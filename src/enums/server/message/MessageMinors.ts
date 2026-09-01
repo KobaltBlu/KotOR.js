@@ -1,6 +1,6 @@
 /**
  * Minor message type IDs for client/server messaging.
- * Extracted from K1 CSWSMessage/CSWCMessage Send/Handle pairs.
+ * Extracted from K1 server/client message handlers Send/Handle pairs.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -168,7 +168,7 @@ export enum GuiInventoryMessageMinor {
   Status = 1,
 }
 
-/** HandlePlayerToServerInputMessage @ 005254c0 minors. */
+/** HandlePlayerToServerInputMessage minors. */
 export enum InputMessageMinor {
   WalkToWaypoint = 1,
   Attack = 2,
@@ -265,7 +265,7 @@ export enum DebugInfoMessageMinor {
 }
 
 /**
- * HandleServerToPlayerGameObjectUpdate @ 0066a4a0 minors.
+ * HandleServerToPlayerGameObjectUpdate minors.
  * Minor 1 payload is a category-byte stream: A/D/G/I/P/U/W.
  */
 export enum GameObjUpdateMessageMinor {

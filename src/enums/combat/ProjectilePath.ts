@@ -14,6 +14,6 @@ export enum ProjectilePath {
   ACCELERATING   = 4,
   /** Retail SpellCastAndImpact / CalculateLastSpellProjectileTime path 6 (+2500 ms). */
   GRENADE        = 6,
-  /** Retail path 7 — used when SpellCastAndImpact param_8 != 0. */
+  /** Retail path 7 — used when SpellCastAndImpact arg8 != 0. */
   SPELL_IMPACT_ALT = 7,
 }

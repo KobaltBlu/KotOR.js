@@ -1,7 +1,7 @@
 /**
  * WeatherCondition enum.
  *
- * Retail CSWCArea::SetWeather / CSWSArea::AIUpdate weather types.
+ * Retail area SetWeather / AIUpdate weather types.
  * Lightning is not a weather type — ChanceLightning overlays fx_lightning01
  * while rain or snow is active.
  *

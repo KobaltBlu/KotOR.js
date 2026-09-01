@@ -2,7 +2,7 @@
  * AutoPauseState enum.
  *
  * Retail statusType / reason bytes passed to SetAutoPaused / SetPaused /
- * CSWGuiInGamePause::SetPauseReason (sparse codes, not a compact 0..n index).
+ * SetPauseReason (sparse codes, not a compact 0..n index).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

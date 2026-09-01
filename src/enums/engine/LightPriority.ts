@@ -1,5 +1,5 @@
 /**
- * MDL lightpriority values. Retail lightcmp @ 004a28c0 prefers lower numbers
+ * MDL lightpriority values. Retail lightcmp prefers lower numbers
  * first, so LOWEST (1) sorts before HIGHEST (5).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II

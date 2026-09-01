@@ -1,7 +1,7 @@
 /**
  * Pazaak Cards enum.
  *
- * TSL gold side indices match CSWGuiPazaakCard::SetCard @ 0054c6b0:
+ * TSL gold side indices match SetCard:
  * 0x12 Tie Breaker, 0x13 Double, 0x14 Flip2&4, 0x15 Flip3&6, 0x16 ±1/±2 (CHANGE).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II

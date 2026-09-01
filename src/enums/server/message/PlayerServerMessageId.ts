@@ -1,7 +1,6 @@
 /**
  * Retail PLAYER_SERVER_MESSAGE_IDS — major message types.
- * From CSWSMessage::HandlePlayerToServerMessage @ 00527b20
- * and CSWCMessage::HandleServerToPlayerMessage @ 0066a640.
+ * From HandlePlayerToServerMessage and HandleServerToPlayerMessage.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

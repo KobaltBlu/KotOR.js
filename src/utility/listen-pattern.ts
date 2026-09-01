@@ -1,10 +1,10 @@
 /**
- * Odyssey CSWSExpression listen-pattern matcher (K1 + K2 parity).
+ * Odyssey listen-pattern matcher (K1 + K2 parity).
  *
  * Grounded in swkotor.exe / swkotor2_aspyr.exe:
- * - CSWSExpression::ParseString @ 0059dab0 (K1)
- * - CSWSExpression::TestString  @ 0059e170 (K1) / FUN_006a34a0 (K2 Aspyr)
- * - CSWSExpression::NewNode     @ 0059d860
+ * - ParseString (K1)
+ * - TestString (K1 / K2 Aspyr)
+ * - NewNode
  *
  * Node types (NewNode param):
  *   0 LITERAL, 1 ANY (**), 2 ALT, 3 JOIN, 4 *w, 5 *p, 6 *a, 7 *n, 8 *A, 9 END
@@ -21,7 +21,7 @@
  * @file listen-pattern.ts
  */
 
-/** Retail CSWSExpressionNode type values. */
+/** Retail expression node type values. */
 export const enum ExprNodeType {
   LITERAL = 0,
   ANY = 1,
@@ -118,7 +118,7 @@ export function parsePattern(pattern: string, caseSensitive = false): ExprNode |
       depth -= 1;
       const parent = stack[depth];
       if(child.head){
-        // Retail CSWSExpression::ParseString `)` case: parent.last becomes
+        // Retail ParseString `)` case: parent.last becomes
         // child.tail (true chain end / JOIN), NOT child.last (alt insert point).
         if(!parent.head){
           parent.head = child.head;

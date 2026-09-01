@@ -1,8 +1,8 @@
 /**
  * ModuleDayPhase enum.
  *
- * Retail CSWSModule day-phase IDs used by GetIsDay/Night/Dawn/Dusk
- * (field67_0x1bc / UpdateTime @ 004c6210).
+ * Retail module day-phase IDs used by GetIsDay/Night/Dawn/Dusk
+ * (UpdateTime).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

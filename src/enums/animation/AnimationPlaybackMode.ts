@@ -12,6 +12,6 @@ export enum AnimationPlaybackMode {
   REVERSE = 0,
   /** Mode 1 — SetOverlayAnimation; does not replace drive locomotion. */
   OVERLAY = 1,
-  /** Mode 2 — normal PlayAnimation on the target Gob(s). */
+  /** Mode 2 — normal PlayAnimation on the target gob(s). */
   NORMAL = 2,
 }

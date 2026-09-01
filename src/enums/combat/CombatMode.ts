@@ -1,8 +1,8 @@
 /**
- * Retail CSWSCreature combat mode (field49_0x4d2) ↔ SetActivity bits.
+ * Retail creature combat mode ↔ SetActivity bits.
  *
  * @file CombatMode.ts
- * @see SetCombatMode @ 0050ee80, SetActivity @ 004f00a0
+ * @see SetCombatMode, SetActivity
  */
 export enum CombatMode {
   NONE = 0,

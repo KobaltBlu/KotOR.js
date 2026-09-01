@@ -1,6 +1,6 @@
 /**
- * Aurora Gob PlayAnimation flag bits used by overlay start/stop.
- * From CSWCAnimBase::SetOverlayAnimation @ 0069e420.
+ * Aurora gob PlayAnimation flag bits used by overlay start/stop.
+ * From SetOverlayAnimation.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -14,7 +14,7 @@ export enum AuroraAnimationFlag {
   /** Overlay slot — stack without clearing locomotion base. */
   OVERLAY_SLOT = 0x008,
   /**
-   * Queue behind current base (Gob::PlayAnimation 0x20) — e.g. planet
+   * Queue behind current base (PlayAnimation 0x20) — e.g. planet
    * `rotate` after `zoomin` on the galaxy map.
    */
   QUEUE = 0x020,

@@ -1,21 +1,21 @@
 /**
  * Retail Odyssey lighting math (K1 LightManager / PartLight).
  *
- * Attenuation from SetUpVertexProgramLightShaderConstants @ 004a50d0 /
- * SetLightGL @ 004a2a00:
+ * Attenuation from SetUpVertexProgramLightShaderConstants /
+ * SetLightGL:
  *   r = max(radius, 0.1)
  *   quadratic = 4.5 / (r²)
  *   atten = 1 / (1 + quadratic * d²)
  *
- * Sort / fade aligned with lightcmp @ 004a28c0 and ControlLightsFade @ 004a4580.
+ * Sort / fade aligned with lightcmp and ControlLightsFade.
  */
 
-/** Minimum radius used by SetLightGL @ 004a2a00 when computing quadratic atten. */
+/** Minimum radius used by SetLightGL when computing quadratic atten. */
 export const RETAIL_LIGHT_ATTEN_MIN_RADIUS = 0.1;
 
 /**
  * KotOR.js default TXI envmap combine — master / retail `environmentMapDest != 0`
- * at `RenderEnvironmentMapped` @ 0046ff70 (`GL_ONE_MINUS_DST_ALPHA`, `GL_ONE`):
+ * at `RenderEnvironmentMapped` (`GL_ONE_MINUS_DST_ALPHA`, `GL_ONE`):
  *   final = litDiffuse + envColor * (1 - diffuseTexAlpha)
  *
  * Diffuse texture alpha is the mask (before material opacity). Dark cubemaps like
@@ -97,7 +97,7 @@ export function retailPointAttenuation(distance: number, radius: number): number
 }
 
 /**
- * Horizontal (XY) distance / radius score used by PrioritizeLights @ 004a2f30.
+ * Horizontal (XY) distance / radius score used by PrioritizeLights.
  * Lower is better; values > 1 are typically excluded from illumination list.
  */
 export function retailIlluminationScore(
@@ -141,8 +141,8 @@ export function retailFadeStep(current: number, target: number, delta: number): 
 }
 
 /**
- * Advance retail shadow-light fade (GetShadowLights @ 004a4b10).
- * FLOAT_007a1948 = 0.3 → fade-in Δt/0.3, fade-out 2·Δt/0.3.
+ * Advance retail shadow-light fade (GetShadowLights).
+ * Fade step constant 0.3 → fade-in Δt/0.3, fade-out 2·Δt/0.3.
  */
 export function retailShadowFadeStep(
   current: number,
@@ -162,7 +162,7 @@ export function retailShadowFadeStep(
 export interface IRetailLightSortKey {
   priority: number;
   /**
-   * Retail n_dynamic_type preference (lightcmp @ 004a28c0):
+   * Retail n_dynamic_type preference (lightcmp):
    * type 1 > type 2 > type 0. Stored as sort rank so higher values win.
    */
   dynamicRank: number;
@@ -178,7 +178,7 @@ export interface IRetailLightSortKey {
 }
 
 /**
- * lightcmp @ 004a28c0: prefer non-black, lower numeric priority, higher
+ * lightcmp: prefer non-black, lower numeric priority, higher
  * dynamicRank, lower illumination score, then registration-order / uuid
  * tie-break (retail uses PartLight pointer address).
  * LightPriority.LOWEST=1 sorts before HIGHEST=5.
@@ -241,7 +241,7 @@ export function retailDynamicRankFromFlags(isDynamic: boolean, affectDynamic: bo
 }
 
 /**
- * Retail RenderStencilShadowsForThisLight disk radius @ 00450730.
+ * Retail RenderStencilShadowsForThisLight disk radius.
  * Uses shadowRadius when > 0, else light radius. If radius > 50, disk is
  * centered on focus with radius 50; otherwise radius is shortened by Δz to focus.
  */
@@ -285,7 +285,7 @@ export function isRetailLightColorBlack(r: number, g: number, b: number): boolea
 }
 
 /**
- * Retail PrioritizeShadow @ 004a3e30 color gate:
+ * Retail PrioritizeShadow color gate:
  * keep light if any raw PartLight.color channel > 0.1 (not fade×color).
  */
 export function isRetailShadowColorVisible(r: number, g: number, b: number): boolean {
@@ -294,7 +294,7 @@ export function isRetailShadowColorVisible(r: number, g: number, b: number): boo
 
 /**
  * Effective lightcmp priority: PartLight.priority, or authored MDL lightpriority
- * when runtime priority is 0 (retail fallback to MdlNode+0x90).
+ * when runtime priority is 0 (retail fallback to MdlNode priority).
  */
 export function retailEffectivePriority(priority: number, authoredPriority = 0): number {
   return (priority | 0) !== 0 ? (priority | 0) : (authoredPriority | 0);
@@ -302,17 +302,17 @@ export function retailEffectivePriority(priority: number, authoredPriority = 0):
 
 /** Retail scene GL light budget (GL_LIGHT0..7). */
 export const RETAIL_MAX_SCENE_LIGHTS = 8;
-/** Retail VertexProgram allowed_lights hard-cap @ 004a27d0. */
+/** Retail VertexProgram allowed_lights hard-cap. */
 export const RETAIL_MAX_LIGHTS_PER_MODEL = 3;
-/** Retail stencil fan segments in RenderStencilShadowsForThisLight @ 00450730. */
+/** Retail stencil fan segments in RenderStencilShadowsForThisLight. */
 export const RETAIL_STENCIL_SHADOW_SEGMENTS = 10;
-/** GetNearestLights / RenderOnlyGobs object query radius @ 00450d60. */
+/** GetNearestLights / RenderOnlyGobs object query radius. */
 export const RETAIL_GOB_LIGHT_RADIUS = 2;
 /** Distant/static GetShadowLights(mode=2) radius threshold. */
 export const RETAIL_DISTANT_SHADOW_RADIUS = 1000;
 
 /**
- * Retail GetShadowLights @ 004a4b10 mode argument:
+ * Retail GetShadowLights mode argument:
  * 0 = multi-light gob / dynamic projections (DoGobShadows / DoDynamicMeshProjections)
  * 1 = single dynamic light for static mesh shadows (DoStaticMeshShadows)
  * 2 = one distant/static light from the full lights list
@@ -324,8 +324,8 @@ export enum RetailShadowLightMode {
 }
 
 /**
- * ControlLightsFade @ 004a4580 param_4 selects which PartLight fade field the
- * pool advances, and GetNearestLights @ 004a3770 uses no fade at all.
+ * ControlLightsFade arg4 selects which PartLight fade field the
+ * pool advances, and GetNearestLights uses no fade at all.
  */
 export enum RetailLightFadeChannel {
   /**
@@ -334,14 +334,14 @@ export enum RetailLightFadeChannel {
    * FFP SetLightGL still uses multiplier × color).
    */
   None = 0,
-  /** param_4 = 0 → field10_0x78. Room / global pool; shader RGB = fade × color. */
+  /** Room / global pool; shader RGB = fade × color. */
   Primary = 1,
-  /** param_4 = 1 → field11_0x7c. Static-geometry pool; shader RGB = secondaryFade × color. */
+  /** Static-geometry pool; shader RGB = secondaryFade × color. */
   Secondary = 2,
 }
 
 /**
- * EnableLightsDynamicOnly @ 004a4480 eligibility. Retail compares
+ * EnableLightsDynamicOnly eligibility. Retail compares
  * `num_dynamic_types == 1` exactly, so baked static lights (type 0) and
  * gob-only lights (type 2) are excluded from the static-geometry overlay.
  */
@@ -350,7 +350,7 @@ export function isRetailDynamicOnlyLight<T extends { dynamicType?: number }>(lig
 }
 
 /**
- * EnableLightsDynamicOnly @ 004a4480: filter the prioritized illumination list
+ * EnableLightsDynamicOnly: filter the prioritized illumination list
  * down to the `n_dynamic_type == 1` lights that light static geometry.
  * Order is preserved — the caller already lightcmp-sorted the input.
  */
@@ -369,7 +369,7 @@ export function retailSelectDynamicOnlyLights<T extends { dynamicType?: number }
 }
 
 /**
- * PrioritizeBump @ 004a3ee0: collect non-ambient dynamic lights from the
+ * PrioritizeBump: collect non-ambient dynamic lights from the
  * render/fade pool, lightcmp-sort, keep at most one.
  */
 export function retailSelectPrioritizeBump<T extends {
@@ -387,7 +387,7 @@ export function retailSelectPrioritizeBump<T extends {
 }
 
 /**
- * PrioritizeIllumination bump_map_lights @ 004a3cf0: scan the first 3 sorted
+ * PrioritizeIllumination bump_map_lights: scan the first 3 sorted
  * illumination lights; keep the first non-ambient with n_dynamic_type != 0.
  */
 export function retailSelectIlluminationBump<T extends {
@@ -433,7 +433,7 @@ export function retailSelectDistantStaticShadowLight<T extends {
 }
 
 /**
- * When headLightEnabled, SetUpVertexProgramLightShaderConstants @ 004a50d0
+ * When headLightEnabled, SetUpVertexProgramLightShaderConstants
  * reserves one of the model's allowed_lights slots (allowedLights -= 1).
  */
 export function retailModelLightSlots(

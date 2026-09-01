@@ -19,19 +19,19 @@ export enum GameEffectSetStateType {
   CUT_SCENE_HORRIFIED = 8,
   FORCEPUSH = 9,
   WHIRLWIND = 10,
-  /** K2 — companion SetState from OnApplyKnockdown @ 0073e1c0 */
+  /** K2 — companion SetState from OnApplyKnockdown */
   KNOCKDOWN = 14,
-  /** K2-only — EffectCrush / ExecuteCommandEffectCrush @ 00787e10 */
+  /** K2-only — EffectCrush */
   CRUSH = 15,
-  /** K2 — EffectDroidConfused @ 007881d5 */
+  /** K2 — EffectDroidConfused */
   DROID_CONFUSED = 16,
   /**
    * K2 SetState 0x11 — Internal choke-like lock (with 0x0E/0x0F);
    * no NWScript Effect* creator found in Aspyr.
    */
   HELD = 17,
-  /** K2 — EffectMindTrick @ 00788241 */
+  /** K2 — EffectMindTrick */
   MIND_TRICK = 18,
-  /** K2 — EffectDroidScramble @ 00788265 */
+  /** K2 — EffectDroidScramble */
   DROID_SCRAMBLE = 19,
 }

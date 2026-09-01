@@ -129,7 +129,7 @@ export enum ActionType {
   /** Wait in area */
   ActionAreaWait = 0x3C,
   /**
-   * Party follow-leader mode flag (TSL AIActionPartyFollowLeader @ 006ca5b0).
+   * Party follow-leader mode flag (TSL AIActionPartyFollowLeader).
    * Same engine ID as ActionFollowLeader — GetAQActionIDByID only has case 0x3D → 38.
    * Factory maps both names to ActionFollowLeader (walk-follow).
    */

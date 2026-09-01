@@ -10,7 +10,7 @@ export function tlkText(strRef: number): string {
 }
 
 /**
- * Substitute &lt;CUSTOM0&gt;… tokens like CTlkTable::SetCustomToken + Fetch.
+ * Substitute &lt;CUSTOM0&gt;… tokens like SetCustomToken + Fetch.
  */
 export function formatTlkWithCustoms(strRef: number, customs: string[]): string {
   let text = tlkText(strRef);

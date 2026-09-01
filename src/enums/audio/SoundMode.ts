@@ -1,7 +1,7 @@
 /**
  * SoundMode enum.
  *
- * Retail CExoSoundInternal::SetSoundMode modes (@ 006395a0).
+ * Retail SetSoundMode modes ().
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
