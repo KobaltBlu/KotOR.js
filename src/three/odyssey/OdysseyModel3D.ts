@@ -155,7 +155,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
   Scale: number;
   modelHeader: IOdysseyModelHeader = {} as IOdysseyModelHeader;
   /**
-   * Retail Gob.distortion (+0x17C). Set by Gob::EnableDistortion / VFX 0x708;
+   * Retail Gob.distortion. Set by Gob EnableDistortion / VFX 0x708;
    * cleared by DisableDistortion. Combined with TILE classification for
    * forcePushBucket / emitter stencil mask (ManageSceneBSP / RenderFunc).
    */
@@ -184,7 +184,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
   opacity: number = 1;
 
   /**
-   * Retail force-distortion opt-in (ManageSceneBSP / PartEmitter::RenderFunc):
+   * Retail force-distortion opt-in (ManageSceneBSP / PartEmitter RenderFunc):
    * gob.distortion != 0 OR ((classification >> 1) & 1) — i.e. OdysseyModelClass.TILE.
    */
   isForceDistortionActive(): boolean {
@@ -610,13 +610,13 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
     const dt =
       delta > 0 ? delta : (this.context?.deltaTime ?? 0);
-    // Odyssey vertex shaders use `time` in sin() for dangly, animated effects, etc. — must accumulate (seconds), not reset to delta each frame.
+    // Odyssey vertex shaders use `time` in sin for dangly, animated effects, etc. — must accumulate (seconds), not reset to delta each frame.
     for(let i = 0; i < this.materials.length; i++){
       let material = this.materials[i];
       if(material instanceof THREE.ShaderMaterial){
         if(material.type == 'ShaderMaterial'){
           material.uniforms.time.value += dt;
-          // Retail ProceduralAnimateHierarchy @ 00483630 — once per rendered frame, no deltaT:
+          // Retail ProceduralAnimateHierarchy — once per rendered frame, no deltaT:
           // base += (uvDirectionX, uvDirectionY); jitter phase driven by uvJitterSpeed
           if(material.defines?.ANIMATED_UV != null && material.uniforms.animatedUVState && material.uniforms.animatedUV){
             const state = material.uniforms.animatedUVState.value;
@@ -789,7 +789,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
   /**
    * Bind each skin to its bone slots.
    *
-   * Retail (ExecuteSkinTransforms / RenderSkinned @ 00487570 / 0048a0d0):
+   * Retail (ExecuteSkinTransforms / RenderSkinned):
    * - MDX bone index → bone_parts[slot] → absolute node number
    * - qbone_ref_inv / tbone_ref_inv are sized to the node list and indexed by that node number
    * - GatherBones walks the part tree in node-number order
@@ -864,7 +864,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
             }
           });
         }
-        //node.updateMatrix();
+        //node.updateMatrix;
         node.updateMatrixWorld(true);
       }catch(e){}
 
@@ -1042,7 +1042,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
   }
 
   /**
-   * Retail CSWCObject::EnableBumpedOutShell @ 0063d440 — clone skinned meshes onto the
+   * Retail EnableBumpedOutShell — clone skinned meshes onto the
    * same parents/skeleton so the shell inherits creature transform + bone animation.
    */
   generateForceShieldGeometry( shieldTexName = '' ){
@@ -1056,7 +1056,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
       if(!originalSkinMesh.parent || !originalSkinMesh.skeleton || !originalSkinMesh.geometry)
         continue;
 
-      // Do not use SkinnedMesh.clone() — recursive copy walks Odyssey node children and
+      // Do not use SkinnedMesh.clone — recursive copy walks Odyssey node children and
       // can hit undefined refs in Material/Object3D.toJSON. Share geometry + skeleton only.
       const skinMaterial = new THREE.ShaderMaterial({
         fragmentShader: THREE.ShaderLib.odyssey.fragmentShader,
@@ -1102,7 +1102,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
     }
   };
 
-  /** Retail CSWCObject::DisableBumpedOutShell @ 0063d460 */
+  /** Retail DisableBumpedOutShell */
   disposeForceShieldGeometry(){
     while(this.forceShieldGeometry.length){
       let object = this.forceShieldGeometry.splice(0, 1)[0];
@@ -1664,7 +1664,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
           }
         }
 
-        // Retail SetBeaming @ 0047147e — beaming meshes use beamingProjectionAlpha as blend alpha.
+        // Retail SetBeaming — beaming meshes use beamingProjectionAlpha as blend alpha.
         if(odysseyNode.beaming){
           material.userData.beaming = true;
           material.transparent = true;
@@ -1681,7 +1681,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
         material.visible = false;
       }
 
-      // Retail SetEnvMap (CSWCObject @ 0063cb70) — object-level envmap from appearance.2da
+      // Retail SetEnvMap — object-level envmap from appearance.2da
       // ENVMAP / baseitems partEnvMap, applied to all parts and overriding the TXI envmap.
       if(options.envMapOverride){
         material.userData.envMapOverride = options.envMapOverride;
@@ -1722,7 +1722,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
         }
       }
 
-      // TSL dirt overlay — retail PartTriMesh::Draw case 0x10.
+      // TSL dirt overlay — retail Draw case 0x10.
       if(odysseyNode.dirtEnabled && material instanceof THREE.ShaderMaterial){
         const slot = Math.max(0, Math.min(2, ((odysseyNode.dirtTexture ?? 1) | 0) - 1));
         const dirtMap = DirtyTextureManager.getTexture(slot);
@@ -1759,7 +1759,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
           material.needsUpdate = true;
         }
 
-        //Set animated uv uniforms — retail ProceduralAnimateHierarchy @ 00483630
+        //Set animated uv uniforms — retail ProceduralAnimateHierarchy
         if(odysseyNode.nAnimateUV){
           material.uniforms.animatedUV.value.set(odysseyNode.fUVDirectionX, odysseyNode.fUVDirectionY, odysseyNode.fUVJitter, odysseyNode.fUVJitterSpeed);
           if(material.uniforms.animatedUVState){

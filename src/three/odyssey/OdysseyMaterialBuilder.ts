@@ -26,14 +26,14 @@ export interface ApplyTXIOptions {
 
 export class OdysseyMaterialBuilder {
   /**
-   * Current area DefaultEnvMap resref. Retail CSWCObject::SetEnvMap @ 0063cb70 resolves
+   * Current area DefaultEnvMap resref. Retail SetEnvMap resolves
    * the envmap resref "DEFAULT" to the module area's DefaultEnvMap before binding.
    * Set by ModuleArea (game) / ForgeArea (forge) when an area is loaded.
    */
   static defaultEnvMap: string = '';
 
   /**
-   * Resolve an envmap resref like retail CSWCObject::SetEnvMap @ 0063cb70:
+   * Resolve an envmap resref like retail SetEnvMap:
    * "DEFAULT" maps to the current area's DefaultEnvMap; an empty result means skip binding.
    */
   static resolveEnvMapResRef(resRef: string): string {
@@ -127,7 +127,7 @@ export class OdysseyMaterialBuilder {
     };
 
     // Object-level envmap override (appearance.2da ENVMAP / baseitems partEnvMap) wins over the
-    // TXI envmap — retail RenderEnvironmentMapped @ 0046ff70 checks the gob envmap first.
+    // TXI envmap — retail RenderEnvironmentMapped checks the gob envmap first.
     const envMapResRef = OdysseyMaterialBuilder.resolveEnvMapResRef(
       (material.userData?.envMapOverride as string) || texture.txi.envMapTexture
     );
@@ -137,7 +137,7 @@ export class OdysseyMaterialBuilder {
       if(!!envmap){
         registerManagedTexture(envmap);
         if((envmap as any).header?.isCubemap){
-          // Retail GLRender::CreateCubeTexture @ 00424000 — GL_CLAMP_TO_EDGE on S/T/R.
+          // Retail CreateCubeTexture — GL_CLAMP_TO_EDGE on S/T/R.
           envmap.wrapS = envmap.wrapT = THREE.ClampToEdgeWrapping;
         }else{
           envmap.wrapS = envmap.wrapT = THREE.RepeatWrapping;
@@ -157,7 +157,7 @@ export class OdysseyMaterialBuilder {
           // (Three envmap chunks set ENV_WORLDPOS for worldpos/envmap varyings).
           material.defines.ENV_WORLDPOS = "";
           // Default TXI envmaps use ADD (master / retail environmentMapDest!=0 @
-          // 0046ff70: glBlendFunc(ONE_MINUS_DST_ALPHA, ONE) → litDiffuse + env*(1-a)).
+          // : glBlendFunc(ONE_MINUS_DST_ALPHA, ONE) → litDiffuse + env*(1-a)).
           // dest==0 LERP replaces albedo with the cubemap and crushes dark maps
           // like CM_Baremetal; ADD keeps armor color and layers sparse highlights.
           material.defines.ENVMAP_BLENDING_ADD = "";
@@ -264,7 +264,7 @@ export class OdysseyMaterialBuilder {
           material.defines = material.defines || {};
           material.defines.WATER = "";
           // Retail uses height→normal bump lighting only (ConvertHeightFieldAndLoadNormalMapTexture
-          // @ 004260a0) — no vertex displacement.
+          //) — no vertex displacement.
           delete material.defines.USE_DISPLACEMENTMAP;
           material.defines.ENVMAP_BLENDING_MIX = "";
           delete material.defines.USE_NORMALMAP;

@@ -16,11 +16,11 @@ import { envMapRotationFromCamera } from "@/utility/envMapRotation";
  * correct lighting). Area ambient/sun state is owned by each LightManager.
  *
  * Retail split (LoadArea / SetAsDay):
- * - ambientColor = ARE DynAmbientColor → CAurScene::SetAmbient
+ * - ambientColor = ARE DynAmbientColor → SetAmbient
  * - sunAmbientColor = sun/moon ambient → directional light ambient channel
  * - sunColor = sun/moon diffuse → directional light diffuse (N·L)
  *
- * ARE room AmbientScale is audio-only (UpdateRoom @ 005ee860 → SetDesiredAmbientScale).
+ * ARE room AmbientScale is audio-only (UpdateRoom → SetDesiredAmbientScale).
  */
 export class OdysseyLightingBinder {
   /** Fallback scene light-model ambient when no LightManager is provided. */
@@ -195,7 +195,7 @@ export class OdysseyLightingBinder {
   }
 
   /**
-   * DoEnvMapTransform @ 0046f780 — upload camera world rotation for cubemap sample.
+   * DoEnvMapTransform — upload camera world rotation for cubemap sample.
    * Called for USE_ENVMAP materials even when IGNORE_LIGHTING skips light arrays.
    */
   static writeEnvMapRotation(material: THREE.ShaderMaterial, camera?: THREE.Camera){
@@ -242,7 +242,7 @@ export class OdysseyLightingBinder {
     const ignoreLighting = Object.prototype.hasOwnProperty.call(defines, 'IGNORE_LIGHTING');
     // Unlit meshes ignore runtime lights entirely. Lightmapped surfaces still
     // receive the exclusive_dynamic_lights overlay (EnableLightsDynamicOnly @
-    // 004a4480) but never area sun/ambient — that is baked into the lightmap.
+    // ) but never area sun/ambient — that is baked into the lightmap.
     if(ignoreLighting && !usesLightmap){
       if(material.userData[cacheKey] === lightSet.cacheID &&
         material.userData.odysseyLightArraysSkipped === true){
@@ -281,7 +281,7 @@ export class OdysseyLightingBinder {
     }
 
     const count = Math.min(lightSet.count, MAX_ODYSSEY_LIGHTS);
-    // Three.UniformsUtils.clone() reuses Vector4 element identity across every
+    // Three.UniformsUtils.clone reuses Vector4 element identity across every
     // material cloned from ShaderLib.odyssey — so lightmap clears and lit binds
     // would clobber each other through aliased slots. Always own unique arrays.
     let posArr = material.uniforms.odysseyLightPos.value as THREE.Vector4[];
@@ -433,7 +433,7 @@ export class OdysseyLightingBinder {
    * `focus`.
    *
    * @param lightPath `'room'` = PrioritizeIllumination globals (ARE rooms);
-   *                  `'gob'` = GetNearestLights (RenderOnlyGobs / GUI AddModel).
+   * `'gob'` = GetNearestLights (RenderOnlyGobs / GUI AddModel).
    */
   static bindSceneModel(
     lightManager: LightManager,

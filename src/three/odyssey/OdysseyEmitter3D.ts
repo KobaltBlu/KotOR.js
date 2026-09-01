@@ -70,12 +70,12 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   static EMITTER_TICK_DEBUG = false;
 
   /**
-   * Retail PartEmitter+0x1f8 (Gob::SetEmitterAsWeather).
+   * Retail PartEmitter (Gob SetEmitterAsWeather).
    * When set, live particles toroidally wrap X/Y around the module camera (±5).
    */
   isWeather: boolean = false;
 
-  /** Retail weather wrap half-extent (_DAT_009f6fc0 / _DAT_009f6fbc = 5). */
+  /** Retail weather wrap half-extent (= 5). */
   private static readonly WEATHER_WRAP_HALF = 5;
 
   updateType: string;
@@ -86,10 +86,10 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   velocities: THREE.BufferAttribute|THREE.InstancedBufferAttribute;
   props: THREE.BufferAttribute|THREE.InstancedBufferAttribute;
   ids: THREE.BufferAttribute|THREE.InstancedBufferAttribute;
-  /** Motion_Blur particle tail (+0x60). */
+  /** Motion_Blur particle tail. */
   prevOffsets: THREE.InstancedBufferAttribute;
   /**
-   * Per-particle inherit velocity (retail Particle scale×accel @ +0x18/+0x1c).
+   * Per-particle inherit velocity (retail Particle scale×accel).
    * CPU-only; MoveFunc adds inherit×dt then |inherit×(1-dt)|.
    */
   private inheritVels: Float32Array = new Float32Array(0);
@@ -98,27 +98,27 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   private _bounceHitCursor: number = 0;
   referenceNode: OdysseyObject3D = new OdysseyObject3D();
   /**
-   * True once setReferenceNode() assigns a real target (retail PartEmitter+0x1e4).
+   * True once setReferenceNode assigns a real target (retail PartEmitter).
    * P2P MoveFunc/RenderFunc no-op and skip drawing when unset.
    */
   hasReferenceTarget: boolean = false;
 
-  // Lightning properties (PartEmitter+0xb8..0xc8)
+  // Lightning properties
   lightningZigZag: number = 0;
   lightningScale: number = 0;
   lightningDelay: number = 0;
   lightningRadius: number = 0;
   lightningSubDiv: number = 0;
-  /** Retail field43_0xf4 — accumulates dt until lightningDelay. */
+  /** Accumulates dt until lightningDelay. */
   _lightningDelay: number = 0;
   /**
    * Bolt-local mid-sample offsets (u/v in plane ⊥ start→end).
-   * Regenerated when delay elapses (LightningEmitter::Update @ 00498b80).
+   * Regenerated when delay elapses (LightningEmitter Update).
    */
   private _lightningMidOU: Float32Array = new Float32Array(0);
   private _lightningMidOV: Float32Array = new Float32Array(0);
   private _lightningSampleCount: number = 0;
-  /** ControlPTDelay accumulator (PartEmitter field44_0xf8). */
+  /** ControlPTDelay accumulator (PartEmitter). */
   private _controlPTAccum: number = 0;
   /** Mid control-point jitter in bolt-local (u,v); sized to cpCount. */
   private _cpMidOU: Float32Array = new Float32Array(0);
@@ -129,10 +129,10 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   /** Scratch control-point positions / tangents (xyz interleaved). */
   private _cpPositions: Float32Array = new Float32Array(0);
   private _cpTangents: Float32Array = new Float32Array(0);
-  /** Scratch xyz mid offsets for RecursiveFractal @ 0048e700. */
+  /** Scratch xyz mid offsets for RecursiveFractal. */
   private _fractalXYZ: Float32Array = new Float32Array(0);
   /**
-   * Child bolts from numBranches (UpdateBranches @ 00491a50).
+   * Child bolts from numBranches (UpdateBranches).
    * Lightweight ribbons — not full child LightningEmitters.
    */
   private _lightningBranches: {
@@ -157,7 +157,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   context: any;
   lifeExp: number = -1;
   _birthTimer: number = 0;
-  /** FountainEmitter field33_0xcc — accumulates dt for spawntype-0 birth. */
+  /** FountainEmitter — accumulates dt for spawntype-0 birth. */
   private _birthAccum: number = 0;
 
   birthRate: number = 0;
@@ -198,7 +198,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   combineTime: number = 0;
   p2pBezier2: number = 0;
   p2pBezier3: number = 0;
-  /** Retail sentinel 255 = two-key start→end (RenderStandard field37_0xdc). */
+  /** Retail sentinel 255 = two-key start→end (RenderStandard). */
   percentStart: number = 255;
   percentMid: number = 0.5;
   percentEnd: number = 1;
@@ -212,7 +212,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   //@ts-ignore
   mesh: THREE.Points|THREE.Mesh;
 
-  // Inherit tracking: emitter world pose between frames (retail field71/74 + field87/91)
+  // Inherit tracking: emitter world pose between frames
   private _lastWorldPos: THREE.Vector3 = new THREE.Vector3();
   private _worldPosDelta: THREE.Vector3 = new THREE.Vector3();
   private _hasLastWorldPos: boolean = false;
@@ -234,7 +234,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   /**
    * Non-lightning Linked trail: retail-style live sample list (world centers + age).
    * Mesh geometry is rebuilt each tick from these only — never draws spare 0,0,0 slots.
-   * RenderLinked @ 00495b20 builds quads from field83_0x1cc particles the same way.
+   * RenderLinked builds quads from field particles the same way.
    */
   private _linkedCenters: Float32Array = new Float32Array(0);
   private _linkedAges: Float32Array = new Float32Array(0);
@@ -570,7 +570,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       const ids: number[] = [];
       const prevOffsets: number[] = [];
 
-      // Birth uses retail Particle::initialize (randomDirection + speed×zdir).
+      // Birth uses retail Particle initialize (randomDirection + speed×zdir).
       this.attributeChanged('mass');
 
       switch(this.node.renderMode){
@@ -676,7 +676,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       return OdysseyEmitter3D._v3B.clone();
     }
 
-    // Retail Particle::randomPosition @ 0048d870 — offsets on local X/Y only (not Z).
+    // Retail Particle randomPosition — offsets on local X/Y only (not Z).
     const quat = OdysseyEmitter3D._quat;
     const pos = OdysseyEmitter3D._v3B;
     this.getWorldQuaternion(quat);
@@ -694,7 +694,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   }
 
   /**
-   * Retail Particle::initialize randvel jitter: signed centi-units when randvel > 0.01.
+   * Retail Particle initialize randvel jitter: signed centi-units when randvel > 0.01.
    * speed = velocity + jitter (even when velocity is 0).
    */
   private randomSignedCentiJitter(range: number): number {
@@ -707,7 +707,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   }
 
   /**
-   * Retail Particle::randomDirection @ 0048de60.
+   * Retail Particle randomDirection.
    * Premultiply tilt about emitter-fixed world X, then twist about emitter-fixed world Z
    * (axes taken once from the emitter quat — not post-tilt local Z).
    * Optional deadSpace camera clamp when node.deadSpace !== 0.
@@ -813,7 +813,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   }
 
   /**
-   * Particle::inheritVelocity @ 0048d9e0 (INHERIT_VEL).
+   * Particle inheritVelocity (INHERIT_VEL).
    * Stores scale×unitAccel as a single vec3 (MoveFunc: pos += v×dt; v *= |1−dt|).
    * accel = emitterLinearVel + (currZ − prevZ) × |emitter − birth| / dt.
    */
@@ -903,14 +903,14 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     if(!delta){
       delta = 1/30;
     }
-    // Retail DoEmitterBucket @ 004509b0: AnimateParticles(min(dt, 0.1)) then RenderFunc
+    // Retail DoEmitterBucket: AnimateParticles(min(dt, 0.1)) then RenderFunc
     delta = Math.min(delta, OdysseyEmitter3D.MAX_ANIMATE_DT);
 
     // Keep emitter matrixWorld current before birth / trail sampling.
     // Manual parent*local can lag when ancestors use matrixAutoUpdate=false.
     this.updateWorldMatrix(true, false);
 
-    // Track emitter world pose delta for inherit/trail (AnimateParticles field71/74).
+    // Track emitter world pose delta for inherit/trail.
     // Dedicated fields — birth/randomDirection reuse static scratches and must not clobber these
     // (plc_fntnmrbl has inherit_local; garbage deltas looked like floaty/wrong spray).
     this.getWorldPosition(this._frameWorldPos);
@@ -932,7 +932,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       }
     }
 
-    // Retail RenderStandard/MotionBlurred: gob.alpha × FUN_0048dc90 fade × particle alpha
+    // Retail RenderStandard/MotionBlurred: gob.alpha × fade × particle alpha
     if(this.material?.uniforms?.parentAlpha){
       this.material.uniforms.parentAlpha.value =
         this.getParentGobAlpha() * this.getEmitterFadeAlpha();
@@ -953,7 +953,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     if(this._birthTimer < 0)
       this._birthTimer = 0;
 
-    // FountainEmitter::Update spawntype 0 @ 00496e40 — batch birth quota for this frame
+    // FountainEmitter Update spawntype 0 — batch birth quota for this frame
     let fountainBirthQuota = 0;
     if(this.node.renderMode !== 'Linked' &&
        this.node.updateMode !== 'Explosion' &&
@@ -1045,7 +1045,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       return;
     }
 
-    // SingleEmitter::Update @ 004979c0 — before Fountain/P2P birth loops
+    // SingleEmitter Update — before Fountain/P2P birth loops
     if(this.node.updateMode == 'Single' && this.node.renderMode !== 'Linked'){
       this.tickSingle(delta);
       this.updateEmitterOrientationMatrix();
@@ -1058,7 +1058,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     // KotOR MDL can set P2P flags on Linked trail emitters (e.g. v_heal_imp); those must not early-return here.
     // (Fountain is updateMode — never compare it to renderMode.)
     if(this.node.flags.isP2P && this.node.renderMode !== 'Linked'){
-      // Retail MoveFunc @ 00494d40 / RenderFunc @ 0049b680: no target → no move, no draw.
+      // Retail MoveFunc / RenderFunc: no target → no move, no draw.
       // Fountain Update still ages/births (quota from consumeFountainBirthQuota above).
       if(!this.hasReferenceTarget){
         this.emitterLog('tick:earlyReturn', { reason: 'P2PNoTarget', delta });
@@ -1110,7 +1110,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         this.clearLinkedTrailMesh();
       }else{
         const liveSlots = Math.min(this.linkedTotalSpawns, cap);
-        // Age samples (retail particle+0x70). Slots stay until ring overwrite.
+        // Age samples (retail Particle). Slots stay until ring overwrite.
         for(let i = 0; i < liveSlots; i++){
           let age = this._linkedAges[i] || 0;
           const maxAge = this._linkedMaxAges[i] || (this.lifeExp >= 0 ? this.lifeExp : 100);
@@ -1159,9 +1159,9 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     }
 
     if(this.node.renderMode != 'Linked'){
-      // FountainEmitter::Update order @ 00496e40:
-      // 1) chkParticleLife  2) Motion_Blur tail lerp  3) particleRot (shader rotate*age)
-      // 4) MoveFunc         5) birth
+      // FountainEmitter Update order:
+      // 1) chkParticleLife 2) Motion_Blur tail lerp 3) particleRot (shader rotate*age)
+      // 4) MoveFunc 5) birth
 
       // --- 1) Age / kill only (no spawn yet) ---
       for(let i = 0; i < spawnableParticleCount; i++){
@@ -1217,7 +1217,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       }
 
       // --- 4a) Inherit (MoveFunc start) — world-space particles ---
-      // Inherit (retail moveParticleStandard bit 6 @ 00492450):
+      // Inherit (retail moveParticleStandard bit 6):
       // local = pos - prevEmitter; local = (currQ * inv(prevQ)) * local; pos = local + currEmitter.
       if(this.node.flags.canInherit && this._hasLastWorldPos){
         const prevPos = this._lastWorldPos;
@@ -1273,7 +1273,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       }
 
       if(this.node.flags.canInheritLocal && !this.node.flags.canInherit && this._hasLastWorldPos){
-        // Retail moveParticleStandard bit 8 only when bit 6 INHERIT is unset @ 00492450:
+        // Retail moveParticleStandard bit 8 only when bit 6 INHERIT is unset:
         // particle += (object.pos − prevObject.pos). Emitter world delta matches a
         // placeable-rooted emitter. Do not transform/subtract — that scrambled spray
         // when pose scratches were also aliased (see _frameWorldPos).
@@ -1299,7 +1299,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         updateVelocity = true;
       }
 
-      // Retail isWeather wrap after fountain integrate (moveParticle* @ 008a9e57)
+      // Retail isWeather wrap after fountain integrate (moveParticle*)
       if(this.isWeather && this.wrapWeatherParticles(spawnableParticleCount)){
         updatePositions = true;
       }
@@ -1313,7 +1313,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
           let maxSpawn = 0;
 
           if(this.node.updateMode == 'Explosion'){
-            // ExplosionEmitter::Update @ 00497640: ftol(birthRate) particles on Detonate
+            // ExplosionEmitter Update: ftol(birthRate) particles on Detonate
             canSpawn = this.isDetonated;
             maxSpawn = Math.floor(this.birthRate) || 0;
           }else if(this.node.spaceType === 1){
@@ -1383,11 +1383,11 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       this.updateChunkInstances();
     }
 
-    // Store pose for next frame's inherit (retail: field74←field71 before next GetWorld)
+    // Store pose for next frame's inherit (swap previous/current before next GetWorld).
     this.commitInheritPose(currentWorldPos, currentWorldQuat);
   }
 
-  /** Retail gob.field46_0xd8 — walk to OdysseyModel3D.opacity. */
+  /** Retail gob opacity field — walk to OdysseyModel3D.opacity. */
   private getParentGobAlpha(): number {
     let obj: THREE.Object3D | null = this.parent;
     while(obj){
@@ -1400,10 +1400,10 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   }
 
   /**
-   * PartEmitter::FUN_0048dc90 @ 0048dc90 — emitterFadeHeight (00798b94) = 5.0.
+   * PartEmitter fade — emitterFadeHeight = 5.0.
    * If emitterWorldZ − modelRootZ > 5 → multiply alpha by deadspace, else 1.
-   * Ref is the CAurObject / OdysseyModel3D root (retail MdlNode abs Z mistyped as
-   * children.size in Ghidra). Used by RenderStandard, RenderMotionBlurred, RenderLinked.
+   * Ref is the model root / OdysseyModel3D root (retail MdlNode abs Z;
+   * do not use children.size). Used by RenderStandard, RenderMotionBlurred, RenderLinked.
    *
    * deadSpace == 0 disables this fade (same gate as Aligned_to_Particle_Dir DEADSPACE).
    * Returning 0 would wipe alpha for tall emitters (e.g. m45ac_bmap red_fighters on rotdummy).
@@ -1420,7 +1420,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       owner.getWorldPosition(OdysseyEmitter3D._v3B);
       refZ = OdysseyEmitter3D._v3B.z;
     }
-    // Retail: emitterFadeHeight < field73_0x16c − nodeAbsZ
+    // Retail: emitterFadeHeight < threshold − nodeAbsZ
     if(OdysseyEmitter3D._v3A.z - refZ > EMITTER_FADE_HEIGHT){
       return dead;
     }
@@ -1488,7 +1488,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   }
 
   /**
-   * PartEmitter::RenderFunc @ 0049b680 — when parent Gob is distortion-active:
+   * PartEmitter RenderFunc — when parent Gob is distortion-active:
    * colorMask(0) + stencil REPLACE during the scene pass. Stencil uses bit
    * {@link FORCE_DISTORTION_STENCIL_BIT} so shadow-disk bits 0–6 stay intact.
    * Sets forceDistortionNeeded for the FB warp pass.
@@ -1542,8 +1542,8 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     if(referenceNode){
       this.referenceNode = referenceNode as OdysseyObject3D;
       this.hasReferenceTarget = true;
-      // Retail RenderFunc draws once field103 target is set; undo P2PNoTarget hide.
-      // birthRate==0 means disable() — leave hidden for P2P fountain; Lightning uses SubDiv density.
+      // Retail RenderFunc draws once the reference target is set; undo P2PNoTarget hide.
+      // birthRate==0 means disable — leave hidden for P2P fountain; Lightning uses SubDiv density.
       if(this.material){
         if(this.node.updateMode === 'Lightning' || (this.node.flags.isP2P && this.birthRate > 0)){
           this.material.visible = true;
@@ -1554,9 +1554,9 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
   /**
    * Feed emitter world orientation into the shader `matrix` uniform.
-   * Retail RenderStandard @ 0048f040:
+   * Retail RenderStandard:
    * - Aligned_to_Particle_Dir: particle orientation (approx. emitter world quat)
-   * - Billboard_to_Local_Z: emitter world quat (localZ branch uses field76_0x1a4)
+   * - Billboard_to_Local_Z: emitter world quat (localZ branch uses)
    */
   private updateEmitterOrientationMatrix(){
     const mode = this.node.renderMode;
@@ -1572,17 +1572,17 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   }
 
   /**
-   * LightningEmitter::Update @ 00498b80 + UpdateControlPoints @ 00497c60.
+   * LightningEmitter Update + UpdateControlPoints.
    * Retail: (int)birthRate = sample count; lightningDelay gates zigzag regen;
    * ControlPTCount/Delay/Radius + TangentLength build Hermite CPs; zigZag° spins
-   * offset axis; K1 always zigzag (DAT_0083049c stays 0); numBranches → UpdateBranches
-   * @ 00491a50; RenderLinked camera ribbon with per-sample size taper.
+   * offset axis; K1 always zigzag; numBranches → UpdateBranches;
+   * RenderLinked camera ribbon with per-sample size taper.
    *
    * Reference: MDL omenref child (e.g. v_coldray_dur omenref01) wires via
-   * setReferenceNode; EffectBeam / Forge retarget. Retail clears when field89==0.
+   * setReferenceNode; EffectBeam / Forge retarget. Retail clears when birthRate == 0.
    */
   tickLightning(delta: number = 0){
-    // Retail LightningEmitter::Update: birthRate==0 OR no reference → destroy samples.
+    // Retail LightningEmitter Update: birthRate==0 OR no reference → destroy samples.
     if(!this.hasReferenceTarget || !this.referenceNode){
       this.clearLightningRibbon();
       return;
@@ -1634,7 +1634,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
     if(needZigZagRegen){
       this._lightningDelay = 0;
-      // K1 retail: DAT_0083049c stays 0 → always zigzag (not RecursiveFractal).
+      // K1 retail: retail stays 0 → always zigzag (not RecursiveFractal).
       // SubDiv still drives branch sample density / birthRate==0 sample count.
       this.regenerateLightningMidOffsets(
         sampleCount, start, target, bolt, basisU, vX, vY, vZ
@@ -1677,7 +1677,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       if(wantCPs){
         this.regenerateControlPTOffsets(cpCount);
       }
-      // UpdateBranches @ 00491a50 — same gate as ControlPT regen
+      // UpdateBranches — same gate as ControlPT regen
       if(maxBranches > 0){
         this.updateLightningBranches(
           maxBranches, sampleCount, dist, start, target, bolt, basisU, vX, vY, vZ
@@ -1851,7 +1851,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   }
 
   /**
-   * UpdateControlPoints @ 00497c60 — sample Hermite through CPs, then add zigzag.
+   * UpdateControlPoints — sample Hermite through CPs, then add zigzag.
    * Without ControlPTCount/TangentLength: linear lerp + zigzag (numCPs==2, tanLen==0).
    */
   private fillLightningSampleCenters(
@@ -1905,7 +1905,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     const cps = this._cpPositions;
     const tans = this._cpTangents;
 
-    // Start tangent: emitter local Z × tanLen (retail quat zdir × field50)
+    // Start tangent: emitter local Z × tanLen (quat zdir × tangent length)
     const quat = OdysseyEmitter3D._quat;
     this.getWorldQuaternion(quat);
     const zx = 2 * (quat.x * quat.z + quat.w * quat.y);
@@ -1960,7 +1960,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         dy = bolt.y * tanLen;
         dz = bolt.z * tanLen;
       }
-      // TangentSpread: yaw/pitch jitter on mid tangents (field49)
+      // TangentSpread: yaw/pitch jitter on mid tangents
       const spread = this.tangentSpread || 0;
       if(spread > 0){
         const yaw = this.randomFloat(0, spread * 2);
@@ -2122,7 +2122,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   }
 
   /**
-   * RecursiveFractal @ 0048e700 — depth = floor(dist×SubDiv×0.5).
+   * RecursiveFractal — depth = floor(dist×SubDiv×0.5).
    * Writes lightning mid offsets; then along-bolt scale jitter like Update.
    */
   private regenerateLightningFractalOffsets(
@@ -2158,7 +2158,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       this._fractalXYZ.fill(0);
     }
 
-    // Retail: param_4 = (-bolt.y, bolt.z, -bolt.x); displace along that axis
+    // Retail: arg4 = (-bolt.y, bolt.z, -bolt.x); displace along that axis
     const px = -bolt.y;
     const py = bolt.z;
     const pz = -bolt.x;
@@ -2178,7 +2178,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
     this.recursiveFractalDisplace(depth, depth, dx, dy, dz, 0, 1.0, sampleCount);
 
-    // Post-fractal along-bolt jitter (Update @ 00498b80 fractal branch)
+    // Post-fractal along-bolt jitter (Update fractal branch)
     const seg = (dist / sampleCount) * 0.5;
     const scale = this.lightningScale || 0;
     if(seg >= 0.01 && scale > 0){
@@ -2303,7 +2303,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   }
 
   /**
-   * UpdateBranches @ 00491a50 — active = rand%(numBranches+1);
+   * UpdateBranches — active = rand%(numBranches+1);
    * scale ∈ [0.1,0.9]; attachIdx = ftol(sampleCount×scale);
    * size/sizeY/size_mid… × scale on child; short vs track-target ends;
    * sampleCount = dist×SubDiv+2.
@@ -2335,17 +2335,17 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       });
     }
 
-    // Retail: field37 = rand() % (numBranches + 1)
+    // Retail: active branch count = rand % (numBranches + 1)
     this._lightningBranchActive = (Math.random() * (maxBranches + 1)) | 0;
 
-    // Mid-axis used for short-branch spin (retail field34..36)
+    // Mid-axis used for short-branch spin
     const midX = vX;
     const midY = vY;
     const midZ = vZ;
 
     for(let i = 0; i < this._lightningBranchActive; i++){
       const branch = this._lightningBranches[i];
-      // fVar2 = (rand%80)*0.01 + 0.1  → [0.1, 0.89]
+      // fVar2 = (rand%80)*0.01 + 0.1 → [0.1, 0.89]
       const scale = (((Math.random() * 80) | 0) * 0.01) + 0.1;
       branch.sizeScale = scale;
       // attachIdx = ftol(sampleCount * scale) — clamp into open interval
@@ -2372,7 +2372,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         const pitch = pitchDeg * 0.017453292;
         const cy = Math.cos(yaw), sy = Math.sin(yaw);
         const cp = Math.cos(pitch), sp = Math.sin(pitch);
-        // Start from mid-axis * size (field18_0x90 ≈ sizes[0])
+        // Start from mid-axis * size (size ≈ sizes[0])
         const size0 = this.sizes[0] || 1;
         let dx = midX * size0;
         let dy = midY * size0;
@@ -2521,7 +2521,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   }
 
   /**
-   * RenderLinked lightning size lifecycle @ 00495b20.
+   * RenderLinked lightning size lifecycle.
    * t = i / sampleCount. percentStart==255 → two-key start→end; else start/mid/end
    * with authored percent breakpoints (0 is valid — e.g. v_coldray_dur percentMid 0).
    * When all sizeY keys are 0, retail falls back to sizeX for the along-pad basis.
@@ -2684,7 +2684,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   }
 
   /**
-   * SingleEmitter::Update @ 004979c0.
+   * SingleEmitter Update.
    * birthRate==0 → destroy sole particle; else age + Motion_Blur + MoveFunc;
    * empty → spawn one. No Fountain birth timer / trails / Detonate.
    */
@@ -2866,7 +2866,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       canSpawn = this.particleCount < 1 && Math.floor(this.birthRate) > 0;
       maxSpawn = 1;
     }else{
-      // FountainEmitter::Update @ 00496e40 — same quota for P2P and non-P2P
+      // FountainEmitter Update — same quota for P2P and non-P2P
       canSpawn = fountainBirthQuota > 0;
       maxSpawn = fountainBirthQuota;
     }
@@ -2878,7 +2878,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   }
 
   /**
-   * P2P Gravity → moveParticleP2PGrav @ 00493ae0.
+   * P2P Gravity → moveParticleP2PGrav.
    * World-space offsets (matching spawnParticle / shader CPU_PHYSICS).
    * Retail: pos += vel*dt → wind → if |toRef|² < threshold² kill →
    * vel *= pow(drag, dt) → a = grav*normalize(toRef) → pos += a*dt²; vel += a*dt →
@@ -2991,7 +2991,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   }
 
   /**
-   * P2P_SEL → moveParticleP2PBezier @ 00492ea0 (MoveFunc @ 00494d40).
+   * P2P_SEL → moveParticleP2PBezier (MoveFunc).
    * World-space offsets (matching spawnParticle / shader CPU_PHYSICS).
    * Retail: inherit rebase → pos+=vel×dt → wind → cubic Bezier(t=age/life)
    * P0=emitter, P1=emitter+ez×bezier2, P2=target+tz×bezier3, P3=target(+targetSize);
@@ -3012,7 +3012,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       endPos.copy(startPos).add(new THREE.Vector3(0, 0, 1));
     }
 
-    // TargetSize jitter on reference (once per MoveFunc), retail field45_0xfc
+    // TargetSize jitter on reference (once per MoveFunc)
     if(this.targetSize > 0){
       const j = this.targetSize * 0.5;
       endPos.x += this.randomFloat(0, j * 2) - j;
@@ -3063,7 +3063,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       }
     }
 
-    // Retail t = age / field12_0x78 (lifeExp); combineTime is not the Bezier parameter
+    // Retail t = age / field (lifeExp); combineTime is not the Bezier parameter
     const transit = this.lifeExp > 0 ? this.lifeExp : (this.combineTime > 0 ? this.combineTime : 1);
 
     let birthCount = 0;
@@ -3139,7 +3139,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
           pW.z = bz * w + fz * iw;
 
           velW.z -= massGravity * delta;
-          // Residual speed scale |1−dt| (retail particle+0x18)
+          // Residual speed scale |1−dt| (retail Particle)
           velW.x *= inheritDecay;
           velW.y *= inheritDecay;
           velW.z *= inheritDecay;
@@ -3286,9 +3286,9 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   }
 
   /**
-   * RenderLinked @ 00495b20 for non-lightning: rebuild camera ribbon from live
+   * RenderLinked for non-lightning: rebuild camera ribbon from live
    * world sample centers only (no spare buffer slots at world origin).
-   * Size taper uses particle age / lifeExp (retail particle+0x70 path).
+   * Size taper uses particle age / lifeExp (retail Particle path).
    */
   private rebuildLinkedTrailMesh(){
     const cap = this._linkedCapacity;
@@ -3434,7 +3434,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
   /**
    * Camera-facing L/R strip for Linked trails (RenderLinked non-lightning).
-   * Size/color lifecycle uses age/maxAge (particle+0x70), not i/count.
+   * Size/color lifecycle uses age/maxAge (Particle), not i/count.
    */
   private appendLinkedTrailRibbon(
     centers: Float32Array,
@@ -3554,7 +3554,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       this.offsets.setY(i, newPosition.y);
       this.offsets.setZ(i, newPosition.z);
       if(this.prevOffsets){
-        // Retail: +0x60 initialized to birth position; inherit alone never updates it.
+        // Retail: motion-blur prev position initialized to birth position; inherit alone never updates it.
         this.prevOffsets.setX(i, newPosition.x);
         this.prevOffsets.setY(i, newPosition.y);
         this.prevOffsets.setZ(i, newPosition.z);
@@ -3565,7 +3565,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       return;
     }
 
-    // Retail Particle::initialize @ 004921d0 (Fountain + Explosion + Single):
+    // Retail Particle initialize (Fountain + Explosion + Single):
     // world quat → optional randomDirection(spread) → (velocity+randvel)×zdir.
     const quat = OdysseyEmitter3D._quat;
     this.getWorldQuaternion(quat);
@@ -3577,7 +3577,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     this.velocities.setY(i, this.vec3.y);
     this.velocities.setZ(i, this.vec3.z);
 
-    // Retail inheritVelocity @ 0048d9e0: fill scale×accel (MoveFunc), do not bake into birth vel.
+    // Retail inheritVelocity: fill scale×accel (MoveFunc), do not bake into birth vel.
     this.setBirthInheritVelocity(i, newPosition, delta);
 
     this.velocities.setW(i, this.mass);
@@ -3586,7 +3586,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     this.props.setW(i, 0); // reset splat flag
 
     if(this.node.flags.isRandom){
-      // FountainEmitter::Update RANDOM bit5: birth frame ∈ [frameStart, frameEnd]
+      // FountainEmitter Update RANDOM bit5: birth frame ∈ [frameStart, frameEnd]
       const start = Math.trunc(this.material.uniforms.frameRange.value.x);
       const end = Math.trunc(this.material.uniforms.frameRange.value.y);
       let range = end - start + 1;
@@ -3623,8 +3623,8 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   }
 
   /**
-   * Retail moveParticleStandard HitCheck @ 00492450 (DAT_00798ba0 == 1):
-   * Scene::HitCheck(prev, curr, &curr) snaps position; then either zero vel
+   * Retail moveParticleStandard HitCheck (retail == 1):
+   * HitCheck(prev, curr, &curr) snaps position; then either zero vel
    * (bounceCo==0) or reflect × 0.75 with Z *= clamp(0.033/dt, 0.5, 1) * bounceCo.
    * If |v|² < 0.5 → stop (props.w), nudge +0.02 along normal (+ size if splat).
    */
@@ -3731,7 +3731,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
     if(speedSq < 0.5){
       this.props.setW(i, 1);
-      // Retail: store hit normal at particle+0x48; RotationArc(up→n) at +0x2c.
+      // Retail: store hit normal on the particle; RotationArc(up→n) for splat orientation.
       // Vel is unused after stop — keep normal in velocity.xyz for splat draw.
       vx = hitNormal.x;
       vy = hitNormal.y;
@@ -3851,7 +3851,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   }
 
   /**
-   * FountainEmitter MoveFunc → moveParticleStandard @ 00492450 (after inherit).
+   * FountainEmitter MoveFunc → moveParticleStandard (after inherit).
    * pos += vel×dt + inherit×dt → wind → vel.z -= mass×9.81×dt → |inherit×(1−dt)| → HitCheck.
    */
   private integrateStandardParticles(delta: number, count: number): boolean {
@@ -3881,14 +3881,14 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       this.ensureInheritVelCapacity(count);
     }
 
-    // Retail: vel.z -= dt * PartEmitter.mass(+0x7c) * 9.81 — not the grav controller.
+    // Retail: vel.z -= dt * PartEmitter.mass * 9.81 — not the grav controller.
     const massGravity = this.mass * 9.81;
     const inheritDecay = Math.abs(1 - delta);
     let changed = false;
 
     for(let i = 0; i < count; i++){
       if(this.props.getZ(i) !== 1) continue;
-      // Retail: particle+0x6c != 0 → skip MoveFunc body (normal kept in velocity for draw)
+      // Retail: Particle != 0 → skip MoveFunc body (normal kept in velocity for draw)
       if(this.props.getW(i) === 1){
         continue;
       }
@@ -3963,7 +3963,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   }
 
   /**
-   * Retail PartEmitter weather wrap @ 008a9e57 (after particle integrate).
+   * Retail PartEmitter weather wrap (after particle integrate).
    * Toroidally folds live particle X/Y into a 10×10 box centered on the module camera
    * so rain/snow stays with the PC when weather Gobs are teleported each frame.
    */
@@ -4011,7 +4011,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   }
 
   /**
-   * FountainEmitter::Update spawntype 0 @ 00496e40.
+   * FountainEmitter Update spawntype 0.
    * Accumulate dt; when accum ≥ 1/rate, spawn floor(rate×accum) % (floor(rate)+1)
    * (at least 1), with optional RandomBirthRate ±jitter, then reset accum.
    */
@@ -4096,7 +4096,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
   /**
    * Load chunk MDL for ChunkyParticle presentation (retail NewCAurObject(chunkName)).
-   * ChunkyParticle::initialize @ 00492400 plays "impact" on the gob; we keep a shared
+   * ChunkyParticle initialize plays "impact" on the gob; we keep a shared
    * InstancedMesh (no per-particle Gob anim) and sync transforms in updateChunkInstances.
    */
   private async loadChunkModel(): Promise<void> {
@@ -4247,7 +4247,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
           quat.identity();
         }
       }else{
-        // particleRot × age about local Z (retail particle+0x14)
+        // particleRot × age about local Z (retail Particle)
         quat.setFromAxisAngle(up, (this.angle || 0) * age);
       }
 

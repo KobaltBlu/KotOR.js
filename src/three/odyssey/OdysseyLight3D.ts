@@ -38,14 +38,14 @@ export class OdysseyLight3D extends OdysseyObject3D {
 
   intensity: number = 0;
   maxIntensity: number = 1;
-  /** Retail fade factor 0–1 (ControlLightsFade field10_0x78). */
+  /** Retail fade factor 0–1 (ControlLightsFade). */
   fadeFactor: number = 1;
   /**
-   * Retail secondary fade 0–1 (ControlLightsFade field11_0x7c). Advanced only
+   * Retail secondary fade 0–1 (ControlLightsFade). Advanced only
    * while the light is in the static-geometry pool (EnableLightsDynamicOnly).
    */
   dynamicOnlyFadeFactor: number = 0;
-  /** Retail shadow fade 0–1 (GetShadowLights field29_0x90). */
+  /** Retail shadow fade 0–1 (GetShadowLights). */
   shadowFadeFactor: number = 0;
 
   color: THREE.Color = new THREE.Color(1, 1, 1);
@@ -87,7 +87,7 @@ export class OdysseyLight3D extends OdysseyObject3D {
     this.type = 'OdysseyLight';
   }
 
-  /** Authored light multiplier (retail PartLight field15_0x8c). */
+  /** Authored light multiplier (retail PartLight). */
   getIntensity(){
     return this.multiplier;
   }
@@ -102,8 +102,8 @@ export class OdysseyLight3D extends OdysseyObject3D {
 
   /**
    * VP-aligned room/global RGB: fade × color.
-   * SetUpVertexProgramLightShaderConstants @ 004a50d0 (param_2 == 0) never
-   * multiplies PartLight.multiplier (field15_0x8c). FFP ControlLightsFade →
+   * SetUpVertexProgramLightShaderConstants (non-dynamic path) never
+   * multiplies PartLight.multiplier. FFP ControlLightsFade →
    * SetLightGL does fade × color × multiplier; Odyssey GLSL follows the VP path.
    */
   getEffectiveColor(out: THREE.Color = new THREE.Color()): THREE.Color {
@@ -121,9 +121,9 @@ export class OdysseyLight3D extends OdysseyObject3D {
 
   /**
    * VP-aligned static-geometry pool RGB: secondary fade × color
-   * (SetUpVertexProgramLightShaderConstants with param_2 != 0 uses fade 1 and
+   * (SetUpVertexProgramLightShaderConstants with dynamic path uses fade 1 and
    * still omits multiplier; we keep the secondary fade channel from
-   * EnableLightsDynamicOnly / ControlLightsFade param_4 = 1).
+   * EnableLightsDynamicOnly / ControlLightsFade dynamic-only = 1).
    */
   getDynamicOnlyColor(out: THREE.Color = new THREE.Color()): THREE.Color {
     return out.copy(this.color).multiplyScalar(this.dynamicOnlyFadeFactor);

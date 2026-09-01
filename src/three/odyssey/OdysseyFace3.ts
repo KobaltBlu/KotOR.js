@@ -52,7 +52,7 @@ export class OdysseyFace3 {
 
 	/**
 	 * Face normal.
-	 * @default new THREE.THREE.Vector3()
+	 * @default new THREE.THREE.Vector3
 	 */
 	normal: THREE.Vector3 = new THREE.Vector3();
 
@@ -70,7 +70,7 @@ export class OdysseyFace3 {
 
 	/**
 	 * Face color.
-	 * @default new THREE.Color()
+	 * @default new THREE.Color
 	 */
 	color: THREE.Color = new THREE.Color();
 

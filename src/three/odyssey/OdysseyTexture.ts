@@ -22,7 +22,7 @@ export class OdysseyTexture extends THREE.Texture {
    */
   tgaOrigin: number = 0;
   /**
-   * Retail CAurTextureBasic::gl_textures[] — one GPU texture per cycle frame.
+   * Retail gl_textures[] — one GPU texture per cycle frame.
    * Index 0 is this texture itself when proceduretype is cycle.
    */
   cycleFrames: THREE.Texture[] = [];
