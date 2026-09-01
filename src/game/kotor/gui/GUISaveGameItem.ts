@@ -25,9 +25,9 @@ export class GUISaveGameItem extends GUIProtoItem {
   }
 
   /**
-   * Retail base row extent — K1 PopulateGameList @ 006cc160 pushes a stack extent
-   * {left 0, top 0, width 0, height 0x2a} and passes it into CSWGuiButton::Initialize
-   * @ 00417970. Row height is 42; width 0 is resolved to viewport-2*padding in
+   * Retail base row extent — K1 PopulateGameList pushes a stack extent
+   * {left 0, top 0, width 0, height 0x2a} and passes it into Initialize
+   *. Row height is 42; width 0 is resolved to viewport-2*padding in
    * OrganizeControls. The PROTOITEM GFF height (50) is never used for the row.
    */
   getRetailBaseExtent(_list: GUIListBox): RetailRowExtent {

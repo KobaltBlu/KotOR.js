@@ -270,7 +270,7 @@ export class CharGenClass extends GameMenu {
   }
 
   GetRandomAnimation(): string {
-    // Retail CSWCCreature::CGPauseCycle initial branch — pause1 or pause2
+    // Retail CGPauseCycle initial branch — pause1 or pause2
     return Math.random() < 0.5 ? 'pause1' : 'pause2';
   }
 

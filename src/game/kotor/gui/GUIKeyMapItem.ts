@@ -20,7 +20,7 @@ const TLK_UNASSIGNED = 0xbc10;
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * Retail CSWGuiKeyMapButton: action label + mapped key, capture/dirty colors.
+ * retail: action label + mapped key, capture/dirty colors.
  *
  * @file GUIKeyMapItem.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -43,8 +43,8 @@ export class GUIKeyMapItem extends GUIProtoItem {
   buildText(){}
 
   /**
-   * Retail base row extent — CSWGuiInGameOptKeyMappings::CreateOption @ 006ed610 computes
-   * height = (CSWGuiText::GetIdealHeight + max(border1Dim, border2Dim)) * 2 (two text rows +
+   * Retail base row extent — CreateOption computes
+   * height = (GetIdealHeight + max(border1Dim, border2Dim)) * 2 (two text rows +
    * border). PROVISIONAL: we approximate with a fixed 71 until GetIdealHeight is emulated;
    * the retail value is font/binding dependent, not a GFF constant.
    */

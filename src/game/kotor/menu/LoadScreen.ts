@@ -16,7 +16,7 @@ const TLK_SAVING_HINT = 41926;
 /**
  * LoadScreen class.
  *
- * Retail CSWGuiLoadScreen — progress, loadscreenhints.2da tips, background image.
+ * retail — progress, loadscreenhints.2da tips, background image.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -30,7 +30,7 @@ export class LoadScreen extends GameMenu {
   PB_PROGRESS: GUIProgressBar;
   LBL_HINT: GUILabel;
   LBL_LOGO: GUILabel;
-  /** True after show() pushed SetSoundMode(4); hide() pops once. */
+  /** True after show pushed SetSoundMode(4); hide pops once. */
   private soundModeHeld: boolean = false;
   LBL_LOADING: GUILabel;
   defaultTex: any;
@@ -95,7 +95,7 @@ export class LoadScreen extends GameMenu {
   }
 
   /**
-   * Retail CClientExoAppInternal::GetNextLoadScreenHintSTRREF GamePlayHint path.
+   * Retail GetNextLoadScreenHintSTRREF GamePlayHint path.
    * Advances PartyManager.GameplayHint so NFO GAMEPLAYHINT persists across saves.
    */
   protected getNextGameplayHintStrRef(): number {

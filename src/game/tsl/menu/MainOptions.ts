@@ -3,7 +3,7 @@ import type { GUIButton, GUILabel, GUIListBox } from "@/gui";
 import { MainOptions as K1_MainOptions } from "@/game/kotor/KOTOR";
 
 /**
- * Retail CSWGuiOptionsMain button description TLKs.
+ * retail button description TLKs.
  */
 const TLK_DESC_GAMEPLAY = 0xa521;
 const TLK_DESC_FEEDBACK = 0x2147a;
@@ -14,7 +14,7 @@ const TLK_DESC_SOUND = 0xbe30;
 /**
  * MainOptions class.
  *
- * Retail CSWGuiOptionsMain (optionsmain_p).
+ * retail (optionsmain_p).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

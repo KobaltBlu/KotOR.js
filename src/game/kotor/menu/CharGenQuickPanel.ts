@@ -5,9 +5,9 @@ import type { GUIControl, GUILabel, GUIButton } from "@/gui";
 
 /**
  * CharGenQuickPanel class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenQuickPanel.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -71,7 +71,7 @@ export class CharGenQuickPanel extends GameMenu {
     });
   }
 
-  /** Retail CSWGuiQuickPanel::SetState */
+  /** Retail SetState */
   setState(step: number) {
     GameState.CharGenManager.quickStep = step;
     this.applyStepVisibility();

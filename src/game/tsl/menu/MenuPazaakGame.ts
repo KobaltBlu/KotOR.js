@@ -5,14 +5,14 @@ import { PazaakTurnMode } from "@/enums/minigames/PazaakTurnMode";
 import { PazaakHandSlots } from "@/enums/minigames/PazaakHandSlots";
 import { PazaakTutorial } from "@/engine/minigames/pazaak-tutorial";
 
-/** Retail HandleForfeitButton @ 005560c0 — MessageBox strref 0xa5b9. */
+/** Retail HandleForfeitButton — MessageBox strref 0xa5b9. */
 const TLK_FORFEIT_PAZAAK_CONFIRM = 0xa5b9;
 
 /**
  * MenuPazaakGame class (TSL).
  *
  * Restores K1 FLIP/play/stand wiring (skipInit must be false), then adds
- * CHANGE (HandleChangeHandCard @ 00555dd0) and FORFEIT (HandleForfeitButton @ 005560c0).
+ * CHANGE (HandleChangeHandCard) and FORFEIT (HandleForfeitButton).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -146,7 +146,7 @@ export class MenuPazaakGame extends K1_MenuPazaakGame {
   }
 
   /**
-   * Retail HandleChangeHandCard @ 00555dd0 — type 0x16 cycles state 0/1↔2.
+   * Retail HandleChangeHandCard — type 0x16 cycles state 0/1↔2.
    */
   changeHandCard(tableIndex: number, cardIndex: number){
     const swapped = GameState.PazaakManager.Tables[tableIndex].swapValueCards.get(cardIndex);
@@ -161,7 +161,7 @@ export class MenuPazaakGame extends K1_MenuPazaakGame {
     const table = GameState.PazaakManager.Tables[tableIndex];
     const flipped = !!table.flipCards.get(cardIndex);
     const swapped = !!table.swapValueCards.get(cardIndex);
-    // Retail HandlePlayHandCard @ 0067ede0 — warn if tutorial + total < 13.
+    // Retail HandlePlayHandCard — warn if tutorial + total < 13.
     if(tableIndex === PazaakTurnMode.PLAYER && PazaakTutorial.enabled){
       if(table.points < 13){
         GameState.PazaakManager.queueTutorialHelp(

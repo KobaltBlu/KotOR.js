@@ -14,9 +14,9 @@ import { SkillType } from "@/enums/nwscript/SkillType";
 
 /**
  * CharGenSkills class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenSkills.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -214,7 +214,7 @@ export class CharGenSkills extends GameMenu {
     if(!creature) return;
 
     const mgr = GameState.CharGenManager;
-    // Retail CSWGuiSkillsCharGen::OnRecommendButton:
+    // Retail OnRecommendButton:
     // CharGen clears ranks + recalculates points; level-up restores baseline + budget.
     if(this.levelUpMode){
       const draft = GameState.LevelUpManager?.draft;

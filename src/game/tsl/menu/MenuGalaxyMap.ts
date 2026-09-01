@@ -14,7 +14,7 @@ const STR_ALREADY_AT_THAT_LOCATION = 125629;
 /**
  * MenuGalaxyMap class.
  *
- * TSL CSWGuiInGameGalaxyMap — Accept checks already-at (strref 125629) and
+ * TSL GUI — Accept checks already-at (strref 125629) and
  * planetary.2da LockedOutReason before running k_sup_galaxymap.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II

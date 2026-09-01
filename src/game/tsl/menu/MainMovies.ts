@@ -4,7 +4,7 @@ import { MainMovies as K1_MainMovies, GUIMovieItem } from "@/game/kotor/menu/Mai
 /**
  * MainMovies class (TSL).
  *
- * Retail CSWGuiTitleMovies (titlemovie_p) — no hardcoded credits row;
+ * retail (titlemovie_p) — no hardcoded credits row;
  * LBL_UNLOCKED_VALUE = unlocked / movies.2da RowCount.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -40,7 +40,7 @@ export class MainMovies extends K1_MainMovies {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      this.LB_MOVIES.protoItem.extent.height = 64; // provisional until movies.gui PROTOITEM Ghidra-verified
+      this.LB_MOVIES.protoItem.extent.height = 64; // provisional until movies.gui PROTOITEM extent confirmed
       this.LB_MOVIES.setTextColor(this.LB_MOVIES.defaultColor.r, this.LB_MOVIES.defaultColor.g, this.LB_MOVIES.defaultColor.b);
       this.LB_MOVIES.protoItem.setTextColor(this.LB_MOVIES.defaultColor.r, this.LB_MOVIES.defaultColor.g, this.LB_MOVIES.defaultColor.b);
       this.LB_MOVIES.onClicked = (movie: GUIMovieItem) => {

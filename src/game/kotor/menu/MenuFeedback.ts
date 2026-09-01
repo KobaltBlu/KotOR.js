@@ -4,7 +4,7 @@ import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "@/gui";
 
 /**
- * Retail CSWGuiOptionsFeedback::PopulateOptionsListbox strrefs / custom_value.
+ * Retail PopulateOptionsListbox strrefs / custom_value.
  * Label TLK + description TLK + INI key + FeedbackOption + retail default.
  */
 const FEEDBACK_OPTIONS: ReadonlyArray<{
@@ -30,7 +30,7 @@ const FEEDBACK_OPTIONS: ReadonlyArray<{
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * Retail CSWGuiOptionsFeedback (optfeedback).
+ * retail (optfeedback).
  *
  * @file MenuFeedback.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -76,7 +76,7 @@ export class MenuFeedback extends GameMenu {
   }
 
   /**
-   * Retail PopulateOptionsListbox — nine CSWGuiOptionsCheckbox rows.
+   * Retail PopulateOptionsListbox — nine GUI rows.
    */
   populateOptionsListbox(){
     this.optionChecks = [];

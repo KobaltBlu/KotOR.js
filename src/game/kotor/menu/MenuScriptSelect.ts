@@ -11,11 +11,11 @@ export interface AIScriptOption {
 }
 
 /**
- * MenuScriptSelect — retail CSWGuiScriptSelect (`scriptselect`).
+ * MenuScriptSelect — retail (`scriptselect`).
  *
- * Character BTN_SCRIPTS → SetCreatureID + AddPanel @ HandleInputEvent 0x29 (006b2250).
- * aiscripts.2da: NAME_STRREF / DESCRIPTION_STRREF / AISTATE (ctor @ 006ea000).
- * Accept writes creature_stats->ai_state (HandleInputEvent 0x27 @ 006e9bc0).
+ * Character BTN_SCRIPTS → SetCreatureID + AddPanel @ HandleInputEvent 0x29.
+ * aiscripts.2da: NAME_STRREF / DESCRIPTION_STRREF / AISTATE (ctor).
+ * Accept writes creature_stats->ai_state (HandleInputEvent 0x27).
  *
  * @file MenuScriptSelect.ts
  */
@@ -93,7 +93,7 @@ export class MenuScriptSelect extends GameMenu {
   }
 
   /**
-   * Retail SetCreatureID @ 006e9ca0 — select list row matching creature ai_state.
+   * Retail SetCreatureID — select list row matching creature ai_state.
    */
   setCreature(creature: ModuleCreature | undefined){
     this.creature = creature;
@@ -123,7 +123,7 @@ export class MenuScriptSelect extends GameMenu {
     }
   }
 
-  /** Retail SetDescription @ 006e9d50 — DESCRIPTION_STRREF for selected row. */
+  /** Retail SetDescription — DESCRIPTION_STRREF for selected row. */
   UpdateSelected(){
     const strRef = this.selected?.descStrRef | 0;
     this.LB_DESC?.setItem(

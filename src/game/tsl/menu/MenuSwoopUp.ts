@@ -24,11 +24,11 @@ interface SwoopUpgradeChoice {
 }
 
 /**
- * MenuSwoopUp class — TSL CSWGuiSwoopUpgrade (`swoopup_p` / swoopupgrade.2da).
+ * MenuSwoopUp class — TSL GUI (`swoopup_p` / swoopupgrade.2da).
  *
- * OnUpgradeSelected @ 005cfa50 returns prior slot item to inventory and consumes
+ * OnUpgradeSelected returns prior slot item to inventory and consumes
  * the newly selected template (stack-- or RemoveItem).
- * OnAssemble @ 005cf980 writes selected 2DA row ids into PartyManager swoop slots.
+ * OnAssemble writes selected 2DA row ids into PartyManager swoop slots.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -80,8 +80,8 @@ export class MenuSwoopUp extends GameMenu {
   upgradeTable: TwoDAObject | undefined;
   choices: SwoopUpgradeChoice[] = [];
   /**
-   * Retail CSWGui3DSceneView on `3D_MODEL` — ctor loads `gui3D_room` + `upgitem_light`
-   * when g_bSWGuiSceneRenderEnabled (CSWGuiSwoopUpgrade @ 005cbe00).
+   * retail on `3D_MODEL` — ctor loads `gui3D_room` + `upgitem_light`
+   * when g_bSWGuiSceneRenderEnabled (GUI).
    */
   _3dView: LBL_3DView;
   _3dViewRoom: OdysseyModel3D;
@@ -141,7 +141,7 @@ export class MenuSwoopUp extends GameMenu {
   }
 
   /**
-   * Retail swoop ctor: CSWGuiScene on 3D_MODEL / 3D_MODEL_LS loads `gui3D_room`
+   * Retail swoop ctor: GUI on 3D_MODEL / 3D_MODEL_LS loads `gui3D_room`
    * then AddModel(`upgitem_light`). Camera from room camerahook (same as MainMenu).
    */
   async init3DPreview(){
@@ -206,7 +206,7 @@ export class MenuSwoopUp extends GameMenu {
 
   /**
    * Swoop GUI ships both standard and `_LS` chrome; use non-LS as the active layout
-   * (retail FUN_005ccfb0 layout toggle — swoop has no lightsaber category).
+   * (retail layout toggle — swoop has no lightsaber category).
    */
   applyLayoutVisibility(){
     const setVisible = (ctrl: any, visible: boolean) => {
@@ -358,7 +358,7 @@ export class MenuSwoopUp extends GameMenu {
   }
 
   /**
-   * Retail OnUpgradeSelected @ 005cfa50 —
+   * Retail OnUpgradeSelected
    * return prior consumed item to inventory, then consume newly selected (stack-- / RemoveItem).
    */
   onUpgradeSelected(choice: SwoopUpgradeChoice){
@@ -429,7 +429,7 @@ export class MenuSwoopUp extends GameMenu {
   }
 
   /**
-   * Retail OnAssemble @ 005cf980 — commit non-zero slot row ids to party swoop slots.
+   * Retail OnAssemble — commit non-zero slot row ids to party swoop slots.
    */
   onAssemble(){
     for(let i = 0; i < 6; i++){

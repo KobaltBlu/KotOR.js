@@ -3,9 +3,9 @@ import type { GUIControl, GUIButton } from "@/gui";
 
 /**
  * MenuTop class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuTop.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -88,7 +88,7 @@ export class MenuTop extends GameMenu {
         this.manager.MenuEquipment.open();
       });
 
-      // LBLH_* are CSWGuiLabelHilight overlays — decorative, not mouse targets.
+      // LBLH_* are GUI overlays — decorative, not mouse targets.
       // Drive their hover chrome from the paired BTN (retail GetIsSelectable skips labels).
       this.bindTopHighlight(this.BTN_EQU, this.LBLH_EQU, () => this.manager.MenuEquipment);
       this.bindTopHighlight(this.BTN_INV, this.LBLH_INV, () => this.manager.MenuInventory);

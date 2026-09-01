@@ -25,7 +25,7 @@ const STR_GIVE_ITEMS = 38543;
 /**
  * MenuContainer class.
  *
- * Retail CSWGuiContainer — take-all from container inventory, or give
+ * retail — take-all from container inventory, or give
  * non-plot items into the container (click item / OK in give mode).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -94,7 +94,7 @@ export class MenuContainer extends GameMenu {
         this.selectedItem = item;
       };
 
-      // Retail: list-item activate (0x27/0x2d) calls CSWGuiContainer::GiveItem
+      // Retail: list-item activate (0x27/0x2d) calls GiveItem
       this.LB_ITEMS.onClicked = (item: ModuleItem) => {
         this.selectedItem = item;
         if(this.mode == MenuContainerMode.GIVE_ITEMS){
@@ -205,7 +205,7 @@ export class MenuContainer extends GameMenu {
     }else{
       this.selectedItem = null;
     }
-    // Prefer setSelectedIndex over setItems(selectIndex) — select() fires onClicked
+    // Prefer setSelectedIndex over setItems(selectIndex) — select fires onClicked
     // and would re-enter giveItem while refreshing the give-mode list.
     this.LB_ITEMS.setItems(inventory);
     if(this.selectedItem){
@@ -229,7 +229,7 @@ export class MenuContainer extends GameMenu {
   }
 
   /**
-   * Retail CSWGuiContainer::GiveItem — move count from party inventory into
+   * Retail GiveItem — move count from party inventory into
    * the container. Shift holds the full stack (g_bShiftActionState).
    */
   giveItem(item: ModuleItem){

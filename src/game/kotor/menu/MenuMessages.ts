@@ -5,9 +5,9 @@ import { FeebackMessageColor } from "@/enums/engine/FeedbackMessageColor";
 
 /**
  * MenuMessages class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuMessages.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -23,8 +23,8 @@ export class MenuMessages extends GameMenu {
   mode: number = 0;
 
   /**
-   * Retail CSWGuiInGameMessages::HandleInputEvent @ 00628260 —
-   * key sequence )/') → "Punch it, Chewie!" + hsMode=1.
+   * Retail HandleInputEvent
+   * key sequence)/') → "Punch it, Chewie!" + hsMode=1.
    */
   static readonly HS_MODE_CHEAT_KEYS = [')', '/', "'", ')'] as const;
   hsModeCheatIdx = 0;
@@ -64,7 +64,7 @@ export class MenuMessages extends GameMenu {
   }
 
   /**
-   * Retail HandleInputEvent sequence )/') decrypts "Pvpfh!kw,!Ekexkh!" →
+   * Retail HandleInputEvent sequence)/') decrypts "Pvpfh!kw,!Ekexkh!" →
    * "Punch it, Chewie!", AppendToMsgBuffer type 0x80, hsMode=1.
    */
   handleHsModeCheatKey(e: KeyboardEvent){

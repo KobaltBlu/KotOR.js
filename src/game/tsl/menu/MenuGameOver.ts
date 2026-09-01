@@ -4,7 +4,7 @@ import { GameState } from "@/GameState";
 import { GameOverManager } from "@/managers/GameOverManager";
 
 /**
- * MenuGameOver class — TSL CSWGuiDeathDisplay (gameover_p).
+ * MenuGameOver class — TSL GUI (gameover_p).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

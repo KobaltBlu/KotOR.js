@@ -2,13 +2,13 @@ import { GameState } from "@/GameState";
 import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton, GUISlider, GUICheckBox } from "@/gui";
 
-/** Retail CSWGuiOptionsMouse custom_value for mouse sensitivity (TLK 0xBB8D). */
+/** retail custom_value for mouse sensitivity (TLK 0xBB8D). */
 const TLK_MOUSE_SENSITIVITY = 0xbb8d;
-/** Retail CSWGuiOptionsMouse custom_value for reverse buttons (TLK 0xBD42). */
+/** retail custom_value for reverse buttons (TLK 0xBD42). */
 const TLK_REVERSE_BUTTONS = 0xbd42;
-/** Retail CClientOptions::SetDefaultMouseOptions mouse_sensitivity (0x2C). */
+/** Retail SetDefaultMouseOptions mouse_sensitivity (0x2C). */
 const DEFAULT_MOUSE_SENSITIVITY = 0x2c;
-/** Retail CClientOptions::SetDefaultMouseOptions reverse_mouse_buttons. */
+/** Retail SetDefaultMouseOptions reverse_mouse_buttons. */
 const DEFAULT_REVERSE_BUTTONS = 0;
 
 const INI_MOUSE_SENSITIVITY = 'Game Options.Mouse Sensitivity';
@@ -19,7 +19,7 @@ const INI_REVERSE_BUTTONS = 'Game Options.Reverse Mouse Buttons';
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * Retail CSWGuiOptionsMouse (optmouse).
+ * retail (optmouse).
  *
  * @file MenuMouse.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>

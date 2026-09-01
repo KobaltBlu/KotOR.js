@@ -11,8 +11,8 @@ import { BitWise } from "@/utility/BitWise";
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * Retail CSWGuiInGameAreaTransition + CGuiInGame::UpdateAreaTransitionGUI /
- * HideAreaTransition (K1 @ 00632180 / 0062eb10, K2 @ 004dee80 / 004df070).
+ * Retail UpdateAreaTransitionGUI /
+ * HideAreaTransition (K1, K2).
  *
  * @file InGameAreaTransition.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -21,11 +21,11 @@ import { BitWise } from "@/utility/BitWise";
 export class InGameAreaTransition extends GameMenu {
 
   engineMode: EngineMode = EngineMode.INGAME;
-  /** Overlay so show() does not force EngineMode via GameMenu.show. */
+  /** Overlay so show does not force EngineMode via GameMenu.show(). */
   isOverlayGUI = true;
   /**
    * Retail ctor: bit_flags = flags & ~DockDesignY | DockDesignX
-   * (K1 @ 006c7d50).
+   * (K1).
    */
   panelCoordFlags: number = GUIPanelCoordFlags.UseExtentOffset | GUIPanelCoordFlags.DockDesignX;
 
@@ -33,7 +33,7 @@ export class InGameAreaTransition extends GameMenu {
   LBL_TEXTBG: GUILabel;
   LBL_DESCRIPTION: GUILabel;
 
-  /** Object currently driving the destination label (retail field5_0x430). */
+  /** Object currently driving the destination label (Retail). */
   transitionObject: ModuleObject;
 
   constructor(){
@@ -56,7 +56,7 @@ export class InGameAreaTransition extends GameMenu {
   }
 
   /**
-   * Retail CSWGuiInGameAreaTransition::SetTransitionObject @ 006c7ec0.
+   * Retail SetTransitionObject.
    * Pass undefined / falsy to clear (OBJECT_INVALID / 0x7F000000).
    */
   setTransitionObject(object: ModuleObject | undefined){
@@ -80,7 +80,7 @@ export class InGameAreaTransition extends GameMenu {
   }
 
   /**
-   * Retail CGuiInGame::UpdateAreaTransitionGUI.
+   * Retail UpdateAreaTransitionGUI.
    * Show when a candidate object is set and TransPending is clear; otherwise hide
    * (keeping the panel during TransPending).
    */
@@ -108,7 +108,7 @@ export class InGameAreaTransition extends GameMenu {
   }
 
   /**
-   * Retail CGuiInGame::HideAreaTransition.
+   * Retail HideAreaTransition.
    * While TransPending, leave the panel up (SendPanelToBack). Otherwise clear the
    * transition object and RemovePanel.
    */

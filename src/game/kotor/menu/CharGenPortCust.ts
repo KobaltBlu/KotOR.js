@@ -16,9 +16,9 @@ import { GameState } from "@/GameState";
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * Retail CSWGuiPortraitCharGen @ 006f9430 (PORTCUST) —
+ * retail (PORTCUST)
  * gui3D_room + cghead_light, camerahookm/f, SetViewAngle 22.726,
- * AttachTranslate (0, headHeight, 0) local-space (field2_0x48=0).
+ * AttachTranslate (0, headHeight, 0) local-space (=0).
  *
  * @file CharGenPortCust.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -50,7 +50,7 @@ export class CharGenPortCust extends GameMenu {
   isCharLoading: boolean = false;
   /** Retail GetPortraitsList parallel arrays (portrait id + appearance id). */
   portraitList: CharGenPortraitEntry[] = [];
-  /** Index into portraitList (retail field23_0x1234). */
+  /** Index into portraitList (Retail). */
   portraitListIndex: number = 0;
 
   constructor(){
@@ -279,7 +279,7 @@ export class CharGenPortCust extends GameMenu {
   }
 
   /**
-   * Retail UpdatePortraitButton AttachTranslate @ 006f8ad0 —
+   * Retail UpdatePortraitButton AttachTranslate
    * camerahookm/f pose + local-space (0, getCameraHeight(), 0).
    */
   updateCamera() {

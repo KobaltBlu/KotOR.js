@@ -4,7 +4,7 @@ import { MenuCredits as K1_MenuCredits } from "@/game/kotor/KOTOR";
 /**
  * MenuCredits class.
  *
- * Retail CSWGuiInGameCredits (credits_p).
+ * retail (credits_p).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

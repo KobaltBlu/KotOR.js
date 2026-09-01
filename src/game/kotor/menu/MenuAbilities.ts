@@ -36,9 +36,9 @@ const COLOR_BLUE = { r: 0, g: 0.658824, b: 0.980392 };
 
 /**
  * MenuAbilities class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuAbilities.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -186,7 +186,7 @@ export class MenuAbilities extends GameMenu {
   }
 
   /**
-   * Retail CSWGuiSkillFlowChart::CreateFeatChart @ 006ce370 (in-game SetCharacter).
+   * Retail CreateFeatChart (in-game SetCharacter).
    */
   buildFeatList(creature: ModuleCreature): any[][] {
     const feats = GameState.SWRuleSet?.feats ?? SWRuleSet.feats ?? [];
@@ -194,7 +194,7 @@ export class MenuAbilities extends GameMenu {
   }
 
   /**
-   * Retail CSWGuiSkillFlowChart::CreatePowerChart @ 006ce0f0 (CreatePowerList param_2=0).
+   * Retail CreatePowerChart (CreatePowerList arg2=0).
    */
   buildSpellsList(creature: ModuleCreature): any[][] {
     const spells = GameState.SWRuleSet?.spells ?? SWRuleSet.spells ?? [];
@@ -230,7 +230,7 @@ export class MenuAbilities extends GameMenu {
   }
 
   /**
-   * Retail CSWGuiInGameAbilities::OnEnterSkill — populate rank / bonus / total / desc.
+   * Retail OnEnterSkill — populate rank / bonus / total / desc.
    */
   selectSkill(skill: TalentSkill) {
     const creature = GameState.PartyManager.party[0];
@@ -265,7 +265,7 @@ export class MenuAbilities extends GameMenu {
   }
 
   /**
-   * Retail CSWGuiInGameAbilities::OnEnterPower — force cost with alignment adjust.
+   * Retail OnEnterPower — force cost with alignment adjust.
    */
   selectPower(spell: any) {
     if(!spell){
@@ -333,7 +333,7 @@ export class MenuAbilities extends GameMenu {
   }
 
   /**
-   * Retail CSWGuiInGameAbilities::OnEnterFeat — name + description only.
+   * Retail OnEnterFeat — name + description only.
    * Also mirrors SetSelectedSkill selection visuals on feat proto items.
    */
   selectFeat(feat: TalentFeat | any) {

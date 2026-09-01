@@ -4,7 +4,7 @@ import type { GUILabel, GUIButton, GUIEditBox } from "@/gui";
 /**
  * MenuSaveName class.
  *
- * Retail CSWGuiSaveNamePanel — overlay edit box for new save names.
+ * retail — overlay edit box for new save names.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

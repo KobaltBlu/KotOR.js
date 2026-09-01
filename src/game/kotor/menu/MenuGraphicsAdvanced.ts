@@ -4,7 +4,7 @@ import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "@/gui";
 import { TextureLoader } from "@/loaders/TextureLoader";
 import { TextureLoaderState } from "@/loaders/TextureLoaderState";
 
-/** Retail CSWGuiOptionsGraphicsAdvanced custom_value / description TLKs. */
+/** retail custom_value / description TLKs. */
 const TLK_SOFT_SHADOWS = 0xbb51;
 const TLK_FRAME_BUFFER = 0xbb55;
 const TLK_ANISOTROPY = 0xbb59;
@@ -37,7 +37,7 @@ const INI_VSYNC = 'Graphics Options.V-Sync';
 const INI_SOFT_SHADOWS = 'Graphics Options.Soft Shadows';
 const INI_SHADOWS = 'Graphics Options.Shadows';
 
-/** Retail CClientOptions::SetDefaultAdvancedGraphicsOptions. */
+/** Retail SetDefaultAdvancedGraphicsOptions. */
 const DEFAULT_FRAME_BUFFER = 1;
 const DEFAULT_ANISOTROPY = 1;
 const DEFAULT_TEXTURE_QUALITY = 0;
@@ -50,7 +50,7 @@ const DEFAULT_SOFT_SHADOWS = 1;
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * Retail CSWGuiOptionsGraphicsAdvanced (optgraphicsadv).
+ * retail (optgraphicsadv).
  *
  * @file MenuGraphicsAdvanced.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -281,7 +281,7 @@ export class MenuGraphicsAdvanced extends GameMenu {
     GameState.lightManager?.applyVideoQualityLimits?.();
     void GameState.iniConfig.save();
 
-    // Retail HandleInputEvent → CSWGuiOptionsGraphics::SetUpOptions after pop.
+    // Retail HandleInputEvent → SetUpOptions after pop.
     const parent = this.manager?.MenuGraphics;
     if(parent?.CB_SHADOWS){
       parent.CB_SHADOWS.setValue(GameState.iniConfig.getProperty(INI_SHADOWS) == 1);

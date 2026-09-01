@@ -26,7 +26,7 @@ interface ComponentShopChoice {
 type BreakFilter = 'ALL' | 'WEAPONS' | 'ARMOR' | 'USEABLE' | 'MISC';
 
 /**
- * MenuComponent — TSL CSWGuiCreateItem (`component_p` / itemcreate.2da).
+ * MenuComponent — TSL GUI (`component_p` / itemcreate.2da).
  *
  * Create spends PartyManager.ComponentCount at max(1, GetCost()/20).
  * Breakdown refunds the same piece value into ComponentCount.

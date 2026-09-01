@@ -15,7 +15,7 @@ const FILTER_BLUE = { r: 0, g: 0.658824, b: 0.980392 };
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * Retail CSWGuiInGameOptKeyMappings (OPTKeyMapping).
+ * retail (OPTKeyMapping).
  *
  * @file MenuKeyboardMapping.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>

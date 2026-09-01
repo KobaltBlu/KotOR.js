@@ -14,7 +14,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
 
 /**
- * Retail CSWGuiInGameInventory::CheckFilter / SetNextFilter filter indices.
+ * Retail CheckFilter / SetNextFilter filter indices.
  * K1 cycles 0–5 via BTN_QUESTITEMS. K2 category buttons set 0 / 6–11.
  */
 export enum InventoryFilter {
@@ -103,7 +103,7 @@ export type InventoryListNode = (ModuleItem | GUIItemEquipped) & {
   inventoryDenyStrRef?: number;
 };
 
-/** Persistent filter (retail CGuiInGame::current_inventory_filter). */
+/** Persistent filter (retail current inventory filter). */
 let currentInventoryFilter: InventoryFilter = InventoryFilter.ALL;
 
 export function getCurrentInventoryFilter(): InventoryFilter {
@@ -164,7 +164,7 @@ function getEquipableSlots(item: ModuleItem): number {
 function isWristWeaponItem(item: ModuleItem): boolean {
   const slots = getEquipableSlots(item);
   if((slots & INV_ARMBAND_SLOTS) === 0) return false;
-  // Retail CheckFilter: baseitem field @ +0xb4 == 2 (weaponWield ONE_HANDED_SWORD).
+  // Retail CheckFilter: baseitem field @ == 2 (weaponWield ONE_HANDED_SWORD).
   return (item.baseItem?.weaponWield | 0) === WeaponWield.ONE_HANDED_SWORD;
 }
 
@@ -174,7 +174,7 @@ function isK2UseableBaseItem(item: ModuleItem): boolean {
 }
 
 /**
- * Retail CSWGuiInGameInventory::CheckFilter.
+ * Retail CheckFilter.
  * @param fromEquipmentSlot armband/belt equipped-item usable-mask path
  */
 export function checkInventoryFilter(

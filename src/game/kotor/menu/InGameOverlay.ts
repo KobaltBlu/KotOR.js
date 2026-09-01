@@ -20,9 +20,9 @@ const TLK_TOOLTIP_FULL_HEALTH = 42498;
 const TLK_TOOLTIP_SOLOMODE = 48035;
 const TLK_TOOLTIP_STEALTH = 247;
 const TLK_TOOLTIP_PAUSE = 48019;
-/** Retail clear_all_button field4_0x24 / CancleCombat tooltip */
+/** Retail clear_all_button / CancleCombat tooltip */
 const TLK_TOOLTIP_CLEARALL = 48518;
-/** Retail clear_one_button field4_0x24 / ClearOneAction tooltip */
+/** Retail clear_one_button / ClearOneAction tooltip */
 const TLK_TOOLTIP_CLEARONE = 48456;
 
 const TLK_TOOLTIP_QUEST     = 48218;
@@ -50,7 +50,7 @@ const ARROW_DIR_UP = -Math.PI / 2;
 /** Retail PositionMenu / UpdateIndicator edge inset (0x20). */
 const TARGET_MENU_EDGE = 0x20;
 
-/** Screen-space menu anchor from CSWCCreature::GetMenuPoint / object vtable 0x13c. */
+/** Screen-space menu anchor from GetMenuPoint / object vtable 0x13c. */
 type TargetMenuPoint = {
   x: number;
   y: number;
@@ -66,7 +66,7 @@ type TargetMenuBounds = {
   height: number;
 };
 
-/** Relative layout captured from GUI extents (CSWGuiTargetActionMenu::Initialize). */
+/** Relative layout captured from GUI extents (Initialize). */
 type TargetMenuLayout = {
   menuWidth: number;
   /** PB_HEALTH.top - (LBL_NAME.top + LBL_NAME.height) */
@@ -89,9 +89,9 @@ type TargetMenuLayout = {
 
 /**
  * InGameOverlay class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file InGameOverlay.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -212,7 +212,7 @@ export class InGameOverlay extends GameMenu {
   namePlateArrow: THREE.Mesh;
   namePlateArrowMaterial: THREE.MeshBasicMaterial;
 
-  /** CSWGuiTargetActionMenu layout gaps / width from GUI init. */
+  /** GUI layout gaps / width from GUI init. */
   targetMenuLayout: TargetMenuLayout;
   targetScreenPosition: THREE.Vector3 = new THREE.Vector3();
   reticlePosition: THREE.Vector3 = new THREE.Vector3();
@@ -416,7 +416,7 @@ export class InGameOverlay extends GameMenu {
         }
       });
 
-      // Retail OnClearAllButtonPressed → ClearAllActions @ 006887d0 (keymap CancleCombat / 0xf0)
+      // Retail OnClearAllButtonPressed → ClearAllActions (keymap CancleCombat / 0xf0)
       this.BTN_CLEARALL.addEventListener('click', (e) => {
         e.stopPropagation();
         this.onClearAllButtonPressed();
@@ -424,7 +424,7 @@ export class InGameOverlay extends GameMenu {
         GameState.TLKManager.TLKStrings[TLK_TOOLTIP_CLEARALL]?.Value ?? ''
       );
 
-      // Retail OnClearOneButtonPressed → OnCombatYButton @ 006880c0 (keymap ClearOneAction / 0xf5)
+      // Retail OnClearOneButtonPressed → OnCombatYButton (keymap ClearOneAction / 0xf5)
       const onClearOne = (e: { stopPropagation: () => void }) => {
         e.stopPropagation();
         this.onClearOneButtonPressed();
@@ -552,7 +552,7 @@ export class InGameOverlay extends GameMenu {
   }
 
   /**
-   * Retail CSWGuiTargetActionMenu::Initialize — store width_ and vertical gaps
+   * Retail Initialize — store width_ and vertical gaps
    * between name, health bar, and target action buttons from GUI extents.
    */
   captureTargetMenuLayout() {
@@ -590,10 +590,10 @@ export class InGameOverlay extends GameMenu {
   }
 
   /**
-   * Retail CSWGuiMainInterface::ClearAllActions @ 006887d0
+   * Retail ClearAllActions
    * (OnClearAllButtonPressed / CancleCombat keymap).
    * Client SetCombatMode(0) → restore combat camera, then ClearAllActions(1)
-   * + RemoveAllActions (server ClearAllActions path). Does not CancelCombat /
+   * + RemoveAllActions (server ClearAllActions path). Does not CancelCombat
    * SetCombatState(0).
    */
   onClearAllButtonPressed() {
@@ -601,12 +601,12 @@ export class InGameOverlay extends GameMenu {
     if(!oPC) return;
     FollowerCamera.setCombatCameraActive(false);
     oPC.clearAllActions(true);
-    // Retail CServerExoApp::ClearAllActions also RemoveAllActions on the round.
+    // Retail ClearAllActions also RemoveAllActions on the round.
     oPC.combatRound?.clearActions?.();
   }
 
   /**
-   * Retail OnCombatYButton @ 006880c0 (OnClearOneButtonPressed / ClearOneAction).
+   * Retail OnCombatYButton (OnClearOneButtonPressed / ClearOneAction).
    * RemoveLastAction from the combat round; if the schedule was empty, ClearAllActions(1).
    */
   onClearOneButtonPressed() {
@@ -849,7 +849,7 @@ export class InGameOverlay extends GameMenu {
   }
 
   /**
-   * Retail CSWCCreature::GetMenuPoint @ 0060ff30 / object vtable+0x13c.
+   * Retail GetMenuPoint / object vtable.
    * Returns top-left screen pixels and visibility status (1 front, 2 behind).
    */
   getTargetMenuPoint(selectedObject: ModuleObject): TargetMenuPoint {
@@ -876,7 +876,7 @@ export class InGameOverlay extends GameMenu {
 
     this.reticlePosition.copy(this.#menuPointWorld);
 
-    // Do NOT call camera.getWorldDirection() — it runs updateWorldMatrix() and
+    // Do NOT call camera.getWorldDirection — it runs updateWorldMatrix and
     // desyncs matrixWorld from matrixWorldInverse mid-frame, which corrupts
     // GameState frustum / currentCameraPosition while the camera turns.
     // FollowerCamera forward is local +Y (Z-up, YZX).
@@ -923,7 +923,7 @@ export class InGameOverlay extends GameMenu {
   }
 
   /**
-   * Retail CSWGuiTargetActionMenu::PositionMenu @ 00686090.
+   * Retail PositionMenu.
    * Positions the floating target menu viewport origin (top-left screen pixels).
    */
   positionTargetMenu(point: TargetMenuPoint, menuWidth: number, menuHeight: number): { x: number; y: number } {
@@ -1002,7 +1002,7 @@ export class InGameOverlay extends GameMenu {
   }
 
   /**
-   * Retail CSWGuiMainInterface::UpdateIndicator edge-arrow path when target is
+   * Retail UpdateIndicator edge-arrow path when target is
    * outside LBL_ARROW_MARGIN (or behind camera). On-screen reticles stay in CursorManager.
    */
   updateArrow(selectedObject: ModuleObject, point?: TargetMenuPoint) {
@@ -1245,8 +1245,8 @@ export class InGameOverlay extends GameMenu {
 
   /**
    * Update HUD Notification Icons
-   * 
-   * @param delta 
+   *
+   * @param delta
    */
   UpdateHUDNotificationIcons(delta = 0){
     if(GameState.UINotificationManager.bNotificationSoundQueued){
@@ -1351,7 +1351,7 @@ export class InGameOverlay extends GameMenu {
   }
 
   /**
-   * Retail CGuiInGame::GetMiniMapVisible / InitializeMap —
+   * Retail GetMiniMapVisible / InitializeMap
    * Feedback Mini Map option and minigame gate HUD map border + MapView.
    */
   updateMiniMapVisibility(){
@@ -1440,7 +1440,7 @@ export class InGameOverlay extends GameMenu {
         this.getControlByName('LBL_DEBILATATED' + (id + 1))?.hide();
       }
     }
-    // Retail client combat UI follows CSWCCreature combat state (synced only for Damage reason),
+    // Retail client combat UI follows retail combat state (synced only for Damage reason),
     // not flourish-only SetCombatState(1, SpellCast/2).
     const hostileCombat = typeof oPC.isHostileCombatEngaged === 'function'
       ? oPC.isHostileCombatEngaged()

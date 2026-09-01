@@ -27,9 +27,9 @@ const STRREF_MODE_COMPLETED = 32178;
 
 /**
  * MenuJournal class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuJournal.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -107,7 +107,7 @@ export class MenuJournal extends GameMenu {
         this.UpdateLabels();
       });
 
-      // Retail CSWGuiInGameJournal HandleInputEvent 0x29 @ 006456e0 → AddPanel(CSWGuiQuestItem).
+      // retail HandleInputEvent 0x29 → AddPanel(GUI).
       this.BTN_QUESTITEMS?.addEventListener('click', (e) => {
         e.stopPropagation();
         GameState.guiAudioEmitter?.playSoundFireAndForget?.('gui_click');

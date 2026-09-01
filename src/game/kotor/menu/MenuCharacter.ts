@@ -128,7 +128,7 @@ export class MenuCharacter extends GameMenu {
       });
       this._button_x = this.BTN_LEVELUP;
 
-      // Retail CSWGuiInGameCharacter HandleInputEvent 0x29 @ 006b2250 → ScriptSelect.
+      // retail HandleInputEvent 0x29 → ScriptSelect.
       this.BTN_SCRIPTS?.addEventListener('click', (e) => {
         e.stopPropagation();
         const creature = GameState.PartyManager?.party?.[0];
@@ -156,7 +156,7 @@ export class MenuCharacter extends GameMenu {
         }
       });
 
-      // Retail RotateCharacterLeft/Right @ 006aed90 / 006aede0 — ±10° yaw while held.
+      // Retail RotateCharacterLeft/Right — ±10° yaw while held.
       // Approximate with click nudges until hold-axis input is wired.
       this.BTN_3DCHAR?.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -217,7 +217,7 @@ export class MenuCharacter extends GameMenu {
   }
 
   /**
-   * Retail AttachModel @ 006aebf0 — camerahook + world Z = getCameraHeight().
+   * Retail AttachModel — camerahook + world Z = getCameraHeight().
    */
   attachPortraitCamera(creature?: ModuleCreature) {
     if(!this._3dView || !this._3dViewModel?.camerahook) return;
@@ -343,7 +343,7 @@ export class MenuCharacter extends GameMenu {
   }
 
   /**
-   * Retail SetStats 3D path @ 006afda0 — copy appearance onto a dedicated
+   * Retail SetStats 3D path — copy appearance onto a dedicated
    * client creature, identity pose + Setup3DScene (never the live party model).
    */
   updateCharacterPortrait( creature: ModuleCreature ){

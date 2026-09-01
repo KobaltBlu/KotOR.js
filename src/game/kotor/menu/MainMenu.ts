@@ -14,7 +14,7 @@ import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
 /**
  * MainMenu class.
  *
- * Retail CSWGuiMainMenu — title screen buttons, 3D backdrop, theme music.
+ * retail — title screen buttons, 3D backdrop, theme music.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

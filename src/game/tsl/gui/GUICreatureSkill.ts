@@ -12,7 +12,7 @@ import {
   enqueueProtoIconLoad,
 } from "@/gui/protoitem/protoItemHelpers";
 
-/** Duck type for InGameSkillEntry::SetSkill payloads (skill / feat / power). */
+/** Duck type for SetSkill payloads (skill / feat / power). */
 export type SkillEntryNode = {
   getName: () => string;
   getIcon: () => string;
@@ -21,8 +21,8 @@ export type SkillEntryNode = {
 /**
  * GUICreatureSkill class.
  *
- * Retail CSWGuiInGameSkillEntry — icon + name row used by abilities skills list
- * and CSWGuiSkillInfoBox (granted feats popup).
+ * retail — icon + name row used by abilities skills list
+ * and GUI (granted feats popup).
  *
  * @file GUICreatureSkill.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -45,8 +45,8 @@ export class GUICreatureSkill extends GUIProtoItem {
   }
 
   /**
-   * Retail CSWGuiInGameSkillEntry::Initialize — SetExtent width = viewport - 2*padding,
-   * height 0x2a (42). K1 @ 006ac930; TSL @ 005958f0 ftol(scalar * 42.0).
+   * Retail Initialize — SetExtent width = viewport - 2*padding,
+   * height 0x2a (42). K1 ; TSL ftol(scalar * 42.0).
    */
   getRetailBaseExtent(list: GUIListBox): RetailRowExtent {
     const vw = typeof list.getViewportWidth === 'function'

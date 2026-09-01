@@ -55,7 +55,7 @@ export class GUIMovieItem implements MovieItem {
 /**
  * MainMovies class.
  *
- * Retail CSWGuiTitleMovies — PopulateMovies / OnMoviePicked / CClientOptions::GetMovieShown.
+ * retail — PopulateMovies / OnMoviePicked / GetMovieShown.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -100,7 +100,7 @@ export class MainMovies extends GameMenu {
   }
 
   /**
-   * CClientOptions::GetMovieShown — bitfield from movies.2da row index.
+   * GetMovieShown — bitfield from movies.2da row index.
    * Empty resref returns true (CompareNoCase empty → shown).
    */
   static getMovieShown(resRef: string): boolean {
@@ -117,7 +117,7 @@ export class MainMovies extends GameMenu {
   }
 
   /**
-   * CClientOptions::SetMovieShown — set bit and SaveOptions.
+   * SetMovieShown — set bit and SaveOptions.
    */
   static setMovieShown(resRef: string, shown: boolean = true): void {
     if(!resRef) return;
@@ -171,7 +171,7 @@ export class MainMovies extends GameMenu {
   }
 
   /**
-   * CSWGuiTitleMovies::PopulateMovies
+   * PopulateMovies
    */
   async populateMovies(): Promise<void> {
     const moviesTable = GameState.TwoDAManager.datatables.get('movies');
@@ -241,7 +241,7 @@ export class MainMovies extends GameMenu {
         this.close();
       });
       this._button_b = this.BTN_BACK;
-      this.LB_MOVIES.protoItem.extent.height = 64; // provisional until movies.gui PROTOITEM Ghidra-verified
+      this.LB_MOVIES.protoItem.extent.height = 64; // provisional until movies.gui PROTOITEM extent confirmed
       this.LB_MOVIES.setTextColor(this.LB_MOVIES.defaultColor.r, this.LB_MOVIES.defaultColor.g, this.LB_MOVIES.defaultColor.b);
       this.LB_MOVIES.onClicked = (movie: GUIMovieItem, control: any, index: number) => {
         this.onMoviePicked(movie);
@@ -251,12 +251,12 @@ export class MainMovies extends GameMenu {
   }
 
   /**
-   * CSWGuiTitleMovies::OnMoviePicked — custom_value == 0 → credits; else PlayMovie.
+   * OnMoviePicked — custom_value == 0 → credits; else PlayMovie.
    */
   onMoviePicked(movie: MovieItem): void {
     if(!movie) return;
     if(movie.isCredits || !movie.name){
-      // CClientExoApp::StartCreditSequence("credits") → CSWGuiInGameCredits
+      // StartCreditSequence("credits") → GUI
       this.manager.MenuCredits.open();
       return;
     }

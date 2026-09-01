@@ -5,7 +5,7 @@ import { GameMenu } from "@/gui";
 import type { GUIListBox } from "@/gui";
 import { TwoDAObject } from "@/resource/TwoDAObject";
 
-/** Retail fade-in duration (CSWGuiInGameCredits::UpdateFading). */
+/** Retail fade-in duration (UpdateFading). */
 const FADE_IN_SEC = 1.0;
 /** Visible hold ends at 3s from fade-cycle start when fading up. */
 const FADE_HOLD_END_SEC = 3.0;
@@ -22,7 +22,7 @@ enum CreditsMode {
 /**
  * MenuCredits class.
  *
- * Retail CSWGuiInGameCredits — loads credits.2da Name strrefs, fades then scrolls.
+ * retail — loads credits.2da Name strrefs, fades then scrolls.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -215,7 +215,7 @@ export class MenuCredits extends GameMenu {
     }
   }
 
-  /** Retail CSWGuiInGameCredits::UpdateFading. */
+  /** Retail UpdateFading. */
   protected updateFading(delta: number) {
     this.fadeTimer += delta;
     if(this.fadeTimer >= FADE_IN_SEC){
@@ -242,7 +242,7 @@ export class MenuCredits extends GameMenu {
     }
   }
 
-  /** Retail CSWGuiInGameCredits::UpdateScrolling. */
+  /** Retail UpdateScrolling. */
   protected updateScrolling(delta: number) {
     const lb = this.LB_CREDITS;
     if(!lb) return;

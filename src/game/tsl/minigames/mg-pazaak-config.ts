@@ -375,7 +375,7 @@ export const PazaakConfig = {
           'pcards_dblneg_p'
         ]
       },
-      // Retail CSWGuiPazaakCard::SetCard @ 0054c6b0 — gold order 0x12..0x16
+      // Retail SetCard — gold order 0x12..0x16
       {
         name: "Tie Breaker",
         type: 0x12,
@@ -425,7 +425,7 @@ export const PazaakConfig = {
         ]
       },
       {
-        // HandleChangeHandCard @ 00555dd0 — type 0x16 cycles state 0/1↔2 (magnitude)
+        // HandleChangeHandCard — type 0x16 cycles state 0/1↔2 (magnitude)
         name: "1±2",
         type: 0x16,
         modifier: [1, 2],

@@ -7,13 +7,13 @@ import { SaveGame } from "@/engine/SaveGame";
 import { TextureLoader } from "@/loaders";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 
-/** Retail CSWGuiSaveLoad::ShowGame play-time TLK (hours/minutes tokens). */
+/** Retail ShowGame play-time TLK (hours/minutes tokens). */
 const TLK_TIME_PLAYED = 0xbe73;
 
 /**
  * MenuSaveLoad class.
  *
- * Retail CSWGuiSaveLoad (saveload_p) — TSL filter, PC name, play time, save order.
+ * retail (saveload_p) — TSL filter, PC name, play time, save order.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -116,7 +116,7 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
       this.LBL_PCNAME.setText('');
       this.LBL_TIMEPLAYED.setText('');
       this.LB_GAMES.setProtoBuilder(GUISaveGameItem);
-      // Retail AddControls(..., varyItemHeights=0) @ PopulateGameLB 005d16c0
+      // Retail AddControls(..., varyItemHeights=0) @ PopulateGameLB
       this.LB_GAMES.setVariableItemHeight(false);
       this.LB_GAMES.onSelected = (save: SaveGame) => {
         this.selected = save;

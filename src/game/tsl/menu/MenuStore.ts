@@ -3,10 +3,10 @@ import { MenuStore as K1_MenuStore, StoreFilter } from "@/game/kotor/KOTOR";
 
 /**
  * MenuStore class — TSL store_p; buy/sell handlers inherited from K1.
- * Wires retail CSWGuiStore filter buttons and LBL_ONHAND_VALUE.
- * 
+ * Wires retail filter buttons and LBL_ONHAND_VALUE.
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuStore.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}

@@ -6,7 +6,7 @@ import type { GUILabel, GUIButton, GUIListBox, GUISlider } from "@/gui";
 import { GUIMusicItem } from "@/game/tsl/gui/GUIMusicItem";
 import { TwoDAObject } from "@/resource/TwoDAObject";
 
-/** TLK 0xBDAC — retail LBL_TRACKNUM default strref (CSWGuiTitleMusic ctor). */
+/** TLK 0xBDAC — retail LBL_TRACKNUM default strref (GUI ctor). */
 const TLK_TRACKNUM_DEFAULT = 0xBDAC;
 
 interface MusicItem {
@@ -20,7 +20,7 @@ interface MusicItem {
 /**
  * MainMusic class.
  *
- * Retail CSWGuiTitleMusic (titlemusic_p) — UnlockedPlanetSongs bitmask,
+ * retail (titlemusic_p) — UnlockedPlanetSongs bitmask,
  * PopulateSongList / OnSongPicked / OnPlayPicked / OnLoopPicked / OnNextPicked / OnStopPicked.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -109,7 +109,7 @@ export class MainMusic extends GameMenu {
         this.onLoopPicked();
       });
 
-      // Retail options+0x4d = Sound Options.Music Volume (0–100)
+      // Retail options = Sound Options.Music Volume (0–100)
       this.SLI_VOLUME.attachINIProperty('Sound Options.Music Volume');
       this.SLI_VOLUME.onValueChanged = (value: number) => {
         value = Math.min(1, Math.max(0, value));
@@ -135,7 +135,7 @@ export class MainMusic extends GameMenu {
   }
 
   /**
-   * CSWGuiTitleMusic::PopulateSongList — musictable rows with UnlockPlanet in 0..10 and unlocked.
+   * PopulateSongList — musictable rows with UnlockPlanet in 0..10 and unlocked.
    */
   populateSongList(): void {
     this.musicList = [];
@@ -164,7 +164,7 @@ export class MainMusic extends GameMenu {
   }
 
   /**
-   * CSWGuiTitleMusic::OnSongPicked — update selection + LBL_TRACKNUM as "%d/%d".
+   * OnSongPicked — update selection + LBL_TRACKNUM as "%d/%d".
    */
   onSongPicked(node: MusicItem): void {
     if(!node) return;
@@ -176,7 +176,7 @@ export class MainMusic extends GameMenu {
   }
 
   /**
-   * CSWGuiTitleMusic::OnPlayPicked
+   * OnPlayPicked
    */
   async onPlayPicked(): Promise<void> {
     if(!this.musicList.length || !this.selected) return;
@@ -195,7 +195,7 @@ export class MainMusic extends GameMenu {
   }
 
   /**
-   * CSWGuiTitleMusic::OnLoopPicked — toggle loop + BTN_LOOP border pulsing.
+   * OnLoopPicked — toggle loop + BTN_LOOP border pulsing.
    */
   onLoopPicked(): void {
     this.loop = !this.loop;
@@ -207,7 +207,7 @@ export class MainMusic extends GameMenu {
   }
 
   /**
-   * CSWGuiTitleMusic::OnStopPicked / StopMusic — FadeAndStop(500ms), clear track name.
+   * OnStopPicked / StopMusic — FadeAndStop(500ms), clear track name.
    */
   async onStopPicked(): Promise<void> {
     const emitter = AudioEngine.GetAudioEngine().areaMusicDayAudioEmitter;
@@ -226,7 +226,7 @@ export class MainMusic extends GameMenu {
   }
 
   /**
-   * CSWGuiTitleMusic::OnNextPicked — advance selection, OnSongPicked, then play.
+   * OnNextPicked — advance selection, OnSongPicked, then play.
    */
   async onNextPicked(): Promise<void> {
     if(!this.musicList.length) return;

@@ -16,9 +16,9 @@ import type { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 /**
  * InGameComputer class.
  *
- * Retail CSWGuiDialogComputer — computer terminal dialog UI.
- * SetType backgrounds follow K1 @ 006a8490 (Aspyr TSL SetType @ 005b1ef0 is a stub).
- * UpdateSkills @ 005b1b10; ambient computer_lp_04 @ ctor 005b0d70.
+ * retail — computer terminal dialog UI.
+ * SetType backgrounds follow K1 (Aspyr TSL SetType is a stub).
+ * UpdateSkills ; ambient computer_lp_04 @ ctor.
  *
  * @file InGameComputer.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -26,7 +26,7 @@ import type { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
  */
 export class InGameComputer extends GameMenu {
 
-  // GameMenu.show() applies this.engineMode — must be DIALOG, not GUI default.
+  // GameMenu.show applies this.engineMode — must be DIALOG, not GUI default.
   // updateCamera re-shows this every tick; GUI would spam SetEngineMode(0↔3).
   engineMode: EngineMode = EngineMode.DIALOG;
 
@@ -91,7 +91,7 @@ export class InGameComputer extends GameMenu {
   }
 
   /**
-   * Retail K1 CSWGuiDialogComputer::SetType @ 006a8490 —
+   * Retail K1 SetType
    * comptypes.2da[ComputerType].ComputerBackground → panel background.
    * Out-of-range index clamps to row 0.
    */
@@ -136,7 +136,7 @@ export class InGameComputer extends GameMenu {
   }
 
   /**
-   * Retail UpdateSkills @ 005b1b10 — Computer Use / Repair ranks and
+   * Retail UpdateSkills — Computer Use / Repair ranks and
    * k_computer_spike / k_repair_part stack totals for party leader.
    */
   updateSkills() {

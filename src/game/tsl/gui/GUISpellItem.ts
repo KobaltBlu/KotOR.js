@@ -36,9 +36,9 @@ export class GUISpellItem extends GUIProtoItem {
   }
 
   /**
-   * Retail CSWGuiSkillFlowChart::AddPowerSet SetExtent (same as AddFeatSet):
-   *   K1 @ 006cd7e0: {0,0,0xf2 (242), 0x28 (40)}
-   *   TSL: width 0x106 (262), height ftol(scalar * 40.0)
+   * Retail AddPowerSet SetExtent (same as AddFeatSet):
+   * K1: {0,0,0xf2 (242), 0x28 (40)}
+   * TSL: width 0x106 (262), height ftol(scalar * 40.0)
    */
   getRetailBaseExtent(_list: GUIListBox): RetailRowExtent {
     const isTsl = GameState.GameKey == GameEngineType.TSL;

@@ -83,7 +83,7 @@ export class MenuUpgrade extends GameMenu {
   originalTag: string = '';
   pendingCrystalTemplate: string = '';
 
-  /** Retail CSWGui3DSceneView on 3D_MODEL / 3D_MODEL_LS. */
+  /** retail on 3D_MODEL / 3D_MODEL_LS. */
   _3dView: LBL_3DView;
   _3dViewRoom: OdysseyModel3D;
   _3dViewLight: OdysseyModel3D;
@@ -141,7 +141,7 @@ export class MenuUpgrade extends GameMenu {
   }
 
   /**
-   * Retail CSWGuiUpgrade ctor — both 3D_MODEL scenes load `gui3D_room` + `upgitem_light`.
+   * retail ctor — both 3D_MODEL scenes load `gui3D_room` + `upgitem_light`.
    */
   async init3DPreview(){
     const lbl = this._3D_MODEL || this._3D_MODEL_LS;
@@ -190,7 +190,7 @@ export class MenuUpgrade extends GameMenu {
   }
 
   /**
-   * Retail CSWGuiUpgrade::GetArmorModelAndTextureResRef @ 005bd420 —
+   * Retail GetArmorModelAndTextureResRef
    * appearance.2da row 0x89, columns Model{A–N} / TEX{A–N} from clamped model
    * variation; texture gets `%02d` textureVariation with Exists fallbacks.
    */
@@ -230,10 +230,10 @@ export class MenuUpgrade extends GameMenu {
   }
 
   /**
-   * Retail CSWGuiUpgrade::Update3DView @ 005bdae4 (Aspyr) —
+   * Retail Update3DView (Aspyr)
    * RemoveModel item, AddModel from GetModelResRef / armor path, camera on
    * camerahook{itemType}, parent to rotatehook{itemType}, play rotate / powered.
-   * itemType = baseitem +0xac (baseitems.2da itemtype); specials 0+baseId1 → 0a,
+   * itemType = baseitem (baseitems.2da itemtype); specials 0+baseId1 → 0a,
    * 4+baseId0x14 → 4a, itemType 0x24..0x26 → hook 31; missing node falls back to camerahook.
    */
   async update3DView(){
@@ -247,13 +247,13 @@ export class MenuUpgrade extends GameMenu {
     }
 
     const base = this.workingItem.getBaseItem?.() || this.workingItem.baseItem;
-    // Retail Format("camerahook%d", *(baseitem+0xac)) — itemtype column.
+    // Retail Format("camerahook%d", *(baseitem)) — itemtype column.
     const itemType = base?.itemType ?? 0;
     const baseId = this.workingItem.getBaseItemId?.() ?? this.workingItem.baseItemId ?? 0;
 
     let camHook = `camerahook${itemType}`;
     let rotHook = `rotatehook${itemType}`;
-    // Retail switch on *(baseitem+0xac) with baseId (item +0xc) specials:
+    // Retail switch on *(baseitem) with baseId (item) specials:
     if(itemType === 0 && baseId === 1){
       camHook = 'camerahook0a';
       rotHook = 'rotatehook0a';
@@ -707,7 +707,7 @@ export class MenuUpgrade extends GameMenu {
     this.returnedToInventory = [];
     this.close();
 
-    // Refresh item list if parent is open.
+    // Refresh item list if parent is open().
     if(GameState.MenuManager.MenuUpgradeItems?.bVisible){
       GameState.MenuManager.MenuUpgradeItems.open();
     }

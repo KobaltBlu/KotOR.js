@@ -5,7 +5,7 @@ import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { GameMenu } from "@/gui";
 import type { GUILabel, GUIButton } from "@/gui";
 
-/** Retail CSWGuiInGamePause::SetPauseReason TLK ids (K1). */
+/** Retail SetPauseReason TLK ids (K1). */
 const TLK_PAUSE_GENERIC = 0x5e4;       // 1508
 const TLK_PAUSE_ENEMY_K1 = 0xbc54;     // 48212
 const TLK_PAUSE_END_ROUND = 0xa5c0;    // 42432
@@ -24,9 +24,9 @@ const TLK_PRESS_CONTINUE_K2 = 0x21477; // 136311
 
 /**
  * InGamePause class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file InGamePause.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -60,7 +60,7 @@ export class InGamePause extends GameMenu {
   }
 
   /**
-   * Retail CSWGuiInGamePause::SetPauseReason — map reason byte → LBL_PAUSEREASON
+   * Retail SetPauseReason — map reason byte → LBL_PAUSEREASON
    * TLK and show/hide LBL_PRESS (enemy/mine hide press).
    */
   setPauseReason(reason: AutoPauseState | number){

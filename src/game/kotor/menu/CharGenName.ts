@@ -4,9 +4,9 @@ import type { GUILabel, GUIButton, GUIEditBox } from "@/gui";
 
 /**
  * CharGenName class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenName.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -31,7 +31,7 @@ export class CharGenName extends GameMenu {
     await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve) => {
-      // Retail CSWGuiNameChargen max length 0x12
+      // retail max length 0x12
       this.NAME_BOX_EDIT.setMaxLength(18);
 
       this.BTN_BACK.addEventListener('click', (e) => {

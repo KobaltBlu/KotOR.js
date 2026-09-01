@@ -12,9 +12,9 @@ const toPaddedDigit = (num: number, len = 2) => {
 
 /**
  * GUISaveGameItem class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GUISaveGameItem.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -30,9 +30,9 @@ export class GUISaveGameItem extends GUIProtoItem {
   }
 
   /**
-   * Retail base row extent — TSL CSWGuiSaveLoadEntry ctor @ 005d5140 builds
+   * Retail base row extent — TSL GUI ctor builds
    * {left 0, top 0, width 0, height 0x24} then scales height by GetResolutionTextScalar
-   * @ 008d03c0 (1.0 below 2048px) before CSWGuiButton::Initialize @ 00417970. Row height
+   * (1.0 below 2048px) before Initialize. Row height
    * is 36 at base resolution; the PROTOITEM GFF height is never used for the row.
    */
   getRetailBaseExtent(_list: GUIListBox): RetailRowExtent {

@@ -11,7 +11,7 @@ import { AuroraAnimationFlag } from "@/enums/animation/AuroraAnimationFlag";
 /**
  * MenuGalaxyMap class.
  *
- * Aligned with retail CSWGuiInGameGalaxyMap (K1 swkotor.exe).
+ * Aligned with retail (K1 swkotor.exe).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

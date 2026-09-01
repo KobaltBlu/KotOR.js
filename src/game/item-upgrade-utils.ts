@@ -5,7 +5,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
 import { TwoDAObject } from "@/resource/TwoDAObject";
 
-/** Retail CSWGuiUpgrade / CSWGuiUpgradeSelection category ids. */
+/** retail / GUI category ids. */
 export enum UpgradeCategory {
   NONE = 0,
   LIGHTSABER = 1,
@@ -151,7 +151,7 @@ export function getSlotCount(category: UpgradeCategory): number {
 }
 
 /**
- * Retail CSWSItem::GetUpgradableType.
+ * Retail GetUpgradableType.
  * K1 maps item-property UpgradeType rows through upgrade.2da.
  * K2 uses baseitems.itemtype plus UpgradeLevel > 0.
  */

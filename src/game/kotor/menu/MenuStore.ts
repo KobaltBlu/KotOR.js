@@ -8,7 +8,7 @@ import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
 import type { ModuleCreature, ModuleItem, ModuleStore } from "@/module";
 import { BitWise } from "@/utility/BitWise";
 
-/** Retail CSWGuiStore::CheckFilter modes (store_p filter buttons). */
+/** Retail CheckFilter modes (store_p filter buttons). */
 export enum StoreFilter {
   ALL = 0,
   WEAPONS = 1,
@@ -16,7 +16,7 @@ export enum StoreFilter {
   MISC = 3,
 }
 
-/** Retail BuySellFlag (CSWSStore + InitializeStoreType). */
+/** Retail BuySellFlag (retail + InitializeStoreType). */
 export enum StoreBuySellFlag {
   BUY_ONLY = 1,
   SELL_ONLY = 2,
@@ -40,9 +40,9 @@ const STORE_ARMOR_SLOTS =
 
 /**
  * MenuStore class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuStore.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -108,7 +108,7 @@ export class MenuStore extends GameMenu {
     });
   }
 
-  /** Clamp bonus like ExecuteCommandOpenStore @ 00540300 (−100..100). */
+  /** Clamp bonus like ExecuteCommandOpenStore (−100..100). */
   static clampBonus(value: number): number {
     const n = value | 0;
     if(n > 100) return 100;
@@ -125,7 +125,7 @@ export class MenuStore extends GameMenu {
   }
 
   /**
-   * Retail CSWGuiStore::CheckFilter — equipableSlots masks.
+   * Retail CheckFilter — equipableSlots masks.
    * WEAPONS: 0x30 (RIGHTHAND|LEFTHAND); ARMOR: 0x78b; MISC: no slots.
    */
   checkFilter(item: ModuleItem): boolean {
@@ -184,7 +184,7 @@ export class MenuStore extends GameMenu {
   }
 
   /**
-   * Retail CSWGuiStore::InitializeStoreType — BuySellFlag drives buy/sell and Examine visibility.
+   * Retail InitializeStoreType — BuySellFlag drives buy/sell and Examine visibility.
    */
   initializeStoreType(){
     const flag = this.getBuySellFlag();
@@ -273,7 +273,7 @@ export class MenuStore extends GameMenu {
   }
 
   /**
-   * Retail CSWGuiStore::OnControlEntered stock / on-hand labels.
+   * Retail OnControlEntered stock / on-hand labels.
    * K1: LBL_STOCK_VALUE is always the selected item's stack (or Infinite on that item).
    * K2 buy: STOCK = store item stack/Infinite; ONHAND = party matching count.
    * K2 sell: STOCK = store matching count; ONHAND = party possession of selected item.
@@ -319,7 +319,7 @@ export class MenuStore extends GameMenu {
   }
 
   /**
-   * Retail CSWSStore::SellItem — infinite store stock is copied with Infinite cleared
+   * Retail SellItem — infinite store stock is copied with Infinite cleared
    * and StackSize=1 before AcquireItem.
    */
   buyItem(item: ModuleItem){
@@ -330,7 +330,7 @@ export class MenuStore extends GameMenu {
     }
     GameState.PartyManager.AddGold(-price);
     this.LBL_CREDITS_VALUE?.setText(String(GameState.PartyManager.Gold || 0));
-    // InventoryManager.addItem clears Infinite (retail CSWSStore::SellItem / CreatureAcquireItem).
+    // InventoryManager.addItem clears Infinite (retail SellItem / CreatureAcquireItem).
     GameState.InventoryManager.addItem(item.template, true);
     if(!item.isInfinite?.()){
       item.setStackSize(item.getStackSize() - 1);

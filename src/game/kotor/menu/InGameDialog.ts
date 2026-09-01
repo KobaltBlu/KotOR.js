@@ -12,9 +12,9 @@ const LETTERBOX_HEIGHT = 100;
 
 /**
  * InGameDialog class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file InGameDialog.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -30,7 +30,7 @@ export class InGameDialog extends GameMenu {
   topBar: THREE.Mesh;
   bottomBar: THREE.Mesh;
 
-  // GameMenu.show() applies this.engineMode — must be DIALOG, not GUI default
+  // GameMenu.show applies this.engineMode — must be DIALOG, not GUI default
   engineMode: EngineMode = EngineMode.DIALOG;
 
   constructor(){

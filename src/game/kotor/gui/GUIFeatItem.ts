@@ -32,8 +32,8 @@ type FeatSlot = {
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * Retail CSWGuiSkillFlow row: three feat slots + arrows.
- * Status/selection via CSWGuiSkillFlow::SetSkillStatus (K1 @ 006ccfd0).
+ * retail row: three feat slots + arrows.
+ * Status/selection via SetSkillStatus (K1).
  *
  * @file GUIFeatItem.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -50,9 +50,9 @@ export class GUIFeatItem extends GUIProtoItem {
   }
 
   /**
-   * Retail CSWGuiSkillFlowChart::AddFeatSet SetExtent:
-   *   K1 @ 006cda80: {0,0,0xf2 (242), 0x28 (40)}
-   *   TSL @ 00589970: width 0x106 (262), height ftol(scalar * 40.0)
+   * Retail AddFeatSet SetExtent:
+   * K1: {0,0,0xf2 (242), 0x28 (40)}
+   * TSL: width 0x106 (262), height ftol(scalar * 40.0)
    */
   getRetailBaseExtent(_list: GUIListBox): RetailRowExtent {
     const isTsl = GameState.GameKey == GameEngineType.TSL;

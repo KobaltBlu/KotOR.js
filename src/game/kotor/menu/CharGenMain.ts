@@ -9,17 +9,17 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import { LevelUpManager } from "@/managers/LevelUpManager";
 import * as THREE from "three";
 
-/** Retail CSWGuiLevelUpCharGen MAIN_TITLE_LBL SetStrRef @ 006e8ef0 */
+/** retail MAIN_TITLE_LBL SetStrRef */
 const TLK_LEVEL_UP_TITLE = 0x42f; // 1071
 
 /**
  * CharGenMain class.
  *
- * Retail CSWGuiMainCharGen @ 006eb420 — gui3D_room + charrec_light (not
+ * retail — gui3D_room + charrec_light (not
  * cgbody_light), Setup3DScene camera on camerahook with AttachTranslate
  * world Z = getCameraHeight(), SetViewAngle 22.726.
  *
- * Also hosts in-game level-up as retail CSWGuiLevelUpCharGen (same MAINCG
+ * Also hosts in-game level-up as retail (same MAINCG
  * layout) with MenuLevelUp (LEVELUPPNL) as childMenu.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -77,9 +77,9 @@ export class CharGenMain extends GameMenu {
   _3dView: LBL_3DView;
   _3dViewModel: OdysseyModel3D;
 
-  /** True while hosting in-game level-up (CSWGuiLevelUpCharGen). */
+  /** True while hosting in-game level-up (GUI). */
   levelUpMode: boolean = false;
-  /** Portrait clone for level-up — never the live party model (retail uses a CSWCCreature copy). */
+  /** Portrait clone for level-up — never the live party model (retail uses a retail copy). */
   portraitModel: OdysseyModel3D;
   portraitGen: number = 0;
 
@@ -146,7 +146,7 @@ export class CharGenMain extends GameMenu {
   }
 
   /**
-   * Retail Setup3DScene AttachTranslate @ 006100f0 —
+   * Retail Setup3DScene AttachTranslate
    * camerahook pose + world-space (0, 0, getCameraHeight()).
    */
   updateCamera() {
@@ -168,7 +168,7 @@ export class CharGenMain extends GameMenu {
   }
 
   /**
-   * Retail CSWGuiInGameCharacter::ShowLevelUpGUI @ 006b0bb0 —
+   * Retail ShowLevelUpGUI
    * opens MAINCG with LEVELUPPNL attached (our childMenu).
    */
   openForLevelUp(creature: ModuleCreature) {
@@ -201,7 +201,7 @@ export class CharGenMain extends GameMenu {
 
   /**
    * Build a disposable appearance clone for level-up 3D (retail SetAppearance on
-   * a dedicated CSWCCreature — never reparent the live party model).
+   * a dedicated retail — never reparent the live party model).
    */
   attachLevelUpPortrait(source: ModuleCreature) {
     if(!source || !this._3dView) return;

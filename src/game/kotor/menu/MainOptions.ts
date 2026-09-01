@@ -3,7 +3,7 @@ import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 
 /**
- * Retail CSWGuiOptionsMain button description TLKs (ctor custom_value / OnEnterSlot).
+ * retail button description TLKs (ctor custom_value / OnEnterSlot).
  * Gameplay 0xa521, Feedback 0x2147a, Autopause 0xa523, Graphics 0xbe2f, Sound 0xbe30.
  */
 const TLK_DESC_GAMEPLAY = 0xa521;
@@ -15,7 +15,7 @@ const TLK_DESC_SOUND = 0xbe30;
 /**
  * MainOptions class.
  *
- * Retail CSWGuiOptionsMain — title/options hub to gameplay/autopause/graphics/sound/feedback.
+ * retail — title/options hub to gameplay/autopause/graphics/sound/feedback.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

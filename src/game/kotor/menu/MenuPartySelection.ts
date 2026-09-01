@@ -33,7 +33,7 @@ interface PartySlotState {
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * Retail CSWGuiPartySelection (partyselection): pending portrait toggles,
+ * retail (partyselection): pending portrait toggles,
  * commit on Done, hover name/level + LBL_3D portrait fill.
  *
  * @file MenuPartySelection.ts

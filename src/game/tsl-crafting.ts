@@ -1,6 +1,6 @@
 /**
- * TSL workbench / chemical helpers — retail CSWGuiCreateMedicalItem / CSWGuiCreateItem
- * cost rules from k2_win_gog_aspyr_swkotor2.exe (never pykotor).
+ * TSL workbench / chemical helpers — retail create-item / create-medical cost rules
+ * from k2_win_gog_aspyr_swkotor2.exe.
  *
  * Chemical create cost: max(1, GetCost() >> 1)
  * Component create/breakdown piece value: max(1, GetCost() / 20)
@@ -22,7 +22,7 @@ export const COMPONENT_CREATE_GROUPS = {
   MISC: 4,
 } as const;
 
-/** Treat Injury — CSWGuiCreateMedicalItem skill rank for discount UI. */
+/** Treat Injury — GUI skill rank for discount UI. */
 export const SKILL_TREAT_INJURY = 7;
 
 export function chemicalCreateCost(goldPieceValue: number): number {
@@ -114,7 +114,7 @@ export function itemCreateRecipeVisible(
 
 /**
  * Good/Evil alignment bucket for ItemCreate `align` column.
- * Retail uses short at stats+0x18a thresholds 0x29 / 0x3c → buckets 3 / 1 / 2.
+ * Retail uses short at stats thresholds 0x29 / 0x3c → buckets 3 / 1 / 2.
  */
 export function itemCreateAlignBucket(goodEvil: number): number {
   const ge = goodEvil | 0;

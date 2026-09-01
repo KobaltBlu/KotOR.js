@@ -11,10 +11,10 @@ import {
 } from "@/game/inventory-menu-utils";
 
 /**
- * MenuQuestItem — retail CSWGuiQuestItem (`questitem`).
+ * MenuQuestItem — retail (`questitem`).
  *
- * Journal BTN_QUESTITEMS → AddPanel @ HandleInputEvent case 0x29 (006456e0).
- * PopulateItemListBox @ 006d29f0: player bag items with plot flag.
+ * Journal BTN_QUESTITEMS → AddPanel @ HandleInputEvent case 0x29.
+ * PopulateItemListBox: player bag items with plot flag.
  *
  * @file MenuQuestItem.ts
  */
@@ -57,7 +57,7 @@ export class MenuQuestItem extends GameMenu {
   }
 
   /**
-   * Retail PopulateItemListBox @ 006d29f0 — bag items where plot != 0.
+   * Retail PopulateItemListBox — bag items where plot != 0.
    * Equipped plot items are omitted (repository type 1 only).
    */
   populateItemListBox(){
@@ -84,7 +84,7 @@ export class MenuQuestItem extends GameMenu {
     }
   }
 
-  /** Retail OnControlEntered @ 006d2580 — item property description. */
+  /** Retail OnControlEntered — item property description. */
   UpdateSelected(){
     const item = unwrapInventoryListNode(this.selected);
     if(item instanceof ModuleItem){

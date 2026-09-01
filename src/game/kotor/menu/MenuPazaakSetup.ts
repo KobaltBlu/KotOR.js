@@ -196,7 +196,7 @@ export class MenuPazaakSetup extends GameMenu {
     if(GameState.PazaakManager.MaxWager > 0){
       GameState.MenuManager.MenuPazaakWager.open();
     }
-    // Retail CSWGuiPazaakStart::OnPanelAdded @ 0067f750 — setup help 0x96e3..0x96e5.
+    // Retail OnPanelAdded — setup help 0x96e3..0x96e5.
     PazaakTutorial.setEnabled(!!GameState.PazaakManager.ShowTutorial);
     GameState.PazaakManager.queueTutorialHelp(PazaakTutorial.beginSetup());
     this.knownCards.clear();

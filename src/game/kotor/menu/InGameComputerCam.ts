@@ -6,9 +6,9 @@ import { GameState } from "@/GameState";
 /**
  * InGameComputerCam class.
  *
- * Retail CSWGuiDialogComputerCamera @ 005b2060 — placeable-cam overlay during
+ * retail — placeable-cam overlay during
  * computer ConversationType==1 + CameraAngle==6. LBL_RETURN skips the current
- * entry; SetLiveFeedMessageVisible @ 005b2390 toggles the live-feed label.
+ * entry; SetLiveFeedMessageVisible toggles the live-feed label.
  *
  * @file InGameComputerCam.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -70,7 +70,7 @@ export class InGameComputerCam extends GameMenu {
   }
 
   /**
-   * Retail SetLiveFeedMessageVisible @ 005b2390 —
+   * Retail SetLiveFeedMessageVisible
    * hidden when CamVidEffect is -2 or 10.
    */
   setLiveFeedVisible(visible: boolean) {

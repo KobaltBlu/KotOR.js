@@ -2,14 +2,14 @@ import { GameMenu } from "@/gui";
 import type { GUIListBox, GUIButton } from "@/gui";
 import type { ModuleItem } from "@/module/ModuleItem";
 
-/** Retail SetLocalBoolean index on DisplayDatapad (ExecuteCommandDisplayDatapad @ 007b15f0). */
+/** Retail SetLocalBoolean index on DisplayDatapad (ExecuteCommandDisplayDatapad). */
 export const DATAPAD_SHOWN_LOCAL_BOOL = 0x5e;
 
 /**
  * MenuDatapad — TSL datapad popup (`datapad_p`).
  *
- * Retail: CSWGuiMessageBox datapad mode @ 0052c960; opened by
- * ExecuteCommandDisplayDatapad @ 007b15f0 (InGameGui panel +0xa4).
+ * Retail: GUI datapad mode ; opened by
+ * ExecuteCommandDisplayDatapad (InGameGui panel).
  * Cancel is hidden (SetAllowCancel(0)); OK dismisses. Text = DescIdentified.
  *
  * @file MenuDatapad.ts

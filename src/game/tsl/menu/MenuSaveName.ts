@@ -4,7 +4,7 @@ import { MenuSaveName as K1_MenuSaveName } from "@/game/kotor/KOTOR";
 /**
  * MenuSaveName class.
  *
- * Retail CSWGuiSaveNamePanel (savename_p).
+ * retail (savename_p).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

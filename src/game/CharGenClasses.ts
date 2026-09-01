@@ -1,7 +1,7 @@
 
 export interface CharGenClassInterface {
   id: number;
-  /** Retail CHAR_TYPE.soundset from CSWGuiClassSelection::classSelection. */
+  /** Retail CHAR_TYPE.soundset from classSelection. */
   soundset: number;
   strings: {
     name: number,
@@ -12,7 +12,7 @@ export interface CharGenClassInterface {
   appearances: number[]
 }
 
-/** Retail staticInitClassSelection + classSelection CHAR_TYPE[6] @ 007a2684. */
+/** Retail staticInitClassSelection + classSelection CHAR_TYPE[6]. */
 export const CharGenClasses: {[key: number]: CharGenClassInterface} = {
   0: {
     id: 2,

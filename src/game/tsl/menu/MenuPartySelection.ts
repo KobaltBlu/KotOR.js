@@ -14,7 +14,7 @@ const TLK_AVAILABLE = 0x61c;
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * Retail CSWGuiPartySelection (partyselect_p): extends K1 pending-toggle flow
+ * retail (partyselect_p): extends K1 pending-toggle flow
  * with 12 slots, charrec_light 3D preview, and nAllowCancel.
  *
  * @file MenuPartySelection.ts
@@ -152,8 +152,8 @@ export class MenuPartySelection extends K1_MenuPartySelection {
   }
 
   /**
-   * Do not override forceNPC / script from show params — open() already stored them.
-   * Parent show() handles init; we only refresh 3D for the focused NPC.
+   * Do not override forceNPC / script from show params — open already stored them.
+   * Parent show handles init; we only refresh 3D for the focused NPC.
    */
   async show() {
     await super.show();

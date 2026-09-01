@@ -17,9 +17,9 @@ const COLOR_SELECT_ENABLED = { r: 0, g: 0.658824, b: 0.980392 };
 
 /**
  * CharGenFeats class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenFeats.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -99,7 +99,7 @@ export class CharGenFeats extends GameMenu {
       this.creature = GameState.CharGenManager.selectedCreature;
     }
     this.chosenFeats = [];
-    // Retail InitiateFeats @ 006f3460
+    // Retail InitiateFeats
     const grantedIds = this.collectAndAddGrantedFeats();
     if(this.levelUpMode && GameState.LevelUpManager?.draft){
       this.selectionsRemaining = GameState.LevelUpManager.draft.featPicksRemaining | 0;
@@ -128,7 +128,7 @@ export class CharGenFeats extends GameMenu {
       }
     };
 
-    // Retail OnPanelAdded @ 006f2f30:
+    // Retail OnPanelAdded:
     // if granted flag: ShowTutorialWindow(0x12); if shown, SetCallback(ShowGranted);
     // else AddPanel(skill_info_box) immediately.
     if(grantedIds.length && !this.levelUpMode){
@@ -171,7 +171,7 @@ export class CharGenFeats extends GameMenu {
     return granted;
   }
 
-  /** Retail ShowGranted @ 006f2c40 — TLK 0xa512 (42258). */
+  /** Retail ShowGranted — TLK 0xa512 (42258). */
   async showGrantedFeats(featIds: number[]): Promise<void> {
     await GameState.MenuManager.EnsureSkillInfoMenu?.();
     const skillInfo = GameState.MenuManager.MenuSkillInfo;
@@ -180,7 +180,7 @@ export class CharGenFeats extends GameMenu {
       GameState.TLKManager.GetStringById?.(42258)?.Value
       ?? GameState.TLKManager.TLKStrings?.[42258]?.Value
       ?? 'You have been granted the following feats:';
-    // Retail SetSkillList(feats, 1) — InGameSkillEntry::SetSkill feat branch.
+    // Retail SetSkillList(feats, 1) — skill-entry feat branch.
     const feats = featIds
       .map((id) => GameState.SWRuleSet.feats[id])
       .filter((f): f is NonNullable<typeof f> => !!f);
@@ -216,8 +216,8 @@ export class CharGenFeats extends GameMenu {
   }
 
   /**
-   * Retail CSWGuiFeatsCharGen::DetermineFeat / BuildButtons:
-   * chosen-this-session (field27) → 4 / button Remove;
+   * Retail DetermineFeat / BuildButtons:
+   * chosen-this-session  → 4 / button Remove;
    * owned → 1; available (CanChooseFeat) → 0; else locked → 3.
    */
   getFeatSlotStatus(feat: any): SkillFlowStatus {
@@ -278,7 +278,7 @@ export class CharGenFeats extends GameMenu {
   }
 
   /**
-   * Retail OnFeatPicked @ 006f3c20 — Add (status 0) or Remove (status 1) chosen feat.
+   * Retail OnFeatPicked — Add (status 0) or Remove (status 1) chosen feat.
    */
   onSelectButton() {
     if(!this.creature || !this.selectedFeat) return;
@@ -292,13 +292,13 @@ export class CharGenFeats extends GameMenu {
     }
   }
 
-  /** @deprecated use onSelectButton */
+  /** @deprecated use onSelectButton() */
   pickSelectedFeat() {
     this.onSelectButton();
   }
 
   /**
-   * Retail AddChosenFeat @ 006f37e0 — move feat into session picks, spend a selection.
+   * Retail AddChosenFeat — move feat into session picks, spend a selection.
    */
   addChosenFeat(featId: number) {
     if(!this.creature || this.selectionsRemaining <= 0) return;
@@ -319,7 +319,7 @@ export class CharGenFeats extends GameMenu {
   }
 
   /**
-   * Retail RemoveChosenFeat @ 006f3990 — unpick session feat and cascade dependents.
+   * Retail RemoveChosenFeat — unpick session feat and cascade dependents.
    */
   removeChosenFeat(featId: number) {
     if(!this.creature) return;
@@ -362,7 +362,7 @@ export class CharGenFeats extends GameMenu {
     if(feat) this.selectFeat(feat);
   }
 
-  /** Owned on creature or picked this session (retail FeatAcquired + field27). */
+  /** Owned on creature or picked this session (retail FeatAcquired +). */
   private hasFeatOrChosen(featId: number): boolean {
     if(this.chosenFeats.indexOf(featId) >= 0) return true;
     return !!this.creature?.getHasFeat(featId);
@@ -432,7 +432,7 @@ export class CharGenFeats extends GameMenu {
     this.STD_SELECTIONS_REMAINING_LBL?.setText(String(this.selectionsRemaining));
   }
 
-  /** @deprecated use collectAndAddGrantedFeats */
+  /** @deprecated use collectAndAddGrantedFeats() */
   addGrantedFeats() {
     this.collectAndAddGrantedFeats();
   }
