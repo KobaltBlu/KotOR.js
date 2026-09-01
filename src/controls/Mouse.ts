@@ -154,6 +154,23 @@ export class Mouse {
   }
 
   /**
+   * Reconcile logical button flags from `MouseEvent.buttons`.
+   * Browsers can drop mouseup outside the window (context menu, alt-tab),
+   * leaving rightDown stuck and chase-cam look active on every move.
+   */
+  static syncButtonStateFromEvent(event: MouseEvent){
+    const reverse = Mouse.isReverseButtonsEnabled();
+    const leftBit = reverse ? 2 : 1;
+    const rightBit = reverse ? 1 : 2;
+    Mouse.leftDown = !!(event.buttons & leftBit);
+    Mouse.rightDown = !!(event.buttons & rightBit);
+    Mouse.middleDown = !!(event.buttons & 4);
+    if(!Mouse.middleDown){
+      Mouse.MiddleMouseDown = false;
+    }
+  }
+
+  /**
    * Whether chase-camera mouse look should consume deltas this frame.
    * Retail UpdateCamera / ProcessInput: look state is `rightClickHeld`, inverted
    * when `mouse_look` is set — never left-button hold.

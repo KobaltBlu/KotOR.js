@@ -4,8 +4,24 @@ import { GameState } from "@/GameState";
 import {
   retailStencilShadowDisk,
   retailStencilShadowOpacity,
+  retailStencilShadowFanVertices,
+  retailShadowCasterDistanceLimit,
   RETAIL_STENCIL_SHADOW_SEGMENTS,
 } from "@/utility/retailLighting";
+
+/** Unit-radius retail fan: center + 10 ring vertices, 10 triangular wedges. */
+function createRetailStencilFanGeometry(): THREE.BufferGeometry {
+  const fan = retailStencilShadowFanVertices(1);
+  const positions: number[] = [];
+  for(let i = 1; i <= RETAIL_STENCIL_SHADOW_SEGMENTS; i++){
+    const a = fan[i];
+    const next = fan[i === RETAIL_STENCIL_SHADOW_SEGMENTS ? 1 : i + 1];
+    positions.push(0, 0, 0, a.x, a.y, 0, next.x, next.y, 0);
+  }
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  return geom;
+}
 
 interface ICasterStencilState {
   colorWrite: boolean;
@@ -47,7 +63,7 @@ export class ShadowBlobManager {
 
   group = new THREE.Group();
   private blobs: THREE.Mesh[] = [];
-  private geometry: THREE.CircleGeometry;
+  private geometry: THREE.BufferGeometry;
   private hardMaterial: THREE.MeshBasicMaterial;
   private softTexture: THREE.DataTexture;
   private lightManager: LightManager;
@@ -56,7 +72,6 @@ export class ShadowBlobManager {
   private _castersScratch: THREE.Mesh[] = [];
   private _savedScratch: ICasterSave[] = [];
   private _blobVisScratch: boolean[] = [];
-  private _hiddenScratch: THREE.Object3D[] = [];
 
   init(lightManager: LightManager, parent?: THREE.Object3D){
     this.lightManager = lightManager;
@@ -71,8 +86,7 @@ export class ShadowBlobManager {
     const maxBlobs = Math.max(1, LightManager.MAXSHADOWLIGHTS);
 
     if(this.geometry){ this.geometry.dispose(); }
-    // Retail fan uses 10 circumferential samples.
-    this.geometry = new THREE.CircleGeometry(1, RETAIL_STENCIL_SHADOW_SEGMENTS);
+    this.geometry = createRetailStencilFanGeometry();
 
     if(this.hardMaterial){ this.hardMaterial.dispose(); }
     this.hardMaterial = new THREE.MeshBasicMaterial({
@@ -166,7 +180,7 @@ export class ShadowBlobManager {
    * @param focus World focus (player / camera target) — retail focus_position
    */
   update(focus: THREE.Vector3){
-    if(!this.lightManager){ return; }
+    if(!this.lightManager || !GameState.areShadowsEnabled()){ return; }
     this.focus.copy(focus);
 
     if(this.blobs.length !== Math.max(1, LightManager.MAXSHADOWLIGHTS)){
@@ -223,6 +237,7 @@ export class ShadowBlobManager {
     clearStencil = true
   ){
     if(!this.lightManager || !renderer || !scene || !camera){ return; }
+    if(!GameState.areShadowsEnabled()){ return; }
     const lights = this.lightManager.shadowLights;
     if(!lights.length || retailStencilShadowOpacity(GameState.shadowAlpha) <= 0){
       return;
@@ -243,16 +258,25 @@ export class ShadowBlobManager {
     casters.length = 0;
     const stencilLayer = ShadowBlobManager.STENCIL_LAYER;
     const blobSet = this.blobs;
-    scene.traverse((obj) => {
-      const mesh = obj as THREE.Mesh;
-      if(!mesh.isMesh || !mesh.visible || blobSet.indexOf(mesh) >= 0){ return; }
-      // castShadow from MDL flagShadow / loader options; SkinnedMesh covers
-      // creatures whose meshes were built before castShadow was forced on.
-      if(mesh.castShadow || (mesh as THREE.SkinnedMesh).isSkinnedMesh){
-        mesh.layers.enable(stencilLayer);
-        casters.push(mesh);
+    const registryCasters = GameState.shadowCasterRegistry?.getStencilCasters();
+    if(registryCasters?.length){
+      for(let i = 0; i < registryCasters.length; i++){
+        const mesh = registryCasters[i];
+        if(mesh.visible){
+          mesh.layers.enable(stencilLayer);
+          casters.push(mesh);
+        }
       }
-    });
+    }else{
+      scene.traverse((obj) => {
+        const mesh = obj as THREE.Mesh;
+        if(!mesh.isMesh || !mesh.visible || blobSet.indexOf(mesh) >= 0){ return; }
+        if(mesh.castShadow || (mesh as THREE.SkinnedMesh).isSkinnedMesh){
+          mesh.layers.enable(stencilLayer);
+          casters.push(mesh);
+        }
+      });
+    }
     if(!casters.length){
       gl.stencilMask(prevStencilMask);
       renderer.autoClear = prevAutoClear;
@@ -313,33 +337,21 @@ export class ShadowBlobManager {
       this.blobs[i].visible = false;
     }
 
-    // Hide non-casters for the mask pass (layer filter alone can miss parented
-    // skinned setups if a parent is culled; visibility hide is the reliable path).
-    const hidden = this._hiddenScratch;
-    hidden.length = 0;
-    scene.traverse((obj) => {
-      const mesh = obj as THREE.Mesh;
-      if(mesh.isMesh && mesh.visible && casters.indexOf(mesh) < 0){
-        mesh.visible = false;
-        hidden.push(mesh);
-      }
-    });
-
     const prevLayersMask = camera.layers.mask;
     try{
-      // Prefer layer filter when it works; visibility hide is the safety net above.
       camera.layers.set(stencilLayer);
 
       for(let i = 0; i < lights.length && i < this.blobs.length; i++){
         const light = lights[i];
         const stencilRef = (this.blobs[i].userData.stencilRef as number) || (1 << (i % 8));
         const lightRadius = Math.max(light.shadowRadius || 0, light.getRadius());
+        const casterLimit = retailShadowCasterDistanceLimit(light.getRadius(), light.shadowRadius || 0);
         if(!(lightRadius > 0)){ continue; }
 
         for(let ci = 0; ci < saved.length; ci++){
           const entry = saved[ci];
           const dist = entry.mesh.getWorldPosition(this._world).distanceTo(light.worldPosition);
-          entry.mesh.visible = dist <= lightRadius + 2;
+          entry.mesh.visible = dist <= casterLimit;
           for(let mi = 0; mi < entry.materials.length; mi++){
             const mat = entry.materials[mi];
             (mat as any).colorWrite = false;
@@ -381,9 +393,6 @@ export class ShadowBlobManager {
         mat.stencilZPass = prev.stencilZPass;
         mat.needsUpdate = true;
       }
-    }
-    for(let i = 0; i < hidden.length; i++){
-      hidden[i].visible = true;
     }
     for(let i = 0; i < this.blobs.length; i++){
       this.blobs[i].visible = blobVis[i];

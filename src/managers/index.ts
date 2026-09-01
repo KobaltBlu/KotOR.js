@@ -22,6 +22,8 @@ export * from "@/managers/JournalManager";
 export * from "@/managers/KEYManager";
 export * from "@/managers/LightManager";
 export * from "@/managers/ShadowBlobManager";
+export * from "@/managers/ShadowCasterRegistry";
+export * from "@/managers/StaticMeshShadowManager";
 export * from "@/managers/WindManager";
 export * from "@/managers/MenuManager";
 export * from "@/managers/ModuleObjectManager";

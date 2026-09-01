@@ -990,9 +990,11 @@ export class ModuleArea extends ModuleObject {
     shadowAlpha = this.shadowAlpha
   ){
     this.shadowAlpha = shadowAlpha;
-    // Gate stencil/creature blobs on ARE SunShadows / MoonShadows for active period.
+    // SunShadows / MoonShadows gate area directional shadow casters only (GetShadowLights
+    // skips radius >= RETAIL_AREA_DIRECTIONAL_SHADOW_RADIUS when false). ShadowOpacity
+    // still drives point-light / projection darkness via shadowAlpha.
     GameState.areaShadowsEnabled = this.lightingIsNight ? !!this.moon.shadows : !!this.sun.shadows;
-    GameState.shadowAlpha = GameState.areaShadowsEnabled ? this.shadowAlpha : 0;
+    GameState.shadowAlpha = this.shadowAlpha;
     GameState.beamingProjectionAlpha = this.beamingProjectionAlpha;
 
     // Keep DynAmbient as scene ambient (LoadArea → SetAmbient).

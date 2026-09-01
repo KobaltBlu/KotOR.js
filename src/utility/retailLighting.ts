@@ -306,10 +306,125 @@ export const RETAIL_MAX_SCENE_LIGHTS = 8;
 export const RETAIL_MAX_LIGHTS_PER_MODEL = 3;
 /** Retail stencil fan segments in RenderStencilShadowsForThisLight. */
 export const RETAIL_STENCIL_SHADOW_SEGMENTS = 10;
+/** Degrees between circumferential samples in RenderStencilShadowsForThisLight. */
+export const RETAIL_STENCIL_FAN_ANGLE_DEG = 40;
+/** Max disk radius when shadow radius exceeds this (RenderStencilShadowsForThisLight). */
+export const RETAIL_STENCIL_DISK_MAX_RADIUS = 50;
+/** Extra caster inclusion margin around shadow light radius (DoGobShadows). */
+export const RETAIL_SHADOW_CASTER_MARGIN = 2;
+/** Minimum vertex-color multiplier after full shadow (ProjectDynamicShadow). */
+export const RETAIL_SHADOW_MIN_VERTEX_COLOR = 0.25;
+/** Depth bias along light→receiver ray (K1 ProjectDynamicShadow / PartVolumeProject). */
+export const RETAIL_SHADOW_DEPTH_BIAS = 0.05;
+
+export interface IRetailVec2 {
+  x: number;
+  y: number;
+}
+
+export interface IRetailShadowLightParams {
+  x: number;
+  y: number;
+  z: number;
+  radius: number;
+  shadowRadius: number;
+  verticalDisplacement: number;
+}
+
+/**
+ * Retail PartLight world position for shadow projection
+ * (light Z + verticalDisplacement).
+ */
+export function retailShadowLightPosition(light: IRetailShadowLightParams): { x: number; y: number; z: number } {
+  return {
+    x: light.x,
+    y: light.y,
+    z: light.z + (light.verticalDisplacement || 0),
+  };
+}
+
+/** Effective shadow influence radius (shadowRadius when > 0, else light radius). */
+export function retailShadowEffectiveRadius(radius: number, shadowRadius: number): number {
+  return shadowRadius > 0 ? shadowRadius : radius;
+}
+
+/** Caster inclusion distance for a shadow light. */
+export function retailShadowCasterDistanceLimit(radius: number, shadowRadius: number): number {
+  return retailShadowEffectiveRadius(radius, shadowRadius) + RETAIL_SHADOW_CASTER_MARGIN;
+}
+
+/**
+ * Retail RenderStencilShadowsForThisLight fan: center + ring samples at 40°.
+ * Returns 11 points (index 0 = center); wedges render segments 0→1…9→10.
+ */
+export function retailStencilShadowFanVertices(radius: number): IRetailVec2[] {
+  const r = Math.max(0, radius);
+  const pts: IRetailVec2[] = [{ x: 0, y: 0 }];
+  const step = (RETAIL_STENCIL_FAN_ANGLE_DEG * Math.PI) / 180;
+  for(let i = 0; i < RETAIL_STENCIL_SHADOW_SEGMENTS; i++){
+    const a = i * step;
+    pts.push({ x: Math.cos(a) * r, y: Math.sin(a) * r });
+  }
+  return pts;
+}
+
+/**
+ * Project a world point from a shadow light onto a horizontal plane at planeZ.
+ * Used by ProjectDynamicShadow / static mesh shadow projection.
+ */
+export function retailProjectPointFromLight(
+  lightX: number,
+  lightY: number,
+  lightZ: number,
+  pointX: number,
+  pointY: number,
+  pointZ: number,
+  planeZ: number
+): { x: number; y: number } | undefined {
+  const dz = pointZ - lightZ;
+  if(Math.abs(dz) < 1e-6){
+    return { x: pointX, y: pointY };
+  }
+  const t = (planeZ - lightZ) / dz;
+  if(!(t > 0)){
+    return undefined;
+  }
+  return {
+    x: lightX + (pointX - lightX) * t,
+    y: lightY + (pointY - lightY) * t,
+  };
+}
+
+/**
+ * Multiply vertex RGB by shadow strength (ProjectDynamicShadow darken).
+ * strength 0 = no change, 1 = full darken toward RETAIL_SHADOW_MIN_VERTEX_COLOR.
+ */
+export function retailShadowVertexDarken(
+  r: number,
+  g: number,
+  b: number,
+  strength: number
+): [number, number, number] {
+  const s = Math.max(0, Math.min(1, strength));
+  const keep = 1 - s * (1 - RETAIL_SHADOW_MIN_VERTEX_COLOR);
+  return [r * keep, g * keep, b * keep];
+}
+
+/** Combined projection opacity from area shadowAlpha and per-light fade. */
+export function retailShadowProjectionStrength(shadowAlpha: number, shadowFadeFactor: number): number {
+  return retailStencilShadowOpacity(shadowAlpha) * Math.max(0, Math.min(1, shadowFadeFactor));
+}
 /** GetNearestLights / RenderOnlyGobs object query radius. */
 export const RETAIL_GOB_LIGHT_RADIUS = 2;
 /** Distant/static GetShadowLights(mode=2) radius threshold. */
 export const RETAIL_DISTANT_SHADOW_RADIUS = 1000;
+/** Area sun/moon lights (radius >= this) are excluded from GetShadowLights when Sun/MoonShadows=0. */
+export const RETAIL_AREA_DIRECTIONAL_SHADOW_RADIUS = 100;
+
+/** True for area directional sun/moon shadow casters (hundreds of units); MDL lamp lights are smaller. */
+export function isRetailAreaDirectionalShadowLight(radius: number): boolean {
+  return (radius | 0) >= RETAIL_AREA_DIRECTIONAL_SHADOW_RADIUS;
+}
 
 /**
  * Retail GetShadowLights mode argument:

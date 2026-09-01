@@ -7,6 +7,12 @@ import {
   createOdysseyLightingUniforms,
   createOdysseyMaterialBaseUniforms,
 } from "@/shaders/chunks/OdysseyLighting";
+import {
+  ODYSSEY_SHADOW_PARS_FRAGMENT,
+  ODYSSEY_SHADOW_WORLD_PARS,
+  ODYSSEY_SHADOW_WORLD_VERTEX,
+  createOdysseyShadowUniforms,
+} from "@/shaders/chunks/OdysseyShadow";
 
 /**
  * ShaderOdysseyModel — Odyssey model materials with fully custom lighting.
@@ -66,6 +72,11 @@ export class ShaderOdysseyModel extends Shader {
     varying vec3 vViewPosition;
 
     ${ODYSSEY_LIGHTING_PARS_FRAGMENT}
+
+    ${ODYSSEY_SHADOW_WORLD_PARS}
+    #ifdef USE_ODYSSEY_SHADOW
+      ${ODYSSEY_SHADOW_PARS_FRAGMENT}
+    #endif
 
     #ifdef WATER
       #ifdef USE_BUMPMAP
@@ -207,6 +218,10 @@ export class ShaderOdysseyModel extends Shader {
         #endif
       #endif
 
+      #ifdef USE_ODYSSEY_SHADOW
+        outgoingLight *= odysseyComputeShadowFactor( vOdysseyShadowWorldPos );
+      #endif
+
       // Post-lighting env combine. Default ADD uses pre-opacity tex alpha so opacity
       // controllers do not kill reflections (dark cubes like CM_Baremetal only glint).
       #ifdef USE_ENVMAP
@@ -331,6 +346,7 @@ export class ShaderOdysseyModel extends Shader {
     #include <uv2_pars_vertex>
     #include <displacementmap_pars_vertex>
     #include <envmap_pars_vertex>
+    ${ODYSSEY_SHADOW_WORLD_PARS}
     #include <color_pars_vertex>
     #include <fog_pars_vertex>
     #include <morphtarget_pars_vertex>
@@ -380,6 +396,8 @@ export class ShaderOdysseyModel extends Shader {
         transformed += objectNormal * 0.02;
       #endif
 
+      ${ODYSSEY_SHADOW_WORLD_VERTEX}
+
       #include <project_vertex>
       #include <logdepthbuf_vertex>
       #include <clipping_planes_vertex>
@@ -407,6 +425,7 @@ export class ShaderOdysseyModel extends Shader {
     this.uniforms = [
       createOdysseyMaterialBaseUniforms(),
       createOdysseyLightingUniforms(),
+      createOdysseyShadowUniforms(),
       { selfIllumColor: { value: new THREE.Color() } },
       { tweakColor: { value: new THREE.Color() } },
       { alphaTest: { value: 0.0 } },

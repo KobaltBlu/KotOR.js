@@ -19,6 +19,7 @@ import {
   retailSelectDynamicOnlyLights,
   retailModelLightSlots,
   retailVideoQualityRowIndex,
+  isRetailAreaDirectionalShadowLight,
   RETAIL_GOB_LIGHT_RADIUS as RETAIL_GOB_LIGHT_RADIUS_CONST,
   RETAIL_MAX_LIGHTS_PER_MODEL,
   RetailLightFadeChannel,
@@ -249,8 +250,13 @@ export class LightManager {
     }
     if(Number.isFinite(sh) && sh > 0){
       LightManager.MAXSHADOWLIGHTS = Math.max(1, Math.floor(sh));
+      this.context?.shadowBlobManager?.rebuildBlobs?.();
     }
     this.softShadowsEnabled = Number(ini?.getProperty?.('Graphics Options.Soft Shadows')) === 1;
+    const shadowsIni = ini?.getProperty?.('Graphics Options.Shadows');
+    if(shadowsIni !== undefined && shadowsIni !== null && shadowsIni !== ''){
+      this.context.userShadowsEnabled = String(shadowsIni) !== '0';
+    }
   }
 
   clearLights(){
@@ -840,6 +846,11 @@ export class LightManager {
       const light = prioritized[i];
       if(light.illuminationScore > 1){ continue; }
       if(dynamicOnly && (light.dynamicType | 0) === 0){ continue; }
+      // When SunShadows/MoonShadows=0, skip area sun/moon so local lamp lights can win slots.
+      if(!this.context?.areaShadowsEnabled &&
+        isRetailAreaDirectionalShadowLight(light.getRadius())){
+        continue;
+      }
       desired.push(light);
       if(dynamicOnly || desired.length >= LightManager.MAXSHADOWLIGHTS){ break; }
     }

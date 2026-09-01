@@ -337,7 +337,20 @@ export class IngameControls {
         return;
       }
 
-      if(event.movementX || event.movementY){
+      // Recover from missed mouseup (context menu, focus loss, etc.).
+      Mouse.syncButtonStateFromEvent(event);
+      Mouse.syncCameraHold();
+
+      const trackLookDeltas =
+        Mouse.pointerLock ||
+        Mouse.isCameraHoldDesired() ||
+        GameState.Mode == EngineMode.FREELOOK ||
+        (
+          GameState.Mode == EngineMode.MINIGAME &&
+          GameState.module?.area?.miniGame?.type === MiniGameType.TURRET
+        );
+
+      if(trackLookDeltas && (event.movementX || event.movementY)){
         Mouse.MouseX += event.movementX;
         Mouse.MouseY += event.movementY;
       }
@@ -346,12 +359,20 @@ export class IngameControls {
         Mouse.Update( Mouse.positionWindow.x + event.movementX, Mouse.positionWindow.y + event.movementY );
       }else{
         // Always track absolute position for GUI / world clicks.
-        // RMB-hold look uses movement deltas separately; do not freeze UI coords
-        // (Mouse Look mode looks continuously while LMB must still hit-test).
         Mouse.Update( event.clientX, event.clientY );
-        if(!event.movementX && !event.movementY){
-          Mouse.MouseX = event.pageX - this.element.offsetLeft;
-          Mouse.MouseY = event.pageY - this.element.offsetTop;
+        const offsetLeft = this.element?.offsetLeft ?? 0;
+        const offsetTop = this.element?.offsetTop ?? 0;
+        if(trackLookDeltas){
+          if(!event.movementX && !event.movementY){
+            Mouse.MouseX = event.pageX - offsetLeft;
+            Mouse.MouseY = event.pageY - offsetTop;
+          }
+        }else{
+          // Not looking — keep delta buffers aligned so stray movement never rotates.
+          Mouse.MouseX = event.pageX - offsetLeft;
+          Mouse.MouseY = event.pageY - offsetTop;
+          Mouse.OldMouseX = Mouse.MouseX;
+          Mouse.OldMouseY = Mouse.MouseY;
         }
       }
 
@@ -1213,7 +1234,7 @@ export class IngameControls {
     }
 
     // Retail UpdateCamera mouse look while rightClickHeld (or Mouse Look)
-    if(Mouse.cameraHoldActive && GameState.Mode == EngineMode.INGAME){
+    if(Mouse.isCameraHoldDesired() && GameState.Mode == EngineMode.INGAME){
       const dx = Mouse.MouseX - Mouse.OldMouseX;
       const dy = Mouse.MouseY - Mouse.OldMouseY;
       if(dx || dy){

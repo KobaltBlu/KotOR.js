@@ -177,6 +177,8 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   lightManager: KotOR.LightManager = new KotOR.LightManager();
+  shadowBlobManager: KotOR.ShadowBlobManager = new KotOR.ShadowBlobManager();
+  staticMeshShadowManager: KotOR.StaticMeshShadowManager = new KotOR.StaticMeshShadowManager();
 
   referenceNode: THREE.Object3D = new THREE.Object3D();
 
@@ -299,6 +301,10 @@ export class UI3DRenderer extends EventListenerModel {
     this.buildDOMEventHandlers();
 
     this.lightManager.init(this);
+    this.shadowBlobManager.init(this.lightManager, this.scene);
+    if(KotOR.GameState.shadowCasterRegistry){
+      this.staticMeshShadowManager.init(this.lightManager, KotOR.GameState.shadowCasterRegistry);
+    }
   }
 
   setModule(module: ForgeModule) {
@@ -1301,6 +1307,9 @@ export class UI3DRenderer extends EventListenerModel {
         this.frustumMat4.multiplyMatrices( this.currentCamera.projectionMatrix, this.currentCamera.matrixWorldInverse )
         this.viewportFrustum.setFromProjectionMatrix(this.frustumMat4);
         this.lightManager.update(delta, this.currentCamera);
+        const focus = this.currentCamera.position;
+        this.shadowBlobManager.update(focus);
+        this.staticMeshShadowManager.update(this.currentCamera.position, true);
         this.selectable.traverse((obj: any) => {
           if(obj?.materials && typeof obj.update === 'function'){
             KotOR.OdysseyLightingBinder.bindSceneModel(this.lightManager, obj, this.currentCamera);
@@ -1337,6 +1346,11 @@ export class UI3DRenderer extends EventListenerModel {
         this.copyToScreenQuad!.render(this.renderer);
       }else{
         this.renderer.setRenderTarget(null);
+        if(cam && KotOR.GameState.areShadowsEnabled?.()){
+          this.renderer.clear(true, true, true);
+          this.shadowBlobManager.renderStencilMasks(this.renderer, this.scene, cam, false);
+          this.renderer.clear(true, true, false);
+        }
         this.renderer.render( this.scene, cam );
       }
 

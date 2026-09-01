@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import {
   AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, LevelUpManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager,
-  FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, ShadowBlobManager, WindManager, MenuManager, ModuleObjectManager, PartyManager,
+  FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, ShadowBlobManager, ShadowCasterRegistry, StaticMeshShadowManager, WindManager, MenuManager, ModuleObjectManager, PartyManager,
   ResolutionManager, ShaderManager, TwoDAManager, FactionManager,
   VideoEffectManager, VideoManager, PazaakManager, UINotificationManager, GuiTimingBarManager, GameOverManager, CutsceneManager, LegalScreenManager, EventManager, TextureAnimationManager, TutorialManager
 } from "@/managers";
@@ -296,6 +296,8 @@ export class GameState implements EngineContext {
 
   static lightManager: LightManager;
   static shadowBlobManager: ShadowBlobManager;
+  static shadowCasterRegistry: ShadowCasterRegistry;
+  static staticMeshShadowManager: StaticMeshShadowManager;
   static windManager: WindManager;
 
   static visible: boolean;
@@ -337,8 +339,15 @@ export class GameState implements EngineContext {
    * When false, stencil disks and creature Fx_Shadow blobs are hidden.
    */
   static areaShadowsEnabled = true;
+  /** INI Graphics Options.Shadows — user toggle for all shadow rendering. */
+  static userShadowsEnabled = true;
   /** Retail global `beamingProjectionAlpha` (0–0.05) from dawn/dusk — SetBeaming blend alpha. */
   static beamingProjectionAlpha = 0;
+
+  /** Combined retail shadow enable: INI + area ShadowOpacity curve. */
+  static areShadowsEnabled(): boolean {
+    return GameState.userShadowsEnabled && GameState.shadowAlpha > 0;
+  }
   static currentLeader: ModuleCreature;
   static playerFeetOffset: THREE.Vector3;
   static collisionList: any[];
@@ -726,7 +735,9 @@ export class GameState implements EngineContext {
 
     GameState.lightManager = new GameState.LightManager();
     OdysseyLightingBinder.setActiveManager(GameState.lightManager);
+    GameState.shadowCasterRegistry = new ShadowCasterRegistry();
     GameState.shadowBlobManager = new ShadowBlobManager();
+    GameState.staticMeshShadowManager = new StaticMeshShadowManager();
     GameState.windManager = new GameState.WindManager();
     WindManager.setInstance(GameState.windManager);
     GameState.processEventListener('init');
@@ -1099,6 +1110,7 @@ export class GameState implements EngineContext {
        */
       GameState.lightManager.init(GameState);
       GameState.shadowBlobManager.init(GameState.lightManager, GameState.scene);
+      GameState.staticMeshShadowManager.init(GameState.lightManager, GameState.shadowCasterRegistry);
       GameState.windManager.init(GameState);
       GameState.lightManager.setLightHelpersVisible(ConfigClient.get('GameState.debug.light_helpers') ? true : false);
 
@@ -1615,6 +1627,7 @@ export class GameState implements EngineContext {
     audioEngine.reset();
 
     GameState.lightManager.clearLights();
+    GameState.shadowCasterRegistry?.clear();
     GameState.windManager.clear();
 
     GameState.CursorManager.selected = undefined;
@@ -1817,6 +1830,10 @@ export class GameState implements EngineContext {
     GameState.updateViewportFrustum();
     GameState.lightManager.update(delta, GameState.getCurrentPlayer());
     GameState.shadowBlobManager.update(GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition);
+    GameState.staticMeshShadowManager.update(
+      GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition,
+      true
+    );
     GameState.windManager.update(delta);
     GameState.module.area.updateRoomAnimatedLights(delta);
     GameState.module.area.updateRoomWindUniforms();
@@ -1859,6 +1876,10 @@ export class GameState implements EngineContext {
     GameState.updateViewportFrustum();
     GameState.lightManager.update(delta, GameState.currentCamera);
     GameState.shadowBlobManager.update(GameState.currentCamera?.position ?? GameState.currentCameraPosition);
+    GameState.staticMeshShadowManager.update(
+      GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition,
+      true
+    );
     GameState.windManager.update(delta);
     GameState.module.area.updateRoomAnimatedLights(delta);
     GameState.module.area.updateRoomWindUniforms();
@@ -1897,6 +1918,10 @@ export class GameState implements EngineContext {
     GameState.updateViewportFrustum();
     GameState.lightManager.update(delta, GameState.getCurrentPlayer());
     GameState.shadowBlobManager.update(GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition);
+    GameState.staticMeshShadowManager.update(
+      GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition,
+      true
+    );
     GameState.windManager.update(delta);
     GameState.module.area.updateRoomAnimatedLights(delta);
     GameState.module.area.updateRoomWindUniforms();
@@ -1950,6 +1975,10 @@ export class GameState implements EngineContext {
     GameState.updateViewportFrustum();
     GameState.lightManager.update(delta, GameState.getCurrentPlayer());
     GameState.shadowBlobManager.update(GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition);
+    GameState.staticMeshShadowManager.update(
+      GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition,
+      true
+    );
     GameState.windManager.update(delta);
     if(GameState.module?.area){
       GameState.module.area.updateRoomAnimatedLights(delta);
@@ -2011,8 +2040,8 @@ export class GameState implements EngineContext {
     }
 
     // Orchestrate stencil-preserving clear for shadow disks:
-    // 1) clear color/depth/stencil into the composer read buffer
-    //    (RenderPass draws into readBuffer — see three RenderPass.js)
+    // 1) clear color/depth/stencil into the composer *read* buffer
+    //    (r149 RenderPass renders into readBuffer — see three RenderPass.js)
     // 2) write caster masks (colorWrite disabled)
     // 3) clear color/depth only, preserving stencil
     // 4) render composer with RenderPass.clear = false
@@ -2020,6 +2049,7 @@ export class GameState implements EngineContext {
     const composer = GameState.composer;
     const prevTarget = renderer.getRenderTarget();
     const prevRenderPassClear = GameState.renderPass.clear;
+    const prevRenderPassClearDepth = GameState.renderPass.clearDepth;
     const stencilTarget = composer?.readBuffer;
 
     const cam = GameState.currentCamera;
@@ -2047,7 +2077,7 @@ export class GameState implements EngineContext {
       cam.layers.disable(RenderLayer.MG_CAMERA_HUD);
     }
 
-    if(GameState.shadowBlobManager && GameState.currentCamera && stencilTarget){
+    if(GameState.shadowBlobManager && GameState.currentCamera && stencilTarget && GameState.areShadowsEnabled()){
       renderer.setRenderTarget(stencilTarget);
       renderer.clear(true, true, true);
       GameState.shadowBlobManager.renderStencilMasks(
@@ -2058,12 +2088,14 @@ export class GameState implements EngineContext {
       );
       renderer.clear(true, true, false);
       GameState.renderPass.clear = false;
+      GameState.renderPass.clearDepth = false;
     }
     composer.render(delta);
     if(cam && prevCamLayers !== undefined){
       cam.layers.mask = prevCamLayers;
     }
     GameState.renderPass.clear = prevRenderPassClear;
+    GameState.renderPass.clearDepth = prevRenderPassClearDepth;
     renderer.setRenderTarget(prevTarget);
   }
 

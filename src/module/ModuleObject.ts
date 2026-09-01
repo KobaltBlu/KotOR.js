@@ -600,7 +600,7 @@ export class ModuleObject {
 
     if(this.shadowBlobModel){
       // Retail ShowShadowBlob / HideShadowBlob — tied to area shadow enable + shadowAlpha.
-      this.shadowBlobModel.visible = GameState.areaShadowsEnabled && GameState.shadowAlpha > 0;
+      this.shadowBlobModel.visible = GameState.areShadowsEnabled();
     }
 
     this.sphere.center.copy(this.position);

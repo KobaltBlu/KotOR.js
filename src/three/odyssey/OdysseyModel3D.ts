@@ -51,6 +51,10 @@ import {
   createEmptyOdysseyLightPosArray,
   createEmptyOdysseyLightColorArray,
 } from "@/shaders/chunks/OdysseyLighting";
+import {
+  ensureMeshVertexColors,
+} from "@/utility/shadowProjection";
+import { enableOdysseyMaterialShadowReceive } from "@/shaders/chunks/OdysseyShadow";
 
 export { resolveDanglyWindPower } from "@/three/odyssey/windPowerContext";
 export type { NodeParseContext, NodeParseFlags, OdysseyModel3DParseBuilders } from "@/three/odyssey/OdysseyModel3DNodeParseContext";
@@ -172,6 +176,8 @@ export class OdysseyModel3D extends OdysseyObject3D {
   // Material-based geometry grouping for optimized merging
   geometryGroupsByMaterial: Map<THREE.Material, THREE.BufferGeometry[]>;
   mergedMesh: THREE.Mesh;
+  /** True when any merged static part had MDL flagShadow / castShadow. */
+  mergedCastsShadow = false;
   mergedBufferDanglyGeometry: THREE.BufferGeometry;
   mergedDanglyMesh: THREE.Mesh;
   mergedDanglyGroups: DanglyGroupParams[];
@@ -311,6 +317,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
       node.remove(object);
       if (object.type === 'Mesh' || object.type === 'SkinnedMesh' || object.type === 'Points') {
         if(object instanceof THREE.Mesh){
+          OdysseyModel3D.unregisterMeshShadow(object);
           if(Array.isArray(object.material)){
             while(object.material.length){
               let material = object.material.splice(0, 1)[0];
@@ -1220,6 +1227,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
           odysseyModel.mergedDanglyMaterials = [];
           odysseyModel.mergedDanglyGroups = [];
           odysseyModel.mergedDanglyVertexOffset = 0;
+          odysseyModel.mergedCastsShadow = false;
           
           // Material-based geometry grouping for optimized merging
           odysseyModel.geometryGroupsByMaterial = new Map<THREE.Material, THREE.BufferGeometry[]>();
@@ -1261,6 +1269,10 @@ export class OdysseyModel3D extends OdysseyObject3D {
               odysseyModel.mergedBufferGeometry = BufferGeometryUtils.mergeBufferGeometries(finalGeometries, true);
               odysseyModel.mergedMesh = new THREE.Mesh(odysseyModel.mergedBufferGeometry, finalMaterials);
               odysseyModel.mergedMesh.receiveShadow = true;
+              odysseyModel.mergedMesh.castShadow = odysseyModel.mergedCastsShadow;
+              ensureMeshVertexColors(odysseyModel.mergedMesh);
+              enableOdysseyMaterialShadowReceive(finalMaterials);
+              OdysseyModel3D.registerMeshShadow(odysseyModel.mergedMesh, options);
               odysseyModel.add(odysseyModel.mergedMesh);
               
               // Dispose of pre-merged geometries
@@ -1393,6 +1405,18 @@ export class OdysseyModel3D extends OdysseyObject3D {
             
             //UV2
             geometry.setAttribute( 'uv2', new THREE.Float32BufferAttribute( odysseyNode.tvectors[1], 2 ) );
+
+            // Vertex colors — MDX baked colors or white for shadow projection receivers.
+            if(odysseyNode.colors.length >= odysseyNode.vertices.length){
+              geometry.setAttribute('color', new THREE.Float32BufferAttribute(odysseyNode.colors, 3));
+            }else if(options.receiveShadow || options.mergeStatic){
+              const vCount = odysseyNode.vertices.length / 3;
+              const colors = new Float32Array(vCount * 3);
+              for(let ci = 0; ci < vCount * 3; ci++){
+                colors[ci] = 1;
+              }
+              geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            }
             
             //--------------------------//
             // SKIN GEOMETRY ATTRIBUTES
@@ -1504,6 +1528,10 @@ export class OdysseyModel3D extends OdysseyObject3D {
             (geometry.getAttribute('normal') as THREE.BufferAttribute).applyNormalMatrix( normalMatrix );
             geometry.normalizeNormals();
 
+            if(odysseyNode.flagShadow || options.castShadow){
+              odysseyModel.mergedCastsShadow = true;
+            }
+
             if((odysseyNode.nodeType & OdysseyModelNodeType.Dangly) == OdysseyModelNodeType.Dangly){
               const danglyNode = odysseyNode as OdysseyModelNodeDangly;
               const vertCount = geometry.getAttribute("position").count;
@@ -1556,6 +1584,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
               // Sabers are additive ribbons — do not cast shadows.
               mesh.castShadow = isSaber ? false : (!!odysseyNode.flagShadow || !!options.castShadow);
               mesh.receiveShadow = isSaber ? false : options.receiveShadow;
+              OdysseyModel3D.registerMeshShadow(mesh, options);
             }else if(options.attachMdlAabbMesh){
               mesh.castShadow = false;
               mesh.receiveShadow = false;
@@ -1692,6 +1721,10 @@ export class OdysseyModel3D extends OdysseyObject3D {
       if(odysseyNode.hasLightmap && tMap2.length){
         material.userData.lightmap = tMap2;
         TextureLoader.enQueue(tMap2, material, TextureType.LIGHTMAP);
+      }
+
+      if(options.receiveShadow || options.mergeStatic){
+        enableOdysseyMaterialShadowReceive(material);
       }
 
       if((!(odysseyNode.MDXDataBitmap & OdysseyModelMDXFlag.TANGENT1) && 
@@ -1895,6 +1928,55 @@ export class OdysseyModel3D extends OdysseyObject3D {
       parentNode.userData.lensFlare = lensFlare;
       parentNode.add(lensFlare);
     }
+  }
+
+  /**
+   * Register mesh with GameState shadow caster registry and enable shader shadow reception.
+   */
+  static registerMeshShadow(mesh: THREE.Mesh | THREE.SkinnedMesh, options: IOdysseyModelLoaderOptions){
+    if(!mesh){ return; }
+    const registry = GameState.shadowCasterRegistry;
+    if(!registry){ return; }
+
+    OdysseyModel3D.unregisterMeshShadow(mesh);
+
+    if(mesh.geometry?.getAttribute('color')){
+      ensureMeshVertexColors(mesh);
+      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      for(let i = 0; i < mats.length; i++){
+        const mat = mats[i];
+        if(mat instanceof THREE.ShaderMaterial){
+          mat.defines = mat.defines || {};
+          mat.defines.USE_COLOR = '';
+          mat.vertexColors = true;
+          mat.needsUpdate = true;
+        }
+      }
+    }
+
+    if(mesh.receiveShadow){
+      enableOdysseyMaterialShadowReceive(mesh.material);
+    }
+
+    const ownerUuid = options?.context?.uuid || mesh.uuid;
+    mesh.userData.shadowOwnerUuid = ownerUuid;
+    registry.registerMesh(mesh, {
+      castShadow: !!mesh.castShadow || (mesh as THREE.SkinnedMesh).isSkinnedMesh,
+      receiveShadow: !!mesh.receiveShadow,
+      isStatic: !!options?.mergeStatic || !!options?.static,
+      ownerUuid,
+    });
+
+    const skinned = mesh as THREE.SkinnedMesh;
+    if(skinned.isSkinnedMesh && skinned.skeleton?.bones?.length){
+      for(let bi = 0; bi < skinned.skeleton.bones.length; bi++){
+        registry.registerBoneCaster(skinned.skeleton.bones[bi], { ownerUuid });
+      }
+    }
+  }
+
+  static unregisterMeshShadow(mesh: THREE.Mesh | THREE.SkinnedMesh){
+    GameState.shadowCasterRegistry?.unregisterMesh(mesh);
   }
 
 };
