@@ -67,11 +67,11 @@ export class ActionFollowLeader extends Action {
     }
 
     this.target = leader;
-    // Sync retail field22 / FollowInfo.InSafetyRange into SM runtime
+    // Sync in-safety range from party follow info into the SM runtime
     if(owner.partyFollowInfo){
       this.followRuntime.inSafetyRange = owner.partyFollowInfo.inSafetyRange | 0;
     }
-    // Seed lastSample (retail field17) once before first WaitingForPath LOS
+    // Seed lastSample once before first WaitingForPath LOS
     if(
       this.followRuntime.lastSampleX === 0 &&
       this.followRuntime.lastSampleY === 0 &&
@@ -84,7 +84,7 @@ export class ActionFollowLeader extends Action {
     _followOffset.copy(GameState.PartyManager.GetFollowPosition(owner));
     const offset = _followOffset;
 
-    // Retail do/while (iVar14 == 1) with field11 abort → Reset
+    // Retail retry loop; abort after stuck iterations → Reset
     let iterations = 0;
     let teleport = false;
     while(iterations < FOLLOW_STUCK_ITERATIONS){
@@ -155,14 +155,14 @@ export class ActionFollowLeader extends Action {
     owner.moveDirOverride = undefined;
     owner.setComputedPath(undefined);
     owner.clearLocomotionAnimation?.();
-    // Party field426 creatures aren't BumpFriends targets — soft-separate when idle
+    // Party members are not BumpFriends targets — soft-separate when idle
     partySoftSeparate(owner);
   }
 
   /**
    * Soft park when Offset sample has been stationary ≥0.25s — keep walkSpeedFactor
    * so the next Offset/Moving frame does not ramp from zero. Clear sticky run/walk
-   * anim so companions do not moonwalk in place once truly parked on field17.
+   * anim so companions do not moonwalk in place once truly parked on the follow sample.
    */
   private parkIdleSoft(owner: ModuleCreature){
     owner.force = 0;
@@ -183,7 +183,7 @@ export class ActionFollowLeader extends Action {
   }
 
   /**
-   * Retail TeleportForward @ 00512de0 — advance one safe ring slot, seed the
+   * Retail TeleportForward — advance one safe ring slot, seed the
    * walk sample, then enter MovingToPath (not JumpToPoint + WaitingForPath).
    * Jump only if the ring cannot catch up and the companion is still ≥15m out.
    */

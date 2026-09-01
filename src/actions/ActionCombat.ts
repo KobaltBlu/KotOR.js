@@ -11,7 +11,7 @@ import { resolveSpellCastTarget } from "@/combat/spell-self-target";
 /**
  * ActionCombat class.
  *
- * Retail AIActionCombat @ 005b6210 — dispatches scheduled CombatRound actions.
+ * Retail combat-dispatch action — dispatches scheduled CombatRound actions.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -182,7 +182,7 @@ export class ActionCombat extends Action {
       }
 
       case CombatActionType.ATTACK_CUTSCENE_MOVE: {
-        // Retail AIActionCombat case 0xC @ 005b6210 — MoveToPoint/Object then continue combat
+        // Retail combat-dispatch action case 0xC — MoveToPoint/Object then continue combat
         const moveTarget = combatAction.target;
         const pos = combatAction.moveToPosition;
         const run = combatAction.shouldRun ? 1 : 0;

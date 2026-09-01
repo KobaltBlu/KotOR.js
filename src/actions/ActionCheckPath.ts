@@ -213,7 +213,7 @@ export class ActionCheckMoveAwayFromObject extends ActionCheckPath {
 }
 
 /**
- * Retail: AIActionCheckInterAreaPathfinding @ 0050ff20
+ * Retail: inter-area pathfinding check action
  * Advances inter-area waypoint list; SetIntraAreaGoal → MoveTo + Wait(0.75).
  * When in use-range of the portal: OpenDoor / LoadModule / JumpTo linked.
  */
@@ -301,7 +301,7 @@ export class ActionCheckInterAreaPathfinding extends ActionCheckPath {
       false
     );
     if(toDoor === ActionStatus.ERROR){
-      // Path to this portal blocked — exclude and try another (field40_0xb8)
+      // Path to this portal blocked — exclude and try another 
       if(wp.object && excludeFailedInterAreaPortal(owner, wp.object.id)){
         const retry = new GameState.ActionFactory.ActionCheckInterAreaPathfinding(undefined, this.groupId);
         owner.actionQueue.addFront(retry);

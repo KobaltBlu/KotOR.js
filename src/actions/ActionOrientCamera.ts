@@ -11,11 +11,11 @@ import {
 
 /**
  * ActionOrientCamera class.
- * Retail: CSWSCreature::AIActionOrientCamera @ 005137c0 — sends
- * SendServerToPlayerCamera_ChangeLocation @ 0056c610 then completes
+ * Retail orient-camera action — sends
+ * SendServerToPlayerCamera_ChangeLocation then completes
  * immediately (transition is client-side).
  *
- * Action params (ExecuteCommandSetCameraFacing @ 00542530 packing):
+ * Action params (NWScript SetCameraFacing packing):
  *  0 - int: flags (bit0 facing, bit1 pitch, bit2 distance, bit3 transition)
  *  1 - float: float1 (facing degrees when bit0)
  *  2 - float: float2 (pitch degrees when bit1)

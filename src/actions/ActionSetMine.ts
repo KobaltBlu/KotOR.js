@@ -15,7 +15,7 @@ import { MineSkillResult, resolveMineSetCheck, signalTrapTriggered } from "@/act
 
 /**
  * ActionSetMine class.
- * Retail: CSWSCreature::AIActionSetMine @ 00519e30
+ * Retail set-mine action
  * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  * 

@@ -7,7 +7,7 @@ import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
 
 /**
- * baseitems.2da itemtype values used by AIActionGiveItem @ 0057b6a0.
+ * baseitems.2da itemtype values used by give-item action.
  * CREDITS → RemoveGold path; PAZAAK_CARD → RemovePazaakCard.
  */
 export const ITEM_TYPE_CREDITS = 0x17;
@@ -50,7 +50,7 @@ export function isPartyCreature(obj: ModuleObject | undefined): boolean {
 }
 
 /**
- * Retail CSWSCreature::SplitItem @ 0055f280 — detach nCount from a stack.
+ * Retail SplitItem — detach nCount from a stack.
  * nCount ≤ 0 or ≥ stack → returns the original item (no split).
  */
 export function splitItemStack(item: ModuleItem, nCount: number): ModuleItem {

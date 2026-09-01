@@ -72,7 +72,7 @@ export class ActionDialogObject extends Action {
       return ActionStatus.FAILED;
     }
 
-    // Only resolve an explicit ActionStartConversation resref here (retail field78).
+    // Only resolve an explicit ActionStartConversation resref here.
     // Blank leaves this.conversation unset so OnDialog → BeginConversation uses
     // StartDialog GetDialogResref on the retail dialog owner (often the last speaker).
     if(!this.validate_conversation_resref){

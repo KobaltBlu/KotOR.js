@@ -28,7 +28,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 /**
  * ActionMoveToPoint class.
  *
- * Retail AIActionMoveToPoint — path + WalkUpdateLocation trapezoid stepping
+ * Retail move-to-point action — path + WalkUpdateLocation trapezoid stepping
  * (not the force-mover speed*2.5 hack).
  *
  * @file ActionMoveToPoint.ts
@@ -38,7 +38,7 @@ export class ActionMoveToPoint extends Action {
   target_position: THREE.Vector3 = new THREE.Vector3();
   real_target_position: THREE.Vector3 = new THREE.Vector3();
 
-  /** Lite PlotPath info — lastCode / endpoints for field28_0x88 early-out. */
+  /** Lite PlotPath info — lastCode / endpoints for early-out. */
   pathFindInfo: PathFindInfoLite | undefined;
 
   constructor( actionId: number = -1, groupId: number = -1 ){
@@ -88,7 +88,7 @@ export class ActionMoveToPoint extends Action {
       BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)
     );
     // queueMoveIntoUseRange / MoveToObject set param-4 to the use target.
-    // WalkUpdateLocation UseRange early-out (@ 00516630) stops locomotion once
+    // WalkUpdateLocation UseRange early-out () stops locomotion once
     // GetIsInUseRange — Move must complete then too, or OpenDoor/UseObject sit
     // behind a never-finishing Move (arrive + re-click to interact).
     const useRangeTarget = !!(
@@ -190,7 +190,7 @@ export class ActionMoveToPoint extends Action {
         const timeout = moveTimeout - delta;
         if(timeout <= 0){
           this.stopMoving(owner);
-          // ForceMove expiry — JumpToPoint (ExecuteCommandMoveTo* @ 0053fe00)
+          // ForceMove expiry — JumpToPoint (NWScript MoveTo*)
           const fallback_action = new GameState.ActionFactory.ActionJumpToPoint(undefined, this.groupId);
           fallback_action.setParameter(0, ActionParameterType.FLOAT, this.real_target_position.x);
           fallback_action.setParameter(1, ActionParameterType.FLOAT, this.real_target_position.y);

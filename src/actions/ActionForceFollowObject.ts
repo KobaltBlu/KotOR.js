@@ -13,15 +13,15 @@ import * as THREE from "three";
 
 const _followGoal = new THREE.Vector3();
 
-/** Retail Wait duration @ 005132e0 — 0x3e800000. */
+/** Retail Wait duration (0.25s). */
 const FORCE_FOLLOW_WAIT = 0.25;
-/** Party field426 wait — 0x3ccccccd. */
+/** Party-member wait (0.1s). */
 const FORCE_FOLLOW_WAIT_PARTY = 0.1;
 
 /**
  * ActionForceFollowObject class.
  *
- * Retail AIActionForceFollowObject @ 005132e0 —
+ * Retail force-follow:
  * when outside range: front-load MoveTo + Wait + CheckForceFollow;
  * when in range: hold (IN_PROGRESS). Not a continuous WalkUpdate SM.
  *

@@ -24,10 +24,10 @@ import { isWithinSpellCastRange } from "@/combat/spell-range";
 import { shouldFailItemCastForNoUses } from "@/combat/item-property-uses";
 import * as THREE from "three";
 
-/** Retail AIActionItemCastSpell SendFeedbackMessage when uses left == 0. */
+/** Retail item-cast action SendFeedbackMessage when uses left == 0. */
 const FEEDBACK_ITEM_NO_USES = 0x17;
 
-/** Retail AIActionItemCastSpell per-item-type animation + gate + pause. */
+/** Retail item-cast action per-item-type animation + gate + pause. */
 type ItemCastTiming = ItemCastTimingResolved;
 
 /** Debug prefix — filter console on `[ItemCast]`. */
@@ -35,7 +35,7 @@ const LOG = (...args: unknown[]) => console.log('[ItemCast]', ...args);
 
 /**
  * ActionItemCastSpell class.
- * Retail AIActionItemCastSpell @ 0050f170 — stays IN_PROGRESS until SpellCastAndImpact.
+ * Retail item-cast action — stays IN_PROGRESS until SpellCastAndImpact.
  *
  * @file ActionItemCastSpell.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -134,7 +134,7 @@ export class ActionItemCastSpell extends Action {
     // The action already held the wind-up through its conjure gate — retail
     // enters at the impact call, so only the projectile flight remains.
     spellCastInstance.conjureTime = 0;
-    // Grenade / throw: impact after CalculateLastSpellProjectileTime (@ 004cb9e0),
+    // Grenade / throw: impact after CalculateLastSpellProjectileTime (),
     // not at cast-start like instant non-L spells.
     let flightMs = 0;
     if(this.timing?.grenade){
@@ -164,7 +164,7 @@ export class ActionItemCastSpell extends Action {
     if(oItem){
       owner.spellCastItem = oItem;
     }
-    // Retail AIActionItemCastSpell: base_class_level = GetClassLevel(last), field349=1
+    // Stamp caster level from the creature's last class; mark item-cast active
     const lastClass = owner.classes?.[owner.classes.length - 1];
     owner.baseClassLevel = (lastClass?.level | 0);
     owner.itemSpellCastActive = true;
@@ -208,7 +208,7 @@ export class ActionItemCastSpell extends Action {
   }
 
   /**
-   * Retail AIActionItemCastSpell @ 0050f170 switch on baseitems ItemType.
+   * Retail item-cast action switch on baseitems ItemType.
    */
   private resolveItemCastTiming(oItem: ModuleItem, targetPosition: THREE.Vector3): ItemCastTiming {
     const creature = this.owner as ModuleCreature;
@@ -442,10 +442,10 @@ export class ActionItemCastSpell extends Action {
       this.startSpellInstance(this.target || undefined, oItem);
       // Retail DecrementUses fires with SpellCastAndImpact, not at round end
       this.consumeItemCharges(oItem);
-      // Retail AIActionItemCastSpell @ 0050f170 — after SpellCastAndImpact,
+      // Retail item-cast action — after SpellCastAndImpact,
       // RemoveSpellAction if GetSpellActionPending (clears combat-queue icon).
       combatRound.removeSpellAction();
-      // Retail droid utility (0x0c): field19 post-impact phase holds 0x2AFA
+      // Retail droid utility (0x0c): post-impact hold uses anim 0x2AFA
       if(timing.postImpactAnim){
         owner.setAnimationState(timing.postImpactAnim);
         this.throwAnim = timing.postImpactAnim;

@@ -395,7 +395,7 @@ export class ActionFactory {
 
   /**
    * Queue counterspell stance toward a casting creature
-   * (CSWSCreature::AddCounterSpellActions @ 004fce90).
+   * (AddCounterSpellActions).
    */
   static AddCounterSpellActions(
     creature: {
@@ -443,7 +443,7 @@ export class ActionFactory {
   }
 
   /**
-   * Queue a vehicle/stick drive update (CSWSCreature::AddDriveAction).
+   * Queue a vehicle/stick drive update (AddDriveAction).
    */
   static AddDriveAction(
     creature: { position: { x: number; y: number }; actionQueue: { add: (a: Action) => void }; clearAllActions?: (u?: boolean) => void },
@@ -476,7 +476,7 @@ export class ActionFactory {
   }
 
   /**
-   * Queue TSL weapon config swap (AddSwitchWeaponsAction / AIActionSwitchWeapons @ 006bbb10).
+   * Queue TSL weapon config swap (switch-weapons action).
    * Engine ID 0x47.
    */
   static AddSwitchWeaponsAction(
@@ -492,7 +492,7 @@ export class ActionFactory {
   }
 
   /**
-   * Queue TSL door-saber (AddDoorSaberAction @ 006ae890). Engine ID 0x43.
+   * Queue TSL door-saber (AddDoorSaberAction). Engine ID 0x43.
    */
   static AddDoorSaberAction(
     creature: { actionQueue: { add: (a: Action) => void }; clearAllActions?: (u?: boolean) => void },

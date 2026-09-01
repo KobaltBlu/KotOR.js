@@ -14,7 +14,7 @@ import { queueMoveIntoUseRange } from "@/actions/use-range";
 
 /**
  * ActionFlagMine class.
- * Retail: CSWSCreature::AIActionFlagMine @ 0050e400
+ * Retail flag-mine action
  * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  * 

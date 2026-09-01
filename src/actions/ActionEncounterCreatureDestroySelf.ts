@@ -7,7 +7,7 @@ import { BitWise } from "@/utility/BitWise";
 
 /**
  * ActionEncounterCreatureDestroySelf class.
- * Retail: CSWSCreature::AIActionEncounterCreatureDestroySelf @ 00510c20 —
+ * Retail encounter destroy-self:
  * unregisters from encounter, clears commandable, schedules destroy +5s.
  *
  * @file ActionEncounterCreatureDestroySelf.ts
@@ -33,10 +33,10 @@ export class ActionEncounterCreatureDestroySelf extends Action {
       return ActionStatus.ERROR;
     }
 
-    // Retail @ 00510c20: RemoveFromActiveCreatureCount(cr, 1) then field408=1
+    // Retail: unlink from encounter active list, then mark encounter-unlinked
     owner.unlinkFromEncounter(true);
 
-    // Retail clears commandable (field49_0xe8=0) and queues destroy in 5000ms
+    // Retail clears commandable and queues destroy in 5000ms
     owner.setCommandable(false);
     owner.setWillDestroy?.(true);
 

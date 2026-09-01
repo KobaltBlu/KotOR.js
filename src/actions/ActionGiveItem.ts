@@ -18,7 +18,7 @@ import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
 
 /**
- * ActionGiveItem — retail CSWSObject::AIActionGiveItem @ 0057b6a0.
+ * ActionGiveItem — retail give-item action.
  *
  * Params:
  *  0 - dword: oItem

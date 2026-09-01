@@ -4,7 +4,7 @@ import { ActionType } from "@/enums/actions/ActionType";
 
 /**
  * ActionRest class.
- * Retail: CSWSCreature::AIActionRest @ 005140e0 — always returns COMPLETE.
+ * Retail rest action — always returns COMPLETE.
  *
  * @file ActionRest.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>

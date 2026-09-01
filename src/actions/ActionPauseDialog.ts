@@ -6,10 +6,10 @@ import { Action } from "@/actions/Action";
 /**
  * ActionPauseDialog class.
  *
- * Retail AIActionPauseDialog @ 0057b290 — sets CSWSObject field15_0x50 so
+ * Retail pause-dialog action — marks the conversation paused so
  * SendDialogEntry defers the next entry while the current node keeps ticking.
- * NWScript ActionPauseConversation applies pause immediately (ExecuteCommand
- * @ 0052d330); this action remains for any queued AI path.
+ * NWScript ActionPauseConversation applies pause immediately; this action
+ * remains for any queued AI path.
  *
  * @file ActionPauseDialog.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>

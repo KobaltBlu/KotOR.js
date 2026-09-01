@@ -8,7 +8,7 @@ import { BitWise } from "@/utility/BitWise";
 
 /**
  * ActionStanceMeditative class.
- * TSL AIActionStanceMeditative @ 006ddac0 — brief meditative ambient toggle.
+ * TSL meditative-stance action — brief meditative ambient toggle.
  * RunActions case 0x45. ActivityManager(2) clears combat-mode activity bits.
  *
  * @file ActionStanceMeditative.ts
@@ -41,7 +41,7 @@ export class ActionStanceMeditative extends Action {
       return ActionStatus.IN_PROGRESS;
     }
 
-    // Retail waits a couple of frames (FUN_00639a30 < 2) then COMPLETE
+    // Retail waits a couple of frames (frame counter < 2) then COMPLETE
     this.holdTimer += delta;
     if(this.holdTimer < 0.05){
       return ActionStatus.IN_PROGRESS;

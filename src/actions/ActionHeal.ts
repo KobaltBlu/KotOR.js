@@ -18,11 +18,11 @@ import { Dice } from "@/utility/Dice";
 const HEAL_ANIM = 0x2721;
 /** Retail EffectVisualEffect int0 for heal impact. */
 const HEAL_VFX = 0x3e9;
-/** BroadcastSkillData skill-broadcast id used by AIActionHeal. */
+/** BroadcastSkillData skill-broadcast id used by the heal action. */
 const HEAL_SKILL_BROADCAST_ID = 0x14a;
 
 /**
- * ActionHeal — retail CSWSCreature::AIActionHeal @ 00517a60.
+ * ActionHeal — retail heal / medpac / repair-kit action.
  *
  * Params:
  *  0 - dword: oTarget
@@ -101,7 +101,7 @@ export class ActionHeal extends Action {
     // Retail always GetSkillRank(7 /* Treat Injury */, target, 0)
     const skillRank = owner.getSkillLevel(SkillType.TREAT_INJURY) | 0;
     let roll = Dice.roll(1, DiceType.d20);
-    // field57_0x4e0 auto-20 cheat — no JS hook yet; leave natural roll.
+    // auto-20 cheat — no JS hook yet; leave natural roll.
     const autoFlag = 0;
 
     const poisonOrDisease = this.target.effects.find(

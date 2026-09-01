@@ -9,7 +9,7 @@ import { BitWise } from "@/utility/BitWise";
 
 /**
  * ActionStanceTotalDefense class.
- * TSL AIActionStanceTotalDefense @ 006dd610 — hold defensive stance ~1500ms.
+ * TSL total-defense stance action — hold defensive stance ~1500ms.
  * RunActions case 0x44. ActivityManager(4) clears minor activities.
  *
  * PARAMS

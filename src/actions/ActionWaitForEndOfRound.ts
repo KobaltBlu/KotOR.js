@@ -8,7 +8,7 @@ import { BitWise } from "@/utility/BitWise";
 /**
  * ActionWaitForEndOfRound class.
  *
- * Retail AIActionWaitForEndOfRound @ 00513f60 —
+ * Retail wait-for-end-of-round action —
  * IN_PROGRESS while round_started && !GetSpellActionPending; else COMPLETE.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II

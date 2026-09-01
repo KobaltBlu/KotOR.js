@@ -12,7 +12,7 @@ import { queueMoveIntoUseRange } from "@/actions/use-range";
 /**
  * ActionCloseDoor class.
  *
- * Retail AIActionCloseDoor uses GetIsInUseRange / GetUseRange.
+ * Retail close-door action uses GetIsInUseRange / GetUseRange.
  *
  * @file ActionCloseDoor.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>

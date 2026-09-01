@@ -11,8 +11,7 @@ import { BitWise } from "@/utility/BitWise";
 import { Utility } from "@/utility/Utility";
 
 /**
- * Retail CSWSCreature::GetUseRange @ 004ee430 /
- * GetIsInUseRange @ 004ee600.
+ * Retail use-range helpers (GetUseRange / GetIsInUseRange).
  *
  * Creature targets: cre_personal_space(self) + cre_personal_space(target) + 0.3
  * Door / placeable: personal_space + 0.75 (+5 for corpse placeables) at nearest action point
@@ -83,7 +82,7 @@ export function getUseRange(
 }
 
 /**
- * Retail GetIsInUseRange @ 004f6000:
+ * Retail GetIsInUseRange:
  * GetUseRange → ClearLineOfSight(eye→usePoint) → dist² ≤ (useRange + extra + 0.1)².
  * Doors/placeables use the nearest action point, not object origin.
  */

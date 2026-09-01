@@ -62,7 +62,7 @@ export class ActionDisarmMine extends Action {
     if(!this.animQueued){
       this.animQueued = true;
       owner.setFacingObject(this.target);
-      // Retail AIActionDisarmMine @ 00519570: door 0x2796, placeable 0x2797, trigger 0x2794
+      // Retail disarm-mine action: door 0x2796, placeable 0x2797, trigger 0x2794
       const isDoor = BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor);
       const isPlaceable = BitWise.InstanceOfObject(this.target, ModuleObjectType.ModulePlaceable);
       const animId = isDoor ? 0x2796 : (isPlaceable ? 0x2797 : 0x2794);

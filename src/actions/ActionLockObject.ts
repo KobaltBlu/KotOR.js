@@ -23,7 +23,7 @@ type Lockable = ModuleObject & {
 /**
  * ActionLockObject class.
  *
- * Retail: CSWSObject::AIActionLockObject @ 0057bec0
+ * Retail lock-object action
  * — move into use range → PlayAnimation (door 0x2790 / placeable 0x2793, 1.5s)
  *   + StartGuiTimingBar(0x5dc, type 8) → EvaluateLock (key) or Security vs CloseLockDC.
  *
@@ -118,7 +118,7 @@ export class ActionLockObject extends Action {
     return ActionStatus.COMPLETE;
   }
 
-  /** Retail EvaluateLock @ 004f0b20 with desiredLocked=1 */
+  /** Retail EvaluateLock with desiredLocked=1 */
   private tryLockWithKey(owner: ModuleCreature, target: Lockable): boolean {
     const keyName = (target.keyName || '').trim();
     if(!keyName.length) return false;

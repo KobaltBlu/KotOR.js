@@ -8,7 +8,7 @@ import { BitWise } from "@/utility/BitWise";
 /**
  * ActionSurrenderToEnemies class.
  *
- * Retail AIActionSurrenderToEnemies @ 0051b420 → SurrenderToEnemies(0).
+ * Retail surrender action → SurrenderToEnemies(0).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -32,7 +32,7 @@ export class ActionSurrenderToEnemies extends Action {
     }
 
     const owner = this.owner as ModuleCreature;
-    // Retail field377_0x9d4 == 1 → FAILED (plot/immortal gate)
+    // Retail == 1 → FAILED (plot/immortal gate)
     if(owner.plot){
       return ActionStatus.FAILED;
     }

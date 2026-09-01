@@ -15,7 +15,7 @@ import { DRIVE_STRAFE_RATE } from "@/engine/pathfinding/locomotion";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { BitWise } from "@/utility/BitWise";
 
-/** Control flag bits from AddDriveAction / AIActionDrive */
+/** Control flag bits from drive action */
 const DRIVE_FORWARD = 0x01;
 const DRIVE_BACKWARD = 0x02;
 const DRIVE_RUN = 0x03; // FORWARD|BACKWARD packed as run
@@ -32,10 +32,10 @@ const DEST_LOOKAHEAD_SEC = 0.4;
 
 /**
  * ActionDrive class.
- * Vehicle / stick drive — CSWSCreature::AIActionDrive @ 0051e6a0
- * + DriveUpdateLocation @ 0051cd20.
+ * Vehicle / stick drive — retail drive action
+ * + DriveUpdateLocation.
  *
- * Params match AddDriveAction @ 004eb510:
+ * Params match AddDriveAction:
  *  0 FLOAT x, 1 FLOAT y, 2 INT facing*10, 3 INT pathId,
  *  4 INT flags, 5 INT retry, 6 INT refresh
  *
@@ -208,7 +208,7 @@ export class ActionDrive extends Action {
     clientX: number | undefined,
     clientY: number | undefined,
   ): void {
-    // Retail field398 starts at 1.0 each resolve; slide may lower it
+    // locomotionScale starts at 1.0 each resolve; slide may lower it
     owner.locomotionScale = 1;
     const facingRad = this.facingRadFromPacked(packedFacing);
     const fwd = ActionDrive._tmpFwd.set(Math.cos(facingRad), Math.sin(facingRad), 0);
@@ -279,7 +279,7 @@ export class ActionDrive extends Action {
       move.normalize().multiplyScalar(stepScale);
       dest.x += move.x;
       dest.y += move.y;
-      // AIActionDrive: TestDirectLine binary + wall-slide before DriveUpdateLocation
+      // drive action: TestDirectLine binary + wall-slide before DriveUpdateLocation
       if(owner.area){
         this.destination.copy(
           driveResolveMoveTarget(owner.area, owner.position, dest, owner, stepScale)

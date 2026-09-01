@@ -34,7 +34,7 @@ const INSTANT_CAST_FLAG = 0x40000000;
 /**
  * ActionCastSpell class.
  *
- * Retail AIActionCastSpell @ 00514af0 — phase gate on conjure/cast/catch,
+ * Retail cast-spell action — phase gate on conjure/cast/catch,
  * entangled fail, RemoveSpellActionFromRound on fail/complete, duel pause sync.
  *
  * @file ActionCastSpell.ts
@@ -47,7 +47,7 @@ export class ActionCastSpell extends Action {
   targetPosition: THREE.Vector3 = new THREE.Vector3();
   spellCastInstance: SpellCastInstance | undefined;
   private castStarted = false;
-  /** Retail field348_0x960 — FP already spent for this cast. */
+  /** True once force points for this cast have been spent. */
   private forceSpent = false;
 
   constructor( actionId: number = -1, groupId: number = -1 ){
@@ -75,7 +75,7 @@ export class ActionCastSpell extends Action {
     return this.getParameter<number>(12) === 1;
   }
 
-  /** Retail AIActionCastSpell instant path (param flags bit 30). */
+  /** Retail cast-spell action instant path (param flags bit 30). */
   get isInstant(): boolean {
     return ((this.getParameter<number>(9) || 0) & INSTANT_CAST_FLAG) !== 0;
   }
@@ -139,7 +139,7 @@ export class ActionCastSpell extends Action {
   }
 
   /**
-   * Retail GetForceItemMask vs spell forbid/require masks @ 00514af0.
+   * Retail GetForceItemMask vs spell forbid/require masks.
    * Fail when forbidden bits overlap, or required bits are missing.
    */
   private failsForceItemMask(owner: ModuleCreature, castSpell: any): boolean {
@@ -239,7 +239,7 @@ export class ActionCastSpell extends Action {
 
   /**
    * Retail hostilesetting → ActivityManager(1)+SetCombatState /
-   * ActivityManager(2) for non-hostile (mirrors AIActionItemCastSpell).
+   * ActivityManager(2) for non-hostile (mirrors item-cast action).
    */
   private applyHostileActivity(owner: ModuleCreature, castSpell: any){
     const hostile = (castSpell?.hostilesetting | 0) === 1;
@@ -286,7 +286,7 @@ export class ActionCastSpell extends Action {
 
     const owner = this.owner as ModuleCreature;
 
-    // Retail LAB_00514d57 — dead / plot / debilitated → RemoveSpellActionFromRound + ERROR
+    // Retail: dead / plot / debilitated → RemoveSpellActionFromRound + ERROR
     if(this.isCasterBlocked(owner)){
       return this.failCast(owner, ActionStatus.ERROR);
     }
@@ -355,7 +355,7 @@ export class ActionCastSpell extends Action {
       return this.failCast(owner, ActionStatus.FAILED);
     }
 
-    // Retail AddCastSpellActions visibility (non-party field426==0)
+    // Retail AddCastSpellActions visibility (non-party creatures)
     if(this.target && this.target !== owner && !this.isCheat && !this.isFake){
       const isPartyUI = !!(owner.isPartyMember?.() || owner.isPlayer || owner.isPM);
       const entry = owner.perceptionList?.find(

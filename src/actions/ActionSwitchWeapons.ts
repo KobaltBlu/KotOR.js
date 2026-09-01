@@ -11,7 +11,7 @@ import { BitWise } from "@/utility/BitWise";
 
 /**
  * ActionSwitchWeapons class.
- * TSL AIActionSwitchWeapons @ 006bbb10 — swap RH/LH with RIGHTHAND2/LEFTHAND2.
+ * TSL switch-weapons action — swap RH/LH with RIGHTHAND2/LEFTHAND2.
  * RunActions case 0x47.
  *
  * @file ActionSwitchWeapons.ts

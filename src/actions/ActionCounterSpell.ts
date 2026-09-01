@@ -14,7 +14,7 @@ import { Utility } from "@/utility/Utility";
 
 /**
  * ActionCounterSpell class.
- * Retail: CSWSCreature::AIActionCounterSpell @ 00514270
+ * Retail counter-spell action
  * Holds counter-spell stance (IN_PROGRESS) while the target remains valid;
  * interrupt is resolved during SpellCastInstance conjure.
  *
@@ -64,9 +64,9 @@ export class ActionCounterSpell extends Action {
     const range = getCounterSpellRange();
     const distance = Utility.Distance2D(owner.position, target.position);
     if(distance > range || owner.area !== target.area){
-      // Retail AIActionCounterSpell @ 00514270: if !(field386_0x9f0 & 2)
-      // SendFeedbackMessage(7) + ERROR; else chase (requeue Move + Check + CounterSpell).
-      // field386 bit2 ≈ combat activity — use combatState.
+      // Out of range: if not already in combat, feedback + ERROR; else chase
+      // (requeue Move + Check + CounterSpell). combatState stands in for the
+      // retail "already fighting" gate.
       if(!owner.combatData?.combatState){
         // Retail SendFeedbackMessage(7) → CC 0xb → GetGUIString/TLK 0x595
         GameState.FeedbackMessageManager.SendFeedbackMessage(7);
@@ -103,7 +103,7 @@ export class ActionCounterSpell extends Action {
     owner.enterCounterSpellMode();
     owner.setFacingObject(target);
     owner.setAnimationState(ModuleCreatureAnimState.CASTOUT1_LP);
-    // Retail AIActionCounterSpell @ 005143d7 — BroadcastCombatStateToParty + ResolveInitiative
+    // Retail counter-spell action — BroadcastCombatStateToParty + ResolveInitiative
     owner.broadcastCombatStateToParty(target);
     owner.resolveInitiative();
     return ActionStatus.IN_PROGRESS;

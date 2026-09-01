@@ -18,8 +18,8 @@ export enum MineSkillResult {
 
 /**
  * Resolve demolitions check against trap DC.
- * Flag  : DisarmDC - 5 (retail AIActionFlagMine)
- * Examine: DisarmDC - 7 (retail AIActionExamineMine)
+ * Flag  : DisarmDC - 5 (retail flag-mine action)
+ * Examine: DisarmDC - 7 (retail examine-mine action)
  */
 export function resolveMineSkillCheck(
   owner: ModuleCreature,
@@ -99,7 +99,7 @@ export function resolvePassiveMineDetect(
 }
 
 /**
- * Plant check (retail AIActionSetMine): traps.2da SetDC vs Demolitions + d20.
+ * Plant check (retail set-mine action): traps.2da SetDC vs Demolitions + d20.
  * Fail-by-10+ still plants but triggers the trap.
  */
 export function resolveMineSetCheck(

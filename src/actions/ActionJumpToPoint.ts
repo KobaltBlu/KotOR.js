@@ -15,7 +15,7 @@ import {
 } from "@/engine/jump-to-location";
 
 /**
- * ActionJumpToPoint — retail AIActionJumpToPoint @ 0051d600.
+ * ActionJumpToPoint — retail jump-to-point action.
  *
  * Same area: SetPosition. Foreign loaded area: AddToArea (detach/attach).
  * Foreign module: LoadModuleWithJumpSpawn (party leader / controlled).
@@ -149,7 +149,7 @@ export function applyLocalJump(
   facing: number
 ){
   creature.setPosition(new THREE.Vector3(x, y, z));
-  // Retail AIActionJumpToPoint → CSWSObject::SetOrientation (instant).
+  // Retail jump-to-point → SetOrientation (instant).
   creature.setFacing(facing, true);
   if(creature.collisionManager){
     creature.collisionManager.groundFace = undefined;

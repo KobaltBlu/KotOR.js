@@ -2,8 +2,8 @@ import * as THREE from "three";
 import type { ModuleTrigger } from "@/module/ModuleTrigger";
 
 /**
- * Retail CSWSTrigger::CreateNewGeometry(halfExtent=2.0) — used by
- * AIActionSetMine @ 00519e30 for free-ground traps.
+ * Retail CreateNewGeometry(halfExtent=2.0) — used by
+ * set-mine action for free-ground traps.
  *
  * Builds an axis-aligned square footprint centered on the trigger (±halfExtent).
  *

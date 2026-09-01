@@ -10,7 +10,7 @@ import { Action } from "@/actions/Action";
 
 /**
  * ActionFollowOwner class.
- * TSL puppet follow — AIActionFollowOwner @ 006ca700.
+ * TSL puppet follow-owner action.
  * While in range: IN_PROGRESS. Out of range: queue MoveToPoint to owner
  * + re-queue FollowOwner, then COMPLETE.
  *

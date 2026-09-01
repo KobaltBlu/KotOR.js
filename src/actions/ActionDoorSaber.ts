@@ -19,7 +19,7 @@ const DOOR_SABER_BAR_TYPE = 9;
 
 /**
  * ActionDoorSaber class.
- * TSL AIActionDoorSaber @ 006bae10 — cut open a locked door with a lightsaber.
+ * TSL door-saber action — cut open a locked door with a lightsaber.
  * RunActions case 0x43.
  *
  * PARAMS

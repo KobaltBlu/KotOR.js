@@ -12,7 +12,7 @@ import { queueMoveIntoUseRange } from "@/actions/use-range";
 /**
  * ActionUseObject class.
  *
- * Retail AIActionUseObject uses GetIsInUseRange / GetUseRange before use.
+ * Retail use-object action uses GetIsInUseRange / GetUseRange before use.
  *
  * @file ActionUseObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>

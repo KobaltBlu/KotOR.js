@@ -30,7 +30,7 @@ import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
 /**
  * ActionPhysicalAttacks class.
  *
- * Retail AIActionPhysicalAttacks @ 005bbbf0:
+ * Retail physical-attack action:
  * MaxAttackRange for "too far", DesiredAttackRange for melee arrive /
  * too-close. Move arrive = ranged ? max : desired.
  * Duel: ResolveChoreographedState / ResolveEngagedState / ResolveMasterState
@@ -81,7 +81,7 @@ export class ActionPhysicalAttacks extends Action {
 
     owner.resetExcitedDuration();
 
-    // Retail AIActionPhysicalAttacks @ 005bbbf0 — load params 0/7/8/9 onto current action
+    // Retail physical-attack action — load params 0/7/8/9 onto current action
     const combatRound = owner.combatRound;
     if(combatRound?.action){
       const resultsCalculated = !!this.getParameter<number>(0);
@@ -102,7 +102,7 @@ export class ActionPhysicalAttacks extends Action {
       return ActionStatus.FAILED;
     }
 
-    // Retail HasTargetBeenDetected @ 005b48f0 — doors/placeables always; creatures need SEEN
+    // Retail HasTargetBeenDetected — doors/placeables always; creatures need SEEN
     // (CutsceneAttack does NOT skip detection/range — only ResolveAttackRoll/Damage short-circuit)
     if(!hasTargetBeenDetected(owner, target)){
       return ActionStatus.FAILED;
@@ -191,7 +191,7 @@ export class ActionPhysicalAttacks extends Action {
       return ActionStatus.FAILED;
     }
 
-    // Retail AIActionPhysicalAttacks @ 005bbbf0 — round_paused early return
+    // Retail physical-attack action — round_paused early return
     // before duel resolution. Infinite-paused duel slaves wait here and never
     // resolve their own swing while the master drives the round.
     if(combatRound.roundPaused){
