@@ -10,7 +10,7 @@ export interface SkillUsabilityTalent {
 }
 
 /**
- * Retail CSWSCreatureStats::GetCanUseSkill @ 005af880.
+ * Retail GetCanUseSkill.
  * Trained-only skills require a positive signed-byte rank. Skills usable
  * untrained require either their all-classes flag or a matching class table.
  */

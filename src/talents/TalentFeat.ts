@@ -260,7 +260,7 @@ export class TalentFeat extends TalentObject {
     if(!BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature)) return;
 
     // AC penalties (Flurry / Crit Strike / Sniper / Rapid Shot) — retail
-    // ResolveMeleeSpecialAttack @ 005ba8e0 / ResolveRangedSpecialAttack @ 005ba540.
+    // ResolveMeleeSpecialAttack / ResolveRangedSpecialAttack.
     // Attack/damage modifiers stay in CombatRound (not EffectAttackDecrease).
     const armorClassPenalty = this.getArmorClassPenalty();
     if(armorClassPenalty > 0){
@@ -279,7 +279,7 @@ export class TalentFeat extends TalentObject {
 
   /**
    * Retail on-hit SETSTATE stun from Crit Strike (STR DC) / Sniper Shot (INT DC).
-   * ResolveMeleeSpecialAttack @ 005ba8e0 / ResolveRangedSpecialAttack @ 005ba540 —
+   * ResolveMeleeSpecialAttack / ResolveRangedSpecialAttack —
    * Fort save DC = total level + ability mod; duration 6s; state = CUT_SCENE_STUNNED.
    * Caller queues the returned effect onto the first swing's CombatAttackData.
    */
@@ -334,12 +334,12 @@ export class TalentFeat extends TalentObject {
     return (classData?.featstable || '').toLowerCase();
   }
 
-  /** Retail CSWGuiInGameSkillEntry::SetSkill (feat branch) — icon resref. */
+  /** Retail in-game skill entry SetSkill (feat branch) — icon resref. */
   getIcon(){
     return this.icon || '';
   }
 
-  /** Retail CSWGuiInGameSkillEntry::SetSkill (feat branch) — name TLK. */
+  /** Retail in-game skill entry SetSkill (feat branch) — name TLK. */
   getName(){
     return this.name != null && this.name != -1
       ? (GameState.TLKManager.GetStringById(this.name)?.Value ?? this.label ?? '')

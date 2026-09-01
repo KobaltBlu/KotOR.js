@@ -7,7 +7,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { TalentSkill } from "@/talents/TalentSkill";
 
 /**
- * Retail CSWSCreatureStats::GetSkillRank @ 005aa570.
+ * Retail GetSkillRank.
  * raw=true returns the signed base rank only; raw=false applies ability mods,
  * armor check, blindness, skill feats, and skill increase/decrease effects.
  */
