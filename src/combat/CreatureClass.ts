@@ -123,19 +123,19 @@ export class CreatureClass {
     return this.acbonuses[this.level];
   }
 
-  /** Retail CSWClass::GetFortSaveBonus @ 005bccd0 — fort_saves[level-1]. */
+  /** Retail GetFortSaveBonus — fort_saves[level-1]. */
   getFortSaveBonus(){
     if(this.level <= 0) return 0;
     return this.savingThrows[this.level - 1]?.fortsave ?? 0;
   }
 
-  /** Retail CSWClass::GetRefSaveBonus @ 005bccf0. */
+  /** Retail GetRefSaveBonus. */
   getRefSaveBonus(){
     if(this.level <= 0) return 0;
     return this.savingThrows[this.level - 1]?.refsave ?? 0;
   }
 
-  /** Retail CSWClass::GetWillSaveBonus @ 005bcd10. */
+  /** Retail GetWillSaveBonus. */
   getWillSaveBonus(){
     if(this.level <= 0) return 0;
     return this.savingThrows[this.level - 1]?.willsave ?? 0;
@@ -340,7 +340,7 @@ export class CreatureClass {
   }
 
   /**
-   * Retail CSWClass::IsJedi — K1: 3/4/5; TSL also 0xB–0x10 (prestige Jedi).
+   * Retail IsJedi — K1: 3/4/5; TSL also 0xB–0x10 (prestige Jedi).
    */
   isJedi(): boolean {
     const id = this.id | 0;

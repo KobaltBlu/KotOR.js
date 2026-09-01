@@ -2,13 +2,13 @@ import type { ItemProperty } from "@/engine/ItemProperty";
 import { ModuleItemProperty } from "@/enums/module/ModuleItemProperty";
 
 /**
- * Retail CSWSItem::GetUsedActivePropertyUsesLeft @ 00555a60 /
- * CSWSItem::DecrementUses @ 0055de20.
+ * Retail GetUsedActivePropertyUsesLeft
+ * DecrementUses.
  *
  * @file item-property-uses.ts
  */
 
-/** Cost values that never fail the AIActionItemCastSpell uses gate (7 / 0xD). */
+/** Cost values that never fail the item-cast action uses gate (7 / 0xD). */
 export const ITEM_CAST_UNLIMITED_COST_VALUES = new Set([7, 0xd]);
 
 /** Charge burn amounts for cost_value 2–6. */
@@ -77,7 +77,7 @@ export function getUsedActivePropertyUsesLeft(
 }
 
 /**
- * Whether AIActionItemCastSpell should abort with SendFeedbackMessage(0x17).
+ * Whether item-cast action should abort with SendFeedbackMessage(0x17).
  */
 export function shouldFailItemCastForNoUses(
   property: ItemProperty | undefined,
@@ -189,7 +189,7 @@ export function applyDecrementUses(input: DecrementUsesInput): DecrementUsesResu
 }
 
 /**
- * Retail AddItemCastSpellActions visibility gate (non-party / field426==0).
+ * Retail AddItemCastSpellActions visibility gate (non-party creatures).
  * Fail when no perception entry, HEARD-only (flags&0xC)==4, or invisible & !SEEN.
  */
 export function canTargetItemCastByPerception(

@@ -12,7 +12,7 @@ import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
 
 /**
- * Retail CSWSCreature::CreateNewAttackActions @ 005b6980 / TSL 006567a0.
+ * Retail CreateNewAttackActions .
  *
  * EndCombatRound passes forceNearest only when the combat-round sticky
  * (NewAttackTarget / field 0xb20) died this end-round. Otherwise:
@@ -27,7 +27,7 @@ import { BitWise } from "@/utility/BitWise";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export type CreateNewAttackActionsOptions = {
-  /** Retail EndCombatRound local_14 — sticky target died during end-round cleanup. */
+  /** Sticky target died during end-round cleanup (force nearest-enemy retarget). */
   forceNearest?: boolean;
 };
 

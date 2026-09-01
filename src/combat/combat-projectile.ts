@@ -11,10 +11,10 @@ import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
 
 /**
  * Client-side traveling blaster bolt —
- * retail CSWCProjectile via HandleServerToPlayerSafeProjectileProjectile @ 006501b0.
+ * retail projectile via HandleServerToPlayerSafeProjectileProjectile.
  *
  * Model / ShotSound / MuzzleFlash from ammunitiontypes.2da.
- * Flight anim: travel01 (CSWCAnimBaseProjectile::SetAnimation case 1 @ 006ea550).
+ * Flight anim: travel01 (projectile SetAnimation case 1).
  *
  * @file combat-projectile.ts
  */
@@ -154,7 +154,7 @@ function playShotSound(resRef: string, position: THREE.Vector3, creature: Module
   emitter.playSoundFireAndForget(resRef);
 }
 
-/** Retail CSWCAnimBaseProjectile::SetAnimation case 1 → travel01. */
+/** Retail projectile SetAnimation case 1 → travel01. */
 export function playSpellProjectileTravelAnimation(model: OdysseyModel3D){
   if(model.playAnimation('travel01', true)){
     // Apply t=0 controllers immediately (travel01 length is often 0) so birthRate is live
@@ -169,7 +169,7 @@ export function playSpellProjectileTravelAnimation(model: OdysseyModel3D){
   try{ model.playAnimation('default', true); }catch(_e){ /* ignore */ }
 }
 
-/** Retail CSWCAnimBaseProjectile::SetAnimation case 2 → impact01 (non-looping). */
+/** Retail projectile SetAnimation case 2 → impact01 (non-looping). */
 function playImpactAnimation(model: OdysseyModel3D){
   if(model.playAnimation('impact01', false)){
     model.animationManager?.update?.(0);

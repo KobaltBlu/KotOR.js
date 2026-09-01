@@ -1,7 +1,7 @@
 import { GameState } from "@/GameState";
 
 /**
- * Retail ExcitedDuration.2da row indices (CSWSCreature::SetExcitedState @ 004f3580).
+ * Retail ExcitedDuration.2da row indices (SetExcitedState).
  * DURATION column is remaining timer in milliseconds; only applied when greater than current.
  */
 export enum ExcitedDurationRow {
@@ -10,7 +10,7 @@ export enum ExcitedDurationRow {
   SpellCast = 2,
 }
 
-/** Retail SetCombatState(true) always refreshes field58_0x4e4 to 8000ms (@ 004f2610). */
+/** Retail SetCombatState(true) always refreshes the combat timer to 8000ms. */
 export const COMBAT_STATE_DURATION_MS = 8000;
 
 /** Fallback ExcitedDuration.2da DURATION values when 2DA missing. */

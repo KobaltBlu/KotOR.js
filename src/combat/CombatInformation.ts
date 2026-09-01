@@ -49,7 +49,7 @@ export class CombatInformationNode {
 }
 
 /**
- * Retail CCombatInformation — SaveData @ 00550f30 / LoadData @ 00552350.
+ * Retail CCombatInformation — SaveData / LoadData.
  * GFF struct type 0xCAAA under creature "CombatInfo".
  *
  * @file CombatInformation.ts
@@ -80,7 +80,7 @@ export class CombatInformation {
   damageList: CombatInformationNode[] = [];
 
   /**
-   * Retail CCombatInformation::SaveData @ 00550f30 (struct type 0xCAAA).
+   * Retail CCombatInformation::SaveData (struct type 0xCAAA).
    */
   toStruct(structIdx: number = 0xCAAA): GFFStruct {
     const struct = new GFFStruct(structIdx);
@@ -120,7 +120,7 @@ export class CombatInformation {
   }
 
   /**
-   * Retail CCombatInformation::LoadData @ 00552350.
+   * Retail CCombatInformation::LoadData.
    */
   fromStruct(struct: GFFStruct): boolean {
     if(!struct) return false;

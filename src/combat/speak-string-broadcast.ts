@@ -6,7 +6,7 @@ import { TalkVolume } from "@/enums/engine/TalkVolume";
  * notifies area creatures (SILENT_TALK delivers GEN_I_WAS_ATTACKED to companions).
  *
  * @file speak-string-broadcast.ts
- * @see BroadcastDialog @ 004cd760
+ * @see BroadcastDialog 
  */
 
 export type SpeakStringNotifyPlan = {

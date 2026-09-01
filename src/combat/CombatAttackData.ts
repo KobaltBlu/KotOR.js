@@ -123,7 +123,7 @@ export class CombatAttackData {
 
   /**
    * Attack roll total (d20 + modifiers) for status-summary feedback.
-   * Retail CSWSCombatAttackData fields packed as CC ints[2].
+   * Retail Attack-data fields packed as CC ints[2].
    */
   toHitTotal: number = 0;
 
@@ -210,13 +210,13 @@ export class CombatAttackData {
   damageApplied: boolean = false;
 
   /**
-   * Retail field122_0x12d — SetState type stamped by OnApplySetStateInternal
+   * SetState type stamped by OnApplySetStateInternal
    * (FORCEPUSH=9) for attack-summary feedback.
    */
   setStateType: number = 0;
 
   /**
-   * Retail field134_0x13c — set when a SetState effect was applied during this attack.
+   * True when a SetState effect was applied during this attack.
    */
   setStateApplied: boolean = false;
 
@@ -295,8 +295,8 @@ export class CombatAttackData {
         }
       }
 
-      // Retail GetDamageBonus @ 005a8be0 — combat-mode Power Attack (mode 2=+5, 3=+10)
-      // plus ResolveSpecialAttackDamageBonus (feat attack_type) @ 005a4fb0.
+      // Retail GetDamageBonus — combat-mode Power Attack (mode 2=+5, 3=+10)
+      // plus ResolveSpecialAttackDamageBonus (feat attack_type).
       const modeDamage = getCombatModeDamageBonus(creature);
       const specialDamage = (feat?.getDamageBonus?.() || 0) + modeDamage;
       if(specialDamage > 0){
@@ -429,7 +429,7 @@ export class CombatAttackData {
   applyDamageEffectToCreature(owner: ModuleCreature, target: ModuleCreature){
     if(!target) return;
 
-    // Retail GetDamageRoll @ 005a9050: Immunity → Resistance → Reduction before packaging.
+    // Retail GetDamageRoll: Immunity → Resistance → Reduction before packaging.
     // SignalMeleeDamage sets int[19]=1 so OnApplyDamage skips a second pass.
     if(target.plot){
       for(let i = 0; i < 15; i++){
@@ -506,7 +506,7 @@ export class CombatAttackData {
 
   /**
    * Convert the combat attack data to a GFF struct
-   * Retail CSWSCombatAttackData::SaveData @ 004d2210 (list element type 0xAAEE)
+   * Retail SaveData (list element type 0xAAEE)
    * @param structIdx - The index of the struct
    * @returns The GFF struct
    */
@@ -555,7 +555,7 @@ export class CombatAttackData {
   }
 
   /**
-   * Retail CSWSCombatAttackData::LoadData @ 004d2450
+   * Retail LoadData 
    */
   fromStruct(struct: GFFStruct){
     if(!struct) return;

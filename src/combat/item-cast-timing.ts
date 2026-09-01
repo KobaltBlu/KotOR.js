@@ -9,7 +9,7 @@ import {
 } from "@/combat/item-cast-grenade";
 
 /**
- * Retail AIActionItemCastSpell @ 0050f170 — per-baseitems ItemType animation,
+ * Retail item-cast action — per-baseitems ItemType animation,
  * conjure gate, and combat-round pause.
  *
  * @file item-cast-timing.ts
@@ -47,8 +47,8 @@ export type ItemCastTimingResolved = {
   gateMs: number;
   pauseMs: number;
   /**
-   * Retail AIActionItemCastSpell droid utility (0x0c): after SpellCastAndImpact
-   * hold anim 0x2AFA until pause ends (field19 post-impact phase).
+   * Retail item-cast action droid utility (0x0c): after SpellCastAndImpact
+   * hold anim 0x2AFA until pause ends (post-impact phase).
    */
   postImpactAnim?: ModuleCreatureAnimState;
 };

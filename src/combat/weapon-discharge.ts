@@ -10,8 +10,8 @@ import * as THREE from "three";
 
 /**
  * Retail weapondischarge.2da helpers —
- * GetWeaponDischargeShots/Hits/Time @ 005b5230 / 005b52e0 / 005b5390,
- * ResolveRangedHit/Miss travel delay @ 005b6db0 / 005b6e90.
+ * GetWeaponDischargeShots/Hits/Time ,
+ * ResolveRangedHit/Miss travel delay .
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -57,7 +57,7 @@ function parseIntCell(raw: unknown, fallback: number = 0): number {
 
 /**
  * Map combat animation name (e.g. b5a1) → weapondischarge row label.
- * Retail GetWeaponDischargeRow @ 005b4fb0:
+ * Retail GetWeaponDischargeRow:
  * - if weapondischarge.Droid ≠ 0 → droiddischarge[appearance.race][label] + "_" + label
  * - else if appearance_type == 3 → "3_" + label
  */
@@ -207,7 +207,7 @@ export function getProjectileTravelDelayMs(
 }
 
 /**
- * ResolveProjectileMissLocation @ 005b4aa0 —
+ * ResolveProjectileMissLocation
  * lateral miss beside target (perspace * 2/3), optional wide scatter when
  * attack_result == 10, then eye→far ray with ClearLineOfSight.
  */

@@ -10,10 +10,10 @@ import {
 } from "@/combat/ranged-impact-vfx";
 
 /**
- * Retail CSWSCreature::ResolveOnHitVisuals @ 005b9040 —
+ * Retail ResolveOnHitVisuals
  * per damage-channel damagehitvisual VFX, plus parry/deflect VFX 0xFB7
  * when attack_result is in {8,9,10}. Ranged miss ground splat remains
- * ResolveProjectileMissImpact @ 005b4e30.
+ * ResolveProjectileMissImpact.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

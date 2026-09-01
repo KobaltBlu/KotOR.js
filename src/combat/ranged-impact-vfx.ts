@@ -10,7 +10,7 @@ import type { CombatAttackData } from "@/combat/CombatAttackData";
 
 /**
  * Retail ranged impact helpers —
- * ResolveProjectileMissImpact @ 005b4e30 (VFX 4032 / 0xFC0 at miss pos),
+ * ResolveProjectileMissImpact (VFX 4032 / 0xFC0 at miss pos),
  * spawnWorldImpactVfx for fire-and-forget world models.
  *
  * Full on-hit / parry visuals live in on-hit-visuals.ts (ResolveOnHitVisuals).

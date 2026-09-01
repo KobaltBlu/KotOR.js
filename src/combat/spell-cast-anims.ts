@@ -2,10 +2,9 @@ import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState"
 
 /**
  * Map spells.2da ConjAnim / CastAnim labels to retail animation IDs.
- * AIActionCastSpell @ 00514af0 uses CSWSpell field14 (conjure) / field21 (cast).
  */
 
-/** Conjure-phase anim (retail field14_0x44 → SetAnimation). */
+/** Conjure-phase anim → SetAnimation. */
 export function getSpellConjureAnimState(conjanim: string | undefined): ModuleCreatureAnimState {
   const a = String(conjanim ?? '').toLowerCase().trim();
   if(a === 'up' || a === '3') return ModuleCreatureAnimState.CASTOUT3;
@@ -15,7 +14,7 @@ export function getSpellConjureAnimState(conjanim: string | undefined): ModuleCr
 }
 
 /**
- * Cast-phase anim (retail field21_0xa6).
+ * Cast-phase anim.
  * Returns 0 when retail skips SetAnimation (castanim 8 / 9).
  */
 export function getSpellCastAnimState(castanim: string | undefined): ModuleCreatureAnimState | 0 {

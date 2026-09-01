@@ -322,7 +322,7 @@ export class SpellCastInstance {
 
   /**
    * Load spells.2da projmodel, falling back to the thrown item MDL (grenades).
-   * Retail CSWCProjectile loads projmodel; empty grenade rows use the item mesh.
+   * Retail projectile loads projmodel; empty grenade rows use the item mesh.
    */
   private async spawnProjectileModel(){
     const candidates =
@@ -435,7 +435,7 @@ export class SpellCastInstance {
   }
 
   /**
-   * Retail LoadCastVisual @ 00696250 + castsound — once at cast-phase start.
+   * Retail LoadCastVisual + castsound — once at cast-phase start.
    * Head → headconjure, hand → handconjure, ground → root; loop cast01.
    */
   private beginCastPhase(){

@@ -3,8 +3,8 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 
 /**
- * Retail DiffSettings.2da + GetWeightedDamageAmount @ 00550d10 /
- * LoadDifficultyInfo @ 00550c50 / GetDamageRoll @ 005a9050.
+ * Retail DiffSettings.2da + GetWeightedDamageAmount
+ * LoadDifficultyInfo / GetDamageRoll.
  *
  * @file diff-settings.ts
  */
@@ -75,8 +75,8 @@ export function getWeightedDamageAmount(
       if(Math.floor((max * pct) / 100) !== max){
         const span = Math.max(1, 100 - pct);
         const mix = ((Math.floor(Math.random() * span) + pct) * max) / 100 + rolled;
-        const iVar1 = Math.floor(mix);
-        if(iVar1 < max) return iVar1;
+        const weighted = Math.floor(mix);
+        if(weighted < max) return weighted;
       }
       return max;
     }
@@ -129,7 +129,7 @@ export function weightWeaponDiceRoll(
 }
 
 /**
- * Retail DoDamage @ 004f39c0 — scale incoming party damage by difficultyopt
+ * Retail DoDamage — scale incoming party damage by difficultyopt
  * MULTIPLIER, then DiffSettings MinHP1 floor.
  */
 export function applyPartyDifficultyDamage(

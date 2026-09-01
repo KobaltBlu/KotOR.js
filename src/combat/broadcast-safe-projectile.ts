@@ -13,7 +13,7 @@ import * as THREE from "three";
 
 /**
  * Shared spell-projectile visual spawn — mirrors retail client
- * HandleServerToPlayerSafeProjectileSpell @ 00650b90 creating CSWCProjectile
+ * HandleServerToPlayerSafeProjectileSpell creating projectile
  * from spells.2da projmodel. SpellCastInstance owns flight+impact timing;
  * this helper only spawns when no instance already attached a model.
  *

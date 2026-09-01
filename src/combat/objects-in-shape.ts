@@ -1,7 +1,7 @@
 import * as THREE from "three";
 
 /**
- * Retail NWScript shape constants (ExecuteCommandGetObjectInShape @ 0054a260).
+ * Retail NWScript shape constants (GetObjectInShape).
  *
  * @file objects-in-shape.ts
  */

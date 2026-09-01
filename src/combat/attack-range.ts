@@ -4,8 +4,8 @@ import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
 
 /**
- * Retail CSWSCreature::DesiredAttackRange @ 004f1310 /
- * MaxAttackRange @ 004fb0f0.
+ * Retail DesiredAttackRange
+ * MaxAttackRange.
  *
  * Melee engage does NOT use PrefAttackDist / appearance PREFATCKDIST —
  * those are loaded but unused on the K1 physical-attack path.
@@ -118,7 +118,7 @@ export function getAttackMoveArriveRange(
 }
 
 /**
- * Retail MaxCleaveRange @ 004ffad0 = MaxAttackRange(..., findNearestEnemyOverride) + 2.
+ * Retail MaxCleaveRange = MaxAttackRange(..., findNearestEnemyOverride) + 2.
  * Used by CreateNewAttackActions / GetNearestEnemy search radius.
  */
 export function maxCleaveRange(
@@ -131,7 +131,7 @@ export function maxCleaveRange(
 }
 
 /**
- * Retail ClearLineOfSight from AIActionPhysicalAttacks / GetIsInUseRange:
+ * Retail ClearLineOfSight from physical-attack action / GetIsInUseRange:
  * eye height +1.5, no perception clamp; maxDistance typically MaxAttackRange.
  */
 export function hasCombatLineOfSight(

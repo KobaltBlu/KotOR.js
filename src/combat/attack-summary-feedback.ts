@@ -5,8 +5,8 @@ import type { TalentFeat } from "@/talents";
 import { formatTlkWithCustoms, tlkText } from "@/utility/tlk-tokens";
 
 /**
- * Retail TLK strrefs for CSWSCreature::SendAttackSummaryFeedback /
- * HandleServerToPlayerCCMessage case 0x12 (client @ 0065f7xx).
+ * Retail TLK strrefs for SendAttackSummaryFeedback
+ * HandleServerToPlayerCCMessage case 0x12 (client xx).
  */
 export const AttackSummaryStrRef = {
   /** "<CUSTOM0> <CUSTOM1> with attack on <CUSTOM2>" */

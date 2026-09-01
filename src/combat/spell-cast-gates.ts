@@ -3,7 +3,7 @@ import type { TalentSpell } from "@/talents/TalentSpell";
 import { canTargetItemCastByPerception } from "@/combat/item-property-uses";
 
 /**
- * Retail AIActionCastSpell / AddCastSpellActions spell gates.
+ * Retail cast-spell action / AddCastSpellActions spell gates.
  *
  * @file spell-cast-gates.ts
  */
@@ -47,7 +47,7 @@ export function passesSpellKnownGate(
 
 /**
  * Retail AddCastSpellActions visibility gate — same bit rules as ItemCastSpell
- * (non-party / field426==0).
+ * (non-party creatures).
  */
 export function canTargetSpellCastByPerception(
   perceptionFlags: number | undefined,

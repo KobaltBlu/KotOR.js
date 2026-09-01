@@ -2,10 +2,10 @@ import { AttackResult } from '@/enums/combat/AttackResult';
 import { ModuleCreatureAnimState } from '@/enums/module/ModuleCreatureAnimState';
 
 /**
- * Retail ResolveMeleeAnimations @ 005b7470 reaction gate:
+ * Retail ResolveMeleeAnimations reaction gate:
  * target has combatRound && attacker.engaged &&
  * (CheckActionLengthAtTime || resultsCalculated).
- * resultsCalculated (param_5) only bypasses the action-length check —
+ * resultsCalculated only bypasses the action-length check —
  * reactions still require engaged.
  */
 export function canSyncMeleeReaction(opts: {
@@ -22,7 +22,7 @@ export function canSyncMeleeReaction(opts: {
 }
 
 /**
- * Retail ResolveRangedAnimations @ 005b6c40 play gate:
+ * Retail ResolveRangedAnimations play gate:
  * CheckActionLengthAtTime && attacker.engaged.
  * Unlike melee, resultsCalculated does not bypass the action-length check.
  */
@@ -67,9 +67,9 @@ export function pickMeleeReaction(result: AttackResult): number {
 }
 
 /**
- * Retail ResolveRangedAnimations @ 005b6c40 reaction pick —
- * DODGE (0x271b) only when no landing hit (local_4==0), target has no
- * lightsaber, target is not in a casting-busy anim (FUN_005b55a0), and
+ * Retail ResolveRangedAnimations reaction pick
+ * DODGE (0x271b) only when no landing hit, target has no
+ * lightsaber, target is not in a casting-busy anim, and
  * target.combat_round.engaged. Otherwise READY (0x2711).
  *
  * This is why a melee PC closing on a shooter must not dodge mid-sprint:
@@ -93,7 +93,7 @@ export function pickRangedReaction(opts: {
 }
 
 /**
- * Retail ResolveRangedAttack local_4 — any AttackList roll in the hit band
+ * Retail ResolveRangedAttack — any AttackList roll in the hit band
  * (results 0–3 / HIT_SUCCESSFUL–AUTOMATIC_HIT). Parry/deflect do not set it.
  */
 export function rangedAttackHadLandingHit(
@@ -113,7 +113,7 @@ export function rangedAttackHadLandingHit(
 }
 
 /**
- * Retail FUN_005b55a0 @ 005b55a0 — animation constants that block ranged dodge.
+ * Retail animation constants that block ranged dodge.
  * Casting (0x271f–0x2724), throw-saber loop (0x274d), inject (0x2756–0x2757),
  * and a few higher specials.
  */

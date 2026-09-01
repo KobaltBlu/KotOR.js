@@ -3,10 +3,10 @@ import { ProjectilePath } from "@/enums/combat/ProjectilePath";
 import { SPELL_PROJECTILE_PATH6_EXTRA_MS } from "@/combat/spell-projectile-time";
 
 /**
- * Client spell-projectile motion samples — approximates retail CSWCProjectile
+ * Client spell-projectile motion samples — approximates retail projectile
  * SetProjectileType / MoveProjectile* for the paths SpellCastInstance uses.
  *
- * Path 6 (grenade): SetBehaviorListSpiral @ 006d4c00 — approach then 2500ms spiral.
+ * Path 6 (grenade): SetBehaviorListSpiral — approach then 2500ms spiral.
  * Path 2: ballistic with gravity-style arc.
  * Path 3: high ballistic (+30 mid peak).
  * Path 1 / default: linear lerp (homing / bolt).
@@ -90,7 +90,7 @@ function sampleSpiralGrenade(
     return out;
   }
 
-  // Spiral hang: orbit while collapsing onto dest (MoveProjectileSpiral @ 006d30c0)
+  // Spiral hang: orbit while collapsing onto dest (MoveProjectileSpiral)
   const s = (t - travelT) / Math.max(1e-6, hangT);
   const radius = 2 * (1 - s);
   const angle = s * Math.PI * 2;
@@ -121,7 +121,7 @@ function sampleBallistic(
 
 /**
  * Path 3 high ballistic — retail raises mid waypoint +30 on first half
- * (SetBehaviorListHighBallistic @ 006d4730).
+ * (SetBehaviorListHighBallistic).
  */
 function sampleHighBallistic(
   origin: THREE.Vector3,

@@ -1,7 +1,7 @@
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 
 /**
- * Retail grenade throw helpers — CSWSCreature::AIActionItemCastSpell @ 0050f170
+ * Retail grenade throw helpers — item-cast action
  * case 6 (baseitems ItemType 6).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -12,7 +12,7 @@ import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState"
 /** baseitems.2da ItemType for grenades. */
 export const GRENADE_ITEM_TYPE = 6;
 
-/** Retail _DAT_007a1b50 — under-handed throw when the target is within 10m. */
+/** Under-handed throw when the target is within 10m. */
 export const GRENADE_CLOSE_RANGE = 10;
 
 /** Retail pause timer 0x5DC for every grenade throw. */

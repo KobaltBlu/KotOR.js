@@ -26,7 +26,7 @@ module.exports = {
       },
     ],
   },
-  testMatch: ['**/*.test.ts'],
+  testMatch: ['<rootDir>/src/tests/**/*.test.ts'],
   coverageDirectory: './coverage',
   coverageReporters: ['text', 'lcov', 'html'],
   verbose: true

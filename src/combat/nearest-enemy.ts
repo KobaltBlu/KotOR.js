@@ -11,7 +11,7 @@ import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
 
 /**
- * Retail GetNearestEnemy @ 004f2de0 / HasTargetBeenDetected @ 005b48f0.
+ * Retail GetNearestEnemy / HasTargetBeenDetected.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -40,9 +40,9 @@ export function hasPerceptionSeen(
 }
 
 /**
- * Retail HasTargetBeenDetected @ 005b48f0.
+ * Retail HasTargetBeenDetected.
  * Doors / placeables always; creatures require SEEN.
- * Retail field426_0xa88 party-UI path skips the visibility gate — mirrored for party members.
+ * Retail party-UI path skips the visibility gate — mirrored for party members.
  */
 export function hasTargetBeenDetected(
   attacker: ModuleCreature,
@@ -101,14 +101,14 @@ function collectAreaCreatures(attacker: ModuleCreature): ModuleCreature[] {
 }
 
 export type GetNearestEnemyOptions = {
-  /** Exclude this object id (retail param_2). Defaults to attacker. */
+  /** Exclude this object id from the search. Defaults to attacker. */
   exclude?: ModuleObject;
   /** Cap; default MaxCleaveRange(attacker). */
   maxRange?: number;
 };
 
 /**
- * Retail GetNearestEnemy @ 004f2de0.
+ * Retail GetNearestEnemy.
  * Hostile + alive + SEEN + combat LOS + creperspace gap within maxRange.
  */
 export function getNearestEnemy(

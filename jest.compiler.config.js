@@ -12,7 +12,7 @@ module.exports = {
     }],
   },
   testMatch: [
-    '<rootDir>/src/nwscript/compiler/__tests__/**/*.test.ts',
+    '<rootDir>/src/tests/NWScriptCompiler.retail.test.ts',
   ],
   verbose: true,
   testTimeout: 120000,

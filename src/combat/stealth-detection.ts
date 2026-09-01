@@ -15,8 +15,8 @@ import { isCreatureBlind } from "@/effects/EffectBlindness";
 
 /**
  * Contested stealth detection helpers.
- * Retail: DoSpotDetection @ 004f1fd0 / DoListenDetection @ 004fb4b0 /
- * GetInvisible @ 00501950.
+ * Retail: DoSpotDetection / DoListenDetection
+ * GetInvisible.
  */
 
 function isStealthedOrInvisible(target: ModuleCreature): boolean {

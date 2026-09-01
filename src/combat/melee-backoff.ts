@@ -8,8 +8,8 @@ import {
 import * as THREE from "three";
 
 /**
- * Retail AIActionPhysicalAttacks too-close branch @ 005bbbf0 —
- * Ideal back-off at DesiredAttackRange, then CServerExoApp::TestDirectLine
+ * Retail physical-attack action too-close branch
+ * Ideal back-off at DesiredAttackRange, then TestDirectLine
  * clip via CWalkHitInfo clear point when the line is blocked.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -104,7 +104,7 @@ export function resolveMeleeBackoff(
   if(attacker.id != null) ignoreIds.push(attacker.id);
   if(target.id != null) ignoreIds.push(target.id);
 
-  // Retail CServerExoApp::TestDirectLine(..., personal_space, height, 1, &CWalkHitInfo)
+  // Retail TestDirectLine(..., personal_space, height, 1, &CWalkHitInfo)
   const hit = testDirectLine(area, attacker.position, ideal, {
     owner: attacker,
     personalSpace: perspace,

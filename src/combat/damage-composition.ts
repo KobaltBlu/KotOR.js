@@ -8,11 +8,11 @@ import { resolveDamageBonusCode } from "@/combat/damage-bonus";
  * (combat-mode Power Attack + Massive Criticals).
  *
  * @file damage-composition.ts
- * @see GetDamageBonus @ 005a8be0, GetDamageRoll Massive Criticals @ 005a9050
+ * @see GetDamageBonus, GetDamageRoll Massive Criticals 
  */
 
 /**
- * Retail GetDamageBonus combat-mode branch — field49_0x4d2 modes 2/3.
+ * Retail GetDamageBonus combat-mode branch — modes 2/3.
  */
 export function getCombatModeDamageBonus(creature: ModuleCreature): number {
   if(creature.combatMode === CombatMode.MODE_2) return 5;

@@ -19,7 +19,7 @@ export const SAVING_THROW_REFLEX = 2;
 export const SAVING_THROW_WILL = 3;
 
 /**
- * Conditioning feat line — retail GetBase*SavingThrow @ 005aa1b0 / 005aa2f0 / 005aa430.
+ * Conditioning feat line — retail GetBase*SavingThrow .
  * Master (22) +3, Improved (21) +2, Conditioning (13) +1; applies to all three saves.
  */
 export function getConditioningSaveBonus(creature: ModuleCreature): number {
@@ -29,7 +29,7 @@ export function getConditioningSaveBonus(creature: ModuleCreature): number {
   return 0;
 }
 
-/** Class table sum for one save kind (retail CSWClass::Get*SaveBonus). */
+/** Class table sum for one save kind (retail Get*SaveBonus). */
 export function getClassSavingThrowBonus(
   creature: ModuleCreature,
   kind: typeof SAVING_THROW_FORTITUDE | typeof SAVING_THROW_REFLEX | typeof SAVING_THROW_WILL
@@ -52,7 +52,7 @@ export function getClassSavingThrowBonus(
 
 /**
  * Retail GetFort/Ref/WillSavingThrow base (no effects) — ability + GFF bonus + class/feats.
- * Reflex clamps positive DEX when debilitated (@ 005ab8f0).
+ * Reflex clamps positive DEX when debilitated ().
  */
 export function getCreatureSavingThrowBase(
   creature: ModuleCreature,
@@ -77,7 +77,7 @@ export function getCreatureSavingThrowBase(
 }
 
 /**
- * Map failed-roll SAVING_THROW_TYPE_* → IMMUNITY_TYPE_* (SavingThrowRoll @ 005b92b0).
+ * Map failed-roll SAVING_THROW_TYPE_* → IMMUNITY_TYPE_* (SavingThrowRoll).
  * Returns 0 when no immunity check applies.
  */
 export function savingThrowTypeToImmunity(
@@ -98,7 +98,7 @@ export function savingThrowTypeToImmunity(
 }
 
 /**
- * Retail CSWSCreature::SavingThrowRoll @ 005b92b0.
+ * Retail SavingThrowRoll.
  * @returns 0 fail, 1 success, 2 immune
  */
 export function savingThrowRoll(

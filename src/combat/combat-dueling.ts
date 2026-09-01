@@ -7,9 +7,9 @@ import { BitWise } from "@/utility/BitWise";
 
 /**
  * Retail melee duel / choreography helpers —
- * ResolveChoreographedState @ 004d2b70,
- * ResolveEngagedState @ 004d2c30,
- * ResolveMasterState @ 004d2d60.
+ * ResolveChoreographedState,
+ * ResolveEngagedState,
+ * ResolveMasterState.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -39,7 +39,7 @@ export function isChoreographedMeleeWeapon(creature: ModuleCreature | undefined)
 }
 
 /**
- * Retail ResolveChoreographedState @ 004d2b70 —
+ * Retail ResolveChoreographedState
  * both combatants have choreographed melee weapons.
  * Used for Desired/MaxAttackRange and ATTACK_DUELING anim preview.
  */
@@ -54,7 +54,7 @@ export function resolveChoreographedState(
 }
 
 /**
- * Retail appearance MODELTYPE S/L check (CSWSCreature::IsCreature @ 005b47c0).
+ * Retail appearance MODELTYPE S/L check (IsCreature).
  * Used when selecting ATTACK_DUELING while already engaged.
  */
 export function isRetailDuelCreature(creature: ModuleCreature | undefined): boolean {
@@ -65,7 +65,7 @@ export function isRetailDuelCreature(creature: ModuleCreature | undefined): bool
 }
 
 /**
- * Retail ResolveEngagedState @ 004d2c30 —
+ * Retail ResolveEngagedState
  * whether this attack should sync as an engaged duel round with target.
  */
 export function resolveEngagedState(
@@ -109,7 +109,7 @@ export function resolveEngagedState(
       (targetLastSpell && targetLastSpell !== attacker) ||
       (targetAttempted && targetAttempted !== attacker)
     ){
-      // retail LAB_004d2d0d: both spell + attempted must be us or empty to keep
+      // Keep engaged only when both last-spell and attempted targets are us or empty
       if(
         (targetLastSpell && targetLastSpell !== attacker) &&
         (targetAttempted && targetAttempted !== attacker)
@@ -123,7 +123,7 @@ export function resolveEngagedState(
 }
 
 /**
- * Retail ResolveMasterState @ 004d2d60 —
+ * Retail ResolveMasterState
  * who drives the engaged duel (party members always master).
  */
 export function resolveMasterState(
@@ -136,7 +136,7 @@ export function resolveMasterState(
   const targetCreature = asCreature(target);
   if(!targetCreature) return false;
 
-  // Retail field426_0xa88 — party / player-UI creatures always master
+  // Party / player-UI creatures are always duel masters
   if(GameState.PartyManager?.party?.indexOf(attacker) >= 0){
     return true;
   }

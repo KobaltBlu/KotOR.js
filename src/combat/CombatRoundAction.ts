@@ -47,7 +47,7 @@ export class CombatRoundAction {
   isUserAction: boolean = false; //Was this action created by the player
 
   /**
-   * Retail CSWSCombatRoundAction field31_0x74 — designer-precomputed attack
+   * Retail Combat-round action — designer-precomputed attack
    * (CutsceneAttack). Distinct from `resolved`, which gates ResolveAttack once.
    */
   resultsCalculated: boolean = false;
@@ -187,7 +187,7 @@ export class CombatRoundAction {
     }
     
     let animationName = attackKey+weaponWield+'a'+attackType;
-    // Retail GetClientMeleeAnimation @ 005f32e0 — resultsCalculated returns nAnimation row
+    // Retail GetClientMeleeAnimation — resultsCalculated returns nAnimation row
     if(this.resultsCalculated && this.attackAnimation){
       const animFromId = GameState.SWRuleSet.animationIdMap.get(this.attackAnimation);
       if(animFromId){
@@ -200,7 +200,7 @@ export class CombatRoundAction {
   }
 
   /**
-   * Retail CSWSCombatRoundAction::SaveData @ 004d1dd0 (list element type 0xDAEA)
+   * Retail SaveData (list element type 0xDAEA)
    */
   toStruct(structIdx: number = 0xDAEA): GFFStruct {
     const struct = new GFFStruct(structIdx);
@@ -223,7 +223,7 @@ export class CombatRoundAction {
   }
 
   /**
-   * Retail CSWSCombatRoundAction::LoadData @ 004d1e90
+   * Retail LoadData 
    */
   fromStruct(struct: GFFStruct, owner?: ModuleObject){
     if(!struct) return;

@@ -4,7 +4,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
 
 /**
- * Retail CSWSCreature::EquipMostDamagingMeleeWeapon / RangedWeapon helpers.
+ * Retail EquipMostDamagingMeleeWeapon / RangedWeapon helpers.
  * Score candidates within a weapon class only — never compare melee dice to a
  * currently equipped blaster (that blocked GN_EquipAppropriateWeapon switches).
  */

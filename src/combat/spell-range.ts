@@ -12,7 +12,7 @@ import { GameState } from "@/GameState";
  * | L      | 4   | SpellRngLng   | 28      |
  * | W      | 19  | SpellRngThrow | 15      |
  *
- * Retail CSWSCreature::ComputeSpellRange @ 004eb3a0 remaps `P` → `T` before
+ * Retail ComputeSpellRange remaps `P` → `T` before
  * reading primary_ranges (approach / MoveTo distance). Targeting for personal
  * powers is still forced onto the caster by ForceMenu / TalentSpell.
  */

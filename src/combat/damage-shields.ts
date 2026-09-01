@@ -6,7 +6,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import { resolveDamageBonusCode, damageTypeFlagToChannel } from "@/combat/damage-bonus";
 
 /**
- * Retail CSWSCreature::ResolveDamageShields @ 005b7d10.
+ * Retail ResolveDamageShields.
  * Called when combat damage lands (int[19] mitigated). Shield damage sets int[19]=0
  * so shields do not recurse.
  */

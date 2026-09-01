@@ -3,7 +3,7 @@ import type { ModuleCreature } from "@/module";
 import { spawnWorldImpactVfx } from "@/combat/ranged-impact-vfx";
 
 /**
- * Retail CSWCCreature::ShowLightSaberContactVisual @ 0060de20 —
+ * Retail ShowLightSaberContactVisual
  * Contact anim event → fire-and-forget VFX 0xFAB at LightSaberHook.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II

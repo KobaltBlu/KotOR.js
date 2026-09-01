@@ -3,14 +3,14 @@ import { Dice } from "@/utility/Dice";
 import { DamageType } from "@/enums/combat/DamageType";
 
 /**
- * Retail DAMAGE_BONUS_* → iprp_damagecost.2da (K1 GetTotalEffectBonus case 2 @ 004f3fe0,
+ * Retail DAMAGE_BONUS_* → iprp_damagecost.2da (K1 GetTotalEffectBonus case 2,
  * Massive Critical / shields via same table).
  *
  * KotOR rows: 1–5 flat (+code); ≥6 use NumDice/Die. K2 adds extra dice rows.
  */
 
 export type ResolveDamageBonusOptions = {
-  /** Retail param_5: use NumDice*Die instead of rolling */
+  /** When true, use NumDice*Die instead of rolling */
   maximize?: boolean;
   /** Critical hit: roll / maximize this many times (retail crit path) */
   critMultiplier?: number;

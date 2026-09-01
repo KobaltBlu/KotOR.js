@@ -8,8 +8,8 @@ import type { OdysseyWalkMesh } from "@/odyssey/OdysseyWalkMesh";
 import { BitWise } from "@/utility/BitWise";
 
 /**
- * Retail CSWSDoor::GetNearestActionPoint @ 00589240 /
- * CSWSPlaceable::GetNearestActionPoint @ 00584c20.
+ * Retail GetNearestActionPoint
+ * GetNearestActionPoint.
  *
  * Prefer nearer walkable candidate (mesh use positions / transition line).
  * Retail uses PositionWalkable — it does NOT shove the point by personal space.

@@ -102,7 +102,7 @@ export class CombatRound {
   masterID: ModuleObject; // creature that owns this duel group
   /** Saved MasterID DWORD for deferred resolve. */
   masterIDObjectId: number = 0;
-  /** Retail field51_0x9c4 — duel slave when this round is master. */
+  /** Duel slave when this round is master. */
   duelPartner: ModuleObject;
   /** Saved DuelPartner DWORD (TSL) for deferred resolve. */
   duelPartnerObjectId: number = 0;
@@ -112,7 +112,7 @@ export class CombatRound {
   /** Saved RoundPausedBy DWORD for deferred resolve. */
   roundPausedByObjectId: number = 0;
   infinitePause: boolean = false;
-  /** Retail field9_0x940 — round started from a scripted (CutsceneAttack) action. */
+  /** True when the round started from a scripted (CutsceneAttack) action. */
   resultsCalculated: boolean = false;
   pauseTimer: number = 0;
   timer: number = 0;
@@ -145,7 +145,7 @@ export class CombatRound {
   scheduledActionList: CombatRoundAction[] = [];
   action: CombatRoundAction;
 
-  /** Last position while PhysicalAttacks held on blocked LOS (retail field70–72). */
+  /** Last position while PhysicalAttacks held on blocked LOS. */
   losStuckPosition: THREE.Vector3 | undefined;
 
   constructor(owner: ModuleObject){
@@ -202,7 +202,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail CSWSCombatRound::StartCombatRound @ 004d5f70.
+   * Retail StartCombatRound.
    * @param target - Attack target (also dodge_target / lock orientation)
    * @param engaged - ResolveEngagedState result
    * @param master - ResolveMasterState result
@@ -260,7 +260,7 @@ export class CombatRound {
     this.roundPaused = false;
     this.pauseTimer = 0;
     this.roundPausedBy = undefined;
-    // Retail StartCombatRound param_5 → field9_0x940; scripted rounds skip the
+    // Scripted (CutsceneAttack) rounds skip the
     // ResetCombatAnimations READY snap so cutscene poses are preserved.
     this.resultsCalculated = !!this.action?.resultsCalculated;
     this.spellCastRound = false;
@@ -272,7 +272,7 @@ export class CombatRound {
     this.dodgeTarget = target;
     this.pendingDischargeVisuals.length = 0;
 
-    // Retail StartCombatRound @ TSL 00772e3e — NewAttackTarget (0xb20) sticky:
+    // Retail StartCombatRound — NewAttackTarget (0xb20) sticky:
     // set to attack target, or INVALID when targeting self.
     if(target && target !== owner){
       this.newAttackTarget = target;
@@ -320,7 +320,7 @@ export class CombatRound {
   }
 
     /**
-   * Retail CalculateOnHandAttacks @ 004d2a10.
+   * Retail CalculateOnHandAttacks.
    * Always 1 + effect_attacks; +1 for Flurry / Rapid Shot feat ids.
    */
   calculateOnHandAttacks(featId = 0): number {
@@ -342,7 +342,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail CalculateOffHandAttacks @ 004d2a70.
+   * Retail CalculateOffHandAttacks.
    * Dual-wield when MH weapon size ≤ creature size and OH is a real weapon;
    * else oversized MELEE_TWO_HAND gets one bonus main-hand-style slot.
    */
@@ -397,7 +397,7 @@ export class CombatRound {
 
   /**
    * End the combat round.
-   * Retail EndCombatRound @ 004d4620 — master clears slave engaged link.
+   * Retail EndCombatRound — master clears slave engaged link.
    */
   endCombatRound(options?: { skipCreateNewAttackActions?: boolean }){
     duelLog(this.owner, 'round:end', {
@@ -442,7 +442,7 @@ export class CombatRound {
       }
     }
 
-    // Master ends → release duel slave (retail field51 clear)
+    // Master ends → release duel slave
     if(this.master && this.duelPartner?.combatRound){
       duelLog(this.owner, 'round:release-slave', { slave: duelWho(this.duelPartner) });
       const slave = this.duelPartner.combatRound;
@@ -480,7 +480,7 @@ export class CombatRound {
     }
     this.owner.onCombatRoundEnd();
 
-    // Retail Body Fuel @ EndCombatRound 004d4684: temporary FP = max FP
+    // Retail Body Fuel at EndCombatRound: temporary FP = max FP
     if(this.owner.bodyFuel){
       this.owner.temporaryForce = this.owner.getMaxFP();
     }
@@ -489,8 +489,8 @@ export class CombatRound {
     // EndCombatRound can CreateNewAttackActions (retail sticky-target clear).
     this.pruneDeadAttackActions();
 
-    // Retail EndCombatRound: if NewAttackTarget sticky died, force GetNearestEnemy
-    // (TSL local_14 / CreateNewAttackActions param_1). Alive sticky keeps focus.
+    // Retail EndCombatRound: if NewAttackTarget sticky died, force GetNearestEnemy.
+    // Alive sticky keeps focus.
     let forceNearest = false;
     const sticky = this.newAttackTarget;
     if(sticky){
@@ -556,7 +556,7 @@ export class CombatRound {
       if(this.pauseTimer < 0) this.pauseTimer = 0;
       if(this.pauseTimer <= 0 && !this.infinitePause){
         this.flushPendingDamage();
-        // Retail UpdateCombatRoundTimer @ 004faf20 — the expired pause resets the
+        // Retail UpdateCombatRoundTimer — the expired pause resets the
         // combat animations (both duel partners when master) and the round keeps
         // running until the timer reaches roundLength. Only a dead/invalid target
         // ends the round early.
@@ -671,7 +671,7 @@ export class CombatRound {
     attack.damageApplyDelay = -1;
 
     const owner = this.owner as ModuleCreature;
-    // Retail ResolveOnHitVisuals @ 005b9040 (+ ranged miss ground splat)
+    // Retail ResolveOnHitVisuals (+ ranged miss ground splat)
     resolveOnHitVisuals(attack, owner);
 
     // Retail OnApplyDamage / SignalMeleeDamage — floaty only for player attacker
@@ -714,7 +714,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail GetSpellActionPending @ 004d35c0 —
+   * Retail GetSpellActionPending
    * true when a cast is in progress or a CAST_SPELL is still scheduled.
    * (Retail list check uses action-type byte; KotOR Combat uses CAST_SPELL=9.)
    */
@@ -730,7 +730,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail SetSpellCastRound @ 004d28b0 —
+   * Retail SetSpellCastRound
    * marks this round as a spell cast and stores the spell id on the creature.
    */
   setSpellCastRound(_spellId: number = -1, _metaFlag: number = 0){
@@ -738,7 +738,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail RemoveSpellAction @ 004d3ba0 —
+   * Retail RemoveSpellAction
    * drop pending spell/item-cast entries (retail action-type byte 2 covers both)
    * from the scheduled list and clear the active round action when it is a cast.
    */
@@ -757,7 +757,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail RemoveSpellActionFromRound @ 004ef450.
+   * Retail RemoveSpellActionFromRound.
    */
   removeSpellActionFromRound(){
     if(this.getSpellActionPending()){
@@ -768,7 +768,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail CheckActionLengthAtTime @ 004d2970 —
+   * Retail CheckActionLengthAtTime
    * whether the target's round can absorb a reaction of `actionLengthMs`.
    */
   checkActionLengthAtTime(
@@ -794,7 +794,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail DecrementRoundLength @ 004d3440 (simplified) —
+   * Retail DecrementRoundLength (simplified)
    * shrink remaining round by attack/reaction animation length.
    */
   decrementRoundLength(amountMs: number){
@@ -848,7 +848,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail CSWSCreature::ResetCombatAnimations @ 004f1250 —
+   * Retail ResetCombatAnimations
    * clear the pause, carry the overshoot into the round timer, and drop the
    * owner into combat READY for the remainder of the round (cinematic duel
    * stance). Scripted rounds (resultsCalculated) keep their posed animation.
@@ -890,7 +890,7 @@ export class CombatRound {
    * @param action - The action to add
    */
   addAction(action: CombatRoundAction){
-    // Retail CSWSCombatRound::AddAction @ 004d36a0 — reject when count > 3 (max 4).
+    // Retail AddAction — reject when count > 3 (max 4).
     if(this.scheduledActionList.length > 3){
       return;
     }
@@ -899,7 +899,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail CSWSCombatRound::AddEquipAction @ 004d3c30 —
+   * Retail AddEquipAction
    * queue ITEM_EQUIP at list head (deferred while casting / combat busy).
    */
   addEquipAction(item: ModuleItem, slot: number, instant: boolean = false){
@@ -916,7 +916,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail CSWSCombatRound::AddUnequipAction @ 004d3ce0.
+   * Retail AddUnequipAction.
    */
   addUnequipAction(item: ModuleItem, instant: boolean = false){
     if(!item) return;
@@ -932,7 +932,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail GetActionPending @ 004d3580 —
+   * Retail GetActionPending
    * head scheduled action's timer has elapsed.
    */
   getActionPending(): boolean {
@@ -942,7 +942,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail ProcessPendingCombatActions @ 004f7530 —
+   * Retail ProcessPendingCombatActions
    * promote deferred ITEM_EQUIP / ITEM_UNEQUIP onto the creature action queue
    * (called after CastSpell fail/complete).
    */
@@ -988,7 +988,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail CSWSCombatRound::ClearAllAttacks @ 004d37e0 —
+   * Retail ClearAllAttacks
    * reset AttackList[5] swing data. Does **not** clear the scheduled action list.
    */
   clearAllAttacks(){
@@ -999,7 +999,7 @@ export class CombatRound {
 
   /**
    * Clear the last scheduled combat-round action.
-   * Retail CSWSCombatRound::RemoveLastAction @ 004d37b0 (RemoveTail).
+   * Retail RemoveLastAction (RemoveTail).
    * @returns True if an action was removed
    */
   removeLastAction(): boolean {
@@ -1012,7 +1012,7 @@ export class CombatRound {
 
   /**
    * Clear all scheduled combat-round actions (and the current action).
-   * Retail CSWSCombatRound::RemoveAllActions @ 004d3770.
+   * Retail RemoveAllActions.
    */
   clearActions(){
     this.action = undefined;
@@ -1060,7 +1060,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail ResolveAttack @ 005bba80 entry — melee vs ranged by main-hand weapon.
+   * Retail ResolveAttack entry — melee vs ranged by main-hand weapon.
    * Fills AttackList slots (JS flattens retail sub_attacks into attackList[5]).
    * @param creature - The creature to calculate the attack damage for
    * @param combatAction - The combat action to calculate the attack damage for
@@ -1070,7 +1070,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail CSWSCreature::ResolveAttack @ 005bba80
+   * Retail ResolveAttack 
    */
   resolveAttack(creature: ModuleCreature, combatAction: CombatRoundAction){
     if(!combatAction || combatAction.resolved)
@@ -1079,9 +1079,9 @@ export class CombatRound {
     creature.weaponPowered(true);
 
     combatAction.resolved = true;
-    // Retail ResolveAttack @ 005bba80 — ActivityManager(4) clears stealth/dialog soft modes
+    // Retail ResolveAttack — ActivityManager(4) clears stealth/dialog soft modes
     creature.activityManager?.(4);
-    // Retail ResolveAttack @ 005bba80 — GetAttackTarget (field66_0x504) = attackee
+    // Retail ResolveAttack — GetAttackTarget = attackee
     if(combatAction.target){
       creature.combatData.lastAttackTarget = combatAction.target;
     }
@@ -1090,7 +1090,7 @@ export class CombatRound {
     this.offHandTaken = false;
     this.pendingDischargeVisuals.length = 0;
 
-    // Retail ResolveAttack @ 005bba80 — always branch melee/ranged.
+    // Retail ResolveAttack — always branch melee/ranged.
     // resultsCalculated only short-circuits roll/damage dice inside those paths.
     if(!combatAction.resultsCalculated){
       combatAction.attackResult = (hasAssuredHit) ? AttackResult.AUTOMATIC_HIT : AttackResult.MISS;
@@ -1135,7 +1135,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail ResolveMeleeAttack @ 005bb890 — loop GetTotalAttacks, SetOffHandAttack by index.
+   * Retail ResolveMeleeAttack — loop GetTotalAttacks, SetOffHandAttack by index.
    */
   resolveMeleeAttack(creature: ModuleCreature, combatAction: CombatRoundAction){
     const maxSlots = this.attackList.length;
@@ -1172,7 +1172,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail ResolveRangedAttack @ 005bb590 —
+   * Retail ResolveRangedAttack
    * weapondischarge.2da Shots/Hits + random attack-shot assignment + travel delay.
    * Every discharge shot fires a bolt; only randomly assigned shots get AttackList rolls.
    */
@@ -1188,7 +1188,7 @@ export class CombatRound {
     this.pendingDischargeVisuals.length = 0;
 
     // Retail ResolveRangedAttack: when resultsCalculated, GetWeaponDischargeShots uses
-    // the designer animations.2da row (param_5); otherwise GetClientRangedAnimation.
+    // the designer animations.2da row; otherwise GetClientRangedAnimation.
     let animName: string;
     if(combatAction.resultsCalculated){
       combatAction.calculateAttackAnimation();
@@ -1274,7 +1274,7 @@ export class CombatRound {
 
       let impactPos: THREE.Vector3;
       if(hit){
-        // ResolveRangedHit — impact node or body z+1.25 (retail CSWCProjectile)
+        // ResolveRangedHit — impact node or body z+1.25 (retail projectile)
         impactPos = getProjectileImpactPosition(combatAction.target);
         attack.rangedTargetX = impactPos.x;
         attack.rangedTargetY = impactPos.y;
@@ -1789,7 +1789,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail CSWSCreatureStats::GetEffectImmunity @ 005a6960.
+   * Retail GetEffectImmunity.
    * Combat uses 30 (sneak) and 31 (critical hits).
    * @param versus - optional attacker for race / alignment filters on the effect
    */
@@ -2050,7 +2050,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail ResolveMeleeSpecialAttack @ 005ba8e0 / ResolveRangedSpecialAttack @ 005ba540 —
+   * Retail ResolveMeleeSpecialAttack / ResolveRangedSpecialAttack
    * on first swing only: queue Crit Strike / Sniper SETSTATE stun when the attack hits.
    * (AC penalties are applied earlier via TalentFeat.impactCaster.)
    */
@@ -2077,7 +2077,7 @@ export class CombatRound {
 
   /**
    * Calculate the round animations for the given creature and combat action.
-   * Retail ResolveMeleeAnimations @ 005b7470 / ResolveRangedAnimations @ 005b6c40 —
+   * Retail ResolveMeleeAnimations / ResolveRangedAnimations
    * engaged duels sync target reaction when CheckActionLengthAtTime.
    * Ranged dodge requires the *target* round engaged (not merely the shooter),
    * so a melee PC closing distance does not dodge-slide mid-sprint.
@@ -2169,7 +2169,7 @@ export class CombatRound {
       );
 
       if(isRanged){
-        // Retail ResolveRangedAnimations @ 005b6c40
+        // Retail ResolveRangedAnimations 
         const rolled: AttackResult[] = [];
         for(let i = 0; i < this.currentAttack; i++){
           const r = this.attackList[i]?.attackResult;
@@ -2193,7 +2193,7 @@ export class CombatRound {
         });
       }else{
         reaction = pickMeleeReaction(combatAction.attackResult);
-        // Retail ResolveMeleeAnimations @ 005b7470:
+        // Retail ResolveMeleeAnimations:
         // engaged && (CheckActionLengthAtTime || resultsCalculated).
         shouldReact = canSyncMeleeReaction({
           engaged: this.engaged,
@@ -2278,7 +2278,7 @@ export class CombatRound {
 
   /**
    * Convert the combat round to a GFF struct
-   * Retail CSWSCombatRound::SaveCombatRound @ 004d3ec0 (struct type 0xCADA)
+   * Retail SaveCombatRound (struct type 0xCADA)
    * @param structIdx - The index of the struct
    * @returns The GFF struct
    */
@@ -2296,7 +2296,7 @@ export class CombatRound {
     struct.addField(new GFFField(GFFDataType.INT, 'Engaged')).setValue(this.engaged ? 1 : 0);
     struct.addField(new GFFField(GFFDataType.INT, 'Master')).setValue(this.master ? 1 : 0);
     struct.addField(new GFFField(GFFDataType.DWORD, 'MasterID')).setValue(objId(this.masterID));
-    // DuelPartner is not written by retail K1 SaveCombatRound @ 004d3ec0
+    // DuelPartner is not written by retail K1 SaveCombatRound 
     if(GameState.GameKey == GameEngineType.TSL){
       struct.addField(new GFFField(GFFDataType.DWORD, 'DuelPartner')).setValue(objId(this.duelPartner));
     }
@@ -2337,7 +2337,7 @@ export class CombatRound {
       specAttackList.addChildStruct(spec);
     }
 
-    // SpecAttackIdList — retail special_attack_id_list @ SaveCombatRound 004d3ec0
+    // SpecAttackIdList — retail special_attack_id_list at SaveCombatRound
     const specAttackIdList = struct.addField(new GFFField(GFFDataType.LIST, 'SpecAttackIdList'));
     for(let i = 0; i < this.specialAttackIdList.length; i++){
       const spec = new GFFStruct(0xDAAE);
@@ -2361,7 +2361,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail CSWSCombatRound::LoadCombatRound @ 004d5120 —
+   * Retail LoadCombatRound
    * only restores when RoundStarted is non-zero.
    */
   fromStruct(struct: GFFStruct): boolean {
@@ -2515,7 +2515,7 @@ export class CombatRound {
 
   /**
    * After individual resolve: ensure master ↔ slave duelPartner / masterID agree
-   * so EndCombatRound can release the slave (retail field51).
+   * so EndCombatRound can release the slave.
    */
   wireBidirectionalDuelLinks(){
     if(!this.engaged || !this.owner){

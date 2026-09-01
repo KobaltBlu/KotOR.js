@@ -1,5 +1,5 @@
 /**
- * Retail CSWSObject::CalculateLastSpellProjectileTime @ 004cb9e0.
+ * Retail CalculateLastSpellProjectileTime.
  *
  * Speed = ln(distance) * 3 + 2 (with path-type multipliers), then
  * flightMs = (distance / speed) * 1000. Path type 6 adds +2500 ms.
@@ -92,7 +92,7 @@ export function resolveSpellProjectilePathType(projtype: unknown): number {
 /**
  * Whether SpellCastAndImpact should delay impact until projectile landing
  * (retail range L / W, or explicit grenade / impactAtProjectileLanding).
- * Retail CalculateLastSpellProjectileTime: proj==0 → field88=0 (no delay).
+ * Retail CalculateLastSpellProjectileTime: proj==0 → no travel delay.
  */
 export function shouldDelaySpellImpactToLanding(
   spell: { range?: string; proj?: number; projtype?: unknown } | undefined,

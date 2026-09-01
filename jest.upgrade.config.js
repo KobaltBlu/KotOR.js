@@ -13,8 +13,8 @@ module.exports = {
   },
   setupFiles: ['<rootDir>/src/tests/jest.setup.ts'],
   testMatch: [
-    '<rootDir>/src/tests/game/item-upgrade-utils.test.ts',
-    '<rootDir>/src/tests/module/ModuleItem-upgrades.test.ts',
+    '<rootDir>/src/tests/item-upgrade-utils.test.ts',
+    '<rootDir>/src/tests/ModuleItem-upgrades.test.ts',
   ],
   verbose: true,
 };
