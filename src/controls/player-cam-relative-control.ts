@@ -1,9 +1,9 @@
 /**
- * Camera-relative player locomotion — retail CSWPlayerControlCamRelative.
+ * Camera-relative player locomotion — retail cam-relative control.
  *
  * Accel: A*input - (A/Vmax)*v; if Vmax < 1.8 then A *= Vmax/1.8.
  * Walk scales desired input by 0.5. RK4 integration. Stop when |vx|,|vy| < 0.25.
- * Stealth (activity_ bit 0 on client field124): Vmax=DriveAnimWalk, A=15
+ * Stealth (activity_ bit 0): Vmax=DriveAnimWalk, A=15
  * (GetMaxSpeed / GetDriveAcceleration). Detect is activity bit 1 and does not
  * change Vmax. Walk key only scales desired — it does not change Vmax.
  * Partial stick release kills velocity on the released camera axis; full release
@@ -26,7 +26,7 @@ import {
 } from "@/engine/pathfinding/movement-rate";
 import { GameState } from "@/GameState";
 
-/** Retail turbo GetMaxSpeed when CClientOptions.turbo_enabled (FLOAT_007a25f8). */
+/** Retail turbo GetMaxSpeed when turbo is enabled. */
 export const PLAYER_TURBO_MAX_SPEED = 15;
 
 /** Retail stop threshold for cam-relative velocity (world units/sec). */
@@ -35,7 +35,7 @@ export const PLAYER_VEL_STOP = 0.25;
 /** Vmax below which accel is scaled (retail 1.8). */
 export const PLAYER_ACCL_SCALE_VMAX = 1.8;
 
-/** DriveAnimationUpdate run threshold factor (FLOAT_007a22f4 = 0.6). */
+/** DriveAnimationUpdate run threshold factor (0.6). */
 export const DRIVE_ANIM_RUN_FACTOR = 0.6;
 
 /**
@@ -48,17 +48,17 @@ export const PLAYER_ANIM_SPEED_CUTOFF = 1.0;
 export const PLAYER_WALK_INPUT_SCALE = 0.5;
 
 /**
- * GetDriveAcceleration when activity_ stealth bit (0x1) is set (FLOAT_00747f6c).
+ * GetDriveAcceleration when activity_ stealth bit (0x1) is set.
  */
 export const PLAYER_STEALTH_DRIVE_ACCL = 15;
 
 /** @deprecated use PLAYER_STEALTH_DRIVE_ACCL */
 export const PLAYER_DETECT_DRIVE_ACCL = PLAYER_STEALTH_DRIVE_ACCL;
 
-/** Control turn gate — |facingError| and |field164| must both exceed this. */
+/** Control turn gate — |facingError| and |lastAnimMoveSpeed| must both exceed this. */
 export const PLAYER_TURN_GATE_DEG = 0.1;
 
-/** Combat camera mode 6 idle face rate (FLOAT_007a25f4) deg/sec. */
+/** Combat camera mode 6 idle face rate (deg/sec). */
 export const PLAYER_COMBAT_FACE_RATE_DEG = 900;
 
 export interface PlayerCamRelativeState {
@@ -75,10 +75,10 @@ export interface PlayerCamRelativeState {
   /** Previous desired world direction (for accel helper). */
   prevDesiredX: number;
   prevDesiredY: number;
-  /** Facing error sign / degrees leftover (retail field13 / field166). */
+  /** Facing error sign / degrees leftover. */
   facingErrorDeg: number;
   /**
-   * Previous frame SetSWAnimationSpeed magnitude (retail field164_0x3b0).
+   * Previous frame SetSWAnimationSpeed magnitude.
    * Turn is gated on |this| > 0.1.
    */
   lastAnimMoveSpeed: number;
@@ -108,7 +108,7 @@ export function createPlayerCamRelativeState(): PlayerCamRelativeState {
 /**
  * Retail GetMaxSpeed / GetDriveAcceleration — activity_ bit 0 (stealth) uses
  * DriveAnimWalk + fixed accel 15; otherwise appearance DriveMaxSpeed / DRIVEACCl.
- * Client field124 mirrors server activity_ (UpdateLastUpdateObject flags 0x40).
+ * Client activity mirrors server activity_ (UpdateLastUpdateObject flags 0x40).
  */
 export function resolvePlayerDriveLimits(
   stealthMode: boolean,
@@ -122,7 +122,7 @@ export function resolvePlayerDriveLimits(
       maxSpeed: coalesceDriveAnimWalk(driveAnimWalk),
     };
   }
-  // Retail CClientOptions.turbo_enabled → GetMaxSpeed returns 15.0
+  // Retail turbo_enabled → GetMaxSpeed returns 15.0
   if(GameState.turboEnabled){
     return {
       driveAccl: coalesceDriveAccl(driveAccl),

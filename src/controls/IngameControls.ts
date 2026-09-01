@@ -60,7 +60,7 @@ function resolveKeyboardForwardAxis(): number {
 }
 
 /**
- * Retail ProcessInput @ 00623a37–00623a6f (swkotor.exe):
+ * Retail ProcessInput LMB-forward inject:
  * When chase-cam look is active (`rightClickHeld`, inverted if Mouse Look) and
  * `leftMouseDown`, inject forward if the keyboard/stick up_down axis is 0.
  * Retail writes raw up_down = -1.0 (stick-forward); our axisForward is +forward.
@@ -726,7 +726,7 @@ export class IngameControls {
 
     KeyMapper.Actions[KeyMapAction.Freelook].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      // Retail caseD_1 @ 006216c7: hsMode==1 → SetNavigateCamera + hsMode++
+      // Retail freelook key: hsMode==1 → SetNavigateCamera + hsMode++
       if(GameState.cameraHsMode === 1
         && (GameState.clientCameraMode | 0) !== ClientCameraMode.FREELOOK
         && (GameState.clientCameraMode | 0) !== ClientCameraMode.NAVIGATE){
@@ -1055,7 +1055,7 @@ export class IngameControls {
       GameState.MenuManager.MenuOptions.open();
     });
 
-    // Retail DoQuickSave @ 005f4b50 / DoQuickLoad @ 00633c50
+    // Retail DoQuickSave / DoQuickLoad
     KeyMapper.Actions[KeyMapAction.Quicksave]?.setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
@@ -1233,7 +1233,7 @@ export class IngameControls {
       this.updateScreenEdgeCameraTurn();
     }
 
-    // Retail ProcessInput @ 006227e0 — UpdateAxis (always) then UpdateMouse (type2);
+    // Retail ProcessInput — UpdateAxis (always) then UpdateMouse (type2);
     // combat/Engine pause blocks Fire only, not axis damping.
     if(GameState.Mode == EngineMode.MINIGAME){
       const mg = GameState.module?.area?.miniGame;
@@ -1290,7 +1290,7 @@ export class IngameControls {
       }
     }
 
-    // FreeLook: right-stick look (CSWCameraFreeLook tilt/rotate axes)
+    // FreeLook: right-stick look (tilt/rotate axes)
     if(GameState.Mode == EngineMode.FREELOOK){
       const rx = this.gamePad.stick_r_x.value;
       const ry = this.gamePad.stick_r_y.value;
@@ -1315,7 +1315,7 @@ export class IngameControls {
   }
 
   /**
-   * Retail UpdateCamera @ 005f5e10 — turn when cursor is within screenFramePercentage
+   * Retail UpdateCamera — turn when cursor is within screenFramePercentage
    * of the left/right viewport edge (min 2px). Skip while over GUI so floating
    * target-menu clicks are not invalidated by camera motion.
    */
@@ -1338,7 +1338,7 @@ export class IngameControls {
   }
 
   /**
-   * Retail CSWGuiManager::HandleZMouse @ 0040c650 — wheel over action buttons
+   * Retail HandleZMouse — wheel over action buttons
    * cycles the matching ActionMenuPanel (BTN_TARGET* / BTN_ACTION*).
    */
   cycleHoveredActionMenu(direction: number){

@@ -66,7 +66,7 @@ export class Keymap {
     this.processCallback = callback;
   }
 
-  /** Retail CSWGuiKeyMapButton category_flags from ICPC* columns. */
+  /** Retail keymap category_flags from ICPC* columns. */
   getCategoryFlags(): number {
     let flags = 0;
     if(this.icpc) flags |= 0x01;

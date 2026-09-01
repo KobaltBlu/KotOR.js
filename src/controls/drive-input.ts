@@ -17,7 +17,7 @@ export const DRIVE_YAW_RIGHT = 0x20;
 
 /**
  * Retail drive-control gate: camera mode 5 (FREELOOK/DRIVE) or creature.driveControlActive.
- * Mode 5 is shared with FreeLook (SetFreeLookCamera @ 006413c0). Not swoop MG.
+ * Mode 5 is shared with FreeLook (SetFreeLookCamera). Not swoop MG.
  */
 export function isDriveControlActive(creature: ModuleCreature | undefined): boolean {
   if(!creature) return false;

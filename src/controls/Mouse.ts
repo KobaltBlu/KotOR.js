@@ -6,7 +6,7 @@ import { MouseAxis } from "@/enums/controls/MouseAxis";
 import { GameState } from "@/GameState";
 import { EngineMode } from "@/enums/engine/EngineMode";
 
-/** Retail CClientOptions::SetDefaultMouseOptions mouse_sensitivity (0x2C). */
+/** Retail default mouse sensitivity (0x2C). */
 const DEFAULT_MOUSE_SENSITIVITY = 0x2c;
 const INI_MOUSE_SENSITIVITY = 'Game Options.Mouse Sensitivity';
 const INI_REVERSE_BUTTONS = 'Game Options.Reverse Mouse Buttons';
@@ -123,7 +123,7 @@ export class Mouse {
   }
 
   /**
-   * Retail CClientOptions::GetMouseSenSetting @ 0061d5b0 —
+   * Retail GetMouseSenSetting —
    * sensitivity * 0.01 * 45.0 + 10.0 (degrees scale for mouse deltas).
    */
   static getSensitivityDegrees(): number {
