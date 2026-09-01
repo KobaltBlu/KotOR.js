@@ -1,5 +1,5 @@
 /**
- * CSWMessage — port of retail CSWMessage (ctor @ 004d60f0).
+ * CSWMessage — port of retail message buffer.
  *
  * Byte-aligned client/server message buffer (not classic NWN bit-packing).
  * CreateWriteMessage reserves 3 header bytes; Send* stamps 'P'/'p' + major + minor.
@@ -25,7 +25,7 @@ export class CSWMessage {
   writeBuffer: Uint8Array;
   writeBufferSize: number = INITIAL_WRITE_CAPACITY;
   writeIndex: number = 0;
-  /** Retail field7_0x1c — bytes written since CreateWriteMessage payload start. */
+  /** Retail field — bytes written since CreateWriteMessage payload start. */
   bytesWritten: number = 0;
   writingMessage: boolean = false;
 
@@ -33,22 +33,22 @@ export class CSWMessage {
   readBufferSize: number = 0;
   readIndex: number = 0;
 
-  /** Retail field19_0x4c — often player id / 0xffffffff. */
+  /** Retail field — often player id / 0xffffffff. */
   messageContext: number = 0xffffffff;
-  /** Retail field18_0x48. */
+  /** Retail field. */
   messageFlag: number = 0;
 
   constructor() {
     this.writeBuffer = new Uint8Array(INITIAL_WRITE_CAPACITY);
   }
 
-  /** Retail ClearReadMessage @ 004d6170 — seek read cursor to end. */
+  /** Retail ClearReadMessage — seek read cursor to end. */
   clearReadMessage(): void {
     this.readIndex = this.readBufferSize;
   }
 
   /**
-   * Retail SetReadMessage @ 004d66b0.
+   * Retail SetReadMessage.
    * @param message Payload bytes (after the 3-byte header when called from dispatchers).
    */
   setReadMessage(
@@ -64,22 +64,22 @@ export class CSWMessage {
     this.readIndex = 0;
   }
 
-  /** Retail MessageReadOverflow @ 004d6230. */
+  /** Retail MessageReadOverflow. */
   messageReadOverflow(): boolean {
     return this.readBufferSize < this.readIndex;
   }
 
-  /** Retail MessageReadUnderflow @ 004d6240 (same predicate as MoreDataToRead). */
+  /** Retail MessageReadUnderflow (same predicate as MoreDataToRead). */
   messageReadUnderflow(): boolean {
     return this.readIndex < this.readBufferSize;
   }
 
-  /** Retail MessageMoreDataToRead @ 004d6250. */
+  /** Retail MessageMoreDataToRead. */
   messageMoreDataToRead(): boolean {
     return this.readIndex < this.readBufferSize;
   }
 
-  /** Retail ExtendWriteBuffer @ 004d6260. */
+  /** Retail ExtendWriteBuffer. */
   extendWriteBuffer(needed: number): void {
     const newSize = needed + 0x80 + this.writeBufferSize;
     const next = new Uint8Array(newSize);
@@ -95,7 +95,7 @@ export class CSWMessage {
   }
 
   /**
-   * Retail CreateWriteMessage @ 004d68a0 — reserves 3 header bytes.
+   * Retail CreateWriteMessage — reserves 3 header bytes.
    */
   createWriteMessage(messageSize: number = 0, context: number = 0xffffffff, flag: number = 1): void {
     this.messageFlag = flag;
@@ -109,7 +109,7 @@ export class CSWMessage {
   }
 
   /**
-   * Retail GetWriteMessage @ 004d6440.
+   * Retail GetWriteMessage.
    * Returns the write buffer view and total size (including 3-byte header slot).
    */
   getWriteMessage(): { ok: boolean; buffer: Uint8Array; size: number } {
@@ -122,7 +122,7 @@ export class CSWMessage {
   }
 
   /**
-   * Retail WriteBOOL @ 004d68e0 — stores a raw 4-byte int (callers pass 0/1 for booleans;
+   * Retail WriteBOOL — stores a raw 4-byte int (callers pass 0/1 for booleans;
    * client also uses this to write OBJECTIDs).
    */
   writeBOOL(value: boolean | number): void {
@@ -134,7 +134,7 @@ export class CSWMessage {
     this.bytesWritten += 4;
   }
 
-  /** Retail WriteBYTE @ 004d62c0. */
+  /** Retail WriteBYTE. */
   writeBYTE(value: number): void {
     this.ensureWrite(1);
     this.writeBuffer[this.writeIndex] = value & 0xff;
@@ -142,7 +142,7 @@ export class CSWMessage {
     this.bytesWritten += 1;
   }
 
-  /** Retail WriteWORD @ 004d6300. */
+  /** Retail WriteWORD. */
   writeWORD(value: number): void {
     this.ensureWrite(2);
     const view = new DataView(this.writeBuffer.buffer, this.writeBuffer.byteOffset);
@@ -151,7 +151,7 @@ export class CSWMessage {
     this.bytesWritten += 2;
   }
 
-  /** Retail WriteDWORD @ 004d6340. */
+  /** Retail WriteDWORD. */
   writeDWORD(value: number): void {
     this.ensureWrite(4);
     const view = new DataView(this.writeBuffer.buffer, this.writeBuffer.byteOffset);
@@ -160,7 +160,7 @@ export class CSWMessage {
     this.bytesWritten += 4;
   }
 
-  /** Retail WriteFLOAT @ 004d6920 (second retail arg unused). */
+  /** Retail WriteFLOAT (second retail arg unused). */
   writeFLOAT(value: number, _unused?: number): void {
     this.ensureWrite(4);
     const view = new DataView(this.writeBuffer.buffer, this.writeBuffer.byteOffset);
@@ -169,7 +169,7 @@ export class CSWMessage {
     this.bytesWritten += 4;
   }
 
-  /** Retail WriteCExoString @ 004d6960 — DWORD length + raw bytes (no null). */
+  /** Retail WriteCExoString — DWORD length + raw bytes (no null). */
   writeCExoString(value: string): void {
     const bytes = textEncoder.encode(value ?? "");
     this.ensureWrite(4 + bytes.length);
@@ -183,7 +183,7 @@ export class CSWMessage {
   }
 
   /**
-   * Retail WriteCResRef @ 004d6380 — fixed-width padded ResRef bytes.
+   * Retail WriteCResRef — fixed-width padded ResRef bytes.
    * @param size Usually 16.
    */
   writeCResRef(resref: string, size: number = RESREF_MAX): void {
@@ -196,7 +196,7 @@ export class CSWMessage {
     this.bytesWritten += size;
   }
 
-  /** Retail WriteVOIDPtr @ 004d63e0. */
+  /** Retail WriteVOIDPtr. */
   writeVOIDPtr(data: Uint8Array, size: number = data.length): void {
     this.ensureWrite(size);
     this.writeBuffer.set(data.subarray(0, size), this.writeIndex);
@@ -204,14 +204,14 @@ export class CSWMessage {
     this.bytesWritten += size;
   }
 
-  /** Retail WriteVector @ 004d71b0. */
+  /** Retail WriteVector. */
   writeVector(v: MessageVector3): void {
     this.writeFLOAT(v.x);
     this.writeFLOAT(v.y);
     this.writeFLOAT(v.z);
   }
 
-  /** Retail ReadBOOL @ 004d66f0 — advances 4, returns low byte. */
+  /** Retail ReadBOOL — advances 4, returns low byte. */
   readBOOL(): boolean {
     const next = this.readIndex + 4;
     if (!this.readBuffer || this.readBufferSize < next) {
@@ -223,7 +223,7 @@ export class CSWMessage {
     return value;
   }
 
-  /** Retail ReadBYTE @ 004d6720. */
+  /** Retail ReadBYTE. */
   readBYTE(): number {
     const next = this.readIndex + 1;
     if (!this.readBuffer || this.readBufferSize < next) {
@@ -235,7 +235,7 @@ export class CSWMessage {
     return value;
   }
 
-  /** Retail ReadWORD @ 004d6750. */
+  /** Retail ReadWORD. */
   readWORD(): number {
     const next = this.readIndex + 2;
     if (!this.readBuffer || this.readBufferSize < next) {
@@ -248,7 +248,7 @@ export class CSWMessage {
     return value;
   }
 
-  /** Retail ReadDWORD @ 004d6780. */
+  /** Retail ReadDWORD. */
   readDWORD(): number {
     const next = this.readIndex + 4;
     if (!this.readBuffer || this.readBufferSize < next) {
@@ -261,7 +261,7 @@ export class CSWMessage {
     return value;
   }
 
-  /** Retail ReadFLOAT @ 004d67b0. */
+  /** Retail ReadFLOAT. */
   readFLOAT(): number {
     const next = this.readIndex + 4;
     if (!this.readBuffer || this.readBufferSize < next) {
@@ -274,7 +274,7 @@ export class CSWMessage {
     return value;
   }
 
-  /** Retail ReadCExoString @ 004d67e0. */
+  /** Retail ReadCExoString. */
   readCExoString(_unused?: number): string {
     const afterLen = this.readIndex + 4;
     let length = 0;
@@ -293,7 +293,7 @@ export class CSWMessage {
   }
 
   /**
-   * Retail ReadCResRef @ 004d6180.
+   * Retail ReadCResRef.
    * @param size Usually 16.
    */
   readCResRef(size: number = RESREF_MAX): string {
@@ -310,7 +310,7 @@ export class CSWMessage {
     return textDecoder.decode(slice.subarray(0, end));
   }
 
-  /** Retail ReadVOIDPtr @ 004d6200 — returns subarray or null on overflow. */
+  /** Retail ReadVOIDPtr — returns subarray or null on overflow. */
   readVOIDPtr(size: number): Uint8Array | null {
     const start = this.readIndex;
     const next = start + size;
@@ -321,7 +321,7 @@ export class CSWMessage {
     return this.readBuffer.subarray(start, next);
   }
 
-  /** Retail ReadVector @ 004d7120. */
+  /** Retail ReadVector. */
   readVector(): MessageVector3 {
     return {
       x: this.readFLOAT(),

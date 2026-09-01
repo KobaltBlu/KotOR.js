@@ -1,6 +1,6 @@
 /**
  * LocString wire helpers for CSWSMessage / CSWCMessage.
- * Retail WriteCExoLocStringServer @ 005785c0 / ReadCExoLocStringClient @ 00692660.
+ * Retail WriteCExoLocStringServer / ReadCExoLocStringClient.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

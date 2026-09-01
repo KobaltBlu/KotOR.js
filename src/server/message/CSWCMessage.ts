@@ -1,5 +1,5 @@
 /**
- * CSWCMessage — port of retail CSWCMessage (ctor @ 0064b510).
+ * CSWCMessage — port of retail client messaging.
  * Client-side SendPlayerToServer* / HandleServerToPlayer* messaging.
  * Unwired: transport defaults to no-op; Handle* reads payloads only (no game side effects).
  *
@@ -72,13 +72,13 @@ export class CSWCMessage {
     this.internal.writeBOOL(objectId | 0);
   }
 
-  /** Retail ReadOBJECTIDClient @ 00692630 — raw DWORD. */
+  /** Retail ReadOBJECTIDClient — raw DWORD. */
   readOBJECTIDClient(): number {
     return this.internal.readDWORD();
   }
 
   /**
-   * Retail SendPlayerToServerMessage @ 00677410 — stamps 'p' + major + minor.
+   * Retail SendPlayerToServerMessage — stamps 'p' + major + minor.
    */
   sendPlayerToServerMessage(
     major: PlayerServerMessageId | number,
@@ -108,7 +108,7 @@ export class CSWCMessage {
   }
 
   /**
-   * Retail HandleServerToPlayerMessage @ 0066a640.
+   * Retail HandleServerToPlayerMessage.
    * Reads payloads only — no client object mutation.
    */
   handleServerToPlayerMessage(message: Uint8Array, size: number = message.length): number {
@@ -250,7 +250,6 @@ export class CSWCMessage {
   // SendPlayerToServer*
   // ---------------------------------------------------------------------------
 
-  /** @ 00677a90 */
   sendPlayerToServerInput_Attack(objectId: number, anim: number): boolean {
     this.internal.createWriteMessage(6);
     this.writeOBJECTIDClient(objectId);
@@ -258,7 +257,6 @@ export class CSWCMessage {
     return this.finishSend(PlayerServerMessageId.Input, InputMessageMinor.Attack);
   }
 
-  /** @ 00677b10 */
   sendPlayerToServerInput_UseSkill(
     skill: number,
     sub: number,
@@ -275,7 +273,6 @@ export class CSWCMessage {
     return this.finishSend(PlayerServerMessageId.Input, InputMessageMinor.UseSkill);
   }
 
-  /** @ 00677bd0 */
   sendPlayerToServerInput_UseItem(opts: {
     itemId: number;
     byte0: number;
@@ -303,14 +300,12 @@ export class CSWCMessage {
     return this.finishSend(PlayerServerMessageId.Input, InputMessageMinor.UseItem);
   }
 
-  /** @ 00677d10 */
   sendPlayerToServerInput_UseObject(objectId: number): boolean {
     this.internal.createWriteMessage(4);
     this.writeOBJECTIDClient(objectId);
     return this.finishSend(PlayerServerMessageId.Input, InputMessageMinor.UseObject);
   }
 
-  /** @ 006776a0 */
   sendPlayerToServerInput_CastSpell(opts: {
     spellId: number;
     b0: number;
@@ -336,7 +331,6 @@ export class CSWCMessage {
     return this.finishSend(PlayerServerMessageId.Input, InputMessageMinor.CastSpell);
   }
 
-  /** @ 00677d70 */
   sendPlayerToServerInput_ChangeDoorState(objectId: number, state: number): boolean {
     this.internal.createWriteMessage(6);
     this.writeOBJECTIDClient(objectId);
@@ -344,7 +338,6 @@ export class CSWCMessage {
     return this.finishSend(PlayerServerMessageId.Input, InputMessageMinor.ChangeDoorState);
   }
 
-  /** @ 00677de0 */
   sendPlayerToServerInput_UnlockObject(objectId: number, keyId: number): boolean {
     this.internal.createWriteMessage(8);
     this.writeOBJECTIDClient(objectId);
@@ -352,14 +345,12 @@ export class CSWCMessage {
     return this.finishSend(PlayerServerMessageId.Input, InputMessageMinor.UnlockObject);
   }
 
-  /** @ 00677ea0 */
   sendPlayerToServerInput_Dialog(objectId: number): boolean {
     this.internal.createWriteMessage(4);
     this.writeOBJECTIDClient(objectId);
     return this.finishSend(PlayerServerMessageId.Input, InputMessageMinor.Dialog);
   }
 
-  /** @ 00677870 */
   sendPlayerToServerInput_GiveItem(oid0: number, oid1: number, oid2: number, amount: number): boolean {
     this.internal.createWriteMessage(16);
     this.writeOBJECTIDClient(oid0);
@@ -369,12 +360,12 @@ export class CSWCMessage {
     return this.finishSend(PlayerServerMessageId.Input, InputMessageMinor.GiveItem);
   }
 
-  /** @ 00677800 — retail is local-only (TogglePauseState); no net stamp. */
+  /** — retail is local-only (TogglePauseState); no net stamp. */
   sendPlayerToServerInput_TogglePauseRequest(): boolean {
     return true;
   }
 
-  /** @ 00677800 companion — WalkToWaypoint @ retail Input minor 1 */
+  /** companion — WalkToWaypoint @ retail Input minor 1 */
   sendPlayerToServerInput_WalkToWaypoint(opts: {
     areaId: number;
     pos: MessageVector3;
@@ -397,7 +388,7 @@ export class CSWCMessage {
     return this.finishSend(PlayerServerMessageId.Input, InputMessageMinor.WalkToWaypoint);
   }
 
-  /** @ 00677e50 path — DriveControl @ 00523450 fields */
+  /** path — DriveControl fields */
   sendPlayerToServerInput_DriveControl(
     stickX: number,
     stickY: number,
@@ -414,17 +405,14 @@ export class CSWCMessage {
     return this.finishSend(PlayerServerMessageId.Input, InputMessageMinor.DriveControl);
   }
 
-  /** @ 00677e50 */
   sendPlayerToServerInput_AbortDriveControl(): boolean {
     return this.sendPlayerToServerMessage(PlayerServerMessageId.Input, InputMessageMinor.AbortDriveControl);
   }
 
-  /** @ 00677490 */
   sendPlayerToServerModule_ModuleLoaded(): boolean {
     return this.sendPlayerToServerMessage(PlayerServerMessageId.Module, ModuleMessageMinor.ModuleLoaded);
   }
 
-  /** @ 006774e0 */
   sendPlayerToServerModule_SaveGame(slot: number, name: string, description: string): boolean {
     this.internal.createWriteMessage(64);
     this.internal.writeDWORD(slot);
@@ -433,7 +421,6 @@ export class CSWCMessage {
     return this.finishSend(PlayerServerMessageId.Module, ModuleMessageMinor.SaveGame);
   }
 
-  /** @ 00677560 */
   sendPlayerToServerModule_LoadGame(slot: number, name: string, description: string): boolean {
     this.internal.createWriteMessage(64);
     this.internal.writeDWORD(slot);
@@ -442,12 +429,10 @@ export class CSWCMessage {
     return this.finishSend(PlayerServerMessageId.Module, ModuleMessageMinor.LoadGame);
   }
 
-  /** @ 006778f0 */
   sendPlayerToServerArea_AreaLoaded(): boolean {
     return this.sendPlayerToServerMessage(PlayerServerMessageId.Area, AreaMessageMinor.AreaLoaded);
   }
 
-  /** @ 006775e0 */
   sendPlayerToServerStatus_RequestStatus(): boolean {
     return this.sendPlayerToServerMessage(
       PlayerServerMessageId.ServerStatus,
@@ -455,7 +440,6 @@ export class CSWCMessage {
     );
   }
 
-  /** @ 00677630 */
   sendPlayerToServerGuiContainer_Close(objectId: number, flag: boolean): boolean {
     this.internal.createWriteMessage(8);
     this.writeOBJECTIDClient(objectId);
@@ -463,7 +447,6 @@ export class CSWCMessage {
     return this.finishSend(PlayerServerMessageId.GuiContainer, GuiContainerMessageMinor.Close);
   }
 
-  /** @ 00677f30 */
   sendPlayerToServerInventory_Equip(objectId: number, slot: number): boolean {
     this.internal.createWriteMessage(8);
     this.writeOBJECTIDClient(objectId);
@@ -472,7 +455,7 @@ export class CSWCMessage {
   }
 
   /**
-   * @ 00678280
+   *
    */
   sendPlayerToServer_LevelUp(opts: {
     classId: number;
@@ -500,7 +483,6 @@ export class CSWCMessage {
     return this.finishSend(PlayerServerMessageId.LevelUp, LevelUpMessageMinor.Request);
   }
 
-  /** @ 00677fa0 */
   sendPlayerToServerLogin_LoginLocalCharacter(
     data: Uint8Array,
     minor: number = LoginMessageMinor.LoginLocalCharacter
@@ -511,17 +493,14 @@ export class CSWCMessage {
     return this.finishSend(PlayerServerMessageId.Login, minor);
   }
 
-  /** @ 00678030 */
   sendPlayerToServerLogin_LoginIFOCharacter(): boolean {
     return this.sendPlayerToServerMessage(PlayerServerMessageId.Login, LoginMessageMinor.LoginIFOCharacter);
   }
 
-  /** @ 006779d0 */
   sendPlayerToServerCheat_Invulnerability(): boolean {
     return this.sendPlayerToServerMessage(PlayerServerMessageId.Cheat, CheatMessageMinor.Invulnerability);
   }
 
-  /** @ 00677820 */
   sendPlayerToServerJournalMessage_QuestScreenOpen(): boolean {
     return this.sendPlayerToServerMessage(
       PlayerServerMessageId.Journal,
@@ -529,7 +508,6 @@ export class CSWCMessage {
     );
   }
 
-  /** @ 00677a20 */
   sendPlayerToServerGuiInventory_Status(open: boolean): boolean {
     this.internal.createWriteMessage(1);
     this.internal.writeBYTE(open ? 1 : 0);
@@ -540,7 +518,6 @@ export class CSWCMessage {
   // HandleServerToPlayer*
   // ---------------------------------------------------------------------------
 
-  /** @ 0064b8e0 */
   handleServerToPlayerCamera(minor: number): number {
     const p: Record<string, unknown> = {};
     if (minor === CameraMessageMinor.ChangeLocation) {
@@ -556,7 +533,6 @@ export class CSWCMessage {
     return this.emitParsed(PlayerServerMessageId.Camera, minor, p);
   }
 
-  /** @ 00665510 */
   handleServerToPlayerAmbient(minor: number): number {
     const p: Record<string, unknown> = {};
     switch (minor) {
@@ -581,7 +557,6 @@ export class CSWCMessage {
     return this.emitParsed(PlayerServerMessageId.Ambient, minor, p);
   }
 
-  /** @ 00665590 */
   handleServerToPlayerGuiTimingEvent(minor: number): number {
     const p: Record<string, unknown> = {};
     if (minor === GuiTimingMessageMinor.Info) {
@@ -594,7 +569,6 @@ export class CSWCMessage {
     return this.emitParsed(PlayerServerMessageId.GuiTimingEvent, minor, p);
   }
 
-  /** @ 0064edd0 */
   handleServerToPlayerLoadBar(minor: number): number {
     const p: Record<string, unknown> = {};
     if (minor === LoadBarMessageMinor.StartStallEvent) {
@@ -609,7 +583,6 @@ export class CSWCMessage {
     return this.emitParsed(PlayerServerMessageId.LoadBar, minor, p);
   }
 
-  /** @ 0064bf30 */
   handleServerToPlayerSetCustomToken(minor: number): number {
     const p: Record<string, unknown> = {};
     if (minor === CustomTokenMessageMinor.SetToken) {
@@ -626,7 +599,6 @@ export class CSWCMessage {
     return this.emitParsed(PlayerServerMessageId.CustomToken, minor, p);
   }
 
-  /** @ 00654230 */
   handleServerToPlayerPopUpGUIPanel(minor: number): number {
     const p: Record<string, unknown> = {};
     if (minor === PopUpGUIPanelMessageMinor.DeathPanel) {
@@ -640,7 +612,6 @@ export class CSWCMessage {
     return this.emitParsed(PlayerServerMessageId.PopUpGUIPanel, minor, p);
   }
 
-  /** @ 00656ba0 */
   handleServerToPlayerSound(minor: number): number {
     const p: Record<string, unknown> = {};
     if (
@@ -914,7 +885,6 @@ export class CSWCMessage {
     return this.emitParsed(PlayerServerMessageId.LevelUp, minor, {});
   }
 
-  /** @ 006631c0 */
   handleServerToPlayerSafeProjectile(minor: number): number {
     const p: Record<string, unknown> = {};
     if (minor === SafeProjectileMessageMinor.Projectile) {

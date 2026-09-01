@@ -1,10 +1,9 @@
 /**
- * GameObjUpdate write helpers — retail CSWSMessage WriteGameObjUpdate_* family.
+ * GameObjUpdate write helpers — retail WriteGameObjUpdate_* family.
  * These encode payload fragments into a CSWMessage; callers pass structured field bags
- * (no live CSWSPlayer / last-update state required for the unwired port).
+ * (no live server-player / last-update state required for the unwired port).
  *
- * Primary refs: WriteGameObjUpdate_UpdateObject @ 00574a10,
- * WriteGameObjUpdate_UpdateAppearance @ 00572070, WriteGameObjUpdate_PlayerUpdate @ 00572dc0.
+ * Includes UpdateObject, UpdateAppearance, and PlayerUpdate fragments.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -24,7 +23,7 @@ export function writeObjectId(msg: CSWMessage, objectId: number): void {
 }
 
 /**
- * Retail WriteGameObjUpdate_WriteInventorySlotAdd @ 00567710 — simplified.
+ * Retail WriteGameObjUpdate_WriteInventorySlotAdd — simplified.
  */
 export function writeInventorySlotAdd(
   msg: CSWMessage,
@@ -69,7 +68,7 @@ export function writeObjectDelete(msg: CSWMessage, objectId: number): void {
 
 /**
  * Vis-effect list: count + entries {id, creator?, duration?}.
- * Matches the compare/assign list shape used around CompareVisualEffectLists @ 005672f0.
+ * Matches the compare/assign list shape used around CompareVisualEffectLists.
  */
 export function writeVisualEffectList(
   msg: CSWMessage,
@@ -84,14 +83,14 @@ export function writeVisualEffectList(
 }
 
 /**
- * Work-remaining progress byte — WriteGameObjUpdate_WorkRemaining @ 00567ba0.
+ * Work-remaining progress byte — WriteGameObjUpdate_WorkRemaining.
  */
 export function writeWorkRemaining(msg: CSWMessage, remaining: number): void {
   msg.writeBYTE(remaining & 0xff);
 }
 
 /**
- * Party AI state fragment — WriteGameObjUpdate_PartyAIState @ 005779f0.
+ * Party AI state fragment — WriteGameObjUpdate_PartyAIState.
  */
 export function writePartyAIState(
   msg: CSWMessage,
@@ -105,7 +104,7 @@ export function writePartyAIState(
 }
 
 /**
- * Character sheet panel fragment — WriteGameObjUpdate_CharacterSheet @ 0056f490.
+ * Character sheet panel fragment — WriteGameObjUpdate_CharacterSheet.
  * Accepts opaque packed bytes from a higher-level packer.
  */
 export function writeCharacterSheetBlob(msg: CSWMessage, packed: Uint8Array): void {
@@ -114,7 +113,7 @@ export function writeCharacterSheetBlob(msg: CSWMessage, packed: Uint8Array): vo
 }
 
 /**
- * Minor GUI panels fragment — WriteGameObjUpdate_MinorGUIPanels @ 00572990.
+ * Minor GUI panels fragment — WriteGameObjUpdate_MinorGUIPanels.
  */
 export function writeMinorGUIPanels(msg: CSWMessage, packed: Uint8Array): void {
   msg.writeDWORD(packed.length);
@@ -122,7 +121,7 @@ export function writeMinorGUIPanels(msg: CSWMessage, packed: Uint8Array): void {
 }
 
 /**
- * Major GUI panels fragment — WriteGameObjUpdate_MajorGUIPanels @ 00577670.
+ * Major GUI panels fragment — WriteGameObjUpdate_MajorGUIPanels.
  */
 export function writeMajorGUIPanels(msg: CSWMessage, packed: Uint8Array): void {
   msg.writeDWORD(packed.length);
@@ -130,7 +129,7 @@ export function writeMajorGUIPanels(msg: CSWMessage, packed: Uint8Array): void {
 }
 
 /**
- * Appearance update blob — WriteGameObjUpdate_UpdateAppearance @ 00572070.
+ * Appearance update blob — WriteGameObjUpdate_UpdateAppearance.
  */
 export function writeUpdateAppearance(msg: CSWMessage, objectId: number, packed: Uint8Array): void {
   writeObjectId(msg, objectId);
@@ -140,7 +139,7 @@ export function writeUpdateAppearance(msg: CSWMessage, objectId: number, packed:
 
 /**
  * Generic object update envelope: type byte + object id + packed delta.
- * Mirrors the category routing around SelectCategoryForGameObject @ 00567780.
+ * Mirrors the category routing around SelectCategoryForGameObject.
  */
 export function writeObjectUpdateEnvelope(
   msg: CSWMessage,
@@ -155,7 +154,7 @@ export function writeObjectUpdateEnvelope(
 }
 
 /**
- * Player-update fragment — WriteGameObjUpdate_PlayerUpdate @ 00572dc0.
+ * Player-update fragment — WriteGameObjUpdate_PlayerUpdate.
  */
 export function writePlayerUpdate(msg: CSWMessage, objectId: number, packed: Uint8Array): void {
   writeObjectId(msg, objectId);
@@ -164,7 +163,7 @@ export function writePlayerUpdate(msg: CSWMessage, objectId: number, packed: Uin
 }
 
 /**
- * Write VisEffect payload matching SendServerToPlayerGameObjUpdateVisEffect @ 00569c40.
+ * Write VisEffect payload matching SendServerToPlayerGameObjUpdateVisEffect.
  * @param isBeam When true, appends beam target/source/bytes/pos (+ duration if objectId invalid).
  */
 export function writeVisEffect(
@@ -213,7 +212,7 @@ export function writeWorkRemainingCategory(msg: CSWMessage, current: number, tot
 }
 
 /**
- * Write a Delete+Creature category fragment (simplified leaf matching @ 0064cc90 reads).
+ * Write a Delete+Creature category fragment (simplified leaf matching reads).
  */
 export function writeCreatureDeleteCategory(
   msg: CSWMessage,
@@ -229,7 +228,7 @@ export function writeCreatureDeleteCategory(
   msg.writeBOOL(data.bool2);
 }
 
-/** Control-object update — SendServerToPlayerGameObjUpdate_ObjControl @ 0056f430. */
+/** Control-object update — SendServerToPlayerGameObjUpdate_ObjControl. */
 export function writeObjControl(msg: CSWMessage, objectId: number): void {
   writeObjectId(msg, objectId);
 }
@@ -239,19 +238,19 @@ export function writeObjControl(msg: CSWMessage, objectId: number): void {
  * Documented with retail addresses for future wiring.
  */
 export const GameObjUpdateCompute = {
-  /** ComputeUpdateRequired @ 0056b950 */
+  /** ComputeUpdateRequired */
   computeUpdateRequired(): boolean {
     return false;
   },
-  /** TestObjectVisible @ 0056dc60 */
+  /** TestObjectVisible */
   testObjectVisible(): boolean {
     return true;
   },
-  /** ComputeGameObjectUpdateForObject @ 00578060 */
+  /** ComputeGameObjectUpdateForObject */
   computeGameObjectUpdateForObject(): Uint8Array {
     return new Uint8Array(0);
   },
-  /** CompareVisualEffectLists @ 005672f0 */
+  /** CompareVisualEffectLists */
   compareVisualEffectLists(): boolean {
     return true;
   },

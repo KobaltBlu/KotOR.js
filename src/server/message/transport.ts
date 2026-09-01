@@ -1,5 +1,5 @@
 /**
- * Message transport stub — replaces retail CNetLayer for the unwired messaging port.
+ * Message transport stub — replaces retail net layer for the unwired messaging port.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -13,9 +13,9 @@ export const SERVER_TO_PLAYER_PREFIX = 0x50; // 'P'
 export const PLAYER_TO_SERVER_PREFIX = 0x70; // 'p'
 
 export interface IMessageTransport {
-  /** Retail CNetLayer::SendMessageToPlayer from server. */
+  /** Retail SendMessageToPlayer from server. */
   sendToPlayer(playerId: number, message: Uint8Array): boolean;
-  /** Retail CNetLayer::SendMessageToPlayer from client (playerId often 0xfffffffd). */
+  /** Retail SendMessageToPlayer from client (playerId often 0xfffffffd). */
   sendToServer(message: Uint8Array): boolean;
 }
 

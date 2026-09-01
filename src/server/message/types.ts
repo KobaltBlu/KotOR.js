@@ -1,5 +1,5 @@
 /**
- * Shared types for the unwired CSW messaging port.
+ * Shared types for the unwired messaging port.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -16,7 +16,7 @@ export const OBJECT_INVALID = 0x7f000000;
 /** Broadcast / all-players id used by some LoadBar sends. */
 export const PLAYER_ID_ALL = 0xfffffff7;
 
-/** Client→server CNetLayer destination used by SendPlayerToServerMessage. */
+/** Client→server net layer destination used by SendPlayerToServerMessage. */
 export const PLAYER_ID_SERVER = 0xfffffffd;
 
 /** Simplified LocString wire form (WriteCExoLocStringServer / ReadCExoLocStringClient). */

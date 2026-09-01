@@ -2,7 +2,7 @@
  * GameObjUpdate read helpers — retail HandleServerToPlayerUpdate_* / CreatureUpdate_* leaves.
  * Decode only; no client world mutation (onParsed consumers).
  *
- * Ref: HandleServerToPlayerGameObjectUpdate @ 0066a4a0
+ * Ref: HandleServerToPlayerGameObjectUpdate
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -31,8 +31,8 @@ export function readObjectIdClient(msg: CSWMessage): number {
 }
 
 /**
- * VisEffect payload @ 0064c3c0 (non-beam path minimum).
- * isBeam is caller-supplied (retail uses CLoopingVisualEffect::GetIsBeam).
+ * VisEffect payload (non-beam path minimum).
+ * isBeam is caller-supplied (retail uses GetIsBeam).
  */
 export function readVisEffect(
   msg: CSWMessage,
@@ -75,7 +75,7 @@ export function readVisEffect(
   return { objectId, vfxId, pos, beam };
 }
 
-/** Creature delete @ 0064cc90 */
+/** Creature delete */
 export function readCreatureDelete(msg: CSWMessage): Record<string, unknown> {
   return {
     objectId: readObjectIdClient(msg),
@@ -86,12 +86,12 @@ export function readCreatureDelete(msg: CSWMessage): Record<string, unknown> {
   };
 }
 
-/** Generic object-type delete (Item/Door/etc. — OBJECTID only for DestroyItem @ 00651b30). */
+/** Generic object-type delete (Item/Door/etc. — OBJECTID only for DestroyItem). */
 export function readObjectIdOnly(msg: CSWMessage): { objectId: number } {
   return { objectId: readObjectIdClient(msg) };
 }
 
-/** WorkRemaining @ 0064dcf0 — two BYTEs. */
+/** WorkRemaining — two BYTEs. */
 export function readWorkRemaining(msg: CSWMessage): { current: number; total: number } {
   const current = msg.readBYTE();
   let total = msg.readBYTE();
@@ -100,7 +100,7 @@ export function readWorkRemaining(msg: CSWMessage): { current: number; total: nu
 }
 
 /**
- * Delete category @ 00656c90 — object-type byte then type-specific leaf.
+ * Delete category — object-type byte then type-specific leaf.
  * Full creature fields when type is Creature; otherwise OBJECTID (+ remaining hint).
  */
 export function readDeleteCategory(msg: CSWMessage): GameObjUpdateEvent {
@@ -123,7 +123,7 @@ export function readDeleteCategory(msg: CSWMessage): GameObjUpdateEvent {
   };
 }
 
-/** Add category @ 00656bd0 — object-type then opaque remaining (full add packs need live templates). */
+/** Add category — object-type then opaque remaining (full add packs need live templates). */
 export function readAddCategory(msg: CSWMessage): GameObjUpdateEvent {
   const objectType = msg.readBYTE();
   return {
