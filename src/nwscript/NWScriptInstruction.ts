@@ -69,9 +69,9 @@ const OP_CALL_MAP: Map<number, ( this: NWScriptInstance, instruction: NWScriptIn
 ]);
 /**
  * NWScriptInstruction class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file NWScriptInstruction.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -169,7 +169,7 @@ export class NWScriptInstruction {
 
   /**
    * The size of the structure of the instruction in bytes
-   */ 
+   */
   sizeOfStructure: number;
 
   /**

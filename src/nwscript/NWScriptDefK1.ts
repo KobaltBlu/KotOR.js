@@ -75,7 +75,7 @@ function getGunBank(obj: ModuleObject, index: number): ModuleMGGunBank | undefin
 }
 
 /**
- * Retail CSWSObject::GetAQActionIDByID (K1 + TSL extras).
+ * Retail GetAQActionIDByID (K1 + TSL extras).
  * Check* path actions are not acceptable (return 65535) â€” GetCurrentAction walks past them.
  */
 function ActionFactoryGetAQActionID(type: number): number {
@@ -108,7 +108,7 @@ function ActionFactoryGetAQActionID(type: number): number {
     case ActionType.ActionFollowLeader:
     case ActionType.ActionPartyFollowLeader: return 38;       // ACTION_FOLLOWLEADER
     case ActionType.ActionCombat: return 39;                  // retail GetAQ 0x3F â†’ 0x27
-    // TSL (GetAQActionIDByID @ 006b3410 / RunActions @ 006b18a0)
+    // TSL (GetAQActionIDByID / RunActions)
     case ActionType.ActionDoorSaber: return 40;               // engine 0x43
     case ActionType.ActionStanceTotalDefense: return 41;      // engine 0x44
     case ActionType.ActionStanceMeditative: return 42;        // engine 0x45
@@ -120,9 +120,9 @@ function ActionFactoryGetAQActionID(type: number): number {
 
 /**
  * NWScriptDefK1 class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file NWScriptDefK1.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -498,7 +498,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      // ExecuteCommandGetItemPossessor @ 0053a5c0 â€” follow possessor; dig once if nested item
+      // ExecuteCommandGetItemPossessor â€” follow possessor; dig once if nested item
       if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleItem)){
         return undefined;
       }
@@ -774,7 +774,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      // Retail ExecuteCommandGetIsObjectValid @ 0053c720 — GetGameObject(id) != null.
+      // Retail ExecuteCommandGetIsObjectValid — GetGameObject(id) != null.
       // KeepCorpse / server-destroyed shells are removed from ObjectList; also reject
       // lingering refs so GetObjectByTag gates (e.g. k_ptar_ramp / Calo082) work.
       if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
@@ -837,7 +837,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number]){
-      // Retail ExecuteCommandSetCameraFacing @ 00542530 â†’ ActionOrientCamera (0x16)
+      // Retail ExecuteCommandSetCameraFacing â†’ ActionOrientCamera (0x16)
       // params: INT flags=1, FLOAT facing, FLOAT 0, FLOAT 0, INT transition=0
       if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
         return;
@@ -1342,7 +1342,7 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
         const c = args[0] as ModuleCreature;
-        // Retail field349_0x964 — item SpellCastAndImpact stamps base_class_level
+        // Retail item SpellCastAndImpact stamps base_class_level
         if(c.itemSpellCastActive){
           return c.baseClassLevel | 0;
         }
@@ -1911,7 +1911,7 @@ NWScriptDefK1.Actions = {
         return;
       }
 
-      // Retail CSWSModule::EventHandler @ 004c5120 — GetModule() is not a ModuleObject in JS
+      // Retail EventHandler — GetModule() is not a ModuleObject in JS
       if(args[0] === (GameState.module as any)){
         if(event.type === NWScriptEventType.EventUserDefined){
           const onUserDefined = GameState.module.scripts[ModuleObjectScript.ModuleOnUserDefined];
@@ -2062,7 +2062,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
-      // Retail ExecuteCommandGetAbilityScore @ 005361b0
+      // Retail ExecuteCommandGetAbilityScore
       if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
         return 0;
       }
@@ -2376,7 +2376,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      // Retail reads CSWSObject commandable (field49_0xe8) for any object —
+      // Retail reads retail commandable for any object
       // placeables (e.g. k_ptar_invis_speaker) must pass GetCommandable so
       // k_ai_master OnDialog can BeginConversation after duels.
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
@@ -2564,7 +2564,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.STRING, NWScriptDataType.STRING],
     action: function(this: NWScriptInstance, args: [string, string]){
-      // Retail ExecuteCommandTestString builds a stack-local CSWSExpression and
+      // Retail ExecuteCommandTestString builds a stack-local retail and
       // destroys it after pushing the boolean — no matched-substring side effect.
       const result = testStringAgainstPattern(args[0] || '', args[1] || '');
       return result.matched ? NW_TRUE : NW_FALSE;
@@ -2576,7 +2576,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.STRING,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      // Retail reads CSWSObject.matched_expression_strings on the caller object.
+      // Retail reads retail.matched_expression_strings on the caller object.
       const caller = this.caller;
       if(!BitWise.InstanceOfObject(caller, ModuleObjectType.ModuleObject)){
         return '';
@@ -2866,7 +2866,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      // Retail ExecuteCommandGetTransitionTarget @ 0053e3c0
+      // Retail ExecuteCommandGetTransitionTarget
       const obj = args[0];
       if(!obj) return undefined;
       if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleTrigger)){
@@ -2940,7 +2940,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.STRING],
     action: function(this: NWScriptInstance, args: [number, string]){
-      // ExecuteCommandSetAreaTransitionBMP @ 00542410 â†’ CSWSPlayer::SetAreaTransitionBMP @ 00560cd0
+      // ExecuteCommandSetAreaTransitionBMP â†’ SetAreaTransitionBMP
       setAreaTransitionBMP(args[0] | 0, args[1] ?? '');
     }
   },
@@ -2951,7 +2951,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.STRING, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING],
     action: function(this: NWScriptInstance, args: [ModuleObject, string, number, number, number, string, string, string, string, string, string]){
       if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
-        // Retail ExecuteCommandActionStartConversation @ 0052d5b0 clears party[0]
+        // Retail ExecuteCommandActionStartConversation clears party[0]
         // client+server actions before queueing ActionDialogObject.
         const partyLeader = GameState.PartyManager.party[0];
         if(BitWise.InstanceOfObject(partyLeader, ModuleObjectType.ModuleCreature)){
@@ -2972,8 +2972,8 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // Retail ExecuteCommandActionPauseConversation @ 0052d330 — sets
-      // field15_0x50 immediately (does not AddAction). Resume stays queued.
+      // Retail ExecuteCommandActionPauseConversation — sets
+      // immediately (does not AddAction). Resume stays queued.
       GameState.CutsceneManager.pauseConversation();
     }
   },
@@ -3458,7 +3458,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.FLOAT, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number, number]){
-      // Retail ExecuteCommandDestroyObject @ 00530104:
+      // Retail ExecuteCommandDestroyObject:
       // SetDeleteNoFade(bNoFade); SetFadeOutTime(fFadeOut*1000); Event 0xb after fDelay ms.
       if(!args[0]){
         return;
@@ -3559,7 +3559,7 @@ NWScriptDefK1.Actions = {
             return undefined;
           }
         break;
-        case 128: // Store — retail ExecuteCommandCreateObject case 0x80 @ 0052f820
+        case 128: // Store — retail ExecuteCommandCreateObject case 0x80
           buffer = ResourceLoader.loadCachedResource(ResourceTypes['utm'], args[1]);
           if(buffer){
             const store = new GameState.Module.ModuleArea.ModuleStore(new GFFObject(buffer));
@@ -3696,7 +3696,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.STRING, NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [string, ModuleObject]){
-      // Retail ExecuteCommandBeginConversation @ 0052e9f0
+      // Retail ExecuteCommandBeginConversation
       let listener = args[1];
       if(!(BitWise.InstanceOfObject(listener, ModuleObjectType.ModuleObject))){
         listener = this.listenPatternSpeaker;
@@ -3743,7 +3743,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // Retail GetLastPerception @ 0053b2a0 â€” returns event flag int (creature+0x904)
+      // Retail GetLastPerception â€” returns event flag int (creature)
       if(BitWise.InstanceOfObject(this.lastPerceived?.object, ModuleObjectType.ModuleObject)){
         return !!(this.lastPerceived.data & PerceptionMask.HEARD) ? 1 : 0;
       }
@@ -3846,7 +3846,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // Retail ExecuteCommandShowLevelUpGUI @ 00543870 â†’ CGuiInGame::ShowLevelUpGUI
+      // Retail ExecuteCommandShowLevelUpGUI â†’ ShowLevelUpGUI
       return GameState.LevelUpManager?.showLevelUpGUI?.() ? NW_TRUE : NW_FALSE;
     }
   },
@@ -3971,7 +3971,7 @@ NWScriptDefK1.Actions = {
       const versus = BitWise.InstanceOfObject(args[2], ModuleObjectType.ModuleCreature)
         ? args[2] as ModuleCreature
         : undefined;
-      // Retail GetEffectImmunity @ 005a6960
+      // Retail GetEffectImmunity
       const immune = creature.combatRound
         ? creature.combatRound.hasEffectImmunity(creature, args[1], versus)
         : hasImmunityType(creature, args[1], versus);
@@ -4487,7 +4487,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      // Retail ExecuteCommandGetAttackTarget @ 00536800 â€” returns field66_0x504
+      // Retail ExecuteCommandGetAttackTarget â€” returns
       // with no combat-state gate (docs claim otherwise).
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
         return args[0].combatData.lastAttackTarget;
@@ -5230,7 +5230,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, ModuleCreature, number, number]){
-      // ExecuteCommandOpenStore @ 00540300 â†’ ShowStoreGui @ 0062e310
+      // ExecuteCommandOpenStore â†’ ShowStoreGui
       if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleStore)){
         return;
       }
@@ -5305,8 +5305,8 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.LOCATION, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [EngineLocation, number, number]){
-      // Retail ExecuteCommandMoveToPoint @ 0053fe00 â€” AddMoveToPointAction with
-      // timeout (default 30). CSWSCreature::ForceMoveToPoint @ 004edba0 is Jump
+      // Retail ExecuteCommandMoveToPoint â€” AddMoveToPointAction with
+      // timeout (default 30). ForceMoveToPoint is Jump
       // for ForcedAction, not this NWScript opcode.
       if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
         const timeout = (typeof args[2] === 'number' && args[2] > 0) ? args[2] : 30.0;
@@ -5320,7 +5320,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number, number]){
-      // Retail ExecuteCommandMoveToObject @ 0053fb00 â€” AddMoveToPointAction with
+      // Retail ExecuteCommandMoveToObject â€” AddMoveToPointAction with
       // timeout (default 30 when paramCount < 4).
       if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
         const timeout = (typeof args[3] === 'number' && args[3] > 0) ? args[3] : 30.0;
@@ -5384,7 +5384,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
-      // GUI_PANEL_PLAYER_DEATH = 0 (SendServerToPlayerPopUpGUIPanel @ 0056aac0)
+      // GUI_PANEL_PLAYER_DEATH = 0 (SendServerToPlayerPopUpGUIPanel)
       GameOverManager.PopUpGUIPanel(args[0], args[1] | 0);
     }
   },
@@ -5495,7 +5495,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
       // oVersus (args[0]) is optional combat-target context; the subject is always OBJECT_SELF.
-      // Retail EquipMostDamagingMeleeWeapon @ 00500e50 â€” used by GN_EquipAppropriateWeapon.
+      // Retail EquipMostDamagingMeleeWeapon â€” used by GN_EquipAppropriateWeapon.
       if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
         return;
       }
@@ -5527,7 +5527,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       // oVersus (args[0]) is optional combat-target context; the subject is always OBJECT_SELF.
-      // Retail EquipMostDamagingRangedWeapon @ 00501250 â€” used by GN_EquipAppropriateWeapon.
+      // Retail EquipMostDamagingRangedWeapon â€” used by GN_EquipAppropriateWeapon.
       if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
         return;
       }
@@ -5634,7 +5634,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // Retail ExecuteCommandGetIsDay @ 00539900 â€” module phase == 1
+      // Retail ExecuteCommandGetIsDay â€” module phase == 1
       return GameState.module?.timeManager.isDay() ? NW_TRUE : NW_FALSE;
     }
   },
@@ -5644,7 +5644,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // Retail ExecuteCommandGetIsNight @ 00539de0 â€” module phase == 2
+      // Retail ExecuteCommandGetIsNight â€” module phase == 2
       return GameState.module?.timeManager.isNight() ? NW_TRUE : NW_FALSE;
     }
   },
@@ -5654,7 +5654,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // Retail ExecuteCommandGetIsDawn @ 005398c0 â€” module phase == 3
+      // Retail ExecuteCommandGetIsDawn â€” module phase == 3
       return GameState.module?.timeManager.isDawn() ? NW_TRUE : NW_FALSE;
     }
   },
@@ -5664,7 +5664,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // Retail ExecuteCommandGetIsDusk @ 00539bd0 â€” module phase == 4
+      // Retail ExecuteCommandGetIsDusk â€” module phase == 4
       return GameState.module?.timeManager.isDusk() ? NW_TRUE : NW_FALSE;
     }
   },
@@ -5674,8 +5674,8 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      // Retail ExecuteCommandGetIsEncounterCreature @ 00539c10 â€”
-      // TRUE when creature.field407_0xa24 != OBJECT_INVALID
+      // Retail ExecuteCommandGetIsEncounterCreature â€”
+      // TRUE when creature. != OBJECT_INVALID
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
         const creature = args[0] as ModuleCreature;
         return creature.encounterObjectId !== ModuleObjectConstant.OBJECT_INVALID
@@ -5763,7 +5763,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.STRING, NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [string, ModuleObject]){
-      // Retail ExecuteCommandSpeakOneLinerConversation @ 00543f70 â†’ RunDialogOneLiner @ 004cb220
+      // Retail ExecuteCommandSpeakOneLinerConversation â†’ RunDialogOneLiner
       if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
         return;
       }
@@ -6007,7 +6007,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // Retail ExecuteCommandGetLastKiller @ 0053b080 â€” CSWSObject field66 killer id
+      // Retail ExecuteCommandGetLastKiller â€” retail killer id
       if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
         return undefined;
       }
@@ -6021,7 +6021,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // Retail ExecuteCommandGetSpellCastItem @ 0053d250 â€” creature field347
+      // Retail ExecuteCommandGetSpellCastItem â€” creature
       if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
         return (this.caller as ModuleCreature).spellCastItem ?? undefined;
       }
@@ -6555,7 +6555,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      // Retail CSWSArea::AwardStealthXP @ 00508770
+      // Retail AwardStealthXP
       const area = GameState.module?.area;
       if(!area || !area.stealthXPEnabled || !area.stealthXP) return;
       if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)) return;
@@ -6728,7 +6728,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.FLOAT,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      // Retail ExecuteCommandGetChallengeRating @ 00536c60
+      // Retail ExecuteCommandGetChallengeRating
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
         return Number((args[0] as ModuleCreature).challengeRating) || 0;
       }
@@ -6741,8 +6741,8 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      // Retail ExecuteCommandGetFoundEnemyCreature @ 00546e70 â€”
-      // path_find_info->field140_0x264 (set by PlotPathAroundCreature).
+      // Retail ExecuteCommandGetFoundEnemyCreature â€”
+      // (set by PlotPathAroundCreature).
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
         return (args[0] as ModuleCreature).collisionManager?.foundEnemyCreature;
       }
@@ -6859,7 +6859,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number, number]){
-      // Retail ExecuteCommandCutsceneAttack @ 0052e890 → AddCutsceneAttackActions @ 004f9fb0
+      // Retail ExecuteCommandCutsceneAttack → AddCutsceneAttackActions
       // Caller must be a creature; target validated later in ResolveAttack (creature/door/placeable).
       if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
         return;
@@ -6882,7 +6882,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
       // Retail NWScript: if oPlayer is not PC-controlled or nCameraMode is invalid, nothing happens.
-      // CClientOptions::SetCameraMode @ 0061b6f0 stores the mode byte once validated upstream.
+      // SetCameraMode stores the mode byte once validated upstream.
       const mode = args[1] | 0;
       const pc = GameState.PartyManager?.party?.[0] as ModuleCreature | undefined;
       if(!pc || !BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature) || args[0] !== pc){
@@ -6925,7 +6925,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.VECTOR, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, THREE.Vector3, number]){
-      // Retail ExecuteCommandCutsceneMove @ 0052e950 → AddCutsceneMoveActions @ 004fa050
+      // Retail ExecuteCommandCutsceneMove → AddCutsceneMoveActions
       // Caller (AssignCommand subject) moves toward oTarget / vPosition.
       if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
         return;
@@ -7102,7 +7102,7 @@ NWScriptDefK1.Actions = {
           return 65534; // ACTION_QUEUEEMPTY
         }
 
-        // Retail ExecuteCommandGetCurrentAction @ 00549040: walk same groupId,
+        // Retail ExecuteCommandGetCurrentAction: walk same groupId,
         // keep last GetAcceptableAction / GetAQActionIDByID whitelist hit.
         const headGroup = queue[0].groupId;
         let result = 65535;
@@ -7396,7 +7396,7 @@ NWScriptDefK1.Actions = {
           case 2: (this.caller as ModuleCreature).attackCreature(args[0] as ModulePlaceable); break;
           //PLACEABLE_ACTION_KNOCK
           case 3: 
-            // (args[0] as ModulePlaceable).actionUseObject(this.caller); 
+            // (args[0] as ModulePlaceable).actionUseObject(this.caller);
           break;
         }
       }
@@ -7408,7 +7408,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // Retail CServerExoAppInternal::GetFirstPCObject walks the player list.
+      // Retail GetFirstPCObject walks the player list.
       // Minigame loads leave party[] empty (ModuleArea.loadPlayer) but keep
       // PartyManager.Player — swoop heartbeat AssignCommand(GetFirstPC(),
       // DelayCommand(3.0, StartNewModule(...))) needs that object.
@@ -7576,7 +7576,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number, number]){
-      // ExecuteCommandSWMG_SetSpeedBlurEffect @ 00543550 — AurEnableSpeedBlur; AccumulationBlurPass
+      // ExecuteCommandSWMG_SetSpeedBlurEffect — AurEnableSpeedBlur; AccumulationBlurPass
       const ratio = typeof args[1] === 'number' ? args[1] : 0.75;
       GameState.SetSpeedBlurEffect(!!args[0], ratio);
     }
@@ -7587,7 +7587,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      // ExecuteCommandEndGame @ 00535570 â†’ SetEndGamePending(+ SetGameOver if show GUI)
+      // ExecuteCommandEndGame â†’ SetEndGamePending(+ SetGameOver if show GUI)
       GameOverManager.EndGame(!!args[0]);
     }
   },
@@ -7668,7 +7668,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.FLOAT,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      // Retail ExecuteCommandGetStrRefSoundDuration @ 0079e8f0 â€” CTlkTable::Fetch â†’ float SoundLength.
+      // Retail ExecuteCommandGetStrRefSoundDuration â€” Fetch â†’ float SoundLength.
       const tlk = GameState.TLKManager.GetStringById(args[0]);
       if(!tlk){ return 0; }
       return tlk.getDisplaySoundLength();
@@ -7680,7 +7680,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
-      // Retail ExecuteCommandAddToParty @ 0052df40 â€” both must be PC (field377/isPC); AddMember to leader faction
+      // Retail ExecuteCommandAddToParty â€” both must be PC (isPC); AddMember to leader faction
       if(
         !BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature) ||
         !BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)
@@ -7699,7 +7699,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      // Retail ExecuteCommandRemoveFromParty @ 00541ba0 â€” CSWSFaction::RemoveMember.
+      // Retail ExecuteCommandRemoveFromParty â€” RemoveMember.
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
         const creature = args[0] as ModuleCreature;
         creature.faction?.removeMember?.(creature);
@@ -7827,7 +7827,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [NWScriptDataType.STRING],
     action: function(this: NWScriptInstance, args: [string]){
-      // Retail GetMGOArray â†’ GetMiniGameObjectByName @ 0066bfb0 (live 255-slot registry).
+      // Retail GetMGOArray â†’ GetMiniGameObjectByName (live 255-slot registry).
       return MiniGameObjectArray.getByName(args[0]);
     }
   },
@@ -7883,7 +7883,7 @@ NWScriptDefK1.Actions = {
   590:{
     comment: "590: adjusts a followers hit points, can specify the absolute value to set to\nSWMG_AdjustFollowerHitPoints\n",
     name: "SWMG_AdjustFollowerHitPoints",
-    // Retail ExecuteCommand @ 005cb990 â€” no StackPushInteger (VOID).
+    // Retail ExecuteCommand â€” no StackPushInteger (VOID).
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
@@ -7929,7 +7929,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // Retail @ 005cbb00: GetLastFollowerHit on caller MGO (obstacle's last_follower_hit_index).
+      // Retail: GetLastFollowerHit on caller MGO (obstacle's last_follower_hit_index).
       if(this.mgFollower){ return this.mgFollower; }
       const caller = this.caller;
       if(BitWise.InstanceOfObject(caller, ModuleObjectType.ModuleMGObstacle)){
@@ -7998,7 +7998,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      // Retail IsSomething @ 005cbc80 â€” follower vtable (player + enemies, incl. dying).
+      // Retail IsSomething â€” follower vtable (player + enemies, incl. dying).
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGPlayer)){
         return NW_TRUE;
       }
@@ -8033,8 +8033,8 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      // Retail IsSomething @ 005cbc80 jump table[3] â†’ 005cbd0b:
-      // IsEnemy vtable (+0x1c returns this) then Trigger byte @ +0x1a0.
+      // Retail IsSomething jump table[3]:
+      // IsEnemy path, then Trigger flag.
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy)){
         return (args[0] as ModuleMGEnemy).isTrigger ? NW_TRUE : NW_FALSE;
       }
@@ -8047,9 +8047,9 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      // Retail IsSomething @ 005cbc80 jump table[4] â†’ 005cbcfb:
-      // IsObstacle vtable (+0x20); then intentional fallthrough to IsTrigger
-      // epilogue @ 005cbd0b (enemy + Trigger@+0x1a0 also returns true).
+      // Retail IsSomething jump table[4]:
+      // IsObstacle path; then intentional fallthrough to IsTrigger
+      // epilogue (enemy + Trigger also returns true).
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGObstacle)){
         return NW_TRUE;
       }
@@ -8122,7 +8122,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.FLOAT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // Retail ExecuteCommandSWMG_GetCameraClipping @ 005cbe90 â†’ GetClipDist
+      // Retail ExecuteCommandSWMG_GetCameraClipping â†’ GetClipDist
       const mg = GameState.module?.area?.miniGame;
       return mg ? (mg.nearClip ?? 0) : 0;
     }
@@ -8143,7 +8143,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.FLOAT, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number, number]){
-      // Retail SetClipDist @ 00670b50 â€” swap if near>far, apply to camera
+      // Retail SetClipDist â€” swap if near>far, apply to camera
       const mg = GameState.module?.area?.miniGame;
       if(!mg) return;
       let nearClip = args[0];
@@ -8591,7 +8591,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number]){
-      // Retail SetSpeed @ 0066c870 â€” update speed + track anim rate (speed*0.01).
+      // Retail SetSpeed â€” update speed + track anim rate (speed*0.01).
       GameState.module.area.miniGame.player.setFollowerSpeed(args[0]);
     }
   },
@@ -9244,7 +9244,7 @@ NWScriptDefK1.Actions = {
     }
   },
   709:{
-    comment: "709: GetNPCSelectability\nRetail CSWPartyTable::GetNPCSelectability — -1 if unavailable, else selectability (0/1).\n",
+    comment: "709: GetNPCSelectability\nRetail GetNPCSelectability — -1 if unavailable, else selectability (0/1).\n",
     name: "GetNPCSelectability",
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.INTEGER],
@@ -9570,7 +9570,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number]){
-      // ExecuteCommandChangeByFaction @ 00546340 (SurrenderByFaction branch)
+      // ExecuteCommandChangeByFaction (SurrenderByFaction branch)
       changeFactionByFaction(this.caller, args[0] | 0, args[1] | 0, true);
     }
   },
@@ -9580,7 +9580,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number]){
-      // ExecuteCommandChangeByFaction @ 00546340 (ChangeFactionByFaction branch)
+      // ExecuteCommandChangeByFaction (ChangeFactionByFaction branch)
       changeFactionByFaction(this.caller, args[0] | 0, args[1] | 0, false);
     }
   },
@@ -9703,7 +9703,7 @@ NWScriptDefK1.Actions = {
         this.conversation = undefined;
       }
       // if(BitWise.InstanceOfObject(this.listenPatternSpeaker, ModuleObjectType.ModuleObject)){
-      //   this.listenPatternSpeaker._conversation = undefined;
+      // this.listenPatternSpeaker._conversation = undefined;
       // }
     }
   },
@@ -9967,12 +9967,12 @@ NWScriptDefK1.Actions = {
 };
 
 // for (let property in NWScriptDef.Actions) {
-//   if (NWScriptDef.Actions.hasOwnProperty(property)) {
-//     if(NWScriptDefK1.Actions[property]){
-//       if(NWScriptDefK1.Actions[property].action === undefined){
-//         NWScriptDefK1.Actions[property].action = NWScriptDef.Actions[property].action;
-//       }
-//     }
-//   }
+// if (NWScriptDef.Actions.hasOwnProperty(property)) {
+// if(NWScriptDefK1.Actions[property]){
+// if(NWScriptDefK1.Actions[property].action === undefined){
+// NWScriptDefK1.Actions[property].action = NWScriptDef.Actions[property].action;
+// }
+// }
+// }
 // }
 

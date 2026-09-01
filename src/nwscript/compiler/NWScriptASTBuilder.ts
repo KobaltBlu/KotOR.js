@@ -154,7 +154,7 @@ export class NWScriptASTBuilder {
       return this.parseComment();
     }
 
-    // const? datatype name ...
+    // const? datatype name...
     // or control-flow statements
     if (this.is("keyword", "IF")) return this.parseIf();
     if (this.is("keyword", "SWITCH")) return this.parseSwitch();
@@ -166,7 +166,7 @@ export class NWScriptASTBuilder {
     if (this.is("keyword", "CONTINUE")) return this.parseContinue();
     if (this.is("punct", "{")) return this.parseBlock();
 
-    // attempt declaration: [const] datatype name ...
+    // attempt declaration: [const] datatype name...
     const save = this.tok;
 
     const isConst = this.is("keyword", "CONST");

@@ -463,7 +463,7 @@ export class NWScriptASTCodeGen {
     }
     if (literal.datatype.value === 'float') {
       const val = Number(literal.value);
-      // If it's a whole number, add .0 to preserve float representation
+      // If it's a whole number, add.0 to preserve float representation
       if (Number.isInteger(val)) {
         return val + '.0';
       }

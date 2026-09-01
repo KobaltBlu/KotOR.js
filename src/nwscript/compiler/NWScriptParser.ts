@@ -213,7 +213,7 @@ export class NWScriptParser {
               const startMatch = trimmed.match(/\/\*(.*?)(\*\/)?/);
               if (startMatch) {
                 if (startMatch[2]) {
-                  // Single line block comment /* ... */
+                  // Single line block comment /*... */
                   commentLines.unshift(startMatch[1].trim());
                   inBlockComment = false;
                 } else {
@@ -478,10 +478,10 @@ export class NWScriptParser {
     //It appears that in the original compiler, local variables declarations are allowed to reuse the same name as an argument.
     //
     //example: k_inc_generic line# 5014
-    //5011:  talent GN_GetTargetedForcePower(int nDroid = FALSE)
-    //5012:  {
-    //5013:    talent tUse;
-    //5014:    int nChoke, nAfflict, nPlague, nPush, nWind, nLightning, nKill, nHorror, nWound, nStasis, nDroid, nKnock, nHowl, nCnt;
+    //5011: talent GN_GetTargetedForcePower(int nDroid = FALSE)
+    //5012: {
+    //5013: talent tUse;
+    //5014: int nChoke, nAfflict, nPlague, nPush, nWind, nLightning, nKill, nHorror, nWound, nStasis, nDroid, nKnock, nHowl, nCnt;
     const isScriptArgumentNameInUse = isScriptVariableNameInUse?.type == 'argument';
 
     return isEngineActionName || isScriptFunctionNameInUse || isScriptStructNameInUse || (isScriptVariableNameInUse && !isScriptArgumentNameInUse);
@@ -773,7 +773,7 @@ export class NWScriptParser {
       let arg = typeof args[i] == 'object' ? this.parseASTStatement(args[i]) as SemanticExpressionNode : args[i];
       const arg_ref = ref_args[i] as SemanticArgumentNode;
 
-      //Check to see if an argument was not supplied and the function reference 
+      //Check to see if an argument was not supplied and the function reference
       //has a default argument value to use in place of unsupplied arguments
       if(!arg && (typeof arg_ref.value !== 'undefined') ){
         //generate a default argument if one is not supplied

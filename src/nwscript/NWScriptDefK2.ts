@@ -19,9 +19,9 @@ import { TalentSpell } from "@/talents/TalentSpell";
 
 /**
  * NWScriptDefK2 class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file NWScriptDefK2.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -1495,11 +1495,11 @@ NWScriptDefK2.Actions = {
     /**
      * TSL made some modifications to this function.
      * 4 additional arguments were added
-     * int bUseLeader = FALSE, 
-     * int nBarkX = -1, 
-     * int nBarkY = -1, 
+     * int bUseLeader = FALSE,
+     * int nBarkX = -1,
+     * int nBarkY = -1,
      * int bDontClearAllActions = 0
-     * nBarkX, and nBarkY override the left, top corner position for the bark string if the conversation starting is a bark string. 
+     * nBarkX, and nBarkY override the left, top corner position for the bark string if the conversation starting is a bark string.
      * They only happen on a conversation by conversation basis and don't stay in effect in subsequent conversations.
      * @param this NWScriptInstance
      * @param args [oObjectToConverse: ModuleObject, sDialogResRef: string = "", bPrivateConversation: boolean = FALSE, nConversationType: number = CONVERSATION_TYPE_CINEMATIC, bIgnoreStartRange: boolean = FALSE, sNameObjectToIgnore1: string = "", sNameObjectToIgnore2: string = "", sNameObjectToIgnore3: string = "", sNameObjectToIgnore4: string = "", sNameObjectToIgnore5: string = "", sNameObjectToIgnore6: string = "", bUseLeader: boolean = FALSE, nBarkX: number = -1, nBarkY: number = -1, bDontClearAllActions: boolean = 0]
@@ -1531,8 +1531,8 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.VOID,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // Retail ExecuteCommandActionPauseConversation @ 0052d330 — sets
-      // field15_0x50 immediately (does not AddAction). Resume stays queued.
+      // Retail ExecuteCommandActionPauseConversation — sets
+      // immediately (does not AddAction). Resume stays queued.
       GameState.CutsceneManager.pauseConversation();
     }
   },
@@ -4412,7 +4412,7 @@ NWScriptDefK2.Actions = {
   590: {
     comment: '590: adjusts a followers hit points, can specify the absolute value to set to\nSWMG_AdjustFollowerHitPoints',
     name: 'SWMG_AdjustFollowerHitPoints',
-    // Retail ExecuteCommand @ 005cb990 — no StackPushInteger (VOID).
+    // Retail ExecuteCommand — no StackPushInteger (VOID).
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
     action: undefined
@@ -5209,7 +5209,7 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // ExecuteCommandEffectWhirlwind @ 0078d030 — SetState int0=10
+      // ExecuteCommandEffectWhirlwind — SetState int0=10
       const effect = new GameState.GameEffectFactory.EffectSetState();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
@@ -5253,7 +5253,7 @@ NWScriptDefK2.Actions = {
     action: undefined
   },
   709: {
-    comment: '709: GetNPCSelectability\nRetail CSWPartyTable::GetNPCSelectability — -1 if unavailable, else selectability (0/1).',
+    comment: '709: GetNPCSelectability\nRetail GetNPCSelectability — -1 if unavailable, else selectability (0/1).',
     name: 'GetNPCSelectability',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER ],
@@ -5724,7 +5724,7 @@ NWScriptDefK2.Actions = {
     comment: 'FAK-OEI 12/15/2003\n771: Get the number of components for an item in pieces',
     name: 'GetItemComponentPieceValue',
     type: NWScriptDataType.INTEGER,
-    // Retail: CSWSItem::GetCost() / 0x14 (same as GetChemicalPieceValue @ 007936e0).
+    // Retail: GetCost() / 0x14 (same as GetChemicalPieceValue).
     args: [ NWScriptDataType.OBJECT ],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleItem)){
@@ -5740,7 +5740,7 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT ],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      // CGuiInGame::ShowChemicalUpgradeScreen → CSWGuiCreateMedicalItem (chemical_p).
+      // ShowChemicalUpgradeScreen → retail (chemical_p).
       const character = BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)
         ? (args[0] as ModuleCreature)
         : undefined;
@@ -5751,7 +5751,7 @@ NWScriptDefK2.Actions = {
     comment: 'FAK-OEI 12/15/2003\n774: Get the number of chemicals for an item',
     name: 'GetChemicals',
     type: NWScriptDataType.INTEGER,
-    // ExecuteCommandGetChemical @ 007935e0 — creature GetChemical / placeable chem stack.
+    // ExecuteCommandGetChemical — creature GetChemical / placeable chem stack.
     // KotOR.js stockpile is PartyManager.ChemicalCount (PT_ITEM_CHEMICAL).
     args: [ NWScriptDataType.OBJECT ],
     action: function(this: NWScriptInstance, _args: [ModuleObject]){
@@ -5762,7 +5762,7 @@ NWScriptDefK2.Actions = {
     comment: 'FAK-OEI 12/15/2003\n775: Get the number of chemicals for an item in pieces',
     name: 'GetChemicalPieceValue',
     type: NWScriptDataType.INTEGER,
-    // ExecuteCommandGetChemicalPieceValue @ 007936e0 — GetCost() / 0x14.
+    // ExecuteCommandGetChemicalPieceValue — GetCost() / 0x14.
     args: [ NWScriptDataType.OBJECT ],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleItem)){
@@ -5819,7 +5819,7 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // ExecuteCommandEffectCrush @ 00787e10 — SetState type 0x08, int0=0x0F
+      // ExecuteCommandEffectCrush — SetState type 0x08, int0=0x0F
       const effect = new GameState.GameEffectFactory.EffectSetState();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
@@ -5870,7 +5870,7 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.VOID,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // TSL CSWGuiSwoopUpgrade — ShowSwoopUpgradeScreen opens swoopup_p.
+      // TSL retail — ShowSwoopUpgradeScreen opens swoopup_p.
       GameState.MenuManager.MenuSwoopUp?.open();
     }
   },
@@ -5943,7 +5943,7 @@ NWScriptDefK2.Actions = {
     }
   },
   791: {
-    comment: '//RWT-OEI 01/16/04\n791: A function to put the character into a true combat state but the reason set to\n     not real combat. This should help us control animations in cutscenes with a bit\n     more precision. -- Not totally sure this is doing anything just yet. Seems\n     the combat condition gets cleared shortly after anyway.\n     If nEnable is 1, it enables fake combat mode. If 0, it disables it.\n     WARNING: Whenever using this function to enable fake combat mode, you should\n              have a matching call to it to disable it. (pass 0 for nEnable).',
+    comment: '//RWT-OEI 01/16/04\n791: A function to put the character into a true combat state but the reason set to\n not real combat. This should help us control animations in cutscenes with a bit\n more precision. -- Not totally sure this is doing anything just yet. Seems\n the combat condition gets cleared shortly after anyway.\n If nEnable is 1, it enables fake combat mode. If 0, it disables it.\n WARNING: Whenever using this function to enable fake combat mode, you should\n have a matching call to it to disable it. (pass 0 for nEnable).',
     name: 'SetFakeCombatState',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
@@ -6055,7 +6055,7 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.FLOAT ],
     action: function(this: NWScriptInstance, args: [number]){
-      // TSL ExecuteCommandSWMG_SetJumpSpeed @ 007fc210
+      // TSL ExecuteCommandSWMG_SetJumpSpeed
       const mg = GameState.module?.area?.miniGame;
       if(mg){ mg.setJumpSpeed(args[0]); }
     }
@@ -6103,7 +6103,7 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // EffectComplex @ 007881d5 — SetState int0=0x10
+      // EffectComplex — SetState int0=0x10
       const effect = new GameState.GameEffectFactory.EffectSetState();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
@@ -6230,7 +6230,7 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // ExecuteCommandEffectForceSight @ 00789df0 — type 0x72
+      // ExecuteCommandEffectForceSight — type 0x72
       const effect = new GameState.GameEffectFactory.EffectForceSight();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
@@ -6255,7 +6255,7 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.VECTOR ],
     action: function(this: NWScriptInstance, args: [THREE.Vector3]){
-      // TSL ExecuteCommandSWMG_PlayerApplyForce @ 007fc260 — jumpSpeed = vector.z
+      // TSL ExecuteCommandSWMG_PlayerApplyForce — jumpSpeed = vector.z
       const mg = GameState.module?.area?.miniGame;
       if(!mg){ return; }
       const v = args[0];
@@ -6479,7 +6479,7 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // EffectComplex @ 00788241 — SetState int0=0x12
+      // EffectComplex — SetState int0=0x12
       const effect = new GameState.GameEffectFactory.EffectSetState();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
@@ -6516,7 +6516,7 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // EffectComplex @ 00788265 — SetState int0=0x13
+      // EffectComplex — SetState int0=0x13
       const effect = new GameState.GameEffectFactory.EffectSetState();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
@@ -6530,7 +6530,7 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.VOID,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // Retail ExecuteCommandActionSwitchWeapons @ 007b0f50 → AddAction(0x47)
+      // Retail ExecuteCommandActionSwitchWeapons → AddAction(0x47)
       if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
         return;
       }
@@ -6634,7 +6634,7 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT ],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      // ExecuteCommandDisplayDatapad @ 007b15f0 — SetLocalBoolean(0x5E), DescIdentified → datapad_p
+      // ExecuteCommandDisplayDatapad — SetLocalBoolean(0x5E), DescIdentified → datapad_p
       if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleItem)){
         return;
       }
@@ -6726,7 +6726,7 @@ NWScriptDefK2.Actions = {
     }
   },
   876: {
-    comment: '876\nRWT-OEI 11/12/04\nThis repopulates the NPCObject table in CSWPartyTable. Do not use this\nunless you understand exactly what it is doing.',
+    comment: '876\nRWT-OEI 11/12/04\nThis repopulates the NPCObject table in the party table. Do not use this\nunless you understand exactly what it is doing.',
     name: 'RebuildPartyTable',
     type: NWScriptDataType.VOID,
     args: [],

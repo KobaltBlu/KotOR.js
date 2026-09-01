@@ -2,7 +2,7 @@ import { GameEffectType } from "@/enums/effects/GameEffectType";
 import type { GameEffect } from "@/effects/GameEffect";
 
 /**
- * Retail CSWVirtualMachineCommands::ExecuteCommandVersusEffect @ 00545470.
+ * Retail ExecuteCommandVersusEffect.
  * Sets race / alignment / trap-versus integers at type-specific slots.
  *
  * @file versus-effect.ts

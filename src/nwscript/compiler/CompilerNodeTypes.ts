@@ -109,7 +109,7 @@ export type CompilerWhileNode = WithCompilerMeta<SemanticWhileNode> & {
   condition_end?: number;
   preStatementsSPCache?: number;
   pendingLoopBreakJmpSites?: number[];
-  /** `continue`: forward JMP patched to bytecode just before backward JMP at loop footer (CNsc layout). */
+  /** `continue`: forward JMP patched to bytecode just before backward JMP at loop footer (NSS compiler layout). */
   pendingWhileContinueFwdJmpSites?: number[];
   statements: CompilerStatementNode[];
   condition: CompilerExpressionNode;

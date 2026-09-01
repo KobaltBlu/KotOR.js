@@ -19,7 +19,7 @@ const KEYWORDS = new Map<string, string>([
   ["struct", "STRUCT"],
   ["action", "ACTION"],
   ["object", "OBJECT"],
-  // object_id is a type alias accepted in tryParseDataType (name), not a keyword —
+  // object_id is a type alias accepted in tryParseDataType (name), not a keyword
   // so OBJECT_ID in nwscript.nss stays a name and Vector/Object stay callable.
 
   ["return", "RETURN"],

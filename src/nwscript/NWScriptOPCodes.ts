@@ -14,7 +14,7 @@ export const OP_CPDOWNSP = 0x01;
 // RSADDO- Reserve Object Space on Stack
 // Reserve space on the stack for the given variable type.
 
-// The value of SP is increased by the size of the type reserved.  (Always 4)
+// The value of SP is increased by the size of the type reserved. (Always 4)
 export const OP_RSADD = 0x02;
 
 // CPTOPSP - Copy Top Stack Pointer
@@ -29,13 +29,13 @@ export const OP_CPTOPSP = 0x03;
 // CONSTO - Place Constant Object ID Onto the Stack
 // Place the constant integer onto the top of the stack.
 
-// The value of SP is increased by the size of the type reserved.  (Always 4)
+// The value of SP is increased by the size of the type reserved. (Always 4)
 export const OP_CONST = 0x04;
 
 // ACTION - Call an Engine Routine
-// Invoke the engine routine specified.  All arguments must be placed on the stack in reverse order prior to this byte code.  The arguments will be removed by the engine routine and any return value then placed on the stack.
+// Invoke the engine routine specified. All arguments must be placed on the stack in reverse order prior to this byte code. The arguments will be removed by the engine routine and any return value then placed on the stack.
 
-// The value of SP is increased by the size of the return value and decreased by the total size of the arguments.  It is important to note that the total size of the arguments might be different than the number of arguments.  Structures and vectors are take up more space than normal types.
+// The value of SP is increased by the size of the return value and decreased by the total size of the arguments. It is important to note that the total size of the arguments might be different than the number of arguments. Structures and vectors are take up more space than normal types.
 export const OP_ACTION = 0x05;
 
 // LOGANDII - Logical AND Two Integers
@@ -73,12 +73,12 @@ export const OP_BOOLANDII = 0x0A;
 // EQUALFF - Test for Logical Equality Two Floats
 // EQUALSS - Test for Logical Equality Two Strings
 // EQUALOO - Test for Logical Equality Two Object IDs
-// Test the two operand for logical equality.  This operator supports the comparison or all the basic types and then engine types as long as both operands have the same type.
+// Test the two operand for logical equality. This operator supports the comparison or all the basic types and then engine types as long as both operands have the same type.
 
 // The value of SP is increased by the size of the result while decreased by the size of both operands.
 
 // EQUALTT - Test for Logical Equality Two Structures
-// Test the two operand for logical equality.  This operator supports the comparison or all the basic types and then engine types as long as both operands have the same type.
+// Test the two operand for logical equality. This operator supports the comparison or all the basic types and then engine types as long as both operands have the same type.
 
 // The value of SP is increased by the size of the result while decreased by the size of both operands.
 export const OP_EQUAL = 0x0B;
@@ -88,12 +88,12 @@ export const OP_EQUAL = 0x0B;
 // NEQUALFF - Test for Logical Inequality Two Floats
 // NEQUALSS - Test for Logical Inequality Two Strings
 // NEQUALOO - Test for Logical Inequality Two Object IDs
-// Test the two operand for logical inequality.  This operator supports the comparison or all the basic types and then engine types as long as both operands have the same type.
+// Test the two operand for logical inequality. This operator supports the comparison or all the basic types and then engine types as long as both operands have the same type.
 
 // The value of SP is increased by the size of the result while decreased by the size of both operands.
 
 // NEQUALTT - Test for Logical Inequality Two Structures
-// Test the two operand for logical inequality.  This operator supports the comparison or all the basic types and then engine types as long as both operands have the same type.
+// Test the two operand for logical inequality. This operator supports the comparison or all the basic types and then engine types as long as both operands have the same type.
 
 // The value of SP is increased by the size of the result while decreased by the size of both operands.
 export const OP_NEQUAL = 0x0C;
@@ -131,19 +131,19 @@ export const OP_LT = 0x0F;
 export const OP_LEQ = 0x10;
 
 // SHLEFTII - Shift the Integer Value Left
-// Shift the value left be the given number of bits.  Operand one is the value to shift while operand two is the number of bits to shift.
+// Shift the value left be the given number of bits. Operand one is the value to shift while operand two is the number of bits to shift.
 
 // The value of SP is increased by the size of the result while decreased by the size of both operands.
 export const OP_SHLEFTII = 0x11;
 
 // SHRIGHTII - Shift the Integer Value Right
-// Shift the value right be the given number of bits.  Operand one is the value to shift while operand two is the number of bits to shift.
+// Shift the value right be the given number of bits. Operand one is the value to shift while operand two is the number of bits to shift.
 
 // The value of SP is increased by the size of the result while decreased by the size of both operands.
 export const OP_SHRIGHTII = 0x12;
 
 // USHRIGHTII - Unsigned Shift the Integer Value Right
-// Shift the value right be the given number of bits as if it was an unsigned integer and not a signed integer.  Operand one is the value to shift while operand two is the number of bits to shift.
+// Shift the value right be the given number of bits as if it was an unsigned integer and not a signed integer. Operand one is the value to shift while operand two is the number of bits to shift.
 
 // The value of SP is increased by the size of the result while decreased by the size of both operands.
 export const OP_USHRIGHTII = 0x13;
@@ -166,7 +166,7 @@ export const OP_ADD = 0x14;
 // SUBFI - Subtract a Float and Integer Values
 // SUBFF - Subtract Two Float Values
 // SUBVV - Subtract Two Vector Values
-// Subtract the two operands. 
+// Subtract the two operands.
 
 // The value of SP is increased by the size of the result while decreased by the size of both operands.
 export const OP_SUB = 0x15;
@@ -221,7 +221,7 @@ export const OP_COMPI = 0x1A;
 export const OP_MOVSP = 0x1B;
 
 // STORE_STATEALL - Store the Current State of the Stack (Obsolete)
-// Obsolete instruction to store the state of the stack and save a pointer to a block of code to later be used as an "action" argument.  This byte code is always followed by a JMP and then a block of code to be executed by a later function such as a DelayCommand.
+// Obsolete instruction to store the state of the stack and save a pointer to a block of code to later be used as an "action" argument. This byte code is always followed by a JMP and then a block of code to be executed by a later function such as a DelayCommand.
 
 // The value of SP remains unchanged.
 export const OP_STORE_STATEALL = 0x1C;
@@ -233,9 +233,9 @@ export const OP_STORE_STATEALL = 0x1C;
 export const OP_JMP = 0x1D;
 
 // JSR - Jump to Subroutine
-// Jump to the subroutine at the relative address given in the instruction.  If the routine returns a value, the RSADDx instruction should first be used to allocate space for the return value.  Then all arguments to the subroutine should be pushed in reverse order.
+// Jump to the subroutine at the relative address given in the instruction. If the routine returns a value, the RSADDx instruction should first be used to allocate space for the return value. Then all arguments to the subroutine should be pushed in reverse order.
 
-// The value of SP remains unchanged.  The return value is NOT placed on the stack.
+// The value of SP remains unchanged. The return value is NOT placed on the stack.
 export const OP_JSR = 0x1E;
 
 // JZ - Jump if Top of Stack is Zero
@@ -245,9 +245,9 @@ export const OP_JSR = 0x1E;
 export const OP_JZ = 0x1F;
 
 // RETN - Return from a JSR
-// Return from a JSR.  All arguments used to invoke the subroutine should be removed prior to the RETN.  This leaves any return value on the top of the stack.  The return value must be allocated by the caller prior to invoking the subroutine.
+// Return from a JSR. All arguments used to invoke the subroutine should be removed prior to the RETN. This leaves any return value on the top of the stack. The return value must be allocated by the caller prior to invoking the subroutine.
 
-// The value of SP remains unchanged.  The return value is NOT placed on the stack.
+// The value of SP remains unchanged. The return value is NOT placed on the stack.
 export const OP_RETN = 0x20;
 
 // DESTRUCT - Destroy Element on the Stack
@@ -287,24 +287,24 @@ export const OP_JNZ = 0x25;
 export const OP_CPDOWNBP = 0x26;
 
 // CPTOPBP - Copy Top Base Pointer
-// Add the given number of bytes from the location specified relative to the base pointer to the top of the stack.  This instruction is used to retrieve the current value of global variables.
+// Add the given number of bytes from the location specified relative to the base pointer to the top of the stack. This instruction is used to retrieve the current value of global variables.
 
 // The value of SP is increased by the number of copied bytes.
 export const OP_CPTOPBP = 0x27;
 
 // DECIBP - Decrement Integer Value Relative to Base Pointer
-// Decrements an integer relative to the current base pointer.  This instruction is used to decrement the value of global variables.
+// Decrements an integer relative to the current base pointer. This instruction is used to decrement the value of global variables.
 
 // The value of SP remains unchanged.
 export const OP_DECIBP = 0x28;
 
 // INCIBP - Increment Integer Value Relative to Base Pointer
-// Increments an integer relative to the current base pointer.  This instruction is used to increment the value of global variables.
+// Increments an integer relative to the current base pointer. This instruction is used to increment the value of global variables.
 
 // The value of SP remains unchanged.
 export const OP_INCIBP = 0x29;
 
-// SAVEBP  - Set a New Base Pointer Value
+// SAVEBP - Set a New Base Pointer Value
 // Save the current value of the base pointer and set BP to the current stack position.
 
 // The value of SP remains unchanged.
@@ -317,13 +317,13 @@ export const OP_SAVEBP = 0x2A;
 export const OP_RESTOREBP = 0x2B;
 
 // STORE_STATE - Store the Current Stack State
-// Store the state of the stack and save a pointer to a block of code to later be used as an "action" argument.  This byte code is always followed by a JMP and then a block of code to be executed by a later function such as a DelayCommand.
+// Store the state of the stack and save a pointer to a block of code to later be used as an "action" argument. This byte code is always followed by a JMP and then a block of code to be executed by a later function such as a DelayCommand.
 
 // The value of SP remains unchanged.
 export const OP_STORE_STATE = 0x2C;
 
 // NOP - No-operation
-// Perform no program function.  This opcode is used as a placeholder for the debugger.
+// Perform no program function. This opcode is used as a placeholder for the debugger.
 
 // The value of SP remains unchanged.
 export const OP_NOP = 0x2D;

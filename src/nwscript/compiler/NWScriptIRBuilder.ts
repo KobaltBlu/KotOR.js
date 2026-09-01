@@ -1460,7 +1460,7 @@ export class NWScriptIRBuilder {
           const buf = allocBuffer(8);
           buf.writeInt8(OP_CPTOPSP, 0);
           buf.writeInt8(0x01, 1);
-          // stack: [ ... baseVec ][ index ]
+          // stack: [... baseVec ][ index ]
           const offset = -(vecSize + 4) + idx * eltSize;
           buf.writeInt32BE(offset, 2);
           buf.writeInt16BE(eltSize, 6);
@@ -1470,7 +1470,7 @@ export class NWScriptIRBuilder {
           const buf = allocBuffer(8);
           buf.writeInt8(OP_CPDOWNSP, 0);
           buf.writeInt8(0x01, 1);
-          // stack: [ ... baseVec ][ index ][ value ]
+          // stack: [... baseVec ][ index ][ value ]
           const offset = -(vecSize + 4 + eltSize) + idx * eltSize;
           buf.writeInt32BE(offset, 2);
           buf.writeInt16BE(eltSize, 6);

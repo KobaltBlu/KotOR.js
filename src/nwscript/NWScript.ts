@@ -24,9 +24,9 @@ import { NWScriptDefK1 } from "@/nwscript/NWScriptDefK1";
 
 /**
  * NWScript class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file NWScript.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -57,7 +57,7 @@ export class NWScript {
   
   /**
    * The program type of the script
-   * 
+   *
    * should always be OP_T (0x42)
    */
   prog: number = OP_T;
@@ -89,14 +89,14 @@ export class NWScript {
   
   /**
    * Whether the script is a global script
-   * 
+   *
    * Global scripts are scripts that are attached to Game Menus and are not part of the game world runtime
    */
   isGlobal: boolean = false;
   
   /**
    * Whether the script is verified
-   * 
+   *
    * This is used to verify that the script is a valid NCS file
    * Cannot be used to verify ScriptSituations, because they do not have a header
    */
@@ -136,7 +136,7 @@ export class NWScript {
 
   /**
    * Verify the NCS header
-   * 
+   *
    * This is used to verify that the script is a valid NCS file
    * Cannot be used to verify ScriptSituations, because they do not have a header
    * @param {BinaryReader} reader
@@ -152,7 +152,7 @@ export class NWScript {
 
   /**
    * Initialize the script
-   * 
+   *
    * @param {Uint8Array} data
    * @param {number} progSize - The size of the program, will only be provided if the script is a ScriptSituation
    */
@@ -193,7 +193,7 @@ export class NWScript {
 
   /**
    * Parse an instruction from the binary data
-   * 
+   *
    * @param {BinaryReader} reader
    */
   parseIntruction( reader: BinaryReader, lastInstruction: NWScriptInstruction, index: number ): NWScriptInstruction {
@@ -283,7 +283,7 @@ export class NWScript {
 
   /**
    * Clone the script
-   * 
+   *
    * @returns {NWScript}
    */
   clone(){
@@ -295,7 +295,7 @@ export class NWScript {
 
   /**
    * Create a new instance of the script
-   * 
+   *
    * When loading a new script always return a NWScriptInstance which will share large data from the parent NWScript
    * like the instruction array, but will have it's own NWScriptStack
    * This whould reduse memory overhead because only one instance of the large data is created per script
@@ -411,7 +411,7 @@ export class NWScript {
   
   /**
    * Decompile the script
-   * 
+   *
    * @param {Uint8Array} binary
    * @returns {string}
    */

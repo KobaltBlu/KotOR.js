@@ -85,9 +85,9 @@ const concatBuffers = (buffers: ByteArray[]) => {
 
 /**
  * NWScriptCompiler class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file NWScriptCompiler.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -190,7 +190,7 @@ export class NWScriptCompiler {
 
   opcodeDebug(name: string, buffer: Uint8Array){
     if( this._silent ) return;
-    // console.log( (name + "                ").slice(0, 16), buffer );
+    // console.log((name + " ").slice(0, 16), buffer);
   }
 
   scopePush( scope: NWScriptScope ){
@@ -416,7 +416,7 @@ export class NWScriptCompiler {
   /**
    * Global-variable loader emitted before user main/StartingConditional: SAVEBP, optional RSADD(int)
    * for StartingConditional results, JSR into the script entry, RESTOREBP, MOVSP clears globals, RETN.
-   * Ordering follows CNscCodeGenerator #globals epilogue semantics.
+   * Ordering follows NSS codegen #globals epilogue semantics.
    */
   compileGlobal(buffers: ByteArray[] = [], returnInt: boolean = false): ByteArray[] {
     if(!this.program){
@@ -521,7 +521,7 @@ export class NWScriptCompiler {
     NCS_Header[0] = 0x4E; // N
     NCS_Header[1] = 0x43; // C
     NCS_Header[2] = 0x53; // S
-    NCS_Header[3] = 0x20; //  
+    NCS_Header[3] = 0x20; //
     NCS_Header[4] = 0x56; // V
     NCS_Header[5] = 0x31; // 1
     NCS_Header[6] = 0x2E; // .
@@ -533,11 +533,11 @@ export class NWScriptCompiler {
 
   /**
    * Get the stack length of a datatype
-   * 
+   *
    * all non void datatypes when placed on the stack take up 4 bytes
    * these positions on the stack are just pointers to the actual data
-   * 
-   * vectors take up 12 bytes because they are stored as 3 floats ( 4 bytes each ) packed end to end on the stack
+   *
+   * vectors take up 12 bytes because they are stored as 3 floats (4 bytes each) packed end to end on the stack
    * @param datatype - The datatype to get the stack length for
    * @returns The stack length of bytes required to store the datatype
    */
@@ -556,7 +556,7 @@ export class NWScriptCompiler {
     throw 'Invalid datatype object ' + datatype;
   }
 
-  /** STORE_STATE operand: BP-relative stack bytes (see CNscCodeGenerator::CodeSTORE_STATE). */
+  /** STORE_STATE operand: BP-relative stack bytes (see CodeSTORE_STATE). */
   private getStoreStateSpDepthBytes(): number {
     return this.stackPointer;
   }
@@ -1030,9 +1030,9 @@ export class NWScriptCompiler {
 
   /**
    * Compile a struct statement
-   * 
+   *
    * This is used when declaring a struct
-   * 
+   *
    * @param statement - The struct statement to compile
    * @returns The compiled struct statement as a Uint8Array
    */
@@ -1048,13 +1048,13 @@ export class NWScriptCompiler {
         prop.offsetPointer = statement.structDataLength;
         if(prop.datatype.value == 'vector'){
           // commented this out because we don't add struct definitions to the stack
-          // buffers.push( this.writeRSADD( NWCompileDataTypes.F ) );
-          // buffers.push( this.writeRSADD( NWCompileDataTypes.F ) );
-          // buffers.push( this.writeRSADD( NWCompileDataTypes.F ) );
+          // buffers.push(this.writeRSADD(NWCompileDataTypes.F));
+          // buffers.push(this.writeRSADD(NWCompileDataTypes.F));
+          // buffers.push(this.writeRSADD(NWCompileDataTypes.F));
           statement.structDataLength += 12;
         }else{
           // commented this out because we don't add struct definitions to the stack
-          // buffers.push( this.writeRSADD( prop.datatype.unary ) );
+          // buffers.push(this.writeRSADD(prop.datatype.unary));
           statement.structDataLength += 4;
         }
       }
@@ -1064,9 +1064,9 @@ export class NWScriptCompiler {
 
   /**
    * Compile a struct property statement
-   * 
+   *
    * This is used when accessing a property of a struct
-   * 
+   *
    * @param statement - The property statement to compile
    * @returns The compiled property statement as a Uint8Array
    */
@@ -1286,7 +1286,7 @@ export class NWScriptCompiler {
             ) 
           );
           // const ssScope = new NWScriptScope();
-          // this.scopePush( ssScope );
+          // this.scopePush(ssScope);
           buffers.push( this.compileStatement(arg) as Uint8Array );
           // this.scopePop();
           buffers.push( this.writeRETN() );
@@ -2407,7 +2407,7 @@ export class NWScriptCompiler {
     const buffer = allocBuffer(this.getInstructionLength(OP_RSADD));
     buffer.writeInt8(OP_RSADD, 0);
     buffer.writeInt8(type, 1);
-    this.stackPointer += 4; //The value of SP is increased by the size of the type reserved.  (Always 4)
+    this.stackPointer += 4; //The value of SP is increased by the size of the type reserved. (Always 4)
     this.opcodeDebug('OP_RSADD', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);
@@ -2451,7 +2451,7 @@ export class NWScriptCompiler {
         buffer.writeInt32BE(value, 2);
       break;
     }
-    this.stackPointer += 4; //The value of SP is increased by the size of the type reserved.  (Always 4)
+    this.stackPointer += 4; //The value of SP is increased by the size of the type reserved. (Always 4)
     this.opcodeDebug('OP_CONST', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);
@@ -2787,7 +2787,7 @@ export class NWScriptCompiler {
     buffer.writeInt8(OP_JSR, 0);
     buffer.writeInt8(0x00, 1);
     buffer.writeInt32BE(nOffset, 2);
-    //SP remains unchanged.  The return value is NOT placed on the stack.
+    //SP remains unchanged. The return value is NOT placed on the stack.
     this.opcodeDebug('OP_JSR', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);
@@ -2810,7 +2810,7 @@ export class NWScriptCompiler {
     const buffer = allocBuffer(this.getInstructionLength(OP_RETN));
     buffer.writeInt8(OP_RETN, 0);
     buffer.writeInt8(0x00, 1);
-    //SP remains unchanged.  The return value is NOT placed on the stack.
+    //SP remains unchanged. The return value is NOT placed on the stack.
     this.opcodeDebug('OP_RETN', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);

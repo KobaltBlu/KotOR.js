@@ -13,9 +13,9 @@ import { GameState } from "@/GameState";
 
 /**
  * CALL_CPDOWNSP
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -30,11 +30,11 @@ export const CALL_CPDOWNSP = function( this: NWScriptInstance, instruction: NWSc
 
 /**
  * CALL_RSADD
- * 
+ *
  * Reserve Space On Stack
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -73,9 +73,9 @@ export const CALL_RSADD = function( this: NWScriptInstance, instruction: NWScrip
 
 /**
  * CALL_CPTOPSP
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -91,9 +91,9 @@ export const CALL_CPTOPSP = function( this: NWScriptInstance, instruction: NWScr
 
 /**
  * CALL_CONST
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -126,11 +126,11 @@ export const CALL_CONST = function( this: NWScriptInstance, instruction: NWScrip
 
 /**
  * CALL_ACTION
- * 
+ *
  * Constant Type is declared by the next byte x03, x04, x05, x06
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -191,9 +191,9 @@ export const CALL_ACTION = function( this: NWScriptInstance, instruction: NWScri
 
 /**
  * CALL_LOGANDII
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -209,9 +209,9 @@ export const CALL_LOGANDII = function( this: NWScriptInstance, instruction: NWSc
 
 /**
  * CALL_LOGORII
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -227,9 +227,9 @@ export const CALL_LOGORII = function( this: NWScriptInstance, instruction: NWScr
 
 /**
  * CALL_INCORII
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -242,9 +242,9 @@ export const CALL_INCORII = function( this: NWScriptInstance, instruction: NWScr
 
 /**
  * CALL_EXCORII
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -256,9 +256,9 @@ export const CALL_EXCORII = function( this: NWScriptInstance, instruction: NWScr
 
 /**
  * CALL_BOOLANDII
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -271,9 +271,9 @@ export const CALL_BOOLANDII = function( this: NWScriptInstance, instruction: NWS
 
 /**
  * CALL_EQUAL
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -352,11 +352,11 @@ export const CALL_EQUAL= function( this: NWScriptInstance, instruction: NWScript
 
 /**
  * CALL_NEQUAL
- * 
+ *
  * Constant Type is declared by the next byte x03, x04, x05, x06
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -436,11 +436,11 @@ export const CALL_NEQUAL = function( this: NWScriptInstance, instruction: NWScri
 
 /**
  * CALL_GEQ
- * 
+ *
  * Constant Type is declared by the next byte x03, x04, x05, x06
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -469,11 +469,11 @@ export const CALL_GEQ = function( this: NWScriptInstance, instruction: NWScriptI
 
 /**
  * CALL_GT
- * 
+ *
  * Constant Type is declared by the next byte x03, x04
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -502,11 +502,11 @@ export const CALL_GT = function( this: NWScriptInstance, instruction: NWScriptIn
 
 /**
  * CALL_LT
- * 
+ *
  * Constant Type is declared by the next byte 0x03, 0x04
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -535,11 +535,11 @@ export const CALL_LT = function( this: NWScriptInstance, instruction: NWScriptIn
 
 /**
  * CALL_LEQ
- * 
+ *
  * Constant Type is declared by the next byte 0x03, 0x04
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -568,11 +568,11 @@ export const CALL_LEQ = function( this: NWScriptInstance, instruction: NWScriptI
 
 /**
  * CALL_SHLEFTII
- * 
+ *
  * Constant Type is declared by the next byte 0x03, 0x04
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -584,9 +584,9 @@ export const CALL_SHLEFTII = function( this: NWScriptInstance, instruction: NWSc
 
 /**
  * CALL_SHRIGHTII
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -598,9 +598,9 @@ export const CALL_SHRIGHTII = function( this: NWScriptInstance, instruction: NWS
 
 /**
  * CALL_USHRIGHTII
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -612,9 +612,9 @@ export const CALL_USHRIGHTII = function( this: NWScriptInstance, instruction: NW
 
 /**
  * CALL_ADD
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -652,9 +652,9 @@ export const CALL_ADD = function( this: NWScriptInstance, instruction: NWScriptI
 
 /**
  * CALL_SUB
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -689,9 +689,9 @@ export const CALL_SUB = function( this: NWScriptInstance, instruction: NWScriptI
 
 /**
  * CALL_MUL
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -730,9 +730,9 @@ export const CALL_MUL = function( this: NWScriptInstance, instruction: NWScriptI
 
 /**
  * CALL_DIV
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -763,9 +763,9 @@ export const CALL_DIV = function( this: NWScriptInstance, instruction: NWScriptI
 
 /**
  * CALL_MOD
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -796,9 +796,9 @@ export const CALL_MOD = function( this: NWScriptInstance, instruction: NWScriptI
 
 /**
  * CALL_NEG
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -815,9 +815,9 @@ export const CALL_NEG = function( this: NWScriptInstance, instruction: NWScriptI
 
 /**
  * CALL_COMPI
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -827,9 +827,9 @@ export const CALL_COMPI = function( this: NWScriptInstance, instruction: NWScrip
 
 /**
  * CALL_MOVSP
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -842,9 +842,9 @@ export const CALL_MOVSP = function( this: NWScriptInstance, instruction: NWScrip
 
 /**
  * CALL_STORE_STATEALL
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  * @deprecated
@@ -855,9 +855,9 @@ export const CALL_STORE_STATEALL = function( this: NWScriptInstance, instruction
 
 /**
  * CALL_JMP
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -867,9 +867,9 @@ export const CALL_JMP = function( this: NWScriptInstance, instruction: NWScriptI
 
 /**
  * CALL_JSR
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -884,9 +884,9 @@ export const CALL_JSR = function( this: NWScriptInstance, instruction: NWScriptI
 
 /**
  * CALL_JZ
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -899,9 +899,9 @@ export const CALL_JZ = function( this: NWScriptInstance, instruction: NWScriptIn
 
 /**
  * CALL_RETN
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -926,9 +926,9 @@ export const CALL_RETN = function( this: NWScriptInstance, instruction: NWScript
 
 /**
  * CALL_DESTRUCT
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -942,8 +942,8 @@ export const CALL_DESTRUCT = function( this: NWScriptInstance, instruction: NWSc
   );
   //push the saved elements back onto the stack
   this.stack.stack.push(
-    //the spread operator (...) merges the returned array elements back onto the stack array instead 
-    //of pushing the array itself back onto the stack 
+    //the spread operator (...) merges the returned array elements back onto the stack array instead
+    //of pushing the array itself back onto the stack
     ...elements
   );
   
@@ -961,9 +961,9 @@ export const CALL_DESTRUCT = function( this: NWScriptInstance, instruction: NWSc
 
 /**
  * CALL_NOTI
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -976,9 +976,9 @@ export const CALL_NOTI = function( this: NWScriptInstance, instruction: NWScript
 
 /**
  * CALL_DECISP
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -989,9 +989,9 @@ export const CALL_DECISP = function( this: NWScriptInstance, instruction: NWScri
 
 /**
  * CALL_INCISP
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -1002,11 +1002,11 @@ export const CALL_INCISP = function( this: NWScriptInstance, instruction: NWScri
 
 /**
  * CALL_JNZ
- * 
+ *
  * I believe this is used in SWITCH statements
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -1019,9 +1019,9 @@ export const CALL_JNZ = function( this: NWScriptInstance, instruction: NWScriptI
 
 /**
  * CALL_CPDOWNBP
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -1034,9 +1034,9 @@ export const CALL_CPDOWNBP = function( this: NWScriptInstance, instruction: NWSc
 
 /**
  * CALL_CPTOPBP
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -1052,9 +1052,9 @@ export const CALL_CPTOPBP = function( this: NWScriptInstance, instruction: NWScr
 
 /**
  * CALL_DECIBP
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -1065,9 +1065,9 @@ export const CALL_DECIBP = function( this: NWScriptInstance, instruction: NWScri
 
 /**
  * CALL_INCIBP
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -1078,9 +1078,9 @@ export const CALL_INCIBP = function( this: NWScriptInstance, instruction: NWScri
 
 /**
  * CALL_SAVEBP
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -1090,9 +1090,9 @@ export const CALL_SAVEBP = function( this: NWScriptInstance, instruction: NWScri
 
 /**
  * CALL_RESTOREBP
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -1102,9 +1102,9 @@ export const CALL_RESTOREBP = function( this: NWScriptInstance, instruction: NWS
 
 /**
  * CALL_STORE_STATE
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -1150,9 +1150,9 @@ export const CALL_STORE_STATE = function( this: NWScriptInstance, instruction: N
 
 /**
  * CALL_NOP
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */

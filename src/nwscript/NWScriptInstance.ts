@@ -21,9 +21,9 @@ import type { NWScriptSubroutine } from "@/nwscript/NWScriptSubroutine";
 
 /**
  * NWScriptInstance class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file NWScriptInstance.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -397,7 +397,7 @@ export class NWScriptInstance {
       }
 
       /**
-       * If we are in debug mode and we are in stepOver mode, 
+       * If we are in debug mode and we are in stepOver mode,
        * Pause execution and send the script's state to the debugger
        */
       if(stepOver){

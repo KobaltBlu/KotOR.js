@@ -18,9 +18,9 @@ const STACK_PACKET_CONSTANTS = {
 
 /**
  * NWScriptStack class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file NWScriptStack.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -132,7 +132,7 @@ export class NWScriptStack {
     //index = index / 4; //This is always a negative value
     
     //if(index > -1)
-    //  throw 'Index cannot be greater than -1.';
+    // throw 'Index cannot be greater than -1.';
 
     this.stack[((this.pointer + index)/4)] = data;
 
@@ -156,7 +156,7 @@ export class NWScriptStack {
     //index = index / 4; //This is always a negative value
     
     //if(index > -1)
-    //  throw 'Index cannot be greater than -1.';
+    // throw 'Index cannot be greater than -1.';
     this.stack[(this.basePointer + index)/4] = data;
 
   }
@@ -223,7 +223,7 @@ export class NWScriptStack {
   saveForEventSituation(){
     let struct = new GFFStruct();
 
-    // Retail CVirtualMachineStack::SaveStack stores dword indices; load multiplies by 4.
+    // Retail SaveStack stores dword indices; load multiplies by 4.
     struct.addField( new GFFField(GFFDataType.INT, 'BasePointer') ).setValue(this.basePointer / 4);
     struct.addField( new GFFField(GFFDataType.INT, 'StackPointer') ).setValue(this.pointer / 4);
     struct.addField( new GFFField(GFFDataType.INT, 'TotalSize') ).setValue(this.stack.length);
