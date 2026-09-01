@@ -18,7 +18,7 @@ coverage/
 scratch/
 research/
 .history/
-extensions/
+/extensions/
 .npm-cache/
 .vscode/mcp.json
 .vscode/chrome-debug-profile/
