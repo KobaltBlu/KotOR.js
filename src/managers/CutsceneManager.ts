@@ -53,7 +53,7 @@ export class CutsceneManager {
 
   static active: boolean = false;
   /**
-   * Retail SendDialogEntryNode field63_0x120 — ms remaining while required
+   * Retail SendDialogEntryNode — ms remaining while required
    * AnimList participants are missing before HandleDialogEntry proceeds.
    */
   static participantRetryRemainingMs = 0;
@@ -66,12 +66,12 @@ export class CutsceneManager {
    * BeginConversation bark is not double-started on fallthrough.
    */
   static conversationEpoch: number = 0;
-  /** Retail CSWSDialog pseudo-random camera angle state (@ 0059f220 / 005a13d0). */
+  /** retail pseudo-random camera angle state (). */
   static dialogCameraPrng: DialogPseudoRandomState | undefined;
   /** When true, conversation is private (scripted bPrivateConversation). */
   static privateConversation: boolean = false;
   /**
-   * Retail CGuiInGame::dialog_non_dependant_list — participant names that may be
+   * Retail dialog_non_dependant_list — participant names that may be
    * absent without blocking dialog entry send (ActionStartConversation ignore args).
    */
   static dialogNonDependantNames: Set<string> = new Set();
@@ -94,12 +94,12 @@ export class CutsceneManager {
   static unequipItems: boolean;
   /**
    * Creatures that had dialog UnequipItems/UnequipHItem applied — restored via
-   * ShowEquippedItems-equivalent at conversation end (SetDialogDelay @ 00758c90).
+   * ShowEquippedItems-equivalent at conversation end (SetDialogDelay).
    */
   static dialogUnequippedCreatures: ModuleCreature[] = [];
   /**
    * K2 SetKeepStealthInDialog — when true, skip UnstealthParty on dialog start
-   * (retail GuiInGame+0x102c check in LoadDialog).
+   * (retail GuiInGame check in LoadDialog).
    */
   static keepStealthInDialog: boolean = false;
   static isListening: boolean;
@@ -107,25 +107,25 @@ export class CutsceneManager {
   static audioEmitter: AudioEmitter;
 
   /**
-   * Retail CSWSObject::field15_0x50 — PauseConversation blocks advancing to the
-   * next entry/reply (SendDialogEntry @ 004cd460) while the current entry's
+   * Retail PauseConversation blocks advancing to the
+   * next entry/reply (SendDialogEntry) while the current entry's
    * WaitFlags / VO / camera keep ticking.
    */
   static paused: boolean = false;
   /**
-   * Retail field13_0x48 — deferred SendDialogEntry / SendDialogReplies while
+   * Retail deferred SendDialogEntry / SendDialogReplies while
    * paused (flushed by update when pause clears, not by Resume itself).
    */
   static pendingAdvance: boolean = false;
   /**
-   * Retail field14_0x4c — when pendingAdvance and this is set, flush shows that
+   * Retail when pendingAdvance and this is set, flush shows that
    * entry; when pendingAdvance and this is undefined, flush shows replies
    * (retail 0xFFFFFFFF sentinel).
    */
   static pendingEntry: DLGNode | undefined = undefined;
   /**
-   * Actors that received dialog AnimList / default talk/listen this entry —
-   * polled for WAIT_ANIM (IsAnimationPlayingInDialog @ 0062d570).
+   * Actors that received dialog AnimList / default talk/listen this entry
+   * polled for WAIT_ANIM (IsAnimationPlayingInDialog).
    */
   static dialogAnimParticipants: ModuleObject[] = [];
   /** TSL ActionStartConversation nBarkX/nBarkY (−1 = default layout). */
@@ -138,7 +138,7 @@ export class CutsceneManager {
    */
   static postDialogRestoreNpcId: number | undefined = undefined;
   /**
-   * Retail AIActionDialogObject @ 0057a470 / 006b37a0 — when a non-PC party leader
+   * Retail AIActionDialogObject — when a non-PC party leader
    * starts a conversation, fade out, wait for IsGlobalFading to clear, swap the PC
    * into the leader slot/position, then StartDialog. Fade-in is holdWorldFadeInForDialog.
    */
@@ -245,7 +245,7 @@ export class CutsceneManager {
     );
   }
 
-  /** Retail CGuiInGame::IsOnDialogNonDependantList @ 0062f840 (case-insensitive). */
+  /** Retail IsOnDialogNonDependantList (case-insensitive). */
   static isDialogNonDependant(participant: string): boolean {
     if(!participant) return false;
     return this.dialogNonDependantNames.has(participant.toLocaleLowerCase());
@@ -265,7 +265,7 @@ export class CutsceneManager {
   }
 
   /**
-   * Retail AIActionPauseDialog @ 0057b290 — set field15_0x50 + dialog-stop activity bit.
+   * Retail AIActionPauseDialog — set + dialog-stop activity bit.
    */
   static pauseConversation() {
     if(!this.active || !this.dialog) return;
@@ -277,9 +277,9 @@ export class CutsceneManager {
   }
 
   /**
-   * Retail AIActionResumeDialog @ 0057b320 — clear pause, ActivityManager(2),
+   * Retail AIActionResumeDialog — clear pause, ActivityManager(2),
    * clear dialog-stop bit, clear stealth bit. Deferred advance is flushed by
-   * update() (UpdateDialog @ 004cd580), not here.
+   * update() (UpdateDialog), not here.
    */
   static resumeConversation() {
     if(!this.dialog) return;
@@ -293,7 +293,7 @@ export class CutsceneManager {
     }
   }
 
-  /** Clear retail field13_0x48 / field14_0x4c pending state. */
+  /** Clear Retail / pending state. */
   static clearPendingDialog() {
     this.pendingAdvance = false;
     this.pendingEntry = undefined;
@@ -393,8 +393,8 @@ export class CutsceneManager {
   }
 
   /**
-   * Retail UpdateDialog @ 004cd580 pending flush: when !paused and field13 set,
-   * field14 == 0xFFFFFFFF → SendDialogReplies, else SendDialogEntry(field14).
+   * Retail UpdateDialog pending flush: when !paused and set,
+   * == 0xFFFFFFFF → SendDialogReplies, else SendDialogEntry().
    */
   static flushPendingDialog() {
     if(this.paused || !this.pendingAdvance) return;
@@ -514,12 +514,12 @@ export class CutsceneManager {
     this.conversation_name = dialog.resref;
     this.unequipHeadItem = !!dialog.unequipHeadItem;
     this.unequipItems = !!dialog.unequipItems;
-    // Retail overlay stop when leaving dialog (SetOverlayAnimation param_3=0).
+    // Retail overlay stop when leaving dialog (SetOverlayAnimation arg3=0).
     // Retail LoadDialog: non-computer convos UnstealthParty unless keepStealthInDialog.
     if(dialog.getConversationType() != DLGConversationType.COMPUTER && !this.keepStealthInDialog){
       this.unstealthPartyForDialog();
     }
-    // Retail K2 CSWSDialog ctor → StartDuckingMusicAndAmbientSounds (sound+0 = 0.2).
+    // Retail K2 retail ctor → StartDuckingMusicAndAmbientSounds (sound+0 = 0.2).
     // AudioEngine no-ops on K1 (no duck API). Miles volume_levels ↔ GainNode linear.
     // Retail SendDialogEntry: if GetSoundMode()!=0 → SetSoundMode(0) so VO is audible.
     const audio = AudioEngine.GetAudioEngine();
@@ -719,12 +719,12 @@ export class CutsceneManager {
    */
   static showEntry(entry: DLGNode, forceParticipantReady = false) {
     if(this.paused){
-      // Retail SendDialogEntry @ 004cd460 — stash field14_0x4c entry index, field13=1.
+      // Retail SendDialogEntry — stash entry index, =1.
       this.pendingAdvance = true;
       this.pendingEntry = entry;
       return;
     }
-    // Retail SendDialogEntryNode @ 005a13d0 — wait for required AnimList objects.
+    // Retail SendDialogEntryNode — wait for required AnimList objects.
     if(!this.tryBeginEntryParticipants(entry, forceParticipantReady)){
       return;
     }
@@ -810,7 +810,7 @@ export class CutsceneManager {
       }
     }
 
-    // Node delay (retail CSWSDialog::SendDialogEntry / SetDialogDelay) — seconds → ms
+    // Node delay (retail SendDialogEntry / SetDialogDelay) — seconds → ms
     const delaySec = this.computeEntryDelaySeconds(entry);
     entry.setNodeDelay(delaySec * 1000);
     //Node camera
@@ -860,7 +860,7 @@ export class CutsceneManager {
   }
 
   /**
-   * Retail SetComputerCameraShot @ 004d6890 CamVidEffect mapping for computer
+   * Retail SetComputerCameraShot CamVidEffect mapping for computer
    * placeable entries: -1 → 0 (enable effect 0), -2 → disable (-1), else pass-through.
    */
   static resolveComputerCamVidEffect(entry: DLGNode): number {
@@ -988,7 +988,7 @@ export class CutsceneManager {
       console.error(e);
     }
 
-    // Retail ShowDialogReplies @ 006340e0 — swap speaker/listener then
+    // Retail ShowDialogReplies — swap speaker/listener then
     // UpdateShotCamera with the first reply's camera fields.
     this.setReplyCamera(entry, reply);
 
@@ -1043,7 +1043,7 @@ export class CutsceneManager {
         }
       }
       this.dialog.releaseStuntActors();
-      // Retail SetDialogDelay @ 00758c90 — re-show equipped items at conversation end
+      // Retail SetDialogDelay — re-show equipped items at conversation end
       this.showEquippedItemsAfterDialog();
       if(this.cutsceneMode == CutsceneMode.ANIMATED){
         GameState.FadeOverlayManager.FadeInFromCutscene();
@@ -1076,7 +1076,7 @@ export class CutsceneManager {
       }
     }
 
-    // Retail overlay stop when leaving dialog (SetOverlayAnimation param_3=0).
+    // Retail overlay stop when leaving dialog (SetOverlayAnimation arg3=0).
     const stopOverlayOn = (obj: ModuleObject | undefined) => {
       if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature)){
         const c = obj as ModuleCreature;
@@ -1090,7 +1090,7 @@ export class CutsceneManager {
     stopOverlayOn(this.listener);
 
     const audioEngine = AudioEngine.GetAudioEngine();
-    // Retail K2 ~CSWSDialog: StopDucking only — area BGM keeps playing.
+    // Retail K2 ~retail: StopDucking only — area BGM keeps playing.
     // K1 never ducked; stop is still safe (restores scale 1).
     // AmbientTrack is play-once; leftover source cleared on UnloadArea (500ms fade).
     audioEngine.bgmTimer = 0;
@@ -1174,8 +1174,8 @@ export class CutsceneManager {
   }
 
   /**
-   * Play a dialog participant animation — retail SetDialogAnimations @ 006313a0
-   * uses CSWCObject SetAnimation (field39_0x9c) for constants >= 10000, not a
+   * Play a dialog participant animation — retail SetDialogAnimations
+   * uses retail SetAnimation for constants >= 10000, not a
    * parallel dialog-only slot. Combat READY/attack stances must go through
    * animationState or CutsceneAttack playTwoDAAnimation is blocked.
    */
@@ -1194,7 +1194,7 @@ export class CutsceneManager {
   }
 
   /**
-   * Retail SetDialogAnimations @ 004d8bd0 — speaker default 0x2736 / 0x27aa when
+   * Retail SetDialogAnimations — speaker default 0x2736 / 0x27aa when
    * IsInjured (current/max HP < 0.2).
    */
   static getDialogTalkAnimation(actor: ModuleObject | undefined): ModuleCreatureAnimState {
@@ -1202,7 +1202,7 @@ export class CutsceneManager {
   }
 
   /**
-   * Retail SetDialogAnimations @ 004d8bd0 — listener default 0x272e / 0x27ab when
+   * Retail SetDialogAnimations — listener default 0x272e / 0x27ab when
    * IsInjured (current/max HP < 0.2).
    */
   static getDialogListenAnimation(actor: ModuleObject | undefined): ModuleCreatureAnimState {
@@ -1210,7 +1210,7 @@ export class CutsceneManager {
   }
 
   /**
-   * Retail CanPlayDialogAnimations @ 004dfbe0 — skip when dead or debilitated.
+   * Retail CanPlayDialogAnimations — skip when dead or debilitated.
    */
   static canPlayDialogAnimations(actor: ModuleObject | undefined): boolean {
     if(!actor){ return false; }
@@ -1224,7 +1224,7 @@ export class CutsceneManager {
    * @param entry - The entry to set the participant animations for
    */
   static setEntryAnimations(entry: DLGNode) {
-    // Speaker — retail SetDialogAnimations @ 004d8bd0 (0x2736 / 0x27aa)
+    // Speaker — retail SetDialogAnimations (0x2736 / 0x27aa)
     if (
       BitWise.InstanceOfObject(this.currentEntry.speaker, ModuleObjectType.ModuleCreature) &&
       this.canPlayDialogAnimations(this.currentEntry.speaker)
@@ -1235,7 +1235,7 @@ export class CutsceneManager {
       );
     }
 
-    // Listener — retail SetDialogAnimations @ 004d8bd0 (0x272e / 0x27ab)
+    // Listener — retail SetDialogAnimations (0x272e / 0x27ab)
     if (
       BitWise.InstanceOfObject(this.currentEntry.listener, ModuleObjectType.ModuleCreature) &&
       this.canPlayDialogAnimations(this.currentEntry.listener)
@@ -1275,7 +1275,7 @@ export class CutsceneManager {
   }
 
   /**
-   * Get the CUT animation name — retail GetCameraAnimationName @ 006288f0.
+   * Get the CUT animation name — retail GetCameraAnimationName.
    */
   static getCUTAnimationName(index = 0) {
     return getCameraAnimationName(index);
@@ -1292,9 +1292,9 @@ export class CutsceneManager {
       const name = getCameraAnimationName(index);
       if(name === 'none') return undefined;
       // Retail IsFireForgetDialogAnimation / IsLoopingDialogStuntAnimation:
-      //   1000–0x52F (cut / cut*w) → fire-forget dialog CUT
-      //   0x578–0x6BF (cut*l / cut*wl) → looping stunt CUT
-      // Marking base CUT as looping made WAIT_ANIM (e.g. 101awake entry 9 /
+      // 1000–0x52F (cut / cut*w) → fire-forget dialog CUT
+      // 0x578–0x6BF (cut*l / cut*wl) → looping stunt CUT
+      // Marking base CUT as looping made WAIT_ANIM (e.g. 101awake entry 9
       // cut012) never clear after FadeType 4 — screen stuck black until skip.
       const looping = index >= 0x578 && index <= 0x6bf;
       return {
@@ -1387,12 +1387,12 @@ export class CutsceneManager {
   }
 
   /**
-   * Set the camera for an entry — retail HandleDialogEntry @ 00631d80 /
-   * SetAnimatedCamera @ 0062bfa0 (anim id must be 1000..0x6BF).
+   * Set the camera for an entry — retail HandleDialogEntry
+   * SetAnimatedCamera (anim id must be 1000..0x6BF).
    */
   static setEntryCamera(entry: DLGNode){
     let angle = entry.cameraAngle;
-    // Retail SendDialogEntryNode @ 005a13d0 resolves ANGLE_RANDOM + advances PRNG
+    // Retail SendDialogEntryNode resolves ANGLE_RANDOM + advances PRNG
     if(this.dialogCameraPrng){
       angle = resolveEntryCameraAngle(angle, this.dialogCameraPrng);
     }else if(angle == DLGCameraAngle.ANGLE_RANDOM){
@@ -1400,7 +1400,7 @@ export class CutsceneManager {
     }
     const fov = entry.camFieldOfView;
     const cameraAnimation = entry.cameraAnimation;
-    // Cache side once per shot (AddCalculatedLineOfAction @ 006bcec0)
+    // Cache side once per shot (AddCalculatedLineOfAction)
     this.cameraState.dialogCamSide = undefined;
     this.cameraState.camHeightOffset = entry.camHeightOffset ?? 0;
     this.cameraState.tarHeightOffset = entry.tarHeightOffset ?? 0;
@@ -1426,7 +1426,7 @@ export class CutsceneManager {
       angle = DLGCameraAngle.ANGLE_SPEAKER;
     }
 
-    // Angle 5: UpdateShotCamera @ 006306e0 early-outs before SetShot (hold framing)
+    // Angle 5: UpdateShotCamera early-outs before SetShot (hold framing)
     if(angle == DLGCameraAngle.ANGLE_FOCUS_PLAYER){
       this.cameraState.mode = CameraMode.DIALOG;
       this.cameraState.cameraAngle = DLGCameraAngle.ANGLE_FOCUS_PLAYER;
@@ -1443,7 +1443,7 @@ export class CutsceneManager {
   }
 
   /**
-   * Retail ShowDialogReplies @ 006340e0 — swap so player is speaker, then
+   * Retail ShowDialogReplies — swap so player is speaker, then
    * UpdateShotCamera with the first reply's camera angle / heights / id.
    */
   static setReplyCamera(entry: DLGNode, reply: DLGNode){
@@ -1499,7 +1499,7 @@ export class CutsceneManager {
     }
 
     this.setDialogCamera(angle);
-    // setDialogCamera re-binds entry participants when currentEntry exists —
+    // setDialogCamera re-binds entry participants when currentEntry exists
     // reply phase clears currentEntry, so re-apply the swap.
     if(player && prevSpeaker){
       this.setCameraParticipants(prevSpeaker, player);
@@ -1536,7 +1536,7 @@ export class CutsceneManager {
     let range = lookupDialogCloseUpExtra(animId, (rowIndex) => {
       return table.getByID(rowIndex) || table.rows[rowIndex];
     });
-    // TSL UpdateShotCamera @ 004d4ef0: appearance 0x235 gets an extra
+    // TSL UpdateShotCamera: appearance 0x235 gets an extra
     // quarter-unit close-up pull after CU_PB_Range lookup.
     if(
       GameState.GameKey == GameEngineType.TSL
@@ -1548,9 +1548,9 @@ export class CutsceneManager {
   }
 
   /**
-   * Retail CGuiInGame::SetAnimatedCamera @ 0062bfa0 —
+   * Retail SetAnimatedCamera
    * succeeds only when 999 < animId < 0x6c0 and CameraModel is loaded.
-   * Play mode from IsLoopingDialogStuntAnimation @ 0062ab70 (l/wl → loop, else one-shot).
+   * Play mode from IsLoopingDialogStuntAnimation (l/wl → loop, else one-shot).
    * @returns true if animated camera was applied
    */
   static trySetAnimatedCamera(nCamera: number, nFOV: number = -1): boolean {
@@ -1585,7 +1585,7 @@ export class CutsceneManager {
     this.cameraState.mode = CameraMode.ANIMATED;
     this.cameraState.cameraAnimation = nCamera;
     GameState.currentCamera = GameState.camera_animated;
-    // SetAnimatedCamera @ 00641010 SetClipDist(0.1, 10000)
+    // SetAnimatedCamera SetClipDist(0.1, 10000)
     GameState.camera_animated.near = ANIMATED_CAMERA_NEAR;
     GameState.camera_animated.far = ANIMATED_CAMERA_FAR;
     if(nFOV != -1 && nFOV > 0){
@@ -1601,7 +1601,7 @@ export class CutsceneManager {
   }
 
   /**
-   * Set the animated camera — LoadAnimatedCamera @ 00640f70 / camerahook follow.
+   * Set the animated camera — LoadAnimatedCamera / camerahook follow.
    * Prefer trySetAnimatedCamera; this path keeps legacy callers and falls back on failure.
    */
   static setAnimatedCamera(nCamera: number, nFOV: number = -1) {
@@ -1662,10 +1662,10 @@ export class CutsceneManager {
   }
 
   /**
-   * Set the placeable camera — retail SetShotFromScript @ 0062e900 /
-   * UpdateShotCamera @ 006306e0 (param_1 == 6).
+   * Set the placeable camera — retail SetShotFromScript
+   * UpdateShotCamera (arg1 == 6).
    * Looks up GIT CameraList by CameraID, rebuilds pose, and applies it onto
-   * the dialog camera (CSWBehaviorCameraDialog::SetShot type 6) — not a
+   * the dialog camera (SetShot type 6) — not a
    * separate render camera, so clip/FOV/shake stay on one dialog cam.
    */
   static setPlaceableCamera(nCamera: number) {
@@ -1702,7 +1702,7 @@ export class CutsceneManager {
 
   /**
    * Copy a ModuleCamera PerspectiveCamera pose onto camera_dialog.
-   * Mirrors CSWBehaviorCameraDialog::SetShot(6, pos, quat, fov) @ 006bb590.
+   * Mirrors SetShot(6, pos, quat, fov).
    */
   static applyPlaceableShotToDialogCamera(src: THREE.PerspectiveCamera) {
     const dialog = GameState.camera_dialog;
@@ -1713,8 +1713,8 @@ export class CutsceneManager {
       GameState.Flags.EnableOverride,
       !!ConfigClient.get('look_in_override')
     );
-    // Retail StartDialog @ 006ac619 gates the Aspyr placeable hack on the
-    // "carth" conversation flag (DAT_00a1347c); other dialogs leave it clear.
+    // Retail StartDialog gates the Aspyr placeable hack on the
+    // "carth" conversation flag (retail constant); other dialogs leave it clear.
     const aspyrVanilla = GameState.GameKey === GameEngineType.TSL
       && isAspyrCarthDialogCameraHack(this.dialog?.resref || this.conversation_name);
     if(!modded && aspyrVanilla){
@@ -1776,7 +1776,7 @@ export class CutsceneManager {
       const updateComplete = this.currentEntry.update(delta);
       if(updateComplete && !this.currentEntry.repliesShown){
         if(this.paused){
-          // Retail SendDialogReplies @ 004cd500 — field13=1, field14=0xFFFFFFFF.
+          // Retail SendDialogReplies — =1, =0xFFFFFFFF.
           this.pendingAdvance = true;
           this.pendingEntry = undefined;
         }else{
@@ -1786,12 +1786,12 @@ export class CutsceneManager {
       }
     }
 
-    // Retail UpdateDialog @ 004cd580 — flush deferred advance once unpaused.
+    // Retail UpdateDialog — flush deferred advance once unpaused.
     this.flushPendingDialog();
   }
 
   /**
-   * Retail IsAnimationPlayingInDialog @ 0062d570 / AnimationDialog @ 0063c4a0 —
+   * Retail IsAnimationPlayingInDialog / AnimationDialog
    * WAIT_ANIM clears when no registered participant still plays a dialog
    * fire-forget or looping clip.
    */
@@ -1904,7 +1904,7 @@ export class CutsceneManager {
 
     if (this.cameraState.mode == CameraMode.PLACEABLE) {
       // Reply phase clears currentEntry — ownership lives on cameraState.cameraID.
-      // Re-apply each tick like Control @ 006bcf50 type-6 (stored shot → dialog cam).
+      // Re-apply each tick like Control type-6 (stored shot → dialog cam).
       this.setPlaceableCamera(this.cameraState.cameraID);
       GameState.forwardVector.set(0, 0, -1).applyQuaternion(GameState.camera_dialog.quaternion);
       if(isComputer){
@@ -1965,7 +1965,7 @@ export class CutsceneManager {
           this.updateCameraAngleTwoShot(delta);
           break;
         case DLGCameraAngle.ANGLE_FOCUS_PLAYER:
-          // UpdateShotCamera @ 006306e0: angle 5 skips SetShot — hold framing
+          // UpdateShotCamera: angle 5 skips SetShot — hold framing
           break;
         default:
           // Unresolved ANGLE_RANDOM (0) or unknown — frame as speaker
@@ -1979,7 +1979,7 @@ export class CutsceneManager {
   /**
    * Same-room gate for dialog shots that interpolate across both participants
    * (OTS / two-shot). Cross-room pairs make GetCameraParameters type 2/3 pull
-   * the camera outside the module; retail Scene::HitCheck then sets field9 and
+   * the camera outside the module; retail HitCheck then sets and
    * reframes as type 1 — we short-circuit to that outcome when rooms differ.
    */
   static validateCameraParticipants(){
@@ -2029,10 +2029,10 @@ export class CutsceneManager {
   static #tmpDialogCamLook = new THREE.Vector3();
 
   /**
-   * Apply GetCameraParameters framing (@ 006bb7b0) to camera_dialog.
-   * Side from AddCalculatedLineOfAction / GetSideUnobstructed @ 006bc600 (cached per entry).
-   * On HitCheck failure, retail sets field9 and reframes as type-1 close-up.
-   * OldHitCheck (DLGObject) → body position instead of CAMERAHOOK (Control @ 006bcf50).
+   * Apply GetCameraParameters framing () to camera_dialog.
+   * Side from AddCalculatedLineOfAction / GetSideUnobstructed (cached per entry).
+   * On HitCheck failure, retail sets and reframes as type-1 close-up.
+   * OldHitCheck (DLGObject) → body position instead of CAMERAHOOK (Control).
    */
   static applyDialogCameraShot(
     shotType: number,
@@ -2072,7 +2072,7 @@ export class CutsceneManager {
       GameState.Flags.EnableOverride,
       !!ConfigClient.get('look_in_override')
     );
-    // Same retail gate as the placeable hack (DAT_00a1347c / "carth" dialog).
+    // Same retail gate as the placeable hack (retail constant / "carth" dialog).
     const aspyrVanilla = GameState.GameKey === GameEngineType.TSL
       && isAspyrCarthDialogCameraHack(this.dialog?.resref || this.conversation_name);
     const aspyr = resolveAspyrAppearanceCameraOverrides(
@@ -2114,7 +2114,7 @@ export class CutsceneManager {
     GameState.camera_dialog.fov =
       (typeof fov === 'number' && fov > 0) ? fov : DIALOG_CAMERA_FOV;
     GameState.camera_dialog.position.copy(this.#tmpDialogCamPos);
-    // Retail Control @ 006bcf50: YawPitchRoll from GetCameraParameters quat
+    // Retail Control: YawPitchRoll from GetCameraParameters quat
     // (not THREE.lookAt, which can introduce non-Aurora roll).
     this.applyDialogCameraLookAt(this.#tmpDialogCamPos, this.#tmpDialogCamLook);
     GameState.camera_dialog.updateProjectionMatrix();
@@ -2135,7 +2135,7 @@ export class CutsceneManager {
   }
 
   /**
-   * Framing point for dialog shots — Control @ 006bcf50:
+   * Framing point for dialog shots — Control:
    * OldHitCheck uses object position + object camera height; otherwise
    * CAMERAHOOK (with height fallback).
    */
@@ -2149,9 +2149,9 @@ export class CutsceneManager {
   }
 
   /**
-   * Retail GetSideUnobstructed @ 006bc600 — pick yaw side 1 vs 2 by comparing
+   * Retail GetSideUnobstructed — pick yaw side 1 vs 2 by comparing
    * HitCheck counts for type-2/3 shots on each side. Side 2 wins ties.
-   * Type-3 shots count up to 3 rays when OldHitCheck is clear (SetShot @ 006bd260).
+   * Type-3 shots count up to 3 rays when OldHitCheck is clear (SetShot).
    */
   static pickDialogCameraSide(speakerPos: THREE.Vector3, listenerPos: THREE.Vector3): number {
     let hitsSide1 = 0;
@@ -2174,7 +2174,7 @@ export class CutsceneManager {
   }
 
   /**
-   * SetShot @ 006bd260 obstruction count — type 3 uses midpoint + speaker + listener
+   * SetShot obstruction count — type 3 uses midpoint + speaker + listener
    * rays when OldHitCheck is unset; other shots use a single look↔camera ray.
    */
   static countDialogCameraHits(
@@ -2218,7 +2218,7 @@ export class CutsceneManager {
 
   /**
    * Over-the-shoulder — shot type 2; collision → type 1.
-   * Different rooms: retail Scene::HitCheck forces field9 → type-1 close-up; our
+   * Different rooms: retail HitCheck forces → type-1 close-up; our
    * walkmesh approx can miss below-floor OTS pulls across the map, so gate here.
    */
   static updateCameraAngleSpeakerBehindPlayer(_delta: number = 0){
@@ -2292,7 +2292,7 @@ export class CutsceneManager {
 
   /**
    * checkCameraCollision
-   * Walkmesh approximation of retail SceneHitCheck @ 0060f1e0 — tests the
+   * Walkmesh approximation of retail SceneHitCheck — tests the
    * complete target↔camera segment against **all** area room walkmeshes
    * (CheckAABBAll loop) plus closed doors. Participant-only rooms missed
    * geometry when the camera sat in a third room (e.g. OTS across the map).
@@ -2308,7 +2308,7 @@ export class CutsceneManager {
     const dist = cameraPosition.distanceTo(targetPosition);
     if(dist < 1e-4){ return false; }
 
-    // Retail SceneHitCheck walks every CSWSArea room via CheckAABBAll.
+    // Retail SceneHitCheck walks every retail room via CheckAABBAll.
     const aabbFaces: any[] = [];
     const rooms = area.rooms || [];
     for(let i = 0, il = rooms.length; i < il; i++){
@@ -2344,7 +2344,7 @@ export class CutsceneManager {
       if (intersects.length > 0) return true;
     }
 
-    // Target → camera (complete segment parity with Scene::HitCheck)
+    // Target → camera (complete segment parity with Scene HitCheck)
     dir.copy(cameraPosition).sub(targetPosition).normalize();
     raycaster.set(targetPosition, dir);
     raycaster.far = dist;

@@ -10,7 +10,7 @@ import { SoundMode } from "@/enums/audio/SoundMode";
  * AutoPauseManager class.
  *
  * Retail client auto-pause + manual combat-pause (SetPausedByCombat reason 4).
- * Pause banner text comes from InGamePause.setPauseReason (CSWGuiInGamePause).
+ * Pause banner text comes from InGamePause.setPauseReason (GUI).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -55,7 +55,7 @@ export class AutoPauseManager {
   }
 
   /**
-   * Retail reasons that open the pause / pause_p panel via CGuiInGame::SetPaused.
+   * Retail reasons that open the pause / pause_p panel via SetPaused.
    * Generic (0) does not enter that switch in retail.
    */
   static ShowsPauseOverlay(reason: AutoPauseState | number): boolean {

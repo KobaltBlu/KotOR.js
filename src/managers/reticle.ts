@@ -8,8 +8,8 @@ import { GameState } from "@/GameState";
 
 /**
  * Retail reticle sizing / style helpers.
- * CSWGuiMainInterface::UpdateStickyTarget @ 006889c0
- * CSWGuiMainInterface::UpdateIndicator @ 0068a310
+ * UpdateStickyTarget
+ * UpdateIndicator
  *
  * @file reticle.ts
  */
@@ -64,7 +64,7 @@ export function getReticleKind(object: ModuleObject | undefined): ReticleKind {
 
 /**
  * True when retail client combat_mode would be set (party has live attack/spell target).
- * Approximates CClientExoAppInternal::UpdateCombatMode @ 005f3ad0.
+ * Approximates UpdateCombatMode.
  */
 export function isClientCombatMode(): boolean {
   const party = GameState.PartyManager?.party;
@@ -149,7 +149,7 @@ export function getSelectedReticleStyle(object: ModuleObject | undefined): Retic
 }
 
 /**
- * Retail combat-reticle size pulse (field21_0x5cb0).
+ * Retail combat-reticle size pulse.
  * Timer -1 → start 0.5s swell; while &gt; 0 add up to +64px; then settle.
  */
 export class CombatReticlePulse {

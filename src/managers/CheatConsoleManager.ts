@@ -15,7 +15,7 @@ import { FeebackMessageColor } from "@/enums/engine/FeedbackMessageColor";
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * Retail ConsoleFunc handlers (swkotor.exe string table @ 0074f058+).
+ * Retail ConsoleFunc handlers (swkotor.exe string table).
  *
  * @file CheatConsoleManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -29,7 +29,7 @@ export class CheatConsoleManager {
   static readonly RESREF_SEC_SPIKE = 'g_i_secspike01';
   static readonly RESREF_SITH_ARMOR = 'ptar_sitharmor';
 
-  /** Retail turbo GetMaxSpeed when CClientOptions.turbo_enabled. */
+  /** Retail turbo GetMaxSpeed when turbo is enabled. */
   static readonly TURBO_MAX_SPEED = 15;
 
   static shouldSkipItemConsume(): boolean {
@@ -53,7 +53,7 @@ export class CheatConsoleManager {
 
   //Gives your character the amount of Dark Side points you want
   static addDarkSide(points: number = 0){
-    // Retail adddarkside @ 0060ab30 — ModifyAlignment(-param), clamped ±100
+    // Retail adddarkside — ModifyAlignment(-param), clamped ±100
     let n = -Math.trunc(points);
     if(n > 100) n = 100;
     if(n < -100) n = -100;
@@ -65,7 +65,7 @@ export class CheatConsoleManager {
 
   //Gives your character the amount of Light Side points you want
   static addLightSide(points: number = 0){
-    // Retail addlightside @ 0060aac0 — ModifyAlignment(param), clamped ±100
+    // Retail addlightside — ModifyAlignment(param), clamped ±100
     let n = Math.trunc(points);
     if(n > 100) n = 100;
     if(n < -100) n = -100;
@@ -86,7 +86,7 @@ export class CheatConsoleManager {
   }
 
   /**
-   * Retail addlevel @ 0060b190 — XP needed for next level; L15 cap unless Jedi; L20 hard cap.
+   * Retail addlevel — XP needed for next level; L15 cap unless Jedi; L20 hard cap.
    */
   static addLevel(){
     const player = GameState.getCurrentPlayer();
@@ -116,7 +116,7 @@ export class CheatConsoleManager {
   }
 
   /**
-   * Retail bright → CSWCArea::ForceBrightSunAndMoon @ 00605fe0.
+   * Retail bright → ForceBrightSunAndMoon.
    */
   static bright(){
     GameState.module?.area?.forceBrightSunAndMoon?.();
@@ -151,7 +151,7 @@ export class CheatConsoleManager {
   }
 
   /**
-   * Retail givecredits @ 0060abd0 — n > 0; if n < 100 force 99.
+   * Retail givecredits — n > 0; if n < 100 force 99.
    */
   static giveCredits(amount: number = 0){
     let n = Math.trunc(amount);
@@ -178,7 +178,7 @@ export class CheatConsoleManager {
     CheatConsoleManager.giveItem(CheatConsoleManager.RESREF_SITH_ARMOR, 1);
   }
 
-  /** Retail heal @ 0060a460 — full vitals on controlled PC. */
+  /** Retail heal — full vitals on controlled PC. */
   static heal(){
     const player = GameState.getCurrentPlayer();
     if(player){
@@ -187,7 +187,7 @@ export class CheatConsoleManager {
     }
   }
 
-  /** Retail revealmap @ 0060abb0 — toggle overlay flag. */
+  /** Retail revealmap — toggle overlay flag. */
   static revealmap(){
     GameState.cheatRevealMap = !GameState.cheatRevealMap;
   }
@@ -216,7 +216,7 @@ export class CheatConsoleManager {
   }
 
   /**
-   * Lists warpable module resrefs under `modules/` (.rim / .mod).
+   * Lists warpable module resrefs under `modules/` (.rim /.mod).
    * Skips secondary archives (`*_s`) that are not standalone entry modules.
    */
   static async listModules(): Promise<string[]> {
@@ -238,7 +238,7 @@ export class CheatConsoleManager {
     }
   }
 
-  /** Retail whereami @ 0060b060 — Module + Position via AurPostString (feedback + console). */
+  /** Retail whereami — Module + Position via AurPostString (feedback + console). */
   static whereami(){
     const player = GameState.getCurrentPlayer();
     if(!player){ return; }
@@ -263,7 +263,7 @@ export class CheatConsoleManager {
   }
 
   /**
-   * Retail CheatSetAbility @ 0060a590 — clamp 0–99.
+   * Retail CheatSetAbility — clamp 0–99.
    * index: 0 STR, 1 DEX, 2 CON, 3 INT, 4 WIS, 5 CHA
    */
   static setAbility(index: number, raw: string | undefined){
@@ -283,7 +283,7 @@ export class CheatConsoleManager {
   }
 
   /**
-   * Retail CheatSetSkill @ 0060a480 — clamp 0–99; skillIndex matches SkillType.
+   * Retail CheatSetSkill — clamp 0–99; skillIndex matches SkillType.
    */
   static setSkill(skillIndex: number, raw: string | undefined){
     const player = GameState.getCurrentPlayer();
@@ -411,7 +411,7 @@ export class CheatConsoleManager {
         CheatConsoleManager.giveRandomLoot(CheatConsoleManager.parseIntParam(params[0], 1));
         break;
       case 'restartminigame':
-        // Retail ConsoleFunc "restartminigame" → CSWCArea::RestartMiniGame @ 00605e50.
+        // Retail ConsoleFunc "restartminigame" → RestartMiniGame.
         void GameState.module?.area?.restartMiniGame?.();
         break;
       case 'dancedancemalak':

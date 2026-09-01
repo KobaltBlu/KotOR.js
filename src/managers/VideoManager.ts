@@ -248,7 +248,7 @@ export class VideoManager {
       this.isPlaying = true;
       // Retail ExecuteCommandPlayMovie: SetSoundMode(3) when not skippable
       AudioEngine.SetSoundMode(SoundMode.PAUSE_LOAD, 0);
-      // CClientExoAppInternal::AddMovieToExoArrayList → CClientOptions::SetMovieShown
+      // AddMovieToExoArrayList → SetMovieShown
       MainMovies.setMovieShown(movieName, true);
       await this.bikObject.play(movieName, () => {
         this.isPlaying = false;

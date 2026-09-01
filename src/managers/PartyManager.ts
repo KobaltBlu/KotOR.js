@@ -66,9 +66,9 @@ export interface CurrentPuppet {
 
 /**
  * PartyManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file PartyManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -81,7 +81,7 @@ export class PartyManager {
   static aiStyle = 0;
 
   /**
-   * Retail CSWPartyTable::SetSoloMode + TogglePartyFollow (runs k_sup_solo).
+   * Retail SetSoloMode + TogglePartyFollow (runs k_sup_solo).
    * @param enabled - solo mode on/off
    * @param options.unstealthOnDisable - when turning solo off, strip party stealth (retail UnstealthParty)
    * @param options.runScript - run k_sup_solo after the flag changes (retail TogglePartyFollow)
@@ -175,12 +175,12 @@ export class PartyManager {
   /** TSL PT_COM_MSG_LIST entries */
   static CombatMessages: { msg: string; type: number; color: number }[] = [];
 
-  /** TSL partytable PT_SWOOP1..3 (SaveTableInfo @ 00700e00 / LoadTableInfo). */
+  /** TSL partytable PT_SWOOP1..3 (SaveTableInfo / LoadTableInfo). */
   static SwoopUpgrade1: number = -1;
   static SwoopUpgrade2: number = -1;
   static SwoopUpgrade3: number = -1;
   /**
-   * Extra runtime slots from CSWGuiSwoopUpgrade::OnAssemble (6 total).
+   * Extra runtime slots from OnAssemble (6 total).
    * Retail partytable only persists PT_SWOOP1..3 — slots 4–6 are session-only.
    */
   static SwoopUpgrade4: number = -1;
@@ -328,7 +328,7 @@ export class PartyManager {
       GameState.Planetary.SetSelectedPlanet(currentPlanet);
     }
 
-    //Init the TutorialWindowTracker      
+    //Init the TutorialWindowTracker
     const tutorial2DA = GameState.TwoDAManager.datatables.get('tutorial');
     let bitCount = 0;
     if(tutorial2DA){
@@ -530,7 +530,7 @@ export class PartyManager {
       }
     }
 
-    // Retail LoadTableInfo — restore per-baseitem cost multipliers (CSWBaseItem+0xc4),
+    // Retail LoadTableInfo — restore per-baseitem cost multipliers (retail),
     // independent of baseitems.itemmultiplier used by GetCost.
     const costMultField =
       gff.RootNode.getFieldByLabel('PT_COST_MULT_LIST') ||
@@ -715,12 +715,12 @@ export class PartyManager {
 
       partytable.RootNode.addField(new GFFField(GFFDataType.BYTE, 'PT_NUM_MEMBERS')).setValue(numMembers);
 
-      // TSL SaveTableInfo @ 00700e00 — puppets + components/chemicals + influence + swoops
+      // TSL SaveTableInfo — puppets + components/chemicals + influence + swoops
       if(GameState.GameKey == GameEngineType.TSL){
         const pc = GameState.PartyManager.Player || GameState.getCurrentPlayer();
         const pcName = (pc && typeof pc.getName === 'function') ? (pc.getName() || '') : '';
         partytable.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'PT_PCNAME')).setValue(pcName);
-        // Retail SaveTableInfo @ 00700e00 — PT_SWOOP1..3 only.
+        // Retail SaveTableInfo — PT_SWOOP1..3 only.
         partytable.RootNode.addField(new GFFField(GFFDataType.DWORD, 'PT_SWOOP1')).setValue(
           GameState.PartyManager.SwoopUpgrade1 | 0
         );
@@ -1112,7 +1112,7 @@ export class PartyManager {
   }
 
   /**
-   * Retail CSWPartyTable::GetNPCSelectability — -1 if unavailable, else canSelect (0/1).
+   * Retail GetNPCSelectability — -1 if unavailable, else canSelect (0/1).
    */
   static GetNPCSelectability(nID = 0): number {
     if(nID < 0 || nID >= PartyManager.MaxPartyCount) return -1;
@@ -1148,7 +1148,7 @@ export class PartyManager {
 
   /**
    * Set the PartyMember to unavailable.
-   * Retail CSWPartyTable::RemoveNPC @ 00700490 — clears available only.
+   * Retail RemoveNPC — clears available only.
    * @param npcId - The ID of the NPC to set to unavailable
    * @returns void
    */
@@ -1200,7 +1200,7 @@ export class PartyManager {
   }
 
   /**
-   * TSL AddAvailablePUPByTemplate (CSWPartyTable::AddPUP by resref @ 007002b0).
+   * TSL AddAvailablePUPByTemplate (AddPUP by resref).
    * Marks slot available and stores UTC; does not spawn.
    */
   static AddAvailablePUPByTemplate(pupId = 0, template: string = ''): boolean {
@@ -1224,7 +1224,7 @@ export class PartyManager {
   }
 
   /**
-   * TSL AddAvailablePUPByObject (CSWPartyTable::AddPUP @ 006fff20).
+   * TSL AddAvailablePUPByObject (AddPUP).
    * Saves creature to AVAILPUP{n}.utc; does not spawn.
    */
   static AddAvailablePUPByObject(pupId = 0, object: ModuleCreature): boolean {
@@ -1242,7 +1242,7 @@ export class PartyManager {
   }
 
   /**
-   * TSL AssignPUP @ 00700400 — set owner NPC's assignedPuppetId (creature+0x11f8).
+   * TSL AssignPUP — set owner NPC's assignedPuppetId (creature).
    * Both PUP and NPC must be available; NPC must already exist in-game.
    */
   static AssignPUP(pupId = 0, npcId = 0): boolean {
@@ -1260,7 +1260,7 @@ export class PartyManager {
   }
 
   /**
-   * TSL SpawnAvailablePUP / SpawnPUP @ 007031c0 — load from AVAILPUP if needed, place at location.
+   * TSL SpawnAvailablePUP / SpawnPUP — load from AVAILPUP if needed, place at location.
    * Does not add to the party puppet list (call AddPartyPuppet for that).
    */
   static SpawnAvailablePUP(pupId = 0, location?: EngineLocation): ModuleCreature | undefined {
@@ -1299,7 +1299,7 @@ export class PartyManager {
   }
 
   /**
-   * TSL GetPUPID @ 007035f0 — puppet slot index for a spawned puppet object, or -1.
+   * TSL GetPUPID — puppet slot index for a spawned puppet object, or -1.
    */
   static GetPUPID(object: ModuleCreature): number {
     if(!BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature)) return -1;
@@ -1310,7 +1310,7 @@ export class PartyManager {
   }
 
   /**
-   * TSL GetPUPOwner @ 00704c70 — party member / player whose assignedPuppetId matches.
+   * TSL GetPUPOwner — party member / player whose assignedPuppetId matches.
    */
   static GetPUPOwner(object: ModuleCreature): ModuleCreature | undefined {
     if(GameState.GameKey != GameEngineType.TSL) return undefined;
@@ -1328,7 +1328,7 @@ export class PartyManager {
   }
 
   /**
-   * TSL SaveMemberByObject / SaveNPCByObject @ 006fdca0 — write creature to AVAILNPC{n}.utc.
+   * TSL SaveMemberByObject / SaveNPCByObject — write creature to AVAILNPC{n}.utc.
    */
   static SaveNPCByObject(npcId = 0, object: ModuleCreature): void {
     if(npcId < 0 || npcId >= PartyManager.MaxPartyCount) return;
@@ -1346,7 +1346,7 @@ export class PartyManager {
   }
 
   /**
-   * TSL RebuildPartyTable @ ExecuteCommandRebuildPartyTable 007b1a30 —
+   * TSL RebuildPartyTable @ ExecuteCommandRebuildPartyTable
    * rebind NPC/PUP object caches by companion tag when the NPC/PUP is available.
    */
   static RebuildPartyTable(): void {
@@ -1372,7 +1372,7 @@ export class PartyManager {
   }
 
   /**
-   * TSL SavePuppetByObject @ 006fe0e0 — write creature to GAMEINPROGRESS:AVAILPUP{n}.utc.
+   * TSL SavePuppetByObject — write creature to GAMEINPROGRESS:AVAILPUP{n}.utc.
    */
   static SavePUPByObject(pupId = 0, object: ModuleCreature): void {
     if(GameState.GameKey != GameEngineType.TSL) return;
@@ -1387,7 +1387,7 @@ export class PartyManager {
   }
 
   /**
-   * TSL AddPartyPuppet / AddPuppet @ 006feb00 — add available puppet to active party list + SetIsPuppet.
+   * TSL AddPartyPuppet / AddPuppet — add available puppet to active party list + SetIsPuppet.
    */
   static AddPartyPuppet(pupId = 0, object?: ModuleCreature): boolean {
     if(GameState.GameKey != GameEngineType.TSL) return false;
@@ -1414,7 +1414,7 @@ export class PartyManager {
   }
 
   /**
-   * TSL GetIsPuppet — reads creature isPuppet (SetIsPuppet / +0x11fc), not mere spawn cache.
+   * TSL GetIsPuppet — reads creature isPuppet (SetIsPuppet), not mere spawn cache.
    */
   static GetIsPartyPuppet(object: ModuleCreature): boolean {
     if(!BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature)) return false;
@@ -1523,7 +1523,7 @@ export class PartyManager {
   /**
    * Save the current party member templates.
    * Retail GetNPCObject requires availability — unavailable CNPCs (e.g. prologue
-   * 3CFD after RemoveAvailableNPC(NPC_MIRA)) must not remain in PT_MEMBERS /
+   * 3CFD after RemoveAvailableNPC(NPC_MIRA)) must not remain in PT_MEMBERS
    * CurrentMembers or they will respawn on the next module load.
    * @returns void
    */
@@ -1665,7 +1665,7 @@ export class PartyManager {
 
   /**
    * Load the PartyMember by it's index in the CurrentMembers array.
-   * Retail CSWPartyTable::GetNPCObject @ 00700660 — unavailable → OBJECT_INVALID
+   * Retail GetNPCObject — unavailable → OBJECT_INVALID
    * (SpawnNPC no-ops). Prologue skip uses RemoveAvailableNPC(7) for 3CFD.
    * @param nIdx - The index of the party member to load
    * @returns void
@@ -1708,7 +1708,7 @@ export class PartyManager {
         partyMember.isPM = true;
         partyMember.npcId = memberID;
         partyMember.load();
-        // Do not clearAllActions after load — that wipes restored ActionList /
+        // Do not clearAllActions after load — that wipes restored ActionList
         // CombatRound SchedActionList / combat targets (mid-combat save resume).
         //PartyManager.party[nIdx+1] = partyMember;
 
@@ -1718,7 +1718,7 @@ export class PartyManager {
         PartyManager.AddPortraitToOrder( partyMember.getPortraitResRef() );
         PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(partyMember) ] = partyMember;
         let spawn = PartyManager.GetSpawnLocation(partyMember);
-        // Retail PositionParty: companions share the leader/waypoint orientation (Yaw @ 004aa0f0).
+        // Retail PositionParty: companions share the leader/waypoint orientation (Yaw).
         const spawnFacing = -Math.atan2(spawn.rotation.x, spawn.rotation.y);
         partyMember.position.copy(spawn.position);
         partyMember.setFacing(spawnFacing, true);
@@ -1789,9 +1789,9 @@ export class PartyManager {
   }
 
   /**
-   * Retail CSWParty formation local offsets (CSWParty ctor @ 00636170 → field16_0x1c8).
+   * retail formation local offsets (retail ctor →).
    * Each pattern stores companion slot1 then slot2 (+X right, +Y forward).
-   * Leader is always (0,0). SetFormation @ 00634760 selects pattern 0–2.
+   * Leader is always (0,0). SetFormation selects pattern 0–2.
    */
   static readonly FORMATION_PATTERN_COMPANIONS: ReadonlyArray<
     ReadonlyArray<Readonly<{ x: number; y: number }>>
@@ -1805,11 +1805,11 @@ export class PartyManager {
   ];
 
   /**
-   * Active party follow formation (retail CSWParty.formation). Default 0 after ctor SetFormation(0).
+   * Active party follow formation (retail.formation). Default 0 after ctor SetFormation(0).
    * −9999 cycles to next unlocked pattern.
    */
   static formation: number = 0;
-  /** Retail field12_0x1c4 — when set, SetFormation swaps slot1/slot2 offsets. */
+  /** Retail when set, SetFormation swaps slot1/slot2 offsets. */
   static formationInvert: boolean = false;
 
   /**
@@ -1835,7 +1835,7 @@ export class PartyManager {
   }
 
   /**
-   * Retail CSWParty::SetFormation @ 00634760.
+   * Retail SetFormation.
    * @param pattern 0–2, or −9999 to cycle
    */
   static setFormation(pattern: number): void {
@@ -1855,7 +1855,7 @@ export class PartyManager {
   }
 
   /**
-   * Retail CSWParty::InvertFormation — toggle companion offset swap.
+   * Retail InvertFormation — toggle companion offset swap.
    */
   static invertFormation(on?: boolean): void {
     if(typeof on === 'boolean'){
@@ -1895,7 +1895,7 @@ export class PartyManager {
     const spawnLoc = GameState.module.area.getSpawnLocation();
     const ox = spawnLoc.rotation.x;
     const oy = spawnLoc.rotation.y;
-    // Retail Yaw @ 004aa0f0: atan2(-x, y) in degrees → radians here.
+    // Retail Yaw: atan2(-x, y) in degrees → radians here.
     const yaw = -Math.atan2(ox, oy);
 
     let index = PartyManager.party.indexOf(creature);
@@ -1908,7 +1908,7 @@ export class PartyManager {
     const offset = PartyManager.getFormationOffsets()[index];
     const cos = Math.cos(yaw);
     const sin = Math.sin(yaw);
-    // Rotate local formation offset around Z (Quaternion * Vector @ 004a9bb0).
+    // Rotate local formation offset around Z (Quaternion * Vector).
     PartyManager.#spawnPos.set(
       spawnLoc.position.x + (offset.x * cos - offset.y * sin),
       spawnLoc.position.y + (offset.x * sin + offset.y * cos),
@@ -2034,7 +2034,7 @@ export class PartyManager {
   }
 
   /**
-   * Give XP to the party (retail CSWPartyTable::DistributeExperience @ 005653a0).
+   * Give XP to the party (retail DistributeExperience).
    * Adds to PT_XP_POOL and awards the full amount to each active party member + player.
    */
   static GiveXP(nXP = 0){

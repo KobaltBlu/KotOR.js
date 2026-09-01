@@ -25,9 +25,9 @@ const REPUTATION_STATUS = {
 
 /**
  * FactionManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file FactionManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -145,7 +145,7 @@ export class FactionManager {
     // -> 0-10 means oSource is hostile to oTarget
     // -> 11-89 means oSource is neutral to oTarget
     // -> 90-100 means oSource is friendly to oTarget
-    // Retail CSWSObject::GetReputation @ 0057cb80 — missing faction → 0x32 (50)
+    // Retail GetReputation — missing faction → 0x32 (50)
     if(!(BitWise.InstanceOf(oSource?.objectType, ModuleObjectType.ModuleObject)) || !(BitWise.InstanceOf(oTarget?.objectType, ModuleObjectType.ModuleObject)))
       return 0;
 

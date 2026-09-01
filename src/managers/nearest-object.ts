@@ -26,7 +26,7 @@ export function insertByDistSq(candidates: NearestCandidate[], obj: ModuleObject
 }
 
 /**
- * Retail ExecuteCommandGetNearestObject @ 0054b550 spiral walk:
+ * Retail ExecuteCommandGetNearestObject spiral walk:
  * start at GetFirstObjectIndiceByX, expand +1/-1/+2/-2…, insert by distSq,
  * abort a direction when |dx|² already exceeds the current nth-furthest distSq.
  */

@@ -41,11 +41,11 @@ const NEAREST_OBJECT_RANGE_SQ = NEAREST_OBJECT_RANGE * NEAREST_OBJECT_RANGE;
 const FRONT_CONE_DOT = 0.866;
 /** Origin offset behind player for front-cone test. */
 const FRONT_CONE_ORIGIN_BACK = 4;
-/** LOS grace while sticky target briefly occluded (field205_0x368). */
+/** LOS grace while sticky target briefly occluded. */
 const STICKY_LOS_GRACE_SEC = 1.0;
 /** Combat dead-target grace (retail target_changing = 0x3fc00000). */
 const TARGET_CHANGING_SEC = 1.5;
-/** Enemy / mine sighted latch (field216_0x394 / field219_0x3a0). */
+/** Enemy / mine sighted latch (). */
 const SIGHTED_LATCH_SEC = 10.0;
 
 type NearestValid = { ok: boolean; hostile: boolean };
@@ -53,9 +53,9 @@ type NearestLists = { around: ModuleObject[]; front: ModuleObject[] };
 
 /**
  * ModuleObjectManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ModuleObjectManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -67,8 +67,8 @@ export class ModuleObjectManager {
 
   static ObjectList: Map<any, ModuleObject> = new Map();
   /**
-   * Retail CSWSModule::object_lookup_table — sorted by tag; equal tags keep insertion order.
-   * FindObjectByTagOrdinal @ 004c5fe0 / AddObjectToLookupTable @ 004c7de0.
+   * Retail object_lookup_table — sorted by tag; equal tags keep insertion order.
+   * FindObjectByTagOrdinal / AddObjectToLookupTable.
    */
   static tagLookup: TagLookupNode[] = [];
   /** Start above mgo_index range (0..0xfe) so module ids never collide with SWMG object ids. */
@@ -131,7 +131,7 @@ export class ModuleObjectManager {
       }
     }
     this.ObjectList.set(object.id, object);
-    // Retail CSWS* ctor AddObject(aiMaster, VERY_LOW) — only if not already registered
+    // retail* ctor AddObject(aiMaster, VERY_LOW) — only if not already registered
     if(object.aiLevel === AILevel.INVALID){
       GameState.ServerAIMaster?.addObject?.(object);
     }
@@ -150,21 +150,21 @@ export class ModuleObjectManager {
   }
 
   /**
-   * Retail FindTagPositionInTable @ 004c5e60 — first index where tag >= needle (lower_bound).
+   * Retail FindTagPositionInTable — first index where tag >= needle (lower_bound).
    */
   static FindTagPositionInTable(tag: string): number {
     return findTagPositionInTable(this.tagLookup, tag);
   }
 
   /**
-   * Retail AddObjectToLookupTable @ 004c7de0 — insert after last equal-tag entry.
+   * Retail AddObjectToLookupTable — insert after last equal-tag entry.
    */
   static AddObjectToLookupTable(tag: string, id: number){
     addObjectToLookupTable(this.tagLookup, tag, id);
   }
 
   /**
-   * Retail RemoveObjectFromLookupTable @ 004c5ef0 — remove by tag + id.
+   * Retail RemoveObjectFromLookupTable — remove by tag + id.
    */
   static RemoveObjectFromLookupTable(tag: string, id: number): boolean {
     return removeObjectFromLookupTable(this.tagLookup, tag, id);
@@ -246,7 +246,7 @@ export class ModuleObjectManager {
       return PartyManager.party[0];
     }
 
-    // Retail FindObjectByTagOrdinal @ 004c5fe0 / FindObjectByTagTypeOrdinal @ 004c60b0
+    // Retail FindObjectByTagOrdinal / FindObjectByTagTypeOrdinal
     const filterType = oType | 0;
     const useTypeFilter = filterType !== NWModuleObjectType.ALL;
     const id = findObjectIdByTagOrdinal(
@@ -398,7 +398,7 @@ export class ModuleObjectManager {
   }
 
   /**
-   * Single CREATURE_TYPE_* criterion for GetNearestCreature* (retail @ 0054b550).
+   * Single CREATURE_TYPE_* criterion for GetNearestCreature* (retail).
    */
   private static creatureMatchesNearestCriterion(
     creature: ModuleCreature,
@@ -489,7 +489,7 @@ export class ModuleObjectManager {
   }
 
   /**
-   * Pass AL — GetNearestCreatureToLocation (retail ExecuteCommandGetNearestObject @ 0054b550).
+   * Pass AL — GetNearestCreatureToLocation (retail ExecuteCommandGetNearestObject).
    * Same criteria as GetNearestCreature; distance sorted vs location XYZ.
    * Reputation/perception reference the party leader when present.
    */
@@ -537,7 +537,7 @@ export class ModuleObjectManager {
   }
 
   /**
-   * Pass AL — GetNearestObjectToLocation (retail ExecuteCommandGetNearestObject @ 0054b550).
+   * Pass AL — GetNearestObjectToLocation (retail ExecuteCommandGetNearestObject).
    */
   public static GetNearestObjectToLocation(oType = 0, lLocation: EngineLocation, iNum = 0){
     const area = this.module?.area;
@@ -555,7 +555,7 @@ export class ModuleObjectManager {
   }
 
   /**
-   * Pass AL — GetNearestTrapToObject (retail ExecuteCommandGetNearestMine @ 0054a090).
+   * Pass AL — GetNearestTrapToObject (retail ExecuteCommandGetNearestMine).
    * Trap objects = triggers/doors/placeables with trapFlag (or TRAP-type triggers).
    */
   public static GetNearestTrapToObject(oTarget: ModuleObject, nTrapDetected = 0): ModuleObject {
@@ -699,18 +699,18 @@ export class ModuleObjectManager {
 
   static playerSelectableObjects: ModuleObject[] = [];
   static playerHoverableObjects: ModuleObject[] = [];
-  /** Hostile flags parallel to playerSelectableObjects (GetNearestObjects param_2). */
+  /** Hostile flags parallel to playerSelectableObjects (GetNearestObjects arg2). */
   static #nearestHostileFlags = new WeakMap<ModuleObject, boolean>();
   static #currentVisibleObject: ModuleObject;
   static #currentVisibleObjectIndex: number = 0;
-  /** Sticky LOS grace timer (retail field205_0x368). */
+  /** Sticky LOS grace timer (Retail). */
   static #stickyLosGrace = 0;
   /** Combat dead-target grace (retail target_changing). */
   static #targetChanging = 0;
-  /** Enemy first-sight latch (retail enemy_sighted + field216_0x394). */
+  /** Enemy first-sight latch (retail enemy_sighted +). */
   static #enemySighted = false;
   static #enemySightedLatch = 0;
-  /** Mine first-sight latch (retail field194_0x328 + field219_0x3a0). */
+  /** Mine first-sight latch (Retail +). */
   static #mineSighted = false;
   static #mineSightedLatch = 0;
   static #cachedFront: ModuleObject[] = [];
@@ -720,7 +720,7 @@ export class ModuleObjectManager {
   static #tmpDelta = new THREE.Vector3();
 
   /**
-   * Retail CSWSCreature::ValidNearestObjectType @ 004f2c30.
+   * Retail ValidNearestObjectType.
    */
   static validNearestObjectType(player: ModuleObject, obj: ModuleObject): NearestValid {
     if(!obj || obj === player || !obj.area){
@@ -766,8 +766,8 @@ export class ModuleObjectManager {
       if(!plc.isUseable()){
         return { ok: false, hostile: false };
       }
-      // Retail ValidNearest placeable @ 004f2c30: hostile only when
-      // field38_0x340 != 0 && reputation < 11. That field is not GFF-loaded
+      // Retail ValidNearest placeable: hostile only when
+      // != 0 && reputation < 11. That field is not GFF-loaded
       // and stays 0 for normal containers, so nearest-hostile is never set.
       return { ok: true, hostile: false };
     }
@@ -795,7 +795,7 @@ export class ModuleObjectManager {
   }
 
   /**
-   * Retail CSWSCreature::GetNearestObjects @ 004fc4c0 (both ranges 30).
+   * Retail GetNearestObjects (both ranges 30).
    * around: yaw-sorted; front: distance-sorted within ~30° cone from 4u behind.
    */
   static getNearestObjects(player: ModuleObject): NearestLists {
@@ -868,19 +868,19 @@ export class ModuleObjectManager {
     return this.#nearestHostileFlags.get(obj) === true;
   }
 
-  /** Approximate retail CSWCCreature::CanSee for selection. */
+  /** Approximate retail CanSee for selection. */
   static canSeeObject(player: ModuleObject, obj: ModuleObject): boolean {
     if(!player || !obj) return false;
     return obj.hasLineOfSight(player, NEAREST_OBJECT_RANGE);
   }
 
   /**
-   * Retail CClientExoAppInternal::ShowObject @ 005f9c60 (presentation subset).
-   * @param doLookAt - param_2: creature LookAt
-   * @param doCameraFocus - param_3: SetLookAtTarget. Tab/SelectNearest and
-   *   enemy/mine first-sight pass true. Continuous combat-mode auto-focus is
-   *   intentionally omitted: FollowerCamera.focusObject yaw moves the floating
-   *   target menu and breaks BTN_TARGET clicks (security / attack).
+   * Retail ShowObject (presentation subset).
+   * @param doLookAt - arg2: creature LookAt
+   * @param doCameraFocus - arg3: SetLookAtTarget. Tab/SelectNearest and
+   * enemy/mine first-sight pass true. Continuous combat-mode auto-focus is
+   * intentionally omitted: FollowerCamera.focusObject yaw moves the floating
+   * target menu and breaks BTN_TARGET clicks (security / attack).
    */
   static showObject(
     obj: ModuleObject | undefined,
@@ -900,7 +900,7 @@ export class ModuleObjectManager {
     this.#currentVisibleObject = obj;
     this.#currentVisibleObjectIndex = this.playerSelectableObjects.indexOf(obj);
 
-    // Retail only touches camera when param_2 (LookAt) is set.
+    // Retail only touches camera when arg2 (LookAt) is set.
     if(doLookAt && doCameraFocus){
       FollowerCamera.setFocusObject(obj);
     }else if(doLookAt && !doCameraFocus){
@@ -954,7 +954,7 @@ export class ModuleObjectManager {
   }
 
   /**
-   * Retail CClientExoAppInternal::DoPassiveSelection @ 005fa630.
+   * Retail DoPassiveSelection.
    */
   static doPassiveSelection(player: ModuleObject, delta: number = 0){
     if(!player){
@@ -1089,7 +1089,7 @@ export class ModuleObjectManager {
       }
     }
 
-    // Latch refresh / decay (retail field216_0x394 / field219_0x3a0)
+    // Latch refresh / decay (Retail)
     if(sawHostileCanSee){
       this.#enemySighted = true;
       this.#enemySightedLatch = SIGHTED_LATCH_SEC;
@@ -1113,7 +1113,7 @@ export class ModuleObjectManager {
     }
 
     if(keepSticky && last){
-      // Retail sticky+CanSee: LookAt only when force-sight (local_2c) set
+      // Retail sticky+CanSee: LookAt only when force-sight is set
       this.showObject(last, forceLookAt, forceCameraFocus);
       return;
     }
@@ -1152,8 +1152,8 @@ export class ModuleObjectManager {
   }
 
   /**
-   * Retail CClientExoAppInternal::SelectNearestObject @ 005fb050.
-   * @param previous - true = SelectPrev (param_1 != 0)
+   * Retail SelectNearestObject.
+   * @param previous - true = SelectPrev (arg1 != 0)
    */
   static selectNearestObject(previous: boolean = false): ModuleObject | undefined {
     const player = PartyManager.party[0] ?? GameState.getCurrentPlayer();
@@ -1168,7 +1168,7 @@ export class ModuleObjectManager {
     if(!list.length) return undefined;
 
     const combat = isClientCombatMode();
-    // Out of combat: prefer hostile creatures when any exist (param_2 = 2)
+    // Out of combat: prefer hostile creatures when any exist (arg2 = 2)
     let hostileOnly = false;
     if(!combat){
       for(let i = 0; i < list.length; i++){

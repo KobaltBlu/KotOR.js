@@ -10,7 +10,7 @@ import { GameState } from "@/GameState";
 const DIRTY_RESREFS = ['dirtytex', 'dirtytex2', 'dirtytex3'] as const;
 
 /**
- * Scene dirtytex / dirtytex2 / dirtytex3 slots (retail DAT_00a14d34[0..2]).
+ * Scene dirtytex / dirtytex2 / dirtytex3 slots (retail constant[0..2]).
  * Loads the three resrefs and optionally regenerates pixels from ARE Dirty*
  * when TXI proceduretype is dirty / dirty2 / dirty3.
  */
@@ -81,7 +81,7 @@ export class DirtyTextureManager {
   }
 
   /**
-   * Port of DirtyTextureController::Init — fills size×size RGBA from ARE params.
+   * DirtyTextureController Init — fills size×size RGBA from ARE params.
    * formula==1 → perlin-style noise; else random. Channels scaled by ARGB maxima.
    */
   static generateProceduralDirt(layer: IAreaDirtLayer): THREE.DataTexture | null {

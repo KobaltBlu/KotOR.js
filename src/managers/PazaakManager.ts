@@ -47,8 +47,8 @@ interface IPazaakSidecardPick {
 }
 
 /**
- * Retail CSWPazaak::FindPotentialSidecardTotal @ 006e4910.
- * maximize=true → param_3==0 (highest non-bust total); false → param_3==1 (lowest).
+ * Retail FindPotentialSidecardTotal.
+ * maximize=true → arg3==0 (highest non-bust total); false → arg3==1 (lowest).
  */
 function findPotentialSidecardTotal(
   table: IPazaakTable,
@@ -232,7 +232,7 @@ export class PazaakManager {
   static TurnMode: PazaakTurnMode = PazaakTurnMode.PLAYER;
   static Actions: IPazaakAction[] = [];
   static TargetWins: number = 3;
-  /** Retail CSWPazaak field6_0x22c — PlayAITurn state (0..4). */
+  /** retail — PlayAITurn state (0..4). */
   static AIState: number = 0;
 
   static {
@@ -245,7 +245,7 @@ export class PazaakManager {
   static Initialize(){
     console.log(`PazaakManager: Initializing`);
     /**
-     * Pazaak Cards — indices 0 .. MAX_CARDS-1 (TSL includes gold 18..22).
+     * Pazaak Cards — indices 0.. MAX_CARDS-1 (TSL includes gold 18..22).
      * - index 0-4: start with 2 cards
      * - remaining: 0
      */
@@ -285,12 +285,12 @@ export class PazaakManager {
     }else{
       PazaakManager.Config = PazaakConfig_TSL;
     }
-    // Retail ExecuteCommandPlayPazaak @ 00540fd0 — MaxWager<=0 mutes credits + wager UI.
+    // Retail ExecuteCommandPlayPazaak — MaxWager<=0 mutes credits + wager UI.
     if(this.MaxWager <= 0){
       this.MaxWager = 0;
       this.Wager = 0;
     }
-    // CSWGuiTutorial field5_0x994 — reset help session for this PlayPazaak.
+    // GUI — reset help session for this PlayPazaak.
     PazaakTutorial.reset();
     PazaakTutorial.setEnabled(!!this.ShowTutorial);
     this.TotalMainDeckCards = PazaakManager.Config.data.mainDeckCards.length;
@@ -587,11 +587,11 @@ export class PazaakManager {
       const playerPoints = this.Tables[PazaakTurnMode.PLAYER].points;
       const opponentPoints = this.Tables[PazaakTurnMode.OPPONENT].points;
       console.log(`PazaakManager: End round ${playerPoints} - ${opponentPoints}`);
-      //[Results] retail CSWPazaak::DetermineWinner @ 006e48a0:
+      //[Results] retail DetermineWinner:
       // bust totals → -1000000; higher non-bust total wins; equal → tie.
       // -1 - tied
-      //  0 - player wins
-      //  1 - opponent wins
+      // 0 - player wins
+      // 1 - opponent wins
       let pScore = playerPoints > this.TargetPoints ? -1000000 : playerPoints;
       let oScore = opponentPoints > this.TargetPoints ? -1000000 : opponentPoints;
       let result = -1;
@@ -610,7 +610,7 @@ export class PazaakManager {
         }
       }
 
-      // Retail DoGameSequence case 8/9 @ 006804c1: message first, then set/match SFX after score++.
+      // Retail DoGameSequence case 8/9: message first, then set/match SFX after score++.
       if(result == -1){
         this.AddAction(this.TurnMode, PazaakActionType.SHOW_MESSAGE, [MSG_TIED]);
       }else if(result == PazaakTurnMode.PLAYER){
@@ -635,7 +635,7 @@ export class PazaakManager {
 
       if(this.Tables[PazaakTurnMode.PLAYER].winCount >= this.TargetWins){
         if(PazaakTutorial.enabled){
-          // Retail HandleEndDialog @ 0067e9a0 — 0x96f9 then EndPazaakGame on close.
+          // Retail HandleEndDialog — 0x96f9 then EndPazaakGame on close.
           this.queueTutorialHelp(PazaakTutorial.beginMatchOverHelp());
         }else{
           this.AddAction(this.TurnMode, PazaakActionType.END_GAME, [PazaakTurnMode.PLAYER]);
@@ -803,7 +803,7 @@ export class PazaakManager {
       actionStatus = ActionStatus.COMPLETE;
     }
     /**
-     * AI determines a move — retail CSWPazaak::PlayAITurn @ 006e4c60.
+     * AI determines a move — retail PlayAITurn.
      */
     else if(action.type == PazaakActionType.AI_DETERMINE_MOVE){
       console.log(`PazaakManager: AI determining move (state ${this.AIState})...`);
@@ -897,8 +897,8 @@ export class PazaakManager {
   }
 
   /**
-   * Retail CSWPazaak::PlayAITurn @ 006e4c60.
-   * AI = enemy table, human = player table; aiState = field6_0x22c.
+   * Retail PlayAITurn.
+   * AI = enemy table, human = player table; aiState =.
    */
   static playAITurn(aiState: number): { code: number; handIndex: number; flipped: boolean } {
     const ai = this.Tables[PazaakTurnMode.OPPONENT];
@@ -1058,7 +1058,7 @@ export class PazaakManager {
   }
 
   /**
-   * TSL BTN_FORFEITGAME — HandleForfeitButton @ 005560c0 / HandleQuitDialog @ 005555a0.
+   * TSL BTN_FORFEITGAME — HandleForfeitButton / HandleQuitDialog.
    * Confirm then EndPazaakGame with opponent win.
    */
   static AddForfeitAction(){
@@ -1067,7 +1067,7 @@ export class PazaakManager {
   }
 
   /**
-   * Show CSWGuiTutorial help via InGameConfirm (OK-only; retail SetAllowCancel 0).
+   * Show GUI help via InGameConfirm (OK-only; retail SetAllowCancel 0).
    * ProcessActionQueue is already paused while confirm is visible.
    */
   static queueTutorialHelp(strRef: number){
@@ -1084,7 +1084,7 @@ export class PazaakManager {
   }
 
   /**
-   * Retail HandleTutorialClose @ 0067ea10 / Aspyr FUN_0088eaa0.
+   * Retail HandleTutorialClose / Aspyr retail.
    */
   static onTutorialHelpClosed(closedStrRef: number){
     const result = PazaakTutorial.onHelpClosed(closedStrRef);

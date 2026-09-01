@@ -1,9 +1,9 @@
 /**
- * Retail SendDialogEntryNode @ 005a13d0 — required AnimList participants must
+ * Retail SendDialogEntryNode — required AnimList participants must
  * resolve on client before HandleDialogEntry (retry window 0x5dc = 1500ms).
  */
 
-/** Retail CSWSDialog::field63_0x120 armed value. */
+/** Retail armed value. */
 export const DIALOG_PARTICIPANT_RETRY_MS = 0x5dc;
 
 export interface DialogParticipantReadyActor {

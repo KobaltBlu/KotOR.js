@@ -30,7 +30,7 @@ interface ICasterSave {
 /**
  * ShadowBlobManager — retail-equivalent stencil-masked shadow disks.
  *
- * Aligns with Scene::RenderStencilShadowsForThisLight @ 00450730:
+ * Aligns with RenderStencilShadowsForThisLight:
  * - dark ground disks at focus Z
  * - opacity shadowAlpha * 0.5
  * - depth test disabled while drawing the disk
@@ -71,7 +71,7 @@ export class ShadowBlobManager {
     const maxBlobs = Math.max(1, LightManager.MAXSHADOWLIGHTS);
 
     if(this.geometry){ this.geometry.dispose(); }
-    // Retail fan uses 10 circumferential samples @ 00450730.
+    // Retail fan uses 10 circumferential samples.
     this.geometry = new THREE.CircleGeometry(1, RETAIL_STENCIL_SHADOW_SEGMENTS);
 
     if(this.hardMaterial){ this.hardMaterial.dispose(); }
@@ -79,7 +79,7 @@ export class ShadowBlobManager {
       color: 0x000000,
       transparent: true,
       opacity: 0,
-      // Retail glDisable(GL_DEPTH_TEST) while drawing the disk @ 00450730.
+      // Retail glDisable(GL_DEPTH_TEST) while drawing the disk.
       depthWrite: false,
       depthTest: false,
       blending: THREE.NormalBlending,
@@ -106,7 +106,7 @@ export class ShadowBlobManager {
 
     const soft = !!this.lightManager?.softShadowsEnabled;
     for(let i = 0; i < maxBlobs; i++){
-      // Retail glStencilFunc bit: 1 << (lightIndex)  (param_3 is 1-based in retail)
+      // Retail glStencilFunc bit: 1 << (lightIndex) (arg3 is 1-based in retail)
       const stencilRef = 1 << (i % 8);
       const mat = this.hardMaterial.clone();
       if(soft){

@@ -14,7 +14,7 @@ interface TextureAnimEntry {
   frames: THREE.Texture[];
   /** Retail CycleTIDTextureController special_field (fps). */
   fps: number;
-  /** Current frame index — IncrementTIDIndex @ 0041f3b0. */
+  /** Current frame index — IncrementTIDIndex. */
   index: number;
   /** Accumulated delta since last advance. */
   accumulator: number;
@@ -24,8 +24,8 @@ interface TextureAnimEntry {
 /**
  * TextureAnimationManager — retail TXI proceduretype cycle playback.
  *
- * Ports CycleTIDTextureController::Control @ 00460970 and
- * CAurTexture::IncrementTIDIndex @ 0041f3b0.
+ * Ports CycleTIDTextureController Control and
+ * texture IncrementTIDIndex.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -38,7 +38,7 @@ export class TextureAnimationManager {
 
   /**
    * Register a cycle-animated texture with a material uniform.
-   * Retail keeps controller state on CAurTextureBasic; we key by the frame array.
+   * Retail keeps controller state on the texture; we key by the frame array.
    */
   static register(
     texture: OdysseyTexture,
@@ -98,9 +98,9 @@ export class TextureAnimationManager {
   }
 
   /**
-   * Retail CycleTIDTextureController::Control @ 00460970:
-   *   accum += deltaT;
-   *   if (accum > 1/fps) { accum = 0; index = (index+1) % (numY*numX); IncrementTIDIndex(index); }
+   * Retail CycleTIDTextureController Control:
+   * accum += deltaT;
+   * if (accum > 1/fps) { accum = 0; index = (index+1) % (numY*numX); IncrementTIDIndex(index); }
    */
   static update(delta: number): void {
     if(delta <= 0 || this.entries.length === 0) return;
@@ -119,7 +119,7 @@ export class TextureAnimationManager {
     }
   }
 
-  /** Retail CAurTexture::IncrementTIDIndex @ 0041f3b0 — current_tid = gl_textures[index]. */
+  /** Retail IncrementTIDIndex — current_tid = gl_textures[index]. */
   private static applyFrame(entry: TextureAnimEntry): void {
     const frame = entry.frames[entry.index];
     if(!frame) return;

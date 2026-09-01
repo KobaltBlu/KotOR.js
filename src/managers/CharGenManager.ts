@@ -38,14 +38,14 @@ import {
 } from "@/engine/rules/chargen-appearance";
 import { createDefaultPartyFollowInfo } from "@/module/ModuleCreature";
 
-/** Retail CSWGuiQuickPanel step indices. */
+/** retail step indices. */
 export enum CharGenQuickStep {
   PORTRAIT = 0,
   NAME = 1,
   PLAY = 2,
 }
 
-/** Retail CSWGuiCustomPanel step indices. */
+/** retail step indices. */
 export enum CharGenCustomStep {
   PORTRAIT = 0,
   ABILITIES = 1,
@@ -57,9 +57,9 @@ export enum CharGenCustomStep {
 
 /**
  * CharGenManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -219,7 +219,7 @@ export class CharGenManager {
   }
 
   /**
-   * Retail CSWGuiQuickPanel::DoQuickStats — apply class package attributes,
+   * Retail DoQuickStats — apply class package attributes,
    * granted/package feats, and recommended skills.
    */
   static doQuickStats() {
@@ -454,7 +454,7 @@ export class CharGenManager {
     template.RootNode.addField(new GFFField(GFFDataType.WORD, 'CurrentForce')).setValue(0);
     template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Gender')).setValue(gender);
     let equipment = template.RootNode.addField(new GFFField(GFFDataType.LIST, 'Equip_ItemList'));
-    // Retail SaveCharGenCreature script set @ 006123e0
+    // Retail SaveCharGenCreature script set
     template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptAttacked')).setValue('k_hen_attacked01');
     template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptDamaged')).setValue('k_def_damage01');
     template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptDeath')).setValue('');

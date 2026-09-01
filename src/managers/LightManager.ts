@@ -65,14 +65,14 @@ export class LightManager {
   static MAXSHADOWLIGHTS = 3;
   /**
    * Per-model light cap: retail hard-sets VertexProgram allowed_lights = 3
-   * (VertexProgram ctor @ 004a27d0). Each model's shader receives at most the
+   * (VertexProgram ctor). Each model's shader receives at most the
    * top 3 of the scene's prioritized lights (SetUpVertexProgramLightShaderConstants
-   * @ 004a50d0), and GetNearestLights @ 004a3770 likewise packs GL_LIGHT0..2.
+   *), and GetNearestLights likewise packs GL_LIGHT0..2.
    */
   static MAX_LIGHTS_PER_MODEL = RETAIL_MAX_LIGHTS_PER_MODEL;
   /**
-   * Object query radius passed to GetNearestLights from Scene::RenderOnlyGobs
-   * (hardcoded 2.0 at 00450d60).
+   * Object query radius passed to GetNearestLights from RenderOnlyGobs
+   * (hardcoded 2.0).
    */
   static RETAIL_GOB_LIGHT_RADIUS = RETAIL_GOB_LIGHT_RADIUS_CONST;
 
@@ -91,8 +91,8 @@ export class LightManager {
   bumpLights: OdysseyLight3D[] = [];
   /**
    * Retail exclusive_dynamic_lights: the fading pool built by
-   * EnableLightsDynamicOnly @ 004a4480 from the `n_dynamic_type == 1` subset of
-   * prioritized_lights. RenderStaticGeometry @ 00450c30 binds this set before
+   * EnableLightsDynamicOnly from the `n_dynamic_type == 1` subset of
+   * prioritized_lights. RenderStaticGeometry binds this set before
    * drawing static/lightmapped geometry, so these are the only lights that
    * overlay a bake.
    */
@@ -117,7 +117,7 @@ export class LightManager {
   shadowLights: OdysseyLight3D[] = [];
   /** GetShadowLights(mode=1) single dynamic light for static mesh shadows. */
   staticMeshShadowLights: OdysseyLight3D[] = [];
-  /** GetShadowLights(mode=2) distant/static light (field21_0xa4). */
+  /** GetShadowLights(mode=2) distant/static light. */
   distantShadowLight: OdysseyLight3D | undefined;
 
   /**
@@ -130,7 +130,7 @@ export class LightManager {
   sunDirection = new THREE.Vector3(4000, 4500, 7000).normalize();
 
   /**
-   * Camera headlight (SetUpVertexProgramLightShaderConstants @ 004a50d0).
+   * Camera headlight (SetUpVertexProgramLightShaderConstants).
    * When enabled, reserves one of the model's three light slots.
    */
   headLightEnabled = false;
@@ -347,7 +347,7 @@ export class LightManager {
   }
 
   /**
-   * PrioritizeIllumination @ 004a3cf0 eligibility for the room/global render set:
+   * PrioritizeIllumination eligibility for the room/global render set:
    * radius != 0 and color not black. Score <= 1 is applied by the caller.
    * Unlike GetNearestLights, static lights (no dynamic/affectDynamic) are included.
    */
@@ -386,7 +386,7 @@ export class LightManager {
   };
 
   /**
-   * PrioritizeLights + PrioritizeIllumination (param_1=false): score lights,
+   * PrioritizeLights + PrioritizeIllumination (arg1=false): score lights,
    * keep those with score <= 1, sort via lightcmp. Cap at MAXLIGHTS for the
    * desired fade set (ControlLightsFade). No per-parent limit — that is a
    * GetNearestLights / GL_LIGHT0..2 concern only.
@@ -419,7 +419,7 @@ export class LightManager {
   }
 
   /**
-   * PrioritizeIllumination bump_map_lights @ 004a3cf0: scan the first 3 sorted
+   * PrioritizeIllumination bump_map_lights: scan the first 3 sorted
    * illumination lights; keep the first non-ambient with n_dynamic_type != 0.
    */
   updateBumpLightSelection(sortedCandidates: OdysseyLight3D[] = this.selectedLights){
@@ -427,7 +427,7 @@ export class LightManager {
   }
 
   /**
-   * Standalone PrioritizeBump @ 004a3ee0: non-ambient dynamic lights from the
+   * Standalone PrioritizeBump: non-ambient dynamic lights from the
    * render/fade pool, lightcmp-sorted, capped at 1. Used when retail selects
    * the independent bump path instead of the illumination-inline scan.
    */
@@ -452,11 +452,11 @@ export class LightManager {
   }
 
   /**
-   * ControlLightsFade @ 004a4580: keep the bound render-light pool, fade with
+   * ControlLightsFade: keep the bound render-light pool, fade with
    * ±deltaT, and apply fadingLightFlag only as the initial fade (0 vs 1).
    * Lights leaving the desired set always fade out — not only when isFading.
    *
-   * `channel` selects the PartLight fade field (retail param_4), so the room
+   * `channel` selects the PartLight fade field (retail arg4), so the room
    * pool and the static-geometry pool fade independently.
    */
   private controlLightsFade(
@@ -523,7 +523,7 @@ export class LightManager {
     return next;
   }
 
-  /** EnableLights @ 004a3080 → ControlLightsFade on the room/global pool. */
+  /** EnableLights → ControlLightsFade on the room/global pool. */
   reclaimLights(delta = 0, desiredLights: OdysseyLight3D[] = []){
     const next = this.controlLightsFade(
       this.boundLights,
@@ -538,9 +538,9 @@ export class LightManager {
   }
 
   /**
-   * EnableLightsDynamicOnly @ 004a4480: fade the `n_dynamic_type == 1` subset of
+   * EnableLightsDynamicOnly: fade the `n_dynamic_type == 1` subset of
    * the prioritized illumination list into exclusive_dynamic_lights. This is the
-   * pool RenderStaticGeometry @ 00450c30 binds for lightmapped geometry.
+   * pool RenderStaticGeometry binds for lightmapped geometry.
    */
   reclaimExclusiveDynamicLights(delta = 0, prioritizedLights: OdysseyLight3D[] = []){
     const desired = retailSelectDynamicOnlyLights(prioritizedLights, this._dynamicOnlyScratch);
@@ -587,7 +587,7 @@ export class LightManager {
 
     // Lightmapped surfaces: the bake supplies static (type 0) and area lighting,
     // so only the exclusive_dynamic_lights pool overlays it, faded on the
-    // secondary channel (ControlLightsFade param_4 = 1).
+    // secondary channel (ControlLightsFade arg4 = 1).
     this.fillUniformSet(
       this.lightmapLights,
       this.exclusiveDynamicLights,
@@ -625,14 +625,14 @@ export class LightManager {
    * Copy the top prioritized room lights into the global packed buffers.
    * boundLights is the scene's fading pool (up to MAXLIGHTS == 8); each model's
    * shader only consumes the top MAX_LIGHTS_PER_MODEL (retail allowed_lights = 3,
-   * SetUpVertexProgramLightShaderConstants @ 004a50d0), so fillUniformSet caps here.
+   * SetUpVertexProgramLightShaderConstants), so fillUniformSet caps here.
    */
   fillGlobalBuffers(){
     this.fillUniformSet(this.globalLights, this.boundLights);
   }
 
   /**
-   * Retail GetNearestLights eligibility (004a3770) with param_4 == 0:
+   * Retail GetNearestLights eligibility with arg4 == 0:
    * (dynamic || affectDynamic) and radius > 0. No color-black / visibility gate.
    */
   isNearestLightEligible(light: OdysseyLight3D): boolean {
@@ -643,7 +643,7 @@ export class LightManager {
 
   /**
    * Retail GetNearestLights: walk registration order, first 3 sphere overlaps.
-   * Shader color packing uses authored rgb only (no fade / no multiplier) —
+   * Shader color packing uses authored rgb only (no fade / no multiplier)
    * VP-aligned; see packLightsForObject.
    * Returns a reused scratch array — copy if you need to retain across calls.
    */
@@ -755,10 +755,10 @@ export class LightManager {
   }
 
   /**
-   * @param channel fade field applied to the packed color (retail param_4);
-   *                `None` is nearest/gob: authored color only (VP-aligned).
+   * @param channel fade field applied to the packed color (retail arg4);
+   * `None` is nearest/gob: authored color only (VP-aligned).
    * @param maxCount per-model shader light cap. Defaults to MAX_LIGHTS_PER_MODEL
-   *                 minus one when the camera headlight is enabled.
+   * minus one when the camera headlight is enabled.
    */
   private fillUniformSet(
     set: IOdysseyLightUniformSlot,
@@ -801,7 +801,7 @@ export class LightManager {
   }
 
   /**
-   * PrioritizeShadow @ 004a3e30: shadow + non-ambient + raw color gate from
+   * PrioritizeShadow: shadow + non-ambient + raw color gate from
    * render_lights (boundLights), sorted via lightcmp.
    * Radius and illuminationScore <= 1 are applied later by GetShadowLights modes.
    */
@@ -823,7 +823,7 @@ export class LightManager {
   }
 
   /**
-   * GetShadowLights @ 004a4b10 for the requested mode.
+   * GetShadowLights for the requested mode.
    * Mode 0/1 retain fading histories; mode 2 picks one distant/static light.
    */
   getShadowLights(mode: RetailShadowLightMode, delta = 0): OdysseyLight3D[] {
@@ -879,7 +879,7 @@ export class LightManager {
   }
 
   /**
-   * Retail PrioritizeShadow @ 004a3e30 + GetShadowLights(mode=0) @ 004a4b10.
+   * Retail PrioritizeShadow + GetShadowLights(mode=0).
    * Also refreshes mode 1 / mode 2 lists for callers that need them.
    */
   updateShadowLightSelection(delta = 0){

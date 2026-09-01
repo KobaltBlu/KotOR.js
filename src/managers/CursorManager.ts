@@ -30,10 +30,10 @@ import {
 /**
  * Manages the in-game cursor, reticles, and selection/hover logic.
  *
- * Retail: CSWGuiMainInterface::UpdateStickyTarget @ 006889c0 /
- * UpdateIndicator @ 0068a310 — distance size, combatreticle pulse, off-screen hide.
- * Mouse hover/click pick: CClientExoAppInternal::ProcessInput @ 006227e0 —
- * Camera::HitCheck then GetStickyMouseThreshhold sticky fallback.
+ * Retail: UpdateStickyTarget
+ * UpdateIndicator — distance size, combatreticle pulse, off-screen hide.
+ * Mouse hover/click pick: ProcessInput
+ * Camera HitCheck then GetStickyMouseThreshhold sticky fallback.
  *
  * @file CursorManager.ts
  * @author KobaltBlu
@@ -64,7 +64,7 @@ export class CursorManager {
 	/** Game module object currently hovered */
 	static hoveredObject: ModuleObject;
 
-	/** Retail combat-reticle swell (UpdateIndicator field21_0x5cb0) */
+	/** Retail combat-reticle swell */
 	static combatReticlePulse = new CombatReticlePulse();
 	static lastCombatReticleTargetId: number = -1;
 	
@@ -231,7 +231,7 @@ export class CursorManager {
 
 	/**
 	 * Sets the currently selected object and positions the secondary reticle.
-	 * @param options.lookAt - when false, skip creature LookAt (ShowObject param_2=0)
+	 * @param options.lookAt - when false, skip creature LookAt (ShowObject arg2=0)
 	 */
 	public static setReticleSelectedObject(
 		object: ModuleObject | undefined,
@@ -552,11 +552,11 @@ export class CursorManager {
 	}
 
 	/**
-	 * Retail ProcessInput mouse pick @ 006227e0 / Android 00305304:
-	 * 1) Camera::HitCheck-style AABB ray against selectable objects (SceneHitCheck
-	 *    walkmesh occluders reject hits behind geometry)
+	 * Retail ProcessInput mouse pick / Android:
+	 * 1) Camera HitCheck-style AABB ray against selectable objects (SceneHitCheck
+	 * walkmesh occluders reject hits behind geometry)
 	 * 2) Sticky fallback — nearest CanSee GetReticlePoint within
-	 *    GetStickyMouseThreshhold `(w/10)²+(h/10)²`
+	 * GetStickyMouseThreshhold `(w/10)²+(h/10)²`
 	 */
 	public static onMouseHitInteractive(): ModuleObject | undefined {
 		const player = GameState.getCurrentPlayer();

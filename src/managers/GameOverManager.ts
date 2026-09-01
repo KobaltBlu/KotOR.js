@@ -19,14 +19,14 @@ import * as THREE from "three";
 /**
  * GameOverManager — retail party wipe / death sequence.
  *
- * Mirrors CServerExoAppInternal::TempDeathUpdate, CClientExoApp::RunDeathSequence,
- * and CClientExoAppInternal::UpdateDeathSequence (K1 GoG + TSL Aspyr).
+ * Mirrors TempDeathUpdate, RunDeathSequence,
+ * and UpdateDeathSequence (K1 GoG + TSL Aspyr).
  *
  * @file GameOverManager.ts
  */
 export class GameOverManager {
 
-  /** CClientExoAppInternal::game_over_state */
+  /** game_over_state */
   static gameOver = false;
 
   /** Set when death fade finishes / user quits — MainLoop drains to main menu. */
@@ -38,28 +38,28 @@ export class GameOverManager {
    */
   static suspendTempDeath = false;
 
-  /** Accumulated seconds since RunDeathSequence (UpdateDeathSequence field179). */
+  /** Accumulated seconds since RunDeathSequence (UpdateDeathSequence). */
   static deathElapsed = 0;
 
-  /** Speed-curve baseline recomputed on the first Update after SetGameOver (field180). */
+  /** Speed-curve baseline recomputed on the first Update after SetGameOver (). */
   static deathSpeedBaseline = 0;
 
-  /** field177 — recompute speed baseline next UpdateDeathSequence. */
+  /** — recompute speed baseline next UpdateDeathSequence. */
   static deathSpeedDirty = false;
 
-  /** Milliseconds accumulator for hostile-scan throttle (field68, threshold 1000). */
+  /** Milliseconds accumulator for hostile-scan throttle (, threshold 1000). */
   static hostileScanMs = 0;
 
-  /** Milliseconds with at least one dead party member and no visible hostiles (field69). */
+  /** Milliseconds with at least one dead party member and no visible hostiles (). */
   static combatClearMs = 0;
 
-  /** last_party_member_temp_killed — focus target for CSWCameraDeath. */
+  /** last_party_member_temp_killed — focus target for retail. */
   static lastPartyMemberKilled: ModuleObject | undefined;
 
   /** Auto-resurrect dead party after this many ms of combat clear (5000). */
   static readonly COMBAT_CLEAR_RESURRECT_MS = 5000;
 
-  /** Button enable delay on TSL gameover_p (0.5f at +0x720). */
+  /** Button enable delay on TSL gameover_p (0.5f at). */
   static readonly BUTTON_ENABLE_DELAY = 0.5;
 
   /** TLK shown on K1 death message box (DisplayDeathMessage → 0xA56F). */
@@ -155,7 +155,7 @@ export class GameOverManager {
   }
 
   /**
-   * Retail: hostile (GetReputation < 0xB) that IsPartyVisible —
+   * Retail: hostile (GetReputation < 0xB) that IsPartyVisible
    * creature perception has a party member with SEEN bit.
    */
   static hasVisibleHostileToParty(): boolean {
@@ -175,7 +175,7 @@ export class GameOverManager {
     return false;
   }
 
-  /** CSWSCreature::IsPartyVisible — SEEN perception entry against a party member. */
+  /** IsPartyVisible — SEEN perception entry against a party member. */
   static isPartyVisibleTo(creature: ModuleCreature): boolean {
     const list = creature.perceptionList;
     if(!list?.length){
@@ -267,14 +267,14 @@ export class GameOverManager {
 
     GameState.MenuManager.ClearMenus();
 
-    // CSWCameraDeath — focus last temp-killed party member (fallback: party[0])
+    // retail — focus last temp-killed party member (fallback: party[0])
     const camTarget =
       this.lastPartyMemberKilled ||
       GameState.PartyManager.party.find((p) => p?.isDead()) ||
       GameState.PartyManager.party[0];
     FollowerCamera.beginDeathCamera(camTarget);
 
-    // Atmosphere: StartGlobalFade(0, wait=12, length=1) @ RunDeathSequence 005f7280
+    // Atmosphere: StartGlobalFade(0, wait=12, length=1) @ RunDeathSequence
     GameState.FadeOverlayManager.FadeOut(
       GameState.FadeOverlayManager.DEATH_FADE_LENGTH,
       0, 0, 0,
@@ -316,7 +316,7 @@ export class GameOverManager {
     if(this.deathSpeedDirty){
       this.deathSpeedDirty = false;
       const t = Math.max(this.deathElapsed, 0.001);
-      // field180 = -1.25 * ln(t * 0.25)
+      // = -1.25 * ln(t * 0.25)
       this.deathSpeedBaseline = -1.25 * Math.log(t * 0.25);
     }
 
@@ -377,7 +377,7 @@ export class GameOverManager {
   }
 
   /**
-   * Retail ExecuteCommandEndGame @ 00535570 → SetEndGamePending(1, fade, showGui).
+   * Retail ExecuteCommandEndGame → SetEndGamePending(1, fade, showGui).
    * showGui also SetGameOver(1). processEndGamePending waits until !gameOver.
    */
   static EndGame(showDeathGui: boolean = false){
@@ -392,7 +392,7 @@ export class GameOverManager {
 
   /**
    * Retail PopUpGUIPanel — only GUI_PANEL_PLAYER_DEATH (0) is meaningful in KotOR
-   * (SendServerToPlayerPopUpGUIPanel @ 0056aac0).
+   * (SendServerToPlayerPopUpGUIPanel).
    */
   static PopUpGUIPanel(oPC: ModuleObject | undefined, guiPanel: number){
     GameState.PartyManager.LastGuiPanel = guiPanel | 0;

@@ -24,7 +24,7 @@ export class VideoEffectManager {
   static videoEffect: VideoEffect;
   static videoEffectId: number = -1;
 
-  /** AurEnableForceSight flag (DAT_00a29fac). Cubemap/scene path — not a color grade. */
+  /** AurEnableForceSight flag (retail constant). Cubemap/scene path — not a color grade. */
   static forceSightActive: boolean = false;
   /** EffectForceSight refcount so VideoEffect + game effect can coexist. */
   static forceSightEffectCount: number = 0;

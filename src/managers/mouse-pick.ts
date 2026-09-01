@@ -3,9 +3,9 @@ import type { Vector3 } from "three";
 /**
  * Retail mouse object picking helpers.
  *
- * CClientExoAppInternal::ProcessInput @ 006227e0 (Win) / 00305304 (Android):
- *   1) Camera::HitCheck → Scene geometry
- *   2) Sticky fallback via GetReticlePoint + GetStickyMouseThreshhold
+ * ProcessInput (Win) (Android):
+ * 1) Camera HitCheck → Scene geometry
+ * 2) Sticky fallback via GetReticlePoint + GetStickyMouseThreshhold
  *
  * @file mouse-pick.ts
  */
@@ -15,7 +15,7 @@ export const MOUSE_PICK_RANGE = 30;
 export const MOUSE_PICK_RANGE_SQ = MOUSE_PICK_RANGE * MOUSE_PICK_RANGE;
 
 /**
- * Retail CSWCObject::GetStickyMouseThreshhold @ 0063d780 / Android 0039b28c —
+ * Retail GetStickyMouseThreshhold / Android
  * `(screenW/10)² + (screenH/10)²` in viewport pixels².
  */
 export function getStickyMouseThresholdSq(screenWidth: number, screenHeight: number): number {

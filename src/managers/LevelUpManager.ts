@@ -16,7 +16,7 @@ import { TalentSpell } from "@/talents/TalentSpell";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 
 /**
- * Session state for the in-game level-up wizard (CSWGuiLevelUpPanel).
+ * Session state for the in-game level-up wizard (GUI).
  */
 export class LevelUpManager {
   static creature: ModuleCreature | null = null;
@@ -97,8 +97,8 @@ export class LevelUpManager {
 
   /**
    * Open the level-up wizard. Returns TRUE if shown (NWScript ShowLevelUpGUI).
-   * Retail CGuiInGame::ShowLevelUpGUI → CSWGuiInGameCharacter::ShowLevelUpGUI @ 006b0bb0
-   * creates CSWGuiLevelUpCharGen (MAINCG / CharGenMain) hosting LEVELUPPNL.
+   * Retail ShowLevelUpGUI → ShowLevelUpGUI
+   * creates GUI (MAINCG / CharGenMain) hosting LEVELUPPNL.
    */
   static async showLevelUpGUIAsync(creature?: ModuleCreature): Promise<boolean> {
     const target = creature || GameState.getCurrentPlayer?.() || GameState.PartyManager?.party?.[0];
@@ -125,7 +125,7 @@ export class LevelUpManager {
   }
 
   /**
-   * Apply a pending level draft (retail CSWSCreatureStats::LevelUp @ 005aabf0).
+   * Apply a pending level draft (retail LevelUp).
    */
   public static applyLevelUp(creature: ModuleCreature, draft: LevelUpDraft): boolean {
     if(!draft || !validateLevelUpDraft(draft)){
@@ -230,7 +230,7 @@ export class LevelUpManager {
   }
 
   /**
-   * Retail CSWSCreatureStats::AutoLevelup @ 005b27e0 — build recommended draft and apply.
+   * Retail AutoLevelup — build recommended draft and apply.
    * Loops while XP remains sufficient for another level.
    */
   public static autoLevelUp(creature: ModuleCreature){

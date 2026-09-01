@@ -3,9 +3,9 @@ import { DeepObject } from "@/utility/DeepObject";
 
 /**
  * ConfigManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ConfigManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -35,21 +35,21 @@ export class ConfigManager{
     }
 
     // if(typeof ipcRenderer != 'undefined'){
-    //   ipcRenderer.on('config-changed', (event, data) => {
-    //     this.options = data;
-    //     let diffs = this.diff(this.options, this._cache);
-    //     for(let i = 0, len = diffs.length; i < len; i++){
-    //       this.triggerEvent(diffs[i].key, diffs[i].value, diffs[i].old);
-    //     }
-    //   });
+    // ipcRenderer.on('config-changed', (event, data) => {
+    // this.options = data;
+    // let diffs = this.diff(this.options, this._cache);
+    // for(let i = 0, len = diffs.length; i < len; i++){
+    // this.triggerEvent(diffs[i].key, diffs[i].value, diffs[i].old);
+    // }
+    // });
     // }else if(typeof ipcMain != 'undefined'){
-    //   ipcMain.on('config-changed', (event, data) => {
-    //     this.options = data;
-    //     let diffs = this.diff(this.options, this._cache);
-    //     for(let i = 0, len = diffs.length; i < len; i++){
-    //       this.triggerEvent(diffs[i].key, diffs[i].value, diffs[i].old);
-    //     }
-    //   });
+    // ipcMain.on('config-changed', (event, data) => {
+    // this.options = data;
+    // let diffs = this.diff(this.options, this._cache);
+    // for(let i = 0, len = diffs.length; i < len; i++){
+    // this.triggerEvent(diffs[i].key, diffs[i].value, diffs[i].old);
+    // }
+    // });
     // }
 
     //Attempt to create the projects directory if it doesn't exist
@@ -260,20 +260,20 @@ export class ConfigManager{
 
   getRecentFiles(): any[]{
     // switch(GameKey){
-    //   case 'KOTOR':
-    //     return this.options.Games.KOTOR.recent_files;
-    //   case 'TSL':
-    //     return this.options.Games.TSL.recent_files;
+    // case 'KOTOR':
+    // return this.options.Games.KOTOR.recent_files;
+    // case 'TSL':
+    // return this.options.Games.TSL.recent_files;
     // }
     return [];
   }
 
   getRecentProjects(): any[]{
     // switch(GameKey){
-    //   case 'KOTOR':
-    //     return this.options.Games.KOTOR.recent_projects;
-    //   case 'TSL':
-    //     return this.options.Games.TSL.recent_projects;
+    // case 'KOTOR':
+    // return this.options.Games.KOTOR.recent_projects;
+    // case 'TSL':
+    // return this.options.Games.TSL.recent_projects;
     // }
     return [];
   }

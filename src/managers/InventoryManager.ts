@@ -11,9 +11,9 @@ import { UIIconTimerType } from "@/enums/engine/UIIconTimerType";
 
 /**
  * InventoryManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file InventoryManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -116,7 +116,7 @@ export class InventoryManager {
     }
 
     item.initProperties();
-    // Retail CreatureAcquireItem / CSWSStore::SellItem clear Infinite (bit 2) on
+    // Retail CreatureAcquireItem / SellItem clear Infinite (bit 2) on
     // copies that enter creature inventory — Infinite is store-stock only.
     item.setInfinite(0);
     if(item.getBaseItemId() == BaseItemType.CREDITS){

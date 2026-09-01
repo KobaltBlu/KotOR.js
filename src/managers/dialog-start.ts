@@ -6,13 +6,13 @@ import { DLGObject } from "@/resource/DLGObject";
 import { BitWise } from "@/utility/BitWise";
 
 /**
- * Retail ExecuteCommandBeginConversation @ 0052e9f0 → StartDialog ownership.
+ * Retail ExecuteCommandBeginConversation → StartDialog ownership.
  *
  * The if-condition assigns pCVar8/uVar6 with C short-circuit side effects:
- *   1. listener == player → StartDialog(caller, listener)
- *   2. caller == player   → StartDialog(listener, caller)  // reassigns before check
- *   3. !creature / !party → StartDialog(caller, listener)
- *   else (party CNPC)     → StartDialog(listener, caller)
+ * 1. listener == player → StartDialog(caller, listener)
+ * 2. caller == player → StartDialog(listener, caller) // reassigns before check
+ * 3. !creature / !party → StartDialog(caller, listener)
+ * else (party CNPC) → StartDialog(listener, caller)
  *
  * (2) is why Trask ActionStartConversation(PC, "") → OnDialog on PC →
  * BeginConversation → StartDialog(Trask) with Trask's Conversation.
@@ -51,7 +51,7 @@ export function resolveDialogStartOwner(
 }
 
 /**
- * Retail BeginConversation blank sResRef → field78 (ActionStartConversation override),
+ * Retail BeginConversation blank sResRef → (ActionStartConversation override),
  * else StartDialog GetDialogResref on the StartDialog owner.
  */
 export function resolveBeginConversationDialog(

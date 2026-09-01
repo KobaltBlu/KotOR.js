@@ -3,9 +3,9 @@ import { GameState } from "@/GameState";
 import { FadeOverlayState } from "@/enums/engine/FadeOverlayState";
 
 /**
- * FadeOverlayManager — retail CSWGuiFade / CGuiInGame::StartGlobalFade.
+ * FadeOverlayManager — retail / StartGlobalFade.
  *
- * Timing mirrors CSWGuiFade::SetFade @ 006244e0 and Draw @ 00624570:
+ * Timing mirrors SetFade and Draw:
  * wait then linear alpha; hitch clamp 5s; elapsed seed 0.1.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -20,16 +20,16 @@ export class FadeOverlayManager {
   static material = new THREE.MeshBasicMaterial( {color: 0x000000, side: THREE.FrontSide, transparent: true, opacity: 0} );
   static plane = new THREE.Mesh( FadeOverlayManager.geometry, FadeOverlayManager.material );
 
-  /** Fade length (seconds) — retail SetFade field2_0x68. */
+  /** Fade length (seconds) — retail SetFade. */
   static duration = 0;
-  /** Total elapsed since SetFade (seconds), includes wait — retail field3_0x6c. */
+  /** Total elapsed since SetFade (seconds), includes wait — Retail. */
   static elapsed = 0;
-  /** Pre-fade wait (seconds) — retail field1_0x64. */
+  /** Pre-fade wait (seconds) — Retail. */
   static wait = 0;
   static state: FadeOverlayState = FadeOverlayState.NONE;
 
   /**
-   * K2 SetFadeUntilScript (CGuiInGame+0x1024): StartGlobalFade / StopGlobalFade
+   * K2 SetFadeUntilScript (GUI): StartGlobalFade / StopGlobalFade
    * no-op until SetGlobalFadeIn clears this and starts a fade-in.
    */
   static holdForScript: boolean = false;
@@ -63,12 +63,12 @@ export class FadeOverlayManager {
 
   /**
    * AIActionDialogObject party-leader→PC swap before StartDialog
-   * (K1 @ 0057ad6d / K2 @ 006b37a0): StartGlobalFade(0, wait=0, length=0.75).
+   * (K1 / K2): StartGlobalFade(0, wait=0, length=0.75).
    * Fade-in uses holdWorldFadeInForDialog → HOLD_WORLD_FADE_IN_* on first entry.
    */
   static readonly PARTY_DIALOG_SWITCH_FADE_OUT_LENGTH = 0.75;
 
-  /** CSWGuiFade::SetFade seeds elapsed to 0.1 (0x3dcccccd). */
+  /** SetFade seeds elapsed to 0.1 (0x3dcccccd). */
   static readonly ELAPSED_SEED = 0.1;
 
   /** Draw hitch clamp: only advance when frame dt < 5s. */
@@ -200,7 +200,7 @@ export class FadeOverlayManager {
   }
 
   /**
-   * Retail CSWGuiFade::Draw — wait then linear ramp; hitch clamp 5s.
+   * Retail Draw — wait then linear ramp; hitch clamp 5s.
    */
   static Update(delta = 0){
     if(FadeOverlayManager.state === FadeOverlayState.NONE ||

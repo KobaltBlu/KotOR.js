@@ -12,21 +12,21 @@ import { SoundMode } from "@/enums/audio/SoundMode";
 
 /**
  * MenuManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuManager {
-  /** Retail CSWGuiDrawable::m_fPulsingAlpha (0.4 ↔ 1.0). */
+  /** Retail m_fPulsingAlpha (0.4 ↔ 1.0). */
   static pulseOpacity: number;
   static activeMenus: GameMenu[];
   static activeModals: GameMenu[];
-  /** Retail CSWGuiDrawable::m_fAlphaPulseTimer — seconds left in current half-cycle. */
+  /** Retail m_fAlphaPulseTimer — seconds left in current half-cycle. */
   static pulse: number;
-  /** Retail CSWGuiDrawable::m_bAlphaPulsingUp. */
+  /** Retail m_bAlphaPulsingUp. */
   static pulseAscending: boolean;
 
   static activeGUIElement: GUIControl;
@@ -245,7 +245,7 @@ export class MenuManager {
     GameState.CursorManager.cursor.material.depthWrite = false;
     GameState.CursorManager.cursor.renderOrder = 9999999;
 
-    // Retail CSWGuiDrawable::UpdatePulsing — triangle wave between 0.4 and 1.0 over 0.75s half-cycles.
+    // Retail UpdatePulsing — triangle wave between 0.4 and 1.0 over 0.75s half-cycles.
     const HALF_CYCLE = 0.75;
     MenuManager.pulse -= delta;
     if(MenuManager.pulse < 0){
@@ -464,7 +464,7 @@ export class MenuManager {
     }
   }
 
-  /** Lazy-load skill-info box (retail CSWGuiSkillInfoBox / CharGen ShowGranted). */
+  /** Lazy-load skill-info box (retail / CharGen ShowGranted). */
   static async EnsureSkillInfoMenu(){
     if(MenuManager.MenuSkillInfo) return;
     const isTSL = GameState.GameKey == GameEngineType.TSL;
@@ -479,8 +479,8 @@ export class MenuManager {
 
   /**
    * Lazy-load in-game level-up UI.
-   * Retail CSWGuiInGameCharacter::ShowLevelUpGUI → CSWGuiLevelUpCharGen (MAINCG)
-   * with child CSWGuiLevelUpPanel (LEVELUPPNL), plus step panels.
+   * Retail ShowLevelUpGUI → GUI (MAINCG)
+   * with child GUI (LEVELUPPNL), plus step panels.
    */
   static async EnsureLevelUpMenus(){
     const isTSL = GameState.GameKey == GameEngineType.TSL;

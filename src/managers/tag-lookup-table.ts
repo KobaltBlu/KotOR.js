@@ -1,6 +1,6 @@
 /**
- * Pure retail CSWSModule::object_lookup_table helpers.
- * FindTagPositionInTable @ 004c5e60 / AddObjectToLookupTable @ 004c7de0.
+ * Pure retail object_lookup_table helpers.
+ * FindTagPositionInTable / AddObjectToLookupTable.
  */
 
 export type TagLookupNode = { tag: string; id: number };

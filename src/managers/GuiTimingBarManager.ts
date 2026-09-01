@@ -4,13 +4,13 @@ import type { ModuleObject } from "@/module/ModuleObject";
 /**
  * GuiTimingBarManager — retail StartGuiTimingBar / StopGuiTimingBar host.
  *
- * Retail: CSWSCreature::StartGuiTimingBar @ 004ef480 → SendServerToPlayerGuiTimingEvent
- * (duration ms + type byte); StopGuiTimingBar @ 004ef4d0; client cancel → ClearAllActions
- * (HandlePlayerToServerInputCancelGuiTimingEvent @ 00523570).
+ * Retail: StartGuiTimingBar → SendServerToPlayerGuiTimingEvent
+ * (duration ms + type byte); StopGuiTimingBar ; client cancel → ClearAllActions
+ * (HandlePlayerToServerInputCancelGuiTimingEvent).
  *
  * JS surfaces progress on InGameOverlay LBL_ACTIONDESC / LBL_ACTIONDESCBG fill scale
  * (no dedicated PB_TIMING control in the overlay GUI). Callers should only start for the
- * client-controlled creature (retail field377_0x9d4 == 1).
+ * client-controlled creature (Retail == 1).
  *
  * @file GuiTimingBarManager.ts
  */
@@ -115,15 +115,15 @@ export class GuiTimingBarManager {
     const progress = this.getProgress();
 
     // if(overlay?.LBL_ACTIONDESC){
-    //   const remaining = Math.max(0, this.duration - this.elapsed);
-    //   const pct = Math.floor(progress * 100);
-    //   const text = this.label
-    //     ? `${this.label} (${pct}%)`
-    //     : `${remaining.toFixed(1)}s`;
-    //   overlay.LBL_ACTIONDESC.setText(text);
-    //   overlay.LBL_ACTIONDESC.show();
-    //   overlay.LBL_ACTIONDESCBG?.show();
-    //   this.applyFillProgress(overlay, progress);
+    // const remaining = Math.max(0, this.duration - this.elapsed);
+    // const pct = Math.floor(progress * 100);
+    // const text = this.label
+    // ? `${this.label} (${pct}%)`
+    //: `${remaining.toFixed(1)}s`;
+    // overlay.LBL_ACTIONDESC.setText(text);
+    // overlay.LBL_ACTIONDESC.show();
+    // overlay.LBL_ACTIONDESCBG?.show();
+    // this.applyFillProgress(overlay, progress);
     // }
 
     if(this.elapsed >= this.duration){

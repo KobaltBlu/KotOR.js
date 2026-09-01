@@ -68,9 +68,9 @@ export function searchTLKStrings(
 
 /**
  * TLKManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file TLKManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -96,12 +96,12 @@ export class TLKManager {
    * Search the talk table.
    *
    * - If `query` is a non-negative integer string (e.g. "12345"), returns the
-   *   entry at that string ID directly — no text scan needed.
+   * entry at that string ID directly — no text scan needed.
    * - Otherwise performs a linear text scan with optional case folding and a
-   *   `limit` that causes early exit once enough matches are collected.
+   * `limit` that causes early exit once enough matches are collected.
    *
-   * @param query      Search term or string ID.
-   * @param options    Search options (see TLKSearchOptions).
+   * @param query Search term or string ID.
+   * @param options Search options (see TLKSearchOptions).
    */
   static Search(query: string, options: TLKSearchOptions = {}): TLKSearchResult[] {
     return searchTLKStrings(TLKManager.TLKStrings, query, options);

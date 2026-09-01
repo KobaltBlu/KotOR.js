@@ -92,8 +92,8 @@ export class FeedbackMessageManager {
   }
 
   /**
-   * Retail CSWSCreature::SendFeedbackMessage @ 004ede10 → client
-   * CClientExoAppInternal::AddFeedbackMessage @ 005fcd10.
+   * Retail SendFeedbackMessage → client
+   * AddFeedbackMessage.
    * Simple IDs map to GetGUIString / TLK indices (case N → TLK).
    */
   static readonly FEEDBACK_TLK: Readonly<Record<number, number>> = {
@@ -103,14 +103,14 @@ export class FeedbackMessageManager {
     0xe: 0x596,
     0xf: 0x597,
     0x10: 0x598,
-    // AIActionHeal @ 00517a60 — GUI-string mapped TLKs (fallback message if missing)
+    // AIActionHeal — GUI-string mapped TLKs (fallback message if missing)
     0x37: 0x5c1,
     0x38: 0x5c2,
     // 0xd = already-locked etc. needs object context — callers use dedicated paths
   };
 
   /**
-   * Retail BroadcastSkillData @ 004ec700 — skill check summary to feedback.
+   * Retail BroadcastSkillData — skill check summary to feedback.
    * Full CC message path is net-oriented; we surface roll/rank/DC/result in the log.
    */
   static BroadcastSkillData(data: {
@@ -260,7 +260,7 @@ export class FeedbackMessageManager {
       break;
       case FeedbackOption.MiniMap:
         this.FeedbackOptions.MiniMap = value;
-        // Retail OnMiniMap → CGuiInGame::InitializeMap
+        // Retail OnMiniMap → InitializeMap
         GameState.MenuManager?.InGameOverlay?.updateMiniMapVisibility?.();
       break;
       case FeedbackOption.FloatingNumbers:
