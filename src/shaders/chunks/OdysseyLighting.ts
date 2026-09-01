@@ -5,8 +5,8 @@ import * as THREE from "three";
  * Positions uploaded by OdysseyLightingBinder are view-space (xyz); w = quadratic atten.
  * Packed arrays avoid Three.js struct-array upload crashes.
  *
- * Attenuation: 1/(1 + (4.5/r²)*d²) with r = max(radius, 0.1) — SetLightGL @ 004a2a00
- * Ambient-only: ambient channel only — SetLightGL @ 004a2a00
+ * Attenuation: 1/(1 + (4.5/r²)*d²) with r = max(radius, 0.1) — SetLightGL
+ * Ambient-only: ambient channel only — SetLightGL
  * Active loop capped at retail per-model allowed_lights (3); array size stays 8.
  */
 
@@ -28,14 +28,14 @@ uniform vec3 odysseySunAmbientColor;
 uniform vec3 odysseySunColor;
 uniform vec3 odysseySunDirection;
 uniform int numOdysseyLights;
-// Camera headlight (SetUpVertexProgramLightShaderConstants @ 004a50d0)
+// Camera headlight (SetUpVertexProgramLightShaderConstants)
 uniform int odysseyHeadLightEnabled;
 uniform vec3 odysseyHeadLightAmbient;
 uniform vec3 odysseyHeadLightDiffuse;
 // xyz = view-space position (binder-transformed), w = quadratic attenuation coeff (4.5/r²)
 uniform vec4 odysseyLightPos[ MAX_ODYSSEY_LIGHTS ];
-// rgb = light color (fade×color for rooms; authored color for nearest/gob —
-// VP SetUpVertexProgramLightShaderConstants @ 004a50d0; no PartLight.multiplier),
+// rgb = light color (fade×color for rooms; authored color for nearest/gob
+// VP SetUpVertexProgramLightShaderConstants; no PartLight.multiplier),
 // w = ambientOnly
 uniform vec4 odysseyLightColor[ MAX_ODYSSEY_LIGHTS ];
 
@@ -61,7 +61,7 @@ vec3 odysseyBlinnPhong(
   return pow( dotNH, shininess ) * specularColor;
 }
 
-// Packed GL_LIGHT0..2 irradiance (SetLightGL @ 004a2a00). Diffuse terms are
+// Packed GL_LIGHT0..2 irradiance (SetLightGL). Diffuse terms are
 // lighting only — the caller multiplies by albedo afterward. Default TXI
 // envmaps ADD env*(1-texAlpha) after lighting (not albedo LERP).
 void odysseyAccumulatePointLights(
@@ -111,10 +111,10 @@ void odysseyAccumulateLights(
   inout vec3 directSpecular,
   inout vec3 indirectDiffuse
 ) {
-  // Scene light-model ambient (DynAmbientColor → CAurScene::SetAmbient)
+  // Scene light-model ambient (DynAmbientColor → SetAmbient)
   indirectDiffuse += odysseyAmbientColor;
 
-  // Directional sun/moon ambient channel (SetAsDay/Night vtable+0x18) — no N·L
+  // Directional sun/moon ambient channel (SetAsDay/Night day/night ambient) — no N·L
   indirectDiffuse += odysseySunAmbientColor;
 
   // Area sun/moon diffuse (gidy_sun_diff) — direction is view-space
@@ -207,7 +207,7 @@ export function createOdysseyMaterialBaseUniforms(): Record<string, { value: unk
     // Retail samples cubemaps with GL_REFLECTION_MAP (no X flip). Three defaults
     // CubeTexture to -1 for its loader convention; TPC faces are uploaded in GL order.
     flipEnvMap: { value: 1 },
-    /** DoEnvMapTransform @ 0046f780 — camera world rotation; identity until binder uploads. */
+    /** DoEnvMapTransform — camera world rotation; identity until binder uploads. */
     envMapRotation: { value: new THREE.Matrix3() },
     reflectivity: { value: 1 },
     refractionRatio: { value: 0.98 },

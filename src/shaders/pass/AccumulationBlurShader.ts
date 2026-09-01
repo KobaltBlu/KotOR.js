@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 /**
  * Retail accumulationBlurShaderATI @ InitializeFrameBufferModificationFragmentShadersATI
- * 00427490 + RenderAccumulationBlur @ 00433970 / 00433da0.
+ * + RenderAccumulationBlur.
  *
  * ATI: r3 = prev * C0; out = current * C1 + r3
  * where C0 = (ratio,ratio,ratio,...) and C1 = (1-ratio,...).
@@ -19,7 +19,7 @@ export const AccumulationBlurShader: AccumulationBlurShader = {
   uniforms: {
     tPrev: { value: null },
     tCurrent: { value: null },
-    /** Retail accumulationRatio (AurSetSpeedBlurRatio default 0.75). */
+    /** Retail accumulationRatio (speed-blur ratio default 0.75). */
     ratio: { value: 0.75 },
   },
 

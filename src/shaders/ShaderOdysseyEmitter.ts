@@ -66,7 +66,7 @@ export class ShaderOdysseyEmitter extends Shader {
     uniform vec3 colorMid;
     uniform vec3 colorEnd;
     uniform mat4 matrix;
-    // x=percentStart (255 = two-key), y=percentMid, z=percentEnd — RenderStandard @ 0048f000
+    // x=percentStart (255 = two-key), y=percentMid, z=percentEnd — RenderStandard
     uniform vec3 lifePercents;
     #ifdef Motion_Blur
       uniform float blurLength;
@@ -94,7 +94,7 @@ export class ShaderOdysseyEmitter extends Shader {
     ${THREE.ShaderChunk[ "common" ]}
     ${THREE.ShaderChunk[ "logdepthbuf_pars_vertex" ]}
 
-    // http://www.geeks3d.com/20141201/how-to-rotate-a-vertex-by-a-quaternion-in-glsl/
+    // http://www.geeks3d.com/how-to-rotate-a-vertex-by-a-quaternion-in-glsl/
     vec3 applyQuaternionToVector( vec4 q, vec3 v ){
       return v + 2.0 * cross( q.xyz, cross( q.xyz, v ) + q.w * v );
     }
@@ -131,7 +131,7 @@ export class ShaderOdysseyEmitter extends Shader {
     }
 
     float getFloatOverLifetime( in float positionInTime, in vec3 attr ) {
-      // Retail: field37_0xdc == 255 → lerp start→end over full life (skip mid)
+      // Retail: percentStart == 255 → lerp start→end over full life (skip mid)
       if(lifePercents.x >= 254.5){
         return mix(attr.x, attr.z, clamp(positionInTime, 0.0, 1.0));
       }
@@ -166,7 +166,7 @@ export class ShaderOdysseyEmitter extends Shader {
     }
     //End From THREE.SPE
 
-    //https://gist.github.com/onedayitwillmake/3288507
+    //https://gist.github.com/onedayitwillmake
     mat4 rotationX( in float angle ) {
       return mat4(	1.0,		0,			0,			0,
               0, 	cos(angle),	-sin(angle),		0,
@@ -215,7 +215,7 @@ export class ShaderOdysseyEmitter extends Shader {
       float framesY = textureAnimation.y;
       float loopCount = textureAnimation.w;
       float totalFrames = textureAnimation.z;
-      // Retail updateParticleFrame @ 0048e460: frames advance only when fps > 0.
+      // Retail updateParticleFrame: frames advance only when fps > 0.
       // fps <= 0 → stay on frameStart. Non-random clamps at frameEnd (one-shot).
       float startF = frameRange.x;
       float endF = frameRange.y;
@@ -309,7 +309,7 @@ export class ShaderOdysseyEmitter extends Shader {
           #endif
         #else
           #ifdef Motion_Blur
-            // Retail RenderMotionBlurred @ 00490820:
+            // Retail RenderMotionBlurred:
             // halfW = size (after size*0.5 doubled); alongPad = sizeY*0.25 (or size*0.25).
             // Quad spans head↔tail, then extends ±alongPad past each end.
             vec3 head = offset;
@@ -345,7 +345,7 @@ export class ShaderOdysseyEmitter extends Shader {
                 vec3 worldPos = offset + t * (position.x * scaleF) + b * (position.y * scaleF);
                 gl_Position = projectionMatrix * viewMatrix * vec4(worldPos, 1.0);
               }else{
-                // Retail RenderStandard Aligned_to_Particle_Dir @ 0048f040:
+                // Retail RenderStandard Aligned_to_Particle_Dir:
                 // corners = center ± xdir(q)·(sizeX/2) ± zdir(q)·(sizeY/2).
                 // matrix = rotation-only emitter world quat (columns = ex,ey,ez).
                 // PlaneGeometry position ∈ [-0.5,0.5] → ×scale = half-extent.
@@ -398,7 +398,7 @@ export class ShaderOdysseyEmitter extends Shader {
                   gl_Position = projectionMatrix * worldZMatrix * ( vec4(scaledPos, 1.0) * rotationZ(rotate * age) );
                 #else
                   #ifdef Billboard_to_Local_Z
-                    // Retail RenderStandard localZ @ 0048f040: emitter world quat
+                    // Retail RenderStandard localZ: emitter world quat
                     // (matrix) + particleRot about emitter Z. Plane = emitter XY.
                     vec3 ex = matrix[0].xyz;
                     vec3 ey = matrix[1].xyz;

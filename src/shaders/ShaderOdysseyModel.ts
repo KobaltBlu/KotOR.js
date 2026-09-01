@@ -28,7 +28,7 @@ export class ShaderOdysseyModel extends Shader {
     uniform float shininess;
     uniform float opacity;
     uniform float envMapAlpha;
-    // Retail DoEnvMapTransform @ 0046f780 — camera world rotation (no translation).
+    // Retail DoEnvMapTransform — camera world rotation (no translation).
     uniform mat3 envMapRotation;
     uniform float time;
 
@@ -188,7 +188,7 @@ export class ShaderOdysseyModel extends Shader {
 
       vec3 outgoingLight = ( directDiffuse + indirectDiffuse ) * odysseyDiffuse( albedo ) + directSpecular + totalEmissiveRadiance;
 
-      // Retail PartTriMesh::Mat @ 00473900 — SelfIllumColor → GL_EMISSION (additive).
+      // Retail Mat — SelfIllumColor → GL_EMISSION (additive).
       // FFP then modulates by texture: emission * albedo ≈ fullbright textured at 1,1,1.
       #ifndef IGNORE_LIGHTING
         #ifdef SELFILLUMCOLOR
@@ -234,7 +234,7 @@ export class ShaderOdysseyModel extends Shader {
         // framebuffer alpha. Writing the mask as .a made chrome composite wrong on the
         // alpha:true canvas (translucent GUI overlap "fixed" it by raising dst alpha).
         // Retail one-pass writes TXI envmapalpha × gob alpha to output alpha
-        // (RenderEnvironmentMapped @ 0046ff70) — envmapalpha defaults to 1;
+        // (RenderEnvironmentMapped) — envmapalpha defaults to 1;
         // opacity keeps fade controllers working.
         gl_FragColor = vec4( outgoingLight, envMapAlpha * opacity );
       #else
@@ -288,8 +288,8 @@ export class ShaderOdysseyModel extends Shader {
       uniform float time;
     #endif
 
-    // Retail MdlNodeTriMesh animateuv — ProceduralAnimateHierarchy @ 00483630
-    // animatedUV      = (uvDirectionX, uvDirectionY, uvJitter, uvJitterSpeed)
+    // Retail MdlNodeTriMesh animateuv — ProceduralAnimateHierarchy
+    // animatedUV = (uvDirectionX, uvDirectionY, uvJitter, uvJitterSpeed)
     // animatedUVState = (accumOffsetX, accumOffsetY, jitterPhase, 0)
     #ifdef ANIMATED_UV
       uniform vec4 animatedUV;
@@ -375,7 +375,7 @@ export class ShaderOdysseyModel extends Shader {
         odyssey_apply_dangly_vertex(transformed, objectNormal, modelMatrix);
       #endif
 
-      // Retail bumped-out VP (c[12].x): MAD pos, normal, scale — EnableBumpedOutShell @ 006a1220 uses 0.02
+      // Retail bumped-out VP (c[12].x): MAD pos, normal, scale — EnableBumpedOutShell uses 0.02
       #ifdef FORCE_SHIELD
         transformed += objectNormal * 0.02;
       #endif

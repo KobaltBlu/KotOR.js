@@ -1,13 +1,13 @@
 /**
- * Retail FrameBufferModifications gate model (K1 00437520 / K2 ARB path).
+ * Retail FrameBufferModifications gate model (K1 / K2 ARB path).
  *
- * Scene::RenderSinglePass passes mask 0x1F (or 0x3F with force distortion),
+ * RenderSinglePass passes mask 0x1F (or 0x3F with force distortion),
  * but each stage also requires its independent visualizePassN flag.
  *
  * Shipping defaults (K1):
- *   visualizePass1 (overbrighten) = 0  — BSS, never written → off
- *   visualizePass2 (convolution)  = 1  — .data init → on
- *   visualizePass3..7             = 1
+ * visualizePass1 (overbrighten) = 0 — BSS, never written → off
+ * visualizePass2 (convolution) = 1 — .data init → on
+ * visualizePass3..7 = 1
  *
  * Bit presence in the dispatcher mask is therefore not sufficient for enablement.
  *
@@ -29,9 +29,9 @@ export const FrameBufferModBit = {
  * Pass1 (overbrighten) is the only stage that stays off.
  */
 export const RetailVisualizePassDefaults = {
-  /** visualizePass1 @ K1 007a68bc — BSS zero, no writers. */
+  /** visualizePass1 — BSS zero, no writers. */
   overbrighten: false,
-  /** visualizePass2 @ K1 0078d974 — .data init 1. */
+  /** visualizePass2 — .data init 1. */
   convolution: true,
   /** visualizePass3 / pass7 — film/scan noise (still needs aurScanNoise). */
   filmNoise: true,
@@ -43,11 +43,11 @@ export const RetailVisualizePassDefaults = {
   speedBlur: true,
 } as const;
 
-/** Retail BloomFilter glColor4f alpha / bloomFilterMultiplier @ 0078daf8. */
+/** Retail BloomFilter glColor4f alpha / bloomFilterMultiplier. */
 export const RETAIL_BLOOM_FILTER_MULTIPLIER = 0.35;
 
 /**
- * Retail bloomFiltersATI 5×5 kernel @ K1 0078e230 (row-major).
+ * Retail bloomFiltersATI 5×5 kernel (row-major).
  * BloomFilter draws these weights with alpha = RETAIL_BLOOM_FILTER_MULTIPLIER.
  */
 export const RETAIL_BLOOM_KERNEL_5X5: readonly number[] = [
@@ -58,7 +58,7 @@ export const RETAIL_BLOOM_KERNEL_5X5: readonly number[] = [
   0.12, 0.25, 0.29, 0.25, 0.12,
 ];
 
-/** Retail overbrighten curve sample (FLOAT_0078daec = 0.5). */
+/** Retail overbrighten curve sample (retail = 0.5). */
 export function retailOverbrightenCurve(x: number): number {
   const f = Math.max(0, Math.min(1, x));
   if(f >= 0.5){
@@ -78,7 +78,7 @@ export interface FrameBufferPassEnableInput {
 
 export interface SpeedBlurPassEnableInput {
   frameBufferIniEnabled: boolean;
-  /** AurEnableSpeedBlur / SWMG_SetSpeedBlurEffect / Force Speed VFX. */
+  /** Enable speed blur / SWMG_SetSpeedBlurEffect / Force Speed VFX. */
   enableSpeedBlur: boolean;
   /** Debug override for visualizePass6; default matches retail shipping (true). */
   visualizeSpeedBlur?: boolean;
@@ -114,7 +114,7 @@ export function resolveSpeedBlurPass(input: SpeedBlurPassEnableInput): boolean {
   return input.frameBufferIniEnabled && input.enableSpeedBlur && vis;
 }
 
-/** Retail progFX ids that call ApplyMotionBlur with AurEnableSpeedBlur (0x641 / 0x642). */
+/** Retail progFX ids that call ApplyMotionBlur with speed blur enabled (0x641 / 0x642). */
 export const MOTION_BLUR_PROGFX_ENABLE = new Set([0x641, 0x642]);
 
 /** Retail hardcoded class range for ApplyMotionBlur / RemoveMotionBlur. */

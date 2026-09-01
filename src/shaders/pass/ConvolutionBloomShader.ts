@@ -5,13 +5,13 @@ import {
 } from '@/shaders/pass/FrameBufferEffectGates';
 
 /**
- * Convolution / bloom helpers — retail RenderOverlayConvolution @ 0042c6e0
- * + bright-extract LUTs from InitializeFrameBufferModifications @ 00427c90
- * + BloomFilter kernel @ 0078e230 / multiplier @ 0078daf8 (= 0.35).
+ * Convolution / bloom helpers — retail RenderOverlayConvolution
+ * + bright-extract LUTs from InitializeFrameBufferModifications
+ * + BloomFilter kernel / multiplier (= 0.35).
  *
  * Threshold LUTs (channel zero below cutoff, then ramp to ~178.5):
- *   R: cutoff 0xEA (234), scale (i-234)*0.04761905*178.5
- *   G/B: cutoff 0xD8 (216), scale (i-216)*0.025641026*178.5
+ * R: cutoff 0xEA (234), scale (i-234)*0.04761905*178.5
+ * G/B: cutoff 0xD8 (216), scale (i-216)*0.025641026*178.5
  */
 
 export function createBrightExtractLutTexture(): THREE.DataTexture {

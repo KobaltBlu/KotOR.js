@@ -10,7 +10,7 @@ import {
 
 /**
  * ConvolutionBloomPass — retail FrameBufferModifications bit 0x02
- * (RenderOverlayConvolution @ 0042c6e0).
+ * (RenderOverlayConvolution).
  *
  * Retail cascade: bright-extract @ 512 → MipmapFilter 256/128/64 →
  * BloomFilter 5×5 (bloomFiltersATI, alpha 0.35) → SRC_ALPHA/ONE composite.

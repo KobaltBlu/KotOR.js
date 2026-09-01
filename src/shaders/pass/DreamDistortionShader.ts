@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 
 /**
- * DreamDistortionShader — K2 RenderDreamDistortionARB @ 00834dc0 /
- * AurEnableClairvoyance → EnableDreamDistortion.
+ * DreamDistortionShader — K2 RenderDreamDistortionARB.
+ * Clairvoyance enables dream distortion.
  *
  * Fullscreen warp (no stencil). Retail uses distortiontex with multi-texcoord
  * offsets (~0.15625 = 0x3e200000) and a slightly oversized quad (±25 px).

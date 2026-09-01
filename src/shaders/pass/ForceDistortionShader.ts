@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 
 /**
- * Retail GLRender::RenderForceDistortion @ 004331d0 +
- * forceDistortionShaderATI @ InitializeFrameBufferModificationFragmentShadersATI 00427490.
+ * Retail RenderForceDistortion +
+ * forceDistortionShaderATI @ InitializeFrameBufferModificationFragmentShadersATI.
  *
  * ATI fragment: sample distortiontex (stage0), bias×2 *(tex−0.5), scale by
  * texcoord1 ≈ (screenW·0.1, screenH·0.1) in RECT pixels → normalized UV offset

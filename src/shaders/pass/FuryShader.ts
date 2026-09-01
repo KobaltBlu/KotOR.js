@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 
 /**
- * FuryShader — K2 EnableFury / RenderFury @ 0082aab0 + ARB fury program
- * (InitializeFrameBufferModificationFragmentShadersARB @ 008369c0).
+ * FuryShader — K2 EnableFury / RenderFury + ARB fury program
+ * (InitializeFrameBufferModificationFragmentShadersARB).
  *
  * Uses fx_Fury01/02/03 alpha to blend warped scene vs fury tint overlay.
  */

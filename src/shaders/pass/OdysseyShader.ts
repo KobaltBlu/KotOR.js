@@ -3,9 +3,9 @@ import * as THREE from 'three';
 /**
  * OdysseyShader — retail VideoEffects saturation + film/scan noise.
  *
- * Saturation: RenderSaturationAdjustment @ K1 00434890 /
- * AurSetSaturationParams @ 0044f100 (luma 0.3086 / 0.6094 / 0.082).
- * Film noise: RenderOverlayFilmNoise @ 00432ad0 — additive filmnoisetex.
+ * Saturation: RenderSaturationAdjustment
+ * (luma weights 0.3086 / 0.6094 / 0.082).
+ * Film noise: RenderOverlayFilmNoise — additive filmnoisetex.
  */
 interface OdysseyShader {
   uniforms: { [uniform: string]: THREE.IUniform<any>; },

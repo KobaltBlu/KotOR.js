@@ -8,13 +8,13 @@ import {
 
 /**
  * AccumulationBlurPass — retail FrameBufferModifications bit 0x10
- * (RenderAccumulationBlur + RenderFrameToTexture @ 004337a0).
+ * (RenderAccumulationBlur + RenderFrameToTexture).
  *
  * Previous frame is stored in a fixed 128x128 buffer (retail pbuffer). Upsampling
  * that soft buffer while mixing with the current full-res frame is what gives
  * Force Speed / swoop their characteristic smear.
  *
- * First enabled frame (or after reset) copies through and seeds the buffer —
+ * First enabled frame (or after reset) copies through and seeds the buffer
  * matches previousFrameWasSpeed / firstFrameBufferFrame gating.
  *
  * @file AccumulationBlurPass.ts
@@ -70,7 +70,7 @@ export class AccumulationBlurPass extends Pass {
     this.uniforms.ratio.value = value;
   }
 
-  /** AurDisableSpeedBlur / first-frame reset — drop accumulated history. */
+  /** Disable speed blur / first-frame reset — drop accumulated history. */
   resetAccumulation() {
     this.hasPreviousFrame = false;
   }
