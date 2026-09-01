@@ -12,7 +12,7 @@ import * as THREE from "three";
 import { computeSafeLocation } from "@/engine/pathfinding/compute-safe-location";
 
 /**
- * EffectSummonCreature — retail OnApplySummonCreature @ 004d8680 / OnRemove @ 004d8a10.
+ * EffectSummonCreature — retail OnApplySummonCreature / OnRemove.
  * string[0] = UTC resref; int[0] = appear VFX (−1 = none); float[0..2] = pos;
  * float[3] = delay seconds; object[0] = area; object[1] = summoned creature (set on apply).
  *
@@ -28,7 +28,7 @@ export class EffectSummonCreature extends GameEffect {
     if(this.applied) return;
     if(!this.object || !GameState.module) return;
 
-    // Retail skips spawn when loading from save (param_3 == 1); creature already exists
+    // Retail skips spawn when loading from save; creature already exists
     if(this.skipOnLoad && this.getObject(1)){
       super.onApply();
       return;

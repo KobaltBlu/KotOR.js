@@ -7,9 +7,9 @@ import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
 /**
- * EffectTimeStop — retail OnApplyTimestop @ 004dcb40 / OnRemove @ 004dcc90.
+ * EffectTimeStop — retail OnApplyTimestop / OnRemove.
  *
- * K1 has no ExecuteCommandEffectTimeStop (unused by stock scripts), but handlers
+ * K1 has no NWScript EffectTimeStop (unused by stock scripts), but handlers
  * exist: pause bit + exclusion list so the host keeps updating while others freeze.
  *
  * @file EffectTimeStop.ts

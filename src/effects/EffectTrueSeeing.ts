@@ -9,7 +9,7 @@ import {
 } from "@/effects/EffectBlindness";
 
 /**
- * EffectTrueSeeing — retail OnApplyTrueSeeing @ 004e35b0 sets detect flag 0x04.
+ * EffectTrueSeeing — retail OnApplyTrueSeeing sets detect flag 0x04.
  * Strips darkness-blind MissChance children (int[1]==1).
  *
  * @file EffectTrueSeeing.ts

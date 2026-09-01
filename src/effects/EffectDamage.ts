@@ -15,7 +15,7 @@ import { BitWise } from "@/utility/BitWise";
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * Retail: CSWSEffectListHandler::OnApplyDamage @ 004dfa40
+ * Retail OnApplyDamage
  *
  * @file EffectDamage.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -33,12 +33,12 @@ export class EffectDamage extends GameEffect {
     this.intList.fill(-1, 0, 15);
 
     // intList[0..14] : typed damage channels (DamageType index; -1 = unused)
-    // intList[15]    : unused / reserved
-    // intList[16]    : pause / anim timing (ms)
-    // intList[17]    : Damage Type flags (DAMAGE_TYPE_*)
-    // intList[18]    : Damage Power (DAMAGE_POWER_*)
-    // intList[19]    : 1 = combat-packaged (already mitigated); 0 = run Immunity→Resist→DR
-    // intList[20]    : 1 = damage-shield sourced (skip ResolveDamageShields)
+    // intList[15] : unused / reserved
+    // intList[16] : pause / anim timing (ms)
+    // intList[17] : Damage Type flags (DAMAGE_TYPE_*)
+    // intList[18] : Damage Power (DAMAGE_POWER_*)
+    // intList[19] : 1 = combat-packaged (already mitigated); 0 = run Immunity→Resist→DR
+    // intList[20] : 1 = damage-shield sourced (skip ResolveDamageShields)
   }
 
   onApply(){
@@ -106,7 +106,7 @@ export class EffectDamage extends GameEffect {
       amount = Math.floor(amount * scale);
     }
 
-    // Retail DoDamage @ 004f39c0 — difficultyopt MULTIPLIER + DiffSettings MinHP1
+    // Retail DoDamage — difficultyopt MULTIPLIER + DiffSettings MinHP1
     if(typeof (this.object as any)?.isPartyMember === 'function'){
       amount = applyPartyDifficultyDamage(this.object as any, amount);
     }

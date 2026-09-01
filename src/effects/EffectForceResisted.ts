@@ -8,7 +8,7 @@ import { AttackSummaryStrRef } from "@/combat/attack-summary-feedback";
 import { FeebackMessageColor } from "@/enums/engine/FeedbackMessageColor";
 
 /**
- * EffectForceResisted — retail OnApplyForceResisted @ 004ded00.
+ * EffectForceResisted — retail OnApplyForceResisted.
  * Spawns temporary VFX 0xFC5 on the target and status-summary
  * "<CUSTOM0> Force Resisted!" (TLK 38598). Scripts also call
  * DisplayFeedBackText for the short Resisted/Immune/Saved floaty.

@@ -9,7 +9,7 @@ import {
 } from "@/effects/EffectBlindness";
 
 /**
- * EffectSeeInvisible — retail OnApplySeeInvisible @ 004dcd00 sets detect flag 0x01.
+ * EffectSeeInvisible — retail OnApplySeeInvisible sets detect flag 0x01.
  *
  * @file EffectSeeInvisible.ts
  */

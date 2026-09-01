@@ -7,7 +7,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 /**
  * EffectInvisibility class.
  *
- * Retail OnApplyInvisibility @ 004e3be0 queues perception refresh.
+ * Retail OnApplyInvisibility queues perception refresh.
  *
  * @file EffectInvisibility.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>

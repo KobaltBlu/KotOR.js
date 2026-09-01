@@ -3,9 +3,9 @@ import { GameEffectType } from "@/enums/effects/GameEffectType";
 
 /**
  * EffectSpellLevelAbsorption — create-only.
- * Retail DoSpellLevelAbsorption @ 004d13a0 is a stub (always returns -1).
- * Ints match ExecuteCommandEffectSpellLevelAbsorption @ 00533fa0:
- *   int[0] max spell level, int[1] levels, int[2] school, int[3] unlimited flag.
+ * Retail DoSpellLevelAbsorption is a stub (always returns -1).
+ * Int layout matches NWScript EffectSpellLevelAbsorption:
+ * int[0] max spell level, int[1] levels, int[2] school, int[3] unlimited flag.
  *
  * @file EffectSpellLevelAbsorption.ts
  */

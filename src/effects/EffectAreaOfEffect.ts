@@ -8,8 +8,8 @@ import type { ModuleAreaOfEffect } from "@/module/ModuleAreaOfEffect";
 import type EngineLocation from "@/engine/EngineLocation";
 
 /**
- * EffectAreaOfEffect — retail OnApplyAreaOfEffect @ 004dade0 /
- * location path via CSWSArea::ApplyEffect @ 0050c780.
+ * EffectAreaOfEffect — retail OnApplyAreaOfEffect /
+ * location path via ApplyEffect.
  *
  * int[0] = vfx_persistent row; string[0..2] = OnEnter / Heartbeat / OnExit overrides;
  * objectList[0] = spawned ModuleAreaOfEffect.

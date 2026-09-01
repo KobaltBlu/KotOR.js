@@ -10,7 +10,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 const IMMUNITY_CURSE = 0x11;
 
 /**
- * EffectCurse — retail OnApplyCurse @ 004dbe60.
+ * EffectCurse — retail OnApplyCurse.
  * int[0..5] = STR/DEX/CON/INT/WIS/CHA penalties; spawns AbilityDecrease children.
  *
  * @file EffectCurse.ts

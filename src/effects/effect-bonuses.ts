@@ -47,7 +47,7 @@ export function getAbilityEffectBonus(object: ModuleObject, abilityId: number): 
 }
 
 /**
- * Saving throw effect bonus — retail GetTotalEffectBonus type 3 @ 004f3fe0.
+ * Saving throw effect bonus — retail GetTotalEffectBonus type 3.
  * int[0]=amount, int[1]=SAVING_THROW_* (0=ALL), int[2]=SAVING_THROW_TYPE_*,
  * int[3]=racialtypes row / race_row_count = any, int[5]=alignment (0=any).
  * Cap at 20 is applied by SavingThrowRoll.
@@ -161,7 +161,7 @@ export function getDamageIncreaseBonusesByChannel(
   return channels;
 }
 
-/** Detect flags: See Invisible = 0x01, Ultra = 0x02, True Seeing = 0x04 (retail +0x8EC). */
+/** Detect flags: See Invisible = 0x01, Ultra = 0x02, True Seeing = 0x04 . */
 export const DETECT_FLAG_SEE_INVISIBLE = 0x01;
 export const DETECT_FLAG_ULTRA_VISION = 0x02;
 export const DETECT_FLAG_TRUE_SEEING = 0x04;

@@ -5,7 +5,7 @@ import { BitWise } from "@/utility/BitWise";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
 /**
- * EffectModifyNumAttacks — retail OnApplyModifyNumAttacks @ 004dbd90.
+ * EffectModifyNumAttacks — retail OnApplyModifyNumAttacks.
  * Adds int[0] into combatRound.effectAttacks, clamp cumulative to [0, 2].
  *
  * @file EffectModifyNumAttacks.ts

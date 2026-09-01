@@ -7,7 +7,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import { isSetStateImmune, rebalanceSetState, SET_STATE_OUTER_AI_ACTIVITY_MASK } from "@/effects/set-state";
 
 /**
- * EffectSetState — retail outer type 0x08 (OnApplySetState @ 004e1c20).
+ * EffectSetState — retail outer type 0x08 (OnApplySetState).
  * int[0] = GameEffectSetStateType; int[1] != 0 → cutscene (skip stun/paralyze/horror immunities).
  *
  * @file EffectSetState.ts

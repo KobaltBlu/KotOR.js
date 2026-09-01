@@ -8,7 +8,7 @@ import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { hasImmunityType } from "@/effects/haste-slow";
 
-/** Vision flags (creature.visionFlags / retail +0x8EC). */
+/** Vision flags (creature.visionFlags). */
 export const VISION_FLAG_SEE_INVISIBLE = 0x01;
 export const VISION_FLAG_ULTRA_VISION = 0x02;
 export const VISION_FLAG_TRUE_SEEING = 0x04;
@@ -16,7 +16,7 @@ export const VISION_FLAG_DARKNESS_BLIND = 0x08;
 export const VISION_FLAG_BLIND = 0x10;
 
 /**
- * EffectBlindness — retail OnApplyBlindness @ 004dcd30.
+ * EffectBlindness — retail OnApplyBlindness.
  * int[0] must be 0x10 (true blind) or 8 (darkness-blind).
  * Spawns MissChance 50%, Vision(4), VFX 0x138A; ORs visionFlags.
  *
@@ -126,7 +126,7 @@ export function recomputeVisionFlags(creature: ModuleCreature){
   creature.visionFlags = flags;
 }
 
-/** Retail GetBlind @ 004ee210 */
+/** Retail GetBlind */
 export function isCreatureBlind(creature: ModuleCreature): boolean {
   const flags = creature.visionFlags || 0;
   if(flags & VISION_FLAG_BLIND) return true;

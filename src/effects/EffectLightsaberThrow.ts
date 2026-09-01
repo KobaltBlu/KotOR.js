@@ -22,7 +22,7 @@ const VFX_THROW_TRAVEL = 6000;
 const VFX_THROW_IMPACT = 0x1771;
 
 /**
- * EffectLightsaberThrow — retail OnApplyLightsaberThrow @ 004de600 / OnRemove @ 004dece0.
+ * EffectLightsaberThrow — retail OnApplyLightsaberThrow / OnRemove.
  * object[0..2] = up to 3 targets; int[0] selects spell speed row (0→spell 0x31, else 4).
  * Schedules travel VFX + ENERGY damage along the path, then return to thrower.
  * Client: hides hand saber and flies a weapon-model copy along the path.
@@ -53,7 +53,7 @@ export class EffectLightsaberThrow extends GameEffect {
     const spellId = (this.getInt(0) || 0) === 0 ? 0x31 : 4;
     const spells = GameState.TwoDAManager.datatables.get('spells');
     const row = spells?.rows?.[spellId] || spells?.rows?.[String(spellId)];
-    // Retail reads float at spell+0xa8 (projectile speed). Approx via proj / numeric columns if present.
+    // Retail reads projectile speed from the spell row. Approx via proj / numeric columns if present.
     if(row){
       const candidates = [row.projectile_speed, row.projectilespeed, row.proj_speed, row.speed];
       for(let i = 0; i < candidates.length; i++){
@@ -128,7 +128,7 @@ export class EffectLightsaberThrow extends GameEffect {
     for(let i = 0; i < targets.length; i++) path.push(targets[i]);
     path.push(thrower);
 
-    // Total path length for throw rate field (retail field437_0xab4)
+    // Total path length for throw rate
     let totalDist = 0;
     for(let i = 1; i < path.length; i++){
       totalDist += path[i - 1].position.distanceTo(path[i].position);
@@ -167,7 +167,7 @@ export class EffectLightsaberThrow extends GameEffect {
       const isReturn = to === thrower;
       if(!isReturn && BitWise.InstanceOfObject(to, ModuleObjectType.ModuleCreature)){
         let amount = Dice.roll(diceCount, DiceType.d6, 0);
-        // Retail: ResistDamage-style adjust vs ENERGY (0x1000) — use amount as mitigated
+        // Retail ResistDamage-style adjust vs ENERGY (0x1000) — use amount as mitigated
         const impactDelay = (elapsedMs + segMs) / 1000;
         this.scheduleApply(to, this.makeDamage(thrower, amount), impactDelay);
         this.scheduleApply(to, this.makeImpactVfx(thrower), impactDelay);

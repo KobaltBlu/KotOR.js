@@ -41,7 +41,7 @@ export class GameEffect {
   objectListIds: number[] = [];
   object: ModuleObject;
   type: GameEffectType;
-  /** Retail CGameEffect::id — DWORD64 allocated from Module.effectNextId */
+  /** Retail id — DWORD64 allocated from Module.effectNextId */
   id: number = 0;
   /** Retail is_exposed — whether the effect is shown on the character sheet */
   isExposed: boolean = true;

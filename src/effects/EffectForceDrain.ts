@@ -2,7 +2,7 @@ import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 
 /**
- * EffectForceDrain — retail OnApplyForceDrain @ 004ddec0.
+ * EffectForceDrain — retail OnApplyForceDrain.
  * Instant: subtract int[0] FP (clamped ≥ 0). Returns remove-after-apply.
  *
  * @file EffectForceDrain.ts

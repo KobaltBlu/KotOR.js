@@ -9,7 +9,7 @@ import { DiceType } from "@/enums/combat/DiceType";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
 /**
- * EffectDispelMagicAll — retail OnApplyDispelAllMagic @ 004e40d0.
+ * EffectDispelMagicAll — retail OnApplyDispelAllMagic.
  * Eligible: MAGICAL + (TEMPORARY|PERMANENT). One roll per spellId group:
  * succeed if effectCreatorLevel + 11 < casterLevel + d20.
  *

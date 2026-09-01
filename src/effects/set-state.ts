@@ -12,8 +12,8 @@ import type { GameEffect } from "@/effects/GameEffect";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
 /**
- * Retail OnApplySetState @ 004e1c20 / OnApplySetStateInternal @ 004da330 /
- * OnRemoveSetState @ 004e22f0 / RecomputeAmbientAnimationState @ 004f28d0.
+ * Retail OnApplySetState / OnApplySetStateInternal /
+ * OnRemoveSetState / RecomputeAmbientAnimationState.
  *
  * Outer EffectSetState handles immunities + priority; Internal does clear /
  * pause / child VFX / animation. Shared by K1 and K2 (same effect opcodes).
@@ -81,7 +81,7 @@ export function isSetStateImmune(
       if(ignoreImmunity) return false;
       return hasImmunityType(creature, IMMUNITY_KNOCKDOWN, versus);
     case GameEffectSetStateType.DROID_CONFUSED:
-      // Retail: no int1 cutscene bypass
+      // Retail no int1 cutscene bypass
       return hasImmunityType(creature, IMMUNITY_DROID_CONFUSED, versus);
     case GameEffectSetStateType.MIND_TRICK:
       if(ignoreImmunity) return false;
@@ -145,7 +145,7 @@ function removeInternals(creature: ModuleCreature){
 
 /**
  * Keep a single Internal matching the highest active outer SetState.
- * Mirrors retail field_0x8ed priority + OnRemoveSetState re-apply.
+ * Mirrors retail priority + OnRemoveSetState re-apply.
  */
 export function rebalanceSetState(creature: ModuleCreature, trigger?: GameEffect){
   if(!BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature)){

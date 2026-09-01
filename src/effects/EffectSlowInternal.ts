@@ -8,7 +8,7 @@ import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
 /**
- * EffectSlowInternal — retail OnApplySlowInternal @ 004dba50.
+ * EffectSlowInternal — retail OnApplySlowInternal.
  * Spawns MSD(50), AC−2, AB−2, Saves−2, LimitMovementSpeed.
  *
  * @file EffectSlowInternal.ts

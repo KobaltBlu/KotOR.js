@@ -8,7 +8,7 @@ import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
 /**
- * EffectHasteInternal — retail OnApplyHasteInternal @ 004db8f0.
+ * EffectHasteInternal — retail OnApplyHasteInternal.
  * Spawns MovementSpeedIncrease(150) + ACIncrease(+4).
  *
  * @file EffectHasteInternal.ts

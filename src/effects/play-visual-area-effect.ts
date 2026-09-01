@@ -4,10 +4,9 @@ import { GameState } from "@/GameState";
 import type { ModuleObject } from "@/module/ModuleObject";
 
 /**
- * Retail CSWSArea::PlayVisualEffect @ 00507e20 (NWScript PlayVisualAreaEffect,
- * ExecuteCommandPlayVisualAreaEffect @ 00541280) — fire a visualeffects.2da
- * row at a world location. Grenade / mine impact scripts use this for the
- * explosion visual and its soundimpact.
+ * Retail PlayVisualEffect (NWScript PlayVisualAreaEffect) — fire a
+ * visualeffects.2da row at a world location. Grenade / mine impact scripts
+ * use this for the explosion visual and its soundimpact.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

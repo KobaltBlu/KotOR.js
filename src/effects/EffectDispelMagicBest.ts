@@ -8,7 +8,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import { isDispelEligible } from "@/effects/EffectDispelMagicAll";
 
 /**
- * EffectDispelMagicBest — retail OnApplyDispelBestMagic @ 004e43c0.
+ * EffectDispelMagicBest — retail OnApplyDispelBestMagic.
  * Tries effects until one succeeds: d20+casterLevel >= 12 removes that effect and stops.
  * Skips creator-level 0 effects when a creature creator exists.
  *

@@ -9,7 +9,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 const IMMUNITY_SILENCE = 0x0b;
 
 /**
- * EffectSilence — retail OnApplySilence @ 004dc200 / OnRemoveSilence @ 004dc380.
+ * EffectSilence — retail OnApplySilence / OnRemoveSilence.
  * Sets creature.silenced; blocks Force / spell casts.
  *
  * @file EffectSilence.ts

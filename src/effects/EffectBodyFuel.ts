@@ -5,7 +5,7 @@ import { BitWise } from "@/utility/BitWise";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
 /**
- * EffectBodyFuel — retail OnApplyBodyFuel @ 004de5b0 / OnRemove @ 004de5d0.
+ * EffectBodyFuel — retail OnApplyBodyFuel / OnRemove.
  * Sets bodyFuel flag. While active:
  * - Force menu enable uses HP as resource (GetSelf/HostileForcePowers)
  * - EndCombatRound refills temporaryForce to max FP

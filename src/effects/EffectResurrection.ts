@@ -6,7 +6,7 @@ import { BitWise } from "@/utility/BitWise";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
 /**
- * EffectResurrection — retail OnApplyResurrection @ 004e13c0.
+ * EffectResurrection — retail OnApplyResurrection.
  * Clamp HP to ≥1, clear actions, strip HitPointChangeWhenDying (temp), refresh anim.
  * K2: int[0] may be % of max HP to restore (when > 0).
  *

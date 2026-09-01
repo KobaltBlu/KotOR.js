@@ -9,7 +9,7 @@ import { BitWise } from "@/utility/BitWise";
 /**
  * EffectDeath class.
  *
- * Retail CSWSEffectListHandler::OnApplyDeath @ 004e0ac0:
+ * Retail OnApplyDeath:
  * plot → ignore; Min1HP → clamp to 1; else SetCurrentHitPoints(-11) + death pipeline.
  *
  * @file EffectDeath.ts

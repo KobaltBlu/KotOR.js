@@ -19,8 +19,8 @@ import {
 } from "@/engine/pathfinding/force-push-quick-walk";
 
 /**
- * EffectSetStateInternal — retail type 0x09 (OnApplySetStateInternal @ 004da330 /
- * K2 @ 00740720). Clears actions (except ForcePush), pauses combat, applies
+ * EffectSetStateInternal — retail type 0x09 (OnApplySetStateInternal).
+ * Clears actions (except ForcePush), pauses combat, applies
  * child VFX/saves, sets ambient / anim.
  *
  * @file EffectSetStateInternal.ts
@@ -43,7 +43,7 @@ function usesSetStateAIMaskNeg3(state: number): boolean {
 }
 
 function firesOnUserDefined(state: number): boolean {
-  // Retail OnRemoveSetStateInternal @ 00741150: 1, 3–10, 0x0E–0x13
+  // Retail OnRemoveSetStateInternal: 1, 3–10, 0x0E–0x13
   return (
     state === GameEffectSetStateType.CONFUSED ||
     (state >= GameEffectSetStateType.DROID_STUN && state <= GameEffectSetStateType.WHIRLWIND) ||
@@ -72,7 +72,7 @@ export class EffectSetStateInternal extends GameEffect {
     const state = this.getInt(0) | 0;
     this.elapsed = 0;
 
-    // Retail: ClearAllActions + RemoveAllActions except ForcePush (state 9)
+    // Retail ClearAllActions + RemoveAllActions except ForcePush (state 9)
     if(state !== GameEffectSetStateType.FORCEPUSH){
       creature.clearAllActions?.(true);
       creature.combatRound?.clearActions?.();

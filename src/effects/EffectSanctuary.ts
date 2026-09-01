@@ -5,7 +5,7 @@ import { BitWise } from "@/utility/BitWise";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
 /**
- * EffectSanctuary — retail OnApplySanctuary @ 004e3d10.
+ * EffectSanctuary — retail OnApplySanctuary.
  * int[4] = Will DC. Hostile observers must fail Will to see the target.
  * Full vis-node cache is approximated via stealth-detection GetInvisible path.
  *

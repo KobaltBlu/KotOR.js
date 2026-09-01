@@ -16,7 +16,7 @@ import {
 } from "@/engine/pathfinding/force-push-quick-walk";
 
 /**
- * EffectForcePushed — retail OnApplyForcePush @ 004e3800 (K2 @ 0074a720).
+ * EffectForcePushed — retail OnApplyForcePush (K2).
  *
  * intList[0] : bIsForcePushedTargeted
  * intList[1] : bIgnoreTestDirectLine

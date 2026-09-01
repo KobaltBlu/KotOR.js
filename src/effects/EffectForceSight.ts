@@ -3,8 +3,8 @@ import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { VideoEffectManager } from "@/managers/VideoEffectManager";
 
 /**
- * EffectForceSight — retail type 0x72 (ExecuteCommandEffectForceSight @ K2 00789df0).
- * OnApply/OnRemove → AurEnableForceSight / AurDisableForceSight.
+ * EffectForceSight — retail type 0x72 (NWScript EffectForceSight).
+ * OnApply/OnRemove enable/disable force-sight video effect.
  *
  * @file EffectForceSight.ts
  */
