@@ -70,6 +70,7 @@ export function buildSpotShadowCameraParams(
 /**
  * Near/far for a focus-centered overhead spot — tight range so body vs floor
  * depths separate in the packed map (avoids 0.99/0.99 self-compare).
+ * @deprecated Prefer {@link buildAngledSpotShadowCameraParams} from the real lamp.
  */
 export function buildFocusSpotShadowCameraParams(
   elevation: number
@@ -79,6 +80,27 @@ export function buildFocusSpotShadowCameraParams(
   const far = elev + 1.5;
   return {
     fovDeg: 90,
+    near,
+    far: Math.max(far, near + 1),
+  };
+}
+
+/**
+ * Tight perspective range around the light→focus ray so packed depths separate
+ * body from floor without forcing an overhead proxy.
+ */
+export function buildAngledSpotShadowCameraParams(
+  lightPos: THREE.Vector3,
+  focus: THREE.Vector3,
+  coverageRadius: number = ODYSSEY_SHADOW_MIN_HALF_EXTENT
+): IOdysseySpotShadowCameraParams {
+  const dist = Math.max(lightPos.distanceTo(focus), ODYSSEY_SHADOW_MIN_HALF_EXTENT);
+  const coverage = Math.max(coverageRadius, ODYSSEY_SHADOW_MIN_HALF_EXTENT);
+  const near = Math.max(ODYSSEY_SHADOW_CAMERA_NEAR, dist - coverage * 0.7);
+  const far = dist + coverage;
+  const fovDeg = THREE.MathUtils.radToDeg(Math.atan(coverage / dist) * 2);
+  return {
+    fovDeg: THREE.MathUtils.clamp(fovDeg, 30, 120),
     near,
     far: Math.max(far, near + 1),
   };
@@ -129,7 +151,6 @@ export function snapOrthographicShadowCameraToTexels(
 
 /**
  * Raise a floor-level local light for shadow-map rendering.
- * @deprecated Prefer configureSpotShadowProxyForFloorContact for local spot maps.
  */
 export function adjustShadowProxyPositionForMap(
   lightPos: THREE.Vector3,
@@ -144,10 +165,9 @@ export function adjustShadowProxyPositionForMap(
 }
 
 /**
- * Local spot shadow map: hang the proxy above the gameplay focus (player), not at
- * the PartLight XY. Room lamps sit at z≈0 beside the player — a map rendered
- * from that XY stratifies body vs floor into different texels, so floor receivers
- * stay lit. Lighting still uses the retail lamp; only the depth pass moves.
+ * Local spot shadow map: keep the retail lamp XY so shadows cast away from the
+ * source, but elevate coplanar (z≈floor) lamps so the depth pass can see body
+ * over floor along the light ray. Lighting still uses the real PartLight.
  */
 export function configureSpotShadowProxyForFloorContact(
   sourceLight: THREE.Vector3,
@@ -156,24 +176,9 @@ export function configureSpotShadowProxyForFloorContact(
   proxyLight: THREE.SpotLight,
   outProxyPos: THREE.Vector3 = _scratchLightPos
 ): THREE.Vector3 {
-  const elevation = Math.max(influenceRadius, ODYSSEY_SHADOW_MIN_HALF_EXTENT);
-  outProxyPos.set(focus.x, focus.y, focus.z + elevation);
-
-  const target = _scratchFocus.copy(focus);
-  target.z = focus.z;
-  const toLightX = sourceLight.x - focus.x;
-  const toLightY = sourceLight.y - focus.y;
-  const horizLen = Math.hypot(toLightX, toLightY);
-  if(horizLen > 1e-3){
-    const bias = Math.min(0.75, horizLen * 0.15);
-    target.x += (toLightX / horizLen) * bias;
-    target.y += (toLightY / horizLen) * bias;
-  }
-
-  proxyLight.position.copy(outProxyPos);
-  proxyLight.target.position.copy(target);
-  proxyLight.target.updateMatrixWorld(true);
-  proxyLight.updateMatrixWorld(true);
+  outProxyPos.copy(sourceLight);
+  adjustShadowProxyPositionForMap(outProxyPos, focus, influenceRadius);
+  aimShadowProxyAtFocus(outProxyPos, focus, proxyLight);
   return outProxyPos;
 }
 

@@ -6,6 +6,15 @@ import { ODYSSEY_SHADOW_MAP_DEPTH_BIAS } from "@/utility/odysseyShadowMap";
 /** Primary shadow map PCF kernel radius (3×3). */
 export const ODYSSEY_SHADOW_PCF_RADIUS = 1;
 
+/**
+ * Fraction of influence radius where radial fade begins (smoothstep start/end).
+ * Matches a soft throw falloff instead of a hard disk edge.
+ */
+export const ODYSSEY_SHADOW_INFLUENCE_FADE_START = 0.65;
+
+/** UV border width (in shadow-map UV) used to soften frustum edge clipping. */
+export const ODYSSEY_SHADOW_MAP_EDGE_FADE = 0.05;
+
 export const ODYSSEY_SHADOW_PARS_FRAGMENT = `
 #ifndef RETAIL_SHADOW_MIN_VERTEX_COLOR
   #define RETAIL_SHADOW_MIN_VERTEX_COLOR ${RETAIL_SHADOW_MIN_VERTEX_COLOR}
@@ -13,6 +22,14 @@ export const ODYSSEY_SHADOW_PARS_FRAGMENT = `
 
 #ifndef ODYSSEY_SHADOW_PCF_RADIUS
   #define ODYSSEY_SHADOW_PCF_RADIUS ${ODYSSEY_SHADOW_PCF_RADIUS}
+#endif
+
+#ifndef ODYSSEY_SHADOW_INFLUENCE_FADE_START
+  #define ODYSSEY_SHADOW_INFLUENCE_FADE_START ${ODYSSEY_SHADOW_INFLUENCE_FADE_START}
+#endif
+
+#ifndef ODYSSEY_SHADOW_MAP_EDGE_FADE
+  #define ODYSSEY_SHADOW_MAP_EDGE_FADE ${ODYSSEY_SHADOW_MAP_EDGE_FADE}
 #endif
 
 uniform float odysseyBeamingProjectionAlpha;
@@ -50,7 +67,14 @@ float odysseyShadowMapFactorAt( const in vec3 worldPos, const in vec3 worldNorma
 
   vec3 toLight = odysseyShadowLightWorld - worldPos;
   float dist = length( toLight.xy );
-  if ( dist > odysseyShadowInfluenceRadius ) {
+  float influence = max( odysseyShadowInfluenceRadius, 1e-4 );
+  // Soft throw: full strength until fade start, then ease out to the influence edge.
+  float radiusFade = 1.0 - smoothstep(
+    influence * ODYSSEY_SHADOW_INFLUENCE_FADE_START,
+    influence,
+    dist
+  );
+  if ( radiusFade <= 0.0 ) {
     return factor;
   }
 
@@ -63,6 +87,17 @@ float odysseyShadowMapFactorAt( const in vec3 worldPos, const in vec3 worldNorma
     shadowCoord.y < 0.0 || shadowCoord.y > 1.0 ||
     shadowCoord.z < 0.0 || shadowCoord.z > 1.0
   ) {
+    return factor;
+  }
+
+  // Soften hard clipping at the shadow-map frustum border.
+  float edgeDist = min(
+    min( shadowCoord.x, 1.0 - shadowCoord.x ),
+    min( shadowCoord.y, 1.0 - shadowCoord.y )
+  );
+  float mapFade = smoothstep( 0.0, ODYSSEY_SHADOW_MAP_EDGE_FADE, edgeDist );
+  float fade = radiusFade * mapFade;
+  if ( fade <= 0.0 ) {
     return factor;
   }
 
@@ -84,11 +119,11 @@ float odysseyShadowMapFactorAt( const in vec3 worldPos, const in vec3 worldNorma
   shadow /= samples;
 
   float darkened = 1.0 - odysseyShadowStrength * ( 1.0 - RETAIL_SHADOW_MIN_VERTEX_COLOR );
-  return mix( darkened, 1.0, shadow );
+  float lit = mix( darkened, 1.0, shadow );
+  return mix( 1.0, lit, fade );
 }
 
 float odysseyComputeShadowMapFactor( const in vec3 worldPos, const in vec3 worldNormal ) {
-  // Focus-centered local spot maps already stack body over floor texels; sample once.
   return odysseyShadowMapFactorAt( worldPos, normalize( worldNormal ) );
 }
 `;

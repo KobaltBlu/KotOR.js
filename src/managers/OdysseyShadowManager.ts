@@ -11,12 +11,13 @@ import {
 } from '@/utility/retailLighting';
 import {
   aimShadowProxyAtFocus,
-  buildFocusSpotShadowCameraParams,
+  buildAngledSpotShadowCameraParams,
   buildOrthoShadowCameraParams,
   configureSpotShadowProxyForFloorContact,
   copyVec3ToScratch,
   isDistantShadowLightRadius,
   ODYSSEY_SHADOW_MAP_LIGHT_BIAS,
+  ODYSSEY_SHADOW_MIN_HALF_EXTENT,
   snapOrthographicShadowCameraToTexels,
 } from '@/utility/odysseyShadowMap';
 
@@ -364,9 +365,8 @@ export class OdysseyShadowManager {
 
     this.syncProxyLight(nextType, lp, influenceR, radius);
 
-    // Shader distance/slope use the proxy that rendered the map (focus-centered for
-    // local spots). Using the PartLight XY culls receivers under the player when the
-    // lamp is near the edge of influenceRadius.
+    // Match the depth-pass proxy (elevated source XY) so lightDir and influence
+    // cull agree with the map that was rendered.
     const proxy = this.getActiveProxy();
     if(proxy){
       this.lightWorld.copy(proxy.position);
@@ -409,10 +409,13 @@ export class OdysseyShadowManager {
     this.configureProxyMapSize(this.mapResolution);
 
     if(type === 'spot'){
-      const elevation = Math.max(influenceR, 5);
       configureSpotShadowProxyForFloorContact(sourceLight, this._focus, influenceR, spot);
-      const elev = Math.abs(spot.position.z - this._focus.z) || elevation;
-      const spotParams = buildFocusSpotShadowCameraParams(elev);
+      const coverage = Math.min(influenceR, ODYSSEY_SHADOW_MIN_HALF_EXTENT * 1.5);
+      const spotParams = buildAngledSpotShadowCameraParams(
+        spot.position,
+        this._focus,
+        Math.max(coverage, ODYSSEY_SHADOW_MIN_HALF_EXTENT)
+      );
       const halfAngleRad = THREE.MathUtils.degToRad(Math.min(spotParams.fovDeg * 0.5, 89));
       spot.angle = halfAngleRad;
       spot.penumbra = this.softShadowMaps ? 0.25 : 0;
