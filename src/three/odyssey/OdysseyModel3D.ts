@@ -55,6 +55,7 @@ import {
   ensureMeshVertexColors,
 } from "@/utility/shadowProjection";
 import { enableOdysseyMaterialShadowReceive } from "@/shaders/chunks/OdysseyShadow";
+import { StaticMeshShadowManager } from "@/managers/StaticMeshShadowManager";
 
 export { resolveDanglyWindPower } from "@/three/odyssey/windPowerContext";
 export type { NodeParseContext, NodeParseFlags, OdysseyModel3DParseBuilders } from "@/three/odyssey/OdysseyModel3DNodeParseContext";
@@ -1584,6 +1585,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
               // Sabers are additive ribbons — do not cast shadows.
               mesh.castShadow = isSaber ? false : (!!odysseyNode.flagShadow || !!options.castShadow);
               mesh.receiveShadow = isSaber ? false : options.receiveShadow;
+              mesh.userData.beaming = !!odysseyNode.beaming;
               OdysseyModel3D.registerMeshShadow(mesh, options);
             }else if(options.attachMdlAabbMesh){
               mesh.castShadow = false;
@@ -1696,6 +1698,8 @@ export class OdysseyModel3D extends OdysseyObject3D {
         // Retail SetBeaming — beaming meshes use beamingProjectionAlpha as blend alpha.
         if(odysseyNode.beaming){
           material.userData.beaming = true;
+          material.defines = material.defines || {};
+          material.defines.USE_ODYSSEY_BEAMING = '';
           material.transparent = true;
           material.blending = THREE.AdditiveBlending;
           material.depthWrite = false;
@@ -1956,15 +1960,18 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
     if(mesh.receiveShadow){
       enableOdysseyMaterialShadowReceive(mesh.material);
+      StaticMeshShadowManager.attachReceiverRenderHook(mesh);
     }
 
     const ownerUuid = options?.context?.uuid || mesh.uuid;
     mesh.userData.shadowOwnerUuid = ownerUuid;
+    mesh.userData.shadowIsStatic = !!options?.mergeStatic || !!options?.static;
     registry.registerMesh(mesh, {
       castShadow: !!mesh.castShadow || (mesh as THREE.SkinnedMesh).isSkinnedMesh,
       receiveShadow: !!mesh.receiveShadow,
       isStatic: !!options?.mergeStatic || !!options?.static,
       ownerUuid,
+      shadowsEnabled: options?.shadowsEnabled !== false,
     });
 
     const skinned = mesh as THREE.SkinnedMesh;

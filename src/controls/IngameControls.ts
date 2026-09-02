@@ -144,6 +144,16 @@ export class IngameControls {
     document.addEventListener('pointerlockchange', this.plChangeCallback.bind(this), true);
     document.addEventListener('pointerlockerror', this.plErrorCallback.bind(this), true);
 
+    // Browser context menu breaks RMB hold tracking; retail captures RMB for look.
+    this.element.addEventListener('contextmenu', (event: Event) => {
+      event.preventDefault();
+    });
+
+    window.addEventListener('blur', () => {
+      Mouse.clearButtonState();
+      Mouse.syncCameraHold();
+    });
+
     window.addEventListener('keydown', (e: KeyboardEvent) => {
       this.keyboard.onKeyDown(e);
 
@@ -280,14 +290,7 @@ export class IngameControls {
       Mouse.clickItem = null;
       Mouse.shiftKey = !!event.shiftKey;
 
-      if(logical === 'left'){
-        Mouse.leftDown = true;
-      }else if(logical === 'right'){
-        Mouse.rightDown = true;
-      }else if(logical === 'middle'){
-        Mouse.middleDown = true;
-        Mouse.MiddleMouseDown = true;
-      }
+      Mouse.updateButtonStateFromEvent(event);
 
       // GUI / world action clicks (logical left). Camera hold is RMB-only
       // (Mouse Look inverts RMB sense per-frame — never steals LMB).
@@ -338,7 +341,7 @@ export class IngameControls {
       }
 
       // Recover from missed mouseup (context menu, focus loss, etc.).
-      Mouse.syncButtonStateFromEvent(event);
+      Mouse.updateButtonStateFromEvent(event);
       Mouse.syncCameraHold();
 
       const trackLookDeltas =
@@ -403,14 +406,7 @@ export class IngameControls {
       const logical = Mouse.mapBrowserButton(event.button);
       Mouse.shiftKey = !!event.shiftKey;
 
-      if(logical === 'left'){
-        Mouse.leftDown = false;
-      }else if(logical === 'right'){
-        Mouse.rightDown = false;
-      }else if(logical === 'middle'){
-        Mouse.middleDown = false;
-        Mouse.MiddleMouseDown = false;
-      }
+      Mouse.updateButtonStateFromEvent(event);
 
       // End/start look immediately on button release (releases pointer lock).
       Mouse.syncCameraHold();

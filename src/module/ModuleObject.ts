@@ -155,6 +155,8 @@ export class ModuleObject {
   rooms: ModuleRoom[] = [];
   /** Retail ApplyShadowBlob — Fx_Shadow_S/M/L model attached under the object. */
   shadowBlobModel: OdysseyModel3D;
+  /** Retail gob shadows flag — TurnOffShadows / HideShadowBlob when false. */
+  shadowsEnabled = true;
   roomIds: number[] = [];
   roomSize: THREE.Vector3;
 
@@ -599,8 +601,8 @@ export class ModuleObject {
     }
 
     if(this.shadowBlobModel){
-      // Retail ShowShadowBlob / HideShadowBlob — tied to area shadow enable + shadowAlpha.
-      this.shadowBlobModel.visible = GameState.areShadowsEnabled();
+      this.updateShadowBlobVisibility();
+      this.updateShadowBlobOrientation();
     }
 
     this.sphere.center.copy(this.position);
@@ -2655,10 +2657,58 @@ export class ModuleObject {
       });
       this.shadowBlobModel = blob;
       this.model.add(blob);
+      this.updateShadowBlobOrientation();
+      this.updateShadowBlobVisibility();
     }catch(_e){
       // Missing Fx_Shadow_* models is non-fatal (e.g. incomplete installs).
     }
   }
+
+  /** Retail HideShadowBlob / ShowShadowBlob — area shadows + per-object flag. */
+  updateShadowBlobVisibility(){
+    if(!this.shadowBlobModel){ return; }
+    this.shadowBlobModel.visible = GameState.areShadowsEnabled() && this.shadowsEnabled;
+  }
+
+  /**
+   * Retail SetShadowBlobOrientation — align foot blob to walkmesh ground normal.
+   */
+  updateShadowBlobOrientation(){
+    if(!this.shadowBlobModel){ return; }
+    const up = ModuleObject._shadowBlobUp;
+    const groundNormal = this.getGroundNormalForShadowBlob();
+    if(groundNormal.lengthSq() < 1e-8){ return; }
+    ModuleObject._shadowBlobQuat.setFromUnitVectors(up, groundNormal);
+    this.shadowBlobModel.quaternion.copy(ModuleObject._shadowBlobQuat);
+  }
+
+  /** Walkable face normal in world space, or +Z when no ground face. */
+  getGroundNormalForShadowBlob(): THREE.Vector3 {
+    const face = this.collisionManager.groundFace;
+    if(face?.normal){
+      ModuleObject._shadowBlobNormal.copy(face.normal);
+      if(this.room?.model?.matrixWorld){
+        ModuleObject._shadowBlobNormal.applyMatrix3(
+          ModuleObject._shadowBlobNormalMatrix.getNormalMatrix(this.room.model.matrixWorld)
+        );
+      }
+      return ModuleObject._shadowBlobNormal.normalize();
+    }
+    return ModuleObject._shadowBlobUp;
+  }
+
+  /** Retail TurnOffShadows — disable projection, stencil volumes, and foot blob. */
+  setShadowsEnabled(enabled: boolean){
+    this.shadowsEnabled = !!enabled;
+    this.updateShadowBlobVisibility();
+    const ownerUuid = (this.context as { uuid?: string })?.uuid || String(this.id);
+    GameState.shadowCasterRegistry?.setOwnerShadowsEnabled(ownerUuid, this.shadowsEnabled);
+  }
+
+  private static _shadowBlobUp = new THREE.Vector3(0, 0, 1);
+  private static _shadowBlobNormal = new THREE.Vector3();
+  private static _shadowBlobNormalMatrix = new THREE.Matrix3();
+  private static _shadowBlobQuat = new THREE.Quaternion();
 
   removeShadowBlob(){
     if(this.shadowBlobModel){

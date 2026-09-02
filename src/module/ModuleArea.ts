@@ -1090,12 +1090,9 @@ export class ModuleArea extends ModuleObject {
    */
   updateBeamingMaterials(){
     const alpha = this.beamingProjectionAlpha;
-    const rooms = this.rooms;
-    for(let i = 0, il = rooms.length; i < il; i++){
-      const room = rooms[i];
-      if(!room.model || !(room.model instanceof OdysseyModel3D)){ continue; }
-      for(let j = 0, jl = room.model.materials.length; j < jl; j++){
-        const material = room.model.materials[j];
+    const applyBeaming = (materials: THREE.Material[]) => {
+      for(let j = 0, jl = materials.length; j < jl; j++){
+        const material = materials[j];
         if(!material?.userData?.beaming){ continue; }
         if(material instanceof THREE.ShaderMaterial && material.uniforms?.opacity){
           material.uniforms.opacity.value = alpha;
@@ -1104,6 +1101,28 @@ export class ModuleArea extends ModuleObject {
         }
         material.visible = alpha > 0;
         material.transparent = true;
+      }
+    };
+    const rooms = this.rooms;
+    for(let i = 0, il = rooms.length; i < il; i++){
+      const room = rooms[i];
+      if(!room.model || !(room.model instanceof OdysseyModel3D)){ continue; }
+      applyBeaming(room.model.materials);
+    }
+    const objectLists = [
+      this.creatures,
+      this.placeables,
+      this.doors,
+      GameState.PartyManager?.party,
+    ];
+    for(let oi = 0; oi < objectLists.length; oi++){
+      const list = objectLists[oi];
+      if(!list?.length){ continue; }
+      for(let gi = 0; gi < list.length; gi++){
+        const obj = list[gi];
+        if(obj?.model instanceof OdysseyModel3D){
+          applyBeaming(obj.model.materials);
+        }
       }
     }
   }

@@ -219,7 +219,7 @@ export class ShaderOdysseyModel extends Shader {
       #endif
 
       #ifdef USE_ODYSSEY_SHADOW
-        outgoingLight *= odysseyComputeShadowFactor( vOdysseyShadowWorldPos );
+        outgoingLight *= odysseyComputeShadowFactor( vOdysseyShadowLocalPos );
       #endif
 
       // Post-lighting env combine. Default ADD uses pre-opacity tex alpha so opacity

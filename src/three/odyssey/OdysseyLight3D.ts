@@ -35,7 +35,7 @@ export class OdysseyLight3D extends OdysseyObject3D {
   isFading: number = 0;
 
   genFlare: boolean = false;
-  /** MDL shadow flag — eligible for GetShadowLights / PrioritizeShadow. */
+  /** MDL shadow flag — used for GetShadowLights mode 2 (distant/static) only. */
   castShadow: boolean = false;
 
   intensity: number = 0;

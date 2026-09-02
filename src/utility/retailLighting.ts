@@ -10,6 +10,8 @@
  * Sort / fade aligned with lightcmp and ControlLightsFade.
  */
 
+import * as THREE from "three";
+
 /** Minimum radius used by SetLightGL when computing quadratic atten. */
 export const RETAIL_LIGHT_ATTEN_MIN_RADIUS = 0.1;
 
@@ -316,6 +318,300 @@ export const RETAIL_SHADOW_CASTER_MARGIN = 2;
 export const RETAIL_SHADOW_MIN_VERTEX_COLOR = 0.25;
 /** Depth bias along light→receiver ray (K1 ProjectDynamicShadow / PartVolumeProject). */
 export const RETAIL_SHADOW_DEPTH_BIAS = 0.05;
+/**
+ * K1 DoDynamicMeshProjections — minimum shadow extrusion length (`shadowLength` global).
+ * Effective radius is clamped to at least this value before mesh projection.
+ * Verified: ProjectDynamicShadow @ 0x0044ff50; shadowLength = 5.0f in .data @ 0x007a2450 / 0x007a2680 (K1 swkotor.exe).
+ */
+export const RETAIL_SHADOW_LENGTH = 5;
+/**
+ * K1 DoGobShadowsForThisLight — focus cull distance when `enableFocusShadowing` is set.
+ * Verified: `maxShadowDistance` = 40 (int) @ 0x007a1b48 (K1 swkotor.exe).
+ */
+export const RETAIL_MAX_SHADOW_DISTANCE = 40;
+/** K1 `enableFocusShadowing` global @ 0x007a1938 (non-zero = enabled). */
+export const RETAIL_ENABLE_FOCUS_SHADOWING = true;
+/** Camera near-plane Z bias added in ProjectDynamicShadow / DoDynamicMeshProjections. */
+export const RETAIL_SHADOW_NEAR_PLANE_Z_BIAS = 0.05;
+/** K1 distant sun plane normal (ProjectDynamicShadow when radius > 1000). */
+export const RETAIL_DISTANT_SHADOW_PLANE_NORMAL = Object.freeze({ x: 0, y: -1, z: -0.1 });
+/** Epsilon scale for PartTriMesh::Project projectionCap (BuildShadowArray). */
+export const RETAIL_SHADOW_PROJECTION_CAP_EPSILON = 1e-4;
+
+export enum RetailShadowProjectionPlaneKind {
+  /** DoDynamicMeshProjections / local ProjectDynamicShadow — camera near + bias. */
+  CameraNear = 0,
+  /** ProjectDynamicShadow when radius >= RETAIL_DISTANT_SHADOW_RADIUS. */
+  DistantGround = 1,
+  /** RenderStencilShadowsForThisLight — horizontal plane at focus Z. */
+  FocusHorizontal = 2,
+}
+
+export interface IRetailShadowProjectionPlane {
+  normal: { x: number; y: number; z: number };
+  constant: number;
+  tangentU: { x: number; y: number; z: number };
+  tangentV: { x: number; y: number; z: number };
+}
+
+/** DoDynamicMeshProjections effective influence radius floor. */
+export function retailShadowEffectiveProjectionLength(radius: number, shadowRadius: number): number {
+  const effective = retailShadowEffectiveRadius(radius, shadowRadius);
+  return Math.max(effective, RETAIL_SHADOW_LENGTH);
+}
+
+export function retailShadowProjectionPlaneKind(
+  radius: number,
+  forStencilDisk = false
+): RetailShadowProjectionPlaneKind {
+  if(forStencilDisk){
+    return RetailShadowProjectionPlaneKind.FocusHorizontal;
+  }
+  if(radius >= RETAIL_DISTANT_SHADOW_RADIUS){
+    return RetailShadowProjectionPlaneKind.DistantGround;
+  }
+  return RetailShadowProjectionPlaneKind.CameraNear;
+}
+
+/**
+ * Hull / lightmapped receiver plane for DoStaticMeshShadows / DoDynamicMeshProjections.
+ * Retail uses camera near + bias for local lights (ProjectDynamicShadow @ 0x0044ff50).
+ */
+export function retailStaticMeshShadowPlaneKind(
+  radius: number,
+  forStencilDisk = false
+): RetailShadowProjectionPlaneKind {
+  return retailShadowProjectionPlaneKind(radius, forStencilDisk);
+}
+
+const _planeTransformPos = new THREE.Vector3();
+const _planeTransformQuat = new THREE.Quaternion();
+const _planeTransformScale = new THREE.Vector3();
+const _planeTransformInvQuat = new THREE.Quaternion();
+const _planeTransformNormal = new THREE.Vector3();
+const _planeTransformOrigin = new THREE.Vector3();
+const _planeTransformLocalOrigin = new THREE.Vector3();
+const _planeTransformTangent = new THREE.Vector3();
+
+/**
+ * Mirror K1 Plane::Transform @ 0x004ab4c0 — world plane → mesh-local plane
+ * (inverse rotation on normal; origin = -constant * normal, then local origin).
+ */
+export function transformRetailShadowPlaneToMeshLocal(
+  worldPlane: IRetailShadowProjectionPlane,
+  matrixWorld: THREE.Matrix4
+): IRetailShadowProjectionPlane {
+  matrixWorld.decompose(_planeTransformPos, _planeTransformQuat, _planeTransformScale);
+  _planeTransformInvQuat.copy(_planeTransformQuat).invert();
+
+  _planeTransformNormal.set(worldPlane.normal.x, worldPlane.normal.y, worldPlane.normal.z);
+  const localNormal = _planeTransformNormal.clone().applyQuaternion(_planeTransformInvQuat).normalize();
+
+  _planeTransformOrigin
+    .copy(_planeTransformNormal)
+    .multiplyScalar(-worldPlane.constant);
+  _planeTransformLocalOrigin
+    .copy(_planeTransformOrigin)
+    .sub(_planeTransformPos)
+    .applyQuaternion(_planeTransformInvQuat);
+
+  const localConstant = -localNormal.dot(_planeTransformLocalOrigin);
+
+  _planeTransformTangent.set(worldPlane.tangentU.x, worldPlane.tangentU.y, worldPlane.tangentU.z);
+  const tangentU = _planeTransformTangent.clone().applyQuaternion(_planeTransformInvQuat).normalize();
+  _planeTransformTangent.set(worldPlane.tangentV.x, worldPlane.tangentV.y, worldPlane.tangentV.z);
+  const tangentV = _planeTransformTangent.clone().applyQuaternion(_planeTransformInvQuat).normalize();
+
+  return {
+    normal: { x: localNormal.x, y: localNormal.y, z: localNormal.z },
+    constant: localConstant,
+    tangentU: { x: tangentU.x, y: tangentU.y, z: tangentU.z },
+    tangentV: { x: tangentV.x, y: tangentV.y, z: tangentV.z },
+  };
+}
+
+const _worldToLocalMatrix = new THREE.Matrix4();
+const _worldToLocalPoint = new THREE.Vector3();
+
+/** Transform a world-space point into a mesh's local space. */
+export function transformWorldPointToMeshLocal(
+  x: number,
+  y: number,
+  z: number,
+  matrixWorld: THREE.Matrix4,
+  target = _worldToLocalPoint
+): THREE.Vector3 {
+  _worldToLocalMatrix.copy(matrixWorld).invert();
+  return target.set(x, y, z).applyMatrix4(_worldToLocalMatrix);
+}
+
+function buildPlaneTangentBasis(
+  nx: number,
+  ny: number,
+  nz: number,
+  tangentU: { x: number; y: number; z: number },
+  tangentV: { x: number; y: number; z: number }
+){
+  let ux = 0;
+  let uy = 0;
+  let uz = 0;
+  if(Math.abs(nz) < 0.9){
+    ux = -ny * 1 + nz * 0;
+    uy = nx * 1 - nz * 0;
+    uz = nx * 0 - ny * 1;
+  }else{
+    ux = -ny * 0 + nz * 1;
+    uy = nx * 0 - nz * 0;
+    uz = nx * 1 - ny * 0;
+  }
+  const uLen = Math.sqrt(ux * ux + uy * uy + uz * uz) || 1;
+  ux /= uLen;
+  uy /= uLen;
+  uz /= uLen;
+  let vx = uy * nz - uz * ny;
+  let vy = uz * nx - ux * nz;
+  let vz = ux * ny - uy * nx;
+  const vLen = Math.sqrt(vx * vx + vy * vy + vz * vz) || 1;
+  vx /= vLen;
+  vy /= vLen;
+  vz /= vLen;
+  tangentU.x = ux;
+  tangentU.y = uy;
+  tangentU.z = uz;
+  tangentV.x = vx;
+  tangentV.y = vy;
+  tangentV.z = vz;
+}
+
+/**
+ * Build retail shadow receiver plane in world space (Three.js plane: n·p + constant = 0).
+ */
+export function buildRetailShadowProjectionPlane(
+  kind: RetailShadowProjectionPlaneKind,
+  camera: { position: { x: number; y: number; z: number }; near?: number; matrixWorld?: unknown },
+  focusZ: number,
+  getCameraForward?: (out: { x: number; y: number; z: number }) => void
+): IRetailShadowProjectionPlane {
+  const tangentU = { x: 1, y: 0, z: 0 };
+  const tangentV = { x: 0, y: 1, z: 0 };
+
+  if(kind === RetailShadowProjectionPlaneKind.FocusHorizontal){
+    const n = { x: 0, y: 0, z: 1 };
+    buildPlaneTangentBasis(n.x, n.y, n.z, tangentU, tangentV);
+    return {
+      normal: n,
+      constant: -focusZ,
+      tangentU,
+      tangentV,
+    };
+  }
+
+  if(kind === RetailShadowProjectionPlaneKind.DistantGround){
+    const raw = RETAIL_DISTANT_SHADOW_PLANE_NORMAL;
+    const len = Math.sqrt(raw.x * raw.x + raw.y * raw.y + raw.z * raw.z) || 1;
+    const n = { x: raw.x / len, y: raw.y / len, z: raw.z / len };
+    buildPlaneTangentBasis(n.x, n.y, n.z, tangentU, tangentV);
+    return { normal: n, constant: 0, tangentU, tangentV };
+  }
+
+  const forward = { x: 0, y: 1, z: 0 };
+  if(getCameraForward){
+    getCameraForward(forward);
+  }else if((camera as { getWorldDirection?: (t: unknown) => void }).getWorldDirection){
+    const tmp = { x: 0, y: 0, z: 0, set: (x: number, y: number, z: number) => { forward.x = x; forward.y = y; forward.z = z; } };
+    (camera as { getWorldDirection: (t: unknown) => void }).getWorldDirection(tmp);
+  }else{
+    forward.y = 1;
+  }
+  const near = (camera as { near?: number }).near ?? 0.1;
+  const dist = near + RETAIL_SHADOW_NEAR_PLANE_Z_BIAS;
+  const px = camera.position.x + forward.x * dist;
+  const py = camera.position.y + forward.y * dist;
+  const pz = camera.position.z + forward.z * dist;
+  const n = { x: forward.x, y: forward.y, z: forward.z };
+  const nLen = Math.sqrt(n.x * n.x + n.y * n.y + n.z * n.z) || 1;
+  n.x /= nLen;
+  n.y /= nLen;
+  n.z /= nLen;
+  const constant = -(n.x * px + n.y * py + n.z * pz);
+  buildPlaneTangentBasis(n.x, n.y, n.z, tangentU, tangentV);
+  return { normal: n, constant, tangentU, tangentV };
+}
+
+/** Signed distance from point to retail plane (n·p + constant). */
+export function retailShadowPlaneDistance(
+  plane: IRetailShadowProjectionPlane,
+  x: number,
+  y: number,
+  z: number
+): number {
+  return plane.normal.x * x + plane.normal.y * y + plane.normal.z * z + plane.constant;
+}
+
+/** Project world XYZ onto plane and return 2D tangent coordinates. */
+export function retailWorldToPlaneUV(
+  plane: IRetailShadowProjectionPlane,
+  x: number,
+  y: number,
+  z: number
+): { x: number; y: number } {
+  const dist = retailShadowPlaneDistance(plane, x, y, z);
+  const px = x - plane.normal.x * dist;
+  const py = y - plane.normal.y * dist;
+  const pz = z - plane.normal.z * dist;
+  return {
+    x: px * plane.tangentU.x + py * plane.tangentU.y + pz * plane.tangentU.z,
+    y: px * plane.tangentV.x + py * plane.tangentV.y + pz * plane.tangentV.z,
+  };
+}
+
+/** Inverse of retailWorldToPlaneUV — plane tangent coords to world XYZ (unit normal). */
+export function retailPlaneUVToWorld(
+  plane: IRetailShadowProjectionPlane,
+  u: number,
+  v: number,
+  target = { x: 0, y: 0, z: 0 }
+): { x: number; y: number; z: number } {
+  const nx = plane.normal.x;
+  const ny = plane.normal.y;
+  const nz = plane.normal.z;
+  const ox = -nx * plane.constant;
+  const oy = -ny * plane.constant;
+  const oz = -nz * plane.constant;
+  target.x = ox + plane.tangentU.x * u + plane.tangentV.x * v;
+  target.y = oy + plane.tangentU.y * u + plane.tangentV.y * v;
+  target.z = oz + plane.tangentU.z * u + plane.tangentV.z * v;
+  return target;
+}
+
+/** K1 ClipProjection — clamp extrusion cap toward plane when cap is above plane. */
+export function retailClipProjection(
+  plane: IRetailShadowProjectionPlane,
+  capX: number,
+  capY: number,
+  capZ: number,
+  sinkX: number,
+  sinkY: number,
+  sinkZ: number
+): { x: number; y: number; z: number } {
+  const side = capX * plane.normal.x + capY * plane.normal.y + capZ * plane.normal.z + plane.constant;
+  if(side <= 0){
+    return { x: capX, y: capY, z: capZ };
+  }
+  const dx = sinkX - capX;
+  const dy = sinkY - capY;
+  const dz = sinkZ - capZ;
+  const denom = dx * plane.normal.x + dy * plane.normal.y + dz * plane.normal.z;
+  if(Math.abs(denom) < 1e-8){
+    return { x: capX, y: capY, z: capZ };
+  }
+  const t = -(capX * plane.normal.x + capY * plane.normal.y + capZ * plane.normal.z + plane.constant) / denom;
+  return {
+    x: capX + dx * t,
+    y: capY + dy * t,
+    z: capZ + dz * t,
+  };
+}
 
 export interface IRetailVec2 {
   x: number;
@@ -393,6 +689,40 @@ export function retailProjectPointFromLight(
     x: lightX + (pointX - lightX) * t,
     y: lightY + (pointY - lightY) * t,
   };
+}
+
+/**
+ * Project a caster sample along the light→point ray onto an arbitrary receiver plane,
+ * then return plane tangent UV (ProjectDynamicShadow / PartTriMesh::Project).
+ */
+export function retailProjectPointFromLightOntoPlane(
+  plane: IRetailShadowProjectionPlane,
+  lightX: number,
+  lightY: number,
+  lightZ: number,
+  pointX: number,
+  pointY: number,
+  pointZ: number
+): { x: number; y: number } | undefined {
+  const dx = pointX - lightX;
+  const dy = pointY - lightY;
+  const dz = pointZ - lightZ;
+  const nx = plane.normal.x;
+  const ny = plane.normal.y;
+  const nz = plane.normal.z;
+  const denom = dx * nx + dy * ny + dz * nz;
+  if(Math.abs(denom) < 1e-8){
+    return undefined;
+  }
+  const lightDist = lightX * nx + lightY * ny + lightZ * nz + plane.constant;
+  const t = -lightDist / denom;
+  if(!(t > 0)){
+    return undefined;
+  }
+  const px = lightX + dx * t;
+  const py = lightY + dy * t;
+  const pz = lightZ + dz * t;
+  return retailWorldToPlaneUV(plane, px, py, pz);
 }
 
 /**

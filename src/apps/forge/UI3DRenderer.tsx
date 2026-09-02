@@ -179,8 +179,12 @@ export class UI3DRenderer extends EventListenerModel {
   lightManager: KotOR.LightManager = new KotOR.LightManager();
   shadowBlobManager: KotOR.ShadowBlobManager = new KotOR.ShadowBlobManager();
   staticMeshShadowManager: KotOR.StaticMeshShadowManager = new KotOR.StaticMeshShadowManager();
-
-  referenceNode: THREE.Object3D = new THREE.Object3D();
+  /** Forge overlay — hull edges (green) and extruded volume wireframe (yellow). */
+  shadowDebugEnabled = true;
+  private shadowDebugGroup = new THREE.Group();
+  private shadowHullDebugLines: THREE.LineSegments | null = null;
+  private shadowVolumeDebugLines: THREE.LineSegments | null = null;
+  private _shadowDebugHullScratch: number[] = [];
 
   selectable: THREE.Group = new THREE.Group();
   unselectable: THREE.Group = new THREE.Group();
@@ -305,6 +309,8 @@ export class UI3DRenderer extends EventListenerModel {
     if(KotOR.GameState.shadowCasterRegistry){
       this.staticMeshShadowManager.init(this.lightManager, KotOR.GameState.shadowCasterRegistry);
     }
+    this.shadowDebugGroup.name = 'shadow_debug';
+    this.scene.add(this.shadowDebugGroup);
   }
 
   setModule(module: ForgeModule) {
@@ -1310,6 +1316,7 @@ export class UI3DRenderer extends EventListenerModel {
         const focus = this.currentCamera.position;
         this.shadowBlobManager.update(focus);
         this.staticMeshShadowManager.update(this.currentCamera.position, true);
+        this.updateShadowDebugOverlay();
         this.selectable.traverse((obj: any) => {
           if(obj?.materials && typeof obj.update === 'function'){
             KotOR.OdysseyLightingBinder.bindSceneModel(this.lightManager, obj, this.currentCamera);
@@ -1412,6 +1419,48 @@ export class UI3DRenderer extends EventListenerModel {
 
       //Custom render logic can run here
       this.processEventListener('onAfterRender', [delta]);
+    }
+  }
+
+  /** Update Forge shadow debug overlays (hull edges + extruded volume wireframe). */
+  updateShadowDebugOverlay(){
+    this.shadowDebugGroup.visible = this.shadowDebugEnabled
+      && !!KotOR.GameState.areShadowsEnabled?.();
+    if(!this.shadowDebugGroup.visible){
+      return;
+    }
+
+    const hullPositions = this._shadowDebugHullScratch;
+    const hullSegments = this.staticMeshShadowManager.buildDebugHullLineSegments(hullPositions);
+    if(hullSegments > 0){
+      if(!this.shadowHullDebugLines){
+        const geom = new THREE.BufferGeometry();
+        const mat = new THREE.LineBasicMaterial({ color: 0x00ff66, depthTest: false });
+        this.shadowHullDebugLines = new THREE.LineSegments(geom, mat);
+        this.shadowDebugGroup.add(this.shadowHullDebugLines);
+      }
+      const geom = this.shadowHullDebugLines.geometry as THREE.BufferGeometry;
+      geom.setAttribute('position', new THREE.Float32BufferAttribute(hullPositions, 3));
+      geom.computeBoundingSphere();
+      this.shadowHullDebugLines.visible = true;
+    }else if(this.shadowHullDebugLines){
+      this.shadowHullDebugLines.visible = false;
+    }
+
+    const volumeMesh = this.shadowBlobManager.getVolumeDebugMesh?.();
+    const volumeGeom = volumeMesh?.geometry as THREE.BufferGeometry | undefined;
+    if(volumeGeom?.getAttribute('position')){
+      if(!this.shadowVolumeDebugLines){
+        const mat = new THREE.LineBasicMaterial({ color: 0xffcc00, depthTest: false });
+        this.shadowVolumeDebugLines = new THREE.LineSegments(new THREE.WireframeGeometry(volumeGeom), mat);
+        this.shadowDebugGroup.add(this.shadowVolumeDebugLines);
+      }else{
+        this.shadowVolumeDebugLines.geometry.dispose();
+        this.shadowVolumeDebugLines.geometry = new THREE.WireframeGeometry(volumeGeom);
+      }
+      this.shadowVolumeDebugLines.visible = true;
+    }else if(this.shadowVolumeDebugLines){
+      this.shadowVolumeDebugLines.visible = false;
     }
   }
 

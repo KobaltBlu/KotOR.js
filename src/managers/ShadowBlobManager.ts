@@ -5,9 +5,13 @@ import {
   retailStencilShadowDisk,
   retailStencilShadowOpacity,
   retailStencilShadowFanVertices,
-  retailShadowCasterDistanceLimit,
+  retailShadowLightPosition,
+  buildRetailShadowProjectionPlane,
+  retailShadowProjectionPlaneKind,
   RETAIL_STENCIL_SHADOW_SEGMENTS,
 } from "@/utility/retailLighting";
+import { ShadowVolumeBuilder } from "@/utility/ShadowVolumeBuilder";
+import type { IShadowRegistryEntry } from "@/managers/ShadowCasterRegistry";
 
 /** Unit-radius retail fan: center + 10 ring vertices, 10 triangular wedges. */
 function createRetailStencilFanGeometry(): THREE.BufferGeometry {
@@ -23,26 +27,6 @@ function createRetailStencilFanGeometry(): THREE.BufferGeometry {
   return geom;
 }
 
-interface ICasterStencilState {
-  colorWrite: boolean;
-  depthWrite: boolean;
-  depthTest: boolean;
-  stencilWrite: boolean;
-  stencilWriteMask: number;
-  stencilFunc: THREE.StencilFunc;
-  stencilRef: number;
-  stencilFail: THREE.StencilOp;
-  stencilZFail: THREE.StencilOp;
-  stencilZPass: THREE.StencilOp;
-}
-
-interface ICasterSave {
-  mesh: THREE.Mesh;
-  visible: boolean;
-  materials: THREE.Material[];
-  state: ICasterStencilState[];
-}
-
 /**
  * ShadowBlobManager — retail-equivalent stencil-masked shadow disks.
  *
@@ -50,7 +34,7 @@ interface ICasterSave {
  * - dark ground disks at focus Z
  * - opacity shadowAlpha * 0.5
  * - depth test disabled while drawing the disk
- * - stencil Equal + Keep (mask written by caster meshes first)
+ * - stencil Equal + Keep (mask written by extruded shadow volumes first)
  * - ten-segment fan geometry
  *
  * Three.js only enables the stencil *test* when material.stencilWrite is true
@@ -69,9 +53,8 @@ export class ShadowBlobManager {
   private lightManager: LightManager;
   private focus = new THREE.Vector3();
   private _world = new THREE.Vector3();
-  private _castersScratch: THREE.Mesh[] = [];
-  private _savedScratch: ICasterSave[] = [];
-  private _blobVisScratch: boolean[] = [];
+  private volumeBuilder = new ShadowVolumeBuilder();
+  private _cameraForward = new THREE.Vector3();
 
   init(lightManager: LightManager, parent?: THREE.Object3D){
     this.lightManager = lightManager;
@@ -226,8 +209,8 @@ export class ShadowBlobManager {
   }
 
   /**
-   * Write per-light stencil masks from caster meshes into the current render
-   * target. Disks use EqualStencilFunc so they only darken masked ground.
+   * Write per-light stencil masks from extruded shadow volumes into the current
+   * render target. Disks use EqualStencilFunc so they only darken masked ground.
    * Caller owns color/depth clears; this clears stencil when clearStencil is true.
    */
   renderStencilMasks(
@@ -242,6 +225,8 @@ export class ShadowBlobManager {
     if(!lights.length || retailStencilShadowOpacity(GameState.shadowAlpha) <= 0){
       return;
     }
+    const registry = GameState.shadowCasterRegistry;
+    if(!registry){ return; }
 
     const gl = renderer.getContext() as WebGLRenderingContext;
     const prevAutoClear = renderer.autoClear;
@@ -254,154 +239,85 @@ export class ShadowBlobManager {
       gl.clear(gl.STENCIL_BUFFER_BIT);
     }
 
-    const casters = this._castersScratch;
-    casters.length = 0;
-    const stencilLayer = ShadowBlobManager.STENCIL_LAYER;
-    const blobSet = this.blobs;
-    const registryCasters = GameState.shadowCasterRegistry?.getStencilCasters();
-    if(registryCasters?.length){
-      for(let i = 0; i < registryCasters.length; i++){
-        const mesh = registryCasters[i];
-        if(mesh.visible){
-          mesh.layers.enable(stencilLayer);
-          casters.push(mesh);
-        }
-      }
-    }else{
-      scene.traverse((obj) => {
-        const mesh = obj as THREE.Mesh;
-        if(!mesh.isMesh || !mesh.visible || blobSet.indexOf(mesh) >= 0){ return; }
-        if(mesh.castShadow || (mesh as THREE.SkinnedMesh).isSkinnedMesh){
-          mesh.layers.enable(stencilLayer);
-          casters.push(mesh);
-        }
-      });
-    }
-    if(!casters.length){
-      gl.stencilMask(prevStencilMask);
-      renderer.autoClear = prevAutoClear;
-      return;
-    }
+    const focusPos = this.focus;
+    const getForward = (out: { x: number; y: number; z: number }) => {
+      this._cameraForward.set(0, 0, -1).applyQuaternion(camera.quaternion);
+      out.x = this._cameraForward.x;
+      out.y = this._cameraForward.y;
+      out.z = this._cameraForward.z;
+    };
+    const camStub = { position: camera.position, near: (camera as THREE.PerspectiveCamera).near ?? 0.1 };
 
-    const saved = this._savedScratch;
-    for(let i = 0; i < casters.length; i++){
-      const mesh = casters[i];
-      const materials = (Array.isArray(mesh.material) ? mesh.material : [mesh.material])
-        .filter((m): m is THREE.Material => m instanceof THREE.Material);
-      let entry = saved[i];
-      if(!entry){
-        entry = { mesh, visible: true, materials: [], state: [] };
-        saved[i] = entry;
-      }
-      entry.mesh = mesh;
-      entry.visible = mesh.visible;
-      entry.materials = materials;
-      const state = entry.state;
-      for(let mi = 0; mi < materials.length; mi++){
-        const mat = materials[mi];
-        let st = state[mi];
-        if(!st){
-          st = {
-            colorWrite: true,
-            depthWrite: true,
-            depthTest: true,
-            stencilWrite: false,
-            stencilWriteMask: 0xff,
-            stencilFunc: THREE.AlwaysStencilFunc,
-            stencilRef: 0,
-            stencilFail: THREE.KeepStencilOp,
-            stencilZFail: THREE.KeepStencilOp,
-            stencilZPass: THREE.KeepStencilOp,
-          };
-          state[mi] = st;
-        }
-        st.colorWrite = (mat as any).colorWrite !== false;
-        st.depthWrite = mat.depthWrite;
-        st.depthTest = mat.depthTest;
-        st.stencilWrite = mat.stencilWrite;
-        st.stencilWriteMask = mat.stencilWriteMask;
-        st.stencilFunc = mat.stencilFunc;
-        st.stencilRef = mat.stencilRef;
-        st.stencilFail = mat.stencilFail;
-        st.stencilZFail = mat.stencilZFail;
-        st.stencilZPass = mat.stencilZPass;
-      }
-      state.length = materials.length;
-    }
-    saved.length = casters.length;
-
-    const blobVis = this._blobVisScratch;
-    blobVis.length = this.blobs.length;
-    for(let i = 0; i < this.blobs.length; i++){
-      blobVis[i] = this.blobs[i].visible;
-      this.blobs[i].visible = false;
-    }
-
-    const prevLayersMask = camera.layers.mask;
     try{
-      camera.layers.set(stencilLayer);
-
       for(let i = 0; i < lights.length && i < this.blobs.length; i++){
         const light = lights[i];
         const stencilRef = (this.blobs[i].userData.stencilRef as number) || (1 << (i % 8));
         const lightRadius = Math.max(light.shadowRadius || 0, light.getRadius());
-        const casterLimit = retailShadowCasterDistanceLimit(light.getRadius(), light.shadowRadius || 0);
         if(!(lightRadius > 0)){ continue; }
 
-        for(let ci = 0; ci < saved.length; ci++){
-          const entry = saved[ci];
-          const dist = entry.mesh.getWorldPosition(this._world).distanceTo(light.worldPosition);
-          entry.mesh.visible = dist <= casterLimit;
-          for(let mi = 0; mi < entry.materials.length; mi++){
-            const mat = entry.materials[mi];
-            (mat as any).colorWrite = false;
-            mat.depthWrite = false;
-            mat.depthTest = true;
-            mat.stencilWrite = true;
-            mat.stencilWriteMask = 0xff;
-            mat.stencilFunc = THREE.AlwaysStencilFunc;
-            mat.stencilRef = stencilRef;
-            mat.stencilFuncMask = 0xffffffff;
-            mat.stencilFail = THREE.KeepStencilOp;
-            mat.stencilZFail = THREE.KeepStencilOp;
-            mat.stencilZPass = THREE.ReplaceStencilOp;
-            mat.needsUpdate = true;
+        const lp = retailShadowLightPosition({
+          x: light.worldPosition.x,
+          y: light.worldPosition.y,
+          z: light.worldPosition.z,
+          radius: light.getRadius(),
+          shadowRadius: light.shadowRadius || 0,
+          verticalDisplacement: light.verticalDisplacement || 0,
+        });
+        const planeKind = retailShadowProjectionPlaneKind(light.getRadius(), false);
+        const plane = buildRetailShadowProjectionPlane(planeKind, camStub, focusPos.z, getForward);
+
+        const volumeCasters = registry.getCastersInLightRadius(
+          lp.x, lp.y, lp.z,
+          light.getRadius(),
+          light.shadowRadius || 0,
+          focusPos
+        );
+
+        if(!volumeCasters.length){ continue; }
+
+        const ownerGroups = new Map<string, IShadowRegistryEntry[]>();
+        for(let ci = 0; ci < volumeCasters.length; ci++){
+          const caster = volumeCasters[ci];
+          const key = caster.ownerUuid || caster.mesh?.uuid || `caster:${ci}`;
+          let group = ownerGroups.get(key);
+          if(!group){
+            group = [];
+            ownerGroups.set(key, group);
           }
+          group.push(caster);
         }
 
-        renderer.render(scene, camera);
+        for(const group of ownerGroups.values()){
+          const built = this.volumeBuilder.buildForLight(
+            group,
+            lp.x, lp.y, lp.z,
+            light.getRadius(),
+            light.shadowRadius || 0,
+            plane,
+            registry
+          );
+          if(!built){ continue; }
+
+          this.volumeBuilder.applyStencilWriteState(stencilRef);
+          if(this.volumeBuilder.mesh.parent !== scene){
+            scene.add(this.volumeBuilder.mesh);
+          }
+          this.volumeBuilder.mesh.visible = true;
+          renderer.render(this.volumeBuilder.mesh, camera);
+          this.volumeBuilder.mesh.visible = false;
+        }
       }
     }finally{
-      camera.layers.mask = prevLayersMask;
-    }
-
-    for(let i = 0; i < saved.length; i++){
-      const entry = saved[i];
-      entry.mesh.visible = entry.visible;
-      for(let mi = 0; mi < entry.materials.length; mi++){
-        const mat = entry.materials[mi];
-        const prev = entry.state[mi];
-        (mat as any).colorWrite = prev.colorWrite;
-        mat.depthWrite = prev.depthWrite;
-        mat.depthTest = prev.depthTest;
-        mat.stencilWrite = prev.stencilWrite;
-        mat.stencilWriteMask = prev.stencilWriteMask;
-        mat.stencilFunc = prev.stencilFunc;
-        mat.stencilRef = prev.stencilRef;
-        mat.stencilFail = prev.stencilFail;
-        mat.stencilZFail = prev.stencilZFail;
-        mat.stencilZPass = prev.stencilZPass;
-        mat.needsUpdate = true;
-      }
-    }
-    for(let i = 0; i < this.blobs.length; i++){
-      this.blobs[i].visible = blobVis[i];
-      const mat = this.blobs[i].material as THREE.MeshBasicMaterial;
-      this.applyDiskStencilState(mat, this.blobs[i].userData.stencilRef || (1 << (i % 8)));
+      /* volume pass uses default camera layers */
     }
 
     gl.stencilMask(prevStencilMask);
     renderer.autoClear = prevAutoClear;
+  }
+
+  /** Last-built extruded volume mesh (Forge debug wireframe). */
+  getVolumeDebugMesh(): THREE.Mesh {
+    return this.volumeBuilder.mesh;
   }
 
   dispose(){
@@ -413,5 +329,6 @@ export class ShadowBlobManager {
     this.geometry?.dispose?.();
     this.hardMaterial?.dispose?.();
     this.softTexture?.dispose?.();
+    this.volumeBuilder.dispose();
   }
 }

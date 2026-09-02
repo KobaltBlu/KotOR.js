@@ -807,16 +807,16 @@ export class LightManager {
   }
 
   /**
-   * PrioritizeShadow: shadow + non-ambient + raw color gate from
-   * render_lights (boundLights), sorted via lightcmp.
-   * Radius and illuminationScore <= 1 are applied later by GetShadowLights modes.
+   * PrioritizeShadow: non-ambient + raw color gate from render_lights (boundLights),
+   * sorted via lightcmp. Retail GetShadowLights modes 0/1 do not check PartLight.shadow
+   * (MDL shadow flag); radius, illuminationScore <= 1, and mode filters run in getShadowLights.
    */
   prioritizeShadow(): OdysseyLight3D[] {
     const candidates = this._shadowCandidateScratch;
     candidates.length = 0;
     for(let i = 0, il = this.boundLights.length; i < il; i++){
       const light = this.boundLights[i];
-      if(!light.castShadow || light.isAmbient){
+      if(light.isAmbient){
         continue;
       }
       if(!isRetailShadowColorVisible(light.color.r, light.color.g, light.color.b)){

@@ -2,6 +2,8 @@ import * as THREE from "three";
 import {
   retailShadowCasterDistanceLimit,
   retailShadowEffectiveRadius,
+  RETAIL_ENABLE_FOCUS_SHADOWING,
+  RETAIL_MAX_SHADOW_DISTANCE,
 } from "@/utility/retailLighting";
 
 export enum ShadowRegistryMeshKind {
@@ -19,6 +21,8 @@ export interface IShadowRegistryEntry {
   isStatic: boolean;
   /** Cached world-space bounding sphere radius for bone casters. */
   boneRadius?: number;
+  /** When false, retail TurnOffShadows — skip projection and stencil volumes. */
+  shadowsEnabled?: boolean;
   ownerUuid?: string;
 }
 
@@ -46,6 +50,7 @@ export class ShadowCasterRegistry {
       receiveShadow?: boolean;
       isStatic?: boolean;
       ownerUuid?: string;
+      shadowsEnabled?: boolean;
     }
   ){
     if(!mesh){ return; }
@@ -65,6 +70,7 @@ export class ShadowCasterRegistry {
         receiveShadow,
         isStatic,
         ownerUuid: options.ownerUuid,
+        shadowsEnabled: options.shadowsEnabled !== false,
       });
     }
 
@@ -127,16 +133,26 @@ export class ShadowCasterRegistry {
     lightZ: number,
     radius: number,
     shadowRadius: number,
+    focus?: THREE.Vector3,
     out: IShadowRegistryEntry[] = this._castersScratch
   ): IShadowRegistryEntry[] {
     out.length = 0;
     const limit = retailShadowCasterDistanceLimit(radius, shadowRadius);
     const limitSq = limit * limit;
+    const focusCull = RETAIL_ENABLE_FOCUS_SHADOWING && focus;
+    const maxFocusSq = RETAIL_MAX_SHADOW_DISTANCE * RETAIL_MAX_SHADOW_DISTANCE;
     for(let i = 0; i < this.casters.length; i++){
       const entry = this.casters[i];
       if(!entry.castShadow){ continue; }
+      if(entry.shadowsEnabled === false){ continue; }
       const pos = this.getEntryWorldPosition(entry);
       if(!pos){ continue; }
+      if(focusCull){
+        const fdx = pos.x - focus.x;
+        const fdy = pos.y - focus.y;
+        const fdz = pos.z - focus.z;
+        if(fdx * fdx + fdy * fdy + fdz * fdz > maxFocusSq){ continue; }
+      }
       const dx = pos.x - lightX;
       const dy = pos.y - lightY;
       const dz = pos.z - lightZ;
@@ -164,6 +180,15 @@ export class ShadowCasterRegistry {
       }
     }
     return out;
+  }
+
+  setOwnerShadowsEnabled(ownerUuid: string, enabled: boolean){
+    if(!ownerUuid){ return; }
+    for(let i = 0; i < this.casters.length; i++){
+      if(this.casters[i].ownerUuid === ownerUuid){
+        this.casters[i].shadowsEnabled = enabled;
+      }
+    }
   }
 
   getEntryWorldPosition(entry: IShadowRegistryEntry, target = this._world): THREE.Vector3 | undefined {

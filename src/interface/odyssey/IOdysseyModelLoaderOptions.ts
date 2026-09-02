@@ -12,6 +12,8 @@ export interface IOdysseyModelLoaderOptions {
   textureVar?: string, //override texture
   castShadow?: boolean, //force cast shadow on mesh nodes
   receiveShadow?: boolean, //force recieve shadow on mesh nodes
+  /** When false, retail TurnOffShadows — skip hull/volume projection for this model. */
+  shadowsEnabled?: boolean,
   /**
    * true (default): register light nodes with context.lightManager.
    * false: keep OdysseyLight3D model-local (no LightManager registration).

@@ -6355,6 +6355,7 @@ export class ModuleCreature extends ModuleObject {
       const model = await OdysseyModel3D.FromMDL(mdl, {
         castShadow: true,
         receiveShadow: true,
+        shadowsEnabled: this.shadowsEnabled,
         textureVar: this.bodyTexture,
         isHologram: this.isHologram,
         envMapOverride: envMapOverride,

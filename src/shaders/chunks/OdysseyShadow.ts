@@ -6,20 +6,20 @@ import { RETAIL_SHADOW_MIN_VERTEX_COLOR, RETAIL_SHADOW_DEPTH_BIAS } from "@/util
 export const MAX_ODYSSEY_SHADOW_HULLS = 8;
 export const MAX_ODYSSEY_SHADOW_HULL_VERTS = 16;
 
-/** World-position varying for shadow tests — independent of Three envmap chunks (r149 has no worldpos_pars_fragment). */
+/** Mesh-local position varying for per-receiver shadow tests (Plane::Transform parity). */
 export const ODYSSEY_SHADOW_WORLD_PARS = `
 #ifdef USE_ODYSSEY_SHADOW
-  varying vec3 vOdysseyShadowWorldPos;
+  varying vec3 vOdysseyShadowLocalPos;
 #endif
 `;
 
 export const ODYSSEY_SHADOW_WORLD_VERTEX = `
 #ifdef USE_ODYSSEY_SHADOW
-  vec4 odysseyShadowWorldPos = vec4( transformed, 1.0 );
+  vec4 odysseyShadowLocalPos = vec4( transformed, 1.0 );
   #ifdef USE_INSTANCING
-    odysseyShadowWorldPos = instanceMatrix * odysseyShadowWorldPos;
+    odysseyShadowLocalPos = instanceMatrix * odysseyShadowLocalPos;
   #endif
-  vOdysseyShadowWorldPos = ( modelMatrix * odysseyShadowWorldPos ).xyz;
+  vOdysseyShadowLocalPos = odysseyShadowLocalPos.xyz;
 #endif
 `;
 
@@ -40,21 +40,37 @@ uniform int numOdysseyShadowHulls;
 uniform vec4 odysseyShadowLightPos[ MAX_ODYSSEY_SHADOW_HULLS ];
 uniform vec4 odysseyShadowHullMeta[ MAX_ODYSSEY_SHADOW_HULLS ];
 uniform vec4 odysseyShadowHullEdges[ MAX_ODYSSEY_SHADOW_HULLS * MAX_ODYSSEY_SHADOW_HULL_VERTS ];
+uniform vec4 odysseyShadowHullPlane[ MAX_ODYSSEY_SHADOW_HULLS ];
+uniform vec4 odysseyShadowHullBasisU[ MAX_ODYSSEY_SHADOW_HULLS ];
+uniform vec4 odysseyShadowHullBasisV[ MAX_ODYSSEY_SHADOW_HULLS ];
 
-float odysseyComputeShadowFactor( vec3 worldPos ) {
+float odysseyComputeShadowFactor( vec3 localPos ) {
   float factor = 1.0;
-  vec2 p = worldPos.xy;
+  #ifdef USE_ODYSSEY_BEAMING
+    if ( odysseyBeamingProjectionAlpha > 0.0 ) {
+      return factor;
+    }
+  #endif
   for ( int hi = 0; hi < MAX_ODYSSEY_SHADOW_HULLS; hi ++ ) {
     if ( hi < numOdysseyShadowHulls ) {
       vec4 lightPos = odysseyShadowLightPos[ hi ];
       float strength = lightPos.w;
       if ( strength > 0.0 ) {
         vec4 meta = odysseyShadowHullMeta[ hi ];
+        // meta.y = casterNearDist, meta.z = vertCount, meta.w = influenceRSq
         float influenceRSq = meta.w;
-        vec3 d = worldPos - lightPos.xyz;
+        vec3 d = localPos - lightPos.xyz;
         if ( dot( d, d ) <= influenceRSq ) {
           int vertCount = int( meta.z + 0.5 );
           if ( vertCount >= 3 ) {
+            vec4 plane = odysseyShadowHullPlane[ hi ];
+            vec3 n = plane.xyz;
+            float planeD = plane.w;
+            vec3 basisU = odysseyShadowHullBasisU[ hi ].xyz;
+            vec3 basisV = odysseyShadowHullBasisV[ hi ].xyz;
+            float distToPlane = dot( localPos, n ) + planeD;
+            vec3 onPlane = localPos - n * distToPlane;
+            vec2 p = vec2( dot( onPlane, basisU ), dot( onPlane, basisV ) );
             float inside = 1.0;
             int signVal = 0;
             for ( int ei = 0; ei < MAX_ODYSSEY_SHADOW_HULL_VERTS; ei ++ ) {
@@ -89,6 +105,20 @@ float odysseyComputeShadowFactor( vec3 worldPos ) {
 }
 `;
 
+export interface IReceiverShadowState {
+  slots: IOdysseyShadowHullSlot[];
+  activeHullCount: number;
+  frameEpoch: number;
+}
+
+export function createReceiverShadowState(): IReceiverShadowState {
+  return {
+    slots: createEmptyOdysseyShadowHullSlots(),
+    activeHullCount: 0,
+    frameEpoch: 0,
+  };
+}
+
 export interface IOdysseyShadowHullSlot {
   active: boolean;
   lightX: number;
@@ -96,6 +126,10 @@ export interface IOdysseyShadowHullSlot {
   lightZ: number;
   strength: number;
   planeZ: number;
+  planeNormal: THREE.Vector3;
+  planeConstant: number;
+  planeTangentU: THREE.Vector3;
+  planeTangentV: THREE.Vector3;
   casterNearDist: number;
   influenceRSq: number;
   hullVertCount: number;
@@ -116,6 +150,10 @@ export function createEmptyOdysseyShadowHullSlots(count = MAX_ODYSSEY_SHADOW_HUL
       lightZ: 0,
       strength: 0,
       planeZ: 0,
+      planeNormal: new THREE.Vector3(0, 0, 1),
+      planeConstant: 0,
+      planeTangentU: new THREE.Vector3(1, 0, 0),
+      planeTangentV: new THREE.Vector3(0, 1, 0),
       casterNearDist: 0,
       influenceRSq: 0,
       hullVertCount: 0,
@@ -141,6 +179,15 @@ export function createOdysseyShadowUniforms(){
       value: Array.from({ length: MAX_ODYSSEY_SHADOW_HULLS }, () => new THREE.Vector4()),
     },
     odysseyShadowHullEdges: { value: hullEdges },
+    odysseyShadowHullPlane: {
+      value: Array.from({ length: MAX_ODYSSEY_SHADOW_HULLS }, () => new THREE.Vector4()),
+    },
+    odysseyShadowHullBasisU: {
+      value: Array.from({ length: MAX_ODYSSEY_SHADOW_HULLS }, () => new THREE.Vector4()),
+    },
+    odysseyShadowHullBasisV: {
+      value: Array.from({ length: MAX_ODYSSEY_SHADOW_HULLS }, () => new THREE.Vector4()),
+    },
   };
 }
 

@@ -134,7 +134,7 @@ export class Mouse {
 
   /** Retail client_options->mouse_look (Game Options.Mouse Look). */
   static isMouseLookEnabled(): boolean {
-    return !!Number(GameState.iniConfig?.getProperty?.(INI_MOUSE_LOOK));
+    return Number(GameState.iniConfig?.getProperty?.(INI_MOUSE_LOOK)) === 1;
   }
 
   /** Retail reverse_mouse_buttons (Game Options.Reverse Mouse Buttons). */
@@ -154,20 +154,39 @@ export class Mouse {
   }
 
   /**
-   * Reconcile logical button flags from `MouseEvent.buttons`.
-   * Browsers can drop mouseup outside the window (context menu, alt-tab),
-   * leaving rightDown stuck and chase-cam look active on every move.
+   * Reconcile logical button flags from a mouse event.
+   * `event.buttons` alone is unreliable on down/up (the transitioning button may
+   * be excluded or not yet included), so merge `event.button` for those types.
    */
-  static syncButtonStateFromEvent(event: MouseEvent){
+  static updateButtonStateFromEvent(event: MouseEvent){
     const reverse = Mouse.isReverseButtonsEnabled();
-    const leftBit = reverse ? 2 : 1;
-    const rightBit = reverse ? 1 : 2;
-    Mouse.leftDown = !!(event.buttons & leftBit);
-    Mouse.rightDown = !!(event.buttons & rightBit);
-    Mouse.middleDown = !!(event.buttons & 4);
-    if(!Mouse.middleDown){
-      Mouse.MiddleMouseDown = false;
+    let physLeft = !!(event.buttons & 1);
+    let physRight = !!(event.buttons & 2);
+    let physMiddle = !!(event.buttons & 4);
+
+    if(event.type === 'mousedown' || event.type === 'mouseup'){
+      const logical = Mouse.mapBrowserButton(event.button);
+      if(logical === 'left'){
+        physLeft = event.type === 'mousedown';
+      }else if(logical === 'right'){
+        physRight = event.type === 'mousedown';
+      }else if(logical === 'middle'){
+        physMiddle = event.type === 'mousedown';
+      }
     }
+
+    Mouse.leftDown = reverse ? physRight : physLeft;
+    Mouse.rightDown = reverse ? physLeft : physRight;
+    Mouse.middleDown = physMiddle;
+    Mouse.MiddleMouseDown = physMiddle;
+  }
+
+  /** Clear all button flags (window blur / missed mouseup recovery). */
+  static clearButtonState(){
+    Mouse.leftDown = false;
+    Mouse.rightDown = false;
+    Mouse.middleDown = false;
+    Mouse.MiddleMouseDown = false;
   }
 
   /**
