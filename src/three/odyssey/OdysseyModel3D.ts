@@ -51,11 +51,12 @@ import {
   createEmptyOdysseyLightPosArray,
   createEmptyOdysseyLightColorArray,
 } from "@/shaders/chunks/OdysseyLighting";
-import {
-  ensureMeshVertexColors,
-} from "@/utility/shadowProjection";
 import { enableOdysseyMaterialShadowReceive } from "@/shaders/chunks/OdysseyShadow";
-import { StaticMeshShadowManager } from "@/managers/StaticMeshShadowManager";
+import {
+  applyOdysseyShadowCasterDepthMaterials,
+  isOdysseyShadowCasterMaterial,
+  shouldExcludeOdysseyShadowCasterMesh,
+} from "@/three/odyssey/OdysseyShadowCasterMaterial";
 
 export { resolveDanglyWindPower } from "@/three/odyssey/windPowerContext";
 export type { NodeParseContext, NodeParseFlags, OdysseyModel3DParseBuilders } from "@/three/odyssey/OdysseyModel3DNodeParseContext";
@@ -226,6 +227,73 @@ export class OdysseyModel3D extends OdysseyObject3D {
     }
   }
 
+  applyShadowCasterMaterials(){
+    for(let i = 0; i < this.skins.length; i++){
+      const skin = this.skins[i];
+      if(skin.castShadow){
+        OdysseyModel3D.applyShadowCasterDepthMaterial(skin);
+      }
+    }
+  }
+
+  /** Materials excluded from shadow-map casting. */
+  static isShadowCasterMaterial(material: THREE.Material): boolean {
+    return isOdysseyShadowCasterMaterial(material);
+  }
+
+  static shouldExcludeShadowCasterMesh(mesh: THREE.Mesh): boolean {
+    return shouldExcludeOdysseyShadowCasterMesh(mesh);
+  }
+
+  static applyShadowCasterDepthMaterial(mesh: THREE.Mesh | THREE.SkinnedMesh): void {
+    if(shouldExcludeOdysseyShadowCasterMesh(mesh)){ return; }
+    applyOdysseyShadowCasterDepthMaterials(mesh);
+  }
+
+  static resolveMeshShadowFlags(
+    odysseyNode: OdysseyModelNodeMesh,
+    options: IOdysseyModelLoaderOptions,
+    isSaber: boolean
+  ): { castShadow: boolean; receiveShadow: boolean } {
+    const shadowsOn = options.shadowsEnabled !== false;
+    if(!shadowsOn || isSaber){
+      return { castShadow: false, receiveShadow: false };
+    }
+    return {
+      castShadow: !!odysseyNode.flagShadow || !!options.castShadow,
+      receiveShadow: !!options.receiveShadow,
+    };
+  }
+
+  /** Mark attached rigid equipment (weapons/helm) as shadow casters. */
+  static markAttachedEquipmentShadowCasting(root: THREE.Object3D, shadowsEnabled = true): void {
+    if(!shadowsEnabled){ return; }
+    root.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if(!mesh.isMesh || (mesh as THREE.SkinnedMesh).isSkinnedMesh){ return; }
+      if(shouldExcludeOdysseyShadowCasterMesh(mesh)){ return; }
+      if(mesh.userData.odysseyShadowCastAuthored === undefined){
+        mesh.userData.odysseyShadowCastAuthored = mesh.castShadow;
+      }
+      mesh.castShadow = true;
+      mesh.userData.odysseyAttachedEquipmentCaster = true;
+      OdysseyModel3D.applyShadowCasterDepthMaterial(mesh);
+    });
+  }
+
+  static restoreAttachedEquipmentShadowCasting(root: THREE.Object3D): void {
+    root.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if(!mesh.isMesh){ return; }
+      if(mesh.userData.odysseyShadowCastAuthored !== undefined){
+        mesh.castShadow = mesh.userData.odysseyShadowCastAuthored;
+      }
+      delete mesh.userData.odysseyAttachedEquipmentCaster;
+      mesh.customDepthMaterial = undefined;
+      mesh.customDistanceMaterial = undefined;
+    });
+  }
+
   attachHead(head: OdysseyModel3D){
 
     const rootNode = head.getRootOdysseyNode();
@@ -271,6 +339,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
       //fix skins
       this.buildSkeleton();
+      this.applyShadowCasterMaterials();
 
       for(let i = 0; i < head.materials.length; i++){
         this.materials.push(head.materials[i]);
@@ -849,6 +918,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
     this.bonesInitialized = true;
     this.animationManager.currentAnimation = this.oldAnim;
+    this.applyShadowCasterMaterials();
   }
 
   pose(node: OdysseyModel3D|THREE.Object3D = undefined){
@@ -1271,7 +1341,6 @@ export class OdysseyModel3D extends OdysseyObject3D {
               odysseyModel.mergedMesh = new THREE.Mesh(odysseyModel.mergedBufferGeometry, finalMaterials);
               odysseyModel.mergedMesh.receiveShadow = true;
               odysseyModel.mergedMesh.castShadow = odysseyModel.mergedCastsShadow;
-              ensureMeshVertexColors(odysseyModel.mergedMesh);
               enableOdysseyMaterialShadowReceive(finalMaterials);
               OdysseyModel3D.registerMeshShadow(odysseyModel.mergedMesh, options);
               odysseyModel.add(odysseyModel.mergedMesh);
@@ -1319,6 +1388,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
         }
         
         odysseyModel.buildSkeleton();
+        odysseyModel.applyShadowCasterMaterials();
 
         if(model.modelHeader.superModelName.indexOf("null") == -1 && model.modelHeader.superModelName != ''){
           await OdysseyModel3D.SuperModelLoader(model.modelHeader.superModelName.toLowerCase(), odysseyModel);
@@ -1372,9 +1442,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
           if(!odysseyNode.tvectors[0].length) odysseyNode.isAnimDummyNode = true;
         }
 
-        //Optimization: Only create a mesh if it is actually rendered. Ignore this for placeable models
-        //This breaks shadows because the original game uses the bones of the model to cast shadows. 
-        //This can possibly be remedied by setting skin meshes to cast shadows.
+        // Visible skin meshes cast SSCS shadows via the depth prepass (retail used invisible bone trimesh proxies).
         if( ( odysseyNode.flagRender || options.editorMode ) || (odysseyModel.modelHeader.classification == OdysseyModelClass.PLACEABLE)){
 
           //-------------------------//
@@ -1496,6 +1564,15 @@ export class OdysseyModel3D extends OdysseyObject3D {
             material.defines.USE_SKINNING = '';
             mesh = new THREE.SkinnedMesh( geometry , material );
             odysseyModel.skins.push(mesh);
+            const shadowFlags = OdysseyModel3D.resolveMeshShadowFlags(odysseyNode, options, false);
+            mesh.castShadow = shadowFlags.castShadow;
+            mesh.receiveShadow = shadowFlags.receiveShadow;
+            if(mesh.castShadow){
+              OdysseyModel3D.applyShadowCasterDepthMaterial(mesh);
+            }
+            if(mesh.receiveShadow){
+              OdysseyModel3D.registerMeshShadow(mesh, options);
+            }
           }
 
           //------------//
@@ -1580,12 +1657,13 @@ export class OdysseyModel3D extends OdysseyObject3D {
               parentNode.userData.mesh = mesh;
             }
             if(!isAabb){
-              // MDL flagShadow selects casters; options.castShadow forces casting for
-              // creatures/placeables so stencil shadow disks have geometry to mask.
-              // Sabers are additive ribbons — do not cast shadows.
-              mesh.castShadow = isSaber ? false : (!!odysseyNode.flagShadow || !!options.castShadow);
-              mesh.receiveShadow = isSaber ? false : options.receiveShadow;
+              const shadowFlags = OdysseyModel3D.resolveMeshShadowFlags(odysseyNode, options, isSaber);
+              mesh.castShadow = shadowFlags.castShadow;
+              mesh.receiveShadow = shadowFlags.receiveShadow;
               mesh.userData.beaming = !!odysseyNode.beaming;
+              if(mesh.castShadow){
+                OdysseyModel3D.applyShadowCasterDepthMaterial(mesh);
+              }
               OdysseyModel3D.registerMeshShadow(mesh, options);
             }else if(options.attachMdlAabbMesh){
               mesh.castShadow = false;
@@ -1935,55 +2013,17 @@ export class OdysseyModel3D extends OdysseyObject3D {
   }
 
   /**
-   * Register mesh with GameState shadow caster registry and enable shader shadow reception.
+   * Enable shadow-map reception on Odyssey materials when requested.
    */
-  static registerMeshShadow(mesh: THREE.Mesh | THREE.SkinnedMesh, options: IOdysseyModelLoaderOptions){
-    if(!mesh){ return; }
-    const registry = GameState.shadowCasterRegistry;
-    if(!registry){ return; }
-
-    OdysseyModel3D.unregisterMeshShadow(mesh);
-
-    if(mesh.geometry?.getAttribute('color')){
-      ensureMeshVertexColors(mesh);
-      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-      for(let i = 0; i < mats.length; i++){
-        const mat = mats[i];
-        if(mat instanceof THREE.ShaderMaterial){
-          mat.defines = mat.defines || {};
-          mat.defines.USE_COLOR = '';
-          mat.vertexColors = true;
-          mat.needsUpdate = true;
-        }
-      }
-    }
-
-    if(mesh.receiveShadow){
-      enableOdysseyMaterialShadowReceive(mesh.material);
-      StaticMeshShadowManager.attachReceiverRenderHook(mesh);
-    }
-
-    const ownerUuid = options?.context?.uuid || mesh.uuid;
-    mesh.userData.shadowOwnerUuid = ownerUuid;
-    mesh.userData.shadowIsStatic = !!options?.mergeStatic || !!options?.static;
-    registry.registerMesh(mesh, {
-      castShadow: !!mesh.castShadow || (mesh as THREE.SkinnedMesh).isSkinnedMesh,
-      receiveShadow: !!mesh.receiveShadow,
-      isStatic: !!options?.mergeStatic || !!options?.static,
-      ownerUuid,
-      shadowsEnabled: options?.shadowsEnabled !== false,
-    });
-
-    const skinned = mesh as THREE.SkinnedMesh;
-    if(skinned.isSkinnedMesh && skinned.skeleton?.bones?.length){
-      for(let bi = 0; bi < skinned.skeleton.bones.length; bi++){
-        registry.registerBoneCaster(skinned.skeleton.bones[bi], { ownerUuid });
-      }
-    }
+  static registerMeshShadow(mesh: THREE.Mesh | THREE.SkinnedMesh, options?: IOdysseyModelLoaderOptions){
+    if(options?.shadowsEnabled === false){ return; }
+    if(!mesh?.receiveShadow){ return; }
+    enableOdysseyMaterialShadowReceive(mesh.material);
   }
 
   static unregisterMeshShadow(mesh: THREE.Mesh | THREE.SkinnedMesh){
-    GameState.shadowCasterRegistry?.unregisterMesh(mesh);
+    mesh.customDepthMaterial = undefined;
+    mesh.customDistanceMaterial = undefined;
   }
 
 };

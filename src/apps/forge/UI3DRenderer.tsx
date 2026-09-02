@@ -177,14 +177,12 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   lightManager: KotOR.LightManager = new KotOR.LightManager();
-  shadowBlobManager: KotOR.ShadowBlobManager = new KotOR.ShadowBlobManager();
-  staticMeshShadowManager: KotOR.StaticMeshShadowManager = new KotOR.StaticMeshShadowManager();
-  /** Forge overlay — hull edges (green) and extruded volume wireframe (yellow). */
+  odysseyShadowManager: KotOR.OdysseyShadowManager = new KotOR.OdysseyShadowManager();
+  /** Forge overlay — shadow light position markers. */
   shadowDebugEnabled = true;
   private shadowDebugGroup = new THREE.Group();
-  private shadowHullDebugLines: THREE.LineSegments | null = null;
-  private shadowVolumeDebugLines: THREE.LineSegments | null = null;
-  private _shadowDebugHullScratch: number[] = [];
+  private shadowLightDebugMarkers: THREE.Mesh[] = [];
+  private shadowFrustumHelper: THREE.CameraHelper | undefined;
 
   selectable: THREE.Group = new THREE.Group();
   unselectable: THREE.Group = new THREE.Group();
@@ -305,10 +303,8 @@ export class UI3DRenderer extends EventListenerModel {
     this.buildDOMEventHandlers();
 
     this.lightManager.init(this);
-    this.shadowBlobManager.init(this.lightManager, this.scene);
-    if(KotOR.GameState.shadowCasterRegistry){
-      this.staticMeshShadowManager.init(this.lightManager, KotOR.GameState.shadowCasterRegistry);
-    }
+    this.odysseyShadowManager.init(this.lightManager, this.scene);
+    this.odysseyShadowManager.useQualityPreset(true);
     this.shadowDebugGroup.name = 'shadow_debug';
     this.scene.add(this.shadowDebugGroup);
   }
@@ -1104,6 +1100,9 @@ export class UI3DRenderer extends EventListenerModel {
     if(this.renderer){
       this.renderer.setClearColor(this.clearColor)
       this.renderer.autoClear = false;
+      this.renderer.shadowMap.enabled = true;
+      this.renderer.shadowMap.autoUpdate = false;
+      this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       this.renderer.setSize( this.width, this.height );
     }
 
@@ -1244,33 +1243,17 @@ export class UI3DRenderer extends EventListenerModel {
     return '';
   }
 
-  /** Scene depth into depthTarget for soft particles (emitters hidden). */
+  /** Scene depth into depthTarget for soft particles. */
   renderDepthPrepass(): void {
-    if(!this.depthTarget || !this.softDepthNeeded || !this.renderer || !this.currentCamera) return;
+    if(!this.softDepthNeeded || !this.depthTarget || !this.renderer || !this.currentCamera) return;
     this.softDepthNeeded = false;
 
-    const hidden = this._depthPrepassHidden;
-    hidden.length = 0;
-    this.scene.traverse((obj) => {
-      if((obj as any).type === 'OdysseyEmitter' && obj.visible){
-        obj.visible = false;
-        hidden.push(obj);
-      }
+    KotOR.runOdysseyDepthPrepass({
+      scene: this.scene,
+      renderer: this.renderer,
+      camera: this.guiMode ? this.guiCamera : this.currentCamera,
+      depthTarget: this.depthTarget,
     });
-
-    const renderer = this.renderer;
-    const prevTarget = renderer.getRenderTarget();
-    const prevAutoClear = renderer.autoClear;
-    renderer.setRenderTarget(this.depthTarget);
-    renderer.autoClear = false;
-    renderer.clear(true, true, true);
-    renderer.render(this.scene, this.guiMode ? this.guiCamera : this.currentCamera);
-    renderer.setRenderTarget(prevTarget);
-    renderer.autoClear = prevAutoClear;
-
-    for(let i = 0; i < hidden.length; i++){
-      hidden[i].visible = true;
-    }
   }
 
   render(){
@@ -1313,9 +1296,11 @@ export class UI3DRenderer extends EventListenerModel {
         this.frustumMat4.multiplyMatrices( this.currentCamera.projectionMatrix, this.currentCamera.matrixWorldInverse )
         this.viewportFrustum.setFromProjectionMatrix(this.frustumMat4);
         this.lightManager.update(delta, this.currentCamera);
-        const focus = this.currentCamera.position;
-        this.shadowBlobManager.update(focus);
-        this.staticMeshShadowManager.update(this.currentCamera.position, true);
+        const focus = this.lightManager.focusPosition;
+        this.odysseyShadowManager.update(this.currentCamera, focus);
+        if(KotOR.GameState.areShadowsEnabled?.() && this.odysseyShadowManager.activeLightCount){
+          this.odysseyShadowManager.markShadowMapForRender(this.renderer!);
+        }
         this.updateShadowDebugOverlay();
         this.selectable.traverse((obj: any) => {
           if(obj?.materials && typeof obj.update === 'function'){
@@ -1353,12 +1338,12 @@ export class UI3DRenderer extends EventListenerModel {
         this.copyToScreenQuad!.render(this.renderer);
       }else{
         this.renderer.setRenderTarget(null);
-        if(cam && KotOR.GameState.areShadowsEnabled?.()){
-          this.renderer.clear(true, true, true);
-          this.shadowBlobManager.renderStencilMasks(this.renderer, this.scene, cam, false);
-          this.renderer.clear(true, true, false);
-        }
         this.renderer.render( this.scene, cam );
+      }
+
+      if(KotOR.GameState.areShadowsEnabled?.() && this.odysseyShadowManager.activeLightCount){
+        this.odysseyShadowManager.noteShadowMapRendered();
+        KotOR.OdysseyLightingBinder.refreshSceneShadowMapUniforms(this.scene);
       }
 
       // Render camera preview if enabled
@@ -1422,7 +1407,7 @@ export class UI3DRenderer extends EventListenerModel {
     }
   }
 
-  /** Update Forge shadow debug overlays (hull edges + extruded volume wireframe). */
+  /** Update Forge shadow debug overlays (primary light marker + shadow frustum). */
   updateShadowDebugOverlay(){
     this.shadowDebugGroup.visible = this.shadowDebugEnabled
       && !!KotOR.GameState.areShadowsEnabled?.();
@@ -1430,37 +1415,41 @@ export class UI3DRenderer extends EventListenerModel {
       return;
     }
 
-    const hullPositions = this._shadowDebugHullScratch;
-    const hullSegments = this.staticMeshShadowManager.buildDebugHullLineSegments(hullPositions);
-    if(hullSegments > 0){
-      if(!this.shadowHullDebugLines){
-        const geom = new THREE.BufferGeometry();
-        const mat = new THREE.LineBasicMaterial({ color: 0x00ff66, depthTest: false });
-        this.shadowHullDebugLines = new THREE.LineSegments(geom, mat);
-        this.shadowDebugGroup.add(this.shadowHullDebugLines);
-      }
-      const geom = this.shadowHullDebugLines.geometry as THREE.BufferGeometry;
-      geom.setAttribute('position', new THREE.Float32BufferAttribute(hullPositions, 3));
-      geom.computeBoundingSphere();
-      this.shadowHullDebugLines.visible = true;
-    }else if(this.shadowHullDebugLines){
-      this.shadowHullDebugLines.visible = false;
+    const manager = this.odysseyShadowManager;
+    const lightWorld = manager.lightWorld;
+    const hasLight = manager.activeLightCount > 0;
+
+    while(this.shadowLightDebugMarkers.length < 1){
+      const marker = new THREE.Mesh(
+        new THREE.SphereGeometry(0.15, 8, 8),
+        new THREE.MeshBasicMaterial({ color: 0xff6600, depthTest: false })
+      );
+      this.shadowLightDebugMarkers.push(marker);
+      this.shadowDebugGroup.add(marker);
     }
 
-    const volumeMesh = this.shadowBlobManager.getVolumeDebugMesh?.();
-    const volumeGeom = volumeMesh?.geometry as THREE.BufferGeometry | undefined;
-    if(volumeGeom?.getAttribute('position')){
-      if(!this.shadowVolumeDebugLines){
-        const mat = new THREE.LineBasicMaterial({ color: 0xffcc00, depthTest: false });
-        this.shadowVolumeDebugLines = new THREE.LineSegments(new THREE.WireframeGeometry(volumeGeom), mat);
-        this.shadowDebugGroup.add(this.shadowVolumeDebugLines);
-      }else{
-        this.shadowVolumeDebugLines.geometry.dispose();
-        this.shadowVolumeDebugLines.geometry = new THREE.WireframeGeometry(volumeGeom);
+    const marker = this.shadowLightDebugMarkers[0];
+    if(hasLight){
+      marker.position.copy(lightWorld);
+      marker.visible = true;
+    }else{
+      marker.visible = false;
+    }
+
+    const shadowCam = manager.getShadowCamera() ?? undefined;
+    if(shadowCam){
+      if(!this.shadowFrustumHelper){
+        this.shadowFrustumHelper = new THREE.CameraHelper(shadowCam);
+        this.shadowDebugGroup.add(this.shadowFrustumHelper);
+      }else if(this.shadowFrustumHelper.camera !== shadowCam){
+        this.shadowFrustumHelper.dispose();
+        this.shadowFrustumHelper = new THREE.CameraHelper(shadowCam);
+        this.shadowDebugGroup.add(this.shadowFrustumHelper);
       }
-      this.shadowVolumeDebugLines.visible = true;
-    }else if(this.shadowVolumeDebugLines){
-      this.shadowVolumeDebugLines.visible = false;
+      this.shadowFrustumHelper.visible = hasLight;
+      this.shadowFrustumHelper.update();
+    }else if(this.shadowFrustumHelper){
+      this.shadowFrustumHelper.visible = false;
     }
   }
 

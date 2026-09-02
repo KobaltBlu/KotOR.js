@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import type { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
 import type { LightManager, IOdysseyLightUniformSlot } from "@/managers/LightManager";
-import type { StaticMeshShadowManager } from "@/managers/StaticMeshShadowManager";
+import type { OdysseyShadowManager } from "@/managers/OdysseyShadowManager";
 import { GameState } from "@/GameState";
 import {
   MAX_ODYSSEY_LIGHTS,
@@ -9,11 +9,9 @@ import {
   createEmptyOdysseyLightColorArray,
 } from "@/shaders/chunks/OdysseyLighting";
 import {
-  MAX_ODYSSEY_SHADOW_HULLS,
-  MAX_ODYSSEY_SHADOW_HULL_VERTS,
   createOdysseyShadowUniforms,
-  type IReceiverShadowState,
 } from "@/shaders/chunks/OdysseyShadow";
+import { ODYSSEY_SHADOW_MAP_DEPTH_BIAS } from "@/utility/odysseyShadowMap";
 import { envMapRotationFromCamera } from "@/utility/envMapRotation";
 
 /**
@@ -244,7 +242,7 @@ export class OdysseyLightingBinder {
     if(!material.uniforms){ return; }
 
     this.writeEnvMapRotation(material, camera);
-    this.bindShadowUniforms(material);
+    this.bindScreenSpaceShadowUniforms(material, undefined, camera);
 
     const defines = material.defines || {};
     const usesLightmap = Object.prototype.hasOwnProperty.call(defines, 'USE_LIGHTMAP');
@@ -390,13 +388,13 @@ export class OdysseyLightingBinder {
   }
 
   /**
-   * Bind ProjectDynamicShadow hull uniforms — independent of IGNORE_LIGHTING /
+   * Bind primary shadow-map uniforms — independent of IGNORE_LIGHTING /
    * light-array skip path so lightmapped static receivers still darken.
    */
-  static bindShadowUniforms(
+  static bindShadowMapUniforms(
     material: THREE.ShaderMaterial,
-    shadowManager?: StaticMeshShadowManager,
-    receiverState?: IReceiverShadowState
+    shadowManager?: OdysseyShadowManager,
+    _camera?: THREE.Camera
   ){
     if(!material.uniforms){ return; }
     const defines = material.defines || {};
@@ -404,115 +402,122 @@ export class OdysseyLightingBinder {
       return;
     }
 
-    const manager = shadowManager ?? GameState.staticMeshShadowManager;
-    const epoch = receiverState?.frameEpoch ?? manager?.frameEpoch ?? 0;
-    const recvUuid = receiverState
-      ? (material.userData.odysseyShadowReceiverUuid as string | undefined)
-      : undefined;
-    const cacheKey = recvUuid ? `${recvUuid}:${epoch}` : epoch;
-    if(material.userData.odysseyShadowBoundEpoch === cacheKey &&
+    OdysseyLightingBinder.ensureShadowMapBeforeRenderHook(material);
+
+    const manager = shadowManager ?? GameState.odysseyShadowManager;
+    const epoch = manager?.frameEpoch ?? 0;
+    const shadowTexLive = manager?.getShadowMapTexture() ?? null;
+    const shadowsActive = (manager?.activeLightCount ?? 0) > 0;
+    const boundTex = material.uniforms.odysseyShadowMap?.value ?? null;
+    const needsTextureRefresh = shadowsActive && !!shadowTexLive && boundTex !== shadowTexLive;
+    if(!needsTextureRefresh &&
+      material.userData.odysseyShadowBoundEpoch === epoch &&
       material.userData.odysseyShadowGatingBound === GameState.shadowAlpha &&
       material.userData.odysseyBeamingBound === GameState.beamingProjectionAlpha){
       return;
     }
 
-    if(!material.uniforms.odysseyShadowAlpha){
-      const defaults = createOdysseyShadowUniforms();
-      Object.assign(material.uniforms, defaults);
-    }
-    if(!material.uniforms.odysseyShadowHullPlane){
-      material.uniforms.odysseyShadowHullPlane = {
-        value: Array.from({ length: MAX_ODYSSEY_SHADOW_HULLS }, () => new THREE.Vector4()),
-      };
-    }
-    if(!material.uniforms.odysseyShadowHullBasisU){
-      material.uniforms.odysseyShadowHullBasisU = {
-        value: Array.from({ length: MAX_ODYSSEY_SHADOW_HULLS }, () => new THREE.Vector4()),
-      };
-    }
-    if(!material.uniforms.odysseyShadowHullBasisV){
-      material.uniforms.odysseyShadowHullBasisV = {
-        value: Array.from({ length: MAX_ODYSSEY_SHADOW_HULLS }, () => new THREE.Vector4()),
-      };
+    if(!material.uniforms.odysseyShadowMap){
+      Object.assign(material.uniforms, createOdysseyShadowUniforms());
     }
 
-    material.uniforms.odysseyShadowAlpha.value = GameState.shadowAlpha;
     material.uniforms.odysseyBeamingProjectionAlpha.value = GameState.beamingProjectionAlpha;
 
-    const activeCount = receiverState?.activeHullCount ?? manager?.activeHullCount ?? 0;
-    const hullSlots = receiverState?.slots ?? manager?.hullSlots;
-    material.uniforms.numOdysseyShadowHulls.value = activeCount;
-
-    let lightPosArr = material.uniforms.odysseyShadowLightPos?.value as THREE.Vector4[];
-    let metaArr = material.uniforms.odysseyShadowHullMeta?.value as THREE.Vector4[];
-    let edgeArr = material.uniforms.odysseyShadowHullEdges?.value as THREE.Vector4[];
-
-    if(!Array.isArray(lightPosArr) || lightPosArr.length !== MAX_ODYSSEY_SHADOW_HULLS ||
-      !material.userData.odysseyShadowLightPosOwned){
-      lightPosArr = Array.from({ length: MAX_ODYSSEY_SHADOW_HULLS }, () => new THREE.Vector4());
-      material.uniforms.odysseyShadowLightPos = { value: lightPosArr };
-      material.userData.odysseyShadowLightPosOwned = true;
+    const activeCount = manager?.activeLightCount ?? 0;
+    material.uniforms.odysseyShadowMapActive.value = activeCount > 0 ? 1.0 : 0.0;
+    material.uniforms.odysseyShadowStrength.value = manager?.shadowStrength ?? 0;
+    material.uniforms.odysseyShadowInfluenceRadius.value = manager?.influenceRadius ?? 0;
+    if(material.uniforms.odysseyShadowConstantBias){
+      material.uniforms.odysseyShadowConstantBias.value = ODYSSEY_SHADOW_MAP_DEPTH_BIAS;
     }
-    if(!Array.isArray(metaArr) || metaArr.length !== MAX_ODYSSEY_SHADOW_HULLS ||
-      !material.userData.odysseyShadowHullMetaOwned){
-      metaArr = Array.from({ length: MAX_ODYSSEY_SHADOW_HULLS }, () => new THREE.Vector4());
-      material.uniforms.odysseyShadowHullMeta = { value: metaArr };
-      material.userData.odysseyShadowHullMetaOwned = true;
-    }
-    const edgeTotal = MAX_ODYSSEY_SHADOW_HULLS * MAX_ODYSSEY_SHADOW_HULL_VERTS;
-    if(!Array.isArray(edgeArr) || edgeArr.length !== edgeTotal ||
-      !material.userData.odysseyShadowHullEdgesOwned){
-      edgeArr = Array.from({ length: edgeTotal }, () => new THREE.Vector4());
-      material.uniforms.odysseyShadowHullEdges = { value: edgeArr };
-      material.userData.odysseyShadowHullEdgesOwned = true;
+    if(material.uniforms.odysseyShadowSlopeBias){
+      material.uniforms.odysseyShadowSlopeBias.value = 0.001;
     }
 
-    for(let i = 0; i < MAX_ODYSSEY_SHADOW_HULLS; i++){
-      const slot = hullSlots?.[i];
-      const lp = lightPosArr[i];
-      const meta = metaArr[i];
-      if(slot?.active){
-        lp.set(slot.lightX, slot.lightY, slot.lightZ, slot.strength);
-        // Shader: meta.y = casterNearDist, meta.z = vertCount, meta.w = influenceRSq
-        meta.set(0, slot.casterNearDist, slot.hullVertCount, slot.influenceRSq);
-        const planeArr = material.uniforms.odysseyShadowHullPlane?.value as THREE.Vector4[];
-        const basisUArr = material.uniforms.odysseyShadowHullBasisU?.value as THREE.Vector4[];
-        const basisVArr = material.uniforms.odysseyShadowHullBasisV?.value as THREE.Vector4[];
-        if(planeArr?.[i]){
-          planeArr[i].set(
-            slot.planeNormal.x,
-            slot.planeNormal.y,
-            slot.planeNormal.z,
-            slot.planeConstant
-          );
-        }
-        if(basisUArr?.[i]){
-          basisUArr[i].set(slot.planeTangentU.x, slot.planeTangentU.y, slot.planeTangentU.z, 0);
-        }
-        if(basisVArr?.[i]){
-          basisVArr[i].set(slot.planeTangentV.x, slot.planeTangentV.y, slot.planeTangentV.z, 0);
-        }
-        const base = i * MAX_ODYSSEY_SHADOW_HULL_VERTS;
-        const vertCount = slot.hullVertCount;
-        for(let v = 0; v < MAX_ODYSSEY_SHADOW_HULL_VERTS; v++){
-          if(v < vertCount){
-            const a = slot.hullVerts[v];
-            const b = slot.hullVerts[(v + 1) % vertCount];
-            edgeArr[base + v].set(a.x, a.y, b.x, b.y);
-          }else{
-            edgeArr[base + v].set(0, 0, 0, 0);
-          }
-        }
-      }else{
-        lp.set(0, 0, 0, 0);
-        meta.set(0, 0, 0, 0);
-      }
+    const lightWorld = material.uniforms.odysseyShadowLightWorld.value as THREE.Vector3;
+    if(manager?.lightWorld){
+      lightWorld.copy(manager.lightWorld);
+    }else{
+      lightWorld.set(0, 0, 0);
     }
 
-    material.userData.odysseyShadowBoundEpoch = cacheKey;
+    const shadowTex = manager?.getShadowMapTexture() ?? null;
+    material.uniforms.odysseyShadowMap.value = shadowTex;
+
+    const mapSize = material.uniforms.odysseyShadowMapSize.value as THREE.Vector2;
+    if(shadowTex?.image){
+      mapSize.set(shadowTex.image.width || 1, shadowTex.image.height || 1);
+    }else if(manager?.mapResolution){
+      mapSize.set(manager.mapResolution, manager.mapResolution);
+    }
+
+    const shadowMatrix = material.uniforms.odysseyShadowMatrix.value as THREE.Matrix4;
+    if(manager){
+      manager.getShadowMatrix(shadowMatrix);
+    }else{
+      shadowMatrix.identity();
+    }
+
+    material.userData.odysseyShadowBoundEpoch = epoch;
     material.userData.odysseyShadowGatingBound = GameState.shadowAlpha;
     material.userData.odysseyBeamingBound = GameState.beamingProjectionAlpha;
     material.uniformsNeedUpdate = true;
+  }
+
+  /** Rebind live shadow-map texture/matrix right before each shadow receiver draws. */
+  static ensureShadowMapBeforeRenderHook(material: THREE.ShaderMaterial){
+    if(material.userData.odysseyShadowBeforeRenderHook){ return; }
+    material.userData.odysseyShadowBeforeRenderHook = true;
+    const previous = material.onBeforeRender;
+    material.onBeforeRender = function onOdysseyShadowBeforeRender(renderer, scene, camera){
+      if(typeof previous === 'function'){
+        previous.call(this, renderer, scene, camera);
+      }
+      // Shadow map texture/matrix are finalized during this frame's shadow pass.
+      delete (this as THREE.ShaderMaterial).userData.odysseyShadowBoundEpoch;
+      OdysseyLightingBinder.bindShadowMapUniforms(
+        this as THREE.ShaderMaterial,
+        GameState.odysseyShadowManager,
+        camera
+      );
+    };
+  }
+
+  /** Force shadow-map uniform refresh for every receiver under `root`. */
+  static refreshSceneShadowMapUniforms(root: THREE.Object3D){
+    root.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if(!mesh.isMesh && !(mesh as THREE.SkinnedMesh).isSkinnedMesh){ return; }
+      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      for(let i = 0; i < mats.length; i++){
+        const material = mats[i];
+        if(!(material instanceof THREE.ShaderMaterial)){ continue; }
+        if(!Object.prototype.hasOwnProperty.call(material.defines || {}, 'USE_ODYSSEY_SHADOW')){
+          continue;
+        }
+        this.ensureShadowMapBeforeRenderHook(material);
+        delete material.userData.odysseyShadowBoundEpoch;
+        this.bindShadowMapUniforms(material, GameState.odysseyShadowManager, GameState.currentCamera ?? undefined);
+      }
+    });
+  }
+
+  /** @deprecated Use bindShadowMapUniforms */
+  static bindScreenSpaceShadowUniforms(
+    material: THREE.ShaderMaterial,
+    shadowManager?: OdysseyShadowManager,
+    camera?: THREE.Camera
+  ){
+    this.bindShadowMapUniforms(material, shadowManager, camera);
+  }
+
+  /** @deprecated Use bindShadowMapUniforms */
+  static bindShadowUniforms(
+    material: THREE.ShaderMaterial,
+    shadowManager?: OdysseyShadowManager,
+    camera?: THREE.Camera
+  ){
+    this.bindShadowMapUniforms(material, shadowManager, camera);
   }
 
   /** Bind unique ShaderMaterials from a list (heads may already be in model.materials). */
@@ -577,7 +582,7 @@ export class OdysseyLightingBinder {
       if(seen.has(material)){ return; }
       seen.add(material);
       if(Object.prototype.hasOwnProperty.call(material.defines || {}, 'USE_ODYSSEY_SHADOW')){
-        this.bindShadowUniforms(material);
+        this.bindShadowMapUniforms(material, GameState.odysseyShadowManager, GameState.currentCamera ?? undefined);
       }
     };
     this.bindMaterialsUnique(model.materials, bindShadow, seen);
@@ -709,6 +714,7 @@ export class OdysseyLightingBinder {
         )
       );
       if(model.userData.odysseyObjectBindFp === objectFp){
+        this.bindModelShadowUniforms(model);
         continue;
       }
       // RenderOnlyGobs → GetNearestLights(..., 2.0, 0); reuse last nearest scratch

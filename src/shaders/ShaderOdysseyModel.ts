@@ -9,8 +9,6 @@ import {
 } from "@/shaders/chunks/OdysseyLighting";
 import {
   ODYSSEY_SHADOW_PARS_FRAGMENT,
-  ODYSSEY_SHADOW_WORLD_PARS,
-  ODYSSEY_SHADOW_WORLD_VERTEX,
   createOdysseyShadowUniforms,
 } from "@/shaders/chunks/OdysseyShadow";
 
@@ -71,12 +69,14 @@ export class ShaderOdysseyModel extends Shader {
 
     varying vec3 vViewPosition;
 
-    ${ODYSSEY_LIGHTING_PARS_FRAGMENT}
-
-    ${ODYSSEY_SHADOW_WORLD_PARS}
     #ifdef USE_ODYSSEY_SHADOW
-      ${ODYSSEY_SHADOW_PARS_FRAGMENT}
+      varying vec3 vWorldShadowPosition;
+      #ifndef FLAT_SHADED
+        varying vec3 vWorldShadowNormal;
+      #endif
     #endif
+
+    ${ODYSSEY_LIGHTING_PARS_FRAGMENT}
 
     #ifdef WATER
       #ifdef USE_BUMPMAP
@@ -108,6 +108,9 @@ export class ShaderOdysseyModel extends Shader {
     #include <normalmap_pars_fragment>
     #include <specularmap_pars_fragment>
     #include <logdepthbuf_pars_fragment>
+    #ifdef USE_ODYSSEY_SHADOW
+      ${ODYSSEY_SHADOW_PARS_FRAGMENT}
+    #endif
     #include <clipping_planes_pars_fragment>
 
     void main() {
@@ -205,7 +208,7 @@ export class ShaderOdysseyModel extends Shader {
         #ifdef SELFILLUMCOLOR
           outgoingLight += selfIllumColor * albedo;
         #endif
-      #endif
+      #endif 
 
       #ifdef IGNORE_LIGHTING
         // Unlit meshes: albedo (+ self-illum) only.
@@ -216,10 +219,6 @@ export class ShaderOdysseyModel extends Shader {
             outgoingLight *= max(vec3(0.25), selfIllumColor);
           #endif
         #endif
-      #endif
-
-      #ifdef USE_ODYSSEY_SHADOW
-        outgoingLight *= odysseyComputeShadowFactor( vOdysseyShadowLocalPos );
       #endif
 
       // Post-lighting env combine. Default ADD uses pre-opacity tex alpha so opacity
@@ -239,6 +238,14 @@ export class ShaderOdysseyModel extends Shader {
       #ifdef USE_DIRT
         vec4 dirtSample = texture2D( dirtMap, vDirtUv );
         outgoingLight = mix( outgoingLight, dirtSample.rgb, dirtSample.a );
+      #endif
+
+      #ifdef USE_ODYSSEY_SHADOW
+        vec3 shadowNormal = normal;
+        #ifndef FLAT_SHADED
+          shadowNormal = normalize( vWorldShadowNormal );
+        #endif
+        outgoingLight *= odysseyComputeShadowMapFactor( vWorldShadowPosition, shadowNormal );
       #endif
 
       #ifdef SABER
@@ -298,6 +305,12 @@ export class ShaderOdysseyModel extends Shader {
     #ifndef FLAT_SHADED
       varying vec3 vNormal;
     #endif
+    #ifdef USE_ODYSSEY_SHADOW
+      varying vec3 vWorldShadowPosition;
+      #ifndef FLAT_SHADED
+        varying vec3 vWorldShadowNormal;
+      #endif
+    #endif
     #include <common>
     #ifdef AURORA
       uniform float time;
@@ -346,7 +359,6 @@ export class ShaderOdysseyModel extends Shader {
     #include <uv2_pars_vertex>
     #include <displacementmap_pars_vertex>
     #include <envmap_pars_vertex>
-    ${ODYSSEY_SHADOW_WORLD_PARS}
     #include <color_pars_vertex>
     #include <fog_pars_vertex>
     #include <morphtarget_pars_vertex>
@@ -396,7 +408,12 @@ export class ShaderOdysseyModel extends Shader {
         transformed += objectNormal * 0.02;
       #endif
 
-      ${ODYSSEY_SHADOW_WORLD_VERTEX}
+      #ifdef USE_ODYSSEY_SHADOW
+        vWorldShadowPosition = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;
+        #ifndef FLAT_SHADED
+          vWorldShadowNormal = normalize( mat3( modelMatrix ) * objectNormal );
+        #endif
+      #endif
 
       #include <project_vertex>
       #include <logdepthbuf_vertex>

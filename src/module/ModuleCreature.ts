@@ -6301,19 +6301,41 @@ export class ModuleCreature extends ModuleObject {
   private detachEquippedModelsFromBody(){
     try{
       const rh = this.equipment.RIGHTHAND?.model;
+      if(rh instanceof OdysseyModel3D){
+        OdysseyModel3D.restoreAttachedEquipmentShadowCasting(rh);
+      }
       if(rh?.parent) rh.parent.remove(rh);
     }catch(e){}
     try{
       const lh = this.equipment.LEFTHAND?.model;
+      if(lh instanceof OdysseyModel3D){
+        OdysseyModel3D.restoreAttachedEquipmentShadowCasting(lh);
+      }
       if(lh?.parent) lh.parent.remove(lh);
     }catch(e){}
     try{
       const helm = this.equipment.HEAD?.model;
+      if(helm instanceof OdysseyModel3D){
+        OdysseyModel3D.restoreAttachedEquipmentShadowCasting(helm);
+      }
       if(helm?.parent) helm.parent.remove(helm);
     }catch(e){}
     try{
       if(this.head?.parent) this.head.parent.remove(this.head);
     }catch(e){}
+  }
+
+  /** Enable rigid weapon/helm shadow casters on the creature rig. */
+  private syncCreatureShadowCasters(){
+    if(!this.shadowsEnabled){ return; }
+    const mark = (model?: OdysseyModel3D) => {
+      if(model instanceof OdysseyModel3D){
+        OdysseyModel3D.markAttachedEquipmentShadowCasting(model, true);
+      }
+    };
+    mark(this.equipment.RIGHTHAND?.model as OdysseyModel3D);
+    mark(this.equipment.LEFTHAND?.model as OdysseyModel3D);
+    mark(this.equipment.HEAD?.model as OdysseyModel3D);
   }
 
   async loadBody(generation?: number) {
@@ -6401,6 +6423,8 @@ export class ModuleCreature extends ModuleObject {
         console.error('ModuleCreature.LoadBody', e);
       }
 
+      this.syncCreatureShadowCasters();
+
       this.model.disableMatrixUpdate();
       const sizeCat = appearance.sizecategory ?? 3;
       void this.applyShadowBlob(ModuleObject.shadowBlobResRefFromSizeCategory(sizeCat));
@@ -6468,6 +6492,7 @@ export class ModuleCreature extends ModuleObject {
       context: this.context,
       castShadow: true,
       receiveShadow: true,
+      shadowsEnabled: this.shadowsEnabled,
       isHologram: this.isHologram,
       textureVar: headTexture,
     });
@@ -6502,6 +6527,8 @@ export class ModuleCreature extends ModuleObject {
       }catch(e){
         console.error('ModuleCreature', e);
       }
+
+      this.syncCreatureShadowCasters();
       
       this.head.disableMatrixUpdate();
       return this.head;

@@ -250,7 +250,6 @@ export class LightManager {
     }
     if(Number.isFinite(sh) && sh > 0){
       LightManager.MAXSHADOWLIGHTS = Math.max(1, Math.floor(sh));
-      this.context?.shadowBlobManager?.rebuildBlobs?.();
     }
     this.softShadowsEnabled = Number(ini?.getProperty?.('Graphics Options.Soft Shadows')) === 1;
     const shadowsIni = ini?.getProperty?.('Graphics Options.Shadows');

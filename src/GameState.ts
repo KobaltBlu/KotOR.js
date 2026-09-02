@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import {
   AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, LevelUpManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager,
-  FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, ShadowBlobManager, ShadowCasterRegistry, StaticMeshShadowManager, WindManager, MenuManager, ModuleObjectManager, PartyManager,
+  FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, OdysseyShadowManager, WindManager, MenuManager, ModuleObjectManager, PartyManager,
   ResolutionManager, ShaderManager, TwoDAManager, FactionManager,
   VideoEffectManager, VideoManager, PazaakManager, UINotificationManager, GuiTimingBarManager, GameOverManager, CutsceneManager, LegalScreenManager, EventManager, TextureAnimationManager, TutorialManager
 } from "@/managers";
@@ -37,7 +37,7 @@ import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
 import { EngineState, EngineMode, GameEngineType, GameEngineEnv, EngineDebugType, RenderLayer } from "@/enums/engine";
 import { TextureType } from "@/enums/loaders/TextureType";
 
-import { EngineContext } from "@/engine/EngineContext";
+import { runOdysseyDepthPrepass } from "@/utility/odysseyDepthPrepass";
 
 import { ConfigClient } from "@/utility/ConfigClient";
 import { FollowerCamera } from "@/engine/FollowerCamera";
@@ -278,11 +278,10 @@ export class GameState implements EngineContext {
   static renderer: THREE.WebGLRenderer;
   static depthTarget: THREE.WebGLRenderTarget;
   /**
-   * Set by DEPTH_TEXTURE emitters during tick. When true, Render runs a
-   * scene depth prepass into depthTarget (emitters hidden) for soft particles.
+   * Set by DEPTH_TEXTURE emitters during tick.
+   * When true, Render runs a scene depth prepass into depthTarget.
    */
   static softDepthNeeded: boolean = false;
-  private static _depthPrepassHidden: THREE.Object3D[] = [];
   /**
    * Set by force-distortion emitters (TILE / Gob.distortion) during tick when
    * the area has rooms. Enables ForceDistortionPass for that frame
@@ -295,9 +294,7 @@ export class GameState implements EngineContext {
   static stats: Stats;
 
   static lightManager: LightManager;
-  static shadowBlobManager: ShadowBlobManager;
-  static shadowCasterRegistry: ShadowCasterRegistry;
-  static staticMeshShadowManager: StaticMeshShadowManager;
+  static odysseyShadowManager: OdysseyShadowManager;
   static windManager: WindManager;
 
   static visible: boolean;
@@ -735,9 +732,7 @@ export class GameState implements EngineContext {
 
     GameState.lightManager = new GameState.LightManager();
     OdysseyLightingBinder.setActiveManager(GameState.lightManager);
-    GameState.shadowCasterRegistry = new ShadowCasterRegistry();
-    GameState.shadowBlobManager = new ShadowBlobManager();
-    GameState.staticMeshShadowManager = new StaticMeshShadowManager();
+    GameState.odysseyShadowManager = new OdysseyShadowManager();
     GameState.windManager = new GameState.WindManager();
     WindManager.setInstance(GameState.windManager);
     GameState.processEventListener('init');
@@ -786,6 +781,9 @@ export class GameState implements EngineContext {
 
     
     GameState.renderer.autoClear = false;
+    GameState.renderer.shadowMap.enabled = true;
+    GameState.renderer.shadowMap.autoUpdate = false;
+    GameState.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     GameState.renderer.setSize( GameState.ResolutionManager.getViewportWidth(), GameState.ResolutionManager.getViewportHeight() );
     GameState.renderer.setClearColor(0x000000);
 
@@ -1109,8 +1107,8 @@ export class GameState implements EngineContext {
        * Initialize the LightManager
        */
       GameState.lightManager.init(GameState);
-      GameState.shadowBlobManager.init(GameState.lightManager, GameState.scene);
-      GameState.staticMeshShadowManager.init(GameState.lightManager, GameState.shadowCasterRegistry);
+      GameState.odysseyShadowManager.init(GameState.lightManager, GameState.scene);
+      GameState.odysseyShadowManager.useQualityPreset(true);
       GameState.windManager.init(GameState);
       GameState.lightManager.setLightHelpersVisible(ConfigClient.get('GameState.debug.light_helpers') ? true : false);
 
@@ -1627,7 +1625,6 @@ export class GameState implements EngineContext {
     audioEngine.reset();
 
     GameState.lightManager.clearLights();
-    GameState.shadowCasterRegistry?.clear();
     GameState.windManager.clear();
 
     GameState.CursorManager.selected = undefined;
@@ -1774,6 +1771,14 @@ export class GameState implements EngineContext {
     GameState.currentCameraPosition.applyMatrix4(GameState.currentCamera.matrixWorld);
   }
 
+  static updateShadowSystems(_delta: number, focus?: THREE.Vector3){
+    if(!GameState.areShadowsEnabled()){ return; }
+    GameState.odysseyShadowManager?.update(
+      GameState.currentCamera ?? undefined,
+      focus ?? GameState.lightManager?.focusPosition
+    );
+  }
+
   static UpdateIngame(delta: number = 0){
     // Retail MainLoop: UpdateRoom(pos) before DoPassiveSelection
     if(GameState.module?.readyToProcessEvents && GameState.module.area){
@@ -1829,11 +1834,7 @@ export class GameState implements EngineContext {
     GameState.FadeOverlayManager.Update(delta);
     GameState.updateViewportFrustum();
     GameState.lightManager.update(delta, GameState.getCurrentPlayer());
-    GameState.shadowBlobManager.update(GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition);
-    GameState.staticMeshShadowManager.update(
-      GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition,
-      true
-    );
+    GameState.updateShadowSystems(delta, GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition);
     GameState.windManager.update(delta);
     GameState.module.area.updateRoomAnimatedLights(delta);
     GameState.module.area.updateRoomWindUniforms();
@@ -1875,11 +1876,7 @@ export class GameState implements EngineContext {
     GameState.FadeOverlayManager.Update(delta);
     GameState.updateViewportFrustum();
     GameState.lightManager.update(delta, GameState.currentCamera);
-    GameState.shadowBlobManager.update(GameState.currentCamera?.position ?? GameState.currentCameraPosition);
-    GameState.staticMeshShadowManager.update(
-      GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition,
-      true
-    );
+    GameState.updateShadowSystems(delta, GameState.currentCamera?.position ?? GameState.currentCameraPosition);
     GameState.windManager.update(delta);
     GameState.module.area.updateRoomAnimatedLights(delta);
     GameState.module.area.updateRoomWindUniforms();
@@ -1917,11 +1914,7 @@ export class GameState implements EngineContext {
     GameState.FadeOverlayManager.Update(delta);
     GameState.updateViewportFrustum();
     GameState.lightManager.update(delta, GameState.getCurrentPlayer());
-    GameState.shadowBlobManager.update(GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition);
-    GameState.staticMeshShadowManager.update(
-      GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition,
-      true
-    );
+    GameState.updateShadowSystems(delta, GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition);
     GameState.windManager.update(delta);
     GameState.module.area.updateRoomAnimatedLights(delta);
     GameState.module.area.updateRoomWindUniforms();
@@ -1974,11 +1967,7 @@ export class GameState implements EngineContext {
     GameState.FadeOverlayManager.Update(delta);
     GameState.updateViewportFrustum();
     GameState.lightManager.update(delta, GameState.getCurrentPlayer());
-    GameState.shadowBlobManager.update(GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition);
-    GameState.staticMeshShadowManager.update(
-      GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition,
-      true
-    );
+    GameState.updateShadowSystems(delta, GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition);
     GameState.windManager.update(delta);
     if(GameState.module?.area){
       GameState.module.area.updateRoomAnimatedLights(delta);
@@ -1999,6 +1988,18 @@ export class GameState implements EngineContext {
     GameState.bokehPass.camera = GameState.currentCamera;
     if(GameState.renderPassMGHud){
       GameState.renderPassMGHud.camera = GameState.currentCamera;
+    }
+
+    // Select primary shadow light; map renders during the next renderer.render().
+    if(GameState.areShadowsEnabled()){
+      const focus = GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition;
+      const shadowTarget = GameState.getCurrentPlayer() ?? GameState.currentCamera;
+      if(GameState.lightManager && shadowTarget){
+        GameState.lightManager.update(0, shadowTarget);
+      }
+      GameState.odysseyShadowManager?.update(GameState.currentCamera, focus);
+      GameState.odysseyShadowManager?.markShadowMapForRender(GameState.renderer);
+      OdysseyLightingBinder.refreshSceneShadowMapUniforms(GameState.scene);
     }
 
     GameState.renderDepthPrepass();
@@ -2039,19 +2040,7 @@ export class GameState implements EngineContext {
       }
     }
 
-    // Orchestrate stencil-preserving clear for shadow disks:
-    // 1) clear color/depth/stencil into the composer *read* buffer
-    //    (r149 RenderPass renders into readBuffer — see three RenderPass.js)
-    // 2) write caster masks (colorWrite disabled)
-    // 3) clear color/depth only, preserving stencil
-    // 4) render composer with RenderPass.clear = false
-    const renderer = GameState.renderer;
     const composer = GameState.composer;
-    const prevTarget = renderer.getRenderTarget();
-    const prevRenderPassClear = GameState.renderPass.clear;
-    const prevRenderPassClearDepth = GameState.renderPass.clearDepth;
-    const stencilTarget = composer?.readBuffer;
-
     const cam = GameState.currentCamera;
     const prevCamLayers = cam?.layers?.mask;
     const miniGame = GameState.module?.area?.miniGame;
@@ -2077,26 +2066,15 @@ export class GameState implements EngineContext {
       cam.layers.disable(RenderLayer.MG_CAMERA_HUD);
     }
 
-    if(GameState.shadowBlobManager && GameState.currentCamera && stencilTarget && GameState.areShadowsEnabled()){
-      renderer.setRenderTarget(stencilTarget);
-      renderer.clear(true, true, true);
-      GameState.shadowBlobManager.renderStencilMasks(
-        renderer,
-        GameState.scene,
-        GameState.currentCamera,
-        false
-      );
-      renderer.clear(true, true, false);
-      GameState.renderPass.clear = false;
-      GameState.renderPass.clearDepth = false;
-    }
     composer.render(delta);
     if(cam && prevCamLayers !== undefined){
       cam.layers.mask = prevCamLayers;
     }
-    GameState.renderPass.clear = prevRenderPassClear;
-    GameState.renderPass.clearDepth = prevRenderPassClearDepth;
-    renderer.setRenderTarget(prevTarget);
+
+    if(GameState.areShadowsEnabled()){
+      GameState.odysseyShadowManager?.noteShadowMapRendered();
+      OdysseyLightingBinder.refreshSceneShadowMapUniforms(GameState.scene);
+    }
   }
 
   /**
@@ -2183,35 +2161,18 @@ export class GameState implements EngineContext {
   }
 
   /**
-   * Fill depthTarget.depthTexture with scene depth (no emitters) for soft
-   * particle DEPTH_TEXTURE sampling. Skipped unless an emitter requested it.
+   * Fill depthTarget.depthTexture with scene depth (no emitters) for soft particles.
    */
   static renderDepthPrepass(): void {
-    if(!GameState.depthTarget || !GameState.softDepthNeeded) return;
+    if(!GameState.softDepthNeeded || !GameState.depthTarget || !GameState.renderer || !GameState.currentCamera) return;
     GameState.softDepthNeeded = false;
 
-    const hidden = GameState._depthPrepassHidden;
-    hidden.length = 0;
-    GameState.scene.traverse((obj) => {
-      if((obj as any).type === 'OdysseyEmitter' && obj.visible){
-        obj.visible = false;
-        hidden.push(obj);
-      }
+    runOdysseyDepthPrepass({
+      scene: GameState.scene,
+      renderer: GameState.renderer,
+      camera: GameState.currentCamera,
+      depthTarget: GameState.depthTarget,
     });
-
-    const renderer = GameState.renderer;
-    const prevTarget = renderer.getRenderTarget();
-    const prevAutoClear = renderer.autoClear;
-    renderer.setRenderTarget(GameState.depthTarget);
-    renderer.autoClear = false;
-    renderer.clear(true, true, true);
-    renderer.render(GameState.scene, GameState.currentCamera);
-    renderer.setRenderTarget(prevTarget);
-    renderer.autoClear = prevAutoClear;
-
-    for(let i = 0; i < hidden.length; i++){
-      hidden[i].visible = true;
-    }
   }
 
   /** Keep DepthTexture.image size in sync after WebGLRenderTarget.setSize. */

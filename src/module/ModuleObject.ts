@@ -2697,12 +2697,10 @@ export class ModuleObject {
     return ModuleObject._shadowBlobUp;
   }
 
-  /** Retail TurnOffShadows — disable projection, stencil volumes, and foot blob. */
+  /** Retail TurnOffShadows — disable projection and foot blob. */
   setShadowsEnabled(enabled: boolean){
     this.shadowsEnabled = !!enabled;
     this.updateShadowBlobVisibility();
-    const ownerUuid = (this.context as { uuid?: string })?.uuid || String(this.id);
-    GameState.shadowCasterRegistry?.setOwnerShadowsEnabled(ownerUuid, this.shadowsEnabled);
   }
 
   private static _shadowBlobUp = new THREE.Vector3(0, 0, 1);

@@ -1,6 +1,6 @@
 /**
  * Three.js camera/object layer indices used by the game render pipeline.
- * Avoid ShadowBlobManager.STENCIL_LAYER (7).
+ * Avoid layer 7 (legacy stencil shadow pass).
  */
 export enum RenderLayer {
   /** Default world geometry (Three.js default). */
