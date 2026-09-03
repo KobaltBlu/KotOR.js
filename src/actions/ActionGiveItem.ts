@@ -82,6 +82,7 @@ export class ActionGiveItem extends Action {
       addAsItem,
       displayStatus: bDisplayStatus && isPartyCreature(oGiveTo),
       statusId: UPDATE_STATUS_ITEM_GIVEN,
+      from: this.owner,
     });
 
     return ok ? ActionStatus.COMPLETE : ActionStatus.ERROR;

@@ -1085,6 +1085,16 @@ export class CombatRound {
     if(combatAction.target){
       creature.combatData.lastAttackTarget = combatAction.target;
     }
+    // GetLastWeaponUsed / GetLastAttackType / GetLastAttackMode writers
+    creature.combatData.lastWeaponUsed =
+      creature.equipment?.RIGHTHAND ||
+      creature.equipment?.CLAW1 ||
+      undefined;
+    creature.combatData.lastAttackType = combatAction.feat?.id ?? combatAction.featId ?? 0;
+    if(creature.combatData.lastAttackType < 0){
+      creature.combatData.lastAttackType = 0;
+    }
+    creature.combatData.lastAttackMode = creature.combatMode | 0;
     const hasAssuredHit = creature.hasEffect(GameEffectType.EffectAssuredHit);
     this.currentAttack = 0;
     this.offHandTaken = false;

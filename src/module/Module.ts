@@ -27,6 +27,7 @@ import type { GameEvent } from "@/events/GameEvent";
 import { ModuleArea } from "@/module/ModuleArea";
 import { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
+import type { ModuleObject } from "@/module/ModuleObject";
 import { ModuleTimeManager } from "@/module/ModuleTimeManager";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
@@ -87,6 +88,13 @@ export class Module {
   transition: any;
   transWP: string;
   lastItemAcquired: any = undefined;
+  /** Previous possessor for OnItemAcquired (GetModuleItemAcquiredFrom). */
+  lastItemAcquiredFrom: ModuleObject = undefined;
+  /** OnItemLost context (GetModuleItemLost / GetModuleItemLostBy). */
+  lastItemLost: ModuleItem = undefined;
+  lastItemLostBy: ModuleCreature = undefined;
+  /** Last item equipped on a creature (GetLastItemEquipped). */
+  lastItemEquipped: ModuleItem = undefined;
   /** Pass AG — OnItemActivated context for GetItemActivated* */
   itemActivated: ModuleItem = undefined;
   itemActivator: ModuleCreature = undefined;
@@ -96,6 +104,10 @@ export class Module {
   lastPlayerDied: ModuleCreature = undefined;
   lastPlayerDying: ModuleCreature = undefined;
   lastRespawnButtonPresser: ModuleCreature = undefined;
+  /** Credit sequence (StartCreditSequence / IsCreditSequenceInProgress). */
+  creditSequenceInProgress: boolean = false;
+  /** ExportAllCharacters pending flag (retail SetExportAllCharactersPending). */
+  exportAllCharactersPending: boolean = false;
 
   /**
    * List of Areas in the module

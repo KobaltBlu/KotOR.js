@@ -541,6 +541,7 @@ export class ModuleDoor extends ModuleObject {
   lock(object: ModuleObject){
     if(this.locked){ return; }
     this.locked = true;
+    this.lastLockedBy = object;
     
     const onLock = this.scripts[ModuleObjectScript.DoorOnLock];
     if(onLock){
@@ -551,6 +552,7 @@ export class ModuleDoor extends ModuleObject {
   unlock(object: ModuleObject){
     if(!this.locked){ return; }
     this.locked = false;
+    this.lastUnlockedBy = object;
     
     const onUnlock = this.scripts[ModuleObjectScript.DoorOnUnlock];
     if(onUnlock){
@@ -656,6 +658,7 @@ export class ModuleDoor extends ModuleObject {
       object.lastDoorExited = this;
     }
 
+    this.lastObjectClosed = object;
     this.playObjectSound(ModulePlaceableObjectSound.CLOSED);
 
     this.setOpenState(ModuleDoorOpenState.CLOSED, true);

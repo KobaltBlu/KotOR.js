@@ -68,6 +68,7 @@ export class ActionTakeItem extends Action {
     const ok = acquireItem(this.owner, transfer, {
       addAsItem: true,
       displayStatus: false,
+      from: oTakeFrom,
     });
 
     if (ok && bDisplayStatus && sourceWasParty) {

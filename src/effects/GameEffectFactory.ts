@@ -39,6 +39,10 @@ import { EffectForcePushed } from "@/effects/EffectForcePushed";
 import { EffectForceResisted } from "@/effects/EffectForceResisted";
 import { EffectForceShield } from "@/effects/EffectForceShield";
 import { EffectForceSight } from "@/effects/EffectForceSight";
+import { EffectFury } from "@/effects/EffectFury";
+import { EffectFPRegenModifier } from "@/effects/EffectFPRegenModifier";
+import { EffectVPRegenModifier } from "@/effects/EffectVPRegenModifier";
+import { EffectFactionModifier } from "@/effects/EffectFactionModifier";
 import { EffectHaste } from "@/effects/EffectHaste";
 import { EffectHasteInternal } from "@/effects/EffectHasteInternal";
 import { EffectHeal } from "@/effects/EffectHeal";
@@ -195,6 +199,10 @@ export class GameEffectFactory {
   static EffectForceFizzle: typeof EffectForceFizzle = EffectForceFizzle;
   static EffectForceShield: typeof EffectForceShield = EffectForceShield;
   static EffectForceSight: typeof EffectForceSight = EffectForceSight;
+  static EffectFury: typeof EffectFury = EffectFury;
+  static EffectFPRegenModifier: typeof EffectFPRegenModifier = EffectFPRegenModifier;
+  static EffectVPRegenModifier: typeof EffectVPRegenModifier = EffectVPRegenModifier;
+  static EffectFactionModifier: typeof EffectFactionModifier = EffectFactionModifier;
   // static EffectPureGoodPowers: typeof EffectPureGoodPowers = EffectPureGoodPowers;
   // static EfffectPureEvilPowers: typeof EfffectPureEvilPowers = EfffectPureEvilPowers;
   
@@ -475,6 +483,18 @@ export class GameEffectFactory {
       break;
       case GameEffectType.EffectForceSight:
         effect = new EffectForceSight();
+      break;
+      case GameEffectType.EffectFury:
+        effect = new EffectFury();
+      break;
+      case GameEffectType.EffectFPRegenModifier:
+        effect = new EffectFPRegenModifier();
+      break;
+      case GameEffectType.EffectVPRegenModifier:
+        effect = new EffectVPRegenModifier();
+      break;
+      case GameEffectType.EffectFactionModifier:
+        effect = new EffectFactionModifier();
       break;
       case GameEffectType.EffectSetState: //EffectSetState
         effect = new EffectSetState();

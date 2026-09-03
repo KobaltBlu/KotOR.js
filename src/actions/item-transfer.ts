@@ -1,7 +1,9 @@
 import { BaseItemType } from "@/enums/combat/BaseItemType";
 import { UIIconTimerType } from "@/enums/engine/UIIconTimerType";
+import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
+import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
@@ -124,13 +126,20 @@ export function showGiveTakeStatus(updateStatusId: number): void {
 export function acquireItem(
   target: ModuleObject,
   item: ModuleItem,
-  options: { addAsItem?: boolean; displayStatus?: boolean; statusId?: number } = {},
+  options: {
+    addAsItem?: boolean;
+    displayStatus?: boolean;
+    statusId?: number;
+    /** Previous possessor (GetModuleItemAcquiredFrom). */
+    from?: ModuleObject;
+  } = {},
 ): boolean {
   if (!target || !item) {
     return false;
   }
 
   const addAsItem = options.addAsItem !== false;
+  const from = options.from;
 
   if (!addAsItem && isCreditsItem(item)) {
     const amount = item.getStackSize?.() ?? 1;
@@ -141,6 +150,7 @@ export function acquireItem(
         UIIconTimerType.CREDITS_RECEIVED,
       );
     }
+    notifyModuleItemAcquired(item, from);
     return true;
   }
 
@@ -164,7 +174,34 @@ export function acquireItem(
   if (options.displayStatus && isPartyCreature(target)) {
     showGiveTakeStatus(options.statusId ?? UPDATE_STATUS_ITEM_GIVEN);
   }
+  notifyModuleItemAcquired(item, from);
   return true;
+}
+
+function notifyModuleItemAcquired(item: ModuleItem, from?: ModuleObject){
+  const mod = GameState.module;
+  if(!mod) return;
+  mod.lastItemAcquired = item;
+  mod.lastItemAcquiredFrom = from;
+  const script = mod.scripts?.[ModuleObjectScript.ModuleOnPlayerAcquireItem];
+  if(script){
+    const instance = script.newInstance?.() ?? script;
+    instance.run(mod.area ?? mod, 0);
+  }
+}
+
+function notifyModuleItemLost(item: ModuleItem, owner: ModuleObject){
+  const mod = GameState.module;
+  if(!mod) return;
+  mod.lastItemLost = item;
+  mod.lastItemLostBy = BitWise.InstanceOfObject(owner, ModuleObjectType.ModuleCreature)
+    ? (owner as ModuleCreature)
+    : undefined;
+  const script = mod.scripts?.[ModuleObjectScript.ModuleOnUnAcquireItem];
+  if(script){
+    const instance = script.newInstance?.() ?? script;
+    instance.run(mod.area ?? mod, 0);
+  }
 }
 
 /**
@@ -185,6 +222,7 @@ export function releaseItemFromOwner(
     removeGoldFromOwner(owner, amount);
     const payload = item.clone?.() ?? item;
     payload.setStackSize?.(amount);
+    notifyModuleItemLost(payload, owner);
     return payload;
   }
 
@@ -198,15 +236,21 @@ export function releaseItemFromOwner(
     const split = nCount > 0 ? splitItemStack(item, nCount) : item;
     if (split === item) {
       GameState.InventoryManager.removeItem(item, count);
+      notifyModuleItemLost(item, owner);
       return item;
     }
+    notifyModuleItemLost(split, owner);
     return split;
   }
 
   if (nCount > 0 && nCount < (item.getStackSize?.() ?? 1)) {
-    return splitItemStack(item, nCount);
+    const split = splitItemStack(item, nCount);
+    notifyModuleItemLost(split, owner);
+    return split;
   }
 
   const removed = owner.removeItem(item, count);
-  return removed ?? item;
+  const lost = removed ?? item;
+  notifyModuleItemLost(lost, owner);
+  return lost;
 }

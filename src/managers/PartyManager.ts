@@ -124,6 +124,12 @@ export class PartyManager {
   static PlayerTemplate: GFFObject;
 
   /**
+   * GetFirstPC / GetNextPC iterator (retail server player list).
+   * Single-player: Player when set, else party[0] for minigame edges.
+   */
+  static pcIteratorIndex: number = -1;
+
+  /**
    * Actual Player Creature (This is the player create that was created by the player)
    * If Player is not Equal to ActualPlayer export pc.utc on Save
    */
@@ -210,6 +216,38 @@ export class PartyManager {
       case 5: return PartyManager.SwoopUpgrade6;
       default: return -1;
     }
+  }
+
+  /**
+   * Retail player list for GetFirstPC / GetNextPC.
+   * Prefer PartyManager.Player; fall back to party[0] when Player is unset
+   * (minigame loads can leave party empty but keep Player).
+   */
+  static getPCIteratorList(): ModuleCreature[] {
+    if(PartyManager.Player){
+      return [PartyManager.Player];
+    }
+    if(PartyManager.party[0]){
+      return [PartyManager.party[0]];
+    }
+    return [];
+  }
+
+  /** Reset PC iterator and return the first PC (or undefined). */
+  static getFirstPC(): ModuleCreature | undefined {
+    const list = PartyManager.getPCIteratorList();
+    PartyManager.pcIteratorIndex = 0;
+    return list[0];
+  }
+
+  /** Continue PC iterator after GetFirstPC / GetNextPC. */
+  static getNextPC(): ModuleCreature | undefined {
+    const list = PartyManager.getPCIteratorList();
+    PartyManager.pcIteratorIndex += 1;
+    if(PartyManager.pcIteratorIndex < 0 || PartyManager.pcIteratorIndex >= list.length){
+      return undefined;
+    }
+    return list[PartyManager.pcIteratorIndex];
   }
 
   static #eventListeners: Map<PartyManagerEvent, Function[]> = new Map();

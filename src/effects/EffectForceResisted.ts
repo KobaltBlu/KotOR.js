@@ -48,5 +48,14 @@ export class EffectForceResisted extends GameEffect {
       [name],
       FeebackMessageColor.INFO,
     );
+
+    // Retail GetWasForcePowerSuccessful — clear on caster (effect creator)
+    const creator = this.getCreator?.() || this.creator;
+    if(BitWise.InstanceOfObject(creator, ModuleObjectType.ModuleCreature)){
+      const cd = (creator as any).combatData;
+      if(cd){
+        cd.lastForcePowerSuccess = false;
+      }
+    }
   }
 }

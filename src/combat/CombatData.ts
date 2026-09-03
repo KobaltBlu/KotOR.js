@@ -36,6 +36,19 @@ export class CombatData {
   initiative: number;
   lastDamager: ModuleObject;
   lastAttacker: ModuleObject;
+  /** Last weapon used in an attack (GetLastWeaponUsed). */
+  lastWeaponUsed: ModuleObject;
+  /** Raw combat-feat id from last attack; GetLastAttackType maps Flurry/Rapid Shot. */
+  lastAttackType: number = 0;
+  /** Raw CombatMode from last attack; GetLastAttackMode maps to COMBAT_MODE_*. */
+  lastAttackMode: number = 0;
+  /** Last associate command issued (GetLastAssociateCommand). */
+  lastAssociateCommand: number = 0;
+  /**
+   * Last damage amounts by DAMAGE_TYPE bit index 0..14
+   * (GetDamageDealtByType / GetTotalDamageDealt).
+   */
+  lastDamageAmounts: number[] = new Array(15).fill(0);
 
   //combat
   combatActionTimer: number;

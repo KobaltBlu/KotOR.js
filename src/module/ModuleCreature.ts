@@ -228,6 +228,15 @@ export class ModuleCreature extends ModuleObject {
   retainedCorpseFadeRemaining: number = -1;
   /** Party stealth mode (retail stealth_mode). */
   stealthMode: boolean = false;
+  /** TSL SetFakeCombatState — combat anims without real combat. */
+  fakeCombatState: boolean = false;
+  /** Last object targeted by ActionMoveToObject / ForceMove (GetAttemptedMovementTarget). */
+  attemptedMovementTarget: ModuleObject = undefined;
+  /**
+   * Retail path_find_info ignore-object id (DoDoorAction IGNORE).
+   * Skipped as a door blocker in noNonWalkPolys / path cost checks.
+   */
+  pathFindIgnoreObjectId: number = 0;
   /**
    * Search / detect mode (retail detect_mode).
    * KotOR defaults ON (constructor + Load* force SetActivity(2,1)); no player UI toggle.
@@ -417,6 +426,8 @@ export class ModuleCreature extends ModuleObject {
   declare footstepEmitter: AudioEmitter;
   props: any;
   maxForcePoints: any;
+  /** TSL bonus force points pool (Set/Add/GetBonusForcePoints). */
+  bonusForcePoints: number = 0;
   bodyModel: any;
   bodyTexture: any;
   headModel: any;
@@ -1994,7 +2005,9 @@ export class ModuleCreature extends ModuleObject {
   moveToObject(target: ModuleObject, bRun = true, distance = 1.0, timeout = 0){
 
     if(target instanceof ModuleObject){
-        
+      // Retail attempted-move object id (GetAttemptedMovementTarget)
+      this.attemptedMovementTarget = target;
+
       // this.openSpot = undefined;
       let action = new GameState.ActionFactory.ActionMoveToPoint();
       action.setParameter(0, ActionParameterType.FLOAT, target.position.x);
@@ -5747,6 +5760,18 @@ export class ModuleCreature extends ModuleObject {
     return false;
   }
 
+  /**
+   * Retail CSWSCreatureStats::GetFeatRemainingUses.
+   * Missing uses-tracking entry → 100; no feat → 0.
+   * (Spend tracking not yet implemented — owned feats report 100.)
+   */
+  getFeatRemainingUses(id: number = 0): number {
+    if(!this.getHasFeat(id)){
+      return 0;
+    }
+    return 100;
+  }
+
   getHasSkill(value: number){
     return this.skills[value].rank > 0;
   }
@@ -6554,6 +6579,9 @@ export class ModuleCreature extends ModuleObject {
     // Skip appearance reload on unequip — ARMOR/HEAD re-equip awaits loadModel once.
     // An unawaited unequip reload races the awaited one and disposes hand weapons.
     this.unequipSlot(slot, false);
+    if(GameState.module){
+      GameState.module.lastItemEquipped = item;
+    }
     item.onEquip(this);
     await item.loadModel();
     switch(slot){

@@ -774,6 +774,12 @@ export class SpellCastInstance {
 
     // Retail EventSpellImpact (0x08) runs the impactscript after flight.
     // SpellCastInstance.castTime is that delay in-process — run it here.
+    if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+      const cd = (this.owner as ModuleCreature).combatData;
+      if(cd){
+        cd.lastForcePowerSuccess = true;
+      }
+    }
     const script = String(this.impactscript || '').trim();
     if(script && script !== '****'){
       const instance = GameState.NWScript.Load(script);

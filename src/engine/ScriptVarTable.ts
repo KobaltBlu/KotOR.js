@@ -31,6 +31,25 @@ export class ScriptVarTable {
     this.entries = [];
   }
 
+  /** Retail CSWSScriptVarTable::SetInt — named int local. */
+  setInt(name: string, value: number){
+    const key = String(name ?? '');
+    if(!key) return;
+    const existing = this.entries.find((e) => e.name === key && e.type === ScriptVarType.Int);
+    if(existing){
+      existing.value = value | 0;
+      return;
+    }
+    this.entries.push({ name: key, type: ScriptVarType.Int, value: value | 0 });
+  }
+
+  /** Retail CSWSScriptVarTable::GetInt — named int local (0 if missing). */
+  getInt(name: string): number {
+    const key = String(name ?? '');
+    const existing = this.entries.find((e) => e.name === key && e.type === ScriptVarType.Int);
+    return existing ? (Number(existing.value) | 0) : 0;
+  }
+
   loadFromListField(field: GFFField | undefined){
     this.clear();
     if(!field) return;

@@ -104,5 +104,13 @@ export enum GameEffectType {
   EfffectPureEvilPowers = 0x6D,
   /** K2 EffectForceSight — retail type 0x72. */
   EffectForceSight = 0x72,
+  /** K2 EffectFury — retail type 0x6F. */
+  EffectFury = 0x6F,
+  /** K2 EffectFPRegenModifier — retail type 0x70. */
+  EffectFPRegenModifier = 0x70,
+  /** K2 EffectVPRegenModifier — retail type 0x71. */
+  EffectVPRegenModifier = 0x71,
+  /** K2 EffectFactionModifier — retail type 0x73. */
+  EffectFactionModifier = 0x73,
   EffectInvalidEffect
 };

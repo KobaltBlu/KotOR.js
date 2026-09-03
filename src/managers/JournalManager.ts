@@ -10,6 +10,18 @@ import { UIIconTimerType } from "@/enums/engine/UIIconTimerType";
 import { GameState } from "@/GameState";
 import { ModuleCalendar } from "@/module/ModuleCalendar";
 
+/** Retail module world-notice entry (AddJournalWorldEntry*). */
+export interface JournalWorldEntry {
+  id: number;
+  text: string;
+  title: string;
+  date: number;
+  time: number;
+  /** Present when created via AddJournalWorldEntryStrref. */
+  strref?: number;
+  titleStrref?: number;
+}
+
 /**
  * JournalManager class.
  *
@@ -22,6 +34,8 @@ import { ModuleCalendar } from "@/module/ModuleCalendar";
 export class JournalManager {
   static Categories: JournalCategory[] = [];
   static Entries: JournalEntry[] = [];
+  /** Retail world notices (script-visible; MenuJournal UI not wired yet). */
+  static WorldEntries: JournalWorldEntry[] = [];
   static SortOrder: number = 0;
   static gff: GFFObject;
 
@@ -120,6 +134,67 @@ export class JournalManager {
       return true;
     }
     return false;
+  }
+
+  static stampWorldEntryTime(entry: JournalWorldEntry){
+    const tm = GameState.module?.timeManager;
+    entry.date = tm?.pauseDay ?? 0;
+    entry.time = tm?.pauseTime ?? 0;
+  }
+
+  /** Retail AddWorldJournalEntry — replace existing id if present. */
+  static AddWorldEntry(id: number, text: string = '', title: string = ''): void {
+    const entryId = id | 0;
+    let entry = JournalManager.WorldEntries.find((e) => e.id === entryId);
+    if(!entry){
+      entry = { id: entryId, text: '', title: '', date: 0, time: 0 };
+      JournalManager.WorldEntries.push(entry);
+    }
+    entry.text = String(text ?? '');
+    entry.title = String(title ?? '');
+    delete entry.strref;
+    delete entry.titleStrref;
+    JournalManager.stampWorldEntryTime(entry);
+  }
+
+  /** Retail AddWorldJournalEntryStrref. */
+  static AddWorldEntryStrref(strrefText: number, strrefTitle: number): void {
+    const textRef = strrefText | 0;
+    const titleRef = strrefTitle | 0;
+    const text = GameState.TLKManager?.GetStringById?.(textRef)?.Value
+      ?? GameState.TLKManager?.GetStringById?.(textRef)?.getDisplayText?.()
+      ?? '';
+    const title = GameState.TLKManager?.GetStringById?.(titleRef)?.Value
+      ?? GameState.TLKManager?.GetStringById?.(titleRef)?.getDisplayText?.()
+      ?? '';
+    // Use text strref as id so DeleteWorldEntryStrref can find it
+    let entry = JournalManager.WorldEntries.find((e) => e.strref === textRef || e.id === textRef);
+    if(!entry){
+      entry = { id: textRef, text: '', title: '', date: 0, time: 0 };
+      JournalManager.WorldEntries.push(entry);
+    }
+    entry.id = textRef;
+    entry.text = String(text ?? '');
+    entry.title = String(title ?? '');
+    entry.strref = textRef;
+    entry.titleStrref = titleRef;
+    JournalManager.stampWorldEntryTime(entry);
+  }
+
+  static DeleteAllWorldEntries(): void {
+    JournalManager.WorldEntries.length = 0;
+  }
+
+  static DeleteWorldEntry(id: number): void {
+    const entryId = id | 0;
+    JournalManager.WorldEntries = JournalManager.WorldEntries.filter((e) => e.id !== entryId);
+  }
+
+  static DeleteWorldEntryStrref(strref: number): void {
+    const ref = strref | 0;
+    JournalManager.WorldEntries = JournalManager.WorldEntries.filter(
+      (e) => e.strref !== ref && e.id !== ref
+    );
   }
 
   static LoadJournal(){

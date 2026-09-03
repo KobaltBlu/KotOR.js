@@ -1,7 +1,10 @@
 import * as THREE from "three";
 import { PathPoint } from "@/engine/pathfinding/PathPoint";
 import type { ModuleObject } from "@/module/ModuleObject";
+import type { ModuleCreature } from "@/module/ModuleCreature";
 import { GameState } from "@/GameState";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { BitWise } from "@/utility/BitWise";
 import { smoothCornerOptimizeRestartable, type SmoothCornerResume } from "@/engine/pathfinding/smooth-corner-optimize";
 import {
   smoothSelectionRestartable,
@@ -189,7 +192,14 @@ export class ComputedPath {
       return { cost: dist + Math.max(1.0, dist * 0.5) };
     }
 
-    const polys = noNonWalkPolysDetailed(area, from.vector, to.vector);
+    const polys = noNonWalkPolysDetailed(area, from.vector, to.vector, {
+      ignoreObjectIds: BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)
+        ? (() => {
+            const id = (this.owner as ModuleCreature).pathFindIgnoreObjectId | 0;
+            return id ? [id] : undefined;
+          })()
+        : undefined,
+    });
     if(!polys.clear){
       const obj = GameState.ModuleObjectManager?.GetObjectById?.(polys.blockingObjectId);
       // Placeable or static door → drop edge; non-static door → keep successor

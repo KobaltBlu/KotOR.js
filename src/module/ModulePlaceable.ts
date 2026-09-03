@@ -613,6 +613,7 @@ export class ModulePlaceable extends ModuleObject {
   lock(object: ModuleObject){
     if(this.locked){ return; }
     this.locked = true;
+    this.lastLockedBy = object;
 
     const instance = this.scripts[ModuleObjectScript.PlaceableOnLock];
     if(!instance){ return; }
@@ -622,6 +623,7 @@ export class ModulePlaceable extends ModuleObject {
   unlock(object: ModuleObject){
     if(!this.locked){ return; }
     this.locked = false;
+    this.lastUnlockedBy = object;
 
     const instance = this.scripts[ModuleObjectScript.PlaceableOnUnlock];
     if(!instance){ return; }
@@ -654,6 +656,7 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   close(object: ModuleObject){
+    this.lastObjectClosed = object;
     if(this.isOpen() && this.state == ModulePlaceableState.OPEN){
       this.setAnimationState(ModulePlaceableAnimState.OPEN_CLOSE);
       this.triggerEvent(ModulePlaceableEvent.CLOSE_START);

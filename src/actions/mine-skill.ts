@@ -133,6 +133,9 @@ export function resolveMineSetCheck(
 }
 
 export function signalTrapDisarm(target: ModuleObject, disarmer: ModuleObject){
+  if(target){
+    target.lastDisarmedBy = disarmer;
+  }
   const event = new GameState.GameEventFactory.EventSignalEvent();
   event.setCaller(disarmer);
   event.setObject(target);

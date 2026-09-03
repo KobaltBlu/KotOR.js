@@ -201,8 +201,16 @@ export class GameState implements EngineContext {
   static infiniteUses = false;
   /** Retail revealmap toggle — hide minimap fog overlay without wiping explored data. */
   static cheatRevealMap = false;
-  /** Retail dancedancemalak GUI flag. */
+  /** Retail dancedancemalak GUI / GetCheatCode(0) flag. */
   static danceDanceMalak = false;
+  /** TSL SetDisableTransit — blocks galaxy map transit when true. */
+  static disableTransit = false;
+  /** TSL SetInputClass — current input class id. */
+  static inputClass = 0;
+  /** TSL EnableRain. */
+  static enableRain = false;
+  /** TSL EnableRendering — when false, skip rendering. */
+  static enableRendering = true;
   
   static Flags = {
     EnableAreaVIS: false,

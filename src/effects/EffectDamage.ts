@@ -117,6 +117,13 @@ export class EffectDamage extends GameEffect {
     }
     this.object.combatData.lastDamager = this.creator;
     this.object.combatData.lastAttacker = this.creator;
+    // Retail GetLastDamageAmountByFlags / GetTotalDamageDealt state
+    const lastDmg = this.object.combatData.lastDamageAmounts;
+    if(lastDmg){
+      for(let i = 0; i < 15; i++){
+        lastDmg[i] = channels[i] >= 0 ? channels[i] : 0;
+      }
+    }
 
     // Retail OnApplyDamage schedules OnDamaged / door-placeable combat broadcast.
     // Door/placeable onDamaged handlers BroadcastCombatStateToParty(attacker, INVALID).

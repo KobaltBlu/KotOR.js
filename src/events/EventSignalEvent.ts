@@ -9,6 +9,10 @@ import { BitWise } from "@/utility/BitWise";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { ModuleObjectScript, SignalEventType } from "@/enums";
+import { NWScriptEventType } from "@/enums/nwscript/NWScriptEventType";
+import EngineLocation from "@/engine/EngineLocation";
+import { GameState } from "@/GameState";
+import type { ModuleCreature, ModuleItem } from "@/module";
 
 /**
  * EventSignalEvent class.
@@ -46,7 +50,39 @@ export class EventSignalEvent extends GameEvent {
 
   execute(){
     const obj = this.getObject() as ModuleObject;
-    console.log('EventSignalEvent', this.eventType, obj, this.getCaller());
+    // NWScript SignalEvent path — queued EventSignalEvent carries an NWScriptEvent
+    if(this.event){
+      const mod = GameState.module;
+      if((this as any)._signalModule && mod){
+        if(this.event.type === NWScriptEventType.EventUserDefined){
+          const onUserDefined = mod.scripts[ModuleObjectScript.ModuleOnUserDefined];
+          if(onUserDefined){
+            onUserDefined.run(mod.area ?? obj, parseInt(this.event.getInt(0)));
+          }
+          return;
+        }
+        if(this.event.type === NWScriptEventType.EventActivateItem){
+          mod.itemActivated = this.event.getObject(0) as ModuleItem;
+          mod.itemActivator = (this.event.getObject(1) as ModuleCreature) ?? (this.getCaller() as ModuleCreature);
+          mod.itemActivatedTarget = this.event.getObject(3);
+          mod.itemActivatedTargetLocation = new EngineLocation(
+            this.event.getFloat(0) || 0,
+            this.event.getFloat(1) || 0,
+            this.event.getFloat(2) || 0
+          );
+          const onActivate = mod.scripts[ModuleObjectScript.ModuleOnPlayerActivateItem];
+          if(onActivate){
+            onActivate.run(mod.area ?? obj, 0);
+          }
+          return;
+        }
+      }
+      if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleObject)){
+        obj.scriptEventHandler(this.event);
+      }
+      return;
+    }
+
     if(!BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleObject)){
       return;
     }

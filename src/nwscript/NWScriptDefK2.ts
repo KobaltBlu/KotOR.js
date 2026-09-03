@@ -1,16 +1,21 @@
 import { ModuleObjectScript, ModuleObjectType } from "@/enums";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { ActionType } from "@/enums/actions/ActionType";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { ModuleDoorOpenState } from "@/enums/module/ModuleDoorOpenState";
+import { AILevel } from "@/enums/module/AILevel";
 import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
 import { GameState } from "@/GameState";
-import type { ModuleCreature, ModuleItem, ModuleObject, ModuleArea, ModuleWaypoint } from "@/module";
+import { ModuleObject, type ModuleCreature, type ModuleItem, type ModuleArea, type ModuleWaypoint, type ModuleDoor } from "@/module";
+import type { GameEffect } from "@/effects/GameEffect";
 import { BitWise } from "@/utility/BitWise";
 import { NW_FALSE, NW_TRUE } from "@/nwscript/NWScriptConstants";
 import { NWScriptDef } from "@/nwscript/NWScriptDef";
 import { NWScriptDefK1 } from "@/nwscript/NWScriptDefK1";
 import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import EngineLocation from "@/engine/EngineLocation";
+import { clearLineOfSight } from "@/engine/pathfinding/clear-line-of-sight";
 import { playVisualAreaEffect } from "@/effects/play-visual-area-effect";
 import { SaveGame } from "@/engine/SaveGame";
 import * as THREE from "three";
@@ -5777,14 +5782,31 @@ NWScriptDefK2.Actions = {
     name: 'GetSpellForcePointCost',
     type: NWScriptDataType.INTEGER,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      const spellId = this.getSpellId();
+      const spell = (this.lastSpell && (spellId < 0 || this.lastSpell.id === spellId))
+        ? this.lastSpell
+        : (spellId >= 0 ? new TalentSpell(spellId) : undefined);
+      if(!spell){
+        return 0;
+      }
+      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
+        return (this.caller as ModuleCreature).getAdjustedForcePointCost(spell);
+      }
+      return (spell.forcepoints | 0) > 0 ? (spell.forcepoints | 0) : 0;
+    }
   },
   777: {
     comment: 'DJS-OEI 1/2/2004\n777: Create a Fury effect.',
     name: 'EffectFury',
     type: NWScriptDataType.EFFECT,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      const effect = new GameState.GameEffectFactory.EffectFury();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
+    }
   },
   778: {
     comment: 'DJS-OEI 1/3/2004\n778: Create a Blind effect.',
@@ -5804,14 +5826,26 @@ NWScriptDefK2.Actions = {
     name: 'EffectFPRegenModifier',
     type: NWScriptDataType.EFFECT,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      const effect = new GameState.GameEffectFactory.EffectFPRegenModifier();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0] | 0);
+      return effect.initialize();
+    }
   },
   780: {
     comment: 'DJS-OEI 1/4/2004\n780: Create a VP regeneration modifier effect.',
     name: 'EffectVPRegenModifier',
     type: NWScriptDataType.EFFECT,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      const effect = new GameState.GameEffectFactory.EffectVPRegenModifier();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0] | 0);
+      return effect.initialize();
+    }
   },
   781: {
     comment: 'DJS-OEI 1/9/2004\n781: Create a Force Crush effect.',
@@ -5855,14 +5889,24 @@ NWScriptDefK2.Actions = {
     name: 'GetFeatAcquired',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
+      if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)){
+        return (args[1] as ModuleCreature).getHasFeat(args[0] | 0) ? NW_TRUE : NW_FALSE;
+      }
+      return NW_FALSE;
+    }
   },
   784: {
     comment: 'DJS-OEI 1/12/2004\n784: Returns whether or not the target has access to a spell,\neven if they can\'t use it right now due to lack of Force Points.',
     name: 'GetSpellAcquired',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
+      if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)){
+        return (args[1] as ModuleCreature).getHasSpell(args[0] | 0) ? NW_TRUE : NW_FALSE;
+      }
+      return NW_FALSE;
+    }
   },
   785: {
     comment: 'FAK-OEI 1/12/2004\n785: Displays the Swoop Bike upgrade screen.',
@@ -5905,7 +5949,34 @@ NWScriptDefK2.Actions = {
     name: 'SpawnMine',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.LOCATION, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, EngineLocation, number, number, ModuleObject]){
+      const area = args[1]?.area ?? GameState.module?.area;
+      if(!area || !args[1]?.position){
+        return;
+      }
+      const hasOwner = BitWise.InstanceOfObject(args[4], ModuleObjectType.ModuleObject);
+      const owner = hasOwner ? args[4] : (this.caller as ModuleObject);
+      if(!BitWise.InstanceOfObject(owner, ModuleObjectType.ModuleObject)){
+        return;
+      }
+      const trigger = ModuleObject.plantGroundTrap(area, args[0] | 0, args[1].position, owner);
+      if(!trigger){
+        return;
+      }
+      if(!hasOwner){
+        // OBJECT_INVALID → Hostile1 (repute.2da id 1)
+        trigger.factionId = 1;
+        trigger.setByPlayerParty = false;
+        trigger.ownerDemolitions = 0;
+      }
+      const trap = GameState.TwoDAManager.datatables.get('traps')?.rows[args[0] | 0];
+      if(trap){
+        const detectMod = !isNaN(parseInt(trap.detectdcmod)) ? parseInt(trap.detectdcmod) : 0;
+        const disarmMod = !isNaN(parseInt(trap.disarmdcmod)) ? parseInt(trap.disarmdcmod) : 0;
+        trigger.trapDetectDC = (args[2] | 0) + detectMod;
+        trigger.trapDisarmDC = (args[3] | 0) + disarmMod;
+      }
+    }
   },
   789: {
     comment: 'FAK - OEI 1/15/04\n789: Yet another minigame function. Returns the object\'s track\'s position.',
@@ -5947,7 +6018,15 @@ NWScriptDefK2.Actions = {
     name: 'SetFakeCombatState',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        const creature = args[0] as ModuleCreature;
+        creature.fakeCombatState = !!args[1];
+        if(creature.combatData){
+          creature.combatData.combatState = !!args[1];
+        }
+      }
+    }
   },
   792: {
     comment: 'FAK - OEI 1/23/04\n792: minigame function that deletes a minigame object',
@@ -5964,8 +6043,11 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      //todo
-      return 0;
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        return 0;
+      }
+      const skill = (args[0] as ModuleObject).ownerDemolitions;
+      return (typeof skill === 'number' && skill >= 0) ? (skill | 0) : 0;
     }
   },
   794: {
@@ -5984,28 +6066,61 @@ NWScriptDefK2.Actions = {
     name: 'GetInfluence',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      const nNPC = args[0] | 0;
+      if(!GameState.PartyManager.IsAvailable(nNPC)){
+        return 0;
+      }
+      return GameState.PartyManager.InfluenceMap.has(nNPC)
+        ? (GameState.PartyManager.InfluenceMap.get(nNPC) | 0)
+        : -1;
+    }
   },
   796: {
     comment: 'DJS-OEI 1/29/2004\n796: Sets the PC\'s influence on the alignment of a CNPC.\nParameters:\nnNPC - NPC_* constant identifying the CNPC we\'re interested in.\nIf this character is not an available party member, nothing\nwill happen.\nnInfluence - The new value for the influence on this CNPC.',
     name: 'SetInfluence',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, number]){
+      const nNPC = args[0] | 0;
+      if(!GameState.PartyManager.IsAvailable(nNPC)){
+        return;
+      }
+      const n = Math.max(0, Math.min(100, args[1] | 0));
+      GameState.PartyManager.InfluenceMap.set(nNPC, n);
+    }
   },
   797: {
     comment: 'DJS-OEI 1/29/2004\n797: Modifies the PC\'s influence on the alignment of a CNPC.\nParameters:\nnNPC - NPC_* constant identifying the CNPC we\'re interested in.\nIf this character is not an available party member, nothing\nwill happen.\nnModifier - The modifier to the current influence on this CNPC.\nThis may be a negative value to reduce the influence.',
     name: 'ModifyInfluence',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, number]){
+      const nNPC = args[0] | 0;
+      if(!GameState.PartyManager.IsAvailable(nNPC)){
+        return;
+      }
+      let current = GameState.PartyManager.InfluenceMap.has(nNPC)
+        ? (GameState.PartyManager.InfluenceMap.get(nNPC) | 0)
+        : -1;
+      if(current === -1){
+        current = 50;
+      }
+      current = Math.max(0, Math.min(100, current + (args[1] | 0)));
+      GameState.PartyManager.InfluenceMap.set(nNPC, current);
+    }
   },
   798: {
     comment: 'FAK - OEI 2/3/04\n798: returns the racial sub-type of the oTarget object',
     name: 'GetRacialSubType',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        return (args[0] as ModuleCreature).getSubRace() | 0;
+      }
+      return 0;
+    }
   },
   799: {
     comment: 'DJS-OEI 2/3/2004\n799: Increases the value of the given global number by the given amount.\nThis function only works with Number type globals, not booleans. It\nwill fail with a warning if the final amount is greater than the max\nof 127.',
@@ -6033,21 +6148,35 @@ NWScriptDefK2.Actions = {
     name: 'SetBonusForcePoints',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        (args[0] as ModuleCreature).bonusForcePoints = args[1] | 0;
+      }
+    }
   },
   802: {
     comment: 'RWT-OEI 02/06/04\n802: AddBonusForcePoints - This adds nBonusFP to the current total\n     bonus that the player has. The Bonus Force Points are a pool\n     of force points that will always be added after the player\'s\n     total force points are calculated (based on level, force dice,\n     etc.)',
     name: 'AddBonusForcePoints',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        (args[0] as ModuleCreature).bonusForcePoints =
+          ((args[0] as ModuleCreature).bonusForcePoints | 0) + (args[1] | 0);
+      }
+    }
   },
   803: {
     comment: 'RWT-OEI 02/06/04\n803: GetBonusForcePoints - This returns the total number of bonus\n     force points a player has. Bonus Force Points are a pool of\n     points that are always added to a player\'s Max Force Points.\nST: Please explain how a function returning VOID could return a\n    numerical value? Hope it works changing the return type...\nvoid GetBonusForcePoints( object oCreature );',
     name: 'GetBonusForcePoints',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        return (args[0] as ModuleCreature).bonusForcePoints | 0;
+      }
+      return 0;
+    }
   },
   804: {
     comment: 'FAK - OEI 2/11/04\n804: SWMG_SetJumpSpeed -- the sets the \'jump speed\' for the swoop\n     bike races. Gravity will act upon this velocity.',
@@ -6095,7 +6224,12 @@ NWScriptDefK2.Actions = {
     name: 'YavinHackDoorClose',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      // Same as K1 YavinHackCloseDoor → SetOpenState(CLOSED, false)
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleDoor)){
+        (args[0] as ModuleDoor).setOpenState(ModuleDoorOpenState.CLOSED, false);
+      }
+    }
   },
   809: {
     comment: '809\nnew function for droid confusion so inherint mind immunity can be\navoided.\nEND PC CODE MERGER',
@@ -6116,7 +6250,12 @@ NWScriptDefK2.Actions = {
     name: 'IsStealthed',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        return (args[0] as ModuleCreature).stealthMode ? NW_TRUE : NW_FALSE;
+      }
+      return NW_FALSE;
+    }
   },
   811: {
     comment: '811\nDJS-OEI 3/12/2004\nDetermines if the given creature is using any Meditation Tree\nForce Power.\n0 = Creature is not meditating.\n1 = Creature is meditating.\nThis function will return 0 for any non-creature.',
@@ -6132,7 +6271,18 @@ NWScriptDefK2.Actions = {
     name: 'IsInTotalDefense',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        return NW_FALSE;
+      }
+      const creature = args[0] as ModuleCreature;
+      if(creature.actionQueue?.actionTypeExists?.(ActionType.ActionStanceTotalDefense)){
+        return NW_TRUE;
+      }
+      return creature.getCurrentAction() === ActionType.ActionStanceTotalDefense
+        ? NW_TRUE
+        : NW_FALSE;
+    }
   },
   813: {
     comment: '813\nRWT-OEI 03/19/04\nStores a Heal Target for the Healer AI script. Should probably\nnot be used outside of the Healer AI script.',
@@ -6159,7 +6309,40 @@ NWScriptDefK2.Actions = {
     name: 'GetRandomDestination',
     type: NWScriptDataType.VECTOR,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        return new THREE.Vector3();
+      }
+      const creature = args[0] as ModuleCreature;
+      const range = Math.max(0, args[1] | 0);
+      const faces = creature.room?.collisionManager?.walkmesh?.walkableFaces;
+      if(faces?.length){
+        // Prefer a walkable face centroid within range of the creature
+        const candidates: THREE.Vector3[] = [];
+        const origin = creature.position;
+        for(let i = 0; i < faces.length; i++){
+          const c = faces[i]?.centroid;
+          if(!c) continue;
+          const dx = c.x - origin.x;
+          const dy = c.y - origin.y;
+          if((dx * dx + dy * dy) <= (range * range) || range <= 0){
+            candidates.push(c);
+          }
+        }
+        const pool = candidates.length ? candidates : faces.map((f: any) => f.centroid).filter(Boolean);
+        if(pool.length){
+          const pick = pool[Math.floor(Math.random() * pool.length)];
+          return new THREE.Vector3(pick.x, pick.y, pick.z);
+        }
+      }
+      const angle = Math.random() * Math.PI * 2;
+      const dist = range > 0 ? Math.random() * range : 0;
+      return new THREE.Vector3(
+        creature.position.x + Math.cos(angle) * dist,
+        creature.position.y + Math.sin(angle) * dist,
+        creature.position.z
+      );
+    }
   },
   816: {
     comment: '816\nDJS-OEI 3/25/2004\nReturns whether the given creature is currently in the\nrequested Lightsaber/Consular Form and can make use of\nits benefits. This function will perform trumping checks\nand lightsaber-wielding checks for those Forms that require\nthem.',
@@ -6192,7 +6375,14 @@ NWScriptDefK2.Actions = {
     name: 'GetSpellBaseForcePointCost',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      const spell = GameState.TwoDAManager.datatables.get('spells')?.rows[args[0] | 0];
+      if(!spell){
+        return 0;
+      }
+      const cost = parseInt(spell.forcepoints);
+      return !isNaN(cost) ? cost : 0;
+    }
   },
   819: {
     comment: '819\nRWT-OEI 04/05/04\nSetting this to TRUE makes it so that the Stealth status is\nleft on characters even when entering cutscenes. By default,\nstealth is removed from anyone taking part in a cutscene.\nALWAYS set this back to FALSE on every End Dialog node in\nthe cutscene you wanted to stay stealthed in. This isn\'t a\nflag that should be left on indefinitely. In fact, it isn\'t\nsaved, so needs to be set/unset on a case by case basis.',
@@ -6208,21 +6398,52 @@ NWScriptDefK2.Actions = {
     name: 'HasLineOfSight',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.VECTOR, NWScriptDataType.VECTOR, NWScriptDataType.OBJECT, NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [THREE.Vector3, THREE.Vector3, ModuleObject, ModuleObject]){
+      const from = args[0];
+      const to = args[1];
+      if(!from || !to){
+        return NW_FALSE;
+      }
+      const area = GameState.module?.area;
+      if(!area){
+        // No area yet — treat as clear when both endpoints are valid
+        return NW_TRUE;
+      }
+      const fromV = from instanceof THREE.Vector3
+        ? from
+        : new THREE.Vector3((from as any).x, (from as any).y, (from as any).z);
+      const toV = to instanceof THREE.Vector3
+        ? to
+        : new THREE.Vector3((to as any).x, (to as any).y, (to as any).z);
+      const clear = clearLineOfSight(area, fromV, toV, {
+        ignoreSource: BitWise.InstanceOfObject(args[2], ModuleObjectType.ModuleObject) ? args[2] : undefined,
+        ignoreObject: BitWise.InstanceOfObject(args[3], ModuleObjectType.ModuleObject) ? args[3] : undefined,
+        eyeHeight: 1.5,
+      });
+      return clear ? NW_TRUE : NW_FALSE;
+    }
   },
   821: {
     comment: '821\nFAK - OEI 5/3/04\nShowDemoScreen, displays a texture, timeout, string and xy for string',
     name: 'ShowDemoScreen',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.STRING, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [string, number, number, number, number]){
+      // No dedicated demo-screen menu in KotOR.js yet
+      void args;
+      return NW_FALSE;
+    }
   },
   822: {
     comment: '822\nDJS-OEI 5/4/2004\nForces a Heartbeat on the given creature. THIS ONLY WORKS FOR CREATURES\nAT THE MOMENT. This heartbeat should force perception updates to occur.',
     name: 'ForceHeartbeat',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        args[0].triggerHeartbeat();
+      }
+    }
   },
   823: {
     comment: '823\nDJS-OEI 5/5/2004\nCreates a Force Sight effect.',
@@ -6290,21 +6511,36 @@ NWScriptDefK2.Actions = {
     name: 'ModifyReflexSavingThrowBase',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        (args[0] as ModuleCreature).refbonus =
+          ((args[0] as ModuleCreature).refbonus | 0) + (args[1] | 0);
+      }
+    }
   },
   829: {
     comment: '829\nAWD-OEI 6/21/2004\nThis function does not return a value.\nThis function modifies the BASE value of the FORTITUDE saving throw for aObject',
     name: 'ModifyFortitudeSavingThrowBase',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        (args[0] as ModuleCreature).fortbonus =
+          ((args[0] as ModuleCreature).fortbonus | 0) + (args[1] | 0);
+      }
+    }
   },
   830: {
     comment: '830\nAWD-OEI 6/21/2004\nThis function does not return a value.\nThis function modifies the BASE value of the WILL saving throw for aObject',
     name: 'ModifyWillSavingThrowBase',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        (args[0] as ModuleCreature).willbonus =
+          ((args[0] as ModuleCreature).willbonus | 0) + (args[1] | 0);
+      }
+    }
   },
   831: {
     comment: 'DJS-OEI 6/21/2004\n831\nThis function will return the one CExoString parameter\nallowed for the currently running script.',
@@ -6333,21 +6569,44 @@ NWScriptDefK2.Actions = {
     name: 'AdjustCreatureAttributes',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        return;
+      }
+      const creature = args[0] as ModuleCreature;
+      const amount = args[2] | 0;
+      switch(args[1] | 0){
+        case 0: creature.str = (creature.str | 0) + amount; break;
+        case 1: creature.dex = (creature.dex | 0) + amount; break;
+        case 2: creature.con = (creature.con | 0) + amount; break;
+        case 3: creature.int = (creature.int | 0) + amount; break;
+        case 4: creature.wis = (creature.wis | 0) + amount; break;
+        case 5: creature.cha = (creature.cha | 0) + amount; break;
+      }
+    }
   },
   834: {
     comment: '834\nAWD-OEI 7/08/2004\nThis function raises a creature\'s priority level.',
     name: 'SetCreatureAILevel',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        return;
+      }
+      GameState.module?.aiScheduler?.setAILevel(args[0], args[1] as AILevel);
+    }
   },
   835: {
     comment: '835\nAWD-OEI 7/08/2004\nThis function raises a creature\'s priority level.',
     name: 'ResetCreatureAILevel',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        (args[0] as ModuleCreature).adjustAILevel();
+      }
+    }
   },
   836: {
     comment: '836\nRWT-OEI 07/17/04\nThis function adds a Puppet to the Puppet Table by\ntemplate.\nReturns 1 if successful, 0 if there was an error\nThis does not spawn the puppet or anything. It just\nadds it to the party table and makes it available for\nuse down the line. Exactly like AddAvailableNPCByTemplate',
@@ -6492,14 +6751,24 @@ NWScriptDefK2.Actions = {
     name: 'EffectFactionModifier',
     type: NWScriptDataType.EFFECT,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      const effect = new GameState.GameEffectFactory.EffectFactionModifier();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0] | 0);
+      return effect.initialize();
+    }
   },
   850: {
     comment: '850\nChangeObjectAppearance\noObjectToChange = Object to change appearance of\nnAppearance = appearance to change to (from appearance.2da)',
     name: 'ChangeObjectAppearance',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        (args[0] as ModuleCreature).setAppearance(args[1] | 0);
+      }
+    }
   },
   851: {
     comment: '851\nGetIsXBox\nReturns TRUE if this script is being executed on the X-Box. Returns FALSE\nif this is the PC build.',
@@ -6553,7 +6822,10 @@ NWScriptDefK2.Actions = {
     name: 'UnlockAllSongs',
     type: NWScriptDataType.VOID,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      // MainMusic uses Game Options.UnlockedPlanetSongs bitmask (planets 0..10)
+      GameState.iniConfig?.setProperty?.('Game Options.UnlockedPlanetSongs', 0x7FF);
+    }
   },
   856: {
     comment: '856\nRWT-OEI 08/31/04\nPassing TRUE into this function turns off the player\'s maps.\nPassing FALSE into this function re-enables them. This change\nis permanent once called, so it is important that there *is*\na matching call to DisableMap(FALSE) somewhere or else the\nplayer is stuck without a map indefinitely.',
@@ -6569,7 +6841,13 @@ NWScriptDefK2.Actions = {
     name: 'DetonateMine',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        return;
+      }
+      // Immediate destroy (retail detonation VFX is visual-only; damage is via script)
+      args[0].destroy();
+    }
   },
   858: {
     comment: '858\nRWT-OEI 09/06/04\nThis function turns off the innate health regeneration that all party\nmembers have. The health regen will *stay* off until it is turned back\non by passing FALSE to this function.',
@@ -6598,35 +6876,56 @@ NWScriptDefK2.Actions = {
     name: 'SetDisableTransit',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      GameState.disableTransit = !!args[0];
+    }
   },
   861: {
     comment: '861\n//RWT-OEI 09/09/04\nThis will set the specific input class.\nThe valid options are:\n0 - Normal PC control\n1 - Mini game control\n2 - GUI control\n3 - Dialog Control\n4 - Freelook control',
     name: 'SetInputClass',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      GameState.inputClass = args[0] | 0;
+    }
   },
   862: {
     comment: '862\n//RWT-OEI 09/15/04\nThis script allows an object to recieve updates even if it is outside\n//the normal range limit of 250.0f meters away from the player. This should\n//ONLY be used for cutscenes that involve objects that are more than 250\n//meters away from the player. It needs to be used on a object by object\n//basis.\n//This flag should *always* be set to false once the cutscene it is needed\n//for is over, or else the game will spend CPU time updating the object\n//when it doesn\'t need to.\n//For questions on use of this function, or what its purpose is, check\n//with me.',
     name: 'SetForceAlwaysUpdate',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        args[0].forceAlwaysUpdate = !!args[1];
+      }
+    }
   },
   863: {
     comment: '//863\n//RWT-OEI 09/15/04\n//This function enables or disables rain',
     name: 'EnableRain',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      GameState.enableRain = !!args[0];
+    }
   },
   864: {
     comment: '//864\n//RWT-OEI 09/27/04\n//This function displays the generic Message Box with the strref\n//message in it\n//sIcon is the resref for an icon you would like to display.',
     name: 'DisplayMessageBox',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.STRING ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, string]){
+      void args[1]; // icon resref — InGameConfirm has no icon slot yet
+      const confirm = GameState.MenuManager?.InGameConfirm;
+      if(confirm?.fromStringRef){
+        confirm.fromStringRef(args[0] | 0);
+        return;
+      }
+      const text = GameState.TLKManager?.GetStringById?.(args[0] | 0)?.Value;
+      if(text){
+        GameState.FeedbackMessageManager?.AddMessage?.(text);
+      }
+    }
   },
   865: {
     comment: '//865\n//RWT-OEI 09/28/04\n//This function displays a datapad popup. Just pass it the\n//object ID of a datapad.',
@@ -6661,42 +6960,100 @@ NWScriptDefK2.Actions = {
     name: 'RemoveEffectByID',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        return;
+      }
+      const id = args[1] | 0;
+      const effects = args[0].effects?.slice?.() ?? [];
+      for(let i = 0; i < effects.length; i++){
+        if(effects[i]?.id === id){
+          args[0].removeEffect(effects[i]);
+        }
+      }
+    }
   },
   868: {
     comment: '//868\nRWT-OEI 10/07/04\nThis script removes an effect by an identical match\nbased on:\nMust have matching EffectID types.\nMust have the same value in Integer(0)\nMust have the same value in Integer(1)\nI\'m specifically using this function for Mandalore\'s implant swapping\nscript and it will probably not be useful for anyone else. If you\'re\nnot sure what this script function does, see me before using it.',
     name: 'RemoveEffectByExactMatch',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.EFFECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, GameEffect]){
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject) || !args[1]){
+        return;
+      }
+      const match = args[1];
+      const effects = args[0].effects?.slice?.() ?? [];
+      for(let i = 0; i < effects.length; i++){
+        const e = effects[i];
+        if(!e) continue;
+        if(
+          e.type === match.type &&
+          e.getInt(0) === match.getInt(0) &&
+          e.getInt(1) === match.getInt(1)
+        ){
+          args[0].removeEffect(e);
+        }
+      }
+    }
   },
   869: {
     comment: '869\nDJS-OEI 10/9/2004\nThis function adjusts a creature\'s skills.\noObject is the creature that will have its skill adjusted\nThe following constants are acceptable for the nSkill parameter:\nSKILL_COMPUTER_USE\nSKILL_DEMOLITIONS\nSKILL_STEALTH\nSKILL_AWARENESS\nSKILL_PERSUADE\nSKILL_REPAIR\nSKILL_SECURITY\nSKILL_TREAT_INJURY\nnAmount is the integer value to adjust the stat by (negative values will work).',
     name: 'AdjustCreatureSkills',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        return;
+      }
+      const skill = args[1] | 0;
+      const creature = args[0] as ModuleCreature;
+      if(creature.skills?.[skill]){
+        creature.skills[skill].rank = (creature.skills[skill].rank | 0) + (args[2] | 0);
+      }
+    }
   },
   870: {
     comment: '870\nDJS-OEI 10/10/2004\nThis function returns the base Skill Rank for the requested\nskill. It does not include modifiers from effects/items.\nThe following constants are acceptable for the nSkill parameter:\nSKILL_COMPUTER_USE\nSKILL_DEMOLITIONS\nSKILL_STEALTH\nSKILL_AWARENESS\nSKILL_PERSUADE\nSKILL_REPAIR\nSKILL_SECURITY\nSKILL_TREAT_INJURY\noObject is the creature that will have its skill base returned.',
     name: 'GetSkillRankBase',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
+      if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)){
+        return (args[1] as ModuleCreature).getSkillRank(args[0] | 0, true);
+      }
+      return 0;
+    }
   },
   871: {
     comment: '871\nDJS-OEI 10/15/2004\nThis function will allow the caller to modify the rendering behavior\nof the target object.\noObject - The object to change rendering state on.\nbEnable - If 0, the object will stop rendering. Else, the object will render.',
     name: 'EnableRendering',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        return;
+      }
+      const enable = !!args[1];
+      args[0].enableRendering = enable;
+      if(args[0].model){
+        args[0].model.visible = enable;
+      }
+    }
   },
   872: {
     comment: '872\nRWT-OEI 10/19/04\nThis function returns TRUE if the creature has actions in its\nCombat Action queue.',
     name: 'GetCombatActionsPending',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        return (args[0] as ModuleCreature).combatData?.combatQueue?.length
+          ? NW_TRUE
+          : NW_FALSE;
+      }
+      return NW_FALSE;
+    }
   },
   873: {
     comment: '873\nRWT-OEI 10/26/04\nThis function saves the party member at that index with the object\nthat is passed in.',

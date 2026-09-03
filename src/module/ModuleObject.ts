@@ -279,6 +279,10 @@ export class ModuleObject {
   isDestroyable: boolean = true;
   isRaisable: boolean = true;
   playerCreated: boolean = false;
+  /** TSL SetForceAlwaysUpdate — keep updating past 250m cutscene range. */
+  forceAlwaysUpdate: boolean = false;
+  /** TSL EnableRendering — when false, skip drawing this object. */
+  enableRendering: boolean = true;
 
   //complex animation varaibles
   fp_push_played: any;
@@ -338,6 +342,18 @@ export class ModuleObject {
   /** Visual / script “detected” latch (triggers); set by SetTrapDetectedBy / detectTrap. */
   trapDetected: boolean = false;
   ownerDemolitions: number = -1;
+  /** Creature that created/set this trap (GetTrapCreator). */
+  trapCreator: ModuleObject = undefined;
+  /** Tag of key that disarms this trap (GetTrapKeyTag); often same as KeyName. */
+  trapKeyTag: string = '';
+  /** Last object that disarmed a trap on this door/placeable/trigger. */
+  lastDisarmedBy: ModuleObject = undefined;
+  /** Last object that locked this door/placeable. */
+  lastLockedBy: ModuleObject = undefined;
+  /** Last object that unlocked this door/placeable. */
+  lastUnlockedBy: ModuleObject = undefined;
+  /** MetaMagic feat byte for the active spell context (GetMetaMagicFeat). */
+  metaMagicFeat: number = 0xff;
 
   notBlastable: boolean = false;
 
@@ -2092,6 +2108,8 @@ export class ModuleObject {
     }
 
     this.trapType = nTrapId;
+    this.trapCreator = owner;
+    this.trapFlag = true;
 
     this.ownerDemolitions = owner.getSkillLevel(SkillType.DEMOLITIONS);
     const d20 = 20;
@@ -2116,6 +2134,7 @@ export class ModuleObject {
     trigger.trapDetectable = true;
     trigger.trapDisarmable = true;
     trigger.ownerDemolitions = -1;
+    trigger.trapCreator = owner;
     trigger.position.copy(this.position);
 
     trigger.linkedToObject = this;
@@ -2160,6 +2179,7 @@ export class ModuleObject {
     trigger.trapDetectable = true;
     trigger.trapDisarmable = true;
     trigger.ownerDemolitions = ownerDemolitions;
+    trigger.trapCreator = owner;
     trigger.position.set(position.x, position.y, position.z);
     trigger.area = area;
 
@@ -3918,6 +3938,10 @@ export class ModuleObject {
     if(opts?.skipRoomWalkmesh){
       // Use-range: Detailed-only (personal_space 0.001), no AABB LOS
       const ignoreIds = [this.id, ignoreObject?.id].filter((id) => id != null) as number[];
+      if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
+        const ignoreDoor = ((this as unknown) as ModuleCreature).pathFindIgnoreObjectId | 0;
+        if(ignoreDoor) ignoreIds.push(ignoreDoor);
+      }
       const a = this.#tmpPositionA.clone();
       const b = this.#tmpPositionB.clone();
       a.z += eyeHeight;
