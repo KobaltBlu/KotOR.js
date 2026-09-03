@@ -52,7 +52,9 @@ export interface IOdysseyShadowDiagnostics {
   } | null;
 }
 
-const DEFAULT_MAP_RES_SOFT = 1024;
+// Directional lights cover up to an 80-unit-wide focus region. 2048 keeps
+// their 3x3 PCF footprint from becoming visibly blocky or overly broad.
+const DEFAULT_MAP_RES_SOFT = 2048;
 const DEFAULT_MAP_RES_HARD = 512;
 const SHADOW_MAP_NORMAL_BIAS = 0.005;
 

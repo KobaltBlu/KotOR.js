@@ -18,14 +18,7 @@ export const ODYSSEY_SHADOW_INFLUENCE_FADE_START = 0.65;
 /** UV border width (in shadow-map UV) used to soften frustum edge clipping. */
 export const ODYSSEY_SHADOW_MAP_EDGE_FADE = 0.05;
 
-/**
- * World-space contact probes for floor receivers so occlusion is tested near
- * walkmesh / caster volume when decorative MDL floors sit below the WOK, and
- * so angled lights do not leave a bright collar at the feet (peter-panning).
- */
-export const ODYSSEY_SHADOW_CONTACT_LIFT = 0.35;
-
-/** Minimum worldNormal.z to treat a receiver as floor-like for contact probes. */
+/** Minimum worldNormal.z to apply the reduced floor receiver bias. */
 export const ODYSSEY_SHADOW_CONTACT_NORMAL_Z = 0.5;
 
 /**
@@ -123,10 +116,6 @@ export const ODYSSEY_SHADOW_PARS_FRAGMENT = `
   #define ODYSSEY_SHADOW_MAP_EDGE_FADE ${ODYSSEY_SHADOW_MAP_EDGE_FADE}
 #endif
 
-#ifndef ODYSSEY_SHADOW_CONTACT_LIFT
-  #define ODYSSEY_SHADOW_CONTACT_LIFT ${ODYSSEY_SHADOW_CONTACT_LIFT}
-#endif
-
 #ifndef ODYSSEY_SHADOW_CONTACT_NORMAL_Z
   #define ODYSSEY_SHADOW_CONTACT_NORMAL_Z ${ODYSSEY_SHADOW_CONTACT_NORMAL_Z}
 #endif
@@ -182,33 +171,10 @@ float odysseyComputeShadowMapFactor( const in vec3 worldPos, const in vec3 world
     return factor;
   }
 
-  // Retail DoGobShadows: each GetShadowLights(mode=0) light can darken.
-  // Multiply independent map factors (overlapping lights stack like retail).
-  factor = odysseyShadowMapsAt( worldPos, worldNormal );
-
-  #ifdef USE_LIGHTMAP
-    vec3 n = normalize( worldNormal );
-    if ( n.z > ODYSSEY_SHADOW_CONTACT_NORMAL_Z ) {
-      float f = min(
-        factor,
-        odysseyShadowMapsAt( worldPos + vec3( 0.0, 0.0, ODYSSEY_SHADOW_CONTACT_LIFT ), worldNormal )
-      );
-      // Horizontal pull toward the strongest active lamp (slot 0).
-      vec3 toLight = odysseyShadowLightWorld[ 0 ] - worldPos;
-      float horizLen = length( toLight.xy );
-      if ( horizLen > 1e-4 && odysseyShadowActive[ 0 ] > 0.0 ) {
-        vec2 h = toLight.xy / horizLen;
-        float pull = ODYSSEY_SHADOW_CONTACT_LIFT * 0.6;
-        f = min(
-          f,
-          odysseyShadowMapsAt( worldPos + vec3( h.x * pull, h.y * pull, 0.0 ), worldNormal )
-        );
-      }
-      return f;
-    }
-  #endif
-
-  return factor;
+  // Retail projects each caster once per selected light. Sampling offset
+  // receiver positions unions displaced silhouettes and visibly duplicates
+  // the shadow, so contact is controlled by the floor bias above instead.
+  return odysseyShadowMapsAt( worldPos, worldNormal );
 }
 `;
 
