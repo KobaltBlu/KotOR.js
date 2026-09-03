@@ -1,6 +1,7 @@
 import { GameState } from "@/GameState";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { GameEffect } from "@/effects/GameEffect";
+import type { SWPoison } from "@/engine/rules/SWPoison";
 
 /**
  * EffectPoison class.
@@ -13,7 +14,7 @@ import { GameEffect } from "@/effects/GameEffect";
  */
 export class EffectPoison extends GameEffect {
   time: number;
-  poison: any;
+  poison: SWPoison;
   constructor(){
     super();
     this.type = GameEffectType.EffectPoison;
@@ -34,10 +35,7 @@ export class EffectPoison extends GameEffect {
 
   initialize(){
     super.initialize();
-    const poison2DA = GameState.TwoDAManager.datatables.get('poison');
-    if(poison2DA){
-      this.poison = poison2DA.rows[this.getPoisionId()];
-    }
+    this.poison = GameState.SWRuleSet.poisons[this.getPoisionId()];
 
     return this;
   }

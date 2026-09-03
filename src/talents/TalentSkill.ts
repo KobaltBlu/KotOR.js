@@ -212,12 +212,11 @@ export class TalentSkill extends TalentObject {
     skill.droidCanUse = TwoDAObject.normalizeValue(row.droidcanuse, 'boolean', false);
     skill.npcCanUse = TwoDAObject.normalizeValue(row.npccanuse, 'boolean', false);
 
-    const classData = GameState.TwoDAManager.datatables.get('classes');
-    if(classData){
-      for(let i = 0; i < classData.RowCount; i++){
-        const classRow = classData.rows[i];
-
-        const classCode = TwoDAObject.normalizeValue(classRow.skillstable, 'string', '');
+    const classes = GameState.SWRuleSet?.classes;
+    if(classes?.length){
+      for(let i = 0; i < classes.length; i++){
+        const cls = classes[i];
+        const classCode = cls?.skillstable || '';
         if(classCode === '')
           continue;
 
@@ -233,6 +232,30 @@ export class TalentSkill extends TalentObject {
         };
         
         skill.classData.set(classCode, skillClass);
+      }
+    }else{
+      const classData = GameState.TwoDAManager.datatables.get('classes');
+      if(classData){
+        for(let i = 0; i < classData.RowCount; i++){
+          const classRow = classData.rows[i];
+
+          const classCode = TwoDAObject.normalizeValue(classRow.skillstable, 'string', '');
+          if(classCode === '')
+            continue;
+
+          const classCodeLower = classCode.toLowerCase();
+
+          const isClassSkill = TwoDAObject.normalizeValue(row[`${classCodeLower}_class`], 'boolean', false);
+          const recommendedLevel = TwoDAObject.normalizeValue(row[`${classCodeLower}_reco`], 'number', 0);
+
+          const skillClass: SkillClass = {
+            class: classCode,
+            isClassSkill: isClassSkill,
+            recommendedLevel: recommendedLevel,
+          };
+          
+          skill.classData.set(classCode, skillClass);
+        }
       }
     }
 

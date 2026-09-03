@@ -328,15 +328,11 @@ export class DLGNode {
     if(this.plotIndex === -1 || !(this.plotXPPercentage > 0)){
       return;
     }
-    const plotTable = GameState.TwoDAManager.datatables.get('plot');
-    if(!plotTable){
-      return;
-    }
-    const row = plotTable.getByID(this.plotIndex) || plotTable.rows[this.plotIndex];
+    const row = GameState.SWRuleSet.GetPlotByIndex(this.plotIndex);
     if(!row){
       return;
     }
-    const baseXP = parseInt(row.xp, 10);
+    const baseXP = row.xp;
     if(!(baseXP > 0)){
       return;
     }

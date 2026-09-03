@@ -90,8 +90,57 @@ export class CreatureClass {
     this.id = id;
     this.level = 0;
     this.spells = [];
-    if(id >= 0)
-      this.apply2DA(GameState.TwoDAManager.datatables.get('classes').rows[this.id]);
+    if(id >= 0){
+      const cached = GameState.SWRuleSet?.classes?.[id];
+      if(cached && cached !== this){
+        this.copyRulesFrom(cached);
+      }else{
+        const row = GameState.TwoDAManager.datatables.get('classes')?.rows?.[this.id];
+        if(row) this.apply2DA(row);
+      }
+    }
+  }
+
+  /** Clone rule tables from an SWRuleSet template without sharing mutable state. */
+  copyRulesFrom(src: CreatureClass){
+    this.id = src.id;
+    this.label = src.label;
+    this.name = src.name;
+    this.plural = src.plural;
+    this.lower = src.lower;
+    this.description = src.description;
+    this.icon = src.icon;
+    this.hitdie = src.hitdie;
+    this.attackbonustable = src.attackbonustable;
+    this.featstable = src.featstable;
+    this.savingthrowtable = src.savingthrowtable;
+    this.skillstable = src.skillstable;
+    this.skillpointbase = src.skillpointbase;
+    this.spellgaintable = src.spellgaintable;
+    this.spellknowntable = src.spellknowntable;
+    this.playerclass = src.playerclass;
+    this.spellcaster = src.spellcaster;
+    this.str = src.str;
+    this.dex = src.dex;
+    this.con = src.con;
+    this.wis = src.wis;
+    this.int = src.int;
+    this.cha = src.cha;
+    this.primaryabil = src.primaryabil;
+    this.alignrestrict = src.alignrestrict;
+    this.alignrstrcttype = src.alignrstrcttype;
+    this.constant = src.constant;
+    this.forcedie = src.forcedie;
+    this.armorclasscolumn = src.armorclasscolumn;
+    this.featgain = src.featgain;
+    this.savingThrows = src.savingThrows.slice();
+    this.attackBonuses = src.attackBonuses.slice();
+    this.featGainPoints = src.featGainPoints.slice();
+    this.featGainBonuses = src.featGainBonuses.slice();
+    this.spellGainPoints = src.spellGainPoints.slice();
+    this.acbonuses = src.acbonuses.slice();
+    this.level = 0;
+    this.spells = [];
   }
 
   getName(){
@@ -299,15 +348,23 @@ export class CreatureClass {
       this.featgain = TwoDAObject.normalizeValue(row.featgain, 'string', 'SOL');
 
     if(this.savingthrowtable){
-      const savingThrows = GameState.TwoDAManager.datatables.get(this.savingthrowtable.toLowerCase());
-      if(savingThrows){
+      const tableName = this.savingthrowtable.toLowerCase();
+      const cached = GameState.SWRuleSet.savingThrowTables.get(tableName);
+      const savingThrows = GameState.TwoDAManager.datatables.get(tableName);
+      if(cached){
+        this.savingThrows = cached.slice();
+      }else if(savingThrows){
         this.savingThrows = Object.values(savingThrows.rows).map((row: any) => SWSavingThrow.From2DA(row));
       }
     }
 
     if(this.attackbonustable){
-      const attackBonuses = GameState.TwoDAManager.datatables.get(this.attackbonustable.toLowerCase());
-      if(attackBonuses){
+      const tableName = this.attackbonustable.toLowerCase();
+      const cached = GameState.SWRuleSet.attackBonusTables.get(tableName);
+      const attackBonuses = GameState.TwoDAManager.datatables.get(tableName);
+      if(cached){
+        this.attackBonuses = cached.slice();
+      }else if(attackBonuses){
         this.attackBonuses = Object.values(attackBonuses.rows).map((row: any) => SWAttackBonus.From2DA(row));
       }
     }
@@ -323,12 +380,8 @@ export class CreatureClass {
       this.spellGainPoints = spellGain.getSpellGain(this.spellgaintable);
     }
 
-    const acbonuses = GameState.TwoDAManager.datatables.get('acbonus');
-    if(acbonuses){
-      this.acbonuses = Object.values(acbonuses.rows).map((row: any) => {
-        const col = row[this.armorclasscolumn.toLowerCase()];
-        return col ? TwoDAObject.normalizeValue(col, 'number', 0) : 0;
-      });
+    if(GameState.SWRuleSet.acBonuses.length){
+      this.acbonuses = GameState.SWRuleSet.acBonuses.map((row) => row.getBonus(this.armorclasscolumn));
     }
 
   }

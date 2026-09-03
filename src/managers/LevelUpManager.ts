@@ -255,12 +255,9 @@ export class LevelUpManager {
 
     // Ability bump already set to primary in beginLevelUpDraft when due.
 
-    const skills2DA = GameState.TwoDAManager.datatables.get('skills');
     autoSpendSkillPoints(creature, draft, (recom: number) => {
       // Package-style: scan skills for matching recommended order via class package if present.
-      // Fallback: walk skill indices by recom rank using skills.2da row order.
-      if(!skills2DA) return recom - 1;
-      // Prefer CharGen-style package recommended skills when available
+      // Fallback: walk skill indices by recom rank.
       const pkg = (cls as any).packageSkills as number[] | undefined;
       if(pkg && pkg[recom - 1] != null) return pkg[recom - 1];
       return recom - 1;

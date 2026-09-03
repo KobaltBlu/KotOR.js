@@ -103,12 +103,8 @@ export class CheatConsoleManager {
     });
     if(level >= 15 && !hasJedi){ return; }
 
-    const exptable = GameState.TwoDAManager.datatables.get('exptable');
-    if(!exptable){ return; }
-    const row = exptable.rows[level];
-    if(!row){ return; }
-    const threshold = parseInt(row.xp, 10);
-    if(!Number.isFinite(threshold)){ return; }
+    const threshold = GameState.SWRuleSet?.expTable?.expList?.[level];
+    if(typeof threshold !== 'number' || !Number.isFinite(threshold)){ return; }
     const needed = threshold - player.getXP();
     if(needed > 0){
       player.addXP(needed, ExperienceType.PLOT);

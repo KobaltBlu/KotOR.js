@@ -164,7 +164,52 @@ export class FactionManager {
     //Clear the factions list
     FactionManager.Init();
 
-    //Populate the default factions
+    const swFactions = GameState.SWRuleSet?.factions;
+    if(swFactions?.length){
+      FactionManager.FACTION_COUNT = swFactions.length;
+      for(let i = 0; i < swFactions.length; i++){
+        const sw = swFactions[i];
+        if(!sw) continue;
+        const faction = new Faction();
+        faction.id = sw.id;
+        faction.label = sw.label;
+        faction.global = 1;
+        FactionManager.factions.set(faction.id, faction);
+        faction.initReputations(ReputationConstant.FRIENDLY);
+      }
+
+      FactionManager.factions.forEach( (faction1, faction1_id) => {
+        const swRow = swFactions[faction1_id];
+        for(let faction2_id = 0; faction2_id < FactionManager.FACTION_COUNT; faction2_id++){
+          const faction2 = FactionManager.factions.get(faction2_id);
+          const repKey = (faction2?.label || '').toLocaleLowerCase();
+          let reputation = swRow?.getReputation?.(repKey) ?? 0;
+          if(typeof reputation !== 'number' || isNaN(reputation)) reputation = 0;
+
+          if(faction1_id == 0){
+            if(faction2_id == 0){
+              faction1.reputations[faction2_id].reputation = ReputationConstant.FRIENDLY;
+            }else{
+              faction1.reputations[faction2_id].reputation = reputation;
+            }
+          }else{
+            if(faction2_id == 0){
+              faction1.reputations[faction2_id] = faction2.reputations[faction1_id];
+            }else{
+              if(faction1_id == faction2_id){
+                faction1.reputations[faction2_id].reputation = reputation;
+              }else{
+                faction1.reputations[faction2_id] = faction2.reputations[faction1_id];
+                faction1.reputations[faction2_id].reputation = reputation;
+              }
+            }
+          }
+        }
+      });
+      return;
+    }
+
+    // Fallback when SWRuleSet has not loaded repute yet
     let repute2DA = TwoDAManager.datatables.get('repute');
     if(repute2DA){
       FactionManager.FACTION_COUNT = repute2DA.RowCount;
@@ -176,9 +221,7 @@ export class FactionManager {
           faction.initReputations(ReputationConstant.FRIENDLY);
         }
       }
-    
 
-      //Set all faction reputations to their default values
       FactionManager.factions.forEach( (faction1, faction1_id) => {
         let twoDA_row = twoDA_factions[faction1_id];
         for(let faction2_id = 0; faction2_id < FactionManager.FACTION_COUNT; faction2_id++){
@@ -186,33 +229,24 @@ export class FactionManager {
           let _2DARep = twoDA_row[faction2.label.toLocaleLowerCase()];
           let reputation = !isNaN(parseInt(_2DARep)) ? parseInt(_2DARep) : 0;
 
-          if(faction1_id == 0){ //First row is a special case [player faction]
-            if(faction2_id == 0){ //targeting the [player faction] again
-              //hardcode the value to friendly
+          if(faction1_id == 0){
+            if(faction2_id == 0){
               faction1.reputations[faction2_id].reputation = ReputationConstant.FRIENDLY;
             }else{
-              //set the reputation value found in the 2da column for the target faction
               faction1.reputations[faction2_id].reputation = reputation;
             }
           }else{
-            if(faction2_id == 0){ //this faction info exists back in the player faction
-              //copy over the reference object from the other faction
-              //this will allow us to update both values at the same time in the future
+            if(faction2_id == 0){
               faction1.reputations[faction2_id] = faction2.reputations[faction1_id];
             }else{
-              if(faction1_id == faction2_id){ //targeting itself
-                //set the reputation value found in the 2da column for this faction
+              if(faction1_id == faction2_id){
                 faction1.reputations[faction2_id].reputation = reputation;
               }else{
-                //copy over the reference object from the other faction
-                //this will allow us to update both values at the same time in the future
                 faction1.reputations[faction2_id] = faction2.reputations[faction1_id];
-                //update the reputation value incase this value is newer
                 faction1.reputations[faction2_id].reputation = reputation;
               }
             }
           }
-
         }
       });
     }

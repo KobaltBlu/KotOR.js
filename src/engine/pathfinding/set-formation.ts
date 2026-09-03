@@ -32,16 +32,13 @@ export function setCreatureFormation(
     return false;
   }
 
-  const formations = GameState.TwoDAManager.datatables.get("formations");
-  if(!formations?.rows?.[pattern]){
+  const formation = GameState.SWRuleSet.formations[pattern];
+  if(!formation){
     return false;
   }
 
-  const row = formations.rows[pattern];
-  const angleKey = `angle_${position}`;
-  const distKey = `distance_${position}`;
-  const angleDeg = parseFloat(row[angleKey] ?? row[angleKey.toUpperCase()] ?? row[`ANGLE_${position}`]);
-  const distance = parseFloat(row[distKey] ?? row[distKey.toUpperCase()] ?? row[`DISTANCE_${position}`]);
+  const angleDeg = formation.angles[position];
+  const distance = formation.distances[position];
   if(!Number.isFinite(angleDeg) || !Number.isFinite(distance)){
     return false;
   }

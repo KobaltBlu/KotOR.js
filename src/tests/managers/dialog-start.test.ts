@@ -1,8 +1,12 @@
+/**
+ * @jest-environment node
+ */
+import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import {
   resolveBeginConversationDialog,
   resolveDialogStartOwner,
-} from "@/managers/dialog-start";
+} from "@/actions/dialog-start";
 
 const CREATURE = ModuleObjectType.ModuleObject | ModuleObjectType.ModuleCreature;
 const DOOR = ModuleObjectType.ModuleObject | ModuleObjectType.ModuleDoor;

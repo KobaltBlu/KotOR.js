@@ -5,6 +5,7 @@ import { GFFStruct } from "@/resource/GFFStruct";
 import { JournalCategory } from "@/engine/JournalCategory";
 import { JournalCategoryEntry } from "@/engine/JournalCategoryEntry";
 import { ModuleCalendar } from "@/module/ModuleCalendar";
+import type { SWPlot } from "@/engine/rules/SWPlot";
 
 /**
  * JournalEntry class.
@@ -23,7 +24,7 @@ export class JournalEntry {
 
   category: JournalCategory;
   entry: JournalCategoryEntry;
-  plot: any;
+  plot: SWPlot;
 
   constructor(){
 
@@ -55,10 +56,7 @@ export class JournalEntry {
     }else{
       console.warn(`JournalEntry.load: Invalid Category "${this.plot_id}"`);
     }
-    const plotTable = GameState.TwoDAManager.datatables.get('plot');
-    if(!plotTable){ return; }
-
-    const plot = plotTable.getRowByColumnAndValue('label', this.plot_id.toLocaleLowerCase());
+    const plot = GameState.SWRuleSet.GetPlotByLabel(this.plot_id);
     if(!plot){ return; }
     
     this.plot = plot;
@@ -66,7 +64,7 @@ export class JournalEntry {
 
   getExperience(): number {
     if(this.plot){
-      return parseInt(this.plot.xp);
+      return this.plot.xp;
     }
     return 0;
   }

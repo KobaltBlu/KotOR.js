@@ -1,7 +1,7 @@
 import { GameState } from "@/GameState";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { GameEffect } from "@/effects/GameEffect";
-// import { TwoDAManager } from "@/managers";
+import type { SWForceShield } from "@/engine/rules/SWForceShield";
 
 /**
  * EffectForceShield class.
@@ -13,7 +13,7 @@ import { GameEffect } from "@/effects/GameEffect";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class EffectForceShield extends GameEffect {
-  forceShield: any;
+  forceShield: SWForceShield;
   /** Child VFX + damage resistance spawned by onApply — torn down together. */
   private children: GameEffect[] = [];
 
@@ -28,10 +28,7 @@ export class EffectForceShield extends GameEffect {
   initialize(){
     super.initialize();
 
-    const forceShield2DA = GameState.TwoDAManager.datatables.get('forceshields');
-    if(forceShield2DA){
-      this.forceShield = forceShield2DA.rows[this.getInt(0)];
-    }
+    this.forceShield = GameState.SWRuleSet.forceShields[this.getInt(0)];
 
     return this;
   }

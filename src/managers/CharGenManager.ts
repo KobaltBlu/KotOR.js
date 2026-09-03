@@ -634,6 +634,26 @@ export class CharGenManager {
   /** Returns skill indices in recommended spend order (-1 = unused slot). */
   static getRecommendedOrder(creature?: { classes?: { skillstable?: string }[] }): number[] {
     const skillOrder: number[] = [-1, -1, -1, -1, -1, -1, -1, -1];
+    const cls = CharGenManager.getCreatureSkillClass(creature);
+    const classCode = cls?.skillstable || '';
+    const skills = GameState.SWRuleSet?.skills;
+    if(skills?.length && classCode){
+      for(let i = 0; i < 8 && i < skills.length; i++){
+        const skill = skills[i];
+        const data =
+          skill?.classData?.get(classCode) ||
+          skill?.classData?.get(classCode.toLowerCase());
+        const recom = data?.recommendedLevel | 0;
+        if(recom > 0){
+          const order = recom - 1;
+          if(order >= 0 && order < 8){
+            skillOrder[order] = i;
+          }
+        }
+      }
+      return skillOrder;
+    }
+
     const table = TwoDAManager.datatables.get('skills');
     const column = CharGenManager.getSkillTableColumnRecommended(creature);
     if(!table || !column) return skillOrder;

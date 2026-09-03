@@ -67,7 +67,7 @@ jest.mock('@/audio/AudioEmitter', () => ({
   },
 }));
 jest.mock('@/utility/ConfigClient', () => ({ ConfigClient: { get: jest.fn() } }));
-jest.mock('@/managers/dialog-camera', () => ({
+jest.mock('@/managers/cutscene/dialog-camera', () => ({
   computeDialogCameraShot: jest.fn(),
   dlgAngleToShotType: jest.fn(),
   DIALOG_CAMERA_FOV: 55,

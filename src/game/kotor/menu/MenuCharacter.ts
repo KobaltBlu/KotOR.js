@@ -295,7 +295,10 @@ export class MenuCharacter extends GameMenu {
     this.LBL_WIS_MOD?.setText(Math.floor((character.getWIS() - 10) / 2));
     this.LBL_CHA_MOD?.setText(Math.floor((character.getCHA() - 10) / 2));
     this.LBL_EXPERIENCE_STAT?.setText(character.experience.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','));
-    this.LBL_NEEDED_XP?.setText(GameState.TwoDAManager.datatables.get('exptable').rows[character.getTotalClassLevel()].xp.replace(/\B(?=(\d{3})+(?!\d))/g, ','));
+    const neededXp = GameState.SWRuleSet?.expTable?.expList?.[character.getTotalClassLevel()];
+    this.LBL_NEEDED_XP?.setText(
+      (neededXp != null ? String(neededXp) : '0').replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+    );
     if (character.canLevelUp()) {
       this.BTN_AUTO?.show();
       this.BTN_LEVELUP?.show();

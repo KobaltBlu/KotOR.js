@@ -689,7 +689,7 @@ export class ModuleTrigger extends ModuleObject {
     this.initialized = true;
 
     if(this.type == ModuleTriggerType.TRAP){
-      const trap = GameState.TwoDAManager.datatables.get('traps')?.rows[this.trapType];
+      const trap = GameState.SWRuleSet.traps[this.trapType];
       if(trap){
         this.trapName = GameState.TLKManager.GetStringById(trap.name).Value;
         this.trapModelResRef = trap.model;

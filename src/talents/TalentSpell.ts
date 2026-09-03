@@ -14,6 +14,7 @@ import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState"
 import { CombatActionType } from "@/enums/combat/CombatActionType";
 import { TalentObjectType } from "@/enums/engine/TalentObjectType";
 import { TwoDAObject } from "@/resource/TwoDAObject";
+import { GameState } from "@/GameState";
 
 const underscoreParser = (value: string = ''): number[] => {
   return value.split('_').map((val) => {
@@ -103,25 +104,42 @@ export class TalentSpell extends TalentObject {
 
   nextSpell: TalentSpell;
 
-  constructor( id = 0 ){
+  constructor( id = 0, loadRules = true ){
     super(id);
     this.objectType = TalentObjectType.TalentObject | TalentObjectType.TalentSpell;
 
-    const spells = TwoDAManager.datatables.get('spells');
-    //Merge the spell properties from the spells.2da row with this spell
-    if(spells && spells.rows[this.id]){
-      this.parseTwoDARow(spells.rows[this.id]);
+    if(loadRules){
+      this.loadRulesFromId(this.id);
     }
-
   }
 
   setId( value = 0 ){
     this.id = value;
+    this.loadRulesFromId(this.id);
+  }
+
+  /** Copy already-parsed spell rules from SWRuleSet, else parse spells.2da. */
+  loadRulesFromId(id: number = this.id){
+    const cached = GameState.SWRuleSet?.spells?.[id];
+    if(cached && cached !== this){
+      this.copyRulesFrom(cached);
+      this.id = id;
+      return;
+    }
     const spells = TwoDAManager.datatables.get('spells');
-    // Must use parseTwoDARow — raw Object.assign leaves **** strings and breaks
-    // forcehostile / forcefriendly self-target gates.
-    if(spells?.rows?.[this.id]){
-      this.parseTwoDARow(spells.rows[this.id]);
+    if(spells?.rows?.[id]){
+      this.parseTwoDARow(spells.rows[id]);
+    }
+  }
+
+  copyRulesFrom(src: TalentSpell){
+    const skip = new Set(['nextSpell', 'oCaster', 'oTarget', 'objectType']);
+    for(const key of Object.keys(src)){
+      if(skip.has(key)) continue;
+      const v = (src as any)[key];
+      if(typeof v === 'function') continue;
+      // Clone arrays so instance mutation does not touch the rules cache
+      (this as any)[key] = Array.isArray(v) ? v.slice() : v;
     }
   }
 
@@ -275,7 +293,7 @@ export class TalentSpell extends TalentObject {
   }
 
   static From2DA( row: any ){
-    const spell = new TalentSpell();
+    const spell = new TalentSpell(0, false);
     spell.parseTwoDARow(row);
     return spell;
   }

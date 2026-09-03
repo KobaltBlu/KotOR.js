@@ -118,6 +118,13 @@ export class BaseItem {
   static From2DA (baseItemId: number = -1): BaseItem {
     const baseItem = new BaseItem();
 
+    const sw = baseItemId >= 0 ? GameState.SWRuleSet?.baseItems?.[baseItemId] : undefined;
+    if(sw){
+      Object.assign(baseItem, sw);
+      baseItem.postProcess();
+      return baseItem;
+    }
+
     let row: any = {};
     if(baseItemId >= 0){
       const datatable = GameState.TwoDAManager.datatables.get('baseitems');

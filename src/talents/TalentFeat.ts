@@ -125,22 +125,41 @@ export class TalentFeat extends TalentObject {
 
   nextFeat: TalentFeat;
 
-  constructor( id = 0){
+  constructor( id = 0, loadRules = true){
     super(id);
     this.objectType = TalentObjectType.TalentObject | TalentObjectType.TalentFeat;
 
-    //Merge the feat properties from the feat.2da row with this feat
-    if(TwoDAManager.datatables.get('feat').rows[this.id]){
-      this.apply2DA(TwoDAManager.datatables.get('feat').rows[this.id]);
+    if(loadRules){
+      this.loadRulesFromId(this.id);
     }
-
   }
 
   setId( value = 0 ){
     this.id = value;
-    //Merge the feat properties from the feat.2da row with this feat
-    if(TwoDAManager.datatables.get('feat').rows[this.id]){
-      this.apply2DA(TwoDAManager.datatables.get('feat').rows[this.id]);
+    this.loadRulesFromId(this.id);
+  }
+
+  /** Copy rule fields from SWRuleSet cache or fall back to feat.2da. */
+  loadRulesFromId(id: number = this.id){
+    const cached = GameState.SWRuleSet?.feats?.[id];
+    if(cached && cached !== this){
+      this.copyRulesFrom(cached);
+      this.id = id;
+      return;
+    }
+    const row = TwoDAManager.datatables.get('feat')?.rows?.[id];
+    if(row){
+      this.apply2DA(row);
+    }
+  }
+
+  copyRulesFrom(src: TalentFeat){
+    const skip = new Set(['nextFeat', 'oCaster', 'oTarget', 'objectType']);
+    for(const key of Object.keys(src)){
+      if(skip.has(key)) continue;
+      const v = (src as any)[key];
+      if(typeof v === 'function') continue;
+      (this as any)[key] = v;
     }
   }
 
@@ -737,7 +756,7 @@ export class TalentFeat extends TalentObject {
   }
 
   static From2DA(row: any = {}) {
-    const talentFeat = new TalentFeat();
+    const talentFeat = new TalentFeat(0, false);
     talentFeat.apply2DA(row);
     return talentFeat;
   }

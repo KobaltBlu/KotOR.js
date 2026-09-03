@@ -2092,7 +2092,7 @@ export class ModuleObject {
    * @param owner
    */
   addTrap(nTrapId: number = -1, owner: ModuleObject){
-    const trap = GameState.TwoDAManager.datatables.get('traps')?.rows[nTrapId];
+    const trap = GameState.SWRuleSet.traps[nTrapId];
     if(!trap){ return; }
 
     if(trap.trapscript?.length && trap.trapscript != '****'){
@@ -2114,17 +2114,17 @@ export class ModuleObject {
     this.ownerDemolitions = owner.getSkillLevel(SkillType.DEMOLITIONS);
     const d20 = 20;
 
-    const nDetectDC = !isNaN(parseInt(trap.detectdcmod)) ? parseInt(trap.detectdcmod) : 0;
+    const nDetectDC = trap.detectdcmod;
     this.trapDetectDC = nDetectDC + d20 + this.ownerDemolitions;
     this.trapDetectable = true;
 
-    const nDisarmDC = !isNaN(parseInt(trap.disarmdcmod)) ? parseInt(trap.disarmdcmod) : 0;
+    const nDisarmDC = trap.disarmdcmod;
     this.trapDisarmDC = nDisarmDC + d20 + this.ownerDemolitions;
     this.trapDisarmable = true;
 
     const trigger = new GameState.Module.ModuleArea.ModuleTrigger();
     trigger.initialized = true;
-    trigger.name = GameState.TLKManager.GetStringById(parseInt(trap.name))?.Value;
+    trigger.name = GameState.TLKManager.GetStringById(trap.name)?.Value;
     trigger.factionId = owner.factionId;
     trigger.type = ModuleTriggerType.TRAP;
     trigger.trapType = nTrapId;
@@ -2159,17 +2159,17 @@ export class ModuleObject {
     owner: ModuleObject
   ){
     if(!area){ return undefined; }
-    const trap = GameState.TwoDAManager.datatables.get('traps')?.rows[nTrapId];
+    const trap = GameState.SWRuleSet.traps[nTrapId];
     if(!trap){ return undefined; }
 
     const d20 = 20;
     const ownerDemolitions = owner.getSkillLevel(SkillType.DEMOLITIONS);
-    const nDetectDC = !isNaN(parseInt(trap.detectdcmod)) ? parseInt(trap.detectdcmod) : 0;
-    const nDisarmDC = !isNaN(parseInt(trap.disarmdcmod)) ? parseInt(trap.disarmdcmod) : 0;
+    const nDetectDC = trap.detectdcmod;
+    const nDisarmDC = trap.disarmdcmod;
 
     const trigger = new GameState.Module.ModuleArea.ModuleTrigger();
     trigger.initialized = true;
-    trigger.name = GameState.TLKManager.GetStringById(parseInt(trap.name))?.Value;
+    trigger.name = GameState.TLKManager.GetStringById(trap.name)?.Value;
     trigger.factionId = owner.factionId;
     trigger.type = ModuleTriggerType.TRAP;
     trigger.trapType = nTrapId;

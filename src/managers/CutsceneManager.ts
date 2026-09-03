@@ -39,15 +39,25 @@ import {
   isAspyrCarthDialogCameraHack,
   applyAspyrPlaceableCameraHack,
   type DialogPseudoRandomState,
-} from "@/managers/dialog-camera";
+} from "@/managers/cutscene/dialog-camera";
 import {
   auroraCameraLookOrientation,
 } from "@/utility/aurora-camera-orientation";
 import { ConfigClient } from "@/utility/ConfigClient";
-import {
-  areRequiredDialogParticipantsReady,
-  DIALOG_PARTICIPANT_RETRY_MS,
-} from "@/managers/dialog-participant-ready";
+
+/** Retail SendDialogEntryNode AnimList retry window (0x5dc = 1500ms). */
+export const DIALOG_PARTICIPANT_RETRY_MS = 0x5dc;
+
+export interface DialogParticipantReadyActor {
+  participant: string;
+  moduleObject?: { model?: unknown } | undefined;
+  animations?: unknown[] | undefined;
+}
+
+export interface DialogParticipantReadyAnim {
+  participant: string;
+  animation: number;
+}
 
 export class CutsceneManager {
 
@@ -329,12 +339,67 @@ export class CutsceneManager {
   }
 
   /**
+   * True when a required AnimList participant is bound for cutscene playback.
+   * NonDependant names are ignored (may be absent).
+   */
+  static isRequiredDialogParticipantReady(
+    anim: DialogParticipantReadyAnim,
+    options: {
+      isNonDependant: (name: string) => boolean;
+      stuntActor?: DialogParticipantReadyActor;
+      /** Live object from GetObjectByTag / PLAYER / OWNER when not a stunt actor. */
+      liveObject?: { model?: unknown } | undefined;
+    }
+  ): boolean {
+    const name = (anim.participant || '').trim();
+    if(!name){ return true; }
+    if(options.isNonDependant(name)){ return true; }
+
+    if(options.stuntActor){
+      const obj = options.stuntActor.moduleObject;
+      if(!obj){ return false; }
+      // CUT stunt anims need both the creature mesh and stunt animation list.
+      if(!obj.model){ return false; }
+      if(!options.stuntActor.animations?.length){ return false; }
+      return true;
+    }
+
+    if(!options.liveObject){ return false; }
+    // Non-stunt AnimList still needs a model for dialogPlayAnimation.
+    if(options.liveObject.model === undefined || options.liveObject.model === null){
+      return false;
+    }
+    return true;
+  }
+
+  static areRequiredDialogParticipantsReady(
+    animations: DialogParticipantReadyAnim[],
+    options: {
+      isNonDependant: (name: string) => boolean;
+      getStuntActor: (name: string) => DialogParticipantReadyActor | undefined;
+      getLiveObject: (name: string) => { model?: unknown } | undefined;
+    }
+  ): boolean {
+    for(let i = 0; i < animations.length; i++){
+      const anim = animations[i];
+      const key = (anim.participant || '').toLocaleLowerCase();
+      const ready = this.isRequiredDialogParticipantReady(anim, {
+        isNonDependant: options.isNonDependant,
+        stuntActor: options.getStuntActor(key),
+        liveObject: options.getLiveObject(anim.participant),
+      });
+      if(!ready){ return false; }
+    }
+    return true;
+  }
+
+  /**
    * Retail SendDialogEntryNode required-participant gate.
    * StuntList actors need moduleObject + model + CUT animations.
    */
   static areRequiredEntryParticipantsReady(entry: DLGNode): boolean {
     if(!entry?.animations?.length){ return true; }
-    return areRequiredDialogParticipantsReady(entry.animations, {
+    return this.areRequiredDialogParticipantsReady(entry.animations, {
       isNonDependant: (name) => this.isDialogNonDependant(name),
       getStuntActor: (name) => this.dialog?.stuntActors?.get(name.toLocaleLowerCase()),
       getLiveObject: (name) => this.resolveDialogParticipantObject(name),

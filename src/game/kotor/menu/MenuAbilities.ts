@@ -281,10 +281,9 @@ export class MenuAbilities extends GameMenu {
     let alignPrefix = '';
     if(creature && (goodEvil === 'G' || goodEvil === 'E')){
       const band = Math.min(10, Math.max(0, Math.floor(creature.getGoodEvil() / 10)));
-      const table = GameState.TwoDAManager.datatables.get('forceadjust');
-      const row = table?.getRowByIndex?.(band) || table?.rows?.[band] || table?.rows?.[String(band)];
+      const row = GameState.SWRuleSet.forceAdjustments[band];
       if(row){
-        const mult = parseFloat(goodEvil === 'G' ? (row.goodcost ?? 1) : (row.evilcost ?? 1));
+        const mult = goodEvil === 'G' ? row.goodcost : row.evilcost;
         if(isFinite(mult) && mult > 0){
           // Retail OnEnterPower: ftol(base * mult + 0.5) - base
           delta = Math.floor(base * mult + 0.5) - base;

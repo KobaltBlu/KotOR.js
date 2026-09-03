@@ -106,12 +106,11 @@ export function resolveMineSetCheck(
   owner: ModuleCreature,
   trapSubType: number = 0
 ): { result: MineSkillResult; roll: number; skill: number; dc: number } {
-  const trap = GameState.TwoDAManager.datatables.get('traps')?.rows[trapSubType];
+  const trap = GameState.SWRuleSet.traps[trapSubType];
   let setDC = 1;
   if(trap){
-    const parsed = parseInt(trap.setdc ?? trap.SetDC ?? trap.setDC);
-    if(!isNaN(parsed) && parsed > 0){
-      setDC = parsed;
+    if(trap.setdc > 0){
+      setDC = trap.setdc;
     }
   }
 

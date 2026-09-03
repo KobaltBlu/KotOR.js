@@ -9,7 +9,7 @@ import {
   applyAspyrPlaceableCameraHack,
   resolveAspyrAppearanceCameraOverrides,
   isLoopingDialogStuntAnimation,
-} from '@/managers/dialog-camera';
+} from '@/managers/cutscene/dialog-camera';
 
 describe('isLoopingDialogStuntAnimation (IsLoopingDialogStuntAnimation @ 0062ab70)', () => {
   it('is false for base and w CUT bands', () => {

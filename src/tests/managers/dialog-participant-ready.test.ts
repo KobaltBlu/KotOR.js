@@ -3,10 +3,9 @@
  */
 import { describe, expect, test } from '@jest/globals';
 import {
-  areRequiredDialogParticipantsReady,
+  CutsceneManager,
   DIALOG_PARTICIPANT_RETRY_MS,
-  isRequiredDialogParticipantReady,
-} from '@/managers/dialog-participant-ready';
+} from '@/managers/CutsceneManager';
 
 describe('dialog-participant-ready', () => {
   test('retail retry window is 1500ms', () => {
@@ -14,7 +13,7 @@ describe('dialog-participant-ready', () => {
   });
 
   test('NonDependant missing participant is ready', () => {
-    expect(isRequiredDialogParticipantReady(
+    expect(CutsceneManager.isRequiredDialogParticipantReady(
       { participant: 'extra', animation: 1200 },
       {
         isNonDependant: () => true,
@@ -25,7 +24,7 @@ describe('dialog-participant-ready', () => {
   });
 
   test('required stunt actor needs object, model, and animations', () => {
-    expect(isRequiredDialogParticipantReady(
+    expect(CutsceneManager.isRequiredDialogParticipantReady(
       { participant: 'bastila', animation: 1200 },
       {
         isNonDependant: () => false,
@@ -34,7 +33,7 @@ describe('dialog-participant-ready', () => {
       }
     )).toBe(false);
 
-    expect(isRequiredDialogParticipantReady(
+    expect(CutsceneManager.isRequiredDialogParticipantReady(
       { participant: 'bastila', animation: 1200 },
       {
         isNonDependant: () => false,
@@ -61,7 +60,7 @@ describe('dialog-participant-ready', () => {
         animations: undefined,
       }],
     ]);
-    expect(areRequiredDialogParticipantsReady(
+    expect(CutsceneManager.areRequiredDialogParticipantsReady(
       [
         { participant: 'player', animation: 1200 },
         { participant: 'bastila', animation: 1200 },

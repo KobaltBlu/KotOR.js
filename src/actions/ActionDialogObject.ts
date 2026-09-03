@@ -6,7 +6,7 @@ import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState"
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
-import { resolveBeginConversationDialog, resolveDialogStartOwner } from "@/managers/dialog-start";
+import { resolveBeginConversationDialog, resolveDialogStartOwner } from "@/actions/dialog-start";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { DLGObject } from "@/resource/DLGObject";
 import { BitWise } from "@/utility/BitWise";

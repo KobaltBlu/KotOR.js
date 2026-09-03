@@ -1,9 +1,6 @@
 import { FeedbackOption } from "@/enums/engine/FeedbackOption";
 import { GameState } from "@/GameState";
 
-export { shouldShowTutorialWindow } from "@/managers/tutorial-window-gate";
-import { shouldShowTutorialWindow } from "@/managers/tutorial-window-gate";
-
 /**
  * TutorialManager — global tutorial.2da / NWScript path.
  *
@@ -33,6 +30,18 @@ export class TutorialManager {
     this.buttonMashCheck = false;
   }
 
+  /**
+   * Pure gate for ShowTutorialWindow (no GameState — Jest-safe).
+   * Retail: script enable AND Options "Tutorial Popups" AND not yet seen.
+   */
+  static shouldShowTutorialWindow(
+    windowsEnabled: boolean,
+    tutorialPopups: boolean,
+    alreadySeen: boolean,
+  ): boolean {
+    return !!windowsEnabled && !!tutorialPopups && !alreadySeen;
+  }
+
   /** Script enable AND Options Tutorial Popups (INI / Feedback). */
   static isPopupAllowed(): boolean {
     const popups = GameState.FeedbackMessageManager?.GetFeedbackTypeEnabled?.(
@@ -40,7 +49,7 @@ export class TutorialManager {
     );
     // Default ON when FeedbackMessageManager not wired yet.
     const tutorialPopups = popups !== false;
-    return shouldShowTutorialWindow(this.windowsEnabled, tutorialPopups, false);
+    return this.shouldShowTutorialWindow(this.windowsEnabled, tutorialPopups, false);
   }
 
   static canShow(id: number): boolean {

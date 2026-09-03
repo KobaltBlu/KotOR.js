@@ -3,7 +3,6 @@ import { GFFField } from "@/resource/GFFField";
 import { GFFObject } from "@/resource/GFFObject";
 import { ResourceLoader } from "@/loaders";
 import { ResourceTypes } from "@/resource/ResourceTypes";
-import { TwoDAManager } from "@/managers/TwoDAManager";
 import { JournalCategory } from "@/engine/JournalCategory";
 import { JournalEntry } from "@/engine/JournalEntry";
 import { UIIconTimerType } from "@/enums/engine/UIIconTimerType";
@@ -68,12 +67,7 @@ export class JournalManager {
   }
 
   static GetJournalQuestExperience(szPlotID: string = ''): number {
-    const plotTable = TwoDAManager.datatables.get('plot');
-    const plot = plotTable.getRowByColumnAndValue('label', szPlotID.toLocaleLowerCase());
-    if(plot){
-      return parseInt(plot.xp);
-    }
-    return 0;
+    return GameState.SWRuleSet.GetPlotByLabel(szPlotID)?.xp || 0;
   }
 
   /** Stamp JNL_Date / JNL_Time from module calendar (Mod_PauseDay / Mod_PauseTime). */
@@ -128,12 +122,7 @@ export class JournalManager {
   }
 
   static PlotExists(szPlotID: string = ''): boolean {
-    const plotTable = TwoDAManager.datatables.get('plot');
-    const plot = plotTable.getRowByColumnAndValue('label', szPlotID.toLocaleLowerCase());
-    if(plot){
-      return true;
-    }
-    return false;
+    return !!GameState.SWRuleSet.GetPlotByLabel(szPlotID);
   }
 
   static stampWorldEntryTime(entry: JournalWorldEntry){

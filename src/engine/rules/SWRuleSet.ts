@@ -38,6 +38,16 @@ import { SWGrenadeSound } from "@/engine/rules/SWGrenadeSound";
 import { SWAnimation } from "@/engine/rules/SWAnimation";
 import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
 import { SWCombatAnimation } from "./SWCombatAnimation";
+import { SWTrap } from "@/engine/rules/SWTrap";
+import { SWForceAdjust } from "@/engine/rules/SWForceAdjust";
+import { SWForceShield } from "@/engine/rules/SWForceShield";
+import { SWPoison } from "@/engine/rules/SWPoison";
+import { SWRegeneration } from "@/engine/rules/SWRegeneration";
+import { SWACBonus } from "@/engine/rules/SWACBonus";
+import { SWFormation } from "@/engine/rules/SWFormation";
+import { SWPlot } from "@/engine/rules/SWPlot";
+import { SWAttackBonus } from "@/engine/rules/SWAttackBonus";
+import { SWSavingThrow } from "@/engine/rules/SWSavingThrow";
 
 /**
  * SWRuleSet class.
@@ -94,6 +104,25 @@ export class SWRuleSet {
 
   static encounterDifficulties: SWEncounterDifficulty[] = [];
   static encounterDifficultyCount: number = 0;
+
+  static traps: SWTrap[] = [];
+  static trapCount: number = 0;
+  static forceAdjustments: SWForceAdjust[] = [];
+  static forceAdjustmentCount: number = 0;
+  static forceShields: SWForceShield[] = [];
+  static forceShieldCount: number = 0;
+  static poisons: SWPoison[] = [];
+  static poisonCount: number = 0;
+  static regenerations: SWRegeneration[] = [];
+  static regenerationCount: number = 0;
+  static acBonuses: SWACBonus[] = [];
+  static acBonusCount: number = 0;
+  static formations: SWFormation[] = [];
+  static formationCount: number = 0;
+  static plots: SWPlot[] = [];
+  static plotCount: number = 0;
+  static attackBonusTables: Map<string, SWAttackBonus[]> = new Map();
+  static savingThrowTables: Map<string, SWSavingThrow[]> = new Map();
 
   static genders: SWGender[] = [];
   static genderCount: number = 0;
@@ -260,6 +289,86 @@ export class SWRuleSet {
     }
 
     /**
+     * Initialize rules tables used by gameplay and class-derived values.
+     */
+    const traps = GameState.TwoDAManager.datatables.get('traps');
+    SWRuleSet.trapCount = traps?.RowCount || 0;
+    SWRuleSet.traps = traps
+      ? Object.values(traps.rows).map((row: any) => SWTrap.From2DA(row))
+      : [];
+
+    const forceAdjust = GameState.TwoDAManager.datatables.get('forceadjust');
+    SWRuleSet.forceAdjustmentCount = forceAdjust?.RowCount || 0;
+    SWRuleSet.forceAdjustments = forceAdjust
+      ? Object.values(forceAdjust.rows).map((row: any) => SWForceAdjust.From2DA(row))
+      : [];
+
+    const forceShields = GameState.TwoDAManager.datatables.get('forceshields');
+    SWRuleSet.forceShieldCount = forceShields?.RowCount || 0;
+    SWRuleSet.forceShields = forceShields
+      ? Object.values(forceShields.rows).map((row: any) => SWForceShield.From2DA(row))
+      : [];
+
+    const poisons = GameState.TwoDAManager.datatables.get('poison');
+    SWRuleSet.poisonCount = poisons?.RowCount || 0;
+    SWRuleSet.poisons = poisons
+      ? Object.values(poisons.rows).map((row: any) => SWPoison.From2DA(row))
+      : [];
+
+    const regenerations = GameState.TwoDAManager.datatables.get('regeneration');
+    SWRuleSet.regenerationCount = regenerations?.RowCount || 0;
+    SWRuleSet.regenerations = regenerations
+      ? Object.values(regenerations.rows).map((row: any) => SWRegeneration.From2DA(row))
+      : [];
+
+    const acBonuses = GameState.TwoDAManager.datatables.get('acbonus');
+    SWRuleSet.acBonusCount = acBonuses?.RowCount || 0;
+    SWRuleSet.acBonuses = acBonuses
+      ? Object.values(acBonuses.rows).map((row: any) => SWACBonus.From2DA(row))
+      : [];
+
+    const formations = GameState.TwoDAManager.datatables.get('formations');
+    SWRuleSet.formationCount = formations?.RowCount || 0;
+    SWRuleSet.formations = formations
+      ? Object.values(formations.rows).map((row: any) => SWFormation.From2DA(row))
+      : [];
+
+    const plots = GameState.TwoDAManager.datatables.get('plot');
+    SWRuleSet.plotCount = plots?.RowCount || 0;
+    SWRuleSet.plots = plots
+      ? Object.values(plots.rows).map((row: any) => SWPlot.From2DA(row))
+      : [];
+
+    SWRuleSet.attackBonusTables.clear();
+    SWRuleSet.savingThrowTables.clear();
+    for(let i = 0; i < SWRuleSet.classes.length; i++){
+      const cls = SWRuleSet.classes[i];
+      const attackTableName = cls.attackbonustable?.toLowerCase();
+      if(attackTableName && !SWRuleSet.attackBonusTables.has(attackTableName)){
+        const table = GameState.TwoDAManager.datatables.get(attackTableName);
+        if(table){
+          SWRuleSet.attackBonusTables.set(
+            attackTableName,
+            Object.values(table.rows).map((row: any) => SWAttackBonus.From2DA(row))
+          );
+        }
+      }
+      const saveTableName = cls.savingthrowtable?.toLowerCase();
+      if(saveTableName && !SWRuleSet.savingThrowTables.has(saveTableName)){
+        const table = GameState.TwoDAManager.datatables.get(saveTableName);
+        if(table){
+          SWRuleSet.savingThrowTables.set(
+            saveTableName,
+            Object.values(table.rows).map((row: any) => SWSavingThrow.From2DA(row))
+          );
+        }
+      }
+      cls.attackBonuses = SWRuleSet.attackBonusTables.get(attackTableName)?.slice() || cls.attackBonuses;
+      cls.savingThrows = SWRuleSet.savingThrowTables.get(saveTableName)?.slice() || cls.savingThrows;
+      cls.acbonuses = SWRuleSet.acBonuses.map((row) => row.getBonus(cls.armorclasscolumn));
+    }
+
+    /**
      * Initialize Racial Types
      */
     const racialtypes = GameState.TwoDAManager.datatables.get('racialtypes');
@@ -414,6 +523,15 @@ export class SWRuleSet {
         SWRuleSet.factions[i] = SWFaction.From2DA(factions.rows[i]);
       }
     }
+
+    /**
+     * Initialize Encounter Difficulties
+     */
+    const encounterDifficulties = GameState.TwoDAManager.datatables.get('encdifficulty');
+    SWRuleSet.encounterDifficultyCount = encounterDifficulties?.RowCount || 0;
+    SWRuleSet.encounterDifficulties = encounterDifficulties
+      ? Object.values(encounterDifficulties.rows).map((row: any) => SWEncounterDifficulty.From2DA(row))
+      : [];
 
     /**
      * Initialize Genders
@@ -640,6 +758,14 @@ export class SWRuleSet {
       }
     }
     return undefined;
+  }
+
+  static GetPlotByLabel(label: string = ''): SWPlot | undefined {
+    return SWPlot.GetByLabel(SWRuleSet.plots, label);
+  }
+
+  static GetPlotByIndex(index: number): SWPlot | undefined {
+    return SWPlot.GetByIndex(SWRuleSet.plots, index);
   }
 
 }

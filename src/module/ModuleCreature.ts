@@ -1489,16 +1489,14 @@ export class ModuleCreature extends ModuleObject {
     if(this.regenTimer <= 0){
       this.regenTimer = this.regenTimerMax;
 
-      const regen2DA = GameState.TwoDAManager.datatables.get('regeneration').rows[this.combatData.combatState ? 0 : 1];
-      if(regen2DA){
-        const regen_force = parseFloat(regen2DA.forceregen);
-        if(!isNaN(regen_force)){
-          this.addFP(Math.abs(regen_force));
+      const regeneration = GameState.SWRuleSet.regenerations[this.combatData.combatState ? 0 : 1];
+      if(regeneration){
+        if(Number.isFinite(regeneration.forceregen)){
+          this.addFP(Math.abs(regeneration.forceregen));
         }
 
-        const regen_health = parseFloat(regen2DA.healthregen);
-        if(!isNaN(regen_health) && !GameState.PartyManager.DisableHealthRegen){
-          this.addHP(Math.abs(regen_health));
+        if(Number.isFinite(regeneration.healthregen) && !GameState.PartyManager.DisableHealthRegen){
+          this.addHP(Math.abs(regeneration.healthregen));
         }
       }
     }
@@ -5054,12 +5052,10 @@ export class ModuleCreature extends ModuleObject {
     if(alignment !== 'G' && alignment !== 'E'){
       return base;
     }
-    const table = GameState.TwoDAManager.datatables.get('forceadjust');
-    if(!table) return base;
     const rowIndex = Math.min(10, Math.max(0, Math.floor(this.getGoodEvil() / 10)));
-    const row = table.getRowByIndex?.(rowIndex) || table.rows[rowIndex] || table.rows[String(rowIndex)];
+    const row = GameState.SWRuleSet.forceAdjustments[rowIndex];
     if(!row) return base;
-    const mult = parseFloat(alignment === 'G' ? (row.goodcost ?? 1) : (row.evilcost ?? 1));
+    const mult = alignment === 'G' ? row.goodcost : row.evilcost;
     if(!isFinite(mult) || mult <= 0) return base;
     return Math.max(0, Math.floor(base * mult));
   }
@@ -5488,7 +5484,19 @@ export class ModuleCreature extends ModuleObject {
   }
 
   private resolveCreatureSpeed(){
-    const table = GameState.TwoDAManager.datatables.get('creaturespeed');
+    const speeds = GameState.SWRuleSet?.creatureSpeeds;
+    const table = speeds?.length
+      ? {
+          rows: Object.fromEntries(
+            speeds.map((s, i) => [i, {
+              walkrate: s.walkrate,
+              runrate: s.runrate,
+              '2daname': s.twoDAName,
+              label: s.label,
+            }])
+          ),
+        }
+      : GameState.TwoDAManager.datatables.get('creaturespeed');
     const token = this.creatureAppearance?.moverate;
     return getCreatureSpeedRates(this.getWalkRateId(), token, table as any);
   }
@@ -5835,33 +5843,24 @@ export class ModuleCreature extends ModuleObject {
   //Does the creature have enough EXP to level up
   canLevelUp(){
     let level = this.getTotalClassLevel();
-    const exptable2DA = GameState.TwoDAManager.datatables.get('exptable');
-    if(exptable2DA){
-      let nextLevelEXP = exptable2DA.rows[level];
-      if(this.getXP() >= parseInt(nextLevelEXP.xp)){
-        return true;
-      }
+    const xp = GameState.SWRuleSet?.expTable?.expList?.[level];
+    if(typeof xp === 'number'){
+      return this.getXP() >= xp;
     }
-
     return false;
   }
 
   //Get the effective creature level based on the creatures current amount of EXP
   getEffectiveLevel(){
     let level = 0;
-
-    const exptable2DA = GameState.TwoDAManager.datatables.get('exptable');
-    if(exptable2DA){
-      let totalLevels = exptable2DA.RowCount;
-      let expLevels = exptable2DA.rows;
-
-      for(let i = 0; i < totalLevels; i++){
-        if(this.getXP() >= parseInt(expLevels[i].xp)){
+    const expList = GameState.SWRuleSet?.expTable?.expList;
+    if(expList?.length){
+      for(let i = 0; i < expList.length; i++){
+        if(this.getXP() >= (expList[i] | 0)){
           level = i;
         }
       }
     }
-
     return level;
   }
 
@@ -7725,6 +7724,13 @@ export class ModuleCreature extends ModuleObject {
   }
 
   loadSoundSet(){
+    const soundSet = GameState.SWRuleSet?.soundSets?.[this.soundSetFile];
+    const resref = soundSet?.resref;
+    if(resref){
+      const buffer = ResourceLoader.loadCachedResource(ResourceTypes.ssf, resref.toLowerCase());
+      this.ssf = new SSFObject(buffer);
+      return;
+    }
     const soundset2DA = GameState.TwoDAManager.datatables.get('soundset');
     if(soundset2DA){
       let ss_row = soundset2DA.rows[this.soundSetFile];

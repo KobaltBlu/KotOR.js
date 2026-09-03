@@ -16,7 +16,7 @@ export class SWEncounterDifficulty {
 
   static From2DA(row: any): SWEncounterDifficulty {
     const difficulty = new SWEncounterDifficulty();
-    difficulty.index = TwoDAObject.normalizeValue(row.__rowIndex, 'number', 0) as number;
+    difficulty.index = TwoDAObject.normalizeValue(row.__index ?? row.__rowIndex, 'number', 0) as number;
     difficulty.label = TwoDAObject.normalizeValue(row.label, 'string', '') as string;
     difficulty.strref = TwoDAObject.normalizeValue(row.strref, 'number', -1) as number;
     difficulty.value = TwoDAObject.normalizeValue(row.value, 'number', 0) as number;

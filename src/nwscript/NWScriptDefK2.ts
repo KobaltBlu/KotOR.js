@@ -5969,12 +5969,10 @@ NWScriptDefK2.Actions = {
         trigger.setByPlayerParty = false;
         trigger.ownerDemolitions = 0;
       }
-      const trap = GameState.TwoDAManager.datatables.get('traps')?.rows[args[0] | 0];
+      const trap = GameState.SWRuleSet.traps[args[0] | 0];
       if(trap){
-        const detectMod = !isNaN(parseInt(trap.detectdcmod)) ? parseInt(trap.detectdcmod) : 0;
-        const disarmMod = !isNaN(parseInt(trap.disarmdcmod)) ? parseInt(trap.disarmdcmod) : 0;
-        trigger.trapDetectDC = (args[2] | 0) + detectMod;
-        trigger.trapDisarmDC = (args[3] | 0) + disarmMod;
+        trigger.trapDetectDC = (args[2] | 0) + trap.detectdcmod;
+        trigger.trapDisarmDC = (args[3] | 0) + trap.disarmdcmod;
       }
     }
   },
@@ -6341,11 +6339,11 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER ],
     action: function(this: NWScriptInstance, args: [number]){
-      const spell = GameState.TwoDAManager.datatables.get('spells').rows[args[0]];
+      const spell = GameState.SWRuleSet?.spells?.[args[0]];
       if(!spell){
         return 0;
       }
-      return parseInt(spell.formmask);
+      return spell.formmask | 0;
     }
   },
   818: {
@@ -6354,11 +6352,11 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER ],
     action: function(this: NWScriptInstance, args: [number]){
-      const spell = GameState.TwoDAManager.datatables.get('spells')?.rows[args[0] | 0];
+      const spell = GameState.SWRuleSet?.spells?.[args[0] | 0];
       if(!spell){
         return 0;
       }
-      const cost = parseInt(spell.forcepoints);
+      const cost = spell.forcepoints | 0;
       return !isNaN(cost) ? cost : 0;
     }
   },

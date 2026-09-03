@@ -51,15 +51,11 @@ export class EffectLightsaberThrow extends GameEffect {
 
   private getThrowRate(creature: ModuleCreature): number {
     const spellId = (this.getInt(0) || 0) === 0 ? 0x31 : 4;
-    const spells = GameState.TwoDAManager.datatables.get('spells');
-    const row = spells?.rows?.[spellId] || spells?.rows?.[String(spellId)];
-    // Retail reads projectile speed from the spell row. Approx via proj / numeric columns if present.
-    if(row){
-      const candidates = [row.projectile_speed, row.projectilespeed, row.proj_speed, row.speed];
-      for(let i = 0; i < candidates.length; i++){
-        const n = parseFloat(candidates[i]);
-        if(isFinite(n) && n > 0) return n;
-      }
+    const spell = GameState.SWRuleSet?.spells?.[spellId];
+    // Retail reads projectile speed from the spell row (proj column when present).
+    if(spell){
+      const n = spell.proj | 0;
+      if(n > 0) return n;
     }
     return DEFAULT_THROW_RATE;
   }

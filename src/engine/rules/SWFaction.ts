@@ -23,7 +23,7 @@ export class SWFaction {
       if(key.startsWith('__index') || key.startsWith('__rowlabel')  || key.startsWith('label')){
         return;
       }
-      faction.reputationMap.set(key, TwoDAObject.normalizeValue(row[key], 'number', 0));
+      faction.reputationMap.set(key.toLocaleLowerCase(), TwoDAObject.normalizeValue(row[key], 'number', 0));
     });
 
     return faction;
