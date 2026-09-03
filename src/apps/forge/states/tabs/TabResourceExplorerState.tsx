@@ -8,6 +8,7 @@ import * as KotOR from "@/apps/forge/KotOR";
 import { EditorFile } from "@/apps/forge/EditorFile";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
+import { groupGameSaveFolderFiles, isSaveGameSavFileName } from "@/apps/forge/savegame/saveGamePaths";
 
 export class TabResourceExplorerState extends TabState {
 
@@ -619,30 +620,58 @@ export class TabResourceExplorerState extends TabState {
 
       try {
         const files = await KotOR.GameFileSystem.readdir('Saves', { recursive: true });
-        const saveArchives = files.filter((filepath: string) => filepath.toLowerCase().endsWith('savegame.sav'));
+        const groups = groupGameSaveFolderFiles(Array.isArray(files) ? files : []);
 
-        // Enumerate only — load each SAVEGAME.sav ERF when the user expands it.
-        for (const savePath of saveArchives) {
-          const archiveName = savePath.split(path.sep).pop() || 'SAVEGAME.sav';
-          const saveFolderName = path.dirname(savePath).split(path.sep).pop() || 'Save';
-          const archiveNode = new FileBrowserNode({
-            name: archiveName,
+        for (const group of groups) {
+          const saveFolderNode = new FileBrowserNode({
+            name: group.folderName,
             type: 'group',
-            data: {
-              lazyArchive: { diskPath: savePath },
-              lazyLoaded: false,
-            },
             nodes: [],
             canOrphan: false,
           });
-          const saveFolderNode = new FileBrowserNode({
-            name: saveFolderName,
-            type: 'group',
-            nodes: [archiveNode],
-            canOrphan: false,
-          });
-          archiveNode.parent = saveFolderNode;
-          savesRoot.addChildNode(saveFolderNode);
+
+          for (const entry of group.files) {
+            if (isSaveGameSavFileName(entry.fileName)) {
+              let archiveNode: FileBrowserNode;
+              try {
+                const erf = new KotOR.ERFObject(entry.relPath);
+                await erf.load();
+                archiveNode = await TabResourceExplorerState.BuildArchiveBrowserNode(
+                  erf,
+                  entry.fileName.split('/').pop() || 'SAVEGAME.sav',
+                  entry.relPath,
+                  undefined
+                );
+              } catch (e) {
+                console.error('LoadSaves: failed to load save archive', entry.relPath, e);
+                archiveNode = new FileBrowserNode({
+                  name: entry.fileName.split('/').pop() || 'SAVEGAME.sav',
+                  type: 'group',
+                  nodes: [],
+                  canOrphan: false,
+                });
+              }
+              archiveNode.data = {
+                ...(archiveNode.data || {}),
+                path: EditorFile.referenceURIForGameRelative(entry.relPath),
+                saveGameFolder: true,
+              };
+              saveFolderNode.addChildNode(archiveNode);
+              continue;
+            }
+
+            saveFolderNode.addChildNode(new FileBrowserNode({
+              name: entry.fileName,
+              type: 'resource',
+              data: { path: EditorFile.referenceURIForGameRelative(entry.relPath) },
+              nodes: [],
+            }));
+          }
+
+          if (saveFolderNode.nodes.length) {
+            saveFolderNode.sort();
+            savesRoot.addChildNode(saveFolderNode);
+          }
         }
 
         savesRoot.sort();
@@ -726,21 +755,6 @@ export class TabResourceExplorerState extends TabState {
     }
 
     try {
-      // Top-level disk archive (e.g. SAVEGAME.sav under Saves/)
-      if (typeof lazyMeta.diskPath === 'string' && lazyMeta.diskPath.length) {
-        const diskArchive = new KotOR.ERFObject(lazyMeta.diskPath);
-        await diskArchive.load();
-        const expandedNode = await TabResourceExplorerState.BuildArchiveBrowserNode(
-          diskArchive,
-          node.name,
-          lazyMeta.diskPath,
-          undefined
-        );
-        node.nodes = expandedNode.nodes;
-        node.data.lazyLoaded = true;
-        return;
-      }
-
       let parentArchive: KotOR.ERFObject | undefined;
       if (lazyMeta.parentArchivePath) {
         parentArchive = new KotOR.ERFObject(lazyMeta.parentArchivePath);

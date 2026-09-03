@@ -7,8 +7,8 @@ import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor
 import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
 import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost";
 import { ForgeStore, StoreItemEntry } from "@/apps/forge/module-editor/ForgeStore";
-import { ModalItemBrowserState } from "@/apps/forge/states/modal/ModalItemBrowserState";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { openItemBrowser } from "@/apps/forge/helpers/openGameResRefPicker";
+import { ScriptResRefInput } from "@/apps/forge/components/script-resref-input/ScriptResRefInput";
 
 export const TabUTMEditor = function(props: BaseTabProps){
 
@@ -92,12 +92,12 @@ export const TabUTMEditor = function(props: BaseTabProps){
   };
 
   const onOpenItemBrowser = (index: number) => {
-    const modal = new ModalItemBrowserState((item) => {
-      onItemFieldChange(index, 'inventoryRes', item.resref);
+    openItemBrowser((item) => {
+      onItemFieldChange(index, "inventoryRes", item.resref);
+    }, {
+      title: "Store Item",
+      initial: itemList[index]?.inventoryRes,
     });
-    modal.attachToModalManager(ForgeState.modalManager);
-    modal.loadItems();
-    modal.open();
   };
 
   const tabs: SubTab[] = [
@@ -163,7 +163,7 @@ export const TabUTMEditor = function(props: BaseTabProps){
                 label="On Open Store" 
                 info="Script that runs when the store is opened by a player."
               >
-                <input type="text" placeholder="Enter script name" maxLength={16} value={onOpenStore} onChange={onUpdateResRefField(setOnOpenStore, 'onOpenStore')} />
+                <ScriptResRefInput placeholder="Enter script name" value={onOpenStore} onChange={onUpdateResRefField(setOnOpenStore, 'onOpenStore')} />
               </FormField>
             </tbody>
           </table>
@@ -185,7 +185,7 @@ export const TabUTMEditor = function(props: BaseTabProps){
                     <strong>Item List</strong>
                     <button 
                       onClick={onAddItem} 
-                      className="btn btn-sm btn-primary"
+                      className="forge-btn forge-btn--sm forge-btn--primary"
                     >
                       <i className="fa-solid fa-plus"></i> Add Item
                     </button>
@@ -219,7 +219,7 @@ export const TabUTMEditor = function(props: BaseTabProps){
                                 />
                                 <button 
                                   onClick={() => onOpenItemBrowser(index)}
-                                  className="btn btn-sm btn-secondary"
+                                  className="forge-btn forge-btn--sm"
                                   title="Browse Items"
                                 >
                                   <i className="fa-solid fa-folder-open"></i>
@@ -249,7 +249,7 @@ export const TabUTMEditor = function(props: BaseTabProps){
                             <td>
                               <button 
                                 onClick={() => onRemoveItem(index)}
-                                className="btn btn-sm btn-danger"
+                                className="forge-btn forge-btn--sm forge-btn--danger"
                                 title="Remove Item"
                               >
                                 <i className="fa-solid fa-trash"></i>

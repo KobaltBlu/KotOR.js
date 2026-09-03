@@ -3,13 +3,12 @@ import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { TabHexEditorState } from "@/apps/forge/states/tabs/tab-hex-editor/TabHexEditorState";
 import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
-import { Button, Form, Modal } from "react-bootstrap";
+import { ForgeButton, ForgeDialog, ForgeInput } from "@/apps/forge/components/ui";
+import { formatKeybinding } from "@/apps/forge/commands/forgeKeybindings";
 import {
-  HEX_BYTES_PER_ROW,
   asciiChar,
   byteToHex2,
   formatOffsetForDisplay,
-  type HexEditorOffsetDisplay,
   offsetForRow,
   parseByteHex2,
   parseGoToOffset,
@@ -18,7 +17,7 @@ import {
   rowIndexForOffset,
 } from "@/apps/forge/components/tabs/tab-hex-editor/hexEditorFormat";
 
-import "@/apps/forge/components/tabs/tab-hex-editor/TabHexEditor.scss";
+import { forgeHexSettings } from "@/apps/forge/settings/forgeEditorsSettings";
 
 const ROW_HEIGHT = 22;
 const OVERSCAN_ROWS = 6;
@@ -54,18 +53,22 @@ export const TabHexEditor = function (props: BaseTabProps) {
   const [editCell, setEditCell] = useState<{ offset: number; draft: string } | null>(null);
   const [showGoTo, setShowGoTo] = useState(false);
   const [goToInput, setGoToInput] = useState("");
-  const [offsetDisplay, setOffsetDisplay] = useState<HexEditorOffsetDisplay>("hex");
+  const [hexSettings, setHexSettings] = useState(() => forgeHexSettings.get());
+  const offsetDisplay = hexSettings.offsetDisplay;
+  const bytesPerRow = hexSettings.bytesPerRow;
+  const showAscii = hexSettings.showAscii;
+  const uppercase = hexSettings.uppercase;
   const scrollRef = useRef<HTMLDivElement>(null);
   const dragAnchorRef = useRef<number | null>(null);
   const lastPaintedFocusRef = useRef<number | null>(null);
 
   const bytes = tab.bytes;
   const byteLength = bytes.length;
-  const rowsTotal = useMemo(() => rowCount(byteLength), [byteLength]);
+  const rowsTotal = useMemo(() => rowCount(byteLength, bytesPerRow), [byteLength, bytesPerRow]);
 
   const syncVisibleRows = useCallback(() => {
     const el = scrollRef.current;
-    const totalRows = rowCount(tab.bytes.length);
+    const totalRows = rowCount(tab.bytes.length, bytesPerRow);
     const last = Math.max(0, totalRows - 1);
     if (!el) {
       setViewStart(0);
@@ -82,7 +85,7 @@ export const TabHexEditor = function (props: BaseTabProps) {
     }
     setViewStart(start);
     setViewEnd(end);
-  }, [tab]);
+  }, [tab, bytesPerRow]);
 
   const onScroll = useCallback(() => {
     syncVisibleRows();
@@ -102,8 +105,14 @@ export const TabHexEditor = function (props: BaseTabProps) {
 
   useEffectOnce(() => {
     tab.addEventListener("onEditorFileLoad", onFileLoad);
+    const onHistoryChanged = () => setDataVersion((v) => v + 1);
+    tab.addEventListener("onHistoryChanged", onHistoryChanged);
+    const onHexSettings = () => setHexSettings(forgeHexSettings.get());
+    forgeHexSettings.addListener(onHexSettings);
     return () => {
       tab.removeEventListener("onEditorFileLoad", onFileLoad);
+      tab.removeEventListener("onHistoryChanged", onHistoryChanged);
+      forgeHexSettings.removeListener(onHexSettings);
     };
   });
 
@@ -147,6 +156,7 @@ export const TabHexEditor = function (props: BaseTabProps) {
       const v = parseByteHex2(hex2);
       if (v === null) return;
       if (bytes[offset] === v) return;
+      tab.captureUndoSnapshot();
       bytes[offset] = v;
       if (tab.file) tab.file.unsaved_changes = true;
       tab.editorFileUpdated();
@@ -200,11 +210,11 @@ export const TabHexEditor = function (props: BaseTabProps) {
       const el = scrollRef.current;
       if (!el || rowsTotal <= 0) return;
       const o = Math.min(offset >>> 0, Math.max(0, byteLength - 1));
-      const row = rowIndexForOffset(o);
+      const row = rowIndexForOffset(o, bytesPerRow);
       el.scrollTop = row * ROW_HEIGHT;
       syncVisibleRows();
     },
-    [byteLength, rowsTotal, syncVisibleRows],
+    [byteLength, rowsTotal, syncVisibleRows, bytesPerRow],
   );
 
   const applyGoTo = useCallback(() => {
@@ -254,6 +264,23 @@ export const TabHexEditor = function (props: BaseTabProps) {
         label: "Edit",
         children: [
           {
+            label: "Undo",
+            shortcut: formatKeybinding("Mod+Z"),
+            onClick: () => {
+              tab.undo();
+            },
+            disabled: !tab.canUndo,
+          },
+          {
+            label: "Redo",
+            shortcut: formatKeybinding("Mod+Y"),
+            onClick: () => {
+              tab.redo();
+            },
+            disabled: !tab.canRedo,
+          },
+          { separator: true },
+          {
             label: "Go to offset…",
             onClick: () => {
               setGoToInput("");
@@ -269,17 +296,17 @@ export const TabHexEditor = function (props: BaseTabProps) {
           {
             label: "Offsets: hexadecimal",
             checked: offsetDisplay === "hex",
-            onClick: () => setOffsetDisplay("hex"),
+            onClick: () => forgeHexSettings.set({ offsetDisplay: "hex" }),
           },
           {
             label: "Offsets: decimal",
             checked: offsetDisplay === "dec",
-            onClick: () => setOffsetDisplay("dec"),
+            onClick: () => forgeHexSettings.set({ offsetDisplay: "dec" }),
           },
         ],
       },
     ],
-    [tab, byteLength, offsetDisplay],
+    [tab, byteLength, offsetDisplay, dataVersion],
   );
 
   const virtualHeight = rowsTotal * ROW_HEIGHT;
@@ -297,10 +324,10 @@ export const TabHexEditor = function (props: BaseTabProps) {
   const rowElements: React.ReactNode[] = [];
   if (rowsTotal > 0) {
     for (let row = viewStart; row <= viewEnd; row++) {
-      const base = offsetForRow(row);
+      const base = offsetForRow(row, bytesPerRow);
       const hexCells: React.ReactNode[] = [];
       const asciiCells: React.ReactNode[] = [];
-      for (let c = 0; c < HEX_BYTES_PER_ROW; c++) {
+      for (let c = 0; c < bytesPerRow; c++) {
         const offset = base + c;
         if (offset >= byteLength) break;
         const b = bytes[offset] ?? 0;
@@ -342,10 +369,10 @@ export const TabHexEditor = function (props: BaseTabProps) {
               onDoubleClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                setEditCell({ offset, draft: byteToHex2(b) });
+                setEditCell({ offset, draft: byteToHex2(b, uppercase) });
               }}
             >
-              {byteToHex2(b)}
+              {byteToHex2(b, uppercase)}
             </span>,
           );
         }
@@ -364,7 +391,7 @@ export const TabHexEditor = function (props: BaseTabProps) {
         >
           <span className="tab-hex-editor__offset">{formatOffsetForDisplay(base, offsetDisplay)}</span>
           <div className="tab-hex-editor__hex-cells">{hexCells}</div>
-          <div className="tab-hex-editor__ascii-line">{asciiCells}</div>
+          {showAscii ? <div className="tab-hex-editor__ascii-line">{asciiCells}</div> : null}
         </div>,
       );
     }
@@ -376,14 +403,14 @@ export const TabHexEditor = function (props: BaseTabProps) {
       : `${byteLength.toLocaleString()} byte${byteLength === 1 ? "" : "s"}${selectionLabel ? ` · ${selectionLabel}` : ""}`;
 
   return (
-    <div className="tab-hex-editor h-100 overflow-hidden">
+    <div className="tab-hex-editor" style={{height: '100%', overflow: 'hidden'}}>
       <MenuBar items={menuItems} />
 
       <div className="tab-hex-editor__toolbar">
         <span className="tab-hex-editor__status">{statusText}</span>
-        <Button size="sm" variant="outline-secondary" disabled={!byteLength} onClick={() => setShowGoTo(true)}>
+        <ForgeButton size="sm" variant="outline-secondary" disabled={!byteLength} onClick={() => setShowGoTo(true)}>
           Go to offset…
-        </Button>
+        </ForgeButton>
       </div>
 
       <div
@@ -400,13 +427,13 @@ export const TabHexEditor = function (props: BaseTabProps) {
         )}
       </div>
 
-      <Modal show={showGoTo} onHide={() => setShowGoTo(false)} centered size="sm">
-        <Modal.Header closeButton>
-          <Modal.Title>Go to offset</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form.Label className="small text-muted">Decimal, hex (0x…), or bare hex</Form.Label>
-          <Form.Control
+      <ForgeDialog show={showGoTo} onHide={() => setShowGoTo(false)} size="sm">
+        <ForgeDialog.Header closeButton>
+          <ForgeDialog.Title>Go to offset</ForgeDialog.Title>
+        </ForgeDialog.Header>
+        <ForgeDialog.Body>
+          <label className="small text-muted">Decimal, hex (0x…), or bare hex</label>
+          <ForgeInput
             type="text"
             value={goToInput}
             onChange={(e) => setGoToInput(e.target.value)}
@@ -419,16 +446,16 @@ export const TabHexEditor = function (props: BaseTabProps) {
             autoFocus
             placeholder="e.g. 4096 or 0x1000"
           />
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowGoTo(false)}>
+        </ForgeDialog.Body>
+        <ForgeDialog.Footer>
+          <ForgeButton variant="secondary" onClick={() => setShowGoTo(false)}>
             Cancel
-          </Button>
-          <Button variant="primary" onClick={applyGoTo} disabled={!byteLength}>
+          </ForgeButton>
+          <ForgeButton variant="primary" onClick={applyGoTo} disabled={!byteLength}>
             Go
-          </Button>
-        </Modal.Footer>
-      </Modal>
+          </ForgeButton>
+        </ForgeDialog.Footer>
+      </ForgeDialog>
     </div>
   );
 };

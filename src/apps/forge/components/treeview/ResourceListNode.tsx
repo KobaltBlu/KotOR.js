@@ -39,8 +39,8 @@ export const ResourceListNode = memo(function ResourceListNode(props: ResourceLi
   }, [node, onSelect]);
 
   const handleDoubleClick = useCallback(() => {
-    if (node.type === 'resource' && node.data?.path) {
-      console.log('Opening resource:', node);
+    const canOpen = !!node.data?.path && (node.type === 'resource' || !!node.data?.saveGameFolder);
+    if (canOpen) {
       FileTypeManager.onOpenResource(
         new EditorFile({
           path: node.data.path,

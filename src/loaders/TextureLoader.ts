@@ -76,7 +76,7 @@ export class TextureLoader {
     if(!!texture){
       texture.anisotropy = TextureLoader.Anisotropy;
       // Cubemaps keep GL_CLAMP_TO_EDGE set by TPCObject (retail CreateCubeTexture).
-      if(!(texture as any).header?.isCubemap){
+      if(!(texture as any).header?.isCubemap && !(texture as any).isCubeTexture){
         texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
       }
       TextureLoader.applySamplerStateToCycleFrames(texture);

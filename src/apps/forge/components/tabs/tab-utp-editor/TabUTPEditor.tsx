@@ -18,14 +18,18 @@ import {
   createCExoLocStringFieldHandler,
   createForgeCheckboxFieldHandler
 } from "@/apps/forge/helpers/UTxEditorHelpers";
+import { ScriptResRefInput } from "@/apps/forge/components/script-resref-input/ScriptResRefInput";
 import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
 import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost";
 import { FormField } from "@/apps/forge/components/form-field/FormField";
 import { InfoBubble } from "@/apps/forge/components/info-bubble/info-bubble";
+import { useForgeHasGameData } from "@/apps/forge/helpers/useForgeHasGameData";
+import { ForgeTwoDAIndexField } from "@/apps/forge/components/ui";
 
 export const TabUTPEditor = function(props: BaseTabProps){
 
   const tab: TabUTPEditorState = props.tab as TabUTPEditorState;
+  const hasGameData = useForgeHasGameData();
   const [selectedTab, setSelectedTab] = useState<string>('basic');
 
   const [animationState, setAnimationState] = useState<number>(0);
@@ -205,11 +209,17 @@ export const TabUTPEditor = function(props: BaseTabProps){
                 <input type="text" maxLength={16} value={tag} onChange={onUpdateResRefField(setTag, 'tag')} />
               </FormField>
               <FormField label="Appearance" info="The appearance of the placeable. This is the model that will be used to display the placeable in-game.">
-                <select className="form-select" value={appearance} onChange={onUpdateByteField(setAppearance, 'appearance')}>
-                  {kPlaceableAppearances.map((appearance: any, index: number) => (
-                    <option key={index} value={index}>{appearance.label}</option>
-                  ))}
-                </select>
+                <ForgeTwoDAIndexField
+                  table="placeables"
+                  value={appearance}
+                  emptyLabel="placeables.2da not loaded"
+                  onChange={(value) => {
+                    const next = clampByte(value);
+                    setAppearance(next);
+                    tab.placeable.setProperty('appearance', next);
+                    tab.updateFile();
+                  }}
+                />
               </FormField>
             </tbody>
           </table>
@@ -318,11 +328,19 @@ export const TabUTPEditor = function(props: BaseTabProps){
               </tr>
               <tr>
                 <td><label>Faction</label></td>
-                <td><select className="form-select" value={faction} onChange={onUpdateByteField(setFaction, 'faction')}>
-                  {kFactions.map((faction: any, index: number) => (
-                    <option key={index} value={index}>{faction.label}</option>
-                  ))}
-                </select></td>
+                <td>
+                  <ForgeTwoDAIndexField
+                    table="repute"
+                    value={faction}
+                    emptyLabel="repute.2da not loaded"
+                    onChange={(value) => {
+                      const next = clampByte(value);
+                      setFaction(next);
+                      tab.placeable.setProperty('faction', next);
+                      tab.updateFile();
+                    }}
+                  />
+                </td>
               </tr>
               <tr>
                 <td><label>Conversation</label></td>
@@ -371,71 +389,71 @@ export const TabUTPEditor = function(props: BaseTabProps){
             <tbody>
                 <tr>
                   <td><label>OnClick</label></td>
-                  <td><input type="text" maxLength={16} value={onClick} onChange={onUpdateResRefField(setOnClick, 'onClick')} /></td>
+                  <td><ScriptResRefInput value={onClick} onChange={onUpdateResRefField(setOnClick, 'onClick')} /></td>
                 </tr>
                 <tr>
                   <td><label>OnClosed</label></td>
-                  <td><input type="text" maxLength={16} value={onClosed} onChange={onUpdateResRefField(setOnClosed, 'onClosed')} /></td>
+                  <td><ScriptResRefInput value={onClosed} onChange={onUpdateResRefField(setOnClosed, 'onClosed')} /></td>
                 </tr>
                 <tr>
                   <td><label>OnDamaged</label></td>
-                  <td><input type="text" maxLength={16} value={onDamaged} onChange={onUpdateResRefField(setOnDamaged, 'onDamaged')} /></td>
+                  <td><ScriptResRefInput value={onDamaged} onChange={onUpdateResRefField(setOnDamaged, 'onDamaged')} /></td>
                 </tr>
                 <tr>
                   <td><label>OnDeath</label></td>
-                  <td><input type="text" maxLength={16} value={onDeath} onChange={onUpdateResRefField(setOnDeath, 'onDeath')} /></td>
+                  <td><ScriptResRefInput value={onDeath} onChange={onUpdateResRefField(setOnDeath, 'onDeath')} /></td>
                 </tr>
                 <tr>
                   <td><label>OnDisarm</label></td>
-                  <td><input type="text" maxLength={16} value={onDisarm} onChange={onUpdateResRefField(setOnDisarm, 'onDisarm')} /></td>
+                  <td><ScriptResRefInput value={onDisarm} onChange={onUpdateResRefField(setOnDisarm, 'onDisarm')} /></td>
                 </tr>
                 <tr>
                   <td><label>OnEndDialogue</label></td>
-                  <td><input type="text" maxLength={16} value={onEndDialogue} onChange={onUpdateResRefField(setOnEndDialogue, 'onEndDialogue')} /></td>
+                  <td><ScriptResRefInput value={onEndDialogue} onChange={onUpdateResRefField(setOnEndDialogue, 'onEndDialogue')} /></td>
                 </tr>
                 <tr>
                   <td><label>OnFailToOpen</label></td>
-                  <td><input type="text" maxLength={16} value={onFailToOpen} onChange={onUpdateResRefField(setOnFailToOpen, 'onFailToOpen')} /></td>
+                  <td><ScriptResRefInput value={onFailToOpen} onChange={onUpdateResRefField(setOnFailToOpen, 'onFailToOpen')} /></td>
                 </tr>
                 <tr>
                   <td><label>OnInvDisturbed</label></td>
-                  <td><input type="text" maxLength={16} value={onInvDisturbed} onChange={onUpdateResRefField(setOnInvDisturbed, 'onInvDisturbed')} /></td>
+                  <td><ScriptResRefInput value={onInvDisturbed} onChange={onUpdateResRefField(setOnInvDisturbed, 'onInvDisturbed')} /></td>
                 </tr>
                 <tr>
                   <td><label>OnHeartbeat</label></td>
-                  <td><input type="text" maxLength={16} value={onHeartbeat} onChange={onUpdateResRefField(setOnHeartbeat, 'onHeartbeat')} /></td>
+                  <td><ScriptResRefInput value={onHeartbeat} onChange={onUpdateResRefField(setOnHeartbeat, 'onHeartbeat')} /></td>
                 </tr>
                 <tr>
                   <td><label>OnLock</label></td>
-                  <td><input type="text" maxLength={16} value={onLock} onChange={onUpdateResRefField(setOnLock, 'onLock')} /></td>
+                  <td><ScriptResRefInput value={onLock} onChange={onUpdateResRefField(setOnLock, 'onLock')} /></td>
                 </tr>
                 <tr>
                   <td><label>OnMeleeAttacked</label></td>
-                  <td><input type="text" maxLength={16} value={onMeleeAttacked} onChange={onUpdateResRefField(setOnMeleeAttacked, 'onMeleeAttacked')} /></td>
+                  <td><ScriptResRefInput value={onMeleeAttacked} onChange={onUpdateResRefField(setOnMeleeAttacked, 'onMeleeAttacked')} /></td>
                 </tr>
                 <tr>
                   <td><label>OnOpen</label></td>
-                  <td><input type="text" maxLength={16} value={onOpen} onChange={onUpdateResRefField(setOnOpen, 'onOpen')} /></td>
+                  <td><ScriptResRefInput value={onOpen} onChange={onUpdateResRefField(setOnOpen, 'onOpen')} /></td>
                 </tr>
                 <tr>
                   <td><label>OnSpellCastAt</label></td>
-                  <td><input type="text" maxLength={16} value={onSpellCastAt} onChange={onUpdateResRefField(setOnSpellCastAt, 'onSpellCastAt')} /></td>
+                  <td><ScriptResRefInput value={onSpellCastAt} onChange={onUpdateResRefField(setOnSpellCastAt, 'onSpellCastAt')} /></td>
                 </tr>
                 <tr>
                   <td><label>OnTrapTriggered</label></td>
-                  <td><input type="text" maxLength={16} value={onTrapTriggered} onChange={onUpdateResRefField(setOnTrapTriggered, 'onTrapTriggered')} /></td>
+                  <td><ScriptResRefInput value={onTrapTriggered} onChange={onUpdateResRefField(setOnTrapTriggered, 'onTrapTriggered')} /></td>
                 </tr>
                 <tr>
                   <td><label>OnUnlock</label></td>
-                  <td><input type="text" maxLength={16} value={onUnlock} onChange={onUpdateResRefField(setOnUnlock, 'onUnlock')} /></td>
+                  <td><ScriptResRefInput value={onUnlock} onChange={onUpdateResRefField(setOnUnlock, 'onUnlock')} /></td>
                 </tr>
                 <tr>
                   <td><label>OnUsed</label></td>
-                  <td><input type="text" maxLength={16} value={onUsed} onChange={onUpdateResRefField(setOnUsed, 'onUsed')} /></td>
+                  <td><ScriptResRefInput value={onUsed} onChange={onUpdateResRefField(setOnUsed, 'onUsed')} /></td>
                 </tr>
                 <tr>
                   <td><label>OnUserDefined</label></td>
-                  <td><input type="text" maxLength={16} value={onUserDefined} onChange={onUpdateResRefField(setOnUserDefined, 'onUserDefined')} /></td>
+                  <td><ScriptResRefInput value={onUserDefined} onChange={onUpdateResRefField(setOnUserDefined, 'onUserDefined')} /></td>
                 </tr>
             </tbody>
           </table>
@@ -521,7 +539,7 @@ export const TabUTPEditor = function(props: BaseTabProps){
     <SubTabHost
       tabs={tabs}
       defaultTab="basic"
-      leftPanel={<UI3DRendererView context={tab.ui3DRenderer} />}
+      leftPanel={hasGameData ? <UI3DRendererView context={tab.ui3DRenderer} /> : undefined}
     />
   </>;
 

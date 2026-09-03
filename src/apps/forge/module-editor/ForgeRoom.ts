@@ -1,5 +1,8 @@
 import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { shouldBuildFromMdl } from "@/apps/forge/helpers/keyModelLoad";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
 import * as KotOR from "@/apps/forge/KotOR";
+import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
 
 export class ForgeRoom extends ForgeGameObject {
 
@@ -65,7 +68,38 @@ export class ForgeRoom extends ForgeGameObject {
   async load(){
     await this.loadModel(this.roomName);
     await this.loadWalkmesh(this.roomName);
+    this.applyEditorWalkmeshVisibility();
     this.updateBoundingBox();
+  }
+
+  /** Whether the module editor currently wants walkmeshes shown. */
+  private editorWalkmeshVisible(): boolean {
+    return this.context?.visibilityState?.walkmesh === true;
+  }
+
+  /**
+   * Toggle both room walkmesh representations:
+   * - `.wok` collision mesh
+   * - MDL AABB / makmesh nodes inside the room model
+   */
+  applyEditorWalkmeshVisibility(visible = this.editorWalkmeshVisible()): void {
+    if (this.walkmesh?.material) {
+      this.walkmesh.material.visible = visible;
+    }
+    if (!this.model) {
+      return;
+    }
+    this.model.traverse((obj) => {
+      const node =
+        (obj as { odysseyModelNode?: { nodeType?: number } }).odysseyModelNode ||
+        (obj.userData?.odysseyModelNode as { nodeType?: number } | undefined);
+      if (!node || typeof node.nodeType !== "number") {
+        return;
+      }
+      if ((node.nodeType & OdysseyModelNodeType.AABB) === OdysseyModelNodeType.AABB) {
+        obj.visible = visible;
+      }
+    });
   }
 
   async loadModel(resRef = ''): Promise<KotOR.OdysseyModel3D | undefined> {
@@ -74,47 +108,76 @@ export class ForgeRoom extends ForgeGameObject {
       return this.model;
     }
 
-    //Load the model
-    const roomFile = await KotOR.MDLLoader.loader.load(this.roomName);
-    const room: KotOR.OdysseyModel3D = await KotOR.OdysseyModel3D.FromMDL(roomFile, {
-      context: this.context,
-      castShadow: false,
-      receiveShadow: true,
-      mergeStatic: true,
-      disableMatrixUpdate: false,
-      editorMode: true
-    });
-
-    //Remove the old model
     if(this.model instanceof KotOR.OdysseyModel3D){
       this.model.removeFromParent();
       try{ this.model.dispose(); }catch(e){}
+      this.model = undefined;
     }
 
-    this.model = room;
-    this.model.userData.moduleObject = this;
-    this.container.add(this.model);
-    this.box.setFromObject(this.container);
+    if(!ForgeState.hasGameData){
+      return undefined;
+    }
 
-    //Load the animations
-    if(this.model.odysseyAnimations.length){
-      for(let animI = 0; animI < this.model.odysseyAnimations.length; animI++){
-        if(this.model.odysseyAnimations[animI].name.indexOf('animloop') >= 0){
-          this.model.animLoops.push(
-            this.model.odysseyAnimations[animI]
-          );
+    try {
+      const roomFile = await KotOR.MDLLoader.loader.load(resRef || this.roomName);
+      if(!shouldBuildFromMdl(roomFile, ForgeState.hasGameData)){
+        return undefined;
+      }
+      const room: KotOR.OdysseyModel3D = await KotOR.OdysseyModel3D.FromMDL(roomFile, {
+        context: this.context,
+        castShadow: false,
+        receiveShadow: true,
+        mergeStatic: true,
+        disableMatrixUpdate: false,
+        editorMode: true,
+        attachMdlAabbMesh: true,
+      });
+
+      this.model = room;
+      this.model.userData.moduleObject = this;
+      this.container.add(this.model);
+      this.box.setFromObject(this.container);
+
+      if(this.model.odysseyAnimations.length){
+        for(let animI = 0; animI < this.model.odysseyAnimations.length; animI++){
+          if(this.model.odysseyAnimations[animI].name.indexOf('animloop') >= 0){
+            this.model.animLoops.push(
+              this.model.odysseyAnimations[animI]
+            );
+          }
         }
       }
+      // Hide MDL AABB/makmesh until the Layers → Walkmesh toggle enables them.
+      this.applyEditorWalkmeshVisibility(false);
+      return this.model;
+    }catch(e){
+      console.error(e);
+      return undefined;
     }
   }
 
   async loadWalkmesh(resRef = ''): Promise<KotOR.OdysseyWalkMesh | undefined> {
+    if(!ForgeState.hasGameData){
+      return undefined;
+    }
     try {
       const buffer = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes.wok, resRef);
       this.walkmesh = new KotOR.OdysseyWalkMesh(new KotOR.BinaryReader(buffer));
       this.walkmesh.name = resRef;
       if(this.model){
         this.model.wok = this.walkmesh;
+      }
+      const mesh = this.walkmesh.mesh;
+      if(mesh){
+        mesh.position.z += 0.001;
+        // Prefer parenting under the room model so it follows room transforms.
+        if(this.model){
+          this.model.add(mesh);
+        }else{
+          this.container.add(mesh);
+        }
+        this.walkmesh.material.visible = this.editorWalkmeshVisible();
+        mesh.visible = true;
       }
       return this.walkmesh;
     }catch(e){

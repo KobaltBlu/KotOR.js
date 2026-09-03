@@ -8,6 +8,7 @@ import {
   OP_STORE_STATE,
   OP_STORE_STATEALL,
 } from "@/nwscript/NWScriptOPCodes";
+import { toSignedInt32 } from "@/nwscript/decompiler/NWScriptOpcodeSemantics";
 
 /**
  * JSR callee entry PCs reachable from a CFG start block (BFS over successors, mirroring
@@ -35,7 +36,7 @@ export function collectCalleeEntryPcsReachableFromBlock(
 
     for (const instr of block.instructions) {
       if (instr.code === OP_JSR && instr.offset !== undefined) {
-        callees.add(instr.address + instr.offset);
+        callees.add(instr.address + toSignedInt32(instr.offset));
       }
     }
 
@@ -51,8 +52,7 @@ export function collectCalleeEntryPcsReachableFromBlock(
 
 /**
  * JSR targets inside STORE_STATE action thunks (DelayCommand / AssignCommand inlined spans).
- * Those JSRs are omitted from normal CFG body walks, so cleanup must seed reachability from here
- * or thunk-only helpers (e.g. {@code DelayCommand(..., Helper(...))}) are dropped from NSS.
+ * Those JSRs are omitted from normal CFG body walks, so cleanup must seed reachability from here.
  */
 export function collectCalleeEntryPcsFromStoreStateThunks(script: NWScript): Set<number> {
   const callees = new Set<number>();
@@ -64,66 +64,16 @@ export function collectCalleeEntryPcsFromStoreStateThunks(script: NWScript): Set
     if (!jmp || jmp.code !== OP_JMP || jmp.offset === undefined) {
       continue;
     }
-    const jmpTarget = jmp.address + jmp.offset;
+    const jmpTarget = jmp.address + toSignedInt32(jmp.offset);
     let current = jmp.nextInstr;
     while (current && current.address < jmpTarget) {
       if (current.code === OP_JSR && current.offset !== undefined) {
-        callees.add(current.address + current.offset);
+        callees.add(current.address + toSignedInt32(current.offset));
       }
       current = current.nextInstr;
     }
   }
   return callees;
-}
-
-/**
- * Expand seed callee entry PCs transitively through known subroutine bodies.
- */
-export function expandCalleeEntryPcsTransitive(
-  seedEntryPcs: Iterable<number>,
-  functions: NWScriptFunction[]
-): Set<number> {
-  const subsByEntry = new Map<number, NWScriptFunction>();
-  for (const f of functions) {
-    if (!f.isMain) {
-      subsByEntry.set(f.entryBlock.startInstruction.address, f);
-    }
-  }
-
-  const out = new Set<number>();
-  const seen = new Set<NWScriptFunction>();
-  const stack: NWScriptFunction[] = [];
-
-  for (const pc of seedEntryPcs) {
-    out.add(pc);
-    const callee = subsByEntry.get(pc);
-    if (callee) {
-      stack.push(callee);
-    }
-  }
-
-  while (stack.length > 0) {
-    const f = stack.pop()!;
-    if (seen.has(f)) {
-      continue;
-    }
-    seen.add(f);
-
-    for (const block of f.bodyBlocks) {
-      for (const instr of block.instructions) {
-        if (instr.code === OP_JSR && instr.offset !== undefined) {
-          const t = instr.address + instr.offset;
-          out.add(t);
-          const callee = subsByEntry.get(t);
-          if (callee) {
-            stack.push(callee);
-          }
-        }
-      }
-    }
-  }
-
-  return out;
 }
 
 /**
@@ -133,15 +83,16 @@ export function expandCalleeEntryPcsTransitive(
  * {@link collectCalleeEntryPcsFromStoreStateThunks} for STORE_STATE thunk callees.
  */
 export function collectCalleeEntryPcsTransitiveFromMainFamily(functions: NWScriptFunction[]): Set<number> {
-  const out = new Set<number>();
-  const seen = new Set<NWScriptFunction>();
-  const stack = functions.filter((f) => f.isMain);
   const subsByEntry = new Map<number, NWScriptFunction>();
   for (const f of functions) {
     if (!f.isMain) {
       subsByEntry.set(f.entryBlock.startInstruction.address, f);
     }
   }
+
+  const out = new Set<number>();
+  const seen = new Set<NWScriptFunction>();
+  const stack = functions.filter(f => f.isMain);
 
   while (stack.length > 0) {
     const f = stack.pop()!;
@@ -153,7 +104,7 @@ export function collectCalleeEntryPcsTransitiveFromMainFamily(functions: NWScrip
     for (const block of f.bodyBlocks) {
       for (const instr of block.instructions) {
         if (instr.code === OP_JSR && instr.offset !== undefined) {
-          const t = instr.address + instr.offset;
+          const t = instr.address + toSignedInt32(instr.offset);
           out.add(t);
           const callee = subsByEntry.get(t);
           if (callee) {

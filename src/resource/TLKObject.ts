@@ -179,6 +179,8 @@ export class TLKObject {
 
     if (partial.flags === undefined) {
       entry.syncFlagsFromContent();
+    } else {
+      entry.invalidateSearchCache();
     }
   }
 

@@ -50,15 +50,8 @@ export class AppState {
       appPath: '/game/',
       profileKey: AppState.appProfile.key || 'kotor',
     }));
-    
-    switch(AppState.appProfile.launch.args.gameChoice){
-      case 2:
-        AppState.gameKey = KotOR.GameEngineType.TSL;
-      break;
-      default:
-        AppState.gameKey = KotOR.GameEngineType.KOTOR;
-      break;
-    }
+
+    AppState.gameKey = KotOR.ApplicationProfile.GameKey;
 
     const eulaState: any = Object.assign({}, JSON.parse(window.localStorage.getItem('acceptEULA') as string));
     const gameEULAConfig = Object.assign({

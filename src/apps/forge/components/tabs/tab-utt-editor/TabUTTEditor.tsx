@@ -7,10 +7,15 @@ import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor
 import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
 import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost";
 import { ForgeTrigger } from "@/apps/forge/module-editor/ForgeTrigger";
+import { ScriptResRefInput } from "@/apps/forge/components/script-resref-input/ScriptResRefInput";
+import { ForgeTwoDAIndexField } from "@/apps/forge/components/ui";
+import { useForgeHasGameData } from "@/apps/forge/helpers/useForgeHasGameData";
+import { clampByte } from "@/apps/forge/helpers/UTxEditorHelpers";
 
 export const TabUTTEditor = function(props: BaseTabProps){
 
   const tab: TabUTTEditorState = props.tab as TabUTTEditorState;
+  useForgeHasGameData();
 
   const [autoRemoveKey, setAutoRemoveKey] = useState<boolean>(false);
   const [comment, setComment] = useState<string>('');
@@ -175,25 +180,25 @@ export const TabUTTEditor = function(props: BaseTabProps){
           <table style={{ width: '100%' }}>
             <tbody>
               <FormField label="On Click" info="ResRef of script executed when clicked.">
-                <input type="text" value={onClick} onChange={onUpdateResRefField(setOnClick, 'onClick')} maxLength={16} />
+                <ScriptResRefInput value={onClick} onChange={onUpdateResRefField(setOnClick, 'onClick')} />
               </FormField>
               <FormField label="On Heartbeat" info="ResRef of ScriptOnHeartbeat.">
-                <input type="text" value={onHeartbeat} onChange={onUpdateResRefField(setOnHeartbeat, 'onHeartbeat')} maxLength={16} />
+                <ScriptResRefInput value={onHeartbeat} onChange={onUpdateResRefField(setOnHeartbeat, 'onHeartbeat')} />
               </FormField>
               <FormField label="On Enter" info="ResRef of ScriptOnEnter.">
-                <input type="text" value={onEnter} onChange={onUpdateResRefField(setOnEnter, 'onEnter')} maxLength={16} />
+                <ScriptResRefInput value={onEnter} onChange={onUpdateResRefField(setOnEnter, 'onEnter')} />
               </FormField>
               <FormField label="On Exit" info="ResRef of ScriptOnExit.">
-                <input type="text" value={onExit} onChange={onUpdateResRefField(setOnExit, 'onExit')} maxLength={16} />
+                <ScriptResRefInput value={onExit} onChange={onUpdateResRefField(setOnExit, 'onExit')} />
               </FormField>
               <FormField label="On User Defined" info="ResRef of ScriptOnUserDefine.">
-                <input type="text" value={onUserDefined} onChange={onUpdateResRefField(setOnUserDefined, 'onUserDefined')} maxLength={16} />
+                <ScriptResRefInput value={onUserDefined} onChange={onUpdateResRefField(setOnUserDefined, 'onUserDefined')} />
               </FormField>
               <FormField label="On Disarm" info="ResRef executed when trap is disarmed.">
-                <input type="text" value={onDisarm} onChange={onUpdateResRefField(setOnDisarm, 'onDisarm')} maxLength={16} />
+                <ScriptResRefInput value={onDisarm} onChange={onUpdateResRefField(setOnDisarm, 'onDisarm')} />
               </FormField>
               <FormField label="On Trap Triggered" info="ResRef fired when trap trips.">
-                <input type="text" value={onTrapTriggered} onChange={onUpdateResRefField(setOnTrapTriggered, 'onTrapTriggered')} maxLength={16} />
+                <ScriptResRefInput value={onTrapTriggered} onChange={onUpdateResRefField(setOnTrapTriggered, 'onTrapTriggered')} />
               </FormField>
             </tbody>
           </table>
@@ -213,7 +218,17 @@ export const TabUTTEditor = function(props: BaseTabProps){
                 <ForgeCheckbox label="Enabled" value={trapFlag} onChange={onUpdateForgeCheckboxField(setTrapFlag, 'trapFlag')} />
               </FormField>
               <FormField label="Trap Type" info="Index into traps.2da.">
-                <input type="number" min={0} value={trapType} onChange={onUpdateByteField(setTrapType, 'trapType')} />
+                <ForgeTwoDAIndexField
+                  table="traps"
+                  value={trapType}
+                  emptyLabel="traps.2da not loaded"
+                  onChange={(value) => {
+                    const next = clampByte(value);
+                    setTrapType(next);
+                    tab.trigger.setProperty('trapType', next);
+                    tab.updateFile();
+                  }}
+                />
               </FormField>
               <FormField label="Disarm DC" info="Base DC to disarm (1-250).">
                 <input type="number" min={0} max={255} value={disarmDC} onChange={onUpdateByteField(setDisarmDC, 'disarmDC')} />

@@ -14,8 +14,8 @@
     display: flex;
     flex-direction: column;
     border-radius: 10px;
-    border: 1px solid rgba($border-primary, 0.75);
-    background: rgba($bg-darker, 0.97);
+    border: 1px solid color-mix(in srgb, var(--forge-border) 75%, transparent);
+    background: color-mix(in srgb, var(--forge-bg) 97%, transparent);
     overflow: visible;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
   }
@@ -27,7 +27,7 @@
     padding: 2px 4px 2px 8px;
     min-height: 28px;
     background: rgba(0, 0, 0, 0.35);
-    border-bottom: 1px solid rgba($border-primary, 0.45);
+    border-bottom: 1px solid color-mix(in srgb, var(--forge-border) 45%, transparent);
     user-select: none;
   }
 
@@ -49,7 +49,7 @@
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: $text-quaternary;
+    color: var(--forge-text-disabled);
   }
 
   &__dismiss {
@@ -62,19 +62,19 @@
     border: none;
     border-radius: 6px;
     background: transparent;
-    color: $text-quaternary;
+    color: var(--forge-text-disabled);
     cursor: pointer;
     transition:
       background 0.12s ease,
       color 0.12s ease;
 
     &:hover {
-      background: rgba($warning, 0.15);
-      color: $text-secondary;
+      background: color-mix(in srgb, var(--forge-danger) 15%, transparent);
+      color: var(--forge-text-bright);
     }
 
     &:focus-visible {
-      outline: 2px solid $primary-blue-lighter;
+      outline: 2px solid var(--forge-accent-hover);
       outline-offset: 1px;
     }
 

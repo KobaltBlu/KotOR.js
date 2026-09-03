@@ -4,11 +4,17 @@ import * as nodePath from "path";
 import TabManager from "@/apps/forge/components/tabs/TabManager";
 import { TabManagerProvider } from "@/apps/forge/context/TabManagerContext";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { ForgeTitlebar } from "@/apps/forge/components/shell/ForgeTitlebar";
+import { ForgeStatusBar } from "@/apps/forge/components/shell/ForgeStatusBar";
 import { MenuTop } from "@/apps/forge/components/MenuTop";
 import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
 import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
-import ModalGrantAccess from "@/apps/forge/components/modal/ModalGrantAccess";
 import { ModalChangeGame } from "@/apps/forge/components/modal/ModalChangeGame";
+import { ModalSettings } from "@/apps/forge/components/modal/ModalSettings";
+import { ModalAbout } from "@/apps/forge/components/modal/ModalAbout";
+import { CommandPalette } from "@/apps/forge/components/CommandPalette";
+import { installForgeKeybindings } from "@/apps/forge/commands/forgeKeybindings";
+import "@/apps/forge/commands/registerForgeCommands";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { useApp } from "@/apps/forge/context/AppContext";
 import { ModalManager } from "@/apps/forge/components/modal/ModalManager";
@@ -19,6 +25,7 @@ import { EditorFile } from "@/apps/forge/EditorFile";
 import { pathParse } from "@/apps/forge/helpers/PathParse";
 import { TabQuickStartState } from "@/apps/forge/states/tabs/TabQuickStartState";
 import { ForgeFloatingMiniPlayer } from "@/apps/forge/components/ForgeFloatingMiniPlayer";
+import { TraskTour } from "@/apps/forge/tutorial/TraskTour";
 import forgeIcon from "@/assets/icons/icon.png";
 import * as KotOR from "@/KotOR";
 
@@ -26,23 +33,18 @@ export const App = (props: any) => {
 
   const appContext = useApp();
   const [appReady, setAppReady] = appContext.appReady;
-  const [showGrantModal, setShowGrantModal] = appContext.showGrantModal;
   const [showLoadingScreen] = appContext.showLoadingScreen;
   const [loadingScreenMessage] = appContext.loadingScreenMessage;
   const [loadingScreenBackgroundURL] = appContext.loadingScreenBackgroundURL;
   const [loadingScreenLogoURL] = appContext.loadingScreenLogoURL;
   const [isDragOver, setIsDragOver] = useState(false);
+  const [westOpen, setWestOpen] = useState(ForgeState.explorerPaneOpen);
   const dragCounter = useRef(0);
   const isFileDragEvent = (e: React.DragEvent<HTMLDivElement>) => {
     const types = e.dataTransfer?.types;
     return !!types && Array.from(types).includes('Files');
   };
 
-
-  const onUserGrant = () => {
-    setShowGrantModal(false);
-    beginInit();
-  }
 
   const beginInit = () => {
     ForgeState.InitializeApp().then( () => {
@@ -62,25 +64,34 @@ export const App = (props: any) => {
     // })
   };
 
-  const onUserCancel = () => {
-    setShowGrantModal(true);
-    window.close();
-  }
-
   useEffectOnce( () => {
+    const profile = KotOR.ApplicationProfile.profile;
+    if (profile) {
+      ForgeState.loaderInit(profile.background, profile.logo);
+      ForgeState.loaderShow();
+    }
 
     ForgeState.VerifyGameDirectory(() => {
       console.log('Game Directory', 'verified');
-      setShowGrantModal(false);
       beginInit();
     }, () => {
-      console.warn('Game Directory', 'not found');
-      setShowGrantModal(true);
+      console.warn('Game Directory', 'not found; starting without game data');
+      beginInit();
     });
 
     return () => {
       //Deconstructor
     }
+  });
+
+  useEffectOnce(() => {
+    const uninstallKeys = installForgeKeybindings();
+    const syncWest = () => setWestOpen(ForgeState.explorerPaneOpen);
+    ForgeState.addEventListener("onExplorerPaneToggle", syncWest);
+    return () => {
+      uninstallKeys();
+      ForgeState.removeEventListener("onExplorerPaneToggle", syncWest);
+    };
   });
 
   const onDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>) => {
@@ -329,7 +340,11 @@ export const App = (props: any) => {
   }, []);
 
   const westContent = (
-    <div id="tabs-explorer" style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}>
+    <div
+      id="tabs-explorer"
+      data-trask-target="explorer-pane"
+      style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+    >
       <TabManagerProvider manager={ForgeState.explorerTabManager}>
         <TabManager></TabManager>
       </TabManagerProvider>
@@ -342,7 +357,7 @@ export const App = (props: any) => {
         <img className="tab-manager-empty-state__logo" src={forgeIcon} alt="Forge logo" />
         <button
           type="button"
-          className="tab-manager-empty-state__quick-start-btn"
+          className="forge-btn forge-btn--primary"
           onClick={() => ForgeState.tabManager.addTab(new TabQuickStartState())}
         >
           Open Start Page
@@ -355,24 +370,38 @@ export const App = (props: any) => {
     <>
       <div
         id="app"
+        className="forge-shell"
         style={{ opacity: (appReady) ? '1': '0' }}
         onDragEnter={onDragEnter}
         onDragLeave={onDragLeave}
         onDragOver={onDragOver}
         onDrop={onDrop}
       >
-        <MenuTop />
-        <div id="container">
-          <LayoutContainerProvider>
-            <LayoutContainer westContent={westContent}>
+        <ForgeTitlebar>
+          <MenuTop />
+        </ForgeTitlebar>
+        <div id="container" className="forge-workspace">
+          <LayoutContainerProvider bindExplorer>
+            <LayoutContainer
+              westContent={westContent}
+              westOpen={westOpen}
+              onWestOpenChange={(open) => ForgeState.setExplorerPaneOpen(open)}
+            >
               <TabManagerProvider manager={ForgeState.tabManager}>
-                <TabManager renderEmptyState={renderMainTabsEmptyState}></TabManager>
+                <div data-trask-target="main-tabs" style={{ height: "100%", minHeight: 0 }}>
+                  <TabManager renderEmptyState={renderMainTabsEmptyState}></TabManager>
+                </div>
               </TabManagerProvider>
             </LayoutContainer>
           </LayoutContainerProvider>
         </div>
+        <ForgeStatusBar />
+        <ModalSettings></ModalSettings>
         <ModalChangeGame></ModalChangeGame>
+        <ModalAbout />
+        <CommandPalette />
         <ForgeFloatingMiniPlayer />
+        {appReady ? <TraskTour /> : null}
         {isDragOver && (
           <div className="drag-drop-overlay">
             <div className="drag-drop-overlay__content">
@@ -383,7 +412,6 @@ export const App = (props: any) => {
         )}
       </div>
       <ModalManager manager={ForgeState.modalManager}></ModalManager>
-      <ModalGrantAccess onUserGrant={onUserGrant} onUserCancel={onUserCancel}></ModalGrantAccess>
       <LoadingScreen active={showLoadingScreen} message={loadingScreenMessage} backgroundURL={loadingScreenBackgroundURL} logoURL={loadingScreenLogoURL} />
     </>
   );

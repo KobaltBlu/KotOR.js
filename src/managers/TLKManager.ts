@@ -21,6 +21,8 @@ export interface TLKSearchResult {
  *
  * - Numeric-only query returns the entry at that string ID directly.
  * - Otherwise performs a linear text scan with optional case folding and limit.
+ * - Uses cached lowercase haystacks on each {@link TLKString} to avoid per-scan
+ *   `getDisplayText()` regex / `toLowerCase()` allocations.
  */
 export function searchTLKStrings(
   strings: TLKString[],
@@ -50,15 +52,16 @@ export function searchTLKStrings(
 
   for (let i = 0, len = strings.length; i < len; i++) {
     const entry = strings[i];
-    const displayText = entry.getDisplayText();
-    const haystack = caseInsensitive ? displayText.toLowerCase() : displayText;
-    const soundResRef = entry.getDisplaySoundResRef();
-    const resRefMatch = includeResRef && soundResRef
-      ? (caseInsensitive ? soundResRef.toLowerCase() : soundResRef).indexOf(needle) >= 0
-      : false;
+    const haystack = caseInsensitive ? entry.getSearchTextLower() : entry.getSearchText();
+    let matched = haystack.indexOf(needle) >= 0;
 
-    if (haystack.indexOf(needle) >= 0 || resRefMatch) {
-      results.push({ index: i, text: displayText });
+    if (!matched && includeResRef) {
+      const resRef = caseInsensitive ? entry.getSearchResRefLower() : entry.getSearchResRef();
+      matched = resRef.length > 0 && resRef.indexOf(needle) >= 0;
+    }
+
+    if (matched) {
+      results.push({ index: i, text: entry.getDisplayText() });
       if (limit !== undefined && results.length >= limit) break;
     }
   }

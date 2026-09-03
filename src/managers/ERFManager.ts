@@ -19,4 +19,23 @@ export class ERFManager {
     ERFManager.ERFs.set(name, erf);
   }
 
+  static FindByPath(archivePath: string): ERFObject | undefined {
+    if(!archivePath){
+      return undefined;
+    }
+    const normalized = String(archivePath).replace(/\\/g, '/').replace(/^\/+|\/+$/g, '').toLowerCase();
+    const base = (normalized.split('/').pop() || normalized).replace(/\.[^.]+$/, '');
+    const byName = ERFManager.ERFs.get(base) || ERFManager.ERFs.get(path.parse(archivePath).name);
+    if(byName){
+      return byName;
+    }
+    for(const erf of ERFManager.ERFs.values()){
+      const p = String(erf.resource_path || '').replace(/\\/g, '/').replace(/^\/+|\/+$/g, '').toLowerCase();
+      if(p === normalized || p.endsWith('/' + normalized) || normalized.endsWith('/' + p)){
+        return erf;
+      }
+    }
+    return undefined;
+  }
+
 }

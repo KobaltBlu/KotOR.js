@@ -219,10 +219,20 @@
 }
 
 // Responsive adjustments
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .discord-widget {
+    position: fixed;
     width: 100%;
-    max-width: 300px;
+    max-width: none;
+    height: calc(100% - 56px);
+    top: 56px;
+    right: -100%;
+    z-index: 130;
+    border-left: none;
+  }
+
+  .discord_widget_open .discord-widget {
+    right: 0;
   }
 }
 

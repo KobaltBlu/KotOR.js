@@ -1,4 +1,4 @@
-import { BrowserWindow } from "electron";
+import { BrowserWindow, shell } from "electron";
 import * as path from "path";
 import { WindowManager } from "./WindowManager";
 import Main from "./Main";
@@ -89,7 +89,10 @@ export class ApplicationWindow {
           }
         }
       }
-      return { action: 'deny' }
+      if (url.startsWith("https://") || url.startsWith("http://")) {
+        void shell.openExternal(url);
+      }
+      return { action: "deny" };
     })
 
     WindowManager.hideLauncher();

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Dropdown } from "react-bootstrap";
+import { ForgeDropdown } from "@/apps/forge/components/ui";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import {
   AmbientMusicOstEntry,
@@ -128,13 +128,13 @@ export const ForgeAudioOstControls = function (props: ForgeAudioOstControlsProps
       <div className="forge-audio-ost__rule" aria-hidden />
 
       <div className="forge-audio-ost__ambient">
-        <Dropdown
+        <ForgeDropdown
           className="forge-audio-ost__dropdown"
           align="end"
           show={ostMenuOpen}
           onToggle={onOstMenuToggle}
         >
-          <Dropdown.Toggle
+          <ForgeDropdown.Toggle
             as="button"
             type="button"
             className="forge-audio-ost__icon-btn forge-audio-ost__dropdown-toggle"
@@ -142,26 +142,11 @@ export const ForgeAudioOstControls = function (props: ForgeAudioOstControlsProps
             aria-label={useQueueList ? "Open playlist" : "Open ambient music playlist"}
           >
             <i className="fa-solid fa-list-ul" />
-          </Dropdown.Toggle>
-          <Dropdown.Menu
-            className="forge-mini-player__menu"
-            renderOnMount
-            popperConfig={{
-              strategy: "fixed",
-              modifiers: [
-                {
-                  name: "preventOverflow",
-                  options: {
-                    padding: 8,
-                    rootBoundary: "viewport",
-                  },
-                },
-              ],
-            }}
-          >
-            <Dropdown.Header className="forge-mini-player__menu-header">
+          </ForgeDropdown.Toggle>
+          <ForgeDropdown.Menu className="forge-mini-player__menu">
+            <ForgeDropdown.Header className="forge-mini-player__menu-header">
               {useQueueList ? "Playlist" : "Ambient music"}
-            </Dropdown.Header>
+            </ForgeDropdown.Header>
             <div
               className="forge-mini-player__shuffle-row"
               onClick={(e) => e.stopPropagation()}
@@ -178,7 +163,7 @@ export const ForgeAudioOstControls = function (props: ForgeAudioOstControlsProps
             </div>
             {useQueueList ? (
               ost.queueLabels.map((title, idx) => (
-                <Dropdown.Item
+                <ForgeDropdown.Item
                   key={`pl-${idx}-${title}`}
                   className="forge-mini-player__menu-item"
                   active={ost.trackIndex === idx}
@@ -187,16 +172,16 @@ export const ForgeAudioOstControls = function (props: ForgeAudioOstControlsProps
                     void AudioPlayerState.seekPlaylistToPhysicalIndex(idx);
                   }}
                 >
-                  <span className="text-truncate d-block">{title}</span>
-                </Dropdown.Item>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>{title}</span>
+                </ForgeDropdown.Item>
               ))
             ) : ostMenuTracks.length === 0 ? (
-              <Dropdown.ItemText className="forge-mini-player__menu-empty">
+              <ForgeDropdown.ItemText className="forge-mini-player__menu-empty">
                 No tracks — load game assets and ambientmusic.2da
-              </Dropdown.ItemText>
+              </ForgeDropdown.ItemText>
             ) : (
               ostMenuTracks.map((t, idx) => (
-                <Dropdown.Item
+                <ForgeDropdown.Item
                   key={`${t.resRef}-${idx}`}
                   className="forge-mini-player__menu-item"
                   active={ost.active && ost.trackIndex === idx}
@@ -207,12 +192,12 @@ export const ForgeAudioOstControls = function (props: ForgeAudioOstControlsProps
                     void AudioPlayerState.seekOstToPhysicalIndex(idx);
                   }}
                 >
-                  <span className="text-truncate d-block">{t.displayName}</span>
-                </Dropdown.Item>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>{t.displayName}</span>
+                </ForgeDropdown.Item>
               ))
             )}
-          </Dropdown.Menu>
-        </Dropdown>
+          </ForgeDropdown.Menu>
+        </ForgeDropdown>
 
         <button
           type="button"

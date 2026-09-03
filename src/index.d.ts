@@ -15,8 +15,10 @@ interface ElectronContextBridge {
   isMac: () => boolean;
   minimize: (profile?: any) => Promise<any>;
   maximize: (profile?: any) => Promise<any>;
+  close: () => Promise<any>;
   locate_game_directory: (profile: any) => Promise<string>;
   launchProfile: (profile: any) => Promise<any>;
+  openExternal: (src: string, options?: any) => void;
 }
 
 interface DialogContextBridge extends Electron.Dialog {

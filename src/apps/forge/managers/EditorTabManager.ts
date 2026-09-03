@@ -4,7 +4,7 @@ import { TabStoreState } from "@/apps/forge/interfaces/TabStoreState";
 import { 
   TabBIKPlayerState, TabGFFEditorState, TabHexEditorState, TabImageViewerState, TabModelViewerState, 
   TabModuleEditorState, TabQuickStartState, TabSSFEditorState, TabTLKEditorState, TabTwoDAEditorState, 
-  TabUTCEditorState, TabUTDEditorState, TabUTPEditorState, TabState
+  TabDLGEditorState, TabUTCEditorState, TabUTDEditorState, TabUTPEditorState, TabSaveGameEditorState, TabState
 } from "@/apps/forge/states/tabs";
 
 export type TabManagerEventListenerTypes =
@@ -194,9 +194,8 @@ export class EditorTabManager extends EventListenerModel {
         );
       break;
       case 'TabModuleEditorState':
-        this.addTab(
-          new TabModuleEditorState({editorFile: tabState.file})
-        );
+        // Restored via project settings.module_editor.open when a project is opened.
+        // Never restore from global open_tabs.
       break;
       case 'TabTwoDAEditorState':
         this.addTab(
@@ -223,6 +222,11 @@ export class EditorTabManager extends EventListenerModel {
           new TabUTCEditorState({editorFile: tabState.file})
         );
       break;
+      case 'TabDLGEditorState':
+        this.addTab(
+          new TabDLGEditorState({editorFile: tabState.file})
+        );
+      break;
       case 'TabUTDEditorState':
         this.addTab(
           new TabUTDEditorState({editorFile: tabState.file})
@@ -231,6 +235,11 @@ export class EditorTabManager extends EventListenerModel {
       case 'TabUTPEditorState':
         this.addTab(
           new TabUTPEditorState({editorFile: tabState.file})
+        );
+      break;
+      case 'TabSaveGameEditorState':
+        this.addTab(
+          new TabSaveGameEditorState({editorFile: tabState.file})
         );
       break;
       case 'TabBIKPlayerState':

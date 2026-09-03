@@ -1,15 +1,13 @@
-@use "tokens" as *;
-
 // =============================================================================
-// TREE VIEW - VS CODE STYLE
+// TREE VIEW
 // =============================================================================
 
 .forgeTreeView {
-  font-family: $font-family-primary;
-  font-size: 13px;
+  font-family: var(--forge-font);
+  font-size: var(--forge-font-size);
   line-height: 22px;
-  color: $text-primary;
-  background: $bg-primary;
+  color: var(--forge-text);
+  background: var(--forge-bg);
   user-select: none;
   -webkit-user-select: none;
   cursor: default;
@@ -48,26 +46,26 @@
       margin: 0;
       cursor: pointer;
       position: relative;
-      border-radius: 3px;
+      border-radius: var(--forge-radius);
       transition: background-color 0.1s ease;
 
       &:hover {
-        background-color: rgba(255, 255, 255, 0.1);
+        background-color: var(--forge-bg-hover);
       }
 
       &:focus {
-        outline: 1px solid rgba(0, 122, 204, 0.5);
+        outline: 1px solid var(--forge-accent);
         outline-offset: -1px;
       }
     }
 
-    &.selected .tree-node-content {
-      background-color: rgba(0, 122, 204, 0.3);
-      color: $text-white;
+    &.selected > .tree-node-content {
+      background-color: var(--forge-accent-muted);
+      color: var(--forge-text-bright);
     }
 
-    &.focused .tree-node-content {
-      background-color: rgba(0, 122, 204, 0.2);
+    &.focused > .tree-node-content {
+      background-color: var(--forge-accent-muted);
     }
 
     // Icon container
@@ -79,18 +77,18 @@
       height: 16px;
       margin-right: 6px;
       flex-shrink: 0;
-      color: $text-quaternary;
+      color: var(--forge-text-muted);
 
       &.folder {
-        color: #4FC1FF;
+        color: var(--forge-accent);
       }
 
       &.file {
-        color: $text-quaternary;
+        color: var(--forge-text-muted);
       }
 
       &.expanded {
-        color: $text-primary;
+        color: var(--forge-text);
       }
     }
 
@@ -103,7 +101,7 @@
       height: 16px;
       margin-right: 2px;
       flex-shrink: 0;
-      color: $text-quaternary;
+      color: var(--forge-text-muted);
       transition: transform 0.1s ease;
       font-size: 12px;
 
@@ -127,7 +125,7 @@
       overflow: hidden;
       text-overflow: ellipsis;
       color: inherit;
-      font-size: 13px;
+      font-size: var(--forge-font-size);
       line-height: 22px;
     }
 
@@ -160,7 +158,7 @@
       top: 0;
       bottom: 0;
       width: 1px;
-      background: rgba(255, 255, 255, 0.1);
+      background: var(--forge-border);
     }
   }
 
@@ -192,7 +190,7 @@
     &.file-jpg .tree-icon { color: #F24E1E; }
     &.file-gif .tree-icon { color: #F24E1E; }
     &.file-svg .tree-icon { color: #FFB000; }
-    
+
     // KotOR specific file types
     &.file-nss .tree-icon { color: #FF6B6B; } // NWScript
     &.file-ncs .tree-icon { color: #4ECDC4; } // Compiled script
@@ -225,19 +223,19 @@
   // Drag and drop states
   .tree-item {
     &.drag-over {
-      background-color: rgba(0, 122, 204, 0.1);
-      border: 1px dashed rgba(0, 122, 204, 0.5);
+      background-color: var(--forge-accent-muted);
+      border: 1px dashed var(--forge-accent);
     }
 
     &.drag-target {
-      background-color: rgba(0, 122, 204, 0.2);
+      background-color: var(--forge-accent-muted);
     }
   }
 
   // Loading state
   .tree-item.loading {
     .tree-label {
-      color: $text-quaternary;
+      color: var(--forge-text-muted);
       font-style: italic;
     }
 
@@ -252,7 +250,7 @@
   .tree-empty {
     padding: 20px;
     text-align: center;
-    color: $text-quaternary;
+    color: var(--forge-text-muted);
     font-style: italic;
   }
 
@@ -260,9 +258,10 @@
   .tree-item {
     .tree-label {
       .highlight {
-        background-color: rgba(255, 255, 0, 0.3);
+        background-color: var(--forge-accent-muted);
+        color: var(--forge-text-bright);
         padding: 0 2px;
-        border-radius: 2px;
+        border-radius: var(--forge-radius);
       }
     }
   }
@@ -275,7 +274,7 @@
       right: 8px;
       top: 50%;
       transform: translateY(-50%);
-      color: $text-quaternary;
+      color: var(--forge-text-muted);
       font-size: 16px;
       opacity: 0;
       transition: opacity 0.1s ease;
@@ -288,7 +287,7 @@
 
   // Focus management
   .tree-item:focus {
-    outline: 1px solid rgba(0, 122, 204, 0.5);
+    outline: 1px solid var(--forge-accent);
     outline-offset: -1px;
   }
 
@@ -298,15 +297,15 @@
   }
 
   &::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--forge-bg);
   }
 
   &::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--forge-bg-active);
     border-radius: 4px;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.2);
+      background: var(--forge-accent);
     }
   }
 }
@@ -320,7 +319,7 @@
 // Responsive adjustments
 @media (max-width: 768px) {
   .forgeTreeView {
-    font-size: 12px;
+    font-size: var(--forge-font-size-sm);
     line-height: 20px;
 
     .tree-item {
@@ -334,27 +333,8 @@
       }
 
       .tree-label {
-        font-size: 12px;
+        font-size: var(--forge-font-size-sm);
         line-height: 20px;
-      }
-    }
-  }
-}
-
-// Dark theme adjustments
-@media (prefers-color-scheme: dark) {
-  .forgeTreeView {
-    .tree-item {
-      // &:hover {
-      //   background-color: rgba(255, 255, 255, 0.05);
-      // }
-
-      &.selected {
-        background-color: rgba(0, 122, 204, 0.4);
-      }
-
-      &.focused {
-        background-color: rgba(0, 122, 204, 0.3);
       }
     }
   }

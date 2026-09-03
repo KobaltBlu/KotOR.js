@@ -1,21 +1,21 @@
 // =============================================================================
-// IMPORTS — vendor + design tokens + layouts (single global entry for Forge)
+// IMPORTS — Forge design tokens + layouts (no Bootstrap)
 // =============================================================================
 
 @import "styles/variables";
-@import "styles/bootstrap-overrides";
-@import "~bootstrap/scss/bootstrap";
+@import "styles/theme";
 
 $fa-font-path: "./fonts";
 @import "~@fortawesome/fontawesome-free/scss/fontawesome";
 @import "~@fortawesome/fontawesome-free/scss/solid.scss";
 @import "~@fortawesome/fontawesome-free/scss/brands.scss";
 
-@import "styles/layout-default.scss";
-@import "styles/layout-custom.scss";
 @import "../game/styles/grant-access-modal.scss";
 @import "styles/component-keyframe.scss";
-@import "react-contexify/ReactContexify.css";
+
+@import "components/ui/forge-ui.scss";
+@import "components/shell/forge-shell.scss";
+@import "settings/forge-settings.scss";
 
 @import "styles/global/fonts";
 @import "styles/global/base";
@@ -24,7 +24,5 @@ $fa-font-path: "./fonts";
 @import "styles/global/forms";
 @import "styles/global/buttons-tree";
 @import "styles/global/modals";
-@import "styles/global/nav-tabs-wizard";
 @import "styles/global/misc";
-@import "styles/theme/tsl";
 @import "styles/global/model-viewer-properties";

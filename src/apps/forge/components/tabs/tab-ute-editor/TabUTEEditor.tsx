@@ -10,9 +10,14 @@ import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-chec
 import "@/apps/forge/components/tabs/tab-ute-editor/TabUTEEditor.scss";
 import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost/SubTabHost";
 import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
+import { ScriptResRefInput } from "@/apps/forge/components/script-resref-input/ScriptResRefInput";
+import { ForgeTwoDAIndexField } from "@/apps/forge/components/ui";
+import { encounterDifficultyValueAt } from "@/apps/forge/helpers/encounterDifficultyValue";
+import { useForgeHasGameData } from "@/apps/forge/helpers/useForgeHasGameData";
 
 export const TabUTEEditor = function(props: BaseTabProps){
   const tab: TabUTEEditorState = props.tab as TabUTEEditorState;
+  useForgeHasGameData();
   const [encounterDifficulties, setEncounterDifficulties] = useState<EncounterDifficulty[]>([]);
 
   const [active, setActive] = useState<boolean>(false);
@@ -174,11 +179,18 @@ export const TabUTEEditor = function(props: BaseTabProps){
                 label="Difficulty"
                 info="The difficulty level of this encounter."
               >
-                <select value={difficultyIndex} onChange={(e) => { setDifficultyIndex(Number(e.target.value)); tab.encounter.difficultyIndex = Number(e.target.value); tab.encounter.difficulty = tab.encounterDifficulties[Number(e.target.value)].value; tab.updateFile(); }} className="tab-ute-editor__select">
-                  {encounterDifficulties.map((diff, idx) => (
-                    <option key={idx} value={idx}>{diff.label}</option>
-                  ))}
-                </select>
+                <ForgeTwoDAIndexField
+                  table="encdifficulty"
+                  value={difficultyIndex}
+                  emptyLabel="encdifficulty.2da not loaded"
+                  onChange={(value) => {
+                    const index = Number(value) || 0;
+                    setDifficultyIndex(index);
+                    tab.encounter.difficultyIndex = index;
+                    tab.encounter.difficulty = encounterDifficultyValueAt(index, tab.encounterDifficulties);
+                    tab.updateFile();
+                  }}
+                />
               </FormField>
               <FormField
                 label="Faction"
@@ -387,12 +399,9 @@ export const TabUTEEditor = function(props: BaseTabProps){
                 label="OnEntered"
                 info="CResRef of script to execute when a creature enters the encounter area (16 characters max)."
               >
-                <input 
-                  type="text" 
-                  maxLength={16} 
-                  value={onEntered} 
-                  onChange={onUpdateResRefField(setOnEntered, 'onEntered')} 
-                  placeholder="Script ResRef"
+                <ScriptResRefInput
+                  value={onEntered}
+                  onChange={onUpdateResRefField(setOnEntered, 'onEntered')}
                   className="tab-ute-editor__input-monospace"
                 />
               </FormField>
@@ -400,12 +409,9 @@ export const TabUTEEditor = function(props: BaseTabProps){
                 label="OnExhausted"
                 info="CResRef of script to execute when the encounter is exhausted (all creatures defeated) (16 characters max)."
               >
-                <input 
-                  type="text" 
-                  maxLength={16} 
-                  value={onExhausted} 
-                  onChange={onUpdateResRefField(setOnExhausted, 'onExhausted')} 
-                  placeholder="Script ResRef"
+                <ScriptResRefInput
+                  value={onExhausted}
+                  onChange={onUpdateResRefField(setOnExhausted, 'onExhausted')}
                   className="tab-ute-editor__input-monospace"
                 />
               </FormField>
@@ -413,12 +419,9 @@ export const TabUTEEditor = function(props: BaseTabProps){
                 label="OnExit"
                 info="CResRef of script to execute when a creature exits the encounter area (16 characters max)."
               >
-                <input 
-                  type="text" 
-                  maxLength={16} 
-                  value={onExit} 
-                  onChange={onUpdateResRefField(setOnExit, 'onExit')} 
-                  placeholder="Script ResRef"
+                <ScriptResRefInput
+                  value={onExit}
+                  onChange={onUpdateResRefField(setOnExit, 'onExit')}
                   className="tab-ute-editor__input-monospace"
                 />
               </FormField>
@@ -426,12 +429,9 @@ export const TabUTEEditor = function(props: BaseTabProps){
                 label="OnHeartbeat"
                 info="CResRef of script to execute on each heartbeat/update cycle (16 characters max)."
               >
-                <input 
-                  type="text" 
-                  maxLength={16} 
-                  value={onHeartbeat} 
-                  onChange={onUpdateResRefField(setOnHeartbeat, 'onHeartbeat')} 
-                  placeholder="Script ResRef"
+                <ScriptResRefInput
+                  value={onHeartbeat}
+                  onChange={onUpdateResRefField(setOnHeartbeat, 'onHeartbeat')}
                   className="tab-ute-editor__input-monospace"
                 />
               </FormField>
@@ -439,12 +439,9 @@ export const TabUTEEditor = function(props: BaseTabProps){
                 label="OnUserDefined"
                 info="CResRef of script to execute on user-defined events (16 characters max)."
               >
-                <input 
-                  type="text" 
-                  maxLength={16} 
-                  value={onUserDefined} 
-                  onChange={onUpdateResRefField(setOnUserDefined, 'onUserDefined')} 
-                  placeholder="Script ResRef"
+                <ScriptResRefInput
+                  value={onUserDefined}
+                  onChange={onUpdateResRefField(setOnUserDefined, 'onUserDefined')}
                   className="tab-ute-editor__input-monospace"
                 />
               </FormField>

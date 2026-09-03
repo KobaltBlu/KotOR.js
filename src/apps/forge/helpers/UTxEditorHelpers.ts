@@ -1,6 +1,6 @@
 import React from "react";
 import * as KotOR from "@/apps/forge/KotOR";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { TabState, UpdateFileOptions } from "@/apps/forge/states/tabs/TabState";
 
 /**
  * Sanitizes a string to be a valid ResRef (max 16 chars, lowercase, alphanumeric + underscore only)
@@ -23,6 +23,41 @@ export const clampWord = (value: number): number => {
   return Math.max(1, Math.min(0xFFFF, value || 1));
 };
 
+/** Mark the UTx tab dirty so the tab-strip dirty-dot updates. */
+export function markUtxTabDirty(tab: TabState): void {
+  if (tab.file) {
+    tab.file.unsaved_changes = true;
+  }
+  tab.editorFileUpdated();
+}
+
+/**
+ * Snapshot the last-exported blueprint before a live UTx field is written.
+ * Save/export passes skipHistory so this does not push undo or re-dirt the tab.
+ */
+export function beginUtxFileUpdate(tab: TabState, options?: UpdateFileOptions): void {
+  if (options?.skipHistory) {
+    return;
+  }
+  if (options?.coalesceKey) {
+    tab.captureCoalescedUndo(options.coalesceKey);
+  } else {
+    tab.captureUndoSnapshot();
+  }
+  markUtxTabDirty(tab);
+}
+
+/** Mark the tab dirty and remount the form after restoring a UTx snapshot. */
+export function finishUtxUndoApply(tab: TabState, attachPreview?: () => Promise<void>): void {
+  markUtxTabDirty(tab);
+  const fireLoad = () => tab.processEventListener("onEditorFileLoad", [tab]);
+  if (attachPreview) {
+    void Promise.resolve(attachPreview()).then(fireLoad, fireLoad);
+  } else {
+    fireLoad();
+  }
+}
+
 /**
  * Creates a handler for updating number fields on a tab state
  */
@@ -37,7 +72,7 @@ export const createNumberFieldHandler = <T extends TabState>(
     const value = parser(raw);
     setter(value);
     tab.setProperty(property as keyof TabState, value);
-    tab.updateFile();
+    tab.updateFile({ coalesceKey: String(property) });
   };
 };
 
@@ -53,7 +88,7 @@ export const createNumberArrayFieldHandler = <T extends TabState>(
     value[index] = raw;
     setter([...value]);
     tab.setProperty(property as keyof TabState, value);
-    tab.updateFile();
+    tab.updateFile({ coalesceKey: `${String(property)}:${index}` });
   };
 };
 
@@ -92,7 +127,7 @@ export const createBooleanFieldHandler = <T extends TabState>(
     const value = e.target.checked;
     setter(value);
     tab.setProperty(property as keyof TabState, value);
-    tab.updateFile();
+    tab.updateFile({ coalesceKey: String(property) });
   };
 };
 
@@ -107,7 +142,7 @@ export const createForgeCheckboxFieldHandler = <T extends TabState>(
   return (value: boolean) => {
     setter(value);
     tab.setProperty(property as keyof TabState, value);
-    tab.updateFile();
+    tab.updateFile({ coalesceKey: String(property) });
   };
 };
 
@@ -123,7 +158,7 @@ export const createResRefFieldHandler = <T extends TabState>(
     const value = sanitizeResRef(e.target.value);
     setter(value);
     tab.setProperty(property as keyof TabState, value);
-    tab.updateFile();
+    tab.updateFile({ coalesceKey: String(property) });
   };
 };
 
@@ -138,7 +173,7 @@ export const createCExoStringFieldHandler = <T extends TabState>(
   return (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setter(e.target.value);
     tab.setProperty(property as keyof TabState, e.target.value);
-    tab.updateFile();
+    tab.updateFile({ coalesceKey: String(property) });
   };
 };
 
@@ -153,7 +188,7 @@ export const createCExoLocStringFieldHandler = <T extends TabState>(
   return (value: KotOR.CExoLocString) => {
     setter(value);
     tab.setProperty(property as keyof TabState, value);
-    tab.updateFile();
+    tab.updateFile({ coalesceKey: String(property) });
   };
 };
 

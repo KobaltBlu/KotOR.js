@@ -4,7 +4,8 @@ import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { TabLIPEditorState, TabLIPEditorStateEventListenerTypes } from "@/apps/forge/states/tabs";
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
 import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
-import { Form } from "react-bootstrap";
+
+import { ForgeSelect } from "@/apps/forge/components/ui";
 import { LIPShapeLabels } from "@/apps/forge/data/LIPShapeLabels";
 
 import * as KotOR from "@/apps/forge/KotOR";
@@ -51,11 +52,70 @@ export const TabLIPEditor = function(props: BaseTabProps){
 
   return (
     <LayoutContainerProvider>
-      <LayoutContainer southContent={southPanel} southSize={196} eastContent={eastPanel} eastSize={300}>
-        <UI3DRendererView context={tab.ui3DRenderer} />
-      </LayoutContainer>
+      <div className="lip-editor-shell">
+        <LayoutContainer southContent={southPanel} southSize={196} eastContent={eastPanel} eastSize={300}>
+          <UI3DRendererView context={tab.ui3DRenderer} />
+        </LayoutContainer>
+        <LIPRhubarbProgressOverlay tab={tab} />
+      </div>
     </LayoutContainerProvider>
   )
+}
+
+function LIPRhubarbProgressOverlay(props: { tab: TabLIPEditorState }) {
+  const tab = props.tab;
+  const [busy, setBusy] = useState(tab.phoneme_generation_busy);
+  const [progress, setProgress] = useState(() => ({ ...tab.phoneme_generation_progress }));
+
+  useEffectOnce(() => {
+    const sync = () => {
+      setBusy(tab.phoneme_generation_busy);
+      setProgress({ ...tab.phoneme_generation_progress });
+    };
+    const onStart = () => sync();
+    const onProgress = () => sync();
+    const onGenerated = () => sync();
+    const onError = () => {
+      setBusy(false);
+      setProgress({ ...tab.phoneme_generation_progress });
+    };
+    tab.addEventListener<TabLIPEditorStateEventListenerTypes>("onPhonemeGenerationStart", onStart);
+    tab.addEventListener<TabLIPEditorStateEventListenerTypes>("onPhonemeGenerationProgress", onProgress);
+    tab.addEventListener<TabLIPEditorStateEventListenerTypes>("onPhonemesGenerated", onGenerated);
+    tab.addEventListener<TabLIPEditorStateEventListenerTypes>("onPhonemeGenerationError", onError);
+    return () => {
+      tab.removeEventListener<TabLIPEditorStateEventListenerTypes>("onPhonemeGenerationStart", onStart);
+      tab.removeEventListener<TabLIPEditorStateEventListenerTypes>("onPhonemeGenerationProgress", onProgress);
+      tab.removeEventListener<TabLIPEditorStateEventListenerTypes>("onPhonemesGenerated", onGenerated);
+      tab.removeEventListener<TabLIPEditorStateEventListenerTypes>("onPhonemeGenerationError", onError);
+    };
+  });
+
+  // Stay visible until busy clears after keyframe apply (after onPhonemesGenerated).
+  useEffect(() => {
+    if (!busy && !tab.phoneme_generation_busy) return;
+    const id = window.setInterval(() => {
+      setBusy(tab.phoneme_generation_busy);
+      setProgress({ ...tab.phoneme_generation_progress });
+    }, 50);
+    return () => window.clearInterval(id);
+  }, [busy, tab]);
+
+  if (!busy && !tab.phoneme_generation_busy) return null;
+
+  const percent = Math.max(0, Math.min(100, progress?.percent ?? 0));
+  return (
+    <div className="lip-rhubarb-overlay" role="alertdialog" aria-busy="true" aria-live="polite">
+      <div className="lip-rhubarb-overlay__card">
+        <div className="lip-rhubarb-overlay__title">Rhubarb Lip Sync</div>
+        <div className="lip-rhubarb-overlay__message">{progress?.message || "Working…"}</div>
+        <div className="lip-rhubarb-overlay__bar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent}>
+          <div className="lip-rhubarb-overlay__bar-fill" style={{ width: `${percent}%` }} />
+        </div>
+        <div className="lip-rhubarb-overlay__percent">{percent}%</div>
+      </div>
+    </div>
+  );
 }
 
 export interface UILIPKeyFramePanelProps {
@@ -407,7 +467,33 @@ export const UILIPKeyFramePanel = function(props: UILIPKeyFramePanelProps){
     tab.selectKeyFrame(keyframe);
     tab.dragging_frame_snapshot = Object.assign({}, keyframe);
     tab.dragging_frame = keyframe;
+    tab.scrubbing = false;
   }
+
+  const applyKeyframeDragTime = (time: number) => {
+    if (!tab.dragging_frame) return;
+    const prevTime = tab.dragging_frame.time;
+    const clamped = Math.max(0, Math.min(tab.lip.duration || time, time));
+    tab.dragging_frame.time = clamped;
+
+    // Keep matching Rhubarb cue markers locked to the dragged keyframe.
+    if (tab.timed_phonemes?.items?.length) {
+      for (const item of tab.timed_phonemes.items) {
+        if (Math.abs(item.startSec - prevTime) < 1e-4) {
+          const dur = Math.max(0, item.endSec - item.startSec);
+          item.startSec = clamped;
+          item.endSec = clamped + dur;
+        }
+      }
+      setTimedPhonemes([...tab.timed_phonemes.items]);
+    }
+
+    tab.lip.elapsed = clamped;
+    tab.poseFrame = true;
+    setKeyFrames([...tab.lip.keyframes]);
+    setSeekPositionLeft(clamped * zoomRef.current);
+    setPlayheadTime(clamped);
+  };
 
   const onKeyFrameMouseUp = (e: React.MouseEvent<HTMLDivElement>, keyframe: KotOR.ILIPKeyFrame) => {
     e.stopPropagation();
@@ -453,8 +539,7 @@ export const UILIPKeyFramePanel = function(props: UILIPKeyFramePanelProps){
     }
     
     if(tab.dragging_frame){
-      tab.dragging_frame.time = time;
-      setKeyFrames([...tab.lip.keyframes]);
+      applyKeyframeDragTime(time);
     }
   }
 
@@ -499,12 +584,22 @@ export const UILIPKeyFramePanel = function(props: UILIPKeyFramePanelProps){
   }
 
   const onMouseMoveWindow = (e: MouseEvent) => {
-    if(!durationDragRef.current.active) return;
-    const deltaX = e.clientX - durationDragRef.current.startX;
-    const deltaSecs = deltaX / zoomRef.current;
-    const minDuration = 0.1;
-    const newDuration = Math.max(minDuration, durationDragRef.current.startDuration + deltaSecs);
-    tab.setDuration(Math.round(newDuration * 1000) / 1000);
+    if (durationDragRef.current.active) {
+      const deltaX = e.clientX - durationDragRef.current.startX;
+      const deltaSecs = deltaX / zoomRef.current;
+      const minDuration = 0.1;
+      const newDuration = Math.max(minDuration, durationDragRef.current.startDuration + deltaSecs);
+      tab.setDuration(Math.round(newDuration * 1000) / 1000);
+      return;
+    }
+    if (tab.dragging_frame) {
+      const keyframeWindowElement = keyframeBarRef.current;
+      if (!keyframeWindowElement) return;
+      const bRect = keyframeWindowElement.getBoundingClientRect();
+      let position = (e.pageX - bRect.left + keyframeWindowElement.scrollLeft);
+      if (position < 0) position = 0;
+      applyKeyframeDragTime(getTimelinePixelPositionAsTime(position));
+    }
   };
 
   const onDurationHandleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -561,7 +656,7 @@ export const UILIPKeyFramePanel = function(props: UILIPKeyFramePanelProps){
             <span className="lip-toolbar__clock-dur">{formatLipClock(duration)}</span>
           </span>
           {selectedFrame ? (
-            <Form.Select
+            <ForgeSelect
               className="lip-toolbar__shape-select"
               onChange={onKeyFrameShapeChange}
               value={selectedFrame.shape}
@@ -570,11 +665,11 @@ export const UILIPKeyFramePanel = function(props: UILIPKeyFramePanelProps){
               {LIPShapeLabels.map((label: string, i: number) => (
                 <option key={i} value={i}>{label.trim()}</option>
               ))}
-            </Form.Select>
+            </ForgeSelect>
           ) : (
-            <Form.Select className="lip-toolbar__shape-select" disabled value="">
+            <ForgeSelect className="lip-toolbar__shape-select" disabled value="">
               <option value="">— shape —</option>
-            </Form.Select>
+            </ForgeSelect>
           )}
         </div>
 

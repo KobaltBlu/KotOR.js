@@ -25,7 +25,7 @@ export const YTVideoPromoItem = function(props: ProfilePromoItemProps){
 
   return (
     <div className="promo-element ytvideo" onClick={onYTVideoClick}>
-      <img ref={imageElement} src={element.thumbnail} style={{height: '250px'}} onDoubleClick={onImageDoubleClick} />
+      <img ref={imageElement} src={element.thumbnail} alt="" onDoubleClick={onImageDoubleClick} />
     </div>
   );
 

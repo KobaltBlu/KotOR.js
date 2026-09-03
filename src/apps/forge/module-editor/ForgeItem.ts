@@ -1,6 +1,17 @@
 import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { facingFromYaw, yawFromFacing } from "@/apps/forge/helpers/gitFacing";
 import * as KotOR from "@/apps/forge/KotOR";
-import { ItemPropertyEntry } from "@/apps/forge/states/tabs/TabUTIEditorState";
+import * as THREE from "three";
+
+export interface ItemPropertyEntry {
+  chanceAppear: number;
+  costTable: number;
+  costValue: number;
+  param1: number;
+  param1Value: number;
+  propertyName: number;
+  subtype: number;
+}
 
 export class ForgeItem extends ForgeGameObject {
   //GIT Instance Properties
@@ -30,11 +41,12 @@ export class ForgeItem extends ForgeGameObject {
   modelLoading: boolean = false;
   kBaseItem: any = {};
 
-  constructor(buffer?: Uint8Array){
+  constructor(buffer?: Uint8Array, templateResRef?: string){
     super();
-    if(buffer){
-      this.loadFromBuffer(buffer);
+    if(templateResRef){
+      this.templateResRef = templateResRef;
     }
+    this.applySourceBuffer(buffer);
     this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
   }
 
@@ -47,13 +59,6 @@ export class ForgeItem extends ForgeGameObject {
     }
     if(property === 'modelVariation'){
       this.loadModel();
-    }
-    if(property === 'templateResRef'){
-      if(newValue !== oldValue){
-        this.loadBlueprint().then(() => {
-          this.load();
-        });
-      }
     }
   }
 
@@ -175,7 +180,9 @@ export class ForgeItem extends ForgeGameObject {
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Stolen', this.stolen ? 1 : 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Tag', this.tag) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', this.templateResRef || '') );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'UpgradeLevel', this.upgradeLevel || 0) );
+    if(this.isTslGame()){
+      root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'UpgradeLevel', this.upgradeLevel || 0) );
+    }
 
     return this.blueprint;
   }
@@ -186,7 +193,10 @@ export class ForgeItem extends ForgeGameObject {
       return this.kBaseItem;
     }
     const twodaObject = KotOR.TwoDAManager.datatables.get('baseitems');
-    if(!twodaObject) return;
+    if(!twodaObject){
+      this.kBaseItem = this.kBaseItem || {};
+      return this.kBaseItem;
+    }
     return this.kBaseItem = twodaObject.getRowByIndex(this.baseItem);
   }
 
@@ -211,8 +221,8 @@ export class ForgeItem extends ForgeGameObject {
       return this.model;
     }
 
-    const itemclass = this.stringCleaner(this.kBaseItem.itemclass);
-    let defaultModel = this.stringCleaner(this.kBaseItem.defaultmodel);
+    const itemclass = this.stringCleaner(this.kBaseItem?.itemclass);
+    let defaultModel = this.stringCleaner(this.kBaseItem?.defaultmodel);
 
     if(defaultModel != 'i_null'){
       defaultModel = this.nthStringConverter(defaultModel, this.modelVariation);
@@ -250,28 +260,38 @@ export class ForgeItem extends ForgeGameObject {
   async load(){
     this.loadBaseItem();
     await this.loadModel();
+    if((!this.model || this.model.children.length === 0) && !this.container.getObjectByName('item-helper')){
+      const helper = new THREE.Mesh(
+        new THREE.BoxGeometry(0.35, 0.35, 0.35),
+        new THREE.MeshBasicMaterial({ color: 0x66ddff, wireframe: true })
+      );
+      helper.name = 'item-helper';
+      helper.position.z = 0.175;
+      helper.userData.forgeGameObject = this;
+      this.container.add(helper);
+    }
     this.updateBoundingBox();
   }
 
   getGITInstance(): KotOR.GFFStruct {
     const instance = new KotOR.GFFStruct(0);
+    const facing = facingFromYaw(this.rotation.z);
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', this.templateResRef));
-    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XOrientation', this.rotation.z));
+    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XOrientation', facing.x));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XPosition', this.position.x));
-    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'YOrientation', this.rotation.z));
+    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'YOrientation', facing.y));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'YPosition', this.position.y));
-    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'ZOrientation', this.rotation.z));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'ZPosition', this.position.z));
     return instance;
   }
 
   setGITInstance(strt: KotOR.GFFStruct){
     this.templateResRef = strt.getFieldByLabel('TemplateResRef').getValue() as string;
-    this.rotation.z = strt.getFieldByLabel('XOrientation').getValue() as number;
+    const xo = strt.hasField('XOrientation') ? strt.getFieldByLabel('XOrientation').getValue() as number : 0;
+    const yo = strt.hasField('YOrientation') ? strt.getFieldByLabel('YOrientation').getValue() as number : 1;
+    this.rotation.z = yawFromFacing(xo, yo);
     this.position.x = strt.getFieldByLabel('XPosition').getValue() as number;
-    this.rotation.z = strt.getFieldByLabel('YOrientation').getValue() as number;
     this.position.y = strt.getFieldByLabel('YPosition').getValue() as number;
-    this.rotation.z = strt.getFieldByLabel('ZOrientation').getValue() as number;
     this.position.z = strt.getFieldByLabel('ZPosition').getValue() as number;
   }
 

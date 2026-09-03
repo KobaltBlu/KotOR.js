@@ -1,0 +1,282 @@
+.tab-gui-editor {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  color: var(--forge-text);
+  background: var(--forge-bg);
+
+  &__body {
+    position: absolute;
+    top: calc(var(--forge-menubar-height, 22px) + 1px);
+    right: 0;
+    bottom: 0;
+    left: 0;
+    min-height: 0;
+    overflow: hidden;
+
+    // LayoutContainer east/west are absolute with a fixed height — force children
+    // to fill that height so their internal overflow:auto regions can scroll.
+    .ui-layout-west,
+    .ui-layout-east {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden !important;
+      min-height: 0;
+    }
+
+    .ui-layout-west > *,
+    .ui-layout-east > * {
+      flex: 1 1 auto;
+      min-height: 0;
+      height: auto !important;
+      max-height: 100%;
+    }
+  }
+
+  &__tree,
+  &__inspector {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    background: var(--forge-bg-elevated, var(--forge-bg));
+  }
+
+  &__tree {
+    border-right: 1px solid var(--forge-border);
+  }
+
+  &__inspector {
+    border-left: 1px solid var(--forge-border);
+  }
+
+  &__inspector-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.55rem 0.65rem;
+    border-bottom: 1px solid var(--forge-border);
+    flex-shrink: 0;
+    background: var(--forge-bg);
+  }
+
+  &__inspector-heading {
+    min-width: 0;
+    flex: 1;
+  }
+
+  &__inspector-tag {
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: var(--forge-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__inspector-meta {
+    margin-top: 0.12rem;
+    font-size: 0.72rem;
+    color: var(--forge-text-muted);
+  }
+
+  &__inspector-tools {
+    display: flex;
+    gap: 0.3rem;
+    flex-shrink: 0;
+  }
+
+  &__tree-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    padding: 0.55rem 0.65rem;
+    border-bottom: 1px solid var(--forge-border);
+    flex-shrink: 0;
+  }
+
+  &__tree-filter {
+    width: 100%;
+  }
+
+  &__tree-actions {
+    display: flex;
+    gap: 0.35rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  &__tree-add-type {
+    flex: 1 1 7rem;
+    min-width: 0;
+    font-size: 0.78rem;
+  }
+
+  &__tree-scroll,
+  &__inspector-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  &__inspector-scroll {
+    padding: 0.45rem 0.55rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+
+    // Keep sections at content height so the pane scrolls instead of squishing fields.
+    > * {
+      flex: 0 0 auto;
+    }
+  }
+
+  &__empty {
+    margin: 0.75rem;
+    color: var(--forge-text-muted);
+    font-size: 0.85rem;
+  }
+
+  &__section {
+    border: 1px solid var(--forge-border);
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--forge-bg) 88%, var(--forge-bg-elevated, #111) 12%);
+    overflow: hidden;
+  }
+
+  &__section-head {
+    display: grid;
+    grid-template-columns: 1rem minmax(0, auto) minmax(0, 1fr);
+    align-items: center;
+    gap: 0.35rem;
+    width: 100%;
+    padding: 0.42rem 0.55rem;
+    border: none;
+    background: transparent;
+    color: var(--forge-text);
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+      background: color-mix(in srgb, var(--forge-accent, #4fc3f7) 10%, transparent);
+    }
+  }
+
+  &__section.is-open > &__section-head {
+    border-bottom: 1px solid var(--forge-border);
+    background: color-mix(in srgb, var(--forge-bg-elevated, #111) 55%, transparent);
+  }
+
+  &__section-chevron {
+    font-size: 0.7rem;
+    color: var(--forge-text-muted);
+    line-height: 1;
+  }
+
+  &__section-title-text {
+    font-size: 0.74rem;
+    font-weight: 650;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--forge-text);
+  }
+
+  &__section-summary {
+    font-size: 0.72rem;
+    color: var(--forge-text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: right;
+  }
+
+  &__section-body {
+    padding: 0.55rem 0.6rem 0.65rem;
+  }
+
+  &__subhead {
+    margin: 0.65rem 0 0.35rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--forge-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+
+    &:first-child {
+      margin-top: 0;
+    }
+  }
+
+  &__field {
+    display: grid;
+    grid-template-columns: 5.5rem minmax(0, 1fr);
+    gap: 0.35rem 0.5rem;
+    align-items: center;
+    margin-bottom: 0.4rem;
+  }
+
+  &__field-label {
+    font-size: 0.78rem;
+    color: var(--forge-text-muted);
+    margin: 0;
+
+    &--help {
+      cursor: help;
+      text-decoration: underline dotted color-mix(in srgb, var(--forge-text-muted) 55%, transparent);
+      text-underline-offset: 2px;
+    }
+  }
+
+  &__field-ctrl {
+    min-width: 0;
+
+    .forge-input,
+    .forge-select,
+    input,
+    select {
+      width: 100%;
+      box-sizing: border-box;
+    }
+  }
+
+  &__extent-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 0.35rem;
+  }
+
+  &__section-hint {
+    margin: 0 0 0.55rem;
+    font-size: 0.72rem;
+    line-height: 1.35;
+    color: var(--forge-text-muted);
+
+    code {
+      font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+      font-size: 0.9em;
+    }
+  }
+
+  &__moveto-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  &__moveto-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 4.25rem;
+    gap: 0.35rem;
+    align-items: center;
+  }
+
+  &__moveto-id {
+    width: 100%;
+  }
+}

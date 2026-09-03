@@ -1,0 +1,57 @@
+.forge-color-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  width: 100%;
+}
+
+.forge-color-field__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.forge-color-field__swatch {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border: 1px solid var(--forge-border);
+  border-radius: 4px;
+  padding: 0;
+  cursor: pointer;
+}
+
+.forge-color-field__native {
+  width: 36px;
+  height: 28px;
+  flex: none;
+  padding: 0;
+  border: 1px solid var(--forge-border);
+  background: transparent;
+  cursor: pointer;
+}
+
+.forge-color-field__channels {
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.forge-color-field__channels .forge-input {
+  width: 100%;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.forge-color-field__wheel {
+  width: 148px;
+  height: 148px;
+  border: 1px solid var(--forge-border);
+  border-radius: 4px;
+  background: var(--forge-bg);
+  touch-action: none;
+  cursor: crosshair;
+}

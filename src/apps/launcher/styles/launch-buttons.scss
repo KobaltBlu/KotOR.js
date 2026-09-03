@@ -1,5 +1,4 @@
 
-
 .launch-btns {
   position: absolute;
   bottom: 25px;
@@ -43,5 +42,48 @@ a.btn-launch:hover, a.btn-launch-executable:hover {
     color: white;
     border-radius: 0.25em;
     border: 1px solid #212121;
+  }
+}
+
+@media (max-width: 900px) {
+  .launch-btns {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    margin-top: 20px;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  a.btn-launch, a.btn-launch-executable {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    margin-right: 0;
+    height: 48px;
+    line-height: 48px;
+    font-size: 120%;
+    padding: 0 16px;
+    box-sizing: border-box;
+  }
+
+  .launch-select {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    width: 100%;
+    margin-top: 16px;
+
+    select {
+      width: 100%;
+      min-height: 48px;
+      padding: 12px 10px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
   }
 }

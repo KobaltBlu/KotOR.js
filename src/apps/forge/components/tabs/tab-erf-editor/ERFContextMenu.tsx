@@ -3,10 +3,19 @@ import { ContextMenuItem } from "@/apps/forge/components/common/ContextMenu";
 import * as KotOR from "@/apps/forge/KotOR";
 import { FileTypeManager } from "@/apps/forge/FileTypeManager";
 import { EditorFile } from "@/apps/forge/EditorFile";
+import { forgeArchivesSettings } from "@/apps/forge/settings/forgeEditorsSettings";
+import * as fs from "fs";
+
+declare const dialog: any;
+
 const exportAllResourceTypes = [KotOR.ResourceTypes['erf'], KotOR.ResourceTypes['mod'], KotOR.ResourceTypes['sav'], KotOR.ResourceTypes['rim']];
 
-import * as fs from "fs";
-declare const dialog: any;
+function confirmExtractOverwrite(fileName: string, exists: boolean): boolean {
+  if (!exists || !forgeArchivesSettings.get().confirmExtractOverwrite) {
+    return true;
+  }
+  return window.confirm(`${fileName} already exists. Overwrite?`);
+}
 
 export interface ERFContextMenuProps {
   archive: KotOR.ERFObject;
@@ -125,8 +134,14 @@ export const createERFContextMenuItems = (props: ERFContextMenuProps): ContextMe
               const resources = (erf as any).keyList ? (erf as any).keyList : (erf as any).resources;
               for(const key of resources){
                 const exportBuffer = await erf.getResourceBufferByResRef(key.resRef, key.resType);
-                fs.writeFile(savePath.filePath + '/' + key.resRef+'.'+KotOR.ResourceTypes.getKeyByValue(key.resType), exportBuffer, () => {
-                  console.log('exported file', key.resRef+'.'+KotOR.ResourceTypes.getKeyByValue(key.resType));
+                const fileName = key.resRef+'.'+KotOR.ResourceTypes.getKeyByValue(key.resType);
+                const dest = savePath.filePath + '/' + fileName;
+                const exists = typeof fs.existsSync === 'function' && fs.existsSync(dest);
+                if(!confirmExtractOverwrite(fileName, exists)){
+                  continue;
+                }
+                fs.writeFile(dest, exportBuffer, () => {
+                  console.log('exported file', fileName);
                 });
               }
             }else if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
@@ -141,7 +156,18 @@ export const createERFContextMenuItems = (props: ERFContextMenuProps): ContextMe
               const resources = (erf as any).keyList ? (erf as any).keyList : (erf as any).resources;
               for(const key of resources){
                 const exportBuffer = await erf.getResourceBufferByResRef(key.resRef, key.resType);
-                const fileHandle = await directoryHandle.getFileHandle(key.resRef+'.'+KotOR.ResourceTypes.getKeyByValue(key.resType), { create: true });
+                const fileName = key.resRef+'.'+KotOR.ResourceTypes.getKeyByValue(key.resType);
+                let exists = false;
+                try {
+                  await directoryHandle.getFileHandle(fileName);
+                  exists = true;
+                } catch {
+                  exists = false;
+                }
+                if(!confirmExtractOverwrite(fileName, exists)){
+                  continue;
+                }
+                const fileHandle = await directoryHandle.getFileHandle(fileName, { create: true });
                 if(!fileHandle){
                   console.error('file handle invalid');
                   continue;

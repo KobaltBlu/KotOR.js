@@ -1,0 +1,113 @@
+// =============================================================================
+// FORGE THEME — CSS custom properties (native desktop chrome)
+// applyForgeTheme() writes inline vars + data-forge-theme / data-forge-color-scheme.
+// These selectors are the fallback so :root KotOR tokens do not win over TSL or
+// a named theme after the document attributes are set.
+// =============================================================================
+
+:root {
+  color-scheme: dark;
+  --forge-bg: #1c1c1c;
+  --forge-bg-elevated: #252525;
+  --forge-bg-panel: #2d2d2d;
+  --forge-bg-input: #222222;
+  --forge-bg-hover: #333333;
+  --forge-bg-active: #3a3a3a;
+  --forge-bg-overlay: rgba(0, 0, 0, 0.55);
+
+  --forge-text: #d4d4d4;
+  --forge-text-muted: #9a9a9a;
+  --forge-text-bright: #f2f2f2;
+  --forge-text-disabled: #6a6a6a;
+
+  --forge-border: #3a3a3a;
+  --forge-border-subtle: #2a2a2a;
+
+  --forge-accent: #3a8fd4;
+  --forge-accent-hover: #4ea3e8;
+  --forge-accent-muted: rgba(58, 143, 212, 0.22);
+
+  --forge-danger: #c75050;
+  --forge-danger-hover: #d96a6a;
+  --forge-success: #3d9a55;
+  --forge-warning: #e0a800;
+  --forge-info: #00b8b8;
+
+  --forge-font: system-ui, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  --forge-font-mono: ui-monospace, "Cascadia Code", "Consolas", monospace;
+  --forge-font-size: 12.5px;
+  --forge-font-size-sm: 11px;
+
+  --forge-radius: 2px;
+  --forge-border-width: 1px;
+
+  --forge-titlebar-height: 32px;
+  --forge-menubar-height: 22px;
+  --forge-tab-height: 28px;
+  --forge-statusbar-height: 22px;
+  --forge-splitter: 4px;
+
+  --forge-z-dropdown: 4000;
+  --forge-z-floating: 5000;
+  --forge-z-tutorial: 7500;
+  --forge-z-modal: 9999;
+  --forge-z-notification: 99999999;
+
+  --forge-focus-ring: 0 0 0 1px var(--forge-accent);
+  --forge-shadow-menu: 0 4px 12px rgba(0, 0, 0, 0.45);
+}
+
+// First paint for TSL before applyForgeTheme() sets data-forge-theme.
+html.TSL:not([data-forge-theme]) {
+  --forge-accent: rgb(26, 178, 140);
+  --forge-accent-hover: rgb(45, 200, 160);
+  --forge-accent-muted: rgba(26, 178, 140, 0.22);
+}
+
+html[data-forge-color-scheme="dark"] {
+  color-scheme: dark;
+}
+
+html[data-forge-color-scheme="light"] {
+  color-scheme: light;
+  --forge-bg: #f3f3f3;
+  --forge-bg-elevated: #ffffff;
+  --forge-bg-panel: #ececec;
+  --forge-bg-input: #ffffff;
+  --forge-bg-hover: #e8e8e8;
+  --forge-bg-active: #dddddd;
+  --forge-bg-overlay: rgba(0, 0, 0, 0.35);
+  --forge-text: #333333;
+  --forge-text-muted: #6a6a6a;
+  --forge-text-bright: #1a1a1a;
+  --forge-text-disabled: #9a9a9a;
+  --forge-border: #d4d4d4;
+  --forge-border-subtle: #e4e4e4;
+  --forge-danger: #c75050;
+  --forge-danger-hover: #a33d3d;
+  --forge-success: #2e7d3a;
+  --forge-warning: #b8860b;
+  --forge-info: #008a8a;
+  --forge-shadow-menu: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+html[data-forge-theme="dark"],
+html[data-forge-theme="light"] {
+  --forge-accent: #007acc;
+  --forge-accent-hover: #1c8adb;
+  --forge-accent-muted: rgba(0, 122, 204, 0.22);
+}
+
+html[data-forge-theme="kotor-dark"],
+html[data-forge-theme="kotor-light"] {
+  --forge-accent: #3a8fd4;
+  --forge-accent-hover: #4ea3e8;
+  --forge-accent-muted: rgba(58, 143, 212, 0.22);
+}
+
+html[data-forge-theme="tsl-dark"],
+html[data-forge-theme="tsl-light"] {
+  --forge-accent: rgb(26, 178, 140);
+  --forge-accent-hover: rgb(45, 200, 160);
+  --forge-accent-muted: rgba(26, 178, 140, 0.22);
+}

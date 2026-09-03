@@ -11,4 +11,6 @@
 export interface IGameFileSystemReadDirOptions {
   recursive?: boolean,
   list_dirs?: boolean;
+  /** Include directory paths alongside files (project explorer empty folders). */
+  include_dirs?: boolean;
 }

@@ -175,7 +175,7 @@ export class NWScriptORChainDetector {
   private buildORExpression(comparisons: NWScriptExpression[]): NWScriptExpression {
     if (comparisons.length === 0) {
       // Fallback - shouldn't happen
-      return NWScriptExpression.constant(0, NWScriptDataType.INTEGER);
+      return NWScriptExpression.unknown('OR-chain operand stack underflow');
     }
     
     if (comparisons.length === 1) {
@@ -275,4 +275,3 @@ export class NWScriptORChainDetector {
     return comparisons;
   }
 }
-

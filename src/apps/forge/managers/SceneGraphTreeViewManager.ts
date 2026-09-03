@@ -28,9 +28,6 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
 
   constructor(){
     super();
-    this.sceneNode.addChildNode(this.camerasNode);
-    this.sceneNode.addChildNode(this.lightingNode);
-    this.sceneNode.addChildNode(this.objectsNode);
     this.parentNodes.push(this.sceneNode);
     this.sceneNode.expandNode();
   }
@@ -44,13 +41,67 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
     this.rebuild();
   }
 
+  /** Ensure generic Cameras/Lights/Objects folders exist for non-module editors. */
+  private ensureGenericFolders(): void {
+    if (!this.sceneNode.nodes.includes(this.camerasNode)) {
+      this.sceneNode.addChildNode(this.camerasNode);
+    }
+    if (!this.sceneNode.nodes.includes(this.lightingNode)) {
+      this.sceneNode.addChildNode(this.lightingNode);
+    }
+    if (!this.sceneNode.nodes.includes(this.objectsNode)) {
+      this.sceneNode.addChildNode(this.objectsNode);
+    }
+  }
+
+  /** Drop unused Cameras/Lights/Objects folders from the module authoring tree. */
+  private removeGenericFolders(): void {
+    const keep = this.sceneNode.nodes.filter(
+      (node) =>
+        node !== this.camerasNode &&
+        node !== this.lightingNode &&
+        node !== this.objectsNode,
+    );
+    if (keep.length !== this.sceneNode.nodes.length) {
+      this.sceneNode.setNodes(keep);
+    }
+    this.camerasNode.setNodes([]);
+    this.lightingNode.setNodes([]);
+    this.objectsNode.setNodes([]);
+  }
+
   syncSelection(object: any){
     const resolved = this.resolveOdysseyObject(object);
     this.sceneNode.traverseChildren((node: SceneGraphNode) => {
-      if (node.data != null && node.data === resolved) {
+      const data = node.data;
+      const forgeObject = data?.userData?.forgeGameObject;
+      const matches = data != null && (
+        data === resolved ||
+        data?.container === resolved ||
+        forgeObject === resolved ||
+        forgeObject?.container === resolved
+      );
+      if (matches) {
         if (!node.selected) node.select();
       } else {
         if (node.selected) node.deselect();
+      }
+    });
+  }
+
+  /** Highlight all selected ForgeGameObjects in the tree (multi-select aware). */
+  syncSelectionFromGameObjects(objects: ForgeGameObject[] = []){
+    const selected = new Set(objects.filter(Boolean));
+    this.sceneNode.traverseChildren((node: SceneGraphNode) => {
+      const data = node.data;
+      const forgeObject = (data instanceof ForgeGameObject)
+        ? data
+        : data?.userData?.forgeGameObject;
+      const matches = forgeObject != null && selected.has(forgeObject);
+      if (matches) {
+        if (!node.selected) node.select();
+      } else if (node.selected && forgeObject) {
+        node.deselect();
       }
     });
   }
@@ -68,11 +119,6 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
   }
 
   rebuild(){
-
-    this.camerasNode.setNodes([]);
-    this.lightingNode.setNodes([]);
-    this.objectsNode.setNodes([]);
-
     if(!this.context){
       return;
     }
@@ -86,6 +132,7 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
   }
 
   buildModuleSceneGraph(){
+    this.removeGenericFolders();
     this.sceneNode.name = 'Module: ' + this.context.module.entryArea;
     const groups: IModuleGroupNode[] = [
       {
@@ -186,9 +233,14 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
           continue;
         }
 
+        const missingTemplate = !String((child as any).templateResRef || "").trim()
+          && group.key !== GroupType.ROOMS
+          && group.key !== GroupType.CAMERA;
         const nodeNode =  new SceneGraphNode({
           uuid: child.uuid,
-          name: child.getEditorName(),
+          name: missingTemplate
+            ? `${child.getEditorName()} ⚠`
+            : child.getEditorName(),
           icon: group.icon,
           data: child,
           onClick: (node) => {
@@ -222,7 +274,12 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
               icon: 'fa-solid fa-circle',
               data: vertex,
               onClick: (node) => {
-                // this.context.selectObject(node.data);
+                trigger.showVertexHelpers(true);
+                trigger.selectVertex(k);
+                const helper = trigger.vertexHelpers[k];
+                if(helper){
+                  this.context.selectObject(helper);
+                }
               },
             });
             nodeNode.addChildNode(vertexNode);
@@ -236,6 +293,10 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
   }
 
   buildGenericSceneGraph(){
+    this.ensureGenericFolders();
+    this.camerasNode.setNodes([]);
+    this.lightingNode.setNodes([]);
+    this.objectsNode.setNodes([]);
     this.sceneNode.name = 'Scene';
     if(this.context.camera){
       this.camerasNode.addChildNode(

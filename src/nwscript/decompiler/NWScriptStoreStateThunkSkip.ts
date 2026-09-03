@@ -4,6 +4,7 @@ import type { NWScriptFunction } from "@/nwscript/decompiler/NWScriptFunctionAna
 import { NWScriptExpression } from "@/nwscript/decompiler/NWScriptExpression";
 import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
 import { buildJsrCalleeArgSlotsByEntryPc } from "@/nwscript/decompiler/NWScriptArgumentStackLayout";
+import { toSignedInt32 } from "@/nwscript/decompiler/NWScriptOpcodeSemantics";
 import {
   OP_RETN,
   OP_JSR,
@@ -21,7 +22,7 @@ import {
  * not a normal subroutine. Policy shared with {@link NWScriptControlFlowGraph.identifyStoreStateJmpTargets},
  * {@link NWScriptFunctionAnalyzer.identifyNestedCallCode}, and {@link NWScriptStatementBuilder.extractNestedCall}:
  * - Thunk bytes are skipped for “real” control-flow / variable analysis where appropriate.
- * - {@link buildDelayCommandThunkCalleeByActionAddress} recovers DelayCommand’s script arg from that span
+ * - {@link buildDelayCommandThunkCalleeByActionAddress} recovers DelayCommand's script arg from that span
  *   (nested AssignCommand ACTION, else ACTION/JSR with args via mini-sim).
  */
 
@@ -46,7 +47,7 @@ export function computeInlinedThunkSkipAddresses(script: NWScript): Set<number> 
     if (!nextInstr || nextInstr.code !== OP_JMP || nextInstr.offset === undefined) {
       continue;
     }
-    const jmpTarget = nextInstr.address + nextInstr.offset;
+    const jmpTarget = nextInstr.address + toSignedInt32(nextInstr.offset);
     let current: NWScriptInstruction | null | undefined = nextInstr.nextInstr;
     while (current && current.address < jmpTarget) {
       skip.add(current.address);
@@ -72,14 +73,7 @@ function isStoreStateJmpPair(
   return { store: instr, jmp: nxt };
 }
 
-function signedOffset(offset: number | undefined): number {
-  if (offset === undefined) {
-    return 0;
-  }
-  return offset > 0x7fffffff ? offset - 0x100000000 : offset;
-}
-
-/** CONST → expression (object 0/1 map via {@link NWScriptExpression.toNSS}). */
+/** CONST -> expression (object 0/1 map via {@link NWScriptExpression.toNSS}). */
 function recoverThunkConstExpression(instruction: NWScriptInstruction): NWScriptExpression {
   switch (instruction.type) {
     case NWScriptDataType.INTEGER:
@@ -101,14 +95,11 @@ function recoverThunkConstExpression(instruction: NWScriptInstruction): NWScript
         NWScriptDataType.STRING
       );
     case NWScriptDataType.OBJECT:
-    case 6: {
-      const raw =
-        instruction.object ??
-        instruction.integer ??
-        instruction.value ??
-        0;
-      return NWScriptExpression.constant(raw, NWScriptDataType.OBJECT);
-    }
+    case 6:
+      return NWScriptExpression.constant(
+        instruction.object ?? instruction.integer ?? instruction.value ?? 0,
+        NWScriptDataType.OBJECT
+      );
     default:
       return NWScriptExpression.constant(
         instruction.integer ?? instruction.value ?? 0,
@@ -117,9 +108,9 @@ function recoverThunkConstExpression(instruction: NWScriptInstruction): NWScript
   }
 }
 
-/** Best-effort CPTOPSP/CPTOPBP → localVar_* / globalVar_* label from signed offset. */
+/** Best-effort CPTOPSP/CPTOPBP -> localVar_* / globalVar_* label from signed offset. */
 function recoverThunkCptopExpression(instruction: NWScriptInstruction): NWScriptExpression {
-  const off = signedOffset(instruction.offset);
+  const off = toSignedInt32(instruction.offset);
   const isGlobal = instruction.code === OP_CPTOPBP;
   let idx: number;
   if (off < 0 && off % 4 === 0) {
@@ -170,10 +161,10 @@ function recoverThunkScriptExpression(
   let thunkPc: NWScriptInstruction | null | undefined = jmpInstr.nextInstr;
 
   while (thunkPc && thunkPc.address < jmpTarget) {
-    // Nested STORE_STATE: skip its inlined span (do not mini-sim nested bytes here)
+    // Nested STORE_STATE: skip its inlined span (do not mini-sim nested bytes here).
     const nested = isStoreStateJmpPair(thunkPc);
     if (nested && nested.jmp.offset !== undefined) {
-      const nestedEnd = nested.jmp.address + nested.jmp.offset;
+      const nestedEnd = nested.jmp.address + toSignedInt32(nested.jmp.offset);
       let skip = nested.jmp.nextInstr;
       while (skip && skip.address < nestedEnd) {
         skip = skip.nextInstr;
@@ -215,7 +206,7 @@ function recoverThunkScriptExpression(
     }
 
     if (thunkPc.code === OP_JSR && thunkPc.offset !== undefined) {
-      const calleePc = thunkPc.address + thunkPc.offset;
+      const calleePc = thunkPc.address + toSignedInt32(thunkPc.offset);
       const callee = entryPcToFn.get(calleePc);
       const name = callee?.name ?? `sub_${calleePc.toString(16)}`;
       const returnType = callee?.returnType ?? NWScriptDataType.VOID;
@@ -224,7 +215,6 @@ function recoverThunkScriptExpression(
         slots = callee.parameters.length;
       }
       if (slots <= 0 && stack.length > 0) {
-        // Fallback: treat remaining pushes since last call as args
         slots = stack.length;
       }
       const args = popThunkArgs(stack, slots);
@@ -252,10 +242,7 @@ function findObjectSubjectInstr(before: NWScriptInstruction): NWScriptInstructio
   let p: NWScriptInstruction | null | undefined = before.prevInstr;
   let steps = 0;
   while (p && steps++ < 32) {
-    if (p.code === OP_CPTOPSP || p.code === OP_CPTOPBP) {
-      return p;
-    }
-    if (p.code === OP_CONST) {
+    if (p.code === OP_CPTOPSP || p.code === OP_CPTOPBP || p.code === OP_CONST) {
       return p;
     }
     if (
@@ -280,12 +267,11 @@ function findOuterStoreStateJmp(
   let bestJmpTarget = -1;
   let cur: NWScriptInstruction | null | undefined = actionInstr.prevInstr;
   let steps = 0;
-  // Prefer the STORE_STATE whose JMP lands closest before this ACTION (outer thunk).
-  // Nested AssignCommand / ActionDoCommand STORE_STATE also sits behind us but jumps earlier.
+
   while (cur && steps++ < 512) {
     const pair = isStoreStateJmpPair(cur);
     if (pair && pair.jmp.offset !== undefined) {
-      const jmpTarget = pair.jmp.address + pair.jmp.offset;
+      const jmpTarget = pair.jmp.address + toSignedInt32(pair.jmp.offset);
       if (jmpTarget <= actionInstr.address && jmpTarget >= bestJmpTarget) {
         bestJmpTarget = jmpTarget;
         storeStateInstr = pair.store;
@@ -300,7 +286,7 @@ function findOuterStoreStateJmp(
   return {
     store: storeStateInstr,
     jmp: jmpInstr,
-    jmpTarget: jmpInstr.address + jmpInstr.offset,
+    jmpTarget: jmpInstr.address + toSignedInt32(jmpInstr.offset),
   };
 }
 
@@ -321,8 +307,8 @@ function findInnerStoreStateJmp(
 }
 
 /**
- * Map DelayCommand ACTION instr address → recovered second argument
- * (`Name()`, nested `AssignCommand(o, …)`, or nested `ActionDoCommand(…)`).
+ * Map DelayCommand ACTION instr address -> recovered second argument
+ * (`Name()`, nested `AssignCommand(o, ...)`, or nested `ActionDoCommand(...)`).
  */
 export function buildDelayCommandThunkCalleeByActionAddress(
   script: NWScript,
@@ -353,14 +339,13 @@ export function buildDelayCommandThunkCalleeByActionAddress(
     let found: DelayCommandThunkArg | undefined;
 
     while (thunkPc && thunkPc.address < jmpTarget) {
-      // Nested AssignCommand (action 6) with its own STORE_STATE thunk
       if (
         thunkPc.code === OP_ACTION &&
         (thunkPc.actionDefinition?.name === "AssignCommand" || thunkPc.action === 6)
       ) {
         const inner = findInnerStoreStateJmp(thunkPc, jmpInstr.address);
         if (inner && inner.jmp.offset !== undefined) {
-          const nestedEnd = inner.jmp.address + inner.jmp.offset;
+          const nestedEnd = inner.jmp.address + toSignedInt32(inner.jmp.offset);
           const nestedScript =
             recoverThunkScriptExpression(
               inner.jmp,
@@ -382,14 +367,13 @@ export function buildDelayCommandThunkCalleeByActionAddress(
         }
       }
 
-      // Nested ActionDoCommand (action 294) with its own STORE_STATE thunk
       if (
         thunkPc.code === OP_ACTION &&
         (thunkPc.actionDefinition?.name === "ActionDoCommand" || thunkPc.action === 294)
       ) {
         const inner = findInnerStoreStateJmp(thunkPc, jmpInstr.address);
         if (inner && inner.jmp.offset !== undefined) {
-          const nestedEnd = inner.jmp.address + inner.jmp.offset;
+          const nestedEnd = inner.jmp.address + toSignedInt32(inner.jmp.offset);
           const nestedScript =
             recoverThunkScriptExpression(
               inner.jmp,
@@ -434,7 +418,7 @@ export function buildDelayCommandThunkCalleeByActionAddress(
 }
 
 /**
- * Map ActionDoCommand ACTION instr address → recovered action argument (`ClearAllActions()`, etc.).
+ * Map ActionDoCommand ACTION instr address -> recovered action argument (`ClearAllActions()`, etc.).
  */
 export function buildActionDoCommandThunkArgByActionAddress(
   script: NWScript,
@@ -478,7 +462,7 @@ export function buildActionDoCommandThunkArgByActionAddress(
 }
 
 /**
- * Map AssignCommand ACTION instr address → recovered action argument (`ActionOpenDoor(o)`, etc.).
+ * Map AssignCommand ACTION instr address -> recovered action argument (`ActionOpenDoor(o)`, etc.).
  * Standalone AssignCommand (not nested under DelayCommand) uses the same STORE_STATE+JMP island.
  */
 export function buildAssignCommandThunkArgByActionAddress(

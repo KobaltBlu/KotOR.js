@@ -1,4 +1,10 @@
 import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { facingFromYaw, yawFromFacing } from "@/apps/forge/helpers/gitFacing";
+import {
+  createVertexHandle,
+  disposeVertexHandle,
+  setVertexHandleSelected,
+} from "@/apps/forge/module-editor/vertexHandleVisuals";
 import * as KotOR from "@/apps/forge/KotOR";
 import * as THREE from "three";
 
@@ -15,6 +21,12 @@ export class ForgeTrigger extends ForgeGameObject {
     new THREE.Vector3(0.5, 0.5, DEFAULT_OFFSET_Z),
     new THREE.Vector3(-0.5, 0.5, DEFAULT_OFFSET_Z)
   ];
+
+  /**
+   * Retail ZOrientation: third component of the GIT orientation unit vector
+   * (XO/YO/ZO). LoadTrigger uses Yaw of that vector to rotate geometry; typically ZO is 0.
+   */
+  zOrientation: number = 0;
 
   //GIT Instance Properties
   templateResType: typeof KotOR.ResourceTypes = KotOR.ResourceTypes.utt;
@@ -53,26 +65,20 @@ export class ForgeTrigger extends ForgeGameObject {
   // Vertex manipulation helpers
   vertexHelperGeometry = new THREE.BoxGeometry(1, 1, 1, 1, 1);
   vertexHelpersGroup: THREE.Group = new THREE.Group();
-  vertexHelpers: THREE.Mesh[] = [];
+  vertexHelpers: THREE.Object3D[] = [];
   vertexHelperSize: number = 0.125;
   selectedVertexIndex: number = -1;
 
-  constructor(buffer?: Uint8Array){
+  constructor(buffer?: Uint8Array, templateResRef?: string){
     super();
-    if(buffer){
-      this.loadFromBuffer(buffer);
+    if(templateResRef){
+      this.templateResRef = templateResRef;
     }
+    this.applySourceBuffer(buffer);
     this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
   }
 
   onPropertyChange(property: string, newValue: any, oldValue: any){
-    if(property === 'templateResRef'){
-      if(newValue !== oldValue){
-        this.loadBlueprint().then(() => {
-          this.load();
-        });
-      }
-    }
   }
 
   loadFromBuffer(buffer: Uint8Array){
@@ -127,7 +133,9 @@ export class ForgeTrigger extends ForgeGameObject {
     if(root.hasField('PortraitId')){
       this.portraitId = root.getFieldByLabel('PortraitId').getValue() || 0;
     }
-    if(root.hasField('ScriptOnHeartbeat')){
+    if(root.hasField('ScriptHeartbeat')){
+      this.onHeartbeat = root.getFieldByLabel('ScriptHeartbeat').getValue() || '';
+    }else if(root.hasField('ScriptOnHeartbeat')){
       this.onHeartbeat = root.getFieldByLabel('ScriptOnHeartbeat').getValue() || '';
     }
     if(root.hasField('ScriptOnEnter')){
@@ -136,7 +144,9 @@ export class ForgeTrigger extends ForgeGameObject {
     if(root.hasField('ScriptOnExit')){
       this.onExit = root.getFieldByLabel('ScriptOnExit').getValue() || '';
     }
-    if(root.hasField('ScriptOnUserDefine')){
+    if(root.hasField('ScriptUserDefine')){
+      this.onUserDefined = root.getFieldByLabel('ScriptUserDefine').getValue() || '';
+    }else if(root.hasField('ScriptOnUserDefine')){
       this.onUserDefined = root.getFieldByLabel('ScriptOnUserDefine').getValue() || '';
     }
     if(root.hasField('Tag')){
@@ -189,13 +199,13 @@ export class ForgeTrigger extends ForgeGameObject {
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnTrapTriggered', this.onTrapTriggered) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'PaletteID', this.paletteID) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'PortraitId', this.portraitId) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ScriptOnHeartbeat', this.onHeartbeat) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ScriptHeartbeat', this.onHeartbeat) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ScriptOnEnter', this.onEnter) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ScriptOnExit', this.onExit) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ScriptOnUserDefine', this.onUserDefined) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ScriptUserDefine', this.onUserDefined) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Tag', this.tag) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', this.templateResRef || '') );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'TrapDetectDC', this.trapDetectDC) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'TrapDetectDC', this.trapDetectDC & 0xFF) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'TrapDetectable', this.trapDetectable ? 1 : 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'TrapDisarmable', this.trapDisarmable ? 1 : 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'TrapFlag', this.trapFlag ? 1 : 0) );
@@ -239,26 +249,18 @@ export class ForgeTrigger extends ForgeGameObject {
     while(this.vertexHelpers.length > 0){
       const helper = this.vertexHelpers.pop();
       if(helper){
-        helper.removeFromParent();
-        helper.geometry.dispose();
-        (helper.material as THREE.Material).dispose();
+        disposeVertexHandle(helper);
       }
     }
     
     // Create helpers for each vertex
     for(let i = 0; i < this.vertices.length; i++){
       const vertex = this.vertices[i];
-      const helper = new THREE.Mesh(
-        this.vertexHelperGeometry, 
-        new THREE.MeshBasicMaterial({color: 0x000000})
-      );
-      
+      const helper = createVertexHandle(this.vertexHelperGeometry, this.vertexHelperSize, {
+        vertexIndex: i,
+        forgeGameObject: this,
+      });
       helper.position.copy(vertex);
-      helper.scale.setScalar(this.vertexHelperSize);
-      
-      helper.userData.vertexIndex = i;
-      helper.userData.forgeGameObject = this;
-      
       this.vertexHelpersGroup.add(helper);
       this.vertexHelpers.push(helper);
     }
@@ -271,21 +273,38 @@ export class ForgeTrigger extends ForgeGameObject {
     }
   }
 
+  addVertex(vertex?: THREE.Vector3){
+    this.vertices.push(vertex ? vertex.clone() : new THREE.Vector3(0, 0, DEFAULT_OFFSET_Z));
+    this.buildGeometry();
+    if(this.mesh){
+      this.mesh.geometry = this.bufferGeometry;
+    }
+    this.buildVertexHelpers();
+    return this.vertices.length - 1;
+  }
+
+  removeVertex(index: number){
+    if(index < 0 || index >= this.vertices.length || this.vertices.length <= 3){
+      return false;
+    }
+    this.vertices.splice(index, 1);
+    this.buildGeometry();
+    if(this.mesh){
+      this.mesh.geometry = this.bufferGeometry;
+    }
+    this.buildVertexHelpers();
+    this.selectVertex(-1);
+    return true;
+  }
+
   selectVertex(index: number = -1){
     this.selectedVertexIndex = index;
-    // Update vertex helper colors
     for(let i = 0; i < this.vertexHelpers.length; i++){
-      const helper = this.vertexHelpers[i];
-      const material = helper.material as THREE.MeshBasicMaterial;
-      if(i === index){
-        material.color.setHex(0xFFFFFF);
-      } else {
-        material.color.setHex(0x000000);
-      }
+      setVertexHandleSelected(this.vertexHelpers[i], i === index);
     }
   }
 
-  updateVertexFromHelper(vertexIndex: number, helper: THREE.Mesh){
+  updateVertexFromHelper(vertexIndex: number, helper: THREE.Object3D){
     if(vertexIndex >= 0 && vertexIndex < this.vertices.length){
       const vertex = this.vertices[vertexIndex];
       const localPos = helper.position.clone();
@@ -334,6 +353,7 @@ export class ForgeTrigger extends ForgeGameObject {
 
   getGITInstance(): KotOR.GFFStruct {
     const instance = new KotOR.GFFStruct(1);
+    const facing = facingFromYaw(this.rotation.z);
     const geometryField = instance.addField(new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Geometry'));
     for(let i = 0, len = this.vertices.length; i < len; i++){
       const geometryStruct = new KotOR.GFFStruct(3);
@@ -343,11 +363,11 @@ export class ForgeTrigger extends ForgeGameObject {
       geometryField?.addChildStruct(geometryStruct);
     }
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', this.templateResRef));
-    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XOrientation', this.rotation.z));
+    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XOrientation', facing.x));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XPosition', this.position.x));
-    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'YOrientation', this.rotation.z));
+    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'YOrientation', facing.y));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'YPosition', this.position.y));
-    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'ZOrientation', this.rotation.z));
+    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'ZOrientation', this.zOrientation));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'ZPosition', this.position.z));
     return instance;
   }
@@ -368,11 +388,12 @@ export class ForgeTrigger extends ForgeGameObject {
       }
     }
     this.templateResRef = strt.getFieldByLabel('TemplateResRef').getValue() as string;
-    this.rotation.z = strt.getFieldByLabel('XOrientation').getValue() as number;
+    const xo = strt.hasField('XOrientation') ? strt.getFieldByLabel('XOrientation').getValue() as number : 0;
+    const yo = strt.hasField('YOrientation') ? strt.getFieldByLabel('YOrientation').getValue() as number : 1;
+    this.rotation.z = yawFromFacing(xo, yo);
+    this.zOrientation = strt.hasField('ZOrientation') ? strt.getFieldByLabel('ZOrientation').getValue() as number : 0;
     this.position.x = strt.getFieldByLabel('XPosition').getValue() as number;
-    this.rotation.z = strt.getFieldByLabel('YOrientation').getValue() as number;
     this.position.y = strt.getFieldByLabel('YPosition').getValue() as number;
-    this.rotation.z = strt.getFieldByLabel('ZOrientation').getValue() as number;
     this.position.z = strt.getFieldByLabel('ZPosition').getValue() as number;
   }
 

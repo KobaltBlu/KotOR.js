@@ -269,6 +269,11 @@ export class IngameControls {
     });
 
     window.addEventListener('mousedown', (event: MouseEvent) => {
+      // Ignore clicks on React/chrome overlays that sit above the game canvas.
+      if(!this.isGameCanvasMouseTarget(event)){
+        return;
+      }
+
       // Block GUI selection while a movie is playing
       if(GameState.VideoManager.isMoviePlaying()){
         return;
@@ -335,6 +340,12 @@ export class IngameControls {
     });
 
     window.addEventListener('mousemove', (event: MouseEvent) => {
+      // Allow look while pointer-locked; otherwise only track when over the canvas
+      // (or while a canvas-started drag is held).
+      if(!this.isGameCanvasMouseTarget(event) && !Mouse.leftDown && !Mouse.rightDown){
+        return;
+      }
+
       // Block GUI selection while a movie is playing
       if(GameState.VideoManager.isMoviePlaying()){
         return;
@@ -397,9 +408,17 @@ export class IngameControls {
     });
 
     window.addEventListener('mouseup', (event: MouseEvent) => {
+      // Finish a canvas-started press even if release lands on overlay chrome;
+      // otherwise ignore presses that never hit the canvas.
+      if(!this.isGameCanvasMouseTarget(event) && !Mouse.leftDown && !Mouse.rightDown){
+        return;
+      }
+
       // Block GUI and in-game selection while a movie is playing
       if(GameState.VideoManager.isMoviePlaying() && event.button == 0){
-        GameState.VideoManager.skipMovie();
+        if(this.isGameCanvasMouseTarget(event)){
+          GameState.VideoManager.skipMovie();
+        }
         return;
       }
 
@@ -529,6 +548,9 @@ export class IngameControls {
 
     // Wheel → retail one-index (or oversized page-step) scroll via GUIListBox.scrollUp/Down
     document.body.addEventListener('wheel', (e: WheelEvent) => {
+      if(!this.isGameCanvasMouseTarget(e)){
+        return;
+      }
       if(e.deltaY < 0){
         if(BitWise.InstanceOf(GameState.MenuManager.hoveredGUIElement?.objectType, GUIControlTypeMask.GUIListBox)){
           (GameState.MenuManager.hoveredGUIElement as GUIListBox).scrollUp();
@@ -552,6 +574,17 @@ export class IngameControls {
       e.preventDefault();
     });
 
+  }
+
+  /**
+   * True when the event landed on the game canvas (or pointer lock owns look input).
+   * React chrome overlaying the canvas uses other targets and must not drive game input.
+   */
+  isGameCanvasMouseTarget(event: Event): boolean {
+    if(Mouse.pointerLock){
+      return true;
+    }
+    return event.target === this.element;
   }
 
   initKeys(){

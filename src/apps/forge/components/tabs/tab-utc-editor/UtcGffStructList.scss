@@ -1,0 +1,48 @@
+.utc-gff-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.utc-gff-list__caption {
+  font-size: 12px;
+  color: var(--forge-text-muted, var(--forge-text));
+}
+
+.utc-gff-list__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.utc-gff-list__table th,
+.utc-gff-list__table td {
+  padding: 4px 6px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.utc-gff-list__table th {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.utc-gff-list__index {
+  width: 2.5em;
+  color: var(--forge-text-muted, var(--forge-text));
+}
+
+.utc-gff-list__actions {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.utc-gff-list__empty {
+  font-size: 12px;
+  color: var(--forge-text-muted, var(--forge-text));
+}
+
+.utc-gff-list .forge-input {
+  width: 6rem;
+}

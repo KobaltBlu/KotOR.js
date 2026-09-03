@@ -10,8 +10,8 @@
   font-size: 28pt;
   width: 100%;
   white-space: nowrap;
-  background: #1f1f25;
-  border-bottom: 2px solid #111;
+  background: var(--forge-bg);
+  border-bottom: 2px solid var(--forge-border);
   padding: 10px;
   line-height: 0;
   user-select: none;
@@ -61,7 +61,7 @@
     padding: 0;
     border: none;
     background: transparent;
-    color: inherit;
+    color: var(--forge-text);
     cursor: pointer;
     font-size: inherit;
     line-height: inherit;
@@ -183,8 +183,8 @@
   align-items: center;
   gap: 8px;
   padding: 6px 10px;
-  background: #171a1f;
-  border-bottom: 1px solid #262b33;
+  background: var(--forge-bg);
+  border-bottom: 1px solid var(--forge-border);
   user-select: none;
   min-height: 42px;
 
@@ -216,8 +216,8 @@
     align-items: center;
     gap: 2px;
     padding: 2px 4px;
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid #2e3540;
+    background: var(--forge-bg-elevated);
+    border: 1px solid var(--forge-border);
     border-radius: 4px;
   }
 
@@ -227,7 +227,7 @@
     gap: 6px;
     font-family: monospace;
     font-size: 12px;
-    color: #93a2b5;
+    color: var(--forge-text-muted);
   }
 
   &__loop {
@@ -235,7 +235,7 @@
     align-items: center;
     gap: 6px;
     font-size: 12px;
-    color: #9ca3af;
+    color: var(--forge-text-muted);
     margin: 0;
   }
 }
@@ -249,21 +249,21 @@
   border: none;
   border-radius: 3px;
   background: transparent;
-  color: #9ca3af;
+  color: var(--forge-text-muted);
   cursor: pointer;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: #d1d7e0;
+    background: var(--forge-bg-hover);
+    color: var(--forge-text-bright);
   }
 
   &--play {
     width: 34px;
     height: 34px;
     border-radius: 50%;
-    color: #75b8ff;
-    background: rgba(20, 55, 95, 0.35);
-    border: 1px solid rgba(79, 146, 220, 0.45);
+    color: var(--forge-accent);
+    background: var(--forge-accent-muted);
+    border: 1px solid var(--forge-accent);
   }
 
   &--edit {
@@ -271,14 +271,15 @@
     min-width: 50px;
     padding: 0 10px;
     font-size: 12px;
-    border: 1px solid #2e3540;
-    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--forge-border);
+    background: var(--forge-bg-elevated);
+    color: var(--forge-text);
   }
 
   &--edit.is-active {
-    color: #bfe0ff;
-    border-color: #4c86bf;
-    background: rgba(49, 96, 150, 0.3);
+    color: var(--forge-text-bright);
+    border-color: var(--forge-accent);
+    background: var(--forge-accent-muted);
   }
 }
 

@@ -33,6 +33,10 @@ export * from "@/nwscript/NWScriptInstance";
 export * from "@/nwscript/NWScriptInstruction";
 export * from "@/nwscript/NWScriptDefK1";
 export * from "@/nwscript/NWScriptDefK2";
+export * from "@/nwscript/inspect/ncsInspection";
+export * from "@/nwscript/inspect/ncsCompare";
+export * from "@/nwscript/inspect/nssCodeLineMap";
+export * from "@/nwscript/parseNcsInstruction";
 
 export * from "@/resource/CExoLocString";
 export * from "@/resource/CExoLocSubString";

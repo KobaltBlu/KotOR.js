@@ -1,9 +1,16 @@
 import type { NWScriptControlFlowGraph } from "@/nwscript/decompiler/NWScriptControlFlowGraph";
 import type { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBlock";
 import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
 import { EdgeType } from "@/nwscript/decompiler/NWScriptEdge";
-import { OP_JZ, OP_JNZ, OP_JMP, OP_RETN, OP_INCISP, OP_DECIBP, OP_INCIBP, OP_DECISP, OP_CPTOPSP, OP_CPDOWNSP, OP_CPTOPBP, OP_CPDOWNBP, OP_EQUAL, OP_CONST, OP_MOVSP, OP_ACTION, OP_JSR } from "@/nwscript/NWScriptOPCodes";
+import { OP_JZ, OP_JNZ, OP_JMP, OP_RETN, OP_RESTOREBP, OP_NOP, OP_INCISP, OP_DECIBP, OP_INCIBP, OP_DECISP, OP_CPTOPSP, OP_CPDOWNSP, OP_CPTOPBP, OP_CPDOWNBP, OP_EQUAL, OP_CONST, OP_MOVSP, OP_ACTION, OP_JSR, OP_RSADD } from "@/nwscript/NWScriptOPCodes";
 import { nwscriptDecompilerDebug } from "@/nwscript/decompiler/NWScriptDecompilerDebug";
+import { toSignedInt32 } from "@/nwscript/decompiler/NWScriptOpcodeSemantics";
+import {
+  indexShortCircuitRegions,
+  LOGICAL_JOIN_MAX_DISTANCE,
+  type NWScriptShortCircuitRegion,
+} from "@/nwscript/decompiler/NWScriptShortCircuitRegion";
 
 /**
  * ControlNode represents a node in the control flow tree.
@@ -17,7 +24,8 @@ export type ControlNode =
   | DoWhileNode
   | ForNode
   | SwitchNode
-  | SequenceNode;
+  | SequenceNode
+  | ExpressionRegionNode;
 
 /**
  * A basic block node (leaf node)
@@ -25,6 +33,8 @@ export type ControlNode =
 export interface BasicBlockNode {
   type: 'basic_block';
   block: NWScriptBasicBlock;
+  /** The terminal JMP is the loop's structural latch, not a source-level continue. */
+  suppressTerminalLoopJump?: boolean;
 }
 
 /**
@@ -34,8 +44,7 @@ export interface IfNode {
   type: 'if';
   condition: ControlNode; // Condition block
   body: ControlNode; // Then body
-  /** Post-if merge (both paths converge) — JMP here is fallthrough, not continue */
-  exitBlock?: NWScriptBasicBlock;
+  invertCondition?: boolean;
 }
 
 /**
@@ -46,8 +55,7 @@ export interface IfElseNode {
   condition: ControlNode; // Condition block
   thenBody: ControlNode; // Then body
   elseBody: ControlNode; // Else body
-  /** Post-if merge — JMP here is fallthrough, not continue */
-  exitBlock?: NWScriptBasicBlock;
+  invertCondition?: boolean;
 }
 
 /**
@@ -101,6 +109,8 @@ export interface SwitchNode {
   defaultCase: ControlNode | null; // Default case
   /** Merge / cleanup after dispatch — break in switch jumps here */
   switchExitBlock?: NWScriptBasicBlock;
+  /** Compiler compare/JNZ ladder rows; not source statements. */
+  switchDispatchBlocks?: NWScriptBasicBlock[];
 }
 
 /**
@@ -117,6 +127,18 @@ export interface SwitchCase {
 export interface SequenceNode {
   type: 'sequence';
   nodes: ControlNode[]; // Sequence of nodes
+}
+
+/**
+ * Compiler-generated `&&` / `||` value diamond. Not a source-level `if`.
+ */
+export interface ExpressionRegionNode {
+  type: 'expression_region';
+  header: NWScriptBasicBlock;
+  join: NWScriptBasicBlock;
+  evaluateBlocks: NWScriptBasicBlock[];
+  bypassBlocks: NWScriptBasicBlock[];
+  operator: 'and' | 'or';
 }
 
 /**
@@ -155,6 +177,8 @@ export interface NWScriptControlStructure {
   bodyBlocks: NWScriptBasicBlock[];
   elseBlocks?: NWScriptBasicBlock[];
   conditionBlock?: NWScriptBasicBlock;
+  /** Ordered blocks that jointly compute a short-circuit loop condition. */
+  conditionBlocks?: NWScriptBasicBlock[];
   incrementBlock?: NWScriptBasicBlock;
   initBlock?: NWScriptBasicBlock; // For loop initialization block
   exitBlock: NWScriptBasicBlock;
@@ -164,6 +188,8 @@ export interface NWScriptControlStructure {
   defaultBlock?: NWScriptBasicBlock; // Default case block
   /** CPTOP/CPTOBP at the chosen ladder seed — may live in a successor block vs {@link headerBlock}. */
   switchDiscriminantInstruction?: NWScriptInstruction;
+  /** Blocks that implement the compiler's compare/JNZ dispatch ladder. */
+  switchDispatchBlocks?: NWScriptBasicBlock[];
   switchCaseFallThrough?: Map<number, boolean>; // Case value -> has fall-through (no break)
   // Else-if chain fields
   elseIfBlocks?: Array<{ block: NWScriptBasicBlock; conditionBlock: NWScriptBasicBlock }>; // Else-if blocks in chain
@@ -188,11 +214,26 @@ export class NWScriptControlStructureBuilder {
   private processedBlocks: Set<NWScriptBasicBlock> = new Set();
   /** Basic blocks touched by merged switch-dispatch probing — avoids re-identifying the same CMP ladder from interior headers */
   private switchDispatchOccupiedBlocks: Set<number> = new Set();
-  /** Loop headers currently being lowered — prevents re-entering the same do-while as its own body. */
-  private buildingLoopHeaders: Set<NWScriptBasicBlock> = new Set();
+  private shortCircuitByHeader: Map<NWScriptBasicBlock, NWScriptShortCircuitRegion> = new Map();
+  private shortCircuitCovering: Map<NWScriptBasicBlock, NWScriptShortCircuitRegion> = new Map();
+  private lastProcedure: Procedure | null = null;
+  /** Successful/failed switch probes keyed by header. Includes {@code null} misses. */
+  private switchIdentifyCache: Map<NWScriptBasicBlock, NWScriptControlStructure | null> = new Map();
+  /** ControlNode trees keyed by procedure entry so each subroutine is structured once. */
+  private procedureTreeCache: Map<NWScriptBasicBlock, ControlNode> = new Map();
 
   constructor(cfg: NWScriptControlFlowGraph) {
     this.cfg = cfg;
+  }
+
+  private indexLogicalRegions(): void {
+    const indexed = indexShortCircuitRegions(this.cfg);
+    this.shortCircuitByHeader = indexed.byHeader;
+    this.shortCircuitCovering = indexed.covering;
+  }
+
+  private shortCircuitForBlock(block: NWScriptBasicBlock): NWScriptShortCircuitRegion | undefined {
+    return this.shortCircuitCovering.get(block) ?? this.shortCircuitByHeader.get(block);
   }
 
   /**
@@ -201,6 +242,7 @@ export class NWScriptControlStructureBuilder {
   analyze(): NWScriptControlStructure[] {
     this.structures = [];
     this.processedBlocks.clear();
+    this.indexLogicalRegions();
 
     if (!this.cfg.entryBlock) {
       return [];
@@ -221,10 +263,9 @@ export class NWScriptControlStructureBuilder {
       // Try loops first (they're more specific)
       const loop = this.identifyLoop(block);
       if (loop) {
-        // Recursively find nested structures within the loop
-        this.findNestedStructures(loop, 0);
         this.structures.push(loop);
-        // Only mark header and exit as processed - body blocks may contain nested structures
+        // Nested recovery is performed while building ControlNode trees. Doing it here
+        // on whole-function if/switch bodies is quadratic in large retail scripts.
         this.processedBlocks.add(loop.headerBlock);
         if (loop.exitBlock) {
           this.processedBlocks.add(loop.exitBlock);
@@ -235,13 +276,21 @@ export class NWScriptControlStructureBuilder {
       // Then try switch (before if/else, as switch is more specific)
       const switchStruct = this.identifySwitch(block);
       if (switchStruct) {
-        // Recursively find nested structures within the switch
-        this.findNestedStructures(switchStruct, 0);
         this.structures.push(switchStruct);
-        // Only mark header and exit as processed - body blocks may contain nested structures
-        this.processedBlocks.add(switchStruct.headerBlock);
+        // Dispatch rows are compiler scaffolding, not nested source statements.
+        for (const dispatchBlock of switchStruct.switchDispatchBlocks ?? [switchStruct.headerBlock]) {
+          this.processedBlocks.add(dispatchBlock);
+        }
         if (switchStruct.exitBlock) {
           this.processedBlocks.add(switchStruct.exitBlock);
+        }
+        continue;
+      }
+
+      const shortCircuit = this.shortCircuitForBlock(block);
+      if (shortCircuit) {
+        for (const covered of shortCircuit.coveredBlocks) {
+          this.processedBlocks.add(covered);
         }
         continue;
       }
@@ -249,13 +298,12 @@ export class NWScriptControlStructureBuilder {
       // Then try if/else
       const ifElse = this.identifyIfElse(block);
       if (ifElse) {
-        // Recursively find nested structures within the if/else
-        this.findNestedStructures(ifElse, 0);
         this.structures.push(ifElse);
-        // Only mark header as processed. Do NOT mark exitBlock — the merge after
-        // if/else (e.g. SetLocalBoolean after GiveXP OR ladders) must remain
-        // scannable as a sibling in the procedure sequence.
+        // Only mark header and exit as processed - body blocks may contain nested structures
         this.processedBlocks.add(ifElse.headerBlock);
+        if (ifElse.exitBlock) {
+          this.processedBlocks.add(ifElse.exitBlock);
+        }
         continue;
       }
     }
@@ -293,6 +341,7 @@ export class NWScriptControlStructureBuilder {
       interior.add(s.headerBlock);
       s.bodyBlocks.forEach(b => interior.add(b));
       s.elseBlocks?.forEach(b => interior.add(b));
+      s.switchDispatchBlocks?.forEach(b => interior.add(b));
       s.switchCases?.forEach(b => interior.add(b));
       if (s.defaultBlock) {
         interior.add(s.defaultBlock);
@@ -305,16 +354,15 @@ export class NWScriptControlStructureBuilder {
     return interior;
   }
 
-  /** Safety cap — pathological nesting / duplicated recovery can exhaust JS stack (~10k locals). */
-  private static readonly MAX_NESTING_DEPTH = 300;
-
   /**
    * Recursively find nested control structures within a parent structure
    * @param depth recursion depth across nestedStructures recovery
    */
   private findNestedStructures(structure: NWScriptControlStructure, depth = 0, ancestorHeaders: Set<NWScriptBasicBlock> = new Set()): void {
-    if (depth >= NWScriptControlStructureBuilder.MAX_NESTING_DEPTH) {
-      console.warn('[NWScriptControlStructureBuilder] nested structure recovery depth cap exceeded');
+    // Every recursive level adds a distinct header. The ancestor set is the primary cycle guard;
+    // this graph-derived bound protects corrupted CFGs without limiting valid source nesting.
+    if (depth > this.cfg.blocks.size) {
+      console.warn('[NWScriptControlStructureBuilder] invalid nested structure cycle');
       return;
     }
 
@@ -470,6 +518,9 @@ export class NWScriptControlStructureBuilder {
    * Pattern: Block with JZ/JNZ -> two successor paths
    */
   private identifyIfElse(block: NWScriptBasicBlock, skipElseIfChainDetection = false): NWScriptControlStructure | null {
+    if (this.shortCircuitCovering.has(block)) {
+      return null;
+    }
     if (block.exitType !== 'conditional') {
       return null;
     }
@@ -479,11 +530,14 @@ export class NWScriptControlStructureBuilder {
       return null;
     }
 
-    /** nwn dispatch ladders are conditional chains and look like `if` — let identifySwitch own them. */
-    for (const merged of this.getSwitchProbeInstructionSequences(block)) {
-      if (merged.length >= 5 && this.tryIdentifySwitchFromInstructions(block, merged)) {
-        return null;
-      }
+    // Dispatch interiors and cached switch headers are not source-level ifs. Do not
+    // re-run the 36-prefix switch probe here; identifySwitch already did that work.
+    if (
+      this.switchDispatchOccupiedBlocks.has(block.id) ||
+      this.isSwitchDispatchContinuation(block) ||
+      this.switchIdentifyCache.get(block)
+    ) {
+      return null;
     }
 
     // Get intra-procedural successors only (exclude CALL/RETURN edges)
@@ -514,7 +568,7 @@ export class NWScriptControlStructureBuilder {
     if (!truePath || !falsePath) {
       const isJZ = conditionInstr.code === OP_JZ;
       const jumpTarget = conditionInstr.offset !== undefined 
-        ? conditionInstr.address + conditionInstr.offset 
+        ? conditionInstr.address + toSignedInt32(conditionInstr.offset)
         : null;
       
       const succ1 = successors[0];
@@ -563,47 +617,66 @@ export class NWScriptControlStructureBuilder {
       return null;
     }
 
-    // Find the merge point (where both paths converge)
-    const mergePoint = this.findMergePoint(truePath, falsePath);
-    if (!mergePoint) {
-      // No merge: avoid collectBlocksBetween(..., null) which walks into later loops
-      // via break/continue targets (e.g. for-break landing on `i = 0` before a do-while).
-      const trueBodyBlocks = this.collectBranchBodyWithoutCrossing(truePath, falsePath);
-      const falseBodyBlocks = this.collectBranchBodyWithoutCrossing(falsePath, truePath);
+    // The compiler lowers an early return to a value write followed by a jump into the
+    // procedure epilogue. Treat that arm as a terminating `if` before generic merge search;
+    // otherwise the epilogue wins the merge tie and shared tail code is duplicated into else.
+    if (
+      this.jumpsDirectlyToProcedureEpilogue(truePath) &&
+      !this.jumpsDirectlyToProcedureEpilogue(falsePath)
+    ) {
+      return {
+        type: ControlStructureType.IF,
+        headerBlock: block,
+        bodyBlocks: [truePath],
+        exitBlock: falsePath,
+        nestedStructures: [],
+      };
+    }
 
-      const truePathExits = trueBodyBlocks.some((b) => b.isExit || b.exitType === "return");
-      const falsePathExits = falseBodyBlocks.some((b) => b.isExit || b.exitType === "return");
+    // Find the merge point (where both paths converge)
+    let mergePoint = this.findMergePoint(truePath, falsePath);
+    if (!mergePoint) {
+      const ipdom = this.cfg.getImmediatePostDominator(block);
+      if (
+        ipdom &&
+        ipdom !== block &&
+        ipdom !== truePath &&
+        ipdom !== falsePath &&
+        !ipdom.isExit &&
+        ipdom.exitType !== 'return'
+      ) {
+        mergePoint = ipdom;
+      }
+    }
+    if (!mergePoint) {
+      const truePathExits = this.pathReachesExit(truePath);
+      const falsePathExits = this.pathReachesExit(falsePath);
 
       if (truePathExits && !falsePathExits) {
-        const structure: NWScriptControlStructure = {
+        return {
           type: ControlStructureType.IF,
           headerBlock: block,
-          bodyBlocks: trueBodyBlocks,
+          bodyBlocks: [truePath],
           exitBlock: falsePath,
           nestedStructures: [],
         };
-        return structure;
-      } else if (!truePathExits && falsePathExits) {
-        const structure: NWScriptControlStructure = {
+      }
+      if (!truePathExits && falsePathExits) {
+        return {
           type: ControlStructureType.IF,
           headerBlock: block,
-          bodyBlocks: falseBodyBlocks,
+          bodyBlocks: [falsePath],
           exitBlock: truePath,
           nestedStructures: [],
         };
-        return structure;
-      } else {
-        const structure: NWScriptControlStructure = {
-          type: falseBodyBlocks.length > 0 ? ControlStructureType.IF_ELSE : ControlStructureType.IF,
-          headerBlock: block,
-          bodyBlocks: trueBodyBlocks,
-          elseBlocks: falseBodyBlocks.length > 0 ? falseBodyBlocks : undefined,
-          exitBlock: falsePath,
-          nestedStructures: [],
-        };
-        this.markBreakContinueBlocks(structure);
-        return structure;
       }
+      return {
+        type: ControlStructureType.IF,
+        headerBlock: block,
+        bodyBlocks: [truePath],
+        exitBlock: falsePath,
+        nestedStructures: [],
+      };
     }
 
     // Collect body blocks
@@ -691,7 +764,7 @@ export class NWScriptControlStructureBuilder {
   private hasJMPToBlock(block: NWScriptBasicBlock, targetBlock: NWScriptBasicBlock): boolean {
     for (const instr of block.instructions) {
       if (instr.code === OP_JMP && instr.offset !== undefined) {
-        const targetAddr = instr.address + instr.offset;
+        const targetAddr = instr.address + toSignedInt32(instr.offset);
         const target = this.cfg.getBlockForAddress(targetAddr);
         if (target === targetBlock) {
           return true;
@@ -708,77 +781,32 @@ export class NWScriptControlStructureBuilder {
    */
   private switchArmReachableBlocks(
     armEntry: NWScriptBasicBlock,
-    otherArmEntries: Set<NWScriptBasicBlock>
+    otherArmEntries: Set<NWScriptBasicBlock>,
+    stopBlocks: ReadonlySet<NWScriptBasicBlock> = new Set()
   ): Set<NWScriptBasicBlock> {
     const out = new Set<NWScriptBasicBlock>();
     const queue: NWScriptBasicBlock[] = [armEntry];
-    let guard = 0;
-    while (queue.length > 0 && guard++ < 256) {
+    while (queue.length > 0) {
       const b = queue.shift()!;
-      if (out.has(b)) {
+      if (out.has(b) || stopBlocks.has(b)) {
         continue;
       }
       out.add(b);
       for (const instr of b.instructions) {
         if (instr.code === OP_JMP && instr.offset !== undefined) {
-          const t = this.cfg.getBlockForAddress(instr.address + instr.offset);
-          if (t && !otherArmEntries.has(t) && !out.has(t)) {
+          const t = this.cfg.getBlockForAddress(instr.address + toSignedInt32(instr.offset));
+          if (t && !otherArmEntries.has(t) && !stopBlocks.has(t) && !out.has(t)) {
             queue.push(t);
           }
         }
       }
       for (const s of this.cfg.getIntraProceduralSuccessors(b, false)) {
-        if (otherArmEntries.has(s)) {
+        if (otherArmEntries.has(s) || stopBlocks.has(s)) {
           continue;
         }
         if (!out.has(s)) {
           queue.push(s);
         }
-      }
-    }
-    return out;
-  }
-
-  /**
-   * Blocks reachable inside one switch arm via fallthrough/successors only (no JMP targets).
-   * Used to discover break/continue JMP destinations without swallowing the merge into the arm.
-   * When {@code exitBlock} is set, do not walk into the post-switch merge (or beyond).
-   */
-  private switchArmFallthroughBlocks(
-    armEntry: NWScriptBasicBlock,
-    otherArmEntries: Set<NWScriptBasicBlock>,
-    exitBlock?: NWScriptBasicBlock | null
-  ): Set<NWScriptBasicBlock> {
-    const out = new Set<NWScriptBasicBlock>();
-    const queue: NWScriptBasicBlock[] = [armEntry];
-    let guard = 0;
-    while (queue.length > 0 && guard++ < 256) {
-      const b = queue.shift()!;
-      if (out.has(b)) {
-        continue;
-      }
-      if (exitBlock && b === exitBlock) {
-        continue;
-      }
-      out.add(b);
-      for (const s of this.cfg.getIntraProceduralSuccessors(b, false)) {
-        if (exitBlock && s === exitBlock) {
-          continue;
-        }
-        if (otherArmEntries.has(s) || out.has(s)) {
-          continue;
-        }
-        // Do not walk through a terminator JMP (break/continue) into the merge / increment.
-        if (
-          b.endInstruction?.code === OP_JMP &&
-          b.endInstruction.offset !== undefined &&
-          this.cfg.getBlockForAddress(
-            b.endInstruction.address + b.endInstruction.offset
-          ) === s
-        ) {
-          continue;
-        }
-        queue.push(s);
       }
     }
     return out;
@@ -877,10 +905,10 @@ export class NWScriptControlStructureBuilder {
     }
 
     if (breakBlocks.length > 0) {
-      structure.breakBlocks = [...new Set(breakBlocks)];
+      structure.breakBlocks = breakBlocks;
     }
     if (continueBlocks.length > 0) {
-      structure.continueBlocks = [...new Set(continueBlocks)];
+      structure.continueBlocks = continueBlocks;
     }
   }
 
@@ -902,10 +930,6 @@ export class NWScriptControlStructureBuilder {
       if (chain.includes(next)) {
         break;
       }
-      // Never follow loop back-edges into the header (would suck in `i < N` CONST as a case).
-      if (next.startInstruction.address <= cur.startInstruction.address) {
-        break;
-      }
       chain.push(next);
       prefixes.push([...chain]);
       cur = next;
@@ -917,38 +941,37 @@ export class NWScriptControlStructureBuilder {
    * Merge instructions along a CMP ladder beyond single-successor chains by following bytecode
    * fall-through (nextInstr after each block terminator) across 2-way splits. Capped tightly to
    * avoid sucking unrelated control-flow; {@link tryIdentifySwitchFromInstructions} still requires
-   * ≥1 matched case row (JNZ) plus a default JMP.
+   * ≥2 matched case rows plus a default JMP.
    */
   private switchDispatchExtendedMerge(start: NWScriptBasicBlock): NWScriptInstruction[] {
     const out: NWScriptInstruction[] = [];
     const seen = new Set<number>();
     let cur: NWScriptBasicBlock | null = start;
-    /** Extra fall-through hops beyond ordinary {@link linearSwitchChainPrefixes} single-successor tails. */
-    let ftBudget = 5;
-    let guard = 40;
-    while (cur && guard-- > 0 && !seen.has(cur.id)) {
+    // The row grammar, terminal-JMP check, and visited set bound this walk without imposing a
+    // source-size limit on generated animation/state tables.
+    while (cur && !seen.has(cur.id)) {
       seen.add(cur.id);
       out.push(...cur.instructions);
+      // The unconditional default JMP terminates every compiler switch dispatcher. Following
+      // it walks into case/merge code, makes unrelated later constructs part of the probe, and
+      // turns deeply nested retail scripts into an expensive near-quadratic scan.
+      if (cur.endInstruction.code === OP_JMP || cur.endInstruction.code === OP_RETN) {
+        break;
+      }
       const succs = this.cfg.getIntraProceduralSuccessors(cur, false);
       if (succs.length === 1) {
-        const next = succs[0];
-        if (next.startInstruction.address <= cur.startInstruction.address) {
-          break;
-        }
-        cur = next;
+        cur = succs[0];
         continue;
       }
-      if (succs.length === 2 && ftBudget > 0) {
-        ftBudget--;
+      // A switch comparison branches to its case on JNZ. Ordinary if/else ladders use JZ and
+      // cannot contribute another valid dispatcher row, so do not probe through their arms.
+      if (succs.length === 2 && cur.endInstruction.code === OP_JNZ) {
         const na = cur.endInstruction?.nextInstr?.address;
         if (na === undefined) {
           break;
         }
         const ft = this.cfg.getBlockForAddress(na);
         if (!ft || !succs.includes(ft)) {
-          break;
-        }
-        if (ft.startInstruction.address <= cur.startInstruction.address) {
           break;
         }
         cur = ft;
@@ -961,7 +984,7 @@ export class NWScriptControlStructureBuilder {
 
   private getSwitchProbeInstructionSequences(start: NWScriptBasicBlock): NWScriptInstruction[][] {
     const sequences: NWScriptInstruction[][] = [];
-    for (const chain of this.linearSwitchChainPrefixes(start, 36)) {
+    for (const chain of this.linearSwitchChainPrefixes(start, 8)) {
       sequences.push(([] as NWScriptInstruction[]).concat(...chain.map((b) => b.instructions)));
     }
     const extended = this.switchDispatchExtendedMerge(start);
@@ -978,14 +1001,14 @@ export class NWScriptControlStructureBuilder {
   private tryParseSwitchCaseRow(
     instructions: NWScriptInstruction[],
     startIdx: number,
-    requireDiscriminantCptop: boolean
+    requireDiscriminantCopy: boolean
   ): {
     branchIdx: number;
     constInstr: NWScriptInstruction;
     jnzInstr: NWScriptInstruction;
   } | null {
     let i = startIdx;
-    if (requireDiscriminantCptop) {
+    if (requireDiscriminantCopy) {
       if (i >= instructions.length) {
         return null;
       }
@@ -995,42 +1018,25 @@ export class NWScriptControlStructureBuilder {
       }
       i++;
     }
-    while (i < instructions.length && instructions[i].code === OP_MOVSP) {
+    while (i < instructions.length && instructions[i].code === OP_NOP) {
       i++;
     }
-    const constWindowEnd = Math.min(instructions.length, i + 10);
-    let constIdx = -1;
-    for (let k = i; k < constWindowEnd; k++) {
-      if (instructions[k].code === OP_CONST && instructions[k].type === 3) {
-        constIdx = k;
-        break;
-      }
-    }
-    if (constIdx < 0) {
-      return null;
-    }
-    // CONST must be immediately followed by EQUAL (case compare). A looser window
-    // falsely pairs the for-loop bound CONST (e.g. `i < 4`) with a later case EQUAL.
-    if (constIdx + 1 >= instructions.length || instructions[constIdx + 1].code !== OP_EQUAL) {
+    const constIdx = i;
+    if (
+      instructions[constIdx]?.code !== OP_CONST ||
+      instructions[constIdx]?.type !== NWScriptDataType.INTEGER
+    ) {
       return null;
     }
     const equalIdx = constIdx + 1;
-    let branchIdx = -1;
-    const branchWindowEnd = Math.min(instructions.length, equalIdx + 4);
-    for (let k = equalIdx + 1; k < branchWindowEnd; k++) {
-      const opc = instructions[k].code;
-      // Switch dispatch uses JNZ (jump when case matches). JZ is if/while and must not
-      // seed single-case switches (smoke_24 `if (j == 1) continue`).
-      if (opc === OP_JNZ) {
-        branchIdx = k;
-        break;
-      }
-      // Only allow trivial gaps (e.g. nothing); reject other compares / loads
-      if (opc !== OP_MOVSP) {
-        break;
-      }
+    if (instructions[equalIdx]?.code !== OP_EQUAL) {
+      return null;
     }
-    if (branchIdx < 0) {
+    const branchIdx = equalIdx + 1;
+    // The NWScript switch dispatcher branches *to* a matching case with JNZ.
+    // Accepting JZ also turns ordinary `if (a == x && b == y)` ladders into
+    // phantom switches because their false edges happen to converge near a JMP.
+    if (instructions[branchIdx]?.code !== OP_JNZ) {
       return null;
     }
     return {
@@ -1047,26 +1053,13 @@ export class NWScriptControlStructureBuilder {
     let best: NWScriptControlStructure | null = null;
     let bestDistinctCases = -1;
 
-    for (let seedIdx = 0; seedIdx < instructions.length; seedIdx++) {
-      const op = instructions[seedIdx]?.code;
-      if (op !== OP_CPTOPSP && op !== OP_CPTOPBP) {
-        continue;
-      }
-      // Discriminant load must live in the header block. Extended merges can reach a
-      // later switch's CPTOP; seeding from those would attach that ladder to this header
-      // (smoke_08: case-2 entry mis-identified as the while's switch).
-      const seedAddr = instructions[seedIdx].address;
-      const headerRange = headerBlock.getAddressRange();
-      if (seedAddr < headerRange.start || seedAddr >= headerRange.end) {
-        continue;
-      }
+    for (let seedIdx = 0; seedIdx + 4 < instructions.length; seedIdx++) {
       const cand = this.tryBuildSwitchStructureFromSeed(headerBlock, instructions, seedIdx);
       const n =
         cand?.switchCases && cand.switchCases.size > 0
           ? cand.switchCases.size
           : 0;
-      // Allow 1-case + default switches (smoke_08); still prefer richer ladders.
-      if (n >= 1 && n > bestDistinctCases) {
+      if (n >= 2 && n > bestDistinctCases) {
         best = cand!;
         bestDistinctCases = n;
       }
@@ -1080,12 +1073,33 @@ export class NWScriptControlStructureBuilder {
     instructions: NWScriptInstruction[],
     seedIdx: number
   ): NWScriptControlStructure | null {
+    // Probing concatenates the header with later fall-through blocks.  The discriminant must be
+    // produced by the candidate header itself; otherwise a predecessor containing ordinary code
+    // (for example an `else` assignment immediately before a switch) is misclassified as a second
+    // copy of the successor's switch and its real statements disappear into the dispatch node.
+    if (this.cfg.getBlockForAddress(instructions[seedIdx].address) !== headerBlock) {
+      return null;
+    }
+    // Extended probing may cross conditional fall-through edges to collect later dispatch rows.
+    // The discriminator seed itself must still precede the first control transfer; otherwise an
+    // enclosing `if` block can incorrectly claim a switch that starts in only one of its arms.
+    // Subsequent rows are already rejected as seeds by the retained-discriminator grammar below.
+    if (instructions.slice(0, seedIdx).some(instruction =>
+      instruction.code === OP_JZ ||
+      instruction.code === OP_JNZ ||
+      instruction.code === OP_JMP ||
+      instruction.code === OP_RETN
+    )) {
+      return null;
+    }
     const caseJNZs: Array<{ instr: NWScriptInstruction; caseValue: number | null; caseBlock: NWScriptBasicBlock | null }> = [];
 
     const pushCaseRow = (jnzInstr: NWScriptInstruction, caseConst: NWScriptInstruction): void => {
       const caseValue = caseConst.integer;
       const caseTargetAddr =
-        jnzInstr.offset !== undefined ? jnzInstr.address + jnzInstr.offset : null;
+        jnzInstr.offset !== undefined
+          ? jnzInstr.address + toSignedInt32(jnzInstr.offset)
+          : null;
 
       let caseBlock: NWScriptBasicBlock | null = null;
       if (caseTargetAddr !== null) {
@@ -1101,7 +1115,11 @@ export class NWScriptControlStructureBuilder {
       }
     };
 
-    const firstRow = this.tryParseSwitchCaseRow(instructions, seedIdx, true);
+    // `seedIdx` is the final instruction that produces the discriminant. Every case
+    // row then starts by copying that retained value. Requiring the producer before
+    // the first row prevents the second row of a real switch from being recognized as
+    // a smaller nested switch.
+    const firstRow = this.tryParseSwitchCaseRow(instructions, seedIdx + 1, true);
     if (!firstRow) {
       return null;
     }
@@ -1109,13 +1127,7 @@ export class NWScriptControlStructureBuilder {
     let scanPos = firstRow.branchIdx + 1;
 
     while (scanPos < instructions.length) {
-      // End of the dispatch ladder: default JMP. Do not keep scanning into case
-      // bodies or later switches (smoke_08: sole `case 2` must not absorb the
-      // while's `case 0` EQUAL+JNZ as another arm of the same switch).
-      if (instructions[scanPos].code === OP_JMP) {
-        break;
-      }
-      const nextRow = this.tryParseSwitchCaseRow(instructions, scanPos, false);
+      const nextRow = this.tryParseSwitchCaseRow(instructions, scanPos, true);
       if (!nextRow) {
         break;
       }
@@ -1123,8 +1135,7 @@ export class NWScriptControlStructureBuilder {
       scanPos = nextRow.branchIdx + 1;
     }
 
-    // ≥1 case + default JMP (smoke_08 is a single `case 2` / `default` switch).
-    if (caseJNZs.length < 1) {
+    if (caseJNZs.length < 2) {
       return null;
     }
 
@@ -1147,7 +1158,9 @@ export class NWScriptControlStructureBuilder {
       const cand = instructions[j];
       if (cand.code === OP_JMP && cand.offset !== undefined) {
         defaultJMP = cand;
-        defaultTarget = this.cfg.getBlockForAddress(cand.address + cand.offset);
+        defaultTarget = this.cfg.getBlockForAddress(
+          cand.address + toSignedInt32(cand.offset)
+        );
         break;
       }
     }
@@ -1170,14 +1183,19 @@ export class NWScriptControlStructureBuilder {
       return null;
     }
 
-    const exitBlock = this.findSwitchExit(Array.from(caseBlocks), defaultTarget, headerBlock)
-
-      ?? (defaultTarget &&
-        defaultTarget.instructions[0]?.code === OP_MOVSP &&
-        defaultTarget.instructions[0].offset !== undefined &&
-        defaultTarget.instructions[0].offset < 0
-          ? defaultTarget
-          : null);
+    // The compiler retains the integer discriminator on the stack throughout the dispatch
+    // ladder.  When there is no source-level default arm, the ladder's final JMP lands directly
+    // on the canonical `MOVSP -4` discriminator cleanup.  That target is a stronger exit signal
+    // than the header's post-dominator: inside an enclosing branch the immediate post-dominator
+    // can be the function epilogue, causing a nested switch to absorb every later statement.
+    const directCleanupExit =
+      defaultTarget?.instructions[0]?.code === OP_MOVSP &&
+      defaultTarget.instructions[0].offset === -4
+        ? defaultTarget
+        : null;
+    const exitBlock =
+      directCleanupExit ??
+      this.findSwitchExit(Array.from(caseBlocks), defaultTarget, headerBlock);
 
     if (!exitBlock) {
       return null;
@@ -1189,6 +1207,13 @@ export class NWScriptControlStructureBuilder {
     }
 
     const filteredBodyBlocks = bodyBlocks.filter((b) => b !== exitBlock);
+    const defaultJumpIndex = instructions.indexOf(defaultJMP);
+    const switchDispatchBlocks = Array.from(new Set(
+      instructions
+        .slice(seedIdx, defaultJumpIndex + 1)
+        .map(instruction => this.cfg.getBlockForAddress(instruction.address))
+        .filter((owner): owner is NWScriptBasicBlock => owner !== null)
+    ));
 
     const structure: NWScriptControlStructure = {
       type: ControlStructureType.SWITCH,
@@ -1199,6 +1224,7 @@ export class NWScriptControlStructureBuilder {
       switchCases: caseValueMap,
       defaultBlock: defaultTarget && defaultTarget !== exitBlock ? defaultTarget : undefined,
       switchDiscriminantInstruction: instructions[seedIdx],
+      switchDispatchBlocks,
     };
 
     this.detectSwitchFallThrough(structure);
@@ -1207,9 +1233,32 @@ export class NWScriptControlStructureBuilder {
     return structure;
   }
 
+  private isSwitchDispatchContinuation(block: NWScriptBasicBlock): boolean {
+    return Array.from(block.predecessors).some(predecessor =>
+      predecessor.endInstruction.code === OP_JNZ &&
+      predecessor.endInstruction.nextInstr?.address === block.startInstruction.address
+    );
+  }
+
+  private occupySwitchDispatch(structure: NWScriptControlStructure): void {
+    for (const owner of structure.switchDispatchBlocks ?? [structure.headerBlock]) {
+      this.switchDispatchOccupiedBlocks.add(owner.id);
+    }
+  }
+
   private identifySwitch(block: NWScriptBasicBlock): NWScriptControlStructure | null {
     if (this.switchDispatchOccupiedBlocks.has(block.id)) {
       return null;
+    }
+    if (this.isSwitchDispatchContinuation(block)) {
+      return null;
+    }
+    const cached = this.switchIdentifyCache.get(block);
+    if (cached !== undefined) {
+      if (cached) {
+        this.occupySwitchDispatch(cached);
+      }
+      return cached;
     }
 
     let best: { structure: NWScriptControlStructure; merged: NWScriptInstruction[] } | null = null;
@@ -1230,32 +1279,16 @@ export class NWScriptControlStructureBuilder {
     }
 
     if (!best) {
+      this.switchIdentifyCache.set(block, null);
       return null;
     }
 
-    // Only occupy the dispatch ladder (through the default JMP), not case bodies or
-    // later code that extended merges may have appended.
-    let occupyUntil = best.merged.length;
-    for (let i = 0; i < best.merged.length; i++) {
-      const ins = best.merged[i];
-      if (ins.code === OP_JMP && i > 0) {
-        // First unconditional JMP after case compares is the default branch.
-        const prevIsCaseBranch = best.merged
-          .slice(0, i)
-          .some((p) => p.code === OP_JNZ || p.code === OP_JZ);
-        if (prevIsCaseBranch) {
-          occupyUntil = i + 1;
-          break;
-        }
-      }
-    }
-    for (let i = 0; i < occupyUntil; i++) {
-      const owner = this.cfg.getBlockForAddress(best.merged[i].address);
-      if (owner) {
-        this.switchDispatchOccupiedBlocks.add(owner.id);
-      }
-    }
-
+    // Extended probing deliberately follows fall-through beyond the dispatcher so it can see
+    // large ladders split across many blocks.  Only reserve the blocks that actually contain the
+    // selected ladder, however. Reserving every probed block hides later, independent switches
+    // (and any other construct reached after the switch exit).
+    this.occupySwitchDispatch(best.structure);
+    this.switchIdentifyCache.set(block, best.structure);
     return best.structure;
   }
 
@@ -1302,9 +1335,17 @@ export class NWScriptControlStructureBuilder {
    * Cases may have break statements (JMP to exit) or fall through
    */
   private findSwitchExit(caseBlocks: NWScriptBasicBlock[], defaultBlock: NWScriptBasicBlock | null, headerBlock: NWScriptBasicBlock): NWScriptBasicBlock | null {
-    // Prefer break JMP consensus over post-dominator: inside a for/while the header's
-    // ipdom is often the *loop* exit, not the post-switch merge (MOVSP drop discriminant).
+    // Try to find a common exit point
+    // Cases with break will have JMP to exit
+    // Cases without break will fall through to next case or default
+    
+    // First, check if there's a post-dominator
+    const ipdom = this.cfg.getImmediatePostDominator(headerBlock);
+    if (ipdom && !caseBlocks.includes(ipdom) && ipdom !== defaultBlock) {
+      return ipdom;
+    }
 
+    // Check case arms for JMP leaving the arm (break → common merge / exit), including multi-block cases
     const exitCandidates = new Set<NWScriptBasicBlock>();
     const armEntries = new Set<NWScriptBasicBlock>(caseBlocks);
     if (defaultBlock) {
@@ -1314,16 +1355,20 @@ export class NWScriptControlStructureBuilder {
     const collectJmpOutFromArm = (armEntry: NWScriptBasicBlock): void => {
       const others = new Set(armEntries);
       others.delete(armEntry);
-      // Fallthrough-only reach: do not follow break/continue JMPs into the merge
-      // (those targets would otherwise sit inside `reach` and be skipped as exits).
-      const internal = this.switchArmFallthroughBlocks(armEntry, others);
-      for (const b of internal) {
+      const stopBlocks = new Set<NWScriptBasicBlock>();
+      if (ipdom) {
+        stopBlocks.add(ipdom);
+      }
+      const reach = this.switchArmReachableBlocks(armEntry, others, stopBlocks);
+      for (const b of reach) {
         for (const instr of b.instructions) {
           if (instr.code === OP_JMP && instr.offset !== undefined) {
-            const t = this.cfg.getBlockForAddress(instr.address + instr.offset);
+            const t = this.cfg.getBlockForAddress(
+              instr.address + toSignedInt32(instr.offset)
+            );
             if (
               t &&
-              !internal.has(t) &&
+              !reach.has(t) &&
               !caseBlocks.includes(t) &&
               t !== defaultBlock &&
               t !== headerBlock
@@ -1342,45 +1387,9 @@ export class NWScriptControlStructureBuilder {
       collectJmpOutFromArm(defaultBlock);
     }
 
-    // Continue JMPs target the for-increment; break JMPs share the post-switch merge.
-    // Prefer the candidate that is the common break target (exclude loop-header / increment
-    // when multiple candidates exist).
+    // If all cases have the same exit, that's the switch exit
     if (exitCandidates.size === 1) {
       return Array.from(exitCandidates)[0];
-    }
-    if (exitCandidates.size > 1) {
-      const nonLoopish = Array.from(exitCandidates).filter(
-        (b) => !b.isLoopHeader && !b.isLoopBody
-      );
-      // Prefer earliest address among non-loopish (post-switch cleanup before increment)
-      const pool = nonLoopish.length > 0 ? nonLoopish : Array.from(exitCandidates);
-      pool.sort((a, b) => a.startInstruction.address - b.startInstruction.address);
-      // Among candidates, prefer the one most arms JMP to
-      let best: NWScriptBasicBlock | null = null;
-      let bestCount = -1;
-      for (const cand of pool) {
-        let count = 0;
-        for (const arm of armEntries) {
-          const others = new Set(armEntries);
-          others.delete(arm);
-          if (this.caseBodyHasJmpToBlock(arm, cand, others)) {
-            count++;
-          }
-        }
-        if (count > bestCount) {
-          bestCount = count;
-          best = cand;
-        }
-      }
-      if (best && bestCount > 0) {
-        return best;
-      }
-      return pool[0];
-    }
-
-    const ipdom = this.cfg.getImmediatePostDominator(headerBlock);
-    if (ipdom && !caseBlocks.includes(ipdom) && ipdom !== defaultBlock) {
-      return ipdom;
     }
 
     // If default exists and is different from cases, use it as exit
@@ -1404,249 +1413,138 @@ export class NWScriptControlStructureBuilder {
   /**
    * Identify loop structure from a block marked as a **natural loop header** (see the CFG's
    * {@code naturalLoops} map and dominance-based back edges in {@link NWScriptControlFlowGraph}).
-   *
-   * Do-while (KotOR {@code compileDoWhileLoop}): body entry is the back-edge target; the post-test
-   * is JZ(exit)+JMP(body) near the latch. {@code if (cond) break} uses the opposite JZ polarity.
    */
   private identifyLoop(block: NWScriptBasicBlock): NWScriptControlStructure | null {
     if (!block.isLoopHeader) {
       return null;
     }
 
-    const loopBlockSet =
-      this.cfg.naturalLoops.get(block) ?? new Set<NWScriptBasicBlock>([block]);
-
-    // Prefer a back-edge latch that belongs to this natural loop
-    let backEdgeBlock: NWScriptBasicBlock | null = null;
-    for (const pred of block.predecessors) {
-      if (pred === block || !pred.successors.has(block) || !loopBlockSet.has(pred)) {
-        continue;
-      }
-      backEdgeBlock = pred;
-      if (pred.exitType === "jump") {
-        break;
-      }
-    }
-    if (!backEdgeBlock) {
-      for (const pred of block.predecessors) {
-        if (pred.isLoopBody && pred.successors.has(block)) {
-          backEdgeBlock = pred;
-          break;
-        }
-      }
-    }
-    if (!backEdgeBlock) {
-      for (const pred of block.predecessors) {
-        if (pred.successors.has(block) && pred.exitType === "jump") {
-          backEdgeBlock = pred;
-          break;
-        }
-      }
-    }
-
-    if (!backEdgeBlock) {
+    const naturalLoop = this.cfg.getNaturalLoop(block);
+    if (naturalLoop.size === 0) {
       return null;
     }
 
-    const latchCondition = this.findDoWhileLatchCondition(backEdgeBlock, block, loopBlockSet);
-    const conditionBlock =
-      latchCondition &&
-      (latchCondition !== block || this.blockHasStatementBeforeCondition(block))
-        ? latchCondition
-        : null;
-    const isDoWhile = conditionBlock !== null;
+    const successorsOutsideLoop = (candidate: NWScriptBasicBlock) =>
+      this.cfg.getIntraProceduralSuccessors(candidate, false)
+        .filter(successor => !naturalLoop.has(successor));
 
-    const bodyBlocks = this.collectLoopBody(block, backEdgeBlock);
+    const conditionIndex = block.conditionInstruction
+      ? block.instructions.indexOf(block.conditionInstruction)
+      : -1;
+    const hasDiscardedMutationPrefix = conditionIndex > 0 &&
+      block.instructions.slice(0, conditionIndex).some((instruction, index, prefix) =>
+        (instruction.code === OP_INCISP || instruction.code === OP_DECISP ||
+          instruction.code === OP_INCIBP || instruction.code === OP_DECIBP) &&
+        prefix.slice(index + 1).some(next => next.code === OP_MOVSP)
+      );
+    const headerIsPreTest =
+      block.exitType === 'conditional' &&
+      successorsOutsideLoop(block).length > 0 &&
+      !hasDiscardedMutationPrefix;
+    let conditionBlock = block;
+    let conditionBlocks: NWScriptBasicBlock[] = [block];
+    let type = ControlStructureType.WHILE;
 
-    let exitBlock = this.findLoopExit(block, bodyBlocks);
-    if (isDoWhile && conditionBlock) {
-      const latchExit = this.findDoWhileLatchExit(conditionBlock, block, bodyBlocks);
-      if (latchExit) {
-        exitBlock = latchExit;
-      }
-    }
-    if (!exitBlock && conditionBlock) {
-      for (const s of this.cfg.getIntraProceduralSuccessors(conditionBlock, false)) {
-        if (!bodyBlocks.includes(s) && s !== block) {
-          exitBlock = s;
-          break;
+    if (!headerIsPreTest) {
+      const postTestCandidates = Array.from(naturalLoop)
+        .filter(candidate =>
+          candidate.exitType === 'conditional' &&
+          successorsOutsideLoop(candidate).length > 0 &&
+          this.cfg.getIntraProceduralSuccessors(candidate, false)
+            .some(successor => naturalLoop.has(successor))
+        )
+        .sort((left, right) => right.startInstruction.address - left.startInstruction.address);
+      if (hasDiscardedMutationPrefix) {
+        conditionBlock = block;
+        type = ControlStructureType.DO_WHILE;
+      } else if (postTestCandidates.length === 0) {
+        return null;
+      } else {
+        conditionBlock = postTestCandidates[0];
+        const inLoopSuccessors = this.cfg
+          .getIntraProceduralSuccessors(conditionBlock, false)
+          .filter(successor => naturalLoop.has(successor));
+        const returnsStraightToHeader = inLoopSuccessors.some(successor => {
+          let current: NWScriptBasicBlock | undefined = successor;
+          const seen = new Set<NWScriptBasicBlock>();
+        while (current && !seen.has(current)) {
+            if (current === block) return true;
+            seen.add(current);
+            if (
+              current.instructions.some(instruction =>
+                instruction.code !== OP_JMP && instruction.code !== OP_NOP
+              )
+            ) {
+              return false;
+            }
+            const next = this.cfg.getIntraProceduralSuccessors(current, false);
+            if (next.length !== 1) return false;
+            current = next[0];
+          }
+          return false;
+        });
+
+        if (conditionBlock !== block && !returnsStraightToHeader) {
+          // A short-circuit pre-test is split across multiple blocks: the natural header
+          // branches to RHS/bypass blocks, and a later conditional performs the real exit.
+          type = ControlStructureType.WHILE;
+          conditionBlocks = [
+            ...this.collectBlocksBetween(block, conditionBlock)
+              .filter(candidate => naturalLoop.has(candidate)),
+            conditionBlock,
+          ].filter((candidate, index, all) => all.indexOf(candidate) === index)
+            .sort((left, right) =>
+              left.startInstruction.address - right.startInstruction.address
+            );
+        } else {
+          type = ControlStructureType.DO_WHILE;
+          conditionBlocks = [conditionBlock];
         }
       }
     }
+
+    const exitBlock = successorsOutsideLoop(conditionBlock)[0] ??
+      Array.from(naturalLoop)
+        .flatMap(candidate => successorsOutsideLoop(candidate))[0];
 
     if (!exitBlock) {
       return null;
     }
 
+    const isPureLatch = (candidate: NWScriptBasicBlock): boolean =>
+      candidate !== conditionBlock &&
+      candidate.instructions.length === 1 &&
+      candidate.endInstruction.code === OP_JMP &&
+      candidate.successors.has(block);
+    const conditionSet = new Set(conditionBlocks);
+    const bodyBlocks = Array.from(naturalLoop)
+      .filter(candidate =>
+        !conditionSet.has(candidate) &&
+        !candidate.isUnreachable &&
+        !isPureLatch(candidate)
+      )
+      .sort((left, right) => left.startInstruction.address - right.startInstruction.address);
+
     const structure: NWScriptControlStructure = {
-      type: isDoWhile ? ControlStructureType.DO_WHILE : ControlStructureType.WHILE,
+      type,
       headerBlock: block,
+      conditionBlock,
+      conditionBlocks,
       bodyBlocks: bodyBlocks,
       exitBlock: exitBlock,
-      nestedStructures: [],
+      nestedStructures: []
     };
 
-    if (isDoWhile && conditionBlock) {
-      structure.conditionBlock = conditionBlock;
-      const exclude = new Set<NWScriptBasicBlock>();
-      if (conditionBlock !== block) {
-        exclude.add(conditionBlock);
-      }
-      if (
-        backEdgeBlock !== conditionBlock &&
-        backEdgeBlock.exitType === "jump" &&
-        backEdgeBlock.successors.has(block) &&
-        !backEdgeBlock.conditionInstruction
-      ) {
-        exclude.add(backEdgeBlock);
-      }
-      const withHeader = [block, ...bodyBlocks.filter((b) => b !== block)];
-      structure.bodyBlocks = withHeader.filter((b) => !exclude.has(b));
-    }
-
+    // Mark break/continue blocks
     this.markBreakContinueBlocks(structure);
 
-    if (structure.type !== ControlStructureType.DO_WHILE) {
-      const forLoop = this.identifyForLoop(structure);
-      if (forLoop) {
-        return forLoop;
-      }
+    // Check if it might be a for loop (has initialization and increment)
+    const forLoop = this.identifyForLoop(structure);
+    if (forLoop) {
+      return forLoop;
     }
 
     return structure;
-  }
-
-  /**
-   * Do-while post-test: false edge exits the loop, true edge continues to the JMP latch.
-   * Break/if uses the opposite polarity and is ignored.
-   */
-  private findDoWhileLatchCondition(
-    latch: NWScriptBasicBlock,
-    header: NWScriptBasicBlock,
-    loopBlocks: Set<NWScriptBasicBlock>
-  ): NWScriptBasicBlock | null {
-    if (this.isDoWhilePostTestCondition(latch, header, loopBlocks)) {
-      return latch;
-    }
-
-    for (const pred of latch.predecessors) {
-      // Allow header when body+condition share one block
-      if (pred !== header && !loopBlocks.has(pred)) {
-        continue;
-      }
-      if (!this.isDoWhilePostTestCondition(pred, header, loopBlocks)) {
-        continue;
-      }
-      const trueSucc = this.getConditionalBranchSuccessor(pred, true);
-      if (trueSucc === latch || trueSucc === header) {
-        return pred;
-      }
-      if (
-        trueSucc &&
-        trueSucc.exitType === "jump" &&
-        trueSucc.successors.has(header) &&
-        !trueSucc.conditionInstruction
-      ) {
-        return pred;
-      }
-    }
-    return null;
-  }
-
-  private isDoWhilePostTestCondition(
-    block: NWScriptBasicBlock,
-    header: NWScriptBasicBlock,
-    loopBlocks: Set<NWScriptBasicBlock>
-  ): boolean {
-    const cond = block.conditionInstruction;
-    if (!cond || (cond.code !== OP_JZ && cond.code !== OP_JNZ)) {
-      return false;
-    }
-    const falseSucc = this.getConditionalBranchSuccessor(block, false);
-    const trueSucc = this.getConditionalBranchSuccessor(block, true);
-    if (!falseSucc || !trueSucc) {
-      return false;
-    }
-    const falseExits = !loopBlocks.has(falseSucc) && falseSucc !== header;
-    const trueContinues = loopBlocks.has(trueSucc) || trueSucc === header;
-    return falseExits && trueContinues;
-  }
-
-  private getConditionalBranchSuccessor(
-    block: NWScriptBasicBlock,
-    wantTrue: boolean
-  ): NWScriptBasicBlock | null {
-    const wantType = wantTrue ? EdgeType.TRUE_BRANCH : EdgeType.FALSE_BRANCH;
-    for (const succ of this.cfg.getIntraProceduralSuccessors(block, false)) {
-      const edge = this.cfg.getEdge(block, succ);
-      if (edge && edge.type === wantType) {
-        return succ;
-      }
-    }
-    return null;
-  }
-
-  private blockHasStatementBeforeCondition(block: NWScriptBasicBlock): boolean {
-    const cond = block.conditionInstruction;
-    if (!cond) {
-      return false;
-    }
-    for (const instr of block.instructions) {
-      if (instr.address >= cond.address) {
-        break;
-      }
-      if (
-        instr.code === OP_ACTION ||
-        instr.code === OP_JSR ||
-        instr.code === OP_CPDOWNSP ||
-        instr.code === OP_CPDOWNBP
-      ) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  private findDoWhileLatchExit(
-    latch: NWScriptBasicBlock,
-    header: NWScriptBasicBlock,
-    bodyBlocks: NWScriptBasicBlock[]
-  ): NWScriptBasicBlock | null {
-    const falseSucc = this.getConditionalBranchSuccessor(latch, false);
-    if (falseSucc && falseSucc !== header && !bodyBlocks.includes(falseSucc)) {
-      return falseSucc;
-    }
-    for (const s of this.cfg.getIntraProceduralSuccessors(latch, false)) {
-      if (s === header || bodyBlocks.includes(s)) {
-        continue;
-      }
-      return s;
-    }
-    return null;
-  }
-
-  /**
-   * If {@code block} is the init predecessor of a for-loop header, return that for structure.
-   */
-  private tryIdentifyForLoopFromInitBlock(block: NWScriptBasicBlock): NWScriptControlStructure | null {
-    if (block.isLoopBody) {
-      return null;
-    }
-    const succs = this.cfg.getIntraProceduralSuccessors(block, false);
-    for (const succ of succs) {
-      if (!succ.isLoopHeader) {
-        continue;
-      }
-      const loop = this.identifyLoop(succ);
-      if (
-        loop &&
-        loop.type === ControlStructureType.FOR &&
-        loop.initBlock === block
-      ) {
-        return loop;
-      }
-    }
-    return null;
   }
 
   /**
@@ -1670,8 +1568,15 @@ export class NWScriptControlStructureBuilder {
     // Find the initialization block (not part of loop body, not the back edge)
     // The init block should be a predecessor that's not in the loop body
     let initBlock: NWScriptBasicBlock | null = null;
+    const loopMembers = this.cfg.getNaturalLoop(whileLoop.headerBlock);
     for (const pred of headerPreds) {
-      if (!pred.isLoopBody && pred !== whileLoop.headerBlock) {
+      if (!loopMembers.has(pred) && pred !== whileLoop.headerBlock) {
+        const isLinearInitializer =
+          pred.exitType === 'fallthrough' &&
+          pred.endInstruction.nextInstr?.address === whileLoop.headerBlock.startInstruction.address;
+        if (!isLinearInitializer) {
+          continue;
+        }
         // Check if this predecessor has a path to the header that doesn't go through the loop body
         // This helps distinguish init blocks from other predecessors
         const intraSuccs = this.cfg.getIntraProceduralSuccessors(pred, false);
@@ -1683,6 +1588,19 @@ export class NWScriptControlStructureBuilder {
     }
 
     if (!initBlock) {
+      return null;
+    }
+    const hasInitializerMutation = initBlock.instructions.some(instruction =>
+      // O3 folds `RSADD; CONST; CPDOWNSP; MOVSP` into a persistent CONST stack slot.
+      instruction.code === OP_CONST ||
+      instruction.code === OP_CPDOWNSP ||
+      instruction.code === OP_CPDOWNBP ||
+      instruction.code === OP_INCISP ||
+      instruction.code === OP_DECISP ||
+      instruction.code === OP_INCIBP ||
+      instruction.code === OP_DECIBP
+    );
+    if (!hasInitializerMutation) {
       return null;
     }
 
@@ -1710,8 +1628,9 @@ export class NWScriptControlStructureBuilder {
       const forLoop: NWScriptControlStructure = {
         type: ControlStructureType.FOR,
         headerBlock: whileLoop.headerBlock,
-        bodyBlocks: whileLoop.bodyBlocks,
-        conditionBlock: whileLoop.headerBlock, // Condition is at header
+        bodyBlocks: whileLoop.bodyBlocks.filter(block => block !== incrementBlock),
+        conditionBlock: whileLoop.conditionBlock ?? whileLoop.headerBlock,
+        conditionBlocks: whileLoop.conditionBlocks,
         initBlock: initBlock, // Initialization block
         incrementBlock: incrementBlock,
         exitBlock: whileLoop.exitBlock,
@@ -1826,7 +1745,9 @@ export class NWScriptControlStructureBuilder {
       // Also check if block ends with JMP to header
       const endsWithJMPToHeader = block.endInstruction.code === OP_JMP &&
         block.endInstruction.offset !== undefined &&
-        this.cfg.getBlockForAddress(block.endInstruction.address + block.endInstruction.offset) === loopHeader;
+        this.cfg.getBlockForAddress(
+          block.endInstruction.address + toSignedInt32(block.endInstruction.offset)
+        ) === loopHeader;
       
       if (hasIncrement && (connectsToHeader || endsWithJMPToHeader)) {
         candidates.push({ block, hasIncrement, connectsToHeader: connectsToHeader || endsWithJMPToHeader });
@@ -1865,31 +1786,18 @@ export class NWScriptControlStructureBuilder {
   }
 
   /**
-   * Collect a branch body without following unconditional JMPs into unrelated regions
-   * (loop exits / later sibling structures). Falls back to a BFS that stops at {@code otherArm}.
+   * Collect blocks between start and end (excluding end)
+   * If end is null, collect all reachable blocks
    */
-  private collectBranchBodyWithoutCrossing(
-    start: NWScriptBasicBlock,
-    otherArm: NWScriptBasicBlock
-  ): NWScriptBasicBlock[] {
-    // Pure jump / return arm — body is just this block (break, continue, return)
-    if (
-      start.exitType === "jump" ||
-      start.exitType === "return" ||
-      start.endInstruction.code === OP_JMP ||
-      start.endInstruction.code === OP_RETN
-    ) {
-      return [start];
-    }
-    return this.collectBlocksBetween(start, otherArm);
-  }
-
   /**
    * Collect all blocks between start and end (exclusive of end)
    * Uses BFS to collect blocks in a more predictable order
    * Only follows intra-procedural edges (excludes CALL/RETURN edges)
    */
   private collectBlocksBetween(start: NWScriptBasicBlock, end: NWScriptBasicBlock | null): NWScriptBasicBlock[] {
+    if (!end) {
+      return [start];
+    }
     const blocks: NWScriptBasicBlock[] = [];
     const visited = new Set<NWScriptBasicBlock>();
     const queue: NWScriptBasicBlock[] = [start];
@@ -1910,6 +1818,10 @@ export class NWScriptControlStructureBuilder {
       visited.add(current);
       blocks.push(current);
 
+      if (this.jumpsDirectlyToProcedureEpilogue(current)) {
+        continue;
+      }
+
       // Only follow intra-procedural successors (exclude CALL/RETURN edges)
       const intraSuccs = this.cfg.getIntraProceduralSuccessors(current, false);
       for (const successor of intraSuccs) {
@@ -1926,43 +1838,98 @@ export class NWScriptControlStructureBuilder {
     return blocks;
   }
 
+  /** True when {@code start} can reach a RETN / graph exit without treating the whole CFG as a body. */
+  private pathReachesExit(start: NWScriptBasicBlock): boolean {
+    const visited = new Set<NWScriptBasicBlock>();
+    const queue: NWScriptBasicBlock[] = [start];
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      if (visited.has(current) || current.isUnreachable) {
+        continue;
+      }
+      visited.add(current);
+      if (current.isExit || current.exitType === 'return') {
+        return true;
+      }
+      if (this.jumpsDirectlyToProcedureEpilogue(current)) {
+        return true;
+      }
+      if (visited.size > LOGICAL_JOIN_MAX_DISTANCE) {
+        return false;
+      }
+      for (const successor of this.cfg.getIntraProceduralSuccessors(current, false)) {
+        if (!visited.has(successor)) {
+          queue.push(successor);
+        }
+      }
+    }
+    return false;
+  }
+
+  /** True when a block's terminal JMP only enters MOVSP/RESTOREBP/NOP cleanup and RETN. */
+  private jumpsDirectlyToProcedureEpilogue(block: NWScriptBasicBlock): boolean {
+    if (!block.instructions.some(instruction => instruction.code === OP_CPDOWNSP)) {
+      return false;
+    }
+    const jump = block.endInstruction;
+    if (jump.code !== OP_JMP || jump.offset === undefined) return false;
+    let current = this.cfg.getBlockForAddress(
+      jump.address + toSignedInt32(jump.offset)
+    );
+    const visited = new Set<NWScriptBasicBlock>();
+    while (current && !visited.has(current)) {
+      visited.add(current);
+      if (current.instructions.some(instruction =>
+        instruction.code !== OP_MOVSP &&
+        instruction.code !== OP_RESTOREBP &&
+        instruction.code !== OP_NOP &&
+        instruction.code !== OP_JMP &&
+        instruction.code !== OP_RETN
+      )) {
+        return false;
+      }
+      if (current.instructions.some(instruction => instruction.code === OP_RETN)) return true;
+      const successors = this.cfg.getIntraProceduralSuccessors(current, false);
+      if (successors.length !== 1) return false;
+      current = successors[0];
+    }
+    return false;
+  }
+
   /**
-   * Collect loop body blocks (blocks in the natural loop except the header).
-   * Only follows edges within the natural loop so later sibling loops are not absorbed.
+   * Collect loop body blocks
+   * Only follows intra-procedural edges
    */
   private collectLoopBody(header: NWScriptBasicBlock, backEdge: NWScriptBasicBlock): NWScriptBasicBlock[] {
-    const loopSet =
-      this.cfg.naturalLoops.get(header) ?? new Set<NWScriptBasicBlock>([header, backEdge]);
     const bodyBlocks: NWScriptBasicBlock[] = [];
     const visited = new Set<NWScriptBasicBlock>();
 
     const collect = (current: NWScriptBasicBlock) => {
-      if (current === header || visited.has(current) || !loopSet.has(current)) {
+      if (current === header || visited.has(current)) {
         return;
       }
 
       visited.add(current);
-      if (!current.isUnreachable) {
+      if (current.isLoopBody && !current.isUnreachable) {
         bodyBlocks.push(current);
       }
 
+      // Only follow intra-procedural successors
       const intraSuccs = this.cfg.getIntraProceduralSuccessors(current, false);
       for (const successor of intraSuccs) {
-        if (successor !== header && loopSet.has(successor)) {
+        // Continue if it's not the header, or if it's the back edge connecting to header
+        if (successor !== header || current === backEdge) {
           collect(successor);
         }
       }
     };
 
+    // Start from header's intra-procedural successors
     const headerIntraSuccs = this.cfg.getIntraProceduralSuccessors(header, false);
     for (const successor of headerIntraSuccs) {
-      if (loopSet.has(successor) && successor !== header) {
+      if (successor.isLoopBody) {
         collect(successor);
       }
-    }
-
-    if (backEdge !== header && loopSet.has(backEdge) && !visited.has(backEdge) && !backEdge.isUnreachable) {
-      bodyBlocks.push(backEdge);
     }
 
     return bodyBlocks;
@@ -1975,103 +1942,83 @@ export class NWScriptControlStructureBuilder {
    * Uses post-dominator information if available for more accurate results
    */
   private findMergePoint(path1: NWScriptBasicBlock, path2: NWScriptBasicBlock): NWScriptBasicBlock | null {
-    // First, try using post-dominator analysis for more accurate results
-    // The merge point should be the immediate post-dominator of the conditional block
-    // that is reachable from both paths
-    
-    // Use BFS to find common reachable block (intra-procedural only)
-    const visited1 = new Set<NWScriptBasicBlock>();
-    const visited2 = new Set<NWScriptBasicBlock>();
-
-    const queue1: NWScriptBasicBlock[] = [path1];
-    const queue2: NWScriptBasicBlock[] = [path2];
-
-    // Limit search depth to avoid infinite loops
-    const maxDepth = 100;
-    let depth = 0;
-
-    while ((queue1.length > 0 || queue2.length > 0) && depth < maxDepth) {
-      depth++;
-
-      // Process path1
-      if (queue1.length > 0) {
-        const current = queue1.shift()!;
-        if (visited2.has(current)) {
-          return current; // Found merge point
-        }
-        if (!visited1.has(current)) {
-          visited1.add(current);
-          // Only follow intra-procedural successors
-          const intraSuccs = this.cfg.getIntraProceduralSuccessors(current, false);
-          for (const successor of intraSuccs) {
-            if (!visited1.has(successor)) {
-              queue1.push(successor);
-            }
-          }
+    const distancesFrom = (start: NWScriptBasicBlock): Map<NWScriptBasicBlock, number> => {
+      const distances = new Map<NWScriptBasicBlock, number>([[start, 0]]);
+      const queue: NWScriptBasicBlock[] = [start];
+      while (queue.length > 0) {
+        const current = queue.shift()!;
+        if (current.isExit) continue;
+        const distance = distances.get(current)!;
+        if (distance >= LOGICAL_JOIN_MAX_DISTANCE) continue;
+        for (const successor of this.cfg.getIntraProceduralSuccessors(current, false)) {
+          // A branch merge is forward control flow. Following a latch makes unrelated code
+          // after a loop appear to be the closest common successor.
+          if (this.cfg.isBackEdge(current, successor) || distances.has(successor)) continue;
+          distances.set(successor, distance + 1);
+          queue.push(successor);
         }
       }
+      return distances;
+    };
 
-      // Process path2
-      if (queue2.length > 0) {
-        const current = queue2.shift()!;
-        if (visited1.has(current)) {
-          return current; // Found merge point
-        }
-        if (!visited2.has(current)) {
-          visited2.add(current);
-          // Only follow intra-procedural successors
-          const intraSuccs = this.cfg.getIntraProceduralSuccessors(current, false);
-          for (const successor of intraSuccs) {
-            if (!visited2.has(successor)) {
-              queue2.push(successor);
-            }
-          }
-        }
-      }
-    }
-
-    return null;
+    const left = distancesFrom(path1);
+    const right = distancesFrom(path2);
+    const candidates = Array.from(left.keys()).filter(block => right.has(block));
+    candidates.sort((a, b) => {
+      // Prefer a live continuation over the shared procedure epilogue when both are equally
+      // near. This preserves `if (...) return;` followed by ordinary tail code.
+      const exitPenalty = Number(a.isExit) - Number(b.isExit);
+      if (exitPenalty !== 0) return exitPenalty;
+      const aSum = left.get(a)! + right.get(a)!;
+      const bSum = left.get(b)! + right.get(b)!;
+      if (aSum !== bSum) return aSum - bSum;
+      const aMax = Math.max(left.get(a)!, right.get(a)!);
+      const bMax = Math.max(left.get(b)!, right.get(b)!);
+      if (aMax !== bMax) return aMax - bMax;
+      return a.startInstruction.address - b.startInstruction.address;
+    });
+    return candidates[0] ?? null;
   }
 
   /**
-   * Find the exit block of a loop.
-   * Prefer the header/latch conditional edge that leaves the natural loop — not the
-   * function-wide post-dominator (sequential scripts often share one far ipdom).
+   * Find the exit block of a loop
+   * Uses post-dominator analysis for more accurate results
    */
   private findLoopExit(header: NWScriptBasicBlock, bodyBlocks: NWScriptBasicBlock[]): NWScriptBasicBlock | null {
-    const loopSet =
-      this.cfg.naturalLoops.get(header) ??
-      new Set<NWScriptBasicBlock>([header, ...bodyBlocks]);
+    // First, try to use post-dominator information
+    // The immediate post-dominator of the header (that's not in the loop) is the exit
+    const ipdom = this.cfg.getImmediatePostDominator(header);
+    if (ipdom && !ipdom.isLoopBody && !bodyBlocks.includes(ipdom)) {
+      return ipdom;
+    }
 
-    // while/for pre-test: JZ false → exit, fallthrough → body
-    if (header.exitType === "conditional") {
-      const falseSucc = this.getConditionalBranchSuccessor(header, false);
-      if (falseSucc && falseSucc !== header && !loopSet.has(falseSucc)) {
-        return falseSucc;
+    // Fallback: Exit is typically a block that:
+    // 1. Is reached from the loop but not part of the loop body
+    // 2. Or is a successor of the header that's not in the loop body
+    // Only check intra-procedural successors
+    const headerIntraSuccs = this.cfg.getIntraProceduralSuccessors(header, false);
+    for (const successor of headerIntraSuccs) {
+      if (!successor.isLoopBody && !bodyBlocks.includes(successor)) {
+        return successor;
       }
-      for (const s of this.cfg.getIntraProceduralSuccessors(header, false)) {
-        if (!loopSet.has(s) && s !== header) {
-          return s;
+    }
+
+    // Check body blocks for exits (intra-procedural only)
+    for (const bodyBlock of bodyBlocks) {
+      const bodyIntraSuccs = this.cfg.getIntraProceduralSuccessors(bodyBlock, false);
+      for (const successor of bodyIntraSuccs) {
+        if (!successor.isLoopBody && !bodyBlocks.includes(successor) && successor !== header) {
+          return successor;
         }
       }
     }
 
-    // Immediate post-dominator only if it is a direct exit neighbor of the loop
-    const ipdom = this.cfg.getImmediatePostDominator(header);
-    if (ipdom && !loopSet.has(ipdom)) {
-      const touchesLoop = [...loopSet].some((b) =>
-        this.cfg.getIntraProceduralSuccessors(b, false).includes(ipdom)
-      );
-      if (touchesLoop) {
-        return ipdom;
-      }
-    }
-
-    for (const bodyBlock of bodyBlocks) {
-      const bodyIntraSuccs = this.cfg.getIntraProceduralSuccessors(bodyBlock, false);
-      for (const successor of bodyIntraSuccs) {
-        if (!loopSet.has(successor) && successor !== header) {
-          return successor;
+    /** Last resort: conditional header's successor that is not part of the collected body (typical loop-exit / fallthrough). */
+    if (header.exitType === "conditional") {
+      const succs = this.cfg.getIntraProceduralSuccessors(header, false);
+      for (const s of succs) {
+        if (!bodyBlocks.includes(s) && s !== header) {
+          return s;
         }
       }
     }
@@ -2123,7 +2070,15 @@ export class NWScriptControlStructureBuilder {
    * @returns A ControlNode tree representing the procedure's control flow
    */
   buildProcedure(entry: NWScriptBasicBlock): ControlNode {
+    const cachedTree = this.procedureTreeCache.get(entry);
+    if (cachedTree) {
+      this.lastProcedure = this.identifyProcedure(entry);
+      return cachedTree;
+    }
     this.switchDispatchOccupiedBlocks.clear();
+    if (this.shortCircuitByHeader.size === 0 && this.shortCircuitCovering.size === 0) {
+      this.indexLogicalRegions();
+    }
     // Ensure loops have been identified (needed for identifyLoop() to work)
     // Check if any blocks have loop flags set - if not, identify loops first
     const hasLoopFlags = Array.from(this.cfg.blocks.values()).some(b => b.isLoopHeader || b.isLoopBody);
@@ -2133,9 +2088,10 @@ export class NWScriptControlStructureBuilder {
     
     // First, identify the procedure region
     const procedure = this.identifyProcedure(entry);
-    
-    // Build the control node tree for this procedure
-    return this.buildControlNodeTree(procedure);
+    this.lastProcedure = procedure;
+    const tree = this.buildControlNodeTree(procedure);
+    this.procedureTreeCache.set(entry, tree);
+    return tree;
   }
 
   /**
@@ -2223,14 +2179,10 @@ export class NWScriptControlStructureBuilder {
     
     if (remainingBlocks.length > 0) {
       const remainingNodes: ControlNode[] = [];
-      for (const b of remainingBlocks) {
-        if (processed.has(b)) {
-          continue;
-        }
-        const node = this.buildNodeFromBlock(b, procedure, processed);
-        if (node) {
-          remainingNodes.push(node);
-        }
+      for (const block of remainingBlocks) {
+        if (processed.has(block)) continue;
+        const node = this.buildNodeFromBlock(block, procedure, processed);
+        if (node) remainingNodes.push(node);
       }
       
       if (rootNode) {
@@ -2278,98 +2230,57 @@ export class NWScriptControlStructureBuilder {
     
     nwscriptDecompilerDebug(`[buildNodeFromBlock] Processing block ${block.id} (${block.instructions.length} instructions)`);
 
-    // For-loop init precedes the header. If we emit it as a plain basic block first, the for's
-    // init slot becomes empty (already-emitted cache). Fold into the for when this is its init.
-    if (!this.buildingLoopHeaders.has(block)) {
-      const forFromInit = this.tryIdentifyForLoopFromInitBlock(block);
-      if (forFromInit && this.isStructureInProcedure(forFromInit, procedure)) {
-        processed.add(forFromInit.headerBlock);
-        if (forFromInit.initBlock) {
-          processed.add(forFromInit.initBlock);
-        }
-        if (forFromInit.incrementBlock) {
-          processed.add(forFromInit.incrementBlock);
-        }
-        return this.buildLoopNode(forFromInit, procedure, processed);
-      }
-    }
-
     // Match analyze() specificity: loops and switch dispatch headers before plain if/else
-    if (!this.buildingLoopHeaders.has(block)) {
-      const loop = this.identifyLoop(block);
-      if (loop && this.isStructureInProcedure(loop, procedure)) {
-        processed.add(loop.headerBlock);
-        if (loop.type === ControlStructureType.DO_WHILE) {
-          // Header is body entry — leave free for body lowering; mark latch/condition instead
-          processed.delete(loop.headerBlock);
-          if (loop.conditionBlock && loop.conditionBlock !== loop.headerBlock) {
-            processed.add(loop.conditionBlock);
-          }
-          for (const pred of loop.headerBlock.predecessors) {
-            if (
-              pred.exitType === "jump" &&
-              pred.successors.has(loop.headerBlock) &&
-              (pred.isLoopBody || (this.cfg.naturalLoops.get(loop.headerBlock)?.has(pred) ?? false))
-            ) {
-              processed.add(pred);
-            }
-          }
-        }
-        // Do not mark while/for exitBlock processed — exits often hold the next real
-        // statement (for-init `i = 0`, or `i = 0` before a following do-while).
-        if (loop.type === ControlStructureType.FOR) {
-          if (loop.initBlock) {
-            processed.add(loop.initBlock);
-          }
-          if (loop.incrementBlock) {
-            processed.add(loop.incrementBlock);
-          }
-        }
-        return this.buildLoopNode(loop, procedure, processed);
+    const loop = this.identifyLoop(block);
+    if (loop && this.isStructureInProcedure(loop, procedure)) {
+      for (const conditionBlock of loop.conditionBlocks ?? [loop.conditionBlock ?? loop.headerBlock]) {
+        processed.add(conditionBlock);
       }
+      // The exit is ordinary code after the loop and must remain available to the
+      // enclosing sequence. Marking it here silently dropped subsequent statements.
+      return this.buildLoopNode(loop, procedure, processed);
     }
 
     const switchStruct = this.identifySwitch(block);
     if (switchStruct && this.isStructureInProcedure(switchStruct, procedure)) {
-      processed.add(switchStruct.headerBlock);
-      this.markSwitchDispatchLadderProcessed(switchStruct, processed);
+      for (const dispatchBlock of switchStruct.switchDispatchBlocks ?? [switchStruct.headerBlock]) {
+        processed.add(dispatchBlock);
+      }
       // Do not mark switch exit as processed: it often contains real post-switch code
       // (e.g. DelayCommand tail after STORE_STATE+JMP to the merge block).
       return this.buildSwitchNode(switchStruct, procedure, processed);
     }
 
+    const shortCircuit = this.shortCircuitForBlock(block);
+    if (shortCircuit) {
+      if (block !== shortCircuit.header) {
+        if (!processed.has(shortCircuit.header) && procedure.blocks.has(shortCircuit.header)) {
+          return this.buildNodeFromBlock(shortCircuit.header, procedure, processed);
+        }
+        processed.add(block);
+        return null;
+      }
+      if (processed.has(shortCircuit.header)) {
+        return null;
+      }
+      for (const covered of shortCircuit.coveredBlocks) {
+        processed.add(covered);
+      }
+      return {
+        type: 'expression_region',
+        header: shortCircuit.header,
+        join: shortCircuit.join,
+        evaluateBlocks: shortCircuit.evaluateBlocks,
+        bypassBlocks: shortCircuit.bypassBlocks,
+        operator: shortCircuit.operator,
+      };
+    }
+
     const ifElse = this.identifyIfElse(block);
     if (ifElse && this.isStructureInProcedure(ifElse, procedure)) {
       processed.add(ifElse.headerBlock);
-      // Keep following do-while / while headers scannable when they are an if merge target.
-      // Also keep side-effecting merges free (e.g. `i = 0` that is both for-break target and pre-do stmt).
-      // Plain if joins whose merge is itself the next `if` (smoke_15: `if (a==b); if (a!="no")`)
-      // must stay free — but do NOT free OR/AND ladder probe exits (smoke_45): those look
-      // conditional yet swallowing them into the while body nests the real body under a probe
-      // that short-circuit absorption later skips.
-      if (ifElse.exitBlock && !ifElse.exitBlock.isLoopHeader) {
-        const exitHasSideEffects = ifElse.exitBlock.instructions.some(
-          (i) =>
-            i.code === OP_CPDOWNSP ||
-            i.code === OP_CPDOWNBP ||
-            i.code === OP_ACTION ||
-            i.code === OP_JSR ||
-            i.code === OP_INCISP ||
-            i.code === OP_DECISP
-        );
-        const exitIsJoinConditional =
-          !!ifElse.exitBlock.conditionInstruction &&
-          (!ifElse.elseBlocks || ifElse.elseBlocks.length === 0) &&
-          // Sequential ifs (smoke_15): then arm ends with an unconditional JMP to the
-          // merge, which is the next if header. OR/AND ladder probes reach the next
-          // term via the header's false JZ, not a then-arm JMP — keep marking those.
-          ifElse.bodyBlocks.some(
-            (b) => b.exitType === "jump" && b.successors.has(ifElse.exitBlock!)
-          );
-        if (!exitHasSideEffects && !exitIsJoinConditional) {
-          processed.add(ifElse.exitBlock);
-        }
-      }
+      // The merge is ordinary code after the branch. It may itself be the header of the
+      // next source-level construct (a common pattern for consecutive if statements).
       return this.buildIfElseNode(ifElse, procedure, processed);
     }
 
@@ -2405,8 +2316,10 @@ export class NWScriptControlStructureBuilder {
 
     const elseOk =
       !structure.elseBlocks || structure.elseBlocks.every(b => procedure.blocks.has(b));
+    const conditionsOk =
+      !structure.conditionBlocks || structure.conditionBlocks.every(b => procedure.blocks.has(b));
 
-    return structure.bodyBlocks.every(b => procedure.blocks.has(b)) && elseOk;
+    return structure.bodyBlocks.every(b => procedure.blocks.has(b)) && elseOk && conditionsOk;
   }
 
   /**
@@ -2419,32 +2332,26 @@ export class NWScriptControlStructureBuilder {
   ): ControlNode {
     const conditionNode: ControlNode = { type: 'basic_block', block: structure.headerBlock };
     
-    // Build then body (skip blocks reserved for outer for-increment / already lowered)
-    const thenBlocks = structure.bodyBlocks.filter((b) => !processed.has(b));
-    const thenBody = this.buildSequenceNode(
-      thenBlocks.length > 0 ? thenBlocks : structure.bodyBlocks,
-      procedure,
-      processed
-    );
+    // Build then body
+    const thenBody = this.buildSequenceNode(structure.bodyBlocks, procedure, processed);
     
-    const elseBlocks =
-      structure.elseBlocks?.filter((b) => !processed.has(b)) ?? [];
-    if (elseBlocks.length > 0) {
-      const elseBody = this.buildSequenceNode(elseBlocks, procedure, processed);
+    if (structure.elseBlocks && structure.elseBlocks.length > 0) {
+      // If-else
+      const elseBody = this.buildSequenceNode(structure.elseBlocks, procedure, processed);
       return {
         type: 'if_else',
         condition: conditionNode,
         thenBody,
-        elseBody,
-        exitBlock: structure.exitBlock,
+        elseBody
+      };
+    } else {
+      // If only
+      return {
+        type: 'if',
+        condition: conditionNode,
+        body: thenBody
       };
     }
-    return {
-      type: 'if',
-      condition: conditionNode,
-      body: thenBody,
-      exitBlock: structure.exitBlock,
-    };
   }
 
   /**
@@ -2455,47 +2362,18 @@ export class NWScriptControlStructureBuilder {
     procedure: Procedure,
     processed: Set<NWScriptBasicBlock>
   ): ControlNode {
-    const conditionBlock =
-      structure.type === ControlStructureType.DO_WHILE && structure.conditionBlock
-        ? structure.conditionBlock
-        : structure.headerBlock;
-    const conditionNode: ControlNode = { type: "basic_block", block: conditionBlock };
-
-    let body: ControlNode;
-    if (
-      structure.type === ControlStructureType.DO_WHILE &&
-      structure.conditionBlock === structure.headerBlock
-    ) {
-      body = { type: "basic_block", block: structure.headerBlock };
-      processed.add(structure.headerBlock);
-    } else {
-      const bodyBlocksForSeq =
-        structure.type === ControlStructureType.DO_WHILE &&
-        structure.conditionBlock &&
-        structure.conditionBlock !== structure.headerBlock
-          ? structure.bodyBlocks.filter((b) => b !== structure.conditionBlock)
-          : structure.type === ControlStructureType.FOR && structure.incrementBlock
-            ? structure.bodyBlocks.filter((b) => b !== structure.incrementBlock)
-            : structure.bodyBlocks;
-      if (structure.type === ControlStructureType.FOR) {
-        if (structure.initBlock) {
-          processed.add(structure.initBlock);
-        }
-        if (structure.incrementBlock) {
-          processed.add(structure.incrementBlock);
-        }
-      }
-      if (structure.type === ControlStructureType.DO_WHILE) {
-        this.buildingLoopHeaders.add(structure.headerBlock);
-      }
-      try {
-        body = this.buildSequenceNode(bodyBlocksForSeq, procedure, processed);
-      } finally {
-        if (structure.type === ControlStructureType.DO_WHILE) {
-          this.buildingLoopHeaders.delete(structure.headerBlock);
-          processed.add(structure.headerBlock);
-        }
-      }
+    const conditionBlocks = structure.conditionBlocks ?? [
+      structure.conditionBlock ?? structure.headerBlock,
+    ];
+    const conditionNode: ControlNode = conditionBlocks.length === 1
+      ? { type: 'basic_block', block: conditionBlocks[0] }
+      : {
+          type: 'sequence',
+          nodes: conditionBlocks.map(block => ({ type: 'basic_block' as const, block })),
+        };
+    const body = this.buildLoopBodyNode(structure, procedure, processed);
+    if (structure.incrementBlock) {
+      processed.add(structure.incrementBlock);
     }
 
     switch (structure.type) {
@@ -2520,9 +2398,13 @@ export class NWScriptControlStructureBuilder {
           ? { type: 'basic_block' as const, block: structure.initBlock }
           : null;
         const incrementNode = structure.incrementBlock
-          ? { type: 'basic_block' as const, block: structure.incrementBlock }
+          ? {
+              type: 'basic_block' as const,
+              block: structure.incrementBlock,
+              suppressTerminalLoopJump: true,
+            }
           : null;
-        const forNode: ControlNode = {
+        return {
           type: 'for',
           init: initNode,
           condition: conditionNode,
@@ -2532,26 +2414,6 @@ export class NWScriptControlStructureBuilder {
           loopHeaderBlock: structure.headerBlock,
           forIncrementBlock: structure.incrementBlock ?? null,
         };
-        // Loop exit often holds the next statement (`i = 0` before a following do-while).
-        // Do not attach loop headers (e.g. a following do-while body entry) — those are structures.
-        if (
-          structure.exitBlock &&
-          !structure.exitBlock.isLoopHeader &&
-          structure.exitBlock.instructions.some(
-            (i) =>
-              i.code === OP_CPDOWNSP ||
-              i.code === OP_CPDOWNBP ||
-              i.code === OP_ACTION ||
-              i.code === OP_JSR
-          )
-        ) {
-          processed.add(structure.exitBlock);
-          return {
-            type: "sequence",
-            nodes: [forNode, { type: "basic_block", block: structure.exitBlock }],
-          };
-        }
-        return forNode;
       default:
         // Fallback to while
         return {
@@ -2565,45 +2427,99 @@ export class NWScriptControlStructureBuilder {
   }
 
   /**
-   * Mark CMP-ladder blocks between the switch header and the first case/default arm so they
-   * are not re-lowered as nested if/switch when the parent sequence walks body blocks.
+   * Structure a natural-loop region without allowing generic merge discovery to walk through
+   * its back edge into later loops. Increment/header/exit stay control transfers, not branch
+   * bodies: `identifyIfElse` may use the increment as a merge, but `ForNode.increment` owns it.
    */
-  private markSwitchDispatchLadderProcessed(
+  private buildLoopBodyNode(
     structure: NWScriptControlStructure,
+    procedure: Procedure,
     processed: Set<NWScriptBasicBlock>
-  ): void {
-    const armEntries = new Set<NWScriptBasicBlock>();
-    if (structure.switchCases) {
-      for (const b of structure.switchCases.values()) {
-        armEntries.add(b);
-      }
-    }
-    if (structure.defaultBlock) {
-      armEntries.add(structure.defaultBlock);
+  ): ControlNode {
+    const reserved = new Set<NWScriptBasicBlock>([
+      structure.headerBlock,
+      structure.exitBlock,
+      ...(structure.conditionBlocks ?? []),
+      ...(structure.incrementBlock ? [structure.incrementBlock] : []),
+    ]);
+    const bodyAllowed = new Set(
+      structure.bodyBlocks.filter(block =>
+        procedure.blocks.has(block) &&
+        !block.isUnreachable &&
+        !reserved.has(block)
+      )
+    );
+    if (bodyAllowed.size === 0) {
+      return { type: 'sequence', nodes: [] };
     }
 
-    let cur: NWScriptBasicBlock | null = structure.headerBlock;
-    let guard = 40;
-    while (cur && guard-- > 0) {
-      processed.add(cur);
-      const na = cur.endInstruction?.nextInstr?.address;
-      if (na === undefined) {
-        break;
+    const miniBlocks = new Set(bodyAllowed);
+    if (structure.incrementBlock && procedure.blocks.has(structure.incrementBlock)) {
+      miniBlocks.add(structure.incrementBlock);
+    }
+    const mini: Procedure = {
+      entry: Array.from(bodyAllowed).sort(
+        (left, right) => left.startInstruction.address - right.startInstruction.address
+      )[0] ?? procedure.entry,
+      blocks: miniBlocks,
+      exitBlocks: procedure.exitBlocks,
+    };
+
+    const nodes: ControlNode[] = [];
+    const ordered = Array.from(bodyAllowed)
+      .sort((left, right) => left.startInstruction.address - right.startInstruction.address);
+    for (const block of ordered) {
+      if (processed.has(block)) {
+        continue;
       }
-      const next = this.cfg.getBlockForAddress(na);
-      if (!next) {
-        break;
+      const covering = this.shortCircuitCovering.get(block);
+      if (covering && covering.header !== block && processed.has(covering.header)) {
+        continue;
       }
-      if (next.startInstruction.address <= cur.startInstruction.address) {
-        break;
+      const node = this.buildNodeFromBlock(block, mini, processed);
+      if (node) {
+        nodes.push(node);
       }
-      if (armEntries.has(next)) {
-        break;
+    }
+
+    for (const block of ordered) {
+      if (!processed.has(block) && !reserved.has(block)) {
+        processed.add(block);
+        nodes.push({
+          type: 'basic_block',
+          block,
+        });
       }
-      if (structure.exitBlock && next === structure.exitBlock) {
-        break;
-      }
-      cur = next;
+    }
+
+    const body = nodes.length === 1 ? nodes[0] : { type: 'sequence' as const, nodes };
+    this.markLoopBodyTailLatch(body, structure);
+    return body;
+  }
+
+  /** True when the block's last instruction is the compiler latch back to header or increment. */
+  private isNaturalLoopLatch(
+    block: NWScriptBasicBlock,
+    structure: NWScriptControlStructure
+  ): boolean {
+    if (block.endInstruction.code !== OP_JMP) {
+      return false;
+    }
+    const target = this.cfg.getIntraProceduralSuccessors(block, false)[0];
+    return target === structure.headerBlock || target === structure.incrementBlock;
+  }
+
+  /**
+   * Suppress the sequential-tail JMP that closes a while/for body. Nested `if (x) continue;`
+   * arms are left unmarked so they still emit `continue`.
+   */
+  private markLoopBodyTailLatch(node: ControlNode, structure: NWScriptControlStructure): void {
+    let tail: ControlNode = node;
+    while (tail.type === 'sequence' && tail.nodes.length > 0) {
+      tail = tail.nodes[tail.nodes.length - 1];
+    }
+    if (tail.type === 'basic_block' && this.isNaturalLoopLatch(tail.block, structure)) {
+      tail.suppressTerminalLoopJump = true;
     }
   }
 
@@ -2617,28 +2533,20 @@ export class NWScriptControlStructureBuilder {
   ): ControlNode {
     const expressionNode: ControlNode = { type: 'basic_block', block: structure.headerBlock };
     
-    const armEntries = new Set<NWScriptBasicBlock>();
-    if (structure.switchCases) {
-      for (const b of structure.switchCases.values()) {
-        armEntries.add(b);
-      }
-    }
-    if (structure.defaultBlock) {
-      armEntries.add(structure.defaultBlock);
-    }
-
-    // Build case nodes — include fallthrough-reachable blocks in each arm (multi-block cases).
+    // Build each complete arm, not only its entry block. Case bodies routinely contain nested
+    // if/switch regions before their terminal break; leaving those blocks for the outer sequence
+    // makes them execute unconditionally after the switch.
     const cases: SwitchCase[] = [];
     if (structure.switchCases) {
+      const armEntries = new Set(structure.switchCases.values());
+      if (structure.defaultBlock) armEntries.add(structure.defaultBlock);
+      const stopBlocks = new Set([structure.exitBlock]);
       for (const [caseValue, caseBlock] of structure.switchCases.entries()) {
-        const others = new Set(armEntries);
-        others.delete(caseBlock);
+        const otherEntries = new Set(armEntries);
+        otherEntries.delete(caseBlock);
         const armBlocks = Array.from(
-          this.switchArmFallthroughBlocks(caseBlock, others, structure.exitBlock)
+          this.switchArmReachableBlocks(caseBlock, otherEntries, stopBlocks)
         );
-        if (armBlocks.length === 0) {
-          armBlocks.push(caseBlock);
-        }
         const caseBody = this.buildSequenceNode(armBlocks, procedure, processed);
         cases.push({
           value: caseValue,
@@ -2648,23 +2556,18 @@ export class NWScriptControlStructureBuilder {
     }
     
     // Build default case if it exists
-    const defaultCase = structure.defaultBlock
-      ? (() => {
-          const others = new Set(armEntries);
-          others.delete(structure.defaultBlock!);
-          const armBlocks = Array.from(
-            this.switchArmFallthroughBlocks(
-              structure.defaultBlock!,
-              others,
-              structure.exitBlock
-            )
-          );
-          if (armBlocks.length === 0) {
-            armBlocks.push(structure.defaultBlock!);
-          }
-          return this.buildSequenceNode(armBlocks, procedure, processed);
-        })()
-      : null;
+    let defaultCase: ControlNode | null = null;
+    if (structure.defaultBlock) {
+      const otherEntries = new Set(structure.switchCases?.values() ?? []);
+      const defaultBlocks = Array.from(
+        this.switchArmReachableBlocks(
+          structure.defaultBlock,
+          otherEntries,
+          new Set([structure.exitBlock])
+        )
+      );
+      defaultCase = this.buildSequenceNode(defaultBlocks, procedure, processed);
+    }
     
     return {
       type: 'switch',
@@ -2673,6 +2576,7 @@ export class NWScriptControlStructureBuilder {
       cases: cases,
       defaultCase: defaultCase,
       switchExitBlock: structure.exitBlock,
+      switchDispatchBlocks: structure.switchDispatchBlocks,
     };
   }
 
@@ -2957,5 +2861,202 @@ export class NWScriptControlStructureBuilder {
       }))
     };
   }
+
+  auditControlNodeCoverage(procedure: Procedure, root: ControlNode): ControlNodeCoverageAudit {
+    return auditControlNodeCoverage(
+      this.cfg,
+      procedure,
+      root,
+      this.shortCircuitCovering
+    );
+  }
+
+  auditLastProcedure(root: ControlNode): ControlNodeCoverageAudit | undefined {
+    if (!this.lastProcedure) {
+      return undefined;
+    }
+    return this.auditControlNodeCoverage(this.lastProcedure, root);
+  }
 }
 
+const SEMANTIC_OPCODES = new Set<number>([
+  OP_ACTION,
+  OP_JSR,
+  OP_RSADD,
+  OP_CPDOWNSP,
+  OP_CPDOWNBP,
+  OP_INCISP,
+  OP_DECISP,
+  OP_INCIBP,
+  OP_DECIBP,
+]);
+
+export interface ControlNodeCoverageAudit {
+  owned: Set<NWScriptBasicBlock>;
+  scaffolding: Set<NWScriptBasicBlock>;
+  missing: NWScriptBasicBlock[];
+  duplicate: NWScriptBasicBlock[];
+}
+
+/**
+ * Collect every basic block referenced by a ControlNode tree, counting duplicate ownership.
+ */
+export function collectControlNodeBlocks(
+  node: ControlNode,
+  counts: Map<NWScriptBasicBlock, number> = new Map()
+): Set<NWScriptBasicBlock> {
+  const visit = (current: ControlNode): void => {
+    switch (current.type) {
+      case 'basic_block':
+        bumpOwnership(counts, current.block);
+        return;
+      case 'if':
+        visit(current.condition);
+        visit(current.body);
+        return;
+      case 'if_else':
+        visit(current.condition);
+        visit(current.thenBody);
+        visit(current.elseBody);
+        return;
+      case 'while':
+      case 'do_while':
+        visit(current.condition);
+        visit(current.body);
+        return;
+      case 'for':
+        if (current.init) visit(current.init);
+        visit(current.condition);
+        visit(current.body);
+        if (current.increment) visit(current.increment);
+        return;
+      case 'switch':
+        visit(current.expression);
+        for (const switchCase of current.cases) {
+          visit(switchCase.body);
+        }
+        if (current.defaultCase) visit(current.defaultCase);
+        return;
+      case 'sequence':
+        for (const child of current.nodes) {
+          visit(child);
+        }
+        return;
+      case 'expression_region':
+        for (const block of current.evaluateBlocks) {
+          bumpOwnership(counts, block);
+        }
+        return;
+    }
+  };
+  visit(node);
+  return new Set(counts.keys());
+}
+
+function bumpOwnership(
+  counts: Map<NWScriptBasicBlock, number>,
+  block: NWScriptBasicBlock
+): void {
+  counts.set(block, (counts.get(block) ?? 0) + 1);
+}
+
+function blockHasSemanticInstructions(block: NWScriptBasicBlock): boolean {
+  return block.instructions.some(instruction => SEMANTIC_OPCODES.has(instruction.code));
+}
+
+function collectScaffoldingBlocks(
+  root: ControlNode,
+  covering: Map<NWScriptBasicBlock, NWScriptShortCircuitRegion>
+): Set<NWScriptBasicBlock> {
+  const scaffolding = new Set<NWScriptBasicBlock>();
+  const visit = (current: ControlNode): void => {
+    switch (current.type) {
+      case 'expression_region':
+        for (const block of current.bypassBlocks) {
+          scaffolding.add(block);
+        }
+        return;
+      case 'switch': {
+        const header = current.expression.type === 'basic_block' ? current.expression.block : undefined;
+        for (const block of current.switchDispatchBlocks ?? []) {
+          if (block !== header) {
+            scaffolding.add(block);
+          }
+        }
+        visit(current.expression);
+        for (const switchCase of current.cases) {
+          visit(switchCase.body);
+        }
+        if (current.defaultCase) {
+          visit(current.defaultCase);
+        }
+        return;
+      }
+      case 'sequence':
+        for (const child of current.nodes) {
+          visit(child);
+        }
+        return;
+      case 'if':
+        visit(current.condition);
+        visit(current.body);
+        return;
+      case 'if_else':
+        visit(current.condition);
+        visit(current.thenBody);
+        visit(current.elseBody);
+        return;
+      case 'while':
+      case 'do_while':
+        visit(current.condition);
+        visit(current.body);
+        return;
+      case 'for':
+        if (current.init) visit(current.init);
+        visit(current.condition);
+        visit(current.body);
+        if (current.increment) visit(current.increment);
+        return;
+      case 'basic_block':
+        return;
+    }
+  };
+  visit(root);
+  for (const region of covering.values()) {
+    for (const block of region.bypassBlocks) {
+      scaffolding.add(block);
+    }
+  }
+  return scaffolding;
+}
+
+export function auditControlNodeCoverage(
+  cfg: NWScriptControlFlowGraph,
+  procedure: Procedure,
+  root: ControlNode,
+  covering: Map<NWScriptBasicBlock, NWScriptShortCircuitRegion> = indexShortCircuitRegions(cfg).covering
+): ControlNodeCoverageAudit {
+  const counts = new Map<NWScriptBasicBlock, number>();
+  collectControlNodeBlocks(root, counts);
+  const owned = new Set(counts.keys());
+  const scaffolding = collectScaffoldingBlocks(root, covering);
+  const missing: NWScriptBasicBlock[] = [];
+  const duplicate: NWScriptBasicBlock[] = [];
+
+  for (const block of procedure.blocks) {
+    if (block.isUnreachable || !blockHasSemanticInstructions(block)) {
+      continue;
+    }
+    if (scaffolding.has(block)) {
+      continue;
+    }
+    const owners = counts.get(block) ?? 0;
+    if (owners === 0) {
+      missing.push(block);
+    } else if (owners > 1) {
+      duplicate.push(block);
+    }
+  }
+
+  return { owned, scaffolding, missing, duplicate };
+}

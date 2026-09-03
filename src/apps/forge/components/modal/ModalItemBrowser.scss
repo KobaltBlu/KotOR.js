@@ -3,19 +3,25 @@
 .modal-item-browser {
   .modal-body {
     padding: 1rem;
-    background-color: $bg-primary;
-    color: $text-primary;
+    background-color: var(--forge-bg);
+    color: var(--forge-text);
   }
 
   .modal-header {
-    background-color: $bg-secondary;
-    border-bottom: 1px solid $border-primary;
-    color: $text-primary;
+    background-color: var(--forge-bg-elevated);
+    border-bottom: 1px solid var(--forge-border);
+    color: var(--forge-text);
   }
 
   .modal-footer {
-    background-color: $bg-secondary;
-    border-top: 1px solid $border-primary;
+    background-color: var(--forge-bg-elevated);
+    border-top: 1px solid var(--forge-border);
+  }
+
+  .item-browser-filter-hint {
+    margin-top: 0.4rem;
+    font-size: 0.75rem;
+    color: var(--forge-text-muted);
   }
 
   .item-browser-search {
@@ -23,18 +29,18 @@
 
     input {
       width: 100%;
-      background-color: $bg-tertiary;
-      border: 1px solid $border-primary;
-      color: $text-primary;
+      background-color: var(--forge-bg-panel);
+      border: 1px solid var(--forge-border);
+      color: var(--forge-text);
       
       &::placeholder {
-        color: $text-tertiary;
+        color: var(--forge-text-muted);
       }
 
       &:focus {
-        background-color: $bg-quaternary;
-        border-color: $form-border-focus;
-        color: $text-primary;
+        background-color: var(--forge-bg-active);
+        border-color: var(--forge-accent);
+        color: var(--forge-text);
         outline: none;
       }
     }
@@ -44,7 +50,7 @@
   .item-browser-empty {
     text-align: center;
     padding: 2rem;
-    color: $text-tertiary;
+    color: var(--forge-text-muted);
   }
 
   .item-browser-grid {
@@ -61,15 +67,15 @@
     }
 
     &::-webkit-scrollbar-track {
-      background: $scrollbar-track;
+      background: var(--forge-bg-elevated);
     }
 
     &::-webkit-scrollbar-thumb {
-      background: $scrollbar-thumb;
+      background: var(--forge-bg-active);
       border-radius: 4px;
 
       &:hover {
-        background: $scrollbar-thumb-inactive;
+        background: var(--forge-bg-active)-inactive;
       }
     }
   }
@@ -85,12 +91,12 @@
     transition: all 0.2s;
 
     &:hover {
-      background-color: $hover-bg;
-      border-color: $secondary-cyan;
+      background-color: var(--forge-bg-hover);
+      border-color: var(--forge-accent);
     }
 
     &:active {
-      background-color: $active-bg;
+      background-color: var(--forge-bg-active);
     }
   }
 
@@ -101,8 +107,8 @@
     align-items: center;
     justify-content: center;
     margin-bottom: 0.5rem;
-    background-color: $bg-tertiary;
-    border: 1px solid $border-primary;
+    background-color: var(--forge-bg-panel);
+    border: 1px solid var(--forge-border);
     border-radius: 4px;
     overflow: hidden;
 
@@ -124,14 +130,14 @@
     align-items: center;
     justify-content: center;
     font-size: 2rem;
-    color: $text-tertiary;
+    color: var(--forge-text-muted);
   }
 
   .item-browser-label {
     font-size: 0.75rem;
     text-align: center;
     word-break: break-word;
-    color: $text-primary;
+    color: var(--forge-text);
     max-width: 100px;
   }
 }

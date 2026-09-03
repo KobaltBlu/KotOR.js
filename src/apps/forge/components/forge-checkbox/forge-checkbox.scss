@@ -4,34 +4,36 @@ input[type=checkbox].ui {
   visibility: hidden;
   width: 1px;
   height: 1px;
+  position: absolute;
 
   + label {
-    padding: $spacing-sm $spacing-md;
-    @include border-radius-form;
+    padding: 2px 4px;
     cursor: pointer;
     vertical-align: middle;
     user-select: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--forge-font-size);
 
     &:before {
       content: '';
       display: inline-block;
-      width: $spacing-xl;
-      height: $spacing-xl;
-      background: radial-gradient(ellipse at center, $checkbox-bg-start 0%, $checkbox-bg-end 100%);
-      border: $border-width-thick solid $checkbox-border;
-      box-shadow: 1px 1px 5px $checkbox-shadow;
-      border-radius: 50%;
+      width: 13px;
+      height: 13px;
+      background: var(--forge-bg-input);
+      border: 1px solid var(--forge-border);
+      border-radius: var(--forge-radius);
       vertical-align: middle;
-      margin-left: -$spacing-sm;
-      margin-right: $spacing-sm;
-      user-select: none;
     }
   }
 
   &:checked + label:before {
-    background: radial-gradient(ellipse at center, $primary-blue 0%, $primary-blue-lighter 100%);
-    border: $border-width-thick solid $primary-blue-dark;
-    box-shadow: 1px 1px 5px #307592;
-    user-select: none;
+    background: var(--forge-accent);
+    border-color: var(--forge-accent);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M3 8l4 4 6-7'/%3e%3c/svg%3e");
+    background-size: 10px 10px;
+    background-repeat: no-repeat;
+    background-position: center;
   }
 }

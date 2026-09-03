@@ -1,122 +1,21 @@
-import React, { useState } from "react";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import React from "react";
+import { useAudioPlayerTransport } from "@/apps/forge/helpers/useAudioPlayerTransport";
 import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
 import { ForgeAudioOstControls } from "@/apps/forge/components/ForgeAudioOstControls";
 
 import "@/apps/forge/components/tabs/tab-audio-player/TabAudioPlayer.scss";
 
 export const AudioPlayer = function () {
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [currentTime, setCurrentTime] = useState<number>(0);
-  const [duration, setDuration] = useState<number>(0);
-  const [currentTimeString, setCurrentTimeString] = useState<string>("0:00");
-  const [durationString, setDurationString] = useState<string>("0:00");
+  const transport = useAudioPlayerTransport({ trackVolume: true });
 
-  let animationFrame: number;
-
-  const onPlay = () => {
-    setIsPlaying(true);
-    onFrame();
-  };
-
-  const onPause = () => {
-    setIsPlaying(false);
-    cancelAnimationFrame(animationFrame);
-  };
-
-  const onStop = () => {
-    setIsPlaying(false);
-    cancelAnimationFrame(animationFrame);
-    setCurrentTime(0);
-    setCurrentTimeString(AudioPlayerState.SecondsToTimeString(0));
-  };
-
-  const onLoop = () => {};
-
-  const onFrame = () => {
-    cancelAnimationFrame(animationFrame);
-    if (AudioPlayerState.playing) {
-      animationFrame = requestAnimationFrame(() => onFrame());
-      setCurrentTime(AudioPlayerState.GetCurrentTime());
-      setDuration(AudioPlayerState.GetDuration());
-      setCurrentTimeString(
-        AudioPlayerState.SecondsToTimeString(AudioPlayerState.GetCurrentTime())
-      );
-      setDurationString(
-        AudioPlayerState.SecondsToTimeString(AudioPlayerState.GetDuration())
-      );
-    }
-  };
-
-  useEffectOnce(() => {
-    const syncFromEngine = () => {
-      const dur = AudioPlayerState.GetDuration();
-      const cur = AudioPlayerState.GetCurrentTime();
-      setCurrentTime(cur);
-      setDuration(dur);
-      setCurrentTimeString(AudioPlayerState.SecondsToTimeString(cur));
-      setDurationString(AudioPlayerState.SecondsToTimeString(dur));
-      if (AudioPlayerState.playing) {
-        setIsPlaying(true);
-        cancelAnimationFrame(animationFrame);
-        onFrame();
-      } else {
-        setIsPlaying(false);
-        cancelAnimationFrame(animationFrame);
-      }
-    };
-
-    AudioPlayerState.AddEventListener("onPlay", onPlay);
-    AudioPlayerState.AddEventListener("onPause", onPause);
-    AudioPlayerState.AddEventListener("onStop", onStop);
-    AudioPlayerState.AddEventListener("onLoop", onLoop);
-    AudioPlayerState.AddEventListener("onOpen", syncFromEngine);
-
-    syncFromEngine();
-
-    return () => {
-      AudioPlayerState.RemoveEventListener("onPlay", onPlay);
-      AudioPlayerState.RemoveEventListener("onPause", onPause);
-      AudioPlayerState.RemoveEventListener("onStop", onStop);
-      AudioPlayerState.RemoveEventListener("onLoop", onLoop);
-      AudioPlayerState.RemoveEventListener("onOpen", syncFromEngine);
-      cancelAnimationFrame(animationFrame);
-    };
-  });
-
-  const onBtnPlay = () => {
-    if (isPlaying) {
-      AudioPlayerState.Pause();
-    } else {
-      AudioPlayerState.Play();
-    }
-  };
-
-  const onBtnStop = () => {
-    AudioPlayerState.Stop();
-  };
-
-  const onTrackBarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const seekPosition = parseFloat(e.target.value);
-    try {
-      AudioPlayerState.Stop();
-    } catch {
-      /* ignore */
-    }
-    AudioPlayerState.pausedAt = seekPosition;
-    try {
-      AudioPlayerState.Play();
-    } catch {
-      /* ignore */
-    }
-  };
-
-  const onBtnSave = () => {
-    AudioPlayerState.Pause();
-    void AudioPlayerState.ExportAudio();
-  };
-
-  const seekDisabled = duration <= 0;
+  const volumeIcon =
+    transport.volume === 0
+      ? "fa-volume-xmark"
+      : transport.volume < 0.33
+        ? "fa-volume-off"
+        : transport.volume < 0.66
+          ? "fa-volume-low"
+          : "fa-volume-high";
 
   return (
     <div className="forge-mini-player" role="region" aria-label="Preview audio">
@@ -125,20 +24,32 @@ export const AudioPlayer = function () {
           <button
             type="button"
             className="forge-mini-player__icon-btn forge-mini-player__icon-btn--primary"
-            title={isPlaying ? "Pause" : "Play"}
-            aria-label={isPlaying ? "Pause" : "Play"}
-            onClick={onBtnPlay}
+            title={transport.isPlaying ? "Pause" : "Play"}
+            aria-label={transport.isPlaying ? "Pause" : "Play"}
+            onClick={transport.onBtnPlay}
           >
-            <i className={`fa-solid ${isPlaying ? "fa-pause" : "fa-play"}`} />
+            <i className={`fa-solid ${transport.isPlaying ? "fa-pause" : "fa-play"}`} />
           </button>
           <button
             type="button"
             className="forge-mini-player__icon-btn"
             title="Stop"
             aria-label="Stop"
-            onClick={onBtnStop}
+            onClick={transport.onBtnStop}
           >
             <i className="fa-solid fa-stop" />
+          </button>
+          <button
+            type="button"
+            className={`forge-mini-player__icon-btn${
+              transport.loop ? " forge-mini-player__icon-btn--active" : ""
+            }`}
+            title={transport.loop ? "Disable loop" : "Enable loop"}
+            aria-label={transport.loop ? "Disable loop" : "Enable loop"}
+            aria-pressed={transport.loop}
+            onClick={transport.onToggleLoop}
+          >
+            <i className="fa-solid fa-repeat" />
           </button>
         </div>
       </div>
@@ -150,7 +61,7 @@ export const AudioPlayer = function () {
               className="forge-mini-player__time forge-mini-player__time--current"
               aria-live="polite"
             >
-              {currentTimeString}
+              {transport.currentTimeString}
             </span>
             <div className="forge-mini-player__seek-wrap">
               <input
@@ -158,18 +69,40 @@ export const AudioPlayer = function () {
                 type="range"
                 step="0.01"
                 min={0}
-                max={duration || 0}
-                value={Math.min(currentTime, duration || 0)}
-                disabled={seekDisabled}
+                max={transport.duration || 0}
+                value={Math.min(transport.currentTime, transport.duration || 0)}
+                disabled={transport.seekDisabled}
                 aria-label="Playback position"
-                onChange={onTrackBarChange}
+                onChange={transport.onSeekChange}
               />
             </div>
             <span className="forge-mini-player__time forge-mini-player__time--total">
-              {durationString}
+              {transport.durationString}
             </span>
           </div>
         </div>
+      </div>
+
+      <div className="forge-mini-player__segment forge-mini-player__segment--volume">
+        <button
+          type="button"
+          className="forge-mini-player__icon-btn"
+          title={transport.volume === 0 ? "Unmute" : "Mute"}
+          aria-label={transport.volume === 0 ? "Unmute" : "Mute"}
+          onClick={transport.onVolumeIconClick}
+        >
+          <i className={`fa-solid ${volumeIcon}`} aria-hidden />
+        </button>
+        <input
+          className="forge-mini-player__volume"
+          type="range"
+          step="0.01"
+          min={0}
+          max={1}
+          value={transport.volume}
+          aria-label="Volume"
+          onChange={transport.onVolumeChange}
+        />
       </div>
 
       <div className="forge-mini-player__segment forge-mini-player__segment--ost">
@@ -191,9 +124,9 @@ export const AudioPlayer = function () {
         <button
           type="button"
           className="forge-mini-player__icon-btn"
-          title="Export audio"
-          aria-label="Export audio"
-          onClick={onBtnSave}
+          title="Export as WAV"
+          aria-label="Export as WAV"
+          onClick={transport.onExport}
         >
           <i className="fa-solid fa-download" />
         </button>

@@ -40,6 +40,7 @@ export class EditorFile extends EventListenerModel {
   useGameFileSystem: boolean = false;
   useProjectFileSystem: boolean = false;
   useSystemFileSystem: boolean = false;
+  trackRecent: boolean = true;
 
   buffer: Uint8Array = new Uint8Array(0);
   buffer2?: Uint8Array; //for dual file types like mdl/mdx
@@ -69,7 +70,7 @@ export class EditorFile extends EventListenerModel {
   set unsaved_changes(value){
     this._unsaved_changes = !!value;
     this.processEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', [this]);
-    if(!this.unsaved_changes) ForgeState.addRecentFile(this);
+    if(!this.unsaved_changes && this.trackRecent) ForgeState.addRecentFile(this);
   }
 
   get resref(){
@@ -129,7 +130,7 @@ export class EditorFile extends EventListenerModel {
       ? options.ext.toLowerCase()
       : null;
 
-    this.buffer = options.buffer || new Uint8Array(0);
+    this.buffer = options.buffer instanceof Uint8Array ? options.buffer : new Uint8Array(0);
     this.buffer2 = options.buffer2;
     this.mdlAsciiOnly = !!options.mdlAsciiOnly;
     this.path = options.path;
@@ -144,6 +145,7 @@ export class EditorFile extends EventListenerModel {
     this.useGameFileSystem = !!options.useGameFileSystem;
     this.useProjectFileSystem = !!options.useProjectFileSystem;
     this.useSystemFileSystem = !!options.useSystemFileSystem;
+    this.trackRecent = options.trackRecent !== false;
 
     if(!this.ext && this.reskey){
       this.ext = KotOR.ResourceTypes.getKeyByValue(this.reskey);
@@ -186,22 +188,29 @@ export class EditorFile extends EventListenerModel {
 
       this.protocol = (parsedURL ? parsedURL.protocol : EditorFileProtocol.FILE) as EditorFileProtocol;
       let pathname = (parsedURL ? parsedURL.pathname : this.path).replace(/%20/g, " ");
+      try {
+        pathname = decodeURIComponent(pathname);
+      } catch {
+        // keep the partially decoded path
+      }
 
       //remove excess slashes on both ends
       pathname = pathname.replace(/^\/+|\/+$/g, '');
 
-      if(pathname.indexOf('game.dir') >= 0){ //Use: GameFileSystem
-        pathname = pathname.replace('game.dir', '').replace(/^\/+|\/+$/g, '');
+      // file://game.dir/Saves/... puts the virtual root in URL.hostname, not pathname.
+      const virtualHost = String(parsedURL?.hostname || '').toLowerCase();
+      if(virtualHost === 'game.dir' || pathname.toLowerCase().indexOf('game.dir') >= 0){
+        pathname = pathname.replace(/game\.dir/ig, '').replace(/^\/+|\/+$/g, '');
         this.useGameFileSystem = true;
       }
 
-      if(pathname.indexOf('project.dir') >= 0){ //Use: ProjectFileSystem
-        pathname = pathname.replace('project.dir', '').replace(/^\/+|\/+$/g, '');
+      if(virtualHost === 'project.dir' || pathname.toLowerCase().indexOf('project.dir') >= 0){
+        pathname = pathname.replace(/project\.dir/ig, '').replace(/^\/+|\/+$/g, '');
         this.useProjectFileSystem = true;
       }
 
-      if(pathname.indexOf('system.dir') >= 0){ //Use: SystemFileSytem
-        pathname = pathname.replace('system.dir', '').replace(/^\/+|\/+$/g, '');
+      if(virtualHost === 'system.dir' || pathname.toLowerCase().indexOf('system.dir') >= 0){
+        pathname = pathname.replace(/system\.dir/ig, '').replace(/^\/+|\/+$/g, '');
         this.useSystemFileSystem = true;
       }
       pathname = pathname.replace(/^\/+|\/+$/g, '');
@@ -454,6 +463,7 @@ export class EditorFile extends EventListenerModel {
 
   async readFile(): Promise<EditorFileReadResponse> {
     return new Promise<EditorFileReadResponse>( async (resolve, reject) => {
+      try {
       if (this.reskey == KotOR.ResourceTypes.mdl || this.reskey == KotOR.ResourceTypes.mdx) {
         if (this.mdlAsciiOnly) {
           resolve(await this.readMdlAsciiOnlyFile());
@@ -472,39 +482,42 @@ export class EditorFile extends EventListenerModel {
             console.log(archive_path.ext)
 
             switch(this.protocol){
-              case EditorFileProtocol.BIF:
-                const bif = new KotOR.BIFObject(this.archive_path);
-                bif.load().then((archive: KotOR.BIFObject) => {
-                  archive.getResourceBuffer(archive.getResource(this.resref, this.reskey)).then( (buffer: Uint8Array) => {
-                    this.buffer = buffer;
-                    resolve({
-                      buffer: this.buffer,
-                    });
-                  });
+              case EditorFileProtocol.BIF: {
+                let bif = KotOR.BIFManager.FindByPath(this.archive_path);
+                if(!bif){
+                  bif = new KotOR.BIFObject(this.archive_path);
+                  await bif.load();
+                }
+                this.buffer = await bif.getResourceBuffer(bif.getResource(this.resref, this.reskey));
+                resolve({
+                  buffer: this.buffer,
                 });
+              }
               break;
               case EditorFileProtocol.ERF:
-              case EditorFileProtocol.MOD:
-                const erf = new KotOR.ERFObject(this.archive_path);
-                erf.load().then( (archive: KotOR.ERFObject) => {
-                  archive.getResourceBufferByResRef(this.resref, this.reskey).then((buffer: Uint8Array) => {
-                    this.buffer = buffer;
-                    resolve({
-                      buffer: this.buffer,
-                    });
-                  });
+              case EditorFileProtocol.MOD: {
+                let erf = KotOR.ERFManager.FindByPath(this.archive_path);
+                if(!erf){
+                  erf = new KotOR.ERFObject(this.archive_path);
+                  await erf.load();
+                }
+                this.buffer = await erf.getResourceBufferByResRef(this.resref, this.reskey);
+                resolve({
+                  buffer: this.buffer,
                 });
+              }
               break;
-              case EditorFileProtocol.RIM:
-                const rim = new KotOR.RIMObject(this.archive_path);
-                rim.load().then( (archive: KotOR.RIMObject) => {
-                  archive.getResourceBuffer(archive.getResourceInfo(this.resref, this.reskey)).then( (buffer: Uint8Array) => {
-                    this.buffer = buffer;
-                    resolve({
-                      buffer: this.buffer,
-                    });
-                  });
+              case EditorFileProtocol.RIM: {
+                let rim = KotOR.RIMManager.FindByPath(this.archive_path);
+                if(!rim){
+                  rim = new KotOR.RIMObject(this.archive_path);
+                  await rim.load();
+                }
+                this.buffer = await rim.getResourceBuffer(rim.getResourceInfo(this.resref, this.reskey));
+                resolve({
+                  buffer: this.buffer,
                 });
+              }
               break;
               default:
                 console.warn('EditorFile.readFile', 'unhandled protocol', this.protocol);
@@ -522,7 +535,7 @@ export class EditorFile extends EventListenerModel {
                         buffer: this.buffer,
                       });
                     }).catch( (err: any) => {
-                      throw err;
+                      reject(err);
                     });
                   }else if(this.useProjectFileSystem){
                     ProjectFileSystem.readFile(this.path).then( (buffer: Uint8Array) => {
@@ -532,12 +545,15 @@ export class EditorFile extends EventListenerModel {
                         buffer: this.buffer,
                       });
                     }).catch( (err: any) => {
-                      throw err;
+                      reject(err);
                     });
                   }else{
                     if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
                       fs.readFile(this.path, (err, buffer) => {
-                        if(err) throw err;
+                        if(err){
+                          reject(err);
+                          return;
+                        }
       
                         this.buffer = new Uint8Array(buffer);
                         resolve({
@@ -583,6 +599,9 @@ export class EditorFile extends EventListenerModel {
           }
   
         }
+      }
+      } catch (err) {
+        reject(err);
       }
     });
   }
@@ -644,60 +663,62 @@ export class EditorFile extends EventListenerModel {
       if(this.archive_path){
         switch(this.protocol){
           case EditorFileProtocol.BIF:
-            const key_mdl = KotOR.KEYManager.Key.getFileKey(this.resref, KotOR.ResourceTypes['mdl']);
-            const key_mdx = KotOR.KEYManager.Key.getFileKey(this.resref, KotOR.ResourceTypes['mdx']);
+            try{
+              const key_mdl = KotOR.KEYManager.Key.getFileKey(this.resref, KotOR.ResourceTypes['mdl']);
+              const key_mdx = KotOR.KEYManager.Key.getFileKey(this.resref, KotOR.ResourceTypes['mdx']);
 
-            if((!(this.buffer instanceof Uint8Array) || !this.buffer?.length) && key_mdl){
-              this.buffer = await KotOR.KEYManager.Key.getFileBuffer(key_mdl);
-            }
+              if((!(this.buffer instanceof Uint8Array) || !this.buffer?.length) && key_mdl){
+                this.buffer = await KotOR.KEYManager.Key.getFileBuffer(key_mdl);
+              }
 
-            if((!(this.buffer2 instanceof Uint8Array) || !this.buffer2?.length) && key_mdx){
-              this.buffer2 = await KotOR.KEYManager.Key.getFileBuffer(key_mdx);
+              if((!(this.buffer2 instanceof Uint8Array) || !this.buffer2?.length) && key_mdx){
+                this.buffer2 = await KotOR.KEYManager.Key.getFileBuffer(key_mdx);
+              }
+            }catch(e){
+              console.warn('EditorFile.readMdlMdxFile BIF read failed', e);
             }
             
+            resolve({
+              buffer: this.buffer instanceof Uint8Array ? this.buffer : new Uint8Array(0),
+              buffer2: this.buffer2 instanceof Uint8Array ? this.buffer2 : new Uint8Array(0),
+            });
+          break;
+          case EditorFileProtocol.ERF:
+          case EditorFileProtocol.MOD: {
+            let erf = KotOR.ERFManager.FindByPath(this.archive_path);
+            if(!erf){
+              erf = new KotOR.ERFObject(this.archive_path);
+              await erf.load();
+            }
+            if(!(this.buffer instanceof Uint8Array) || !this.buffer?.length){
+              this.buffer = await erf.getResourceBufferByResRef(this.resref, KotOR.ResourceTypes['mdl']);
+            }
+            if(!(this.buffer2 instanceof Uint8Array) || !this.buffer2?.length){
+              this.buffer2 = await erf.getResourceBufferByResRef(this.resref, KotOR.ResourceTypes['mdx']);
+            }
             resolve({
               buffer: this.buffer,
               buffer2: this.buffer2
             });
+          }
           break;
-          case EditorFileProtocol.ERF:
-          case EditorFileProtocol.MOD:
-            const erf = new KotOR.ERFObject(this.archive_path);
-            erf.load().then( async (archive: KotOR.ERFObject) => {
-              //MDL
-              if(!(this.buffer instanceof Uint8Array) || !this.buffer?.length){
-                this.buffer = await archive.getResourceBufferByResRef(this.resref, KotOR.ResourceTypes['mdl']);
-              }
-
-              //MDX
-              if(!(this.buffer2 instanceof Uint8Array) || !this.buffer2?.length){
-                this.buffer2 = await archive.getResourceBufferByResRef(this.resref, KotOR.ResourceTypes['mdx']);
-              }
-
-              resolve({
-                buffer: this.buffer,
-                buffer2: this.buffer2
-              });
+          case EditorFileProtocol.RIM: {
+            let rim = KotOR.RIMManager.FindByPath(this.archive_path);
+            if(!rim){
+              rim = new KotOR.RIMObject(this.archive_path);
+              await rim.load();
+            }
+            if(!(this.buffer instanceof Uint8Array) || !this.buffer?.length){
+              this.buffer = await rim.getResourceBufferByResRef(this.resref, KotOR.ResourceTypes['mdl']);
+            }
+            if(!(this.buffer2 instanceof Uint8Array) || !this.buffer2?.length){
+              this.buffer2 = await rim.getResourceBufferByResRef(this.resref, KotOR.ResourceTypes['mdx']);
+            }
+            resolve({
+              buffer: this.buffer,
+              buffer2: this.buffer2
             });
-          break;
-          case EditorFileProtocol.RIM:
-            const rim = new KotOR.RIMObject(this.archive_path);
-            rim.load().then( async (archive: KotOR.RIMObject) => {
-              //MDL
-              if(!(this.buffer instanceof Uint8Array) || !this.buffer?.length){
-                this.buffer = await archive.getResourceBufferByResRef(this.resref, KotOR.ResourceTypes['mdl']);
-              }
-
-              //MDX
-              if(!(this.buffer2 instanceof Uint8Array) || !this.buffer2?.length){
-                this.buffer2 = await archive.getResourceBufferByResRef(this.resref, KotOR.ResourceTypes['mdx']);
-              }
-
-              resolve({
-                buffer: this.buffer,
-                buffer2: this.buffer2
-              });
-            });
+          }
           break;
           default:
 
@@ -833,6 +854,16 @@ export class EditorFile extends EventListenerModel {
   }
 
   getPrettyPath(){
+    if(!this.path && this.archive_path){
+      if(this.useGameFileSystem || this.useProjectFileSystem){
+        return `${this.protocol}//~/${this.archive_path}`;
+      }
+      return `${this.archive_path}`;
+    }
+    if(!this.path){
+      return '';
+    }
+
     const parsed = pathParse(this.path);
     if(this.useGameFileSystem){
       if(this.archive_path){
@@ -855,8 +886,74 @@ export class EditorFile extends EventListenerModel {
     return parsed.dir;
   }
 
-  save(){
-    //stub
+  /**
+   * Write bytes using the same backend matrix as {@link readFile}
+   * (`game.dir` / `project.dir` / Electron disk / browser file handle).
+   * Archives and untitled files return false so the caller can Save As.
+   */
+  async writeBuffer(data: Uint8Array): Promise<boolean> {
+    if(!(data instanceof Uint8Array)){
+      return false;
+    }
+    if(this.archive_path || this.archive_path2){
+      return false;
+    }
+    try{
+      if(this.useProjectFileSystem){
+        if(!this.path || !ProjectFileSystem.hasRoot()){
+          return false;
+        }
+        const ok = await ProjectFileSystem.writeFile(this.path, data);
+        if(ok){
+          this.buffer = data;
+          this.unsaved_changes = false;
+        }
+        return ok;
+      }
+      if(this.useGameFileSystem){
+        if(!this.path){
+          return false;
+        }
+        const ok = await KotOR.GameFileSystem.writeFile(this.path, data);
+        if(ok){
+          this.buffer = data;
+          this.unsaved_changes = false;
+        }
+        return ok;
+      }
+      if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
+        if(!this.path){
+          return false;
+        }
+        await fs.promises.writeFile(this.path, data);
+        this.buffer = data;
+        this.unsaved_changes = false;
+        return true;
+      }
+      if(this.handle){
+        let granted = (await this.handle.queryPermission({mode: 'readwrite'})) === 'granted';
+        if(!granted){
+          granted = (await this.handle.requestPermission({mode: 'readwrite'})) === 'granted';
+        }
+        if(!granted){
+          return false;
+        }
+        const stream = await this.handle.createWritable();
+        await stream.write(data as any);
+        await stream.close();
+        this.buffer = data;
+        this.unsaved_changes = false;
+        return true;
+      }
+      return false;
+    }catch(e){
+      console.error('EditorFile.writeBuffer', this.path, e);
+      return false;
+    }
+  }
+
+  async save(): Promise<boolean> {
+    return this.writeBuffer(this.buffer);
   }
 
   saveAs(){

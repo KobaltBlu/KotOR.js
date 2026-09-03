@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
-import { Button, Modal } from "react-bootstrap";
+import { ForgeButton, ForgeDialog } from "@/apps/forge/components/ui";
 import { ModalExtractionResultsState } from "@/apps/forge/states/modal/ModalExtractionResultsState";
 
 export const ModalExtractionResults = (props: BaseModalProps) => {
@@ -28,11 +28,11 @@ export const ModalExtractionResults = (props: BaseModalProps) => {
   const failed = results.failedFiles.length;
 
   return (
-    <Modal show={show} onHide={handleClose} size="lg">
-      <Modal.Header closeButton>
-        <Modal.Title>Extraction Results</Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
+    <ForgeDialog show={show} onHide={handleClose} size="lg">
+      <ForgeDialog.Header closeButton>
+        <ForgeDialog.Title>Extraction Results</ForgeDialog.Title>
+      </ForgeDialog.Header>
+      <ForgeDialog.Body>
         <p><strong>Model:</strong> {results.modelName}</p>
         <p>
           <strong>Models:</strong> {results.modelCount} ({results.modelCount * 2} files)
@@ -59,10 +59,10 @@ export const ModalExtractionResults = (props: BaseModalProps) => {
             <div key={`fail-${i}`} style={{ color: '#d9534f' }}>MISSING: {file}</div>
           ))}
         </div>
-      </Modal.Body>
-      <Modal.Footer>
-        <Button variant="primary" onClick={handleClose}>Close</Button>
-      </Modal.Footer>
-    </Modal>
+      </ForgeDialog.Body>
+      <ForgeDialog.Footer>
+        <ForgeButton variant="primary" onClick={handleClose}>Close</ForgeButton>
+      </ForgeDialog.Footer>
+    </ForgeDialog>
   );
 };

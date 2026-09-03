@@ -1,11 +1,25 @@
 import { EditorFile } from "@/apps/forge/EditorFile";
+import {
+  editorFileProjectRelativePath,
+  remapProjectRelativeAfterRename,
+} from "@/apps/forge/helpers/editorFileProjectPath";
 import { DeepObject } from "@/utility/DeepObject";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { TabModuleEditorState, TabQuickStartState } from "@/apps/forge/states/tabs";
+import { TabModuleEditorState, TabProjectExplorerState, TabQuickStartState } from "@/apps/forge/states/tabs";
+import { RecentProject } from "@/apps/forge/RecentProject";
 
 import * as KotOR from "@/apps/forge/KotOR";
-import { ProjectType } from "@/apps/forge/enum/ProjectType";
 import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { openImportModuleWizard } from "@/apps/forge/helpers/openImportModuleWizard";
+import { packProjectModule, type PackProjectModuleResult } from "@/apps/forge/helpers/exportProjectModule";
+import {
+  compileAllNssBeforeModulePack,
+  formatBulkNssCompileFailure,
+} from "@/apps/forge/helpers/ForgeNWScriptCompile";
+import { packProjectZip } from "@/apps/forge/helpers/projectZip";
+import { ModalBulkNssCompileResultsState } from "@/apps/forge/states/modal/ModalBulkNssCompileResultsState";
+import * as fs from "fs";
+declare const dialog: any;
 import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
 import { ForgeFileSystem } from "@/apps/forge/ForgeFileSystem";
 import { ProjectSettings } from "@/apps/forge/interfaces/ProjectSettings";
@@ -13,20 +27,21 @@ import { ForgeArea } from "@/apps/forge/module-editor/ForgeArea";
 import { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
 import { ForgeRoom } from "@/apps/forge/module-editor/ForgeRoom";
 import { ForgeInitializer } from "@/apps/forge/ForgeInitializer";
+import {
+  createOrOpenVirtualProjectFolder,
+  isOriginPrivateFileSystemAvailable,
+  isProjectDirectoryHandle,
+} from "@/apps/forge/virtual/VirtualProjectFolder";
 
 const DIR_FORGE = '.forge';
-const DIR_BLUEPRINTS = 'blueprints';
-const DIR_MODELS = 'models';
-const DIR_TEXTURES = 'textures';
-const DIR_DIALOGS = 'dialogs';
-const DIR_SOUNDS = 'sounds';
-const DIR_MUSIC = 'music';
-const DIR_SCRIPTS = 'scripts';
 
 export class Project {
 
   static base_dir: string = 'forge';
   static project_assets_dir: string = 'assets';
+
+  /** True while {@link close} is tearing down tabs; skips clearing module_editor.open. */
+  #closing = false;
   dir: string = '';
 
   className: string;
@@ -50,43 +65,222 @@ export class Project {
     this.settings = DeepObject.Merge(defaults, {});
   }
   
+  static async attachRootAndOpen(options: {
+    path?: string;
+    handle?: FileSystemDirectoryHandle;
+    virtual?: boolean;
+  }): Promise<boolean> {
+    ProjectFileSystem.clearDirectoryCache();
+    ProjectFileSystem.isVirtual = !!options.virtual;
+    ProjectFileSystem.rootDirectoryPath = (options.path || undefined) as any;
+    ProjectFileSystem.rootDirectoryHandle = (options.handle || undefined) as any;
+    if(!ProjectFileSystem.hasRoot()){
+      return false;
+    }
+    const project = new Project();
+    await project.open();
+    if(ForgeState.project instanceof Project){
+      await ProjectFileSystem.initializeProjectExplorer();
+      return true;
+    }
+    return false;
+  }
+  
   static OpenByDirectory() {
     ForgeFileSystem.OpenDirectory().then( async (response) => {
       if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
         if(response.paths && response.paths.length){
-          ProjectFileSystem.clearDirectoryCache();
-          const projectPath = response.paths[0];
-          ProjectFileSystem.rootDirectoryPath = projectPath;
-          const project = new Project();
-          await project.open();
-          if(ForgeState.project instanceof Project){
-            await ProjectFileSystem.initializeProjectExplorer();
-          }
+          await Project.attachRootAndOpen({ path: response.paths[0], virtual: false });
         }
       }else if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
         if(response.handles && response.handles.length){
-          ProjectFileSystem.clearDirectoryCache();
           const handle = response.handles[0] as FileSystemDirectoryHandle;
-          ProjectFileSystem.rootDirectoryHandle = handle;
-          console.log('ProjectFileSystem.rootDirectoryHandle', ProjectFileSystem.rootDirectoryHandle);
-          const project = new Project();
-          await project.open();
-          if(ForgeState.project instanceof Project){
-            await ProjectFileSystem.initializeProjectExplorer();
-          }
+          console.log('ProjectFileSystem.rootDirectoryHandle', handle);
+          await Project.attachRootAndOpen({ handle, virtual: false });
         }
       }
     });
   }
 
-  //Save any altered files in the project
-  save(){
-
+  static async OpenRecent(recentProject: RecentProject): Promise<boolean> {
+    if(!recentProject){
+      return false;
+    }
+    try{
+      ForgeState.loaderShow();
+      if(recentProject.virtual){
+        let handle = isProjectDirectoryHandle(recentProject.handle) ? recentProject.handle : undefined;
+        if(!handle && recentProject.name){
+          const handleKey = `project_handle_${recentProject.getIdentifier()}`;
+          try {
+            const { get } = await import('idb-keyval');
+            handle = await get(handleKey);
+          } catch(e) {
+            console.warn('Failed to restore handle from IndexedDB:', e);
+          }
+        }
+        if(!isProjectDirectoryHandle(handle)){
+          if(isOriginPrivateFileSystemAvailable() && recentProject.name){
+            const created = await createOrOpenVirtualProjectFolder(recentProject.name);
+            handle = created.handle;
+          } else {
+            await ForgeState.removeRecentProject(recentProject);
+            console.warn('Failed to reopen virtual project.');
+            return false;
+          }
+        }
+        const loaded = await Project.attachRootAndOpen({ handle, virtual: true });
+        if(!loaded){
+          await ForgeState.removeRecentProject(recentProject);
+          return false;
+        }
+        return true;
+      }
+      if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
+        const projectPath = recentProject.path;
+        if(!projectPath){
+          throw new Error('Project path not available');
+        }
+        const loaded = await Project.attachRootAndOpen({ path: projectPath, virtual: false });
+        if(!loaded){
+          await ForgeState.removeRecentProject(recentProject);
+          console.warn('Failed to open project. It may have been moved or deleted.');
+          return false;
+        }
+        return true;
+      }
+      let handle = recentProject.handle;
+      if(!handle && recentProject.name){
+        const handleKey = `project_handle_${recentProject.getIdentifier()}`;
+        try {
+          const { get } = await import('idb-keyval');
+          handle = await get(handleKey);
+        } catch(e) {
+          console.warn('Failed to restore handle from IndexedDB:', e);
+        }
+      }
+      if(isProjectDirectoryHandle(handle)){
+        try{
+          if(typeof handle.queryPermission === 'function'){
+            await handle.queryPermission({ mode: 'read' });
+          }
+          const loaded = await Project.attachRootAndOpen({ handle, virtual: false });
+          if(!loaded){
+            throw new Error('Project failed to load');
+          }
+          await ForgeState.addRecentProject(handle);
+          return true;
+        } catch(permError){
+          console.warn('Handle permission denied or invalid, requesting new access:', permError);
+          Project.OpenByDirectory();
+          return false;
+        }
+      }
+      Project.OpenByDirectory();
+      return false;
+    }catch(e){
+      console.error('Error opening recent project:', e);
+      await ForgeState.removeRecentProject(recentProject);
+      return false;
+    }finally{
+      ForgeState.loaderHide();
+    }
   }
 
-  //Closes the current project
-  close(){
+  static async SaveToFolder(): Promise<boolean> {
+    if(!ProjectFileSystem.hasRoot()){
+      return false;
+    }
+    const response = await ForgeFileSystem.showOpenDirectoryDialog({
+      title: 'Save Project To Folder',
+    });
+    if(response.cancelled){
+      return false;
+    }
+    const destPath = (response as { path?: string }).path;
+    const destHandle = isProjectDirectoryHandle((response as { handle?: FileSystemDirectoryHandle }).handle)
+      ? (response as { handle: FileSystemDirectoryHandle }).handle
+      : undefined;
+    if(!destPath && !destHandle){
+      return false;
+    }
+    const copied = await ProjectFileSystem.copyToDirectory({
+      path: destHandle ? undefined : destPath,
+      handle: destHandle,
+    });
+    if(!copied){
+      console.error('Project.SaveToFolder: copy failed');
+      return false;
+    }
+    ProjectFileSystem.clearDirectoryCache();
+    ProjectFileSystem.isVirtual = false;
+    if(destHandle){
+      ProjectFileSystem.rootDirectoryHandle = destHandle;
+      ProjectFileSystem.rootDirectoryPath = undefined as any;
+      await ForgeState.addRecentProject(destHandle);
+    }else if(destPath){
+      ProjectFileSystem.rootDirectoryPath = destPath;
+      ProjectFileSystem.rootDirectoryHandle = undefined as any;
+      await ForgeState.addRecentProject(destPath);
+    }
+    await ProjectFileSystem.initializeProjectExplorer();
+    return true;
+  }
 
+  // Save project settings and dirty editor tabs (not a module export).
+  async save(){
+    await this.saveSettings();
+    const tabs = [...(ForgeState.tabManager?.tabs || [])];
+    for(let i = 0; i < tabs.length; i++){
+      const tab = tabs[i];
+      if(tab?.file?.unsaved_changes){
+        try{
+          await tab.save();
+        }catch(e){
+          console.error('Project.save: tab save failed', e);
+        }
+      }
+    }
+  }
+
+  get isClosing(): boolean {
+    return this.#closing;
+  }
+
+  async close(): Promise<boolean> {
+    const tabs = [...(ForgeState.tabManager?.tabs || [])];
+    const dirty = tabs.filter((tab) => tab.isClosable && tab.file?.unsaved_changes);
+    if(dirty.length){
+      const ok = window.confirm(`You have ${dirty.length} unsaved file(s). Close the project anyway?`);
+      if(!ok){
+        return false;
+      }
+    }
+    this.#closing = true;
+    try{
+      for(let i = 0; i < tabs.length; i++){
+        const tab = tabs[i];
+        if(tab?.isClosable){
+          tab.remove({ skipUnsavedConfirm: true });
+        }
+      }
+      this.moduleEditor = undefined;
+      this.module = undefined;
+      ForgeState.project = undefined as any;
+      ProjectFileSystem.clearDirectoryCache();
+      ProjectFileSystem.isVirtual = false;
+      ProjectFileSystem.rootDirectoryPath = undefined as any;
+      ProjectFileSystem.rootDirectoryHandle = undefined as any;
+      TabProjectExplorerState.Resources.splice(0, TabProjectExplorerState.Resources.length);
+      ForgeState.projectExplorerTab.reload();
+      const hasStart = ForgeState.tabManager.tabs.some((tab) => tab instanceof TabQuickStartState);
+      if(!hasStart){
+        ForgeState.tabManager.addTab(new TabQuickStartState());
+      }
+      return true;
+    }finally{
+      this.#closing = false;
+    }
   }
 
   async load(): Promise<boolean> {
@@ -199,22 +393,18 @@ export class Project {
       }
 
       await ForgeInitializer.Init(this.settings.game);
-      //This is where we initialize ProjectType specific operations
       if(!deferInit){
         await this.initializeProject();
       }
 
       ForgeState.project = this;
       
-      // Add to recent projects
-      if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
-        if(ProjectFileSystem.rootDirectoryPath){
-          await ForgeState.addRecentProject(ProjectFileSystem.rootDirectoryPath);
-        }
-      } else {
-        if(ProjectFileSystem.rootDirectoryHandle){
-          await ForgeState.addRecentProject(ProjectFileSystem.rootDirectoryHandle);
-        }
+      if(ProjectFileSystem.isVirtual && isProjectDirectoryHandle(ProjectFileSystem.rootDirectoryHandle)){
+        await ForgeState.addRecentProject(ProjectFileSystem.rootDirectoryHandle);
+      } else if(ProjectFileSystem.rootDirectoryPath){
+        await ForgeState.addRecentProject(ProjectFileSystem.rootDirectoryPath);
+      } else if(isProjectDirectoryHandle(ProjectFileSystem.rootDirectoryHandle)){
+        await ForgeState.addRecentProject(ProjectFileSystem.rootDirectoryHandle);
       }
     }catch(e){
       console.error(e);
@@ -223,16 +413,13 @@ export class Project {
 
   }
 
+  hasModule(): boolean {
+    return !!this.module_ifo;
+  }
+
   async initializeProject(){
-    switch(this.settings.type){
-      case ProjectType.MODULE:
-        //Initialize the Map Editor
-        if(this.settings.module_editor.open)
-          await this.initEditor();
-      break;
-      case ProjectType.OTHER:
-        //TODO: Implement other project types
-      break;
+    if(this.hasModule() && this.settings.module_editor?.open){
+      await this.initEditor();
     }
     console.log('Project Init');
 
@@ -248,29 +435,251 @@ export class Project {
 
   }
 
-  //Exports the finished project to a .mod file
-  export(){
+  /**
+   * Compile NSS, apply live module-editor overrides, and pack a playable .mod buffer.
+   * Shared by save-as export and install-to-game.
+   */
+  async buildModuleExportBuffer(): Promise<PackProjectModuleResult & { cancelled?: boolean }> {
+    let overrides: Record<string, Uint8Array> | undefined;
+    if(this.moduleEditor instanceof TabModuleEditorState && this.moduleEditor.file?.unsaved_changes){
+      const saveFirst = window.confirm("The module editor has unsaved changes. Save before exporting?");
+      if(saveFirst){
+        const saved = await this.moduleEditor.save();
+        if(!saved){
+          return { ok: false, reason: "Save cancelled.", filename: "module.mod", resourceCount: 0, cancelled: true };
+        }
+      }
+    }
+    if(this.moduleEditor instanceof TabModuleEditorState){
+      const buffers = this.moduleEditor.serializeModuleBuffers();
+      const areaResRef = this.moduleEditor.module?.area?.getLayoutResRef();
+      if(buffers && areaResRef){
+        overrides = {
+          "module.ifo": buffers.ifo,
+          [`${areaResRef}.are`]: buffers.are,
+          [`${areaResRef}.git`]: buffers.git,
+        };
+        if(buffers.lyt) overrides[`${areaResRef}.lyt`] = buffers.lyt;
+        if(buffers.vis) overrides[`${areaResRef}.vis`] = buffers.vis;
+      }
+    }
 
+    const compile = await compileAllNssBeforeModulePack();
+    if(!compile.ok){
+      const modal = new ModalBulkNssCompileResultsState(compile.outcome);
+      modal.attachToModalManager(ForgeState.modalManager);
+      modal.open();
+      window.alert(formatBulkNssCompileFailure(compile.outcome));
+      return { ok: false, reason: "NSS compile failed.", filename: "module.mod", resourceCount: 0 };
+    }
+
+    const files = await ProjectFileSystem.readdir("", { recursive: true });
+    return packProjectModule({
+      files,
+      readFile: (rel) => ProjectFileSystem.readFile(rel),
+      moduleTag: this.moduleEditor?.module?.tag || this.settings.name,
+      projectName: this.settings.name,
+      overrides,
+    });
+  }
+
+  //Exports the finished project to a .mod file
+  async export(): Promise<boolean> {
+    if(!ProjectFileSystem.hasRoot()){
+      return false;
+    }
+    ForgeState.loaderShow();
+    try{
+      const result = await this.buildModuleExportBuffer();
+      if(result.cancelled){
+        return false;
+      }
+      if(!result.ok || !result.buffer){
+        window.alert(result.reason || "Export failed.");
+        return false;
+      }
+
+      try{
+        if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
+          const savePath = await dialog.showSaveDialog({
+            title: "Export Module",
+            defaultPath: result.filename,
+            filters: [{ name: "Module", extensions: ["mod"] }],
+          });
+          if(!savePath || savePath.cancelled || !savePath.filePath){
+            return false;
+          }
+          await fs.promises.writeFile(savePath.filePath, result.buffer);
+          return true;
+        }
+        const handle = await window.showSaveFilePicker({
+          suggestedName: result.filename,
+          types: [{ description: "Module", accept: { "application/octet-stream": [".mod"] } }],
+        });
+        const ws = await handle.createWritable();
+        await ws.write(result.buffer as any);
+        await ws.close();
+        return true;
+      }catch(e){
+        console.error("Project.export", e);
+        return false;
+      }
+    }finally{
+      ForgeState.loaderHide();
+    }
+  }
+
+  /** Pack the project module and write it into the bound game's modules folder. */
+  async exportToGameModules(): Promise<boolean> {
+    if(!ProjectFileSystem.hasRoot()){
+      return false;
+    }
+    if(!ForgeState.hasBoundGameDirectory()){
+      window.alert("Locate a game install directory before exporting to Modules.");
+      return false;
+    }
+
+    ForgeState.loaderShow();
+    try{
+      const result = await this.buildModuleExportBuffer();
+      if(result.cancelled){
+        return false;
+      }
+      if(!result.ok || !result.buffer){
+        window.alert(result.reason || "Export failed.");
+        return false;
+      }
+
+      const relPath = `modules/${result.filename}`;
+      if(await KotOR.GameFileSystem.exists(relPath)){
+        const overwrite = window.confirm(`${result.filename} already exists in Modules. Overwrite?`);
+        if(!overwrite){
+          return false;
+        }
+      }
+
+      const written = await KotOR.GameFileSystem.writeFile(relPath, result.buffer);
+      if(!written){
+        window.alert(`Failed to write ${relPath}.`);
+        return false;
+      }
+
+      try{
+        const mod = new KotOR.ERFObject(relPath);
+        await mod.load();
+        mod.group = "Module";
+        const resRef = result.filename.replace(/\.[^.]+$/, "");
+        KotOR.ERFManager.addERF(resRef, mod);
+      }catch(e){
+        console.warn("Project.exportToGameModules: wrote file but failed to refresh ERFManager", e);
+      }
+
+      window.alert(`Exported ${result.filename} to the game Modules folder.`);
+      return true;
+    }catch(e){
+      console.error("Project.exportToGameModules", e);
+      return false;
+    }finally{
+      ForgeState.loaderHide();
+    }
+  }
+
+  /** Export the full project tree (including .forge and source) as a ZIP. */
+  async exportAsZip(): Promise<boolean> {
+    if(!ProjectFileSystem.hasRoot()){
+      return false;
+    }
+    ForgeState.loaderShow();
+    try{
+      const files = await ProjectFileSystem.readdir("", { recursive: true });
+      const result = await packProjectZip({
+        files,
+        readFile: (rel) => ProjectFileSystem.readFile(rel),
+        projectName: this.settings.name,
+      });
+      if(!result.ok || !result.buffer){
+        window.alert(result.reason || "ZIP export failed.");
+        return false;
+      }
+
+      try{
+        if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
+          const savePath = await dialog.showSaveDialog({
+            title: "Export Project as ZIP",
+            defaultPath: result.filename,
+            filters: [{ name: "ZIP Archive", extensions: ["zip"] }],
+          });
+          if(!savePath || savePath.cancelled || !savePath.filePath){
+            return false;
+          }
+          await fs.promises.writeFile(savePath.filePath, result.buffer);
+          return true;
+        }
+        const handle = await window.showSaveFilePicker({
+          suggestedName: result.filename,
+          types: [{ description: "ZIP Archive", accept: { "application/zip": [".zip"] } }],
+        });
+        const ws = await handle.createWritable();
+        await ws.write(result.buffer as any);
+        await ws.close();
+        return true;
+      }catch(e){
+        console.error("Project.exportAsZip", e);
+        return false;
+      }
+    }finally{
+      ForgeState.loaderHide();
+    }
+  }
+
+  /** Persist whether the module editor should reopen with this project. */
+  setModuleEditorOpen(open: boolean): void {
+    if(!this.settings.module_editor){
+      this.settings.module_editor = { open: false };
+    }
+    if(this.settings.module_editor.open === open){
+      return;
+    }
+    this.settings.module_editor.open = open;
+    void this.saveSettings();
   }
 
   /**
    * Creates a new THREE.js Engine and initialize the scene
    */
   async initEditor() {
-    this.moduleEditor = new TabModuleEditorState();
+    if(!(this.moduleEditor instanceof TabModuleEditorState)){
+      this.moduleEditor = new TabModuleEditorState({ editorFile: this.module_ifo });
+    }
+    this.moduleEditor.bindProjectFiles(this);
     ForgeState.tabManager.addTab(this.moduleEditor);
-    this.moduleEditor.module = await TabModuleEditorState.FromProject(this);
-    this.moduleEditor.module?.setContext(this.moduleEditor.ui3DRenderer);
-    await this.moduleEditor.module?.load();
+    this.setModuleEditorOpen(true);
+    await this.moduleEditor.loadFromProject(this);
   }
 
   openModuleEditor(){
     if(this.moduleEditor instanceof TabModuleEditorState){
       ForgeState.tabManager.addTab(this.moduleEditor);
       this.moduleEditor.show();
-    }else{
-      this.initEditor();
+      this.setModuleEditorOpen(true);
+      return;
     }
+    if(this.hasModule()){
+      void this.initEditor();
+      return;
+    }
+    openImportModuleWizard();
+  }
+
+  /** Called when the user closes the module editor tab (not when closing the project). */
+  onModuleEditorClosed(tab: TabModuleEditorState): void {
+    if(this.#closing){
+      return;
+    }
+    if(this.moduleEditor === tab){
+      this.moduleEditor = undefined;
+    }
+    this.setModuleEditorOpen(false);
   }
 
   getTemplatesByType ( restype = '' ) {
@@ -333,6 +742,34 @@ export class Project {
     }
   }
 
+  /** Rewrite persisted `open_files` URIs after a project-tree rename. */
+  retargetOpenFilesAfterRename(fromRel: string, toRel: string): void {
+    const beforeJson = JSON.stringify(this.settings.open_files);
+    const seen = new Set<string>();
+    const next: string[] = [];
+    for (let i = 0; i < this.settings.open_files.length; i++) {
+      const entry = String(this.settings.open_files[i] ?? "").trim();
+      if (!entry.length) {
+        continue;
+      }
+      const rel = editorFileProjectRelativePath({
+        useProjectFileSystem: true,
+        path: entry,
+      });
+      const mapped = rel ? remapProjectRelativeAfterRename(rel, fromRel, toRel) : undefined;
+      const uri = mapped ? EditorFile.referenceURIForProjectRelative(mapped) : entry;
+      if (seen.has(uri)) {
+        continue;
+      }
+      seen.add(uri);
+      next.push(uri);
+    }
+    this.settings.open_files = next;
+    if (JSON.stringify(this.settings.open_files) !== beforeJson) {
+      this.saveSettings();
+    }
+  }
+
   async buildModuleAndArea(name: string, areaName: string = 'm01aa', rooms: { roomName: string, envAudio: number, ambientScale: number }[] = []){
     const mod = new ForgeModule();
     mod.name.addSubString(name, 0); // Male English (StringID 0 = language 0, gender 0)
@@ -362,33 +799,9 @@ export class Project {
     return { ifo, are, git };
   }
 
+  /** Asset folders are created when files are added. `.forge/` is ensured by save/loadSettings. */
   async initDirectoryStructure(){
-    if(!await ProjectFileSystem.exists(`${DIR_BLUEPRINTS}`)){
-      console.log('Creating directory', `./${DIR_BLUEPRINTS}/`);
-      await ProjectFileSystem.mkdir(`${DIR_BLUEPRINTS}`, { recursive: false });
-    }
-    if(!await ProjectFileSystem.exists(`${DIR_MODELS}`)){
-      console.log('Creating directory', `./${DIR_MODELS}/`);
-      await ProjectFileSystem.mkdir(`${DIR_MODELS}`, { recursive: false });
-    }
-    if(!await ProjectFileSystem.exists(`${DIR_TEXTURES}`)){
-      console.log('Creating directory', `./${DIR_TEXTURES}/`);
-      await ProjectFileSystem.mkdir(`${DIR_TEXTURES}`, { recursive: false });
-    }
-    if(!await ProjectFileSystem.exists(`${DIR_DIALOGS}`)){
-      console.log('Creating directory', `./${DIR_DIALOGS}/`);
-      await ProjectFileSystem.mkdir(`${DIR_DIALOGS}`, { recursive: false });
-    }
-    // if(!await ProjectFileSystem.exists(`${DIR_SOUNDS}`)){
-    //   await ProjectFileSystem.mkdir(`${DIR_SOUNDS}`, { recursive: false });
-    // }
-    // if(!await ProjectFileSystem.exists(`${DIR_MUSIC}`)){
-    //   await ProjectFileSystem.mkdir(`${DIR_MUSIC}`, { recursive: false });
-    // }
-    if(!await ProjectFileSystem.exists(`${DIR_SCRIPTS}`)){
-      console.log('Creating directory', `./${DIR_SCRIPTS}/`);
-      await ProjectFileSystem.mkdir(`${DIR_SCRIPTS}`, { recursive: false });
-    }
+    return;
   }
 
   async saveSettings(){

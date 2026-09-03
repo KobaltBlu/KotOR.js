@@ -1,3 +1,6 @@
 {
-  "references.preferredLocation": "peek"
+  "references.preferredLocation": "peek",
+  "liveServer.settings.port": 8080,
+  "liveServer.settings.host": "localhost",
+  "liveServer.settings.root": "dist",
 }

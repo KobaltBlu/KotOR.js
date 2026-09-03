@@ -107,7 +107,7 @@ export const MaterialTextureSection: React.FC<MaterialTextureSectionProps> = ({ 
             onKeyDown={handleSwapKeyDown}
           />
           <button
-            className="btn btn-sm"
+            className="forge-btn forge-btn--sm"
             onClick={handleSwapTexture}
             disabled={swapping || !swapTexture.trim()}
           >

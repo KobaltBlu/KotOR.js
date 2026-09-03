@@ -10,7 +10,7 @@
     position: absolute;
     top: $spacing-sm;
     left: $spacing-sm;
-    color: $error;
+    color: var(--forge-danger);
   }
 }
 
@@ -26,9 +26,10 @@
 }
 
 div#editor-content {
-  border-left: $border-width solid $border-primary;
+  border-left: $border-width solid var(--forge-border);
 }
 
-.container {
-  border-right: $border-width solid $border-secondary;
+.gff-properties,
+#gffProperties {
+  border-right: $border-width solid var(--forge-border-subtle);
 }

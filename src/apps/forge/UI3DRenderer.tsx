@@ -11,6 +11,20 @@ import { CopyShader } from 'three/examples/jsm/shaders/CopyShader';
 import { ForceDistortionPass } from '@/shaders/pass/ForceDistortionPass';
 import { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
 import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { resolveVertexHandleRoot } from "@/apps/forge/module-editor/vertexHandleVisuals";
+import {
+  defaultViewportPerfPolicy,
+  shouldIdleRender,
+} from "@/apps/forge/module-editor/kernel/ViewportPerfPolicy";
+import {
+  computeFocusDistance,
+  expandFocusBounds,
+  FOCUS_FALLBACK_RADIUS,
+  focusNearFar,
+} from "@/apps/forge/module-editor/kernel/CameraFocusPolicy";
+import { PickService } from "@/apps/forge/module-editor/kernel/PickService";
+import { isHighlightableGameObject } from "@/apps/forge/module-editor/kernel/SelectionHighlightService";
+import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
 
 export enum CameraView {
   Top = 'top',
@@ -22,6 +36,22 @@ export enum CameraView {
   Orthogonal = 'orthogonal',
   Default = 'default'
 }
+
+/** Named camera orientations for View menus / viewport toolbars (keys 1–7, 0). */
+export const CAMERA_VIEW_PRESETS: ReadonlyArray<{
+  view: CameraView;
+  label: string;
+  shortcut: string;
+}> = [
+  { view: CameraView.Top, label: 'Top', shortcut: '1' },
+  { view: CameraView.Bottom, label: 'Bottom', shortcut: '2' },
+  { view: CameraView.Left, label: 'Left', shortcut: '3' },
+  { view: CameraView.Right, label: 'Right', shortcut: '4' },
+  { view: CameraView.Front, label: 'Front', shortcut: '5' },
+  { view: CameraView.Back, label: 'Back', shortcut: '6' },
+  { view: CameraView.Orthogonal, label: 'Isometric', shortcut: '7' },
+  { view: CameraView.Default, label: 'Default', shortcut: '0' },
+];
 
 export type UI3DRendererEventListenerTypes =
   'onBeforeRender'|'onAfterRender'|'onCreate'|'onDispose'|'onResize'|'onCanvasAttached'|'onSelect'|'onMouseDown'|'onMouseUp'|'onMouseMove'|'onMouseWheel'|'onKeyDown'|'onKeyUp';
@@ -184,12 +214,18 @@ export class UI3DRenderer extends EventListenerModel {
   private shadowLightDebugMarkers: THREE.Mesh[] = [];
   private shadowFrustumHelper: THREE.CameraHelper | undefined;
 
+  referenceNode: THREE.Object3D = new THREE.Object3D();
+
   selectable: THREE.Group = new THREE.Group();
   unselectable: THREE.Group = new THREE.Group();
 
   resizeObserver: ResizeObserver;
   loadingTextures: boolean;
   enabled: boolean = false;
+  /** Last user interaction timestamp for idle render throttling. */
+  lastInteractionAt: number = Date.now();
+  private idleFrameAccumulator = 0;
+  private viewportPerfPolicy = defaultViewportPerfPolicy();
 
   queuedAnimationFrame: number;
 
@@ -245,7 +281,18 @@ export class UI3DRenderer extends EventListenerModel {
   viewportFrustum: THREE.Frustum;
 
   transformControlsDragging: boolean = false;
+  /** Left mouse reserved for pick/marquee; orbit via middle / right / Alt+left. */
+  private orbitSelectFriendly = false;
+  /** Temporarily disable orbit (e.g. while marquee drag is active). */
+  private orbitSuspended = false;
+  /** Alt held: temporarily restore left-button rotate while select-friendly. */
+  private orbitAltRotate = false;
   focusMode: CameraFocusMode = CameraFocusMode.SCENE;
+  /** Keys claimed by an owning tab so the built-in canvas handler does not also act on them. */
+  private reservedKeys = new Set<string>();
+  #lookAtWorldPos: THREE.Vector3 = new THREE.Vector3();
+  #frameDirection: THREE.Vector3 = new THREE.Vector3();
+  #frameBoxSize: THREE.Vector3 = new THREE.Vector3();
 
   constructor( canvas?: HTMLCanvasElement, width: number = 640, height: number = 480 ){
     super();
@@ -331,6 +378,8 @@ export class UI3DRenderer extends EventListenerModel {
       this.orbitControls.enablePan = true;
       this.orbitControls.enableRotate = true;
       this.orbitControls.panSpeed = 2;
+      this.applyOrbitMouseButtons();
+      this.syncOrbitEnabled();
       this.transformControls = new TransformControls(this.currentCamera, this.canvas);
       this.transformControls.visible = false;
       this.unselectable.add(this.transformControls);
@@ -340,19 +389,61 @@ export class UI3DRenderer extends EventListenerModel {
       });
 
       this.transformControls.addEventListener('dragging-changed', (event: any) => {
-        this.transformControlsDragging = event.value === true;  
-        if (this.orbitControls) {
-          this.orbitControls.enabled = !this.transformControlsDragging;
-        }
+        this.transformControlsDragging = event.value === true;
+        this.syncOrbitEnabled();
       });
 
       this.transformControls.addEventListener('mouseDown', () => {
-        if (this.orbitControls) this.orbitControls.enabled = false;
+        this.syncOrbitEnabled(true);
       });
       this.transformControls.addEventListener('mouseUp', () => {
-        if (this.orbitControls) this.orbitControls.enabled = true;
+        this.syncOrbitEnabled();
       });
     }
+  }
+
+  /**
+   * In select/marquee mode, left-drag must not orbit. Middle rotates, right pans,
+   * Alt+left restores rotate (matches marquee skipping when Alt is held).
+   */
+  setOrbitSelectFriendly(enabled: boolean): void {
+    this.orbitSelectFriendly = enabled;
+    if (!enabled) {
+      this.orbitAltRotate = false;
+    }
+    this.applyOrbitMouseButtons();
+  }
+
+  setOrbitSuspended(suspended: boolean): void {
+    this.orbitSuspended = suspended;
+    this.syncOrbitEnabled();
+  }
+
+  setOrbitAltRotate(active: boolean): void {
+    this.orbitAltRotate = active;
+    this.applyOrbitMouseButtons();
+  }
+
+  private applyOrbitMouseButtons(): void {
+    if (!this.orbitControls) return;
+    if (this.orbitSelectFriendly && !this.orbitAltRotate) {
+      // No THREE.MOUSE action for left — pick/marquee owns the button.
+      (this.orbitControls.mouseButtons as any).LEFT = -1;
+      this.orbitControls.mouseButtons.MIDDLE = THREE.MOUSE.ROTATE;
+      this.orbitControls.mouseButtons.RIGHT = THREE.MOUSE.PAN;
+    } else {
+      this.orbitControls.mouseButtons.LEFT = THREE.MOUSE.ROTATE;
+      this.orbitControls.mouseButtons.MIDDLE = this.orbitSelectFriendly
+        ? THREE.MOUSE.ROTATE
+        : THREE.MOUSE.DOLLY;
+      this.orbitControls.mouseButtons.RIGHT = THREE.MOUSE.PAN;
+    }
+  }
+
+  private syncOrbitEnabled(forceOff = false): void {
+    if (!this.orbitControls) return;
+    this.orbitControls.enabled =
+      !forceOff && !this.transformControlsDragging && !this.orbitSuspended;
   }
 
   buildViewHelper() {
@@ -364,12 +455,21 @@ export class UI3DRenderer extends EventListenerModel {
 
   lookAtObject(object?: THREE.Object3D) {
     if(!object || !this.camera || !this.orbitControls) return;
-    this.orbitControls.target.copy(object.position);
+    object.getWorldPosition(this.#lookAtWorldPos);
+    this.orbitControls.target.copy(this.#lookAtWorldPos);
     this.orbitControls.update();
   }
 
+  /**
+   * Claim keys so the built-in canvas key handler skips them (owning tab handles them instead).
+   */
+  reserveKeys(keys: string[]): void {
+    for (let i = 0; i < keys.length; i++) {
+      this.reservedKeys.add(keys[i].toLowerCase());
+    }
+  }
+
   reorientCamera(view: CameraView) {
-    console.log('reorientCamera', view);
     if(!this.camera || !this.orbitControls) return;
 
     const oldView = this.cameraView;
@@ -382,9 +482,12 @@ export class UI3DRenderer extends EventListenerModel {
     };
 
     if(this.cameraViewCache[view]){
+      // Top/Bottom leave camera.up as (0,1,0); Default and orthographic side views need Z-up.
+      // lookAt / OrbitControls both use up, so restore it before re-aiming.
+      this.updateCameraUpForView(view);
       this.camera.position.copy(this.cameraViewCache[view].position);
-      this.camera.lookAt(this.cameraViewCache[view].target);
       this.orbitControls.target.copy(this.cameraViewCache[view].target);
+      this.camera.lookAt(this.cameraViewCache[view].target);
       this.orbitControls.update();
       this.orbitControls.enableRotate = view === CameraView.Default;
       return;
@@ -442,63 +545,137 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   setCameraFocusMode(mode: CameraFocusMode) {
-    console.log('setCameraFocusMode', mode);
     this.focusMode = mode;
   }
   
   #center: THREE.Vector3 = new THREE.Vector3();
   #box3: THREE.Box3 = new THREE.Box3();
+  #focusScratchBox: THREE.Box3 = new THREE.Box3();
 
-  private updateCameraFocus(): void {
-    console.log('updateCameraFocus');
-    this.#box3 = new THREE.Box3();
+  /**
+   * Recompute focus bounds from the current focus mode roots.
+   * Does not mutate orbitControls.target when the box is empty.
+   * @returns true when a non-empty focus box was computed
+   */
+  private updateCameraFocus(): boolean {
+    this.#box3.makeEmpty();
     const objects = this.focusMode === CameraFocusMode.SELECTABLE ? this.selectable.children : this.scene.children;
-    for(let i = 0; i < objects.length; i++){
-      this.#box3.expandByObject(objects[i]);
+    for (let i = 0; i < objects.length; i++) {
+      const root = objects[i];
+      root.updateWorldMatrix(true, true);
+      expandFocusBounds(root, this.#box3, this.#focusScratchBox);
+    }
+    if (this.#box3.isEmpty()) {
+      this.#center.set(0, 0, 0);
+      return false;
     }
     this.#box3.getCenter(this.#center);
-    this.orbitControls.target.copy(this.#center);
+    return true;
   }
 
-  public fitCameraToScene(offset: number = 1.25): void {
-    console.log('fitCameraToScene', offset);
-    this.updateCameraFocus();
-    if(!this.#center) return;
-    
-    // Calculate bounding box size (box3 is already calculated in updateCameraFocus)
-    const boxSize = this.#box3.getSize(new THREE.Vector3());
-    const maxSize = Math.max(boxSize.x, boxSize.y, boxSize.z);
-    
-    const fov = THREE.MathUtils.degToRad(this.camera.fov); // vertical fov in radians
-    const aspect = this.camera.aspect;
+  /**
+   * Frame the playable scene (or selectable roots), excluding skyboxes / helpers.
+   * Snaps to the active orthographic/isometric view direction (Fit Camera to Scene).
+   */
+  public frameAll(offset: number = 1.25): boolean {
+    return this.fitCameraToScene(offset);
+  }
 
-    // Distance required to fit box height in view
-    const fitHeightDistance = maxSize / (2 * Math.tan(fov / 2));
-    // Distance required to fit box width in view
-    const fitWidthDistance = fitHeightDistance / aspect;
+  /**
+   * Frame one or more objects (selection). Preserves the current orbit direction
+   * so framing a creature zooms in place rather than snapping to isometric.
+   */
+  public frameObjects(objects: THREE.Object3D[], offset: number = 1.5): boolean {
+    if (!this.camera || !this.orbitControls || !objects.length) {
+      return false;
+    }
 
-    // Take the larger one, then apply offset
-    const distance = offset * Math.max(fitHeightDistance, fitWidthDistance);
+    this.#box3.makeEmpty();
+    for (let i = 0; i < objects.length; i++) {
+      const root = objects[i];
+      if (!root) continue;
+      root.updateWorldMatrix(true, true);
+      expandFocusBounds(root, this.#box3, this.#focusScratchBox);
+    }
 
-    // Get the direction vector based on the current cameraView
-    const direction = this.getDirectionForView(this.cameraView);
+    if (this.#box3.isEmpty()) {
+      for (let i = 0; i < objects.length; i++) {
+        const root = objects[i];
+        if (!root) continue;
+        root.getWorldPosition(this.#lookAtWorldPos);
+        this.#focusScratchBox.setFromCenterAndSize(
+          this.#lookAtWorldPos,
+          this.#frameBoxSize.set(
+            FOCUS_FALLBACK_RADIUS * 2,
+            FOCUS_FALLBACK_RADIUS * 2,
+            FOCUS_FALLBACK_RADIUS * 2,
+          ),
+        );
+        this.#box3.union(this.#focusScratchBox);
+      }
+    }
 
-    // New camera position
-    this.camera.position.copy(this.#center).add(direction.multiplyScalar(distance));
+    if (this.#box3.isEmpty()) {
+      return false;
+    }
 
-    // Update camera up vector based on view
-    this.updateCameraUpForView(this.cameraView);
+    this.#box3.getCenter(this.#center);
+    this.#box3.getSize(this.#frameBoxSize);
 
-    // Update controls target to center the box
+    const distance = computeFocusDistance({
+      boxSize: this.#frameBoxSize,
+      fovDeg: this.camera.fov,
+      aspect: this.camera.aspect,
+      offset,
+    });
+
+    this.#frameDirection.subVectors(this.camera.position, this.orbitControls.target);
+    if (this.#frameDirection.lengthSq() < 1e-8) {
+      this.#frameDirection.copy(this.getDirectionForView(this.cameraView));
+    } else {
+      this.#frameDirection.normalize();
+    }
+
+    this.camera.position.copy(this.#center).add(this.#frameDirection.multiplyScalar(distance));
     this.orbitControls.target.copy(this.#center);
     this.camera.lookAt(this.#center);
 
-    // Optionally update near/far to better match scene scale
-    this.camera.near = distance / 100;
-    this.camera.far = distance * 100;
+    const clip = focusNearFar(distance);
+    this.camera.near = clip.near;
+    this.camera.far = clip.far;
     this.camera.updateProjectionMatrix();
-
     this.orbitControls.update();
+    return true;
+  }
+
+  public fitCameraToScene(offset: number = 1.25): boolean {
+    if (!this.camera || !this.orbitControls) return false;
+    if (!this.updateCameraFocus()) return false;
+
+    this.#box3.getSize(this.#frameBoxSize);
+    const maxSize = Math.max(this.#frameBoxSize.x, this.#frameBoxSize.y, this.#frameBoxSize.z);
+    if (maxSize <= 0) return false;
+
+    const distance = computeFocusDistance({
+      boxSize: this.#frameBoxSize,
+      fovDeg: this.camera.fov,
+      aspect: this.camera.aspect,
+      offset,
+      minDistance: 0.01,
+    });
+
+    const direction = this.getDirectionForView(this.cameraView);
+    this.camera.position.copy(this.#center).add(direction.multiplyScalar(distance));
+    this.updateCameraUpForView(this.cameraView);
+    this.orbitControls.target.copy(this.#center);
+    this.camera.lookAt(this.#center);
+
+    const clip = focusNearFar(distance);
+    this.camera.near = clip.near;
+    this.camera.far = clip.far;
+    this.camera.updateProjectionMatrix();
+    this.orbitControls.update();
+    return true;
   }
 
   private getDirectionForView(view: CameraView): THREE.Vector3 {
@@ -576,6 +753,7 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   onKeyDown(event: KeyboardEvent) {
+    this.noteInteraction();
     this.processEventListener('onKeyDown', [event]);
     // Only handle key events when canvas is visible and enabled
     if(!this.canvas || !this.enabled) {
@@ -590,7 +768,10 @@ export class UI3DRenderer extends EventListenerModel {
 
     // Prevent default behavior for camera view keys
     const key = event.key.toLowerCase();
-    
+    if (this.reservedKeys.has(key)) {
+      return;
+    }
+
     switch(key) {
       case '1':
         event.preventDefault();
@@ -644,6 +825,7 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   onMouseDown(event: MouseEvent) {
+    this.noteInteraction();
     this.processEventListener('onMouseDown', [event]);
     if(event.target != this.canvas){
       return;
@@ -660,16 +842,12 @@ export class UI3DRenderer extends EventListenerModel {
     if(KotOR.Mouse.ButtonState == KotOR.MouseState.LEFT && !this.transformControlsDragging){
       this.raycaster.setFromCamera( KotOR.Mouse.Vector, this.camera );
       const intersects = this.raycaster.intersectObjects( this.selectable.children, true );
-      if(intersects.length){
-        const closestIntersection = intersects[0];
-        const isVertexHelper = closestIntersection.object instanceof THREE.Mesh && 
-          closestIntersection.object.userData?.vertexIndex !== undefined;
-        
+      // Three.js may still return hits on visible:false meshes; skip Layer-hidden objects.
+      const closestIntersection = PickService.firstVisibleIntersection(intersects);
+      if(closestIntersection){
         this.selectObject(closestIntersection.object);
-        // this.processEventListener('onSelect', [intersection]);
       }else{
         this.selectObject(undefined);
-        // this.processEventListener('onSelect', [undefined]);
       }
     }
   }
@@ -682,6 +860,9 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   onMouseMove(event: MouseEvent) {
+    if (KotOR.Mouse.MouseDown) {
+      this.noteInteraction();
+    }
     this.processEventListener('onMouseMove', [event]);
     if(event.target != this.canvas){
       return;
@@ -695,81 +876,154 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   onMouseWheel(event: WheelEvent) {
+    this.noteInteraction();
     this.processEventListener('onMouseWheel', [event]);
   }
 
   toggleVisibilityByType(type: ObjectType) {
-    switch(type) {
-      case 'room':
-        this.group.rooms.children.forEach( (child) => {
-          child.visible = !this.visibilityState[ObjectType.ROOM];
+    this.setVisibilityByType(type, !this.visibilityState[type]);
+  }
+
+  /**
+   * Show or hide a scene object class. Walkmeshes toggle material visibility
+   * so placement raycasts can still snap when the walkmesh layer is off;
+   * object Layers use `.visible` and are excluded from selection picks.
+   */
+  setVisibilityByType(type: ObjectType, visible: boolean) {
+    if (this.visibilityState[type] === visible) {
+      this.applyVisibilityByType(type, visible);
+      return;
+    }
+    this.visibilityState[type] = visible;
+    this.applyVisibilityByType(type, visible);
+  }
+
+  private setMaterialVisible(
+    material: THREE.Material | THREE.Material[] | undefined,
+    visible: boolean,
+  ): void {
+    if (!material) return;
+    if (Array.isArray(material)) {
+      for (let i = 0; i < material.length; i++) {
+        material[i].visible = visible;
+      }
+    } else {
+      material.visible = visible;
+    }
+  }
+
+  private isAabbWalkmeshObject(obj: THREE.Object3D): boolean {
+    const node =
+      (obj as { odysseyModelNode?: { nodeType?: number } }).odysseyModelNode ||
+      (obj.userData?.odysseyModelNode as { nodeType?: number } | undefined);
+    if (!node || typeof node.nodeType !== "number") {
+      return false;
+    }
+    return (node.nodeType & OdysseyModelNodeType.AABB) === OdysseyModelNodeType.AABB;
+  }
+
+  /**
+   * Room walkmeshes come in two forms:
+   * 1) `.wok` collision mesh (`userData.wok`)
+   * 2) MDL AABB / makmesh nodes embedded in the room model
+   */
+  private applyWalkmeshVisibility(visible: boolean): void {
+    this.group.rooms.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if (mesh.isMesh && mesh.userData?.wok) {
+        this.setMaterialVisible(mesh.material, visible);
+        return;
+      }
+      if (this.isAabbWalkmeshObject(obj)) {
+        obj.visible = visible;
+        if (mesh.isMesh) {
+          this.setMaterialVisible(mesh.material, visible);
+        }
+      }
+    });
+  }
+
+  private applyVisibilityByType(type: ObjectType, visible: boolean): void {
+    switch (type) {
+      case ObjectType.ROOM:
+        this.group.rooms.visible = visible;
+        this.group.rooms.children.forEach((child) => {
+          child.visible = visible;
         });
         break;
-      case 'walkmesh':
-        this.group.rooms.children.forEach( (child) => {
-          ((child as KotOR.OdysseyModel3D).wok.mesh.material as THREE.Material).visible = !this.visibilityState[ObjectType.WALKMESH];
+      case ObjectType.WALKMESH:
+        this.applyWalkmeshVisibility(visible);
+        break;
+      case ObjectType.CREATURE:
+        this.group.creature.visible = visible;
+        this.group.creature.children.forEach((child) => {
+          child.visible = visible;
         });
         break;
-      case 'creature':
-        this.group.creature.children.forEach( (child) => {
-          child.visible = !this.visibilityState[ObjectType.CREATURE];
+      case ObjectType.DOOR:
+        this.group.door.visible = visible;
+        this.group.door.children.forEach((child) => {
+          child.visible = visible;
         });
         break;
-      case 'door':
-        this.group.door.children.forEach( (child) => {
-          child.visible = !this.visibilityState[ObjectType.DOOR];
+      case ObjectType.PLACEABLE:
+        this.group.placeable.visible = visible;
+        this.group.placeable.children.forEach((child) => {
+          child.visible = visible;
         });
         break;
-      case 'placeable':
-        this.group.placeable.children.forEach( (child) => {
-          child.visible = !this.visibilityState[ObjectType.PLACEABLE];
+      case ObjectType.ITEM:
+        this.group.item.visible = visible;
+        this.group.item.children.forEach((child) => {
+          child.visible = visible;
         });
         break;
-      case 'item':
-        this.group.item.children.forEach( (child) => {
-          child.visible = !this.visibilityState[ObjectType.ITEM];
+      case ObjectType.TRIGGER:
+        this.group.trigger.visible = visible;
+        this.group.trigger.children.forEach((child) => {
+          child.visible = visible;
         });
         break;
-      case 'trigger':
-        this.group.trigger.children.forEach( (child) => {
-          child.visible = !this.visibilityState[ObjectType.TRIGGER];
+      case ObjectType.WAYPOINT:
+        this.group.waypoint.visible = visible;
+        this.group.waypoint.children.forEach((child) => {
+          child.visible = visible;
         });
         break;
-      case 'waypoint':
-        this.group.waypoint.children.forEach( (child) => {
-          child.visible = !this.visibilityState[ObjectType.WAYPOINT];
+      case ObjectType.SOUND:
+        this.group.sound.visible = visible;
+        this.group.sound.children.forEach((child) => {
+          child.visible = visible;
         });
         break;
-      case 'sound':
-        this.group.sound.children.forEach( (child) => {
-          child.visible = !this.visibilityState[ObjectType.SOUND];
+      case ObjectType.CAMERA:
+        this.group.camera.visible = visible;
+        this.group.camera.children.forEach((child) => {
+          child.visible = visible;
         });
         break;
-      case 'camera':
-        this.group.camera.children.forEach( (child) => {
-          child.visible = !this.visibilityState[ObjectType.CAMERA];
+      case ObjectType.ENCOUNTER:
+        this.group.encounter.visible = visible;
+        this.group.encounter.children.forEach((child) => {
+          child.visible = visible;
         });
         break;
-      case 'encounter':
-        this.group.encounter.children.forEach( (child) => {
-          child.visible = !this.visibilityState[ObjectType.ENCOUNTER];
+      case ObjectType.STORE:
+        this.group.store.visible = visible;
+        this.group.store.children.forEach((child) => {
+          child.visible = visible;
         });
         break;
-      case 'store':
-        this.group.store.children.forEach( (child) => {
-          child.visible = !this.visibilityState[ObjectType.STORE];
-        });
-        break;
-      case 'light_helpers':
-        this.group.light_helpers.children.forEach( (child) => {
-          child.visible = !this.visibilityState[ObjectType.LIGHT_HELPERS];
+      case ObjectType.LIGHT_HELPERS:
+        this.group.light_helpers.visible = visible;
+        this.group.light_helpers.children.forEach((child) => {
+          child.visible = visible;
         });
         break;
       default:
-        console.warn(`toggleVisibilityByType: unhandled object type, ${type}`);
+        console.warn(`setVisibilityByType: unhandled object type, ${type}`);
         break;
     }
-    this.visibilityState[type] = !this.visibilityState[type];
   }
 
   addObjectToGroup(object: THREE.Object3D, group: GroupType) {
@@ -777,9 +1031,21 @@ export class UI3DRenderer extends EventListenerModel {
       case GroupType.ROOMS:
         this.group[GroupType.ROOMS].add(object);
         object.visible = this.visibilityState[ObjectType.ROOM];
-        if(object instanceof KotOR.OdysseyModel3D){
-          (object.wok.mesh.material as THREE.Material).visible = this.visibilityState[ObjectType.WALKMESH];
-        }
+        // Apply current walkmesh visibility to WOK + MDL AABB/makmesh under this room.
+        object.traverse((node) => {
+          const mesh = node as THREE.Mesh;
+          if (mesh.isMesh && mesh.userData?.wok) {
+            this.setMaterialVisible(mesh.material, this.visibilityState[ObjectType.WALKMESH]);
+            return;
+          }
+          if (this.isAabbWalkmeshObject(node)) {
+            const walkVisible = this.visibilityState[ObjectType.WALKMESH];
+            node.visible = walkVisible;
+            if (mesh.isMesh) {
+              this.setMaterialVisible(mesh.material, walkVisible);
+            }
+          }
+        });
         break;
       case GroupType.LIGHT_HELPERS:
         this.group[GroupType.LIGHT_HELPERS].add(object);
@@ -821,8 +1087,13 @@ export class UI3DRenderer extends EventListenerModel {
         this.group[GroupType.SOUND].add(object);
         object.visible = this.visibilityState[ObjectType.SOUND];
         break;
+      case GroupType.STORE:
+        this.group[GroupType.STORE].add(object);
+        object.visible = this.visibilityState[ObjectType.STORE];
+        break;
       case GroupType.CAMERA:
         this.group[GroupType.CAMERA].add(object);
+        object.visible = this.visibilityState[ObjectType.CAMERA];
         break;
       default:
         console.warn(`addObjectToGroup: unhandled group type, ${group}`);
@@ -867,6 +1138,9 @@ export class UI3DRenderer extends EventListenerModel {
         break;
       case GroupType.SOUND:
         this.group[GroupType.SOUND].remove(object);
+        break;
+      case GroupType.STORE:
+        this.group[GroupType.STORE].remove(object);
         break;
       case GroupType.CAMERA:
         this.group[GroupType.CAMERA].remove(object);
@@ -933,9 +1207,9 @@ export class UI3DRenderer extends EventListenerModel {
       return;
     }
 
-    // Check if this is a vertex helper - if so, pass it through directly
-    if(object instanceof THREE.Mesh && object.userData?.vertexIndex !== undefined){
-      this.processEventListener('onSelect', [object]);
+    // Check if this is a vertex helper - if so, pass the handle root through
+    if(object.userData?.vertexIndex !== undefined){
+      this.processEventListener('onSelect', [resolveVertexHandleRoot(object)]);
       return;
     }
 
@@ -958,8 +1232,24 @@ export class UI3DRenderer extends EventListenerModel {
     }
 
     if(object instanceof KotOR.OdysseyWalkMesh){
-      console.warn('selectObject: object picking is not supported yet for OdysseyWalkMesh');
-      return;
+      // Prefer selecting the parent ForgeRoom (authoring unit) over raw walkmesh
+      if(forgeGameObject){
+        object = forgeGameObject.container;
+      } else {
+        let current: THREE.Object3D | null = object.parent;
+        while(current){
+          if(current.userData?.forgeGameObject instanceof ForgeGameObject){
+            forgeGameObject = current.userData.forgeGameObject;
+            object = forgeGameObject.container;
+            break;
+          }
+          current = current.parent;
+        }
+        if(object instanceof KotOR.OdysseyWalkMesh){
+          console.warn('selectObject: object picking is not supported yet for OdysseyWalkMesh without a parent ForgeRoom');
+          return;
+        }
+      }
     }
 
     const nodeType: KotOR.OdysseyModelNodeType = (object as any).odysseyModelNode?.nodeType || 1;
@@ -970,7 +1260,8 @@ export class UI3DRenderer extends EventListenerModel {
 
     //@ts-ignore
     this.selectionBox.setFromObject(object, true);
-    this.selectionBox.visible = true;
+    // Dynamic GIT instances use inverted-hull outlines; keep BoxHelper for rooms / raw nodes.
+    this.selectionBox.visible = !isHighlightableGameObject(forgeGameObject);
 
     const size = arr.reduce( (a, b) => a + b, 0 );
 
@@ -1243,6 +1534,45 @@ export class UI3DRenderer extends EventListenerModel {
     return '';
   }
 
+  /** Mark an interaction so the viewport returns to the active render rate. */
+  noteInteraction(): void {
+    this.lastInteractionAt = Date.now();
+  }
+
+  /**
+   * Enable/disable the render loop. Disabling stops rAF; enabling starts it again.
+   * Assigning `.enabled = true` alone does not restart rendering.
+   */
+  setEnabled(enabled: boolean): void {
+    if(this.enabled === enabled){
+      if(enabled){
+        this.render();
+      }
+      return;
+    }
+    this.enabled = enabled;
+    if(!enabled){
+      cancelAnimationFrame(this.queuedAnimationFrame);
+      this.queuedAnimationFrame = 0 as any;
+      return;
+    }
+    this.syncSizeFromParent();
+    this.render();
+  }
+
+  /** Resize from the canvas parent after it becomes visible again (e.g. exit preview). */
+  syncSizeFromParent(): void {
+    const parent = this.canvas?.parentElement;
+    if(!parent){
+      return;
+    }
+    const width = parent.clientWidth;
+    const height = parent.clientHeight;
+    if(width > 0 && height > 0){
+      this.setSize(width, height);
+    }
+  }
+
   /** Scene depth into depthTarget for soft particles. */
   renderDepthPrepass(): void {
     if(!this.softDepthNeeded || !this.depthTarget || !this.renderer || !this.currentCamera) return;
@@ -1261,13 +1591,27 @@ export class UI3DRenderer extends EventListenerModel {
     this.queuedAnimationFrame = requestAnimationFrame( () => {
       this.render();
     });
+
+    const rawDelta = this.clock.getDelta();
+    const idle = shouldIdleRender(this.lastInteractionAt);
+    if (idle) {
+      this.idleFrameAccumulator += rawDelta;
+      const frameBudget = 1 / Math.max(1, this.viewportPerfPolicy.idleRenderHz);
+      if (this.idleFrameAccumulator < frameBudget) {
+        return;
+      }
+      this.idleFrameAccumulator = 0;
+    } else {
+      this.idleFrameAccumulator = 0;
+    }
+
     if(this.renderer){
       this.renderer.clear();
       if (this.selectionBox.visible) {
         this.selectionBox.update();
       }
 
-      const delta = this.clock.getDelta();
+      const delta = idle ? (1 / Math.max(1, this.viewportPerfPolicy.idleRenderHz)) : rawDelta;
       this.time += delta;
       this.deltaTime += delta;
       this.deltaTimeFixed += (1/60);

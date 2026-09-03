@@ -1,124 +1,114 @@
 @use "tokens" as *;
 
-//Tab Manager
-
 .tabManager {
-
   height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 
   ul.tabs-menu {
-    height: 30px;
-    float: left;
-    clear: both;
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: stretch;
+    height: var(--forge-tab-height);
+    min-height: var(--forge-tab-height);
     list-style: none;
     padding: 0;
     margin: 0;
     width: 100%;
-    background: #212121;
+    background: var(--forge-bg);
     white-space: nowrap;
-    overflow: hidden;
-    border-bottom: 1px solid #191919;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-bottom: 1px solid var(--forge-border);
 
     &.tabs-flex-wrap {
-      display: flex;
-      flex-flow: wrap;
+      flex-wrap: wrap;
       height: auto;
     }
 
-    li.btn.btn-tab {
-      display: inline-block;
-      height: 30px;
-      background-color: #1B1A1A;
-      color: #CCC;
-      padding: 2.5px 10px;
-      border-left: 3px solid #212121;
+    li.forge-tab {
+      display: inline-flex;
+      align-items: center;
+      height: 100%;
+      background: transparent;
+      color: var(--forge-text-muted);
+      padding: 0 10px;
+      border: none;
+      border-right: 1px solid var(--forge-border-subtle);
       border-radius: 0;
-      border-top: none;
-      border-bottom: none;
-      border-right: none;
+      cursor: default;
+      max-width: 220px;
+      min-width: 48px;
 
-      &.current, &.active {
+      &.current,
+      &.active {
         position: relative;
-        background-color: #333333;
-        border: none;
-        border-left: 3px solid #128EC7;
-        z-index: 5;
-        a {
-          color: #CCC;
+        background: var(--forge-bg-elevated);
+        color: var(--forge-text-bright);
+
+        &::after {
+          content: "";
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          height: 2px;
+          background: var(--forge-accent);
         }
       }
 
       a {
-        text-transform: uppercase;
-        color: #CCC;
+        text-transform: none;
+        color: inherit;
         text-decoration: none;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: var(--forge-font-size);
       }
 
       .close {
-        text-shadow: 0 1px 0 #000000;
         padding: 0;
-        margin: 0;
-        margin-left: 5px;
-        border-color: transparent;
-        background-color: transparent;
+        margin: 0 0 0 6px;
+        border: none;
+        background: transparent;
+        color: var(--forge-text-muted);
+        min-width: 16px;
+        min-height: 16px;
+        line-height: 1;
 
-        span {
-          display: block;
-          padding: 0px 5px;
+        &:hover {
+          color: var(--forge-text-bright);
+          background: var(--forge-bg-hover);
         }
-
-        &:focus, &:hover {
-          color: #FFF;
-        }
-
       }
 
       .dirty-dot {
         display: inline-block;
-        width: 8px;
-        height: 8px;
+        width: 6px;
+        height: 6px;
         border-radius: 50%;
-        margin-left: 0;
         margin-right: 6px;
-        background: #8f8f8f;
-        vertical-align: middle;
+        background: var(--forge-text-muted);
+        flex-shrink: 0;
       }
 
       &:hover {
-        color: #CCC;
-        .dirty-dot {
-          background: #b5b5b5;
-        }
-      }
-
-      &:focus, &:hover, &:active {
-        border-top: none;
-        border-bottom: none;
-        border-right: none;
-      }
-
-      &.active,
-      &.current {
-        .dirty-dot {
-          background: #e5e5e5;
-        }
+        color: var(--forge-text);
+        background: var(--forge-bg-hover);
       }
 
       &.drag-over {
-        box-shadow: inset 3px 0 0 #128EC7;
+        box-shadow: inset 2px 0 0 var(--forge-accent);
       }
-
     }
-
   }
 
   .tab-content {
-    position: absolute;
+    position: relative;
+    flex: 1;
+    min-height: 0;
     width: 100%;
-    top: 30px;
-    bottom: 0;
-    left: 0;
-    right: 0;
 
     .tab-manager-empty-state {
       position: absolute;
@@ -128,7 +118,7 @@
       align-items: center;
       justify-content: center;
       gap: 16px;
-      pointer-events: none;
+      // pointer-events: none;
 
       &__logo {
         width: min(260px, 40vw);
@@ -143,43 +133,25 @@
         font-family: "Trajan-Pro-Regular", "OldRepublic-Bold", serif;
         font-size: clamp(32px, 6vw, 64px);
         letter-spacing: 0.08em;
-        color: #cfd8dc;
+        color: var(--forge-text);
         opacity: 0.18;
         user-select: none;
       }
 
       &__quick-start-btn {
         pointer-events: auto;
-        border: 1px solid rgba(18, 142, 199, 0.7);
-        background: rgba(18, 142, 199, 0.12);
-        color: #9fdfff;
-        border-radius: 4px;
-        padding: 8px 14px;
-        font-size: 13px;
-        cursor: pointer;
-        transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-
-        &:hover {
-          background: rgba(18, 142, 199, 0.24);
-          border-color: rgba(18, 142, 199, 0.95);
-          color: #d5f3ff;
-        }
       }
     }
-    
-    // height: 100%;
-    // display: none;
-    // box-shadow: rgb(0, 0, 0) 0px 0px 5px inset;
 
     .tab-pane {
+      display: none;
       overflow: hidden;
-      &.active, &.show {
+
+      &.active,
+      &.show {
         display: block;
         position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
+        inset: 0;
       }
 
       .flex-vertical {
@@ -193,135 +165,71 @@
       }
 
       .vertical-tabs {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+
         .vertical-tabs-nav {
-          height: 30px;
+          height: var(--forge-tab-height);
+          min-height: var(--forge-tab-height);
         }
+
         .vertical-tabs-container {
           position: relative;
-          height: calc(100% - 30px);
+          flex: 1;
+          min-height: 0;
         }
       }
 
       .tab-pane-header {
-        background: #292929;
+        background: var(--forge-bg-elevated);
         margin: 0;
-        padding: 0 10px;
-        padding-bottom: 5px;
-        padding-top: 15px;
-        border-bottom: 1px solid $border-primary;
-        margin-bottom: 15px;
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--forge-border);
+
+        h3 {
+          margin: 0;
+          font-size: 13px;
+          font-weight: 600;
+        }
+
         i.icon {
-          color: $secondary-cyan-dark;
+          color: var(--forge-accent);
         }
       }
-      
+
       .tab-pane-content {
         position: absolute;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        right: 0;
+        inset: 0;
+
         &.relative {
           position: relative;
           top: initial;
           bottom: initial;
           left: initial;
           right: initial;
-          padding: 0 10px;
+          padding: 0 8px;
         }
 
-        &.scroll-y {
-          overflow-y: auto;
-        }
-    
-        &.scroll-x {
-          overflow-x: auto;
-        }
+        &.scroll-y { overflow-y: auto; }
+        &.scroll-x { overflow-x: auto; }
       }
-
     }
 
     .quick-start-container {
-      // background-image: url(https://img.wallpapersafari.com/desktop/1600/900/28/25/NHoSzk.jpg);
       background-size: cover;
-      background-repeat: no-repeat;
-      background-position: top center;
       height: 100%;
-
-      &:before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        backdrop-filter: grayscale(100%) contrast(110%) opacity(0.25);
-        pointer-events: none;
-      }
-
-      & > .row {
-        background: rgba(17, 39, 56, 0.43);
-        background: rgba(25, 25, 25, 0.90);
-        height: 100%;
-        position: relative;
-        display: block;
-      }
-
     }
-    
   }
-  
-  .tab {
-    border: 1px solid #2196F3;
-    float: left;
-    width: 100%;
-    height: calc(100% - 30px);
-  }
-
 }
 
-// Tabs Scroller
+#tabs-container {
+  height: 100%;
+  min-height: 0;
+}
 
 .tabs-scroll-control {
-  float: left;
-  position: relative;
-  width: 50px;
-  height: 30px;
-  box-sizing: border-box;
-}
-
-.tabs-scroll-control-btn {
-  background: #1b1a1a;
-  width: 50%;
-  height: 100%;
-  float: left;
-  position: relative;
-  text-align: center;
-  cursor: pointer;
-}
-
-.tabs-scroll-control-btn:hover {
-  background: #265c8c;
-}
-
-.tabs-scroll-control-btn.left {
-  border-right: 1px solid #2e2e2e;
-}
-
-.tabs-scroll-control-btn.left::after {
-  content: "\3008";
-  line-height: 30px;
-  font-weight: bold;
-}
-
-.tabs-scroll-control-btn.right {
-  border-left: 1px solid #2e2e2e;
-}
-
-.tabs-scroll-control-btn.right::after {
-  content: "\3009";
-  line-height: 30px;
-  font-weight: bold;
+  display: none;
 }
 
 .tab-container {

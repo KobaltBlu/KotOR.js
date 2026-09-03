@@ -180,7 +180,7 @@ export const TextureCanvas: React.FC<TextureCanvasProps> = ({
 
         setTextureLoaded(true);
       } catch (error) {
-        console.error(`Failed to load texture: ${texture}`, error);
+        console.warn(`Failed to load texture: ${texture}`, error);
       }
     };
 

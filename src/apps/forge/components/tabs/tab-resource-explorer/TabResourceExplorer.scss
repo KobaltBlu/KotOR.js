@@ -1,0 +1,59 @@
+.resource-explorer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--forge-bg);
+  color: var(--forge-text);
+  font-family: var(--forge-font);
+  font-size: var(--forge-font-size);
+}
+
+.resource-explorer__search {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--forge-border);
+  background: var(--forge-bg-elevated);
+
+  .forge-input-group {
+    margin-bottom: 0;
+  }
+}
+
+.resource-explorer__progress {
+  flex-shrink: 0;
+  padding: 8px;
+  width: 100%;
+}
+
+.resource-explorer__tree {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow: auto;
+  background: var(--forge-bg);
+  padding: 4px 0;
+}
+
+.resource-explorer__empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  color: var(--forge-text-muted, var(--forge-text));
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
+  button {
+    margin: 0 auto;
+  }
+}
+
+.resource-explorer__load-more {
+  padding: 8px;
+  text-align: center;
+}

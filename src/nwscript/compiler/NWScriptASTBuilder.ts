@@ -904,6 +904,15 @@ export class NWScriptASTBuilder {
       return { type: "variable_reference", name: t.value, source: t.source };
     }
 
+    // BioWare `Vector(x, y, z)`: the constructor shares a name with the `vector` type keyword.
+    // The lexer already emits a name token when `(` follows immediately, but comments between
+    // the identifier and `(` still arrive here as keyword VECTOR.
+    if (this.is("keyword", "VECTOR")) {
+      const t = this.tok;
+      this.next();
+      return { type: "variable_reference", name: "Vector", source: t.source };
+    }
+
     // If we encounter a comment and ignoreComments is enabled, this shouldn't happen
     // (comments should be skipped before nud is called), but handle it gracefully
     if (this.ignoreComments && this.is("comment")) {

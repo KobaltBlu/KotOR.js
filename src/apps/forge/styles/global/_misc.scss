@@ -3,7 +3,7 @@
 // =============================================================================
 
 hr {
-  border-top: $border-width solid $border-quaternary;
+  border-top: $border-width solid var(--forge-border);
 }
 
 // =============================================================================
@@ -52,7 +52,7 @@ input[type=range] {
     width: 100%;
     height: 16px;
     cursor: pointer;
-    box-shadow: 1px 1px 1px #000000, 0px 0px 1px $bg-darkest;
+    box-shadow: 1px 1px 1px #000000, 0px 0px 1px var(--forge-bg);
     background: #484d4d;
     border-radius: $border-radius-large;
     border: 0px solid #010101;
@@ -63,12 +63,12 @@ input[type=range] {
   }
 
   &::-webkit-slider-thumb {
-    box-shadow: 0px 0px 1px $error-dark, 0px 0px 0px $error-darker;
-    border: 0px solid $error;
+    box-shadow: 0px 0px 1px var(--forge-danger), 0px 0px 0px var(--forge-danger);
+    border: 0px solid var(--forge-danger);
     height: 16px;
     width: 16px;
     border-radius: 50%;
-    background: #258CE4;
+    background: var(--forge-accent);
     cursor: pointer;
     -webkit-appearance: none;
     margin-top: -0.7px;
@@ -85,7 +85,7 @@ input[type=range] {
 
   &:disabled {
     &::-webkit-slider-runnable-track {
-      background: $bg-secondary;
+      background: var(--forge-bg-elevated);
     }
     
     &::-webkit-slider-thumb {
@@ -158,8 +158,8 @@ input[type="range"].volume:before {
 
 .list-group-item {
   &.list-group-header {
-    background-color: $primary-blue;
-    color: $text-white;
+    background-color: var(--forge-accent);
+    color: var(--forge-text-bright);
     padding: 0;
 
     span {
@@ -168,23 +168,24 @@ input[type="range"].volume:before {
     }
   }
 
-  background-color: $bg-secondary;
-  border: $border-width solid $border-tertiary;
+  background-color: var(--forge-bg-elevated);
+  border: $border-width solid var(--forge-border-subtle);
 
   &:hover {
-    background-color: $hover-bg-light;
-    border: $border-width solid $primary-blue;
+    background-color: var(--forge-accent-muted);
+    border: $border-width solid var(--forge-accent);
     z-index: 1;
   }
 }
 
 .my-list-group li.list-group-item {
-  background-color: #073348;
-  border-color: #07628e;
+  background-color: var(--forge-accent-muted);
+  border-color: var(--forge-accent);
   cursor: pointer;
 
   &.selected {
-    background-color: #07628e;
+    background-color: var(--forge-accent);
+    color: var(--forge-text-bright);
   }
 }
 
@@ -217,8 +218,8 @@ input[type="range"].volume:before {
     left: 0;
     right: 0;
     height: 42px;
-    background-color: $primary-blue;
-    color: $text-white;
+    background-color: var(--forge-accent);
+    color: var(--forge-text-bright);
     padding-left: 0;
 
     span {
@@ -233,17 +234,17 @@ input[type="range"].volume:before {
     position: relative;
     display: block;
     margin-bottom: -1px;
-    background-color: $bg-secondary;
-    border: $border-width solid $border-tertiary;
+    background-color: var(--forge-bg-elevated);
+    border: $border-width solid var(--forge-border-subtle);
     user-select: none;
 
     &.selected {
-      background-color: $hover-bg-light;
-      border: $border-width solid $primary-blue;
+      background-color: var(--forge-accent-muted);
+      border: $border-width solid var(--forge-accent);
       z-index: 2;
 
       span {
-        border-right: $border-width solid $primary-blue;
+        border-right: $border-width solid var(--forge-accent);
       }
     }
     
@@ -257,7 +258,7 @@ input[type="range"].volume:before {
       padding: 10px 0 10px $spacing-md;
       display: inline-flex; 
       width: 33.33%;
-      border-right: $border-width solid $border-tertiary;
+      border-right: $border-width solid var(--forge-border-subtle);
     }
   }
 }
@@ -274,7 +275,7 @@ input[type="range"].volume:before {
 ::-webkit-scrollbar-track {
   -webkit-border-radius: $border-radius;
   border-radius: $border-radius;
-  background: $scrollbar-track;
+  background: var(--forge-bg-elevated);
 }
 
 ::-webkit-scrollbar-button {
@@ -289,10 +290,10 @@ input[type="range"].volume:before {
 ::-webkit-scrollbar-thumb {
   -webkit-border-radius: $border-radius;
   border-radius: $border-radius;
-  background: $scrollbar-thumb;
+  background: var(--forge-bg-active);
 
   &:window-inactive {
-    background: $scrollbar-thumb-inactive;
+    background: var(--forge-bg-active)-inactive;
   }
 }
 
@@ -304,12 +305,12 @@ input[type="range"].volume:before {
   position: absolute !important;
   top: 150px;
   left: $spacing-xl;
-  background: $bg-dark;
+  background: var(--forge-bg);
   width: 30px;
   text-align: center;
 
   .float-ui-header {
-    background: $primary-blue-darker;
+    background: var(--forge-accent);
     height: $spacing-xl;
   }
 
@@ -328,7 +329,7 @@ input[type="range"].volume:before {
   border-radius: $border-radius-large;
 
   &.selected {
-    outline: $border-width-thick solid $success;
+    outline: $border-width-thick solid var(--forge-success);
   }
 
   img {
@@ -343,10 +344,10 @@ input[type="range"].volume:before {
     top: -10px;
     right: -10px;
     border-radius: 50%;
-    background: $success-light;
+    background: var(--forge-success);
     color: black;
     font-size: 14pt;
-    box-shadow: 0px 0px 10px $success-dark;
+    box-shadow: 0px 0px 10px var(--forge-success);
   }
 }
 
@@ -360,12 +361,12 @@ input[type="range"].volume:before {
     font-size: $font-size-small;
     padding: 2px;
     border-radius: 0px;
-    border: $border-width solid $secondary-cyan-light;
+    border: $border-width solid var(--forge-accent-hover);
   }
 
   button.btn.btn-default {
     padding: 2px;
-    border: $border-width solid $primary-blue-lighter;
+    border: $border-width solid var(--forge-accent-hover);
     border-radius: 0;
     font-size: $font-size-small;
     margin: 0;
@@ -377,13 +378,13 @@ input[type="range"].volume:before {
 // =============================================================================
 
 .checkerboard {
-  background-color: $text-white;
+  background-color: var(--forge-text-bright);
   background-image: 
     -webkit-gradient(linear, 0 100%, 100% 0, color-stop(.25, $checkerboard-light), color-stop(.25, rgba(255, 255, 255, 0))), 
     -webkit-gradient(linear, 0 0, 100% 100%, color-stop(.25, $checkerboard-light), color-stop(.25, transparent)), 
     -webkit-gradient(linear, 0 100%, 100% 0, color-stop(.75, transparent), color-stop(.75, $checkerboard-light)), 
     -webkit-gradient(linear, 0 0, 100% 100%, color-stop(.75, transparent), color-stop(.75, $checkerboard-light));
-  background-color: $bg-secondary;
+  background-color: var(--forge-bg-elevated);
   background-image: 
     -webkit-gradient(linear, 0 100%, 100% 0, color-stop(0.25, $checkerboard-dark), color-stop(0.25, rgb(255 255 255 / 0%))), 
     -webkit-gradient(linear, 0 0, 100% 100%, color-stop(0.25, $checkerboard-dark), color-stop(0.25, transparent)), 
@@ -402,7 +403,7 @@ input[type="range"].volume:before {
   position: absolute;
   bottom: 0;
   left: 0;
-  background: $bg-overlay;
+  background: var(--forge-bg-overlay);
   padding: $spacing-md;
   border-top-right-radius: $border-radius-large;
 }
@@ -411,8 +412,8 @@ input[type="range"].volume:before {
   position: absolute;
   bottom: 0;
   left: 0;
-  background: $bg-overlay;
-  color: $text-white;
+  background: var(--forge-bg-overlay);
+  color: var(--forge-text-bright);
 }
 
 // =============================================================================
@@ -422,14 +423,14 @@ input[type="range"].volume:before {
 .windowpane {
   display: block;
   position: absolute;
-  background: $bg-quaternary;
+  background: var(--forge-bg-active);
   width: 250px;
 
   .windowpane-title {
     display: block;
     min-height: $spacing-xl;
     width: 100%;
-    background: $primary-blue;
+    background: var(--forge-accent);
     cursor: all-scroll;
     padding: $spacing-sm;
   }
@@ -440,7 +441,7 @@ input[type="range"].volume:before {
     padding: $spacing-sm;
 
     .title {
-      color: $text-accent;
+      color: var(--forge-accent);
     }
 
     select {
@@ -448,7 +449,7 @@ input[type="range"].volume:before {
     }
 
     .section-header {
-      background: $bg-darker;
+      background: var(--forge-bg);
       display: block;
       padding: $spacing-sm $spacing-md;
       margin: $spacing-md -$spacing-sm;
@@ -478,9 +479,9 @@ input[type="range"].volume:before {
   display: block;
 
   .section-header {
-    background: $border-secondary;
+    background: var(--forge-border-subtle);
     padding: 2.5px $spacing-sm;
-    border-bottom: $border-width-thick solid $border-accent-darkest;
+    border-bottom: $border-width-thick solid var(--forge-accent);
     font-weight: bold;
 
     &-collapsible {
@@ -488,7 +489,7 @@ input[type="range"].volume:before {
       user-select: none;
 
       &:hover {
-        background: lighten($border-secondary, 5%);
+        background: color-mix(in srgb, var(--forge-border-subtle) 95%, white);
       }
     }
   }

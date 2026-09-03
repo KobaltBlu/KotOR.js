@@ -38,26 +38,33 @@ export class TabProjectExplorerState extends TabState {
     return TabProjectExplorerState.Resources;
   }
 
+  static async RefreshQuiet(state?: TabProjectExplorerState) {
+    await TabProjectExplorerState.LoadFiles();
+    const tab = state || ForgeState.projectExplorerTab;
+    tab?.reload();
+  }
+
   static LoadFiles(): Promise<void> {
     const nodeList = TabProjectExplorerState.Resources;
     nodeList.splice(0, nodeList.length);
-    return ProjectFileSystem.readdir("", { recursive: true })
-      .then((files: string[]) => {
-        console.log("TabProjectExplorerState.LoadFiles", files);
-        try {
-          const root = buildProjectExplorerTree(files);
-          nodeList.push(root);
-        } catch (e) {
-          console.error("TabProjectExplorerState.LoadFiles", e);
-        }
-      })
-      .catch((e: unknown) => {
+    return Promise.all([
+      ProjectFileSystem.readdir("", { recursive: true }).catch(() => [] as string[]),
+      ProjectFileSystem.readdir("", { recursive: true, list_dirs: true }).catch(() => [] as string[]),
+    ]).then(([files, dirs]) => {
+      console.log("TabProjectExplorerState.LoadFiles", files, dirs);
+      try {
+        const root = buildProjectExplorerTree(files, dirs);
+        nodeList.push(root);
+      } catch (e) {
         console.error("TabProjectExplorerState.LoadFiles", e);
-        try {
-          nodeList.push(buildProjectExplorerTree([]));
-        } catch {
-          /* noop */
-        }
-      });
+      }
+    }).catch((e: unknown) => {
+      console.error("TabProjectExplorerState.LoadFiles", e);
+      try {
+        nodeList.push(buildProjectExplorerTree([]));
+      } catch {
+        /* noop */
+      }
+    });
   }
 }

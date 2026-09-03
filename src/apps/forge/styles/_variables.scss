@@ -1,22 +1,19 @@
 // =============================================================================
-// COLOR SCHEME VARIABLES
+// COLOR SCHEME VARIABLES (aligned to CSS theme tokens)
 // =============================================================================
 
-// Primary Brand Colors
-$primary-blue: #337ab7;
-$primary-blue-dark: #256DA7;
-$primary-blue-darker: #265c8c;
-$primary-blue-light: #3578BD;
+$primary-blue: #3a8fd4;
+$primary-blue-dark: #2d7ab8;
+$primary-blue-darker: #256da7;
+$primary-blue-light: #4ea3e8;
 $primary-blue-lighter: #5bc0de;
-$primary-blue-lightest: #90CEFF;
+$primary-blue-lightest: #90ceff;
 
-// Secondary Brand Colors
-$secondary-cyan: #2196F3;
-$secondary-cyan-dark: #2a7ab9;
-$secondary-cyan-darker: #0C3D5A;
-$secondary-cyan-light: #29b3dc;
+$secondary-cyan: #3a8fd4;
+$secondary-cyan-dark: #2d7ab8;
+$secondary-cyan-darker: #0c3d5a;
+$secondary-cyan-light: #4ea3e8;
 
-// TSL Theme Colors (The Sith Lords)
 $tsl-primary: rgb(26, 178, 140);
 $tsl-primary-light: rgb(27, 195, 153);
 $tsl-primary-lighter: rgb(25, 212, 166);
@@ -24,153 +21,143 @@ $tsl-primary-dark: rgb(12, 111, 86);
 $tsl-primary-darker: rgb(14, 72, 57);
 $tsl-primary-darkest: rgb(11, 70, 55);
 
-// Background Colors
-$bg-primary: #212121;
-$bg-secondary: #333;
-$bg-tertiary: #292929;
-$bg-quaternary: #30303D;
-$bg-quinary: #464646;
+$bg-primary: #1c1c1c;
+$bg-secondary: #252525;
+$bg-tertiary: #2d2d2d;
+$bg-quaternary: #333333;
+$bg-quinary: #3a3a3a;
 $bg-dark: #121212;
-$bg-darker: #1D1D1D;
+$bg-darker: #1d1d1d;
 $bg-darkest: #0d0d0d;
 $bg-overlay: rgba(0, 0, 0, 0.5);
 $bg-overlay-light: rgba(0, 0, 0, 0.25);
 $bg-overlay-dark: rgba(0, 0, 0, 0.75);
 
-// Text Colors
-$text-primary: #CCC;
+$text-primary: #d4d4d4;
 $text-secondary: #f2f2f2;
-$text-tertiary: #9d9d9d;
+$text-tertiary: #9a9a9a;
 $text-quaternary: #777777;
-$text-white: #FFFFFF;
-$text-light: #C9DDE6;
+$text-white: #ffffff;
+$text-light: #c9dde6;
 $text-dark: #989898;
-$text-accent: #62b3f9;
+$text-accent: #3a8fd4;
 
-// Border Colors
-$border-primary: #464646;
-$border-secondary: #252525;
+$border-primary: #3a3a3a;
+$border-secondary: #2a2a2a;
 $border-tertiary: #1f1f1f;
 $border-quaternary: #656565;
 $border-quinary: #797979;
-$border-accent: #0c435d;
-$border-accent-dark: #0D5171;
-$border-accent-darker: #0C548E;
+$border-accent: var(--forge-accent, #3a8fd4);
+$border-accent-dark: #0d5171;
+$border-accent-darker: #0c548e;
 $border-accent-darkest: #0b5171;
 
-// Status Colors
-$success: #0b800f;
+$success: #3d9a55;
 $success-light: #09b509;
 $success-dark: #005f03;
 $success-darker: #0a8e01;
 $warning: #e43a35;
-$error: #ff1e00;
+$error: #c75050;
 $error-dark: #670000;
 $error-darker: #810000;
 
-// Interactive Colors
-$hover-bg: #232323;
+$hover-bg: #333333;
 $hover-bg-light: #255d8e;
 $hover-bg-dark: #111;
-$active-bg: #313131;
-$disabled-bg: #364550;
-$disabled-border: #2D5A7D;
+$active-bg: #3a3a3a;
+$disabled-bg: #2a2a2a;
+$disabled-border: #3a3a3a;
 
-// Form Colors
-$form-bg: #133652;
-$form-bg-gradient-start: #133652;
-$form-bg-gradient-end: #205784;
-$form-border: #2a7ab9;
-$form-border-focus: #2196F3;
-$form-placeholder: #9d9d9d;
+$form-bg: #222222;
+$form-bg-gradient-start: #222222;
+$form-bg-gradient-end: #222222;
+$form-border: #3a3a3a;
+$form-border-focus: #3a8fd4;
+$form-placeholder: #9a9a9a;
 
-// Scrollbar Colors
-$scrollbar-track: #464646;
-$scrollbar-thumb: #337ab7;
-$scrollbar-thumb-inactive: #777;
+$scrollbar-track: #252525;
+$scrollbar-thumb: #3a3a3a;
+$scrollbar-thumb-inactive: #555555;
 
-// Shadow Colors
 $shadow-light: rgba(0, 0, 0, 0.075);
 $shadow-medium: #1d1d1d;
 $shadow-dark: rgba(0, 0, 0, 0.5);
 $shadow-darker: rgba(0, 0, 0, 0.75);
 
-// Special Colors
 $checkerboard-light: #ccc;
 $checkerboard-dark: #676767;
-$checkbox-bg-start: #afafaf;
-$checkbox-bg-end: #efefef;
-$checkbox-border: #4c4c4c;
-$checkbox-shadow: #424242;
+$checkbox-bg-start: #2d2d2d;
+$checkbox-bg-end: #2d2d2d;
+$checkbox-border: #555555;
+$checkbox-shadow: transparent;
 
 // =============================================================================
-// TYPOGRAPHY VARIABLES
+// TYPOGRAPHY
 // =============================================================================
 
-$font-family-primary: 'Roboto', sans-serif;
+$font-family-primary: system-ui, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
 $font-family-trajan: 'Trajan', serif;
 $font-family-old-republic: 'Old Republic', serif;
 $font-family-fa: "Font Awesome 6 Free";
 
-$font-size-base: 0.875rem; // 14px (equivalent to ~12pt at 16px base)
-$font-size-small: 0.75rem;  // 12px (equivalent to ~10pt)
-$font-size-large: 1rem;     // 16px (equivalent to ~14pt)
-$font-size-larger: 1.0625rem; // 17px
+$font-size-base: 0.78125rem;
+$font-size-small: 0.6875rem;
+$font-size-large: 0.875rem;
+$font-size-larger: 0.9375rem;
 
 // =============================================================================
-// SPACING VARIABLES
+// SPACING
 // =============================================================================
 
 $spacing-xs: 2px;
-$spacing-sm: 5px;
-$spacing-md: 10px;
-$spacing-lg: 15px;
-$spacing-xl: 20px;
-$spacing-xxl: 30px;
+$spacing-sm: 4px;
+$spacing-md: 8px;
+$spacing-lg: 12px;
+$spacing-xl: 16px;
+$spacing-xxl: 24px;
 
 // =============================================================================
-// LAYOUT VARIABLES
+// LAYOUT
 // =============================================================================
 
-$header-height: 60px;
-$border-radius: 5px;
-$border-radius-large: 10px;
+$header-height: var(--forge-titlebar-height, 32px);
+$border-radius: 2px;
+$border-radius-large: 2px;
 $border-width: 1px;
-$border-width-thick: 2px;
+$border-width-thick: 1px;
 
 // =============================================================================
-// Z-INDEX VARIABLES
+// Z-INDEX
 // =============================================================================
 
-// Main Forge menu bar + dropdowns (must sit above tab content `MenuBar` and similar chrome, which use z-index ~100+).
 $z-index-dropdown: 4000;
-/** Floating chrome (mini audio player) — above top menu / dropdowns, below modals. */
 $z-index-floating-chrome: 5000;
+$z-index-tutorial: 7500;
 $z-index-modal: 9999;
 $z-index-notification: 99999999;
 
 // =============================================================================
-// ANIMATION VARIABLES
+// ANIMATION
 // =============================================================================
 
-$transition-fast: 0.15s;
-$transition-normal: 0.3s;
-$transition-slow: 0.82s;
+$transition-fast: 0.12s;
+$transition-normal: 0.2s;
+$transition-slow: 0.4s;
 
 // =============================================================================
 // MIXINS
 // =============================================================================
 
 @mixin text-shadow-light {
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
+  text-shadow: none;
 }
 
 @mixin box-shadow-form {
-  box-shadow: 2px 2px 10px $shadow-medium;
+  box-shadow: none;
 }
 
 @mixin border-radius-form {
-  border-radius: $border-radius;
+  border-radius: var(--forge-radius, 2px);
 }
 
 @mixin transition-form {
@@ -178,9 +165,9 @@ $transition-slow: 0.82s;
 }
 
 @mixin gradient-form {
-  background: linear-gradient($form-bg-gradient-start 0%, $form-bg-gradient-end 100%);
+  background: var(--forge-bg-input, #222222);
 }
 
 @mixin gradient-tsl {
-  background: linear-gradient($tsl-primary-darker 0%, $tsl-primary-dark 100%);
+  background: var(--forge-bg-input, #222222);
 }

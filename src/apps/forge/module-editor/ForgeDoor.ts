@@ -5,7 +5,7 @@ export class ForgeDoor extends ForgeGameObject {
   linkedTo: string = '';
   linkedToFlags: number = 0;
   linkedToModule: string = '';
-  transitionDestin: string = '';
+  transitionDestin: KotOR.CExoLocString = new KotOR.CExoLocString(-1);
 
   /**
    * The walkmesh for the closed state
@@ -73,6 +73,7 @@ export class ForgeDoor extends ForgeGameObject {
   openState: number = 0;
   paletteID: number = 0;
   plot: boolean = false;
+  portrait: string = '';
   portraitId: number = 0;
   ref: number = 0;
   static: boolean = false;
@@ -85,11 +86,12 @@ export class ForgeDoor extends ForgeGameObject {
   trapType: number = 0;
   will: number = 0;
 
-  constructor(buffer?: Uint8Array){
+  constructor(buffer?: Uint8Array, templateResRef?: string){
     super();
-    if(buffer){
-      this.loadFromBuffer(buffer);
+    if(templateResRef){
+      this.templateResRef = templateResRef;
     }
+    this.applySourceBuffer(buffer);
     this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
   }
 
@@ -102,13 +104,6 @@ export class ForgeDoor extends ForgeGameObject {
     }
     if(property === 'hp'){
       this.currentHP = newValue;
-    }
-    if(property === 'templateResRef'){
-      if(newValue !== oldValue){
-        this.loadBlueprint().then(() => {
-          this.load();
-        });
-      }
     }
   }
 
@@ -179,6 +174,12 @@ export class ForgeDoor extends ForgeGameObject {
     if(root.hasField('LocName')){
       this.locName = root.getFieldByLabel('LocName').getCExoLocString() || new KotOR.CExoLocString();
     }
+    if(root.hasField('LinkedTo')){
+      this.linkedTo = root.getFieldByLabel('LinkedTo').getValue() || '';
+    }
+    if(root.hasField('LinkedToFlags')){
+      this.linkedToFlags = root.getFieldByLabel('LinkedToFlags').getValue() || 0;
+    }
     if(root.hasField('Lockable')){
       this.lockable = root.getFieldByLabel('Lockable').getValue() || false;
     }
@@ -242,6 +243,9 @@ export class ForgeDoor extends ForgeGameObject {
     if(root.hasField('Plot')){
       this.plot = root.getFieldByLabel('Plot').getValue() || false;
     }
+    if(root.hasField('Portrait')){
+      this.portrait = root.getFieldByLabel('Portrait').getValue() || '';
+    }
     if(root.hasField('PortraitId')){
       this.portraitId = root.getFieldByLabel('PortraitId').getValue() || 0;
     }
@@ -304,6 +308,8 @@ export class ForgeDoor extends ForgeGameObject {
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Interruptable', this.interruptable ? 1 : 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'KeyName', this.keyName) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'KeyRequired', this.keyRequired ? 1 : 0) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'LinkedTo', this.linkedTo) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'LinkedToFlags', this.linkedToFlags) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'LoadScreenID', this.loadScreenID || 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'LocName', this.locName) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Lockable', this.lockable ? 1 : 0) );
@@ -327,6 +333,7 @@ export class ForgeDoor extends ForgeGameObject {
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'OpenState', this.openState || 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'PaletteID', this.paletteID || 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Plot', this.plot ? 1 : 0) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Portrait', this.portrait || '') );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'PortraitId', this.portraitId || 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Ref', this.ref) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Static', this.static ? 1 : 0) );
@@ -376,7 +383,15 @@ export class ForgeDoor extends ForgeGameObject {
       return this.model;
     }
 
-    const modelName = this.stringCleaner(this.kDoorAppearance?.modelname) || 'plc_invis';
+    const modelName = this.stringCleaner(this.kDoorAppearance?.modelname);
+
+    if(!modelName){
+      this.model = new KotOR.OdysseyModel3D();
+      this.modelLoading = false;
+      this.processEventListener('onModelChange', [this]);
+      this.container.add(this.model);
+      return this.model;
+    }
 
     try{
       this.modelLoading = true;
@@ -413,7 +428,8 @@ export class ForgeDoor extends ForgeGameObject {
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'LinkedToModule', this.linkedToModule));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Tag', this.tag));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', this.templateResRef));
-    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'TransitionDestin', this.transitionDestin));
+    const transitionDestinField = instance.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'TransitionDestin'))!;
+    transitionDestinField.setCExoLocString(this.transitionDestin);
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'X', this.position.x));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Y', this.position.y));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Z', this.position.z));
@@ -427,7 +443,9 @@ export class ForgeDoor extends ForgeGameObject {
     this.linkedToModule = strt.getFieldByLabel('LinkedToModule').getValue() as string;
     this.tag = strt.getFieldByLabel('Tag').getValue() as string;
     this.templateResRef = strt.getFieldByLabel('TemplateResRef').getValue() as string;
-    this.transitionDestin = strt.getFieldByLabel('TransitionDestin').getValue() as string;
+    if(strt.hasField('TransitionDestin')){
+      this.transitionDestin = strt.getFieldByLabel('TransitionDestin').getCExoLocString() || new KotOR.CExoLocString(-1);
+    }
     this.position.x = strt.getFieldByLabel('X').getValue() as number;
     this.position.y = strt.getFieldByLabel('Y').getValue() as number;
     this.position.z = strt.getFieldByLabel('Z').getValue() as number;

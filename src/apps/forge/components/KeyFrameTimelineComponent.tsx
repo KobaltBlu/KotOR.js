@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Form } from "react-bootstrap";
+
 import * as KotOR from "@/apps/forge/KotOR";
 import {
   ModelViewerEditableTrack,
@@ -8,6 +8,7 @@ import {
 } from "@/apps/forge/states/tabs";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 
+import { ForgeSelect } from "@/apps/forge/components/ui";
 import "@/apps/forge/components/KeyFrameTimelineComponent.scss";
 
 function formatTimelineClock(totalSeconds: number): string {
@@ -364,23 +365,23 @@ export const KeyFrameTimelineComponent = function(props: any){
     <div className="mvp-keyframe-dock">
       <div className="mvp-keyframe-toolbar">
         <div className="mvp-keyframe-toolbar__left">
-          <Form.Select onChange={onSelectAnimationChange} value={selectedAnimationIndex}>
+          <ForgeSelect onChange={onSelectAnimationChange} value={selectedAnimationIndex}>
             {
               animations.map( (animation, index) => {
                 return <option key={`${index}-${animation.name}`} value={index}>{animation.name}</option>
               })
             }
-          </Form.Select>
+          </ForgeSelect>
           <label className="mvp-keyframe-toolbar__loop">
             <i className="fa-solid fa-rotate"></i>
             <input type="checkbox" checked={looping} onChange={onCheckboxLoopChange} />
           </label>
           <button className={`mvp-btn mvp-btn--edit ${keyframeEditorEnabled ? 'is-active' : ''}`} onClick={onToggleEditor}>Edit</button>
-          <Form.Select size="sm" value={trackFilterScope} onChange={onTrackFilterChange} style={{ width: 160 }}>
+          <ForgeSelect size="sm" value={trackFilterScope} onChange={onTrackFilterChange} style={{ width: 160 }}>
             <option value="all">All Tracks</option>
             <option value="selectedNode">Selected Node</option>
             <option value="cameraHook">Camera Hook</option>
-          </Form.Select>
+          </ForgeSelect>
           <span className="mvp-keyframe-toolbar__clock" title="Playhead / duration">
             <span>{formatTimelineClock(tab.getCurrentAnimationElapsed())}</span>
             <span>/</span>

@@ -1,0 +1,49 @@
+.tab-ifo-editor,
+.tab-are-editor {
+  height: 100%;
+  overflow: auto;
+  padding: 16px;
+  background: var(--forge-bg);
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 16px;
+
+    h2 {
+      margin: 0 0 4px;
+      font-size: 16px;
+    }
+
+    p {
+      margin: 0;
+      color: var(--forge-text-muted);
+      font-size: var(--forge-font-size-sm);
+    }
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: var(--forge-font-size-sm);
+      color: var(--forge-text-muted);
+    }
+  }
+
+  &__description {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: var(--forge-font-size-sm);
+    color: var(--forge-text-muted);
+  }
+}

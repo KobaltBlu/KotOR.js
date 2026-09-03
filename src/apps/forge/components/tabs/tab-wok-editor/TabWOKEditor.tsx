@@ -10,7 +10,7 @@ import { CameraView } from "@/apps/forge/UI3DRenderer";
 
 import * as KotOR from "@/apps/forge/KotOR";
 import { SectionContainer } from "@/apps/forge/components/SectionContainer";
-import { Button, ButtonGroup, Form } from "react-bootstrap";
+import { ForgeButton, ForgeButtonGroup, ForgeSelect, ForgeInput } from "@/apps/forge/components/ui";
 
 import "@/apps/forge/components/tabs/tab-wok-editor/TabWOKEditor.scss";
 
@@ -206,25 +206,25 @@ const WOKSidebarComponent = function(props: any){
           </SectionContainer>
 
           <SectionContainer name="Tools" slim={true}>
-            <ButtonGroup size="sm" className="wok-mode-buttons">
-              <Button variant="outline-secondary" active={controlMode === 0} onClick={() => tab.setControlMode(0)} title="Face">
+            <ForgeButtonGroup size="sm" className="wok-mode-buttons">
+              <ForgeButton variant="outline-secondary" active={controlMode === 0} onClick={() => tab.setControlMode(0)} title="Face">
                 <i className="fa-solid fa-cube" />
-              </Button>
-              <Button variant="outline-secondary" active={controlMode === 1} onClick={() => tab.setControlMode(1)} title="Vertex">
+              </ForgeButton>
+              <ForgeButton variant="outline-secondary" active={controlMode === 1} onClick={() => tab.setControlMode(1)} title="Vertex">
                 <i className="fa-solid fa-draw-polygon" />
-              </Button>
-              <Button variant="outline-secondary" active={controlMode === 2} onClick={() => tab.setControlMode(2)} title="Edge">
+              </ForgeButton>
+              <ForgeButton variant="outline-secondary" active={controlMode === 2} onClick={() => tab.setControlMode(2)} title="Edge">
                 <i className="fa-solid fa-circle-nodes" />
-              </Button>
-              <Button variant="outline-secondary" active={controlMode === 3} onClick={() => tab.setControlMode(3)} title="Paint">
+              </ForgeButton>
+              <ForgeButton variant="outline-secondary" active={controlMode === 3} onClick={() => tab.setControlMode(3)} title="Paint">
                 <i className="fa-solid fa-fill-drip" />
-              </Button>
-            </ButtonGroup>
+              </ForgeButton>
+            </ForgeButtonGroup>
           </SectionContainer>
 
           {controlMode === TabWOKEditorControlMode.PAINT && (
             <SectionContainer name="Paint Brush" slim={true}>
-              <Form.Select size="sm" value={paintWalkIndex} onChange={(e) => tab.setPaintWalkIndex(parseInt(e.target.value, 10))}>
+              <ForgeSelect size="sm" value={paintWalkIndex} onChange={(e) => tab.setPaintWalkIndex(parseInt(e.target.value, 10))}>
                 {surfaceMaterials.length === 0 ? (
                   <option value={0}>0: (load surfacemat 2DA)</option>
                 ) : (
@@ -232,7 +232,7 @@ const WOKSidebarComponent = function(props: any){
                     <option key={i} value={i}>{i}: {mat?.label || '(unknown)'}</option>
                   ))
                 )}
-              </Form.Select>
+              </ForgeSelect>
               <div className="wok-color-swatches">
                 {tileColors.slice(0, Math.min(24, tileColors.length)).map((tc, i) => (
                   <button
@@ -272,7 +272,7 @@ const WOKSidebarComponent = function(props: any){
                 <PropRow label="Edge" value={selectedEdgeIndex >= 0 ? selectedEdgeIndex : '—'} />
                 <div className="wok-prop-row">
                   <span className="wok-prop-label">Transition</span>
-                  <Form.Control
+                  <ForgeInput
                     className="wok-transition-input"
                     type="number"
                     size="sm"

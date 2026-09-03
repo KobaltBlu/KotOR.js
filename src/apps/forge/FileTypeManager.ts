@@ -3,11 +3,13 @@ import { EditorFileOptions } from "@/apps/forge/interfaces/EditorFileOptions";
 import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { 
-  TabBIKPlayerState, TabERFEditorState, TabGFFEditorState, TabGUIEditorState, TabHexEditorState, TabImageViewerState, TabLIPEditorState, TabLYTEditorState, TabModelViewerState, TabPTHEditorState, TabSSFEditorState, TabTextEditorState, TabTLKEditorState, TabTwoDAEditorState, TabUTCEditorState, 
+  TabAREEditorState, TabBIKPlayerState, TabDLGEditorState, TabERFEditorState, TabGFFEditorState, TabGUIEditorState, TabHexEditorState, TabIFOEditorState, TabImageViewerState, TabJRLEditorState, TabLIPEditorState, TabLYTEditorState, TabModelViewerState, TabPTHEditorState, TabSaveGameEditorState, TabSSFEditorState, TabTextEditorState, TabTLKEditorState, TabTwoDAEditorState, TabUTCEditorState,
   TabUTDEditorState, TabUTEEditorState, TabUTIEditorState, TabUTMEditorState, TabUTPEditorState, TabUTSEditorState, TabUTTEditorState, TabUTWEditorState, TabWOKEditorState 
 } from "@/apps/forge/states/tabs";
 import { ResourceTypes } from "@/KotOR";
 import { sniffBufferLooksLikeBinary } from "@/apps/forge/helpers/sniffBufferLooksLikeBinary";
+import { DefaultEditorKind, getDefaultEditor } from "@/apps/forge/settings/forgeSettings";
+import { isTopLevelSaveGameSav } from "@/apps/forge/savegame/saveGamePaths";
 
 /**
  * FileTypeManager class.
@@ -49,6 +51,39 @@ export class FileTypeManager {
 
     console.log('FileTypeManager.onOpenResource', res, ext);
 
+    const kind = getDefaultEditor(ext);
+    FileTypeManager.openWithEditor(kind, res, ext);
+  }
+
+  /**
+   * Open with a specific editor. Defaults and one-shot Open with… share this factory.
+   * Restored tabs do not go through here.
+   */
+  static openWithEditor(kind: DefaultEditorKind, res: EditorFile, ext?: string): void {
+    const resolvedExt = (
+      ext
+      || ResourceTypes.getKeyByValue(res.reskey)
+      || (typeof res.ext === 'string' ? res.ext : '')
+      || 'NA'
+    ).toLowerCase();
+
+    if(kind === 'gff'){
+      ForgeState.tabManager.addTab(new TabGFFEditorState({editorFile: res}));
+      return;
+    }
+    if(kind === 'hex'){
+      ForgeState.tabManager.addTab(new TabHexEditorState({editorFile: res}));
+      return;
+    }
+    if(kind === 'text'){
+      ForgeState.tabManager.addTab(new TabTextEditorState({editorFile: res}));
+      return;
+    }
+
+    FileTypeManager.openNativeEditor(resolvedExt, res);
+  }
+
+  static openNativeEditor(ext: string, res: EditorFile): void {
     switch(ext){
       case 'lyt':
         ForgeState.tabManager.addTab(new TabLYTEditorState({editorFile: res}));
@@ -68,10 +103,18 @@ export class FileTypeManager {
         ForgeState.tabManager.addTab(new TabTLKEditorState({editorFile: res}));
       break;
       case 'dlg':
-      case 'bic':
+        ForgeState.tabManager.addTab(new TabDLGEditorState({editorFile: res}));
+      break;
       case 'jrl':
+        ForgeState.tabManager.addTab(new TabJRLEditorState({editorFile: res}));
+      break;
       case 'ifo':
+        ForgeState.tabManager.addTab(new TabIFOEditorState({editorFile: res}));
+      break;
       case 'are':
+        ForgeState.tabManager.addTab(new TabAREEditorState({editorFile: res}));
+      break;
+      case 'bic':
       case 'git':
       case 'res':
       case 'fac':
@@ -82,8 +125,14 @@ export class FileTypeManager {
       break;
       case 'erf':
       case 'mod':
-      case 'sav':
         ForgeState.tabManager.addTab(new TabERFEditorState({editorFile: res}));
+      break;
+      case 'sav':
+        if (isTopLevelSaveGameSav(res)) {
+          ForgeState.tabManager.addTab(new TabSaveGameEditorState({editorFile: res}));
+        } else {
+          ForgeState.tabManager.addTab(new TabERFEditorState({editorFile: res}));
+        }
       break;
       case 'mdl':
       case 'mdx':
@@ -105,6 +154,7 @@ export class FileTypeManager {
       case 'png':
       case 'jpg':
       case 'jpeg':
+      case 'psd':
         ForgeState.tabManager.addTab(new TabImageViewerState({editorFile: res}));
       break;
       case 'utc':
@@ -145,6 +195,7 @@ export class FileTypeManager {
       break;
       case 'wav':
       case 'mp3':
+      case 'bmu':
         console.log('audio file', res);
         AudioPlayerState.OpenAudio(res);
       break;
@@ -152,7 +203,6 @@ export class FileTypeManager {
         void FileTypeManager.openUnknownExtensionWithSniff(res);
       break;
     }
-
   }
 
   /** Unknown extension: sniff bytes; binary → hex tab, else text editor. */

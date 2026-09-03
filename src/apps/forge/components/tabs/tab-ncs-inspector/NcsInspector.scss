@@ -1,0 +1,280 @@
+.ncs-inspector {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  color: var(--forge-text-bright, #f8f9fa);
+  background: var(--forge-bg, #1c1c1c);
+  outline: none;
+  font-size: 0.8rem;
+
+  &__toolbar {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.3rem;
+    min-height: 34px;
+    padding: 0.2rem 0.35rem;
+    border-bottom: 1px solid var(--forge-border);
+    background: var(--forge-bg-elevated);
+    flex: 0 0 auto;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+
+    .btn {
+      white-space: nowrap;
+      padding: 0.12rem 0.42rem;
+      color: var(--forge-text);
+      background: var(--forge-bg-elevated);
+      border: 1px solid var(--forge-border);
+
+      &:hover:not(:disabled) {
+        background: var(--forge-bg-hover);
+        border-color: var(--forge-text-muted);
+        color: var(--forge-text-bright);
+      }
+    }
+  }
+
+  &__modes {
+    display: inline-flex;
+    gap: 0.15rem;
+  }
+
+  &__search {
+    min-width: 7rem;
+    flex: 1 1 10rem;
+    background: var(--forge-bg-elevated);
+    color: inherit;
+    border: 1px solid var(--forge-border);
+    border-radius: 3px;
+    padding: 0.1rem 0.4rem;
+  }
+
+  &__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__panes {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    background: var(--forge-bg);
+  }
+
+  &__asm,
+  &__hex,
+  &__functions {
+    min-width: 0;
+    min-height: 0;
+    overflow: auto;
+    font-family: ui-monospace, "Cascadia Mono", Consolas, "Courier New", monospace;
+  }
+
+  &__asm,
+  &__hex {
+    flex: 1 1 0;
+    padding: 0.15rem 0;
+    scrollbar-width: thin;
+  }
+
+  &__hex {
+    border-left: 1px solid var(--forge-border);
+  }
+
+  &__functions {
+    flex: 0 0 10rem;
+    border-left: 1px solid var(--forge-border);
+    padding: 0.3rem;
+    background: var(--forge-bg-elevated);
+  }
+
+  &__functions-title {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    color: var(--forge-text-muted);
+  }
+
+  &__function {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    color: inherit;
+    border: 0;
+    padding: 0.15rem 0.25rem;
+    border-radius: 3px;
+    cursor: pointer;
+
+    &--active {
+      background: var(--forge-accent-muted);
+    }
+  }
+
+  &__row {
+    display: block;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    min-height: 20px;
+    padding: 0.08rem 0.5rem;
+    white-space: pre;
+    cursor: pointer;
+
+    &--active {
+      background: var(--forge-accent-muted);
+      box-shadow: inset 2px 0 var(--forge-accent);
+    }
+
+    &--search {
+      outline: 1px solid rgba(255, 196, 0, 0.55);
+    }
+  }
+
+  &__operand {
+    border-radius: 2px;
+
+    &--active {
+      background: rgba(255, 196, 0, 0.38);
+    }
+
+    &--jump {
+      color: var(--forge-accent);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      background: transparent;
+      border: 0;
+      min-height: 0;
+      padding: 0;
+      display: inline;
+    }
+  }
+
+  &__hex-row {
+    display: grid;
+    grid-template-columns: 6.5rem 1fr;
+    gap: 0.5rem;
+    padding: 0.05rem 0.6rem;
+    align-items: center;
+  }
+
+  &__offset {
+    color: var(--forge-text-muted);
+    user-select: none;
+  }
+
+  &__byte {
+    display: inline-block;
+    min-width: 1.3rem;
+    text-align: center;
+    border-radius: 2px;
+    cursor: default;
+
+    &--instr {
+      background: var(--forge-accent-muted);
+    }
+
+    &--part {
+      background: rgba(255, 196, 0, 0.38);
+    }
+
+    &--header {
+      color: var(--forge-text-muted);
+    }
+  }
+
+  &__details {
+    flex: 0 0 auto;
+    max-height: 34%;
+    overflow: auto;
+    border-top: 1px solid var(--forge-border);
+    padding: 0.35rem 0.5rem;
+    background: var(--forge-bg-elevated);
+  }
+
+  &__details-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 600;
+    margin-bottom: 0.2rem;
+
+    .btn-link {
+      padding: 0;
+      font-size: inherit;
+      text-decoration: none;
+    }
+  }
+
+  &__close {
+    margin-left: auto;
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  &__error {
+    color: #f0ad4e;
+    padding: 0.2rem 0.6rem;
+  }
+
+  &__compare {
+    flex: 0 0 auto;
+    max-height: 32%;
+    overflow: auto;
+    border-top: 1px solid var(--forge-border);
+    padding: 0.35rem 0.6rem;
+  }
+
+  &--compact {
+    .ncs-inspector__toolbar {
+      min-height: 30px;
+    }
+
+    .ncs-inspector__functions {
+      flex-basis: 9rem;
+    }
+  }
+
+  @media (max-width: 520px) {
+    &__modes .btn {
+      padding-inline: 0.3rem;
+    }
+
+    &__functions {
+      flex-basis: 8rem;
+    }
+  }
+
+  &__compare-row {
+    display: grid;
+    grid-template-columns: 5.5rem 1fr 1fr;
+    gap: 0.4rem;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    color: inherit;
+    border: 0;
+    padding: 0.1rem 0.2rem;
+    font-family: inherit;
+    cursor: pointer;
+
+    &--added {
+      background: color-mix(in srgb, var(--forge-success) 22%, transparent);
+    }
+
+    &--removed {
+      background: color-mix(in srgb, var(--forge-danger) 22%, transparent);
+    }
+
+    &--changed {
+      background: color-mix(in srgb, var(--forge-accent) 18%, transparent);
+    }
+  }
+}

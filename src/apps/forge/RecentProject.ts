@@ -1,9 +1,12 @@
-import * as KotOR from "@/KotOR";
+import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
+import { ApplicationProfile } from "@/utility/ApplicationProfile";
+import { isProjectDirectoryHandle } from "@/apps/forge/virtual/VirtualProjectFolder";
 
 export interface RecentProjectOptions {
   path?: string;
   handle?: FileSystemDirectoryHandle;
   name?: string;
+  virtual?: boolean;
 }
 
 /**
@@ -14,18 +17,23 @@ export class RecentProject {
   path?: string;
   handle?: FileSystemDirectoryHandle;
   name?: string;
+  virtual?: boolean;
 
   constructor(options: RecentProjectOptions = {}) {
     this.path = options.path;
     this.handle = options.handle;
+    this.virtual = !!options.virtual;
     this.name = options.name || this.path || (this.handle ? this.handle.name : undefined);
   }
 
   /**
-   * Get the project identifier (path for Electron, name for Browser)
+   * Get the project identifier (path for Electron, name for Browser / virtual)
    */
   getIdentifier(): string | undefined {
-    if (KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON) {
+    if (this.virtual) {
+      return this.name || (this.handle ? this.handle.name : undefined);
+    }
+    if (ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON) {
       return this.path;
     } else {
       return this.name || (this.handle ? this.handle.name : undefined);
@@ -36,25 +44,23 @@ export class RecentProject {
    * Get display name for the project
    */
   getDisplayName(): string {
+    let base = 'Unknown Project';
     if (this.name) {
-      return this.name;
-    }
-    if (this.path) {
-      // Extract folder name from path
+      base = this.name;
+    } else if (this.path) {
       const parts = this.path.replace(/\\/g, '/').split('/');
-      return parts[parts.length - 1] || this.path;
+      base = parts[parts.length - 1] || this.path;
+    } else if (this.handle) {
+      base = this.handle.name;
     }
-    if (this.handle) {
-      return this.handle.name;
-    }
-    return 'Unknown Project';
+    return this.virtual ? `${base} (virtual)` : base;
   }
 
   /**
    * Check if this project has a valid handle (for browser)
    */
   hasHandle(): boolean {
-    return !!this.handle;
+    return isProjectDirectoryHandle(this.handle);
   }
 
   /**
@@ -70,8 +76,9 @@ export class RecentProject {
   static From(data: any): RecentProject {
     return new RecentProject({
       path: data.path,
-      handle: data.handle, // Handle will be restored from IndexedDB if stored
-      name: data.name
+      handle: data.handle,
+      name: data.name,
+      virtual: !!data.virtual,
     });
   }
 }

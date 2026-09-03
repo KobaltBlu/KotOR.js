@@ -1,0 +1,129 @@
+@use "tokens" as *;
+
+.tab-savegame-editor {
+  position: relative;
+  min-height: 0;
+  height: 100%;
+}
+
+.tab-savegame-editor__host {
+  position: absolute;
+  top: 25px;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  min-height: 0;
+}
+
+.tab-savegame-editor__pane {
+  padding: 0.75rem 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.tab-savegame-editor__section-title {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--forge-text-muted, inherit);
+}
+
+.tab-savegame-editor__overview {
+  display: grid;
+  grid-template-columns: minmax(160px, 220px) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.tab-savegame-editor__shot {
+  width: 100%;
+  background: var(--forge-bg);
+  border: 1px solid var(--forge-border);
+  min-height: 90px;
+  display: block;
+}
+
+.tab-savegame-editor__shot--empty {
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.tab-savegame-editor__form {
+  display: grid;
+  grid-template-columns: 8.5rem minmax(0, 1fr);
+  gap: 0.4rem 0.75rem;
+  align-items: center;
+}
+
+.tab-savegame-editor__form label {
+  font-size: 0.8rem;
+}
+
+.tab-savegame-editor__grid-header,
+.tab-savegame-editor__grid-row {
+  display: grid;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.3rem 0.4rem;
+  font-size: 0.85rem;
+}
+
+.tab-savegame-editor__grid-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-bottom: 1px solid var(--forge-border);
+  background: var(--forge-bg);
+}
+
+.tab-savegame-editor__grid-row {
+  border-bottom: 1px solid var(--forge-border);
+}
+
+.tab-savegame-editor__grid-row:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.tab-savegame-editor__globals {
+  grid-template-columns: minmax(8rem, 1.4fr) minmax(6rem, 1fr);
+}
+
+.tab-savegame-editor__party-members {
+  grid-template-columns: 4.5rem minmax(5rem, 1fr) auto;
+}
+
+.tab-savegame-editor__avail {
+  grid-template-columns: 3.5rem 5.5rem 6rem minmax(5rem, 1fr) auto;
+}
+
+.tab-savegame-editor__journal {
+  grid-template-columns: minmax(7rem, 1.2fr) 5rem 5rem 5rem;
+}
+
+.tab-savegame-editor__files,
+.tab-savegame-editor__modules {
+  grid-template-columns: minmax(8rem, 1.3fr) minmax(5rem, 0.8fr) auto;
+}
+
+.tab-savegame-editor__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  justify-content: flex-end;
+}
+
+.tab-savegame-editor__muted {
+  opacity: 0.75;
+  font-size: 0.85rem;
+}

@@ -25,9 +25,27 @@ export class ApplicationProfile {
   static profile: any = {};
   static isMac: boolean = false;
 
+  /**
+   * Map a launcher/Forge profile onto {@link GameEngineType}.
+   * TSL is `key === 'tsl'` or the game app's `launch.args.gameChoice === 2`.
+   */
+  static resolveGameKey(profile: { key?: string; launch?: { args?: { gameChoice?: number | string } } } | null | undefined): GameEngineType {
+    const choice = profile?.launch?.args?.gameChoice;
+    if (choice === 2 || choice === '2') {
+      return GameEngineType.TSL;
+    }
+    const key = String(profile?.key ?? '').toLowerCase();
+    if (key === 'tsl') {
+      return GameEngineType.TSL;
+    }
+    return GameEngineType.KOTOR;
+  }
+
   static SetProfile(profile: any){
-    if(typeof profile === 'object'){
+    if(typeof profile === 'object' && profile){
       ApplicationProfile.profile = profile;
+      ApplicationProfile.key = profile.key;
+      ApplicationProfile.GameKey = ApplicationProfile.resolveGameKey(profile);
       ApplicationProfile.InitEnvironment();
     }
     if(ApplicationProfile.profile){

@@ -12,20 +12,47 @@
         margin-bottom: 0;
         li {
             margin-left: 0;
-            padding: 5px;
+            padding: 0;
             border-radius: 5px;
             background: #333;
+            box-sizing: border-box;
             width: 32px;
             height: 32px;
-            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             margin-bottom: 5px;
             cursor: pointer;
             position: relative;
+            a {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 100%;
+                height: 100%;
+                line-height: 0;
+                color: inherit;
+                text-decoration: none;
+            }
+            .fa-layers {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                line-height: 1;
+            }
             &.selected {
                 background: #0d5171;
             }
-            &:hover, &:active, &:focus {
+            &:hover:not(.selected):not(.disabled),
+            &:active:not(.selected):not(.disabled),
+            &:focus:not(.selected):not(.disabled),
+            &:focus-within:not(.selected):not(.disabled) {
                 background: #0F78A9;
+            }
+            &.selected:hover,
+            &.selected:focus,
+            &.selected:focus-within {
+                background: #1280b5;
             }
             &.tool-palette-item-with-submenu {
                 &.submenu-open {

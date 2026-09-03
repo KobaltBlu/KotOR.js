@@ -8,6 +8,7 @@ import { IERFKeyEntry } from "@/interface/resource/IERFKeyEntry";
 import { GFFObject } from "@/resource/GFFObject";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GFFField } from "@/resource/GFFField";
+import { isUsableDirectoryHandle } from "@/utility/gameDirectoryAccess";
 
 /**
  * CurrentGame class.
@@ -88,7 +89,7 @@ export class CurrentGame {
         console.log(`CurrentGame.CleanGameInProgressFolder`, `Mode: BROWSER`);
         try{
           const directory_handle = await GameFileSystem.opendir_web(CurrentGame.gameinprogress_dir);
-          if(directory_handle instanceof FileSystemDirectoryHandle){
+          if(isUsableDirectoryHandle(directory_handle)){
             for await(let handle of directory_handle.values()){
               if(handle.kind == 'file'){
                 await directory_handle.removeEntry(handle.name);
@@ -105,6 +106,7 @@ export class CurrentGame {
             console.log('exists', directory_handle);
           }
         }
+        return true;
       }
     }catch(e){
       console.log(`CurrentGame.CleanGameInProgressFolder`, `Failed due to exception`);

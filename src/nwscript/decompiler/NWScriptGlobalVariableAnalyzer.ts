@@ -2,9 +2,27 @@ import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
 import type { NWScript } from "@/nwscript/NWScript";
 import type { NWScriptControlFlowGraph } from "@/nwscript/decompiler/NWScriptControlFlowGraph";
 import type { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBlock";
+import type { NWScriptFunction } from "@/nwscript/decompiler/NWScriptFunctionAnalyzer";
 import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
-import { OP_RSADD, OP_CONST, OP_CPDOWNSP, OP_CPDOWNBP, OP_MOVSP, OP_NEG, OP_ACTION, OP_SAVEBP, OP_JSR, OP_RESTOREBP, OP_RETN } from "@/nwscript/NWScriptOPCodes";
-import { EdgeType } from "@/nwscript/decompiler/NWScriptEdge";
+import { OP_RSADD, OP_CONST, OP_CPTOPSP, OP_CPDOWNSP, OP_MOVSP, OP_NEG, OP_SAVEBP, OP_JSR, OP_RESTOREBP, OP_RETN, OP_NOP } from "@/nwscript/NWScriptOPCodes";
+import {
+  getUnaryDataType,
+  stackBytesForDataType,
+  stackSlotsForByteSize,
+  toSignedInt32,
+} from "@/nwscript/decompiler/NWScriptOpcodeSemantics";
+import {
+  buildJsrCalleeArgSlotsByEntryPc,
+  buildJsrUserRoutineMetaByEntryPc,
+} from "@/nwscript/decompiler/NWScriptArgumentStackLayout";
+import {
+  NWScriptStackSimulator,
+  type NWScriptFrameVariableIdentity,
+  type NWScriptStackSnapshot,
+} from "@/nwscript/decompiler/NWScriptStackSimulator";
+import { NWScriptExpressionType } from "@/nwscript/decompiler/NWScriptExpression";
+import type { NWScriptExpression } from "@/nwscript/decompiler/NWScriptExpression";
+import { nwscriptDecompilerDebug } from "@/nwscript/decompiler/NWScriptDecompilerDebug";
 
 /**
  * Represents a detected global variable initialization
@@ -15,6 +33,10 @@ export interface NWScriptGlobalInit {
   initialValue: any;
   hasInitializer: boolean; // Whether this variable has an explicit initializer
   instructionAddress: number; // Address of the RSADD instruction
+  /** Recovered non-literal initializer; populated after function ABI analysis. */
+  initialExpression?: NWScriptExpression;
+  /** Physical width of initialExpression when it initializes a vector/struct frame range. */
+  initializerStackSlots?: number;
 }
 
 /**
@@ -32,6 +54,7 @@ export class NWScriptGlobalVariableAnalyzer {
   private cfg: NWScriptControlFlowGraph | null = null;
   private globalInits: NWScriptGlobalInit[] = [];
   private processedAddresses: Set<number> = new Set();
+  private globalInitInstructions: NWScriptInstruction[] = [];
 
   constructor(script: NWScript, cfg?: NWScriptControlFlowGraph) {
     this.script = script;
@@ -45,6 +68,7 @@ export class NWScriptGlobalVariableAnalyzer {
   analyze(): NWScriptGlobalInit[] {
     this.globalInits = [];
     this.processedAddresses.clear();
+    this.globalInitInstructions = [];
 
     if (!this.script.instructions) {
       return [];
@@ -92,358 +116,332 @@ export class NWScriptGlobalVariableAnalyzer {
 
     // Sort instructions by address
     const sortedInstructions = instructionsToAnalyze.sort((a, b) => a.address - b.address);
-
-    // Track all RSADD instructions to find uninitialized ones later
-    const allRSADD: NWScriptInstruction[] = [];
-
-    // First pass: Look for initialization patterns by following instruction chains
-    for (const rsadd of sortedInstructions) {
-      if (rsadd.code !== OP_RSADD) continue;
-      allRSADD.push(rsadd);
-      
-      if (this.processedAddresses.has(rsadd.address)) continue;
-
-      // Follow the instruction chain to find the pattern
-      let current = rsadd.nextInstr;
-      if (!current) continue;
-
-      // Find CONST
-      while (current && current.code !== OP_CONST && current.address < rsadd.address + 50) {
-        current = current.nextInstr;
-      }
-      if (!current || current.code !== OP_CONST) continue;
-      const constInstr = current;
-
-      // Check for NEG after CONST
-      let hasNeg = false;
-      if (constInstr.nextInstr && constInstr.nextInstr.code === OP_NEG) {
-        hasNeg = true;
-        current = constInstr.nextInstr.nextInstr;
-      } else {
-        current = constInstr.nextInstr;
-      }
-
-      // CRITICAL FIX: Skip if there's an ACTION call between CONST and CPDOWNSP
-      // This indicates a function call (e.g., GetGlobalNumber), not a constant initialization
-      let hasAction = false;
-      let searchCurrent = current;
-      while (searchCurrent && searchCurrent.code !== OP_CPDOWNSP && searchCurrent.address < constInstr.address + 50) {
-        if (searchCurrent.code === OP_ACTION) {
-          hasAction = true;
-          break;
-        }
-        searchCurrent = searchCurrent.nextInstr;
-      }
-      
-      // If we found an ACTION call, this is NOT a global variable initialization
-      // It's a function call that should be in the function body
-      if (hasAction) {
-        continue;
-      }
-
-      // Find CPDOWNSP
-      while (current && current.code !== OP_CPDOWNSP && current.address < constInstr.address + 30) {
-        current = current.nextInstr;
-      }
-      if (!current || current.code !== OP_CPDOWNSP) continue;
-      const cpdownsp = current;
-
-      // Check CPDOWNSP parameters
-      // CPDOWNSP FFFFFFF8 means offset -8 (writing to the space reserved by RSADD)
-      // The offset is a signed 32-bit integer, so 0xFFFFFFF8 is -8
-      const cpdownspOffset = cpdownsp.offset;
-      const cpdownspOffsetSigned = cpdownspOffset > 0x7FFFFFFF ? cpdownspOffset - 0x100000000 : cpdownspOffset;
-      if (cpdownspOffsetSigned !== -8 || cpdownsp.size !== 4) continue;
-
-      // Find MOVSP
-      current = cpdownsp.nextInstr;
-      while (current && current.code !== OP_MOVSP && current.address < cpdownsp.address + 20) {
-        current = current.nextInstr;
-      }
-      if (!current || current.code !== OP_MOVSP) continue;
-      const movsp = current;
-
-      // Check MOVSP offset
-      // MOVSP FFFFFFFC means offset -4 (cleaning up the stack)
-      const movspOffset = movsp.offset;
-      const movspOffsetSigned = movspOffset > 0x7FFFFFFF ? movspOffset - 0x100000000 : movspOffset;
-      if (movspOffsetSigned !== -4) continue;
-
-      // Extract initialization
-      const init = this.extractInitialization(rsadd, constInstr, cpdownsp, hasNeg);
-      if (init) {
-        this.globalInits.push(init);
-        // Mark all instructions as processed
-        this.processedAddresses.add(rsadd.address);
-        this.processedAddresses.add(constInstr.address);
-        if (hasNeg && constInstr.nextInstr) {
-          this.processedAddresses.add(constInstr.nextInstr.address);
-        }
-        this.processedAddresses.add(cpdownsp.address);
-        this.processedAddresses.add(movsp.address);
-      }
-    }
-
-    // Second pass: Find uninitialized globals (RSADD without initialization pattern)
-    // Only consider writes that are part of a complete initialization pattern
-    for (const rsadd of allRSADD) {
-      if (this.processedAddresses.has(rsadd.address)) continue;
-
-      // Check if there's a complete initialization pattern for this RSADD
-      // Pattern: RSADD -> CONST -> [NEG] -> CPDOWNSP -> MOVSP
-      // We search within a very limited window and verify the complete pattern
-      let hasInitialization = false;
-      let current = rsadd.nextInstr;
-      
-      // Very limited search window - initialization patterns are immediate
-      // Stop immediately if we hit another RSADD (new variable declaration)
-      const maxSearchDistance = 20; // Only search within immediate initialization context
-      let searchLimit = 0;
-      
-      while (current && searchLimit < maxSearchDistance) {
-        // Stop if we hit another RSADD - that's a new variable, not initialization of this one
-        if (current.code === OP_RSADD && current.address !== rsadd.address) {
-          break;
-        }
-        
-        // Look for the initialization pattern: CONST -> [NEG] -> CPDOWNSP -> MOVSP
-        if (current.code === OP_CONST) {
-          const constInstr = current;
-          
-          // Check for NEG after CONST
-          let hasNeg = false;
-          let nextAfterConst = constInstr.nextInstr;
-          if (nextAfterConst && nextAfterConst.code === OP_NEG) {
-            hasNeg = true;
-            nextAfterConst = nextAfterConst.nextInstr;
-          }
-          
-          // CRITICAL FIX: Skip if there's an ACTION call between CONST and CPDOWNSP
-          // This indicates a function call, not a constant initialization
-          let hasAction = false;
-          let actionCheck = nextAfterConst;
-          while (actionCheck && actionCheck.code !== OP_CPDOWNSP && actionCheck.code !== OP_CPDOWNBP && actionCheck.address < constInstr.address + 50) {
-            if (actionCheck.code === OP_ACTION) {
-              hasAction = true;
-              break;
-            }
-            actionCheck = actionCheck.nextInstr;
-          }
-          
-          if (hasAction) {
-            // This is a function call pattern, not a global initialization
-            current = current.nextInstr;
-            continue;
-          }
-          
-          // Look for CPDOWNSP after CONST (or NEG)
-          let cpdownspInstr = nextAfterConst;
-          let cpdownspSearchLimit = 0;
-          while (cpdownspInstr && cpdownspSearchLimit < 10) {
-            if (cpdownspInstr.code === OP_CPDOWNSP || cpdownspInstr.code === OP_CPDOWNBP) {
-              const offset = cpdownspInstr.offset;
-              const offsetSigned = offset > 0x7FFFFFFF ? offset - 0x100000000 : offset;
-              
-              // CPDOWNSP -8 writes to the space reserved by the most recent RSADD
-              // But we need to verify this is actually for our RSADD
-              // The pattern should be: RSADD -> CONST -> CPDOWNSP -8 -> MOVSP -4
-              if (offsetSigned === -8 && cpdownspInstr.size === 4) {
-                // Check for MOVSP -4 after CPDOWNSP
-                let movspInstr = cpdownspInstr.nextInstr;
-                let movspSearchLimit = 0;
-                while (movspInstr && movspSearchLimit < 10) {
-                  if (movspInstr.code === OP_MOVSP && movspInstr.offset !== undefined) {
-                    const movspOffset = movspInstr.offset;
-                    const movspOffsetSigned = movspOffset > 0x7FFFFFFF ? movspOffset - 0x100000000 : movspOffset;
-                    
-                    // MOVSP -4 after CPDOWNSP completes the initialization pattern
-                    if (movspOffsetSigned === -4) {
-                      // Verify this pattern is for our RSADD by checking the sequence
-                      // The instructions should be sequential: RSADD -> CONST -> CPDOWNSP -> MOVSP
-                      if (constInstr.address > rsadd.address &&
-                          cpdownspInstr.address > constInstr.address &&
-                          movspInstr.address > cpdownspInstr.address) {
-                        hasInitialization = true;
-                        break;
-                      }
-                    }
-                  }
-                  movspInstr = movspInstr.nextInstr;
-                  movspSearchLimit++;
-                }
-                
-                if (hasInitialization) {
-                  break;
-                }
-              }
-            }
-            
-            // Stop if we hit another RSADD or CONST (different pattern)
-            if (cpdownspInstr.code === OP_RSADD || cpdownspInstr.code === OP_CONST) {
-              break;
-            }
-            
-            cpdownspInstr = cpdownspInstr.nextInstr;
-            cpdownspSearchLimit++;
-          }
-          
-          if (hasInitialization) {
-            break;
-          }
-        }
-        
-        current = current.nextInstr;
-        searchLimit++;
-      }
-
-      // If no initialization pattern found, this is an uninitialized global
-      if (!hasInitialization) {
-        // Determine data type from RSADD type
-        let dataType: NWScriptDataType;
-        switch (rsadd.type) {
-          case 3: dataType = NWScriptDataType.INTEGER; break;
-          case 4: dataType = NWScriptDataType.FLOAT; break;
-          case 5: dataType = NWScriptDataType.STRING; break;
-          case 6: dataType = NWScriptDataType.OBJECT; break;
-          default: continue; // Skip unknown types
-        }
-
-        // Calculate global variable BP offset (will be recalculated after all globals are found)
-        // For now, use a placeholder - we'll fix it in a second pass
-        const offset = 0; // Placeholder, will be recalculated
-
+    this.globalInitInstructions = sortedInstructions;
+    // A simple initializer region can be evaluated immediately, including O3 constants that
+    // have no RSADD. Calls require subroutine ABI information, so keep every RSADD as a
+    // provisional frame candidate and reconcile the exact values at SAVEBP in the second phase.
+    const simpleFrame = this.recoverSimpleGlobalFrame(sortedInstructions);
+    if (simpleFrame) {
+      this.globalInits = simpleFrame;
+      for (const init of simpleFrame) this.processedAddresses.add(init.instructionAddress);
+    } else {
+      for (const instruction of sortedInstructions) {
+        if (instruction.code !== OP_RSADD) continue;
+        const dataType = this.dataTypeForRsadd(instruction);
+        if (dataType === null) continue;
         this.globalInits.push({
-          offset: offset,
-          dataType: dataType,
+          offset: 0,
+          dataType,
           initialValue: undefined,
           hasInitializer: false,
-          instructionAddress: rsadd.address
+          instructionAddress: instruction.address,
         });
-
-        // Mark RSADD as processed
-        this.processedAddresses.add(rsadd.address);
+        this.processedAddresses.add(instruction.address);
       }
     }
 
-    // CRITICAL FIX: Recalculate BP offsets now that we know the total count
-    // After SAVEBP, BP points to the "top" of globals (just after the last global)
-    // Global 0 (first) is at BP - (N*4), Global 1 is at BP - ((N-1)*4), etc.
-    // Global i is at BP - ((N-i)*4) where N = total globals
-    const totalGlobals = this.globalInits.length;
-    for (let i = 0; i < this.globalInits.length; i++) {
-      const globalIndex = i;
-      const offset = -4 * (totalGlobals - globalIndex);
-      this.globalInits[i].offset = offset;
-    }
+    // After SAVEBP, BP points just above the global frame. Account for physical width instead
+    // of assuming every recovered global occupies one dword.
+    this.assignFrameOffsets();
 
     return this.globalInits;
   }
 
   /**
-   * Check if a sequence of instructions matches the initialization pattern
+   * Recover initializer expressions with the canonical stack evaluator after subroutine
+   * signatures are known. Before SAVEBP, compiler-generated globals are addressed through SP;
+   * assigning source identities to their persistent RSADD slots keeps references to an earlier
+   * global as `globalVar_n` instead of duplicating its initializer (and its side effects).
    */
-  private isInitializationPattern(
-    rsadd: NWScriptInstruction,
-    constInstr: NWScriptInstruction,
-    cpdownsp: NWScriptInstruction,
-    movsp: NWScriptInstruction
-  ): boolean {
-    // Check RSADD
-    if (rsadd.code !== OP_RSADD) return false;
-    if (this.processedAddresses.has(rsadd.address)) return false;
+  recoverInitializerExpressions(functions: NWScriptFunction[] = []): NWScriptGlobalInit[] {
+    if (this.globalInitInstructions.length === 0) {
+      return this.globalInits;
+    }
 
-    // Check CONST
-    if (constInstr.code !== OP_CONST) return false;
-    if (constInstr.address <= rsadd.address) return false;
+    const provisional = this.globalInits;
+    const firstPass = this.simulateGlobalInitFrame(functions, provisional, false);
+    if (!firstPass) return this.globalInits;
 
-    // Check CPDOWNSP with offset FFFFFFF8 (which is -8, writing to the reserved space)
-    if (cpdownsp.code !== OP_CPDOWNSP) return false;
-    if (cpdownsp.offset !== -8 || cpdownsp.size !== 4) return false;
-    if (cpdownsp.address <= constInstr.address) return false;
+    // Only values still present at SAVEBP are globals. This removes transient JSR return
+    // reservations and expression temporaries that the legacy RSADD scan cannot distinguish.
+    this.globalInits = this.globalFrameFromSnapshot(firstPass, provisional);
+    this.assignFrameOffsets();
 
-    // Check MOVSP with offset FFFFFFFC (which is -4, cleaning up the stack)
-    if (movsp.code !== OP_MOVSP) return false;
-    if (movsp.offset !== -4) return false;
-    if (movsp.address <= cpdownsp.address) return false;
-
-    return true;
+    this.simulateGlobalInitFrame(functions, this.globalInits, true);
+    return this.globalInits;
   }
 
-  /**
-   * Extract initialization information from the pattern
-   */
-  private extractInitialization(
-    rsadd: NWScriptInstruction,
-    constInstr: NWScriptInstruction,
-    cpdownsp: NWScriptInstruction,
-    hasNeg: boolean = false
-  ): NWScriptGlobalInit | null {
-    // Determine data type from RSADD type
-    let dataType: NWScriptDataType;
-    switch (rsadd.type) {
-      case 3: dataType = NWScriptDataType.INTEGER; break;
-      case 4: dataType = NWScriptDataType.FLOAT; break;
-      case 5: dataType = NWScriptDataType.STRING; break;
-      case 6: dataType = NWScriptDataType.OBJECT; break;
-      default: return null;
-    }
+  private simulateGlobalInitFrame(
+    functions: NWScriptFunction[],
+    inits: NWScriptGlobalInit[],
+    captureInitializers: boolean
+  ): NWScriptStackSnapshot | null {
+    const simulator = new NWScriptStackSimulator();
+    simulator.setJsrCalleeArgSlotsByEntryPc(
+      buildJsrCalleeArgSlotsByEntryPc(functions, this.script)
+    );
+    simulator.setJsrUserRoutineMetaByEntryPc(
+      buildJsrUserRoutineMetaByEntryPc(functions)
+    );
 
-    // Extract value from CONST instruction
-    let initialValue: any;
-    let hasInitializer = true;
-    
-    switch (constInstr.type) {
-      case 3: // INTEGER
-        initialValue = constInstr.integer;
-        // Integer values are always valid initializers (including 0 and 1)
-        // The presence of CPDOWNSP writing to the reserved space indicates initialization
-        break;
-      case 4: // FLOAT
-        initialValue = constInstr.float;
-        // Float values are always valid initializers (including 0.0)
-        break;
-      case 5: // STRING
-        initialValue = constInstr.string;
-        // Empty string is a valid initializer
-        break;
-      case 6: // OBJECT
-        initialValue = constInstr.object;
-        // Object value 0 means OBJECT_INVALID, which typically means no initializer
-        // Also, value 1 might be a default/placeholder that shouldn't be treated as initializer
-        if (initialValue === 0 || initialValue === undefined || initialValue === 1) {
-          hasInitializer = false;
-          initialValue = undefined;
+    const allocationIndices = new Map<number, number>();
+    const identities = new Map<number, NWScriptFrameVariableIdentity>();
+    const aggregateIdentities = new Map<number, NWScriptFrameVariableIdentity>();
+    const vectorStarts = new Set<number>();
+    const structureLayouts = new Map<number, NWScriptDataType[]>();
+    for (let index = 0; index < inits.length; index += 1) {
+      const init = inits[index];
+      const producer = this.script.instructions.get(init.instructionAddress);
+      if (producer && !allocationIndices.has(producer.address)) {
+        allocationIndices.set(producer.address, index);
+      }
+      identities.set(index, {
+        name: `globalVar_${index}`,
+        dataType: init.dataType,
+        isGlobal: true,
+      });
+    }
+    simulator.setLocalVariableAllocationIndices(allocationIndices);
+    simulator.setFrameVariableIdentities(identities);
+    simulator.setFrameAggregateIdentities(aggregateIdentities);
+    simulator.setLocalVariableInits(inits);
+    simulator.setVectorLocalAllocationStarts(vectorStarts);
+    simulator.setStructureLocalLayouts(structureLayouts);
+
+    try {
+      for (const instruction of this.globalInitInstructions) {
+        const targetIndex = instruction.code === OP_CPDOWNSP
+          ? simulator.getLocalVariableIndexAtStackPosition(
+              simulator.getStackPointer() + toSignedInt32(instruction.offset)
+            )
+          : undefined;
+        const expression = simulator.processInstruction(instruction);
+        if (
+          instruction.code !== OP_CPDOWNSP ||
+          targetIndex === undefined ||
+          targetIndex < 0 ||
+          targetIndex >= inits.length ||
+          !expression ||
+          expression.type === NWScriptExpressionType.UNKNOWN ||
+          !captureInitializers
+        ) {
+          continue;
         }
-        break;
-      default:
-        return null;
-    }
 
-    // Apply negation if NEG instruction was present
-    if (hasNeg) {
-      if (dataType === NWScriptDataType.INTEGER || dataType === NWScriptDataType.FLOAT) {
-        initialValue = -initialValue;
+        const slots = stackSlotsForByteSize(
+          instruction.size ?? 4,
+          'global initializer CPDOWNSP'
+        );
+        const init = inits[targetIndex];
+        init.initialExpression = expression;
+        init.initializerStackSlots = slots;
+        init.hasInitializer = true;
+        if (expression.dataType === NWScriptDataType.VECTOR && slots === 3) {
+          vectorStarts.add(targetIndex);
+          aggregateIdentities.set(targetIndex, {
+            name: `globalVar_${targetIndex}`,
+            dataType: NWScriptDataType.VECTOR,
+            isGlobal: true,
+          });
+          for (let component = 0; component < 3; component += 1) {
+            identities.set(targetIndex + component, {
+              name: `globalVar_${targetIndex}.${['x', 'y', 'z'][component]}`,
+              dataType: NWScriptDataType.FLOAT,
+              isGlobal: true,
+            });
+          }
+        } else if (
+          expression.dataType === NWScriptDataType.STRUCTURE &&
+          expression.structureFieldTypes.length === slots
+        ) {
+          structureLayouts.set(targetIndex, expression.structureFieldTypes);
+          aggregateIdentities.set(targetIndex, {
+            name: `globalVar_${targetIndex}`,
+            dataType: NWScriptDataType.STRUCTURE,
+            isGlobal: true,
+            structureFieldTypes: expression.structureFieldTypes,
+          });
+          for (let field = 0; field < slots; field += 1) {
+            identities.set(targetIndex + field, {
+              name: `globalVar_${targetIndex}.field_${field}`,
+              dataType: expression.structureFieldTypes[field] ?? NWScriptDataType.INTEGER,
+              isGlobal: true,
+            });
+          }
+        }
+      }
+      return simulator.takeStackSnapshot();
+    } catch (error) {
+      // Preserve literal/zero-value recovery when malformed or hand-authored initialization
+      // bytecode cannot be evaluated as the compiler's linear pre-SAVEBP stack program.
+      nwscriptDecompilerDebug('Global initializer stack recovery failed:', error);
+      return null;
+    }
+  }
+
+  private globalFrameFromSnapshot(
+    snapshot: NWScriptStackSnapshot,
+    provisional: NWScriptGlobalInit[]
+  ): NWScriptGlobalInit[] {
+    const result: NWScriptGlobalInit[] = [];
+    for (const item of snapshot.stack) {
+      const original = provisional.find(init => init.instructionAddress === item.address);
+      if (item.slotWidth === 1 && original) {
+        result.push({
+          ...original,
+          initialExpression: undefined,
+          initializerStackSlots: undefined,
+        });
+        continue;
+      }
+
+      const fieldTypes = item.expression.dataType === NWScriptDataType.VECTOR
+        ? Array.from({ length: item.slotWidth }, () => NWScriptDataType.FLOAT)
+        : item.expression.structureFieldTypes.length === item.slotWidth
+          ? item.expression.structureFieldTypes
+          : Array.from({ length: item.slotWidth }, () => item.expression.dataType);
+      for (let slot = 0; slot < item.slotWidth; slot += 1) {
+        const expression = slot === 0 ? item.expression : undefined;
+        result.push({
+          offset: 0,
+          dataType: fieldTypes[slot] ?? NWScriptDataType.INTEGER,
+          initialValue: expression?.type === NWScriptExpressionType.CONSTANT
+            ? expression.value
+            : undefined,
+          hasInitializer: item.address >= 0 && expression !== undefined,
+          instructionAddress: item.address,
+          initialExpression: expression,
+          initializerStackSlots: expression ? item.slotWidth : undefined,
+        });
       }
     }
+    return result;
+  }
 
-    // For objects, if the value is 0, 1, or undefined after processing, treat as no initializer
-    // Value 1 for objects is often OBJECT_INVALID or a placeholder
-    if (dataType === NWScriptDataType.OBJECT && (initialValue === 0 || initialValue === 1 || initialValue === undefined)) {
-      hasInitializer = false;
-      initialValue = undefined;
+  private assignFrameOffsets(): void {
+    const totalBytes = this.globalInits.reduce(
+      (sum, init) => sum + stackBytesForDataType(init.dataType),
+      0
+    );
+    let offset = -totalBytes;
+    for (const init of this.globalInits) {
+      init.offset = offset;
+      offset += stackBytesForDataType(init.dataType);
+    }
+  }
+
+  private dataTypeForRsadd(rsadd: NWScriptInstruction): NWScriptDataType | null {
+    const dataType = getUnaryDataType(rsadd.type);
+    return dataType === null ||
+      dataType === NWScriptDataType.VOID ||
+      dataType === NWScriptDataType.VECTOR ||
+      dataType === NWScriptDataType.STRUCTURE
+      ? null
+      : dataType;
+  }
+
+  private recoverSimpleGlobalFrame(
+    instructions: NWScriptInstruction[]
+  ): NWScriptGlobalInit[] | null {
+    type FrameSlot = Omit<NWScriptGlobalInit, 'offset'>;
+    const stack: FrameSlot[] = [];
+
+    for (const instruction of instructions) {
+      if (instruction.code === OP_RSADD) {
+        const dataType = getUnaryDataType(instruction.type);
+        if (
+          dataType === null ||
+          dataType === NWScriptDataType.VOID ||
+          dataType === NWScriptDataType.VECTOR ||
+          dataType === NWScriptDataType.STRUCTURE
+        ) return null;
+        stack.push({
+          dataType,
+          initialValue: undefined,
+          hasInitializer: false,
+          instructionAddress: instruction.address,
+        });
+        continue;
+      }
+
+      if (instruction.code === OP_CONST) {
+        const dataType = getUnaryDataType(instruction.type);
+        if (dataType === null) return null;
+        const initialValue = dataType === NWScriptDataType.INTEGER
+          ? instruction.integer
+          : dataType === NWScriptDataType.FLOAT
+            ? instruction.float
+            : dataType === NWScriptDataType.STRING
+              ? instruction.string
+              : dataType === NWScriptDataType.OBJECT
+                ? instruction.object
+                : undefined;
+        if (initialValue === undefined) return null;
+        stack.push({
+          dataType,
+          initialValue,
+          hasInitializer: true,
+          instructionAddress: instruction.address,
+        });
+        continue;
+      }
+
+      if (instruction.code === OP_NEG) {
+        const top = stack[stack.length - 1];
+        if (
+          !top ||
+          typeof top.initialValue !== 'number' ||
+          (top.dataType !== NWScriptDataType.INTEGER && top.dataType !== NWScriptDataType.FLOAT)
+        ) return null;
+        top.initialValue = -top.initialValue;
+        continue;
+      }
+
+      if (instruction.code === OP_CPTOPSP) {
+        const slots = stackSlotsForByteSize(instruction.size ?? 4, 'global CPTOPSP');
+        const offset = toSignedInt32(instruction.offset);
+        if (offset % 4 !== 0) return null;
+        const start = stack.length + offset / 4;
+        if (start < 0 || start + slots > stack.length) return null;
+        stack.push(...stack.slice(start, start + slots).map(slot => ({ ...slot })));
+        continue;
+      }
+
+      if (instruction.code === OP_CPDOWNSP) {
+        const slots = stackSlotsForByteSize(instruction.size ?? 4, 'global CPDOWNSP');
+        const offset = toSignedInt32(instruction.offset);
+        if (offset % 4 !== 0 || slots > stack.length) return null;
+        const target = stack.length + offset / 4;
+        if (target < 0 || target + slots > stack.length) return null;
+        const source = stack.slice(stack.length - slots);
+        for (let slot = 0; slot < slots; slot++) {
+          stack[target + slot] = {
+            ...source[slot],
+            instructionAddress: stack[target + slot].instructionAddress,
+          };
+        }
+        continue;
+      }
+
+      if (instruction.code === OP_MOVSP) {
+        const offset = toSignedInt32(instruction.offset);
+        const slots = stackSlotsForByteSize(Math.abs(offset), 'global MOVSP');
+        if (offset < 0) {
+          if (slots > stack.length) return null;
+          stack.splice(stack.length - slots, slots);
+        } else {
+          return null;
+        }
+        continue;
+      }
+
+      if (instruction.code === OP_NOP) continue;
+      // Calls/actions and BP writes need full expression/ABI simulation; preserve the proven
+      // legacy analysis instead of guessing a frame through them.
+      return null;
     }
 
-        // Calculate global variable BP offset (will be recalculated after all globals are found)
-        // For now, use a placeholder - we'll fix it in a second pass
-        const offset = 0; // Placeholder, will be recalculated
-
-    return {
-      offset: offset,
-      dataType: dataType,
-      initialValue: initialValue,
-      hasInitializer: hasInitializer,
-      instructionAddress: rsadd.address
-    };
+    return stack.map(slot => ({ ...slot, offset: 0 }));
   }
 
   /**
@@ -502,7 +500,7 @@ export class NWScriptGlobalVariableAnalyzer {
     }
     
     // Get the first JSR target address
-    const firstJSRTarget = firstJSR.address + firstJSR.offset;
+    const firstJSRTarget = firstJSR.address + toSignedInt32(firstJSR.offset);
     const firstJSRBlock = this.cfg.getBlockForAddress(firstJSRTarget);
     
     if (!firstJSRBlock) {
@@ -552,7 +550,8 @@ export class NWScriptGlobalVariableAnalyzer {
           // If not found in same block, search successor blocks
           if (!foundJSR && savebpAddress) {
             const jsrSearchVisited = new Set<NWScriptBasicBlock>();
-            const jsrSearchQueue: NWScriptBasicBlock[] = Array.from(block.successors);
+            const jsrSearchQueue: NWScriptBasicBlock[] =
+              this.cfg.getIntraProceduralSuccessors(block);
             
             while (jsrSearchQueue.length > 0 && !foundJSR && savebpAddress) {
               const succBlock = jsrSearchQueue.shift()!;
@@ -576,7 +575,7 @@ export class NWScriptGlobalVariableAnalyzer {
               
               // Continue searching if we haven't found JSR yet
               if (!foundJSR && savebpAddress) {
-                for (const succSucc of succBlock.successors) {
+                for (const succSucc of this.cfg.getIntraProceduralSuccessors(succBlock)) {
                   if (!jsrSearchVisited.has(succSucc)) {
                     const hasRetn = succSucc.instructions.some(i => i.code === OP_RETN);
                     if (!hasRetn) {
@@ -600,14 +599,8 @@ export class NWScriptGlobalVariableAnalyzer {
       
       // Continue searching if we haven't found SAVEBP yet
       if (!savebpAddress) {
-        for (const successor of block.successors) {
+        for (const successor of this.cfg.getIntraProceduralSuccessors(block)) {
           if (!visited.has(successor)) {
-            // Skip RETURN edges - these go back to the caller (outside the function)
-            const edge = this.cfg.getEdge(block, successor);
-            if (edge && edge.type === EdgeType.RETURN) {
-              continue;
-            }
-            
             // Stop if we hit a RETN (end of function)
             const hasRetn = successor.instructions.some(instr => instr.code === OP_RETN);
             if (!hasRetn) {
@@ -639,7 +632,8 @@ export class NWScriptGlobalVariableAnalyzer {
     
     // Collect blocks from first JSR target up to (but not including) SAVEBP block
     // Variables in these blocks are globals
-    // CRITICAL: We must only follow execution edges within the function, NOT return edges
+    // Follow the wrapper's procedure-local control flow. A RETURN edge is the linear
+    // continuation after a JSR; CALL edges are the ones that enter another procedure.
     const blocks: NWScriptBasicBlock[] = [];
     const blockVisited = new Set<NWScriptBasicBlock>();
     const blockQueue: NWScriptBasicBlock[] = [firstJSRBlock];
@@ -670,29 +664,13 @@ export class NWScriptGlobalVariableAnalyzer {
       // Block is entirely before SAVEBP - include it
       blocks.push(block);
 
-      // Follow successors, but stop at SAVEBP block
-      // CRITICAL: Only follow execution edges within the function, NOT return edges
-      // Return edges go back to the caller and are outside the function
-      for (const successor of block.successors) {
+      // Follow procedure-local successors, but stop at the SAVEBP block.
+      for (const successor of this.cfg.getIntraProceduralSuccessors(block)) {
         // Include SAVEBP block if it hasn't been visited yet (it contains globals before SAVEBP)
         if (!blockVisited.has(successor)) {
-          // Skip RETURN edges - these go back to the caller (outside the function)
-          const edge = this.cfg.getEdge(block, successor);
-          if (edge && edge.type === EdgeType.RETURN) {
-            continue;
-          }
-          
           // Skip the entry JSR return point (RETN in entry block) - it's outside the function
           if (entryJSRReturnBlock && successor === entryJSRReturnBlock) {
             continue;
-          }
-          
-          // Skip CALL edges to other functions (though we should stop at SAVEBP before reaching them)
-          if (edge && edge.type === EdgeType.CALL) {
-            // Only skip if it's not the first JSR target (which we're already in)
-            if (successor.startInstruction.address !== firstJSRTarget) {
-              continue;
-            }
           }
           
           // Check if successor is before SAVEBP or is the SAVEBP block itself
@@ -711,4 +689,3 @@ export class NWScriptGlobalVariableAnalyzer {
     return { blocks, savebpAddress };
   }
 }
-

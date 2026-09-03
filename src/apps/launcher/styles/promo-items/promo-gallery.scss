@@ -1,5 +1,4 @@
 
-
 /* GALLERY ELEMENT */
 
 .promo-element.gallery {
@@ -74,4 +73,24 @@
 
 .promo-element.gallery:hover .gallery-left, .promo-element.gallery:hover .gallery-right {
   opacity: 1;
+}
+
+@media (max-width: 900px) {
+  .promo-element.gallery {
+    width: var(--promo-tile-width, 100%);
+  }
+
+  .promo-element.gallery .gallery-left,
+  .promo-element.gallery .gallery-right {
+    top: calc(50% - 44px);
+    width: 40px;
+    height: 88px;
+    line-height: 88px;
+    opacity: 0.85;
+  }
+
+  .promo-element.gallery:hover .gallery-left,
+  .promo-element.gallery:hover .gallery-right {
+    opacity: 1;
+  }
 }

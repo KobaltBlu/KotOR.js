@@ -9,7 +9,7 @@ backup/
 .ds_store
 projects/
 Saves/
-tests/
+/tests/
 # src/**/*.js
 dist/
 debug.log
@@ -18,7 +18,7 @@ coverage/
 scratch/
 research/
 .history/
-extensions/
+/extensions/
 .npm-cache/
 .vscode/mcp.json
 .vscode/chrome-debug-profile/

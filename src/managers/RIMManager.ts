@@ -63,4 +63,23 @@ export class RIMManager {
     RIMManager.RIMs.set(name, rim);
   }
 
+  static FindByPath(archivePath: string): RIMObject | undefined {
+    if(!archivePath){
+      return undefined;
+    }
+    const normalized = String(archivePath).replace(/\\/g, '/').replace(/^\/+|\/+$/g, '').toLowerCase();
+    const base = (normalized.split('/').pop() || normalized).replace(/\.[^.]+$/, '');
+    const byName = RIMManager.RIMs.get(base) || RIMManager.RIMs.get(path.parse(archivePath).name);
+    if(byName){
+      return byName;
+    }
+    for(const rim of RIMManager.RIMs.values()){
+      const p = String(rim.resource_path || '').replace(/\\/g, '/').replace(/^\/+|\/+$/g, '').toLowerCase();
+      if(p === normalized || p.endsWith('/' + normalized) || normalized.endsWith('/' + p)){
+        return rim;
+      }
+    }
+    return undefined;
+  }
+
 }

@@ -10,6 +10,7 @@ import { NWScriptANDChainDetector } from "@/nwscript/decompiler/NWScriptANDChain
 import type { NWScriptGlobalInit } from "@/nwscript/decompiler/NWScriptGlobalVariableAnalyzer";
 import { OP_STORE_STATE, OP_STORE_STATEALL, OP_JMP, OP_RETN, OP_ACTION, OP_JZ, OP_JNZ, OP_CPDOWNSP, OP_RSADD, OP_MOVSP } from "@/nwscript/NWScriptOPCodes";
 import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import { toSignedInt32 } from "@/nwscript/decompiler/NWScriptOpcodeSemantics";
 
 /**
  * Represents a high-level statement in the decompiled code
@@ -665,7 +666,7 @@ export class NWScriptStatementBuilder {
         if (nextInstr && nextInstr.code === OP_JMP && nextInstr.offset) {
           const nestedCall = this.extractNestedCall(instruction, nextInstr);
           if (nestedCall) {
-            const jmpTarget = nextInstr.address + nextInstr.offset;
+            const jmpTarget = nextInstr.address + toSignedInt32(nextInstr.offset);
             this.pendingNestedCalls.set(jmpTarget, nestedCall);
           }
         }
@@ -680,7 +681,7 @@ export class NWScriptStatementBuilder {
   private extractNestedCall(storeState: NWScriptInstruction, jmp: NWScriptInstruction): NWScriptExpression | null {
     if (!jmp.offset) return null;
     
-    const jmpTarget = jmp.address + jmp.offset;
+    const jmpTarget = jmp.address + toSignedInt32(jmp.offset);
     const nestedSimulator = new NWScriptStackSimulator();
     let current = jmp.nextInstr;
     let lastActionExpr: NWScriptExpression | null = null;
@@ -735,7 +736,7 @@ export class NWScriptStatementBuilder {
       if (instruction.code === OP_STORE_STATE || instruction.code === OP_STORE_STATEALL) {
         const nextInstr = instruction.nextInstr;
         if (nextInstr && nextInstr.code === OP_JMP && nextInstr.offset) {
-          const jmpTarget = nextInstr.address + nextInstr.offset;
+          const jmpTarget = nextInstr.address + toSignedInt32(nextInstr.offset);
           let current = nextInstr.nextInstr;
           while (current && current.address < jmpTarget) {
             skipAddresses.add(current.address);
@@ -868,7 +869,7 @@ export class NWScriptStatementBuilder {
         foundMovsp = true;
       } else if (current.code === OP_JMP && foundMovsp && current.offset !== undefined) {
         foundJmp = true;
-        jmpTarget = current.address + current.offset;
+        jmpTarget = current.address + toSignedInt32(current.offset);
         break;
       } else if (current.code === OP_RETN) {
         // Direct RETN after MOVSP (no JMP)
@@ -996,4 +997,3 @@ export class NWScriptStatementBuilder {
     return this.processedBlocks;
   }
 }
-

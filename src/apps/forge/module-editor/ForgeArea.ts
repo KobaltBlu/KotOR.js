@@ -3,6 +3,7 @@ import type { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
 import { AreaMap } from "@/module/AreaMap";
 import { GroupType, type UI3DRenderer } from "@/apps/forge/UI3DRenderer";
 import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { ForgeMiniGame } from "@/apps/forge/module-editor/ForgeMiniGame";
 import { ForgeCreature } from "@/apps/forge/module-editor/ForgeCreature";
 import { ForgeRoom } from "@/apps/forge/module-editor/ForgeRoom";
@@ -22,8 +23,15 @@ export class ForgeArea extends ForgeGameObject{
 
   git: KotOR.GFFObject;
   are: KotOR.GFFObject;
-  layout: KotOR.LYTObject;
-  visObject: KotOR.VISObject;
+  /** Present only when loaded from disk/game or created via `ensureLayout` (user room edits). */
+  layout?: KotOR.LYTObject;
+  visObject?: KotOR.VISObject;
+  /** True when `${layoutResRef}.lyt` was read from the project on load. */
+  layoutPresentOnDisk = false;
+  /** True when layout was Demanded from retail game KEY/BIF (not in the project). */
+  layoutLoadedFromGame = false;
+  /** True when the editor invented a layout because the user edited rooms/visibility. */
+  layoutEnsuredByEditor = false;
 
   module: ForgeModule;
 
@@ -167,7 +175,7 @@ export class ForgeArea extends ForgeGameObject{
     musicNight: 0,
   }
 
-  miniGame: ForgeMiniGame;
+  miniGame: ForgeMiniGame | undefined;
   cameras: ForgeCamera[] = [];
   creatures: ForgeCreature[] = [];
   doors: ForgeDoor[] = [];
@@ -197,229 +205,150 @@ export class ForgeArea extends ForgeGameObject{
     this.context = context;
   }
 
+  private areField(label: string, fields?: KotOR.GFFField[]): KotOR.GFFField | undefined {
+    if(fields){
+      return this.are.getFieldByLabel(label, fields) || undefined;
+    }
+    if(!this.are?.RootNode?.hasField(label)){
+      return undefined;
+    }
+    return this.are.getFieldByLabel(label) || undefined;
+  }
+
+  private readAreValue<T>(label: string, fallback: T, fields?: KotOR.GFFField[]): T {
+    const field = this.areField(label, fields);
+    if(!field){
+      return fallback;
+    }
+    try{
+      const value = field.getValue();
+      return (value === undefined || value === null) ? fallback : (value as T);
+    }catch{
+      return fallback;
+    }
+  }
+
+  private readAreLocString(label: string, fallback: KotOR.CExoLocString = new KotOR.CExoLocString(-1)): KotOR.CExoLocString {
+    const field = this.areField(label);
+    if(!field){
+      return fallback;
+    }
+    try{
+      return field.getCExoLocString() || fallback;
+    }catch{
+      return fallback;
+    }
+  }
+
   async load(){
     //BEGIN AREA LOAD
 
-    if(this.are.RootNode.hasField('ObjectId'))
-      this.id = this.are.getFieldByLabel('ObjectId').getValue();
+    this.id = this.readAreValue('ObjectId', this.id);
 
-    let rooms = this.are.getFieldByLabel('Rooms');
+    const rooms = this.areField('Rooms');
 
-    this.alphaTest = this.are.getFieldByLabel('AlphaTest').getValue();
-    this.cameraStyle = this.are.getFieldByLabel('CameraStyle').getValue();
-    this.chanceLightning = this.are.getFieldByLabel('ChanceLightning').getValue();
-    this.chanceRain = this.are.getFieldByLabel('ChanceRain').getValue();
-    this.chanceSnow = this.are.getFieldByLabel('ChanceSnow').getValue();
-    this.comments = this.are.getFieldByLabel('Comments').getValue();
-    this.creatorId = this.are.getFieldByLabel('Creator_ID').getValue();
-    this.dayNightCycle = this.are.getFieldByLabel('DayNightCycle').getValue();
-    this.defaultEnvMap = this.are.getFieldByLabel('DefaultEnvMap').getValue();
+    this.alphaTest = this.readAreValue('AlphaTest', this.alphaTest);
+    this.cameraStyle = this.readAreValue('CameraStyle', this.cameraStyle);
+    this.chanceLightning = this.readAreValue('ChanceLightning', this.chanceLightning);
+    this.chanceRain = this.readAreValue('ChanceRain', this.chanceRain);
+    this.chanceSnow = this.readAreValue('ChanceSnow', this.chanceSnow);
+    this.comments = this.readAreValue('Comments', this.comments) || '';
+    this.creatorId = this.readAreValue('Creator_ID', this.creatorId);
+    this.dayNightCycle = !!this.readAreValue('DayNightCycle', this.dayNightCycle);
+    this.defaultEnvMap = this.readAreValue('DefaultEnvMap', this.defaultEnvMap) || '';
     KotOR.OdysseyMaterialBuilder.defaultEnvMap = this.defaultEnvMap;
-    this.dynamicAmbientColor = this.are.getFieldByLabel('DynAmbientColor').getValue();
+    this.dynamicAmbientColor = this.readAreValue('DynAmbientColor', this.dynamicAmbientColor);
     this.expansionList = [];
 
-    this.flags = this.are.getFieldByLabel('Flags').getValue();
-    // this.grass = {
-    //   ambient: this.are.getFieldByLabel('Grass_Ambient').getValue(),
-    //   density: this.are.getFieldByLabel('Grass_Density').getValue(),
-    //   diffuse: this.are.getFieldByLabel('Grass_Diffuse').getValue(),
-    //   probability: {
-    //     lowerLeft: this.are.getFieldByLabel('Grass_Prob_LL').getValue(),
-    //     lowerRight: this.are.getFieldByLabel('Grass_Prob_LR').getValue(),
-    //     upperLeft: this.are.getFieldByLabel('Grass_Prob_UL').getValue(),
-    //     upperRight: this.are.getFieldByLabel('Grass_Prob_UR').getValue()
-    //   },
-    //   quadSize: this.are.getFieldByLabel('Grass_QuadSize').getValue(),
-    //   textureName: this.are.getFieldByLabel('Grass_TexName').getValue()
-    // };
+    this.flags = this.readAreValue('Flags', this.flags);
+    this.grassAmbient = this.readAreValue('Grass_Ambient', this.grassAmbient);
+    this.grassDensity = this.readAreValue('Grass_Density', this.grassDensity);
+    this.grassDiffuse = this.readAreValue('Grass_Diffuse', this.grassDiffuse);
+    this.grassProbLL = this.readAreValue('Grass_Prob_LL', this.grassProbLL);
+    this.grassProbLR = this.readAreValue('Grass_Prob_LR', this.grassProbLR);
+    this.grassProbUL = this.readAreValue('Grass_Prob_UL', this.grassProbUL);
+    this.grassProbUR = this.readAreValue('Grass_Prob_UR', this.grassProbUR);
+    this.grassQuadSize = this.readAreValue('Grass_QuadSize', this.grassQuadSize);
+    this.grassTexName = this.readAreValue('Grass_TexName', this.grassTexName) || '';
 
-    this.id = this.are.getFieldByLabel('ID').getValue();
-    this.isNight = this.are.getFieldByLabel('IsNight').getValue();
-    this.lightingScheme = this.are.getFieldByLabel('LightingScheme').getValue();
-    this.loadScreenId = this.are.getFieldByLabel('LoadScreenID').getValue();
+    this.id = this.readAreValue('ID', this.id);
+    this.isNight = !!this.readAreValue('IsNight', this.isNight);
+    this.lightingScheme = this.readAreValue('LightingScheme', this.lightingScheme);
+    this.loadScreenId = this.readAreValue('LoadScreenID', this.loadScreenId);
 
-    let map = this.are.getFieldByLabel('Map').getChildStructs()[0];
-    if(map){
-      this.areaMap = AreaMap.FromStruct(map) as AreaMap;
+    if(this.areField('Map')){
+      const map = this.areField('Map')?.getChildStructs()?.[0];
+      const loadedMap = map ? AreaMap.FromStruct(map) : undefined;
+      if(loadedMap){
+        this.areaMap = loadedMap;
+      }
     }
 
-    if(this.are.RootNode.hasField('MiniGame')){
-      this.miniGame = new ForgeMiniGame(
-        this.are.getFieldByLabel('MiniGame').getChildStructs()[0]
-      );
+    if(this.areField('MiniGame')){
+      const miniGameStruct = this.areField('MiniGame')?.getChildStructs()?.[0];
+      if(miniGameStruct){
+        this.miniGame = new ForgeMiniGame(miniGameStruct);
+      }
     }
 
-    this.modListenCheck = this.are.getFieldByLabel('ModListenCheck').getValue();
-    this.modSpotCheck = this.are.getFieldByLabel('ModSpotCheck').getValue();
-    this.moonAmbientColor = this.are.getFieldByLabel('MoonAmbientColor').getValue();
-    this.moonDiffuseColor = this.are.getFieldByLabel('MoonDiffuseColor').getValue();
-    this.moonFogColor = this.are.getFieldByLabel('MoonFogColor').getValue();
-    this.moonFogFar = this.are.getFieldByLabel('MoonFogFar').getValue();
-    this.moonFogNear = this.are.getFieldByLabel('MoonFogNear').getValue();
-    this.moonFogOn = !!this.are.getFieldByLabel('MoonFogOn').getValue();
-    this.moonShadows = !!this.are.getFieldByLabel('MoonShadows').getValue();
-    this.name = this.are.getFieldByLabel('Name').getCExoLocString();
+    this.modListenCheck = this.readAreValue('ModListenCheck', this.modListenCheck);
+    this.modSpotCheck = this.readAreValue('ModSpotCheck', this.modSpotCheck);
+    this.moonAmbientColor = this.readAreValue('MoonAmbientColor', this.moonAmbientColor);
+    this.moonDiffuseColor = this.readAreValue('MoonDiffuseColor', this.moonDiffuseColor);
+    this.moonFogColor = this.readAreValue('MoonFogColor', this.moonFogColor);
+    this.moonFogFar = this.readAreValue('MoonFogFar', this.moonFogFar);
+    this.moonFogNear = this.readAreValue('MoonFogNear', this.moonFogNear);
+    this.moonFogOn = !!this.readAreValue('MoonFogOn', this.moonFogOn);
+    this.moonShadows = !!this.readAreValue('MoonShadows', this.moonShadows);
+    this.name = this.readAreLocString('Name', this.name);
 
-    this.noHangBack = !!this.are.getFieldByLabel('NoHangBack').getValue();
-    this.noRest = !!this.are.getFieldByLabel('NoRest').getValue();
+    this.noHangBack = !!this.readAreValue('NoHangBack', this.noHangBack);
+    this.noRest = !!this.readAreValue('NoRest', this.noRest);
 
-    // if(this.are.RootNode.hasField(ModuleObjectScript.AreaOnEnter)){
-    //   this.scriptResRefs.set(ModuleObjectScript.AreaOnEnter, this.are.getFieldByLabel(ModuleObjectScript.AreaOnEnter).getValue());
-    // }
+    this.onEnter = this.readAreValue('OnEnter', this.onEnter) || '';
+    this.onExit = this.readAreValue('OnExit', this.onExit) || '';
+    this.onHeartbeat = this.readAreValue('OnHeartbeat', this.onHeartbeat) || '';
+    this.onUserDefined = this.readAreValue('OnUserDefined', this.onUserDefined) || '';
 
-    // if(this.are.RootNode.hasField(ModuleObjectScript.AreaOnExit)){
-    //   this.scriptResRefs.set(ModuleObjectScript.AreaOnExit, this.are.getFieldByLabel(ModuleObjectScript.AreaOnExit).getValue());
-    // }
-
-    // if(this.are.RootNode.hasField(ModuleObjectScript.AreaOnHeartbeat)){
-    //   this.scriptResRefs.set(ModuleObjectScript.AreaOnHeartbeat, this.are.getFieldByLabel(ModuleObjectScript.AreaOnHeartbeat).getValue());
-    // }
-
-    // if(this.are.RootNode.hasField(ModuleObjectScript.AreaOnUserDefined)){
-    //   this.scriptResRefs.set(ModuleObjectScript.AreaOnUserDefined, this.are.getFieldByLabel(ModuleObjectScript.AreaOnUserDefined).getValue());
-    // }
-
-    this.playerOnly = !!this.are.getFieldByLabel('PlayerOnly').getValue();
-    this.playerVsPlayer = this.are.getFieldByLabel('PlayerVsPlayer').getValue();
+    this.playerOnly = !!this.readAreValue('PlayerOnly', this.playerOnly);
+    this.playerVsPlayer = this.readAreValue('PlayerVsPlayer', this.playerVsPlayer);
 
     //Rooms
-    for(let i = 0; i < rooms.childStructs.length; i++ ){
-      let strt = rooms.childStructs[i];
-      const roomName = this.are.getFieldByLabel('RoomName', strt.getFields()).getValue().toLowerCase();
-      const envAudio = this.are.getFieldByLabel('EnvAudio', strt.getFields()).getValue();
-      const ambientScale = this.are.getFieldByLabel('AmbientScale', strt.getFields()).getValue();
+    const roomStructs = rooms?.childStructs || [];
+    for(let i = 0; i < roomStructs.length; i++ ){
+      const strt = roomStructs[i];
+      const roomFields = strt.getFields();
+      const roomName = String(this.readAreValue('RoomName', '', roomFields) || '').toLowerCase();
+      if(!roomName){
+        continue;
+      }
+      const envAudio = this.readAreValue('EnvAudio', 0, roomFields);
+      const ambientScale = this.readAreValue('AmbientScale', 1, roomFields);
       const room = new ForgeRoom(roomName);
       room.setAmbientScale(ambientScale);
       room.setEnvAudio(envAudio);
       this.rooms.push(room);
     }
 
-    this.shadowOpacity = this.are.getFieldByLabel('ShadowOpacity').getValue();
+    this.shadowOpacity = this.readAreValue('ShadowOpacity', this.shadowOpacity);
 
-    this.stealthXPEnabled = this.are.getFieldByLabel('StealthXPEnabled').getValue();
-    this.stealthXPLoss = this.are.getFieldByLabel('StealthXPLoss').getValue();
-    this.stealthXPMax = this.are.getFieldByLabel('StealthXPMax').getValue();
+    this.stealthXPEnabled = !!this.readAreValue('StealthXPEnabled', this.stealthXPEnabled);
+    this.stealthXPLoss = this.readAreValue('StealthXPLoss', this.stealthXPLoss);
+    this.stealthXPMax = this.readAreValue('StealthXPMax', this.stealthXPMax);
 
-    this.sunAmbientColor = this.are.getFieldByLabel('SunAmbientColor').getValue();
-    this.sunDiffuseColor = this.are.getFieldByLabel('SunDiffuseColor').getValue();
-    this.sunFogColor = this.are.getFieldByLabel('SunFogColor').getValue();
-    this.sunFogFar = this.are.getFieldByLabel('SunFogFar').getValue();
-    this.sunFogNear = this.are.getFieldByLabel('SunFogNear').getValue();
-    this.sunFogOn = this.are.getFieldByLabel('SunFogOn').getValue();
-    this.sunShadows = this.are.getFieldByLabel('SunShadows').getValue();
-    this.tag = this.are.getFieldByLabel('Tag').getValue();
-    this.unescapable = this.are.getFieldByLabel('Unescapable').getValue() ? true : false;
-    this.version = this.are.getFieldByLabel('Version').getValue();
-    this.windPower = this.are.getFieldByLabel('WindPower').getValue();
+    this.sunAmbientColor = this.readAreValue('SunAmbientColor', this.sunAmbientColor);
+    this.sunDiffuseColor = this.readAreValue('SunDiffuseColor', this.sunDiffuseColor);
+    this.sunFogColor = this.readAreValue('SunFogColor', this.sunFogColor);
+    this.sunFogFar = this.readAreValue('SunFogFar', this.sunFogFar);
+    this.sunFogNear = this.readAreValue('SunFogNear', this.sunFogNear);
+    this.sunFogOn = !!this.readAreValue('SunFogOn', this.sunFogOn);
+    this.sunShadows = !!this.readAreValue('SunShadows', this.sunShadows);
+    this.tag = this.readAreValue('Tag', this.tag) || '';
+    this.unescapable = !!this.readAreValue('Unescapable', this.unescapable);
+    this.version = this.readAreValue('Version', this.version);
+    this.windPower = this.readAreValue('WindPower', this.windPower);
 
-    // this.fog = undefined;
-
-    // if(this.sun.fogOn){
-    //   this.fog = new THREE.Fog(
-    //     this.sun.fogColor,
-    //     this.sun.fogNear,
-    //     this.sun.fogFar
-    //   );
-    //   GameState.scene.fog = this.fog;
-    // }else{
-    //   GameState.scene.fog = undefined;
-    // }
-
-    //BEGIN GIT LOAD
-
-    // const areaMap = this.git.getFieldByLabel('AreaMap');
-    // const areaProps = this.git.getFieldByLabel('AreaProperties');
-    // const areaEffects = this.git.getFieldByLabel('AreaEffectList');
-    const cameras = this.git.getFieldByLabel('CameraList');
-    const creatures = this.git.getFieldByLabel('Creature List');
-    const doors = this.git.getFieldByLabel('Door List');
-    const encounters = this.git.getFieldByLabel('Encounter List');
-    const placeables = this.git.getFieldByLabel('Placeable List');
-    const sounds = this.git.getFieldByLabel('SoundList');
-    const stores = this.git.getFieldByLabel('StoreList');
-    const triggers = this.git.getFieldByLabel('TriggerList');
-    const waypoints = this.git.getFieldByLabel('WaypointList');
-
-    // const areaPropsField = areaProps.getChildStructs()[0].getFields();
-    // this.audio.ambient.day = this.git.getFieldByLabel('AmbientSndDay', areaPropsField).getValue();
-    // this.audio.ambient.dayVolume = this.git.getFieldByLabel('AmbientSndDayVol', areaPropsField).getValue();
-    // this.audio.ambient.night = this.git.getFieldByLabel('AmbientSndNight', areaPropsField).getValue();
-    // this.audio.ambient.nightVolume = this.git.getFieldByLabel('AmbientSndNitVol', areaPropsField).getValue();
-    // if(areaProps.getChildStructs()[0].hasField('EnvAudio')){
-    //   this.audio.environmentAudio = this.git.getFieldByLabel('EnvAudio', areaPropsField).getValue();
-    // }else{
-    //   this.audio.environmentAudio = -1;
-    // }
-    
-    // this.audio.music.battle = this.git.getFieldByLabel('MusicBattle', areaPropsField).getValue();
-    // this.audio.music.day = this.git.getFieldByLabel('MusicDay', areaPropsField).getValue();
-    // this.audio.music.delay = this.git.getFieldByLabel('MusicDelay', areaPropsField).getValue();
-    // this.audio.music.night = this.git.getFieldByLabel('MusicNight', areaPropsField).getValue();
-    // AudioEngine.GetAudioEngine().setAreaAudioProperties(this.audio);
-
-    //Cameras
-    if(cameras){
-      for(let i = 0; i < cameras.childStructs.length; i++){
-        this.gitInstanceToForgeGameObject(cameras.childStructs[i], GroupType.CAMERA);
-      }
-    }
-
-    // //AreaEffects
-    // if(areaEffects){
-    //   for(let i = 0; i < areaEffects.childStructs.length; i++){
-    //     const strt = areaEffects.childStructs[i];
-    //     this.attachObject( new ModuleAreaOfEffect(GFFObject.FromStruct(strt)) );
-    //   }
-    // }
-
-    //Creatures
-    if(creatures){
-      for(let i = 0; i < creatures.childStructs.length; i++){
-        this.gitInstanceToForgeGameObject(creatures.childStructs[i], GroupType.CREATURE);
-      }
-    }
-
-    //Triggers
-    if(triggers){
-      for(let i = 0; i < triggers.childStructs.length; i++){
-        this.gitInstanceToForgeGameObject(triggers.childStructs[i], GroupType.TRIGGER);
-      }
-    }
-
-    //Doors
-    if(doors){
-      for(let i = 0; i < doors.childStructs.length; i++ ){
-        this.gitInstanceToForgeGameObject(doors.childStructs[i], GroupType.DOOR);
-      }
-    }
-
-    //Placeables
-    if(placeables){
-      for(let i = 0; i < placeables.childStructs.length; i++ ){
-        this.gitInstanceToForgeGameObject(placeables.childStructs[i], GroupType.PLACEABLE);
-      }
-    }
-
-    //Sounds
-    if(sounds){
-      for(let i = 0; i < sounds.childStructs.length; i++ ){
-        this.gitInstanceToForgeGameObject(sounds.childStructs[i], GroupType.SOUND);
-      }
-    }
-
-    //Stores
-    if(stores){
-      for(let i = 0; i < stores.childStructs.length; i++ ){
-        this.gitInstanceToForgeGameObject(stores.childStructs[i], GroupType.STORE);
-      }
-    }
-
-    //Waypoints
-    if(waypoints){
-      for(let i = 0; i < waypoints.childStructs.length; i++ ){
-        this.gitInstanceToForgeGameObject(waypoints.childStructs[i], GroupType.WAYPOINT);
-      }
-    }
+    this.loadGITLists();
 
     // //AreaMapData
     // if(areaMap){
@@ -457,50 +386,25 @@ export class ForgeArea extends ForgeGameObject{
     // }
 
     try{
-      const lyt = await ProjectFileSystem.readFile(`${this.name.getValue()}.lyt`);
-      if(lyt){
-        this.layout = new KotOR.LYTObject(lyt);
+      const layoutResRef = this.getLayoutResRef();
+      this.layout = undefined;
+      this.layoutPresentOnDisk = false;
+      this.layoutLoadedFromGame = false;
+      this.layoutEnsuredByEditor = false;
+      this.visObject = undefined;
 
-        //Resort the rooms based on the LYT file because it matches the walkmesh transition index numbers
-        let sortedRooms: ForgeRoom[] = [];
-        for(let i = 0; i < this.layout.rooms.length; i++){
-          let roomLYT = this.layout.rooms[i];
-          for(let r = 0; r != this.rooms.length; r++ ){
-            let room = this.rooms[r];
-            if(room.roomName.toLowerCase() == roomLYT.name.toLowerCase()){
-              room.position.copy(roomLYT.position);
-              sortedRooms.push(room);
-            }
-          }
-        }
-
-        this.rooms = sortedRooms;
-
-        // for(let i = 0; i < this.layout.doorhooks.length; i++){
-        //   let _doorHook = this.layout.doorhooks[i];
-        //   this.doorhooks.push(_doorHook);
-        // }
-
-        // if(this.miniGame){
-        //   for(let i = 0; i < this.layout.tracks.length; i++){
-        //     this.miniGame.tracks.push(new ModuleMGTrack(this.layout.tracks[i]));
-        //   }
-    
-        //   for(let i = 0; i < this.layout.obstacles.length; i++){
-        //     this.miniGame.obstacles.push(new ModuleMGObstacle(undefined, this.layout.obstacles[i]));
-        //   }
-        // }
+      const lytBuffer = await this.loadLayoutBuffer(layoutResRef);
+      if(lytBuffer?.byteLength){
+        this.layout = new KotOR.LYTObject(lytBuffer);
+        this.applyLayoutRoomOrderAndPositions();
       }
 
-      const vis = await ProjectFileSystem.readFile(`${this.name.getValue()}.vis`);
-      if(vis){
-        this.visObject = new KotOR.VISObject(vis);
+      const visBuffer = await this.loadVisBuffer(layoutResRef);
+      if(visBuffer?.byteLength){
+        this.visObject = new KotOR.VISObject(visBuffer);
         this.visObject.read();
         this.visObject.attachArea(this as any);
       }
-
-      console.log('lyt', this.layout);
-      console.log('vis', this.visObject);
     }catch(e){
       console.error(e);
     }
@@ -512,7 +416,71 @@ export class ForgeArea extends ForgeGameObject{
 
     await this.loadRooms();
     await this.loadCreatures();
-    this.context.sceneGraphManager.rebuild();
+    await this.loadGameObjectList(this.doors, GroupType.DOOR, { blueprint: true });
+    await this.loadGameObjectList(this.placeables, GroupType.PLACEABLE, { blueprint: true });
+    await this.loadGameObjectList(this.items, GroupType.ITEM, { blueprint: true });
+    await this.loadGameObjectList(this.stores, GroupType.STORE, { blueprint: true });
+    await this.loadGameObjectList(this.triggers, GroupType.TRIGGER);
+    await this.loadGameObjectList(this.cameras, GroupType.CAMERA);
+    await this.loadGameObjectList(this.waypoints, GroupType.WAYPOINT);
+    await this.loadGameObjectList(this.sounds, GroupType.SOUND);
+    await this.loadGameObjectList(this.encounters, GroupType.ENCOUNTER);
+    this.context?.sceneGraphManager?.rebuild();
+  }
+
+  /**
+   * Hydrate GIT AreaProperties and instance lists without loading 3D assets.
+   */
+  loadGITLists(): void {
+    if(!(this.git instanceof KotOR.GFFObject)){
+      return;
+    }
+
+    const areaProps = this.git.getFieldByLabel('AreaProperties');
+    const areaPropsStruct = areaProps?.getChildStructs()?.[0];
+    if(areaPropsStruct){
+      const fields = areaPropsStruct.getFields();
+      const readInt = (label: string, fallback: number): number => {
+        const field = this.git.getFieldByLabel(label, fields);
+        return field ? field.getValue() : fallback;
+      };
+      this.areaProperties.ambientSndDay = readInt('AmbientSndDay', this.areaProperties.ambientSndDay);
+      this.areaProperties.ambientSndDayVol = readInt('AmbientSndDayVol', this.areaProperties.ambientSndDayVol);
+      this.areaProperties.ambientSndNight = readInt('AmbientSndNight', this.areaProperties.ambientSndNight);
+      this.areaProperties.ambientSndNitVol = readInt('AmbientSndNitVol', this.areaProperties.ambientSndNitVol);
+      this.areaProperties.envAudio = readInt('EnvAudio', this.areaProperties.envAudio);
+      this.areaProperties.musicBattle = readInt('MusicBattle', this.areaProperties.musicBattle);
+      this.areaProperties.musicDay = readInt('MusicDay', this.areaProperties.musicDay);
+      this.areaProperties.musicDelay = readInt('MusicDelay', this.areaProperties.musicDelay);
+      this.areaProperties.musicNight = readInt('MusicNight', this.areaProperties.musicNight);
+    }
+
+    if(this.git.RootNode.hasField('UseTemplates')){
+      this.useTemplate = !!this.git.getFieldByLabel('UseTemplates').getValue();
+    }
+
+    const lists: Array<[string, GroupType]> = [
+      ['CameraList', GroupType.CAMERA],
+      ['Creature List', GroupType.CREATURE],
+      ['Door List', GroupType.DOOR],
+      ['Encounter List', GroupType.ENCOUNTER],
+      ['List', GroupType.ITEM],
+      ['Placeable List', GroupType.PLACEABLE],
+      ['SoundList', GroupType.SOUND],
+      ['StoreList', GroupType.STORE],
+      ['TriggerList', GroupType.TRIGGER],
+      ['WaypointList', GroupType.WAYPOINT],
+    ];
+    for(let i = 0; i < lists.length; i++){
+      const [label, groupType] = lists[i];
+      const field = this.git.getFieldByLabel(label);
+      if(!field){
+        continue;
+      }
+      for(let j = 0; j < field.childStructs.length; j++){
+        this.gitInstanceToForgeGameObject(field.childStructs[j], groupType);
+      }
+    }
   }
 
   getNextCameraId(): number {
@@ -539,18 +507,20 @@ export class ForgeArea extends ForgeGameObject{
       const array = registry.array;
       const groupType = registry.groupType;
       const onAttach = registry.onAttach;
-      this.context.addObjectToGroup(object.container, groupType);
+      if(this.context){
+        this.context.addObjectToGroup(object.container, groupType);
+        object.setContext(this.context);
+      }
       if(array){
         this[array].push(object);
       }
-      object.setContext(this.context);
       if(typeof onAttach === 'function'){
         onAttach(object);
       }
     }else if(object instanceof ForgeMiniGame){
       this.miniGame = object;
     }
-    this.context.sceneGraphManager.rebuild();
+    this.context?.sceneGraphManager?.rebuild();
   }
 
 
@@ -562,14 +532,14 @@ export class ForgeArea extends ForgeGameObject{
       const array = registry.array;
       const groupType = registry.groupType;
       const onDetach = registry.onDetach;
-      this.context.removeObjectFromGroup(object.container, groupType);
+      this.context?.removeObjectFromGroup(object.container, groupType);
       if(array){
         const idx = this[array].indexOf(object);
         if(idx >= 0){
           this[array].splice(idx, 1);
         }
       }
-      if(this.context.transformControls.object === object.container){
+      if(this.context?.transformControls?.object === object.container){
         this.context.selectObject(undefined);
       }
       if(typeof onDetach === 'function'){
@@ -577,7 +547,250 @@ export class ForgeArea extends ForgeGameObject{
       }
     }
     
-    this.context.sceneGraphManager.rebuild();
+    this.context?.sceneGraphManager?.rebuild();
+  }
+
+  clearAttachedObjects(): void {
+    const objects = [
+      ...this.cameras, ...this.creatures, ...this.doors, ...this.encounters,
+      ...this.items, ...this.placeables, ...this.sounds, ...this.stores,
+      ...this.triggers, ...this.waypoints, ...this.rooms,
+    ];
+    for(let i = 0; i < objects.length; i++){
+      this.detachObject(objects[i]);
+    }
+  }
+
+  /** Stable area resref for LYT/VIS filenames (not localized ARE Name). */
+  getLayoutResRef(): string {
+    const fromModule = this.module?.entryArea?.trim();
+    if(fromModule){
+      return fromModule.toLowerCase();
+    }
+    const fromTag = String(this.tag || "").trim();
+    if(fromTag){
+      return fromTag.toLowerCase();
+    }
+    return "area";
+  }
+
+  /**
+   * Build VIS text for current rooms.
+   * Preserves existing visibility links when visObject is present; only adds
+   * default full-mesh links for brand-new room names. Full mesh when no prior VIS.
+   */
+  buildVisText(): string {
+    const roomNames = this.rooms.map((r) => r.roomName).filter(Boolean);
+    const prior = this.visObject?.rooms;
+    const hasPrior = !!(prior && prior.size > 0);
+    let vis = "";
+
+    for(let i = 0; i < roomNames.length; i++){
+      const name = roomNames[i];
+      const key = name.toLocaleLowerCase();
+      let children: string[] = [];
+
+      if(hasPrior){
+        const existing = prior!.get(key);
+        if(existing){
+          // Keep links to rooms that still exist (preserve original casing from room list)
+          children = existing.rooms
+            .map((child) => roomNames.find((n) => n.toLocaleLowerCase() === child.toLocaleLowerCase()))
+            .filter((n): n is string => !!n);
+        } else {
+          // New room: default to seeing all rooms (including self pattern used by emptyVis)
+          children = [...roomNames];
+        }
+      } else {
+        children = [...roomNames];
+      }
+
+      vis += `${name} ${children.length}\n`;
+      for(let j = 0; j < children.length; j++){
+        vis += `  ${children[j]}\n`;
+      }
+    }
+    return vis;
+  }
+
+  /**
+   * Project file first, then retail KEY/BIF Demand (incomplete modules restored from game data).
+   */
+  private async loadLayoutBuffer(layoutResRef: string): Promise<Uint8Array | undefined> {
+    const path = `${layoutResRef}.lyt`;
+    if(await ProjectFileSystem.exists(path)){
+      try{
+        const lyt = await ProjectFileSystem.readFile(path);
+        if(lyt?.byteLength){
+          this.layoutPresentOnDisk = true;
+          return lyt;
+        }
+      }catch(e){
+        console.error(e);
+      }
+    }
+    if(!ForgeState.hasGameData){
+      return undefined;
+    }
+    try{
+      const fromGame = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes.lyt, layoutResRef);
+      if(fromGame?.byteLength){
+        this.layoutLoadedFromGame = true;
+        return fromGame;
+      }
+    }catch(e){
+      // Missing from game as well — retail would leave 0 layout rooms.
+    }
+    return undefined;
+  }
+
+  private async loadVisBuffer(layoutResRef: string): Promise<Uint8Array | undefined> {
+    const path = `${layoutResRef}.vis`;
+    if(await ProjectFileSystem.exists(path)){
+      try{
+        const vis = await ProjectFileSystem.readFile(path);
+        if(vis?.byteLength){
+          return vis;
+        }
+      }catch(e){
+        console.error(e);
+      }
+    }
+    if(!ForgeState.hasGameData){
+      return undefined;
+    }
+    try{
+      const fromGame = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes.vis, layoutResRef);
+      if(fromGame?.byteLength){
+        return fromGame;
+      }
+    }catch(e){
+      // optional
+    }
+    return undefined;
+  }
+
+  /** Apply LYT room order + positions (walkmesh transition indices). */
+  private applyLayoutRoomOrderAndPositions(): void {
+    if(!this.layout){
+      return;
+    }
+    const sortedRooms: ForgeRoom[] = [];
+    for(let i = 0; i < this.layout.rooms.length; i++){
+      const roomLYT = this.layout.rooms[i];
+      for(let r = 0; r != this.rooms.length; r++ ){
+        const room = this.rooms[r];
+        if(room.roomName.toLowerCase() == roomLYT.name.toLowerCase()){
+          room.position.copy(roomLYT.position);
+          sortedRooms.push(room);
+        }
+      }
+    }
+    this.rooms = sortedRooms;
+  }
+
+  /**
+   * Create an in-memory LYT when the user edits rooms/visibility and none was loaded.
+   * Does not write to disk until flush/save.
+   */
+  ensureLayout(): void {
+    if(this.layout){
+      return;
+    }
+    this.layout = new KotOR.LYTObject();
+    this.layoutEnsuredByEditor = true;
+    this.syncLayoutAndVisInMemory();
+  }
+
+  /** True when save/export should write `.lyt` / `.vis` into the project. */
+  shouldPersistLayout(): boolean {
+    return !!this.layout && (
+      this.layoutPresentOnDisk ||
+      this.layoutLoadedFromGame ||
+      this.layoutEnsuredByEditor
+    );
+  }
+
+  /**
+   * Sync room positions into the in-memory LYT/VIS.
+   * No-op when there is no layout (does not invent from ARE rooms alone).
+   */
+  syncLayoutAndVisInMemory(): void {
+    if(!this.layout){
+      return;
+    }
+    this.layout.rooms = this.rooms.map((room) => ({
+      name: room.roomName,
+      position: room.position.clone(),
+    }));
+
+    const vis = this.buildVisText();
+    this.visObject = new KotOR.VISObject(new TextEncoder().encode(vis));
+    this.visObject.read();
+    this.visObject.attachArea(this as any);
+  }
+
+  async flushLayoutAndVis(): Promise<void> {
+    if(!this.shouldPersistLayout() || !this.layout){
+      return;
+    }
+    const areaName = this.getLayoutResRef();
+    this.syncLayoutAndVisInMemory();
+    if(!this.layout){
+      return;
+    }
+    await ProjectFileSystem.writeFile(`${areaName}.lyt`, this.layout.export());
+    await ProjectFileSystem.writeFile(`${areaName}.vis`, new TextEncoder().encode(this.buildVisText()));
+    this.layoutPresentOnDisk = true;
+    this.layoutLoadedFromGame = false;
+  }
+
+  async writeLayoutAndVis(): Promise<void> {
+    this.ensureLayout();
+    this.syncLayoutAndVisInMemory();
+    await this.flushLayoutAndVis();
+  }
+
+  /** Visible room names from `fromRoom`. With no VIS yet, defaults to all rooms (matches buildVisText). */
+  getRoomVisibility(fromRoom: string): string[] {
+    if(!fromRoom){
+      return [];
+    }
+    if(!this.visObject || !this.visObject.rooms.size){
+      return this.rooms.map((r) => r.roomName).filter(Boolean);
+    }
+    const entry = this.visObject.getRoom(fromRoom);
+    return entry ? [...entry.rooms] : [];
+  }
+
+  /**
+   * Toggle whether `toRoom` is visible from `fromRoom` and sync visObject for writeLayoutAndVis.
+   */
+  setRoomVisibilityLink(fromRoom: string, toRoom: string, visible: boolean): void {
+    if(!fromRoom || !toRoom){
+      return;
+    }
+    this.ensureLayout();
+    if(!this.visObject){
+      this.visObject = new KotOR.VISObject(new TextEncoder().encode(this.buildVisText()));
+      this.visObject.read();
+    }
+    const key = fromRoom.toLocaleLowerCase();
+    let entry = this.visObject.rooms.get(key);
+    if(!entry){
+      entry = { name: fromRoom, count: 0, rooms: [] };
+      this.visObject.rooms.set(key, entry);
+    }
+    const toLower = toRoom.toLocaleLowerCase();
+    const idx = entry.rooms.findIndex((n) => n.toLocaleLowerCase() === toLower);
+    if(visible && idx < 0){
+      const canonical = this.rooms.find((r) => r.roomName.toLocaleLowerCase() === toLower)?.roomName || toRoom;
+      entry.rooms.push(canonical);
+    } else if(!visible && idx >= 0){
+      entry.rooms.splice(idx, 1);
+    }
+    entry.count = entry.rooms.length;
+    entry.name = fromRoom;
   }
 
   /**
@@ -670,11 +883,29 @@ export class ForgeArea extends ForgeGameObject{
   }
 
   async loadCreatures(): Promise<void> {
-    for(let i = 0; i < this.creatures.length; i++){
-      const creature = this.creatures[i];
-      await creature.loadBlueprint();
-      await creature.load();
-      this.context.addObjectToGroup(creature.container, GroupType.CREATURE);
+    await this.loadGameObjectList(this.creatures, GroupType.CREATURE, { blueprint: true });
+  }
+
+  /**
+   * Load visuals for GIT-attached game objects. Blueprint-backed types resolve
+   * UT* appearance before building models/helpers.
+   */
+  async loadGameObjectList(
+    objects: ForgeGameObject[],
+    groupType: GroupType,
+    options: { blueprint?: boolean } = {},
+  ): Promise<void> {
+    for(let i = 0; i < objects.length; i++){
+      const object = objects[i];
+      try {
+        if(options.blueprint){
+          await object.loadBlueprint();
+        }
+        await object.load();
+      }catch(e){
+        console.warn(`Failed to load ${groupType} object`, e);
+      }
+      this.context?.addObjectToGroup(object.container, groupType);
     }
   }
 
@@ -688,13 +919,17 @@ export class ForgeArea extends ForgeGameObject{
     
     for(let i = 0; i < this.rooms.length; i++){
       const room = this.rooms[i];
-      await room.load();
+      try {
+        await room.load();
+      }catch(e){
+        console.warn(`Failed to load room ${room.roomName}`, e);
+      }
       const model = room.model;
       
       if(model instanceof KotOR.OdysseyModel3D){
         model.name = room.roomName;
-        this.context.addObjectToGroup(room.container, GroupType.ROOMS);
       }
+      this.context?.addObjectToGroup(room.container, GroupType.ROOMS);
     }
     
     // Invalidate cache after loading rooms (containers now have children)
@@ -713,8 +948,8 @@ export class ForgeArea extends ForgeGameObject{
         let room2 = this.rooms[j];
         //console.log(room2.linked_rooms);
         if(room2 instanceof ForgeRoom){
-          const room1_room_links = this.visObject.getRoom(room1.roomName)?.rooms || [];
-          const room2_room_links = this.visObject.getRoom(room2.roomName)?.rooms || [];
+          const room1_room_links = this.visObject?.getRoom(room1.roomName)?.rooms || [];
+          const room2_room_links = this.visObject?.getRoom(room2.roomName)?.rooms || [];
           const room2_links_to_room1 = room2_room_links.indexOf(room1.roomName) >= 0;
           const room1_links_to_room2 = room1_room_links.indexOf(room2.roomName) >= 0;
 
@@ -822,7 +1057,10 @@ export class ForgeArea extends ForgeGameObject{
     are.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.WORD, 'LoadScreenID', this.loadScreenId));
 
     // Map (STRUCT with nested structure)
-    const mapField =  are.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.STRUCT, 'Map'));
+    if(!(this.areaMap instanceof AreaMap)){
+      this.areaMap = new AreaMap();
+    }
+    const mapField = are.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.STRUCT, 'Map'));
     mapField?.addChildStruct(this.areaMap.export());
 
     if(this.miniGame){

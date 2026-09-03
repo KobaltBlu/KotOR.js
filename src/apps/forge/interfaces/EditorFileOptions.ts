@@ -18,4 +18,6 @@ export interface EditorFileOptions {
   useGameFileSystem?: boolean;
   useProjectFileSystem?: boolean;
   useSystemFileSystem?: boolean;
+  /** When false, skip Forge recent-files tracking (throwaway extract/export reads). Default true. */
+  trackRecent?: boolean;
 }

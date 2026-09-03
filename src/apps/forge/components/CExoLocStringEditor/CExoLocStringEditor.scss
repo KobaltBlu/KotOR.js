@@ -8,14 +8,14 @@
     font-weight: bold;
     display: block;
     margin-bottom: $spacing-sm;
-    color: $text-primary;
+    color: var(--forge-text);
   }
 
   .cexoloc-container {
-    border: $border-width solid $border-primary;
+    border: $border-width solid var(--forge-border);
     border-radius: $border-radius;
     padding: $spacing-md;
-    background-color: $bg-tertiary;
+    background-color: var(--forge-bg-panel);
   }
 
   .cexoloc-main-input-row {
@@ -26,10 +26,10 @@
     .cexoloc-display-input {
       flex: 1;
       padding: 4px;
-      background-color: $form-bg;
-      border: $border-width solid $form-border;
+      background-color: var(--forge-bg-input);
+      border: $border-width solid var(--forge-border);
       border-radius: $border-radius;
-      color: $text-primary;
+      color: var(--forge-text);
       font-family: $font-family-primary;
       @include transition-form;
 
@@ -39,25 +39,25 @@
 
       &:focus {
         outline: none;
-        border-color: $form-border-focus;
+        border-color: var(--forge-accent);
       }
     }
 
     .cexoloc-toggle-button {
       padding: 4px 12px;
       cursor: pointer;
-      background-color: $primary-blue;
-      color: $text-white;
+      background-color: var(--forge-accent);
+      color: var(--forge-text-bright);
       border: none;
       border-radius: $border-radius;
       transition: background-color $transition-fast ease;
 
       &:hover {
-        background-color: $primary-blue-dark;
+        background-color: var(--forge-accent-hover);
       }
 
       &:active {
-        background-color: $primary-blue-darker;
+        background-color: var(--forge-accent);
       }
     }
 
@@ -69,36 +69,36 @@
     .cexoloc-save-button {
       padding: 4px 12px;
       cursor: pointer;
-      background-color: $success;
-      color: $text-white;
+      background-color: var(--forge-success);
+      color: var(--forge-text-bright);
       border: none;
       border-radius: $border-radius;
       transition: background-color $transition-fast ease;
 
       &:hover {
-        background-color: lighten($success, 10%);
+        background-color: color-mix(in srgb, var(--forge-success) 90%, white);
       }
 
       &:active {
-        background-color: darken($success, 5%);
+        background-color: color-mix(in srgb, var(--forge-success) 95%, black);
       }
     }
 
     .cexoloc-cancel-button {
       padding: 4px 12px;
       cursor: pointer;
-      background-color: $warning;
-      color: $text-white;
+      background-color: var(--forge-danger);
+      color: var(--forge-text-bright);
       border: none;
       border-radius: $border-radius;
       transition: background-color $transition-fast ease;
 
       &:hover {
-        background-color: lighten($warning, 10%);
+        background-color: color-mix(in srgb, var(--forge-danger) 90%, white);
       }
 
       &:active {
-        background-color: darken($warning, 5%);
+        background-color: color-mix(in srgb, var(--forge-danger) 95%, black);
       }
     }
   }
@@ -106,7 +106,7 @@
   .cexoloc-expanded {
     margin-top: $spacing-md;
     padding-top: $spacing-md;
-    border-top: $border-width solid $border-secondary;
+    border-top: $border-width solid var(--forge-border-subtle);
   }
 
   .cexoloc-resref-section {
@@ -116,16 +116,16 @@
       display: block;
       font-size: $font-size-small;
       margin-bottom: $spacing-sm;
-      color: $text-primary;
+      color: var(--forge-text);
       font-weight: bold;
     }
 
     .cexoloc-resref-display {
       margin-bottom: $spacing-md;
       padding: $spacing-md;
-      border: $border-width solid $border-primary;
+      border: $border-width solid var(--forge-border);
       border-radius: $border-radius;
-      background-color: $bg-quaternary;
+      background-color: var(--forge-bg-active);
 
       .cexoloc-tlk-current,
       .cexoloc-tlk-custom {
@@ -142,14 +142,14 @@
           min-width: 0; // Allow text to shrink
 
           .cexoloc-tlk-index {
-            color: $primary-blue-lighter;
+            color: var(--forge-accent-hover);
             font-weight: bold;
             font-size: $font-size-small;
             flex-shrink: 0;
           }
 
           .cexoloc-tlk-text {
-            color: $text-primary;
+            color: var(--forge-text);
             font-size: $font-size-small;
             flex: 1;
             word-break: break-word;
@@ -167,7 +167,7 @@
       .cexoloc-tlk-custom {
         .cexoloc-tlk-text {
           font-style: italic;
-          color: $text-tertiary;
+          color: var(--forge-text-muted);
         }
       }
     }
@@ -178,7 +178,7 @@
       border: none;
       border-radius: $border-radius;
       background-color: transparent;
-      color: $text-primary;
+      color: var(--forge-text);
       transition: all $transition-fast ease;
       display: flex;
       align-items: center;
@@ -189,32 +189,32 @@
       }
 
       &:hover {
-        background-color: $bg-tertiary;
+        background-color: var(--forge-bg-panel);
       }
 
       &:active {
-        background-color: $bg-primary;
+        background-color: var(--forge-bg);
       }
     }
 
     .cexoloc-search-icon-button {
       &:hover {
-        color: $primary-blue;
-        background-color: rgba($primary-blue, 0.1);
+        color: var(--forge-accent-hover);
+        background-color: color-mix(in srgb, var(--forge-accent-hover) 10%, transparent);
       }
     }
 
     .cexoloc-clear-icon-button {
       &:hover {
-        color: $error;
-        background-color: rgba($error, 0.1);
+        color: var(--forge-danger);
+        background-color: color-mix(in srgb, var(--forge-danger) 10%, transparent);
       }
     }
 
     .cexoloc-resref-hint {
       display: block;
       font-size: $font-size-small;
-      color: $text-tertiary;
+      color: var(--forge-text-muted);
       line-height: 1.4;
     }
   }
@@ -231,30 +231,31 @@
       .cexoloc-substrings-label {
         font-size: $font-size-small;
         font-weight: bold;
-        color: $text-primary;
+        color: var(--forge-text);
       }
 
       .cexoloc-add-button {
         padding: $spacing-xs $spacing-md;
         font-size: $font-size-small;
         cursor: pointer;
-        background-color: $success;
-        color: $text-white;
+        background-color: var(--forge-success);
+        color: var(--forge-text-bright);
         border: none;
         border-radius: $border-radius;
         transition: background-color $transition-fast ease;
 
         &:hover:not(:disabled) {
-          background-color: $success-light;
+          background-color: color-mix(in srgb, var(--forge-success) 85%, white);
         }
 
         &:active:not(:disabled) {
-          background-color: $success-dark;
+          background-color: var(--forge-success);
         }
 
         &:disabled {
-          background-color: $disabled-bg;
-          border: $border-width solid $disabled-border;
+          color: var(--forge-text-disabled);
+          background-color: var(--forge-bg-elevated);
+          border: $border-width solid var(--forge-border);
           cursor: not-allowed;
           opacity: 0.6;
         }
@@ -264,7 +265,7 @@
     .cexoloc-empty-state {
       padding: $spacing-md;
       text-align: center;
-      color: $text-tertiary;
+      color: var(--forge-text-muted);
       font-size: $font-size-small;
       font-style: italic;
     }
@@ -273,8 +274,8 @@
   .cexoloc-substring {
     margin-bottom: $spacing-md;
     padding: $spacing-md;
-    background-color: $bg-secondary;
-    border: $border-width solid $border-primary;
+    background-color: var(--forge-bg-elevated);
+    border: $border-width solid var(--forge-border);
     border-radius: $border-radius;
 
     .cexoloc-substring-controls {
@@ -289,22 +290,22 @@
           display: block;
           font-size: $font-size-small;
           margin-bottom: $spacing-xs;
-          color: $text-primary;
+          color: var(--forge-text);
         }
 
         .cexoloc-substring-select {
           width: 100%;
           padding: $spacing-xs;
           font-size: $font-size-small;
-          border: $border-width solid $form-border;
+          border: $border-width solid var(--forge-border);
           border-radius: $border-radius;
-          background-color: $form-bg;
-          color: $text-primary;
+          background-color: var(--forge-bg-input);
+          color: var(--forge-text);
           @include transition-form;
 
           &:focus {
             outline: none;
-            border-color: $form-border-focus;
+            border-color: var(--forge-accent);
           }
         }
       }
@@ -317,18 +318,18 @@
           padding: $spacing-xs $spacing-md;
           font-size: $font-size-small;
           cursor: pointer;
-          background-color: $warning;
-          color: $text-white;
+          background-color: var(--forge-danger);
+          color: var(--forge-text-bright);
           border: none;
           border-radius: $border-radius;
           transition: background-color $transition-fast ease;
 
           &:hover {
-            background-color: $error;
+            background-color: var(--forge-danger-hover);
           }
 
           &:active {
-            background-color: $error-dark;
+            background-color: var(--forge-danger);
           }
         }
       }
@@ -339,19 +340,19 @@
         display: block;
         font-size: $font-size-small;
         margin-bottom: $spacing-xs;
-        color: $text-primary;
+        color: var(--forge-text);
       }
 
       .cexoloc-substring-textarea {
         width: 100%;
         padding: 4px;
         font-size: $font-size-small;
-        border: $border-width solid $form-border;
+        border: $border-width solid var(--forge-border);
         border-radius: $border-radius;
         font-family: monospace;
         resize: vertical;
-        background-color: $form-bg;
-        color: $text-primary;
+        background-color: var(--forge-bg-input);
+        color: var(--forge-text);
         @include transition-form;
 
         &::placeholder {
@@ -360,13 +361,13 @@
 
         &:focus {
           outline: none;
-          border-color: $form-border-focus;
+          border-color: var(--forge-accent);
         }
       }
 
       .cexoloc-char-counter {
         font-size: $font-size-small;
-        color: $text-tertiary;
+        color: var(--forge-text-muted);
       }
     }
   }

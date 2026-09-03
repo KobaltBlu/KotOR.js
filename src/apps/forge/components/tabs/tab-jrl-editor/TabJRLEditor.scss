@@ -1,0 +1,114 @@
+.tab-jrl-editor {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  background: var(--forge-bg);
+
+  &__sidebar {
+    width: 240px;
+    border-right: 1px solid var(--forge-border);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  &__sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    border-bottom: 1px solid var(--forge-border);
+  }
+
+  &__category-list {
+    list-style: none;
+    margin: 0;
+    padding: 4px;
+    overflow: auto;
+    flex: 1;
+
+    button {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      gap: 2px;
+      padding: 8px;
+      border: none;
+      border-radius: var(--forge-radius);
+      background: transparent;
+      color: var(--forge-text);
+      text-align: left;
+      cursor: pointer;
+
+      small {
+        color: var(--forge-text-muted);
+      }
+
+      &.is-active,
+      &:hover {
+        background: var(--forge-bg-hover);
+      }
+    }
+  }
+
+  &__main {
+    flex: 1;
+    min-width: 0;
+    overflow: auto;
+    padding: 12px;
+  }
+
+  &__fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: var(--forge-font-size-sm);
+      color: var(--forge-text-muted);
+    }
+  }
+
+  &__comment {
+    grid-column: 1 / -1;
+  }
+
+  &__entries-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  &__entry {
+    border: 1px solid var(--forge-border);
+    border-radius: var(--forge-radius);
+    padding: 8px;
+    margin-bottom: 8px;
+    background: var(--forge-bg-elevated);
+  }
+
+  &__entry-meta {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+    gap: 8px;
+    margin-bottom: 8px;
+
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: var(--forge-font-size-sm);
+      color: var(--forge-text-muted);
+    }
+  }
+
+  &__empty {
+    color: var(--forge-text-muted);
+    padding: 24px;
+  }
+}

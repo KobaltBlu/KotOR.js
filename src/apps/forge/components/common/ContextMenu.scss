@@ -1,22 +1,19 @@
-@use "tokens" as *;
-
 .context-menu {
   position: fixed;
-  background: $bg-secondary;
-  border: 1px solid $border-primary;
-  border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  z-index: 1000;
+  background: var(--forge-bg-elevated);
+  border: 1px solid var(--forge-border);
+  border-radius: var(--forge-radius);
+  box-shadow: var(--forge-shadow-menu);
+  z-index: var(--forge-z-dropdown);
   min-width: 200px;
-  font-family: $font-family-primary;
-  font-size: 13px;
+  font-family: var(--forge-font);
+  font-size: var(--forge-font-size);
   padding: 4px 0;
-  color: $text-primary;
+  color: var(--forge-text);
   user-select: none;
   margin-top: 5px;
   margin-left: 5px;
 
-  // Context menu items
   .context-menu-item {
     padding: 6px 12px;
     cursor: pointer;
@@ -27,16 +24,16 @@
     position: relative;
 
     &:hover {
-      background: $hover-bg;
+      background: var(--forge-bg-hover);
     }
 
     &:active {
-      background: $active-bg;
+      background: var(--forge-bg-active);
     }
 
     &.disabled {
       cursor: not-allowed;
-      color: $text-tertiary;
+      color: var(--forge-text-disabled);
       opacity: 0.6;
 
       &:hover {
@@ -46,116 +43,40 @@
 
     &.has-submenu {
       .submenu-arrow {
-        color: $text-secondary;
+        color: var(--forge-text-muted);
         font-size: 10px;
         margin-left: 8px;
       }
     }
 
-    // Keyboard shortcut styling
     .shortcut {
-      color: $text-secondary;
+      color: var(--forge-text-muted);
       font-size: 11px;
       margin-left: 16px;
       font-weight: 400;
     }
 
-    // Submenu styling
     .context-menu-submenu {
       position: absolute;
       left: 100%;
       top: 0;
       margin-left: 2px;
-      background: $bg-secondary;
-      border: 1px solid $border-primary;
-      border-radius: 4px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      background: var(--forge-bg-elevated);
+      border: 1px solid var(--forge-border);
+      border-radius: var(--forge-radius);
+      box-shadow: var(--forge-shadow-menu);
       min-width: 180px;
-      z-index: 1001;
+      z-index: calc(var(--forge-z-dropdown) + 1);
       padding: 4px 0;
     }
   }
 
-  // Dark theme submenu
-  &.dark-theme .context-menu-item .context-menu-submenu {
-    background: $bg-darker;
-    border-color: $border-secondary;
-  }
-
-  // Light theme submenu
-  &.light-theme .context-menu-item .context-menu-submenu {
-    background: $bg-secondary;
-    border-color: $border-primary;
-  }
-
-  // Separator styling
   .context-menu-separator {
     height: 1px;
-    background: $border-primary;
+    background: var(--forge-border-subtle);
     margin: 4px 0;
   }
 
-  // Dark mode support
-  &.dark-theme {
-    background: $bg-darker;
-    border-color: $border-secondary;
-    color: $text-primary;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-
-    .context-menu-item {
-      &:hover {
-        background: $hover-bg-dark;
-      }
-
-      &:active {
-        background: $active-bg;
-      }
-
-      &.disabled {
-        color: $text-quaternary;
-      }
-
-      .shortcut {
-        color: $text-tertiary;
-      }
-    }
-
-    .context-menu-separator {
-      background: $border-secondary;
-    }
-  }
-
-  // Light mode (default)
-  &.light-theme {
-    background: $bg-secondary;
-    border-color: $border-primary;
-    color: $text-primary;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-
-    .context-menu-item {
-      &:hover {
-        background: $hover-bg;
-      }
-
-      &:active {
-        background: $active-bg;
-      }
-
-      &.disabled {
-        color: $text-tertiary;
-      }
-
-      .shortcut {
-        color: $text-secondary;
-      }
-    }
-
-    .context-menu-separator {
-      background: $border-primary;
-    }
-  }
-
-  // Animation for smooth appearance
   &.context-menu-enter {
     opacity: 0;
     transform: scale(0.95);
@@ -167,25 +88,12 @@
     transform: scale(1);
   }
 
-  // Focus styles for accessibility
   .context-menu-item:focus {
-    outline: 2px solid $primary-blue;
-    outline-offset: -2px;
+    outline: 1px solid var(--forge-accent);
+    outline-offset: -1px;
+    background: var(--forge-accent-muted);
   }
 
-  // High contrast mode support
-  @media (prefers-contrast: high) {
-    border-width: 2px;
-    
-    .context-menu-item {
-      &:hover {
-        background: $primary-blue;
-        color: $bg-primary;
-      }
-    }
-  }
-
-  // Reduced motion support
   @media (prefers-reduced-motion: reduce) {
     &.context-menu-enter,
     &.context-menu-enter-active {

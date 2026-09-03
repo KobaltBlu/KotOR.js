@@ -1,0 +1,85 @@
+.modal-script-browser {
+  .forge-dialog__body {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: 10px 12px;
+  }
+}
+
+.script-browser-search {
+  margin-bottom: 8px;
+
+  .forge-input {
+    margin-bottom: 4px;
+  }
+}
+
+.script-browser-count {
+  font-size: var(--forge-font-size-sm);
+  color: var(--forge-text-muted);
+}
+
+.script-browser-empty {
+  text-align: center;
+  padding: 24px 8px;
+  color: var(--forge-text-muted);
+}
+
+.script-browser-list {
+  max-height: 52vh;
+  overflow: auto;
+  border: 1px solid var(--forge-border);
+  background: var(--forge-bg);
+}
+
+.script-browser-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 24px;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--forge-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--forge-bg-hover);
+    color: var(--forge-text-bright);
+  }
+}
+
+.script-browser-resref {
+  font-family: var(--forge-font-mono);
+  font-size: var(--forge-font-size-sm);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.script-browser-source {
+  flex: none;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--forge-text-muted);
+  border: 1px solid var(--forge-border);
+  border-radius: var(--forge-radius);
+  padding: 0 5px;
+  line-height: 16px;
+
+  &--project {
+    color: var(--forge-accent);
+    border-color: var(--forge-accent);
+  }
+
+  &--override {
+    color: var(--forge-text-bright);
+  }
+}

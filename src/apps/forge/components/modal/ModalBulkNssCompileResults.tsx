@@ -1,6 +1,6 @@
 import React from "react";
 import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
-import { Button, Modal } from "react-bootstrap";
+import { ForgeButton, ForgeDialog } from "@/apps/forge/components/ui";
 import type { BulkProjectNssCompileOutcome } from "@/apps/forge/helpers/ForgeNWScriptCompile";
 import { ModalBulkNssCompileResultsState } from "@/apps/forge/states/modal/ModalBulkNssCompileResultsState";
 
@@ -21,11 +21,11 @@ export const ModalBulkNssCompileResults = (props: BaseModalProps) => {
   }, [modal]);
 
   return (
-    <Modal show={show} onHide={() => modal.close()} size="lg">
-      <Modal.Header closeButton>
-        <Modal.Title>Bulk NSS compile</Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
+    <ForgeDialog show={show} onHide={() => modal.close()} size="lg">
+      <ForgeDialog.Header closeButton>
+        <ForgeDialog.Title>Bulk NSS compile</ForgeDialog.Title>
+      </ForgeDialog.Header>
+      <ForgeDialog.Body>
         {r.abortedReason && (
           <p style={{ color: "#d9534f" }}>{r.abortedReason}</p>
         )}
@@ -72,12 +72,12 @@ export const ModalBulkNssCompileResults = (props: BaseModalProps) => {
             ))}
           </div>
         )}
-      </Modal.Body>
-      <Modal.Footer>
-        <Button variant="primary" onClick={() => modal.close()}>
+      </ForgeDialog.Body>
+      <ForgeDialog.Footer>
+        <ForgeButton variant="primary" onClick={() => modal.close()}>
           Close
-        </Button>
-      </Modal.Footer>
-    </Modal>
+        </ForgeButton>
+      </ForgeDialog.Footer>
+    </ForgeDialog>
   );
 };

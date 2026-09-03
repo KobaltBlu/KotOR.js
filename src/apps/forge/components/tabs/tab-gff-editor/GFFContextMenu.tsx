@@ -1,89 +1,87 @@
-import React from 'react';
-import { ContextMenuItem } from "@/apps/forge/components/common/ContextMenu";
-import * as KotOR from "@/apps/forge/KotOR";
+/**
+ * Context menus for the generic GFF tree.
+ *
+ * @file GFFContextMenu.tsx
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 
-export interface GFFContextMenuProps {
-  struct: KotOR.GFFStruct;
-  onFieldAdded: () => void;
-  onStructCut?: () => void;
-  onStructCopy?: () => void;
-  onFieldPaste?: () => void;
-  onStructDelete?: () => void;
-  onNew?: () => void;
-  onOpen?: () => void;
-  onClose?: () => void;
+import { ContextMenuItem } from "@/apps/forge/components/common/ContextMenu";
+import { gffFieldTypeOptions } from "@/apps/forge/helpers/gffJsonCodec";
+
+export interface GFFStructContextMenuArgs {
+  isRoot: boolean;
+  canPaste: boolean;
+  onAddField: (type: number) => void;
+  onCut?: () => void;
+  onCopy?: () => void;
+  onPaste?: () => void;
+  onDuplicate?: () => void;
+  onDelete?: () => void;
 }
 
-export const createGFFContextMenuItems = (props: GFFContextMenuProps): ContextMenuItem[] => {
-  const {
-    struct,
-    onFieldAdded,
-    onStructCut,
-    onStructCopy,
-    onFieldPaste,
-    onStructDelete,
-    onNew,
-    onOpen,
-    onClose
-  } = props;
+export interface GFFFieldContextMenuArgs {
+  isList: boolean;
+  canPaste: boolean;
+  onAddStruct?: () => void;
+  onChangeType: (type: number) => void;
+  onRename?: () => void;
+  onCut?: () => void;
+  onCopy?: () => void;
+  onPaste?: () => void;
+  onDuplicate?: () => void;
+  onDelete?: () => void;
+}
 
-  const fieldTypes = [
-    { label: 'BYTE', type: KotOR.GFFDataType.BYTE },
-    { label: 'CHAR', type: KotOR.GFFDataType.CHAR },
-    { label: 'WORD', type: KotOR.GFFDataType.WORD },
-    { label: 'SHORT', type: KotOR.GFFDataType.SHORT },
-    { label: 'DWORD', type: KotOR.GFFDataType.DWORD },
-    { label: 'INT', type: KotOR.GFFDataType.INT },
-    { label: 'DWORD64', type: KotOR.GFFDataType.DWORD64 },
-    { label: 'INT64', type: KotOR.GFFDataType.INT64 },
-    { label: 'FLOAT', type: KotOR.GFFDataType.FLOAT },
-    { label: 'DOUBLE', type: KotOR.GFFDataType.DOUBLE },
-    { label: 'CExoString', type: KotOR.GFFDataType.CEXOSTRING },
-    { label: 'ResRef', type: KotOR.GFFDataType.RESREF },
-    { label: 'CExoLocString', type: KotOR.GFFDataType.CEXOLOCSTRING },
-    { label: 'VOID', type: KotOR.GFFDataType.VOID },
-    { label: 'Struct', type: KotOR.GFFDataType.STRUCT },
-    { label: 'List', type: KotOR.GFFDataType.LIST },
-    { label: 'Orientation', type: KotOR.GFFDataType.ORIENTATION },
-    { label: 'Vector', type: KotOR.GFFDataType.VECTOR },
-  ];
-
-  const addFieldItems: ContextMenuItem[] = fieldTypes.map((fieldType, index) => ({
-    id: `add-field-${fieldType.label.toLowerCase()}`,
-    label: `Add ${fieldType.label}`,
-    onClick: () => {
-      struct.addField(new KotOR.GFFField(fieldType.type, 'New Field [Untitled]', 0));
-      onFieldAdded();
-    }
+const typeItems = (onPick: (type: number) => void, idPrefix: string): ContextMenuItem[] => {
+  return gffFieldTypeOptions().map((entry) => ({
+    id: `${idPrefix}-${entry.type}`,
+    label: entry.label,
+    onClick: () => onPick(entry.type),
   }));
+};
 
-  return [
-    ...addFieldItems,
-    { id: 'separator-1', separator: true },
+export const createGFFStructContextMenuItems = (args: GFFStructContextMenuArgs): ContextMenuItem[] => {
+  const items: ContextMenuItem[] = [
     {
-      id: 'cut',
-      label: 'Cut',
-      onClick: onStructCut,
-      disabled: !onStructCut
+      id: "add-field",
+      label: "Add Field",
+      submenu: typeItems(args.onAddField, "add-field"),
     },
-    {
-      id: 'copy',
-      label: 'Copy',
-      onClick: onStructCopy,
-      disabled: !onStructCopy
-    },
-    {
-      id: 'paste',
-      label: 'Paste',
-      onClick: onFieldPaste,
-      disabled: !onFieldPaste
-    },
-    { id: 'separator-2', separator: true },
-    {
-      id: 'delete',
-      label: 'Delete',
-      onClick: onStructDelete,
-      disabled: !onStructDelete
-    }
+    { id: "separator-edit", separator: true },
+    { id: "cut", label: "Cut", shortcut: "Ctrl+X", onClick: args.onCut, disabled: args.isRoot || !args.onCut },
+    { id: "copy", label: "Copy", shortcut: "Ctrl+C", onClick: args.onCopy, disabled: !args.onCopy },
+    { id: "paste", label: "Paste", shortcut: "Ctrl+V", onClick: args.onPaste, disabled: !args.canPaste },
+    { id: "duplicate", label: "Duplicate", shortcut: "Ctrl+D", onClick: args.onDuplicate, disabled: args.isRoot || !args.onDuplicate },
+    { id: "separator-delete", separator: true },
+    { id: "delete", label: "Delete", shortcut: "Del", onClick: args.onDelete, disabled: args.isRoot || !args.onDelete },
   ];
+  return items;
+};
+
+export const createGFFFieldContextMenuItems = (args: GFFFieldContextMenuArgs): ContextMenuItem[] => {
+  const items: ContextMenuItem[] = [];
+  if (args.isList) {
+    items.push({
+      id: "add-struct",
+      label: "Add Struct",
+      onClick: args.onAddStruct,
+    });
+  }
+  items.push(
+    {
+      id: "change-type",
+      label: "Change Type",
+      submenu: typeItems(args.onChangeType, "change-type"),
+    },
+    { id: "rename", label: "Rename", shortcut: "F2", onClick: args.onRename },
+    { id: "separator-edit", separator: true },
+    { id: "cut", label: "Cut", shortcut: "Ctrl+X", onClick: args.onCut },
+    { id: "copy", label: "Copy", shortcut: "Ctrl+C", onClick: args.onCopy },
+    { id: "paste", label: "Paste", shortcut: "Ctrl+V", onClick: args.onPaste, disabled: !args.canPaste },
+    { id: "duplicate", label: "Duplicate", shortcut: "Ctrl+D", onClick: args.onDuplicate },
+    { id: "separator-delete", separator: true },
+    { id: "delete", label: "Delete", shortcut: "Del", onClick: args.onDelete },
+  );
+  return items;
 };

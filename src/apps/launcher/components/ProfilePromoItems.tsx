@@ -7,6 +7,7 @@ export const ProfilePromoItems = forwardRef(function(props: any, ref: any){
   const appContext = useApp();
   const profile: any = props.profile;
   const tabRef: any = props.tabRef;
+  const promoWrapRef = useRef<HTMLDivElement>(null);
   const promoElementsRef = useRef<HTMLDivElement>(null);
   const promoElementWidthValue: number = props.promoElementWidth || 320;
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
@@ -21,28 +22,64 @@ export const ProfilePromoItems = forwardRef(function(props: any, ref: any){
   const [scrollR, setScrollR] = useState<boolean>(false);
   const [marginLeft, setMarginLeft] = useState<number>(scrollOffset.current);
 
+  const getViewportWidth = useCallback(() => {
+    return promoWrapRef.current?.clientWidth
+      || tabRef?.current?.clientWidth
+      || 0;
+  }, [tabRef]);
+
+  const getScrollStep = useCallback(() => {
+    const firstItem = promoElementsRef.current?.querySelector('.promo-element') as HTMLElement | null;
+    if (firstItem?.offsetWidth) {
+      const style = window.getComputedStyle(firstItem);
+      const marginLeftPx = parseFloat(style.marginLeft) || 0;
+      return firstItem.offsetWidth + marginLeftPx;
+    }
+    return promoElementWidthValue;
+  }, [promoElementWidthValue]);
+
+  const syncTileWidthVar = useCallback(() => {
+    const wrap = promoWrapRef.current;
+    if (!wrap) return;
+    const width = wrap.clientWidth;
+    if (width > 0) {
+      wrap.style.setProperty('--promo-tile-width', `${width}px`);
+    }
+  }, []);
+
   // Memoized scroll update functions
   const updateScroll = useCallback(() => {
-    if(!tabRef.current || !promoElementsRef.current){
+    if(!promoElementsRef.current){
       return;
     }
-    
-    const max = tabRef.current.clientWidth - promoElementsRef.current.clientWidth;
+
+    const viewportWidth = getViewportWidth();
+    if (!viewportWidth) return;
+
+    const max = viewportWidth - promoElementsRef.current.scrollWidth;
     canScroll.current = max < 0;
-  }, [tabRef, promoElementsRef]);
+  }, [getViewportWidth]);
 
   const updateScrollButtons = useCallback(() => {
-    if(!tabRef.current || !promoElementsRef.current){
+    if(!promoElementsRef.current){
       scrollLeftVisable.current = false;
       scrollRightVisable.current = false;
       canScroll.current = false;
       return;
     }
 
-    const max = tabRef.current.clientWidth - promoElementsRef.current.clientWidth;
+    const viewportWidth = getViewportWidth();
+    if (!viewportWidth) {
+      scrollLeftVisable.current = false;
+      scrollRightVisable.current = false;
+      canScroll.current = false;
+      return;
+    }
+
+    const max = viewportWidth - promoElementsRef.current.scrollWidth;
     scrollLeftVisable.current = false;
     scrollRightVisable.current = false;
-    
+
     if(canScroll.current){
       if(scrollOffset.current < 0){
         scrollLeftVisable.current = true;
@@ -51,21 +88,32 @@ export const ProfilePromoItems = forwardRef(function(props: any, ref: any){
         scrollRightVisable.current = true;
       }
     }
-    
+
     setScrollL(scrollLeftVisable.current);
     setScrollR(scrollRightVisable.current);
     setMarginLeft(scrollOffset.current);
-  }, [tabRef, promoElementsRef]);
+  }, [getViewportWidth]);
 
   // Combined update function for external calls
   const updateScrollAndButtons = useCallback(() => {
+    syncTileWidthVar();
     updateScroll();
+    // Clamp offset after resize so tiles stay in view
+    if (promoElementsRef.current) {
+      const viewportWidth = getViewportWidth();
+      const max = Math.min(0, viewportWidth - promoElementsRef.current.scrollWidth);
+      if (scrollOffset.current < max) {
+        scrollOffset.current = max;
+      }
+      if (scrollOffset.current > 0) {
+        scrollOffset.current = 0;
+      }
+    }
     updateScrollButtons();
-  }, [updateScroll, updateScrollButtons]);
+  }, [syncTileWidthVar, updateScroll, updateScrollButtons, getViewportWidth]);
 
   useImperativeHandle(ref, () => ({
     recalculate() {
-      // console.warn(`recalculate: ${profile.name} promo`);
       updateScrollAndButtons();
     }
   }), [updateScrollAndButtons]);
@@ -75,32 +123,33 @@ export const ProfilePromoItems = forwardRef(function(props: any, ref: any){
     if(!canScroll.current)
       return;
 
-    if(!tabRef.current || !promoElementsRef.current)
+    if(!promoElementsRef.current)
       return;
 
-    const offset = scrollOffset.current + promoElementWidthValue;
+    const offset = scrollOffset.current + getScrollStep();
     scrollOffset.current = offset >= 0 ? 0 : offset;
     updateScrollButtons();
-  }, [updateScroll, updateScrollButtons, promoElementWidthValue]);
+  }, [updateScroll, updateScrollButtons, getScrollStep]);
 
   const onBtnPromoRight = useCallback(() => {
     updateScroll();
     if(!canScroll.current)
       return;
 
-    if(!tabRef.current || !promoElementsRef.current)
+    if(!promoElementsRef.current)
       return;
 
-    const max = Math.abs(tabRef.current.clientWidth - promoElementsRef.current.clientWidth);
-    const offset = scrollOffset.current - promoElementWidthValue;
+    const viewportWidth = getViewportWidth();
+    const max = Math.abs(viewportWidth - promoElementsRef.current.scrollWidth);
+    const offset = scrollOffset.current - getScrollStep();
 
     scrollOffset.current = Math.abs(offset) >= max ? -max : offset;
     updateScrollButtons();
-  }, [updateScroll, updateScrollButtons, promoElementWidthValue]);
+  }, [updateScroll, updateScrollButtons, getScrollStep, getViewportWidth]);
 
   // Setup ResizeObserver to detect child size changes
   useEffect(() => {
-    if (!promoElementsRef.current) return;
+    if (!promoElementsRef.current && !promoWrapRef.current) return;
 
     // Clean up existing observer
     if (resizeObserverRef.current) {
@@ -109,7 +158,7 @@ export const ProfilePromoItems = forwardRef(function(props: any, ref: any){
 
     // Create new ResizeObserver
     let debounceTimeout: NodeJS.Timeout | null = null;
-    resizeObserverRef.current = new ResizeObserver((entries) => {
+    resizeObserverRef.current = new ResizeObserver(() => {
       // Debounce the updates to avoid excessive recalculations
       if (debounceTimeout) {
         clearTimeout(debounceTimeout);
@@ -120,16 +169,22 @@ export const ProfilePromoItems = forwardRef(function(props: any, ref: any){
       }, 16); // ~60fps
     });
 
-    // Observe the promo elements container
-    resizeObserverRef.current.observe(promoElementsRef.current);
+    if (promoWrapRef.current) {
+      resizeObserverRef.current.observe(promoWrapRef.current);
+    }
 
-    // Also observe individual promo items if they exist
-    const promoItems = promoElementsRef.current.querySelectorAll('.promo-element');
-    promoItems.forEach(item => {
-      if (resizeObserverRef.current) {
-        resizeObserverRef.current.observe(item);
-      }
-    });
+    // Observe the promo elements container
+    if (promoElementsRef.current) {
+      resizeObserverRef.current.observe(promoElementsRef.current);
+
+      // Also observe individual promo items if they exist
+      const promoItems = promoElementsRef.current.querySelectorAll('.promo-element');
+      promoItems.forEach(item => {
+        if (resizeObserverRef.current) {
+          resizeObserverRef.current.observe(item);
+        }
+      });
+    }
 
     // Initial update
     updateScrollAndButtons();
@@ -137,6 +192,9 @@ export const ProfilePromoItems = forwardRef(function(props: any, ref: any){
     return () => {
       if (resizeObserverRef.current) {
         resizeObserverRef.current.disconnect();
+      }
+      if (debounceTimeout) {
+        clearTimeout(debounceTimeout);
       }
     };
   }, [updateScrollAndButtons, profile.elements]);
@@ -151,7 +209,7 @@ export const ProfilePromoItems = forwardRef(function(props: any, ref: any){
   }, [updateScrollAndButtons]);
 
   return (
-    <div className={`promo-elements ${scrollL ? 'scroll-left': ''} ${scrollR ? 'scroll-right' : ''}`} >
+    <div ref={promoWrapRef} className={`promo-elements ${scrollL ? 'scroll-left': ''} ${scrollR ? 'scroll-right' : ''}`} >
       <div className="promo-elements-left" onClick={onBtnPromoLeft}><i className="fas fa-chevron-left"></i></div>
       <div ref={promoElementsRef} className="promo-elements-container" style={{ marginLeft: marginLeft, position: 'absolute' }}>
         {

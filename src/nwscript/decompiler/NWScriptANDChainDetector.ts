@@ -205,7 +205,7 @@ export class NWScriptANDChainDetector {
   private buildANDExpression(comparisons: NWScriptExpression[]): NWScriptExpression {
     if (comparisons.length === 0) {
       // Fallback - shouldn't happen
-      return NWScriptExpression.constant(0, NWScriptDataType.INTEGER);
+      return NWScriptExpression.unknown('AND-chain operand stack underflow');
     }
     
     if (comparisons.length === 1) {
@@ -246,4 +246,3 @@ export class NWScriptANDChainDetector {
     return expr;
   }
 }
-

@@ -498,7 +498,7 @@ export class ModuleCreature extends ModuleObject {
   corpseDestroyScheduled: boolean;
   animSpeed: number;
   selectedNPC: number;
-  creatureAppearance: SWCreatureAppearance;
+  creatureAppearance: SWCreatureAppearance | undefined;
 
   /**
    * Head tracking enabled
@@ -3592,7 +3592,7 @@ export class ModuleCreature extends ModuleObject {
 
   getClosesetOpenSpot(oObject: ModuleObject){
     let maxDistance = Infinity;
-    let radius = this.creatureAppearance.hitdist;
+    let radius = this.creatureAppearance?.hitdist ?? 1;
     let closest = undefined;
     let distance = 0;
     let origin = this.position;
@@ -5291,7 +5291,7 @@ export class ModuleCreature extends ModuleObject {
     return this.firstName instanceof CExoLocString ? this.firstName.getValue() : (this.firstName || '');
   }
 
-  getAppearance(): SWCreatureAppearance {
+  getAppearance(): SWCreatureAppearance | undefined {
     return this.creatureAppearance;
   }
 
@@ -5574,7 +5574,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getHitDistance(){
-    return this.creatureAppearance.hitdist;
+    return this.creatureAppearance?.hitdist ?? 1;
   }
 
   /** appearance.hitradius — unengaged DesiredAttackRange. */
@@ -6187,7 +6187,7 @@ export class ModuleCreature extends ModuleObject {
 
   /** NWScript GetPersonalSpace — appearance.perspace. */
   getPersonalSpace(){
-    return this.creatureAppearance.perspace;
+    return this.creatureAppearance?.perspace ?? 1;
   }
 
   initEffects(): void {

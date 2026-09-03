@@ -76,6 +76,7 @@ div#container:before {
   right: 0;
   bottom: 0;
   background: linear-gradient(rgba(0, 0, 0, 0) 50%, #000000 90%);
+  pointer-events: none;
 }
 
 @import "./launcher-menu";
@@ -229,4 +230,98 @@ h3.title:after {
   opacity: 0.5;
   padding: 5px;
   user-select: none;
+}
+
+@media (max-width: 900px) {
+  html, body {
+    overflow: auto;
+    height: 100%;
+  }
+
+  #container {
+    position: relative;
+    min-height: 100%;
+    height: auto;
+    overflow: visible;
+    background-size: cover;
+  }
+
+  div#container:before {
+    position: fixed;
+  }
+
+  .launcher-content.active {
+    display: flex;
+    flex-direction: column;
+    padding: 12px 12px 24px;
+    min-height: 100%;
+    box-sizing: border-box;
+    position: relative;
+    z-index: 1;
+  }
+
+  .logo {
+    margin-top: 0;
+    margin-left: 0;
+    max-width: min(280px, 70vw);
+    height: auto;
+  }
+
+  .launcher-content .logo {
+    max-height: 80px;
+  }
+
+  .panel {
+    margin: 8px;
+    max-width: calc(100% - 16px);
+    box-sizing: border-box;
+
+    &.scroll-y {
+      overflow-y: visible;
+      max-height: none;
+    }
+  }
+
+  .need-kotor-buy-panel {
+    overflow: visible;
+  }
+
+  ul.link-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 0;
+
+    li {
+      display: block;
+      width: 100%;
+      padding-bottom: 12px;
+      padding-right: 0;
+
+      &:not(:has(a)) {
+        display: none;
+      }
+
+      a {
+        display: inline-block;
+        padding: 8px 0;
+        min-height: 44px;
+        line-height: 1.4;
+        box-sizing: border-box;
+      }
+    }
+  }
+
+  .video-wrapper {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+
+  .youtube-video {
+    width: 100%;
+  }
+
+  .version {
+    position: static;
+    text-align: right;
+    padding: 8px 12px 12px;
+  }
 }

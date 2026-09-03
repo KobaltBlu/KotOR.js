@@ -134,7 +134,7 @@ export class VISObject {
     }
 
     const room = this.readContext.currentRoom;
-    this.rooms.set(room.name, room);
+    this.rooms.set(room.name.toLocaleLowerCase(), room);
   }
 
   /**

@@ -58,10 +58,10 @@ export const SubTabHost: React.FC<SubTabHostProps> = ({
   return (
     <div style={{ height: '100%' }}>
       <div className="vertical-tabs" style={{ height: '100%' }}>
-        <div className="vertical-tabs-nav navbar navbar-sidebar-wizard-horizontal" role="navigation">
-          <ul className="tabs-menu" style={{ textAlign: 'center' }}>
+        <div className="vertical-tabs-nav" role="navigation">
+          <ul className="tabs-menu">
             {tabs.map(tab => (
-              <li key={tab.id} className={`btn btn-tab ${selectedTab === tab.id ? 'active' : ''}`}>
+              <li key={tab.id} className={`forge-tab ${selectedTab === tab.id ? 'active' : ''}`}>
                 <a onClick={() => setSelectedTab(tab.id)}>{tab.label}</a>
               </li>
             ))}

@@ -1,97 +1,140 @@
 // =============================================================================
-// BASE STYLES
+// BASE STYLES — desktop app shell
 // =============================================================================
 
-html, body, #root {
-  height: 100vh;
-  width: 100vw;
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
-:focus {
-  outline: -webkit-focus-ring-color auto 0px;
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+:focus-visible {
+  outline: 1px solid var(--forge-accent);
+  outline-offset: -1px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
 }
 
 body {
-  border-radius: $border-radius;
   overflow: hidden;
-  background: $bg-secondary;
-  font-family: $font-family-primary;
-  color: $text-primary;
-  font-size: $font-size-base;
+  background: var(--forge-bg);
+  font-family: var(--forge-font);
+  color: var(--forge-text);
+  font-size: var(--forge-font-size);
+  line-height: 1.35;
+  user-select: none;
 }
 
-#app {
-  position: absolute;
-  bottom: 0;
-  top: 0;
-  left: 0;
-  right: 0;
+input, textarea, select, [contenteditable="true"] {
+  user-select: text;
+}
+
+a {
+  color: var(--forge-accent);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--forge-accent-hover);
+  }
+}
+
+#app,
+.forge-shell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: var(--forge-bg);
 }
 
 .drag-drop-overlay {
   position: absolute;
   inset: 0;
-  z-index: 9999;
-  background: rgba(0, 0, 0, 0.6);
-  border: 3px dashed rgba(255, 255, 255, 0.5);
+  z-index: var(--forge-z-modal);
+  background: var(--forge-bg-overlay);
+  border: 1px dashed var(--forge-accent);
   display: flex;
   align-items: center;
   justify-content: center;
   pointer-events: none;
-  border-radius: $border-radius;
 
   &__content {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
-    color: rgba(255, 255, 255, 0.85);
+    gap: 8px;
+    color: var(--forge-text-bright);
 
     i {
-      font-size: 48px;
+      font-size: 32px;
       opacity: 0.9;
     }
 
     span {
-      font-size: 1.4rem;
-      font-weight: 600;
-      letter-spacing: 0.05em;
+      font-size: 13px;
+      font-weight: 500;
     }
   }
 }
 
-#container {
+#container,
+.forge-workspace {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--forge-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--forge-border);
+  border: 2px solid var(--forge-bg);
+
+  &:hover {
+    background: var(--forge-text-muted);
+  }
+}
+
+.no-js #loader {
+  display: none;
+}
+
+.js #loader {
+  display: block;
   position: absolute;
-  top: $header-height;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  max-width: initial;
-}
-
-// =============================================================================
-// LOADING SCREEN
-// =============================================================================
-
-.no-js #loader { 
-  display: none;  
-}
-
-.js #loader { 
-  display: block; 
-  position: absolute; 
-  left: 100px; 
-  top: 0; 
+  left: 100px;
+  top: 0;
 }
 
 .se-pre-con {
   position: fixed;
-  left: 0px;
-  top: 35px;
+  left: 0;
+  top: 0;
   width: 100%;
   height: 100%;
-  z-index: $z-index-modal;
-  background: $bg-primary;
+  z-index: var(--forge-z-modal);
+  background: var(--forge-bg);
 }
 
 .loading-screen {
@@ -100,14 +143,56 @@ body {
 
 #loader {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
 
   .loading-container .loading-message {
     text-align: center;
     position: relative;
     display: block;
+  }
+}
+
+.text-muted { color: var(--forge-text-muted); }
+.text-primary { color: var(--forge-accent); }
+.text-secondary { color: var(--forge-text); }
+.flex-grow-1 { flex: 1; min-width: 0; }
+.mb-3 { margin-bottom: 8px; }
+.me-2 { margin-right: 8px; }
+.p-2 { padding: 8px; }
+.small { font-size: var(--forge-font-size-sm); }
+.font-weight-bold { font-weight: 600; }
+
+button:where(:not(.forge-titlebar__btn)) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 22px;
+  padding: 2px 8px;
+  font-size: var(--forge-font-size);
+  font-family: inherit;
+  line-height: 1.2;
+  color: var(--forge-text);
+  background: var(--forge-bg-elevated);
+  border: 1px solid var(--forge-border);
+  border-radius: var(--forge-radius);
+  cursor: pointer;
+  user-select: none;
+  text-shadow: none;
+  white-space: nowrap;
+
+  &:hover:where(:not(:disabled)) {
+    background: var(--forge-bg-hover);
+    border-color: var(--forge-text-muted);
+    color: var(--forge-text-bright);
+  }
+
+  &:active:where(:not(:disabled)) {
+    background: var(--forge-bg-active);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
   }
 }

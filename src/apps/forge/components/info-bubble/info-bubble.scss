@@ -1,7 +1,3 @@
-// =============================================================================
-// INFO BUBBLE COMPONENT STYLES
-// =============================================================================
-
 @use "tokens" as *;
 
 .info-bubble-trigger {
@@ -12,14 +8,14 @@
 .info-bubble {
   position: fixed;
   z-index: 10000;
-  background: $bg-primary;
-  border: $border-width solid $border-accent;
-  border-radius: $border-radius;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  background: var(--forge-bg-elevated);
+  border: $border-width solid var(--forge-accent);
+  border-radius: var(--forge-radius);
+  box-shadow: var(--forge-shadow-menu);
   padding: $spacing-sm;
   font-size: $font-size-small;
   line-height: 1.4;
-  color: $text-primary;
+  color: var(--forge-text);
   max-width: 300px;
   word-wrap: break-word;
   pointer-events: none;
@@ -38,12 +34,11 @@
     border: 6px solid transparent;
   }
 
-  // Arrow positions
   &__arrow--top {
     bottom: -12px;
     left: 50%;
     transform: translateX(-50%);
-    border-top-color: $border-accent;
+    border-top-color: var(--forge-accent);
     border-bottom: none;
   }
 
@@ -51,7 +46,7 @@
     top: -12px;
     left: 50%;
     transform: translateX(-50%);
-    border-bottom-color: $border-accent;
+    border-bottom-color: var(--forge-accent);
     border-top: none;
   }
 
@@ -59,7 +54,7 @@
     right: -12px;
     top: 50%;
     transform: translateY(-50%);
-    border-left-color: $border-accent;
+    border-left-color: var(--forge-accent);
     border-right: none;
   }
 
@@ -67,58 +62,11 @@
     left: -12px;
     top: 50%;
     transform: translateY(-50%);
-    border-right-color: $border-accent;
+    border-right-color: var(--forge-accent);
     border-left: none;
-  }
-
-  // Dark theme support
-  .dark-theme & {
-    background: $bg-secondary;
-    border-color: $border-primary;
-    color: $text-primary;
-    
-    .info-bubble__arrow--top {
-      border-top-color: $border-primary;
-    }
-    
-    .info-bubble__arrow--bottom {
-      border-bottom-color: $border-primary;
-    }
-    
-    .info-bubble__arrow--left {
-      border-left-color: $border-primary;
-    }
-    
-    .info-bubble__arrow--right {
-      border-right-color: $border-primary;
-    }
-  }
-
-  // TSL theme support
-  .TSL & {
-    background: $bg-secondary;
-    border-color: $tsl-primary;
-    color: $text-primary;
-    
-    .info-bubble__arrow--top {
-      border-top-color: $tsl-primary;
-    }
-    
-    .info-bubble__arrow--bottom {
-      border-bottom-color: $tsl-primary;
-    }
-    
-    .info-bubble__arrow--left {
-      border-left-color: $tsl-primary;
-    }
-    
-    .info-bubble__arrow--right {
-      border-right-color: $tsl-primary;
-    }
   }
 }
 
-// Animation keyframes
 @keyframes info-bubble-fade-in {
   from {
     opacity: 0;
@@ -130,7 +78,6 @@
   }
 }
 
-// Responsive adjustments
 @media (max-width: 768px) {
   .info-bubble {
     max-width: 250px;

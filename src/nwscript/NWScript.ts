@@ -1,5 +1,4 @@
 import { BinaryReader } from "@/utility/binary/BinaryReader";
-import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
 import { Endians } from "@/enums/resource/Endians";
 import { ResourceLoader } from "@/loaders";
 import { ResourceTypes } from "@/resource/ResourceTypes";
@@ -9,11 +8,8 @@ import { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
 import { NWScriptStack } from "@/nwscript/NWScriptStack";
 import { NWScriptControlFlowGraph } from "@/nwscript/decompiler/NWScriptControlFlowGraph";
 import { NWScriptDecompiler } from "@/nwscript/decompiler/NWScriptDecompiler";
-
-import {
-  OP_CPDOWNSP, OP_CPTOPSP, OP_CONST, OP_ACTION, OP_EQUAL, OP_NEQUAL, OP_MOVSP, OP_JMP, OP_JSR, OP_JZ, OP_RETN, 
-  OP_DESTRUCT, OP_DECISP, OP_INCISP, OP_JNZ, OP_CPDOWNBP, OP_CPTOPBP, OP_DECIBP, OP_INCIBP, OP_STORE_STATE, OP_T
-} from "@/nwscript/NWScriptOPCodes";
+import { parseNcsInstruction } from "@/nwscript/parseNcsInstruction";
+import { OP_T } from "@/nwscript/NWScriptOPCodes";
 
 import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
 import { GameState } from "@/GameState";
@@ -21,6 +17,13 @@ import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { INWScriptDefAction } from "@/interface/nwscript/INWScriptDefAction";
 import { NWScriptDefK2 } from "@/nwscript/NWScriptDefK2";
 import { NWScriptDefK1 } from "@/nwscript/NWScriptDefK1";
+
+export interface NWScriptLoadOptions {
+  /** Explicit bytecode dialect. Defaults to the active game for runtime compatibility. */
+  game?: GameEngineType;
+  /** Optional action table override for tools that run without GameState. */
+  actionsMap?: { [key: number]: INWScriptDefAction };
+}
 
 /**
  * NWScript class.
@@ -107,9 +110,11 @@ export class NWScript {
    */
   controlFlowGraph: NWScriptControlFlowGraph | null = null;
 
-  constructor ( dataOrFile?: string|Uint8Array ){
-    this.actionsMap = (GameState.GameKey == GameEngineType.TSL) ? 
-      NWScriptDefK2.Actions : NWScriptDefK1.Actions;
+  constructor ( dataOrFile?: string|Uint8Array, options: NWScriptLoadOptions = {} ){
+    const game = options.game ?? GameState.GameKey;
+    this.actionsMap = options.actionsMap ?? (
+      game === GameEngineType.TSL ? NWScriptDefK2.Actions : NWScriptDefK1.Actions
+    );
 
     this.instances = [];
     this.isGlobal = false;
@@ -197,86 +202,7 @@ export class NWScript {
    * @param {BinaryReader} reader
    */
   parseIntruction( reader: BinaryReader, lastInstruction: NWScriptInstruction, index: number ): NWScriptInstruction {
-    const instructionAddress = reader.position;
-    const opCode = reader.readByte();
-    const opType = opCode != OP_T ? reader.readByte() : reader.readInt32();
-
-    const instruction = new NWScriptInstruction(opCode, opType, instructionAddress);
-    
-    instruction.prevInstr = lastInstruction;
-    instruction.index = index;
-
-    //If we already have parsed an instruction set the property of nextInstr on the previous instruction to the current one
-    if(lastInstruction){
-      lastInstruction.nextInstr = instruction;
-    }
-
-    switch(opCode){
-      case OP_CPDOWNSP:
-      case OP_CPTOPSP:
-      case OP_CPDOWNBP:
-      case OP_CPTOPBP:
-        instruction.offset = reader.readInt32();
-        instruction.size = reader.readInt16(); //As far as I can tell this should always be 4. Because all stack objects are 4Bytes long
-        if(instruction.offset == undefined || instruction.size == undefined){
-          console.warn(instruction.codeName, instruction.offset, instruction.size, reader.position);
-        }
-      break;
-      case OP_CONST:
-        switch(instruction.type){
-          case 3:
-            instruction.integer = reader.readInt32();
-          break;
-          case 4:
-            instruction.float = reader.readSingle();
-          break;
-          case 5:
-            instruction.string = reader.readChars(reader.readUInt16());
-          break;
-          case 6:
-            instruction.object = reader.readInt32();
-          break;
-        }
-      break;
-      case OP_ACTION:
-        instruction.action = reader.readUInt16();
-        instruction.argCount = reader.readByte();
-        instruction.actionDefinition = this.actionsMap[instruction.action];
-      break;
-      case OP_EQUAL:
-      case OP_NEQUAL:
-        if(instruction.type == NWScriptDataType.STRUCTURE){
-          instruction.sizeOfStructure = reader.readUInt16();
-        }
-      break;
-      case OP_MOVSP:
-      case OP_JMP:
-      case OP_JSR:
-      case OP_JZ:
-      case OP_DECISP:
-      case OP_INCISP:
-      case OP_JNZ:
-      case OP_DECIBP:
-      case OP_INCIBP:
-        instruction.offset = reader.readInt32();
-      break;
-      case OP_DESTRUCT:
-        instruction.sizeToDestroy = reader.readInt16();
-        instruction.offsetToSaveElement = reader.readInt16();
-        instruction.sizeOfElementToSave = reader.readInt16();
-      break;
-      case OP_STORE_STATE:
-        instruction.bpOffset = reader.readInt32();
-        instruction.spOffset = reader.readInt32();
-      break;
-      case OP_T:
-        instruction.size = opType
-      break;
-    }
-
-    //Calculate the size of the instruction
-    instruction.instructionSize = reader.position - instructionAddress;
-
+    const instruction = parseNcsInstruction(reader, lastInstruction, index, this.actionsMap);
     this.instructions.set(instruction.address, instruction);
     return instruction;
   }
@@ -287,7 +213,7 @@ export class NWScript {
    * @returns {NWScript}
    */
   clone(){
-    const script = new NWScript();
+    const script = new NWScript(undefined, { actionsMap: this.actionsMap });
     script.name = this.name;
     script.instructions = new Map(this.instructions);
     return script;

@@ -145,7 +145,7 @@ contextBridge.exposeInMainWorld(
   'electron',
   {
     isMac: () => {
-      process.platform === 'darwin'
+      return process.platform === 'darwin';
     },
     minimize: (profile: any) => {
       return new Promise((resolve, reject) => {
@@ -160,6 +160,9 @@ contextBridge.exposeInMainWorld(
           resolve(response);
         });
       })
+    },
+    close: () => {
+      return ipcRenderer.invoke('win-close');
     },
     locate_game_directory: (profile: any) => {
       return new Promise((resolve, reject) => {

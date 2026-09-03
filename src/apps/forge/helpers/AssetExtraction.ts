@@ -13,9 +13,84 @@ export type ExportTarget =
   | { type: 'electron'; path: string }
   | { type: 'browser'; handle: FileSystemDirectoryHandle };
 
+export const WRITE_CONCURRENCY = 4;
+
+export type ProgressCallback = (current: number, total: number, message: string) => void;
+
 interface CollectedAssets {
   models: Set<string>;
   textures: Set<string>;
+}
+
+interface BrowserDestCache {
+  dirs: Map<string, FileSystemDirectoryHandle>;
+  files: Map<string, Set<string>>;
+  inflight: Map<string, Promise<{ dir: FileSystemDirectoryHandle; names: Set<string> }>>;
+}
+
+const destCaches = new WeakMap<FileSystemDirectoryHandle, BrowserDestCache>();
+
+function getBrowserDestCache(handle: FileSystemDirectoryHandle): BrowserDestCache {
+  let cache = destCaches.get(handle);
+  if (!cache) {
+    cache = { dirs: new Map(), files: new Map(), inflight: new Map() };
+    destCaches.set(handle, cache);
+  }
+  return cache;
+}
+
+function splitExportPath(filename: string): { parts: string[]; fileName: string } | undefined {
+  const normalized = filename.replace(/\\/g, '/').replace(/^\/+/, '');
+  const parts = normalized.split('/').filter(Boolean);
+  const fileName = parts.pop();
+  if (!fileName) {
+    return undefined;
+  }
+  return { parts, fileName };
+}
+
+async function enumerateDirNames(dirHandle: FileSystemDirectoryHandle): Promise<Set<string>> {
+  const names = new Set<string>();
+  for await (const entry of dirHandle.values()) {
+    if (entry.kind === 'file') {
+      names.add(entry.name);
+    }
+  }
+  return names;
+}
+
+async function resolveBrowserDestDir(
+  target: Extract<ExportTarget, { type: 'browser' }>,
+  parts: string[],
+  create: boolean,
+): Promise<{ dir: FileSystemDirectoryHandle; names: Set<string> } | undefined> {
+  const cache = getBrowserDestCache(target.handle);
+  const key = parts.join('/');
+  const cachedDir = cache.dirs.get(key);
+  const cachedNames = cache.files.get(key);
+  if (cachedDir && cachedNames) {
+    return { dir: cachedDir, names: cachedNames };
+  }
+  const inflight = cache.inflight.get(key);
+  if (inflight) {
+    return inflight;
+  }
+  const promise = (async () => {
+    let dirHandle = target.handle;
+    for (const segment of parts) {
+      dirHandle = await dirHandle.getDirectoryHandle(segment, { create });
+    }
+    const names = await enumerateDirNames(dirHandle);
+    cache.dirs.set(key, dirHandle);
+    cache.files.set(key, names);
+    cache.inflight.delete(key);
+    return { dir: dirHandle, names };
+  })().catch((e) => {
+    cache.inflight.delete(key);
+    throw e;
+  });
+  cache.inflight.set(key, promise);
+  return promise;
 }
 
 export async function promptForDirectory(defaultName: string): Promise<ExportTarget | undefined> {
@@ -51,17 +126,11 @@ export async function fileExists(filename: string, target: ExportTarget): Promis
     });
   } else {
     try {
-      const normalized = filename.replace(/\\/g, '/').replace(/^\/+/, '');
-      const parts = normalized.split('/').filter(Boolean);
-      const fileName = parts.pop();
-      if (!fileName) return false;
-
-      let dirHandle = target.handle;
-      for (const segment of parts) {
-        dirHandle = await dirHandle.getDirectoryHandle(segment);
-      }
-      await dirHandle.getFileHandle(fileName);
-      return true;
+      const split = splitExportPath(filename);
+      if (!split) return false;
+      const resolved = await resolveBrowserDestDir(target, split.parts, false);
+      if (!resolved) return false;
+      return resolved.names.has(split.fileName);
     } catch {
       return false;
     }
@@ -80,23 +149,206 @@ export async function writeFile(filename: string, buffer: Uint8Array, target: Ex
       });
     });
   } else {
-    const normalized = filename.replace(/\\/g, '/').replace(/^\/+/, '');
-    const parts = normalized.split('/').filter(Boolean);
-    const fileName = parts.pop();
-    if (!fileName) {
+    const split = splitExportPath(filename);
+    if (!split) {
       throw new Error(`Invalid filename '${filename}'`);
     }
 
-    let dirHandle = target.handle;
-    for (const segment of parts) {
-      dirHandle = await dirHandle.getDirectoryHandle(segment, { create: true });
+    const resolved = await resolveBrowserDestDir(target, split.parts, true);
+    if (!resolved) {
+      throw new Error(`Failed to resolve export directory for '${filename}'`);
     }
 
-    const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
+    const fileHandle = await resolved.dir.getFileHandle(split.fileName, { create: true });
     const ws: FileSystemWritableFileStream = await fileHandle.createWritable();
     await ws.write(buffer as any);
     await ws.close();
+    resolved.names.add(split.fileName);
   }
+}
+
+function normalizeArchivePath(archivePath: string): string {
+  return String(archivePath ?? '').replace(/\\/g, '/').replace(/^\/+|\/+$/g, '').toLowerCase();
+}
+
+export interface ParsedGameResourceUri {
+  scheme: string;
+  pathname: string;
+  resref?: string;
+  restype?: string;
+  reskey?: number;
+}
+
+export function parseGameResourceUri(uri: string): ParsedGameResourceUri | undefined {
+  if (!uri) {
+    return undefined;
+  }
+  try {
+    const hasProtocol = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(uri.trim());
+    if (!hasProtocol) {
+      return { scheme: 'file', pathname: uri.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '') };
+    }
+    const u = new URL(uri.trim());
+    const scheme = u.protocol.replace(/:$/, '').toLowerCase();
+    let pathname = decodeURIComponent(u.pathname || '').replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
+    const host = (u.hostname || '').toLowerCase();
+    if (host && host !== 'game.dir' && host !== 'project.dir' && host !== 'system.dir') {
+      pathname = pathname ? `${u.hostname}/${pathname}` : u.hostname;
+    } else if (pathname.toLowerCase().startsWith('game.dir/')) {
+      pathname = pathname.slice('game.dir/'.length);
+    } else if (pathname.toLowerCase() === 'game.dir') {
+      pathname = '';
+    }
+    const resref = u.searchParams.get('resref') || undefined;
+    const restype = (u.searchParams.get('restype') || '').toLowerCase() || undefined;
+    const reskey = restype ? KotOR.ResourceTypes[restype] : undefined;
+    return { scheme, pathname, resref, restype, reskey };
+  } catch {
+    return undefined;
+  }
+}
+
+type ArchiveKind = 'bif' | 'erf' | 'rim';
+type LoadedArchive = KotOR.BIFObject | KotOR.ERFObject | KotOR.RIMObject;
+
+interface CachedArchive {
+  kind: ArchiveKind;
+  archive: LoadedArchive;
+  owned: boolean;
+}
+
+export class ArchiveReadCache {
+  private archives = new Map<string, Promise<CachedArchive>>();
+
+  private cacheKey(kind: ArchiveKind, archivePath: string): string {
+    return `${kind}:${normalizeArchivePath(archivePath)}`;
+  }
+
+  private async loadArchive(kind: ArchiveKind, archivePath: string): Promise<CachedArchive> {
+    if (kind === 'bif') {
+      const existing = KotOR.BIFManager.FindByPath(archivePath);
+      if (existing) {
+        return { kind, archive: existing, owned: false };
+      }
+      const bif = new KotOR.BIFObject(archivePath);
+      await bif.load();
+      return { kind, archive: bif, owned: true };
+    }
+    if (kind === 'rim') {
+      const existing = KotOR.RIMManager.FindByPath(archivePath);
+      if (existing) {
+        return { kind, archive: existing, owned: false };
+      }
+      const rim = new KotOR.RIMObject(archivePath);
+      await rim.load();
+      return { kind, archive: rim, owned: true };
+    }
+    const existing = KotOR.ERFManager.FindByPath(archivePath);
+    if (existing) {
+      return { kind, archive: existing, owned: false };
+    }
+    const erf = new KotOR.ERFObject(archivePath);
+    await erf.load();
+    return { kind, archive: erf, owned: true };
+  }
+
+  private getArchive(kind: ArchiveKind, archivePath: string): Promise<CachedArchive> {
+    const key = this.cacheKey(kind, archivePath);
+    let pending = this.archives.get(key);
+    if (!pending) {
+      pending = this.loadArchive(kind, archivePath).catch((e) => {
+        this.archives.delete(key);
+        throw e;
+      });
+      this.archives.set(key, pending);
+    }
+    return pending;
+  }
+
+  async read(uri: string): Promise<Uint8Array> {
+    const ref = parseGameResourceUri(uri);
+    if (!ref) {
+      return new Uint8Array(0);
+    }
+    if (ref.scheme === 'file' || !ref.resref) {
+      if (!ref.pathname) {
+        return new Uint8Array(0);
+      }
+      return KotOR.GameFileSystem.readFile(ref.pathname);
+    }
+    const kind: ArchiveKind = ref.scheme === 'bif' ? 'bif' : ref.scheme === 'rim' ? 'rim' : 'erf';
+    const cached = await this.getArchive(kind, ref.pathname);
+    const reskey = typeof ref.reskey === 'number' ? ref.reskey : 0;
+    if (cached.kind === 'bif') {
+      return (cached.archive as KotOR.BIFObject).getResourceBufferByResRef(ref.resref, reskey);
+    }
+    if (cached.kind === 'rim') {
+      const buffer = await (cached.archive as KotOR.RIMObject).getResourceBufferByResRef(ref.resref, reskey);
+      return buffer || new Uint8Array(0);
+    }
+    return (cached.archive as KotOR.ERFObject).getResourceBufferByResRef(ref.resref, reskey);
+  }
+
+  async dispose(): Promise<void> {
+    const loaded = await Promise.all(this.archives.values());
+    for (const entry of loaded) {
+      if (entry.owned && typeof (entry.archive as any).dispose === 'function') {
+        await (entry.archive as any).dispose();
+      }
+    }
+    this.archives.clear();
+  }
+}
+
+export function createThrottledProgress(
+  onProgress?: ProgressCallback,
+  intervalMs = 100,
+): ProgressCallback & { flush: () => void } {
+  if (!onProgress) {
+    const noop = ((() => {}) as ProgressCallback & { flush: () => void });
+    noop.flush = () => {};
+    return noop;
+  }
+  let lastSent = 0;
+  let lastArgs: [number, number, string] | undefined;
+  const fn = ((current: number, total: number, message: string) => {
+    lastArgs = [current, total, message];
+    const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+    if (current >= total || now - lastSent >= intervalMs) {
+      lastSent = now;
+      onProgress(current, total, message);
+      lastArgs = undefined;
+    }
+  }) as ProgressCallback & { flush: () => void };
+  fn.flush = () => {
+    if (lastArgs) {
+      onProgress(...lastArgs);
+      lastArgs = undefined;
+    }
+  };
+  return fn;
+}
+
+export function createConcurrencyGate(limit: number) {
+  let active = 0;
+  const waiters: Array<() => void> = [];
+  return {
+    async acquire() {
+      if (active >= limit) {
+        await new Promise<void>((resolve) => waiters.push(resolve));
+      } else {
+        active++;
+      }
+    },
+    release() {
+      const next = waiters.shift();
+      if (next) {
+        next();
+      } else {
+        active--;
+      }
+    },
+  };
 }
 
 function collectNodeAssets(node: KotOR.OdysseyModelNode, assets: CollectedAssets): void {
@@ -277,12 +529,6 @@ export async function fetchModelBuffers(resref: string): Promise<{ mdl: Uint8Arr
   return undefined;
 }
 
-export type ProgressCallback = (current: number, total: number, message: string) => void;
-
-/**
- * Export all collected models and textures to the target directory, skipping
- * files that already exist. Returns the results for display.
- */
 export async function exportCollectedAssets(
   allModels: Set<string>,
   allTextures: Set<string>,
@@ -295,13 +541,14 @@ export async function exportCollectedAssets(
   const failedFiles: string[] = [];
 
   const fetchMdl = fetchModelBuffersOverride || fetchModelBuffers;
+  const progress = createThrottledProgress(onProgress);
 
   const totalItems = allModels.size + allTextures.size;
   let processed = 0;
 
   for (const resref of allModels) {
     processed++;
-    onProgress?.(processed, totalItems, `Exporting model: ${resref}`);
+    progress(processed, totalItems, `Exporting model: ${resref}`);
     try {
       const mdlName = `${resref}.mdl`;
       const mdxName = `${resref}.mdx`;
@@ -336,7 +583,7 @@ export async function exportCollectedAssets(
 
   for (const resref of allTextures) {
     processed++;
-    onProgress?.(processed, totalItems, `Exporting texture: ${resref}`);
+    progress(processed, totalItems, `Exporting texture: ${resref}`);
     try {
       const result = await fetchTextureBuffer(resref);
       if (result) {
@@ -364,6 +611,7 @@ export async function exportCollectedAssets(
     }
   }
 
+  progress.flush();
   return { exportedFiles, skippedFiles, failedFiles };
 }
 

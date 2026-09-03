@@ -164,6 +164,11 @@ export class ERFObject {
     return this._resourceIndex.get(`${resRef.toLowerCase()}:${resType}`);
   }
 
+  /** BIF-compatible alias of {@link getResourceInfo}. */
+  getResource(resRef: string, resType: number): IERFResource {
+    return this.getResourceInfo(resRef, resType);
+  }
+
   async getFileDescription(): Promise<any> {
     if(this.#fd) return this.#fd;
     this.#fd = await GameFileSystem.open(this.resource_path, 'r');
@@ -182,8 +187,9 @@ export class ERFObject {
       return new Uint8Array(0);
     }
 
-    if(resource.data instanceof Uint8Array && resource.data.byteLength === resource.size){
-      return resource.data;
+    // In-memory packs (addResource / setResource) store payload on the entry.
+    if(resource.data instanceof Uint8Array && resource.data.byteLength){
+      return resource.data.slice(0, resource.size);
     }
 
     const buffer = new Uint8Array(resource.size);
@@ -292,6 +298,35 @@ export class ERFObject {
     });
 
     this._resourceIndex.set(`${keyName}:${resType}`, this.resources[resId]);
+  }
+
+  /**
+   * Replace an existing key or append a new one. Hydrate resource payloads
+   * with {@link ensureResourceDataLoaded} before {@link getExportBuffer}.
+   */
+  setResource(resRef: string, resType: number, buffer: Uint8Array): void {
+    const existing = this.getResourceInfo(resRef, resType);
+    if (existing) {
+      existing.data = buffer;
+      existing.size = buffer.length;
+      existing.offset = -1;
+      return;
+    }
+    this.addResource(resRef, resType, buffer);
+  }
+
+  async ensureResourceDataLoaded(): Promise<void> {
+    for (let i = 0; i < this.resources.length; i++) {
+      const resource = this.resources[i];
+      if (resource.data instanceof Uint8Array && resource.data.length === resource.size) {
+        continue;
+      }
+      if (this.inMemory && this.buffer instanceof Uint8Array && resource.size > 0) {
+        resource.data = this.buffer.slice(resource.offset, resource.offset + resource.size);
+      } else {
+        resource.data = await this.getResourceBuffer(resource);
+      }
+    }
   }
 
   export( file: string, onExport?: Function, onError?: Function ){

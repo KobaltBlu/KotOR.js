@@ -1,4 +1,5 @@
 import { get, set } from 'idb-keyval';
+import { isPlainObject, mergeConfigDefaults } from '@/utility/mergeConfigDefaults';
 
 /**
  * ConfigClient class.
@@ -14,11 +15,10 @@ export class ConfigClient {
   static UUID: string = ConfigClient.uuidv4();
 
   static async Init() {
-    ConfigClient.options = Object.assign(
-      defaults, 
+    ConfigClient.options = mergeConfigDefaults(
+      defaults,
       await get('app_settings')
     );
-
   }
 
   static get(path: string|any[] = '', defaultValue?:any){
@@ -51,35 +51,38 @@ export class ConfigClient {
       path = path.join('.');
 
     if(typeof value == 'string' || typeof value == 'number' || typeof value == 'boolean' || typeof value == 'object' || Array.isArray(value)){
-      let parts = path.split('.');
-      let scope = ConfigClient.options;
-      let i = 0, len = Math.max(parts.length-1, 0);
-      for(i = 0; i < len; i++){
-        if(scope[parts[i]]){
-          scope = scope[parts[i]];
-        }
-        
-        if(typeof scope == 'undefined'){
-          console.warn('ConfigManager.set', 'Invalid property', path);
-          return undefined;
-        }
-      }
-
-      if(scope[parts[i]] == ConfigClient.options){
+      let parts = path.split('.').filter((part) => part.length > 0);
+      if(!parts.length){
+        console.warn('ConfigManager.set', 'Invalid property', path);
         return undefined;
       }
 
-      if(typeof scope[parts[len]] == 'undefined'){
-        scope[parts[len]] = {};
+      let scope = ConfigClient.options;
+      const last = parts.length - 1;
+      for(let i = 0; i < last; i++){
+        const part = parts[i];
+        const next = scope[part];
+        if(!isPlainObject(next)){
+          scope[part] = {};
+        }
+        scope = scope[part];
       }
 
-      if(typeof scope[parts[len]] != 'undefined'){
-        let _old = JSON.parse(JSON.stringify(scope[parts[len]]));
-        scope[parts[len]] = value;
-        if(_old != value){
-          // ConfigClient.triggerEvent(path, value, _old);
-          ConfigClient.save(null, true);
-        }
+      const leaf = parts[last];
+      if(leaf == '' || typeof scope == 'undefined'){
+        console.warn('ConfigManager.set', 'Invalid property', path);
+        return undefined;
+      }
+
+      let _old: any = undefined;
+      try {
+        _old = JSON.parse(JSON.stringify(scope[leaf]));
+      }catch(e){
+        _old = undefined;
+      }
+      scope[leaf] = value;
+      if(_old != value){
+        ConfigClient.save(null, true);
       }
     }else{
       console.warn('ConfigManager.set', 'Invalid value type', typeof value, value);
@@ -102,10 +105,12 @@ export class ConfigClient {
 
 }
 
-window.addEventListener('storage', (event: StorageEvent) => {
-  console.log('storage', event);
-  ConfigClient.Init();
-});
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+  window.addEventListener('storage', (event: StorageEvent) => {
+    console.log('storage', event);
+    ConfigClient.Init();
+  });
+}
 
 const defaults: any = {
   first_run: true,
@@ -207,6 +212,14 @@ const defaults: any = {
           visible: false
         },
       }
+    },
+    NcsInspector: {
+      layoutMode: 'assembly',
+      showFunctions: false,
+      showDetails: false,
+      drawerOpen: false,
+      drawerWidth: 440,
+      experienceVersion: 2,
     }
   },
   Panes: {
@@ -217,5 +230,122 @@ const defaults: any = {
   },
   Projects_Directory: null,
   recent_projects: [],
-  recent_files: []
+  recent_files: [],
+  Forge: {
+    themeByGame: {
+      KOTOR: 'kotor-dark',
+      TSL: 'tsl-dark',
+    },
+    userThemes: [],
+    themeCustomizations: {},
+    defaultEditors: {},
+    editor: {
+      fontFamily: 'ui-monospace, "Cascadia Code", Consolas, monospace',
+      fontSize: 14,
+      fontLigatures: false,
+      tabSize: 2,
+      insertSpaces: true,
+      wordWrap: 'off',
+      minimap: true,
+      lineNumbers: 'on',
+      renderWhitespace: 'selection',
+      scrollBeyondLastLine: true,
+      mouseWheelZoom: false,
+    },
+    session: {
+      restoreOpenTabs: true,
+      confirmCloseUnsaved: true,
+      explorerOpenOnLaunch: true,
+      showFloatingMiniPlayer: false,
+      traskTourCompleted: false,
+    },
+    localization: {
+      language: 0,
+      gender: 0,
+      previewStrRefFromTlk: true,
+    },
+    editors: {
+      hex: {
+        offsetDisplay: 'hex',
+        bytesPerRow: 16,
+        showAscii: true,
+        uppercase: true,
+      },
+      gff: {
+        showType: true,
+        showPreview: true,
+        previewMaxLength: 48,
+      },
+      twoda: {
+        wrapCells: false,
+        showRowLabel: true,
+      },
+      tlk: {
+        searchResultCap: 500,
+        autoplayVo: false,
+      },
+      ssf: {
+        autoplayOnSelect: false,
+      },
+      viewport: {
+        layers: {
+          lights: true,
+          emitters: true,
+          walkmeshes: false,
+          trimesh: true,
+          skin: true,
+          dangly: true,
+          saber: true,
+          childModels: true,
+          layout: true,
+          ground: true,
+        },
+        windPower: 1,
+        wokWireframe: true,
+        wokGrid: true,
+      },
+      module: {
+        helpers: {
+          creature: true,
+          door: true,
+          encounter: true,
+          placeable: true,
+          merchant: true,
+          sound: true,
+          trigger: true,
+          waypoint: true,
+        },
+      },
+      blueprints: {
+        show3DPreview: true,
+        autoExpandLocString: false,
+      },
+      dlg: {
+        graphLayout: 'vertical',
+      },
+      lip: {
+        head: 'p_bastilah',
+      },
+      image: {
+        filter: 'nearest',
+        checkerboard: true,
+        defaultZoom: '100',
+      },
+      audio: {
+        volume: 0.25,
+        loop: false,
+        visualization: 'spectrum',
+      },
+      gui: {
+        zoomStep: 0.25,
+        zoomMin: 0.1,
+        zoomMax: 5,
+      },
+      archives: {
+        confirmExtractOverwrite: true,
+      },
+    },
+  },
 };
+
+export { mergeConfigDefaults };

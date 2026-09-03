@@ -3,6 +3,7 @@ import { TabTwoDAEditor } from "@/apps/forge/components/tabs/tab-twoda-editor/Ta
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import { TabState } from "@/apps/forge/states/tabs/TabState";
 import { EditorFile } from "@/apps/forge/EditorFile";
+import { forgeTwoDASettings } from "@/apps/forge/settings/forgeEditorsSettings";
 import * as KotOR from "@/apps/forge/KotOR";
 
 interface TwoDASnapshot {
@@ -99,7 +100,11 @@ export class TabTwoDAEditorState extends TabState {
 
   importFromCSV(csvContent: string): void {
     this.captureUndoSnapshot();
-    this.twoDAObject = KotOR.TwoDAObject.fromCSV(csvContent);
+    const settings = forgeTwoDASettings.get();
+    this.twoDAObject = KotOR.TwoDAObject.fromCSV(csvContent, {
+      delimiter: settings.csvDelimiter,
+      hasHeader: settings.csvHasHeader,
+    });
     if(this.file instanceof EditorFile){
       this.file.unsaved_changes = true;
       this.editorFileUpdated();

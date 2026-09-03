@@ -1,0 +1,17 @@
+.forge-twoda-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  width: 100%;
+}
+
+.forge-twoda-field__filter {
+  width: 100%;
+}
+
+.forge-twoda-field .forge-select,
+.forge-twoda-field .forge-input {
+  width: 100%;
+  margin-bottom: 0;
+}

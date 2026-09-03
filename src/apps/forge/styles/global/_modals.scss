@@ -1,24 +1,92 @@
 // =============================================================================
-// MODALS
+// DIALOGS
 // =============================================================================
 
-.modal-content {
-  background-color: $bg-secondary;
-  height: 100%;
-  border-radius: 0;
-  padding: $spacing-md;
+.forge-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--forge-z-modal);
+  background: var(--forge-bg-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.modal-header {
-  border-bottom: $border-width solid $bg-darker;
+.forge-dialog {
+  display: flex;
+  flex-direction: column;
+  min-width: 360px;
+  max-width: min(720px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  background: var(--forge-bg-elevated);
+  border: 1px solid var(--forge-border);
+  border-radius: var(--forge-radius);
+  box-shadow: var(--forge-shadow-menu);
+  color: var(--forge-text);
+
+  &--lg {
+    min-width: 560px;
+    max-width: min(900px, calc(100vw - 48px));
+  }
+
+  &--xl {
+    min-width: 720px;
+    width: min(920px, calc(100vw - 48px));
+    height: min(640px, calc(100vh - 48px));
+    max-width: min(920px, calc(100vw - 48px));
+  }
+
+  &--sm {
+    min-width: 280px;
+  }
 }
 
-.modal-footer {
-  border-top: $border-width solid $bg-darker;
+.forge-dialog__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 28px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--forge-border);
+  -webkit-app-region: no-drag;
 }
 
-.modal-backdrop {
-  background-color: $bg-overlay-dark;
+.forge-dialog__title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--forge-text-bright);
+}
+
+.forge-dialog__close {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--forge-text-muted);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--forge-text-bright);
+    background: var(--forge-bg-hover);
+  }
+}
+
+.forge-dialog__body {
+  padding: 12px;
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.forge-dialog__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--forge-border);
 }
 
 .modal-buttons-wrapper {
@@ -28,5 +96,5 @@
   flex: 1;
   margin-top: $spacing-lg;
   padding-top: $spacing-md;
-  border-top: $border-width solid $border-secondary;
+  border-top: 1px solid var(--forge-border);
 }

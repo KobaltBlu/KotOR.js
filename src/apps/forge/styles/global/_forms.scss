@@ -1,140 +1,175 @@
 // =============================================================================
-// FORMS
+// FORMS — native-flat controls
 // =============================================================================
 
-.input-group {
+.forge-input-group {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
   margin-bottom: $spacing-sm;
-  .input-group-text {
-    background-color: $form-bg;
-    color: $text-primary;
-    margin-bottom: 0 !important;
-    border-color: $form-border;
-    z-index: 1;
-    border-width: $border-width;
+  min-height: 22px;
+
+  > * {
+    border-radius: 0;
+    margin: 0 !important;
   }
 
-  > input {
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
+  > *:first-child {
+    border-top-left-radius: var(--forge-radius);
+    border-bottom-left-radius: var(--forge-radius);
   }
 
-  > select {
-    margin-bottom: 0 !important;
+  > *:last-child {
+    border-top-right-radius: var(--forge-radius);
+    border-bottom-right-radius: var(--forge-radius);
   }
 
-  > input {
-    margin-bottom: 0 !important;
-  }
-
-  > button {
-    margin-bottom: 0 !important;
+  > *:not(:first-child) {
+    margin-left: -1px !important;
   }
 }
 
-.form-control, 
-pre, 
-input[type=text], 
-input[type=number], 
-input[type=cexolocstring], 
-textarea {
+.forge-input-group__text {
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  background: var(--forge-bg-elevated);
+  color: var(--forge-text-muted);
+  border: 1px solid var(--forge-border);
+  font-size: var(--forge-font-size-sm);
+  white-space: nowrap;
+}
+
+.forge-input,
+.form-control,
+input[type=text],
+input[type=number],
+input[type=search],
+input[type=cexolocstring],
+textarea,
+pre {
   width: 100%;
-  padding: $spacing-sm 9px;
-  font-size: 15px;
-  line-height: 1.42857143;
-  background-image: none;
-  border: $border-width solid $text-primary;
-  border-radius: 0;
-  -webkit-box-shadow: inset 0 1px 1px $shadow-light;
-  box-shadow: inset 0 1px 1px $shadow-light;
-  @include transition-form;
-  background: $bg-tertiary;
-  border: $border-width solid $form-border;
-  color: $text-primary;
-  @include border-radius-form;
+  min-height: 22px;
+  padding: 2px 6px;
+  font-size: var(--forge-font-size);
+  font-family: inherit;
+  line-height: 1.3;
+  background: var(--forge-bg-input);
+  border: 1px solid var(--forge-border);
+  border-radius: var(--forge-radius);
+  color: var(--forge-text);
+  box-shadow: none;
   margin-bottom: $spacing-sm;
-  @include box-shadow-form;
 
   &:focus {
-    color: $text-white;
-    background-color: $active-bg;
+    color: var(--forge-text-bright);
+    border-color: var(--forge-accent);
+    outline: none;
+    box-shadow: var(--forge-focus-ring);
   }
 
   &::placeholder {
-    color: $form-placeholder;
+    color: var(--forge-text-muted);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: default;
   }
 }
 
-// Universal select styling - applies to all select elements
-select {
-  @include border-radius-form;
-  border: $border-width-thick solid $form-border;
-  padding: $spacing-sm;
-  background-color: $form-bg;
-  outline-color: $form-border;
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23FFFFFF' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right $spacing-sm center;
-  background-size: 16px 12px;
-  display: block;
-  @include box-shadow-form;
+textarea {
+  min-height: 48px;
+  resize: vertical;
+}
+
+select,
+.forge-select,
+.form-select {
   width: 100%;
-  color: $text-white;
+  min-height: 22px;
+  padding: 2px 22px 2px 6px;
+  font-size: var(--forge-font-size);
   font-family: inherit;
-  font-size: inherit;
-  line-height: inherit;
+  line-height: 1.3;
+  color: var(--forge-text);
+  background-color: var(--forge-bg-input);
+  border: 1px solid var(--forge-border);
+  border-radius: var(--forge-radius);
+  outline: none;
   appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
+  display: block;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23d4d4d4' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  background-size: 10px 8px;
+  margin-bottom: $spacing-sm;
 
   &:focus {
-    color: $text-white;
-    border-color: $secondary-cyan;
-    outline: none;
-    box-shadow: 0 0 0 2px rgba($secondary-cyan, 0.2);
-  }
-
-  &:hover {
-    border-color: $secondary-cyan-light;
+    border-color: var(--forge-accent);
+    box-shadow: var(--forge-focus-ring);
   }
 
   option {
-    background-color: $form-bg;
-    color: $text-white;
+    background-color: var(--forge-bg-panel);
+    color: var(--forge-text);
   }
 }
 
-// Ensure .form-select class gets the same styling
-.form-select {
-  @extend select;
-}
-
-button[disabled], 
-html input[disabled], 
-textarea[disabled] {
-  cursor: default !important;
-  background: $disabled-bg !important;
-  border: $border-width-thick solid $disabled-border !important;
+button[disabled],
+html input[disabled],
+textarea[disabled],
+select:disabled {
+  cursor: default;
+  opacity: 0.55;
 }
 
 fieldset {
-  border: $border-width-thick solid $border-accent-darker;
+  border: 1px solid var(--forge-border);
   padding: $spacing-sm;
-  @include border-radius-form;
+  border-radius: var(--forge-radius);
   margin: 0 $spacing-md $spacing-md $spacing-md;
 }
 
 legend {
   float: none;
-  color: $text-primary;
+  color: var(--forge-text-muted);
   border-bottom: none;
   margin-bottom: 0;
   display: inline-block;
   width: auto;
-  padding: 0 $spacing-md;
+  padding: 0 $spacing-sm;
+  font-size: var(--forge-font-size-sm);
 }
 
+.forge-property-row {
+  td {
+    padding: 2px 4px;
+    vertical-align: middle;
+  }
+
+  label {
+    cursor: help;
+    color: var(--forge-text-muted);
+    font-size: var(--forge-font-size-sm);
+  }
+}
+
+.input-group {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  margin-bottom: $spacing-sm;
+}
+
+.input-group-text,
 .input-group-addon {
-  color: $text-primary;
-  background-color: $form-bg;
-  border: $border-width-thick solid $secondary-cyan;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  background: var(--forge-bg-elevated);
+  color: var(--forge-text-muted);
+  border: 1px solid var(--forge-border);
+  font-size: var(--forge-font-size-sm);
+  white-space: nowrap;
 }

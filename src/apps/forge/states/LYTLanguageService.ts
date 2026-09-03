@@ -97,6 +97,21 @@ export class LYTLanguageService {
       }
     });
 
+    monacoEditor.editor.defineTheme('lyt-light', {
+      base: 'vs',
+      inherit: true,
+      rules: [
+        { token: 'keyword', foreground: '0000FF' },
+        { token: 'identifier', foreground: '001080' },
+        { token: 'number', foreground: '098658' },
+        { token: 'number.float', foreground: '098658' },
+        { token: 'number.hex', foreground: 'B89500' },
+      ],
+      colors: {
+        'editor.foreground': '#333333'
+      }
+    });
+
     // Register diagnostics provider for linting
     monacoEditor.languages.registerDocumentFormattingEditProvider('lyt', {
       provideDocumentFormattingEdits: (model: monacoEditor.editor.ITextModel, options: monacoEditor.languages.FormattingOptions, token: monacoEditor.CancellationToken) => {

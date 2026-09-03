@@ -1,5 +1,4 @@
 
-
 /* Launcher Options */
 
 .launcher-options {
@@ -21,6 +20,10 @@
     list-style: none;
     margin-bottom: 25px;
   }
+}
+
+.profiles-drawer-backdrop {
+  display: none;
 }
 
 .launcher-option {
@@ -109,5 +112,65 @@
     opacity: 0;
     -webkit-transition: opacity 0.2s ease-in-out;
     transition: opacity 0.2s ease-in-out;
+  }
+}
+
+@media (max-width: 900px) {
+  .profiles-drawer-backdrop {
+    display: block;
+    position: fixed;
+    top: 56px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 110;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease-in-out;
+  }
+
+  .profiles_drawer_open .profiles-drawer-backdrop {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .launcher-options {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    width: min(280px, 85vw);
+    bottom: 0;
+    z-index: 120;
+    transform: translateX(-105%);
+    transition: transform 0.25s ease-in-out;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    background: rgba(0, 0, 0, 0.92);
+    backdrop-filter: blur(12px);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+  }
+
+  .profiles_drawer_open .launcher-options {
+    transform: translateX(0);
+  }
+
+  .launcher-option {
+    min-height: 48px;
+    padding: 8px 0;
+  }
+
+  .launcher-contents {
+    position: relative;
+    top: auto;
+    left: 0;
+    right: auto;
+    bottom: auto;
+    overflow: visible;
+    min-height: calc(100vh - 56px);
+  }
+
+  .launcher-contents.full-width {
+    left: 0;
   }
 }

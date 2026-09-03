@@ -1,26 +1,114 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
+import { ForgeMenuItem } from "@/apps/forge/components/common/forgeMenuItem";
 
-export interface MenuItem {
-  label?: string;
-  shortcut?: string;
-  onClick?: () => void;
-  children?: MenuItem[];
-  disabled?: boolean;
-  separator?: boolean;
-  checked?: boolean;
-}
+export type { ForgeMenuItem } from "@/apps/forge/components/common/forgeMenuItem";
+
+/** @deprecated Use ForgeMenuItem */
+export type MenuItem = ForgeMenuItem;
 
 interface MenuBarProps {
-  items: MenuItem[];
+  items: ForgeMenuItem[];
+  variant?: "flow" | "overlay";
+  className?: string;
+}
+
+interface FlyoutPlacement {
+  top: number;
+  left: number;
+  maxHeight: number;
 }
 
 const SUBMENU_CLOSE_DELAY_MS = 220;
+const MENU_EDGE_PAD_PX = 4;
+const MENU_MIN_HEIGHT_PX = 96;
 
-export const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
-  const [openMenu, setOpenMenu] = useState<string | null>(null);
+function isSelectable(item: ForgeMenuItem | undefined): boolean {
+  if (!item) {
+    return false;
+  }
+  if (item.separator || item.header || item.disabled) {
+    return false;
+  }
+  return true;
+}
+
+function isPathOpen(openSubmenu: string | null, itemPath: string): boolean {
+  if (!openSubmenu) {
+    return false;
+  }
+  return openSubmenu === itemPath || openSubmenu.startsWith(`${itemPath}-`);
+}
+
+/** Bottom edge of the nearest height-clipped ancestor (tab pane) or the viewport. */
+function resolveMenuClipBottom(from: HTMLElement): number {
+  let clipBottom = window.innerHeight;
+  let el: HTMLElement | null = from.parentElement;
+  while (el && el !== document.documentElement) {
+    const style = window.getComputedStyle(el);
+    const overflowY = style.overflowY;
+    const clips =
+      overflowY === "hidden" ||
+      overflowY === "auto" ||
+      overflowY === "scroll" ||
+      overflowY === "clip" ||
+      el.classList.contains("tab-pane") ||
+      el.classList.contains("tab-pane-content");
+    if (clips) {
+      const rect = el.getBoundingClientRect();
+      if (rect.height > 0) {
+        clipBottom = Math.min(clipBottom, rect.bottom);
+      }
+    }
+    el = el.parentElement;
+  }
+  return clipBottom;
+}
+
+function clearMenuMaxHeights(root: HTMLElement) {
+  root.querySelectorAll<HTMLElement>(".forge-menu__scroller").forEach((scroller) => {
+    scroller.style.removeProperty("max-height");
+  });
+}
+
+function applyMenuMaxHeights(root: HTMLElement) {
+  const clipBottom = resolveMenuClipBottom(root);
+  root.querySelectorAll<HTMLElement>(".forge-menu").forEach((menu) => {
+    const scroller = menu.querySelector<HTMLElement>(":scope > .forge-menu__scroller");
+    if (!scroller) {
+      return;
+    }
+    const top = menu.getBoundingClientRect().top;
+    const available = Math.floor(clipBottom - top - MENU_EDGE_PAD_PX);
+    scroller.style.maxHeight = `${Math.max(MENU_MIN_HEIGHT_PX, available)}px`;
+  });
+}
+
+function measureFlyoutPlacement(
+  trigger: HTMLElement,
+  clipFrom: HTMLElement,
+): FlyoutPlacement {
+  const rect = trigger.getBoundingClientRect();
+  const clipBottom = resolveMenuClipBottom(clipFrom);
+  const clipRight = window.innerWidth;
+  const maxHeight = Math.max(MENU_MIN_HEIGHT_PX, Math.floor(clipBottom - rect.top - MENU_EDGE_PAD_PX));
+  let left = Math.floor(rect.right - 1);
+  // Prefer opening to the right; flip if it would leave the viewport.
+  if (left + 180 > clipRight - MENU_EDGE_PAD_PX) {
+    left = Math.max(MENU_EDGE_PAD_PX, Math.floor(rect.left - 180 + 1));
+  }
+  return {
+    top: Math.floor(rect.top),
+    left,
+    maxHeight,
+  };
+}
+
+export const MenuBar: React.FC<MenuBarProps> = ({ items, variant = "overlay", className = "" }) => {
+  const [openMenu, setOpenMenu] = useState<number | null>(null);
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
+  const [activePath, setActivePath] = useState<string | null>(null);
+  const [flyoutPlacements, setFlyoutPlacements] = useState<Record<string, FlyoutPlacement>>({});
   const menuRef = useRef<HTMLDivElement>(null);
-  /** Clears pending nested-submenu close; must run when entering any row or flyout that keeps that path open. */
   const submenuCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const cancelPendingSubmenuClose = useCallback(() => {
@@ -35,82 +123,280 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
       cancelPendingSubmenuClose();
       submenuCloseTimerRef.current = setTimeout(() => {
         submenuCloseTimerRef.current = null;
-        setOpenSubmenu((prev) => (prev === path ? null : prev));
+        setOpenSubmenu((prev) => (prev === path || prev?.startsWith(`${path}-`) ? null : prev));
       }, SUBMENU_CLOSE_DELAY_MS);
     },
     [cancelPendingSubmenuClose],
   );
 
-  useEffect(() => {
-    return () => cancelPendingSubmenuClose();
-  }, [cancelPendingSubmenuClose]);
-
-  const handleMenuClick = useCallback((label?: string) => {
-    setOpenMenu((prev) => (prev === label ? null : label ?? null));
-    setOpenSubmenu(null);
-    cancelPendingSubmenuClose();
-  }, [cancelPendingSubmenuClose]);
-
-  const handleItemClick = useCallback((item: MenuItem) => {
-    if (item.children) {
-      return; // Don't close menu if it has children
-    }
-    if (item.onClick) {
-      item.onClick();
-    }
-    setOpenMenu(null);
-    setOpenSubmenu(null);
-    cancelPendingSubmenuClose();
-  }, [cancelPendingSubmenuClose]);
-
   const closeAllMenus = useCallback(() => {
     cancelPendingSubmenuClose();
     setOpenMenu(null);
     setOpenSubmenu(null);
+    setActivePath(null);
+    setFlyoutPlacements({});
   }, [cancelPendingSubmenuClose]);
 
-  // Close menus when clicking outside
+  useEffect(() => {
+    return () => cancelPendingSubmenuClose();
+  }, [cancelPendingSubmenuClose]);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         closeAllMenus();
       }
     };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [closeAllMenus]);
 
-  const renderMenuItem = (item: MenuItem, index: number, parentPath: string = '') => {
+  const syncFlyoutPlacements = useCallback(() => {
+    const root = menuRef.current;
+    if (!root || openSubmenu === null) {
+      setFlyoutPlacements({});
+      return;
+    }
+
+    const next: Record<string, FlyoutPlacement> = {};
+    const parts = openSubmenu.split("-");
+    // Rebuild every ancestor path: "0-3-1" → "0-3", "0-3-1"
+    for (let depth = 2; depth <= parts.length; depth++) {
+      const path = parts.slice(0, depth).join("-");
+      const trigger = root.querySelector<HTMLElement>(`[data-menu-path="${path}"]`);
+      if (trigger) {
+        next[path] = measureFlyoutPlacement(trigger, root);
+      }
+    }
+    setFlyoutPlacements((prev) => {
+      const prevKeys = Object.keys(prev);
+      const nextKeys = Object.keys(next);
+      if (prevKeys.length === nextKeys.length) {
+        let same = true;
+        for (const key of nextKeys) {
+          const a = prev[key];
+          const b = next[key];
+          if (!a || !b || a.top !== b.top || a.left !== b.left || a.maxHeight !== b.maxHeight) {
+            same = false;
+            break;
+          }
+        }
+        if (same) {
+          return prev;
+        }
+      }
+      return next;
+    });
+  }, [openSubmenu]);
+
+  useLayoutEffect(() => {
+    const root = menuRef.current;
+    if (!root) {
+      return;
+    }
+    if (openMenu === null) {
+      clearMenuMaxHeights(root);
+      setFlyoutPlacements({});
+      return;
+    }
+
+    applyMenuMaxHeights(root);
+    syncFlyoutPlacements();
+    // Parent flyouts must mount before nested triggers exist; remeasure next frame.
+    const raf = window.requestAnimationFrame(() => {
+      applyMenuMaxHeights(root);
+      syncFlyoutPlacements();
+    });
+
+    const onResize = () => {
+      applyMenuMaxHeights(root);
+      syncFlyoutPlacements();
+    };
+    window.addEventListener("resize", onResize);
+
+    const scrollers = Array.from(root.querySelectorAll<HTMLElement>(".forge-menu__scroller"));
+    for (const scroller of scrollers) {
+      scroller.addEventListener("scroll", syncFlyoutPlacements, { passive: true });
+    }
+
+    const clipParent = root.parentElement;
+    let ro: ResizeObserver | undefined;
+    if (clipParent && typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(onResize);
+      ro.observe(clipParent);
+      let ancestor: HTMLElement | null = clipParent.parentElement;
+      while (ancestor && ancestor !== document.body) {
+        const style = window.getComputedStyle(ancestor);
+        if (
+          style.overflowY === "hidden" ||
+          style.overflowY === "auto" ||
+          style.overflowY === "scroll" ||
+          ancestor.classList.contains("tab-pane")
+        ) {
+          ro.observe(ancestor);
+          break;
+        }
+        ancestor = ancestor.parentElement;
+      }
+    }
+
+    return () => {
+      window.cancelAnimationFrame(raf);
+      window.removeEventListener("resize", onResize);
+      for (const scroller of scrollers) {
+        scroller.removeEventListener("scroll", syncFlyoutPlacements);
+      }
+      ro?.disconnect();
+    };
+  }, [openMenu, openSubmenu, items, syncFlyoutPlacements]);
+
+  const selectableTopIndexes = items
+    .map((item, index) => (item.disabled || (!item.children?.length && !item.onClick) ? -1 : index))
+    .filter((index) => index >= 0);
+
+  const activateLeaf = useCallback(
+    (item: ForgeMenuItem) => {
+      if (item.disabled || item.separator || item.header) {
+        return;
+      }
+      if (item.children?.length) {
+        return;
+      }
+      if (item.onClick) {
+        item.onClick();
+      }
+      closeAllMenus();
+    },
+    [closeAllMenus],
+  );
+
+  const openTopByOffset = useCallback(
+    (delta: number) => {
+      if (!selectableTopIndexes.length) {
+        return;
+      }
+      const current = openMenu ?? selectableTopIndexes[0];
+      const pos = selectableTopIndexes.indexOf(current);
+      const nextPos = (pos + delta + selectableTopIndexes.length) % selectableTopIndexes.length;
+      const next = selectableTopIndexes[nextPos];
+      setOpenMenu(next);
+      setOpenSubmenu(null);
+      const children = items[next]?.children || [];
+      const first = children.findIndex(isSelectable);
+      setActivePath(first >= 0 ? `${next}-${first}` : `${next}`);
+    },
+    [items, openMenu, selectableTopIndexes],
+  );
+
+  useEffect(() => {
+    if (openMenu === null) {
+      return;
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeAllMenus();
+        return;
+      }
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        openTopByOffset(1);
+        return;
+      }
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        openTopByOffset(-1);
+        return;
+      }
+      const top = items[openMenu];
+      const children = top?.children || [];
+      const selectable = children
+        .map((child, index) => (isSelectable(child) ? index : -1))
+        .filter((index) => index >= 0);
+      if (!selectable.length) {
+        return;
+      }
+      const currentChild = activePath?.startsWith(`${openMenu}-`)
+        ? parseInt(activePath.slice(String(openMenu).length + 1), 10)
+        : selectable[0];
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        const pos = selectable.indexOf(currentChild);
+        const next = selectable[(pos + 1) % selectable.length];
+        setActivePath(`${openMenu}-${next}`);
+        const child = children[next];
+        if (child?.children?.length) {
+          setOpenSubmenu(`${openMenu}-${next}`);
+        }
+        requestAnimationFrame(() => {
+          menuRef.current
+            ?.querySelector(`.forge-menu__item.is-open`)
+            ?.scrollIntoView({ block: "nearest" });
+        });
+        return;
+      }
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        const pos = selectable.indexOf(currentChild);
+        const next = selectable[(pos - 1 + selectable.length) % selectable.length];
+        setActivePath(`${openMenu}-${next}`);
+        requestAnimationFrame(() => {
+          menuRef.current
+            ?.querySelector(`.forge-menu__item.is-open`)
+            ?.scrollIntoView({ block: "nearest" });
+        });
+        return;
+      }
+      if (event.key === "Enter") {
+        event.preventDefault();
+        const child = Number.isFinite(currentChild) ? children[currentChild] : undefined;
+        if (child?.children?.length) {
+          setOpenSubmenu(`${openMenu}-${currentChild}`);
+          return;
+        }
+        if (child) {
+          activateLeaf(child);
+        }
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [openMenu, activePath, items, closeAllMenus, openTopByOffset, activateLeaf]);
+
+  const renderMenuItemRow = (item: ForgeMenuItem, index: number, parentPath: string) => {
     const itemPath = `${parentPath}-${index}`;
-    const hasChildren = item.children && item.children.length > 0;
-    const isSubmenuOpen = openSubmenu === itemPath;
+    const hasChildren = !!(item.children && item.children.length > 0);
+    const submenuOpen = isPathOpen(openSubmenu, itemPath);
+    const isActive = activePath === itemPath;
 
     if (item.separator) {
+      return <div key={itemPath} className="forge-menu__separator" role="separator" />;
+    }
+
+    if (item.header) {
       return (
-        <div
-          key={itemPath}
-          style={{
-            height: '1px',
-            backgroundColor: '#555',
-            margin: '2px 0',
-          }}
-        />
+        <div key={itemPath} className="forge-menu__header">
+          {item.label}
+        </div>
       );
     }
+
+    const mark = item.radio
+      ? (item.checked ? <span className="forge-menu__check" aria-hidden="true">●</span> : null)
+      : (item.checked ? <span className="forge-menu__check" aria-hidden="true">✓</span> : null);
 
     return (
       <div
         key={itemPath}
-        style={{
-          position: 'relative',
-        }}
+        data-menu-path={itemPath}
         onMouseEnter={() => {
+          setActivePath(itemPath);
           if (hasChildren) {
             cancelPendingSubmenuClose();
             setOpenSubmenu(itemPath);
+          } else {
+            cancelPendingSubmenuClose();
+            setOpenSubmenu(parentPath.includes("-") ? parentPath : null);
           }
         }}
         onMouseLeave={() => {
@@ -120,153 +406,150 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
         }}
       >
         <div
-          onClick={() => handleItemClick(item)}
-          style={{
-            padding: '4px 24px 4px 20px',
-            cursor: item.disabled ? 'not-allowed' : 'pointer',
-            backgroundColor: isSubmenuOpen ? '#2a5a7a' : 'transparent',
-            color: item.disabled ? '#666' : '#ccc',
-            fontSize: '13px',
-            whiteSpace: 'nowrap',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            userSelect: 'none',
-          }}
-          onMouseEnter={(e) => {
-            if (!item.disabled) {
-              e.currentTarget.style.backgroundColor = '#2a5a7a';
+          className={`forge-menu__item ${item.disabled ? "is-disabled" : ""} ${submenuOpen || isActive ? "is-open" : ""}`}
+          role="menuitem"
+          aria-disabled={item.disabled || undefined}
+          aria-haspopup={hasChildren || undefined}
+          aria-expanded={hasChildren ? submenuOpen : undefined}
+          aria-checked={item.checked === undefined ? undefined : item.checked}
+          onClick={() => {
+            if (item.disabled) {
+              return;
             }
-          }}
-          onMouseLeave={(e) => {
-            if (!isSubmenuOpen) {
-              e.currentTarget.style.backgroundColor = 'transparent';
+            if (hasChildren) {
+              setOpenSubmenu(itemPath);
+              return;
             }
+            activateLeaf(item);
           }}
         >
-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {item.checked && (
-              <span style={{ fontSize: '12px', color: '#4EC9B0' }}>✓</span>
-            )}
-            <span>{item.label}</span>
-          </span>
+          {mark}
+          <span className="forge-menu__label">{item.label}</span>
+          {item.detail ? <span className="forge-menu__detail">{item.detail}</span> : null}
           {hasChildren ? (
-            <span style={{ marginLeft: '20px', fontSize: '10px' }}>▶</span>
+            <span className="forge-menu__arrow">▶</span>
           ) : item.shortcut ? (
-            <span style={{ marginLeft: '24px', fontSize: '11px', color: '#888' }}>{item.shortcut}</span>
+            <span className="forge-menu__shortcut">{item.shortcut}</span>
           ) : null}
         </div>
-        {hasChildren && isSubmenuOpen && (
-          <div
-            style={{
-              position: 'absolute',
-              left: '100%',
-              top: 0,
-              backgroundColor: '#2d2d2d',
-              border: '1px solid #555',
-              borderLeft: 'none',
-              boxShadow: '2px 2px 8px rgba(0, 0, 0, 0.5)',
-              minWidth: '150px',
-              zIndex: 20,
-            }}
-            onMouseEnter={() => {
-              cancelPendingSubmenuClose();
-              setOpenSubmenu(itemPath);
-            }}
-            onMouseLeave={() => scheduleSubmenuClose(itemPath)}
-          >
-            {item.children!.map((child, childIndex) => renderMenuItem(child, childIndex, itemPath))}
-          </div>
-        )}
       </div>
     );
   };
 
+  const renderMenuPanel = (
+    panelItems: ForgeMenuItem[],
+    parentPath: string,
+    panelClassName = "",
+    placement?: FlyoutPlacement,
+  ) => {
+    const openChild = panelItems.findIndex((_, childIndex) => {
+      const childPath = `${parentPath}-${childIndex}`;
+      return isPathOpen(openSubmenu, childPath);
+    });
+    const openChildItem = openChild >= 0 ? panelItems[openChild] : undefined;
+    const openChildPath = openChild >= 0 ? `${parentPath}-${openChild}` : null;
+    const childPlacement = openChildPath ? flyoutPlacements[openChildPath] : undefined;
+
+    return (
+      <div
+        className={`forge-menu ${panelClassName}`.trim()}
+        role="menu"
+        style={
+          placement
+            ? {
+                position: "fixed",
+                top: placement.top,
+                left: placement.left,
+                maxHeight: undefined,
+              }
+            : undefined
+        }
+        onMouseEnter={() => {
+          if (parentPath.includes("-")) {
+            cancelPendingSubmenuClose();
+            setOpenSubmenu(parentPath);
+          }
+        }}
+        onMouseLeave={() => {
+          if (parentPath.includes("-")) {
+            scheduleSubmenuClose(parentPath);
+          }
+        }}
+      >
+        <div
+          className="forge-menu__scroller"
+          style={placement ? { maxHeight: placement.maxHeight } : undefined}
+        >
+          {panelItems.map((child, childIndex) => renderMenuItemRow(child, childIndex, parentPath))}
+        </div>
+        {openChildItem?.children?.length && openChildPath && childPlacement
+          ? renderMenuPanel(
+            openChildItem.children,
+            openChildPath,
+            "forge-menu--flyout",
+            childPlacement,
+          )
+          : null}
+      </div>
+    );
+  };
+
+  const variantClass = variant === "overlay" ? "forge-overlay-menubar" : "";
+
   return (
     <div
       ref={menuRef}
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: '24px',
-        backgroundColor: '#1e1e1e',
-        borderBottom: '1px solid #555',
-        display: 'flex',
-        alignItems: 'center',
-        zIndex: 10,
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-      }}
+      className={`forge-menubar ${variantClass} ${className}`.trim()}
+      role="menubar"
     >
       {items.map((item, index) => {
-        const isOpen = openMenu === item.label;
-        const hasChildren = item.children && item.children.length > 0;
+        const isOpen = openMenu === index;
+        const hasChildren = !!(item.children && item.children.length > 0);
         const handleTopClick = () => {
-          if(item.disabled) return;
-          if(hasChildren){
-            handleMenuClick(item.label);
-          }else if(item.onClick){
+          if (item.disabled) {
+            return;
+          }
+          if (hasChildren) {
+            setOpenMenu((prev) => (prev === index ? null : index));
+            setOpenSubmenu(null);
+            cancelPendingSubmenuClose();
+            const first = (item.children || []).findIndex(isSelectable);
+            setActivePath(first >= 0 ? `${index}-${first}` : `${index}`);
+          } else if (item.onClick) {
             item.onClick();
+            closeAllMenus();
           }
         };
         return (
           <div
-            key={index}
-            style={{
-              position: 'relative',
-              height: '100%',
+            key={item.id || `${item.label || "item"}-${index}`}
+            className="forge-menubar__item"
+            onMouseEnter={() => {
+              cancelPendingSubmenuClose();
+              if (openMenu !== null && !item.disabled && hasChildren) {
+                setOpenMenu(index);
+                setOpenSubmenu(null);
+                const first = (item.children || []).findIndex(isSelectable);
+                setActivePath(first >= 0 ? `${index}-${first}` : `${index}`);
+              }
             }}
-            onMouseEnter={() => cancelPendingSubmenuClose()}
-            onMouseLeave={closeAllMenus}
           >
             <button
+              type="button"
               onClick={handleTopClick}
               disabled={item.disabled}
-              style={{
-                height: '100%',
-                padding: '0 12px',
-                backgroundColor: isOpen ? '#2d2d2d' : 'transparent',
-                border: 'none',
-                color: item.disabled ? '#555' : '#ccc',
-                cursor: item.disabled ? 'not-allowed' : 'pointer',
-                fontSize: '13px',
-                fontFamily: 'inherit',
-                userSelect: 'none',
-              }}
-              onMouseEnter={(e) => {
-                if (!isOpen && !item.disabled) {
-                  e.currentTarget.style.backgroundColor = '#2a2a2a';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isOpen) {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }
-              }}
+              aria-haspopup={hasChildren || undefined}
+              aria-expanded={hasChildren ? isOpen : undefined}
+              className={`forge-menubar__label ${isOpen ? "is-open" : ""}`}
             >
               {item.label}
             </button>
-            {isOpen && hasChildren && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '100%',
-                  left: 0,
-                  backgroundColor: '#2d2d2d',
-                  border: '1px solid #555',
-                  boxShadow: '2px 2px 8px rgba(0, 0, 0, 0.5)',
-                  minWidth: '150px',
-                  zIndex: 20,
-                }}
-              >
-                {item.children!.map((child, childIndex) => renderMenuItem(child, childIndex, item.label))}
-              </div>
-            )}
+            {isOpen && hasChildren
+              ? renderMenuPanel(item.children!, String(index))
+              : null}
           </div>
         );
       })}
     </div>
   );
 };
-

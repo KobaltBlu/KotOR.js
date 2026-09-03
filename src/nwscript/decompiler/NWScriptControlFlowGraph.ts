@@ -5,6 +5,8 @@ import { NWScriptEdge, EdgeType } from "@/nwscript/decompiler/NWScriptEdge";
 import {
   OP_JMP, OP_JSR, OP_JZ, OP_JNZ, OP_RETN, OP_STORE_STATE, OP_STORE_STATEALL
 } from "@/nwscript/NWScriptOPCodes";
+import { toSignedInt32 } from "@/nwscript/decompiler/NWScriptOpcodeSemantics";
+import { nwscriptDecompilerNowMs } from "@/nwscript/decompiler/NWScriptDecompilerDebug";
 
 /**
  * Control Flow Graph for NWScript decompilation.
@@ -102,10 +104,8 @@ export class NWScriptControlFlowGraph {
   backEdges: Set<NWScriptEdge> = new Set();
 
   /**
-   * Unconditional backward {@code JMP} edges inside a procedure region that are **not**
-   * classified as {@link backEdges} because global dominance from script entry can miss the
-   * latch (e.g. JSR/RET merges before the loop header). Used only for {@link identifyNaturalLoops};
-   * they are not required to satisfy {@code dominates(to, from)}.
+   * Reserved for compatibility with older CFG consumers. Natural loops now require a genuine
+   * dominance back edge; procedure-local dominators make the old heuristic unnecessary.
    */
   procedureLatchEdges: Set<NWScriptEdge> = new Set();
 
@@ -169,6 +169,22 @@ export class NWScriptControlFlowGraph {
    */
   returnEdges: Set<NWScriptEdge> = new Set();
 
+  /** Milliseconds spent in named CFG.build sub-steps (last {@link build} call). */
+  lastBuildTimings: Record<string, number> = {};
+
+  private intraProcSuccessorsCache: Map<NWScriptBasicBlock, NWScriptBasicBlock[]> | null = null;
+  private intraProcPredecessorsCache: Map<NWScriptBasicBlock, NWScriptBasicBlock[]> | null = null;
+  private procedureRegionsCache: Array<{
+    root: NWScriptBasicBlock;
+    region: Set<NWScriptBasicBlock>;
+  }> | null = null;
+  private optionalDepthsReady = false;
+  private optionalCriticalEdgesReady = false;
+  private optionalDominanceFrontiersReady = false;
+  private optionalControlDependencesReady = false;
+  private optionalLoopNestingReady = false;
+  private optionalReachabilityReady = false;
+
   /**
    * Invalidation flags for cached computations
    */
@@ -210,73 +226,57 @@ export class NWScriptControlFlowGraph {
     this.callEdges.clear();
     this.returnEdges.clear();
     this.invalidated.clear();
+    this.lastBuildTimings = {};
+    this.clearAnalysisCaches();
 
     if (!this.script.instructions || this.script.instructions.size === 0) {
       return;
     }
 
+    const timeStep = (name: string, fn: () => void): void => {
+      const start = nwscriptDecompilerNowMs();
+      fn();
+      this.lastBuildTimings[name] = nwscriptDecompilerNowMs() - start;
+    };
+
     // Step 1: Identify all jump targets and subroutine entries
-    this.identifyJumpTargets();
-    
-    // Step 1.5: Identify STORE_STATE+JMP targets and callback entries (these are NOT function entries)
-    this.identifyStoreStateJmpTargets();
-    
-    // Step 1.6: Compute leader set (entry, branch/call targets, callback entries, fallthrough after terminators, continuation after JSR)
-    this.computeLeaders();
-
-    // Step 2: Build basic blocks using leaders
-    this.buildBasicBlocks();
-
-    // Step 2.5: Map JSR return blocks (must be done after all blocks are built)
-    this.mapJsrReturnBlocks();
+    timeStep('leadersAndBlocks', () => {
+      this.identifyJumpTargets();
+      this.identifyStoreStateJmpTargets();
+      this.computeLeaders();
+      this.buildBasicBlocks();
+      this.mapJsrReturnBlocks();
+    });
 
     // Step 3: Connect blocks with edges
-    this.connectBlocks();
-
-    // Step 4: Identify entry and exit blocks
-    this.identifyEntryAndExitBlocks();
-
-    // Step 5: Build typed edge list (must precede dominators/post-dominators — getEdge/edgeMap drive intra-procedural walks)
-    this.buildEdges();
+    timeStep('connect', () => {
+      this.connectBlocks();
+      this.identifyEntryAndExitBlocks();
+      this.buildEdges();
+      this.intraProcSuccessorsCache = null;
+      this.intraProcPredecessorsCache = null;
+      this.procedureRegionsCache = null;
+      this.rebuildAnalysisCaches();
+    });
 
     // Step 6: Compute dominators (for loop detection and decompilation)
-    this.computeDominators();
+    timeStep('dominators', () => this.computeDominators());
 
     // Step 7: Compute post-dominators (for merge point detection and unreachable code)
-    this.computePostDominators();
+    timeStep('postDominators', () => this.computePostDominators());
 
     // Step 8: Identify unreachable code
-    this.identifyUnreachableCode();
+    timeStep('unreachable', () => this.identifyUnreachableCode());
 
     // Step 9: Identify back edges
-    this.identifyBackEdges();
+    timeStep('loops', () => {
+      this.identifyBackEdges();
+      this.populateProcedureLatchEdges();
+      this.identifyNaturalLoops();
+    });
 
-    // Step 9b: Procedure-local backward unconditional JMPs not caught by dominance (NCSDecomp-style latch hints)
-    this.populateProcedureLatchEdges();
-
-    // Step 10: Identify critical edges
-    this.identifyCriticalEdges();
-
-    // Step 11: Compute block depths
-    this.computeBlockDepths();
-
-    // Step 12: Identify natural loops
-    this.identifyNaturalLoops();
-
-    // Step 13: Validate post-dominators
-    this.validatePostDominators();
-
-    // Step 14: Compute dominance frontiers
-    this.computeDominanceFrontiers();
-
-    // Step 15: Compute control dependences
-    this.computeControlDependences();
-
-    // Step 16: Build loop nesting tree
-    this.buildLoopNestingTree();
-
-    // Step 17: Cache reachability sets
-    this.computeReachabilitySets();
+    // Dump/validate-only analyses (reachability, DF, control-deps, depths, loop
+    // nesting, critical edges) are computed lazily from getters / toJSON.
 
     // Step 18: Track inter-procedural edges
     this.trackInterProceduralEdges();
@@ -300,7 +300,7 @@ export class NWScriptControlFlowGraph {
         case OP_JZ:
         case OP_JNZ:
           if (instruction.offset !== undefined) {
-            targetAddress = instruction.address + instruction.offset;
+            targetAddress = instruction.address + toSignedInt32(instruction.offset);
             this.jumpTargets.add(targetAddress);
             if (instruction.code === OP_JSR) {
               this.jsrTargets.add(targetAddress);
@@ -358,7 +358,7 @@ export class NWScriptControlFlowGraph {
         // Track JMP target (where outer ACTION call happens)
         const nextInstr = instruction.nextInstr;
         if (nextInstr && nextInstr.code === OP_JMP && nextInstr.offset !== undefined) {
-          const jmpTarget = nextInstr.address + nextInstr.offset;
+          const jmpTarget = nextInstr.address + toSignedInt32(nextInstr.offset);
           this.storeStateJmpTargets.add(jmpTarget);
         }
       }
@@ -475,6 +475,15 @@ export class NWScriptControlFlowGraph {
             this.entryBlock = block;
             block.isEntry = true;
           }
+
+          // A real user routine may begin with an action thunk. The STORE_STATE-specific block
+          // construction must not bypass normal JSR-target registration for that routine entry;
+          // only the thunk callback and its outer-action continuation are synthetic entries.
+          if (this.jsrTargets.has(leaderAddr) &&
+              !this.storeStateJmpTargets.has(leaderAddr) &&
+              !this.callbackEntries.has(leaderAddr)) {
+            this.subroutineEntries.set(leaderAddr, block);
+          }
           
           continue;
         }
@@ -535,23 +544,20 @@ export class NWScriptControlFlowGraph {
           break;
         }
 
-        // Stop if we've reached the next leader — include currentInstr (e.g. LOGANDII
-        // that sits immediately before an OR/merge leader; otherwise && never appears in CFG).
-        if (nextLeaderAddr !== null && currentInstr.nextInstr && 
-            currentInstr.nextInstr.address >= nextLeaderAddr) {
-          if (currentInstr !== leaderInstr) {
-            block.addInstruction(currentInstr);
-            this.instructionToBlock.set(currentInstr.address, block);
-          }
-          block.endInstruction = currentInstr;
-          block.exitType = 'fallthrough';
-          break;
-        }
-
-        // Add instruction to block
+        // Record the current instruction before testing whether its successor starts the next
+        // block. The old ordering stopped at the boundary first, silently dropping the final
+        // non-terminator immediately before every leader.
         if (currentInstr !== leaderInstr) {
           block.addInstruction(currentInstr);
           this.instructionToBlock.set(currentInstr.address, block);
+        }
+
+        // Stop if we've reached the next leader
+        if (nextLeaderAddr !== null && currentInstr.nextInstr && 
+            currentInstr.nextInstr.address >= nextLeaderAddr) {
+          block.endInstruction = currentInstr;
+          block.exitType = 'fallthrough';
+          break;
         }
 
         // Move to next instruction
@@ -599,7 +605,7 @@ export class NWScriptControlFlowGraph {
         case OP_JMP:
           // Documentation: "JMP - Jump to a New Location... Change the current execution address to the relative address given"
           if (lastInstr.offset !== undefined) {
-            const targetAddr = lastInstr.address + lastInstr.offset;
+            const targetAddr = lastInstr.address + toSignedInt32(lastInstr.offset);
             const targetBlock = this.instructionToBlock.get(targetAddr);
             if (targetBlock) {
               successors.push({ block: targetBlock, type: EdgeType.JUMP });
@@ -613,7 +619,7 @@ export class NWScriptControlFlowGraph {
           // 1. The subroutine entry (JSR target) - CALL edge
           // 2. The return point (next instruction after JSR) - RETURN edge
           if (lastInstr.offset !== undefined) {
-            const targetAddr = lastInstr.address + lastInstr.offset;
+            const targetAddr = lastInstr.address + toSignedInt32(lastInstr.offset);
             const targetBlock = this.instructionToBlock.get(targetAddr);
             if (targetBlock) {
               successors.push({ block: targetBlock, type: EdgeType.CALL });
@@ -635,7 +641,7 @@ export class NWScriptControlFlowGraph {
           // Conditional branch: add both true and false paths
           // Order: jump target first (if condition true for JNZ, false for JZ), then fallthrough
           if (lastInstr.offset !== undefined) {
-            const targetAddr = lastInstr.address + lastInstr.offset;
+            const targetAddr = lastInstr.address + toSignedInt32(lastInstr.offset);
             const targetBlock = this.instructionToBlock.get(targetAddr);
             if (targetBlock) {
               const isTrueBranch = lastInstr.code === OP_JNZ;
@@ -716,128 +722,304 @@ export class NWScriptControlFlowGraph {
     }
   }
 
-  /**
-   * Compute dominators for each block, ignoring CALL edges (and optionally RETURN edges)
-   * A block A dominates block B if all intra-procedural paths from entry to B go through A
-   * @param excludeReturn Whether to also exclude RETURN edges (default: false)
-   */
-  private computeDominators(excludeReturn: boolean = false): void {
-    if (!this.entryBlock) return;
-
-    // Initialize: entry block dominates itself
+  /** Compute dominators independently for every script procedure (Cooper–Harvey–Kennedy). */
+  private computeDominators(): void {
+    this.rebuildAnalysisCaches();
     for (const block of this.blocks.values()) {
-      if (block === this.entryBlock) {
-        block.dominators.add(block);
-      } else {
-        // Initially, all blocks are dominated by all blocks
-        for (const otherBlock of this.blocks.values()) {
-          block.dominators.add(otherBlock);
-        }
-      }
+      block.dominators.clear();
+      block.immediateDominator = null;
     }
 
-    // Iterative algorithm to compute dominators using intra-procedural edges only
-    let changed = true;
-    while (changed) {
-      changed = false;
-      for (const block of this.blocks.values()) {
-        if (block === this.entryBlock) continue;
+    for (const { root, region } of this.getProcedureRegions()) {
+      const successorsOf = (block: NWScriptBasicBlock) =>
+        this.getIntraProceduralSuccessors(block).filter(successor => region.has(successor));
+      const predecessorsOf = (block: NWScriptBasicBlock) =>
+        this.getIntraProceduralPredecessors(block).filter(predecessor => region.has(predecessor));
 
-        const newDominators = new Set<NWScriptBasicBlock>();
-        // Intersection of all intra-procedural predecessors' dominators
-        const intraPreds = this.getIntraProceduralPredecessors(block, false);
-        if (intraPreds.length > 0) {
-          const firstPred = intraPreds[0];
-          for (const dom of firstPred.dominators) {
-            newDominators.add(dom);
+      const rpo = this.reversePostorderFrom([root], region, successorsOf);
+      const rpoNumber = new Map<NWScriptBasicBlock, number>();
+      for (let index = 0; index < rpo.length; index++) {
+        rpoNumber.set(rpo[index], index);
+      }
+
+      const idom = new Map<NWScriptBasicBlock, NWScriptBasicBlock>();
+      idom.set(root, root);
+
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (const block of rpo) {
+          if (block === root) continue;
+          const definedPreds = predecessorsOf(block).filter(predecessor => idom.has(predecessor));
+          if (definedPreds.length === 0) continue;
+          let next = definedPreds[0];
+          for (let index = 1; index < definedPreds.length; index++) {
+            next = this.intersectIdom(definedPreds[index], next, idom, rpoNumber);
           }
-          
-          for (const pred of intraPreds) {
-            const toRemove: NWScriptBasicBlock[] = [];
-            for (const dom of newDominators) {
-              if (!pred.dominators.has(dom)) {
-                toRemove.push(dom);
-              }
-            }
-            for (const dom of toRemove) {
-              newDominators.delete(dom);
-            }
+          if (idom.get(block) !== next) {
+            idom.set(block, next);
+            changed = true;
           }
         }
-        
-        // Add self
-        newDominators.add(block);
+      }
 
-        if (newDominators.size !== block.dominators.size ||
-            !Array.from(newDominators).every(d => block.dominators.has(d))) {
-          block.dominators = newDominators;
-          changed = true;
-        }
+      for (const block of region) {
+        this.assignDominatorSet(block, root, idom);
       }
     }
   }
 
-
-  /**
-   * Compute post-dominators for each block, ignoring CALL edges (and optionally RETURN edges)
-   * A block A post-dominates block B if all intra-procedural paths from B to any exit go through A
-   * This is the reverse of dominators - we work backwards from exit blocks
-   * @param excludeReturn Whether to also exclude RETURN edges (default: false)
-   */
-  private computePostDominators(excludeReturn: boolean = false): void {
-    if (this.exitBlocks.size === 0) return;
-
-    // Initialize: exit blocks post-dominate themselves
+  /** Compute post-dominators independently for every script procedure. */
+  private computePostDominators(): void {
+    this.rebuildAnalysisCaches();
     for (const block of this.blocks.values()) {
-      if (this.exitBlocks.has(block)) {
-        block.postDominators.add(block);
-      } else {
-        // Initially, all blocks are post-dominated by all blocks
-        for (const otherBlock of this.blocks.values()) {
-          block.postDominators.add(otherBlock);
-        }
-      }
+      block.postDominators.clear();
+      block.immediatePostDominator = null;
     }
 
-    // Iterative algorithm to compute post-dominators using intra-procedural edges only
-    let changed = true;
-    while (changed) {
-      changed = false;
-      for (const block of this.blocks.values()) {
-        if (this.exitBlocks.has(block)) continue;
+    for (const { region } of this.getProcedureRegions()) {
+      const successorsOf = (block: NWScriptBasicBlock) =>
+        this.getIntraProceduralSuccessors(block).filter(successor => region.has(successor));
+      const predecessorsOf = (block: NWScriptBasicBlock) =>
+        this.getIntraProceduralPredecessors(block).filter(predecessor => region.has(predecessor));
 
-        const newPostDominators = new Set<NWScriptBasicBlock>();
-        // Intersection of all intra-procedural successors' post-dominators
-        const intraSuccs = this.getIntraProceduralSuccessors(block, excludeReturn);
-        if (intraSuccs.length > 0) {
-          const firstSucc = intraSuccs[0];
-          for (const postDom of firstSucc.postDominators) {
-            newPostDominators.add(postDom);
-          }
-          
-          for (const succ of intraSuccs) {
-            const toRemove: NWScriptBasicBlock[] = [];
-            for (const postDom of newPostDominators) {
-              if (!succ.postDominators.has(postDom)) {
-                toRemove.push(postDom);
-              }
-            }
-            for (const postDom of toRemove) {
-              newPostDominators.delete(postDom);
-            }
-          }
+      const exits = Array.from(region).filter(block =>
+        block.isExit || successorsOf(block).length === 0
+      );
+
+      if (exits.length === 0) {
+        for (const block of region) {
+          block.postDominators = new Set([block]);
         }
-        
-        // Add self
-        newPostDominators.add(block);
+        continue;
+      }
 
-        if (newPostDominators.size !== block.postDominators.size ||
-            !Array.from(newPostDominators).every(pd => block.postDominators.has(pd))) {
-          block.postDominators = newPostDominators;
-          changed = true;
+      // Virtual sink so multiple procedure exits share a single reverse-CFG root.
+      const virtual = Symbol('postDomSink');
+      type PostDomNode = NWScriptBasicBlock | typeof virtual;
+      const idom = new Map<PostDomNode, PostDomNode>();
+      idom.set(virtual, virtual);
+
+      const reverseSuccessorsOf = (node: PostDomNode): PostDomNode[] => {
+        if (node === virtual) return exits;
+        return predecessorsOf(node);
+      };
+      const reversePredecessorsOf = (node: PostDomNode): PostDomNode[] => {
+        if (node === virtual) return [];
+        const succs = successorsOf(node);
+        return succs.length === 0 ? [virtual] : succs;
+      };
+
+      const rpo: PostDomNode[] = [];
+      const visited = new Set<PostDomNode>();
+      const dfs = (node: PostDomNode): void => {
+        if (visited.has(node)) return;
+        visited.add(node);
+        for (const successor of reverseSuccessorsOf(node)) {
+          dfs(successor);
+        }
+        rpo.push(node);
+      };
+      dfs(virtual);
+      for (const block of region) {
+        dfs(block);
+      }
+      rpo.reverse();
+
+      const rpoNumber = new Map<PostDomNode, number>();
+      for (let index = 0; index < rpo.length; index++) {
+        rpoNumber.set(rpo[index], index);
+      }
+
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (const node of rpo) {
+          if (node === virtual) continue;
+          const definedPreds = reversePredecessorsOf(node).filter(predecessor => idom.has(predecessor));
+          if (definedPreds.length === 0) continue;
+          let next: PostDomNode = definedPreds[0];
+          for (let index = 1; index < definedPreds.length; index++) {
+            next = this.intersectGenericIdom(definedPreds[index], next, idom, rpoNumber);
+          }
+          if (idom.get(node) !== next) {
+            idom.set(node, next);
+            changed = true;
+          }
         }
       }
+
+      for (const block of region) {
+        const set = new Set<NWScriptBasicBlock>([block]);
+        let current: PostDomNode = block;
+        while (current !== virtual) {
+          const parent = idom.get(current);
+          if (!parent || parent === current) break;
+          if (parent !== virtual) {
+            set.add(parent);
+          }
+          current = parent;
+        }
+        block.postDominators = set;
+        const parent = idom.get(block);
+        block.immediatePostDominator =
+          parent && parent !== virtual && parent !== block ? parent : null;
+      }
     }
+  }
+
+  private intersectIdom(
+    left: NWScriptBasicBlock,
+    right: NWScriptBasicBlock,
+    idom: Map<NWScriptBasicBlock, NWScriptBasicBlock>,
+    rpoNumber: Map<NWScriptBasicBlock, number>
+  ): NWScriptBasicBlock {
+    return this.intersectGenericIdom(left, right, idom, rpoNumber);
+  }
+
+  private intersectGenericIdom<T>(
+    left: T,
+    right: T,
+    idom: Map<T, T>,
+    rpoNumber: Map<T, number>
+  ): T {
+    let finger1 = left;
+    let finger2 = right;
+    while (finger1 !== finger2) {
+      while ((rpoNumber.get(finger1) ?? Number.MAX_SAFE_INTEGER) > (rpoNumber.get(finger2) ?? Number.MAX_SAFE_INTEGER)) {
+        const parent = idom.get(finger1);
+        if (!parent || parent === finger1) break;
+        finger1 = parent;
+      }
+      while ((rpoNumber.get(finger2) ?? Number.MAX_SAFE_INTEGER) > (rpoNumber.get(finger1) ?? Number.MAX_SAFE_INTEGER)) {
+        const parent = idom.get(finger2);
+        if (!parent || parent === finger2) break;
+        finger2 = parent;
+      }
+      if (finger1 === finger2) break;
+      if (!idom.has(finger1) || !idom.has(finger2)) {
+        return finger1;
+      }
+      if (idom.get(finger1) === finger1 && idom.get(finger2) === finger2 && finger1 !== finger2) {
+        return finger1;
+      }
+    }
+    return finger1;
+  }
+
+  private assignDominatorSet(
+    block: NWScriptBasicBlock,
+    root: NWScriptBasicBlock,
+    idom: Map<NWScriptBasicBlock, NWScriptBasicBlock>
+  ): void {
+    const set = new Set<NWScriptBasicBlock>([block]);
+    if (!idom.has(block)) {
+      block.dominators = set;
+      return;
+    }
+    let current = block;
+    while (current !== root) {
+      const parent = idom.get(current);
+      if (!parent || parent === current) break;
+      set.add(parent);
+      current = parent;
+    }
+    set.add(root);
+    block.dominators = set;
+    block.immediateDominator = block === root ? null : (idom.get(block) ?? null);
+  }
+
+  private reversePostorderFrom(
+    roots: NWScriptBasicBlock[],
+    region: Set<NWScriptBasicBlock>,
+    successorsOf: (block: NWScriptBasicBlock) => NWScriptBasicBlock[]
+  ): NWScriptBasicBlock[] {
+    const result: NWScriptBasicBlock[] = [];
+    const visited = new Set<NWScriptBasicBlock>();
+    const dfs = (block: NWScriptBasicBlock): void => {
+      if (!region.has(block) || visited.has(block)) return;
+      visited.add(block);
+      for (const successor of successorsOf(block)) {
+        dfs(successor);
+      }
+      result.push(block);
+    };
+    for (const root of roots) {
+      dfs(root);
+    }
+    for (const block of region) {
+      dfs(block);
+    }
+    result.reverse();
+    return result;
+  }
+
+  private getProcedureRegions(): Array<{
+    root: NWScriptBasicBlock;
+    region: Set<NWScriptBasicBlock>;
+  }> {
+    if (!this.procedureRegionsCache) {
+      this.procedureRegionsCache = this.collectProcedureRegions();
+    }
+    return this.procedureRegionsCache;
+  }
+
+  /** Partition the CFG by roots without following CALL edges. */
+  private collectProcedureRegions(): Array<{
+    root: NWScriptBasicBlock;
+    region: Set<NWScriptBasicBlock>;
+  }> {
+    const roots = new Set<NWScriptBasicBlock>();
+    if (this.entryBlock) {
+      roots.add(this.entryBlock);
+    }
+    for (const block of this.subroutineEntries.values()) {
+      roots.add(block);
+    }
+    for (const address of this.callbackEntries.keys()) {
+      const block = this.instructionToBlock.get(address);
+      if (block) roots.add(block);
+    }
+
+    const orderedRoots = Array.from(roots).sort(
+      (left, right) => left.startInstruction.address - right.startInstruction.address
+    );
+    const rootSet = new Set(orderedRoots);
+    const assigned = new Set<NWScriptBasicBlock>();
+    const regions: Array<{ root: NWScriptBasicBlock; region: Set<NWScriptBasicBlock> }> = [];
+
+    const collect = (root: NWScriptBasicBlock): Set<NWScriptBasicBlock> => {
+      const region = new Set<NWScriptBasicBlock>();
+      const queue = [root];
+      let head = 0;
+      while (head < queue.length) {
+        const block = queue[head++];
+        if (region.has(block) || (assigned.has(block) && block !== root)) continue;
+        region.add(block);
+        for (const successor of this.getIntraProceduralSuccessors(block)) {
+          if (successor !== root && rootSet.has(successor)) continue;
+          if (!region.has(successor)) queue.push(successor);
+        }
+      }
+      return region;
+    };
+
+    for (const root of orderedRoots) {
+      if (assigned.has(root)) continue;
+      const region = collect(root);
+      if (region.size === 0) continue;
+      regions.push({ root, region });
+      for (const block of region) assigned.add(block);
+    }
+
+    for (const block of this.getBlocksInOrder()) {
+      if (assigned.has(block)) continue;
+      const region = collect(block);
+      regions.push({ root: block, region });
+      for (const member of region) assigned.add(member);
+    }
+
+    return regions;
   }
 
   /**
@@ -860,9 +1042,10 @@ export class NWScriptControlFlowGraph {
     // BFS from entry block to mark all reachable blocks
     const visited = new Set<NWScriptBasicBlock>();
     const queue: NWScriptBasicBlock[] = [this.entryBlock];
+    let head = 0;
 
-    while (queue.length > 0) {
-      const current = queue.shift()!;
+    while (head < queue.length) {
+      const current = queue[head++];
       if (visited.has(current)) continue;
       visited.add(current);
 
@@ -984,7 +1167,7 @@ export class NWScriptControlFlowGraph {
       const jsrBlock = this.instructionToBlock.get(jsrAddress);
       if (jsrBlock) {
         if (jsrInstr.offset !== undefined) {
-          const targetAddr = jsrInstr.address + jsrInstr.offset;
+          const targetAddr = jsrInstr.address + toSignedInt32(jsrInstr.offset);
           const targetBlock = this.instructionToBlock.get(targetAddr);
           if (targetBlock && !jsrBlock.successors.has(targetBlock)) {
             errors.push(`CFG Validation Error: JSR block at address ${jsrAddress} does not connect to subroutine entry at ${targetAddr}`);
@@ -1006,7 +1189,7 @@ export class NWScriptControlFlowGraph {
         } else if (nextInstr.code !== OP_JMP) {
           errors.push(`CFG Validation Error: STORE_STATE/STORE_STATEALL at address ${instruction.address} is not followed by JMP (found ${nextInstr.codeName || nextInstr.code})`);
         } else if (nextInstr.offset !== undefined) {
-          const jmpTarget = nextInstr.address + nextInstr.offset;
+          const jmpTarget = nextInstr.address + toSignedInt32(nextInstr.offset);
           if (!this.storeStateJmpTargets.has(jmpTarget)) {
             errors.push(`CFG Validation Error: STORE_STATE+JMP target at address ${jmpTarget} is not marked as a STORE_STATE target`);
           }
@@ -1101,7 +1284,7 @@ export class NWScriptControlFlowGraph {
         );
         continue;
       }
-      const targetPc = last.address + last.offset;
+      const targetPc = last.address + toSignedInt32(last.offset);
       if (edge.to.startInstruction.address !== targetPc) {
         errors.push(
           `CFG Validation Error: Procedure latch JMP target mismatch ${edge.from.id}->${edge.to.id}`
@@ -1214,16 +1397,7 @@ export class NWScriptControlFlowGraph {
    * Find the immediate dominator of a block
    */
   getImmediateDominator(block: NWScriptBasicBlock): NWScriptBasicBlock | null {
-    if (block === this.entryBlock) return null;
-
-    let idom: NWScriptBasicBlock | null = null;
-    for (const dom of block.dominators) {
-      if (dom === block) continue;
-      if (!idom || this.dominates(dom, idom)) {
-        idom = dom;
-      }
-    }
-    return idom;
+    return block.immediateDominator;
   }
 
   /**
@@ -1244,16 +1418,7 @@ export class NWScriptControlFlowGraph {
    * Find the immediate post-dominator of a block
    */
   getImmediatePostDominator(block: NWScriptBasicBlock): NWScriptBasicBlock | null {
-    if (this.exitBlocks.has(block)) return null;
-
-    let ipdom: NWScriptBasicBlock | null = null;
-    for (const postDom of block.postDominators) {
-      if (postDom === block) continue;
-      if (!ipdom || this.postDominates(postDom, ipdom)) {
-        ipdom = postDom;
-      }
-    }
-    return ipdom;
+    return block.immediatePostDominator;
   }
 
   /**
@@ -1293,7 +1458,7 @@ export class NWScriptControlFlowGraph {
             case 'call':
               // Check if this is the call target or return point
               if (lastInstr.code === OP_JSR && lastInstr.offset !== undefined) {
-                const targetAddr = lastInstr.address + lastInstr.offset;
+                const targetAddr = lastInstr.address + toSignedInt32(lastInstr.offset);
                 if (successor.startInstruction.address === targetAddr) {
                   edgeType = EdgeType.CALL;
                 } else {
@@ -1305,7 +1470,7 @@ export class NWScriptControlFlowGraph {
               // Determine if this is true or false branch
               if (lastInstr.code === OP_JZ || lastInstr.code === OP_JNZ) {
                 const targetAddr = lastInstr.offset !== undefined 
-                  ? lastInstr.address + lastInstr.offset 
+                  ? lastInstr.address + toSignedInt32(lastInstr.offset)
                   : null;
                 
                 if (targetAddr !== null && successor.startInstruction.address === targetAddr) {
@@ -1359,7 +1524,7 @@ export class NWScriptControlFlowGraph {
         continue;
       }
       region.add(b);
-      for (const succ of b.successors) {
+      for (const succ of this.getIntraProceduralSuccessors(b)) {
         if (!region.has(succ)) {
           queue.push(succ);
         }
@@ -1369,25 +1534,17 @@ export class NWScriptControlFlowGraph {
   }
 
   /**
-   * Region for dominance when recovering loops inside a subroutine: forward closure from its
-   * entry plus immediate {@link EdgeType.CALL} predecessors (JSR sites).
+   * Region for loop recovery inside a procedure. CALL targets are deliberately excluded: a
+   * callee has its own dominance root and must never inherit the caller's control-flow state.
    */
   private procedureRegionForEntry(entry: NWScriptBasicBlock): Set<NWScriptBasicBlock> {
-    const region = this.forwardReachableFrom(entry);
-    for (const p of entry.predecessors) {
-      const e = this.getEdge(p, entry);
-      if (e && e.type === EdgeType.CALL) {
-        region.add(p);
-      }
-    }
-    return region;
+    return this.forwardReachableFrom(entry);
   }
 
   /**
    * Collect unconditional {@code OP_JMP} edges that jump to a PC **before** the latch block start,
    * with both endpoints in the same {@link procedureRegionForEntry} for some script or subroutine
-   * root. Used for tests and for {@link procedureLatchEdges} / natural loop recovery when whole-graph
-   * dominance misses the latch.
+   * root. Retained as a diagnostic oracle; natural-loop recovery requires dominance.
    */
   collectProcedureBackwardUnconditionalJumpEdges(): NWScriptEdge[] {
     const out: NWScriptEdge[] = [];
@@ -1411,7 +1568,7 @@ export class NWScriptControlFlowGraph {
         if (!last || last.code !== OP_JMP || last.offset === undefined) {
           continue;
         }
-        const targetPc = last.address + last.offset;
+        const targetPc = last.address + toSignedInt32(last.offset);
         if (edge.to.startInstruction.address !== targetPc) {
           continue;
         }
@@ -1432,16 +1589,12 @@ export class NWScriptControlFlowGraph {
   }
 
   /**
-   * Fill {@link procedureLatchEdges} with backward unconditional JMPs in procedure regions that
-   * were not marked as dominance {@link backEdges}.
+   * Keep the historical latch set for API compatibility. With per-procedure dominators, a
+   * legitimate natural-loop latch is already a back edge. Treating every backward JMP as a latch
+   * manufactures loops for irreducible or merely unstructured control flow.
    */
   private populateProcedureLatchEdges(): void {
     this.procedureLatchEdges.clear();
-    for (const edge of this.collectProcedureBackwardUnconditionalJumpEdges()) {
-      if (!edge.isBackEdge) {
-        this.procedureLatchEdges.add(edge);
-      }
-    }
   }
 
   /**
@@ -1484,9 +1637,10 @@ export class NWScriptControlFlowGraph {
 
     const visited = new Set<NWScriptBasicBlock>();
     const queue: [NWScriptBasicBlock, number][] = [[this.entryBlock, 0]];
+    let head = 0;
 
-    while (queue.length > 0) {
-      const [current, depth] = queue.shift()!;
+    while (head < queue.length) {
+      const [current, depth] = queue[head++];
       if (visited.has(current)) continue;
       visited.add(current);
 
@@ -1541,7 +1695,7 @@ export class NWScriptControlFlowGraph {
    * Recursively add blocks to a natural loop
    */
   private addLoopBlocks(header: NWScriptBasicBlock, current: NWScriptBasicBlock, loopBlocks: Set<NWScriptBasicBlock>): void {
-    for (const pred of current.predecessors) {
+    for (const pred of this.getIntraProceduralPredecessors(current)) {
       if (pred !== header && !loopBlocks.has(pred)) {
         loopBlocks.add(pred);
         this.addLoopBlocks(header, pred, loopBlocks);
@@ -1603,9 +1757,10 @@ export class NWScriptControlFlowGraph {
 
     const visited = new Set<NWScriptBasicBlock>();
     const queue: NWScriptBasicBlock[] = [from];
+    let head = 0;
 
-    while (queue.length > 0) {
-      const current = queue.shift()!;
+    while (head < queue.length) {
+      const current = queue[head++];
       if (current === to) return true;
       if (visited.has(current)) continue;
       visited.add(current);
@@ -1805,9 +1960,10 @@ export class NWScriptControlFlowGraph {
   getReachableSubgraph(start: NWScriptBasicBlock): Set<NWScriptBasicBlock> {
     const reachable = new Set<NWScriptBasicBlock>();
     const queue: NWScriptBasicBlock[] = [start];
+    let head = 0;
 
-    while (queue.length > 0) {
-      const current = queue.shift()!;
+    while (head < queue.length) {
+      const current = queue[head++];
       if (reachable.has(current)) continue;
       reachable.add(current);
 
@@ -1863,6 +2019,7 @@ export class NWScriptControlFlowGraph {
    * Get critical edges
    */
   getCriticalEdges(): Array<[NWScriptBasicBlock, NWScriptBasicBlock]> {
+    this.ensureCriticalEdges();
     return Array.from(this.criticalEdges).map(edge => [edge.from, edge.to]);
   }
 
@@ -1919,6 +2076,7 @@ export class NWScriptControlFlowGraph {
    * Get block depth from entry
    */
   getBlockDepth(block: NWScriptBasicBlock): number {
+    this.ensureBlockDepths();
     return this.blockDepths.get(block) ?? -1;
   }
 
@@ -2119,6 +2277,7 @@ export class NWScriptControlFlowGraph {
    */
   toJSON(): any {
     const sortedBlocks = this.getBlocksInOrder();
+    this.ensureReachability();
     const graphMetrics = this.getGraphMetrics();
 
     return {
@@ -2376,6 +2535,7 @@ export class NWScriptControlFlowGraph {
    * Get the dominance frontier of a block
    */
   getDominanceFrontier(block: NWScriptBasicBlock): Set<NWScriptBasicBlock> {
+    this.ensureDominanceFrontiers();
     return this.dominanceFrontiers.get(block) || new Set();
   }
 
@@ -2453,6 +2613,7 @@ export class NWScriptControlFlowGraph {
    * Get blocks that are control-dependent on the given block
    */
   getControlDependents(block: NWScriptBasicBlock): Set<NWScriptBasicBlock> {
+    this.ensureControlDependences();
     return this.controlDependences.get(block) || new Set();
   }
 
@@ -2533,6 +2694,7 @@ export class NWScriptControlFlowGraph {
    * Get loop depth for a block (0 = not in a loop)
    */
   getLoopDepth(block: NWScriptBasicBlock): number {
+    this.ensureLoopNestingTree();
     return this.loopDepth.get(block) || 0;
   }
 
@@ -2540,6 +2702,7 @@ export class NWScriptControlFlowGraph {
    * Get parent loop header for a block (null if not in a loop)
    */
   getParentLoop(block: NWScriptBasicBlock): NWScriptBasicBlock | null {
+    this.ensureLoopNestingTree();
     return this.loopNestingTree.get(block) || null;
   }
 
@@ -2570,17 +2733,15 @@ export class NWScriptControlFlowGraph {
     this.reachesTo.clear();
 
     for (const block of this.blocks.values()) {
+      this.reachesTo.set(block, new Set());
+    }
+
+    for (const block of this.blocks.values()) {
       const reachable = this.getReachableSubgraph(block);
       this.reachableFrom.set(block, reachable);
-
-      // Compute reverse reachability
-      const canReach = new Set<NWScriptBasicBlock>();
-      for (const otherBlock of this.blocks.values()) {
-        if (this.canReach(otherBlock, block)) {
-          canReach.add(otherBlock);
-        }
+      for (const target of reachable) {
+        this.reachesTo.get(target)!.add(block);
       }
-      this.reachesTo.set(block, canReach);
     }
   }
 
@@ -2667,7 +2828,7 @@ export class NWScriptControlFlowGraph {
       maxDepth: maxDepthValue,
       loopCount: this.naturalLoops.size,
       unreachableBlocks: this.getUnreachableBlocks().length,
-      criticalEdges: this.criticalEdges.size,
+      criticalEdges: this.ensureCriticalEdges(),
       backEdges: this.backEdges.size
     };
   }
@@ -2902,20 +3063,16 @@ export class NWScriptControlFlowGraph {
    * @param excludeReturn Whether to also exclude RETURN edges (default: false)
    */
   getIntraProceduralSuccessors(block: NWScriptBasicBlock, excludeReturn: boolean = false): NWScriptBasicBlock[] {
-    const result: NWScriptBasicBlock[] = [];
-    for (const succ of this.getOrderedSuccessors(block)) {
-      const edge = this.getEdge(block, succ);
-      if (edge) {
-        if (edge.type === EdgeType.CALL) {
-          continue; // Skip call edges
-        }
-        if (excludeReturn && edge.type === EdgeType.RETURN) {
-          continue; // Skip return edges if requested
-        }
-        result.push(succ);
-      }
+    this.rebuildAnalysisCaches();
+    const cached = this.intraProcSuccessorsCache?.get(block);
+    const successors = cached ?? this.computeIntraProceduralSuccessors(block, false);
+    if (!excludeReturn) {
+      return successors;
     }
-    return result;
+    return successors.filter(successor => {
+      const edge = this.getEdge(block, successor);
+      return !edge || edge.type !== EdgeType.RETURN;
+    });
   }
 
   /**
@@ -2923,20 +3080,11 @@ export class NWScriptControlFlowGraph {
    * Includes {@link EdgeType.RETURN} (JSR → linear successor): those edges must be predecessors
    * or dominators break for all code after the first subroutine call.
    * @param block The block to get predecessors for
-   * @param excludeCall Whether to also exclude CALL edges (default: false)
    */
-  getIntraProceduralPredecessors(block: NWScriptBasicBlock, excludeCall: boolean = false): NWScriptBasicBlock[] {
-    const result: NWScriptBasicBlock[] = [];
-    for (const pred of this.getOrderedPredecessors(block)) {
-      const edge = this.getEdge(pred, block);
-      if (edge) {
-        if (excludeCall && edge.type === EdgeType.CALL) {
-          continue; // Skip call edges if requested
-        }
-        result.push(pred);
-      }
-    }
-    return result;
+  getIntraProceduralPredecessors(block: NWScriptBasicBlock): NWScriptBasicBlock[] {
+    this.rebuildAnalysisCaches();
+    return this.intraProcPredecessorsCache?.get(block)
+      ?? this.computeIntraProceduralPredecessors(block);
   }
 
   /**
@@ -3096,6 +3244,101 @@ export class NWScriptControlFlowGraph {
     this.invalidated.add('reachability');
     this.invalidated.add('loops');
     this.reverseCFG = null;
+    this.clearAnalysisCaches();
+  }
+
+  private clearAnalysisCaches(): void {
+    this.intraProcSuccessorsCache = null;
+    this.intraProcPredecessorsCache = null;
+    this.procedureRegionsCache = null;
+    this.optionalDepthsReady = false;
+    this.optionalCriticalEdgesReady = false;
+    this.optionalDominanceFrontiersReady = false;
+    this.optionalControlDependencesReady = false;
+    this.optionalLoopNestingReady = false;
+    this.optionalReachabilityReady = false;
+  }
+
+  private rebuildAnalysisCaches(): void {
+    if (this.intraProcSuccessorsCache && this.intraProcPredecessorsCache) {
+      return;
+    }
+    if (this.edgeMap.size === 0) {
+      return;
+    }
+    this.intraProcSuccessorsCache = new Map();
+    this.intraProcPredecessorsCache = new Map();
+    for (const block of this.blocks.values()) {
+      this.intraProcSuccessorsCache.set(block, this.computeIntraProceduralSuccessors(block, false));
+      this.intraProcPredecessorsCache.set(block, this.computeIntraProceduralPredecessors(block));
+    }
+  }
+
+  private computeIntraProceduralSuccessors(
+    block: NWScriptBasicBlock,
+    excludeReturn: boolean
+  ): NWScriptBasicBlock[] {
+    const result: NWScriptBasicBlock[] = [];
+    for (const succ of this.getOrderedSuccessors(block)) {
+      const edge = this.getEdge(block, succ);
+      if (!edge || edge.type === EdgeType.CALL) continue;
+      if (excludeReturn && edge.type === EdgeType.RETURN) continue;
+      result.push(succ);
+    }
+    return result;
+  }
+
+  private computeIntraProceduralPredecessors(block: NWScriptBasicBlock): NWScriptBasicBlock[] {
+    const result: NWScriptBasicBlock[] = [];
+    for (const pred of this.getOrderedPredecessors(block)) {
+      const edge = this.getEdge(pred, block);
+      if (!edge || edge.type === EdgeType.CALL) continue;
+      result.push(pred);
+    }
+    return result;
+  }
+
+  private ensureCriticalEdges(): number {
+    if (!this.optionalCriticalEdgesReady) {
+      this.identifyCriticalEdges();
+      this.optionalCriticalEdgesReady = true;
+    }
+    return this.criticalEdges.size;
+  }
+
+  private ensureBlockDepths(): void {
+    if (!this.optionalDepthsReady) {
+      this.computeBlockDepths();
+      this.optionalDepthsReady = true;
+    }
+  }
+
+  private ensureDominanceFrontiers(): void {
+    if (!this.optionalDominanceFrontiersReady) {
+      this.computeDominanceFrontiers();
+      this.optionalDominanceFrontiersReady = true;
+    }
+  }
+
+  private ensureControlDependences(): void {
+    if (!this.optionalControlDependencesReady) {
+      this.computeControlDependences();
+      this.optionalControlDependencesReady = true;
+    }
+  }
+
+  private ensureLoopNestingTree(): void {
+    if (!this.optionalLoopNestingReady) {
+      this.buildLoopNestingTree();
+      this.optionalLoopNestingReady = true;
+    }
+  }
+
+  private ensureReachability(): void {
+    if (!this.optionalReachabilityReady) {
+      this.computeReachabilitySets();
+      this.optionalReachabilityReady = true;
+    }
   }
 
   /**

@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
-import { Button, Modal } from "react-bootstrap";
+import { ForgeButton, ForgeDialog } from "@/apps/forge/components/ui";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { ModalBlueprintBrowserState } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
+import type { BlueprintCatalogSource } from "@/apps/forge/helpers/blueprintCatalog";
+import { BlueprintBrowserThumbnail } from "@/apps/forge/components/modal/BlueprintBrowserThumbnail";
+import { isBlueprintThumbnailType } from "@/apps/forge/helpers/blueprintThumbnailFingerprint";
 import "@/apps/forge/components/modal/ModalBlueprintBrowser.scss";
 
 const BLUEPRINT_TYPE_LABELS: Record<string, string> = {
@@ -15,6 +18,12 @@ const BLUEPRINT_TYPE_LABELS: Record<string, string> = {
   'uts': 'sounds',
   'utt': 'triggers',
   'utw': 'waypoints',
+};
+
+const SOURCE_LABEL: Record<BlueprintCatalogSource, string> = {
+  project: "Project",
+  override: "Override",
+  game: "Game",
 };
 
 export const ModalBlueprintBrowser = (props: BaseModalProps) => {
@@ -30,14 +39,11 @@ export const ModalBlueprintBrowser = (props: BaseModalProps) => {
 
   const onShow = () => {
     setShow(true);
-    // Load blueprints when shown
-    if (modal.items.length === 0) {
-      setLoading(true);
-      modal.loadBlueprints().catch((error) => {
-        console.error('Failed to load blueprints:', error);
-        setLoading(false);
-      });
-    }
+    setLoading(true);
+    modal.loadBlueprints().catch((error) => {
+      console.error('Failed to load blueprints:', error);
+      setLoading(false);
+    });
   };
 
   const onBlueprintsLoaded = () => {
@@ -56,8 +62,9 @@ export const ModalBlueprintBrowser = (props: BaseModalProps) => {
     modal.addEventListener('onBlueprintsLoaded', onBlueprintsLoaded);
     modal.addEventListener('onSearchChanged', onSearchChanged);
     
-    // Check if items are already loaded (from cache) and update state
-    if (modal.items.length > 0) {
+    if (modal.visible) {
+      onShow();
+    } else if (modal.items.length > 0) {
       setItems([...modal.filteredItems]);
       setLoading(false);
     }
@@ -70,28 +77,20 @@ export const ModalBlueprintBrowser = (props: BaseModalProps) => {
     };
   });
 
-  // Watch for visibility changes and load blueprints when modal becomes visible
   useEffect(() => {
-    if (modal.visible) {
-      if (modal.items.length === 0) {
-        setLoading(true);
-        modal.loadBlueprints().catch((error) => {
-          console.error('Failed to load blueprints:', error);
-          setLoading(false);
-        });
-      } else if (items.length === 0) {
-        // Items are already loaded (from cache) but component state hasn't updated
-        setItems([...modal.filteredItems]);
+    if (modal.visible && loading && modal.items.length === 0) {
+      modal.loadBlueprints().catch((error) => {
+        console.error('Failed to load blueprints:', error);
         setLoading(false);
-      }
+      });
     }
-  }, [modal.visible, modal.items.length]);
+  }, [modal.visible, loading, modal.items.length]);
 
   const handleHide = () => {
     modal.close();
   };
 
-  const handleClose = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleClose = (_e: React.MouseEvent<HTMLButtonElement>) => {
     modal.close();
   };
 
@@ -104,7 +103,7 @@ export const ModalBlueprintBrowser = (props: BaseModalProps) => {
   };
 
   return (
-    <Modal
+    <ForgeDialog
       show={show}
       onHide={handleHide}
       backdrop="static"
@@ -112,19 +111,24 @@ export const ModalBlueprintBrowser = (props: BaseModalProps) => {
       size="lg"
       className="modal-blueprint-browser"
     >
-      <Modal.Header closeButton>
-        <Modal.Title>{modal.title}</Modal.Title>
-      </Modal.Header>
+      <ForgeDialog.Header closeButton>
+        <ForgeDialog.Title>{modal.title}</ForgeDialog.Title>
+      </ForgeDialog.Header>
 
-      <Modal.Body>
+      <ForgeDialog.Body>
         <div className="blueprint-browser-search">
           <input
             type="text"
-            className="form-control"
+            className="forge-input"
             placeholder={`Search ${BLUEPRINT_TYPE_LABELS[modal.selectedBlueprintType]}...`}
             value={searchQuery}
             onChange={handleSearchChange}
           />
+          {!loading ? (
+            <div className="blueprint-browser-count">
+              {items.length} blueprint{items.length === 1 ? "" : "s"}
+            </div>
+          ) : null}
         </div>
 
         {loading ? (
@@ -140,17 +144,29 @@ export const ModalBlueprintBrowser = (props: BaseModalProps) => {
             ) : (
               items.map((blueprint) => (
                 <div
-                  key={blueprint.resref}
+                  key={`${blueprint.source || "game"}:${blueprint.resref}`}
                   className="blueprint-browser-item"
                   onClick={() => handleBlueprintClick(blueprint)}
                   title={blueprint.localizedName || blueprint.resref}
                 >
-                  <div className="blueprint-browser-icon">
-                    <div className="blueprint-browser-icon-placeholder">
-                      {modal.selectedBlueprintType.toUpperCase()}
+                  {isBlueprintThumbnailType(modal.selectedBlueprintType) ? (
+                    <BlueprintBrowserThumbnail
+                      type={modal.selectedBlueprintType}
+                      item={blueprint}
+                    />
+                  ) : (
+                    <div className="blueprint-browser-icon">
+                      <div className="blueprint-browser-icon-placeholder">
+                        {modal.selectedBlueprintType.toUpperCase()}
+                      </div>
                     </div>
-                  </div>
+                  )}
                   <div className="blueprint-browser-label">{blueprint.resref}</div>
+                  {blueprint.source && (
+                    <div className={`blueprint-browser-source blueprint-browser-source--${blueprint.source}`}>
+                      {SOURCE_LABEL[blueprint.source]}
+                    </div>
+                  )}
                   {blueprint.localizedName && blueprint.localizedName !== blueprint.resref && (
                     <div className="blueprint-browser-localized-name">{blueprint.localizedName}</div>
                   )}
@@ -159,14 +175,13 @@ export const ModalBlueprintBrowser = (props: BaseModalProps) => {
             )}
           </div>
         )}
-      </Modal.Body>
+      </ForgeDialog.Body>
 
-      <Modal.Footer>
-        <Button variant="secondary" onClick={handleClose}>
+      <ForgeDialog.Footer>
+        <ForgeButton onClick={handleClose}>
           Close
-        </Button>
-      </Modal.Footer>
-    </Modal>
+        </ForgeButton>
+      </ForgeDialog.Footer>
+    </ForgeDialog>
   );
 };
-

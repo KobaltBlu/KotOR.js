@@ -6,8 +6,18 @@
   width: 446px;
   height: 250px;
   iframe {
-    float: left;
+    display: block;
+    float: none;
+    border: 0;
     width: 100%!important;
     height: 100%!important;
+  }
+}
+
+@media (max-width: 900px) {
+  .promo-element.webview {
+    width: var(--promo-tile-width, 100%);
+    height: 100%;
+    white-space: normal;
   }
 }

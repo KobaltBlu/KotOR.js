@@ -1,0 +1,22 @@
+.modal-resref-prompt {
+  min-width: 360px;
+}
+
+.resref-prompt-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.resref-prompt-hint {
+  margin: 0;
+  color: var(--forge-text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.resref-prompt-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--forge-text);
+}

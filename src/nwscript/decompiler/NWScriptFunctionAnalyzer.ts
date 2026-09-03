@@ -3,8 +3,37 @@ import type { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBloc
 import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
 import type { NWScriptGlobalInit } from "@/nwscript/decompiler/NWScriptGlobalVariableAnalyzer";
 import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
-import { inferSubroutineParameterSlotsFromCallSites } from "@/nwscript/decompiler/NWScriptArgumentStackLayout";
-import { OP_JSR, OP_RETN, OP_RSADD, OP_STORE_STATE, OP_STORE_STATEALL, OP_JMP, OP_JZ, OP_JNZ, OP_SAVEBP, OP_RESTOREBP, OP_MOVSP, OP_CPTOPBP, OP_CPTOPSP, OP_CPDOWNSP, OP_CPDOWNBP, OP_CONST, OP_ACTION, OP_ADD } from "@/nwscript/NWScriptOPCodes";
+import {
+  inferSubroutineCallAbiFromCallSites,
+  inferSubroutineParameterSlotsFromCallSites,
+  inferSubroutineReturnTypeFromCallSites,
+  inferActionReturnFromStoreCleanup,
+  inferJsrArgumentTypes,
+  inferJsrArgumentTypesByTotalSlots,
+  instructionForwardStackSlotDelta,
+  nwscriptDataTypeStackBytes,
+  nwscriptParametersTotalBytes,
+  type InferredJsrArgument,
+} from "@/nwscript/decompiler/NWScriptArgumentStackLayout";
+import {
+  getArithmeticTypeSignature,
+  getComparisonTypeSignature,
+  getUnaryDataType,
+  stackSlotsForByteSize,
+  stackSlotsForDataType,
+  toSignedInt32,
+} from "@/nwscript/decompiler/NWScriptOpcodeSemantics";
+import { computeInlinedThunkSkipAddresses } from "@/nwscript/decompiler/NWScriptStoreStateThunkSkip";
+import {
+  OP_ACTION, OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MODII,
+  OP_EQUAL, OP_NEQUAL, OP_GEQ, OP_GT, OP_LT, OP_LEQ,
+  OP_LOGANDII, OP_LOGORII, OP_BOOLANDII, OP_INCORII, OP_EXCORII,
+  OP_SHLEFTII, OP_SHRIGHTII, OP_USHRIGHTII,
+  OP_NEG, OP_COMPI, OP_NOTI,
+  OP_JSR, OP_RETN, OP_RSADD, OP_JMP,
+  OP_SAVEBP, OP_RESTOREBP, OP_MOVSP, OP_CPTOPBP, OP_CPTOPSP,
+  OP_CPDOWNSP, OP_CPDOWNBP, OP_NOP, OP_CONST, OP_JZ, OP_JNZ, OP_DESTRUCT,
+} from "@/nwscript/NWScriptOPCodes";
 
 /**
  * Represents a function/subroutine in the decompiled code.
@@ -16,6 +45,8 @@ export interface NWScriptFunction {
   bodyBlocks: NWScriptBasicBlock[];
   parameters: NWScriptFunctionParameter[];
   returnType: NWScriptDataType;
+  returnStackSlots?: number;
+  returnStructureFieldTypes?: NWScriptDataType[];
   isMain: boolean;
   jsrInstruction: NWScriptInstruction | null; // The JSR that calls this function
 }
@@ -25,6 +56,8 @@ export interface NWScriptFunctionParameter {
   dataType: NWScriptDataType;
   /** BP-relative operand for CPTOPBP; when {@link resolvedViaSpOperand} holds, this is CPTOPSP's signed offset operand */
   offset: number;
+  stackSlots?: number;
+  structureFieldTypes?: NWScriptDataType[];
   /** True when the compiler passes/reads parameters via CPTOPSP negative operands instead of CPTOPBP */
   resolvedViaSpOperand?: boolean;
 }
@@ -47,6 +80,7 @@ export class NWScriptFunctionAnalyzer {
   private initAddresses: Set<number> = new Set();
   private nestedCallAddresses: Set<number> = new Set(); // Addresses in nested call code (between STORE_STATE+JMP and JMP target)
   private globalInitFunctionAddress: number | null = null; // Entry address of global init function (if exists)
+  private returnStructureFieldsByEntry: Map<number, NWScriptDataType[]> = new Map();
 
   /** Signed CPTOPBP offsets that refer to script globals — not subroutine parameters. */
   private readonly globalCptopbpOffsets = new Set<number>();
@@ -58,21 +92,10 @@ export class NWScriptFunctionAnalyzer {
       const o = g.offset > 0x7fffffff ? g.offset - 0x100000000 : g.offset;
       this.globalCptopbpOffsets.add(o);
     }
-    // Build set of initialization addresses for quick lookup
+    // The owning wrapper procedure is excluded separately; one producer address is enough for
+    // initialization-only block classification and avoids a source-size-dependent lookahead.
     for (const init of globalInits) {
       this.initAddresses.add(init.instructionAddress);
-      // Also mark the following instructions (CONST, CPDOWNSP, MOVSP)
-      const rsadd = this.cfg.script.instructions.get(init.instructionAddress);
-      if (rsadd) {
-        let current = rsadd.nextInstr;
-        let count = 0;
-        while (current && count < 5) {
-          this.initAddresses.add(current.address);
-          if (current.code === 0x1B) break; // MOVSP
-          current = current.nextInstr;
-          count++;
-        }
-      }
     }
     
     // Identify nested call code (between STORE_STATE+JMP and JMP target)
@@ -85,23 +108,7 @@ export class NWScriptFunctionAnalyzer {
    * Contract: keep in sync with {@link NWScriptStoreStateThunkSkip.computeInlinedThunkSkipAddresses}.
    */
   private identifyNestedCallCode(): void {
-    for (const instruction of this.cfg.script.instructions.values()) {
-      if (instruction.code === OP_STORE_STATE || instruction.code === OP_STORE_STATEALL) {
-        const nextInstr = instruction.nextInstr;
-        if (nextInstr && nextInstr.code === OP_JMP && nextInstr.offset !== undefined) {
-          const jmpTarget = nextInstr.address + nextInstr.offset;
-
-          let current: NWScriptInstruction | null | undefined = nextInstr.nextInstr;
-          while (current && current.address < jmpTarget) {
-            this.nestedCallAddresses.add(current.address);
-            if (current.code === OP_RETN) {
-              break;
-            }
-            current = current.nextInstr;
-          }
-        }
-      }
-    }
+    this.nestedCallAddresses = computeInlinedThunkSkipAddresses(this.cfg.script);
   }
 
   /**
@@ -160,6 +167,8 @@ export class NWScriptFunctionAnalyzer {
       }
     }
 
+    this.refineFunctionParameterTypesFixedPoint();
+
     // Assign proper function names (sub1, sub2, etc.)
     this.assignFunctionNames();
 
@@ -215,7 +224,7 @@ export class NWScriptFunctionAnalyzer {
       return null;
     }
     
-    const firstJSRTarget = firstJSR.address + firstJSR.offset;
+    const firstJSRTarget = firstJSR.address + toSignedInt32(firstJSR.offset);
     const firstJSRBlock = this.cfg.getBlockForAddress(firstJSRTarget);
     
     if (!firstJSRBlock) {
@@ -249,7 +258,7 @@ export class NWScriptFunctionAnalyzer {
             if (next.code === OP_JSR && next.offset !== undefined) {
               // Found SAVEBP -> JSR pattern - first JSR is global init
               hasGlobals = true;
-              realMainJSRTarget = next.address + next.offset;
+              realMainJSRTarget = next.address + toSignedInt32(next.offset);
               isStartingConditional = entryRSADD !== null;
               foundJSR = true;
               break;
@@ -276,7 +285,7 @@ export class NWScriptFunctionAnalyzer {
                 if (succInstr.code === OP_JSR && succInstr.offset !== undefined && succInstr.address > instr.address) {
                   // Found JSR in successor after SAVEBP
                   hasGlobals = true;
-                  realMainJSRTarget = succInstr.address + succInstr.offset;
+                  realMainJSRTarget = succInstr.address + toSignedInt32(succInstr.offset);
                   isStartingConditional = entryRSADD !== null;
                   foundJSR = true;
                   break;
@@ -464,8 +473,8 @@ export class NWScriptFunctionAnalyzer {
     // If we don't have a JSR, we can still analyze parameters from the body
     const parameters = this.analyzeParameters(jsrInstruction, bodyBlocks, true, entryAddress, entryBlock);
 
-    // Analyze return type (stack usage after RETN)
-    const returnType = this.analyzeReturnType(entryBlock, bodyBlocks);
+    const returnType = this.analyzeReturnType(entryAddress, bodyBlocks, parameters);
+    const returnStructureFieldTypes = this.returnStructureFieldsByEntry.get(entryAddress);
 
     // Generate function name
     const functionName = this.generateFunctionName(entryAddress);
@@ -477,6 +486,8 @@ export class NWScriptFunctionAnalyzer {
       bodyBlocks: bodyBlocks,
       parameters: parameters,
       returnType: returnType,
+      returnStackSlots: returnStructureFieldTypes?.length,
+      returnStructureFieldTypes,
       isMain: false,
       jsrInstruction: jsrInstruction
     };
@@ -489,7 +500,7 @@ export class NWScriptFunctionAnalyzer {
     for (const instruction of this.cfg.script.instructions.values()) {
       if (instruction.code === OP_JSR &&
           instruction.offset !== undefined &&
-          instruction.address + instruction.offset === targetAddress) {
+          instruction.address + toSignedInt32(instruction.offset) === targetAddress) {
         return instruction;
       }
     }
@@ -626,7 +637,10 @@ export class NWScriptFunctionAnalyzer {
     entryAddress: number,
     entryBlock: NWScriptBasicBlock
   ): NWScriptFunctionParameter[] {
-    const parameterOffsets = new Map<number, { dataType: NWScriptDataType, count: number }>();
+    const parameterOffsets = new Map<
+      number,
+      { dataType: NWScriptDataType; count: number; stackSlots: number }
+    >();
     
     // Scan all instructions in function body for CPTOPBP with negative offsets
     for (const block of bodyBlocks) {
@@ -641,11 +655,17 @@ export class NWScriptFunctionAnalyzer {
             if (this.globalCptopbpOffsets.has(offsetSigned)) {
               continue;
             }
-            // Infer data type from instruction type
-            let dataType = NWScriptDataType.INTEGER;
-            if (instruction.type === 4) dataType = NWScriptDataType.FLOAT;
-            else if (instruction.type === 5) dataType = NWScriptDataType.STRING;
-            else if (instruction.type === 6) dataType = NWScriptDataType.OBJECT;
+            // CPTOPBP's type byte is the copy opcode type (normally 0x01), not the
+            // source-language datatype. Width can identify vectors; scalar type is refined at callers.
+            const stackSlots = stackSlotsForByteSize(
+              instruction.size ?? 4,
+              instruction.codeName || 'CPTOPBP'
+            );
+            const dataType = stackSlots === 3
+              ? NWScriptDataType.VECTOR
+              : stackSlots > 1
+                ? NWScriptDataType.STRUCTURE
+                : NWScriptDataType.INTEGER;
             
             const existing = parameterOffsets.get(offsetSigned);
             if (existing) {
@@ -654,25 +674,25 @@ export class NWScriptFunctionAnalyzer {
               if (dataType !== NWScriptDataType.INTEGER && existing.dataType === NWScriptDataType.INTEGER) {
                 existing.dataType = dataType;
               }
+              existing.stackSlots = Math.max(existing.stackSlots, stackSlots);
             } else {
-              parameterOffsets.set(offsetSigned, { dataType, count: 1 });
+              parameterOffsets.set(offsetSigned, { dataType, count: 1, stackSlots });
             }
           }
         }
       }
     }
     
-    // Convert offsets to sorted parameter list
-    // Parameters are accessed with negative offsets relative to BP
-    // We need to sort them by offset (most negative = first parameter, least negative = last parameter)
-    const sortedOffsets = Array.from(parameterOffsets.keys()).sort((a, b) => a - b); // Ascending (most negative first)
+    // Formal one is nearest TOS and has the least-negative frame offset. Wider formals use
+    // the offset of the bottom of their occupied range (for example, a first vector is -12).
+    const sortedOffsets = Array.from(parameterOffsets.keys()).sort((a, b) => b - a);
     
     const parameters: NWScriptFunctionParameter[] = [];
     for (let i = 0; i < sortedOffsets.length; i++) {
       const offset = sortedOffsets[i];
       const info = parameterOffsets.get(offset)!;
       
-      // Parameter index (0 = first parameter, accessed with most negative offset)
+      // Parameter index (0 = first source-level formal)
       const paramIndex = i;
       
       // Generate parameter name based on type
@@ -682,291 +702,635 @@ export class NWScriptFunctionAnalyzer {
       parameters.push({
         name: paramName,
         dataType: info.dataType,
-        offset: offset
+        offset: offset,
+        stackSlots: info.stackSlots,
+        structureFieldTypes: info.dataType === NWScriptDataType.STRUCTURE
+          ? new Array<NWScriptDataType>(info.stackSlots).fill(NWScriptDataType.INTEGER)
+          : undefined,
       });
     }
     
+    const tailSlots = this.inferParameterCleanupSlots(bodyBlocks);
+    const returnWriteBytes = this.inferReturnWriteBytes(bodyBlocks);
+    const callerAbi = returnWriteBytes === null
+      ? null
+      : inferSubroutineCallAbiFromCallSites(
+          this.cfg.script,
+          entryAddress,
+          returnWriteBytes
+        );
+    const authoritativeSlots = tailSlots > 0
+      ? tailSlots
+      : callerAbi?.parameterSlots ?? null;
+    const callSiteLayout = authoritativeSlots === null
+      ? null
+      : this.inferParameterLayoutFromCallSites(entryAddress, authoritativeSlots);
+    const minCallerArgSlots = inferSubroutineParameterSlotsFromCallSites(
+      this.cfg.script,
+      entryAddress
+    );
+    // A shared compiler epilogue is occasionally outside the conservative function body. In
+    // that case CPTOPSP analysis can miss a formal used only in a path whose entry depth is
+    // ambiguous. Accept the caller width only when every slot can also be parsed into complete
+    // argument expressions. This rejects raw deltas polluted by a local RSADD or a non-void
+    // result reservation while recovering cases such as a fourth string passed to a void helper.
+    const parsedCallerLayout = authoritativeSlots === null && minCallerArgSlots > 0
+      ? this.inferParameterLayoutFromCallSites(entryAddress, minCallerArgSlots)
+      : null;
+    const finalize = (selected: NWScriptFunctionParameter[]) =>
+      this.refineParameterTypesFromBody(
+        this.refineParameterTypesFromCallSites(selected, entryAddress),
+        entryBlock,
+        bodyBlocks
+      );
+    const selectCompleteLayout = (
+      inferred: NWScriptFunctionParameter[]
+    ): NWScriptFunctionParameter[] => {
+      if (
+        callSiteLayout &&
+        this.parameterStackSlots(inferred) !== authoritativeSlots
+      ) {
+        return callSiteLayout;
+      }
+      if (
+        parsedCallerLayout &&
+        this.parameterStackSlots(inferred) !== minCallerArgSlots
+      ) {
+        return parsedCallerLayout;
+      }
+      return inferred;
+    };
+
     if (parameters.length > 0) {
-      return parameters;
+      return finalize(selectCompleteLayout(parameters));
     }
 
     if (!allowCptopspInference) {
       return [];
     }
 
-    // Prefer arity from non-thunk call sites; fall back to STORE_STATE thunk JSRs
-    // (DelayCommand(..., Helper(arg))) when the callee is only invoked from a thunk.
-    const minCallerArgSlotsExcludingThunks = inferSubroutineParameterSlotsFromCallSites(
-      this.cfg.script,
-      entryAddress,
-      (instr) => !this.nestedCallAddresses.has(instr.address)
-    );
-    const minCallerArgSlotsIncludingThunks = inferSubroutineParameterSlotsFromCallSites(
-      this.cfg.script,
-      entryAddress
-    );
-    const minCallerArgSlots =
-      minCallerArgSlotsExcludingThunks > 0
-        ? minCallerArgSlotsExcludingThunks
-        : minCallerArgSlotsIncludingThunks;
+    let out = this.inferParametersFromCptopspOperands(entryBlock, bodyBlocks);
     if (minCallerArgSlots === 0) {
-      return [];
+      return finalize(selectCompleteLayout(out));
     }
 
-    let out = this.inferParametersFromCptopspOperands(bodyBlocks);
-    if (out.length < minCallerArgSlots) {
-      const fb = this.fallbackCptopspParamsFromEntryBlock(entryBlock, bodyBlocks, minCallerArgSlots);
-      if (fb.length > out.length) {
-        out = fb;
-      }
-    }
-    out = this.narrowCptopspParamsToCallArity(out, minCallerArgSlots);
-    // Empty stubs (e.g. Db_PostString) never CPTOP their formals — invent from CONST
-    // pushes at call sites so the decl arity matches the calls.
-    if (out.length === 0 && minCallerArgSlots > 0) {
-      out = this.inventFormalsFromCallSiteConsts(entryAddress, minCallerArgSlots);
-    }
-    return this.refineCptopspParamTypesFromCallSites(entryAddress, out);
+    const narrowed = this.narrowCptopspParamsToCallArity(out, minCallerArgSlots);
+    return finalize(selectCompleteLayout(narrowed));
   }
 
-  /**
-   * Invent formals for empty-body stubs from CONST type codes pushed immediately before
-   * each JSR to {@code entryAddress}. Left-to-right CONST order = param1..paramN.
-   */
-  private inventFormalsFromCallSiteConsts(
-    entryAddress: number,
-    minSlots: number
-  ): NWScriptFunctionParameter[] {
-    const typeVotes: NWScriptDataType[][] = Array.from({ length: minSlots }, () => []);
-    for (const instr of this.cfg.script.instructions.values()) {
-      if (instr.code !== OP_JSR || instr.offset === undefined) {
-        continue;
-      }
-      if (instr.address + instr.offset !== entryAddress) {
-        continue;
-      }
-      const argTypes = this.inferArgTypesBeforeJsr(instr, minSlots);
-      for (let i = 0; i < argTypes.length; i++) {
-        typeVotes[i].push(argTypes[i]);
+  /** Last negative MOVSP in a compiler tail removes the incoming argument frame. */
+  private inferParameterCleanupSlots(bodyBlocks: NWScriptBasicBlock[]): number {
+    const positiveCandidates = new Set<number>();
+    for (const block of bodyBlocks) {
+      for (let index = 0; index < block.instructions.length; index += 1) {
+        if (block.instructions[index].code !== OP_RETN) continue;
+        let previousIndex = index - 1;
+        while (
+          previousIndex >= 0 &&
+          (block.instructions[previousIndex].code === OP_NOP ||
+            block.instructions[previousIndex].code === OP_RESTOREBP)
+        ) {
+          previousIndex -= 1;
+        }
+        const previous = previousIndex >= 0 ? block.instructions[previousIndex] : null;
+        if (previous?.code !== OP_MOVSP || previous.offset === undefined) continue;
+        const signed = previous.offset > 0x7fffffff
+          ? previous.offset - 0x100000000
+          : previous.offset;
+        if (signed < 0 && signed % 4 === 0) {
+          positiveCandidates.add(Math.abs(signed) / 4);
+        }
       }
     }
 
-    const params: NWScriptFunctionParameter[] = [];
-    for (let i = 0; i < minSlots; i++) {
-      const votes = typeVotes[i];
-      let dataType = NWScriptDataType.INTEGER;
-      if (votes.length > 0) {
-        const objectVotes = votes.filter((v) => v === NWScriptDataType.OBJECT).length;
-        const floatVotes = votes.filter((v) => v === NWScriptDataType.FLOAT).length;
-        const stringVotes = votes.filter((v) => v === NWScriptDataType.STRING).length;
-        if (objectVotes > 0) dataType = NWScriptDataType.OBJECT;
-        else if (floatVotes > 0) dataType = NWScriptDataType.FLOAT;
-        else if (stringVotes > 0) dataType = NWScriptDataType.STRING;
-        else dataType = NWScriptDataType.INTEGER;
+    // STORE_STATE payloads and compiler-generated helper islands can contribute a bare RETN to
+    // a conservatively collected function body. Such a terminal has no ABI cleanup information;
+    // it must not cancel the real shared epilogue's MOVSP. Conflicting positive widths remain
+    // ambiguous and deliberately fall back to caller/body inference.
+    return positiveCandidates.size === 1 ? Array.from(positiveCandidates)[0] : 0;
+  }
+
+  /** Build a canonical first-formal-first ABI layout from every direct caller. */
+  private inferParameterLayoutFromCallSites(
+    entryAddress: number,
+    totalSlots: number
+  ): NWScriptFunctionParameter[] | null {
+    let consensus: InferredJsrArgument[] | null = null;
+    let provenCallCount = 0;
+
+    for (const instruction of this.cfg.script.instructions.values()) {
+      if (
+        instruction.code !== OP_JSR ||
+        instruction.offset === undefined ||
+        instruction.address + toSignedInt32(instruction.offset) !== entryAddress
+      ) {
+        continue;
       }
-      const typePrefix = this.getTypePrefix(dataType);
-      const offset = -(minSlots - i) * 4;
-      params.push({
-        name: `${typePrefix}Param${i + 1}`,
+      const inferred = inferJsrArgumentTypesByTotalSlots(instruction, totalSlots);
+      // A caller may compute an argument through another JSR, which makes a local backwards
+      // expression walk intentionally stop. Other direct callers still carry valid ABI evidence.
+      if (!inferred) continue;
+      provenCallCount += 1;
+      if (!consensus) {
+        consensus = inferred;
+        continue;
+      }
+      if (consensus.length !== inferred.length) return null;
+      for (let index = 0; index < consensus.length; index += 1) {
+        const observed = inferred[index];
+        if (consensus[index].stackSlots !== observed.stackSlots) return null;
+        if (observed.dataType === null) continue;
+        if (
+          consensus[index].dataType !== null &&
+          consensus[index].dataType !== observed.dataType
+        ) return null;
+        consensus[index] = observed;
+      }
+    }
+
+    if (provenCallCount === 0 || !consensus) return null;
+
+    let bytesFromTop = 0;
+    return consensus.map((observed, index) => {
+      const dataType = observed.dataType ??
+        (observed.stackSlots > 1
+          ? NWScriptDataType.STRUCTURE
+          : NWScriptDataType.INTEGER);
+      bytesFromTop += observed.stackSlots * 4;
+      return {
+        name: `${this.getTypePrefix(dataType)}Param${index + 1}`,
         dataType,
-        offset,
+        offset: -bytesFromTop,
+        stackSlots: observed.stackSlots,
+        structureFieldTypes: dataType === NWScriptDataType.STRUCTURE
+          ? new Array<NWScriptDataType>(observed.stackSlots).fill(NWScriptDataType.INTEGER)
+          : undefined,
         resolvedViaSpOperand: true,
+      };
+    });
+  }
+
+  private refineParameterTypesFromCallSites(
+    parameters: NWScriptFunctionParameter[],
+    entryAddress: number
+  ): NWScriptFunctionParameter[] {
+    const sorted = [...parameters].sort((left, right) => right.offset - left.offset);
+    const observations = sorted.map(() => new Set<NWScriptDataType>());
+
+    for (const instruction of this.cfg.script.instructions.values()) {
+      if (
+        instruction.code !== OP_JSR ||
+        instruction.offset === undefined ||
+        instruction.address + toSignedInt32(instruction.offset) !== entryAddress
+      ) {
+        continue;
+      }
+      const inferred = inferJsrArgumentTypes(instruction, sorted);
+      inferred?.forEach((dataType, index) => {
+        if (dataType !== null) observations[index].add(dataType);
       });
     }
-    return params;
-  }
 
-  /**
-   * Map CONST type byte / binary type to NWScriptDataType.
-   */
-  private dataTypeFromConstOrBinaryType(typeCode: number): NWScriptDataType {
-    if (typeCode === 4) return NWScriptDataType.FLOAT;
-    if (typeCode === 5 || typeCode === 0x23) return NWScriptDataType.STRING;
-    if (typeCode === 6) return NWScriptDataType.OBJECT;
-    if (typeCode === 3) return NWScriptDataType.INTEGER;
-    return NWScriptDataType.INTEGER;
-  }
-
-  /**
-   * Mini type-stack walk of the instruction chain immediately before a JSR.
-   * Models CONST pushes, valued ACTION returns, and ADD type 0x23 (string concat).
-   * Returns arg types top-first (param1 = stack top at JSR).
-   */
-  private inferArgTypesBeforeJsr(
-    jsr: NWScriptInstruction,
-    maxSlots: number
-  ): NWScriptDataType[] {
-    const rev: NWScriptInstruction[] = [];
-    let p: NWScriptInstruction | null | undefined = jsr.prevInstr;
-    let steps = 0;
-    while (p && steps++ < 64) {
-      if (p.code === OP_JSR || p.code === OP_RETN || p.code === OP_JMP) {
-        break;
-      }
-      rev.push(p);
-      p = p.prevInstr;
-    }
-    rev.reverse();
-
-    const typeStack: NWScriptDataType[] = [];
-    const pushType = (dt: NWScriptDataType) => {
-      typeStack.push(dt);
-    };
-    const popType = (): NWScriptDataType => {
-      return typeStack.pop() ?? NWScriptDataType.INTEGER;
-    };
-
-    for (const ins of rev) {
-      if (ins.code === OP_CONST && ins.type !== undefined) {
-        pushType(this.dataTypeFromConstOrBinaryType(ins.type));
-        continue;
-      }
-      if (ins.code === OP_CPTOPSP || ins.code === OP_CPTOPBP) {
-        pushType(NWScriptDataType.INTEGER);
-        continue;
-      }
-      if (ins.code === OP_RSADD) {
-        // Return/local reservation — not an arg; ignore for type stack of caller args.
-        continue;
-      }
-      if (ins.code === OP_ADD && ins.type === 0x23) {
-        popType();
-        popType();
-        pushType(NWScriptDataType.STRING);
-        continue;
-      }
-      if (ins.code === OP_ACTION) {
-        const def = ins.actionDefinition;
-        if (def) {
-          const argCount = def.args?.length ?? 0;
-          for (let i = 0; i < argCount; i++) {
-            popType();
-          }
-          if (def.type !== undefined && def.type !== NWScriptDataType.VOID) {
-            pushType(def.type);
-          }
-        } else {
-          // Unknown action: treat as valued (common for Get* returning one slot).
-          pushType(NWScriptDataType.INTEGER);
-        }
-        continue;
-      }
-      // MOVSP / CPDOWN etc. — leave type stack alone for arg inference
-    }
-
-    const out: NWScriptDataType[] = [];
-    for (let i = 0; i < maxSlots && typeStack.length > 0; i++) {
-      out.push(typeStack.pop()!);
-    }
-    return out;
-  }
-
-  /**
-   * If a formal is CPTOP'd as the sole arg to PrintString, vote STRING.
-   */
-  private voteStringFromPrintStringBody(
-    entryAddress: number,
-    spParams: NWScriptFunctionParameter[],
-    typeVotes: NWScriptDataType[][]
-  ): void {
-    const entryBlock = this.cfg.getBlockForAddress(entryAddress);
-    if (!entryBlock) {
-      return;
-    }
-    let cur: NWScriptInstruction | null | undefined = entryBlock.startInstruction;
-    let guard = 100000;
-    while (cur && guard-- > 0) {
-      if (cur.code === OP_RETN) {
-        break;
-      }
-      if (cur.code === OP_ACTION && cur.actionDefinition?.name === "PrintString") {
-        let q: NWScriptInstruction | null | undefined = cur.prevInstr;
-        let qSteps = 0;
-        while (q && qSteps++ < 8) {
-          if (q.code === OP_CPTOPSP && q.offset !== undefined) {
-            const off = q.offset > 0x7FFFFFFF ? q.offset - 0x100000000 : q.offset;
-            const idx = spParams.findIndex((p) => p.offset === off);
-            if (idx >= 0) {
-              typeVotes[idx].push(NWScriptDataType.STRING);
-            }
-            break;
-          }
-          if (q.code === OP_CONST || q.code === OP_ACTION || q.code === OP_JSR) {
-            break;
-          }
-          q = q.prevInstr;
-        }
-      }
-      cur = cur.nextInstr;
-    }
-  }
-
-  /**
-   * CPTOPSP type bytes are often generic (0x01); refine formal types from call-site
-   * type stacks (CONST / valued ACTION / ADDSS) and PrintString body feedback.
-   */
-  private refineCptopspParamTypesFromCallSites(
-    entryAddress: number,
-    params: NWScriptFunctionParameter[]
-  ): NWScriptFunctionParameter[] {
-    if (params.length === 0) {
-      return params;
-    }
-    const spParams = params.filter((p) => p.resolvedViaSpOperand);
-    if (spParams.length === 0) {
-      return params;
-    }
-
-    const typeVotes: NWScriptDataType[][] = spParams.map(() => []);
-    for (const instr of this.cfg.script.instructions.values()) {
-      if (instr.code !== OP_JSR || instr.offset === undefined) {
-        continue;
-      }
-      if (instr.address + instr.offset !== entryAddress) {
-        continue;
-      }
-      const argTypes = this.inferArgTypesBeforeJsr(instr, spParams.length);
-      for (let i = 0; i < argTypes.length; i++) {
-        typeVotes[i].push(argTypes[i]);
-      }
-    }
-
-    this.voteStringFromPrintStringBody(entryAddress, spParams, typeVotes);
-
-    return params.map((param) => {
-      if (!param.resolvedViaSpOperand) {
-        return param;
-      }
-      const spIndex = spParams.indexOf(param);
-      if (spIndex < 0 || typeVotes[spIndex].length === 0) {
-        return param;
-      }
-      const votes = typeVotes[spIndex];
-      const objectVotes = votes.filter((v) => v === NWScriptDataType.OBJECT).length;
-      const floatVotes = votes.filter((v) => v === NWScriptDataType.FLOAT).length;
-      const stringVotes = votes.filter((v) => v === NWScriptDataType.STRING).length;
-      let dataType = param.dataType;
-      if (objectVotes > 0) dataType = NWScriptDataType.OBJECT;
-      else if (floatVotes > 0) dataType = NWScriptDataType.FLOAT;
-      else if (stringVotes > 0) dataType = NWScriptDataType.STRING;
-      if (dataType === param.dataType) {
-        return param;
-      }
-      const typePrefix = this.getTypePrefix(dataType);
-      const indexMatch = param.name.match(/(\d+)$/);
-      const idx = indexMatch ? indexMatch[1] : "1";
+    return sorted.map((parameter, index) => {
+      const observed = observations[index];
+      const dataType = observed.size === 1
+        ? Array.from(observed)[0]
+        : parameter.dataType;
       return {
-        ...param,
+        ...parameter,
         dataType,
-        name: `${typePrefix}Param${idx}`,
+        name: `${this.getTypePrefix(dataType)}Param${index + 1}`,
       };
     });
   }
 
   /**
+   * Refine scalar formals from typed consumers in the callee. CPTOPSP/CPTOPBP copy
+   * opcodes carry only a width, so defaulting every four-byte value to int loses
+   * object/string and engine-structure types when the caller expression is itself an
+   * untyped frame copy. ACTION signatures and typed operators provide authoritative
+   * constraints for those values.
+   */
+  private refineParameterTypesFromBody(
+    parameters: NWScriptFunctionParameter[],
+    entryBlock: NWScriptBasicBlock,
+    bodyBlocks: NWScriptBasicBlock[]
+  ): NWScriptFunctionParameter[] {
+    if (parameters.length === 0) return parameters;
+
+    type AbstractValue = {
+      origins: Set<string>;
+      declaredType?: NWScriptDataType;
+    };
+    const unknown = (declaredType?: NWScriptDataType): AbstractValue => ({
+      origins: new Set<string>(),
+      declaredType,
+    });
+    const parameterOffsets = new Set(parameters.map(parameter => parameter.offset));
+    const parametersByOffset = new Map(
+      parameters.map(parameter => [parameter.offset, parameter] as const)
+    );
+    const evidence = new Map<number, Set<NWScriptDataType>>();
+    const structureEvidence = new Map<
+      number,
+      Map<number, Set<NWScriptDataType>>
+    >();
+    const bodySet = new Set(bodyBlocks);
+    const originKey = (offset: number, field: number): string => `${offset}:${field}`;
+    const parseOrigin = (origin: string): [number, number] => {
+      const separator = origin.lastIndexOf(':');
+      return [
+        Number.parseInt(origin.slice(0, separator), 10),
+        Number.parseInt(origin.slice(separator + 1), 10),
+      ];
+    };
+
+    // Compute each block's stack depth relative to procedure entry. This turns a raw
+    // SP operand into the stable formal-frame offset used by `parameters`.
+    const entryDeltas = new Map<NWScriptBasicBlock, number | null>([[entryBlock, 0]]);
+    const queue: NWScriptBasicBlock[] = [entryBlock];
+    while (queue.length > 0) {
+      const block = queue.shift()!;
+      const knownEntry = entryDeltas.get(block);
+      if (knownEntry === undefined || knownEntry === null) continue;
+      let delta = knownEntry;
+      let knownExit = true;
+      for (const instruction of block.instructions) {
+        const instructionDelta = this.parameterAnalysisStackDelta(instruction);
+        if (instructionDelta === null) {
+          knownExit = false;
+          break;
+        }
+        delta += instructionDelta;
+      }
+      if (!knownExit) continue;
+      for (const successor of this.cfg.getIntraProceduralSuccessors(block)) {
+        if (!bodySet.has(successor)) continue;
+        const existing = entryDeltas.get(successor);
+        if (existing === undefined) {
+          entryDeltas.set(successor, delta);
+          queue.push(successor);
+        } else if (existing !== null && existing !== delta) {
+          entryDeltas.set(successor, null);
+        }
+      }
+    }
+
+    const record = (value: AbstractValue, dataType: NWScriptDataType): void => {
+      if (dataType === NWScriptDataType.VOID || dataType === NWScriptDataType.ACTION) return;
+      for (const origin of value.origins) {
+        const [offset, field] = parseOrigin(origin);
+        if (!parameterOffsets.has(offset)) continue;
+        const parameter = parametersByOffset.get(offset);
+        if (parameter?.dataType === NWScriptDataType.STRUCTURE) {
+          if (dataType === NWScriptDataType.STRUCTURE) continue;
+          const byField = structureEvidence.get(offset) ?? new Map();
+          const observed = byField.get(field) ?? new Set<NWScriptDataType>();
+          observed.add(dataType);
+          byField.set(field, observed);
+          structureEvidence.set(offset, byField);
+          continue;
+        }
+        const observed = evidence.get(offset) ?? new Set<NWScriptDataType>();
+        observed.add(dataType);
+        evidence.set(offset, observed);
+      }
+    };
+
+    for (const block of bodyBlocks) {
+      const entryDelta = entryDeltas.get(block);
+      if (entryDelta === undefined || entryDelta === null || entryDelta < 0) continue;
+
+      // One array element represents one physical dword. Multi-slot values repeat the
+      // same provenance object so copies and consumers can operate by bytecode width.
+      const stack: AbstractValue[] = Array.from({ length: entryDelta }, unknown);
+      const push = (value: AbstractValue, slots: number): void => {
+        for (let slot = 0; slot < slots; slot += 1) stack.push(value);
+      };
+      const pop = (slots: number): AbstractValue => {
+        const origins = new Set<string>();
+        for (let slot = 0; slot < slots && stack.length > 0; slot += 1) {
+          for (const origin of stack.pop()!.origins) origins.add(origin);
+        }
+        return { origins };
+      };
+      const consume = (
+        dataType: NWScriptDataType,
+        slots = stackSlotsForDataType(dataType)
+      ): AbstractValue => {
+        const value = pop(slots);
+        record(value, dataType);
+        return value;
+      };
+
+      for (const instruction of block.instructions) {
+        if (instruction.code === OP_CPTOPSP || instruction.code === OP_CPTOPBP) {
+          let slots: number;
+          try {
+            slots = stackSlotsForByteSize(instruction.size ?? 4, instruction.codeName || 'CPTOP');
+          } catch {
+            break;
+          }
+          const signed = toSignedInt32(instruction.offset);
+          const frameOffset = instruction.code === OP_CPTOPSP
+            ? signed + stack.length * 4
+            : signed;
+          const parameter = parametersByOffset.get(frameOffset);
+          if (parameter) {
+            for (let field = 0; field < slots; field += 1) {
+              stack.push({ origins: new Set([originKey(frameOffset, field)]) });
+            }
+          } else if (
+            instruction.code === OP_CPTOPSP &&
+            frameOffset >= 0 &&
+            frameOffset % 4 === 0 &&
+            frameOffset / 4 + slots <= stack.length
+          ) {
+            for (const value of stack.slice(frameOffset / 4, frameOffset / 4 + slots)) {
+              stack.push({
+                origins: new Set(value.origins),
+                declaredType: value.declaredType,
+              });
+            }
+          } else {
+            push(unknown(), slots);
+          }
+          continue;
+        }
+
+        if (instruction.code === OP_CONST || instruction.code === OP_RSADD) {
+          const dataType = getUnaryDataType(instruction.type);
+          push(
+            unknown(instruction.code === OP_RSADD ? dataType ?? undefined : undefined),
+            Math.max(1, stackSlotsForDataType(dataType ?? undefined))
+          );
+          continue;
+        }
+
+        if (instruction.code === OP_ACTION) {
+          const definition = instruction.actionDefinition;
+          const inferred = inferActionReturnFromStoreCleanup(instruction);
+          if (definition) {
+            const argCount = Math.min(instruction.argCount ?? 0, definition.args.length);
+            for (let index = 0; index < argCount; index += 1) {
+              consume(definition.args[index]);
+            }
+            push(
+              unknown(),
+              inferred?.stackSlots ?? stackSlotsForDataType(definition.type)
+            );
+          } else {
+            const argCount = instruction.argCount ?? 0;
+            for (let index = 0; index < argCount; index += 1) {
+              consume(NWScriptDataType.INTEGER);
+            }
+            push(unknown(inferred?.dataType), inferred?.stackSlots ?? 0);
+          }
+          continue;
+        }
+
+        if (
+          instruction.code === OP_ADD || instruction.code === OP_SUB ||
+          instruction.code === OP_MUL || instruction.code === OP_DIV ||
+          instruction.code === OP_MODII
+        ) {
+          const signature = getArithmeticTypeSignature(instruction.code, instruction.type);
+          if (!signature) break;
+          consume(signature.right);
+          consume(signature.left);
+          push(unknown(), stackSlotsForDataType(signature.result));
+          continue;
+        }
+
+        if (
+          instruction.code === OP_EQUAL || instruction.code === OP_NEQUAL ||
+          instruction.code === OP_GEQ || instruction.code === OP_GT ||
+          instruction.code === OP_LT || instruction.code === OP_LEQ
+        ) {
+          const signature = getComparisonTypeSignature(instruction.code, instruction.type);
+          if (!signature) break;
+          consume(signature.right);
+          consume(signature.left);
+          push(unknown(), 1);
+          continue;
+        }
+
+        if (
+          instruction.code === OP_LOGANDII || instruction.code === OP_LOGORII ||
+          instruction.code === OP_BOOLANDII || instruction.code === OP_INCORII ||
+          instruction.code === OP_EXCORII || instruction.code === OP_SHLEFTII ||
+          instruction.code === OP_SHRIGHTII || instruction.code === OP_USHRIGHTII
+        ) {
+          consume(NWScriptDataType.INTEGER);
+          consume(NWScriptDataType.INTEGER);
+          push(unknown(), 1);
+          continue;
+        }
+
+        if (instruction.code === OP_NEG || instruction.code === OP_COMPI || instruction.code === OP_NOTI) {
+          const dataType = getUnaryDataType(instruction.type);
+          if (dataType === null) break;
+          consume(dataType);
+          push(unknown(), stackSlotsForDataType(dataType));
+          continue;
+        }
+
+        if (instruction.code === OP_JZ || instruction.code === OP_JNZ) {
+          consume(NWScriptDataType.INTEGER);
+          continue;
+        }
+
+        if (instruction.code === OP_MOVSP) {
+          const signed = toSignedInt32(instruction.offset);
+          let slots: number;
+          try {
+            slots = stackSlotsForByteSize(Math.abs(signed), 'MOVSP');
+          } catch {
+            break;
+          }
+          if (signed < 0) pop(slots);
+          else push(unknown(), slots);
+          continue;
+        }
+
+        if (instruction.code === OP_DESTRUCT) {
+          let destroySlots: number;
+          let saveOffsetSlots: number;
+          let saveSlots: number;
+          try {
+            destroySlots = stackSlotsForByteSize(
+              instruction.sizeToDestroy,
+              'DESTRUCT destroy'
+            );
+            saveOffsetSlots = stackSlotsForByteSize(
+              instruction.offsetToSaveElement,
+              'DESTRUCT offset'
+            );
+            saveSlots = stackSlotsForByteSize(
+              instruction.sizeOfElementToSave,
+              'DESTRUCT saved value'
+            );
+          } catch {
+            break;
+          }
+          if (
+            destroySlots > stack.length ||
+            saveOffsetSlots + saveSlots > destroySlots
+          ) break;
+          const regionStart = stack.length - destroySlots;
+          const saved = stack.slice(
+            regionStart + saveOffsetSlots,
+            regionStart + saveOffsetSlots + saveSlots
+          );
+          stack.splice(regionStart, destroySlots, ...saved);
+          continue;
+        }
+
+        if (instruction.code === OP_CPDOWNSP || instruction.code === OP_CPDOWNBP) {
+          let slots: number;
+          try {
+            slots = stackSlotsForByteSize(
+              instruction.size ?? 4,
+              instruction.codeName || 'CPDOWN'
+            );
+          } catch {
+            break;
+          }
+          if (slots > stack.length) break;
+          const source = stack.slice(stack.length - slots);
+
+          if (instruction.code === OP_CPDOWNSP) {
+            const signed = toSignedInt32(instruction.offset);
+            if (signed % 4 !== 0) break;
+            const targetIndex = stack.length + signed / 4;
+            if (targetIndex >= 0 && targetIndex + slots <= stack.length) {
+              for (let field = 0; field < slots; field += 1) {
+                const target = stack[targetIndex + field];
+                if (target.declaredType !== undefined) {
+                  record(source[field], target.declaredType);
+                }
+                target.origins = new Set(source[field].origins);
+              }
+            }
+          } else {
+            const startOffset = toSignedInt32(instruction.offset);
+            for (let field = 0; field < slots; field += 1) {
+              const global = this.globalInits.find(
+                init => toSignedInt32(init.offset) === startOffset + field * 4
+              );
+              if (global) record(source[field], global.dataType);
+            }
+          }
+          continue;
+        }
+
+        if (instruction.code === OP_JSR) {
+          const target = instruction.offset === undefined
+            ? undefined
+            : this.functions.get(
+                instruction.address + toSignedInt32(instruction.offset)
+              );
+          if (!target) break;
+          for (const parameter of target.parameters) {
+            consume(
+              parameter.dataType,
+              parameter.stackSlots ?? stackSlotsForDataType(parameter.dataType)
+            );
+          }
+          continue;
+        }
+
+        const delta = this.parameterAnalysisStackDelta(instruction);
+        if (delta === null) break;
+        if (delta < 0) pop(-delta);
+        else if (delta > 0) push(unknown(), delta);
+      }
+    }
+
+    return parameters.map((parameter, index) => {
+      const observed = evidence.get(parameter.offset);
+      const dataType = observed?.size === 1 ? Array.from(observed)[0] : parameter.dataType;
+      const fieldEvidence = structureEvidence.get(parameter.offset);
+      const structureFieldTypes = dataType === NWScriptDataType.STRUCTURE
+        ? Array.from(
+            { length: parameter.stackSlots ?? parameter.structureFieldTypes?.length ?? 1 },
+            (_, field) => {
+              const types = fieldEvidence?.get(field);
+              return types?.size === 1
+                ? Array.from(types)[0]
+                : parameter.structureFieldTypes?.[field] ?? NWScriptDataType.INTEGER;
+            }
+          )
+        : undefined;
+      return {
+        ...parameter,
+        dataType,
+        structureFieldTypes,
+        name: `${this.getTypePrefix(dataType)}Param${index + 1}`,
+      };
+    });
+  }
+
+  /**
+   * Propagate formal types through user-function calls after every direct JSR target has an
+   * initial signature. NCS scalar frame copies are untyped, so a wrapper that only forwards an
+   * object/string/engine value cannot be typed correctly in a single address-order pass.
+   */
+  private refineFunctionParameterTypesFixedPoint(): void {
+    const functions = Array.from(this.functions.values());
+    const maxPasses = Math.max(1, functions.length);
+    for (let pass = 0; pass < maxPasses; pass += 1) {
+      let changed = false;
+      for (const func of functions) {
+        if (func.parameters.length === 0) continue;
+        const refined = this.refineParameterTypesFromBody(
+          this.refineParameterTypesFromCallSites(
+            func.parameters,
+            func.entryBlock.startInstruction.address
+          ),
+          func.entryBlock,
+          func.bodyBlocks
+        );
+        if (refined.some((parameter, index) =>
+          parameter.dataType !== func.parameters[index]?.dataType ||
+          JSON.stringify(parameter.structureFieldTypes ?? []) !==
+            JSON.stringify(func.parameters[index]?.structureFieldTypes ?? [])
+        )) {
+          func.parameters = refined;
+          if (!func.isMain) {
+            func.returnType = this.analyzeReturnType(
+              func.entryBlock.startInstruction.address,
+              func.bodyBlocks,
+              func.parameters
+            );
+            func.returnStructureFieldTypes = this.returnStructureFieldsByEntry.get(
+              func.entryBlock.startInstruction.address
+            );
+            func.returnStackSlots = func.returnStructureFieldTypes?.length;
+          }
+          changed = true;
+        }
+      }
+      if (!changed) break;
+    }
+  }
+
+  private parameterAnalysisStackDelta(instruction: NWScriptInstruction): number | null {
+    if (instruction.code !== OP_JSR || instruction.offset === undefined) {
+      return instructionForwardStackSlotDelta(instruction);
+    }
+    const callee = this.functions.get(
+      instruction.address + toSignedInt32(instruction.offset)
+    );
+    return callee
+      ? -(nwscriptParametersTotalBytes(callee.parameters) / 4)
+      : null;
+  }
+
+  /**
    * CPTOPSP-operand inference can pick up locals/temps (e.g. -8) ahead of the real lone int param (-4).
-   * When call sites push {@code minSlots} words, keep the {@code minSlots} operands closest to zero (least negative),
-   * then renumber most-negative-first as intParam1, …
+   * When call sites push {@code minSlots} words, keep operands closest to zero and preserve
+   * first-formal-first (least-negative-first) ordering.
    */
   private narrowCptopspParamsToCallArity(
     params: NWScriptFunctionParameter[],
@@ -974,12 +1338,22 @@ export class NWScriptFunctionAnalyzer {
   ): NWScriptFunctionParameter[] {
     const bpParams = params.filter((p) => !p.resolvedViaSpOperand);
     const spParams = params.filter((p) => p.resolvedViaSpOperand);
-    if (minSlots < 1 || spParams.length <= minSlots) {
+    const bpSlots = this.parameterStackSlots(bpParams);
+    const availableSpSlots = Math.max(0, minSlots - bpSlots);
+    if (availableSpSlots < 1 || this.parameterStackSlots(spParams) <= availableSpSlots) {
       return params;
     }
-    const asc = [...spParams].sort((a, b) => a.offset - b.offset);
-    const picked = asc.slice(-minSlots);
-    picked.sort((a, b) => a.offset - b.offset);
+    const nearestFirst = [...spParams].sort((a, b) => b.offset - a.offset);
+    const picked: NWScriptFunctionParameter[] = [];
+    let pickedSlots = 0;
+    for (const parameter of nearestFirst) {
+      const width = nwscriptParametersTotalBytes([parameter]) / 4;
+      if (pickedSlots + width > availableSpSlots) continue;
+      picked.push(parameter);
+      pickedSlots += width;
+      if (pickedSlots === availableSpSlots) break;
+    }
+    picked.sort((a, b) => b.offset - a.offset);
     const renumbered = picked.map((p, i) => {
       const typePrefix = this.getTypePrefix(p.dataType);
       return {
@@ -987,103 +1361,86 @@ export class NWScriptFunctionAnalyzer {
         name: `${typePrefix}Param${i + 1}`,
       };
     });
-    return [...bpParams, ...renumbered];
+    return [...bpParams, ...renumbered].sort((a, b) => b.offset - a.offset);
   }
 
-  private fallbackCptopspParamsFromEntryBlock(
-    entryBlock: NWScriptBasicBlock,
-    bodyBlocks: NWScriptBasicBlock[],
-    maxParams: number
-  ): NWScriptFunctionParameter[] {
-    const scanOrder: NWScriptBasicBlock[] = [entryBlock];
-    for (const b of bodyBlocks) {
-      if (b.startInstruction.address !== entryBlock.startInstruction.address) {
-        scanOrder.push(b);
-      }
-    }
-    const distinct: number[] = [];
-    const seen = new Set<number>();
-    outer: for (const block of scanOrder) {
-      for (const instruction of block.instructions) {
-        if (instruction.code !== OP_CPTOPSP || instruction.offset === undefined) {
-          continue;
-        }
-        const signed = instruction.offset > 0x7fffffff ? instruction.offset - 0x100000000 : instruction.offset;
-        if (signed >= 0 || seen.has(signed)) {
-          continue;
-        }
-        seen.add(signed);
-        distinct.push(signed);
-        if (distinct.length >= maxParams * 8) {
-          break outer;
-        }
-      }
-    }
-    distinct.sort((a, b) => a - b);
-    const take = distinct.slice(0, maxParams);
-    return take.map((off, i) => {
-      let dataType = NWScriptDataType.INTEGER;
-      for (const block of scanOrder) {
-        for (const instruction of block.instructions) {
-          if (
-            instruction.code === OP_CPTOPSP &&
-            instruction.offset !== undefined &&
-            (instruction.offset > 0x7fffffff ? instruction.offset - 0x100000000 : instruction.offset) === off
-          ) {
-            if (instruction.type === 4) {
-              dataType = NWScriptDataType.FLOAT;
-            } else if (instruction.type === 5) {
-              dataType = NWScriptDataType.STRING;
-            } else if (instruction.type === 6) {
-              dataType = NWScriptDataType.OBJECT;
-            }
-            break;
-          }
-        }
-      }
-      const typePrefix = this.getTypePrefix(dataType);
-      return {
-        name: `${typePrefix}Param${i + 1}`,
-        dataType,
-        offset: off,
-        resolvedViaSpOperand: true,
-      };
-    });
+  private parameterStackSlots(parameters: NWScriptFunctionParameter[]): number {
+    return nwscriptParametersTotalBytes(parameters) / 4;
   }
 
   /**
-   * Many void helpers read int/float/etc. arguments only via CPTOPSP (never CPTOPBP). Infer distinct
-   * negative CPTOPSP operands ordered most-negative-first as formal parameters (matches typical frame layout).
+   * Infer SP-based formals using frame-relative positions, not raw CPTOPSP operands. Raw operands
+   * change as temporaries are pushed, so two different parameters can legitimately use the same
+   * encoded offset. Positions at or above entry SP are locals/temporaries and are excluded.
    */
-  private inferParametersFromCptopspOperands(bodyBlocks: NWScriptBasicBlock[]): NWScriptFunctionParameter[] {
-    const tally = new Map<number, { dataType: NWScriptDataType; count: number }>();
-    for (const block of bodyBlocks) {
+  private inferParametersFromCptopspOperands(
+    entryBlock: NWScriptBasicBlock,
+    bodyBlocks: NWScriptBasicBlock[]
+  ): NWScriptFunctionParameter[] {
+    const tally = new Map<
+      number,
+      { dataType: NWScriptDataType; count: number; stackSlots: number }
+    >();
+    const bodySet = new Set(bodyBlocks);
+    const entryDeltas = new Map<NWScriptBasicBlock, number | null>([[entryBlock, 0]]);
+    const queue: NWScriptBasicBlock[] = [entryBlock];
+
+    while (queue.length > 0) {
+      const block = queue.shift()!;
+      const entryDelta = entryDeltas.get(block);
+      if (entryDelta === undefined || entryDelta === null) continue;
+      let deltaSlots = entryDelta;
+      let exitKnown = true;
+
       for (const instruction of block.instructions) {
-        if (instruction.code !== OP_CPTOPSP || instruction.offset === undefined) {
-          continue;
-        }
-        const signed = instruction.offset > 0x7fffffff ? instruction.offset - 0x100000000 : instruction.offset;
-        if (signed >= 0) {
-          continue;
-        }
+        if (instruction.code === OP_CPTOPSP && instruction.offset !== undefined) {
+          const signed = instruction.offset > 0x7fffffff
+            ? instruction.offset - 0x100000000
+            : instruction.offset;
+          const frameOffset = signed + deltaSlots * 4;
+          if (frameOffset < 0) {
+            const stackSlots = stackSlotsForByteSize(
+              instruction.size ?? 4,
+              instruction.codeName || 'CPTOPSP'
+            );
+            const dataType = stackSlots === 3
+              ? NWScriptDataType.VECTOR
+              : stackSlots > 1
+                ? NWScriptDataType.STRUCTURE
+                : NWScriptDataType.INTEGER;
 
-        let dataType = NWScriptDataType.INTEGER;
-        if (instruction.type === 4) {
-          dataType = NWScriptDataType.FLOAT;
-        } else if (instruction.type === 5) {
-          dataType = NWScriptDataType.STRING;
-        } else if (instruction.type === 6) {
-          dataType = NWScriptDataType.OBJECT;
-        }
-
-        const existing = tally.get(signed);
-        if (existing) {
-          existing.count++;
-          if (dataType !== NWScriptDataType.INTEGER && existing.dataType === NWScriptDataType.INTEGER) {
-            existing.dataType = dataType;
+            const existing = tally.get(frameOffset);
+            if (existing) {
+              existing.count += 1;
+              if (dataType !== NWScriptDataType.INTEGER && existing.dataType === NWScriptDataType.INTEGER) {
+                existing.dataType = dataType;
+              }
+              existing.stackSlots = Math.max(existing.stackSlots, stackSlots);
+            } else {
+              tally.set(frameOffset, { dataType, count: 1, stackSlots });
+            }
           }
-        } else {
-          tally.set(signed, { dataType, count: 1 });
+        }
+
+        const instructionDelta = instructionForwardStackSlotDelta(instruction);
+        if (instructionDelta === null) {
+          exitKnown = false;
+          break;
+        }
+        deltaSlots += instructionDelta;
+      }
+
+      if (!exitKnown) continue;
+      for (const successor of this.cfg.getIntraProceduralSuccessors(block)) {
+        if (!bodySet.has(successor)) continue;
+        const known = entryDeltas.get(successor);
+        if (known === undefined) {
+          entryDeltas.set(successor, deltaSlots);
+          queue.push(successor);
+        } else if (known !== null && known !== deltaSlots) {
+          // Conflicting depths mean this region is malformed or outside what static inference can prove.
+          entryDeltas.set(successor, null);
+          queue.push(successor);
         }
       }
     }
@@ -1092,7 +1449,7 @@ export class NWScriptFunctionAnalyzer {
       return [];
     }
 
-    const sortedOffsets = [...tally.keys()].sort((a, b) => a - b);
+    const sortedOffsets = [...tally.keys()].sort((a, b) => b - a);
     return sortedOffsets.map((off, i) => {
       const info = tally.get(off)!;
       const typePrefix = this.getTypePrefix(info.dataType);
@@ -1100,6 +1457,10 @@ export class NWScriptFunctionAnalyzer {
         name: `${typePrefix}Param${i + 1}`,
         dataType: info.dataType,
         offset: off,
+        stackSlots: info.stackSlots,
+        structureFieldTypes: info.dataType === NWScriptDataType.STRUCTURE
+          ? new Array<NWScriptDataType>(info.stackSlots).fill(NWScriptDataType.INTEGER)
+          : undefined,
         resolvedViaSpOperand: true,
       };
     });
@@ -1114,125 +1475,83 @@ export class NWScriptFunctionAnalyzer {
       case NWScriptDataType.FLOAT: return 'float';
       case NWScriptDataType.STRING: return 'string';
       case NWScriptDataType.OBJECT: return 'object';
+      case NWScriptDataType.VECTOR: return 'vector';
+      case NWScriptDataType.EFFECT: return 'effect';
+      case NWScriptDataType.EVENT: return 'event';
+      case NWScriptDataType.LOCATION: return 'location';
+      case NWScriptDataType.TALENT: return 'talent';
+      case NWScriptDataType.STRUCTURE: return 'struct';
       default: return 'int';
     }
   }
 
-  /**
-   * Analyze return type for a **subroutine** (JSR target), not main/StartingConditional.
-   *
-   * Caller RSADD-before-JSR is necessary but not sufficient: a preceding local
-   * {@code int x;} is also RSADD immediately before a void call. Require a
-   * callee return-slot write (CPDOWNSP → MOVSP → RETN) before trusting caller RSADD.
-   */
-  private analyzeReturnType(entryBlock: NWScriptBasicBlock, bodyBlocks: NWScriptBasicBlock[]): NWScriptDataType {
-    if (!this.calleeHasReturnValueWrite(bodyBlocks)) {
-      return NWScriptDataType.VOID;
-    }
-
-    const entryAddress = entryBlock.startInstruction?.address;
-    if (entryAddress === undefined) {
-      return NWScriptDataType.INTEGER;
-    }
-
-    const votes = new Map<NWScriptDataType, number>();
-    for (const instruction of this.cfg.script.instructions.values()) {
+  /** Infer a user routine return only when callee writes and every caller reservation agree. */
+  private analyzeReturnType(
+    entryAddress: number,
+    bodyBlocks: NWScriptBasicBlock[],
+    parameters: NWScriptFunctionParameter[]
+  ): NWScriptDataType {
+    const returnBytes = this.inferReturnWriteBytes(bodyBlocks);
+    if (returnBytes === null) return NWScriptDataType.VOID;
+    const parameterSlots = nwscriptParametersTotalBytes(parameters) / 4;
+    const callerAbi = inferSubroutineCallAbiFromCallSites(
+      this.cfg.script,
+      entryAddress,
+      returnBytes
+    );
+    if (callerAbi?.parameterSlots === parameterSlots) {
       if (
-        instruction.code !== OP_JSR ||
-        instruction.offset === undefined ||
-        instruction.address + instruction.offset !== entryAddress
+        callerAbi.returnType === NWScriptDataType.STRUCTURE &&
+        callerAbi.returnStructureFieldTypes
+      ) {
+        this.returnStructureFieldsByEntry.set(
+          entryAddress,
+          callerAbi.returnStructureFieldTypes
+        );
+      } else {
+        this.returnStructureFieldsByEntry.delete(entryAddress);
+      }
+      return callerAbi.returnType;
+    }
+    const returnType = inferSubroutineReturnTypeFromCallSites(
+      this.cfg.script,
+      entryAddress,
+      parameterSlots,
+      returnBytes
+    );
+    this.returnStructureFieldsByEntry.delete(entryAddress);
+    return returnType;
+  }
+
+  private inferReturnWriteBytes(bodyBlocks: NWScriptBasicBlock[]): number | null {
+    const returnWriteSizes = new Set<number>();
+    for (const block of bodyBlocks) {
+      for (let index = 0; index < block.instructions.length; index += 1) {
+        const instruction = block.instructions[index];
+        if (
+          instruction.code === OP_CPDOWNSP &&
+          this.isLikelyReturnWrite(block, index)
+        ) {
+          returnWriteSizes.add(instruction.size ?? 4);
+        }
+      }
+    }
+    return returnWriteSizes.size === 1 ? Array.from(returnWriteSizes)[0] : null;
+  }
+
+  private isLikelyReturnWrite(block: NWScriptBasicBlock, cpdownspIndex: number): boolean {
+    for (let index = cpdownspIndex + 1; index < block.instructions.length; index += 1) {
+      const instruction = block.instructions[index];
+      if (
+        instruction.code === OP_MOVSP ||
+        instruction.code === OP_RESTOREBP ||
+        instruction.code === OP_NOP
       ) {
         continue;
       }
-      const rsadd = this.findCallerReturnRsadd(instruction);
-      if (!rsadd) {
-        continue;
-      }
-      const dt = this.rsaddTypeToDataType(rsadd.type);
-      if (dt === NWScriptDataType.VOID) {
-        continue;
-      }
-      votes.set(dt, (votes.get(dt) || 0) + 1);
-    }
-
-    if (votes.size === 0) {
-      // Callee epilogue can look like a return write (last assign + MOVSP + RETN).
-      // Without a caller RSADD vote, keep VOID.
-      return NWScriptDataType.VOID;
-    }
-
-    let best: NWScriptDataType = NWScriptDataType.INTEGER;
-    let bestCount = 0;
-    for (const [dt, count] of votes) {
-      if (count > bestCount) {
-        best = dt;
-        bestCount = count;
-      }
-    }
-    return best;
-  }
-
-  /** True if any body block has CPDOWNSP → MOVSP … → RETN/JMP (user return value). */
-  private calleeHasReturnValueWrite(bodyBlocks: NWScriptBasicBlock[]): boolean {
-    for (const block of bodyBlocks) {
-      for (let i = 0; i < block.instructions.length; i++) {
-        const instr = block.instructions[i];
-        if (instr.code !== OP_CPDOWNSP) continue;
-        if (i + 1 >= block.instructions.length) continue;
-        if (block.instructions[i + 1].code !== OP_MOVSP) continue;
-        const limit = Math.min(i + 8, block.instructions.length);
-        for (let j = i + 2; j < limit; j++) {
-          const next = block.instructions[j];
-          if (next.code === OP_RETN || next.code === OP_JMP) return true;
-          if (next.code === OP_JSR || next.code === OP_JZ || next.code === OP_JNZ) break;
-        }
-      }
+      return instruction.code === OP_JMP || instruction.code === OP_RETN;
     }
     return false;
-  }
-
-  /** Map RSADD unary type byte to {@link NWScriptDataType}. */
-  private rsaddTypeToDataType(rsaddType: number): NWScriptDataType {
-    switch (rsaddType) {
-      case 3: return NWScriptDataType.INTEGER;
-      case 4: return NWScriptDataType.FLOAT;
-      case 5: return NWScriptDataType.STRING;
-      case 6: return NWScriptDataType.OBJECT;
-      default: return NWScriptDataType.VOID;
-    }
-  }
-
-  /**
-   * Walk backward from a JSR for the caller RSADD that reserved return space.
-   * Rejects RSADD followed by CPDOWNSP before the JSR (local init pattern).
-   */
-  private findCallerReturnRsadd(jsr: NWScriptInstruction): NWScriptInstruction | null {
-    let current: NWScriptInstruction | null = jsr.prevInstr;
-    const between: NWScriptInstruction[] = [];
-    let steps = 0;
-    while (current && steps < 64) {
-      if (current.code === OP_RSADD) {
-        for (const instr of between) {
-          if (instr.code === OP_CPDOWNSP || instr.code === OP_CPDOWNBP) {
-            return null;
-          }
-        }
-        return current;
-      }
-      if (
-        current.code === OP_JMP ||
-        current.code === OP_JZ ||
-        current.code === OP_JNZ ||
-        current.code === OP_RETN ||
-        current.code === OP_JSR
-      ) {
-        break;
-      }
-      between.push(current);
-      current = current.prevInstr;
-      steps++;
-    }
-    return null;
   }
 
   /**
@@ -1283,5 +1602,3 @@ export class NWScriptFunctionAnalyzer {
     return this.functions.get(entryAddress) || null;
   }
 }
-
-

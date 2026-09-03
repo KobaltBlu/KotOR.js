@@ -6,7 +6,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: $bg-overlay-dark;
+  background-color: var(--forge-bg-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -16,8 +16,8 @@
 }
 
 .tlk-search-modal {
-  background-color: $bg-secondary;
-  border: $border-width solid $border-primary;
+  background-color: var(--forge-bg-elevated);
+  border: $border-width solid var(--forge-border);
   border-radius: $border-radius-large;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
   width: 90%;
@@ -33,13 +33,13 @@
     justify-content: space-between;
     align-items: center;
     padding: $spacing-lg;
-    border-bottom: $border-width solid $border-primary;
-    background-color: $bg-tertiary;
+    border-bottom: $border-width solid var(--forge-border);
+    background-color: var(--forge-bg-panel);
     border-radius: $border-radius-large $border-radius-large 0 0;
 
     h3 {
       margin: 0;
-      color: $text-primary;
+      color: var(--forge-text);
       font-size: $font-size-large;
       font-weight: bold;
     }
@@ -47,7 +47,7 @@
     .tlk-search-modal-close {
       background: none;
       border: none;
-      color: $text-primary;
+      color: var(--forge-text);
       font-size: 28px;
       cursor: pointer;
       padding: 0;
@@ -57,7 +57,7 @@
       transition: color $transition-fast ease;
 
       &:hover {
-        color: $error;
+        color: var(--forge-danger);
       }
     }
   }
@@ -77,17 +77,17 @@
       .tlk-search-input {
         flex: 1;
         padding: $spacing-md;
-        border: $border-width solid $form-border;
+        border: $border-width solid var(--forge-border);
         border-radius: $border-radius;
-        background-color: $form-bg;
-        color: $text-primary;
+        background-color: var(--forge-bg-input);
+        color: var(--forge-text);
         font-size: $font-size-base;
         @include transition-form;
 
         &:focus {
           outline: none;
-          border-color: $form-border-focus;
-          box-shadow: 0 0 0 3px rgba($form-border-focus, 0.1);
+          border-color: var(--forge-accent);
+          box-shadow: 0 0 0 3px color-mix(in srgb, var(--forge-accent) 10%, transparent);
         }
 
         &::placeholder {
@@ -98,8 +98,8 @@
       .tlk-search-button {
         padding: $spacing-md $spacing-xl;
         cursor: pointer;
-        background-color: $primary-blue;
-        color: $text-white;
+        background-color: var(--forge-accent);
+        color: var(--forge-text-bright);
         border: none;
         border-radius: $border-radius;
         font-size: $font-size-base;
@@ -108,16 +108,17 @@
         white-space: nowrap;
 
         &:hover:not(:disabled) {
-          background-color: $primary-blue-dark;
+          background-color: var(--forge-accent-hover);
         }
 
         &:active:not(:disabled) {
-          background-color: $primary-blue-darker;
+          background-color: var(--forge-accent);
         }
 
         &:disabled {
-          background-color: $disabled-bg;
-          border: $border-width solid $disabled-border;
+          color: var(--forge-text-disabled);
+          background-color: var(--forge-bg-elevated);
+          border: $border-width solid var(--forge-border);
           cursor: not-allowed;
           opacity: 0.6;
         }
@@ -126,14 +127,14 @@
 
     .tlk-current-selection {
       padding: $spacing-md;
-      background-color: $bg-tertiary;
-      border: $border-width solid $border-accent;
+      background-color: var(--forge-bg-panel);
+      border: $border-width solid var(--forge-accent);
       border-radius: $border-radius;
-      color: $text-primary;
+      color: var(--forge-text);
       font-size: $font-size-small;
 
       strong {
-        color: $primary-blue-lighter;
+        color: var(--forge-accent-hover);
       }
     }
 
@@ -142,9 +143,9 @@
       display: flex;
       flex-direction: column;
       min-height: 300px;
-      border: $border-width solid $border-primary;
+      border: $border-width solid var(--forge-border);
       border-radius: $border-radius;
-      background-color: $bg-tertiary;
+      background-color: var(--forge-bg-panel);
 
       .tlk-search-loading {
         display: flex;
@@ -152,13 +153,13 @@
         align-items: center;
         justify-content: center;
         padding: $spacing-xxl;
-        color: $text-tertiary;
+        color: var(--forge-text-muted);
 
         .tlk-search-spinner {
           width: 40px;
           height: 40px;
-          border: 3px solid $border-primary;
-          border-top-color: $primary-blue;
+          border: 3px solid var(--forge-border);
+          border-top-color: var(--forge-accent);
           border-radius: 50%;
           animation: spin 0.8s linear infinite;
           margin-bottom: $spacing-lg;
@@ -177,33 +178,33 @@
         align-items: center;
         justify-content: center;
         padding: $spacing-xxl;
-        color: $text-tertiary;
+        color: var(--forge-text-muted);
         text-align: center;
 
         i {
           font-size: 48px;
           margin-bottom: $spacing-lg;
-          color: $text-quaternary;
+          color: var(--forge-text-disabled);
         }
 
         p {
           margin: 0 0 $spacing-sm 0;
           font-size: $font-size-base;
-          color: $text-primary;
+          color: var(--forge-text);
         }
 
         small {
           font-size: $font-size-small;
-          color: $text-tertiary;
+          color: var(--forge-text-muted);
         }
       }
 
       .tlk-search-results-header {
         padding: $spacing-md;
-        background-color: $bg-quaternary;
-        border-bottom: $border-width solid $border-primary;
+        background-color: var(--forge-bg-active);
+        border-bottom: $border-width solid var(--forge-border);
         font-size: $font-size-small;
-        color: $text-primary;
+        color: var(--forge-text);
         font-weight: bold;
       }
 
@@ -214,7 +215,7 @@
         .tlk-search-result-item {
           padding: $spacing-md $spacing-lg;
           cursor: pointer;
-          border-bottom: $border-width solid $border-secondary;
+          border-bottom: $border-width solid var(--forge-border-subtle);
           transition: background-color $transition-fast ease;
           display: flex;
           gap: $spacing-lg;
@@ -224,21 +225,21 @@
           }
 
           &:hover {
-            background-color: $hover-bg;
+            background-color: var(--forge-bg-hover);
           }
 
           &:active {
-            background-color: $active-bg;
+            background-color: var(--forge-bg-active);
           }
 
           &.active {
-            background-color: $hover-bg-light;
-            border-left: 3px solid $primary-blue;
+            background-color: var(--forge-accent-muted);
+            border-left: 3px solid var(--forge-accent);
             padding-left: calc(#{$spacing-lg} - 3px);
           }
 
           .tlk-result-index {
-            color: $primary-blue-lighter;
+            color: var(--forge-accent-hover);
             font-weight: bold;
             font-size: $font-size-base;
             min-width: 60px;
@@ -246,7 +247,7 @@
           }
 
           .tlk-result-text {
-            color: $text-primary;
+            color: var(--forge-text);
             font-size: $font-size-base;
             flex: 1;
             word-break: break-word;
@@ -258,8 +259,8 @@
 
   .tlk-search-modal-footer {
     padding: $spacing-lg;
-    border-top: $border-width solid $border-primary;
-    background-color: $bg-tertiary;
+    border-top: $border-width solid var(--forge-border);
+    background-color: var(--forge-bg-panel);
     display: flex;
     justify-content: flex-end;
     border-radius: 0 0 $border-radius-large $border-radius-large;
@@ -267,20 +268,20 @@
     .tlk-cancel-button {
       padding: $spacing-md $spacing-xl;
       cursor: pointer;
-      background-color: $bg-quinary;
-      color: $text-primary;
-      border: $border-width solid $border-primary;
+      background-color: var(--forge-bg-active);
+      color: var(--forge-text);
+      border: $border-width solid var(--forge-border);
       border-radius: $border-radius;
       font-size: $font-size-base;
       transition: background-color $transition-fast ease, border-color $transition-fast ease;
 
       &:hover {
-        background-color: $hover-bg;
-        border-color: $border-quaternary;
+        background-color: var(--forge-bg-hover);
+        border-color: var(--forge-border);
       }
 
       &:active {
-        background-color: $active-bg;
+        background-color: var(--forge-bg-active);
       }
     }
   }
@@ -319,15 +320,15 @@
   }
 
   &::-webkit-scrollbar-track {
-    background: $scrollbar-track;
+    background: var(--forge-bg-elevated);
   }
 
   &::-webkit-scrollbar-thumb {
-    background: $scrollbar-thumb;
+    background: var(--forge-bg-active);
     border-radius: 4px;
 
     &:hover {
-      background: $scrollbar-thumb-inactive;
+      background: var(--forge-bg-active)-inactive;
     }
   }
 }

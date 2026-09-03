@@ -1,0 +1,717 @@
+/**
+ * Per-editor Forge settings bags under Forge.editors.*.
+ *
+ * @file forgeEditorsSettings.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
+
+import { ConfigClient } from "@/utility/ConfigClient";
+import {
+  asSettingsRecord,
+  createForgeSettingsBag,
+  sanitizeBoolean,
+  sanitizeEnum,
+  sanitizeInteger,
+  sanitizeNumber,
+} from "@/apps/forge/settings/forgeSettingsStore";
+import type { TabAudioVisualId } from "@/apps/forge/components/tabs/tab-audio-player/tabAudioVisualizations";
+import { TAB_AUDIO_VISUAL_IDS } from "@/apps/forge/components/tabs/tab-audio-player/tabAudioVisualizations";
+import {
+  DEFAULT_MODULE_WORKSPACE,
+  sanitizeModuleWorkspace,
+  type ModuleWorkspaceState,
+} from "@/apps/forge/module-editor/workspace/ModuleWorkspaceState";
+
+export type ViewportLayerKey =
+  | "lights"
+  | "emitters"
+  | "walkmeshes"
+  | "trimesh"
+  | "skin"
+  | "dangly"
+  | "saber"
+  | "childModels"
+  | "layout"
+  | "ground";
+
+export type ViewportLayerVisibility = Record<ViewportLayerKey, boolean>;
+
+export const DEFAULT_VIEWPORT_LAYERS: ViewportLayerVisibility = {
+  lights: true,
+  emitters: true,
+  walkmeshes: false,
+  trimesh: true,
+  skin: true,
+  dangly: true,
+  saber: true,
+  childModels: true,
+  layout: true,
+  ground: true,
+};
+
+export const LIP_EDITOR_FALLBACK_HEAD = "p_bastilah";
+
+export type HexOffsetDisplay = "hex" | "dec";
+export type HexBytesPerRow = 8 | 16 | 32;
+export type TwoDACellWrap = "clip" | "wrap";
+export type DlgGraphLayout = "horizontal" | "vertical";
+export type ImageFilterMode = "nearest" | "linear";
+export type ImageDefaultZoom = "fit" | "100";
+
+export interface ForgeHexSettings {
+  offsetDisplay: HexOffsetDisplay;
+  bytesPerRow: HexBytesPerRow;
+  showAscii: boolean;
+  uppercase: boolean;
+}
+
+export interface ForgeGffSettings {
+  showType: boolean;
+  showPreview: boolean;
+  previewMaxLength: number;
+}
+
+export type TwoDACsvDelimiter = "," | "\t" | ";";
+
+export interface ForgeTwoDASettings {
+  wrapCells: boolean;
+  showRowLabel: boolean;
+  csvDelimiter: TwoDACsvDelimiter;
+  csvHasHeader: boolean;
+}
+
+export interface ForgeTlkSettings {
+  searchResultCap: number;
+  autoplayVo: boolean;
+}
+
+export interface ForgeSsfSettings {
+  autoplayOnSelect: boolean;
+}
+
+export interface ForgeViewportSettings {
+  layers: ViewportLayerVisibility;
+  windPower: 0 | 1 | 2;
+  wokWireframe: boolean;
+  wokGrid: boolean;
+}
+
+export type ModuleHelperType =
+  | "creature"
+  | "door"
+  | "encounter"
+  | "placeable"
+  | "merchant"
+  | "sound"
+  | "trigger"
+  | "waypoint";
+
+export type ForgeModuleHelperVisibility = Record<ModuleHelperType, boolean>;
+
+export interface ForgeModuleSettings {
+  helpers: ForgeModuleHelperVisibility;
+  /** Enable Unity/Unreal-inspired workbench chrome (hierarchy / assets / problems). */
+  workbenchEnabled: boolean;
+  /** Prefer transactional command history; fall back to full snapshots when false. */
+  commandHistoryEnabled: boolean;
+  /** Autosave recovery snapshots into .forge/recovery. */
+  autosaveEnabled: boolean;
+  /** Autosave interval in seconds. */
+  autosaveIntervalSec: number;
+  snapPosition: boolean;
+  snapPositionStep: number;
+  snapAngle: boolean;
+  snapAngleStep: number;
+  transformSpace: "local" | "world";
+  showViewportToolbar: boolean;
+  showProblemsPanel: boolean;
+  marqueeSelect: boolean;
+  workspace: ModuleWorkspaceState;
+}
+
+export interface ForgeBlueprintsSettings {
+  show3DPreview: boolean;
+  autoExpandLocString: boolean;
+}
+
+export interface ForgeDlgSettings {
+  graphLayout: DlgGraphLayout;
+}
+
+export interface ForgeLipSettings {
+  head: string;
+  /** Enabled extended Rhubarb shapes, subset of GHX. */
+  extendedShapes: string;
+  includeRestKeys: boolean;
+  /** Minimum mouth-cue duration in milliseconds. */
+  minCueDurationMs: number;
+  /** Web Worker pool size for Rhubarb WASM analysis. */
+  workerCount: number;
+  expandFromDialog: boolean;
+  splitConsonants: boolean;
+  phraseOnsetKeys: boolean;
+  /** Negative values make mouth keys lead the audio. */
+  timeOffsetMs: number;
+  rekeyAfterGapMs: number;
+}
+
+export interface ForgeImageSettings {
+  filter: ImageFilterMode;
+  checkerboard: boolean;
+  defaultZoom: ImageDefaultZoom;
+}
+
+export interface ForgeAudioSettings {
+  volume: number;
+  loop: boolean;
+  visualization: TabAudioVisualId;
+}
+
+export interface ForgeGuiSettings {
+  zoomStep: number;
+  zoomMin: number;
+  zoomMax: number;
+}
+
+export type ErfBrowserViewMode = "details" | "list" | "icons" | "tiles";
+export type ErfBrowserSortKey = "name" | "type" | "size" | "offset" | "resId";
+export type ErfBrowserSortDir = "asc" | "desc";
+
+export const ERF_BROWSER_VIEW_MODES: ErfBrowserViewMode[] = ["details", "list", "icons", "tiles"];
+export const ERF_BROWSER_SORT_KEYS: ErfBrowserSortKey[] = ["name", "type", "size", "offset", "resId"];
+export const ERF_BROWSER_SORT_DIRS: ErfBrowserSortDir[] = ["asc", "desc"];
+
+export interface ForgeArchivesSettings {
+  confirmExtractOverwrite: boolean;
+  defaultView: ErfBrowserViewMode;
+  sortKey: ErfBrowserSortKey;
+  sortDir: ErfBrowserSortDir;
+}
+
+export const DEFAULT_FORGE_HEX_SETTINGS: ForgeHexSettings = {
+  offsetDisplay: "hex",
+  bytesPerRow: 16,
+  showAscii: true,
+  uppercase: true,
+};
+
+export const DEFAULT_FORGE_GFF_SETTINGS: ForgeGffSettings = {
+  showType: true,
+  showPreview: true,
+  previewMaxLength: 48,
+};
+
+export const DEFAULT_FORGE_TWODA_SETTINGS: ForgeTwoDASettings = {
+  wrapCells: false,
+  showRowLabel: true,
+  csvDelimiter: ",",
+  csvHasHeader: true,
+};
+
+export const DEFAULT_FORGE_TLK_SETTINGS: ForgeTlkSettings = {
+  searchResultCap: 500,
+  autoplayVo: false,
+};
+
+export const DEFAULT_FORGE_SSF_SETTINGS: ForgeSsfSettings = {
+  autoplayOnSelect: false,
+};
+
+export const DEFAULT_FORGE_VIEWPORT_SETTINGS: ForgeViewportSettings = {
+  layers: { ...DEFAULT_VIEWPORT_LAYERS },
+  windPower: 1,
+  wokWireframe: true,
+  wokGrid: true,
+};
+
+export const MODULE_HELPER_TYPES: ModuleHelperType[] = [
+  "creature",
+  "door",
+  "encounter",
+  "placeable",
+  "merchant",
+  "sound",
+  "trigger",
+  "waypoint",
+];
+
+export const DEFAULT_FORGE_MODULE_SETTINGS: ForgeModuleSettings = {
+  helpers: {
+    creature: true,
+    door: true,
+    encounter: true,
+    placeable: true,
+    merchant: true,
+    sound: true,
+    trigger: true,
+    waypoint: true,
+  },
+  workbenchEnabled: true,
+  commandHistoryEnabled: true,
+  autosaveEnabled: true,
+  autosaveIntervalSec: 120,
+  snapPosition: true,
+  snapPositionStep: 0.1,
+  snapAngle: true,
+  snapAngleStep: 5,
+  transformSpace: "world",
+  showViewportToolbar: true,
+  showProblemsPanel: true,
+  marqueeSelect: true,
+  workspace: DEFAULT_MODULE_WORKSPACE,
+};
+
+export const DEFAULT_FORGE_BLUEPRINTS_SETTINGS: ForgeBlueprintsSettings = {
+  show3DPreview: true,
+  autoExpandLocString: false,
+};
+
+export const DEFAULT_FORGE_DLG_SETTINGS: ForgeDlgSettings = {
+  graphLayout: "vertical",
+};
+
+export const DEFAULT_FORGE_LIP_SETTINGS: ForgeLipSettings = {
+  head: LIP_EDITOR_FALLBACK_HEAD,
+  extendedShapes: "GHX",
+  includeRestKeys: false,
+  minCueDurationMs: 0,
+  workerCount: 1,
+  expandFromDialog: true,
+  splitConsonants: true,
+  phraseOnsetKeys: true,
+  timeOffsetMs: -20,
+  rekeyAfterGapMs: 80,
+};
+
+export const DEFAULT_FORGE_IMAGE_SETTINGS: ForgeImageSettings = {
+  filter: "nearest",
+  checkerboard: true,
+  defaultZoom: "100",
+};
+
+export const DEFAULT_FORGE_AUDIO_SETTINGS: ForgeAudioSettings = {
+  volume: 0.25,
+  loop: false,
+  visualization: "spectrum",
+};
+
+export const DEFAULT_FORGE_GUI_SETTINGS: ForgeGuiSettings = {
+  zoomStep: 0.25,
+  zoomMin: 0.1,
+  zoomMax: 5,
+};
+
+export const DEFAULT_FORGE_ARCHIVES_SETTINGS: ForgeArchivesSettings = {
+  confirmExtractOverwrite: true,
+  defaultView: "details",
+  sortKey: "name",
+  sortDir: "asc",
+};
+
+export const DEFAULT_FORGE_EDITORS = {
+  hex: DEFAULT_FORGE_HEX_SETTINGS,
+  gff: DEFAULT_FORGE_GFF_SETTINGS,
+  twoda: DEFAULT_FORGE_TWODA_SETTINGS,
+  tlk: DEFAULT_FORGE_TLK_SETTINGS,
+  ssf: DEFAULT_FORGE_SSF_SETTINGS,
+  viewport: DEFAULT_FORGE_VIEWPORT_SETTINGS,
+  module: DEFAULT_FORGE_MODULE_SETTINGS,
+  blueprints: DEFAULT_FORGE_BLUEPRINTS_SETTINGS,
+  dlg: DEFAULT_FORGE_DLG_SETTINGS,
+  lip: DEFAULT_FORGE_LIP_SETTINGS,
+  image: DEFAULT_FORGE_IMAGE_SETTINGS,
+  audio: DEFAULT_FORGE_AUDIO_SETTINGS,
+  gui: DEFAULT_FORGE_GUI_SETTINGS,
+  archives: DEFAULT_FORGE_ARCHIVES_SETTINGS,
+};
+
+const HEX_OFFSETS: HexOffsetDisplay[] = ["hex", "dec"];
+const HEX_ROWS: HexBytesPerRow[] = [8, 16, 32];
+const LAYER_KEYS: ViewportLayerKey[] = [
+  "lights",
+  "emitters",
+  "walkmeshes",
+  "trimesh",
+  "skin",
+  "dangly",
+  "saber",
+  "childModels",
+  "layout",
+  "ground",
+];
+
+function sanitizeBytesPerRow(value: unknown): HexBytesPerRow {
+  const n = typeof value === "number" ? value : Number(value);
+  return HEX_ROWS.indexOf(n as HexBytesPerRow) !== -1 ? n as HexBytesPerRow : 16;
+}
+
+function sanitizeLayers(value: unknown): ViewportLayerVisibility {
+  const raw = asSettingsRecord(value);
+  const next = { ...DEFAULT_VIEWPORT_LAYERS };
+  for (let i = 0; i < LAYER_KEYS.length; i++) {
+    const key = LAYER_KEYS[i];
+    next[key] = sanitizeBoolean(raw[key], DEFAULT_VIEWPORT_LAYERS[key]);
+  }
+  return next;
+}
+
+function sanitizeWindPower(value: unknown): 0 | 1 | 2 {
+  const n = Math.round(sanitizeNumber(value, 1, 0, 2));
+  if (n === 0 || n === 1 || n === 2) {
+    return n;
+  }
+  return 1;
+}
+
+function sanitizeHelpers(value: unknown): ForgeModuleHelperVisibility {
+  const raw = asSettingsRecord(value);
+  const next = { ...DEFAULT_FORGE_MODULE_SETTINGS.helpers };
+  for (let i = 0; i < MODULE_HELPER_TYPES.length; i++) {
+    const key = MODULE_HELPER_TYPES[i];
+    next[key] = sanitizeBoolean(raw[key], DEFAULT_FORGE_MODULE_SETTINGS.helpers[key]);
+  }
+  return next;
+}
+
+function sanitizeHead(value: unknown): string {
+  if (typeof value !== "string") {
+    return DEFAULT_FORGE_LIP_SETTINGS.head;
+  }
+  const trimmed = value.trim().toLowerCase();
+  return trimmed || DEFAULT_FORGE_LIP_SETTINGS.head;
+}
+
+export function sanitizeHexSettings(value: unknown): ForgeHexSettings {
+  const raw = asSettingsRecord(value);
+  return {
+    offsetDisplay: sanitizeEnum(raw.offsetDisplay, HEX_OFFSETS, DEFAULT_FORGE_HEX_SETTINGS.offsetDisplay),
+    bytesPerRow: sanitizeBytesPerRow(raw.bytesPerRow),
+    showAscii: sanitizeBoolean(raw.showAscii, DEFAULT_FORGE_HEX_SETTINGS.showAscii),
+    uppercase: sanitizeBoolean(raw.uppercase, DEFAULT_FORGE_HEX_SETTINGS.uppercase),
+  };
+}
+
+export function sanitizeGffSettings(value: unknown): ForgeGffSettings {
+  const raw = asSettingsRecord(value);
+  return {
+    showType: sanitizeBoolean(raw.showType, DEFAULT_FORGE_GFF_SETTINGS.showType),
+    showPreview: sanitizeBoolean(raw.showPreview, DEFAULT_FORGE_GFF_SETTINGS.showPreview),
+    previewMaxLength: sanitizeInteger(raw.previewMaxLength, DEFAULT_FORGE_GFF_SETTINGS.previewMaxLength, 8, 200),
+  };
+}
+
+export function sanitizeTwoDASettings(value: unknown): ForgeTwoDASettings {
+  const raw = asSettingsRecord(value);
+  return {
+    wrapCells: sanitizeBoolean(raw.wrapCells, DEFAULT_FORGE_TWODA_SETTINGS.wrapCells),
+    showRowLabel: sanitizeBoolean(raw.showRowLabel, DEFAULT_FORGE_TWODA_SETTINGS.showRowLabel),
+    csvDelimiter: sanitizeEnum(
+      raw.csvDelimiter,
+      [",", "\t", ";"] as const,
+      DEFAULT_FORGE_TWODA_SETTINGS.csvDelimiter,
+    ),
+    csvHasHeader: sanitizeBoolean(raw.csvHasHeader, DEFAULT_FORGE_TWODA_SETTINGS.csvHasHeader),
+  };
+}
+
+export function sanitizeTlkSettings(value: unknown): ForgeTlkSettings {
+  const raw = asSettingsRecord(value);
+  return {
+    searchResultCap: sanitizeInteger(raw.searchResultCap, DEFAULT_FORGE_TLK_SETTINGS.searchResultCap, 50, 5000),
+    autoplayVo: sanitizeBoolean(raw.autoplayVo, DEFAULT_FORGE_TLK_SETTINGS.autoplayVo),
+  };
+}
+
+export function sanitizeSsfSettings(value: unknown): ForgeSsfSettings {
+  const raw = asSettingsRecord(value);
+  return {
+    autoplayOnSelect: sanitizeBoolean(raw.autoplayOnSelect, DEFAULT_FORGE_SSF_SETTINGS.autoplayOnSelect),
+  };
+}
+
+export function sanitizeViewportSettings(value: unknown): ForgeViewportSettings {
+  const raw = asSettingsRecord(value);
+  return {
+    layers: sanitizeLayers(raw.layers),
+    windPower: sanitizeWindPower(raw.windPower),
+    wokWireframe: sanitizeBoolean(raw.wokWireframe, DEFAULT_FORGE_VIEWPORT_SETTINGS.wokWireframe),
+    wokGrid: sanitizeBoolean(raw.wokGrid, DEFAULT_FORGE_VIEWPORT_SETTINGS.wokGrid),
+  };
+}
+
+export function sanitizeModuleSettings(value: unknown): ForgeModuleSettings {
+  const raw = asSettingsRecord(value);
+  return {
+    helpers: sanitizeHelpers(raw.helpers),
+    workbenchEnabled: sanitizeBoolean(raw.workbenchEnabled, DEFAULT_FORGE_MODULE_SETTINGS.workbenchEnabled),
+    commandHistoryEnabled: sanitizeBoolean(
+      raw.commandHistoryEnabled,
+      DEFAULT_FORGE_MODULE_SETTINGS.commandHistoryEnabled,
+    ),
+    autosaveEnabled: sanitizeBoolean(raw.autosaveEnabled, DEFAULT_FORGE_MODULE_SETTINGS.autosaveEnabled),
+    autosaveIntervalSec: sanitizeInteger(
+      raw.autosaveIntervalSec,
+      DEFAULT_FORGE_MODULE_SETTINGS.autosaveIntervalSec,
+      30,
+      3600,
+    ),
+    snapPosition: sanitizeBoolean(raw.snapPosition, DEFAULT_FORGE_MODULE_SETTINGS.snapPosition),
+    snapPositionStep: sanitizeNumber(
+      raw.snapPositionStep,
+      DEFAULT_FORGE_MODULE_SETTINGS.snapPositionStep,
+      0.01,
+      10,
+    ),
+    snapAngle: sanitizeBoolean(raw.snapAngle, DEFAULT_FORGE_MODULE_SETTINGS.snapAngle),
+    snapAngleStep: sanitizeNumber(raw.snapAngleStep, DEFAULT_FORGE_MODULE_SETTINGS.snapAngleStep, 1, 90),
+    transformSpace: sanitizeEnum(
+      raw.transformSpace,
+      ["local", "world"] as const,
+      DEFAULT_FORGE_MODULE_SETTINGS.transformSpace,
+    ),
+    showViewportToolbar: sanitizeBoolean(
+      raw.showViewportToolbar,
+      DEFAULT_FORGE_MODULE_SETTINGS.showViewportToolbar,
+    ),
+    showProblemsPanel: sanitizeBoolean(
+      raw.showProblemsPanel,
+      DEFAULT_FORGE_MODULE_SETTINGS.showProblemsPanel,
+    ),
+    marqueeSelect: sanitizeBoolean(raw.marqueeSelect, DEFAULT_FORGE_MODULE_SETTINGS.marqueeSelect),
+    workspace: sanitizeModuleWorkspace(raw.workspace),
+  };
+}
+
+export function sanitizeBlueprintsSettings(value: unknown): ForgeBlueprintsSettings {
+  const raw = asSettingsRecord(value);
+  return {
+    show3DPreview: sanitizeBoolean(raw.show3DPreview, DEFAULT_FORGE_BLUEPRINTS_SETTINGS.show3DPreview),
+    autoExpandLocString: sanitizeBoolean(
+      raw.autoExpandLocString,
+      DEFAULT_FORGE_BLUEPRINTS_SETTINGS.autoExpandLocString,
+    ),
+  };
+}
+
+export function sanitizeDlgSettings(value: unknown): ForgeDlgSettings {
+  const raw = asSettingsRecord(value);
+  return {
+    graphLayout: sanitizeEnum(raw.graphLayout, ["horizontal", "vertical"] as const, DEFAULT_FORGE_DLG_SETTINGS.graphLayout),
+  };
+}
+
+export function sanitizeLipSettings(value: unknown): ForgeLipSettings {
+  const raw = asSettingsRecord(value);
+  const extendedRaw = String(raw.extendedShapes ?? DEFAULT_FORGE_LIP_SETTINGS.extendedShapes).toUpperCase();
+  const extendedShapes = ["G", "H", "X"].filter((c) => extendedRaw.includes(c)).join("") || "";
+  const cores =
+    typeof navigator !== "undefined" && Number.isFinite(navigator.hardwareConcurrency)
+      ? Math.max(1, navigator.hardwareConcurrency)
+      : 8;
+  return {
+    head: sanitizeHead(raw.head),
+    extendedShapes,
+    includeRestKeys: sanitizeBoolean(raw.includeRestKeys, DEFAULT_FORGE_LIP_SETTINGS.includeRestKeys),
+    minCueDurationMs: sanitizeNumber(raw.minCueDurationMs, DEFAULT_FORGE_LIP_SETTINGS.minCueDurationMs, 0, 500),
+    workerCount: sanitizeNumber(raw.workerCount, DEFAULT_FORGE_LIP_SETTINGS.workerCount, 1, cores),
+    expandFromDialog: sanitizeBoolean(raw.expandFromDialog, DEFAULT_FORGE_LIP_SETTINGS.expandFromDialog),
+    splitConsonants: sanitizeBoolean(raw.splitConsonants, DEFAULT_FORGE_LIP_SETTINGS.splitConsonants),
+    phraseOnsetKeys: sanitizeBoolean(raw.phraseOnsetKeys, DEFAULT_FORGE_LIP_SETTINGS.phraseOnsetKeys),
+    timeOffsetMs: sanitizeNumber(raw.timeOffsetMs, DEFAULT_FORGE_LIP_SETTINGS.timeOffsetMs, -200, 200),
+    rekeyAfterGapMs: sanitizeNumber(raw.rekeyAfterGapMs, DEFAULT_FORGE_LIP_SETTINGS.rekeyAfterGapMs, 0, 500),
+  };
+}
+
+export function sanitizeImageSettings(value: unknown): ForgeImageSettings {
+  const raw = asSettingsRecord(value);
+  return {
+    filter: sanitizeEnum(raw.filter, ["nearest", "linear"] as const, DEFAULT_FORGE_IMAGE_SETTINGS.filter),
+    checkerboard: sanitizeBoolean(raw.checkerboard, DEFAULT_FORGE_IMAGE_SETTINGS.checkerboard),
+    defaultZoom: sanitizeEnum(raw.defaultZoom, ["fit", "100"] as const, DEFAULT_FORGE_IMAGE_SETTINGS.defaultZoom),
+  };
+}
+
+export function sanitizeAudioSettings(value: unknown): ForgeAudioSettings {
+  const raw = asSettingsRecord(value);
+  return {
+    volume: sanitizeNumber(raw.volume, DEFAULT_FORGE_AUDIO_SETTINGS.volume, 0, 1),
+    loop: sanitizeBoolean(raw.loop, DEFAULT_FORGE_AUDIO_SETTINGS.loop),
+    visualization: sanitizeEnum(raw.visualization, TAB_AUDIO_VISUAL_IDS, DEFAULT_FORGE_AUDIO_SETTINGS.visualization),
+  };
+}
+
+export function sanitizeGuiSettings(value: unknown): ForgeGuiSettings {
+  const raw = asSettingsRecord(value);
+  const zoomMin = sanitizeNumber(raw.zoomMin, DEFAULT_FORGE_GUI_SETTINGS.zoomMin, 0.05, 4);
+  const zoomMax = sanitizeNumber(raw.zoomMax, DEFAULT_FORGE_GUI_SETTINGS.zoomMax, zoomMin, 16);
+  return {
+    zoomStep: sanitizeNumber(raw.zoomStep, DEFAULT_FORGE_GUI_SETTINGS.zoomStep, 0.05, 2),
+    zoomMin,
+    zoomMax,
+  };
+}
+
+export function sanitizeArchivesSettings(value: unknown): ForgeArchivesSettings {
+  const raw = asSettingsRecord(value);
+  return {
+    confirmExtractOverwrite: sanitizeBoolean(
+      raw.confirmExtractOverwrite,
+      DEFAULT_FORGE_ARCHIVES_SETTINGS.confirmExtractOverwrite,
+    ),
+    defaultView: sanitizeEnum(
+      raw.defaultView,
+      ERF_BROWSER_VIEW_MODES,
+      DEFAULT_FORGE_ARCHIVES_SETTINGS.defaultView,
+    ),
+    sortKey: sanitizeEnum(
+      raw.sortKey,
+      ERF_BROWSER_SORT_KEYS,
+      DEFAULT_FORGE_ARCHIVES_SETTINGS.sortKey,
+    ),
+    sortDir: sanitizeEnum(
+      raw.sortDir,
+      ERF_BROWSER_SORT_DIRS,
+      DEFAULT_FORGE_ARCHIVES_SETTINGS.sortDir,
+    ),
+  };
+}
+
+export const forgeHexSettings = createForgeSettingsBag({
+  key: "Forge.editors.hex",
+  eventName: "forge-hex-settings-change",
+  defaults: DEFAULT_FORGE_HEX_SETTINGS,
+  sanitize: sanitizeHexSettings,
+});
+
+export const forgeGffSettings = createForgeSettingsBag({
+  key: "Forge.editors.gff",
+  eventName: "forge-gff-settings-change",
+  defaults: DEFAULT_FORGE_GFF_SETTINGS,
+  sanitize: sanitizeGffSettings,
+});
+
+export const forgeTwoDASettings = createForgeSettingsBag({
+  key: "Forge.editors.twoda",
+  eventName: "forge-twoda-settings-change",
+  defaults: DEFAULT_FORGE_TWODA_SETTINGS,
+  sanitize: sanitizeTwoDASettings,
+});
+
+export const forgeTlkSettings = createForgeSettingsBag({
+  key: "Forge.editors.tlk",
+  eventName: "forge-tlk-settings-change",
+  defaults: DEFAULT_FORGE_TLK_SETTINGS,
+  sanitize: sanitizeTlkSettings,
+});
+
+export const forgeSsfSettings = createForgeSettingsBag({
+  key: "Forge.editors.ssf",
+  eventName: "forge-ssf-settings-change",
+  defaults: DEFAULT_FORGE_SSF_SETTINGS,
+  sanitize: sanitizeSsfSettings,
+});
+
+export const forgeViewportSettings = createForgeSettingsBag({
+  key: "Forge.editors.viewport",
+  eventName: "forge-viewport-settings-change",
+  defaults: DEFAULT_FORGE_VIEWPORT_SETTINGS,
+  sanitize: sanitizeViewportSettings,
+});
+
+export const forgeModuleSettings = createForgeSettingsBag({
+  key: "Forge.editors.module",
+  eventName: "forge-module-settings-change",
+  defaults: DEFAULT_FORGE_MODULE_SETTINGS,
+  sanitize: sanitizeModuleSettings,
+});
+
+export const forgeBlueprintsSettings = createForgeSettingsBag({
+  key: "Forge.editors.blueprints",
+  eventName: "forge-blueprints-settings-change",
+  defaults: DEFAULT_FORGE_BLUEPRINTS_SETTINGS,
+  sanitize: sanitizeBlueprintsSettings,
+});
+
+export const forgeDlgSettings = createForgeSettingsBag({
+  key: "Forge.editors.dlg",
+  eventName: "forge-dlg-settings-change",
+  defaults: DEFAULT_FORGE_DLG_SETTINGS,
+  sanitize: sanitizeDlgSettings,
+});
+
+export const forgeLipSettings = createForgeSettingsBag({
+  key: "Forge.editors.lip",
+  eventName: "forge-lip-settings-change",
+  defaults: DEFAULT_FORGE_LIP_SETTINGS,
+  sanitize: sanitizeLipSettings,
+});
+
+export const forgeImageSettings = createForgeSettingsBag({
+  key: "Forge.editors.image",
+  eventName: "forge-image-settings-change",
+  defaults: DEFAULT_FORGE_IMAGE_SETTINGS,
+  sanitize: sanitizeImageSettings,
+});
+
+export const forgeAudioSettings = createForgeSettingsBag({
+  key: "Forge.editors.audio",
+  eventName: "forge-audio-settings-change",
+  defaults: DEFAULT_FORGE_AUDIO_SETTINGS,
+  sanitize: sanitizeAudioSettings,
+});
+
+export const forgeGuiSettings = createForgeSettingsBag({
+  key: "Forge.editors.gui",
+  eventName: "forge-gui-settings-change",
+  defaults: DEFAULT_FORGE_GUI_SETTINGS,
+  sanitize: sanitizeGuiSettings,
+});
+
+export const forgeArchivesSettings = createForgeSettingsBag({
+  key: "Forge.editors.archives",
+  eventName: "forge-archives-settings-change",
+  defaults: DEFAULT_FORGE_ARCHIVES_SETTINGS,
+  sanitize: sanitizeArchivesSettings,
+});
+
+export function truncateGffPreview(text: string, maxLength = forgeGffSettings.get().previewMaxLength): string {
+  if (!text) {
+    return "";
+  }
+  if (text.length <= maxLength) {
+    return text;
+  }
+  return `${text.slice(0, Math.max(1, maxLength - 1))}…`;
+}
+
+export function resolvePersistedLipHead(
+  storedHead: string | undefined,
+  localStorageHead: string | undefined,
+  fallback = LIP_EDITOR_FALLBACK_HEAD,
+): string {
+  const fromStore = typeof storedHead === "string" ? storedHead.trim().toLowerCase() : "";
+  if (fromStore) {
+    return fromStore;
+  }
+  const fromLocal = typeof localStorageHead === "string" ? localStorageHead.trim().toLowerCase() : "";
+  if (fromLocal) {
+    return fromLocal;
+  }
+  return fallback;
+}
+
+export function syncModuleHelpersToLegacyConfig(helpers: ForgeModuleHelperVisibility): void {
+  const next: Record<string, { visible: boolean }> = {};
+  for (let i = 0; i < MODULE_HELPER_TYPES.length; i++) {
+    const key = MODULE_HELPER_TYPES[i];
+    next[key] = { visible: helpers[key] };
+  }
+  ConfigClient.set("Editor.Module.Helpers", next);
+}
+
+export function setModuleSettings(patch: Partial<ForgeModuleSettings>): ForgeModuleSettings {
+  const next = forgeModuleSettings.set(patch);
+  syncModuleHelpersToLegacyConfig(next.helpers);
+  return next;
+}

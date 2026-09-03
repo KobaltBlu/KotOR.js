@@ -11,7 +11,10 @@ export interface ParsedPath {
   hasProtocol: boolean
 }
 
-export const pathParse = (filepath: string): ParsedPath => {
+export const pathParse = (filepath: string | null | undefined): ParsedPath => {
+  if (typeof filepath !== "string") {
+    filepath = "";
+  }
   // Detect protocol patterns (file://, ftp://, http://, etc.)
   const protocolMatch = filepath.match(/^([a-zA-Z][a-zA-Z0-9+.-]*):\/\//);
   const hasProtocol = !!protocolMatch;
@@ -37,11 +40,15 @@ export const pathParse = (filepath: string): ParsedPath => {
     protocol: protocol,
     hasProtocol: hasProtocol
   };
+
+  if (!normalizedPath) {
+    return parsed;
+  }
   
-  // Handle empty or root paths
-  if (!normalizedPath || normalizedPath === '/') {
-    parsed.root = isWin32Path ? '' : '/';
-    parsed.dir = isWin32Path ? '' : '/';
+  // Handle unix root
+  if (normalizedPath === '/') {
+    parsed.root = '/';
+    parsed.dir = '/';
     return parsed;
   }
   

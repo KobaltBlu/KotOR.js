@@ -19,8 +19,7 @@ const KEYWORDS = new Map<string, string>([
   ["struct", "STRUCT"],
   ["action", "ACTION"],
   ["object", "OBJECT"],
-  // object_id is a type alias accepted in tryParseDataType (name), not a keyword
-  // so OBJECT_ID in nwscript.nss stays a name and Vector/Object stay callable.
+  // object_id is accepted as a type alias by the AST builder when it appears as a name.
 
   ["return", "RETURN"],
   ["break", "BREAK"],
@@ -116,6 +115,25 @@ export class NWScriptLexer {
       }
 
       break;
+    }
+  }
+
+  /**
+   * Next non-whitespace character without consuming. Used to tell the `vector` type keyword
+   * from the engine constructor `Vector(...)` — the only type/function name collision in
+   * nwscript.nss.
+   */
+  private peekNonWhitespaceChar(): string {
+    let offset = 0;
+    while (true) {
+      const idx = this.i + offset;
+      if (idx < 0 || idx >= this.src.length) return "\0";
+      const ch = this.src[idx];
+      if (ch === " " || ch === "\t" || ch === "\r" || ch === "\n") {
+        offset++;
+        continue;
+      }
+      return ch;
     }
   }
 
@@ -220,6 +238,11 @@ export class NWScriptLexer {
       // NWScript keywords are case-sensitive (vector vs engine action Vector).
       // Matching toLowerCase() incorrectly keywordizes Vector/Object/etc.
       const kw = KEYWORDS.get(s);
+      // `vector Vector(float x, float y, float z)` is both the type and the constructor.
+      // Keep the identifier when a call follows so expression parsing can treat it as a name.
+      if (kw === "VECTOR" && this.peekNonWhitespaceChar() === "(") {
+        return this.makeToken("name", s, startLine, startCol, this.line, this.col);
+      }
       if (kw) return this.makeToken("keyword", kw, startLine, startCol, this.line, this.col);
 
       return this.makeToken("name", s, startLine, startCol, this.line, this.col);

@@ -10,6 +10,22 @@ import { IRIMResource } from "@/interface/resource/IRIMResource";
 import { IERFResource } from "@/interface/resource/IERFResource";
 import { GameFileSystem } from "@/utility/GameFileSystem";
 
+/** Duck-type archives so cross-bundle ERF/RIM instances (Forge externals) still cache. */
+function isRIMArchive(archive: any): archive is RIMObject {
+  return !!archive
+    && Array.isArray(archive.resources)
+    && typeof archive.getResourceBuffer === 'function'
+    && typeof archive.hasResource === 'function'
+    && !Array.isArray(archive.keyList);
+}
+
+function isERFArchive(archive: any): archive is ERFObject {
+  return !!archive
+    && Array.isArray(archive.keyList)
+    && typeof archive.getResourceBufferByResRef === 'function'
+    && typeof archive.hasResource === 'function';
+}
+
 /**
  * ResourceLoader class.
  *
@@ -78,28 +94,30 @@ export class ResourceLoader {
 
     const scope = ResourceLoader.CacheScopes[CacheScope.MODULE];
     await Promise.all(archives.map(async (archive) => {
-      if(archive instanceof RIMObject){
+      if(isRIMArchive(archive) || archive instanceof RIMObject){
         const resources = archive.resources;
         for(let i = 0; i < resources.length; i++){
           const resource = resources[i];
           const buffer = await archive.getResourceBuffer(resource);
           // console.log('InitModuleCache: RIM', resource.resRef.toLocaleLowerCase(), buffer);
-          scope.get(resource.resType).set(
+          scope.get(resource.resType)?.set(
             resource.resRef.toLocaleLowerCase(),
             buffer
           );
         }
-      }else if(archive instanceof ERFObject){
+      }else if(isERFArchive(archive) || archive instanceof ERFObject){
         const keyList = archive.keyList;
         for(let i = 0; i < keyList.length; i++){
           const key = keyList[i];
           const buffer = await archive.getResourceBufferByResRef(key.resRef, key.resType);
           // console.log('InitModuleCache: ERF', resource.resRef.toLocaleLowerCase(), buffer);
-          scope.get(key.resType).set(
+          scope.get(key.resType)?.set(
             key.resRef.toLocaleLowerCase(),
             buffer
           );
         }
+      }else{
+        console.warn('InitModuleCache: unrecognized archive type', archive);
       }
     }));
 
@@ -261,13 +279,13 @@ export class ResourceLoader {
 
     for(let i = 0; i < archiveCount; i++){
       const archive = this.ModuleArchives[i];
-      if(archive instanceof RIMObject){
+      if(isRIMArchive(archive) || archive instanceof RIMObject){
         if(!archive.hasResource(resRef, resId)){ continue; }
         const data = await archive.getResourceBufferByResRef(resRef, resId);
         if(data){
           return data;
         }
-      }else if(archive instanceof ERFObject){
+      }else if(isERFArchive(archive) || archive instanceof ERFObject){
         if(!archive.hasResource(resRef, resId)){ continue; }
         const data = await archive.getResourceBufferByResRef(resRef, resId);
         if(data){

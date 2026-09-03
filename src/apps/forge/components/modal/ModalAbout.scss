@@ -1,0 +1,85 @@
+/**
+ * About dialog layout.
+ *
+ * @file ModalAbout.scss
+ */
+
+.forge-about-dialog {
+  width: min(520px, calc(100vw - 48px));
+}
+
+.forge-about {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.forge-about__hero {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.forge-about__logo {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.forge-about__name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--forge-text-bright);
+}
+
+.forge-about__version {
+  margin: 2px 0 0;
+  color: var(--forge-text-muted);
+  font-size: var(--forge-font-size-sm);
+}
+
+.forge-about__blurb {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.forge-about__meta {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid var(--forge-border);
+}
+
+.forge-about__row {
+  display: grid;
+  grid-template-columns: 88px 1fr;
+  gap: 8px;
+  align-items: start;
+
+  dt {
+    margin: 0;
+    color: var(--forge-text-muted);
+    font-weight: 600;
+  }
+
+  dd {
+    margin: 0;
+    min-width: 0;
+    word-break: break-word;
+  }
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+}
+
+.forge-about__path {
+  font-family: var(--forge-font-mono);
+  font-size: var(--forge-font-size-sm);
+}

@@ -74,9 +74,9 @@ export const TabUTWEditor = function(props: BaseTabProps){
   return <>
 <div style={{height: '100%'}}>
   <div className="vertical-tabs" style={{height: '100%'}}>
-    <div className="vertical-tabs-nav navbar navbar-sidebar-wizard-horizontal" role="navigation">
+    <div className="vertical-tabs-nav" role="navigation">
       <ul className="tabs-menu" style={{textAlign: 'center'}}>
-        <li className={`btn btn-tab ${selectedTab == 'basic' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('basic') }>Basic</a></li>
+        <li className={`forge-tab ${selectedTab == 'basic' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('basic') }>Basic</a></li>
       </ul>
     </div>
     <div className="vertical-tabs-container">

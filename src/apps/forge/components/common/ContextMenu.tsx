@@ -17,7 +17,6 @@ export interface ContextMenuProps {
   onClose?: () => void;
   className?: string;
   style?: React.CSSProperties;
-  theme?: 'light' | 'dark' | 'auto';
 }
 
 export const ContextMenu: React.FC<ContextMenuProps> = ({ 
@@ -25,25 +24,12 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   onClose, 
   className = '', 
   style = {},
-  theme = 'auto'
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [hoveredSubmenu, setHoveredSubmenu] = useState<string | null>(null);
   const [adjustedPosition, setAdjustedPosition] = useState<{ x: number; y: number } | null>(null);
   const [isVisible, setIsVisible] = useState(false);
-
-  // Theme detection
-  const getThemeClass = () => {
-    if (theme === 'auto') {
-      // Check if dark mode is preferred or if body has dark class
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const hasDarkClass = document.body.classList.contains('dark-theme') || 
-                          document.documentElement.classList.contains('dark-theme');
-      return hasDarkClass || prefersDark ? 'dark-theme' : 'light-theme';
-    }
-    return theme === 'dark' ? 'dark-theme' : 'light-theme';
-  };
 
   // Show animation on mount
   useEffect(() => {
@@ -146,13 +132,12 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     })
   };
 
-  const themeClass = getThemeClass();
   const animationClass = isVisible ? 'context-menu-enter-active' : 'context-menu-enter';
 
   return (
     <div 
       ref={menuRef}
-      className={`context-menu ${themeClass} ${animationClass} ${className}`}
+      className={`context-menu ${animationClass} ${className}`}
       style={defaultStyle}
     >
       {items.map((item, index) => {
@@ -239,7 +224,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
 };
 
 // Hook for managing context menu state
-export const useContextMenu = (theme: 'light' | 'dark' | 'auto' = 'auto') => {
+export const useContextMenu = () => {
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
     x: number;
@@ -273,7 +258,6 @@ export const useContextMenu = (theme: 'light' | 'dark' | 'auto' = 'auto') => {
       <ContextMenu
         items={contextMenu.items}
         onClose={hideContextMenu}
-        theme={theme}
         style={{
           top: contextMenu.y,
           left: contextMenu.x

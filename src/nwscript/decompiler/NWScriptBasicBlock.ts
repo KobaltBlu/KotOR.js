@@ -86,6 +86,16 @@ export class NWScriptBasicBlock {
    */
   postDominators: Set<NWScriptBasicBlock> = new Set();
 
+  /**
+   * Immediate dominator in the enclosing procedure (null for a procedure root).
+   */
+  immediateDominator: NWScriptBasicBlock | null = null;
+
+  /**
+   * Immediate post-dominator in the enclosing procedure (null for a procedure exit).
+   */
+  immediatePostDominator: NWScriptBasicBlock | null = null;
+
   constructor(id: number, startInstruction: NWScriptInstruction) {
     this.id = id;
     this.startInstruction = startInstruction;

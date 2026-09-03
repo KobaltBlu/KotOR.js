@@ -1,6 +1,6 @@
 import * as KotOR from "@/apps/forge/KotOR";
-import { GroupType, type UI3DRenderer } from "@/apps/forge/UI3DRenderer";
 import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { facingFromYaw, yawFromFacing } from "@/apps/forge/helpers/gitFacing";
 
 interface EngineItem {
   baseItem: KotOR.SWBaseItem | undefined;
@@ -180,13 +180,12 @@ export class ForgeCreature extends ForgeGameObject {
     rightHand2Item: undefined,
   };
 
-  constructor(buffer?: Uint8Array){
+  constructor(buffer?: Uint8Array, templateResRef?: string){
     super();
-    if(buffer){
-      this.loadFromBuffer(buffer);
-    } else {
-      this.blueprint = new KotOR.GFFObject();
+    if(templateResRef){
+      this.templateResRef = templateResRef;
     }
+    this.applySourceBuffer(buffer);
     this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
   }
 
@@ -259,11 +258,6 @@ export class ForgeCreature extends ForgeGameObject {
         this.loadEquipment(KotOR.ModuleCreatureArmorSlot.CLAW3);
       }
     }
-    if(property === 'slotHide'){
-      if(newValue !== oldValue){
-        this.loadEquipment(KotOR.ModuleCreatureArmorSlot.HIDE);
-      }
-    }
     if(property === 'slotLeftHand2'){
       if(newValue !== oldValue){
         this.loadEquipment(KotOR.ModuleCreatureArmorSlot.LEFTHAND2);
@@ -272,13 +266,6 @@ export class ForgeCreature extends ForgeGameObject {
     if(property === 'slotRightHand2'){
       if(newValue !== oldValue){
         this.loadEquipment(KotOR.ModuleCreatureArmorSlot.RIGHTHAND2);
-      }
-    }
-    if(property === 'templateResRef'){
-      if(newValue !== oldValue){
-        this.loadBlueprint().then(() => {
-          this.load();
-        });
       }
     }
   }
@@ -306,39 +293,68 @@ export class ForgeCreature extends ForgeGameObject {
       let modelVariation: number = 0;
       let textureVariation: number = 0;
       let bodyVariation: number = 1;
-      let itemTemplate: KotOR.GFFObject = new KotOR.GFFObject();
+      let itemTemplate: KotOR.GFFObject | undefined;
       let slotKey: keyof typeof this.templateSlots | undefined = undefined;
+      let equippedRes = '';
 
       const utiResId = KotOR.ResourceTypes.uti;
 
       switch(slot){
         case KotOR.ModuleCreatureArmorSlot.HEAD:
-          if(!this.slotHead) return;
-          itemTemplate = new KotOR.GFFObject(
-            await KotOR.ResourceLoader.loadResource(utiResId, this.slotHead)
-          );
           slotKey = 'headItem';
+          equippedRes = this.slotHead;
           break;
         case KotOR.ModuleCreatureArmorSlot.ARMOR:
-          if(!this.slotArmor) return;
-          itemTemplate = new KotOR.GFFObject(
-            await KotOR.ResourceLoader.loadResource(utiResId, this.slotArmor)
-          );
           slotKey = 'armorItem';
+          equippedRes = this.slotArmor;
           break;
         case KotOR.ModuleCreatureArmorSlot.LEFTHAND:
-          if(!this.slotLeftHand) return;
-          itemTemplate = new KotOR.GFFObject(
-            await KotOR.ResourceLoader.loadResource(utiResId, this.slotLeftHand)
-          );
           slotKey = 'leftHandItem';
+          equippedRes = this.slotLeftHand;
           break;
         case KotOR.ModuleCreatureArmorSlot.RIGHTHAND:
-          if(!this.slotRightHand) return;
-          itemTemplate = new KotOR.GFFObject(
-            await KotOR.ResourceLoader.loadResource(utiResId, this.slotRightHand)
-          );
           slotKey = 'rightHandItem';
+          equippedRes = this.slotRightHand;
+          break;
+        case KotOR.ModuleCreatureArmorSlot.BELT:
+          slotKey = 'beltItem';
+          equippedRes = this.slotBelt;
+          break;
+        case KotOR.ModuleCreatureArmorSlot.IMPLANT:
+          slotKey = 'implantItem';
+          equippedRes = this.slotImplant;
+          break;
+        case KotOR.ModuleCreatureArmorSlot.LEFTARMBAND:
+          slotKey = 'leftArmbandItem';
+          equippedRes = this.slotLeftArmband;
+          break;
+        case KotOR.ModuleCreatureArmorSlot.RIGHTARMBAND:
+          slotKey = 'rightArmbandItem';
+          equippedRes = this.slotRightArmband;
+          break;
+        case KotOR.ModuleCreatureArmorSlot.HIDE:
+          slotKey = 'hideItem';
+          equippedRes = this.slotHide;
+          break;
+        case KotOR.ModuleCreatureArmorSlot.CLAW1:
+          slotKey = 'claw1Item';
+          equippedRes = this.slotClaw1;
+          break;
+        case KotOR.ModuleCreatureArmorSlot.CLAW2:
+          slotKey = 'claw2Item';
+          equippedRes = this.slotClaw2;
+          break;
+        case KotOR.ModuleCreatureArmorSlot.CLAW3:
+          slotKey = 'claw3Item';
+          equippedRes = this.slotClaw3;
+          break;
+        case KotOR.ModuleCreatureArmorSlot.LEFTHAND2:
+          slotKey = 'leftHand2Item';
+          equippedRes = this.slotLeftHand2;
+          break;
+        case KotOR.ModuleCreatureArmorSlot.RIGHTHAND2:
+          slotKey = 'rightHand2Item';
+          equippedRes = this.slotRightHand2;
           break;
         default:
           break;
@@ -347,29 +363,35 @@ export class ForgeCreature extends ForgeGameObject {
       if(slotKey){
         this.templateSlots[slotKey] = undefined;
       }
-      
-      if(itemTemplate && typeof slotKey === 'string'){
-        const root = itemTemplate.RootNode;
-        if(root.hasField('BaseItem')){
-          baseItemId = itemTemplate.getFieldByLabel('BaseItem').getValue() || 0;
-          baseItem = KotOR.SWRuleSet.baseItems[baseItemId];
-        }
-        if(root.hasField('ModelVariation')){
-          modelVariation = root.getFieldByLabel('ModelVariation').getValue() || 0;
-        }
-        if(root.hasField('TextureVar')){
-          textureVariation = root.getFieldByLabel('TextureVar').getValue() || 0;
-        }
-        if(root.hasField('BodyVariation')){
-          bodyVariation = root.getFieldByLabel('BodyVariation').getValue() || '';
-        }
-        this.templateSlots[slotKey] = {
-          baseItem: baseItem,
-          modelVariation: modelVariation,
-          textureVariation: textureVariation,
-          bodyVariation: baseItem?.bodyVar || (bodyVariation > 0 ? String.fromCharCode(bodyVariation + 64) : ''),
-        };
+
+      if(!slotKey || !equippedRes){
+        return;
       }
+
+      itemTemplate = new KotOR.GFFObject(
+        await KotOR.ResourceLoader.loadResource(utiResId, equippedRes)
+      );
+
+      const root = itemTemplate.RootNode;
+      if(root.hasField('BaseItem')){
+        baseItemId = itemTemplate.getFieldByLabel('BaseItem').getValue() || 0;
+        baseItem = KotOR.SWRuleSet.baseItems[baseItemId];
+      }
+      if(root.hasField('ModelVariation')){
+        modelVariation = root.getFieldByLabel('ModelVariation').getValue() || 0;
+      }
+      if(root.hasField('TextureVar')){
+        textureVariation = root.getFieldByLabel('TextureVar').getValue() || 0;
+      }
+      if(root.hasField('BodyVariation')){
+        bodyVariation = root.getFieldByLabel('BodyVariation').getValue() || 1;
+      }
+      this.templateSlots[slotKey] = {
+        baseItem: baseItem,
+        modelVariation: modelVariation,
+        textureVariation: textureVariation,
+        bodyVariation: baseItem?.bodyVar || (bodyVariation > 0 ? String.fromCharCode(bodyVariation + 64) : ''),
+      };
     }catch(e){
       console.error(e);
     }
@@ -396,6 +418,11 @@ export class ForgeCreature extends ForgeGameObject {
     }
 
     const appearance = this.creatureAppearance;
+    if(!appearance?.getBodyModelInfo){
+      this.model = new KotOR.OdysseyModel3D();
+      this.container.add(this.model);
+      return this.model;
+    }
     let bodyVariation: string = this.templateSlots.armorItem?.bodyVariation || '';
     let textureVariation: number = this.templateSlots.armorItem?.textureVariation || 1;
     const hasBodyVariation = !!(bodyVariation && bodyVariation.length);
@@ -433,6 +460,9 @@ export class ForgeCreature extends ForgeGameObject {
 
   async loadHead() {
     const appearance = this.creatureAppearance;
+    if(!appearance){
+      return;
+    }
     const headId = appearance.normalhead;//.replace(/\0[\s\S]*$/g,'').toLowerCase();
     if(!( headId >= 0 && appearance.modeltype == 'B' )){
       return;
@@ -662,7 +692,9 @@ export class ForgeCreature extends ForgeGameObject {
     if(root.hasField('Plot')){
       this.plot = root.getFieldByLabel('Plot').getValue() || false;
     }
-    if(root.hasField('PalletID')){
+    if(root.hasField('PaletteID')){
+      this.palletID = root.getFieldByLabel('PaletteID').getValue() || 0;
+    }else if(root.hasField('PalletID')){
       this.palletID = root.getFieldByLabel('PalletID').getValue() || 0;
     }
     if(root.hasField('PortraitId')){
@@ -680,13 +712,17 @@ export class ForgeCreature extends ForgeGameObject {
     if(root.hasField('ScriptDeath')){
       this.scriptDeath = root.getFieldByLabel('ScriptDeath').getValue() || '';
     }
-    if(root.hasField('ScriptDialogu')){
+    if(root.hasField('ScriptDialogue')){
+      this.scriptDialogu = root.getFieldByLabel('ScriptDialogue').getValue() || '';
+    }else if(root.hasField('ScriptDialogu')){
       this.scriptDialogu = root.getFieldByLabel('ScriptDialogu').getValue() || '';
     }
     if(root.hasField('ScriptDisturbed')){
       this.scriptDisturbed = root.getFieldByLabel('ScriptDisturbed').getValue() || '';
     }
-    if(root.hasField('ScriptEndDialogue')){
+    if(root.hasField('ScriptEndDialogu')){
+      this.scriptEndDialogue = root.getFieldByLabel('ScriptEndDialogu').getValue() || '';
+    }else if(root.hasField('ScriptEndDialogue')){
       this.scriptEndDialogue = root.getFieldByLabel('ScriptEndDialogue').getValue() || '';
     }
     if(root.hasField('ScriptEndRound')){
@@ -887,7 +923,7 @@ export class ForgeCreature extends ForgeGameObject {
       equipItem.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'EquippedRes', this.slotArms) );
       equipItemList.addChildStruct(equipItem);
     }
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Equip_ItemList', equipItemList) );
+    root.addField(equipItemList);
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'FactionID', this.factionID) );
     const featList = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'FeatList');
     if(featList){
@@ -924,7 +960,7 @@ export class ForgeCreature extends ForgeGameObject {
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'NaturalAC', this.naturalAC) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'NoPermDeath', this.noPermDeath ? 1 : 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'NotReorienting', this.notReorienting ? 1 : 0) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'PalletID', this.palletID) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'PaletteID', this.palletID) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'PartyInteract', this.partyInteract ? 1 : 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'PerceptionRange', this.perceptionRange) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'Phenotype', this.phenotype) );
@@ -934,9 +970,9 @@ export class ForgeCreature extends ForgeGameObject {
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ScriptAttacked', this.scriptAttacked) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ScriptDamaged', this.scriptDamaged) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ScriptDeath', this.scriptDeath) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ScriptDialogu', this.scriptDialogu) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ScriptDialogue', this.scriptDialogu) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ScriptDisturbed', this.scriptDisturbed) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ScriptEndDialogue', this.scriptEndDialogue) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ScriptEndDialogu', this.scriptEndDialogue) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ScriptEndRound', this.scriptEndRound) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ScriptHeartbeat', this.scriptHeartbeat) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ScriptOnBlocked', this.scriptOnBlocked) );
@@ -985,7 +1021,7 @@ export class ForgeCreature extends ForgeGameObject {
     this.templateResRef = instance.getFieldByLabel('TemplateResRef').getValue() as string;
     const xOrientation = instance.getFieldByLabel('XOrientation').getValue() as number;
     const yOrientation = instance.getFieldByLabel('YOrientation').getValue() as number;
-    this.container.rotation.z = -Math.atan2(yOrientation, xOrientation);
+    this.container.rotation.z = yawFromFacing(xOrientation, yOrientation);
     this.container.position.x = instance.getFieldByLabel('XPosition').getValue() as number;
     this.container.position.y = instance.getFieldByLabel('YPosition').getValue() as number;
     this.container.position.z = instance.getFieldByLabel('ZPosition').getValue() as number;
@@ -993,10 +1029,11 @@ export class ForgeCreature extends ForgeGameObject {
 
   getGITInstance(): KotOR.GFFStruct {
     const instance = new KotOR.GFFStruct(4);
+    const facing = facingFromYaw(this.container.rotation.z);
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', this.templateResRef));
-    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XOrientation', Math.cos(this.container.rotation.z + (Math.PI/2))));
+    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XOrientation', facing.x));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XPosition', this.container.position.x));
-    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'YOrientation', Math.sin(this.container.rotation.z + (Math.PI/2))));
+    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'YOrientation', facing.y));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'YPosition', this.container.position.y));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'ZPosition', this.container.position.z));
     return instance;

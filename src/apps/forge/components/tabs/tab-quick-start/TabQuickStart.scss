@@ -7,16 +7,16 @@
   width: 100%;
   overflow-x: hidden;
   overflow-y: auto;
-  background: linear-gradient(135deg, $bg-dark 0%, $bg-primary 50%, $bg-darker 100%);
-  color: $text-primary;
+  background: var(--forge-bg);
+  color: var(--forge-text);
   position: relative;
 
   // Hero Section
   .hero-section {
     padding: $spacing-xxl * 2 $spacing-xxl;
     text-align: center;
-    background: linear-gradient(180deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0) 100%);
-    border-bottom: 1px solid $border-primary;
+    background: linear-gradient(180deg, var(--forge-bg-overlay) 0%, transparent 100%);
+    border-bottom: 1px solid var(--forge-border);
     margin-bottom: $spacing-xxl;
 
     .hero-title {
@@ -24,18 +24,18 @@
       font-weight: bold;
       font-size: 48px;
       margin: 0 0 $spacing-sm 0;
-      background: linear-gradient(135deg, #ffd700 0%, #d6b400 50%, #b8960d 100%);
+      color: var(--forge-accent);
+      background: linear-gradient(135deg, var(--forge-accent-hover) 0%, var(--forge-accent) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      text-shadow: 0 2px 10px rgba(214, 180, 0, 0.3);
       letter-spacing: 2px;
     }
 
     .hero-subtitle {
-      font-family: $font-family-primary;
+      font-family: var(--forge-font);
       font-size: 14px;
-      color: $text-tertiary;
+      color: var(--forge-text-muted);
       margin: 0;
       letter-spacing: 1px;
       text-transform: uppercase;
@@ -58,32 +58,32 @@
 
   // Card Base Styles
   .quick-start-card {
-    background: $bg-secondary;
-    border: 1px solid $border-primary;
-    border-radius: $border-radius-large;
+    background: var(--forge-bg-elevated);
+    border: 1px solid var(--forge-border);
+    border-radius: var(--forge-radius);
     padding: $spacing-xl;
     transition: all $transition-normal;
-    box-shadow: 0 4px 6px $shadow-dark;
+    box-shadow: var(--forge-shadow-menu);
 
     &:hover {
-      border-color: $border-quaternary;
-      box-shadow: 0 6px 12px $shadow-darker;
+      border-color: var(--forge-accent);
+      box-shadow: var(--forge-shadow-menu);
       transform: translateY(-2px);
     }
 
     .quick-start-card-title {
       font-size: 20px;
       font-weight: 600;
-      color: $text-secondary;
+      color: var(--forge-text-bright);
       margin: 0 0 $spacing-lg 0;
       padding-bottom: $spacing-md;
-      border-bottom: 2px solid $border-accent;
+      border-bottom: 2px solid var(--forge-accent);
       display: flex;
       align-items: center;
       gap: $spacing-md;
 
       i {
-        color: $primary-blue;
+        color: var(--forge-accent);
         font-size: 22px;
       }
     }
@@ -102,10 +102,10 @@
       align-items: center;
       gap: $spacing-md;
       padding: $spacing-lg;
-      background: linear-gradient(135deg, $form-bg-gradient-start 0%, $form-bg-gradient-end 100%);
-      border: 1px solid $form-border;
-      border-radius: $border-radius;
-      color: $text-secondary;
+      background: var(--forge-bg-input);
+      border: 1px solid var(--forge-border);
+      border-radius: var(--forge-radius);
+      color: var(--forge-text-bright);
       text-decoration: none;
       font-size: 14px;
       font-weight: 500;
@@ -126,10 +126,10 @@
       }
 
       &:hover {
-        background: linear-gradient(135deg, $hover-bg-light 0%, $primary-blue 100%);
-        border-color: $primary-blue-light;
+        background: var(--forge-accent-muted);
+        border-color: var(--forge-accent);
         transform: translateX(4px);
-        box-shadow: 0 4px 8px $shadow-dark;
+        box-shadow: var(--forge-shadow-menu);
 
         &::before {
           left: 100%;
@@ -146,7 +146,7 @@
 
       i {
         font-size: 18px;
-        color: $primary-blue-lightest;
+        color: var(--forge-accent-hover);
         transition: transform $transition-fast;
         flex-shrink: 0;
       }
@@ -171,19 +171,19 @@
       align-items: center;
       gap: $spacing-md;
       padding: $spacing-md;
-      background: $bg-tertiary;
-      border: 1px solid $border-secondary;
-      border-radius: $border-radius;
+      background: var(--forge-bg-panel);
+      border: 1px solid var(--forge-border-subtle);
+      border-radius: var(--forge-radius);
       transition: all $transition-fast;
       cursor: pointer;
 
       &:hover {
-        background: $hover-bg;
-        border-color: $border-quaternary;
+        background: var(--forge-bg-hover);
+        border-color: var(--forge-accent);
         transform: translateX(4px);
 
         .item-name {
-          color: $primary-blue-lightest;
+          color: var(--forge-accent-hover);
         }
 
         .remove-button {
@@ -193,7 +193,7 @@
 
       .item-icon {
         font-size: 16px;
-        color: $primary-blue-light;
+        color: var(--forge-accent);
         flex-shrink: 0;
       }
 
@@ -206,7 +206,7 @@
 
         .item-name {
           font-weight: 600;
-          color: $text-secondary;
+          color: var(--forge-text-bright);
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -215,7 +215,7 @@
 
         .item-path {
           font-size: 11px;
-          color: $text-tertiary;
+          color: var(--forge-text-muted);
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -232,14 +232,14 @@
         background: transparent;
         border: none;
         border-radius: 50%;
-        color: $text-quaternary;
+        color: var(--forge-text-disabled);
         cursor: pointer;
         opacity: 0;
         transition: all $transition-fast;
 
         &:hover {
-          background: $error-dark;
-          color: $text-white;
+          background: var(--forge-danger);
+          color: var(--forge-text-bright);
         }
 
         i {
@@ -251,12 +251,12 @@
     .empty-state {
       padding: $spacing-xxl;
       text-align: center;
-      color: $text-primary;
+      color: var(--forge-text);
       font-style: italic;
 
       i {
         font-size: 48px;
-        color: $text-tertiary;
+        color: var(--forge-text-muted);
         margin-bottom: $spacing-md;
         display: block;
       }
@@ -268,23 +268,80 @@
     grid-column: 1 / -1;
   }
 
+  .virtual-projects-under-recent {
+    margin-top: $spacing-lg;
+    padding-top: $spacing-lg;
+    border-top: 1px solid var(--forge-border-subtle);
+
+    &__title {
+      margin: 0 0 $spacing-md 0;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--forge-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    &__hint {
+      margin: 0;
+      font-size: 12px;
+      color: var(--forge-text-muted);
+      line-height: 1.4;
+    }
+  }
+
+  .virtual-project-item {
+    padding: 0;
+    gap: 0;
+
+    &:hover {
+      transform: none;
+    }
+
+    .virtual-project-item__open {
+      display: flex;
+      align-items: center;
+      gap: $spacing-md;
+      flex: 1;
+      min-width: 0;
+      padding: $spacing-md;
+      border: none;
+      background: transparent;
+      color: inherit;
+      text-align: left;
+      cursor: pointer;
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: wait;
+      }
+
+      &:hover .item-name {
+        color: var(--forge-accent-hover);
+      }
+    }
+
+    .virtual-project-item__delete {
+      margin-right: $spacing-md;
+      opacity: 1;
+    }
+  }
+
   // Scrollbar Styling
   &::-webkit-scrollbar {
     width: 12px;
   }
 
   &::-webkit-scrollbar-track {
-    background: $bg-dark;
+    background: var(--forge-bg);
   }
 
   &::-webkit-scrollbar-thumb {
-    background: $scrollbar-thumb;
+    background: var(--forge-bg-active);
     border-radius: 6px;
 
     &:hover {
-      background: $primary-blue-light;
+      background: var(--forge-accent);
     }
   }
 }
-
-

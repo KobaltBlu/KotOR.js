@@ -28,28 +28,28 @@
 
   &__button-add {
     margin-left: 10px;
-    background-color: #2d4d2d;
-    color: #99ff99;
-    border: 1px solid #555;
+    background-color: var(--forge-success);
+    color: var(--forge-text-bright);
+    border: 1px solid var(--forge-border);
     padding: 4px 8px;
     cursor: pointer;
     border-radius: 3px;
 
     &:hover {
-      background-color: #3d5d3d;
+      background-color: color-mix(in srgb, var(--forge-success) 85%, white);
     }
   }
 
   &__button-remove {
-    background-color: #3d1a1a;
-    color: #ff9999;
-    border: 1px solid #555;
+    background-color: var(--forge-danger);
+    color: var(--forge-text-bright);
+    border: 1px solid var(--forge-border);
     padding: 4px 8px;
     cursor: pointer;
     border-radius: 3px;
 
     &:hover {
-      background-color: #4d2a2a;
+      background-color: var(--forge-danger-hover);
     }
   }
 

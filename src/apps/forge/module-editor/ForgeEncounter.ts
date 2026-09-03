@@ -1,4 +1,9 @@
 import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import {
+  createVertexHandle,
+  disposeVertexHandle,
+  setVertexHandleSelected,
+} from "@/apps/forge/module-editor/vertexHandleVisuals";
 import * as KotOR from "@/apps/forge/KotOR";
 import * as THREE from "three";
 import { CreatureListEntry } from "@/apps/forge/interfaces/CreatureListEntry";
@@ -50,26 +55,20 @@ export class ForgeEncounter extends ForgeGameObject {
   // Vertex manipulation helpers
   vertexHelperGeometry = new THREE.BoxGeometry(1, 1, 1, 1, 1);
   vertexHelpersGroup: THREE.Group = new THREE.Group();
-  vertexHelpers: THREE.Mesh[] = [];
+  vertexHelpers: THREE.Object3D[] = [];
   vertexHelperSize: number = 0.125;
   selectedVertexIndex: number = -1;
 
-  constructor(buffer?: Uint8Array){
+  constructor(buffer?: Uint8Array, templateResRef?: string){
     super();
-    if(buffer){
-      this.loadFromBuffer(buffer);
+    if(templateResRef){
+      this.templateResRef = templateResRef;
     }
+    this.applySourceBuffer(buffer);
     this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
   }
 
   onPropertyChange(property: string, newValue: any, oldValue: any){
-    if(property === 'templateResRef'){
-      if(newValue !== oldValue){
-        this.loadBlueprint().then(() => {
-          this.load();
-        });
-      }
-    }
   }
 
   loadFromBuffer(buffer: Uint8Array){
@@ -197,7 +196,7 @@ export class ForgeEncounter extends ForgeGameObject {
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'ResetTime', this.resetTime) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'Respawns', this.respawns) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'SpawnOption', this.spawnOption) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Tag', this.tag) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Tag', this.tag) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', this.templateResRef || '') );
 
     return this.blueprint;
@@ -236,26 +235,18 @@ export class ForgeEncounter extends ForgeGameObject {
     while(this.vertexHelpers.length > 0){
       const helper = this.vertexHelpers.pop();
       if(helper){
-        helper.removeFromParent();
-        helper.geometry.dispose();
-        (helper.material as THREE.Material).dispose();
+        disposeVertexHandle(helper);
       }
     }
     
     // Create helpers for each vertex
     for(let i = 0; i < this.vertices.length; i++){
       const vertex = this.vertices[i];
-      const helper = new THREE.Mesh(
-        this.vertexHelperGeometry, 
-        new THREE.MeshBasicMaterial({color: 0x000000})
-      );
-      
+      const helper = createVertexHandle(this.vertexHelperGeometry, this.vertexHelperSize, {
+        vertexIndex: i,
+        forgeGameObject: this,
+      });
       helper.position.copy(vertex);
-      helper.scale.setScalar(this.vertexHelperSize);
-      
-      helper.userData.vertexIndex = i;
-      helper.userData.forgeGameObject = this;
-      
       this.vertexHelpersGroup.add(helper);
       this.vertexHelpers.push(helper);
     }
@@ -268,21 +259,55 @@ export class ForgeEncounter extends ForgeGameObject {
     }
   }
 
+  addVertex(vertex?: THREE.Vector3){
+    this.vertices.push(vertex ? vertex.clone() : new THREE.Vector3(0, 0, DEFAULT_OFFSET_Z));
+    this.buildGeometry();
+    if(this.mesh){
+      this.mesh.geometry = this.bufferGeometry;
+    }
+    this.buildVertexHelpers();
+    return this.vertices.length - 1;
+  }
+
+  removeVertex(index: number){
+    if(index < 0 || index >= this.vertices.length || this.vertices.length <= 3){
+      return false;
+    }
+    this.vertices.splice(index, 1);
+    this.buildGeometry();
+    if(this.mesh){
+      this.mesh.geometry = this.bufferGeometry;
+    }
+    this.buildVertexHelpers();
+    this.selectVertex(-1);
+    return true;
+  }
+
+  addSpawnPoint(entry?: KotOR.EncounterSpawnPointEntry){
+    const point = entry || new KotOR.EncounterSpawnPointEntry();
+    if(!entry){
+      point.position.copy(this.position);
+    }
+    this.spawnPointList.push(point);
+    return this.spawnPointList.length - 1;
+  }
+
+  removeSpawnPoint(index: number){
+    if(index < 0 || index >= this.spawnPointList.length){
+      return false;
+    }
+    this.spawnPointList.splice(index, 1);
+    return true;
+  }
+
   selectVertex(index: number = -1){
     this.selectedVertexIndex = index;
-    // Update vertex helper colors
     for(let i = 0; i < this.vertexHelpers.length; i++){
-      const helper = this.vertexHelpers[i];
-      const material = helper.material as THREE.MeshBasicMaterial;
-      if(i === index){
-        material.color.setHex(0xFFFFFF);
-      } else {
-        material.color.setHex(0x000000);
-      }
+      setVertexHandleSelected(this.vertexHelpers[i], i === index);
     }
   }
 
-  updateVertexFromHelper(vertexIndex: number, helper: THREE.Mesh){
+  updateVertexFromHelper(vertexIndex: number, helper: THREE.Object3D){
     if(vertexIndex >= 0 && vertexIndex < this.vertices.length){
       const vertex = this.vertices[vertexIndex];
       const localPos = helper.position.clone();
@@ -334,9 +359,9 @@ export class ForgeEncounter extends ForgeGameObject {
     const geometryField = instance.addField(new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Geometry'));
     for(let i = 0, len = this.vertices.length; i < len; i++){
       const geometryStruct = new KotOR.GFFStruct(3);
-      geometryStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'PointX', this.vertices[i].x));
-      geometryStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'PointY', this.vertices[i].y));
-      geometryStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'PointZ', this.vertices[i].z));
+      geometryStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'X', this.vertices[i].x));
+      geometryStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Y', this.vertices[i].y));
+      geometryStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Z', this.vertices[i].z));
       geometryField?.addChildStruct(geometryStruct);
     }
     const spawnPointListField = instance.addField(new KotOR.GFFField(KotOR.GFFDataType.LIST, 'SpawnPointList'));
@@ -361,7 +386,17 @@ export class ForgeEncounter extends ForgeGameObject {
     if(geometryField){
       for(let i = 0, len = geometryField.getChildStructs().length; i < len; i++){
         const geometryStruct = geometryField.getChildStructs()[i];
-        this.vertices.push(new THREE.Vector3(geometryStruct.getFieldByLabel('PointX').getValue() as number, geometryStruct.getFieldByLabel('PointY').getValue() as number, geometryStruct.getFieldByLabel('PointZ').getValue() as number));
+        // Retail uses X/Y/Z; older Forge used PointX/PointY/PointZ
+        const x = geometryStruct.hasField('X')
+          ? geometryStruct.getFieldByLabel('X').getValue() as number
+          : geometryStruct.getFieldByLabel('PointX').getValue() as number;
+        const y = geometryStruct.hasField('Y')
+          ? geometryStruct.getFieldByLabel('Y').getValue() as number
+          : geometryStruct.getFieldByLabel('PointY').getValue() as number;
+        const z = geometryStruct.hasField('Z')
+          ? geometryStruct.getFieldByLabel('Z').getValue() as number
+          : geometryStruct.getFieldByLabel('PointZ').getValue() as number;
+        this.vertices.push(new THREE.Vector3(x, y, z));
       }
     }
     this.spawnPointList = [];
@@ -375,12 +410,18 @@ export class ForgeEncounter extends ForgeGameObject {
         }
       }
     }
-    this.rotation.z = strt.getFieldByLabel('XOrientation').getValue() as number;
-    this.position.x = strt.getFieldByLabel('XPosition').getValue() as number;
-    this.rotation.z = strt.getFieldByLabel('YOrientation').getValue() as number;
-    this.position.y = strt.getFieldByLabel('YPosition').getValue() as number;
-    this.rotation.z = strt.getFieldByLabel('ZOrientation').getValue() as number;
-    this.position.z = strt.getFieldByLabel('ZPosition').getValue() as number;
+    if(strt.hasField('TemplateResRef')){
+      this.templateResRef = strt.getFieldByLabel('TemplateResRef').getValue() as string;
+    }
+    if(strt.hasField('XPosition')){
+      this.position.x = strt.getFieldByLabel('XPosition').getValue() as number;
+    }
+    if(strt.hasField('YPosition')){
+      this.position.y = strt.getFieldByLabel('YPosition').getValue() as number;
+    }
+    if(strt.hasField('ZPosition')){
+      this.position.z = strt.getFieldByLabel('ZPosition').getValue() as number;
+    }
   }
 
 }

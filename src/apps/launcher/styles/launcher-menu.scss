@@ -102,3 +102,23 @@ body.lightbox_open .launcher-menu {
   width: 100%;
   line-height: 80px;
 }
+
+@media (max-width: 900px) {
+  .launcher-menu {
+    height: 56px;
+    position: sticky;
+    top: 0;
+  }
+
+  .discord_widget_open .launcher-menu {
+    width: 100%;
+  }
+
+  .launcher-menu .title {
+    line-height: 56px;
+  }
+
+  .launcher-menu-background {
+    background-size: cover;
+  }
+}

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
 import { TabBIKPlayerState } from "@/apps/forge/states/tabs/TabBIKPlayerState";
 import { ensureYUVWebGL, drawYUVFrame, type YUVWebGLState } from "@/apps/forge/components/tabs/tab-bik-player/yuvWebGL";
+import { ForgeButton } from "@/apps/forge/components/ui";
 
 /** Format seconds as M:SS or H:MM:SS. */
 function formatTime(seconds: number): string {
@@ -107,27 +108,27 @@ export const TabBIKPlayer = function (props: BaseTabProps) {
           style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
         />
       </div>
-      <div className="tab-bik-player-controls" style={{ padding: "8px 12px", background: "#1a1a1a", borderTop: "1px solid #333", display: "flex", alignItems: "center", gap: "12px" }}>
-        <span
+      <div className="tab-bik-player-controls" style={{ padding: "8px 12px", background: "var(--forge-bg-elevated)", borderTop: "1px solid var(--forge-border)", display: "flex", alignItems: "center", gap: "12px" }}>
+        <ForgeButton
+          variant="ghost"
           className="btn-play"
           title="Replay"
-          style={{ cursor: "pointer", fontSize: "18px" }}
           onClick={onReplay}
         >
           <i className="fa-solid fa-play"></i>
-        </span>
-        <span
+        </ForgeButton>
+        <ForgeButton
+          variant="ghost"
           className="btn-stop"
           title="Stop"
-          style={{ cursor: "pointer", fontSize: "18px" }}
           onClick={onStop}
         >
           <i className="fa-solid fa-stop"></i>
-        </span>
-        <span style={{ color: "#aaa", fontSize: "13px" }}>
+        </ForgeButton>
+        <span style={{ color: "var(--forge-text-muted)", fontSize: "13px" }}>
           {formatTime(playbackTime)} / {formatTime(totalTime)}
         </span>
-        <span style={{ color: "#666", fontSize: "12px" }}>
+        <span style={{ color: "var(--forge-text-disabled)", fontSize: "12px" }}>
           {isPlaying ? "Playing" : "Stopped"}
           {videoSize ? ` · ${videoSize.w}×${videoSize.h}` : ""}
         </span>

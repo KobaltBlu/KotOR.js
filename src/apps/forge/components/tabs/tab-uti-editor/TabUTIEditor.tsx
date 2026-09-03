@@ -9,10 +9,13 @@ import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost";
 import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
 import { ForgeItem } from "@/apps/forge/module-editor/ForgeItem";
 import { clampByte } from "@/apps/forge/helpers/UTxEditorHelpers";
+import { useForgeHasGameData } from "@/apps/forge/helpers/useForgeHasGameData";
+import { ForgeTwoDAIndexField } from "@/apps/forge/components/ui";
 
 export const TabUTIEditor = function(props: BaseTabProps){
 
   const tab: TabUTIEditorState = props.tab as TabUTIEditorState;
+  const hasGameData = useForgeHasGameData();
   const [selectedTab, setSelectedTab] = useState<string>('basic');
 
   const [locName, setLocName] = useState<KotOR.CExoLocString>(new KotOR.CExoLocString());
@@ -141,7 +144,7 @@ export const TabUTIEditor = function(props: BaseTabProps){
         <input type="number" min={0} max={255} value={property.param1Value} onChange={(e) => onPropertyFieldChange(index, 'param1Value', clampByte(parseInt(e.target.value) || 0))} />
       </td>
       <td>
-        <button className="btn btn-sm btn-danger" onClick={() => removeProperty(index)}>
+        <button className="forge-btn forge-btn--sm forge-btn--danger" onClick={() => removeProperty(index)}>
           <i className="fa-solid fa-trash"></i>
         </button>
       </td>
@@ -171,7 +174,17 @@ export const TabUTIEditor = function(props: BaseTabProps){
                 <textarea value={comment} onChange={onUpdateCExoStringField(setComment, 'comment')} rows={2} />
               </FormField>
               <FormField label="Base Item" info="Index into baseitems.2da determining model type and behaviour.">
-                <input type="number" min={0} value={baseItem} onChange={onUpdateByteField(setBaseItem, 'baseItem')} />
+                <ForgeTwoDAIndexField
+                  table="baseitems"
+                  value={baseItem}
+                  emptyLabel="baseitems.2da not loaded"
+                  onChange={(value) => {
+                    const next = clampByte(value);
+                    setBaseItem(next);
+                    tab.item.setProperty('baseItem', next);
+                    tab.updateFile();
+                  }}
+                />
               </FormField>
               <FormField label="Palette ID" info="Palette grouping for the item blueprint.">
                 <input type="number" min={0} max={255} value={paletteID} onChange={onUpdateByteField(setPaletteID, 'paletteID')} />
@@ -234,7 +247,7 @@ export const TabUTIEditor = function(props: BaseTabProps){
       content: (
         <>
           <div style={{marginBottom: '10px'}}>
-            <button className="btn btn-sm btn-primary" onClick={addProperty}>
+            <button className="forge-btn forge-btn--sm forge-btn--primary" onClick={addProperty}>
               <i className="fa-solid fa-plus"></i> Add Property
             </button>
           </div>
@@ -270,7 +283,7 @@ export const TabUTIEditor = function(props: BaseTabProps){
     <SubTabHost
       tabs={tabs}
       defaultTab="basic"
-      leftPanel={<UI3DRendererView context={tab.ui3DRenderer} />}
+      leftPanel={hasGameData ? <UI3DRendererView context={tab.ui3DRenderer} /> : undefined}
     />
   );
 }

@@ -87,6 +87,15 @@ export class WindowManager {
       return false;
     });
     
+    ipcMain.handle('win-close', (event, data) => {
+      let win = BrowserWindow.getFocusedWindow() || BrowserWindow.fromWebContents(event.sender);
+      if(win){
+        win.close();
+        return true;
+      }
+      return false;
+    });
+
     ipcMain.handle('locate-game-directory', (event, data) => {
       return new Promise( (resolve, reject) => {
         dialog.showOpenDialog({title: 'KotOR Game Install Folder', properties: ['openDirectory', 'createDirectory']}).then(result => {

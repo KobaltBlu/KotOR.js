@@ -19,7 +19,7 @@ export class AppearanceManager {
   static doorAppearances: Map<number, SWDoorAppearance> = new Map();
   static placeableAppearances: Map<number, SWPlaceableAppearance> = new Map();
 
-  static GetCreatureAppearanceById(id: number): SWCreatureAppearance {
+  static GetCreatureAppearanceById(id: number): SWCreatureAppearance | undefined {
     return AppearanceManager.appearances.get(id);
   }
 

@@ -7,7 +7,10 @@
 }
 
 .promo-element.video video {
+  display: block;
+  width: auto;
   height: 250px;
+  max-width: none;
 }
 
 .promo-element.video:hover:after {
@@ -20,4 +23,34 @@
   position: absolute;
   top: 0;
   left: 0;
+  pointer-events: none;
+}
+
+@media (max-width: 900px) {
+  .promo-element.video {
+    width: var(--promo-tile-width, 100%);
+    height: 100%;
+  }
+
+  .promo-element.video video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+
+  .promo-element.video:after {
+    content: '';
+    background-image: url('./images/play-icon.png');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 48px 48px;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    opacity: 0.85;
+  }
 }

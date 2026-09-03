@@ -2,12 +2,13 @@ import React, { useState } from "react";
 import * as THREE from "three";
 import { TabModelViewerState, TabModelViewerStateEventListenerTypes } from "@/apps/forge/states/tabs";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { Form } from "react-bootstrap";
+
 import { SceneGraphTreeView } from "@/apps/forge/components/SceneGraphTreeView";
 import { SectionContainer } from "@/apps/forge/components/SectionContainer";
 import { NodePropertiesPanel } from "@/apps/forge/components/tabs/tab-model-viewer/panels/NodePropertiesPanel";
 
 import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeSelect, ForgeInput } from "@/apps/forge/components/ui";
 import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
 
 export const ModelViewerSidebarComponent = function(props: any){
@@ -161,20 +162,20 @@ export const ModelViewerSidebarComponent = function(props: any){
         )}
 
         <SectionContainer name="Camera" collapsible>
-          <Form.Select size="sm" value={selectedCameraIndex} onChange={onCameraSelectChange}>
+          <ForgeSelect size="sm" value={selectedCameraIndex} onChange={onCameraSelectChange}>
             {cameras.map((entry, index) => (
               <option key={index} value={index}>{entry.name}</option>
             ))}
             {cameras.length === 0 && <option value={0}>Main</option>}
-          </Form.Select>
+          </ForgeSelect>
           <div className="property-editor-row">
             <span className="property-editor-label">Speed</span>
-            <Form.Control size="sm" type="number" min={1} max={250} value={cameraSpeed} onChange={onCameraSpeedChange} />
+            <ForgeInput size="sm" type="number" min={1} max={250} value={cameraSpeed} onChange={onCameraSpeedChange} />
           </div>
           {!isMainCamera && (
             <div className="property-editor-row">
               <span className="property-editor-label">FOV</span>
-              <Form.Control size="sm" type="number" min={1} max={179} value={Math.round(cameraFov)} onChange={onCameraFovChange} />
+              <ForgeInput size="sm" type="number" min={1} max={179} value={Math.round(cameraFov)} onChange={onCameraFovChange} />
             </div>
           )}
         </SectionContainer>
@@ -183,17 +184,17 @@ export const ModelViewerSidebarComponent = function(props: any){
           <div className="property-editor-row">
             <span className="property-editor-label">Layout</span>
           </div>
-          <Form.Select size="sm" value={selectedLayout} onChange={onLayoutSelectChange}>
+          <ForgeSelect size="sm" value={selectedLayout} onChange={onLayoutSelectChange}>
             <option value={-1}>None</option>
             {
               layouts.map( (lytKEY) => {
                 return <option key={lytKEY.resId} value={lytKEY.resId}>{lytKEY.resRef}</option>
               })
             }
-          </Form.Select>
+          </ForgeSelect>
           <div className="button-group">
-            <button className="btn btn-sm" onClick={onBtnLoadLayout}>Load</button>
-            <button className="btn btn-sm" onClick={onBtnDisposeLayout}>Dispose</button>
+            <button className="forge-btn forge-btn--sm" onClick={onBtnLoadLayout}>Load</button>
+            <button className="forge-btn forge-btn--sm" onClick={onBtnDisposeLayout}>Dispose</button>
           </div>
         </SectionContainer>
 
@@ -238,7 +239,7 @@ export const ModelViewerSidebarComponent = function(props: any){
             <>
               <div className="property-editor-row">
                 <span className="property-editor-label">Follow Hook Cam</span>
-                <Form.Check type="switch" checked={followCameraHook} onChange={onFollowCameraHookChange} />
+                <input type="checkbox" checked={followCameraHook} onChange={onFollowCameraHookChange} />
               </div>
             </>
           )}

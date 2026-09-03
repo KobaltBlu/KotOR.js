@@ -71,6 +71,8 @@ export interface NWScriptASTNode {
  */
 export interface NWScriptProgramNode extends NWScriptASTNode {
   type: NWScriptASTNodeType.PROGRAM;
+  /** Synthesized nominal layouts required by user-struct ABI values. */
+  structs: NWScriptStructDefinition[];
   /**
    * Global variable declarations
    */
@@ -98,6 +100,7 @@ export interface NWScriptFunctionNode extends NWScriptASTNode {
    * Return type
    */
   returnType: NWScriptDataType;
+  returnStructName?: string;
   /**
    * Function parameters
    */
@@ -122,6 +125,12 @@ export interface NWScriptFunctionNode extends NWScriptASTNode {
 export interface NWScriptFunctionParameter {
   name: string;
   type: NWScriptDataType;
+  structName?: string;
+}
+
+export interface NWScriptStructDefinition {
+  name: string;
+  fields: Array<{ name: string; type: NWScriptDataType }>;
 }
 
 /**
@@ -363,6 +372,7 @@ export interface NWScriptVariableDeclarationNode extends NWScriptASTNode {
    * Variable type
    */
   dataType: NWScriptDataType;
+  structName?: string;
   /**
    * Initial value (optional)
    */
@@ -382,6 +392,7 @@ export interface NWScriptGlobalVariableDeclarationNode extends NWScriptASTNode {
    * Variable type
    */
   dataType: NWScriptDataType;
+  structName?: string;
   /**
    * Initial value (optional)
    */
@@ -429,11 +440,13 @@ export class NWScriptAST {
   static createProgram(
     globals: NWScriptGlobalVariableDeclarationNode[] = [],
     functions: NWScriptFunctionNode[] = [],
-    mainBody?: NWScriptBlockNode
+    mainBody?: NWScriptBlockNode,
+    structs: NWScriptStructDefinition[] = []
   ): NWScriptProgramNode {
     return {
       type: NWScriptASTNodeType.PROGRAM,
       children: [...globals, ...functions, ...(mainBody ? [mainBody] : [])],
+      structs,
       globals,
       functions,
       mainBody
@@ -680,13 +693,15 @@ export class NWScriptAST {
   static createVariableDeclaration(
     name: string,
     dataType: NWScriptDataType,
-    initializer?: NWScriptExpression
+    initializer?: NWScriptExpression,
+    structName?: string
   ): NWScriptVariableDeclarationNode {
     return {
       type: NWScriptASTNodeType.VARIABLE_DECLARATION,
       children: [],
       name,
       dataType,
+      structName,
       initializer
     };
   }
@@ -697,13 +712,15 @@ export class NWScriptAST {
   static createGlobalVariableDeclaration(
     name: string,
     dataType: NWScriptDataType,
-    initializer?: NWScriptExpression
+    initializer?: NWScriptExpression,
+    structName?: string
   ): NWScriptGlobalVariableDeclarationNode {
     return {
       type: NWScriptASTNodeType.GLOBAL_VARIABLE_DECLARATION,
       children: [],
       name,
       dataType,
+      structName,
       initializer
     };
   }
@@ -1014,4 +1031,3 @@ export class NWScriptAST {
     return serialized;
   }
 }
-

@@ -3,10 +3,11 @@ import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { TabSSFEditorState } from "@/apps/forge/states/tabs/TabSSFEditorState";
 import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
-import { Button, Form, Spinner } from "react-bootstrap";
+import { ForgeButton, ForgeSpinner, ForgeInput } from "@/apps/forge/components/ui";
 import * as KotOR from "@/apps/forge/KotOR";
 import { SSFType } from "@/enums/resource/SSFType";
 
+import { forgeSsfSettings } from "@/apps/forge/settings/forgeEditorsSettings";
 import "@/apps/forge/components/tabs/tab-ssf-editor/TabSSFEditor.scss";
 
 export const TabSSFEditor = function (props: BaseTabProps) {
@@ -231,23 +232,23 @@ export const TabSSFEditor = function (props: BaseTabProps) {
   ];
 
   return (
-    <div className="tab-ssf-editor h-100 overflow-hidden">
+    <div className="tab-ssf-editor">
       <MenuBar items={menuItems} />
 
       <div className="tab-ssf-editor__scroll">
         {!ssf ? (
-          <p className="text-muted">Loading…</p>
+          <p className="tab-ssf-editor__loading">Loading…</p>
         ) : (
-          <>
-            <div className="tab-ssf-editor__grid-header">
+          <div className="tab-ssf-editor__table" key={dataVersion + historyVersion}>
+            <div className="tab-ssf-editor__grid-header" role="row">
               <span>Slot</span>
               <span>STRREF</span>
               <span>Sound (resref)</span>
               <span>TLK text</span>
-              <span className="text-end">Actions</span>
+              <span className="tab-ssf-editor__actions-heading">Actions</span>
             </div>
 
-            <div key={dataVersion + historyVersion}>
+            <div className="tab-ssf-editor__rows">
               {slots.map(({ slot, label }) => {
                 const soundRef = tab.getSoundResRefDisplay(slot);
                 const tlkText = tab.getSoundText(slot);
@@ -256,10 +257,22 @@ export const TabSSFEditor = function (props: BaseTabProps) {
                 const playing = previewPlayingSlot === slot;
 
                 return (
-                  <div className="tab-ssf-editor__grid-row" key={slot}>
+                  <div
+                    className="tab-ssf-editor__grid-row"
+                    key={slot}
+                    role="row"
+                    onClick={(e) => {
+                      if ((e.target as HTMLElement).closest("button, input")) {
+                        return;
+                      }
+                      if (forgeSsfSettings.get().autoplayOnSelect) {
+                        void togglePreview(slot);
+                      }
+                    }}
+                  >
                     <div className="tab-ssf-editor__slot-label">{label}</div>
-                    <div>
-                      <Form.Control
+                    <div className="tab-ssf-editor__strref-cell">
+                      <ForgeInput
                         type="number"
                         min={0}
                         max={4294967295}
@@ -272,28 +285,28 @@ export const TabSSFEditor = function (props: BaseTabProps) {
                       />
                     </div>
                     <div className="tab-ssf-editor__sound-ref" title={soundRef || undefined}>
-                      {soundRef ? <code>{soundRef}</code> : <span className="text-muted">—</span>}
+                      {soundRef ? <code>{soundRef}</code> : <span className="tab-ssf-editor__empty">—</span>}
                     </div>
                     <div className="tab-ssf-editor__tlk-preview" title={tlkText || undefined}>
                       {tlkText || "—"}
                     </div>
                     <div className="tab-ssf-editor__actions">
                       {err ? <span className="tab-ssf-editor__preview-error" title={err}>{err}</span> : null}
-                      {loading ? <Spinner animation="border" size="sm" /> : null}
-                      <Button
+                      {loading ? <ForgeSpinner animation="border" size="sm" /> : null}
+                      <ForgeButton
                         variant={playing ? "warning" : "primary"}
                         size="sm"
                         disabled={!soundRef || loading}
                         onClick={() => void togglePreview(slot)}
                       >
                         {playing ? "Stop" : "Play"}
-                      </Button>
+                      </ForgeButton>
                     </div>
                   </div>
                 );
               })}
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>

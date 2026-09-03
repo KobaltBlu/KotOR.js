@@ -1,17 +1,22 @@
 import { EventListenerModel } from "@/apps/forge/EventListenerModel";
 import * as KotOR from "@/apps/forge/KotOR";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
 import * as THREE from 'three';
-import type { ForgeArea } from "@/apps/forge/module-editor/ForgeArea";
+import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
+
+/** TabState.tsx is not type-checkable under Jest (`JSX` types). */
+interface BlueprintEditorTab {
+  updateFile(): void;
+}
+
+type FieldChangeEvent = { target: { value: string; checked?: boolean } };
 
 export class ForgeGameObject extends EventListenerModel {
-  context: UI3DRenderer;
+  context: any;
   container: THREE.Object3D = new THREE.Object3D();
   blueprint: KotOR.GFFObject = new KotOR.GFFObject();
   uuid: string = crypto.randomUUID();
 
-  area: ForgeArea;
+  area: any;
 
   position: THREE.Vector3 = new THREE.Vector3();
   rotation: THREE.Euler = new THREE.Euler();
@@ -23,6 +28,10 @@ export class ForgeGameObject extends EventListenerModel {
   templateResRef: string = '';
   templateResType: typeof KotOR.ResourceTypes = KotOR.ResourceTypes.NA;
 
+  private static projectTemplatePathCache = new Map<string, string>();
+  private blueprintReloadTimer: ReturnType<typeof setTimeout> | undefined;
+  private blueprintReloadToken = 0;
+
   constructor(){
     super();
     this.position = this.container.position;
@@ -32,11 +41,15 @@ export class ForgeGameObject extends EventListenerModel {
     this.container.userData.forgeGameObject = this;
   }
 
-  setArea(area: ForgeArea){
+  static invalidateProjectTemplatePathCache(): void {
+    ForgeGameObject.projectTemplatePathCache.clear();
+  }
+
+  setArea(area: any){
     this.area = area;
   }
 
-  setContext(context: UI3DRenderer){
+  setContext(context: any){
     this.context = context;
   }
 
@@ -45,18 +58,116 @@ export class ForgeGameObject extends EventListenerModel {
     this.templateResType = resType;
   }
 
+  /**
+   * Debounced blueprint reload so typing a resref does not thrash disk/KEY loads.
+   */
+  protected scheduleBlueprintReload(): void {
+    if(this.blueprintReloadTimer){
+      clearTimeout(this.blueprintReloadTimer);
+    }
+    this.blueprintReloadTimer = setTimeout(() => {
+      this.blueprintReloadTimer = undefined;
+      const token = ++this.blueprintReloadToken;
+      void this.loadBlueprint().then(() => {
+        if(token !== this.blueprintReloadToken){
+          return;
+        }
+        return this.load();
+      });
+    }, 350);
+  }
+
+  private async resolveTemplateBuffer(): Promise<Uint8Array | undefined> {
+    if(!this.templateResRef || this.templateResType === KotOR.ResourceTypes.NA){
+      return undefined;
+    }
+    const ext = String(KotOR.ResourceTypes.getKeyByValue?.(this.templateResType) || "").toLowerCase();
+    if(ext && ProjectFileSystem.hasRoot()){
+      const fromProject = await ForgeGameObject.readProjectTemplate(this.templateResRef, ext);
+      if(fromProject?.byteLength){
+        return fromProject;
+      }
+    }
+    try{
+      return await KotOR.ResourceLoader.loadResource(this.templateResType, this.templateResRef);
+    }catch{
+      return undefined;
+    }
+  }
+
+  private static async readProjectTemplate(resRef: string, ext: string): Promise<Uint8Array | undefined> {
+    const key = `${resRef}.${ext}`.toLowerCase();
+    let path = ForgeGameObject.projectTemplatePathCache.get(key);
+    if(!path){
+      try{
+        const files = await ProjectFileSystem.readdir("", { recursive: true });
+        for(let i = 0; i < files.length; i++){
+          const rel = String(files[i] || "").replace(/\\/g, "/");
+          const base = rel.split("/").pop() || "";
+          if(base){
+            ForgeGameObject.projectTemplatePathCache.set(base.toLowerCase(), rel);
+          }
+        }
+      }catch{
+        return undefined;
+      }
+      path = ForgeGameObject.projectTemplatePathCache.get(key);
+    }
+    if(!path){
+      return undefined;
+    }
+    try{
+      return await ProjectFileSystem.readFile(path);
+    }catch{
+      return undefined;
+    }
+  }
+
   async loadBlueprint(){
     if(!this.templateResRef || this.templateResType === KotOR.ResourceTypes.NA) return;
-    const buffer = await KotOR.ResourceLoader.loadResource(this.templateResType, this.templateResRef);
-    if(buffer){
-      const gff = new KotOR.GFFObject(buffer);
-      this.blueprint = gff;
-      this.loadFromBlueprint();
+    try{
+      const buffer = await this.resolveTemplateBuffer();
+      if(buffer?.byteLength){
+        const gff = new KotOR.GFFObject(buffer);
+        this.blueprint = gff;
+        this.loadFromBlueprint();
+      }
+    }catch(e){
+      console.warn(`loadBlueprint failed for ${this.templateResRef}.${KotOR.ResourceTypes.getKeyByValue?.(this.templateResType) || this.templateResType}`, e);
     }
   }
 
   loadFromBlueprint(){
     // stub method to be overridden by child classes
+  }
+
+  /**
+   * Seed a retail-style blueprint GFF. Child classes replace this with the
+   * pipeline field list for their UT* FileType.
+   */
+  exportToBlueprint(): KotOR.GFFObject {
+    return this.blueprint;
+  }
+
+  /**
+   * Parse an existing GFF buffer, or seed a blank template when File → New
+   * passes an empty/undefined buffer (empty Uint8Array is truthy).
+   */
+  protected applySourceBuffer(buffer?: Uint8Array){
+    if(buffer instanceof Uint8Array && buffer.length >= KotOR.GFFObject.HEADER_SIZE){
+      this.loadFromBuffer(buffer);
+      return;
+    }
+    this.exportToBlueprint();
+  }
+
+  loadFromBuffer(buffer: Uint8Array){
+    this.blueprint = new KotOR.GFFObject(buffer);
+    this.loadFromBlueprint();
+  }
+
+  protected isTslGame(){
+    return KotOR.ApplicationProfile.GameKey === KotOR.GameEngineType.TSL;
   }
 
   async load(){
@@ -108,10 +219,10 @@ export class ForgeGameObject extends EventListenerModel {
     setter: (value: number) => void,
     property: keyof T,
     instance: T,
-    tab: TabState,
+    tab: BlueprintEditorTab,
     parser: (value: number) => number = (v) => v
   ) => {
-    return (e: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLSelectElement>) => {
+    return (e: FieldChangeEvent) => {
       const raw = parseInt(e.target.value) || 0;
       const value = parser(raw);
       setter(value);
@@ -125,9 +236,9 @@ export class ForgeGameObject extends EventListenerModel {
     index: number,
     property: keyof T,
     instance: T,
-    tab: TabState,
+    tab: BlueprintEditorTab,
   ) => {
-    return (e: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLSelectElement>) => {
+    return (e: FieldChangeEvent) => {
       const raw = parseInt(e.target.value) || 0;
       const value = instance.getProperty(property) as number[];
       value[index] = raw;
@@ -145,7 +256,7 @@ export class ForgeGameObject extends EventListenerModel {
     setter: (value: number) => void,
     property: keyof T,
     instance: T,
-    tab: TabState,
+    tab: BlueprintEditorTab,
   ) => {
     return this.createNumberFieldHandler(setter, property, instance, tab, this.clampByte);
   };
@@ -157,7 +268,7 @@ export class ForgeGameObject extends EventListenerModel {
     setter: (value: number) => void,
     property: keyof T,
     instance: T,
-    tab: TabState,
+    tab: BlueprintEditorTab,
   ) => {
     return this.createNumberFieldHandler(setter, property, instance, tab, this.clampWord);
   };
@@ -169,10 +280,10 @@ export class ForgeGameObject extends EventListenerModel {
     setter: (value: boolean) => void,
     property: keyof T,
     instance: T,
-    tab: TabState,
+    tab: BlueprintEditorTab,
   ) => {
-    return (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.checked;
+    return (e: FieldChangeEvent) => {
+      const value = !!e.target.checked;
       setter(value);
       instance.setProperty(property as keyof T, value);
       tab.updateFile();
@@ -186,7 +297,7 @@ export class ForgeGameObject extends EventListenerModel {
     setter: (value: boolean) => void,
     property: keyof T,
     instance: T,
-    tab: TabState,
+    tab: BlueprintEditorTab,
   ) => {
     return (value: boolean) => {
       setter(value);
@@ -202,9 +313,9 @@ export class ForgeGameObject extends EventListenerModel {
     setter: (value: string) => void,
     property: keyof T,
     instance: T,
-    tab: TabState,
+    tab: BlueprintEditorTab,
   ) => {
-    return (e: React.ChangeEvent<HTMLInputElement>) => {
+    return (e: FieldChangeEvent) => {
       const value = this.sanitizeResRef(e.target.value);
       setter(value);
       instance.setProperty(property as keyof T, value);
@@ -219,9 +330,9 @@ export class ForgeGameObject extends EventListenerModel {
     setter: (value: string) => void,
     property: keyof T,
     instance: T,
-    tab: TabState,
+    tab: BlueprintEditorTab,
   ) => {
-    return (e: React.ChangeEvent<HTMLTextAreaElement|HTMLInputElement>) => {
+    return (e: FieldChangeEvent) => {
       setter(e.target.value);
       instance.setProperty(property as keyof T, e.target.value);
       tab.updateFile();
@@ -235,7 +346,7 @@ export class ForgeGameObject extends EventListenerModel {
     setter: (value: KotOR.CExoLocString) => void,
     property: keyof T,
     instance: T,
-    tab: TabState,
+    tab: BlueprintEditorTab,
   ) => {
     return (value: KotOR.CExoLocString) => {
       setter(value);
@@ -251,6 +362,9 @@ export class ForgeGameObject extends EventListenerModel {
   setProperty(property: keyof this, value: any){
     const old = (this as any)[property];
     (this as any)[property] = value;
+    if(property === 'templateResRef' && value !== old && this.templateResType !== KotOR.ResourceTypes.NA){
+      this.scheduleBlueprintReload();
+    }
     this.processEventListener('onPropertyChange', [property, value, old]);
     return value;
   }
