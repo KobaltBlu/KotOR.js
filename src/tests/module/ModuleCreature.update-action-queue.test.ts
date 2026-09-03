@@ -4,12 +4,12 @@
  */
 import { describe, expect, it } from "@jest/globals";
 import * as fs from "fs";
-import * as path from "path";
+import { srcPath } from "@/tests/helpers/paths";
 
 describe("ModuleCreature.updateActionQueue", () => {
   it("does not early-return on isDebilitated (k_ptar_calofade Wait/Resume)", () => {
     const src = fs.readFileSync(
-      path.join(__dirname, "ModuleCreature.ts"),
+      srcPath("module", "ModuleCreature.ts"),
       "utf8"
     );
     const start = src.indexOf("  updateActionQueue(delta = 0){");

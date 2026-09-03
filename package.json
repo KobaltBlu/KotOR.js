@@ -22,7 +22,8 @@
     "typedoc": "typedoc --out ./wiki ./src/KotOR.ts",
     "test": "jest --verbose --coverage --no-cache ./src/tests",
     "test:pathing": "jest --config jest.pathing.config.js --coverage=false --no-cache",
-    "test:upgrade": "jest --config jest.upgrade.config.js --no-cache"
+    "test:audio": "jest --config jest.audio-priority.config.js --coverage=false --no-cache",
+    "test:compiler": "jest --config jest.compiler.config.js --coverage=false --no-cache"
   },
   "author": "KobaltBlu",
   "license": "GPL-3.0",

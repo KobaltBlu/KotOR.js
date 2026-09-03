@@ -4,16 +4,16 @@
  */
 import { describe, expect, it } from '@jest/globals';
 import * as fs from 'fs';
-import * as path from 'path';
+import { srcPath } from '@/tests/helpers/paths';
 
 describe('K2 SetState subtypes 0x0E / 0x10–0x13', () => {
   it('enums define KNOCKDOWN/DROID_CONFUSED/HELD/MIND_TRICK/DROID_SCRAMBLE', () => {
     const setState = fs.readFileSync(
-      path.join(__dirname, '../enums/effects/GameEffectSetStateType.ts'),
+      srcPath('enums', 'effects', 'GameEffectSetStateType.ts'),
       'utf8'
     );
     const ambient = fs.readFileSync(
-      path.join(__dirname, '../enums/module/ModuleCreatureAmbientState.ts'),
+      srcPath('enums', 'module', 'ModuleCreatureAmbientState.ts'),
       'utf8'
     );
     expect(setState).toMatch(/KNOCKDOWN\s*=\s*14/);
@@ -26,7 +26,7 @@ describe('K2 SetState subtypes 0x0E / 0x10–0x13', () => {
 
   it('K2 opcodes 809/848/852 build SetState 16/18/19', () => {
     const src = fs.readFileSync(
-      path.join(__dirname, 'NWScriptDefK2.ts'),
+      srcPath('nwscript', 'NWScriptDefK2.ts'),
       'utf8'
     );
     expect(src).toMatch(
@@ -42,7 +42,7 @@ describe('K2 SetState subtypes 0x0E / 0x10–0x13', () => {
 
   it('EffectKnockdown applies companion SetState KNOCKDOWN', () => {
     const src = fs.readFileSync(
-      path.join(__dirname, '../effects/EffectKnockdown.ts'),
+      srcPath('effects', 'EffectKnockdown.ts'),
       'utf8'
     );
     expect(src).toMatch(/GameEffectSetStateType\.KNOCKDOWN/);
@@ -51,7 +51,7 @@ describe('K2 SetState subtypes 0x0E / 0x10–0x13', () => {
 
   it('SetStateInternal handles MindTrick/Scramble stun VFX and knockdown ambient', () => {
     const src = fs.readFileSync(
-      path.join(__dirname, '../effects/EffectSetStateInternal.ts'),
+      srcPath('effects', 'EffectSetStateInternal.ts'),
       'utf8'
     );
     expect(src).toMatch(/MIND_TRICK/);
@@ -64,7 +64,7 @@ describe('K2 SetState subtypes 0x0E / 0x10–0x13', () => {
 
   it('immunities cover knockdown / droid confused / mind trick', () => {
     const src = fs.readFileSync(
-      path.join(__dirname, '../effects/set-state.ts'),
+      srcPath('effects', 'set-state.ts'),
       'utf8'
     );
     expect(src).toMatch(/IMMUNITY_KNOCKDOWN/);
@@ -76,7 +76,7 @@ describe('K2 SetState subtypes 0x0E / 0x10–0x13', () => {
 
   it('ModuleCreature helpers and isDebilitated exclude DroidConfused', () => {
     const src = fs.readFileSync(
-      path.join(__dirname, '../module/ModuleCreature.ts'),
+      srcPath('module', 'ModuleCreature.ts'),
       'utf8'
     );
     expect(src).toMatch(/isDroidConfused\(\)[\s\S]*?hasSetState\(16\)/);
@@ -92,7 +92,7 @@ describe('K2 SetState subtypes 0x0E / 0x10–0x13', () => {
 
   it('debilitated anim switch covers cases 14–19', () => {
     const src = fs.readFileSync(
-      path.join(__dirname, '../module/ModuleObject.ts'),
+      srcPath('module', 'ModuleCreature.ts'),
       'utf8'
     );
     expect(src).toMatch(/case 14:/);

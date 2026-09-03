@@ -5579,17 +5579,17 @@ export class ModuleCreature extends ModuleObject {
 
   /** appearance.hitradius — unengaged DesiredAttackRange. */
   getHitRadius(){
-    return this.creatureAppearance.hitradius;
+    return this.creatureAppearance?.hitradius ?? 1;
   }
 
   /** appearance.creperspace — creature spacing / engaged DesiredAttackRange. */
   getCreaturePersonalSpace(){
-    return this.creatureAppearance.creperspace;
+    return this.creatureAppearance?.creperspace ?? 1;
   }
 
   /** appearance.perspace — pathfind / walkmesh personal radius. */
   getPathPersonalSpace(){
-    return this.creatureAppearance.perspace;
+    return this.creatureAppearance?.perspace ?? 1;
   }
 
   getMainClass(){

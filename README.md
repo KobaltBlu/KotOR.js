@@ -160,7 +160,10 @@ Notes:
 | `npm run webpack:dev-watch` | Watch-mode development build (no dev server) |
 | `npm run webpack:prod` | Production build (minified, no source maps) |
 | `npm run electron:compile` | Compile only the Electron main process TypeScript |
-| `npm run test` | Run the Jest test suite |
+| `npm run test` | Run the full Jest suite under `src/tests/` |
+| `npm run test:pathing` | Pathfinding / follow-leader suite |
+| `npm run test:audio` | Audio / minigame audio suite |
+| `npm run test:compiler` | NWScript retail compiler suite |
 | `npm run typedoc` | Generate API docs into the `wiki/` folder |
 
 ## Screenshots

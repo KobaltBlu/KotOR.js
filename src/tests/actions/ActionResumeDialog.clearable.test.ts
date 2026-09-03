@@ -4,22 +4,22 @@
  */
 import { describe, expect, it } from "@jest/globals";
 import * as fs from "fs";
-import * as path from "path";
+import { srcPath } from "@/tests/helpers/paths";
 
 describe("dialog control action clearability", () => {
   it("marks Pause/Resume unclearable and ClearAllActions keeps Wait/Resume types", () => {
     // tar_m08aa k_ptar_calofade: Pause → Wait → Resume, then EffectHorrified
     // ClearAllActions(1) must not drop Resume or the dialog hangs paused.
     const resumeSrc = fs.readFileSync(
-      path.join(__dirname, "ActionResumeDialog.ts"),
+      srcPath("actions", "ActionResumeDialog.ts"),
       "utf8"
     );
     const pauseSrc = fs.readFileSync(
-      path.join(__dirname, "ActionPauseDialog.ts"),
+      srcPath("actions", "ActionPauseDialog.ts"),
       "utf8"
     );
     const objectSrc = fs.readFileSync(
-      path.join(__dirname, "../module/ModuleObject.ts"),
+      srcPath("module", "ModuleObject.ts"),
       "utf8"
     );
 

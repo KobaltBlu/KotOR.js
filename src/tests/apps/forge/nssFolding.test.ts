@@ -1,5 +1,5 @@
 import { describe, expect, test } from "@jest/globals";
-import { foldNss } from "./nssFolding";
+import { foldNss } from "@/apps/forge/nwscript-language/nssFolding";
 
 describe("foldNss", () => {
   test("folds braces", () => {

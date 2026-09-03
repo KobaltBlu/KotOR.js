@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  *
- * Run: npx jest --config jest.config.js src/resource/GFFObject.toJSON.test.ts --coverage=false
+ * Run: npx jest --config jest.config.js src/tests/resource/GFFObject.toJSON.test.ts --coverage=false
  */
 import { describe, expect, it } from '@jest/globals';
 import { GFFDataType } from '@/enums/resource/GFFDataType';

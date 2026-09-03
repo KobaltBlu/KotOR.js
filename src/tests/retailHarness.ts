@@ -13,6 +13,8 @@ import { execFileSync } from 'child_process';
 import { NWScriptParser } from '@/nwscript/compiler/NWScriptParser';
 import { NWScriptCompiler } from '@/nwscript/compiler/NWScriptCompiler';
 
+import { REPO_ROOT } from '@/tests/helpers/paths';
+
 export type MismatchClass = 'A' | 'B' | 'C';
 
 export type CompileCompareResult = {
@@ -25,9 +27,8 @@ export type CompileCompareResult = {
   note?: string;
 };
 
-const ROOT = path.resolve(__dirname, '../../../../');
-export const NWNNSSCOMP = path.join(ROOT, 'exports/k1/scripts/nwnnsscomp.exe');
-export const NWSCRIPT_NSS = path.join(ROOT, 'exports/k1/scripts/nwscript.nss');
+export const NWNNSSCOMP = path.join(REPO_ROOT, 'exports/k1/scripts/nwnnsscomp.exe');
+export const NWSCRIPT_NSS = path.join(REPO_ROOT, 'exports/k1/scripts/nwscript.nss');
 
 let cachedParser: NWScriptParser | null = null;
 

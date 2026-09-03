@@ -1,19 +1,10 @@
 /** @type {import('ts-jest').JestConfigWithTsJest} **/
+const base = require('./jest.config.js');
+
 module.exports = {
-  preset: 'ts-jest',
-  testEnvironment: 'node',
-  moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1',
-  },
-  transform: {
-    '^.+.ts?$': ['ts-jest', {
-      diagnostics: false,
-      isolatedModules: true,
-    }],
-  },
+  ...base,
   testMatch: [
-    '<rootDir>/src/tests/NWScriptCompiler.retail.test.ts',
+    '<rootDir>/src/tests/nwscript/compiler/NWScriptCompiler.retail.test.ts',
   ],
-  verbose: true,
   testTimeout: 120000,
 };
