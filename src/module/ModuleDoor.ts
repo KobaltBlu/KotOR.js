@@ -1035,9 +1035,10 @@ export class ModuleDoor extends ModuleObject {
           //lighting: false,
           static: this.static,
           useTweakColor: this.useTweakColor,
-          tweakColor: this.tweakColor
-          //castShadow: true,
-          //receiveShadow: true
+          tweakColor: this.tweakColor,
+          castShadow: false,
+          receiveShadow: true,
+          shadowsEnabled: false,
         }).then((door: OdysseyModel3D) => {
           if(this.model instanceof OdysseyModel3D){
             this.model.removeFromParent();
