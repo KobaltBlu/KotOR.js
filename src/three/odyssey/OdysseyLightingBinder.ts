@@ -409,6 +409,7 @@ export class OdysseyLightingBinder {
     const manager = shadowManager ?? GameState.odysseyShadowManager;
     const epoch = manager?.frameEpoch ?? 0;
     const activeCount = manager?.activeLightCount ?? 0;
+    const softBound = manager?.softShadowMaps ? 1 : 0;
     const shadowTexLive = manager?.getShadowMapTextureAt?.(0) ?? manager?.getShadowMapTexture() ?? null;
     const shadowsActive = activeCount > 0;
     const boundTex = material.uniforms.odysseyShadowMap0?.value
@@ -418,17 +419,21 @@ export class OdysseyLightingBinder {
     if(!needsTextureRefresh &&
       material.userData.odysseyShadowBoundEpoch === epoch &&
       material.userData.odysseyShadowGatingBound === GameState.shadowAlpha &&
-      material.userData.odysseyBeamingBound === GameState.beamingProjectionAlpha){
+      material.userData.odysseyBeamingBound === GameState.beamingProjectionAlpha &&
+      material.userData.odysseyShadowSoftBound === softBound){
       return;
     }
 
-    if(!material.uniforms.odysseyShadowMap0){
+    if(!material.uniforms.odysseyShadowMap0 || !material.uniforms.odysseyShadowSoft){
       Object.assign(material.uniforms, createOdysseyShadowUniforms());
     }
 
     material.uniforms.odysseyBeamingProjectionAlpha.value = GameState.beamingProjectionAlpha;
     material.uniforms.odysseyShadowMapActive.value = activeCount > 0 ? 1.0 : 0.0;
     material.uniforms.odysseyShadowLightCount.value = activeCount;
+    if(material.uniforms.odysseyShadowSoft){
+      material.uniforms.odysseyShadowSoft.value = manager?.softShadowMaps ? 1.0 : 0.0;
+    }
     if(material.uniforms.odysseyShadowConstantBias){
       material.uniforms.odysseyShadowConstantBias.value = ODYSSEY_SHADOW_MAP_DEPTH_BIAS;
     }
@@ -485,6 +490,7 @@ export class OdysseyLightingBinder {
     material.userData.odysseyShadowBoundEpoch = epoch;
     material.userData.odysseyShadowGatingBound = GameState.shadowAlpha;
     material.userData.odysseyBeamingBound = GameState.beamingProjectionAlpha;
+    material.userData.odysseyShadowSoftBound = softBound;
     material.uniformsNeedUpdate = true;
   }
 

@@ -304,7 +304,7 @@ export class UI3DRenderer extends EventListenerModel {
 
     this.lightManager.init(this);
     this.odysseyShadowManager.init(this.lightManager, this.scene);
-    this.odysseyShadowManager.useQualityPreset(true);
+    this.odysseyShadowManager.syncQualityFromLightManager();
     this.shadowDebugGroup.name = 'shadow_debug';
     this.scene.add(this.shadowDebugGroup);
   }

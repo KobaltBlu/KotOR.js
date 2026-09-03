@@ -279,6 +279,7 @@ export class MenuGraphicsAdvanced extends GameMenu {
     }
 
     GameState.lightManager?.applyVideoQualityLimits?.();
+    GameState.odysseyShadowManager?.syncQualityFromLightManager?.();
     void GameState.iniConfig.save();
 
     // Retail HandleInputEvent → SetUpOptions after pop.

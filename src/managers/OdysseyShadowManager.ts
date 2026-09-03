@@ -5,9 +5,11 @@ import { LightManager as LightManagerClass } from '@/managers/LightManager';
 import type { OdysseyLight3D } from '@/three/odyssey';
 import { GameState } from '@/GameState';
 import {
+  isRetailShadowColorVisible,
   retailShadowEffectiveRadius,
   retailShadowLightPosition,
   retailShadowProjectionStrength,
+  retailSoftShadowLightElevationOk,
 } from '@/utility/retailLighting';
 import {
   aimShadowProxyAtFocus,
@@ -66,9 +68,10 @@ interface IShadowProxySlot {
 }
 
 /**
- * Retail-aligned shadow maps — up to `maxShadowLights` (NumShadowCastingLights,
- * default 3) concurrent proxy lights, matching GetShadowLights(mode=0) /
- * DoGobShadows multi-light behavior.
+ * Retail-aligned shadow maps.
+ *
+ * Soft Shadows ON → one proxy (RenderShadows / soft stencil disk path).
+ * Soft Shadows OFF → up to `maxShadowLights` (DoGobShadows multi-light).
  */
 export class OdysseyShadowManager {
   private lightManager: LightManager | undefined;
@@ -111,6 +114,8 @@ export class OdysseyShadowManager {
   private _focus = new THREE.Vector3();
   private _proxyPos = new THREE.Vector3();
   private _scratchSelected: OdysseyLight3D[] = [];
+  private _scratchSoftCandidates: OdysseyLight3D[] = [];
+  private _scratchToFocus = new THREE.Vector3();
 
   init(lightManager: LightManager, scene?: THREE.Scene | THREE.Object3D){
     this.lightManager = lightManager;
@@ -120,12 +125,24 @@ export class OdysseyShadowManager {
     }
   }
 
-  /** Runtime cap from videoquality NumShadowCastingLights (retail maxShadowLights). */
+  /**
+   * Concurrent maps: Soft Shadows uses one disk/light (retail RenderShadows);
+   * hard mode uses videoquality NumShadowCastingLights / DoGobShadows.
+   */
   get maxShadowMaps(): number {
+    if(this.softShadowMaps){
+      return 1;
+    }
     const fromQuality = this.lightManager
       ? LightManagerClass.MAXSHADOWLIGHTS
       : MAX_ODYSSEY_SHADOW_MAPS;
     return Math.max(1, Math.min(MAX_ODYSSEY_SHADOW_MAPS, fromQuality | 0));
+  }
+
+  /** Sync map resolution / soft flag from LightManager INI Soft Shadows. */
+  syncQualityFromLightManager(){
+    const soft = !!this.lightManager?.softShadowsEnabled;
+    this.useQualityPreset(soft);
   }
 
   setScene(scene: THREE.Scene | THREE.Object3D){
@@ -142,10 +159,12 @@ export class OdysseyShadowManager {
   }
 
   useQualityPreset(softShadowsEnabled: boolean){
-    this.setMapResolution(
-      softShadowsEnabled ? DEFAULT_MAP_RES_SOFT : DEFAULT_MAP_RES_HARD,
-      softShadowsEnabled
-    );
+    const soft = !!softShadowsEnabled;
+    const nextRes = soft ? DEFAULT_MAP_RES_SOFT : DEFAULT_MAP_RES_HARD;
+    if(this.softShadowMaps !== soft || this.mapResolution !== nextRes){
+      this.frameEpoch++;
+    }
+    this.setMapResolution(nextRes, soft);
   }
 
   private ensureSlots(count: number){
@@ -274,13 +293,18 @@ export class OdysseyShadowManager {
   }
 
   /**
-   * Retail GetShadowLights(mode=0) set: all fading shadowLights with strength > 0,
-   * capped at maxShadowLights. Falls back to mode-1/2 when mode-0 is empty.
+   * Soft Shadows: one elevated lightcmp-best bound light (RenderShadows).
+   * Hard: GetShadowLights(mode=0) fading set, capped at maxShadowLights.
+   * Falls back to mode-1/2 when mode-0 is empty (hard only).
    */
   private selectShadowLights(): OdysseyLight3D[] {
     const out = this._scratchSelected;
     out.length = 0;
     if(!this.lightManager){ return out; }
+
+    if(this.softShadowMaps){
+      return this.selectSoftShadowLight(out);
+    }
 
     const max = this.maxShadowMaps;
     const seen = new Set<string>();
@@ -308,6 +332,75 @@ export class OdysseyShadowManager {
       push(this.lightManager.distantShadowLight);
     }
 
+    return out;
+  }
+
+  /**
+   * Retail RenderShadows Soft Shadows path: elevation gate, then the most
+   * overhead elevated bound light (soft disk is horizontal at focus Z).
+   * lightcmp alone prefers lower MDL priority and would keep wall sconces
+   * (e.g. auroralight40) over ceiling lamps (auroralight47). Empty when none qualify.
+   */
+  private selectSoftShadowLight(out: OdysseyLight3D[]): OdysseyLight3D[] {
+    const lm = this.lightManager;
+    if(!lm){ return out; }
+    if(!(GameState.shadowAlpha > 0)){ return out; }
+
+    const focusZ = this._focus.z;
+    const candidates = this._scratchSoftCandidates;
+    candidates.length = 0;
+
+    const bound = lm.boundLights;
+    for(let i = 0; i < bound.length; i++){
+      const light = bound[i];
+      if(light.isAmbient){ continue; }
+      if(!isRetailShadowColorVisible(light.color.r, light.color.g, light.color.b)){
+        continue;
+      }
+      if(light.illuminationScore > 1){ continue; }
+      if(!retailSoftShadowLightElevationOk(light.worldPosition.z, focusZ)){
+        continue;
+      }
+      candidates.push(light);
+    }
+
+    if(!candidates.length){ return out; }
+
+    const toFocus = this._scratchToFocus;
+    const focus = this._focus;
+    const elevAngleSq = (light: OdysseyLight3D) => {
+      // Smaller = more overhead. Use 1 - cos^2 toward -Z without acos.
+      toFocus.set(
+        focus.x - light.worldPosition.x,
+        focus.y - light.worldPosition.y,
+        focus.z - light.worldPosition.z
+      );
+      const lenSq = toFocus.lengthSq();
+      if(!(lenSq > 1e-8)){ return 0; }
+      const dz = toFocus.z;
+      // horiz^2 / len^2 = 1 - (dz/len)^2 — lower when more vertical.
+      return 1 - (dz * dz) / lenSq;
+    };
+
+    candidates.sort((a, b) => {
+      const ea = elevAngleSq(a);
+      const eb = elevAngleSq(b);
+      if(ea !== eb){ return ea - eb; }
+      return lm.sortLights(a, b);
+    });
+
+    const best = candidates[0];
+    // Soft path does not wait on GetShadowLights fade history.
+    if(!(best.shadowFadeFactor > 0)){
+      best.shadowFadeFactor = 1;
+    }
+    const strength = retailShadowProjectionStrength(
+      GameState.shadowAlpha,
+      best.shadowFadeFactor || 0
+    );
+    if(strength > 0){
+      out.push(best);
+    }
     return out;
   }
 
@@ -358,6 +451,14 @@ export class OdysseyShadowManager {
       this._focus.copy(focus);
     }else{
       this._focus.copy(this.lightManager.focusPosition);
+    }
+
+    // Soft Shadows may flip between 1 and multi-light mid-session.
+    if(this.lightManager){
+      const soft = !!this.lightManager.softShadowsEnabled;
+      if(soft !== this.softShadowMaps){
+        this.useQualityPreset(soft);
+      }
     }
 
     const lights = this.selectShadowLights();

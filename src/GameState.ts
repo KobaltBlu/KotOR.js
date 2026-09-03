@@ -1108,7 +1108,7 @@ export class GameState implements EngineContext {
        */
       GameState.lightManager.init(GameState);
       GameState.odysseyShadowManager.init(GameState.lightManager, GameState.scene);
-      GameState.odysseyShadowManager.useQualityPreset(true);
+      GameState.odysseyShadowManager.syncQualityFromLightManager();
       GameState.windManager.init(GameState);
       GameState.lightManager.setLightHelpersVisible(ConfigClient.get('GameState.debug.light_helpers') ? true : false);
 

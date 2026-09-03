@@ -331,6 +331,16 @@ export const RETAIL_SHADOW_LENGTH = 5;
 export const RETAIL_MAX_SHADOW_DISTANCE = 40;
 /** K1 `enableFocusShadowing` global @ 0x007a1938 (non-zero = enabled). */
 export const RETAIL_ENABLE_FOCUS_SHADOWING = true;
+/**
+ * K1 RenderShadows Soft Shadows elevation gate: light.z must exceed
+ * focus_position.z + this value or the soft stencil pass is skipped.
+ * Verified: Scene::RenderShadows @ 0x00451af4 (K1 swkotor.exe).
+ */
+export const RETAIL_SOFT_SHADOW_LIGHT_MIN_ELEVATION = 1.75;
+/** True when a light is high enough above focus for retail Soft Shadows. */
+export function retailSoftShadowLightElevationOk(lightZ: number, focusZ: number): boolean {
+  return lightZ > focusZ + RETAIL_SOFT_SHADOW_LIGHT_MIN_ELEVATION;
+}
 /** Camera near-plane Z bias added in ProjectDynamicShadow / DoDynamicMeshProjections. */
 export const RETAIL_SHADOW_NEAR_PLANE_Z_BIAS = 0.05;
 /** K1 distant sun plane normal (ProjectDynamicShadow when radius > 1000). */

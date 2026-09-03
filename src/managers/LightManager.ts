@@ -828,7 +828,8 @@ export class LightManager {
 
   /**
    * GetShadowLights for the requested mode.
-   * Mode 0/1 retain fading histories; mode 2 picks one distant/static light.
+   * Mode 0/1 walk boundLights in order (retail field8_0x50) with illum/dynamic
+   * filters and retain fading histories; mode 2 picks one distant/static light.
    */
   getShadowLights(mode: RetailShadowLightMode, delta = 0): OdysseyLight3D[] {
     if(mode === RetailShadowLightMode.DistantStatic){
@@ -836,12 +837,13 @@ export class LightManager {
       return this.distantShadowLight ? [this.distantShadowLight] : [];
     }
 
-    const prioritized = this.prioritizeShadow();
     const dynamicOnly = mode === RetailShadowLightMode.SingleDynamic;
     const desired = this._shadowDesiredScratch;
     desired.length = 0;
-    for(let i = 0; i < prioritized.length; i++){
-      const light = prioritized[i];
+    // Retail GetShadowLights modes 0/1 iterate the bound render list in order —
+    // no re-sort and no PartLight.shadow (MDL) check.
+    for(let i = 0, il = this.boundLights.length; i < il; i++){
+      const light = this.boundLights[i];
       if(light.illuminationScore > 1){ continue; }
       if(dynamicOnly && (light.dynamicType | 0) === 0){ continue; }
       // ARE SunShadows/MoonShadows does not suppress module-authored MDL key lights
