@@ -17,6 +17,7 @@ import { SWDifficulty } from "@/engine/rules/SWDifficulty";
 import { SWBodyBag } from "@/engine/rules/SWBodyBag";
 import { SWHead } from "@/engine/rules/SWHead";
 import { SWPriorityGroup } from "@/engine/rules/SWPriorityGroup";
+import { SWInfluence } from "@/engine/rules/SWInfluence";
 import { SWEncounterDifficulty } from "@/engine/rules/SWEncounterDifficulty";
 import { SWGender } from "@/engine/rules/SWGender";
 import { SWPhenotype } from "@/engine/rules/SWPhenotype";
@@ -85,6 +86,8 @@ export class SWRuleSet {
   static difficulty: SWDifficulty[] = [];
   static currentDifficulty: number = 0;
   static bodyBags: SWBodyBag[] = [];
+  static influences: SWInfluence[] = [];
+  static influenceCount: number = 0;
   static priorityGroups: SWPriorityGroup[] = [];
   static factions: SWFaction[] = [];
   static factionCount: number = 0;
@@ -374,6 +377,22 @@ export class SWRuleSet {
     }
 
     /**
+     * Initialize Influence (TSL influence.2da — Tag / BaseInfluence)
+     */
+    const influences = GameState.TwoDAManager.datatables.get('influence');
+    if(influences){
+      SWRuleSet.influenceCount = influences.RowCount;
+      SWRuleSet.influences = new Array(SWRuleSet.influenceCount);
+      for(let i = 0; i < influences.RowCount; i++){
+        SWRuleSet.influences[i] = SWInfluence.From2DA(influences.rows[i]);
+        SWRuleSet.influences[i].id = i;
+      }
+    }else{
+      SWRuleSet.influences = [];
+      SWRuleSet.influenceCount = 0;
+    }
+
+    /**
      * Initialize Priority Groups
      */
     const priorityGroups = GameState.TwoDAManager.datatables.get('prioritygroups');
@@ -608,6 +627,19 @@ export class SWRuleSet {
         SWRuleSet.currentDifficulty = difficulty;
       }
     }
+  }
+
+  /** Case-insensitive lookup in influence.2da rows (TSL). */
+  static GetInfluenceByTag(tag: string): SWInfluence | undefined {
+    const want = (tag || '').toLowerCase();
+    if(!want) return undefined;
+    for(let i = 0; i < SWRuleSet.influences.length; i++){
+      const row = SWRuleSet.influences[i];
+      if(row && (row.tag || '').toLowerCase() === want){
+        return row;
+      }
+    }
+    return undefined;
   }
 
 }

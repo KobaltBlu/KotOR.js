@@ -26,8 +26,6 @@ export * from "@/managers/WindManager";
 export * from "@/managers/MenuManager";
 export * from "@/managers/ModuleObjectManager";
 export * from "@/managers/PartyManager";
-export * from "@/managers/influence-status";
-export * from "@/managers/handle-alignment-influence";
 export * from "@/managers/RIMManager";
 export * from "@/managers/ShaderManager";
 export * from "@/managers/TLKManager";

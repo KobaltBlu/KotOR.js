@@ -18,12 +18,8 @@ import { ModulePlayer } from "@/module/ModulePlayer";
 import { GameFileSystem } from "@/utility/GameFileSystem";
 import { JournalEntry } from "@/engine/JournalEntry";
 import { DialogMessageEntry } from "@/engine/DialogMessageEntry";
-import { InfluenceStatusFeedback } from "@/managers/influence-status";
-import {
-  fanoutAlignmentInfluenceFromPC as fanoutAllNpcAlignmentInfluence,
-  handleAlignmentInfluence,
-} from "@/managers/handle-alignment-influence";
 import { FeedbackMessageEntry } from "@/engine/FeedbackMessageEntry";
+import { FeebackMessageColor } from "@/enums/engine/FeedbackMessageColor";
 import { PazaakCards } from "@/enums/minigames/PazaakCards";
 import { PazaakSideDeckSlots } from "@/enums/minigames/PazaakSideDeckSlots";
 import { type SWPortrait } from "@/engine/rules/SWPortrait";
@@ -161,6 +157,16 @@ export class PartyManager {
   /** Retail UpdateStatus 9/10 pending bitmasks (TSL). */
   static influenceGainedMask: number = 0;
   static influenceLostMask: number = 0;
+  /** Dirty flag for a future MenuStatusSummary (retail +0x68). */
+  static influenceStatusPending: boolean = false;
+
+  /**
+   * TSL companion tags in NPC_* slot order (RebuildPartyTable / influence resolve).
+   */
+  static readonly TSL_NPC_TAGS: readonly string[] = [
+    'atton', 'baodur', 'mand', 'g0t0', 'handmaiden', 'hk47',
+    'kreia', 'mira', 't3m4', 'visasmarr', 'hanharr', 'disciple',
+  ];
   static ChemicalCount: number = 0;
   static ComponentCount: number = 0;
   /** Party XP pool (retail PT_XP_POOL). */
@@ -328,25 +334,70 @@ export class PartyManager {
     return true;
   }
 
+  /** NPC_* slot for a companion tag, or -1. */
+  static npcIdFromTag(tag: string): number {
+    const want = (tag || '').toLowerCase();
+    if(!want) return -1;
+    return PartyManager.TSL_NPC_TAGS.indexOf(want);
+  }
+
+  /**
+   * Retail CGuiInGame::UpdateStatus 9/10 — influence gained / lost bitmasks + combat log.
+   */
+  static notifyInfluenceChange(npcId: number, gained: boolean){
+    const bit = 1 << ((npcId | 0) & 31);
+    if(gained){
+      PartyManager.influenceGainedMask |= bit;
+    }else{
+      PartyManager.influenceLostMask |= bit;
+    }
+    PartyManager.influenceStatusPending = true;
+
+    const cre =
+      PartyManager.GetPartyMemberByNPCId(npcId) ||
+      PartyManager.NPCS[npcId]?.moduleObject;
+    const name = cre?.getName?.() || `NPC_${npcId | 0}`;
+    const text = gained
+      ? `Influence gained: ${name}`
+      : `Influence lost: ${name}`;
+    try{
+      GameState.FeedbackMessageManager?.AddMessage?.(
+        text,
+        FeebackMessageColor.INFO,
+      );
+    }catch(_e){
+      // Feedback may be unavailable outside a running game
+    }
+  }
+
   /** Status feedback + HandleAlignmentInfluence after a real change. */
   static onInfluenceChanged(nNPC: number, prev: number, next: number){
     // Retail UpdateStatus 9 = gained, 10 = lost (-1 counts as below any set value)
     const gained = next > prev;
-    InfluenceStatusFeedback.notify(nNPC, gained);
-    PartyManager.influenceGainedMask = InfluenceStatusFeedback.gainedMask;
-    PartyManager.influenceLostMask = InfluenceStatusFeedback.lostMask;
+    PartyManager.notifyInfluenceChange(nNPC, gained);
 
     const cre =
       PartyManager.GetPartyMemberByNPCId(nNPC) ||
       PartyManager.NPCS[nNPC]?.moduleObject;
     if(cre){
-      handleAlignmentInfluence(cre);
+      cre.handleAlignmentInfluence();
     }
   }
 
   /** Retail ModifyAlignment PC fanout — refresh all CNPC alignment-from-influence. */
   static fanoutAlignmentInfluenceFromPC(){
-    fanoutAllNpcAlignmentInfluence();
+    if(GameState.GameKey !== GameEngineType.TSL){
+      return;
+    }
+    const max = PartyManager.MaxPartyCount || 12;
+    for(let i = 0; i < max; i++){
+      const cre =
+        PartyManager.GetPartyMemberByNPCId(i) ||
+        PartyManager.NPCS[i]?.moduleObject;
+      if(cre){
+        cre.handleAlignmentInfluence();
+      }
+    }
   }
 
   static #eventListeners: Map<PartyManagerEvent, Function[]> = new Map();
@@ -368,6 +419,9 @@ export class PartyManager {
         spawned: false
       };
     }
+    PartyManager.influenceGainedMask = 0;
+    PartyManager.influenceLostMask = 0;
+    PartyManager.influenceStatusPending = false;
 
     for(let i = 0; i < PartyManager.MaxPuppetCount; i++){
       GameState.PartyManager.Puppets[i] = {
@@ -419,6 +473,9 @@ export class PartyManager {
         spawned: false
       };
     }
+    PartyManager.influenceGainedMask = 0;
+    PartyManager.influenceLostMask = 0;
+    PartyManager.influenceStatusPending = false;
 
     for(let i = 0; i < PartyManager.MaxPuppetCount; i++){
       GameState.PartyManager.Puppets[i] = {
@@ -1488,10 +1545,7 @@ export class PartyManager {
    */
   static RebuildPartyTable(): void {
     if(GameState.GameKey != GameEngineType.TSL) return;
-    const tags = [
-      'atton', 'baodur', 'mand', 'g0t0', 'handmaiden', 'hk47',
-      'kreia', 'mira', 't3m4', 'visasmarr', 'hanharr', 'disciple',
-    ];
+    const tags = PartyManager.TSL_NPC_TAGS;
     for(let i = 0; i < tags.length; i++){
       if(!PartyManager.NPCS[i]?.available) continue;
       const obj = GameState.ModuleObjectManager.GetObjectByTag(tags[i], 0);

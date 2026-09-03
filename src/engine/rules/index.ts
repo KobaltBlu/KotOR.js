@@ -10,6 +10,7 @@ export * from "@/engine/rules/SWPriorityGroup";
 export * from "@/engine/rules/SWEncounterDifficulty";
 export * from "@/engine/rules/SWDifficulty";
 export * from "@/engine/rules/SWBodyBag";
+export * from "@/engine/rules/SWInfluence";
 export * from "@/engine/rules/SWFeatGain";
 export * from "@/engine/rules/SWSpellGain";
 export * from "@/engine/rules/SWEXPTable";

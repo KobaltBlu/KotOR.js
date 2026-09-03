@@ -4700,6 +4700,132 @@ export class ModuleCreature extends ModuleObject {
     this.refreshAppearanceAlignment(oldValue);
   }
 
+  /** Prestige tier from class level (retail HandleAlignmentInfluence). */
+  static #prestigeTierFromLevel(level: number): number {
+    const lv = level | 0;
+    if(lv <= 0) return 0;
+    if(lv < 7) return 1;
+    if(lv < 11) return 2;
+    if(lv < 15) return 3;
+    if(lv < 19) return 4;
+    return 5;
+  }
+
+  /** Retail PC prestige multiplier (local_2c = 1 + 0.2 * tier) + CHA*3 bonus. */
+  static #getPcPrestigeFactor(pc: ModuleCreature | undefined): { factor: number; bonus: number } {
+    if(!pc){
+      return { factor: 1.0, bonus: 0 };
+    }
+    const FEAT_PRESTIGE_A = 0x95;
+    const FEAT_PRESTIGE_B = 0xa7;
+    const CLASS_PRESTIGE_A = 0x0c;
+    const CLASS_PRESTIGE_B = 0x0f;
+
+    const cha = typeof pc.getCHA === 'function' ? (pc.getCHA() | 0) : (pc.cha | 0);
+    const bonus = cha * 3;
+    let tier = 0;
+    const goodEvil = pc.getGoodEvil?.() ?? pc.goodEvil | 0;
+
+    if(pc.getHasFeat?.(FEAT_PRESTIGE_A)){
+      if(goodEvil < 0x29){
+        for(let i = 0; i < (pc.classes?.length || 0) && i < 2; i++){
+          const cls = pc.classes[i];
+          if((cls?.id | 0) === CLASS_PRESTIGE_B){
+            tier = ModuleCreature.#prestigeTierFromLevel(cls.level | 0);
+            break;
+          }
+        }
+      }
+    }else if(pc.getHasFeat?.(FEAT_PRESTIGE_B)){
+      if(goodEvil > 0x3b){
+        for(let i = 0; i < (pc.classes?.length || 0) && i < 2; i++){
+          const cls = pc.classes[i];
+          if((cls?.id | 0) === CLASS_PRESTIGE_A){
+            tier = ModuleCreature.#prestigeTierFromLevel(cls.level | 0);
+            break;
+          }
+        }
+      }
+    }
+
+    return { factor: 1.0 + tier * 0.2, bonus };
+  }
+
+  /**
+   * Retail CSWSCreature::HandleAlignmentInfluence.
+   * Kreia: influence.2da (SWRuleSet) + PC align + prestige math → goodEvil.
+   * Other CNPCs: goodEvil = baseGoodEvil.
+   */
+  handleAlignmentInfluence(){
+    if(GameState.GameKey !== GameEngineType.TSL){
+      return;
+    }
+
+    const clampAlign = (v: number) => {
+      if(v < 0) return 0;
+      if(v > 100) return 100;
+      return v | 0;
+    };
+
+    const tag = (this.getTag?.() || this.tag || '').toLowerCase();
+    if(tag !== 'kreia'){
+      const base = typeof this.baseGoodEvil === 'number'
+        ? this.baseGoodEvil
+        : (this.goodEvil | 0);
+      this.setGoodEvilQuiet(clampAlign(base));
+      return;
+    }
+
+    const row = GameState.SWRuleSet?.GetInfluenceByTag?.(tag);
+    if(!row){
+      return;
+    }
+
+    let npcId = -1;
+    if(typeof this.npcId === 'number' && this.npcId >= 0){
+      npcId = this.npcId | 0;
+    }else{
+      npcId = GameState.PartyManager.npcIdFromTag(tag);
+    }
+    if(npcId < 0){
+      npcId = GameState.PartyManager.npcIdFromTag('kreia');
+    }
+
+    let influence = GameState.PartyManager.getInfluence(npcId);
+    if(influence === -1){
+      influence = clampAlign(row.baseInfluence);
+      GameState.PartyManager.InfluenceMap.set(npcId, influence);
+    }
+
+    const pcAlign = GameState.GlobalVariableManager?.GetGlobalNumber?.('G_PC_Align_Val') ?? 50;
+    const pc =
+      GameState.PartyManager.Player ||
+      GameState.getCurrentPlayer?.() ||
+      GameState.PartyManager.party?.[0];
+    const { factor, bonus } = ModuleCreature.#getPcPrestigeFactor(pc);
+
+    const baseNpc = typeof this.baseGoodEvil === 'number'
+      ? this.baseGoodEvil
+      : (this.goodEvil | 0);
+
+    let combined = (influence | 0) + (bonus | 0);
+    if(combined > 100) combined = 100;
+    if(combined < 0) combined = 0;
+
+    const inflNorm = ((combined - 50) * factor) / 50.0;
+    const pcNorm = ((pcAlign | 0) - 50) / 50.0;
+    const product = pcNorm * inflNorm;
+
+    let next: number;
+    if(product >= 0){
+      next = baseNpc + (100 - baseNpc) * product;
+    }else{
+      next = (product + 1.0) * baseNpc;
+    }
+
+    this.setGoodEvilQuiet(clampAlign(Math.round(next)));
+  }
+
   /**
    * Adds to the alignment of the creature.
    * @param value - The amount to add to the alignment.
