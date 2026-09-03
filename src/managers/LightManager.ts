@@ -19,7 +19,6 @@ import {
   retailSelectDynamicOnlyLights,
   retailModelLightSlots,
   retailVideoQualityRowIndex,
-  isRetailAreaDirectionalShadowLight,
   RETAIL_GOB_LIGHT_RADIUS as RETAIL_GOB_LIGHT_RADIUS_CONST,
   RETAIL_MAX_LIGHTS_PER_MODEL,
   RetailLightFadeChannel,
@@ -845,11 +844,9 @@ export class LightManager {
       const light = prioritized[i];
       if(light.illuminationScore > 1){ continue; }
       if(dynamicOnly && (light.dynamicType | 0) === 0){ continue; }
-      // When SunShadows/MoonShadows=0, skip area sun/moon so local lamp lights can win slots.
-      if(!this.context?.areaShadowsEnabled &&
-        isRetailAreaDirectionalShadowLight(light.getRadius())){
-        continue;
-      }
+      // ARE SunShadows/MoonShadows does not suppress module-authored MDL key lights
+      // (e.g. m02ac auroralight01 r=800). Illumination scoring already prefers those
+      // over nearby lamps; gating them forced streaky local-lamp maps outdoors.
       desired.push(light);
       if(dynamicOnly || desired.length >= LightManager.MAXSHADOWLIGHTS){ break; }
     }

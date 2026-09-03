@@ -990,8 +990,10 @@ export class ModuleArea extends ModuleObject {
     shadowAlpha = this.shadowAlpha
   ){
     this.shadowAlpha = shadowAlpha;
-    // SunShadows / MoonShadows gate area directional shadow casters only (GetShadowLights
-    // skips radius >= RETAIL_AREA_DIRECTIONAL_SHADOW_RADIUS when false). ShadowOpacity
+    // SunShadows / MoonShadows still publish GameState.areaShadowsEnabled for
+    // lighting/docs. Primary shadow-map selection no longer excludes module MDL
+    // key lights (radius >= 100) when this flag is false — those lights are
+    // authored in the room model (e.g. m02ac auroralight01). ShadowOpacity
     // still drives point-light / projection darkness via shadowAlpha.
     GameState.areaShadowsEnabled = this.lightingIsNight ? !!this.moon.shadows : !!this.sun.shadows;
     GameState.shadowAlpha = this.shadowAlpha;

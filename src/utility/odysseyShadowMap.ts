@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 import {
-  RETAIL_DISTANT_SHADOW_RADIUS,
+  RETAIL_AREA_DIRECTIONAL_SHADOW_RADIUS,
   RETAIL_MAX_SHADOW_DISTANCE,
   RETAIL_SHADOW_LENGTH,
 } from '@/utility/retailLighting';
@@ -112,8 +112,28 @@ export function computeOrthographicHalfExtent(effectiveRadius: number): number {
   return Math.min(influence, RETAIL_MAX_SHADOW_DISTANCE);
 }
 
-export function buildOrthoShadowCameraParams(effectiveRadius: number): IOdysseyOrthoShadowCameraParams {
+/**
+ * Orthographic shadow frustum around the focus. When light/focus positions are
+ * provided, near/far hug the light-to-focus distance so elevated key lights
+ * (e.g. m02ac auroralight01 ~200u above the walkway, or retail gidy_sun) keep
+ * casters inside the depth range — a fixed far = half*4 clips those scenes.
+ */
+export function buildOrthoShadowCameraParams(
+  effectiveRadius: number,
+  lightPos?: THREE.Vector3 | { x: number; y: number; z: number },
+  focus?: THREE.Vector3 | { x: number; y: number; z: number }
+): IOdysseyOrthoShadowCameraParams {
   const half = computeOrthographicHalfExtent(effectiveRadius);
+  if(lightPos && focus){
+    const dx = lightPos.x - focus.x;
+    const dy = lightPos.y - focus.y;
+    const dz = lightPos.z - focus.z;
+    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    const span = Math.max(half, ODYSSEY_SHADOW_MIN_HALF_EXTENT);
+    const near = Math.max(ODYSSEY_SHADOW_CAMERA_NEAR, dist - span);
+    const far = Math.max(dist + span, near + 1);
+    return { halfExtent: half, near, far };
+  }
   return {
     halfExtent: half,
     far: half * 4 + ODYSSEY_SHADOW_MIN_HALF_EXTENT,
@@ -121,8 +141,9 @@ export function buildOrthoShadowCameraParams(effectiveRadius: number): IOdysseyO
   };
 }
 
+/** True when the shadow map should use a directional/ortho camera (module key lights). */
 export function isDistantShadowLightRadius(radius: number): boolean {
-  return radius >= RETAIL_DISTANT_SHADOW_RADIUS;
+  return radius >= RETAIL_AREA_DIRECTIONAL_SHADOW_RADIUS;
 }
 
 /**

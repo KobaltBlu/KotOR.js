@@ -6376,7 +6376,7 @@ export class ModuleCreature extends ModuleObject {
       const envMapOverride = appearance.envmap?.length ? appearance.envmap : 'DEFAULT';
       const model = await OdysseyModel3D.FromMDL(mdl, {
         castShadow: true,
-        receiveShadow: false,//true,
+        receiveShadow: false,
         shadowsEnabled: this.shadowsEnabled,
         textureVar: this.bodyTexture,
         isHologram: this.isHologram,
@@ -6491,7 +6491,7 @@ export class ModuleCreature extends ModuleObject {
     const head = await OdysseyModel3D.FromMDL(mdl, {
       context: this.context,
       castShadow: true,
-      receiveShadow: true,
+      receiveShadow: false,
       shadowsEnabled: this.shadowsEnabled,
       isHologram: this.isHologram,
       textureVar: headTexture,

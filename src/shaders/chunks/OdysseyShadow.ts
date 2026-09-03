@@ -133,10 +133,14 @@ float odysseyShadowMapFactorAt( const in vec3 worldPos, const in vec3 worldNorma
   vec3 lightDir = toLightLen > 1e-4 ? toLight / toLightLen : vec3( 0.0, 0.0, 1.0 );
   float cosTheta = clamp( dot( normalize( worldNormal ), lightDir ), 0.0, 1.0 );
   float slopeBias = odysseyShadowSlopeBias * sqrt( 1.0 - cosTheta * cosTheta ) / max( cosTheta, 0.05 );
-  // Floors: shrink bias so boots do not detach from the cast silhouette.
-  float biasScale = normalize( worldNormal ).z > ODYSSEY_SHADOW_CONTACT_NORMAL_Z
-    ? ODYSSEY_SHADOW_FLOOR_BIAS_SCALE
-    : 1.0;
+  // Lightmapped floors: shrink bias so boots do not detach from the cast silhouette.
+  // Gated to USE_LIGHTMAP so creature skins never get floor contact bias.
+  float biasScale = 1.0;
+  #ifdef USE_LIGHTMAP
+    if ( normalize( worldNormal ).z > ODYSSEY_SHADOW_CONTACT_NORMAL_Z ) {
+      biasScale = ODYSSEY_SHADOW_FLOOR_BIAS_SCALE;
+    }
+  #endif
   float compare = shadowCoord.z - ( odysseyShadowConstantBias + slopeBias ) * biasScale;
 
   vec2 texelSize = vec2( 1.0 ) / odysseyShadowMapSize;
@@ -158,29 +162,31 @@ float odysseyShadowMapFactorAt( const in vec3 worldPos, const in vec3 worldNorma
 float odysseyComputeShadowMapFactor( const in vec3 worldPos, const in vec3 worldNormal ) {
   vec3 n = normalize( worldNormal );
   float f0 = odysseyShadowMapFactorAt( worldPos, n );
-  if ( n.z <= ODYSSEY_SHADOW_CONTACT_NORMAL_Z ) {
-    return f0;
-  }
+  // Contact probes are room/lightmap-only (retail dynamics do not receive the map).
+  #ifdef USE_LIGHTMAP
+    if ( n.z > ODYSSEY_SHADOW_CONTACT_NORMAL_Z ) {
+      // Vertical probe: decorative MDL floors below WOK / feet.
+      float f = min(
+        f0,
+        odysseyShadowMapFactorAt( worldPos + vec3( 0.0, 0.0, ODYSSEY_SHADOW_CONTACT_LIFT ), n )
+      );
 
-  // Vertical probe: decorative MDL floors below WOK / feet.
-  float f = min(
-    f0,
-    odysseyShadowMapFactorAt( worldPos + vec3( 0.0, 0.0, ODYSSEY_SHADOW_CONTACT_LIFT ), n )
-  );
-
-  // Horizontal pull toward the lamp XY: closes the bright collar between boots
-  // and the cast silhouette under angled lights (vertical-only lift mis-projects).
-  vec3 toLight = odysseyShadowLightWorld - worldPos;
-  float horizLen = length( toLight.xy );
-  if ( horizLen > 1e-4 ) {
-    vec2 h = toLight.xy / horizLen;
-    float pull = ODYSSEY_SHADOW_CONTACT_LIFT * 0.6;
-    f = min(
-      f,
-      odysseyShadowMapFactorAt( worldPos + vec3( h.x * pull, h.y * pull, 0.0 ), n )
-    );
-  }
-  return f;
+      // Horizontal pull toward the lamp XY: closes the gap between boots and the
+      // cast silhouette under angled lights (vertical-only lift mis-projects).
+      vec3 toLight = odysseyShadowLightWorld - worldPos;
+      float horizLen = length( toLight.xy );
+      if ( horizLen > 1e-4 ) {
+        vec2 h = toLight.xy / horizLen;
+        float pull = ODYSSEY_SHADOW_CONTACT_LIFT * 0.6;
+        f = min(
+          f,
+          odysseyShadowMapFactorAt( worldPos + vec3( h.x * pull, h.y * pull, 0.0 ), n )
+        );
+      }
+      return f;
+    }
+  #endif
+  return f0;
 }
 `;
 

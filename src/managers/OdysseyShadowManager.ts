@@ -8,6 +8,7 @@ import {
   retailShadowLightPosition,
   retailShadowProjectionStrength,
   retailStencilShadowOpacity,
+  isRetailAreaDirectionalShadowLight,
 } from '@/utility/retailLighting';
 import {
   aimShadowProxyAtFocus,
@@ -18,7 +19,6 @@ import {
   isDistantShadowLightRadius,
   ODYSSEY_SHADOW_MAP_LIGHT_BIAS,
   ODYSSEY_SHADOW_MIN_HALF_EXTENT,
-  snapOrthographicShadowCameraToTexels,
 } from '@/utility/odysseyShadowMap';
 
 export type OdysseyPrimaryShadowLightType = 'spot' | 'directional';
@@ -216,32 +216,26 @@ export class OdysseyShadowManager {
     }
 
     if(!combined.length){
-      const shadowLights = this.lightManager.shadowLights;
-      let best: OdysseyLight3D | undefined;
-      let bestStrength = -1;
-      let bestDistSq = Infinity;
-      const focus = this._focus;
-      for(let i = 0; i < shadowLights.length; i++){
-        const light = shadowLights[i];
-        const strength = retailShadowProjectionStrength(
-          GameState.shadowAlpha,
-          light.shadowFadeFactor || 0
-        );
-        const dx = light.worldPosition.x - focus.x;
-        const dy = light.worldPosition.y - focus.y;
-        const dz = light.worldPosition.z - focus.z;
-        const distSq = dx * dx + dy * dy + dz * dz;
-        if(
-          strength > bestStrength ||
-          (strength === bestStrength && distSq < bestDistSq)
-        ){
-          bestStrength = strength;
-          bestDistSq = distSq;
-          best = light;
-        }
-      }
+      const best = this.pickBestShadowLight(this.lightManager.shadowLights);
       if(best){
         combined.push(best);
+      }
+    }
+
+    // Prefer module key lights (radius >= 100) over local lamps during fade overlap.
+    const large = this.findPreferredLargeRadiusLight();
+    if(large){
+      const largeStrength = retailShadowProjectionStrength(
+        GameState.shadowAlpha,
+        large.shadowFadeFactor || 0
+      );
+      if(largeStrength > 0){
+        const current = combined[0];
+        const currentRadius = current?.getRadius?.() ?? 0;
+        if(!current || !isRetailAreaDirectionalShadowLight(currentRadius)){
+          combined.length = 0;
+          combined.push(large);
+        }
       }
     }
 
@@ -252,7 +246,9 @@ export class OdysseyShadowManager {
     }
 
     if(this.retainedLightUuid && candidate.uuid !== this.retainedLightUuid){
-      const retained = combined.find((entry) => entry.uuid === this.retainedLightUuid);
+      const retained =
+        combined.find((entry) => entry.uuid === this.retainedLightUuid) ||
+        this.findLightByUuid(this.retainedLightUuid);
       if(retained){
         const fade = retailShadowProjectionStrength(
           GameState.shadowAlpha,
@@ -266,6 +262,73 @@ export class OdysseyShadowManager {
 
     this.retainedLightUuid = candidate.uuid;
     return candidate;
+  }
+
+  private findLightByUuid(uuid: string): OdysseyLight3D | undefined {
+    if(!this.lightManager){ return undefined; }
+    return (
+      this.lightManager.staticMeshShadowLights.find((l) => l.uuid === uuid) ||
+      this.lightManager.shadowLights.find((l) => l.uuid === uuid)
+    );
+  }
+
+  /** Best fading light from a pool, preferring area-scale radii on strength ties. */
+  private pickBestShadowLight(lights: OdysseyLight3D[]): OdysseyLight3D | undefined {
+    let best: OdysseyLight3D | undefined;
+    let bestStrength = -1;
+    let bestIsLarge = false;
+    let bestDistSq = Infinity;
+    const focus = this._focus;
+    for(let i = 0; i < lights.length; i++){
+      const light = lights[i];
+      const strength = retailShadowProjectionStrength(
+        GameState.shadowAlpha,
+        light.shadowFadeFactor || 0
+      );
+      if(!(strength > 0)){ continue; }
+      const isLarge = isRetailAreaDirectionalShadowLight(light.getRadius());
+      const dx = light.worldPosition.x - focus.x;
+      const dy = light.worldPosition.y - focus.y;
+      const dz = light.worldPosition.z - focus.z;
+      const distSq = dx * dx + dy * dy + dz * dz;
+      if(
+        strength > bestStrength ||
+        (strength === bestStrength && isLarge && !bestIsLarge) ||
+        (strength === bestStrength && isLarge === bestIsLarge && distSq < bestDistSq)
+      ){
+        bestStrength = strength;
+        bestIsLarge = isLarge;
+        bestDistSq = distSq;
+        best = light;
+      }
+    }
+    return best;
+  }
+
+  private findPreferredLargeRadiusLight(): OdysseyLight3D | undefined {
+    if(!this.lightManager){ return undefined; }
+    const pools = [
+      this.lightManager.staticMeshShadowLights,
+      this.lightManager.shadowLights,
+    ];
+    let best: OdysseyLight3D | undefined;
+    let bestStrength = -1;
+    for(let p = 0; p < pools.length; p++){
+      const pool = pools[p];
+      for(let i = 0; i < pool.length; i++){
+        const light = pool[i];
+        if(!isRetailAreaDirectionalShadowLight(light.getRadius())){ continue; }
+        const strength = retailShadowProjectionStrength(
+          GameState.shadowAlpha,
+          light.shadowFadeFactor || 0
+        );
+        if(strength > bestStrength){
+          bestStrength = strength;
+          best = light;
+        }
+      }
+    }
+    return best;
   }
 
   private computeStateHash(
@@ -425,7 +488,7 @@ export class OdysseyShadowManager {
       spot.shadow.camera.far = spotParams.far;
       spot.shadow.camera.updateProjectionMatrix();
     }else{
-      const ortho = buildOrthoShadowCameraParams(influenceR);
+      const ortho = buildOrthoShadowCameraParams(influenceR, sourceLight, this._focus);
       const cam = dir.shadow.camera as THREE.OrthographicCamera;
       cam.left = -ortho.halfExtent;
       cam.right = ortho.halfExtent;
@@ -433,8 +496,9 @@ export class OdysseyShadowManager {
       cam.bottom = -ortho.halfExtent;
       cam.near = ortho.near;
       cam.far = ortho.far;
+      // Aim from the authored light position. Do not overhead-snap the shadow
+      // camera — that fought angled key lights and clipped casters past near.
       aimShadowProxyAtFocus(sourceLight, this._focus, dir);
-      snapOrthographicShadowCameraToTexels(cam, this._focus, this.mapResolution);
       cam.updateProjectionMatrix();
     }
 
