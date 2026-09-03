@@ -6062,52 +6062,30 @@ NWScriptDefK2.Actions = {
     }
   },
   795: {
-    comment: 'DJS-OEI 1/29/2004\n795: Gets the PC\'s influence on the alignment of a CNPC.\nParameters:\nnNPC - NPC_* constant identifying the CNPC we\'re interested in.\nIf this character is not an available party member, the return\nvalue with be 0. If the character is in the party, but has an\nattitude of Ambivalent, this will be -1.',
+    comment: 'DJS-OEI 1/29/2004\n795: Gets the PC\'s influence on the alignment of a CNPC.\nParameters:\nnNPC - NPC_* constant identifying the CNPC we\'re interested in.\nRetail ExecuteCommandInfluence does not gate on IsAvailable (NSS text differs).\nAmbivalent (unset) returns -1.',
     name: 'GetInfluence',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER ],
     action: function(this: NWScriptInstance, args: [number]){
-      const nNPC = args[0] | 0;
-      if(!GameState.PartyManager.IsAvailable(nNPC)){
-        return 0;
-      }
-      return GameState.PartyManager.InfluenceMap.has(nNPC)
-        ? (GameState.PartyManager.InfluenceMap.get(nNPC) | 0)
-        : -1;
+      return GameState.PartyManager.getInfluence(args[0] | 0);
     }
   },
   796: {
-    comment: 'DJS-OEI 1/29/2004\n796: Sets the PC\'s influence on the alignment of a CNPC.\nParameters:\nnNPC - NPC_* constant identifying the CNPC we\'re interested in.\nIf this character is not an available party member, nothing\nwill happen.\nnInfluence - The new value for the influence on this CNPC.',
+    comment: 'DJS-OEI 1/29/2004\n796: Sets the PC\'s influence on the alignment of a CNPC.\nRetail clamps 0..100 and ignores IsAvailable despite NSS comments.',
     name: 'SetInfluence',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
     action: function(this: NWScriptInstance, args: [number, number]){
-      const nNPC = args[0] | 0;
-      if(!GameState.PartyManager.IsAvailable(nNPC)){
-        return;
-      }
-      const n = Math.max(0, Math.min(100, args[1] | 0));
-      GameState.PartyManager.InfluenceMap.set(nNPC, n);
+      GameState.PartyManager.setInfluence(args[0] | 0, args[1] | 0, { clamp: true });
     }
   },
   797: {
-    comment: 'DJS-OEI 1/29/2004\n797: Modifies the PC\'s influence on the alignment of a CNPC.\nParameters:\nnNPC - NPC_* constant identifying the CNPC we\'re interested in.\nIf this character is not an available party member, nothing\nwill happen.\nnModifier - The modifier to the current influence on this CNPC.\nThis may be a negative value to reduce the influence.',
+    comment: 'DJS-OEI 1/29/2004\n797: Modifies the PC\'s influence on the alignment of a CNPC.\nRetail: if current is -1 (ambivalent) seed 50, then add; clamp 0..100.',
     name: 'ModifyInfluence',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
     action: function(this: NWScriptInstance, args: [number, number]){
-      const nNPC = args[0] | 0;
-      if(!GameState.PartyManager.IsAvailable(nNPC)){
-        return;
-      }
-      let current = GameState.PartyManager.InfluenceMap.has(nNPC)
-        ? (GameState.PartyManager.InfluenceMap.get(nNPC) | 0)
-        : -1;
-      if(current === -1){
-        current = 50;
-      }
-      current = Math.max(0, Math.min(100, current + (args[1] | 0)));
-      GameState.PartyManager.InfluenceMap.set(nNPC, current);
+      GameState.PartyManager.modifyInfluence(args[0] | 0, args[1] | 0);
     }
   },
   798: {

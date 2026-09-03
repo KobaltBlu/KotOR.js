@@ -346,6 +346,11 @@ export class ModuleCreature extends ModuleObject {
   forcePoints: number;
   gender: number = 0;
   goodEvil: number = 50;
+  /**
+   * Retail base_npc_alignment — template GoodEvil used by HandleAlignmentInfluence
+   * for non-Kreia sync (not overwritten by live influence math).
+   */
+  baseGoodEvil: number = 50;
   hitPoints: number;
   interruptable: number;
   isPC: number;
@@ -658,6 +663,7 @@ export class ModuleCreature extends ModuleObject {
     this.forcePoints = 0;
     this.gender = 0;
     this.goodEvil = 50;
+    this.baseGoodEvil = 50;
     this.hitPoints = 0; //Base Maximum Hit Points, not considering any bonuses. See Section 3.4 for more details.
     this.interruptable = 1;
     this.isPC = 0;
@@ -4680,6 +4686,18 @@ export class ModuleCreature extends ModuleObject {
       GameState.UINotificationManager.EnableUINotificationIconType(value >= oldValue ? UIIconTimerType.LIGHT_SHIFT : UIIconTimerType.DARK_SHIFT);
     }
     this.refreshAppearanceAlignment(oldValue);
+    this.fanoutAlignmentInfluenceIfPC();
+  }
+
+  /**
+   * Set live goodEvil without light/dark UI icons (HandleAlignmentInfluence).
+   */
+  setGoodEvilQuiet(value: number = 0){
+    const oldValue = this.goodEvil;
+    this.goodEvil = value;
+    if(this.goodEvil < 0) this.goodEvil = 0;
+    if(this.goodEvil > 100) this.goodEvil = 100;
+    this.refreshAppearanceAlignment(oldValue);
   }
 
   /**
@@ -4695,6 +4713,7 @@ export class ModuleCreature extends ModuleObject {
       GameState.UINotificationManager.EnableUINotificationIconType(value >= 0 ? UIIconTimerType.LIGHT_SHIFT : UIIconTimerType.DARK_SHIFT);
     }
     this.refreshAppearanceAlignment(oldValue);
+    this.fanoutAlignmentInfluenceIfPC();
   }
 
   /**
@@ -4748,6 +4767,20 @@ export class ModuleCreature extends ModuleObject {
       GameState.UINotificationManager.EnableUINotificationIconType(alignmentShifted == 2 ? UIIconTimerType.LIGHT_SHIFT : UIIconTimerType.DARK_SHIFT);
     }
     this.refreshAppearanceAlignment(oldValue);
+    this.fanoutAlignmentInfluenceIfPC();
+  }
+
+  /**
+   * TSL: when the PC's alignment changes, refresh companion HandleAlignmentInfluence.
+   */
+  fanoutAlignmentInfluenceIfPC(){
+    if(GameState.GameKey !== GameEngineType.TSL){
+      return;
+    }
+    if(!(this.getIsPC?.() || this.isPC || this === GameState.PartyManager?.Player)){
+      return;
+    }
+    GameState.PartyManager.fanoutAlignmentInfluenceFromPC?.();
   }
 
   /**
@@ -7062,8 +7095,10 @@ export class ModuleCreature extends ModuleObject {
       if(this.template.RootNode.hasField('Gender'))
         this.gender = this.template.RootNode.getFieldByLabel('Gender').getValue();
     
-      if(this.template.RootNode.hasField('GoodEvil'))
+      if(this.template.RootNode.hasField('GoodEvil')){
         this.goodEvil = this.template.RootNode.getFieldByLabel('GoodEvil').getValue();
+        this.baseGoodEvil = this.goodEvil;
+      }
         
       if(this.template.RootNode.hasField('Hologram'))
         this.isHologram = this.template.getFieldByLabel('Hologram').getValue();

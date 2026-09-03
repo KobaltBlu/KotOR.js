@@ -18,6 +18,11 @@ import { ModulePlayer } from "@/module/ModulePlayer";
 import { GameFileSystem } from "@/utility/GameFileSystem";
 import { JournalEntry } from "@/engine/JournalEntry";
 import { DialogMessageEntry } from "@/engine/DialogMessageEntry";
+import { InfluenceStatusFeedback } from "@/managers/influence-status";
+import {
+  fanoutAlignmentInfluenceFromPC as fanoutAllNpcAlignmentInfluence,
+  handleAlignmentInfluence,
+} from "@/managers/handle-alignment-influence";
 import { FeedbackMessageEntry } from "@/engine/FeedbackMessageEntry";
 import { PazaakCards } from "@/enums/minigames/PazaakCards";
 import { PazaakSideDeckSlots } from "@/enums/minigames/PazaakSideDeckSlots";
@@ -153,6 +158,9 @@ export class PartyManager {
   static CurrentPuppets: CurrentPuppet[] = [];
 
   static InfluenceMap: Map<number, number> = new Map<number, number>();
+  /** Retail UpdateStatus 9/10 pending bitmasks (TSL). */
+  static influenceGainedMask: number = 0;
+  static influenceLostMask: number = 0;
   static ChemicalCount: number = 0;
   static ComponentCount: number = 0;
   /** Party XP pool (retail PT_XP_POOL). */
@@ -248,6 +256,97 @@ export class PartyManager {
       return undefined;
     }
     return list[PartyManager.pcIteratorIndex];
+  }
+
+  /**
+   * Retail CSWPartyTable::GetInfluence — OOB → 0; else raw (incl. -1).
+   */
+  static getInfluence(nNPC: number): number {
+    const id = nNPC | 0;
+    if(id < 0 || id >= PartyManager.MaxPartyCount){
+      return 0;
+    }
+    if(!PartyManager.InfluenceMap.has(id)){
+      return -1;
+    }
+    return PartyManager.InfluenceMap.get(id) | 0;
+  }
+
+  /**
+   * Retail script SetInfluence path (ExecuteCommandInfluence).
+   * Clamps 0..100 by default. Returns true when the stored value changed.
+   */
+  static setInfluence(
+    nNPC: number,
+    value: number,
+    opts: { clamp?: boolean; quiet?: boolean } = {},
+  ): boolean {
+    const id = nNPC | 0;
+    if(id < 0 || id >= PartyManager.MaxPartyCount){
+      return false;
+    }
+    const clamp = opts.clamp !== false;
+    let next = value | 0;
+    if(clamp){
+      if(next < 0) next = 0;
+      if(next > 100) next = 100;
+    }
+    const prev = PartyManager.getInfluence(id);
+    if(prev === next){
+      return false;
+    }
+    PartyManager.InfluenceMap.set(id, next);
+    if(!opts.quiet){
+      PartyManager.onInfluenceChanged(id, prev, next);
+    }
+    return true;
+  }
+
+  /**
+   * Retail script ModifyInfluence — seed -1 → 50, then add + clamp.
+   */
+  static modifyInfluence(nNPC: number, delta: number): boolean {
+    const id = nNPC | 0;
+    if(id < 0 || id >= PartyManager.MaxPartyCount){
+      return false;
+    }
+    const prevStored = PartyManager.InfluenceMap.has(id)
+      ? (PartyManager.InfluenceMap.get(id) | 0)
+      : -1;
+    let current = prevStored;
+    if(current === -1){
+      current = 50;
+    }
+    let next = current + (delta | 0);
+    if(next < 0) next = 0;
+    if(next > 100) next = 100;
+    if(prevStored === next){
+      return false;
+    }
+    PartyManager.InfluenceMap.set(id, next);
+    PartyManager.onInfluenceChanged(id, prevStored, next);
+    return true;
+  }
+
+  /** Status feedback + HandleAlignmentInfluence after a real change. */
+  static onInfluenceChanged(nNPC: number, prev: number, next: number){
+    // Retail UpdateStatus 9 = gained, 10 = lost (-1 counts as below any set value)
+    const gained = next > prev;
+    InfluenceStatusFeedback.notify(nNPC, gained);
+    PartyManager.influenceGainedMask = InfluenceStatusFeedback.gainedMask;
+    PartyManager.influenceLostMask = InfluenceStatusFeedback.lostMask;
+
+    const cre =
+      PartyManager.GetPartyMemberByNPCId(nNPC) ||
+      PartyManager.NPCS[nNPC]?.moduleObject;
+    if(cre){
+      handleAlignmentInfluence(cre);
+    }
+  }
+
+  /** Retail ModifyAlignment PC fanout — refresh all CNPC alignment-from-influence. */
+  static fanoutAlignmentInfluenceFromPC(){
+    fanoutAllNpcAlignmentInfluence();
   }
 
   static #eventListeners: Map<PartyManagerEvent, Function[]> = new Map();
