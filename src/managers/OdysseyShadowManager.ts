@@ -42,7 +42,7 @@ export interface IOdysseyShadowDiagnostics {
 
 const DEFAULT_MAP_RES_SOFT = 1024;
 const DEFAULT_MAP_RES_HARD = 512;
-const SHADOW_MAP_NORMAL_BIAS = 0.02;
+const SHADOW_MAP_NORMAL_BIAS = 0.005;
 
 /**
  * Primary retail-selected shadow map — one proxy Three.js light generates depth

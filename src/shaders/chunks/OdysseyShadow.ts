@@ -15,6 +15,22 @@ export const ODYSSEY_SHADOW_INFLUENCE_FADE_START = 0.65;
 /** UV border width (in shadow-map UV) used to soften frustum edge clipping. */
 export const ODYSSEY_SHADOW_MAP_EDGE_FADE = 0.05;
 
+/**
+ * World-space contact probes for floor receivers so occlusion is tested near
+ * walkmesh / caster volume when decorative MDL floors sit below the WOK, and
+ * so angled lights do not leave a bright collar at the feet (peter-panning).
+ */
+export const ODYSSEY_SHADOW_CONTACT_LIFT = 0.35;
+
+/** Minimum worldNormal.z to treat a receiver as floor-like for contact probes. */
+export const ODYSSEY_SHADOW_CONTACT_NORMAL_Z = 0.5;
+
+/**
+ * Scale applied to constant/slope bias on floor-like receivers. Full map bias
+ * opens a lit ring between boots and the cast silhouette under angled lamps.
+ */
+export const ODYSSEY_SHADOW_FLOOR_BIAS_SCALE = 0.15;
+
 export const ODYSSEY_SHADOW_PARS_FRAGMENT = `
 #ifndef RETAIL_SHADOW_MIN_VERTEX_COLOR
   #define RETAIL_SHADOW_MIN_VERTEX_COLOR ${RETAIL_SHADOW_MIN_VERTEX_COLOR}
@@ -30,6 +46,18 @@ export const ODYSSEY_SHADOW_PARS_FRAGMENT = `
 
 #ifndef ODYSSEY_SHADOW_MAP_EDGE_FADE
   #define ODYSSEY_SHADOW_MAP_EDGE_FADE ${ODYSSEY_SHADOW_MAP_EDGE_FADE}
+#endif
+
+#ifndef ODYSSEY_SHADOW_CONTACT_LIFT
+  #define ODYSSEY_SHADOW_CONTACT_LIFT ${ODYSSEY_SHADOW_CONTACT_LIFT}
+#endif
+
+#ifndef ODYSSEY_SHADOW_CONTACT_NORMAL_Z
+  #define ODYSSEY_SHADOW_CONTACT_NORMAL_Z ${ODYSSEY_SHADOW_CONTACT_NORMAL_Z}
+#endif
+
+#ifndef ODYSSEY_SHADOW_FLOOR_BIAS_SCALE
+  #define ODYSSEY_SHADOW_FLOOR_BIAS_SCALE ${ODYSSEY_SHADOW_FLOOR_BIAS_SCALE}
 #endif
 
 uniform float odysseyBeamingProjectionAlpha;
@@ -105,7 +133,11 @@ float odysseyShadowMapFactorAt( const in vec3 worldPos, const in vec3 worldNorma
   vec3 lightDir = toLightLen > 1e-4 ? toLight / toLightLen : vec3( 0.0, 0.0, 1.0 );
   float cosTheta = clamp( dot( normalize( worldNormal ), lightDir ), 0.0, 1.0 );
   float slopeBias = odysseyShadowSlopeBias * sqrt( 1.0 - cosTheta * cosTheta ) / max( cosTheta, 0.05 );
-  float compare = shadowCoord.z - odysseyShadowConstantBias - slopeBias;
+  // Floors: shrink bias so boots do not detach from the cast silhouette.
+  float biasScale = normalize( worldNormal ).z > ODYSSEY_SHADOW_CONTACT_NORMAL_Z
+    ? ODYSSEY_SHADOW_FLOOR_BIAS_SCALE
+    : 1.0;
+  float compare = shadowCoord.z - ( odysseyShadowConstantBias + slopeBias ) * biasScale;
 
   vec2 texelSize = vec2( 1.0 ) / odysseyShadowMapSize;
   float shadow = 0.0;
@@ -124,7 +156,31 @@ float odysseyShadowMapFactorAt( const in vec3 worldPos, const in vec3 worldNorma
 }
 
 float odysseyComputeShadowMapFactor( const in vec3 worldPos, const in vec3 worldNormal ) {
-  return odysseyShadowMapFactorAt( worldPos, normalize( worldNormal ) );
+  vec3 n = normalize( worldNormal );
+  float f0 = odysseyShadowMapFactorAt( worldPos, n );
+  if ( n.z <= ODYSSEY_SHADOW_CONTACT_NORMAL_Z ) {
+    return f0;
+  }
+
+  // Vertical probe: decorative MDL floors below WOK / feet.
+  float f = min(
+    f0,
+    odysseyShadowMapFactorAt( worldPos + vec3( 0.0, 0.0, ODYSSEY_SHADOW_CONTACT_LIFT ), n )
+  );
+
+  // Horizontal pull toward the lamp XY: closes the bright collar between boots
+  // and the cast silhouette under angled lights (vertical-only lift mis-projects).
+  vec3 toLight = odysseyShadowLightWorld - worldPos;
+  float horizLen = length( toLight.xy );
+  if ( horizLen > 1e-4 ) {
+    vec2 h = toLight.xy / horizLen;
+    float pull = ODYSSEY_SHADOW_CONTACT_LIFT * 0.6;
+    f = min(
+      f,
+      odysseyShadowMapFactorAt( worldPos + vec3( h.x * pull, h.y * pull, 0.0 ), n )
+    );
+  }
+  return f;
 }
 `;
 
