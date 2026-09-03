@@ -113,32 +113,48 @@ export function computeOrthographicHalfExtent(effectiveRadius: number): number {
 }
 
 /**
- * Orthographic shadow frustum around the focus. When light/focus positions are
- * provided, near/far hug the light-to-focus distance so elevated key lights
- * (e.g. m02ac auroralight01 ~200u above the walkway, or retail gidy_sun) keep
- * casters inside the depth range — a fixed far = half*4 clips those scenes.
+ * Orthographic shadow frustum around the focus. Half-extent is clamped to the
+ * retail focus region; near/far hug a focus-relative proxy distance (not the
+ * authored light distance — elevated keys / gidy_sun sit hundreds–thousands of
+ * units away and empty the depth map if the camera stays at the source).
  */
 export function buildOrthoShadowCameraParams(
   effectiveRadius: number,
-  lightPos?: THREE.Vector3 | { x: number; y: number; z: number },
-  focus?: THREE.Vector3 | { x: number; y: number; z: number }
+  _lightPos?: THREE.Vector3 | { x: number; y: number; z: number },
+  _focus?: THREE.Vector3 | { x: number; y: number; z: number }
 ): IOdysseyOrthoShadowCameraParams {
   const half = computeOrthographicHalfExtent(effectiveRadius);
-  if(lightPos && focus){
-    const dx = lightPos.x - focus.x;
-    const dy = lightPos.y - focus.y;
-    const dz = lightPos.z - focus.z;
-    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-    const span = Math.max(half, ODYSSEY_SHADOW_MIN_HALF_EXTENT);
-    const near = Math.max(ODYSSEY_SHADOW_CAMERA_NEAR, dist - span);
-    const far = Math.max(dist + span, near + 1);
-    return { halfExtent: half, near, far };
+  const offset = Math.max(half * 2, ODYSSEY_SHADOW_MIN_HALF_EXTENT * 2);
+  const near = Math.max(ODYSSEY_SHADOW_CAMERA_NEAR, offset - half);
+  const far = Math.max(offset + half, near + 1);
+  return { halfExtent: half, near, far };
+}
+
+/**
+ * Place a directional shadow proxy along the authored light→focus ray, close
+ * enough for usable ortho depth precision (auroralight01, retail gidy_sun).
+ */
+export function placeDirectionalShadowProxyAlongLight(
+  lightPos: THREE.Vector3 | { x: number; y: number; z: number },
+  focus: THREE.Vector3 | { x: number; y: number; z: number },
+  halfExtent: number,
+  outProxyPos: THREE.Vector3
+): void {
+  const dx = lightPos.x - focus.x;
+  const dy = lightPos.y - focus.y;
+  const dz = lightPos.z - focus.z;
+  const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+  const offset = Math.max(halfExtent * 2, ODYSSEY_SHADOW_MIN_HALF_EXTENT * 2);
+  if(!(dist > 1e-4)){
+    outProxyPos.set(focus.x, focus.y, focus.z + offset);
+    return;
   }
-  return {
-    halfExtent: half,
-    far: half * 4 + ODYSSEY_SHADOW_MIN_HALF_EXTENT,
-    near: ODYSSEY_SHADOW_CAMERA_NEAR,
-  };
+  const scale = offset / dist;
+  outProxyPos.set(
+    focus.x + dx * scale,
+    focus.y + dy * scale,
+    focus.z + dz * scale
+  );
 }
 
 /** True when the shadow map should use a directional/ortho camera (module key lights). */

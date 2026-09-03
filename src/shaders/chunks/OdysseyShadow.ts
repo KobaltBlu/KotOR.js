@@ -3,6 +3,9 @@ import * as THREE from "three";
 import { RETAIL_SHADOW_MIN_VERTEX_COLOR } from "@/utility/retailLighting";
 import { ODYSSEY_SHADOW_MAP_DEPTH_BIAS } from "@/utility/odysseyShadowMap";
 
+/** Matches retail `maxShadowLights` / videoquality NumShadowCastingLights default. */
+export const MAX_ODYSSEY_SHADOW_MAPS = 3;
+
 /** Primary shadow map PCF kernel radius (3×3). */
 export const ODYSSEY_SHADOW_PCF_RADIUS = 1;
 
@@ -31,9 +34,81 @@ export const ODYSSEY_SHADOW_CONTACT_NORMAL_Z = 0.5;
  */
 export const ODYSSEY_SHADOW_FLOOR_BIAS_SCALE = 0.15;
 
+/**
+ * Unrolled per-slot body — WebGL1/GLSL ES 1.00 cannot pass sampler2D into functions.
+ * SLOT = 0|1|2, MAP = odysseyShadowMap0|1|2
+ */
+const ODYSSEY_SHADOW_SLOT_BODY = (slot: number, map: string) => `
+  if ( odysseyShadowActive[ ${slot} ] > 0.0 && odysseyShadowStrength[ ${slot} ] > 0.0 ) {
+    vec3 toLight${slot} = odysseyShadowLightWorld[ ${slot} ] - samplePos;
+    float dist${slot} = length( toLight${slot}.xy );
+    float influence${slot} = max( odysseyShadowInfluenceRadius[ ${slot} ], 1e-4 );
+    float radiusFade${slot} = 1.0 - smoothstep(
+      influence${slot} * ODYSSEY_SHADOW_INFLUENCE_FADE_START,
+      influence${slot},
+      dist${slot}
+    );
+    if ( radiusFade${slot} > 0.0 ) {
+      vec4 shadowCoord${slot} = odysseyShadowMatrix[ ${slot} ] * vec4( samplePos, 1.0 );
+      shadowCoord${slot}.xyz /= shadowCoord${slot}.w;
+      if (
+        shadowCoord${slot}.x >= 0.0 && shadowCoord${slot}.x <= 1.0 &&
+        shadowCoord${slot}.y >= 0.0 && shadowCoord${slot}.y <= 1.0 &&
+        shadowCoord${slot}.z >= 0.0 && shadowCoord${slot}.z <= 1.0
+      ) {
+        float edgeDist${slot} = min(
+          min( shadowCoord${slot}.x, 1.0 - shadowCoord${slot}.x ),
+          min( shadowCoord${slot}.y, 1.0 - shadowCoord${slot}.y )
+        );
+        float mapFade${slot} = smoothstep( 0.0, ODYSSEY_SHADOW_MAP_EDGE_FADE, edgeDist${slot} );
+        float fade${slot} = radiusFade${slot} * mapFade${slot};
+        if ( fade${slot} > 0.0 ) {
+          float toLightLen${slot} = length( toLight${slot} );
+          vec3 lightDir${slot} = toLightLen${slot} > 1e-4
+            ? toLight${slot} / toLightLen${slot}
+            : vec3( 0.0, 0.0, 1.0 );
+          float cosTheta${slot} = clamp( dot( n, lightDir${slot} ), 0.0, 1.0 );
+          float slopeBias${slot} = odysseyShadowSlopeBias
+            * sqrt( 1.0 - cosTheta${slot} * cosTheta${slot} )
+            / max( cosTheta${slot}, 0.05 );
+          float biasScale${slot} = 1.0;
+          #ifdef USE_LIGHTMAP
+            if ( n.z > ODYSSEY_SHADOW_CONTACT_NORMAL_Z ) {
+              biasScale${slot} = ODYSSEY_SHADOW_FLOOR_BIAS_SCALE;
+            }
+          #endif
+          float compare${slot} = shadowCoord${slot}.z
+            - ( odysseyShadowConstantBias + slopeBias${slot} ) * biasScale${slot};
+          float shadow${slot} = 0.0;
+          for ( int x${slot} = -ODYSSEY_SHADOW_PCF_RADIUS; x${slot} <= ODYSSEY_SHADOW_PCF_RADIUS; x${slot} ++ ) {
+            for ( int y${slot} = -ODYSSEY_SHADOW_PCF_RADIUS; y${slot} <= ODYSSEY_SHADOW_PCF_RADIUS; y${slot} ++ ) {
+              vec2 offset${slot} = vec2( float( x${slot} ), float( y${slot} ) ) * texelSize;
+              float depth${slot} = unpackRGBAToDepth(
+                texture2D( ${map}, shadowCoord${slot}.xy + offset${slot} )
+              );
+              shadow${slot} += step( compare${slot}, depth${slot} );
+            }
+          }
+          shadow${slot} /= float(
+            ( 2 * ODYSSEY_SHADOW_PCF_RADIUS + 1 ) * ( 2 * ODYSSEY_SHADOW_PCF_RADIUS + 1 )
+          );
+          float darkened${slot} = 1.0
+            - odysseyShadowStrength[ ${slot} ] * ( 1.0 - RETAIL_SHADOW_MIN_VERTEX_COLOR );
+          float lit${slot} = mix( darkened${slot}, 1.0, shadow${slot} );
+          slotFactor *= mix( 1.0, lit${slot}, fade${slot} );
+        }
+      }
+    }
+  }
+`;
+
 export const ODYSSEY_SHADOW_PARS_FRAGMENT = `
 #ifndef RETAIL_SHADOW_MIN_VERTEX_COLOR
   #define RETAIL_SHADOW_MIN_VERTEX_COLOR ${RETAIL_SHADOW_MIN_VERTEX_COLOR}
+#endif
+
+#ifndef MAX_ODYSSEY_SHADOW_MAPS
+  #define MAX_ODYSSEY_SHADOW_MAPS ${MAX_ODYSSEY_SHADOW_MAPS}
 #endif
 
 #ifndef ODYSSEY_SHADOW_PCF_RADIUS
@@ -61,26 +136,40 @@ export const ODYSSEY_SHADOW_PARS_FRAGMENT = `
 #endif
 
 uniform float odysseyBeamingProjectionAlpha;
-uniform sampler2D odysseyShadowMap;
-uniform mat4 odysseyShadowMatrix;
+uniform sampler2D odysseyShadowMap0;
+uniform sampler2D odysseyShadowMap1;
+uniform sampler2D odysseyShadowMap2;
+uniform mat4 odysseyShadowMatrix[ MAX_ODYSSEY_SHADOW_MAPS ];
 uniform vec2 odysseyShadowMapSize;
-uniform float odysseyShadowStrength;
-uniform float odysseyShadowInfluenceRadius;
-uniform vec3 odysseyShadowLightWorld;
+uniform float odysseyShadowStrength[ MAX_ODYSSEY_SHADOW_MAPS ];
+uniform float odysseyShadowInfluenceRadius[ MAX_ODYSSEY_SHADOW_MAPS ];
+uniform vec3 odysseyShadowLightWorld[ MAX_ODYSSEY_SHADOW_MAPS ];
+uniform float odysseyShadowActive[ MAX_ODYSSEY_SHADOW_MAPS ];
 uniform float odysseyShadowConstantBias;
 uniform float odysseyShadowSlopeBias;
 uniform float odysseyShadowMapActive;
+uniform float odysseyShadowLightCount;
 
-float odysseyUnpackShadowDepth( const in vec4 rgba ) {
-  return unpackRGBAToDepth( rgba );
+float odysseyShadowMapsAt( const in vec3 samplePos, const in vec3 worldNormal ) {
+  vec3 n = normalize( worldNormal );
+  vec2 texelSize = vec2( 1.0 ) / odysseyShadowMapSize;
+  float slotFactor = 1.0;
+  ${ODYSSEY_SHADOW_SLOT_BODY(0, 'odysseyShadowMap0')}
+  if ( odysseyShadowLightCount > 1.0 ) {
+    ${ODYSSEY_SHADOW_SLOT_BODY(1, 'odysseyShadowMap1')}
+  }
+  if ( odysseyShadowLightCount > 2.0 ) {
+    ${ODYSSEY_SHADOW_SLOT_BODY(2, 'odysseyShadowMap2')}
+  }
+  return slotFactor;
 }
 
-float odysseyShadowCompare( const in vec2 uv, const in float compare ) {
-  float depth = odysseyUnpackShadowDepth( texture2D( odysseyShadowMap, uv ) );
-  return step( compare, depth );
-}
-
+// Compatibility alias for probes / older comments.
 float odysseyShadowMapFactorAt( const in vec3 worldPos, const in vec3 worldNormal ) {
+  return odysseyShadowMapsAt( worldPos, worldNormal );
+}
+
+float odysseyComputeShadowMapFactor( const in vec3 worldPos, const in vec3 worldNormal ) {
   float factor = 1.0;
 
   #ifdef USE_ODYSSEY_BEAMING
@@ -89,123 +178,74 @@ float odysseyShadowMapFactorAt( const in vec3 worldPos, const in vec3 worldNorma
     }
   #endif
 
-  if ( odysseyShadowMapActive <= 0.0 || odysseyShadowStrength <= 0.0 ) {
+  if ( odysseyShadowMapActive <= 0.0 || odysseyShadowLightCount <= 0.0 ) {
     return factor;
   }
 
-  vec3 toLight = odysseyShadowLightWorld - worldPos;
-  float dist = length( toLight.xy );
-  float influence = max( odysseyShadowInfluenceRadius, 1e-4 );
-  // Soft throw: full strength until fade start, then ease out to the influence edge.
-  float radiusFade = 1.0 - smoothstep(
-    influence * ODYSSEY_SHADOW_INFLUENCE_FADE_START,
-    influence,
-    dist
-  );
-  if ( radiusFade <= 0.0 ) {
-    return factor;
-  }
+  // Retail DoGobShadows: each GetShadowLights(mode=0) light can darken.
+  // Multiply independent map factors (overlapping lights stack like retail).
+  factor = odysseyShadowMapsAt( worldPos, worldNormal );
 
-  // Three.js LightShadow.matrix already applies NDC→[0,1] viewport bias.
-  vec4 shadowCoord = odysseyShadowMatrix * vec4( worldPos, 1.0 );
-  shadowCoord.xyz /= shadowCoord.w;
-
-  if (
-    shadowCoord.x < 0.0 || shadowCoord.x > 1.0 ||
-    shadowCoord.y < 0.0 || shadowCoord.y > 1.0 ||
-    shadowCoord.z < 0.0 || shadowCoord.z > 1.0
-  ) {
-    return factor;
-  }
-
-  // Soften hard clipping at the shadow-map frustum border.
-  float edgeDist = min(
-    min( shadowCoord.x, 1.0 - shadowCoord.x ),
-    min( shadowCoord.y, 1.0 - shadowCoord.y )
-  );
-  float mapFade = smoothstep( 0.0, ODYSSEY_SHADOW_MAP_EDGE_FADE, edgeDist );
-  float fade = radiusFade * mapFade;
-  if ( fade <= 0.0 ) {
-    return factor;
-  }
-
-  float toLightLen = length( toLight );
-  vec3 lightDir = toLightLen > 1e-4 ? toLight / toLightLen : vec3( 0.0, 0.0, 1.0 );
-  float cosTheta = clamp( dot( normalize( worldNormal ), lightDir ), 0.0, 1.0 );
-  float slopeBias = odysseyShadowSlopeBias * sqrt( 1.0 - cosTheta * cosTheta ) / max( cosTheta, 0.05 );
-  // Lightmapped floors: shrink bias so boots do not detach from the cast silhouette.
-  // Gated to USE_LIGHTMAP so creature skins never get floor contact bias.
-  float biasScale = 1.0;
   #ifdef USE_LIGHTMAP
-    if ( normalize( worldNormal ).z > ODYSSEY_SHADOW_CONTACT_NORMAL_Z ) {
-      biasScale = ODYSSEY_SHADOW_FLOOR_BIAS_SCALE;
-    }
-  #endif
-  float compare = shadowCoord.z - ( odysseyShadowConstantBias + slopeBias ) * biasScale;
-
-  vec2 texelSize = vec2( 1.0 ) / odysseyShadowMapSize;
-  float shadow = 0.0;
-  for ( int x = -ODYSSEY_SHADOW_PCF_RADIUS; x <= ODYSSEY_SHADOW_PCF_RADIUS; x ++ ) {
-    for ( int y = -ODYSSEY_SHADOW_PCF_RADIUS; y <= ODYSSEY_SHADOW_PCF_RADIUS; y ++ ) {
-      vec2 offset = vec2( float( x ), float( y ) ) * texelSize;
-      shadow += odysseyShadowCompare( shadowCoord.xy + offset, compare );
-    }
-  }
-  float samples = float( ( 2 * ODYSSEY_SHADOW_PCF_RADIUS + 1 ) * ( 2 * ODYSSEY_SHADOW_PCF_RADIUS + 1 ) );
-  shadow /= samples;
-
-  float darkened = 1.0 - odysseyShadowStrength * ( 1.0 - RETAIL_SHADOW_MIN_VERTEX_COLOR );
-  float lit = mix( darkened, 1.0, shadow );
-  return mix( 1.0, lit, fade );
-}
-
-float odysseyComputeShadowMapFactor( const in vec3 worldPos, const in vec3 worldNormal ) {
-  vec3 n = normalize( worldNormal );
-  float f0 = odysseyShadowMapFactorAt( worldPos, n );
-  // Contact probes are room/lightmap-only (retail dynamics do not receive the map).
-  #ifdef USE_LIGHTMAP
+    vec3 n = normalize( worldNormal );
     if ( n.z > ODYSSEY_SHADOW_CONTACT_NORMAL_Z ) {
-      // Vertical probe: decorative MDL floors below WOK / feet.
       float f = min(
-        f0,
-        odysseyShadowMapFactorAt( worldPos + vec3( 0.0, 0.0, ODYSSEY_SHADOW_CONTACT_LIFT ), n )
+        factor,
+        odysseyShadowMapsAt( worldPos + vec3( 0.0, 0.0, ODYSSEY_SHADOW_CONTACT_LIFT ), worldNormal )
       );
-
-      // Horizontal pull toward the lamp XY: closes the gap between boots and the
-      // cast silhouette under angled lights (vertical-only lift mis-projects).
-      vec3 toLight = odysseyShadowLightWorld - worldPos;
+      // Horizontal pull toward the strongest active lamp (slot 0).
+      vec3 toLight = odysseyShadowLightWorld[ 0 ] - worldPos;
       float horizLen = length( toLight.xy );
-      if ( horizLen > 1e-4 ) {
+      if ( horizLen > 1e-4 && odysseyShadowActive[ 0 ] > 0.0 ) {
         vec2 h = toLight.xy / horizLen;
         float pull = ODYSSEY_SHADOW_CONTACT_LIFT * 0.6;
         f = min(
           f,
-          odysseyShadowMapFactorAt( worldPos + vec3( h.x * pull, h.y * pull, 0.0 ), n )
+          odysseyShadowMapsAt( worldPos + vec3( h.x * pull, h.y * pull, 0.0 ), worldNormal )
         );
       }
       return f;
     }
   #endif
-  return f0;
+
+  return factor;
 }
 `;
 
 export function createOdysseyShadowUniforms(){
+  const matrices: THREE.Matrix4[] = [];
+  const strengths: number[] = [];
+  const influences: number[] = [];
+  const lightWorlds: THREE.Vector3[] = [];
+  const active: number[] = [];
+  for(let i = 0; i < MAX_ODYSSEY_SHADOW_MAPS; i++){
+    matrices.push(new THREE.Matrix4());
+    strengths.push(0);
+    influences.push(0);
+    lightWorlds.push(new THREE.Vector3());
+    active.push(0);
+  }
   return {
     odysseyBeamingProjectionAlpha: { value: 0 },
+    odysseyShadowMap0: { value: null as THREE.Texture | null },
+    odysseyShadowMap1: { value: null as THREE.Texture | null },
+    odysseyShadowMap2: { value: null as THREE.Texture | null },
+    /** @deprecated Alias of map0 for older binder paths. */
     odysseyShadowMap: { value: null as THREE.Texture | null },
-    odysseyShadowMatrix: { value: new THREE.Matrix4() },
+    odysseyShadowMatrix: { value: matrices },
     odysseyShadowMapSize: { value: new THREE.Vector2(1, 1) },
-    odysseyShadowStrength: { value: 0 },
-    odysseyShadowInfluenceRadius: { value: 0 },
-    odysseyShadowLightWorld: { value: new THREE.Vector3() },
+    odysseyShadowStrength: { value: strengths },
+    odysseyShadowInfluenceRadius: { value: influences },
+    odysseyShadowLightWorld: { value: lightWorlds },
+    odysseyShadowActive: { value: active },
     odysseyShadowConstantBias: { value: ODYSSEY_SHADOW_MAP_DEPTH_BIAS },
     odysseyShadowSlopeBias: { value: 0.001 },
     odysseyShadowMapActive: { value: 0 },
+    odysseyShadowLightCount: { value: 0 },
   };
 }
 
-  /** Enable shadow-map reception on Odyssey materials. */
+/** Enable shadow-map reception on Odyssey materials. */
 export function enableOdysseyMaterialShadowReceive(material: THREE.Material | THREE.Material[]): void {
   const mats = Array.isArray(material) ? material : [material];
   for(let i = 0; i < mats.length; i++){

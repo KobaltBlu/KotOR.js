@@ -7,6 +7,7 @@ function createShadowDepthMaterial(skinning: boolean): THREE.MeshDepthMaterial {
   const mat = new THREE.MeshDepthMaterial({
     depthPacking: THREE.RGBADepthPacking,
     alphaTest: 0.5,
+    side: THREE.DoubleSide,
     name: skinning ? 'OdysseySkinnedShadowDepth' : 'OdysseyRigidShadowDepth',
   });
   if(skinning){
@@ -65,7 +66,8 @@ export function syncShadowCasterDepthMaterialFromSource(
     }
   }
   depthMat.map = map;
-  depthMat.alphaTest = alphaTest;
+  depthMat.alphaTest = map ? alphaTest : 0;
+  depthMat.side = THREE.DoubleSide;
   depthMat.needsUpdate = true;
 }
 

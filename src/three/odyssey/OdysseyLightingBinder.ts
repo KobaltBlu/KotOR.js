@@ -10,6 +10,7 @@ import {
 } from "@/shaders/chunks/OdysseyLighting";
 import {
   createOdysseyShadowUniforms,
+  MAX_ODYSSEY_SHADOW_MAPS,
 } from "@/shaders/chunks/OdysseyShadow";
 import { ODYSSEY_SHADOW_MAP_DEPTH_BIAS } from "@/utility/odysseyShadowMap";
 import { envMapRotationFromCamera } from "@/utility/envMapRotation";
@@ -388,8 +389,9 @@ export class OdysseyLightingBinder {
   }
 
   /**
-   * Bind primary shadow-map uniforms — independent of IGNORE_LIGHTING /
+   * Bind multi-light shadow-map uniforms — independent of IGNORE_LIGHTING /
    * light-array skip path so lightmapped static receivers still darken.
+   * Matches retail GetShadowLights(mode=0) / DoGobShadows (up to maxShadowLights).
    */
   static bindShadowMapUniforms(
     material: THREE.ShaderMaterial,
@@ -406,9 +408,12 @@ export class OdysseyLightingBinder {
 
     const manager = shadowManager ?? GameState.odysseyShadowManager;
     const epoch = manager?.frameEpoch ?? 0;
-    const shadowTexLive = manager?.getShadowMapTexture() ?? null;
-    const shadowsActive = (manager?.activeLightCount ?? 0) > 0;
-    const boundTex = material.uniforms.odysseyShadowMap?.value ?? null;
+    const activeCount = manager?.activeLightCount ?? 0;
+    const shadowTexLive = manager?.getShadowMapTextureAt?.(0) ?? manager?.getShadowMapTexture() ?? null;
+    const shadowsActive = activeCount > 0;
+    const boundTex = material.uniforms.odysseyShadowMap0?.value
+      ?? material.uniforms.odysseyShadowMap?.value
+      ?? null;
     const needsTextureRefresh = shadowsActive && !!shadowTexLive && boundTex !== shadowTexLive;
     if(!needsTextureRefresh &&
       material.userData.odysseyShadowBoundEpoch === epoch &&
@@ -417,16 +422,13 @@ export class OdysseyLightingBinder {
       return;
     }
 
-    if(!material.uniforms.odysseyShadowMap){
+    if(!material.uniforms.odysseyShadowMap0){
       Object.assign(material.uniforms, createOdysseyShadowUniforms());
     }
 
     material.uniforms.odysseyBeamingProjectionAlpha.value = GameState.beamingProjectionAlpha;
-
-    const activeCount = manager?.activeLightCount ?? 0;
     material.uniforms.odysseyShadowMapActive.value = activeCount > 0 ? 1.0 : 0.0;
-    material.uniforms.odysseyShadowStrength.value = manager?.shadowStrength ?? 0;
-    material.uniforms.odysseyShadowInfluenceRadius.value = manager?.influenceRadius ?? 0;
+    material.uniforms.odysseyShadowLightCount.value = activeCount;
     if(material.uniforms.odysseyShadowConstantBias){
       material.uniforms.odysseyShadowConstantBias.value = ODYSSEY_SHADOW_MAP_DEPTH_BIAS;
     }
@@ -434,28 +436,50 @@ export class OdysseyLightingBinder {
       material.uniforms.odysseyShadowSlopeBias.value = 0.001;
     }
 
-    const lightWorld = material.uniforms.odysseyShadowLightWorld.value as THREE.Vector3;
-    if(manager?.lightWorld){
-      lightWorld.copy(manager.lightWorld);
-    }else{
-      lightWorld.set(0, 0, 0);
-    }
-
-    const shadowTex = manager?.getShadowMapTexture() ?? null;
-    material.uniforms.odysseyShadowMap.value = shadowTex;
-
     const mapSize = material.uniforms.odysseyShadowMapSize.value as THREE.Vector2;
-    if(shadowTex?.image){
-      mapSize.set(shadowTex.image.width || 1, shadowTex.image.height || 1);
-    }else if(manager?.mapResolution){
+    if(manager?.mapResolution){
       mapSize.set(manager.mapResolution, manager.mapResolution);
     }
 
-    const shadowMatrix = material.uniforms.odysseyShadowMatrix.value as THREE.Matrix4;
-    if(manager){
-      manager.getShadowMatrix(shadowMatrix);
-    }else{
-      shadowMatrix.identity();
+    const matrices = material.uniforms.odysseyShadowMatrix.value as THREE.Matrix4[];
+    const strengths = material.uniforms.odysseyShadowStrength.value as number[];
+    const influences = material.uniforms.odysseyShadowInfluenceRadius.value as number[];
+    const lightWorlds = material.uniforms.odysseyShadowLightWorld.value as THREE.Vector3[];
+    const actives = material.uniforms.odysseyShadowActive.value as number[];
+
+    const mapUniformNames = [
+      'odysseyShadowMap0',
+      'odysseyShadowMap1',
+      'odysseyShadowMap2',
+    ] as const;
+
+    for(let i = 0; i < MAX_ODYSSEY_SHADOW_MAPS; i++){
+      const slot = manager?.getSlotState?.(i);
+      const tex = manager?.getShadowMapTextureAt?.(i) ?? null;
+      const mapUniform = material.uniforms[mapUniformNames[i]];
+      if(mapUniform){
+        mapUniform.value = (slot?.active && i < activeCount) ? tex : null;
+      }
+      if(i === 0 && material.uniforms.odysseyShadowMap){
+        material.uniforms.odysseyShadowMap.value = mapUniform?.value ?? null;
+      }
+
+      if(slot?.active && i < activeCount){
+        actives[i] = 1;
+        strengths[i] = slot.strength;
+        influences[i] = slot.influenceRadius;
+        lightWorlds[i].copy(slot.lightWorld);
+        manager?.getShadowMatrixAt?.(i, matrices[i]);
+        if(tex?.image && i === 0){
+          mapSize.set(tex.image.width || mapSize.x, tex.image.height || mapSize.y);
+        }
+      }else{
+        actives[i] = 0;
+        strengths[i] = 0;
+        influences[i] = 0;
+        lightWorlds[i].set(0, 0, 0);
+        matrices[i].identity();
+      }
     }
 
     material.userData.odysseyShadowBoundEpoch = epoch;
