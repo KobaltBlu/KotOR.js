@@ -14,10 +14,7 @@ import { GUIControlAlignment } from "@/enums/gui/GUIControlAlignment";
 import { asExtentInt, truncDiv } from "@/gui/GUICoord";
 import {
   bindChromeTexture,
-  GUI_CHROME_REGION_FILL,
-  layoutOrthoPlanePositions,
-  mergeChromePlanes,
-  stampRegionAttribute,
+  buildFillChromeGeometry,
 } from "@/gui/guiChrome";
 
 /** K1 options checkbox fixed glyph size (`0x19`). */
@@ -225,20 +222,15 @@ export class GUICheckBox extends GUIControl{
     if(this.isOptionsStyleLayout()){
       const cbSize = this.getCBScale();
       const center = this.getOptionsCheckboxCenter();
-      const plane = new THREE.PlaneGeometry(1, 1, 1) as THREE.BufferGeometry;
-      layoutOrthoPlanePositions(plane, cbSize, cbSize);
-      plane.translate(center.x, center.y, 0);
-      stampRegionAttribute(plane, GUI_CHROME_REGION_FILL);
 
       if(this.chrome.geometry instanceof THREE.BufferGeometry){
         this.chrome.geometry.dispose();
       }
-      this.chrome.geometry = mergeChromePlanes([plane]);
+      this.chrome.geometry = buildFillChromeGeometry(cbSize, cbSize, center.x, center.y);
       if(this.chrome.mesh){
         this.chrome.mesh.geometry = this.chrome.geometry;
         this.chrome.mesh.position.z = this.zOffset;
       }
-      plane.dispose();
       return;
     }
     super.buildChrome();

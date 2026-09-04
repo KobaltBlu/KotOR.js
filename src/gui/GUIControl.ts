@@ -51,16 +51,11 @@ import { ResolutionManager } from "@/managers/ResolutionManager";
 import { createGuiControlStruct, isTslGuiGame } from "@/gui/guiControlSchema";
 import {
   bindChromeTexture,
+  buildChromeGeometryForControl,
   chromeFrameDimension,
   createGuiChrome,
-  GUI_CHROME_REGION_CORNER,
-  GUI_CHROME_REGION_EDGE,
-  GUI_CHROME_REGION_FILL,
   GUI_HOVER_MODE_OVERLAY,
   GUI_HOVER_MODE_SWAP,
-  layoutOrthoPlanePositions,
-  mergeChromePlanes,
-  stampRegionAttribute,
 } from "@/gui/guiChrome";
 
 const itemSize = 2
@@ -1807,7 +1802,7 @@ export class GUIControl {
       height: eh,
       dimension: dim,
       innerOffset: 0,
-      innerOffsetY: 0,
+      applyInnerOffset: false,
     });
 
     // Scrollbar shrink (listbox SetExtent) is content-width only, applied after.
@@ -1908,120 +1903,24 @@ export class GUIControl {
     };
   }
 
-  /** ListBox content fill X: shift away from scrollbar (matches layoutRttQuad). */
-  private getFillShrinkOffsetX(): number {
-    const shrink = asExtentInt(this.getShrinkWidth());
-    const half = truncDiv(shrink, 2);
-    return this.flipLeft() ? half : -half;
-  }
-
-  /**
-   * Size a unit PlaneGeometry with TL-centered int edges (not float ±w/2 scale).
-   * Odd sizes otherwise leave a 0.5px gap against borderSideExtent inners.
-   */
-  private layoutOrthoPlane(
-    geometry: THREE.BufferGeometry,
-    width: number,
-    height: number,
-  ): void {
-    layoutOrthoPlanePositions(geometry, width, height);
-  }
-
-  /** Create fill plane baked into chrome geometry (widget-local, int-aligned). */
-  private createFillPlane(): THREE.BufferGeometry {
-    const extent = this.getFillExtent();
-    const plane = new THREE.PlaneGeometry(1, 1, 1) as THREE.BufferGeometry;
-    // meshSize only here — logical fill may be 0 when the frame consumes the hole.
-    this.layoutOrthoPlane(plane, this.meshSize(extent.width), this.meshSize(extent.height));
-    // XY only — mesh.position.z already carries zOffset for the whole chrome.
-    plane.translate(this.getFillShrinkOffsetX(), 0, 0);
-    stampRegionAttribute(plane, GUI_CHROME_REGION_FILL);
-    return plane;
-  }
-
-  /**
-   * Edge/corner piece sized with symmetric PlaneGeometry (±w/2), then rotated for UVs.
-   * Odd sizes: nudge the post-rotation center by +0.5 on each odd axis so ±half spans
-   * TL ints [−⌊n/2⌋, n−⌊n/2⌋] and meets neighboring pieces (e.g. top ±47.5 → [-47,48]
-   * against corners at -47/48). Do not rewrite vertex frustums — that breaks UV flips.
-   * Fill quads stay TL-centered via {@link createFillPlane}.
-   */
-  private createBorderSidePlane(
-    extent: { left: number; top: number; width: number; height: number },
-    rotateZ: number = 0,
-  ): THREE.PlaneGeometry {
-    const w = asExtentInt(extent.width);
-    const h = asExtentInt(extent.height);
-    const plane = new THREE.PlaneGeometry(
-      Math.max(GUIControl.MESH_EPS, w),
-      Math.max(GUIControl.MESH_EPS, h),
-      1,
-      1,
-    );
-    if(rotateZ !== 0){
-      plane.rotateZ(rotateZ);
-    }
-
-    // Translate is widget-space (after rot). Map local odd axes → world nudge.
-    let tx = extent.left;
-    let ty = extent.top;
-    const twoPi = Math.PI * 2;
-    const norm = ((rotateZ % twoPi) + twoPi) % twoPi;
-    const is90 = Math.abs(norm - Math.PI / 2) < 1e-6;
-    const isNeg90 = Math.abs(norm - (Math.PI * 3) / 2) < 1e-6;
-    if(is90 || isNeg90){
-      // local X → world Y, local Y → world X (sign ignored for +0.5 span)
-      if(w & 1) ty += 0.5;
-      if(h & 1) tx += 0.5;
-    }else{
-      // 0 or 180°: local axes stay aligned with world
-      if(w & 1) tx += 0.5;
-      if(h & 1) ty += 0.5;
-    }
-    plane.translate(tx, ty, 0);
-    return plane;
-  }
-
-  /** Build the single chrome mesh (8 frame quads + fill). Frame uses chrome size (may be highlight dim). */
+  /** Build the single chrome mesh (8 frame quads + fill) with shared ring seams. */
   buildChrome(){
-    const planes: THREE.BufferGeometry[] = [];
-
-    const sideSpecs: Array<{ side: string; rot: number; region: number }> = [
-      { side: 'top', rot: Math.PI, region: GUI_CHROME_REGION_EDGE },
-      { side: 'right', rot: -Math.PI/2, region: GUI_CHROME_REGION_EDGE },
-      { side: 'bottom', rot: 0, region: GUI_CHROME_REGION_EDGE },
-      { side: 'left', rot: Math.PI/2, region: GUI_CHROME_REGION_EDGE },
-      { side: 'topLeft', rot: 0, region: GUI_CHROME_REGION_CORNER },
-      { side: 'topRight', rot: -Math.PI/2, region: GUI_CHROME_REGION_CORNER },
-      { side: 'bottomRight', rot: Math.PI, region: GUI_CHROME_REGION_CORNER },
-      { side: 'bottomLeft', rot: Math.PI/2, region: GUI_CHROME_REGION_CORNER },
-    ];
-
-    for(let i = 0; i < sideSpecs.length; i++){
-      const spec = sideSpecs[i];
-      const plane = this.createBorderSidePlane(this.getChromeFrameExtent(spec.side), spec.rot);
-      stampRegionAttribute(plane, spec.region);
-      planes.push(plane);
-    }
-
-    planes.push(this.createFillPlane());
+    const ew = asExtentInt(this.extent.width);
+    const eh = asExtentInt(this.extent.height);
+    const dim = this.getChromeFrameSize();
+    const shrink = asExtentInt(this.getShrinkWidth());
 
     if(this.chrome.geometry instanceof THREE.BufferGeometry){
       this.chrome.geometry.dispose();
     }
 
-    this.chrome.geometry = mergeChromePlanes(planes);
+    // Rings shrink from the right; fillOffset is baked into outerR (no extra X nudge).
+    // flipLeft: translate the whole mesh so the missing strip sits on the left.
+    this.chrome.geometry = buildChromeGeometryForControl(ew, eh, dim, shrink, 0);
     if(this.chrome.mesh){
       this.chrome.mesh.geometry = this.chrome.geometry;
       this.chrome.mesh.position.z = this.zOffset;
-    }
-
-    let _plane: THREE.BufferGeometry | undefined;
-    while(planes.length){
-      _plane = planes.shift();
-      if(_plane){
-        _plane.dispose();
-      }
+      this.chrome.mesh.position.x = this.flipLeft() ? shrink : 0;
     }
   }
 

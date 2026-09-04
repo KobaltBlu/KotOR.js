@@ -10,6 +10,10 @@ import {
 } from "@/gui/GUICoord";
 import { borderInnerExtent } from "@/gui/borderInnerExtent";
 import { borderSideExtent } from "@/gui/borderSideExtent";
+import {
+  chromeFrameRings,
+  chromeWorldQuadsFromRings,
+} from "@/gui/chromeGeometry";
 
 describe("BTN_AUTO / BTN_LEVELUP odd-width seams", () => {
   it("odd fill width 95 uses [-47, 48] and meets even-dim L/R inners", () => {
@@ -18,6 +22,7 @@ describe("BTN_AUTO / BTN_LEVELUP odd-width seams", () => {
       height: 52,
       dimension: 16,
       innerOffset: 0,
+      applyInnerOffset: false,
     });
     expect(hole).toEqual({ width: 95, height: 20 });
 
@@ -31,13 +36,57 @@ describe("BTN_AUTO / BTN_LEVELUP odd-width seams", () => {
     expect(rightInner - fillMaxX).toBe(0);
   });
 
-  it("odd edge width 95 with +0.5 center nudge spans [-47, 48] like corners", () => {
-    // Symmetric PlaneGeometry(95) is ±47.5; translate X += 0.5 → [-47, 48]
-    const half = 95 / 2;
-    const nudged = { minX: 0.5 - half, maxX: 0.5 + half };
-    expect(nudged).toEqual({ minX: -47, maxX: 48 });
-    // Without nudge (user dump): ±47.5 leaves 0.5px gap to corner at 48
-    expect(48 - half).toBe(0.5);
+  it("ring chrome shares exact edge↔corner seams (even dim)", () => {
+    const quads = chromeWorldQuadsFromRings(127, 52, 16);
+    const byRegion = (region: number) => quads.filter((q) => q.region === region);
+    const edges = byRegion(0);
+    const corners = byRegion(1);
+    // top-left corner meets left edge + upper edge
+    const tl = corners.find((q) => q.minX < 0 && q.maxY > 0)!;
+    const left = edges.find((q) => q.maxX === tl.maxX && q.minY < tl.minY)!;
+    const upper = edges.find((q) => q.minY === tl.minY && q.minX === tl.maxX)!;
+    expect(tl.maxX).toBe(left.maxX);
+    expect(tl.minY).toBe(left.maxY);
+    expect(tl.minY).toBe(upper.minY);
+    expect(tl.maxX).toBe(upper.minX);
+  });
+
+  it("ring chrome has zero right/top gaps for odd DIMENSION (MainMenu)", () => {
+    // Odd dim + TL-around-center previously left gap:1 on right/top seams.
+    for (const [ew, eh, dim] of [
+      [229, 35, 9],
+      [100, 25, 5],
+      [211, 41, 7],
+    ] as const) {
+      const r = chromeFrameRings(ew, eh, dim);
+      expect(r.innerR - r.innerL).toBeGreaterThan(0);
+      const quads = chromeWorldQuadsFromRings(ew, eh, dim);
+      const edges = quads.filter((q) => q.region === 0);
+      const corners = quads.filter((q) => q.region === 1);
+      const tr = corners.find((q) => q.minX > 0 && q.maxY > 0)!;
+      const upper = edges.find((q) => q.maxY === tr.maxY)!;
+      const right = edges.find((q) => q.minX === tr.minX && q.maxY < tr.maxY)!;
+      expect(tr.minX - upper.maxX).toBe(0);
+      expect(tr.minY - right.maxY).toBe(0);
+      expect(tr.minX).toBe(r.innerR);
+      expect(tr.maxX).toBe(r.outerR);
+    }
+  });
+
+  it("ring fill hole matches borderInnerExtent Draw hole", () => {
+    const ew = 229;
+    const eh = 35;
+    const dim = 9;
+    const hole = borderInnerExtent({
+      width: ew,
+      height: eh,
+      dimension: dim,
+      innerOffset: 0,
+      applyInnerOffset: false,
+    });
+    const r = chromeFrameRings(ew, eh, dim);
+    expect(r.innerR - r.innerL).toBe(hole.width);
+    expect(r.innerT - r.innerB).toBe(hole.height);
   });
 });
 

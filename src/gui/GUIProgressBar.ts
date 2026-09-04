@@ -11,11 +11,8 @@ import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import { GUIControlType } from "@/enums/gui/GUIControlType";
 import {
   bindChromeTexture,
+  buildFillChromeGeometry,
   createGuiChrome,
-  GUI_CHROME_REGION_FILL,
-  layoutOrthoPlanePositions,
-  mergeChromePlanes,
-  stampRegionAttribute,
 } from "@/gui/guiChrome";
 import { asExtentInt, truncDiv } from "@/gui/GUICoord";
 
@@ -139,19 +136,15 @@ export class GUIProgressBar extends GUIControl {
   buildProgressChrome(){
     // Animated overlay is fill-only; frame tiles (if any) stay full-size on a sibling mesh.
     const fillExtent = this.getFillExtent();
-    const fillPlane = new THREE.PlaneGeometry(1, 1, 1) as THREE.BufferGeometry;
-    layoutOrthoPlanePositions(fillPlane, fillExtent.width, fillExtent.height);
-    stampRegionAttribute(fillPlane, GUI_CHROME_REGION_FILL);
 
     if(this.progressChrome.geometry instanceof THREE.BufferGeometry){
       this.progressChrome.geometry.dispose();
     }
-    this.progressChrome.geometry = mergeChromePlanes([fillPlane]);
+    this.progressChrome.geometry = buildFillChromeGeometry(fillExtent.width, fillExtent.height);
     this.progressChrome.mesh.geometry = this.progressChrome.geometry;
     this.progressChrome.mesh.position.z = this.zOffset + 1;
     this.progressChrome.material.uniforms.enableFrame.value = 0;
     this.progressChrome.material.uniforms.enableFill.value = 1;
-    fillPlane.dispose();
   }
 
   setProgress(val: number = 100){

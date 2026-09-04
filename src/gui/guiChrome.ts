@@ -1,14 +1,20 @@
 import * as THREE from "three";
-import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { GUIChromeMapSlot, IGUIControlChrome } from "@/interface/gui/IGUIControlChrome";
 import { GameState } from "@/GameState";
 import { TextureLoader } from "@/loaders";
 import { asGuiSize, asExtentInt, writeOrthoAlignedPlanePositions } from "@/gui/GUICoord";
-
-/** Chrome mesh region ids — must match ShaderAuroraGUI GUI_CHROME sampling. */
-export const GUI_CHROME_REGION_EDGE = 0;
-export const GUI_CHROME_REGION_CORNER = 1;
-export const GUI_CHROME_REGION_FILL = 2;
+export {
+  GUI_CHROME_REGION_CORNER,
+  GUI_CHROME_REGION_EDGE,
+  GUI_CHROME_REGION_FILL,
+  buildChromeGeometryForControl,
+  buildChromeGeometryFromWorldQuads,
+  buildFillChromeGeometry,
+  chromeFrameRings,
+  chromeWorldQuadCorners,
+  chromeWorldQuadsFromRings,
+} from "@/gui/chromeGeometry";
+export type { ChromeWorldQuad } from "@/gui/chromeGeometry";
 
 /** Shader hoverMode: swap border↔highlight samples. */
 export const GUI_HOVER_MODE_SWAP = 0;
@@ -140,17 +146,4 @@ export function bindChromeTexture(
 
 export function clearChromeTexture(material: THREE.ShaderMaterial, slot: GUIChromeMapSlot): void {
   bindChromeTexture(material, slot, null);
-}
-
-/**
- * Merge edge (0..3), corner (4..7), and optional fill plane into one chrome geometry.
- * Each input plane must already include a `region` attribute.
- */
-export function mergeChromePlanes(planes: THREE.BufferGeometry[]): THREE.BufferGeometry {
-  const merged = BufferGeometryUtils.mergeBufferGeometries(planes, false);
-  if(!merged){
-    return new THREE.BufferGeometry();
-  }
-  merged.computeBoundingBox();
-  return merged;
 }

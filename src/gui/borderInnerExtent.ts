@@ -1,16 +1,17 @@
 import { asExtentInt, asGuiSize, clampFrameDim, truncDiv } from "@/gui/GUICoord";
 
 /**
- * Matches retail GetInnerExtent (K1) for width/height.
+ * Matches retail GetInnerExtent for width/height.
  *
  * corner/edge sizes come from the border DIMENSION (GetBorderDim), clamped with
  * {@link asGuiSize} / {@link clampFrameDim}. DIMENSION 0 means no corner/edge
  * geometry in KotOR.js (retail would use corner/edge image sizes there — not
  * modeled). INNEROFFSET is then applied with retail's axis asymmetry:
  * width = (w - 2*corner) + 2*min(INNEROFFSET, DIMENSION)
- * height = (h - 2*corner) + 2*INNEROFFSETY (raw, no cap)
- * plus the degenerate-collapse test: if content is smaller than half an edge tile, it collapses.
- * When the clamped frame consumes the control, the fill/content hole is 0.
+ * height = (h - 2*corner) + 2*effectiveY (raw, no cap)
+ *
+ * TSL GetInnerExtent: when INNEROFFSETY is 0, Y falls back to INNEROFFSET.
+ * Pass {@link applyInnerOffset} false for Draw fill holes (no inset, no fallback).
  */
 export function borderInnerExtent(params: {
   width: number;
@@ -18,6 +19,8 @@ export function borderInnerExtent(params: {
   dimension: number;
   innerOffset: number;
   innerOffsetY?: number;
+  /** When false, skip INNEROFFSET/Y (fill Draw hole). Default true. */
+  applyInnerOffset?: boolean;
 }): { width: number; height: number } {
   const ew = asExtentInt(params.width);
   const eh = asExtentInt(params.height);
@@ -35,8 +38,16 @@ export function borderInnerExtent(params: {
     h = 0;
   }
 
+  if (params.applyInnerOffset === false) {
+    return { width: w, height: h };
+  }
+
   const rawInnerX = asExtentInt(params.innerOffset);
-  const rawInnerY = asExtentInt(params.innerOffsetY ?? params.innerOffset);
+  // TSL: INNEROFFSETY == 0 → fall back to INNEROFFSET (not literal zero).
+  const rawInnerYIn = params.innerOffsetY;
+  const rawInnerY = asExtentInt(
+    (rawInnerYIn === 0 || rawInnerYIn == null) ? params.innerOffset : rawInnerYIn,
+  );
   const cappedInnerX = Math.min(rawInnerX, asGuiSize(params.dimension));
 
   return {

@@ -16,6 +16,7 @@ describe("MenuCharacter BTN_AUTO / BTN_LEVELUP fill vs text inner", () => {
       height: 52,
       dimension: 16,
       innerOffset: 0,
+      applyInnerOffset: false,
     });
     const text = borderInnerExtent({
       width: 127,
@@ -33,6 +34,7 @@ describe("MenuCharacter BTN_AUTO / BTN_LEVELUP fill vs text inner", () => {
       height: 40,
       dimension: 16,
       innerOffset: 0,
+      applyInnerOffset: false,
     });
     expect(fill).toEqual({ width: 95, height: 8 });
   });

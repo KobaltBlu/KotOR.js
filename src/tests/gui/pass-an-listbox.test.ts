@@ -243,6 +243,45 @@ describe("border inner extent (INNEROFFSET fix)", () => {
     expect(inner.width).toBe(0);
     expect(inner.height).toBe(0);
   });
+
+  it("TSL INNEROFFSETY==0 falls back to INNEROFFSET for height", () => {
+    const inner = borderInnerExtent({
+      width: 340,
+      height: 364,
+      dimension: 16,
+      innerOffset: 14,
+      innerOffsetY: 0,
+    });
+    // Y uses INNEROFFSET 14 (not literal 0): height = 332 + 28
+    expect(inner.height).toBe(360);
+    expect(inner.width).toBe(336);
+  });
+
+  it("TSL asymmetric INNEROFFSETY uses uncapped Y and capped X", () => {
+    const inner = borderInnerExtent({
+      width: 340,
+      height: 364,
+      dimension: 16,
+      innerOffset: 14,
+      innerOffsetY: 8,
+    });
+    // width = 308 + 2*min(14,16) = 336
+    expect(inner.width).toBe(336);
+    // height = 332 + 2*8 = 348
+    expect(inner.height).toBe(348);
+  });
+
+  it("applyInnerOffset false skips inset (Draw fill hole)", () => {
+    const hole = borderInnerExtent({
+      width: 340,
+      height: 364,
+      dimension: 16,
+      innerOffset: 14,
+      innerOffsetY: 8,
+      applyInnerOffset: false,
+    });
+    expect(hole).toEqual({ width: 308, height: 332 });
+  });
 });
 
 describe("saveload row layout end-to-end (base extent → OrganizeControls)", () => {
