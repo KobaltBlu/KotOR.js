@@ -203,6 +203,11 @@ export class GameState implements EngineContext {
   static cheatRevealMap = false;
   /** Retail dancedancemalak GUI / GetCheatCode(0) flag. */
   static danceDanceMalak = false;
+  /**
+   * NWScript ShipBuild() — retail shipping builds always return TRUE.
+   * Default TRUE to match retail; cheat console can toggle off for debug scripts.
+   */
+  static shipBuild = true;
   /** TSL SetDisableTransit — blocks galaxy map transit when true. */
   static disableTransit = false;
   /** TSL SetInputClass — current input class id. */

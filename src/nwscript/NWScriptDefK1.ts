@@ -10318,9 +10318,9 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // Retail always returns TRUE (sets shipBuild=1). KotOR.js returns FALSE so
-      // scripts treat this as a non-shipping/debug-capable build.
-      return NW_FALSE;
+      // Retail shipping builds always return TRUE. Default GameState.shipBuild is
+      // TRUE to match retail; cheat console can toggle off for debug scripts.
+      return GameState.shipBuild ? NW_TRUE : NW_FALSE;
     }
   },
   762:{

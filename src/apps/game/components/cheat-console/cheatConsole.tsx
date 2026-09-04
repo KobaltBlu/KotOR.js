@@ -196,9 +196,15 @@ export const CheatConsole = () => {
     setDebugTick(debugTick + 1);
   }
 
+  const onToggleShipBuild = () => {
+    KotOR.CheatConsoleManager.shipBuild();
+    setDebugTick(debugTick + 1);
+  }
+
   const formatDebugLabel = (label: string) => label.replace(/_/g, ' ');
   const pcDamageScale = KotOR.GameState.DEBUG_PC_DAMAGE_SCALE;
   const floatyAllAttackers = KotOR.GameState.DEBUG_COMBAT_FLOATY_ALL_ATTACKERS;
+  const shipBuild = KotOR.GameState.shipBuild;
 
   return (
     <div className={`console on ${gameKey}`}>
@@ -268,6 +274,17 @@ export const CheatConsole = () => {
                       </button>
                     ))}
                   </div>
+                  {group.label === 'General' && (
+                    <div className="console-submenu-buttons">
+                      <button
+                        className={`console-btn console-btn-small flex-1 ${shipBuild ? 'on' : 'off'}`}
+                        onClick={onToggleShipBuild}
+                        title="When on (default), NWScript ShipBuild() returns TRUE (retail shipping). Off = debug-capable build."
+                      >
+                        Ship Build
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
               <div className="console-submenu-group">

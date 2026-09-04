@@ -200,6 +200,14 @@ export class CheatConsoleManager {
     GameState.infiniteUses = !GameState.infiniteUses;
   }
 
+  /** Toggle NWScript ShipBuild() — TRUE mimics retail shipping builds (default). */
+  static shipBuild(){
+    GameState.shipBuild = !GameState.shipBuild;
+    const line = `ShipBuild: ${GameState.shipBuild ? 'ON' : 'OFF'}`;
+    console.log(line);
+    GameState.FeedbackMessageManager?.AddMessage?.(line, FeebackMessageColor.INFO, 0, { bypassStatusSummary: true });
+  }
+
   static danceDanceMalak(){
     GameState.danceDanceMalak = true;
   }
@@ -313,6 +321,7 @@ export class CheatConsoleManager {
       'turbo',
       'invulnerability',
       'infiniteuses',
+      'shipbuild',
       'warp',
       'whereami',
       'giverandomloot',
@@ -396,6 +405,9 @@ export class CheatConsoleManager {
         break;
       case 'infiniteuses':
         CheatConsoleManager.infiniteUses();
+        break;
+      case 'shipbuild':
+        CheatConsoleManager.shipBuild();
         break;
       case 'warp':
         CheatConsoleManager.warp(params[0]);
