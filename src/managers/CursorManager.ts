@@ -4,6 +4,7 @@ import { Mouse } from "@/controls/Mouse";
 import type { ModuleObject } from "@/module";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleDoor } from "@/module/ModuleDoor";
+import type { ModulePlaceable } from "@/module/ModulePlaceable";
 import { ApplicationProfile } from "@/utility/ApplicationProfile";
 import { EngineMode, GameEngineType } from "@/enums/engine";
 import type { MenuManager } from "@/managers/MenuManager";
@@ -12,20 +13,69 @@ import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { BitWise } from "@/utility/BitWise";
 import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import { OdysseyObject3D } from "@/three/odyssey/OdysseyObject3D";
-import {
-	CombatReticlePulse,
-	getHoverReticleStyle,
-	getReticleKind,
-	getReticlePixelSize,
-	getSelectedReticleStyle,
-	pixelSizeToWorldScale,
-} from "@/managers/reticle";
-import {
-	getStickyMouseThresholdSq,
-	MOUSE_PICK_RANGE_SQ,
-	passesMousePickGates,
-	screenDistanceSq,
-} from "@/managers/mouse-pick";
+
+/** Retail ProcessInput pick range (√900) — XY distance player↔object. */
+export const MOUSE_PICK_RANGE = 30;
+export const MOUSE_PICK_RANGE_SQ = MOUSE_PICK_RANGE * MOUSE_PICK_RANGE;
+
+/** Retail clear / scale floor distance (√900). */
+export const RETICLE_MAX_DISTANCE = 30;
+export const RETICLE_MAX_DISTANCE_SQ = 900;
+
+/** World sprite scale that maps to retail base size 0x40 (64px). */
+export const RETICLE_BASE_WORLD_SCALE = 0.5;
+
+export type ReticleKind = 'creature' | 'object';
+
+export type ReticleStyle = {
+	/** CursorManager material key */
+	material: 'reticleF' | 'reticleH' | 'reticleF2' | 'reticleH2' | 'reticleCombat';
+	/** Friendly vs hostile (arrow / nameplate) */
+	hostile: boolean;
+};
+
+/**
+ * Retail combat-reticle size pulse.
+ * Timer -1 → start 0.5s swell; while > 0 add up to +64px; then settle.
+ */
+export class CombatReticlePulse {
+	/** -1 = armed to swell, 0 = idle, >0 = pulsing */
+	timer: number = 0;
+
+	/** Call when selected target or combat-mode style becomes combatreticle. */
+	arm(){
+		if(this.timer === 0){
+			this.timer = -1;
+		}
+	}
+
+	reset(){
+		this.timer = 0;
+	}
+
+	/**
+	 * @returns extra pixel size to add this frame
+	 */
+	update(delta: number, usingCombatReticle: boolean): number {
+		if(!usingCombatReticle){
+			this.timer = 0;
+			return 0;
+		}
+		if(this.timer <= 0){
+			if(this.timer !== -1){
+				return 0;
+			}
+			this.timer = 0.5;
+			return 0x40;
+		}
+		this.timer -= delta;
+		if(this.timer <= 0){
+			this.timer = 0;
+			return 0;
+		}
+		return Math.floor(this.timer * 128);
+	}
+}
 
 /**
  * Manages the in-game cursor, reticles, and selection/hover logic.
@@ -75,6 +125,164 @@ export class CursorManager {
 	static #tmpHit = new THREE.Vector3();
 	static #tmpNdc = new THREE.Vector3();
 	static #tmpBox = new THREE.Box3();
+
+	/**
+	 * Retail GetStickyMouseThreshhold / Android
+	 * `(screenW/10)² + (screenH/10)²` in viewport pixels².
+	 */
+	static getStickyMouseThresholdSq(screenWidth: number, screenHeight: number): number {
+		const w = screenWidth / 10;
+		const h = screenHeight / 10;
+		return w * w + h * h;
+	}
+
+	/** Squared screen-space distance between mouse and projected reticle. */
+	static screenDistanceSq(
+		mouseX: number,
+		mouseY: number,
+		screenX: number,
+		screenY: number,
+	): number {
+		const dx = screenX - mouseX;
+		const dy = screenY - mouseY;
+		return dx * dx + dy * dy;
+	}
+
+	/**
+	 * Retail ProcessInput gates after a candidate is resolved:
+	 * - XY distance to player < 30
+	 * - (player - cam) · (obj - cam) >= 0 in XY (same half-space as the player)
+	 */
+	static passesMousePickGates(
+		player: THREE.Vector3,
+		camera: THREE.Vector3,
+		object: THREE.Vector3,
+		maxDistSq: number = MOUSE_PICK_RANGE_SQ,
+	): boolean {
+		const dx = object.x - player.x;
+		const dy = object.y - player.y;
+		if(dx * dx + dy * dy > maxDistSq){
+			return false;
+		}
+		const px = player.x - camera.x;
+		const py = player.y - camera.y;
+		const ox = object.x - camera.x;
+		const oy = object.y - camera.y;
+		return px * ox + py * oy >= 0;
+	}
+
+	/**
+	 * Retail pixel size from distance².
+	 * Creatures shrink with ×48 toward min 16; doors/placeables/triggers ×32 toward min 32.
+	 */
+	static getReticlePixelSize(distSq: number, kind: ReticleKind): number {
+		const base = 0x40;
+		if(distSq >= RETICLE_MAX_DISTANCE_SQ){
+			return kind === 'creature' ? 0x10 : 0x20;
+		}
+		if(distSq > 25){
+			const shrink = kind === 'creature' ? 48 : 32;
+			return Math.max(
+				kind === 'creature' ? 0x10 : 0x20,
+				base - Math.floor((Math.sqrt(distSq) - 5) * 0.04 * shrink)
+			);
+		}
+		return base;
+	}
+
+	static pixelSizeToWorldScale(pixelSize: number): number {
+		return (pixelSize / 0x40) * RETICLE_BASE_WORLD_SCALE;
+	}
+
+	static getReticleKind(object: ModuleObject | undefined): ReticleKind {
+		if(BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature)){
+			return 'creature';
+		}
+		return 'object';
+	}
+
+	/**
+	 * True when retail client combat_mode would be set (party has live attack/spell target).
+	 */
+	static isClientCombatMode(): boolean {
+		const party = GameState.PartyManager?.party;
+		if(!party?.length){
+			const pc = GameState.getCurrentPlayer();
+			return !!(pc?.combatData?.combatState || (pc?.excitedDuration ?? 0) > 0);
+		}
+		for(let i = 0; i < party.length; i++){
+			const member = party[i];
+			if(!member || member.isDead?.()) continue;
+			if(member.combatData?.combatState || (member.excitedDuration ?? 0) > 0){
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Hostile for reticle fill.
+	 * Creatures: live hostile only (dead → friendly loot).
+	 * Placeables: locked + useable + non-plot (retail dual-flag bash path).
+	 * Doors: locked and closed (retail door dual-flag path).
+	 */
+	static isReticleHostile(object: ModuleObject | undefined, observer?: ModuleObject): boolean {
+		if(!object) return false;
+		const viewer = observer ?? GameState.getCurrentPlayer();
+		if(!viewer) return false;
+
+		if(BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature)){
+			const cre = object as ModuleCreature;
+			if(cre.isDead()) return false;
+			return cre.isHostile(viewer);
+		}
+
+		if(BitWise.InstanceOfObject(object, ModuleObjectType.ModulePlaceable)){
+			const plc = object as ModulePlaceable;
+			if(!plc.isUseable()) return false;
+			if(plc.plot || plc.isBodyBag || plc.isCorpse) return false;
+			return !!plc.locked;
+		}
+
+		if(BitWise.InstanceOfObject(object, ModuleObjectType.ModuleDoor)){
+			const door = object as ModuleDoor;
+			if(!door.isUseable()) return false;
+			if(door.plot) return false;
+			return door.isLocked() && !door.isOpen();
+		}
+
+		if(BitWise.InstanceOfObject(object, ModuleObjectType.ModuleTrigger)){
+			return !!object.isHostile?.(viewer);
+		}
+
+		return false;
+	}
+
+	/** Hover reticle (UpdateStickyTarget): friendlyreticle / hostilereticle */
+	static getHoverReticleStyle(object: ModuleObject | undefined): ReticleStyle {
+		const hostile = CursorManager.isReticleHostile(object);
+		return {
+			hostile,
+			material: hostile ? 'reticleH' : 'reticleF',
+		};
+	}
+
+	/**
+	 * Selected reticle (UpdateIndicator): friendlyreticle2 / hostilereticle2 / combatreticle.
+	 */
+	static getSelectedReticleStyle(object: ModuleObject | undefined): ReticleStyle {
+		const hostile = CursorManager.isReticleHostile(object);
+		if(!hostile){
+			return { hostile: false, material: 'reticleF2' };
+		}
+		if(
+			BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature) &&
+			CursorManager.isClientCombatMode()
+		){
+			return { hostile: true, material: 'reticleCombat' };
+		}
+		return { hostile: true, material: 'reticleH2' };
+	}
 	
 	/**
 	 * Initializes cursor/reticle materials and sprites, and loads textures.
@@ -224,8 +432,8 @@ export class CursorManager {
 			return;
 		}
 		const distSq = player.position.distanceToSquared(object.position);
-		const px = getReticlePixelSize(distSq, getReticleKind(object)) + pulseExtraPx;
-		const s = pixelSizeToWorldScale(Math.max(1, px));
+		const px = CursorManager.getReticlePixelSize(distSq, CursorManager.getReticleKind(object)) + pulseExtraPx;
+		const s = CursorManager.pixelSizeToWorldScale(Math.max(1, px));
 		sprite.scale.set(s, s, s);
 	}
 
@@ -264,7 +472,7 @@ export class CursorManager {
 			return;
 		}
 
-		const style = getSelectedReticleStyle(object);
+		const style = CursorManager.getSelectedReticleStyle(object);
 		if(style.material === 'reticleCombat'){
 			if(CursorManager.lastCombatReticleTargetId !== object.id){
 				CursorManager.combatReticlePulse.arm();
@@ -293,23 +501,23 @@ export class CursorManager {
 
 		if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleDoor)){
 			CursorManager.setCursor(canChangeCursor ? 'door' : 'select');
-			CursorManager.setReticle(getHoverReticleStyle(object).material);
+			CursorManager.setReticle(CursorManager.getHoverReticleStyle(object).material);
 		}else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModulePlaceable)){
 			if(!object.isUseable()){
 				return;
 			}
 			CursorManager.setCursor(canChangeCursor ? 'use' : 'select');
-			CursorManager.setReticle(getHoverReticleStyle(object).material);
+			CursorManager.setReticle(CursorManager.getHoverReticleStyle(object).material);
 		}else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleTrigger)){
 			if(!object.isUseable()){
 				return;
 			}
 			CursorManager.setCursor(canChangeCursor ? 'trap' : 'select');
-			CursorManager.setReticle(getHoverReticleStyle(object).material);
+			CursorManager.setReticle(CursorManager.getHoverReticleStyle(object).material);
 		}else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
 			const player = GameState.getCurrentPlayer();
 			const creature = object as ModuleCreature;
-			const style = getHoverReticleStyle(creature);
+			const style = CursorManager.getHoverReticleStyle(creature);
 
 			if(style.hostile){
 				CursorManager.setCursor(canChangeCursor ? 'attack' : 'select');
@@ -429,7 +637,7 @@ export class CursorManager {
 				CursorManager.reticle.position.copy(CursorManager.#tmpWorld);
 				CursorManager.reticle.visible = true;
 				CursorManager.applyReticleScale(CursorManager.reticle, CursorManager.hoveredObject);
-				CursorManager.setReticle(getHoverReticleStyle(CursorManager.hoveredObject).material);
+				CursorManager.setReticle(CursorManager.getHoverReticleStyle(CursorManager.hoveredObject).material);
 			}else{
 				CursorManager.reticle.visible = false;
 			}
@@ -441,7 +649,7 @@ export class CursorManager {
 			CursorManager.selected.getWorldPosition(CursorManager.#tmpWorld);
 			const onScreen = GameState.viewportFrustum?.containsPoint(CursorManager.#tmpWorld) ?? true;
 			if(onScreen){
-				const style = getSelectedReticleStyle(CursorManager.selectedObject);
+				const style = CursorManager.getSelectedReticleStyle(CursorManager.selectedObject);
 				if(style.material === 'reticleCombat'){
 					if(CursorManager.lastCombatReticleTargetId !== CursorManager.selectedObject?.id){
 						CursorManager.combatReticlePulse.arm();
@@ -586,7 +794,7 @@ export class CursorManager {
 
 		for(let i = 0; i < objCount; i++){
 			const obj = objects[i];
-			if(!passesMousePickGates(player.position, camera.position, obj.position, MOUSE_PICK_RANGE_SQ)){
+			if(!CursorManager.passesMousePickGates(player.position, camera.position, obj.position, MOUSE_PICK_RANGE_SQ)){
 				continue;
 			}
 
@@ -634,7 +842,7 @@ export class CursorManager {
 		}
 
 		// Sticky fallback — retail GetStickyMouseThreshhold + GetReticlePoint
-		const threshSq = getStickyMouseThresholdSq(
+		const threshSq = CursorManager.getStickyMouseThresholdSq(
 			GameState.ResolutionManager.getViewportWidth(),
 			GameState.ResolutionManager.getViewportHeight(),
 		);
@@ -649,13 +857,13 @@ export class CursorManager {
 			if(!GameState.ModuleObjectManager.canSeeObject(player, obj)){
 				continue;
 			}
-			if(!passesMousePickGates(player.position, camera.position, obj.position, MOUSE_PICK_RANGE_SQ)){
+			if(!CursorManager.passesMousePickGates(player.position, camera.position, obj.position, MOUSE_PICK_RANGE_SQ)){
 				continue;
 			}
 			if(!CursorManager.projectReticleToScreen(obj, camera, screen)){
 				continue;
 			}
-			const distSq = screenDistanceSq(mouseX, mouseY, screen.x, screen.y);
+			const distSq = CursorManager.screenDistanceSq(mouseX, mouseY, screen.x, screen.y);
 			if(distSq > threshSq || distSq >= bestStickyDist){
 				continue;
 			}

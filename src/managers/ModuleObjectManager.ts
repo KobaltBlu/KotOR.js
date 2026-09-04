@@ -8,31 +8,34 @@ import { ReputationType } from "@/enums/nwscript/ReputationType";
 import { BitWise } from "@/utility/BitWise";
 import { PartyManager } from "@/managers/PartyManager";
 import * as THREE from "three";
-import type { Module, ModuleCreature, ModuleDoor, ModuleObject, ModulePlaceable, ModuleTrigger } from "@/module";
+import type { Module, ModuleArea, ModuleCreature, ModuleDoor, ModuleObject, ModulePlaceable, ModuleTrigger } from "@/module";
 import { PerceptionMask } from "@/enums/engine/PerceptionMask";
 import { GameState } from "@/GameState";
 import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
 import { clearLineOfSight } from "@/engine/pathfinding/clear-line-of-sight";
 import { isPointInShape } from "@/combat/objects-in-shape";
 import { FollowerCamera } from "@/engine/FollowerCamera";
-import { isClientCombatMode } from "@/managers/reticle";
 import { AutoPauseState } from "@/enums/engine/AutoPauseState";
 import { EngineState } from "@/enums/engine/EngineState";
 import { MiniGameObjectArray } from "@/module/minigame/MiniGameObjectArray";
-import {
-  addObjectToLookupTable,
-  findObjectIdByTagOrdinal,
-  findTagPositionInTable,
-  removeObjectFromLookupTable,
-  removeObjectFromLookupTableById,
-  type TagLookupNode,
-} from "@/managers/tag-lookup-table";
-import { findNearestInArea } from "@/managers/nearest-object";
 
 /** First non-MG object id — retail SWMG StackPushObject uses mgo_index 0..0xfe. */
 const FIRST_MODULE_OBJECT_ID = MiniGameObjectArray.CAPACITY + 1; // 0x100
 
-export type { TagLookupNode };
+/** Retail object_lookup_table node. */
+export type TagLookupNode = { tag: string; id: number };
+
+export type NearestCandidate = { obj: ModuleObject; distSq: number };
+
+export type FindNearestInAreaOptions = {
+  area: ModuleArea;
+  origin: THREE.Vector3;
+  /** 0-based nth (NWScript stack uses 1-based; callers subtract 1). */
+  nth: number;
+  /** Source object id to skip (GetNearestObject / ByTag / Creature). */
+  excludeId?: number;
+  matches: (obj: ModuleObject) => boolean;
+};
 
 /** Retail GetNearestObjects / DoPassiveSelection range (√900). */
 const NEAREST_OBJECT_RANGE = 30;
@@ -152,27 +155,192 @@ export class ModuleObjectManager {
   /**
    * Retail FindTagPositionInTable — first index where tag >= needle (lower_bound).
    */
+  static findTagPositionInTable(table: TagLookupNode[], tag: string): number {
+    const needle = (tag ?? '').toLowerCase();
+    let lo = 0;
+    let hi = table.length;
+    while(lo < hi){
+      const mid = (lo + hi) >> 1;
+      if(table[mid].tag < needle){
+        lo = mid + 1;
+      }else{
+        hi = mid;
+      }
+    }
+    return lo;
+  }
+
+  /** Insert after last equal-tag entry. */
+  static addObjectToLookupTable(table: TagLookupNode[], tag: string, id: number): void {
+    const key = (tag ?? '').toLowerCase();
+    let i = ModuleObjectManager.findTagPositionInTable(table, key);
+    while(i < table.length && table[i].tag === key){
+      i++;
+    }
+    table.splice(i, 0, { tag: key, id });
+  }
+
+  /** Remove by tag + id. */
+  static removeObjectFromLookupTable(table: TagLookupNode[], tag: string, id: number): boolean {
+    const key = (tag ?? '').toLowerCase();
+    let i = ModuleObjectManager.findTagPositionInTable(table, key);
+    while(i < table.length){
+      if(table[i].tag !== key) break;
+      if(table[i].id === id){
+        table.splice(i, 1);
+        return true;
+      }
+      i++;
+    }
+    return false;
+  }
+
+  /** Remove every entry for this object id. */
+  static removeObjectFromLookupTableById(table: TagLookupNode[], id: number): void {
+    for(let i = table.length - 1; i >= 0; i--){
+      if(table[i].id === id){
+        table.splice(i, 1);
+      }
+    }
+  }
+
+  /**
+   * FindObjectByTagOrdinal — return id at firstMatch + nth among equal tags.
+   */
+  static findObjectIdByTagOrdinal(
+    table: TagLookupNode[],
+    tag: string,
+    nth: number,
+    matchesType?: (id: number) => boolean
+  ): number | undefined {
+    const key = (tag ?? '').toLowerCase();
+    let i = ModuleObjectManager.findTagPositionInTable(table, key);
+    let remaining = nth | 0;
+    while(i < table.length && table[i].tag === key){
+      const id = table[i].id;
+      if(!matchesType || matchesType(id)){
+        if(remaining <= 0){
+          return id;
+        }
+        remaining--;
+      }
+      i++;
+    }
+    return undefined;
+  }
+
+  /** Insert candidate into ascending distSq list (retail CExoArrayList Insert). */
+  static insertByDistSq(candidates: NearestCandidate[], obj: ModuleObject, distSq: number): void {
+    let i = 0;
+    while(i < candidates.length && candidates[i].distSq <= distSq){
+      i++;
+    }
+    candidates.splice(i, 0, { obj, distSq });
+  }
+
+  /**
+   * Retail ExecuteCommandGetNearestObject spiral walk:
+   * start at GetFirstObjectIndiceByX, expand +1/-1/+2/-2…, insert by distSq,
+   * abort a direction when |dx|² already exceeds the current nth-furthest distSq.
+   */
+  static findNearestInArea(opts: FindNearestInAreaOptions): ModuleObject | undefined {
+    const { area, origin, matches } = opts;
+    const nth = Math.max(0, opts.nth | 0);
+    const excludeId = opts.excludeId;
+    if(!area || !origin){
+      return undefined;
+    }
+
+    area.ensureGameObjectsSorted();
+    const table = area.gameObjects;
+    if(!table.length){
+      return undefined;
+    }
+
+    let start = area.getFirstObjectIndexByX(origin.x);
+    if(excludeId !== undefined){
+      let found = false;
+      for(let i = start; i < table.length; i++){
+        if(table[i]?.id === excludeId){
+          start = i;
+          found = true;
+          break;
+        }
+      }
+      if(!found){
+        return undefined;
+      }
+    }
+
+    const candidates: NearestCandidate[] = [];
+    const seen = new Set<number>();
+    let stopPos = false;
+    let stopNeg = false;
+
+    const consider = (idx: number, direction: 1 | -1) => {
+      if(idx < 0){
+        stopNeg = true;
+        return;
+      }
+      if(idx >= table.length){
+        stopPos = true;
+        return;
+      }
+      const obj = table[idx];
+      if(!obj) return;
+      const id = obj.id | 0;
+      if(excludeId !== undefined && id === excludeId) return;
+      if(seen.has(id)) return;
+      seen.add(id);
+      if(!matches(obj)) return;
+
+      const dx = obj.position.x - origin.x;
+      const dy = obj.position.y - origin.y;
+      const dz = obj.position.z - origin.z;
+      const distSq = dx * dx + dy * dy + dz * dz;
+      const dxSq = dx * dx;
+
+      if(candidates.length > nth && dxSq > candidates[nth].distSq){
+        if(direction > 0) stopPos = true;
+        else stopNeg = true;
+        return;
+      }
+      ModuleObjectManager.insertByDistSq(candidates, obj, distSq);
+    };
+
+    for(let mag = 1; mag <= table.length; mag++){
+      if(stopPos && stopNeg) break;
+      if(!stopPos) consider(start + mag, 1);
+      if(!stopNeg) consider(start - mag, -1);
+    }
+
+    return candidates[nth]?.obj;
+  }
+
+  /**
+   * Retail FindTagPositionInTable on the manager table.
+   */
   static FindTagPositionInTable(tag: string): number {
-    return findTagPositionInTable(this.tagLookup, tag);
+    return ModuleObjectManager.findTagPositionInTable(this.tagLookup, tag);
   }
 
   /**
    * Retail AddObjectToLookupTable — insert after last equal-tag entry.
    */
   static AddObjectToLookupTable(tag: string, id: number){
-    addObjectToLookupTable(this.tagLookup, tag, id);
+    ModuleObjectManager.addObjectToLookupTable(this.tagLookup, tag, id);
   }
 
   /**
    * Retail RemoveObjectFromLookupTable — remove by tag + id.
    */
   static RemoveObjectFromLookupTable(tag: string, id: number): boolean {
-    return removeObjectFromLookupTable(this.tagLookup, tag, id);
+    return ModuleObjectManager.removeObjectFromLookupTable(this.tagLookup, tag, id);
   }
 
   /** Remove any lookup entries for this object id (tag may have changed). */
   static RemoveObjectFromLookupTableById(id: number){
-    removeObjectFromLookupTableById(this.tagLookup, id);
+    ModuleObjectManager.removeObjectFromLookupTableById(this.tagLookup, id);
   }
 
   /**
@@ -249,7 +417,7 @@ export class ModuleObjectManager {
     // Retail FindObjectByTagOrdinal / FindObjectByTagTypeOrdinal
     const filterType = oType | 0;
     const useTypeFilter = filterType !== NWModuleObjectType.ALL;
-    const id = findObjectIdByTagOrdinal(
+    const id = ModuleObjectManager.findObjectIdByTagOrdinal(
       this.tagLookup,
       sTag,
       iNum,
@@ -273,7 +441,7 @@ export class ModuleObjectManager {
     if(!area || !oObject?.position){
       return undefined;
     }
-    return findNearestInArea({
+    return ModuleObjectManager.findNearestInArea({
       area,
       origin: oObject.position,
       nth: iNum,
@@ -289,7 +457,7 @@ export class ModuleObjectManager {
     }
     const typeMask = oType | 0;
     const matchAll = (typeMask & NWModuleObjectType.ALL) === NWModuleObjectType.ALL;
-    return findNearestInArea({
+    return ModuleObjectManager.findNearestInArea({
       area,
       origin: oObject.position,
       nth: iNum,
@@ -479,7 +647,7 @@ export class ModuleObjectManager {
       return true;
     };
 
-    return findNearestInArea({
+    return ModuleObjectManager.findNearestInArea({
       area,
       origin: oTarget.position,
       nth: Math.max(0, (nNth | 0) - 1),
@@ -528,7 +696,7 @@ export class ModuleObjectManager {
       return true;
     };
 
-    return findNearestInArea({
+    return ModuleObjectManager.findNearestInArea({
       area,
       origin: lLocation.position,
       nth: Math.max(0, (nNth | 0) - 1),
@@ -546,7 +714,7 @@ export class ModuleObjectManager {
     }
     const typeMask = oType | 0;
     const matchAll = (typeMask & NWModuleObjectType.ALL) === NWModuleObjectType.ALL;
-    return findNearestInArea({
+    return ModuleObjectManager.findNearestInArea({
       area,
       origin: lLocation.position,
       nth: iNum,
@@ -563,7 +731,7 @@ export class ModuleObjectManager {
     if(!oTarget?.position || !area){
       return undefined;
     }
-    return findNearestInArea({
+    return ModuleObjectManager.findNearestInArea({
       area,
       origin: oTarget.position,
       nth: 0,
@@ -968,7 +1136,7 @@ export class ModuleObjectManager {
     const around = this.playerSelectableObjects;
     const front = this.#cachedFront;
     let last = GameState.CursorManager.selectedObject;
-    const combat = isClientCombatMode();
+    const combat = !!GameState.CursorManager?.isClientCombatMode?.();
     const paused = GameState.State === EngineState.PAUSED;
 
     // Retail DoPassiveSelection first loop: creatures → hostile pool,
@@ -1167,7 +1335,7 @@ export class ModuleObjectManager {
     const list = this.playerSelectableObjects;
     if(!list.length) return undefined;
 
-    const combat = isClientCombatMode();
+    const combat = !!GameState.CursorManager?.isClientCombatMode?.();
     // Out of combat: prefer hostile creatures when any exist (arg2 = 2)
     let hostileOnly = false;
     if(!combat){

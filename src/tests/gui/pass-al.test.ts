@@ -2,10 +2,20 @@
  * @jest-environment node
  */
 import { describe, expect, it, jest } from "@jest/globals";
-import * as THREE from "three";
-import { insertByDistSq, type NearestCandidate } from "@/managers/nearest-object";
 
-jest.mock("@/GameState", () => ({ GameState: {} }));
+jest.mock("@/managers/PartyManager", () => ({
+  PartyManager: { party: [], Player: undefined },
+}));
+jest.mock("@/GameState", () => ({
+  GameState: { CursorManager: { isClientCombatMode: () => false } },
+}));
+jest.mock("@/engine/FollowerCamera", () => ({ FollowerCamera: {} }));
+jest.mock("@/managers/ResolutionManager", () => ({ ResolutionManager: { addResolution: () => {} } }));
+jest.mock("@/combat/objects-in-shape", () => ({ isPointInShape: () => false }));
+jest.mock("@/engine/pathfinding/clear-line-of-sight", () => ({ clearLineOfSight: () => true }));
+
+import * as THREE from "three";
+import { ModuleObjectManager, type NearestCandidate } from "@/managers/ModuleObjectManager";
 
 /** Mirror of retail nearest insert by squared world distance. */
 function nearestObjectToLocation(
@@ -18,7 +28,7 @@ function nearestObjectToLocation(
     const dx = obj.position.x - origin.x;
     const dy = obj.position.y - origin.y;
     const dz = obj.position.z - origin.z;
-    insertByDistSq(candidates, obj as NearestCandidate["obj"], dx * dx + dy * dy + dz * dz);
+    ModuleObjectManager.insertByDistSq(candidates, obj as NearestCandidate["obj"], dx * dx + dy * dy + dz * dz);
   }
   return candidates[iNum]?.obj;
 }
@@ -45,7 +55,7 @@ describe("Pass AL GetNearestCreatureToLocation IS_ALIVE sort", () => {
       const dx = c.position.x - origin.x;
       const dy = c.position.y - origin.y;
       const dz = c.position.z - origin.z;
-      insertByDistSq(candidates, c as NearestCandidate["obj"], dx * dx + dy * dy + dz * dz);
+      ModuleObjectManager.insertByDistSq(candidates, c as NearestCandidate["obj"], dx * dx + dy * dy + dz * dz);
     }
     expect(candidates[0].obj).toBe(near);
   });

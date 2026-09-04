@@ -1,10 +1,22 @@
 /**
- * Retail ExecuteCommandGetNearestObject @ 0054b550 spiral finder.
+ * Retail ExecuteCommandGetNearestObject spiral finder.
  * @jest-environment node
  */
-import { describe, expect, it } from "@jest/globals";
+import { describe, expect, it, jest } from "@jest/globals";
+
+jest.mock("@/managers/PartyManager", () => ({
+  PartyManager: { party: [], Player: undefined },
+}));
+jest.mock("@/GameState", () => ({
+  GameState: { CursorManager: { isClientCombatMode: () => false } },
+}));
+jest.mock("@/engine/FollowerCamera", () => ({ FollowerCamera: {} }));
+jest.mock("@/managers/ResolutionManager", () => ({ ResolutionManager: { addResolution: () => {} } }));
+jest.mock("@/combat/objects-in-shape", () => ({ isPointInShape: () => false }));
+jest.mock("@/engine/pathfinding/clear-line-of-sight", () => ({ clearLineOfSight: () => true }));
+
 import * as THREE from "three";
-import { findNearestInArea, insertByDistSq, type NearestCandidate } from "@/managers/nearest-object";
+import { ModuleObjectManager, type NearestCandidate } from "@/managers/ModuleObjectManager";
 import type { ModuleArea } from "@/module/ModuleArea";
 import type { ModuleObject } from "@/module/ModuleObject";
 
@@ -45,9 +57,9 @@ describe("insertByDistSq", () => {
     const a = { id: 1 } as ModuleObject;
     const b = { id: 2 } as ModuleObject;
     const c = { id: 3 } as ModuleObject;
-    insertByDistSq(candidates, b, 4);
-    insertByDistSq(candidates, a, 1);
-    insertByDistSq(candidates, c, 9);
+    ModuleObjectManager.insertByDistSq(candidates, b, 4);
+    ModuleObjectManager.insertByDistSq(candidates, a, 1);
+    ModuleObjectManager.insertByDistSq(candidates, c, 9);
     expect(candidates.map((x) => x.obj.id)).toEqual([1, 2, 3]);
   });
 });
@@ -58,7 +70,7 @@ describe("findNearestInArea", () => {
     const far = { id: 3, position: new THREE.Vector3(10, 0, 0) };
     const source = { id: 1, position: new THREE.Vector3(0, 0, 0) };
     const area = makeArea([source, near, far]);
-    const result = findNearestInArea({
+    const result = ModuleObjectManager.findNearestInArea({
       area,
       origin: source.position,
       nth: 0,
@@ -72,7 +84,7 @@ describe("findNearestInArea", () => {
     const source = { id: 1, position: new THREE.Vector3(0, 0, 0) };
     const other = { id: 2, position: new THREE.Vector3(1, 0, 0) };
     const area = makeArea([source, other]);
-    const result = findNearestInArea({
+    const result = ModuleObjectManager.findNearestInArea({
       area,
       origin: source.position,
       nth: 0,
@@ -89,13 +101,13 @@ describe("findNearestInArea", () => {
     const b = { id: 3, position: new THREE.Vector3(2, 0, 0) };
     const c = { id: 4, position: new THREE.Vector3(3, 0, 0) };
     const area = makeArea([source, a, b, c]);
-    expect(findNearestInArea({
+    expect(ModuleObjectManager.findNearestInArea({
       area, origin: source.position, nth: 0, excludeId: 1, matches: () => true,
     })?.id).toBe(2);
-    expect(findNearestInArea({
+    expect(ModuleObjectManager.findNearestInArea({
       area, origin: source.position, nth: 1, excludeId: 1, matches: () => true,
     })?.id).toBe(3);
-    expect(findNearestInArea({
+    expect(ModuleObjectManager.findNearestInArea({
       area, origin: source.position, nth: 2, excludeId: 1, matches: () => true,
     })?.id).toBe(4);
   });
@@ -105,7 +117,7 @@ describe("findNearestInArea", () => {
     const taggedFar = { id: 2, position: new THREE.Vector3(5, 0, 0), tag: "foo", getTag: () => "foo" };
     const taggedNear = { id: 3, position: new THREE.Vector3(1, 0, 0), tag: "bar", getTag: () => "bar" };
     const area = makeArea([source, taggedNear, taggedFar]);
-    const result = findNearestInArea({
+    const result = ModuleObjectManager.findNearestInArea({
       area,
       origin: source.position,
       nth: 0,
@@ -123,7 +135,7 @@ describe("findNearestInArea", () => {
     const fartherX = { id: 4, position: new THREE.Vector3(20, 0, 0) };
     const area = makeArea([source, near, farX, fartherX]);
     const considered: number[] = [];
-    const result = findNearestInArea({
+    const result = ModuleObjectManager.findNearestInArea({
       area,
       origin: source.position,
       nth: 0,
@@ -147,7 +159,7 @@ describe("findNearestInArea", () => {
     const origin = new THREE.Vector3(0, 0, 0);
     // lower_bound of 0 is index of rightNear (x=1). Spiral: +1=rightFar, -1=left.
     const area = makeArea([left, rightNear, rightFar]);
-    const result = findNearestInArea({
+    const result = ModuleObjectManager.findNearestInArea({
       area,
       origin,
       nth: 0,
