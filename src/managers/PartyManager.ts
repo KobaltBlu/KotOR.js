@@ -265,7 +265,9 @@ export class PartyManager {
   }
 
   /**
-   * Retail CSWPartyTable::GetInfluence — OOB → 0; else raw (incl. -1).
+   * Get the influence for the given NPC.
+   * @param nNPC The NPC to get the influence for.
+   * @returns The influence for the given NPC.
    */
   static getInfluence(nNPC: number): number {
     const id = nNPC | 0;
@@ -279,7 +281,11 @@ export class PartyManager {
   }
 
   /**
-   * Retail script SetInfluence path (ExecuteCommandInfluence).
+   * Set the influence for the given NPC.
+   * @param nNPC The NPC to set the influence for.
+   * @param value The value to set the influence to.
+   * @param opts The options to use for the influence.
+   * @returns True if the influence was set successfully, false otherwise.
    * Clamps 0..100 by default. Returns true when the stored value changed.
    */
   static setInfluence(
@@ -309,7 +315,10 @@ export class PartyManager {
   }
 
   /**
-   * Retail script ModifyInfluence — seed -1 → 50, then add + clamp.
+   * Modify the influence for the given NPC.
+   * @param nNPC The NPC to modify the influence for.
+   * @param delta The amount to modify the influence by.
+   * @returns True if the influence was modified successfully, false otherwise.
    */
   static modifyInfluence(nNPC: number, delta: number): boolean {
     const id = nNPC | 0;
@@ -342,7 +351,9 @@ export class PartyManager {
   }
 
   /**
-   * Retail CGuiInGame::UpdateStatus 9/10 — influence gained / lost bitmasks + combat log.
+   * Notify the influence changed for the given NPC.
+   * @param npcId The ID of the NPC to notify the influence changed for.
+   * @param gained Whether the influence gained or lost.
    */
   static notifyInfluenceChange(npcId: number, gained: boolean){
     const bit = 1 << ((npcId | 0) & 31);
@@ -384,7 +395,9 @@ export class PartyManager {
     }
   }
 
-  /** Retail ModifyAlignment PC fanout — refresh all CNPC alignment-from-influence. */
+  /**
+   * Fanout the alignment influence from the PC.
+   */
   static fanoutAlignmentInfluenceFromPC(){
     if(GameState.GameKey !== GameEngineType.TSL){
       return;
@@ -450,7 +463,7 @@ export class PartyManager {
   }
 
   /**
-   * Load the party manager
+   * Load the party manager from a GFF object.
    * @param gff - The GFF object to load
    * @returns void
    */

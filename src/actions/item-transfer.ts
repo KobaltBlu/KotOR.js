@@ -15,7 +15,7 @@ import { BitWise } from "@/utility/BitWise";
 export const ITEM_TYPE_CREDITS = 0x17;
 export const ITEM_TYPE_PAZAAK_CARD = 0x2a;
 
-/** Retail UpdateStatus ids from Give/Take (CGuiInGame::UpdateStatus). */
+/** Retail UpdateStatus ids from Give/Take. */
 export const UPDATE_STATUS_ITEM_GIVEN = 7;
 export const UPDATE_STATUS_ITEM_TAKEN = 8;
 

@@ -342,15 +342,15 @@ export function retailSoftShadowLightElevationOk(lightZ: number, focusZ: number)
 export const RETAIL_SHADOW_NEAR_PLANE_Z_BIAS = 0.05;
 /** K1 distant sun plane normal (ProjectDynamicShadow when radius > 1000). */
 export const RETAIL_DISTANT_SHADOW_PLANE_NORMAL = Object.freeze({ x: 0, y: -1, z: -0.1 });
-/** Epsilon scale for PartTriMesh::Project projectionCap (BuildShadowArray). */
+/** Epsilon scale for Project projectionCap (BuildShadowArray). */
 export const RETAIL_SHADOW_PROJECTION_CAP_EPSILON = 1e-4;
 
 export enum RetailShadowProjectionPlaneKind {
-  /** DoDynamicMeshProjections / local ProjectDynamicShadow — camera near + bias. */
+  /** DoDynamicMeshProjections / local ProjectDynamicShadow: camera near + bias. */
   CameraNear = 0,
   /** ProjectDynamicShadow when radius >= RETAIL_DISTANT_SHADOW_RADIUS. */
   DistantGround = 1,
-  /** RenderStencilShadowsForThisLight — horizontal plane at focus Z. */
+  /** RenderStencilShadowsForThisLight: horizontal plane at focus Z. */
   FocusHorizontal = 2,
 }
 
@@ -401,7 +401,7 @@ const _planeTransformLocalOrigin = new THREE.Vector3();
 const _planeTransformTangent = new THREE.Vector3();
 
 /**
- * Mirror K1 Plane::Transform — world plane → mesh-local plane
+ * Transform: world plane → mesh-local plane
  * (inverse rotation on normal; origin = -constant * normal, then local origin).
  */
 export function transformRetailShadowPlaneToMeshLocal(
@@ -591,7 +591,7 @@ export function retailPlaneUVToWorld(
   return target;
 }
 
-/** K1 ClipProjection — clamp extrusion cap toward plane when cap is above plane. */
+/** ClipProjection: clamp extrusion cap toward plane when cap is above plane. */
 export function retailClipProjection(
   plane: IRetailShadowProjectionPlane,
   capX: number,
@@ -700,7 +700,7 @@ export function retailProjectPointFromLight(
 
 /**
  * Project a caster sample along the light→point ray onto an arbitrary receiver plane,
- * then return plane tangent UV (ProjectDynamicShadow / PartTriMesh::Project).
+ * then return plane tangent UV (ProjectDynamicShadow / Project).
  */
 export function retailProjectPointFromLightOntoPlane(
   plane: IRetailShadowProjectionPlane,

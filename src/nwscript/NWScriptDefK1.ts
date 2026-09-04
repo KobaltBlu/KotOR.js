@@ -3654,7 +3654,6 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.STRING,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // Retail ExecuteCommandRandomName → CSWNameGen::GetRandomName
       return GameState.CharGenManager.generateRandomName();
     }
   },
@@ -5632,7 +5631,6 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.EFFECT],
     action: function(this: NWScriptInstance, args: [ModuleObject, GameEffect]){
-      // Retail ExecuteCommandGetIsLinkImmune → CSWSCreatureStats::GetEffectLinkImmunity
       const target = args[0];
       const effect = args[1];
       if(!BitWise.InstanceOfObject(target, ModuleObjectType.ModuleCreature) || !effect){
@@ -6123,7 +6121,6 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
-      // Retail ExecuteCommandGetIsWeaponEffective → CSWSCreature::GetIsWeaponEffective
       if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
         return NW_FALSE;
       }
@@ -7320,7 +7317,6 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // Retail CSWSCreature::GetUserActionsPending — combat_round actions with user flag
       if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
         return NW_FALSE;
       }
@@ -7386,7 +7382,6 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      // Retail ExecuteCommandStartCreditSequence → CClientExoApp::StartCreditSequence
       if(GameState.module){
         GameState.module.creditSequenceInProgress = true;
       }
@@ -9224,7 +9219,6 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.STRING, NWScriptDataType.STRING],
     action: function(this: NWScriptInstance, args: [number, string, string]){
-      // Retail CSWSModule::AddWorldJournalEntry(id, text, title, day, ms)
       GameState.JournalManager.AddWorldEntry(args[0] | 0, args[1], args[2]);
     }
   },
@@ -10177,7 +10171,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // Retail CGuiInGame::SetGlobalDialogState(0) clears GUI dialog flags.
+      // Clear the global dialog state.
       // Clear script-instance conversation / listen context only — do not
       // tear down CutsceneManager mid-dialog (NSS warning).
       this.conversation = undefined;
@@ -10450,7 +10444,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      // Retail ExecuteCommandYavinHackCloseDoor → CSWSDoor::SetOpenState(0, 0)
+      // Set the open state of the door to closed.
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleDoor)){
         (args[0] as ModuleDoor).setOpenState(ModuleDoorOpenState.CLOSED, false);
       }

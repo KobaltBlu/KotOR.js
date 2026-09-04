@@ -4912,7 +4912,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail CSWSCreature::HandleAlignmentInfluence.
+   * Handle the alignment influence for the creature.
    * Kreia: influence.2da (SWRuleSet) + PC align + prestige math → goodEvil.
    * Other CNPCs: goodEvil = baseGoodEvil.
    */
@@ -6077,9 +6077,9 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail CSWSCreatureStats::GetFeatRemainingUses.
-   * Missing uses-tracking entry → 100; no feat → 0.
-   * (Spend tracking not yet implemented — owned feats report 100.)
+   * Get the remaining uses for the given feat.
+   * @param id The ID of the feat to get the remaining uses for.
+   * @returns The remaining uses for the given feat.
    */
   getFeatRemainingUses(id: number = 0): number {
     if(!this.getHasFeat(id)){
@@ -6093,9 +6093,9 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail GetCanUseSkill.
-   * Trained-only skills require a positive signed-byte rank. Skills usable
-   * untrained require either their all-classes flag or a matching class table.
+   * Get whether the creature can use the given skill.
+   * @param value The value of the skill to get whether the creature can use.
+   * @returns True if the creature can use the given skill, false otherwise.
    */
   getCanUseSkill(value: number): boolean {
     // Retail aliases the mine subskills 100–102 to Demolitions.
@@ -6121,9 +6121,10 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail GetSkillRank.
-   * raw=true returns the signed base rank only; raw=false applies ability mods,
-   * armor check, blindness, skill feats, and skill increase/decrease effects.
+   * Get the skill rank for the given skill.
+   * @param value The value of the skill to get the skill rank for.
+   * @param raw Whether to return the raw skill rank.
+   * @returns The skill rank for the given skill.
    */
   getSkillRank(value: number, raw: boolean = false){
     const skills = this.skills;
@@ -6214,7 +6215,11 @@ export class ModuleCreature extends ModuleObject {
     return rank | 0;
   }
 
-  /** Retail GetSkillRank feat chains (Gear Head / Caution / Empathy). */
+  /**
+   * Get the skill feat bonus for the given skill.
+   * @param skillId The ID of the skill to get the skill feat bonus for.
+   * @returns The skill feat bonus for the given skill.
+   */
   private getSkillFeatBonus(skillId: number): number {
     const has = (id: number) => !!this.getHasFeat?.(id);
 
@@ -6249,7 +6254,8 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Contested stealth / invisibility helpers (retail DoSpotDetection / GetInvisible).
+   * Get whether the creature is stealthed or invisible.
+   * @returns True if the creature is stealthed or invisible, false otherwise.
    */
   isStealthedOrInvisible(): boolean {
     if(this.stealthMode) return true;
@@ -6259,7 +6265,9 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail GetInvisible — true if `target` is effect-hidden from this observer.
+   * Get whether the target is effect-hidden from this observer.
+   * @param target The target to get whether is effect-hidden from this observer.
+   * @returns True if the target is effect-hidden from this observer, false otherwise.
    */
   isInvisibleToObserver(target: ModuleCreature): boolean {
     if(!target || this === target) return false;

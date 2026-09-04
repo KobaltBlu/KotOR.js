@@ -6,7 +6,7 @@ import { borderInnerExtent } from "@/gui/borderInnerExtent";
 
 /**
  * character.gui BTN_AUTO / BTN_LEVELUP: thick confirm2 frame + dialog2 fill.
- * CSWGuiBorder::Draw sizes fill to the corner hole (no INNEROFFSET).
+ * Draw sizes fill to the corner hole (no INNEROFFSET).
  * GetInnerExtent (text) still applies INNEROFFSET.
  */
 describe("MenuCharacter BTN_AUTO / BTN_LEVELUP fill vs text inner", () => {

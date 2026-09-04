@@ -70,7 +70,7 @@ describe("noNonWalkPolysDetailed door open mesh", () => {
 
 describe("noNonWalkPolysDetailed static placeables", () => {
   it("static placeable without surface wok does not AABB-block", () => {
-    // Retail CSWSPlaceable::NoNonWalkPolys only tests CSWCollisionMesh.
+    // NoNonWalkPolys only tests CSWCollisionMesh.
     const plc = {
       id: 301,
       isStatic: () => true,

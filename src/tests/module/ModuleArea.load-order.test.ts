@@ -20,7 +20,7 @@ import {
  * Implementation comments reference LoadGIT / LoadArea.
  */
 describe("area load order (retail LoadGIT)", () => {
-  test("GIT object sequence matches CSWSArea::LoadGIT", () => {
+  test("GIT object sequence matches LoadGIT", () => {
     expect([...RETAIL_LOAD_GIT_OBJECT_ORDER]).toEqual([
       "creatures",
       "items",

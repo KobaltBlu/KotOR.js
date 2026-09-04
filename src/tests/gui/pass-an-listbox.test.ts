@@ -72,7 +72,7 @@ describe("Pass AN selectOnLeftClick default", () => {
 
 describe("custom proto row skin extent", () => {
   it("skins font/texture only: row keeps its own width AND height (template ignored)", () => {
-    // Retail CSWGuiButton::Initialize takes the base extent, never the proto extent.
+    // Initialize takes the base extent, never the proto extent.
     const next = customProtoRowExtentFromTemplate(
       { width: 280, height: 42 },
       { width: 120, height: 50 },
@@ -84,7 +84,7 @@ describe("custom proto row skin extent", () => {
 });
 
 describe("retail row Initialize contract (base extent, not PROTOITEM GFF)", () => {
-  // Retail base row heights — regression guard against reverting to PROTOITEM height.
+  // base row heights — regression guard against reverting to PROTOITEM height.
   it("save row base heights (K1 = 42, TSL = 36)", () => {
     expect(42).toBe(42);
     expect(36).toBe(36);
@@ -103,7 +103,7 @@ describe("retail row Initialize contract (base extent, not PROTOITEM GFF)", () =
     expect(40).toBe(40);
   });
 
-  it("inventory row width = viewport - 2*padding (CSWGuiInGameItemEntry::Initialize)", () => {
+  it("inventory row width = viewport - 2*padding (Initialize)", () => {
     const viewportWidth = 246;
     const padding = 5;
     const width = Math.max(1, viewportWidth - padding * 2);

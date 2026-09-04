@@ -23,8 +23,10 @@ export enum DiffSettingsOption {
 const DIFF_SETTINGS_COLS = ['dmeasy', 'easy', 'normal', 'hardcore', 'dmplayers'] as const;
 
 /**
- * Retail CSWRules::GetDifficultyOption(option, difficulty) —
- * DiffSettings[option][difficulty+1], **** → 0.
+ * Get the difficulty option value for the given option and difficulty.
+ * @param option The option to get the value for.
+ * @param difficulty The difficulty to get the value for.
+ * @returns The difficulty option value.
  */
 export function getDifficultyOption(option: DiffSettingsOption): number {
   const table = GameState.TwoDAManager?.datatables?.get('diffsettings');
@@ -57,7 +59,13 @@ export function getDifficultyOptMultiplier(): number {
 }
 
 /**
- * Retail CSWRules::GetWeightedDamageAmount(roll, maxDice, pcVsNpc, npcVsPc, percent).
+ * Get the weighted damage amount for the given roll, max dice, pc vs npc, npc vs pc, and percent.
+ * @param roll The roll to get the weighted damage amount for.
+ * @param maxDice The max dice to get the weighted damage amount for.
+ * @param pcVsNpc Whether the attacker is a pc vs npc.
+ * @param npcVsPc Whether the attacker is a npc vs pc.
+ * @param percent The percent to get the weighted damage amount for.
+ * @returns The weighted damage amount.
  */
 export function getWeightedDamageAmount(
   roll: number,

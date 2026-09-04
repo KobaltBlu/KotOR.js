@@ -116,7 +116,6 @@ export function ImageCanvas(props: { tab: TabImageViewerState; txiPreview: strin
       if (material.uniforms.time) {
         material.uniforms.time.value += delta;
       }
-      // Retail CycleTIDTextureController::Control
       KotOR.TextureAnimationManager.update(delta);
       if (material.defines?.ANIMATED_UV != null && material.uniforms.animatedUVState && material.uniforms.animatedUV) {
         const state = material.uniforms.animatedUVState.value;

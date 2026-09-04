@@ -27,11 +27,18 @@ export interface ScriptVarEntry {
 export class ScriptVarTable {
   entries: ScriptVarEntry[] = [];
 
-  clear(){
+  /**
+   * Clear the ScriptVarTable.
+   */
+  clear() {
     this.entries = [];
   }
 
-  /** Retail CSWSScriptVarTable::SetInt — named int local. */
+  /**
+   * Set the value of a named int local.
+   * @param name The name of the int local to set.
+   * @param value The value to set.
+   */
   setInt(name: string, value: number){
     const key = String(name ?? '');
     if(!key) return;
@@ -43,13 +50,21 @@ export class ScriptVarTable {
     this.entries.push({ name: key, type: ScriptVarType.Int, value: value | 0 });
   }
 
-  /** Retail CSWSScriptVarTable::GetInt — named int local (0 if missing). */
+  /**
+   * Get the value of a named int local.
+   * @param name The name of the int local to get.
+   * @returns The value of the int local.
+   */
   getInt(name: string): number {
     const key = String(name ?? '');
     const existing = this.entries.find((e) => e.name === key && e.type === ScriptVarType.Int);
     return existing ? (Number(existing.value) | 0) : 0;
   }
 
+  /**
+   * Load the ScriptVarTable from a GFFField.
+   * @param field The GFFField to load the ScriptVarTable from.
+   */
   loadFromListField(field: GFFField | undefined){
     this.clear();
     if(!field) return;
@@ -90,7 +105,8 @@ export class ScriptVarTable {
   }
 
   /**
-   * Write entries into an existing LIST field (creates child structs).
+   * Write the ScriptVarTable to a GFFField.
+   * @param listField The GFFField to write the ScriptVarTable to.
    */
   writeToListField(listField: GFFField){
     for(let i = 0; i < this.entries.length; i++){

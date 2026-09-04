@@ -80,7 +80,9 @@ export class CombatInformation {
   damageList: CombatInformationNode[] = [];
 
   /**
-   * Retail CCombatInformation::SaveData (struct type 0xCAAA).
+   * Save the CombatInformation to a GFFStruct.
+   * @param structIdx The struct index to use for the GFFStruct.
+   * @returns The GFFStruct containing the CombatInformation.
    */
   toStruct(structIdx: number = 0xCAAA): GFFStruct {
     const struct = new GFFStruct(structIdx);
@@ -120,7 +122,9 @@ export class CombatInformation {
   }
 
   /**
-   * Retail CCombatInformation::LoadData.
+   * Load the CombatInformation from a GFFStruct.
+   * @param struct The GFFStruct to load the CombatInformation from.
+   * @returns True if the CombatInformation was loaded successfully, false otherwise.
    */
   fromStruct(struct: GFFStruct): boolean {
     if(!struct) return false;

@@ -312,7 +312,11 @@ export function applyNfoFields(gff: GFFObject, fields: SaveNfoFields): void {
   }
 }
 
-/** Retail CSWGlobalVariableTable::WriteTable: (count >> 3) + 1 */
+/**
+ * Calculate the number of bytes required to encode the booleans.
+ * @param booleanCount Number of booleans to encode.
+ * @returns Number of bytes required to encode the booleans.
+ */
 export function valBooleanByteSize(booleanCount: number): number {
   return (booleanCount >> 3) + 1;
 }
