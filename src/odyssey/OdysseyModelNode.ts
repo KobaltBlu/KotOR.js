@@ -10,14 +10,15 @@ import { OdysseyModelUtility } from "@/odyssey/OdysseyModelUtility";
 import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
 import { IOdysseyControllerFrameGeneric } from "@/interface";
       
-// Constants for quaternion decompression
-const QUAT_X_MASK = 0x07ff;        // 11 bits for X component
-const QUAT_Y_MASK = 0x07ff;        // 11 bits for Y component  
-const QUAT_Z_MASK = 0x3FF;         // 10 bits for Z component
-const QUAT_X_SCALE = 1.0 / 1023.0; // Scale factor for X,Y
-const QUAT_Z_SCALE = 1.0 / 511.0;  // Scale factor for Z
-const QUAT_Y_SHIFT = 11;           // Y component bit shift
-const QUAT_Z_SHIFT = 22;           // Z component bit shift
+// Compressed orientation keys — NewController::GetQuaternionFromIndexLocation
+// (K1 00483050 / TSL 008f8760): packed uint32 as 11-bit X, 11-bit Y, 10-bit Z.
+const QUAT_X_MASK = 0x07ff;
+const QUAT_Y_MASK = 0x07ff;
+const QUAT_Z_MASK = 0x03ff;
+const QUAT_X_SCALE = Math.fround(1.0 / 1023.0); // K1 float @ 0x00743250
+const QUAT_Z_SCALE = Math.fround(1.0 / 511.0);  // K1 float @ 0x0074324c
+const QUAT_Y_SHIFT = 11;
+const QUAT_Z_SHIFT = 22;
 
 /**
  * OdysseyModelNode class.
@@ -274,32 +275,23 @@ export class OdysseyModelNode {
                 frame.time = data[controller.timeKeyIndex + r];
 
                 if(controller.columnCount == 2){
-                  let temp = data2[controller.dataValueIndex + r];
-                  
-                  // Input validation and constants
-                  if(isNaN(temp) || !Number.isInteger(temp)){
-                    temp = 0;
-                  }
+                  // Reinterpret controller data dword as packed xyz (retail float→uint bits)
+                  const temp = data2[controller.dataValueIndex + r] >>> 0;
 
                   const x = ((temp & QUAT_X_MASK) * QUAT_X_SCALE) - 1.0;
                   const y = (((temp >> QUAT_Y_SHIFT) & QUAT_Y_MASK) * QUAT_X_SCALE) - 1.0;
                   const z = (((temp >> QUAT_Z_SHIFT) & QUAT_Z_MASK) * QUAT_Z_SCALE) - 1.0;
-
-                  // Use more efficient square calculation
                   const fSquares = x * x + y * y + z * z;
 
-                  // Early exit for identity quaternion (all components near zero)
-                  if(fSquares < 1e-10){
-                    tmpQuat.set(0, 0, 0, 1);
-                  } else if(fSquares < 1.0){
+                  // Retail: if (fSquares <= 1.0) w = sqrt(1 - fSquares); else normalize xyz, w = 0
+                  if(fSquares <= 1.0){
                     tmpQuat.set(x, y, z, Math.sqrt(1.0 - fSquares));
-                  } else {
-                    // Normalize the vector to unit length instead of setting w=0
+                  }else{
                     const invLength = 1.0 / Math.sqrt(fSquares);
                     tmpQuat.set(x * invLength, y * invLength, z * invLength, 0);
                   }
-
                 }else{
+                  // columnCount == 4: raw x,y,z,w floats (no normalize in retail)
                   tmpQuat.set(
                     data[controller.dataValueIndex + (r * controller.columnCount) + 0],
                     data[controller.dataValueIndex + (r * controller.columnCount) + 1],
@@ -307,8 +299,6 @@ export class OdysseyModelNode {
                     data[controller.dataValueIndex + (r * controller.columnCount) + 3]
                   );
                 }
-
-                tmpQuat.normalize();
     
                 frame.x = tmpQuat.x;
                 frame.y = tmpQuat.y;
