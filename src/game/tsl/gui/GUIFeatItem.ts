@@ -67,6 +67,7 @@ export class GUIFeatItem extends GUIProtoItem {
   buildFill(){}
   buildBorder(){}
   buildHighlight(){}
+  buildChrome(){}
   buildText(){}
 
   createControl(){
@@ -123,10 +124,10 @@ export class GUIFeatItem extends GUIProtoItem {
         const status = this.resolveSlotStatus(feat);
         const locked = status === SkillFlowStatus.Locked || status === SkillFlowStatus.Available;
 
-        enqueueProtoTexture(this as any, backTex, this.border.fill.material, (texture) => {
+        enqueueProtoTexture(this as any, backTex, this.chrome.material, (texture) => {
           applyAbilityButtonTexture(buttonIcon, texture, locked);
           this.refreshSlotVisuals();
-        });
+        }, 'fillMap');
 
         buttonIcon.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -181,10 +182,10 @@ export class GUIFeatItem extends GUIProtoItem {
           _arrowIconWidget.position.z = this.zIndex + 1;
           this.widget.add(_arrowIconWidget);
 
-          enqueueProtoTexture(this as any, arrowTex, this.border.fill.material, (texture) => {
+          enqueueProtoTexture(this as any, arrowTex, this.chrome.material, (texture) => {
             applyAbilityButtonTexture(arrowIcon!, texture, locked);
             this.refreshSlotVisuals();
-          });
+          }, 'fillMap');
         }
 
         this.featSlots.push({

@@ -26,7 +26,7 @@ import type { OdysseyModel3D } from "@/three/odyssey";
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * @file encounter-cr.ts
+ * (formerly encounter-cr.ts)
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
@@ -80,7 +80,7 @@ function calculatePointsFromCR(challengeRating: number): number {
  *
  * Placement uses ComputeSafeLocation / ComputeNonVisibleLocation.
  *
- * @file encounter-spawn.ts
+ * (formerly encounter-spawn.ts)
  */
 
 const TALLY_RADIUS = 30.0;

@@ -42,6 +42,33 @@ export function asExtentInt(n: number): number {
 }
 
 /**
+ * Drawable GUI size in int space (border DIMENSION, edge/corner thickness, etc.).
+ * Truncates like retail ints, but any positive sub-pixel value clamps up to 1
+ * (e.g. 0.4 → 1) so thin frames are never discarded as 0.
+ */
+export function asGuiSize(n: number): number {
+  if(!(n > 0)){
+    return 0;
+  }
+  const t = Math.trunc(n);
+  return t < 1 ? 1 : (t | 0);
+}
+
+/**
+ * Retail Draw / GetInnerExtent frame thickness: clamp so L+R and T+B never exceed
+ * the control. When dim would consume the whole rect, each side gets half and the
+ * center fill hole is 0.
+ */
+export function clampFrameDim(dimension: number, width: number, height: number): number {
+  const ew = asExtentInt(width);
+  const eh = asExtentInt(height);
+  if(ew <= 0 || eh <= 0){
+    return 0;
+  }
+  return Math.min(asGuiSize(dimension), truncDiv(ew, 2), truncDiv(eh, 2));
+}
+
+/**
  * Inclusive max of a TL span in centered space: [−truncDiv(n,2), n−truncDiv(n,2)].
  * Prefer this over +truncDiv(n,2) so odd sizes keep the extra pixel on the max side.
  */

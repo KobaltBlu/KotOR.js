@@ -33,7 +33,7 @@ export class LoadScreen extends K1_LoadScreen {
     if(skipInit) return;
     return new Promise<void>((resolve) => {
       this.LBL_HINT.hide();
-      this.defaultTex = (this.tGuiPanel.getFill().material as any).uniforms.map.value;
+      this.defaultTex = this.tGuiPanel.getFillTexture();
       resolve();
     });
   }

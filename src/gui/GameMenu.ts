@@ -399,11 +399,9 @@ export class GameMenu {
       }
     }
 
-    if(this.tGuiPanel && this.tGuiPanel.children){
-      let len = this.tGuiPanel.children.length;
-      for(let i = 0; i < len; i++){
-        this.tGuiPanel.children[i].update(delta);
-      }
+    if(this.tGuiPanel){
+      // Update panel chrome (background fill/border) and recurse into children.
+      this.tGuiPanel.update(delta);
     }
   }
 

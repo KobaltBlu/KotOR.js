@@ -302,6 +302,8 @@ export class GUIListBox extends GUIControl {
 
     // Retail Draw: arrow pulse + hold-repeat on the live scrollbar mesh (outside RTT)
     if (this.scrollbar && this.scrollWrapper?.visible) {
+      // Scrollbar is not in children[] — must update chrome enable flags / pulse itself.
+      this.scrollbar.update(delta);
       this.scrollbar.updateArrowPulse(delta);
       this.scrollbar.updateHoldRepeat(delta);
     }

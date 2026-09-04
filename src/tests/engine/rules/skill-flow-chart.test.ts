@@ -1,20 +1,19 @@
 /**
  * @jest-environment node
  */
-import { describe, expect, it } from "@jest/globals";
-import {
-  buildSortedFeatIds,
-  buildSortedPowerIds,
-  createInGameFeatChart,
-  createInGamePowerChart,
-  encodeSpellSubRadial,
-  featChainDepth,
-  isSpellChartRoot,
-  spellSubRadialFamily,
-  spellSubRadialPriority,
-  spellSubRadialSlot,
-  type SkillFlowCreature,
-} from "@/engine/menu/skill-flow-chart";
+import { describe, expect, it, jest } from "@jest/globals";
+
+jest.mock("@/GameState", () => ({ GameState: {} }));
+jest.mock("@/gui", () => ({ GameMenu: class {} }));
+jest.mock("@/game/kotor/gui/GUIFeatItem", () => ({ GUIFeatItem: class {} }));
+jest.mock("@/game/tsl/gui/GUISpellItem", () => ({ GUISpellItem: class {} }));
+jest.mock("@/game/tsl/gui/GUICreatureSkill", () => ({ GUICreatureSkill: class {} }));
+jest.mock("@/engine/rules/SWRuleSet", () => ({ SWRuleSet: {} }));
+jest.mock("@/gui/protoitem/protoItemHelpers", () => ({
+  SkillFlowStatus: { InGame: 6 },
+}));
+
+import { MenuAbilities, type SkillFlowCreature } from "@/game/kotor/menu/MenuAbilities";
 import type { TalentFeat } from "@/talents/TalentFeat";
 import type { TalentSpell } from "@/talents/TalentSpell";
 
@@ -58,34 +57,34 @@ function makeSpell(
 
 describe("subradial encode (CSWSpellArray::Load @ 0059ba20)", () => {
   it("Force Aura/Shield/Armor share friendly family+slot, priorities 0/1/2", () => {
-    const aura = encodeSpellSubRadial({ forcefriendly: 1, forcepriority: 0 });
-    const shield = encodeSpellSubRadial({ forcefriendly: 1, forcepriority: 1 });
-    const armor = encodeSpellSubRadial({ forcefriendly: 1, forcepriority: 2 });
+    const aura = MenuAbilities.encodeSpellSubRadial({ forcefriendly: 1, forcepriority: 0 });
+    const shield = MenuAbilities.encodeSpellSubRadial({ forcefriendly: 1, forcepriority: 1 });
+    const armor = MenuAbilities.encodeSpellSubRadial({ forcefriendly: 1, forcepriority: 2 });
     expect(aura).toBe(3010);
     expect(shield).toBe(3011);
     expect(armor).toBe(3012);
-    expect(spellSubRadialFamily(aura)).toBe(spellSubRadialFamily(shield));
-    expect(spellSubRadialSlot(aura)).toBe(1);
-    expect(spellSubRadialPriority(aura)).toBe(0);
-    expect(spellSubRadialPriority(shield)).toBe(1);
-    expect(spellSubRadialPriority(armor)).toBe(2);
+    expect(MenuAbilities.spellSubRadialFamily(aura)).toBe(MenuAbilities.spellSubRadialFamily(shield));
+    expect(MenuAbilities.spellSubRadialSlot(aura)).toBe(1);
+    expect(MenuAbilities.spellSubRadialPriority(aura)).toBe(0);
+    expect(MenuAbilities.spellSubRadialPriority(shield)).toBe(1);
+    expect(MenuAbilities.spellSubRadialPriority(armor)).toBe(2);
   });
 
   it("Force Push/Whirlwind/Wave share hostile family+slot", () => {
-    const push = encodeSpellSubRadial({ forcehostile: 6, forcepriority: 0 });
-    const ww = encodeSpellSubRadial({ forcehostile: 6, forcepriority: 1 });
-    const wave = encodeSpellSubRadial({ forcehostile: 6, forcepriority: 2 });
+    const push = MenuAbilities.encodeSpellSubRadial({ forcehostile: 6, forcepriority: 0 });
+    const ww = MenuAbilities.encodeSpellSubRadial({ forcehostile: 6, forcepriority: 1 });
+    const wave = MenuAbilities.encodeSpellSubRadial({ forcehostile: 6, forcepriority: 2 });
     expect(push).toBe(1060);
-    expect(spellSubRadialFamily(push)).toBe(1);
-    expect(spellSubRadialSlot(push)).toBe(6);
-    expect(spellSubRadialPriority(ww)).toBe(1);
-    expect(spellSubRadialPriority(wave)).toBe(2);
+    expect(MenuAbilities.spellSubRadialFamily(push)).toBe(1);
+    expect(MenuAbilities.spellSubRadialSlot(push)).toBe(6);
+    expect(MenuAbilities.spellSubRadialPriority(ww)).toBe(1);
+    expect(MenuAbilities.spellSubRadialPriority(wave)).toBe(2);
   });
 
   it("isSpellChartRoot: priority 0 or missing key", () => {
-    expect(isSpellChartRoot(encodeSpellSubRadial({ forcehostile: 6, forcepriority: 0 }))).toBe(true);
-    expect(isSpellChartRoot(encodeSpellSubRadial({ forcehostile: 6, forcepriority: 1 }))).toBe(false);
-    expect(isSpellChartRoot(-1)).toBe(true);
+    expect(MenuAbilities.isSpellChartRoot(MenuAbilities.encodeSpellSubRadial({ forcehostile: 6, forcepriority: 0 }))).toBe(true);
+    expect(MenuAbilities.isSpellChartRoot(MenuAbilities.encodeSpellSubRadial({ forcehostile: 6, forcepriority: 1 }))).toBe(false);
+    expect(MenuAbilities.isSpellChartRoot(-1)).toBe(true);
   });
 });
 
@@ -97,20 +96,20 @@ describe("BuildSortedFeatList / CreateFeatChart", () => {
   const feats = [root, mid, end, otherRoot];
 
   it("featChainDepth matches retail 0/1/2", () => {
-    expect(featChainDepth(root)).toBe(0);
-    expect(featChainDepth(mid)).toBe(1);
-    expect(featChainDepth(end)).toBe(2);
+    expect(MenuAbilities.featChainDepth(root)).toBe(0);
+    expect(MenuAbilities.featChainDepth(mid)).toBe(1);
+    expect(MenuAbilities.featChainDepth(end)).toBe(2);
   });
 
   it("sorted ids put roots before mids before ends", () => {
-    expect(buildSortedFeatIds(feats)).toEqual([0, 3, 1, 2]);
+    expect(MenuAbilities.buildSortedFeatIds(feats)).toEqual([0, 3, 1, 2]);
   });
 
   it("in-game chart: known root only, known children only, sparse slots", () => {
     const creature: SkillFlowCreature = {
       getHasFeat: (id) => id === 0 || id === 2, // root + end, not mid
     };
-    const groups = createInGameFeatChart(creature, feats);
+    const groups = MenuAbilities.createInGameFeatChart(creature, feats);
     expect(groups).toHaveLength(1);
     expect(groups[0][0]).toBe(root);
     expect(groups[0][1]).toBeUndefined();
@@ -122,7 +121,7 @@ describe("BuildSortedFeatList / CreateFeatChart", () => {
     const creature: SkillFlowCreature = {
       getHasFeat: (id) => id === 3,
     };
-    const groups = createInGameFeatChart(creature, feats);
+    const groups = MenuAbilities.createInGameFeatChart(creature, feats);
     expect(groups).toHaveLength(1);
     expect(groups[0][0]).toBe(otherRoot);
     expect(groups[0][1]).toBeUndefined();
@@ -132,7 +131,7 @@ describe("BuildSortedFeatList / CreateFeatChart", () => {
   it("skips feats with name == 0", () => {
     const blank = makeFeat(4, { name: 0 });
     const named = makeFeat(0, { name: 100 });
-    expect(buildSortedFeatIds([blank, named])).toEqual([1]);
+    expect(MenuAbilities.buildSortedFeatIds([blank, named])).toEqual([1]);
   });
 });
 
@@ -146,7 +145,7 @@ describe("BuildSortedPowerList / CreatePowerChart", () => {
   const spells = [wave, shield, push, orphan, ww, aura]; // shuffled
 
   it("sorts by priority then family then slot", () => {
-    const ids = buildSortedPowerIds(spells);
+    const ids = MenuAbilities.buildSortedPowerIds(spells);
     // priority 0 first: orphan (no key), push (fam1), aura (fam3)
     // then pri 1: ww, shield; then pri 2: wave
     const byId = ids.map((i) => spells[i].id);
@@ -161,7 +160,7 @@ describe("BuildSortedPowerList / CreatePowerChart", () => {
       getFP: () => 100,
       getAdjustedForcePointCost: (s) => s.forcepoints ?? 0,
     };
-    const groups = createInGamePowerChart(creature, spells);
+    const groups = MenuAbilities.createInGamePowerChart(creature, spells);
     const pushGroup = groups.find((g) => g[0]?.id === 10);
     expect(pushGroup).toBeDefined();
     expect(pushGroup![0]?.id).toBe(10);
@@ -175,7 +174,7 @@ describe("BuildSortedPowerList / CreatePowerChart", () => {
       getFP: () => 100,
       getAdjustedForcePointCost: (s) => s.forcepoints ?? 0,
     };
-    const groups = createInGamePowerChart(creature, spells);
+    const groups = MenuAbilities.createInGamePowerChart(creature, spells);
     const pushGroup = groups.find((g) => g[0]?.id === 10)!;
     expect(pushGroup[1]).toBeUndefined();
     expect(pushGroup[2]?.id).toBe(12);
@@ -188,7 +187,7 @@ describe("BuildSortedPowerList / CreatePowerChart", () => {
       getFP: () => 15, // can afford ww(20)? no — 15 < 20; wave 30 no; shield 15 ok
       getAdjustedForcePointCost: (s) => s.forcepoints ?? 0,
     };
-    const groups = createInGamePowerChart(creature, spells);
+    const groups = MenuAbilities.createInGamePowerChart(creature, spells);
     const pushGroup = groups.find((g) => g[0]?.id === 10)!;
     expect(pushGroup[1]).toBeUndefined();
     expect(pushGroup[2]).toBeUndefined();
@@ -202,13 +201,13 @@ describe("BuildSortedPowerList / CreatePowerChart", () => {
       getFP: () => 0,
       getAdjustedForcePointCost: () => 0,
     };
-    const groups = createInGamePowerChart(creature, spells);
+    const groups = MenuAbilities.createInGamePowerChart(creature, spells);
     expect(groups).toHaveLength(1);
     expect(groups[0][0]?.id).toBe(30);
   });
 
   it("excludes non-usertype-1 spells", () => {
     const item = makeSpell(99, { userType: 4, forcehostile: 0, forcepriority: 0 });
-    expect(buildSortedPowerIds([item, push])).toEqual([1]);
+    expect(MenuAbilities.buildSortedPowerIds([item, push])).toEqual([1]);
   });
 });

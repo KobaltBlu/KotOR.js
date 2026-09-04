@@ -66,11 +66,8 @@ import { getForceResistanceBonus, getSavingThrowEffectBonus } from "@/effects/ef
 import { getActiveSetStateType } from "@/effects/set-state";
 import { hasImmunityType } from "@/effects/haste-slow";
 import { ModuleCreatureAmbientState } from "@/enums/module/ModuleCreatureAmbientState";
-import {
-  applyTrapGroundGeometry,
-  trapKitResRefFromRow,
-} from "@/actions/trap-geometry";
 import type { SWAnimation } from "@/engine/rules/SWAnimation";
+import type { ModuleTrigger } from "@/module/ModuleTrigger";
 
 export interface DialogModelVisibilityInput {
   mode: EngineMode;
@@ -95,6 +92,36 @@ export interface DialogModelVisibilityInput {
 * @memberof KotOR
 */
 export class ModuleObject {
+  /** Retail SetMine free-ground half-extent (CreateNewGeometry 2.0). */
+  static readonly TRAP_GROUND_HALF_EXTENT = 2.0;
+
+  /**
+   * Assign local-space trigger vertices for a square mine footprint.
+   */
+  static applyTrapGroundGeometry(
+    trigger: ModuleTrigger,
+    halfExtent: number = ModuleObject.TRAP_GROUND_HALF_EXTENT,
+  ): void {
+    if(!trigger) return;
+    const h = Math.max(0.1, Number(halfExtent) || ModuleObject.TRAP_GROUND_HALF_EXTENT);
+    trigger.vertices = [
+      new THREE.Vector3(-h,  h, 0),
+      new THREE.Vector3(-h, -h, 0),
+      new THREE.Vector3( h,  h, 0),
+      new THREE.Vector3( h, -h, 0),
+    ];
+  }
+
+  /**
+   * traps.2da `resref` for RecoverMine item restore.
+   */
+  static trapKitResRefFromRow(trapRow: any): string {
+    if(!trapRow) return '';
+    const resref = (trapRow.resref || '').toString().trim();
+    if(!resref || resref === '****') return '';
+    return resref;
+  }
+
   /** Resolve mesh visibility for DIALOG / MINIGAME. */
   static resolveDialogModelVisibility(input: DialogModelVisibilityInput): boolean {
     if(input.mode == EngineMode.MINIGAME){
@@ -2189,8 +2216,8 @@ export class ModuleObject {
     this.linkedToObject = trigger;
 
     // Retail CreateNewGeometry(2.0) + traps.2da resref for RecoverMine
-    trigger.trapResRef = trapKitResRefFromRow(trap);
-    applyTrapGroundGeometry(trigger);
+    trigger.trapResRef = ModuleObject.trapKitResRefFromRow(trap);
+    ModuleObject.applyTrapGroundGeometry(trigger);
 
     trigger.load();
 
@@ -2238,8 +2265,8 @@ export class ModuleObject {
     }
 
     // Retail CreateNewGeometry(2.0, plantPos) @ SetMine; resref for RecoverMine kit
-    trigger.trapResRef = trapKitResRefFromRow(trap);
-    applyTrapGroundGeometry(trigger);
+    trigger.trapResRef = ModuleObject.trapKitResRefFromRow(trap);
+    ModuleObject.applyTrapGroundGeometry(trigger);
 
     trigger.load();
     area.triggers.push(trigger);

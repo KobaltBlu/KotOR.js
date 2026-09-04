@@ -186,7 +186,7 @@ export class LBL_MapView {
 
     const material = this.control.getFill().material;
     if(material instanceof THREE.ShaderMaterial){
-      material.uniforms.diffuse.value.setHex(0xFFFFFF);
+      this.control.setFillColor(1, 1, 1);
     }
   }
 
@@ -463,7 +463,7 @@ export class LBL_MapView {
       let material = this.control.getFill().material;
       if(material instanceof THREE.Material){
         if(material instanceof THREE.ShaderMaterial){
-          material.uniforms.map.value = this.texture.texture;
+          this.control.setFillTexture(this.texture.texture);
         }else if(material instanceof THREE.MeshBasicMaterial){
           material.map = this.texture.texture;
         }

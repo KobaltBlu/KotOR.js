@@ -516,7 +516,7 @@ export class MenuPartySelection extends GameMenu {
         if(texture) LBL_CHAR.setFillTexture(texture);
       }
       const selectable = this.slotState[i]?.canToggle && GameState.PartyManager.IsSelectable(i);
-      (LBL_CHAR.getFill().material as THREE.ShaderMaterial).uniforms.opacity.value = selectable ? 1 : 0.5;
+      LBL_CHAR.setChromeOpacity(selectable ? 1 : 0.5);
       LBL_CHAR.show();
     }
   }

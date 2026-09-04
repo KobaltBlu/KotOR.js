@@ -40,6 +40,7 @@ export class GUIKeyMapItem extends GUIProtoItem {
   buildFill(){}
   buildBorder(){}
   buildHighlight(){}
+  buildChrome(){}
   buildText(){}
 
   /**

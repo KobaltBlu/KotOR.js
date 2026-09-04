@@ -58,6 +58,7 @@ export class GUIInventoryItem extends GUIProtoItem {
   buildFill(){}
   buildBorder(){}
   buildHighlight(){}
+  buildChrome(){}
   buildText(){}
 
   createControl(){

@@ -37,32 +37,148 @@ export class ShaderAuroraGUI extends Shader {
     #include <specularmap_pars_fragment>
     #include <logdepthbuf_pars_fragment>
     #include <clipping_planes_pars_fragment>
+
+    #ifdef GUI_CHROME
+      uniform sampler2D edgeMap;
+      uniform sampler2D cornerMap;
+      uniform sampler2D fillMap;
+      uniform sampler2D highlightEdgeMap;
+      uniform sampler2D highlightCornerMap;
+      uniform sampler2D highlightFillMap;
+      uniform float hasEdgeMap;
+      uniform float hasCornerMap;
+      uniform float hasFillMap;
+      uniform float hasHighlightEdgeMap;
+      uniform float hasHighlightCornerMap;
+      uniform float hasHighlightFillMap;
+      uniform float hovered;
+      uniform float hoverMode;
+      uniform vec3 highlightDiffuse;
+      uniform vec3 fillDiffuse;
+      uniform float edgeOpacity;
+      uniform float fillOpacity;
+      uniform float enableFrame;
+      uniform float enableFill;
+      varying float vRegion;
+
+      vec4 sampleChromeMap(float region, float useHighlight){
+        vec4 tex = vec4(1.0);
+        float hasMap = 0.0;
+        if(region < 0.5){
+          if(useHighlight > 0.5){
+            hasMap = hasHighlightEdgeMap;
+            if(hasMap > 0.5) tex = texture2D(highlightEdgeMap, vUv);
+          }else{
+            hasMap = hasEdgeMap;
+            if(hasMap > 0.5) tex = texture2D(edgeMap, vUv);
+          }
+        }else if(region < 1.5){
+          if(useHighlight > 0.5){
+            hasMap = hasHighlightCornerMap;
+            if(hasMap > 0.5) tex = texture2D(highlightCornerMap, vUv);
+          }else{
+            hasMap = hasCornerMap;
+            if(hasMap > 0.5) tex = texture2D(cornerMap, vUv);
+          }
+        }else{
+          if(useHighlight > 0.5){
+            hasMap = hasHighlightFillMap;
+            if(hasMap > 0.5) tex = texture2D(highlightFillMap, vUv);
+          }else{
+            hasMap = hasFillMap;
+            if(hasMap > 0.5) tex = texture2D(fillMap, vUv);
+          }
+        }
+        if(hasMap < 0.5){
+          return vec4(0.0);
+        }
+        return tex;
+      }
+
+      vec4 tintChrome(vec4 tex, float region, float useHighlight){
+        vec3 tint = fillDiffuse;
+        if(region < 1.5){
+          tint = useHighlight > 0.5 ? highlightDiffuse : diffuse;
+        }
+        float a = region < 1.5 ? edgeOpacity : fillOpacity;
+        return vec4(tex.rgb * tint, tex.a * a);
+      }
+
+      vec4 alphaOver(vec4 under, vec4 over){
+        float outA = over.a + under.a * (1.0 - over.a);
+        vec3 outRgb = (over.rgb * over.a + under.rgb * under.a * (1.0 - over.a)) / max(outA, 1e-5);
+        return vec4(outRgb, outA);
+      }
+    #endif
+
     void main() {
       #include <clipping_planes_fragment>
-      vec4 diffuseColor = vec4( diffuse, opacity );
-      #include <logdepthbuf_fragment>
-      #include <map_fragment>
-      #include <color_fragment>
-      #include <alphamap_fragment>
-      #include <alphatest_fragment>
-      #include <specularmap_fragment>
-      ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
-      #ifdef USE_LIGHTMAP
-        vec4 lightMapTexel = texture2D( lightMap, vUv2 );
-        reflectedLight.indirectDiffuse += lightMapTexel.rgb * lightMapIntensity * RECIPROCAL_PI;
-      #else
+
+      #ifdef GUI_CHROME
+        float region = vRegion;
+        if(region < 1.5){
+          if(enableFrame < 0.5) discard;
+        }else{
+          if(enableFill < 0.5) discard;
+        }
+
+        vec4 borderSample = tintChrome(sampleChromeMap(region, 0.0), region, 0.0);
+        vec4 highlightSample = tintChrome(sampleChromeMap(region, 1.0), region, 1.0);
+
+        vec4 chromeColor;
+        if(hovered < 0.5){
+          chromeColor = borderSample;
+        }else if(hoverMode < 0.5){
+          chromeColor = highlightSample.a > 0.0 ? highlightSample : borderSample;
+        }else{
+          chromeColor = alphaOver(borderSample, highlightSample);
+        }
+
+        if(chromeColor.a <= 0.001) discard;
+
+        vec4 diffuseColor = vec4(chromeColor.rgb, chromeColor.a * opacity);
+        #include <logdepthbuf_fragment>
+        #include <color_fragment>
+        #include <alphamap_fragment>
+        #include <alphatest_fragment>
+        #include <specularmap_fragment>
+        ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
         reflectedLight.indirectDiffuse += vec3( 1.0 );
+        #include <aomap_fragment>
+        reflectedLight.indirectDiffuse *= diffuseColor.rgb;
+        vec3 outgoingLight = reflectedLight.indirectDiffuse;
+        gl_FragColor = vec4( outgoingLight, diffuseColor.a );
+        #include <tonemapping_fragment>
+        #include <encodings_fragment>
+        #include <fog_fragment>
+        #include <premultiplied_alpha_fragment>
+        #include <dithering_fragment>
+      #else
+        vec4 diffuseColor = vec4( diffuse, opacity );
+        #include <logdepthbuf_fragment>
+        #include <map_fragment>
+        #include <color_fragment>
+        #include <alphamap_fragment>
+        #include <alphatest_fragment>
+        #include <specularmap_fragment>
+        ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
+        #ifdef USE_LIGHTMAP
+          vec4 lightMapTexel = texture2D( lightMap, vUv2 );
+          reflectedLight.indirectDiffuse += lightMapTexel.rgb * lightMapIntensity * RECIPROCAL_PI;
+        #else
+          reflectedLight.indirectDiffuse += vec3( 1.0 );
+        #endif
+        #include <aomap_fragment>
+        reflectedLight.indirectDiffuse *= diffuseColor.rgb;
+        vec3 outgoingLight = reflectedLight.indirectDiffuse;
+        #include <envmap_fragment>
+        #include <output_fragment>
+        #include <tonemapping_fragment>
+        #include <encodings_fragment>
+        #include <fog_fragment>
+        #include <premultiplied_alpha_fragment>
+        #include <dithering_fragment>
       #endif
-      #include <aomap_fragment>
-      reflectedLight.indirectDiffuse *= diffuseColor.rgb;
-      vec3 outgoingLight = reflectedLight.indirectDiffuse;
-      #include <envmap_fragment>
-      #include <output_fragment>
-      #include <tonemapping_fragment>
-      #include <encodings_fragment>
-      #include <fog_fragment>
-      #include <premultiplied_alpha_fragment>
-      #include <dithering_fragment>
     }
     `;
     this.vertex = `
@@ -78,12 +194,20 @@ export class ShaderAuroraGUI extends Shader {
     #include <clipping_planes_pars_vertex>
     uniform float rotation;
     uniform vec2 center;
+
+    #ifdef GUI_CHROME
+      attribute float region;
+      varying float vRegion;
+    #endif
     
     void main() {
       #include <uv_vertex>
       #include <uv2_vertex>
       #include <color_vertex>
       #include <morphcolor_vertex>
+      #ifdef GUI_CHROME
+        vRegion = region;
+      #endif
       #if defined ( USE_ENVMAP ) || defined ( USE_SKINNING )
         #include <beginnormal_vertex>
         #include <morphnormal_vertex>
@@ -135,6 +259,26 @@ export class ShaderAuroraGUI extends Shader {
         map: { value: null },
         bounds: { value: new THREE.Vector4(0, 0, 0, 0) },
         scissorBounds: { value: new THREE.Vector4(0, 0, 0, 0) },
+        edgeMap: { value: null },
+        cornerMap: { value: null },
+        fillMap: { value: null },
+        highlightEdgeMap: { value: null },
+        highlightCornerMap: { value: null },
+        highlightFillMap: { value: null },
+        hasEdgeMap: { value: 0 },
+        hasCornerMap: { value: 0 },
+        hasFillMap: { value: 0 },
+        hasHighlightEdgeMap: { value: 0 },
+        hasHighlightCornerMap: { value: 0 },
+        hasHighlightFillMap: { value: 0 },
+        hovered: { value: 0 },
+        hoverMode: { value: 0 },
+        highlightDiffuse: { value: new THREE.Color(1, 1, 0) },
+        fillDiffuse: { value: new THREE.Color(1, 1, 1) },
+        edgeOpacity: { value: 1 },
+        fillOpacity: { value: 1 },
+        enableFrame: { value: 1 },
+        enableFill: { value: 1 },
       }
     ])
   }

@@ -22,21 +22,13 @@ import { TGAObject } from "@/resource/TGAObject";
 import { GameFileSystem } from "@/utility/GameFileSystem";
 import { SaveGame } from "@/engine/SaveGame";
 import {
-  applyDriveInput,
-  abortDriveControl,
-  isDriveControlActive,
-  DRIVE_FORWARD,
-  DRIVE_BACKWARD,
-  DRIVE_RUN,
-  DRIVE_YAW_LEFT,
-  DRIVE_YAW_RIGHT,
-} from "@/controls/drive-input";
-import {
   createPlayerCamRelativeState,
   setPlayerAxes,
 } from "@/controls/player-cam-relative-control";
 import { EventManager } from "@/managers/EventManager";
 import type { ModuleCreature } from "@/module/ModuleCreature";
+import { ActionType } from "@/enums/actions/ActionType";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 
 function ensurePlayerControl(creature: { playerControl?: ReturnType<typeof createPlayerCamRelativeState> }){
   if(!creature.playerControl){
@@ -117,6 +109,59 @@ const MG_MOUSE_POLL_SCALE = 20;
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class IngameControls {
+  /** Control flag bits — match ActionDrive / AddDriveAction. */
+  static readonly DRIVE_FORWARD = 0x01;
+  static readonly DRIVE_BACKWARD = 0x02;
+  static readonly DRIVE_RUN = 0x03;
+  static readonly DRIVE_STRAFE_LEFT = 0x04;
+  static readonly DRIVE_STRAFE_RIGHT = 0x08;
+  static readonly DRIVE_YAW_LEFT = 0x10;
+  static readonly DRIVE_YAW_RIGHT = 0x20;
+
+  /**
+   * Retail drive-control gate: camera mode 5 (FREELOOK/DRIVE) or creature.driveControlActive.
+   * Mode 5 is shared with FreeLook (SetFreeLookCamera). Not swoop MG.
+   */
+  static isDriveControlActive(creature: ModuleCreature | undefined): boolean {
+    if(!creature) return false;
+    if(!creature.isCommandable) return false;
+    if(creature.driveControlActive) return true;
+    return GameState.clientCameraMode === ClientCameraMode.DRIVE;
+  }
+
+  /**
+   * Apply stick/keyboard bits via AddDriveAction (HandlePlayerToServerInputDriveControl).
+   */
+  static applyDriveInput(creature: ModuleCreature, flags: number): void {
+    if(!creature || !flags) return;
+    if(!creature.canMove?.()) return;
+    if(!creature.isCommandable) return;
+
+    const facingRad = Utility.NormalizeRadian(FollowerCamera.facing + Math.PI / 2);
+    let facingDeg = (facingRad * 180) / Math.PI;
+    while(facingDeg < 0) facingDeg += 360;
+    while(facingDeg >= 360) facingDeg -= 360;
+
+    GameState.ActionFactory.AddDriveAction(creature, flags, facingDeg, {
+      x: creature.position.x,
+      y: creature.position.y,
+      clear: true,
+      retry: 2,
+    });
+    creature.controlled = true;
+  }
+
+  /**
+   * Abort front Drive action retry (HandlePlayerToServerInputAbortDriveControl).
+   */
+  static abortDriveControl(creature: ModuleCreature | undefined): void {
+    if(!creature?.actionQueue) return;
+    const front = creature.actionQueue[0] as any;
+    if(front?.type === ActionType.ActionDrive){
+      front.setParameter?.(5, ActionParameterType.INT, 0);
+    }
+  }
+
   Mouse: Mouse = Mouse;
   KeyMapper: KeyMapper = KeyMapper;
 
@@ -600,15 +645,15 @@ export class IngameControls {
       const forward = resolvePlayerForwardAxis();
       const walking = !!followee.walk;
 
-      if(isDriveControlActive(followee)){
+      if(IngameControls.isDriveControlActive(followee)){
         if(!forward){
-          abortDriveControl(followee);
+          IngameControls.abortDriveControl(followee);
           return;
         }
         if(forward > 0){
-          applyDriveInput(followee, walking ? DRIVE_FORWARD : DRIVE_RUN);
+          IngameControls.applyDriveInput(followee, walking ? IngameControls.DRIVE_FORWARD : IngameControls.DRIVE_RUN);
         }else{
-          applyDriveInput(followee, DRIVE_BACKWARD);
+          IngameControls.applyDriveInput(followee, IngameControls.DRIVE_BACKWARD);
         }
         GameState.scene_cursor_holder.visible = true;
         FollowerCamera.clearFocusObject();
@@ -671,8 +716,8 @@ export class IngameControls {
       const followee = GameState.PartyManager.party[0];
       if(!followee) return;
       if(!followee.canMove()) return;
-      if(isDriveControlActive(followee)){
-        applyDriveInput(followee, DRIVE_YAW_LEFT);
+      if(IngameControls.isDriveControlActive(followee)){
+        IngameControls.applyDriveInput(followee, IngameControls.DRIVE_YAW_LEFT);
       }
     });
 
@@ -687,8 +732,8 @@ export class IngameControls {
       const followee = GameState.PartyManager.party[0];
       if(!followee) return;
       if(!followee.canMove()) return;
-      if(isDriveControlActive(followee)){
-        applyDriveInput(followee, DRIVE_YAW_RIGHT);
+      if(IngameControls.isDriveControlActive(followee)){
+        IngameControls.applyDriveInput(followee, IngameControls.DRIVE_YAW_RIGHT);
       }
     });
 
@@ -710,8 +755,8 @@ export class IngameControls {
       }
       if(GameState.Mode != EngineMode.INGAME) return;
       const followee = GameState.PartyManager.party[0];
-      if(isDriveControlActive(followee) && keymap.keyboardInput?.down){
-        applyDriveInput(followee, DRIVE_YAW_LEFT);
+      if(IngameControls.isDriveControlActive(followee) && keymap.keyboardInput?.down){
+        IngameControls.applyDriveInput(followee, IngameControls.DRIVE_YAW_LEFT);
         return;
       }
       if(
@@ -748,8 +793,8 @@ export class IngameControls {
       }
       if(GameState.Mode != EngineMode.INGAME) return;
       const followee = GameState.PartyManager.party[0];
-      if(isDriveControlActive(followee) && keymap.keyboardInput?.down){
-        applyDriveInput(followee, DRIVE_YAW_RIGHT);
+      if(IngameControls.isDriveControlActive(followee) && keymap.keyboardInput?.down){
+        IngameControls.applyDriveInput(followee, IngameControls.DRIVE_YAW_RIGHT);
         return;
       }
       if(
@@ -1213,16 +1258,16 @@ export class IngameControls {
         if(followee){
           if(followee.canMove()){
             if( this.gamePad.stick_l_x.value || this.gamePad.stick_l_y.value ){
-              if(isDriveControlActive(followee)){
+              if(IngameControls.isDriveControlActive(followee)){
                 let flags = 0;
                 const lx = this.gamePad.stick_l_x.value;
                 const ly = this.gamePad.stick_l_y.value;
-                if(ly < -0.2) flags |= DRIVE_FORWARD;
-                if(ly > 0.2) flags |= DRIVE_BACKWARD;
-                if((flags & DRIVE_FORWARD) && Math.abs(ly) > 0.7) flags = DRIVE_RUN;
-                if(lx < -0.2) flags |= DRIVE_YAW_LEFT;
-                if(lx > 0.2) flags |= DRIVE_YAW_RIGHT;
-                if(flags) applyDriveInput(followee, flags);
+                if(ly < -0.2) flags |= IngameControls.DRIVE_FORWARD;
+                if(ly > 0.2) flags |= IngameControls.DRIVE_BACKWARD;
+                if((flags & IngameControls.DRIVE_FORWARD) && Math.abs(ly) > 0.7) flags = IngameControls.DRIVE_RUN;
+                if(lx < -0.2) flags |= IngameControls.DRIVE_YAW_LEFT;
+                if(lx > 0.2) flags |= IngameControls.DRIVE_YAW_RIGHT;
+                if(flags) IngameControls.applyDriveInput(followee, flags);
                 GameState.scene_cursor_holder.visible = false;
                 this.gamePadMovement = true;
               }else{

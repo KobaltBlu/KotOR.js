@@ -127,24 +127,15 @@ export class MenuEquipment extends GameMenu {
       this.LB_DESC.hide();
       this.LBL_CANTEQUIP.hide();
 
-      this.LBL_INV_IMPLANT.border.fill.material.alphaTest = 0.5;
-      this.LBL_INV_IMPLANT.highlight.fill.material.alphaTest = 0.5;
-      this.LBL_INV_HEAD.border.fill.material.alphaTest = 0.5;
-      this.LBL_INV_HEAD.highlight.fill.material.alphaTest = 0.5;
-      this.LBL_INV_HANDS.border.fill.material.alphaTest = 0.5;
-      this.LBL_INV_HANDS.highlight.fill.material.alphaTest = 0.5;
-      this.LBL_INV_ARM_L.border.fill.material.alphaTest = 0.5;
-      this.LBL_INV_ARM_L.highlight.fill.material.alphaTest = 0.5;
-      this.LBL_INV_BODY.border.fill.material.alphaTest = 0.5;
-      this.LBL_INV_BODY.highlight.fill.material.alphaTest = 0.5;
-      this.LBL_INV_ARM_R.border.fill.material.alphaTest = 0.5;
-      this.LBL_INV_ARM_R.highlight.fill.material.alphaTest = 0.5;
-      this.LBL_INV_WEAP_L.border.fill.material.alphaTest = 0.5;
-      this.LBL_INV_WEAP_L.highlight.fill.material.alphaTest = 0.5;
-      this.LBL_INV_BELT.border.fill.material.alphaTest = 0.5;
-      this.LBL_INV_BELT.highlight.fill.material.alphaTest = 0.5;
-      this.LBL_INV_WEAP_R.border.fill.material.alphaTest = 0.5;
-      this.LBL_INV_WEAP_R.highlight.fill.material.alphaTest = 0.5;
+      this.LBL_INV_IMPLANT.chrome.material.alphaTest = 0.5;
+      this.LBL_INV_HEAD.chrome.material.alphaTest = 0.5;
+      this.LBL_INV_HANDS.chrome.material.alphaTest = 0.5;
+      this.LBL_INV_ARM_L.chrome.material.alphaTest = 0.5;
+      this.LBL_INV_BODY.chrome.material.alphaTest = 0.5;
+      this.LBL_INV_ARM_R.chrome.material.alphaTest = 0.5;
+      this.LBL_INV_WEAP_L.chrome.material.alphaTest = 0.5;
+      this.LBL_INV_BELT.chrome.material.alphaTest = 0.5;
+      this.LBL_INV_WEAP_R.chrome.material.alphaTest = 0.5;
 
       this.BTN_BACK = this.getControlByName('BTN_BACK');
       this.BTN_BACK.addEventListener('click', (e) => {
@@ -666,11 +657,8 @@ export class MenuEquipment extends GameMenu {
   }
 
   protected setSlotIconAlpha(label: GUILabel | undefined, alpha: number) {
-    if(!label?.border?.fill?.material?.uniforms?.opacity) return;
-    label.border.fill.material.uniforms.opacity.value = alpha;
-    if(label.highlight?.fill?.material?.uniforms?.opacity){
-      label.highlight.fill.material.uniforms.opacity.value = alpha;
-    }
+    if(!label) return;
+    label.setChromeOpacity(alpha);
   }
 
   updateSlotIcons(force: boolean = false) {

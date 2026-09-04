@@ -3,6 +3,7 @@ import { EngineMode } from "@/enums/engine/EngineMode";
 import { FeedbackOption } from "@/enums/engine/FeedbackOption";
 import { GameMenu, LBL_MapView, GUIPanelCoordFlags } from "@/gui";
 import type { GUILabel, GUIButton, GUICheckBox, GUIProgressBar } from "@/gui";
+import { clearChromeTexture } from "@/gui/guiChrome";
 import { TextureLoader } from "@/loaders";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import * as THREE from "three";
@@ -717,31 +718,35 @@ export class InGameOverlay extends GameMenu {
     );
   }
 
+  clearActionIcon(guiControl: GUIButton){
+    if(guiControl.chrome?.material){
+      clearChromeTexture(guiControl.chrome.material, 'fillMap');
+      clearChromeTexture(guiControl.chrome.material, 'highlightFillMap');
+      guiControl.borderFillEnabled = false;
+      guiControl.highlightFillEnabled = false;
+    }
+    guiControl.setFillTextureName('');
+  }
+
   UpdateTargetUIIcon(index = 0) {
     const guiControl = this.getControlByName('LBL_TARGET' + index);
     if (!GameState.ActionMenuManager.ActionPanels.targetPanels[index].actions.length) {
-      guiControl.setMaterialTexture(guiControl.border.fill.material, undefined);
-      guiControl.setMaterialTexture(guiControl.highlight.fill.material, undefined);
-      guiControl.setFillTextureName('');
+      this.clearActionIcon(guiControl);
       return;
     }
 
     const action = GameState.ActionMenuManager.ActionPanels.targetPanels[index].getSelectedAction();
     if (!action) {
-      guiControl.setMaterialTexture(guiControl.border.fill.material, undefined);
-      guiControl.setMaterialTexture(guiControl.highlight.fill.material, undefined);
-      guiControl.setFillTextureName('');
+      this.clearActionIcon(guiControl);
       return;
     }
 
     if (guiControl.getFillTextureName() != action.icon) {
       guiControl.setFillTextureName(action.icon);
-      guiControl.setHighlightFillTexture(action.icon);
       TextureLoader.tpcLoader.fetch(action.icon).then((texture: OdysseyTexture) => {
-        guiControl.setMaterialTexture(guiControl.border.fill.material, texture);
-        guiControl.setMaterialTexture(guiControl.highlight.fill.material, texture);
-        guiControl.border.fill.material.transparent = true;
-        guiControl.highlight.fill.material.transparent = true;
+        guiControl.setFillTexture(texture);
+        guiControl.setHighlightFillTexture(texture);
+        if(guiControl.chrome?.material) guiControl.chrome.material.transparent = true;
         this.applyActionIconEnabled(guiControl, action.enabled !== false);
       });
     } else {
@@ -755,37 +760,26 @@ export class InGameOverlay extends GameMenu {
       const action = GameState.ActionMenuManager.ActionPanels.selfPanels[index].getSelectedAction();
       if (action && guiControl.getFillTextureName() != action.icon) {
         guiControl.setFillTextureName(action.icon);
-        guiControl.setHighlightFillTexture(action.icon);
         TextureLoader.tpcLoader.fetch(action.icon).then((texture: OdysseyTexture) => {
-          guiControl.setMaterialTexture(guiControl.border.fill.material, texture);
-          guiControl.setMaterialTexture(guiControl.highlight.fill.material, texture);
-          guiControl.border.fill.material.transparent = true;
-          guiControl.highlight.fill.material.transparent = true;
+          guiControl.setFillTexture(texture);
+          guiControl.setHighlightFillTexture(texture);
+          if(guiControl.chrome?.material) guiControl.chrome.material.transparent = true;
           this.applyActionIconEnabled(guiControl, action.enabled !== false);
         });
       } else if (action) {
         this.applyActionIconEnabled(guiControl, action.enabled !== false);
       } else if (!action) {
-        guiControl.setMaterialTexture(guiControl.border.fill.material, undefined);
-        guiControl.setMaterialTexture(guiControl.highlight.fill.material, undefined);
-        guiControl.setFillTextureName('');
+        this.clearActionIcon(guiControl);
       }
     } else {
-      guiControl.setMaterialTexture(guiControl.border.fill.material, undefined);
-      guiControl.setMaterialTexture(guiControl.highlight.fill.material, undefined);
-      guiControl.setFillTextureName('');
+      this.clearActionIcon(guiControl);
     }
   }
 
   applyActionIconEnabled(guiControl: GUIButton, enabled: boolean){
     const alpha = enabled ? 1.0 : 0.25;
     try{
-      if(guiControl.border?.fill?.material?.uniforms?.opacity){
-        guiControl.border.fill.material.uniforms.opacity.value = alpha;
-      }
-      if(guiControl.highlight?.fill?.material?.uniforms?.opacity){
-        guiControl.highlight.fill.material.uniforms.opacity.value = alpha;
-      }
+      guiControl.setChromeOpacity(alpha);
     }catch(e){}
     guiControl.disableSelection = !enabled;
   }
@@ -1456,7 +1450,7 @@ export class InGameOverlay extends GameMenu {
           this.LBL_QUEUE0.setFillTextureName(action0.iconResRef);
           TextureLoader.tpcLoader.fetch(action0.iconResRef).then((texture: OdysseyTexture) => {
             this.LBL_QUEUE0.setFillTexture(texture);
-            this.LBL_QUEUE0.border.fill.material.transparent = true;
+            if(this.LBL_QUEUE0.chrome?.material) this.LBL_QUEUE0.chrome.material.transparent = true;
           });
         }
       } else {
@@ -1468,7 +1462,7 @@ export class InGameOverlay extends GameMenu {
           this.LBL_QUEUE1.setFillTextureName(action1.iconResRef);
           TextureLoader.tpcLoader.fetch(action1.iconResRef).then((texture: OdysseyTexture) => {
             this.LBL_QUEUE1.setFillTexture(texture);
-            this.LBL_QUEUE1.border.fill.material.transparent = true;
+            if(this.LBL_QUEUE1.chrome?.material) this.LBL_QUEUE1.chrome.material.transparent = true;
           });
         }
       } else {
@@ -1480,7 +1474,7 @@ export class InGameOverlay extends GameMenu {
           this.LBL_QUEUE2.setFillTextureName(action2.iconResRef);
           TextureLoader.tpcLoader.fetch(action2.iconResRef).then((texture: OdysseyTexture) => {
             this.LBL_QUEUE2.setFillTexture(texture);
-            this.LBL_QUEUE2.border.fill.material.transparent = true;
+            if(this.LBL_QUEUE2.chrome?.material) this.LBL_QUEUE2.chrome.material.transparent = true;
           });
         }
       } else {
@@ -1492,7 +1486,7 @@ export class InGameOverlay extends GameMenu {
           this.LBL_QUEUE3.setFillTextureName(action3.iconResRef);
           TextureLoader.tpcLoader.fetch(action3.iconResRef).then((texture: OdysseyTexture) => {
             this.LBL_QUEUE3.setFillTexture(texture);
-            this.LBL_QUEUE3.border.fill.material.transparent = true;
+            if(this.LBL_QUEUE3.chrome?.material) this.LBL_QUEUE3.chrome.material.transparent = true;
           });
         }
       } else {

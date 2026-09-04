@@ -144,8 +144,8 @@ export class CharGenClass extends GameMenu {
       let creature = GameState.CharGenManager.creatures.get(nth);
       _3dView.setControl(control);
       _3dView.visible = true;
-      control.border.fill.material.transparent = true;
-      control.border.fill.material.blending = 1;
+      control.chrome.material.transparent = true;
+      control.chrome.material.blending = 1;
 
       if(_3dViewModel) _3dViewModel.removeFromParent();
 

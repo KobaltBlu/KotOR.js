@@ -3,18 +3,28 @@ import type { GameMenu } from "@/gui/GameMenu";
 import { GUIControl } from "@/gui/GUIControl";
 import { TextureType } from "@/enums/loaders/TextureType";
 import { IGUIControlBorder } from "@/interface/gui/IGUIControlBorder";
+import type { IGUIControlChrome } from "@/interface/gui/IGUIControlChrome";
 import { TextureLoader } from "@/loaders";
-import { ShaderManager } from "@/managers/ShaderManager";
 import type { GFFStruct } from "@/resource/GFFStruct";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import { GUIControlType } from "@/enums/gui/GUIControlType";
+import {
+  bindChromeTexture,
+  createGuiChrome,
+  GUI_CHROME_REGION_FILL,
+  layoutOrthoPlanePositions,
+  mergeChromePlanes,
+  stampRegionAttribute,
+} from "@/gui/guiChrome";
 import { asExtentInt, truncDiv } from "@/gui/GUICoord";
 
 /**
  * GUIProgressBar class.
  * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * Progress overlay uses a second chrome mesh (independent width animation).
  * 
  * @file GUIProgressBar.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -26,6 +36,7 @@ export class GUIProgressBar extends GUIControl {
   maxValue: number;
 
   progress: IGUIControlBorder;
+  progressChrome: IGUIControlChrome;
   hasProgress: boolean;
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
@@ -40,24 +51,11 @@ export class GUIProgressBar extends GUIControl {
     this.widget.userData.progress = new THREE.Group();
     this.widget.add(this.widget.userData.progress);
 
-    //----------//
-    // Progress
-    //----------//
-
     this.progress = {
       color: new THREE.Color(0, 0.658824, 0.980392),
       corner: '',
-      corner_material: {} as THREE.ShaderMaterial,
       edge: '',
-      edge_material: {} as THREE.ShaderMaterial,
-      mesh: {} as THREE.Mesh,
-      geometry: {} as THREE.BufferGeometry,
-      fill: {
-        texture: '',
-        material: {} as THREE.ShaderMaterial,
-        mesh: {} as THREE.Mesh,
-        geometry: {} as THREE.BufferGeometry
-      },
+      fill: { texture: '' },
       fillstyle: -1,
       dimension: 0,
       inneroffset: 0,
@@ -65,67 +63,11 @@ export class GUIProgressBar extends GUIControl {
       pulsing: 0
     };
 
-    this.progress.geometry = new THREE.BufferGeometry();
-    
-    this.progress.edge_material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
-      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
-      side: THREE.FrontSide,
-      fog: false,
-      visible: true,
-      defines: {
-        GUI_SORT: ''
-      }
-    });
-    this.progress.edge_material.defines.USE_MAP = '';
-    this.progress.edge_material.uniforms.diffuse.value = this.progress.color;
-
-    this.progress.corner_material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
-      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
-      side: THREE.FrontSide,
-      fog: false,
-      visible: true,
-      defines: {
-        GUI_SORT: ''
-      }
-    });
-    //this.progress.corner_material.defines.USE_MAP = '';
-    this.progress.corner_material.uniforms.diffuse.value = this.progress.color;
-
-    this.progress.mesh = new THREE.Mesh( this.progress.geometry, [this.progress.edge_material, this.progress.corner_material] );
-    this.widget.userData.progress.add(this.progress.mesh);
-
-    //---------------//
-    // Progress Fill
-    //---------------//
-    
-    this.progress.fill.material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
-      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
-      side: THREE.FrontSide,
-      fog: false,
-      visible: true,
-      defines: {
-        GUI_SORT: ''
-      }
-    });
-    //this.progress.fill.material.defines.USE_MAP = '';
-    this.progress.fill.material.uniforms.diffuse.value = this.progress.color;
-    this.progress.fill.geometry = new THREE.PlaneGeometry( 1, 1, 1 );
-    this.progress.fill.mesh = new THREE.Mesh( this.progress.fill.geometry, this.progress.fill.material );
-    this.progress.fill.mesh.position.z = this.zOffset + 1;
-
-    this.widget.userData.progress.add( this.progress.fill.mesh );
+    this.progressChrome = createGuiChrome();
+    this.progressChrome.material.uniforms.diffuse.value = this.progress.color;
+    this.progressChrome.material.uniforms.fillDiffuse.value = this.progress.color;
+    this.progressChrome.mesh.name = 'GUIProgressChrome';
+    this.widget.userData.progress.add(this.progressChrome.mesh);
 
     if(this.control){
       
@@ -142,7 +84,7 @@ export class GUIProgressBar extends GUIControl {
           }
 
           if(typeof this.progress.color === 'undefined'){
-            this.progress.color = new THREE.Color(1, 1, 1); //this.defaultColor;
+            this.progress.color = new THREE.Color(1, 1, 1);
           }
 
           this.progress.dimension = progress.getFieldByLabel('DIMENSION')?.getValue() || 0;
@@ -161,41 +103,55 @@ export class GUIProgressBar extends GUIControl {
 
     }
 
-    //----------//
-    // Progress
-    //----------//
+    this.progressChrome.material.uniforms.diffuse.value.copy(this.progress.color);
+    this.progressChrome.material.uniforms.fillDiffuse.value.copy(this.progress.color);
 
-    if(this.progress.edge != ''){
-      TextureLoader.enQueue(this.progress.edge, this.progress.edge_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-        if(!texture)
-          console.log('initTextures', this.progress.edge, texture);
-
-        texture.wrapS = THREE.ClampToEdgeWrapping;
-        texture.wrapT = THREE.ClampToEdgeWrapping;
-      });
-    }
-
-    if(this.progress.corner != ''){
-      TextureLoader.enQueue(this.progress.corner, this.progress.corner_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-        if(!texture)
-          console.log('initTextures', this.progress.corner, texture);
-
-        texture.wrapS = THREE.ClampToEdgeWrapping;
-        texture.wrapT = THREE.ClampToEdgeWrapping;
-      });
-    }
-
-    if(this.progress.fill.texture != ''){
-      this.progress.fill.material.transparent = true;
-      TextureLoader.enQueue(this.progress.fill.texture, this.progress.fill.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-        if(texture == null){
-          this.progress.fill.material.uniforms.opacity.value = 0.01;
+    const enqueue = (name: string, slot: 'edgeMap' | 'cornerMap' | 'fillMap') => {
+      if(!name){
+        bindChromeTexture(this.progressChrome.material, slot, null);
+        return;
+      }
+      TextureLoader.enQueue(name, this.progressChrome.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
+        if(!texture){
+          if(slot === 'fillMap'){
+            this.progressChrome.material.uniforms.fillOpacity.value = 0.01;
+          }
+          return;
         }
-      });
-    }else{
-      this.progress.fill.material.visible = false;
-    }
+        texture.wrapS = THREE.ClampToEdgeWrapping;
+        texture.wrapT = THREE.ClampToEdgeWrapping;
+        bindChromeTexture(this.progressChrome.material, slot, texture);
+      }, undefined, slot);
+    };
 
+    enqueue(this.progress.edge, 'edgeMap');
+    enqueue(this.progress.corner, 'cornerMap');
+    enqueue(this.progress.fill.texture, 'fillMap');
+
+    this.attachEventListenters(this.progressChrome.mesh);
+  }
+
+  buildChrome(){
+    super.buildChrome();
+    this.buildProgressChrome();
+  }
+
+  buildProgressChrome(){
+    // Animated overlay is fill-only; frame tiles (if any) stay full-size on a sibling mesh.
+    const fillExtent = this.getFillExtent();
+    const fillPlane = new THREE.PlaneGeometry(1, 1, 1) as THREE.BufferGeometry;
+    layoutOrthoPlanePositions(fillPlane, fillExtent.width, fillExtent.height);
+    fillPlane.translate(0, 0, this.zOffset + 1);
+    stampRegionAttribute(fillPlane, GUI_CHROME_REGION_FILL);
+
+    if(this.progressChrome.geometry instanceof THREE.BufferGeometry){
+      this.progressChrome.geometry.dispose();
+    }
+    this.progressChrome.geometry = mergeChromePlanes([fillPlane]);
+    this.progressChrome.mesh.geometry = this.progressChrome.geometry;
+    this.progressChrome.material.uniforms.enableFrame.value = 0;
+    this.progressChrome.material.uniforms.enableFill.value = 1;
+    fillPlane.dispose();
   }
 
   setProgress(val: number = 100){
@@ -207,34 +163,43 @@ export class GUIProgressBar extends GUIControl {
     let value = Math.min(this.curValue / maxV, 1);
 
     let extent = this.getFillExtent();
-    let sprite = this.progress.fill.mesh;
+    const mesh = this.progressChrome.mesh;
     const fillW = asExtentInt(extent.width);
     const fillH = asExtentInt(extent.height);
 
     if(fillW > fillH){
       const scaledW = asExtentInt(fillW * value) || 1;
-      sprite.scale.set( scaledW, fillH, 1.0 );
+      mesh.scale.set( scaledW / Math.max(fillW, 1), 1, 1.0 );
       let offsetX = truncDiv(fillW - scaledW, 2);
       if(this.startFromLeft)
-        sprite.position.x = -offsetX;
+        mesh.position.x = -offsetX;
       else
-        sprite.position.x = +offsetX;
+        mesh.position.x = +offsetX;
+      mesh.position.y = 0;
     }else{
       const scaledH = asExtentInt(fillH * value) || 1;
-      sprite.scale.set( fillW, scaledH, 1.0 );
+      mesh.scale.set( 1, scaledH / Math.max(fillH, 1), 1.0 );
       let offsetY = truncDiv(fillH - scaledH, 2);
       if(this.startFromLeft)
-        sprite.position.y = +offsetY;
+        mesh.position.y = +offsetY;
       else
-        sprite.position.y = -offsetY;
+        mesh.position.y = -offsetY;
+      mesh.position.x = 0;
     }
 
-    (this.progress.fill.geometry.attributes.uv as THREE.BufferAttribute).setY(1, value);
-    this.progress.fill.geometry.attributes.uv.needsUpdate = true;
-    
-    (sprite.material as any).uniforms.opacity.value = 1;
-    (sprite.material as any).transparent = true;
+    // Match prior UV crop on the growing axis
+    const uv = this.progressChrome.geometry.getAttribute('uv') as THREE.BufferAttribute | undefined;
+    if(uv && uv.count >= 4){
+      // PlaneGeometry UV layout: update vMax for vertical growth; keep u for horizontal scale via mesh.scale
+      if(fillW <= fillH){
+        uv.setY(1, value);
+        uv.needsUpdate = true;
+      }
+    }
 
+    this.progressChrome.material.uniforms.fillOpacity.value = 1;
+    this.progressChrome.material.transparent = true;
+    this.progressChrome.material.uniformsNeedUpdate = true;
   }
 
   getFillTextureName(){
@@ -244,7 +209,10 @@ export class GUIProgressBar extends GUIControl {
   setFillTextureName(name = ''){
     this.progress.fill.texture = name;
     return new Promise<OdysseyTexture>( (resolve, reject) => {
-      TextureLoader.enQueue(this.progress.fill.texture, this.progress.fill.material, TextureType.TEXTURE, resolve);
+      TextureLoader.enQueue(this.progress.fill.texture, this.progressChrome.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
+        bindChromeTexture(this.progressChrome.material, 'fillMap', texture ?? null);
+        resolve(texture);
+      }, undefined, 'fillMap');
     })
   }
 
@@ -252,28 +220,12 @@ export class GUIProgressBar extends GUIControl {
     if(!(map instanceof THREE.Texture)){
       map = TextureLoader.textures.get('fx_static');
     }
-
-    this.progress.fill.material.uniforms.map.value = map;
-    (this.progress.fill as any).material.map = map;
-
-    if(map instanceof THREE.Texture){
-      this.progress.fill.material.visible = true;
-      this.progress.fill.material.uniforms.opacity.value = 1;
-      this.progress.fill.material.uniforms.uvTransform.value = this.progress.fill.material.uniforms.map.value.matrix;
-      this.progress.fill.material.uniforms.map.value.updateMatrix();
-      this.progress.fill.material.defines.USE_UV = '';
-      this.progress.fill.material.defines.USE_MAP = '';
-    }else{
-      this.progress.fill.material.visible = false;
-    }
-
-    this.progress.fill.material.needsUpdate = true;
-    this.progress.fill.material.uniformsNeedUpdate = true;
-    this.progress.fill.material.visible = (map instanceof THREE.Texture);
+    bindChromeTexture(this.progressChrome.material, 'fillMap', map instanceof THREE.Texture ? map : null);
   }
 
   _onCreate(){
     super._onCreate();
+    this.buildProgressChrome();
     this.setProgress(this.curValue);
   }
 

@@ -59,6 +59,7 @@ export class GUICreatureSkill extends GUIProtoItem {
   buildFill(){}
   buildBorder(){}
   buildHighlight(){}
+  buildChrome(){}
   buildText(){}
 
   private resolveName(): string {

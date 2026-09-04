@@ -99,28 +99,17 @@ export class MenuEquipment extends K1_MenuEquipment {
     return new Promise<void>((resolve) => {
       this.defaultControl = this.BTN_INV_BODY;
 
-      this.LBL_INV_IMPLANT.border.fill.material.alphaTest = 0.5;
-      this.LBL_INV_IMPLANT.highlight.fill.material.alphaTest = 0.5;
-      this.LBL_INV_HEAD.border.fill.material.alphaTest = 0.5;
-      this.LBL_INV_HEAD.highlight.fill.material.alphaTest = 0.5;
-      this.LBL_INV_HANDS.border.fill.material.alphaTest = 0.5;
-      this.LBL_INV_HANDS.highlight.fill.material.alphaTest = 0.5;
-      this.LBL_INV_ARM_L.border.fill.material.alphaTest = 0.5;
-      this.LBL_INV_ARM_L.highlight.fill.material.alphaTest = 0.5;
-      this.LBL_INV_BODY.border.fill.material.alphaTest = 0.5;
-      this.LBL_INV_BODY.highlight.fill.material.alphaTest = 0.5;
-      this.LBL_INV_ARM_R.border.fill.material.alphaTest = 0.5;
-      this.LBL_INV_ARM_R.highlight.fill.material.alphaTest = 0.5;
-      this.LBL_INV_WEAP_L.border.fill.material.alphaTest = 0.5;
-      this.LBL_INV_WEAP_L.highlight.fill.material.alphaTest = 0.5;
-      this.LBL_INV_BELT.border.fill.material.alphaTest = 0.5;
-      this.LBL_INV_BELT.highlight.fill.material.alphaTest = 0.5;
-      this.LBL_INV_WEAP_R.border.fill.material.alphaTest = 0.5;
-      this.LBL_INV_WEAP_R.highlight.fill.material.alphaTest = 0.5;
-      this.LBL_INV_WEAP_L2.border.fill.material.alphaTest = 0.5;
-      this.LBL_INV_WEAP_L2.highlight.fill.material.alphaTest = 0.5;
-      this.LBL_INV_WEAP_R2.border.fill.material.alphaTest = 0.5;
-      this.LBL_INV_WEAP_R2.highlight.fill.material.alphaTest = 0.5;
+      this.LBL_INV_IMPLANT.chrome.material.alphaTest = 0.5;
+      this.LBL_INV_HEAD.chrome.material.alphaTest = 0.5;
+      this.LBL_INV_HANDS.chrome.material.alphaTest = 0.5;
+      this.LBL_INV_ARM_L.chrome.material.alphaTest = 0.5;
+      this.LBL_INV_BODY.chrome.material.alphaTest = 0.5;
+      this.LBL_INV_ARM_R.chrome.material.alphaTest = 0.5;
+      this.LBL_INV_WEAP_L.chrome.material.alphaTest = 0.5;
+      this.LBL_INV_BELT.chrome.material.alphaTest = 0.5;
+      this.LBL_INV_WEAP_R.chrome.material.alphaTest = 0.5;
+      this.LBL_INV_WEAP_L2.chrome.material.alphaTest = 0.5;
+      this.LBL_INV_WEAP_R2.chrome.material.alphaTest = 0.5;
 
       this.LB_DESC.hide();
       this.LBL_CANTEQUIP.hide();

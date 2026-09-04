@@ -158,10 +158,10 @@ export class TextureLoader {
     }
   }
 
-  static enQueue(name: string|string[], material: THREE.Material, type = TextureType.TEXTURE, onLoad?: Function, fallback?: string){
+  static enQueue(name: string|string[], material: THREE.Material, type = TextureType.TEXTURE, onLoad?: Function, fallback?: string, uniformName?: string){
     if(typeof name == 'string' && name.length){
       name = name.toLowerCase();
-      const obj = { name: name, material: material, type: type, fallback: fallback, onLoad: onLoad } as ITextureLoaderQueuedRef;
+      const obj = { name: name, material: material, type: type, fallback: fallback, onLoad: onLoad, uniformName: uniformName } as ITextureLoaderQueuedRef;
       const cached = TextureLoader.textures.get(name) ?? TextureLoader.guiTextures.get(name);
       if(cached){
         TextureLoader.UpdateMaterial(obj);
@@ -177,7 +177,7 @@ export class TextureLoader {
     }else if(Array.isArray(name)){
       for(let i = 0, len = name.length; i < len; i++){
         const texName = name[i].toLowerCase();
-        const obj = { name: texName, material: material, type: type, fallback: fallback, onLoad: onLoad } as ITextureLoaderQueuedRef;
+        const obj = { name: texName, material: material, type: type, fallback: fallback, onLoad: onLoad, uniformName: uniformName } as ITextureLoaderQueuedRef;
         const cached = TextureLoader.textures.get(texName) ?? TextureLoader.guiTextures.get(texName);
         if(cached){
           TextureLoader.UpdateMaterial(obj);
@@ -194,6 +194,31 @@ export class TextureLoader {
     }else{
       console.warn('unhandled enQueue', name);
       console.log('enQueue', name, material, type);
+    }
+  }
+
+  /** Assign a texture to either `map` or a named chrome uniform on a ShaderMaterial. */
+  static assignMaterialTexture(material: THREE.Material, texture: THREE.Texture | null, uniformName?: string){
+    if(!(material instanceof THREE.Material)) return;
+    const slot = uniformName && uniformName.length ? uniformName : 'map';
+    if(material instanceof THREE.RawShaderMaterial || material instanceof THREE.ShaderMaterial){
+      if(material.uniforms?.[slot]){
+        material.uniforms[slot].value = texture;
+      }
+      if(slot === 'map'){
+        (material as any).map = texture;
+      }else{
+        (material as any)[slot] = texture;
+      }
+      const hasKey = 'has' + slot.charAt(0).toUpperCase() + slot.slice(1);
+      if(material.uniforms?.[hasKey]){
+        material.uniforms[hasKey].value = texture instanceof THREE.Texture ? 1 : 0;
+      }
+      material.uniformsNeedUpdate = true;
+      material.needsUpdate = true;
+    }else{
+      (material as any).map = texture;
+      (material as any).needsUpdate = true;
     }
   }
 
@@ -229,16 +254,7 @@ export class TextureLoader {
         let texture: OdysseyTexture = await TextureLoader.Load(tex.name, TextureLoader.CACHE);
         if(!!texture && tex.material instanceof THREE.Material){
 
-          if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
-            //console.log('THREE.RawShaderMaterial', tex);
-            tex.material.uniforms.map.value = texture;
-            (tex.material as any).map = texture;
-            tex.material.uniformsNeedUpdate = true;
-            tex.material.needsUpdate = true; //This is required for cached textures. If not models will not update with a cached texture
-          }else{
-            (tex.material as any).map = texture;
-            (tex.material as any).needsUpdate = true; //This is required for cached textures. If not models will not update with a cached texture
-          }
+          TextureLoader.assignMaterialTexture(tex.material, texture, tex.uniformName);
 
           /*
             //Obsolete now that the alpha value was discovered in the TPC Header
@@ -296,16 +312,7 @@ export class TextureLoader {
           let fallback: OdysseyTexture = await TextureLoader.Load(tex.fallback, TextureLoader.CACHE);
           if(!!fallback && tex.material instanceof THREE.Material){
 
-            if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
-              //console.log('THREE.RawShaderMaterial', tex);
-              tex.material.uniforms.map.value = fallback;
-              (tex.material as any).map = fallback;
-              tex.material.uniformsNeedUpdate = true;
-              tex.material.needsUpdate = true; //This is required for cached textures. If not models will not update with a cached texture
-            }else{
-              (tex.material as any).map = fallback;
-              (tex.material as any).needsUpdate = true; //This is required for cached textures. If not models will not update with a cached texture
-            }
+            TextureLoader.assignMaterialTexture(tex.material, fallback, tex.uniformName);
 
             /*
               //Obsolete now that the alpha value was discovered in the TPC Header

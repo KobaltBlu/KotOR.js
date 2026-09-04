@@ -1,4 +1,4 @@
-import { asExtentInt, truncDiv } from "@/gui/GUICoord";
+import { asExtentInt, clampFrameDim, truncDiv } from "@/gui/GUICoord";
 
 export { centeredExtentMax } from "@/gui/GUICoord";
 
@@ -18,6 +18,9 @@ export type BorderSide =
  * Retail Draw uses top-left rects. In center space that span is
  * [−truncDiv(w,2), w−truncDiv(w,2)), not ±truncDiv(w,2). Using ±truncDiv(innerW,2) as
  * PlaneGeometry centers drops the right (and top) pixel when the control size is odd.
+ *
+ * Dimension is {@link clampFrameDim}'d so oversized borders take the remaining half
+ * on each side and the center fill collapses to 0.
  */
 export function borderSideExtent(params: {
   width: number;
@@ -30,7 +33,7 @@ export function borderSideExtent(params: {
 }): { top: number; left: number; width: number; height: number } {
   const ew = asExtentInt(params.width);
   const eh = asExtentInt(params.height);
-  const dim = Math.min(asExtentInt(params.dimension), truncDiv(ew, 2), truncDiv(eh, 2));
+  const dim = clampFrameDim(params.dimension, ew, eh);
   const shrinkWidth = asExtentInt(params.shrinkWidth ?? 0);
 
   const innerW =

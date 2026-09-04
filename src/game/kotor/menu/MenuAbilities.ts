@@ -6,13 +6,29 @@ import { GUIFeatItem } from "@/game/kotor/gui/GUIFeatItem";
 import { GUISpellItem } from "@/game/tsl/gui/GUISpellItem";
 import { GUICreatureSkill } from "@/game/tsl/gui/GUICreatureSkill";
 import { type TalentFeat } from "@/talents/TalentFeat";
+import type { TalentSpell } from "@/talents/TalentSpell";
 import type { TalentSkill } from "@/talents/TalentSkill";
-import {
-  createInGameFeatChart,
-  createInGamePowerChart,
-} from "@/engine/menu/skill-flow-chart";
 import { SWRuleSet } from "@/engine/rules/SWRuleSet";
 import { SkillFlowStatus } from "@/gui/protoitem/protoItemHelpers";
+
+
+/** Minimal creature surface used by in-game chart builders. */
+export type SkillFlowCreature = {
+  getHasFeat?: (id: number) => boolean;
+  getHasSpell?: (id: number) => boolean;
+  getFP?: () => number;
+  getAdjustedForcePointCost?: (spell: {
+    forcepoints?: number;
+    goodEvil?: string;
+  }) => number;
+};
+
+export type SpellSubRadialFields = {
+  forcehostile?: number;
+  forcefriendly?: number;
+  forcepassive?: number;
+  forcepriority?: number;
+};
 
 enum AbilityFilter {
   SKILLS = 1,
@@ -44,6 +60,309 @@ const COLOR_BLUE = { r: 0, g: 0.658824, b: 0.980392 };
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuAbilities extends GameMenu {
+  private static isUnsetPrereq(id: number | null | undefined): boolean {
+    if (id == null) return true;
+    const n = id | 0;
+    return n < 0 || n === 0xffffffff;
+  }
+
+  /**
+   * Retail feat chain depth for BuildSortedFeatList:
+   * 0 = root (no prereqFeat1), 1 = mid (prereqFeat2 unset), 2 = end.
+   */
+  static featChainDepth(feat: {
+    prereqFeat1?: number;
+    prereqFeat2?: number;
+  }): number {
+    if (this.isUnsetPrereq(feat.prereqFeat1)) return 0;
+    if (this.isUnsetPrereq(feat.prereqFeat2)) return 1;
+    return 2;
+  }
+
+  /**
+   * Retail BuildSortedFeatList — feats with name != 0, ordered by depth ascending.
+   */
+  static buildSortedFeatIds(feats: readonly (TalentFeat | undefined | null)[]): number[] {
+    const sorted: number[] = [];
+    for (let i = 0; i < feats.length; i++) {
+      const feat = feats[i];
+      if (!feat) continue;
+      const nameRef = typeof feat.name === "number" ? feat.name : parseInt(String(feat.name), 10);
+      if (!nameRef) continue;
+
+      const depth = this.featChainDepth(feat);
+      let inserted = false;
+      for (let j = 0; j < sorted.length; j++) {
+        const other = feats[sorted[j]];
+        if (!other) continue;
+        if (depth < this.featChainDepth(other)) {
+          sorted.splice(j, 0, i);
+          inserted = true;
+          break;
+        }
+      }
+      if (!inserted) sorted.push(i);
+    }
+    return sorted;
+  }
+
+  /**
+   * Retail CreateFeatChart (in-game).
+   * Known roots only; mid/end only when HasFeat. Sparse [root, mid?, end?].
+   */
+  static createInGameFeatChart(
+    creature: SkillFlowCreature,
+    feats: readonly (TalentFeat | undefined | null)[] = [],
+  ): (TalentFeat | undefined)[][] {
+    const sorted = this.buildSortedFeatIds(feats);
+    const groups: (TalentFeat | undefined)[][] = [];
+
+    for (let si = 0; si < sorted.length; si++) {
+      const rootId = sorted[si];
+      const root = feats[rootId];
+      if (!root) continue;
+
+      if (!this.isUnsetPrereq(root.prereqFeat1)) {
+        break; // past contiguous root block
+      }
+
+      if (!creature.getHasFeat?.(rootId)) continue;
+
+      let mid: TalentFeat | undefined;
+      let end: TalentFeat | undefined;
+      for (let j = si + 1; j < sorted.length; j++) {
+        if (mid && end) break;
+        const childId = sorted[j];
+        const child = feats[childId];
+        if (!child) continue;
+        if ((child.prereqFeat1 | 0) !== rootId) continue;
+        if (!creature.getHasFeat?.(childId)) continue;
+
+        if (this.isUnsetPrereq(child.prereqFeat2)) {
+          mid = child;
+        } else {
+          end = child;
+        }
+      }
+
+      const group: (TalentFeat | undefined)[] = [root];
+      if (mid) group[1] = mid;
+      if (end) group[2] = end;
+      groups.push(group);
+    }
+
+    return groups;
+  }
+
+  /**
+   * Retail Load subradial encode.
+   * Returns the first radial key (FORCEFRIENDLY, then HOSTILE, then PASSIVE order in Load).
+   * -1 when no force menu column is set.
+   */
+  static encodeSpellSubRadial(spell: SpellSubRadialFields): number {
+    const priority = Number.isFinite(spell.forcepriority as number) && (spell.forcepriority as number) >= 0
+      ? (spell.forcepriority as number) | 0
+      : 0;
+
+    // Load builds an array; GetSubRadialSpell(0) is the first entry written.
+    // Order in Load: FRIENDLY first (if present), then HOSTILE, then PASSIVE.
+    if (Number.isFinite(spell.forcefriendly as number) && (spell.forcefriendly as number) >= 0) {
+      return ((spell.forcefriendly as number) * 5 + 1500) * 2 + priority;
+    }
+    if (Number.isFinite(spell.forcehostile as number) && (spell.forcehostile as number) >= 0) {
+      return ((spell.forcehostile as number) * 5 + 500) * 2 + priority;
+    }
+    if (Number.isFinite(spell.forcepassive as number) && (spell.forcepassive as number) >= 0) {
+      return ((spell.forcepassive as number) * 5 + 1000) * 2 + priority;
+    }
+    return -1;
+  }
+
+  /** Retail GetPriority */
+  static spellSubRadialPriority(key: number): number {
+    if (key < 0) return -1;
+    return key % 10;
+  }
+
+  /** Retail GetSlot */
+  static spellSubRadialSlot(key: number): number {
+    if (key < 0) return -1;
+    return Math.floor((key % 1000) / 10);
+  }
+
+  /** Thousands digit — hostile≈1, passive≈2, friendly≈3 */
+  static spellSubRadialFamily(key: number): number {
+    if (key < 0) return -1;
+    return Math.floor(key / 1000);
+  }
+
+  private static spellUserType(spell: TalentSpell | { userType?: number; usertype?: number }): number {
+    const raw = (spell as TalentSpell).userType ?? (spell as any).usertype;
+    const n = typeof raw === "number" ? raw : parseInt(String(raw ?? 0), 10);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  private static spellNameRef(spell: TalentSpell | { name?: number }): number {
+    const n = typeof spell.name === "number" ? spell.name : parseInt(String(spell.name ?? 0), 10);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  private static spellIdOf(spell: TalentSpell, fallbackIndex: number): number {
+    if (typeof spell.id === "number" && Number.isFinite(spell.id)) return spell.id | 0;
+    const row = (spell as any).__index ?? (spell as any).__rowlabel;
+    if (typeof row === "number" && Number.isFinite(row)) return row | 0;
+    return fallbackIndex | 0;
+  }
+
+  /**
+   * Retail BuildSortedPowerList — usertype==1, name!=0;
+   * sort by priority, then family, then slot.
+   */
+  static buildSortedPowerIds(spells: readonly (TalentSpell | undefined | null)[]): number[] {
+    const sorted: number[] = [];
+    for (let i = 0; i < spells.length; i++) {
+      const spell = spells[i];
+      if (!spell) continue;
+      if (this.spellUserType(spell) !== 1) continue;
+      if (!this.spellNameRef(spell)) continue;
+
+      const key = this.encodeSpellSubRadial(spell);
+      // Missing subradial sorts like retail unsigned 0xffffffff priority (before 0).
+      const pri = key < 0 ? -1 : this.spellSubRadialPriority(key);
+      const fam = key < 0 ? -1 : this.spellSubRadialFamily(key);
+      const slot = key < 0 ? -1 : this.spellSubRadialSlot(key);
+
+      let inserted = false;
+      for (let j = 0; j < sorted.length; j++) {
+        const other = spells[sorted[j]];
+        if (!other) continue;
+        const oKey = this.encodeSpellSubRadial(other);
+        const oPri = this.spellSubRadialPriority(oKey);
+        if (pri < oPri) {
+          sorted.splice(j, 0, i);
+          inserted = true;
+          break;
+        }
+        if (pri === oPri) {
+          const oFam = this.spellSubRadialFamily(oKey);
+          if (fam < oFam) {
+            sorted.splice(j, 0, i);
+            inserted = true;
+            break;
+          }
+          if (fam === oFam) {
+            const oSlot = this.spellSubRadialSlot(oKey);
+            if (slot < oSlot) {
+              sorted.splice(j, 0, i);
+              inserted = true;
+              break;
+            }
+          }
+        }
+      }
+      if (!inserted) sorted.push(i);
+    }
+    return sorted;
+  }
+
+  private static hasSpellKnown(creature: SkillFlowCreature, id: number): boolean {
+    return !!creature.getHasSpell?.(id);
+  }
+
+  /**
+   * Retail HasSpell with arg3 != 0:
+   * known and adjusted force cost ≤ current FP.
+   */
+  private static hasSpellAffordable(
+    creature: SkillFlowCreature,
+    spell: TalentSpell,
+    id: number,
+  ): boolean {
+    if (!this.hasSpellKnown(creature, id)) return false;
+    const cost = typeof creature.getAdjustedForcePointCost === "function"
+      ? creature.getAdjustedForcePointCost({
+          forcepoints: spell.forcepoints,
+          goodEvil: spell.goodEvil,
+        })
+      : (spell.forcepoints | 0);
+    const fp = typeof creature.getFP === "function" ? creature.getFP() : 0;
+    return cost <= fp;
+  }
+
+  /**
+   * Retail root test in CreatePowerChart: ones digit == 0, OR GetPriority < 0
+   * (no subradial → 0xffffffff → signed priority < 0).
+   */
+  static isSpellChartRoot(key: number): boolean {
+    if (key < 0) return true;
+    return this.spellSubRadialPriority(key) === 0;
+  }
+
+  /**
+   * Retail CreatePowerChart with arg2=0 (in-game abilities).
+   * Roots: known + root priority. Children: same family/slot; HasSpell afford gate.
+   * Sparse [root, mid?, end?].
+   */
+  static createInGamePowerChart(
+    creature: SkillFlowCreature,
+    spells: readonly (TalentSpell | undefined | null)[] = [],
+  ): (TalentSpell | undefined)[][] {
+    const sorted = this.buildSortedPowerIds(spells);
+    const groups: (TalentSpell | undefined)[][] = [];
+
+    for (let si = 0; si < sorted.length; si++) {
+      const rootIndex = sorted[si];
+      const root = spells[rootIndex];
+      if (!root) continue;
+
+      const rootKey = this.encodeSpellSubRadial(root);
+      // Contiguous root block ends at first mid/end (priority 1+).
+      if (!this.isSpellChartRoot(rootKey)) {
+        break;
+      }
+
+      const rootId = this.spellIdOf(root, rootIndex);
+      if (!this.hasSpellKnown(creature, rootId)) continue;
+
+      const rootFam = this.spellSubRadialFamily(rootKey);
+      const rootSlot = this.spellSubRadialSlot(rootKey);
+      let mid: TalentSpell | undefined;
+      let end: TalentSpell | undefined;
+
+      // Orphans with no force columns still get a single-slot row (no children).
+      if (rootKey >= 0) {
+        for (let j = si + 1; j < sorted.length; j++) {
+          if (mid && end) break;
+          const childIndex = sorted[j];
+          const child = spells[childIndex];
+          if (!child) continue;
+
+          const childId = this.spellIdOf(child, childIndex);
+          if (!this.hasSpellAffordable(creature, child, childId)) continue;
+
+          const childKey = this.encodeSpellSubRadial(child);
+          if (childKey < 0) continue;
+          if (this.spellSubRadialFamily(childKey) !== rootFam) continue;
+          if (this.spellSubRadialSlot(childKey) !== rootSlot) continue;
+
+          const childPri = this.spellSubRadialPriority(childKey);
+          if (childPri === 1) {
+            mid = child;
+          } else if (childPri === 2) {
+            end = child;
+          }
+        }
+      }
+
+      const group: (TalentSpell | undefined)[] = [root];
+      if (mid) group[1] = mid;
+      if (end) group[2] = end;
+      groups.push(group);
+    }
+
+    return groups;
+  }
+
 
   LBL_INFOBG: GUILabel;
   LB_DESC: GUIListBox;
@@ -190,7 +509,7 @@ export class MenuAbilities extends GameMenu {
    */
   buildFeatList(creature: ModuleCreature): any[][] {
     const feats = GameState.SWRuleSet?.feats ?? SWRuleSet.feats ?? [];
-    return createInGameFeatChart(creature, feats);
+    return MenuAbilities.createInGameFeatChart(creature, feats);
   }
 
   /**
@@ -198,7 +517,7 @@ export class MenuAbilities extends GameMenu {
    */
   buildSpellsList(creature: ModuleCreature): any[][] {
     const spells = GameState.SWRuleSet?.spells ?? SWRuleSet.spells ?? [];
-    return createInGamePowerChart(creature, spells);
+    return MenuAbilities.createInGamePowerChart(creature, spells);
   }
 
   private tlk(strRef: number): string {

@@ -110,7 +110,7 @@ export class LBL_3DView {
 
     this.control.setFillTexture(this.texture.texture);
     // this.control.getFill.material.uniforms.map.value = this.texture.texture;
-    this.control.getFill().material.uniforms.diffuse.value.setHex(0xFFFFFF);
+    this.control.setFillColor(1, 1, 1);
   }
 
   /** Retail SetViewAngle — ClassSel / MainCG / PORTCUST / Setup3DScene. */
@@ -231,7 +231,7 @@ export class LBL_3DView {
     if(this.control){
       let material = this.control.getFill().material;
       if(material instanceof THREE.ShaderMaterial){
-        material.uniforms.map.value = this.texture.texture;
+        this.control.setFillTexture(this.texture.texture);
         material.transparent = true;
         material.needsUpdate = true;
       }

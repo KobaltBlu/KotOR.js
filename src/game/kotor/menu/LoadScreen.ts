@@ -52,7 +52,7 @@ export class LoadScreen extends GameMenu {
     if(skipInit) return;
     return new Promise<void>((resolve) => {
       this.LBL_HINT.hide();
-      this.defaultTex = (this.tGuiPanel.getFill().material as THREE.ShaderMaterial)?.uniforms?.map?.value;
+      this.defaultTex = this.tGuiPanel.getFillTexture();
       resolve();
     });
   }
@@ -66,17 +66,17 @@ export class LoadScreen extends GameMenu {
       if (resref) {
         const texture = await this.loadTexture(resref);
         if (texture) {
-          (this.tGuiPanel.getFill().material as THREE.ShaderMaterial).uniforms.map.value = texture;
+          this.tGuiPanel.setFillTexture(texture);
           resolve(true);
           return;
         } else {
           const default_texture = await this.loadTexture('load_default');
           if(default_texture){
-            (this.tGuiPanel.getFill().material as THREE.ShaderMaterial).uniforms.map.value = this.defaultTex = default_texture;
+            this.tGuiPanel.setFillTexture(this.defaultTex = default_texture);
             resolve(true);
             return;
           }else if(this.defaultTex){
-            (this.tGuiPanel.getFill().material as THREE.ShaderMaterial).uniforms.map.value = this.defaultTex;
+            this.tGuiPanel.setFillTexture(this.defaultTex);
             resolve(true);
             return;
           }else{
@@ -86,7 +86,7 @@ export class LoadScreen extends GameMenu {
         }
       } else {
         if(this.defaultTex){
-          (this.tGuiPanel.getFill().material as THREE.ShaderMaterial).uniforms.map.value = this.defaultTex;
+          this.tGuiPanel.setFillTexture(this.defaultTex);
         }
         resolve(false);
         return;

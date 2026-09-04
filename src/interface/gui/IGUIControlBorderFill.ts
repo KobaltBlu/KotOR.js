@@ -9,8 +9,5 @@
  * @interface
  */
 export interface IGUIControlBorderFill {
-  texture: string,
-  material: THREE.ShaderMaterial,
-  mesh: THREE.Mesh,
-  geometry: THREE.BufferGeometry
+  texture: string;
 }

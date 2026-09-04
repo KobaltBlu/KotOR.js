@@ -53,6 +53,7 @@ export class GUISpellItem extends GUIProtoItem {
   buildFill(){}
   buildBorder(){}
   buildHighlight(){}
+  buildChrome(){}
   buildText(){}
 
   createControl(){
@@ -99,9 +100,9 @@ export class GUISpellItem extends GUIProtoItem {
         _buttonIconWidget.position.z = this.zIndex + 1;
         this.widget.add(_buttonIconWidget);
 
-        enqueueProtoTexture(this as any, backTex, this.border.fill.material, (texture) => {
+        enqueueProtoTexture(this as any, backTex, this.chrome.material, (texture) => {
           applyAbilityButtonTexture(buttonIcon, texture, locked);
-        });
+        }, 'fillMap');
 
         buttonIcon.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -162,9 +163,9 @@ export class GUISpellItem extends GUIProtoItem {
           _arrowIconWidget.position.z = this.zIndex + 1;
           this.widget.add(_arrowIconWidget);
 
-          enqueueProtoTexture(this as any, arrowTex, this.border.fill.material, (texture) => {
+          enqueueProtoTexture(this as any, arrowTex, this.chrome.material, (texture) => {
             applyAbilityButtonTexture(arrowIcon, texture, locked && !isUnknown);
-          });
+          }, 'fillMap');
         }
       }
 

@@ -23,7 +23,7 @@ export enum ClientCameraMode {
    * Same numeric value as retail FreeLook and drive-control gate.
    */
   FREELOOK = 5,
-  /** Alias — scripts / drive-input gate use mode 5 */
+  /** Alias — scripts / IngameControls drive gate use mode 5 */
   DRIVE = 5,
   /**
    * combat camera behavior — SetCombatCamera / SetCombatMode.

@@ -3,6 +3,8 @@ import type { IGUIControlBorderFill } from "@/interface/gui/IGUIControlBorderFil
 /**
  * IGUIControlBorder interface.
  * 
+ * Data-only border/highlight descriptor. Drawables live on the control chrome mesh.
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  * 
  * @file IGUIControlBorder.ts
@@ -11,17 +13,13 @@ import type { IGUIControlBorderFill } from "@/interface/gui/IGUIControlBorderFil
  * @interface
  */
 export interface IGUIControlBorder {
-  color: THREE.Color,
-  corner: string,
-  corner_material: THREE.ShaderMaterial,
-  edge: string,
-  edge_material: THREE.ShaderMaterial,
-  fill: IGUIControlBorderFill,
-  fillstyle: number,
-  geometry: THREE.BufferGeometry,
-  mesh: THREE.Mesh,
-  dimension: number,
-  inneroffset: number,
-  inneroffsety: number,
-  pulsing: number
+  color: THREE.Color;
+  corner: string;
+  edge: string;
+  fill: IGUIControlBorderFill;
+  fillstyle: number;
+  dimension: number;
+  inneroffset: number;
+  inneroffsety: number;
+  pulsing: number;
 }

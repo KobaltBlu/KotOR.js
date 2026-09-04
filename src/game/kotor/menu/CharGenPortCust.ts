@@ -226,7 +226,7 @@ export class CharGenPortCust extends GameMenu {
         console.error(e);
       }
     });
-    (control.getFill().material as THREE.ShaderMaterial).uniforms.map.value = this._3dView.texture.texture;
+    control.setFillTexture(this._3dView.texture.texture);
     (control.getFill().material as THREE.ShaderMaterial).transparent = false;
     (control.getFill().material as THREE.ShaderMaterial).blending = 1;
   }

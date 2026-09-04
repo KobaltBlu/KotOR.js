@@ -7,10 +7,18 @@ import { TextureType } from "@/enums/loaders/TextureType";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { GameState } from "@/GameState";
 import { IGUIControlBorder } from "@/interface/gui/IGUIControlBorder";
+import type { GUIChromeMapSlot } from "@/interface/gui/IGUIControlChrome";
 import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import { GUIControlType } from "@/enums/gui/GUIControlType";
 import { GUIControlAlignment } from "@/enums/gui/GUIControlAlignment";
-import { asExtentInt, truncDiv, writeOrthoAlignedPlanePositions } from "@/gui/GUICoord";
+import { asExtentInt, truncDiv } from "@/gui/GUICoord";
+import {
+  bindChromeTexture,
+  GUI_CHROME_REGION_FILL,
+  layoutOrthoPlanePositions,
+  mergeChromePlanes,
+  stampRegionAttribute,
+} from "@/gui/guiChrome";
 
 /** K1 options checkbox fixed glyph size (`0x19`). */
 const OPTIONS_CHECKBOX_SIZE = 0x19;
@@ -25,6 +33,8 @@ const OPTIONS_TEXT_OFFSET = 0x1e;
  * Maps to K1 button-toggle controls. Tags starting with `CB_` use the
  * options-checkbox SetExtent layout (fixed 25×25 glyph + label strip).
  * 
+ * Selected vs unselected textures are rebound onto the shared chrome material.
+ * 
  * @file GUICheckBox.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -38,6 +48,8 @@ export class GUICheckBox extends GUIControl{
   hasSelected: boolean;
   hashighlightSelected: boolean;
 
+  private _texCache: Partial<Record<string, OdysseyTexture>> = {};
+
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
     this.objectType |= GUIControlTypeMask.GUICheckBox;
@@ -45,179 +57,29 @@ export class GUICheckBox extends GUIControl{
 
     this.value = 0;
 
-    this.widget.userData.selected = new THREE.Group();
-    this.widget.userData.highlightSelected = new THREE.Group();
-    this.widget.add(this.widget.userData.selected);
-    this.widget.add(this.widget.userData.highlightSelected);
-
-    //----------//
-    // Selected
-    //----------//
-
     this.borderSelected = {
       color: new THREE.Color(0, 0.658824, 0.980392),
       corner: '',
-      corner_material: {} as THREE.ShaderMaterial,
       edge: '',
-      edge_material: {} as THREE.ShaderMaterial,
-      fill: {
-        texture: '',
-        material: {} as THREE.ShaderMaterial,
-        mesh: {} as THREE.Mesh,
-        geometry: {} as THREE.BufferGeometry,
-      },
-      mesh: {} as THREE.Mesh,
-      geometry: {} as THREE.BufferGeometry,
+      fill: { texture: '' },
       fillstyle: -1,
       dimension: 0,
       inneroffset: 0,
       inneroffsety: 0,
       pulsing: 0
     };
-
-    this.borderSelected.geometry = new THREE.BufferGeometry();
-    
-    this.borderSelected.edge_material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
-      vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
-      side: THREE.FrontSide,
-      fog: false,
-      visible: true,
-      defines: {
-        GUI_SORT: ''
-      }
-    });
-    this.borderSelected.edge_material.defines.USE_MAP = '';
-    this.borderSelected.edge_material.uniforms.diffuse.value = this.borderSelected.color;
-
-    this.borderSelected.corner_material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
-      vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
-      side: THREE.FrontSide,
-      fog: false,
-      visible: true,
-      defines: {
-        GUI_SORT: ''
-      }
-    });
-    //this.borderSelected.corner_material.defines.USE_MAP = '';
-    this.borderSelected.corner_material.uniforms.diffuse.value = this.borderSelected.color;
-
-    this.borderSelected.mesh = new THREE.Mesh( this.borderSelected.geometry, [this.borderSelected.edge_material, this.borderSelected.corner_material] );
-    this.widget.userData.selected.add(this.borderSelected.mesh);
-
-    //---------------//
-    // Selected Fill
-    //---------------//
-    
-    this.borderSelected.fill.material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
-      vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
-      side: THREE.FrontSide,
-      fog: false,
-      visible: true,
-      defines: {
-        GUI_SORT: ''
-      }
-    });
-    //this.borderSelected.fill.material.defines.USE_MAP = '';
-    this.borderSelected.fill.material.uniforms.diffuse.value = new THREE.Color(0xFFFFFF);
-    this.borderSelected.fill.geometry = new THREE.PlaneGeometry( 1, 1, 1 );
-    this.borderSelected.fill.mesh = new THREE.Mesh( this.borderSelected.fill.geometry, this.borderSelected.fill.material );
-
-    this.widget.userData.selected.add( this.borderSelected.fill.mesh );
-
-    //--------------------//
-    // Highlight Selected
-    //--------------------//
 
     this.highlightSelected = {
       color: new THREE.Color(0, 0.658824, 0.980392),
       corner: '',
-      corner_material: {} as THREE.ShaderMaterial,
       edge: '',
-      edge_material: {} as THREE.ShaderMaterial,
-      fill: {
-        texture: '',
-        material: {} as THREE.ShaderMaterial,
-        mesh: {} as THREE.Mesh,
-        geometry: {} as THREE.BufferGeometry,
-      },
-      mesh: {} as THREE.Mesh,
-      geometry: {} as THREE.BufferGeometry,
+      fill: { texture: '' },
       fillstyle: -1,
       dimension: 0,
       inneroffset: 0,
       inneroffsety: 0,
       pulsing: 0
     };
-
-    this.highlightSelected.geometry = new THREE.BufferGeometry();
-    
-    this.highlightSelected.edge_material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
-      vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
-      side: THREE.FrontSide,
-      fog: false,
-      visible: true
-    });
-    this.highlightSelected.edge_material.defines.USE_MAP = '';
-    this.highlightSelected.edge_material.uniforms.diffuse.value = this.highlightSelected.color;
-
-    this.highlightSelected.corner_material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
-      vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
-      side: THREE.FrontSide,
-      fog: false,
-      visible: true,
-      defines: {
-        GUI_SORT: ''
-      }
-    });
-    //this.highlightSelected.corner_material.defines.USE_MAP = '';
-    this.highlightSelected.corner_material.uniforms.diffuse.value = this.highlightSelected.color;
-
-    this.highlightSelected.mesh = new THREE.Mesh( this.highlightSelected.geometry, [this.highlightSelected.edge_material, this.highlightSelected.corner_material] );
-    this.widget.userData.highlightSelected.add(this.highlightSelected.mesh);
-
-    //-------------------------//
-    // Highlight Selected Fill
-    //-------------------------//
-    
-    this.highlightSelected.fill.material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
-      vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
-      side: THREE.FrontSide,
-      fog: false,
-      visible: true,
-      defines: {
-        GUI_SORT: ''
-      }
-    });
-    //this.highlightSelected.fill.material.defines.USE_MAP = '';
-    this.highlightSelected.fill.material.uniforms.diffuse.value = new THREE.Color(0xFFFFFF);
-    this.highlightSelected.fill.geometry = new THREE.PlaneGeometry( 1, 1, 1 );
-    this.highlightSelected.fill.mesh = new THREE.Mesh( this.highlightSelected.fill.geometry, this.highlightSelected.fill.material );
-
-    this.widget.userData.highlightSelected.add( this.highlightSelected.fill.mesh );
 
     if(this.control instanceof GFFStruct){
       
@@ -232,7 +94,7 @@ export class GUICheckBox extends GUIControl{
         }
 
         if(typeof this.borderSelected.color === 'undefined'){
-          this.borderSelected.color = new THREE.Color(1, 1, 1); //this.defaultColor;
+          this.borderSelected.color = new THREE.Color(1, 1, 1);
         }
 
         this.borderSelected.dimension = selected.getFieldByLabel('DIMENSION').getValue() || 0;
@@ -259,7 +121,7 @@ export class GUICheckBox extends GUIControl{
         }
 
         if(typeof this.highlightSelected.color === 'undefined'){
-          this.highlightSelected.color = new THREE.Color(1, 1, 1); //this.defaultColor;
+          this.highlightSelected.color = new THREE.Color(1, 1, 1);
         }
 
         this.highlightSelected.dimension = highlightSelected.getFieldByLabel('DIMENSION').getValue() || 0;
@@ -281,97 +143,9 @@ export class GUICheckBox extends GUIControl{
 
     }
 
-    //Control Textures
+    this.preloadSelectedTextures();
 
-    //----------//
-    // Selected
-    //----------//
-
-    if(this.borderSelected.edge != ''){
-      TextureLoader.enQueue(this.borderSelected.edge, this.borderSelected.edge_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-        if(!texture){
-          console.log('initTextures', this.borderSelected.edge, texture);
-          return;
-        }
-
-        texture.wrapS = THREE.ClampToEdgeWrapping;
-        texture.wrapT = THREE.ClampToEdgeWrapping;
-        this.layoutCheckboxFills();
-      });
-    }
-
-    if(this.borderSelected.corner != ''){
-      TextureLoader.enQueue(this.borderSelected.corner, this.borderSelected.corner_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-        if(!texture){
-          console.log('initTextures', this.borderSelected.corner, texture);
-          return;
-        }
-
-        texture.wrapS = THREE.ClampToEdgeWrapping;
-        texture.wrapT = THREE.ClampToEdgeWrapping;
-      });
-    }
-
-    if(this.borderSelected.fill.texture != ''){
-      this.borderSelected.fill.material.transparent = true;
-      TextureLoader.enQueue(this.borderSelected.fill.texture, this.borderSelected.fill.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-        if(texture == null){
-          this.borderSelected.fill.material.uniforms.opacity.value = 0.01;
-        }
-      });
-    }else{
-      this.borderSelected.fill.material.visible = false;
-    }
-
-    //--------------------//
-    // Highlight Selected
-    //--------------------//
-
-    if(this.highlightSelected.edge != ''){
-      TextureLoader.enQueue(this.highlightSelected.edge, this.highlightSelected.edge_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-        if(!texture){
-          console.log('initTextures', this.highlightSelected.edge, texture);
-          return;
-        }
-
-        texture.wrapS = THREE.ClampToEdgeWrapping;
-        texture.wrapT = THREE.ClampToEdgeWrapping;
-      });
-    }
-
-    if(this.highlightSelected.corner != ''){
-      TextureLoader.enQueue(this.highlightSelected.corner, this.highlightSelected.corner_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-        if(!texture){
-          console.log('initTextures', this.highlightSelected.corner, texture);
-          return;
-        }
-
-        texture.wrapS = THREE.ClampToEdgeWrapping;
-        texture.wrapT = THREE.ClampToEdgeWrapping;
-      });
-    }
-
-    if(this.highlightSelected.fill.texture != ''){
-      this.highlightSelected.fill.material.transparent = true;
-      TextureLoader.enQueue(this.highlightSelected.fill.texture, this.highlightSelected.fill.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-        if(texture == null){
-          this.highlightSelected.fill.material.uniforms.opacity.value = 0.01;
-        }
-        this.layoutCheckboxFills();
-      });
-    }else{
-      this.highlightSelected.fill.material.visible = false;
-    }
-
-    //Control Input Events
-
-    //Selected
-    this.attachEventListenters( this.borderSelected.mesh );
-
-    //Highlight Selected
-    this.attachEventListenters( this.highlightSelected.mesh );
-
-    this.addEventListener( 'mouseMove', (e: any) => { });
+    this.addEventListener( 'mouseMove', (_e: any) => { });
 
     this.addEventListener( 'click', () =>{
       this.setValue(!this.value);
@@ -383,11 +157,40 @@ export class GUICheckBox extends GUIControl{
 
     this.addEventListener( 'mouseUp', () => { });
 
-    this.borderSelected.fill.material.uniforms.diffuse.value.set(this.defaultColor);
-    this.highlightSelected.fill.material.uniforms.diffuse.value.set(this.defaultHighlightColor);
-
-    this.layoutCheckboxFills();
     this.updateCBVisualState();
+  }
+
+  private enqueueNamed(name: string, onLoad?: (texture: OdysseyTexture) => void){
+    if(!name) return;
+    TextureLoader.enQueue(name, this.chrome.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
+      if(texture){
+        texture.wrapS = THREE.ClampToEdgeWrapping;
+        texture.wrapT = THREE.ClampToEdgeWrapping;
+        this._texCache[name.toLowerCase()] = texture;
+      }
+      onLoad?.(texture);
+    });
+  }
+
+  private preloadSelectedTextures(){
+    this.enqueueNamed(this.borderSelected.edge);
+    this.enqueueNamed(this.borderSelected.corner);
+    this.enqueueNamed(this.borderSelected.fill.texture, () => this.updateCBVisualState());
+    this.enqueueNamed(this.highlightSelected.edge);
+    this.enqueueNamed(this.highlightSelected.corner);
+    this.enqueueNamed(this.highlightSelected.fill.texture, () => this.updateCBVisualState());
+  }
+
+  private texFor(name: string): OdysseyTexture | null {
+    if(!name) return null;
+    return this._texCache[name.toLowerCase()]
+      ?? TextureLoader.textures.get(name.toLowerCase())
+      ?? TextureLoader.guiTextures.get(name.toLowerCase())
+      ?? null;
+  }
+
+  private bindSlot(slot: GUIChromeMapSlot, name: string){
+    bindChromeTexture(this.chrome.material, slot, this.texFor(name));
   }
 
   /**
@@ -418,57 +221,27 @@ export class GUICheckBox extends GUIControl{
     );
   }
 
-  layoutCheckboxFills(){
-    if(!this.isOptionsStyleLayout()){
+  buildChrome(){
+    if(this.isOptionsStyleLayout()){
+      const cbSize = this.getCBScale();
+      const center = this.getOptionsCheckboxCenter();
+      const plane = new THREE.PlaneGeometry(1, 1, 1) as THREE.BufferGeometry;
+      layoutOrthoPlanePositions(plane, cbSize, cbSize);
+      plane.translate(center.x, center.y, this.zOffset);
+      stampRegionAttribute(plane, GUI_CHROME_REGION_FILL);
+
+      if(this.chrome.geometry instanceof THREE.BufferGeometry){
+        this.chrome.geometry.dispose();
+      }
+      this.chrome.geometry = mergeChromePlanes([plane]);
+      if(this.chrome.mesh){
+        this.chrome.mesh.geometry = this.chrome.geometry;
+        this.chrome.mesh.position.z = this.zOffset;
+      }
+      plane.dispose();
       return;
     }
-
-    const cbSize = this.getCBScale();
-    const center = this.getOptionsCheckboxCenter();
-    const fills = [
-      this.border.fill.mesh,
-      this.borderSelected.fill.mesh,
-      this.highlight.fill.mesh,
-      this.highlightSelected.fill.mesh,
-    ];
-
-    for(const mesh of fills){
-      if(!mesh) continue;
-      // Odd 25×25 glyph: int frustum edges, not float ±scale/2
-      mesh.scale.set(1, 1, 1);
-      const pos = (mesh.geometry as THREE.BufferGeometry).getAttribute('position') as THREE.BufferAttribute;
-      if(pos && pos.count >= 4){
-        writeOrthoAlignedPlanePositions(pos, cbSize, cbSize);
-        (mesh.geometry as THREE.BufferGeometry).computeBoundingBox();
-      }
-      mesh.position.set(center.x, center.y, this.zOffset);
-    }
-  }
-
-  buildFill(){
-    super.buildFill();
-    if(this.isOptionsStyleLayout()){
-      this.layoutCheckboxFills();
-      this.border.fill.material.uniforms.diffuse.value.set(this.defaultColor);
-    }
-  }
-
-  buildHighlightFill(){
-    super.buildHighlightFill();
-    if(this.isOptionsStyleLayout()){
-      this.layoutCheckboxFills();
-      this.highlight.fill.material.uniforms.diffuse.value.set(this.defaultHighlightColor);
-    }
-  }
-
-  resizeFill(){
-    super.resizeFill();
-    this.layoutCheckboxFills();
-  }
-
-  resizeHighlightFill(){
-    super.resizeHighlightFill();
-    this.layoutCheckboxFills();
+    super.buildChrome();
   }
 
   /** Options text lives in `(left+0x1e, top, width-0x1e, height)` — not the border inner rect. */
@@ -514,8 +287,6 @@ export class GUICheckBox extends GUIControl{
 
   hideHighlight(){
     if(this.isOptionsStyleLayout()){
-      // Options style: edges stay off; fill visibility is owned by updateCBVisualState.
-      if(this.highlight.mesh) this.highlight.mesh.visible = false;
       return;
     }
     super.hideHighlight();
@@ -523,7 +294,6 @@ export class GUICheckBox extends GUIControl{
 
   hideBorder(){
     if(this.isOptionsStyleLayout()){
-      if(this.border.mesh) this.border.mesh.visible = false;
       return;
     }
     super.hideBorder();
@@ -545,7 +315,6 @@ export class GUICheckBox extends GUIControl{
 
   showBorder(){
     if(this.isOptionsStyleLayout()){
-      if(this.border.mesh) this.border.mesh.visible = false;
       return;
     }
     super.showBorder();
@@ -553,7 +322,6 @@ export class GUICheckBox extends GUIControl{
 
   showHighlight(){
     if(this.isOptionsStyleLayout()){
-      if(this.highlight.mesh) this.highlight.mesh.visible = false;
       return;
     }
     super.showHighlight();
@@ -574,40 +342,37 @@ export class GUICheckBox extends GUIControl{
   }
 
   updateCBVisualState(){
-    this.border.fill.mesh.visible = false;
-    this.borderSelected.fill.mesh.visible = false;
-    this.highlight.fill.mesh.visible = false;
-    this.highlightSelected.fill.mesh.visible = false;
+    const borderSrc = this.value ? this.borderSelected : this.border;
+    const highlightSrc = this.value ? this.highlightSelected : this.highlight;
+
+    this.bindSlot('edgeMap', borderSrc.edge);
+    this.bindSlot('cornerMap', borderSrc.corner);
+    this.bindSlot('fillMap', borderSrc.fill.texture);
+    this.bindSlot('highlightEdgeMap', highlightSrc.edge);
+    this.bindSlot('highlightCornerMap', highlightSrc.corner);
+    this.bindSlot('highlightFillMap', highlightSrc.fill.texture);
+
+    this.chrome.material.uniforms.diffuse.value.copy(borderSrc.color);
+    this.chrome.material.uniforms.highlightDiffuse.value.copy(
+      this.value ? this.highlightSelected.color : this.defaultHighlightColor
+    );
+    this.chrome.material.uniforms.fillDiffuse.value.copy(
+      this.isOptionsStyleLayout() ? this.defaultColor : new THREE.Color(1, 1, 1)
+    );
 
     if(this.isOptionsStyleLayout()){
-      // K1 OptionsCheckbox: only the 25×25 fills draw; chrome edges stay off.
-      if(this.border.mesh) this.border.mesh.visible = false;
-      if(this.highlight.mesh) this.highlight.mesh.visible = false;
-      if(this.borderSelected.mesh) this.borderSelected.mesh.visible = false;
-      if(this.highlightSelected.mesh) this.highlightSelected.mesh.visible = false;
-      this.layoutCheckboxFills();
+      this.borderEnabled = false;
+      this.highlightEnabled = false;
+      this.borderFillEnabled = true;
+      this.highlightFillEnabled = true;
     }
 
-    if(this.hover){
-      if(this.value){
-        this.highlightSelected.fill.mesh.visible = true;
-      }else{
-        this.highlight.fill.mesh.visible = true;
-      }
-    }else{
-      if(this.value){
-        this.borderSelected.fill.mesh.visible = true;
-      }else{
-        this.border.fill.mesh.visible = true;
-      }
-    }
-
+    this.applyChromeHoverState(!!this.hover);
     this.list?.markListRttDirty?.();
   }
 
   _onCreate(){
     super._onCreate();
-    this.layoutCheckboxFills();
     this.updateCBVisualState();
     if(this.isOptionsStyleLayout() && this.text?.mesh){
       this.alignText();

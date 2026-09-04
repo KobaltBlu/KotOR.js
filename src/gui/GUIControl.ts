@@ -3,6 +3,7 @@ import { Anchor } from "@/enums/gui/Anchor";
 import { GUIControlAlignment } from "@/enums/gui/GUIControlAlignment";
 import { IDPadTarget } from "@/interface/gui/IDPadTarget";
 import { IGUIControlBorder } from "@/interface/gui/IGUIControlBorder";
+import type { GUIChromeMapSlot, IGUIControlChrome } from "@/interface/gui/IGUIControlChrome";
 import { IGUIControlEventListeners } from "@/interface/gui/IGUIControlEventListeners";
 import { IGUIControlExtent } from "@/interface/gui/IGUIControlExtent";
 import { IGUIControlMoveTo } from "@/interface/gui/IGUIControlMoveTo";
@@ -13,7 +14,6 @@ import { TextureLoader } from "@/loaders";
 import { TextureType } from "@/enums/loaders/TextureType";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { GameEngineType } from "@/enums/engine";
-import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { KeyMapper, Mouse } from "@/controls";
 import { IGUIControlColors } from "@/interface/gui/IGUIControlColors";
 import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
@@ -29,7 +29,9 @@ import { GFFField } from "@/resource/GFFField";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import {
   asExtentInt,
+  asGuiSize,
   centeredExtentMax,
+  clampFrameDim,
   extentToCenteredPosition,
   getLocalMouseCoords,
   GUI_DESIGN_HEIGHT,
@@ -42,12 +44,22 @@ import {
   applyPanelOffsetToLetterboxLocal,
   selectTopmostHitChildIndex,
   truncDiv,
-  writeOrthoAlignedPlanePositions,
 } from "@/gui/GUICoord";
 import { borderInnerExtent } from "@/gui/borderInnerExtent";
 import { borderSideExtent } from "@/gui/borderSideExtent";
 import { ResolutionManager } from "@/managers/ResolutionManager";
 import { createGuiControlStruct, isTslGuiGame } from "@/gui/guiControlSchema";
+import {
+  bindChromeTexture,
+  chromeFrameDimension,
+  createGuiChrome,
+  GUI_CHROME_REGION_CORNER,
+  GUI_CHROME_REGION_EDGE,
+  GUI_CHROME_REGION_FILL,
+  layoutOrthoPlanePositions,
+  mergeChromePlanes,
+  stampRegionAttribute,
+} from "@/gui/guiChrome";
 
 const itemSize = 2
 const box = { min: [0, 0], max: [0, 0] }
@@ -171,6 +183,8 @@ export class GUIControl {
 
   border: IGUIControlBorder;
   highlight: IGUIControlBorder;
+  /** Single chrome drawable (frame + fill). Border/highlight are data only. */
+  chrome: IGUIControlChrome;
   text: IGUIControlText;
   hasText: boolean;
   hasBorder: boolean;
@@ -265,14 +279,12 @@ export class GUIControl {
     this.opacity = 1;
     this.hover = false;
 
-    this.widget.userData.border = new THREE.Group();
-    this.widget.userData.highlight = new THREE.Group();
+    this.widget.userData.chrome = new THREE.Group();
     this.widget.userData.fill = new THREE.Group();
     this.widget.userData.text = new THREE.Group();
 
-    this.widget.add(this.widget.userData.border);
-    this.widget.add(this.widget.userData.highlight);
-    this.widget.add(this.widget.userData.fill);
+    this.widget.add(this.widget.userData.chrome);
+    //this.widget.add(this.widget.userData.fill);
     this.widget.add(this.widget.userData.text);
 
     this.initObjects();
@@ -295,23 +307,16 @@ export class GUIControl {
     };
 
     //--------//
-    // Border
+    // Border (data)
     //--------//
 
     this.border = {
       color: new THREE.Color(this.defaultColor),
       corner: '',
-      corner_material: {} as THREE.ShaderMaterial,
       edge: '',
-      edge_material: {} as THREE.ShaderMaterial,
       fill: {
-        geometry: {} as THREE.BufferGeometry,
-        material: {} as THREE.ShaderMaterial,
-        mesh: {} as THREE.Mesh,
         texture: '',
       },
-      geometry: {} as THREE.BufferGeometry,
-      mesh: {} as THREE.Mesh,
       fillstyle: -1,
       dimension: 0,
       inneroffset: 0,
@@ -319,88 +324,17 @@ export class GUIControl {
       pulsing: 0
     };
 
-    this.border.geometry = new THREE.BufferGeometry();
-    
-    this.border.edge_material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
-      vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
-      side: THREE.FrontSide,
-      fog: false,
-      visible: true,
-      defines: {
-        GUI_SORT: ''
-      }
-    });
-    //this.border.edge_material.defines.USE_UV = '';
-    //this.border.edge_material.defines.USE_MAP = '';
-    this.border.edge_material.uniforms.diffuse.value = this.border.color;
-
-    this.border.corner_material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
-      vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
-      side: THREE.FrontSide,
-      fog: false,
-      visible: true,
-      defines: {
-        GUI_SORT: ''
-      }
-    });
-    //this.border.corner_material.defines.USE_UV = '';
-    //this.border.corner_material.defines.USE_MAP = '';
-    this.border.corner_material.uniforms.diffuse.value = this.border.color;
-
-    this.border.mesh = new THREE.Mesh( this.border.geometry, [this.border.edge_material, this.border.corner_material] );
-    this.widget.userData.border.add(this.border.mesh);
-
-    //-------------//
-    // Border Fill
-    //-------------//
-    
-    this.border.fill.material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
-      vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
-      side: THREE.FrontSide,
-      fog: false,
-      visible: true,
-      defines: {
-        GUI_SORT: ''
-      }
-    });
-    //this.border.fill.material.defines.USE_UV = '';
-    //this.border.fill.material.defines.USE_MAP = '';
-    this.border.fill.material.uniforms.diffuse.value = new THREE.Color(0xFFFFFF);
-    this.border.fill.geometry = new THREE.PlaneGeometry( 1, 1, 1 ) as THREE.BufferGeometry;
-    this.border.fill.mesh = new THREE.Mesh( this.border.fill.geometry, this.border.fill.material );
-
-    this.widget.userData.border.add( this.border.fill.mesh );
-
     //-----------//
-    // Highlight
+    // Highlight (data)
     //-----------//
 
     this.highlight = {
       color: new THREE.Color(this.defaultHighlightColor),
       corner: '',
-      corner_material: {} as THREE.ShaderMaterial,
       edge: '',
-      edge_material: {} as THREE.ShaderMaterial,
       fill: {
-        geometry: {} as THREE.BufferGeometry,
-        material: {} as THREE.ShaderMaterial,
-        mesh: {} as THREE.Mesh,
         texture: '',
       },
-      geometry: {} as THREE.BufferGeometry,
-      mesh: {} as THREE.Mesh,
       fillstyle: -1,
       dimension: 0,
       inneroffset: 0,
@@ -408,66 +342,14 @@ export class GUIControl {
       pulsing: 0
     };
 
-    this.highlight.geometry = new THREE.BufferGeometry();
+    //--------//
+    // Chrome
+    //--------//
 
-    this.highlight.edge_material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
-      vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
-      side: THREE.FrontSide,
-      fog: false,
-      visible: true,
-      defines: {
-        GUI_SORT: ''
-      }
-    });
-    //this.highlight.edge_material.defines.USE_MAP = '';
-    this.highlight.edge_material.uniforms.diffuse.value = this.highlight.color;
-
-    this.highlight.corner_material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
-      vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
-      side: THREE.FrontSide,
-      fog: false,
-      visible: true,
-      defines: {
-        GUI_SORT: ''
-      }
-    });
-    //this.highlight.corner_material.defines.USE_MAP = '';
-    this.highlight.corner_material.uniforms.diffuse.value = this.highlight.color;
-
-    this.highlight.mesh = new THREE.Mesh( this.highlight.geometry, [this.highlight.edge_material, this.highlight.corner_material] );
-    this.widget.userData.highlight.add(this.highlight.mesh);
-
-    //----------------//
-    // Highlight Fill
-    //----------------//
-    
-    this.highlight.fill.material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
-      vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
-      side: THREE.FrontSide,
-      fog: false,
-      visible: true,
-      defines: {
-        GUI_SORT: ''
-      }
-    });
-    //this.highlight.fill.material.defines.USE_MAP = '';
-    this.highlight.fill.material.uniforms.diffuse.value = new THREE.Color(0xFFFFFF);
-    this.highlight.fill.geometry = new THREE.PlaneGeometry( 1, 1, 1 );
-    this.highlight.fill.mesh = new THREE.Mesh( this.highlight.fill.geometry, this.highlight.fill.material );
-
-    this.widget.userData.highlight.add( this.highlight.fill.mesh );
+    this.chrome = createGuiChrome();
+    this.chrome.material.uniforms.diffuse.value = this.border.color;
+    this.chrome.material.uniforms.highlightDiffuse.value = this.highlight.color;
+    this.widget.userData.chrome.add(this.chrome.mesh);
 
     //------//
     // Text
@@ -554,47 +436,12 @@ export class GUIControl {
   }
 
   initInputListeners(){
-    //---------//
-    //  Border
-    //---------//
-
-    if(this.border.mesh){
-      this.border.mesh.name = 'GUIBorder';
-      this.border.mesh.position.z = this.zOffset;
-      this.attachEventListenters( this.border.mesh );
+    if(this.chrome?.mesh){
+      this.chrome.mesh.name = 'GUIChrome';
+      this.chrome.mesh.position.z = this.zOffset;
+      this.chrome.mesh.renderOrder = this.id;
+      this.attachEventListenters( this.chrome.mesh );
     }
-
-    //-------------//
-    // Border Fill
-    //-------------//
-
-    if(this.border.fill.mesh){
-      this.border.fill.mesh.renderOrder = this.id;
-      this.attachEventListenters( this.border.fill.mesh );
-    }
-
-    //-----------//
-    // Highlight
-    //-----------//
-
-    if(this.highlight.mesh){
-      this.highlight.mesh.name = 'GUIHighlight';
-      this.highlight.mesh.position.z = this.zOffset;
-      this.attachEventListenters( this.highlight.mesh );
-    }
-
-    //----------------//
-    // Highlight Fill
-    //----------------//
-    
-    if(this.highlight.fill.mesh){
-      this.highlight.fill.mesh.renderOrder = this.id;
-      this.attachEventListenters( this.highlight.fill.mesh );
-    }
-
-    //------//
-    // Text
-    //------//
 
     if(this.text.mesh){
       this.text.mesh.name = 'GUIText';
@@ -774,9 +621,10 @@ export class GUIControl {
         if(border.hasField('COLOR')){
           let color = border.getFieldByLabel('COLOR')?.getVector();
           if(color && (color.x * color.y * color.z) < 1 ){
-            if(this.border.color && this.border.fill.material){
+            if(this.border.color){
               this.border.color.setRGB(color.x, color.y, color.z);
-              this.border.fill.material.uniforms.diffuse.value.set(this.border.color);
+              this.chrome.material.uniforms.diffuse.value.set(this.border.color);
+              this.chrome.material.uniforms.fillDiffuse.value.set(this.border.color);
             }
           }
         }
@@ -837,9 +685,9 @@ export class GUIControl {
         if(highlight.hasField('COLOR')){
           let color = highlight.getFieldByLabel('COLOR')?.getVector();
           if(color && (color.x * color.y * color.z) < 1 ){
-            if(this.highlight.color && this.highlight.fill.material){
+            if(this.highlight.color){
               this.highlight.color.setRGB(color.x, color.y, color.z);
-              this.highlight.fill.material.uniforms.diffuse.value.set(this.highlight.color);
+              this.chrome.material.uniforms.highlightDiffuse.value.set(this.highlight.color);
             }
           }
         }
@@ -859,6 +707,7 @@ export class GUIControl {
           this.highlight.inneroffsety = highlight.getFieldByLabel('INNEROFFSETY')?.getValue();
 
         this.highlight.pulsing = highlight.getFieldByLabel('PULSING')?.getValue() || 0;
+        this.chrome.material.uniforms.highlightDiffuse.value.copy(this.highlight.color);
       }
     }
 
@@ -877,93 +726,56 @@ export class GUIControl {
 
   initTextures(){
 
+    const enqueueChrome = (name: string, slot: GUIChromeMapSlot, onReady?: (texture: OdysseyTexture) => void) => {
+      if(!name) return;
+      this._beginTextureLoad();
+      TextureLoader.enQueue(name, this.chrome.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
+        if(!texture){
+          bindChromeTexture(this.chrome.material, slot, null);
+          this.syncChromeEnableFlags();
+          this._endTextureLoad();
+          return;
+        }
+        texture.wrapS = THREE.ClampToEdgeWrapping;
+        texture.wrapT = THREE.ClampToEdgeWrapping;
+        texture.anisotropy = 1;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.needsUpdate = true;
+        bindChromeTexture(this.chrome.material, slot, texture);
+        onReady?.(texture);
+        this.syncChromeEnableFlags();
+        this._endTextureLoad();
+      }, undefined, slot);
+    };
+
+    // Enable chrome layers from GFF texture names immediately (do not wait on async load,
+    // and do not clear frame when only one of edge/corner is empty).
+    this.borderEnabled = !!(this.border.edge || this.border.corner);
+    this.borderFillEnabled = !!this.border.fill.texture;
+    this.highlightEnabled = !!(this.highlight.edge || this.highlight.corner);
+    this.highlightFillEnabled = !!this.highlight.fill.texture;
+
     //--------//
     // Border
     //--------//
 
     if(this.border.edge != ''){
-      this.border.edge_material.visible = false;
-      this._beginTextureLoad();
-      TextureLoader.enQueue(this.border.edge, this.border.edge_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-        if(!texture){
-          console.log('initTextures', this.border.edge, texture);
-          this._endTextureLoad();
-          return;
-        }
-
-        texture.wrapS = THREE.ClampToEdgeWrapping;
-        texture.wrapT = THREE.ClampToEdgeWrapping;
-        texture.anisotropy = 1;
-        texture.minFilter = THREE.LinearFilter;
-        texture.magFilter = THREE.LinearFilter;
-        if(!this.border.edge_material.transparent){
-          this.border.mesh.renderOrder = 0;
-        }
-        texture.needsUpdate = true;
-        this.border.edge_material.visible = true;
-        if(typeof this.borderEnabled == 'undefined')
-          this.borderEnabled = true;
-        this._endTextureLoad();
-      });
+      enqueueChrome(this.border.edge, 'edgeMap');
     }else{
-      this.border.edge_material.visible = false;
-      this.borderEnabled = false;
+      bindChromeTexture(this.chrome.material, 'edgeMap', null);
     }
 
     if(this.border.corner != ''){
-      this.border.corner_material.visible = false;
-      this._beginTextureLoad();
-      TextureLoader.enQueue(this.border.corner, this.border.corner_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-        if(!texture){
-          console.log('initTextures', this.border.corner, texture);
-          this._endTextureLoad();
-          return;
-        }
-
-        texture.wrapS = THREE.ClampToEdgeWrapping;
-        texture.wrapT = THREE.ClampToEdgeWrapping;
-        texture.anisotropy = 1;
-        texture.minFilter = THREE.LinearFilter;
-        texture.magFilter = THREE.LinearFilter;
-        if(!this.border.corner_material.transparent){
-          this.border.mesh.renderOrder = 0;
-        }
-        texture.needsUpdate = true;
-        this.border.corner_material.visible = true;
-        if(typeof this.borderEnabled == 'undefined')
-          this.borderEnabled = true;
-        this._endTextureLoad();
-      });
+      enqueueChrome(this.border.corner, 'cornerMap');
     }else{
-      this.border.corner_material.visible = false;
-      this.borderEnabled = false;
+      bindChromeTexture(this.chrome.material, 'cornerMap', null);
     }
 
     if(this.border.fill.texture != ''){
-      this.border.fill.material.visible = false;
-      this._beginTextureLoad();
-      TextureLoader.enQueue(this.border.fill.texture, this.border.fill.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-        if(!(texture)){
-          this.border.fill.material.visible = false;
-          this._endTextureLoad();
-          return;
-        }
-
-        texture.anisotropy = 1;
-        texture.minFilter = THREE.LinearFilter;
-        texture.magFilter = THREE.LinearFilter;
-        if(!this.border.fill.material.transparent){
-          this.border.fill.mesh.renderOrder = 0;
-        }
-        texture.needsUpdate = true;
-        this.border.fill.material.visible = true;
-        if(typeof this.borderFillEnabled == 'undefined')
-          this.borderFillEnabled = true;
-        this._endTextureLoad();
-      });
+      enqueueChrome(this.border.fill.texture, 'fillMap');
     }else{
-      this.border.fill.material.visible = false;
-      this.borderFillEnabled = false;
+      bindChromeTexture(this.chrome.material, 'fillMap', null);
     }
 
     //-----------//
@@ -971,90 +783,24 @@ export class GUIControl {
     //-----------//
 
     if(this.highlight.edge != ''){
-      this.highlight.edge_material.visible = false;
-      this._beginTextureLoad();
-      TextureLoader.enQueue(this.highlight.edge, this.highlight.edge_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-        if(!texture){
-          console.log('initTextures', this.highlight.edge, texture);
-          this._endTextureLoad();
-          return;
-        }
-
-        texture.wrapS = THREE.ClampToEdgeWrapping;
-        texture.wrapT = THREE.ClampToEdgeWrapping;
-        texture.anisotropy = 1;
-        texture.minFilter = THREE.LinearFilter;
-        texture.magFilter = THREE.LinearFilter;
-        if(!this.highlight.edge_material.transparent){
-          this.highlight.mesh.renderOrder = 0;
-        }
-        texture.needsUpdate = true;
-        this.highlight.edge_material.visible = true;
-        if(typeof this.highlightEnabled == 'undefined')
-          this.highlightEnabled = true;
-        this._endTextureLoad();
-      });
+      enqueueChrome(this.highlight.edge, 'highlightEdgeMap');
     }else{
-      this.highlight.edge_material.visible = false;
-      this.highlightEnabled = false;
+      bindChromeTexture(this.chrome.material, 'highlightEdgeMap', null);
     }
 
     if(this.highlight.corner != ''){
-      this.highlight.corner_material.visible = false;
-      this._beginTextureLoad();
-      TextureLoader.enQueue(this.highlight.corner, this.highlight.corner_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-        if(!texture){
-          console.log('initTextures', this.highlight.corner, texture);
-          this._endTextureLoad();
-          return;
-        }
-
-        texture.wrapS = THREE.ClampToEdgeWrapping;
-        texture.wrapT = THREE.ClampToEdgeWrapping;
-        texture.anisotropy = 1;
-        texture.minFilter = THREE.LinearFilter;
-        texture.magFilter = THREE.LinearFilter;
-        if(!this.highlight.corner_material.transparent){
-          this.highlight.mesh.renderOrder = 0;
-        }
-        texture.needsUpdate = true;
-        this.highlight.corner_material.visible = true;
-        if(typeof this.highlightEnabled == 'undefined')
-          this.highlightEnabled = true;
-        this._endTextureLoad();
-      });
+      enqueueChrome(this.highlight.corner, 'highlightCornerMap');
     }else{
-      this.highlight.corner_material.visible = false;
-      this.highlightEnabled = false;
+      bindChromeTexture(this.chrome.material, 'highlightCornerMap', null);
     }
 
-    if(this.highlight.fill.material){
-      if(this.highlight.fill.texture != ''){
-        this.highlight.fill.material.visible = false;
-        this._beginTextureLoad();
-        TextureLoader.enQueue(this.highlight.fill.texture, this.highlight.fill.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-          if(this.highlight.fill.material){
-            if(!(texture)){
-              this.highlight.fill.material.visible = false;
-            }else{
-              texture.anisotropy = 1;
-              texture.minFilter = THREE.LinearFilter;
-              texture.magFilter = THREE.LinearFilter;
-              if(this.highlight.fill.mesh && !this.highlight.fill.material.transparent){
-                this.highlight.fill.mesh.renderOrder = 0;
-              }
-              texture.needsUpdate = true;
-              this.highlight.fill.material.visible = true;
-              this.highlightFillEnabled = true;
-            }
-          }
-          this._endTextureLoad();
-        });
-      }else{
-        this.highlight.fill.material.visible = false;
-        this.highlightFillEnabled = false;
-      }
+    if(this.highlight.fill.texture != ''){
+      enqueueChrome(this.highlight.fill.texture, 'highlightFillMap');
+    }else{
+      bindChromeTexture(this.chrome.material, 'highlightFillMap', null);
     }
+
+    this.syncChromeEnableFlags();
 
     //------//
     // Text
@@ -1127,16 +873,7 @@ export class GUIControl {
     if(typeof this.onMouseOut === 'function')
       this.onMouseOut();
 
-    if(this.swapBorderAndHighliteOnHover){
-      this.hideHighlight();
-
-      if(this.border.edge != '')
-        this.showBorder();
-    }else{
-      this.showBorder();
-      this.hideHighlight();
-    }
-
+    this.applyChromeHoverState(false);
     this.processEventListener('mouseOut');
     this.setTooltipVisible(false);
     this.list?.markListRttDirty?.();
@@ -1157,16 +894,7 @@ export class GUIControl {
     if(typeof this.onMouseIn === 'function')
       this.onMouseIn();
 
-    if(this.swapBorderAndHighliteOnHover){
-      if(this.highlight.edge != '' || this.highlight.fill.texture != '')
-        this.showHighlight();
-
-      if(this.highlight.edge != '')
-        this.hideBorder();
-    }else{
-      this.showBorder();
-      this.showHighlight();
-    }
+    this.applyChromeHoverState(true);
 
     if(this.isClickable()){
       GameState.guiAudioEmitter.playSoundFireAndForget('gui_scroll');
@@ -1179,6 +907,43 @@ export class GUIControl {
     // this.setTooltipVisible(true);
   }
 
+  /** Drive chrome hovered/hoverMode uniforms from control hover state. */
+  protected applyChromeHoverState(hovered: boolean){
+    if(!this.chrome?.material) return;
+    const u = this.chrome.material.uniforms;
+    u.hoverMode.value = this.swapBorderAndHighliteOnHover ? 0 : 1;
+    const hasHighlight = this.highlight.edge != '' || this.highlight.fill.texture != '';
+    if(hovered){
+      if(this.swapBorderAndHighliteOnHover){
+        u.hovered.value = hasHighlight ? 1 : 0;
+      }else{
+        u.hovered.value = 1;
+      }
+      if(hasHighlight){
+        // Use GFF HILIGHT COLOR (e.g. K1 saveload ~off-white), not engine default yellow.
+        u.highlightDiffuse.value.copy(this.highlight.color);
+      }
+    }else{
+      u.hovered.value = 0;
+    }
+    this.syncChromeEnableFlags();
+    this.chrome.material.uniformsNeedUpdate = true;
+  }
+
+  protected syncChromeEnableFlags(){
+    if(!this.chrome?.material) return;
+    const u = this.chrome.material.uniforms;
+    const hovered = u.hovered.value > 0.5;
+    const swap = this.swapBorderAndHighliteOnHover;
+    if(hovered && swap){
+      u.enableFrame.value = this.highlightEnabled ? 1 : 0;
+      u.enableFill.value = this.highlightFillEnabled ? 1 : 0;
+    }else{
+      u.enableFrame.value = this.borderEnabled ? 1 : 0;
+      u.enableFill.value = this.borderFillEnabled ? 1 : 0;
+    }
+  }
+
   onFontTextureLoaded(){
     this.buildText();
     if (this.list) {
@@ -1189,19 +954,9 @@ export class GUIControl {
   resizeControl(){
 
     try{
-      if(this.hasBorder){
-        this.buildBorder();
-      }
-      if(this.hasHighlight){
-        this.buildHighlight();
-      }
+      this.buildChrome();
     }catch(e: any){
       //Must not have a border
-    }
-
-    this.resizeFill();
-    if(this.hasHighlight){
-      this.resizeHighlightFill();
     }
 
   }
@@ -1216,13 +971,8 @@ export class GUIControl {
     //  this.widget.add(this.menu.backgroundSprite);
     //}
 
-    this.buildBorder();
-    this.buildFill();
-
-    this.buildHighlight();
-    this.buildHighlightFill();
-
-    this.hideHighlight();
+    this.buildChrome();
+    this.applyChromeHoverState(false);
     
     this._onCreate();
     //Calculate the widget screen position
@@ -1313,38 +1063,22 @@ export class GUIControl {
     const textFlags = this.text.pulsing | 0;
     // Runtime `this.pulsing` ≈ SetPulsingAlpha(1, 1, 0): edges/corners + text, not fill.
     // Fill pulses only when GFF PULSING bit1 is set (retail SetPulsingAlpha fill flag).
-    const pulseBorderEdge = this.pulsing || !!(borderFlags & 1);
-    const pulseBorderFill = !!(borderFlags & 2);
-    const pulseHighlightEdge = this.pulsing || !!(highlightFlags & 1);
-    const pulseHighlightFill = !!(highlightFlags & 2);
+    const hovered = this.chrome?.material?.uniforms?.hovered?.value > 0.5;
+    const swap = this.swapBorderAndHighliteOnHover;
+    const useHighlightPulse = hovered && swap;
+    const pulseEdge = this.pulsing || !!( (useHighlightPulse ? highlightFlags : borderFlags) & 1);
+    const pulseFill = !!((useHighlightPulse ? highlightFlags : borderFlags) & 2);
     const pulseText = this.pulsing || !!textFlags;
 
-    if(pulseBorderEdge || pulseBorderFill || pulseHighlightEdge || pulseHighlightFill || pulseText){
+    if(pulseEdge || pulseFill || pulseText){
       const pulseAlpha = GameState.MenuManager.pulseOpacity * opacity;
       const solidAlpha = opacity;
 
-      if(this.border.edge_material){
-        this.border.edge_material.uniforms.opacity.value = pulseBorderEdge ? pulseAlpha : solidAlpha;
-      }
-
-      if(this.border.corner_material){
-        this.border.corner_material.uniforms.opacity.value = pulseBorderEdge ? pulseAlpha : solidAlpha;
-      }
-
-      if(this.border.fill.material){
-        this.border.fill.material.uniforms.opacity.value = pulseBorderFill ? pulseAlpha : solidAlpha;
-      }
-
-      if(this.highlight.edge_material){
-        this.highlight.edge_material.uniforms.opacity.value = pulseHighlightEdge ? pulseAlpha : solidAlpha;
-      }
-
-      if(this.highlight.corner_material){
-        this.highlight.corner_material.uniforms.opacity.value = pulseHighlightEdge ? pulseAlpha : solidAlpha;
-      }
-
-      if(this.highlight.fill.material){
-        this.highlight.fill.material.uniforms.opacity.value = pulseHighlightFill ? pulseAlpha : solidAlpha;
+      if(this.chrome?.material){
+        this.chrome.material.uniforms.edgeOpacity.value = pulseEdge ? pulseAlpha : solidAlpha;
+        this.chrome.material.uniforms.fillOpacity.value = pulseFill ? pulseAlpha : solidAlpha;
+        this.chrome.material.uniforms.opacity.value = 1;
+        this.chrome.material.uniformsNeedUpdate = true;
       }
 
       if(this.text.material){
@@ -1354,23 +1088,7 @@ export class GUIControl {
       this.resetPulse();
     }
 
-    if(this.border.edge_material && this.border.corner_material){
-      this.border.edge_material.visible = this.borderEnabled ? true : false;
-      this.border.corner_material.visible = this.borderEnabled ? true : false;
-    }
-
-    if(this.highlight.edge_material && this.highlight.corner_material){
-      this.highlight.edge_material.visible = this.highlightEnabled ? true : false;
-      this.highlight.corner_material.visible = this.highlightEnabled ? true : false;
-    }
-    
-    if(this.border.fill.material){
-      this.border.fill.material.visible = this.borderFillEnabled;
-    }
-    
-    if(this.highlight.fill.material){
-      this.highlight.fill.material.visible = this.highlightFillEnabled;
-    }
+    this.syncChromeEnableFlags();
 
     let len = this.children.length;
     for(let i = 0; i < len; i++){
@@ -1386,20 +1104,11 @@ export class GUIControl {
 
   resetPulse(){
     const opacity = this.disableSelection ? 0.5 : 1;
-    if(this.border.edge_material){
-      this.border.edge_material.uniforms.opacity.value = 1 * opacity;
-    }
-
-    if(this.border.corner_material){
-      this.border.corner_material.uniforms.opacity.value = 1 * opacity;
-    }
-
-    if(this.highlight.edge_material){
-      this.highlight.edge_material.uniforms.opacity.value = 1 * opacity;
-    }
-
-    if(this.highlight.corner_material){
-      this.highlight.corner_material.uniforms.opacity.value = 1 * opacity;
+    if(this.chrome?.material){
+      this.chrome.material.uniforms.edgeOpacity.value = 1 * opacity;
+      this.chrome.material.uniforms.fillOpacity.value = 1 * opacity;
+      this.chrome.material.uniforms.opacity.value = 1;
+      this.chrome.material.uniformsNeedUpdate = true;
     }
 
     if(this.text.material){
@@ -1407,11 +1116,8 @@ export class GUIControl {
       this.setTextColor(this.text.color.r, this.text.color.g, this.text.color.b);
     }
     
-    if(this.border.fill.material)
-      this.border.fill.material.uniforms.opacity.value = 1 * opacity;
-    
     if(this.disableSelection || this.disableHover){
-      this.hideHighlight();
+      this.applyChromeHoverState(false);
     }
   }
 
@@ -1420,51 +1126,73 @@ export class GUIControl {
   }
 
   hideBorder(){
-    this.border.mesh.visible = false;
-    this.hideFill();
+    this.borderEnabled = false;
+    this.borderFillEnabled = false;
+    this.syncChromeEnableFlags();
   }
 
   showBorder(){
-    this.border.mesh.visible = true;
-    this.showFill();
+    this.borderEnabled = !!(this.border.edge || this.border.corner);
+    this.borderFillEnabled = !!this.border.fill.texture;
+    this.syncChromeEnableFlags();
   }
 
   hideHighlight(){
-    this.highlight.mesh.visible = false;
-    this.hideHighlightFill();
+    if(this.chrome?.material){
+      this.chrome.material.uniforms.hovered.value = 0;
+      this.chrome.material.uniformsNeedUpdate = true;
+    }
+    this.syncChromeEnableFlags();
   }
 
   showHighlight(){
-    this.highlight.mesh.visible = true;
-    this.highlight.corner_material.uniforms.diffuse.value.set(this.defaultHighlightColor);
-    this.highlight.edge_material.uniforms.diffuse.value.set(this.defaultHighlightColor);
-    this.showHighlightFill();
+    if(this.chrome?.material){
+      this.chrome.material.uniforms.hovered.value = 1;
+      this.chrome.material.uniforms.highlightDiffuse.value.copy(this.highlight.color);
+      this.chrome.material.uniformsNeedUpdate = true;
+    }
+    this.highlightEnabled = !!(this.highlight.edge || this.highlight.corner);
+    this.highlightFillEnabled = !!this.highlight.fill.texture;
+    this.syncChromeEnableFlags();
   }
 
   hideFill(){
-    this.border.fill.mesh.visible = false;
+    this.borderFillEnabled = false;
+    this.syncChromeEnableFlags();
   }
 
   showFill(){
-    this.border.fill.mesh.visible = true;
+    this.borderFillEnabled = !!this.border.fill.texture;
+    this.syncChromeEnableFlags();
   }
 
   hideHighlightFill(){
-    this.highlight.fill.mesh.visible = false;
+    this.highlightFillEnabled = false;
+    this.syncChromeEnableFlags();
   }
 
   showHighlightFill(){
-    this.highlight.fill.mesh.visible = true;
+    this.highlightFillEnabled = !!this.highlight.fill.texture;
+    this.syncChromeEnableFlags();
   }
 
   setBorderColor(r = 1, g = 1, b = 1){
-    this.border.edge_material.uniforms.diffuse.value.setRGB(r, g, b);
-    this.border.corner_material.uniforms.diffuse.value.setRGB(r, g, b);
+    this.border.color.setRGB(r, g, b);
+    this.chrome.material.uniforms.diffuse.value.setRGB(r, g, b);
+    this.chrome.material.uniformsNeedUpdate = true;
   }
 
   setHighlightColor(r = 1, g = 1, b = 1){
-    this.highlight.edge_material.uniforms.diffuse.value.setRGB(r, g, b);
-    this.highlight.corner_material.uniforms.diffuse.value.setRGB(r, g, b);
+    this.highlight.color.setRGB(r, g, b);
+    this.chrome.material.uniforms.highlightDiffuse.value.setRGB(r, g, b);
+    this.chrome.material.uniformsNeedUpdate = true;
+  }
+
+  setChromeOpacity(edgeAlpha: number, fillAlpha?: number){
+    if(!this.chrome?.material) return;
+    this.chrome.material.uniforms.edgeOpacity.value = edgeAlpha;
+    this.chrome.material.uniforms.fillOpacity.value = fillAlpha ?? edgeAlpha;
+    this.chrome.material.uniformsNeedUpdate = true;
   }
 
   setTextColor(r = 1, g = 1, b = 1){
@@ -1482,11 +1210,11 @@ export class GUIControl {
   }*/
 
   getFill(): THREE.Mesh {
-    return this.border.fill.mesh;
+    return this.chrome.mesh;
   }
 
   getHighlightFill(){
-    return this.highlight.fill.mesh;
+    return this.chrome.mesh;
   }
 
   setHighlightFillTexture(map: THREE.Texture){
@@ -1494,35 +1222,18 @@ export class GUIControl {
       map = TextureLoader.textures.get('fx_static');
     }
 
-    this.highlight.fill.material.uniforms.map.value = map;
-    (this.highlight.fill as any).material.map = map;
-
-    if(map instanceof THREE.Texture){
-      this.highlight.fill.material.visible = true;
-      this.highlight.fill.material.uniforms.opacity.value = 1;
-      this.highlight.fill.material.uniforms.uvTransform.value = this.highlight.fill.material.uniforms.map.value.matrix;
-      this.highlight.fill.material.uniforms.map.value.updateMatrix();
-      this.highlight.fill.material.defines.USE_UV = '';
-      this.highlight.fill.material.defines.USE_MAP = '';
-    }else{
-      this.highlight.fill.material.visible = false;
-    }
-
-    this.highlight.fill.material.needsUpdate = true;
-    this.highlight.fill.material.uniformsNeedUpdate = true;
-    this.highlight.fill.material.visible = (map instanceof THREE.Texture);
-    this.highlightFillEnabled = true;
+    bindChromeTexture(this.chrome.material, 'highlightFillMap', map instanceof THREE.Texture ? map : null);
+    this.highlightFillEnabled = map instanceof THREE.Texture;
+    this.syncChromeEnableFlags();
   }
 
   setFillColor(r = 1, g = 1, b = 1){
-    //0.0, 0.658824, 0.980392
-    if(typeof this.getFill() != 'undefined'){
-      (this.getFill().material as THREE.ShaderMaterial).uniforms.diffuse.value.setRGB(r, g, b);
-    }
+    this.chrome.material.uniforms.fillDiffuse.value.setRGB(r, g, b);
+    this.chrome.material.uniformsNeedUpdate = true;
   }
 
   getFillTexture(){
-    return this.border.fill.material.uniforms.map.value;
+    return this.chrome.material.uniforms.fillMap.value;
   }
 
   setFillTexture(map: THREE.Texture){
@@ -1531,27 +1242,9 @@ export class GUIControl {
       map = TextureLoader.textures.get('fx_static');
     }
 
-    this.border.fill.material.uniforms.map.value = map;
-    (this.border.fill as any).material.map = map;
-
-    if(map instanceof THREE.Texture){
-      this.border.fill.material.visible = true;
-      this.border.fill.material.uniforms.opacity.value = 1;
-      this.border.fill.material.uniforms.uvTransform.value = this.border.fill.material.uniforms.map.value.matrix;
-      this.border.fill.material.uniforms.map.value.updateMatrix();
-      this.border.fill.material.defines.USE_UV = '';
-      this.border.fill.material.defines.USE_MAP = '';
-      this.border.fill.material.depthTest = false;
-      this.border.fill.material.depthWrite = false;
-      this.border.fill.material.transparent = true;
-    }else{
-      this.border.fill.material.visible = false;
-    }
-
-    this.border.fill.material.needsUpdate = true;
-    this.border.fill.material.uniformsNeedUpdate = true;
-    this.border.fill.material.visible = (map instanceof THREE.Texture);
-    this.borderFillEnabled = true;
+    bindChromeTexture(this.chrome.material, 'fillMap', map instanceof THREE.Texture ? map : null);
+    this.borderFillEnabled = map instanceof THREE.Texture;
+    this.syncChromeEnableFlags();
   }
 
   getFillTextureName(){
@@ -1565,17 +1258,13 @@ export class GUIControl {
     
     if(bUpdateHighlight) this.highlightFillEnabled = true;
     if(bUpdateHighlight) this.highlight.fill.texture = name;
-    TextureLoader.enQueue(this.border.fill.texture, this.border.fill.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
+    this._beginTextureLoad();
+    TextureLoader.enQueue(this.border.fill.texture, this.chrome.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
       this.setFillTexture(texture)
-      this.border.fill.material.depthTest = false;
-      this.border.fill.material.depthWrite = false;
-      this.border.fill.material.transparent = true;
       if(bUpdateHighlight) this.setHighlightFillTexture(texture);
-      this.highlight.fill.material.depthTest = false;
-      this.highlight.fill.material.depthWrite = false;
-      this.highlight.fill.material.transparent = true;
+      this._endTextureLoad();
       return texture;
-    });
+    }, undefined, 'fillMap');
     return;
   }
 
@@ -1586,14 +1275,23 @@ export class GUIControl {
     if(texture == undefined)
       texture = null;
 
-    material.uniforms.map.value = texture;
-    (material as any).map = texture;
+    // Chrome materials use named map slots; map material identity to the fill slot.
+    if(material === this.chrome?.material){
+      bindChromeTexture(material, 'fillMap', texture);
+      this.borderFillEnabled = texture instanceof THREE.Texture;
+      this.syncChromeEnableFlags();
+      return true;
+    }
+
+    TextureLoader.assignMaterialTexture(material, texture, 'map');
 
     if(texture instanceof THREE.Texture){
       material.visible = true;
       material.uniforms.opacity.value = 1;
-      material.uniforms.uvTransform.value = material.uniforms.map.value.matrix;
-      material.uniforms.map.value.updateMatrix();
+      if(material.uniforms.uvTransform && material.uniforms.map?.value?.matrix){
+        material.uniforms.uvTransform.value = material.uniforms.map.value.matrix;
+        material.uniforms.map.value.updateMatrix();
+      }
       material.defines.USE_UV = '';
       material.defines.USE_MAP = '';
     }else{
@@ -1603,26 +1301,18 @@ export class GUIControl {
     material.needsUpdate = true;
     material.uniformsNeedUpdate = true;
     material.visible = (texture instanceof THREE.Texture);
-
-    if(material == this.border.fill.material){
-      this.borderFillEnabled = true;
-    }
-
-    if(material == this.highlight.fill.material){
-      this.highlightFillEnabled = true;
-    }
-
+    return true;
   }
 
   flipY(flip = true){
-    let texture = this.border.fill.material.uniforms.map.value;
+    let texture = this.chrome.material.uniforms.fillMap.value;
     if(texture instanceof THREE.Texture){
       texture.repeat.y = flip ? -1 : 1;
       texture.updateMatrix();
       texture.needsUpdate = true;
     }
 
-    texture = this.highlight.fill.material.uniforms.map.value;
+    texture = this.chrome.material.uniforms.highlightFillMap.value;
     if(texture instanceof THREE.Texture){
       texture.repeat.y = flip ? -1 : 1;
       texture.updateMatrix();
@@ -2010,7 +1700,7 @@ export class GUIControl {
     const borderInner = borderInnerExtent({
       width: ew,
       height: eh,
-      dimension: asExtentInt(this.getBorderSize()),
+      dimension: this.getBorderSize(),
       innerOffset: asExtentInt(this.border.inneroffset || 0),
       innerOffsetY: asExtentInt(this.border.inneroffsety ?? this.border.inneroffset ?? 0),
     });
@@ -2019,7 +1709,7 @@ export class GUIControl {
       const hilightInner = borderInnerExtent({
         width: ew,
         height: eh,
-        dimension: asExtentInt(this.getHightlightSize()),
+        dimension: this.getHightlightSize(),
         innerOffset: asExtentInt(this.highlight.inneroffset || 0),
         innerOffsetY: asExtentInt(this.highlight.inneroffsety ?? this.highlight.inneroffset ?? 0),
       });
@@ -2062,16 +1752,21 @@ export class GUIControl {
    * Draw sizes the fill to the hole inside the corner/edge tiles (w−2·dim × h−2·dim),
    * not GetInnerExtent. INNEROFFSET expands text/viewport only ({@link getInnerSize});
    * applying it here made thick-border fills (e.g. character BTN_AUTO) cover the frame.
+   * Uses the same clamped chrome frame dim as the border quads so fill shrinks when
+   * the frame grows, and becomes 0 when the frame consumes the control.
    * Scrollbar shrink (listbox SetExtent) is subtracted after, separately.
    */
   getFillExtent(){
     const extent = this.getControlExtent();
     const shrinkWidth = asExtentInt(this.getShrinkWidth());
+    const ew = asExtentInt(this.extent.width);
+    const eh = asExtentInt(this.extent.height);
+    const dim = clampFrameDim(this.getChromeFrameSize(), ew, eh);
 
     const hole = borderInnerExtent({
-      width: asExtentInt(this.extent.width),
-      height: asExtentInt(this.extent.height),
-      dimension: asExtentInt(this.getBorderSize()),
+      width: ew,
+      height: eh,
+      dimension: dim,
       innerOffset: 0,
       innerOffsetY: 0,
     });
@@ -2083,25 +1778,38 @@ export class GUIControl {
     return {
       top: extent.top,
       left: extent.left,
-      width: this.meshSize(width),
-      height: this.meshSize(height)
+      // Logical 0 when frame consumes the hole (mesh eps applied only at geometry build).
+      width,
+      height,
     };
   }
 
   getBorderSize(){
-    if(GameState.GameKey == GameEngineType.TSL){
-      return this.border.dimension || 0;
-    }else{
-      return this.border.dimension || 0;
-    }
+    return asGuiSize(this.border.dimension || 0);
   }
 
   getHightlightSize(){
-    if(GameState.GameKey == GameEngineType.TSL){
-      return this.highlight.dimension || 0;
-    }else{
-      return this.highlight.dimension || 0;
-    }
+    return asGuiSize(this.highlight.dimension || 0);
+  }
+
+  /**
+   * Frame thickness for the single chrome mesh.
+   * When idle border has no edge/corner (K1 saveload buttons) but highlight does,
+   * use highlight DIMENSION so hover boxlines are sized correctly. Otherwise take
+   * the max so both visual states fit the same geometry. Clamped to half the
+   * control so oversized dims leave fill=0 and the frame takes remaining space.
+   */
+  getChromeFrameSize(){
+    return clampFrameDim(
+      chromeFrameDimension(
+        this.getBorderSize(),
+        this.getHightlightSize(),
+        !!(this.border.edge || this.border.corner),
+        !!(this.highlight.edge || this.highlight.corner),
+      ),
+      this.extent.width,
+      this.extent.height,
+    );
   }
 
   getShrinkWidth() {
@@ -2121,40 +1829,25 @@ export class GUIControl {
    * Retail Draw uses int left/top/width/height.
    */
   getBorderExtent(side: string){
-    const shrinkWidth = asExtentInt(this.getShrinkWidth());
-    const ew = asExtentInt(this.extent.width);
-    const eh = asExtentInt(this.extent.height);
-    const borderSize = Math.min(asExtentInt(this.getBorderSize()), truncDiv(ew, 2), truncDiv(eh, 2));
-
-    let innerW = Math.max(0, ew - borderSize);
-    if(BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIProtoItem)){
-      innerW = Math.min(ew, innerW);
-    }
-
-    const extent = borderSideExtent({
-      width: ew,
-      height: eh,
-      dimension: borderSize,
-      side,
-      shrinkWidth,
-      innerW,
-    });
-
-    return {
-      top: extent.top,
-      left: extent.left + (this.flipLeft() ? shrinkWidth : 0),
-      width: this.meshSize(extent.width),
-      height: this.meshSize(extent.height)
-    };
+    return this.getFrameExtent(side, this.getBorderSize());
   }
 
   getHighlightExtent(side: string){
+    return this.getFrameExtent(side, this.getHightlightSize());
+  }
+
+  /** Frame quads for the shared chrome mesh (may use highlight dim — see {@link getChromeFrameSize}). */
+  getChromeFrameExtent(side: string){
+    return this.getFrameExtent(side, this.getChromeFrameSize());
+  }
+
+  private getFrameExtent(side: string, frameSize: number){
     const shrinkWidth = asExtentInt(this.getShrinkWidth());
     const ew = asExtentInt(this.extent.width);
     const eh = asExtentInt(this.extent.height);
-    const highlightSize = Math.min(asExtentInt(this.getHightlightSize()), truncDiv(ew, 2), truncDiv(eh, 2));
+    const dim = clampFrameDim(frameSize, ew, eh);
 
-    let innerW = Math.max(0, ew - highlightSize);
+    let innerW = Math.max(0, ew - dim);
     if(BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIProtoItem)){
       innerW = Math.min(ew, innerW);
     }
@@ -2162,7 +1855,7 @@ export class GUIControl {
     const extent = borderSideExtent({
       width: ew,
       height: eh,
-      dimension: highlightSize,
+      dimension: dim,
       side,
       shrinkWidth,
       innerW,
@@ -2192,32 +1885,22 @@ export class GUIControl {
     width: number,
     height: number,
   ): void {
-    const pos = geometry.getAttribute('position') as THREE.BufferAttribute;
-    if(!pos || pos.count < 4) return;
-    writeOrthoAlignedPlanePositions(
-      pos,
-      Math.max(0, asExtentInt(width)),
-      Math.max(0, asExtentInt(height)),
-    );
-    geometry.computeBoundingBox();
+    layoutOrthoPlanePositions(geometry, width, height);
   }
 
-  /** Border/highlight fill quad: int-aligned hole, scale left at 1. */
-  private layoutFillMesh(mesh: THREE.Mesh, extent: { width: number; height: number }): void {
-    mesh.scale.set(1, 1, 1);
-    this.layoutOrthoPlane(mesh.geometry as THREE.BufferGeometry, extent.width, extent.height);
-    mesh.position.z = this.zOffset;
-    mesh.position.x = this.getFillShrinkOffsetX();
-    mesh.position.y = 0;
+  /** Create fill plane baked into chrome geometry (widget-local, int-aligned). */
+  private createFillPlane(): THREE.BufferGeometry {
+    const extent = this.getFillExtent();
+    const plane = new THREE.PlaneGeometry(1, 1, 1) as THREE.BufferGeometry;
+    // meshSize only here — logical fill may be 0 when the frame consumes the hole.
+    this.layoutOrthoPlane(plane, this.meshSize(extent.width), this.meshSize(extent.height));
+    plane.translate(this.getFillShrinkOffsetX(), 0, this.zOffset);
+    stampRegionAttribute(plane, GUI_CHROME_REGION_FILL);
+    return plane;
   }
 
   buildFill(){
-    const extent = this.getFillExtent();
-    
-    if(this.border.fill.mesh){
-      this.border.fill.mesh.name = this.widget.name+' center fill';
-      this.layoutFillMesh(this.border.fill.mesh, extent);
-    }
+    // Fill is merged into chrome geometry via buildChrome().
   }
 
   /**
@@ -2225,7 +1908,7 @@ export class GUIControl {
    * Odd sizes: nudge the post-rotation center by +0.5 on each odd axis so ±half spans
    * TL ints [−⌊n/2⌋, n−⌊n/2⌋] and meets neighboring pieces (e.g. top ±47.5 → [-47,48]
    * against corners at -47/48). Do not rewrite vertex frustums — that breaks UV flips.
-   * Fill quads stay TL-centered via {@link layoutFillMesh}.
+   * Fill quads stay TL-centered via {@link createFillPlane}.
    */
   private createBorderSidePlane(
     extent: { left: number; top: number; width: number; height: number },
@@ -2263,58 +1946,40 @@ export class GUIControl {
     return plane;
   }
 
-  buildBorder(){
-
-    const edgeGeometries = 4;
-    const cornerGeometries = 4;
-    const geomCount = edgeGeometries + cornerGeometries;
-
+  /** Build the single chrome mesh (8 frame quads + fill). Frame uses chrome size (may be highlight dim). */
+  buildChrome(){
     const planes: THREE.BufferGeometry[] = [];
 
-    for(let i = 0; i < geomCount; i++){
-      switch(i){
-        case 0: //top-border
-          planes[i] = this.createBorderSidePlane(this.getBorderExtent('top'), Math.PI);
-        break;
-        case 1: //right-border
-          planes[i] = this.createBorderSidePlane(this.getBorderExtent('right'), -Math.PI/2);
-        break;
-        case 2: //bottom-border
-          planes[i] = this.createBorderSidePlane(this.getBorderExtent('bottom'));
-        break;
-        case 3: //left-border
-          planes[i] = this.createBorderSidePlane(this.getBorderExtent('left'), Math.PI/2);
-        break;
-        case 4: //top-left-corner
-          planes[i] = this.createBorderSidePlane(this.getBorderExtent('topLeft'));
-        break;
-        case 5: //top-right-corner
-          planes[i] = this.createBorderSidePlane(this.getBorderExtent('topRight'), -Math.PI/2);
-        break;
-        case 6: //bottom-right-corner
-          planes[i] = this.createBorderSidePlane(this.getBorderExtent('bottomRight'), Math.PI);
-        break;
-        case 7: //bottom-left-corner
-          planes[i] = this.createBorderSidePlane(this.getBorderExtent('bottomLeft'), Math.PI/2);
-        break;
-      }
+    const sideSpecs: Array<{ side: string; rot: number; region: number }> = [
+      { side: 'top', rot: Math.PI, region: GUI_CHROME_REGION_EDGE },
+      { side: 'right', rot: -Math.PI/2, region: GUI_CHROME_REGION_EDGE },
+      { side: 'bottom', rot: 0, region: GUI_CHROME_REGION_EDGE },
+      { side: 'left', rot: Math.PI/2, region: GUI_CHROME_REGION_EDGE },
+      { side: 'topLeft', rot: 0, region: GUI_CHROME_REGION_CORNER },
+      { side: 'topRight', rot: -Math.PI/2, region: GUI_CHROME_REGION_CORNER },
+      { side: 'bottomRight', rot: Math.PI, region: GUI_CHROME_REGION_CORNER },
+      { side: 'bottomLeft', rot: Math.PI/2, region: GUI_CHROME_REGION_CORNER },
+    ];
+
+    for(let i = 0; i < sideSpecs.length; i++){
+      const spec = sideSpecs[i];
+      const plane = this.createBorderSidePlane(this.getChromeFrameExtent(spec.side), spec.rot);
+      stampRegionAttribute(plane, spec.region);
+      planes.push(plane);
     }
 
-    if(this.border.geometry instanceof THREE.BufferGeometry)
-      this.border.geometry.dispose();
+    planes.push(this.createFillPlane());
 
-    this.border.geometry = BufferGeometryUtils.mergeBufferGeometries(planes, false);
-    this.border.geometry.computeBoundingBox();
+    if(this.chrome.geometry instanceof THREE.BufferGeometry){
+      this.chrome.geometry.dispose();
+    }
 
-    //Edge Group
-    this.border.geometry.addGroup(0, 24, 0);
-    //Corner Group
-    this.border.geometry.addGroup(24, 24, 1);
+    this.chrome.geometry = mergeChromePlanes(planes);
+    if(this.chrome.mesh){
+      this.chrome.mesh.geometry = this.chrome.geometry;
+      this.chrome.mesh.position.z = this.zOffset;
+    }
 
-    if(this.border.mesh)
-      this.border.mesh.geometry = this.border.geometry;
-
-    //Clean up the temporary plane geometries
     let _plane: THREE.BufferGeometry | undefined;
     while(planes.length){
       _plane = planes.shift();
@@ -2322,77 +1987,18 @@ export class GUIControl {
         _plane.dispose();
       }
     }
+  }
 
+  buildBorder(){
+    this.buildChrome();
   }
 
   buildHighlight(){
-
-    let edgeGeometries = 4;
-    let cornerGeometries = 4;
-    let geomCount = edgeGeometries + cornerGeometries;
-
-    let planes: THREE.BufferGeometry[] = [];
-
-    for(let i = 0; i < geomCount; i++){
-      switch(i){
-        case 0: //top-border
-          planes[i] = this.createBorderSidePlane(this.getHighlightExtent('top'), Math.PI);
-        break;
-        case 1: //right-border
-          planes[i] = this.createBorderSidePlane(this.getHighlightExtent('right'), -Math.PI/2);
-        break;
-        case 2: //bottom-border
-          planes[i] = this.createBorderSidePlane(this.getHighlightExtent('bottom'));
-        break;
-        case 3: //left-border
-          planes[i] = this.createBorderSidePlane(this.getHighlightExtent('left'), Math.PI/2);
-        break;
-        case 4: //top-left-corner
-          planes[i] = this.createBorderSidePlane(this.getHighlightExtent('topLeft'));
-        break;
-        case 5: //top-right-corner
-          planes[i] = this.createBorderSidePlane(this.getHighlightExtent('topRight'), -Math.PI/2);
-        break;
-        case 6: //bottom-right-corner
-          planes[i] = this.createBorderSidePlane(this.getHighlightExtent('bottomRight'), Math.PI);
-        break;
-        case 7: //bottom-left-corner
-          planes[i] = this.createBorderSidePlane(this.getHighlightExtent('bottomLeft'), Math.PI/2);
-        break;
-      }
-    }
-
-    if(this.highlight.geometry instanceof THREE.BufferGeometry)
-      this.highlight.geometry.dispose();
-
-    this.highlight.geometry = BufferGeometryUtils.mergeBufferGeometries(planes, false);
-    this.highlight.geometry.computeBoundingBox();
-
-    //Edge Group
-    this.highlight.geometry.addGroup(0, 24, 0);
-    //Corner Group
-    this.highlight.geometry.addGroup(24, 24, 1);
-
-    if(this.highlight.mesh)
-      this.highlight.mesh.geometry = this.highlight.geometry;
-
-    //Clean up the temporary plane geometries
-    let _plane: THREE.BufferGeometry | undefined;
-    while(planes.length){
-      _plane = planes.shift();
-      if(_plane){
-        _plane.dispose();
-      }
-    }
-
+    // Highlight uses the same chrome geometry; textures swap via uniforms.
   }
 
   buildHighlightFill(){
-    let extent = this.getFillExtent();
-    if(this.highlight.fill.mesh){
-      this.highlight.fill.mesh.name = this.widget.name+' center fill';
-      this.layoutFillMesh(this.highlight.fill.mesh, extent);
-    }
+    // Fill is merged into chrome geometry via buildChrome().
   }
 
   buildText(){
@@ -2531,34 +2137,42 @@ export class GUIControl {
 
   disableBorder(){
     this.borderEnabled = false;
+    this.syncChromeEnableFlags();
   }
 
   disableBorderFill(){
     this.borderFillEnabled = false;
+    this.syncChromeEnableFlags();
   }
 
   disableHighlight(){
     this.highlightEnabled = false;
+    this.syncChromeEnableFlags();
   }
 
   disableHighlightFill(){
     this.highlightFillEnabled = false;
+    this.syncChromeEnableFlags();
   }
 
   enableBorder(){
     this.borderEnabled = true;
+    this.syncChromeEnableFlags();
   }
 
   enableBorderFill(){
     this.borderFillEnabled = true;
+    this.syncChromeEnableFlags();
   }
 
   enableHighlight(){
     this.highlightEnabled = true;
+    this.syncChromeEnableFlags();
   }
 
   enableHighlightFill(){
     this.highlightFillEnabled = true;
+    this.syncChromeEnableFlags();
   }
 
   disableTextAlignment(){
@@ -2649,168 +2263,27 @@ export class GUIControl {
   }
 
   resizeFill(){
-    if(this.border.fill.mesh){
-      this.layoutFillMesh(this.border.fill.mesh, this.getFillExtent());
-    }
+    this.buildChrome();
   }
 
   resizeHighlightFill(){
-    if(this.highlight.fill.mesh){
-      this.layoutFillMesh(this.highlight.fill.mesh, this.getFillExtent());
-    }
+    this.buildChrome();
   }
 
-  resizeBorder(side: string){
-
-    let extent = this.getBorderExtent(side);
-
-    switch(side){
-      case 'top':
-        this.widget.userData.border.children[0].position.set( extent.left, extent.top, 1 ); // top
-        this.widget.userData.border.children[0].scale.x = extent.width || 0.000001;
-        this.widget.userData.border.children[0].scale.y = extent.height || 0.000001;
-      break;
-      case 'left':
-        this.widget.userData.border.children[1].position.set( extent.left, extent.top, 1 ); // left
-        this.widget.userData.border.children[1].scale.x = extent.width || 0.000001;
-        this.widget.userData.border.children[1].scale.y = extent.height || 0.000001;
-      break;
-      case 'right':
-        this.widget.userData.border.children[2].position.set( extent.left, extent.top, 1 ); // right
-        this.widget.userData.border.children[2].scale.x = extent.width || 0.000001;
-        this.widget.userData.border.children[2].scale.y = extent.height || 0.000001;
-      break;
-      case 'bottom':
-        this.widget.userData.border.children[3].position.set( extent.left, extent.top, 1 ); // bottom
-        this.widget.userData.border.children[3].scale.x = extent.width || 0.000001;
-        this.widget.userData.border.children[3].scale.y = extent.height || 0.000001;
-      break;
-    }
-
+  resizeBorder(_side: string){
+    this.buildChrome();
   }
 
-  resizeCorner(side: string){
-    
-    let extent = this.getBorderExtent(side);
-
-    switch(side){
-      case 'topLeft':
-        this.widget.userData.border.children[4].position.set( extent.left, extent.top, 1 ); // top
-        this.widget.userData.border.children[4].scale.x = extent.width || 0.000001;
-        this.widget.userData.border.children[4].scale.y = extent.height || 0.000001;
-      break;
-      case 'topRight':
-        this.widget.userData.border.children[5].position.set( extent.left, extent.top, 1 ); // left
-        this.widget.userData.border.children[5].scale.x = extent.width || 0.000001;
-        this.widget.userData.border.children[5].scale.y = extent.height || 0.000001;
-      break;
-      case 'bottomLeft':
-        this.widget.userData.border.children[6].position.set( extent.left, extent.top, 1 ); // right
-        this.widget.userData.border.children[6].scale.x = extent.width || 0.000001;
-        this.widget.userData.border.children[6].scale.y = extent.height || 0.000001;
-      break;
-      case 'bottomRight':
-        this.widget.userData.border.children[7].position.set( extent.left, extent.top, 1 ); // bottom
-        this.widget.userData.border.children[7].scale.x = extent.width || 0.000001;
-        this.widget.userData.border.children[7].scale.y = extent.height || 0.000001;
-      break;
-    }
-
+  resizeCorner(_side: string){
+    this.buildChrome();
   }
 
-  resizeHighlight(side: string){
-    
-    /*let extent = this.getHighlightExtent(side);
-
-    let geometry = new THREE.PlaneGeometry( extent.width, extent.height, 1 );
-    let material = new THREE.MeshBasicMaterial( {color: new THREE.Color(0xFFFFFF), side: THREE.DoubleSide} );
-    let sprite = new THREE.Mesh( geometry, material );
-
-    if(this.highlight.edge != ''){
-      TextureLoader.enQueue(this.highlight.edge, material, TextureType.TEXTURE);
-    }
-    sprite.position.set( extent.left, extent.top, 1 ); // top left
-
-    switch(side){
-      case 'top':
-        sprite.rotation.z = Math.PI;
-      break;
-      case 'bottom':
-      break;
-      case 'left':
-        sprite.rotation.z = Math.PI/2;
-      break;
-      case 'right':
-        sprite.rotation.z = -Math.PI/2;
-      break;
-    }
-
-    sprite.name = side+' edge';
-    this.widget.highlight.add(sprite);
-
-    sprite.isClickable = (e: any) => {
-      return this.isClickable;
-    };
-
-    sprite.onClick = (e: any) => {
-      if(typeof this.onClick == 'function')
-        this.onClick(e: any);
-    };
-
-    sprite.onMouseMove = (e: any) =>{
-      if(typeof this.onMouseMove == 'function')
-        this.onMouseMove(e: any);
-    }
-
-    sprite.onMouseDown = (e: any) => {
-      if(typeof this.onMouseDown == 'function')
-        this.onMouseDown(e: any);
-    };
-
-    sprite.onMouseUp = (e: any) => {
-      if(typeof this.onMouseUp == 'function')
-        this.onMouseUp(e: any);
-    };
-    
-    sprite.onHover = (e: any) => {
-      if(typeof this.onMouseIn == 'function')
-        this.onMouseIn(e: any);
-    };
-
-    sprite.getControl =  => {
-      return this;
-    }*/
-
+  resizeHighlight(_side: string){
+    this.buildChrome();
   }
 
-  resizeHighlightCorner(side: string){
-    
-    /*let extent = this.getHighlightExtent(side);
-
-    let geometry = new THREE.PlaneGeometry( extent.width, extent.height, 1 );
-    let material = new THREE.MeshBasicMaterial( {color: new THREE.Color(0xFFFFFF), side: THREE.DoubleSide} );
-    let sprite = new THREE.Mesh( geometry, material );
-
-    if(this.highlight.corner != ''){
-      TextureLoader.enQueue(this.highlight.corner, material, TextureType.TEXTURE);
-    }
-
-    switch(side){
-      case 'topRight':
-        sprite.rotation.z = - (Math.PI / 2);
-      break;
-      case 'bottomRight':
-        sprite.rotation.z = - Math.PI;
-      break;
-      case 'bottomLeft':
-        sprite.rotation.z = (Math.PI / 2);
-      break;
-    }
-
-    sprite.position.set( extent.left, extent.top, 0 ); // top left
-    sprite.name = side+' corner';
-    this.widget.highlight.add(sprite);*/
-
+  resizeHighlightCorner(_side: string){
+    this.buildChrome();
   }
 
   //Add an event listener
@@ -3008,8 +2481,9 @@ export class GUIControl {
   }
 
   setDepthMode(mode: THREE.DepthModes) {
-    this.border.fill.material.depthFunc = mode;
-    this.highlight.fill.material.depthFunc = mode;
+    if(this.chrome?.material){
+      this.chrome.material.depthFunc = mode;
+    }
   }
 
 }

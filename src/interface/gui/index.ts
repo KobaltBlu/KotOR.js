@@ -2,6 +2,7 @@ export * from "@/interface/gui/IActionPanelLists";
 export * from "@/interface/gui/IDPadTarget";
 export * from "@/interface/gui/IGUIControlBorder";
 export * from "@/interface/gui/IGUIControlBorderFill";
+export * from "@/interface/gui/IGUIControlChrome";
 export * from "@/interface/gui/IGUIControlColors";
 export * from "@/interface/gui/IGUIControlEventListeners";
 export * from "@/interface/gui/IGUIControlExtent";

@@ -253,32 +253,26 @@ export function applySkillFlowStatus(
   }
 
   // Keep indent/back fill visible; dim only when locked (field alpha on case 3).
-  const fillMat = button.getFill?.()?.material as THREE.ShaderMaterial | undefined;
-  if(fillMat?.uniforms?.opacity){
-    fillMat.uniforms.opacity.value = statusNum === SkillFlowStatus.Locked
-      ? ABILITY_LOCKED_ICON_ALPHA
-      : 1;
-    fillMat.transparent = true;
+  const fillAlpha = statusNum === SkillFlowStatus.Locked
+    ? ABILITY_LOCKED_ICON_ALPHA
+    : 1;
+  if(button.chrome?.material){
+    button.chrome.material.transparent = true;
+    button.chrome.material.uniforms.fillOpacity.value = fillAlpha;
+    button.chrome.material.uniformsNeedUpdate = true;
   }
 
-  if(arrowButton){
-    const arrowFill = arrowButton.getFill?.()?.material as THREE.ShaderMaterial | undefined;
-    if(arrowFill?.uniforms?.opacity){
-      arrowFill.uniforms.opacity.value = arrowAlpha;
-      arrowFill.transparent = true;
-    }
+  if(arrowButton?.chrome?.material){
+    arrowButton.chrome.material.transparent = true;
+    arrowButton.chrome.material.uniforms.fillOpacity.value = arrowAlpha;
+    arrowButton.chrome.material.uniformsNeedUpdate = true;
   }
 
   if(alphasOnly){
     // Owned-unselected uses border alpha 0.5; resetPulse would force 1.0.
     // Do not touch opacity while pulsing — MenuManager.pulseOpacity owns that.
     if(!pulse && showBorder){
-      if(button.border?.edge_material){
-        button.border.edge_material.uniforms.opacity.value = borderAlpha;
-      }
-      if(button.border?.corner_material){
-        button.border.corner_material.uniforms.opacity.value = borderAlpha;
-      }
+      button.setChromeOpacity?.(borderAlpha, fillAlpha);
     }
     return;
   }
@@ -294,19 +288,10 @@ export function applySkillFlowStatus(
   if(showBorder){
     button.enableBorder?.();
     button.borderEnabled = true;
-    if(button.border?.edge_material){
-      button.border.edge_material.uniforms.opacity.value = borderAlpha;
-      button.border.edge_material.visible = true;
-    }
-    if(button.border?.corner_material){
-      button.border.corner_material.uniforms.opacity.value = borderAlpha;
-      button.border.corner_material.visible = true;
-    }
-    if(button.border?.mesh) button.border.mesh.visible = true;
+    button.setChromeOpacity?.(borderAlpha, fillAlpha);
   }else{
+    button.disableBorder?.();
     button.borderEnabled = false;
-    if(button.border?.edge_material) button.border.edge_material.visible = false;
-    if(button.border?.corner_material) button.border.corner_material.visible = false;
   }
 }
 
@@ -317,15 +302,13 @@ export function applyAbilityButtonTexture(
   lockedAlpha: number = ABILITY_LOCKED_ICON_ALPHA,
 ): void {
   if(!texture) return;
-  buttonIcon.setMaterialTexture(buttonIcon.border.fill.material, texture);
-  buttonIcon.border.fill.material.transparent = true;
-  buttonIcon.setMaterialTexture(buttonIcon.highlight.fill.material, texture);
-  buttonIcon.highlight.fill.material.transparent = true;
+  buttonIcon.setFillTexture(texture);
+  buttonIcon.setHighlightFillTexture(texture);
+  if(buttonIcon.chrome?.material){
+    buttonIcon.chrome.material.transparent = true;
+  }
   if(locked){
-    const fillMat = buttonIcon.getFill()?.material as THREE.ShaderMaterial | undefined;
-    if(fillMat?.uniforms?.opacity){
-      fillMat.uniforms.opacity.value = lockedAlpha;
-    }
+    buttonIcon.setChromeOpacity?.(1, lockedAlpha);
   }
 }
 
@@ -382,6 +365,7 @@ export function enqueueProtoTexture(
   name: string,
   material: THREE.Material,
   onLoaded?: (texture: OdysseyTexture) => void,
+  uniformName?: string,
 ): void {
   ctrl._beginTextureLoad();
   TextureLoader.enQueue(name, material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
@@ -390,5 +374,5 @@ export function enqueueProtoTexture(
     }finally{
       ctrl._endTextureLoad();
     }
-  });
+  }, undefined, uniformName);
 }

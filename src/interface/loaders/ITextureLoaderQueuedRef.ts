@@ -15,6 +15,8 @@ export interface ITextureLoaderQueuedRef {
   name: string,
   type: TextureType,
   material?: THREE.ShaderMaterial,
+  /** When set, assign the loaded texture to this ShaderMaterial uniform instead of `map`. */
+  uniformName?: string,
   partGroup?: any,
   fallback?: string,
   onLoad?: Function,
