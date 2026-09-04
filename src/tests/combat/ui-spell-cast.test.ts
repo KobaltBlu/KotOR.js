@@ -23,7 +23,7 @@ import { TalentObjectType } from '@/enums/engine/TalentObjectType';
 import { CombatActionType } from '@/enums/combat/CombatActionType';
 
 /**
- * Retail UnReadySpell @ 005a55c0 — drain cost from FP pool, clamp at 0, always
+ * Retail UnReadySpell — drain cost from FP pool, clamp at 0, always
  * succeed when the spell row exists. Menu enable is the soft gate.
  */
 function unreadySpellRetail(

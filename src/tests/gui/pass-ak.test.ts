@@ -3,7 +3,7 @@
  */
 import { describe, expect, it } from "@jest/globals";
 
-/** Mirrors InventoryFilter.QUEST / retail plot flag gate @ PopulateItemListBox 006d29f0. */
+/** Mirrors InventoryFilter.QUEST / retail plot flag gate in PopulateItemListBox. */
 function isQuestPlotItem(item: { plot?: number } | null | undefined): boolean {
   return !!(item && item.plot);
 }
@@ -17,7 +17,7 @@ describe("Pass AK QuestItem plot filter", () => {
 });
 
 describe("Pass AK ScriptSelect aiscripts row shape", () => {
-  it("parses AISTATE / NAME_STRREF / DESCRIPTION_STRREF like retail ctor @ 006ea000", () => {
+  it("parses AISTATE / NAME_STRREF / DESCRIPTION_STRREF like retail ctor", () => {
     const row = {
       NAME_STRREF: "32190",
       DESCRIPTION_STRREF: "32191",

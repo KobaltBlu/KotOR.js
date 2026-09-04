@@ -142,7 +142,7 @@ export enum SkillFlowStatus {
   InGame = 6,
 }
 
-/** Retail SetSkillStatus locked/unavailable icon alpha (case 0 / 3 @ 0x3e800000). */
+/** Retail SetSkillStatus locked/unavailable icon alpha (case 0 / 3). */
 export const ABILITY_LOCKED_ICON_ALPHA = 0.25;
 
 /** Retail SetSkillStatus case 1/2 unselected border_params.alpha. */

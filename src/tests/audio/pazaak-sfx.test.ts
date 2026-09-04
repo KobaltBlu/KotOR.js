@@ -4,7 +4,7 @@
 import { describe, expect, it } from "@jest/globals";
 import { pazaakSetOrMatchSfx } from "@/engine/minigames/pazaak-sfx";
 
-describe("Pass AJ Pazaak SFX (DoGameSequence @ 00680050)", () => {
+describe("Pass AJ Pazaak SFX (DoGameSequence)", () => {
   it("player set win before target → mgs_winset", () => {
     expect(pazaakSetOrMatchSfx("player", 1, 3)).toBe("mgs_winset");
     expect(pazaakSetOrMatchSfx("player", 2, 3)).toBe("mgs_winset");

@@ -33,7 +33,7 @@ type FeatSlot = {
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
  * retail row: three feat slots + arrows; locked uses alpha 0.25
- * (TSL SetSkillStatus case 0/3 @ 0x3e800000). Do not skip locked feats.
+ * (TSL SetSkillStatus case 0/3). Do not skip locked feats.
  *
  * @file GUIFeatItem.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>

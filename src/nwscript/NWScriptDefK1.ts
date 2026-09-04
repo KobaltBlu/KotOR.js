@@ -2611,7 +2611,7 @@ NWScriptDefK1.Actions = {
     args: [],
     action: function(this: NWScriptInstance, args: []){
       // Retail ExecuteCommandGetMatchedStringsCount returns the array size (0 when empty).
-      // The nwscript.nss "-1" comment does not match swkotor.exe behavior.
+      // The nwscript.nss "-1" comment does not match retail behavior.
       const caller = this.caller;
       if(!BitWise.InstanceOfObject(caller, ModuleObjectType.ModuleObject)){
         return 0;
@@ -4706,8 +4706,8 @@ NWScriptDefK1.Actions = {
     name: "SetAssociateListenPatterns",
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT],
-    // Retail has no ExecuteCommand for this opcode (return_zero stub in
-    // swkotor.exe). NWN ASSOCIATE_LISTEN_PATTERNS / NW_* tokens are not present.
+    // Retail has no ExecuteCommand for this opcode (return_zero stub).
+    // NWN ASSOCIATE_LISTEN_PATTERNS / NW_* tokens are not present.
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       // Intentional retail no-op
     }

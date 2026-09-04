@@ -8,7 +8,7 @@ import {
   scrollBarThumbSize,
 } from "@/gui/scrollBarThumb";
 
-describe("scrollBarThumbSize (retail SetExtent @ 004193f0)", () => {
+describe("scrollBarThumbSize (retail SetExtent)", () => {
   it("uses border inner width, not full track width", () => {
     const size = scrollBarThumbSize({
       trackWidth: 20,
@@ -47,7 +47,7 @@ describe("scrollBarThumbSize (retail SetExtent @ 004193f0)", () => {
   });
 });
 
-describe("scrollBarDragValue (retail HandleMouseCapturedMovement @ 0041b670)", () => {
+describe("scrollBarDragValue (retail HandleMouseCapturedMovement)", () => {
   it("zero delta keeps start value (no jump past cursor)", () => {
     expect(scrollBarDragValue({
       deltaY: 0,

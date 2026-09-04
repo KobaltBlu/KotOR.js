@@ -65,14 +65,14 @@ describe("Pass AN listbox pitch", () => {
 });
 
 describe("Pass AN selectOnLeftClick default", () => {
-  it("matches retail ctor @ 0041be40 (false)", () => {
+  it("matches retail ctor (false)", () => {
     expect(createDefaultListBoxBitFlags().selectOnLeftClick).toBe(false);
   });
 });
 
 describe("custom proto row skin extent", () => {
   it("skins font/texture only: row keeps its own width AND height (template ignored)", () => {
-    // Retail CSWGuiButton::Initialize @ 00417970 takes the base extent, never the proto extent.
+    // Retail CSWGuiButton::Initialize takes the base extent, never the proto extent.
     const next = customProtoRowExtentFromTemplate(
       { width: 280, height: 42 },
       { width: 120, height: 50 },
@@ -84,22 +84,22 @@ describe("custom proto row skin extent", () => {
 });
 
 describe("retail row Initialize contract (base extent, not PROTOITEM GFF)", () => {
-  // Ghidra-sourced base row heights — regression guard against reverting to PROTOITEM height.
-  it("save row base heights (K1 @ 006cc160 = 42, TSL @ 005d5140 = 36)", () => {
+  // Retail base row heights — regression guard against reverting to PROTOITEM height.
+  it("save row base heights (K1 = 42, TSL = 36)", () => {
     expect(42).toBe(42);
     expect(36).toBe(36);
   });
 
-  it("inventory row base heights (K1 @ 006b4db0 = 56, TSL @ 005a4b50 = 36)", () => {
+  it("inventory row base heights (K1 = 56, TSL = 36)", () => {
     expect(56).toBe(56);
     expect(36).toBe(36);
   });
 
-  it("abilities skill row base height (K1 @ 006ac930 = 42)", () => {
+  it("abilities skill row base height (K1 = 42)", () => {
     expect(42).toBe(42);
   });
 
-  it("abilities feat/power row base height (K1 @ 006cda80 = 40)", () => {
+  it("abilities feat/power row base height (K1 = 40)", () => {
     expect(40).toBe(40);
   });
 
@@ -113,7 +113,7 @@ describe("retail row Initialize contract (base extent, not PROTOITEM GFF)", () =
 
 describe("K1 inventory/equip list spacing (GFF PADDING=0)", () => {
   // inventory.gui / equip.gui LB_ITEMS: EXTENT.H=294, BORDER.DIMENSION=4, PADDING=0
-  // getFillExtent → vh = (294 - 2*4) + 0 = 286; row base height 56 @ 006b4db0
+  // getFillExtent → vh = (294 - 2*4) + 0 = 286; row base height 56
   const vh = borderInnerExtent({
     width: 269,
     height: 294,
@@ -145,7 +145,7 @@ describe("K1 inventory/equip list spacing (GFF PADDING=0)", () => {
 
 describe("K1 abilities LB_ABILITY spacing (GFF PADDING=0)", () => {
   // abilities.gui LB_ABILITY: EXTENT.H=180, BORDER.DIMENSION=4, PADDING=0
-  // SkillEntry height 42 @ 006ac930; SkillFlow height 40 @ 006cda80
+  // SkillEntry height 42; SkillFlow height 40
   const vh = borderInnerExtent({
     width: 269,
     height: 180,
@@ -177,7 +177,7 @@ describe("K1 abilities LB_ABILITY spacing (GFF PADDING=0)", () => {
 });
 
 describe("abilities retail row extents", () => {
-  it("skill row: height 42, width = viewport - 2*padding (Initialize @ 006ac930)", () => {
+  it("skill row: height 42, width = viewport - 2*padding (Initialize)", () => {
     const viewportWidth = 261;
     const padding = 0;
     const width = Math.max(1, viewportWidth - padding * 2);
@@ -197,18 +197,18 @@ describe("abilities retail row extents", () => {
     expect(56).not.toBe(42);
   });
 
-  it("feat/power row K1: 242×40 (AddFeatSet @ 006cda80)", () => {
+  it("feat/power row K1: 242×40 (AddFeatSet)", () => {
     expect(0xf2).toBe(242);
     expect(0x28).toBe(40);
   });
 
-  it("feat/power row TSL: 262×40 (AddFeatSet @ 00589970, scalar*40)", () => {
+  it("feat/power row TSL: 262×40 (AddFeatSet, scalar*40)", () => {
     expect(0x106).toBe(262);
     expect(40).toBe(40);
   });
 });
 
-describe("border inner extent @ 00415240 (INNEROFFSET fix)", () => {
+describe("border inner extent (INNEROFFSET fix)", () => {
   it("K1 LB_GAMES: DIMENSION 0 / INNEROFFSET 0 → viewport equals extent", () => {
     const inner = borderInnerExtent({
       width: 272,
@@ -319,7 +319,7 @@ describe("savegame fixed PROTOITEM height", () => {
   });
 });
 
-describe("OrganizeControls leftover stretch @ 0041b140", () => {
+describe("OrganizeControls leftover stretch", () => {
   it("matches K1 saveload LB_GAMES (vh=323, pad=5, PROTOITEM=50)", () => {
     const vh = 323;
     const pad = 5;

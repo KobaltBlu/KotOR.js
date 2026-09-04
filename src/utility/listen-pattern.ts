@@ -1,7 +1,7 @@
 /**
  * Odyssey listen-pattern matcher (K1 + K2 parity).
  *
- * Grounded in swkotor.exe / swkotor2_aspyr.exe:
+ * Retail routines:
  * - ParseString (K1)
  * - TestString (K1 / K2 Aspyr)
  * - NewNode

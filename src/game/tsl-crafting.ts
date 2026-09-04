@@ -1,6 +1,5 @@
 /**
- * TSL workbench / chemical helpers — retail create-item / create-medical cost rules
- * from k2_win_gog_aspyr_swkotor2.exe.
+ * TSL workbench / chemical helpers — retail create-item / create-medical cost rules.
  *
  * Chemical create cost: max(1, GetCost() >> 1)
  * Component create/breakdown piece value: max(1, GetCost() / 20)

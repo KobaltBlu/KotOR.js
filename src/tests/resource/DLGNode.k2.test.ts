@@ -56,7 +56,7 @@ jest.mock('@/nwscript/NWScriptInstance', () => ({
 import { DLGNode } from '@/resource/DLGNode';
 import { ModuleCreatureAnimState } from '@/enums/module/ModuleCreatureAnimState';
 
-describe('DLGNode.resolveAlienVO (LoadDialogBase @ 0074f4f0)', () => {
+describe('DLGNode.resolveAlienVO (LoadDialogBase)', () => {
   let node: DLGNode;
 
   beforeEach(() => {
@@ -107,7 +107,7 @@ describe('DLGNode.resolveAlienVO (LoadDialogBase @ 0074f4f0)', () => {
   });
 });
 
-describe('DLGNode.runActiveScripts Logic (SendDialogReplies @ 007562c0)', () => {
+describe('DLGNode.runActiveScripts Logic (SendDialogReplies)', () => {
   const makeActive = (result: boolean) => ({
     setScriptParam() {},
     setScriptStringParam() {},

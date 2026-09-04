@@ -6,7 +6,7 @@ describe('OdysseyMaterialBuilder.resolveEnvMapResRef', () => {
     OdysseyMaterialBuilder.defaultEnvMap = '';
   });
 
-  test('resolves DEFAULT to the current area DefaultEnvMap (retail SetEnvMap @ 0063cb70)', () => {
+  test('resolves DEFAULT to the current area DefaultEnvMap (retail SetEnvMap)', () => {
     OdysseyMaterialBuilder.defaultEnvMap = 'cm_baremetal';
     expect(OdysseyMaterialBuilder.resolveEnvMapResRef('DEFAULT')).toBe('cm_baremetal');
     expect(OdysseyMaterialBuilder.resolveEnvMapResRef('default')).toBe('cm_baremetal');

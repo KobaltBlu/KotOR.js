@@ -10,13 +10,13 @@ import { OdysseyModelUtility } from "@/odyssey/OdysseyModelUtility";
 import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
 import { IOdysseyControllerFrameGeneric } from "@/interface";
       
-// Compressed orientation keys — NewController::GetQuaternionFromIndexLocation
-// (K1 00483050 / TSL 008f8760): packed uint32 as 11-bit X, 11-bit Y, 10-bit Z.
+// Compressed orientation keys — NewController::GetQuaternionFromIndexLocation:
+// packed uint32 as 11-bit X, 11-bit Y, 10-bit Z.
 const QUAT_X_MASK = 0x07ff;
 const QUAT_Y_MASK = 0x07ff;
 const QUAT_Z_MASK = 0x03ff;
-const QUAT_X_SCALE = Math.fround(1.0 / 1023.0); // K1 float @ 0x00743250
-const QUAT_Z_SCALE = Math.fround(1.0 / 511.0);  // K1 float @ 0x0074324c
+const QUAT_X_SCALE = Math.fround(1.0 / 1023.0);
+const QUAT_Z_SCALE = Math.fround(1.0 / 511.0);
 const QUAT_Y_SHIFT = 11;
 const QUAT_Z_SHIFT = 22;
 

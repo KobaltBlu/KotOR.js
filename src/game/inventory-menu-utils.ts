@@ -38,7 +38,7 @@ export enum InventoryFilter {
   MISC_K2 = 11,
 }
 
-/** Retail itemFilterStrRefs @ 0x756444 (K1). */
+/** Retail itemFilterStrRefs (K1). */
 export const ITEM_FILTER_STR_REFS: readonly number[] = [
   41822, // All
   42165, // New

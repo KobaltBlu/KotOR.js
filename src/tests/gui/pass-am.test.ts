@@ -3,7 +3,7 @@
  */
 import { describe, expect, it } from "@jest/globals";
 
-/** Retail SetLocalBoolean index — ExecuteCommandDisplayDatapad @ 007b15f0. */
+/** Retail SetLocalBoolean index — ExecuteCommandDisplayDatapad. */
 const DATAPAD_SHOWN_LOCAL_BOOL = 0x5e;
 
 /** Mirrors MenuDatapad.resolveDatapadText / DescIdentified path. */

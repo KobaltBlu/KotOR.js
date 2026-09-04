@@ -15,7 +15,7 @@ import { FeebackMessageColor } from "@/enums/engine/FeedbackMessageColor";
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * Retail ConsoleFunc handlers (swkotor.exe string table).
+ * Retail ConsoleFunc handlers (string table).
  *
  * @file CheatConsoleManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>

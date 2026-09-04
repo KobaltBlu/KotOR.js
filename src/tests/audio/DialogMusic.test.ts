@@ -7,7 +7,7 @@ import { describe, expect, test, jest } from '@jest/globals';
 import { BackgroundMusicMode } from '@/enums/audio/BackgroundMusicMode';
 import { AudioPriorityGroup } from '@/enums/audio/AudioPriorityGroup';
 
-/** Retail FadeAndStopDialogAmbientTrack @ 004e15c0. */
+/** Retail FadeAndStopDialogAmbientTrack. */
 const DIALOG_AMBIENT_TRACK_FADE_MS = 500;
 
 describe('Dialog music enter/exit parity', () => {
@@ -76,8 +76,7 @@ describe('Dialog music enter/exit parity', () => {
   });
 
   test('AmbientTrack plays once (not loop)', () => {
-    // CExoStreamingSoundSourceInternal ctor @ 0063ace0: field[2]=0;
-    // Play @ 0063b060: AIL_set_stream_loop_count(stream, field[2]==0) → 1 = play once.
+    // AmbientTrack: retail looping flag 0 → play once.
     const ailLoopCountFromRetailLoopingFlag = (loopingField: number) =>
       (loopingField === 0) ? 1 : 0;
     expect(ailLoopCountFromRetailLoopingFlag(0)).toBe(1);

@@ -7,7 +7,7 @@ import { truncDiv } from "@/gui/GUICoord";
 import { GUIControlAlignment } from "@/enums/gui/GUIControlAlignment";
 
 /**
- * Retail CSWGuiButton::SetExtent @ 00417a50 — text extent is
+ * Retail CSWGuiButton::SetExtent — text extent is
  * Intersection(GetInnerExtent(border), GetInnerExtent(hilight)).
  * map.gui BTN_PRTYSLCT / BTN_RETURN: H13, border dim2/inner9, hilight dim6/inner9,
  * ALIGNMENT 10 (HorizontalCenter|VerticalTop).

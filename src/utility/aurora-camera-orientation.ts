@@ -11,7 +11,7 @@ const _qTmp = new THREE.Quaternion();
 const _fwd = new THREE.Vector3();
 
 /**
- * Retail `Yaw(Vector*)` @ `004aa0f0` — degrees.
+ * Retail `Yaw(Vector*)` — degrees.
  */
 export function auroraYawFromVector(x: number, y: number, _z: number): number {
   if(y === 0 && x === 0) return 0;
@@ -19,7 +19,7 @@ export function auroraYawFromVector(x: number, y: number, _z: number): number {
 }
 
 /**
- * Retail `Pitch(Vector*)` @ `004aa130` — degrees.
+ * Retail `Pitch(Vector*)` — degrees.
  */
 export function auroraPitchFromVector(x: number, y: number, z: number): number {
   return Math.atan2(z, Math.sqrt(x * x + y * y)) * RAD2DEG;
@@ -27,7 +27,7 @@ export function auroraPitchFromVector(x: number, y: number, z: number): number {
 
 /**
  * Direction derived from a quaternion for Yaw/Pitch extractors
- * (`Yaw` @ `004a9f40` / `Pitch` @ `004aa020`).
+ * (`Yaw` / `Pitch`).
  * Identity → (0,1,0); with pitch 90 look quat, camera local −Z maps to this facing.
  */
 function auroraFacingFromQuaternion(q: THREE.Quaternion, out: THREE.Vector3): THREE.Vector3 {
@@ -40,20 +40,20 @@ function auroraFacingFromQuaternion(q: THREE.Quaternion, out: THREE.Vector3): TH
   return out;
 }
 
-/** Retail `Yaw(Quaternion*)` @ `004a9f40` — degrees. */
+/** Retail `Yaw(Quaternion*)` — degrees. */
 export function auroraYawFromQuaternion(q: THREE.Quaternion): number {
   auroraFacingFromQuaternion(q, _fwd);
   return auroraYawFromVector(_fwd.x, _fwd.y, _fwd.z);
 }
 
-/** Retail `Pitch(Quaternion*)` @ `004aa020` — degrees. */
+/** Retail `Pitch(Quaternion*)` — degrees. */
 export function auroraPitchFromQuaternion(q: THREE.Quaternion): number {
   auroraFacingFromQuaternion(q, _fwd);
   return auroraPitchFromVector(_fwd.x, _fwd.y, _fwd.z);
 }
 
 /**
- * Retail `Roll(Quaternion)` @ `004acb90` — undo yaw then pitch, then extract
+ * Retail `Roll(Quaternion)` — undo yaw then pitch, then extract
  * remaining rotation about Y (degrees).
  */
 export function auroraRollFromQuaternion(q: THREE.Quaternion): number {
@@ -71,7 +71,7 @@ export function auroraRollFromQuaternion(q: THREE.Quaternion): number {
 }
 
 /**
- * Retail `YawPitchRoll` @ `004acac0` — angles in degrees.
+ * Retail `YawPitchRoll` — angles in degrees.
  * Composition: (yaw_Z * pitch_X) * roll_Y.
  */
 export function auroraYawPitchRoll(
@@ -88,7 +88,7 @@ export function auroraYawPitchRoll(
 
 /**
  * Placeable / dialog camera orientation from GIT Orientation + Pitch.
- * Matches `SetShotFromScript` @ `0062e900` then `Control` @ `006bcf50`
+ * Matches `SetShotFromScript` then `Control`
  * (`YawPitchRoll(Yaw(q), Pitch(q)+Pitch, Roll(q))` with zero Control offsets).
  *
  * Aurora Camera and Three.js both look along local −Z, so the result can be

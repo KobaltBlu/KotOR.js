@@ -17,7 +17,7 @@ import {
 
 /**
  * Guardrails for ModuleArea load()/loadScene()/initAreaObjects order.
- * Implementation comments reference LoadGIT @ 0050dd80 / LoadArea @ 0050e190.
+ * Implementation comments reference LoadGIT / LoadArea.
  */
 describe("area load order (retail LoadGIT)", () => {
   test("GIT object sequence matches CSWSArea::LoadGIT", () => {

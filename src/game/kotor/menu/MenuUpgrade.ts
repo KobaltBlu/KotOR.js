@@ -149,7 +149,7 @@ export class MenuUpgrade extends GameMenu {
 
     this._3dView = new LBL_3DView();
     this._3dView.visible = true;
-    // Retail Update3DView FOV ≈ 22.72 (0x41b5ced9); LBL_3DView default matches.
+    // Retail Update3DView FOV ≈ 22.72; LBL_3DView default matches.
     this._3dView.camera.fov = 22.72;
     if(lbl.extent?.width && lbl.extent?.height){
       this._3dView.camera.aspect = lbl.extent.width / lbl.extent.height;

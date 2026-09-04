@@ -7,7 +7,7 @@ import { asExtentInt } from "@/gui/GUICoord";
 
 /**
  * Retail SetViewAngle value used by ClassSel / MainCG / PORTCUST /
- * Setup3DScene / Upgrade (0x41b5ced9 ≈ 22.726).
+ * Setup3DScene / Upgrade (≈ 22.726°).
  */
 export const GUI_3D_VIEW_FOV = 22.72;
 

@@ -16,7 +16,7 @@ import { MiniGameObjectArray } from "@/module/minigame/MiniGameObjectArray";
 import type { OdysseyModel3D } from "@/three/odyssey";
 import * as THREE from "three";
 
-/** retail @ MiniGame / (24 bytes: accel + vel). */
+/** Retail MiniGame physics state (24 bytes: accel + vel). */
 export interface MGMPhysicsState {
   acceleration: THREE.Vector3;
   velocity: THREE.Vector3;

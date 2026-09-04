@@ -1947,7 +1947,7 @@ export class GameState implements EngineContext {
         break;
     }
 
-    // Retail MainLoop: UpdateAreaTransitionGUI after world/object updates (00632180 / 004dee80).
+    // Retail MainLoop: UpdateAreaTransitionGUI after world/object updates.
     if(GameState.MenuManager.InGameAreaTransition)
       GameState.MenuManager.InGameAreaTransition.updateAreaTransitionGUI();
 

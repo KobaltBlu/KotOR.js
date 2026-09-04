@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  *
- * Retail CSWSExpression semantics (swkotor.exe ParseString/TestString).
+ * Retail CSWSExpression semantics (ParseString / TestString).
  */
 import { describe, expect, test } from '@jest/globals';
 import { parsePattern, testStringAgainstPattern } from '@/utility/listen-pattern';

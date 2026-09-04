@@ -39,7 +39,7 @@ import {
 export type { ListBoxSavedExtent };
 
 /**
- * GUIListBox — aligned with retail list box (swkotor.exe).
+ * GUIListBox — aligned with retail list box.
  *
  * Layout uses index-based OrganizeControls / OrganizeUnequal / OrganizeOversized.
  * RTT rendering and menu APIs (setItems / setProtoBuilder) are preserved.

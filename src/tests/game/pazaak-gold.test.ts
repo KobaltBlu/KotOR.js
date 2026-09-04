@@ -28,7 +28,7 @@ function emptyTable(): IPazaakTable {
   };
 }
 
-describe('TSL Pazaak gold specials (SetCard @ 0054c6b0)', () => {
+describe('TSL Pazaak gold specials (SetCard)', () => {
   const side = PazaakConfig_TSL.data.sideDeckCards;
 
   it('gold order matches retail 0x12..0x16', () => {

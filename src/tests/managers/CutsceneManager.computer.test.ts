@@ -126,7 +126,7 @@ import { CutsceneManager } from '@/managers/CutsceneManager';
 import { DLGCameraAngle } from '@/enums/dialog/DLGCameraAngle';
 import { GameState } from '@/GameState';
 
-describe('InGameComputer.setType (K1 SetType @ 006a8490)', () => {
+describe('InGameComputer.setType (K1 SetType)', () => {
   let menu: InGameComputer;
 
   beforeEach(() => {
@@ -149,7 +149,7 @@ describe('InGameComputer.setType (K1 SetType @ 006a8490)', () => {
   });
 });
 
-describe('InGameComputer.updateSkills (UpdateSkills @ 005b1b10)', () => {
+describe('InGameComputer.updateSkills (UpdateSkills)', () => {
   test('writes skill ranks and spike/part stack totals', () => {
     const menu = new InGameComputer();
     const setComp = jest.fn();

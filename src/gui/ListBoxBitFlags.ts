@@ -1,5 +1,5 @@
 /**
- * Retail list-box bit flags (swkotor.exe).
+ * Retail list-box bit flags.
  * Defaults match the list box constructor.
  */
 export interface ListBoxBitFlags {

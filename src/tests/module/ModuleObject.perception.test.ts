@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  *
- * Retail SaveCreature @ 005009af writes every CSWVisibilityNode's ObjectId +
+ * Retail SaveCreature writes every CSWVisibilityNode's ObjectId +
  * PerceptionData verbatim. Unresolved / PLAYER_ID heard-only nodes must survive
  * the same GFF write path used by ModuleCreature.save.
  *

@@ -10,7 +10,7 @@ import {
   skillFlowSlotExtentLeft,
 } from "@/gui/GUICoord";
 
-describe("selectTopmostHitChildIndex (retail CSWGuiPanel::HitCheckMouse @ 0040b690)", () => {
+describe("selectTopmostHitChildIndex (retail CSWGuiPanel::HitCheckMouse)", () => {
   it("returns -1 when nothing is hit", () => {
     expect(selectTopmostHitChildIndex([false, false, false])).toBe(-1);
     expect(selectTopmostHitChildIndex([])).toBe(-1);

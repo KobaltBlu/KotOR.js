@@ -109,7 +109,7 @@ describe('CutsceneManager.computeEntryDelaySeconds', () => {
   });
 });
 
-describe('CutsceneManager dialog talk/listen defaults (SetDialogAnimations @ 004d8bd0)', () => {
+describe('CutsceneManager dialog talk/listen defaults (SetDialogAnimations)', () => {
   test('healthy speaker/listener → TALK_NORMAL / LISTEN', () => {
     const actor = { isInjured: () => false } as any;
     expect(CutsceneManager.getDialogTalkAnimation(actor)).toBe(ModuleCreatureAnimState.TALK_NORMAL);
@@ -127,7 +127,7 @@ describe('CutsceneManager dialog talk/listen defaults (SetDialogAnimations @ 004
     expect(CutsceneManager.getDialogListenAnimation(undefined)).toBe(ModuleCreatureAnimState.LISTEN);
   });
 
-  test('canPlayDialogAnimations gates dead/debilitated (CanPlayDialogAnimations @ 004dfbe0)', () => {
+  test('canPlayDialogAnimations gates dead/debilitated (CanPlayDialogAnimations)', () => {
     expect(CutsceneManager.canPlayDialogAnimations(undefined)).toBe(false);
     expect(CutsceneManager.canPlayDialogAnimations({
       isDead: () => true,
@@ -144,7 +144,7 @@ describe('CutsceneManager dialog talk/listen defaults (SetDialogAnimations @ 004
   });
 });
 
-describe('CutsceneManager pause/resume pending (UpdateDialog @ 004cd580)', () => {
+describe('CutsceneManager pause/resume pending (UpdateDialog)', () => {
   beforeEach(() => {
     CutsceneManager.active = true;
     CutsceneManager.dialog = { stuntActors: new Map() } as any;

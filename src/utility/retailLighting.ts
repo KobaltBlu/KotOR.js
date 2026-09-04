@@ -118,7 +118,7 @@ export function retailIlluminationScore(
 }
 
 /**
- * Retail ControlLightsFade (`004a4580`) initial fade when a light is first
+ * Retail ControlLightsFade initial fade when a light is first
  * added to the bound list: fadingLightFlag (max_tree != 0) starts at 0,
  * otherwise 1. Ongoing updates always use `retailFadeStep`.
  */
@@ -321,20 +321,17 @@ export const RETAIL_SHADOW_DEPTH_BIAS = 0.05;
 /**
  * K1 DoDynamicMeshProjections — minimum shadow extrusion length (`shadowLength` global).
  * Effective radius is clamped to at least this value before mesh projection.
- * Verified: ProjectDynamicShadow @ 0x0044ff50; shadowLength = 5.0f in .data @ 0x007a2450 / 0x007a2680 (K1 swkotor.exe).
  */
 export const RETAIL_SHADOW_LENGTH = 5;
 /**
  * K1 DoGobShadowsForThisLight — focus cull distance when `enableFocusShadowing` is set.
- * Verified: `maxShadowDistance` = 40 (int) @ 0x007a1b48 (K1 swkotor.exe).
  */
 export const RETAIL_MAX_SHADOW_DISTANCE = 40;
-/** K1 `enableFocusShadowing` global @ 0x007a1938 (non-zero = enabled). */
+/** K1 `enableFocusShadowing` global (non-zero = enabled). */
 export const RETAIL_ENABLE_FOCUS_SHADOWING = true;
 /**
  * K1 RenderShadows Soft Shadows elevation gate: light.z must exceed
  * focus_position.z + this value or the soft stencil pass is skipped.
- * Verified: Scene::RenderShadows @ 0x00451af4 (K1 swkotor.exe).
  */
 export const RETAIL_SOFT_SHADOW_LIGHT_MIN_ELEVATION = 1.75;
 /** True when a light is high enough above focus for retail Soft Shadows. */
@@ -385,7 +382,7 @@ export function retailShadowProjectionPlaneKind(
 
 /**
  * Hull / lightmapped receiver plane for DoStaticMeshShadows / DoDynamicMeshProjections.
- * Retail uses camera near + bias for local lights (ProjectDynamicShadow @ 0x0044ff50).
+ * Retail uses camera near + bias for local lights (ProjectDynamicShadow).
  */
 export function retailStaticMeshShadowPlaneKind(
   radius: number,
@@ -404,7 +401,7 @@ const _planeTransformLocalOrigin = new THREE.Vector3();
 const _planeTransformTangent = new THREE.Vector3();
 
 /**
- * Mirror K1 Plane::Transform @ 0x004ab4c0 — world plane → mesh-local plane
+ * Mirror K1 Plane::Transform — world plane → mesh-local plane
  * (inverse rotation on normal; origin = -constant * normal, then local origin).
  */
 export function transformRetailShadowPlaneToMeshLocal(

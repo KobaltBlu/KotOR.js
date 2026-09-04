@@ -35,7 +35,7 @@ export const STR_OFFHAND_BLOCKED = 42344;
 export const STR_NOTHING_AVAILABLE = 42345;
 
 /**
- * Retail slotInfo table (swkotor.exe), keyed by EquipmentSlots bitmask.
+ * Retail slotInfo table, keyed by EquipmentSlots bitmask.
  * Icon stem is formatted as `i` + (`d` if droid) + stem.
  */
 export const EQUIP_SLOT_INFO: Partial<Record<ModuleCreatureArmorSlot, EquipSlotInfo>> = {

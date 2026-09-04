@@ -55,7 +55,7 @@ function makeSpell(
   } as TalentSpell;
 }
 
-describe("subradial encode (CSWSpellArray::Load @ 0059ba20)", () => {
+describe("subradial encode (CSWSpellArray::Load)", () => {
   it("Force Aura/Shield/Armor share friendly family+slot, priorities 0/1/2", () => {
     const aura = MenuAbilities.encodeSpellSubRadial({ forcefriendly: 1, forcepriority: 0 });
     const shield = MenuAbilities.encodeSpellSubRadial({ forcefriendly: 1, forcepriority: 1 });

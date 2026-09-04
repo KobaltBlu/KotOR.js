@@ -50,7 +50,7 @@ export interface UpgradeSessionSlot {
   templateTag: string;
 }
 
-/** Retail K1 SLOT_INFO @ 0x00756fb0 — indexed by (slotIndex-4)+category*4. */
+/** Retail K1 SLOT_INFO — indexed by (slotIndex-4)+category*4. */
 const K1_SLOT_INFO: Record<UpgradeCategory, UpgradeSlotInfo[]> = {
   [UpgradeCategory.NONE]: [],
   [UpgradeCategory.LIGHTSABER]: [
@@ -75,7 +75,7 @@ const K1_SLOT_INFO: Record<UpgradeCategory, UpgradeSlotInfo[]> = {
   ],
 };
 
-/** Retail K2 SLOT_INFO @ 0x00993c70 — 6 entries per category. */
+/** Retail K2 SLOT_INFO — 6 entries per category. */
 const K2_SLOT_INFO: Record<UpgradeCategory, UpgradeSlotInfo[]> = {
   [UpgradeCategory.NONE]: [],
   [UpgradeCategory.LIGHTSABER]: [

@@ -30,7 +30,7 @@ function makePlaceable(id = 2): ModulePlaceable {
   } as unknown as ModulePlaceable;
 }
 
-describe("isPthEdgeBlockedByObject (GenerateSuccessors @ 004bdb00)", () => {
+describe("isPthEdgeBlockedByObject (GenerateSuccessors)", () => {
   it("allows edge when blocker is a non-static (openable) door", () => {
     expect(isPthEdgeBlockedByObject(makeDoor(false))).toBe(false);
   });

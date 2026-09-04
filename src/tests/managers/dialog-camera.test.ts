@@ -11,7 +11,7 @@ import {
   isLoopingDialogStuntAnimation,
 } from '@/managers/cutscene/dialog-camera';
 
-describe('isLoopingDialogStuntAnimation (IsLoopingDialogStuntAnimation @ 0062ab70)', () => {
+describe('isLoopingDialogStuntAnimation (IsLoopingDialogStuntAnimation)', () => {
   it('is false for base and w CUT bands', () => {
     expect(isLoopingDialogStuntAnimation(1000)).toBe(false);
     expect(isLoopingDialogStuntAnimation(1200)).toBe(false);

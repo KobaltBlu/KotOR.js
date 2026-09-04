@@ -96,7 +96,7 @@ export class ModuleMGPlayer extends ModuleObject {
   /** Retail player origin (Start_Offset_*) added to tunnel clamps. */
   origin: { x: number; y: number; z: number };
   /**
-   * Retail Target_Offset_X/Y/Z @ Load 006702f0 (fields 0x214–0x21c)
+   * Retail Target_Offset_X/Y/Z from Load —
    * local-space aim point for BehaviorTrack / FireGunCallback targeting.
    */
   targetOffset: THREE.Vector3 = new THREE.Vector3();
@@ -126,12 +126,12 @@ export class ModuleMGPlayer extends ModuleObject {
   bankDecayLatched: boolean = false;
   /**
    * retail DoInertia — previous modelhook velocity
-   * (fields 0x228–0x230) for bump-plane projection when UseInertia.
+   * for bump-plane projection when UseInertia.
    */
   inertiaVelocity: THREE.Vector3 = new THREE.Vector3();
   /**
    * Retail OnReportKey → follower.trigger (Pos keys, flag≠0)
-   * and MiniPlayer (Ori keys, flag==0). SWMGKeyInfo 0x24.
+   * and MiniPlayer (Ori keys, flag==0).
    */
   inertiaKeysTrigger: SWMGKeyInfo[] = [];
   inertiaKeysReport: SWMGKeyInfo[] = [];
