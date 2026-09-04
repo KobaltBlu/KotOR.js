@@ -26,10 +26,19 @@ export class SWCreatureAppearance {
   rundist: number = 5.4;
   /** Anim pacing distance — retail default 2 when zero. */
   driveanimwalk: number = 2;
-  /** Anim pacing distance — retail default 4 when zero (K1 DriveAnimRun). */
+  /**
+   * Anim pacing distance — retail default 4 when zero.
+   * K1: appearance.2da DriveAnimRun. TSL: Load2DArrays_Appearance /
+   * CreateBodyAppearance cache DriveAnimRun_PC into this same slot.
+   */
   driveanimrun: number = 4;
-  /** TSL PC DriveAnimRun_PC column (Load2DArrays caches this instead of DriveAnimRun). */
+  /**
+   * Raw DriveAnimRun_PC cell (TSL). Mirrored into driveanimrun by From2DA so
+   * CreateBodyAppearance-equivalent paths share one run distance.
+   */
   driveanimrun_pc: number = 4;
+  /** TSL DriveAnimRun_XBOX — not cached by PC Load2DArrays_Appearance. */
+  driveanimrun_xbox: number = 4;
   racetex: string = '';
   modeltype: 'B'|'F'|'S'|'L' = 'B';
   normalhead: number = -1;
@@ -77,10 +86,15 @@ export class SWCreatureAppearance {
 
   modelm: string = ''; //TSL
   texm: string = ''; //TSL
-  texmevil: string = ''; //TSL
 
   modeln: string = ''; //TSL
   texn: string = ''; //TSL
+  /**
+   * Body-N evil tex prefix. Retail SetAppearanceAlignment looks up "TEXMEVIL"
+   * for body index 0xE, but appearance.2da's column is texnevil — From2DA reads
+   * texnevil (and texmevil as a mod alias) into this field.
+   */
+  texmevil: string = ''; //TSL (2DA: texnevil)
 
   skin: string = '';
   headtexve: string = '';
@@ -175,7 +189,8 @@ export class SWCreatureAppearance {
 
   /**
    * Retail SetAppearanceAlignment TEX*Evil prefix for the given body letter index.
-   * K1 only has TEXAEVIL (no body variation). K2: B=2, I=9, L=0xC, N=0xE → TEXMEVIL.
+   * K1 only has TEXAEVIL (no body variation). K2: B=2, I=9, L=0xC, N=0xE →
+   * retail string "TEXMEVIL" / 2DA column texnevil (stored as texmevil).
    */
   getEvilBodyTexPrefix(bodyIndex: number, hasBodyVariation: boolean): string {
     if(!hasBodyVariation){
@@ -222,8 +237,13 @@ export class SWCreatureAppearance {
       maxBodyIndex,
     );
     const { model: slotModel, texture: slotTex } = this.getModelTexForIndex(bodyIndex);
-    let bodyModel = slotModel || defaultModel;
-    let bodyTexture = slotTex || defaultTexture;
+    // Retail GetBTypeModelAndTextureResRef: empty TEX* → empty resref (MDL default),
+    // not ModelA's TEXA. Falling back to TEXA is why Atton/Mira party bodies got PMBAMC/PFBAMC.
+    const bodyModel = slotModel || defaultModel;
+    let bodyTexture = slotTex;
+    if(!slotModel && !slotTex){
+      bodyTexture = defaultTexture;
+    }
 
     // Retail SetAppearanceAlignment: evil body tex + "01" when GoodEvil < 0x29
     if(goodEvil < APPEARANCE_EVIL_BODY_ALIGN_MAX){
@@ -242,8 +262,8 @@ export class SWCreatureAppearance {
     }
 
     return {
-      model: (bodyModel || defaultModel).toLowerCase(),
-      texture: (bodyTexture || defaultTexture).toLowerCase(),
+      model: bodyModel.toLowerCase(),
+      texture: bodyTexture.toLowerCase(),
     };
   }
 
@@ -266,13 +286,24 @@ export class SWCreatureAppearance {
       appearance.driveanimwalk = TwoDAObject.normalizeValue(row.driveanimwalk, 'number', 2);
       if(!(appearance.driveanimwalk > 0)) appearance.driveanimwalk = 2;
     }
+    // K1: DriveAnimRun. TSL Load2DArrays_Appearance indexes DriveAnimRun_PC into
+    // the same COL2DA_APPEARANCETABLE_DRIVEANIMRUN slot CreateBodyAppearance reads.
+    let loadedDriveAnimRun = false;
     if(row.hasOwnProperty('driveanimrun')){
       appearance.driveanimrun = TwoDAObject.normalizeValue(row.driveanimrun, 'number', 4);
       if(!(appearance.driveanimrun > 0)) appearance.driveanimrun = 4;
+      loadedDriveAnimRun = true;
     }
     if(row.hasOwnProperty('driveanimrun_pc')){
       appearance.driveanimrun_pc = TwoDAObject.normalizeValue(row.driveanimrun_pc, 'number', 4);
       if(!(appearance.driveanimrun_pc > 0)) appearance.driveanimrun_pc = 4;
+      if(!loadedDriveAnimRun){
+        appearance.driveanimrun = appearance.driveanimrun_pc;
+      }
+    }
+    if(row.hasOwnProperty('driveanimrun_xbox')){
+      appearance.driveanimrun_xbox = TwoDAObject.normalizeValue(row.driveanimrun_xbox, 'number', 4);
+      if(!(appearance.driveanimrun_xbox > 0)) appearance.driveanimrun_xbox = 4;
     }
     if(row.hasOwnProperty('racetex'))
       appearance.racetex = TwoDAObject.normalizeValue(row.racetex, 'string', '');
@@ -355,13 +386,16 @@ export class SWCreatureAppearance {
       appearance.modelm = TwoDAObject.normalizeValue(row.modelm, 'string', '');
     if(row.hasOwnProperty('texm'))
       appearance.texm = TwoDAObject.normalizeValue(row.texm, 'string', '');
-    if(row.hasOwnProperty('texmevil'))
-      appearance.texmevil = TwoDAObject.normalizeValue(row.texmevil, 'string', '');
 
     if(row.hasOwnProperty('modeln'))
       appearance.modeln = TwoDAObject.normalizeValue(row.modeln, 'string', '');
     if(row.hasOwnProperty('texn'))
       appearance.texn = TwoDAObject.normalizeValue(row.texn, 'string', '');
+    // Retail SetAppearanceAlignment string is "TEXMEVIL" for body N; 2DA column is texnevil.
+    if(row.hasOwnProperty('texnevil'))
+      appearance.texmevil = TwoDAObject.normalizeValue(row.texnevil, 'string', '');
+    else if(row.hasOwnProperty('texmevil'))
+      appearance.texmevil = TwoDAObject.normalizeValue(row.texmevil, 'string', '');
 
     if(row.hasOwnProperty('skin'))
       appearance.skin = TwoDAObject.normalizeValue(row.skin, 'string', '');

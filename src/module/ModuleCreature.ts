@@ -5814,11 +5814,7 @@ export class ModuleCreature extends ModuleObject {
         this.setAnimationState(nextAnim);
       }
       const animDist = nextAnim === ModuleCreatureAnimState.RUNNING
-        ? coalesceDriveAnimRun(
-            GameState.GameKey === GameEngineType.TSL
-              ? (appearance.driveanimrun_pc || appearance.driveanimrun)
-              : appearance.driveanimrun
-          )
+        ? coalesceDriveAnimRun(appearance.driveanimrun)
         : coalesceDriveAnimWalk(appearance.driveanimwalk);
       this.animSpeed = Math.max(
         0.1,
