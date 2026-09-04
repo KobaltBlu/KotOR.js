@@ -4,6 +4,7 @@ import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
 import { GameInitializer } from "@/apps/game/GameInitializer";
 import { applyProfileSeo } from "@/apps/common/seo/applyProfileSeo";
 import { buildProfileSeo } from "@/apps/common/seo/profileSeo";
+import { persistGameDirectoryHandle, restoreGameDirectoryHandlesToProfiles } from "@/utility/gameDirectoryAccess";
 
 export class AppState {
   static eulaAccepted: boolean = false;
@@ -22,6 +23,8 @@ export class AppState {
     const query = new URLSearchParams(window.location.search);
     await KotOR.ConfigClient.Init();
     await Launcher.InitProfiles();
+    // Dedicated IDB keys survive profile merges; Forge already restores these.
+    await restoreGameDirectoryHandlesToProfiles();
     const rawKey = query.get("key");
     const gameKeys = ['kotor', 'tsl'];
     const key =
@@ -283,7 +286,7 @@ export class AppState {
   static async attachDirectoryHandle(handle: FileSystemDirectoryHandle){
     KotOR.ApplicationProfile.directoryHandle = handle;
     AppState.appProfile.directory_handle = handle;
-    KotOR.ConfigClient.set(`Profiles.${AppState.appProfile.key}.directory_handle`, handle);
+    await persistGameDirectoryHandle(AppState.appProfile.key, handle);
     AppState.directoryLocated = true;
     if(AppState.shouldDeferForAudioUnlock()){
       AppState.processEventListener('on-preload', []);
