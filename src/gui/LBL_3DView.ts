@@ -229,12 +229,8 @@ export class LBL_3DView {
     //GameState.renderer.setClearColor(oldClearColor, 1);
 
     if(this.control){
-      let material = this.control.getFill().material;
-      if(material instanceof THREE.ShaderMaterial){
-        this.control.setFillTexture(this.texture.texture);
-        material.transparent = true;
-        material.needsUpdate = true;
-      }
+      this.control.setFillTexture(this.texture.texture);
+      this.control.setFillOpaque(false);
     }
 
   }

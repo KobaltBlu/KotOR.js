@@ -135,7 +135,7 @@ export class MenuCharacter extends K1_MenuCharacter {
         this._3dView.setControl(this.LBL_3DCHAR);
         this._3dView.setViewAngle();
         this._3dView.visible = true;
-        (this.LBL_3DCHAR.getFill().material as any).transparent = false;
+        this.LBL_3DCHAR.setFillOpaque(true);
 
         OdysseyModel3D.FromMDL(mdl, {
           context: this._3dView,

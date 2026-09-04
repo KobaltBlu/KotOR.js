@@ -358,9 +358,7 @@ export class MenuPartySelection extends GameMenu {
       }
     }
     if(this.LBL_3D.getFillTextureName() != resref){
-      this.LBL_3D.setFillTextureName(resref);
-      const texture = await TextureLoader.Load(resref);
-      if(texture) this.LBL_3D.setFillTexture(texture);
+      await this.LBL_3D.setFillTextureName(resref);
     }
     this.LBL_3D.show();
   }
@@ -511,9 +509,7 @@ export class MenuPartySelection extends GameMenu {
       LBL_NA.hide();
       const portrait = GameState.PartyManager.GetPortraitByIndex(i);
       if(LBL_NA.getFillTextureName() != portrait && !!portrait){
-        LBL_CHAR.setFillTextureName(portrait);
-        const texture = await TextureLoader.Load(portrait);
-        if(texture) LBL_CHAR.setFillTexture(texture);
+        await LBL_CHAR.setFillTextureName(portrait);
       }
       const selectable = this.slotState[i]?.canToggle && GameState.PartyManager.IsSelectable(i);
       LBL_CHAR.setChromeOpacity(selectable ? 1 : 0.5);

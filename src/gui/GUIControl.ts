@@ -56,6 +56,8 @@ import {
   GUI_CHROME_REGION_CORNER,
   GUI_CHROME_REGION_EDGE,
   GUI_CHROME_REGION_FILL,
+  GUI_HOVER_MODE_OVERLAY,
+  GUI_HOVER_MODE_SWAP,
   layoutOrthoPlanePositions,
   mergeChromePlanes,
   stampRegionAttribute,
@@ -165,7 +167,7 @@ export class GUIControl {
   pulse: number = 1;
   opacity: number = 1;
   hover: boolean;
-  swapBorderAndHighliteOnHover = true;
+  swapBorderAndHighlightOnHover = true;
 
   extent: IGUIControlExtent = {
     top: 0,
@@ -194,7 +196,7 @@ export class GUIControl {
   objectParent: number;
   objectLocked: number;
   type: number;
-  hasHighlight: any;
+  hasHighlight: boolean;
   hasMoveTo: any;
   borderEnabled: boolean;
   borderFillEnabled: boolean;
@@ -902,15 +904,17 @@ export class GUIControl {
   protected applyChromeHoverState(hovered: boolean){
     if(!this.chrome?.material) return;
     const u = this.chrome.material.uniforms;
-    u.hoverMode.value = this.swapBorderAndHighliteOnHover ? 0 : 1;
-    const hasHighlight = this.highlight.edge != '' || this.highlight.fill.texture != '';
+    u.hoverMode.value = this.swapBorderAndHighlightOnHover
+      ? GUI_HOVER_MODE_SWAP
+      : GUI_HOVER_MODE_OVERLAY;
+    const hasHighlightAssets = this.highlight.edge != '' || this.highlight.fill.texture != '';
     if(hovered){
-      if(this.swapBorderAndHighliteOnHover){
-        u.hovered.value = hasHighlight ? 1 : 0;
+      if(this.swapBorderAndHighlightOnHover){
+        u.hovered.value = hasHighlightAssets ? 1 : 0;
       }else{
         u.hovered.value = 1;
       }
-      if(hasHighlight){
+      if(hasHighlightAssets){
         // Use GFF HILIGHT COLOR (e.g. K1 saveload ~off-white), not engine default yellow.
         u.highlightDiffuse.value.copy(this.highlight.color);
       }
@@ -925,7 +929,7 @@ export class GUIControl {
     if(!this.chrome?.material) return;
     const u = this.chrome.material.uniforms;
     const hovered = u.hovered.value > 0.5;
-    const swap = this.swapBorderAndHighliteOnHover;
+    const swap = this.swapBorderAndHighlightOnHover;
     if(hovered && swap){
       u.enableFrame.value = this.highlightEnabled ? 1 : 0;
       u.enableFill.value = this.highlightFillEnabled ? 1 : 0;
@@ -1055,7 +1059,7 @@ export class GUIControl {
     // Runtime `this.pulsing` ≈ SetPulsingAlpha(1, 1, 0): edges/corners + text, not fill.
     // Fill pulses only when GFF PULSING bit1 is set (retail SetPulsingAlpha fill flag).
     const hovered = this.chrome?.material?.uniforms?.hovered?.value > 0.5;
-    const swap = this.swapBorderAndHighliteOnHover;
+    const swap = this.swapBorderAndHighlightOnHover;
     const useHighlightPulse = hovered && swap;
     const pulseEdge = this.pulsing || !!( (useHighlightPulse ? highlightFlags : borderFlags) & 1);
     const pulseFill = !!((useHighlightPulse ? highlightFlags : borderFlags) & 2);
@@ -1200,9 +1204,33 @@ export class GUIControl {
     }
   }*/
 
-  /** Compat alias — fill is a chrome region, not a separate mesh. */
+  /**
+   * @deprecated Fill is a chrome region, not a separate mesh. Prefer setFillTexture /
+   * setFillOpaque / setChromeBlending / markChromeNeedsUpdate. Still returns chrome.mesh
+   * for legacy mesh-transform callers (e.g. timing bar).
+   */
   getFill(): THREE.Mesh {
     return this.chrome.mesh;
+  }
+
+  /** Opaque 3D/RTT fill: transparent=false, material visible. */
+  setFillOpaque(opaque: boolean){
+    if(!this.chrome?.material) return;
+    this.chrome.material.transparent = !opaque;
+    this.chrome.material.visible = true;
+    this.chrome.material.needsUpdate = true;
+  }
+
+  setChromeBlending(mode: number){
+    if(!this.chrome?.material) return;
+    this.chrome.material.blending = mode;
+    this.chrome.material.needsUpdate = true;
+  }
+
+  markChromeNeedsUpdate(){
+    if(!this.chrome?.material) return;
+    this.chrome.material.needsUpdate = true;
+    this.chrome.material.uniformsNeedUpdate = true;
   }
 
   setHighlightFillTexture(map: THREE.Texture){
@@ -1239,21 +1267,44 @@ export class GUIControl {
     return this.border.fill.texture;
   }
 
-  async setFillTextureName(name = '', bUpdateHighlight = true): Promise<OdysseyTexture> {
+  clearFillTexture(){
+    this.border.fill.texture = '';
+    this.highlight.fill.texture = '';
+    if(this.chrome?.material){
+      bindChromeTexture(this.chrome.material, 'fillMap', null);
+      bindChromeTexture(this.chrome.material, 'highlightFillMap', null);
+    }
+    this.borderFillEnabled = false;
+    this.highlightFillEnabled = false;
+    this.syncChromeEnableFlags();
+  }
+
+  async setFillTextureName(
+    name = '',
+    bUpdateHighlight = true,
+    opts?: { transparent?: boolean },
+  ): Promise<OdysseyTexture | void> {
     this.border.fill.texture = name;
-    this.borderFillEnabled = true;
-    if(!name.length){ return; }
-    
+    this.borderFillEnabled = !!name.length;
+    if(!name.length){
+      this.clearFillTexture();
+      return;
+    }
+
     if(bUpdateHighlight) this.highlightFillEnabled = true;
     if(bUpdateHighlight) this.highlight.fill.texture = name;
     this._beginTextureLoad();
-    TextureLoader.enQueue(this.border.fill.texture, this.chrome.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-      this.setFillTexture(texture)
-      if(bUpdateHighlight) this.setHighlightFillTexture(texture);
-      this._endTextureLoad();
-      return texture;
-    }, undefined, 'fillMap');
-    return;
+    return new Promise<OdysseyTexture | void>((resolve) => {
+      TextureLoader.enQueue(this.border.fill.texture, this.chrome.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
+        this.setFillTexture(texture);
+        if(bUpdateHighlight) this.setHighlightFillTexture(texture);
+        if(opts?.transparent !== undefined){
+          this.setFillOpaque(!opts.transparent);
+        }
+        this._endTextureLoad();
+        resolve(texture);
+      }, undefined, 'fillMap');
+    });
   }
 
   setMaterialTexture(material: THREE.ShaderMaterial, texture: THREE.Texture|null){
@@ -1697,7 +1748,7 @@ export class GUIControl {
       const hilightInner = borderInnerExtent({
         width: ew,
         height: eh,
-        dimension: this.getHightlightSize(),
+        dimension: this.getHighlightSize(),
         innerOffset: asExtentInt(this.highlight.inneroffset || 0),
         innerOffsetY: asExtentInt(this.highlight.inneroffsety ?? this.highlight.inneroffset ?? 0),
       });
@@ -1776,7 +1827,7 @@ export class GUIControl {
     return asGuiSize(this.border.dimension || 0);
   }
 
-  getHightlightSize(){
+  getHighlightSize(){
     return asGuiSize(this.highlight.dimension || 0);
   }
 
@@ -1791,7 +1842,7 @@ export class GUIControl {
     return clampFrameDim(
       chromeFrameDimension(
         this.getBorderSize(),
-        this.getHightlightSize(),
+        this.getHighlightSize(),
         !!(this.border.edge || this.border.corner),
         !!(this.highlight.edge || this.highlight.corner),
       ),
@@ -1821,7 +1872,7 @@ export class GUIControl {
   }
 
   getHighlightExtent(side: string){
-    return this.getFrameExtent(side, this.getHightlightSize());
+    return this.getFrameExtent(side, this.getHighlightSize());
   }
 
   /** Frame quads for the shared chrome mesh (may use highlight dim — see {@link getChromeFrameSize}). */

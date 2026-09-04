@@ -199,10 +199,7 @@ export class MenuTop extends K1_MenuTop {
       this.TogglePartyMember(i, true);
       let pmBG = this.getControlByName('LBL_CHAR' + (i + 1));
       if (pmBG.getFillTextureName() != portTextureRef) {
-        pmBG.setFillTextureName(portTextureRef);
-        TextureLoader.Load(portTextureRef).then((texture: OdysseyTexture) => {
-          pmBG.setFillTexture(texture);
-        });
+        void pmBG.setFillTextureName(portTextureRef);
       }
       if (i == 0) {
         (this.getControlByName('PB_VIT' + (i + 1)) as GUIProgressBar).setProgress(partyMember.getHP() / partyMember.getMaxHP() * 100);

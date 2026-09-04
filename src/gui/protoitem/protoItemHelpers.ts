@@ -257,13 +257,13 @@ export function applySkillFlowStatus(
     ? ABILITY_LOCKED_ICON_ALPHA
     : 1;
   if(button.chrome?.material){
-    button.chrome.material.transparent = true;
+    button.setFillOpaque(false);
     button.chrome.material.uniforms.fillOpacity.value = fillAlpha;
     button.chrome.material.uniformsNeedUpdate = true;
   }
 
   if(arrowButton?.chrome?.material){
-    arrowButton.chrome.material.transparent = true;
+    arrowButton.setFillOpaque(false);
     arrowButton.chrome.material.uniforms.fillOpacity.value = arrowAlpha;
     arrowButton.chrome.material.uniformsNeedUpdate = true;
   }
@@ -304,9 +304,7 @@ export function applyAbilityButtonTexture(
   if(!texture) return;
   buttonIcon.setFillTexture(texture);
   buttonIcon.setHighlightFillTexture(texture);
-  if(buttonIcon.chrome?.material){
-    buttonIcon.chrome.material.transparent = true;
-  }
+  buttonIcon.setFillOpaque(false);
   if(locked){
     buttonIcon.setChromeOpacity?.(1, lockedAlpha);
   }

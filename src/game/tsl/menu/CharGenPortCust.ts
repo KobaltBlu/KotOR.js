@@ -101,7 +101,7 @@ export class CharGenPortCust extends K1_CharGenPortCust {
     this._3dView.visible = true;
     this._3dView.setControl(this.LBL_HEAD);
     this._3dView.setViewAngle();
-    (this.LBL_HEAD.getFill().material as THREE.ShaderMaterial).transparent = false;
+    this.LBL_HEAD.setFillOpaque(true);
 
     this.Init3D();
   }

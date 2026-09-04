@@ -101,8 +101,8 @@ export class CharGenClass extends GameMenu {
         _3dView.visible = true;
         _3dView.setControl(control);
         _3dView.setViewAngle();
-        (control.getFill().material as THREE.ShaderMaterial).transparent = true;
-        (control.getFill().material as THREE.ShaderMaterial).blending = 1;
+        control.setFillOpaque(false);
+        control.setChromeBlending(1);
       }
 
       this.captureBaseExtents();
@@ -144,8 +144,8 @@ export class CharGenClass extends GameMenu {
       let creature = GameState.CharGenManager.creatures.get(nth);
       _3dView.setControl(control);
       _3dView.visible = true;
-      control.chrome.material.transparent = true;
-      control.chrome.material.blending = 1;
+      control.setFillOpaque(false);
+      control.setChromeBlending(1);
 
       if(_3dViewModel) _3dViewModel.removeFromParent();
 
@@ -246,7 +246,7 @@ export class CharGenClass extends GameMenu {
         }
         _3dView.setSize(modelControl.extent.width * 2, modelControl.extent.height * 2);
         _3dView.render(delta);
-        (modelControl.getFill().material as THREE.ShaderMaterial).needsUpdate = true;
+        modelControl.markChromeNeedsUpdate();
         btnControl.resizeControl();
         modelControl.resizeControl();
       }

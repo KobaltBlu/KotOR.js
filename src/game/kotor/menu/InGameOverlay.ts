@@ -3,7 +3,6 @@ import { EngineMode } from "@/enums/engine/EngineMode";
 import { FeedbackOption } from "@/enums/engine/FeedbackOption";
 import { GameMenu, LBL_MapView, GUIPanelCoordFlags } from "@/gui";
 import type { GUILabel, GUIButton, GUICheckBox, GUIProgressBar } from "@/gui";
-import { clearChromeTexture } from "@/gui/guiChrome";
 import { TextureLoader } from "@/loaders";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import * as THREE from "three";
@@ -719,13 +718,7 @@ export class InGameOverlay extends GameMenu {
   }
 
   clearActionIcon(guiControl: GUIButton){
-    if(guiControl.chrome?.material){
-      clearChromeTexture(guiControl.chrome.material, 'fillMap');
-      clearChromeTexture(guiControl.chrome.material, 'highlightFillMap');
-      guiControl.borderFillEnabled = false;
-      guiControl.highlightFillEnabled = false;
-    }
-    guiControl.setFillTextureName('');
+    guiControl.clearFillTexture();
   }
 
   UpdateTargetUIIcon(index = 0) {
@@ -742,16 +735,9 @@ export class InGameOverlay extends GameMenu {
     }
 
     if (guiControl.getFillTextureName() != action.icon) {
-      guiControl.setFillTextureName(action.icon);
-      TextureLoader.tpcLoader.fetch(action.icon).then((texture: OdysseyTexture) => {
-        guiControl.setFillTexture(texture);
-        guiControl.setHighlightFillTexture(texture);
-        if(guiControl.chrome?.material) guiControl.chrome.material.transparent = true;
-        this.applyActionIconEnabled(guiControl, action.enabled !== false);
-      });
-    } else {
-      this.applyActionIconEnabled(guiControl, action.enabled !== false);
+      void guiControl.setFillTextureName(action.icon, true, { transparent: true });
     }
+    this.applyActionIconEnabled(guiControl, action.enabled !== false);
   }
 
   UpdateSelfUIIcon(index = 0) {
@@ -759,13 +745,8 @@ export class InGameOverlay extends GameMenu {
     if (GameState.ActionMenuManager.ActionPanels.selfPanels[index].actions.length) {
       const action = GameState.ActionMenuManager.ActionPanels.selfPanels[index].getSelectedAction();
       if (action && guiControl.getFillTextureName() != action.icon) {
-        guiControl.setFillTextureName(action.icon);
-        TextureLoader.tpcLoader.fetch(action.icon).then((texture: OdysseyTexture) => {
-          guiControl.setFillTexture(texture);
-          guiControl.setHighlightFillTexture(texture);
-          if(guiControl.chrome?.material) guiControl.chrome.material.transparent = true;
-          this.applyActionIconEnabled(guiControl, action.enabled !== false);
-        });
+        void guiControl.setFillTextureName(action.icon, true, { transparent: true });
+        this.applyActionIconEnabled(guiControl, action.enabled !== false);
       } else if (action) {
         this.applyActionIconEnabled(guiControl, action.enabled !== false);
       } else if (!action) {
@@ -1421,10 +1402,7 @@ export class InGameOverlay extends GameMenu {
       let pmBG = this.getControlByName('LBL_CHAR' + (id + 1));
       const portraitResRef = partyMember.getPortraitResRef();
       if (pmBG.getFillTextureName() != portraitResRef) {
-        pmBG.setFillTextureName(portraitResRef);
-        TextureLoader.tpcLoader.fetch(portraitResRef).then((texture: OdysseyTexture) => {
-          pmBG.setFillTexture(texture);
-        });
+        void pmBG.setFillTextureName(portraitResRef);
       }
       (this.getControlByName('PB_VIT' + (id + 1)) as GUIProgressBar).setProgress(Math.min(Math.max(partyMember.getHP() / partyMember.getMaxHP(), 0), 1) * 100);
       (this.getControlByName('PB_FORCE' + (id + 1)) as GUIProgressBar).setProgress(Math.min(Math.max(partyMember.getFP() / partyMember.getMaxFP(), 0), 1) * 100);
@@ -1447,51 +1425,31 @@ export class InGameOverlay extends GameMenu {
       let action3 = oPC.combatRound.scheduledActionList[2];
       if (action0 != undefined) {
         if (this.LBL_QUEUE0.getFillTextureName() != action0.iconResRef) {
-          this.LBL_QUEUE0.setFillTextureName(action0.iconResRef);
-          TextureLoader.tpcLoader.fetch(action0.iconResRef).then((texture: OdysseyTexture) => {
-            this.LBL_QUEUE0.setFillTexture(texture);
-            if(this.LBL_QUEUE0.chrome?.material) this.LBL_QUEUE0.chrome.material.transparent = true;
-          });
+          void this.LBL_QUEUE0.setFillTextureName(action0.iconResRef, true, { transparent: true });
         }
       } else {
-        this.LBL_QUEUE0.setFillTextureName('');
-        this.LBL_QUEUE0.setFillTexture(undefined);
+        this.LBL_QUEUE0.clearFillTexture();
       }
       if (action1 != undefined) {
         if (this.LBL_QUEUE1.getFillTextureName() != action1.iconResRef) {
-          this.LBL_QUEUE1.setFillTextureName(action1.iconResRef);
-          TextureLoader.tpcLoader.fetch(action1.iconResRef).then((texture: OdysseyTexture) => {
-            this.LBL_QUEUE1.setFillTexture(texture);
-            if(this.LBL_QUEUE1.chrome?.material) this.LBL_QUEUE1.chrome.material.transparent = true;
-          });
+          void this.LBL_QUEUE1.setFillTextureName(action1.iconResRef, true, { transparent: true });
         }
       } else {
-        this.LBL_QUEUE1.setFillTextureName('');
-        this.LBL_QUEUE1.setFillTexture(undefined);
+        this.LBL_QUEUE1.clearFillTexture();
       }
       if (action2 != undefined) {
         if (this.LBL_QUEUE2.getFillTextureName() != action2.iconResRef) {
-          this.LBL_QUEUE2.setFillTextureName(action2.iconResRef);
-          TextureLoader.tpcLoader.fetch(action2.iconResRef).then((texture: OdysseyTexture) => {
-            this.LBL_QUEUE2.setFillTexture(texture);
-            if(this.LBL_QUEUE2.chrome?.material) this.LBL_QUEUE2.chrome.material.transparent = true;
-          });
+          void this.LBL_QUEUE2.setFillTextureName(action2.iconResRef, true, { transparent: true });
         }
       } else {
-        this.LBL_QUEUE2.setFillTextureName('');
-        this.LBL_QUEUE2.setFillTexture(undefined);
+        this.LBL_QUEUE2.clearFillTexture();
       }
       if (action3 != undefined) {
         if (this.LBL_QUEUE3.getFillTextureName() != action3.iconResRef) {
-          this.LBL_QUEUE3.setFillTextureName(action3.iconResRef);
-          TextureLoader.tpcLoader.fetch(action3.iconResRef).then((texture: OdysseyTexture) => {
-            this.LBL_QUEUE3.setFillTexture(texture);
-            if(this.LBL_QUEUE3.chrome?.material) this.LBL_QUEUE3.chrome.material.transparent = true;
-          });
+          void this.LBL_QUEUE3.setFillTextureName(action3.iconResRef, true, { transparent: true });
         }
       } else {
-        this.LBL_QUEUE3.setFillTextureName('');
-        this.LBL_QUEUE3.setFillTexture(undefined);
+        this.LBL_QUEUE3.clearFillTexture();
       }
     } else {
       this.hideCombatUI();

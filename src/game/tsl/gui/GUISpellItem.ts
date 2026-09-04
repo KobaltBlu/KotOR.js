@@ -116,8 +116,6 @@ export class GUISpellItem extends GUIProtoItem {
         iconSprite.scale.y = 32;
         iconSprite.position.z = 5;
         iconSprite.renderOrder = 5;
-        this.widget.userData.iconMaterial = iconMaterial;
-        this.widget.userData.iconSprite = iconSprite;
 
         const iconName = (isUnknown && !hasSpell)
           ? 'ip_secret'

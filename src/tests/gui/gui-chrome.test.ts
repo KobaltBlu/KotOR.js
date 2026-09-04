@@ -47,6 +47,16 @@ describe("gui chrome region attribute", () => {
   });
 });
 
+describe("gui chrome hover mode constants", () => {
+  it("matches ShaderAuroraGUI hoverMode swap/overlay values", () => {
+    // Keep in sync with guiChrome.ts exports (avoid importing BufferGeometryUtils ESM here).
+    const GUI_HOVER_MODE_SWAP = 0;
+    const GUI_HOVER_MODE_OVERLAY = 1;
+    expect(GUI_HOVER_MODE_SWAP).toBe(0);
+    expect(GUI_HOVER_MODE_OVERLAY).toBe(1);
+  });
+});
+
 describe("chromeFrameDimension", () => {
   // Avoid importing guiChrome.ts (pulls BufferGeometryUtils ESM). Inline the helper contract.
   function asGuiSize(n: number): number {

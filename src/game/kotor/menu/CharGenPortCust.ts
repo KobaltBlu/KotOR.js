@@ -121,7 +121,7 @@ export class CharGenPortCust extends GameMenu {
     this._3dView.visible = true;
     this._3dView.setControl(this.LBL_HEAD);
     this._3dView.setViewAngle();
-    (this.LBL_HEAD.getFill().material as THREE.ShaderMaterial).transparent = false;
+    this.LBL_HEAD.setFillOpaque(true);
 
     this.Init3D();
   }
@@ -227,8 +227,8 @@ export class CharGenPortCust extends GameMenu {
       }
     });
     control.setFillTexture(this._3dView.texture.texture);
-    (control.getFill().material as THREE.ShaderMaterial).transparent = false;
-    (control.getFill().material as THREE.ShaderMaterial).blending = 1;
+    control.setFillOpaque(true);
+    control.setChromeBlending(1);
   }
 
   update(delta = 0) {
@@ -240,7 +240,7 @@ export class CharGenPortCust extends GameMenu {
       let modelControl = this.LBL_HEAD;
       creature.update(delta);
       this._3dView.render(delta);
-      (modelControl.getFill().material as THREE.ShaderMaterial).needsUpdate = true;
+      modelControl.markChromeNeedsUpdate();
     } catch (e: any) {
       console.error(e);
     }
@@ -252,10 +252,7 @@ export class CharGenPortCust extends GameMenu {
     const portraitResRef = creature.portrait?.getPortraitGoodEvil(goodEvil);
     this.LBL_PORTRAIT.show();
     if (this.LBL_PORTRAIT.getFillTextureName() != portraitResRef) {
-      this.LBL_PORTRAIT.setFillTextureName(portraitResRef);
-      TextureLoader.tpcLoader.fetch(portraitResRef).then((texture: OdysseyTexture) => {
-        this.LBL_PORTRAIT.setFillTexture(texture);
-      });
+      void this.LBL_PORTRAIT.setFillTextureName(portraitResRef);
     }
   }
 
@@ -273,7 +270,7 @@ export class CharGenPortCust extends GameMenu {
       console.error(e);
     }
     this._3dView.addModel(creature.model);
-    (this.LBL_PORTRAIT.getFill().material as THREE.ShaderMaterial).blending = 1;
+    this.LBL_PORTRAIT.setChromeBlending(1);
     this.updateCamera();
     this.UpdatePortrait();
   }

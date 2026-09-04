@@ -138,7 +138,7 @@ export class MenuPazaakGame extends GameMenu {
       /**
        * Play hand cards
        */
-      this.BTN_PLRSIDE0.swapBorderAndHighliteOnHover = false;
+      this.BTN_PLRSIDE0.swapBorderAndHighlightOnHover = false;
       this.BTN_PLRSIDE0.addEventListener('click', () => {
         if(this.noClicks() || GameState.PazaakManager.Tables[0].handCardPlayed){
           return;
@@ -146,7 +146,7 @@ export class MenuPazaakGame extends GameMenu {
         this.playHandCard(0, 0);
       });
 
-      this.BTN_PLRSIDE1.swapBorderAndHighliteOnHover = false;
+      this.BTN_PLRSIDE1.swapBorderAndHighlightOnHover = false;
       this.BTN_PLRSIDE1.addEventListener('click', () => {
         if(this.noClicks() || GameState.PazaakManager.Tables[0].handCardPlayed){
           return;
@@ -154,7 +154,7 @@ export class MenuPazaakGame extends GameMenu {
         this.playHandCard(0, 1);
       }); 
 
-      this.BTN_PLRSIDE2.swapBorderAndHighliteOnHover = false;
+      this.BTN_PLRSIDE2.swapBorderAndHighlightOnHover = false;
       this.BTN_PLRSIDE2.addEventListener('click', () => {
         if(this.noClicks() || GameState.PazaakManager.Tables[0].handCardPlayed){
           return;
@@ -162,7 +162,7 @@ export class MenuPazaakGame extends GameMenu {
         this.playHandCard(0, 2);
       });
 
-      this.BTN_PLRSIDE3.swapBorderAndHighliteOnHover = false;
+      this.BTN_PLRSIDE3.swapBorderAndHighlightOnHover = false;
       this.BTN_PLRSIDE3.addEventListener('click', () => {
         if(this.noClicks() || GameState.PazaakManager.Tables[0].handCardPlayed){
           return;
@@ -170,10 +170,10 @@ export class MenuPazaakGame extends GameMenu {
         this.playHandCard(0, 3);
       });
 
-      this.BTN_NPCSIDE0.swapBorderAndHighliteOnHover = false;
-      this.BTN_NPCSIDE1.swapBorderAndHighliteOnHover = false;
-      this.BTN_NPCSIDE2.swapBorderAndHighliteOnHover = false;
-      this.BTN_NPCSIDE3.swapBorderAndHighliteOnHover = false;
+      this.BTN_NPCSIDE0.swapBorderAndHighlightOnHover = false;
+      this.BTN_NPCSIDE1.swapBorderAndHighlightOnHover = false;
+      this.BTN_NPCSIDE2.swapBorderAndHighlightOnHover = false;
+      this.BTN_NPCSIDE3.swapBorderAndHighlightOnHover = false;
       
       /**
        * End turn

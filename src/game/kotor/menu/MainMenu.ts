@@ -122,8 +122,7 @@ export class MainMenu extends GameMenu {
         this._3dView.setControl(this.LBL_3DVIEW);
         this._3dView.visible = true;
         this.LBL_3DVIEW.setFillTexture(this._3dView.texture.texture);
-        (this.LBL_3DVIEW.getFill().material as THREE.ShaderMaterial).transparent = false;
-        (this.LBL_3DVIEW.getFill().material as any).visible = true;
+        this.LBL_3DVIEW.setFillOpaque(true);
 
         OdysseyModel3D.FromMDL(mdl, {
           context: this._3dView

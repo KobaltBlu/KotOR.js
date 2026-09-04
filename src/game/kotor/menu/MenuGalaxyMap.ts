@@ -276,10 +276,7 @@ export class MenuGalaxyMap extends GameMenu {
       // LBL_3DView.render ticks OdysseyModel3D (emitters + anim). Do not
       // call model.update here or particles age/birth twice per frame.
       this._3dView?.render(delta);
-      const fill = this._3D_PlanetDisplay?.getFill();
-      if(fill?.material){
-        (fill.material as THREE.ShaderMaterial).needsUpdate = true;
-      }
+      this._3D_PlanetDisplay?.markChromeNeedsUpdate();
     } catch (e: any) {
       console.error(e);
     }
@@ -314,10 +311,7 @@ export class MenuGalaxyMap extends GameMenu {
       }
 
       _3dView?.render(delta, { skipModelUpdate: true });
-      const fill = this._3D_PlanetModel?.getFill();
-      if(fill?.material){
-        (fill.material as THREE.ShaderMaterial).needsUpdate = true;
-      }
+      this._3D_PlanetModel?.markChromeNeedsUpdate();
     } catch (e: any) {
       console.error(e);
     }

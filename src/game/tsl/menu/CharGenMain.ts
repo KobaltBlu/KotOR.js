@@ -63,8 +63,8 @@ export class CharGenMain extends K1_CharGenMain {
       this._3dView.visible = true;
       this._3dView.setControl(this.MODEL_LBL);
       this._3dView.setViewAngle();
-      (this.MODEL_LBL.getFill().material as THREE.ShaderMaterial).transparent = true;
-      (this.MODEL_LBL.getFill().material as THREE.ShaderMaterial).blending = 1;
+      this.MODEL_LBL.setFillOpaque(false);
+      this.MODEL_LBL.setChromeBlending(1);
 
       void this.Init3D().then(() => resolve()).catch((e) => {
         console.error('CharGenMain.Init3D', e);

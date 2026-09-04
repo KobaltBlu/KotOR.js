@@ -99,8 +99,8 @@ export class CharGenMain extends GameMenu {
       this._3dView.visible = true;
       this._3dView.setControl(this.MODEL_LBL);
       this._3dView.setViewAngle();
-      (this.MODEL_LBL.getFill().material as THREE.ShaderMaterial).transparent = true;
-      (this.MODEL_LBL.getFill().material as THREE.ShaderMaterial).blending = 1;
+      this.MODEL_LBL.setFillOpaque(false);
+      this.MODEL_LBL.setChromeBlending(1);
 
       void this.Init3D().then(() => resolve()).catch((e) => {
         console.error('CharGenMain.Init3D', e);
@@ -240,7 +240,7 @@ export class CharGenMain extends GameMenu {
         this.getDisplayCreature()?.update?.(delta);
       }
       this._3dView.render(delta);
-      (modelControl.getFill().material as THREE.ShaderMaterial).needsUpdate = true;
+      modelControl.markChromeNeedsUpdate();
     } catch (e: any) {
       console.error(e);
     }
@@ -326,10 +326,7 @@ export class CharGenMain extends GameMenu {
     if(portraitResRef && this.PORTRAIT_LBL){
       this.PORTRAIT_LBL.show();
       if(this.PORTRAIT_LBL.getFillTextureName() != portraitResRef){
-        this.PORTRAIT_LBL.setFillTextureName(portraitResRef);
-        TextureLoader.tpcLoader.fetch(portraitResRef).then((texture: OdysseyTexture) => {
-          this.PORTRAIT_LBL.setFillTexture(texture);
-        });
+        void this.PORTRAIT_LBL.setFillTextureName(portraitResRef);
       }
     }
   }

@@ -113,10 +113,9 @@ export class MainMenu extends K1_MainMenu {
 
       this._3dView = new LBL_3DView();
       this._3dView.visible = true;
-      (this.LBL_3DVIEW.getFill().material as any).transparent = false;
       this._3dView.setControl(this.LBL_3DVIEW);
       this.LBL_3DVIEW.setFillTexture(this._3dView.texture.texture);
-      (this.LBL_3DVIEW.getFill().material as any).visible = true;
+      this.LBL_3DVIEW.setFillOpaque(true);
 
       MDLLoader.loader.load('mainmenu01')
       .then((mdl: OdysseyModel) => {

@@ -10,6 +10,11 @@ export const GUI_CHROME_REGION_EDGE = 0;
 export const GUI_CHROME_REGION_CORNER = 1;
 export const GUI_CHROME_REGION_FILL = 2;
 
+/** Shader hoverMode: swap border↔highlight samples. */
+export const GUI_HOVER_MODE_SWAP = 0;
+/** Shader hoverMode: alpha-over highlight on top of border (Pazaak cards). */
+export const GUI_HOVER_MODE_OVERLAY = 1;
+
 /**
  * Frame thickness for a single chrome mesh when border and highlight dims differ.
  * Empty idle border + thicker highlight (K1 saveload buttons) → use highlight dim.

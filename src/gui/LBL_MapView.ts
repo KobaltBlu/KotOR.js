@@ -183,11 +183,7 @@ export class LBL_MapView {
     if(!this.control) return;
 
     this.control.setFillTexture(this.texture.texture);
-
-    const material = this.control.getFill().material;
-    if(material instanceof THREE.ShaderMaterial){
-      this.control.setFillColor(1, 1, 1);
-    }
+    this.control.setFillColor(1, 1, 1);
   }
 
   setVisible(bVisible: boolean){
@@ -460,16 +456,8 @@ export class LBL_MapView {
     GameState.renderer.setClearColor(oldClearColor, 1);
 
     if(this.control){
-      let material = this.control.getFill().material;
-      if(material instanceof THREE.Material){
-        if(material instanceof THREE.ShaderMaterial){
-          this.control.setFillTexture(this.texture.texture);
-        }else if(material instanceof THREE.MeshBasicMaterial){
-          material.map = this.texture.texture;
-        }
-        material.transparent = true;
-        material.needsUpdate = true;
-      }
+      this.control.setFillTexture(this.texture.texture);
+      this.control.setFillOpaque(false);
     }
 
   }

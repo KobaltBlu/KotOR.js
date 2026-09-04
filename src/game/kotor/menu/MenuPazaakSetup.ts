@@ -146,7 +146,7 @@ export class MenuPazaakSetup extends GameMenu {
           if(!button){
             continue;
           }
-          button.swapBorderAndHighliteOnHover = false;
+          button.swapBorderAndHighlightOnHover = false;
           button.addEventListener('click', () => {
             this.selectedCard = i;
             console.log(`PazaakSetup: Selected card ${i}, count: ${card.count}`);
@@ -174,7 +174,7 @@ export class MenuPazaakSetup extends GameMenu {
         if(!button){
           continue;
         }
-        button.swapBorderAndHighliteOnHover = false;
+        button.swapBorderAndHighlightOnHover = false;
         button.addEventListener('click', () => {
           const card = GameState.PazaakManager.PlayerSideDeck.get(i);
           this.selectedSideCard = i;
@@ -272,7 +272,7 @@ export class MenuPazaakSetup extends GameMenu {
 
       const button = this.getCardButton(i);
       if(button){
-        button.swapBorderAndHighliteOnHover = false;
+        button.swapBorderAndHighlightOnHover = false;
         button.disableSelection = !bCardAvailable;
         bCardAvailable || bCardKnown ? button.show() : button.hide();
       }
@@ -293,7 +293,7 @@ export class MenuPazaakSetup extends GameMenu {
       if(!button || !label){
         continue;
       }
-      button.swapBorderAndHighliteOnHover = false;
+      button.swapBorderAndHighlightOnHover = false;
       if(typeof card === 'number' && card != PazaakCards.INVALID){
         label.setText(card.toString());
         const type = Math.floor(card/6);

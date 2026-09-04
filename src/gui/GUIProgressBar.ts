@@ -60,6 +60,7 @@ export class GUIProgressBar extends GUIControl {
       pulsing: 0
     };
 
+    // Progress overlay sits above base chrome (same widget): zOffset+1 and renderOrder id+1.
     this.progressChrome = createGuiChrome();
     this.progressChrome.material.uniforms.diffuse.value = this.progress.color;
     this.progressChrome.material.uniforms.fillDiffuse.value = this.progress.color;
@@ -209,7 +210,7 @@ export class GUIProgressBar extends GUIControl {
     this.progress.fill.texture = name;
     return new Promise<OdysseyTexture>( (resolve, reject) => {
       TextureLoader.enQueue(this.progress.fill.texture, this.progressChrome.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-        bindChromeTexture(this.progressChrome.material, 'fillMap', texture ?? null);
+        this.setFillTexture(texture);
         resolve(texture);
       }, undefined, 'fillMap');
     })
