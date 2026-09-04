@@ -13,12 +13,27 @@ import { PerceptionMask } from "@/enums/engine/PerceptionMask";
 import { GameState } from "@/GameState";
 import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
 import { clearLineOfSight } from "@/engine/pathfinding/clear-line-of-sight";
-import { isPointInShape } from "@/combat/objects-in-shape";
 import { FollowerCamera } from "@/engine/FollowerCamera";
 import { AutoPauseState } from "@/enums/engine/AutoPauseState";
 import { EngineState } from "@/enums/engine/EngineState";
 import { MiniGameObjectArray } from "@/module/minigame/MiniGameObjectArray";
 
+/**
+ * Retail NWScript shape constants (GetObjectInShape).
+ */
+export const ShapeType = {
+  SPELLCYLINDER: 0,
+  CONE: 1,
+  CUBE: 2,
+  SPELLCONE: 3,
+  SPHERE: 4,
+} as const;
+
+/** Retail SPELLCYLINDER off-axis radius squared (1.5²). */
+export const SPELLCYLINDER_RADIUS_SQ = 2.25;
+
+/** Retail SPELLCONE forward half-angle cos(30°) ≈ 0.866. */
+export const SPELLCONE_MIN_DOT = 0.866;
 /** First non-MG object id — retail SWMG StackPushObject uses mgo_index 0..0xfe. */
 const FIRST_MODULE_OBJECT_ID = MiniGameObjectArray.CAPACITY + 1; // 0x100
 
@@ -150,6 +165,115 @@ export class ModuleObjectManager {
     this.RemoveObjectFromLookupTableById(object.id);
     const tag = String(object.getTag?.() ?? '').toLowerCase();
     this.AddObjectToLookupTable(tag, object.id);
+  }
+
+  static isInSphere(
+    point: THREE.Vector3,
+    center: THREE.Vector3,
+    radius: number
+  ): boolean {
+    return point.distanceToSquared(center) <= radius * radius;
+  }
+
+  static isInCube(
+    point: THREE.Vector3,
+    center: THREE.Vector3,
+    halfExtent: number
+  ): boolean {
+    return (
+      Math.abs(point.x - center.x) <= halfExtent &&
+      Math.abs(point.y - center.y) <= halfExtent &&
+      Math.abs(point.z - center.z) <= halfExtent
+    );
+  }
+
+  /**
+   * Retail case 0 — corridor from origin to target end, 1.5m off-axis radius.
+   */
+  static isInSpellCylinder(
+    point: THREE.Vector3,
+    origin: THREE.Vector3,
+    end: THREE.Vector3,
+    length: number
+  ): boolean {
+    const axis = end.clone().sub(origin);
+    const axisLen = axis.length();
+    if(axisLen < 1e-5){
+      return ModuleObjectManager.isInSphere(point, origin, 1.5);
+    }
+    axis.multiplyScalar(1 / axisLen);
+    const toPoint = point.clone().sub(origin);
+    const along = toPoint.dot(axis);
+    if(along < 0 || along > Math.max(length, axisLen)) return false;
+    const closest = origin.clone().addScaledVector(axis, along);
+    return point.distanceToSquared(closest) <= SPELLCYLINDER_RADIUS_SQ;
+  }
+
+  /**
+   * Retail case 1 — cone that widens toward the end.
+   */
+  static isInCone(
+    point: THREE.Vector3,
+    origin: THREE.Vector3,
+    end: THREE.Vector3,
+    size: number
+  ): boolean {
+    const axis = end.clone().sub(origin);
+    const axisLen = axis.length();
+    if(axisLen < 1e-5) return false;
+    const toPoint = point.clone().sub(origin);
+    const dir = axis.clone().multiplyScalar(1 / axisLen);
+    const along = toPoint.dot(dir);
+    if(along <= 0 || along > axisLen) return false;
+    const closest = origin.clone().addScaledVector(dir, along);
+    const radiusAt = (along / axisLen) * size;
+    return point.distanceToSquared(closest) <= radiusAt * radiusAt;
+  }
+
+  /**
+   * Retail case 3 — forward cone with cosθ ≥ 0.866 and distance ≤ size.
+   */
+  static isInSpellCone(
+    point: THREE.Vector3,
+    origin: THREE.Vector3,
+    end: THREE.Vector3,
+    size: number
+  ): boolean {
+    const axis = end.clone().sub(origin);
+    const axisLen = axis.length();
+    if(axisLen < 1e-5) return false;
+    const toPoint = point.clone().sub(origin);
+    const distSq = toPoint.lengthSq();
+    if(distSq > size * size) return false;
+    const dir = axis.multiplyScalar(1 / axisLen);
+    const toDir = toPoint.normalize();
+    return dir.dot(toDir) >= SPELLCONE_MIN_DOT;
+  }
+
+  /**
+   * True when `point` lies in the retail shape described by nShape.
+   */
+  static isPointInShape(
+    shape: number,
+    point: THREE.Vector3,
+    center: THREE.Vector3,
+    size: number,
+    origin?: THREE.Vector3
+  ): boolean {
+    const from = origin || center;
+    switch(shape){
+      case ShapeType.SPELLCYLINDER:
+        return ModuleObjectManager.isInSpellCylinder(point, from, center, size);
+      case ShapeType.CONE:
+        return ModuleObjectManager.isInCone(point, from, center, size);
+      case ShapeType.CUBE:
+        return ModuleObjectManager.isInCube(point, center, size);
+      case ShapeType.SPELLCONE:
+        return ModuleObjectManager.isInSpellCone(point, from, center, size);
+      case ShapeType.SPHERE:
+      default:
+        return ModuleObjectManager.isInSphere(point, center, size);
+    }
   }
 
   /**
@@ -830,7 +954,7 @@ export class ModuleObjectManager {
 
     for(let i = 0, len = object_pool.length; i < len; i++){
       if(BitWise.InstanceOf(object_pool[i]?.objectType, ModuleObjectType.ModuleObject)){
-        if(!isPointInShape(shape, object_pool[i].position, center, size, originPos)){
+        if(!ModuleObjectManager.isPointInShape(shape, object_pool[i].position, center, size, originPos)){
           continue;
         }
         if(lineOfSight){

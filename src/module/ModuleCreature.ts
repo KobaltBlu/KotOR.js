@@ -25,8 +25,6 @@ import { TalentObject } from "@/talents/TalentObject";
 import { TalentSkill } from "@/talents/TalentSkill";
 import { TalentSpell } from "@/talents/TalentSpell";
 import { TalentObjectType } from "@/enums/engine/TalentObjectType";
-import { getCanUseSkill as getCanUseSkillRetail } from "@/talents/skill-usability";
-import { getSkillRankRetail } from "@/talents/skill-rank";
 import { OdysseyModel3D, OdysseyObject3D } from "@/three/odyssey";
 import { OdysseyModel, OdysseyModelAnimation } from "@/odyssey";
 import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
@@ -105,7 +103,6 @@ import { UIIconTimerType } from "@/enums/engine/UIIconTimerType";
 import { ExperienceType } from "@/enums/engine/ExperienceType";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 import { MineSkillResult, resolvePassiveMineDetect } from "@/actions/mine-skill";
-import { doStealthDetection, isCreatureStealthedOrInvisible, isInvisibleToObserver } from "@/combat/stealth-detection";
 import { PerceptionMask } from "@/enums/engine/PerceptionMask";
 import {
   COMBAT_STATE_DURATION_MS,
@@ -118,8 +115,20 @@ import {
   isChoreographedMeleeWeapon,
   resolveChoreographedState,
 } from "@/combat/combat-dueling";
-import { getAbilityEffectBonus, getAttackEffectBonus, getForceResistanceBonus } from "@/effects/effect-bonuses";
+import {
+  DETECT_FLAG_SEE_INVISIBLE,
+  DETECT_FLAG_TRUE_SEEING,
+  DETECT_FLAG_ULTRA_VISION,
+  getAbilityEffectBonus,
+  getAttackEffectBonus,
+  getDetectFlags,
+  getForceResistanceBonus,
+} from "@/effects/effect-bonuses";
+import { isCreatureBlind } from "@/effects/EffectBlindness";
+import type { EffectSanctuary } from "@/effects/EffectSanctuary";
+import { getAbilityModifier } from "@/engine/rules/skill-points";
 import { Dice } from "@/utility/Dice";
+import { DiceType } from "@/enums/combat/DiceType";
 import {
   getCreatureSpeedRates,
   coalesceDriveAnimRun,
@@ -1601,8 +1610,8 @@ export class ModuleCreature extends ModuleObject {
       }
 
       let distance = this.position.distanceTo(creature.position);
-      const stealthed = isCreatureStealthedOrInvisible(creature);
-      const detected = !stealthed || doStealthDetection(this, creature);
+      const stealthed = creature.isStealthedOrInvisible();
+      const detected = !stealthed || this.doStealthDetection(creature);
       if(distance < this.getPerceptionRangePrimary() && this.hasLineOfSight(creature) && detected){
         const wasSeen = this.hasSeenObject(creature);
         if(GameState.PartyManager.party.indexOf(this) == -1){
@@ -1645,8 +1654,8 @@ export class ModuleCreature extends ModuleObject {
       }
 
       let distance = this.position.distanceTo(creature.position);
-      const stealthed = isCreatureStealthedOrInvisible(creature);
-      const detected = !stealthed || doStealthDetection(this, creature);
+      const stealthed = creature.isStealthedOrInvisible();
+      const detected = !stealthed || this.doStealthDetection(creature);
       if(distance < this.getPerceptionRangePrimary() && this.hasLineOfSight(creature) && detected){
         if(GameState.PartyManager.party.indexOf(this) == -1){
           if(this.isHostile(creature)){
@@ -5162,7 +5171,7 @@ export class ModuleCreature extends ModuleObject {
     // Retail: GetInvisible(attacker, defender) || !(SEEN bit) → no GetDEXMod / dodge field.
     const loseDex =
       !!attacker &&
-      (isInvisibleToObserver(this, attacker) || !this.hasSeenObject(attacker));
+      (this.isInvisibleToObserver(attacker) || !this.hasSeenObject(attacker));
 
     const armor = this.equipment.ARMOR;
     let dexBonus = Math.floor((this.getDEX() - 10) / 2);
@@ -5936,17 +5945,292 @@ export class ModuleCreature extends ModuleObject {
 
   /**
    * Retail GetCanUseSkill.
+   * Trained-only skills require a positive signed-byte rank. Skills usable
+   * untrained require either their all-classes flag or a matching class table.
    */
   getCanUseSkill(value: number): boolean {
-    return getCanUseSkillRetail(this.skills, this.classes, value);
+    // Retail aliases the mine subskills 100–102 to Demolitions.
+    const skillId = value === 100 || value === 101 || value === 102
+      ? 1
+      : value;
+    const skill = this.skills[skillId];
+    if(!skill) return false;
+    if(!skill.isUntrained()){
+      // Retail stores ranks as signed bytes; 0xff is -1, not 255 ranks.
+      return ((skill.rank << 24) >> 24) > 0;
+    }
+    if(skill.canAllClassesUse()){
+      return true;
+    }
+    for(let i = 0; i < this.classes.length; i++){
+      const classSkill = skill.classData.get(this.classes[i].skillstable);
+      if(classSkill?.isClassSkill){
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
    * Retail GetSkillRank.
-   * @param raw — when true, return signed base rank only (no mods/feats/effects).
+   * raw=true returns the signed base rank only; raw=false applies ability mods,
+   * armor check, blindness, skill feats, and skill increase/decrease effects.
    */
   getSkillRank(value: number, raw: boolean = false){
-    return getSkillRankRetail(this, value, raw);
+    const skills = this.skills;
+    if(!skills || value < 0 || value >= skills.length){
+      return 0;
+    }
+
+    const skill = skills[value] as TalentSkill;
+    let rank = ((skill.rank << 24) >> 24);
+
+    if(raw){
+      return ModuleCreature.clampSkillRank(rank);
+    }
+
+    // Trained-only skills with no ranks contribute nothing.
+    if(!skill.isUntrained?.() && rank === 0){
+      return 0;
+    }
+
+    // Effect skill increase / decrease
+    if(this.effects?.length){
+      for(let i = 0; i < this.effects.length; i++){
+        const e = this.effects[i];
+        if(e?.type === GameEffectType.EffectSkillIncrease && e.getInt(0) === value){
+          rank += e.getInt(1) || 0;
+        }else if(e?.type === GameEffectType.EffectSkillDecrease){
+          const id = e.getInt(0);
+          if(id === value || id === 0xff){
+            rank -= e.getInt(1) || 0;
+          }
+        }
+      }
+    }
+
+    const keyRaw = skill.getKeyAbility?.() || skill.keyAbility || '';
+    const keyNum = parseInt(String(keyRaw), 10);
+    const key = Number.isNaN(keyNum) ? String(keyRaw).toLowerCase() : keyNum;
+
+    switch(key){
+      case 0:
+      case 'str':
+        rank += getAbilityModifier(this.getSTR());
+        if(isCreatureBlind(this)) rank -= 4;
+        break;
+      case 1:
+      case 'dex': {
+        const dexMod = getAbilityModifier(this.getDEX());
+        if(this.isDebilitated?.()){
+          rank += dexMod < 0 ? dexMod : 0;
+        }else{
+          rank += dexMod;
+        }
+        if(isCreatureBlind(this)) rank -= 4;
+        break;
+      }
+      case 2:
+      case 'con':
+        rank += getAbilityModifier(this.getCON());
+        break;
+      case 3:
+      case 'int':
+        rank += getAbilityModifier(this.getINT());
+        break;
+      case 4:
+      case 'wis':
+        rank += getAbilityModifier(this.getWIS());
+        break;
+      case 5:
+      case 'cha':
+        rank += getAbilityModifier(this.getCHA());
+        break;
+      default:
+        break;
+    }
+
+    if(skill.hasArmorCheckPenalty?.() || skill.armorCheckPenalty){
+      rank += (this.combatInformation?.armorCheckPen | 0);
+    }
+
+    rank += this.getSkillFeatBonus(value);
+
+    return ModuleCreature.clampSkillRank(rank);
+  }
+
+  private static clampSkillRank(rank: number): number {
+    if(rank > 0x7e) return 0x7f;
+    if(rank < -0x7e) return -0x7f;
+    return rank | 0;
+  }
+
+  /** Retail GetSkillRank feat chains (Gear Head / Caution / Empathy). */
+  private getSkillFeatBonus(skillId: number): number {
+    const has = (id: number) => !!this.getHasFeat?.(id);
+
+    switch(skillId){
+      case SkillType.COMPUTER_USE:
+        if(has(CombatFeatType.GEAR_HEAD_MASTER)) return 3;
+        if(has(CombatFeatType.GEAR_HEAD_ADEPT)) return 2;
+        if(has(CombatFeatType.GEAR_HEAD)) return 1;
+        return 0;
+      case SkillType.DEMOLITIONS:
+      case SkillType.STEALTH:
+        if(has(CombatFeatType.MASTER_CAUTION)) return 3;
+        if(has(CombatFeatType.IMPROVED_CAUTION)) return 2;
+        if(has(CombatFeatType.CAUTIOUS)) return 1;
+        return 0;
+      case SkillType.AWARENESS:
+      case SkillType.PERSUADE:
+      case SkillType.TREAT_INJURY:
+        if(has(CombatFeatType.MASTER__EMPATHY)) return 3;
+        if(has(CombatFeatType.IMPROVED_EMPATHY)) return 2;
+        if(has(CombatFeatType.EMPATHY)) return 1;
+        return 0;
+      case SkillType.REPAIR:
+      case SkillType.SECURITY:
+        if(has(CombatFeatType.GEAR_HEAD_MASTER)) return 3;
+        if(has(CombatFeatType.GEAR_HEAD_ADEPT)) return 2;
+        if(has(CombatFeatType.GEAR_HEAD)) return 1;
+        return 0;
+      default:
+        return 0;
+    }
+  }
+
+  /**
+   * Contested stealth / invisibility helpers (retail DoSpotDetection / GetInvisible).
+   */
+  isStealthedOrInvisible(): boolean {
+    if(this.stealthMode) return true;
+    if(this.hasEffect?.(GameEffectType.EffectInvisibility)) return true;
+    if(this.hasEffect?.(GameEffectType.EffectSanctuary)) return true;
+    return false;
+  }
+
+  /**
+   * Retail GetInvisible — true if `target` is effect-hidden from this observer.
+   */
+  isInvisibleToObserver(target: ModuleCreature): boolean {
+    if(!target || this === target) return false;
+
+    const detect = getDetectFlags(this);
+    if(detect & DETECT_FLAG_TRUE_SEEING){
+      return false;
+    }
+    const seeInvis = !!(detect & DETECT_FLAG_SEE_INVISIBLE);
+    const pierceDark = !!(detect & (DETECT_FLAG_ULTRA_VISION | DETECT_FLAG_TRUE_SEEING));
+
+    const effects = target.effects || [];
+    for(let i = 0; i < effects.length; i++){
+      const e = effects[i];
+      if(!e) continue;
+
+      if(e.type === GameEffectType.EffectInvisibility){
+        const mode = e.getInt(0) || 1;
+        // mode 2 (darkness): UltraVision / True Seeing pierce
+        if(mode === 2){
+          if(!pierceDark) return true;
+        }else if(mode === 1 || mode === 4){
+          if(!seeInvis) return true;
+        }else if(!seeInvis){
+          return true;
+        }
+      }
+
+      if(e.type === GameEffectType.EffectSanctuary){
+        const hostile = typeof this.isHostile === 'function'
+          ? this.isHostile(target)
+          : (this.factionId !== target.factionId);
+        if(!hostile) continue;
+        const dc = (e as EffectSanctuary).getWillDC?.() || e.getInt(4) || 0;
+        if(dc <= 0 || !this.willSave?.(dc, 0, target)){
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Spot check: observer Awareness vs target Hide while stealthed.
+   * Returns true if this observer sees the target.
+   */
+  doSpotDetection(target: ModuleCreature): boolean {
+    if(!target) return false;
+    // Retail DoSpotDetection: GetBlind observer fails spot
+    if(isCreatureBlind(this)){
+      return false;
+    }
+    if(!target.isStealthedOrInvisible()) return true;
+
+    const hideRank = target.getSkillLevel?.(SkillType.STEALTH) || 0;
+    if(hideRank < 1 && !target.stealthMode){
+      return true;
+    }
+
+    const hideDice = Dice.roll(1, DiceType.d10);
+    let awareness = this.getSkillLevel?.(SkillType.AWARENESS) || 0;
+    const detectMode = !!this.detectMode;
+    if(!detectMode){
+      awareness = Math.floor(awareness / 2);
+    }
+    const spotDice = Dice.roll(1, DiceType.d10);
+
+    let score = awareness + spotDice - hideRank - hideDice;
+
+    const toTarget = target.position.clone().sub(this.position);
+    toTarget.z = 0;
+    if(toTarget.lengthSq() > 0.0001){
+      toTarget.normalize();
+      const facing = this.getFacingVector?.() || new THREE.Vector3(0, 1, 0);
+      facing.z = 0;
+      if(facing.lengthSq() > 0.0001){
+        facing.normalize();
+        const dot = toTarget.x * facing.x + toTarget.y * facing.y;
+        if(dot < -0.707){
+          score -= 5;
+        }
+      }
+    }
+
+    if(this.combatData?.combatState || this.combatRound?.roundStarted){
+      score -= 10;
+    }
+
+    const targetMoving = (target.force || 0) > 0.01 || (target.speed || 0) > 0.01;
+    const observerMoving = (this.force || 0) > 0.01 || (this.speed || 0) > 0.01;
+    if(!targetMoving) score -= 5;
+    if(!observerMoving) score += 5;
+
+    const dist = this.position.distanceTo(target.position);
+    const distFactor = dist / 3;
+    if(distFactor > 2){
+      score -= Math.floor(distFactor - 2);
+    }
+
+    return score >= 1;
+  }
+
+  doListenDetection(target: ModuleCreature): boolean {
+    return this.doSpotDetection(target);
+  }
+
+  /**
+   * True if this observer can detect a (possibly stealthed/invisible) target.
+   */
+  doStealthDetection(target: ModuleCreature): boolean {
+    // Effect invisibility / sanctuary not pierced → cannot detect
+    if(this.isInvisibleToObserver(target)){
+      return false;
+    }
+    if(!target.isStealthedOrInvisible()){
+      return true;
+    }
+    // Contested hide for stealth mode (and residual invis that was pierced)
+    return this.doSpotDetection(target) || this.doListenDetection(target);
   }
 
   getSkillLevel(value: number){

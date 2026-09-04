@@ -23,15 +23,64 @@ import {
   isSecuritySpikeItem,
   isUsableItemActive,
 } from "@/engine/menu/action-menu-usable";
-import { getCombatMenuFeatIds } from "@/engine/menu/action-menu-combat-feats";
-import {
-  buildEquipmentForceMenuSpellList,
-  buildForceMenuSpellList,
-  getHostileTargetExclusionFlags,
-  isDroidForceMenuCaster,
-  isForceMenuSpellEnabled,
-} from "@/engine/menu/action-menu-force-powers";
 import { shouldShowCounterSpellAction } from "@/combat/spell-cast-gates";
+
+/** Appearance racialtype 5 (droid) — retail global. */
+const APPEARANCE_RACIALTYPE_DROID = 5;
+/** Appearance racialtype 6 — retail global. */
+const APPEARANCE_RACIALTYPE_ALT = 6;
+
+/** Spell exclusion flags passed into GetMenuInfo (GetHostileForcePowers). */
+const ForceMenuExclusion = {
+  NONE: 0,
+  /** Target appearance racialtype == 6 */
+  RACIALTYPE_ALT: 1,
+  /** Target appearance racialtype == 5 (droid) */
+  DROID: 2,
+  /** Target is not a creature */
+  NON_CREATURE: 4,
+} as const;
+
+/**
+ * K1 ranges.2da secondary values used by GetMinSpellRange.
+ * P/T share Touch (row 1); W uses Throw row 19.
+ */
+const FORCE_MENU_MIN_RANGE_FALLBACK: Record<string, number> = {
+  P: 0,
+  T: 0,
+  S: 0,
+  M: 0,
+  L: 0,
+  W: 5,
+};
+
+type ForceMenuMode = 'hostile' | 'friendly';
+
+interface ForceMenuSpellEntry {
+  spell: TalentSpell;
+  /** Equipped item that owns this power (droid GetEquipmentForcePowers). */
+  item?: ModuleItem;
+  sortIndex: number;
+  priority: number;
+}
+
+const MELEE_FEAT_CHAINS = [
+  [81, 19, 8],   // Master / Improved / Critical Strike
+  [53, 91, 11],  // Master / Improved / Flurry
+  [83, 17, 28],  // Master / Improved / Power Attack
+];
+
+const RANGED_FEAT_CHAINS = [
+  [82, 18, 29],  // Master / Improved / Power Blast
+  [26, 92, 30],  // Master / Improved / Rapid Shot
+  [77, 20, 31],  // Master / Improved / Sniper Shot
+];
+
+const EQUIP_FORCE_SLOTS: (keyof ModuleCreature['equipment'])[] = [
+  'HEAD', 'ARMOR', 'ARMS', 'RIGHTHAND', 'LEFTHAND',
+  'LEFTARMBAND', 'RIGHTARMBAND', 'IMPLANT', 'BELT',
+  'RIGHTHAND2', 'LEFTHAND2', 'CLAW1', 'CLAW2', 'CLAW3',
+];
 
 /** TSL GetStances / GetMenuInfo form spell id range (0x102–0x10C). */
 const STANCE_FORM_SPELL_MIN = 0x102;
@@ -117,6 +166,171 @@ export class ActionMenuManager {
     return GameState.TLKManager?.GetStringById?.(strRef)?.Value || fallback;
   }
 
+  /**
+   * Retail GetCombatFeatsSkills → CheckFeat: one highest-owned feat per chain,
+   * in the fixed menu order used by K1.
+   */
+  static getCombatMenuFeatIds(
+    hasFeat: (id: number) => boolean,
+    ranged: boolean
+  ): number[] {
+    const chains = ranged ? RANGED_FEAT_CHAINS : MELEE_FEAT_CHAINS;
+    const result: number[] = [];
+    for(let i = 0; i < chains.length; i++){
+      const chain = chains[i];
+      for(let j = 0; j < chain.length; j++){
+        if(hasFeat(chain[j])){
+          result.push(chain[j]);
+          break;
+        }
+      }
+    }
+    return result;
+  }
+
+  static #isCreatureLike(target: ModuleObject | undefined): target is ModuleCreature {
+    return !!(target && typeof (target as ModuleCreature).getAppearance === 'function');
+  }
+
+  /** Retail GetHostileForcePowers tmp14 — exclusion bits for the current target. */
+  static getHostileTargetExclusionFlags(target: ModuleObject | undefined): number {
+    if(!ActionMenuManager.#isCreatureLike(target)){
+      return ForceMenuExclusion.NON_CREATURE;
+    }
+    const racialtype = target.getAppearance()?.racialtype ?? -1;
+    if(racialtype === APPEARANCE_RACIALTYPE_DROID){
+      return ForceMenuExclusion.DROID;
+    }
+    if(racialtype === APPEARANCE_RACIALTYPE_ALT){
+      return ForceMenuExclusion.RACIALTYPE_ALT;
+    }
+    return ForceMenuExclusion.NONE;
+  }
+
+  /** Retail: include when `(spell.exclusion & flags) == 0`. */
+  static spellPassesForceMenuExclusion(spell: TalentSpell, flags: number): boolean {
+    return ((spell.exclusion | 0) & (flags | 0)) === 0;
+  }
+
+  /** retail secondary_ranges used by GetMinSpellRange. */
+  static resolveForceMenuMinRange(rangeLetter: string): number {
+    const key = (rangeLetter || '').toUpperCase();
+    if(Object.prototype.hasOwnProperty.call(FORCE_MENU_MIN_RANGE_FALLBACK, key)){
+      return FORCE_MENU_MIN_RANGE_FALLBACK[key];
+    }
+    return 0;
+  }
+
+  /**
+   * Retail GetMenuInfo range gate: disable when secondary > 0 and
+   * distanceSq <= secondary² (too close). Max/primary range is not checked here.
+   */
+  static isWithinForceMenuMinRange(rangeLetter: string, distanceSq: number): boolean {
+    const minRange = ActionMenuManager.resolveForceMenuMinRange(rangeLetter);
+    if(!(minRange > 0)) return true;
+    return distanceSq > minRange * minRange;
+  }
+
+  /** Retail forbid/require item-mask checks from GetMenuInfo. */
+  static passesForceItemMask(spell: TalentSpell, forceItemMask: number): boolean {
+    const forbid = spell.forbiditemmask | 0;
+    const require = spell.requireitemmask | 0;
+    if((forbid & forceItemMask) !== 0) return false;
+    if((require & forceItemMask) !== require) return false;
+    return true;
+  }
+
+  static isForceMenuSpellEnabled(
+    spell: TalentSpell,
+    opts: {
+      resource: number;
+      cost: number;
+      distanceSq: number;
+      forceItemMask: number;
+    }
+  ): boolean {
+    if(opts.cost > opts.resource) return false;
+    if(!ActionMenuManager.isWithinForceMenuMinRange(spell.range, opts.distanceSq)) return false;
+    if(!ActionMenuManager.passesForceItemMask(spell, opts.forceItemMask)) return false;
+    return true;
+  }
+
+  static #sortKeyForMode(spell: TalentSpell, mode: ForceMenuMode): number {
+    const raw = mode === 'hostile' ? spell.forcehostile : spell.forcefriendly;
+    const n = typeof raw === 'number' ? raw : parseInt(String(raw), 10);
+    return Number.isFinite(n) ? n : -1;
+  }
+
+  static #priorityOf(spell: TalentSpell): number {
+    const p = spell.forcepriority;
+    if(typeof p !== 'number' || !Number.isFinite(p) || p < 0) return 0;
+    return p | 0;
+  }
+
+  /**
+   * Retail GetMenuInfo known-spell pass: filter by menu column + exclusion,
+   * keep highest FORCEPRIORITY per sort index, ascending sort order.
+   */
+  static buildForceMenuSpellList(
+    spells: TalentSpell[],
+    mode: ForceMenuMode,
+    exclusionFlags: number = ForceMenuExclusion.NONE
+  ): ForceMenuSpellEntry[] {
+    const bySort = new Map<number, ForceMenuSpellEntry>();
+
+    for(let i = 0; i < spells.length; i++){
+      const spell = spells[i];
+      if(!spell) continue;
+      const sortIndex = ActionMenuManager.#sortKeyForMode(spell, mode);
+      if(sortIndex < 0) continue;
+      if(!ActionMenuManager.spellPassesForceMenuExclusion(spell, exclusionFlags)) continue;
+
+      const priority = ActionMenuManager.#priorityOf(spell);
+      const existing = bySort.get(sortIndex);
+      if(!existing || existing.priority < priority){
+        bySort.set(sortIndex, { spell, sortIndex, priority });
+      }
+    }
+
+    return Array.from(bySort.values()).sort((a, b) => a.sortIndex - b.sortIndex);
+  }
+
+  /** Retail caster appearance.racialtype == 5 → GetEquipmentForcePowers for hostile menu. */
+  static isDroidForceMenuCaster(creature: ModuleCreature | undefined): boolean {
+    if(!creature) return false;
+    return creature.getAppearance()?.racialtype === APPEARANCE_RACIALTYPE_DROID;
+  }
+
+  /**
+   * Retail GetEquipmentForcePowers — hostile (category 1) powers from equipped items.
+   */
+  static buildEquipmentForceMenuSpellList(
+    creature: ModuleCreature,
+    exclusionFlags: number
+  ): ForceMenuSpellEntry[] {
+    const collected: TalentSpell[] = [];
+    const itemBySpellId = new Map<number, ModuleItem>();
+
+    for(let i = 0; i < EQUIP_FORCE_SLOTS.length; i++){
+      const item = creature.equipment[EQUIP_FORCE_SLOTS[i]] as ModuleItem | undefined;
+      if(!item?.getSpells) continue;
+      const spells = item.getSpells() || [];
+      for(let j = 0; j < spells.length; j++){
+        const spell = spells[j];
+        if(!spell || ActionMenuManager.#sortKeyForMode(spell, 'hostile') < 0) continue;
+        if(!ActionMenuManager.spellPassesForceMenuExclusion(spell, exclusionFlags)) continue;
+        collected.push(spell);
+        itemBySpellId.set(spell.id, item);
+      }
+    }
+
+    const list = ActionMenuManager.buildForceMenuSpellList(collected, 'hostile', exclusionFlags);
+    for(let i = 0; i < list.length; i++){
+      list[i].item = itemBySpellId.get(list[i].spell.id);
+    }
+    return list;
+  }
+
   /** Retail GetSelfForcePowers → personal slot 0. */
   static populateSelfForcePowers(){
     if(!ActionMenuManager.oPC) return;
@@ -126,7 +340,7 @@ export class ActionMenuManager {
     const resource = ActionMenuManager.oPC.getForceMenuResource();
     const forceItemMask = ActionMenuManager.oPC.getForceItemMask();
     // Self uses known class spells only (not armband CastSpell props).
-    const entries = buildForceMenuSpellList(
+    const entries = ActionMenuManager.buildForceMenuSpellList(
       ActionMenuManager.oPC.getClassSpells(),
       'friendly'
     );
@@ -135,7 +349,7 @@ export class ActionMenuManager {
       const { spell } = entries[i];
       const cost = ActionMenuManager.oPC.getAdjustedForcePointCost(spell);
       // Retail GetSelfForcePowers passes distanceSq = 0.0001
-      const enabled = isForceMenuSpellEnabled(spell, {
+      const enabled = ActionMenuManager.isForceMenuSpellEnabled(spell, {
         resource,
         cost,
         distanceSq: 0.0001,
@@ -156,7 +370,7 @@ export class ActionMenuManager {
     if(!ActionMenuManager.oPC || !ActionMenuManager.oTarget) return;
     if(ActionMenuManager.areaIsRestricted()) return;
 
-    const exclusionFlags = getHostileTargetExclusionFlags(ActionMenuManager.oTarget);
+    const exclusionFlags = ActionMenuManager.getHostileTargetExclusionFlags(ActionMenuManager.oTarget);
     const resource = ActionMenuManager.oPC.getForceMenuResource();
     const forceItemMask = ActionMenuManager.oPC.getForceItemMask();
     const dx = ActionMenuManager.oTarget.position.x - ActionMenuManager.oPC.position.x;
@@ -164,9 +378,9 @@ export class ActionMenuManager {
     const dz = ActionMenuManager.oTarget.position.z - ActionMenuManager.oPC.position.z;
     const distanceSq = dx * dx + dy * dy + dz * dz;
 
-    const entries = isDroidForceMenuCaster(ActionMenuManager.oPC)
-      ? buildEquipmentForceMenuSpellList(ActionMenuManager.oPC, exclusionFlags)
-      : buildForceMenuSpellList(
+    const entries = ActionMenuManager.isDroidForceMenuCaster(ActionMenuManager.oPC)
+      ? ActionMenuManager.buildEquipmentForceMenuSpellList(ActionMenuManager.oPC, exclusionFlags)
+      : ActionMenuManager.buildForceMenuSpellList(
           ActionMenuManager.oPC.getClassSpells(),
           'hostile',
           exclusionFlags
@@ -179,7 +393,7 @@ export class ActionMenuManager {
       if(entry.item){
         // GetEquipmentForcePowers: charges + item masks (no FP gate).
         enabled = isUsableItemActive(ActionMenuManager.oPC, entry.item)
-          && isForceMenuSpellEnabled(spell, {
+          && ActionMenuManager.isForceMenuSpellEnabled(spell, {
             resource: Number.POSITIVE_INFINITY,
             cost: 0,
             distanceSq,
@@ -187,7 +401,7 @@ export class ActionMenuManager {
           });
       }else{
         const cost = ActionMenuManager.oPC.getAdjustedForcePointCost(spell);
-        enabled = isForceMenuSpellEnabled(spell, {
+        enabled = ActionMenuManager.isForceMenuSpellEnabled(spell, {
           resource,
           cost,
           distanceSq,
@@ -397,7 +611,7 @@ export class ActionMenuManager {
     const dz = ActionMenuManager.oTarget.position.z - ActionMenuManager.oPC.position.z;
     const distanceSq = dx * dx + dy * dy + dz * dz;
     const cost = ActionMenuManager.oPC.getAdjustedForcePointCost(spell);
-    const enabled = isForceMenuSpellEnabled(spell, {
+    const enabled = ActionMenuManager.isForceMenuSpellEnabled(spell, {
       resource,
       cost,
       distanceSq,
@@ -489,7 +703,7 @@ export class ActionMenuManager {
       if(id < STANCE_FORM_SPELL_MIN || id > STANCE_FORM_SPELL_MAX) continue;
 
       const cost = ActionMenuManager.oPC.getAdjustedForcePointCost(spell);
-      const enabled = isForceMenuSpellEnabled(spell, {
+      const enabled = ActionMenuManager.isForceMenuSpellEnabled(spell, {
         resource,
         cost,
         distanceSq: 0.0001,
@@ -654,7 +868,7 @@ export class ActionMenuManager {
       ){
         // Retail GetTargetActions slot 0: GetCombatFeatsSkills then Attack.
         if(!restricted){
-          const featIds = getCombatMenuFeatIds(
+          const featIds = ActionMenuManager.getCombatMenuFeatIds(
             id => ActionMenuManager.oPC.getHasFeat(id),
             ActionMenuManager.oPC.isRangedEquipped()
           );

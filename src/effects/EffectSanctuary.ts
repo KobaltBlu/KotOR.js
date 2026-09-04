@@ -7,7 +7,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 /**
  * EffectSanctuary — retail OnApplySanctuary.
  * int[4] = Will DC. Hostile observers must fail Will to see the target.
- * Full vis-node cache is approximated via stealth-detection GetInvisible path.
+ * Full vis-node cache is approximated via ModuleCreature.isInvisibleToObserver.
  *
  * @file EffectSanctuary.ts
  */

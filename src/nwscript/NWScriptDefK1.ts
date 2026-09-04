@@ -59,7 +59,6 @@ import { CreatureClassType } from "@/enums/nwscript/CreatureClassType";
 import { TalkVolume } from "@/enums/engine/TalkVolume";
 import { FeebackMessageColor } from "@/enums/engine/FeedbackMessageColor";
 import { hasImmunityType } from "@/effects/haste-slow";
-import { changeFactionByFaction } from "@/module/faction-by-faction";
 import { GameOverManager } from "@/managers/GameOverManager";
 import { setAreaTransitionBMP } from "@/engine/area-transition-bmp";
 import { setCreatureFormation } from "@/engine/pathfinding/set-formation";
@@ -10043,7 +10042,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number]){
       // ExecuteCommandChangeByFaction (SurrenderByFaction branch)
-      changeFactionByFaction(this.caller, args[0] | 0, args[1] | 0, true);
+      GameState.FactionManager.changeFactionByFaction(this.caller, args[0] | 0, args[1] | 0, true);
     }
   },
   737:{
@@ -10053,7 +10052,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number]){
       // ExecuteCommandChangeByFaction (ChangeFactionByFaction branch)
-      changeFactionByFaction(this.caller, args[0] | 0, args[1] | 0, false);
+      GameState.FactionManager.changeFactionByFaction(this.caller, args[0] | 0, args[1] | 0, false);
     }
   },
   738:{

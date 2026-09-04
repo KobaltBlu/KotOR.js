@@ -1,5 +1,5 @@
 import { CurrentGame } from "@/engine/CurrentGame";
-import type { ModuleCreature, ModuleObject } from "@/module";
+import type { ModuleArea, ModuleCreature, ModuleObject } from "@/module";
 import { GFFObject } from "@/resource/GFFObject";
 import { GFFStruct } from "@/resource/GFFStruct";
 
@@ -361,6 +361,60 @@ export class FactionManager {
         });
       }
     });
+  }
+
+  /**
+   * Resolve the area used by ExecuteCommandChangeByFaction.
+   * Caller may be a creature/object (→ GetArea) or the area itself.
+   */
+  static resolveCallerArea(caller: ModuleObject | undefined): ModuleArea | undefined {
+    if(!caller) return undefined;
+    if(BitWise.InstanceOfObject(caller, ModuleObjectType.ModuleArea)){
+      return caller as ModuleArea;
+    }
+    return caller.area;
+  }
+
+  /**
+   * Retail ExecuteCommandChangeByFaction
+   * ChangeFactionByFaction / SurrenderByFaction.
+   *
+   * All creatures in the caller's area whose FactionID matches `fromFactionId`
+   * join `toFactionId`. Surrender also clears combat/actions and pacifies.
+   */
+  static changeFactionByFaction(
+    caller: ModuleObject | undefined,
+    fromFactionId: number,
+    toFactionId: number,
+    surrender: boolean = false,
+  ): void {
+    const area = FactionManager.resolveCallerArea(caller);
+    if(!area?.creatures?.length) return;
+
+    const toFaction = FactionManager.factions.get(toFactionId);
+    if(!toFaction) return;
+
+    for(let i = 0; i < area.creatures.length; i++){
+      const creature = area.creatures[i] as ModuleCreature;
+      if(!creature) continue;
+
+      const factionId = creature.faction?.id ?? creature.factionId;
+      if(factionId !== fromFactionId) continue;
+
+      creature.faction = toFaction;
+      creature.factionId = toFactionId;
+      FactionManager.AddCreatureToFaction(creature);
+
+      if(surrender){
+        // SetCombatState(0, 1), ClearAllActions(1), PacifyCreature
+        creature.setCombatState(false);
+        creature.clearAllActions(true);
+        creature.pacifyCreature();
+      }else{
+        // ClearVisibleList + UpdateVisibleList(0)
+        creature.clearVisibleList();
+      }
+    }
   }
 
 }

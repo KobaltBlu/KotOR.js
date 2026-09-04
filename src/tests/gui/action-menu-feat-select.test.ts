@@ -49,18 +49,6 @@ jest.mock('@/GameState', () => ({
   },
 }));
 
-jest.mock('@/engine/menu/action-menu-combat-feats', () => ({
-  getCombatMenuFeatIds: () => [28],
-}));
-
-jest.mock('@/engine/menu/action-menu-force-powers', () => ({
-  buildForceMenuSpellList: () => [],
-  buildEquipmentForceMenuSpellList: () => [],
-  getHostileTargetExclusionFlags: () => 0,
-  isDroidForceMenuCaster: () => false,
-  isForceMenuSpellEnabled: () => true,
-}));
-
 jest.mock('@/engine/menu/action-menu-usable', () => ({
   UsableItemMask: { MEDICAL: 1, OTHER: 2, MINES: 4 },
   getMineStrengthLevel: () => 0,
@@ -98,6 +86,14 @@ jest.mock('@/talents/TalentObject', () => {
 import { ActionMenuManager } from '@/engine/menu/ActionMenuManager';
 import { ActionType } from '@/enums/actions/ActionType';
 import { TalentFeat } from '@/talents/TalentFeat';
+
+// Folded helpers — stub after import so UpdateMenuActions stays focused.
+(ActionMenuManager as any).getCombatMenuFeatIds = () => [28];
+(ActionMenuManager as any).buildForceMenuSpellList = () => [];
+(ActionMenuManager as any).buildEquipmentForceMenuSpellList = () => [];
+(ActionMenuManager as any).getHostileTargetExclusionFlags = () => 0;
+(ActionMenuManager as any).isDroidForceMenuCaster = () => false;
+(ActionMenuManager as any).isForceMenuSpellEnabled = () => true;
 import { GameState } from '@/GameState';
 
 function seedCombatSlot0(enemy: any){

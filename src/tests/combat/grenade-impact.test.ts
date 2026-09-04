@@ -2,19 +2,24 @@
  * Grenade impact alignment — GrenadeSND, shapes, spell-target plumbing.
  * @jest-environment node
  */
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it, jest } from '@jest/globals';
 import * as THREE from 'three';
+
+jest.mock('@/managers/PartyManager', () => ({
+  PartyManager: { party: [], Player: undefined },
+}));
+jest.mock('@/GameState', () => ({
+  GameState: { CursorManager: { isClientCombatMode: () => false } },
+}));
+jest.mock('@/engine/FollowerCamera', () => ({ FollowerCamera: {} }));
+jest.mock('@/managers/ResolutionManager', () => ({ ResolutionManager: { addResolution: () => {} } }));
+jest.mock('@/engine/pathfinding/clear-line-of-sight', () => ({ clearLineOfSight: () => true }));
 
 import { SWGrenadeSound } from '@/engine/rules/SWGrenadeSound';
 import {
+  ModuleObjectManager,
   ShapeType,
-  isInCone,
-  isInCube,
-  isInSpellCone,
-  isInSpellCylinder,
-  isInSphere,
-  isPointInShape,
-} from '@/combat/objects-in-shape';
+} from '@/managers/ModuleObjectManager';
 import { isGrenadeItemType } from '@/combat/item-cast-grenade';
 
 describe('SWGrenadeSound', () => {
@@ -95,39 +100,39 @@ describe('objects-in-shape geometry', () => {
   const ahead = new THREE.Vector3(10, 0, 0);
 
   it('sphere includes points within radius', () => {
-    expect(isInSphere(new THREE.Vector3(3, 0, 0), origin, 5)).toBe(true);
-    expect(isInSphere(new THREE.Vector3(6, 0, 0), origin, 5)).toBe(false);
+    expect(ModuleObjectManager.isInSphere(new THREE.Vector3(3, 0, 0), origin, 5)).toBe(true);
+    expect(ModuleObjectManager.isInSphere(new THREE.Vector3(6, 0, 0), origin, 5)).toBe(false);
   });
 
   it('cube uses AABB half-extent', () => {
-    expect(isInCube(new THREE.Vector3(1, 1, 1), origin, 2)).toBe(true);
-    expect(isInCube(new THREE.Vector3(3, 0, 0), origin, 2)).toBe(false);
+    expect(ModuleObjectManager.isInCube(new THREE.Vector3(1, 1, 1), origin, 2)).toBe(true);
+    expect(ModuleObjectManager.isInCube(new THREE.Vector3(3, 0, 0), origin, 2)).toBe(false);
   });
 
   it('spell cylinder keeps a 1.5m corridor along the axis', () => {
-    expect(isInSpellCylinder(new THREE.Vector3(5, 0, 0), origin, ahead, 10)).toBe(true);
-    expect(isInSpellCylinder(new THREE.Vector3(5, 2, 0), origin, ahead, 10)).toBe(false);
-    expect(isInSpellCylinder(new THREE.Vector3(-1, 0, 0), origin, ahead, 10)).toBe(false);
+    expect(ModuleObjectManager.isInSpellCylinder(new THREE.Vector3(5, 0, 0), origin, ahead, 10)).toBe(true);
+    expect(ModuleObjectManager.isInSpellCylinder(new THREE.Vector3(5, 2, 0), origin, ahead, 10)).toBe(false);
+    expect(ModuleObjectManager.isInSpellCylinder(new THREE.Vector3(-1, 0, 0), origin, ahead, 10)).toBe(false);
   });
 
   it('cone widens toward the end', () => {
-    expect(isInCone(new THREE.Vector3(9, 0.5, 0), origin, ahead, 4)).toBe(true);
-    expect(isInCone(new THREE.Vector3(2, 3, 0), origin, ahead, 4)).toBe(false);
+    expect(ModuleObjectManager.isInCone(new THREE.Vector3(9, 0.5, 0), origin, ahead, 4)).toBe(true);
+    expect(ModuleObjectManager.isInCone(new THREE.Vector3(2, 3, 0), origin, ahead, 4)).toBe(false);
   });
 
   it('spell cone requires forward alignment', () => {
-    expect(isInSpellCone(new THREE.Vector3(5, 0, 0), origin, ahead, 10)).toBe(true);
-    expect(isInSpellCone(new THREE.Vector3(0, 5, 0), origin, ahead, 10)).toBe(false);
+    expect(ModuleObjectManager.isInSpellCone(new THREE.Vector3(5, 0, 0), origin, ahead, 10)).toBe(true);
+    expect(ModuleObjectManager.isInSpellCone(new THREE.Vector3(0, 5, 0), origin, ahead, 10)).toBe(false);
   });
 
   it('isPointInShape dispatches retail shape ids', () => {
-    expect(isPointInShape(
+    expect(ModuleObjectManager.isPointInShape(
       ShapeType.SPHERE,
       new THREE.Vector3(1, 0, 0),
       origin,
       2
     )).toBe(true);
-    expect(isPointInShape(
+    expect(ModuleObjectManager.isPointInShape(
       ShapeType.CUBE,
       new THREE.Vector3(0.5, 0.5, 0.5),
       origin,

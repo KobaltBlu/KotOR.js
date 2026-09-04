@@ -13,8 +13,8 @@ jest.mock("@/GameState", () => ({
 }));
 jest.mock("@/engine/FollowerCamera", () => ({ FollowerCamera: {} }));
 jest.mock("@/managers/ResolutionManager", () => ({ ResolutionManager: { addResolution: () => {} } }));
-jest.mock("@/combat/objects-in-shape", () => ({ isPointInShape: () => false }));
 jest.mock("@/engine/pathfinding/clear-line-of-sight", () => ({ clearLineOfSight: () => true }));
+
 
 import {
   ModuleObjectManager,
