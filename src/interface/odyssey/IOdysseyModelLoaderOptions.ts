@@ -10,7 +10,8 @@
  */
 export interface IOdysseyModelLoaderOptions {
   textureVar?: string, //override texture
-  castShadow?: boolean, //force cast shadow on mesh nodes
+  /** true: force cast; false: never cast (rooms/doors); omit: use MDL flagShadow */
+  castShadow?: boolean,
   receiveShadow?: boolean, //force recieve shadow on mesh nodes
   /** When false, retail TurnOffShadows — skip hull/volume projection for this model. */
   shadowsEnabled?: boolean,

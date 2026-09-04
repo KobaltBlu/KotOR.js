@@ -259,8 +259,13 @@ export class OdysseyModel3D extends OdysseyObject3D {
     if(!shadowsOn || isSaber){
       return { castShadow: false, receiveShadow: false };
     }
+    // castShadow: false (rooms/doors) must suppress MDL flagShadow so tiles
+    // receive shadows without self-shadowing. true forces cast; omit uses MDL.
+    const castShadow = options.castShadow === false
+      ? false
+      : (!!odysseyNode.flagShadow || !!options.castShadow);
     return {
-      castShadow: !!odysseyNode.flagShadow || !!options.castShadow,
+      castShadow,
       receiveShadow: !!options.receiveShadow,
     };
   }
@@ -1606,7 +1611,8 @@ export class OdysseyModel3D extends OdysseyObject3D {
             (geometry.getAttribute('normal') as THREE.BufferAttribute).applyNormalMatrix( normalMatrix );
             geometry.normalizeNormals();
 
-            if(odysseyNode.flagShadow || options.castShadow){
+            // Rooms pass castShadow: false — merged static must not cast even if MDL flagShadow is set.
+            if(options.castShadow !== false && (odysseyNode.flagShadow || options.castShadow)){
               odysseyModel.mergedCastsShadow = true;
             }
 
