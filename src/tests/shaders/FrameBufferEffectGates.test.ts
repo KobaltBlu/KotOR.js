@@ -75,6 +75,8 @@ describe('FrameBufferEffectGates', () => {
     expect(RETAIL_BLOOM_KERNEL_5X5[12]).toBeCloseTo(0.67); // center
     expect(RETAIL_BLOOM_KERNEL_5X5[0]).toBeCloseTo(0.12);
     expect(RETAIL_BLOOM_KERNEL_5X5[24]).toBeCloseTo(0.12);
+    const kernelSum = RETAIL_BLOOM_KERNEL_5X5.reduce((a, b) => a + b, 0);
+    expect(kernelSum).toBeCloseTo(8.59, 2);
   });
 
   test('resolveSpeedBlurPass requires enableSpeedBlur and Frame Buffer INI', () => {

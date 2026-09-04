@@ -10,10 +10,12 @@ import {
 
 /**
  * ConvolutionBloomPass — retail FrameBufferModifications bit 0x02
- * (RenderOverlayConvolution).
+ * (RenderOverlayConvolution, GOG K1).
  *
  * Retail cascade: bright-extract @ 512 → MipmapFilter 256/128/64 →
- * BloomFilter 5×5 (bloomFiltersATI, alpha 0.35) → SRC_ALPHA/ONE composite.
+ * BloomFilter 5×5 (bloomFiltersATI) with glColor alpha 0.35 burn-in →
+ * final SRC_ALPHA/ONE composite at glColor alpha 1. We apply the single
+ * ×0.35 at composite (bloom LUT alpha) for the same net intensity.
  *
  * @file ConvolutionBloomPass.ts
  */
