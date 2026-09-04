@@ -245,7 +245,7 @@ assert(creatureSrc.includes('levelStatRecordFromDraft'), 'applyLevelUp records l
 assert(creatureSave.includes("'PerceptionList'"), 'Creature save writes PerceptionList');
 
 {
-  // Retail SaveCreature @ 005009af persists every visibility node; unresolved
+  // Retail SaveCreature persists every visibility node; unresolved
   // objectIds (PLAYER_ID / stale) must not be spliced out of perceptionList.
   const moduleObjectSrc = read('src/module/ModuleObject.ts');
   const initIdx = moduleObjectSrc.indexOf('initPerceptionList()');
@@ -269,7 +269,7 @@ assert(invSrc.includes('.save()'), 'InventoryManager uses item.save()');
 assert(!invSrc.includes("'ObjectId'"), 'InventoryManager does not add ObjectId');
 
 {
-  // Retail DoPCAutosave @ 004b908c: pifo.ifo only in 000001 - AUTOSAVE
+  // Retail DoPCAutosave: pifo.ifo only in 000001 - AUTOSAVE
   const saveGameSrc = read('src/engine/SaveGame.ts');
   const writeIdx = saveGameSrc.indexOf('static async writeSaveFolder(');
   assert(writeIdx >= 0, 'SaveGame has writeSaveFolder');
