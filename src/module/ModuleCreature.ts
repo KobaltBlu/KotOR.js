@@ -1997,6 +1997,32 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
+  /**
+   * Apply the current drive clip to the skeleton without requiring EngineMode
+   * INGAME. loadModel runs under LOADING, where update() skips animation — without
+   * this, creatures render MDL bind/rest pose until the first real tick.
+   */
+  primeAnimationPose(){
+    if(!(this.model instanceof OdysseyModel3D)){
+      return;
+    }
+    if(!this.animationState.animation){
+      this.setAnimationState(
+        this.combatData.combatState ? ModuleCreatureAnimState.READY : ModuleCreatureAnimState.PAUSE
+      );
+    }
+    this.updateAnimationState();
+    // updateAnimationState may only setAnimationState (started=false) when the
+    // clip was missing — drive play + pose on a second pass.
+    if(this.animationState.animation && !this.animationState.started){
+      this.updateAnimationState();
+    }
+    if(this.model.bonesInitialized){
+      this.model.animateFrame = true;
+      this.model.update(0.0000000000000000000001);
+    }
+  }
+
   damage(amount = 0, oAttacker: ModuleObject, delayTime = 0){
     if(delayTime){
       this.damageList.push({amount: amount, delay: delayTime});
@@ -6866,6 +6892,11 @@ export class ModuleCreature extends ModuleObject {
   async loadModel (): Promise<OdysseyModel3D> {
     const generation = ++this.modelLoadGeneration;
     this.isReady = false;
+    // Hide while rebuilding so bind/rest pose cannot flash if the container
+    // is already in the scene (player path, equip / appearance reload).
+    if(this.model instanceof OdysseyModel3D){
+      this.model.visible = false;
+    }
     await this.loadEquipmentModels();
     if(generation !== this.modelLoadGeneration){
       return this.model;
@@ -6874,13 +6905,22 @@ export class ModuleCreature extends ModuleObject {
     if(generation !== this.modelLoadGeneration){
       return this.model;
     }
+    if(this.model instanceof OdysseyModel3D){
+      this.model.visible = false;
+    }
     await this.loadHead(generation);
     if(generation !== this.modelLoadGeneration){
       return this.model;
     }
     this.isReady = true;
     this.updateCollision(0.0000000000000000000001);
+    this.primeAnimationPose();
     this.update(0.0000000000000000000001);
+    // updateModelVisibility is Mode-gated (INGAME); force visible after prime so a
+    // stale room from the prior module cannot leave the mesh hidden under LOADING.
+    if(this.model instanceof OdysseyModel3D){
+      this.model.visible = true;
+    }
     return this.model;
   }
 

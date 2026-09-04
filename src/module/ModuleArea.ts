@@ -2678,7 +2678,6 @@ export class ModuleArea extends ModuleObject {
 
         if(!this.miniGame){
           GameState.PartyManager.party[ GameState.PartyManager.GetCreatureStartingPartyIndex(GameState.PartyManager.Player) ] = GameState.PartyManager.Player;
-          GameState.group.party.add( GameState.PartyManager.Player.container );
         }
 
         // Reset actions between modules; preserve mid-combat ActionList on save load.
@@ -2700,6 +2699,9 @@ export class ModuleArea extends ModuleObject {
 
           GameState.PartyManager.Player.getCurrentRoom();
           // GameState.PartyManager.Player.computeBoundingBox(true);
+          if(!this.miniGame){
+            GameState.group.party.add( GameState.PartyManager.Player.container );
+          }
         }catch(e){
           console.error(e);
         }
@@ -2713,7 +2715,6 @@ export class ModuleArea extends ModuleObject {
 
         if(!this.miniGame){
           GameState.PartyManager.party[ GameState.PartyManager.GetCreatureStartingPartyIndex(player) ] = player;
-          GameState.group.party.add( player.container );
         }
 
         try{
@@ -2728,6 +2729,9 @@ export class ModuleArea extends ModuleObject {
 
           player.getCurrentRoom();
           player.computeBoundingBox(true);
+          if(!this.miniGame){
+            GameState.group.party.add( player.container );
+          }
         }catch(e){
           console.error(e);
         }
@@ -2767,6 +2771,11 @@ export class ModuleArea extends ModuleObject {
       const pm = GameState.PartyManager.party[i];
       if(pm && typeof pm.clearLocomotionState === 'function'){
         pm.clearLocomotionState(true);
+        // clearLocomotion may demote walk/run → PAUSE with started=false; apply
+        // before fade-in (Mode is still LOADING so tick update() skips anim).
+        if(typeof pm.primeAnimationPose === 'function'){
+          pm.primeAnimationPose();
+        }
       }
     }
     GameState.PartyManager.ApplyControlledNPC();

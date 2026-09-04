@@ -164,9 +164,9 @@ export class TextureLoader {
       const obj = { name: name, material: material, type: type, fallback: fallback, onLoad: onLoad, uniformName: uniformName } as ITextureLoaderQueuedRef;
       const cached = TextureLoader.textures.get(name) ?? TextureLoader.guiTextures.get(name);
       if(cached){
-        TextureLoader.UpdateMaterial(obj);
-        if(typeof onLoad == 'function')
-          onLoad(cached, obj);
+        // onLoad runs from UpdateMaterial after assignMaterialTexture (material.map / GUI_SORT).
+        // Calling onLoad here raced ahead of that bind and caused opaque GUI text for a few frames.
+        void TextureLoader.UpdateMaterial(obj);
       }else if(type === TextureType.TEXTURE && TextureLoader.pendingSubscribers.has(name)){
         TextureLoader.pendingSubscribers.get(name).push(obj);
       }else{
@@ -180,9 +180,7 @@ export class TextureLoader {
         const obj = { name: texName, material: material, type: type, fallback: fallback, onLoad: onLoad, uniformName: uniformName } as ITextureLoaderQueuedRef;
         const cached = TextureLoader.textures.get(texName) ?? TextureLoader.guiTextures.get(texName);
         if(cached){
-          TextureLoader.UpdateMaterial(obj);
-          if(typeof onLoad == 'function')
-            onLoad(cached, obj);
+          void TextureLoader.UpdateMaterial(obj);
         }else if(type === TextureType.TEXTURE && TextureLoader.pendingSubscribers.has(texName)){
           TextureLoader.pendingSubscribers.get(texName).push(obj);
         }else{
