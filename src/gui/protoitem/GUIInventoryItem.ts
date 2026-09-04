@@ -55,9 +55,6 @@ export class GUIInventoryItem extends GUIProtoItem {
     return { left: 0, top: 0, width, height };
   }
 
-  buildFill(){}
-  buildBorder(){}
-  buildHighlight(){}
   buildChrome(){}
   buildText(){}
 

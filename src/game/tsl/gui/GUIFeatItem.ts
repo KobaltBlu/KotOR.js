@@ -64,9 +64,6 @@ export class GUIFeatItem extends GUIProtoItem {
     };
   }
 
-  buildFill(){}
-  buildBorder(){}
-  buildHighlight(){}
   buildChrome(){}
   buildText(){}
 

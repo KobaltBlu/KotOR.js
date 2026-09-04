@@ -48,9 +48,6 @@ export class GUIProgressBar extends GUIControl {
     this.curValue = ( control.hasField('CURVALUE') ? control.getFieldByLabel('CURVALUE')?.getValue() : 0 );
     this.maxValue = ( control.hasField('MAXVALUE') ? control.getFieldByLabel('MAXVALUE')?.getValue() : 0 );
 
-    this.widget.userData.progress = new THREE.Group();
-    this.widget.add(this.widget.userData.progress);
-
     this.progress = {
       color: new THREE.Color(0, 0.658824, 0.980392),
       corner: '',
@@ -67,7 +64,9 @@ export class GUIProgressBar extends GUIControl {
     this.progressChrome.material.uniforms.diffuse.value = this.progress.color;
     this.progressChrome.material.uniforms.fillDiffuse.value = this.progress.color;
     this.progressChrome.mesh.name = 'GUIProgressChrome';
-    this.widget.userData.progress.add(this.progressChrome.mesh);
+    this.progressChrome.mesh.position.z = this.zOffset + 1;
+    this.progressChrome.mesh.renderOrder = this.id + 1;
+    this.widget.add(this.progressChrome.mesh);
 
     if(this.control){
       
@@ -141,7 +140,6 @@ export class GUIProgressBar extends GUIControl {
     const fillExtent = this.getFillExtent();
     const fillPlane = new THREE.PlaneGeometry(1, 1, 1) as THREE.BufferGeometry;
     layoutOrthoPlanePositions(fillPlane, fillExtent.width, fillExtent.height);
-    fillPlane.translate(0, 0, this.zOffset + 1);
     stampRegionAttribute(fillPlane, GUI_CHROME_REGION_FILL);
 
     if(this.progressChrome.geometry instanceof THREE.BufferGeometry){
@@ -149,6 +147,7 @@ export class GUIProgressBar extends GUIControl {
     }
     this.progressChrome.geometry = mergeChromePlanes([fillPlane]);
     this.progressChrome.mesh.geometry = this.progressChrome.geometry;
+    this.progressChrome.mesh.position.z = this.zOffset + 1;
     this.progressChrome.material.uniforms.enableFrame.value = 0;
     this.progressChrome.material.uniforms.enableFill.value = 1;
     fillPlane.dispose();

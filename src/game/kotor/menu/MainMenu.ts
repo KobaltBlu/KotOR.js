@@ -117,7 +117,7 @@ export class MainMenu extends GameMenu {
       });
 
       MDLLoader.loader.load('mainmenu').then((mdl: OdysseyModel) => {
-        this.tGuiPanel.widget.userData.fill.visible = false;
+        this.tGuiPanel.hideFill();
         this._3dView = new LBL_3DView();
         this._3dView.setControl(this.LBL_3DVIEW);
         this._3dView.visible = true;

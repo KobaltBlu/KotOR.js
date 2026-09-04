@@ -50,9 +50,6 @@ export class GUISpellItem extends GUIProtoItem {
     };
   }
 
-  buildFill(){}
-  buildBorder(){}
-  buildHighlight(){}
   buildChrome(){}
   buildText(){}
 

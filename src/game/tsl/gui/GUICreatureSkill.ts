@@ -56,9 +56,6 @@ export class GUICreatureSkill extends GUIProtoItem {
     return { left: 0, top: 0, width, height: 42 };
   }
 
-  buildFill(){}
-  buildBorder(){}
-  buildHighlight(){}
   buildChrome(){}
   buildText(){}
 

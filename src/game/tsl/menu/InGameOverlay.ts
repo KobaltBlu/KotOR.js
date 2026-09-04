@@ -163,7 +163,7 @@ export class InGameOverlay extends K1_InGameOverlay {
       this.LBL_QUEUE0.anchor = Anchor.BottomCenter;
       this.LBL_QUEUE0.recalculate();
 
-      this.tGuiPanel.widget.userData.fill.visible = false;
+      this.tGuiPanel.hideFill();
 
       /*this.TB_STEALTH.hideBorder();
       this.TB_PAUSE.hideBorder();

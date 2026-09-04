@@ -97,7 +97,7 @@ export class MenuGalaxyMap extends GameMenu {
     GameState.PerformanceMonitor.start('MenuGalaxyMap.loadGalaxyModel');
     const mdl = await MDLLoader.loader.load('galaxy');
     GameState.PerformanceMonitor.stop('MenuGalaxyMap.loadGalaxyModel');
-    this.tGuiPanel.widget.userData.fill.visible = false;
+    this.tGuiPanel.hideFill();
 
     this._3dView = new LBL_3DView();
     this._3dView.visible = true;

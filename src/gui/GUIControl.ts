@@ -279,14 +279,6 @@ export class GUIControl {
     this.opacity = 1;
     this.hover = false;
 
-    this.widget.userData.chrome = new THREE.Group();
-    this.widget.userData.fill = new THREE.Group();
-    this.widget.userData.text = new THREE.Group();
-
-    this.widget.add(this.widget.userData.chrome);
-    //this.widget.add(this.widget.userData.fill);
-    this.widget.add(this.widget.userData.text);
-
     this.initObjects();
     this.initInputListeners();
     this.initProperties();
@@ -349,7 +341,7 @@ export class GUIControl {
     this.chrome = createGuiChrome();
     this.chrome.material.uniforms.diffuse.value = this.border.color;
     this.chrome.material.uniforms.highlightDiffuse.value = this.highlight.color;
-    this.widget.userData.chrome.add(this.chrome.mesh);
+    this.widget.add(this.chrome.mesh);
 
     //------//
     // Text
@@ -399,7 +391,6 @@ export class GUIControl {
     //new THREE.MeshBasicMaterial({color: this.text.color, side: THREE.DoubleSide, transparent: true});
     this.text.mesh = new THREE.Mesh( this.text.geometry, this.text.material );
     this.text.mesh.frustumCulled = false;
-    //this.widget.userData.text.add(this.text.mesh);
 
     //--------//
     // MoveTo
@@ -1209,11 +1200,8 @@ export class GUIControl {
     }
   }*/
 
+  /** Compat alias — fill is a chrome region, not a separate mesh. */
   getFill(): THREE.Mesh {
-    return this.chrome.mesh;
-  }
-
-  getHighlightFill(){
     return this.chrome.mesh;
   }
 
@@ -1894,13 +1882,10 @@ export class GUIControl {
     const plane = new THREE.PlaneGeometry(1, 1, 1) as THREE.BufferGeometry;
     // meshSize only here — logical fill may be 0 when the frame consumes the hole.
     this.layoutOrthoPlane(plane, this.meshSize(extent.width), this.meshSize(extent.height));
-    plane.translate(this.getFillShrinkOffsetX(), 0, this.zOffset);
+    // XY only — mesh.position.z already carries zOffset for the whole chrome.
+    plane.translate(this.getFillShrinkOffsetX(), 0, 0);
     stampRegionAttribute(plane, GUI_CHROME_REGION_FILL);
     return plane;
-  }
-
-  buildFill(){
-    // Fill is merged into chrome geometry via buildChrome().
   }
 
   /**
@@ -1989,18 +1974,6 @@ export class GUIControl {
     }
   }
 
-  buildBorder(){
-    this.buildChrome();
-  }
-
-  buildHighlight(){
-    // Highlight uses the same chrome geometry; textures swap via uniforms.
-  }
-
-  buildHighlightFill(){
-    // Fill is merged into chrome geometry via buildChrome().
-  }
-
   buildText(){
     let self = this;
 
@@ -2010,7 +1983,7 @@ export class GUIControl {
     if(this.text.mesh.parent)
       this.text.mesh.parent.remove(this.text.mesh);
 
-    this.widget.userData.text.add(this.text.mesh);
+    this.widget.add(this.text.mesh);
     
     let texture = this.text.texture;
     texture.flipY = false;
@@ -2097,7 +2070,7 @@ export class GUIControl {
     if(this.text.geometry && this.text.geometry.boundingBox){
       this.text.geometry.boundingBox.getSize(this.textSize);
     }
-    this.widget.userData.text.position.z = this.zOffset;
+    this.text.mesh.position.z = this.zOffset;
 
     const innerSize = this.getInnerSize();
     const innerW = asExtentInt(innerSize.width);
@@ -2105,18 +2078,18 @@ export class GUIControl {
     const textH = asExtentInt(this.textSize.y);
 
     // Horizontal alignment is handled in GUIFont; origin sits at left edge of inner box.
-    this.widget.userData.text.position.x = -truncDiv(innerW, 2);
+    this.text.mesh.position.x = -truncDiv(innerW, 2);
 
     const vertical = this.text.alignment & GUIControlAlignment.VerticalMask;
     switch(vertical){
       case GUIControlAlignment.VerticalTop:
-        this.widget.userData.text.position.y = truncDiv(innerH, 2);
+        this.text.mesh.position.y = truncDiv(innerH, 2);
       break;
       case GUIControlAlignment.VerticalCenter:
-        this.widget.userData.text.position.y = truncDiv(textH, 2);
+        this.text.mesh.position.y = truncDiv(textH, 2);
       break;
       case GUIControlAlignment.VerticalBottom:
-        this.widget.userData.text.position.y = -truncDiv(innerH, 2) + textH;
+        this.text.mesh.position.y = -truncDiv(innerH, 2) + textH;
       break;
     }
 
@@ -2260,30 +2233,6 @@ export class GUIControl {
     }else{
       return '';
     }
-  }
-
-  resizeFill(){
-    this.buildChrome();
-  }
-
-  resizeHighlightFill(){
-    this.buildChrome();
-  }
-
-  resizeBorder(_side: string){
-    this.buildChrome();
-  }
-
-  resizeCorner(_side: string){
-    this.buildChrome();
-  }
-
-  resizeHighlight(_side: string){
-    this.buildChrome();
-  }
-
-  resizeHighlightCorner(_side: string){
-    this.buildChrome();
   }
 
   //Add an event listener

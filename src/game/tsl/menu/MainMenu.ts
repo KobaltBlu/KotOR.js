@@ -109,7 +109,7 @@ export class MainMenu extends K1_MainMenu {
         }
       });
 
-      (this.tGuiPanel.widget.userData.fill as any).visible = false;
+      this.tGuiPanel.hideFill();
 
       this._3dView = new LBL_3DView();
       this._3dView.visible = true;

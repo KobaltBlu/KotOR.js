@@ -37,9 +37,6 @@ export class GUIKeyMapItem extends GUIProtoItem {
     super(menu, control, parent, scale);
   }
 
-  buildFill(){}
-  buildBorder(){}
-  buildHighlight(){}
   buildChrome(){}
   buildText(){}
 

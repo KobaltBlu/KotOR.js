@@ -240,7 +240,7 @@ export class InGameOverlay extends GameMenu {
     await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>(async (resolve, reject) => {
-      this.tGuiPanel.widget.userData.fill.visible = false;
+      this.tGuiPanel.hideFill();
       //this.TB_STEALTH.hideBorder();
       //this.TB_PAUSE.hideBorder();
       //this.TB_SOLO.hideBorder();

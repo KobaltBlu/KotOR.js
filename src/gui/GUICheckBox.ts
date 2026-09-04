@@ -227,7 +227,7 @@ export class GUICheckBox extends GUIControl{
       const center = this.getOptionsCheckboxCenter();
       const plane = new THREE.PlaneGeometry(1, 1, 1) as THREE.BufferGeometry;
       layoutOrthoPlanePositions(plane, cbSize, cbSize);
-      plane.translate(center.x, center.y, this.zOffset);
+      plane.translate(center.x, center.y, 0);
       stampRegionAttribute(plane, GUI_CHROME_REGION_FILL);
 
       if(this.chrome.geometry instanceof THREE.BufferGeometry){
@@ -264,22 +264,22 @@ export class GUICheckBox extends GUIControl{
     if(this.text.geometry && this.text.geometry.boundingBox){
       this.text.geometry.boundingBox.getSize(this.textSize);
     }
-    this.widget.userData.text.position.z = this.zOffset;
+    this.text.mesh.position.z = this.zOffset;
 
     // Text strip starts at left + 0x1e (widget left is −width/2).
-    this.widget.userData.text.position.x = -truncDiv(asExtentInt(this.extent.width), 2) + OPTIONS_TEXT_OFFSET;
+    this.text.mesh.position.x = -truncDiv(asExtentInt(this.extent.width), 2) + OPTIONS_TEXT_OFFSET;
 
     const innerSize = this.getInnerSize();
     const vertical = this.text.alignment & GUIControlAlignment.VerticalMask;
     switch(vertical){
       case GUIControlAlignment.VerticalTop:
-        this.widget.userData.text.position.y = truncDiv(asExtentInt(innerSize.height), 2);
+        this.text.mesh.position.y = truncDiv(asExtentInt(innerSize.height), 2);
         break;
       case GUIControlAlignment.VerticalCenter:
-        this.widget.userData.text.position.y = truncDiv(asExtentInt(this.textSize.y), 2);
+        this.text.mesh.position.y = truncDiv(asExtentInt(this.textSize.y), 2);
         break;
       case GUIControlAlignment.VerticalBottom:
-        this.widget.userData.text.position.y =
+        this.text.mesh.position.y =
           -truncDiv(asExtentInt(innerSize.height), 2) + asExtentInt(this.textSize.y);
         break;
     }
