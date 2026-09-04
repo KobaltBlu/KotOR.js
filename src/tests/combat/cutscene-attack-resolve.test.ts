@@ -8,7 +8,7 @@ const animRows: Record<number | string, any> = {
   239: { name: 'RF_Attack_1', __rowlabel: 'RF_Attack_1' },
 };
 
-// Index-style iteration used by weapon-discharge OdysseyModelAnimationGetRow
+// Index-style iteration used by CombatRound.OdysseyModelAnimationGetRow
 animRows[0] = animRows[239];
 
 jest.mock('@/GameState', () => ({
@@ -44,6 +44,9 @@ jest.mock('@/GameState', () => ({
     FeedbackMessageManager: {
       AddMessage: jest.fn(),
     },
+    SWRuleSet: {
+      animationIdMap: new Map([[239, animRows[239]]]),
+    },
     TLKManager: {
       GetStringById: () => ({ Value: '', getDisplayText: () => '' }),
     },
@@ -76,8 +79,8 @@ jest.mock('@/combat/combat-projectile', () => ({
   spawnCombatProjectile: jest.fn(),
 }));
 
-jest.mock('@/combat/on-hit-visuals', () => ({
-  resolveOnHitVisuals: jest.fn(),
+jest.mock('@/engine/pathfinding/clear-line-of-sight', () => ({
+  clearLineOfSight: () => true,
 }));
 
 jest.mock('@/combat/ranged-impact-vfx', () => ({
@@ -88,20 +91,6 @@ jest.mock('@/combat/ranged-impact-vfx', () => ({
 jest.mock('@/combat/attack-summary-feedback', () => ({
   formatAttackSummaryFeedback: () => ({ message: '', color: 0 }),
   AttackSummaryStrRef: {},
-}));
-
-jest.mock('@/combat/combat-floaty', () => ({
-  shouldShowCombatFloaty: () => false,
-}));
-
-jest.mock('@/combat/combat-reaction-eligibility', () => ({
-  canSyncMeleeReaction: () => false,
-  canSyncRangedReaction: () => false,
-  pickMeleeReaction: () => 0,
-  pickRangedReaction: () => 0,
-  rangedAttackHadLandingHit: () => false,
-  isRangedDodgeBlockedAnimation: () => false,
-  resolveMeleeReactionPlayback: () => {},
 }));
 
 jest.mock('@/combat/duel-debug', () => ({
@@ -122,10 +111,6 @@ jest.mock('@/combat/damage-mitigation', () => ({
   damageFlagsFromChannels: () => 0,
   mitigateDamageAmount: (n: number) => n,
   scaleDamageChannels: (c: unknown) => c,
-}));
-
-jest.mock('@/combat/damage-shields', () => ({
-  resolveDamageShields: () => {},
 }));
 
 jest.mock('three', () => {

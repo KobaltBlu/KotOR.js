@@ -4,12 +4,8 @@ import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { BitWise } from "@/utility/BitWise";
 
 /**
- * retail corpse ring — effective capacity 3 retained KeepCorpse shells.
+ * Retail corpse ring — effective capacity 3 retained KeepCorpse shells.
  * Overflow reveals the oldest linked body bag and fades out the oldest shell.
- *
- * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
- * @file corpse-cache.ts
  */
 export class CorpseCache {
   /** Retail ring holds 4 slots with one empty sentinel → 3 live corpses. */
@@ -56,9 +52,7 @@ export class CorpseCache {
     if(idx >= 0) this.shells.splice(idx, 1);
   }
 
-  /**
-   * Reveal linked bag and fade/delete the retained shell (cache overflow).
-   */
+  /** Reveal linked bag and fade/delete the retained shell (cache overflow). */
   evict(creature: ModuleCreature){
     this.remove(creature);
     const bag = creature.getBodyBagPlaceable?.();

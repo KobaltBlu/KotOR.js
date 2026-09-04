@@ -9,11 +9,6 @@ import { OdysseyMaterialBuilder } from "@/three/odyssey/OdysseyMaterialBuilder";
 import { OdysseyLightingBinder } from "@/three/odyssey/OdysseyLightingBinder";
 import { AreaMap } from "@/module/AreaMap";
 import { AreaWeather } from "@/module/AreaWeather";
-import {
-  RETAIL_INIT_AREA_OBJECT_ORDER,
-  RETAIL_LOAD_GIT_OBJECT_ORDER,
-  RETAIL_LOAD_SCENE_OBJECT_ORDER,
-} from "@/module/area-load-order";
 import * as THREE from "three";
 import { GFFField } from "@/resource/GFFField";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
@@ -74,9 +69,61 @@ import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 import { ModuleDayPhase } from "@/enums/module/ModuleDayPhase";
 import { ModuleCalendar } from "@/module/ModuleCalendar";
 import { ModuleTimeManager } from "@/module/ModuleTimeManager";
-import { CorpseCache } from "@/module/corpse-cache";
+import { CorpseCache } from "@/module/CorpseCache";
 
 type AreaScriptKeys = 'OnEnter'|'OnExit'|'OnHeartbeat'|'OnUserDefined';
+
+export const RETAIL_LOAD_GIT_OBJECT_ORDER = [
+  'creatures',
+  'items',
+  'doors',
+  'triggers',
+  'encounters',
+  'waypoints',
+  'sounds',
+  'placeables',
+  'stores',
+  'areaEffects',
+  'properties',
+  'maps',
+  'cameras',
+] as const;
+
+export type RetailLoadGitObjectStep = (typeof RETAIL_LOAD_GIT_OBJECT_ORDER)[number];
+
+export const RETAIL_LOAD_SCENE_OBJECT_ORDER = [
+  'creatures',
+  'player',
+  'party',
+  'items',
+  'doors',
+  'triggers',
+  'encounters',
+  'waypoints',
+  'sounds',
+  'placeables',
+  'stores',
+  'areaEffects',
+  'cameras',
+] as const;
+
+export type RetailLoadSceneObjectStep = (typeof RETAIL_LOAD_SCENE_OBJECT_ORDER)[number];
+
+export const RETAIL_INIT_AREA_OBJECT_ORDER = [
+  'creatures',
+  'items',
+  'doors',
+  'triggers',
+  'encounters',
+  'waypoints',
+  'sounds',
+  'placeables',
+  'stores',
+  'areaEffects',
+  'party',
+] as const;
+
+export type RetailInitAreaObjectStep = (typeof RETAIL_INIT_AREA_OBJECT_ORDER)[number];
 
 /**
  * ModuleArea class.
@@ -91,7 +138,7 @@ type AreaScriptKeys = 'OnEnter'|'OnExit'|'OnHeartbeat'|'OnUserDefined';
  */
 export class ModuleArea extends ModuleObject {
 
-  /** Retail LoadGIT object sequence — see area-load-order.ts */
+  /** Retail LoadGIT object sequence. */
   static readonly LOAD_GIT_OBJECT_ORDER = RETAIL_LOAD_GIT_OBJECT_ORDER;
   /** loadScene object asset order (rooms/path/music excluded) */
   static readonly LOAD_SCENE_OBJECT_ORDER = RETAIL_LOAD_SCENE_OBJECT_ORDER;

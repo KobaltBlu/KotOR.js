@@ -22,6 +22,13 @@ jest.mock('@/GameState', () => ({
         ],
       ]),
     },
+    SWRuleSet: {
+      animationIdMap: new Map([
+        [416, animRows[416]],
+        [239, animRows[239]],
+      ]),
+      animations: animRows,
+    },
   },
 }));
 
@@ -31,17 +38,27 @@ jest.mock('@/odyssey', () => ({
   },
 }));
 
+jest.mock('@/combat/CombatAttackData', () => ({
+  CombatAttackData: class {},
+}));
+
+jest.mock('@/engine/pathfinding/clear-line-of-sight', () => ({
+  clearLineOfSight: () => true,
+}));
+
+jest.mock('@/combat/combat-projectile', () => ({
+  getProjectileImpactPosition: () => undefined,
+  spawnCombatProjectile: () => {},
+}));
+
+jest.mock('@/combat/ranged-impact-vfx', () => ({
+  spawnWorldImpactVfx: () => {},
+  VFX_COM_BLASTER_IMPACT_GROUND: 0,
+}));
+
 import { CombatRoundAction, resolveAnimations2DARow } from '@/combat/CombatRoundAction';
 import { resolveMasterState } from '@/combat/combat-dueling';
-import {
-  canSyncMeleeReaction,
-  canSyncRangedReaction,
-  isRangedDodgeBlockedAnimation,
-  pickMeleeReaction,
-  pickRangedReaction,
-  rangedAttackHadLandingHit,
-  resolveMeleeReactionPlayback,
-} from '@/combat/combat-reaction-eligibility';
+import { CombatRound } from '@/combat/CombatRound';
 import { resolveAttackPauseMs, shouldEndRoundOnPauseExpiry, shouldSnapCombatReady } from '@/combat/combat-round-pause';
 import { CombatActionType } from '@/enums/combat/CombatActionType';
 import { AttackResult } from '@/enums/combat/AttackResult';
@@ -177,7 +194,7 @@ describe('ResolveMeleeAnimations reaction eligibility', () => {
   };
 
   it('engaged + resultsCalculated reacts even when checkActionLengthOk is false', () => {
-    expect(canSyncMeleeReaction({
+    expect(CombatRound.canSyncMeleeReaction({
       ...base,
       engaged: true,
       resultsCalculated: true,
@@ -186,7 +203,7 @@ describe('ResolveMeleeAnimations reaction eligibility', () => {
   });
 
   it('non-engaged never reacts even with resultsCalculated', () => {
-    expect(canSyncMeleeReaction({
+    expect(CombatRound.canSyncMeleeReaction({
       ...base,
       engaged: false,
       resultsCalculated: true,
@@ -194,13 +211,13 @@ describe('ResolveMeleeAnimations reaction eligibility', () => {
   });
 
   it('engaged without resultsCalculated requires checkActionLengthOk', () => {
-    expect(canSyncMeleeReaction({
+    expect(CombatRound.canSyncMeleeReaction({
       ...base,
       engaged: true,
       resultsCalculated: false,
       checkActionLengthOk: false,
     })).toBe(false);
-    expect(canSyncMeleeReaction({
+    expect(CombatRound.canSyncMeleeReaction({
       ...base,
       engaged: true,
       resultsCalculated: false,
@@ -209,7 +226,7 @@ describe('ResolveMeleeAnimations reaction eligibility', () => {
   });
 
   it('missing target combatRound blocks reaction', () => {
-    expect(canSyncMeleeReaction({
+    expect(CombatRound.canSyncMeleeReaction({
       engaged: true,
       resultsCalculated: true,
       hasTargetCombatRound: false,
@@ -253,24 +270,24 @@ describe('killingBlow does not gate duel anims or reactions', () => {
 
 describe('CutsceneAttack hit DAMAGE reaction playback', () => {
   it('pickMeleeReaction maps landing hits to DAMAGE', () => {
-    expect(pickMeleeReaction(AttackResult.HIT_SUCCESSFUL)).toBe(ModuleCreatureAnimState.DAMAGE);
-    expect(pickMeleeReaction(AttackResult.CRITICAL_HIT)).toBe(ModuleCreatureAnimState.DAMAGE);
-    expect(pickMeleeReaction(AttackResult.AUTOMATIC_HIT)).toBe(ModuleCreatureAnimState.DAMAGE);
+    expect(CombatRound.pickMeleeReaction(AttackResult.HIT_SUCCESSFUL)).toBe(ModuleCreatureAnimState.DAMAGE);
+    expect(CombatRound.pickMeleeReaction(AttackResult.CRITICAL_HIT)).toBe(ModuleCreatureAnimState.DAMAGE);
+    expect(CombatRound.pickMeleeReaction(AttackResult.AUTOMATIC_HIT)).toBe(ModuleCreatureAnimState.DAMAGE);
   });
 
   it('pickMeleeReaction maps miss/parry to dodge/parry', () => {
-    expect(pickMeleeReaction(AttackResult.MISS)).toBe(ModuleCreatureAnimState.DODGE);
-    expect(pickMeleeReaction(AttackResult.PARRIED)).toBe(ModuleCreatureAnimState.PARRY);
+    expect(CombatRound.pickMeleeReaction(AttackResult.MISS)).toBe(ModuleCreatureAnimState.DODGE);
+    expect(CombatRound.pickMeleeReaction(AttackResult.PARRIED)).toBe(ModuleCreatureAnimState.PARRY);
   });
 
   it('prefers mapped clip when present', () => {
-    expect(resolveMeleeReactionPlayback({ name: 'g2d1' })).toEqual({ mode: 'mapped' });
+    expect(CombatRound.resolveMeleeReactionPlayback({ name: 'g2d1' })).toEqual({ mode: 'mapped' });
   });
 
   it('falls back to setAnimationState when mapped clip is missing', () => {
     // Never flip only index — that leaves a stale ATTACK clip on the defender
-    expect(resolveMeleeReactionPlayback(undefined)).toEqual({ mode: 'setAnimationState' });
-    expect(resolveMeleeReactionPlayback(null)).toEqual({ mode: 'setAnimationState' });
+    expect(CombatRound.resolveMeleeReactionPlayback(undefined)).toEqual({ mode: 'setAnimationState' });
+    expect(CombatRound.resolveMeleeReactionPlayback(null)).toEqual({ mode: 'setAnimationState' });
   });
 });
 
@@ -284,61 +301,61 @@ describe('ResolveRangedAnimations reaction eligibility', () => {
   };
 
   it('picks DODGE only for clean misses against an engaged non-saber target', () => {
-    expect(pickRangedReaction(dodgeReady)).toBe(ModuleCreatureAnimState.DODGE);
+    expect(CombatRound.pickRangedReaction(dodgeReady)).toBe(ModuleCreatureAnimState.DODGE);
   });
 
   it('does not dodge while the target is still closing (target.engaged false)', () => {
-    expect(pickRangedReaction({
+    expect(CombatRound.pickRangedReaction({
       ...dodgeReady,
       targetEngaged: false,
     })).toBe(ModuleCreatureAnimState.READY);
   });
 
   it('does not dodge when any AttackList roll landed', () => {
-    expect(pickRangedReaction({
+    expect(CombatRound.pickRangedReaction({
       ...dodgeReady,
       anyHit: true,
     })).toBe(ModuleCreatureAnimState.READY);
   });
 
   it('does not dodge vs lightsaber or casting-busy poses', () => {
-    expect(pickRangedReaction({
+    expect(CombatRound.pickRangedReaction({
       ...dodgeReady,
       targetLightsaberEquipped: true,
     })).toBe(ModuleCreatureAnimState.READY);
-    expect(pickRangedReaction({
+    expect(CombatRound.pickRangedReaction({
       ...dodgeReady,
       targetCastingBusy: true,
     })).toBe(ModuleCreatureAnimState.READY);
   });
 
   it('rangedAttackHadLandingHit matches retail hit band', () => {
-    expect(rangedAttackHadLandingHit([AttackResult.MISS])).toBe(false);
-    expect(rangedAttackHadLandingHit([AttackResult.PARRIED])).toBe(false);
-    expect(rangedAttackHadLandingHit([AttackResult.HIT_SUCCESSFUL])).toBe(true);
-    expect(rangedAttackHadLandingHit([AttackResult.MISS, AttackResult.CRITICAL_HIT])).toBe(true);
+    expect(CombatRound.rangedAttackHadLandingHit([AttackResult.MISS])).toBe(false);
+    expect(CombatRound.rangedAttackHadLandingHit([AttackResult.PARRIED])).toBe(false);
+    expect(CombatRound.rangedAttackHadLandingHit([AttackResult.HIT_SUCCESSFUL])).toBe(true);
+    expect(CombatRound.rangedAttackHadLandingHit([AttackResult.MISS, AttackResult.CRITICAL_HIT])).toBe(true);
   });
 
   it('isRangedDodgeBlockedAnimation covers casting / throw-saber', () => {
-    expect(isRangedDodgeBlockedAnimation(ModuleCreatureAnimState.RUNNING)).toBe(false);
-    expect(isRangedDodgeBlockedAnimation(ModuleCreatureAnimState.DODGE)).toBe(false);
-    expect(isRangedDodgeBlockedAnimation(ModuleCreatureAnimState.CASTOUT1)).toBe(true);
-    expect(isRangedDodgeBlockedAnimation(ModuleCreatureAnimState.CASTOUT4_LP)).toBe(true);
-    expect(isRangedDodgeBlockedAnimation(ModuleCreatureAnimState.THROW_SABER_LP)).toBe(true);
+    expect(CombatRound.isRangedDodgeBlockedAnimation(ModuleCreatureAnimState.RUNNING)).toBe(false);
+    expect(CombatRound.isRangedDodgeBlockedAnimation(ModuleCreatureAnimState.DODGE)).toBe(false);
+    expect(CombatRound.isRangedDodgeBlockedAnimation(ModuleCreatureAnimState.CASTOUT1)).toBe(true);
+    expect(CombatRound.isRangedDodgeBlockedAnimation(ModuleCreatureAnimState.CASTOUT4_LP)).toBe(true);
+    expect(CombatRound.isRangedDodgeBlockedAnimation(ModuleCreatureAnimState.THROW_SABER_LP)).toBe(true);
   });
 
   it('canSyncRangedReaction requires attacker engaged + action length (no cutscene bypass)', () => {
-    expect(canSyncRangedReaction({
+    expect(CombatRound.canSyncRangedReaction({
       attackerEngaged: true,
       hasTargetCombatRound: true,
       checkActionLengthOk: true,
     })).toBe(true);
-    expect(canSyncRangedReaction({
+    expect(CombatRound.canSyncRangedReaction({
       attackerEngaged: true,
       hasTargetCombatRound: true,
       checkActionLengthOk: false,
     })).toBe(false);
-    expect(canSyncRangedReaction({
+    expect(CombatRound.canSyncRangedReaction({
       attackerEngaged: false,
       hasTargetCombatRound: true,
       checkActionLengthOk: true,

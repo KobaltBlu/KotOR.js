@@ -10,7 +10,7 @@ const nonVisMock = jest.fn();
 jest.mock("@/GameState", () => ({
   GameState: {
     module: { area: {} },
-    PartyManager: { party: [] },
+    PartyManager: { party: [] as unknown[] },
   },
 }));
 
@@ -22,9 +22,12 @@ jest.mock("@/engine/pathfinding/compute-safe-location", () => ({
 jest.mock("@/loaders", () => ({ ResourceLoader: {} }));
 jest.mock("@/resource/GFFObject", () => ({ GFFObject: class {} }));
 jest.mock("@/resource/ResourceTypes", () => ({ ResourceTypes: {} }));
-jest.mock("@/module/encounter-cr", () => ({
-  calculatePointsFromCR: (cr: number) => Math.max(1, cr),
-}));
+jest.mock("@/three/odyssey", () => ({ OdysseyFace3: class {}, OdysseyModel3D: class {}, OdysseyObject3D: class {} }));
+jest.mock("@/three/odyssey/OdysseyModel3D", () => ({ OdysseyModel3D: class {} }));
+jest.mock("three/examples/jsm/utils/BufferGeometryUtils", () => ({}));
+jest.mock("three/examples/jsm/objects/Lensflare", () => ({ Lensflare: class {}, LensflareElement: class {} }));
+jest.mock("@/nwscript/NWScript", () => ({ NWScript: {} }));
+jest.mock("@/nwscript/NWScriptInstance", () => ({ NWScriptInstance: class {} }));
 jest.mock("@/module/EncounterCreatureEntry", () => ({
   EncounterCreatureEntry: class {},
 }));
@@ -36,11 +39,8 @@ jest.mock("@/module/EncounterSpawnEntry", () => ({
   },
 }));
 
-import {
-  pickSpawnPosition,
-  spawnIfAppropriate,
-} from "@/module/encounter-spawn";
-import type { ModuleEncounter } from "@/module/ModuleEncounter";
+import { ModuleEncounter } from "@/module/ModuleEncounter";
+const { pickSpawnPosition, spawnIfAppropriate } = ModuleEncounter;
 
 function makeEncounter(partial: Partial<ModuleEncounter> = {}): ModuleEncounter {
   return {
@@ -78,7 +78,7 @@ describe("pickSpawnPosition fail paths (Pass AF)", () => {
   it("falls through to NonVisible when Safe fails with spawn points", () => {
     const enc = makeEncounter({
       spawnPointList: [
-        { position: new THREE.Vector3(50, 50, 0), orientation: 0 },
+        { position: new THREE.Vector3(50, 50, 0), orientation: 0 } as any,
       ],
     });
     safeMock.mockReturnValue(false);

@@ -61,8 +61,6 @@ import { getUseRange } from "@/actions/use-range";
 import { ModulePlaceable } from "@/module/ModulePlaceable";
 import type { ModuleEncounter } from "@/module/ModuleEncounter";
 import { BaseItemType } from "@/enums/combat/BaseItemType";
-import { collectSurrenderNearbyCreatures } from "@/module/surrender-nearby";
-import { resolveEnterDeadTransition } from "@/module/enter-dead-transition";
 
 import { ICreatureAnimationState } from "@/interface/animation/ICreatureAnimationState";
 import { IOverlayAnimationState } from "@/interface/animation/IOverlayAnimationState";
@@ -92,7 +90,8 @@ import {
   COMBAT_MODE_ACTIVITY_MASK,
 } from "@/enums/combat/CombatMode";
 import { CombatRound, CombatRoundAction, resolveAnimations2DARow } from "@/combat";
-import { showLightSaberContactVisual } from "@/combat/lightsaber-contact-vfx";
+import { spawnWorldImpactVfx } from "@/combat/ranged-impact-vfx";
+import { isGrenadeItemType } from "@/combat/item-cast-grenade";
 import { CombatInformation } from "@/combat/CombatInformation";
 import { GameEffectFactory } from "@/effects/GameEffectFactory";
 import type { Action } from "@/actions/Action";
@@ -208,6 +207,54 @@ export function createDefaultPartyFollowInfo(): CreaturePartyFollowInfo {
 * @memberof KotOR
 */
 export class ModuleCreature extends ModuleObject {
+  /**
+   * Retail SetAnimation — when entering looping DEAD/DEAD1 from a non-dead
+   * pose, insert DIE/DIE1 fireforget before the corpse hold.
+   */
+  static resolveEnterDeadTransition(
+    requested: ModuleCreatureAnimState,
+    current: ModuleCreatureAnimState | undefined | null,
+  ): ModuleCreatureAnimState {
+    const isDeadFamily =
+      current === ModuleCreatureAnimState.DIE ||
+      current === ModuleCreatureAnimState.DIE1 ||
+      current === ModuleCreatureAnimState.DEAD ||
+      current === ModuleCreatureAnimState.DEAD1;
+    if(requested === ModuleCreatureAnimState.DEAD){
+      return isDeadFamily ? requested : ModuleCreatureAnimState.DIE;
+    }
+    if(requested === ModuleCreatureAnimState.DEAD1){
+      return isDeadFamily ? requested : ModuleCreatureAnimState.DIE1;
+    }
+    return requested;
+  }
+
+  /**
+   * Retail SurrenderToEnemies walks area game objects. Party members are
+   * removed from area.creatures on join, so merge them in without duplicates.
+   */
+  static collectSurrenderNearbyCreatures<T extends object>(
+    areaCreatures: (T | null | undefined)[] | undefined | null,
+    party: (T | null | undefined)[] | undefined | null,
+  ): T[] {
+    const nearby: T[] = [];
+    if(areaCreatures?.length){
+      for(let i = 0; i < areaCreatures.length; i++){
+        const creature = areaCreatures[i];
+        if(creature) nearby.push(creature);
+      }
+    }
+    if(party?.length){
+      for(let i = 0; i < party.length; i++){
+        const member = party[i];
+        if(member && nearby.indexOf(member) === -1){
+          nearby.push(member);
+        }
+      }
+    }
+    return nearby;
+  }
+
   debugLabel: TextSprite3D;
   pm_IsDisguised: boolean; //polymorphIsDisguised
   pm_Appearance: number; //polymorphAppearance
@@ -2683,7 +2730,7 @@ export class ModuleCreature extends ModuleObject {
     if(!animState){ return; }
 
     // Retail SetAnimation — insert DIE/DIE1 before looping DEAD.
-    animState = resolveEnterDeadTransition(animState, this.animationState?.index);
+    animState = ModuleCreature.resolveEnterDeadTransition(animState, this.animationState?.index);
 
     this.animationState.index = animState;
     this.animationState.animation = this.animationConstantToAnimation(animState);
@@ -2926,7 +2973,7 @@ export class ModuleCreature extends ModuleObject {
 
     // Retail walks area game_objects (GetCreatureByGameObjectID). Party members
     // are removed from area.creatures on join — include them like GetObjectsInShape.
-    const nearby = collectSurrenderNearbyCreatures(
+    const nearby = ModuleCreature.collectSurrenderNearbyCreatures(
       this.area?.creatures,
       GameState.PartyManager?.party,
     );
@@ -3354,6 +3401,75 @@ export class ModuleCreature extends ModuleObject {
     return false;
   }
 
+  private static isMeleeWeaponItem(item: ModuleItem | undefined): boolean {
+    if(!item?.baseItem) return false;
+    const wield = item.baseItem.weaponWield;
+    return (
+      wield === WeaponWield.STUN_BATON ||
+      wield === WeaponWield.ONE_HANDED_SWORD ||
+      wield === WeaponWield.TWO_HANDED_SWORD
+    );
+  }
+
+  private static isRangedWeaponItem(item: ModuleItem | undefined): boolean {
+    if(!item?.baseItem || isGrenadeItemType(item.baseItem.itemType)) return false;
+    const wield = item.baseItem.weaponWield;
+    return (
+      wield === WeaponWield.BLASTER_PISTOL ||
+      wield === WeaponWield.BLASTER_RIFLE ||
+      wield === WeaponWield.BLASTER_HEAVY
+    );
+  }
+
+  private collectWeaponCandidates(equipped: ModuleItem | undefined): ModuleItem[] {
+    const candidates = (this.getInventory() || []).filter((item): item is ModuleItem => !!item);
+    if(equipped && candidates.indexOf(equipped) < 0){
+      candidates.push(equipped);
+    }
+    const offHand = this.equipment?.LEFTHAND;
+    if(offHand && candidates.indexOf(offHand) < 0){
+      candidates.push(offHand);
+    }
+    return candidates;
+  }
+
+  private static pickMostDamagingWeapon(
+    candidates: ModuleItem[],
+    predicate: (item: ModuleItem) => boolean
+  ): ModuleItem | undefined {
+    let best: ModuleItem | undefined;
+    let bestScore = -1;
+    for(let i = 0; i < candidates.length; i++){
+      const item = candidates[i];
+      if(!item || !predicate(item)) continue;
+      const score = (item.baseItem?.dieToRoll || 0) * (item.baseItem?.numDice || 0);
+      if(!best || score > bestScore){
+        best = item;
+        bestScore = score;
+      }
+    }
+    return best;
+  }
+
+  /** Best melee in possession; falls back to ranged. */
+  findMostDamagingMelee(offHand = false): ModuleItem | undefined {
+    const equipped = offHand ? this.equipment.LEFTHAND : this.equipment.RIGHTHAND;
+    const candidates = this.collectWeaponCandidates(equipped);
+    return (
+      ModuleCreature.pickMostDamagingWeapon(candidates, ModuleCreature.isMeleeWeaponItem) ||
+      ModuleCreature.pickMostDamagingWeapon(candidates, ModuleCreature.isRangedWeaponItem)
+    );
+  }
+
+  /** Best ranged in possession; falls back to melee. */
+  findMostDamagingRanged(): ModuleItem | undefined {
+    const candidates = this.collectWeaponCandidates(this.equipment.RIGHTHAND);
+    return (
+      ModuleCreature.pickMostDamagingWeapon(candidates, ModuleCreature.isRangedWeaponItem) ||
+      ModuleCreature.pickMostDamagingWeapon(candidates, ModuleCreature.isMeleeWeaponItem)
+    );
+  }
+
   updateItems(delta = 0){
 
     if(this.equipment.RIGHTHAND){
@@ -3423,6 +3539,17 @@ export class ModuleCreature extends ModuleObject {
     return AudioPriorityGroup.NON_PLAYER_CHAT;
   }
 
+  showLightSaberContactVisual(): void {
+    const position = new THREE.Vector3();
+    const hook = this.model?.lightsaberhook;
+    if(hook){
+      hook.getWorldPosition(position);
+    }else{
+      position.copy(this.position);
+    }
+    spawnWorldImpactVfx(0xfab, position, this.context);
+  }
+
   /**
    * Retail PlaySwingSound — weaponsounds row from weaponmattype,
    * preferring off-hand when it is a lightsaber.
@@ -3479,7 +3606,7 @@ export class ModuleCreature extends ModuleObject {
       break;
       case 'contact':
         // Retail HitContactEvent → ShowLightSaberContactVisual (VFX only)
-        showLightSaberContactVisual(this);
+        this.showLightSaberContactVisual();
       break;
       case 'clash':
         // Retail HitClashEvent → PlaySwingSound("Clash", 2)

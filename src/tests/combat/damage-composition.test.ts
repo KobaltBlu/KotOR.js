@@ -23,25 +23,22 @@ jest.mock('@/GameState', () => ({
   },
 }));
 
-import {
-  getCombatModeDamageBonus,
-  getMassiveCriticalBonus,
-} from '@/combat/damage-composition';
+import { CombatAttackData } from '@/combat/CombatAttackData';
 import { CombatMode } from '@/enums/combat/CombatMode';
 import { ModuleItemProperty } from '@/enums/module/ModuleItemProperty';
 
 describe('getCombatModeDamageBonus', () => {
   it('maps mode 2 → +5 and mode 3 → +10 (GetDamageBonus)', () => {
-    expect(getCombatModeDamageBonus({ combatMode: CombatMode.NONE } as any)).toBe(0);
-    expect(getCombatModeDamageBonus({ combatMode: CombatMode.MODE_2 } as any)).toBe(5);
-    expect(getCombatModeDamageBonus({ combatMode: CombatMode.MODE_3 } as any)).toBe(10);
+    expect(CombatAttackData.getCombatModeDamageBonus({ combatMode: CombatMode.NONE } as any)).toBe(0);
+    expect(CombatAttackData.getCombatModeDamageBonus({ combatMode: CombatMode.MODE_2 } as any)).toBe(5);
+    expect(CombatAttackData.getCombatModeDamageBonus({ combatMode: CombatMode.MODE_3 } as any)).toBe(10);
   });
 });
 
 describe('getMassiveCriticalBonus', () => {
   it('returns 0 when the weapon has no Massive Criticals property', () => {
-    expect(getMassiveCriticalBonus(undefined)).toBe(0);
-    expect(getMassiveCriticalBonus({ properties: [] } as any)).toBe(0);
+    expect(CombatAttackData.getMassiveCriticalBonus(undefined)).toBe(0);
+    expect(CombatAttackData.getMassiveCriticalBonus({ properties: [] } as any)).toBe(0);
   });
 
   it('resolves flat iprp_damagecost codes 1–5 once', () => {
@@ -52,6 +49,6 @@ describe('getMassiveCriticalBonus', () => {
         costValue: 3,
       }],
     };
-    expect(getMassiveCriticalBonus(weapon as any)).toBe(3);
+    expect(CombatAttackData.getMassiveCriticalBonus(weapon as any)).toBe(3);
   });
 });

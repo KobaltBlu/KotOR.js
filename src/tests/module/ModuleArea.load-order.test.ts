@@ -1,9 +1,19 @@
-import { describe, expect, test } from "@jest/globals";
+import { describe, expect, test, jest } from "@jest/globals";
+
+jest.mock("@/GameState", () => ({ GameState: {} }));
+jest.mock("@/three/odyssey", () => ({ OdysseyFace3: class {}, OdysseyModel3D: class {}, OdysseyObject3D: class {} }));
+jest.mock("@/three/odyssey/OdysseyModel3D", () => ({ OdysseyModel3D: class {} }));
+jest.mock("three/examples/jsm/utils/BufferGeometryUtils", () => ({}));
+jest.mock("three/examples/jsm/objects/Lensflare", () => ({ Lensflare: class {}, LensflareElement: class {} }));
+jest.mock("@/nwscript/NWScript", () => ({ NWScript: {} }));
+jest.mock("@/nwscript/NWScriptInstance", () => ({ NWScriptInstance: class {} }));
+jest.mock("@/engine/FollowerCamera", () => ({ FollowerCamera: {} }));
+
 import {
   RETAIL_INIT_AREA_OBJECT_ORDER,
   RETAIL_LOAD_GIT_OBJECT_ORDER,
   RETAIL_LOAD_SCENE_OBJECT_ORDER,
-} from "@/module/area-load-order";
+} from "@/module/ModuleArea";
 
 /**
  * Guardrails for ModuleArea load()/loadScene()/initAreaObjects order.

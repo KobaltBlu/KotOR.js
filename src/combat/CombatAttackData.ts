@@ -6,11 +6,11 @@ import { GFFField } from "@/resource/GFFField";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import { DamageType } from "@/enums/combat/DamageType";
-import { EffectDamage } from "@/effects";
+import { EffectDamage } from "@/effects/EffectDamage";
 import type { GameEffect } from "@/effects/GameEffect";
 import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
 import { AttackResult } from "@/enums/combat/AttackResult";
-import { TalentFeat } from "@/talents";
+import type { TalentFeat } from "@/talents/TalentFeat";
 import { CombatFeatType } from "@/enums/combat/CombatFeatType";
 import { WeaponWield } from "@/enums/combat/WeaponWield";
 import { Dice } from "@/utility/Dice";
@@ -21,11 +21,14 @@ import {
   scaleDamageChannels,
 } from "@/combat/damage-mitigation";
 import { getDamageIncreaseBonusesByChannel } from "@/effects/effect-bonuses";
-import { resolveDamageShields } from "@/combat/damage-shields";
+import type { EffectDamageShield } from "@/effects/EffectDamageShield";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { ModuleItemProperty } from "@/enums/module/ModuleItemProperty";
+import { CombatMode } from "@/enums/combat/CombatMode";
 import {
-  getCombatModeDamageBonus,
-  getMassiveCriticalBonus,
-} from "@/combat/damage-composition";
+  damageTypeFlagToChannel,
+  resolveDamageBonusCode,
+} from "@/combat/damage-bonus";
 import {
   getWeaponMaxDice,
   weightWeaponDiceRoll,
@@ -297,7 +300,7 @@ export class CombatAttackData {
 
       // Retail GetDamageBonus — combat-mode Power Attack (mode 2=+5, 3=+10)
       // plus ResolveSpecialAttackDamageBonus (feat attack_type).
-      const modeDamage = getCombatModeDamageBonus(creature);
+      const modeDamage = CombatAttackData.getCombatModeDamageBonus(creature);
       const specialDamage = (feat?.getDamageBonus?.() || 0) + modeDamage;
       if(specialDamage > 0){
         for(let i = 0; i < critMultiplier; i++){
@@ -314,7 +317,7 @@ export class CombatAttackData {
 
       // Retail GetDamageRoll Massive Criticals (IP 0x31) — once on crit, not × multiplier
       if(isCritial){
-        const massive = getMassiveCriticalBonus(this.attackWeapon);
+        const massive = CombatAttackData.getMassiveCriticalBonus(this.attackWeapon);
         if(massive > 0){
           this.damageList[DamageType.BASE].addDamage(massive);
         }
@@ -460,7 +463,7 @@ export class CombatAttackData {
     target.addEffect(damageEffect, GameEffectDurationType.INSTANT);
     // Retail ResolveDamageShields after mitigated combat damage
     if(owner && !target.plot && this.getTotalDamage() > 0){
-      resolveDamageShields(target, owner);
+      CombatAttackData.resolveDamageShields(target, owner);
     }
     // Retail Signal*Damage applies queued special-attack effects (SETSTATE stun, etc.)
     for(let i = 0; i < this.pendingOnHitEffects.length; i++){
@@ -622,6 +625,53 @@ export class CombatAttackData {
 
   static GetAbilityMod(abilityScore: number = 10): number {
     return Math.floor((abilityScore - 10) / 2);
+  }
+
+  /** Retail GetDamageBonus combat-mode branch — modes 2/3. */
+  static getCombatModeDamageBonus(creature: ModuleCreature): number {
+    if(creature.combatMode === CombatMode.MODE_2) return 5;
+    if(creature.combatMode === CombatMode.MODE_3) return 10;
+    return 0;
+  }
+
+  /** Retail Massive Criticals item property (0x31) via iprp_damagecost. */
+  static getMassiveCriticalBonus(weapon: ModuleItem | undefined): number {
+    if(!weapon?.properties) return 0;
+    for(let i = 0; i < weapon.properties.length; i++){
+      const property = weapon.properties[i];
+      if(!property?.isUseable?.() || !property.is?.(ModuleItemProperty.Massive_Criticals)){
+        continue;
+      }
+      return resolveDamageBonusCode(property.costValue | 0);
+    }
+    return 0;
+  }
+
+  /** Retail ResolveDamageShields after mitigated combat damage lands. */
+  static resolveDamageShields(defender: ModuleCreature, attacker: ModuleCreature){
+    if(!defender || !attacker || defender === attacker || attacker.plot) return;
+
+    const effects = defender.effects || [];
+    for(let i = 0; i < effects.length; i++){
+      const effect = effects[i];
+      if(effect?.type !== GameEffectType.EffectDamageShield) continue;
+
+      const shield = effect as EffectDamageShield;
+      let amount = shield.getFlatAmount?.() ?? (effect.getInt(0) || 0);
+      const diceCode = shield.getDiceBonusCode?.() ?? (effect.getInt(1) || 0);
+      if(diceCode > 0){
+        amount += resolveDamageBonusCode(diceCode);
+      }
+      if(amount < 1) amount = 1;
+
+      const typeFlags = shield.getDamageTypeFlags?.() ?? (effect.getInt(2) || 0);
+      const damageEffect = new EffectDamage();
+      damageEffect.setCreator(defender);
+      damageEffect.setInt(damageTypeFlagToChannel(typeFlags), amount);
+      damageEffect.setInt(19, 0);
+      damageEffect.setInt(20, 1);
+      attacker.addEffect(damageEffect, GameEffectDurationType.INSTANT);
+    }
   }
 
 }

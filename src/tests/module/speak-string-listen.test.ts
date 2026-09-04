@@ -2,12 +2,35 @@
  * SpeakString notify plan + heardString drain + dead-attack prune.
  * @jest-environment node
  */
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it, jest } from '@jest/globals';
+
+jest.mock('@/GameState', () => ({
+  GameState: {},
+}));
+
+jest.mock('@/combat/CombatAttackData', () => ({
+  CombatAttackData: class {},
+}));
+
+jest.mock('@/engine/pathfinding/clear-line-of-sight', () => ({
+  clearLineOfSight: () => true,
+}));
+
+jest.mock('@/combat/combat-projectile', () => ({
+  getProjectileImpactPosition: () => undefined,
+  spawnCombatProjectile: () => {},
+}));
+
+jest.mock('@/combat/ranged-impact-vfx', () => ({
+  spawnWorldImpactVfx: () => {},
+  VFX_COM_BLASTER_IMPACT_GROUND: 0,
+}));
+
 import {
   drainHeardStringHead,
   getSpeakStringNotifyPlan,
 } from '@/combat/speak-string-broadcast';
-import { filterLiveAttackActions } from '@/combat/prune-dead-attack-actions';
+import { CombatRound } from '@/combat/CombatRound';
 import { TalkVolume } from '@/enums/engine/TalkVolume';
 import { CombatActionType } from '@/enums/combat/CombatActionType';
 
@@ -42,7 +65,7 @@ describe('filterLiveAttackActions', () => {
       { actionType: CombatActionType.CAST_SPELL, target: { isDead: () => true } },
       { actionType: CombatActionType.ATTACK_USE_FEAT, target: null },
     ];
-    const kept = filterLiveAttackActions(list as any);
+    const kept = CombatRound.filterLiveAttackActions(list as any);
     expect(kept).toHaveLength(2);
     expect(kept[0].actionType).toBe(CombatActionType.ATTACK);
     expect(kept[0].target?.isDead?.()).toBe(false);

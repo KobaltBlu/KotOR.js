@@ -4,9 +4,17 @@ import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { GameState } from "@/GameState";
-import { broadcastSafeProjectileSpell } from "@/combat/broadcast-safe-projectile";
 import { TalentSpell } from "@/talents";
 import * as THREE from "three";
+import { MDLLoader } from "@/loaders";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { playSpellProjectileTravelAnimation } from "@/combat/combat-projectile";
+import { resolveSpellProjectileModelResRef } from "@/combat/spell-projectile-model";
+import { sampleSpellProjectilePosition } from "@/combat/spell-projectile-motion";
+import { resolveSpellProjectilePathType } from "@/combat/spell-projectile-time";
+import { ProjectilePath } from "@/enums/combat/ProjectilePath";
+import type { ModuleItem } from "@/module/ModuleItem";
+import type { ModuleObject } from "@/module/ModuleObject";
 
 /**
  * EventBroadcastSafeProjectile — retail SpellCastAndImpact →
@@ -67,7 +75,7 @@ export class EventBroadcastSafeProjectile extends GameEvent {
       this.itemId
         ? GameState.ModuleObjectManager.GetObjectById(this.itemId)
         : undefined;
-    void broadcastSafeProjectileSpell({
+    void this.broadcastSafeProjectileSpell({
       caster,
       target,
       origin: this.origin,
@@ -78,6 +86,74 @@ export class EventBroadcastSafeProjectile extends GameEvent {
       projectilePath: this.projectilePath,
       alreadySpawned: this.alreadySpawned,
     });
+  }
+
+  private async broadcastSafeProjectileSpell(opts: {
+    caster: ModuleObject;
+    target?: ModuleObject;
+    origin: THREE.Vector3;
+    destination: THREE.Vector3;
+    spell: TalentSpell | undefined;
+    item?: ModuleItem;
+    flightMs: number;
+    projectilePath?: number;
+    alreadySpawned?: boolean;
+  }): Promise<OdysseyModel3D | undefined> {
+    if(opts.alreadySpawned) return undefined;
+    const projmodel = resolveSpellProjectileModelResRef(opts.spell, opts.item);
+    if(!projmodel) return undefined;
+
+    try{
+      const mdl = await MDLLoader.loader.load(projmodel.toLowerCase());
+      if(!mdl) return undefined;
+      const model = await OdysseyModel3D.FromMDL(mdl, {
+        context: opts.caster.context || GameState,
+      });
+      if(!model) return undefined;
+
+      (opts.caster.context || GameState).group?.effects?.add(model);
+      model.position.copy(opts.origin);
+      playSpellProjectileTravelAnimation(model);
+
+      const flight = Math.max(1, opts.flightMs | 0);
+      const start = performance.now();
+      const from = opts.origin.clone();
+      const to = opts.destination.clone();
+      const pathType =
+        (opts.projectilePath | 0) ||
+        resolveSpellProjectilePathType(opts.spell?.projtype) ||
+        ProjectilePath.GRENADE;
+      const spiralSign = Math.random() < 0.5 ? -1 : 1;
+      const lookAhead = new THREE.Vector3();
+
+      const tick = () => {
+        const progress = Math.min(1, (performance.now() - start) / flight);
+        sampleSpellProjectilePosition(pathType, from, to, progress, model.position, {
+          totalMs: flight,
+          spiralSign,
+        });
+        sampleSpellProjectilePosition(
+          pathType,
+          from,
+          to,
+          Math.min(1, progress + 0.05),
+          lookAhead,
+          { totalMs: flight, spiralSign }
+        );
+        if(lookAhead.distanceToSquared(model.position) > 0.0001){
+          model.lookAt(lookAhead);
+        }
+        if(progress < 1){
+          requestAnimationFrame(tick);
+        }else{
+          try{ model.dispose(); }catch(_e){ /* ignore */ }
+        }
+      };
+      requestAnimationFrame(tick);
+      return model;
+    }catch(_e){
+      return undefined;
+    }
   }
 
   export(){

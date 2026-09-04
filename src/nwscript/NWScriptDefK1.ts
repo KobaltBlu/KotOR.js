@@ -45,7 +45,6 @@ import { resolveBeginConversationDialog, resolveDialogStartOwner } from "@/actio
 import { NW_FALSE, NW_TRUE } from "@/nwscript/NWScriptConstants";
 import { formatNWScriptFloat } from "@/nwscript/format-nwscript-float";
 import { CombatRound } from "@/combat/CombatRound";
-import { findMostDamagingMelee, findMostDamagingRanged } from "@/combat/equip-most-damaging";
 import { BitWise } from "@/utility/BitWise";
 import { testStringAgainstPattern } from "@/utility/listen-pattern";
 import { UIIconTimerType } from "@/enums/engine/UIIconTimerType";
@@ -5789,7 +5788,7 @@ NWScriptDefK1.Actions = {
 
       const offHand = !!args[1];
       const equipped = offHand ? creature.equipment.LEFTHAND : creature.equipment.RIGHTHAND;
-      const weapon = findMostDamagingMelee(creature, offHand);
+      const weapon = creature.findMostDamagingMelee(offHand);
       console.log('ActionEquipMostDamagingMelee', weapon, equipped, this.caller, args[0], args[1]);
       if(!weapon || weapon === equipped){
         return;
@@ -5820,7 +5819,7 @@ NWScriptDefK1.Actions = {
       }
 
       const equipped = creature.equipment.RIGHTHAND;
-      const weapon = findMostDamagingRanged(creature);
+      const weapon = creature.findMostDamagingRanged();
       if(!weapon || weapon === equipped){
         return;
       }

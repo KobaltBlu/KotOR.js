@@ -44,8 +44,8 @@ jest.mock('@/combat/combat-projectile', () => ({
   spawnCombatProjectile: jest.fn(),
 }));
 
-jest.mock('@/combat/on-hit-visuals', () => ({
-  resolveOnHitVisuals: jest.fn(),
+jest.mock('@/engine/pathfinding/clear-line-of-sight', () => ({
+  clearLineOfSight: () => true,
 }));
 
 jest.mock('@/combat/ranged-impact-vfx', () => ({
@@ -56,20 +56,6 @@ jest.mock('@/combat/ranged-impact-vfx', () => ({
 jest.mock('@/combat/attack-summary-feedback', () => ({
   formatAttackSummaryFeedback: () => ({ message: '', color: 0 }),
   AttackSummaryStrRef: {},
-}));
-
-jest.mock('@/combat/combat-floaty', () => ({
-  shouldShowCombatFloaty: () => false,
-}));
-
-jest.mock('@/combat/combat-reaction-eligibility', () => ({
-  canSyncMeleeReaction: () => false,
-  canSyncRangedReaction: () => false,
-  pickMeleeReaction: () => 0,
-  pickRangedReaction: () => 0,
-  rangedAttackHadLandingHit: () => false,
-  isRangedDodgeBlockedAnimation: () => false,
-  resolveMeleeReactionPlayback: () => {},
 }));
 
 jest.mock('@/combat/duel-debug', () => ({
@@ -90,18 +76,6 @@ jest.mock('@/combat/damage-mitigation', () => ({
   damageFlagsFromChannels: () => 0,
   mitigateDamageAmount: (n: number) => n,
   scaleDamageChannels: (c: unknown) => c,
-}));
-
-jest.mock('@/combat/damage-shields', () => ({
-  resolveDamageShields: () => {},
-}));
-
-jest.mock('@/combat/weapon-discharge', () => ({
-  getProjectileMissLocation: () => ({ x: 0, y: 0, z: 0 }),
-  getProjectileTravelDelayMs: () => 0,
-  getWeaponDischargeHand: () => 0,
-  getWeaponDischargeInfo: () => undefined,
-  pickAttackShotIndices: () => [],
 }));
 
 jest.mock('three', () => {

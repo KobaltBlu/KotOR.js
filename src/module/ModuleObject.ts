@@ -38,7 +38,6 @@ import { ExcitedDurationRow } from "@/combat/combat-engagement";
 import { getSpeakStringNotifyPlan } from "@/combat/speak-string-broadcast";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { CutsceneMode } from "@/enums/dialog/CutsceneMode";
-import { resolveDialogModelVisibility } from "@/module/dialog-model-visibility";
 import { DLGObject } from "@/resource/DLGObject";
 import { Faction } from "@/engine/Faction";
 import { ScriptVarTable } from "@/engine/ScriptVarTable";
@@ -46,11 +45,6 @@ import { SWPlaceableAppearance } from "@/engine/rules/SWPlaceableAppearance";
 import { SWCreatureAppearance } from "@/engine/rules/SWCreatureAppearance";
 import { SWDoorAppearance } from "@/engine/rules/SWDoorAppearance";
 import { IDialogAnimationState } from "@/interface/animation/IDialogAnimationState";
-import {
-  flourishAnimationRow,
-  meleeCombatWieldAnimationRow,
-  meleeWieldAnimationRow,
-} from "@/module/animation/flourish-wield-dispatch";
 import { AILevel } from "@/enums/module/AILevel";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
@@ -70,20 +64,23 @@ import type { SWRange } from "@/engine/rules/SWRange";
 import { TURN_SPEED_SLOW } from "@/engine/TurnSpeeds";
 import { getForceResistanceBonus, getSavingThrowEffectBonus } from "@/effects/effect-bonuses";
 import { getActiveSetStateType } from "@/effects/set-state";
+import { hasImmunityType } from "@/effects/haste-slow";
 import { ModuleCreatureAmbientState } from "@/enums/module/ModuleCreatureAmbientState";
-import {
-  SAVING_THROW_FORTITUDE,
-  SAVING_THROW_REFLEX,
-  SAVING_THROW_WILL,
-  getCreatureSavingThrowBase,
-  savingThrowRoll,
-} from "@/combat/saving-throw";
 import {
   applyTrapGroundGeometry,
   trapKitResRefFromRow,
 } from "@/actions/trap-geometry";
 import type { SWAnimation } from "@/engine/rules/SWAnimation";
 
+export interface DialogModelVisibilityInput {
+  mode: EngineMode;
+  cutsceneMode: CutsceneMode;
+  isPartyMember: boolean;
+  /** StuntList participant — set via ModuleObject.setCutsceneMode(true). */
+  objectCutsceneMode: boolean;
+  roomModelVisible: boolean | undefined;
+  hasRoom: boolean;
+}
 
 /**
 * ModuleObject class.
@@ -98,6 +95,57 @@ import type { SWAnimation } from "@/engine/rules/SWAnimation";
 * @memberof KotOR
 */
 export class ModuleObject {
+  /** Resolve mesh visibility for DIALOG / MINIGAME. */
+  static resolveDialogModelVisibility(input: DialogModelVisibilityInput): boolean {
+    if(input.mode == EngineMode.MINIGAME){
+      return true;
+    }
+    if(input.mode != EngineMode.DIALOG){
+      return true;
+    }
+    if(
+      input.cutsceneMode == CutsceneMode.ANIMATED &&
+      input.isPartyMember &&
+      !input.objectCutsceneMode
+    ){
+      return false;
+    }
+    if(!input.hasRoom){
+      return true;
+    }
+    return !!input.roomModelVisible;
+  }
+
+  /** MELEE_WIELD → G*F1 overlay rows (overlay=1). */
+  static meleeWieldAnimationRow(weaponType: number): number {
+    switch(weaponType){
+      case 2: return 377;
+      case 4: return 376;
+      default: return 378;
+    }
+  }
+
+  /** FLOURISH / MELEE_COMBAT_WIELD → g*w1 fireforget rows. */
+  static flourishAnimationRow(weaponType: number): number {
+    switch(weaponType){
+      case 1: return 91;
+      case 2: return 132;
+      case 3: return 173;
+      case 4: return 214;
+      case 5: return 222;
+      case 6: return 136;
+      case 7:
+      case 9: return 244;
+      case 8:
+      default: return 373;
+    }
+  }
+
+  /** Same g*w1 table as FLOURISH. */
+  static meleeCombatWieldAnimationRow(weaponType: number): number {
+    return ModuleObject.flourishAnimationRow(weaponType);
+  }
+
   facingSpeed: number = TURN_SPEED_SLOW;
   helperColor: THREE.Color = new THREE.Color(0xFFFFFF);
 
@@ -694,7 +742,7 @@ export class ModuleObject {
     }
 
     if(GameState.Mode == EngineMode.DIALOG || GameState.Mode == EngineMode.MINIGAME){
-      this.model.visible = resolveDialogModelVisibility({
+      this.model.visible = ModuleObject.resolveDialogModelVisibility({
         mode: GameState.Mode,
         cutsceneMode: GameState.CutsceneManager?.cutsceneMode ?? CutsceneMode.DIALOG,
         isPartyMember: this.isPartyMember(),
@@ -1596,12 +1644,12 @@ export class ModuleObject {
       break;
       // MELEE_WIELD (10157 / 0x27ad) — SetOverlayAnimation while moving (PlayerFlourishWeapons).
       case ModuleCreatureAnimState.MELEE_WIELD:
-        return animations[meleeWieldAnimationRow(this.getCombatAnimationWeaponType())];
+        return animations[ModuleObject.meleeWieldAnimationRow(this.getCombatAnimationWeaponType())];
       // MELEE_COMBAT_WIELD (10158 / 0x27ae) — standing InsertFireForgetAnimation path.
       case ModuleCreatureAnimState.MELEE_COMBAT_WIELD:
-        return animations[meleeCombatWieldAnimationRow(this.getCombatAnimationWeaponType())];
+        return animations[ModuleObject.meleeCombatWieldAnimationRow(this.getCombatAnimationWeaponType())];
       case ModuleCreatureAnimState.FLOURISH:
-        return animations[flourishAnimationRow(this.getCombatAnimationWeaponType())];
+        return animations[ModuleObject.flourishAnimationRow(this.getCombatAnimationWeaponType())];
       break;
 
       //BEGIN TSL ANIMATIONS
@@ -2900,10 +2948,9 @@ export class ModuleObject {
    */
   getFortitudeSave(){
     if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
-      return getCreatureSavingThrowBase(this as unknown as ModuleCreature, SAVING_THROW_FORTITUDE)
-        + getSavingThrowEffectBonus(this, SAVING_THROW_FORTITUDE);
+      return this.getCreatureSavingThrowBase(1) + getSavingThrowEffectBonus(this, 1);
     }
-    return this.fortitudeSaveThrow + getSavingThrowEffectBonus(this, SAVING_THROW_FORTITUDE);
+    return this.fortitudeSaveThrow + getSavingThrowEffectBonus(this, 1);
   }
 
   /**
@@ -2911,10 +2958,9 @@ export class ModuleObject {
    */
   getReflexSave(){
     if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
-      return getCreatureSavingThrowBase(this as unknown as ModuleCreature, SAVING_THROW_REFLEX)
-        + getSavingThrowEffectBonus(this, SAVING_THROW_REFLEX);
+      return this.getCreatureSavingThrowBase(2) + getSavingThrowEffectBonus(this, 2);
     }
-    return this.reflexSaveThrow + getSavingThrowEffectBonus(this, SAVING_THROW_REFLEX);
+    return this.reflexSaveThrow + getSavingThrowEffectBonus(this, 2);
   }
 
   /**
@@ -2922,7 +2968,7 @@ export class ModuleObject {
    * @returns 0 fail, 1 success, 2 immune
    */
   fortitudeSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
-    return savingThrowRoll(this, SAVING_THROW_FORTITUDE, nDC, nSaveType, oVersus);
+    return this.savingThrowRoll(1, nDC, nSaveType, oVersus);
   }
 
   /**
@@ -2938,7 +2984,7 @@ export class ModuleObject {
    * @returns 0 fail, 1 success, 2 immune
    */
   reflexSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
-    return savingThrowRoll(this, SAVING_THROW_REFLEX, nDC, nSaveType, oVersus);
+    return this.savingThrowRoll(2, nDC, nSaveType, oVersus);
   }
 
   /**
@@ -2954,10 +3000,9 @@ export class ModuleObject {
    */
   getWillSave(){
     if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
-      return getCreatureSavingThrowBase(this as unknown as ModuleCreature, SAVING_THROW_WILL)
-        + getSavingThrowEffectBonus(this, SAVING_THROW_WILL);
+      return this.getCreatureSavingThrowBase(3) + getSavingThrowEffectBonus(this, 3);
     }
-    return this.willSaveThrow + getSavingThrowEffectBonus(this, SAVING_THROW_WILL);
+    return this.willSaveThrow + getSavingThrowEffectBonus(this, 3);
   }
 
   /**
@@ -2965,7 +3010,108 @@ export class ModuleObject {
    * @returns 0 fail, 1 success, 2 immune
    */
   willSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
-    return savingThrowRoll(this, SAVING_THROW_WILL, nDC, nSaveType, oVersus);
+    return this.savingThrowRoll(3, nDC, nSaveType, oVersus);
+  }
+
+  private getConditioningSaveBonus(creature: ModuleCreature): number {
+    if(creature.getHasFeat?.(CombatFeatType.MASTER_CONDITIONING)) return 3;
+    if(creature.getHasFeat?.(CombatFeatType.IMPROVED_CONDITIONING)) return 2;
+    if(creature.getHasFeat?.(CombatFeatType.CONDITIONING)) return 1;
+    return 0;
+  }
+
+  private getClassSavingThrowBonus(creature: ModuleCreature, kind: number): number {
+    let total = 0;
+    const classes = creature.classes || [];
+    for(let i = 0; i < classes.length; i++){
+      const creatureClass = classes[i];
+      if(!creatureClass) continue;
+      if(kind === 1){
+        total += creatureClass.getFortSaveBonus?.() || 0;
+      }else if(kind === 2){
+        total += creatureClass.getRefSaveBonus?.() || 0;
+      }else{
+        total += creatureClass.getWillSaveBonus?.() || 0;
+      }
+    }
+    return total + this.getConditioningSaveBonus(creature);
+  }
+
+  private getCreatureSavingThrowBase(kind: number): number {
+    const creature = this as unknown as ModuleCreature;
+    let abilityMod = 0;
+    let gffBonus = 0;
+    if(kind === 1){
+      abilityMod = CombatRound.GetMod(creature.getCON());
+      gffBonus = creature.fortitudeSaveThrow | 0;
+    }else if(kind === 2){
+      abilityMod = CombatRound.GetMod(creature.getDEX());
+      if(creature.isDebilitated?.() && abilityMod > 0){
+        abilityMod = 0;
+      }
+      gffBonus = creature.reflexSaveThrow | 0;
+    }else{
+      abilityMod = CombatRound.GetMod(creature.getWIS());
+      gffBonus = creature.willSaveThrow | 0;
+    }
+    return abilityMod + gffBonus + this.getClassSavingThrowBonus(creature, kind);
+  }
+
+  private savingThrowTypeToImmunity(saveType: number, lastSpellSchool?: number): number {
+    switch(saveType | 0){
+      case 10: return 1;
+      case 12: return 2;
+      case 5: return 3;
+      case 8: return 4;
+      case 14: return 5;
+      case 4:
+        if(lastSpellSchool === 1 || lastSpellSchool === 2) return 0x20;
+        return 0;
+      default: return 0;
+    }
+  }
+
+  private savingThrowRoll(
+    kind: number,
+    nDC: number,
+    nSaveType: number,
+    oVersus?: ModuleObject
+  ): number {
+    if(!BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
+      const base =
+        kind === 1 ? (this.fortitudeSaveThrow | 0) :
+        kind === 2 ? (this.reflexSaveThrow | 0) :
+        (this.willSaveThrow | 0);
+      return Dice.roll(1, DiceType.d20) + base >= (nDC | 0) ? 1 : 0;
+    }
+
+    const creature = this as unknown as ModuleCreature;
+    const versus = BitWise.InstanceOfObject(oVersus, ModuleObjectType.ModuleCreature)
+      ? oVersus as ModuleCreature
+      : undefined;
+    const base = this.getCreatureSavingThrowBase(kind);
+    let effectBonus = getSavingThrowEffectBonus(creature, kind, nSaveType | 0, versus);
+    if(effectBonus > 20) effectBonus = 20;
+    if(Dice.roll(1, DiceType.d20) + effectBonus + base >= (nDC | 0)){
+      return 1;
+    }
+
+    const spellId = creature.combatData?.lastForcePowerUsed?.id
+      ?? (creature as any).lastSpellId;
+    let spellSchool: number | undefined;
+    if(typeof spellId === 'number' && spellId >= 0){
+      const spellRow = (GameState as any).SWRuleSet?.spells?.[spellId]
+        ?? (GameState as any).TwoDAManager?.datatables?.get?.('spells')?.rows?.[spellId];
+      const school = spellRow?.school ?? spellRow?.School;
+      if(school !== undefined && school !== ''){
+        spellSchool = parseInt(school, 10);
+      }
+    }
+    const immunityType = this.savingThrowTypeToImmunity(nSaveType, spellSchool);
+    if(immunityType && hasImmunityType(creature, immunityType, versus)){
+      return 2;
+    }
+    return 0;
   }
 
   /**

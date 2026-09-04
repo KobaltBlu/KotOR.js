@@ -1,9 +1,16 @@
+import { describe, expect, it, jest } from "@jest/globals";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
-import {
-  flourishAnimationRow,
-  meleeCombatWieldAnimationRow,
-  meleeWieldAnimationRow,
-} from "@/module/animation/flourish-wield-dispatch";
+
+jest.mock("@/GameState", () => ({ GameState: {} }));
+jest.mock("@/three/odyssey", () => ({ OdysseyFace3: class {}, OdysseyModel3D: class {}, OdysseyObject3D: class {} }));
+jest.mock("@/three/odyssey/OdysseyModel3D", () => ({ OdysseyModel3D: class {} }));
+jest.mock("three/examples/jsm/utils/BufferGeometryUtils", () => ({}));
+jest.mock("three/examples/jsm/objects/Lensflare", () => ({ Lensflare: class {}, LensflareElement: class {} }));
+jest.mock("@/nwscript/NWScript", () => ({ NWScript: {} }));
+jest.mock("@/nwscript/NWScriptInstance", () => ({ NWScriptInstance: class {} }));
+
+import { ModuleObject } from "@/module/ModuleObject";
+const { flourishAnimationRow, meleeCombatWieldAnimationRow, meleeWieldAnimationRow } = ModuleObject;
 
 describe("flourish-wield-dispatch", () => {
   it("maps MELEE_WIELD weapon types to G*F1 overlay rows", () => {

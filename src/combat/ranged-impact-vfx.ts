@@ -13,7 +13,7 @@ import type { CombatAttackData } from "@/combat/CombatAttackData";
  * ResolveProjectileMissImpact (VFX 4032 / 0xFC0 at miss pos),
  * spawnWorldImpactVfx for fire-and-forget world models.
  *
- * Full on-hit / parry visuals live in on-hit-visuals.ts (ResolveOnHitVisuals).
+ * Full on-hit / parry visuals live in CombatRound.resolveOnHitVisuals.
  * Traveling CombatProjectile bolts spawn at muzzle time (see combat-projectile.ts).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II

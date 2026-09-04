@@ -12,7 +12,6 @@ import { duelLog, duelWho } from "@/combat/duel-debug";
 import { hasTargetBeenDetected } from "@/combat/nearest-enemy";
 import { tryStuckLosRetarget } from "@/combat/initialize-new-attack-target";
 import { getNearestActionPoint } from "@/combat/nearest-action-point";
-import { resolveMeleeBackoff, resolveMeleeTooCloseHysteresis } from "@/combat/melee-backoff";
 import { ModuleObjectConstant, ModuleObjectType, SSFType } from "@/enums";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
@@ -26,6 +25,16 @@ import { Utility } from "@/utility/Utility";
 import { Action } from "@/actions/Action";
 import * as THREE from 'three';
 import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
+import {
+  testDirectLine,
+  TestDirectLineCode,
+} from "@/engine/pathfinding/test-direct-line";
+
+export type MeleeBackoffResult = {
+  position: THREE.Vector3;
+  clippedDesired: number;
+  clear: boolean;
+};
 
 /**
  * ActionPhysicalAttacks class.
@@ -62,6 +71,86 @@ export class ActionPhysicalAttacks extends Action {
     // 7 - attackAnimation row (INT) when resultsCalculated
     // 8 - attackResult (INT) when resultsCalculated
     // 9 - attackDamage (INT) when resultsCalculated
+  }
+
+  static resolveMeleeTooCloseHysteresis(
+    distSq: number,
+    desiredSq: number,
+    active: boolean
+  ): { tooClose: boolean; active: boolean } {
+    if(active){
+      const tooClose = distSq < desiredSq;
+      return { tooClose, active: tooClose };
+    }
+    if(distSq < desiredSq - 0.2){
+      return { tooClose: true, active: true };
+    }
+    return { tooClose: false, active: false };
+  }
+
+  static getMeleeBackoffIdeal(
+    attacker: ModuleCreature,
+    target: ModuleObject,
+    desired: number
+  ): THREE.Vector3 {
+    const dx = attacker.position.x - target.position.x;
+    const dy = attacker.position.y - target.position.y;
+    const len = Math.sqrt(dx * dx + dy * dy) || 1.0;
+    return new THREE.Vector3(
+      target.position.x + (dx / len) * desired,
+      target.position.y + (dy / len) * desired,
+      attacker.position.z
+    );
+  }
+
+  static getMeleeBackoffPosition(
+    attacker: ModuleCreature,
+    target: ModuleObject,
+    desired: number
+  ): THREE.Vector3 {
+    return ActionPhysicalAttacks.resolveMeleeBackoff(attacker, target, desired).position;
+  }
+
+  static resolveMeleeBackoff(
+    attacker: ModuleCreature,
+    target: ModuleObject,
+    desired: number
+  ): MeleeBackoffResult {
+    const ideal = ActionPhysicalAttacks.getMeleeBackoffIdeal(attacker, target, desired);
+    const area = attacker.area;
+    if(!area){
+      return { position: ideal, clippedDesired: desired, clear: true };
+    }
+
+    const perspace = getPathPersonalSpace(attacker);
+    const ignoreIds: number[] = [];
+    if(attacker.id != null) ignoreIds.push(attacker.id);
+    if(target.id != null) ignoreIds.push(target.id);
+
+    const hit = testDirectLine(area, attacker.position, ideal, {
+      owner: attacker,
+      personalSpace: perspace,
+      checkCreatures: true,
+      ignoreCreatureIds: ignoreIds,
+      collectHitInfo: true,
+    });
+    if(hit.ok || hit.code === TestDirectLineCode.Ok){
+      return { position: ideal, clippedDesired: desired, clear: true };
+    }
+
+    let clear = hit.clearPoint.clone();
+    if(typeof area.getNearestWalkablePoint === 'function'){
+      clear = area.getNearestWalkablePoint(clear, perspace);
+    }
+    const clippedDesired = Math.hypot(
+      target.position.x - clear.x,
+      target.position.y - clear.y
+    );
+    return {
+      position: clear,
+      clippedDesired: clippedDesired > 0 ? clippedDesired : desired,
+      clear: false,
+    };
   }
 
   update(delta: number = 0): ActionStatus {
@@ -124,7 +213,7 @@ export class ActionPhysicalAttacks extends Action {
     const isPartyMember = GameState.PartyManager.party.indexOf(owner) >= 0;
     let tooClose = false;
     if(!isPartyMember && !owner.isRangedEquipped()){
-      const latch = resolveMeleeTooCloseHysteresis(
+      const latch = ActionPhysicalAttacks.resolveMeleeTooCloseHysteresis(
         distSq,
         desiredSq,
         this.meleeBackoffActive
@@ -142,7 +231,7 @@ export class ActionPhysicalAttacks extends Action {
 
       // Too close: DesiredAttackRange back-off + TestDirectLine / CWalkHitInfo clip
       if(tooClose && !tooFar){
-        const backoff = resolveMeleeBackoff(owner, target, desired);
+        const backoff = ActionPhysicalAttacks.resolveMeleeBackoff(owner, target, desired);
         target_position = backoff.position;
         arriveRange = 0;
       }else if(owner.area?.getNearestWalkablePoint){

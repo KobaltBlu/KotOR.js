@@ -18,8 +18,26 @@ jest.mock('@/GameState', () => ({
   },
 }));
 
+jest.mock('@/combat/CombatAttackData', () => ({
+  CombatAttackData: class {},
+}));
+
+jest.mock('@/engine/pathfinding/clear-line-of-sight', () => ({
+  clearLineOfSight: () => true,
+}));
+
+jest.mock('@/combat/combat-projectile', () => ({
+  getProjectileImpactPosition: () => undefined,
+  spawnCombatProjectile: () => {},
+}));
+
+jest.mock('@/combat/ranged-impact-vfx', () => ({
+  spawnWorldImpactVfx: () => {},
+  VFX_COM_BLASTER_IMPACT_GROUND: 0,
+}));
+
 import { GameState } from '@/GameState';
-import { shouldShowCombatFloaty } from '@/combat/combat-floaty';
+import { CombatRound } from '@/combat/CombatRound';
 
 describe('shouldShowCombatFloaty', () => {
   beforeEach(() => {
@@ -29,23 +47,23 @@ describe('shouldShowCombatFloaty', () => {
 
   it('returns false when Floating Numbers is off', () => {
     mockGetFeedback.mockReturnValue(false);
-    expect(shouldShowCombatFloaty(mockPlayer as any)).toBe(false);
+    expect(CombatRound.shouldShowCombatFloaty(mockPlayer as any)).toBe(false);
   });
 
   it('returns true for player attacker (retail)', () => {
-    expect(shouldShowCombatFloaty(mockPlayer as any)).toBe(true);
+    expect(CombatRound.shouldShowCombatFloaty(mockPlayer as any)).toBe(true);
   });
 
   it('returns false for companion/NPC attacker by default', () => {
-    expect(shouldShowCombatFloaty(mockCompanion as any)).toBe(false);
+    expect(CombatRound.shouldShowCombatFloaty(mockCompanion as any)).toBe(false);
   });
 
   it('returns true for any attacker when DEBUG_COMBAT_FLOATY_ALL_ATTACKERS', () => {
     GameState.DEBUG_COMBAT_FLOATY_ALL_ATTACKERS = true;
-    expect(shouldShowCombatFloaty(mockCompanion as any)).toBe(true);
+    expect(CombatRound.shouldShowCombatFloaty(mockCompanion as any)).toBe(true);
   });
 
   it('returns false for undefined attacker', () => {
-    expect(shouldShowCombatFloaty(undefined)).toBe(false);
+    expect(CombatRound.shouldShowCombatFloaty(undefined)).toBe(false);
   });
 });

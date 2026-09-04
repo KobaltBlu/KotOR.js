@@ -18,34 +18,23 @@ import { DamageType } from "@/enums/combat/DamageType";
 import { DiceType } from "@/enums/combat/DiceType";
 import { WeaponType } from "@/enums/combat/WeaponType";
 import { GameEngineType } from "@/enums/engine/GameEngineType";
+import { FeedbackOption } from "@/enums/engine/FeedbackOption";
+import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
 import { TextSprite3D } from "@/engine/TextSprite3D";
 import { BitWise } from "@/utility/BitWise";
 import { CombatAttackData } from "@/combat/CombatAttackData";
 import type { CombatRoundAction } from "@/combat/CombatRoundAction";
 import { CombatRoundAction as CombatRoundActionClass } from "@/combat/CombatRoundAction";
 import { createNewAttackActions } from "@/combat/create-new-attack-actions";
-import { filterLiveAttackActions } from "@/combat/prune-dead-attack-actions";
-import {
-  canSyncMeleeReaction,
-  canSyncRangedReaction,
-  isRangedDodgeBlockedAnimation,
-  pickMeleeReaction,
-  pickRangedReaction,
-  rangedAttackHadLandingHit,
-  resolveMeleeReactionPlayback,
-} from "@/combat/combat-reaction-eligibility";
 import { duelLog, duelWho } from "@/combat/duel-debug";
 import { shouldEndRoundOnPauseExpiry, shouldSnapCombatReady } from "@/combat/combat-round-pause";
-import {
-  getProjectileMissLocation,
-  getProjectileTravelDelayMs,
-  getWeaponDischargeHand,
-  getWeaponDischargeInfo,
-  pickAttackShotIndices,
-  type PendingDischargeVisual,
-} from "@/combat/weapon-discharge";
-import { resolveOnHitVisuals } from "@/combat/on-hit-visuals";
 import { getProjectileImpactPosition, spawnCombatProjectile } from "@/combat/combat-projectile";
+import { getPathPersonalSpace } from "@/combat/attack-range";
+import {
+  spawnWorldImpactVfx,
+  VFX_COM_BLASTER_IMPACT_GROUND,
+} from "@/combat/ranged-impact-vfx";
+import { clearLineOfSight } from "@/engine/pathfinding/clear-line-of-sight";
 import { GameState } from "@/GameState";
 import { getAttackEffectBonus } from "@/effects/effect-bonuses";
 import { AutoPauseState } from "@/enums/engine/AutoPauseState";
@@ -54,12 +43,52 @@ import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import type { TalentFeat } from "@/talents";
 import { formatAttackSummaryFeedback, AttackSummaryStrRef } from "@/combat/attack-summary-feedback";
-import { shouldShowCombatFloaty } from "@/combat/combat-floaty";
 import {
   lookupCombatObjectById,
   normalizeCombatObjectId,
 } from "@/combat/resolve-combat-object-id";
 import * as THREE from 'three';
+
+/** Retail reaxn_delay ≈ distance * (1000/42) ms. */
+export const PROJECTILE_TRAVEL_MS_PER_UNIT = 1000 / 42;
+
+/** VFX_COM_PARRY — ResolveOnHitVisuals int 0xFB7 for attack_result 8..10. */
+export const VFX_COM_PARRY_DEFLECT = 0xfb7; // 4023
+
+export type PrunableCombatAction = {
+  actionType: CombatActionType | number;
+  target?: { isDead?: () => boolean } | null;
+};
+
+export type MeleeReactionPlayback =
+  | { mode: 'mapped' }
+  | { mode: 'setAnimationState' };
+
+export type WeaponDischargeInfo = {
+  rowLabel: string;
+  shots: number;
+  hits: number;
+  switchMask: string;
+  /** Per-shot muzzle times in ms (shot1..shotN). */
+  shotTimes: number[];
+};
+
+/**
+ * Retail ResolveRangedAttack packs every discharge into sub_attacks;
+ * shots without an AttackList roll are visual-only (ResolveRangedMiss).
+ */
+export type PendingDischargeVisual = {
+  /** ms until muzzle spawn (counts down). */
+  muzzleRemainingMs: number;
+  /** Projectile flight duration after muzzle. */
+  travelMs: number;
+  weaponAttackType: number;
+  attackWeapon?: ModuleItem;
+  rangedTargetX: number;
+  rangedTargetY: number;
+  rangedTargetZ: number;
+  reactObject?: ModuleObject;
+};
 
 const SPELL_FORCE_DEFLECTION = 162;
 const SPELL_FORCE_REDIRECTION = 163;
@@ -83,6 +112,489 @@ export class CombatRound {
    * The length of a combat round in milliseconds
    */
   static ROUND_LENGTH: number = 3000;
+
+  /** Retail damagehitvisual loop skips BLUDGEONING/PIERCING/SLASHING (0..2). */
+  private static DAMAGE_HIT_VISUAL_TYPE_COUNT = 14;
+
+  static filterLiveAttackActions<T extends PrunableCombatAction>(
+    list: T[]
+  ): T[] {
+    return list.filter((action) => {
+      if(
+        action.actionType !== CombatActionType.ATTACK &&
+        action.actionType !== CombatActionType.ATTACK_USE_FEAT
+      ){
+        return true;
+      }
+      const t = action.target;
+      if(!t) return false;
+      if(typeof t.isDead === 'function' && t.isDead()) return false;
+      return true;
+    });
+  }
+
+  /**
+   * Retail OnApplyDamage / SignalMeleeDamage floaty gate:
+   * AddFloatyText only when attacker/damager is GetPlayerCreatureId.
+   * DEBUG_COMBAT_FLOATY_ALL_ATTACKERS restores pre-alignment (any attacker).
+   */
+  static shouldShowCombatFloaty(attacker: ModuleObject | undefined): boolean {
+    if(!attacker) return false;
+    if(!GameState.FeedbackMessageManager.GetFeedbackTypeEnabled(FeedbackOption.FloatingNumbers)){
+      return false;
+    }
+    if(GameState.DEBUG_COMBAT_FLOATY_ALL_ATTACKERS){
+      return true;
+    }
+    const player = GameState.getCurrentPlayer();
+    return !!player && attacker === player;
+  }
+
+  /**
+   * Retail ResolveMeleeAnimations reaction gate:
+   * target has combatRound && attacker.engaged &&
+   * (CheckActionLengthAtTime || resultsCalculated).
+   */
+  static canSyncMeleeReaction(opts: {
+    engaged: boolean;
+    resultsCalculated: boolean;
+    hasTargetCombatRound: boolean;
+    checkActionLengthOk: boolean;
+  }): boolean {
+    return !!(
+      opts.hasTargetCombatRound &&
+      opts.engaged &&
+      (opts.checkActionLengthOk || opts.resultsCalculated)
+    );
+  }
+
+  /**
+   * Retail ResolveRangedAnimations play gate:
+   * CheckActionLengthAtTime && attacker.engaged.
+   */
+  static canSyncRangedReaction(opts: {
+    attackerEngaged: boolean;
+    hasTargetCombatRound: boolean;
+    checkActionLengthOk: boolean;
+  }): boolean {
+    return !!(
+      opts.hasTargetCombatRound &&
+      opts.attackerEngaged &&
+      opts.checkActionLengthOk
+    );
+  }
+
+  static pickMeleeReaction(result: AttackResult): number {
+    if(
+      result === AttackResult.HIT_SUCCESSFUL ||
+      result === AttackResult.CRITICAL_HIT ||
+      result === AttackResult.AUTOMATIC_HIT
+    ){
+      return ModuleCreatureAnimState.DAMAGE;
+    }
+    if(
+      result === AttackResult.PARRIED ||
+      result === AttackResult.DEFLECTED
+    ){
+      return ModuleCreatureAnimState.PARRY;
+    }
+    if(
+      result === AttackResult.MISS ||
+      result === AttackResult.ATTACK_RESISTED ||
+      result === AttackResult.ATTACK_FAILED
+    ){
+      return ModuleCreatureAnimState.DODGE;
+    }
+    return ModuleCreatureAnimState.READY;
+  }
+
+  static pickRangedReaction(opts: {
+    anyHit: boolean;
+    targetLightsaberEquipped: boolean;
+    targetCastingBusy: boolean;
+    targetEngaged: boolean;
+  }): number {
+    if(
+      !opts.anyHit &&
+      !opts.targetLightsaberEquipped &&
+      !opts.targetCastingBusy &&
+      opts.targetEngaged
+    ){
+      return ModuleCreatureAnimState.DODGE;
+    }
+    return ModuleCreatureAnimState.READY;
+  }
+
+  static rangedAttackHadLandingHit(
+    results: Array<AttackResult | number | undefined | null>
+  ): boolean {
+    for(let i = 0; i < results.length; i++){
+      const r = results[i];
+      if(
+        r === AttackResult.HIT_SUCCESSFUL ||
+        r === AttackResult.CRITICAL_HIT ||
+        r === AttackResult.AUTOMATIC_HIT
+      ){
+        return true;
+      }
+    }
+    return false;
+  }
+
+  static isRangedDodgeBlockedAnimation(anim: number): boolean {
+    const param = anim | 0;
+    if(param < 0x2758){
+      if(param < 0x2756){
+        if(param < 0x271f){
+          return false;
+        }
+        if(param > 0x2724 && param !== 0x274d){
+          return false;
+        }
+      }
+      return true;
+    }
+    if(param !== 0x28a1 && param !== 11000){
+      return false;
+    }
+    return true;
+  }
+
+  static resolveMeleeReactionPlayback(
+    mappedClip: unknown
+  ): MeleeReactionPlayback {
+    return mappedClip ? { mode: 'mapped' } : { mode: 'setAnimationState' };
+  }
+
+  private static parseIntCell(raw: unknown, fallback: number = 0): number {
+    if(raw === null || raw === undefined || raw === '****') return fallback;
+    const n = typeof raw === 'number' ? raw : parseInt(String(raw), 10);
+    return Number.isFinite(n) ? n : fallback;
+  }
+
+  /**
+   * Map combat animation name (e.g. b5a1) → weapondischarge row label.
+   * Retail GetWeaponDischargeRow.
+   */
+  static getWeaponDischargeRowLabel(
+    creature: ModuleCreature,
+    animName: string
+  ): string | undefined {
+    if(!animName) return undefined;
+
+    const animRow = CombatRound.OdysseyModelAnimationGetRow(animName);
+    if(!animRow) return undefined;
+
+    const baseLabel = String(animRow.__rowlabel ?? animRow.__index ?? '');
+    if(!baseLabel) return undefined;
+
+    const table = GameState.TwoDAManager?.datatables?.get('weapondischarge');
+    if(!table) return baseLabel;
+
+    const baseRow = CombatRound.findDischargeRow(table, baseLabel);
+    const droidFlag = baseRow
+      ? CombatRound.parseIntCell(baseRow.droid ?? baseRow.Droid, 0)
+      : 0;
+
+    if(droidFlag !== 0){
+      const race = String(creature?.getAppearance?.()?.race ?? '').replace(/\0[\s\S]*$/g, '').trim();
+      if(race && race !== '****'){
+        const prefix = CombatRound.getDroidDischargePrefix(race, baseLabel);
+        if(prefix){
+          return `${prefix}_${baseLabel}`;
+        }
+      }
+    }else if(creature?.appearance === 3){
+      const prefixed = `3_${baseLabel}`;
+      if(CombatRound.findDischargeRow(table, prefixed)){
+        return prefixed;
+      }
+    }
+
+    return baseLabel;
+  }
+
+  /** droiddischarge.2da: row = appearance.race, column = anim row label → numeric prefix. */
+  private static getDroidDischargePrefix(
+    race: string,
+    animLabel: string
+  ): string | undefined {
+    const table: any = GameState.TwoDAManager?.datatables?.get('droiddischarge');
+    if(!table) return undefined;
+
+    let row = table.getByID?.(race);
+    if(!row){
+      for(let i = 0, len = table.RowCount || 0; i < len; i++){
+        const r = table.rows[i];
+        if(r && String(r.__rowlabel).toLowerCase() === race.toLowerCase()){
+          row = r;
+          break;
+        }
+      }
+    }
+    if(!row) return undefined;
+
+    const raw = row[animLabel] ?? row[String(animLabel)];
+    if(raw === null || raw === undefined || raw === '****') return undefined;
+    const prefix = String(raw).trim();
+    return prefix || undefined;
+  }
+
+  private static OdysseyModelAnimationGetRow(name: string): any {
+    const animations2DA = GameState.TwoDAManager?.datatables?.get('animations');
+    if(!animations2DA) return undefined;
+    for(let i = 0, len = animations2DA.RowCount; i < len; i++){
+      const row = animations2DA.rows[i];
+      if(row?.name?.toLowerCase?.() === name.toLowerCase()){
+        return row;
+      }
+    }
+    return undefined;
+  }
+
+  private static findDischargeRow(table: any, label: string): any {
+    if(!table) return undefined;
+    const byId = table.getByID?.(label) || table.getByID?.(Number(label));
+    if(byId) return byId;
+    for(let i = 0, len = table.RowCount || 0; i < len; i++){
+      const row = table.rows[i];
+      if(row && String(row.__rowlabel) === String(label)){
+        return row;
+      }
+    }
+    return undefined;
+  }
+
+  static getWeaponDischargeInfo(
+    creature: ModuleCreature,
+    animName: string
+  ): WeaponDischargeInfo | undefined {
+    const rowLabel = CombatRound.getWeaponDischargeRowLabel(creature, animName);
+    if(!rowLabel) return undefined;
+
+    const table = GameState.TwoDAManager?.datatables?.get('weapondischarge');
+    const row = CombatRound.findDischargeRow(table, rowLabel);
+    if(!row) return undefined;
+
+    const shots = Math.max(0, CombatRound.parseIntCell(row.shots ?? row.Shots, 0));
+    const hits = Math.max(0, CombatRound.parseIntCell(row.hits ?? row.Hits, 0));
+    const switchMask = String(row.switchmask ?? row.SwitchMask ?? '');
+    const shotTimes: number[] = [];
+    for(let i = 1; i <= Math.max(shots, 12); i++){
+      const key = `shot${i}`;
+      const raw = row[key] ?? row[`Shot${i}`];
+      if(raw === null || raw === undefined || raw === '****'){
+        if(i > shots) break;
+        shotTimes.push(0);
+        continue;
+      }
+      shotTimes.push(CombatRound.parseIntCell(raw, 0));
+    }
+
+    if(shots <= 0){
+      return undefined;
+    }
+
+    return { rowLabel, shots, hits, switchMask, shotTimes };
+  }
+
+  static pickAttackShotIndices(shots: number, attackCount: number): number[] {
+    const indices: number[] = [];
+    let remainingShots = Math.max(0, shots);
+    let remainingAttacks = Math.max(0, attackCount);
+    for(let i = 0; i < shots; i++){
+      if(remainingShots <= 0) break;
+      if(remainingAttacks > 0 && (Math.floor(Math.random() * remainingShots) < remainingAttacks)){
+        remainingAttacks--;
+        indices.push(i);
+      }
+      remainingShots--;
+    }
+    return indices;
+  }
+
+  /** Retail ResolveRangedHit / Miss: reaxn_delay = |Δpos| * 23.809525 */
+  static getProjectileTravelDelayMs(
+    from: THREE.Vector3,
+    to: THREE.Vector3
+  ): number {
+    const dist = from.distanceTo(to);
+    return Math.max(0, Math.floor(dist * PROJECTILE_TRAVEL_MS_PER_UNIT));
+  }
+
+  /**
+   * ResolveProjectileMissLocation
+   * lateral miss beside target (perspace * 2/3), optional wide scatter when
+   * attack_result == 10, then eye→far ray with ClearLineOfSight.
+   */
+  static getProjectileMissLocation(
+    attacker: ModuleObject,
+    target: ModuleObject,
+    attackResult?: number
+  ): THREE.Vector3 {
+    if(!target){
+      return attacker.position.clone();
+    }
+
+    // Retail defaults when target is not a creature
+    let lateralScale = 0.40002003;
+    let scatterMul = 1.0;
+
+    if(BitWise.InstanceOfObject(target, ModuleObjectType.ModuleCreature)){
+      lateralScale = getPathPersonalSpace(target) * 0.6667;
+      // attack_result == '\n' (10) → sum of three rand()%3
+      if((attackResult | 0) === 10){
+        scatterMul =
+          (Math.floor(Math.random() * 3)) +
+          (Math.floor(Math.random() * 3)) +
+          (Math.floor(Math.random() * 3));
+      }
+    }
+
+    // Direction target → attacker, then cross(up) for a side miss
+    const toAttacker = new THREE.Vector3().subVectors(attacker.position, target.position);
+    const distSq = toAttacker.lengthSq();
+    if(distSq > 1e-8){
+      toAttacker.normalize();
+    }else{
+      toAttacker.set(1, 0, 0);
+    }
+    const perp = new THREE.Vector3().crossVectors(toAttacker, new THREE.Vector3(0, 0, 1));
+    // Retail: flip when (rand & 1) != 0
+    if((Math.floor(Math.random() * 2) & 1) !== 0){
+      perp.negate();
+    }
+    perp.multiplyScalar(scatterMul);
+
+    const missBeside = new THREE.Vector3(
+      target.position.x + perp.x * lateralScale,
+      target.position.y + perp.y * lateralScale,
+      target.position.z + perp.z * lateralScale
+    );
+
+    // Z variance from distance² * 0.015
+    const zRange = distSq * 0.015;
+    const eye = new THREE.Vector3(
+      attacker.position.x,
+      attacker.position.y,
+      attacker.position.z + 1.5
+    );
+    const dir = new THREE.Vector3(
+      missBeside.x - eye.x,
+      missBeside.y - eye.y,
+      ((1.5 - zRange * (2 / 3)) + Math.random() * zRange * 0.75 + missBeside.z) - eye.z
+    );
+    if(dir.lengthSq() > 1e-8){
+      dir.normalize();
+    }else{
+      dir.set(px, py, 0);
+    }
+    const far = eye.clone().addScaledVector(dir, 1000);
+
+    const hitPoint = new THREE.Vector3();
+    const area = attacker.area;
+    if(area && typeof clearLineOfSight === 'function'){
+      const clear = clearLineOfSight(area, eye, far, {
+        ignoreSource: attacker,
+        ignoreObject: target,
+        eyeHeight: 0,
+        hitPoint,
+      });
+      if(clear){
+        return far;
+      }
+      if(hitPoint.lengthSq() > 0){
+        return hitPoint;
+      }
+    }
+
+    // No LOS helper / no hit — use the beside-target miss point
+    return missBeside;
+  }
+
+  /** SwitchMask digit for discharge hand (0/1) at shot index. */
+  static getWeaponDischargeHand(switchMask: string, shotIndex: number): number {
+    if(!switchMask || switchMask === '****') return 0;
+    const ch = switchMask.charAt(shotIndex);
+    const n = parseInt(ch, 10);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  private static readDamageHitVisualId(
+    damageTypeIndex: number,
+    ranged: boolean
+  ): number {
+    const table = GameState.TwoDAManager?.datatables?.get('damagehitvisual');
+    const row = table?.getByID?.(damageTypeIndex) || table?.rows?.[damageTypeIndex];
+    if(!row) return 0;
+
+    const raw = ranged
+      ? (row.rangedeffect ?? row.RangedEffect)
+      : (row.visualeffect ?? row.VisualEffect);
+    if(raw === null || raw === undefined || raw === '****') return 0;
+
+    const n = typeof raw === 'number' ? raw : parseInt(String(raw), 10);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  }
+
+  private static applyInstantVisualEffect(
+    target: ModuleObject,
+    vfxId: number,
+    creator?: ModuleObject
+  ): void {
+    if(!target || !vfxId || !GameState.GameEffectFactory?.EffectVisualEffect) return;
+    const vfx = new GameState.GameEffectFactory.EffectVisualEffect();
+    if(creator) vfx.setCreator(creator);
+    vfx.setDurationType(GameEffectDurationType.INSTANT);
+    vfx.setInt(0, vfxId);
+    vfx.initialize();
+    target.addEffect(vfx, GameEffectDurationType.INSTANT, 0);
+  }
+
+  /**
+   * Retail ResolveOnHitVisuals + ranged miss impact.
+   * Call from CombatRound.signalAttackResult for every attack.
+   */
+  static resolveOnHitVisuals(
+    attack: CombatAttackData,
+    owner: ModuleCreature
+  ): void {
+    if(!attack) return;
+
+    const target = attack.reactObject;
+    const ranged = !!attack.rangedAttack;
+
+    // Per damage channel (skip physical 0..2) — VisualEffect / RangedEffect
+    if(target){
+      for(let i = 0; i < CombatRound.DAMAGE_HIT_VISUAL_TYPE_COUNT; i++){
+        if(i === 0 || i === 1 || i === 2) continue;
+        const amount = attack.damageList[i]?.damageValue ?? -1;
+        if(amount <= 0) continue;
+
+        const vfxId = CombatRound.readDamageHitVisualId(i, ranged);
+        if(vfxId > 0){
+          CombatRound.applyInstantVisualEffect(target, vfxId, owner);
+        }
+      }
+    }
+
+    // attack_result 8..10 → VFX 0xFB7 (PARRIED / DEFLECTED / retail result 10)
+    const result = attack.attackResult as number;
+    if(target && result >= AttackResult.PARRIED && result <= 10){
+      CombatRound.applyInstantVisualEffect(target, VFX_COM_PARRY_DEFLECT, target);
+    }
+
+    // Ranged miss ground splat (ResolveProjectileMissImpact)
+    if(ranged && attack.attackResult === AttackResult.MISS){
+      const pos = new THREE.Vector3(
+        attack.rangedTargetX,
+        attack.rangedTargetY,
+        attack.rangedTargetZ
+      );
+      spawnWorldImpactVfx(VFX_COM_BLASTER_IMPACT_GROUND, pos, owner?.context);
+    }
+  }
+
   owner: ModuleObject;
 
   roundStarted: boolean = false;
@@ -530,7 +1042,7 @@ export class CombatRound {
    */
   pruneDeadAttackActions(){
     if(!this.scheduledActionList.length) return;
-    this.scheduledActionList = filterLiveAttackActions(this.scheduledActionList);
+    this.scheduledActionList = CombatRound.filterLiveAttackActions(this.scheduledActionList);
   }
 
     /**
@@ -672,10 +1184,10 @@ export class CombatRound {
 
     const owner = this.owner as ModuleCreature;
     // Retail ResolveOnHitVisuals (+ ranged miss ground splat)
-    resolveOnHitVisuals(attack, owner);
+    CombatRound.resolveOnHitVisuals(attack, owner);
 
     // Retail OnApplyDamage / SignalMeleeDamage — floaty only for player attacker
-    const showFloaty = shouldShowCombatFloaty(owner);
+    const showFloaty = CombatRound.shouldShowCombatFloaty(owner);
 
     const tlkFloaty = (strRef: number) =>
       GameState.TLKManager.GetStringById(strRef)?.getDisplayText?.() ||
@@ -1221,14 +1733,14 @@ export class CombatRound {
       combatAction.animationName = animName;
     }
 
-    const discharge = getWeaponDischargeInfo(creature, animName);
+    const discharge = CombatRound.getWeaponDischargeInfo(creature, animName);
     const shots = discharge?.shots ?? totalAttacks;
-    const attackShotIndices = pickAttackShotIndices(shots, totalAttacks);
+    const attackShotIndices = CombatRound.pickAttackShotIndices(shots, totalAttacks);
     const attackShotSet = new Set(attackShotIndices);
 
     let attackRollIndex = 0;
     for(let shot = 0; shot < shots; shot++){
-      const dischargeHand = getWeaponDischargeHand(discharge?.switchMask ?? '', shot);
+      const dischargeHand = CombatRound.getWeaponDischargeHand(discharge?.switchMask ?? '', shot);
       const isOffHand = attackShotSet.has(shot)
         ? (attackRollIndex >= onHand)
         : (dischargeHand !== 0 && !!offWeapon);
@@ -1242,8 +1754,8 @@ export class CombatRound {
       if(!attackShotSet.has(shot)){
         // Retail: discharge-only → ResolveRangedMiss + sub_attack (no AttackList roll)
         if(this.pendingDischargeVisuals.length >= 16) continue;
-        const impactPos = getProjectileMissLocation(creature, combatAction.target, AttackResult.MISS);
-        const travelMs = getProjectileTravelDelayMs(creature.position, impactPos);
+        const impactPos = CombatRound.getProjectileMissLocation(creature, combatAction.target, AttackResult.MISS);
+        const travelMs = CombatRound.getProjectileTravelDelayMs(creature.position, impactPos);
         this.pendingDischargeVisuals.push({
           muzzleRemainingMs: muzzleMs,
           travelMs,
@@ -1290,13 +1802,13 @@ export class CombatRound {
         attack.rangedTargetY = impactPos.y;
         attack.rangedTargetZ = impactPos.z;
       }else{
-        impactPos = getProjectileMissLocation(creature, combatAction.target, attack.attackResult);
+        impactPos = CombatRound.getProjectileMissLocation(creature, combatAction.target, attack.attackResult);
         attack.rangedTargetX = impactPos.x;
         attack.rangedTargetY = impactPos.y;
         attack.rangedTargetZ = impactPos.z;
       }
 
-      const travelMs = getProjectileTravelDelayMs(creature.position, impactPos);
+      const travelMs = CombatRound.getProjectileTravelDelayMs(creature.position, impactPos);
       attack.reaxnDelay = travelMs;
       attack.damageApplyDelay = muzzleMs + travelMs;
 
@@ -2188,24 +2700,24 @@ export class CombatRound {
         if(!rolled.length && typeof combatAction.attackResult === 'number'){
           rolled.push(combatAction.attackResult);
         }
-        reaction = pickRangedReaction({
-          anyHit: rangedAttackHadLandingHit(rolled),
+        reaction = CombatRound.pickRangedReaction({
+          anyHit: CombatRound.rangedAttackHadLandingHit(rolled),
           targetLightsaberEquipped: this.isLightsaberEquipped(target),
-          targetCastingBusy: isRangedDodgeBlockedAnimation(
+          targetCastingBusy: CombatRound.isRangedDodgeBlockedAnimation(
             target.animationState?.index ?? 0
           ),
           targetEngaged: !!target.combatRound?.engaged,
         });
-        shouldReact = canSyncRangedReaction({
+        shouldReact = CombatRound.canSyncRangedReaction({
           attackerEngaged: this.engaged,
           hasTargetCombatRound: !!target.combatRound,
           checkActionLengthOk,
         });
       }else{
-        reaction = pickMeleeReaction(combatAction.attackResult);
+        reaction = CombatRound.pickMeleeReaction(combatAction.attackResult);
         // Retail ResolveMeleeAnimations:
         // engaged && (CheckActionLengthAtTime || resultsCalculated).
-        shouldReact = canSyncMeleeReaction({
+        shouldReact = CombatRound.canSyncMeleeReaction({
           engaged: this.engaged,
           resultsCalculated: !!combatAction.resultsCalculated,
           hasTargetCombatRound: !!target.combatRound,
@@ -2241,7 +2753,7 @@ export class CombatRound {
           attackAnim: this.action.animationName,
           ranged: isRanged,
         });
-        if(resolveMeleeReactionPlayback(mapped).mode === 'mapped'){
+        if(CombatRound.resolveMeleeReactionPlayback(mapped).mode === 'mapped'){
           target.playTwoDAAnimation(mapped);
           target.animationState.index = reaction;
         }else{

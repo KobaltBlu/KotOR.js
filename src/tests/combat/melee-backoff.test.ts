@@ -15,14 +15,26 @@ jest.mock('@/engine/pathfinding/test-direct-line', () => ({
   })),
 }));
 
-import { getMeleeBackoffIdeal, resolveMeleeBackoff, resolveMeleeTooCloseHysteresis } from '@/combat/melee-backoff';
+jest.mock('@/combat/CombatRound', () => ({
+  CombatRound: { ROUND_LENGTH: 3000 },
+}));
+
+jest.mock('@/GameState', () => ({
+  GameState: { PartyManager: { party: [] } },
+}));
+
+jest.mock('@/actions/Action', () => ({
+  Action: class {},
+}));
+
+import { ActionPhysicalAttacks } from '@/actions/ActionPhysicalAttacks';
 import { testDirectLine } from '@/engine/pathfinding/test-direct-line';
 
 describe('getMeleeBackoffIdeal', () => {
   it('places the ideal on the attacker side of the target at DesiredAttackRange', () => {
     const attacker = { position: new THREE.Vector3(0, 0, 0) } as any;
     const target = { position: new THREE.Vector3(10, 0, 0) } as any;
-    const ideal = getMeleeBackoffIdeal(attacker, target, 2);
+    const ideal = ActionPhysicalAttacks.getMeleeBackoffIdeal(attacker, target, 2);
     // target − towardTarget*desired = (10,0) − (1,0)*2 = (8,0)
     expect(ideal.x).toBeCloseTo(8, 5);
     expect(ideal.y).toBeCloseTo(0, 5);
@@ -31,7 +43,7 @@ describe('getMeleeBackoffIdeal', () => {
   it('keeps the attacker on their side when already beyond desired', () => {
     const attacker = { position: new THREE.Vector3(0, 0, 0) } as any;
     const target = { position: new THREE.Vector3(3, 0, 0) } as any;
-    const ideal = getMeleeBackoffIdeal(attacker, target, 2);
+    const ideal = ActionPhysicalAttacks.getMeleeBackoffIdeal(attacker, target, 2);
     expect(ideal.x).toBeCloseTo(1, 5);
   });
 });
@@ -48,7 +60,7 @@ describe('resolveMeleeBackoff', () => {
   } as any;
 
   it('returns the ideal when no area is available', () => {
-    const r = resolveMeleeBackoff(attacker, target, 2);
+    const r = ActionPhysicalAttacks.resolveMeleeBackoff(attacker, target, 2);
     expect(r.clear).toBe(true);
     expect(r.position.x).toBeCloseTo(8, 5);
     expect(r.clippedDesired).toBe(2);
@@ -65,7 +77,7 @@ describe('resolveMeleeBackoff', () => {
     attacker.area = {
       getNearestWalkablePoint: (p: THREE.Vector3) => p.clone(),
     };
-    const r = resolveMeleeBackoff(attacker, target, 2);
+    const r = ActionPhysicalAttacks.resolveMeleeBackoff(attacker, target, 2);
     expect(r.clear).toBe(false);
     expect(r.position.x).toBeCloseTo(6, 5);
     expect(r.clippedDesired).toBeCloseTo(4, 5);
@@ -78,26 +90,26 @@ describe('resolveMeleeTooCloseHysteresis', () => {
   const desiredSq = desired * desired;
 
   it('enters tooClose only below desired²−0.2', () => {
-    const justInside = resolveMeleeTooCloseHysteresis(desiredSq - 0.1, desiredSq, false);
+    const justInside = ActionPhysicalAttacks.resolveMeleeTooCloseHysteresis(desiredSq - 0.1, desiredSq, false);
     expect(justInside.tooClose).toBe(false);
     expect(justInside.active).toBe(false);
 
-    const deep = resolveMeleeTooCloseHysteresis(desiredSq - 0.25, desiredSq, false);
+    const deep = ActionPhysicalAttacks.resolveMeleeTooCloseHysteresis(desiredSq - 0.25, desiredSq, false);
     expect(deep.tooClose).toBe(true);
     expect(deep.active).toBe(true);
   });
 
   it('stays active until dist² ≥ desired² (no immediate re-queue at Desired)', () => {
-    let latch = resolveMeleeTooCloseHysteresis(desiredSq - 0.25, desiredSq, false);
+    let latch = ActionPhysicalAttacks.resolveMeleeTooCloseHysteresis(desiredSq - 0.25, desiredSq, false);
     expect(latch.active).toBe(true);
 
     // At Desired−ε still tooClose while latched
-    latch = resolveMeleeTooCloseHysteresis(desiredSq - 0.05, desiredSq, true);
+    latch = ActionPhysicalAttacks.resolveMeleeTooCloseHysteresis(desiredSq - 0.05, desiredSq, true);
     expect(latch.tooClose).toBe(true);
     expect(latch.active).toBe(true);
 
     // At/above Desired — leave backoff
-    latch = resolveMeleeTooCloseHysteresis(desiredSq, desiredSq, true);
+    latch = ActionPhysicalAttacks.resolveMeleeTooCloseHysteresis(desiredSq, desiredSq, true);
     expect(latch.tooClose).toBe(false);
     expect(latch.active).toBe(false);
   });
