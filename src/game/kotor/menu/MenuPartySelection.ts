@@ -479,12 +479,13 @@ export class MenuPartySelection extends GameMenu {
       }
       btn.disableBorder();
       btn.disableHighlight();
-      btn.pulsing = false;
+      btn.setPulsingAlpha(false);
     }
     const btn = this.getControlByName('BTN_NPC' + this.selectedNPC);
     if(btn instanceof GUIControl){
       btn.enableHighlight();
-      btn.pulsing = true;
+      // Retail SetSelected — SetPulsingAlpha(1, 1, 0): edges only (portrait fill stays solid)
+      btn.setPulsingAlpha(true, true, false);
     }
   }
 

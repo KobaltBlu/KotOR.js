@@ -124,6 +124,7 @@ export class GUIScrollBar extends GUIControl{
           this.upArrow.scale.x = this.arrowSize;
           this.upArrow.scale.y = this.arrowSize;
           this.upArrow.position.z = 5;
+          this.upArrow.renderOrder = this.getRenderOrder(5);
 
           this.upArrow.position.y = truncDiv(asExtentInt(this.extent.height), 2) + truncDiv(asExtentInt(this.arrowSize), 2);
           this.upArrow.userData.worldPosition = new THREE.Vector3();
@@ -154,6 +155,7 @@ export class GUIScrollBar extends GUIControl{
           this.downArrow.scale.x = this.arrowSize;
           this.downArrow.scale.y = this.arrowSize;
           this.downArrow.position.z = 5;
+          this.downArrow.renderOrder = this.getRenderOrder(5);
           this.downArrow.position.y = -(truncDiv(asExtentInt(this.extent.height), 2) + truncDiv(asExtentInt(this.arrowSize), 2));
           this.downArrow.rotation.z = Math.PI;
           this.downArrow.userData.worldPosition = new THREE.Vector3();
@@ -194,6 +196,7 @@ export class GUIScrollBar extends GUIControl{
       this.thumb.scale.x = 1;
       this.thumb.scale.y = Math.max(1, asExtentInt(this.extent.height));
       this.thumb.position.z = 5;
+      this.thumb.renderOrder = this.getRenderOrder(5);
 
       let parentPos = this.worldPosition;
       const halfW = truncDiv(asExtentInt(this.extent.width), 2);
@@ -281,6 +284,14 @@ export class GUIScrollBar extends GUIControl{
       this.endHoldRepeat();
     });
 
+  }
+
+  refreshRenderOrder(){
+    super.refreshRenderOrder();
+    const order = this.getRenderOrder(5);
+    if(this.upArrow) this.upArrow.renderOrder = order;
+    if(this.downArrow) this.downArrow.renderOrder = order;
+    if(this.thumb) this.thumb.renderOrder = order;
   }
 
   /**

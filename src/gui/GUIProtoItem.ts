@@ -121,14 +121,15 @@ export class GUIProtoItem extends GUIControl{
     if(this.selected){
       this.showHighlight();
       this.hideBorder();
-      this.pulsing = true;
+      // Retail list selection — SetPulsingAlpha(1, 1, 0): edges only
+      this.setPulsingAlpha(true, true, false);
       this.text.color.copy(this.defaultHighlightColor);
       this.text.material.uniforms.diffuse.value = this.text.color;
       this.text.material.needsUpdate = true;
     }else{
       this.hideHighlight();
       this.showBorder();
-      this.pulsing = false;
+      this.setPulsingAlpha(false);
       this.text.color.copy(this.defaultColor);
       this.text.material.uniforms.diffuse.value = this.text.color;
       this.text.material.needsUpdate = true;

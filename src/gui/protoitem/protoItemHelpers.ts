@@ -49,7 +49,8 @@ export function applyProtoSelectVisuals(
   if(selected){
     ctrl.showHighlight();
     ctrl.hideBorder();
-    ctrl.pulsing = true;
+    // Retail list selection — SetPulsingAlpha(1, 1, 0): edges only
+    ctrl.setPulsingAlpha(true, true, false);
     ctrl.text.color.copy(hi);
     if(ctrl.text.material?.uniforms?.diffuse){
       ctrl.text.material.uniforms.diffuse.value = ctrl.text.color;
@@ -60,7 +61,7 @@ export function applyProtoSelectVisuals(
       opts.buttonLabel.showHighlight();
       opts.buttonLabel.hideBorder();
       opts.buttonLabel.setHighlightColor(hi.r, hi.g, hi.b);
-      opts.buttonLabel.pulsing = true;
+      opts.buttonLabel.setPulsingAlpha(true, true, false);
       opts.buttonLabel.text.color.copy(hi);
       if(opts.buttonLabel.text.material?.uniforms?.diffuse){
         opts.buttonLabel.text.material.uniforms.diffuse.value = opts.buttonLabel.text.color;
@@ -68,7 +69,7 @@ export function applyProtoSelectVisuals(
       }
     }
     if(opts?.buttonIcon){
-      opts.buttonIcon.pulsing = true;
+      opts.buttonIcon.setPulsingAlpha(true, true, false);
     }
     if(opts?.hexMaterial){
       opts.hexMaterial.color.copy(hi);
@@ -76,7 +77,7 @@ export function applyProtoSelectVisuals(
   }else{
     ctrl.hideHighlight();
     ctrl.showBorder();
-    ctrl.pulsing = false;
+    ctrl.setPulsingAlpha(false);
     ctrl.text.color.copy(lo);
     if(ctrl.text.material?.uniforms?.diffuse){
       ctrl.text.material.uniforms.diffuse.value = ctrl.text.color;
@@ -87,7 +88,7 @@ export function applyProtoSelectVisuals(
       opts.buttonLabel.hideHighlight();
       opts.buttonLabel.showBorder();
       opts.buttonLabel.setBorderColor(lo.r, lo.g, lo.b);
-      opts.buttonLabel.pulsing = false;
+      opts.buttonLabel.setPulsingAlpha(false);
       opts.buttonLabel.text.color.copy(lo);
       if(opts.buttonLabel.text.material?.uniforms?.diffuse){
         opts.buttonLabel.text.material.uniforms.diffuse.value = opts.buttonLabel.text.color;
@@ -95,7 +96,7 @@ export function applyProtoSelectVisuals(
       }
     }
     if(opts?.buttonIcon){
-      opts.buttonIcon.pulsing = false;
+      opts.buttonIcon.setPulsingAlpha(false);
     }
     if(opts?.hexMaterial){
       opts.hexMaterial.color.copy(lo);
@@ -277,7 +278,12 @@ export function applySkillFlowStatus(
     return;
   }
 
-  button.pulsing = pulse;
+  // Retail SetSkillStatus — SetPulsingAlpha(1, 1, 0): edges only (fill stays solid).
+  if(pulse){
+    button.setPulsingAlpha(true, true, false);
+  }else{
+    button.setPulsingAlpha(false);
+  }
   button.setBorderColor(borderColor.r, borderColor.g, borderColor.b);
   if(isTsl && selected){
     button.setFillColor?.(borderColor.r, borderColor.g, borderColor.b);

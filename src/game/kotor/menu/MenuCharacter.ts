@@ -341,6 +341,9 @@ export class MenuCharacter extends GameMenu {
   }
 
   hide() {
+    if(this.manager?.MenuScriptSelect?.isVisible?.()){
+      this.manager.MenuScriptSelect.close();
+    }
     this.clearPortraitChar();
     super.hide();
   }

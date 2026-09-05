@@ -672,7 +672,8 @@ export class InGameOverlay extends GameMenu {
         switch (nth) {
         case 0:
           if (GameState.PartyManager.party[nth].canLevelUp()) {
-            this.getControlByName('LBL_LEVELUP1').pulsing = true;
+            // Retail SetPulsingAlpha(1, 0, 1) — fill only
+            this.getControlByName('LBL_LEVELUP1')?.setPulsingAlpha(true, false, true);
             this.getControlByName('LBL_LEVELUP1')?.show();
           } else {
             this.getControlByName('LBL_LEVELUP1')?.hide();
@@ -680,7 +681,7 @@ export class InGameOverlay extends GameMenu {
           break;
         case 1:
           if (GameState.PartyManager.party[nth].canLevelUp()) {
-            this.getControlByName('LBL_LEVELUP3').pulsing = true;
+            this.getControlByName('LBL_LEVELUP3')?.setPulsingAlpha(true, false, true);
             this.getControlByName('LBL_LEVELUP3')?.show();
           } else {
             this.getControlByName('LBL_LEVELUP3')?.hide();
@@ -688,7 +689,7 @@ export class InGameOverlay extends GameMenu {
           break;
         case 2:
           if (GameState.PartyManager.party[nth].canLevelUp()) {
-            this.getControlByName('LBL_LEVELUP2').pulsing = true;
+            this.getControlByName('LBL_LEVELUP2')?.setPulsingAlpha(true, false, true);
             this.getControlByName('LBL_LEVELUP2')?.show();
           } else {
             this.getControlByName('LBL_LEVELUP2')?.hide();
@@ -1235,9 +1236,10 @@ export class InGameOverlay extends GameMenu {
     /**
      * Item Lost
      */
+    // Retail CSWGuiMainInterfaceStatus::Initialize — SetPulsingAlpha(1, 0, 1) fill-only
     if(GameState.UINotificationManager.ItemLostTimer > 0){
       this.LBL_ITEMLOST.show();
-      this.LBL_ITEMLOST.pulsing = true;
+      this.LBL_ITEMLOST.setPulsingAlpha(true, false, true);
       GameState.UINotificationManager.ItemLostTimer -= delta;
     }else{
       GameState.UINotificationManager.ItemLostTimer = 0;
@@ -1249,7 +1251,7 @@ export class InGameOverlay extends GameMenu {
      */
     if(GameState.UINotificationManager.ItemReceivedTimer > 0){
       this.LBL_ITEMRCVD.show();
-      this.LBL_ITEMRCVD.pulsing = true;
+      this.LBL_ITEMRCVD.setPulsingAlpha(true, false, true);
       GameState.UINotificationManager.ItemReceivedTimer -= delta;
     }else{
       GameState.UINotificationManager.ItemReceivedTimer = 0;
@@ -1260,8 +1262,8 @@ export class InGameOverlay extends GameMenu {
      * Credits Received
      */
     if(GameState.UINotificationManager.CreditsReceivedTimer > 0){
-      this.LBL_CASH.show();   
-      this.LBL_CASH.pulsing = true;
+      this.LBL_CASH.show();
+      this.LBL_CASH.setPulsingAlpha(true, false, true);
       GameState.UINotificationManager.CreditsReceivedTimer -= delta;
     }else{
       GameState.UINotificationManager.CreditsReceivedTimer = 0;
@@ -1273,7 +1275,7 @@ export class InGameOverlay extends GameMenu {
      */
     if(GameState.UINotificationManager.JournalEntryAddedTimer > 0){
       this.LBL_JOURNAL.show();
-      this.LBL_JOURNAL.pulsing = true;
+      this.LBL_JOURNAL.setPulsingAlpha(true, false, true);
       GameState.UINotificationManager.JournalEntryAddedTimer -= delta;
     }else{
       GameState.UINotificationManager.JournalEntryAddedTimer = 0;
@@ -1285,7 +1287,7 @@ export class InGameOverlay extends GameMenu {
      */
     if(GameState.UINotificationManager.LightShiftTimer > 0){
       this.LBL_LIGHTSHIFT.show();
-      this.LBL_LIGHTSHIFT.pulsing = true;
+      this.LBL_LIGHTSHIFT.setPulsingAlpha(true, false, true);
       GameState.UINotificationManager.LightShiftTimer -= delta;
     }else{
       GameState.UINotificationManager.LightShiftTimer = 0;
@@ -1297,7 +1299,7 @@ export class InGameOverlay extends GameMenu {
      */
     if(GameState.UINotificationManager.DarkShiftTimer > 0){
       this.LBL_DARKSHIFT.show();
-      this.LBL_DARKSHIFT.pulsing = true;
+      this.LBL_DARKSHIFT.setPulsingAlpha(true, false, true);
       GameState.UINotificationManager.DarkShiftTimer -= delta;
     }else{
       GameState.UINotificationManager.DarkShiftTimer = 0;
@@ -1309,7 +1311,7 @@ export class InGameOverlay extends GameMenu {
      */
     if(GameState.UINotificationManager.PlotXPReceivedTimer > 0){
       this.LBL_PLOTXP.show();
-      this.LBL_PLOTXP.pulsing = true;
+      this.LBL_PLOTXP.setPulsingAlpha(true, false, true);
       GameState.UINotificationManager.PlotXPReceivedTimer -= delta;
     }else{
       GameState.UINotificationManager.PlotXPReceivedTimer = 0;
@@ -1321,7 +1323,7 @@ export class InGameOverlay extends GameMenu {
      */
     if(GameState.UINotificationManager.StealthXPReceivedTimer > 0){
       this.LBL_STEALTHXP.show();
-      this.LBL_STEALTHXP.pulsing = true;
+      this.LBL_STEALTHXP.setPulsingAlpha(true, false, true);
       GameState.UINotificationManager.StealthXPReceivedTimer -= delta;
     }else{
       GameState.UINotificationManager.StealthXPReceivedTimer = 0;

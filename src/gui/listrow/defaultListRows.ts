@@ -87,6 +87,16 @@ export function createDefaultCheckBoxRow(
   const menu = list.menu;
   const ctrl = new menu.factory.GUICheckBox(menu, protoTemplate.control, list, scale);
   applyProtoTemplateSkin(ctrl, protoTemplate);
+  // Retail OptionsCheckbox Initialize(proto->extent, proto) — PROTOITEM extent is fixed pitch.
+  const protoH = protoTemplate.extent?.height | 0;
+  const protoW = protoTemplate.extent?.width | 0;
+  if(protoH > 0){
+    ctrl.setExtentHeight(protoH);
+  }
+  if(protoW > 0){
+    ctrl.setExtentWidth(protoW);
+  }
+  ctrl.listRowAlignExtentToWrappedText = false;
   ctrl.isProtoItem = false;
   ctrl.offset = list.offset;
   ctrl.node = node;

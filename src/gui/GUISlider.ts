@@ -75,6 +75,7 @@ export class GUISlider extends GUIControl{
       this.thumb.mesh.name = 'SCROLLBAR thumb';
       this.thumb.mesh.scale.x = asExtentInt(this.thumb.width);
       this.thumb.mesh.scale.y = asExtentInt(this.thumb.height);
+      this.thumb.mesh.renderOrder = this.getRenderOrder(5);
 
       let parentPos = this.widget.getWorldPosition(new THREE.Vector3());
       const halfW = truncDiv(asExtentInt(this.extent.width), 2);
@@ -135,6 +136,13 @@ export class GUISlider extends GUIControl{
 
     this.setValue(this.value);
 
+  }
+
+  refreshRenderOrder(){
+    super.refreshRenderOrder();
+    if(this.thumb?.mesh){
+      this.thumb.mesh.renderOrder = this.getRenderOrder(5);
+    }
   }
 
   onINIPropertyAttached(){

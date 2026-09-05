@@ -140,7 +140,7 @@ export class GUIFeatItem extends GUIProtoItem {
         iconSprite.scale.x = 32;
         iconSprite.scale.y = 32;
         iconSprite.position.z = 5;
-        iconSprite.renderOrder = 5;
+        iconSprite.renderOrder = this.getRenderOrder(5);
 
         enqueueProtoTexture(this as any, feat.icon, iconMaterial, (texture) => {
           if(!texture) return;

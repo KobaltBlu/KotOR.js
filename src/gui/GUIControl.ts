@@ -158,11 +158,29 @@ export class GUIControl {
   onKeyUp?: (e: KeyboardEvent) => void;
   onKeyDown?: (e: KeyboardEvent) => void;
 
-  pulsing: boolean = false;
+  /** Backing field for `pulsing` (enable / text pulse). */
+  private _pulsing: boolean = false;
+  /** Retail SetPulsingAlpha edge flag (Draw bit for corners/edges). */
+  runtimePulseEdge: boolean = false;
+  /** Retail SetPulsingAlpha fill flag (Draw bit for fill). */
+  runtimePulseFill: boolean = false;
   pulse: number = 1;
   opacity: number = 1;
   hover: boolean;
   swapBorderAndHighlightOnHover = true;
+
+  /**
+   * Runtime pulse enable. Assigning true pulses edge + fill + text together;
+   * use setPulsingAlpha when edge/fill must differ (HUD fill-only, etc.).
+   */
+  get pulsing(): boolean {
+    return this._pulsing;
+  }
+  set pulsing(value: boolean) {
+    this._pulsing = !!value;
+    this.runtimePulseEdge = this._pulsing;
+    this.runtimePulseFill = this._pulsing;
+  }
 
   extent: IGUIControlExtent = {
     top: 0,
@@ -427,17 +445,38 @@ export class GUIControl {
     if(this.chrome?.mesh){
       this.chrome.mesh.name = 'GUIChrome';
       this.chrome.mesh.position.z = this.zOffset;
-      this.chrome.mesh.renderOrder = this.id;
+      this.chrome.mesh.renderOrder = this.getRenderOrder(this.id);
       this.attachEventListenters( this.chrome.mesh );
     }
 
     if(this.text.mesh){
       this.text.mesh.name = 'GUIText';
       this.text.mesh.position.z = this.zOffset;
-      this.text.mesh.renderOrder = 5;
+      this.text.mesh.renderOrder = this.getRenderOrder(5);
       this.attachEventListenters( this.text.mesh );
     }
     
+  }
+
+  /** Local GUI order + menu layer bias (overlays above parents). */
+  getRenderOrder(local: number): number {
+    return (this.menu?.renderOrderBias ?? 0) + local;
+  }
+
+  /**
+   * Re-apply chrome/text renderOrder after the menu bias changes.
+   * Subclasses with extra meshes should override and call super.
+   */
+  refreshRenderOrder(){
+    if(this.chrome?.mesh){
+      this.chrome.mesh.renderOrder = this.getRenderOrder(this.id);
+    }
+    if(this.text?.mesh){
+      this.text.mesh.renderOrder = this.getRenderOrder(5);
+    }
+    for(let i = 0, len = this.children.length; i < len; i++){
+      this.children[i].refreshRenderOrder();
+    }
   }
 
   attachEventListenters( object: THREE.Object3D ){
@@ -1036,29 +1075,49 @@ export class GUIControl {
    */
   wantsPulseAnimation(): boolean {
     return !!(
-      this.pulsing ||
+      this._pulsing ||
+      this.runtimePulseEdge ||
+      this.runtimePulseFill ||
       (this.border.pulsing | 0) ||
       (this.highlight.pulsing | 0) ||
       (this.text.pulsing | 0)
     );
   }
 
+  /**
+   * Retail CSWGuiBorderParams::SetPulsingAlpha(enable, pulseEdge, pulseFill).
+   * Edge/fill map to Draw bits (GFF PULSING bit0 / bit1). Prefer this when edge and
+   * fill must differ (HUD icons are fill-only; key-capture is both).
+   */
+  setPulsingAlpha(
+    enable: boolean | number,
+    pulseEdge: boolean | number = true,
+    pulseFill: boolean | number = true,
+  ){
+    const on = !!enable;
+    this._pulsing = on;
+    this.runtimePulseEdge = on && !!pulseEdge;
+    this.runtimePulseFill = on && !!pulseFill;
+  }
+
   update(delta: number){
     const opacity = this.disableSelection ? 0.5 : 1;
-    // Retail Draw / Draw: use m_fPulsingAlpha when pulsing bits set.
+    // Retail CSWGuiBorder::Draw: m_fPulsingAlpha when enable + edge/fill bits set.
     // GFF PULSING → SetPulsingAlpha(nonzero, bit0, bit1): bit0 = edges/corners, bit1 = fill.
-    // `this.pulsing` is the runtime SetPulsingAlpha(enable, …) equivalent (menus/protoitems).
+    // Runtime flags from `pulsing = true` / setPulsingAlpha; GFF bits still apply.
     const borderFlags = this.border.pulsing | 0;
     const highlightFlags = this.highlight.pulsing | 0;
     const textFlags = this.text.pulsing | 0;
-    // Runtime `this.pulsing` ≈ SetPulsingAlpha(1, 1, 0): edges/corners + text, not fill.
-    // Fill pulses only when GFF PULSING bit1 is set (retail SetPulsingAlpha fill flag).
     const hovered = this.chrome?.material?.uniforms?.hovered?.value > 0.5;
     const swap = this.swapBorderAndHighlightOnHover;
     const useHighlightPulse = hovered && swap;
-    const pulseEdge = this.pulsing || !!( (useHighlightPulse ? highlightFlags : borderFlags) & 1);
-    const pulseFill = !!((useHighlightPulse ? highlightFlags : borderFlags) & 2);
-    const pulseText = this.pulsing || !!textFlags;
+    const pulseEdge =
+      this.runtimePulseEdge ||
+      !!((useHighlightPulse ? highlightFlags : borderFlags) & 1);
+    const pulseFill =
+      this.runtimePulseFill ||
+      !!((useHighlightPulse ? highlightFlags : borderFlags) & 2);
+    const pulseText = this._pulsing || !!textFlags;
 
     if(pulseEdge || pulseFill || pulseText){
       const pulseAlpha = GameState.MenuManager.pulseOpacity * opacity;
@@ -2149,7 +2208,7 @@ export class GUIControl {
       this.buildText();
     
     if(this.text.mesh){
-      this.text.mesh.renderOrder = undefined;//renderOrder;
+      this.text.mesh.renderOrder = this.getRenderOrder(renderOrder);
     }
 
     if(oldText != this.text.text && typeof this.text.geometry === 'object'){

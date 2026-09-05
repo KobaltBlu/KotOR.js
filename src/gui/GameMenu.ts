@@ -52,6 +52,11 @@ export class GameMenu {
   scale: number = 1;
   enablePositionScaling: boolean = false;
   isOverlayGUI: boolean = false;
+  /**
+   * Added to every mesh renderOrder in this menu so overlays sit above parents
+   * (shared scene_gui + depthTest off — draw order is renderOrder only).
+   */
+  renderOrderBias: number = 0;
   textNeedsUpdate: boolean = false;
 
   userCanClose: boolean = true;
@@ -258,7 +263,7 @@ export class GameMenu {
       });
       this.backgroundVoidSprite = new THREE.Mesh( geometry, this.backgroundVoidMaterial );
       this.backgroundVoidSprite.position.z = -6;
-      this.backgroundVoidSprite.renderOrder = -6;
+      this.backgroundVoidSprite.renderOrder = this.renderOrderBias - 6;
 
       // this.backgroundVoidMaterial.uniforms.u_color.value.setRGB(0.0, 0.658824, 0.980392);
       // Cool steel grey with a blue-metal hint (matches KotOR GUI panel metal).
@@ -295,7 +300,7 @@ export class GameMenu {
       this.backgroundMaterial.depthWrite = false;
       this.backgroundSprite = new THREE.Mesh( geometry, this.backgroundMaterial );
       this.backgroundSprite.position.z = -5;
-      this.backgroundSprite.renderOrder = -5;
+      this.backgroundSprite.renderOrder = this.renderOrderBias - 5;
       this.backgroundMaterial.uniforms.map.value = texture;
     }
   }
@@ -322,6 +327,30 @@ export class GameMenu {
       this.childMenu.hide();
   }
 
+  /**
+   * Assign a menu-wide renderOrder layer and refresh all GUI meshes.
+   * Propagates to childMenu (e.g. MenuTop under Character) so they stay in the same band.
+   */
+  setRenderOrderBias(bias: number){
+    if(this.renderOrderBias === bias){
+      if(this.childMenu instanceof GameMenu)
+        this.childMenu.setRenderOrderBias(bias);
+      return;
+    }
+    this.renderOrderBias = bias;
+    this.refreshBackgroundRenderOrders();
+    this.tGuiPanel?.refreshRenderOrder();
+    if(this.childMenu instanceof GameMenu)
+      this.childMenu.setRenderOrderBias(bias);
+  }
+
+  refreshBackgroundRenderOrders(){
+    if(this.backgroundVoidSprite)
+      this.backgroundVoidSprite.renderOrder = this.renderOrderBias - 6;
+    if(this.backgroundSprite)
+      this.backgroundSprite.renderOrder = this.renderOrderBias - 5;
+  }
+
   show(){
     // this.Hide;
     if(!this.isOverlayGUI && GameState.Mode !== EngineMode.MOVIE)
@@ -333,6 +362,9 @@ export class GameMenu {
     //Handle the child menu if it is set
     if(this.childMenu instanceof GameMenu)
       this.childMenu.show();
+
+    // Modal + parent share scene_gui; re-layer so overlay mesh orders sit above the parent.
+    this.manager.syncGuiRenderOrderLayers();
   }
 
   close(){

@@ -8,14 +8,17 @@ export interface AIScriptOption {
   descStrRef: number;
   aiState: number;
   getName: () => string;
+  /** Default PROTOITEM rows call `setText(node)` → `toString()`. */
+  toString: () => string;
 }
 
 /**
  * MenuScriptSelect — retail (`scriptselect`).
  *
- * Character BTN_SCRIPTS → SetCreatureID + AddPanel @ HandleInputEvent 0x29.
+ * Character BTN_SCRIPTS → SetCreatureID + AddPanel(flags=3) @ HandleInputEvent 0x29
+ * (PushModalPanel — character stays drawn underneath).
  * aiscripts.2da: NAME_STRREF / DESCRIPTION_STRREF / AISTATE (ctor).
- * Accept writes creature_stats->ai_state (HandleInputEvent 0x27).
+ * Accept / list AButton writes creature_stats->ai_state then PopModalPanel (0x27 / OnScriptSelected).
  *
  * @file MenuScriptSelect.ts
  */
@@ -36,6 +39,8 @@ export class MenuScriptSelect extends GameMenu {
     this.gui_resref = 'scriptselect';
     this.background = '';
     this.voidFill = false;
+    // Retail AddPanel(flags=3) → PushModalPanel; character remains in the panel list.
+    this.isOverlayGUI = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
@@ -88,6 +93,7 @@ export class MenuScriptSelect extends GameMenu {
         descStrRef,
         aiState,
         getName: () => GameState.TLKManager?.GetStringById?.(nameStrRef)?.Value || '',
+        toString(){ return this.getName(); },
       });
     }
   }

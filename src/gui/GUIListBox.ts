@@ -222,7 +222,7 @@ export class GUIListBox extends GUIControl {
     this.targetMesh = new THREE.Mesh(this.targetGeometry, this.targetMaterial);
     this.targetMaterial.map = this.texture.texture;
     this.targetMesh.position.z = 4;
-    this.targetMesh.renderOrder = 5;
+    this.targetMesh.renderOrder = this.getRenderOrder(5);
     this.layoutRttQuad();
     this.widget.add(this.targetMesh);
 
@@ -320,6 +320,14 @@ export class GUIListBox extends GUIControl {
 
   markListRttDirty(): void {
     this.listRttDirty = true;
+  }
+
+  refreshRenderOrder(){
+    super.refreshRenderOrder();
+    if(this.targetMesh){
+      this.targetMesh.renderOrder = this.getRenderOrder(5);
+    }
+    this.scrollbar?.refreshRenderOrder();
   }
 
   // ---------------------------------------------------------------------------

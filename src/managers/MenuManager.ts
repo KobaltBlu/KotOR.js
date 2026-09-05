@@ -24,6 +24,10 @@ export class MenuManager {
   static pulseOpacity: number;
   static activeMenus: GameMenu[];
   static activeModals: GameMenu[];
+  /** Gap between menu renderOrder layers (control IDs are small). */
+  static readonly GUI_LAYER_STRIDE = 10000;
+  /** Base bias for activeModals so they draw above activeMenus. */
+  static readonly GUI_MODAL_BASE = 100000;
   /** Retail m_fAlphaPulseTimer — seconds left in current half-cycle. */
   static pulse: number;
   /** Retail m_bAlphaPulsingUp. */
@@ -148,6 +152,7 @@ export class MenuManager {
       if(MenuManager.activeModals.indexOf(menu) == -1)
         MenuManager.activeModals.push(menu);
     }
+    MenuManager.syncGuiRenderOrderLayers();
   }
 
   static Remove(menu: GameMenu){
@@ -188,6 +193,25 @@ export class MenuManager {
       const mIdx = MenuManager.activeModals.indexOf(menu);
       if(mIdx >= 0)
         MenuManager.activeModals.splice(mIdx, 1);
+    }
+    MenuManager.syncGuiRenderOrderLayers();
+  }
+
+  /**
+   * Assign renderOrder biases so later activeMenus / activeModals draw above earlier ones.
+   * Overlays (modals) use GUI_MODAL_BASE so they sit above any non-modal menu.
+   * childMenu (e.g. MenuTop) inherits the parent bias via GameMenu.setRenderOrderBias.
+   */
+  static syncGuiRenderOrderLayers(){
+    const stride = MenuManager.GUI_LAYER_STRIDE;
+    const menus = MenuManager.activeMenus;
+    for(let i = 0, len = menus.length; i < len; i++){
+      menus[i].setRenderOrderBias(i * stride);
+    }
+    const modals = MenuManager.activeModals;
+    const modalBase = MenuManager.GUI_MODAL_BASE;
+    for(let i = 0, len = modals.length; i < len; i++){
+      modals[i].setRenderOrderBias(modalBase + i * stride);
     }
   }
 
@@ -651,8 +675,8 @@ export class MenuManager {
           MenuManager.GameMenuLoader(TSL.MenuGalaxyMap),
           MenuManager.GameMenuLoader(TSL.MenuInventory),
           MenuManager.GameMenuLoader(TSL.MenuJournal),
-          MenuManager.GameMenuLoader(KOTOR.MenuQuestItem),
-          MenuManager.GameMenuLoader(KOTOR.MenuScriptSelect),
+          MenuManager.GameMenuLoader(TSL.MenuQuestItem),
+          MenuManager.GameMenuLoader(TSL.MenuScriptSelect),
           MenuManager.GameMenuLoader(TSL.MenuLevelUp),
           MenuManager.GameMenuLoader(TSL.MenuMap),
           MenuManager.GameMenuLoader(TSL.MenuMessages),

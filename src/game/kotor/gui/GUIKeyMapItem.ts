@@ -132,9 +132,10 @@ export class GUIKeyMapItem extends GUIProtoItem {
     if(!this.buttonKey) return;
     if(capturing){
       this.buttonKey.setBorderColor(COLOR_YELLOW.r, COLOR_YELLOW.g, COLOR_YELLOW.b);
-      this.buttonKey.pulsing = true;
+      // Retail SetCaptureEvent — SetPulsingAlpha(1, 1, 1) edges + fill
+      this.buttonKey.setPulsingAlpha(true, true, true);
     }else{
-      this.buttonKey.pulsing = false;
+      this.buttonKey.setPulsingAlpha(false);
       this.applyBindingColors();
     }
   }

@@ -38,17 +38,8 @@ export class InGameComputer extends K1_InGameComputer {
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
-    await super.menuControlInitializer(true);
-    if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
-      this.LB_MESSAGE.setItem(null);
-      this.LB_MESSAGE.setTextColor(this.LB_MESSAGE.defaultColor.r, this.LB_MESSAGE.defaultColor.g, this.LB_MESSAGE.defaultColor.b);
-      this.LB_REPLIES.onClicked = (_entry: any, _control: any, index: number) => {
-        if (index < 0) return;
-        GameState.CutsceneManager.selectReplyAtIndex(index);
-      }
-      resolve();
-    });
+    // Keep K1 wiring (colors, reply click); only layout resref differs.
+    await super.menuControlInitializer(skipInit);
   }
   
 }

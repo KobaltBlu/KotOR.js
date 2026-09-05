@@ -69,6 +69,7 @@ export class MenuCharacter extends K1_MenuCharacter {
   declare LBL_BAR4: GUILabel;
   declare LBL_TITLE: GUILabel;
   declare BTN_EXIT: GUIButton;
+  declare BTN_SCRIPTS: GUIButton;
   declare BTN_AUTO: GUIButton;
   declare BTN_LEVELUP: GUIButton;
   declare LBL_FORCEMASTERY: GUILabel;
@@ -103,6 +104,16 @@ export class MenuCharacter extends K1_MenuCharacter {
         e.stopPropagation();
         GameState.LevelUpManager?.showLevelUpGUI?.(GameState.getCurrentPlayer());
       });
+
+      // Retail HandleInputEvent 0x29 — TSL skips K1 init, so re-wire here.
+      this.BTN_SCRIPTS?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const creature = GameState.PartyManager?.party?.[0];
+        if(!creature) return;
+        GameState.guiAudioEmitter?.playSoundFireAndForget?.('gui_click');
+        this.manager.MenuScriptSelect?.openForCreature?.(creature);
+      });
+      this._button_x = this.BTN_SCRIPTS;
 
       this.BTN_CHANGE1?.addEventListener('click', (e) => {
         e.stopPropagation();

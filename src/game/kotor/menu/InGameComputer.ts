@@ -82,6 +82,8 @@ export class InGameComputer extends GameMenu {
     return new Promise<void>((resolve) => {
       this.LB_MESSAGE.setTextColor(this.LB_MESSAGE.defaultColor.r, this.LB_MESSAGE.defaultColor.g, this.LB_MESSAGE.defaultColor.b);
       this.LB_REPLIES.setTextColor(this.LB_MESSAGE.defaultColor.r, this.LB_MESSAGE.defaultColor.g, this.LB_MESSAGE.defaultColor.b);
+      // Reply list: click-to-confirm (not hover-select).
+      this.LB_REPLIES.setSelectOnLeftClick(true);
       this.LB_REPLIES.onClicked = (_entry: DLGNode, _control: any, index: number) => {
         if (index < 0) return;
         GameState.CutsceneManager.selectReplyAtIndex(index);
@@ -213,47 +215,63 @@ export class InGameComputer extends GameMenu {
       .map((r, i) => (i + 1) + '. ' + r.getCompiledString());
     this.LB_REPLIES.setItems(texts);
     this.LB_REPLIES.show();
-    this.updateSkills();
-  }
-
-  setEntry(entry: DLGNode) {
-    this.currentEntry = entry;
-    this.LB_MESSAGE.setItem(entry.getCompiledString() || null);
-    this.LB_MESSAGE.show();
-    this.updateSkills();
-  }
-
-  setDialogMode(state: ConversationState) {
-    // Retail computer panel keeps message + replies listboxes; toggle replies
-    // visibility for listening vs PC choice (mirrors InGameDialog layout swap).
-    if(state == ConversationState.LISTENING_TO_SPEAKER){
-      this.LB_REPLIES?.hide?.();
-      this.LB_MESSAGE?.show?.();
-      this.updateTextPosition(true);
-    }else{
-      this.LB_REPLIES?.show?.();
-      this.updateTextPosition(false);
-    }
+    // Retail Computer::SetReplies keeps the spoken entry listbox visible under replies.
+    this.LB_MESSAGE?.show?.();
     this.updateSkills();
   }
 
   /**
-   * Layout tweak for listening vs choice — positions message list near bottom
-   * while listening and leaves room for replies when choosing.
+   * Retail Computer::SetDialogMessage — clear LB_MESSAGE, size the row to
+   * GetIdealHeight / font height, AddControls(message label).
    */
-  updateTextPosition(isListening: boolean = false) {
-    if(!this.LB_MESSAGE){ return; }
+  setEntry(entry: DLGNode) {
+    this.currentEntry = entry;
+    const text = entry?.getCompiledString?.() || '';
+    this.LB_MESSAGE.setItem(text || null);
+    this.syncMessageItemHeight(text);
+    this.LB_MESSAGE.show();
+    this.updateSkills();
+  }
+
+  /**
+   * Match retail SetDialogMessage height: empty → font height, else wrapped text height.
+   * Keeps the PROTOITEM row extent in sync so OrganizeControls places it correctly.
+   */
+  private syncMessageItemHeight(text: string) {
+    const row = this.LB_MESSAGE?.children?.[0];
+    if(!row){ return; }
     try{
-      const panel = this.LB_MESSAGE as any;
-      if(panel.extent && typeof panel.calculatePosition === 'function'){
-        // Soft offset: listening keeps message mid-panel; choice nudges up.
-        if(typeof panel.widget?.position?.y === 'number'){
-          panel.widget.position.y = isListening ? 0 : 40;
-        }
+      if(typeof row.getTextSize === 'function'){
+        row.getTextSize();
+      }else if(row.text?.geometry?.boundingBox){
+        row.text.geometry.computeBoundingBox();
+        row.text.geometry.boundingBox.getSize(row.textSize);
       }
+      const fontH = (row as any).guiFont?.height || (row as any).guiFont?.getHeight?.() || 14;
+      const ideal = (text && text.length)
+        ? Math.max(row.extent.height | 0, Math.ceil(row.textSize?.y || 0) | 0)
+        : (fontH | 0);
+      if(ideal > 0 && (row.extent.height | 0) !== ideal){
+        row.extent.height = ideal;
+        row.resizeControl?.();
+      }
+      this.LB_MESSAGE.relayoutAfterRowHeightChange?.();
     }catch(_e){
       // Layout controls may not be fully initialized in tests.
     }
+  }
+
+  setDialogMode(state: ConversationState) {
+    // Retail: replies listbox toggles visibility; LB_MESSAGE stays at GUI layout
+    // (Computer::SetReplies even forces message_label visible when replies show).
+    if(state == ConversationState.LISTENING_TO_SPEAKER){
+      this.LB_REPLIES?.hide?.();
+      this.LB_MESSAGE?.show?.();
+    }else{
+      this.LB_REPLIES?.show?.();
+      this.LB_MESSAGE?.show?.();
+    }
+    this.updateSkills();
   }
 
 }

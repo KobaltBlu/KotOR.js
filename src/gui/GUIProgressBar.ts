@@ -63,7 +63,7 @@ export class GUIProgressBar extends GUIControl {
     this.progressChrome.material.uniforms.fillDiffuse.value = this.progress.color;
     this.progressChrome.mesh.name = 'GUIProgressChrome';
     this.progressChrome.mesh.position.z = this.zOffset + 1;
-    this.progressChrome.mesh.renderOrder = this.id + 1;
+    this.progressChrome.mesh.renderOrder = this.getRenderOrder(this.id + 1);
     this.widget.add(this.progressChrome.mesh);
 
     if(this.control){
@@ -131,6 +131,13 @@ export class GUIProgressBar extends GUIControl {
   buildChrome(){
     super.buildChrome();
     this.buildProgressChrome();
+  }
+
+  refreshRenderOrder(){
+    super.refreshRenderOrder();
+    if(this.progressChrome?.mesh){
+      this.progressChrome.mesh.renderOrder = this.getRenderOrder(this.id + 1);
+    }
   }
 
   buildProgressChrome(){

@@ -21,16 +21,15 @@ export class MenuScriptSelect extends K1_MenuScriptSelect {
   constructor(){
     super();
     this.gui_resref = 'scriptselect_p';
-    this.background = 'blackfill';
-    this.voidFill = true;
+    this.background = '';
+    // Modal over character — no void fill (K1 CSWGuiScriptSelect / AddPanel overlay).
+    this.voidFill = false;
+    this.isOverlayGUI = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
-    await super.menuControlInitializer(true);
-    if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
-      resolve();
-    });
+    // Keep K1 wiring (Back / Accept / list); only the layout resref differs.
+    await super.menuControlInitializer(skipInit);
   }
   
 }

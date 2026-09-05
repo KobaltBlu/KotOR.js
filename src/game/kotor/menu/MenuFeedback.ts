@@ -77,9 +77,15 @@ export class MenuFeedback extends GameMenu {
 
   /**
    * Retail PopulateOptionsListbox — nine GUI rows.
+   * AddControls(..., suppressCleanUp=1, restoreExtents=1, varyItemHeights=0).
    */
   populateOptionsListbox(){
     this.optionChecks = [];
+    this.LB_OPTIONS.bitFlags.suppressControlCleanup = true;
+    this.LB_OPTIONS.bitFlags.restoreSavedExtents = true;
+    this.LB_OPTIONS.setVariableItemHeight(false);
+    this.LB_OPTIONS.setLooping(false);
+
     this.LB_OPTIONS.mutate((tx) => {
       tx.clear();
       for(const entry of FEEDBACK_OPTIONS){
