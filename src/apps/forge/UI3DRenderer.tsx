@@ -1641,7 +1641,7 @@ export class UI3DRenderer extends EventListenerModel {
         this.viewportFrustum.setFromProjectionMatrix(this.frustumMat4);
         this.lightManager.update(delta, this.currentCamera);
         const focus = this.lightManager.focusPosition;
-        this.odysseyShadowManager.update(this.currentCamera, focus);
+        this.odysseyShadowManager.update(this.currentCamera, focus, delta);
         if(KotOR.GameState.areShadowsEnabled?.() && this.odysseyShadowManager.activeLightCount){
           this.odysseyShadowManager.markShadowMapForRender(this.renderer!);
         }

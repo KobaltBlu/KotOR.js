@@ -95,4 +95,52 @@ describe('LightManager shadow selection (GetShadowLights modes 0/1)', () => {
     expect(selected.length).toBe(1);
     expect(selected[0]).toBe(lamp);
   });
+
+  test('mode 0 hysteresis keeps prior resident over newly higher-ranked bound light', () => {
+    const lm = new LightManager();
+    LightManager.MAXSHADOWLIGHTS = 1;
+    const sticky = mockLight({
+      uuid: 'sticky',
+      illuminationScore: 0.6,
+      shadowFadeFactor: 1,
+      registrationOrder: 0,
+    });
+    const challenger = mockLight({
+      uuid: 'challenger',
+      illuminationScore: 0.1,
+      shadowFadeFactor: 0,
+      registrationOrder: 1,
+    });
+    // Challenger is first in bound order (would win raw retail walk).
+    lm.boundLights = [challenger as never, sticky as never];
+    lm.shadowLights = [sticky as never];
+
+    const selected = lm.getShadowLights(RetailShadowLightMode.Multi, 0);
+    expect(selected.some((l) => l.uuid === 'sticky')).toBe(true);
+    expect(selected[selected.length - 1].uuid).toBe('sticky');
+  });
+
+  test('mode 0 allows transient MAX+1 residency during crossfade', () => {
+    const lm = new LightManager();
+    LightManager.MAXSHADOWLIGHTS = 1;
+    const outgoing = mockLight({
+      uuid: 'out',
+      illuminationScore: 1.5, // no longer qualifies for desired
+      shadowFadeFactor: 1,
+    });
+    const incoming = mockLight({
+      uuid: 'in',
+      illuminationScore: 0.2,
+      shadowFadeFactor: 0,
+    });
+    lm.boundLights = [incoming as never];
+    lm.shadowLights = [outgoing as never];
+
+    const selected = lm.getShadowLights(RetailShadowLightMode.Multi, 0.05);
+    expect(selected.length).toBe(2);
+    expect(selected.some((l) => l.uuid === 'out')).toBe(true);
+    expect(selected.some((l) => l.uuid === 'in')).toBe(true);
+    expect(outgoing.shadowFadeFactor).toBeLessThan(1);
+    expect(incoming.shadowFadeFactor).toBeGreaterThan(0);
+  });
 });

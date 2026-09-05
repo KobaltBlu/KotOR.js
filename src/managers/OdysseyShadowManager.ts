@@ -7,9 +7,11 @@ import { GameState } from '@/GameState';
 import {
   isRetailShadowColorVisible,
   retailShadowEffectiveRadius,
+  retailShadowFadeStep,
   retailShadowLightPosition,
   retailShadowProjectionStrength,
   retailSoftShadowLightElevationOk,
+  RETAIL_MAX_SHADOW_DISTANCE,
 } from '@/utility/retailLighting';
 import {
   aimShadowProxyAtFocus,
@@ -60,6 +62,13 @@ const DEFAULT_MAP_RES_SOFT = 2048;
 const DEFAULT_MAP_RES_HARD = 512;
 const SHADOW_MAP_NORMAL_BIAS = 0.005;
 
+/** Soft sticky: challenger must lead by this overhead score for hold duration. */
+export const SOFT_SHADOW_STICKY_SCORE_MARGIN = 0.08;
+/** Soft sticky: larger lead switches immediately without hold. */
+export const SOFT_SHADOW_STICKY_INSTANT_MARGIN = 0.25;
+/** Soft sticky: seconds a challenger must lead before swap. */
+export const SOFT_SHADOW_STICKY_HOLD_SEC = 0.3;
+
 interface IShadowProxySlot {
   spot: THREE.SpotLight;
   directional: THREE.DirectionalLight;
@@ -70,8 +79,9 @@ interface IShadowProxySlot {
 /**
  * Retail-aligned shadow maps.
  *
- * Soft Shadows ON → one proxy (RenderShadows / soft stencil disk path).
- * Soft Shadows OFF → up to `maxShadowLights` (DoGobShadows multi-light).
+ * Soft Shadows ON → steady 1 map (RenderShadows), up to 2 while crossfading.
+ * Soft Shadows OFF → steady NumShadowCastingLights, +1 transient for fade.
+ * Slots are owned by light UUID so map identity does not teleport on re-rank.
  */
 export class OdysseyShadowManager {
   private lightManager: LightManager | undefined;
@@ -116,6 +126,19 @@ export class OdysseyShadowManager {
   private _scratchSelected: OdysseyLight3D[] = [];
   private _scratchSoftCandidates: OdysseyLight3D[] = [];
   private _scratchToFocus = new THREE.Vector3();
+  private _scratchSoftNext: OdysseyLight3D[] = [];
+
+  /** Soft sticky winner UUID (desired set size 1). */
+  private _softStickyUuid: string | null = null;
+  private _softChallengerUuid: string | null = null;
+  private _softChallengerHold = 0;
+  /** Soft residency including fade-out (up to 2). */
+  private _softResidents: OdysseyLight3D[] = [];
+
+  /** Combined projection opacity (tests / diagnostics). */
+  static shadowStrengthForLight(shadowAlpha: number, shadowFadeFactor: number): number {
+    return retailShadowProjectionStrength(shadowAlpha, shadowFadeFactor);
+  }
 
   init(lightManager: LightManager, scene?: THREE.Scene | THREE.Object3D){
     this.lightManager = lightManager;
@@ -126,17 +149,25 @@ export class OdysseyShadowManager {
   }
 
   /**
-   * Concurrent maps: Soft Shadows uses one disk/light (retail RenderShadows);
-   * hard mode uses videoquality NumShadowCastingLights / DoGobShadows.
+   * Steady-state concurrent maps (retail Soft=1 / hard=NumShadowCastingLights).
    */
-  get maxShadowMaps(): number {
+  get steadyMaxShadowMaps(): number {
     if(this.softShadowMaps){
       return 1;
     }
     const fromQuality = this.lightManager
       ? LightManagerClass.MAXSHADOWLIGHTS
-      : MAX_ODYSSEY_SHADOW_MAPS;
-    return Math.max(1, Math.min(MAX_ODYSSEY_SHADOW_MAPS, fromQuality | 0));
+      : 3;
+    // Leave at least one of MAX_ODYSSEY_SHADOW_MAPS for transient crossfade.
+    return Math.max(1, Math.min(MAX_ODYSSEY_SHADOW_MAPS - 1, fromQuality | 0));
+  }
+
+  /**
+   * Pool / residency capacity including one transient crossfade slot.
+   * Soft: 2. Hard: steady+1 (capped at MAX_ODYSSEY_SHADOW_MAPS).
+   */
+  get maxShadowMaps(): number {
+    return Math.min(MAX_ODYSSEY_SHADOW_MAPS, this.steadyMaxShadowMaps + 1);
   }
 
   /** Sync map resolution / soft flag from LightManager INI Soft Shadows. */
@@ -153,6 +184,9 @@ export class OdysseyShadowManager {
 
   setMapResolution(resolution: number, soft = true){
     this.mapResolution = Math.max(256, resolution | 0);
+    if(this.softShadowMaps !== soft){
+      this.resetSoftStickyState();
+    }
     this.softShadowMaps = soft;
     this.configureProxyMapSize(this.mapResolution);
     this._needsShadowMapRender = true;
@@ -165,6 +199,13 @@ export class OdysseyShadowManager {
       this.frameEpoch++;
     }
     this.setMapResolution(nextRes, soft);
+  }
+
+  private resetSoftStickyState(){
+    this._softStickyUuid = null;
+    this._softChallengerUuid = null;
+    this._softChallengerHold = 0;
+    this._softResidents.length = 0;
   }
 
   private ensureSlots(count: number){
@@ -293,17 +334,16 @@ export class OdysseyShadowManager {
   }
 
   /**
-   * Soft Shadows: one elevated lightcmp-best bound light (RenderShadows).
-   * Hard: GetShadowLights(mode=0) fading set, capped at maxShadowLights.
-   * Falls back to mode-1/2 when mode-0 is empty (hard only).
+   * Soft Shadows: sticky elevated light + fade residency (up to 2).
+   * Hard: GetShadowLights(mode=0) fading set (steady+1), then mode-1/2 fallback.
    */
-  private selectShadowLights(): OdysseyLight3D[] {
+  private selectShadowLights(delta = 0): OdysseyLight3D[] {
     const out = this._scratchSelected;
     out.length = 0;
     if(!this.lightManager){ return out; }
 
     if(this.softShadowMaps){
-      return this.selectSoftShadowLight(out);
+      return this.selectSoftShadowLight(out, delta);
     }
 
     const max = this.maxShadowMaps;
@@ -324,7 +364,6 @@ export class OdysseyShadowManager {
       push(mode0[i]);
     }
 
-    // Mode 1 / 2 fallbacks when mode 0 produced nothing (or fill remaining slots).
     if(!out.length){
       push(this.lightManager.staticMeshShadowLights[0]);
     }
@@ -335,16 +374,41 @@ export class OdysseyShadowManager {
     return out;
   }
 
+  private softElevAngleSq(light: OdysseyLight3D): number {
+    const toFocus = this._scratchToFocus;
+    const focus = this._focus;
+    toFocus.set(
+      focus.x - light.worldPosition.x,
+      focus.y - light.worldPosition.y,
+      focus.z - light.worldPosition.z
+    );
+    const lenSq = toFocus.lengthSq();
+    if(!(lenSq > 1e-8)){ return 0; }
+    const dz = toFocus.z;
+    return 1 - (dz * dz) / lenSq;
+  }
+
+  private softCandidateOk(light: OdysseyLight3D, focusZ: number): boolean {
+    if(light.isAmbient){ return false; }
+    if(!isRetailShadowColorVisible(light.color.r, light.color.g, light.color.b)){
+      return false;
+    }
+    if(light.illuminationScore > 1){ return false; }
+    return retailSoftShadowLightElevationOk(light.worldPosition.z, focusZ);
+  }
+
   /**
-   * Retail RenderShadows Soft Shadows path: elevation gate, then the most
-   * overhead elevated bound light (soft disk is horizontal at focus Z).
-   * lightcmp alone prefers lower MDL priority and would keep wall sconces
-   * (e.g. auroralight40) over ceiling lamps (auroralight47). Empty when none qualify.
+   * Retail RenderShadows Soft Shadows path with sticky winner + fade crossfade.
+   * Elevation gate, then most-overhead elevated bound light; stick until a
+   * challenger leads by margin for hold time (or large instant margin).
    */
-  private selectSoftShadowLight(out: OdysseyLight3D[]): OdysseyLight3D[] {
+  private selectSoftShadowLight(out: OdysseyLight3D[], delta = 0): OdysseyLight3D[] {
     const lm = this.lightManager;
     if(!lm){ return out; }
-    if(!(GameState.shadowAlpha > 0)){ return out; }
+    if(!(GameState.shadowAlpha > 0)){
+      this.resetSoftStickyState();
+      return out;
+    }
 
     const focusZ = this._focus.z;
     const candidates = this._scratchSoftCandidates;
@@ -353,53 +417,121 @@ export class OdysseyShadowManager {
     const bound = lm.boundLights;
     for(let i = 0; i < bound.length; i++){
       const light = bound[i];
-      if(light.isAmbient){ continue; }
-      if(!isRetailShadowColorVisible(light.color.r, light.color.g, light.color.b)){
-        continue;
+      if(this.softCandidateOk(light, focusZ)){
+        candidates.push(light);
       }
-      if(light.illuminationScore > 1){ continue; }
-      if(!retailSoftShadowLightElevationOk(light.worldPosition.z, focusZ)){
-        continue;
-      }
-      candidates.push(light);
     }
 
-    if(!candidates.length){ return out; }
-
-    const toFocus = this._scratchToFocus;
-    const focus = this._focus;
-    const elevAngleSq = (light: OdysseyLight3D) => {
-      // Smaller = more overhead. Use 1 - cos^2 toward -Z without acos.
-      toFocus.set(
-        focus.x - light.worldPosition.x,
-        focus.y - light.worldPosition.y,
-        focus.z - light.worldPosition.z
-      );
-      const lenSq = toFocus.lengthSq();
-      if(!(lenSq > 1e-8)){ return 0; }
-      const dz = toFocus.z;
-      // horiz^2 / len^2 = 1 - (dz/len)^2 — lower when more vertical.
-      return 1 - (dz * dz) / lenSq;
-    };
-
     candidates.sort((a, b) => {
-      const ea = elevAngleSq(a);
-      const eb = elevAngleSq(b);
+      const ea = this.softElevAngleSq(a);
+      const eb = this.softElevAngleSq(b);
       if(ea !== eb){ return ea - eb; }
       return lm.sortLights(a, b);
     });
 
     const best = candidates[0];
-    // Soft path does not wait on GetShadowLights fade history.
-    if(!(best.shadowFadeFactor > 0)){
-      best.shadowFadeFactor = 1;
+    let sticky = this._softStickyUuid
+      ? candidates.find((l) => l.uuid === this._softStickyUuid)
+      : undefined;
+
+    if(!sticky){
+      // Sticky lost eligibility — adopt best immediately (or clear).
+      this._softStickyUuid = best?.uuid ?? null;
+      this._softChallengerUuid = null;
+      this._softChallengerHold = 0;
+      sticky = best;
+    }else if(best && best.uuid !== sticky.uuid){
+      const stickyScore = this.softElevAngleSq(sticky);
+      const bestScore = this.softElevAngleSq(best);
+      const lead = stickyScore - bestScore; // positive when best is more overhead
+      if(lead >= SOFT_SHADOW_STICKY_INSTANT_MARGIN){
+        this._softStickyUuid = best.uuid;
+        this._softChallengerUuid = null;
+        this._softChallengerHold = 0;
+        sticky = best;
+      }else if(lead >= SOFT_SHADOW_STICKY_SCORE_MARGIN){
+        if(this._softChallengerUuid === best.uuid){
+          this._softChallengerHold += Math.max(0, delta);
+        }else{
+          this._softChallengerUuid = best.uuid;
+          this._softChallengerHold = Math.max(0, delta);
+        }
+        if(this._softChallengerHold >= SOFT_SHADOW_STICKY_HOLD_SEC){
+          this._softStickyUuid = best.uuid;
+          this._softChallengerUuid = null;
+          this._softChallengerHold = 0;
+          sticky = best;
+        }
+      }else{
+        this._softChallengerUuid = null;
+        this._softChallengerHold = 0;
+      }
+    }else{
+      this._softChallengerUuid = null;
+      this._softChallengerHold = 0;
     }
-    const strength = retailShadowProjectionStrength(
-      GameState.shadowAlpha,
-      best.shadowFadeFactor || 0
-    );
-    if(strength > 0){
-      out.push(best);
+
+    const desired: OdysseyLight3D[] = sticky ? [sticky] : [];
+    const desiredSet = new Set<string>();
+    for(let i = 0; i < desired.length; i++){
+      desiredSet.add(desired[i].uuid);
+    }
+
+    // Cold start: first soft caster appears immediately (no prior residency).
+    // Ongoing swaps still use retailShadowFadeStep crossfade.
+    if(
+      sticky &&
+      !this._softResidents.length &&
+      !(sticky.shadowFadeFactor > 0)
+    ){
+      sticky.shadowFadeFactor = 1;
+    }
+
+    const next = this._scratchSoftNext;
+    next.length = 0;
+    for(let i = 0; i < this._softResidents.length; i++){
+      const light = this._softResidents[i];
+      if(desiredSet.has(light.uuid)){ continue; }
+      light.shadowFadeFactor = retailShadowFadeStep(light.shadowFadeFactor || 0, 0, delta);
+      if(light.shadowFadeFactor > 0){ next.push(light); }
+    }
+    for(let i = 0; i < desired.length; i++){
+      const light = desired[i];
+      light.shadowFadeFactor = retailShadowFadeStep(light.shadowFadeFactor || 0, 1, delta);
+      next.push(light);
+    }
+
+    const transitionCap = this.maxShadowMaps; // soft: 2
+    if(next.length > transitionCap){
+      const fadingCount = next.length - desired.length;
+      const keepFading = Math.max(0, transitionCap - desired.length);
+      if(fadingCount > keepFading){
+        const trimmed: OdysseyLight3D[] = [];
+        for(let i = 0; i < keepFading; i++){
+          trimmed.push(next[i]);
+        }
+        for(let i = fadingCount; i < next.length; i++){
+          trimmed.push(next[i]);
+        }
+        next.length = 0;
+        for(let i = 0; i < trimmed.length; i++){
+          next.push(trimmed[i]);
+        }
+      }else{
+        next.length = transitionCap;
+      }
+    }
+
+    this._softResidents = next.slice();
+    for(let i = 0; i < next.length; i++){
+      const light = next[i];
+      const strength = retailShadowProjectionStrength(
+        GameState.shadowAlpha,
+        light.shadowFadeFactor || 0
+      );
+      if(strength > 0){
+        out.push(light);
+      }
     }
     return out;
   }
@@ -425,7 +557,72 @@ export class OdysseyShadowManager {
     return h | 0;
   }
 
-  update(_camera?: THREE.Camera, focus?: THREE.Vector3){
+  /**
+   * Assign / refresh proxy slots by light UUID. Never rebinds an occupied slot
+   * to a different UUID; packs active slots contiguous for the shader.
+   */
+  private syncSlotsByUuid(lights: OdysseyLight3D[]){
+    const max = this.maxShadowMaps;
+    this.ensureSlots(max);
+
+    const desiredByUuid = new Map<string, OdysseyLight3D>();
+    for(let i = 0; i < lights.length; i++){
+      desiredByUuid.set(lights[i].uuid, lights[i]);
+    }
+
+    const stillOwned = new Set<string>();
+    for(let i = 0; i < this.slots.length; i++){
+      const slot = this.slots[i];
+      const uuid = slot.state.uuid;
+      if(!uuid){ continue; }
+      const light = desiredByUuid.get(uuid);
+      if(light){
+        this.syncSlot(i, light);
+        stillOwned.add(uuid);
+      }else{
+        this.clearSlot(i);
+      }
+    }
+
+    for(let i = 0; i < lights.length; i++){
+      const light = lights[i];
+      if(stillOwned.has(light.uuid)){ continue; }
+      let free = -1;
+      for(let s = 0; s < this.slots.length && s < max; s++){
+        if(!this.slots[s].state.uuid){
+          free = s;
+          break;
+        }
+      }
+      if(free < 0){ break; }
+      this.syncSlot(free, light);
+      stillOwned.add(light.uuid);
+    }
+
+    // Pack active slots to the front so shader lightCount thresholds work.
+    const active: IShadowProxySlot[] = [];
+    const inactive: IShadowProxySlot[] = [];
+    for(let i = 0; i < this.slots.length; i++){
+      if(this.slots[i].state.active){
+        active.push(this.slots[i]);
+      }else{
+        inactive.push(this.slots[i]);
+      }
+    }
+    // Preserve desired light order among actives for stable primary diagnostics.
+    active.sort((a, b) => {
+      const ai = lights.findIndex((l) => l.uuid === a.state.uuid);
+      const bi = lights.findIndex((l) => l.uuid === b.state.uuid);
+      return (ai < 0 ? 999 : ai) - (bi < 0 ? 999 : bi);
+    });
+    this.slots.length = 0;
+    for(let i = 0; i < active.length; i++){ this.slots.push(active[i]); }
+    for(let i = 0; i < inactive.length; i++){ this.slots.push(inactive[i]); }
+
+    this.activeLightCount = active.length;
+  }
+
+  update(_camera?: THREE.Camera, focus?: THREE.Vector3, delta = 0){
     this.activeLightCount = 0;
     this.activeLight = undefined;
     this.activeLightUuid = null;
@@ -453,7 +650,6 @@ export class OdysseyShadowManager {
       this._focus.copy(this.lightManager.focusPosition);
     }
 
-    // Soft Shadows may flip between 1 and multi-light mid-session.
     if(this.lightManager){
       const soft = !!this.lightManager.softShadowsEnabled;
       if(soft !== this.softShadowMaps){
@@ -461,7 +657,7 @@ export class OdysseyShadowManager {
       }
     }
 
-    const lights = this.selectShadowLights();
+    const lights = this.selectShadowLights(delta);
     if(!lights.length){
       this.deactivateProxies('no-primary-light');
       return;
@@ -478,16 +674,8 @@ export class OdysseyShadowManager {
       this.lastUpdateReason = 'unchanged';
     }
 
-    const max = this.maxShadowMaps;
-    for(let i = 0; i < this.slots.length; i++){
-      if(i >= max || i >= lights.length){
-        this.clearSlot(i);
-        continue;
-      }
-      this.syncSlot(i, lights[i]);
-    }
+    this.syncSlotsByUuid(lights);
 
-    this.activeLightCount = Math.min(lights.length, max);
     this.activeLight = lights[0];
     this.activeLightUuid = lights[0].uuid;
     this.activeLightType = this.slots[0]?.state.type ?? null;
@@ -516,6 +704,7 @@ export class OdysseyShadowManager {
     this.influenceRadius = 0;
     this._needsShadowMapRender = false;
     this.lastUpdateReason = reason;
+    this.resetSoftStickyState();
     this.refreshDiagnostics();
   }
 
@@ -553,11 +742,16 @@ export class OdysseyShadowManager {
 
     if(type === 'spot'){
       configureSpotShadowProxyForFloorContact(this._proxyPos, this._focus, influenceR, slot.spot);
-      const coverage = Math.min(influenceR, ODYSSEY_SHADOW_MIN_HALF_EXTENT * 1.5);
+      // Cover the light's influence around focus, clamped to retail focus-shadow
+      // distance — not MIN_HALF*1.5 (~7.5), which made map-edge fade track camera zoom.
+      const coverage = Math.min(
+        Math.max(influenceR, ODYSSEY_SHADOW_MIN_HALF_EXTENT),
+        RETAIL_MAX_SHADOW_DISTANCE
+      );
       const spotParams = buildAngledSpotShadowCameraParams(
         slot.spot.position,
         this._focus,
-        Math.max(coverage, ODYSSEY_SHADOW_MIN_HALF_EXTENT)
+        coverage
       );
       const halfAngleRad = THREE.MathUtils.degToRad(Math.min(spotParams.fovDeg * 0.5, 89));
       slot.spot.angle = halfAngleRad;
@@ -567,7 +761,6 @@ export class OdysseyShadowManager {
       slot.spot.shadow.camera.near = spotParams.near;
       slot.spot.shadow.camera.far = spotParams.far;
       slot.spot.shadow.camera.updateProjectionMatrix();
-      slot.state.lightWorld.copy(slot.spot.position);
     }else{
       const ortho = buildOrthoShadowCameraParams(influenceR, this._proxyPos, this._focus);
       const cam = slot.directional.shadow.camera as THREE.OrthographicCamera;
@@ -585,8 +778,11 @@ export class OdysseyShadowManager {
       );
       aimShadowProxyAtFocus(this._proxyPos, this._focus, slot.directional);
       cam.updateProjectionMatrix();
-      slot.state.lightWorld.copy(slot.directional.position);
     }
+
+    // Radial fade must use the authored light, not the focus-proximate map proxy —
+    // otherwise XY distance tracks the player/camera focus and feels like zoom fade.
+    slot.state.lightWorld.set(lp.x, lp.y, lp.z);
 
     slot.state.light = light;
     slot.state.uuid = light.uuid;
@@ -713,5 +909,6 @@ export class OdysseyShadowManager {
     this.slots.length = 0;
     this.lightManager = undefined;
     this.scene = undefined;
+    this.resetSoftStickyState();
   }
 }

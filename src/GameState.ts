@@ -2007,7 +2007,8 @@ export class GameState implements EngineContext {
     if(!GameState.areShadowsEnabled()){ return; }
     GameState.odysseyShadowManager?.update(
       GameState.currentCamera ?? undefined,
-      focus ?? GameState.lightManager?.focusPosition
+      focus ?? GameState.lightManager?.focusPosition,
+      _delta
     );
   }
 
@@ -2231,7 +2232,7 @@ export class GameState implements EngineContext {
       if(GameState.lightManager && shadowTarget){
         GameState.lightManager.update(0, shadowTarget);
       }
-      GameState.odysseyShadowManager?.update(GameState.currentCamera, focus);
+      GameState.odysseyShadowManager?.update(GameState.currentCamera, focus, delta);
       GameState.odysseyShadowManager?.markShadowMapForRender(GameState.renderer);
       OdysseyLightingBinder.refreshSceneShadowMapUniforms(GameState.scene);
     }

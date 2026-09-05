@@ -3,8 +3,12 @@ import * as THREE from "three";
 import { RETAIL_SHADOW_MIN_VERTEX_COLOR } from "@/utility/retailLighting";
 import { ODYSSEY_SHADOW_MAP_DEPTH_BIAS } from "@/utility/odysseyShadowMap";
 
-/** Matches retail `maxShadowLights` / videoquality NumShadowCastingLights default. */
-export const MAX_ODYSSEY_SHADOW_MAPS = 3;
+/**
+ * Shader / binder map capacity. Steady-state still targets retail
+ * NumShadowCastingLights (3) or Soft Shadows (1); the 4th slot is for
+ * transient crossfade residency (MAX+1) so caster swaps can blend.
+ */
+export const MAX_ODYSSEY_SHADOW_MAPS = 4;
 
 /**
  * Soft-shadow PCF half-width (5×5). Hard mode still compiles this loop but only
@@ -50,7 +54,7 @@ export const ODYSSEY_SHADOW_SOFT_DEPTH_WIDTH = 0.008;
 
 /**
  * Unrolled per-slot body — WebGL1/GLSL ES 1.00 cannot pass sampler2D into functions.
- * SLOT = 0|1|2, MAP = odysseyShadowMap0|1|2
+ * SLOT = 0|1|2|3, MAP = odysseyShadowMap0|1|2|3
  *
  * Soft and hard both floor toward RETAIL_SHADOW_MIN_VERTEX_COLOR (ProjectDynamicShadow).
  * Soft widens PCF / depth compare to approximate retail Soft Shadows blur; hard
@@ -193,6 +197,7 @@ uniform float odysseyBeamingProjectionAlpha;
 uniform sampler2D odysseyShadowMap0;
 uniform sampler2D odysseyShadowMap1;
 uniform sampler2D odysseyShadowMap2;
+uniform sampler2D odysseyShadowMap3;
 uniform mat4 odysseyShadowMatrix[ MAX_ODYSSEY_SHADOW_MAPS ];
 uniform vec2 odysseyShadowMapSize;
 uniform float odysseyShadowStrength[ MAX_ODYSSEY_SHADOW_MAPS ];
@@ -215,6 +220,9 @@ float odysseyShadowMapsAt( const in vec3 samplePos, const in vec3 worldNormal ) 
   }
   if ( odysseyShadowLightCount > 2.0 ) {
     ${ODYSSEY_SHADOW_SLOT_BODY(2, 'odysseyShadowMap2')}
+  }
+  if ( odysseyShadowLightCount > 3.0 ) {
+    ${ODYSSEY_SHADOW_SLOT_BODY(3, 'odysseyShadowMap3')}
   }
   return slotFactor;
 }
@@ -260,6 +268,7 @@ export function createOdysseyShadowUniforms(){
     odysseyShadowMap0: { value: null as THREE.Texture | null },
     odysseyShadowMap1: { value: null as THREE.Texture | null },
     odysseyShadowMap2: { value: null as THREE.Texture | null },
+    odysseyShadowMap3: { value: null as THREE.Texture | null },
     /** @deprecated Alias of map0 for older binder paths. */
     odysseyShadowMap: { value: null as THREE.Texture | null },
     odysseyShadowMatrix: { value: matrices },

@@ -20,11 +20,12 @@ describe('OdysseyShadow primary map shader chunk', () => {
     expect(ODYSSEY_SHADOW_PARS_FRAGMENT).not.toContain('odysseyComputeScreenSpaceShadow');
   });
 
-  test('supports retail maxShadowLights concurrent maps', () => {
-    expect(MAX_ODYSSEY_SHADOW_MAPS).toBe(3);
+  test('supports retail maxShadowLights concurrent maps plus transient crossfade slot', () => {
+    expect(MAX_ODYSSEY_SHADOW_MAPS).toBe(4);
     expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('MAX_ODYSSEY_SHADOW_MAPS');
     expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('odysseyShadowMap1');
     expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('odysseyShadowMap2');
+    expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('odysseyShadowMap3');
     expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('odysseyShadowLightCount');
     expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('slotFactor *=');
   });
@@ -36,15 +37,11 @@ describe('OdysseyShadow primary map shader chunk', () => {
     expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('mix( 1.0, lit0, fade0 )');
   });
 
-  test('lifts floor-receiver samples to close walkmesh vs MDL floor gaps', () => {
-    expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('ODYSSEY_SHADOW_CONTACT_LIFT');
+  test('scales floor-receiver bias under lightmaps to close walkmesh vs MDL gaps', () => {
     expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('ODYSSEY_SHADOW_CONTACT_NORMAL_Z');
     expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('ODYSSEY_SHADOW_FLOOR_BIAS_SCALE');
-    expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('worldPos + vec3( 0.0, 0.0, ODYSSEY_SHADOW_CONTACT_LIFT )');
-    expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('h.x * pull');
-    // Contact probes and floor bias must not run on creature skins.
+    // Floor bias must not run on creature skins (lightmapped receivers only).
     expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toMatch(/#ifdef USE_LIGHTMAP[\s\S]*ODYSSEY_SHADOW_FLOOR_BIAS_SCALE/);
-    expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toMatch(/#ifdef USE_LIGHTMAP[\s\S]*ODYSSEY_SHADOW_CONTACT_LIFT/);
   });
 
   test('PCF radius constant is positive', () => {
@@ -56,6 +53,7 @@ describe('OdysseyShadow primary map shader chunk', () => {
     expect(uniforms.odysseyShadowMap0).toBeDefined();
     expect(uniforms.odysseyShadowMap1).toBeDefined();
     expect(uniforms.odysseyShadowMap2).toBeDefined();
+    expect(uniforms.odysseyShadowMap3).toBeDefined();
     expect(uniforms.odysseyShadowMatrix).toBeDefined();
     expect(uniforms.odysseyShadowMapActive).toBeDefined();
     expect(uniforms.odysseyShadowLightCount).toBeDefined();

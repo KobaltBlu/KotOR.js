@@ -456,6 +456,7 @@ export class OdysseyLightingBinder {
       'odysseyShadowMap0',
       'odysseyShadowMap1',
       'odysseyShadowMap2',
+      'odysseyShadowMap3',
     ] as const;
 
     for(let i = 0; i < MAX_ODYSSEY_SHADOW_MAPS; i++){

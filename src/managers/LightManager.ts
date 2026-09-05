@@ -828,8 +828,10 @@ export class LightManager {
 
   /**
    * GetShadowLights for the requested mode.
-   * Mode 0/1 walk boundLights in order (retail field8_0x50) with illum/dynamic
-   * filters and retain fading histories; mode 2 picks one distant/static light.
+   * Mode 0/1 walk boundLights with illum/dynamic filters, sticky hysteresis for
+   * residents that still qualify, and fade retention up to steadyCap+1 so an
+   * outgoing caster can crossfade with an incoming one under shadow maps.
+   * Mode 2 picks one distant/static light.
    */
   getShadowLights(mode: RetailShadowLightMode, delta = 0): OdysseyLight3D[] {
     if(mode === RetailShadowLightMode.DistantStatic){
@@ -838,32 +840,55 @@ export class LightManager {
     }
 
     const dynamicOnly = mode === RetailShadowLightMode.SingleDynamic;
-    const desired = this._shadowDesiredScratch;
-    desired.length = 0;
-    // Retail GetShadowLights modes 0/1 iterate the bound render list in order —
-    // no re-sort and no PartLight.shadow (MDL) check.
-    for(let i = 0, il = this.boundLights.length; i < il; i++){
-      const light = this.boundLights[i];
-      if(light.illuminationScore > 1){ continue; }
-      if(dynamicOnly && (light.dynamicType | 0) === 0){ continue; }
-      // ARE SunShadows/MoonShadows does not suppress module-authored MDL key lights
-      // (e.g. m02ac auroralight01 r=800). Illumination scoring already prefers those
-      // over nearby lamps; gating them forced streaky local-lamp maps outdoors.
-      desired.push(light);
-      if(dynamicOnly || desired.length >= LightManager.MAXSHADOWLIGHTS){ break; }
-    }
-
+    const steadyCap = dynamicOnly ? 1 : LightManager.MAXSHADOWLIGHTS;
+    // Transient residency: one extra slot while fade-out × fade-in overlap.
+    const residencyCap = steadyCap + 1;
     const previous = mode === RetailShadowLightMode.SingleDynamic
       ? this.staticMeshShadowLights
       : this.shadowLights;
+
+    const desired = this._shadowDesiredScratch;
+    desired.length = 0;
     const desiredSet = this._shadowDesiredSetScratch;
     desiredSet.clear();
-    for(let i = 0; i < desired.length; i++){
-      desiredSet.add(desired[i].uuid);
+
+    const stillQualifies = (light: OdysseyLight3D) => {
+      if(light.illuminationScore > 1){ return false; }
+      if(dynamicOnly && (light.dynamicType | 0) === 0){ return false; }
+      return true;
+    };
+
+    // Sticky hysteresis: keep previous residents that still qualify before
+    // admitting newly higher-ranked bound lights (reduces top-N thrash).
+    for(let i = 0; i < previous.length; i++){
+      const light = previous[i];
+      if(desired.length >= steadyCap){ break; }
+      if(!stillQualifies(light)){ continue; }
+      if(desiredSet.has(light.uuid)){ continue; }
+      // Only sticky if still present in the bound render list.
+      let inBound = false;
+      for(let b = 0, bl = this.boundLights.length; b < bl; b++){
+        if(this.boundLights[b] === light){ inBound = true; break; }
+      }
+      if(!inBound){ continue; }
+      desired.push(light);
+      desiredSet.add(light.uuid);
     }
+
+    // Retail walk fills remaining desired slots from bound order.
+    for(let i = 0, il = this.boundLights.length; i < il; i++){
+      if(desired.length >= steadyCap){ break; }
+      const light = this.boundLights[i];
+      if(!stillQualifies(light)){ continue; }
+      if(desiredSet.has(light.uuid)){ continue; }
+      desired.push(light);
+      desiredSet.add(light.uuid);
+    }
+
     const next = this._shadowNextScratch;
     next.length = 0;
 
+    // Fading-out residents first (retail prepends), then desired.
     for(let i = 0; i < previous.length; i++){
       const light = previous[i];
       if(desiredSet.has(light.uuid)){ continue; }
@@ -875,8 +900,28 @@ export class LightManager {
       light.shadowFadeFactor = retailShadowFadeStep(light.shadowFadeFactor || 0, 1, delta);
       next.push(light);
     }
-    const cap = dynamicOnly ? 1 : LightManager.MAXSHADOWLIGHTS;
-    if(next.length > cap){ next.length = cap; }
+
+    // Cap at residencyCap, preferring desired over fading-out when trimming.
+    if(next.length > residencyCap){
+      const fadingCount = next.length - desired.length;
+      const keepFading = Math.max(0, residencyCap - desired.length);
+      if(fadingCount > keepFading){
+        const trimmed: OdysseyLight3D[] = [];
+        for(let i = 0; i < keepFading; i++){
+          trimmed.push(next[i]);
+        }
+        for(let i = fadingCount; i < next.length; i++){
+          trimmed.push(next[i]);
+        }
+        next.length = 0;
+        for(let i = 0; i < trimmed.length; i++){
+          next.push(trimmed[i]);
+        }
+      }else{
+        next.length = residencyCap;
+      }
+    }
+
     if(mode === RetailShadowLightMode.SingleDynamic){
       this.staticMeshShadowLights = next.slice();
     }else{
