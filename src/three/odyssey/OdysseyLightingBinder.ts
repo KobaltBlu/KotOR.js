@@ -427,6 +427,9 @@ export class OdysseyLightingBinder {
     if(!material.uniforms.odysseyShadowMap0 || !material.uniforms.odysseyShadowSoft){
       Object.assign(material.uniforms, createOdysseyShadowUniforms());
     }
+    if(!material.uniforms.odysseyShadowDistantFactor){
+      Object.assign(material.uniforms, createOdysseyShadowUniforms());
+    }
 
     material.uniforms.odysseyBeamingProjectionAlpha.value = GameState.beamingProjectionAlpha;
     material.uniforms.odysseyShadowMapActive.value = activeCount > 0 ? 1.0 : 0.0;
@@ -451,6 +454,7 @@ export class OdysseyLightingBinder {
     const influences = material.uniforms.odysseyShadowInfluenceRadius.value as number[];
     const lightWorlds = material.uniforms.odysseyShadowLightWorld.value as THREE.Vector3[];
     const actives = material.uniforms.odysseyShadowActive.value as number[];
+    const distantFactors = material.uniforms.odysseyShadowDistantFactor.value as number[];
 
     const mapUniformNames = [
       'odysseyShadowMap0',
@@ -474,6 +478,7 @@ export class OdysseyLightingBinder {
         actives[i] = 1;
         strengths[i] = slot.strength;
         influences[i] = slot.influenceRadius;
+        distantFactors[i] = slot.distantFactor ?? 0;
         lightWorlds[i].copy(slot.lightWorld);
         manager?.getShadowMatrixAt?.(i, matrices[i]);
         if(tex?.image && i === 0){
@@ -483,6 +488,7 @@ export class OdysseyLightingBinder {
         actives[i] = 0;
         strengths[i] = 0;
         influences[i] = 0;
+        distantFactors[i] = 0;
         lightWorlds[i].set(0, 0, 0);
         matrices[i].identity();
       }

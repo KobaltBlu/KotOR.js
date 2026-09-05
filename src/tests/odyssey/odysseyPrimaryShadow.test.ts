@@ -113,7 +113,7 @@ describe('OdysseyShadowManager primary shadow map', () => {
 
     expect(manager.activeLightCount).toBe(1);
     expect(manager.shadowStrength).toBeCloseTo(
-      OdysseyShadowManager.shadowStrengthForLight(1, 0.8),
+      OdysseyShadowManager.shadowStrengthForLight(1, 0.8, 8),
       5
     );
     expect(manager.lightWorld.x).toBeCloseTo(10, 4);
@@ -137,6 +137,40 @@ describe('OdysseyShadowManager primary shadow map', () => {
     expect(manager.lightWorld.x).toBeCloseTo(100, 4);
     expect(manager.lightWorld.y).toBeCloseTo(50, 4);
     expect(manager.lightWorld.z).toBeCloseTo(200, 4);
+  });
+
+  test('distant sun gets higher adaptive strength than equal-fade local lamp', () => {
+    const lamp = mockShadowLight({
+      uuid: 'lamp',
+      worldPosition: new THREE.Vector3(2, 0, 4),
+      shadowFadeFactor: 1,
+      getRadius: () => 8,
+    }) as any;
+    const sun = mockShadowLight({
+      uuid: 'sun',
+      worldPosition: new THREE.Vector3(100, 0, 200),
+      shadowFadeFactor: 1,
+      getRadius: () => RETAIL_DISTANT_SHADOW_RADIUS,
+    }) as any;
+
+    lightManager.shadowLights = [lamp];
+    lightManager.staticMeshShadowLights = [];
+    manager.update(undefined, new THREE.Vector3(0, 0, 0));
+    const lampStrength = manager.shadowStrength;
+    const lampDistant = manager.getSlotState(0)?.distantFactor ?? -1;
+
+    lightManager.shadowLights = [sun];
+    manager.update(undefined, new THREE.Vector3(0, 0, 0));
+    const sunStrength = manager.shadowStrength;
+    const sunDistant = manager.getSlotState(0)?.distantFactor ?? -1;
+
+    expect(lampDistant).toBe(0);
+    expect(sunDistant).toBe(1);
+    expect(sunStrength).toBeGreaterThan(lampStrength);
+    expect(sunStrength).toBeCloseTo(
+      OdysseyShadowManager.shadowStrengthForLight(1, 1, RETAIL_DISTANT_SHADOW_RADIUS),
+      5
+    );
   });
 
   test('spot map coverage follows light influence up to retail focus distance', () => {

@@ -3,6 +3,12 @@ import * as THREE from "three";
 import { RETAIL_SHADOW_MIN_VERTEX_COLOR } from "@/utility/retailLighting";
 import { ODYSSEY_SHADOW_MAP_DEPTH_BIAS } from "@/utility/odysseyShadowMap";
 
+/** Emit a GLSL float literal (`3` → `3.0`) so mix()/smoothstep stay typed. */
+function glslFloat(n: number): string {
+  const s = String(n);
+  return /[.eE]/.test(s) ? s : `${s}.0`;
+}
+
 /**
  * Shader / binder map capacity. Steady-state still targets retail
  * NumShadowCastingLights (3) or Soft Shadows (1); the 4th slot is for
@@ -11,16 +17,18 @@ import { ODYSSEY_SHADOW_MAP_DEPTH_BIAS } from "@/utility/odysseyShadowMap";
 export const MAX_ODYSSEY_SHADOW_MAPS = 4;
 
 /**
- * Soft-shadow PCF half-width (5×5). Hard mode still compiles this loop but only
- * weights the center tap (see `odysseyShadowSoft`).
+ * Soft-shadow PCF half-width (5×5). Soft mode weights all taps; hard mode uses
+ * center (distant) or a mild 3×3 (local) — see slot body tapWeight.
  */
 export const ODYSSEY_SHADOW_PCF_RADIUS = 2;
 
-/**
- * Soft-mode UV tap spacing in texels. >1 widens the penumbra to approximate
- * retail image-space Soft Shadows blur (1-texel 5×5 is still a hard contact).
- */
+/** @deprecated Prefer LOCAL/DISTANT soft texel spreads; kept for mid-blend docs. */
 export const ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD = 2.5;
+
+/** Soft ON: local lamp UV tap spacing (wider penumbra). */
+export const ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD_LOCAL = 3.0;
+/** Soft ON: distant/sun UV tap spacing (tighter contact). */
+export const ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD_DISTANT = 1.15;
 
 /**
  * Fraction of influence radius where radial fade begins (smoothstep start/end).
@@ -46,25 +54,46 @@ export const ODYSSEY_SHADOW_CONTACT_NORMAL_Z = 0.5;
  */
 export const ODYSSEY_SHADOW_FLOOR_BIAS_SCALE = 0.15;
 
-/**
- * Soft-shadow depth compare half-width in packed NDC depth. Approximates retail
- * image-space Soft Shadows blur without a second pass.
- */
+/** @deprecated Prefer LOCAL/DISTANT soft depth widths. */
 export const ODYSSEY_SHADOW_SOFT_DEPTH_WIDTH = 0.008;
+
+/** Soft ON: local lamp depth compare half-width (softer contact). */
+export const ODYSSEY_SHADOW_SOFT_DEPTH_WIDTH_LOCAL = 0.012;
+/** Soft ON: distant/sun depth compare half-width (crisper). */
+export const ODYSSEY_SHADOW_SOFT_DEPTH_WIDTH_DISTANT = 0.003;
+
+/** Multiplier on retail projection strength for local lamps. */
+export const ODYSSEY_SHADOW_STRENGTH_SCALE_LOCAL = 0.82;
+/** Multiplier on retail projection strength for area/sun lights. */
+export const ODYSSEY_SHADOW_STRENGTH_SCALE_DISTANT = 1.35;
+
+/**
+ * Apply local↔distant strength scale to retail base opacity. Clamped to [0, 1].
+ */
+export function odysseyShadowAdaptiveStrength(
+  baseStrength: number,
+  distantFactor: number
+): number {
+  const f = Math.max(0, Math.min(1, distantFactor));
+  const scale =
+    ODYSSEY_SHADOW_STRENGTH_SCALE_LOCAL * (1 - f) +
+    ODYSSEY_SHADOW_STRENGTH_SCALE_DISTANT * f;
+  return Math.max(0, Math.min(1, baseStrength * scale));
+}
 
 /**
  * Unrolled per-slot body — WebGL1/GLSL ES 1.00 cannot pass sampler2D into functions.
  * SLOT = 0|1|2|3, MAP = odysseyShadowMap0|1|2|3
  *
  * Soft and hard both floor toward RETAIL_SHADOW_MIN_VERTEX_COLOR (ProjectDynamicShadow).
- * Soft widens PCF / depth compare to approximate retail Soft Shadows blur; hard
- * uses a single center tap.
+ * Softness / PCF adapt via odysseyShadowDistantFactor (local softer, distant crisper).
  */
 const ODYSSEY_SHADOW_SLOT_BODY = (slot: number, map: string) => `
   if ( odysseyShadowActive[ ${slot} ] > 0.0 && odysseyShadowStrength[ ${slot} ] > 0.0 ) {
     vec3 toLight${slot} = odysseyShadowLightWorld[ ${slot} ] - samplePos;
     float dist${slot} = length( toLight${slot}.xy );
     float influence${slot} = max( odysseyShadowInfluenceRadius[ ${slot} ], 1e-4 );
+    float distant${slot} = clamp( odysseyShadowDistantFactor[ ${slot} ], 0.0, 1.0 );
     float fadeStart${slot} = mix(
       ODYSSEY_SHADOW_INFLUENCE_FADE_START,
       ODYSSEY_SHADOW_INFLUENCE_FADE_START_SOFT,
@@ -113,22 +142,35 @@ const ODYSSEY_SHADOW_SLOT_BODY = (slot: number, map: string) => `
             - ( odysseyShadowConstantBias + slopeBias${slot} ) * biasScale${slot};
           float shadow${slot} = 0.0;
           float weightSum${slot} = 0.0;
-          float softSpread${slot} = mix( 1.0, ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD, odysseyShadowSoft );
+          float softSpread${slot} = mix(
+            ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD_LOCAL,
+            ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD_DISTANT,
+            distant${slot}
+          );
+          float softDepthW${slot} = mix(
+            ODYSSEY_SHADOW_SOFT_DEPTH_WIDTH_LOCAL,
+            ODYSSEY_SHADOW_SOFT_DEPTH_WIDTH_DISTANT,
+            distant${slot}
+          );
           for ( int x${slot} = -ODYSSEY_SHADOW_PCF_RADIUS; x${slot} <= ODYSSEY_SHADOW_PCF_RADIUS; x${slot} ++ ) {
             for ( int y${slot} = -ODYSSEY_SHADOW_PCF_RADIUS; y${slot} <= ODYSSEY_SHADOW_PCF_RADIUS; y${slot} ++ ) {
-              float tapWeight${slot} = odysseyShadowSoft > 0.5
-                ? 1.0
-                : ( ( x${slot} == 0 && y${slot} == 0 ) ? 1.0 : 0.0 );
+              float hardCenter${slot} = ( x${slot} == 0 && y${slot} == 0 ) ? 1.0 : 0.0;
+              float hardLocal3${slot} = (
+                abs( float( x${slot} ) ) <= 1.0 && abs( float( y${slot} ) ) <= 1.0
+              ) ? 1.0 : 0.0;
+              // Soft OFF: local lamps use mild 3×3; distant stays center tap.
+              float hardTap${slot} = mix( hardLocal3${slot}, hardCenter${slot}, distant${slot} );
+              float tapWeight${slot} = mix( hardTap${slot}, 1.0, odysseyShadowSoft );
               if ( tapWeight${slot} > 0.0 ) {
                 vec2 offset${slot} = vec2( float( x${slot} ), float( y${slot} ) )
-                  * texelSize * softSpread${slot};
+                  * texelSize * mix( 1.0, softSpread${slot}, odysseyShadowSoft );
                 float depth${slot} = unpackRGBAToDepth(
                   texture2D( ${map}, shadowCoord${slot}.xy + offset${slot} )
                 );
                 float hard${slot} = step( compare${slot}, depth${slot} );
                 float soft${slot} = smoothstep(
-                  compare${slot} - ODYSSEY_SHADOW_SOFT_DEPTH_WIDTH,
-                  compare${slot} + ODYSSEY_SHADOW_SOFT_DEPTH_WIDTH,
+                  compare${slot} - softDepthW${slot},
+                  compare${slot} + softDepthW${slot},
                   depth${slot}
                 );
                 shadow${slot} += mix( hard${slot}, soft${slot}, odysseyShadowSoft ) * tapWeight${slot};
@@ -150,7 +192,7 @@ const ODYSSEY_SHADOW_SLOT_BODY = (slot: number, map: string) => `
 
 export const ODYSSEY_SHADOW_PARS_FRAGMENT = `
 #ifndef RETAIL_SHADOW_MIN_VERTEX_COLOR
-  #define RETAIL_SHADOW_MIN_VERTEX_COLOR ${RETAIL_SHADOW_MIN_VERTEX_COLOR}
+  #define RETAIL_SHADOW_MIN_VERTEX_COLOR ${glslFloat(RETAIL_SHADOW_MIN_VERTEX_COLOR)}
 #endif
 
 #ifndef MAX_ODYSSEY_SHADOW_MAPS
@@ -161,36 +203,44 @@ export const ODYSSEY_SHADOW_PARS_FRAGMENT = `
   #define ODYSSEY_SHADOW_PCF_RADIUS ${ODYSSEY_SHADOW_PCF_RADIUS}
 #endif
 
-#ifndef ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD
-  #define ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD ${ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD}
+#ifndef ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD_LOCAL
+  #define ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD_LOCAL ${glslFloat(ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD_LOCAL)}
+#endif
+
+#ifndef ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD_DISTANT
+  #define ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD_DISTANT ${glslFloat(ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD_DISTANT)}
 #endif
 
 #ifndef ODYSSEY_SHADOW_INFLUENCE_FADE_START
-  #define ODYSSEY_SHADOW_INFLUENCE_FADE_START ${ODYSSEY_SHADOW_INFLUENCE_FADE_START}
+  #define ODYSSEY_SHADOW_INFLUENCE_FADE_START ${glslFloat(ODYSSEY_SHADOW_INFLUENCE_FADE_START)}
 #endif
 
 #ifndef ODYSSEY_SHADOW_INFLUENCE_FADE_START_SOFT
-  #define ODYSSEY_SHADOW_INFLUENCE_FADE_START_SOFT ${ODYSSEY_SHADOW_INFLUENCE_FADE_START_SOFT}
+  #define ODYSSEY_SHADOW_INFLUENCE_FADE_START_SOFT ${glslFloat(ODYSSEY_SHADOW_INFLUENCE_FADE_START_SOFT)}
 #endif
 
 #ifndef ODYSSEY_SHADOW_MAP_EDGE_FADE
-  #define ODYSSEY_SHADOW_MAP_EDGE_FADE ${ODYSSEY_SHADOW_MAP_EDGE_FADE}
+  #define ODYSSEY_SHADOW_MAP_EDGE_FADE ${glslFloat(ODYSSEY_SHADOW_MAP_EDGE_FADE)}
 #endif
 
 #ifndef ODYSSEY_SHADOW_MAP_EDGE_FADE_SOFT
-  #define ODYSSEY_SHADOW_MAP_EDGE_FADE_SOFT ${ODYSSEY_SHADOW_MAP_EDGE_FADE_SOFT}
+  #define ODYSSEY_SHADOW_MAP_EDGE_FADE_SOFT ${glslFloat(ODYSSEY_SHADOW_MAP_EDGE_FADE_SOFT)}
 #endif
 
 #ifndef ODYSSEY_SHADOW_CONTACT_NORMAL_Z
-  #define ODYSSEY_SHADOW_CONTACT_NORMAL_Z ${ODYSSEY_SHADOW_CONTACT_NORMAL_Z}
+  #define ODYSSEY_SHADOW_CONTACT_NORMAL_Z ${glslFloat(ODYSSEY_SHADOW_CONTACT_NORMAL_Z)}
 #endif
 
 #ifndef ODYSSEY_SHADOW_FLOOR_BIAS_SCALE
-  #define ODYSSEY_SHADOW_FLOOR_BIAS_SCALE ${ODYSSEY_SHADOW_FLOOR_BIAS_SCALE}
+  #define ODYSSEY_SHADOW_FLOOR_BIAS_SCALE ${glslFloat(ODYSSEY_SHADOW_FLOOR_BIAS_SCALE)}
 #endif
 
-#ifndef ODYSSEY_SHADOW_SOFT_DEPTH_WIDTH
-  #define ODYSSEY_SHADOW_SOFT_DEPTH_WIDTH ${ODYSSEY_SHADOW_SOFT_DEPTH_WIDTH}
+#ifndef ODYSSEY_SHADOW_SOFT_DEPTH_WIDTH_LOCAL
+  #define ODYSSEY_SHADOW_SOFT_DEPTH_WIDTH_LOCAL ${glslFloat(ODYSSEY_SHADOW_SOFT_DEPTH_WIDTH_LOCAL)}
+#endif
+
+#ifndef ODYSSEY_SHADOW_SOFT_DEPTH_WIDTH_DISTANT
+  #define ODYSSEY_SHADOW_SOFT_DEPTH_WIDTH_DISTANT ${glslFloat(ODYSSEY_SHADOW_SOFT_DEPTH_WIDTH_DISTANT)}
 #endif
 
 uniform float odysseyBeamingProjectionAlpha;
@@ -204,6 +254,7 @@ uniform float odysseyShadowStrength[ MAX_ODYSSEY_SHADOW_MAPS ];
 uniform float odysseyShadowInfluenceRadius[ MAX_ODYSSEY_SHADOW_MAPS ];
 uniform vec3 odysseyShadowLightWorld[ MAX_ODYSSEY_SHADOW_MAPS ];
 uniform float odysseyShadowActive[ MAX_ODYSSEY_SHADOW_MAPS ];
+uniform float odysseyShadowDistantFactor[ MAX_ODYSSEY_SHADOW_MAPS ];
 uniform float odysseyShadowConstantBias;
 uniform float odysseyShadowSlopeBias;
 uniform float odysseyShadowMapActive;
@@ -256,12 +307,14 @@ export function createOdysseyShadowUniforms(){
   const influences: number[] = [];
   const lightWorlds: THREE.Vector3[] = [];
   const active: number[] = [];
+  const distantFactors: number[] = [];
   for(let i = 0; i < MAX_ODYSSEY_SHADOW_MAPS; i++){
     matrices.push(new THREE.Matrix4());
     strengths.push(0);
     influences.push(0);
     lightWorlds.push(new THREE.Vector3());
     active.push(0);
+    distantFactors.push(0);
   }
   return {
     odysseyBeamingProjectionAlpha: { value: 0 },
@@ -277,6 +330,7 @@ export function createOdysseyShadowUniforms(){
     odysseyShadowInfluenceRadius: { value: influences },
     odysseyShadowLightWorld: { value: lightWorlds },
     odysseyShadowActive: { value: active },
+    odysseyShadowDistantFactor: { value: distantFactors },
     odysseyShadowConstantBias: { value: ODYSSEY_SHADOW_MAP_DEPTH_BIAS },
     odysseyShadowSlopeBias: { value: 0.001 },
     odysseyShadowMapActive: { value: 0 },

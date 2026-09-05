@@ -751,12 +751,30 @@ export function retailShadowVertexDarken(
 export function retailShadowProjectionStrength(shadowAlpha: number, shadowFadeFactor: number): number {
   return retailStencilShadowOpacity(shadowAlpha) * Math.max(0, Math.min(1, shadowFadeFactor));
 }
+
 /** GetNearestLights / RenderOnlyGobs object query radius. */
 export const RETAIL_GOB_LIGHT_RADIUS = 2;
 /** Distant/static GetShadowLights(mode=2) radius threshold. */
 export const RETAIL_DISTANT_SHADOW_RADIUS = 1000;
 /** Area sun/moon lights (radius >= this) are excluded from GetShadowLights when Sun/MoonShadows=0. */
 export const RETAIL_AREA_DIRECTIONAL_SHADOW_RADIUS = 100;
+
+/**
+ * 0 = local lamp, 1 = area/sun. Smoothstep from 20 → {@link RETAIL_AREA_DIRECTIONAL_SHADOW_RADIUS}.
+ * Used to adapt shadow-map strength / PCF for depth maps (retail used one opacity for all).
+ */
+export function retailShadowDistantFactor(radius: number): number {
+  const start = 20;
+  const end = RETAIL_AREA_DIRECTIONAL_SHADOW_RADIUS;
+  if(!(radius > start)){
+    return 0;
+  }
+  if(radius >= end){
+    return 1;
+  }
+  const t = (radius - start) / (end - start);
+  return t * t * (3 - 2 * t);
+}
 
 /** True for area directional sun/moon shadow casters (hundreds of units); MDL lamp lights are smaller. */
 export function isRetailAreaDirectionalShadowLight(radius: number): boolean {

@@ -4,7 +4,10 @@ import {
   MAX_ODYSSEY_SHADOW_MAPS,
   ODYSSEY_SHADOW_PARS_FRAGMENT,
   ODYSSEY_SHADOW_PCF_RADIUS,
+  ODYSSEY_SHADOW_STRENGTH_SCALE_DISTANT,
+  ODYSSEY_SHADOW_STRENGTH_SCALE_LOCAL,
   createOdysseyShadowUniforms,
+  odysseyShadowAdaptiveStrength,
 } from '@/shaders/chunks/OdysseyShadow';
 
 describe('OdysseyShadow primary map shader chunk', () => {
@@ -37,6 +40,18 @@ describe('OdysseyShadow primary map shader chunk', () => {
     expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('mix( 1.0, lit0, fade0 )');
   });
 
+  test('adapts soft spread and hard-mode local PCF via distantFactor', () => {
+    expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('odysseyShadowDistantFactor');
+    expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD_LOCAL');
+    expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD_DISTANT');
+    expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('ODYSSEY_SHADOW_SOFT_DEPTH_WIDTH_LOCAL');
+    expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('hardLocal3');
+    // JS String(3.0) === "3"; GLSL mix() needs float literals.
+    expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toMatch(
+      /#define ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD_LOCAL 3\.0/
+    );
+  });
+
   test('scales floor-receiver bias under lightmaps to close walkmesh vs MDL gaps', () => {
     expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('ODYSSEY_SHADOW_CONTACT_NORMAL_Z');
     expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('ODYSSEY_SHADOW_FLOOR_BIAS_SCALE');
@@ -48,6 +63,19 @@ describe('OdysseyShadow primary map shader chunk', () => {
     expect(ODYSSEY_SHADOW_PCF_RADIUS).toBeGreaterThan(0);
   });
 
+  test('adaptive strength boosts distant and eases local', () => {
+    const base = 0.5;
+    expect(odysseyShadowAdaptiveStrength(base, 0)).toBeCloseTo(
+      base * ODYSSEY_SHADOW_STRENGTH_SCALE_LOCAL
+    );
+    expect(odysseyShadowAdaptiveStrength(base, 1)).toBeCloseTo(
+      Math.min(1, base * ODYSSEY_SHADOW_STRENGTH_SCALE_DISTANT)
+    );
+    expect(odysseyShadowAdaptiveStrength(base, 1)).toBeGreaterThan(
+      odysseyShadowAdaptiveStrength(base, 0)
+    );
+  });
+
   test('createOdysseyShadowUniforms exposes multi-map fields', () => {
     const uniforms = createOdysseyShadowUniforms();
     expect(uniforms.odysseyShadowMap0).toBeDefined();
@@ -57,7 +85,9 @@ describe('OdysseyShadow primary map shader chunk', () => {
     expect(uniforms.odysseyShadowMatrix).toBeDefined();
     expect(uniforms.odysseyShadowMapActive).toBeDefined();
     expect(uniforms.odysseyShadowLightCount).toBeDefined();
+    expect(uniforms.odysseyShadowDistantFactor).toBeDefined();
     expect(uniforms.odysseyShadowStrength.value).toHaveLength(MAX_ODYSSEY_SHADOW_MAPS);
     expect(uniforms.odysseyShadowActive.value).toHaveLength(MAX_ODYSSEY_SHADOW_MAPS);
+    expect(uniforms.odysseyShadowDistantFactor.value).toHaveLength(MAX_ODYSSEY_SHADOW_MAPS);
   });
 });

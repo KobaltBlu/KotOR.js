@@ -14,6 +14,8 @@ import {
   retailStencilShadowOpacity,
   isRetailShadowColorVisible,
   retailShadowFadeStep,
+  retailShadowDistantFactor,
+  retailShadowProjectionStrength,
   retailSelectPrioritizeBump,
   retailSelectIlluminationBump,
   retailSelectDistantStaticShadowLight,
@@ -143,6 +145,21 @@ describe('retailLighting', () => {
     expect(retailShadowFadeStep(0, 1, 0.15)).toBeCloseTo(0.5);
     expect(retailShadowFadeStep(1, 0, 0.15)).toBeCloseTo(0);
     expect(retailShadowFadeStep(1, 0, 0.075)).toBeCloseTo(0.5);
+  });
+
+  test('distantFactor is 0 for lamps and 1 for area/sun radii', () => {
+    expect(retailShadowDistantFactor(8)).toBe(0);
+    expect(retailShadowDistantFactor(20)).toBe(0);
+    expect(retailShadowDistantFactor(100)).toBe(1);
+    expect(retailShadowDistantFactor(800)).toBe(1);
+    const mid = retailShadowDistantFactor(60);
+    expect(mid).toBeGreaterThan(0);
+    expect(mid).toBeLessThan(1);
+  });
+
+  test('retail projection strength base is shadowAlpha * 0.5 * fade', () => {
+    expect(retailShadowProjectionStrength(1, 1)).toBeCloseTo(0.5);
+    expect(retailShadowProjectionStrength(1, 0.8)).toBeCloseTo(0.4);
   });
 
   test('PrioritizeIllumination bump scans top 3 for first non-ambient dynamic', () => {

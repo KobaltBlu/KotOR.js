@@ -6,6 +6,7 @@ import type { OdysseyLight3D } from '@/three/odyssey';
 import { GameState } from '@/GameState';
 import {
   isRetailShadowColorVisible,
+  retailShadowDistantFactor,
   retailShadowEffectiveRadius,
   retailShadowFadeStep,
   retailShadowLightPosition,
@@ -23,7 +24,10 @@ import {
   ODYSSEY_SHADOW_MIN_HALF_EXTENT,
   placeDirectionalShadowProxyAlongLight,
 } from '@/utility/odysseyShadowMap';
-import { MAX_ODYSSEY_SHADOW_MAPS } from '@/shaders/chunks/OdysseyShadow';
+import {
+  MAX_ODYSSEY_SHADOW_MAPS,
+  odysseyShadowAdaptiveStrength,
+} from '@/shaders/chunks/OdysseyShadow';
 
 export type OdysseyPrimaryShadowLightType = 'spot' | 'directional';
 
@@ -33,6 +37,8 @@ export interface IOdysseyShadowSlotState {
   type: OdysseyPrimaryShadowLightType | null;
   strength: number;
   influenceRadius: number;
+  /** 0 = local lamp, 1 = area/sun — drives adaptive PCF / strength. */
+  distantFactor: number;
   lightWorld: THREE.Vector3;
   active: boolean;
 }
@@ -135,9 +141,14 @@ export class OdysseyShadowManager {
   /** Soft residency including fade-out (up to 2). */
   private _softResidents: OdysseyLight3D[] = [];
 
-  /** Combined projection opacity (tests / diagnostics). */
-  static shadowStrengthForLight(shadowAlpha: number, shadowFadeFactor: number): number {
-    return retailShadowProjectionStrength(shadowAlpha, shadowFadeFactor);
+  /** Combined projection opacity with adaptive local/distant scale (tests / diagnostics). */
+  static shadowStrengthForLight(
+    shadowAlpha: number,
+    shadowFadeFactor: number,
+    radius = 8
+  ): number {
+    const base = retailShadowProjectionStrength(shadowAlpha, shadowFadeFactor);
+    return odysseyShadowAdaptiveStrength(base, retailShadowDistantFactor(radius));
   }
 
   init(lightManager: LightManager, scene?: THREE.Scene | THREE.Object3D){
@@ -232,6 +243,7 @@ export class OdysseyShadowManager {
           type: null,
           strength: 0,
           influenceRadius: 0,
+          distantFactor: 0,
           lightWorld: new THREE.Vector3(),
           active: false,
         },
@@ -289,6 +301,7 @@ export class OdysseyShadowManager {
     slot.state.type = null;
     slot.state.strength = 0;
     slot.state.influenceRadius = 0;
+    slot.state.distantFactor = 0;
     slot.state.lightWorld.set(0, 0, 0);
     slot.state.active = false;
   }
@@ -710,11 +723,14 @@ export class OdysseyShadowManager {
 
   private syncSlot(index: number, light: OdysseyLight3D){
     const slot = this.slots[index];
-    const strength = retailShadowProjectionStrength(
+    const radius = light.getRadius();
+    const influenceR = retailShadowEffectiveRadius(radius, light.shadowRadius || 0);
+    const distantFactor = retailShadowDistantFactor(influenceR);
+    const baseStrength = retailShadowProjectionStrength(
       GameState.shadowAlpha,
       light.shadowFadeFactor || 0
     );
-    const radius = light.getRadius();
+    const strength = odysseyShadowAdaptiveStrength(baseStrength, distantFactor);
     const lp = retailShadowLightPosition({
       x: light.worldPosition.x,
       y: light.worldPosition.y,
@@ -723,7 +739,6 @@ export class OdysseyShadowManager {
       shadowRadius: light.shadowRadius || 0,
       verticalDisplacement: light.verticalDisplacement || 0,
     });
-    const influenceR = retailShadowEffectiveRadius(radius, light.shadowRadius || 0);
     const type: OdysseyPrimaryShadowLightType = isDistantShadowLightRadius(radius)
       ? 'directional'
       : 'spot';
@@ -789,6 +804,7 @@ export class OdysseyShadowManager {
     slot.state.type = type;
     slot.state.strength = strength;
     slot.state.influenceRadius = influenceR;
+    slot.state.distantFactor = distantFactor;
     slot.state.active = true;
     this._needsShadowMapRender = true;
   }

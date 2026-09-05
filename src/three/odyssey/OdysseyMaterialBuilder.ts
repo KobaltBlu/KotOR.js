@@ -245,6 +245,8 @@ export class OdysseyMaterialBuilder {
             (material as any).vertexTangents = true;
             (material as any).normalMapType = THREE.TangentSpaceNormalMap;
             material.defines.TANGENTSPACE_NORMALMAP = "";
+            delete material.defines.USE_BUMPMAP;
+            delete material.defines.OBJECTSPACE_NORMALMAP;
             if(bumpMap.txi.procedureType === TXIPROCEDURETYPE.CYCLE){
               TextureAnimationManager.register(bumpMap, material, 'normalMap');
             }
@@ -258,6 +260,11 @@ export class OdysseyMaterialBuilder {
           if(material instanceof THREE.RawShaderMaterial || material instanceof THREE.ShaderMaterial){
             material.uniforms.bumpMap.value = bumpMap;
             material.defines.USE_BUMPMAP = "";
+            // Height bumps must not leave TANGENTSPACE_NORMALMAP — Three's
+            // normal_fragment_maps samples normalMap under that define alone.
+            delete material.defines.USE_NORMALMAP;
+            delete material.defines.TANGENTSPACE_NORMALMAP;
+            delete material.defines.OBJECTSPACE_NORMALMAP;
             material.uniformsNeedUpdate = true;
             if(bumpMap.txi.procedureType === TXIPROCEDURETYPE.CYCLE){
               TextureAnimationManager.register(bumpMap, material, 'bumpMap');
@@ -277,7 +284,11 @@ export class OdysseyMaterialBuilder {
           //) — no vertex displacement.
           delete material.defines.USE_DISPLACEMENTMAP;
           material.defines.ENVMAP_BLENDING_MIX = "";
+          // Drop the full normal-map path; leave USE_BUMPMAP for height→normal.
+          // TANGENTSPACE_NORMALMAP without USE_NORMALMAP leaves normalMap undeclared.
           delete material.defines.USE_NORMALMAP;
+          delete material.defines.TANGENTSPACE_NORMALMAP;
+          delete material.defines.OBJECTSPACE_NORMALMAP;
           delete material.defines.ENVMAP_BLENDING_ADD;
           delete material.defines.ENVMAP_BLENDING_LERP;
           (material as any).combine = THREE.MixOperation;
