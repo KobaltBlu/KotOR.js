@@ -28,6 +28,7 @@ import { SWDoorAppearance } from "@/engine/rules/SWDoorAppearance";
 import { AudioEngine } from "@/audio/AudioEngine";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { BitWise } from "@/utility/BitWise";
+import { Utility } from "@/utility/Utility";
 import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
 import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
 import { GameEffectFactory } from "@/effects/GameEffectFactory";
@@ -793,14 +794,18 @@ export class ModuleDoor extends ModuleObject {
       const outer_distance = partymember.position.distanceTo(this.position);
       if(outer_distance < 10){
         this.testTransitionLine(partymember);
+        const linkedOpen = !!(this.getLinkedToModule() && this.isOpen());
         if(this.transitionDistance < 5){
-          if(this.getLinkedToModule() && this.isOpen()){
+          if(linkedOpen){
             GameState.MenuManager.InGameAreaTransition.setTransitionObject(this);
           }
         }else{
           GameState.MenuManager.InGameAreaTransition.unsetTransitionObject(this);
         }
-        if(this.transitionDistance < 0.5){
+        // Linked open doors: keep lastDoorEntered for the whole popup proximity so
+        // CollisionManager can detect a line/plane cross (incl. models without `trans`).
+        const enterDist = linkedOpen ? 5 : 0.5;
+        if(this.transitionDistance < enterDist){
           if(partymember.lastDoorEntered !== this){
             partymember.lastDoorEntered = this;
             this.onEnter(partymember);
@@ -964,18 +969,49 @@ export class ModuleDoor extends ModuleObject {
   }
 
   testTransitionLineCrosses(object: ModuleObject){
-    if(object == GameState.getCurrentPlayer()){
-      const trans = this?.model?.trans;
-      if(trans){
-        GameState.raycaster.ray.origin.copy(object.position);
-        GameState.raycaster.ray.origin.z += 1;
-        GameState.raycaster.ray.direction.copy(object.forceVector);
-        const intersections: THREE.Intersection[] =[];
-        trans.children[0].raycast(GameState.raycaster, intersections);
-        if(intersections.length){
-          this.transitNPC(object);
-        }
+    if(object != GameState.getCurrentPlayer()) return;
+    if(!object.forceVector.length()) return;
+
+    // Prefer MDL `trans` plane when present (standard door models).
+    const transMesh = this?.model?.trans?.children?.[0];
+    if(transMesh){
+      const raycaster = GameState.raycaster;
+      const prevFar = raycaster.far;
+      const moveLen = object.forceVector.length();
+      raycaster.ray.origin.copy(object.position);
+      raycaster.ray.origin.z += 1;
+      raycaster.ray.direction.copy(object.forceVector).normalize();
+      // Collision subdivides movement; keep far tied to this step's travel.
+      raycaster.far = Math.max(moveLen * 1.05, 0.05);
+      const intersections: THREE.Intersection[] = [];
+      transMesh.raycast(raycaster, intersections);
+      raycaster.far = prevFar;
+      if(intersections.length){
+        this.transitNPC(object);
       }
+      return;
+    }
+
+    // Forcefields / doors without a `trans` mesh (e.g. mydoor2): cross the
+    // generated transition line the same way room portal edges are detected.
+    if(!this.transitionLine){
+      this.generateTransitionLine();
+    }
+    if(!this.transitionLine) return;
+
+    this.transitionLineMin.z = object.position.z;
+    this.transitionLineMax.z = object.position.z;
+    if(Utility.LineLineIntersection(
+      object.position.x,
+      object.position.y,
+      object.position.x + object.forceVector.x,
+      object.position.y + object.forceVector.y,
+      this.transitionLine.start.x,
+      this.transitionLine.start.y,
+      this.transitionLine.end.x,
+      this.transitionLine.end.y
+    )){
+      this.transitNPC(object);
     }
   }
 
@@ -983,11 +1019,9 @@ export class ModuleDoor extends ModuleObject {
     if(!(object instanceof ModuleObject)) return;
     if(object != GameState.getCurrentPlayer()) return;
     if(this.getLinkedToModule() && !(GameState.Mode == EngineMode.DIALOG) && this.isOpen()){
-      if(object.controlled){
-        GameState.LoadModuleWithAreaTransitionFade(this.getLinkedToModule().toLowerCase(), this.getLinkedTo().toLowerCase());
-      }else{
-        object.lastDoorEntered = this;
-      }
+      // Align with ModuleTrigger / tryUseInterAreaTransition: party leader loads
+      // even when click-to-move left `controlled` unset for the frame.
+      GameState.LoadModuleWithAreaTransitionFade(this.getLinkedToModule().toLowerCase(), this.getLinkedTo().toLowerCase());
     }
   }
 
