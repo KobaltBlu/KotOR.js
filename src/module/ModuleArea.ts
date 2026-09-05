@@ -1516,25 +1516,28 @@ export class ModuleArea extends ModuleObject {
   }
 
   lastRoom: ModuleRoom = undefined;
+
+  /** Retail GetRoomIndex vertical half-extent (CheckAABBWalkable z±1000). */
+  static readonly ROOM_PROBE_HALF_HEIGHT = 1000;
+
   /**
-   * Retail GetRoomIndex for a world position — AABB hit, then XZ footprint
-   * (dialog cameras often sit above the walkmesh).
+   * Retail GetRoomIndex(pos, 0): vertical segment (x,y,z±1000) vs room AABB.
+   * Prefers walkmesh AABB when present (CheckAABBWalkable); else room.box.
+   * Dialog cameras often sit above the walkmesh.
    */
   getRoomAtPosition(pos: THREE.Vector3): ModuleRoom | undefined {
     if(!pos){ return undefined; }
+    const zMin = pos.z - ModuleArea.ROOM_PROBE_HALF_HEIGHT;
+    const zMax = pos.z + ModuleArea.ROOM_PROBE_HALF_HEIGHT;
     for(let i = 0, roomCount = this.rooms.length; i < roomCount; i++){
       const room = this.rooms[i];
-      if(room?.box?.containsPoint(pos)){
-        return room;
-      }
-    }
-    for(let i = 0, roomCount = this.rooms.length; i < roomCount; i++){
-      const room = this.rooms[i];
-      const box = room?.box;
+      if(!room){ continue; }
+      const box = room.collisionManager?.walkmesh?.box ?? room.box;
       if(!box){ continue; }
       if(
         pos.x >= box.min.x && pos.x <= box.max.x &&
-        pos.y >= box.min.y && pos.y <= box.max.y
+        pos.y >= box.min.y && pos.y <= box.max.y &&
+        box.max.z >= zMin && box.min.z <= zMax
       ){
         return room;
       }
@@ -2135,7 +2138,6 @@ export class ModuleArea extends ModuleObject {
       const buffer = await ResourceLoader.loadResource(ResourceTypes.vis, this.name);
       this.visObject = new VISObject(buffer);
       this.visObject.read();
-      return;
     }catch(e){
       this.visObject = new VISObject();
       console.error(e);

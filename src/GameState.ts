@@ -1760,6 +1760,13 @@ export class GameState implements EngineContext {
     console.log('SetEngineMode: ', mode);
     GameState.Mode = mode;
 
+    // Force dialog PVS recompute on enter (camera room may differ from player).
+    if(mode == EngineMode.DIALOG && prev != EngineMode.DIALOG){
+      if(GameState.module?.area){
+        GameState.module.area.lastRoom = undefined;
+      }
+    }
+
     // Freelook camera enter/exit
     if(mode == EngineMode.FREELOOK && prev != EngineMode.FREELOOK){
       FollowerCamera.beginFreeLook();
@@ -2088,13 +2095,15 @@ export class GameState implements EngineContext {
     if(isEntryMode){
       GameState.scene_cursor_holder.visible = false;
     }
+    // Retail MainLoop: UpdateCamera before UpdateRoom so dialog room cull
+    // probes the current shot pose, not the previous frame's.
+    GameState.CutsceneManager.update(delta);
     // World timer keeps running in dialog unless paused (same policy as freelook).
     if(GameState.State == EngineState.PAUSED || GameState.MenuManager.activeModals.length){
       GameState.module.tickPaused(delta);
     }else{
       GameState.module.tick(delta);
     }
-    GameState.CutsceneManager.update(delta);
     if(GameState.MenuManager.InGameBark?.bVisible){
       GameState.MenuManager.InGameBark.update(delta);
     }
