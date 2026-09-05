@@ -3,6 +3,7 @@ import type { OdysseyModelAnimation, OdysseyModelAnimationManager } from "@/odys
 import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
 import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
 import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
+import * as THREE from "three";
 
 /**
  * ColorMidController class.
@@ -16,6 +17,8 @@ import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdyss
 export class ColorMidController extends OdysseyController {
 
   type: OdysseyModelControllerType = OdysseyModelControllerType.ColorMid;
+
+  private static _rgb = new THREE.Vector3();
 
   constructor( controller: IOdysseyControllerGeneric){
     super(controller);
@@ -31,11 +34,8 @@ export class ColorMidController extends OdysseyController {
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
     if(manager.modelNode.emitter){
-      manager.modelNode.emitter.colorMid.setRGB(
-        last.x + fl * (next.x - last.x),
-        last.y + fl * (next.y - last.y),
-        last.z + fl * (next.z - last.z)
-      );
+      const rgb = OdysseyController.sampleVec3(last, next, fl, ColorMidController._rgb);
+      manager.modelNode.emitter.colorMid.setRGB(rgb.x, rgb.y, rgb.z);
       manager.modelNode.emitter.material.uniforms.colorMid.value.copy(manager.modelNode.emitter.colorMid);
       manager.modelNode.emitter.material.uniformsNeedUpdate = true;
     }

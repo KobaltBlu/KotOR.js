@@ -37,6 +37,52 @@ export class OdysseyController {
     return (next.value - last.value) * fl + last.value;
   }
 
+  /**
+   * Sample RGB between two controller frames.
+   * Bezier path mirrors PositionController (curve sample + lerp) without a position offset.
+   */
+  static sampleVec3(
+    last: IOdysseyControllerFrameGeneric,
+    next: IOdysseyControllerFrameGeneric,
+    fl: number,
+    out: THREE.Vector3
+  ): THREE.Vector3 {
+    if(last.isBezier){
+      if(last.isLinearBezier){
+        out.copy(last.bezier.getPoint(0));
+      }else{
+        out.copy(last.bezier.getPoint((0.5 * fl) + 0.5));
+      }
+      const nextPt = OdysseyController._bezierScratch;
+      if(next.isBezier){
+        nextPt.copy(next.bezier.getPoint(next.lastFrame ? 0 : 0.5));
+      }else{
+        nextPt.set(next.x, next.y, next.z);
+      }
+      out.lerp(nextPt, fl);
+      return out;
+    }
+    if(next.isBezier){
+      out.set(last.x, last.y, last.z);
+      const nextPt = OdysseyController._bezierScratch;
+      if(next.isLinearBezier){
+        nextPt.copy(next.bezier.getPoint(0));
+      }else{
+        nextPt.copy(next.bezier.getPoint(0.5 * fl));
+      }
+      out.lerp(nextPt, fl);
+      return out;
+    }
+    out.set(
+      last.x + fl * (next.x - last.x),
+      last.y + fl * (next.y - last.y),
+      last.z + fl * (next.z - last.z)
+    );
+    return out;
+  }
+
+  private static _bezierScratch = new THREE.Vector3();
+
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
     
   }

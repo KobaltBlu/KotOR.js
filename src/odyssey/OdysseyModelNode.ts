@@ -9,6 +9,7 @@ import { IOdysseyArrayDefinition } from "@/interface/odyssey/IOdysseyArrayDefini
 import { OdysseyModelUtility } from "@/odyssey/OdysseyModelUtility";
 import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
 import { IOdysseyControllerFrameGeneric } from "@/interface";
+import { parseEmitterColorFrames } from "@/odyssey/parseEmitterColorFrames";
       
 // Compressed orientation keys:
 // packed uint32 as 11-bit X, 11-bit Y, 10-bit Z.
@@ -383,14 +384,13 @@ export class OdysseyModelNode {
               case OdysseyModelControllerType.ColorStart:
               case OdysseyModelControllerType.ColorMid:
               case OdysseyModelControllerType.ColorEnd:
-                for (let r = 0; r < controller.frameCount; r++) {
-                  const frame: IOdysseyControllerFrameGeneric = {} as any;
-                  frame.time = data[controller.timeKeyIndex + r];
-                  frame.x = data[controller.dataValueIndex + (r * controller.columnCount) + 0];
-                  frame.y = data[controller.dataValueIndex + (r * controller.columnCount) + 1];
-                  frame.z = data[controller.dataValueIndex + (r * controller.columnCount) + 2];
-                  controller.data[r] = frame
-                }
+                controller.data = parseEmitterColorFrames(
+                  controller.frameCount,
+                  controller.columnCount,
+                  controller.timeKeyIndex,
+                  controller.dataValueIndex,
+                  data
+                );
               break;
               case OdysseyModelControllerType.LifeExp:
               case OdysseyModelControllerType.BirthRate:
