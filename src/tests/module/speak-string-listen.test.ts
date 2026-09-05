@@ -29,10 +29,12 @@ jest.mock('@/combat/ranged-impact-vfx', () => ({
 import {
   drainHeardStringHead,
   getSpeakStringNotifyPlan,
+  listenerHearsSpeaker,
 } from '@/combat/speak-string-broadcast';
 import { CombatRound } from '@/combat/CombatRound';
 import { TalkVolume } from '@/enums/engine/TalkVolume';
 import { CombatActionType } from '@/enums/combat/CombatActionType';
+import { PerceptionMask } from '@/enums/engine/PerceptionMask';
 
 describe('getSpeakStringNotifyPlan', () => {
   it('notifies party on SILENT_TALK and TALK (not only SHOUT)', () => {
@@ -54,6 +56,16 @@ describe('drainHeardStringHead', () => {
     expect(q).toEqual(['GEN_I_WAS_ATTACKED']);
     expect(drainHeardStringHead(q)).toBe('GEN_I_WAS_ATTACKED');
     expect(q).toEqual([]);
+  });
+});
+
+describe('listenerHearsSpeaker', () => {
+  it('gates on HEARD bit (retail BroadcastDialog)', () => {
+    const speaker = {};
+    const listener = { perceptionList: [{ object: speaker, data: PerceptionMask.SEEN }] };
+    expect(listenerHearsSpeaker(listener, speaker)).toBe(false);
+    listener.perceptionList[0].data |= PerceptionMask.HEARD;
+    expect(listenerHearsSpeaker(listener, speaker)).toBe(true);
   });
 });
 

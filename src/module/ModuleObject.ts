@@ -35,7 +35,11 @@ import { noNonWalkPolysDetailed } from "@/engine/pathfinding/no-non-walk-polys";
 import type { ModuleArea, ModuleDoor, ModuleItem, ModuleRoom } from "@/module";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { ExcitedDurationRow } from "@/combat/combat-engagement";
-import { getSpeakStringNotifyPlan } from "@/combat/speak-string-broadcast";
+import { getSpeakStringNotifyPlan, listenerHearsSpeaker } from "@/combat/speak-string-broadcast";
+import {
+  setLastHostileActor as setLastHostileActorHelper,
+  getLastHostileActor as getLastHostileActorHelper,
+} from "@/combat/last-hostile-actor";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { CutsceneMode } from "@/enums/dialog/CutsceneMode";
 import { DLGObject } from "@/resource/DLGObject";
@@ -1854,6 +1858,8 @@ export class ModuleObject {
       if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
         // Creature target: engage both sides (retail)
         const target = this as any as ModuleCreature;
+        // Retail EventHandler OnSpellCastAt sets last hostile when harmful
+        target.setLastHostileActor(c);
         c.broadcastCombatStateToParty(target);
         c.setExcitedState(ExcitedDurationRow.SpellCast);
         c.removeCombatInvisibilityEffects();
@@ -1861,6 +1867,7 @@ export class ModuleObject {
         target.setExcitedState(ExcitedDurationRow.Damage);
       }else{
         // Door / placeable: engage caster only (retail)
+        this.setLastHostileActor(c);
         c.broadcastCombatStateToParty();
         c.setExcitedState(ExcitedDurationRow.SpellCast);
         c.removeCombatInvisibilityEffects();
@@ -2321,6 +2328,23 @@ export class ModuleObject {
   }
 
   /**
+   * Retail CSWSObject::SetLastHostileActor.
+   * @param hostileActor - attacker / damager / harmful caster (or undefined to clear)
+   * @param force - when true, write the id without plot/faction/alive checks (CancelCombat clear)
+   */
+  setLastHostileActor(hostileActor: ModuleObject | undefined, force: boolean = false){
+    setLastHostileActorHelper(this, hostileActor, force);
+  }
+
+  /**
+   * Retail ExecuteCommandGetLastHostileActor — returns last_hostile_actor_id
+   * when still a living creature (AOE resolves to creator); clears stale refs.
+   */
+  getLastHostileActor(): ModuleObject | undefined {
+    return getLastHostileActorHelper(this);
+  }
+
+  /**
    * Retail IsInjured — current/max < 0.2.
    * Invalid max HP must not count as injured (avoids 0/0 → NaN → pauseinj on load).
    */
@@ -2458,6 +2482,13 @@ export class ModuleObject {
   }
 
   /**
+   * Creature ScriptEndDialogu / placeable OnEndDialogue — retail end-of-conversation.
+   */
+  onEndDialog(){
+    //stub
+  }
+
+  /**
    * On attacked — placeable uses retail EventHandler 0xf attacker broadcast.
    * Creatures / doors override with their own handlers.
    */
@@ -2498,7 +2529,7 @@ export class ModuleObject {
     const spoken = str;
     const notified = new Set<number>();
 
-    const pushHeard = (creature: any) => {
+    const pushHeard = (creature: any, requireHeardPerception: boolean) => {
       if(!creature || creature === (this as any) || creature.isDead?.()) return;
       const id = creature.id;
       if(id != null){
@@ -2507,6 +2538,9 @@ export class ModuleObject {
       }
       const d2 = this.position.distanceToSquared(creature.position);
       if(d2 > rangeSquared) return;
+      // Retail: creature→creature needs HEARD visibility bit. Party path skips
+      // (retail forces mutual party perception).
+      if(requireHeardPerception && !listenerHearsSpeaker(creature, this)) return;
       creature.heardStrings.push({
         speaker: this,
         string: spoken,
@@ -2518,7 +2552,7 @@ export class ModuleObject {
       const party = GameState.PartyManager?.party;
       if(party){
         for(let i = 0, len = party.length; i < len; i++){
-          pushHeard(party[i]);
+          pushHeard(party[i], false);
         }
       }
     }
@@ -2527,7 +2561,7 @@ export class ModuleObject {
       const creatures = GameState.module?.area?.creatures;
       if(creatures){
         for(let i = 0, len = creatures.length; i < len; i++){
-          pushHeard(creatures[i]);
+          pushHeard(creatures[i], true);
         }
       }
     }
@@ -2565,6 +2599,7 @@ export class ModuleObject {
     this.subtractHP(amount);
     this.combatData.lastDamager = oAttacker;
     this.combatData.lastAttacker = oAttacker;
+    this.setLastHostileActor(oAttacker);
     this.onDamaged();
   }
 

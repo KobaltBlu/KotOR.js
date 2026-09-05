@@ -107,6 +107,8 @@ import {
   COMBAT_STATE_DURATION_MS,
   ExcitedDurationRow,
   getExcitedDurationMs,
+  setClientCombatMode,
+  updateClientCombatMode,
 } from "@/combat/combat-engagement";
 import { createNewAttackActions } from "@/combat/create-new-attack-actions";
 import { getNearestEnemy } from "@/combat/nearest-enemy";
@@ -338,8 +340,13 @@ export class ModuleCreature extends ModuleObject {
   activity: number = 0x2;
   /** Bits that ActivityManager / SetActivity will not auto-clear. */
   activityLocked: number = 0;
-  /** Retail SetCombatMode. */
+  /** Retail SetCombatMode (stance / activity bits). */
   combatMode: CombatMode = CombatMode.NONE;
+  /**
+   * Retail CSWCCreature client combat-mode bit (UI + combat camera).
+   * Distinct from stance `combatMode` and from SetCombatState timer.
+   */
+  clientCombatMode: boolean = false;
   /** Deferred combat mode while round_started (Retail). */
   pendingCombatMode: number = -1;
   isHasted: boolean = false;
@@ -641,6 +648,8 @@ export class ModuleCreature extends ModuleObject {
     this.combatData.lastDamager = undefined;
     //Last creature who attacked this creature
     this.combatData.lastAttacker = undefined;
+    // Retail last_hostile_actor_id
+    this.combatData.lastHostileActor = undefined;
     //Last creature who attacked this creature with a spell
     this.combatData.lastSpellAttacker = undefined;
     //Last Combat Feat Used
@@ -653,6 +662,7 @@ export class ModuleCreature extends ModuleObject {
     this.excitedDuration = 0;
     this.combatStateTimer = 0;
     this.combatStateReason = 0;
+    this.clientCombatMode = false;
     this.instantItemCooldownMs = 0;
 
     this.cha = 0;
@@ -992,6 +1002,7 @@ export class ModuleCreature extends ModuleObject {
 
     this.updateCombatStateTimer(delta);
     this.updateExcitedDuration(delta);
+    updateClientCombatMode(this);
     this.updateCombat(delta);
     this.updateCasting(delta);
 
@@ -1776,6 +1787,9 @@ export class ModuleCreature extends ModuleObject {
     if(this.combatData.lastDamager instanceof ModuleObject && this.combatData.lastDamager.isDead())
       this.combatData.lastDamager = undefined;
 
+    if(this.combatData.lastHostileActor instanceof ModuleObject && this.combatData.lastHostileActor.isDead())
+      this.setLastHostileActor(undefined, true);
+
     if(this.combatData.lastSpellAttacker instanceof ModuleObject && this.combatData.lastSpellAttacker.isDead())
       this.combatData.lastSpellAttacker = undefined;
 
@@ -2031,6 +2045,7 @@ export class ModuleCreature extends ModuleObject {
     }
     this.combatData.lastDamager = oAttacker;
     this.combatData.lastAttacker = oAttacker;
+    this.setLastHostileActor(oAttacker);
 
     // Only adopt the damager as attack target when we have no live focus
     // including sticky attempted target — so a hit from another creature cannot
@@ -2237,6 +2252,8 @@ export class ModuleCreature extends ModuleObject {
     const wasCombat = this.combatData.combatState;
     this.setCombatState(true, reason);
     this.setExcitedState(reason);
+    // Retail ActionMenuAttack / engage → client SetCombatMode(1)
+    setClientCombatMode(this, true);
     // Retail RemoveCombatInvisibilityEffects on hostile engagement
     if(!wasCombat){
       this.removeCombatInvisibilityEffects();
@@ -2359,10 +2376,7 @@ export class ModuleCreature extends ModuleObject {
           this.combatRound.endCombatRound({ skipCreateNewAttackActions: true });
         }
       }
-      // Client SetCombatMode(0) → RestoreCamera
-      if(this === GameState.getCurrentPlayer()){
-        FollowerCamera.setCombatCameraActive(false);
-      }
+      // Client combat camera follows SetCombatMode, not SetCombatState.
       return;
     }
     this.combatData.combatState = true;
@@ -2370,10 +2384,6 @@ export class ModuleCreature extends ModuleObject {
     // Retail: Damage reason (1) sticks; SpellCast (2) does not overwrite it.
     if(this.combatStateReason !== ExcitedDurationRow.Damage){
       this.combatStateReason = reason;
-    }
-    // Client SetCombatMode(1) → SetCombatCamera (mode 6)
-    if(this === GameState.getCurrentPlayer()){
-      FollowerCamera.setCombatCameraActive(true);
     }
   }
 
@@ -2547,6 +2557,8 @@ export class ModuleCreature extends ModuleObject {
 
     // Retail AddAttackActions → BroadcastCombatStateToParty(this, this.id)
     this.broadcastCombatStateToParty(this);
+    // Retail ActionMenuAttack → SetCombatMode(1) on the attacker
+    setClientCombatMode(this, true);
 
     if(!this.actionQueue.actionTypeExists(ActionType.ActionCombat)){
       const action = new GameState.ActionFactory.ActionCombat(0xFFFF);
@@ -2973,6 +2985,8 @@ export class ModuleCreature extends ModuleObject {
     // Heavy SetCombatState(0) already clears combat-round attacks/actions + ends the round.
     this.setCombatState(false);
     this.clearTarget();
+    // Retail SetLastHostileActor(INVALID, force)
+    this.setLastHostileActor(undefined, true);
     // ClearHostileActionsVersus(null): drop every queued hostile action group.
     this.clearHostileActionsVersus(undefined);
     if(this.combatRound){
@@ -2981,7 +2995,9 @@ export class ModuleCreature extends ModuleObject {
       }
       this.combatRound.clearActions();
     }
-    // Client SetCombatMode(0): drop stance/counterspell mode.
+    // Client SetCombatMode(0) — UI/camera bit (distinct from stance clearCombatMode).
+    setClientCombatMode(this, false);
+    // Stance / CounterSpell activity bits.
     this.clearCombatMode();
     this.resetOverlayAnimationState();
     if(this.animationState.index == ModuleCreatureAnimState.READY){
@@ -3098,6 +3114,7 @@ export class ModuleCreature extends ModuleObject {
         cd.lastAttemptedAttackTarget === this ||
         cd.lastAttacker === this ||
         cd.lastDamager === this ||
+        cd.lastHostileActor === this ||
         cd.lastSpellTarget === this ||
         cd.lastAttemptedSpellTarget === this ||
         cd.lastSpellAttacker === this;
@@ -3110,6 +3127,7 @@ export class ModuleCreature extends ModuleObject {
       }
       if(cd.lastAttacker === this) cd.lastAttacker = undefined;
       if(cd.lastDamager === this) cd.lastDamager = undefined;
+      if(cd.lastHostileActor === this) other.setLastHostileActor(undefined, true);
       if(cd.lastSpellTarget === this) cd.lastSpellTarget = undefined;
       if(cd.lastAttemptedSpellTarget === this) cd.lastAttemptedSpellTarget = undefined;
       if(cd.lastSpellAttacker === this) cd.lastSpellAttacker = undefined;
@@ -4459,10 +4477,28 @@ export class ModuleCreature extends ModuleObject {
     return true;
   }
 
+  /**
+   * Retail ScriptEndDialogu — k_def_endconv → k_ai_master case 1011
+   * (re-enable commandable, DCR if enemy seen, else post-dialog walk).
+   */
+  onEndDialog(){
+    const nwscript = this.scripts[ModuleObjectScript.CreatureOnEndDialog];
+    if(!nwscript){ return; }
+    const instance = nwscript.newInstance();
+    // Wrappers hardcode KOTOR_DEFAULT_EVENT_ON_GLOBAL_DIALOGUE_END (1011).
+    // Party templates leave this slot empty.
+    const script_num = (GameState.PartyManager.party.indexOf(this) > -1) ? 2011 : 1011;
+    instance.run(this, script_num);
+  }
+
   onAttacked(attackType: CombatActionType){
     // Retail EventHandler physical-attacked (0xf) — runs for hit and miss.
     // BroadcastCombatStateToParty on attacker + target refreshes 8000ms combat + party ExcitedDuration.
     const attacker = this.combatData.lastAttacker;
+    // Retail SetLastHostileActor(attacker) before ScriptAttacked
+    if(BitWise.InstanceOfObject(attacker, ModuleObjectType.ModuleObject)){
+      this.setLastHostileActor(attacker as ModuleObject);
+    }
     if(BitWise.InstanceOfObject(attacker, ModuleObjectType.ModuleCreature)){
       const atk = attacker as ModuleCreature;
       atk.broadcastCombatStateToParty(this);

@@ -1071,6 +1071,18 @@ export class CutsceneManager {
   static endConversation(aborted = false) {
     const wasBark = this.cutsceneMode == CutsceneMode.BARK;
     const hadPendingPartySwitch = !!this.pendingPartyDialogSwitch;
+    // Capture before teardown — ScriptEndDialogu / k_def_endconv (master 1011)
+    const endDialogTargets: ModuleObject[] = [];
+    const pushEndDialog = (obj: ModuleObject | undefined) => {
+      if(!obj || endDialogTargets.indexOf(obj) >= 0) return;
+      endDialogTargets.push(obj);
+    };
+    pushEndDialog(this.owner);
+    pushEndDialog(this.listener);
+    for(let i = 0; i < this.dialogAnimParticipants.length; i++){
+      pushEndDialog(this.dialogAnimParticipants[i]);
+    }
+
     this.pendingPartyDialogSwitch = undefined;
     this.active = false;
     this.paused = false;
@@ -1112,6 +1124,14 @@ export class CutsceneManager {
       this.showEquippedItemsAfterDialog();
       if(this.cutsceneMode == CutsceneMode.ANIMATED){
         GameState.FadeOverlayManager.FadeInFromCutscene();
+      }
+    }
+
+    // Creature ScriptEndDialogu (k_def_endconv → k_ai_master 1011) after DLG EndConversation
+    for(let i = 0; i < endDialogTargets.length; i++){
+      const target = endDialogTargets[i];
+      if(typeof target.onEndDialog === 'function'){
+        target.onEndDialog();
       }
     }
 

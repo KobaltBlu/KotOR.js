@@ -20,10 +20,10 @@ import {
   buildOrthoShadowCameraParams,
   configureSpotShadowProxyForFloorContact,
   isDistantShadowLightRadius,
-  ODYSSEY_SHADOW_MAP_LIGHT_BIAS,
   ODYSSEY_SHADOW_MIN_HALF_EXTENT,
   placeDirectionalShadowProxyAlongLight,
 } from '@/utility/odysseyShadowMap';
+import { OdysseyLightingDebug } from '@/utility/odysseyLightingDebug';
 import {
   MAX_ODYSSEY_SHADOW_MAPS,
   odysseyShadowAdaptiveStrength,
@@ -457,19 +457,22 @@ export class OdysseyShadowManager {
       const stickyScore = this.softElevAngleSq(sticky);
       const bestScore = this.softElevAngleSq(best);
       const lead = stickyScore - bestScore; // positive when best is more overhead
-      if(lead >= SOFT_SHADOW_STICKY_INSTANT_MARGIN){
+      const stickyInstant = OdysseyLightingDebug.values.softStickyInstantMargin;
+      const stickyMargin = OdysseyLightingDebug.values.softStickyScoreMargin;
+      const stickyHold = OdysseyLightingDebug.values.softStickyHoldSec;
+      if(lead >= stickyInstant){
         this._softStickyUuid = best.uuid;
         this._softChallengerUuid = null;
         this._softChallengerHold = 0;
         sticky = best;
-      }else if(lead >= SOFT_SHADOW_STICKY_SCORE_MARGIN){
+      }else if(lead >= stickyMargin){
         if(this._softChallengerUuid === best.uuid){
           this._softChallengerHold += Math.max(0, delta);
         }else{
           this._softChallengerUuid = best.uuid;
           this._softChallengerHold = Math.max(0, delta);
         }
-        if(this._softChallengerHold >= SOFT_SHADOW_STICKY_HOLD_SEC){
+        if(this._softChallengerHold >= stickyHold){
           this._softStickyUuid = best.uuid;
           this._softChallengerUuid = null;
           this._softChallengerHold = 0;
@@ -749,7 +752,7 @@ export class OdysseyShadowManager {
     slot.directional.castShadow = type === 'directional';
 
     const active = type === 'spot' ? slot.spot : slot.directional;
-    active.shadow.bias = ODYSSEY_SHADOW_MAP_LIGHT_BIAS;
+    active.shadow.bias = OdysseyLightingDebug.values.lightBias;
     active.shadow.normalBias = SHADOW_MAP_NORMAL_BIAS;
     active.shadow.mapSize.set(this.mapResolution, this.mapResolution);
 

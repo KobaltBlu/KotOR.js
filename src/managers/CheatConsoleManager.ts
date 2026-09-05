@@ -9,6 +9,10 @@ import { ExperienceType } from "@/enums/engine/ExperienceType";
 import { GameFileSystem } from "@/utility/GameFileSystem";
 import { SkillType } from "@/enums/nwscript/SkillType";
 import { FeebackMessageColor } from "@/enums/engine/FeedbackMessageColor";
+import {
+  OdysseyLightingDebug,
+  ODYSSEY_LIGHTING_DEBUG_KEYS,
+} from "@/utility/odysseyLightingDebug";
 
 /**
  * CheatConsoleManager class.
@@ -40,6 +44,91 @@ export class CheatConsoleManager {
     if(raw == null || raw === ''){ return fallback; }
     const n = parseInt(raw, 10);
     return Number.isFinite(n) ? n : fallback;
+  }
+
+  static parseFloatParam(raw: string | undefined, fallback: number = 0): number {
+    if(raw == null || raw === ''){ return fallback; }
+    const n = parseFloat(raw);
+    return Number.isFinite(n) ? n : fallback;
+  }
+
+  /** Dump or query OdysseyLightingDebug knobs (cheat console). */
+  static lightGet(keyRaw?: string){
+    const key = OdysseyLightingDebug.resolveKey(keyRaw);
+    if(keyRaw && !key){
+      const line = `lightget: unknown key "${keyRaw}"`;
+      GameState.FeedbackMessageManager?.AddMessage?.(line, FeebackMessageColor.INFO, 0, { bypassStatusSummary: true });
+      console.warn(line);
+      return;
+    }
+    if(key){
+      const line = `lightget ${key} = ${OdysseyLightingDebug.get(key)}`;
+      GameState.FeedbackMessageManager?.AddMessage?.(line, FeebackMessageColor.INFO, 0, { bypassStatusSummary: true });
+      console.log(line);
+      return;
+    }
+    const dump = OdysseyLightingDebug.dump();
+    console.log('lightget', dump);
+    for(let i = 0; i < ODYSSEY_LIGHTING_DEBUG_KEYS.length; i++){
+      const k = ODYSSEY_LIGHTING_DEBUG_KEYS[i];
+      console.log(`  ${k} = ${dump[k]}`);
+    }
+    GameState.FeedbackMessageManager?.AddMessage?.(
+      'lightget: dumped to console',
+      FeebackMessageColor.INFO,
+      0,
+      { bypassStatusSummary: true }
+    );
+  }
+
+  /** Set an OdysseyLightingDebug knob. */
+  static lightSet(keyRaw: string | undefined, valueRaw: string | undefined){
+    const key = OdysseyLightingDebug.resolveKey(keyRaw);
+    if(!key){
+      const line = `lightset: unknown key "${keyRaw ?? ''}"`;
+      GameState.FeedbackMessageManager?.AddMessage?.(line, FeebackMessageColor.INFO, 0, { bypassStatusSummary: true });
+      console.warn(line);
+      return;
+    }
+    if(valueRaw == null || valueRaw === ''){
+      const line = `lightset: usage lightset <key> <value>`;
+      GameState.FeedbackMessageManager?.AddMessage?.(line, FeebackMessageColor.INFO, 0, { bypassStatusSummary: true });
+      console.warn(line);
+      return;
+    }
+    const value = CheatConsoleManager.parseFloatParam(valueRaw, NaN);
+    if(!Number.isFinite(value)){
+      const line = `lightset: invalid value "${valueRaw}"`;
+      GameState.FeedbackMessageManager?.AddMessage?.(line, FeebackMessageColor.INFO, 0, { bypassStatusSummary: true });
+      console.warn(line);
+      return;
+    }
+    OdysseyLightingDebug.set(key, value);
+    const line = `lightset ${key} = ${value}`;
+    GameState.FeedbackMessageManager?.AddMessage?.(line, FeebackMessageColor.INFO, 0, { bypassStatusSummary: true });
+    console.log(line);
+  }
+
+  /** Reset one or all OdysseyLightingDebug knobs. */
+  static lightReset(keyRaw?: string){
+    if(keyRaw){
+      const key = OdysseyLightingDebug.resolveKey(keyRaw);
+      if(!key){
+        const line = `lightreset: unknown key "${keyRaw}"`;
+        GameState.FeedbackMessageManager?.AddMessage?.(line, FeebackMessageColor.INFO, 0, { bypassStatusSummary: true });
+        console.warn(line);
+        return;
+      }
+      OdysseyLightingDebug.reset(key);
+      const line = `lightreset ${key} = ${OdysseyLightingDebug.get(key)}`;
+      GameState.FeedbackMessageManager?.AddMessage?.(line, FeebackMessageColor.INFO, 0, { bypassStatusSummary: true });
+      console.log(line);
+      return;
+    }
+    OdysseyLightingDebug.reset();
+    const line = 'lightreset: all lighting knobs restored';
+    GameState.FeedbackMessageManager?.AddMessage?.(line, FeebackMessageColor.INFO, 0, { bypassStatusSummary: true });
+    console.log(line);
   }
 
   /**
@@ -341,6 +430,9 @@ export class CheatConsoleManager {
       'setrepair',
       'setsecurity',
       'settreatinjury',
+      'lightget',
+      'lightset',
+      'lightreset',
     ].slice().sort((a, b) => a.localeCompare(b));
   }
 
@@ -466,6 +558,15 @@ export class CheatConsoleManager {
         break;
       case 'settreatinjury':
         CheatConsoleManager.setSkill(SkillType.TREAT_INJURY, params[0]);
+        break;
+      case 'lightget':
+        CheatConsoleManager.lightGet(params[0]);
+        break;
+      case 'lightset':
+        CheatConsoleManager.lightSet(params[0], params[1]);
+        break;
+      case 'lightreset':
+        CheatConsoleManager.lightReset(params[0]);
         break;
     }
   }

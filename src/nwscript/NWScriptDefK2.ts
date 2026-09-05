@@ -4175,7 +4175,13 @@ NWScriptDefK2.Actions = {
     name: 'GetLastHostileActor',
     type: NWScriptDataType.OBJECT,
     args: [ NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      const target = (typeof args[0] != 'undefined') ? args[0] : this.caller;
+      if(!BitWise.InstanceOfObject(target, ModuleObjectType.ModuleObject)){
+        return undefined;
+      }
+      return target.getLastHostileActor();
+    }
   },
   557: {
     comment: '557: Force all the characters of the players who are currently in the game to\nbe exported to their respective directories i.e. LocalVault/ServerVault/ etc.',

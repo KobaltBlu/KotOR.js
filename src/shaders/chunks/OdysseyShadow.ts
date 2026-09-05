@@ -1,13 +1,6 @@
 import * as THREE from "three";
 
-import { RETAIL_SHADOW_MIN_VERTEX_COLOR } from "@/utility/retailLighting";
-import { ODYSSEY_SHADOW_MAP_DEPTH_BIAS } from "@/utility/odysseyShadowMap";
-
-/** Emit a GLSL float literal (`3` → `3.0`) so mix()/smoothstep stay typed. */
-function glslFloat(n: number): string {
-  const s = String(n);
-  return /[.eE]/.test(s) ? s : `${s}.0`;
-}
+import { OdysseyLightingDebug } from "@/utility/odysseyLightingDebug";
 
 /**
  * Shader / binder map capacity. Steady-state still targets retail
@@ -19,13 +12,14 @@ export const MAX_ODYSSEY_SHADOW_MAPS = 4;
 /**
  * Soft-shadow PCF half-width (5×5). Soft mode weights all taps; hard mode uses
  * center (distant) or a mild 3×3 (local) — see slot body tapWeight.
+ * Loop bounds must stay compile-time constants (GLSL ES 1.00).
  */
 export const ODYSSEY_SHADOW_PCF_RADIUS = 2;
 
 /** @deprecated Prefer LOCAL/DISTANT soft texel spreads; kept for mid-blend docs. */
 export const ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD = 2.5;
 
-/** Soft ON: local lamp UV tap spacing (wider penumbra). */
+/** Soft ON: local lamp UV tap spacing (wider penumbra). Default; live via OdysseyLightingDebug. */
 export const ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD_LOCAL = 3.0;
 /** Soft ON: distant/sun UV tap spacing (tighter contact). */
 export const ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD_DISTANT = 1.15;
@@ -69,15 +63,16 @@ export const ODYSSEY_SHADOW_STRENGTH_SCALE_DISTANT = 1.35;
 
 /**
  * Apply local↔distant strength scale to retail base opacity. Clamped to [0, 1].
+ * Reads live scales from {@link OdysseyLightingDebug}.
  */
 export function odysseyShadowAdaptiveStrength(
   baseStrength: number,
   distantFactor: number
 ): number {
   const f = Math.max(0, Math.min(1, distantFactor));
-  const scale =
-    ODYSSEY_SHADOW_STRENGTH_SCALE_LOCAL * (1 - f) +
-    ODYSSEY_SHADOW_STRENGTH_SCALE_DISTANT * f;
+  const local = OdysseyLightingDebug.values.strengthScaleLocal;
+  const distant = OdysseyLightingDebug.values.strengthScaleDistant;
+  const scale = local * (1 - f) + distant * f;
   return Math.max(0, Math.min(1, baseStrength * scale));
 }
 
@@ -85,8 +80,7 @@ export function odysseyShadowAdaptiveStrength(
  * Unrolled per-slot body — WebGL1/GLSL ES 1.00 cannot pass sampler2D into functions.
  * SLOT = 0|1|2|3, MAP = odysseyShadowMap0|1|2|3
  *
- * Soft and hard both floor toward RETAIL_SHADOW_MIN_VERTEX_COLOR (ProjectDynamicShadow).
- * Softness / PCF adapt via odysseyShadowDistantFactor (local softer, distant crisper).
+ * Softness / fade / bias knobs are uniforms (cheat-console live tuning).
  */
 const ODYSSEY_SHADOW_SLOT_BODY = (slot: number, map: string) => `
   if ( odysseyShadowActive[ ${slot} ] > 0.0 && odysseyShadowStrength[ ${slot} ] > 0.0 ) {
@@ -95,8 +89,8 @@ const ODYSSEY_SHADOW_SLOT_BODY = (slot: number, map: string) => `
     float influence${slot} = max( odysseyShadowInfluenceRadius[ ${slot} ], 1e-4 );
     float distant${slot} = clamp( odysseyShadowDistantFactor[ ${slot} ], 0.0, 1.0 );
     float fadeStart${slot} = mix(
-      ODYSSEY_SHADOW_INFLUENCE_FADE_START,
-      ODYSSEY_SHADOW_INFLUENCE_FADE_START_SOFT,
+      odysseyShadowInfluenceFadeStart,
+      odysseyShadowInfluenceFadeStartSoft,
       odysseyShadowSoft
     );
     float radiusFade${slot} = 1.0 - smoothstep(
@@ -117,8 +111,8 @@ const ODYSSEY_SHADOW_SLOT_BODY = (slot: number, map: string) => `
           min( shadowCoord${slot}.y, 1.0 - shadowCoord${slot}.y )
         );
         float edgeFadeWidth${slot} = mix(
-          ODYSSEY_SHADOW_MAP_EDGE_FADE,
-          ODYSSEY_SHADOW_MAP_EDGE_FADE_SOFT,
+          odysseyShadowMapEdgeFade,
+          odysseyShadowMapEdgeFadeSoft,
           odysseyShadowSoft
         );
         float mapFade${slot} = smoothstep( 0.0, edgeFadeWidth${slot}, edgeDist${slot} );
@@ -134,8 +128,8 @@ const ODYSSEY_SHADOW_SLOT_BODY = (slot: number, map: string) => `
             / max( cosTheta${slot}, 0.05 );
           float biasScale${slot} = 1.0;
           #ifdef USE_LIGHTMAP
-            if ( n.z > ODYSSEY_SHADOW_CONTACT_NORMAL_Z ) {
-              biasScale${slot} = ODYSSEY_SHADOW_FLOOR_BIAS_SCALE;
+            if ( n.z > odysseyShadowContactNormalZ ) {
+              biasScale${slot} = odysseyShadowFloorBiasScale;
             }
           #endif
           float compare${slot} = shadowCoord${slot}.z
@@ -143,13 +137,13 @@ const ODYSSEY_SHADOW_SLOT_BODY = (slot: number, map: string) => `
           float shadow${slot} = 0.0;
           float weightSum${slot} = 0.0;
           float softSpread${slot} = mix(
-            ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD_LOCAL,
-            ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD_DISTANT,
+            odysseyShadowSoftTexelSpreadLocal,
+            odysseyShadowSoftTexelSpreadDistant,
             distant${slot}
           );
           float softDepthW${slot} = mix(
-            ODYSSEY_SHADOW_SOFT_DEPTH_WIDTH_LOCAL,
-            ODYSSEY_SHADOW_SOFT_DEPTH_WIDTH_DISTANT,
+            odysseyShadowSoftDepthWidthLocal,
+            odysseyShadowSoftDepthWidthDistant,
             distant${slot}
           );
           for ( int x${slot} = -ODYSSEY_SHADOW_PCF_RADIUS; x${slot} <= ODYSSEY_SHADOW_PCF_RADIUS; x${slot} ++ ) {
@@ -181,7 +175,7 @@ const ODYSSEY_SHADOW_SLOT_BODY = (slot: number, map: string) => `
           shadow${slot} /= max( weightSum${slot}, 1.0 );
           // ProjectDynamicShadow floor — never pure black (ShadowOpacity can exceed 100).
           float darkened${slot} = 1.0
-            - odysseyShadowStrength[ ${slot} ] * ( 1.0 - RETAIL_SHADOW_MIN_VERTEX_COLOR );
+            - odysseyShadowStrength[ ${slot} ] * ( 1.0 - odysseyShadowMinVertexColor );
           float lit${slot} = mix( darkened${slot}, 1.0, shadow${slot} );
           slotFactor *= mix( 1.0, lit${slot}, fade${slot} );
         }
@@ -191,56 +185,12 @@ const ODYSSEY_SHADOW_SLOT_BODY = (slot: number, map: string) => `
 `;
 
 export const ODYSSEY_SHADOW_PARS_FRAGMENT = `
-#ifndef RETAIL_SHADOW_MIN_VERTEX_COLOR
-  #define RETAIL_SHADOW_MIN_VERTEX_COLOR ${glslFloat(RETAIL_SHADOW_MIN_VERTEX_COLOR)}
-#endif
-
 #ifndef MAX_ODYSSEY_SHADOW_MAPS
   #define MAX_ODYSSEY_SHADOW_MAPS ${MAX_ODYSSEY_SHADOW_MAPS}
 #endif
 
 #ifndef ODYSSEY_SHADOW_PCF_RADIUS
   #define ODYSSEY_SHADOW_PCF_RADIUS ${ODYSSEY_SHADOW_PCF_RADIUS}
-#endif
-
-#ifndef ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD_LOCAL
-  #define ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD_LOCAL ${glslFloat(ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD_LOCAL)}
-#endif
-
-#ifndef ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD_DISTANT
-  #define ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD_DISTANT ${glslFloat(ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD_DISTANT)}
-#endif
-
-#ifndef ODYSSEY_SHADOW_INFLUENCE_FADE_START
-  #define ODYSSEY_SHADOW_INFLUENCE_FADE_START ${glslFloat(ODYSSEY_SHADOW_INFLUENCE_FADE_START)}
-#endif
-
-#ifndef ODYSSEY_SHADOW_INFLUENCE_FADE_START_SOFT
-  #define ODYSSEY_SHADOW_INFLUENCE_FADE_START_SOFT ${glslFloat(ODYSSEY_SHADOW_INFLUENCE_FADE_START_SOFT)}
-#endif
-
-#ifndef ODYSSEY_SHADOW_MAP_EDGE_FADE
-  #define ODYSSEY_SHADOW_MAP_EDGE_FADE ${glslFloat(ODYSSEY_SHADOW_MAP_EDGE_FADE)}
-#endif
-
-#ifndef ODYSSEY_SHADOW_MAP_EDGE_FADE_SOFT
-  #define ODYSSEY_SHADOW_MAP_EDGE_FADE_SOFT ${glslFloat(ODYSSEY_SHADOW_MAP_EDGE_FADE_SOFT)}
-#endif
-
-#ifndef ODYSSEY_SHADOW_CONTACT_NORMAL_Z
-  #define ODYSSEY_SHADOW_CONTACT_NORMAL_Z ${glslFloat(ODYSSEY_SHADOW_CONTACT_NORMAL_Z)}
-#endif
-
-#ifndef ODYSSEY_SHADOW_FLOOR_BIAS_SCALE
-  #define ODYSSEY_SHADOW_FLOOR_BIAS_SCALE ${glslFloat(ODYSSEY_SHADOW_FLOOR_BIAS_SCALE)}
-#endif
-
-#ifndef ODYSSEY_SHADOW_SOFT_DEPTH_WIDTH_LOCAL
-  #define ODYSSEY_SHADOW_SOFT_DEPTH_WIDTH_LOCAL ${glslFloat(ODYSSEY_SHADOW_SOFT_DEPTH_WIDTH_LOCAL)}
-#endif
-
-#ifndef ODYSSEY_SHADOW_SOFT_DEPTH_WIDTH_DISTANT
-  #define ODYSSEY_SHADOW_SOFT_DEPTH_WIDTH_DISTANT ${glslFloat(ODYSSEY_SHADOW_SOFT_DEPTH_WIDTH_DISTANT)}
 #endif
 
 uniform float odysseyBeamingProjectionAlpha;
@@ -260,6 +210,17 @@ uniform float odysseyShadowSlopeBias;
 uniform float odysseyShadowMapActive;
 uniform float odysseyShadowLightCount;
 uniform float odysseyShadowSoft;
+uniform float odysseyShadowSoftTexelSpreadLocal;
+uniform float odysseyShadowSoftTexelSpreadDistant;
+uniform float odysseyShadowSoftDepthWidthLocal;
+uniform float odysseyShadowSoftDepthWidthDistant;
+uniform float odysseyShadowInfluenceFadeStart;
+uniform float odysseyShadowInfluenceFadeStartSoft;
+uniform float odysseyShadowMapEdgeFade;
+uniform float odysseyShadowMapEdgeFadeSoft;
+uniform float odysseyShadowFloorBiasScale;
+uniform float odysseyShadowContactNormalZ;
+uniform float odysseyShadowMinVertexColor;
 
 float odysseyShadowMapsAt( const in vec3 samplePos, const in vec3 worldNormal ) {
   vec3 n = normalize( worldNormal );
@@ -308,6 +269,7 @@ export function createOdysseyShadowUniforms(){
   const lightWorlds: THREE.Vector3[] = [];
   const active: number[] = [];
   const distantFactors: number[] = [];
+  const d = OdysseyLightingDebug.values;
   for(let i = 0; i < MAX_ODYSSEY_SHADOW_MAPS; i++){
     matrices.push(new THREE.Matrix4());
     strengths.push(0);
@@ -331,11 +293,22 @@ export function createOdysseyShadowUniforms(){
     odysseyShadowLightWorld: { value: lightWorlds },
     odysseyShadowActive: { value: active },
     odysseyShadowDistantFactor: { value: distantFactors },
-    odysseyShadowConstantBias: { value: ODYSSEY_SHADOW_MAP_DEPTH_BIAS },
-    odysseyShadowSlopeBias: { value: 0.001 },
+    odysseyShadowConstantBias: { value: d.constantBias },
+    odysseyShadowSlopeBias: { value: d.slopeBias },
     odysseyShadowMapActive: { value: 0 },
     odysseyShadowLightCount: { value: 0 },
     odysseyShadowSoft: { value: 0 },
+    odysseyShadowSoftTexelSpreadLocal: { value: d.softTexelSpreadLocal },
+    odysseyShadowSoftTexelSpreadDistant: { value: d.softTexelSpreadDistant },
+    odysseyShadowSoftDepthWidthLocal: { value: d.softDepthWidthLocal },
+    odysseyShadowSoftDepthWidthDistant: { value: d.softDepthWidthDistant },
+    odysseyShadowInfluenceFadeStart: { value: d.influenceFadeStart },
+    odysseyShadowInfluenceFadeStartSoft: { value: d.influenceFadeStartSoft },
+    odysseyShadowMapEdgeFade: { value: d.mapEdgeFade },
+    odysseyShadowMapEdgeFadeSoft: { value: d.mapEdgeFadeSoft },
+    odysseyShadowFloorBiasScale: { value: d.floorBiasScale },
+    odysseyShadowContactNormalZ: { value: d.contactNormalZ },
+    odysseyShadowMinVertexColor: { value: d.minVertexColor },
   };
 }
 

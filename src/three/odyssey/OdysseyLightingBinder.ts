@@ -12,7 +12,7 @@ import {
   createOdysseyShadowUniforms,
   MAX_ODYSSEY_SHADOW_MAPS,
 } from "@/shaders/chunks/OdysseyShadow";
-import { ODYSSEY_SHADOW_MAP_DEPTH_BIAS } from "@/utility/odysseyShadowMap";
+import { OdysseyLightingDebug } from "@/utility/odysseyLightingDebug";
 import { envMapRotationFromCamera } from "@/utility/envMapRotation";
 
 /**
@@ -410,6 +410,7 @@ export class OdysseyLightingBinder {
     const epoch = manager?.frameEpoch ?? 0;
     const activeCount = manager?.activeLightCount ?? 0;
     const softBound = manager?.softShadowMaps ? 1 : 0;
+    const lightingRev = OdysseyLightingDebug.revision;
     const shadowTexLive = manager?.getShadowMapTextureAt?.(0) ?? manager?.getShadowMapTexture() ?? null;
     const shadowsActive = activeCount > 0;
     const boundTex = material.uniforms.odysseyShadowMap0?.value
@@ -420,17 +421,19 @@ export class OdysseyLightingBinder {
       material.userData.odysseyShadowBoundEpoch === epoch &&
       material.userData.odysseyShadowGatingBound === GameState.shadowAlpha &&
       material.userData.odysseyBeamingBound === GameState.beamingProjectionAlpha &&
-      material.userData.odysseyShadowSoftBound === softBound){
+      material.userData.odysseyShadowSoftBound === softBound &&
+      material.userData.odysseyLightingDebugRevision === lightingRev){
       return;
     }
 
     if(!material.uniforms.odysseyShadowMap0 || !material.uniforms.odysseyShadowSoft){
       Object.assign(material.uniforms, createOdysseyShadowUniforms());
     }
-    if(!material.uniforms.odysseyShadowDistantFactor){
+    if(!material.uniforms.odysseyShadowDistantFactor || !material.uniforms.odysseyShadowSoftTexelSpreadLocal){
       Object.assign(material.uniforms, createOdysseyShadowUniforms());
     }
 
+    const d = OdysseyLightingDebug.values;
     material.uniforms.odysseyBeamingProjectionAlpha.value = GameState.beamingProjectionAlpha;
     material.uniforms.odysseyShadowMapActive.value = activeCount > 0 ? 1.0 : 0.0;
     material.uniforms.odysseyShadowLightCount.value = activeCount;
@@ -438,10 +441,43 @@ export class OdysseyLightingBinder {
       material.uniforms.odysseyShadowSoft.value = manager?.softShadowMaps ? 1.0 : 0.0;
     }
     if(material.uniforms.odysseyShadowConstantBias){
-      material.uniforms.odysseyShadowConstantBias.value = ODYSSEY_SHADOW_MAP_DEPTH_BIAS;
+      material.uniforms.odysseyShadowConstantBias.value = d.constantBias;
     }
     if(material.uniforms.odysseyShadowSlopeBias){
-      material.uniforms.odysseyShadowSlopeBias.value = 0.001;
+      material.uniforms.odysseyShadowSlopeBias.value = d.slopeBias;
+    }
+    if(material.uniforms.odysseyShadowSoftTexelSpreadLocal){
+      material.uniforms.odysseyShadowSoftTexelSpreadLocal.value = d.softTexelSpreadLocal;
+    }
+    if(material.uniforms.odysseyShadowSoftTexelSpreadDistant){
+      material.uniforms.odysseyShadowSoftTexelSpreadDistant.value = d.softTexelSpreadDistant;
+    }
+    if(material.uniforms.odysseyShadowSoftDepthWidthLocal){
+      material.uniforms.odysseyShadowSoftDepthWidthLocal.value = d.softDepthWidthLocal;
+    }
+    if(material.uniforms.odysseyShadowSoftDepthWidthDistant){
+      material.uniforms.odysseyShadowSoftDepthWidthDistant.value = d.softDepthWidthDistant;
+    }
+    if(material.uniforms.odysseyShadowInfluenceFadeStart){
+      material.uniforms.odysseyShadowInfluenceFadeStart.value = d.influenceFadeStart;
+    }
+    if(material.uniforms.odysseyShadowInfluenceFadeStartSoft){
+      material.uniforms.odysseyShadowInfluenceFadeStartSoft.value = d.influenceFadeStartSoft;
+    }
+    if(material.uniforms.odysseyShadowMapEdgeFade){
+      material.uniforms.odysseyShadowMapEdgeFade.value = d.mapEdgeFade;
+    }
+    if(material.uniforms.odysseyShadowMapEdgeFadeSoft){
+      material.uniforms.odysseyShadowMapEdgeFadeSoft.value = d.mapEdgeFadeSoft;
+    }
+    if(material.uniforms.odysseyShadowFloorBiasScale){
+      material.uniforms.odysseyShadowFloorBiasScale.value = d.floorBiasScale;
+    }
+    if(material.uniforms.odysseyShadowContactNormalZ){
+      material.uniforms.odysseyShadowContactNormalZ.value = d.contactNormalZ;
+    }
+    if(material.uniforms.odysseyShadowMinVertexColor){
+      material.uniforms.odysseyShadowMinVertexColor.value = d.minVertexColor;
     }
 
     const mapSize = material.uniforms.odysseyShadowMapSize.value as THREE.Vector2;
@@ -498,6 +534,7 @@ export class OdysseyLightingBinder {
     material.userData.odysseyShadowGatingBound = GameState.shadowAlpha;
     material.userData.odysseyBeamingBound = GameState.beamingProjectionAlpha;
     material.userData.odysseyShadowSoftBound = softBound;
+    material.userData.odysseyLightingDebugRevision = lightingRev;
     material.uniformsNeedUpdate = true;
   }
 

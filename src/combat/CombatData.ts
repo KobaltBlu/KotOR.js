@@ -36,6 +36,12 @@ export class CombatData {
   initiative: number;
   lastDamager: ModuleObject;
   lastAttacker: ModuleObject;
+  /**
+   * Retail CSWSObject.last_hostile_actor_id — set by SetLastHostileActor on
+   * attacked / damage / harmful spell-at. Used by GetLastHostileActor (not
+   * lastAttackTarget).
+   */
+  lastHostileActor: ModuleObject;
   /** Last weapon used in an attack (GetLastWeaponUsed). */
   lastWeaponUsed: ModuleObject;
   /** Raw combat-feat id from last attack; GetLastAttackType maps Flurry/Rapid Shot. */

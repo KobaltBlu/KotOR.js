@@ -42,21 +42,18 @@ describe('OdysseyShadow primary map shader chunk', () => {
 
   test('adapts soft spread and hard-mode local PCF via distantFactor', () => {
     expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('odysseyShadowDistantFactor');
-    expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD_LOCAL');
-    expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD_DISTANT');
-    expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('ODYSSEY_SHADOW_SOFT_DEPTH_WIDTH_LOCAL');
+    expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('odysseyShadowSoftTexelSpreadLocal');
+    expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('odysseyShadowSoftTexelSpreadDistant');
+    expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('odysseyShadowSoftDepthWidthLocal');
     expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('hardLocal3');
-    // JS String(3.0) === "3"; GLSL mix() needs float literals.
-    expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toMatch(
-      /#define ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD_LOCAL 3\.0/
-    );
+    expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('uniform float odysseyShadowSoftTexelSpreadLocal');
   });
 
   test('scales floor-receiver bias under lightmaps to close walkmesh vs MDL gaps', () => {
-    expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('ODYSSEY_SHADOW_CONTACT_NORMAL_Z');
-    expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('ODYSSEY_SHADOW_FLOOR_BIAS_SCALE');
+    expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('odysseyShadowContactNormalZ');
+    expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('odysseyShadowFloorBiasScale');
     // Floor bias must not run on creature skins (lightmapped receivers only).
-    expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toMatch(/#ifdef USE_LIGHTMAP[\s\S]*ODYSSEY_SHADOW_FLOOR_BIAS_SCALE/);
+    expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toMatch(/#ifdef USE_LIGHTMAP[\s\S]*odysseyShadowFloorBiasScale/);
   });
 
   test('PCF radius constant is positive', () => {
@@ -86,6 +83,8 @@ describe('OdysseyShadow primary map shader chunk', () => {
     expect(uniforms.odysseyShadowMapActive).toBeDefined();
     expect(uniforms.odysseyShadowLightCount).toBeDefined();
     expect(uniforms.odysseyShadowDistantFactor).toBeDefined();
+    expect(uniforms.odysseyShadowSoftTexelSpreadLocal).toBeDefined();
+    expect(uniforms.odysseyShadowMinVertexColor).toBeDefined();
     expect(uniforms.odysseyShadowStrength.value).toHaveLength(MAX_ODYSSEY_SHADOW_MAPS);
     expect(uniforms.odysseyShadowActive.value).toHaveLength(MAX_ODYSSEY_SHADOW_MAPS);
     expect(uniforms.odysseyShadowDistantFactor.value).toHaveLength(MAX_ODYSSEY_SHADOW_MAPS);

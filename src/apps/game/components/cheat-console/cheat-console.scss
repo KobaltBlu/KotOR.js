@@ -86,6 +86,8 @@
     border-radius: 4px;
     box-shadow: 0 0 4px #000;
     z-index: 10;
+    max-height: min(70vh, 560px);
+    overflow-y: auto;
   }
 
   .console-submenu-group {
@@ -129,6 +131,17 @@
     font-weight: bold;
     padding: 0.25rem 0.4rem;
     text-align: right;
+  }
+
+  .console-number-input-wide {
+    width: 5.5rem;
+  }
+
+  .console-lighting-tunables {
+    max-height: min(36vh, 280px);
+    overflow-y: auto;
+    padding-right: 4px;
+    margin-bottom: 4px;
   }
 
   .console-warp-browser {

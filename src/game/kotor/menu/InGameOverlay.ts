@@ -13,7 +13,10 @@ import { AutoPauseState } from "@/enums/engine/AutoPauseState";
 import { BitWise } from "@/utility/BitWise";
 import { KeyMapAction, ModuleObjectType } from "@/enums";
 import type { ModuleObject } from "@/module/ModuleObject";
-import { FollowerCamera } from "@/engine/FollowerCamera";
+import {
+  getClientCombatMode,
+  setClientCombatMode,
+} from "@/combat/combat-engagement";
 
 const TLK_TOOLTIP_FULL_HEALTH = 42498;
 
@@ -599,7 +602,8 @@ export class InGameOverlay extends GameMenu {
   onClearAllButtonPressed() {
     const oPC = GameState.getCurrentPlayer();
     if(!oPC) return;
-    FollowerCamera.setCombatCameraActive(false);
+    // Retail ClearAllActions → SetCombatMode(0) then ClearAllActions (not CancelCombat).
+    setClientCombatMode(oPC, false);
     oPC.clearAllActions(true);
     // Retail ClearAllActions also RemoveAllActions on the round.
     oPC.combatRound?.clearActions?.();
@@ -1412,12 +1416,9 @@ export class InGameOverlay extends GameMenu {
         this.getControlByName('LBL_DEBILATATED' + (id + 1))?.hide();
       }
     }
-    // Retail client combat UI follows retail combat state (synced only for Damage reason),
-    // not flourish-only SetCombatState(1, SpellCast/2).
-    const hostileCombat = typeof oPC.isHostileCombatEngaged === 'function'
-      ? oPC.isHostileCombatEngaged()
-      : oPC.combatData.combatState;
-    if (hostileCombat || oPC.excitedDuration || oPC.combatRound.scheduledActionList.length) {
+    // Retail ShowActionQueue(GetCombatMode()) — client combat mode only
+    // (not ExcitedDuration / SetCombatState timer / queue length).
+    if (getClientCombatMode()) {
       this.showCombatUI();
       let action0 = oPC.combatRound.action;
       let action1 = oPC.combatRound.scheduledActionList[0];

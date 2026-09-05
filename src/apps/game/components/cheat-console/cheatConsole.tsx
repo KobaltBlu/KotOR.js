@@ -191,6 +191,17 @@ export const CheatConsole = () => {
     setDebugTick(debugTick + 1);
   }
 
+  const onSetLightingDebug = (key: KotOR.OdysseyLightingDebugKey, value: number) => {
+    if(!Number.isFinite(value)){ return; }
+    KotOR.OdysseyLightingDebug.set(key, value);
+    setDebugTick(debugTick + 1);
+  }
+
+  const onResetLightingDebug = () => {
+    KotOR.OdysseyLightingDebug.reset();
+    setDebugTick(debugTick + 1);
+  }
+
   const onToggleFloatyAllAttackers = () => {
     KotOR.GameState.DEBUG_COMBAT_FLOATY_ALL_ATTACKERS = !KotOR.GameState.DEBUG_COMBAT_FLOATY_ALL_ATTACKERS;
     setDebugTick(debugTick + 1);
@@ -284,6 +295,37 @@ export const CheatConsole = () => {
                         Ship Build
                       </button>
                     </div>
+                  )}
+                  {group.label === 'Lighting' && (
+                    <>
+                      <div className="console-submenu-title">Shadow Tunables</div>
+                      <div className="console-lighting-tunables">
+                        {KotOR.ODYSSEY_LIGHTING_DEBUG_KEYS.map((key) => (
+                          <div key={key} className="console-submenu-row">
+                            <label className="console-submenu-label" htmlFor={`lighting-${key}`} title={key}>
+                              {key}
+                            </label>
+                            <input
+                              id={`lighting-${key}`}
+                              className="console-number-input console-number-input-wide"
+                              type="number"
+                              step="any"
+                              value={KotOR.OdysseyLightingDebug.get(key)}
+                              onChange={(e) => onSetLightingDebug(key, parseFloat(e.target.value))}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      <div className="console-submenu-buttons">
+                        <button
+                          className="console-btn console-btn-small flex-1"
+                          onClick={onResetLightingDebug}
+                          title="Reset all lighting knobs to defaults (lightreset)"
+                        >
+                          Reset Lighting
+                        </button>
+                      </div>
+                    </>
                   )}
                 </div>
               ))}

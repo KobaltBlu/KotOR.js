@@ -1,4 +1,5 @@
 import { TalkVolume } from "@/enums/engine/TalkVolume";
+import { PerceptionMask } from "@/enums/engine/PerceptionMask";
 
 /**
  * Retail SpeakString / BroadcastDialog notify plan (volume → range + who hears).
@@ -30,6 +31,27 @@ export function getSpeakStringNotifyPlan(volume: TalkVolume): SpeakStringNotifyP
     default:
       return { range: 5, notifyCreatures: false, notifyParty: false };
   }
+}
+
+/**
+ * Retail BroadcastDialog creature→creature gate: listener must already HEAR the
+ * speaker (visibility HEARD bit). Party mutual perception is forced in retail,
+ * so party notify skips this check.
+ */
+export function listenerHearsSpeaker(
+  listener: { perceptionList?: Array<{ object?: unknown; data?: number }> },
+  speaker: unknown
+): boolean {
+  if(!listener || !speaker || listener === speaker) return true;
+  const list = listener.perceptionList;
+  if(!list?.length) return false;
+  for(let i = 0; i < list.length; i++){
+    const entry = list[i];
+    if(entry?.object === speaker && (entry.data & PerceptionMask.HEARD)){
+      return true;
+    }
+  }
+  return false;
 }
 
 /**

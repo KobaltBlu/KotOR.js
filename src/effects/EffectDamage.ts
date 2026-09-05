@@ -62,6 +62,7 @@ export class EffectDamage extends GameEffect {
       this.resolvedDamage = 0;
       this.object.combatData.lastDamager = this.creator;
       this.object.combatData.lastAttacker = this.creator;
+      this.object.setLastHostileActor(this.creator);
       return;
     }
 
@@ -74,6 +75,7 @@ export class EffectDamage extends GameEffect {
       this.resolvedDamage = 0;
       this.object.combatData.lastDamager = this.creator;
       this.object.combatData.lastAttacker = this.creator;
+      this.object.setLastHostileActor(this.creator);
       return;
     }
 
@@ -117,6 +119,7 @@ export class EffectDamage extends GameEffect {
     }
     this.object.combatData.lastDamager = this.creator;
     this.object.combatData.lastAttacker = this.creator;
+    this.object.setLastHostileActor(this.creator);
     // Retail GetLastDamageAmountByFlags / GetTotalDamageDealt state
     const lastDmg = this.object.combatData.lastDamageAmounts;
     if(lastDmg){

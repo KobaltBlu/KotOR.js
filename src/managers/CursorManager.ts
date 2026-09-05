@@ -13,6 +13,7 @@ import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { BitWise } from "@/utility/BitWise";
 import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import { OdysseyObject3D } from "@/three/odyssey/OdysseyObject3D";
+import { getClientCombatMode } from "@/combat/combat-engagement";
 
 /** Retail ProcessInput pick range (√900) — XY distance player↔object. */
 export const MOUSE_PICK_RANGE = 30;
@@ -202,22 +203,11 @@ export class CursorManager {
 	}
 
 	/**
-	 * True when retail client combat_mode would be set (party has live attack/spell target).
+	 * True when retail client combat_mode would be set
+	 * (CClientExoApp::GetCombatMode — controlled PC client combat-mode bit).
 	 */
 	static isClientCombatMode(): boolean {
-		const party = GameState.PartyManager?.party;
-		if(!party?.length){
-			const pc = GameState.getCurrentPlayer();
-			return !!(pc?.combatData?.combatState || (pc?.excitedDuration ?? 0) > 0);
-		}
-		for(let i = 0; i < party.length; i++){
-			const member = party[i];
-			if(!member || member.isDead?.()) continue;
-			if(member.combatData?.combatState || (member.excitedDuration ?? 0) > 0){
-				return true;
-			}
-		}
-		return false;
+		return getClientCombatMode();
 	}
 
 	/**

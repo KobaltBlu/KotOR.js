@@ -7912,11 +7912,12 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      
-      if(typeof args[0] == 'undefined')
+      // Retail ExecuteCommandGetLastHostileActor — last_hostile_actor_id only
+      const target = (typeof args[0] != 'undefined') ? args[0] : this.caller;
+      if(!BitWise.InstanceOfObject(target, ModuleObjectType.ModuleObject)){
         return undefined;
-
-      return args[0].combatData.lastAttackTarget || args[0].combatData.lastAttacker || args[0].combatData.lastDamager || undefined;
+      }
+      return target.getLastHostileActor();
     }
   },
   557:{
