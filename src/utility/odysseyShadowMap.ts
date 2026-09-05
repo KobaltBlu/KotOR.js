@@ -88,13 +88,18 @@ export function buildFocusSpotShadowCameraParams(
 /**
  * Tight perspective range around the light→focus ray so packed depths separate
  * body from floor without forcing an overhead proxy.
+ *
+ * Uses the real light→focus distance for near/far/FOV. Clamping dist to
+ * {@link ODYSSEY_SHADOW_MIN_HALF_EXTENT} made low local lamps (dist &lt; 5)
+ * compute near≈1.5 while the camera sat ~2 units from focus, clipping
+ * everything above the shins out of the depth map.
  */
 export function buildAngledSpotShadowCameraParams(
   lightPos: THREE.Vector3,
   focus: THREE.Vector3,
   coverageRadius: number = ODYSSEY_SHADOW_MIN_HALF_EXTENT
 ): IOdysseySpotShadowCameraParams {
-  const dist = Math.max(lightPos.distanceTo(focus), ODYSSEY_SHADOW_MIN_HALF_EXTENT);
+  const dist = Math.max(lightPos.distanceTo(focus), ODYSSEY_SHADOW_CAMERA_NEAR);
   const coverage = Math.max(coverageRadius, ODYSSEY_SHADOW_MIN_HALF_EXTENT);
   const near = Math.max(ODYSSEY_SHADOW_CAMERA_NEAR, dist - coverage * 0.7);
   const far = dist + coverage;

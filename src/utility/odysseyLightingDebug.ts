@@ -54,7 +54,7 @@ export interface IOdysseyLightingDebugValues {
 export type OdysseyLightingDebugKey = keyof IOdysseyLightingDebugValues;
 
 export const ODYSSEY_LIGHTING_DEBUG_DEFAULTS: Readonly<IOdysseyLightingDebugValues> = Object.freeze({
-  strengthScaleLocal: 0.82,
+  strengthScaleLocal: 0.50,
   strengthScaleDistant: 1.35,
   softTexelSpreadLocal: 3.0,
   softTexelSpreadDistant: 1.15,

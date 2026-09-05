@@ -72,6 +72,22 @@ describe('odyssey shadow map camera', () => {
     expect(params.fovDeg).toBeLessThanOrEqual(120);
   });
 
+  test('close local lamps keep near below body so feet-only clipping cannot occur', () => {
+    // auroralight27-style: lamp at head height, dist < RETAIL_SHADOW_LENGTH (5)
+    const light = new THREE.Vector3(5.691, 28.577, 23.579);
+    const focus = new THREE.Vector3(5.926, 29.166, 21.804);
+    const dist = light.distanceTo(focus);
+    expect(dist).toBeLessThan(ODYSSEY_SHADOW_MIN_HALF_EXTENT);
+
+    const params = buildAngledSpotShadowCameraParams(light, focus, 5);
+    expect(params.near).toBeCloseTo(0.1, 4);
+    expect(params.near).toBeLessThan(dist * 0.5);
+    expect(params.far).toBeCloseTo(dist + 5, 4);
+    // Wider FOV than the old dist-clamped-to-5 path (90°) so floor throw stays in-map.
+    expect(params.fovDeg).toBeGreaterThan(90);
+    expect(params.fovDeg).toBeLessThanOrEqual(120);
+  });
+
   test('focus spot camera tightens near/far around elevation', () => {
     const params = buildFocusSpotShadowCameraParams(5);
     expect(params.fovDeg).toBe(90);

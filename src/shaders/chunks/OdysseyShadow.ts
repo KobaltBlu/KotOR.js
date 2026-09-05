@@ -57,7 +57,7 @@ export const ODYSSEY_SHADOW_SOFT_DEPTH_WIDTH_LOCAL = 0.012;
 export const ODYSSEY_SHADOW_SOFT_DEPTH_WIDTH_DISTANT = 0.003;
 
 /** Multiplier on retail projection strength for local lamps. */
-export const ODYSSEY_SHADOW_STRENGTH_SCALE_LOCAL = 0.82;
+export const ODYSSEY_SHADOW_STRENGTH_SCALE_LOCAL = 0.50;
 /** Multiplier on retail projection strength for area/sun lights. */
 export const ODYSSEY_SHADOW_STRENGTH_SCALE_DISTANT = 1.35;
 

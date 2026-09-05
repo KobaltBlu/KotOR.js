@@ -128,6 +128,8 @@ export class OdysseyShadowManager {
   private _lastStateHash = 0;
   private _needsShadowMapRender = false;
   private _focus = new THREE.Vector3();
+  /** Slot-0 frustum gizmo parented under LightManager context.group.shadow_lights. */
+  private shadowFrustumHelper: THREE.CameraHelper | null = null;
   private _proxyPos = new THREE.Vector3();
   private _scratchSelected: OdysseyLight3D[] = [];
   private _scratchSoftCandidates: OdysseyLight3D[] = [];
@@ -702,6 +704,7 @@ export class OdysseyShadowManager {
     }
 
     this.refreshDiagnostics();
+    this.updateShadowFrustumHelper();
   }
 
   private deactivateProxies(reason: string){
@@ -722,6 +725,40 @@ export class OdysseyShadowManager {
     this.lastUpdateReason = reason;
     this.resetSoftStickyState();
     this.refreshDiagnostics();
+    this.updateShadowFrustumHelper();
+  }
+
+  /**
+   * Sync CameraHelper for the active shadow projector into the game
+   * `shadow_lights` debug group (when that layer is visible).
+   */
+  private updateShadowFrustumHelper(){
+    const group = this.lightManager?.context?.group?.shadow_lights as THREE.Group | undefined;
+    const cam = this.getShadowCamera();
+    const show = !!group?.visible && !!cam && this.activeLightCount > 0;
+
+    if(!show){
+      if(this.shadowFrustumHelper){
+        this.shadowFrustumHelper.visible = false;
+      }
+      return;
+    }
+
+    if(!this.shadowFrustumHelper || this.shadowFrustumHelper.camera !== cam){
+      if(this.shadowFrustumHelper){
+        this.shadowFrustumHelper.removeFromParent();
+        this.shadowFrustumHelper.dispose();
+        this.shadowFrustumHelper = null;
+      }
+      this.shadowFrustumHelper = new THREE.CameraHelper(cam!);
+      this.shadowFrustumHelper.name = 'OdysseyShadowFrustumHelper';
+      group!.add(this.shadowFrustumHelper);
+    }else if(this.shadowFrustumHelper.parent !== group){
+      group!.add(this.shadowFrustumHelper);
+    }
+
+    this.shadowFrustumHelper.visible = true;
+    this.shadowFrustumHelper.update();
   }
 
   private syncSlot(index: number, light: OdysseyLight3D){

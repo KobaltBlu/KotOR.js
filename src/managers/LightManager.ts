@@ -1,6 +1,10 @@
 import * as THREE from "three";
 import { OdysseyLight3D } from "@/three/odyssey";
 import { OdysseyLightHelper } from "@/three/odyssey/OdysseyLightHelper";
+import {
+  OdysseyShadowHelperRole,
+  OdysseyShadowLightHelper,
+} from "@/three/odyssey/OdysseyShadowLightHelper";
 import type { ModuleObject } from "@/module";
 import { TwoDAManager } from "@/managers/TwoDAManager";
 import { MAX_ODYSSEY_LIGHTS } from "@/shaders/chunks/OdysseyLighting";
@@ -190,6 +194,14 @@ export class LightManager {
   private lightHelpers = new Map<string, OdysseyLightHelper>();
   /** Scratch set of bound light uuids for helper styling / filter. */
   private _boundHelperSet = new Set<string>();
+  /** Active shadow-caster gizmos keyed by light uuid. */
+  private shadowHelpers = new Map<string, OdysseyShadowLightHelper>();
+  /** Scratch role bitmask per uuid while rebuilding shadow helpers. */
+  private _shadowRoleScratch = new Map<string, number>();
+  /** Scratch light lookup while rebuilding shadow helpers. */
+  private _shadowLightScratch = new Map<string, OdysseyLight3D>();
+  /** Scratch list of shadow-helper uuids to dispose. */
+  private _shadowHelperDisposeScratch: string[] = [];
 
   init(context: any){
     this.context = context;
@@ -266,6 +278,7 @@ export class LightManager {
 
   clearLights(){
     this.disposeAllLightHelpers();
+    this.disposeAllShadowHelpers();
     this.modelLightCounter = {};
     this.lights = [];
     this.boundLights = [];
@@ -316,6 +329,7 @@ export class LightManager {
       this.lightsPoseEpoch++;
     }
     this.disposeLightHelper(light);
+    this.disposeShadowHelper(light);
     this.boundLights = this.boundLights.filter((entry) => entry !== light);
     this.selectedLights = this.selectedLights.filter((entry) => entry !== light);
     this.bumpLights = this.bumpLights.filter((entry) => entry !== light);
@@ -359,6 +373,7 @@ export class LightManager {
     this.updateDynamicLights(delta);
     this.updateShadowLightSelection(delta);
     this.updateLightHelpers();
+    this.updateShadowHelpers();
   }
 
   private ensureLightHelper(light: OdysseyLight3D){
@@ -426,6 +441,94 @@ export class LightManager {
       helper.visible = !boundOnly || bound;
       if(helper.visible){
         helper.update(bound);
+      }
+    }
+  }
+
+  private ensureShadowHelper(light: OdysseyLight3D){
+    if(this.shadowHelpers.has(light.uuid)){
+      return this.shadowHelpers.get(light.uuid)!;
+    }
+    const group = this.context?.group?.shadow_lights as THREE.Group | undefined;
+    if(!group){
+      return undefined;
+    }
+    const helper = new OdysseyShadowLightHelper(light);
+    this.shadowHelpers.set(light.uuid, helper);
+    group.add(helper);
+    return helper;
+  }
+
+  private disposeShadowHelper(light: OdysseyLight3D){
+    const helper = this.shadowHelpers.get(light.uuid);
+    if(!helper){
+      return;
+    }
+    this.shadowHelpers.delete(light.uuid);
+    helper.dispose();
+  }
+
+  private disposeAllShadowHelpers(){
+    for(const helper of this.shadowHelpers.values()){
+      helper.dispose();
+    }
+    this.shadowHelpers.clear();
+  }
+
+  /**
+   * Gizmos for lights currently in GetShadowLights pools (multi / static / distant).
+   * Populates `context.group.shadow_lights` when that debug layer is available.
+   */
+  private updateShadowHelpers(){
+    const group = this.context?.group?.shadow_lights as THREE.Group | undefined;
+    if(!group){
+      return;
+    }
+
+    this._shadowRoleScratch.clear();
+    this._shadowLightScratch.clear();
+    const addRole = (light: OdysseyLight3D | undefined, role: number) => {
+      if(!light){ return; }
+      this._shadowLightScratch.set(light.uuid, light);
+      const prev = this._shadowRoleScratch.get(light.uuid) || 0;
+      this._shadowRoleScratch.set(light.uuid, prev | role);
+    };
+
+    for(let i = 0, il = this.shadowLights.length; i < il; i++){
+      addRole(this.shadowLights[i], OdysseyShadowHelperRole.Multi);
+    }
+    for(let i = 0, il = this.staticMeshShadowLights.length; i < il; i++){
+      addRole(this.staticMeshShadowLights[i], OdysseyShadowHelperRole.StaticMesh);
+    }
+    addRole(this.distantShadowLight, OdysseyShadowHelperRole.Distant);
+
+    this._shadowHelperDisposeScratch.length = 0;
+    for(const uuid of this.shadowHelpers.keys()){
+      if(!this._shadowRoleScratch.has(uuid)){
+        this._shadowHelperDisposeScratch.push(uuid);
+      }
+    }
+    for(let i = 0; i < this._shadowHelperDisposeScratch.length; i++){
+      const helper = this.shadowHelpers.get(this._shadowHelperDisposeScratch[i]);
+      if(helper){
+        this.shadowHelpers.delete(this._shadowHelperDisposeScratch[i]);
+        helper.dispose();
+      }
+    }
+
+    if(!group.visible){
+      return;
+    }
+
+    for(const [uuid, roles] of this._shadowRoleScratch){
+      const light = this._shadowLightScratch.get(uuid);
+      if(!light){
+        continue;
+      }
+      const helper = this.ensureShadowHelper(light);
+      if(helper){
+        helper.visible = true;
+        helper.update(roles, this.focusPosition);
       }
     }
   }
