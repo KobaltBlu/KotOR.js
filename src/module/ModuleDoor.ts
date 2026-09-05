@@ -712,7 +712,7 @@ export class ModuleDoor extends ModuleObject {
 
       this.audioEmitter.setPosition(this.position.x, this.position.y, this.position.z);
       this.boxHelper = new THREE.Box3Helper( this.box, (new THREE.Color()).setHex(0xff0000) );
-      GameState.group.light_helpers.add( this.boxHelper );
+      GameState.group.collision_helpers.add( this.boxHelper );
     }
 
     if(this.collisionManager.walkmesh && this.model){

@@ -1,8 +1,10 @@
 import * as THREE from "three";
 import { OdysseyLight3D } from "@/three/odyssey";
+import { OdysseyLightHelper } from "@/three/odyssey/OdysseyLightHelper";
 import type { ModuleObject } from "@/module";
 import { TwoDAManager } from "@/managers/TwoDAManager";
 import { MAX_ODYSSEY_LIGHTS } from "@/shaders/chunks/OdysseyLighting";
+import { EngineDebugType } from "@/enums/engine/EngineDebugType";
 import {
   compareRetailLights,
   retailDynamicRank,
@@ -184,6 +186,11 @@ export class LightManager {
   private _prevDynamicCacheID = -1;
   private _prevLightmapCacheID = -1;
 
+  /** Per-light debug gizmos keyed by light uuid. */
+  private lightHelpers = new Map<string, OdysseyLightHelper>();
+  /** Scratch set of bound light uuids for helper styling / filter. */
+  private _boundHelperSet = new Set<string>();
+
   init(context: any){
     this.context = context;
     LightManager.MAXLIGHTS = MAX_ODYSSEY_LIGHTS;
@@ -258,6 +265,7 @@ export class LightManager {
   }
 
   clearLights(){
+    this.disposeAllLightHelpers();
     this.modelLightCounter = {};
     this.lights = [];
     this.boundLights = [];
@@ -297,6 +305,7 @@ export class LightManager {
       this.lights.push(light);
       light.getWorldPosition(light.worldPosition);
       this.lightsPoseEpoch++;
+      this.ensureLightHelper(light);
     }
   }
 
@@ -306,6 +315,7 @@ export class LightManager {
       this.lights.splice(index, 1);
       this.lightsPoseEpoch++;
     }
+    this.disposeLightHelper(light);
     this.boundLights = this.boundLights.filter((entry) => entry !== light);
     this.selectedLights = this.selectedLights.filter((entry) => entry !== light);
     this.bumpLights = this.bumpLights.filter((entry) => entry !== light);
@@ -348,6 +358,76 @@ export class LightManager {
 
     this.updateDynamicLights(delta);
     this.updateShadowLightSelection(delta);
+    this.updateLightHelpers();
+  }
+
+  private ensureLightHelper(light: OdysseyLight3D){
+    if(this.lightHelpers.has(light.uuid)){
+      return;
+    }
+    const group = this.context?.group?.light_helpers as THREE.Group | undefined;
+    if(!group){
+      return;
+    }
+    const helper = new OdysseyLightHelper(light);
+    this.lightHelpers.set(light.uuid, helper);
+    group.add(helper);
+  }
+
+  private disposeLightHelper(light: OdysseyLight3D){
+    const helper = this.lightHelpers.get(light.uuid);
+    if(!helper){
+      return;
+    }
+    this.lightHelpers.delete(light.uuid);
+    helper.dispose();
+  }
+
+  private disposeAllLightHelpers(){
+    for(const helper of this.lightHelpers.values()){
+      helper.dispose();
+    }
+    this.lightHelpers.clear();
+  }
+
+  /**
+   * Sync OdysseyLightHelper gizmos for every registered light.
+   * Respects group visibility and optional bound-only debug filter.
+   */
+  private updateLightHelpers(){
+    const group = this.context?.group?.light_helpers as THREE.Group | undefined;
+    if(!group){
+      return;
+    }
+
+    // Attach helpers for lights registered before the group existed.
+    for(let i = 0, il = this.lights.length; i < il; i++){
+      this.ensureLightHelper(this.lights[i]);
+    }
+
+    if(!group.visible){
+      return;
+    }
+
+    this._boundHelperSet.clear();
+    for(let i = 0, il = this.boundLights.length; i < il; i++){
+      this._boundHelperSet.add(this.boundLights[i].uuid);
+    }
+
+    const boundOnly = !!this.context?.debug?.[EngineDebugType.LIGHT_HELPERS_BOUND_ONLY];
+
+    for(let i = 0, il = this.lights.length; i < il; i++){
+      const light = this.lights[i];
+      const helper = this.lightHelpers.get(light.uuid);
+      if(!helper){
+        continue;
+      }
+      const bound = this._boundHelperSet.has(light.uuid);
+      helper.visible = !boundOnly || bound;
+      if(helper.visible){
+        helper.update(bound);
+      }
+    }
   }
 
   /**

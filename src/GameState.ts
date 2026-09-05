@@ -237,6 +237,7 @@ export class GameState implements EngineContext {
     COLLISION_HELPERS: false,
 
     LIGHT_HELPERS: false,
+    LIGHT_HELPERS_BOUND_ONLY: false,
     SHADOW_LIGHTS: false,
   };
   

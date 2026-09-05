@@ -1,47 +1,171 @@
-.console {
+.cheat-console {
   position: absolute;
-  bottom: 0;
-  right: 0;
-  left: 0;
+  inset: 0;
+  pointer-events: none;
+  z-index: 45;
   display: none;
+  font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
 
   &.on {
     display: block;
   }
-  
-  &:before {
-    content: '>';
+
+  // —— Command bar (retail-style bottom strip) ——
+  .cheat-console-bar {
     position: absolute;
+    left: 0;
+    right: 0;
     bottom: 0;
-    font-size: 18pt;
-    height: 41px;
-    /* line-height: 41px; */
-    font-weight: bolder;
-    font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
-    left: 10px;
-    color: gold;
+    pointer-events: auto;
+
+    &:before {
+      content: '>';
+      position: absolute;
+      bottom: 0;
+      font-size: 18pt;
+      height: 41px;
+      font-weight: bolder;
+      font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+      left: 10px;
+      color: gold;
+      z-index: 1;
+      pointer-events: none;
+      line-height: 41px;
+    }
   }
-  
-  & > input[type="text"] {
+
+  .cheat-console-input {
+    display: block;
     background: rgba(0, 0, 0, 0.5);
     border: 1px solid cornflowerblue;
-    width: calc(100%);
+    width: 100%;
+    box-sizing: border-box;
     font-size: 18pt;
     font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
     color: gold;
     text-indent: 30px;
+    padding: 4px 0;
+    outline: none;
   }
 
-  .console-buttons {
-    padding: 10px;
-    text-align: right;
+  // —— Debug / Tools docked panel ——
+  .debug-tools-panel {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    bottom: 56px;
+    width: min(380px, 40vw);
+    z-index: 46;
+    display: flex;
+    flex-direction: column;
+    background: #0e0e0ef2;
+    border: 2px solid #d4a03d;
+    border-radius: 6px;
+    box-shadow: 0 0 12px #000;
+    color: #e6b35c;
+    pointer-events: auto;
+    min-height: 0;
   }
 
-  .console-menu-anchor {
-    position: relative;
-    display: inline-block;
+  .debug-tools-chrome {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    border-bottom: 1px solid #d4a03d66;
+    flex-shrink: 0;
   }
-  
+
+  .debug-tools-chrome-text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .debug-tools-title {
+    font-weight: bold;
+    font-size: 1rem;
+  }
+
+  .debug-tools-subtitle {
+    font-size: 0.72rem;
+    opacity: 0.75;
+    font-family: Consolas, "Lucida Console", monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .debug-tools-close {
+    background: #0e0e0ebd;
+    border: 2px solid #d4a03d;
+    color: #e6b35c;
+    padding: 0.25rem 0.75rem;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 4px;
+    flex-shrink: 0;
+
+    &:hover {
+      background: #1c2c38;
+    }
+  }
+
+  .debug-tools-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 4px 0 8px;
+  }
+
+  .debug-tools-section {
+    border-bottom: 1px solid #d4a03d44;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  .debug-tools-section-header {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 8px;
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    color: #e6b35c;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: bold;
+    cursor: pointer;
+    text-align: left;
+
+    &:hover {
+      background: rgba(212, 160, 61, 0.08);
+    }
+  }
+
+  .debug-tools-section-title {
+    flex: 1;
+  }
+
+  .debug-tools-section-chevron {
+    opacity: 0.7;
+    font-size: 0.7rem;
+  }
+
+  .debug-tools-section-body {
+    padding: 0 12px 10px;
+  }
+
+  .debug-tools-btn-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+  }
+
+  // —— Shared controls ——
   .console-btn {
     background: #0e0e0ebd;
     border: 2px solid #d4a03d;
@@ -52,17 +176,16 @@
     cursor: pointer;
     border-radius: 4px;
     box-shadow: 0 0 4px #000;
-    margin-left: 10px;
     white-space: nowrap;
 
     &.flex-1 {
       flex: 1;
     }
-  
+
     &:hover {
       background: #1c2c38;
     }
-  
+
     &:active {
       background: #2c3e50;
     }
@@ -71,46 +194,107 @@
   .console-btn-small {
     padding: 0.35rem 0.75rem;
     font-size: 0.85rem;
-    margin: 4px 6px 0 0;
+    margin: 0;
   }
 
-  .console-submenu {
-    position: absolute;
-    right: 0;
-    bottom: 100%;
-    margin-bottom: 8px;
-    padding: 10px;
-    text-align: right;
-    background: #0e0e0ebd;
-    border: 2px solid #d4a03d;
-    border-radius: 4px;
-    box-shadow: 0 0 4px #000;
-    z-index: 10;
-    max-height: min(70vh, 560px);
-    overflow-y: auto;
-  }
-
-  .console-submenu-group {
-    margin-top: 8px;
-  }
-
-  .console-submenu-title {
-    color: #e6b35c;
-    font-weight: bold;
-    margin-bottom: 4px;
-  }
-
-  .console-submenu-buttons {
+  // Boolean toggles: pip + ON/OFF badge so off is unmistakable
+  .console-toggle {
     display: inline-flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 4px;
+    align-items: center;
+    gap: 0.4rem;
+    padding-left: 0.55rem;
+    padding-right: 0.45rem;
+
+    .console-toggle-pip {
+      width: 0.55rem;
+      height: 0.55rem;
+      border-radius: 50%;
+      flex-shrink: 0;
+      border: 1.5px solid currentColor;
+      background: transparent;
+      box-sizing: border-box;
+    }
+
+    .console-toggle-label {
+      flex: 1;
+      min-width: 0;
+      text-align: left;
+    }
+
+    .console-toggle-state {
+      flex-shrink: 0;
+      font-size: 0.65rem;
+      font-weight: bold;
+      letter-spacing: 0.04em;
+      padding: 0.1rem 0.35rem;
+      border-radius: 3px;
+      border: 1px solid currentColor;
+      line-height: 1.2;
+      opacity: 0.9;
+    }
+
+    &.on {
+      background: rgba(212, 160, 61, 0.22);
+      border-style: solid;
+      opacity: 1;
+
+      .console-toggle-pip {
+        background: currentColor;
+        box-shadow: 0 0 6px currentColor;
+      }
+
+      .console-toggle-state {
+        background: rgba(212, 160, 61, 0.35);
+      }
+    }
+
+    &.off {
+      background: transparent;
+      border-style: dashed;
+      opacity: 0.55;
+      color: #a89060;
+
+      &:hover {
+        opacity: 0.8;
+        background: rgba(212, 160, 61, 0.06);
+      }
+
+      .console-toggle-pip {
+        background: transparent;
+        box-shadow: none;
+      }
+
+      .console-toggle-state {
+        background: transparent;
+        opacity: 0.75;
+      }
+    }
+  }
+
+  // Choice / selection (warp current, damage presets) — highlight only, no ON/OFF
+  .console-choice {
+    &.on {
+      background: rgba(212, 160, 61, 0.22);
+      opacity: 1;
+    }
+
+    &.off {
+      background: transparent;
+      opacity: 0.55;
+      border-style: dashed;
+      color: #a89060;
+
+      &:hover {
+        opacity: 0.8;
+        background: rgba(212, 160, 61, 0.06);
+      }
+    }
   }
 
   .console-submenu-row {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: space-between;
     gap: 8px;
     margin-bottom: 4px;
   }
@@ -119,10 +303,14 @@
     color: #e6b35c;
     font-size: 0.85rem;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
   }
 
   .console-number-input {
     width: 4.5rem;
+    flex-shrink: 0;
     background: #0e0e0ebd;
     border: 1px solid #d4a03d;
     border-radius: 4px;
@@ -138,22 +326,14 @@
   }
 
   .console-lighting-tunables {
-    max-height: min(36vh, 280px);
-    overflow-y: auto;
-    padding-right: 4px;
     margin-bottom: 4px;
-  }
-
-  .console-warp-browser {
-    width: min(360px, 80vw);
-    text-align: left;
   }
 
   .console-filter-input {
     display: block;
     width: 100%;
     box-sizing: border-box;
-    margin: 4px 0 8px;
+    margin: 0 0 8px;
     background: #0e0e0ebd;
     border: 1px solid #d4a03d;
     border-radius: 4px;
@@ -167,7 +347,7 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
-    max-height: min(40vh, 320px);
+    max-height: min(28vh, 240px);
     overflow-y: auto;
     padding-right: 4px;
   }
@@ -176,7 +356,7 @@
     margin: 0;
     width: 100%;
     text-align: left;
-    font-family: "Lucida Sans Unicode", "Lucida Grande", monospace;
+    font-family: Consolas, "Lucida Console", monospace;
   }
 
   .console-warp-empty {
@@ -194,15 +374,48 @@
     text-align: right;
   }
 
-  .console-btn.on {
-    background: #1c2c38;
-  }
-
-  .console-btn.off {
-    opacity: 0.7;
-  }
-
+  // —— TSL theme ——
   &.TSL {
+    .cheat-console-bar:before {
+      color: #00ffcc;
+    }
+
+    .cheat-console-input {
+      border-color: #1a5f4e;
+      color: #00ffcc;
+    }
+
+    .debug-tools-panel {
+      border-color: #1a5f4e;
+      color: #00ffcc;
+    }
+
+    .debug-tools-chrome {
+      border-bottom-color: #1a5f4e66;
+    }
+
+    .debug-tools-section {
+      border-bottom-color: #1a5f4e44;
+    }
+
+    .debug-tools-section-header {
+      color: #00ffcc;
+
+      &:hover {
+        background: rgba(0, 255, 204, 0.08);
+      }
+    }
+
+    .debug-tools-close {
+      border-color: #1a5f4e;
+      color: #00ffcc;
+      background-color: transparent;
+
+      &:hover {
+        background: rgba(0, 255, 204, 0.1);
+      }
+    }
+
     .console-btn {
       border-color: #1a5f4e;
       color: #00ffcc;
@@ -214,6 +427,40 @@
 
       &:active {
         background: rgba(0, 255, 204, 0.2);
+      }
+    }
+
+    .console-toggle {
+      &.on {
+        background: rgba(0, 255, 204, 0.18);
+
+        .console-toggle-state {
+          background: rgba(0, 255, 204, 0.28);
+        }
+      }
+
+      &.off {
+        color: #5a9a8a;
+        border-color: #1a5f4e;
+
+        &:hover {
+          background: rgba(0, 255, 204, 0.06);
+        }
+      }
+    }
+
+    .console-choice {
+      &.on {
+        background: rgba(0, 255, 204, 0.18);
+      }
+
+      &.off {
+        color: #5a9a8a;
+        border-color: #1a5f4e;
+
+        &:hover {
+          background: rgba(0, 255, 204, 0.06);
+        }
       }
     }
 

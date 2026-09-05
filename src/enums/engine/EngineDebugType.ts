@@ -15,5 +15,7 @@ export enum EngineDebugType {
   PLACEABLE_WALKMESH = 'PLACEABLE_WALKMESH',
   COLLISION_HELPERS = 'COLLISION_HELPERS',
   LIGHT_HELPERS = 'LIGHT_HELPERS',
+  /** When on with LIGHT_HELPERS, hide gizmos for lights not in the bound/fade set. */
+  LIGHT_HELPERS_BOUND_ONLY = 'LIGHT_HELPERS_BOUND_ONLY',
   SHADOW_LIGHTS = 'SHADOW_LIGHTS',
 }
