@@ -2643,9 +2643,7 @@ export class ModuleCreature extends ModuleObject {
     attackResult: AttackResult,
     damage: number
   ){
-    if(!target || target == this){
-      target = GameState.PartyManager.party[0];
-    }
+    // Retail passes oTarget through; ResolveAttack filters creature/door/placeable
     if(!target){
       return;
     }
@@ -2673,9 +2671,10 @@ export class ModuleCreature extends ModuleObject {
     this.combatRound.addAction(combatAction);
 
     // Retail: no BroadcastCombatStateToParty on cutscene path
-    // Retail PC: ComputeAIState + ClearAllActions when client object present
-    if(this.isPC || this.isPartyMember?.()){
-      this.actionQueue.clear();
+    // Retail field68_0x4e0==0 (PC) + client object: ComputeAIState + ClearAllActions(1)
+    if(this.isPC){
+      this.computeAIState();
+      this.clearAllActions(true);
     }
 
     if(!this.actionQueue.actionTypeExists(ActionType.ActionCombat)){
@@ -2705,14 +2704,25 @@ export class ModuleCreature extends ModuleObject {
 
     this.combatRound.addAction(combatAction);
 
-    if(this.isPC || this.isPartyMember?.()){
-      this.actionQueue.clear();
+    // Retail AddCutsceneMoveActions — same PC ClearAllActions(1) gate as attack
+    if(this.isPC){
+      this.computeAIState();
+      this.clearAllActions(true);
     }
 
     if(!this.actionQueue.actionTypeExists(ActionType.ActionCombat)){
       const action = new GameState.ActionFactory.ActionCombat(0xFFFF);
       this.actionQueue.add(action);
     }
+  }
+
+  /**
+   * Retail ComputeAIState @ 004f1460 — zeroes transient AI action tracking then
+   * rescans the action list via ComputeAIStateOnAction. Full OnAction reverse
+   * is deferred; ClearAllActions(1) follows immediately on the cutscene path.
+   */
+  computeAIState(){
+    // Placeholder for retail field_0x9f2 / field400 reset + action walk.
   }
 
   /**

@@ -43,6 +43,7 @@ jest.mock('@/GameState', () => ({
     },
     FeedbackMessageManager: {
       AddMessage: jest.fn(),
+      GetFeedbackTypeEnabled: () => false,
     },
     SWRuleSet: {
       animationIdMap: new Map([[239, animRows[239]]]),
@@ -62,7 +63,21 @@ jest.mock('@/odyssey', () => ({
 }));
 
 jest.mock('@/effects', () => ({
-  EffectDamage: class {},
+  EffectDamage: class {
+    ints: number[] = [];
+    setCreator() {}
+    setInt(i: number, v: number){ this.ints[i] = v; }
+    getInt(i: number){ return this.ints[i] ?? -1; }
+  },
+}));
+
+jest.mock('@/effects/EffectDamage', () => ({
+  EffectDamage: class {
+    ints: number[] = [];
+    setCreator() {}
+    setInt(i: number, v: number){ this.ints[i] = v; }
+    getInt(i: number){ return this.ints[i] ?? -1; }
+  },
 }));
 
 jest.mock('@/effects/effect-bonuses', () => ({
@@ -109,7 +124,7 @@ jest.mock('@/combat/create-new-attack-actions', () => ({
 
 jest.mock('@/combat/damage-mitigation', () => ({
   damageFlagsFromChannels: () => 0,
-  mitigateDamageAmount: (n: number) => n,
+  mitigateDamageAmount: jest.fn((n: number) => n),
   scaleDamageChannels: (c: unknown) => c,
 }));
 
@@ -135,11 +150,13 @@ import { AttackResult } from '@/enums/combat/AttackResult';
 import { DamageType } from '@/enums/combat/DamageType';
 import { ModuleCreatureArmorSlot } from '@/enums/module/ModuleCreatureArmorSlot';
 import { ModuleObjectType } from '@/enums/module/ModuleObjectType';
+import { mitigateDamageAmount } from '@/combat/damage-mitigation';
 import * as THREE from 'three';
 
-function makeCreature(opts: { ranged?: boolean } = {}) {
+function makeCreature(opts: { ranged?: boolean; damageFlags?: number } = {}) {
   const weapon = {
     isRangedWeapon: () => !!opts.ranged,
+    getDamageFlags: () => opts.damageFlags ?? 0x1000, // ENERGY bit (1<<12)
   };
   return {
     objectType: ModuleObjectType.ModuleCreature,
@@ -188,7 +205,7 @@ describe('CutsceneAttack calculateWeaponAttack stamp', () => {
     round.offHandAttacks = 0;
   });
 
-  it('stamps scripted result and base damage when resultsCalculated', () => {
+  it('stamps PHYSICAL + weapon flag channel (not BASE) when resultsCalculated', () => {
     const action = new CombatRoundAction(creature);
     action.resultsCalculated = true;
     action.attackResult = AttackResult.HIT_SUCCESSFUL;
@@ -205,7 +222,10 @@ describe('CutsceneAttack calculateWeaponAttack stamp', () => {
 
     const attack = round.attackList[0];
     expect(attack.attackResult).toBe(AttackResult.HIT_SUCCESSFUL);
-    expect(attack.damageList[DamageType.BASE].damageValue).toBe(42);
+    // Retail SetBaseDamage → PHYSICAL (0xE); SetDamage(ENERGY flags) → ENERGY
+    expect(attack.damageList[DamageType.PHYSICAL].damageValue).toBe(42);
+    expect(attack.damageList[DamageType.ENERGY].damageValue).toBe(42);
+    expect(attack.damageList[DamageType.BASE].damageValue).not.toBe(42);
     expect(attack.rangedAttack).toBe(true);
     expect(attack.reactObject).toBe(target);
     expect(attack.attackWeapon).toBe(weapon);
@@ -229,8 +249,56 @@ describe('CutsceneAttack calculateWeaponAttack stamp', () => {
     const attack = round.attackList[0];
     expect(attack.attackResult).toBe(AttackResult.MISS);
     // Unset channel stays -1; scripted damage must not be applied on miss
+    expect(attack.damageList[DamageType.PHYSICAL].damageValue).not.toBe(99);
     expect(attack.damageList[DamageType.BASE].damageValue).not.toBe(99);
     expect(attack.rangedAttack).toBe(true);
+  });
+});
+
+describe('CutsceneAttack scripted apply / on-hit', () => {
+  it('applyDamageEffectToCreature skips mitigation when scriptedResults', () => {
+    (mitigateDamageAmount as jest.Mock).mockClear();
+
+    const attack = new CombatAttackData();
+    attack.setScriptedCutsceneDamage(50, {
+      getDamageFlags: () => 0x1000,
+    } as any);
+
+    const effects: any[] = [];
+    const target = {
+      plot: false,
+      addEffect: (e: any) => effects.push(e),
+      combatData: {},
+    } as any;
+    const owner = { effects: [] } as any;
+
+    attack.applyDamageEffectToCreature(owner, target, { scriptedResults: true });
+
+    expect(mitigateDamageAmount).not.toHaveBeenCalled();
+    expect(attack.damageList[DamageType.PHYSICAL].damageValue).toBe(50);
+    expect(attack.damageApplied).toBe(true);
+  });
+
+  it('signalAttackResult skips resolveOnHitVisuals when resultsCalculated', () => {
+    const creature = makeCreature({ ranged: true });
+    const target = makeTarget();
+    (target as any).addEffect = jest.fn();
+    (target as any).plot = false;
+
+    const round = new CombatRound(creature);
+    round.resultsCalculated = true;
+    round.attackList = [new CombatAttackData()];
+    const attack = round.attackList[0];
+    attack.attackResult = AttackResult.HIT_SUCCESSFUL;
+    attack.reactObject = target;
+    attack.setScriptedCutsceneDamage(12, creature.equipment.RIGHTHAND);
+
+    const visualsSpy = jest.spyOn(CombatRound, 'resolveOnHitVisuals').mockImplementation(() => {});
+    round.signalAttackResult(attack);
+
+    expect(visualsSpy).not.toHaveBeenCalled();
+    expect(attack.damageApplied).toBe(true);
+    visualsSpy.mockRestore();
   });
 });
 
@@ -258,7 +326,7 @@ describe('CutsceneAttack resolveRangedAttack VFX packing', () => {
     const attack = round.attackList[0];
     expect(attack.rangedAttack).toBe(true);
     expect(attack.attackResult).toBe(AttackResult.HIT_SUCCESSFUL);
-    expect(attack.damageList[DamageType.BASE].damageValue).toBe(12);
+    expect(attack.damageList[DamageType.PHYSICAL].damageValue).toBe(12);
     expect(attack.damageApplyDelay).toBeGreaterThanOrEqual(0);
     expect(attack.reaxnDelay).toBeGreaterThanOrEqual(0);
   });

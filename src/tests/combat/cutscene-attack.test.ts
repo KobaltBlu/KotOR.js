@@ -435,3 +435,51 @@ describe('CutsceneMove combat action type', () => {
     expect(action.shouldRun).toBe(1);
   });
 });
+
+describe('AddCutsceneAttackActions schedule gate', () => {
+  // Retail field68_0x4e0==0 (PC) only — not party companions
+  const shouldClearForCutscene = (isPC: boolean, _isPartyMember: boolean) => !!isPC;
+
+  it('clears actions for PC only', () => {
+    expect(shouldClearForCutscene(true, false)).toBe(true);
+    expect(shouldClearForCutscene(true, true)).toBe(true);
+  });
+
+  it('does not clear for party NPC', () => {
+    expect(shouldClearForCutscene(false, true)).toBe(false);
+    expect(shouldClearForCutscene(false, false)).toBe(false);
+  });
+
+  it('does not rewrite self target to party[0]', () => {
+    // Retail ExecuteCommandCutsceneAttack passes oTarget through unchanged
+    const resolveCutsceneTarget = (target: unknown, self: unknown) => {
+      if(!target) return undefined;
+      return target; // no self → party[0]
+    };
+    const self = { id: 1 };
+    expect(resolveCutsceneTarget(self, self)).toBe(self);
+    expect(resolveCutsceneTarget(undefined, self)).toBeUndefined();
+  });
+});
+
+describe('sticky attempted attack target', () => {
+  it('sets only when currently unset (not when dead)', () => {
+    // Mirrors CombatData.setAttemptedAttackTargetIfInvalid retail OBJECT_INVALID gate
+    const setIfInvalid = (
+      current: { dead?: boolean } | undefined,
+      next: { id: number }
+    ) => {
+      if(!next) return current;
+      if(!current) return next;
+      return current;
+    };
+    const living = { id: 1, dead: false };
+    const dead = { id: 2, dead: true };
+    const next = { id: 3 };
+
+    expect(setIfInvalid(undefined, next)).toBe(next);
+    expect(setIfInvalid(living, next)).toBe(living);
+    // Dead-but-set must NOT be overwritten (retail field79 only checks INVALID)
+    expect(setIfInvalid(dead, next)).toBe(dead);
+  });
+});

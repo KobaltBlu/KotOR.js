@@ -14,9 +14,8 @@ import { LightsaberForm } from "@/enums/combat/LightsaberForm";
 import { WeaponWield } from "@/enums/combat/WeaponWield";
 import { ActionType } from "@/enums/actions/ActionType";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
-import { DamageType } from "@/enums/combat/DamageType";
-import { DiceType } from "@/enums/combat/DiceType";
 import { WeaponType } from "@/enums/combat/WeaponType";
+import { DiceType } from "@/enums/combat/DiceType";
 import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { FeedbackOption } from "@/enums/engine/FeedbackOption";
 import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
@@ -1183,8 +1182,11 @@ export class CombatRound {
     attack.damageApplyDelay = -1;
 
     const owner = this.owner as ModuleCreature;
-    // Retail ResolveOnHitVisuals (+ ranged miss ground splat)
-    CombatRound.resolveOnHitVisuals(attack, owner);
+    const scripted = !!this.resultsCalculated;
+    // Retail ResolveOnHitVisuals — skipped on resultsCalculated (ResolveDamage scripted)
+    if(!scripted){
+      CombatRound.resolveOnHitVisuals(attack, owner);
+    }
 
     // Retail OnApplyDamage / SignalMeleeDamage — floaty only for player attacker
     const showFloaty = CombatRound.shouldShowCombatFloaty(owner);
@@ -1199,7 +1201,11 @@ export class CombatRound {
       attack.attackResult == AttackResult.CRITICAL_HIT ||
       attack.attackResult == AttackResult.AUTOMATIC_HIT
     ){
-      attack.applyDamageEffectToCreature(owner, attack.reactObject as ModuleCreature);
+      attack.applyDamageEffectToCreature(
+        owner,
+        attack.reactObject as ModuleCreature,
+        { scriptedResults: scripted }
+      );
       if(attack.reactObject && showFloaty){
         TextSprite3D.CreateOnObject(attack.reactObject, attack.getTotalDamage().toString(), TextSprite3DType.HOSTILE, 1500);
       }
@@ -2450,7 +2456,7 @@ export class CombatRound {
     attack.weaponAttackType = weaponSlot == ModuleCreatureArmorSlot.LEFTHAND ? 2 : 1;
 
     // Retail ResolveAttackRoll / ResolveDamage when resultsCalculated:
-    // stamp designer result + SetBaseDamage(scripted); skip dice and on-hit visuals.
+    // stamp designer result + SetBaseDamage/SetDamage(scripted); skip dice and on-hit.
     if(combatAction.resultsCalculated){
       attack.attackResult = combatAction.attackResult;
       if(
@@ -2458,7 +2464,7 @@ export class CombatRound {
         attack.attackResult == AttackResult.CRITICAL_HIT ||
         attack.attackResult == AttackResult.AUTOMATIC_HIT
       ){
-        attack.damageList[DamageType.BASE].damageValue = combatAction.attackDamage;
+        attack.setScriptedCutsceneDamage(combatAction.attackDamage, weapon);
       }
       this.logAttackResult(
         creature,

@@ -425,29 +425,63 @@ export class CombatAttackData {
   }
 
   /**
+   * Retail ResolveDamage resultsCalculated path — SetBaseDamage + SetDamage.
+   * SetBaseDamage writes damage_list[0xE] (PHYSICAL); SetDamage writes the
+   * weapon GetDamageFlags channel (flags 1 when unarmed).
+   */
+  setScriptedCutsceneDamage(amount: number, weapon?: ModuleItem){
+    const scripted = amount | 0;
+    if(scripted < 0) return;
+
+    // SetBaseDamage @ 004d2030
+    const base = this.damageList[DamageType.PHYSICAL];
+    if(base.damageValue > 0){
+      base.addDamage(scripted);
+    }else{
+      base.setDamage(scripted);
+    }
+
+    // SetDamage(GetDamageFlags, amount) @ 004d2070 / GetDamageFlags @ 004ed5e0
+    const flags = (weapon?.getDamageFlags?.() ?? 0) | 0;
+    const channel = damageTypeFlagToChannel(flags || 1);
+    this.damageList[channel].setDamage(scripted);
+  }
+
+  /**
    * Apply the damage effect to the target creature
    * @param owner - The owner of the damage effect
    * @param target - The target creature to apply the damage effect to
+   * @param opts.scriptedResults - CutsceneAttack: skip mitigate / on-hit effects
    */
-  applyDamageEffectToCreature(owner: ModuleCreature, target: ModuleCreature){
+  applyDamageEffectToCreature(
+    owner: ModuleCreature,
+    target: ModuleCreature,
+    opts?: { scriptedResults?: boolean }
+  ){
     if(!target) return;
+
+    const scripted = !!opts?.scriptedResults;
 
     // Retail GetDamageRoll: Immunity → Resistance → Reduction before packaging.
     // SignalMeleeDamage sets int[19]=1 so OnApplyDamage skips a second pass.
-    if(target.plot){
-      for(let i = 0; i < 15; i++){
-        this.damageList[i].setDamage(0);
-      }
-    }else{
-      const channels: number[] = new Array(15);
-      for(let i = 0; i < 15; i++){
-        channels[i] = this.damageList[i].damageValue;
-      }
-      const flags = damageFlagsFromChannels(channels);
-      const mitigated = mitigateDamageAmount(target, this.getTotalDamage(), flags, 0);
-      scaleDamageChannels(channels, mitigated);
-      for(let i = 0; i < 15; i++){
-        this.damageList[i].setDamage(channels[i]);
+    // Scripted ResolveDamage stamps raw amount (no mitigate); EffectDamage still
+    // zeroes plot on apply.
+    if(!scripted){
+      if(target.plot){
+        for(let i = 0; i < 15; i++){
+          this.damageList[i].setDamage(0);
+        }
+      }else{
+        const channels: number[] = new Array(15);
+        for(let i = 0; i < 15; i++){
+          channels[i] = this.damageList[i].damageValue;
+        }
+        const flags = damageFlagsFromChannels(channels);
+        const mitigated = mitigateDamageAmount(target, this.getTotalDamage(), flags, 0);
+        scaleDamageChannels(channels, mitigated);
+        for(let i = 0; i < 15; i++){
+          this.damageList[i].setDamage(channels[i]);
+        }
       }
     }
 
@@ -466,9 +500,12 @@ export class CombatAttackData {
       CombatAttackData.resolveDamageShields(target, owner);
     }
     // Retail Signal*Damage applies queued special-attack effects (SETSTATE stun, etc.)
-    for(let i = 0; i < this.pendingOnHitEffects.length; i++){
-      const onHit = this.pendingOnHitEffects[i];
-      if(onHit) target.addEffect(onHit);
+    // Scripted ResolveDamage skips ResolveOnHitEffect — do not apply pending on-hit.
+    if(!scripted){
+      for(let i = 0; i < this.pendingOnHitEffects.length; i++){
+        const onHit = this.pendingOnHitEffects[i];
+        if(onHit) target.addEffect(onHit);
+      }
     }
     this.pendingOnHitEffects.length = 0;
     this.damageApplied = true;

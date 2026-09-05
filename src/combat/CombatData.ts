@@ -87,13 +87,12 @@ export class CombatData {
   }
 
   /**
-   * Retail AddAttackActions / AddAttackAction
-   * CreateNewAttackActions — sticky attempted target: set only when
-   * currently INVALID (OBJECT_INVALID).
+   * Retail AddAttackActions / AddAttackAction / AddCutsceneAttackAction —
+   * sticky attempted target: set only when currently INVALID (unset).
    */
   setAttemptedAttackTargetIfInvalid(target: ModuleObject): void {
     if(!target) return;
-    if(!this.lastAttemptedAttackTarget || this.lastAttemptedAttackTarget.isDead()){
+    if(!this.lastAttemptedAttackTarget){
       this.lastAttemptedAttackTarget = target;
     }
   }
