@@ -102,12 +102,18 @@ export class TXI {
     let lines = this.info.split('\n');
     for(let i = 0; i < lines.length; i++){
       let line = lines[i];
-      let args = line.split(' ');
+      let args = line.split(/\s+/).filter(Boolean);
 
       if(typeof args[1] != 'undefined')
         args[1] = args[1].trim();
 
-      switch(args[0]){
+      // TPC mip leftovers can glue printable junk onto the first TXI line
+      // (e.g. fx_static → "1((blending additive"). Strip to the trailing directive.
+      const rawKey = (args[0] || '').trim().toLowerCase();
+      const keyMatch = rawKey.match(/[a-z][a-z0-9_]*$/i);
+      const key = keyMatch ? keyMatch[0].toLowerCase() : rawKey;
+
+      switch(key){
         /*case 'isbumpmap':
           if(this.textureType != TXITexType.NORMALMAP)
             this.textureType = TXITexType.BUMPMAP;

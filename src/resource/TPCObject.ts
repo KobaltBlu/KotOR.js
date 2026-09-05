@@ -74,9 +74,9 @@ export class TPCObject {
         return '';
       }
       const headerOffset = this.getDataLength() + TPCHeaderLength;
-      const fromHeader = this.readTxiStringAt(headerOffset);
+      const fromHeader = TPCObject.sanitizeTxiText(this.readTxiStringAt(headerOffset));
       const leftover = this.file.length - headerOffset;
-      const fromTail = this.readTxiFromFileTail();
+      const fromTail = TPCObject.sanitizeTxiText(this.readTxiFromFileTail());
       const headerTrim = fromHeader.trim();
       const tailTrim = fromTail.trim();
       const tailUsable = !!(tailTrim && this.txiTextLooksValid(fromTail, true));
@@ -161,6 +161,33 @@ export class TPCObject {
       return /\b(proceduretype|blending|mipmap|bumpmaptexture|bumpyshinytexture|envmaptexture|numx|numy|cube|isbumpmap|compresstexture|filter|clamp|decal|defaultwidth|defaultheight|fps)\b/i.test(trimmed);
     }
     return /[a-zA-Z]/.test(trimmed);
+  }
+
+  /**
+   * Drop printable mip leftovers glued ahead of the first TXI directive
+   * (e.g. fx_static TPC → "1((blending additive").
+   */
+  static sanitizeTxiText(text: string): string {
+    if (!text) return '';
+    const keyword =
+      /\b(proceduretype|blending|mipmap|bumpmaptexture|bumpyshinytexture|envmaptexture|numx|numy|cube|isbumpmap|compresstexture|filter|clamp|decal|defaultwidth|defaultheight|fps|islightmap|wateralpha|envmapalpha|bumpmapscaling)\b/i;
+    const match = keyword.exec(text);
+    if (!match || match.index <= 0) {
+      return text;
+    }
+    // Prefer start of the line containing the first keyword
+    let start = match.index;
+    for (let i = match.index - 1; i >= 0; i--) {
+      const c = text.charCodeAt(i);
+      if (c === 10 || c === 13) {
+        start = i + 1;
+        break;
+      }
+      if (i === 0) {
+        start = match.index;
+      }
+    }
+    return text.slice(start);
   }
 
   private isCycleTexture(): boolean {
