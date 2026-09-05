@@ -98,6 +98,12 @@ describe('OdysseyShadowManager primary shadow map', () => {
     manager.useQualityPreset(false);
   });
 
+  test('hard quality preset keeps 2048 map resolution', () => {
+    expect(manager.mapResolution).toBe(2048);
+    manager.useQualityPreset(true);
+    expect(manager.mapResolution).toBe(2048);
+  });
+
   test('selects one primary light with retail fade strength', () => {
     const light = mockShadowLight({
       uuid: 'a',

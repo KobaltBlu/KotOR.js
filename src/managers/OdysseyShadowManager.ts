@@ -62,10 +62,10 @@ export interface IOdysseyShadowDiagnostics {
   } | null;
 }
 
-// Directional lights cover up to an 80-unit-wide focus region. 2048 keeps
-// their 3x3 PCF footprint from becoming visibly blocky or overly broad.
+// Soft and hard both use 2048 — hard used to drop to 512, which made sun
+// ortho maps (~±16 half-extent) only ~11 texels tall per character.
 const DEFAULT_MAP_RES_SOFT = 2048;
-const DEFAULT_MAP_RES_HARD = 512;
+const DEFAULT_MAP_RES_HARD = 2048;
 const SHADOW_MAP_NORMAL_BIAS = 0.005;
 
 /** Soft sticky: challenger must lead by this overhead score for hold duration. */

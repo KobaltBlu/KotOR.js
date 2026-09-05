@@ -57,7 +57,7 @@ export const ODYSSEY_LIGHTING_DEBUG_DEFAULTS: Readonly<IOdysseyLightingDebugValu
   strengthScaleLocal: 0.50,
   strengthScaleDistant: 1.35,
   softTexelSpreadLocal: 3.0,
-  softTexelSpreadDistant: 1.15,
+  softTexelSpreadDistant: 0.65,
   softDepthWidthLocal: 0.012,
   softDepthWidthDistant: 0.003,
   influenceFadeStart: 0.65,

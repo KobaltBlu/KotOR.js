@@ -2,7 +2,6 @@ import * as THREE from 'three';
 
 import {
   RETAIL_AREA_DIRECTIONAL_SHADOW_RADIUS,
-  RETAIL_MAX_SHADOW_DISTANCE,
   RETAIL_SHADOW_LENGTH,
 } from '@/utility/retailLighting';
 
@@ -20,6 +19,13 @@ export const ODYSSEY_SHADOW_MAP_LIGHT_BIAS = -0.001;
 
 /** Default orthographic half-extent when influence radius is tiny. */
 export const ODYSSEY_SHADOW_MIN_HALF_EXTENT = RETAIL_SHADOW_LENGTH;
+
+/**
+ * Max ortho half-extent for directional/sun shadow maps. Tighter than the
+ * retail focus cull distance (40) so 2048² maps keep usable texel density on
+ * characters (~0.016 world units/texel at ±16).
+ */
+export const ODYSSEY_SHADOW_DIRECTIONAL_MAX_HALF_EXTENT = 16;
 
 /** Local lights coplanar with focus within this Z delta get a map proxy elevation. */
 export const ODYSSEY_SHADOW_COPLANAR_Z_EPS = 0.25;
@@ -111,15 +117,15 @@ export function buildAngledSpotShadowCameraParams(
   };
 }
 
-/** Orthographic half-size clamped to retail focus-shadow region. */
+/** Orthographic half-size clamped for directional map texel density. */
 export function computeOrthographicHalfExtent(effectiveRadius: number): number {
   const influence = Math.max(effectiveRadius, ODYSSEY_SHADOW_MIN_HALF_EXTENT);
-  return Math.min(influence, RETAIL_MAX_SHADOW_DISTANCE);
+  return Math.min(influence, ODYSSEY_SHADOW_DIRECTIONAL_MAX_HALF_EXTENT);
 }
 
 /**
- * Orthographic shadow frustum around the focus. Half-extent is clamped to the
- * retail focus region; near/far hug a focus-relative proxy distance (not the
+ * Orthographic shadow frustum around the focus. Half-extent is clamped for
+ * map texel density; near/far hug a focus-relative proxy distance (not the
  * authored light distance — elevated keys / gidy_sun sit hundreds–thousands of
  * units away and empty the depth map if the camera stays at the source).
  */

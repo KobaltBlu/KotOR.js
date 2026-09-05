@@ -12,6 +12,7 @@ import {
   configureSpotShadowProxyForFloorContact,
   isDistantShadowLightRadius,
   ODYSSEY_SHADOW_COPLANAR_Z_EPS,
+  ODYSSEY_SHADOW_DIRECTIONAL_MAX_HALF_EXTENT,
   ODYSSEY_SHADOW_MIN_HALF_EXTENT,
   placeDirectionalShadowProxyAlongLight,
 } from '@/utility/odysseyShadowMap';
@@ -108,7 +109,7 @@ describe('odyssey shadow map camera', () => {
     const light = new THREE.Vector3(262, 173, 189);
     const focus = new THREE.Vector3(187, 78, 0);
     const ortho = buildOrthoShadowCameraParams(800, light, focus);
-    expect(ortho.halfExtent).toBeLessThanOrEqual(40);
+    expect(ortho.halfExtent).toBe(ODYSSEY_SHADOW_DIRECTIONAL_MAX_HALF_EXTENT);
     expect(ortho.near).toBeLessThan(ortho.far);
     expect(ortho.far).toBeLessThan(200);
 

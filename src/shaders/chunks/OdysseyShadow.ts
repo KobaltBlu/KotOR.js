@@ -22,7 +22,7 @@ export const ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD = 2.5;
 /** Soft ON: local lamp UV tap spacing (wider penumbra). Default; live via OdysseyLightingDebug. */
 export const ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD_LOCAL = 3.0;
 /** Soft ON: distant/sun UV tap spacing (tighter contact). */
-export const ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD_DISTANT = 1.15;
+export const ODYSSEY_SHADOW_SOFT_TEXEL_SPREAD_DISTANT = 0.65;
 
 /**
  * Fraction of influence radius where radial fade begins (smoothstep start/end).

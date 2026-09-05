@@ -89,6 +89,10 @@ export class LBL_3DView {
       creatures: new THREE.Group()
     }
 
+    // Match GameState debug defaults — helpers only when explicitly enabled.
+    this.group.light_helpers.visible = false;
+    this.group.shadow_lights.visible = false;
+
     this.scene.add(this.group.emitters);
     this.scene.add(this.group.lights);
     this.scene.add(this.group.shadow_lights);
