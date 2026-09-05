@@ -12,6 +12,12 @@ export const AREA_MAP_LOGICAL_SIZE_K1 = { width: 440, height: 256 } as const;
 /** Retail TSL Aspyr logical map size (0x24C x 0x126). */
 export const AREA_MAP_LOGICAL_SIZE_TSL = { width: 588, height: 294 } as const;
 
+export interface AreaMapPixelResult {
+  x: number;
+  y: number;
+  valid: boolean;
+}
+
 /**
 * AreaMap class.
 *
@@ -33,6 +39,7 @@ export class AreaMap {
   worldPt1Y: number;
   worldPt2X: number;
   worldPt2Y: number;
+  /** Map corner UVs in [0,1] (ARE FLOAT MapPt*), or normalized from INT pixels on load. */
   mapPt1X: number;
   mapPt1Y: number;
   mapPt2X: number;
@@ -44,6 +51,7 @@ export class AreaMap {
   fogAlphaTexture: THREE.DataTexture;
 
   _mapCoordinates: THREE.Vector2 = new THREE.Vector2(0, 0);
+  _mapPixels: AreaMapPixelResult = { x: -1, y: -1, valid: false };
 
   mapNotes: ModuleWaypoint[] = [];
 
@@ -80,6 +88,24 @@ export class AreaMap {
       return { width: AREA_MAP_LOGICAL_SIZE_TSL.width, height: AREA_MAP_LOGICAL_SIZE_TSL.height };
     }
     return { width: AREA_MAP_LOGICAL_SIZE_K1.width, height: AREA_MAP_LOGICAL_SIZE_K1.height };
+  }
+
+  /**
+   * Retail NorthAxis world transform (CSWSAreaMap::Initialize / GetMapPixelFromWorldCoord).
+   * NORTH identity, EAST negate both, SOUTH (y,-x), WEST (-y,x).
+   */
+  static transformWorldByNorthAxis(x: number, y: number, northAxis: number): { x: number, y: number } {
+    switch(northAxis){
+      case MapNorthAxis.EAST:
+        return { x: -x, y: -y };
+      case MapNorthAxis.SOUTH:
+        return { x: y, y: -x };
+      case MapNorthAxis.WEST:
+        return { x: -y, y: x };
+      case MapNorthAxis.NORTH:
+      default:
+        return { x, y };
+    }
   }
 
   init(){
@@ -157,47 +183,80 @@ export class AreaMap {
     }
   }
 
-  toMapCoordinates(x: number = 0, y: number = 0): THREE.Vector2 {
-    let scaleX = 0, scaleY = 0;
-    switch(this.northAxis){
-      case MapNorthAxis.NORTH: //end_m01aa
-        {
-          scaleY = (this.mapPt1Y - this.mapPt2Y) / (this.worldPt1Y - this.worldPt2Y);
-          scaleX = (this.mapPt1X - this.mapPt2X) / (this.worldPt1X - this.worldPt2X);
+  /**
+   * Retail GetMapPixelFromWorldCoord — returns logical map pixels and in-bounds validity.
+   */
+  toMapPixels(x: number = 0, y: number = 0): AreaMapPixelResult {
+    const { width, height } = AreaMap.getLogicalMapSize();
+    const mapPt1Xpx = Math.trunc(this.mapPt1X * width);
+    const mapPt1Ypx = Math.trunc(this.mapPt1Y * height);
+    const mapPt2Xpx = Math.trunc(this.mapPt2X * width);
+    const mapPt2Ypx = Math.trunc(this.mapPt2Y * height);
 
-          this._mapCoordinates.x = (( x - this.worldPt1X) * scaleX) + this.mapPt1X;
-          this._mapCoordinates.y = 1 - (((y - this.worldPt1Y) * scaleY) + this.mapPt1Y);
-        }
-      break;
-      case MapNorthAxis.SOUTH: //152HAR
-        {
-          scaleY = (this.mapPt1Y - this.mapPt2Y) / (this.worldPt1Y - this.worldPt2Y);
-          scaleX = (this.mapPt1X - this.mapPt2X) / (this.worldPt1X - this.worldPt2X);
+    const w1 = AreaMap.transformWorldByNorthAxis(this.worldPt1X, this.worldPt1Y, this.northAxis);
+    const w2 = AreaMap.transformWorldByNorthAxis(this.worldPt2X, this.worldPt2Y, this.northAxis);
+    const local = AreaMap.transformWorldByNorthAxis(x, y, this.northAxis);
 
-          this._mapCoordinates.y = ((( x - this.worldPt1X) * scaleX) + this.mapPt1X);
-          this._mapCoordinates.x = (((-y - this.worldPt1Y) * scaleY) + this.mapPt1Y);
-        }
-      break;
-      case MapNorthAxis.EAST:
-        {
-          scaleX = (this.mapPt1Y - this.mapPt2Y) / (this.worldPt1X - this.worldPt2X);
-			    scaleY = (this.mapPt1X - this.mapPt2X) / (this.worldPt1Y - this.worldPt2Y);
-
-          this._mapCoordinates.x = (((y - this.worldPt1Y) * scaleY) + this.mapPt1X);
-          this._mapCoordinates.y = (((x - this.worldPt1X) * scaleX) + this.mapPt1Y);
-        }
-      break;
-      case MapNorthAxis.WEST: //end_m01ab
-        {
-          scaleX = (this.mapPt1Y - this.mapPt2Y) / (this.worldPt1X - this.worldPt2X);
-			    scaleY = (this.mapPt1X - this.mapPt2X) / (this.worldPt1Y - this.worldPt2Y);
-
-          this._mapCoordinates.x = (((y - this.worldPt1Y) * scaleY) + this.mapPt1X);
-          this._mapCoordinates.y = 1 - (((x - this.worldPt1X) * scaleX) + this.mapPt1Y);
-        }
-      break;
+    const denomX = mapPt2Xpx - mapPt1Xpx;
+    const denomY = mapPt2Ypx - mapPt1Ypx;
+    if(denomX == 0 || denomY == 0){
+      this._mapPixels.x = -1;
+      this._mapPixels.y = -1;
+      this._mapPixels.valid = false;
+      return this._mapPixels;
     }
+
+    const scaleX = (w2.x - w1.x) / denomX;
+    const scaleY = (w2.y - w1.y) / denomY;
+    if(scaleX == 0 || scaleY == 0){
+      this._mapPixels.x = -1;
+      this._mapPixels.y = -1;
+      this._mapPixels.valid = false;
+      return this._mapPixels;
+    }
+
+    const offsetX = w1.x - mapPt1Xpx * scaleX;
+    const offsetY = w1.y - mapPt1Ypx * scaleY;
+
+    const pixelX = Math.trunc((local.x - offsetX) / scaleX + 0.5);
+    const pixelY = Math.trunc((local.y - offsetY) / scaleY + 0.5);
+
+    // Raw pixels kept for UV conversion even when OOB (retail returns -1,-1 to callers).
+    this._mapPixels.x = pixelX;
+    this._mapPixels.y = pixelY;
+    this._mapPixels.valid = pixelX >= 0 && pixelX <= width && pixelY >= 0 && pixelY <= height;
+    return this._mapPixels;
+  }
+
+  /**
+   * World XY → map UV for LBL_MapView.
+   * X matches retail GetMapPixelFromWorldCoord / logical width.
+   * Y is flipped: retail/AurGUI map pixels are top-origin (Y-down), while the
+   * Three.js map scene is bottom-origin (Y-up) with the TGA on the plane.
+   */
+  toMapCoordinates(x: number = 0, y: number = 0): THREE.Vector2 {
+    const { width, height } = AreaMap.getLogicalMapSize();
+    const pix = this.toMapPixels(x, y);
+    this._mapCoordinates.x = pix.x / width;
+    this._mapCoordinates.y = 1 - (pix.y / height);
     return this._mapCoordinates;
+  }
+
+  /**
+   * Retail GetGridPixelFromMapPixel — map pixels → fog grid cell.
+   */
+  toGridPixels(mapPixelX: number, mapPixelY: number): { x: number, y: number, valid: boolean } {
+    const { width, height } = AreaMap.getLogicalMapSize();
+    if(mapPixelX < 0 || mapPixelX > width || mapPixelY < 0 || mapPixelY > height){
+      return { x: -1, y: -1, valid: false };
+    }
+    if(!this.mapResX || !this.mapResY){
+      return { x: -1, y: -1, valid: false };
+    }
+
+    const gridX = Math.trunc(mapPixelX / (width / this.mapResX) + 0.5);
+    const gridY = Math.trunc(mapPixelY / (height / this.mapResY) + 0.5);
+    return { x: gridX, y: gridY, valid: true };
   }
 
   getRevealedMapNotes(){
@@ -210,12 +269,14 @@ export class AreaMap {
     const resX = (this.mapResX+1);
     const resY = (this.mapResY+1);
 
-    const mapPos = this.toMapCoordinates(x, y);
-    mapPos.x = THREE.MathUtils.clamp(mapPos.x, 0, 1);
-    mapPos.y = 1 - THREE.MathUtils.clamp(mapPos.y, 0, 1);
+    const pix = this.toMapPixels(x, y);
+    if(!pix.valid) return false;
 
-    const gridX = Math.floor(resX * mapPos.x);
-    const gridY = Math.floor(resY * mapPos.y);
+    const grid = this.toGridPixels(pix.x, pix.y);
+    if(!grid.valid) return false;
+
+    const gridX = THREE.MathUtils.clamp(grid.x, 0, resX - 1);
+    const gridY = THREE.MathUtils.clamp(grid.y, 0, resY - 1);
     if(this.fogAlphaPixelData[(resX * gridY) + gridX] == 0){
       return true;
     }
@@ -238,12 +299,14 @@ export class AreaMap {
     const resX = (this.mapResX+1);
     const resY = (this.mapResY+1);
 
-    const mapPos = this.toMapCoordinates(x, y);
-    mapPos.x = THREE.MathUtils.clamp(mapPos.x, 0, 1);
-    mapPos.y = 1 - THREE.MathUtils.clamp(mapPos.y, 0, 1);
+    const pix = this.toMapPixels(x, y);
+    if(!pix.valid) return;
 
-    const gridX = Math.floor(resX * mapPos.x);
-    const gridY = Math.floor(resY * mapPos.y);
+    const grid = this.toGridPixels(pix.x, pix.y);
+    if(!grid.valid) return;
+
+    const gridX = grid.x;
+    const gridY = grid.y;
 
     let needsUpdate = false;
     for(let dx = -radius; dx <= radius; dx++){
@@ -364,6 +427,29 @@ export class AreaMap {
     }
   }
 
+  /**
+   * Load ARE MapPt as UV. FLOAT fields are already UV; INT fields are logical pixels
+   * (retail LoadAreaHeader) and are normalized by logical map size.
+   */
+  static readMapPtUV(struct: GFFStruct, label: string, logicalSize: number, fallback = 0): number {
+    const field = struct.getFieldByLabel(label);
+    if(!field){
+      return fallback;
+    }
+    const value = field.getValue();
+    if(typeof value !== 'number' || !Number.isFinite(value)){
+      return fallback;
+    }
+    if(field.getType() == GFFDataType.FLOAT){
+      return value;
+    }
+    // INT (and other integer types): already in logical pixels
+    if(logicalSize > 0){
+      return value / logicalSize;
+    }
+    return fallback;
+  }
+
   static FromStruct( struct: GFFStruct ): AreaMap | undefined {
     if(!struct || typeof struct.getFieldByLabel !== 'function'){
       return undefined;
@@ -378,11 +464,12 @@ export class AreaMap {
       return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
     };
 
+    const { width, height } = AreaMap.getLogicalMapSize();
     const areaMap = new AreaMap();
-    areaMap.mapPt1X = readNumber('MapPt1X');
-    areaMap.mapPt1Y = readNumber('MapPt1Y');
-    areaMap.mapPt2X = readNumber('MapPt2X');
-    areaMap.mapPt2Y = readNumber('MapPt2Y');
+    areaMap.mapPt1X = AreaMap.readMapPtUV(struct, 'MapPt1X', width);
+    areaMap.mapPt1Y = AreaMap.readMapPtUV(struct, 'MapPt1Y', height);
+    areaMap.mapPt2X = AreaMap.readMapPtUV(struct, 'MapPt2X', width);
+    areaMap.mapPt2Y = AreaMap.readMapPtUV(struct, 'MapPt2Y', height);
     areaMap.mapResX = readNumber('MapResX');
     areaMap.mapZoom = readNumber('MapZoom', 1) || 1;
     areaMap.northAxis = readNumber('NorthAxis');
