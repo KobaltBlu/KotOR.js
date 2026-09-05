@@ -1062,7 +1062,10 @@ export class ActionMenuManager {
     }
 
     if(menuItem.item){
-      const useTarget = target || pc;
+      // Self-panel / inventory personal use — PartyMenuUseItem stamps caster;
+      // never fall through to look-at (oTarget).
+      const useTarget =
+        (defaultTarget === pc || menuItem.target === pc) ? pc : (target || pc);
       menuItem.item.useItemOnObject(pc, useTarget as ModuleObject, { isUserAction: true });
       return;
     }

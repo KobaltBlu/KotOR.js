@@ -578,6 +578,11 @@ export class ModulePlaceable extends ModuleObject {
 
     if(this.isLocked()){
       this.playObjectSound(ModulePlaceableObjectSound.LOCKED);
+    }else if(this.isBodyBag){
+      // Body bags (often hidden under KeepCorpse, or used before EventSpawnBodyBag
+      // loads the model) skip open anim — open inventory immediately.
+      this.setOpenState(ModulePlaceableState.OPEN);
+      this.triggerEvent(ModulePlaceableEvent.OPEN_END);
     }else{
       if(!this.isOpen() && (this.state == ModulePlaceableState.CLOSED || this.state == ModulePlaceableState.DEFAULT)){
         this.setAnimationState(ModulePlaceableAnimState.CLOSE_OPEN);

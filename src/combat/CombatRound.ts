@@ -1564,11 +1564,26 @@ export class CombatRound {
    * @param target - The target to set the attack target for
    * @returns True if the attack target was set, false otherwise
    */
+  /**
+   * Retarget scheduled *attack* actions only.
+   * Retail InitializeNewAttackTarget / CreateNewAttackActions must not rewrite
+   * CAST_SPELL / ITEM_CAST_SPELL targets (personal menu stamps the caster).
+   */
   setAttackTarget(target: ModuleObject): boolean {
     if(!target) return false;
+    const attackTypes = [
+      CombatActionType.ATTACK,
+      CombatActionType.ATTACK_USE_FEAT,
+      CombatActionType.ATTACK_CUTSCENE_MOVE,
+    ];
     for(let i = 0, len = this.scheduledActionList.length; i < len; i++){
-      this.scheduledActionList[i].target = target;
+      const action = this.scheduledActionList[i];
+      if(!action) continue;
+      if(attackTypes.indexOf(action.actionType) >= 0){
+        action.target = target;
+      }
     }
+    return true;
   }
 
   /**

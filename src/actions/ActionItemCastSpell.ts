@@ -22,6 +22,7 @@ import {
 import { ExcitedDurationRow } from "@/combat/combat-engagement";
 import { isWithinSpellCastRange } from "@/combat/spell-range";
 import { shouldFailItemCastForNoUses } from "@/combat/item-property-uses";
+import { isGrenadeItemType } from "@/combat/item-cast-grenade";
 import * as THREE from "three";
 
 /** Retail item-cast action SendFeedbackMessage when uses left == 0. */
@@ -250,6 +251,24 @@ export class ActionItemCastSpell extends Action {
     }
     this.spell = this.cachedSpell;
     const oItem = this.cachedItem || oItemParam;
+    // Personal item casts (medpac etc.): if the stamped caster id failed to
+    // resolve, fall back to owner — never leave GetSpellTargetObject invalid
+    // so a nearby party member wins via shape queries.
+    if(
+      !this.target &&
+      this.isUserAction &&
+      BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature) &&
+      !isGrenadeItemType(oItem?.baseItem?.itemType)
+    ){
+      const forceHostile = this.spell?.forcehostile ?? -1;
+      const hostile =
+        typeof forceHostile === 'number'
+          ? forceHostile
+          : parseInt(String(forceHostile), 10);
+      if(!(hostile >= 1) && (this.spell?.hostilesetting | 0) !== 1){
+        this.target = this.owner;
+      }
+    }
 
     // Before SpellCastAndImpact the item must resolve; after cast, retail may
     // DestroyItem while the action still holds until pause ends.

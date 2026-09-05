@@ -1,6 +1,7 @@
 import { ModuleObjectType } from "@/enums";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
@@ -25,9 +26,46 @@ export class ActionUseObject extends Action {
     this.type = ActionType.ActionUseObject;
   }
 
+  /**
+   * Resolve DWORD target for client use (KeepCorpse shells survive event 0xb).
+   * Retarget dead creatures to their body bag when one exists.
+   */
+  resolveUseTarget(): ModuleObject | undefined {
+    const param = this.parameters[0];
+    let target: ModuleObject | undefined;
+    if(param?.type === ActionParameterType.DWORD){
+      target = GameState.ModuleObjectManager.GetClientObjectById(param.value as number);
+    }else{
+      target = this.getParameter<ModuleObject>(0);
+    }
+
+    if(!BitWise.InstanceOfObject(target, ModuleObjectType.ModuleObject)){
+      return undefined;
+    }
+
+    // Mid-action bag spawn / KeepCorpse: loot via getLootUseTarget
+    if(BitWise.InstanceOfObject(target, ModuleObjectType.ModuleCreature)){
+      const creature = target as ModuleCreature;
+      if(
+        (typeof creature.isDead === 'function' && creature.isDead())
+        || creature.isRetainedCorpse
+      ){
+        const lootTarget = creature.getLootUseTarget?.();
+        if(BitWise.InstanceOfObject(lootTarget, ModuleObjectType.ModuleObject)){
+          if(lootTarget.id !== target.id){
+            this.setParameter(0, ActionParameterType.DWORD, lootTarget.id);
+          }
+          return lootTarget;
+        }
+      }
+    }
+
+    return target;
+  }
+
   update(delta: number = 0): ActionStatus {
 
-    this.target = this.getParameter<ModuleObject>(0);
+    this.target = this.resolveUseTarget();
 
     if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleObject)){
       return ActionStatus.FAILED;

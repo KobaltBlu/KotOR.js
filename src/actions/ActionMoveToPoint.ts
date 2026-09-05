@@ -86,10 +86,19 @@ export class ActionMoveToPoint extends Action {
 
     this.real_target_position.copy(this.target_position);
 
-    this.target = this.getParameter<ModuleObject>(4);
+    // Client resolve so KeepCorpse shells (removed from GetObjectById) still work
+    // as use-range destinations for ActionUseObject → queueMoveIntoUseRange.
+    const param4 = this.parameters[4];
+    if(param4?.type === ActionParameterType.DWORD){
+      this.target = GameState.ModuleObjectManager.GetClientObjectById(param4.value as number);
+    }else{
+      this.target = this.getParameter<ModuleObject>(4);
+    }
     const chaseLive = !!(
       this.target &&
-      BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)
+      BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature) &&
+      typeof this.target.isDead === 'function' &&
+      !this.target.isDead()
     );
     // queueMoveIntoUseRange / MoveToObject set param-4 to the use target.
     // WalkUpdateLocation UseRange early-out () stops locomotion once
@@ -103,11 +112,6 @@ export class ActionMoveToPoint extends Action {
     if(useRangeTarget){
       if(chaseLive){
         this.real_target_position.copy(this.target.position);
-        if( this.target.isDead() ){
-          this.stopMoving(owner);
-          this.setComputedPath(undefined);
-          return ActionStatus.FAILED;
-        }
       }
 
       // Retail MoveToObject completion uses GetIsInUseRange (+0.1 slack), not the
@@ -115,6 +119,7 @@ export class ActionMoveToPoint extends Action {
       // freeze locomotion while dist is still slightly above param-6 — that left
       // end_m01aa k_pend_traskdl40 Pause→Move→Resume stuck forever, and the same
       // gap blocked door/placeable UseObject after walking into range.
+      // Dead corpses / KeepCorpse shells are static use targets (not live chase).
       if(isInUseRange(owner, this.target) || Utility.Distance2D(owner.position, this.real_target_position) <= range){
         this.stopMoving(owner);
         this.setComputedPath(undefined);
@@ -122,6 +127,10 @@ export class ActionMoveToPoint extends Action {
       }
 
       if(chaseLive){
+        // Continuous live chase can last longer than COMBAT_STATE_DURATION_MS (8s).
+        // Refresh SetCombatState while still closing on a living combat target so
+        // SetCombatState(0) does not wipe combatRound.scheduledActionList mid-approach.
+        this.refreshCombatStateDuringChase(owner);
         const distanceToLive = Utility.Distance2D(owner.position, this.real_target_position);
         if(this.shouldRepathToMovingTarget(distanceToLive)){
           // In-place live chase — keep walkSpeedFactor (no COMPLETE / dispose)
@@ -332,6 +341,42 @@ export class ActionMoveToPoint extends Action {
     if(storedToLive < 0.001) return false;
     const threshold = Math.max(2.0, distanceToLive * 0.4);
     return storedToLive > threshold;
+  }
+
+  /**
+   * Keep SetCombatState alive during continuous live chase so the 8s timer
+   * does not ClearAllAttacks / RemoveAllActions mid-approach.
+   */
+  private refreshCombatStateDuringChase(owner: ModuleObject): void {
+    if(!BitWise.InstanceOfObject(owner, ModuleObjectType.ModuleCreature)){
+      return;
+    }
+    const creature = owner as ModuleCreature;
+    if(!creature.combatData?.combatState){
+      return;
+    }
+    const chase = this.target;
+    if(!chase || (typeof (chase as ModuleCreature).isDead === 'function' && (chase as ModuleCreature).isDead())){
+      return;
+    }
+    const data = creature.combatData;
+    const roundActionTarget = creature.combatRound?.action?.target;
+    const isCombatChase =
+      data.lastAttackTarget === chase ||
+      data.lastAttemptedAttackTarget === chase ||
+      data.lastSpellTarget === chase ||
+      data.lastAttemptedSpellTarget === chase ||
+      roundActionTarget === chase ||
+      creature.combatRound?.newAttackTarget === chase;
+    if(!isCombatChase){
+      return;
+    }
+    // Refresh SetCombatState timer only — do not re-run full setCombatEngaged each tick.
+    if(typeof creature.setCombatState === 'function'){
+      creature.setCombatState(true);
+    }else{
+      creature.combatStateTimer = 8000;
+    }
   }
 
   /**

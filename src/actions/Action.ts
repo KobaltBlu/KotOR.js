@@ -218,7 +218,11 @@ export class Action {
     if (!param) { return; }
     switch (param.type) {
       case ActionParameterType.DWORD:
-        return GameState.ModuleObjectManager.GetObjectById(param.value as number) as T;
+        // Client/action resolve — include party (removed from area.creatures).
+        return (
+          GameState.ModuleObjectManager.GetClientObjectById?.(param.value as number) ||
+          GameState.ModuleObjectManager.GetObjectById(param.value as number)
+        ) as T;
       case ActionParameterType.SCRIPT_SITUATION:
         return param.scriptInstance as T;
       default:

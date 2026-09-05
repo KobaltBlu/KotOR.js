@@ -13,7 +13,11 @@ export function lookupCombatObjectById(id: number): ModuleObject | undefined {
     return undefined;
   }
   try{
-    return GameState.ModuleObjectManager?.GetObjectById?.(id);
+    const mom = GameState.ModuleObjectManager;
+    return (
+      mom?.GetClientObjectById?.(id) ||
+      mom?.GetObjectById?.(id)
+    );
   }catch{
     return undefined;
   }

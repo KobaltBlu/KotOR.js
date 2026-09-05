@@ -107,6 +107,7 @@ import {
   COMBAT_STATE_DURATION_MS,
   ExcitedDurationRow,
   getExcitedDurationMs,
+  hasLivingCombatTarget,
   setClientCombatMode,
   updateClientCombatMode,
 } from "@/combat/combat-engagement";
@@ -2462,6 +2463,8 @@ export class ModuleCreature extends ModuleObject {
 
   /**
    * Retail AIUpdate combat-state tick — countdown to SetCombatState(0).
+   * While still closing on a living combat target (PhysicalAttacks / chase Move),
+   * refresh the 8000ms timer instead of wiping the combat schedule mid-approach.
    */
   updateCombatStateTimer(delta = 0){
     if(this.instantItemCooldownMs > 0){
@@ -2476,12 +2479,55 @@ export class ModuleCreature extends ModuleObject {
     if(!this.combatData.combatState) return;
     this.combatStateTimer -= (1000 * delta);
     if(this.combatStateTimer <= 0){
+      if(this.isActivelyPursuingCombatTarget()){
+        this.combatStateTimer = COMBAT_STATE_DURATION_MS;
+        return;
+      }
       this.setCombatState(false, this.combatStateReason);
       if(this.animationState.index == ModuleCreatureAnimState.READY){
         this.setAnimationState(ModuleCreatureAnimState.PAUSE);
       }
       this.weaponPowered(false);
     }
+  }
+
+  /**
+   * True when a living combat target remains and the action queue / round is
+   * still pursuing it (prevents 8s SetCombatState(0) during long approaches).
+   */
+  isActivelyPursuingCombatTarget(): boolean {
+    if(!hasLivingCombatTarget(this)){
+      return false;
+    }
+    if(this.combatRound?.action?.target && !this.combatRound.action.target.isDead?.()){
+      return true;
+    }
+    const queue = this.actionQueue;
+    if(!queue?.length){
+      return false;
+    }
+    for(let i = 0; i < queue.length; i++){
+      const action = queue[i];
+      if(!action) continue;
+      if(action.type === ActionType.ActionPhysicalAttacks){
+        return true;
+      }
+      if(action.type === ActionType.ActionMoveToPoint){
+        const moveTarget = action.getParameter?.(4);
+        if(
+          moveTarget &&
+          (
+            moveTarget === this.combatData.lastAttackTarget ||
+            moveTarget === this.combatData.lastAttemptedAttackTarget ||
+            moveTarget === this.combatRound?.action?.target ||
+            moveTarget === this.combatRound?.newAttackTarget
+          )
+        ){
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   /**

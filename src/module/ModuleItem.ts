@@ -819,7 +819,8 @@ export class ModuleItem extends ModuleObject {
 
   /**
    * Whether this item should be transferred into a body bag.
-   * retail Dropable bit (flags & 8): missing field defaults to 0 (not droppable).
+   * retail Dropable bit (flags & 8): LoadDataFromGff defaults missing to 0;
+   * LoadItem keeps UTI value when the instance struct omits Dropable.
    */
   isDropable(): boolean {
     return !!this.dropable;
@@ -1451,8 +1452,8 @@ export class ModuleItem extends ModuleObject {
   }
 
   load(){
-    // Retail LoadItem: LoadFromTemplate then re-apply instance Dropable
-    // Pickpocketable from the Equip_ItemList / ItemList struct (default 0 if absent).
+    // Retail LoadItem: LoadFromTemplate then re-apply instance Dropable /
+    // Pickpocketable only when present on the Equip_ItemList / ItemList struct.
     const hadDropable = this.template?.RootNode?.hasField('Dropable');
     const instanceDropable = hadDropable
       ? this.template.getFieldByLabel('Dropable').getValue()
@@ -1462,11 +1463,10 @@ export class ModuleItem extends ModuleObject {
       ? this.template.getFieldByLabel('Pickpocketable').getValue()
       : undefined;
     const applyInstanceFlags = () => {
+      // Retail LoadItem: only overwrite Dropable/Pickpocketable when the instance
+      // Equip_ItemList / ItemList struct has the field; otherwise keep UTI values.
       if(hadDropable){
         this.dropable = instanceDropable;
-      }else if(this.getEquippedRes() || this.getInventoryRes()){
-        // Template-resref inventory/equip entries: missing Dropable → not droppable
-        this.dropable = 0;
       }
       if(hadPickpocketable){
         this.pickpocketable = instancePickpocketable;

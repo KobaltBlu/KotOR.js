@@ -96,6 +96,7 @@ export class MenuJournal extends GameMenu {
 
       this.BTN_SWAPTEXT.addEventListener('click', (e) => {
         e.stopPropagation();
+        // Retail HandleInputEvent 0x2a — toggle active/done then PopulateItemListBox.
         switch(this.mode){
           case JournalQuestMode.ACTIVE:
             this.mode = JournalQuestMode.COMPLETED;
@@ -104,10 +105,11 @@ export class MenuJournal extends GameMenu {
             this.mode = JournalQuestMode.ACTIVE;
           break;
         }
+        this.updateList();
         this.UpdateLabels();
       });
 
-      // retail HandleInputEvent 0x29 → AddPanel(GUI).
+      // retail HandleInputEvent 0x29 → AddPanel + PushModalPanel (flags=3).
       this.BTN_QUESTITEMS?.addEventListener('click', (e) => {
         e.stopPropagation();
         GameState.guiAudioEmitter?.playSoundFireAndForget?.('gui_click');
@@ -117,6 +119,14 @@ export class MenuJournal extends GameMenu {
 
       resolve();
     });
+  }
+
+  /** Pop quest-item modal when journal leaves the screen (retail panel ownership). */
+  hide(){
+    if(this.manager?.MenuQuestItem?.isVisible?.()){
+      this.manager.MenuQuestItem.close();
+    }
+    super.hide();
   }
 
   UpdateSelected(){
@@ -176,17 +186,30 @@ export class MenuJournal extends GameMenu {
   }
 
   updateList(){
-    this.LBL_ITEM_DESCRIPTION.setItem(null);
-    this.LB_ITEMS.setItems(this.getFilteredEntries());
+    const entries = this.getFilteredEntries();
+    this.selected = undefined;
+    this.LB_ITEMS.setItems(entries, {
+      selectIndex: entries.length ? 0 : -1,
+    });
+    if(entries.length){
+      this.selected = entries[0];
+      this.UpdateSelected();
+    }else{
+      this.LBL_ITEM_DESCRIPTION.setItem(null);
+    }
   }
 
   getFilteredEntries(){
-    const entries = GameState.JournalManager.Entries.slice();
+    // Retail PopulateItemListBox walks active or done lists (End bit on category entry).
+    const entries = GameState.JournalManager.Entries.slice().filter((entry) => {
+      const complete = entry.isComplete();
+      return this.mode === JournalQuestMode.COMPLETED ? complete : !complete;
+    });
 
     return entries.sort( (a, b) => {
       if(this.sort == JournalSort.NAME){
-        let nameA = a.category.name.getTLKValue().toLocaleLowerCase();
-        let nameB = b.category.name.getTLKValue().toLocaleLowerCase();
+        let nameA = a.category?.name?.getTLKValue?.()?.toLocaleLowerCase?.() ?? '';
+        let nameB = b.category?.name?.getTLKValue?.()?.toLocaleLowerCase?.() ?? '';
         if (nameA < nameB) {
           return -1;
         }
@@ -198,19 +221,19 @@ export class MenuJournal extends GameMenu {
       }else if(this.sort == JournalSort.RECIEVED){
         return GameState.JournalManager.compareReceived(a, b);
       }else if(this.sort == JournalSort.PRIORITY){
-        if (a.category.priority < b.category.priority) {
+        if ((a.category?.priority ?? 0) < (b.category?.priority ?? 0)) {
           return -1;
         }
-        if (a.category.priority > b.category.priority) {
+        if ((a.category?.priority ?? 0) > (b.category?.priority ?? 0)) {
           return 1;
         }
         
         return 0;
       }else if(this.sort == JournalSort.PLANET){
-        if (a.category.planet_id < b.category.planet_id) {
+        if ((a.category?.planet_id ?? 0) < (b.category?.planet_id ?? 0)) {
           return -1;
         }
-        if (a.category.planet_id > b.category.planet_id) {
+        if ((a.category?.planet_id ?? 0) > (b.category?.planet_id ?? 0)) {
           return 1;
         }
         

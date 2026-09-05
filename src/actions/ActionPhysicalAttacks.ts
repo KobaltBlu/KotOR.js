@@ -251,9 +251,24 @@ export class ActionPhysicalAttacks extends Action {
       actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, arriveRange);
       actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
       actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
+
+      // Retail AIActionPhysicalAttacks (too far / too close): AddActionToFront(self)
+      // then MoveToPoint, return COMPLETE (2). Keeps PhysicalAttacks behind Move so
+      // resetExcitedDuration / combat-state refresh run again between approach hops.
+      // Returning IN_PROGRESS left this action blocked behind a continuous live chase
+      // until the 8s SetCombatState timer wiped scheduledActionList.
+      const requeue = new GameState.ActionFactory.ActionPhysicalAttacks(undefined, this.groupId);
+      for(let i = 0; i <= 9; i++){
+        const p = this.parameters[i];
+        if(p){
+          requeue.setParameter(i, p.type, p.value);
+        }
+      }
+      requeue.isUserAction = this.isUserAction;
+      owner.actionQueue.addFront(requeue);
       owner.actionQueue.addFront(actionMoveToTarget);
 
-      return ActionStatus.IN_PROGRESS;
+      return ActionStatus.COMPLETE;
     }
 
     // In range but ClearLineOfSight blocked — retail may retarget via GetNearestEnemy

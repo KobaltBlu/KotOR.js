@@ -128,6 +128,66 @@ export class ModuleObjectManager {
 
   }
 
+  /**
+   * Client-side id resolve for actions/UI. Unlike GetObjectById (script GetGameObject),
+   * this still finds KeepCorpse shells after event 0xb (removed from ObjectList /
+   * filtered as retained) by scanning area.creatures.
+   */
+  static GetClientObjectById(id: ModuleObject|number = -1): ModuleObject | undefined {
+    if(id == ModuleObjectConstant.OBJECT_INVALID)
+      return undefined;
+
+    if(typeof id === 'object' && id != null){
+      return id;
+    }
+
+    if(typeof id !== 'number' || isNaN(id)){
+      return undefined;
+    }
+
+    const fromList = this.ObjectList.get(id) as ModuleObject & {
+      destroyed?: boolean;
+      isRetainedCorpse?: boolean;
+    } | undefined;
+    if(fromList && !fromList.destroyed){
+      return fromList;
+    }
+
+    const area = GameState.module?.area;
+    if(area?.creatures){
+      for(let i = 0; i < area.creatures.length; i++){
+        const cre = area.creatures[i];
+        if(cre && cre.id === id && !cre.destroyed){
+          return cre;
+        }
+      }
+    }
+    // Party members are removed from area.creatures on join — still resolve
+    // by id for action params / UI (same as GetObjectsInShape).
+    const party = PartyManager.party;
+    if(party){
+      for(let i = 0; i < party.length; i++){
+        const pm = party[i];
+        if(pm && pm.id === id && !(pm as ModuleCreature).destroyed){
+          return pm;
+        }
+      }
+    }
+    if(PartyManager.Player && PartyManager.Player.id === id && !PartyManager.Player.destroyed){
+      return PartyManager.Player;
+    }
+    if(area?.placeables){
+      for(let i = 0; i < area.placeables.length; i++){
+        const plc = area.placeables[i];
+        if(plc && plc.id === id && !plc.destroyed){
+          return plc;
+        }
+      }
+    }
+
+    return undefined;
+  }
+
   static GetNextObjectId(){
     return this.COUNT++;
   }
@@ -1021,8 +1081,16 @@ export class ModuleObjectManager {
 
     if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature)){
       const cre = obj as ModuleCreature;
-      if(typeof cre.isDead === 'function' && cre.isDead()){
-        return { ok: false, hostile: false };
+      const deadOrCorpse = (typeof cre.isDead === 'function' && cre.isDead())
+        || !!(cre as ModuleCreature).isRetainedCorpse;
+      if(deadOrCorpse){
+        // KeepCorpse / DeadSelectable loot shells — friendly pick only (not combat).
+        const lootable = (typeof cre.isUseable === 'function' && cre.isUseable())
+          || (typeof cre.canLootAsCorpse === 'function' && cre.canLootAsCorpse(player));
+        if(!lootable){
+          return { ok: false, hostile: false };
+        }
+        return { ok: true, hostile: false };
       }
       const viewer = player as ModuleCreature;
       const seen = typeof viewer.hasSeenObject === 'function'

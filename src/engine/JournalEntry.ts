@@ -31,11 +31,24 @@ export class JournalEntry {
   }
 
   getName(): string {
-    return this.category.name.getTLKValue();
+    return this.category?.name?.getTLKValue?.() ?? '';
+  }
+
+  /** Used by default list PROTOITEM rows (`setText(node)` → `toString()`). */
+  toString(): string {
+    return this.getName();
   }
 
   getEntryText(): string {
-    return this.entry.text.getTLKValue();
+    return this.entry?.text?.getTLKValue?.() ?? '';
+  }
+
+  /**
+   * Retail SJournalEntry done flag — category entry `End != 0` puts the quest
+   * on the completed (done) list instead of the active list.
+   */
+  isComplete(): boolean {
+    return !!(this.entry?.end);
   }
 
   /**

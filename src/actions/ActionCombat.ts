@@ -7,7 +7,7 @@ import { ModuleObjectConstant, ModuleObjectType } from "@/enums";
 import { BitWise } from "@/utility/BitWise";
 import { GameState } from "@/GameState";
 import { CombatRound } from "@/combat/CombatRound";
-import { resolveSpellCastTarget } from "@/combat/spell-self-target";
+import { resolveSpellCastTarget, parseForceMenuIndex } from "@/combat/spell-self-target";
 /**
  * ActionCombat class.
  *
@@ -125,25 +125,34 @@ export class ActionCombat extends Action {
       }
 
       case CombatActionType.ITEM_CAST_SPELL: {
-        // Retail case 10 — spells.FORCEHOSTILE < 1 clears non-self target
+        // Retail AIActionCombat case 10 — FORCEHOSTILE < 1 clears non-self
+        // object id but keeps the scheduled position (grenade location casts).
+        // Compare by id so a stamped self-target cannot be treated as "other".
         const rawTarget = combatAction.target;
-        let itemTargetId = rawTarget?.id || ModuleObjectConstant.OBJECT_INVALID;
-        const forceHostile = combatAction.spell?.forcehostile ?? -1;
-        const clearHostileTarget =
-          forceHostile < 1 &&
+        const ownerId = this.owner?.id;
+        const forceHostile = parseForceMenuIndex(combatAction.spell?.forcehostile);
+        const isSelfTarget =
           !!rawTarget &&
-          rawTarget !== this.owner;
-        if(clearHostileTarget){
+          (rawTarget === this.owner || (!!ownerId && rawTarget.id === ownerId));
+        let itemTargetId = rawTarget?.id || ModuleObjectConstant.OBJECT_INVALID;
+        let posSource = rawTarget;
+        if(forceHostile < 1 && rawTarget && !isSelfTarget){
           itemTargetId = ModuleObjectConstant.OBJECT_INVALID;
           combatAction.target = undefined;
+          // Keep rawTarget position for approach / grenade impact location.
+        }else if(isSelfTarget){
+          // Personal menu stamp — always resolve to the caster object id.
+          itemTargetId = ownerId || ModuleObjectConstant.OBJECT_INVALID;
+          combatAction.target = this.owner;
+          posSource = this.owner;
         }
 
         const itemSpellAction = new GameState.ActionFactory.ActionItemCastSpell();
         itemSpellAction.setParameter(0, ActionParameterType.DWORD, itemTargetId);
-        itemSpellAction.setParameter(1, ActionParameterType.DWORD, rawTarget?.area?.id || ModuleObjectConstant.OBJECT_INVALID);
-        itemSpellAction.setParameter(2, ActionParameterType.FLOAT, rawTarget?.position?.x || 0);
-        itemSpellAction.setParameter(3, ActionParameterType.FLOAT, rawTarget?.position?.y || 0);
-        itemSpellAction.setParameter(4, ActionParameterType.FLOAT, rawTarget?.position?.z || 0);
+        itemSpellAction.setParameter(1, ActionParameterType.DWORD, posSource?.area?.id || this.owner?.area?.id || ModuleObjectConstant.OBJECT_INVALID);
+        itemSpellAction.setParameter(2, ActionParameterType.FLOAT, posSource?.position?.x || 0);
+        itemSpellAction.setParameter(3, ActionParameterType.FLOAT, posSource?.position?.y || 0);
+        itemSpellAction.setParameter(4, ActionParameterType.FLOAT, posSource?.position?.z || 0);
         itemSpellAction.setParameter(5, ActionParameterType.INT, combatAction.spell ? combatAction.spell.id : 0);
         itemSpellAction.setParameter(6, ActionParameterType.INT, combatAction.domainLevel);
         itemSpellAction.setParameter(7, ActionParameterType.FLOAT, 1.0);

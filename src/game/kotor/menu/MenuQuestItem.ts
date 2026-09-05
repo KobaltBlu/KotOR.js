@@ -13,7 +13,8 @@ import {
 /**
  * MenuQuestItem — retail (`questitem`).
  *
- * Journal BTN_QUESTITEMS → AddPanel @ HandleInputEvent case 0x29.
+ * Journal BTN_QUESTITEMS → AddPanel + PushModalPanel @ HandleInputEvent case 0x29
+ * (flags=3). Overlay so the journal panel stays drawn underneath.
  * PopulateItemListBox: player bag items with plot flag.
  *
  * @file MenuQuestItem.ts
@@ -32,6 +33,8 @@ export class MenuQuestItem extends GameMenu {
     this.gui_resref = 'questitem';
     this.background = '';
     this.voidFill = false;
+    // Retail AddPanel(flags=3) → PushModalPanel; journal remains in the panel list.
+    this.isOverlayGUI = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
