@@ -13,6 +13,13 @@ import {
 import { getPathPersonalSpace } from "@/combat/attack-range";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { BitWise } from "@/utility/BitWise";
+import {
+  FORCE_PUSH_LOCO_STATE,
+  QuickWalkLocoState,
+  getQuickWalkLocoState,
+  isForcePushLocoActive,
+  setQuickWalkLocoState,
+} from "@/engine/pathfinding/quick-walk-loco";
 
 /**
  * Retail OnApplyForcePush + WalkUpdateLocation_QuickWalk_ForcePushed.
@@ -20,8 +27,10 @@ import { BitWise } from "@/utility/BitWise";
  * @file force-push-quick-walk.ts
  */
 
-/** Retail value set by OnApplyForcePush. */
-export const FORCE_PUSH_LOCO_STATE = 4;
+export {
+  FORCE_PUSH_LOCO_STATE,
+  isForcePushLocoActive,
+} from "@/engine/pathfinding/quick-walk-loco";
 
 /** Retail QuickWalk_ForcePushed speed when loco state == 4. */
 export const FORCE_PUSH_SPEED = 25.0;
@@ -175,13 +184,6 @@ export function clipForcePushDestination(
   return clear;
 }
 
-/** True when retail QuickWalk routes to ForcePushed (state ∈ {4,5,6}). */
-export function isForcePushLocoActive(creature: ModuleCreature | undefined): boolean {
-  if(!creature) return false;
-  const s = creature.forcePushLocoState | 0;
-  return s === 4 || s === 5 || s === 6;
-}
-
 /**
  * Install 2-point XY path and loco state 4 (retail path_count_=4 float pairs).
  * Seeds one QuickWalk(1)-equivalent frame with delta 0.
@@ -202,7 +204,7 @@ export function installForcePushPath(
     _origin.clone(),
     _dest.clone(),
   ]));
-  creature.forcePushLocoState = FORCE_PUSH_LOCO_STATE;
+  setQuickWalkLocoState(creature, FORCE_PUSH_LOCO_STATE);
   creature.forcePushDistanceTraveled = 0;
   creature.forcePushArrived = false;
   creature.forcePushArriveElapsed = 0;
@@ -219,7 +221,7 @@ export function installForcePushPath(
 
 export function clearForcePushLoco(creature: ModuleCreature): void {
   if(!creature) return;
-  creature.forcePushLocoState = 0;
+  setQuickWalkLocoState(creature, QuickWalkLocoState.PathWalk);
   creature.forcePushDistanceTraveled = 0;
   creature.forcePushArrived = false;
   creature.forcePushArriveElapsed = 0;
@@ -287,7 +289,7 @@ export function forcePushQuickWalkUpdate(
   const end = points[points.length - 1].vector;
   const start = points[0].vector;
   const speed =
-    (creature.forcePushLocoState | 0) === FORCE_PUSH_LOCO_STATE
+    getQuickWalkLocoState(creature) === FORCE_PUSH_LOCO_STATE
       ? FORCE_PUSH_SPEED
       : Math.hypot(end.x - start.x, end.y - start.y) * 3.030303;
 

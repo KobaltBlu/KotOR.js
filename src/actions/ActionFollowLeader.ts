@@ -17,6 +17,10 @@ import {
   stepFollowLeaderState,
 } from "@/engine/pathfinding/follow-leader-sm";
 import { partySoftSeparate } from "@/engine/pathfinding/party-soft-separate";
+import {
+  QuickWalkLocoState,
+  setQuickWalkLocoState,
+} from "@/engine/pathfinding/quick-walk-loco";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { BitWise } from "@/utility/BitWise";
 import { Action } from "@/actions/Action";
@@ -48,6 +52,8 @@ export class ActionFollowLeader extends Action {
     }
 
     const owner = this.owner as ModuleCreature;
+    // Retail AIActionPartyFollowLeader @ 00511130 — field438 = 3
+    setQuickWalkLocoState(owner, QuickWalkLocoState.FollowLeader);
 
     if(GameState.Mode == EngineMode.DIALOG){
       owner.force = 0;

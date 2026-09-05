@@ -22,6 +22,10 @@ import {
   PlotPathCode,
   type PathFindInfoLite,
 } from "@/engine/pathfinding/plot-path";
+import {
+  QuickWalkLocoState,
+  setQuickWalkLocoState,
+} from "@/engine/pathfinding/quick-walk-loco";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
@@ -316,6 +320,8 @@ export class ActionMoveToPoint extends Action {
   private stopMoving(owner: ModuleCreature){
     // Physics + walk/run anim — retail WalkUpdateLocation end sets anim 10000
     owner.clearLocomotionState(false);
+    // Retail ResetAtEndOfPath → field438 = 1
+    setQuickWalkLocoState(owner, QuickWalkLocoState.Paused);
   }
 
   shouldRepathToMovingTarget(distanceToLive: number): boolean {
@@ -344,6 +350,8 @@ export class ActionMoveToPoint extends Action {
     this.setParameter(0, ActionParameterType.FLOAT, dest.x);
     this.setParameter(1, ActionParameterType.FLOAT, dest.y);
     this.setParameter(2, ActionParameterType.FLOAT, dest.z);
+    // Retail creature-target drift (dist² >= 4) → field438 = -1
+    setQuickWalkLocoState(this.owner as ModuleCreature, QuickWalkLocoState.Repath);
     // Clear path only — do not stopMoving / clearLocomotionState
     this.setComputedPath(undefined);
     if(this.pathFindInfo){
@@ -351,6 +359,10 @@ export class ActionMoveToPoint extends Action {
       this.pathFindInfo.origin.copy(this.owner.position);
     }
     this.calculatePath();
+    // After replot, resume ordinary path walk
+    if(this.computedPath?.points?.length){
+      setQuickWalkLocoState(this.owner as ModuleCreature, QuickWalkLocoState.PathWalk);
+    }
   }
 
   enqueueMoveToLiveTarget(range: number, moveFlags: number){
@@ -423,6 +435,7 @@ export class ActionMoveToPoint extends Action {
     path.fixWalkEdges(getPathPersonalSpace(this.owner));
     path.setColor(this.owner.helperColor);
     this.setComputedPath(path);
+    setQuickWalkLocoState(this.owner as ModuleCreature, QuickWalkLocoState.PathWalk);
   }
 
   private getRawNumberParameter(index: number): number | undefined {

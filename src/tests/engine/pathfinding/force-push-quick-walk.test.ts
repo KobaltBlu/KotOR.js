@@ -204,7 +204,7 @@ describe('forcePushQuickWalkUpdate', () => {
   it('slides ~5m in ~0.2s at 25 u/s and stops', () => {
     const creature: any = {
       position: new THREE.Vector3(0, 0, 0),
-      forcePushLocoState: 0,
+      quickWalkLocoState: 0,
       forcePushDistanceTraveled: 0,
       forcePushArrived: false,
       forcePushArriveElapsed: 0,
@@ -222,7 +222,7 @@ describe('forcePushQuickWalkUpdate', () => {
       new THREE.Vector3(0, 0, 0),
       new THREE.Vector3(5, 0, 0)
     );
-    expect(creature.forcePushLocoState).toBe(FORCE_PUSH_LOCO_STATE);
+    expect(creature.quickWalkLocoState).toBe(FORCE_PUSH_LOCO_STATE);
     expect(creature.forcePushArrived).toBe(false);
 
     let result = forcePushQuickWalkUpdate(creature, 0.2);
@@ -237,7 +237,7 @@ describe('forcePushQuickWalkUpdate', () => {
   it('moves partially across smaller deltas', () => {
     const creature: any = {
       position: new THREE.Vector3(0, 0, 0),
-      forcePushLocoState: FORCE_PUSH_LOCO_STATE,
+      quickWalkLocoState: FORCE_PUSH_LOCO_STATE,
       forcePushDistanceTraveled: 0,
       forcePushArrived: false,
       forcePushArriveElapsed: 0,
@@ -262,7 +262,7 @@ describe('forcePushQuickWalkUpdate', () => {
 describe('updateForcePushAnimFlags', () => {
   it('holds push flag until arrived, then lands/gets up', () => {
     const creature: any = {
-      forcePushLocoState: FORCE_PUSH_LOCO_STATE,
+      quickWalkLocoState: FORCE_PUSH_LOCO_STATE,
       forcePushArrived: false,
       forcePushArriveElapsed: 0,
       fp_push_played: false,

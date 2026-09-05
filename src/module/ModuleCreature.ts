@@ -143,6 +143,12 @@ import {
   updateForcePushAnimFlags,
 } from "@/engine/pathfinding/force-push-quick-walk";
 import {
+  QuickWalkLocoState,
+  isFollowLeaderLocoActive,
+  isQuickWalkPaused,
+  setQuickWalkLocoState,
+} from "@/engine/pathfinding/quick-walk-loco";
+import {
   cameraRelativeDesired,
   createPlayerCamRelativeState,
   driveAnimPlaybackRate,
@@ -461,10 +467,10 @@ export class ModuleCreature extends ModuleObject {
   walkRate: number;
   blockingTimer: number;
   /**
-   * Retail Force Push QuickWalk modes {4,5,6}.
-   * Set by OnApplyForcePush; cleared when SetState FORCEPUSH ends.
+   * Retail WalkUpdateLocation_QuickWalk loco mode (field438_0xa8c).
+   * 3 = FollowLeader, 4..6 = ForcePushed, 1 = paused, -1 = repath.
    */
-  forcePushLocoState: number;
+  quickWalkLocoState: number;
   /** Retail distance traveled during Force Push slide. */
   forcePushDistanceTraveled: number;
   /** True once QuickWalk_ForcePushed reaches path end (land/getup phase). */
@@ -810,7 +816,7 @@ export class ModuleCreature extends ModuleObject {
     this.fp_push_played = false;
     this.fp_land_played = false;
     this.fp_getup_played = false;
-    this.forcePushLocoState = 0;
+    this.quickWalkLocoState = QuickWalkLocoState.PathWalk;
     this.forcePushDistanceTraveled = 0;
     this.forcePushArrived = false;
     this.forcePushArriveElapsed = 0;
@@ -904,6 +910,7 @@ export class ModuleCreature extends ModuleObject {
    * Advances the head MoveTo/Follow/Drive action so motion never skips frames
    * when aiUpdate is budget-deferred. Sets _quickWalkedThisFrame so aiUpdate
    * does not re-process the same action.
+   * Routes on quickWalkLocoState (field438): ForcePush → FollowLeader → path walk.
    * Force Push (∈ {4,5,6}) runs even while debilitated.
    */
   quickWalkUpdate(delta: number = 0){
@@ -913,6 +920,11 @@ export class ModuleCreature extends ModuleObject {
 
     // aiUpdate is budget-deferred; keep area current for every-frame follow/move.
     this.area = GameState.module.area;
+
+    // Retail: field438 == 1 → early return (paused / end-of-path)
+    if(isQuickWalkPaused(this) && !isForcePushLocoActive(this)){
+      return;
+    }
 
     if(isForcePushLocoActive(this)){
       forcePushQuickWalkUpdate(this, delta);
@@ -926,9 +938,23 @@ export class ModuleCreature extends ModuleObject {
     const action = this.actionQueue?.[0];
     if(!action) return;
     const type = action.type;
+
+    // Retail field438 == 3 → FollowLeader; AIActionPartyFollowLeader stamps 3.
+    if(type === ActionType.ActionFollowLeader){
+      setQuickWalkLocoState(this, QuickWalkLocoState.FollowLeader);
+      this.actionQueue.process(delta);
+      this.action = this.actionQueue[0];
+      this._quickWalkedThisFrame = true;
+      return;
+    }
+
+    // Stale FollowLeader mode without the action — pause like retail end-of-path.
+    if(isFollowLeaderLocoActive(this)){
+      setQuickWalkLocoState(this, QuickWalkLocoState.Paused);
+    }
+
     if(
       type !== ActionType.ActionMoveToPoint &&
-      type !== ActionType.ActionFollowLeader &&
       type !== ActionType.ActionForceFollowObject &&
       type !== ActionType.ActionDrive
     ){
@@ -1251,9 +1277,7 @@ export class ModuleCreature extends ModuleObject {
       // Retail Force Push: QuickWalk_ForcePushed only SetPosition — no cam turn.
       const forcePushLocked =
         this.isForcePushed() ||
-        this.forcePushLocoState === 4 ||
-        this.forcePushLocoState === 5 ||
-        this.forcePushLocoState === 6;
+        isForcePushLocoActive(this);
       const usePlayerControl =
         !forcePushLocked &&
         GameState.Mode != EngineMode.DIALOG &&
@@ -1435,14 +1459,10 @@ export class ModuleCreature extends ModuleObject {
       // Perception / listening moved to aiUpdate
 
 
-      // Party companion stuck: prefer follow-ring TeleportForward; give hex/WalkUpdate recovery time first.
-      // Retail FollowLeader TeleportForward advances safe ring slots; it does not hard-snap to GetFollowPosition.
+      // Party companion stuck timer — retail FollowLeader TeleportForward is owned by
+      // the FollowLeader SM (ActionFollowLeader.softTeleportForward). Do not also
+      // advance the ring from collisionTimer while following (dual TeleportForward).
       if(this.npcId != undefined && this != (GameState.getCurrentPlayer() as any) && this.collisionTimer >= 2){
-        const following = this.action?.type === ActionType.ActionFollowLeader;
-        const dest = new THREE.Vector3();
-        if(following && GameState.PartyManager.teleportFollowForward(this, dest)){
-          this.setPosition(dest);
-        }
         this.collisionTimer = 0;
       }
 

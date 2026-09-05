@@ -13,17 +13,24 @@ import {
   shouldFollowRun,
   type FollowLeaderRuntime,
 } from "@/engine/pathfinding/follow-leader";
-import { getFollowRateScale } from "@/engine/pathfinding/locomotion";
+import { getFollowRateScale, pathApproachScale, walkSpeedFactorRamp } from "@/engine/pathfinding/locomotion";
 import { partyFollowPath, FOLLOW_RING_SIZE } from "@/engine/pathfinding/party-follow-path";
 import { testDirectLine, TestDirectLineCode } from "@/engine/pathfinding/test-direct-line";
 import { testSafeLocationPoint } from "@/engine/pathfinding/test-safe-location-point";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { CombatFeatType } from "@/enums/combat/CombatFeatType";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
 import { Utility } from "@/utility/Utility";
 
 /** Repath when live follow goal drifts this far from path end. */
 export const FOLLOW_PATH_REPATH_DRIFT = 1.25;
+/**
+ * Min world displacement before Offset/Moving counts as a step for anim.
+ * Below this, keep/clear pause so micro-chasing trail vs GetFollowPosition
+ * cannot leave companions moonwalking in run after the leader stops.
+ */
+export const FOLLOW_STEP_ANIM_EPS = 0.02;
 
 export type FollowStepResult = {
   /** Spend remaining inner-loop budget (retail iVar14 == 1). */
@@ -39,14 +46,47 @@ const _lateral = new THREE.Vector3();
 const _sample = new THREE.Vector3();
 const _moveGoal = new THREE.Vector3();
 
-function getEffectiveFollowRate(owner: ModuleCreature, run: boolean): number {
-  const base = run
+/**
+ * Retail QuickWalk_FollowLeader rate: GetWalkRate / GetRunRate × movementSpeed.
+ * Stealth activity forces walk (QuickWalk GetActivity(1)); without STEALTH_RUN
+ * (0xc5) K2 GetWalkRate stays on walk even when otherwise running.
+ */
+export function getEffectiveFollowRate(owner: ModuleCreature, run: boolean): number {
+  const stealth = !!owner.stealthMode;
+  const hasStealthRun =
+    typeof owner.getHasFeat === "function" &&
+    owner.getHasFeat(CombatFeatType.STEALTH_RUN);
+  // Retail: stealth activity → GetWalkRate; STEALTH_RUN allows run while stealthed
+  const useRun = run && (!stealth || hasStealthRun);
+  const base = useRun
     ? (owner.getRunSpeed?.() || 5.4)
     : (owner.getWalkSpeed?.() || 1.7);
-  const movement = typeof owner.movementSpeed === 'number' && owner.movementSpeed > 0
+  const movement = typeof owner.movementSpeed === "number" && owner.movementSpeed > 0
     ? owner.movementSpeed
     : 1;
   return base * movement;
+}
+
+/**
+ * Frame step budget — retail QuickWalk_FollowLeader outer uses
+ * `dt_ms * rate_milli * 1e-06` (= delta * worldRate) after dist² bands.
+ * walkSpeedFactor is still ramped for MoveTo handoff continuity.
+ */
+export function computeFollowStepBudget(
+  owner: ModuleCreature,
+  run: boolean,
+  distForBands: number,
+  remainingToGoal: number,
+  delta: number
+): number {
+  const base = getEffectiveFollowRate(owner, run);
+  const followScale = getFollowRateScale(distForBands);
+  const rate = base * followScale;
+  const dt = Math.max(0, delta);
+  const approach = pathApproachScale(remainingToGoal, rate, dt);
+  const prev = Number.isFinite(owner.walkSpeedFactor) ? owner.walkSpeedFactor : 0;
+  owner.walkSpeedFactor = walkSpeedFactorRamp(prev, approach, dt);
+  return dt * rate;
 }
 
 /**
@@ -345,9 +385,13 @@ function handleOffset(
 
   const run = shouldFollowRun(distLeader, distOffset, runtime.wasRunning);
   runtime.wasRunning = run;
-  const rate = getEffectiveFollowRate(owner, run);
-  const followScale = getFollowRateScale(distOffset);
-  const budget = Math.max(0, rate * Math.max(0, delta) * followScale);
+  const budget = computeFollowStepBudget(
+    owner,
+    run,
+    distOffset,
+    distOffset,
+    delta
+  );
 
   // Seed path cursor (retail) from Recalc center if unset
   if(
@@ -418,9 +462,10 @@ function handleOffset(
     _sample.copy(owner.position);
   }
 
-  // Retail: LOS state → new lateral; fail → MovingToPath.
-  // If state is stale (NPC stood on the old sample), retry from feet so
-  // Offset↔Moving thrash cannot freeze lastSample forever.
+  // Retail: LOS sample → new lateral; fail → MovingToPath when still outside
+  // comfort. If already within FOLLOW_COMFORT, stay Offset and park — otherwise
+  // ActionFollowLeader's inner loop thrash Offset↔Moving forever (LOS fail then
+  // comfort re-enter), leaving companions stuck on RUNNING with zero displacement.
   if(area && !hasFollowLos(area, owner, _sample, _lateral)){
     const sampleDist = Utility.Distance2D(owner.position, _sample);
     if(sampleDist > 0.5 && hasFollowLos(area, owner, owner.position, _lateral)){
@@ -428,13 +473,24 @@ function handleOffset(
       runtime.lastSampleX = owner.position.x;
       runtime.lastSampleY = owner.position.y;
       runtime.lastSampleZ = owner.position.z;
+    }else if(distOffset <= FOLLOW_COMFORT){
+      runtime.lastSampleX = owner.position.x;
+      runtime.lastSampleY = owner.position.y;
+      runtime.lastSampleZ = owner.position.z;
+      runtime.offsetStepped = false;
+      owner.force = 0;
+      owner.speed = 0;
+      owner.walk = false;
+      owner.clearLocomotionAnimation?.();
+      return { continueInner: false, teleport: false };
     }else{
-      // Refresh state to feet before pathing so a later Offset re-entry is live
+      // Refresh sample to feet before pathing so a later Offset re-entry is live
       runtime.lastSampleX = owner.position.x;
       runtime.lastSampleY = owner.position.y;
       runtime.lastSampleZ = owner.position.z;
       runtime.state = FollowLeaderState.MovingToPath;
-      return { continueInner: true, teleport: false };
+      // Do not continueInner — same-frame comfort re-enter would thrash with LOS fail
+      return { continueInner: false, teleport: false };
     }
   }
 
@@ -455,8 +511,11 @@ function handleOffset(
   if(distToSample > 0.05 || sampleMoved){
     // Retail FollowLeader — after Advance burns budget into state,
     // SetPosition toward that sample (not WalkUpdate trapezoid).
+    const beforeX = owner.position.x;
+    const beforeY = owner.position.y;
     applyFollowSetPosition(owner, _lateral, budget, delta, run);
-    runtime.offsetStepped = true;
+    const moved = Math.hypot(owner.position.x - beforeX, owner.position.y - beforeY);
+    runtime.offsetStepped = moved >= FOLLOW_STEP_ANIM_EPS;
   }
 
   return { continueInner: false, teleport: false };
@@ -487,11 +546,13 @@ function handleMoving(
       runtime.pathPointY = owner.position.y;
       runtime.pathPointZ = owner.position.z;
     }
-    // Keep state at feet when re-entering Offset from Moving* so a stale
+    // Keep sample at feet when re-entering Offset from Moving* so a stale
     // sample behind an NPC cannot immediately bounce us back to MovingToPath.
     runtime.lastSampleX = owner.position.x;
     runtime.lastSampleY = owner.position.y;
     runtime.lastSampleZ = owner.position.z;
+    // continueInner so Offset can Advance/park this frame; Offset LOS-in-comfort
+    // now parks instead of bouncing back to Moving.
     return { continueInner: true, teleport: false };
   }
   runtime.stuckTimer += delta;
@@ -529,6 +590,7 @@ function handleMoving(
  * Retail FollowLeader outer SetPosition toward last sample.
  * Budget already burned by AdvancePointOnPath; step toward sample with
  * TestDirectLine / TestSafeLocationPoint gate.
+ * @returns world units actually displaced this call
  */
 function applyFollowSetPosition(
   owner: ModuleCreature,
@@ -536,7 +598,7 @@ function applyFollowSetPosition(
   budget: number,
   delta: number,
   run: boolean
-){
+): number {
   if(owner.blockingTimer >= 5 || owner.collisionTimer >= 0.5){
     owner.blockingTimer = 0;
     owner.collisionTimer = 0;
@@ -550,10 +612,13 @@ function applyFollowSetPosition(
     owner.force = 0;
     owner.speed = 0;
     owner.walk = false;
-    return;
+    owner.clearLocomotionAnimation?.();
+    return 0;
   }
 
   const step = Math.min(budget, dist);
+  const beforeX = owner.position.x;
+  const beforeY = owner.position.y;
   _tmp.set(
     owner.position.x + (dx / dist) * step,
     owner.position.y + (dy / dist) * step,
@@ -572,7 +637,8 @@ function applyFollowSetPosition(
         _tmp.copy(hit.clearPoint);
       }else if(!testSafeLocationPoint(area, _tmp, owner)){
         faceToward(owner, goal);
-        return;
+        owner.clearLocomotionAnimation?.();
+        return 0;
       }
     }
     if(typeof area.getNearestWalkablePoint === 'function'){
@@ -581,12 +647,24 @@ function applyFollowSetPosition(
   }
 
   faceToward(owner, goal);
-  owner.walk = !run;
   owner.force = 0;
   owner.speed = 0;
   owner.moveDirOverride = undefined;
+  const moved = Math.hypot(_tmp.x - beforeX, _tmp.y - beforeY);
+  if(moved < FOLLOW_STEP_ANIM_EPS){
+    owner.walk = false;
+    owner.clearLocomotionAnimation?.();
+    // Still snap residual so we don't micro-chase forever
+    if(moved > 1e-8){
+      owner.setPosition(_tmp);
+    }
+    return moved;
+  }
+
+  owner.walk = !run;
   owner.setAnimationState(run ? ModuleCreatureAnimState.RUNNING : ModuleCreatureAnimState.WALKING);
   owner.setPosition(_tmp);
+  return moved;
 }
 
 export enum FollowMoveResult {
@@ -621,15 +699,21 @@ function applyFollowDirectMove(
   if(dist < 1e-6){
     owner.force = 0;
     owner.speed = 0;
+    owner.walk = false;
+    owner.clearLocomotionAnimation?.();
     return FollowMoveResult.Arrived;
   }
   if(budget <= 0){
     owner.force = 0;
     owner.speed = 0;
+    owner.walk = false;
+    owner.clearLocomotionAnimation?.();
     return FollowMoveResult.OK;
   }
 
   const step = Math.min(budget, dist);
+  const beforeX = owner.position.x;
+  const beforeY = owner.position.y;
   _tmp.set(
     owner.position.x + (dx / dist) * step,
     owner.position.y + (dy / dist) * step,
@@ -659,10 +743,22 @@ function applyFollowDirectMove(
     }
   }
 
-  owner.walk = !run;
   owner.force = 0;
   owner.speed = 0;
   owner.moveDirOverride = undefined;
+  const moved = Math.hypot(_tmp.x - beforeX, _tmp.y - beforeY);
+  if(moved < FOLLOW_STEP_ANIM_EPS){
+    owner.walk = false;
+    owner.clearLocomotionAnimation?.();
+    if(moved > 1e-8){
+      owner.setPosition(_tmp);
+    }
+    return dist - moved <= FOLLOW_STEP_ANIM_EPS
+      ? FollowMoveResult.Arrived
+      : FollowMoveResult.OK;
+  }
+
+  owner.walk = !run;
   owner.setAnimationState(run ? ModuleCreatureAnimState.RUNNING : ModuleCreatureAnimState.WALKING);
   owner.setPosition(_tmp);
   return step >= dist ? FollowMoveResult.Arrived : FollowMoveResult.OK;
@@ -695,9 +791,14 @@ export function driveTowardOffset(
   owner.force = 0;
   owner.moveDirOverride = undefined;
 
-  const rate = getEffectiveFollowRate(owner, run);
-  const followScale = getFollowRateScale(Utility.Distance2D(owner.position, offset));
-  const budget = Math.max(0, rate * Math.max(0, delta) * followScale);
+  const distGoal = Utility.Distance2D(owner.position, offset);
+  const budget = computeFollowStepBudget(
+    owner,
+    run,
+    distGoal,
+    Utility.Distance2D(owner.position, _moveGoal),
+    delta
+  );
   return applyFollowDirectMove(owner, _moveGoal, budget, delta, run);
 }
 

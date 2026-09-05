@@ -16,6 +16,10 @@ import { BitWise } from "@/utility/BitWise";
 import { ActionParameter } from "@/actions/ActionParameter";
 import { ActionQueue } from "@/actions/ActionQueue";
 import { ComputedPath } from "@/engine/pathfinding/ComputedPath";
+import {
+  QuickWalkLocoState,
+  setQuickWalkLocoState,
+} from "@/engine/pathfinding/quick-walk-loco";
 
 /**
  * Base class for all game actions in the engine.
@@ -116,6 +120,8 @@ export class Action {
       if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) {
         const creature = this.owner as ModuleCreature;
         creature.clearLocomotionState(false);
+        // Retail ResetAtEndOfPath → field438 = 1 (paused)
+        setQuickWalkLocoState(creature, QuickWalkLocoState.Paused);
         const computedPath = creature.getComputedPath();
         if(!!computedPath && computedPath === this.computedPath){
           creature.setComputedPath(undefined);

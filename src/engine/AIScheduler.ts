@@ -6,6 +6,10 @@ import { BitWise } from "@/utility/BitWise";
 import { GameState } from "@/GameState";
 import type { ModuleObject } from "@/module/ModuleObject";
 import type { ModuleCreature } from "@/module/ModuleCreature";
+import {
+  isForcePushLocoActive,
+  isFollowLeaderLocoActive,
+} from "@/engine/pathfinding/quick-walk-loco";
 
 /** Per-frame AI budget (microseconds). */
 const AI_BUDGET_US = 10000;
@@ -320,11 +324,11 @@ export class AIScheduler {
 
   private creatureNeedsQuickWalk(creature: ModuleCreature): boolean {
     // Force Push QuickWalk even while debilitated.
-    if(
-      creature.forcePushLocoState === 4 ||
-      creature.forcePushLocoState === 5 ||
-      creature.forcePushLocoState === 6
-    ){
+    if(isForcePushLocoActive(creature)){
+      return true;
+    }
+    // FollowLeader loco mode (field438 == 3)
+    if(isFollowLeaderLocoActive(creature)){
       return true;
     }
     const action = creature.actionQueue?.[0] ?? creature.action;

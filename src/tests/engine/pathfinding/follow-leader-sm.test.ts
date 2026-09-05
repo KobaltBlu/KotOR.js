@@ -65,6 +65,7 @@ import {
   driveTowardOffset,
   stepFollowLeaderState,
 } from "@/engine/pathfinding/follow-leader-sm";
+import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
 function makeCreature(x: number, y: number, z = 0): ModuleCreature {
@@ -94,6 +95,7 @@ function makeCreature(x: number, y: number, z = 0): ModuleCreature {
     collisionTimer: 0,
     moveDirOverride: undefined,
     helperColor: 0,
+    clearLocomotionAnimation: jest.fn(),
   };
   return creature as unknown as ModuleCreature;
 }
@@ -385,6 +387,36 @@ describe("Offset direct trail stepping", () => {
     stepFollowLeaderState(runtime, companion, leader, farOffset, 0.016);
     expect(runtime.state).not.toBe(FollowLeaderState.Offset);
   });
+
+  it("does not keep offsetStepped on sub-epsilon micro-chases (stops run anim)", () => {
+    const leader = makeCreature(0, 0, 0);
+    const companion = makeCreature(1.5, -0.7, 0);
+    mockParty.push(leader, companion);
+    seedRing(partyFollowPath, 30);
+    partyFollowPath.recalculateFollowPoints();
+
+    const setAnim = jest.fn();
+    const clearAnim = jest.fn();
+    (companion as { setAnimationState: typeof setAnim }).setAnimationState = setAnim;
+    (companion as { clearLocomotionAnimation: typeof clearAnim }).clearLocomotionAnimation = clearAnim;
+
+    const runtime = createFollowRuntime();
+    runtime.state = FollowLeaderState.Offset;
+    runtime.lastSampleX = companion.position.x;
+    runtime.lastSampleY = companion.position.y;
+    runtime.lastSampleZ = companion.position.z;
+    runtime.pathPointX = companion.position.x;
+    runtime.pathPointY = companion.position.y;
+    runtime.pathPointZ = companion.position.z;
+
+    // Offset goal almost under feet — any residual lateral is sub-epsilon
+    const offset = companion.position.clone();
+    stepFollowLeaderState(runtime, companion, leader, offset, 0.1);
+
+    expect(runtime.state).toBe(FollowLeaderState.Offset);
+    expect(runtime.offsetStepped).toBe(false);
+    expect(setAnim).not.toHaveBeenCalledWith(ModuleCreatureAnimState.RUNNING);
+  });
 });
 
 describe("Moving direct follow rate scaling", () => {
@@ -469,6 +501,65 @@ describe("Offset stale field17 LOS (Carth stuck walk)", () => {
     expect(runtime.lastSampleX).not.toBe(-5);
     expect(runtime.lastSampleX).toBeGreaterThan(0);
     expect(mockTestDirectLine.mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("parks in Offset when LOS blocked but already within FOLLOW_COMFORT (no Moving thrash)", () => {
+    const leader = makeCreature(0, 0, 0);
+    const companion = makeCreature(1.5, 0, 0);
+    mockParty.push(leader, companion);
+    seedRing(partyFollowPath, 20);
+    partyFollowPath.recalculateFollowPoints();
+
+    // Always blocked — DetailedBlock like live Kreia→offset
+    mockTestDirectLine.mockImplementation(() => ({
+      ok: false,
+      code: -2,
+      clearT: 0,
+      clearPoint: companion.position.clone(),
+    }));
+
+    (companion as { area: object }).area = {
+      path: {
+        traverseToPoint: () => ({
+          points: [{ vector: companion.position.clone() }],
+          fixWalkEdges: () => {},
+          setColor: () => {},
+        }),
+      },
+      getNearestWalkablePoint: (p: THREE.Vector3) => p.clone(),
+      isPointWalkable: () => true,
+    };
+
+    const clearAnim = jest.fn();
+    (companion as { clearLocomotionAnimation: typeof clearAnim }).clearLocomotionAnimation = clearAnim;
+    (companion as { setAnimationState: (s: number) => void }).setAnimationState = jest.fn();
+
+    const runtime = createFollowRuntime();
+    runtime.state = FollowLeaderState.Offset;
+    runtime.lastSampleX = companion.position.x;
+    runtime.lastSampleY = companion.position.y;
+    runtime.lastSampleZ = companion.position.z;
+    runtime.pathPointX = companion.position.x;
+    runtime.pathPointY = companion.position.y;
+    runtime.pathPointZ = companion.position.z;
+
+    // Within comfort (~1.5)
+    const offset = new THREE.Vector3(0, 0, 0);
+    const first = stepFollowLeaderState(runtime, companion, leader, offset, 0.05);
+    expect(runtime.state).toBe(FollowLeaderState.Offset);
+    expect(first.continueInner).toBe(false);
+    expect(clearAnim).toHaveBeenCalled();
+
+    // Same-frame Moving re-enter must not bounce back into a thrash loop
+    runtime.state = FollowLeaderState.MovingToPath;
+    const second = stepFollowLeaderState(runtime, companion, leader, offset, 0.05);
+    expect(runtime.state).toBe(FollowLeaderState.Offset);
+    // Inner continue into Offset is ok; Offset then parks without returning to Moving
+    if(second.continueInner){
+      const third = stepFollowLeaderState(runtime, companion, leader, offset, 0.05);
+      expect(runtime.state).toBe(FollowLeaderState.Offset);
+      expect(third.continueInner).toBe(false);
+    }
   });
 });
 
