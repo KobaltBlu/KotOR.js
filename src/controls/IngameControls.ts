@@ -232,8 +232,10 @@ export class IngameControls {
         }
       }
 
-      if(GameState.MenuManager.activeMenus.length){
-        GameState.MenuManager.activeMenus[GameState.MenuManager.activeMenus.length-1].triggerEventListener('keydown', e);
+      // Overlay modals (save name, confirm) must receive keys — not the menu underneath.
+      const foreground = GameState.MenuManager.GetForegroundMenu();
+      if(foreground){
+        foreground.triggerEventListener('keydown', e);
       }
     });
 
@@ -308,8 +310,9 @@ export class IngameControls {
         }
       }
 
-      if(GameState.MenuManager.activeMenus.length){
-        GameState.MenuManager.activeMenus[GameState.MenuManager.activeMenus.length-1].triggerEventListener('keyup', e);
+      const foreground = GameState.MenuManager.GetForegroundMenu();
+      if(foreground){
+        foreground.triggerEventListener('keyup', e);
       }
     });
 

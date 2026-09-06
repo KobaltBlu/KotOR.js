@@ -36,13 +36,7 @@ export class MenuSaveName extends GameMenu {
       // Retail save edit max length 0x10 (GUIEditBox default)
 
       this.BTN_OK.addEventListener('click', () => {
-        const name = String(this.EDITBOX.getValue?.() ?? '').trim();
-        const cb = this.onSave;
-        this.onSave = undefined;
-        this.close();
-        if(typeof cb === 'function' && name){
-          cb(name);
-        }
+        this.acceptSaveName();
       });
       this._button_a = this.BTN_OK;
 
@@ -51,8 +45,27 @@ export class MenuSaveName extends GameMenu {
         this.close();
       });
       this._button_b = this.BTN_CANCEL;
+
+      this.addEventListener('keydown', (e: KeyboardEvent) => {
+        if(e.key === 'Enter'){
+          this.acceptSaveName();
+          e.preventDefault?.();
+        }
+      });
+
       resolve();
     });
+  }
+
+  /** OK / Enter — trim, close, then invoke onSave when non-empty. */
+  private acceptSaveName(): void {
+    const name = String(this.EDITBOX.getValue?.() ?? '').trim();
+    const cb = this.onSave;
+    this.onSave = undefined;
+    this.close();
+    if(typeof cb === 'function' && name){
+      cb(name);
+    }
   }
 
   show() {

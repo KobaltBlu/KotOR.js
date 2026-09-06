@@ -6,6 +6,7 @@ import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import { GUIControlType } from "@/enums/gui/GUIControlType";
 import { asExtentInt } from "@/gui/GUICoord";
 import { GameState } from "@/GameState";
+import type { BufferAttribute } from "three";
 
 /**
  * GUIEditBox — retail edit box.
@@ -30,6 +31,7 @@ export class GUIEditBox extends GUIControl {
   private wasFocused: boolean = false;
 
   private static readonly CARET_PERIOD = 0.5;
+  private static readonly CARET_CHAR = '_';
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
@@ -46,24 +48,27 @@ export class GUIEditBox extends GUIControl {
         return;
       }
 
-      switch(e.which){
-        case 8: // Backspace
-          this.setText(this.editValue.slice(0, -1));
-          e.preventDefault?.();
-        break;
-        case 32: // Spacebar
-          this.setText(this.editValue + ' ');
-          e.preventDefault?.();
-        break;
-        default:
-          if(e.which >= 48 && e.which <= 90){
-            const ch = e.shiftKey
-              ? String.fromCharCode(e.which).toLocaleUpperCase()
-              : String.fromCharCode(e.which).toLocaleLowerCase();
-            this.setText(this.editValue + ch);
-            e.preventDefault?.();
-          }
-        break;
+      if(e.key === 'Backspace'){
+        this.setText(this.editValue.slice(0, -1));
+        e.preventDefault?.();
+        return;
+      }
+
+      // Enter / Escape are handled by the owning menu (e.g. MenuSaveName).
+      if(e.key === 'Enter' || e.key === 'Escape' || e.key === 'Tab'){
+        return;
+      }
+
+      if(e.key === ' '){
+        this.setText(this.editValue + ' ');
+        e.preventDefault?.();
+        return;
+      }
+
+      // Printable single code point — letters/digits (retail save-name charset).
+      if(e.key.length === 1 && /^[0-9A-Za-z]$/.test(e.key)){
+        this.setText(this.editValue + e.key);
+        e.preventDefault?.();
       }
     };
   }
@@ -101,6 +106,11 @@ export class GUIEditBox extends GUIControl {
     // Do not trim — preserve spaces while typing (unlike GUIControl.setText).
     const parsed = this.menu ? this.menu.gameStringParse(str) : str;
     this.editValue = parsed.substr(0, this.maxLength);
+    // Typing resets caret blink so the caret stays visible while editing.
+    if(this.isFocused()){
+      this.caretVisible = true;
+      this.caretTimer = 0;
+    }
     this.refreshDisplay();
   }
 
@@ -134,26 +144,47 @@ export class GUIEditBox extends GUIControl {
     }
   }
 
-  /** Display value + optional caret; geometry uses inner extent (GetInnerExtent). */
+  /**
+   * While focused, always lay out with a trailing caret so center-aligned
+   * EDITBOX text (savename ALIGNMENT 18) does not shift when the caret blinks.
+   * When the caret is off, collapse the trailing glyph quads in place.
+   */
   private refreshDisplay(): void {
-    const display = (this.isFocused() && this.caretVisible)
-      ? this.editValue + '_'
+    const focused = this.isFocused();
+    const display = focused
+      ? this.editValue + GUIEditBox.CARET_CHAR
       : this.editValue;
 
-    const oldText = this.text.text;
     this.text.text = display;
 
     if(typeof this.text.geometry !== 'object'){
       this.buildText();
+    }else{
+      this.updateTextGeometry(display);
     }
 
-    if(oldText != this.text.text && typeof this.text.geometry === 'object'){
-      this.updateTextGeometry(this.text.text);
+    if(focused && !this.caretVisible){
+      this.hideTrailingCaretGlyph();
     }
 
     if(this.text.geometry && this.text.geometry.boundingBox){
       this.text.geometry.boundingBox.getSize(this.textSize);
     }
+  }
+
+  /** Collapse the last character quad so the caret blinks without reflow. */
+  private hideTrailingCaretGlyph(): void {
+    const pos = this.text.geometry?.getAttribute('position') as BufferAttribute | undefined;
+    if(!pos || pos.count < 4){
+      return;
+    }
+    const base = pos.count - 4;
+    const x = pos.getX(base);
+    const y = pos.getY(base);
+    for(let i = 0; i < 4; i++){
+      pos.setXY(base + i, x, y);
+    }
+    pos.needsUpdate = true;
   }
 
   static _focusClickHandler: (e: GUIControlEvent) => void = (e: GUIControlEvent) => {
