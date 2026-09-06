@@ -303,10 +303,43 @@ export const ScriptInstanceWindow = () => {
     });
   };
 
+  const jumpToFunction = (codeOffset: number) => {
+    if (!instance) return;
+    instance.seek = codeOffset;
+    instance.dispatchEvent('seek', codeOffset);
+    forceRender((n) => n + 1);
+    if (viewMode === 'assembly') {
+      requestAnimationFrame(() => {
+        const hex = codeOffset.toString(16).toUpperCase().padStart(8, '0');
+        document.getElementById(hex)?.scrollIntoView({ block: 'nearest' });
+      });
+      return;
+    }
+    jumpToNssForOffset(codeOffset);
+  };
+
+  const shortId = instance?.uuid ? instance.uuid.slice(0, 8) : '';
+  const functionOutline = decompile?.functions?.length ? (
+    <div className="debugger-function-list">
+      {decompile.functions.map((fn) => (
+        <button
+          key={`${fn.name}-${fn.codeOffset}`}
+          className="debugger-function-btn"
+          title={`0x${fn.codeOffset.toString(16).toUpperCase().padStart(8, '0')}`}
+          onClick={() => jumpToFunction(fn.codeOffset)}
+        >
+          {fn.name}
+        </button>
+      ))}
+    </div>
+  ) : null;
+
   return (
     <div className="script-debugger-instance">
       <div className="title">
-        <span>Instance: {instance ? (instance.name + ' | ' + instance.uuid) : ''}</span>
+        <span title={instance ? `${instance.name} | ${instance.uuid}` : undefined}>
+          {instance ? `Instance: ${instance.name} · ${shortId}` : 'Instance'}
+        </span>
         {instance ? (
           <div className="view-mode-toggle">
             <button
@@ -329,26 +362,8 @@ export const ScriptInstanceWindow = () => {
       <div className="content">
         <div className="content-inner">
           {viewMode === 'assembly' ? (
-            <div className="debugger-assembly-pane">
-              {decompile?.functions?.length ? (
-                <div className="debugger-function-list">
-                  {decompile.functions.map((fn) => (
-                    <button
-                      key={`${fn.name}-${fn.codeOffset}`}
-                      className="debugger-function-btn"
-                      title={`0x${fn.codeOffset.toString(16).toUpperCase().padStart(8, '0')}`}
-                      onClick={() => {
-                        if (!instance) return;
-                        instance.seek = fn.codeOffset;
-                        jumpToNssForOffset(fn.codeOffset);
-                        forceRender((n) => n + 1);
-                      }}
-                    >
-                      {fn.name}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
+            <div className="debugger-source-pane">
+              {functionOutline}
               <ul className="instruction-list">
                 {instance ? (
                   instructions.map((instruction) => (
@@ -364,25 +379,28 @@ export const ScriptInstanceWindow = () => {
               </ul>
             </div>
           ) : (
-            <ul className="nss-line-list">
-              {instance && decompile ? (
-                decompile.lines.map((text, index) => {
-                  const lineNumber = index + 1;
-                  const codeOffset = decompile.lineMap.nssLineToCodeOffset.get(lineNumber);
-                  return (
-                    <NssSourceLine
-                      key={`${instance.uuid}-nss-${lineNumber}`}
-                      instance={instance}
-                      lineNumber={lineNumber}
-                      text={text}
-                      codeOffset={codeOffset}
-                      isSeeked={seekedNssLine === lineNumber}
-                      bpVersion={bpVersion}
-                    />
-                  );
-                })
-              ) : <></>}
-            </ul>
+            <div className="debugger-source-pane">
+              {functionOutline}
+              <ul className="nss-line-list">
+                {instance && decompile ? (
+                  decompile.lines.map((text, index) => {
+                    const lineNumber = index + 1;
+                    const codeOffset = decompile.lineMap.nssLineToCodeOffset.get(lineNumber);
+                    return (
+                      <NssSourceLine
+                        key={`${instance.uuid}-nss-${lineNumber}`}
+                        instance={instance}
+                        lineNumber={lineNumber}
+                        text={text}
+                        codeOffset={codeOffset}
+                        isSeeked={seekedNssLine === lineNumber}
+                        bpVersion={bpVersion}
+                      />
+                    );
+                  })
+                ) : <></>}
+              </ul>
+            </div>
           )}
           {instance ? (
             <div className="debugger-buttons">

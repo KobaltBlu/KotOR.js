@@ -4,6 +4,7 @@ import { FeebackMessageColor } from "@/enums/engine/FeedbackMessageColor";
 import { GUIProtoItem } from "@/gui";
 import type { GameMenu, GUIControl } from "@/gui";
 import { asExtentInt } from "@/gui/GUICoord";
+import { chromeFrameDimension } from "@/gui/guiChrome";
 import type { GUIListBox } from "@/gui/GUIListBox";
 import type { RetailRowExtent } from "@/gui/GUIProtoItem";
 import type { GFFStruct } from "@/resource/GFFStruct";
@@ -90,6 +91,9 @@ export class GUIMessageItem extends GUIProtoItem {
 
   /**
    * Retail: height = GetIdealHeight() + GetBorderDim()*2 after SetText.
+   * Use hilight-aware chrome frame dim (not idle BORDER only) so the hover
+   * selection frame pads around the text. Unclamped — retail GetBorderDim is
+   * not limited by the provisional height-10 extent before SetExtent.
    */
   private syncRetailRowHeight(){
     if(this.text?.geometry?.boundingBox){
@@ -97,11 +101,28 @@ export class GUIMessageItem extends GUIProtoItem {
       this.text.geometry.boundingBox.getSize(this.textSize);
     }
     const textH = asExtentInt(this.textSize?.y || 0);
-    const borderDim = asExtentInt(this.getBorderSize());
+    const borderDim = asExtentInt(chromeFrameDimension(
+      this.getBorderSize(),
+      this.getHighlightSize(),
+      !!(this.border.edge || this.border.corner),
+      !!(this.highlight.edge || this.highlight.corner),
+    ));
     const height = Math.max(10, textH + borderDim * 2);
     this.setExtentHeight(height);
     this.resizeControl();
     this.alignText();
+  }
+
+  /**
+   * Hilight edge/corner may resolve GetBorderDim via texture size after async
+   * load — re-measure row height so the list layout picks up the padded extent.
+   */
+  protected onChromeTextureLoaded(): void {
+    const prevH = asExtentInt(this.extent.height);
+    this.syncRetailRowHeight();
+    if(asExtentInt(this.extent.height) !== prevH && this.list){
+      this.list.relayoutAfterRowHeightChange();
+    }
   }
 
 }

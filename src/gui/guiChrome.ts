@@ -43,6 +43,43 @@ export function chromeFrameDimension(
   return Math.max(b, h);
 }
 
+/**
+ * Retail CSWGuiBorderParams::GetBorderDim.
+ * When DIMENSION is non-zero, return it; otherwise fall back to edge (then corner)
+ * texture height so LabelHilight / boxline frames still size correctly.
+ */
+export function retailBorderDim(
+  dimension: number,
+  edgeTextureSize: number = 0,
+  cornerTextureSize: number = 0,
+): number {
+  const dim = asGuiSize(dimension);
+  if(dim > 0){
+    return dim;
+  }
+  const edge = asGuiSize(edgeTextureSize);
+  if(edge > 0){
+    return edge;
+  }
+  return asGuiSize(cornerTextureSize);
+}
+
+/** GUI pixel size from a loaded chrome edge/corner map (retail image GetHeight). */
+export function chromeTextureGuiSize(texture: THREE.Texture | null | undefined): number {
+  if(!(texture instanceof THREE.Texture)){
+    return 0;
+  }
+  const img: any = texture.image;
+  if(img && typeof img.height === 'number' && img.height > 0){
+    return asGuiSize(img.height);
+  }
+  const header = (texture as any).header;
+  if(header && typeof header.height === 'number' && header.height > 0){
+    return asGuiSize(header.height);
+  }
+  return 0;
+}
+
 const HAS_UNIFORM: Record<GUIChromeMapSlot, string> = {
   edgeMap: 'hasEdgeMap',
   cornerMap: 'hasCornerMap',

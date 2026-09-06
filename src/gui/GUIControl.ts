@@ -53,9 +53,11 @@ import {
   bindChromeTexture,
   buildChromeGeometryForControl,
   chromeFrameDimension,
+  chromeTextureGuiSize,
   createGuiChrome,
   GUI_HOVER_MODE_OVERLAY,
   GUI_HOVER_MODE_SWAP,
+  retailBorderDim,
 } from "@/gui/guiChrome";
 
 const itemSize = 2
@@ -772,6 +774,16 @@ export class GUIControl {
         bindChromeTexture(this.chrome.material, slot, texture);
         onReady?.(texture);
         this.syncChromeEnableFlags();
+        // Retail GetBorderDim falls back to edge/corner image size when DIMENSION is 0.
+        // Rebuild chrome (and let subclasses remeasure) once that size is known.
+        const isFrameSlot =
+          slot === 'edgeMap' || slot === 'cornerMap' ||
+          slot === 'highlightEdgeMap' || slot === 'highlightCornerMap';
+        const dimField = slot.startsWith('highlight') ? this.highlight.dimension : this.border.dimension;
+        if(isFrameSlot && !(dimField > 0)){
+          this.resizeControl();
+          this.onChromeTextureLoaded();
+        }
         this._endTextureLoad();
       }, undefined, slot);
     };
@@ -978,6 +990,15 @@ export class GUIControl {
     if (this.list) {
       this.invalidateListRtt();
     }
+  }
+
+  /**
+   * Called when a border/hilight edge or corner texture finishes loading and
+   * DIMENSION was 0 (retail GetBorderDim texture-size fallback). Default
+   * rebuilds chrome via the caller; subclasses may remeasure extents.
+   */
+  protected onChromeTextureLoaded(): void {
+    // no-op — MessageItem re-syncs LabelHilight row height
   }
 
   resizeControl(){
@@ -1878,11 +1899,21 @@ export class GUIControl {
   }
 
   getBorderSize(){
-    return asGuiSize(this.border.dimension || 0);
+    const u = this.chrome?.material?.uniforms;
+    return retailBorderDim(
+      this.border.dimension || 0,
+      chromeTextureGuiSize(u?.edgeMap?.value),
+      chromeTextureGuiSize(u?.cornerMap?.value),
+    );
   }
 
   getHighlightSize(){
-    return asGuiSize(this.highlight.dimension || 0);
+    const u = this.chrome?.material?.uniforms;
+    return retailBorderDim(
+      this.highlight.dimension || 0,
+      chromeTextureGuiSize(u?.highlightEdgeMap?.value),
+      chromeTextureGuiSize(u?.highlightCornerMap?.value),
+    );
   }
 
   /**

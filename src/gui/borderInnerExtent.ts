@@ -3,10 +3,9 @@ import { asExtentInt, asGuiSize, clampFrameDim, truncDiv } from "@/gui/GUICoord"
 /**
  * Matches retail GetInnerExtent for width/height.
  *
- * corner/edge sizes come from the border DIMENSION (GetBorderDim), clamped with
- * {@link asGuiSize} / {@link clampFrameDim}. DIMENSION 0 means no corner/edge
- * geometry in KotOR.js (retail would use corner/edge image sizes there — not
- * modeled). INNEROFFSET is then applied with retail's axis asymmetry:
+ * corner/edge sizes come from GetBorderDim (DIMENSION, else edge/corner texture
+ * height), clamped with {@link asGuiSize} / {@link clampFrameDim}. INNEROFFSET
+ * is then applied with retail's axis asymmetry:
  * width = (w - 2*corner) + 2*min(INNEROFFSET, DIMENSION)
  * height = (h - 2*corner) + 2*effectiveY (raw, no cap)
  *

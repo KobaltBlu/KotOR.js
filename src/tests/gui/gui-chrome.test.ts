@@ -76,6 +76,17 @@ describe("chromeFrameDimension", () => {
     if(!hasHighlightFrame) return b;
     return Math.max(b, h);
   }
+  function retailBorderDim(
+    dimension: number,
+    edgeTextureSize: number = 0,
+    cornerTextureSize: number = 0,
+  ): number {
+    const dim = asGuiSize(dimension);
+    if(dim > 0) return dim;
+    const edge = asGuiSize(edgeTextureSize);
+    if(edge > 0) return edge;
+    return asGuiSize(cornerTextureSize);
+  }
 
   it("uses highlight dim for K1 saveload-style empty idle border", () => {
     // Retail BTN_SAVELOAD: BORDER dim 2 empty, HILIGHT dim 6 boxline
@@ -93,6 +104,23 @@ describe("chromeFrameDimension", () => {
   it("clamps fractional frame dims up to 1", () => {
     expect(chromeFrameDimension(0.4, 0, true, false)).toBe(1);
     expect(chromeFrameDimension(0, 0.4, false, true)).toBe(1);
+  });
+
+  it("GetBorderDim uses DIMENSION when set", () => {
+    expect(retailBorderDim(4, 16, 16)).toBe(4);
+  });
+
+  it("GetBorderDim falls back to edge then corner texture size when DIMENSION is 0", () => {
+    expect(retailBorderDim(0, 3, 8)).toBe(3);
+    expect(retailBorderDim(0, 0, 8)).toBe(8);
+    expect(retailBorderDim(0, 0, 0)).toBe(0);
+  });
+
+  it("Messages LabelHilight row height pads with hilight chrome dim", () => {
+    // Idle BORDER empty; HILIGHT dim 2 → height = ideal + 2*2
+    const textH = 14;
+    const borderDim = chromeFrameDimension(0, 2, false, true);
+    expect(Math.max(10, textH + borderDim * 2)).toBe(18);
   });
 });
 
