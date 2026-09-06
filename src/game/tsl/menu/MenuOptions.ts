@@ -7,6 +7,18 @@ import { NWScript } from "@/nwscript/NWScript";
 import { MenuOptions as K1_MenuOptions } from "@/game/kotor/KOTOR";
 
 /**
+ * retail CSWGuiInGameOptions::OnEnterSlot description TLKs (TSL).
+ */
+const TLK_DESC_LOADGAME = 0xa53c;
+const TLK_DESC_SAVEGAME = 0xa53d;
+const TLK_DESC_GAMEPLAY = 0xa521;
+const TLK_DESC_FEEDBACK = 0x2147a;
+const TLK_DESC_AUTOPAUSE = 0xa523;
+const TLK_DESC_GRAPHICS = 0xbe2f;
+const TLK_DESC_SOUND = 0xbe30;
+const TLK_DESC_QUIT = 0xa53e;
+
+/**
  * MenuOptions class.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -107,36 +119,29 @@ export class MenuOptions extends K1_MenuOptions {
         });
       });
 
-      this.BTN_LOADGAME.addEventListener( 'hover', () => {
-        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[42300].Value);
+      this.BTN_LOADGAME.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_LOADGAME);
       });
-
-      this.BTN_SAVEGAME.addEventListener( 'hover', () => {
-        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[42301].Value);
+      this.BTN_SAVEGAME.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_SAVEGAME);
       });
-
-      this.BTN_GAMEPLAY.addEventListener( 'hover', () => {
-        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[42273].Value);
+      this.BTN_GAMEPLAY.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_GAMEPLAY);
       });
-
-      this.BTN_FEEDBACK.addEventListener( 'hover', () => {
-        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[136314].Value);
+      this.BTN_FEEDBACK.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_FEEDBACK);
       });
-
-      this.BTN_AUTOPAUSE.addEventListener( 'hover', () => {
-        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[42275].Value);
+      this.BTN_AUTOPAUSE.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_AUTOPAUSE);
       });
-
-      this.BTN_GRAPHICS.addEventListener( 'hover', () => {
-        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[48687].Value);
+      this.BTN_GRAPHICS.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_GRAPHICS);
       });
-
-      this.BTN_SOUND.addEventListener( 'hover', () => {
-        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[48688].Value);
+      this.BTN_SOUND.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_SOUND);
       });
-
-      this.BTN_QUIT.addEventListener( 'hover', () => {
-        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[42302].Value);
+      this.BTN_QUIT.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_QUIT);
       });
 
       resolve();
@@ -145,7 +150,7 @@ export class MenuOptions extends K1_MenuOptions {
 
   show() {
     super.show();
-    this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[42300].Value);
+    this.setDescription(TLK_DESC_LOADGAME);
   }
   
 }

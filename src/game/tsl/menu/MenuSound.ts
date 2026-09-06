@@ -5,6 +5,12 @@ import { MenuSound as K1_MenuSound } from "@/game/kotor/KOTOR";
 
 const DEFAULT_GAIN = 0.75;
 
+/** retail CSWGuiOptionsSound description TLKs (TSL). */
+const TLK_DESC_MUSIC = 0xa547;
+const TLK_DESC_VO = 0xa548;
+const TLK_DESC_FX = 0xa549;
+const TLK_DESC_MOVIE = 0xbb31;
+
 /**
  * MenuSound class.
  *
@@ -86,37 +92,23 @@ export class MenuSound extends K1_MenuSound {
     this.SLI_FX.attachINIProperty('Sound Options.Sound Effects Volume');
     this.SLI_MOVIE.attachINIProperty('Sound Options.Movie Volume');
 
-    this.LBL_MUSIC.addEventListener( 'hover', () => {
-      this.LB_DESC.setItem(this.LBL_MUSIC.getHintText());
-    });
+    this.LBL_MUSIC.addEventListener('hover', () => this.setDescription(TLK_DESC_MUSIC));
+    this.SLI_MUSIC.addEventListener('hover', () => this.setDescription(TLK_DESC_MUSIC));
+    this.LBL_VO.addEventListener('hover', () => this.setDescription(TLK_DESC_VO));
+    this.SLI_VO.addEventListener('hover', () => this.setDescription(TLK_DESC_VO));
+    this.LBL_FX.addEventListener('hover', () => this.setDescription(TLK_DESC_FX));
+    this.SLI_FX.addEventListener('hover', () => this.setDescription(TLK_DESC_FX));
+    this.LBL_MOVIE.addEventListener('hover', () => this.setDescription(TLK_DESC_MOVIE));
+    this.SLI_MOVIE.addEventListener('hover', () => this.setDescription(TLK_DESC_MOVIE));
+  }
 
-    this.SLI_MUSIC.addEventListener( 'hover', () => {
-      this.LB_DESC.setItem(this.LBL_MUSIC.getHintText());
-    });
-
-    this.LBL_VO.addEventListener( 'hover', () => {
-      this.LB_DESC.setItem(this.LBL_VO.getHintText());
-    });
-
-    this.SLI_VO.addEventListener( 'hover', () => {
-      this.LB_DESC.setItem(this.LBL_VO.getHintText());
-    });
-
-    this.LBL_FX.addEventListener( 'hover', () => {
-      this.LB_DESC.setItem(this.LBL_FX.getHintText());
-    });
-
-    this.SLI_FX.addEventListener( 'hover', () => {
-      this.LB_DESC.setItem(this.LBL_FX.getHintText());
-    });
-
-    this.LBL_MOVIE.addEventListener( 'hover', () => {
-      this.LB_DESC.setItem(this.LBL_MOVIE.getHintText());
-    });
-
-    this.SLI_MOVIE.addEventListener( 'hover', () => {
-      this.LB_DESC.setItem(this.LBL_MOVIE.getHintText());
-    });
+  show() {
+    super.show();
+    this.SLI_MUSIC.setValue(AudioEngine.GAIN_MUSIC);
+    this.SLI_VO.setValue(AudioEngine.GAIN_VO);
+    this.SLI_FX.setValue(AudioEngine.GAIN_SFX);
+    this.SLI_MOVIE.setValue(AudioEngine.GAIN_MOVIE);
+    this.setDescription(TLK_DESC_MUSIC);
   }
   
 }

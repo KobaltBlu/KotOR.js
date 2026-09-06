@@ -1,5 +1,10 @@
+import { GameState } from "@/GameState";
 import type { GUILabel, GUIListBox, GUISlider, GUICheckBox, GUIButton } from "@/gui";
 import { MenuMouse as K1_MenuMouse } from "@/game/kotor/KOTOR";
+
+/** retail CSWGuiOptionsMouse custom_value (TSL). */
+const TLK_MOUSE_SENSITIVITY = 0xbe51;
+const TLK_REVERSE_BUTTONS = 0xbe52;
 
 /**
  * MenuMouse class.
@@ -29,6 +34,45 @@ export class MenuMouse extends K1_MenuMouse {
     this.gui_resref = 'optmouse_p';
     this.background = 'blackfill';
     this.voidFill = true;
+  }
+
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer(true);
+    if(skipInit) return;
+    return new Promise<void>((resolve) => {
+      this.BTN_BACK.addEventListener('click', (e) => {
+        e.stopPropagation();
+        void GameState.iniConfig.save();
+        this.close();
+      });
+      this._button_b = this.BTN_BACK;
+
+      this.BTN_DEFAULT.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.resetToDefaults();
+      });
+
+      this.SLI_MOUSESEN.attachINIProperty('Game Options.Mouse Sensitivity');
+      this.CB_REVBUTTONS.attachINIProperty('Game Options.Reverse Mouse Buttons');
+
+      this.SLI_MOUSESEN.addEventListener('hover', () => {
+        this.setDescription(TLK_MOUSE_SENSITIVITY);
+      });
+      this.LBL_MOUSESEN.addEventListener('hover', () => {
+        this.setDescription(TLK_MOUSE_SENSITIVITY);
+      });
+      this.CB_REVBUTTONS.addEventListener('hover', () => {
+        this.setDescription(TLK_REVERSE_BUTTONS);
+      });
+
+      resolve();
+    });
+  }
+
+  show(): void {
+    super.show();
+    this.setupOptions();
+    this.setDescription(TLK_MOUSE_SENSITIVITY);
   }
 
 }

@@ -7,6 +7,18 @@ import { Module } from "@/module";
 import { NWScript } from "@/nwscript/NWScript";
 
 /**
+ * retail CSWGuiInGameOptions::OnEnterSlot description TLKs (K1).
+ */
+const TLK_DESC_LOADGAME = 0xa53c;
+const TLK_DESC_SAVEGAME = 0xa53d;
+const TLK_DESC_GAMEPLAY = 0xbb86;
+const TLK_DESC_FEEDBACK = 0xbd99;
+const TLK_DESC_AUTOPAUSE = 0xbdbc;
+const TLK_DESC_GRAPHICS = 0xbb8a;
+const TLK_DESC_SOUND = 0xbb8c;
+const TLK_DESC_QUIT = 0xa53e;
+
+/**
  * MenuOptions class.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -85,36 +97,29 @@ export class MenuOptions extends GameMenu {
         this.manager.MenuSound.open();
       });
 
-      this.BTN_LOADGAME.addEventListener( 'hover', () => {
-        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[42300].Value);
+      this.BTN_LOADGAME.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_LOADGAME);
       });
-
-      this.BTN_SAVEGAME.addEventListener( 'hover', () => {
-        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[42301].Value);
+      this.BTN_SAVEGAME.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_SAVEGAME);
       });
-
-      this.BTN_GAMEPLAY.addEventListener( 'hover', () => {
-        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[48006].Value);
+      this.BTN_GAMEPLAY.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_GAMEPLAY);
       });
-
-      this.BTN_FEEDBACK.addEventListener( 'hover', () => {
-        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[42274].Value);
+      this.BTN_FEEDBACK.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_FEEDBACK);
       });
-
-      this.BTN_AUTOPAUSE.addEventListener( 'hover', () => {
-        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[48572].Value);
+      this.BTN_AUTOPAUSE.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_AUTOPAUSE);
       });
-
-      this.BTN_GRAPHICS.addEventListener( 'hover', () => {
-        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[48010].Value);
+      this.BTN_GRAPHICS.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_GRAPHICS);
       });
-
-      this.BTN_SOUND.addEventListener( 'hover', () => {
-        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[48012].Value);
+      this.BTN_SOUND.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_SOUND);
       });
-
-      this.BTN_QUIT.addEventListener( 'hover', () => {
-        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[42302].Value);
+      this.BTN_QUIT.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_QUIT);
       });
 
       this.BTN_QUIT.addEventListener('click', () => {
@@ -141,10 +146,18 @@ export class MenuOptions extends GameMenu {
     });
   }
 
+  protected setDescription(strRef: number) {
+    this.LB_DESC?.setItem(
+      GameState.TLKManager.GetStringById(strRef)?.Value
+        || GameState.TLKManager.TLKStrings?.[strRef]?.Value
+        || ''
+    );
+  }
+
   show() {
     super.show();
     this.manager.MenuTop.LBLH_OPT.onHoverIn();
-    this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[42300].Value);
+    this.setDescription(TLK_DESC_LOADGAME);
   }
 
   triggerControllerDUpPress() {

@@ -3,6 +3,15 @@ import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton, GUISlider, GUICheckBox } from "@/gui";
 
 /**
+ * retail CSWGuiOptionsGraphics description TLKs (ctor custom_value / OnEnterSlot).
+ */
+const TLK_DESC_GAMMA = 0xa546;
+const TLK_DESC_RESOLUTION = 0xbb5f;
+const TLK_DESC_SHADOWS = 0xbb4f;
+const TLK_DESC_GRASS = 0xbb53;
+const TLK_DESC_ADVANCED = 0xbfae;
+
+/**
  * MenuGraphics class.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -31,6 +40,14 @@ export class MenuGraphics extends GameMenu {
     this.voidFill = true;
   }
 
+  protected setDescription(strRef: number) {
+    this.LB_DESC?.setItem(
+      GameState.TLKManager.GetStringById(strRef)?.Value
+        || GameState.TLKManager.TLKStrings?.[strRef]?.Value
+        || ''
+    );
+  }
+
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
@@ -38,12 +55,6 @@ export class MenuGraphics extends GameMenu {
       
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
-        /*this.Hide();
-        if(Game.Mode == Game.MODES.INGAME){
-          this.manager.MenuOptions.Show();
-        }else{
-          this.manager.MainOptions.Show();
-        }*/
         this.close();
       });
       this._button_b = this.BTN_BACK;
@@ -53,9 +64,7 @@ export class MenuGraphics extends GameMenu {
       });
 
       this.SLI_GAMMA.onValueChanged = (value: any) => {
-        //let gamma = (1.5 * value) +.25;
         let contrast = (50 * ((value*2) - 1) )*-1;
-
         GameState.canvas.style.filter = 'contrast('+(100 + contrast)+'%)';
       };
 
@@ -63,10 +72,7 @@ export class MenuGraphics extends GameMenu {
         this.manager.MenuResolutions.open();
       });
 
-      // this.BTN_RESOLUTION.hide();
-
       this.CB_GRASS.onValueChanged = (value: any) => {
-        //Toggle Grass
         if(GameState.group.grass){
           GameState.group.grass.visible = !!value;
         }
@@ -77,8 +83,21 @@ export class MenuGraphics extends GameMenu {
         //Toggle Shadows
       };
       this.CB_SHADOWS.attachINIProperty('Graphics Options.Shadows');
+
+      this.SLI_GAMMA.addEventListener('hover', () => this.setDescription(TLK_DESC_GAMMA));
+      this.LBL_GAMMA.addEventListener('hover', () => this.setDescription(TLK_DESC_GAMMA));
+      this.BTN_RESOLUTION.addEventListener('hover', () => this.setDescription(TLK_DESC_RESOLUTION));
+      this.CB_SHADOWS.addEventListener('hover', () => this.setDescription(TLK_DESC_SHADOWS));
+      this.CB_GRASS.addEventListener('hover', () => this.setDescription(TLK_DESC_GRASS));
+      this.BTN_ADVANCED.addEventListener('hover', () => this.setDescription(TLK_DESC_ADVANCED));
+
       resolve();
     });
+  }
+
+  show() {
+    super.show();
+    this.setDescription(TLK_DESC_GAMMA);
   }
 
   close(){

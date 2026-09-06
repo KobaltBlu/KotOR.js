@@ -4,7 +4,7 @@ import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "@/gui";
 
 /**
- * Retail PopulateOptionsListbox strrefs / custom_value.
+ * Retail PopulateOptionsListbox strrefs / custom_value (K1).
  * Label TLK + description TLK + INI key + FeedbackOption + retail default.
  */
 const FEEDBACK_OPTIONS: ReadonlyArray<{
@@ -53,6 +53,10 @@ export class MenuFeedback extends GameMenu {
     this.voidFill = true;
   }
 
+  protected getFeedbackOptions() {
+    return FEEDBACK_OPTIONS;
+  }
+
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
@@ -76,10 +80,11 @@ export class MenuFeedback extends GameMenu {
   }
 
   /**
-   * Retail PopulateOptionsListbox — nine GUI rows.
+   * Retail PopulateOptionsListbox — GUI rows from getFeedbackOptions().
    * AddControls(..., suppressCleanUp=1, restoreExtents=1, varyItemHeights=0).
    */
   populateOptionsListbox(){
+    const options = this.getFeedbackOptions();
     this.optionChecks = [];
     this.LB_OPTIONS.bitFlags.suppressControlCleanup = true;
     this.LB_OPTIONS.bitFlags.restoreSavedExtents = true;
@@ -88,7 +93,7 @@ export class MenuFeedback extends GameMenu {
 
     this.LB_OPTIONS.mutate((tx) => {
       tx.clear();
-      for(const entry of FEEDBACK_OPTIONS){
+      for(const entry of options){
         const label = GameState.TLKManager.GetStringById(entry.label)?.Value || '';
         const cb = tx.add(label) as GUICheckBox;
         cb.attachINIProperty(entry.ini);
@@ -107,15 +112,17 @@ export class MenuFeedback extends GameMenu {
   show(): void {
     super.show();
     this.setupOptions();
-    if(FEEDBACK_OPTIONS.length){
-      this.setDescription(FEEDBACK_OPTIONS[0].desc);
+    const options = this.getFeedbackOptions();
+    if(options.length){
+      this.setDescription(options[0].desc);
     }
   }
 
   /** Retail SetUpOptions — sync checkbox state from INI / client options. */
   setupOptions(){
-    for(let i = 0; i < FEEDBACK_OPTIONS.length; i++){
-      const entry = FEEDBACK_OPTIONS[i];
+    const options = this.getFeedbackOptions();
+    for(let i = 0; i < options.length; i++){
+      const entry = options[i];
       const cb = this.optionChecks[i];
       if(!cb) continue;
       const on = GameState.iniConfig.getProperty(entry.ini) == 1;
@@ -126,8 +133,9 @@ export class MenuFeedback extends GameMenu {
 
   /** Retail OnDefault / SetDefaultFeedbackOptions (bit_flags_2 defaults). */
   resetToDefaults(){
-    for(let i = 0; i < FEEDBACK_OPTIONS.length; i++){
-      const entry = FEEDBACK_OPTIONS[i];
+    const options = this.getFeedbackOptions();
+    for(let i = 0; i < options.length; i++){
+      const entry = options[i];
       const cb = this.optionChecks[i];
       if(!cb) continue;
       cb.setValue(entry.defaultOn);

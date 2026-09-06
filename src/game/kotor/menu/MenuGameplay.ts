@@ -4,6 +4,18 @@ import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "@/gui";
 
 /**
+ * retail CSWGuiInGameGameplay description TLKs (ctor custom_value / OnEnterSlot).
+ */
+const TLK_DESC_DIFFICULTY = 0xa519;
+const TLK_DESC_LEVELUP = 0xa51a;
+const TLK_DESC_INVERTCAM = 0xbb8e;
+const TLK_DESC_AUTOSAVE = 0x9496;
+const TLK_DESC_REVERSE = 0xbc55;
+const TLK_DESC_DISABLEMOVE = 0xa5f4;
+const TLK_DESC_MOUSE = 0xbfaf;
+const TLK_DESC_KEYMAP = 0xbfb0;
+
+/**
  * MenuGameplay class.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -37,6 +49,14 @@ export class MenuGameplay extends GameMenu {
     this.gui_resref = 'optgameplay';
     this.background = '1600x1200back';
     this.voidFill = true;
+  }
+
+  protected setDescription(strRef: number) {
+    this.LB_DESC?.setItem(
+      GameState.TLKManager.GetStringById(strRef)?.Value
+        || GameState.TLKManager.TLKStrings?.[strRef]?.Value
+        || ''
+    );
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
@@ -94,31 +114,31 @@ export class MenuGameplay extends GameMenu {
         this.manager.MenuMouse.open();
       });
 
-      
+      this.BTN_DIFFICULTY.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_DIFFICULTY);
+      });
+      this.CB_LEVELUP.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_LEVELUP);
+      });
+      this.CB_INVERTCAM.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_INVERTCAM);
+      });
+      this.CB_AUTOSAVE.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_AUTOSAVE);
+      });
+      this.CB_REVERSE.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_REVERSE);
+      });
+      this.CB_DISABLEMOVE.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_DISABLEMOVE);
+      });
+      this.BTN_MOUSE.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_MOUSE);
+      });
+      this.BTN_KEYMAP.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_KEYMAP);
+      });
 
-      this.BTN_DIFFICULTY.addEventListener( 'hover', () => {
-        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[42265].Value);
-      });
-      
-      this.CB_LEVELUP.addEventListener( 'hover', () => {
-        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[42266].Value);
-      });
-      
-      this.CB_INVERTCAM.addEventListener( 'hover', () => {
-        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[48697].Value);
-      });
-      
-      this.CB_AUTOSAVE.addEventListener( 'hover', () => {
-        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[38038].Value);
-      });  
-      
-      this.CB_REVERSE.addEventListener( 'hover', () => {
-        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[48699].Value);
-      });
-      
-      this.CB_DISABLEMOVE.addEventListener( 'hover', () => {
-        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[42484].Value);
-      });
       resolve();
     });
   }
@@ -149,6 +169,7 @@ export class MenuGameplay extends GameMenu {
       GameState.SWRuleSet.currentDifficulty = this.difficultyList.indexOf(this.selectedDifficulty);
     }
     this.updateSelectedDifficulty();
+    this.setDescription(TLK_DESC_DIFFICULTY);
   }
 
   update(delta: number){

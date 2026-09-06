@@ -2,26 +2,21 @@ import { GameState } from "@/GameState";
 import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "@/gui";
 import { AutoPauseState } from "@/enums/engine/AutoPauseState";
-import { GameEngineType } from "@/enums/engine/GameEngineType";
 
-const END_ROUND_DESC = 42445;
-const ENEMY_SIGHTED_DESC = 42446;
-const PARTY_KILLED_DESC = 42447;
+/** retail CSWGuiInGameAutoPause description TLKs (ctor custom_value). */
+const TLK_DESC_ENDROUND = 0xa5cd;
+const TLK_DESC_ENEMYSIGHTED = 0xa5ce;
+const TLK_DESC_MINESIGHTED = 0xbfdd;
+const TLK_DESC_PARTYKILLED = 0xa5cf;
+const TLK_DESC_ACTIONMENU = 0xbd20;
+const TLK_DESC_TRIGGERS = 0xbc56;
 
-const AUTOPAUSE_OPTIONS: ReadonlyArray<{
+type AutoPauseOption = {
   control: keyof MenuAutoPause;
   ini: string;
   type: AutoPauseState;
-  k1Desc: number;
-  tslDesc: number;
-}> = [
-  { control: 'CB_ENDROUND', ini: 'Autopause Options.End Of Combat Round', type: AutoPauseState.CombatRoundEnd, k1Desc: END_ROUND_DESC, tslDesc: END_ROUND_DESC },
-  { control: 'CB_ENEMYSIGHTED', ini: 'Autopause Options.Enemy Sighted', type: AutoPauseState.EnemySighted, k1Desc: ENEMY_SIGHTED_DESC, tslDesc: ENEMY_SIGHTED_DESC },
-  { control: 'CB_MINESIGHTED', ini: 'Autopause Options.Mine Sighted', type: AutoPauseState.MineSighted, k1Desc: 49117, tslDesc: 48704 },
-  { control: 'CB_PARTYKILLED', ini: 'Autopause Options.Party Killed', type: AutoPauseState.PartyMemberKilled, k1Desc: PARTY_KILLED_DESC, tslDesc: PARTY_KILLED_DESC },
-  { control: 'CB_ACTIONMENU', ini: 'Autopause Options.Action Menu', type: AutoPauseState.ActionMenuUsed, k1Desc: 48416, tslDesc: 48705 },
-  { control: 'CB_TRIGGERS', ini: 'Autopause Options.New Target Selected', type: AutoPauseState.NewTargetSelected, k1Desc: 48214, tslDesc: 48706 },
-];
+  desc: number;
+};
 
 /**
  * MenuAutoPause class.
@@ -52,12 +47,27 @@ export class MenuAutoPause extends GameMenu {
     this.voidFill = true;
   }
 
+  protected getAutoPauseOptions(): ReadonlyArray<AutoPauseOption> {
+    return [
+      { control: 'CB_ENDROUND', ini: 'Autopause Options.End Of Combat Round', type: AutoPauseState.CombatRoundEnd, desc: TLK_DESC_ENDROUND },
+      { control: 'CB_ENEMYSIGHTED', ini: 'Autopause Options.Enemy Sighted', type: AutoPauseState.EnemySighted, desc: TLK_DESC_ENEMYSIGHTED },
+      { control: 'CB_MINESIGHTED', ini: 'Autopause Options.Mine Sighted', type: AutoPauseState.MineSighted, desc: TLK_DESC_MINESIGHTED },
+      { control: 'CB_PARTYKILLED', ini: 'Autopause Options.Party Killed', type: AutoPauseState.PartyMemberKilled, desc: TLK_DESC_PARTYKILLED },
+      { control: 'CB_ACTIONMENU', ini: 'Autopause Options.Action Menu', type: AutoPauseState.ActionMenuUsed, desc: TLK_DESC_ACTIONMENU },
+      { control: 'CB_TRIGGERS', ini: 'Autopause Options.New Target Selected', type: AutoPauseState.NewTargetSelected, desc: TLK_DESC_TRIGGERS },
+    ];
+  }
+
+  /** Retail default checkbox states (K1). */
+  protected getDefaultEnabled(): ReadonlyArray<boolean> {
+    return [false, true, true, true, false, true];
+  }
+
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve) => {
-      const isTSL = GameState.GameKey == GameEngineType.TSL;
-      for(const entry of AUTOPAUSE_OPTIONS){
+      for(const entry of this.getAutoPauseOptions()){
         const checkbox = this[entry.control] as GUICheckBox;
         checkbox.attachINIProperty(entry.ini);
         checkbox.onValueChanged = () => {
@@ -67,7 +77,7 @@ export class MenuAutoPause extends GameMenu {
           );
         };
         checkbox.addEventListener('hover', () => {
-          this.setDescription(isTSL ? entry.tslDesc : entry.k1Desc);
+          this.setDescription(entry.desc);
         });
       }
 
@@ -90,15 +100,14 @@ export class MenuAutoPause extends GameMenu {
   show(): void {
     super.show();
     this.setupOptions();
-    this.setDescription(
-      GameState.GameKey == GameEngineType.TSL
-        ? AUTOPAUSE_OPTIONS[0].tslDesc
-        : AUTOPAUSE_OPTIONS[0].k1Desc
-    );
+    const options = this.getAutoPauseOptions();
+    if(options.length){
+      this.setDescription(options[0].desc);
+    }
   }
 
   setupOptions(){
-    for(const entry of AUTOPAUSE_OPTIONS){
+    for(const entry of this.getAutoPauseOptions()){
       const checkbox = this[entry.control] as GUICheckBox;
       const enabled = GameState.iniConfig.getProperty(entry.ini) == 1;
       checkbox.setValue(enabled);
@@ -107,11 +116,10 @@ export class MenuAutoPause extends GameMenu {
   }
 
   resetToDefaults(){
-    const defaults = GameState.GameKey == GameEngineType.TSL
-      ? [false, true, false, true, false, true]
-      : [false, true, true, true, false, true];
-    for(let i = 0; i < AUTOPAUSE_OPTIONS.length; i++){
-      const entry = AUTOPAUSE_OPTIONS[i];
+    const defaults = this.getDefaultEnabled();
+    const options = this.getAutoPauseOptions();
+    for(let i = 0; i < options.length; i++){
+      const entry = options[i];
       const checkbox = this[entry.control] as GUICheckBox;
       checkbox.setValue(defaults[i]);
       GameState.AutoPauseManager.SetAutoPauseTypeEnabled(entry.type, defaults[i]);

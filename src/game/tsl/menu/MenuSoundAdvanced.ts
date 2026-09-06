@@ -1,5 +1,11 @@
+import { AudioEngine } from "@/audio/AudioEngine";
+import { GameState } from "@/GameState";
 import type { GUILabel, GUIListBox, GUICheckBox, GUIButton } from "@/gui";
 import { MenuSoundAdvanced as K1_MenuSoundAdvanced } from "@/game/kotor/KOTOR";
+
+/** retail CSWGuiOptionsSoundAdvanced description TLKs (TSL). */
+const TLK_DESC_FORCESOFTWARE = 0xbe4e;
+const TLK_DESC_EAX = 0xbe4f;
 
 /**
  * MenuSoundAdvanced class.
@@ -37,6 +43,15 @@ export class MenuSoundAdvanced extends K1_MenuSoundAdvanced {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
+      this.CB_FORCESOFTWARE.attachINIProperty('Sound Options.Force Software');
+      this.CB_FORCESOFTWARE.onValueChanged = () => {
+        if(GameState.iniConfig.getProperty('Sound Options.Force Software') == 1){
+          AudioEngine.GetAudioEngine().setReverbState(false);
+        }else{
+          AudioEngine.GetAudioEngine().setReverbState(true);
+        }
+      };
+
       this.BTN_CANCEL.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
@@ -49,8 +64,19 @@ export class MenuSoundAdvanced extends K1_MenuSoundAdvanced {
       });
       this._button_b = this.BTN_BACK;
       this.selectedControl = this.LB_DESC;
+
+      this.CB_FORCESOFTWARE.addEventListener('hover', () => this.setDescription(TLK_DESC_FORCESOFTWARE));
+      this.BTN_EAX?.addEventListener('hover', () => this.setDescription(TLK_DESC_EAX));
+      this.BTN_EAXLEFT?.addEventListener('hover', () => this.setDescription(TLK_DESC_EAX));
+      this.BTN_EAXRIGHT?.addEventListener('hover', () => this.setDescription(TLK_DESC_EAX));
+
       resolve();
     });
+  }
+
+  show() {
+    super.show();
+    this.setDescription(TLK_DESC_FORCESOFTWARE);
   }
   
 }

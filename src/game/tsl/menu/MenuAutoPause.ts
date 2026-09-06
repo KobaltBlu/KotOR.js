@@ -1,5 +1,14 @@
 import type { GUILabel, GUICheckBox, GUIListBox, GUIButton } from "@/gui";
+import { AutoPauseState } from "@/enums/engine/AutoPauseState";
 import { MenuAutoPause as K1_MenuAutoPause } from "@/game/kotor/KOTOR";
+
+/** retail CSWGuiInGameAutoPause description TLKs (ctor custom_value). */
+const TLK_DESC_ENDROUND = 0xa5cd;
+const TLK_DESC_ENEMYSIGHTED = 0xa5ce;
+const TLK_DESC_MINESIGHTED = 0xbe40;
+const TLK_DESC_PARTYKILLED = 0xa5cf;
+const TLK_DESC_ACTIONMENU = 0xbe41;
+const TLK_DESC_TRIGGERS = 0xbe42;
 
 /**
  * MenuAutoPause class.
@@ -32,6 +41,22 @@ export class MenuAutoPause extends K1_MenuAutoPause {
     this.gui_resref = 'optautopause_p';
     this.background = 'blackfill';
     this.voidFill = true;
+  }
+
+  protected getAutoPauseOptions() {
+    return [
+      { control: 'CB_ENDROUND' as const, ini: 'Autopause Options.End Of Combat Round', type: AutoPauseState.CombatRoundEnd, desc: TLK_DESC_ENDROUND },
+      { control: 'CB_ENEMYSIGHTED' as const, ini: 'Autopause Options.Enemy Sighted', type: AutoPauseState.EnemySighted, desc: TLK_DESC_ENEMYSIGHTED },
+      { control: 'CB_MINESIGHTED' as const, ini: 'Autopause Options.Mine Sighted', type: AutoPauseState.MineSighted, desc: TLK_DESC_MINESIGHTED },
+      { control: 'CB_PARTYKILLED' as const, ini: 'Autopause Options.Party Killed', type: AutoPauseState.PartyMemberKilled, desc: TLK_DESC_PARTYKILLED },
+      { control: 'CB_ACTIONMENU' as const, ini: 'Autopause Options.Action Menu', type: AutoPauseState.ActionMenuUsed, desc: TLK_DESC_ACTIONMENU },
+      { control: 'CB_TRIGGERS' as const, ini: 'Autopause Options.New Target Selected', type: AutoPauseState.NewTargetSelected, desc: TLK_DESC_TRIGGERS },
+    ];
+  }
+
+  /** Retail default checkbox states (TSL). */
+  protected getDefaultEnabled(): ReadonlyArray<boolean> {
+    return [false, true, false, true, false, true];
   }
   
 }

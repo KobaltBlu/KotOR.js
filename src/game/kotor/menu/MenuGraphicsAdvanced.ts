@@ -4,7 +4,7 @@ import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "@/gui";
 import { TextureLoader } from "@/loaders/TextureLoader";
 import { TextureLoaderState } from "@/loaders/TextureLoaderState";
 
-/** retail custom_value / description TLKs. */
+/** retail CSWGuiOptionsGraphicsAdvanced description TLKs (K1). */
 const TLK_SOFT_SHADOWS = 0xbb51;
 const TLK_FRAME_BUFFER = 0xbb55;
 const TLK_ANISOTROPY = 0xbb59;
@@ -12,14 +12,14 @@ const TLK_VSYNC = 0xbb61;
 const TLK_ANTI_ALIAS = 0xbb63;
 const TLK_TEX_QUAL = 0xbb5d;
 
-/** Retail SetAntiAliasText display TLKs keyed by sample count. */
+/** Retail SetAntiAliasText display TLKs keyed by sample count (K1). */
 const TLK_AA_OFF = 0xbb7c;
 const TLK_AA_2X = 0xbb7d;
-const TLK_AA_4X = 47999;
+const TLK_AA_4X = 0xbb7f;
 const TLK_AA_6X = 0xbfe4;
 const TLK_AA_8X = 0xbfe5;
 
-/** Retail SetAnisotropyText display TLKs keyed by anisotropy level. */
+/** Retail SetAnisotropyText display TLKs keyed by anisotropy level (K1). */
 const TLK_ANISO_1X = 0xbfb7;
 const TLK_ANISO_2X = 0xbfb8;
 const TLK_ANISO_4X = 0xbfb9;
@@ -178,18 +178,18 @@ export class MenuGraphicsAdvanced extends GameMenu {
         this.draftVSync = Number(value) ? 1 : 0;
       };
 
-      this.BTN_ANTIALIAS.addEventListener('hover', () => this.setDescription(TLK_ANTI_ALIAS));
-      this.BTN_ANTIALIASLEFT.addEventListener('hover', () => this.setDescription(TLK_ANTI_ALIAS));
-      this.BTN_ANTIALIASRIGHT.addEventListener('hover', () => this.setDescription(TLK_ANTI_ALIAS));
-      this.BTN_TEXQUAL.addEventListener('hover', () => this.setDescription(TLK_TEX_QUAL));
-      this.BTN_TEXQUALLEFT.addEventListener('hover', () => this.setDescription(TLK_TEX_QUAL));
-      this.BTN_TEXQUALRIGHT.addEventListener('hover', () => this.setDescription(TLK_TEX_QUAL));
-      this.BTN_ANISOTROPY.addEventListener('hover', () => this.setDescription(TLK_ANISOTROPY));
-      this.BTN_ANISOTROPYLEFT.addEventListener('hover', () => this.setDescription(TLK_ANISOTROPY));
-      this.BTN_ANISOTROPYRIGHT.addEventListener('hover', () => this.setDescription(TLK_ANISOTROPY));
-      this.CB_FRAMEBUFF.addEventListener('hover', () => this.setDescription(TLK_FRAME_BUFFER));
-      this.CB_SOFTSHADOWS.addEventListener('hover', () => this.setDescription(TLK_SOFT_SHADOWS));
-      this.CB_VSYNC.addEventListener('hover', () => this.setDescription(TLK_VSYNC));
+      this.BTN_ANTIALIAS.addEventListener('hover', () => this.setDescription(this.getDescAntiAlias()));
+      this.BTN_ANTIALIASLEFT.addEventListener('hover', () => this.setDescription(this.getDescAntiAlias()));
+      this.BTN_ANTIALIASRIGHT.addEventListener('hover', () => this.setDescription(this.getDescAntiAlias()));
+      this.BTN_TEXQUAL.addEventListener('hover', () => this.setDescription(this.getDescTexQual()));
+      this.BTN_TEXQUALLEFT.addEventListener('hover', () => this.setDescription(this.getDescTexQual()));
+      this.BTN_TEXQUALRIGHT.addEventListener('hover', () => this.setDescription(this.getDescTexQual()));
+      this.BTN_ANISOTROPY.addEventListener('hover', () => this.setDescription(this.getDescAnisotropy()));
+      this.BTN_ANISOTROPYLEFT.addEventListener('hover', () => this.setDescription(this.getDescAnisotropy()));
+      this.BTN_ANISOTROPYRIGHT.addEventListener('hover', () => this.setDescription(this.getDescAnisotropy()));
+      this.CB_FRAMEBUFF.addEventListener('hover', () => this.setDescription(this.getDescFrameBuffer()));
+      this.CB_SOFTSHADOWS.addEventListener('hover', () => this.setDescription(this.getDescSoftShadows()));
+      this.CB_VSYNC.addEventListener('hover', () => this.setDescription(this.getDescVSync()));
 
       resolve();
     });
@@ -199,7 +199,7 @@ export class MenuGraphicsAdvanced extends GameMenu {
     super.show();
     this.discardChanges = false;
     this.setupOptions();
-    this.setDescription(TLK_ANTI_ALIAS);
+    this.setDescription(this.getDescAntiAlias());
   }
 
   close() {
@@ -319,14 +319,7 @@ export class MenuGraphicsAdvanced extends GameMenu {
   }
 
   updateAntiAliasLabel(){
-    let strRef = TLK_AA_OFF;
-    switch(this.draftAntiAlias){
-      case 2: strRef = TLK_AA_2X; break;
-      case 4: strRef = TLK_AA_4X; break;
-      case 6: strRef = TLK_AA_6X; break;
-      case 8: strRef = TLK_AA_8X; break;
-      default: strRef = TLK_AA_OFF; break;
-    }
+    const strRef = this.getAntiAliasLabelStrRef(this.draftAntiAlias);
     this.BTN_ANTIALIAS.setText(GameState.TLKManager.GetStringById(strRef)?.Value || '');
 
     if(this.draftAntiAlias <= 0){
@@ -344,14 +337,7 @@ export class MenuGraphicsAdvanced extends GameMenu {
   }
 
   updateAnisotropyLabel(){
-    let strRef = TLK_ANISO_1X;
-    switch(this.draftAnisotropy){
-      case 2: strRef = TLK_ANISO_2X; break;
-      case 4: strRef = TLK_ANISO_4X; break;
-      case 8: strRef = TLK_ANISO_8X; break;
-      case 16: strRef = TLK_ANISO_16X; break;
-      default: strRef = TLK_ANISO_1X; break;
-    }
+    const strRef = this.getAnisotropyLabelStrRef(this.draftAnisotropy);
     this.BTN_ANISOTROPY.setText(GameState.TLKManager.GetStringById(strRef)?.Value || '');
 
     if(this.draftAnisotropy < 2){
@@ -370,6 +356,34 @@ export class MenuGraphicsAdvanced extends GameMenu {
 
   setDescription(strRef: number){
     this.LB_DESC.setItem(GameState.TLKManager.GetStringById(strRef)?.Value || '');
+  }
+
+  /** K1 description TLKs — TSL overrides these. */
+  protected getDescAntiAlias(): number { return TLK_ANTI_ALIAS; }
+  protected getDescTexQual(): number { return TLK_TEX_QUAL; }
+  protected getDescAnisotropy(): number { return TLK_ANISOTROPY; }
+  protected getDescFrameBuffer(): number { return TLK_FRAME_BUFFER; }
+  protected getDescSoftShadows(): number { return TLK_SOFT_SHADOWS; }
+  protected getDescVSync(): number { return TLK_VSYNC; }
+
+  protected getAntiAliasLabelStrRef(mode: number): number {
+    switch(mode){
+      case 2: return TLK_AA_2X;
+      case 4: return TLK_AA_4X;
+      case 6: return TLK_AA_6X;
+      case 8: return TLK_AA_8X;
+      default: return TLK_AA_OFF;
+    }
+  }
+
+  protected getAnisotropyLabelStrRef(level: number): number {
+    switch(level){
+      case 2: return TLK_ANISO_2X;
+      case 4: return TLK_ANISO_4X;
+      case 8: return TLK_ANISO_8X;
+      case 16: return TLK_ANISO_16X;
+      default: return TLK_ANISO_1X;
+    }
   }
 
   /** Retail OnAntiAliasLeft / OnAntiAliasRight — step through supported modes. */

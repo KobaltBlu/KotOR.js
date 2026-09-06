@@ -2,9 +2,8 @@ import { GameState } from "@/GameState";
 import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton, GUISlider, GUICheckBox } from "@/gui";
 
-/** retail custom_value for mouse sensitivity (TLK 0xBB8D). */
+/** retail CSWGuiOptionsMouse custom_value (K1). */
 const TLK_MOUSE_SENSITIVITY = 0xbb8d;
-/** retail custom_value for reverse buttons (TLK 0xBD42). */
 const TLK_REVERSE_BUTTONS = 0xbd42;
 /** Retail SetDefaultMouseOptions mouse_sensitivity (0x2C). */
 const DEFAULT_MOUSE_SENSITIVITY = 0x2c;
