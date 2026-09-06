@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { OdysseyWalkMesh } from "@/odyssey/OdysseyWalkMesh";
 import { OdysseyFace3 } from "@/three/odyssey/OdysseyFace3";
+import { WalkmeshEdge } from "@/odyssey/WalkmeshEdge";
 
 function makeFace(wok: OdysseyWalkMesh, a: number, b: number, c: number): OdysseyFace3 {
   const face = new OdysseyFace3(a, b, c);
@@ -9,6 +10,25 @@ function makeFace(wok: OdysseyWalkMesh, a: number, b: number, c: number): Odysse
   face.triangle = new THREE.Triangle(wok.vertices[a], wok.vertices[b], wok.vertices[c]);
   face.normal = new THREE.Vector3(0, 0, 1);
   return face;
+}
+
+function makeEdge(
+  wok: OdysseyWalkMesh,
+  index: number,
+  start: THREE.Vector3,
+  end: THREE.Vector3
+): WalkmeshEdge {
+  const edge = new WalkmeshEdge(-1);
+  edge.setWalkmesh(wok);
+  edge.index = index;
+  edge.line.start.copy(start);
+  edge.line.end.copy(end);
+  edge.box.makeEmpty();
+  edge.box.expandByPoint(start);
+  edge.box.expandByPoint(end);
+  edge.line.at(0.5, edge.center_point);
+  wok.edges.set(index, edge);
+  return edge;
 }
 
 describe("OdysseyWalkMesh spatial helpers", () => {
@@ -39,5 +59,38 @@ describe("OdysseyWalkMesh spatial helpers", () => {
     const hits = wok.raycast(raycaster, [nearFace]);
     expect(hits).toHaveLength(1);
     expect((hits[0] as any).face).toBe(nearFace);
+  });
+
+  it("getEdgesInBox uses the edge AABB tree and matches brute-force overlap", () => {
+    const wok = new OdysseyWalkMesh();
+    const near = makeEdge(
+      wok,
+      0,
+      new THREE.Vector3(-1, 0, 0),
+      new THREE.Vector3(1, 0, 0)
+    );
+    const far = makeEdge(
+      wok,
+      1,
+      new THREE.Vector3(20, 0, 0),
+      new THREE.Vector3(22, 0, 0)
+    );
+    wok.buildEdgeAABBTree();
+    expect(wok.edgeAABBRoot).toBeDefined();
+
+    const query = new THREE.Box3(
+      new THREE.Vector3(-2, -1, -1),
+      new THREE.Vector3(2, 1, 1)
+    );
+    const hits = wok.getEdgesInBox(query);
+    expect(hits).toContain(near);
+    expect(hits).not.toContain(far);
+
+    // Brute-force reference with tree disabled
+    const root = wok.edgeAABBRoot;
+    wok.edgeAABBRoot = undefined;
+    const brute = wok.getEdgesInBox(query);
+    wok.edgeAABBRoot = root;
+    expect(hits.map((e) => e.index).sort()).toEqual(brute.map((e) => e.index).sort());
   });
 });

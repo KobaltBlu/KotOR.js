@@ -719,7 +719,15 @@ export class OdysseyModelAnimationManager {
       state = this.createAnimationState();
     }
     if(!node) return;
-    this.modelNode = this.model.nodes.get(node.name);
+    // Retail AnimateHierarchy: match Part / anim node by MdlNode.id (nodeNumber).
+    // Always clear first so a missing id cannot reuse the previous bone.
+    this.modelNode = undefined;
+    if(typeof node.nodeNumber === 'number' && node.nodeNumber >= 0){
+      this.modelNode = this.model.nodesById?.[node.nodeNumber];
+    }
+    if(!this.modelNode){
+      this.modelNode = this.model.nodes.get(node.name);
+    }
     if(!this.modelNode) return;
 
     anim._position.x = anim._position.y = anim._position.z = 0;

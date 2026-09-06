@@ -547,13 +547,18 @@ export class OdysseyLightingBinder {
       if(typeof previous === 'function'){
         previous.call(this, renderer, scene, camera);
       }
-      // Shadow map texture/matrix are finalized during this frame's shadow pass.
-      delete (this as THREE.ShaderMaterial).userData.odysseyShadowBoundEpoch;
-      OdysseyLightingBinder.bindShadowMapUniforms(
-        this as THREE.ShaderMaterial,
-        GameState.odysseyShadowManager,
-        camera
-      );
+      // Epoch early-out inside bindShadowMapUniforms; only force when the live
+      // shadow texture identity differs from the bound sampler (map just created).
+      const mat = this as THREE.ShaderMaterial;
+      const manager = GameState.odysseyShadowManager;
+      const liveTex = manager?.getShadowMapTextureAt?.(0) ?? manager?.getShadowMapTexture() ?? null;
+      const boundTex = mat.uniforms?.odysseyShadowMap0?.value
+        ?? mat.uniforms?.odysseyShadowMap?.value
+        ?? null;
+      if(liveTex && boundTex !== liveTex){
+        delete mat.userData.odysseyShadowBoundEpoch;
+      }
+      OdysseyLightingBinder.bindShadowMapUniforms(mat, manager, camera);
     };
   }
 
@@ -776,6 +781,21 @@ export class OdysseyLightingBinder {
       const obj = dynamics[i];
       if(!(obj?.model as OdysseyModel3D)?.materials){ continue; }
       const model = obj.model as OdysseyModel3D;
+      // Runtime-baked placeables use room lightmap overlay (exclusive_dynamic),
+      // not GetNearestLights — same bind path as USE_LIGHTMAP room meshes.
+      if(model.userData.odysseyPlaceableLightmap){
+        const lightmapFp = this.mixHash(
+          lightManager.lightmapLights.cacheID,
+          this.mixHash(lightManager.selectionEpoch, fp.areaFp)
+        );
+        if(model.userData.odysseyObjectBindFp === lightmapFp){
+          this.bindModelShadowUniforms(model);
+          continue;
+        }
+        this.bindModel(model, lightManager.getLightmapLightSet(), camera, 'lightmapLightCacheID', lightManager);
+        model.userData.odysseyObjectBindFp = lightmapFp;
+        continue;
+      }
       const pos = (obj as any).position instanceof THREE.Vector3
         ? (obj as any).position
         : model.getWorldPosition(this._scratchWorldPos);

@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import {
   AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, LevelUpManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager,
-  FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, OdysseyShadowManager, WindManager, MenuManager, ModuleObjectManager, PartyManager,
+  FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, PlaceableLightmapBaker, OdysseyShadowManager, WindManager, MenuManager, ModuleObjectManager, PartyManager,
   ResolutionManager, ShaderManager, TwoDAManager, FactionManager,
   VideoEffectManager, VideoManager, PazaakManager, UINotificationManager, GuiTimingBarManager, GameOverManager, CutsceneManager, LegalScreenManager, EventManager, TextureAnimationManager, TutorialManager
 } from "@/managers";
@@ -373,6 +373,8 @@ export class GameState implements EngineContext {
   static areShadowsEnabled(): boolean {
     return GameState.userShadowsEnabled && GameState.shadowAlpha > 0;
   }
+  /** Set by updateShadowSystems; Render skips a second selection pass when true. */
+  static shadowSystemsUpdatedThisFrame = false;
   static currentLeader: ModuleCreature;
   static playerFeetOffset: THREE.Vector3;
   static collisionList: any[];
@@ -876,6 +878,7 @@ export class GameState implements EngineContext {
 
     GameState.lightManager = new GameState.LightManager();
     OdysseyLightingBinder.setActiveManager(GameState.lightManager);
+    PlaceableLightmapBaker.setLightManagerProvider(() => GameState.lightManager);
     GameState.odysseyShadowManager = new OdysseyShadowManager();
     GameState.windManager = new GameState.WindManager();
     WindManager.setInstance(GameState.windManager);
@@ -2019,6 +2022,7 @@ export class GameState implements EngineContext {
     requestAnimationFrame( GameState.Update );
 
     GameState.forwardVector.set(0, 0, -1);
+    GameState.shadowSystemsUpdatedThisFrame = false;
 
     const delta = GameState.clock.getDelta();
     GameState.processEventListener('beforeRender', [delta]);
@@ -2149,6 +2153,7 @@ export class GameState implements EngineContext {
       focus ?? GameState.lightManager?.focusPosition,
       _delta
     );
+    GameState.shadowSystemsUpdatedThisFrame = true;
   }
 
   static UpdateIngame(delta: number = 0){
@@ -2364,16 +2369,25 @@ export class GameState implements EngineContext {
       GameState.renderPassMGHud.camera = GameState.currentCamera;
     }
 
-    // Select primary shadow light; map renders during the next renderer.render().
+    // Shadow selection runs in Update* via updateShadowSystems. Only re-select here
+    // when that pass did not run (GUI/LOADING/debugger). Maps + uniforms are gated.
     if(GameState.areShadowsEnabled()){
-      const focus = GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition;
-      const shadowTarget = GameState.getCurrentPlayer() ?? GameState.currentCamera;
-      if(GameState.lightManager && shadowTarget){
-        GameState.lightManager.update(0, shadowTarget);
+      if(!GameState.shadowSystemsUpdatedThisFrame){
+        const focus = GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition;
+        const shadowTarget = GameState.getCurrentPlayer() ?? GameState.currentCamera;
+        if(GameState.lightManager && shadowTarget){
+          GameState.lightManager.update(0, shadowTarget);
+        }
+        GameState.odysseyShadowManager?.update(GameState.currentCamera, focus, delta);
       }
-      GameState.odysseyShadowManager?.update(GameState.currentCamera, focus, delta);
-      GameState.odysseyShadowManager?.markShadowMapForRender(GameState.renderer);
-      OdysseyLightingBinder.refreshSceneShadowMapUniforms(GameState.scene);
+      const mapsMarked = !!GameState.odysseyShadowManager?.markShadowMapForRender(GameState.renderer);
+      if(mapsMarked){
+        OdysseyLightingBinder.refreshSceneShadowMapUniforms(GameState.scene);
+        // Consume mark-triggered flag; post-compose refresh only if matrices change.
+        GameState.odysseyShadowManager?.consumeUniformsRefreshNeeded();
+      }else if(GameState.odysseyShadowManager?.consumeUniformsRefreshNeeded()){
+        OdysseyLightingBinder.refreshSceneShadowMapUniforms(GameState.scene);
+      }
     }
 
     GameState.renderDepthPrepass();
@@ -2447,7 +2461,9 @@ export class GameState implements EngineContext {
 
     if(GameState.areShadowsEnabled()){
       GameState.odysseyShadowManager?.noteShadowMapRendered();
-      OdysseyLightingBinder.refreshSceneShadowMapUniforms(GameState.scene);
+      if(GameState.odysseyShadowManager?.consumeUniformsRefreshNeeded()){
+        OdysseyLightingBinder.refreshSceneShadowMapUniforms(GameState.scene);
+      }
     }
   }
 

@@ -15,6 +15,8 @@ import { OdysseyWalkMeshType } from "@/enums/odyssey/OdysseyWalkMeshType";
 export class WalkmeshEdge {
   transition: number;
   line: THREE.Line3 = new THREE.Line3(new THREE.Vector3(), new THREE.Vector3());
+  /** Cached AABB of line.start/end for spatial queries. */
+  box: THREE.Box3 = new THREE.Box3();
   normal: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
   center_point: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
   face: OdysseyFace3 = undefined;
@@ -60,6 +62,9 @@ export class WalkmeshEdge {
     const vert2 = verts[this.vertIdx2];
     this.line.start.set( vert1.x, vert1.y, vert1.z );
     this.line.end.set( vert2.x, vert2.y, vert2.z );
+    this.box.makeEmpty();
+    this.box.expandByPoint(this.line.start);
+    this.box.expandByPoint(this.line.end);
 
     this.updateNormal();
   }

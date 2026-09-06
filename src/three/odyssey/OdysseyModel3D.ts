@@ -18,6 +18,7 @@ import { WindManager } from "@/managers/WindManager";
 import { IOdysseyModelLoaderOptions } from "@/interface/odyssey";
 import { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
 import { OdysseyModelAnimationManager } from "@/odyssey/OdysseyModelAnimationManager";
+import { synchronizeAnimationToModel } from "@/odyssey/OdysseyNodeIdSync";
 import { AuroraAnimationFlag } from "@/enums/animation/AuroraAnimationFlag";
 import { OdysseyWalkMesh } from "@/odyssey/OdysseyWalkMesh";
 import { type OdysseyModelNodeLight } from "@/odyssey/OdysseyModelNodeLight";
@@ -57,6 +58,12 @@ import {
   isOdysseyShadowCasterMaterial,
   shouldExcludeOdysseyShadowCasterMesh,
 } from "@/three/odyssey/OdysseyShadowCasterMaterial";
+import {
+  buildGatherBonesDfsOrder,
+  installOdysseySkeletonUpdate,
+  ODYSSEY_IDENTITY_BIND_MATRIX,
+  resolveSkinBoneSlot,
+} from "@/three/odyssey/OdysseySkeletonBind";
 
 export { resolveDanglyWindPower } from "@/three/odyssey/windPowerContext";
 export type { NodeParseContext, NodeParseFlags, OdysseyModel3DParseBuilders } from "@/three/odyssey/OdysseyModel3DNodeParseContext";
@@ -116,6 +123,28 @@ export class OdysseyModel3D extends OdysseyObject3D {
   animateFrame = true;
 
   nodes: Map<string, OdysseyObject3D> = new Map<string, OdysseyObject3D>();
+  /**
+   * Runtime nodes indexed by MDL nameIndex (retail node index into names[]).
+   * Useful for tools / nameIndex lookups. Skin bone_parts use GatherBones DFS
+   * (see dfsNodes), not this table — on p_bastilabb those diverge for legs.
+   */
+  nodesByNameIndex: OdysseyObject3D[] = [];
+  /**
+   * Nodes in retail GatherBones / hierarchy DFS order. Skin bone_parts[slot]
+   * and QBone/TBone are parallel to this list.
+   */
+  dfsNodes: OdysseyObject3D[] = [];
+  /**
+   * nameIndex → GatherBones DFS index. May differ from nameIndex on models
+   * like p_bastilabb; used when mapping names onto DFS (not for bone_parts).
+   */
+  dfsIndexByNameIndex: number[] = [];
+  /**
+   * Runtime nodes indexed by MDL nodeNumber (retail MdlNode.id).
+   * Shared across the supermodel chain for skeletal bones; AnimateHierarchy
+   * matches Parts to anim nodes by this id. Prefer this over the name Map.
+   */
+  nodesById: OdysseyObject3D[] = [];
   nodesByUUID: Map<string, OdysseyObject3D> = new Map<string, OdysseyObject3D>();
   sourceModel: OdysseyModel;
   private sourceModelUnsubscribe: Function = undefined;
@@ -310,8 +339,12 @@ export class OdysseyModel3D extends OdysseyObject3D {
         if(node == rootNode) return;
 
         if(node instanceof THREE.SkinnedMesh){
-          // bone_parts indexes the head model's names[] (node numbers), not Map insertion order
+          // bone_parts / QBone use the head model's GatherBones DFS, not body
+          head.ensureGatherBonesDfs();
           node.userData.boneNames = head.names;
+          node.userData.nodesByNameIndex = head.nodesByNameIndex;
+          node.userData.dfsNodes = head.dfsNodes;
+          node.userData.dfsIndexByNameIndex = head.dfsIndexByNameIndex;
           this.skins.push(node);
           let m_node = node.parent;
           let n_parent = this.nodes.get(m_node.parent?.name);
@@ -453,6 +486,10 @@ export class OdysseyModel3D extends OdysseyObject3D {
       this.animationManager.currentAnimation = undefined;
       this.animNodeCache = {};
       this.nodesByUUID.clear();
+      this.nodesByNameIndex = [];
+      this.dfsNodes = [];
+      this.dfsIndexByNameIndex = [];
+      this.nodesById = [];
       this.options = {};
     
       this.headhook = null;
@@ -869,53 +906,133 @@ export class OdysseyModel3D extends OdysseyObject3D {
   }
 
   /**
+   * Ensure nodesByNameIndex is populated for skin binds.
+   * Prefer nodes whose name matches names[nameIndex] so head/weapon attaches
+   * with their own nameIndex namespaces do not overwrite body slots.
+   */
+  ensureNodesByNameIndex(): void {
+    if(this.nodesByNameIndex.length > 0){
+      return;
+    }
+    this.traverse((obj: THREE.Object3D) => {
+      if(!(obj instanceof OdysseyObject3D) || !obj.odysseyModelNode){
+        return;
+      }
+      const nameIndex = obj.odysseyModelNode.nameIndex;
+      if(typeof nameIndex !== 'number' || nameIndex < 0){
+        return;
+      }
+      if(this.names[nameIndex] !== obj.name){
+        return;
+      }
+      if(typeof this.nodesByNameIndex[nameIndex] === 'undefined'){
+        this.nodesByNameIndex[nameIndex] = obj;
+      }
+    });
+  }
+
+  /**
+   * Ensure dfsNodes / dfsIndexByNameIndex match retail GatherBones order.
+   */
+  ensureGatherBonesDfs(): void {
+    if(this.dfsNodes.length > 0){
+      return;
+    }
+    const root = this.getRootOdysseyNode() ?? this;
+    const { dfsNodes, dfsIndexByNameIndex } = buildGatherBonesDfsOrder(root, this.names);
+    this.dfsNodes = dfsNodes as OdysseyObject3D[];
+    this.dfsIndexByNameIndex = dfsIndexByNameIndex;
+  }
+
+  /**
+   * Ensure nodesById is populated for anim / Part-id lookups (retail MdlNode.id).
+   * Only register nodes whose name matches this model's names[nameIndex] so head
+   * attaches with colliding nodeNumbers do not overwrite body skeletal slots.
+   */
+  ensureNodesById(): void {
+    if(this.nodesById.length > 0){
+      return;
+    }
+    this.traverse((obj: THREE.Object3D) => {
+      if(!(obj instanceof OdysseyObject3D) || !obj.odysseyModelNode){
+        return;
+      }
+      const nodeNumber = obj.odysseyModelNode.nodeNumber;
+      const nameIndex = obj.odysseyModelNode.nameIndex;
+      if(typeof nodeNumber !== 'number' || nodeNumber < 0){
+        return;
+      }
+      if(typeof nameIndex === 'number' && nameIndex >= 0 && this.names[nameIndex] !== obj.name){
+        return;
+      }
+      if(typeof this.nodesById[nodeNumber] === 'undefined'){
+        this.nodesById[nodeNumber] = obj;
+      }
+    });
+  }
+
+  /**
    * Bind each skin to its bone slots.
    *
-   * Retail (ExecuteSkinTransforms / RenderSkinned):
-   * - MDX bone index → bone_parts[slot] → absolute node number
-   * - qbone_ref_inv / tbone_ref_inv are sized to the node list and indexed by that node number
-   * - GatherBones walks the part tree in node-number order
+   * Retail (PartSkin::PostProcess / ExecuteSkinTransforms / RenderSkinned):
+   * - MDX bone index → bone_parts[slot] → GatherBones DFS index
+   * - qbone_ref_inv / tbone_ref_inv are parallel to that same DFS walk
+   * - On p_bastilabb, nameIndex ≠ DFS for leg slots; treating bone_parts as
+   *   nameIndex binds the wrong Object3D (e.g. foot instead of thigh)
    *
-   * Do not resolve bones via `nodes` Map key order — duplicate names (e.g. talkdummy,
-   * lhand/rhand skins) shift indices and leave high node numbers undefined, which makes
-   * THREE treat those slots as identity and stretch verts when the model leaves the origin.
+   * Resolve bone and inverse both via dfsNodes[bone_parts[j]]. Keep MDL
+   * inverses and update in skin-local space.
    */
   buildSkeleton(){
     this.bonesInitialized = false;
     this.oldAnim = this.animationManager.currentAnimation;
     this.animationManager.currentAnimation = undefined;
     this.pose();
+    this.ensureNodesByNameIndex();
+    this.ensureGatherBonesDfs();
+    this.ensureNodesById();
+    this.updateMatrixWorld(true);
 
     for(let i = 0; i < this.skins.length; i++){
       const skinNode = this.skins[i];
       if(typeof skinNode.userData.boneNames === 'undefined'){
         skinNode.userData.boneNames = this.names;
       }
+      if(typeof skinNode.userData.nodesByNameIndex === 'undefined'){
+        skinNode.userData.nodesByNameIndex = this.nodesByNameIndex;
+      }
+      if(typeof skinNode.userData.dfsNodes === 'undefined'){
+        skinNode.userData.dfsNodes = this.dfsNodes;
+      }
+      if(typeof skinNode.userData.dfsIndexByNameIndex === 'undefined'){
+        skinNode.userData.dfsIndexByNameIndex = this.dfsIndexByNameIndex;
+      }
       const odysseyModelNode = skinNode.userData.odysseyModelNode as OdysseyModelNodeSkin | undefined;
       if(typeof odysseyModelNode?.bone_parts !== 'undefined'){
-        const bones: THREE.Object3D[] = [];
-        const inverses: THREE.Matrix4[] = [];
-        const boneNames: string[] = skinNode.userData.boneNames;
+        const slotCount = odysseyModelNode.bone_parts.length;
+        const bones: (THREE.Object3D | undefined)[] = new Array(slotCount);
+        const inverses: THREE.Matrix4[] = new Array(slotCount);
+        const dfsNodes: OdysseyObject3D[] = skinNode.userData.dfsNodes;
         const inverseMats = odysseyModelNode.bone_inverse_matrix;
-        const nodeIndexedInverses = inverseMats.length === boneNames.length;
 
-        for(let j = 0; j < odysseyModelNode.bone_parts.length; j++){
-          const nodeIndex = odysseyModelNode.bone_parts[j];
-          // Unused slots are typically 0xFFFF; garbage past the used range is also skipped
-          if(nodeIndex === 0xFFFF || nodeIndex < 0 || nodeIndex >= boneNames.length){
-            continue;
-          }
-          const boneName = boneNames[nodeIndex];
-          const boneNode = this.nodes.get(boneName);
-          if(typeof boneNode === 'undefined'){
-            continue;
-          }
-          bones[j] = boneNode;
-          // Retail indexes QBone/TBone by node number; fall back to slot index for odd files
-          const inv = nodeIndexedInverses ? inverseMats[nodeIndex] : inverseMats[j];
-          inverses[j] = inv ?? new THREE.Matrix4();
+        for(let j = 0; j < slotCount; j++){
+          const dfsIndex = odysseyModelNode.bone_parts[j];
+          const { bone, inverse } = resolveSkinBoneSlot(
+            dfsIndex,
+            dfsNodes,
+            inverseMats,
+            dfsNodes.length,
+            j,
+          );
+          bones[j] = bone;
+          inverses[j] = inverse;
         }
-        skinNode.bind(new THREE.Skeleton( bones as any[], inverses ));
+
+        const skeleton = new THREE.Skeleton(bones as any[], inverses);
+        // Identity bindMatrix skips calculateInverses() so MDL inverses are kept.
+        skinNode.bindMode = 'detached';
+        skinNode.bind(skeleton, ODYSSEY_IDENTITY_BIND_MATRIX);
+        installOdysseySkeletonUpdate(skeleton, skinNode);
         skinNode.skeleton.update();
         skinNode.updateMatrixWorld();
       }
@@ -987,7 +1104,13 @@ export class OdysseyModel3D extends OdysseyObject3D {
     if(!this.bonesInitialized)
       return;
 
-    let modelNode = this.nodes.get(node.name);
+    let modelNode: OdysseyObject3D | undefined;
+    if(typeof node?.nodeNumber === 'number' && node.nodeNumber >= 0){
+      modelNode = this.nodesById?.[node.nodeNumber];
+    }
+    if(typeof modelNode === 'undefined'){
+      modelNode = this.nodes.get(node.name);
+    }
 
     if(typeof modelNode != 'undefined'){
       modelNode.controllers.forEach( (controller: OdysseyController) => {
@@ -1229,6 +1352,8 @@ export class OdysseyModel3D extends OdysseyObject3D {
       return odysseyModel;
     }
 
+    odysseyModel.ensureNodesById();
+
     //--------------------------------------//
     // Supermodel: Animations Merge - Begin
     //--------------------------------------//
@@ -1237,6 +1362,9 @@ export class OdysseyModel3D extends OdysseyObject3D {
       const hasAnim = odysseyModel.odysseyAnimationMap.has(animName);
       if(!hasAnim){
         const anim = OdysseyModelAnimation.From(supermodel.animations[i]);
+        // Retail SynchronizeNodes: remap anim MdlNode.id onto geometry id space.
+        // Clone happens inside sync so the cached supermodel MDL is not mutated.
+        synchronizeAnimationToModel(anim, odysseyModel.nodes, odysseyModel.nodesById);
         odysseyModel.odysseyAnimations.push(anim);
         odysseyModel.odysseyAnimationMap.set(anim.name, anim);
       }

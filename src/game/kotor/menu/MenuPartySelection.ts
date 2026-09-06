@@ -140,16 +140,10 @@ export class MenuPartySelection extends GameMenu {
   protected wireNpcButton(npcId: number){
     const btn = this.getControlByName('BTN_NPC' + npcId);
     if(!(btn instanceof GUIControl)) return;
-    // Portrait click / confirm on BTN_NPC only selects (OnEnter). Add/Remove toggles.
+    // Click selects (OnEnter). Hover is chrome-only via GUIControl — do not steal selection.
+    // Add/Remove (BTN_ACCEPT) toggles pending membership.
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      if(GameState.PartyManager.IsAvailable(npcId)){
-        void this.onEnterNPC(npcId);
-      }else{
-        this.onEnterUnavailable();
-      }
-    });
-    btn.addEventListener('hover', () => {
       if(GameState.PartyManager.IsAvailable(npcId)){
         void this.onEnterNPC(npcId);
       }else{

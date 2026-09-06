@@ -2,6 +2,7 @@ import { GameState } from "@/GameState";
 import { WindManager } from "@/managers/WindManager";
 import { DirtyTextureManager } from "@/managers/DirtyTextureManager";
 import { TextureAnimationManager } from "@/managers/TextureAnimationManager";
+import { PlaceableLightmapBaker } from "@/managers/PlaceableLightmapBaker";
 import { GFFObject } from "@/resource/GFFObject";
 import type { OdysseyFace3 } from "@/three/odyssey/OdysseyFace3";
 import { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
@@ -180,6 +181,8 @@ export class ModuleArea extends ModuleObject {
   _areaHeartbeatElapsedMs: number = 0;
   _areaHeartbeatInitialized: boolean = false;
   frameLosCache: Map<string, boolean> = new Map();
+  /** Frame-local memo for getWalkCandidatesForBox (cleared each AIScheduler tick). */
+  frameWalkCandidateCache: Map<string, { faces: OdysseyFace3[]; edges: WalkmeshEdge[]; rooms: ModuleRoom[] }> = new Map();
   /** Players currently in this area — drives Increase/DecreaseAILevelPriority. */
   playersInArea: number = 0;
   /** ARE template `ID` header (retail LoadAreaHeader header_info[0]) — not the game ObjectId */
@@ -1065,6 +1068,8 @@ export class ModuleArea extends ModuleObject {
       GameState.sunLight.color.copy(GameState.sunColor);
       GameState.sunLight.intensity = 1;
     }
+    // Sun/ambient are baked into placeable lightmaps — rebake when they change.
+    // PlaceableLightmapBaker.invalidateArea(this);
 
     if(fogOn){
       if(!this.fog){
@@ -1263,6 +1268,8 @@ export class ModuleArea extends ModuleObject {
    */
   updateRoomAnimatedLights(delta: number = 0){
     void delta;
+
+    PlaceableLightmapBaker.flushDirty(GameState.lightManager);
 
     const lm = GameState.lightManager;
     const camera = GameState.currentCamera;
@@ -2992,6 +2999,12 @@ export class ModuleArea extends ModuleObject {
       plc.computeBoundingBox();
       plc.room?.markCollisionPlaceablesDirty?.();
     }
+    // Bake placeable lightmaps after all models are posed (rooms already registered lights).
+    try{
+      PlaceableLightmapBaker.bakeArea(this, GameState.lightManager);
+    }catch(e){
+      console.error(e);
+    }
   }
 
   /**
@@ -3330,12 +3343,33 @@ export class ModuleArea extends ModuleObject {
     edges.length = 0;
     rooms.length = 0;
 
+    const cacheKey = [
+      box.min.x, box.min.y, box.min.z,
+      box.max.x, box.max.y, box.max.z,
+    ].map((v) => v.toFixed(3)).join('|');
+    const cached = this.frameWalkCandidateCache.get(cacheKey);
+    if(cached){
+      for(let i = 0, len = cached.faces.length; i < len; i++) faces.push(cached.faces[i]);
+      for(let i = 0, len = cached.edges.length; i < len; i++) edges.push(cached.edges[i]);
+      for(let i = 0, len = cached.rooms.length; i < len; i++) rooms.push(cached.rooms[i]);
+      return { faces, edges, rooms };
+    }
+
     const faceScratch = this._walkCandidateFaceScratch;
     const edgeScratch = this._walkCandidateEdgeScratch;
     for(let i = 0, len = this.rooms.length; i < len; i++){
       const room = this.rooms[i];
       const wok = room?.collisionManager?.walkmesh;
       if(!wok?.faces?.length) continue;
+
+      // Cull rooms whose AABB cannot overlap the query box.
+      const cullBox = (room.box && !room.box.isEmpty()) ? room.box
+        : (wok.box && !wok.box.isEmpty()) ? wok.box
+        : undefined;
+      if(cullBox && !cullBox.intersectsBox(box) && !cullBox.containsBox(box)){
+        continue;
+      }
+
       wok.getFacesInBox(box, faceScratch);
       if(faceScratch.length){
         rooms.push(room);
@@ -3352,6 +3386,12 @@ export class ModuleArea extends ModuleObject {
         }
       }
     }
+
+    this.frameWalkCandidateCache.set(cacheKey, {
+      faces: faces.slice(),
+      edges: edges.slice(),
+      rooms: rooms.slice(),
+    });
 
     return { faces, edges, rooms };
   }

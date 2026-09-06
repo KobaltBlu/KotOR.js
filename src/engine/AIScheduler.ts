@@ -147,6 +147,7 @@ export class AIScheduler {
     const module = GameState.module;
     if(!module?.readyToProcessEvents) return;
     module.area?.frameLosCache?.clear();
+    module.area?.frameWalkCandidateCache?.clear();
 
     let remainingUs = AI_BUDGET_US;
     const frameStart = performance.now();

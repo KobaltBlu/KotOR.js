@@ -3,6 +3,7 @@ import { WalkmeshEdge } from "@/odyssey/WalkmeshEdge";
 import { BinaryReader } from "@/utility/binary/BinaryReader";
 import { OdysseyWalkMeshType } from "@/enums/odyssey/OdysseyWalkMeshType";
 import { IOdysseyModelAABBNode } from "@/interface/odyssey/IOdysseyModelAABBNode";
+import { IWalkmeshEdgeAABBNode } from "@/interface/odyssey/IWalkmeshEdgeAABBNode";
 import { TwoDAManager } from "@/managers/TwoDAManager";
 import { ModuleObject } from "@/module";
 import { OdysseyFace3 } from "@/three/odyssey/OdysseyFace3";
@@ -67,6 +68,9 @@ export class OdysseyWalkMesh {
   aabbNodes: IOdysseyModelAABBNode[] = [];
   walkableFacesEdgesAdjacencyMatrix: number[][] = [];
   edges: Map<number, WalkmeshEdge>;
+  /** Runtime AABB tree over walkmesh edges (not the WOK on-disk face AABB). */
+  edgeAABBNodes: IWalkmeshEdgeAABBNode[] = [];
+  edgeAABBRoot: IWalkmeshEdgeAABBNode | undefined;
   perimeters: IPerimeter[] = [];
   edgeLines: any[] = [];
   edgeNormalHelpers: THREE.Group;
@@ -227,6 +231,7 @@ export class OdysseyWalkMesh {
     }
 
     this.aabbRoot = this.aabbNodes[0];
+    this.buildEdgeAABBTree();
 
   }
 
@@ -298,6 +303,7 @@ export class OdysseyWalkMesh {
     this.edges.forEach( (edge) => {
       edge.update();
     });
+    this.buildEdgeAABBTree();
   }
 
   buildEdgeNormalHelpers(color: number = 0xff0000, maxLength: number = 0.5){
@@ -672,6 +678,28 @@ export class OdysseyWalkMesh {
     return out;
   }
 
+  private edgeOverlapsBox(edge: WalkmeshEdge | undefined, box: THREE.Box3): boolean {
+    if(!edge?.line) return false;
+    return edge.box.intersectsBox(box) || edge.box.containsBox(box);
+  }
+
+  private collectAABBEdges(
+    box: THREE.Box3,
+    node: IWalkmeshEdgeAABBNode | undefined,
+    out: WalkmeshEdge[]
+  ): WalkmeshEdge[] {
+    if(!node || !this.containsPointOrBox(node.box, box)) return out;
+    if(node.edge){
+      if(this.edgeOverlapsBox(node.edge, box)){
+        out.push(node.edge);
+      }
+      return out;
+    }
+    this.collectAABBEdges(box, node.leftNode, out);
+    this.collectAABBEdges(box, node.rightNode, out);
+    return out;
+  }
+
   getFacesInBox(box: THREE.Box3, out: OdysseyFace3[] = []): OdysseyFace3[] {
     out.length = 0;
     if(!this.faces?.length) return out;
@@ -689,13 +717,11 @@ export class OdysseyWalkMesh {
   getEdgesInBox(box: THREE.Box3, out: WalkmeshEdge[] = []): WalkmeshEdge[] {
     out.length = 0;
     if(!this.edges?.size) return out;
-    const tmpBox = _faceBoxScratch;
+    if(this.edgeAABBRoot){
+      return this.collectAABBEdges(box, this.edgeAABBRoot, out);
+    }
     for(const edge of this.edges.values()){
-      if(!edge?.line) continue;
-      tmpBox.makeEmpty();
-      tmpBox.expandByPoint(edge.line.start);
-      tmpBox.expandByPoint(edge.line.end);
-      if(tmpBox.intersectsBox(box) || tmpBox.containsBox(box)){
+      if(this.edgeOverlapsBox(edge, box)){
         out.push(edge);
       }
     }
@@ -1107,6 +1133,7 @@ export class OdysseyWalkMesh {
 
     // Rebuild AABB tree
     this.buildAABBTree();
+    this.buildEdgeAABBTree();
 
     this.buildBufferedGeometry();
     if (this.mesh) {
@@ -1235,6 +1262,106 @@ export class OdysseyWalkMesh {
     }
 
     this.aabbRoot = this.aabbNodes[0];
+  }
+
+  /**
+   * Build AABB tree over walkmesh edges for getEdgesInBox.
+   * Top-down median split along longest axis (±0.01 expansion), same style as face AABB.
+   */
+  buildEdgeAABBTree(): void {
+    const edgeList: WalkmeshEdge[] = [];
+    for(const edge of this.edges.values()){
+      if(!edge?.line) continue;
+      // Ensure cached box is current (edges may be queried before update()).
+      if(edge.box.isEmpty()){
+        edge.box.expandByPoint(edge.line.start);
+        edge.box.expandByPoint(edge.line.end);
+      }
+      edgeList.push(edge);
+    }
+
+    if(!edgeList.length){
+      this.edgeAABBNodes = [];
+      this.edgeAABBRoot = undefined;
+      return;
+    }
+
+    type EdgeAABBNodeData = {
+      box: THREE.Box3;
+      edge?: WalkmeshEdge;
+      left?: EdgeAABBNodeData;
+      right?: EdgeAABBNodeData;
+    };
+
+    const buildNode = (edges: WalkmeshEdge[]): EdgeAABBNodeData => {
+      const box = new THREE.Box3();
+      for(let i = 0; i < edges.length; i++){
+        box.union(edges[i].box);
+      }
+      box.min.subScalar(0.01);
+      box.max.addScalar(0.01);
+
+      if(edges.length === 1){
+        return { box, edge: edges[0] };
+      }
+
+      const size = box.getSize(new THREE.Vector3());
+      const axis = size.x >= size.y && size.x >= size.z ? 0 : size.y >= size.z ? 1 : 2;
+      const getMid = (e: WalkmeshEdge) => {
+        const mx = (e.line.start.x + e.line.end.x) * 0.5;
+        const my = (e.line.start.y + e.line.end.y) * 0.5;
+        const mz = (e.line.start.z + e.line.end.z) * 0.5;
+        return axis === 0 ? mx : axis === 1 ? my : mz;
+      };
+      edges.sort((a, b) => getMid(a) - getMid(b));
+      const mid = Math.max(0, Math.floor(edges.length / 2) - 1);
+      let leftEdges = edges.slice(0, mid + 1);
+      let rightEdges = edges.slice(mid + 1);
+      // Degenerate split guard (all midpoints equal): force a balanced split.
+      if(!leftEdges.length || !rightEdges.length){
+        const half = Math.max(1, Math.floor(edges.length / 2));
+        leftEdges = edges.slice(0, half);
+        rightEdges = edges.slice(half);
+      }
+
+      return {
+        box,
+        left: buildNode(leftEdges),
+        right: buildNode(rightEdges),
+      };
+    };
+
+    const root = buildNode(edgeList);
+
+    const countNodes = (n: EdgeAABBNodeData): number =>
+      1 + (n.left ? countNodes(n.left) : 0) + (n.right ? countNodes(n.right) : 0);
+
+    const flatten = (n: EdgeAABBNodeData, offset: number): number => {
+      const leftCount = n.left ? countNodes(n.left) : 0;
+      const node: IWalkmeshEdgeAABBNode = {
+        box: n.box.clone(),
+        edge: n.edge,
+      };
+      this.edgeAABBNodes[offset] = node;
+
+      let nextOffset = offset + 1;
+      if(n.left){
+        const leftOffset = nextOffset;
+        nextOffset = flatten(n.left, nextOffset);
+        node.leftNode = this.edgeAABBNodes[leftOffset];
+      }
+      if(n.right){
+        const rightOffset = nextOffset;
+        nextOffset = flatten(n.right, nextOffset);
+        node.rightNode = this.edgeAABBNodes[rightOffset];
+      }
+
+      return nextOffset;
+    };
+
+    this.edgeAABBNodes = new Array(countNodes(root));
+    flatten(root, 0);
+    this.edgeAABBRoot = this.edgeAABBNodes[0];
   }
 
   buildPerimeters(){

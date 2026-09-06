@@ -20,6 +20,7 @@ export * from "@/odyssey/OdysseyWalkMesh";
 export * from "@/odyssey/WalkmeshEdge";
 export * from "@/odyssey/OdysseyModelUtility";
 export * from "@/odyssey/OdysseyModelFactory";
+export * from "@/odyssey/OdysseyNodeIdSync";
 export * from "@/odyssey/binary/OdysseyModelBinaryLayout";
 export * from "@/odyssey/binary/OdysseyModelBinaryWriter";
 export * from "@/odyssey/binary/OdysseyModelBinaryMdxWriter";

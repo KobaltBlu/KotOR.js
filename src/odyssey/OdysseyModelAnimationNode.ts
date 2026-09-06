@@ -41,9 +41,18 @@ export class OdysseyModelAnimationNode extends OdysseyModelNode {
         cache = this.modelNodeCache[model.uuid] = {};
       }
 
-      let nodeCache = cache[node.name] || undefined;
+      const cacheKey =
+        typeof node.nodeNumber === 'number' && node.nodeNumber >= 0
+          ? `id:${node.nodeNumber}`
+          : `name:${node.name}`;
+      let nodeCache = cache[cacheKey] || undefined;
       if(typeof nodeCache == 'undefined'){
-        nodeCache = this.modelNodeCache[model.uuid][node.name] = model.nodes.get(node.name);
+        const byId =
+          typeof node.nodeNumber === 'number' && node.nodeNumber >= 0
+            ? model.nodesById?.[node.nodeNumber]
+            : undefined;
+        nodeCache = this.modelNodeCache[model.uuid][cacheKey] =
+          byId || model.nodes.get(node.name);
       }
 
       return nodeCache;

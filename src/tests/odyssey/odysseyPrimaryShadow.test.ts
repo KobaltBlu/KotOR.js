@@ -263,6 +263,98 @@ describe('OdysseyShadowManager primary shadow map', () => {
     expect(spotAAfter).toBe(spotA);
     expect(manager.activeLightCount).toBe(2);
   });
+
+  test('markShadowMapForRender no-ops when state is unchanged after a render', () => {
+    const light = mockShadowLight({
+      uuid: 'static',
+      worldPosition: new THREE.Vector3(5, 0, 0),
+      shadowFadeFactor: 1,
+    }) as any;
+    lightManager.shadowLights = [light];
+    lightManager.staticMeshShadowLights = [];
+    const focus = new THREE.Vector3(0, 0, 0);
+    const renderer = { shadowMap: { needsUpdate: false } } as THREE.WebGLRenderer;
+
+    manager.update(undefined, focus);
+    expect(manager.needsShadowMapRender).toBe(true);
+    expect(manager.markShadowMapForRender(renderer)).toBe(true);
+    expect(renderer.shadowMap.needsUpdate).toBe(true);
+    manager.noteShadowMapRendered();
+    expect(manager.needsShadowMapRender).toBe(false);
+
+    renderer.shadowMap.needsUpdate = false;
+    manager.update(undefined, focus);
+    expect(manager.needsShadowMapRender).toBe(false);
+    expect(manager.markShadowMapForRender(renderer)).toBe(false);
+    expect(renderer.shadowMap.needsUpdate).toBe(false);
+  });
+
+  test('markShadowMapForRender dirties again when light pose changes', () => {
+    const light = mockShadowLight({
+      uuid: 'moving',
+      worldPosition: new THREE.Vector3(5, 0, 0),
+      shadowFadeFactor: 1,
+    }) as any;
+    lightManager.shadowLights = [light];
+    lightManager.staticMeshShadowLights = [];
+    const focus = new THREE.Vector3(0, 0, 0);
+    const renderer = { shadowMap: { needsUpdate: false } } as THREE.WebGLRenderer;
+
+    manager.update(undefined, focus);
+    manager.markShadowMapForRender(renderer);
+    manager.noteShadowMapRendered();
+
+    light.worldPosition.set(8, 0, 0);
+    manager.update(undefined, focus);
+    expect(manager.needsShadowMapRender).toBe(true);
+    expect(manager.markShadowMapForRender(renderer)).toBe(true);
+  });
+
+  test('nearby animated creature dirties shadow maps without light motion', () => {
+    const light = mockShadowLight({
+      uuid: 'lamp',
+      worldPosition: new THREE.Vector3(2, 0, 0),
+      shadowFadeFactor: 1,
+    }) as any;
+    lightManager.shadowLights = [light];
+    lightManager.staticMeshShadowLights = [];
+    const focus = new THREE.Vector3(0, 0, 0);
+    const renderer = { shadowMap: { needsUpdate: false } } as THREE.WebGLRenderer;
+
+    manager.update(undefined, focus);
+    manager.markShadowMapForRender(renderer);
+    manager.noteShadowMapRendered();
+    expect(manager.needsShadowMapRender).toBe(false);
+
+    const { GameState } = require('@/GameState');
+    GameState.PartyManager = {
+      party: [{
+        position: new THREE.Vector3(0.5, 0, 0),
+        model: { visible: true, animateFrame: true },
+      }],
+    };
+
+    manager.update(undefined, focus);
+    expect(manager.needsShadowMapRender).toBe(true);
+    expect(manager.lastUpdateReason).toBe('animated-caster');
+    expect(manager.markShadowMapForRender(renderer)).toBe(true);
+
+    GameState.PartyManager = undefined;
+  });
+
+  test('consumeUniformsRefreshNeeded clears after read', () => {
+    const light = mockShadowLight({
+      uuid: 'u',
+      worldPosition: new THREE.Vector3(3, 0, 0),
+      shadowFadeFactor: 1,
+    }) as any;
+    lightManager.shadowLights = [light];
+    lightManager.staticMeshShadowLights = [];
+
+    manager.update(undefined, new THREE.Vector3(0, 0, 0));
+    expect(manager.consumeUniformsRefreshNeeded()).toBe(true);
+    expect(manager.consumeUniformsRefreshNeeded()).toBe(false);
+  });
 });
 
 describe('OdysseyShadowManager soft sticky + crossfade', () => {
@@ -298,8 +390,10 @@ describe('OdysseyShadowManager soft sticky + crossfade', () => {
     const side = softLamp('side', 3, 5, 1);
     lightManager.boundLights = [ceiling, side];
 
-    manager.update(undefined, focus, 0);
+    // One full retail fade-in step so cold-start residency is established.
+    manager.update(undefined, focus, 0.3);
     expect(manager.activeLightUuid).toBe('ceiling');
+    expect(ceiling.shadowFadeFactor).toBeCloseTo(1);
 
     // Make side clearly more overhead (smaller XY offset)
     side.worldPosition.set(0, 0, 6);
@@ -311,6 +405,24 @@ describe('OdysseyShadowManager soft sticky + crossfade', () => {
 
     manager.update(undefined, focus, SOFT_SHADOW_STICKY_HOLD_SEC);
     expect(manager.activeLightUuid).toBe('side');
+  });
+
+  test('soft path fades in first caster on cold start', () => {
+    const focus = new THREE.Vector3(0, 0, 0);
+    const lamp = softLamp('lamp', 0, 6, 0);
+    lightManager.boundLights = [lamp];
+
+    manager.update(undefined, focus, 0.05);
+    expect(manager.activeLightCount).toBe(1);
+    expect(manager.activeLightUuid).toBe('lamp');
+    expect(lamp.shadowFadeFactor).toBeGreaterThan(0);
+    expect(lamp.shadowFadeFactor).toBeLessThan(1);
+    const partialStrength = manager.shadowStrength;
+    const fullStrength = OdysseyShadowManager.shadowStrengthForLight(1, 1, 8);
+    expect(partialStrength).toBeLessThan(fullStrength);
+
+    manager.update(undefined, focus, 0.3);
+    expect(lamp.shadowFadeFactor).toBeCloseTo(1);
   });
 
   test('soft path crossfades with two maps during swap', () => {

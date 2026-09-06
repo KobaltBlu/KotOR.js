@@ -127,6 +127,8 @@ export class OdysseyShadowManager {
   private slots: IShadowProxySlot[] = [];
   private _lastStateHash = 0;
   private _needsShadowMapRender = false;
+  /** True when materials need a scene-wide shadow uniform refresh. */
+  private _uniformsRefreshNeeded = false;
   private _focus = new THREE.Vector3();
   /** Slot-0 frustum gizmo parented under LightManager context.group.shadow_lights. */
   private shadowFrustumHelper: THREE.CameraHelper | null = null;
@@ -203,13 +205,14 @@ export class OdysseyShadowManager {
     this.softShadowMaps = soft;
     this.configureProxyMapSize(this.mapResolution);
     this._needsShadowMapRender = true;
+    this._uniformsRefreshNeeded = true;
   }
 
   useQualityPreset(softShadowsEnabled: boolean){
     const soft = !!softShadowsEnabled;
     const nextRes = soft ? DEFAULT_MAP_RES_SOFT : DEFAULT_MAP_RES_HARD;
     if(this.softShadowMaps !== soft || this.mapResolution !== nextRes){
-      this.frameEpoch++;
+      this.bumpFrameEpoch();
     }
     this.setMapResolution(nextRes, soft);
   }
@@ -294,6 +297,7 @@ export class OdysseyShadowManager {
   private clearSlot(index: number){
     const slot = this.slots[index];
     if(!slot){ return; }
+    const wasActive = slot.state.active;
     slot.spot.visible = false;
     slot.spot.castShadow = false;
     slot.directional.visible = false;
@@ -306,6 +310,34 @@ export class OdysseyShadowManager {
     slot.state.distantFactor = 0;
     slot.state.lightWorld.set(0, 0, 0);
     slot.state.active = false;
+    if(wasActive){
+      this._needsShadowMapRender = true;
+      this._uniformsRefreshNeeded = true;
+    }
+  }
+
+  private bumpFrameEpoch(){
+    this.frameEpoch++;
+    this._uniformsRefreshNeeded = true;
+  }
+
+  /** True when shadow maps should be redrawn this frame (tests / diagnostics). */
+  get needsShadowMapRender(): boolean {
+    return this._needsShadowMapRender;
+  }
+
+  /**
+   * Returns and clears whether receivers need a scene-wide shadow uniform refresh.
+   */
+  consumeUniformsRefreshNeeded(): boolean {
+    const needed = this._uniformsRefreshNeeded;
+    this._uniformsRefreshNeeded = false;
+    return needed;
+  }
+
+  /** Mark that shadow uniforms must be rebound (epoch / map / gating change). */
+  markUniformsRefreshNeeded(){
+    this._uniformsRefreshNeeded = true;
   }
 
   /** Shadow camera for slot 0 (Forge debug overlay). */
@@ -495,16 +527,6 @@ export class OdysseyShadowManager {
       desiredSet.add(desired[i].uuid);
     }
 
-    // Cold start: first soft caster appears immediately (no prior residency).
-    // Ongoing swaps still use retailShadowFadeStep crossfade.
-    if(
-      sticky &&
-      !this._softResidents.length &&
-      !(sticky.shadowFadeFactor > 0)
-    ){
-      sticky.shadowFadeFactor = 1;
-    }
-
     const next = this._scratchSoftNext;
     next.length = 0;
     for(let i = 0; i < this._softResidents.length; i++){
@@ -685,7 +707,7 @@ export class OdysseyShadowManager {
     const hashChanged = stateHash !== this._lastStateHash;
     if(hashChanged){
       this._lastStateHash = stateHash;
-      this.frameEpoch++;
+      this.bumpFrameEpoch();
       this._needsShadowMapRender = true;
       this.lastUpdateReason = 'state-change';
     }else{
@@ -703,6 +725,8 @@ export class OdysseyShadowManager {
       this.lightWorld.copy(this.slots[0].state.lightWorld);
     }
 
+    this.dirtyIfNearbyAnimatedCasters();
+
     this.refreshDiagnostics();
     this.updateShadowFrustumHelper();
   }
@@ -710,7 +734,7 @@ export class OdysseyShadowManager {
   private deactivateProxies(reason: string){
     if(this._lastStateHash !== 0){
       this._lastStateHash = 0;
-      this.frameEpoch++;
+      this.bumpFrameEpoch();
     }
     for(let i = 0; i < this.slots.length; i++){
       this.clearSlot(i);
@@ -783,6 +807,29 @@ export class OdysseyShadowManager {
       ? 'directional'
       : 'spot';
 
+    const prevUuid = slot.state.uuid;
+    const prevType = slot.state.type;
+    const prevStrength = slot.state.strength;
+    const prevInfluence = slot.state.influenceRadius;
+    const prevDistant = slot.state.distantFactor;
+    const prevLwX = slot.state.lightWorld.x;
+    const prevLwY = slot.state.lightWorld.y;
+    const prevLwZ = slot.state.lightWorld.z;
+    const prevProxy = prevType === 'spot' ? slot.spot : prevType === 'directional' ? slot.directional : undefined;
+    const prevPx = prevProxy?.position.x ?? 0;
+    const prevPy = prevProxy?.position.y ?? 0;
+    const prevPz = prevProxy?.position.z ?? 0;
+    const prevSpotAngle = slot.spot.angle;
+    const prevSpotDist = slot.spot.distance;
+    const prevSpotFov = slot.spot.shadow.camera.fov;
+    const prevSpotNear = slot.spot.shadow.camera.near;
+    const prevSpotFar = slot.spot.shadow.camera.far;
+    const prevOrtho = slot.directional.shadow.camera as THREE.OrthographicCamera;
+    const prevLeft = prevOrtho.left;
+    const prevRight = prevOrtho.right;
+    const prevNear = prevOrtho.near;
+    const prevFar = prevOrtho.far;
+
     slot.spot.visible = type === 'spot';
     slot.spot.castShadow = type === 'spot';
     slot.directional.visible = type === 'directional';
@@ -846,14 +893,98 @@ export class OdysseyShadowManager {
     slot.state.influenceRadius = influenceR;
     slot.state.distantFactor = distantFactor;
     slot.state.active = true;
-    this._needsShadowMapRender = true;
+
+    const eps = 1e-4;
+    const changed =
+      prevUuid !== light.uuid ||
+      prevType !== type ||
+      Math.abs(prevStrength - strength) > eps ||
+      Math.abs(prevInfluence - influenceR) > eps ||
+      Math.abs(prevDistant - distantFactor) > eps ||
+      Math.abs(prevLwX - lp.x) > eps ||
+      Math.abs(prevLwY - lp.y) > eps ||
+      Math.abs(prevLwZ - lp.z) > eps ||
+      Math.abs(prevPx - active.position.x) > eps ||
+      Math.abs(prevPy - active.position.y) > eps ||
+      Math.abs(prevPz - active.position.z) > eps ||
+      (type === 'spot' && (
+        Math.abs(prevSpotAngle - slot.spot.angle) > eps ||
+        Math.abs(prevSpotDist - slot.spot.distance) > eps ||
+        Math.abs(prevSpotFov - slot.spot.shadow.camera.fov) > eps ||
+        Math.abs(prevSpotNear - slot.spot.shadow.camera.near) > eps ||
+        Math.abs(prevSpotFar - slot.spot.shadow.camera.far) > eps
+      )) ||
+      (type === 'directional' && (
+        Math.abs(prevLeft - (active.shadow.camera as THREE.OrthographicCamera).left) > eps ||
+        Math.abs(prevRight - (active.shadow.camera as THREE.OrthographicCamera).right) > eps ||
+        Math.abs(prevNear - (active.shadow.camera as THREE.OrthographicCamera).near) > eps ||
+        Math.abs(prevFar - (active.shadow.camera as THREE.OrthographicCamera).far) > eps
+      ));
+
+    if(changed){
+      this._needsShadowMapRender = true;
+      this._uniformsRefreshNeeded = true;
+    }
+  }
+
+  /**
+   * Dirty maps when a visible creature is animating near the shadow focus.
+   * Avoids full scene.traverse; equipment casters move with the creature.
+   */
+  private dirtyIfNearbyAnimatedCasters(){
+    if(this._needsShadowMapRender || this.activeLightCount <= 0){ return; }
+
+    let maxR = this.influenceRadius;
+    for(let i = 0; i < this.activeLightCount; i++){
+      const ir = this.slots[i]?.state.influenceRadius ?? 0;
+      if(ir > maxR){ maxR = ir; }
+    }
+    if(maxR <= 0){ maxR = RETAIL_MAX_SHADOW_DISTANCE; }
+    const r2 = maxR * maxR;
+    const fx = this._focus.x;
+    const fy = this._focus.y;
+    const fz = this._focus.z;
+
+    const nearAnimated = (obj: {
+      position?: THREE.Vector3;
+      model?: { visible?: boolean; animateFrame?: boolean };
+    } | undefined): boolean => {
+      if(!obj?.model?.visible || !obj.model.animateFrame || !obj.position){ return false; }
+      const dx = obj.position.x - fx;
+      const dy = obj.position.y - fy;
+      const dz = obj.position.z - fz;
+      return (dx * dx + dy * dy + dz * dz) <= r2;
+    };
+
+    const party = GameState.PartyManager?.party;
+    if(party){
+      for(let i = 0; i < party.length; i++){
+        if(nearAnimated(party[i])){
+          this._needsShadowMapRender = true;
+          this.lastUpdateReason = 'animated-caster';
+          return;
+        }
+      }
+    }
+
+    const creatures = GameState.module?.area?.creatures;
+    if(creatures){
+      for(let i = 0; i < creatures.length; i++){
+        if(nearAnimated(creatures[i])){
+          this._needsShadowMapRender = true;
+          this.lastUpdateReason = 'animated-caster';
+          return;
+        }
+      }
+    }
   }
 
   /**
    * Mark all active proxy maps dirty for the next `renderer.render()` call.
+   * No-ops when `_needsShadowMapRender` is false (static light/focus/casters).
    */
   markShadowMapForRender(renderer: THREE.WebGLRenderer): boolean {
-    if(!this.activeLightCount){
+    if(!this.activeLightCount || !this._needsShadowMapRender){
       return false;
     }
 
@@ -870,6 +1001,7 @@ export class OdysseyShadowManager {
     if(!any){ return false; }
 
     renderer.shadowMap.needsUpdate = true;
+    this._uniformsRefreshNeeded = true;
     this.lastUpdateReason = 'pending-render';
     this.refreshDiagnostics();
     return true;
@@ -900,7 +1032,7 @@ export class OdysseyShadowManager {
       }
     }
     if(matrixChanged){
-      this.frameEpoch++;
+      this.bumpFrameEpoch();
     }
     this._needsShadowMapRender = false;
     this.lastUpdateReason = 'render';
