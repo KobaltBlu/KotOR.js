@@ -48,9 +48,15 @@ export class MenuResolutions extends GameMenu {
       });
 
       this.LB_RESOLUTIONS.onSelected = (res: IScreenResolution) => {
-        console.log('LB_RESOLUTIONS', res);
         this.activeResolution = res;
       }
+
+      // optresolution.gui parks the dialog at design-canvas (150,126) ≈ centered on
+      // 640×480. KotOR.js centers by panel size at widget (0,0); zero the GFF
+      // origin so GetLocalMouseCoords / hit tests match (MenuContainer / InGameConfirm).
+      this.tGuiPanel.extent.left = 0;
+      this.tGuiPanel.extent.top = 0;
+
       resolve();
     });
   }
@@ -58,10 +64,21 @@ export class MenuResolutions extends GameMenu {
   show() {
     super.show();
     this.supportedResolutions = GameState.ResolutionManager.getSupportedResolutions();
-    this.activeResolution = this.supportedResolutions[0];
+    const current = GameState.ResolutionManager.screenResolution;
+    let selectIndex = this.supportedResolutions.findIndex((res) =>
+      res === current ||
+      (res.isDynamicRes === current.isDynamicRes &&
+        res.width === current.width &&
+        res.height === current.height)
+    );
+    if(selectIndex < 0){
+      selectIndex = 0;
+    }
+    this.activeResolution = this.supportedResolutions[selectIndex];
     this.LB_RESOLUTIONS.setItems(this.supportedResolutions, {
-      selectIndex: 0,
-    } as any);
+      selectIndex,
+    });
+    this.recalculatePosition();
   }
   
 }

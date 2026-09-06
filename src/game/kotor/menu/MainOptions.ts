@@ -3,14 +3,14 @@ import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 
 /**
- * retail button description TLKs (ctor custom_value / OnEnterSlot).
- * Gameplay 0xa521, Feedback 0x2147a, Autopause 0xa523, Graphics 0xbe2f, Sound 0xbe30.
+ * retail CSWGuiOptionsMain button description TLKs (ctor custom_value / OnEnterSlot).
+ * Gameplay 0xbb86, Feedback 0xbd99, Autopause 0xbdbc, Graphics 0xbb8a, Sound 0xbb8c.
  */
-const TLK_DESC_GAMEPLAY = 0xa521;
-const TLK_DESC_FEEDBACK = 0x2147a;
-const TLK_DESC_AUTOPAUSE = 0xa523;
-const TLK_DESC_GRAPHICS = 0xbe2f;
-const TLK_DESC_SOUND = 0xbe30;
+const TLK_DESC_GAMEPLAY = 0xbb86;
+const TLK_DESC_FEEDBACK = 0xbd99;
+const TLK_DESC_AUTOPAUSE = 0xbdbc;
+const TLK_DESC_GRAPHICS = 0xbb8a;
+const TLK_DESC_SOUND = 0xbb8c;
 
 /**
  * MainOptions class.

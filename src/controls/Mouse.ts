@@ -128,8 +128,25 @@ export class Mouse {
       Mouse.positionUI.x = Mouse.Vector.x = ( x - (window.innerWidth/2) );
       Mouse.positionUI.y = Mouse.Vector.y = - ( y -(window.innerHeight/2) );
     }else{
-      Mouse.positionViewport.x = x - ((ResolutionManager.windowResolution.width/2) - ((res.width)/2));
-      Mouse.positionViewport.y = y - ((ResolutionManager.windowResolution.height/2) - ((res.height)/2));
+      // Fixed resolutions render at res WxH then CSS-scale (vpScaleFactor) inside the
+      // flex-centered viewport-wrapper. Map client coords through the scaled canvas
+      // bounds so the software cursor stays locked to the hardware pointer.
+      const canvas = GameState.canvas as HTMLCanvasElement | undefined;
+      const rect = canvas?.getBoundingClientRect?.();
+      if(rect && rect.width > 0 && rect.height > 0){
+        Mouse.positionViewport.x = ((x - rect.left) / rect.width) * res.width;
+        Mouse.positionViewport.y = ((y - rect.top) / rect.height) * res.height;
+      }else{
+        const scale = ResolutionManager.vpScaleFactor || 1;
+        const winW = ResolutionManager.windowResolution.width;
+        const winH = ResolutionManager.windowResolution.height;
+        const displayedW = res.width * scale;
+        const displayedH = res.height * scale;
+        const offsetX = (winW - displayedW) / 2;
+        const offsetY = (winH - displayedH) / 2;
+        Mouse.positionViewport.x = (x - offsetX) / scale;
+        Mouse.positionViewport.y = (y - offsetY) / scale;
+      }
 
       Mouse.position.x = Mouse.Vector.x = ( Mouse.positionViewport.x / res.width ) * 2 - 1;
       Mouse.position.y = Mouse.Vector.y = - ( Mouse.positionViewport.y / res.height ) * 2 + 1;
