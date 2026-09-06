@@ -19,6 +19,13 @@ const TLK_DENY_SELECT = 0xa588;
 const TLK_DENY_REMOVE = 0x1a789;
 const TLK_DENY_FORCED = 0xa5a6;
 
+/** Retail colorGreen / colorYellow / colorBlue for party-selection chrome + Add/Remove. */
+const COLOR_GREEN = { r: 0, g: 1, b: 0 };
+const COLOR_YELLOW = { r: 0.980392, g: 1, b: 0 };
+const COLOR_BLUE = { r: 0, g: 0.658824, b: 0.980392 };
+const COLOR_DISABLED = { r: 0.5, g: 0.5, b: 0.5 };
+const COLOR_ICON_ENABLED = { r: 1, g: 1, b: 1 };
+
 interface PartySlotState {
   pendingSelected: boolean;
   /** Index in active party when menu opened; -1 if not in party. */
@@ -133,15 +140,18 @@ export class MenuPartySelection extends GameMenu {
   protected wireNpcButton(npcId: number){
     const btn = this.getControlByName('BTN_NPC' + npcId);
     if(!(btn instanceof GUIControl)) return;
+    // Portrait click / confirm on BTN_NPC only selects (OnEnter). Add/Remove toggles.
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       if(GameState.PartyManager.IsAvailable(npcId)){
-        this.onToggleNpc(npcId);
+        void this.onEnterNPC(npcId);
+      }else{
+        this.onEnterUnavailable();
       }
     });
     btn.addEventListener('hover', () => {
       if(GameState.PartyManager.IsAvailable(npcId)){
-        this.onEnterNPC(npcId);
+        void this.onEnterNPC(npcId);
       }else{
         this.onEnterUnavailable();
       }
@@ -294,6 +304,10 @@ export class MenuPartySelection extends GameMenu {
   async onEnterNPC(npcId: number){
     if(!this.isValidNpc(npcId)) return;
     this.selectedNPC = npcId;
+    const focusBtn = this.getControlByName('BTN_NPC' + npcId);
+    if(focusBtn instanceof GUIControl){
+      this.setActiveControl(focusBtn);
+    }
     this.updateSelectionHighlight();
 
     if(!GameState.PartyManager.IsAvailable(npcId)){
@@ -310,12 +324,14 @@ export class MenuPartySelection extends GameMenu {
       this.LBL_NPC_LEVEL.show();
       this.LBL_3D.hide();
       this.setAddRemoveLabel(true);
+      this.applyAddRemoveColors(false);
       return;
     }
 
     this.LBL_NPC_NAME.setText(creature.getName());
-    const mainClass = creature.getMainClass();
-    const className = mainClass ? mainClass.getName() : '';
+    // Retail: TLK Level + GetLevel(stats, 0) + last class string (getMainClass).
+    const lastClass = creature.getMainClass();
+    const className = lastClass ? lastClass.getName() : '';
     const levelLabel = GameState.TLKManager.GetStringById(TLK_LEVEL)?.Value ?? 'Level';
     this.LBL_NPC_LEVEL.setText(`${levelLabel} ${creature.getTotalClassLevel()} ${className}`.trim());
     this.LBL_NPC_NAME.show();
@@ -337,6 +353,7 @@ export class MenuPartySelection extends GameMenu {
     this.LBL_NPC_LEVEL.hide();
     this.LBL_3D.hide();
     this.setAddRemoveLabel(true);
+    this.applyAddRemoveColors(false);
     this.clearPreview();
   }
 
@@ -450,20 +467,35 @@ export class MenuPartySelection extends GameMenu {
   }
 
   protected setAddRemoveLabel(showAdd: boolean){
+    const slot = this.selectedNPC >= 0 ? this.slotState[this.selectedNPC] : undefined;
+    const selectable = !!slot?.canToggle;
+    // Retail SetAddRemoveLabel: Add uses disabled colors when selectedCount > 1 (at MaxNPCCount).
+    // OnEnter also uses disabled text when the focused slot is not selectable.
+    const addEnabled = this.selectedCount < GameState.PartyManager.MaxNPCCount && selectable;
+
     if(showAdd){
       this.BTN_ACCEPT.setText(GameState.TLKManager.GetStringById(TLK_ADD).Value);
-      if(this.selectedCount >= GameState.PartyManager.MaxNPCCount){
-        // At capacity — Add disabled look (still visible)
-        this.BTN_ACCEPT.show();
-      }else{
-        this.BTN_ACCEPT.show();
-      }
+      this.applyAddRemoveColors(addEnabled);
+      this.BTN_ACCEPT.show();
     }else{
       this.BTN_ACCEPT.setText(GameState.TLKManager.GetStringById(TLK_REMOVE).Value);
+      this.applyAddRemoveColors(true);
       this.BTN_ACCEPT.show();
     }
+
     if(this.selectedNPC >= 0 && this.slotState[this.selectedNPC]?.forced){
       this.BTN_ACCEPT.hide();
+    }
+  }
+
+  /** Retail accept button blue vs disabled gray text/border. */
+  protected applyAddRemoveColors(enabled: boolean){
+    if(enabled){
+      this.BTN_ACCEPT.setTextColor(COLOR_BLUE.r, COLOR_BLUE.g, COLOR_BLUE.b);
+      this.BTN_ACCEPT.setBorderColor(COLOR_ICON_ENABLED.r, COLOR_ICON_ENABLED.g, COLOR_ICON_ENABLED.b);
+    }else{
+      this.BTN_ACCEPT.setTextColor(COLOR_DISABLED.r, COLOR_DISABLED.g, COLOR_DISABLED.b);
+      this.BTN_ACCEPT.setBorderColor(COLOR_DISABLED.r, COLOR_DISABLED.g, COLOR_DISABLED.b);
     }
   }
 
@@ -471,20 +503,28 @@ export class MenuPartySelection extends GameMenu {
     for(let i = 0; i < GameState.PartyManager.MaxPartyCount; i++){
       const btn = this.getControlByName('BTN_NPC' + i);
       if(!(btn instanceof GUIControl)) continue;
+      const available = GameState.PartyManager.IsAvailable(i);
       const slot = this.slotState[i];
-      if(slot?.pendingSelected){
-        btn.setHighlightColor(0, 1, 0);
-      }else{
-        btn.setHighlightColor(1, 1, 0);
+
+      if(!available){
+        btn.hideBorder();
+        btn.disableHighlight();
+        btn.setPulsingAlpha(false);
+        continue;
       }
-      btn.disableBorder();
-      btn.disableHighlight();
-      btn.setPulsingAlpha(false);
-    }
-    const btn = this.getControlByName('BTN_NPC' + this.selectedNPC);
-    if(btn instanceof GUIControl){
+
+      // Retail CSWGuiPartySelectionButton::SetSelected — per-slot chrome.
+      if(slot?.pendingSelected){
+        btn.showBorder();
+        btn.enableBorder();
+        btn.setBorderColor(COLOR_GREEN.r, COLOR_GREEN.g, COLOR_GREEN.b);
+        btn.setHighlightColor(COLOR_GREEN.r, COLOR_GREEN.g, COLOR_GREEN.b);
+      }else{
+        btn.hideBorder();
+        btn.setHighlightColor(COLOR_YELLOW.r, COLOR_YELLOW.g, COLOR_YELLOW.b);
+      }
       btn.enableHighlight();
-      // Retail SetSelected — SetPulsingAlpha(1, 1, 0): edges only (portrait fill stays solid)
+      // SetPulsingAlpha(1, 1, 0): edges only (portrait fill stays solid)
       btn.setPulsingAlpha(true, true, false);
     }
   }
@@ -509,11 +549,12 @@ export class MenuPartySelection extends GameMenu {
       }
       LBL_NA.hide();
       const portrait = GameState.PartyManager.GetPortraitByIndex(i);
-      if(LBL_NA.getFillTextureName() != portrait && !!portrait){
+      if(LBL_CHAR.getFillTextureName() != portrait && !!portrait){
         await LBL_CHAR.setFillTextureName(portrait);
       }
       const selectable = this.slotState[i]?.canToggle && GameState.PartyManager.IsSelectable(i);
-      LBL_CHAR.setChromeOpacity(selectable ? 1 : 0.5);
+      // Retail non-selectable fill alpha 0.25
+      LBL_CHAR.setChromeOpacity(selectable ? 1 : 0.25);
       LBL_CHAR.show();
     }
   }
@@ -636,12 +677,81 @@ export class MenuPartySelection extends GameMenu {
     return GameState.PartyManager.IsSelectable(npcId);
   }
 
-  triggerControllerDUpPress() {}
+  triggerControllerDUpPress() {
+    this.navigateNpcSlot('up');
+  }
 
-  triggerControllerDDownPress() {}
+  triggerControllerDDownPress() {
+    this.navigateNpcSlot('down');
+  }
 
-  triggerControllerDLeftPress() {}
+  triggerControllerDLeftPress() {
+    this.navigateNpcSlot('left');
+  }
 
-  triggerControllerDRightPress() {}
+  triggerControllerDRightPress() {
+    this.navigateNpcSlot('right');
+  }
+
+  /**
+   * Retail panel MOVETO between BTN_NPC slots; skip unavailable NPCs.
+   */
+  protected navigateNpcSlot(direction: 'up' | 'down' | 'left' | 'right'){
+    const current = this.getControlByName('BTN_NPC' + this.selectedNPC);
+    if(current instanceof GUIControl){
+      let next = current.getMoveToControl(direction);
+      const seen = new Set<GUIControl>();
+      while(next && !seen.has(next)){
+        seen.add(next);
+        const npcId = this.npcIdFromControl(next);
+        if(npcId >= 0 && GameState.PartyManager.IsAvailable(npcId)){
+          void this.onEnterNPC(npcId);
+          return;
+        }
+        next = next.getMoveToControl(direction);
+      }
+    }
+
+    // Fallback: walk available slots in a fixed 3-column grid when MOVETO is missing.
+    const max = GameState.PartyManager.MaxPartyCount;
+    const cols = 3;
+    if(this.selectedNPC < 0 || this.selectedNPC >= max) return;
+    const row = Math.floor(this.selectedNPC / cols);
+    const col = this.selectedNPC % cols;
+    const candidates: number[] = [];
+    for(let i = 0; i < max; i++){
+      if(i == this.selectedNPC) continue;
+      if(!GameState.PartyManager.IsAvailable(i)) continue;
+      const r = Math.floor(i / cols);
+      const c = i % cols;
+      if(direction == 'up' && r < row && c == col) candidates.push(i);
+      else if(direction == 'down' && r > row && c == col) candidates.push(i);
+      else if(direction == 'left' && c < col && r == row) candidates.push(i);
+      else if(direction == 'right' && c > col && r == row) candidates.push(i);
+    }
+    if(!candidates.length){
+      for(let step = 1; step < max; step++){
+        const delta = (direction == 'left' || direction == 'up') ? -step : step;
+        const id = this.selectedNPC + delta;
+        if(id >= 0 && id < max && GameState.PartyManager.IsAvailable(id)){
+          void this.onEnterNPC(id);
+          return;
+        }
+      }
+      return;
+    }
+    candidates.sort((a, b) => {
+      if(direction == 'up' || direction == 'left') return b - a;
+      return a - b;
+    });
+    void this.onEnterNPC(candidates[0]);
+  }
+
+  protected npcIdFromControl(control: GUIControl): number {
+    const name = control?.name || '';
+    const match = /^BTN_NPC(\d+)$/i.exec(name);
+    if(!match) return -1;
+    return parseInt(match[1], 10);
+  }
 
 }
