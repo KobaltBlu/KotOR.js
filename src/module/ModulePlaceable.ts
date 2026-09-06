@@ -30,6 +30,7 @@ import { ModuleObject } from "@/module/ModuleObject";
 import { ModuleItem } from "@/module/ModuleItem";
 import type { ModuleArea } from "@/module/ModuleArea";
 import type { ModuleCreature } from "@/module/ModuleCreature";
+import { PlaceableLightmapBaker } from "@/managers/PlaceableLightmapBaker";
 import { DLGConversationType } from "@/enums/dialog/DLGConversationType";
 import { SkillType } from "@/enums/nwscript/SkillType";
 import { ModulePlaceableObjectSound } from "@/enums/module/ModulePlaceableObjectSound";
@@ -705,7 +706,9 @@ export class ModulePlaceable extends ModuleObject {
         context: this.context,
         castShadow: true,
         //receiveShadow: true,
-        //lighting: false,
+        // Keep lit until runtime lightmap bake applies USE_LIGHTMAP — options.static
+        // alone would stamp IGNORE_LIGHTING (flat albedo) on unusable placeables.
+        lighting: true,
         static: this.static,
         useTweakColor: this.useTweakColor,
         tweakColor: this.tweakColor
@@ -726,6 +729,9 @@ export class ModulePlaceable extends ModuleObject {
       this.model.disableMatrixUpdate();
       const shadowSize = this.getAppearance()?.shadowsize ?? 1;
       void this.applyShadowBlob(ModuleObject.shadowBlobResRefFromPlaceableShadowSize(shadowSize));
+
+      // Queue bake for late spawns; area load finishes with bakeArea().
+      PlaceableLightmapBaker.invalidate(this);
     }catch(e){
       console.error(e);
     }
@@ -1103,7 +1109,26 @@ export class ModulePlaceable extends ModuleObject {
 
   }
 
+  /**
+   * Set the facing
+   * @param facing
+   * @param instant
+   */
+  setFacing(facing = 0, instant = false, speed?: number){
+    super.setFacing(facing, instant, speed as any);
+    PlaceableLightmapBaker.invalidate(this);
+  }
+
+  /**
+   * Set the position
+   */
+  setPosition(x: THREE.Vector3|number = 0, y = 0, z = 0){
+    super.setPosition(x as any, y, z);
+    PlaceableLightmapBaker.invalidate(this);
+  }
+
   destroy(): void {
+    PlaceableLightmapBaker.dispose(this);
     // Retail SpawnBodyBag accepts placeables with items when destroyable
     if(!this.isBodyBag && this.isDestroyable){
       this.spawnBodyBag();
