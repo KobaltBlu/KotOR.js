@@ -8,10 +8,14 @@ import { describe, expect, test } from '@jest/globals';
 import * as THREE from 'three';
 import {
   buildGatherBonesDfsOrder,
+  collectHeadhookAncestorNames,
   installOdysseySkeletonUpdate,
   ODYSSEY_IDENTITY_BIND_MATRIX,
+  preferHeadBonesForNameCollisions,
+  reparentBodyUniqueChildrenOntoHead,
   resolveSkinBoneSlot,
 } from '@/three/odyssey/OdysseySkeletonBind';
+import { OdysseyObject3D } from '@/three/odyssey/OdysseyObject3D';
 
 function maxBoneMatrixTranslation(skeleton: THREE.Skeleton): number {
   skeleton.update();
@@ -220,5 +224,199 @@ describe('OdysseySkeletonBind DFS bone_parts', () => {
     // Contrast: nameIndex-as-parts would bind wrongly
     const wrongBone = resolveSkinBoneSlot(2, dfsNodes, inverseMats, dfsNodes.length);
     expect(wrongBone.bone).toBe(b); // dfsNodes[2]=b, whereas names[2]=a
+  });
+});
+
+describe('preferHeadBonesForNameCollisions (p_bastilabb head merge)', () => {
+  function makeBone(name: string, nodeNumber: number, nameIndex: number): OdysseyObject3D {
+    const obj = new OdysseyObject3D();
+    obj.name = name;
+    (obj as any).odysseyModelNode = { name, nodeNumber, nameIndex };
+    return obj;
+  }
+
+  test('collectHeadhookAncestorNames includes path to root', () => {
+    const torso = new THREE.Object3D();
+    torso.name = 'torsoupr_g';
+    const headhook = new THREE.Object3D();
+    headhook.name = 'headhook';
+    torso.add(headhook);
+    expect([...collectHeadhookAncestorNames(headhook)]).toEqual(
+      expect.arrayContaining(['headhook', 'torsoupr_g']),
+    );
+  });
+
+  test('BB-style: head wins neck/head_g; headhook ancestors stay body', () => {
+    // Body: torsoupr → headhook + necklwr → neck → hturn → head_g
+    const bodyTorso = makeBone('torsoupr_g', 4, 17);
+    const bodyHeadhook = makeBone('headhook', 41, 54);
+    const bodyNecklwr = makeBone('necklwr_g', 43, 55);
+    const bodyNeck = makeBone('neck_g', 44, 56);
+    const bodyHturn = makeBone('hturn_g', 45, 57);
+    const bodyHeadG = makeBone('head_g', 46, 58);
+    bodyTorso.add(bodyHeadhook);
+    bodyTorso.add(bodyNecklwr);
+    bodyNecklwr.add(bodyNeck);
+    bodyNeck.add(bodyHturn);
+    bodyHturn.add(bodyHeadG);
+
+    // Head: same neck/head names + nodeNumbers, different nameIndex
+    const headNecklwr = makeBone('necklwr_g', 43, 5);
+    const headNeck = makeBone('neck_g', 44, 6);
+    const headHturn = makeBone('hturn_g', 45, 7);
+    const headHeadG = makeBone('head_g', 46, 8);
+    headNecklwr.add(headNeck);
+    headNeck.add(headHturn);
+    headHturn.add(headHeadG);
+
+    const nodes = new Map<string, THREE.Object3D>([
+      ['torsoupr_g', bodyTorso],
+      ['headhook', bodyHeadhook],
+      ['necklwr_g', bodyNecklwr],
+      ['neck_g', bodyNeck],
+      ['hturn_g', bodyHturn],
+      ['head_g', bodyHeadG],
+    ]);
+    const nodesById: (THREE.Object3D | undefined)[] = [];
+    nodesById[4] = bodyTorso;
+    nodesById[41] = bodyHeadhook;
+    nodesById[43] = bodyNecklwr;
+    nodesById[44] = bodyNeck;
+    nodesById[45] = bodyHturn;
+    nodesById[46] = bodyHeadG;
+    // Body DFS includes torso (ancestor) + neck stack — like BB torso weighting neck_g
+    const dfsNodes: THREE.Object3D[] = [
+      bodyTorso,
+      bodyNecklwr,
+      bodyNeck,
+      bodyHturn,
+      bodyHeadG,
+    ];
+    const headDfsNodes: THREE.Object3D[] = [
+      headNecklwr,
+      headNeck,
+      headHturn,
+      headHeadG,
+    ];
+
+    preferHeadBonesForNameCollisions(
+      { nodes, nodesById, dfsNodes },
+      headDfsNodes,
+      collectHeadhookAncestorNames(bodyHeadhook),
+    );
+
+    // Anim maps + body DFS neck/head slots prefer head Object3Ds
+    expect(nodes.get('head_g')).toBe(headHeadG);
+    expect(nodes.get('neck_g')).toBe(headNeck);
+    expect(nodesById[46]).toBe(headHeadG);
+    expect(nodesById[44]).toBe(headNeck);
+    expect(dfsNodes[2]).toBe(headNeck); // was bodyNeck
+    expect(dfsNodes[4]).toBe(headHeadG);
+
+    // headhook ancestors stay body
+    expect(nodes.get('torsoupr_g')).toBe(bodyTorso);
+    expect(nodes.get('headhook')).toBe(bodyHeadhook);
+    expect(nodesById[4]).toBe(bodyTorso);
+    expect(dfsNodes[0]).toBe(bodyTorso);
+
+    // Head skin bone === anim map (skelIsNodes)
+    expect(headDfsNodes[3]).toBe(nodes.get('head_g'));
+  });
+
+  test('reparents body-unique hair onto preferred head_g; skips duplicate names', () => {
+    const bodyHeadhook = makeBone('headhook', 41, 54);
+    const bodyHeadG = makeBone('head_g', 46, 58);
+    const bodyFace = makeBone('f_rns_g', 50, 60);
+    const hair = makeBone('hair', 103, 12);
+    hair.position.set(0, 0.01, 0.05);
+    bodyHeadG.add(bodyFace);
+    bodyHeadG.add(hair);
+
+    const headHeadG = makeBone('head_g', 46, 8);
+    const headFace = makeBone('f_rns_g', 50, 18);
+    headHeadG.add(headFace);
+
+    const nodes = new Map<string, THREE.Object3D>([
+      ['headhook', bodyHeadhook],
+      ['head_g', bodyHeadG],
+      ['hair', hair],
+      ['f_rns_g', bodyFace],
+    ]);
+    const nodesById: (THREE.Object3D | undefined)[] = [];
+    nodesById[46] = bodyHeadG;
+    const dfsNodes: THREE.Object3D[] = [bodyHeadG];
+    const headDfsNodes: THREE.Object3D[] = [headHeadG];
+
+    preferHeadBonesForNameCollisions(
+      { nodes, nodesById, dfsNodes },
+      headDfsNodes,
+      collectHeadhookAncestorNames(bodyHeadhook),
+    );
+
+    expect(nodes.get('head_g')).toBe(headHeadG);
+    expect(hair.parent).toBe(headHeadG);
+    expect(hair.position.z).toBeCloseTo(0.05);
+    // Duplicate-named face bone stays on body head_g (not double-added)
+    expect(headHeadG.children.filter((c) => c.name === 'f_rns_g')).toHaveLength(1);
+    expect(headFace.parent).toBe(headHeadG);
+    expect(bodyFace.parent).toBe(bodyHeadG);
+  });
+
+  test('replaces empty head eyera/teethu placeholders with meshed body nodes', () => {
+    const bodyHeadhook = makeBone('headhook', 41, 54);
+    const bodyHeadG = makeBone('head_g', 46, 58);
+    const bodyEyera = makeBone('eyera', 90, 30);
+    const eyeMesh = new THREE.Mesh(
+      new THREE.BufferGeometry(),
+      new THREE.MeshBasicMaterial(),
+    );
+    bodyEyera.add(eyeMesh);
+    const bodyTalk = makeBone('talkdummy', 91, 31);
+    const bodyJaw = makeBone('f_jaw_g', 92, 32);
+    const bodyTeethl = makeBone('teethl', 93, 33);
+    const teethMesh = new THREE.Mesh(
+      new THREE.BufferGeometry(),
+      new THREE.MeshBasicMaterial(),
+    );
+    bodyTeethl.add(teethMesh);
+    bodyJaw.add(bodyTeethl);
+    bodyTalk.add(bodyJaw);
+    bodyHeadG.add(bodyEyera);
+    bodyHeadG.add(bodyTalk);
+
+    const headHeadG = makeBone('head_g', 46, 8);
+    const headEyera = makeBone('eyera', 90, 20); // empty placeholder
+    const headTalk = makeBone('talkdummy', 91, 21);
+    const headJaw = makeBone('f_jaw_g', 92, 22);
+    const headTeethl = makeBone('teethl', 93, 23); // empty
+    headJaw.add(headTeethl);
+    headTalk.add(headJaw);
+    headHeadG.add(headEyera);
+    headHeadG.add(headTalk);
+
+    const nodes = new Map<string, THREE.Object3D>([
+      ['headhook', bodyHeadhook],
+      ['head_g', bodyHeadG],
+      ['eyera', headEyera],
+      ['teethl', headTeethl],
+    ]);
+    const nodesById: (THREE.Object3D | undefined)[] = [];
+    nodesById[46] = bodyHeadG;
+    nodesById[90] = headEyera;
+
+    preferHeadBonesForNameCollisions(
+      { nodes, nodesById, dfsNodes: [bodyHeadG] },
+      [headHeadG],
+      collectHeadhookAncestorNames(bodyHeadhook),
+    );
+
+    expect(bodyEyera.parent).toBe(headHeadG);
+    expect(headEyera.parent).toBeNull();
+    expect(nodes.get('eyera')).toBe(bodyEyera);
+    expect(nodesById[90]).toBe(bodyEyera);
+    expect(bodyTeethl.parent).toBe(headJaw);
+    expect(headTeethl.parent).toBeNull();
+    expect(eyeMesh.parent).toBe(bodyEyera);
+    expect(teethMesh.parent).toBe(bodyTeethl);
   });
 });

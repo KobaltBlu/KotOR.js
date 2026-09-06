@@ -141,3 +141,146 @@ export function resolveSkinBoneSlot(
   }
   return { bone, inverse: new THREE.Matrix4() };
 }
+
+/**
+ * Names owned by the body along the path to headhook (inclusive).
+ * Prefer-head collision rewrite must not steal these (torsoupr_g, torso_g, …).
+ */
+export function collectHeadhookAncestorNames(
+  headhook: THREE.Object3D | undefined | null,
+): Set<string> {
+  const names = new Set<string>();
+  let obj: THREE.Object3D | null | undefined = headhook ?? undefined;
+  while(obj){
+    if(obj.name){
+      names.add(obj.name);
+    }
+    obj = obj.parent;
+  }
+  return names;
+}
+
+export interface IOdysseyBodyBoneTables {
+  nodes: Map<string, THREE.Object3D>;
+  nodesById: (THREE.Object3D | undefined)[];
+  dfsNodes: THREE.Object3D[];
+}
+
+/** True if obj or any descendant is a Mesh / SkinnedMesh. */
+export function odysseyObjectHasMesh(obj: THREE.Object3D): boolean {
+  if((obj as THREE.Mesh).isMesh || (obj as THREE.SkinnedMesh).isSkinnedMesh){
+    return true;
+  }
+  for(let i = 0; i < obj.children.length; i++){
+    if(odysseyObjectHasMesh(obj.children[i])){
+      return true;
+    }
+  }
+  return false;
+}
+
+function retargetNodeTables(
+  body: IOdysseyBodyBoneTables,
+  from: THREE.Object3D,
+  to: THREE.Object3D,
+): void {
+  if(to.name && body.nodes.get(to.name) === from){
+    body.nodes.set(to.name, to);
+  }
+  const fromId = (from as any).odysseyModelNode?.nodeNumber;
+  if(typeof fromId === 'number' && fromId >= 0 && body.nodesById[fromId] === from){
+    body.nodesById[fromId] = to;
+  }
+  const toId = (to as any).odysseyModelNode?.nodeNumber;
+  if(typeof toId === 'number' && toId >= 0){
+    body.nodesById[toId] = to;
+  }
+}
+
+/**
+ * Move body-only attachments onto the preferred bone. When both sides share a
+ * child name, recurse; if the body node carries meshes and the head placeholder
+ * does not (eyera/teethu on p_bastilabb), replace the empty head node.
+ * Local TRS is preserved.
+ */
+export function reparentBodyUniqueChildrenOntoHead(
+  bodyObj: THREE.Object3D,
+  headObj: THREE.Object3D,
+  body: IOdysseyBodyBoneTables,
+): void {
+  const headChildByName = new Map<string, THREE.Object3D>();
+  for(let c = 0; c < headObj.children.length; c++){
+    const child = headObj.children[c];
+    if(child?.name && !headChildByName.has(child.name)){
+      headChildByName.set(child.name, child);
+    }
+  }
+
+  const bodyChildren = bodyObj.children.slice();
+  for(let c = 0; c < bodyChildren.length; c++){
+    const child = bodyChildren[c];
+    if(!child?.name){
+      continue;
+    }
+    const headChild = headChildByName.get(child.name);
+    if(!headChild){
+      headObj.add(child);
+      headChildByName.set(child.name, child);
+      continue;
+    }
+    // Only swap empty leaf placeholders (eyera/teethu). Structural bones like
+    // f_jaw_g may gain mesh via a child (teethl) — recurse into that child.
+    if(
+      odysseyObjectHasMesh(child) &&
+      !odysseyObjectHasMesh(headChild) &&
+      headChild.children.length === 0
+    ){
+      headObj.remove(headChild);
+      headObj.add(child);
+      headChildByName.set(child.name, child);
+      retargetNodeTables(body, headChild, child);
+      continue;
+    }
+    reparentBodyUniqueChildrenOntoHead(child, headChild, body);
+  }
+}
+
+/**
+ * Model B bodies like p_bastilabb embed the same neck/head bone names and
+ * nodeNumbers as the head MDL. attachHead first-wins left anim on the body's
+ * unused duplicates while head skins bound the head's bones.
+ *
+ * Prefer the head's Object3D for colliding names (except headhook ancestors)
+ * in nodes / nodesById / body dfsNodes so collar + face share one hierarchy.
+ * Reparent body-unique children (hair) and replace empty head placeholders
+ * that the body fills with meshes (eyes, lids, teeth).
+ */
+export function preferHeadBonesForNameCollisions(
+  body: IOdysseyBodyBoneTables,
+  headDfsNodes: THREE.Object3D[],
+  bodyOwnedNames: Set<string>,
+): void {
+  for(let i = 0; i < headDfsNodes.length; i++){
+    const headObj = headDfsNodes[i];
+    if(!headObj?.name || bodyOwnedNames.has(headObj.name)){
+      continue;
+    }
+    const existing = body.nodes.get(headObj.name);
+    if(!existing || existing === headObj){
+      continue;
+    }
+
+    reparentBodyUniqueChildrenOntoHead(existing, headObj, body);
+
+    body.nodes.set(headObj.name, headObj);
+    const nodeNumber = (headObj as any).odysseyModelNode?.nodeNumber;
+    if(typeof nodeNumber === 'number' && nodeNumber >= 0){
+      body.nodesById[nodeNumber] = headObj;
+    }
+    for(let d = 0; d < body.dfsNodes.length; d++){
+      if(body.dfsNodes[d] === existing){
+        body.dfsNodes[d] = headObj;
+      }
+    }
+  }
+}

@@ -26,6 +26,7 @@ import { TalentSkill } from "@/talents/TalentSkill";
 import { TalentSpell } from "@/talents/TalentSpell";
 import { TalentObjectType } from "@/enums/engine/TalentObjectType";
 import { OdysseyModel3D, OdysseyObject3D } from "@/three/odyssey";
+import { applyHeadTrackingToHturn } from "@/module/applyHeadTrackingToHturn";
 import { OdysseyModel, OdysseyModelAnimation } from "@/odyssey";
 import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
 import { LIPObject } from "@/resource/LIPObject";
@@ -4043,8 +4044,13 @@ export class ModuleCreature extends ModuleObject {
       this.headTrackingPitch += Math.sign(pitchDiff) * stepV;
     }
 
-    this.model.hturn_g.rotation.z = Math.abs(this.headTrackingAngle) > 0.001 ? this.headTrackingAngle : 0;
-    this.model.hturn_g.rotation.x = Math.abs(this.headTrackingPitch) > 0.001 ? this.headTrackingPitch : 0;
+    // Do not force idle axes to 0 - that wipes female neck/hturn bind cancel
+    // (+/-0.1745) after anim and makes Model B heads look down (p_bastilah).
+    applyHeadTrackingToHturn(
+      this.model.hturn_g,
+      this.headTrackingAngle,
+      this.headTrackingPitch,
+    );
   }
 
   onClick(callee: ModuleObject){

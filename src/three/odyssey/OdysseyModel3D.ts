@@ -60,8 +60,10 @@ import {
 } from "@/three/odyssey/OdysseyShadowCasterMaterial";
 import {
   buildGatherBonesDfsOrder,
+  collectHeadhookAncestorNames,
   installOdysseySkeletonUpdate,
   ODYSSEY_IDENTITY_BIND_MATRIX,
+  preferHeadBonesForNameCollisions,
   resolveSkinBoneSlot,
 } from "@/three/odyssey/OdysseySkeletonBind";
 
@@ -330,6 +332,18 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
   attachHead(head: OdysseyModel3D){
 
+    // Prior head dispose leaves SkinnedMeshes in this.skins; drop orphans.
+    this.skins = this.skins.filter((skin) => {
+      let obj: THREE.Object3D | null = skin;
+      while(obj){
+        if(obj === this){
+          return true;
+        }
+        obj = obj.parent;
+      }
+      return false;
+    });
+
     const rootNode = head.getRootOdysseyNode();
     // console.log('attachHead', rootNode);
     let remapper: [OdysseyObject3D, OdysseyObject3D][] = [];
@@ -374,6 +388,18 @@ export class OdysseyModel3D extends OdysseyObject3D {
       }
 
       this.headhook.add(rootNode);
+
+      // p_bastilabb embeds neck/head bones that collide with the head MDL
+      // (same names + nodeNumbers). Prefer the head's Object3Ds for those
+      // collisions so anim (nodes/nodesById) and skins share one hierarchy.
+      // Never steal headhook ancestors (torsoupr_g, torso_g, ...).
+      head.ensureGatherBonesDfs();
+      this.ensureGatherBonesDfs();
+      preferHeadBonesForNameCollisions(
+        this,
+        head.dfsNodes,
+        collectHeadhookAncestorNames(this.headhook),
+      );
 
       //fix skins
       this.buildSkeleton();
