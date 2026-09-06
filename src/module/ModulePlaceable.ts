@@ -560,6 +560,8 @@ export class ModulePlaceable extends ModuleObject {
         }
 
         this.scripts[ModuleObjectScript.PlaceableOnOpen]?.run(this)
+        // Settle pose: deferred static-chart rebake (animated parts stay nearest-lit).
+        PlaceableLightmapBaker.invalidate(this);
       break;
       case ModulePlaceableEvent.CLOSE_START:
         this.setOpenState(ModulePlaceableState.CLOSED);
@@ -567,6 +569,7 @@ export class ModulePlaceable extends ModuleObject {
       break;
       case ModulePlaceableEvent.CLOSE_END:
         this.scripts[ModuleObjectScript.PlaceableOnClosed]?.run(this)
+        PlaceableLightmapBaker.invalidate(this);
       break;
     }
   }

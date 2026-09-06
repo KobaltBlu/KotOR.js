@@ -1962,6 +1962,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
       
       if(odysseyNode.hasLightmap && tMap2.length){
         material.userData.lightmap = tMap2;
+        material.userData.odysseyAuthoredLightmap = true;
         TextureLoader.enQueue(tMap2, material, TextureType.LIGHTMAP);
       }
 

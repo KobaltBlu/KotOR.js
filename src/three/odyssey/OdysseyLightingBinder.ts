@@ -781,19 +781,39 @@ export class OdysseyLightingBinder {
       const obj = dynamics[i];
       if(!(obj?.model as OdysseyModel3D)?.materials){ continue; }
       const model = obj.model as OdysseyModel3D;
-      // Runtime-baked placeables use room lightmap overlay (exclusive_dynamic),
-      // not GetNearestLights — same bind path as USE_LIGHTMAP room meshes.
+      // Hybrid placeable lighting: baked mats use exclusive_dynamic overlay;
+      // animated/skin/dangly siblings stay on GetNearestLights (same query).
       if(model.userData.odysseyPlaceableLightmap){
-        const lightmapFp = this.mixHash(
-          lightManager.lightmapLights.cacheID,
-          this.mixHash(lightManager.selectionEpoch, fp.areaFp)
+        const pos = (obj as any).position instanceof THREE.Vector3
+          ? (obj as any).position
+          : model.getWorldPosition(this._scratchWorldPos);
+        const nearestFp = lightManager.fingerprintNearestLights(pos);
+        const hybridFp = this.mixHash(
+          nearestFp,
+          this.mixHash(
+            lightManager.lightsPoseEpoch,
+            this.mixHash(
+              lightManager.lightmapLights.cacheID,
+              this.mixHash(lightManager.selectionEpoch, fp.areaFp)
+            )
+          )
         );
-        if(model.userData.odysseyObjectBindFp === lightmapFp){
+        if(model.userData.odysseyObjectBindFp === hybridFp){
           this.bindModelShadowUniforms(model);
           continue;
         }
-        this.bindModel(model, lightManager.getLightmapLightSet(), camera, 'lightmapLightCacheID', lightManager);
-        model.userData.odysseyObjectBindFp = lightmapFp;
+        const nearest = lightManager.packLastNearestLights();
+        this.bindModelMaterials(model, (material) => {
+          const defines = material.defines || {};
+          const usesLightmap = Object.prototype.hasOwnProperty.call(defines, 'USE_LIGHTMAP');
+          const set = usesLightmap
+            ? lightManager.getLightmapLightSet()
+            : nearest;
+          const key = usesLightmap ? 'lightmapLightCacheID' : 'objectLightCacheID';
+          this.bindMaterial(material, set, camera, key, lightManager);
+        });
+        model.userData.odysseyObjectBindFp = hybridFp;
+        this.bindModelShadowUniforms(model);
         continue;
       }
       const pos = (obj as any).position instanceof THREE.Vector3
