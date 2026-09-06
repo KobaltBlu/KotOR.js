@@ -242,7 +242,7 @@ export class IngameControls {
        * Debugger Hotkey
        */
       if(e.key == 'D' && e.ctrlKey && e.shiftKey){
-        GameState.Debugger.open();
+        GameState.Debugger.toggle();
       }
 
       /**

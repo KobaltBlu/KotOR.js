@@ -21,7 +21,7 @@ import { TXILanguageService } from "@/apps/forge/states/TXILanguageService";
 import { SemanticFunctionNode } from "@/nwscript/compiler/ASTSemanticTypes";
 import { compileNssSource, resolveIncludesForNss } from "@/apps/forge/helpers/ForgeNWScriptCompile";
 import { compiledNcsOverrideRelativePath, GAME_OVERRIDE_DIR } from "@/apps/forge/helpers/forgeNcsCompilePaths";
-import { NWScriptDecompiler } from "@/nwscript/decompiler/NWScriptDecompiler";
+import { decompileScriptWithLineMap } from "@/nwscript/inspect/decompileScriptWithLineMap";
 import {
   codeOffsetForNssLine,
   createEmptyNssCodeLineMap,
@@ -167,8 +167,7 @@ export class TabTextEditorState extends TabState {
   }
 
   applyDecompile(script: KotOR.NWScript): void {
-    const decompiler = new NWScriptDecompiler(script);
-    const result = decompiler.decompileWithLineMap();
+    const result = decompileScriptWithLineMap(script);
     this.code = result.nss;
     this.nssLineMap = result.lineMap;
     this.recoveredFunctions = result.functions;

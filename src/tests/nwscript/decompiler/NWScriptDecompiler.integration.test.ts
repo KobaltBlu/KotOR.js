@@ -75,6 +75,41 @@ describe('NWScriptDecompiler integration', () => {
     expect(source).not.toContain('__NCS_DECOMPILER_UNKNOWN_VALUE__');
   });
 
+  test('stamps bytecode offsets onto NSS line maps for debugger breakpoints', () => {
+    const printPair: INWScriptDefAction = {
+      name: 'PrintPair',
+      comment: '',
+      type: NWScriptDataType.VOID,
+      args: [NWScriptDataType.INTEGER, NWScriptDataType.STRING],
+    };
+    const script = linkedScript([
+      instruction(OP_JSR, 0, 0, 6, { offset: 20 }),
+      instruction(OP_RETN, 0, 6, 2),
+      instruction(OP_CONST, NWScriptDataType.STRING, 20, 7, { string: 'ok' }),
+      instruction(OP_CONST, NWScriptDataType.INTEGER, 27, 6, { integer: 7 }),
+      instruction(OP_ACTION, 0, 33, 5, {
+        action: 900,
+        argCount: 2,
+        actionDefinition: printPair,
+      }),
+      instruction(OP_RETN, 0, 38, 2),
+    ]);
+
+    const result = new NWScriptDecompiler(script).decompileWithLineMap();
+    const offsets = [...result.lineMap.nssLineToCodeOffset.values()];
+
+    expect(result.lineMap.nssLineToCodeOffset.size).toBeGreaterThan(0);
+    expect(offsets).toContain(33);
+    expect(result.functions.some((func) => func.name === 'main')).toBe(true);
+    expect(result.functions.find((func) => func.name === 'main')?.codeOffset).toBe(20);
+
+    const printLine = result.nss
+      .split('\n')
+      .findIndex((line) => line.includes('PrintPair(7, "ok");')) + 1;
+    expect(printLine).toBeGreaterThan(0);
+    expect(result.lineMap.nssLineToCodeOffset.get(printLine)).toBe(33);
+  });
+
   test('keeps mutually exclusive branch evaluation isolated through the AST pipeline', () => {
     const printText: INWScriptDefAction = {
       name: 'PrintText',

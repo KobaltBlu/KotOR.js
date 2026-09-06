@@ -1,10 +1,15 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import * as KotOR from "@/apps/debugger/KotOR";
 import { DebuggerState } from "@/apps/debugger/states/DebuggerState";
-import { IPCMessage } from "@/server/ipc/IPCMessage";
-import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
-import { IPCMessageParam } from "@/server/ipc/IPCMessageParam";
-import { IPCDataType } from "@/enums/server/ipc/IPCDataType";
+import type {
+  GlobalsSnapshotEntry,
+  LiveObjectSnapshot,
+  ModuleAreaSnapshot,
+  ObjectListEntry,
+} from "@/inspect/runtimeSnapshots";
+
+export type InspectorActivity = 'scene' | 'module' | 'objects' | 'globals' | 'scripts';
+export type InspectorHostMode = 'iframe' | 'window';
 
 export interface AppProviderValues {
   stateRef: React.MutableRefObject<DebuggerState>;
@@ -14,6 +19,14 @@ export interface AppProviderValues {
   selectedInstance: [KotOR.NWScriptInstance, React.Dispatch<KotOR.NWScriptInstance>];
   setSelectedInstanceHelper: Function;
   sendMessageHelper: Function;
+  activity: InspectorActivity;
+  setActivity: (activity: InspectorActivity) => void;
+  moduleSnapshot: ModuleAreaSnapshot | null;
+  objectList: ObjectListEntry[];
+  selectedObjectDetail: LiveObjectSnapshot | null;
+  globalsSnapshot: GlobalsSnapshotEntry[];
+  scriptNameFilter: string[];
+  hostMode: InspectorHostMode;
 }
 export const AppContext = createContext<AppProviderValues>({} as any);
 
@@ -21,12 +34,19 @@ export function useApp(){
   return useContext(AppContext);
 }
 
-export const AppProvider = (props: {children: any; appState: DebuggerState}) => {
+export const AppProvider = (props: {children: any; appState: DebuggerState; hostMode?: InspectorHostMode}) => {
   const [scriptMap, setScriptMap] = useState<Map<string, KotOR.NWScript>>(new Map());
   const [instanceMap, setInstanceMap] = useState<Map<string, KotOR.NWScriptInstance>>(new Map());
   const [parentMap, setParentMap] = useState<Map<string, Set<string>>>(new Map());
 
   const [selectedInstance, setSelectedInstance] = useState<KotOR.NWScriptInstance>();
+  const [activity, setActivity] = useState<InspectorActivity>('scene');
+  const [moduleSnapshot, setModuleSnapshot] = useState<ModuleAreaSnapshot | null>(null);
+  const [objectList, setObjectList] = useState<ObjectListEntry[]>([]);
+  const [selectedObjectDetail, setSelectedObjectDetail] = useState<LiveObjectSnapshot | null>(null);
+  const [globalsSnapshot, setGlobalsSnapshot] = useState<GlobalsSnapshotEntry[]>([]);
+  const [scriptNameFilter, setScriptNameFilter] = useState<string[]>([]);
+  const hostMode: InspectorHostMode = props.hostMode === 'iframe' ? 'iframe' : 'window';
 
   const stateRef = useRef<DebuggerState>(props.appState);
 
@@ -56,14 +76,38 @@ export const AppProvider = (props: {children: any; appState: DebuggerState}) => 
     const appState = stateRef.current;
     if(!appState) return;
 
+    const refreshMaps = () => onUpdateState(appState);
+
     appState.addEventListener('update', onUpdateState);
     appState.addEventListener('selected-instance', onSelectedInstance);
     appState.addEventListener('message', onMessage);
+    appState.addEventListener('script-created', refreshMaps);
+    appState.addEventListener('script-destroyed', refreshMaps);
+    appState.addEventListener('instance-updated', refreshMaps);
+    appState.addEventListener('module-snapshot', setModuleSnapshot);
+    appState.addEventListener('object-list', setObjectList);
+    appState.addEventListener('object-detail', setSelectedObjectDetail);
+    appState.addEventListener('globals-snapshot', setGlobalsSnapshot);
+    appState.addEventListener('script-name-filter', setScriptNameFilter);
+
+    setModuleSnapshot(appState.moduleSnapshot);
+    setObjectList(appState.objectList);
+    setSelectedObjectDetail(appState.selectedObjectDetail);
+    setGlobalsSnapshot(appState.globalsSnapshot);
+    setScriptNameFilter(appState.scriptNameFilter);
 
     return () => {
       appState.removeEventListener('update', onUpdateState);
       appState.removeEventListener('selected-instance', onSelectedInstance);
       appState.removeEventListener('message', onMessage);
+      appState.removeEventListener('script-created', refreshMaps);
+      appState.removeEventListener('script-destroyed', refreshMaps);
+      appState.removeEventListener('instance-updated', refreshMaps);
+      appState.removeEventListener('module-snapshot', setModuleSnapshot);
+      appState.removeEventListener('object-list', setObjectList);
+      appState.removeEventListener('object-detail', setSelectedObjectDetail);
+      appState.removeEventListener('globals-snapshot', setGlobalsSnapshot);
+      appState.removeEventListener('script-name-filter', setScriptNameFilter);
       appState.dispose();
     };
   }, []);
@@ -76,7 +120,15 @@ export const AppProvider = (props: {children: any; appState: DebuggerState}) => 
     //@ts-ignore
     selectedInstance: [selectedInstance, setSelectedInstance],
     setSelectedInstanceHelper: setSelectedInstanceHelper,
-    sendMessageHelper: sendMessageHelper
+    sendMessageHelper: sendMessageHelper,
+    activity,
+    setActivity,
+    moduleSnapshot,
+    objectList,
+    selectedObjectDetail,
+    globalsSnapshot,
+    scriptNameFilter,
+    hostMode,
   };
 
   return (

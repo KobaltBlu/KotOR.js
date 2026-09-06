@@ -454,6 +454,48 @@ export class NWScriptAST {
   }
 
   /**
+   * Stamp bytecode location metadata onto an AST node.
+   */
+  static locate<T extends NWScriptASTNode>(
+    node: T,
+    startAddress?: number,
+    options?: {
+      endAddress?: number;
+      startBlock?: NWScriptBasicBlock;
+      endBlock?: NWScriptBasicBlock;
+    }
+  ): T {
+    if (startAddress == null || !Number.isFinite(startAddress)) {
+      return node;
+    }
+    node.location = {
+      startAddress,
+      endAddress: options?.endAddress ?? startAddress,
+      startBlock: options?.startBlock,
+      endBlock: options?.endBlock,
+    };
+    return node;
+  }
+
+  private static locationFromBlock(
+    block?: NWScriptBasicBlock
+  ): NWScriptASTNode['location'] | undefined {
+    const startAddress = block?.startInstruction?.address;
+    if (startAddress == null || !Number.isFinite(startAddress)) {
+      return undefined;
+    }
+    const endInstr = block.endInstruction ?? block.startInstruction;
+    return {
+      startBlock: block,
+      endBlock: block,
+      startAddress,
+      endAddress: endInstr
+        ? endInstr.address + (endInstr.instructionSize ?? 0)
+        : startAddress,
+    };
+  }
+
+  /**
    * Create a function node
    */
   static createFunction(
@@ -464,6 +506,7 @@ export class NWScriptAST {
     locals: NWScriptVariableDeclarationNode[] = [],
     entryBlock?: NWScriptBasicBlock
   ): NWScriptFunctionNode {
+    const location = this.locationFromBlock(entryBlock);
     return {
       type: NWScriptASTNodeType.FUNCTION,
       children: [...locals, body],
@@ -472,7 +515,8 @@ export class NWScriptAST {
       parameters,
       locals,
       body,
-      entryBlock
+      entryBlock,
+      ...(location ? { location } : {}),
     };
   }
 
@@ -497,6 +541,7 @@ export class NWScriptAST {
     headerBlock?: NWScriptBasicBlock
   ): NWScriptIfNode | NWScriptIfElseNode {
     const children = [thenBody, ...(elseBody ? [elseBody] : [])];
+    const location = this.locationFromBlock(headerBlock);
     if (elseBody) {
       return {
         type: NWScriptASTNodeType.IF_ELSE,
@@ -504,7 +549,8 @@ export class NWScriptAST {
         condition,
         thenBody,
         elseBody,
-        headerBlock
+        headerBlock,
+        ...(location ? { location } : {}),
       };
     } else {
       return {
@@ -513,7 +559,8 @@ export class NWScriptAST {
         condition,
         thenBody,
         elseBody,
-        headerBlock
+        headerBlock,
+        ...(location ? { location } : {}),
       };
     }
   }
@@ -526,12 +573,14 @@ export class NWScriptAST {
     body: NWScriptBlockNode,
     headerBlock?: NWScriptBasicBlock
   ): NWScriptWhileNode {
+    const location = this.locationFromBlock(headerBlock);
     return {
       type: NWScriptASTNodeType.WHILE,
       children: [body],
       condition,
       body,
-      headerBlock
+      headerBlock,
+      ...(location ? { location } : {}),
     };
   }
 
@@ -543,12 +592,14 @@ export class NWScriptAST {
     condition: NWScriptExpression,
     headerBlock?: NWScriptBasicBlock
   ): NWScriptDoWhileNode {
+    const location = this.locationFromBlock(headerBlock);
     return {
       type: NWScriptASTNodeType.DO_WHILE,
       children: [body],
       body,
       condition,
-      headerBlock
+      headerBlock,
+      ...(location ? { location } : {}),
     };
   }
 
@@ -567,6 +618,7 @@ export class NWScriptAST {
       body,
       ...(increment ? [increment] : [])
     ];
+    const location = this.locationFromBlock(headerBlock);
     return {
       type: NWScriptASTNodeType.FOR,
       children,
@@ -574,7 +626,8 @@ export class NWScriptAST {
       condition,
       increment,
       body,
-      headerBlock
+      headerBlock,
+      ...(location ? { location } : {}),
     };
   }
 
@@ -588,13 +641,15 @@ export class NWScriptAST {
     headerBlock?: NWScriptBasicBlock
   ): NWScriptSwitchNode {
     const children = [...cases, ...(defaultCase ? [defaultCase] : [])];
+    const location = this.locationFromBlock(headerBlock);
     return {
       type: NWScriptASTNodeType.SWITCH,
       children,
       expression,
       cases,
       defaultCase,
-      headerBlock
+      headerBlock,
+      ...(location ? { location } : {}),
     };
   }
 

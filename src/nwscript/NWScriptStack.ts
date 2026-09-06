@@ -491,7 +491,7 @@ export class NWScriptStack {
   }
 
   static FromDebuggerPacket( data: Uint8Array ): NWScriptStack {
-    const dataView = new DataView(data.buffer);
+    const dataView = new DataView(data.buffer, data.byteOffset, data.byteLength);
 
     const basePointer = dataView.getInt32(0, true);
     const pointer = dataView.getInt32(4, true);

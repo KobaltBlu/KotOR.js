@@ -125,7 +125,6 @@ export const DebugToolsPanel: React.FC = () => {
   const appContext = useApp();
   const [appState] = appContext.appState;
   const [, setShowCheatConsole] = appContext.showCheatConsole;
-  const [showSceneOverview, setShowSceneOverview] = appContext.showSceneOverview;
   const [debugTick, setDebugTick] = useState(0);
   const [openSections, setOpenSections] = useState<Record<SectionId, boolean>>(DEFAULT_OPEN);
   const [modules, setModules] = useState<string[]>([]);
@@ -170,10 +169,6 @@ export const DebugToolsPanel: React.FC = () => {
 
   const onClose = () => {
     setShowCheatConsole(false);
-  };
-
-  const onToggleSceneOverview = () => {
-    setShowSceneOverview(!showSceneOverview);
   };
 
   const onToggleDebugger = () => {
@@ -253,11 +248,8 @@ export const DebugToolsPanel: React.FC = () => {
           onToggle={onToggleSection}
         >
           <div className="debug-tools-btn-row">
-            <ConsoleToggle active={showSceneOverview} onClick={onToggleSceneOverview}>
-              Scene
-            </ConsoleToggle>
             <button type="button" className="console-btn console-btn-small" onClick={onToggleDebugger}>
-              Debugger
+              Dev Tools
             </button>
             <button type="button" className="console-btn console-btn-small" onClick={onTogglePerformanceMonitor}>
               Toggle Stats

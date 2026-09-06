@@ -1,24 +1,55 @@
-import React, { useEffect, useState } from "react"
+import React, { useMemo } from "react";
+import { ActivityChrome } from "@/apps/debugger/components/ActivityChrome";
+import { SceneActivity } from "@/apps/debugger/components/SceneActivity";
+import { ModuleActivity } from "@/apps/debugger/components/ModuleActivity";
+import { ObjectsActivity } from "@/apps/debugger/components/ObjectsActivity";
+import { GlobalsActivity } from "@/apps/debugger/components/GlobalsActivity";
+import { ScriptsActivity } from "@/apps/debugger/components/ScriptsActivity";
 import { useApp } from "@/apps/debugger/context/AppContext";
-import { ScriptBrowserWindow } from "@/apps/debugger/components/ScriptBrowserWindow";
-import { ScriptInstanceWindow } from "@/apps/debugger/components/ScriptInstanceWindow";
-import { LayoutContainer } from "@/apps/debugger/components/LayoutContainer";
-import { MenuTop } from "@/apps/debugger/components/MenuTop";
-
 
 export const ScriptDebugger = () => {
+  const { activity, moduleSnapshot, selectedInstance: selectedInstanceTuple } = useApp();
+  const [selectedInstance] = selectedInstanceTuple;
 
-  const westContent = (
-    <ScriptBrowserWindow />
-  );
+  const statusLeft = useMemo(() => {
+    if(!moduleSnapshot?.loaded){
+      return 'No module loaded';
+    }
+    const file = moduleSnapshot.moduleFilename || 'module';
+    const area = moduleSnapshot.areaTag || moduleSnapshot.areaResRef || '—';
+    return `${file} · ${area}`;
+  }, [moduleSnapshot]);
+
+  const statusRight = useMemo(() => {
+    if(selectedInstance?.name){
+      return `Paused: ${selectedInstance.name}`;
+    }
+    return '';
+  }, [selectedInstance]);
+
+  let body: React.ReactNode = null;
+  switch(activity){
+    case 'scene':
+      body = <SceneActivity />;
+      break;
+    case 'module':
+      body = <ModuleActivity />;
+      break;
+    case 'objects':
+      body = <ObjectsActivity />;
+      break;
+    case 'globals':
+      body = <GlobalsActivity />;
+      break;
+    case 'scripts':
+    default:
+      body = <ScriptsActivity />;
+      break;
+  }
 
   return (
-  <div className="script-debugger app-container">
-    <MenuTop />
-    <div id="container" className="script-debugger-container">
-      <LayoutContainer westContent={westContent} westSize={250} southContent={<></>}>
-        <ScriptInstanceWindow />
-      </LayoutContainer>
-    </div>
-  </div>);
-}
+    <ActivityChrome statusLeft={statusLeft} statusRight={statusRight}>
+      {body}
+    </ActivityChrome>
+  );
+};

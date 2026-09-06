@@ -2967,15 +2967,17 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [ModuleObject, string, number, number, number, string, string, string, string, string, string, number]){
       if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
         // Retail ExecuteCommandActionStartConversation clears party[0]
-        // client+server actions before queueing ActionDialogObject.
+        // client+server actions before queueing ActionDialogObject on the caller
+        // (triggers/doors/creatures — not redirected to the PC).
         const partyLeader = GameState.PartyManager.party[0];
         if(BitWise.InstanceOfObject(partyLeader, ModuleObjectType.ModuleCreature)){
           partyLeader.clearAllActions(true);
         }
-        const ignoreStartRange = !!args[4];
+        // Retail pops bIgnoreStartRange then forces it to 1 before AddAction.
+        // (AIActionDialogObject also skips approach when action param3 stays 1.)
         const ignoreNames = [args[5], args[6], args[7], args[8], args[9], args[10]]
           .filter((s) => typeof s === 'string' && s.trim().length > 0);
-        this.caller.actionDialogObject( args[0], args[1], ignoreStartRange, args[2], args[3], false, ignoreNames );
+        this.caller.actionDialogObject( args[0], args[1], true, args[2], args[3], false, ignoreNames );
       }else{
         console.error('ActionStartConversation', 'Caller is not an instance of ModuleObject');
       }

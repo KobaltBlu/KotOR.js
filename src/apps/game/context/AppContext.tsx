@@ -11,7 +11,6 @@ export interface AppProviderValues {
   showGrantModal: [boolean, React.Dispatch<boolean>];
   showClickToBeginModal: [boolean, React.Dispatch<boolean>];
   showCheatConsole: [boolean, React.Dispatch<boolean>];
-  showSceneOverview: [boolean, React.Dispatch<boolean>];
   showPerformanceMonitor: [boolean, React.Dispatch<boolean>];
   showLoadingScreen: [boolean, React.Dispatch<boolean>];
   loadingScreenMessage: [string, React.Dispatch<string>];
@@ -32,7 +31,6 @@ export const AppProvider = (props: any) => {
   const [showGrantModal, setShowGrantModal] = useState<boolean>(props.showGrantModal || false);
   const [showClickToBeginModal, setShowClickToBeginModal] = useState<boolean>(false);
   const [showCheatConsole, setShowCheatConsole] = useState<boolean>(false);
-  const [showSceneOverview, setShowSceneOverview] = useState<boolean>(false);
   const [showPerformanceMonitor, setShowPerformanceMonitor] = useState<boolean>(false);
 
   const [showLoadingScreen, setShowLoadingScreen] = useState<boolean>(true);
@@ -130,7 +128,6 @@ export const AppProvider = (props: any) => {
     showGrantModal: [showGrantModal, setShowGrantModal],
     showClickToBeginModal: [showClickToBeginModal, setShowClickToBeginModal],
     showCheatConsole: [showCheatConsole, setShowCheatConsole],
-    showSceneOverview: [showSceneOverview, setShowSceneOverview],
     showPerformanceMonitor: [showPerformanceMonitor, setShowPerformanceMonitor],
     showLoadingScreen: [showLoadingScreen, setShowLoadingScreen],
     loadingScreenMessage: [loadingScreenMessage, setLoadingScreenMessage],

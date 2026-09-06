@@ -7,7 +7,7 @@ import { MenuTopItem } from "@/apps/debugger/MenuTopItem";
 
 export class MenuTopState {
 
-  static title: string = `KotOR Forge`;
+  static title: string = `Dev Tools`;
   static items: MenuTopItem[] = [];
   
   static optionsItemExample: MenuTopItem;

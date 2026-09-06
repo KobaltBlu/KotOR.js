@@ -9,6 +9,7 @@ import { DebugApp } from "@/apps/debugger/DebugApp";
 const params = new URLSearchParams(window.location.search);
 const uuid = params.get('uuid');
 if(!uuid) throw new Error('UUID is required');
+const hostMode = params.get('host') === 'iframe' ? 'iframe' as const : 'window' as const;
 
 const appState = new DebuggerState(uuid);
 DebugApp.appState = appState;
@@ -20,7 +21,7 @@ const loadReactApplication = () => {
   ( async () => {
     root.render(
       // <React.StrictMode>
-        <AppProvider appState={DebugApp.appState}>
+        <AppProvider appState={DebugApp.appState} hostMode={hostMode}>
           <App />
         </AppProvider>
       // </React.StrictMode>

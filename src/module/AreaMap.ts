@@ -185,9 +185,14 @@ export class AreaMap {
 
   /**
    * Retail GetMapPixelFromWorldCoord — returns logical map pixels and in-bounds validity.
+   * Pass `logicalSize` when the caller already knows K1/TSL size (e.g. Dev Tools IPC).
    */
-  toMapPixels(x: number = 0, y: number = 0): AreaMapPixelResult {
-    const { width, height } = AreaMap.getLogicalMapSize();
+  toMapPixels(
+    x: number = 0,
+    y: number = 0,
+    logicalSize?: { width: number, height: number }
+  ): AreaMapPixelResult {
+    const { width, height } = logicalSize || AreaMap.getLogicalMapSize();
     const mapPt1Xpx = Math.trunc(this.mapPt1X * width);
     const mapPt1Ypx = Math.trunc(this.mapPt1Y * height);
     const mapPt2Xpx = Math.trunc(this.mapPt2X * width);

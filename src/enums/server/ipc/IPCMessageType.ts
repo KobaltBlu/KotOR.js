@@ -18,5 +18,23 @@ export enum IPCMessageType {
   RemoveScriptBreakpoint = 0x08,
   UpdateScriptState = 0x09,
   ContinueScript = 0x0A,
-  StepOverInstruction = 0x0B
+  StepOverInstruction = 0x0B,
+  StepIntoInstruction = 0x0C,
+  StepOutInstruction = 0x0D,
+  /** Debugger requests (or game pushes) CreateScript for all live instances. */
+  ListLiveScripts = 0x10,
+
+  // Dev Tools snapshot opcodes (0x20+; keep clear of Script ops)
+  RequestModuleSnapshot = 0x20,
+  ModuleSnapshot = 0x21,
+  RequestObjectList = 0x22,
+  ObjectList = 0x23,
+  RequestObjectDetail = 0x24,
+  ObjectDetail = 0x25,
+  RequestGlobalsSnapshot = 0x26,
+  GlobalsSnapshot = 0x27,
+  /** Dev Tools Scene tab → game: sync/clear in-world map markers. */
+  SetSceneWorldMarkers = 0x28,
+  RequestAreaMapOverlay = 0x29,
+  AreaMapOverlay = 0x2A,
 }

@@ -8,10 +8,12 @@ import {
   DEFAULT_KIND_FILTERS,
   OVERVIEW_KIND_COLORS,
   OVERVIEW_KIND_LABELS,
+  overviewEntryToMapPin,
   snapshotModuleAreaInfo,
   type ModuleAreaSnapshot,
   type OverviewEntry,
   type OverviewObjectKind,
+  type SceneMapPin,
 } from "./object-overview-utils";
 import { clearWorldMarkers, syncWorldMarkers } from "./world-markers";
 import "./scene-overview.scss";
@@ -26,10 +28,13 @@ function InfoChip({ label, value, mono }: { label: string; value: string | numbe
   );
 }
 
-export const SceneOverviewPanel: React.FC = () => {
+/**
+ * Standalone Scene Overview (legacy). Prefer Dev Tools → Scene activity.
+ * Kept for direct embedding / experiments.
+ */
+export const SceneOverviewPanel: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
   const appContext = useApp();
   const [gameKey] = appContext.gameKey;
-  const [, setShowSceneOverview] = appContext.showSceneOverview;
 
   const [entries, setEntries] = useState<OverviewEntry[]>([]);
   const [moduleInfo, setModuleInfo] = useState<ModuleAreaSnapshot>(() => snapshotModuleAreaInfo());
@@ -68,32 +73,43 @@ export const SceneOverviewPanel: React.FC = () => {
     [entries, filters]
   );
 
-  const bounds = useMemo(() => computeOverviewBounds(visibleEntries), [visibleEntries]);
+  const pins = useMemo(() => entries.map(overviewEntryToMapPin), [entries]);
+  const visiblePins = useMemo(
+    () => pins.filter((p) => filters[p.kind] !== false),
+    [pins, filters]
+  );
+  const bounds = useMemo(() => computeOverviewBounds(visiblePins), [visiblePins]);
 
   useEffect(() => {
-    syncWorldMarkers(visibleEntries, showWorldMarkers, selectedId);
-  }, [visibleEntries, showWorldMarkers, selectedId]);
+    syncWorldMarkers(visiblePins, showWorldMarkers, selectedId);
+  }, [visiblePins, showWorldMarkers, selectedId]);
 
-  const onSelect = useCallback((entry: OverviewEntry | null) => {
+  const onSelect = useCallback((pin: SceneMapPin | null) => {
+    if(!pin){
+      setSelectedEntry(null);
+      setSelectedId(null);
+      return;
+    }
+    const entry = entries.find((e) => e.id === pin.id) || null;
     setSelectedEntry(entry);
-    setSelectedId(entry?.id ?? null);
-  }, []);
+    setSelectedId(pin.id);
+  }, [entries]);
 
-  const onClose = useCallback(() => {
+  const handleClose = useCallback(() => {
     clearWorldMarkers();
-    setShowSceneOverview(false);
-  }, [setShowSceneOverview]);
+    onClose?.();
+  }, [onClose]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if(e.key === 'Escape'){
         e.preventDefault();
-        onClose();
+        handleClose();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [handleClose]);
 
   const kinds = Object.keys(OVERVIEW_KIND_LABELS) as OverviewObjectKind[];
   const oc = moduleInfo.objectCounts;
@@ -119,7 +135,9 @@ export const SceneOverviewPanel: React.FC = () => {
           />
           World markers
         </label>
-        <button type="button" className="scene-overview-close" onClick={onClose}>Close</button>
+        {onClose && (
+          <button type="button" className="scene-overview-close" onClick={handleClose}>Close</button>
+        )}
       </div>
 
       <div className="scene-overview-module-info">
@@ -182,7 +200,7 @@ export const SceneOverviewPanel: React.FC = () => {
       <div className="scene-overview-body">
         <div className="scene-overview-map">
           <TopDownMap
-            entries={entries}
+            entries={pins}
             filters={filters}
             bounds={bounds}
             selectedId={selectedId}

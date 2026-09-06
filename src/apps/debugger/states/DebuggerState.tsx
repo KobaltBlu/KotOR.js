@@ -3,6 +3,13 @@ import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
 import { IPCMessage } from "@/server/ipc/IPCMessage";
 import { IPCMessageParam } from "@/server/ipc/IPCMessageParam";
 import * as KotOR from "@/apps/debugger/KotOR";
+import type {
+  GlobalsSnapshotEntry,
+  LiveObjectSnapshot,
+  ModuleAreaSnapshot,
+  ObjectListEntry,
+} from "@/inspect/runtimeSnapshots";
+import type { AreaMapOverlaySnapshot } from "@/inspect/areaMapOverlay";
 
 export class DebuggerState {
 
@@ -11,7 +18,17 @@ export class DebuggerState {
   scriptMap: Map<string, KotOR.NWScript> = new Map();
   instanceMap: Map<string, KotOR.NWScriptInstance> = new Map();
   parentMap: Map<string, Set<string>> = new Map();
+  /** Script-name → breakpoint addresses reapplied on every CreateScript. */
+  scriptBreakPoints: Map<string, Set<number>> = new Map();
   selectedInstance: KotOR.NWScriptInstance;
+
+  moduleSnapshot: ModuleAreaSnapshot | null = null;
+  objectList: ObjectListEntry[] = [];
+  selectedObjectDetail: LiveObjectSnapshot | null = null;
+  globalsSnapshot: GlobalsSnapshotEntry[] = [];
+  areaMapOverlay: AreaMapOverlaySnapshot | null = null;
+  /** Script resrefs to highlight/filter when jumping from Objects → Scripts. */
+  scriptNameFilter: string[] = [];
 
   constructor(uuid: string){
     this.init(uuid);
@@ -19,13 +36,13 @@ export class DebuggerState {
 
   init(uuid: string){
     this.#channel = new BroadcastChannel(`debugger-${uuid}`);
+    // Do not post 'close' on unload — pop-out/dock tear down the client without ending the session.
+    // Explicit Close in the UI posts 'close' via a short-lived channel.
     window.onbeforeunload = () => {
-      this.#channel.postMessage('close');
-      this.#channel.close();
+      try{ this.#channel.close(); }catch{ /* ignore */ }
     }
     this.#channel.onmessage = (event) => {
       if(typeof event.data == 'string'){
-        console.log(event.data);
         return;
       }else if(event.data?.constructor == Uint8Array){
         const message = IPCMessage.fromBuffer(event.data);
@@ -34,16 +51,12 @@ export class DebuggerState {
           const parentUUID = message.getParam(1).getString();
           let name = message.getParam(2).getString();
     
-          /**
-           * If the script name is missing, this is an anonymous script
-           * and we need to use the UUID as the name
-           */
           if(!name?.length){
             name = uuid;
           }
-          /**
-           * If the script is not already in the map, we need to create a new one
-           */
+          if(KotOR.NWScript.NWScriptInstanceMap.has(uuid)){
+            return;
+          }
           if(!this.scriptMap.has(name)){
             let nwscript = new KotOR.NWScript();
             nwscript.name = name;
@@ -61,20 +74,22 @@ export class DebuggerState {
             instance.nwscript = script;
             instance.name = name;
             KotOR.NWScript.NWScriptInstanceMap.set(uuid, instance);
+            this.instanceMap.set(uuid, instance);
+            if(!this.parentMap.has(parentUUID)){
+              this.parentMap.set(parentUUID, new Set());
+            }
+            this.parentMap.get(parentUUID)!.add(uuid);
             if(script.instances.find((inst) => inst.uuid == uuid) == undefined){
               script.instances = [...script.instances, instance];
             }
-            KotOR.NWScript.NWScriptInstanceMap.set(uuid, instance);
+            this.applyScriptLevelBreakpoints(instance);
+            this.dispatchEvent('script-created', instance);
           }
         }else if(message.type == IPCMessageType.DestroyScript){
           const uuid = message.getParam(0).getString();
           const parentUUID = message.getParam(1).getString();
           let name = message.getParam(2).getString();
     
-          /**
-           * If the script name is missing, this is an anonymous script
-           * and we need to use the UUID as the name
-           */
           if(!name?.length){
             name = uuid;
           }
@@ -83,29 +98,131 @@ export class DebuggerState {
             script.instances = [...script.instances.filter((inst) => inst.uuid != uuid)];
           }
     
-          if(this.instanceMap.has(name)){
-            this.instanceMap.delete(name);
-          }
+          this.instanceMap.delete(uuid);
+          this.parentMap.get(parentUUID)?.delete(uuid);
           if(KotOR.NWScript.NWScriptInstanceMap.has(uuid)){
             KotOR.NWScript.NWScriptInstanceMap.delete(uuid);
           }
+          this.dispatchEvent('script-destroyed', uuid);
         }else if(message.type == IPCMessageType.UpdateScriptState){
           const uuid = message.getParam(0).getString();
-          const parentUUID = message.getParam(1).getString();
-          let name = message.getParam(2).getString();
-          console.log("Update Scripte State Received", uuid);
           const instance = KotOR.NWScript.NWScriptInstanceMap.get(uuid);
           if(instance){
             instance.seek = message.getParam(3).getInt32();
             instance.stack = KotOR.NWScript.NWScriptStack.FromDebuggerPacket(message.getParam(4).getVoid());
+            const callStackParam = message.getParam(5);
+            if(callStackParam){
+              instance.debugCallStack = KotOR.NWScriptInstance.unpackCallStackFromDebugger(callStackParam.getVoid());
+            }else{
+              instance.debugCallStack = [];
+            }
             this.setSelectedInstance(instance);
-            console.log("Script state updated", uuid, instance.seek, instance);
             instance.dispatchEvent('update');
             this.dispatchEvent('instance-updated', instance);
           }
+        }else if(message.type == IPCMessageType.ModuleSnapshot){
+          this.moduleSnapshot = this.parseJsonParam(message.getParam(0), null);
+          this.dispatchEvent('module-snapshot', this.moduleSnapshot);
+        }else if(message.type == IPCMessageType.ObjectList){
+          this.objectList = this.parseJsonParam(message.getParam(0), []) || [];
+          this.dispatchEvent('object-list', this.objectList);
+        }else if(message.type == IPCMessageType.ObjectDetail){
+          this.selectedObjectDetail = this.parseJsonParam(message.getParam(0), null);
+          this.dispatchEvent('object-detail', this.selectedObjectDetail);
+        }else if(message.type == IPCMessageType.GlobalsSnapshot){
+          this.globalsSnapshot = this.parseJsonParam(message.getParam(0), []) || [];
+          this.dispatchEvent('globals-snapshot', this.globalsSnapshot);
+        }else if(message.type == IPCMessageType.AreaMapOverlay){
+          this.areaMapOverlay = this.parseJsonParam(message.getParam(0), null);
+          this.dispatchEvent('area-map-overlay', this.areaMapOverlay);
         }
       }
       this.dispatchEvent('message', event.data);
+    }
+
+    // Ask the game for any scripts already running when we connected.
+    const listMsg = new IPCMessage(IPCMessageType.ListLiveScripts);
+    this.sendMessage(listMsg.toBuffer());
+    this.requestModuleSnapshot();
+  }
+
+  parseJsonParam<T>(param: IPCMessageParam | undefined, fallback: T): T {
+    if(!param){ return fallback; }
+    try{
+      const raw = param.getString();
+      if(!raw){ return fallback; }
+      return JSON.parse(raw) as T;
+    }catch{
+      return fallback;
+    }
+  }
+
+  requestModuleSnapshot(){
+    this.sendMessage(new IPCMessage(IPCMessageType.RequestModuleSnapshot).toBuffer());
+  }
+
+  requestObjectList(kind?: string){
+    const msg = new IPCMessage(IPCMessageType.RequestObjectList);
+    if(kind){
+      msg.addParam(new IPCMessageParam(IPCDataType.STRING, kind));
+    }
+    this.sendMessage(msg.toBuffer());
+  }
+
+  requestObjectDetail(objectId: number){
+    const msg = new IPCMessage(IPCMessageType.RequestObjectDetail);
+    msg.addParam(new IPCMessageParam(IPCDataType.INTEGER, objectId | 0));
+    this.sendMessage(msg.toBuffer());
+  }
+
+  requestGlobalsSnapshot(){
+    this.sendMessage(new IPCMessage(IPCMessageType.RequestGlobalsSnapshot).toBuffer());
+  }
+
+  requestAreaMapOverlay(){
+    this.sendMessage(new IPCMessage(IPCMessageType.RequestAreaMapOverlay).toBuffer());
+  }
+
+  setSceneWorldMarkers(payload: {
+    enabled: boolean;
+    selectedId?: string | null;
+    entries?: import("@/inspect/runtimeSnapshots").SceneMapPin[];
+  }){
+    const msg = new IPCMessage(IPCMessageType.SetSceneWorldMarkers);
+    msg.addParam(new IPCMessageParam(IPCDataType.STRING, JSON.stringify(payload)));
+    this.sendMessage(msg.toBuffer());
+  }
+
+  setScriptNameFilter(names: string[]){
+    this.scriptNameFilter = names.filter(Boolean);
+    this.dispatchEvent('script-name-filter', this.scriptNameFilter);
+  }
+
+  applyScriptLevelBreakpoints(instance: KotOR.NWScriptInstance){
+    const name = instance.name;
+    const addresses = this.scriptBreakPoints.get(name);
+    if(!addresses) return;
+    for(const address of addresses){
+      if(!instance.breakPoints.has(address)){
+        instance.breakPoints.set(address, true);
+      }
+      const ipcMessage = new IPCMessage(IPCMessageType.SetScriptBreakpoint);
+      ipcMessage.addParam(new IPCMessageParam(IPCDataType.STRING, instance.uuid));
+      ipcMessage.addParam(new IPCMessageParam(IPCDataType.INTEGER, address));
+      this.sendMessage(ipcMessage.toBuffer());
+    }
+    instance.breakPointVersion++;
+  }
+
+  rememberScriptBreakpoint(scriptName: string, address: number, added: boolean){
+    if(!this.scriptBreakPoints.has(scriptName)){
+      this.scriptBreakPoints.set(scriptName, new Set());
+    }
+    const set = this.scriptBreakPoints.get(scriptName)!;
+    if(added){
+      set.add(address);
+    }else{
+      set.delete(address);
     }
   }
 
@@ -118,9 +235,9 @@ export class DebuggerState {
     this.dispatchEvent('selected-instance', instance);
   }
 
-  _breakPointUpdateHandler = (address: number, added: false) => {
-    console.log('breakPointUpdateHandler', address, added);
+  _breakPointUpdateHandler = (address: number, added: boolean) => {
     if(!this.selectedInstance) return;
+    this.rememberScriptBreakpoint(this.selectedInstance.name, address, added);
 
     const ipcMessage = new IPCMessage(added ? IPCMessageType.SetScriptBreakpoint : IPCMessageType.RemoveScriptBreakpoint);
     ipcMessage.addParam(new IPCMessageParam(IPCDataType.STRING, this.selectedInstance.uuid));
@@ -128,12 +245,19 @@ export class DebuggerState {
     this.sendMessage(ipcMessage.toBuffer());
   }
 
+  clearInstanceBreakpoints(instance: KotOR.NWScriptInstance){
+    const addresses = [...instance.breakPoints.keys()];
+    for(const address of addresses){
+      instance.removeBreakpoint(address);
+    }
+    this.scriptBreakPoints.set(instance.name, new Set());
+  }
+
   sendMessage(data: any){
     this.#channel.postMessage(data);
   }
 
   dispose(){
-    console.log("Closing channel");
     this.#channel.close();
   }
   

@@ -1519,12 +1519,12 @@ NWScriptDefK2.Actions = {
             partyLeader.clearAllActions(true);
           }
         }
-        const ignoreStartRange = !!args[4];
+        // Retail pops bIgnoreStartRange then forces it to 1 before AddAction.
         const ignoreNames = [args[5], args[6], args[7], args[8], args[9], args[10]]
           .filter((s) => typeof s === 'string' && s.trim().length > 0);
         // TSL bUseLeader (args[11]) — force party leader as listener/owner pairing
         const bUseLeader = !!args[11];
-        this.caller.actionDialogObject( args[0], args[1], ignoreStartRange, args[2], args[3], false, ignoreNames, args[12] ?? -1, args[13] ?? -1, bUseLeader );
+        this.caller.actionDialogObject( args[0], args[1], true, args[2], args[3], false, ignoreNames, args[12] ?? -1, args[13] ?? -1, bUseLeader );
       }else{
         console.error('ActionStartConversation', 'Caller is not an instance of ModuleObject');
       }

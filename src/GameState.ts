@@ -73,11 +73,22 @@ import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
 import { Planetary } from "@/engine/Planetary";
 import { Debugger } from "@/engine/Debugger";
 import { DebuggerState } from "@/enums/server/DebuggerState";
-import type { IPCMessage } from "@/server/ipc/IPCMessage";
+import { IPCMessage } from "@/server/ipc/IPCMessage";
+import { IPCMessageParam } from "@/server/ipc/IPCMessageParam";
+import { IPCDataType } from "@/enums/server/ipc/IPCDataType";
 import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
 import { IPCMessageTypeDebug } from "@/enums/server/ipc/IPCMessageTypeDebug";
 import { PerformanceMonitor } from "@/utility/PerformanceMonitor";
 import { OdysseyLightingBinder } from "@/three/odyssey/OdysseyLightingBinder";
+import {
+  snapshotGlobals,
+  snapshotLiveObject,
+  snapshotModuleAreaInfo,
+  snapshotObjectList,
+  type SceneMapPin,
+} from "@/inspect/runtimeSnapshots";
+import { snapshotAreaMapOverlay } from "@/inspect/areaMapOverlay";
+import { clearWorldMarkers, syncWorldMarkers } from "@/inspect/worldMarkers";
 
 export interface GameStateInitializeOptions {
   Game: GameEngineType,
@@ -467,6 +478,71 @@ export class GameState implements EngineContext {
     GameState.SetDebugState(type, !this.debug[type]);
   }
 
+  /** Push CreateScript IPC for every live NWScriptInstance so a late-opened debugger is populated. */
+  static dumpLiveScriptsToDebugger(){
+    if(!GameState.debugMode) return;
+    for(const instance of GameState.NWScript.NWScriptInstanceMap.values()){
+      instance.sendToDebugger(IPCMessageType.CreateScript);
+    }
+  }
+
+  /** Push a JSON-safe Module Inspector snapshot to the debugger window. */
+  static sendInspectorSnapshot(type: IPCMessageType, payload: unknown){
+    if(!GameState.debugMode) return;
+    const msg = new IPCMessage(type);
+    msg.addParam(new IPCMessageParam(IPCDataType.STRING, JSON.stringify(payload ?? null)));
+    GameState.Debugger.send(msg);
+  }
+
+  /** Finish or clear a mid-halt script when the debugger window closes. */
+  static finishPausedScriptOnDebuggerClose(){
+    const script = GameState.Debugger.currentScript;
+    const instruction = GameState.Debugger.currentInstruction;
+    GameState.Debugger.pendingResume = null;
+    if(script && instruction && !script._disposed){
+      GameState.Debugger.state = DebuggerState.Idle;
+      GameState.Debugger.currentInstruction = undefined as any;
+      script.seekTo(instruction.address);
+      try{
+        script.runScript(true);
+      }catch(e){
+        console.error('Debugger close: failed to finish paused script', e);
+      }
+    }
+    GameState.Debugger.clearDebugHalt();
+    if(script){
+      script.suspended = false;
+    }
+  }
+
+  /** Apply Continue / Step queued from BroadcastChannel on the next Update tick. */
+  static processPendingDebuggerResume(){
+    const pending = GameState.Debugger.pendingResume;
+    if(!pending || !GameState.Debugger.currentScript) return;
+    GameState.Debugger.pendingResume = null;
+
+    const script = GameState.Debugger.currentScript;
+    GameState.Debugger.currentInstruction = undefined as any;
+
+    switch(pending.action){
+      case 'continue':
+        GameState.Debugger.state = DebuggerState.Idle;
+        break;
+      case 'stepOver':
+        GameState.Debugger.state = DebuggerState.InstructionStepOver;
+        break;
+      case 'stepInto':
+        GameState.Debugger.state = DebuggerState.InstructionStepInto;
+        break;
+      case 'stepOut':
+        GameState.Debugger.state = DebuggerState.InstructionStepOut;
+        break;
+    }
+
+    script.seekTo(pending.seek);
+    script.runScript(true);
+  }
+
   /**
    * Retail SWMG_SetSpeedBlurEffect —
    * AurSetSpeedBlurRatio (default 0.75) + AurEnable/DisableSpeedBlur.
@@ -699,12 +775,23 @@ export class GameState implements EngineContext {
    */
   static async Init(){
     GameState.Debugger.addEventListener('open', () => {
-      console.log('Debugger: Open');
       GameState.debugMode = true;
-    }); 
+      GameState.dumpLiveScriptsToDebugger();
+      GameState.sendInspectorSnapshot(IPCMessageType.ModuleSnapshot, snapshotModuleAreaInfo());
+    });
+    GameState.Debugger.addEventListener('client-reconnected', () => {
+      if(!GameState.debugMode){ return; }
+      GameState.dumpLiveScriptsToDebugger();
+      GameState.sendInspectorSnapshot(IPCMessageType.ModuleSnapshot, snapshotModuleAreaInfo());
+      void (async () => {
+        const overlay = await snapshotAreaMapOverlay();
+        GameState.sendInspectorSnapshot(IPCMessageType.AreaMapOverlay, overlay);
+      })();
+    });
     GameState.Debugger.addEventListener('close', () => {
-      console.log('Debugger: Close');
+      GameState.finishPausedScriptOnDebuggerClose();
       GameState.debugMode = false;
+      clearWorldMarkers();
     });
     GameState.Debugger.addEventListener('message', (msg: IPCMessage) => {
       if(msg.type == IPCMessageType.SetScriptBreakpoint){
@@ -712,7 +799,6 @@ export class GameState implements EngineContext {
         const address = msg.getParam(1).getInt32();
         const instance = GameState.NWScript.NWScriptInstanceMap.get(instanceUUID);
         if(instance){
-          console.log("Setting breakpoint", address, "on instance", instanceUUID);
           instance.setBreakpoint(address);
         }
       }else if(msg.type == IPCMessageType.RemoveScriptBreakpoint){
@@ -720,27 +806,68 @@ export class GameState implements EngineContext {
         const address = msg.getParam(1).getInt32();
         const instance = GameState.NWScript.NWScriptInstanceMap.get(instanceUUID);
         if(instance){
-          console.log("Removing breakpoint", address, "on instance", instanceUUID);
           instance.removeBreakpoint(address);
         }
       }else if(msg.type == IPCMessageType.ContinueScript){
         if(GameState.Debugger.currentScript && GameState.Debugger.currentInstruction){
-          const instruction = GameState.Debugger.currentInstruction;
-          const seek = instruction.address;
-          GameState.Debugger.currentInstruction = undefined;
-          GameState.Debugger.state = DebuggerState.Idle;
-          GameState.Debugger.currentScript.seekTo(seek);
-          GameState.Debugger.currentScript.runScript(true);
+          const seek = GameState.Debugger.currentInstruction.address;
+          GameState.Debugger.queueResume('continue', seek);
         }
       }else if(msg.type == IPCMessageType.StepOverInstruction){
         if(GameState.Debugger.currentScript && GameState.Debugger.currentInstruction){
-          const instruction = GameState.Debugger.currentInstruction;
-          const seek = instruction.address;
-          GameState.Debugger.currentInstruction = undefined;
-          GameState.Debugger.state = DebuggerState.IntructionStepOver;
-          GameState.Debugger.currentScript.seekTo(seek);
-          GameState.Debugger.currentScript.runScript(true);
+          const seek = GameState.Debugger.currentInstruction.address;
+          GameState.Debugger.queueResume('stepOver', seek);
         }
+      }else if(msg.type == IPCMessageType.StepIntoInstruction){
+        if(GameState.Debugger.currentScript && GameState.Debugger.currentInstruction){
+          const seek = GameState.Debugger.currentInstruction.address;
+          GameState.Debugger.queueResume('stepInto', seek);
+        }
+      }else if(msg.type == IPCMessageType.StepOutInstruction){
+        if(GameState.Debugger.currentScript && GameState.Debugger.currentInstruction){
+          const seek = GameState.Debugger.currentInstruction.address;
+          GameState.Debugger.queueResume('stepOut', seek);
+        }
+      }else if(msg.type == IPCMessageType.ListLiveScripts){
+        GameState.dumpLiveScriptsToDebugger();
+      }else if(msg.type == IPCMessageType.RequestModuleSnapshot){
+        GameState.sendInspectorSnapshot(IPCMessageType.ModuleSnapshot, snapshotModuleAreaInfo());
+      }else if(msg.type == IPCMessageType.RequestObjectList){
+        const kindParam = msg.getParam(0);
+        const kind = kindParam ? kindParam.getString() : '';
+        GameState.sendInspectorSnapshot(
+          IPCMessageType.ObjectList,
+          snapshotObjectList(kind ? { kind } : undefined)
+        );
+      }else if(msg.type == IPCMessageType.RequestObjectDetail){
+        const objectId = msg.getParam(0)?.getInt32?.() ?? -1;
+        const obj = GameState.ModuleObjectManager.GetObjectById(objectId);
+        const detail = obj ? snapshotLiveObject(obj) : null;
+        GameState.sendInspectorSnapshot(IPCMessageType.ObjectDetail, detail);
+      }else if(msg.type == IPCMessageType.RequestGlobalsSnapshot){
+        GameState.sendInspectorSnapshot(IPCMessageType.GlobalsSnapshot, snapshotGlobals());
+      }else if(msg.type == IPCMessageType.SetSceneWorldMarkers){
+        try{
+          const raw = msg.getParam(0)?.getString?.() || '';
+          const payload = raw ? JSON.parse(raw) as {
+            enabled?: boolean;
+            selectedId?: string | null;
+            entries?: SceneMapPin[];
+          } : {};
+          syncWorldMarkers(
+            Array.isArray(payload.entries) ? payload.entries : [],
+            !!payload.enabled,
+            payload.selectedId ?? null
+          );
+        }catch(e){
+          console.error('SetSceneWorldMarkers failed', e);
+          clearWorldMarkers();
+        }
+      }else if(msg.type == IPCMessageType.RequestAreaMapOverlay){
+        void (async () => {
+          const overlay = await snapshotAreaMapOverlay();
+          GameState.sendInspectorSnapshot(IPCMessageType.AreaMapOverlay, overlay);
+        })();
       }else if(msg.type == IPCMessageType.Debug && msg.subType == IPCMessageTypeDebug.ToggleDebugState){
         const type = msg.getParam(0).getString();
         GameState.ToggleDebugState(type as EngineDebugType);
@@ -1900,9 +2027,20 @@ export class GameState implements EngineContext {
     GameState.deltaTimeFixed += (1/60);
 
     /**
-     * Pause the main loop if the debugger is active
+     * Soft debugger freeze: still process controls, menus, audio, and render,
+     * but skip world / script simulation while paused. Resume Continue/Step here
+     * (not inside the BroadcastChannel handler) so long scripts do not block IPC.
      */
-    if(GameState.debugMode && !!GameState.Debugger.state){
+    if(GameState.debugMode && GameState.Debugger.pendingResume){
+      GameState.processPendingDebuggerResume();
+    }
+
+    if(GameState.debugMode && GameState.Debugger.state !== DebuggerState.Idle){
+      GameState.controls.Update(delta);
+      GameState.MenuManager.Update(delta);
+      AudioEngine.GetAudioEngine().update(delta, GameState.currentCamera.position, GameState.currentCamera.rotation, GameState.forwardVector);
+      GameState.Render(delta);
+      GameState.processEventListener('afterRender', [delta]);
       return;
     }
 

@@ -99,6 +99,12 @@ export class NWScriptInstance {
   objectInShapeResults: ModuleObject[] = [];
 
   breakPoints: Map<number, boolean> = new Map<number, boolean>();
+  /** True while halted at a debugger breakpoint / step; Cleared when run completes. */
+  suspended: boolean = false;
+  /** Return addresses for debugger call-stack display (filled on UpdateScriptState). */
+  debugCallStack: number[] = [];
+  /** Breakpoint map version — bump to force UI remount of gutters. */
+  breakPointVersion: number = 0;
 
   #eventListener: { [key: string]: Function[] } = {};
 
@@ -169,6 +175,7 @@ export class NWScriptInstance {
   setBreakpoint(address: number){
     if(!this.breakPoints.has(address)) {  
       this.breakPoints.set(address, true);
+      this.breakPointVersion++;
       this.dispatchEvent('breakpoint', address, true);
     }
   }
@@ -176,8 +183,37 @@ export class NWScriptInstance {
   removeBreakpoint(address: number){
     if(this.breakPoints.has(address)) {  
       this.breakPoints.delete(address);
+      this.breakPointVersion++;
       this.dispatchEvent('breakpoint', address, false);
     }
+  }
+
+  clearBreakpoints(){
+    const addresses = [...this.breakPoints.keys()];
+    for(const address of addresses){
+      this.removeBreakpoint(address);
+    }
+  }
+
+  packCallStackForDebugger(): Uint8Array {
+    const frames = this.subRoutines.map((sub) => sub.returnAddress);
+    const data = new Uint8Array(4 + frames.length * 4);
+    const view = new DataView(data.buffer);
+    view.setInt32(0, frames.length, true);
+    for(let i = 0; i < frames.length; i++){
+      view.setInt32(4 + i * 4, frames[i], true);
+    }
+    return data;
+  }
+
+  static unpackCallStackFromDebugger(data: Uint8Array): number[] {
+    const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+    const count = view.getInt32(0, true);
+    const frames: number[] = [];
+    for(let i = 0; i < count; i++){
+      frames.push(view.getInt32(4 + i * 4, true));
+    }
+    return frames;
   }
   
   sendToDebugger(type: IPCMessageType){
@@ -193,6 +229,7 @@ export class NWScriptInstance {
     if(type == IPCMessageType.UpdateScriptState){
       ipcMessage.addParam(new GameState.Debugger.IPCMessageParam(IPCDataType.INTEGER, this.currentInstruction.address));
       ipcMessage.addParam(new GameState.Debugger.IPCMessageParam(IPCDataType.VOID, this.stack.saveForDebugger()));
+      ipcMessage.addParam(new GameState.Debugger.IPCMessageParam(IPCDataType.VOID, this.packCallStackForDebugger()));
     }
     GameState.Debugger.send(ipcMessage);
   }
@@ -222,6 +259,8 @@ export class NWScriptInstance {
 
     this.subRoutines = [];
     this.subRoutine = undefined;
+    this.suspended = false;
+    this.debugCallStack = [];
 
     this.enteringObject = undefined;
     this.exitingObject = undefined;
@@ -333,12 +372,31 @@ export class NWScriptInstance {
     this.currentInstruction = this.getInstrAtOffset(address);
   }
 
+  /**
+   * Execute bytecode until end, or until a debugger halt.
+   *
+   * When halted at a breakpoint / step, returns early without flushing DelayCommands or
+   * calling init(). Sync callers still receive undefined for that early return — a full
+   * async invocation rewrite is required to hold the original caller's return value.
+   */
   runScript(ignoreBreakPoint: boolean = false){
     let executionHalted = false;
-    let stepOver = false;
+    let stepOneInstruction = false;
+    let stepOverDepth: number | undefined;
+    let stepOutDepth: number | undefined;
 
-    if(GameState.debugMode && GameState.Debugger.state == DebuggerState.IntructionStepOver){
-      stepOver = true;
+    const dbgState = GameState.Debugger.state;
+    if(GameState.debugMode){
+      if(
+        dbgState == DebuggerState.InstructionStepOver ||
+        dbgState == DebuggerState.IntructionStepOver
+      ){
+        stepOneInstruction = true;
+      }else if(dbgState == DebuggerState.InstructionStepInto){
+        stepOneInstruction = true;
+      }else if(dbgState == DebuggerState.InstructionStepOut){
+        stepOutDepth = this.subRoutines.length;
+      }
     }
 
     this.running = true;
@@ -348,7 +406,10 @@ export class NWScriptInstance {
       this.currentInstruction = this.getInstrAtOffset( 0 );
     }
 
-    this.delayCommands = [];
+    // Preserve DelayCommands when resuming a suspended debug halt.
+    if(!this.suspended && !ignoreBreakPoint){
+      this.delayCommands = [];
+    }
 
     while(this.running && !this._disposed){
 
@@ -367,15 +428,24 @@ export class NWScriptInstance {
       /**
        * If we are in debug mode and the current instruction has a breakpoint, kill the script and send the state to the debugger
        */
-      if(GameState.debugMode && (this.breakPoints.get(this.currentInstruction.address) && !ignoreBreakPoint) && !stepOver){
-        GameState.Debugger.currentScript = this;
-        GameState.Debugger.currentInstruction = this.currentInstruction;
-        GameState.Debugger.state = DebuggerState.Paused;
-
-        this.sendToDebugger(IPCMessageType.UpdateScriptState);
+      if(GameState.debugMode && (this.breakPoints.get(this.currentInstruction.address) && !ignoreBreakPoint) && !stepOneInstruction){
+        this.haltForDebugger();
         executionHalted = true;
-        this.running = false;
         break;
+      }
+
+      const depthBefore = this.subRoutines.length;
+      const isJsr = this.currentInstruction.code === 0x1E; // OP_JSR
+      if(
+        GameState.debugMode &&
+        (dbgState == DebuggerState.InstructionStepOver || dbgState == DebuggerState.IntructionStepOver) &&
+        isJsr &&
+        stepOverDepth === undefined &&
+        stepOneInstruction
+      ){
+        // True step-over: run the callee until we return to this depth.
+        stepOverDepth = depthBefore;
+        stepOneInstruction = false;
       }
 
       /**
@@ -396,24 +466,44 @@ export class NWScriptInstance {
         throw error;
       }
 
-      /**
-       * If we are in debug mode and we are in stepOver mode,
-       * Pause execution and send the script's state to the debugger
-       */
-      if(stepOver){
-        stepOver = false;
-        GameState.Debugger.currentScript = this;
-        if(this.seek){
-          GameState.Debugger.currentInstruction = this.getInstrAtOffset(this.seek);
-        }else{
-          GameState.Debugger.currentInstruction = this.currentInstruction.nextInstr;
-        }
-        GameState.Debugger.state = DebuggerState.Paused;
+      const depthAfter = this.subRoutines.length;
 
-        this.sendToDebugger(IPCMessageType.UpdateScriptState);
-        executionHalted = true;
-        this.running = false;
-        break;
+      /**
+       * Debugger step modes
+       */
+      if(GameState.debugMode){
+        let shouldPause = false;
+        if(stepOneInstruction){
+          shouldPause = true;
+          stepOneInstruction = false;
+        }else if(stepOverDepth !== undefined && depthAfter <= stepOverDepth){
+          shouldPause = true;
+          stepOverDepth = undefined;
+        }else if(stepOutDepth !== undefined && depthAfter < stepOutDepth){
+          shouldPause = true;
+          stepOutDepth = undefined;
+        }
+
+        if(shouldPause){
+          if(this.seek){
+            GameState.Debugger.currentInstruction = this.getInstrAtOffset(this.seek);
+          }else{
+            GameState.Debugger.currentInstruction = this.currentInstruction.nextInstr;
+          }
+          if(GameState.Debugger.currentInstruction){
+            this.haltForDebugger(GameState.Debugger.currentInstruction);
+          }else{
+            // Fell off end after step — treat as normal completion path below
+            this.suspended = false;
+            GameState.Debugger.state = DebuggerState.Idle;
+            GameState.Debugger.currentScript = undefined as any;
+            GameState.Debugger.currentInstruction = undefined as any;
+          }
+          if(this.suspended){
+            executionHalted = true;
+            break;
+          }
+        }
       }
 
       this.currentInstruction = this.currentInstruction.nextInstr;
@@ -424,6 +514,7 @@ export class NWScriptInstance {
     if(this._disposed || executionHalted)
       return;
 
+    this.suspended = false;
     const returnValue = this.getReturnValue();
 
     /**
@@ -447,6 +538,16 @@ export class NWScriptInstance {
     // }
 
     return returnValue;
+  }
+
+  private haltForDebugger(instruction = this.currentInstruction){
+    this.suspended = true;
+    this.running = false;
+    GameState.Debugger.currentScript = this;
+    GameState.Debugger.currentInstruction = instruction;
+    GameState.Debugger.state = DebuggerState.Paused;
+    this.seek = instruction?.address ?? this.address;
+    this.sendToDebugger(IPCMessageType.UpdateScriptState);
   }
 
   executeScript(instance: NWScriptInstance, parentInstance: NWScriptInstance, args: any[] = []){

@@ -331,7 +331,7 @@ export class AppState {
   }
 
   static toggleDebugger(){
-    KotOR.GameState.Debugger.open();
+    KotOR.GameState.Debugger.toggle();
   }
 
   static reloadLastSave(){

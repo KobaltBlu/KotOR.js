@@ -850,6 +850,48 @@ export class NWScriptControlNodeToASTConverter {
     this.setupVariableMappings();
   }
 
+  /**
+   * Stamp bytecode offset metadata used by NSS line maps / debugger breakpoints.
+   */
+  private locate<T extends NWScriptASTNode>(
+    node: T,
+    startAddress?: number,
+    startBlock?: NWScriptBasicBlock
+  ): T {
+    return NWScriptAST.locate(node, startAddress, { startBlock });
+  }
+
+  private firstBasicBlock(node: ControlNode | null | undefined): NWScriptBasicBlock | undefined {
+    if (!node) return undefined;
+    switch (node.type) {
+      case 'basic_block':
+        return node.block;
+      case 'sequence':
+        for (const child of node.nodes) {
+          const block = this.firstBasicBlock(child);
+          if (block) return block;
+        }
+        return undefined;
+      case 'if':
+        return this.firstBasicBlock(node.condition) ?? this.firstBasicBlock(node.thenBody);
+      case 'if_else':
+        return this.firstBasicBlock(node.condition) ?? this.firstBasicBlock(node.thenBody);
+      case 'while':
+      case 'do_while':
+        return this.firstBasicBlock(node.condition) ?? this.firstBasicBlock(node.body);
+      case 'for':
+        return this.firstBasicBlock(node.init) ??
+          this.firstBasicBlock(node.condition) ??
+          this.firstBasicBlock(node.body);
+      case 'switch':
+        return this.firstBasicBlock(node.expression);
+      case 'expression_region':
+        return node.header;
+      default:
+        return undefined;
+    }
+  }
+
   private createTempStackSimulator(
     functionContext: NWScriptFunction | null = null
   ): NWScriptStackSimulator {
@@ -2165,7 +2207,11 @@ export class NWScriptControlNodeToASTConverter {
       ) {
         for (const discarded of this.stackSimulator.getDiscardedExpressions()) {
           if (discarded.type === NWScriptExpressionType.FUNCTION_CALL) {
-            blockStatements.push(NWScriptAST.createExpressionStatement(discarded));
+            blockStatements.push(this.locate(
+              NWScriptAST.createExpressionStatement(discarded),
+              instruction.address,
+              block
+            ));
           }
         }
       }
@@ -2183,11 +2229,11 @@ export class NWScriptControlNodeToASTConverter {
           continue;
         }
         if (jumpKind === "break") {
-          blockStatements.push(NWScriptAST.createBreak());
+          blockStatements.push(this.locate(NWScriptAST.createBreak(), instruction.address, block));
           continue;
         }
         if (jumpKind === "continue") {
-          blockStatements.push(NWScriptAST.createContinue());
+          blockStatements.push(this.locate(NWScriptAST.createContinue(), instruction.address, block));
           continue;
         }
       }
@@ -2228,7 +2274,11 @@ export class NWScriptControlNodeToASTConverter {
             if (returnValueExpr && allowReturnValueStatement) {
               isReturnWrite = true;
               this.returnValueExpressions.set(block, returnValueExpr);
-              blockStatements.push(NWScriptAST.createReturn(returnValueExpr));
+              blockStatements.push(this.locate(
+                NWScriptAST.createReturn(returnValueExpr),
+                instruction.address,
+                block
+              ));
               nwscriptDecompilerDebug(`[RETURN-DETECT] ✓ Created return statement with expression: ${returnValueExpr.toNSS()}`);
             } else {
               nwscriptDecompilerDebug(`[RETURN-DETECT] ✗ WARNING: No expression on stack for return value`);
@@ -2263,7 +2313,11 @@ export class NWScriptControlNodeToASTConverter {
           if (returnValueExpr && allowReturnValueStatement) {
             isReturnWrite = true;
             this.returnValueExpressions.set(block, returnValueExpr);
-            blockStatements.push(NWScriptAST.createReturn(returnValueExpr));
+            blockStatements.push(this.locate(
+              NWScriptAST.createReturn(returnValueExpr),
+              instruction.address,
+              block
+            ));
             nwscriptDecompilerDebug(`[RETURN-DETECT-FLOW] ✓ Created return statement with expression: ${returnValueExpr.toNSS()}`);
           } else {
             nwscriptDecompilerDebug(`[RETURN-DETECT-FLOW] ✗ WARNING: No expression on stack for return value`);
@@ -2278,7 +2332,11 @@ export class NWScriptControlNodeToASTConverter {
         // But if we didn't see a CPDOWNSP (void function), we still need to create a return
         if (!isReturnWrite && !returnValueExpr) {
           // Void return (no value)
-          blockStatements.push(NWScriptAST.createReturn(undefined));
+          blockStatements.push(this.locate(
+            NWScriptAST.createReturn(undefined),
+            instruction.address,
+            block
+          ));
         }
         // RETN doesn't pop anything - it just returns control
         continue;
@@ -2338,10 +2396,14 @@ export class NWScriptControlNodeToASTConverter {
             index !== undefined && index >= 0 && index < slotCap
           )) {
             for (let component = 0; component < targetIndices.length; component += 1) {
-              blockStatements.push(NWScriptAST.createAssignment(
-                this.getLocalSlotSourceName(functionContext, targetIndices[component]),
-                valueExpr.components[component],
-                false
+              blockStatements.push(this.locate(
+                NWScriptAST.createAssignment(
+                  this.getLocalSlotSourceName(functionContext, targetIndices[component]),
+                  valueExpr.components[component],
+                  false
+                ),
+                instruction.address,
+                block
               ));
             }
             continue;
@@ -2355,7 +2417,11 @@ export class NWScriptControlNodeToASTConverter {
             (instruction.size ?? 4) > 4
           );
           nwscriptDecompilerDebug(`[CPDOWNSP] ✓ Creating assignment: ${varName} = <expression>`);
-          blockStatements.push(NWScriptAST.createAssignment(varName, valueExpr, false));
+          blockStatements.push(this.locate(
+            NWScriptAST.createAssignment(varName, valueExpr, false),
+            instruction.address,
+            block
+          ));
           continue;
         }
         
@@ -2382,13 +2448,21 @@ export class NWScriptControlNodeToASTConverter {
           expr.components.every(component => component.type === NWScriptExpressionType.ASSIGNMENT)
         ) {
           for (const assignment of expr.components) {
-            blockStatements.push(NWScriptAST.createExpressionStatement(assignment));
+            blockStatements.push(this.locate(
+              NWScriptAST.createExpressionStatement(assignment),
+              instruction.address,
+              block
+            ));
           }
           continue;
         }
         // Direct frame mutations (CPDOWNBP, INC/DEC) are complete source statements.
         if (expr.type === NWScriptExpressionType.ASSIGNMENT) {
-          blockStatements.push(NWScriptAST.createExpressionStatement(expr));
+          blockStatements.push(this.locate(
+            NWScriptAST.createExpressionStatement(expr),
+            instruction.address,
+            block
+          ));
           continue;
         }
         if (
@@ -2396,7 +2470,11 @@ export class NWScriptControlNodeToASTConverter {
           (expr.operator === '++' || expr.operator === '--' ||
             expr.operator === 'post++' || expr.operator === 'post--')
         ) {
-          blockStatements.push(NWScriptAST.createExpressionStatement(expr));
+          blockStatements.push(this.locate(
+            NWScriptAST.createExpressionStatement(expr),
+            instruction.address,
+            block
+          ));
           continue;
         }
 
@@ -2451,7 +2529,11 @@ export class NWScriptControlNodeToASTConverter {
           // Void calls complete immediately. Non-void calls stay in the value stack and are
           // emitted only if a later MOVSP explicitly discards their unused result.
           if (expr.dataType === NWScriptDataType.VOID) {
-            blockStatements.push(NWScriptAST.createExpressionStatement(expr));
+            blockStatements.push(this.locate(
+              NWScriptAST.createExpressionStatement(expr),
+              instruction.address,
+              block
+            ));
           }
         }
         // For other expression types, be conservative and skip them
@@ -2862,7 +2944,12 @@ export class NWScriptControlNodeToASTConverter {
           switchCase.value,
           NWScriptDataType.INTEGER
         );
-        cases.push(NWScriptAST.createSwitchCase(caseValueExpr, caseBody));
+        const caseEntry = this.firstBasicBlock(switchCase.body);
+        cases.push(this.locate(
+          NWScriptAST.createSwitchCase(caseValueExpr, caseBody),
+          caseEntry?.startInstruction?.address,
+          caseEntry
+        ));
       }
 
       let defaultCase: NWScriptSwitchDefaultNode | undefined;
@@ -2873,7 +2960,12 @@ export class NWScriptControlNodeToASTConverter {
           branchEntry
         );
         exits.push(branch.exit);
-        defaultCase = NWScriptAST.createSwitchDefault(branch.body);
+        const defaultEntry = this.firstBasicBlock(node.defaultCase);
+        defaultCase = this.locate(
+          NWScriptAST.createSwitchDefault(branch.body),
+          defaultEntry?.startInstruction?.address,
+          defaultEntry
+        );
       } else {
         exits.push(branchEntry);
       }
@@ -3943,13 +4035,16 @@ export class NWScriptControlNodeToASTConverter {
           init.initializerStackSlots === aggregate.fieldTypes.length
           ? init.initialExpression
           : undefined;
-        declarations.push(NWScriptAST.createGlobalVariableDeclaration(
-          aggregate.name,
-          aggregate.dataType,
-          initializer,
-          aggregate.dataType === NWScriptDataType.STRUCTURE
-            ? this.getStructureTypeName(aggregate.fieldTypes)
-            : undefined
+        declarations.push(this.locate(
+          NWScriptAST.createGlobalVariableDeclaration(
+            aggregate.name,
+            aggregate.dataType,
+            initializer,
+            aggregate.dataType === NWScriptDataType.STRUCTURE
+              ? this.getStructureTypeName(aggregate.fieldTypes)
+              : undefined
+          ),
+          init.instructionAddress
         ));
         continue;
       }
@@ -3961,10 +4056,13 @@ export class NWScriptControlNodeToASTConverter {
           : undefined
       );
 
-      declarations.push(NWScriptAST.createGlobalVariableDeclaration(
-        name,
-        init.dataType,
-        initializer
+      declarations.push(this.locate(
+        NWScriptAST.createGlobalVariableDeclaration(
+          name,
+          init.dataType,
+          initializer
+        ),
+        init.instructionAddress
       ));
     }
     return declarations;
@@ -3997,6 +4095,14 @@ export class NWScriptControlNodeToASTConverter {
         locals,
         mainFunction.entryBlock
       );
+      if (mainFunction.returnBlock?.endInstruction) {
+        const endInstr = mainFunction.returnBlock.endInstruction;
+        NWScriptAST.locate(mainNode, mainFunction.entryBlock.startInstruction.address, {
+          startBlock: mainFunction.entryBlock,
+          endBlock: mainFunction.returnBlock,
+          endAddress: endInstr.address + (endInstr.instructionSize ?? 0),
+        });
+      }
       if (mainFunction.returnStructureFieldTypes) {
         mainNode.returnStructName = this.getStructureTypeName(
           mainFunction.returnStructureFieldTypes
@@ -4032,6 +4138,14 @@ export class NWScriptControlNodeToASTConverter {
           locals,
           func.entryBlock
         );
+        if (func.returnBlock?.endInstruction) {
+          const endInstr = func.returnBlock.endInstruction;
+          NWScriptAST.locate(functionNode, func.entryBlock.startInstruction.address, {
+            startBlock: func.entryBlock,
+            endBlock: func.returnBlock,
+            endAddress: endInstr.address + (endInstr.instructionSize ?? 0),
+          });
+        }
         if (func.returnStructureFieldTypes) {
           functionNode.returnStructName = this.getStructureTypeName(
             func.returnStructureFieldTypes
@@ -4067,7 +4181,18 @@ export class NWScriptControlNodeToASTConverter {
     if (last?.type === NWScriptASTNodeType.RETURN && !last.value) {
       body.statements.pop();
     }
-    body.statements.push(NWScriptAST.createReturn(candidate));
+    const returnBlock = Array.from(this.returnValueExpressions.entries())
+      .filter(([block, expression]) =>
+        func.bodyBlocks.includes(block) && expression.type !== NWScriptExpressionType.UNKNOWN
+      )
+      .sort(([left], [right]) =>
+        right.startInstruction.address - left.startInstruction.address
+      )[0]?.[0];
+    body.statements.push(this.locate(
+      NWScriptAST.createReturn(candidate),
+      returnBlock?.startInstruction?.address,
+      returnBlock
+    ));
     body.children = [...body.statements];
   }
 
@@ -4119,15 +4244,18 @@ export class NWScriptControlNodeToASTConverter {
       }
     }
     for (let i = 0; i < slotCount; i++) {
+      const site = rsaddSites[i];
       if (vectorStarts.has(i)) {
-        declarations.push(NWScriptAST.createVariableDeclaration(
-          `localVar_${i}`,
-          NWScriptDataType.VECTOR
+        declarations.push(this.locate(
+          NWScriptAST.createVariableDeclaration(
+            `localVar_${i}`,
+            NWScriptDataType.VECTOR
+          ),
+          site?.address ?? sortedInits[i]?.instructionAddress
         ));
         continue;
       }
       if (aggregateComponents.has(i)) continue;
-      const site = rsaddSites[i];
       const init =
         site !== undefined
           ? sortedInits.find(ini => ini.instructionAddress === site.address)
@@ -4152,11 +4280,14 @@ export class NWScriptControlNodeToASTConverter {
           : undefined;
 
       const structureFields = structureLayouts.get(i);
-      declarations.push(NWScriptAST.createVariableDeclaration(
-        `localVar_${i}`,
-        dataType,
-        initializer,
-        structureFields ? this.getStructureTypeName(structureFields) : undefined
+      declarations.push(this.locate(
+        NWScriptAST.createVariableDeclaration(
+          `localVar_${i}`,
+          dataType,
+          initializer,
+          structureFields ? this.getStructureTypeName(structureFields) : undefined
+        ),
+        site?.address ?? init?.instructionAddress
       ));
     }
 
