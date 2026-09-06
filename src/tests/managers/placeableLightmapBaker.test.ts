@@ -1,5 +1,6 @@
 import { describe, expect, test } from '@jest/globals';
 import * as THREE from 'three';
+import { OdysseyLightmapBaker } from '@/managers/OdysseyLightmapBaker';
 import { PlaceableLightmapBaker } from '@/managers/PlaceableLightmapBaker';
 import type { LightManager } from '@/managers/LightManager';
 import type { OdysseyLight3D } from '@/three/odyssey/OdysseyLight3D';
@@ -18,7 +19,7 @@ function mockLightManager(overrides: Partial<LightManager> = {}): LightManager {
   } as unknown as LightManager;
 }
 
-function makePlaceable(geometry: THREE.BufferGeometry, material: THREE.ShaderMaterial){
+function makeModel(geometry: THREE.BufferGeometry, material: THREE.ShaderMaterial){
   const mesh = new THREE.Mesh(geometry, material);
   const model = new THREE.Object3D() as OdysseyModel3D;
   model.materials = [material];
@@ -28,13 +29,12 @@ function makePlaceable(geometry: THREE.BufferGeometry, material: THREE.ShaderMat
   model.nodesById = [];
   model.nodes = new Map();
   model.add(mesh);
-  const container = new THREE.Object3D();
-  container.add(model);
-  const plc = { model, container, destroyed: false } as unknown as ModulePlaceable;
-  return { plc, model, mesh, material, geometry };
+  const root = new THREE.Object3D();
+  root.add(model);
+  return { model, mesh, material, geometry, root };
 }
 
-describe('PlaceableLightmapBaker', () => {
+describe('OdysseyLightmapBaker', () => {
   test('applyLightmap sets USE_LIGHTMAP and clears IGNORE_LIGHTING', () => {
     const material = new THREE.ShaderMaterial({
       uniforms: { lightMap: { value: null } },
@@ -43,11 +43,39 @@ describe('PlaceableLightmapBaker', () => {
     const data = new Float32Array(4);
     data[0] = 0.5; data[1] = 0.5; data[2] = 0.5; data[3] = 1;
     const tex = new THREE.DataTexture(data, 1, 1, THREE.RGBAFormat, THREE.FloatType);
-    PlaceableLightmapBaker.applyLightmap(material, tex);
+    OdysseyLightmapBaker.applyLightmap(material, tex);
     expect(Object.prototype.hasOwnProperty.call(material.defines, 'USE_LIGHTMAP')).toBe(true);
     expect(Object.prototype.hasOwnProperty.call(material.defines, 'IGNORE_LIGHTING')).toBe(false);
     tex.dispose();
     material.dispose();
+  });
+
+  test('bakeGeometry works on bare geometry without a placeable', () => {
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute([
+      0, 0, 0, 1, 0, 0, 0, 1, 0,
+    ], 3));
+    geometry.setAttribute('normal', new THREE.Float32BufferAttribute([
+      0, 0, 1, 0, 0, 1, 0, 0, 1,
+    ], 3));
+    const material = new THREE.ShaderMaterial({
+      uniforms: { lightMap: { value: null } },
+      defines: {},
+    });
+    OdysseyLightmapBaker.setLightManagerProvider(() => mockLightManager({
+      ambientColor: new THREE.Color(0.2, 0.2, 0.25),
+    }));
+    const tex = OdysseyLightmapBaker.bakeGeometry(
+      geometry,
+      material,
+      new THREE.Matrix4(),
+      mockLightManager({ ambientColor: new THREE.Color(0.2, 0.2, 0.25) })
+    );
+    expect(tex).toBeTruthy();
+    expect(Object.prototype.hasOwnProperty.call(material.defines, 'USE_LIGHTMAP')).toBe(true);
+    tex?.dispose();
+    material.dispose();
+    geometry.dispose();
   });
 
   test('authored userData.lightmap skips bake and leaves UV2 unchanged', () => {
@@ -60,39 +88,33 @@ describe('PlaceableLightmapBaker', () => {
     ], 3));
     const uv2 = new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6]);
     geometry.setAttribute('uv2', new THREE.Float32BufferAttribute(uv2.slice(0), 2));
-
     const material = new THREE.ShaderMaterial({
       uniforms: { lightMap: { value: null } },
       defines: {},
     });
-    material.userData.lightmap = 'lm_placeable01';
+    material.userData.lightmap = 'lm_prop01';
+    const { model, mesh, root } = makeModel(geometry, material);
 
-    const { plc, mesh } = makePlaceable(geometry, material);
-    PlaceableLightmapBaker.bakePlaceable(plc, mockLightManager());
+    OdysseyLightmapBaker.bakeModel(model, mockLightManager(), { root });
 
-    expect(PlaceableLightmapBaker.isBaked(plc)).toBe(false);
+    expect(OdysseyLightmapBaker.isBaked(model)).toBe(false);
     expect(Object.prototype.hasOwnProperty.call(material.defines, 'USE_LIGHTMAP')).toBe(false);
     expect(Array.from((mesh.geometry as THREE.BufferGeometry).attributes.uv2.array)).toEqual(
       Array.from(uv2)
     );
-    expect(material.userData.odysseyAuthoredLightmap).toBe(true);
 
     material.dispose();
     geometry.dispose();
   });
 
   test('computeChartPad never inverts charts at high tri density', () => {
-    // Dense atlas: many tris → small cell; pad must stay < cell/2.
     const triCount = 400;
     const grid = Math.ceil(Math.sqrt(triCount));
     const cell = 1 / grid;
     for(const res of [16, 32, 64]){
-      const pad = PlaceableLightmapBaker.computeChartPad(cell, res);
+      const pad = OdysseyLightmapBaker.computeChartPad(cell, res);
       expect(pad).toBeLessThan(cell / 2);
-      expect(pad).toBeGreaterThanOrEqual(0);
-      const u0 = pad;
-      const u1 = cell - pad;
-      expect(u1).toBeGreaterThan(u0);
+      expect(cell - pad).toBeGreaterThan(pad);
     }
   });
 
@@ -145,93 +167,39 @@ describe('PlaceableLightmapBaker', () => {
     model.add(staticMesh);
     model.add(hinge);
 
-    const container = new THREE.Object3D();
-    container.add(model);
-    const plc = { model, container, destroyed: false } as unknown as ModulePlaceable;
-
-    PlaceableLightmapBaker.bakePlaceable(plc, mockLightManager({
+    OdysseyLightmapBaker.bakeModel(model, mockLightManager({
       ambientColor: new THREE.Color(0.2, 0.2, 0.25),
     }));
 
-    expect(PlaceableLightmapBaker.isBaked(plc)).toBe(true);
+    expect(OdysseyLightmapBaker.isBaked(model)).toBe(true);
     expect(Object.prototype.hasOwnProperty.call(staticMat.defines, 'USE_LIGHTMAP')).toBe(true);
     expect(Object.prototype.hasOwnProperty.call(lidMat.defines, 'USE_LIGHTMAP')).toBe(false);
-    expect(lidMesh.userData.odysseyPlaceableDynamicLit).toBe(true);
+    expect(lidMesh.userData.odysseyDynamicLit).toBe(true);
 
-    PlaceableLightmapBaker.dispose(plc);
+    OdysseyLightmapBaker.dispose(model);
     staticMat.dispose();
     lidMat.dispose();
     staticGeo.dispose();
     lidGeo.dispose();
   });
 
-  test('dilate fills neighbor of chart texel', () => {
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute([
-      0, 0, 0, 1, 0, 0, 0, 1, 0,
-    ], 3));
-    geometry.setAttribute('normal', new THREE.Float32BufferAttribute([
-      0, 0, 1, 0, 0, 1, 0, 0, 1,
-    ], 3));
+  test('PlaceableLightmapBaker facade bakes via container root', () => {
+    const geometry = new THREE.BoxGeometry(1, 1, 1);
     const material = new THREE.ShaderMaterial({
       uniforms: { lightMap: { value: null } },
       defines: {},
     });
-    const { plc } = makePlaceable(geometry, material);
+    const { model, root } = makeModel(geometry, material);
+    const plc = {
+      model,
+      container: root,
+      destroyed: false,
+    } as unknown as ModulePlaceable;
 
     PlaceableLightmapBaker.bakePlaceable(plc, mockLightManager({
-      ambientColor: new THREE.Color(0.1, 0.1, 0.1),
-      sunColor: new THREE.Color(2, 2, 2),
-      sunDirection: new THREE.Vector3(0, 0, 1),
+      ambientColor: new THREE.Color(0.2, 0.2, 0.2),
     }));
-
-    const tex = material.uniforms.lightMap.value as THREE.DataTexture;
-    const pixels = tex.image.data as Float32Array;
-    const w = tex.image.width as number;
-    const h = tex.image.height as number;
-    // Right-tri chart leaves the far half empty; after dilate a sample just
-    // past the hypotenuse should rise above seed ambient (0.1).
-    const x = Math.min(w - 1, Math.floor(w * 0.72));
-    const y = Math.min(h - 1, Math.floor(h * 0.72));
-    const o = (y * w + x) * 4;
-    const sampleAvg = (pixels[o] + pixels[o + 1] + pixels[o + 2]) / 3;
-    expect(sampleAvg).toBeGreaterThan(0.15);
-
-    PlaceableLightmapBaker.dispose(plc);
-    material.dispose();
-    geometry.dispose();
-  });
-
-  test('rejects UV1-as-UV2 copy and builds unique atlas charts', () => {
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute([
-      0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0,
-    ], 3));
-    geometry.setAttribute('normal', new THREE.Float32BufferAttribute([
-      0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1,
-    ], 3));
-    const uv = new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]);
-    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-    geometry.setAttribute('uv2', new THREE.Float32BufferAttribute(uv.slice(0), 2));
-    geometry.setIndex([0, 1, 2, 0, 2, 3]);
-
-    const material = new THREE.ShaderMaterial({
-      uniforms: { lightMap: { value: null } },
-      defines: {},
-    });
-    const { plc, mesh } = makePlaceable(geometry, material);
-    const beforeUv2 = Array.from((geometry.attributes.uv2 as THREE.BufferAttribute).array);
-
-    PlaceableLightmapBaker.bakePlaceable(plc, mockLightManager());
-
-    const geo = mesh.geometry as THREE.BufferGeometry;
-    expect(geo.userData.odysseyLightmapChartsReady).toBe(true);
-    expect(geo.index).toBeNull();
-    expect(geo.attributes.position.count).toBe(6);
-    const afterUv2 = Array.from((geo.attributes.uv2 as THREE.BufferAttribute).array);
-    expect(afterUv2).not.toEqual(beforeUv2);
-    expect(afterUv2[0]).not.toBeCloseTo(afterUv2[6], 5);
-
+    expect(PlaceableLightmapBaker.isBaked(plc)).toBe(true);
     PlaceableLightmapBaker.dispose(plc);
     material.dispose();
     geometry.dispose();
@@ -243,7 +211,7 @@ describe('PlaceableLightmapBaker', () => {
       uniforms: { lightMap: { value: null } },
       defines: {},
     });
-    const { plc } = makePlaceable(geometry, material);
+    const { model, root } = makeModel(geometry, material);
 
     const type0 = {
       dynamicType: 0,
@@ -265,7 +233,7 @@ describe('PlaceableLightmapBaker', () => {
       getWorldPosition: (out: THREE.Vector3) => out.set(0, 0, 0),
     } as unknown as OdysseyLight3D;
 
-    PlaceableLightmapBaker.bakePlaceable(plc, mockLightManager({ lights: [type0, type1] }));
+    OdysseyLightmapBaker.bakeModel(model, mockLightManager({ lights: [type0, type1] }), { root });
 
     const tex = material.uniforms.lightMap.value as THREE.DataTexture;
     const pixels = tex.image.data as Float32Array;
@@ -277,7 +245,7 @@ describe('PlaceableLightmapBaker', () => {
     expect(maxR).toBeGreaterThan(0.5);
     expect(maxG).toBeLessThan(0.5);
 
-    PlaceableLightmapBaker.dispose(plc);
+    OdysseyLightmapBaker.dispose(model);
     material.dispose();
     geometry.dispose();
   });

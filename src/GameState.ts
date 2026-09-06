@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import {
   AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, LevelUpManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager,
-  FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, PlaceableLightmapBaker, OdysseyShadowManager, WindManager, MenuManager, ModuleObjectManager, PartyManager,
+  FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, OdysseyLightmapBaker, PlaceableLightmapBaker, OdysseyShadowManager, WindManager, MenuManager, ModuleObjectManager, PartyManager,
   ResolutionManager, ShaderManager, TwoDAManager, FactionManager,
   VideoEffectManager, VideoManager, PazaakManager, UINotificationManager, GuiTimingBarManager, GameOverManager, CutsceneManager, LegalScreenManager, EventManager, TextureAnimationManager, TutorialManager
 } from "@/managers";
@@ -879,6 +879,7 @@ export class GameState implements EngineContext {
     GameState.lightManager = new GameState.LightManager();
     OdysseyLightingBinder.setActiveManager(GameState.lightManager);
     PlaceableLightmapBaker.setLightManagerProvider(() => GameState.lightManager);
+    OdysseyLightmapBaker.setLightManagerProvider(() => GameState.lightManager);
     GameState.odysseyShadowManager = new OdysseyShadowManager();
     GameState.windManager = new GameState.WindManager();
     WindManager.setInstance(GameState.windManager);

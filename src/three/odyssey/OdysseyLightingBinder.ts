@@ -781,9 +781,9 @@ export class OdysseyLightingBinder {
       const obj = dynamics[i];
       if(!(obj?.model as OdysseyModel3D)?.materials){ continue; }
       const model = obj.model as OdysseyModel3D;
-      // Hybrid placeable lighting: baked mats use exclusive_dynamic overlay;
+      // Hybrid runtime lightmaps: baked mats use exclusive_dynamic overlay;
       // animated/skin/dangly siblings stay on GetNearestLights (same query).
-      if(model.userData.odysseyPlaceableLightmap){
+      if(model.userData.odysseyRuntimeLightmap || model.userData.odysseyPlaceableLightmap){
         const pos = (obj as any).position instanceof THREE.Vector3
           ? (obj as any).position
           : model.getWorldPosition(this._scratchWorldPos);
