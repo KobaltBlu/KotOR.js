@@ -8,7 +8,6 @@ jest.mock('@/GameState', () => ({ GameState: {} }));
 jest.mock("@/three/odyssey", () => ({ OdysseyFace3: class {}, OdysseyModel3D: class {}, OdysseyObject3D: class {} }));
 jest.mock("@/three/odyssey/OdysseyModel3D", () => ({ OdysseyModel3D: class {} }));
 jest.mock("three/examples/jsm/utils/BufferGeometryUtils", () => ({}));
-jest.mock("three/examples/jsm/objects/Lensflare", () => ({ Lensflare: class {}, LensflareElement: class {} }));
 jest.mock("@/nwscript/NWScript", () => ({ NWScript: {} }));
 jest.mock("@/nwscript/NWScriptInstance", () => ({ NWScriptInstance: class {} }));
 jest.mock("@/engine/FollowerCamera", () => ({ FollowerCamera: {} }));

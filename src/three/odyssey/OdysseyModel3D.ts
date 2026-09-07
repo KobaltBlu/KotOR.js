@@ -10,7 +10,6 @@ import { OdysseyModelClass } from "@/enums/odyssey/OdysseyModelClass";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils";
 import { OdysseyController } from "@/odyssey/controllers";
 import { IOdysseyModelHeader } from "@/interface/odyssey/IOdysseyModelHeader";
-import { Lensflare, LensflareElement } from "three/examples/jsm/objects/Lensflare";
 import type { SWAnimation } from "@/engine/rules/SWAnimation";
 import { TwoDAManager } from "@/managers/TwoDAManager";
 import { DirtyTextureManager } from "@/managers/DirtyTextureManager";
@@ -2158,18 +2157,33 @@ export class OdysseyModel3D extends OdysseyObject3D {
     return lightNode;
   };
 
-  static NodeLensflareBuilder(odysseyModel: OdysseyModel3D, parentNode: OdysseyLight3D, odysseyNode: OdysseyModelNodeLight, options: IOdysseyModelLoaderOptions){
-    if(odysseyNode.flare.radius){
-      let lensFlare = new Lensflare();
+  /**
+   * Attach MDL flare arrays to the light for Scene::RenderLensFlares.
+   * Retail CollectLightsForGivenRoom gates on flarecolorshifts count, not
+   * generateflare or flareradius (radius is cull/falloff at draw time).
+   */
+  static NodeLensflareBuilder(_odysseyModel: OdysseyModel3D, parentNode: OdysseyLight3D, odysseyNode: OdysseyModelNodeLight, _options: IOdysseyModelLoaderOptions){
+    const flare = odysseyNode.flare;
+    if(!flare?.colorShifts?.length){
+      return;
+    }
 
-      for(let i = 0, len = odysseyNode.flare.textures.length; i < len; i++){
-        TextureLoader.enQueue(odysseyNode.flare.textures[i], null, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-          lensFlare.addElement( new LensflareElement( texture, odysseyNode.flare.sizes[i],  odysseyNode.flare.positions[i],  odysseyNode.flare.colorShifts[i] ) );
-        });
+    parentNode.flareRadius = flare.radius || 0;
+    parentNode.flareSizes = flare.sizes.slice();
+    parentNode.flarePositions = flare.positions.slice();
+    parentNode.flareColorShifts = flare.colorShifts.map((c) => c.clone());
+    parentNode.flareTextures = new Array(flare.textures.length).fill(null);
+    parentNode.flareOcclusionFade = 0;
+
+    for(let i = 0, len = flare.textures.length; i < len; i++){
+      const index = i;
+      const resref = flare.textures[i];
+      if(!resref){
+        continue;
       }
-
-      parentNode.userData.lensFlare = lensFlare;
-      parentNode.add(lensFlare);
+      TextureLoader.enQueue(resref, null, TextureType.TEXTURE, (texture: OdysseyTexture) => {
+        parentNode.flareTextures[index] = texture;
+      });
     }
   }
 

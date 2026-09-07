@@ -50,6 +50,7 @@ import { DreamDistortionPass } from "@/shaders/pass/DreamDistortionPass";
 import { FuryPass } from "@/shaders/pass/FuryPass";
 import { MiniGameAspectMaskPass } from "@/shaders/pass/MiniGameAspectMaskPass";
 import { resolveMiniGameAspectMaskPass } from "@/shaders/pass/MiniGameAspectMaskGates";
+import { OdysseyLensFlarePass } from "@/shaders/pass/OdysseyLensFlarePass";
 import { ResourceLoader, TextureLoader } from "@/loaders";
 
 //THREE.js imports
@@ -429,6 +430,10 @@ export class GameState implements EngineContext {
   static dreamDistortionPass: DreamDistortionPass;
   /** K2 force fury overlay (fx_Fury01/02/03). */
   static furyPass: FuryPass;
+  /**
+   * Retail Scene::RenderLensFlares — after primary FB mods, before GUI.
+   */
+  static lensFlarePass: OdysseyLensFlarePass;
   /**
    * Widescreen soft 4:3 cockpit mask for swoop / turret.
    * After FB FX + MG HUD, before GUI (menus stay full-bleed).
@@ -1112,6 +1117,11 @@ export class GameState implements EngineContext {
     GameState.dreamDistortionPass.enabled = false;
     GameState.furyPass = new FuryPass();
     GameState.furyPass.enabled = false;
+    GameState.lensFlarePass = new OdysseyLensFlarePass();
+    GameState.lensFlarePass.setLightsProvider(() => GameState.lightManager.getLensFlareLights());
+    GameState.lensFlarePass.setCameraProvider(() => GameState.currentCamera);
+    GameState.lensFlarePass.setAreaProvider(() => GameState.module?.area);
+    GameState.lensFlarePass.setDeltaProvider(() => GameState.deltaTime || 0);
     GameState.miniGameAspectMaskPass = new MiniGameAspectMaskPass();
     GameState.miniGameAspectMaskPass.enabled = false;
     GameState.copyPass = new ShaderPass(CopyShader);
@@ -1184,6 +1194,8 @@ export class GameState implements EngineContext {
     GameState.composer.addPass(GameState.odysseyShaderPass);
     GameState.composer.addPass(GameState.dreamDistortionPass);
     GameState.composer.addPass(GameState.furyPass);
+    // Retail RenderLensFlares after FrameBufferModifications, before GUI.
+    GameState.composer.addPass(GameState.lensFlarePass);
     // Soft 4:3 cockpit mask for swoop/turret — after world FX, before GUI.
     GameState.composer.addPass(GameState.miniGameAspectMaskPass);
     // GameState.composer.addPass(GameState.bokehPass);

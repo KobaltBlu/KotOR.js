@@ -146,6 +146,12 @@ export class LightManager {
   /** Soft-shadow INI path (Graphics Options.Soft Shadows). */
   softShadowsEnabled = false;
 
+  /**
+   * Retail LightManager.lens_flare_lights — rebuilt by CollectLightsForGivenRoom
+   * equivalent (current + linked rooms, flarecolorshifts.count > 0).
+   */
+  lensFlareLights: OdysseyLight3D[] = [];
+
   focusPosition = new THREE.Vector3();
   context: any;
   /** Next registration ordinal for lightcmp pointer-order approximation. */
@@ -336,6 +342,7 @@ export class LightManager {
     this.exclusiveDynamicLights = this.exclusiveDynamicLights.filter((entry) => entry !== light);
     this.shadowLights = this.shadowLights.filter((entry) => entry !== light);
     this.staticMeshShadowLights = this.staticMeshShadowLights.filter((entry) => entry !== light);
+    this.lensFlareLights = this.lensFlareLights.filter((entry) => entry !== light);
     if(this.distantShadowLight === light){ this.distantShadowLight = undefined; }
     this.syncUniformBuffers();
   }
@@ -372,8 +379,94 @@ export class LightManager {
 
     this.updateDynamicLights(delta);
     this.updateShadowLightSelection(delta);
+    this.rebuildLensFlareLights(this.resolveCollectLightsRoom(target));
     this.updateLightHelpers();
     this.updateShadowHelpers();
+  }
+
+  /**
+   * Resolve the room used for CollectLightsForGivenRoom scoping.
+   * Prefer a ModuleObject target's room, else the controlled player's room.
+   */
+  private resolveCollectLightsRoom(
+    target: THREE.Camera|ModuleObject|{ position: THREE.Vector3 }
+  ): { room?: any; areaRooms?: any[] } {
+    const asModule = target as ModuleObject;
+    if(asModule?.room){
+      return { room: asModule.room };
+    }
+    const player = this.context?.getCurrentPlayer?.()
+      ?? this.context?.PartyManager?.party?.[0]
+      ?? this.context?.PartyManager?.Player;
+    if(player?.room){
+      return { room: player.room };
+    }
+    const area = this.context?.module?.area;
+    return { areaRooms: area?.rooms };
+  }
+
+  /**
+   * CollectLightsForGivenRoom — lens_flare_lights from current room + linked
+   * rooms (or all rooms when no current room). Gate: flarecolorshifts.length > 0.
+   */
+  rebuildLensFlareLights(scope?: { room?: any; areaRooms?: any[] }){
+    this.lensFlareLights.length = 0;
+
+    const roomSet = new Set<any>();
+    const currentRoom = scope?.room;
+    if(currentRoom){
+      roomSet.add(currentRoom);
+      const linked = currentRoom.linkedRoomsArray;
+      if(linked?.length){
+        for(let i = 0, il = linked.length; i < il; i++){
+          roomSet.add(linked[i]);
+        }
+      }
+    }
+
+    const filterByRoom = roomSet.size > 0;
+
+    for(let i = 0, il = this.lights.length; i < il; i++){
+      const light = this.lights[i];
+      if(!light?.flareColorShifts?.length){
+        continue;
+      }
+
+      if(!filterByRoom){
+        this.lensFlareLights.push(light);
+        continue;
+      }
+
+      if(this.lightBelongsToRoomSet(light, roomSet)){
+        this.lensFlareLights.push(light);
+      }
+    }
+  }
+
+  private lightBelongsToRoomSet(light: OdysseyLight3D, roomSet: Set<any>): boolean {
+    const model = light.odysseyModel as any;
+    const moduleObject = model?.userData?.moduleObject ?? model?.moduleObject;
+    if(moduleObject && roomSet.has(moduleObject)){
+      return true;
+    }
+    if(moduleObject?.room && roomSet.has(moduleObject.room)){
+      return true;
+    }
+    // Walk parents for a room moduleObject (light under room model hierarchy).
+    let obj: THREE.Object3D | null = light;
+    while(obj){
+      const mo = (obj as any).userData?.moduleObject;
+      if(mo && roomSet.has(mo)){
+        return true;
+      }
+      obj = obj.parent;
+    }
+    return false;
+  }
+
+  /** Retail GetLensFlareLights — returns the collected flare light list. */
+  getLensFlareLights(): OdysseyLight3D[] {
+    return this.lensFlareLights;
   }
 
   private ensureLightHelper(light: OdysseyLight3D){

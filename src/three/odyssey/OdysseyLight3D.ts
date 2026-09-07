@@ -34,9 +34,26 @@ export class OdysseyLight3D extends OdysseyObject3D {
   dynamicType: number = 0;
   isFading: number = 0;
 
+  /**
+   * Authored MDL generateflare flag. Retail CollectLightsForGivenRoom /
+   * RenderLensFlares do not gate on this — selection uses flarecolorshifts.
+   */
   genFlare: boolean = false;
   /** MDL shadow flag — used for GetShadowLights mode 2 (distant/static) only. */
   castShadow: boolean = false;
+
+  /** MDL flareradius — distance cull + size/color falloff (not light radius). */
+  flareRadius: number = 0;
+  flareSizes: number[] = [];
+  flarePositions: number[] = [];
+  flareColorShifts: THREE.Color[] = [];
+  /** Loaded flare textures (parallel to flareTextures resrefs / sizes). */
+  flareTextures: (THREE.Texture | null)[] = [];
+  /**
+   * Retail PartLight+0x88 occlusion fade 0–1 (RenderLensFlares hit-check).
+   * Independent of ControlLightsFade fadeFactor.
+   */
+  flareOcclusionFade: number = 0;
 
   intensity: number = 0;
   maxIntensity: number = 1;
