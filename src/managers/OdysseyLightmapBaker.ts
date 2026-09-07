@@ -28,6 +28,11 @@ export interface IOdysseyLightmapBakeOptions {
    * transform meshes so they stay on GetNearestLights.
    */
   classifyAnimated?: boolean;
+  /**
+   * When true with classification, bake multi-frame Position/Orientation/Scale
+   * meshes in their current world pose. Skins and dangly still stay dynamic.
+   */
+  includeAnimatedTransforms?: boolean;
 }
 
 const MIN_RESOLUTION = 16;
@@ -122,7 +127,9 @@ export class OdysseyLightmapBaker {
     const classify = options.classifyAnimated !== false &&
       !!(odyssey.odysseyAnimations || odyssey.skins || odyssey.danglyMeshes);
     const dynamicMeshes = classify
-      ? this.classifyDynamicMeshes(odyssey)
+      ? this.classifyDynamicMeshes(odyssey, {
+          includeAnimatedTransforms: !!options.includeAnimatedTransforms,
+        })
       : new Set<THREE.Object3D>();
 
     const entries: IOdysseyBakedLightmap[] = [];
@@ -233,19 +240,16 @@ export class OdysseyLightmapBaker {
   }
 
   /**
-   * Meshes that should stay dynamically lit: skins, dangly, and anything
-   * under a node with multi-frame Position/Orientation/Scale controllers.
+   * Meshes that should stay dynamically lit: skins, dangly, and (unless
+   * includeAnimatedTransforms) anything under a multi-frame transform node.
    */
-  static classifyDynamicMeshes(model: OdysseyModel3D): Set<THREE.Object3D> {
-    const dynamic = new Set<THREE.Object3D>();
-
-    const skins = model.skins || [];
-    for(let i = 0; i < skins.length; i++){
-      if(skins[i]){ dynamic.add(skins[i]); }
-    }
-    const dangly = model.danglyMeshes || [];
-    for(let i = 0; i < dangly.length; i++){
-      if(dangly[i]){ dynamic.add(dangly[i]); }
+  static classifyDynamicMeshes(
+    model: OdysseyModel3D,
+    options: { includeAnimatedTransforms?: boolean } = {}
+  ): Set<THREE.Object3D> {
+    const dynamic = this.classifySkinsAndDangly(model);
+    if(options.includeAnimatedTransforms){
+      return dynamic;
     }
 
     const animatedRoots = this.findAnimatedTransformNodes(model);
@@ -255,6 +259,20 @@ export class OdysseyLightmapBaker {
       });
     }
 
+    return dynamic;
+  }
+
+  /** Skins and dangly meshes only — always stay on GetNearestLights. */
+  static classifySkinsAndDangly(model: OdysseyModel3D): Set<THREE.Object3D> {
+    const dynamic = new Set<THREE.Object3D>();
+    const skins = model.skins || [];
+    for(let i = 0; i < skins.length; i++){
+      if(skins[i]){ dynamic.add(skins[i]); }
+    }
+    const dangly = model.danglyMeshes || [];
+    for(let i = 0; i < dangly.length; i++){
+      if(dangly[i]){ dynamic.add(dangly[i]); }
+    }
     return dynamic;
   }
 

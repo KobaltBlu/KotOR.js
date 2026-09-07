@@ -7,6 +7,7 @@ import type { OdysseyLight3D } from '@/three/odyssey/OdysseyLight3D';
 import type { ModulePlaceable } from '@/module/ModulePlaceable';
 import type { OdysseyModel3D } from '@/three/odyssey/OdysseyModel3D';
 import { OdysseyModelControllerType } from '@/enums/odyssey/OdysseyModelControllerType';
+import { ModulePlaceableAnimState } from '@/enums/module/ModulePlaceableAnimState';
 
 function mockLightManager(overrides: Partial<LightManager> = {}): LightManager {
   return {
@@ -32,6 +33,61 @@ function makeModel(geometry: THREE.BufferGeometry, material: THREE.ShaderMateria
   const root = new THREE.Object3D();
   root.add(model);
   return { model, mesh, material, geometry, root };
+}
+
+function makeHingeModel(){
+  const staticGeo = new THREE.BufferGeometry();
+  staticGeo.setAttribute('position', new THREE.Float32BufferAttribute([
+    0, 0, 0, 1, 0, 0, 0, 1, 0,
+  ], 3));
+  staticGeo.setAttribute('normal', new THREE.Float32BufferAttribute([
+    0, 0, 1, 0, 0, 1, 0, 0, 1,
+  ], 3));
+  const staticMat = new THREE.ShaderMaterial({
+    uniforms: { lightMap: { value: null } },
+    defines: {},
+  });
+  const staticMesh = new THREE.Mesh(staticGeo, staticMat);
+
+  const hinge = new THREE.Object3D();
+  hinge.name = 'hinge';
+  const lidGeo = new THREE.BufferGeometry();
+  lidGeo.setAttribute('position', new THREE.Float32BufferAttribute([
+    0, 0, 0, 1, 0, 0, 0, 1, 0,
+  ], 3));
+  lidGeo.setAttribute('normal', new THREE.Float32BufferAttribute([
+    0, 0, 1, 0, 0, 1, 0, 0, 1,
+  ], 3));
+  const lidMat = new THREE.ShaderMaterial({
+    uniforms: { lightMap: { value: null } },
+    defines: {},
+  });
+  const lidMesh = new THREE.Mesh(lidGeo, lidMat);
+  hinge.add(lidMesh);
+
+  const model = new THREE.Object3D() as OdysseyModel3D;
+  model.materials = [staticMat, lidMat];
+  model.skins = [];
+  model.danglyMeshes = [];
+  model.nodesById = [];
+  model.nodes = new Map([['hinge', hinge]]);
+  model.nodesById[1] = hinge;
+  model.odysseyAnimations = [{
+    nodes: [{
+      name: 'hinge',
+      nodeNumber: 1,
+      controllers: new Map([
+        [OdysseyModelControllerType.Orientation, { frameCount: 4, data: [{}, {}, {}, {}] }],
+      ]),
+    }],
+  }] as any;
+  model.add(staticMesh);
+  model.add(hinge);
+
+  const root = new THREE.Object3D();
+  root.add(model);
+
+  return { model, root, staticMat, lidMat, lidMesh, staticGeo, lidGeo };
 }
 
 describe('OdysseyLightmapBaker', () => {
@@ -119,53 +175,7 @@ describe('OdysseyLightmapBaker', () => {
   });
 
   test('mesh under multi-frame Orientation controller stays nearest-lit', () => {
-    const staticGeo = new THREE.BufferGeometry();
-    staticGeo.setAttribute('position', new THREE.Float32BufferAttribute([
-      0, 0, 0, 1, 0, 0, 0, 1, 0,
-    ], 3));
-    staticGeo.setAttribute('normal', new THREE.Float32BufferAttribute([
-      0, 0, 1, 0, 0, 1, 0, 0, 1,
-    ], 3));
-    const staticMat = new THREE.ShaderMaterial({
-      uniforms: { lightMap: { value: null } },
-      defines: {},
-    });
-    const staticMesh = new THREE.Mesh(staticGeo, staticMat);
-
-    const hinge = new THREE.Object3D();
-    hinge.name = 'hinge';
-    const lidGeo = new THREE.BufferGeometry();
-    lidGeo.setAttribute('position', new THREE.Float32BufferAttribute([
-      0, 0, 0, 1, 0, 0, 0, 1, 0,
-    ], 3));
-    lidGeo.setAttribute('normal', new THREE.Float32BufferAttribute([
-      0, 0, 1, 0, 0, 1, 0, 0, 1,
-    ], 3));
-    const lidMat = new THREE.ShaderMaterial({
-      uniforms: { lightMap: { value: null } },
-      defines: {},
-    });
-    const lidMesh = new THREE.Mesh(lidGeo, lidMat);
-    hinge.add(lidMesh);
-
-    const model = new THREE.Object3D() as OdysseyModel3D;
-    model.materials = [staticMat, lidMat];
-    model.skins = [];
-    model.danglyMeshes = [];
-    model.nodesById = [];
-    model.nodes = new Map([['hinge', hinge]]);
-    model.nodesById[1] = hinge;
-    model.odysseyAnimations = [{
-      nodes: [{
-        name: 'hinge',
-        nodeNumber: 1,
-        controllers: new Map([
-          [OdysseyModelControllerType.Orientation, { frameCount: 4, data: [{}, {}, {}, {}] }],
-        ]),
-      }],
-    }] as any;
-    model.add(staticMesh);
-    model.add(hinge);
+    const { model, staticMat, lidMat, lidMesh, staticGeo, lidGeo } = makeHingeModel();
 
     OdysseyLightmapBaker.bakeModel(model, mockLightManager({
       ambientColor: new THREE.Color(0.2, 0.2, 0.25),
@@ -175,6 +185,24 @@ describe('OdysseyLightmapBaker', () => {
     expect(Object.prototype.hasOwnProperty.call(staticMat.defines, 'USE_LIGHTMAP')).toBe(true);
     expect(Object.prototype.hasOwnProperty.call(lidMat.defines, 'USE_LIGHTMAP')).toBe(false);
     expect(lidMesh.userData.odysseyDynamicLit).toBe(true);
+
+    OdysseyLightmapBaker.dispose(model);
+    staticMat.dispose();
+    lidMat.dispose();
+    staticGeo.dispose();
+    lidGeo.dispose();
+  });
+
+  test('includeAnimatedTransforms bakes hinge meshes in current pose', () => {
+    const { model, staticMat, lidMat, lidMesh, staticGeo, lidGeo } = makeHingeModel();
+
+    OdysseyLightmapBaker.bakeModel(model, mockLightManager({
+      ambientColor: new THREE.Color(0.2, 0.2, 0.25),
+    }), { includeAnimatedTransforms: true });
+
+    expect(Object.prototype.hasOwnProperty.call(staticMat.defines, 'USE_LIGHTMAP')).toBe(true);
+    expect(Object.prototype.hasOwnProperty.call(lidMat.defines, 'USE_LIGHTMAP')).toBe(true);
+    expect(lidMesh.userData.odysseyDynamicLit).toBeFalsy();
 
     OdysseyLightmapBaker.dispose(model);
     staticMat.dispose();
@@ -194,6 +222,8 @@ describe('OdysseyLightmapBaker', () => {
       model,
       container: root,
       destroyed: false,
+      animState: ModulePlaceableAnimState.DEFAULT,
+      animStateInfo: { currentAnimState: ModulePlaceableAnimState.DEFAULT },
     } as unknown as ModulePlaceable;
 
     PlaceableLightmapBaker.bakePlaceable(plc, mockLightManager({
@@ -203,6 +233,50 @@ describe('OdysseyLightmapBaker', () => {
     PlaceableLightmapBaker.dispose(plc);
     material.dispose();
     geometry.dispose();
+  });
+
+  test('idle rebake freezes hinge pose once, then resets on activity', () => {
+    const { model, root, staticMat, lidMat, lidMesh, staticGeo, lidGeo } = makeHingeModel();
+    const lm = mockLightManager({ ambientColor: new THREE.Color(0.2, 0.2, 0.25) });
+    PlaceableLightmapBaker.setLightManagerProvider(() => lm);
+
+    const plc = {
+      model,
+      container: root,
+      destroyed: false,
+      animState: ModulePlaceableAnimState.DEFAULT,
+      animStateInfo: { currentAnimState: ModulePlaceableAnimState.DEFAULT },
+    } as unknown as ModulePlaceable;
+
+    PlaceableLightmapBaker.bakePlaceable(plc, lm);
+    expect(Object.prototype.hasOwnProperty.call(lidMat.defines, 'USE_LIGHTMAP')).toBe(false);
+    expect(PlaceableLightmapBaker.isPoseFrozen(plc)).toBe(false);
+
+    PlaceableLightmapBaker.noteActivity(plc);
+    PlaceableLightmapBaker.tickIdle(0.25, lm);
+    expect(PlaceableLightmapBaker.isPoseFrozen(plc)).toBe(false);
+    expect(Object.prototype.hasOwnProperty.call(lidMat.defines, 'USE_LIGHTMAP')).toBe(false);
+
+    PlaceableLightmapBaker.tickIdle(0.25, lm);
+    expect(PlaceableLightmapBaker.isPoseFrozen(plc)).toBe(true);
+    expect(Object.prototype.hasOwnProperty.call(lidMat.defines, 'USE_LIGHTMAP')).toBe(true);
+    expect(lidMesh.userData.odysseyDynamicLit).toBeFalsy();
+
+    // Further idle ticks do not clear freeze or thrash.
+    PlaceableLightmapBaker.tickIdle(1.0, lm);
+    expect(PlaceableLightmapBaker.isPoseFrozen(plc)).toBe(true);
+
+    PlaceableLightmapBaker.noteActivity(plc);
+    expect(PlaceableLightmapBaker.isPoseFrozen(plc)).toBe(false);
+    PlaceableLightmapBaker.flushDirty(lm);
+    expect(Object.prototype.hasOwnProperty.call(lidMat.defines, 'USE_LIGHTMAP')).toBe(false);
+    expect(lidMesh.userData.odysseyDynamicLit).toBe(true);
+
+    PlaceableLightmapBaker.dispose(plc);
+    staticMat.dispose();
+    lidMat.dispose();
+    staticGeo.dispose();
+    lidGeo.dispose();
   });
 
   test('collects only dynamicType 0 lights into bake (type 1 excluded)', () => {

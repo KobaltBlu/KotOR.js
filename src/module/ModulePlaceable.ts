@@ -293,6 +293,12 @@ export class ModulePlaceable extends ModuleObject {
     if(!(this.model instanceof OdysseyModel3D))
       return;
 
+    const transitioning = this.animStateInfo.currentAnimState === ModulePlaceableAnimState.OPEN_CLOSE
+      || this.animStateInfo.currentAnimState === ModulePlaceableAnimState.CLOSE_OPEN;
+    if(transitioning){
+      PlaceableLightmapBaker.noteActivity(this);
+    }
+
     let currentAnimation = this.model.getAnimationName();
     if(!this.animStateInfo.currentAnimState) this.setAnimationState(ModulePlaceableAnimState.DEFAULT);
     if(this.animStateInfo.currentAnimState){
@@ -561,6 +567,7 @@ export class ModulePlaceable extends ModuleObject {
 
         this.scripts[ModuleObjectScript.PlaceableOnOpen]?.run(this)
         // Settle pose: deferred static-chart rebake (animated parts stay nearest-lit).
+        PlaceableLightmapBaker.noteActivity(this);
         PlaceableLightmapBaker.invalidate(this);
       break;
       case ModulePlaceableEvent.CLOSE_START:
@@ -569,6 +576,7 @@ export class ModulePlaceable extends ModuleObject {
       break;
       case ModulePlaceableEvent.CLOSE_END:
         this.scripts[ModuleObjectScript.PlaceableOnClosed]?.run(this)
+        PlaceableLightmapBaker.noteActivity(this);
         PlaceableLightmapBaker.invalidate(this);
       break;
     }
@@ -734,6 +742,7 @@ export class ModulePlaceable extends ModuleObject {
       void this.applyShadowBlob(ModuleObject.shadowBlobResRefFromPlaceableShadowSize(shadowSize));
 
       // Queue bake for late spawns; area load finishes with bakeArea().
+      PlaceableLightmapBaker.noteActivity(this);
       PlaceableLightmapBaker.invalidate(this);
     }catch(e){
       console.error(e);
@@ -1119,6 +1128,7 @@ export class ModulePlaceable extends ModuleObject {
    */
   setFacing(facing = 0, instant = false, speed?: number){
     super.setFacing(facing, instant, speed as any);
+    PlaceableLightmapBaker.noteActivity(this);
     PlaceableLightmapBaker.invalidate(this);
   }
 
@@ -1127,6 +1137,7 @@ export class ModulePlaceable extends ModuleObject {
    */
   setPosition(x: THREE.Vector3|number = 0, y = 0, z = 0){
     super.setPosition(x as any, y, z);
+    PlaceableLightmapBaker.noteActivity(this);
     PlaceableLightmapBaker.invalidate(this);
   }
 

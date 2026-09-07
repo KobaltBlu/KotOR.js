@@ -1267,8 +1267,7 @@ export class ModuleArea extends ModuleObject {
    * Push packed Odyssey light + area ambient/sun uniforms to room and dynamic materials.
    */
   updateRoomAnimatedLights(delta: number = 0){
-    void delta;
-
+    PlaceableLightmapBaker.tickIdle(delta, GameState.lightManager);
     PlaceableLightmapBaker.flushDirty(GameState.lightManager);
 
     const lm = GameState.lightManager;
