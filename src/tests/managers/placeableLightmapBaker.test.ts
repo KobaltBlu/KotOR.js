@@ -279,7 +279,7 @@ describe('OdysseyLightmapBaker', () => {
     lidGeo.dispose();
   });
 
-  test('collects only dynamicType 0 lights into bake (type 1 excluded)', () => {
+  test('bakes dynamicType 0 only; excludes type 1 and 2', () => {
     const geometry = new THREE.BoxGeometry(1, 1, 1);
     const material = new THREE.ShaderMaterial({
       uniforms: { lightMap: { value: null } },
@@ -307,17 +307,29 @@ describe('OdysseyLightmapBaker', () => {
       getWorldPosition: (out: THREE.Vector3) => out.set(0, 0, 0),
     } as unknown as OdysseyLight3D;
 
-    OdysseyLightmapBaker.bakeModel(model, mockLightManager({ lights: [type0, type1] }), { root });
+    const type2 = {
+      dynamicType: 2,
+      isAmbient: true,
+      color: new THREE.Color(0, 0, 1),
+      worldPosition: new THREE.Vector3(0, 0, 0),
+      getRadius: () => 5,
+      getIntensity: () => 1,
+      getWorldPosition: (out: THREE.Vector3) => out.set(0, 0, 0),
+    } as unknown as OdysseyLight3D;
+
+    OdysseyLightmapBaker.bakeModel(model, mockLightManager({ lights: [type0, type1, type2] }), { root });
 
     const tex = material.uniforms.lightMap.value as THREE.DataTexture;
     const pixels = tex.image.data as Float32Array;
-    let maxR = 0, maxG = 0;
+    let maxR = 0, maxG = 0, maxB = 0;
     for(let i = 0; i < pixels.length; i += 4){
       if(pixels[i] > maxR) maxR = pixels[i];
       if(pixels[i + 1] > maxG) maxG = pixels[i + 1];
+      if(pixels[i + 2] > maxB) maxB = pixels[i + 2];
     }
     expect(maxR).toBeGreaterThan(0.5);
     expect(maxG).toBeLessThan(0.5);
+    expect(maxB).toBeLessThan(0.5);
 
     OdysseyLightmapBaker.dispose(model);
     material.dispose();

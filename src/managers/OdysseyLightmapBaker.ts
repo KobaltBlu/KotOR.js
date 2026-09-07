@@ -46,9 +46,10 @@ const USERDATA_DYNAMIC = 'odysseyDynamicLit';
 
 /**
  * Runtime lightmap baker for any Odyssey model / mesh / geometry.
- * Bakes static irradiance (DynAmbient + sun + n_dynamic_type == 0) into
- * USE_LIGHTMAP textures. Animated / skin / dangly meshes can be classified
- * and left on GetNearestLights. Type-1 lights overlay via exclusive_dynamic.
+ * Bakes DynAmbient + sun + n_dynamic_type == 0 into USE_LIGHTMAP textures.
+ * Animated / skin / dangly meshes can stay on GetNearestLights.
+ * Placeable hybrid bind overlays GetNearestLights (not exclusive_dynamic) so
+ * gob type-2 lights still shade without being baked (avoids idle over-bright).
  */
 export class OdysseyLightmapBaker {
   private static dirty = new Map<object, IOdysseyLightmapBakeTarget>();
@@ -384,6 +385,8 @@ export class OdysseyLightmapBaker {
     if(!lm?.lights){ return out; }
     for(let i = 0, il = lm.lights.length; i < il; i++){
       const light = lm.lights[i];
+      // Room-static only. Type 1/2 stay on the binder overlay / GetNearestLights
+      // so idle freezes do not over-brighten vs the animating gob path.
       if((light.dynamicType | 0) !== 0){ continue; }
       if(!(light.getRadius() > 0)){ continue; }
       out.push(light);

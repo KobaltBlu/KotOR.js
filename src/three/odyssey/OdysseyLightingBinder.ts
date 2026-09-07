@@ -781,8 +781,10 @@ export class OdysseyLightingBinder {
       const obj = dynamics[i];
       if(!(obj?.model as OdysseyModel3D)?.materials){ continue; }
       const model = obj.model as OdysseyModel3D;
-      // Hybrid runtime lightmaps: baked mats use exclusive_dynamic overlay;
-      // animated/skin/dangly siblings stay on GetNearestLights (same query).
+      // Hybrid runtime lightmaps: bake holds DynAmbient (+ type-0); gob lights
+      // come from GetNearestLights on every material (lightmapped and dynamic).
+      // Using exclusive_dynamic here left placeables flat; baking type-2 made them
+      // over-bright vs the animating nearest path.
       if(model.userData.odysseyRuntimeLightmap || model.userData.odysseyPlaceableLightmap){
         const pos = (obj as any).position instanceof THREE.Vector3
           ? (obj as any).position
@@ -792,10 +794,7 @@ export class OdysseyLightingBinder {
           nearestFp,
           this.mixHash(
             lightManager.lightsPoseEpoch,
-            this.mixHash(
-              lightManager.lightmapLights.cacheID,
-              this.mixHash(lightManager.selectionEpoch, fp.areaFp)
-            )
+            this.mixHash(lightManager.selectionEpoch, fp.areaFp)
           )
         );
         if(model.userData.odysseyObjectBindFp === hybridFp){
@@ -804,13 +803,9 @@ export class OdysseyLightingBinder {
         }
         const nearest = lightManager.packLastNearestLights();
         this.bindModelMaterials(model, (material) => {
-          const defines = material.defines || {};
-          const usesLightmap = Object.prototype.hasOwnProperty.call(defines, 'USE_LIGHTMAP');
-          const set = usesLightmap
-            ? lightManager.getLightmapLightSet()
-            : nearest;
-          const key = usesLightmap ? 'lightmapLightCacheID' : 'objectLightCacheID';
-          this.bindMaterial(material, set, camera, key, lightManager);
+          // Same nearest set for USE_LIGHTMAP and dynamic mats — lightmap supplies
+          // baked ambient/type-0; point overlay matches gob GetNearestLights.
+          this.bindMaterial(material, nearest, camera, 'objectLightCacheID', lightManager);
         });
         model.userData.odysseyObjectBindFp = hybridFp;
         this.bindModelShadowUniforms(model);
