@@ -11,7 +11,7 @@ import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
 
 /**
  * Client-side traveling blaster bolt —
- * retail projectile via HandleServerToPlayerSafeProjectileProjectile.
+ * projectile via HandleServerToPlayerSafeProjectileProjectile.
  *
  * Model / ShotSound / MuzzleFlash from ammunitiontypes.2da.
  * Flight anim: travel01 (projectile SetAnimation case 1).
@@ -31,7 +31,7 @@ export type AmmunitionTypeRow = {
   shieldhit?: string | number;
 };
 
-/** Retail ResolveRangedHit fallback when impact node missing. */
+/** ResolveRangedHit fallback when impact node missing. */
 export const PROJECTILE_IMPACT_Z_OFFSET = 1.25;
 
 const _tmpOrigin = new THREE.Vector3();
@@ -92,7 +92,7 @@ export function getAmmunitionTypeRow(weapon: ModuleItem | undefined): Ammunition
 }
 
 /**
- * Retail hit aim: model node "impact", else position.z + 1.25.
+ * hit aim: model node "impact", else position.z + 1.25.
  */
 export function getProjectileImpactPosition(
   target: ModuleObject | undefined,
@@ -122,7 +122,7 @@ function getMuzzleHookPosition(
   const weapon = offHand ? creature.equipment?.LEFTHAND : creature.equipment?.RIGHTHAND;
   const weaponModel = weapon?.model as OdysseyModel3D | undefined;
 
-  // Retail: rbullet/lbullet on creature, else bullethook on equipped weapon
+  // : rbullet/lbullet on creature, else bullethook on equipped weapon
   if(offHand){
     if(tryModelNodeWorldPos(creature.model, ['lbullet', 'bullethook', 'bullethook0', 'gunhook0'], out)){
       return out;
@@ -154,7 +154,7 @@ function playShotSound(resRef: string, position: THREE.Vector3, creature: Module
   emitter.playSoundFireAndForget(resRef);
 }
 
-/** Retail projectile SetAnimation case 1 → travel01. */
+/** projectile SetAnimation case 1 → travel01. */
 export function playSpellProjectileTravelAnimation(model: OdysseyModel3D){
   if(model.playAnimation('travel01', true)){
     // Apply t=0 controllers immediately (travel01 length is often 0) so birthRate is live
@@ -169,7 +169,7 @@ export function playSpellProjectileTravelAnimation(model: OdysseyModel3D){
   try{ model.playAnimation('default', true); }catch(_e){ /* ignore */ }
 }
 
-/** Retail projectile SetAnimation case 2 → impact01 (non-looping). */
+/** projectile SetAnimation case 2 → impact01 (non-looping). */
 function playImpactAnimation(model: OdysseyModel3D){
   if(model.playAnimation('impact01', false)){
     model.animationManager?.update?.(0);
@@ -181,7 +181,7 @@ function playImpactAnimation(model: OdysseyModel3D){
   }
 }
 
-/** Retail CreateMuzzleFlash plays "impact". */
+/** CreateMuzzleFlash plays "impact". */
 function playMuzzleFlashAnimation(model: OdysseyModel3D){
   if(model.playAnimation('impact', true)){
     model.animationManager?.update?.(0);
@@ -303,7 +303,7 @@ export class CombatProjectile {
       if(this.modelPending && !this.model){
         return;
       }
-      // Retail SetAnimation(2) → impact01; hold so impact + trail can finish.
+      // SetAnimation(2) → impact01; hold so impact + trail can finish.
       if(this.model){
         this.beginImpactHold(120);
         return;
@@ -331,7 +331,7 @@ export class CombatProjectile {
 
 /**
  * Spawn bolt + play ShotSound at muzzle time
- * (retail SafeProjectile projectile message handler).
+ * (SafeProjectile projectile message handler).
  */
 export function spawnCombatProjectile(
   owner: ModuleCreature,
@@ -359,7 +359,7 @@ export function spawnCombatProjectile(
     attack.rangedTargetY || 0,
     attack.rangedTargetZ || 0
   );
-  // If target coords unset, aim at react impact height (retail z+1.25)
+  // If target coords unset, aim at react impact height (z+1.25)
   if(_tmpTarget.lengthSq() < 0.0001 && attack.reactObject){
     getProjectileImpactPosition(attack.reactObject, _tmpTarget);
   }
@@ -407,7 +407,7 @@ export function spawnCombatProjectile(
     });
   }
 
-  // Optional muzzle flash VFX (fire-and-forget) — retail plays "impact"
+  // Optional muzzle flash VFX (fire-and-forget) — plays "impact"
   const muzzle = pickRowResRef(ammo as any, 'muzzleflash');
   if(muzzle){
     const flashOrigin = _tmpOrigin.clone();

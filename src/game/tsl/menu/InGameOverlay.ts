@@ -165,7 +165,7 @@ export class InGameOverlay extends K1_InGameOverlay {
 
       this.tGuiPanel.hideFill();
 
-      /*this.TB_STEALTH.hideBorder();
+      /*this.TB_STEALTH.hideBorder;
       this.TB_PAUSE.hideBorder();
       this.TB_SOLO.hideBorder();*/
 
@@ -179,7 +179,7 @@ export class InGameOverlay extends K1_InGameOverlay {
       this.LBL_ITEMLOST.hide();
 
       //Map INIT
-      //this.LBL_MAPBORDER.hideBorder();
+      //this.LBL_MAPBORDER.hideBorder;
       this.LBL_MAP.hide();
       this.LBL_ARROW_MARGIN.hide();
       this.LBL_ARROW?.hide();
@@ -190,21 +190,21 @@ export class InGameOverlay extends K1_InGameOverlay {
       this.LBL_CMBTEFCTRED1.hide();
       this.LBL_CMBTEFCTINC1.hide();
       this.LBL_LEVELUP1.hide();
-      //this.LBL_LVLUPBG1.hide();
+      //this.LBL_LVLUPBG1.hide;
       this.LBL_DEBILATATED1.hide();
       this.LBL_DISABLE1.hide();
 
       this.LBL_CMBTEFCTRED2.hide();
       this.LBL_CMBTEFCTINC2.hide();
       this.LBL_LEVELUP2.hide();
-      //this.LBL_LVLUPBG2.hide();
+      //this.LBL_LVLUPBG2.hide;
       this.LBL_DEBILATATED2.hide();
       this.LBL_DISABLE2.hide();
 
       this.LBL_CMBTEFCTRED3.hide();
       this.LBL_CMBTEFCTINC3.hide();
       this.LBL_LEVELUP3.hide();
-      //this.LBL_LVLUPBG3.hide();
+      //this.LBL_LVLUPBG3.hide;
       this.LBL_DEBILATATED3.hide();
       this.LBL_DISABLE3.hide();
 
@@ -263,7 +263,7 @@ export class InGameOverlay extends K1_InGameOverlay {
         this.manager.MenuEquipment.open();
       });
 
-      // Retail OnPauseButtonPressed — SetPausedByCombat toggle reason 4, clear auto-pause
+      // OnPauseButtonPressed — SetPausedByCombat toggle reason 4, clear auto-pause
       this.TB_PAUSE.addEventListener('click', (e) => {
         e.stopPropagation();
         GameState.AutoPauseManager.ToggleManualPause();
@@ -402,10 +402,10 @@ export class InGameOverlay extends K1_InGameOverlay {
   show() {
     super.show();
     GameState.SetEngineMode(EngineMode.INGAME);
-    // this.BTN_ACTIONDOWN0.flipY();
-    // this.BTN_ACTIONDOWN1.flipY();
-    // this.BTN_ACTIONDOWN2.flipY();
-    // this.BTN_ACTIONDOWN3.flipY();
+    // this.BTN_ACTIONDOWN0.flipY;
+    // this.BTN_ACTIONDOWN1.flipY;
+    // this.BTN_ACTIONDOWN2.flipY;
+    // this.BTN_ACTIONDOWN3.flipY;
     this.BTN_ACTIONDOWN4.flipY();
     this.BTN_ACTIONDOWN5.flipY();
   }

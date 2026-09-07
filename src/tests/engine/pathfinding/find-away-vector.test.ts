@@ -1,5 +1,5 @@
 /**
- * ComputeAwayVector TestDirectLine clip (G8).
+ * find away vector TestDirectLine clip (G8).
  * @jest-environment node
  */
 import { describe, expect, it, jest } from "@jest/globals";
@@ -18,10 +18,10 @@ jest.mock("@/engine/pathfinding/test-direct-line", () => ({
   farthestClearPoint: (...args: unknown[]) => farthestClearPointMock(...args),
 }));
 
-import { computeAwayVector } from "@/engine/pathfinding/compute-away-vector";
+import { findAwayVector } from "@/engine/pathfinding/find-away-vector";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
-describe("computeAwayVector (G8)", () => {
+describe("findAwayVector (G8)", () => {
   it("clips candidates via TestDirectLine / farthestClearPoint", () => {
     testDirectLineMock.mockReturnValue({
       ok: false,
@@ -48,7 +48,7 @@ describe("computeAwayVector (G8)", () => {
       },
     } as unknown as ModuleCreature;
 
-    const dest = computeAwayVector(creature, new THREE.Vector3(5, 0, 0), 4);
+    const dest = findAwayVector(creature, new THREE.Vector3(5, 0, 0), 4);
     expect(testDirectLineMock).toHaveBeenCalled();
     expect(farthestClearPointMock).toHaveBeenCalled();
     // Clipped length should be shorter than unclipped ideal (~4)

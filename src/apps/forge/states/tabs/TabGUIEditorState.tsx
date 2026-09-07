@@ -176,7 +176,7 @@ export class TabGUIEditorState extends TabState {
 
   /**
    * Convert canvas-buffer mouse coords to GUI UI space and pick the deepest control.
-   * Uses the same axis-aligned boxes as retail `GUIControl.getActiveControls`.
+   * Uses the same axis-aligned boxes as `GUIControl.getActiveControls`.
    */
   pickControlAtCanvas(mouseX: number, mouseY: number): KotOR.GUIControl | undefined {
     const canvas = this.ui3DRenderer?.canvas;

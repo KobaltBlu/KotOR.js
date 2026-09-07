@@ -9,7 +9,7 @@ import { OdysseyModel3D } from "@/three/odyssey";
 import type { CombatAttackData } from "@/combat/CombatAttackData";
 
 /**
- * Retail ranged impact helpers —
+ * ranged impact helpers —
  * ResolveProjectileMissImpact (VFX 4032 / 0xFC0 at miss pos),
  * spawnWorldImpactVfx for fire-and-forget world models.
  *
@@ -84,7 +84,7 @@ export function applyHitImpactVfx(target: ModuleObject, weapon?: ModuleObject): 
 }
 
 /**
- * Called when deferred ranged damage/miss resolves — retail impact VFX timing.
+ * Called when deferred ranged damage/miss resolves — impact VFX timing.
  */
 export function signalRangedImpactVfx(
   attack: CombatAttackData,

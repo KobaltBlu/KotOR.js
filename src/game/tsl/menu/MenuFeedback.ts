@@ -3,7 +3,7 @@ import { FeedbackOption } from "@/enums/engine/FeedbackOption";
 import { MenuFeedback as K1_MenuFeedback } from "@/game/kotor/KOTOR";
 
 /**
- * Retail PopulateOptionsListbox strrefs / custom_value (TSL).
+ * PopulateOptionsListbox strrefs / custom_value (TSL).
  * Eight rows — no Use Small Fonts (K1-only).
  */
 const FEEDBACK_OPTIONS: ReadonlyArray<{

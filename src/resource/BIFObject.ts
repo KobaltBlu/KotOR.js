@@ -188,7 +188,7 @@ export class BIFObject {
     return await this.getResourceBuffer(resource);
   }
 
-  /*load( path: string, onLoad?: Function, onError?: Function ){
+  /*load(path: string, onLoad?: Function, onError?: Function){
 
     let pathInfo = Utility.filePathInfo(path);
 

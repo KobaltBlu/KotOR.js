@@ -18,7 +18,7 @@ describe("ModuleCalendar", () => {
     expect(calendar.milisecond).toBe(500);
   });
 
-  test("converts the retail 28-day, 12-month calendar", () => {
+  test("converts the engine 28-day, 12-month calendar", () => {
     const calendar = new ModuleCalendar();
 
     calendar.pauseDay = ModuleCalendar.DAYS_IN_MONTH * ModuleCalendar.MONTHS_IN_YEAR;
@@ -72,7 +72,7 @@ describe("ModuleTimeManager", () => {
     const manager = new ModuleTimeManager();
     manager.minutesPerHour = 2;
 
-    // Retail ConvertHourMinSecMsToMs adds minute*60000, then ConvertFromTimeOfDay
+    // ConvertHourMinSecMsToMs adds minute*60000, then ConvertFromTimeOfDay
     // returns world_time_ms/60000 % minutesPerHour.
     manager.setTime(8, 30, 0, 0);
 
@@ -94,7 +94,7 @@ describe("ModuleTimeManager", () => {
     expect(manager.getMilisecondsElapsed(0, 0)).toBeGreaterThan(0x7fffffff);
   });
 
-  test("computes retail day/night/dawn/dusk phases", () => {
+  test("computes engine day/night/dawn/dusk phases", () => {
     const { ModuleDayPhase } = require("@/enums/module/ModuleDayPhase") as typeof import("@/enums/module/ModuleDayPhase");
     const manager = new ModuleTimeManager();
     manager.minutesPerHour = 60;
@@ -167,14 +167,14 @@ describe("Journal calendar stamps", () => {
     expect(ModuleCalendar.comparePauseDayTime(10, 9000, 11, 0)).toBeLessThan(0);
   });
 
-  test("formats received date from retail 28-day months", () => {
+  test("formats received date from engine 28-day months", () => {
     expect(ModuleCalendar.formatPauseDayLabel(28)).toBe("01/02/0");
     expect(ModuleCalendar.formatPauseDayLabel(0)).toBe("01/01/0");
   });
 });
 
 describe("DayNightCycle shadowAlpha", () => {
-  test("matches retail before/after midpoint curves", () => {
+  test("matches engine before/after midpoint curves", () => {
     // opacity 100 → base 1.0
     expect(ModuleTimeManager.computeTransitionShadowAlpha(100, 0, true)).toBeCloseTo(1);
     expect(ModuleTimeManager.computeTransitionShadowAlpha(100, 0.25, true)).toBeCloseTo(0.5);

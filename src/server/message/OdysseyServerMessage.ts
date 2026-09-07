@@ -1,16 +1,15 @@
 /**
- * CSWSMessage — port of retail server messaging.
- * Server-side SendServerToPlayer* / HandlePlayerToServer* messaging.
+ * OdysseyServerMessage — server-side SendServerToPlayer* / HandlePlayerToServer* messaging.
  * Unwired: transport defaults to no-op; Handle* reads payloads only (no game side effects).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * @file CSWSMessage.ts
+ * @file OdysseyServerMessage.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { CSWMessage, type MessageVector3 } from "@/server/message/CSWMessage";
+import { OdysseyMessage, type MessageVector3 } from "@/server/message/OdysseyMessage";
 import {
   IMessageTransport,
   NoopMessageTransport,
@@ -62,18 +61,18 @@ import {
   VoiceChatMessageMinor,
 } from "@/enums/server/message/MessageMinors";
 
-export class CSWSMessage {
-  readonly internal: CSWMessage = new CSWMessage();
+export class OdysseyServerMessage {
+  readonly internal: OdysseyMessage = new OdysseyMessage();
   transport: IMessageTransport;
   onParsed?: MessageParseHook;
-  /** Retail enableCombatDebugging — used by CCMessage case 3. */
+  /** enableCombatDebugging — used by CCMessage case 3. */
   enableCombatDebugging: boolean = false;
 
   constructor(transport: IMessageTransport = new NoopMessageTransport()) {
     this.transport = transport;
   }
 
-  /** Retail WriteOBJECTIDServer. */
+  /** WriteOBJECTIDServer. */
   writeOBJECTIDServer(objectId: number): void {
     let id = objectId >>> 0;
     if (id !== OBJECT_INVALID) {
@@ -82,7 +81,7 @@ export class CSWSMessage {
     this.internal.writeDWORD(id);
   }
 
-  /** Retail ReadOBJECTIDServer. */
+  /** ReadOBJECTIDServer. */
   readOBJECTIDServer(): number {
     return this.internal.readDWORD() & 0x7fffffff;
   }
@@ -92,7 +91,7 @@ export class CSWSMessage {
   }
 
   /**
-   * Retail SendServerToPlayerMessage — stamps 'P' + major + minor.
+   * SendServerToPlayerMessage — stamps 'P' + major + minor.
    */
   sendServerToPlayerMessage(
     playerId: number,
@@ -125,7 +124,7 @@ export class CSWSMessage {
   }
 
   /**
-   * Retail HandlePlayerToServerMessage.
+   * HandlePlayerToServerMessage.
    * Reads payloads only — no server object mutation.
    */
   handlePlayerToServerMessage(playerId: number, message: Uint8Array, size: number = message.length): number {
@@ -350,7 +349,7 @@ export class CSWSMessage {
     return this.finishSend(playerId, PlayerServerMessageId.CustomToken, CustomTokenMessageMinor.SetToken);
   }
 
-  /** Skips tokens < 10 like retail. */
+  /** Skips tokens < 10 like. */
   sendServerToPlayerSetCustomTokenList(playerId: number, tokens: CustomTokenEntry[]): boolean {
     const filtered = tokens.filter((t) => t.number >= 10);
     this.internal.createWriteMessage(256);
@@ -455,7 +454,7 @@ export class CSWSMessage {
   }
 
   /**
-   * — body from PackModuleIntoMessage (retail packer; pass opaque blob until packer ported).
+   * — body from PackModuleIntoMessage (packer; pass opaque blob until packer ported).
    */
   sendServerToPlayerModule_Info(playerId: number, packedModule: Uint8Array): boolean {
     this.internal.createWriteMessage(packedModule.length);
@@ -474,7 +473,7 @@ export class CSWSMessage {
   }
 
   /**
-   * — retail is local-only (SetPauseState); no net stamp.
+   * — is local-only (SetPauseState); no net stamp.
    * Documented for API parity; returns true without sending.
    */
   sendServerToPlayerModule_SetPauseState(_pauseType: number, _paused: number): boolean {
@@ -971,7 +970,7 @@ export class CSWSMessage {
 
   /**
    * — structured CC feedback.
-   * Accepts pre-built integers/objectIds/strings matching retail client layout.
+   * Accepts pre-built integers/objectIds/strings matching client layout.
    */
   sendServerToPlayerCCMessage(playerId: number, minor: number, data: CCMessageData): boolean {
     const ints = data.integers ?? [];
@@ -1207,7 +1206,7 @@ export class CSWSMessage {
   }
 
   /**
-   * — CharList minor 4; accepts pre-serialized BIC blob (retail builds via GFF).
+   * — CharList minor 4; accepts pre-serialized BIC blob (builds via GFF).
    */
   sendServerToPlayerUpdateCharResponse(
     playerId: number,
@@ -1434,7 +1433,7 @@ export class CSWSMessage {
   /**
    * — GameObjUpdate body.
    * Prefer writing category fragments via payload/game-obj-update.ts then passing the buffer.
-   * Retail PackAreaIntoMessage / WriteGameObjUpdate_UpdateObject still blob for full packs.
+   * PackAreaIntoMessage / WriteGameObjUpdate_UpdateObject still blob for full packs.
    */
   sendServerToPlayerGameObjUpdate(playerId: number, packed: Uint8Array, minor: number = GameObjUpdateMessageMinor.Update): boolean {
     this.internal.createWriteMessage(packed.length);
@@ -1567,7 +1566,7 @@ export class CSWSMessage {
       case InputMessageMinor.CancelGuiTimingEvent:
         break;
       case InputMessageMinor.DriveControl:
-        // Retail HandlePlayerToServerInputDriveControl
+        // HandlePlayerToServerInputDriveControl
         p.stickX = this.internal.readFLOAT();
         p.stickY = this.internal.readFLOAT();
         p.word = this.internal.readWORD();

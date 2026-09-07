@@ -375,7 +375,7 @@ export const PazaakConfig = {
           'pcards_dblneg_p'
         ]
       },
-      // Retail SetCard — gold order 0x12..0x16
+      // SetCard — gold order 0x12..0x16
       {
         name: "Tie Breaker",
         type: 0x12,

@@ -32,7 +32,7 @@ export class ShaderOdysseyModel extends Shader {
     uniform float shininess;
     uniform float opacity;
     uniform float envMapAlpha;
-    // Retail DoEnvMapTransform — camera world rotation (no translation).
+    // DoEnvMapTransform — camera world rotation (no translation).
     uniform mat3 envMapRotation;
     uniform float time;
 
@@ -121,7 +121,7 @@ export class ShaderOdysseyModel extends Shader {
 
       #include <logdepthbuf_fragment>
 
-      // Diffuse texture alpha before the opacity multiply — retail masks reflections on
+      // Diffuse texture alpha before the opacity multiply — masks reflections on
       // the texture alpha, so alpha controllers/opacity must not affect the env mask.
       float odysseyDiffuseAlpha = 1.0;
       #ifdef USE_MAP
@@ -147,7 +147,7 @@ export class ShaderOdysseyModel extends Shader {
       float materialShininess = max( shininess, 1e-4 );
 
       // Default TXI envmaps: sample cubemap first, light diffuse albedo, then ADD
-      // env * (1-texAlpha) after lighting (master / retail environmentMapDest!=0).
+      // env * (1-texAlpha) after lighting (master / environmentMapDest!=0).
       vec3 albedo = materialDiffuseColor;
       vec4 envColor = vec4( 0.0 );
       #ifdef USE_ENVMAP
@@ -178,7 +178,7 @@ export class ShaderOdysseyModel extends Shader {
       vec3 indirectDiffuse = vec3( 0.0 );
 
       #ifdef USE_LIGHTMAP
-        // Bake supplies static irradiance; type-1 lights overlay (EnableLightsDynamicOnly).
+        // Bake supplies static irradiance; type-1 lights overlay (dynamic-only lights).
         indirectDiffuse += texture2D( lightMap, vUv2 ).xyz * lightMapIntensity;
         odysseyAccumulatePointLights(
           geometryPosition, normal, geometryViewDir,
@@ -202,7 +202,7 @@ export class ShaderOdysseyModel extends Shader {
 
       vec3 outgoingLight = ( directDiffuse + indirectDiffuse ) * odysseyDiffuse( albedo ) + directSpecular + totalEmissiveRadiance;
 
-      // Retail Mat — SelfIllumColor → GL_EMISSION (additive).
+      // Mat — SelfIllumColor → GL_EMISSION (additive).
       // FFP then modulates by texture: emission * albedo ≈ fullbright textured at 1,1,1.
       #ifndef IGNORE_LIGHTING
         #ifdef SELFILLUMCOLOR
@@ -229,7 +229,7 @@ export class ShaderOdysseyModel extends Shader {
         #elif defined( ENVMAP_BLENDING_MIX )
           outgoingLight = mix( outgoingLight, envColor.xyz, specularStrength * reflectivity * (1.0 - odysseyDiffuseAlpha) );
         #elif defined( ENVMAP_BLENDING_ADD )
-          // litDiffuse + env*(1-texAlpha) — retail dest!=0 / master path.
+          // litDiffuse + env*(1-texAlpha) — dest!=0 / master path.
           outgoingLight += envColor.xyz * ( 1.0 - odysseyDiffuseAlpha );
         #endif
       #endif
@@ -253,9 +253,9 @@ export class ShaderOdysseyModel extends Shader {
         gl_FragColor = sampledDiffuseColor;
       #elif defined( USE_ENVMAP )
         // Diffuse tex alpha is the reflection mask (already applied to RGB above), NOT
-        // framebuffer alpha. Writing the mask as .a made chrome composite wrong on the
+        // framebuffer alpha. Writing the mask as.a made chrome composite wrong on the
         // alpha:true canvas (translucent GUI overlap "fixed" it by raising dst alpha).
-        // Retail one-pass writes TXI envmapalpha × gob alpha to output alpha
+        // one-pass writes TXI envmapalpha × gob alpha to output alpha
         // (RenderEnvironmentMapped) — envmapalpha defaults to 1;
         // opacity keeps fade controllers working.
         gl_FragColor = vec4( outgoingLight, envMapAlpha * opacity );
@@ -316,7 +316,7 @@ export class ShaderOdysseyModel extends Shader {
       uniform float time;
     #endif
 
-    // Retail MdlNodeTriMesh animateuv — ProceduralAnimateHierarchy
+    // model nodeTriMesh animateuv — ProceduralAnimateHierarchy
     // animatedUV = (uvDirectionX, uvDirectionY, uvJitter, uvJitterSpeed)
     // animatedUVState = (accumOffsetX, accumOffsetY, jitterPhase, 0)
     #ifdef ANIMATED_UV
@@ -403,7 +403,7 @@ export class ShaderOdysseyModel extends Shader {
         odyssey_apply_dangly_vertex(transformed, objectNormal, modelMatrix);
       #endif
 
-      // Retail bumped-out VP (c[12].x): MAD pos, normal, scale — EnableBumpedOutShell uses 0.02
+      // bumped-out VP (c[12].x): MAD pos, normal, scale — EnableBumpedOutShell uses 0.02
       #ifdef FORCE_SHIELD
         transformed += objectNormal * 0.02;
       #endif

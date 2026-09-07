@@ -602,7 +602,7 @@ export class TGALoader {
 
 			// Load image data according to specific method
 			// let func = 'tgaGetImageData' + (use_grey ? 'Grey' : '') + (header.pixel_size) + 'bits';
-			// func(data, y_start, y_step, y_end, x_start, x_step, x_end, width, image, palette );
+			// func(data, y_start, y_step, y_end, x_start, x_step, x_end, width, image, palette);
 			return data;
 
 		}
@@ -662,7 +662,7 @@ export class TGALoader {
 				break;
 			}*/
 
-			//offset += ( (header.width + header.width) * 5 );
+			//offset += ((header.width + header.width) * 5);
 			canvases.push(canvas);
 		}
 
@@ -681,10 +681,10 @@ export class TGALoader {
 	}
 
 	/**
-	 * Retail CreateTexture — uncompressed cycle sheets are
+	 * CreateTexture — uncompressed cycle sheets are
 	 * ImageGetSubImage'd at (i % numx)*subW, (i / numx)*subH into one GL tid per frame.
-	 * parse() remaps BL/BR into an upright canvas, so row indexing is inverted for those
-	 * origins to match retail's raw bottom-up buffer (frame 0 = bottom-left cell).
+	 * parse remaps BL/BR into an upright canvas, so row indexing is inverted for those
+	 * origins to match 's raw bottom-up buffer (frame 0 = bottom-left cell).
 	 */
 	applyCycleFrames(texture: OdysseyTexture): void {
 		const txi = texture.txi;

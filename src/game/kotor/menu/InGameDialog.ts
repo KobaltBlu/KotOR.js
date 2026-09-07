@@ -83,7 +83,7 @@ export class InGameDialog extends GameMenu {
 
   setDialogMode(state: ConversationState) {
     if(state == ConversationState.LISTENING_TO_SPEAKER){
-      // Retail feedback Subtitles option gates speaker line; replies stay visible
+      // feedback Subtitles option gates speaker line; replies stay visible
       const showSubtitles = GameState.FeedbackMessageManager.GetFeedbackTypeEnabled(FeedbackOption.Subtitles);
       this.LBL_MESSAGE.setText(showSubtitles ? GameState.CutsceneManager.lastSpokenString : '');
       this.LB_REPLIES.hide();

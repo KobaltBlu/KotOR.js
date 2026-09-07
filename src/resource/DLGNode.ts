@@ -39,9 +39,9 @@ export class DLGNode {
   cameraID: number;
   cameraAnimation: number;
   camFieldOfView: number;
-  /** Retail CamHeightOffset — SetShot field3 / GetCameraParameters height bias. */
+  /** CamHeightOffset — SetShot field3 / GetCameraParameters height bias. */
   camHeightOffset: number = 0;
-  /** Retail TarHeightOffset — SetShot field4 / focus height bias. */
+  /** TarHeightOffset — SetShot field4 / focus height bias. */
   tarHeightOffset: number = 0;
   camVidEffect: number = -1;
   comment: string;
@@ -79,13 +79,13 @@ export class DLGNode {
   speaker: ModuleObject;
   dialog: DLGObject;
 
-  /** Retail WaitFlags bits (IsDialogDelay). */
+  /** WaitFlags bits (IsDialogDelay). */
   static readonly WAIT_CAMERA = 0x01;
   static readonly WAIT_VOICE = 0x02;
   static readonly WAIT_ANIM = 0x04;
   static readonly WAIT_FADE = 0x08;
   static readonly WAIT_EXPLICIT_DELAY = 0x10;
-  /** Retail Delay DWORD 0xFFFFFFFF — use unsigned (>>> 0); JS `& 0xFFFFFFFF` yields signed -1. */
+  /** Delay DWORD 0xFFFFFFFF — use unsigned (>>> 0); JS `& 0xFFFFFFFF` yields signed -1. */
   static readonly DELAY_UNSET = 0xFFFFFFFF >>> 0;
 
   listener: ModuleObject;
@@ -260,7 +260,7 @@ export class DLGNode {
   }
 
   /**
-   * Retail SendDialogReplies — Logic 0=AND, 1=OR;
+   * SendDialogReplies — Logic 0=AND, 1=OR;
    * a single present Active script is evaluated alone.
    */
   runActiveScripts(){
@@ -298,7 +298,7 @@ export class DLGNode {
       const allowOverrideHigher = false;
       GameState.JournalManager.AddJournalQuestEntry(this.quest, this.questEntry, allowOverrideHigher);
     }
-    // Retail GiveDialogPlotXP
+    // GiveDialogPlotXP
     this.awardPlotIndexXP();
     if(!this.text || this.text.length == 0 || this.isContinueDialog()){
       console.warn(`No text found for ${this.text} on ${this.speaker?.getName()}. not saving to journal`, this.isContinueDialog());
@@ -322,7 +322,7 @@ export class DLGNode {
   }
 
   /**
-   * Award plot.2da XP from PlotIndex + PlotXPPercentage (retail GiveDialogPlotXP).
+   * Award plot.2da XP from PlotIndex + PlotXPPercentage (GiveDialogPlotXP).
    */
   awardPlotIndexXP(){
     if(this.plotIndex === -1 || !(this.plotXPPercentage > 0)){
@@ -363,7 +363,7 @@ export class DLGNode {
 
   /**
    * Apply DLG node fade overlay.
-   * Retail HandleDialogEntry → SetFade
+   * HandleDialogEntry → SetFade
    * (KotOR.js reuses FadeOverlayManager with the same dir/wait/length/color).
    * Types 1/4 fade out; 2/3 fade in. Length 0 is an instant cut (types 1/2).
    * WaitFlags&0x08 (WAIT_FADE) completes when the overlay IsFadeDone, with a
@@ -391,7 +391,7 @@ export class DLGNode {
         break;
       }
     }
-    // Retail IsFadingInDialog: !letterbox.IsFadeDone
+    // IsFadingInDialog: !letterbox.IsFadeDone
     if(GameState.FadeOverlayManager.isFadeDone() ||
        this.elapsed >= (this.fade.delay + this.fade.length) * 1000){
       this.checkList.fadeComplete = true;
@@ -449,7 +449,7 @@ export class DLGNode {
 
   /**
    * VO resref exists but playback failed (missing/undecodable file or denied voice).
-   * Retail SendDialogEntry: when the sound file is not found and the explicit delay
+   * SendDialogEntry: when the sound file is not found and the explicit delay
    * bit (0x10) is clear, the entry timer falls back to the spoken-time estimate
    * instead of the node delay (often a 0s DelayEntry) — otherwise the line would
    * advance on the next frame.
@@ -460,7 +460,7 @@ export class DLGNode {
     if((this.waitFlags & DLGNode.WAIT_EXPLICIT_DELAY) !== 0){
       return;
     }
-    // Animated cuts use a 0s delay in retail (SetDialogDelay(0.0) when camera dialog)
+    // Animated cuts use a 0s delay in (SetDialogDelay(0.0) when camera dialog)
     const delaySec = this.dialog?.isAnimatedCutscene
       ? 0
       : Math.max(0.01, DLGNode.estimateSpokenTimeSeconds(this.getCompiledString()));
@@ -468,7 +468,7 @@ export class DLGNode {
   }
 
   getVoiceResRef(): string {
-    // Retail SoundExists: 0 → no VO playback (even if Sound/VO_ResRef strings present).
+    // SoundExists: 0 → no VO playback (even if Sound/VO_ResRef strings present).
     // Default when field absent is 0x80; alien VO success sets bits via | 3.
     if((this.soundExists >>> 0) === 0){
       return '';
@@ -487,7 +487,7 @@ export class DLGNode {
   }
 
   /**
-   * Entry completion checklist mirroring retail IsDialogDelay WaitFlags bits.
+   * Entry completion checklist mirroring IsDialogDelay WaitFlags bits.
    */
   resetChecklist(){
     const waitCamera = (this.waitFlags & DLGNode.WAIT_CAMERA) !== 0;
@@ -567,7 +567,7 @@ export class DLGNode {
       node.sound = struct.getFieldByLabel('Sound').getValue();
     }
 
-    // Retail LoadDialogBase — SoundExists default 0x80 when absent
+    // LoadDialogBase — SoundExists default 0x80 when absent
     if(struct.hasField('SoundExists')){
       node.soundExists = struct.getFieldByLabel('SoundExists').getValue();
     }else{
@@ -579,7 +579,7 @@ export class DLGNode {
     }
 
     if(struct.hasField('CameraAnimation')){
-      // Retail WORD; 0 means none. Valid CUT ids are 1000..0x6BF (SetAnimatedCamera).
+      // WORD; 0 means none. Valid CUT ids are 1000..0x6BF (SetAnimatedCamera).
       const anim = struct.getFieldByLabel('CameraAnimation').getValue();
       node.cameraAnimation = anim > 0 ? anim : -1;
     }
@@ -603,7 +603,7 @@ export class DLGNode {
       }
     }
 
-    // Retail LoadDialogBase always reads ActionParam1-5/StrA with Script (not gated on Script2)
+    // LoadDialogBase always reads ActionParam1-5/StrA with Script (not gated on Script2)
     if(struct.hasField('ActionParam1')){
       node.nodeEngineType = DLGNodeEngineType.K2;
       node.scriptParams.Param1 = struct.getFieldByLabel('ActionParam1').getValue();
@@ -907,7 +907,7 @@ export class DLGNode {
     }
 
     if(struct.hasField('Delay')){
-      // >>> 0: JS bitwise & yields signed -1 for 0xFFFFFFFF; retail Delay unset is unsigned
+      // >>> 0: JS bitwise & yields signed -1 for 0xFFFFFFFF; Delay unset is unsigned
       node.delay = struct.getFieldByLabel('Delay').getValue() >>> 0;
     }
 
@@ -953,10 +953,10 @@ export class DLGNode {
       node.facialAnimation = struct.getFieldByLabel('FacialAnim').getValue();
     }
 
-    // Retail LoadDialogBase alien VO resolve must run before delay/WaitFlags mutations
+    // LoadDialogBase alien VO resolve must run before delay/WaitFlags mutations
     node.resolveAlienVO(dialog);
 
-    // Retail LoadDialogBase fade / delay / WaitFlags mutations
+    // LoadDialogBase fade / delay / WaitFlags mutations
     node.applyLoadDialogBaseMutations(dialog, fadeTypePresent, defaultUnsetDelay);
 
     if(struct.hasField('NodeUnskippable')){
@@ -986,7 +986,7 @@ export class DLGNode {
   }
 
   /**
-   * Retail LoadDialogBase alien/foreign-language VO resolution.
+   * LoadDialogBase alien/foreign-language VO resolution.
    * When VO_ResRef is empty: race row from AlienRaceNode (or AlienRaceOwner for
    * empty Speaker); emotion.2da[Emotion].LABEL names the alienvo.2da column.
    */
@@ -1043,7 +1043,7 @@ export class DLGNode {
   }
 
   /**
-   * Retail LoadDialogBase post-load mutations for Delay, WaitFlags, and fade fields.
+   * LoadDialogBase post-load mutations for Delay, WaitFlags, and fade fields.
    * @param defaultUnsetDelay — DelayEntry for entries, DelayReply for replies.
    */
   applyLoadDialogBaseMutations(
@@ -1092,7 +1092,7 @@ export class DLGNode {
 
   /**
    * Spoken-time estimate in seconds when Delay is unset and there is no VO.
-   * Retail GetSpokenTimeEstimate: length * 0.11 + 1.0
+   * GetSpokenTimeEstimate: length * 0.11 + 1.0
    * (empty text returns 0; SetDialogDelay floors the result to 0.01).
    */
   static estimateSpokenTimeSeconds(text: string): number {

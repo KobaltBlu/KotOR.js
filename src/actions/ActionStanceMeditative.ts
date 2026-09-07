@@ -41,7 +41,7 @@ export class ActionStanceMeditative extends Action {
       return ActionStatus.IN_PROGRESS;
     }
 
-    // Retail waits a couple of frames (frame counter < 2) then COMPLETE
+    // waits a couple of frames (frame counter < 2) then COMPLETE
     this.holdTimer += delta;
     if(this.holdTimer < 0.05){
       return ActionStatus.IN_PROGRESS;

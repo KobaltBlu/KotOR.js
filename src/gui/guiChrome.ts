@@ -44,11 +44,11 @@ export function chromeFrameDimension(
 }
 
 /**
- * Retail CSWGuiBorderParams::GetBorderDim.
+ *.
  * When DIMENSION is non-zero, return it; otherwise fall back to edge (then corner)
  * texture height so LabelHilight / boxline frames still size correctly.
  */
-export function retailBorderDim(
+export function odysseyBorderDim(
   dimension: number,
   edgeTextureSize: number = 0,
   cornerTextureSize: number = 0,
@@ -64,7 +64,7 @@ export function retailBorderDim(
   return asGuiSize(cornerTextureSize);
 }
 
-/** GUI pixel size from a loaded chrome edge/corner map (retail image GetHeight). */
+/** GUI pixel size from a loaded chrome edge/corner map (image GetHeight). */
 export function chromeTextureGuiSize(texture: THREE.Texture | null | undefined): number {
   if(!(texture instanceof THREE.Texture)){
     return 0;

@@ -2,7 +2,7 @@ import { asExtentInt, truncDiv } from "@/gui/GUICoord";
 import { borderInnerExtent } from "@/gui/borderInnerExtent";
 
 /**
- * Retail SetExtent — thumb size inside border
+ * SetExtent — thumb size inside border
  * GetInnerExtent. Height floors at 4 when maxValue > 1.
  */
 export function scrollBarThumbSize(params: {
@@ -43,7 +43,7 @@ export function scrollBarThumbSize(params: {
 }
 
 /**
- * Retail HandleMouseCapturedMovement thumb drag.
+ * HandleMouseCapturedMovement thumb drag.
  * `startValue` is the 1-based scroll_position when shouldScroll, else cur.
  * Returns the same units as startValue (1-based or 0-based accordingly).
  */

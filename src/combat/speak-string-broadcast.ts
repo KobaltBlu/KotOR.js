@@ -2,7 +2,7 @@ import { TalkVolume } from "@/enums/engine/TalkVolume";
 import { PerceptionMask } from "@/enums/engine/PerceptionMask";
 
 /**
- * Retail SpeakString / BroadcastDialog notify plan (volume → range + who hears).
+ * SpeakString / BroadcastDialog notify plan (volume → range + who hears).
  * Party lives in PartyManager.party and must be notified for every volume that
  * notifies area creatures (SILENT_TALK delivers GEN_I_WAS_ATTACKED to companions).
  *
@@ -34,8 +34,8 @@ export function getSpeakStringNotifyPlan(volume: TalkVolume): SpeakStringNotifyP
 }
 
 /**
- * Retail BroadcastDialog creature→creature gate: listener must already HEAR the
- * speaker (visibility HEARD bit). Party mutual perception is forced in retail,
+ * BroadcastDialog creature→creature gate: listener must already HEAR the
+ * speaker (visibility HEARD bit). Party mutual perception is forced in,
  * so party notify skips this check.
  */
 export function listenerHearsSpeaker(

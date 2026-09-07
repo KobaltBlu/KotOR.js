@@ -88,7 +88,7 @@ export class TLKString {
 
   /**
    * SoundLength in seconds when SNDLENGTH_PRESENT is set; otherwise 0.
-   * TLK stores SoundLength as IEEE-754 float (retail TLK fetch → float).
+   * TLK stores SoundLength as IEEE-754 float (TLK fetch → float).
    */
   getDisplaySoundLength(): number {
     if (!this.hasSoundLengthPresent()) return 0;

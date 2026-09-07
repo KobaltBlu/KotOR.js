@@ -71,7 +71,7 @@ export class CharGenQuickPanel extends GameMenu {
     });
   }
 
-  /** Retail SetState */
+  /** SetState */
   setState(step: number) {
     GameState.CharGenManager.quickStep = step;
     this.applyStepVisibility();

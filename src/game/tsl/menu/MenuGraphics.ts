@@ -3,7 +3,7 @@ import type { GUILabel, GUISlider, GUIListBox, GUIButton, GUICheckBox } from "@/
 import { MenuGraphics as K1_MenuGraphics } from "@/game/kotor/KOTOR";
 
 /**
- * retail CSWGuiOptionsGraphics description TLKs (ctor custom_value / OnEnterSlot).
+ * graphics options description TLKs (ctor custom_value / OnEnterSlot).
  */
 const TLK_DESC_GAMMA = 0xa546;
 const TLK_DESC_RESOLUTION = 0xbe43;

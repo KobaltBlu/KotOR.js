@@ -17,7 +17,7 @@ import {
 /**
  * Approximate TestDirectLine + NoCreaturesOnLine.
  *
- * Retail walks room→room via ClippedLineSegmentWalkable / NoNonWalkPolys,
+ * walks room→room via ClippedLineSegmentWalkable / NoNonWalkPolys,
  * height band (arg4), then NoCreaturesOnLine.
  *
  * JS: face-walk ClippedLine + NoNonWalkPolysDetailed (doors/static/mesh) +
@@ -27,7 +27,7 @@ import {
  * @file test-direct-line.ts
  */
 
-/** Retail-ish TestDirectLine return codes used by ProcessPoint / callers. */
+/** -ish TestDirectLine return codes used by ProcessPoint / callers. */
 export enum TestDirectLineCode {
   Fail = 0,
   Ok = 1,
@@ -47,7 +47,7 @@ export type TestDirectLineHit = {
   blockingCreatureId?: number;
   /** Blocking door/placeable id when DetailedBlock. */
   blockingObjectId?: number;
-  /** Optional retail CWalkHitInfo payload. */
+  /** Optional CWalkHitInfo payload. */
   walkHit?: WalkHitInfo;
 };
 
@@ -82,7 +82,7 @@ export function getWalkHeightAt(
 
 /**
  * True if segment crosses a non-transition walk edge (wall).
- * Same rule as PathPoint.hasLOS / retail ClippedLine exit when GetAdjacentRoom==-1.
+ * Same rule as PathPoint.hasLOS / ClippedLine exit when GetAdjacentRoom==-1.
  */
 function isCandidatePointWalkable(
   area: ModuleArea,
@@ -125,7 +125,7 @@ export function segmentCrossesBlockingWalkEdge(
 /**
  * Room containing a point via walkable faces only.
  * No AABB fallback — overlapping room boxes caused false VIS/room fails.
- * Retail GetRoom uses walkmesh; undefined → skip room connectivity.
+ * GetRoom uses walkmesh; undefined → skip room connectivity.
  */
 export function getRoomAtPoint(
   area: ModuleArea | undefined,
@@ -163,7 +163,7 @@ const _walkAdjCache = new WeakMap<ModuleArea, { roomCount: number; adj: Map<stri
 
 /**
  * Undirected room graph from WalkmeshEdge.transition → area.rooms[index].
- * Retail TestDirectLine uses GetAdjacentRoom on clip exit, not.vis links.
+ * TestDirectLine uses GetAdjacentRoom on clip exit, not.vis links.
  */
 function getWalkRoomAdjacency(area: ModuleArea): Map<string, Set<string>> {
   const cached = _walkAdjCache.get(area);
@@ -217,7 +217,7 @@ function roomsAreWalkConnected(
   // No transition data → cannot prove disconnect; allow (avoid false fails)
   if(!startLinks?.size && !destLinks?.size) return true;
 
-  // Retail TestDirectLine walks GetAdjacentRoom along the clip (hop = transitions).
+  // TestDirectLine walks GetAdjacentRoom along the clip (hop = transitions).
   // Cap BFS depth so distant graph paths are not treated as LOS-clear.
   type Node = { name: string; depth: number };
   const open: Node[] = [{ name: start.roomName, depth: 0 }];
@@ -253,14 +253,14 @@ function roomsAreAdjacentOrSame(
 function adaptiveSteps(origin: THREE.Vector3, dest: THREE.Vector3, requested?: number): number {
   if(requested != null) return Math.max(4, requested);
   const dist = Math.hypot(dest.x - origin.x, dest.y - origin.y);
-  // ~1 sample / 0.4m, clamp 8..48 (retail continuous clip)
+  // ~1 sample / 0.4m, clamp 8..48 (continuous clip)
   return Math.max(8, Math.min(48, Math.ceil(dist / 0.4) + 1));
 }
 
 /**
  * Test whether origin→dest is walkable (and optionally creature-clear).
  * @param checkCreatures When true, treat creature spheres as blockers (NoCreaturesOnLine).
- * @param maxHeightDelta Max |ΔZ| between consecutive walk samples (retail height cylinder).
+ * @param maxHeightDelta Max |ΔZ| between consecutive walk samples (height cylinder).
  */
 export function testDirectLine(
   area: ModuleArea | undefined,
@@ -272,7 +272,7 @@ export function testDirectLine(
     checkCreatures?: boolean;
     /** Creature ids to skip in NoCreaturesOnLine (e.g. the hex blocker). */
     ignoreCreatureIds?: number[];
-    /** Treat party members as non-blocking (retail ProcessPoint -3 + IsPartyMember). */
+    /** Treat party members as non-blocking (ProcessPoint -3 + IsPartyMember). */
     allowPartyCreatures?: boolean;
     maxHeightDelta?: number;
     steps?: number;
@@ -310,7 +310,7 @@ export function testDirectLine(
   const candidateFaces = candidates?.faces as any[] | undefined;
   const candidateEdges = candidates?.edges as WalkmeshEdge[] | undefined;
 
-  // Retail: ClippedLineSegmentWalkable per room before NoNonWalk / creatures
+  // : ClippedLineSegmentWalkable per room before NoNonWalk / creatures
   if(checkClip && area.walkFaces?.length){
     const clip = clippedLineSegmentWalkable(area, origin, dest, { maxHeightDelta: maxDz });
     if(!clip.ok){
@@ -324,7 +324,7 @@ export function testDirectLine(
     }
   }
 
-  // Retail NoNonWalkPolysDetailed + OnRoom after clip (−2 DetailedBlock).
+  // NoNonWalkPolysDetailed + OnRoom after clip (−2 DetailedBlock).
   // Full-segment block still reports farthest clear fraction (PlotPath partial).
   if(checkClip){
     const polys = noNonWalkPolysDetailed(area, origin, dest, {
@@ -367,7 +367,7 @@ export function testDirectLine(
   let prevZ = getWalkHeightAt(area, origin, candidateFaces);
   if(isNaN(prevZ)) prevZ = origin.z;
   const prevSample = origin.clone();
-  // Retail walks GetAdjacentRoom along the clip — track current room, 1-hop only
+  // walks GetAdjacentRoom along the clip — track current room, 1-hop only
   let walkRoom = startRoom;
 
   for(let i = 1; i <= steps; i++){
@@ -378,7 +378,7 @@ export function testDirectLine(
       origin.z + (dest.z - origin.z) * t
     );
 
-    // Non-transition walk edge = wall (retail GetAdjacentRoom -1)
+    // Non-transition walk edge = wall (GetAdjacentRoom -1)
     if(segmentCrossesBlockingWalkEdge(area, prevSample, _sample, candidateEdges)){
       refineClearPoint(area, origin, dest, clearT, t, clearPoint, perspace);
       return {
@@ -458,7 +458,7 @@ export function testDirectLine(
     prevSample.copy(_sample);
   }
 
-  // Retail NoCreaturesOnLine on the (clipped) segment — creperspace capsule
+  // NoCreaturesOnLine on the (clipped) segment — creperspace capsule
   if(checkCreatures){
     const creSpace = options.owner
       ? getCreaturePersonalSpace(options.owner as ModuleCreature)
@@ -493,7 +493,7 @@ export function testDirectLine(
 
 /**
  * Binary-search farthest t where origin→lerp(t) clears NoNonWalkPolysDetailed.
- * Retail PlotPathInArea partial recovery needs clearT > 0 when a static object
+ * PlotPathInArea partial recovery needs clearT > 0 when a static object
  * only blocks near the destination (e.g. console placeable beside a waypoint).
  */
 function refineDetailedClearT(
@@ -561,7 +561,7 @@ function refineClearPoint(
 
 /**
  * Binary expand toward dest from origin for farthest walkable point
- * (retail PlotPathInArea partial-path recovery when full line fails).
+ * (PlotPathInArea partial-path recovery when full line fails).
  */
 export function farthestClearPoint(
   area: ModuleArea | undefined,
@@ -580,7 +580,7 @@ export function farthestClearPoint(
 }
 
 /**
- * Retail PlotPathInArea first stage: full LOS → true.
+ * PlotPathInArea first stage: full LOS → true.
  */
 export function hasDirectLine(
   area: ModuleArea | undefined,

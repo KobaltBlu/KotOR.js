@@ -1,13 +1,13 @@
 /**
  * Odyssey listen-pattern matcher (K1 + K2 parity).
  *
- * Retail routines:
+ * routines:
  * - ParseString (K1)
  * - TestString (K1 / K2 Aspyr)
  * - NewNode
  *
  * Node types (NewNode param):
- *   0 LITERAL, 1 ANY (**), 2 ALT, 3 JOIN, 4 *w, 5 *p, 6 *a, 7 *n, 8 *A, 9 END
+ * 0 LITERAL, 1 ANY (**), 2 ALT, 3 JOIN, 4 *w, 5 *p, 6 *a, 7 *n, 8 *A, 9 END
  *
  * Character classes consume exactly one character per successful visit. Because
  * TestString re-enters non-literal nodes on backtrack (advancing from that
@@ -21,7 +21,7 @@
  * @file listen-pattern.ts
  */
 
-/** Retail expression node type values. */
+/** expression node type values. */
 export const enum ExprNodeType {
   LITERAL = 0,
   ANY = 1,
@@ -118,7 +118,7 @@ export function parsePattern(pattern: string, caseSensitive = false): ExprNode |
       depth -= 1;
       const parent = stack[depth];
       if(child.head){
-        // Retail ParseString `)` case: parent.last becomes
+        // ParseString `)` case: parent.last becomes
         // child.tail (true chain end / JOIN), NOT child.last (alt insert point).
         if(!parent.head){
           parent.head = child.head;
@@ -248,7 +248,7 @@ export function testStringAgainstPattern(
 
   resetVisits(head);
 
-  // path[0] is a dummy JOIN (retail pushes NewNode(3) before walking).
+  // path[0] is a dummy JOIN (pushes NewNode(3) before walking).
   const path: ExprNode[] = [newNode(ExprNodeType.JOIN)];
 
   let pos = 0;
@@ -270,7 +270,7 @@ export function testStringAgainstPattern(
 
   /**
    * Pop path entries until a retriable (non-literal) node is found.
-   * Restores `pos` to that node's endPos (retail local_38 = node[2]).
+   * Restores `pos` to that node's endPos (local_38 = node[2]).
    */
   const backtrack = (): ExprNode | null => {
     while(path.length > 1){
@@ -315,7 +315,7 @@ export function testStringAgainstPattern(
         path.push(node);
         if(pos === len){
           if(node.visits > 1){
-            // Cannot expand past end — hard fail (retail clears and returns 0).
+            // Cannot expand past end — hard fail (clears and returns 0).
             return empty;
           }
         }else if(node.visits > 1){
@@ -331,13 +331,13 @@ export function testStringAgainstPattern(
         path.push(node);
         node.endPos = pos;
         if(node.visits === 1){
-          // Right side first (retail).
+          // Right side first.
           node = node.next;
         }else if(node.visits === 2 && node.child){
           node.child.visits = 0;
           node = node.child;
         }else{
-          // Exhausted both sides — pop self before further backtrack (retail deleteAt).
+          // Exhausted both sides — pop self before further backtrack (deleteAt).
           path.pop();
           failed = true;
           break;
@@ -362,7 +362,7 @@ export function testStringAgainstPattern(
         }
         path.push(node);
         if(!charMatchesClass(node.type, input[pos])){
-          // Retail pops the just-pushed node before general backtrack.
+          // pops the just-pushed node before general backtrack.
           path.pop();
           failed = true;
           break;

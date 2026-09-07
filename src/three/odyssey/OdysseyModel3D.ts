@@ -92,7 +92,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
   context: IGameContext = undefined;
   meshes: any[] = [];
   danglyMeshes: any[] = [];
-  /** Retail PartLightsaber meshes — updated by SaberTrailSimulator */
+  /** light nodesaber meshes — updated by SaberTrailSimulator */
   saberMeshes: THREE.Mesh[] = [];
   odysseyAnimations: OdysseyModelAnimation[] = [];
   odysseyAnimationMap: Map<string, OdysseyModelAnimation> = new Map<string, OdysseyModelAnimation>();
@@ -125,13 +125,13 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
   nodes: Map<string, OdysseyObject3D> = new Map<string, OdysseyObject3D>();
   /**
-   * Runtime nodes indexed by MDL nameIndex (retail node index into names[]).
+   * Runtime nodes indexed by MDL nameIndex (node index into names).
    * Useful for tools / nameIndex lookups. Skin bone_parts use GatherBones DFS
    * (see dfsNodes), not this table — on p_bastilabb those diverge for legs.
    */
   nodesByNameIndex: OdysseyObject3D[] = [];
   /**
-   * Nodes in retail GatherBones / hierarchy DFS order. Skin bone_parts[slot]
+   * Nodes in GatherBones / hierarchy DFS order. Skin bone_parts[slot]
    * and QBone/TBone are parallel to this list.
    */
   dfsNodes: OdysseyObject3D[] = [];
@@ -141,7 +141,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
    */
   dfsIndexByNameIndex: number[] = [];
   /**
-   * Runtime nodes indexed by MDL nodeNumber (retail MdlNode.id).
+   * Runtime nodes indexed by MDL nodeNumber (model node.id).
    * Shared across the supermodel chain for skeletal bones; AnimateHierarchy
    * matches Parts to anim nodes by this id. Prefer this over the name Map.
    */
@@ -191,7 +191,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
   Scale: number;
   modelHeader: IOdysseyModelHeader = {} as IOdysseyModelHeader;
   /**
-   * Retail Gob.distortion. Set by Gob EnableDistortion / VFX 0x708;
+   * Gob.distortion. Set by Gob EnableDistortion / VFX 0x708;
    * cleared by DisableDistortion. Combined with TILE classification for
    * forcePushBucket / emitter stencil mask (ManageSceneBSP / RenderFunc).
    */
@@ -222,7 +222,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
   opacity: number = 1;
 
   /**
-   * Retail force-distortion opt-in (ManageSceneBSP / PartEmitter RenderFunc):
+   * force-distortion opt-in (ManageSceneBSP / PartEmitter RenderFunc):
    * gob.distortion != 0 OR ((classification >> 1) & 1) — i.e. OdysseyModelClass.TILE.
    */
   isForceDistortionActive(): boolean {
@@ -391,7 +391,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
       // p_bastilabb embeds neck/head bones that collide with the head MDL
       // (same names + nodeNumbers). Prefer the head's Object3Ds for those
       // collisions so anim (nodes/nodesById) and skins share one hierarchy.
-      // Never steal headhook ancestors (torsoupr_g, torso_g, ...).
+      // Never steal headhook ancestors (torsoupr_g, torso_g,...).
       head.ensureGatherBonesDfs();
       this.ensureGatherBonesDfs();
       preferHeadBonesForNameCollisions(
@@ -760,7 +760,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
       if(material instanceof THREE.ShaderMaterial){
         if(material.type == 'ShaderMaterial'){
           material.uniforms.time.value += dt;
-          // Retail ProceduralAnimateHierarchy — once per rendered frame, no deltaT:
+          // ProceduralAnimateHierarchy — once per rendered frame, no deltaT:
           // base += (uvDirectionX, uvDirectionY); jitter phase driven by uvJitterSpeed
           if(material.defines?.ANIMATED_UV != null && material.uniforms.animatedUVState && material.uniforms.animatedUV){
             const state = material.uniforms.animatedUVState.value;
@@ -957,7 +957,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
   }
 
   /**
-   * Ensure dfsNodes / dfsIndexByNameIndex match retail GatherBones order.
+   * Ensure dfsNodes / dfsIndexByNameIndex match GatherBones order.
    */
   ensureGatherBonesDfs(): void {
     if(this.dfsNodes.length > 0){
@@ -970,7 +970,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
   }
 
   /**
-   * Ensure nodesById is populated for anim / Part-id lookups (retail MdlNode.id).
+   * Ensure nodesById is populated for anim / Part-id lookups (model node.id).
    * Only register nodes whose name matches this model's names[nameIndex] so head
    * attaches with colliding nodeNumbers do not overwrite body skeletal slots.
    */
@@ -999,11 +999,11 @@ export class OdysseyModel3D extends OdysseyObject3D {
   /**
    * Bind each skin to its bone slots.
    *
-   * Retail (PartSkin::PostProcess / ExecuteSkinTransforms / RenderSkinned):
+   * (/ ExecuteSkinTransforms / RenderSkinned):
    * - MDX bone index → bone_parts[slot] → GatherBones DFS index
    * - qbone_ref_inv / tbone_ref_inv are parallel to that same DFS walk
    * - On p_bastilabb, nameIndex ≠ DFS for leg slots; treating bone_parts as
-   *   nameIndex binds the wrong Object3D (e.g. foot instead of thigh)
+   * nameIndex binds the wrong Object3D (e.g. foot instead of thigh)
    *
    * Resolve bone and inverse both via dfsNodes[bone_parts[j]]. Keep MDL
    * inverses and update in skin-local space.
@@ -1054,7 +1054,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
         }
 
         const skeleton = new THREE.Skeleton(bones as any[], inverses);
-        // Identity bindMatrix skips calculateInverses() so MDL inverses are kept.
+        // Identity bindMatrix skips calculateInverses so MDL inverses are kept.
         skinNode.bindMode = 'detached';
         skinNode.bind(skeleton, ODYSSEY_IDENTITY_BIND_MATRIX);
         installOdysseySkeletonUpdate(skeleton, skinNode);
@@ -1273,7 +1273,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
   }
 
   /**
-   * Retail EnableBumpedOutShell — clone skinned meshes onto the
+   * EnableBumpedOutShell — clone skinned meshes onto the
    * same parents/skeleton so the shell inherits creature transform + bone animation.
    */
   generateForceShieldGeometry( shieldTexName = '' ){
@@ -1333,7 +1333,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
     }
   };
 
-  /** Retail DisableBumpedOutShell */
+  /** DisableBumpedOutShell */
   disposeForceShieldGeometry(){
     while(this.forceShieldGeometry.length){
       let object = this.forceShieldGeometry.splice(0, 1)[0];
@@ -1387,7 +1387,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
       const hasAnim = odysseyModel.odysseyAnimationMap.has(animName);
       if(!hasAnim){
         const anim = OdysseyModelAnimation.From(supermodel.animations[i]);
-        // Retail SynchronizeNodes: remap anim MdlNode.id onto geometry id space.
+        // SynchronizeNodes: remap anim model node.id onto geometry id space.
         // Clone happens inside sync so the cached supermodel MDL is not mutated.
         synchronizeAnimationToModel(anim, odysseyModel.nodes, odysseyModel.nodesById);
         odysseyModel.odysseyAnimations.push(anim);
@@ -1592,7 +1592,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
       const isSaber =
         (odysseyNode.nodeType & OdysseyModelNodeType.Saber) === OdysseyModelNodeType.Saber;
 
-      // Sabers often have empty faces[] but valid verts/indices — still build the mesh.
+      // Sabers often have empty faces but valid verts/indices — still build the mesh.
       if(odysseyNode.faces.length || (isSaber && odysseyNode.vertices.length) ){
 
         if(!odysseyNode.isAnimDummyNode){
@@ -1600,7 +1600,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
           if(!odysseyNode.tvectors[0].length) odysseyNode.isAnimDummyNode = true;
         }
 
-        // Visible skin meshes cast SSCS shadows via the depth prepass (retail used invisible bone trimesh proxies).
+        // Visible skin meshes cast SSCS shadows via the depth prepass (used invisible bone trimesh proxies).
         if( ( odysseyNode.flagRender || options.editorMode ) || (odysseyModel.modelHeader.classification == OdysseyModelClass.PLACEABLE)){
 
           //-------------------------//
@@ -1749,7 +1749,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
           //----------------//
           // MERGE GEOMETRY
           //----------------//
-          // Sabers must stay as live PartLightsaber meshes (trail rebuild each frame).
+          // Sabers must stay as live light nodesaber meshes (trail rebuild each frame).
           if(!isSaber && !((odysseyNode.nodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB) && !odysseyNode.backgroundGeometry && options.mergeStatic && !odysseyNode.isAnimDummyNode && odysseyNode.faces.length){
 
             parentNode.getWorldPosition( mesh.position );
@@ -1932,7 +1932,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
           }
         }
 
-        // Retail SetBeaming — beaming meshes use beamingProjectionAlpha as blend alpha.
+        // SetBeaming — beaming meshes use beamingProjectionAlpha as blend alpha.
         if(odysseyNode.beaming){
           material.userData.beaming = true;
           material.defines = material.defines || {};
@@ -1951,7 +1951,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
         material.visible = false;
       }
 
-      // Retail SetEnvMap — object-level envmap from appearance.2da
+      // envmap assign — object-level envmap from appearance.2da
       // ENVMAP / baseitems partEnvMap, applied to all parts and overriding the TXI envmap.
       if(options.envMapOverride){
         material.userData.envMapOverride = options.envMapOverride;
@@ -1982,7 +1982,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
       if((odysseyNode.nodeType & OdysseyModelNodeType.Saber) == OdysseyModelNodeType.Saber){
         material.defines.IGNORE_LIGHTING = "";
         material.defines.SABER = "";
-        // Retail enableLightsaberBlurAdd — additive, no depth write, double-sided.
+        // enableLightsaberBlurAdd — additive, no depth write, double-sided.
         material.transparent = true;
         material.blending = THREE.AdditiveBlending;
         material.depthWrite = false;
@@ -1997,7 +1997,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
         }
       }
 
-      // TSL dirt overlay — retail Draw case 0x10.
+      // TSL dirt overlay — Draw case 0x10.
       if(odysseyNode.dirtEnabled && material instanceof THREE.ShaderMaterial){
         const slot = Math.max(0, Math.min(2, ((odysseyNode.dirtTexture ?? 1) | 0) - 1));
         const dirtMap = DirtyTextureManager.getTexture(slot);
@@ -2034,7 +2034,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
           material.needsUpdate = true;
         }
 
-        //Set animated uv uniforms — retail ProceduralAnimateHierarchy
+        //Set animated uv uniforms — ProceduralAnimateHierarchy
         if(odysseyNode.nAnimateUV){
           material.uniforms.animatedUV.value.set(odysseyNode.fUVDirectionX, odysseyNode.fUVDirectionY, odysseyNode.fUVJitter, odysseyNode.fUVJitterSpeed);
           if(material.uniforms.animatedUVState){
@@ -2113,7 +2113,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
     lightNode.castShadow = odysseyNode.shadowFlag ? true : false;
     lightNode.genFlare = odysseyNode.generateFlareFlag ? true : false;
     lightNode.isFading = odysseyNode.fadingLightFlag;
-    // ControlLightsFade: fadingLightFlag → initial fade 0, else 1
+    // light fade pass: fadingLightFlag → initial fade 0, else 1
     lightNode.fadeFactor = odysseyNode.fadingLightFlag ? 0 : 1;
     lightNode.shadowFadeFactor = 0;
     lightNode.maxIntensity = 1;
@@ -2158,8 +2158,8 @@ export class OdysseyModel3D extends OdysseyObject3D {
   };
 
   /**
-   * Attach MDL flare arrays to the light for Scene::RenderLensFlares.
-   * Retail CollectLightsForGivenRoom gates on flarecolorshifts count, not
+   * Attach MDL flare arrays to the light for.
+   * CollectLightsForGivenRoom gates on flarecolorshifts count, not
    * generateflare or flareradius (radius is cull/falloff at draw time).
    */
   static NodeLensflareBuilder(_odysseyModel: OdysseyModel3D, parentNode: OdysseyLight3D, odysseyNode: OdysseyModelNodeLight, _options: IOdysseyModelLoaderOptions){

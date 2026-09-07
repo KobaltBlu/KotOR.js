@@ -32,13 +32,13 @@ export class ApplicationWindow {
 
     // Enable SharedArrayBuffer
     // this.browserWindow.webContents.session.webRequest.onHeadersReceived(
-    //   (details, callback) => {
-    //     if(!details.responseHeaders) details.responseHeaders = {};
-    //     details.responseHeaders['Cross-Origin-Opener-Policy'] = ['same-origin'];
-    //     details.responseHeaders['Cross-Origin-Embedder-Policy'] = ['require-corp'];
-    //     callback({ responseHeaders: details.responseHeaders });
-    //   }
-    // );
+    // (details, callback) => {
+    // if(!details.responseHeaders) details.responseHeaders = {};
+    // details.responseHeaders['Cross-Origin-Opener-Policy'] = ['same-origin'];
+    // details.responseHeaders['Cross-Origin-Embedder-Policy'] = ['require-corp'];
+    // callback({ responseHeaders: details.responseHeaders });
+    // }
+    //);
     
     this.profile = profile;
 
@@ -68,7 +68,7 @@ export class ApplicationWindow {
 
     this.browserWindow.webContents.on("did-create-window", (window, details) => {
       if(details.url.indexOf(`debugger/index.html`) !== -1){
-        // window.webContents.once("dom-ready", () => window.webContents.openDevTools());
+        // window.webContents.once("dom-ready",  => window.webContents.openDevTools);
         console.log('Debugger: Launched!');
       }
     });

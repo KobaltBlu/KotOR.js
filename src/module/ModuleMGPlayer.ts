@@ -30,7 +30,7 @@ import { hitCheckPart } from "@/module/minigame/MGHitCheck";
 import { FollowerCamera } from "@/engine/FollowerCamera";
 import { AuroraAnimationFlag } from "@/enums/animation/AuroraAnimationFlag";
 
-/** Retail SWMGKeyInfo (0x24) appended by OnReportKey. */
+/** SWMGKeyInfo (0x24) appended by OnReportKey. */
 export interface SWMGKeyInfo {
   time: number;
   position: THREE.Vector3;
@@ -63,7 +63,7 @@ export class ModuleMGPlayer extends ModuleObject {
   gunBanks: ModuleMGGunBank[] = [];
   bullets: ModuleMGGunBullet[] = [];
 
-  /** retail Sounds (Engine / Death) + SWMG sound properties. */
+  /** Sounds (Engine / Death) + SWMG sound properties. */
   trackFollowerSounds: MGTrackFollowerSounds = new MGTrackFollowerSounds();
   /** Engine loop + death oneshot (Go / Stop / OnDeath). */
   trackFollowerAudio: MGTrackFollowerAudio = new MGTrackFollowerAudio(this.trackFollowerSounds, true);
@@ -81,27 +81,27 @@ export class ModuleMGPlayer extends ModuleObject {
   invince: number;
   gear: number;
   gunTimer: number;
-  /** @deprecated Use MiniGame.jumpSpeed (TSL retail). Kept for legacy reads. */
+  /** @deprecated Use MiniGame.jumpSpeed (TSL). Kept for legacy reads. */
   jumpVelcolity: number;
   boostVelocity: number;
   falling: boolean;
   alive: boolean;
   /**
-   * Retail tunnel limits from GFF (raw floats).
+   * tunnel limits from GFF (raw floats).
    * Type 1 (swoop): position offsets. Type 2 (turret): degrees (applied as radians to rotation).
    */
   tunnel: { neg: { x: number; y: number; z: number; }; pos: { x: number; y: number; z: number; }; };
-  /** Retail KeepInTunnel: when component != 0, axis is infinite (type 2 wraps 0–360). */
+  /** KeepInTunnel: when component != 0, axis is infinite (type 2 wraps 0–360). */
   tunnelInfinite: { x: number; y: number; z: number };
-  /** Retail player origin (Start_Offset_*) added to tunnel clamps. */
+  /** player origin (Start_Offset_*) added to tunnel clamps. */
   origin: { x: number; y: number; z: number };
   /**
-   * Retail Target_Offset_X/Y/Z from Load —
+   * Target_Offset_X/Y/Z from Load —
    * local-space aim point for BehaviorTrack / FireGunCallback targeting.
    */
   targetOffset: THREE.Vector3 = new THREE.Vector3();
   /**
-   * retail offset — tunnel-local translation (swoop) or aim (turret uses rotation).
+   * offset — tunnel-local translation (swoop) or aim (turret uses rotation).
    * Applied to container local position for type 1.
    */
   playerOffset: THREE.Vector3;
@@ -115,22 +115,22 @@ export class ModuleMGPlayer extends ModuleObject {
   num_loops: any;
   /** Last HP delta for SWMG_GetLastHPChange / OnDamage. */
   lastHPChange: number = 0;
-  /** Retail AdjustPosition bank level −10..10 for BankL/R_## anims. */
+  /** AdjustPosition bank level −10..10 for BankL/R_## anims. */
   bankLevel: number = 0;
   /**
-   * retail — continuous signed bank magnitude.
+   * — continuous signed bank magnitude.
    * Mapped to bankLevel via Control thresholds.
    */
   bankMagnitude: number = 0;
-  /** Retail latch so decay snaps to plateau once per release. */
+  /** latch so decay snaps to plateau once per release. */
   bankDecayLatched: boolean = false;
   /**
-   * retail DoInertia — previous modelhook velocity
+   * DoInertia — previous modelhook velocity
    * for bump-plane projection when UseInertia.
    */
   inertiaVelocity: THREE.Vector3 = new THREE.Vector3();
   /**
-   * Retail OnReportKey → follower.trigger (Pos keys, flag≠0)
+   * OnReportKey → follower.trigger (Pos keys, flag≠0)
    * and MiniPlayer (Ori keys, flag==0).
    */
   inertiaKeysTrigger: SWMGKeyInfo[] = [];
@@ -156,22 +156,22 @@ export class ModuleMGPlayer extends ModuleObject {
   cameraName: string = '';
   trackName: string = '';
   /**
-   * retail bit0 — set by Go, cleared by Stop / ForceSetTrack.
+   * bit0 — set by Go, cleared by Stop / ForceSetTrack.
    * DoHitCheck only runs while the player follower is running.
    */
   running: boolean = false;
   /** True when `track` was created for this follower (must dispose with follower). */
   ownsTrack: boolean = false;
   /**
-   * Retail ForceSetTrack 3rd arg / GetAttachType
+   * ForceSetTrack 3rd arg / GetAttachType
    * swoop=1, turret=2, enemy=0. Used when attaching rotating models to modelhook.
    */
   trackAttachType: number = 0;
-  /** Retail SetSpeed / Go — PlayAnimation("track", speed * 0.01). */
+  /** SetSpeed / Go — PlayAnimation("track", speed * 0.01). */
   trackAnimRate: number = 0;
   /**
    * Model world position at start of update — DoObstacleHitCheck segment start
-   * (retail follower GetPreviousPosition → GetPosition).
+   * (follower GetPreviousPosition → GetPosition).
    */
   hitModelSegFrom: THREE.Vector3 = new THREE.Vector3();
   private hitModelSegReady: boolean = false;
@@ -180,7 +180,7 @@ export class ModuleMGPlayer extends ModuleObject {
   /** World pose for sphere / audio — container.position holds swoop tunnel offset. */
   private static _worldPos = new THREE.Vector3();
   /**
-   * Retail OnAnimKeyEvent — bound playEvent listeners on track + models.
+   * OnAnimKeyEvent — bound playEvent listeners on track + models.
    * Detached in disposeFollower.
    */
   private animPlayEventHandler = (e: { event?: string; target?: { name?: string } }) => {
@@ -206,7 +206,7 @@ export class ModuleMGPlayer extends ModuleObject {
 
     this.animationManagers = [];
 
-    // retail ctor — speed defaults to 100 (track rate = speed*0.01).
+    // ctor — speed defaults to 100 (track rate = speed*0.01).
     this.speed = 100;
     this.speed_min = 0;
     this.speed_max = 0;
@@ -240,7 +240,7 @@ export class ModuleMGPlayer extends ModuleObject {
     material.opacity = 0.15;
     this.sphere_geom = new THREE.Mesh( geometry, material );
 
-    // retail → retail.
+    // →.
     MiniGameObjectArray.register(this);
   }
 
@@ -257,7 +257,7 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   setTrack(model: THREE.Object3D = new OdysseyObject3D(), ownsTrack: boolean = false, attachType: number = 0){
-    // Retail ForceSetTrack: destroy previous track Gob if replacing.
+    // ForceSetTrack: destroy previous track Gob if replacing.
     if(this.track && this.track !== model){
       this.unbindAnimPlayEvent(this.track);
       if(this.ownsTrack){
@@ -314,11 +314,11 @@ export class ModuleMGPlayer extends ModuleObject {
     this.inertiaReady = false;
     this.clearInertiaKeyBuffers();
     this.onCreateRun = false;
-    // Retail Go RegisterCallBack(OnAnimKeyEvent) on track Gob.
+    // Go RegisterCallBack(OnAnimKeyEvent) on track Gob.
     this.bindAnimPlayEvent(this.track);
   }
 
-  /** Sync track anim playback rate — retail SetSpeed. */
+  /** Sync track anim playback rate — SetSpeed. */
   setFollowerSpeed(speed: number){
     this.speed = speed;
     this.trackAnimRate = Math.max(0, speed) * 0.01;
@@ -329,7 +329,7 @@ export class ModuleMGPlayer extends ModuleObject {
 
   /**
    * Ensure "track" anim is playing.
-   * Retail Go / SetSpeed PlayAnimation("track", speed*0.01, flags)
+   * Go / SetSpeed PlayAnimation("track", speed*0.01, flags)
    * looping==1 → 0x11, else 0x14 (both loop-style; JS uses loop=true).
    * OnReportKey is synthesized from modelhook key crossings (no Aurora CB).
    */
@@ -347,7 +347,7 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail Target_Offset aim point — model world position + local offset rotated
+   * Target_Offset aim point — model world position + local offset rotated
    * by model world orientation (BehaviorTrack / FireGunCallback).
    */
   getTargetAimPoint(out: THREE.Vector3 = new THREE.Vector3()): THREE.Vector3 {
@@ -396,7 +396,7 @@ export class ModuleMGPlayer extends ModuleObject {
     this.getHitModelWorld(this.hitModelSegFrom);
     this.hitModelSegReady = true;
 
-    // Retail Update — OnHeartbeat (script index 4)
+    // Update — OnHeartbeat (script index 4)
     // every frame when the ResRef is set; delta is unused (no 3s/6s timer).
     if(GameState.module){
       this.triggerHeartbeat();
@@ -427,7 +427,7 @@ export class ModuleMGPlayer extends ModuleObject {
       }
     }
 
-    // Retail TrackFollowerPartDie / donedie — purge follower models when die ends.
+    // TrackFollowerPartDie / donedie — purge follower models when die ends.
     if(!this.alive){
       for(let i = this.models.length - 1; i >= 0; i--){
         const model = this.models[i];
@@ -464,7 +464,7 @@ export class ModuleMGPlayer extends ModuleObject {
       case MiniGameType.SWOOPRACE: {
         const miniGame = GameState.module.area.miniGame;
 
-        // Retail Control accelerates only while follower running bit is set.
+        // Control accelerates only while follower running bit is set.
         if(this.running && (this.speed_min || this.speed)){
           if(this.speed < this.speed_min){
             this.speed = this.speed_min;
@@ -480,7 +480,7 @@ export class ModuleMGPlayer extends ModuleObject {
           this.forceVector.set(0, this.speed * delta, 0);
         }
 
-        // Retail Control order: advance track → OnReportKey → DoInertia
+        // Control order: advance track → OnReportKey → DoInertia
         // into.acceleration → offset += velocity delta → KeepInTunnel.
         // Track Gob motion is Aurora "track" anim only — never translate the mesh.
         if(this.track instanceof OdysseyModel3D){
@@ -523,7 +523,7 @@ export class ModuleMGPlayer extends ModuleObject {
       } break;
       case MiniGameType.TURRET: {
         const miniGame = GameState.module.area.miniGame;
-        // Retail: Aurora advances the track Gob; we must tick it (same rate as Go/SetSpeed).
+        // : Aurora advances the track Gob; we must tick it (same rate as Go/SetSpeed).
         if(this.track instanceof OdysseyModel3D){
           if(this.running){
             this.ensureTrackAnimation();
@@ -548,7 +548,7 @@ export class ModuleMGPlayer extends ModuleObject {
 
     if(this.camera instanceof OdysseyModel3D && this.camera.bonesInitialized && this.camera.visible){
       this.camera.update(delta);
-      // Re-apply after anim — retail Control writes offset controllers after model tick.
+      // Re-apply after anim — Control writes offset controllers after model tick.
       if(GameState.module?.area?.miniGame?.type === MiniGameType.SWOOPRACE){
         this.applySwoopTunnelOffset();
       }
@@ -573,13 +573,13 @@ export class ModuleMGPlayer extends ModuleObject {
 
   damage(damage = 0){
     if(this.alive){
-      // Retail path: AdjustHitPoints → OnDamage (script or default apply + anims).
+      // path: AdjustHitPoints → OnDamage (script or default apply + anims).
       this.adjustHitPoints(-damage, 0);
     }
   }
 
   /**
-   * Retail OnDeath.
+   * OnDeath.
    * skipScript=true = DefaultImpl path (OnDeath(1)).
    */
   die(skipScript: boolean = false){
@@ -615,12 +615,12 @@ export class ModuleMGPlayer extends ModuleObject {
       model.playAnimation(dieAnim, false);
     }
 
-    // Retail OnDeath → each gun bank Die.
+    // OnDeath → each gun bank Die.
     for(let i = 0; i < this.gunBanks.length; i++){
       this.gunBanks[i]?.die?.();
     }
 
-    // Retail: if models empty → SetPlayer(null).
+    // : if models empty → SetPlayer(null).
     if(!this.models.length){
       const mg = GameState.module?.area?.miniGame;
       if(mg?.player === this){
@@ -630,7 +630,7 @@ export class ModuleMGPlayer extends ModuleObject {
     }
   }
 
-  /** Retail Go — Ready_01, track anim @ speed*0.01, running bit, engine.
+  /** Go — Ready_01, track anim @ speed*0.01, running bit, engine.
    * Also RegisterCallBack(OnReportKey) when UseInertia path active — see emitInertiaKeysFromTrackAnim. */
   go(){
     if(this.running || !this.alive){ return; }
@@ -655,7 +655,7 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail Stop
+   * Stop
    * PlayAnimation("track", 0, flags) then clear running + engine Stop.
    * (Not a hard stopAnimation — disposeFollower hard-stops after this.)
    */
@@ -679,7 +679,7 @@ export class ModuleMGPlayer extends ModuleObject {
    */
   disposeFollower(){
     this.stopTrack();
-    // Retail SetCamera detach — camera must not stay parented under disposed HUD.
+    // SetCamera detach — camera must not stay parented under disposed HUD.
     if(FollowerCamera.mgCameraHookAttached){
       const hook = this.camera?.camerahook;
       if(!hook || FollowerCamera.camera.parent === hook){
@@ -724,9 +724,9 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail AdjustHitPoints — queue hp_adjust then OnDamage(0).
+   * AdjustHitPoints — queue hp_adjust then OnDamage(0).
    * SetFollowerHitPoints → SetHitPoints (nAbsolute path; only if nHP > 0).
-   * ExecuteCommand Adjust pops one int only — nAbsolute is unused by retail Adjust.
+   * ExecuteCommand Adjust pops one int only — nAbsolute is unused by Adjust.
    */
   adjustHitPoints(nHP = 0, nAbsolute = 0){
     if(nAbsolute){
@@ -740,7 +740,7 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail OnDamage
+   * OnDamage
    * param 0: OnDamage script if present (return; script may SWMG_OnDamage).
    * else / param 1: apply lastHPChange, damage anims, death if HP ≤ 0.
    */
@@ -804,11 +804,11 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail Control bank curve + AdjustPosition
+   * Control bank curve + AdjustPosition
    * accumulate/decay continuous `bankMagnitude`, map ABS to level −10..10, play
    * Ready_01 / BankL_## / BankR_## when the discrete level changes.
    *
-   * @param lateralInput Retail signed rate (keys: ±LateralAccel; stick: axis).
+   * @param lateralInput signed rate (keys: ±LateralAccel; stick: axis).
    */
   updateBankAnimation(lateralInput: number, delta: number = 0){
     if(delta < 0){ delta = 0; }
@@ -837,7 +837,7 @@ export class ModuleMGPlayer extends ModuleObject {
     }else if(this.bankMagnitude !== 0){
       const sgn = signOf(this.bankMagnitude);
       let mag = Math.abs(this.bankMagnitude);
-      // First decay frame: snap into retail plateaus when inside those bands.
+      // First decay frame: snap into plateaus when inside those bands.
       if(!this.bankDecayLatched){
         if(mag >= 0.23 && mag < 0.235){
           mag = 0.235;
@@ -873,7 +873,7 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail Control — map |bankMagnitude| thresholds → bank level 0..10.
+   * Control — map |bankMagnitude| thresholds → bank level 0..10.
    */
   static bankMagnitudeToLevel(magnitude: number): number {
     const sgn = magnitude < 0 ? -1 : magnitude > 0 ? 1 : 0;
@@ -899,7 +899,7 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail OnReportKey stand-in — for each modelhook Position key crossed
+   * OnReportKey stand-in — for each modelhook Position key crossed
    * append to follower.trigger list; Orientation keys → list.
    * World-bakes Aurora local key values for DoInertia (expects world pos/quat).
    */
@@ -965,7 +965,7 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail UseInertia: Control merges OnReportKey buffers → DoInertia
+   * UseInertia: Control merges OnReportKey buffers → DoInertia
    * per segment, then remainder to live modelhook; clears counts each frame.
    * DoInertia results accumulate into MiniGame.acceleration (physicsNext),
    * not playerOffset — offset only receives the axis velocity delta afterward.
@@ -1022,7 +1022,7 @@ export class ModuleMGPlayer extends ModuleObject {
       tCursor = key.time;
     }
 
-    // Frame remainder → live modelhook (retail final DoInertia with leftover dt).
+    // Frame remainder → live modelhook (final DoInertia with leftover dt).
     const t1 = this.inertiaAnimT0 + delta;
     const trackModel = this.track as OdysseyModel3D;
     const elapsed = trackModel?.animationManager?.currentAnimationState?.elapsed;
@@ -1048,7 +1048,7 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail Control merge of two 0x24 lists by ascending time.
+   * Control merge of two 0x24 lists by ascending time.
    * Rewrites absolute times stay absolute here; segment dts computed in applyInertia.
    */
   mergeInertiaKeyBuffers(): SWMGKeyInfo[] {
@@ -1157,7 +1157,7 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail DoInertia
+   * DoInertia
    * vel = (curr−prev)/dt; project (prevVel−vel) off BumpPlane; store vel;
    * return Inverse(quat) * tangential (scale 1.0).
    */
@@ -1181,14 +1181,14 @@ export class ModuleMGPlayer extends ModuleObject {
     out.y -= this.inertiaPlane.y * along;
     out.z -= this.inertiaPlane.z * along;
     this.inertiaVelocity.copy(this.inertiaScratch);
-    // Inverse(quat) * tangential — retail FLOAT scale is 1.0.
+    // Inverse(quat) * tangential — FLOAT scale is 1.0.
     this.inertiaHookQuat.copy(quat).invert();
     out.applyQuaternion(this.inertiaHookQuat);
     return out;
   }
 
   /**
-   * Retail KeepInTunnel / TSL.
+   * KeepInTunnel / TSL.
    * Type 1: clamp offset to origin±tunnel. Type 2 infinite: wrap degrees 0–360.
    */
   keepInTunnel(offset: THREE.Vector3){
@@ -1266,16 +1266,16 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail DoObstacleHitCheck
+   * DoObstacleHitCheck
    * Requires obstacle Gob "hitbump" part + follower models.size != 0, then HitCheckPart.
    * No proximity fallback (that falsely killed turret players with large Sphere_Radius).
    */
   tryHitObstacle(obstacle: ModuleMGObstacle){
-    // Retail DoObstacleHitCheck does not gate on invulnerability — scripts do.
+    // DoObstacleHitCheck does not gate on invulnerability — scripts do.
     if(!this.alive){ return; }
     if(!obstacle || obstacle.hit){ return; }
     if(!obstacle.models?.length){ return; }
-    // Retail DoObstacleHitCheck requires follower models.size != 0.
+    // DoObstacleHitCheck requires follower models.size != 0.
     if(!this.models?.length){ return; }
 
     let hit = false;
@@ -1301,7 +1301,7 @@ export class ModuleMGPlayer extends ModuleObject {
     if(mg){ mg.lastFollowerHit = this; }
     obstacle.lastFollowerHit = this;
 
-    // Retail order: player OnHitObstacle, then obstacle OnHitFollower.
+    // order: player OnHitObstacle, then obstacle OnHitFollower.
     this.onHitObstacle(obstacle);
     obstacle.onHitFollower(this);
   }
@@ -1316,7 +1316,7 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Turret aim: playerOffset is degrees (retail ori controllers 0x3ea/0x3eb).
+   * Turret aim: playerOffset is degrees (ori controllers 0x3ea/0x3eb).
    * Sync container.rotation (radians) from offset after KeepInTunnel.
    */
   applyTurretOffsetRotation(){
@@ -1328,7 +1328,7 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail Control — after KeepInTunnel, write offset to rotating
+   * Control — after KeepInTunnel, write offset to rotating
    * model controllers (0x3ea) and camera Gob controller (0x3eb).
    * CameraRotate==0 parents the camera to modelhook as a sibling of container;
    * both must share playerOffset so the bike stays tunnel-centered on screen.
@@ -1437,7 +1437,7 @@ export class ModuleMGPlayer extends ModuleObject {
     let _axisFront = this.forceVector.clone();
     let _oPosition = this.position.clone();
 
-    //this.getCurrentRoom();
+    //this.getCurrentRoom;
     const hitdist = this.sphere_radius;
     const hitdist_half = hitdist/2;
 
@@ -1702,7 +1702,7 @@ export class ModuleMGPlayer extends ModuleObject {
 
   /**
    * Load Camera ResRef model. Resolves true on success.
-   * Turret Load requires a successful camera (retail hard-fail).
+   * Turret Load requires a successful camera (hard-fail).
    * Parenting is deferred to setCameraHook (after ForceSetTrack).
    */
   loadCamera(): Promise<boolean> {
@@ -1761,7 +1761,7 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail SetCameraHook
+   * SetCameraHook
    * CameraRotate==0 → AttachToObject(modelhook, behavior 0); else GetAttachType.
    * Swoop (flag 0): camera Gob is a modelhook sibling; Control writes shared offset.
    * Turret (flag 1, attach 2): parent under aim container so cam/HUD follow rotation.
@@ -1816,7 +1816,7 @@ export class ModuleMGPlayer extends ModuleObject {
         }
         this.models.push(model);
         model.name = item.model;
-        // Retail Go RegisterCallBack(OnAnimKeyEvent) on follower models.
+        // Go RegisterCallBack(OnAnimKeyEvent) on follower models.
         this.bindAnimPlayEvent(model);
 
         if(this.camera && model.name == this.camera.name)
@@ -1834,7 +1834,7 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail Load Gun_Banks then AttachGuns on each model.
+   * Load Gun_Banks then AttachGuns on each model.
    */
   async loadGunBanks(){
     for(let i = 0; i < this.gunBanks.length; i++){
@@ -1856,7 +1856,7 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail OnAnimKeyEvent stand-in via OdysseyModel3D playEvent.
+   * OnAnimKeyEvent stand-in via OdysseyModel3D playEvent.
    * custom_* → lastEvent = suffix + OnAnimEvent script; loop → Num_Loops + OnTrackLoop.
    */
   handleAnimPlayEvent(e: { event?: string; target?: { name?: string } }){
@@ -1867,13 +1867,13 @@ export class ModuleMGPlayer extends ModuleObject {
     const mg = GameState.module?.area?.miniGame;
 
     if(lower.startsWith('custom_')){
-      // Retail stores arg2+7 (suffix after "custom_").
+      // stores arg2+7 (suffix after "custom_").
       mg?.recordAnimEvent?.(raw.substring(7), modelName);
       this.onAnimEvent();
       return;
     }
     if(lower === 'loop'){
-      // Retail: if looping != -1, decrement + SetSpeed, then OnTrackLoop script.
+      // : if looping != -1, decrement + SetSpeed, then OnTrackLoop script.
       if(typeof this.num_loops === 'number' && this.num_loops !== -1){
         this.num_loops = this.num_loops - 1;
         this.setFollowerSpeed(this.speed);
@@ -1961,7 +1961,7 @@ export class ModuleMGPlayer extends ModuleObject {
       instance.run(this, 0);
       return;
     }
-    // Retail OnHitBullet default: AdjustHitPoints(-damage) when invuln expired.
+    // OnHitBullet default: AdjustHitPoints(-damage) when invuln expired.
     if(this.invince > 0){ return; }
     const dmg = (bullet as any)?.damage_amt ?? (bullet as any)?.damage ?? 0;
     if(dmg){
@@ -1977,7 +1977,7 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail OnHitObstacle
+   * OnHitObstacle
    * param 0: try OnHitObstacle script; else stop anims, dead bit, OnDeath(0).
    * param 1 (SWMG_OnObstacleHit DefaultImpl): skip script → OnDeath(0).
    */
@@ -2075,7 +2075,7 @@ export class ModuleMGPlayer extends ModuleObject {
         this.template.getFieldByLabel('Track').getValue()
       );
 
-    // retail Sounds struct (Death / Engine resrefs).
+    // Sounds struct (Death / Engine resrefs).
     if(this.template.RootNode.hasField('Sounds')){
       this.trackFollowerSounds.loadFromSoundsStruct(
         this.template.getFieldByLabel('Sounds').getFieldStruct()
@@ -2119,7 +2119,7 @@ export class ModuleMGPlayer extends ModuleObject {
     }
     loadTunnelInfinite('Tunnellnfinite'); // forge typo present in some exports
 
-    // Retail Start_Offset_* → SetOrigin (also seeds offset when not running).
+    // Start_Offset_* → SetOrigin (also seeds offset when not running).
     const startX = this.readFloatField('Start_Offset_X', 'XOrigin');
     const startY = this.readFloatField('Start_Offset_Y', 'YOrigin');
     const startZ = this.readFloatField('Start_Offset_Z', 'ZOrigin');
@@ -2130,7 +2130,7 @@ export class ModuleMGPlayer extends ModuleObject {
       this.playerOffset.set(startX, startY, startZ);
     }
 
-    // Retail Target_Offset_* — BehaviorTrack aim point in player local space.
+    // Target_Offset_* — BehaviorTrack aim point in player local space.
     this.targetOffset.set(
       this.readFloatField('Target_Offset_X'),
       this.readFloatField('Target_Offset_Y'),

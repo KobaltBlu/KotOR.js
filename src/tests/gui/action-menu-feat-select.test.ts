@@ -1,5 +1,5 @@
 /**
- * Target slot-0 combat feat selection / activation (retail ActionMenu).
+ * Target slot-0 combat feat selection / activation (ActionMenu).
  * @jest-environment node
  */
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';

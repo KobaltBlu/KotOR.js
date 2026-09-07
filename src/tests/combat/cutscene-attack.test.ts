@@ -77,12 +77,12 @@ describe('resolveAnimations2DARow', () => {
   });
 });
 
-describe('AddCutsceneAttackAction field contract', () => {
-  it('mirrors retail AddCutsceneAttackAction', () => {
+describe('queue cutscene attack field contract', () => {
+  it('mirrors engine queue cutscene attack', () => {
     const action = new CombatRoundAction();
     action.actionType = CombatActionType.ATTACK;
     action.animation = ModuleCreatureAnimState.ATTACK;
-    // Retail (combatStretch + 3000) / 2
+    // (combatStretch + 3000) / 2
     action.animationTime = Math.floor((0 + 3000) / 2);
     action.resultsCalculated = true;
     action.attackAnimation = 416;
@@ -134,7 +134,7 @@ describe('AddCutsceneAttackAction field contract', () => {
 });
 
 describe('CutsceneAttack duel timing', () => {
-  // Retail: cutscene attacks use the same engaged/master/slave path as normal
+  // : cutscene attacks use the same engaged/master/slave path as normal
   // attacks. Branch is solely on duelEngaged (not resultsCalculated).
   const usesNonEngagedStart = (duelEngaged: boolean) => !duelEngaged;
 
@@ -150,7 +150,7 @@ describe('CutsceneAttack duel timing', () => {
     expect(usesNonEngagedStart(false)).toBe(true);
   });
 
-  it('roundPaused early-returns before duel resolution (retail slave wait)', () => {
+  it('roundPaused early-returns before duel resolution (engine slave wait)', () => {
     // Mirror ActionPhysicalAttacks: if roundPaused, return IN_PROGRESS and
     // never enter StartCombatRound / ResolveAttack.
     const shouldEarlyReturn = (roundPaused: boolean) => roundPaused;
@@ -187,7 +187,7 @@ describe('CutsceneAttack duel timing', () => {
 });
 
 describe('ResolveMeleeAnimations reaction eligibility', () => {
-  // Retail: engaged && (checkActionLengthOk || resultsCalculated)
+  // : engaged && (checkActionLengthOk || resultsCalculated)
   const base = {
     hasTargetCombatRound: true,
     checkActionLengthOk: false,
@@ -236,8 +236,8 @@ describe('ResolveMeleeAnimations reaction eligibility', () => {
 });
 
 describe('killingBlow does not gate duel anims or reactions', () => {
-  // Mirrors calculateRoundAnimations gates after retail alignment.
-  // Retail ResolveMeleeAnimations only checks GetDeadTemp (actual death) —
+  // Mirrors calculateRoundAnimations gates after alignment.
+  // ResolveMeleeAnimations only checks GetDeadTemp (actual death) —
   // predicted killingBlow must not force m-set or skip the reaction block.
   const usesDuelAttackSet = (
     attackKey: string,
@@ -292,7 +292,7 @@ describe('CutsceneAttack hit DAMAGE reaction playback', () => {
 });
 
 describe('ResolveRangedAnimations reaction eligibility', () => {
-  // Retail — dodge only when target round engaged; no resultsCalculated bypass.
+  // — dodge only when target round engaged; no resultsCalculated bypass.
   const dodgeReady = {
     anyHit: false,
     targetLightsaberEquipped: false,
@@ -329,7 +329,7 @@ describe('ResolveRangedAnimations reaction eligibility', () => {
     })).toBe(ModuleCreatureAnimState.READY);
   });
 
-  it('rangedAttackHadLandingHit matches retail hit band', () => {
+  it('rangedAttackHadLandingHit matches engine hit band', () => {
     expect(CombatRound.rangedAttackHadLandingHit([AttackResult.MISS])).toBe(false);
     expect(CombatRound.rangedAttackHadLandingHit([AttackResult.PARRIED])).toBe(false);
     expect(CombatRound.rangedAttackHadLandingHit([AttackResult.HIT_SUCCESSFUL])).toBe(true);
@@ -389,7 +389,7 @@ describe('duel post-swing READY remainder', () => {
   });
 
   it('leaves scripted, dead, and debilitated fighters posed', () => {
-    // Retail — cutscene rounds keep their posed animation
+    // — cutscene rounds keep their posed animation
     expect(shouldSnapCombatReady({
       dead: false,
       debilitated: false,
@@ -436,8 +436,8 @@ describe('CutsceneMove combat action type', () => {
   });
 });
 
-describe('AddCutsceneAttackActions schedule gate', () => {
-  // Retail field68_0x4e0==0 (PC) only — not party companions
+describe('queue cutscene attacks schedule gate', () => {
+  // internal field==0 (PC) only — not party companions
   const shouldClearForCutscene = (isPC: boolean, _isPartyMember: boolean) => !!isPC;
 
   it('clears actions for PC only', () => {
@@ -451,7 +451,7 @@ describe('AddCutsceneAttackActions schedule gate', () => {
   });
 
   it('does not rewrite self target to party[0]', () => {
-    // Retail ExecuteCommandCutsceneAttack passes oTarget through unchanged
+    // ExecuteCommandCutsceneAttack passes oTarget through unchanged
     const resolveCutsceneTarget = (target: unknown, self: unknown) => {
       if(!target) return undefined;
       return target; // no self → party[0]
@@ -464,7 +464,7 @@ describe('AddCutsceneAttackActions schedule gate', () => {
 
 describe('sticky attempted attack target', () => {
   it('sets only when currently unset (not when dead)', () => {
-    // Mirrors CombatData.setAttemptedAttackTargetIfInvalid retail OBJECT_INVALID gate
+    // Mirrors CombatData.setAttemptedAttackTargetIfInvalid OBJECT_INVALID gate
     const setIfInvalid = (
       current: { dead?: boolean } | undefined,
       next: { id: number }
@@ -479,7 +479,7 @@ describe('sticky attempted attack target', () => {
 
     expect(setIfInvalid(undefined, next)).toBe(next);
     expect(setIfInvalid(living, next)).toBe(living);
-    // Dead-but-set must NOT be overwritten (retail field79 only checks INVALID)
+    // Dead-but-set must NOT be overwritten (field79 only checks INVALID)
     expect(setIfInvalid(dead, next)).toBe(dead);
   });
 });

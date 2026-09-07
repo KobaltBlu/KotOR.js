@@ -11,7 +11,7 @@ export * from "@/combat/SpellCastInstance";
 export * from "@/combat/combat-engagement";
 export * from "@/combat/attack-range";
 export * from "@/combat/nearest-enemy";
-export * from "@/combat/create-new-attack-actions";
+export * from "@/combat/queue-attack-actions";
 export * from "@/combat/initialize-new-attack-target";
 export * from "@/combat/nearest-action-point";
 export * from "@/combat/combat-dueling";

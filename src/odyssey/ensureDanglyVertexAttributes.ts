@@ -4,7 +4,7 @@ import type { OdysseyModelNodeDangly } from "@/odyssey/OdysseyModelNodeDangly";
 /**
  * Compiled MDL fills `danglyVec4` in `readBinary`. ASCII imports only have `constraints`
  * weights; we build vec4 per vertex using normals as a placeholder axis (.xyz unused by
- * the CPU dangly sim). Weight .w: 0 = pinned (skip sim), 255 = pinned (limit 0).
+ * the CPU dangly sim). Weight.w: 0 = pinned (skip sim), 255 = pinned (limit 0).
  */
 export function ensureDanglyConstraintAttribute(
   node: OdysseyModelNodeDangly,

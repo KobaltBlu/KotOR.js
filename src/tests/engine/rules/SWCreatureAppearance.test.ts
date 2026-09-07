@@ -25,7 +25,7 @@ describe("SWCreatureAppearance.From2DA", () => {
     expect(appearance.modeln).toBe("P_MaleN");
     expect(appearance.texn).toBe("PMHN");
     expect(appearance.texlevil).toBe("PMHLE");
-    // 2DA column texnevil → stored as texmevil (retail lookup string TEXMEVIL)
+    // 2DA column texnevil → stored as texmevil (lookup string TEXMEVIL)
     expect(appearance.texmevil).toBe("PMHNE");
     expect(appearance.texbevil).toBe("PMHBE");
     expect(appearance.driveanimrun_pc).toBe(5.5);
@@ -137,13 +137,13 @@ describe("SWCreatureAppearance.getBodyModelInfo", () => {
     expect(info.model).toBe("p_malea");
   });
 
-  it("uses TEXBEvil / TEXIEvil / TEXLEvil / TEXMEvil by retail body indices", () => {
+  it("uses TEXBEvil / TEXIEvil / TEXLEvil / TEXMEvil by engine body indices", () => {
     const a = makeAppearance();
     const ge = APPEARANCE_EVIL_BODY_ALIGN_MAX - 1;
     expect(a.getBodyModelInfo("B", 1, APPEARANCE_BODY_MAX_K2, ge, true).texture).toBe("pmhbe01");
     expect(a.getBodyModelInfo("I", 1, APPEARANCE_BODY_MAX_K2, ge, true).texture).toBe("pmhie01");
     expect(a.getBodyModelInfo("L", 1, APPEARANCE_BODY_MAX_K2, ge, true).texture).toBe("pmhle01");
-    // Retail body byte 0xE = letter N → TEXMEVIL string / texnevil 2DA column
+    // body byte 0xE = letter N → TEXMEVIL string / texnevil 2DA column
     expect(a.getBodyModelInfo("N", 1, APPEARANCE_BODY_MAX_K2, ge, true).texture).toBe("pmhne01");
   });
 
@@ -170,7 +170,7 @@ describe("SWCreatureAppearance.getBodyModelInfo", () => {
       texb: "",
       texbevil: "P_AttonBAD",
     });
-    // Retail GetBType: empty TEXB → no ReplaceTexture (MDL default), not TEXA
+    // GetBType: empty TEXB → no ReplaceTexture (MDL default), not TEXA
     expect(a.getBodyModelInfo("B", 1, APPEARANCE_BODY_MAX_K2, 50, true)).toEqual({
       model: "p_attonbb",
       texture: "",

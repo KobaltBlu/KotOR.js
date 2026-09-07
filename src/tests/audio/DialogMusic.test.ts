@@ -7,11 +7,11 @@ import { describe, expect, test, jest } from '@jest/globals';
 import { BackgroundMusicMode } from '@/enums/audio/BackgroundMusicMode';
 import { AudioPriorityGroup } from '@/enums/audio/AudioPriorityGroup';
 
-/** Retail FadeAndStopDialogAmbientTrack. */
+/** FadeAndStopDialogAmbientTrack. */
 const DIALOG_AMBIENT_TRACK_FADE_MS = 500;
 
 describe('Dialog music enter/exit parity', () => {
-  test('DIALOG_AMBIENT_TRACK_FADE_MS is retail 500', () => {
+  test('DIALOG_AMBIENT_TRACK_FADE_MS is engine 500', () => {
     expect(DIALOG_AMBIENT_TRACK_FADE_MS).toBe(500);
   });
 
@@ -65,7 +65,7 @@ describe('Dialog music enter/exit parity', () => {
         dialogEmitter.stop();
         return;
       }
-      // Retail ctor looping=0 → AIL play-once (not infinite loop).
+      // ctor looping=0 → AIL play-once (not infinite loop).
       dialogEmitter.play(false);
     };
     loadBackgroundMusic(undefined);
@@ -76,7 +76,7 @@ describe('Dialog music enter/exit parity', () => {
   });
 
   test('AmbientTrack plays once (not loop)', () => {
-    // AmbientTrack: retail looping flag 0 → play once.
+    // AmbientTrack: looping flag 0 → play once.
     const ailLoopCountFromRetailLoopingFlag = (loopingField: number) =>
       (loopingField === 0) ? 1 : 0;
     expect(ailLoopCountFromRetailLoopingFlag(0)).toBe(1);

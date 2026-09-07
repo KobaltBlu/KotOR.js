@@ -74,7 +74,7 @@ import { CorpseCache } from "@/module/CorpseCache";
 
 type AreaScriptKeys = 'OnEnter'|'OnExit'|'OnHeartbeat'|'OnUserDefined';
 
-export const RETAIL_LOAD_GIT_OBJECT_ORDER = [
+export const ODYSSEY_LOAD_GIT_OBJECT_ORDER = [
   'creatures',
   'items',
   'doors',
@@ -90,9 +90,9 @@ export const RETAIL_LOAD_GIT_OBJECT_ORDER = [
   'cameras',
 ] as const;
 
-export type RetailLoadGitObjectStep = (typeof RETAIL_LOAD_GIT_OBJECT_ORDER)[number];
+export type OdysseyLoadGitObjectStep = (typeof ODYSSEY_LOAD_GIT_OBJECT_ORDER)[number];
 
-export const RETAIL_LOAD_SCENE_OBJECT_ORDER = [
+export const ODYSSEY_LOAD_SCENE_OBJECT_ORDER = [
   'creatures',
   'player',
   'party',
@@ -108,9 +108,9 @@ export const RETAIL_LOAD_SCENE_OBJECT_ORDER = [
   'cameras',
 ] as const;
 
-export type RetailLoadSceneObjectStep = (typeof RETAIL_LOAD_SCENE_OBJECT_ORDER)[number];
+export type OdysseyLoadSceneObjectStep = (typeof ODYSSEY_LOAD_SCENE_OBJECT_ORDER)[number];
 
-export const RETAIL_INIT_AREA_OBJECT_ORDER = [
+export const ODYSSEY_INIT_AREA_OBJECT_ORDER = [
   'creatures',
   'items',
   'doors',
@@ -124,7 +124,7 @@ export const RETAIL_INIT_AREA_OBJECT_ORDER = [
   'party',
 ] as const;
 
-export type RetailInitAreaObjectStep = (typeof RETAIL_INIT_AREA_OBJECT_ORDER)[number];
+export type OdysseyInitAreaObjectStep = (typeof ODYSSEY_INIT_AREA_OBJECT_ORDER)[number];
 
 /**
  * ModuleArea class.
@@ -139,12 +139,12 @@ export type RetailInitAreaObjectStep = (typeof RETAIL_INIT_AREA_OBJECT_ORDER)[nu
  */
 export class ModuleArea extends ModuleObject {
 
-  /** Retail LoadGIT object sequence. */
-  static readonly LOAD_GIT_OBJECT_ORDER = RETAIL_LOAD_GIT_OBJECT_ORDER;
+  /** GIT load object sequence. */
+  static readonly LOAD_GIT_OBJECT_ORDER = ODYSSEY_LOAD_GIT_OBJECT_ORDER;
   /** loadScene object asset order (rooms/path/music excluded) */
-  static readonly LOAD_SCENE_OBJECT_ORDER = RETAIL_LOAD_SCENE_OBJECT_ORDER;
+  static readonly LOAD_SCENE_OBJECT_ORDER = ODYSSEY_LOAD_SCENE_OBJECT_ORDER;
   /** initAreaObjects iteration order */
-  static readonly INIT_AREA_OBJECT_ORDER = RETAIL_INIT_AREA_OBJECT_ORDER;
+  static readonly INIT_AREA_OBJECT_ORDER = ODYSSEY_INIT_AREA_OBJECT_ORDER;
 
   static ModuleObject: typeof ModuleObject = ModuleObject;
   static ModuleAreaOfEffect: typeof ModuleAreaOfEffect = ModuleAreaOfEffect;
@@ -177,7 +177,7 @@ export class ModuleArea extends ModuleObject {
   visObject: VISObject;
   layout: LYTObject;
   areaMap: AreaMap;
-  /** Elapsed ms since last area OnHeartbeat (retail 5999ms). */
+  /** Elapsed ms since last area OnHeartbeat (5999ms). */
   _areaHeartbeatElapsedMs: number = 0;
   _areaHeartbeatInitialized: boolean = false;
   frameLosCache: Map<string, boolean> = new Map();
@@ -185,15 +185,15 @@ export class ModuleArea extends ModuleObject {
   frameWalkCandidateCache: Map<string, { faces: OdysseyFace3[]; edges: WalkmeshEdge[]; rooms: ModuleRoom[] }> = new Map();
   /** Players currently in this area — drives Increase/DecreaseAILevelPriority. */
   playersInArea: number = 0;
-  /** ARE template `ID` header (retail LoadAreaHeader header_info[0]) — not the game ObjectId */
+  /** ARE template `ID` header (LoadAreaHeader header_info[0]) — not the game ObjectId */
   areId: number = 0;
-  /** Retail GIT TransPending / TransPendCurrID / TransPendNextID */
+  /** GIT TransPending / TransPendCurrID / TransPendNextID */
   transPending: number = 0;
   transPendCurrId: number = 0;
   transPendNextId: number = 0;
 
   /**
-   * Retail GetNextTransitionPendingID — bump allocator, skip 0.
+   * GetNextTransitionPendingID — bump allocator, skip 0.
    */
   getNextTransitionPendingId(): number {
     this.transPendNextId = ((this.transPendNextId | 0) + 1) & 0xFF;
@@ -204,7 +204,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
-   * Retail SetTransitionPending — door/trigger module-link handshake.
+   * SetTransitionPending — door/trigger module-link handshake.
    * @param pending 1 while transition is in flight, 0 when cleared
    * @param currId optional pending id; allocated when pending and omitted
    */
@@ -222,14 +222,14 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
-   * retail — visit mark during CountAreaTransitionTriggers.
+   * — visit mark during CountAreaTransitionTriggers.
    * Set when a transition into this area is chosen so only one portal per dest is used.
    */
   interAreaVisitMark: number = 0;
 
   cameras: ModuleCamera[] = [];
   creatures: ModuleCreature[] = [];
-  /** retail KeepCorpse shell cache (max 3). */
+  /** KeepCorpse shell cache (max 3). */
   corpseCache: CorpseCache = new CorpseCache();
   doorhooks: any[] = [];
   doors: ModuleDoor[] = [];
@@ -242,7 +242,7 @@ export class ModuleArea extends ModuleObject {
   waypoints: ModuleWaypoint[] = [];
   areaOfEffects: ModuleAreaOfEffect[] = [];
   /**
-   * Retail game_objects — X-sorted for GetNearestObject spiral
+   * game_objects — X-sorted for GetNearestObject spiral
    * (GetFirstObjectIndiceByX / ExecuteCommandGetNearestObject).
    */
   gameObjects: ModuleObject[] = [];
@@ -292,7 +292,7 @@ export class ModuleArea extends ModuleObject {
 
   /**
    * Determines if there is an active day/night cycle.
-   * Retail UpdateDayNightCycle / SetAsDay|Night|Dawn|Dusk.
+   * UpdateDayNightCycle / SetAsDay|Night|Dawn|Dusk.
    */
   dayNightCycle: boolean = false;
 
@@ -337,7 +337,7 @@ export class ModuleArea extends ModuleObject {
 
   /**
    * TSL ARE DirtyARGB/Size/Formula/Func One–Three.
-   * Formula values are stored after retail 0↔1 swap.
+   * Formula values are stored after 0↔1 swap.
    */
   dirt: IAreaDirtProperties = {
     layers: [
@@ -353,17 +353,17 @@ export class ModuleArea extends ModuleObject {
   isNight: boolean = false;
 
   /**
-   * Runtime lighting night flag (retail `area.is_night`). Distinct from authored ARE `IsNight`.
+   * Runtime lighting night flag (`area.is_night`). Distinct from authored ARE `IsNight`.
    */
   lightingIsNight = false;
 
-  /** Retail dawn-transition flag. */
+  /** dawn-transition flag. */
   dayNightDawnActive = false;
 
-  /** Retail dusk-transition flag. */
+  /** dusk-transition flag. */
   dayNightDuskActive = false;
 
-  /** Retail pending midpoint audio/lighting flip during dawn/dusk. */
+  /** pending midpoint audio/lighting flip during dawn/dusk. */
   dayNightHalfwayPending = false;
 
   /** Last module day phase applied via SetTimeOfDayState. */
@@ -372,10 +372,10 @@ export class ModuleArea extends ModuleObject {
   /** Whether area BGM/ambient currently use day tracks. */
   audioUsesDayTracks = true;
 
-  /** Retail `shadowAlpha` for this area's day/night cycle (0–1). */
+  /** `shadowAlpha` for this area's day/night cycle (0–1). */
   shadowAlpha = 0;
 
-  /** Retail `beamingProjectionAlpha` during dawn/dusk (0–0.05). */
+  /** `beamingProjectionAlpha` during dawn/dusk (0–0.05). */
   beamingProjectionAlpha = 0;
 
   lightingScheme = 0;
@@ -520,7 +520,7 @@ export class ModuleArea extends ModuleObject {
     this.areaMap.dispose();
     this.corpseCache.clear();
 
-    // Retail FadeAndStopDialogAmbientTrack — 500ms on UnloadArea.
+    // FadeAndStopDialogAmbientTrack — 500ms on UnloadArea.
     void AudioEngine.GetAudioEngine().fadeStopDialogAmbientTrack();
 
     if(this.miniGame){
@@ -588,7 +588,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
-   * Retail AIUpdate — weather re-roll + OnHeartbeat every 5999ms.
+   * AIUpdate — weather re-roll + OnHeartbeat every 5999ms.
    */
   aiUpdate(delta: number = 0){
     this.weather?.aiUpdate?.(delta);
@@ -658,7 +658,7 @@ export class ModuleArea extends ModuleObject {
     //update rooms
     for(let i = 0; i < this.rooms.length; i++){
       this.rooms[i]?.update(delta);
-      // this.rooms[i].hide();
+      // this.rooms[i].hide;
     }
 
     for(let i = 0; i < this.spellInstances.length; i++){
@@ -787,7 +787,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
-   * Retail UpdateDayNightCycle + SetTimeOfDayState.
+   * UpdateDayNightCycle + SetTimeOfDayState.
    * Applies sun/moon lighting for the module day phase and lerps during dawn/dusk.
    */
   updateDayNightCycle(){
@@ -865,12 +865,12 @@ export class ModuleArea extends ModuleObject {
       this.updateAmbientAudioTimeOfDay();
     }
 
-    // Retail UpdateDayNightCycle refreshes sound-object hour/phase gates every frame.
+    // UpdateDayNightCycle refreshes sound-object hour/phase gates every frame.
     this.updateSoundObjectsTimeOfDay();
   }
 
   /**
-   * Retail UpdateDayNightCycle shadowAlpha during dawn/dusk:
+   * UpdateDayNightCycle shadowAlpha during dawn/dusk:
    * before midpoint → opacity*0.01*(1 - t/0.5);
    * after midpoint → opacity*0.01*(t/0.5 - 1).
    */
@@ -883,13 +883,13 @@ export class ModuleArea extends ModuleObject {
     );
   }
 
-  /** Pure retail shadowAlpha curve for dawn/dusk (unit-tested). */
+  /** Pure shadowAlpha curve for dawn/dusk (unit-tested). */
   static computeTransitionShadowAlpha(shadowOpacity: number, progress: number, beforeHalfway: boolean, half = 0.5){
     return ModuleTimeManager.computeTransitionShadowAlpha(shadowOpacity, progress, beforeHalfway, half);
   }
 
   /**
-   * Retail SetTimeOfDayState.
+   * SetTimeOfDayState.
    */
   setTimeOfDayState(phase: ModuleDayPhase){
     switch(phase){
@@ -916,7 +916,7 @@ export class ModuleArea extends ModuleObject {
     }
   }
 
-  /** Retail SetAsDay. */
+  /** SetAsDay. */
   setAsDay(){
     if(!this.dayNightCycle && this.isNight){
       this.setAsNight();
@@ -931,7 +931,7 @@ export class ModuleArea extends ModuleObject {
     this.applySunLighting();
   }
 
-  /** Retail SetAsNight. */
+  /** SetAsNight. */
   setAsNight(){
     if(!this.dayNightCycle && !this.isNight){
       this.setAsDay();
@@ -946,7 +946,7 @@ export class ModuleArea extends ModuleObject {
     this.applyMoonLighting();
   }
 
-  /** Retail SetAsDawn. */
+  /** SetAsDawn. */
   setAsDawn(){
     if(!this.dayNightCycle){
       if(this.isNight){
@@ -964,7 +964,7 @@ export class ModuleArea extends ModuleObject {
     this.shadowAlpha = (this.shadowOpacity | 0) * 0.01;
   }
 
-  /** Retail SetAsDusk. */
+  /** SetAsDusk. */
   setAsDusk(){
     if(!this.dayNightCycle){
       if(this.isNight){
@@ -983,7 +983,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
-   * Retail ForceBrightSunAndMoon.
+   * ForceBrightSunAndMoon.
    * Ambient RGB → 0; diffuse RGB → 1; sun fog off; reapply day/night.
    */
   forceBrightSunAndMoon(){
@@ -1024,7 +1024,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
-   * Apply retail sun/moon directional ambient + diffuse (+ fog/clear).
+   * Apply sun/moon directional ambient + diffuse (+ fog/clear).
    * Scene light-model ambient stays ARE DynAmbientColor (see applyDynAmbient).
    * sunAmbient → directional ambient channel; diffuse → OdysseyLightingBinder sunColor.
    * Colors are applied directly — no invented intensity curves (UpdateDayNightCycle).
@@ -1093,7 +1093,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
-   * Retail LoadArea → SetAmbient(DynAmbientColor).
+   * LoadArea → SetAmbient(DynAmbientColor).
    * This is the light-model ambient for dynamic objects — not sun/moon ambient.
    */
   applyDynAmbient(){
@@ -1111,7 +1111,7 @@ export class ModuleArea extends ModuleObject {
 
   /**
    * Read one TSL ARE dirt layer (One/Two/Three). Missing fields → zeros.
-   * Retail LoadAreaHeader swaps DirtyFormula 0↔1 before storage.
+   * LoadAreaHeader swaps DirtyFormula 0↔1 before storage.
    */
   readAreDirtLayer(suffix: 'One' | 'Two' | 'Three'): IAreaDirtLayer {
     const readInt = (label: string): number | undefined => {
@@ -1139,7 +1139,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
-   * Retail SetBeaming — apply beamingProjectionAlpha to beaming meshes
+   * SetBeaming — apply beamingProjectionAlpha to beaming meshes
    * (additive blend color alpha during dawn/dusk).
    */
   updateBeamingMaterials(){
@@ -1200,7 +1200,7 @@ export class ModuleArea extends ModuleObject {
 
   /**
    * Day and dawn use day tracks; night and dusk use night tracks
-   * (retail UpdateTimeOfDay phase grouping).
+   * (UpdateTimeOfDay phase grouping).
    */
   static usesDayAudioTracks(phase: ModuleDayPhase){
     return ModuleTimeManager.usesDayAudioTracks(phase);
@@ -1273,7 +1273,7 @@ export class ModuleArea extends ModuleObject {
     const lm = GameState.lightManager;
     const camera = GameState.currentCamera;
     // RenderOnlyGobs walks Scene.objects — creatures, placeables, doors, items,
-    // party members, and other model-bearing gobs that receive GetNearestLights.
+    // party members, and other model-bearing gobs that receive nearest light selection.
     const dynamics = this._lightingDynamicsScratch;
     dynamics.length = 0;
     for(let i = 0; i < this.creatures.length; i++) dynamics.push(this.creatures[i]);
@@ -1302,7 +1302,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
-   * Retail PlayBattleMusic.
+   * PlayBattleMusic.
    * NWScript MusicBattlePlay / MusicBattleStop and excited-timer combat music share this path.
    */
   playBattleMusic(play: boolean){
@@ -1349,7 +1349,7 @@ export class ModuleArea extends ModuleObject {
         const data = await AudioLoader.LoadMusic(bgMusic.resource);
         audioEngine.setAudioBuffer('BACKGROUND_MUSIC_DAY', data.buffer as ArrayBuffer, bgMusic.resource);
         audioEngine.areaMusicDayAudioEmitter.streamingMusicForMovie = !!streamingMusicForMovie;
-        // Retail SetMusicDayTrack: if playing & different file → PlayMusic(0) then PlayMusic(1).
+        // SetMusicDayTrack: if playing & different file → PlayMusic(0) then PlayMusic(1).
         const newName = (bgMusic.resource || '').toLowerCase();
         if(wasPlaying && prevName && prevName.toLowerCase() !== newName){
           await audioEngine.areaMusicDayAudioEmitter.fadeOutAndStop(AREA_MUSIC_FADE_MS / 1000);
@@ -1415,7 +1415,7 @@ export class ModuleArea extends ModuleObject {
         const data = await AudioLoader.LoadMusic(battleMusic.resource);
         audioEngine.setAudioBuffer('BATTLE', data.buffer as ArrayBuffer, battleMusic.resource);
       }
-      // Retail ReadInfo loads Stinger1–3; PlayStinger picks randomly among non-empty
+      // ReadInfo loads Stinger1–3; PlayStinger picks randomly among non-empty
       const stingerKeys = ['stinger1', 'stinger2', 'stinger3'] as const;
       const stingerBuffers: ArrayBuffer[] = [];
       for(let i = 0; i < stingerKeys.length; i++){
@@ -1523,11 +1523,11 @@ export class ModuleArea extends ModuleObject {
 
   lastRoom: ModuleRoom = undefined;
 
-  /** Retail GetRoomIndex vertical half-extent (CheckAABBWalkable z±1000). */
+  /** GetRoomIndex vertical half-extent (CheckAABBWalkable z±1000). */
   static readonly ROOM_PROBE_HALF_HEIGHT = 1000;
 
   /**
-   * Retail GetRoomIndex(pos, 0): vertical segment (x,y,z±1000) vs room AABB.
+   * GetRoomIndex(pos, 0): vertical segment (x,y,z±1000) vs room AABB.
    * Prefers walkmesh AABB when present (CheckAABBWalkable); else room.box.
    * Dialog cameras often sit above the walkmesh.
    */
@@ -1554,7 +1554,7 @@ export class ModuleArea extends ModuleObject {
   updateRoomVisibility(delta: number = 0){
     switch(GameState.Mode){
       case EngineMode.DIALOG: {
-        // Retail MainLoop: while dialog, UpdateRoom uses
+        // MainLoop: while dialog, UpdateRoom uses
         // GetDialogCameraPosition — SetCurrentRoom + VIS links, not frustum OR.
         const cam = GameState.currentCamera;
         if(!cam){ return; }
@@ -1562,7 +1562,7 @@ export class ModuleArea extends ModuleObject {
         if(this.lastRoom && this.lastRoom == cameraRoom){
           return;
         }
-        // Retail: invalid room index returns early without clearing prior visibility
+        // : invalid room index returns early without clearing prior visibility
         if(!cameraRoom){
           return;
         }
@@ -1596,7 +1596,7 @@ export class ModuleArea extends ModuleObject {
         const player = GameState.getCurrentPlayer();
         if(!player){ return; }
 
-        // Retail UpdateRoom(pos) → GetRoomIndex: resolve room from position when unset
+        // UpdateRoom(pos) → GetRoomIndex: resolve room from position when unset
         if(!player.room){
           player.getCurrentRoom();
         }
@@ -1606,14 +1606,14 @@ export class ModuleArea extends ModuleObject {
           return;
         }
 
-        // Retail: invalid room index returns early without clearing prior visibility
+        // : invalid room index returns early without clearing prior visibility
         if(!player.room){
           return;
         }
 
         this.lastRoom = player.room;
 
-        // Retail UpdateRoom — SetDesiredEnvironment + SetDesiredAmbientScale.
+        // UpdateRoom — SetDesiredEnvironment + SetDesiredAmbientScale.
         if(this.lastRoom?.envAudio >= 0){
           AudioEngine.GetAudioEngine().setDesiredEnvironment(this.lastRoom.envAudio || 0);
         }
@@ -1666,7 +1666,7 @@ export class ModuleArea extends ModuleObject {
 
     for(let i = 0; i < this.rooms.length; i++){
       const room = this.rooms[i];
-      //room.LoadModel();
+      //room.LoadModel;
     }
 
     for(let i = 0; i < this.creatures.length; i++){
@@ -1713,7 +1713,7 @@ export class ModuleArea extends ModuleObject {
     //BEGIN AREA LOAD
 
     // ARE ObjectId (when present, e.g. embedded save ARE) is the game object id.
-    // ARE ID header is separate (retail header_info[0]) — never overwrite this.id with it.
+    // ARE ID header is separate (header_info[0]) — never overwrite this.id with it.
     if(this.are.RootNode.hasField('ObjectId'))
       this.id = this.are.getFieldByLabel('ObjectId').getValue();
 
@@ -1728,7 +1728,7 @@ export class ModuleArea extends ModuleObject {
     this.creatorId = this.are.getFieldByLabel('Creator_ID').getValue();
     this.dayNightCycle = this.are.getFieldByLabel('DayNightCycle').getValue();
     this.defaultEnvMap = this.are.getFieldByLabel('DefaultEnvMap').getValue();
-    // Retail SetEnvMap resolves the "DEFAULT" envmap resref
+    // envmap assign resolves the "DEFAULT" envmap resref
     // against the current area's DefaultEnvMap.
     OdysseyMaterialBuilder.defaultEnvMap = this.defaultEnvMap;
     this.dynamicAmbientColor = this.are.getFieldByLabel('DynAmbientColor').getValue();
@@ -1736,7 +1736,7 @@ export class ModuleArea extends ModuleObject {
     this.expansionList = [];
 
     this.flags = this.are.getFieldByLabel('Flags').getValue();
-    // Retail LoadAreaHeader: indoor (Flags & 1) clears weather chances / wind.
+    // LoadAreaHeader: indoor (Flags & 1) clears weather chances / wind.
     if(this.flags & 1){
       this.weather.chanceLightning = 0;
       this.weather.chanceRain = 0;
@@ -1756,7 +1756,7 @@ export class ModuleArea extends ModuleObject {
       textureName: this.are.getFieldByLabel('Grass_TexName').getValue()
     };
 
-    // TSL dirt layers (DirtyARGB/Size/Formula/Func One–Three). Retail swaps formula 0↔1 on load.
+    // TSL dirt layers (DirtyARGB/Size/Formula/Func One–Three). swaps formula 0↔1 on load.
     this.dirt = {
       layers: [
         this.readAreDirtLayer('One'),
@@ -1868,7 +1868,7 @@ export class ModuleArea extends ModuleObject {
       GameState.scene.fog = undefined;
     }
 
-    // BEGIN GIT LOAD — retail LoadGIT (K1) (TSL)
+    // BEGIN GIT LOAD — GIT load (K1) (TSL)
     // Order: weather/vars → creatures → items → doors → triggers → encounters →
     // waypoints → sounds → placeables → stores → AOEs → properties → maps → cameras
 
@@ -1886,8 +1886,8 @@ export class ModuleArea extends ModuleObject {
     const triggers = this.git.getFieldByLabel('TriggerList');
     const waypoints = this.git.getFieldByLabel('WaypointList');
 
-    // Retail LoadGIT start (when from save): weather + var tables before objects.
-    // Indoor areas force clear (LoadGIT flags & 1).
+    // GIT load start (when from save): weather + var tables before objects.
+    // Indoor areas force clear (GIT load flags & 1).
     if(this.git.RootNode.hasField('CurrentWeather')){
       this.weather.currentWeather = this.git.getFieldByLabel('CurrentWeather').getValue();
       this.weather.fromSave = true;
@@ -2007,7 +2007,7 @@ export class ModuleArea extends ModuleObject {
       }
     }
 
-    // LoadProperties — AreaProperties + ambient (retail after stores/AOEs)
+    // LoadProperties — AreaProperties + ambient (after stores/AOEs)
     if(areaProps){
       const areaPropsStruct = areaProps.getChildStructs()[0];
       if(areaPropsStruct){
@@ -2049,7 +2049,7 @@ export class ModuleArea extends ModuleObject {
         if(areaPropsStruct.hasField('SunFogColor')){
           this.sun.fogColor = areaPropsStruct.getFieldByLabel('SunFogColor').getValue();
         }
-        // Retail LoadProperties also reads transition pending from AreaProperties.
+        // LoadProperties also reads transition pending from AreaProperties.
         if(areaPropsStruct.hasField('TransPending')){
           this.transPending = areaPropsStruct.getFieldByLabel('TransPending').getValue() | 0;
         }
@@ -2118,7 +2118,7 @@ export class ModuleArea extends ModuleObject {
     if(cameraStyle2DA?.rows){
       return cameraStyle2DA.rows[this.cameraStyle] ?? cameraStyle2DA.rows[0] ?? {};
     }
-    // Retail SetCameraStyle fallbacks when 2DA missing (dist/speed/pitch/height)
+    // SetCameraStyle fallbacks when 2DA missing (dist/speed/pitch/height)
     return {
       distance: 6.25,
       speed: 20,
@@ -2188,11 +2188,11 @@ export class ModuleArea extends ModuleObject {
         for(let i = 0; i < this.layout.obstacles.length; i++){
           const layoutObs = this.layout.obstacles[i];
           const name = ModuleMiniGame.normalizeMgoName(layoutObs?.name);
-          // Retail: LYT places by Name/pos; ARE Name → GetMiniGameObjectByName → Load(Scripts).
+          // : LYT places by Name/pos; ARE Name → GetMiniGameObjectByName → Load(Scripts).
           const template = name ? this.miniGame.getMiniGameObjectByName(name) : undefined;
           const obstacle = new ModuleMGObstacle(template, layoutObs);
           if(template){
-            // Retail Load — Scripts then OnCreate (OnCreate in initMiniGameObjects).
+            // Load — Scripts then OnCreate (OnCreate in initMiniGameObjects).
             obstacle.loadScripts();
           }
           this.miniGame.obstacles.push(obstacle);
@@ -2205,7 +2205,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
-   * Retail RestartMiniGame (cheat `restartminigame`)
+   * RestartMiniGame (cheat `restartminigame`)
    * new MiniGame, re-add tracks/obstacles from layout, Load, destroy old, Go.
    */
   async restartMiniGame(): Promise<ModuleMiniGame | undefined> {
@@ -2316,17 +2316,17 @@ export class ModuleArea extends ModuleObject {
         console.error(e);
       }
 
-      // Retail Scene ctor loads dirtytex* before room models bind dirt overlays.
+      // Scene ctor loads dirtytex* before room models bind dirt overlays.
       try { await DirtyTextureManager.loadForArea(this); } catch(e){ console.error(e); }
 
-      // Retail LoadArea: rooms → LoadGIT objects → LoadPathPoints
+      // LoadArea: rooms → GIT load objects → LoadPathPoints
       try { await this.loadRooms(); } catch(e){ console.error(e); }
 
       this.roomWalkmeshes = this.rooms.filter( (r) => { return r?.model?.wok}).map( (r) => { return r.model.wok; });
 
       GameState.MenuManager.LoadScreen.setProgress(10);
 
-      // GIT object asset order matches LoadGIT (player/party adjacent to creatures)
+      // GIT object asset order matches GIT load (player/party adjacent to creatures)
       try { await this.loadCreatures(); } catch(e){ console.error(e); }
       try { await this.loadPlayer(); } catch(e){ console.error(e); }
       try { await this.loadParty(); } catch(e){ console.error(e); }
@@ -2364,7 +2364,7 @@ export class ModuleArea extends ModuleObject {
           await this.miniGame.load();
         }catch(e){
           console.error(e);
-          // Retail type-2 Load aborts on missing Camera — do not continue half-loaded MG.
+          // type-2 Load aborts on missing Camera — do not continue half-loaded MG.
           throw e;
         }
       }
@@ -2392,7 +2392,7 @@ export class ModuleArea extends ModuleObject {
       this.cleanupUninitializedObjects();
       this.detectRoomObjects();
 
-      // Retail IncreaseAILevelPriority when players occupy the area
+      // IncreaseAILevelPriority when players occupy the area
       this.playersInArea = GameState.PartyManager?.party?.length || 0;
       if(this.playersInArea > 0){
         const aiObjects = [
@@ -2481,7 +2481,7 @@ export class ModuleArea extends ModuleObject {
     object.area = this;
 
     if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
-      // Leaving limbo when attached to an area (retail AddToArea counterpart)
+      // Leaving limbo when attached to an area (AddToArea counterpart)
       if(GameState.module?.isObjectInLimbo(object as ModuleCreature)){
         GameState.module.removeObjectFromLimbo(object as ModuleCreature);
       }
@@ -2539,7 +2539,7 @@ export class ModuleArea extends ModuleObject {
       this.rooms.push(object as ModuleRoom);
     }
 
-    // Retail AddToArea: promote VERY_LOW → LOW while players occupy the area
+    // AddToArea: promote VERY_LOW → LOW while players occupy the area
     if(this.playersInArea > 0 && object.aiLevel === AILevel.VERY_LOW){
       if(GameState.module.aiScheduler.shouldPromoteOnAreaEntry(object)){
         GameState.module.aiScheduler.setAILevel(object, AILevel.LOW);
@@ -2621,7 +2621,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
-   * Rebuild retail game_objects sorted by position.x for nearest spiral scans.
+   * Rebuild game_objects sorted by position.x for nearest spiral scans.
    * Includes party members in the active area (deduped by id).
    */
   ensureGameObjectsSorted(): void {
@@ -2660,7 +2660,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
-   * Retail GetFirstObjectIndiceByX — lower_bound on position.x.
+   * GetFirstObjectIndiceByX — lower_bound on position.x.
    */
   getFirstObjectIndexByX(x: number): number {
     this.ensureGameObjectsSorted();
@@ -2700,7 +2700,7 @@ export class ModuleArea extends ModuleObject {
           const model = await GameState.PartyManager.Player.loadModel();
           GameState.PartyManager.Player.model = model;
           GameState.PartyManager.Player.model.hasCollision = true;
-          //let spawnLoc = this.getSpawnLocation();
+          //let spawnLoc = this.getSpawnLocation;
           let spawnLoc = GameState.PartyManager.GetSpawnLocation(GameState.PartyManager.Player);
           GameState.PartyManager.Player.position.copy(spawnLoc.position);
           GameState.PartyManager.Player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
@@ -2762,7 +2762,7 @@ export class ModuleArea extends ModuleObject {
     for(let i = 0; i < GameState.PartyManager.CurrentMembers.length; i++){
       await GameState.PartyManager.LoadPartyMember(i);
     }
-    // Portrait-order mismatch can leave Player in the scene but not in party[].
+    // Portrait-order mismatch can leave Player in the scene but not in party.
     // initAreaObjects only onSpawns party members — re-insert if missing.
     const player = GameState.PartyManager.Player;
     if(player && GameState.PartyManager.party.indexOf(player) < 0){
@@ -2774,20 +2774,20 @@ export class ModuleArea extends ModuleObject {
       }
     }
     // Area transit reuses locomotion state from the prior module (WASD walk into
-    // a door, etc.). Retail PositionParty leaves creatures in PAUSE (10000).
+    // a door, etc.). PositionParty leaves creatures in PAUSE (10000).
     for(let i = 0; i < GameState.PartyManager.party.length; i++){
       const pm = GameState.PartyManager.party[i];
       if(pm && typeof pm.clearLocomotionState === 'function'){
         pm.clearLocomotionState(true);
         // clearLocomotion may demote walk/run → PAUSE with started=false; apply
-        // before fade-in (Mode is still LOADING so tick update() skips anim).
+        // before fade-in (Mode is still LOADING so tick update skips anim).
         if(typeof pm.primeAnimationPose === 'function'){
           pm.primeAnimationPose();
         }
       }
     }
     GameState.PartyManager.ApplyControlledNPC();
-    // Retail PositionParty → ResetAllFollowData after placing the party.
+    // PositionParty → ResetAllFollowData after placing the party.
     GameState.PartyManager.resetFollowPath(GameState.PartyManager.party[0]);
     // Attach every party member to a room (companions skip this in LoadPartyMember;
     // controlled NPC as party[0] must have a room for UpdateRoom VIS).
@@ -2931,9 +2931,9 @@ export class ModuleArea extends ModuleObject {
       const door = this.doors[i];
       try{
         door.load();
-        // door.position.x = door.getX();
-        // door.position.y = door.getY();
-        // door.position.z = door.getZ();
+        // door.position.x = door.getX;
+        // door.position.y = door.getY;
+        // door.position.z = door.getZ;
         door.rotation.set(0, 0, door.getBearing());
         door.facing = door.getBearing();
         const model = await door.loadModel();
@@ -3134,7 +3134,7 @@ export class ModuleArea extends ModuleObject {
         const model = await creature.loadModel();
         creature.model.userData.moduleObject = creature;
 
-        //creature.setFacing(Math.atan2(creature.getXOrientation(), creature.getYOrientation()) + Math.PI/2, true);
+        //creature.setFacing(Math.atan2(creature.getXOrientation, creature.getYOrientation) + Math.PI/2, true);
         creature.setFacing(-Math.atan2(creature.getXOrientation(), creature.getYOrientation()), true);
 
         model.hasCollision = true;
@@ -3152,7 +3152,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
-   * Load ground items (GIT List) — retail LoadItems / AddToArea after creatures.
+   * Load ground items (GIT List) — LoadItems / AddToArea after creatures.
    * Scene placement matches ActionDropItem (model under placeables group).
    */
   async loadItems(): Promise<void> {
@@ -3234,9 +3234,9 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
-   * Post-load OnSpawn pass — iterate types in retail LoadGIT order.
+   * Post-load OnSpawn pass — iterate types in GIT load order.
    * Only creatures (and party) currently run spawn scripts; other types call
-   * onSpawn for init side-effects without inventing non-retail script slots.
+   * onSpawn for init side-effects without inventing non- script slots.
    */
   async initAreaObjects(runSpawnScripts = false){
     for(let i = 0; i < this.creatures.length; i++){
@@ -3523,7 +3523,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   getAreaPropertiesStruct(){
-    // Retail SaveProperties — AreaProperties struct type 100
+    // SaveProperties — AreaProperties struct type 100
     let struct = new GFFStruct(100);
     struct.addField( new GFFField(GFFDataType.INT, 'AmbientSndDay') ).setValue(this.audio.ambient.day);
     struct.addField( new GFFField(GFFDataType.INT, 'AmbientSndDayVol') ).setValue(this.audio.ambient.dayVolume);
@@ -3551,7 +3551,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   saveAreaListStruct(){
-    // Retail SaveModuleIFOStart — Mod_Area_list element type 6
+    // SaveModuleIFOStart — Mod_Area_list element type 6
     let areaStruct = new GFFStruct(6);
     areaStruct.addField( new GFFField(GFFDataType.RESREF, 'Area_Name') ).setValue(this.name);
     areaStruct.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
@@ -3582,12 +3582,12 @@ export class ModuleArea extends ModuleObject {
     const creatureList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'Creature List') );
     for(let i = 0; i < this.creatures.length; i++){
       const creature = this.creatures[i];
-      // Retail: KeepCorpse shells / post-0xb visuals are client-only — never serialize
+      // : KeepCorpse shells / post-0xb visuals are client-only — never serialize
       if(!creature || creature.isRetainedCorpse || creature.serverDestroyed) continue;
       creatureList.addChildStruct( creature.save().RootNode );
     }
 
-    // Retail SaveGIT — CurrentWeather is BYTE, not LIST
+    // SaveGIT — CurrentWeather is BYTE, not LIST
     git.RootNode.addField( new GFFField(GFFDataType.BYTE, 'CurrentWeather') ).setValue(this.weather.currentWeather | 0);
 
     const doorList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'Door List') );

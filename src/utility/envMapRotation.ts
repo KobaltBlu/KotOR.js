@@ -1,7 +1,7 @@
 import * as THREE from "three";
 
 /**
- * Retail DoEnvMapTransform — texture-matrix multiply by camera
+ * DoEnvMapTransform — texture-matrix multiply by camera
  * orientation (translation zero). Eye-space reflection × this matrix → world
  * cubemap direction (same as FFP GL_REFLECTION_MAP + camera quaternion matrix).
  */

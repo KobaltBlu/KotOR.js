@@ -14,9 +14,9 @@ import { isInUseRange } from "@/actions/use-range";
 import { beginInterAreaPath } from "@/engine/pathfinding/inter-area-path";
 import { WALK_BACK_DOT } from "@/engine/pathfinding/locomotion";
 import {
-  WalkUpdateResult,
-  walkUpdateLocation,
-} from "@/engine/pathfinding/walk-update-location";
+  CreatureWalkResult,
+  updateCreatureWalk,
+} from "@/engine/pathfinding/update-creature-walk";
 import {
   plotPath,
   PlotPathCode,
@@ -32,7 +32,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 /**
  * ActionMoveToPoint class.
  *
- * Retail move-to-point action — path + WalkUpdateLocation trapezoid stepping
+ * move-to-point action — path + creature walk update trapezoid stepping
  * (not the force-mover speed*2.5 hack).
  *
  * @file ActionMoveToPoint.ts
@@ -101,7 +101,7 @@ export class ActionMoveToPoint extends Action {
       !this.target.isDead()
     );
     // queueMoveIntoUseRange / MoveToObject set param-4 to the use target.
-    // WalkUpdateLocation UseRange early-out () stops locomotion once
+    // creature walk update UseRange early-out stops locomotion once
     // GetIsInUseRange — Move must complete then too, or OpenDoor/UseObject sit
     // behind a never-finishing Move (arrive + re-click to interact).
     const useRangeTarget = !!(
@@ -114,8 +114,8 @@ export class ActionMoveToPoint extends Action {
         this.real_target_position.copy(this.target.position);
       }
 
-      // Retail MoveToObject completion uses GetIsInUseRange (+0.1 slack), not the
-      // raw param-6 distance alone. WalkUpdateLocation's UseRange early-out can
+      // MoveToObject completion uses GetIsInUseRange (+0.1 slack), not the
+      // raw param-6 distance alone. creature walk update's UseRange early-out can
       // freeze locomotion while dist is still slightly above param-6 — that left
       // end_m01aa k_pend_traskdl40 Pause→Move→Resume stuck forever, and the same
       // gap blocked door/placeable UseObject after walking into range.
@@ -149,7 +149,7 @@ export class ActionMoveToPoint extends Action {
       this.calculatePath();
     }
 
-    // Retail: Incomplete (1) continues; Fail (3) fails — no replot grace
+    // : Incomplete (1) continues; Fail (3) fails — no replot grace
     if(this.pathFindInfo?.lastCode === PlotPathCode.Incomplete && !this.computedPath?.points?.length){
       return ActionStatus.IN_PROGRESS;
     }
@@ -162,7 +162,7 @@ export class ActionMoveToPoint extends Action {
 
     const distance = Utility.Distance2D(owner.position, this.target_position);
     if(distance > (this.computedPath.points.length > 1 ? 0.5 : range)){
-      let walkResult: WalkUpdateResult | undefined;
+      let walkResult: CreatureWalkResult | undefined;
 
       const point = this.computedPath.points[0];
       if(point){
@@ -179,9 +179,9 @@ export class ActionMoveToPoint extends Action {
         }
       }
 
-      if(walkResult === WalkUpdateResult.ARRIVED){
+      if(walkResult === CreatureWalkResult.ARRIVED){
         this.consumeArrivedPathPoint(owner, range);
-      }else if(walkResult === WalkUpdateResult.BLOCKED){
+      }else if(walkResult === CreatureWalkResult.BLOCKED){
         this.syncBlockedComputedPath(owner);
       }
 
@@ -197,7 +197,7 @@ export class ActionMoveToPoint extends Action {
         }
       }
 
-      // Retail AddMoveToPointAction: timeout 0 = no Jump; >0 = ForceMove countdown.
+      // AddMoveToPointAction: timeout 0 = no Jump; >0 = ForceMove countdown.
       const moveTimeout = this.getParameter<number>(8);
       if(typeof moveTimeout === 'number' && moveTimeout > 0){
         const timeout = moveTimeout - delta;
@@ -244,14 +244,14 @@ export class ActionMoveToPoint extends Action {
   }
 
   /**
-   * WalkUpdateLocation step toward the next waypoint.
+   * creature walk update step toward the next waypoint.
    */
   private stepWalkUpdate(
     owner: ModuleCreature,
     goal: THREE.Vector3,
     run: boolean,
     delta: number
-  ): WalkUpdateResult {
+  ): CreatureWalkResult {
     owner.walk = !run;
     owner.force = 0;
 
@@ -293,7 +293,7 @@ export class ActionMoveToPoint extends Action {
       owner.setAnimationState(run ? ModuleCreatureAnimState.RUNNING : ModuleCreatureAnimState.WALKING);
     }
 
-    return walkUpdateLocation(owner, goal, run, delta, {
+    return updateCreatureWalk(owner, goal, run, delta, {
       remainingDistance: remaining,
       allowWalkBack,
       useRangeTargetId: this.pathFindInfo?.targetObjectId,
@@ -327,9 +327,9 @@ export class ActionMoveToPoint extends Action {
   }
 
   private stopMoving(owner: ModuleCreature){
-    // Physics + walk/run anim — retail WalkUpdateLocation end sets anim 10000
+    // Physics + walk/run anim — creature walk update end sets anim 10000
     owner.clearLocomotionState(false);
-    // Retail ResetAtEndOfPath → field438 = 1
+    // ResetAtEndOfPath → field438 = 1
     setQuickWalkLocoState(owner, QuickWalkLocoState.Paused);
   }
 
@@ -395,7 +395,7 @@ export class ActionMoveToPoint extends Action {
     this.setParameter(0, ActionParameterType.FLOAT, dest.x);
     this.setParameter(1, ActionParameterType.FLOAT, dest.y);
     this.setParameter(2, ActionParameterType.FLOAT, dest.z);
-    // Retail creature-target drift (dist² >= 4) → field438 = -1
+    // creature-target drift (dist² >= 4) → field438 = -1
     setQuickWalkLocoState(this.owner as ModuleCreature, QuickWalkLocoState.Repath);
     // Clear path only — do not stopMoving / clearLocomotionState
     this.setComputedPath(undefined);

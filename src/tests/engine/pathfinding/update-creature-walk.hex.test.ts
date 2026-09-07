@@ -1,5 +1,5 @@
 /**
- * WalkUpdateLocation mid-step hex field141 (G2).
+ * creature walk update mid-step hex field141 (G2).
  * @jest-environment node
  */
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
@@ -48,15 +48,15 @@ jest.mock("@/engine/pathfinding/plot-path-around-creature", () => ({
   plotPathAroundCreature: (...args: unknown[]) => plotHexMock(...args),
 }));
 
-jest.mock("@/engine/pathfinding/drive-update-location", () => ({
+jest.mock("@/engine/pathfinding/update-creature-drive", () => ({
   DriveUpdateResult: { OK: 0, BLOCKED: 1, ARRIVED: 2 },
-  driveUpdateLocation: () => 0,
+  updateCreatureDrive: () => 0,
 }));
 
-import { walkUpdateLocation } from "@/engine/pathfinding/walk-update-location";
+import { updateCreatureWalk } from "@/engine/pathfinding/update-creature-walk";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
-describe("walkUpdateLocation mid-step hex (G2)", () => {
+describe("updateCreatureWalk mid-step hex (G2)", () => {
   let owner: ModuleCreature & {
     pathBlockFailCount: number;
     setComputedPath: jest.Mock;
@@ -96,7 +96,7 @@ describe("walkUpdateLocation mid-step hex (G2)", () => {
     noCreaturesMock.mockReturnValue({ clear: false, blockingCreatureId: 9 });
     bumpFriendsMock.mockReturnValue(true);
 
-    walkUpdateLocation(owner, new THREE.Vector3(5, 0, 0), false, 0.05);
+    updateCreatureWalk(owner, new THREE.Vector3(5, 0, 0), false, 0.05);
 
     expect(bumpFriendsMock).toHaveBeenCalled();
     expect(plotHexMock).not.toHaveBeenCalled();
@@ -108,18 +108,18 @@ describe("walkUpdateLocation mid-step hex (G2)", () => {
     bumpFriendsMock.mockReturnValue(false);
     plotHexMock.mockReturnValue({ spliced: true });
 
-    walkUpdateLocation(owner, new THREE.Vector3(5, 0, 0), false, 0.05);
+    updateCreatureWalk(owner, new THREE.Vector3(5, 0, 0), false, 0.05);
 
     expect(plotHexMock).toHaveBeenCalledTimes(1);
     expect(owner.pathBlockFailCount).toBe(0); // reset on successful splice
   });
 
-  it("pauses and clears path when hex fails (retail PlotPathAroundCreature miss)", () => {
+  it("pauses and clears path when hex fails (engine PlotPathAroundCreature miss)", () => {
     noCreaturesMock.mockReturnValue({ clear: false, blockingCreatureId: 9 });
     bumpFriendsMock.mockReturnValue(false);
     plotHexMock.mockReturnValue({ spliced: false });
 
-    walkUpdateLocation(owner, new THREE.Vector3(5, 0, 0), false, 0.05);
+    updateCreatureWalk(owner, new THREE.Vector3(5, 0, 0), false, 0.05);
 
     expect(plotHexMock).toHaveBeenCalledTimes(1);
     expect(owner.setAnimationState).toHaveBeenCalled();
@@ -132,7 +132,7 @@ describe("walkUpdateLocation mid-step hex (G2)", () => {
     bumpFriendsMock.mockReturnValue(false);
     owner.pathBlockFailCount = 5; // next fail → 6
 
-    walkUpdateLocation(owner, new THREE.Vector3(5, 0, 0), false, 0.05);
+    updateCreatureWalk(owner, new THREE.Vector3(5, 0, 0), false, 0.05);
 
     expect(plotHexMock).not.toHaveBeenCalled();
     expect(owner.setComputedPath).toHaveBeenCalledWith(undefined);
@@ -144,7 +144,7 @@ describe("walkUpdateLocation mid-step hex (G2)", () => {
     owner.pathBlockFailCount = 3;
     owner.walkSpeedFactor = 0.75;
 
-    const result = walkUpdateLocation(owner, new THREE.Vector3(5, 0, 0), false, 0.05, {
+    const result = updateCreatureWalk(owner, new THREE.Vector3(5, 0, 0), false, 0.05, {
       useRangeTargetId: 9,
     });
 

@@ -1,7 +1,7 @@
 import { GUIProtoItem, GUIButton } from "@/gui";
 import type { GUIControl, GameMenu } from "@/gui";
 import type { GUIListBox } from "@/gui/GUIListBox";
-import type { RetailRowExtent } from "@/gui/GUIProtoItem";
+import type { ProtoRowExtent } from "@/gui/GUIProtoItem";
 import * as THREE from "three";
 import type { GFFStruct } from "@/resource/GFFStruct";
 import { GameState } from "@/GameState";
@@ -32,7 +32,7 @@ type FeatSlot = {
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * retail row: three feat slots + arrows.
+ * row: three feat slots + arrows.
  * Status/selection via SetSkillStatus (K1).
  *
  * @file GUIFeatItem.ts
@@ -50,11 +50,11 @@ export class GUIFeatItem extends GUIProtoItem {
   }
 
   /**
-   * Retail AddFeatSet SetExtent:
+   * AddFeatSet SetExtent:
    * K1: {0,0,0xf2 (242), 0x28 (40)}
    * TSL: width 0x106 (262), height ftol(scalar * 40.0)
    */
-  getRetailBaseExtent(_list: GUIListBox): RetailRowExtent {
+  getProtoBaseExtent(_list: GUIListBox): ProtoRowExtent {
     const isTsl = GameState.GameKey == GameEngineType.TSL;
     return {
       left: 0,
@@ -239,7 +239,7 @@ export class GUIFeatItem extends GUIProtoItem {
   }
 
   /**
-   * Retail status for a slot:
+   * status for a slot:
    * - Menu may override via getFeatSlotStatus (CharGen BuildButtons mapping).
    * - Default: in-game status 6; locked when prereqs unmet.
    */

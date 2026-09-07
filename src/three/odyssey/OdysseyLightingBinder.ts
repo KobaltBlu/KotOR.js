@@ -22,7 +22,7 @@ import { envMapRotationFromCamera } from "@/utility/envMapRotation";
  * Light positions are transformed to view-space on upload (camera required for
  * correct lighting). Area ambient/sun state is owned by each LightManager.
  *
- * Retail split (LoadArea / SetAsDay):
+ * split (LoadArea / SetAsDay):
  * - ambientColor = ARE DynAmbientColor → SetAmbient
  * - sunAmbientColor = sun/moon ambient → directional light ambient channel
  * - sunColor = sun/moon diffuse → directional light diffuse (N·L)
@@ -37,7 +37,7 @@ export class OdysseyLightingBinder {
   static sunColor = new THREE.Color(0, 0, 0);
   /**
    * Fallback world-space direction toward the sun (for N·L).
-   * Retail places gidy_sun at (4000, 4500, 7000) in LoadArea.
+   * places gidy_sun at (4000, 4500, 7000) in LoadArea.
    */
   static sunDirection = new THREE.Vector3(4000, 4500, 7000).normalize();
 
@@ -249,8 +249,8 @@ export class OdysseyLightingBinder {
     const usesLightmap = Object.prototype.hasOwnProperty.call(defines, 'USE_LIGHTMAP');
     const ignoreLighting = Object.prototype.hasOwnProperty.call(defines, 'IGNORE_LIGHTING');
     // Unlit meshes ignore runtime lights entirely. Lightmapped surfaces still
-    // receive the exclusive_dynamic_lights overlay (EnableLightsDynamicOnly @
-    // ) but never area sun/ambient — that is baked into the lightmap.
+    // receive the exclusive_dynamic_lights overlay (dynamic-only lights @
+    //) but never area sun/ambient — that is baked into the lightmap.
     if(ignoreLighting && !usesLightmap){
       if(material.userData[cacheKey] === lightSet.cacheID &&
         material.userData.odysseyLightArraysSkipped === true){
@@ -391,7 +391,7 @@ export class OdysseyLightingBinder {
   /**
    * Bind multi-light shadow-map uniforms — independent of IGNORE_LIGHTING /
    * light-array skip path so lightmapped static receivers still darken.
-   * Matches retail GetShadowLights(mode=0) / DoGobShadows (up to maxShadowLights).
+   * matches engine behavior shadow light selection(mode=0) / gob shadows (up to maxShadowLights).
    */
   static bindShadowMapUniforms(
     material: THREE.ShaderMaterial,
@@ -648,11 +648,11 @@ export class OdysseyLightingBinder {
   /**
    * Bind a self-contained scene model (main menu, forge preview, room mesh).
    * Lightmapped → exclusive_dynamic_lights overlay; bump → bump light; else
-   * either room globals (ControlLightsFade) or gob GetNearestLights around
+   * either room globals (light fade pass) or gob nearest light selection around
    * `focus`.
    *
-   * @param lightPath `'room'` = PrioritizeIllumination globals (ARE rooms);
-   * `'gob'` = GetNearestLights (RenderOnlyGobs / GUI AddModel).
+   * @param lightPath `'room'` = illumination prioritize globals (ARE rooms);
+   * `'gob'` = nearest light selection (RenderOnlyGobs / GUI AddModel).
    */
   private static bindModelShadowUniforms(model: OdysseyModel3D){
     const seen = this._bindSeen;
@@ -782,7 +782,7 @@ export class OdysseyLightingBinder {
       if(!(obj?.model as OdysseyModel3D)?.materials){ continue; }
       const model = obj.model as OdysseyModel3D;
       // Hybrid runtime lightmaps: bake holds DynAmbient (+ type-0); gob lights
-      // come from GetNearestLights on every material (lightmapped and dynamic).
+      // come from nearest light selection on every material (lightmapped and dynamic).
       // Using exclusive_dynamic here left placeables flat; baking type-2 made them
       // over-bright vs the animating nearest path.
       if(model.userData.odysseyRuntimeLightmap || model.userData.odysseyPlaceableLightmap){
@@ -804,7 +804,7 @@ export class OdysseyLightingBinder {
         const nearest = lightManager.packLastNearestLights();
         this.bindModelMaterials(model, (material) => {
           // Same nearest set for USE_LIGHTMAP and dynamic mats — lightmap supplies
-          // baked ambient/type-0; point overlay matches gob GetNearestLights.
+          // baked ambient/type-0; point overlay matches gob nearest light selection.
           this.bindMaterial(material, nearest, camera, 'objectLightCacheID', lightManager);
         });
         model.userData.odysseyObjectBindFp = hybridFp;
@@ -826,7 +826,7 @@ export class OdysseyLightingBinder {
         this.bindModelShadowUniforms(model);
         continue;
       }
-      // RenderOnlyGobs → GetNearestLights(..., 2.0, 0); reuse last nearest scratch
+      // RenderOnlyGobs → nearest light selection(..., 2.0, 0); reuse last nearest scratch
       const set = lightManager.packLastNearestLights();
       this.bindModel(model, set, camera, 'objectLightCacheID', lightManager);
       model.userData.odysseyObjectBindFp = objectFp;

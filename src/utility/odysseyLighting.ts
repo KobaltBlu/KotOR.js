@@ -1,24 +1,21 @@
 /**
- * Retail Odyssey lighting math (K1 LightManager / PartLight).
+ * Odyssey lighting math (attenuation, sort keys, fade, shadow projection helpers).
  *
- * Attenuation from SetUpVertexProgramLightShaderConstants /
- * SetLightGL:
- *   r = max(radius, 0.1)
- *   quadratic = 4.5 / (r²)
- *   atten = 1 / (1 + quadratic * d²)
- *
- * Sort / fade aligned with lightcmp and ControlLightsFade.
+ * Point-light attenuation:
+ * r = max(radius, 0.1)
+ * quadratic = 4.5 / (r²)
+ * atten = 1 / (1 + quadratic * d²)
  */
 
 import * as THREE from "three";
 
-/** Minimum radius used by SetLightGL when computing quadratic atten. */
-export const RETAIL_LIGHT_ATTEN_MIN_RADIUS = 0.1;
+/** Minimum radius when computing quadratic attenuation. */
+export const ODYSSEY_LIGHT_ATTEN_MIN_RADIUS = 0.1;
 
 /**
- * KotOR.js default TXI envmap combine — master / retail `environmentMapDest != 0`
+ * KotOR.js default TXI envmap combine — master / `environmentMapDest != 0`
  * at `RenderEnvironmentMapped` (`GL_ONE_MINUS_DST_ALPHA`, `GL_ONE`):
- *   final = litDiffuse + envColor * (1 - diffuseTexAlpha)
+ * final = litDiffuse + envColor * (1 - diffuseTexAlpha)
  *
  * Diffuse texture alpha is the mask (before material opacity). Dark cubemaps like
  * CM_Baremetal only contribute sparse highlights; LERP (dest==0) would replace
@@ -29,7 +26,7 @@ export const RETAIL_LIGHT_ATTEN_MIN_RADIUS = 0.1;
  * varyings. Shader edits require a full page reload (materials snapshot GLSL
  * at create; HMR does not recompile live materials).
  */
-export function retailEnvmapAdd(
+export function odysseyEnvmapAdd(
   litDiffuseRgb: [number, number, number],
   envRgb: [number, number, number],
   diffuseTexAlpha: number
@@ -44,10 +41,10 @@ export function retailEnvmapAdd(
 }
 
 /**
- * Retail dest==0 multipass albedo (not KotOR.js default — dark cubes crush chrome):
- *   albedo = mix(envColor, diffuseColor, diffuseTexAlpha)
+ * dest==0 multipass albedo (not KotOR.js default — dark cubes crush chrome):
+ * albedo = mix(envColor, diffuseColor, diffuseTexAlpha)
  */
-export function retailEnvmapAlbedo(
+export function odysseyEnvmapAlbedo(
   envRgb: [number, number, number],
   diffuseRgb: [number, number, number],
   diffuseTexAlpha: number
@@ -64,7 +61,7 @@ export function retailEnvmapAlbedo(
 /**
  * Apply irradiance to blended albedo (FFP GL_MODULATE / dest==0 second factor).
  */
-export function retailEnvmapLitColor(
+export function odysseyEnvmapLitColor(
   irradiance: [number, number, number],
   albedo: [number, number, number]
 ): [number, number, number] {
@@ -75,26 +72,26 @@ export function retailEnvmapLitColor(
   ];
 }
 
-/** Retail quadratic attenuation coefficient for a light radius. */
-export function retailQuadraticAttenuation(radius: number): number {
+/** quadratic attenuation coefficient for a light radius. */
+export function odysseyQuadraticAttenuation(radius: number): number {
   if(!(radius > 0)){
     return 0;
   }
-  // SetLightGL: r = max(radius, 0.1); quadratic = 9 / (r² + r²) === 4.5 / r²
-  const r = Math.max(radius, RETAIL_LIGHT_ATTEN_MIN_RADIUS);
+  // light upload: r = max(radius, 0.1); quadratic = 9 / (r² + r²) === 4.5 / r²
+  const r = Math.max(radius, ODYSSEY_LIGHT_ATTEN_MIN_RADIUS);
   const r2 = r * r;
   return 9.0 / (r2 + r2);
 }
 
 /**
- * Retail point-light distance attenuation.
+ * point-light distance attenuation.
  * constant=1, linear=0, quadratic=4.5/r²
  */
-export function retailPointAttenuation(distance: number, radius: number): number {
+export function odysseyPointAttenuation(distance: number, radius: number): number {
   if(!(radius > 0)){
     return 0;
   }
-  const q = retailQuadraticAttenuation(radius);
+  const q = odysseyQuadraticAttenuation(radius);
   return 1 / (1 + q * distance * distance);
 }
 
@@ -102,7 +99,7 @@ export function retailPointAttenuation(distance: number, radius: number): number
  * Horizontal (XY) distance / radius score used by PrioritizeLights.
  * Lower is better; values > 1 are typically excluded from illumination list.
  */
-export function retailIlluminationScore(
+export function odysseyIlluminationScore(
   lightX: number,
   lightY: number,
   focusX: number,
@@ -118,20 +115,20 @@ export function retailIlluminationScore(
 }
 
 /**
- * Retail ControlLightsFade initial fade when a light is first
+ * light fade pass initial fade when a light is first
  * added to the bound list: fadingLightFlag (max_tree != 0) starts at 0,
- * otherwise 1. Ongoing updates always use `retailFadeStep`.
+ * otherwise 1. Ongoing updates always use `odysseyFadeStep`.
  */
-export function retailFadeInit(fadingLight: boolean): number {
+export function odysseyFadeInit(fadingLight: boolean): number {
   return fadingLight ? 0 : 1;
 }
 
 /**
- * Retail ControlLightsFade continuous fade: always ±deltaT toward target,
+ * light fade pass continuous fade: always ±deltaT toward target,
  * clamped to [0, 1]. fadingLightFlag only affects the initial value via
- * `retailFadeInit` — in/out while bound always uses this rate.
+ * `odysseyFadeInit` — in/out while bound always uses this rate.
  */
-export function retailFadeStep(current: number, target: number, delta: number): number {
+export function odysseyFadeStep(current: number, target: number, delta: number): number {
   const dt = Math.max(0, delta);
   if(target > current){
     return Math.min(1, current + dt);
@@ -143,10 +140,10 @@ export function retailFadeStep(current: number, target: number, delta: number): 
 }
 
 /**
- * Advance retail shadow-light fade (GetShadowLights).
+ * Advance shadow-light fade (shadow light selection).
  * Fade step constant 0.3 → fade-in Δt/0.3, fade-out 2·Δt/0.3.
  */
-export function retailShadowFadeStep(
+export function odysseyShadowFadeStep(
   current: number,
   target: number,
   delta: number
@@ -161,10 +158,10 @@ export function retailShadowFadeStep(
   return current;
 }
 
-export interface IRetailLightSortKey {
+export interface IOdysseyLightSortKey {
   priority: number;
   /**
-   * Retail n_dynamic_type preference (lightcmp):
+   * n_dynamic_type preference (light sort):
    * type 1 > type 2 > type 0. Stored as sort rank so higher values win.
    */
   dynamicRank: number;
@@ -172,7 +169,7 @@ export interface IRetailLightSortKey {
   colorIsBlack: boolean;
   /**
    * Monotonic registration ordinal. Prefer this over uuid for a stable
-   * approximation of retail PartLight pointer-order tie-breaking.
+   * approximation of light node pointer-order tie-breaking.
    */
   registrationOrder?: number;
   /** @deprecated Prefer registrationOrder; kept for older call sites/tests. */
@@ -180,13 +177,13 @@ export interface IRetailLightSortKey {
 }
 
 /**
- * lightcmp: prefer non-black, lower numeric priority, higher
+ * light sort: prefer non-black, lower numeric priority, higher
  * dynamicRank, lower illumination score, then registration-order / uuid
- * tie-break (retail uses PartLight pointer address).
+ * tie-break (uses light node pointer address).
  * LightPriority.LOWEST=1 sorts before HIGHEST=5.
  * Returns < 0 if a should sort before b (more preferred).
  */
-export function compareRetailLights(a: IRetailLightSortKey, b: IRetailLightSortKey): number {
+export function compareOdysseyLights(a: IOdysseyLightSortKey, b: IOdysseyLightSortKey): number {
   if(a.colorIsBlack !== b.colorIsBlack){
     return a.colorIsBlack ? 1 : -1;
   }
@@ -213,11 +210,11 @@ export function compareRetailLights(a: IRetailLightSortKey, b: IRetailLightSortK
 }
 
 /**
- * Rank for lightcmp n_dynamic_type preference (higher sorts first).
- * Retail: type 1 > type 2 > type 0. affectDynamic is a separate eligibility flag
- * (GetNearestLights) and does not change lightcmp ranking.
+ * Rank for light sort n_dynamic_type preference (higher sorts first).
+ * : type 1 > type 2 > type 0. affectDynamic is a separate eligibility flag
+ * (nearest light selection) and does not change light sort ranking.
  */
-export function retailDynamicRank(dynamicType: number, _affectDynamic?: boolean): number {
+export function odysseyDynamicRank(dynamicType: number, _affectDynamic?: boolean): number {
   const type = dynamicType | 0;
   if(type === 1){
     return 2;
@@ -232,22 +229,22 @@ export function retailDynamicRank(dynamicType: number, _affectDynamic?: boolean)
   return 0;
 }
 
-/** @deprecated Prefer retailDynamicRank(dynamicType). */
-export function retailDynamicRankFromFlags(isDynamic: boolean, affectDynamic: boolean): number {
+/** @deprecated Prefer odysseyDynamicRank(dynamicType). */
+export function odysseyDynamicRankFromFlags(isDynamic: boolean, affectDynamic: boolean): number {
   if(isDynamic){
-    return retailDynamicRank(1);
+    return odysseyDynamicRank(1);
   }
-  // affectDynamic alone does not raise lightcmp rank (n_dynamic_type stays 0).
+  // affectDynamic alone does not raise light sort rank (n_dynamic_type stays 0).
   void affectDynamic;
   return 0;
 }
 
 /**
- * Retail RenderStencilShadowsForThisLight disk radius.
+ * RenderStencilShadowsForThisLight disk radius.
  * Uses shadowRadius when > 0, else light radius. If radius > 50, disk is
  * centered on focus with radius 50; otherwise radius is shortened by Δz to focus.
  */
-export function retailStencilShadowDisk(
+export function odysseyStencilShadowDisk(
   lightX: number,
   lightY: number,
   lightZ: number,
@@ -277,118 +274,118 @@ export function retailStencilShadowDisk(
   };
 }
 
-/** Retail stencil disk opacity: shadowAlpha * 0.5 (alpha channel of dark disk). */
-export function retailStencilShadowOpacity(shadowAlpha: number): number {
+/** stencil disk opacity: shadowAlpha * 0.5 (alpha channel of dark disk). */
+export function odysseyStencilShadowOpacity(shadowAlpha: number): number {
   return Math.max(0, Math.min(1, shadowAlpha * 0.5));
 }
 
-export function isRetailLightColorBlack(r: number, g: number, b: number): boolean {
+export function isOdysseyLightColorBlack(r: number, g: number, b: number): boolean {
   return r === 0 && g === 0 && b === 0;
 }
 
 /**
- * Retail PrioritizeShadow color gate:
- * keep light if any raw PartLight.color channel > 0.1 (not fade×color).
+ * shadow prioritize color gate:
+ * keep light if any raw light node.color channel > 0.1 (not fade×color).
  */
-export function isRetailShadowColorVisible(r: number, g: number, b: number): boolean {
+export function isOdysseyShadowColorVisible(r: number, g: number, b: number): boolean {
   return r > 0.1 || g > 0.1 || b > 0.1;
 }
 
 /**
- * Effective lightcmp priority: PartLight.priority, or authored MDL lightpriority
- * when runtime priority is 0 (retail fallback to MdlNode priority).
+ * Effective light sort priority: light node.priority, or authored MDL lightpriority
+ * when runtime priority is 0 (fallback to model node priority).
  */
-export function retailEffectivePriority(priority: number, authoredPriority = 0): number {
+export function odysseyEffectivePriority(priority: number, authoredPriority = 0): number {
   return (priority | 0) !== 0 ? (priority | 0) : (authoredPriority | 0);
 }
 
-/** Retail scene GL light budget (GL_LIGHT0..7). */
-export const RETAIL_MAX_SCENE_LIGHTS = 8;
-/** Retail VertexProgram allowed_lights hard-cap. */
-export const RETAIL_MAX_LIGHTS_PER_MODEL = 3;
-/** Retail stencil fan segments in RenderStencilShadowsForThisLight. */
-export const RETAIL_STENCIL_SHADOW_SEGMENTS = 10;
+/** scene GL light budget (GL_LIGHT0..7). */
+export const ODYSSEY_MAX_SCENE_LIGHTS = 8;
+/** VertexProgram allowed_lights hard-cap. */
+export const ODYSSEY_MAX_LIGHTS_PER_MODEL = 3;
+/** stencil fan segments in RenderStencilShadowsForThisLight. */
+export const ODYSSEY_STENCIL_SHADOW_SEGMENTS = 10;
 /** Degrees between circumferential samples in RenderStencilShadowsForThisLight. */
-export const RETAIL_STENCIL_FAN_ANGLE_DEG = 40;
+export const ODYSSEY_STENCIL_FAN_ANGLE_DEG = 40;
 /** Max disk radius when shadow radius exceeds this (RenderStencilShadowsForThisLight). */
-export const RETAIL_STENCIL_DISK_MAX_RADIUS = 50;
-/** Extra caster inclusion margin around shadow light radius (DoGobShadows). */
-export const RETAIL_SHADOW_CASTER_MARGIN = 2;
+export const ODYSSEY_STENCIL_DISK_MAX_RADIUS = 50;
+/** Extra caster inclusion margin around shadow light radius (gob shadows). */
+export const ODYSSEY_SHADOW_CASTER_MARGIN = 2;
 /** Minimum vertex-color multiplier after full shadow (ProjectDynamicShadow). */
-export const RETAIL_SHADOW_MIN_VERTEX_COLOR = 0.25;
+export const ODYSSEY_SHADOW_MIN_VERTEX_COLOR = 0.25;
 /** Depth bias along light→receiver ray (K1 ProjectDynamicShadow / PartVolumeProject). */
-export const RETAIL_SHADOW_DEPTH_BIAS = 0.05;
+export const ODYSSEY_SHADOW_DEPTH_BIAS = 0.05;
 /**
- * K1 DoDynamicMeshProjections — minimum shadow extrusion length (`shadowLength` global).
+ * K1 dynamic mesh projections — minimum shadow extrusion length (`shadowLength` global).
  * Effective radius is clamped to at least this value before mesh projection.
  */
-export const RETAIL_SHADOW_LENGTH = 5;
+export const ODYSSEY_SHADOW_LENGTH = 5;
 /**
- * K1 DoGobShadowsForThisLight — focus cull distance when `enableFocusShadowing` is set.
+ * K1 gob shadowsForThisLight — focus cull distance when `enableFocusShadowing` is set.
  */
-export const RETAIL_MAX_SHADOW_DISTANCE = 40;
+export const ODYSSEY_MAX_SHADOW_DISTANCE = 40;
 /** K1 `enableFocusShadowing` global (non-zero = enabled). */
-export const RETAIL_ENABLE_FOCUS_SHADOWING = true;
+export const ODYSSEY_ENABLE_FOCUS_SHADOWING = true;
 /**
  * K1 RenderShadows Soft Shadows elevation gate: light.z must exceed
  * focus_position.z + this value or the soft stencil pass is skipped.
  */
-export const RETAIL_SOFT_SHADOW_LIGHT_MIN_ELEVATION = 1.75;
-/** True when a light is high enough above focus for retail Soft Shadows. */
-export function retailSoftShadowLightElevationOk(lightZ: number, focusZ: number): boolean {
-  return lightZ > focusZ + RETAIL_SOFT_SHADOW_LIGHT_MIN_ELEVATION;
+export const ODYSSEY_SOFT_SHADOW_LIGHT_MIN_ELEVATION = 1.75;
+/** True when a light is high enough above focus for Soft Shadows. */
+export function odysseySoftShadowLightElevationOk(lightZ: number, focusZ: number): boolean {
+  return lightZ > focusZ + ODYSSEY_SOFT_SHADOW_LIGHT_MIN_ELEVATION;
 }
-/** Camera near-plane Z bias added in ProjectDynamicShadow / DoDynamicMeshProjections. */
-export const RETAIL_SHADOW_NEAR_PLANE_Z_BIAS = 0.05;
+/** Camera near-plane Z bias added in ProjectDynamicShadow / dynamic mesh projections. */
+export const ODYSSEY_SHADOW_NEAR_PLANE_Z_BIAS = 0.05;
 /** K1 distant sun plane normal (ProjectDynamicShadow when radius > 1000). */
-export const RETAIL_DISTANT_SHADOW_PLANE_NORMAL = Object.freeze({ x: 0, y: -1, z: -0.1 });
+export const ODYSSEY_DISTANT_SHADOW_PLANE_NORMAL = Object.freeze({ x: 0, y: -1, z: -0.1 });
 /** Epsilon scale for Project projectionCap (BuildShadowArray). */
-export const RETAIL_SHADOW_PROJECTION_CAP_EPSILON = 1e-4;
+export const ODYSSEY_SHADOW_PROJECTION_CAP_EPSILON = 1e-4;
 
-export enum RetailShadowProjectionPlaneKind {
-  /** DoDynamicMeshProjections / local ProjectDynamicShadow: camera near + bias. */
+export enum OdysseyShadowProjectionPlaneKind {
+  /** dynamic mesh projections / local ProjectDynamicShadow: camera near + bias. */
   CameraNear = 0,
-  /** ProjectDynamicShadow when radius >= RETAIL_DISTANT_SHADOW_RADIUS. */
+  /** ProjectDynamicShadow when radius >= ODYSSEY_DISTANT_SHADOW_RADIUS. */
   DistantGround = 1,
   /** RenderStencilShadowsForThisLight: horizontal plane at focus Z. */
   FocusHorizontal = 2,
 }
 
-export interface IRetailShadowProjectionPlane {
+export interface IOdysseyShadowProjectionPlane {
   normal: { x: number; y: number; z: number };
   constant: number;
   tangentU: { x: number; y: number; z: number };
   tangentV: { x: number; y: number; z: number };
 }
 
-/** DoDynamicMeshProjections effective influence radius floor. */
-export function retailShadowEffectiveProjectionLength(radius: number, shadowRadius: number): number {
-  const effective = retailShadowEffectiveRadius(radius, shadowRadius);
-  return Math.max(effective, RETAIL_SHADOW_LENGTH);
+/** dynamic mesh projections effective influence radius floor. */
+export function odysseyShadowEffectiveProjectionLength(radius: number, shadowRadius: number): number {
+  const effective = odysseyShadowEffectiveRadius(radius, shadowRadius);
+  return Math.max(effective, ODYSSEY_SHADOW_LENGTH);
 }
 
-export function retailShadowProjectionPlaneKind(
+export function odysseyShadowProjectionPlaneKind(
   radius: number,
   forStencilDisk = false
-): RetailShadowProjectionPlaneKind {
+): OdysseyShadowProjectionPlaneKind {
   if(forStencilDisk){
-    return RetailShadowProjectionPlaneKind.FocusHorizontal;
+    return OdysseyShadowProjectionPlaneKind.FocusHorizontal;
   }
-  if(radius >= RETAIL_DISTANT_SHADOW_RADIUS){
-    return RetailShadowProjectionPlaneKind.DistantGround;
+  if(radius >= ODYSSEY_DISTANT_SHADOW_RADIUS){
+    return OdysseyShadowProjectionPlaneKind.DistantGround;
   }
-  return RetailShadowProjectionPlaneKind.CameraNear;
+  return OdysseyShadowProjectionPlaneKind.CameraNear;
 }
 
 /**
- * Hull / lightmapped receiver plane for DoStaticMeshShadows / DoDynamicMeshProjections.
- * Retail uses camera near + bias for local lights (ProjectDynamicShadow).
+ * Hull / lightmapped receiver plane for static mesh shadows / dynamic mesh projections.
+ * uses camera near + bias for local lights (ProjectDynamicShadow).
  */
-export function retailStaticMeshShadowPlaneKind(
+export function odysseyStaticMeshShadowPlaneKind(
   radius: number,
   forStencilDisk = false
-): RetailShadowProjectionPlaneKind {
-  return retailShadowProjectionPlaneKind(radius, forStencilDisk);
+): OdysseyShadowProjectionPlaneKind {
+  return odysseyShadowProjectionPlaneKind(radius, forStencilDisk);
 }
 
 const _planeTransformPos = new THREE.Vector3();
@@ -405,9 +402,9 @@ const _planeTransformTangent = new THREE.Vector3();
  * (inverse rotation on normal; origin = -constant * normal, then local origin).
  */
 export function transformRetailShadowPlaneToMeshLocal(
-  worldPlane: IRetailShadowProjectionPlane,
+  worldPlane: IOdysseyShadowProjectionPlane,
   matrixWorld: THREE.Matrix4
-): IRetailShadowProjectionPlane {
+): IOdysseyShadowProjectionPlane {
   matrixWorld.decompose(_planeTransformPos, _planeTransformQuat, _planeTransformScale);
   _planeTransformInvQuat.copy(_planeTransformQuat).invert();
 
@@ -491,18 +488,18 @@ function buildPlaneTangentBasis(
 }
 
 /**
- * Build retail shadow receiver plane in world space (Three.js plane: n·p + constant = 0).
+ * Build shadow receiver plane in world space (Three.js plane: n·p + constant = 0).
  */
 export function buildRetailShadowProjectionPlane(
-  kind: RetailShadowProjectionPlaneKind,
+  kind: OdysseyShadowProjectionPlaneKind,
   camera: { position: { x: number; y: number; z: number }; near?: number; matrixWorld?: unknown },
   focusZ: number,
   getCameraForward?: (out: { x: number; y: number; z: number }) => void
-): IRetailShadowProjectionPlane {
+): IOdysseyShadowProjectionPlane {
   const tangentU = { x: 1, y: 0, z: 0 };
   const tangentV = { x: 0, y: 1, z: 0 };
 
-  if(kind === RetailShadowProjectionPlaneKind.FocusHorizontal){
+  if(kind === OdysseyShadowProjectionPlaneKind.FocusHorizontal){
     const n = { x: 0, y: 0, z: 1 };
     buildPlaneTangentBasis(n.x, n.y, n.z, tangentU, tangentV);
     return {
@@ -513,8 +510,8 @@ export function buildRetailShadowProjectionPlane(
     };
   }
 
-  if(kind === RetailShadowProjectionPlaneKind.DistantGround){
-    const raw = RETAIL_DISTANT_SHADOW_PLANE_NORMAL;
+  if(kind === OdysseyShadowProjectionPlaneKind.DistantGround){
+    const raw = ODYSSEY_DISTANT_SHADOW_PLANE_NORMAL;
     const len = Math.sqrt(raw.x * raw.x + raw.y * raw.y + raw.z * raw.z) || 1;
     const n = { x: raw.x / len, y: raw.y / len, z: raw.z / len };
     buildPlaneTangentBasis(n.x, n.y, n.z, tangentU, tangentV);
@@ -531,7 +528,7 @@ export function buildRetailShadowProjectionPlane(
     forward.y = 1;
   }
   const near = (camera as { near?: number }).near ?? 0.1;
-  const dist = near + RETAIL_SHADOW_NEAR_PLANE_Z_BIAS;
+  const dist = near + ODYSSEY_SHADOW_NEAR_PLANE_Z_BIAS;
   const px = camera.position.x + forward.x * dist;
   const py = camera.position.y + forward.y * dist;
   const pz = camera.position.z + forward.z * dist;
@@ -545,9 +542,9 @@ export function buildRetailShadowProjectionPlane(
   return { normal: n, constant, tangentU, tangentV };
 }
 
-/** Signed distance from point to retail plane (n·p + constant). */
-export function retailShadowPlaneDistance(
-  plane: IRetailShadowProjectionPlane,
+/** Signed distance from point to plane (n·p + constant). */
+export function odysseyShadowPlaneDistance(
+  plane: IOdysseyShadowProjectionPlane,
   x: number,
   y: number,
   z: number
@@ -556,13 +553,13 @@ export function retailShadowPlaneDistance(
 }
 
 /** Project world XYZ onto plane and return 2D tangent coordinates. */
-export function retailWorldToPlaneUV(
-  plane: IRetailShadowProjectionPlane,
+export function odysseyWorldToPlaneUV(
+  plane: IOdysseyShadowProjectionPlane,
   x: number,
   y: number,
   z: number
 ): { x: number; y: number } {
-  const dist = retailShadowPlaneDistance(plane, x, y, z);
+  const dist = odysseyShadowPlaneDistance(plane, x, y, z);
   const px = x - plane.normal.x * dist;
   const py = y - plane.normal.y * dist;
   const pz = z - plane.normal.z * dist;
@@ -572,9 +569,9 @@ export function retailWorldToPlaneUV(
   };
 }
 
-/** Inverse of retailWorldToPlaneUV — plane tangent coords to world XYZ (unit normal). */
-export function retailPlaneUVToWorld(
-  plane: IRetailShadowProjectionPlane,
+/** Inverse of odysseyWorldToPlaneUV — plane tangent coords to world XYZ (unit normal). */
+export function odysseyPlaneUVToWorld(
+  plane: IOdysseyShadowProjectionPlane,
   u: number,
   v: number,
   target = { x: 0, y: 0, z: 0 }
@@ -592,8 +589,8 @@ export function retailPlaneUVToWorld(
 }
 
 /** ClipProjection: clamp extrusion cap toward plane when cap is above plane. */
-export function retailClipProjection(
-  plane: IRetailShadowProjectionPlane,
+export function odysseyClipProjection(
+  plane: IOdysseyShadowProjectionPlane,
   capX: number,
   capY: number,
   capZ: number,
@@ -620,12 +617,12 @@ export function retailClipProjection(
   };
 }
 
-export interface IRetailVec2 {
+export interface IOdysseyVec2 {
   x: number;
   y: number;
 }
 
-export interface IRetailShadowLightParams {
+export interface IOdysseyShadowLightParams {
   x: number;
   y: number;
   z: number;
@@ -635,10 +632,10 @@ export interface IRetailShadowLightParams {
 }
 
 /**
- * Retail PartLight world position for shadow projection
+ * light node world position for shadow projection
  * (light Z + verticalDisplacement).
  */
-export function retailShadowLightPosition(light: IRetailShadowLightParams): { x: number; y: number; z: number } {
+export function odysseyShadowLightPosition(light: IOdysseyShadowLightParams): { x: number; y: number; z: number } {
   return {
     x: light.x,
     y: light.y,
@@ -647,24 +644,24 @@ export function retailShadowLightPosition(light: IRetailShadowLightParams): { x:
 }
 
 /** Effective shadow influence radius (shadowRadius when > 0, else light radius). */
-export function retailShadowEffectiveRadius(radius: number, shadowRadius: number): number {
+export function odysseyShadowEffectiveRadius(radius: number, shadowRadius: number): number {
   return shadowRadius > 0 ? shadowRadius : radius;
 }
 
 /** Caster inclusion distance for a shadow light. */
-export function retailShadowCasterDistanceLimit(radius: number, shadowRadius: number): number {
-  return retailShadowEffectiveRadius(radius, shadowRadius) + RETAIL_SHADOW_CASTER_MARGIN;
+export function odysseyShadowCasterDistanceLimit(radius: number, shadowRadius: number): number {
+  return odysseyShadowEffectiveRadius(radius, shadowRadius) + ODYSSEY_SHADOW_CASTER_MARGIN;
 }
 
 /**
- * Retail RenderStencilShadowsForThisLight fan: center + ring samples at 40°.
+ * RenderStencilShadowsForThisLight fan: center + ring samples at 40°.
  * Returns 11 points (index 0 = center); wedges render segments 0→1…9→10.
  */
-export function retailStencilShadowFanVertices(radius: number): IRetailVec2[] {
+export function odysseyStencilShadowFanVertices(radius: number): IOdysseyVec2[] {
   const r = Math.max(0, radius);
-  const pts: IRetailVec2[] = [{ x: 0, y: 0 }];
-  const step = (RETAIL_STENCIL_FAN_ANGLE_DEG * Math.PI) / 180;
-  for(let i = 0; i < RETAIL_STENCIL_SHADOW_SEGMENTS; i++){
+  const pts: IOdysseyVec2[] = [{ x: 0, y: 0 }];
+  const step = (ODYSSEY_STENCIL_FAN_ANGLE_DEG * Math.PI) / 180;
+  for(let i = 0; i < ODYSSEY_STENCIL_SHADOW_SEGMENTS; i++){
     const a = i * step;
     pts.push({ x: Math.cos(a) * r, y: Math.sin(a) * r });
   }
@@ -675,7 +672,7 @@ export function retailStencilShadowFanVertices(radius: number): IRetailVec2[] {
  * Project a world point from a shadow light onto a horizontal plane at planeZ.
  * Used by ProjectDynamicShadow / static mesh shadow projection.
  */
-export function retailProjectPointFromLight(
+export function odysseyProjectPointFromLight(
   lightX: number,
   lightY: number,
   lightZ: number,
@@ -702,8 +699,8 @@ export function retailProjectPointFromLight(
  * Project a caster sample along the light→point ray onto an arbitrary receiver plane,
  * then return plane tangent UV (ProjectDynamicShadow / Project).
  */
-export function retailProjectPointFromLightOntoPlane(
-  plane: IRetailShadowProjectionPlane,
+export function odysseyProjectPointFromLightOntoPlane(
+  plane: IOdysseyShadowProjectionPlane,
   lightX: number,
   lightY: number,
   lightZ: number,
@@ -729,43 +726,43 @@ export function retailProjectPointFromLightOntoPlane(
   const px = lightX + dx * t;
   const py = lightY + dy * t;
   const pz = lightZ + dz * t;
-  return retailWorldToPlaneUV(plane, px, py, pz);
+  return odysseyWorldToPlaneUV(plane, px, py, pz);
 }
 
 /**
  * Multiply vertex RGB by shadow strength (ProjectDynamicShadow darken).
- * strength 0 = no change, 1 = full darken toward RETAIL_SHADOW_MIN_VERTEX_COLOR.
+ * strength 0 = no change, 1 = full darken toward ODYSSEY_SHADOW_MIN_VERTEX_COLOR.
  */
-export function retailShadowVertexDarken(
+export function odysseyShadowVertexDarken(
   r: number,
   g: number,
   b: number,
   strength: number
 ): [number, number, number] {
   const s = Math.max(0, Math.min(1, strength));
-  const keep = 1 - s * (1 - RETAIL_SHADOW_MIN_VERTEX_COLOR);
+  const keep = 1 - s * (1 - ODYSSEY_SHADOW_MIN_VERTEX_COLOR);
   return [r * keep, g * keep, b * keep];
 }
 
 /** Combined projection opacity from area shadowAlpha and per-light fade. */
-export function retailShadowProjectionStrength(shadowAlpha: number, shadowFadeFactor: number): number {
-  return retailStencilShadowOpacity(shadowAlpha) * Math.max(0, Math.min(1, shadowFadeFactor));
+export function odysseyShadowProjectionStrength(shadowAlpha: number, shadowFadeFactor: number): number {
+  return odysseyStencilShadowOpacity(shadowAlpha) * Math.max(0, Math.min(1, shadowFadeFactor));
 }
 
-/** GetNearestLights / RenderOnlyGobs object query radius. */
-export const RETAIL_GOB_LIGHT_RADIUS = 2;
-/** Distant/static GetShadowLights(mode=2) radius threshold. */
-export const RETAIL_DISTANT_SHADOW_RADIUS = 1000;
-/** Area sun/moon lights (radius >= this) are excluded from GetShadowLights when Sun/MoonShadows=0. */
-export const RETAIL_AREA_DIRECTIONAL_SHADOW_RADIUS = 100;
+/** nearest light selection / RenderOnlyGobs object query radius. */
+export const ODYSSEY_GOB_LIGHT_RADIUS = 2;
+/** Distant/static shadow light selection(mode=2) radius threshold. */
+export const ODYSSEY_DISTANT_SHADOW_RADIUS = 1000;
+/** Area sun/moon lights (radius >= this) are excluded from shadow light selection when Sun/MoonShadows=0. */
+export const ODYSSEY_AREA_DIRECTIONAL_SHADOW_RADIUS = 100;
 
 /**
- * 0 = local lamp, 1 = area/sun. Smoothstep from 20 → {@link RETAIL_AREA_DIRECTIONAL_SHADOW_RADIUS}.
- * Used to adapt shadow-map strength / PCF for depth maps (retail used one opacity for all).
+ * 0 = local lamp, 1 = area/sun. Smoothstep from 20 → {@link ODYSSEY_AREA_DIRECTIONAL_SHADOW_RADIUS}.
+ * Used to adapt shadow-map strength / PCF for depth maps (used one opacity for all).
  */
-export function retailShadowDistantFactor(radius: number): number {
+export function odysseyShadowDistantFactor(radius: number): number {
   const start = 20;
-  const end = RETAIL_AREA_DIRECTIONAL_SHADOW_RADIUS;
+  const end = ODYSSEY_AREA_DIRECTIONAL_SHADOW_RADIUS;
   if(!(radius > start)){
     return 0;
   }
@@ -777,31 +774,31 @@ export function retailShadowDistantFactor(radius: number): number {
 }
 
 /** True for area directional sun/moon shadow casters (hundreds of units); MDL lamp lights are smaller. */
-export function isRetailAreaDirectionalShadowLight(radius: number): boolean {
-  return (radius | 0) >= RETAIL_AREA_DIRECTIONAL_SHADOW_RADIUS;
+export function isOdysseyAreaDirectionalShadowLight(radius: number): boolean {
+  return (radius | 0) >= ODYSSEY_AREA_DIRECTIONAL_SHADOW_RADIUS;
 }
 
 /**
- * Retail GetShadowLights mode argument:
- * 0 = multi-light gob / dynamic projections (DoGobShadows / DoDynamicMeshProjections)
- * 1 = single dynamic light for static mesh shadows (DoStaticMeshShadows)
+ * shadow light selection mode argument:
+ * 0 = multi-light gob / dynamic projections (gob shadows / dynamic mesh projections)
+ * 1 = single dynamic light for static mesh shadows (static mesh shadows)
  * 2 = one distant/static light from the full lights list
  */
-export enum RetailShadowLightMode {
+export enum OdysseyShadowLightMode {
   Multi = 0,
   SingleDynamic = 1,
   DistantStatic = 2,
 }
 
 /**
- * ControlLightsFade arg4 selects which PartLight fade field the
- * pool advances, and GetNearestLights uses no fade at all.
+ * light fade pass arg4 selects which light node fade field the
+ * pool advances, and nearest light selection uses no fade at all.
  */
-export enum RetailLightFadeChannel {
+export enum OdysseyLightFadeChannel {
   /**
-   * GetNearestLights / gob packing for Odyssey GLSL: authored color only
-   * (SetUpVertexProgramLightShaderConstants omits PartLight.multiplier;
-   * FFP SetLightGL still uses multiplier × color).
+   * nearest light selection / gob packing for Odyssey GLSL: authored color only
+   * (SetUpVertexProgramLightShaderConstants omits light node.multiplier;
+   * FFP light upload still uses multiplier × color).
    */
   None = 0,
   /** Room / global pool; shader RGB = fade × color. */
@@ -811,27 +808,27 @@ export enum RetailLightFadeChannel {
 }
 
 /**
- * EnableLightsDynamicOnly eligibility. Retail compares
+ * dynamic-only lights eligibility. compares
  * `num_dynamic_types == 1` exactly, so baked static lights (type 0) and
  * gob-only lights (type 2) are excluded from the static-geometry overlay.
  */
-export function isRetailDynamicOnlyLight<T extends { dynamicType?: number }>(light: T): boolean {
+export function isOdysseyDynamicOnlyLight<T extends { dynamicType?: number }>(light: T): boolean {
   return (light?.dynamicType | 0) === 1;
 }
 
 /**
- * EnableLightsDynamicOnly: filter the prioritized illumination list
+ * dynamic-only lights: filter the prioritized illumination list
  * down to the `n_dynamic_type == 1` lights that light static geometry.
- * Order is preserved — the caller already lightcmp-sorted the input.
+ * Order is preserved — the caller already light sort-sorted the input.
  */
-export function retailSelectDynamicOnlyLights<T extends { dynamicType?: number }>(
+export function odysseySelectDynamicOnlyLights<T extends { dynamicType?: number }>(
   prioritizedLights: T[],
   out: T[] = []
 ): T[] {
   out.length = 0;
   for(let i = 0; i < prioritizedLights.length; i++){
     const light = prioritizedLights[i];
-    if(isRetailDynamicOnlyLight(light)){
+    if(isOdysseyDynamicOnlyLight(light)){
       out.push(light);
     }
   }
@@ -839,10 +836,10 @@ export function retailSelectDynamicOnlyLights<T extends { dynamicType?: number }
 }
 
 /**
- * PrioritizeBump: collect non-ambient dynamic lights from the
- * render/fade pool, lightcmp-sort, keep at most one.
+ * bump prioritize: collect non-ambient dynamic lights from the
+ * render/fade pool, light sort-sort, keep at most one.
  */
-export function retailSelectPrioritizeBump<T extends {
+export function odysseySelectPrioritizeBump<T extends {
   isAmbient?: boolean;
   dynamicType?: number;
 }>(
@@ -857,10 +854,10 @@ export function retailSelectPrioritizeBump<T extends {
 }
 
 /**
- * PrioritizeIllumination bump_map_lights: scan the first 3 sorted
+ * illumination prioritize bump_map_lights: scan the first 3 sorted
  * illumination lights; keep the first non-ambient with n_dynamic_type != 0.
  */
-export function retailSelectIlluminationBump<T extends {
+export function odysseySelectIlluminationBump<T extends {
   isAmbient?: boolean;
   dynamicType?: number;
 }>(sortedIlluminationLights: T[]): T[] {
@@ -875,10 +872,10 @@ export function retailSelectIlluminationBump<T extends {
 }
 
 /**
- * GetShadowLights(mode=2) eligibility: shadow, not ambient-only, and either
+ * shadow light selection(mode=2) eligibility: shadow, not ambient-only, and either
  * radius >= 1000 or n_dynamic_type == 0. Lowest effective priority wins.
  */
-export function retailSelectDistantStaticShadowLight<T extends {
+export function odysseySelectDistantStaticShadowLight<T extends {
   castShadow?: boolean;
   isAmbient?: boolean;
   dynamicType?: number;
@@ -892,8 +889,8 @@ export function retailSelectDistantStaticShadowLight<T extends {
     if(!light.castShadow || light.isAmbient){ continue; }
     const radius = light.radius ?? 0;
     const dynamicType = light.dynamicType | 0;
-    if(!(radius >= RETAIL_DISTANT_SHADOW_RADIUS || dynamicType === 0)){ continue; }
-    const priority = retailEffectivePriority(light.priority ?? 0, light.authoredPriority ?? 0);
+    if(!(radius >= ODYSSEY_DISTANT_SHADOW_RADIUS || dynamicType === 0)){ continue; }
+    const priority = odysseyEffectivePriority(light.priority ?? 0, light.authoredPriority ?? 0);
     if(priority < bestPriority){
       best = light;
       bestPriority = priority;
@@ -906,8 +903,8 @@ export function retailSelectDistantStaticShadowLight<T extends {
  * When headLightEnabled, SetUpVertexProgramLightShaderConstants
  * reserves one of the model's allowed_lights slots (allowedLights -= 1).
  */
-export function retailModelLightSlots(
-  allowedLights = RETAIL_MAX_LIGHTS_PER_MODEL,
+export function odysseyModelLightSlots(
+  allowedLights = ODYSSEY_MAX_LIGHTS_PER_MODEL,
   headLightEnabled = false
 ): number {
   const allowed = Math.max(0, allowedLights | 0);
@@ -921,7 +918,7 @@ export function retailModelLightSlots(
  * Map active graphics quality to a videoquality.2da row index.
  * Prefer explicit Video Quality; otherwise Texture Quality (INI).
  */
-export function retailVideoQualityRowIndex(
+export function odysseyVideoQualityRowIndex(
   rowCount: number,
   textureQuality?: number,
   videoQuality?: number

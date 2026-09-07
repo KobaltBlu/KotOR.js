@@ -7,13 +7,13 @@ import { SaveGame } from "@/engine/SaveGame";
 import { TextureLoader } from "@/loaders";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 
-/** Retail ShowGame play-time TLK (hours/minutes tokens). */
+/** ShowGame play-time TLK (hours/minutes tokens). */
 const TLK_TIME_PLAYED = 0xbe73;
 
 /**
  * MenuSaveLoad class.
  *
- * retail (saveload_p) — TSL filter, PC name, play time, save order.
+ * (saveload_p) — TSL filter, PC name, play time, save order.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -58,7 +58,7 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
     const tlk = GameState.TLKManager.GetStringById(TLK_TIME_PLAYED)?.Value
       || GameState.TLKManager.TLKStrings?.[TLK_TIME_PLAYED]?.Value;
     if(tlk){
-      // Retail substitutes %0/%1 (or similar) with hours/minutes.
+      // substitutes %0/%1 (or similar) with hours/minutes.
       return tlk
         .replace(/%d/g, String(hours))
         .replace(/%0!?[nu]?!?/gi, String(hours))
@@ -116,7 +116,7 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
       this.LBL_PCNAME.setText('');
       this.LBL_TIMEPLAYED.setText('');
       this.LB_GAMES.setProtoBuilder(GUISaveGameItem);
-      // Retail AddControls(..., varyItemHeights=0) @ PopulateGameLB
+      // AddControls(..., varyItemHeights=0) @ PopulateGameLB
       this.LB_GAMES.setVariableItemHeight(false);
       this.LB_GAMES.onSelected = (save: SaveGame) => {
         this.selected = save;
@@ -134,7 +134,7 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
       saves = SaveGame.saves.slice().filter(save => {
         return !save.getIsQuickSave() && !save.getIsAutoSave();
       });
-      // Retail SortGamesByTimeStamp — newest first for manual slots.
+      // SortGamesByTimeStamp — newest first for manual slots.
       saves = saves.sort((a, b) => {
         const ta = a.TIMESTAMP instanceof Date ? a.TIMESTAMP.getTime() : 0;
         const tb = b.TIMESTAMP instanceof Date ? b.TIMESTAMP.getTime() : 0;

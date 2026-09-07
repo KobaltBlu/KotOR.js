@@ -8,12 +8,12 @@ export interface AIScriptOption {
   descStrRef: number;
   aiState: number;
   getName: () => string;
-  /** Default PROTOITEM rows call `setText(node)` → `toString()`. */
+  /** Default PROTOITEM rows call `setText(node)` → `toString`. */
   toString: () => string;
 }
 
 /**
- * MenuScriptSelect — retail (`scriptselect`).
+ * MenuScriptSelect — (`scriptselect`).
  *
  * Character BTN_SCRIPTS → SetCreatureID + AddPanel(flags=3) @ HandleInputEvent 0x29
  * (PushModalPanel — character stays drawn underneath).
@@ -39,7 +39,7 @@ export class MenuScriptSelect extends GameMenu {
     this.gui_resref = 'scriptselect';
     this.background = '';
     this.voidFill = false;
-    // Retail AddPanel(flags=3) → PushModalPanel; character remains in the panel list.
+    // AddPanel(flags=3) → PushModalPanel; character remains in the panel list.
     this.isOverlayGUI = true;
   }
 
@@ -72,7 +72,7 @@ export class MenuScriptSelect extends GameMenu {
     });
   }
 
-  /** Retail ctor loads aiscripts.2da NAME_STRREF / DESCRIPTION_STRREF / AISTATE. */
+  /** ctor loads aiscripts.2da NAME_STRREF / DESCRIPTION_STRREF / AISTATE. */
   loadOptionsFrom2DA(){
     const table = GameState.TwoDAManager?.datatables?.get('aiscripts');
     this.options = [];
@@ -86,7 +86,7 @@ export class MenuScriptSelect extends GameMenu {
       const descStrRef = parseInt(row.DESCRIPTION_STRREF ?? row.description_strref ?? '0', 10) | 0;
       const aiState = parseInt(row.AISTATE ?? row.aistate ?? '0', 10) | 0;
       if(!nameStrRef && !descStrRef && !aiState && i === 0){
-        // Keep empty/zero rows — retail includes all row_count entries.
+        // Keep empty/zero rows — includes all row_count entries.
       }
       this.options.push({
         nameStrRef,
@@ -99,7 +99,7 @@ export class MenuScriptSelect extends GameMenu {
   }
 
   /**
-   * Retail SetCreatureID — select list row matching creature ai_state.
+   * SetCreatureID — select list row matching creature ai_state.
    */
   setCreature(creature: ModuleCreature | undefined){
     this.creature = creature;
@@ -129,7 +129,7 @@ export class MenuScriptSelect extends GameMenu {
     }
   }
 
-  /** Retail SetDescription — DESCRIPTION_STRREF for selected row. */
+  /** SetDescription — DESCRIPTION_STRREF for selected row. */
   UpdateSelected(){
     const strRef = this.selected?.descStrRef | 0;
     this.LB_DESC?.setItem(
@@ -137,7 +137,7 @@ export class MenuScriptSelect extends GameMenu {
     );
   }
 
-  /** Retail Accept (0x27) — write ai_state then pop modal. */
+  /** Accept (0x27) — write ai_state then pop modal. */
   acceptAndClose(){
     if(this.creature && this.selected){
       this.creature.aiState = this.selected.aiState | 0;

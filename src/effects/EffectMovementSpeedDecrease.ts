@@ -22,7 +22,7 @@ export class EffectMovementSpeedDecrease extends GameEffect {
 
     if(!this.object) return;
     const pct = this.getInt(0) | 0;
-    // Retail: n >= 100 → effect deleted / ignored
+    // : n >= 100 → effect deleted / ignored
     if(pct < 1 || pct >= 100) return;
     this.object.updateMovementSpeed();
   }

@@ -125,7 +125,7 @@ describe('objects-in-shape geometry', () => {
     expect(ModuleObjectManager.isInSpellCone(new THREE.Vector3(0, 5, 0), origin, ahead, 10)).toBe(false);
   });
 
-  it('isPointInShape dispatches retail shape ids', () => {
+  it('isPointInShape dispatches engine shape ids', () => {
     expect(ModuleObjectManager.isPointInShape(
       ShapeType.SPHERE,
       new THREE.Vector3(1, 0, 0),

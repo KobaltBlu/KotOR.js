@@ -120,19 +120,19 @@ export class TabUTCEditorState extends TabState {
 
     // if(this.moduleCreature && this.moduleCreature.model){
 
-    //   let currentAnimation = this.moduleCreature.model.getAnimationName();
-    //   let animation = this.moduleCreature.animationConstantToAnimation(this.moduleCreature.animState);
-    //   if(animation){
-    //     if(currentAnimation != animation.name.toLowerCase()){
-    //       let aLooping = (!parseInt(animation.fireforget) && parseInt(animation.looping) == 1);
-    //       const anim = this.moduleCreature.model.playAnimation(animation.name.toLowerCase(), aLooping);
-    //       if(!aLooping){
-    //         setTimeout( () => {
-    //           this.moduleCreature.animState = ModuleCreatureAnimState.PAUSE;
-    //         }, anim ? anim.length * 1000 : 1500 );
-    //       }
-    //     }
-    //   }
+    // let currentAnimation = this.moduleCreature.model.getAnimationName;
+    // let animation = this.moduleCreature.animationConstantToAnimation(this.moduleCreature.animState);
+    // if(animation){
+    // if(currentAnimation != animation.name.toLowerCase){
+    // let aLooping = (!parseInt(animation.fireforget) && parseInt(animation.looping) == 1);
+    // const anim = this.moduleCreature.model.playAnimation(animation.name.toLowerCase, aLooping);
+    // if(!aLooping){
+    // setTimeout(=> {
+    // this.moduleCreature.animState = ModuleCreatureAnimState.PAUSE;
+    // }, anim ? anim.length * 1000 : 1500);
+    // }
+    // }
+    // }
     // }
     
   }

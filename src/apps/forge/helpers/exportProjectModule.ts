@@ -1,5 +1,5 @@
 /**
- * Pack a Forge project's loose module files into a playable .mod ERF.
+ * Pack a Forge project's loose module files into a playable.mod ERF.
  *
  * @file exportProjectModule.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -35,7 +35,7 @@ export interface BuildProjectModuleErfResult {
   filename: string;
   resourceCount: number;
   erf?: ERFObject;
-  /** Project .nss files that were skipped (preview needs .ncs). */
+  /** Project.nss files that were skipped (preview needs.ncs). */
   skippedNss: string[];
 }
 

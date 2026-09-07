@@ -9,7 +9,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import { VISION_FLAG_DARKNESS_BLIND } from "@/effects/EffectBlindness";
 
 /**
- * EffectDarkness — retail OnApplyDarkness.
+ * EffectDarkness — effect apply.
  * Spawns Invisibility(mode 2) + Blindness(int[0]=8). Typically AOE-applied.
  *
  * @file EffectDarkness.ts

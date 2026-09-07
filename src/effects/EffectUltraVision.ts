@@ -9,7 +9,7 @@ import {
 } from "@/effects/EffectBlindness";
 
 /**
- * EffectUltraVision — retail sets vision flag 0x02; pierces darkness-blind.
+ * EffectUltraVision — sets vision flag 0x02; pierces darkness-blind.
  *
  * @file EffectUltraVision.ts
  */

@@ -1,7 +1,7 @@
 import { asExtentInt } from "@/gui/GUICoord";
 
 /**
- * Retail GUI extent snapshot stored in control_extents
+ * GUI extent snapshot stored in control_extents
  * (AddControls; restored in OrganizeControls).
  */
 export type ListBoxSavedExtent = {
@@ -36,7 +36,7 @@ export function applyListBoxSavedExtent(
   target.height = asExtentInt(saved.height);
 }
 
-/** Retail pitch = padding + item_height (OrganizeControls). */
+/** pitch = padding + item_height (OrganizeControls). */
 export function listBoxRowPitch(padding: number, itemHeight: number): number {
   return padding + itemHeight;
 }
@@ -52,7 +52,7 @@ export function maxItemHeightFromHeights(heights: readonly number[]): number {
 }
 
 /**
- * Retail OrganizeControls leftover :
+ * OrganizeControls leftover :
  * leftover = (viewport_height - items_per_page * pitch) - padding
  * stretch = leftover / items_per_page (trunc toward 0); rem = leftover - stretch * ipp
  */

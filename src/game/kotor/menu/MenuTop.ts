@@ -89,7 +89,7 @@ export class MenuTop extends GameMenu {
       });
 
       // LBLH_* are GUI overlays — decorative, not mouse targets.
-      // Drive their hover chrome from the paired BTN (retail GetIsSelectable skips labels).
+      // Drive their hover chrome from the paired BTN (GetIsSelectable skips labels).
       this.bindTopHighlight(this.BTN_EQU, this.LBLH_EQU, () => this.manager.MenuEquipment);
       this.bindTopHighlight(this.BTN_INV, this.LBLH_INV, () => this.manager.MenuInventory);
       this.bindTopHighlight(this.BTN_CHAR, this.LBLH_CHA, () => this.manager.MenuCharacter);

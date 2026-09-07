@@ -23,7 +23,7 @@ describe("level-up rules", () => {
     expect(shouldOfferAbilityBump(8)).toBe(true);
   });
 
-  it("maps primary ability to retail LevelUp index order", () => {
+  it("maps primary ability to engine LevelUp index order", () => {
     expect(primaryAbilityToIndex("STR")).toBe(LevelUpAbilityIndex.STR);
     expect(primaryAbilityToIndex("INT")).toBe(LevelUpAbilityIndex.INT);
     expect(primaryAbilityToIndex("WIS")).toBe(LevelUpAbilityIndex.WIS);
@@ -85,7 +85,7 @@ describe("level-up rules", () => {
     expect(validateLevelUpDraft(draft)).toBe(true);
   });
 
-  it("levelStatRecordFromDraft snapshots retail LvlStat fields", () => {
+  it("levelStatRecordFromDraft snapshots engine LvlStat fields", () => {
     const draft = createEmptyDraft();
     draft.classId = 2;
     draft.hpChange = 6;

@@ -6,7 +6,7 @@ import { MenuContainer as K1_MenuContainer } from "@/game/kotor/KOTOR";
 /**
  * MenuContainer class.
  *
- * K2 loads container_p; behavior matches retail via the K1 base.
+ * K2 loads container_p; behavior matches engine behavior via the K1 base.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

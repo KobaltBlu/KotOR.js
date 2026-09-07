@@ -171,7 +171,7 @@ export class UI3DRenderer extends EventListenerModel {
   private _depthPrepassHidden: THREE.Object3D[] = [];
   /**
    * Set by TILE / Gob.distortion emitters during tick. Triggers force-distortion
-   * post-pass (retail RenderForceDistortion) after the scene color is drawn.
+   * post-pass (RenderForceDistortion) after the scene color is drawn.
    */
   forceDistortionNeeded: boolean = false;
   forceDistortionTexture: THREE.Texture | null = null;
@@ -1296,7 +1296,7 @@ export class UI3DRenderer extends EventListenerModel {
       this.buildWebGLRenderer();
       this.buildDepthTarget();
 
-      // this.buildCamera();
+      // this.buildCamera;
       this.buildAmbientLight();
       this.buildScene();
     }
@@ -1311,7 +1311,7 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   private buildCamera(){
-    // if(this.camera) this.camera.dispose();
+    // if(this.camera) this.camera.dispose;
     this.camera = new THREE.PerspectiveCamera( 50, this.width / this.height, 0.1, 1500 );
     this.camera.up = new THREE.Vector3( 0, 0, 1 );
     this.camera.position.set( .1, 5, 1 ); // offset the camera a bit
@@ -1349,7 +1349,7 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   private buildScene(){
-    // this.scene = new THREE.Scene();
+    // this.scene = new THREE.Scene;
     this.group.light_helpers.visible = false;
 
     this.scene.add(this.selectionBox);

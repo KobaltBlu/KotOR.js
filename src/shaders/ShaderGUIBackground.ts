@@ -251,7 +251,7 @@ export class ShaderGUIBackground extends Shader {
        *
        * grad already gives:
        *
-       * edge     -> 0
+       * edge -> 0
        * interior -> 1
        *
        * Noise should influence the transition region directly.

@@ -223,7 +223,7 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
       }
       else
       {
-        // Use setNodes() instead of direct assignment to fire onNodesChange event
+        // Use setNodes instead of direct assignment to fire onNodesChange event
         groupNode.setNodes([]);
       }
 

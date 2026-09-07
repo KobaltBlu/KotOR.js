@@ -16,7 +16,7 @@ import {
 } from "@/engine/pathfinding/force-push-quick-walk";
 
 /**
- * EffectForcePushed — retail OnApplyForcePush (K2).
+ * EffectForcePushed — effect apply (K2).
  *
  * intList[0] : bIsForcePushedTargeted
  * intList[1] : bIgnoreTestDirectLine
@@ -82,7 +82,7 @@ export class EffectForcePushed extends GameEffect {
     creature.fp_getup_played = false;
 
     const eSetState = new GameState.GameEffectFactory.EffectSetState();
-    // Retail OnApplyForcePush: subtype = (copied & ~7) | TEMPORARY
+    // effect apply: subtype = (copied & ~7) | TEMPORARY
     eSetState.setDurationType(GameEffectDurationType.TEMPORARY);
     eSetState.setDuration(this.getDuration());
     eSetState.setExpireDay(this.expireDay);

@@ -5,7 +5,7 @@ import { GameFileSystem } from '@/utility/GameFileSystem';
 import type { TwoDAObject } from '@/resource/TwoDAObject';
 
 /**
- * Retail modulesave.2da AutoSaveOnEnter column values.
+ * modulesave.2da AutoSaveOnEnter column values.
  * TSL AutoSaveOnEnteringModule / K1 StartNewModule path.
  */
 export enum ModuleAutoSaveOnEnter {
@@ -20,7 +20,7 @@ export enum ModuleAutoSaveOnEnter {
  */
 export class ModuleSaveTable {
 
-  /** Retail UpdateAutoSaveTimer threshold 0xdbba1 ms (~15 min). */
+  /** UpdateAutoSaveTimer threshold 0xdbba1 ms (~15 min). */
   static readonly AUTO_SAVE_INTERVAL_MS = 0xdbba1;
 
   /** Accumulated play time toward next timed autosave (ms). */
@@ -63,7 +63,7 @@ export class ModuleSaveTable {
   }
 
   /**
-   * Retail IncludeModuleInSave — default true when table/row missing.
+   * IncludeModuleInSave — default true when table/row missing.
    */
   static includeInSave(moduleName: string): boolean {
     const table = ModuleSaveTable.getTable();
@@ -121,7 +121,7 @@ export class ModuleSaveTable {
   }
 
   /**
-   * Retail UpdateAutoSaveTimer — accumulate wall time; mark due at ~15 min.
+   * UpdateAutoSaveTimer — accumulate wall time; mark due at ~15 min.
    * @param deltaSeconds THREE.Clock delta in seconds
    */
   static updateAutoSaveTimer(deltaSeconds: number): boolean {
@@ -137,7 +137,7 @@ export class ModuleSaveTable {
   }
 
   /**
-   * Retail AutoSaveOnEnteringModule.
+   * AutoSaveOnEnteringModule.
    * force → always; no → never; yes → only if timer due and INI AutoSave on;
    * missing table/row/column → autosave (and clear timer).
    */
@@ -173,7 +173,7 @@ export class ModuleSaveTable {
   }
 
   /**
-   * Retail DoModuleEnterSaveCleanup
+   * DoModuleEnterSaveCleanup
    * delete GAMEINPROGRESS.sav for every module whose SaveGroup matches
    * the destination's DeleteSaveGroupOnEnter.
    */

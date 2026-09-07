@@ -5,19 +5,19 @@ import { WeatherCondition } from "@/enums/module/WeatherCondition";
 import * as THREE from "three";
 import { MDLLoader } from "@/loaders";
 
-/** retail weather FX slot count (SetWeather). */
+/** weather FX slot count (SetWeather). */
 const WEATHER_SLOT_COUNT = 6;
 
-/** Retail weather spread radius (retail constant = 4.5). */
+/** weather spread radius (constant = 4.5). */
 const WEATHER_SPREAD = 4.5;
 
-/** Retail player Z offset for weather base (Update). */
+/** player Z offset for weather base (Update). */
 const WEATHER_BASE_Z = 8;
 
-/** Retail StartWeather/StopWeather transition length (ms). */
+/** StartWeather/StopWeather transition length (ms). */
 const WEATHER_TRANSITION_MS = 6000;
 
-/** Retail AIUpdate weather re-roll interval (ms). */
+/** AIUpdate weather re-roll interval (ms). */
 const WEATHER_CHECK_INTERVAL_MS = 300000;
 
 /**
@@ -44,7 +44,7 @@ const THUNDER_ROLLING = ['as_wt_thunderds1', 'as_wt_thunderds2'] as const;
 /**
  * AreaWeather class.
  *
- * retail weather roll + retail visual weather (rain/snow/lightning).
+ * weather roll + visual weather (rain/snow/lightning).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -68,31 +68,31 @@ export class AreaWeather {
   chanceLightning: number = 0;
 
   /**
-   * Last rolled weather type (GIT CurrentWeather / retail).
-   * CLEAR while weather is off after a stop roll still keeps the prior type in retail saves
+   * Last rolled weather type (GIT CurrentWeather /).
+   * CLEAR while weather is off after a stop roll still keeps the prior type in original game saves
    * when WeatherStarted is cleared — we store the type used for the last start/stop.
    */
   currentWeather: WeatherCondition = WeatherCondition.CLEAR;
 
-  /** Whether weather is active (GIT WeatherStarted / retail). */
+  /** Whether weather is active (GIT WeatherStarted /). */
   started: boolean = false;
 
-  /** When true, load() restores saved weather instead of rolling immediately. */
+  /** When true, load restores saved weather instead of rolling immediately. */
   fromSave: boolean = false;
 
-  /** Target type during a StartWeather/StopWeather transition (retail). */
+  /** Target type during a StartWeather/StopWeather transition. */
   private targetWeather: WeatherCondition = WeatherCondition.CLEAR;
 
-  /** Currently applied visual type (retail). */
+  /** Currently applied visual type. */
   private appliedWeather: WeatherCondition = WeatherCondition.CLEAR;
 
-  /** Transition countdown in ms (retail). */
+  /** Transition countdown in ms. */
   private transitionMs: number = 0;
 
-  /** Intensity 0–100 driven by the transition (retail). */
+  /** Intensity 0–100 driven by the transition. */
   private intensity: number = 0;
 
-  /** Auto re-roll countdown in ms (retail). */
+  /** Auto re-roll countdown in ms. */
   private checkTimerMs: number = 0;
 
   /** Lightning strike delay (seconds) before next chance roll. */
@@ -118,14 +118,14 @@ export class AreaWeather {
     return (this.area.flags & 1) !== 0;
   }
 
-  /** Retail GetRoomDisableWeather — player's current room. */
+  /** GetRoomDisableWeather — player's current room. */
   isWeatherDisabledInCurrentRoom(): boolean {
     const player = GameState.getCurrentPlayer?.();
     return !!player?.room?.disableWeather;
   }
 
   /**
-   * Retail AIUpdate weather selection.
+   * AIUpdate weather selection.
    * ChanceRain, ChanceSnow, and ChanceLightning are mutually exclusive by priority
    * (rain > snow > lightning-as-rain-type). Lightning FX still uses ChanceLightning
    * as an overlay while rain/snow is active.
@@ -176,7 +176,7 @@ export class AreaWeather {
   }
 
   /**
-   * Retail StartWeather — begin fade-in to type over 6000ms.
+   * StartWeather — begin fade-in to type over 6000ms.
    */
   startWeather(type: WeatherCondition){
     this.targetWeather = type;
@@ -186,7 +186,7 @@ export class AreaWeather {
   }
 
   /**
-   * Retail StopWeather — begin fade-out over 6000ms.
+   * StopWeather — begin fade-out over 6000ms.
    */
   stopWeather(){
     this.targetWeather = WeatherCondition.CLEAR;
@@ -226,7 +226,7 @@ export class AreaWeather {
       this.chanceRain = 0;
       this.chanceSnow = 0;
       this.chanceLightning = 0;
-      // Retail LoadGIT indoor: CurrentWeather = 0xFF, WeatherStarted = 0
+      // GIT load indoor: CurrentWeather = 0xFF, WeatherStarted = 0
       this.currentWeather = 0xFF as WeatherCondition;
       this.started = false;
       this.fromSave = false;
@@ -243,14 +243,14 @@ export class AreaWeather {
       this.appliedWeather = WeatherCondition.CLEAR;
       this.checkTimerMs = WEATHER_CHECK_INTERVAL_MS;
     }else{
-      // Fresh area enter — retail AIUpdate rolls when timer is 0.
+      // Fresh area enter — AIUpdate rolls when timer is 0.
       this.checkTimerMs = 0;
     }
   }
 
   /**
-   * Retail AIUpdate weather re-roll (every 300s).
-   * Visual FX continue in update().
+   * AIUpdate weather re-roll (every 300s).
+   * Visual FX continue in update.
    */
   aiUpdate(delta: number = 0){
     if(this.isIndoor()) return;
@@ -259,7 +259,7 @@ export class AreaWeather {
 
   /**
    * Per-frame update: transition, FX placement, lightning.
-   * Weather re-roll lives in aiUpdate (retail AIUpdate).
+   * Weather re-roll lives in aiUpdate (AIUpdate).
    */
   update(delta: number = 0){
     if(this.isIndoor()){
@@ -316,7 +316,7 @@ export class AreaWeather {
   }
 
   /**
-   * Retail SetWeather — swap FX models and drive intensity.
+   * SetWeather — swap FX models and drive intensity.
    */
   private async applyWeatherVisual(type: WeatherCondition, intensity: number){
     if(this.isWeatherDisabledInCurrentRoom()){
@@ -377,7 +377,7 @@ export class AreaWeather {
         if(this.models[i]) continue;
         const model = await OdysseyModel3D.FromMDL(mdl, { context: GameState });
         model.playAnimation(type === WeatherCondition.SNOW ? 'snow' : 'rain', true);
-        // Retail SetEmitterAsWeather(1) — PartEmitter
+        // SetEmitterAsWeather(1) — PartEmitter
         this.markEmittersAsWeather(model);
         this.models[i] = model;
         group.add(model);
@@ -404,7 +404,7 @@ export class AreaWeather {
     }
   }
 
-  /** Retail SetEmitterAsWeather — mark every emitter under the weather Gob. */
+  /** SetEmitterAsWeather — mark every emitter under the weather Gob. */
   private markEmittersAsWeather(model: OdysseyModel3D){
     const emitters = model.emitters;
     if(!emitters) return;
@@ -463,7 +463,7 @@ export class AreaWeather {
   }
 
   /**
-   * Retail lightning strike loop inside Update.
+   * lightning strike loop inside Update.
    */
   private updateLightning(delta: number){
     if(!this.lightningModel || this.chanceLightning <= 0) return;

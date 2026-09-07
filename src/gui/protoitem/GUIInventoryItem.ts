@@ -1,6 +1,6 @@
 import { GameMenu, GUIButton, GUIControl, GUIProtoItem } from "@/gui";
 import type { GUIListBox } from "@/gui/GUIListBox";
-import type { RetailRowExtent } from "@/gui/GUIProtoItem";
+import type { ProtoRowExtent } from "@/gui/GUIProtoItem";
 import { GameState } from "@/GameState";
 import { GameEngineType } from "@/enums/engine";
 import { asExtentInt, truncDiv } from "@/gui/GUICoord";
@@ -39,14 +39,14 @@ export class GUIInventoryItem extends GUIProtoItem {
   }
 
   /**
-   * Retail base row extent — CreateItemEntry passes
+   * base row extent — CreateItemEntry passes
    * width = viewport_width - 2*padding into Initialize, which calls
    * SetExtent with a fixed height:
    * K1: height 0x38 (56).
    * TSL: ftol(GetResolutionTextScalar * 36.0) = 36 at base resolution.
    * The PROTOITEM GFF height is never used for the row.
    */
-  getRetailBaseExtent(list: GUIListBox): RetailRowExtent {
+  getProtoBaseExtent(list: GUIListBox): ProtoRowExtent {
     const vw = typeof list.getViewportWidth === 'function'
       ? list.getViewportWidth()
       : list.extent.width - (list.scrollbar ? list.scrollbar.extent.width : 0);
@@ -60,12 +60,12 @@ export class GUIInventoryItem extends GUIProtoItem {
 
   createControl(){
     try{
-      // Row height from getRetailBaseExtent (K1 56 / TSL 36); no resref hardcodes.
+      // Row height from getProtoBaseExtent (K1 56 / TSL 36); no resref hardcodes.
       super.createControl();
 
       const isContainer = this.menu.gui_resref == 'container' || this.menu.gui_resref == 'container_p';
       const protoWidth = asExtentInt(this.extent.width);
-      // Icon must fit the retail row height (56/36); hardcoded 60 spilled into the next pitch.
+      // Icon must fit the row height (56/36); hardcoded 60 spilled into the next pitch.
       const iconWidth = Math.max(1, asExtentInt(this.extent.height));
       const iconHeight = iconWidth;
       const labelWidth = asExtentInt((protoWidth - iconWidth));

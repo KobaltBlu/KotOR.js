@@ -5,7 +5,7 @@ import type { GUIListBox, GUILabel, GUIButton, GUISlider } from "@/gui";
 
 const DEFAULT_GAIN = 0.75;
 
-/** retail CSWGuiOptionsSound description TLKs (K1). */
+/** sound options description TLKs (K1). */
 const TLK_DESC_MUSIC = 0xa547;
 const TLK_DESC_VO = 0xa548;
 const TLK_DESC_FX = 0xa549;

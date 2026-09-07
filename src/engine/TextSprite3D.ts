@@ -221,9 +221,9 @@ export class TextSprite3D {
       self.computeBox(positions, bbox)
     }
 
-    // this.text.geometry.computeBoundingBox();
-    // this.text.geometry.computeBoundingSphere();
-    // const tSize = new THREE.Vector3();
+    // this.text.geometry.computeBoundingBox;
+    // this.text.geometry.computeBoundingSphere;
+    // const tSize = new THREE.Vector3;
     // this.text.geometry.boundingBox.getSize(tSize);
     // this.text.mesh.position.x = -tSize.x/2;
   }

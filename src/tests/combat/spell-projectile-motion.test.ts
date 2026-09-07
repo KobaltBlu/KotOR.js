@@ -63,7 +63,7 @@ describe('spellProjectileBezierMid', () => {
 });
 
 describe('resolveDroidUtilityGateMs', () => {
-  it('uses anim length minus 50ms like retail GetAnimationLength(0x2AF9)-0x32', () => {
+  it('uses anim length minus 50ms like engine GetAnimationLength(0x2AF9)-0x32', () => {
     expect(resolveDroidUtilityGateMs(0.4)).toBe(350);
   });
 

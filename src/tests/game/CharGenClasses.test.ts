@@ -2,8 +2,8 @@ import { describe, expect, it } from "@jest/globals";
 import { CharGenClasses } from "@/game/CharGenClasses";
 
 describe("CharGenClasses slot mapping", () => {
-  it("maps UI slots to retail class ids (soldier/scout/scoundrel)", () => {
-    // Male: scoundrel, scout, soldier (retail staticInitClassSelection)
+  it("maps UI slots to engine class ids (soldier/scout/scoundrel)", () => {
+    // Male: scoundrel, scout, soldier (staticInitClassSelection)
     expect(CharGenClasses[0].id).toBe(2);
     expect(CharGenClasses[1].id).toBe(1);
     expect(CharGenClasses[2].id).toBe(0);
@@ -13,7 +13,7 @@ describe("CharGenClasses slot mapping", () => {
     expect(CharGenClasses[5].id).toBe(2);
   });
 
-  it("uses retail classSelection soundsets (male 85 / female 83)", () => {
+  it("uses engine classSelection soundsets (male 85 / female 83)", () => {
     expect(CharGenClasses[0].soundset).toBe(85);
     expect(CharGenClasses[1].soundset).toBe(85);
     expect(CharGenClasses[2].soundset).toBe(85);

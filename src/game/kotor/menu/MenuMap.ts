@@ -104,7 +104,7 @@ export class MenuMap extends GameMenu {
     if (!GameState.module.area.miniGame) {
       const oPC = GameState.getCurrentPlayer();
 
-      //update minimap — retail uses creature yaw, not camera
+      //update minimap — uses creature yaw, not camera
       this.miniMap.setPosition(oPC.position.x, oPC.position.y);
       this.miniMap.setRotation(oPC.getFacing());
       this.miniMap.updateMousePosition(

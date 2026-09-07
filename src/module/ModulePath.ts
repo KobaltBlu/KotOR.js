@@ -410,7 +410,7 @@ export class ModulePath {
   }
 
   /**
-   * Retail PlotPathInArea:
+   * PlotPathInArea:
    * 1. TestDirectLine → 2-point path when clear
    * 2. Else PathPointDFS (PlotPathPointPath)
    * 3. Else PlotGridPath / GridDFS when no PTH / DFS fail
@@ -434,7 +434,7 @@ export class ModulePath {
       return smoothOnly;
     }
 
-    // Stage 1: retail TestDirectLine first
+    // Stage 1: TestDirectLine first
     if(hasDirectLine(this.area, origin, dest, owner)){
       this.clearSmoothSession(ownerId);
       return ComputedPath.FromPointsList([originPoint, destPoint]);
@@ -496,7 +496,7 @@ export class ModulePath {
       return this.partialClearPath(owner, origin, dest, originPoint);
     }
 
-    // Stage 3: no PTH — retail PlotGridPath
+    // Stage 3: no PTH — PlotGridPath
     this.clearSmoothSession(ownerId);
     const gridPath = this.gridPathToComputed(owner, origin, dest, originPoint);
     if(gridPath){

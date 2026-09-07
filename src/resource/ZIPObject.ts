@@ -69,7 +69,7 @@ export class ZIPObject {
   }
 
   /**
-   * One-shot build: same as `new ZIPObject(); entries.forEach(...); return z.getExportBuffer()`.
+   * One-shot build: same as `new ZIPObject; entries.forEach(...); return z.getExportBuffer`.
    */
   static buildStoreOnly(entries: { path: string; data: Uint8Array }[]): Uint8Array {
     const z = new ZIPObject();

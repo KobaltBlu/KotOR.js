@@ -26,7 +26,7 @@ export class SWFeatGain {
 
   /**
    * Bonus feat picks per level (featgain.2da *_bon).
-   * Used by retail CalcLevelUpNumberFeats second out-param.
+   * Used by CalcLevelUpNumberFeats second out-param.
    */
   getBonus(classCode: string): number[] {
     return this.classMap.get(classCode.toLowerCase())?.bonuses || [];
@@ -35,7 +35,7 @@ export class SWFeatGain {
   /**
    * Get the number of feat points gained for a class per level
    * @param classCode
-   * @returns number[]
+   * @returns number
    */
   getRegular(classCode: string): number[] {
     return this.classMap.get(classCode.toLowerCase())?.points || [];

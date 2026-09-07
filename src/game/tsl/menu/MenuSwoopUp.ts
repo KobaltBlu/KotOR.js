@@ -67,7 +67,7 @@ export class MenuSwoopUp extends GameMenu {
   declare BTN_UPGRADE36: GUIButton;
   declare BTN_BACK: GUIButton;
 
-  /** Pending 2DA row per slot (−1 = empty). Retail OnAssemble writes 6 slots. */
+  /** Pending 2DA row per slot (−1 = empty). OnAssemble writes 6 slots. */
   slotRows: number[] = [-1, -1, -1, -1, -1, -1];
   /**
    * Items consumed this session for undo when changing selection
@@ -80,7 +80,7 @@ export class MenuSwoopUp extends GameMenu {
   upgradeTable: TwoDAObject | undefined;
   choices: SwoopUpgradeChoice[] = [];
   /**
-   * retail on `3D_MODEL` — ctor loads `gui3D_room` + `upgitem_light`
+   * on `3D_MODEL` — ctor loads `gui3D_room` + `upgitem_light`
    * when g_bSWGuiSceneRenderEnabled (GUI).
    */
   _3dView: LBL_3DView;
@@ -141,7 +141,7 @@ export class MenuSwoopUp extends GameMenu {
   }
 
   /**
-   * Retail swoop ctor: GUI on 3D_MODEL / 3D_MODEL_LS loads `gui3D_room`
+   * swoop ctor: GUI on 3D_MODEL / 3D_MODEL_LS loads `gui3D_room`
    * then AddModel(`upgitem_light`). Camera from room camerahook (same as MainMenu).
    */
   async init3DPreview(){
@@ -206,7 +206,7 @@ export class MenuSwoopUp extends GameMenu {
 
   /**
    * Swoop GUI ships both standard and `_LS` chrome; use non-LS as the active layout
-   * (retail layout toggle — swoop has no lightsaber category).
+   * (layout toggle — swoop has no lightsaber category).
    */
   applyLayoutVisibility(){
     const setVisible = (ctrl: any, visible: boolean) => {
@@ -310,7 +310,7 @@ export class MenuSwoopUp extends GameMenu {
   }
 
   /**
-   * Retail OnSlotSelected: list inventory items whose tag matches swoopupgrade.2da
+   * OnSlotSelected: list inventory items whose tag matches swoopupgrade.2da
    * `template` for rows where `group` == slot (plus a clear/empty entry).
    */
   collectChoicesForSlot(slot: number): SwoopUpgradeChoice[] {
@@ -358,7 +358,7 @@ export class MenuSwoopUp extends GameMenu {
   }
 
   /**
-   * Retail OnUpgradeSelected
+   * OnUpgradeSelected
    * return prior consumed item to inventory, then consume newly selected (stack-- / RemoveItem).
    */
   onUpgradeSelected(choice: SwoopUpgradeChoice){
@@ -381,7 +381,7 @@ export class MenuSwoopUp extends GameMenu {
       return;
     }
 
-    // Consume one from inventory (retail RemoveItem / stack--).
+    // Consume one from inventory (RemoveItem / stack--).
     const owned = choice.item || InventoryManager.getItemByTag(choice.template) || undefined;
     if(owned){
       InventoryManager.removeItem(owned, 1);
@@ -415,7 +415,7 @@ export class MenuSwoopUp extends GameMenu {
   }
 
   /**
-   * Cancel without assemble — refund session-consumed upgrade items (retail BACK).
+   * Cancel without assemble — refund session-consumed upgrade items (BACK).
    */
   cancelPanel(){
     for(let i = 0; i < 6; i++){
@@ -429,7 +429,7 @@ export class MenuSwoopUp extends GameMenu {
   }
 
   /**
-   * Retail OnAssemble — commit non-zero slot row ids to party swoop slots.
+   * OnAssemble — commit non-zero slot row ids to party swoop slots.
    */
   onAssemble(){
     for(let i = 0; i < 6; i++){

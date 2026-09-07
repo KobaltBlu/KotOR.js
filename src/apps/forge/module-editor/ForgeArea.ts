@@ -28,7 +28,7 @@ export class ForgeArea extends ForgeGameObject{
   visObject?: KotOR.VISObject;
   /** True when `${layoutResRef}.lyt` was read from the project on load. */
   layoutPresentOnDisk = false;
-  /** True when layout was Demanded from retail game KEY/BIF (not in the project). */
+  /** True when layout was Demanded from game KEY/BIF (not in the project). */
   layoutLoadedFromGame = false;
   /** True when the editor invented a layout because the user edited rooms/visibility. */
   layoutEnsuredByEditor = false;
@@ -352,37 +352,37 @@ export class ForgeArea extends ForgeGameObject{
 
     // //AreaMapData
     // if(areaMap){
-    //   const areaMapStruct = areaMap.getChildStructs()[0];
-    //   if(areaMapStruct){
-    //     this.areaMap.loadDataStruct(areaMapStruct);
-    //   }
+    // const areaMapStruct = areaMap.getChildStructs[0];
+    // if(areaMapStruct){
+    // this.areaMap.loadDataStruct(areaMapStruct);
+    // }
     // }
 
     // if(!(this.transWP instanceof GFFObject)){
-    //   this.transWP = null;
+    // this.transWP = null;
     // }
 
     // if(this.git.RootNode.hasField('SWVarTable')){
-    //   console.log("SWVarTable", this.git);
-    //   let localBools = this.git.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
-    //   //console.log(localBools);
-    //   for(let i = 0; i < localBools.length; i++){
-    //     let data = localBools[i].getFieldByLabel('Variable').getValue();
-    //     for(let bit = 0; bit < 32; bit++){
-    //       this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
-    //     }
-    //   }
+    // console.log("SWVarTable", this.git);
+    // let localBools = this.git.RootNode.getFieldByLabel('SWVarTable').getChildStructs[0].getFieldByLabel('BitArray').getChildStructs;
+    // //console.log(localBools);
+    // for(let i = 0; i < localBools.length; i++){
+    // let data = localBools[i].getFieldByLabel('Variable').getValue;
+    // for(let bit = 0; bit < 32; bit++){
+    // this._locals.Booleans[bit + (i*32)] = ((data>>bit) % 2 != 0);
+    // }
+    // }
     // }
 
     // GameState.AlphaTest = this.alphaTest;
 
-    // AudioEngine.GetAudioEngine().setReverbProfile(this.audio.environmentAudio);
+    // AudioEngine.GetAudioEngine.setReverbProfile(this.audio.environmentAudio);
 
-    // FollowerCamera.setCameraStyle(this.getCameraStyle());
+    // FollowerCamera.setCameraStyle(this.getCameraStyle);
     // if(this.miniGame){
-    //   FollowerCamera.setCameraFOV(this.miniGame.cameraViewAngle);
+    // FollowerCamera.setCameraFOV(this.miniGame.cameraViewAngle);
     // }else{
-    //   FollowerCamera.setCameraFOV(FollowerCamera.DEFAULT_FOV);
+    // FollowerCamera.setCameraFOV(FollowerCamera.DEFAULT_FOV);
     // }
 
     try{
@@ -409,9 +409,9 @@ export class ForgeArea extends ForgeGameObject{
       console.error(e);
     }
 
-    // await this.loadVis();
-    // await this.loadLayout();
-    // await this.loadScripts();
+    // await this.loadVis;
+    // await this.loadLayout;
+    // await this.loadScripts;
     // GameState.scene.fog = this.fog;
 
     await this.loadRooms();
@@ -614,7 +614,7 @@ export class ForgeArea extends ForgeGameObject{
   }
 
   /**
-   * Project file first, then retail KEY/BIF Demand (incomplete modules restored from game data).
+   * Project file first, then KEY/BIF Demand (incomplete modules restored from game data).
    */
   private async loadLayoutBuffer(layoutResRef: string): Promise<Uint8Array | undefined> {
     const path = `${layoutResRef}.lyt`;
@@ -639,7 +639,7 @@ export class ForgeArea extends ForgeGameObject{
         return fromGame;
       }
     }catch(e){
-      // Missing from game as well — retail would leave 0 layout rooms.
+      // Missing from game as well — would leave 0 layout rooms.
     }
     return undefined;
   }
@@ -914,8 +914,8 @@ export class ForgeArea extends ForgeGameObject{
    */
   async loadRooms(): Promise<void> {
     console.log('Loading Rooms');
-    // this.walkEdges = [];
-    // this.walkFaces = [];
+    // this.walkEdges =;
+    // this.walkFaces =;
     
     for(let i = 0; i < this.rooms.length; i++){
       const room = this.rooms[i];
@@ -964,7 +964,7 @@ export class ForgeArea extends ForgeGameObject{
           }
         }
       }
-      // this.walkmesh_rooms = [room1].concat(Array.from(room1.linkedRooms.values()));
+      // this.walkmesh_rooms = [room1].concat(Array.from(room1.linkedRooms.values));
     }
   }
 
@@ -1097,7 +1097,7 @@ export class ForgeArea extends ForgeGameObject{
 
     // Name
     const nameField = are.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'Name'))!;
-    // const nameLocString = new KotOR.CExoLocString();
+    // const nameLocString = new KotOR.CExoLocString;
     // nameLocString.addSubString(name, 0); // Male English (StringID 0 = language 0, gender 0)
     // nameField.setCExoLocString(nameLocString);
     nameField.setCExoLocString(this.name);

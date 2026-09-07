@@ -14,7 +14,7 @@ export interface IAreaDirtLayer {
   /** Procedural texture edge length (DirtySize*). */
   size: number;
   /**
-   * Stored formula after retail 0↔1 swap on load.
+   * Stored formula after 0↔1 swap on load.
    * Stored `1` → perlin generation; stored `0` → random.
    */
   formula: number;

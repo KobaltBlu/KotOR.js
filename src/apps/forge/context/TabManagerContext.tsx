@@ -30,7 +30,7 @@ export const TabManagerProvider = (props: TabManagerProviderProps) => {
 
   useEffect(() => {
     // if(selectedTab){
-    //   selectedTab.show();
+    // selectedTab.show;
     // }
   }, [selectedTab]);
 

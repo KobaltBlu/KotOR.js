@@ -6,7 +6,7 @@ import { Action } from "@/actions/Action";
 /**
  * ActionPauseDialog class.
  *
- * Retail pause-dialog action — marks the conversation paused so
+ * pause-dialog action — marks the conversation paused so
  * SendDialogEntry defers the next entry while the current node keeps ticking.
  * NWScript ActionPauseConversation applies pause immediately; this action
  * remains for any queued AI path.

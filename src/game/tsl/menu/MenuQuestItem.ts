@@ -21,7 +21,7 @@ export class MenuQuestItem extends K1_MenuQuestItem {
     super();
     this.gui_resref = 'questitem_p';
     this.background = '';
-    // Modal over journal — no void fill (K1 CSWGuiQuestItem / AddPanel overlay).
+    // Modal over journal — no void fill (K1 quest item panel / AddPanel overlay).
     this.voidFill = false;
     this.isOverlayGUI = true;
   }

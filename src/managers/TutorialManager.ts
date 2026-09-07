@@ -32,7 +32,7 @@ export class TutorialManager {
 
   /**
    * Pure gate for ShowTutorialWindow (no GameState — Jest-safe).
-   * Retail: script enable AND Options "Tutorial Popups" AND not yet seen.
+   * : script enable AND Options "Tutorial Popups" AND not yet seen.
    */
   static shouldShowTutorialWindow(
     windowsEnabled: boolean,
@@ -72,7 +72,7 @@ export class TutorialManager {
   }
 
   /**
-   * Retail ShowTutorialWindow — show tutorial.2da row `id` once if allowed.
+   * ShowTutorialWindow — show tutorial.2da row `id` once if allowed.
    * @returns true if a dialog was opened
    */
   static showWindow(id: number): boolean {

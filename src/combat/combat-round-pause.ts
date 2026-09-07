@@ -1,10 +1,10 @@
 /**
- * Retail combat-round pause / ResetCombatAnimations helpers.
+ * combat-round pause / ResetCombatAnimations helpers.
  */
 
 /**
- * Retail pauses the round for the attack animation length (the same
- * value AddCutsceneAttackAction stamps as (combatStretch + 3000) / 2), not the
+ * pauses the round for the attack animation length (the same
+ * value queue cutscene attack stamps as (combatStretch + 3000) / 2), not the
  * whole round. The remainder of the round plays out in combat READY.
  */
 export function resolveAttackPauseMs(
@@ -19,7 +19,7 @@ export function resolveAttackPauseMs(
 }
 
 /**
- * Retail ResetCombatAnimations only snaps to GetPauseReadyAnimation when the
+ * ResetCombatAnimations only snaps to GetPauseReadyAnimation when the
  * creature can still fight and the round was not started from a scripted
  * action — cutscene poses are left alone.
  * Living scripted DEAD (e.g. Min1HP + ActionPlayAnimation) must not snap to READY.
@@ -34,7 +34,7 @@ export function shouldSnapCombatReady(opts: {
 }
 
 /**
- * Retail UpdateCombatRoundTimer pause expiry only ends the round when the
+ * UpdateCombatRoundTimer pause expiry only ends the round when the
  * attack target is gone or dead; otherwise the unpaused timer ends it once it
  * reaches roundLength.
  */

@@ -1,5 +1,5 @@
 /**
- * Retail ComputeSpellRange / spell-range helpers.
+ * resolve spell range / spell-range helpers.
  * @jest-environment node
  */
 import { describe, expect, it, jest } from '@jest/globals';
@@ -16,8 +16,8 @@ import {
   resolveSpellCastRange,
 } from '@/combat/spell-range';
 
-describe('ComputeSpellRange personal remap', () => {
-  it('retail: P remaps to T before primary lookup', () => {
+describe('resolve spell range personal remap', () => {
+  it('engine: P remaps to T before primary lookup', () => {
     expect(normalizeSpellRangeLetter('P')).toBe('T');
     expect(normalizeSpellRangeLetter('p')).toBe('T');
     expect(normalizeSpellRangeLetter('T')).toBe('T');

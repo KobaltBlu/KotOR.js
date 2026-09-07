@@ -182,7 +182,7 @@ export class MenuUpgradeSelect extends K1_MenuUpgradeSelect {
     }
 
     if(this.disableUpgrade){
-      // Creation-only workshop — retail opens create panel; MenuComponent (itemcreate).
+      // Creation-only workshop — opens create panel; MenuComponent (itemcreate).
       GameState.MenuManager.MenuComponent?.open({
         character: this.skillCharacter,
         createItemString: this.createItemString,

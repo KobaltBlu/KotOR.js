@@ -13,7 +13,7 @@ import type { TalentSpell } from "@/talents/TalentSpell";
 import * as THREE from "three";
 
 /**
- * EventSpellImpact — retail SpellCastAndImpact AddEventDeltaTime type 0x08.
+ * EventSpellImpact — SpellCastAndImpact AddEventDeltaTime type 0x08.
  * Runs the spell impactscript after CalculateLastSpellProjectileTime delay.
  *
  * @file EventSpellImpact.ts
@@ -55,7 +55,7 @@ export class EventSpellImpact extends GameEvent {
     const scriptName = String(this.impactScript || '').trim();
     if(!scriptName || scriptName === '****') return;
 
-    // Stamp retail spell-target fields before the impactscript runs
+    // Stamp spell-target fields before the impactscript runs
     caster.spellTargetPosition.copy(this.impactPosition);
     if(BitWise.InstanceOfObject(caster, ModuleObjectType.ModuleCreature)){
       const cre = caster as ModuleCreature;
@@ -106,7 +106,7 @@ export class EventSpellImpact extends GameEvent {
 }
 
 /**
- * Schedule retail SpellCastAndImpact delayed impactscript (event type 0x08).
+ * Schedule SpellCastAndImpact delayed impactscript (event type 0x08).
  */
 export function scheduleSpellImpactEvent(opts: {
   caster: ModuleObject;

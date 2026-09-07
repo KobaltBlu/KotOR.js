@@ -19,7 +19,7 @@ const TLK_DENY_SELECT = 0xa588;
 const TLK_DENY_REMOVE = 0x1a789;
 const TLK_DENY_FORCED = 0xa5a6;
 
-/** Retail colorGreen / colorYellow / colorBlue for party-selection chrome + Add/Remove. */
+/** colorGreen / colorYellow / colorBlue for party-selection chrome + Add/Remove. */
 const COLOR_GREEN = { r: 0, g: 1, b: 0 };
 const COLOR_YELLOW = { r: 0.980392, g: 1, b: 0 };
 const COLOR_BLUE = { r: 0, g: 0.658824, b: 0.980392 };
@@ -31,7 +31,7 @@ interface PartySlotState {
   /** Index in active party when menu opened; -1 if not in party. */
   partyIndex: number;
   forced: boolean;
-  /** Retail selectable bit — cleared for forced slots while panel is open. */
+  /** selectable bit — cleared for forced slots while panel is open. */
   canToggle: boolean;
 }
 
@@ -40,7 +40,7 @@ interface PartySlotState {
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * retail (partyselection): pending portrait toggles,
+ * (partyselection): pending portrait toggles,
  * commit on Done, hover name/level + LBL_3D portrait fill.
  *
  * @file MenuPartySelection.ts
@@ -165,7 +165,7 @@ export class MenuPartySelection extends GameMenu {
    * @param forceNPC1 - Forced NPC id (-1 none).
    * @param forceNPC2 - Forced NPC id (-1 none).
    * @param allowCancel - K2: allow Back when script-opened.
-   * @param requireAccept - Retail script-open flag (Done commit / confirm rules).
+   * @param requireAccept - script-open flag (Done commit / confirm rules).
    */
   open(scriptName = '', forceNPC1 = -1, forceNPC2 = -1, allowCancel = 0, requireAccept = false) {
     this.scriptName = scriptName;
@@ -323,7 +323,7 @@ export class MenuPartySelection extends GameMenu {
     }
 
     this.LBL_NPC_NAME.setText(creature.getName());
-    // Retail: TLK Level + GetLevel(stats, 0) + last class string (getMainClass).
+    // : TLK Level + GetLevel(stats, 0) + last class string (getMainClass).
     const lastClass = creature.getMainClass();
     const className = lastClass ? lastClass.getName() : '';
     const levelLabel = GameState.TLKManager.GetStringById(TLK_LEVEL)?.Value ?? 'Level';
@@ -463,7 +463,7 @@ export class MenuPartySelection extends GameMenu {
   protected setAddRemoveLabel(showAdd: boolean){
     const slot = this.selectedNPC >= 0 ? this.slotState[this.selectedNPC] : undefined;
     const selectable = !!slot?.canToggle;
-    // Retail SetAddRemoveLabel: Add uses disabled colors when selectedCount > 1 (at MaxNPCCount).
+    // SetAddRemoveLabel: Add uses disabled colors when selectedCount > 1 (at MaxNPCCount).
     // OnEnter also uses disabled text when the focused slot is not selectable.
     const addEnabled = this.selectedCount < GameState.PartyManager.MaxNPCCount && selectable;
 
@@ -482,7 +482,7 @@ export class MenuPartySelection extends GameMenu {
     }
   }
 
-  /** Retail accept button blue vs disabled gray text/border. */
+  /** accept button blue vs disabled gray text/border. */
   protected applyAddRemoveColors(enabled: boolean){
     if(enabled){
       this.BTN_ACCEPT.setTextColor(COLOR_BLUE.r, COLOR_BLUE.g, COLOR_BLUE.b);
@@ -507,7 +507,7 @@ export class MenuPartySelection extends GameMenu {
         continue;
       }
 
-      // Retail CSWGuiPartySelectionButton::SetSelected — per-slot chrome.
+      // — per-slot chrome.
       if(slot?.pendingSelected){
         btn.showBorder();
         btn.enableBorder();
@@ -547,7 +547,7 @@ export class MenuPartySelection extends GameMenu {
         await LBL_CHAR.setFillTextureName(portrait);
       }
       const selectable = this.slotState[i]?.canToggle && GameState.PartyManager.IsSelectable(i);
-      // Retail non-selectable fill alpha 0.25
+      // non-selectable fill alpha 0.25
       LBL_CHAR.setChromeOpacity(selectable ? 1 : 0.25);
       LBL_CHAR.show();
     }
@@ -596,7 +596,7 @@ export class MenuPartySelection extends GameMenu {
   }
 
   /**
-   * Commit pending selection to the live party (retail AcceptParty).
+   * Commit pending selection to the live party (AcceptParty).
    * @param completed - true when Done (not cancel); sets exit scriptVar for K2.
    */
   async acceptParty(completed: boolean = true){
@@ -635,7 +635,7 @@ export class MenuPartySelection extends GameMenu {
     this.close();
 
     if(script instanceof NWScriptInstance){
-      // Script-opened success → TRUE; map/other → 0 (retail AcceptParty param)
+      // Script-opened success → TRUE; map/other → 0 (AcceptParty param)
       const scriptVar = (wasRequireAccept && completed) ? 1 : 0;
       script.run(undefined, scriptVar);
     }
@@ -688,7 +688,7 @@ export class MenuPartySelection extends GameMenu {
   }
 
   /**
-   * Retail panel MOVETO between BTN_NPC slots; skip unavailable NPCs.
+   * panel MOVETO between BTN_NPC slots; skip unavailable NPCs.
    */
   protected navigateNpcSlot(direction: 'up' | 'down' | 'left' | 'right'){
     const current = this.getControlByName('BTN_NPC' + this.selectedNPC);

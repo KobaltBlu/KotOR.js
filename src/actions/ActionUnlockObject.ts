@@ -97,7 +97,7 @@ export class ActionUnlockObject extends Action {
       if(!this.timingBarStarted){
         this.timingBarStarted = true;
         this.target.audioEmitter.playSound('gui_lockpick');
-        // Retail StartGuiTimingBar(this, 0x5dc, 8) — 1500 ms, type 8
+        // StartGuiTimingBar(this, 0x5dc, 8) — 1500 ms, type 8
         if(this.owner === GameState.getCurrentPlayer()){
           GameState.GuiTimingBarManager?.startMs?.(0x5dc, 'Unlock', this.owner, 8);
         }

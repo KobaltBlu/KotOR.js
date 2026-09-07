@@ -11,9 +11,9 @@ import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
 import { queueMoveIntoUseRange } from "@/actions/use-range";
 
-/** Retail PlayAnimation id 0x28bd during DoorSaber timing bar. */
+/** PlayAnimation id 0x28bd during DoorSaber timing bar. */
 const DOOR_SABER_ANIM = 0x28bd;
-/** Retail StartGuiTimingBar(2000, 9). */
+/** StartGuiTimingBar(2000, 9). */
 const DOOR_SABER_BAR_MS = 2000;
 const DOOR_SABER_BAR_TYPE = 9;
 
@@ -23,9 +23,9 @@ const DOOR_SABER_BAR_TYPE = 9;
  * RunActions case 0x43.
  *
  * PARAMS
- *  0 - dword: door object id
- *  1 - int: faced (retail creature field ≈ 0x10ac)
- *  2 - int: timingStarted (retail creature field ≈ 0x10b0)
+ * 0 - dword: door object id
+ * 1 - int: faced (creature field ≈ 0x10ac)
+ * 2 - int: timingStarted (creature field ≈ 0x10b0)
  *
  * @file ActionDoorSaber.ts
  */
@@ -117,7 +117,7 @@ export class ActionDoorSaber extends Action {
       return ActionStatus.COMPLETE;
     }
 
-    // Timing finished — open locked door (retail clears lock then OpenDoor)
+    // Timing finished — open locked door (clears lock then OpenDoor)
     if(door.isLocked() || door.locked){
       door.setLocked(false);
       door.openDoor(owner);

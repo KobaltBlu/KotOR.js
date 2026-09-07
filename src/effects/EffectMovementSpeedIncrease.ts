@@ -3,7 +3,7 @@ import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { normalizeSpeedIncreasePercent } from "@/engine/pathfinding/locomotion";
 
 /**
- * EffectMovementSpeedIncrease — NWScript / retail absolute speed percent.
+ * EffectMovementSpeedIncrease — NWScript / absolute speed percent.
  * n < 100 → n+100 (50 → 150%); n ≥ 100 used directly (200 → 2× before clamp).
  *
  * @file EffectMovementSpeedIncrease.ts

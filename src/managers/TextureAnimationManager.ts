@@ -10,9 +10,9 @@ interface TextureAnimSubscriber {
 }
 
 interface TextureAnimEntry {
-  /** Retail gl_textures[] — one GPU texture per cycle frame. */
+  /** gl_textures — one GPU texture per cycle frame. */
   frames: THREE.Texture[];
-  /** Retail CycleTIDTextureController special_field (fps). */
+  /** CycleTIDTextureController special_field (fps). */
   fps: number;
   /** Current frame index — IncrementTIDIndex. */
   index: number;
@@ -22,7 +22,7 @@ interface TextureAnimEntry {
 }
 
 /**
- * TextureAnimationManager — retail TXI proceduretype cycle playback.
+ * TextureAnimationManager — TXI proceduretype cycle playback.
  *
  * Ports CycleTIDTextureController Control and
  * texture IncrementTIDIndex.
@@ -38,7 +38,7 @@ export class TextureAnimationManager {
 
   /**
    * Register a cycle-animated texture with a material uniform.
-   * Retail keeps controller state on the texture; we key by the frame array.
+   * keeps controller state on the texture; we key by the frame array.
    */
   static register(
     texture: OdysseyTexture,
@@ -98,7 +98,7 @@ export class TextureAnimationManager {
   }
 
   /**
-   * Retail CycleTIDTextureController Control:
+   * CycleTIDTextureController Control:
    * accum += deltaT;
    * if (accum > 1/fps) { accum = 0; index = (index+1) % (numY*numX); IncrementTIDIndex(index); }
    */
@@ -119,7 +119,7 @@ export class TextureAnimationManager {
     }
   }
 
-  /** Retail IncrementTIDIndex — current_tid = gl_textures[index]. */
+  /** IncrementTIDIndex — current_tid = gl_textures[index]. */
   private static applyFrame(entry: TextureAnimEntry): void {
     const frame = entry.frames[entry.index];
     if(!frame) return;

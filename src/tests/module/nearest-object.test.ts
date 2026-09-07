@@ -1,5 +1,5 @@
 /**
- * Retail ExecuteCommandGetNearestObject spiral finder.
+ * ExecuteCommandGetNearestObject spiral finder.
  * @jest-environment node
  */
 import { describe, expect, it, jest } from "@jest/globals";
@@ -152,7 +152,7 @@ describe("findNearestInArea", () => {
   });
 
   it("location query finds nearest without excludeId", () => {
-    // Retail spiral skips the lower_bound slot; place two objects so +1/-1 can hit them.
+    // spiral skips the lower_bound slot; place two objects so +1/-1 can hit them.
     const left = { id: 1, position: new THREE.Vector3(-2, 0, 0) };
     const rightNear = { id: 2, position: new THREE.Vector3(1, 0, 0) };
     const rightFar = { id: 3, position: new THREE.Vector3(5, 0, 0) };
@@ -165,7 +165,7 @@ describe("findNearestInArea", () => {
       nth: 0,
       matches: () => true,
     });
-    // left distSq=4, rightFar distSq=25 — left wins; rightNear at start is skipped (retail).
+    // left distSq=4, rightFar distSq=25 — left wins; rightNear at start is skipped.
     expect(result?.id).toBe(1);
   });
 });

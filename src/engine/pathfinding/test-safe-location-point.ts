@@ -9,7 +9,7 @@ import { getRoomAtPoint } from "@/engine/pathfinding/test-direct-line";
 /**
  * Approximate TestSafeLocationPoint.
  *
- * Retail: tiny ±0.01 XY / ±0.1 Z probe through room NoNonWalk + Detailed +
+ * : tiny ±0.01 XY / ±0.1 Z probe through room NoNonWalk + Detailed +
  * NoCreaturesOnLine (param skipBumpable=0).
  *
  * @file test-safe-location-point.ts
@@ -28,7 +28,7 @@ export function testSafeLocationPoint(
 ): boolean {
   if(!area || !point) return false;
 
-  // Must be in a room (retail GetRoom)
+  // Must be in a room (GetRoom)
   if(!getRoomAtPoint(area, point)){
     // Fallback: walkable face check when room lookup fails
     if(typeof area.isPointWalkable === 'function' && !area.isPointWalkable(point)){

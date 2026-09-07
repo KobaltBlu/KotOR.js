@@ -17,9 +17,9 @@ import {
   placeDirectionalShadowProxyAlongLight,
 } from '@/utility/odysseyShadowMap';
 import {
-  isRetailAreaDirectionalShadowLight,
-  RETAIL_AREA_DIRECTIONAL_SHADOW_RADIUS,
-} from '@/utility/retailLighting';
+  isOdysseyAreaDirectionalShadowLight,
+  ODYSSEY_AREA_DIRECTIONAL_SHADOW_RADIUS,
+} from '@/utility/odysseyLighting';
 
 describe('odyssey shadow map camera', () => {
   test('spot FOV uses receiver coverage radius, not max shadow distance', () => {
@@ -74,7 +74,7 @@ describe('odyssey shadow map camera', () => {
   });
 
   test('close local lamps keep near below body so feet-only clipping cannot occur', () => {
-    // auroralight27-style: lamp at head height, dist < RETAIL_SHADOW_LENGTH (5)
+    // auroralight27-style: lamp at head height, dist < ODYSSEY_SHADOW_LENGTH (5)
     const light = new THREE.Vector3(5.691, 28.577, 23.579);
     const focus = new THREE.Vector3(5.926, 29.166, 21.804);
     const dist = light.distanceTo(focus);
@@ -98,11 +98,11 @@ describe('odyssey shadow map camera', () => {
   });
 
   test('area-scale radii use directional/ortho shadow cameras (threshold 100)', () => {
-    expect(RETAIL_AREA_DIRECTIONAL_SHADOW_RADIUS).toBe(100);
+    expect(ODYSSEY_AREA_DIRECTIONAL_SHADOW_RADIUS).toBe(100);
     expect(isDistantShadowLightRadius(99)).toBe(false);
     expect(isDistantShadowLightRadius(100)).toBe(true);
     expect(isDistantShadowLightRadius(800)).toBe(true);
-    expect(isRetailAreaDirectionalShadowLight(800)).toBe(true);
+    expect(isOdysseyAreaDirectionalShadowLight(800)).toBe(true);
   });
 
   test('ortho near/far hug a focus-relative directional proxy offset', () => {

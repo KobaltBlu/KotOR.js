@@ -37,7 +37,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import { ExcitedDurationRow } from "@/combat/combat-engagement";
 import { getSpeakStringNotifyPlan, listenerHearsSpeaker } from "@/combat/speak-string-broadcast";
 import {
-  setLastHostileActor as setLastHostileActorHelper,
+  assignHostileActor as assignHostileActorHelper,
   getLastHostileActor as getLastHostileActorHelper,
 } from "@/combat/last-hostile-actor";
 import { EngineMode } from "@/enums/engine/EngineMode";
@@ -96,7 +96,7 @@ export interface DialogModelVisibilityInput {
 * @memberof KotOR
 */
 export class ModuleObject {
-  /** Retail SetMine free-ground half-extent (CreateNewGeometry 2.0). */
+  /** SetMine free-ground half-extent (CreateNewGeometry 2.0). */
   static readonly TRAP_GROUND_HALF_EXTENT = 2.0;
 
   /**
@@ -185,9 +185,9 @@ export class ModuleObject {
   controlled: boolean;
   id: number;
   /**
-   * Retail mgo_index — slot in client MiniGameObjectArray (0xff = unset).
+   * mgo_index — slot in client MiniGameObjectArray (0xff = unset).
    * Synced to `id` on register so NWScript StackPushObject / StoreState use the slot
-   * (retail ExecuteCommandSWMG_GetObjectByName pushes mgo_index).
+   * (ExecuteCommandSWMG_GetObjectByName pushes mgo_index).
    */
   mgoIndex: number = 0xff;
   initialized: boolean;
@@ -232,9 +232,9 @@ export class ModuleObject {
   //Room
   room: ModuleRoom;
   rooms: ModuleRoom[] = [];
-  /** Retail ApplyShadowBlob — Fx_Shadow_S/M/L model attached under the object. */
+  /** ApplyShadowBlob — Fx_Shadow_S/M/L model attached under the object. */
   shadowBlobModel: OdysseyModel3D;
-  /** Retail gob shadows flag — TurnOffShadows / HideShadowBlob when false. */
+  /** gob shadows flag — TurnOffShadows / HideShadowBlob when false. */
   shadowsEnabled = true;
   roomIds: number[] = [];
   roomSize: THREE.Vector3;
@@ -282,7 +282,7 @@ export class ModuleObject {
   casting: any[] = [];
   damageList: any[] = [];
   _locals: { Booleans: any[]; Numbers: {}; };
-  /** Retail named VarTable (retail) — round-trip from saves */
+  /** named VarTable  — round-trip from saves */
   scriptVarTable: ScriptVarTable = new ScriptVarTable();
   objectsInside: any[];
   lockDialogOrientation: boolean = false;
@@ -311,12 +311,12 @@ export class ModuleObject {
   perceptionList: IPerceptionInfo[] = [];
   isListening: boolean;
   /**
-   * Registered listen expressions in registration order (retail expression_list).
+   * Registered listen expressions in registration order (expression_list).
    * Keyed by pattern number via SetListenExpression; first match wins on scan.
    */
   listeningPatterns: Array<{ pattern: string; number: number }> = [];
   /**
-   * Per-node captures from the last listen match (retail matched_expression_strings).
+   * Per-node captures from the last listen match (matched_expression_strings).
    * Indexed by GetMatchedSubstring after OnDialogue.
    */
   matchedSubstrings: string[] = [];
@@ -369,7 +369,7 @@ export class ModuleObject {
   fp_getup_played: any;
 
   /**
-   * Retail spell_target_position — stamped by item/force casts for
+   * spell_target_position — stamped by item/force casts for
    * GetSpellTargetLocation when the spell has no creature target.
    */
   spellTargetPosition: THREE.Vector3 = new THREE.Vector3();
@@ -416,7 +416,7 @@ export class ModuleObject {
   trapOneShot: boolean;
   trapType: number;
   trapFlag: boolean;
-  /** Pass AL — creature object ids that have detected this trap (retail DetectedBy lists). */
+  /** Pass AL — creature object ids that have detected this trap (DetectedBy lists). */
   trapDetectedByIds: number[] = [];
   /** Visual / script “detected” latch (triggers); set by SetTrapDetectedBy / detectTrap. */
   trapDetected: boolean = false;
@@ -450,7 +450,7 @@ export class ModuleObject {
     this.rotation = this.container.rotation;
     this.quaternion = this.container.quaternion;
     this._triangle = new THREE.Triangle();
-    // this.wm_c_point = new THREE.Vector3();
+    // this.wm_c_point = new THREE.Vector3;
 
     this.box = new THREE.Box3();
     this.sphere = new THREE.Sphere();
@@ -517,7 +517,7 @@ export class ModuleObject {
 
     this.context = GameState;
     this._heartbeatTimerOffset = Math.floor(Math.random() * 600) + 100;
-    // Retail object heartbeat fires every 5999ms; stagger start like the old 3s path.
+    // object heartbeat fires every 5999ms; stagger start like the old 3s path.
     this._heartbeatTimeout = 6000;
     this._aiHeartbeatElapsedMs = this._heartbeatTimerOffset;
     this.aiLevel = AILevel.INVALID;
@@ -651,7 +651,7 @@ export class ModuleObject {
       return;
     }
 
-    // Retail heartbeat threshold: 5999ms
+    // heartbeat threshold: 5999ms
     this._aiHeartbeatElapsedMs += 1000 * delta;
     if(this._aiHeartbeatElapsedMs > 5999){
       if(GameState.module){
@@ -688,7 +688,7 @@ export class ModuleObject {
     }
 
     // Triggers/doors are static — roomCheck findWalkableFace would snap Z by +0.005.
-    // They attach rooms via their own getCurrentRoom() without mutating position.
+    // They attach rooms via their own getCurrentRoom without mutating position.
     if(this.spawned
       && !BitWise.InstanceOfObject(this, ModuleObjectType.ModuleTrigger)
       && !BitWise.InstanceOfObject(this, ModuleObjectType.ModuleDoor)){
@@ -786,22 +786,22 @@ export class ModuleObject {
 
   /**
    * Clear all actions
-   * @param skipUnclearable — retail ActionManager(1) / ClearAllActions(1): keep
+   * @param skipUnclearable — ActionManager(1) / ClearAllActions(1): keep
    * unclearable actions (dialog), ClearAllAttacks on the combat round, and
    * interrupt combat-round pause so a newly queued CAST_SPELL / attack can
    * dispatch via ActionCombat immediately.
    *
-   * Retail ClearAllActions (commandable path) keeps
+   * ClearAllActions (commandable path) keeps
    * conversation control actions via a per-action callback. EffectHorrified
    * SetState must not drop Pause/Wait/Resume or dialogs hang (tar08_calo082).
    *
-   * Retail ClearAllActions does **not** RemoveAllActions
+   * ClearAllActions does **not** RemoveAllActions
    * on the combat-round schedule — that is a separate call (GUI ClearAll
    * CancelCombat / SetCombatState(0)). Keeping the schedule lets the player
    * queue multiple attacks/spells while in combat.
    */
   clearAllActions(skipUnclearable = false){
-    // Retail ClearAllActions(1) → ClearAllAttacks only (not RemoveAllActions).
+    // ClearAllActions(1) → ClearAllAttacks only (not RemoveAllActions).
     // clearAllActions(false) is our aggressive reset (party/dialog) — also
     // RemoveAllActions so leftover combat-queue entries cannot resume.
     if(skipUnclearable){
@@ -817,12 +817,12 @@ export class ModuleObject {
     this.setComputedPath(undefined);
     //Reset the anim state
     //this.animState = 0;
-    //this.actionQueue.clear();
+    //this.actionQueue.clear;
     if(skipUnclearable){
       let i = this.actionQueue.length;
       while(i--){
         let action = this.actionQueue[i];
-        // Retail ClearAllActions (commandable path) uses
+        // ClearAllActions (commandable path) uses
         // a per-action keep/drop callback. Conversation Pause/Wait/Resume must
         // survive SetState clears (EffectHorrified in k_ptar_calofade) or the
         // dialog stays paused forever with pendingAdvance.
@@ -846,7 +846,7 @@ export class ModuleObject {
       this.actionQueue.clear();
     }
 
-    // Retail CancelGuiTimingEvent clears actions; clearing actions must also StopGuiTimingBar.
+    // CancelGuiTimingEvent clears actions; clearing actions must also StopGuiTimingBar.
     GameState.GuiTimingBarManager?.cancelFor?.(this);
 
     this.combatData.reset();
@@ -855,7 +855,7 @@ export class ModuleObject {
     }
     // Drop sticky walk / approach / player-control axes after cancel
     (this as any).clearLocomotionState?.(true);
-    //this.clearTarget();
+    //this.clearTarget;
   }
 
   /**
@@ -957,7 +957,7 @@ export class ModuleObject {
     }else{
       action.setParameter(5, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
     }
-    // Params 6–11: ignore-object names (retail AddToDialogNonDependantList)
+    // Params 6–11: ignore-object names (AddToDialogNonDependantList)
     for(let i = 0; i < 6; i++){
       action.setParameter(6 + i, ActionParameterType.STRING, ignoreObjectNames[i] ?? '');
     }
@@ -1355,7 +1355,7 @@ export class ModuleObject {
           }
         }
       break;
-      // Retail anim 0x2713 — walk-back uses same weapon walk set (reverse playback)
+      // anim 0x2713 — walk-back uses same weapon walk set (reverse playback)
       case ModuleCreatureAnimState.WALKING_BACK:
         if(this.isSimpleCreature()){
           return animations[253];
@@ -1807,7 +1807,7 @@ export class ModuleObject {
 
   /**
    * Trigger the user defined event
-   * Retail: EventHandler SignalEvent 0x0B runs script_on_user_defined;
+   * : EventHandler SignalEvent 0x0B runs script_on_user_defined;
    * EventHandler case 0x0B runs Mod_OnUsrDefined.
    * @param event
    */
@@ -1832,7 +1832,7 @@ export class ModuleObject {
     }
 
     if(!onUserDefined){ return; }
-    // Match onDamaged / onSpellAt: always newInstance(). Reusing the stored
+    // Match onDamaged / onSpellAt: always newInstance. Reusing the stored
     // template instance can leave STORE_STATE / stack residue across UD events
     // (Deadeye duel latch GetLocalBoolean(0) observed stuck after a partial run).
     const instance = onUserDefined.nwscript
@@ -1843,7 +1843,7 @@ export class ModuleObject {
 
   /**
    * Trigger the spell cast at event
-   * Retail creature EventHandler case 2 / placeable-door:
+   * creature EventHandler case 2 / placeable-door:
    * harmful → BroadcastCombatStateToParty + SetExcitedState.
    * @param event
    */
@@ -1856,18 +1856,18 @@ export class ModuleObject {
     if(harmful && BitWise.InstanceOfObject(caster, ModuleObjectType.ModuleCreature)){
       const c = caster as ModuleCreature;
       if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
-        // Creature target: engage both sides (retail)
+        // Creature target: engage both sides 
         const target = this as any as ModuleCreature;
-        // Retail EventHandler OnSpellCastAt sets last hostile when harmful
-        target.setLastHostileActor(c);
+        // EventHandler OnSpellCastAt sets last hostile when harmful
+        target.assignHostileActor(c);
         c.broadcastCombatStateToParty(target);
         c.setExcitedState(ExcitedDurationRow.SpellCast);
         c.removeCombatInvisibilityEffects();
         target.broadcastCombatStateToParty(c);
         target.setExcitedState(ExcitedDurationRow.Damage);
       }else{
-        // Door / placeable: engage caster only (retail)
-        this.setLastHostileActor(c);
+        // Door / placeable: engage caster only 
+        this.assignHostileActor(c);
         c.broadcastCombatStateToParty();
         c.setExcitedState(ExcitedDurationRow.SpellCast);
         c.removeCombatInvisibilityEffects();
@@ -2162,7 +2162,7 @@ export class ModuleObject {
    * @param script
    */
   doCommand(script: NWScriptInstance){
-    //console.log('doCommand', this.getTag(), script, action, instruction);
+    //console.log('doCommand', this.getTag, script, action, instruction);
     let action = new GameState.ActionFactory.ActionDoCommand();
     action.setParameter(0, ActionParameterType.SCRIPT_SITUATION, script);
     this.actionQueue.add(action);
@@ -2222,7 +2222,7 @@ export class ModuleObject {
     trigger.linkedToObject = this;
     this.linkedToObject = trigger;
 
-    // Retail CreateNewGeometry(2.0) + traps.2da resref for RecoverMine
+    // CreateNewGeometry(2.0) + traps.2da resref for RecoverMine
     trigger.trapResRef = ModuleObject.trapKitResRefFromRow(trap);
     ModuleObject.applyTrapGroundGeometry(trigger);
 
@@ -2271,7 +2271,7 @@ export class ModuleObject {
       trigger.scripts[ModuleObjectScript.TriggerOnTrapTriggered] = nwscript;
     }
 
-    // Retail CreateNewGeometry(2.0, plantPos) @ SetMine; resref for RecoverMine kit
+    // CreateNewGeometry(2.0, plantPos) @ SetMine; resref for RecoverMine kit
     trigger.trapResRef = ModuleObject.trapKitResRefFromRow(trap);
     ModuleObject.applyTrapGroundGeometry(trigger);
 
@@ -2281,7 +2281,7 @@ export class ModuleObject {
   }
 
   /**
-   * Pass AL — SetTrapDetectedBy / GetTrapDetectedBy (retail DetectedBy object-id lists).
+   * Pass AL — SetTrapDetectedBy / GetTrapDetectedBy (DetectedBy object-id lists).
    * Returns TRUE when the detector was newly added or already present.
    */
   setTrapDetectedBy(detector: ModuleObject): boolean {
@@ -2328,16 +2328,16 @@ export class ModuleObject {
   }
 
   /**
-   * Retail CSWSObject::SetLastHostileActor.
+   *.
    * @param hostileActor - attacker / damager / harmful caster (or undefined to clear)
    * @param force - when true, write the id without plot/faction/alive checks (CancelCombat clear)
    */
-  setLastHostileActor(hostileActor: ModuleObject | undefined, force: boolean = false){
-    setLastHostileActorHelper(this, hostileActor, force);
+  assignHostileActor(hostileActor: ModuleObject | undefined, force: boolean = false){
+    assignHostileActorHelper(this, hostileActor, force);
   }
 
   /**
-   * Retail ExecuteCommandGetLastHostileActor — returns last_hostile_actor_id
+   * ExecuteCommandget hostile actor — returns last_hostile_actor_id
    * when still a living creature (AOE resolves to creator); clears stale refs.
    */
   getLastHostileActor(): ModuleObject | undefined {
@@ -2345,7 +2345,7 @@ export class ModuleObject {
   }
 
   /**
-   * Retail IsInjured — current/max < 0.2.
+   * IsInjured — current/max < 0.2.
    * Invalid max HP must not count as injured (avoids 0/0 → NaN → pauseinj on load).
    */
   isInjured(){
@@ -2430,7 +2430,7 @@ export class ModuleObject {
     if(this.isDead())
       return true;
 
-    // Retail OnApplyDamage door/placeable — BroadcastCombatStateToParty(attacker, INVALID)
+    // effect apply door/placeable — BroadcastCombatStateToParty(attacker, INVALID)
     if(
       BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlaceable) ||
       BitWise.InstanceOfObject(this, ModuleObjectType.ModuleDoor)
@@ -2482,14 +2482,14 @@ export class ModuleObject {
   }
 
   /**
-   * Creature ScriptEndDialogu / placeable OnEndDialogue — retail end-of-conversation.
+   * Creature ScriptEndDialogu / placeable OnEndDialogue — end-of-conversation.
    */
   onEndDialog(){
     //stub
   }
 
   /**
-   * On attacked — placeable uses retail EventHandler 0xf attacker broadcast.
+   * On attacked — placeable uses EventHandler 0xf attacker broadcast.
    * Creatures / doors override with their own handlers.
    */
   onAttacked(attackType: CombatActionType){
@@ -2518,13 +2518,13 @@ export class ModuleObject {
   }
 
   speakString(str: string, volume: TalkVolume){
-    // Retail BroadcastDialog — area objects in range with
+    // BroadcastDialog — area objects in range with
     // listening set. Party members live in PartyManager.party (not always in
     // area.creatures), so they must be notified for every volume that notifies.
     const plan = getSpeakStringNotifyPlan(volume);
     const talkVolume = volume;
     const rangeSquared = plan.range * plan.range;
-    // Keep original case — retail captures slice from the original-case
+    // Keep original case — captures slice from the original-case
     // input; matching lowercases internally when case-insensitive.
     const spoken = str;
     const notified = new Set<number>();
@@ -2538,8 +2538,8 @@ export class ModuleObject {
       }
       const d2 = this.position.distanceToSquared(creature.position);
       if(d2 > rangeSquared) return;
-      // Retail: creature→creature needs HEARD visibility bit. Party path skips
-      // (retail forces mutual party perception).
+      // : creature→creature needs HEARD visibility bit. Party path skips
+      // (forces mutual party perception).
       if(requireHeardPerception && !listenerHearsSpeaker(creature, this)) return;
       creature.heardStrings.push({
         speaker: this,
@@ -2575,7 +2575,7 @@ export class ModuleObject {
   }
 
   /**
-   * Set the commandable state (retail).
+   * Set the commandable state.
    */
   setCommadable(arg0: any) {
     this.commandable = !!arg0;
@@ -2599,7 +2599,7 @@ export class ModuleObject {
     this.subtractHP(amount);
     this.combatData.lastDamager = oAttacker;
     this.combatData.lastAttacker = oAttacker;
-    this.setLastHostileActor(oAttacker);
+    this.assignHostileActor(oAttacker);
     this.onDamaged();
   }
 
@@ -2703,7 +2703,7 @@ export class ModuleObject {
    */
   getCameraHeight(){
     if(this.model && this.model.camerahook){
-      // Retail object height is an offset from the object's world position.
+      // object height is an offset from the object's world position.
       // Returning world Z here caused OldHitCheck to add position.z twice.
       return this.model.camerahook.position.z;
     }
@@ -2762,7 +2762,7 @@ export class ModuleObject {
   }
 
   /**
-   * Retail ApplyShadowBlob — attach Fx_Shadow_S/M/L under the model root.
+   * ApplyShadowBlob — attach Fx_Shadow_S/M/L under the model root.
    * Blob models have shadows turned off (TurnOffShadows).
    */
   async applyShadowBlob(resref: string): Promise<void> {
@@ -2794,14 +2794,14 @@ export class ModuleObject {
     }
   }
 
-  /** Retail HideShadowBlob / ShowShadowBlob — area shadows + per-object flag. */
+  /** HideShadowBlob / ShowShadowBlob — area shadows + per-object flag. */
   updateShadowBlobVisibility(){
     if(!this.shadowBlobModel){ return; }
     this.shadowBlobModel.visible = GameState.areShadowsEnabled() && this.shadowsEnabled;
   }
 
   /**
-   * Retail SetShadowBlobOrientation — align foot blob to walkmesh ground normal.
+   * SetShadowBlobOrientation — align foot blob to walkmesh ground normal.
    */
   updateShadowBlobOrientation(){
     if(!this.shadowBlobModel){ return; }
@@ -2827,7 +2827,7 @@ export class ModuleObject {
     return ModuleObject._shadowBlobUp;
   }
 
-  /** Retail TurnOffShadows — disable projection and foot blob. */
+  /** TurnOffShadows — disable projection and foot blob. */
   setShadowsEnabled(enabled: boolean){
     this.shadowsEnabled = !!enabled;
     this.updateShadowBlobVisibility();
@@ -2847,7 +2847,7 @@ export class ModuleObject {
   }
 
   /**
-   * Resolve retail Fx_Shadow_S/M/L from appearance.sizecategory (creatures).
+   * Resolve Fx_Shadow_S/M/L from appearance.sizecategory (creatures).
    * size 1–2 → S, 4–5 → L, else M (ApplyShadowBlob).
    */
   static shadowBlobResRefFromSizeCategory(sizeCategory: number): string {
@@ -2864,7 +2864,7 @@ export class ModuleObject {
   }
 
   /**
-   * Resolve retail Fx_Shadow_S/M/L from placeables.2da ShadowSize.
+   * Resolve Fx_Shadow_S/M/L from placeables.2da ShadowSize.
    * 0 → S, 1 → M, 2 → L, else M (ApplyShadowBlob).
    */
   static shadowBlobResRefFromPlaceableShadowSize(shadowSize: number): string {
@@ -2959,7 +2959,7 @@ export class ModuleObject {
    * Creature/object forward as an EngineLocation orientation vector.
    * Matches EngineLocation.setFacing and FollowerCamera.getCreatureForwardXY:
    * (−sin(θ), cos(θ)) for model yaw θ (rotation.z).
-   * Retail GetLocation / GetScriptLocation copies this live orientation.
+   * GetLocation / GetScriptLocation copies this live orientation.
    * @param bearing model yaw in radians (defaults to this.rotation.z)
    */
   getRotationFromBearing( bearing: number = undefined ){
@@ -3005,7 +3005,7 @@ export class ModuleObject {
   }
 
   /**
-   * Get the fortitude save — retail GetFortSavingThrow.
+   * Get the fortitude save — GetFortSavingThrow.
    * Creatures: CON + FortSaveThrow + class/conditioning + effects.
    */
   getFortitudeSave(){
@@ -3016,7 +3016,7 @@ export class ModuleObject {
   }
 
   /**
-   * Get the reflex save — retail GetReflexSavingThrow.
+   * Get the reflex save — GetReflexSavingThrow.
    */
   getReflexSave(){
     if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
@@ -3026,7 +3026,7 @@ export class ModuleObject {
   }
 
   /**
-   * Fortitude save — retail SavingThrowRoll type 1.
+   * Fortitude save — SavingThrowRoll type 1.
    * @returns 0 fail, 1 success, 2 immune
    */
   fortitudeSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
@@ -3042,7 +3042,7 @@ export class ModuleObject {
   }
 
   /**
-   * Reflex save — retail SavingThrowRoll type 2.
+   * Reflex save — SavingThrowRoll type 2.
    * @returns 0 fail, 1 success, 2 immune
    */
   reflexSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
@@ -3058,7 +3058,7 @@ export class ModuleObject {
   }
 
   /**
-   * Get the will save — retail GetWillSavingThrow.
+   * Get the will save — GetWillSavingThrow.
    */
   getWillSave(){
     if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
@@ -3068,7 +3068,7 @@ export class ModuleObject {
   }
 
   /**
-   * Will save — retail SavingThrowRoll type 3.
+   * Will save — SavingThrowRoll type 3.
    * @returns 0 fail, 1 success, 2 immune
    */
   willSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
@@ -3213,7 +3213,7 @@ export class ModuleObject {
    * Initialize all effects for the object
    */
   initEffects(){
-    // Drop any EffectDamage that was incorrectly persisted (retail OnApplyDamage
+    // Drop any EffectDamage that was incorrectly persisted (effect apply
     // returns 1 → never inserted into EffectList). Re-applying would re-deal HP.
     for(let i = this.effects.length - 1; i >= 0; i--){
       if(this.effects[i]?.type === GameEffectType.EffectDamage){
@@ -3242,7 +3242,7 @@ export class ModuleObject {
   }
 
   /**
-   * Retail object.area_id for save export — area game ObjectId, not ARE template ID.
+   * object.area_id for save export — area game ObjectId, not ARE template ID.
    */
   getSaveAreaId(): number {
     return (this.area?.id ?? GameState.module?.area?.id ?? 0) >>> 0;
@@ -3284,7 +3284,7 @@ export class ModuleObject {
     if(!effect.initialized){
       effect.initialize();
     }
-    // Retail: allocate effect id from module Mod_Effect_NxtId when not loaded from save
+    // : allocate effect id from module Mod_Effect_NxtId when not loaded from save
     if(!effect.id && GameState.module){
       if(typeof GameState.module.effectNextId !== 'number' || isNaN(GameState.module.effectNextId)){
         GameState.module.effectNextId = 1;
@@ -3294,11 +3294,11 @@ export class ModuleObject {
     effect.setAttachedObject(this);
     effect.loadModel();
     effect.onApply(this);
-    // Immunities / invalid modes return before super.onApply() — do not keep rejected effects
+    // Immunities / invalid modes return before super.onApply — do not keep rejected effects
     if(!effect.applied){
       return;
     }
-    // Retail ApplyEffect — OnApplyDamage returns 1 so the
+    // ApplyEffect — effect apply returns 1 so the
     // effect is freed and never inserted into EffectList. Keeping it caused
     // re-apply (and OnDamaged) during initEffects on module load.
     if(effect.type === GameEffectType.EffectDamage){
@@ -3352,7 +3352,7 @@ export class ModuleObject {
   }
 
   /**
-   * Remove every attached effect (retail ClearAllEffects).
+   * Remove every attached effect (ClearAllEffects).
    * @param retainSelfBuffs - SurrenderRetainBuffs: keep effects created by this object
    */
   clearAllEffects(retainSelfBuffs: boolean = false){
@@ -3361,7 +3361,7 @@ export class ModuleObject {
       const effect = effects[i];
       if(!effect) continue;
       const duration = effect.getDurationType?.() ?? (effect.subType & 0x07);
-      // Retail skips EQUIPPED (3) and INNATE (4)
+      // skips EQUIPPED (3) and INNATE (4)
       if(duration === 3 || duration === 4) continue;
       if(effect.type === 0x09) continue; // EffectSetStateInternal
       if(retainSelfBuffs && effect.creator === this) continue;
@@ -3370,7 +3370,7 @@ export class ModuleObject {
   }
 
   /**
-   * Retail OnApplyDeath effect strip + IsEffectToIgnoreOnDeath.
+   * effect apply effect strip + IsEffectToIgnoreOnDeath.
    * Removes all non-EQUIPPED/INNATE effects except types listed in removefxondeath.2da
    * (Disguise, Beam, and beam VisualEffects).
    */
@@ -3388,7 +3388,7 @@ export class ModuleObject {
   }
 
   /**
-   * Retail IsEffectToIgnoreOnDeath — removefxondeath.2da EffectType column
+   * IsEffectToIgnoreOnDeath — removefxondeath.2da EffectType column
    * uses NWScript EFFECT_TYPE_* (Disguise=62, Beam=21). Beam VFX also kept.
    */
   isEffectToIgnoreOnDeath(effect: GameEffect): boolean {
@@ -3397,7 +3397,7 @@ export class ModuleObject {
     if(effect.type === GameEffectType.EffectDisguise) return true;
     // EFFECT_BEAM = 21 → GameEffectType.EffectBeam (0x20)
     if(effect.type === GameEffectType.EffectBeam) return true;
-    // VisualEffect that is a beam (type_fd 'B') — retail GetIsBeam
+    // VisualEffect that is a beam (type_fd 'B') — GetIsBeam
     if(effect.type === GameEffectType.EffectVisualEffect){
       const vfx = (effect as any).visualEffect;
       if(vfx?.type_fd === 'B') return true;
@@ -3432,7 +3432,7 @@ export class ModuleObject {
   }
 
   /**
-   * Jump to an EngineLocation — retail JumpToLocation / AIActionJumpToPoint.
+   * Jump to an EngineLocation — JumpToLocation / AIActionJumpToPoint.
    * Cross-area: AddToArea. Cross-module (party leader): LoadModule + spawn XYZ.
    */
   JumpToLocation(lLocation: EngineLocation){
@@ -3448,7 +3448,7 @@ export class ModuleObject {
       action.setParameter(5, ActionParameterType.FLOAT, 20.0);
       action.setParameter(6, ActionParameterType.FLOAT, lLocation.rotation.x);
       action.setParameter(7, ActionParameterType.FLOAT, lLocation.rotation.y);
-      // Instant jump: run one update (retail AddActionToFront + process)
+      // Instant jump: run one update (AddActionToFront + process)
       action.owner = this;
       action.update(0);
       return;
@@ -3614,7 +3614,7 @@ export class ModuleObject {
 
   /**
    * Set the HP
-   * Retail DoDamage clamps to 1 when min1hp is set.
+   * DoDamage clamps to 1 when min1hp is set.
    * @param value
    */
   setHP(value = 0){
@@ -3762,7 +3762,7 @@ export class ModuleObject {
   }
 
   /**
-   * Retail GetReticlePoint — prefer lookathook.
+   * GetReticlePoint — prefer lookathook.
    * Creatures / corpse placeables override (head_g / rootdummy).
    */
   getReticleNode(){
@@ -3816,7 +3816,7 @@ export class ModuleObject {
   }
 
   /**
-   * Set the listening pattern (retail SetListenExpression).
+   * Set the listening pattern (SetListenExpression).
    * Re-parses in place when the pattern number already exists.
    * @param sString
    * @param iNum
@@ -3833,7 +3833,7 @@ export class ModuleObject {
     this.listeningPatterns.push({ pattern, number });
   }
 
-  /** Clear matched substrings (retail ClearMatchedExpressionStrings). */
+  /** Clear matched substrings (ClearMatchedExpressionStrings). */
   clearMatchedSubstrings(){
     this.matchedSubstrings = [];
   }
@@ -3943,7 +3943,7 @@ export class ModuleObject {
 
   /**
    * Initialize the perception list.
-   * Retail SaveCreature writes every non-null retail
+   * SaveCreature writes every non-null 
    * verbatim (including stale / OBJECT_INVALID ids). Resolve object refs when
    * possible, but never prune unresolved nodes — they must round-trip on save.
    */
@@ -4009,7 +4009,7 @@ export class ModuleObject {
 
     if(triggerOnNotice && onNotice){
       const instance = onNotice.nwscript.newInstance();
-      // Retail sets discrete event flags (0x904 Heard / 0x90c Inaudible) — not cumulative list bits
+      // sets discrete event flags (0x904 Heard / 0x90c Inaudible) — not cumulative list bits
       instance.lastPerceived = {
         object: object,
         objectId: object.id,
@@ -4066,7 +4066,7 @@ export class ModuleObject {
 
     if(triggerOnNotice && onNotice){
       const instance = onNotice.nwscript.newInstance();
-      // Retail sets discrete event flags (0x908 Seen / 0x910 Vanished)
+      // sets discrete event flags (0x908 Seen / 0x910 Vanished)
       instance.lastPerceived = {
         object: object,
         objectId: object.id,
@@ -4083,7 +4083,7 @@ export class ModuleObject {
 
   /**
    * Check if the object has line of sight to another object.
-   * Retail ClearLineOfSight (combat / GetIsInUseRange) uses eye
+   * ClearLineOfSight (combat / GetIsInUseRange) uses eye
    * height ~1.5 and does not clamp to perception range — pass
    * ignorePerceptionRange for those. GetIsInUseRange rays to the GetUseRange
    * point (doors/placeables), not object origin.
@@ -4094,9 +4094,9 @@ export class ModuleObject {
     opts?: {
       ignorePerceptionRange?: boolean;
       eyeHeight?: number;
-      /** Retail ClearLineOfSight excludes source + target object ids from hits. */
+      /** ClearLineOfSight excludes source + target object ids from hits. */
       ignoreObject?: ModuleObject;
-      /** End point override (retail GetIsInUseRange → nearest action point). */
+      /** End point override (GetIsInUseRange → nearest action point). */
       toPosition?: THREE.Vector3;
       /**
        * Skip room walkmesh face tests. Use-range ClearLineOfSight is
@@ -4428,7 +4428,7 @@ export class ModuleObject {
 
     this.loadActionList();
 
-    // Retail AddToArea / Load*: register after Tag is known (RegisterObject = ObjectList + tag lookup).
+    // AddToArea / Load*: register after Tag is known (RegisterObject = ObjectList + tag lookup).
     if(needsRegister){
       GameState.ModuleObjectManager.RegisterObject(this);
     }
@@ -4483,7 +4483,7 @@ export class ModuleObject {
   }
 
   /**
-   * Load named VarTable from a GFF LIST field (retail).
+   * Load named VarTable from a GFF LIST field.
    */
   loadNamedVarTable(field?: GFFField){
     this.scriptVarTable.loadFromListField(field);
@@ -4574,11 +4574,11 @@ export class ModuleObject {
    */
   noFadeOnDestroy: boolean = false;
 
-  /** Retail creature ctor SetFadeOutTime(8000). */
+  /** creature ctor SetFadeOutTime(8000). */
   static FADE_TIME: number = 8.0;
 
   /**
-   * Fade-out length in seconds (retail SetFadeOutTime default 8000ms).
+   * Fade-out length in seconds (SetFadeOutTime default 8000ms).
    */
   fadeDuration: number = 8.0;
 

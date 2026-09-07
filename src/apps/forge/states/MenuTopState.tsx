@@ -281,7 +281,7 @@ export class MenuTopState {
     return items;
   }
 
-  /** @deprecated Use rebuild() */
+  /** @deprecated Use rebuild */
   static buildAudioMenuItems(){
     this.rebuild();
   }

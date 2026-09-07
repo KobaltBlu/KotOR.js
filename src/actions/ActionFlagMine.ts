@@ -14,7 +14,7 @@ import { queueMoveIntoUseRange } from "@/actions/use-range";
 
 /**
  * ActionFlagMine class.
- * Retail flag-mine action
+ * flag-mine action
  * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  * 
@@ -79,14 +79,14 @@ export class ActionFlagMine extends Action {
     if(!this.animQueued){
       this.animQueued = true;
       owner.setFacingObject(this.target);
-      // Retail: 0x274b trigger, 0x274c door/placeable
+      // : 0x274b trigger, 0x274c door/placeable
       const animId = (isDoor || isPlaceable) ? 0x274c : 0x274b;
       const playAnim = new GameState.ActionFactory.ActionPlayAnimation();
       playAnim.setParameter(0, ActionParameterType.INT, animId);
       playAnim.setParameter(1, ActionParameterType.FLOAT, 1.0);
       playAnim.setParameter(2, ActionParameterType.FLOAT, 4.5);
       owner.actionQueue.addFront(playAnim);
-      // Retail StartGuiTimingBar(this, 0x1194, 1) — 4500 ms, type 1
+      // StartGuiTimingBar(this, 0x1194, 1) — 4500 ms, type 1
       if(owner === GameState.getCurrentPlayer()){
         GameState.GuiTimingBarManager?.startMs?.(0x1194, 'Flag Mine', owner, 1);
       }

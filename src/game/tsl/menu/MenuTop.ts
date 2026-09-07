@@ -231,7 +231,7 @@ export class MenuTop extends K1_MenuTop {
           this.LBL_TOP_CLASS1.show();
           this.LBL_TOP_CLASS1LEVEL?.show();
           // this.LBL_TOP_CLASS1.extent.top = 98;
-          // this.LBL_TOP_CLASS1.recalculate();
+          // this.LBL_TOP_CLASS1.recalculate;
         }else{
           this.LBL_TOP_CLASS1?.hide();
           this.LBL_TOP_CLASS1LEVEL?.hide();

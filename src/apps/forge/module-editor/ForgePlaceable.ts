@@ -442,7 +442,7 @@ export class ForgePlaceable extends ForgeGameObject {
   setGITInstance(strt: KotOR.GFFStruct){
     this.rotation.z = strt.getFieldByLabel('Bearing').getValue() as number;
     this.templateResRef = strt.getFieldByLabel('TemplateResRef').getValue() as string;
-    // Retail GIT uses X/Y/Z (not XPosition*)
+    // GIT uses X/Y/Z (not XPosition*)
     if(strt.hasField('X')){
       this.position.x = strt.getFieldByLabel('X').getValue() as number;
       this.position.y = strt.getFieldByLabel('Y').getValue() as number;

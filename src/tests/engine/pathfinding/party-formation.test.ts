@@ -17,7 +17,7 @@ describe("party formation offsets", () => {
     return [ { x: 0, y: 0 }, c0, c1 ];
   }
 
-  it("pattern 0 matches CSWParty ctor companion slots", () => {
+  it("pattern 0 matches party ctor companion slots", () => {
     const o = getOffsets(0);
     expect(o[1]).toEqual({ x: 1.5, y: -0.7 });
     expect(o[2]).toEqual({ x: -1.5, y: 0.8 });
@@ -37,7 +37,7 @@ describe("party formation offsets", () => {
 });
 
 describe("formations.2da SetFormation target math", () => {
-  it("rotates (distance,0) by yaw+angle like retail Quaternion path", () => {
+  it("rotates (distance,0) by yaw+angle like engine Quaternion path", () => {
     const DEG2RAD = Math.PI / 180;
     const anchor = { x: 10, y: 20 };
     // Facing +X (yaw from -atan2(0,1) = 0)

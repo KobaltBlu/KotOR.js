@@ -3,7 +3,7 @@ import { Dice } from "@/utility/Dice";
 import { DamageType } from "@/enums/combat/DamageType";
 
 /**
- * Retail DAMAGE_BONUS_* → iprp_damagecost.2da (K1 GetTotalEffectBonus case 2,
+ * DAMAGE_BONUS_* → iprp_damagecost.2da (K1 GetTotalEffectBonus case 2,
  * Massive Critical / shields via same table).
  *
  * KotOR rows: 1–5 flat (+code); ≥6 use NumDice/Die. K2 adds extra dice rows.
@@ -12,7 +12,7 @@ import { DamageType } from "@/enums/combat/DamageType";
 export type ResolveDamageBonusOptions = {
   /** When true, use NumDice*Die instead of rolling */
   maximize?: boolean;
-  /** Critical hit: roll / maximize this many times (retail crit path) */
+  /** Critical hit: roll / maximize this many times (crit path) */
   critMultiplier?: number;
 };
 
@@ -35,7 +35,7 @@ export function resolveDamageBonusCode(
 }
 
 function resolveDamageBonusCodeOnce(code: number, maximize: boolean): number {
-  // Retail: codes 1..5 add the code as a flat bonus (row index == amount)
+  // : codes 1..5 add the code as a flat bonus (row index == amount)
   if(code > 0 && code < 6){
     return code;
   }
@@ -73,7 +73,7 @@ function resolveDamageBonusCodeOnce(code: number, maximize: boolean): number {
 
 /**
  * NWScript DAMAGE_TYPE_* bitflag → damageList channel index.
- * Retail uses log2(flags) for a single set bit.
+ * uses log2(flags) for a single set bit.
  */
 export function damageTypeFlagToChannel(flags: number): number {
   const f = flags | 0;

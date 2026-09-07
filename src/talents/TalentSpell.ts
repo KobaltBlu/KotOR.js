@@ -188,12 +188,12 @@ export class TalentSpell extends TalentObject {
     return 'castoutlp1';
   }
 
-  /** Retail conjure SetAnimation id from spells.2da ConjAnim. */
+  /** conjure SetAnimation id from spells.2da ConjAnim. */
   getConjureAnimState(){
     return getSpellConjureAnimState(this.conjanim);
   }
 
-  /** Retail cast SetAnimation id from spells.2da CastAnim (0 = skip). */
+  /** cast SetAnimation id from spells.2da CastAnim (0 = skip). */
   getCastAnimState(){
     return getSpellCastAnimState(this.castanim || this.conjanim);
   }
@@ -207,11 +207,11 @@ export class TalentSpell extends TalentObject {
   }
 
   /**
-   * Queue a cast via combat round (retail AddCastSpellActions / GUI ForceMenuAction).
+   * Queue a cast via combat round (AddCastSpellActions / GUI ForceMenuAction).
    * @param options.isUserAction — player HUD/input (CombatRoundAction.isUserAction)
    */
   useTalentOnObject(oTarget: ModuleObject, oCaster: ModuleObject, options?: { isUserAction?: boolean }){
-    // Retail GetSelfForcePowers / range P — never cast personal/friendly HUD
+    // GetSelfForcePowers / range P — never cast personal/friendly HUD
     // powers at the look-at party member.
     if(oCaster){
       oTarget = resolveSpellCastTarget(this, oTarget, oCaster, options);
@@ -219,7 +219,7 @@ export class TalentSpell extends TalentObject {
 
     super.useTalentOnObject(oTarget, oCaster);
 
-    // Retail AddCastSpellActions visibility (non-party field426==0)
+    // AddCastSpellActions visibility (non-party field426==0)
     if(oTarget && oTarget !== oCaster){
       const isPartyUI = !!(
         (oCaster as any).isPartyMember?.() ||
@@ -240,7 +240,7 @@ export class TalentSpell extends TalentObject {
     oCaster.combatData.lastSpellTarget = oTarget;
     oTarget.combatData.lastSpellAttacker = oCaster;
     if(this.hostilesetting == 1){
-      // Retail hostile cast → ActivityManager(1) + BroadcastCombatStateToParty
+      // hostile cast → ActivityManager(1) + BroadcastCombatStateToParty
       if(typeof (oCaster as any).activityManager === 'function'){
         (oCaster as any).activityManager(1);
       }
@@ -266,7 +266,7 @@ export class TalentSpell extends TalentObject {
     combatAction.animationName = this.getConjureAnimation();
     combatAction.animationTime = 1500;
     combatAction.isUserAction = !!options?.isUserAction;
-    // Retail ForceMenuAction / AddCastSpellActions classIndex (Jedi 3/4/5 in first two slots)
+    // ForceMenuAction / AddCastSpellActions classIndex (Jedi 3/4/5 in first two slots)
     if(typeof (oCaster as any).getForceSpellClassIndex === 'function'){
       combatAction.spellClassIndex = (oCaster as any).getForceSpellClassIndex();
     }
@@ -502,8 +502,8 @@ export class TalentSpell extends TalentObject {
   save(){
     let spellStruct = new GFFStruct(3);
     spellStruct.addField( new GFFField(GFFDataType.WORD, 'Spell') ).setValue(this.getId());
-    //spellStruct.addField( new GFFField(GFFDataType.SHORT, 'SpellFlags') ).setValue(this.getFlags());
-    //spellStruct.addField( new GFFField(GFFDataType.SHORT, 'SpellMetaMagic') ).setValue(this.getMetaMagic());
+    //spellStruct.addField(new GFFField(GFFDataType.SHORT, 'SpellFlags')).setValue(this.getFlags);
+    //spellStruct.addField(new GFFField(GFFDataType.SHORT, 'SpellMetaMagic')).setValue(this.getMetaMagic);
     return spellStruct;
   }
 

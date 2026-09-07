@@ -70,11 +70,11 @@ export class AudioFile {
         switch(info.archive.type){
           case 'bif':
             // Global.kotorBIF[info.archive.name].getResourceBuffer(Global.kotorBIF[info.archive.name].getResource(info.file.name, ResourceTypes[info.file.ext]), (buffer) => {
-            //   this.reader = new BinaryReader(buffer);
-            //   this.processFile(onComplete);
-            //   return;
+            // this.reader = new BinaryReader(buffer);
+            // this.processFile(onComplete);
+            // return;
             // }, (e: any) => {
-            //   throw 'Resource not found in BIF archive '+pathInfo.archive.name;
+            // throw 'Resource not found in BIF archive '+pathInfo.archive.name;
             // });
           break;
         }
@@ -380,15 +380,15 @@ export class AudioFile {
 
     if(args.file!=null){
 
-      // fs.writeFile(args.file, this.getExportableData(), (err) => {
-      //   if (err) {
-      //     if(typeof args.onError == 'function')
-      //       args.onError(err);
-      //   }else{
-      //     if(typeof args.onComplete == 'function')
-      //       args.onComplete();
-      //   }
-      //   console.log('AudioFile Saved');
+      // fs.writeFile(args.file, this.getExportableData, (err) => {
+      // if (err) {
+      // if(typeof args.onError == 'function')
+      // args.onError(err);
+      // }else{
+      // if(typeof args.onComplete == 'function')
+      // args.onComplete;
+      // }
+      // console.log('AudioFile Saved');
       // });
 
     }

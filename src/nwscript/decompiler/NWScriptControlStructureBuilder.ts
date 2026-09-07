@@ -265,7 +265,7 @@ export class NWScriptControlStructureBuilder {
       if (loop) {
         this.structures.push(loop);
         // Nested recovery is performed while building ControlNode trees. Doing it here
-        // on whole-function if/switch bodies is quadratic in large retail scripts.
+        // on whole-function if/switch bodies is quadratic in large engine scripts.
         this.processedBlocks.add(loop.headerBlock);
         if (loop.exitBlock) {
           this.processedBlocks.add(loop.exitBlock);
@@ -954,7 +954,7 @@ export class NWScriptControlStructureBuilder {
       out.push(...cur.instructions);
       // The unconditional default JMP terminates every compiler switch dispatcher. Following
       // it walks into case/merge code, makes unrelated later constructs part of the probe, and
-      // turns deeply nested retail scripts into an expensive near-quadratic scan.
+      // turns deeply nested engine scripts into an expensive near-quadratic scan.
       if (cur.endInstruction.code === OP_JMP || cur.endInstruction.code === OP_RETN) {
         break;
       }

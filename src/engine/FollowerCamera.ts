@@ -13,7 +13,7 @@ const HALF_PI = Math.PI / 2;
 const EASE_THRESHOLD = Math.PI / 2;
 const FOCUS_DEAD_ZONE = 0.16;
 
-/** Retail ChangeLocation flags — SendServerToPlayerCamera_ChangeLocation */
+/** ChangeLocation flags — SendServerToPlayerCamera_ChangeLocation */
 export const CAMERA_LOC_FLAG_FACING = 0x01;
 export const CAMERA_LOC_FLAG_PITCH = 0x02;
 export const CAMERA_LOC_FLAG_DISTANCE = 0x04;
@@ -22,7 +22,7 @@ export const CAMERA_LOC_FLAG_TRANSITION = 0x08;
 /**
  * FollowerCamera class.
  *
- * Client chase camera — retail OnAStick chase (Control, SetCameraStyle,
+ * Client chase camera — OnAStick chase (Control, SetCameraStyle,
  * HitCheckCamera) plus death-camera blends.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -37,18 +37,18 @@ export class FollowerCamera {
 
   static DEFAULT_FOV = 55;
 
-  /** Retail SetCameraStyle fallbacks when camerastyle.2da is missing */
+  /** SetCameraStyle fallbacks when camerastyle.2da is missing */
   static readonly DEFAULT_STYLE_DISTANCE = 6.25;
   static readonly DEFAULT_STYLE_SPEED = 20.0;
   static readonly DEFAULT_STYLE_PITCH_DEG = 80.0;
   static readonly DEFAULT_STYLE_HEIGHT = 3.5;
 
-  /** Retail cameraPersonalSpace global */
+  /** cameraPersonalSpace global */
   static readonly DEFAULT_CAMERA_PERSONAL_SPACE = 0.35;
-  /** Retail HitCheckCamera pad (cameraPersonalSpace + 0.15) */
+  /** HitCheckCamera pad (cameraPersonalSpace + 0.15) */
   static readonly CAMERA_HIT_PAD = 0.15;
   /**
-   * cameraInterpDistAmt — ComputeNewCameraPosition
+   * cameraInterpDistAmt — new camera position
    * blends current XY cam distance toward style dist each tick.
    */
   static readonly CAMERA_INTERP_DIST_AMT = 0.5;
@@ -146,7 +146,7 @@ export class FollowerCamera {
   static focusTurnSpeed: number = 6.0;
 
   /**
-   * Retail SendServerToPlayerCamera_ChangeLocation client transition.
+   * SendServerToPlayerCamera_ChangeLocation client transition.
    * Flags select facing/pitch/distance; transitionType 0 = SNAP; else CAMERA_TRANSITION_TYPE_* (2…100).
    */
   static locationTransitionActive = false;
@@ -160,7 +160,7 @@ export class FollowerCamera {
 
   /**
    * death camera — set when party wipe starts.
-   * Retail ctor: speed_yaw 30°/s, desired_pitch 90°, distance 3,
+   * ctor: speed_yaw 30°/s, desired_pitch 90°, distance 3,
    * height 0.75→0, log_pitch/height 0.01, log_distance 0.5, log_yaw 0.5.
    */
   static deathCamActive = false;
@@ -213,7 +213,7 @@ export class FollowerCamera {
   /**
    * navigate camera — free-fly state (Control).
    * Axes are set by controls and consumed each navigate frame.
-   * navigateHoverMode maps to retail hsMode != 0 (ship-style flight).
+   * navigateHoverMode maps to hsMode != 0 (ship-style flight).
    */
   static navigateActive = false;
   static navigateHoverMode = false;
@@ -281,7 +281,7 @@ export class FollowerCamera {
     FollowerCamera.flLookUp = flLookUp;
     FollowerCamera.flLookDown = flLookDown;
 
-    // CamRelative Control caches Min/MaxTurnRate (retail controller Init / SetCameraStyle)
+    // CamRelative Control caches Min/MaxTurnRate (controller Init / SetCameraStyle)
     FollowerCamera.minTurnRateDeg = FollowerCamera.parseStyleFloat(
       cameraStyle?.minturnrate ?? cameraStyle?.MinTurnRate,
       FollowerCamera.DEFAULT_MIN_TURN_RATE_DEG
@@ -347,7 +347,7 @@ export class FollowerCamera {
   }
 
   /**
-   * Retail SetCamera — BehaviorAttach live camera to camerahook.
+   * SetCamera — BehaviorAttach live camera to camerahook.
    * Identity local transform; world pose follows the hook (no per-frame copy).
    */
   static mgCameraHookAttached = false;
@@ -391,7 +391,7 @@ export class FollowerCamera {
   }
 
   /**
-   * Retail UpdateCamera mouse path while rightClickHeld (or Mouse Look):
+   * UpdateCamera mouse path while rightClickHeld (or Mouse Look):
    * TurnCamera(dx * GetMouseSenSetting), TiltCamera(dy * GetMouseSenSetting).
    * dx/dy are pixel movement this frame (browser); normalized like DI [-1,1].
    */
@@ -465,7 +465,7 @@ export class FollowerCamera {
     FollowerCamera.freeLookPitchDeg +=
       FollowerCamera.freeLookPitchAxis * FollowerCamera.flTiltSpeed * dt;
 
-    // Mouse look when cursor is hidden / pointer-driven (retail HideMouse)
+    // Mouse look when cursor is hidden / pointer-driven (HideMouse)
     // Scale by GetMouseSenSetting vs default (~29.8) — was hard-coded 0.15
     const mx = Mouse.MouseX - Mouse.OldMouseX;
     const my = Mouse.MouseY - Mouse.OldMouseY;
@@ -504,7 +504,7 @@ export class FollowerCamera {
     FollowerCamera.camera.updateProjectionMatrix();
   }
 
-  /** Begin retail death camera aimed at the fallen party member. */
+  /** Begin death camera aimed at the fallen party member. */
   static beginDeathCamera(target?: ModuleObject){
     FollowerCamera.deathCamActive = true;
     FollowerCamera.focusObject = target;
@@ -520,7 +520,7 @@ export class FollowerCamera {
   }
 
   /**
-   * Apply camera ChangeLocation (retail CAMERA msg subtype 1).
+   * Apply camera ChangeLocation (CAMERA msg subtype 1).
    * Payload: flags + up to 3 floats (facing/pitch/distance) + optional transition byte.
    * Floats of -1 mean "keep current".
    * @param transitionType 0 = snap; else lerp speed (CAMERA_TRANSITION_TYPE_*)
@@ -576,7 +576,7 @@ export class FollowerCamera {
     FollowerCamera.locationTargetFacing = Utility.NormalizeRadian(targetFacing);
     FollowerCamera.locationTargetPitch = targetPitch;
     FollowerCamera.locationTargetDistance = targetDistance;
-    // Retail speeds: CRAWL=2 … VERY_FAST=100 — approach rate scale
+    // speeds: CRAWL=2 … VERY_FAST=100 — approach rate scale
     FollowerCamera.locationTransitionSpeed = Math.max(1, transitionType);
     FollowerCamera.locationTransitionActive = true;
   }
@@ -651,7 +651,7 @@ export class FollowerCamera {
     else if(yawDeg >= 360) yawDeg -= 360;
     FollowerCamera.deathYaw = yawDeg;
 
-    // pitch blend toward desired (retail uses 90 - desired_pitch offset; desired=90 → level)
+    // pitch blend toward desired (uses 90 - desired_pitch offset; desired=90 → level)
     const desiredPitchDeg = 90.0 - FollowerCamera.DEATH_DESIRED_PITCH_DEG;
     FollowerCamera.deathPitch =
       (desiredPitchDeg - FollowerCamera.deathPitch) * FollowerCamera.DEATH_LOG_PITCH +
@@ -690,7 +690,7 @@ export class FollowerCamera {
     FollowerCamera.camera.updateProjectionMatrix();
   }
 
-  /** Retail GetTargetHeadPosition — model camerahook / 1.5 fallback + appearance offset. */
+  /** GetTargetHeadPosition — model camerahook / 1.5 fallback + appearance offset. */
   static getFolloweeHeadHeight(followee: ModuleObject): number {
     let head = 1.5 + FollowerCamera.DEBUG_OFFSET;
     if(typeof (followee as any).getCameraHeight === 'function'){
@@ -790,7 +790,7 @@ export class FollowerCamera {
     if(active){
       if(FollowerCamera.combatCameraActive) return;
       const mode = GameState.clientCameraMode | 0;
-      // Retail SetCombatCamera only swaps when already OnAStick (mode 3).
+      // SetCombatCamera only swaps when already OnAStick (mode 3).
       if(mode !== ClientCameraMode.ON_A_STICK){
         return;
       }
@@ -822,7 +822,7 @@ export class FollowerCamera {
   }
 
   /**
-   * Combat look target — retail Control uses GetLastTarget only.
+   * Combat look target — Control uses GetLastTarget only.
    * Cursor hover must not steal the lock (that blocked free orbit).
    */
   static getCombatLookTarget(followee: ModuleObject): ModuleObject | undefined {
@@ -844,7 +844,7 @@ export class FollowerCamera {
    *
    * GetNextYaw returns desired yaw; GetNextPosition only
    * soft-steps when duration > 0, but shipped GetNextYaw always writes 0 — so
-   * retail snaps position every tick. Soft-approach yaw with AccelerateInterp
+   * snaps position every tick. Soft-approach yaw with AccelerateInterp
    * rate (ChaseCam-style) for follow→combat / retarget; keep position snapped.
    */
   static updateCombatCameraYaw(followee: ModuleObject, delta: number){
@@ -927,7 +927,7 @@ export class FollowerCamera {
     FollowerCamera.navigateLastRoll = 0;
   }
 
-  /** Enter Navigate with retail hsMode!=0 ship flight (freelook cheat path). */
+  /** Enter Navigate with hsMode!=0 ship flight (freelook cheat path). */
   static beginNavigateHover(){
     GameState.clientCameraMode = ClientCameraMode.NAVIGATE;
     FollowerCamera.lastAppliedCameraMode = -1;
@@ -1015,7 +1015,7 @@ export class FollowerCamera {
     const move = FollowerCamera.NAVIGATE_MOVE_SPEED * delta;
     const yaw = FollowerCamera.facing + HALF_PI;
     const pitch = FollowerCamera.pitch;
-    // Local forward includes pitch (look direction); retail −speed on local Y after −90° pitch trick
+    // Local forward includes pitch (look direction); −speed on local Y after −90° pitch trick
     const forwardX = Math.cos(yaw) * Math.cos(pitch);
     const forwardY = Math.sin(yaw) * Math.cos(pitch);
     const forwardZ = Math.sin(pitch);
@@ -1124,7 +1124,7 @@ export class FollowerCamera {
   }
 
   /**
-   * ComputeNewCameraPosition distance blend:
+   * new camera position distance blend:
    * styleDist + (1 − cameraInterpDistAmt) * (currentDist − styleDist).
    */
   static blendStyleDistance(styleDist: number, currentDist: number): number {
@@ -1194,7 +1194,7 @@ export class FollowerCamera {
         else if(t1 >= 0 && t1 <= 1) t = t1;
         if(t < 0) continue;
 
-        // Nudge slightly toward origin (retail 0.001 along ray)
+        // Nudge slightly toward origin (0.001 along ray)
         t = Math.max(0, t - 0.001);
         camX = ox + vx * t;
         camY = oy + vy * t;
@@ -1277,7 +1277,7 @@ export class FollowerCamera {
 
     const fullRayLen = Math.max(distance, 1e-6);
 
-    // Retail while-hits loop: shrink and re-test until clear or stable
+    // while-hits loop: shrink and re-test until clear or stable
     for(let pass = 0; pass < 8; pass++){
       let hitThisPass = false;
       let best = distance;
@@ -1465,7 +1465,7 @@ export class FollowerCamera {
       ? FollowerCamera.STIFF_DIST
       : FollowerCamera.maxDistance) * GameState.CameraDebugZoom;
 
-    // ComputeNewCameraPosition — soft blend toward style distance.
+    // new camera position — soft blend toward style distance.
     // Combat CalculateDesiredLocation uses this->distance directly.
     let distance = mode === ClientCameraMode.COMBAT
       ? styleDist
@@ -1499,13 +1499,13 @@ export class FollowerCamera {
         ( (mgPlayer: ModuleMGPlayer) => {
           const hook = mgPlayer.camera?.camerahook;
           if(hook){
-            // Retail SetCamera — attach to camerahook (no world-pose copy).
+            // SetCamera — attach to camerahook (no world-pose copy).
             FollowerCamera.attachMinigameCamera(hook);
           }else{
             FollowerCamera.detachMinigameCamera();
           }
           FollowerCamera.camera.fov = area.miniGame.cameraViewAngle;
-          // retail clip_start/clip_end (Near_Clip / Far_Clip)
+          // clip_start/clip_end (Near_Clip / Far_Clip)
           if(area.miniGame.nearClip > 0){
             FollowerCamera.camera.near = area.miniGame.nearClip;
           }
@@ -1525,7 +1525,7 @@ export class FollowerCamera {
         delta
       );
 
-      // HitCheckCamera / DetermineSafePosition result (retail GetNextPosition
+      // HitCheckCamera / DetermineSafePosition result (GetNextPosition
       // duration is 0 from GetNextYaw — snap every tick).
       FollowerCamera.camera.position.copy(FollowerCamera.tmpSafeCam);
 

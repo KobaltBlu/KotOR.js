@@ -1,7 +1,7 @@
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 
 /**
- * Map spells.2da ConjAnim / CastAnim labels to retail animation IDs.
+ * Map spells.2da ConjAnim / CastAnim labels to animation IDs.
  */
 
 /** Conjure-phase anim → SetAnimation. */
@@ -15,7 +15,7 @@ export function getSpellConjureAnimState(conjanim: string | undefined): ModuleCr
 
 /**
  * Cast-phase anim.
- * Returns 0 when retail skips SetAnimation (castanim 8 / 9).
+ * Returns 0 when skips SetAnimation (castanim 8 / 9).
  */
 export function getSpellCastAnimState(castanim: string | undefined): ModuleCreatureAnimState | 0 {
   const a = String(castanim ?? '').toLowerCase().trim();

@@ -28,7 +28,7 @@ interface ChemicalShopChoice {
  * MenuChemicals — TSL GUI (`chemical_p` / chemicalcreate.2da).
  *
  * Categories Health/Stims/Grenades/Mines (group 0–3). Create spends
- * PartyManager.ChemicalCount at cost = max(1, GetCost()>>1). Breakdown refunds
+ * PartyManager.ChemicalCount at cost = max(1, GetCost>>1). Breakdown refunds
  * the same sell value into ChemicalCount.
  *
  * @file MenuChemicals.ts

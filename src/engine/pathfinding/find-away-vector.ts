@@ -8,16 +8,16 @@ import {
 } from "@/engine/pathfinding/test-direct-line";
 
 /**
- * Retail ComputeAwayVector
+ * find away vector
  * Try 8 directions at 45° around the creature→threat axis, prefer 180°
  * (away), clip with TestDirectLine / farthestClearPoint, pick best by
  * distance-from-threat × angle weight.
  *
- * @file compute-away-vector.ts
+ * @file find-away-vector.ts
  */
 
 const ANGLE_STEP = Math.PI / 4; // 0.7853982
-/** Retail multipliers: index 4 (180°) best, then ±135°, etc. */
+/** multipliers: index 4 (180°) best, then ±135°, etc. */
 const ANGLE_WEIGHT = [1, 4, 16, 64, 256, 64, 16, 4];
 
 const _toward = new THREE.Vector3();
@@ -50,7 +50,7 @@ function clipDirectLine(
 /**
  * Compute flee destination at least ~`range` from `threat`.
  */
-export function computeAwayVector(
+export function findAwayVector(
   creature: ModuleCreature,
   threat: THREE.Vector3,
   range: number
@@ -88,7 +88,7 @@ export function computeAwayVector(
 
     _candidate.set(origin.x + dx, origin.y + dy, origin.z);
 
-    // If still inside range of threat, push another range step (retail)
+    // If still inside range of threat, push another range step 
     const dtx = threat.x - _candidate.x;
     const dty = threat.y - _candidate.y;
     const dtz = threat.z - _candidate.z;
@@ -99,7 +99,7 @@ export function computeAwayVector(
 
     let dest = _candidate.clone();
     if(area){
-      // Full line blocked → binary-scale toward origin (retail local_b8 *= 0.5)
+      // Full line blocked → binary-scale toward origin (local_b8 *= 0.5)
       let scale = 1.0;
       let cleared = false;
       while(scale >= 0.005){
@@ -126,7 +126,7 @@ export function computeAwayVector(
       if(!cleared){
         continue;
       }
-      // Reject if closer to threat than we started (retail goto skip)
+      // Reject if closer to threat than we started (goto skip)
       const newDist =
         (dest.x - threat.x) * (dest.x - threat.x) +
         (dest.y - threat.y) * (dest.y - threat.y) +

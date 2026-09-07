@@ -21,4 +21,4 @@ export enum CreatureType {
   DOES_NOT_HAVE_SPELL_EFFECT = 6,
   PERCEPTION                = 7,
 }
-//const CREATURE_TYPE_ALIGNMENT       = 2;
+//const CREATURE_TYPE_ALIGNMENT = 2;

@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  *
- * Retail SaveCreature writes every CSWVisibilityNode's ObjectId +
+ * SaveCreature writes every visibility node's ObjectId +
  * PerceptionData verbatim. Unresolved / PLAYER_ID heard-only nodes must survive
  * the same GFF write path used by ModuleCreature.save.
  *
@@ -33,7 +33,7 @@ function savePerceptionList(list: IPerceptionInfo[]): GFFObject {
 
 /**
  * Mirrors ModuleObject.initPerceptionList retention: resolve when possible,
- * never splice unresolved nodes (retail SaveCreature round-trip).
+ * never splice unresolved nodes (SaveCreature round-trip).
  */
 function initPerceptionListRetain(
   list: IPerceptionInfo[],

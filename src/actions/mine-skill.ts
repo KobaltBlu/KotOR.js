@@ -18,8 +18,8 @@ export enum MineSkillResult {
 
 /**
  * Resolve demolitions check against trap DC.
- * Flag  : DisarmDC - 5 (retail flag-mine action)
- * Examine: DisarmDC - 7 (retail examine-mine action)
+ * Flag : DisarmDC - 5 (flag-mine action)
+ * Examine: DisarmDC - 7 (examine-mine action)
  */
 export function resolveMineSkillCheck(
   owner: ModuleCreature,
@@ -42,7 +42,7 @@ export function resolveMineSkillCheck(
     dc = Math.max(1, dc - 7);
   }
 
-  // Own / party-planted traps auto-succeed in retail disarm/examine/flag paths.
+  // Own / party-planted traps auto-succeed in disarm/examine/flag paths.
   const creatorId = (target as any).createdBy?.id ?? (target as any).creatorId;
   if(creatorId && creatorId === owner.id){
     return { result: MineSkillResult.OWNED, roll, skill, dc };
@@ -63,7 +63,7 @@ export function resolveMineSkillCheck(
 }
 
 /**
- * Passive trap detection (retail UpdateMineCheck): Awareness + d10 vs DetectDC.
+ * Passive trap detection (UpdateMineCheck): Awareness + d10 vs DetectDC.
  */
 export function resolvePassiveMineDetect(
   owner: ModuleCreature,
@@ -71,7 +71,7 @@ export function resolvePassiveMineDetect(
   options: { detectMode?: boolean } = {}
 ): { result: MineSkillResult; roll: number; skill: number; dc: number } {
   const skill = owner.getSkillLevel(SkillType.AWARENESS) | 0;
-  // Detect mode: d10+10; otherwise d10 (retail UpdateMineCheck).
+  // Detect mode: d10+10; otherwise d10 (UpdateMineCheck).
   let roll = Dice.roll(1, DiceType.d10);
   if(options.detectMode){
     roll += 10;
@@ -99,7 +99,7 @@ export function resolvePassiveMineDetect(
 }
 
 /**
- * Plant check (retail set-mine action): traps.2da SetDC vs Demolitions + d20.
+ * Plant check (set-mine action): traps.2da SetDC vs Demolitions + d20.
  * Fail-by-10+ still plants but triggers the trap.
  */
 export function resolveMineSetCheck(
@@ -115,7 +115,7 @@ export function resolveMineSetCheck(
   }
 
   let skill = owner.getSkillLevel(SkillType.DEMOLITIONS) | 0;
-  // Retail adds +2 when base ranks (unmodified) exceed 4.
+  // adds +2 when base ranks (unmodified) exceed 4.
   if((owner.getSkillLevel(SkillType.DEMOLITIONS) | 0) > 4){
     skill += 2;
   }
@@ -157,7 +157,7 @@ export function signalTrapTriggered(target: ModuleObject, triggerer: ModuleObjec
   GameState.module.addEvent(event);
 }
 
-/** Schedule trap destruction (retail SetFadeOutTime ~2). */
+/** Schedule trap destruction (SetFadeOutTime ~2). */
 export function fadeDestroyTrap(target: ModuleObject){
   target.setDelayUntilDestroy(2);
   target.setWillDestroy(true);

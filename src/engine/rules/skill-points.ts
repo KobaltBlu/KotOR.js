@@ -1,7 +1,7 @@
 import { GameEngineType } from "@/enums/engine";
 import { SkillType } from "@/enums/nwscript/SkillType";
 
-/** Race id for droids (retail GetIcon race == 5). */
+/** Race id for droids (GetIcon race == 5). */
 const RACE_DROID = 5;
 
 export interface SkillPointClass {
@@ -37,7 +37,7 @@ export function getAbilityModifier(score: number): number {
 }
 
 /**
- * Retail AddSkillPointsPerLevel — points gained for the
+ * AddSkillPointsPerLevel — points gained for the
  * given total level (K1 and K2 formulas differ).
  */
 export function computeSkillPointsGained(
@@ -119,7 +119,7 @@ export function isClassSkill(creature: SkillPointCreature, skillId: number): boo
 }
 
 /**
- * Retail GetSkillPointCostForSkillRank — class 1, cross-class 2.
+ * GetSkillPointCostForSkillRank — class 1, cross-class 2.
  * Returns 0 when the skill is not usable by any of the creature's classes.
  */
 export function getSkillPointCost(
@@ -170,7 +170,7 @@ export function getCreatureRace(creature: SkillPointCreature): number {
   return (creature.race | 0);
 }
 
-/** Retail CharGen droid blocks Stealth / Persuade / Treat Injury. */
+/** CharGen droid blocks Stealth / Persuade / Treat Injury. */
 export function isSkillBlockedForCreature(creature: SkillPointCreature, skillId: number): boolean {
   const skill = creature.skills?.[skillId];
   if(!skill) return true;

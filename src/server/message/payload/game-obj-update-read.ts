@@ -1,5 +1,5 @@
 /**
- * GameObjUpdate read helpers — retail HandleServerToPlayerUpdate_* / CreatureUpdate_* leaves.
+ * GameObjUpdate read helpers — HandleServerToPlayerUpdate_* / CreatureUpdate_* leaves.
  * Decode only; no client world mutation (onParsed consumers).
  *
  * Ref: HandleServerToPlayerGameObjectUpdate
@@ -11,7 +11,7 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import type { CSWMessage, MessageVector3 } from "@/server/message/CSWMessage";
+import type { OdysseyMessage, MessageVector3 } from "@/server/message/OdysseyMessage";
 import {
   GameObjUpdateCategory,
   MessageGameObjectType,
@@ -26,16 +26,16 @@ export type GameObjUpdateEvent =
   | { category: string; remainingHint: number };
 
 /** ReadOBJECTIDClient — raw DWORD. */
-export function readObjectIdClient(msg: CSWMessage): number {
+export function readObjectIdClient(msg: OdysseyMessage): number {
   return msg.readDWORD();
 }
 
 /**
  * VisEffect payload (non-beam path minimum).
- * isBeam is caller-supplied (retail uses GetIsBeam).
+ * isBeam is caller-supplied (uses GetIsBeam).
  */
 export function readVisEffect(
-  msg: CSWMessage,
+  msg: OdysseyMessage,
   isBeam: boolean
 ): {
   objectId: number;
@@ -76,7 +76,7 @@ export function readVisEffect(
 }
 
 /** Creature delete */
-export function readCreatureDelete(msg: CSWMessage): Record<string, unknown> {
+export function readCreatureDelete(msg: OdysseyMessage): Record<string, unknown> {
   return {
     objectId: readObjectIdClient(msg),
     bool0: msg.readBOOL(),
@@ -87,12 +87,12 @@ export function readCreatureDelete(msg: CSWMessage): Record<string, unknown> {
 }
 
 /** Generic object-type delete (Item/Door/etc. — OBJECTID only for DestroyItem). */
-export function readObjectIdOnly(msg: CSWMessage): { objectId: number } {
+export function readObjectIdOnly(msg: OdysseyMessage): { objectId: number } {
   return { objectId: readObjectIdClient(msg) };
 }
 
 /** WorkRemaining — two BYTEs. */
-export function readWorkRemaining(msg: CSWMessage): { current: number; total: number } {
+export function readWorkRemaining(msg: OdysseyMessage): { current: number; total: number } {
   const current = msg.readBYTE();
   let total = msg.readBYTE();
   if (total === 0) total = 1;
@@ -103,7 +103,7 @@ export function readWorkRemaining(msg: CSWMessage): { current: number; total: nu
  * Delete category — object-type byte then type-specific leaf.
  * Full creature fields when type is Creature; otherwise OBJECTID (+ remaining hint).
  */
-export function readDeleteCategory(msg: CSWMessage): GameObjUpdateEvent {
+export function readDeleteCategory(msg: OdysseyMessage): GameObjUpdateEvent {
   const objectType = msg.readBYTE();
   if (objectType === MessageGameObjectType.Creature) {
     return {
@@ -124,7 +124,7 @@ export function readDeleteCategory(msg: CSWMessage): GameObjUpdateEvent {
 }
 
 /** Add category — object-type then opaque remaining (full add packs need live templates). */
-export function readAddCategory(msg: CSWMessage): GameObjUpdateEvent {
+export function readAddCategory(msg: OdysseyMessage): GameObjUpdateEvent {
   const objectType = msg.readBYTE();
   return {
     category: "A",
@@ -136,7 +136,7 @@ export function readAddCategory(msg: CSWMessage): GameObjUpdateEvent {
 /**
  * Parse minor-1 category stream until buffer exhausted or unknown category.
  */
-export function readGameObjUpdateStream(msg: CSWMessage): GameObjUpdateEvent[] {
+export function readGameObjUpdateStream(msg: OdysseyMessage): GameObjUpdateEvent[] {
   const events: GameObjUpdateEvent[] = [];
   while (msg.messageMoreDataToRead() && !msg.messageReadOverflow()) {
     const cat = msg.readBYTE();

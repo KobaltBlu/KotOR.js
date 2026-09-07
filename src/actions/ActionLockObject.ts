@@ -23,9 +23,9 @@ type Lockable = ModuleObject & {
 /**
  * ActionLockObject class.
  *
- * Retail lock-object action
+ * lock-object action
  * — move into use range → PlayAnimation (door 0x2790 / placeable 0x2793, 1.5s)
- *   + StartGuiTimingBar(0x5dc, type 8) → EvaluateLock (key) or Security vs CloseLockDC.
+ * + StartGuiTimingBar(0x5dc, type 8) → EvaluateLock (key) or Security vs CloseLockDC.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -66,14 +66,14 @@ export class ActionLockObject extends Action {
       return ActionStatus.IN_PROGRESS;
     }
 
-    // Already locked — retail SendFeedbackMessage 0x0d (needs object context;
-    // full CC payload TBD — fail closed like retail).
+    // Already locked — SendFeedbackMessage 0x0d (needs object context;
+    // full CC payload TBD — fail closed like).
     if(target.isLocked?.() || target.locked){
       GameState.GuiTimingBarManager?.stopFor?.(owner);
       return ActionStatus.FAILED;
     }
 
-    // KeyRequired blocks ActionLockObject (retail door/placeable path)
+    // KeyRequired blocks ActionLockObject (door/placeable path)
     if(target.keyRequired){
       GameState.GuiTimingBarManager?.stopFor?.(owner);
       return ActionStatus.FAILED;
@@ -85,7 +85,7 @@ export class ActionLockObject extends Action {
       owner.force = 0;
 
       const isDoor = BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor);
-      // Retail: door 0x2790 (UNLOCK_DOOR), placeable 0x2793 (UNLOCK_CONTAINER)
+      // : door 0x2790 (UNLOCK_DOOR), placeable 0x2793 (UNLOCK_CONTAINER)
       const animId = isDoor ? 0x2790 : 0x2793;
       const playAnim = new GameState.ActionFactory.ActionPlayAnimation();
       playAnim.setParameter(0, ActionParameterType.INT, animId);
@@ -93,7 +93,7 @@ export class ActionLockObject extends Action {
       playAnim.setParameter(2, ActionParameterType.FLOAT, 1.5);
       owner.actionQueue.addFront(playAnim);
 
-      // Retail StartGuiTimingBar(this, 0x5dc, 8) — 1500 ms, type 8
+      // StartGuiTimingBar(this, 0x5dc, 8) — 1500 ms, type 8
       if(owner === GameState.getCurrentPlayer()){
         GameState.GuiTimingBarManager?.startMs?.(0x5dc, 'Lock', owner, 8);
       }
@@ -106,7 +106,7 @@ export class ActionLockObject extends Action {
       return ActionStatus.COMPLETE;
     }
 
-    // Security skill + d20 vs CloseLockDC (retail: no WIS/2; DC min 1)
+    // Security skill + d20 vs CloseLockDC (: no WIS/2; DC min 1)
     const skill = owner.getSkillLevel(SkillType.SECURITY) | 0;
     const roll = owner.combatData?.combatState ? ((Math.random() * 20) | 0) + 1 : 20;
     const dc = Math.max(1, target.closeLockDC | 0);
@@ -118,7 +118,7 @@ export class ActionLockObject extends Action {
     return ActionStatus.COMPLETE;
   }
 
-  /** Retail EvaluateLock with desiredLocked=1 */
+  /** EvaluateLock with desiredLocked=1 */
   private tryLockWithKey(owner: ModuleCreature, target: Lockable): boolean {
     const keyName = (target.keyName || '').trim();
     if(!keyName.length) return false;

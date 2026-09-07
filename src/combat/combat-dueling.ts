@@ -6,7 +6,7 @@ import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
 
 /**
- * Retail melee duel / choreography helpers —
+ * melee duel / choreography helpers —
  * ResolveChoreographedState,
  * ResolveEngagedState,
  * ResolveMasterState.
@@ -24,7 +24,7 @@ function asCreature(obj: ModuleObject | undefined): ModuleCreature | undefined {
 }
 
 /**
- * Retail MainHand weapon eligible for choreographed melee:
+ * MainHand weapon eligible for choreographed melee:
  * present, not ranged, not stun baton, not wield 8 (unused in K1 baseitems).
  */
 export function isChoreographedMeleeWeapon(creature: ModuleCreature | undefined): boolean {
@@ -39,7 +39,7 @@ export function isChoreographedMeleeWeapon(creature: ModuleCreature | undefined)
 }
 
 /**
- * Retail ResolveChoreographedState
+ * ResolveChoreographedState
  * both combatants have choreographed melee weapons.
  * Used for Desired/MaxAttackRange and ATTACK_DUELING anim preview.
  */
@@ -54,10 +54,10 @@ export function resolveChoreographedState(
 }
 
 /**
- * Retail appearance MODELTYPE S/L check (IsCreature).
+ * appearance MODELTYPE S/L check (IsCreature).
  * Used when selecting ATTACK_DUELING while already engaged.
  */
-export function isRetailDuelCreature(creature: ModuleCreature | undefined): boolean {
+export function isOdysseyDuelCreature(creature: ModuleCreature | undefined): boolean {
   if(!creature) return false;
   const mt = String(creature.getAppearance?.()?.modeltype ?? creature.creatureAppearance?.modeltype ?? '');
   const c = mt.charAt(0);
@@ -65,7 +65,7 @@ export function isRetailDuelCreature(creature: ModuleCreature | undefined): bool
 }
 
 /**
- * Retail ResolveEngagedState
+ * ResolveEngagedState
  * whether this attack should sync as an engaged duel round with target.
  */
 export function resolveEngagedState(
@@ -96,7 +96,7 @@ export function resolveEngagedState(
     engaged = true;
   }
 
-  // Party leader as target — retail GetCharacter(0) special case
+  // Party leader as target — GetCharacter(0) special case
   const partyLeader = GameState.PartyManager?.party?.[0];
   if(partyLeader && targetCreature === partyLeader){
     if(noAttackTarget){
@@ -123,7 +123,7 @@ export function resolveEngagedState(
 }
 
 /**
- * Retail ResolveMasterState
+ * ResolveMasterState
  * who drives the engaged duel (party members always master).
  */
 export function resolveMasterState(
@@ -165,7 +165,7 @@ export type DuelRoundFlags = {
 };
 
 /**
- * Resolve all duel flags for one PhysicalAttacks tick (retail order).
+ * Resolve all duel flags for one PhysicalAttacks tick (order).
  */
 export function resolveDuelRoundFlags(
   attacker: ModuleCreature,
@@ -179,8 +179,8 @@ export function resolveDuelRoundFlags(
   if(!engaged){
     useDuelingAnim = false;
   }else if(
-    isRetailDuelCreature(attacker) ||
-    isRetailDuelCreature(asCreature(target))
+    isOdysseyDuelCreature(attacker) ||
+    isOdysseyDuelCreature(asCreature(target))
   ){
     useDuelingAnim = true;
   }else if(choreographed){

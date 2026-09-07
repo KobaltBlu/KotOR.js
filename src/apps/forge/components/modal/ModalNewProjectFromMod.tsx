@@ -1,5 +1,5 @@
 /**
- * Modal: create a new Forge project from a .mod / .rim / .erf archive.
+ * Modal: create a new Forge project from a.mod /.rim /.erf archive.
  *
  * @file ModalNewProjectFromMod.tsx
  * @author KobaltBlu <https://github.com/KobaltBlu>

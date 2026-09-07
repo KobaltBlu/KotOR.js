@@ -242,7 +242,7 @@ export class OdysseyModelNode {
                   
                   // If this is the first keyframe, ignore the Bezier control at v1 by
                   // copying v0 (keeps animated cameras from jumping off-rails on start).
-                  // Retail camera animation still uses the same controller data; this
+                  // camera animation still uses the same controller data; this
                   // matches observed first-frame stability for dialog CameraModel paths.
                   if(!r){
                     frame.bezier.v1.copy(frame.bezier.v0);
@@ -276,7 +276,7 @@ export class OdysseyModelNode {
                 frame.time = data[controller.timeKeyIndex + r];
 
                 if(controller.columnCount == 2){
-                  // Reinterpret controller data dword as packed xyz (retail float→uint bits)
+                  // Reinterpret controller data dword as packed xyz (float→uint bits)
                   const temp = data2[controller.dataValueIndex + r] >>> 0;
 
                   const x = ((temp & QUAT_X_MASK) * QUAT_X_SCALE) - 1.0;
@@ -284,7 +284,7 @@ export class OdysseyModelNode {
                   const z = (((temp >> QUAT_Z_SHIFT) & QUAT_Z_MASK) * QUAT_Z_SCALE) - 1.0;
                   const fSquares = x * x + y * y + z * z;
 
-                  // Retail: if (fSquares <= 1.0) w = sqrt(1 - fSquares); else normalize xyz, w = 0
+                  // : if (fSquares <= 1.0) w = sqrt(1 - fSquares); else normalize xyz, w = 0
                   if(fSquares <= 1.0){
                     tmpQuat.set(x, y, z, Math.sqrt(1.0 - fSquares));
                   }else{
@@ -292,7 +292,7 @@ export class OdysseyModelNode {
                     tmpQuat.set(x * invLength, y * invLength, z * invLength, 0);
                   }
                 }else{
-                  // columnCount == 4: raw x,y,z,w floats (no normalize in retail)
+                  // columnCount == 4: raw x,y,z,w floats (no normalize in)
                   tmpQuat.set(
                     data[controller.dataValueIndex + (r * controller.columnCount) + 0],
                     data[controller.dataValueIndex + (r * controller.columnCount) + 1],

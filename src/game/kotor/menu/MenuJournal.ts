@@ -96,7 +96,7 @@ export class MenuJournal extends GameMenu {
 
       this.BTN_SWAPTEXT.addEventListener('click', (e) => {
         e.stopPropagation();
-        // Retail HandleInputEvent 0x2a — toggle active/done then PopulateItemListBox.
+        // HandleInputEvent 0x2a — toggle active/done then PopulateItemListBox.
         switch(this.mode){
           case JournalQuestMode.ACTIVE:
             this.mode = JournalQuestMode.COMPLETED;
@@ -109,7 +109,7 @@ export class MenuJournal extends GameMenu {
         this.UpdateLabels();
       });
 
-      // retail HandleInputEvent 0x29 → AddPanel + PushModalPanel (flags=3).
+      // HandleInputEvent 0x29 → AddPanel + PushModalPanel (flags=3).
       this.BTN_QUESTITEMS?.addEventListener('click', (e) => {
         e.stopPropagation();
         GameState.guiAudioEmitter?.playSoundFireAndForget?.('gui_click');
@@ -121,7 +121,7 @@ export class MenuJournal extends GameMenu {
     });
   }
 
-  /** Pop quest-item modal when journal leaves the screen (retail panel ownership). */
+  /** Pop quest-item modal when journal leaves the screen (panel ownership). */
   hide(){
     if(this.manager?.MenuQuestItem?.isVisible?.()){
       this.manager.MenuQuestItem.close();
@@ -200,7 +200,7 @@ export class MenuJournal extends GameMenu {
   }
 
   getFilteredEntries(){
-    // Retail PopulateItemListBox walks active or done lists (End bit on category entry).
+    // PopulateItemListBox walks active or done lists (End bit on category entry).
     const entries = GameState.JournalManager.Entries.slice().filter((entry) => {
       const complete = entry.isComplete();
       return this.mode === JournalQuestMode.COMPLETED ? complete : !complete;

@@ -1,6 +1,6 @@
 import { GameMenu, GUIButton, GUIControl, GUIProtoItem } from "@/gui";
 import type { GUIListBox } from "@/gui/GUIListBox";
-import type { RetailRowExtent } from "@/gui/GUIProtoItem";
+import type { ProtoRowExtent } from "@/gui/GUIProtoItem";
 import { asExtentInt, truncDiv } from "@/gui/GUICoord";
 import { GFFStruct } from "@/resource/GFFStruct";
 import * as THREE from "three";
@@ -21,7 +21,7 @@ export type SkillEntryNode = {
 /**
  * GUICreatureSkill class.
  *
- * retail — icon + name row used by abilities skills list
+ * — icon + name row used by abilities skills list
  * and GUI (granted feats popup).
  *
  * @file GUICreatureSkill.ts
@@ -45,10 +45,10 @@ export class GUICreatureSkill extends GUIProtoItem {
   }
 
   /**
-   * Retail Initialize — SetExtent width = viewport - 2*padding,
-   * height 0x2a (42). K1 ; TSL ftol(scalar * 42.0).
+   * Initialize — SetExtent width = viewport - 2*padding,
+   * height 0x2a (42). K1; TSL ftol(scalar * 42.0).
    */
-  getRetailBaseExtent(list: GUIListBox): RetailRowExtent {
+  getProtoBaseExtent(list: GUIListBox): ProtoRowExtent {
     const vw = typeof list.getViewportWidth === 'function'
       ? list.getViewportWidth()
       : list.extent.width - (list.scrollbar ? list.scrollbar.extent.width : 0);

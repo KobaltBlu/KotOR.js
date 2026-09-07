@@ -18,9 +18,9 @@ export class ModuleTimeManager {
 
   dawnHour = 6;
   duskHour = 18;
-  /** retail — day/night/dawn/dusk phase. */
+  /** — day/night/dawn/dusk phase. */
   dayPhase: ModuleDayPhase = ModuleDayPhase.Day;
-  /** Retail Mod_Transition — ms spent in the current dawn/dusk hour. */
+  /** Mod_Transition — ms spent in the current dawn/dusk hour. */
   transition = 0;
 
   enabled = true;
@@ -45,7 +45,7 @@ export class ModuleTimeManager {
     milisecond = Math.trunc(milisecond);
     if(hour < 0 || minute < 0 || second < 0 || milisecond < 0) return;
 
-    // Retail AdvanceToTime: carry overflow through every field before conversion.
+    // AdvanceToTime: carry overflow through every field before conversion.
     second += Math.floor(milisecond / 1000);
     milisecond %= 1000;
     minute += Math.floor(second / 60);
@@ -72,12 +72,12 @@ export class ModuleTimeManager {
     this.pauseDay = Math.max(0, this.pauseDay + advanceDay);
     this.pauseTime = time;
     this.calendar.updateCalendarDateTime();
-    // Retail ExecuteCommandSetTime passes elapsed=0 into UpdateTime.
+    // ExecuteCommandSetTime passes elapsed=0 into UpdateTime.
     this.updateTime(0);
   }
 
   /**
-   * Retail ConvertHourMinSecMsToMs.
+   * ConvertHourMinSecMsToMs.
    * Hours scale by minutesPerHour; minutes always contribute minute*60000.
    */
   convertHourMinSecMsToMs(hour = 0, minute = 0, second = 0, milisecond = 0){
@@ -102,7 +102,7 @@ export class ModuleTimeManager {
   }
 
   /**
-   * Retail UpdateTime.
+   * UpdateTime.
    * Recomputes day phase from the current hour and accumulates Mod_Transition
    * while the previous phase is dawn or dusk.
    */
@@ -119,7 +119,7 @@ export class ModuleTimeManager {
   }
 
   /**
-   * Retail LoadModuleStart / UpdateTime phase selection.
+   * LoadModuleStart / UpdateTime phase selection.
    * 1 day, 2 night, 3 dawn (exact dawn hour), 4 dusk (exact dusk hour).
    */
   computeDayPhase(hour = 0): ModuleDayPhase {
@@ -148,14 +148,14 @@ export class ModuleTimeManager {
 
   /**
    * Day and dawn use day tracks; night and dusk use night tracks
-   * (retail UpdateTimeOfDay phase grouping).
+   * (UpdateTimeOfDay phase grouping).
    */
   static usesDayAudioTracks(phase: ModuleDayPhase){
     return phase === ModuleDayPhase.Day || phase === ModuleDayPhase.Dawn;
   }
 
   /**
-   * Retail UpdateDayNightCycle shadowAlpha during dawn/dusk.
+   * UpdateDayNightCycle shadowAlpha during dawn/dusk.
    * before midpoint → opacity*0.01*(1 - t/0.5);
    * after midpoint → opacity*0.01*(t/0.5 - 1).
    */
@@ -203,7 +203,7 @@ export class ModuleTimeManager {
   }
 
   setMinutesPerHour(mph: number = 0){
-    // Retail SetMinutesPerHour: zero becomes 5.
+    // SetMinutesPerHour: zero becomes 5.
     this.minutesPerHour = ((mph | 0) > 0) ? (mph | 0) : 5;
   }
 
@@ -299,7 +299,7 @@ export class ModuleTimeManager {
         this.calendar.setCalendarDateTime();
       }
 
-      // Retail LoadModuleStart initializes phase from the restored hour.
+      // LoadModuleStart initializes phase from the restored hour.
       this.dayPhase = this.computeDayPhase(this.hour);
     }
   }

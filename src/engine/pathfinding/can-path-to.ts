@@ -41,6 +41,6 @@ export function canPathToPoint(
     dest: target.clone(),
   };
   const result = plotPath(area, creature, info, { smooth: false });
-  // Retail Check continues on Incomplete; only Fail → ERROR
+  // Check continues on Incomplete; only Fail → ERROR
   return result.code === PlotPathCode.Ready || result.code === PlotPathCode.Incomplete;
 }

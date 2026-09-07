@@ -16,7 +16,7 @@ import {
 /**
  * Approximate NoCreaturesOnLine.
  *
- * Retail: cre_personal_space(+0.01) capsule along the segment; returns 0 and
+ * : cre_personal_space(+0.01) capsule along the segment; returns 0 and
  * writes blocker object id when a living bumpable creature overlaps.
  * EvaluateOverlappingTargets soft-clears start-overlap / soft-pair stacks.
  * Optional CWalkHitInfo via SetHitInfoForCreature.
@@ -25,9 +25,9 @@ import {
  */
 
 export type NoCreaturesOnLineResult = {
-  /** true = clear (retail return 1). */
+  /** true = clear (return 1). */
   clear: boolean;
-  /** Blocker id when clear=false (retail *arg6). */
+  /** Blocker id when clear=false (*arg6). */
   blockingCreatureId?: number;
 };
 
@@ -62,7 +62,7 @@ function isPartyCreature(creature: ModuleObject): boolean {
 
 /**
  * Test whether any creature's creperspace capsule intersects the segment.
- * Mirrors retail return: clear=1 / blocked=0 + blocker id.
+ * matches engine behavior return: clear=1 / blocked=0 + blocker id.
  */
 export function noCreaturesOnLine(
   area: ModuleArea | undefined,
@@ -70,18 +70,18 @@ export function noCreaturesOnLine(
   to: THREE.Vector3,
   options: {
     owner?: ModuleObject;
-    /** Self cre_personal_space (retail arg3->cre_personal_space + 0.01). */
+    /** Self cre_personal_space (arg3->cre_personal_space + 0.01). */
     crePersonalSpace?: number;
     ignoreCreatureIds?: number[];
     allowPartyCreatures?: boolean;
-    /** Soft-pair for EvaluateOverlappingTargets (retail pathfind state). */
+    /** Soft-pair for EvaluateOverlappingTargets (pathfind state). */
     softCreature?: ModuleObject;
     /**
      * When true, skip creatures where GetIsCreatureBumpable(owner, other)
-     * (retail NoCreatures arg5 gate — rarely set by callers).
+     * (NoCreatures arg5 gate — rarely set by callers).
      */
     skipBumpable?: boolean;
-    /** Optional retail CWalkHitInfo out-param. */
+    /** Optional CWalkHitInfo out-param. */
     hit?: WalkHitInfo;
   } = {}
 ): NoCreaturesOnLineResult {
@@ -110,7 +110,7 @@ export function noCreaturesOnLine(
     }
   }
 
-  // Expand AABB slightly (retail uses ±6 on X index range)
+  // Expand AABB slightly (uses ±6 on X index range)
   const minX = Math.min(from.x, to.x) - 6;
   const maxX = Math.max(from.x, to.x) + 6;
   const minY = Math.min(from.y, to.y) - 6;

@@ -36,7 +36,7 @@ export class PlaceableLightmapBaker {
 
   /**
    * Mark motion / open-close activity. Resets the idle clock and unfreezes
-   * a prior pose-freeze bake so lids return to GetNearestLights.
+   * a prior pose-freeze bake so lids return to nearest light selection.
    */
   static noteActivity(plc: ModulePlaceable): void {
     if(!plc || plc.destroyed){ return; }

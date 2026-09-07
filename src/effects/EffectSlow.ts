@@ -6,7 +6,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import { hasImmunityType, rebalanceHasteSlow } from "@/effects/haste-slow";
 
 /**
- * EffectSlow — retail outer type 0x03; immunity type 9 rejects apply.
+ * EffectSlow — outer type 0x03; immunity type 9 rejects apply.
  *
  * @file EffectSlow.ts
  */

@@ -8,7 +8,7 @@ import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
 
 /**
- * Retail InitializeNewAttackTarget
+ * InitializeNewAttackTarget
  * retarget scheduled attacks + PhysicalAttacks action param when stuck-LOS
  * finds a nearer SEEN hostile (MaxAttackRange override).
  *
@@ -44,7 +44,7 @@ export function initializeNewAttackTarget(
 }
 
 /**
- * Retail stuck-LOS branch in physical-attack action:
+ * stuck-LOS branch in physical-attack action:
  * standing still with blocked LOS → GetNearestEnemy(MaxAttackRange override)
  * excluding current target → InitializeNewAttackTarget or cancel combat.
  *

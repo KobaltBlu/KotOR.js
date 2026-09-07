@@ -240,7 +240,7 @@ describe('swoop obstacle / enemy rendering attach', () => {
       getCurrentRoom: jest.fn(),
       setTrack: jest.fn(),
     };
-    // Track is on the ARE template — empty until load()/initProperties.
+    // Track is on the ARE template — empty until load/initProperties.
     const good = {
       trackName: '',
       load: jest.fn(async function (this: { trackName: string }) {

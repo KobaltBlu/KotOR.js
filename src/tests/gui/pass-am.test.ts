@@ -3,7 +3,7 @@
  */
 import { describe, expect, it } from "@jest/globals";
 
-/** Retail SetLocalBoolean index — ExecuteCommandDisplayDatapad. */
+/** SetLocalBoolean index — ExecuteCommandDisplayDatapad. */
 const DATAPAD_SHOWN_LOCAL_BOOL = 0x5e;
 
 /** Mirrors MenuDatapad.resolveDatapadText / DescIdentified path. */
@@ -19,7 +19,7 @@ function resolveDatapadText(item: {
 }
 
 describe("Pass AM DisplayDatapad local bool", () => {
-  it("uses retail index 0x5E", () => {
+  it("uses engine index 0x5E", () => {
     expect(DATAPAD_SHOWN_LOCAL_BOOL).toBe(0x5e);
   });
 

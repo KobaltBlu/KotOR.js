@@ -41,9 +41,9 @@ export class ComputedPath {
   smoothResume: SmoothSelectionResume | undefined;
   /** SmoothCornerOptimize mid-pass resume (JS hitch hardening after selection). */
   smoothCornerResume: SmoothCornerResume | undefined;
-  /** True when DFS hit wall-clock budget without a full path (retail return 1). */
+  /** True when DFS hit wall-clock budget without a full path (return 1). */
   incomplete: boolean = false;
-  /** Populated on timeout for cross-frame TransTable reuse (Retail). */
+  /** Populated on timeout for cross-frame TransTable reuse. */
   dfsResume: PathPointDfsResume | undefined;
 
   color = new THREE.Color().setRGB(1, 0.6470588235294118, 0);
@@ -57,7 +57,7 @@ export class ComputedPath {
   helperMesh: THREE.LineSegments = new THREE.LineSegments();
   enableHelper: boolean = false;
 
-  /** Detour waypoint when parent→child went around a creature (retail cost geometry). */
+  /** Detour waypoint when parent→child went around a creature (cost geometry). */
   private edgeDetours = new WeakMap<PathPoint, THREE.Vector3>();
 
   constructor(owner: ModuleObject, origin: PathPoint = undefined, destination: PathPoint = undefined){
@@ -72,7 +72,7 @@ export class ComputedPath {
   }
 
   getCost( point: PathPoint ){
-    // Retail PathPointDFS heuristic: distance to goal
+    // PathPointDFS heuristic: distance to goal
     return point.vector.distanceTo( this.destination.vector );
   }
 
@@ -85,9 +85,9 @@ export class ComputedPath {
   }
 
   /**
-   * PTH graph search — PathPointDFS () with TransTable + iterative
+   * PTH graph search — PathPointDFS  with TransTable + iterative
    * cost budget (PlotPathPointPath). Creature detours from GenerateSuccessors.
-   * Optional wall-clock slice (~retail high-res timer continuation).
+   * Optional wall-clock slice (~ high-res timer continuation).
    * Pass `resume` to reuse TransTable when start/end unchanged (state).
    */
   search(options: {
@@ -169,14 +169,14 @@ export class ComputedPath {
    * Edge cost for PTH expansion (GenerateSuccessors).
    * cost < 0 = blocked (static door / placeable).
    * Non-static doors do not prune edges — plot through while scripted open finishes.
-   * Creature on line → retail detour length + splice waypoint.
+   * Creature on line → detour length + splice waypoint.
    */
   private evaluateEdge(from: PathPoint, to: PathPoint): { cost: number; detour?: THREE.Vector3 } {
     const dist = from.vector.distanceTo(to.vector);
     const area = from.area ?? this.owner?.area;
     if(!area) return { cost: dist };
 
-    // Retail order: NoCreaturesOnLine, then NoNonWalkPolysDetailed
+    // order: NoCreaturesOnLine, then NoNonWalkPolysDetailed
     const creatures = noCreaturesOnLine(area, from.vector, to.vector, {
       owner: this.owner,
       allowPartyCreatures: true,
@@ -212,7 +212,7 @@ export class ComputedPath {
   }
 
   /**
-   * Prune — retail SmoothSelection three-pass (densify + string-pull).
+   * Prune — SmoothSelection three-pass (densify + string-pull).
    * Optional time budget + resume (~SmoothSelectionRestartable).
    * On timeout sets `smoothResume` for ModulePath cross-frame session.
    */
@@ -477,7 +477,7 @@ export class ComputedPath {
   }
 
   /**
-   * Retail SmoothPointsOnPath second stage — corner chords via TestDirectLine.
+   * SmoothPointsOnPath second stage — corner chords via TestDirectLine.
    * Optional budget/resume for JS hitch hardening after SmoothSelection.
    */
   smoothCorners(options: {

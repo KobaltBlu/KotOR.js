@@ -4,7 +4,7 @@ import { BitWise } from "@/utility/BitWise";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 
 /**
- * Retail PathPointDFSGenerateSuccessors — when NoNonWalkPolysDetailed
+ * PathPointDFSGenerateSuccessors — when NoNonWalkPolysDetailed
  * blocks an edge, drop it only for placeables or static doors. Non-static
  * (openable) doors keep the PTH successor so scripted opens can plot through.
  *

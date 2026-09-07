@@ -1,6 +1,6 @@
 import { describe, expect, test } from '@jest/globals';
 import { LightManager } from '@/managers/LightManager';
-import { RetailShadowLightMode } from '@/utility/retailLighting';
+import { OdysseyShadowLightMode } from '@/utility/odysseyLighting';
 import * as THREE from 'three';
 
 type MockShadowLight = {
@@ -62,7 +62,7 @@ function mockLight(overrides: Partial<MockShadowLight> = {}): MockShadowLight {
   };
 }
 
-describe('LightManager shadow selection (GetShadowLights modes 0/1)', () => {
+describe('LightManager shadow selection (shadow light selection modes 0/1)', () => {
   test('prioritizeShadow includes local lamps without MDL castShadow', () => {
     const lm = new LightManager();
     const lamp = mockLight({ radius: 8, castShadow: false, illuminationScore: 0.42, dynamicType: 1 });
@@ -91,7 +91,7 @@ describe('LightManager shadow selection (GetShadowLights modes 0/1)', () => {
       registrationOrder: 0,
     });
     lm.boundLights = [sun as never, lamp as never];
-    const selected = lm.getShadowLights(RetailShadowLightMode.SingleDynamic, 0);
+    const selected = lm.getShadowLights(OdysseyShadowLightMode.SingleDynamic, 0);
     expect(selected.length).toBe(1);
     expect(selected[0]).toBe(lamp);
   });
@@ -111,11 +111,11 @@ describe('LightManager shadow selection (GetShadowLights modes 0/1)', () => {
       shadowFadeFactor: 0,
       registrationOrder: 1,
     });
-    // Challenger is first in bound order (would win raw retail walk).
+    // Challenger is first in bound order (would win raw walk).
     lm.boundLights = [challenger as never, sticky as never];
     lm.shadowLights = [sticky as never];
 
-    const selected = lm.getShadowLights(RetailShadowLightMode.Multi, 0);
+    const selected = lm.getShadowLights(OdysseyShadowLightMode.Multi, 0);
     expect(selected.some((l) => l.uuid === 'sticky')).toBe(true);
     expect(selected[selected.length - 1].uuid).toBe('sticky');
   });
@@ -136,7 +136,7 @@ describe('LightManager shadow selection (GetShadowLights modes 0/1)', () => {
     lm.boundLights = [incoming as never];
     lm.shadowLights = [outgoing as never];
 
-    const selected = lm.getShadowLights(RetailShadowLightMode.Multi, 0.05);
+    const selected = lm.getShadowLights(OdysseyShadowLightMode.Multi, 0.05);
     expect(selected.length).toBe(2);
     expect(selected.some((l) => l.uuid === 'out')).toBe(true);
     expect(selected.some((l) => l.uuid === 'in')).toBe(true);

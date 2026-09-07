@@ -44,9 +44,9 @@ jest.mock("@/engine/pathfinding/plot-path", () => ({
   plotPath: (...args: unknown[]) => mockPlotPath(...args),
 }));
 
-jest.mock("@/engine/pathfinding/walk-update-location", () => ({
-  WalkUpdateResult: { OK: 1, ARRIVED: 2, BLOCKED: 3 },
-  walkUpdateLocation: (...args: unknown[]) => mockWalkUpdate(...args),
+jest.mock("@/engine/pathfinding/update-creature-walk", () => ({
+  CreatureWalkResult: { OK: 1, ARRIVED: 2, BLOCKED: 3 },
+  updateCreatureWalk: (...args: unknown[]) => mockWalkUpdate(...args),
 }));
 
 jest.mock("@/engine/pathfinding/inter-area-path", () => ({

@@ -15,15 +15,15 @@ import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import { OdysseyObject3D } from "@/three/odyssey/OdysseyObject3D";
 import { getClientCombatMode } from "@/combat/combat-engagement";
 
-/** Retail ProcessInput pick range (√900) — XY distance player↔object. */
+/** ProcessInput pick range (√900) — XY distance player↔object. */
 export const MOUSE_PICK_RANGE = 30;
 export const MOUSE_PICK_RANGE_SQ = MOUSE_PICK_RANGE * MOUSE_PICK_RANGE;
 
-/** Retail clear / scale floor distance (√900). */
+/** clear / scale floor distance (√900). */
 export const RETICLE_MAX_DISTANCE = 30;
 export const RETICLE_MAX_DISTANCE_SQ = 900;
 
-/** World sprite scale that maps to retail base size 0x40 (64px). */
+/** World sprite scale that maps to base size 0x40 (64px). */
 export const RETICLE_BASE_WORLD_SCALE = 0.5;
 
 export type ReticleKind = 'creature' | 'object';
@@ -36,7 +36,7 @@ export type ReticleStyle = {
 };
 
 /**
- * Retail combat-reticle size pulse.
+ * combat-reticle size pulse.
  * Timer -1 → start 0.5s swell; while > 0 add up to +64px; then settle.
  */
 export class CombatReticlePulse {
@@ -81,7 +81,7 @@ export class CombatReticlePulse {
 /**
  * Manages the in-game cursor, reticles, and selection/hover logic.
  *
- * Retail: UpdateStickyTarget
+ * : UpdateStickyTarget
  * UpdateIndicator — distance size, combatreticle pulse, off-screen hide.
  * Mouse hover/click pick: ProcessInput
  * Camera HitCheck then GetStickyMouseThreshhold sticky fallback.
@@ -115,7 +115,7 @@ export class CursorManager {
 	/** Game module object currently hovered */
 	static hoveredObject: ModuleObject;
 
-	/** Retail combat-reticle swell */
+	/** combat-reticle swell */
 	static combatReticlePulse = new CombatReticlePulse();
 	static lastCombatReticleTargetId: number = -1;
 	
@@ -128,7 +128,7 @@ export class CursorManager {
 	static #tmpBox = new THREE.Box3();
 
 	/**
-	 * Retail GetStickyMouseThreshhold / Android
+	 * GetStickyMouseThreshhold / Android
 	 * `(screenW/10)² + (screenH/10)²` in viewport pixels².
 	 */
 	static getStickyMouseThresholdSq(screenWidth: number, screenHeight: number): number {
@@ -150,7 +150,7 @@ export class CursorManager {
 	}
 
 	/**
-	 * Retail ProcessInput gates after a candidate is resolved:
+	 * ProcessInput gates after a candidate is resolved:
 	 * - XY distance to player < 30
 	 * - (player - cam) · (obj - cam) >= 0 in XY (same half-space as the player)
 	 */
@@ -173,7 +173,7 @@ export class CursorManager {
 	}
 
 	/**
-	 * Retail pixel size from distance².
+	 * pixel size from distance².
 	 * Creatures shrink with ×48 toward min 16; doors/placeables/triggers ×32 toward min 32.
 	 */
 	static getReticlePixelSize(distSq: number, kind: ReticleKind): number {
@@ -203,8 +203,8 @@ export class CursorManager {
 	}
 
 	/**
-	 * True when retail client combat_mode would be set
-	 * (CClientExoApp::GetCombatMode — controlled PC client combat-mode bit).
+	 * True when client combat_mode would be set
+	 * (— controlled PC client combat-mode bit).
 	 */
 	static isClientCombatMode(): boolean {
 		return getClientCombatMode();
@@ -213,8 +213,8 @@ export class CursorManager {
 	/**
 	 * Hostile for reticle fill.
 	 * Creatures: live hostile only (dead → friendly loot).
-	 * Placeables: locked + useable + non-plot (retail dual-flag bash path).
-	 * Doors: locked and closed (retail door dual-flag path).
+	 * Placeables: locked + useable + non-plot (dual-flag bash path).
+	 * Doors: locked and closed (door dual-flag path).
 	 */
 	static isReticleHostile(object: ModuleObject | undefined, observer?: ModuleObject): boolean {
 		if(!object) return false;
@@ -438,7 +438,7 @@ export class CursorManager {
 		const doLookAt = options?.lookAt !== false;
 		const player = GameState.getCurrentPlayer();
 		if(!object){
-			// Retail ShowObject(null) → LookAt(OBJECT_INVALID)
+			// ShowObject(null) → LookAt(OBJECT_INVALID)
 			if(player && typeof player.lookAt === 'function'){
 				player.lookAt(undefined);
 			}
@@ -529,7 +529,7 @@ export class CursorManager {
 		let cursorCaptured = false;
 		let guiHoverCaptured = false;
 
-		// Retail ProcessInput / HideMouse while rightClickHeld — skip hover picking.
+		// ProcessInput / HideMouse while rightClickHeld — skip hover picking.
 		// Pointer lock also hides the OS cursor; skip world hover while locked.
 		// Mouse Look keeps LMB picking active while camera tracks movement (unlocked).
 		if(Mouse.pointerLock || (Mouse.cameraHoldActive && !Mouse.isMouseLookEnabled())){
@@ -566,7 +566,7 @@ export class CursorManager {
 				continue;
 			}
 
-			// Retail HandleMouseMove — only selectable controls get mouse-over
+			// HandleMouseMove — only selectable controls get mouse-over
 			// (GetIsSelectable). Decorative labels under the cursor are skipped.
 			if(!guiHoverCaptured && control.receivesGuiMouseHover()){
 				let cMenu = control.menu;
@@ -608,12 +608,12 @@ export class CursorManager {
 					if(moduleObject){
 						CursorManager.setReticleHoveredObject(moduleObject);
 					}else{
-						// Retail UpdateStickyTarget hides hover when GetReticlePoint fails / no target
+						// UpdateStickyTarget hides hover when GetReticlePoint fails / no target
 						CursorManager.hoveredObject = undefined;
 						CursorManager.hovered = undefined;
 					}
 				}
-				// Hidden cursor: retail does not auto-acquire hover via nearest;
+				// Hidden cursor: does not auto-acquire hover via nearest;
 				// DoPassiveSelection owns selected target presentation.
 			}
 		}
@@ -655,7 +655,7 @@ export class CursorManager {
 				CursorManager.setReticle2(style.material);
 				CursorManager.applyReticleScale(CursorManager.reticle2, CursorManager.selectedObject, pulsePx);
 			}else{
-				// Off-screen: retail swaps to edge arrow (InGameOverlay.updateArrow)
+				// Off-screen: swaps to edge arrow (InGameOverlay.updateArrow)
 				CursorManager.reticle2.visible = false;
 			}
 		}else{
@@ -669,7 +669,7 @@ export class CursorManager {
 
 	/**
 	 * Nearest walkmesh occlusion along the current raycaster ray.
-	 * Approximates retail SceneHitCheck room CheckAABBAll + closed-door DWKs.
+	 * Approximates SceneHitCheck room CheckAABBAll + closed-door DWKs.
 	 */
 	static findNearestSceneOccluder(): { distance: number; door?: ModuleObject } | undefined {
 		const area = GameState.module?.area;
@@ -722,7 +722,7 @@ export class CursorManager {
 
 	/**
 	 * Project an object's GetReticlePoint into viewport pixel space.
-	 * Mirrors retail GetReticlePoint screen write used by the sticky path.
+	 * matches engine behavior GetReticlePoint screen write used by the sticky path.
 	 */
 	static projectReticleToScreen(
 		object: ModuleObject,
@@ -750,7 +750,7 @@ export class CursorManager {
 	}
 
 	/**
-	 * Retail ProcessInput mouse pick / Android:
+	 * ProcessInput mouse pick / Android:
 	 * 1) Camera HitCheck-style AABB ray against selectable objects (SceneHitCheck
 	 * walkmesh occluders reject hits behind geometry)
 	 * 2) Sticky fallback — nearest CanSee GetReticlePoint within
@@ -831,7 +831,7 @@ export class CursorManager {
 			return bestObj;
 		}
 
-		// Sticky fallback — retail GetStickyMouseThreshhold + GetReticlePoint
+		// Sticky fallback — GetStickyMouseThreshhold + GetReticlePoint
 		const threshSq = CursorManager.getStickyMouseThresholdSq(
 			GameState.ResolutionManager.getViewportWidth(),
 			GameState.ResolutionManager.getViewportHeight(),

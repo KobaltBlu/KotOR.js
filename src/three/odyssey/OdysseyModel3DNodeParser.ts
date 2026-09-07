@@ -172,13 +172,13 @@ export function parseOdysseyNode(
 
   if (!odysseyModel.nodes.has(node.name)) odysseyModel.nodes.set(node.name, node);
   odysseyModel.nodesByUUID.set(odysseyNode.uuid, node);
-  // Retail skin bone_parts → nameIndex (names[] index). Prefer first geometry node.
+  // skin bone_parts → nameIndex (names index). Prefer first geometry node.
   if(typeof odysseyNode.nameIndex === 'number' && odysseyNode.nameIndex >= 0){
     if(typeof odysseyModel.nodesByNameIndex[odysseyNode.nameIndex] === 'undefined'){
       odysseyModel.nodesByNameIndex[odysseyNode.nameIndex] = node;
     }
   }
-  // Retail MdlNode.id / AnimateHierarchy Part id. Prefer first geometry node.
+  // model node.id / AnimateHierarchy Part id. Prefer first geometry node.
   if(typeof odysseyNode.nodeNumber === 'number' && odysseyNode.nodeNumber >= 0){
     if(typeof odysseyModel.nodesById[odysseyNode.nodeNumber] === 'undefined'){
       odysseyModel.nodesById[odysseyNode.nodeNumber] = node;

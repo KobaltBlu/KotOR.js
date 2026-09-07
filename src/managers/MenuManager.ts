@@ -20,7 +20,7 @@ import { SoundMode } from "@/enums/audio/SoundMode";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuManager {
-  /** Retail m_fPulsingAlpha (0.4 ↔ 1.0). */
+  /** m_fPulsingAlpha (0.4 ↔ 1.0). */
   static pulseOpacity: number;
   static activeMenus: GameMenu[];
   static activeModals: GameMenu[];
@@ -28,9 +28,9 @@ export class MenuManager {
   static readonly GUI_LAYER_STRIDE = 10000;
   /** Base bias for activeModals so they draw above activeMenus. */
   static readonly GUI_MODAL_BASE = 100000;
-  /** Retail m_fAlphaPulseTimer — seconds left in current half-cycle. */
+  /** m_fAlphaPulseTimer — seconds left in current half-cycle. */
   static pulse: number;
-  /** Retail m_bAlphaPulsingUp. */
+  /** m_bAlphaPulsingUp. */
   static pulseAscending: boolean;
 
   static activeGUIElement: GUIControl;
@@ -137,7 +137,7 @@ export class MenuManager {
       MenuManager.activeMenus.push(menu);
   
       MenuManager.Resize();
-      // Retail ShowSWInGameGui: SetSoundMode(4). Only when leaving gameplay into a GUI menu.
+      // ShowSWInGameGui: SetSoundMode(4). Only when leaving gameplay into a GUI menu.
       // Main menu / title GUI must not pause (ctor clears mode; menu music stays audible).
       if(
         menu.engineMode === EngineMode.GUI &&
@@ -180,7 +180,7 @@ export class MenuManager {
 
       MenuManager.Resize();
 
-      // Retail HideSWInGameGui: SetSoundMode(0) when leaving GUI pause screens.
+      // HideSWInGameGui: SetSoundMode(0) when leaving GUI pause screens.
       // Only pop when no GUI-mode menus remain (nested SetSoundMode(4) is a no-op).
       if(menu.engineMode === EngineMode.GUI && !MenuManager.hasGuiPauseMenu()){
         AudioEngine.SetSoundMode(SoundMode.POP, 0);
@@ -215,7 +215,7 @@ export class MenuManager {
     }
   }
 
-  /** True if any non-overlay active menu uses EngineMode.GUI (retail in-game pause GUI). */
+  /** True if any non-overlay active menu uses EngineMode.GUI (in-game pause GUI). */
   static hasGuiPauseMenu(): boolean {
     return MenuManager.activeMenus.some(
       (m) => !m.isOverlayGUI && m.engineMode === EngineMode.GUI
@@ -269,7 +269,7 @@ export class MenuManager {
     GameState.CursorManager.cursor.material.depthWrite = false;
     GameState.CursorManager.cursor.renderOrder = 9999999;
 
-    // Retail UpdatePulsing — triangle wave between 0.4 and 1.0 over 0.75s half-cycles.
+    // UpdatePulsing — triangle wave between 0.4 and 1.0 over 0.75s half-cycles.
     const HALF_CYCLE = 0.75;
     MenuManager.pulse -= delta;
     if(MenuManager.pulse < 0){
@@ -488,7 +488,7 @@ export class MenuManager {
     }
   }
 
-  /** Lazy-load skill-info box (retail / CharGen ShowGranted). */
+  /** Lazy-load skill-info box (/ CharGen ShowGranted). */
   static async EnsureSkillInfoMenu(){
     if(MenuManager.MenuSkillInfo) return;
     const isTSL = GameState.GameKey == GameEngineType.TSL;
@@ -503,7 +503,7 @@ export class MenuManager {
 
   /**
    * Lazy-load in-game level-up UI.
-   * Retail ShowLevelUpGUI → GUI (MAINCG)
+   * ShowLevelUpGUI → GUI (MAINCG)
    * with child GUI (LEVELUPPNL), plus step panels.
    */
   static async EnsureLevelUpMenus(){

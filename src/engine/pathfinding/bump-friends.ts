@@ -42,7 +42,7 @@ function lineProject2D(
  * @param other Friendly to push
  * @param to Intended destination (along travel)
  * @param from Mover start (usually self.position before step)
- * @returns true if other was pushed (retail return 1)
+ * @returns true if other was pushed (return 1)
  */
 export function bumpFriends(
   self: ModuleCreature,

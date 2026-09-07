@@ -1,5 +1,5 @@
 /**
- * Retail list-box bit flags.
+ * list-box bit flags.
  * Defaults match the list box constructor.
  */
 export interface ListBoxBitFlags {
@@ -20,7 +20,7 @@ export interface ListBoxBitFlags {
 
 export function createDefaultListBoxBitFlags(): ListBoxBitFlags {
   return {
-    // Retail list box ctor — selectOnLeftClick = false (hover-select).
+    // list box ctor — selectOnLeftClick = false (hover-select).
     // setProtoBuilder sets protoClickSelects for click-to-select custom rows.
     selectOnLeftClick: false,
     suppressControlCleanup: true,

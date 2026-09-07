@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import type { OdysseyLight3D } from "@/three/odyssey/OdysseyLight3D";
 
-/** Bit flags for which GetShadowLights pools include this light. */
+/** Bit flags for which shadow light selection pools include this light. */
 export const OdysseyShadowHelperRole = {
   Multi: 1,
   StaticMesh: 2,
@@ -90,7 +90,7 @@ function roleColor(roles: OdysseyShadowHelperRoleFlags, out: THREE.Color): THREE
 }
 
 /**
- * Debug gizmo for a light currently selected by GetShadowLights.
+ * Debug gizmo for a light currently selected by shadow light selection.
  * Sparse rings + aim line to focus — not a dense wireframe cage.
  */
 export class OdysseyShadowLightHelper extends THREE.Object3D {

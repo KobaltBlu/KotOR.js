@@ -7,7 +7,7 @@ import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
 /**
- * EffectHitPointChangeWhenDying — retail OnApply / OnRemove.
+ * EffectHitPointChangeWhenDying — OnApply / OnRemove.
  *
  * Instant + |float0| ≥ 0.1 → temporary lasting |6 / float0| seconds.
  * On expiry: ±1 HP; negative also applies blood VFX (BLOODCOLR).
@@ -31,7 +31,7 @@ export class EffectHitPointChangeWhenDying extends GameEffect {
       return;
     }
     const creature = this.object as ModuleCreature;
-    // Retail PC only (creature_stats->is_pc)
+    // PC only (creature_stats->is_pc)
     if(!creature.isPC){
       return;
     }

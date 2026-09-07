@@ -6,14 +6,14 @@
  * Handles demuxing, video decode (YUV->RGBA), and audio decode off the main thread.
  *
  * Protocol (main -> worker):
- *   { type: 'init',   buffer: ArrayBuffer }        — transfer file, parse header
- *   { type: 'decode', frameIndex: number }          — decode one frame
- *   { type: 'stop' }                                — tear down
+ * { type: 'init', buffer: ArrayBuffer } — transfer file, parse header
+ * { type: 'decode', frameIndex: number } — decode one frame
+ * { type: 'stop' } — tear down
  *
  * Protocol (worker -> main):
- *   { type: 'ready',  header: BinkWorkerHeader }
- *   { type: 'frame',  frameIndex, video?, audio? }
- *   { type: 'error',  message: string }
+ * { type: 'ready', header: BinkWorkerHeader }
+ * { type: 'frame', frameIndex, video?, audio? }
+ * { type: 'error', message: string }
  * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  * 
@@ -217,9 +217,9 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
         const { frameIndex, outputFormat = 'rgba' } = msg;
 
         // console.log(`Decode frame ${frameIndex}`);
-        // const startTime = performance.now();
+        // const startTime = performance.now;
 
-        // let lTime = performance.now();
+        // let lTime = performance.now;
         // Demux
         let frame;
         try {
@@ -234,9 +234,9 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
           }
         }
 
-        // console.log(`Demux time: ${performance.now() - lTime}ms`);
+        // console.log(`Demux time: ${performance.now - lTime}ms`);
 
-        // lTime = performance.now();
+        // lTime = performance.now;
         // ── Video ──────────────────────────────────────────────────────
         let videoPayload: ({ rgba: ArrayBuffer; width: number; height: number } | { yuv: YUVFrame }) | null = null;
         const transfers: ArrayBuffer[] = [];
@@ -270,10 +270,10 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
             videoPayload = { yuv: yuvCopy };
             transfers.push(yCopy.buffer as ArrayBuffer, uCopy.buffer as ArrayBuffer, vCopy.buffer as ArrayBuffer);
           }
-          // console.log(`Video decode time: ${performance.now() - lTime}ms`);
+          // console.log(`Video decode time: ${performance.now - lTime}ms`);
         }
 
-        // lTime = performance.now();
+        // lTime = performance.now;
         // ── Audio ──────────────────────────────────────────────────────
         let audioPayload: { pcm: ArrayBuffer[]; sampleRate: number; channels: number; sampleCount: number; frameLen: number; overlapLen: number; isFirst: boolean; ptsSamples: number } | null = null;
 
@@ -300,12 +300,12 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
               }
             } catch { /* skip audio for this frame */ }
           }
-          // console.log(`Audio decode time: ${performance.now() - lTime}ms`);
+          // console.log(`Audio decode time: ${performance.now - lTime}ms`);
         }
 
         const resp: WorkerResponse = { type: 'frame', frameIndex, video: videoPayload, audio: audioPayload };
         worker.postMessage(resp, transfers);
-        // console.log(`Decode frame ${frameIndex} time: ${performance.now() - startTime}ms`);
+        // console.log(`Decode frame ${frameIndex} time: ${performance.now - startTime}ms`);
         break;
       }
 

@@ -10,7 +10,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 const IMMUNITY_DEAF = 8;
 
 /**
- * EffectDeaf — retail OnApplyDeaf.
+ * EffectDeaf — effect apply.
  * Spawns ArcaneSpellFailure 20%; blocked by immunity type 8 / plot.
  *
  * @file EffectDeaf.ts
@@ -48,7 +48,7 @@ export class EffectDeaf extends GameEffect {
     super.onApply();
     creature.deaf = true;
 
-    // Retail ARCANESPELLFAILURE int[0]=0x14 (20%)
+    // ARCANESPELLFAILURE int[0]=0x14 (20%)
     const fail = new GameState.GameEffectFactory.EffectArcaneSpellFailure();
     this.stampChild(fail);
     fail.setInt(0, 0x14);

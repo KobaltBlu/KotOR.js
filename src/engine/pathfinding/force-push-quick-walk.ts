@@ -8,8 +8,8 @@ import {
 } from "@/engine/pathfinding/test-direct-line";
 import {
   DriveUpdateResult,
-  driveUpdateLocation,
-} from "@/engine/pathfinding/drive-update-location";
+  updateCreatureDrive,
+} from "@/engine/pathfinding/update-creature-drive";
 import { getPathPersonalSpace } from "@/combat/attack-range";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { BitWise } from "@/utility/BitWise";
@@ -22,7 +22,7 @@ import {
 } from "@/engine/pathfinding/quick-walk-loco";
 
 /**
- * Retail OnApplyForcePush + WalkUpdateLocation_QuickWalk_ForcePushed.
+ * effect apply + force-push quick-walk.
  *
  * @file force-push-quick-walk.ts
  */
@@ -32,7 +32,7 @@ export {
   isForcePushLocoActive,
 } from "@/engine/pathfinding/quick-walk-loco";
 
-/** Retail QuickWalk_ForcePushed speed when loco state == 4. */
+/** QuickWalk_ForcePushed speed when loco state == 4. */
 export const FORCE_PUSH_SPEED = 25.0;
 
 /** Default push distance when effect float[3] is 0. */
@@ -42,7 +42,7 @@ export const FORCE_PUSH_DEFAULT_DISTANCE = 5.0;
 export const FORCE_PUSH_ANIM_LAND = 1.0666699409484863;
 export const FORCE_PUSH_ANIM_GETUP = 1.466670036315918;
 
-/** Retail SETAISTATE int −3 → ushort 0xFFFD (clears activity bit 1). */
+/** SETAISTATE int −3 → ushort 0xFFFD (clears activity bit 1). */
 export const FORCE_PUSH_AI_ACTIVITY_MASK = 0xfffd;
 
 const _origin = new THREE.Vector3();
@@ -62,7 +62,7 @@ export type ForcePushOrigin = {
 
 /**
  * Resolve push origin — creator position (untargeted) or float[0..2] (targeted).
- * Returns undefined when untargeted and creator is missing (retail early-out).
+ * Returns undefined when untargeted and creator is missing (early-out).
  */
 export function resolveForcePushOrigin(
   effect: ForcePushApplyIntsFloats,
@@ -138,7 +138,7 @@ export function facingFromDirection(dirX: number, dirY: number): number {
 }
 
 /**
- * Retail TestDirectLine clip for Force Push:
+ * TestDirectLine clip for Force Push:
  * 1 → keep dest
  * 0 → stay at current position
  * else → walk-hit clear point
@@ -156,7 +156,7 @@ export function clipForcePushDestination(
   const ignoreIds: number[] = [];
   if(creature.id != null) ignoreIds.push(creature.id);
 
-  // Retail: TestDirectLine(..., personal_space, path_find_info->height,...)
+  // : TestDirectLine(..., personal_space, path_find_info->height,...)
   const height = creature.getAppearance?.()?.height ?? 0;
   const hit = testDirectLine(creature.area, creature.position, dest, {
     owner: creature,
@@ -185,7 +185,7 @@ export function clipForcePushDestination(
 }
 
 /**
- * Install 2-point XY path and loco state 4 (retail path_count_=4 float pairs).
+ * Install 2-point XY path and loco state 4 (path_count_=4 float pairs).
  * Seeds one QuickWalk(1)-equivalent frame with delta 0.
  */
 export function installForcePushPath(
@@ -215,7 +215,7 @@ export function installForcePushPath(
     creature.forcePushArrived = true;
   }
 
-  // Retail OnApplyForcePush calls WalkUpdateLocation_QuickWalk(1) to seed timers.
+  // effect apply calls quick-walk locomotion(1) to seed timers.
   forcePushQuickWalkUpdate(creature, 0);
 }
 
@@ -228,7 +228,7 @@ export function clearForcePushLoco(creature: ModuleCreature): void {
 }
 
 /**
- * Retail OnApplySetAIState with int −3 — AND activity with 0xFFFD.
+ * effect apply with int −3 — AND activity with 0xFFFD.
  * Shared by ForcePush / Whirlwind / Crush / Choke / Horror / Knockdown
  * Held / Stun / MindTrick / DroidScramble / DroidStun SetState internals.
  */
@@ -238,7 +238,7 @@ export function applyForcePushAIActivityMask(creature: ModuleCreature): void {
 }
 
 /**
- * Retail OnApplySetStateInternal (state==9): stamp creator's current attack
+ * effect apply (state==9): stamp creator's current attack
  * state=9 / state=1 for attack-summary feedback.
  */
 export function stampForcePushAttackSummary(
@@ -265,7 +265,7 @@ export type ForcePushQuickWalkResult = "moving" | "arrived" | "idle";
 
 /**
  * Per-frame Force Push locomotion @ 25 u/s (loco state 4).
- * Uses DriveUpdateLocation walkmesh clip (WalkUpdateLocationDistance approx).
+ * Uses creature drive update walkmesh clip (walk frame distance approx).
  */
 export function forcePushQuickWalkUpdate(
   creature: ModuleCreature,
@@ -299,7 +299,7 @@ export function forcePushQuickWalkUpdate(
 
   const beforeX = creature.position.x;
   const beforeY = creature.position.y;
-  const result = driveUpdateLocation(creature, end, false, delta, speed);
+  const result = updateCreatureDrive(creature, end, false, delta, speed);
 
   const moved = Math.hypot(
     creature.position.x - beforeX,

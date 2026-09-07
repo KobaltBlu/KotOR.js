@@ -17,7 +17,7 @@ import {
 import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { GameState } from "@/GameState";
 
-/** Retail SetSoundMode stack capacity (max depth 9). */
+/** SetSoundMode stack capacity (max depth 9). */
 const SOUND_MODE_STACK_MAX = 9;
 
 class AudioChannel {
@@ -29,7 +29,7 @@ class AudioChannel {
 
   #gain: number;
 
-  /** Retail MuteSound/UnMuteSound bus scale (dialog/sfx/music sliders). */
+  /** MuteSound/UnMuteSound bus scale (dialog/sfx/music sliders). */
   #busScale: number = 1;
 
   #channel: AudioEngineChannel;
@@ -79,7 +79,7 @@ class AudioChannel {
     if(this.muted){ return; }
     this.muted = true;
     // Keep the audio graph intact. SFX/VO have auxiliary reverb sends, and a
-    // blanket disconnect() would destroy those connections as a side effect.
+    // blanket disconnect would destroy those connections as a side effect.
     this.#gainNode.gain.value = 0;
   }
 
@@ -92,23 +92,23 @@ class AudioChannel {
 
 type BackgroundAudioType = 'BACKGROUND_MUSIC_DAY' | 'BACKGROUND_MUSIC_NIGHT' | 'BATTLE' | 'BATTLE_STINGER' | 'DIALOG' | 'AMBIENT_DAY' | 'AMBIENT_NIGHT'
 
-/** Retail FadeAndStop duration used by PlayBattleMusic / PlayMusic (ms). */
+/** FadeAndStop duration used by PlayBattleMusic / PlayMusic (ms). */
 export const BATTLE_MUSIC_FADE_MS = 800;
 
 /** Same as PlayMusic FadeAndStop(800) — area BGM stop / day↔night switch. */
 export const AREA_MUSIC_FADE_MS = 800;
 
-/** Retail PlayAmbientSound(0) FadeAndStop duration (ms). */
+/** PlayAmbientSound(0) FadeAndStop duration (ms). */
 export const AMBIENT_SOUND_FADE_MS = 6000;
 
-/** Retail FadeAndStopDialogAmbientTrack duration (ms) — UnloadArea only. */
+/** FadeAndStopDialogAmbientTrack duration (ms) — UnloadArea only. */
 export const DIALOG_AMBIENT_TRACK_FADE_MS = 500;
 
-/** Retail Update delay before starting battle track after fade (ms). */
+/** Update delay before starting battle track after fade (ms). */
 const BATTLE_MUSIC_START_DELAY_MS = 10;
 
 /**
- * Retail MuteSound / UnMuteSound fade duration (ms).
+ * MuteSound / UnMuteSound fade duration (ms).
  * MuteSound / UnMuteSound set fade duration = 500.
  */
 export const SOUND_MUTE_FADE_MS = 500;
@@ -153,7 +153,7 @@ export class AudioEngine {
   emitters: AudioEmitter[];
 
   /**
-   * Retail prioritygroups.2da voice allocator (maxplaying / interrupt / fadetime).
+   * prioritygroups.2da voice allocator (maxplaying / interrupt / fadetime).
    */
   priorityManager: AudioPriorityManager;
 
@@ -161,12 +161,12 @@ export class AudioEngine {
   listenerPosition = { x: 0, y: 0, z: 0 };
 
   /**
-   * Retail OcclusionRender amortizes obstruction samples across frames.
+   * OcclusionRender amortizes obstruction samples across frames.
    * Round-robin index into emitters; process a few GetObstructionFactor calls per update.
    */
   private occlusionCursor: number = 0;
 
-  /** Max wall-clock ms for OcclusionRender per frame (retail default 3). */
+  /** Max wall-clock ms for OcclusionRender per frame (default 3). */
   static OCCLUSION_BUDGET_MS = 3;
 
   ambientAudioDayEmitter: AmbientAudioEmitter;
@@ -184,20 +184,20 @@ export class AudioEngine {
   ambientLoaded: boolean = false;
 
   /**
-   * Retail battle_music_playing — area-level want flag.
+   * battle_music_playing — area-level want flag.
    * PlayBattleMusic no-ops when the requested state matches.
    */
   battleMusicPlaying: boolean = false;
 
   /**
-   * Retail ambient sound PlayMusic want. Update only restarts area BGM when set.
+   * ambient sound PlayMusic want. Update only restarts area BGM when set.
    */
   areaMusicWanted: boolean = false;
 
   /** Loaded battle stinger buffers (ambientmusic Stinger1–3), for random pick. */
   battleStingerBuffers: ArrayBuffer[] = [];
 
-  /** Pending battle-track start after area fade (Retail). */
+  /** Pending battle-track start after area fade. */
   private battleMusicStartTimerMs: number = 0;
   private battleMusicTransitionToken: number = 0;
 
@@ -222,7 +222,7 @@ export class AudioEngine {
   reverbEnabled: boolean = false;
 
   /**
-   * Retail desired ambient scale (ARE room AmbientScale).
+   * desired ambient scale (ARE room AmbientScale).
    * Lerped toward target each update (~1 second to catch up, matching Render).
    */
   desiredAmbientScale: number = 1;
@@ -237,14 +237,14 @@ export class AudioEngine {
   ambientNightVolume: number = 1;
 
   /**
-   * Retail SetDesiredEnvironment / SetCurrentEnvironment (EnvAudio index).
+   * SetDesiredEnvironment / SetCurrentEnvironment (EnvAudio index).
    * Render applies when current != desired.
    */
   desiredEnvironment: number = 0;
   currentEnvironment: number = -1;
 
   /**
-   * Retail MuteSound flag. When true, Render fades dialog/sfx/music to 0.
+   * MuteSound flag. When true, Render fades dialog/sfx/music to 0.
    * GUI and movie buses are not part of that fade.
    */
   static soundMuted: boolean = false;
@@ -252,10 +252,10 @@ export class AudioEngine {
   /** Current bus scale applied by MuteSound/UnMuteSound (1 = full, 0 = silent). */
   private static muteBusScale: number = 1;
 
-  /** Fade-out duration ms ; 0 = inactive. */
+  /** Fade-out duration ms; 0 = inactive. */
   private static muteFadeOutMs: number = 0;
 
-  /** Fade-in duration ms ; 0 = inactive. */
+  /** Fade-in duration ms; 0 = inactive. */
   private static muteFadeInMs: number = 0;
 
   /** Fade start timestamp ms. */
@@ -270,13 +270,13 @@ export class AudioEngine {
   private static pauseSfxBus: boolean = false;
   /**
    * When paused, whether Music bus is held at 0.
-   * Retail GetPauseable: modes 2/4 keep streaming music (groups 1/2/11; mode 2 also 4).
+   * GetPauseable: modes 2/4 keep streaming music (groups 1/2/11; mode 2 also 4).
    * Mode 3 (movie/load) pauses music streams.
    */
   private static pauseMusicBus: boolean = false;
 
   /**
-   * Retail sound-mode stack (depth + movie flag).
+   * sound-mode stack (depth + movie flag).
    * stack[0] is the idle baseline (SoundMode.POP); depth starts at 0.
    */
   private static soundModeStack: number[] = new Array(SOUND_MODE_STACK_MAX + 1).fill(SoundMode.POP);
@@ -285,7 +285,7 @@ export class AudioEngine {
   private static soundModeMovieFlag: boolean = false;
 
   /**
-   * Retail K2 music/ambient duck scale — StartDuckingMusicAndAmbientSounds sets 0.2,
+   * K2 music/ambient duck scale — StartDuckingMusicAndAmbientSounds sets 0.2,
    * StopDucking restores 1.0. Streaming SetVolume multiplies music slider (groups 1/2)
    * and ambient groups 4/5 by this scale into AIL_set_*_volume_levels (linear 0–1).
    * Web Audio GainNode uses the same linear amplitude unit — no curve conversion.
@@ -294,7 +294,7 @@ export class AudioEngine {
   musicAmbientDuckScale: number = 1;
 
   /**
-   * Retail K2 StartDuckingMusicAndAmbientSounds (0.2).
+   * K2 StartDuckingMusicAndAmbientSounds (0.2).
    * Miles volume_levels and Web Audio GainNode are both linear amplitude 0–1.
    */
   static DIALOG_MUSIC_AMBIENT_DUCK = 0.2;
@@ -411,9 +411,9 @@ export class AudioEngine {
     this.battleStingerAudioEmitter = new AmbientAudioEmitter(this);
     this.dialogMusicAudioEmitter = new AmbientAudioEmitter(this);
 
-    // Retail ambient sound SetPriorityGroup:
+    // ambient sound SetPriorityGroup:
     // PlayAmbientSound → 4, PlayMusic/PlayBattleMusic → 2, PlayStinger → 1.
-    // Retail ambient sound SetPriorityGroup:
+    // ambient sound SetPriorityGroup:
     // PlayAmbientSound → 4, PlayMusic/PlayBattleMusic → 2, PlayStinger → 1.
     // LoadAmbientTrackForDialog → SetPriorityGroup(4); play-once (ctor looping=0).
     this.ambientAudioDayEmitter.setPriorityGroupId(AudioPriorityGroup.LOOPING_AREAWIDE_AMBIENTS);
@@ -446,17 +446,17 @@ export class AudioEngine {
       this.bgmMode = BackgroundMusicMode.BATTLE;
     });
 
-    // Stinger is a one-shot overlay on a separate source (Retail);
+    // Stinger is a one-shot overlay on a separate source;
     // it must not steal bgmMode from resumed area music.
 
-    // Retail: duck keeps area BGM playing; AmbientTrack layers on top — do not stop area music.
+    // : duck keeps area BGM playing; AmbientTrack layers on top — do not stop area music.
     this.dialogMusicAudioEmitter.addEventListener('play', () => {
       this.bgmMode = BackgroundMusicMode.DIALOG;
     });
 
     const onAreaMusicEnded = () => {
       this.bgmState = BackgroundMusicState.ENDED;
-      // Retail Update: arm restart when want set; timer = max(1, MusicDelay).
+      // Update: arm restart when want set; timer = max(1, MusicDelay).
       if(this.areaMusicWanted && AudioEngine.loopBGM){
         this.bgmTimer = Math.max(1, this.bgmLoopTime | 0);
       }else{
@@ -468,7 +468,7 @@ export class AudioEngine {
     this.areaMusicNightAudioEmitter.addEventListener('ended', onAreaMusicEnded);
 
     // Stinger + area resume are driven by playBattleMusic(false), not battle stop events.
-    // Retail PlayStinger uses a separate source and overlaps area music restart.
+    // PlayStinger uses a separate source and overlaps area music restart.
 
     // Dialog AmbientTrack end: restore mode only — area BGM was never stopped (want untouched).
     this.dialogMusicAudioEmitter.addEventListener('ended', () => {
@@ -480,7 +480,7 @@ export class AudioEngine {
   }
 
   /**
-   * Retail GetClosestRecentSound — reuse obstruction if another emitter
+   * GetClosestRecentSound — reuse obstruction if another emitter
    * sampled near the same source/listener within 175ms.
    */
   findRecentObstruction(
@@ -508,7 +508,7 @@ export class AudioEngine {
   }
 
   /**
-   * Retail OcclusionRender — walk playing positional sources with a soft per-frame
+   * OcclusionRender — walk playing positional sources with a soft per-frame
    * wall-clock budget (defaults to 3ms).
    */
   private updateOcclusion(): void {
@@ -577,7 +577,7 @@ export class AudioEngine {
   }
 
   /**
-   * Retail SetDesiredEnvironment — room EnvAudio from UpdateRoom.
+   * SetDesiredEnvironment — room EnvAudio from UpdateRoom.
    * Applied on next update via SetCurrentEnvironment (Render).
    */
   setDesiredEnvironment(index: number){
@@ -586,7 +586,7 @@ export class AudioEngine {
   }
 
   /**
-   * Retail SetCurrentEnvironment — stores the environment id and applies EAX.
+   * SetCurrentEnvironment — stores the environment id and applies EAX.
    */
   setCurrentEnvironment(index: number){
     const next = Number.isFinite(index) ? Math.trunc(index) : 0;
@@ -596,14 +596,14 @@ export class AudioEngine {
       this.setReverbState(false);
       return;
     }
-    // Queue/apply the room first, then fade the wet return in. loadPreset() is
+    // Queue/apply the room first, then fade the wet return in. loadPreset is
     // safe before reverbReady resolves; ReverbEngine forwards it once initialized.
     this.reverbEngine.loadPreset(next);
     this.setReverbState(true);
   }
 
   /**
-   * Retail Render — if current env != desired, SetCurrentEnvironment(desired).
+   * Render — if current env != desired, SetCurrentEnvironment(desired).
    */
   applyDesiredEnvironment(){
     if(this.currentEnvironment !== this.desiredEnvironment){
@@ -626,8 +626,8 @@ export class AudioEngine {
   }
 
   /**
-   * Retail SetDesiredAmbientScale — room AmbientScale from ARE.
-   * Applied as a volume multiplier on ambient emitters while lerping in update().
+   * SetDesiredAmbientScale — room AmbientScale from ARE.
+   * Applied as a volume multiplier on ambient emitters while lerping in update.
    */
   setDesiredAmbientScale(scale: number){
     const next = Number.isFinite(scale) ? Math.max(0, scale) : 1;
@@ -636,7 +636,7 @@ export class AudioEngine {
     this.desiredAmbientScale = next;
   }
 
-  /** Retail PlayMusic want flag. */
+  /** PlayMusic want flag. */
   setAreaMusicWanted(want: boolean){
     this.areaMusicWanted = !!want;
     if(!want){
@@ -645,7 +645,7 @@ export class AudioEngine {
   }
 
   /**
-   * Retail PlayMusic(0) — FadeAndStop(800) both day/night area music emitters; clear restart timer.
+   * PlayMusic(0) — FadeAndStop(800) both day/night area music emitters; clear restart timer.
    */
   async fadeStopAreaMusic(): Promise<void> {
     this.bgmTimer = 0;
@@ -669,7 +669,7 @@ export class AudioEngine {
   }
 
   /**
-   * Retail FadeAndStopDialogAmbientTrack — 500ms fade then destroy.
+   * FadeAndStopDialogAmbientTrack — 500ms fade then destroy.
    * Called from area unload, not CloseDialog.
    */
   async fadeStopDialogAmbientTrack(): Promise<void> {
@@ -703,7 +703,7 @@ export class AudioEngine {
   }
 
   /**
-   * Retail K2 StartDuckingMusicAndAmbientSounds — dialog start.
+   * K2 StartDuckingMusicAndAmbientSounds — dialog start.
    * Multiplies streaming music + ambient (groups 4/5) volumes by 0.2 via SetVolume.
    * No-op on K1 (API / duck field do not exist).
    */
@@ -713,7 +713,7 @@ export class AudioEngine {
   }
 
   /**
-   * Retail K2 StopDuckingMusicAndAmbientSounds — dialog end.
+   * K2 StopDuckingMusicAndAmbientSounds — dialog end.
    */
   stopDuckingMusicAndAmbientSounds(){
     this.setMusicAmbientDuckScale(1);
@@ -741,7 +741,7 @@ export class AudioEngine {
       const em = ambientEmitters[i];
       em?.applyEffectiveGain?.();
     }
-    // Retail streaming SetVolume ducks groups 4/5; oneshot SetVolume does not
+    // streaming SetVolume ducks groups 4/5; oneshot SetVolume does not
     // multiply by the K2 duck scale (only streaming music/ambient paths do).
   }
 
@@ -771,10 +771,10 @@ export class AudioEngine {
       this.audioCtx.listener.setOrientation(forward.x, forward.y, forward.z, 0, 0, 1);
     }
 
-    // Retail Render ambient-scale lerp (dt * (desired - origin) per frame).
+    // Render ambient-scale lerp (dt * (desired - origin) per frame).
     const dt = Math.min(0.1, Math.max(0, delta));
     AudioEngine.updateMuteFade();
-    // Retail Render: SetCurrentEnvironment when desired != current.
+    // Render: SetCurrentEnvironment when desired != current.
     this.applyDesiredEnvironment();
     if(this.currentAmbientScale !== this.desiredAmbientScale){
       let next = this.currentAmbientScale + dt * (this.desiredAmbientScale - this.ambientScaleLerpFrom);
@@ -796,14 +796,14 @@ export class AudioEngine {
       }
     }
 
-    // Retail GetWithinRangeOfListener cull for positional emitters.
+    // GetWithinRangeOfListener cull for positional emitters.
     if(this.emitters){
       for(let i = 0, il = this.emitters.length; i < il; i++){
         this.emitters[i]?.updateListenerRange?.();
       }
     }
 
-    // Retail OcclusionRender — amortized obstruction for positional sources.
+    // OcclusionRender — amortized obstruction for positional sources.
     this.updateOcclusion();
 
     // ReverbEngine expects a direction vector here, not Euler angles. Source
@@ -813,7 +813,7 @@ export class AudioEngine {
       [forward.x, forward.y, forward.z]
     );
 
-    //Handle the background music loop (retail Update)
+    //Handle the background music loop (Update)
     if(
       this.areaMusicWanted &&
       AudioEngine.loopBGM &&
@@ -832,7 +832,7 @@ export class AudioEngine {
       }
     }
 
-    // Retail Update — after fade, delay then PlayBattleMusic(1)
+    // Update — after fade, delay then PlayBattleMusic(1)
     if(this.battleMusicStartTimerMs > 0 && this.battleMusicPlaying){
       this.battleMusicStartTimerMs -= delta * 1000;
       if(this.battleMusicStartTimerMs <= 0){
@@ -847,7 +847,7 @@ export class AudioEngine {
   }
 
   /**
-   * Retail PlayBattleMusic / ambient sound.
+   * PlayBattleMusic / ambient sound.
    * @param play true = start battle BGM; false = fade out, stinger, resume area music
    */
   playBattleMusic(play: boolean){
@@ -915,7 +915,7 @@ export class AudioEngine {
     if(token !== this.battleMusicTransitionToken || this.battleMusicPlaying){
       return;
     }
-    // Retail: PlayStinger on a separate source, then PlayMusic(1) immediately
+    // : PlayStinger on a separate source, then PlayMusic(1) immediately
     this.playRandomBattleStinger();
     this.bgmMode = BackgroundMusicMode.AREA;
     this.bgmState = BackgroundMusicState.PLAYING;
@@ -925,7 +925,7 @@ export class AudioEngine {
   }
 
   /**
-   * Retail PlayStinger
+   * PlayStinger
    * pick uniformly among non-empty Stinger1–3 on the battle music row.
    */
   playRandomBattleStinger(){
@@ -981,7 +981,7 @@ export class AudioEngine {
         this.battleMusicLoaded = true;
         break;
       case 'BATTLE_STINGER':
-        // Prefer setBattleStingerBuffers for multi-stinger retail rows; single buffer fallback
+        // Prefer setBattleStingerBuffers for multi-stinger rows; single buffer fallback
         this.setBattleStingerBuffers([data]);
         this.battleStingerAudioEmitter.name = name;
         break;
@@ -1097,7 +1097,7 @@ export class AudioEngine {
   }
 
   /**
-   * Retail MuteSound — if not muted, start 500ms fade of dialog/sfx/music to 0.
+   * MuteSound — if not muted, start 500ms fade of dialog/sfx/music to 0.
    */
   static MuteSound(){
     if(AudioEngine.soundMuted){ return; }
@@ -1108,7 +1108,7 @@ export class AudioEngine {
   }
 
   /**
-   * Retail UnMuteSound — if muted, start 500ms fade back to user slider gains.
+   * UnMuteSound — if muted, start 500ms fade back to user slider gains.
    */
   static UnMuteSound(){
     if(!AudioEngine.soundMuted){ return; }
@@ -1119,7 +1119,7 @@ export class AudioEngine {
   }
 
   /**
-   * Retail Render mute fade (fade-out / fade-in over stored baselines).
+   * Render mute fade (fade-out / fade-in over stored baselines).
    */
   private static updateMuteFade(){
     const now = performance.now();
@@ -1145,12 +1145,12 @@ export class AudioEngine {
   }
 
   /**
-   * Retail PauseAllSounds — bus-level approx of per-source Pause + GetPauseable.
+   * PauseAllSounds — bus-level approx of per-source Pause + GetPauseable.
    * @param pauseMusic When true, zero Music bus (mode 3 / movie). When false, SFX only
-   *   (modes 2/4 keep streaming music groups audible).
+   * (modes 2/4 keep streaming music groups audible).
    * @param keepAreawideAmbients When true (mode 2), route group-4 day/night ambients
    * around the muted SFX bus so they stay audible (GetPauseable).
-   * @param keepStreamingMusicForMovie When true, retail PauseAllButStreamingMusicForMovie:
+   * @param keepStreamingMusicForMovie When true, PauseAllButStreamingMusicForMovie:
    * mute Music bus but re-route streams with SetStreamingMusicForMovie.
    */
   static PauseAllSounds(
@@ -1174,7 +1174,7 @@ export class AudioEngine {
   }
 
   /**
-   * Retail PauseAllButStreamingMusicForMovie — keep streams with the movie-stream flag audible
+   * PauseAllButStreamingMusicForMovie — keep streams with the movie-stream flag audible
    * by routing them past the muted Music bus to the context destination.
    */
   static applyStreamingMusicForMovieBypass(keep: boolean){
@@ -1215,7 +1215,7 @@ export class AudioEngine {
     engine.ambientAudioDayEmitter?.setDestination?.(dest);
     engine.ambientAudioNightEmitter?.setDestination?.(dest);
 
-    // Retail GetPauseable: any oneshot/source with group 4 is exempt in mode 2.
+    // GetPauseable: any oneshot/source with group 4 is exempt in mode 2.
     if(engine.emitters){
       for(let i = 0, il = engine.emitters.length; i < il; i++){
         const em = engine.emitters[i];
@@ -1231,7 +1231,7 @@ export class AudioEngine {
     AudioEngine.PauseAllSounds(true);
   }
 
-  /** Retail ResumeAllSounds after pause / SetSoundMode pop. */
+  /** ResumeAllSounds after pause / SetSoundMode pop. */
   static ResumeAllSoundsFromMovie(){
     if(!AudioEngine.soundsPausedForMovie && !AudioEngine.pauseSfxBus && !AudioEngine.pauseMusicBus){
       AudioEngine.ensureGameBusesAudible();
@@ -1260,16 +1260,16 @@ export class AudioEngine {
   }
 
   /**
-   * Retail GetSoundMode — top of mode stack.
+   * GetSoundMode — top of mode stack.
    */
   static GetSoundMode(): number {
     return AudioEngine.soundModeStack[AudioEngine.soundModeDepth] ?? SoundMode.POP;
   }
 
   /**
-   * Retail SetSoundMode.
+   * SetSoundMode.
    * @param mode SoundMode value (0 pops; 1 mute; 2/3/4 pause; 5/6 movie path)
-   * @param keepStreamingMusic When non-zero, retail uses PauseAllButStreamingMusicForMovie.
+   * @param keepStreamingMusic When non-zero, uses PauseAllButStreamingMusicForMovie.
    */
   static SetSoundMode(mode: number, keepStreamingMusic: number = 0){
     if(mode === SoundMode.MOVIE || mode === SoundMode.RESUME_MOVIE){
@@ -1336,7 +1336,7 @@ export class AudioEngine {
   }
 
   /**
-   * Retail BusyWaitMuteSound — SetSoundMode(1) then wait ~500ms while Render runs.
+   * BusyWaitMuteSound — SetSoundMode(1) then wait ~500ms while Render runs.
    */
   static async BusyWaitMuteSound(): Promise<void> {
     AudioEngine.SetSoundMode(SoundMode.MUTE, 0);
@@ -1348,7 +1348,7 @@ export class AudioEngine {
     AudioEngine.updateMuteFade();
   }
 
-  /** Pop sound modes until idle (retail MainLoop double SetSoundMode(0) after load). */
+  /** Pop sound modes until idle (MainLoop double SetSoundMode(0) after load). */
   static clearSoundModeStack(){
     let guard = SOUND_MODE_STACK_MAX + 2;
     while(guard-- > 0 && AudioEngine.GetSoundMode() !== SoundMode.POP){

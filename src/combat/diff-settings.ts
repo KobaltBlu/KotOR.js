@@ -3,7 +3,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 
 /**
- * Retail DiffSettings.2da + GetWeightedDamageAmount
+ * DiffSettings.2da + GetWeightedDamageAmount
  * LoadDifficultyInfo / GetDamageRoll.
  *
  * @file diff-settings.ts
@@ -137,7 +137,7 @@ export function weightWeaponDiceRoll(
 }
 
 /**
- * Retail DoDamage — scale incoming party damage by difficultyopt
+ * DoDamage — scale incoming party damage by difficultyopt
  * MULTIPLIER, then DiffSettings MinHP1 floor.
  */
 export function applyPartyDifficultyDamage(

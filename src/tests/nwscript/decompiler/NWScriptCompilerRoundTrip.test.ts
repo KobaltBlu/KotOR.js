@@ -1063,7 +1063,7 @@ describeWithCompiler('NWScriptDecompiler compiler round trips', () => {
 
   const corpusRoot = process.env.NWSCRIPT_CORPUS_ROOT;
   const corpusTest = corpusRoot ? test : test.skip;
-  corpusTest('retail source corpus decompiles to compilable NSS', () => {
+  corpusTest('engine source corpus decompiles to compilable NSS', () => {
     const limit = Number.parseInt(process.env.NWSCRIPT_CORPUS_LIMIT ?? '100', 10);
     const offset = Number.parseInt(process.env.NWSCRIPT_CORPUS_OFFSET ?? '0', 10);
     const filter = process.env.NWSCRIPT_CORPUS_FILTER;

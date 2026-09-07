@@ -68,14 +68,14 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
       });
     }else{
       // let handle = await window.showDirectoryPicker({
-      //   mode: "readwrite"
+      // mode: "readwrite"
       // });
       // if(handle){
-      //   if ((await handle.requestPermission({ mode: 'readwrite' })) === 'granted') {
-      //     ConfigClient.set(`Profiles.${profile.key}.directory_handle`, handle);
-      //     buildProfileElement(ConfigClient.get(`Profiles.${profile.key}`));
-      //     setLauncherOption(profile.key);
-      //   }
+      // if ((await handle.requestPermission({ mode: 'readwrite' })) === 'granted') {
+      // ConfigClient.set(`Profiles.${profile.key}.directory_handle`, handle);
+      // buildProfileElement(ConfigClient.get(`Profiles.${profile.key}`));
+      // setLauncherOption(profile.key);
+      // }
       // }
     }
   };
@@ -118,7 +118,7 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
           <div className="launch-select">
             <select className="select" onChange={onSelectChange} value={selectValue}>
               <option value="js">{profile.name} - JS</option>
-              <option value="executable">{profile.name} - Retail</option>
+              <option value="executable">{profile.name} - Disk</option>
             </select>
           </div> : isForge ? (
             <div className="launch-select">

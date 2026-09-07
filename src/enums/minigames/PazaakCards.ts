@@ -43,7 +43,7 @@ export enum PazaakCards {
    * FLIP toggles sign; CHANGE (swapValueCards) toggles magnitude 1↔2.
    */
   PLUS_MINUS_1_OR_2 = 22,
-  /** Exclusive upper bound for side-deck inventory indices (0 .. MAX_CARDS-1). */
+  /** Exclusive upper bound for side-deck inventory indices (0.. MAX_CARDS-1). */
   MAX_CARDS = 23,
   MAIN_CARD_1 = 101,
   MAIN_CARD_2 = 102,

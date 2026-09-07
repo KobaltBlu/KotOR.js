@@ -9,7 +9,7 @@ import { SoundMode } from "@/enums/audio/SoundMode";
 /**
  * AutoPauseManager class.
  *
- * Retail client auto-pause + manual combat-pause (SetPausedByCombat reason 4).
+ * client auto-pause + manual combat-pause (SetPausedByCombat reason 4).
  * Pause banner text comes from InGamePause.setPauseReason (GUI).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -55,8 +55,8 @@ export class AutoPauseManager {
   }
 
   /**
-   * Retail reasons that open the pause / pause_p panel via SetPaused.
-   * Generic (0) does not enter that switch in retail.
+   * reasons that open the pause / pause_p panel via SetPaused.
+   * Generic (0) does not enter that switch in.
    */
   static ShowsPauseOverlay(reason: AutoPauseState | number): boolean {
     switch(reason as number){
@@ -75,7 +75,7 @@ export class AutoPauseManager {
   }
 
   /**
-   * Retail OnPauseButtonPressed / pause key: toggle SetPausedByCombat(..., 4),
+   * OnPauseButtonPressed / pause key: toggle SetPausedByCombat(..., 4),
    * then clear auto-pause if set.
    */
   static ToggleManualPause(){
@@ -90,7 +90,7 @@ export class AutoPauseManager {
   }
 
   /**
-   * Retail SetPausedByCombat — manual/combat pause with a reason byte (default 4).
+   * SetPausedByCombat — manual/combat pause with a reason byte (default 4).
    * Does not set the auto-pause bit.
    */
   static SetPausedByCombat(paused: boolean, reason: AutoPauseState = AutoPauseState.Manual){
@@ -98,7 +98,7 @@ export class AutoPauseManager {
       if(GameState.State == EngineState.PAUSED) return;
       this.CurrentReason = reason;
       GameState.State = EngineState.PAUSED;
-      // Retail SetPausedByCombat(1) → SetSoundMode(2) — SFX pause, music stays.
+      // SetPausedByCombat(1) → SetSoundMode(2) — SFX pause, music stays.
       AudioEngine.SetSoundMode(SoundMode.PAUSE, 0);
       GameState.MenuManager?.InGamePause?.setPauseReason(reason);
       if(typeof this.onPauseStateChange === 'function'){
@@ -142,7 +142,7 @@ export class AutoPauseManager {
       this.enemySightedLatchUntil = Date.now() + 10000;
     }
     GameState.State = EngineState.PAUSED;
-    // Retail SetPausedByCombat(1) → SetSoundMode(2) — SFX pause, music stays (GetPauseable).
+    // SetPausedByCombat(1) → SetSoundMode(2) — SFX pause, music stays (GetPauseable).
     AudioEngine.SetSoundMode(SoundMode.PAUSE, 0);
     GameState.MenuManager?.InGamePause?.setPauseReason(type);
 
@@ -153,7 +153,7 @@ export class AutoPauseManager {
     return true;
   }
 
-  /** Retail enemy-sighted latch stays armed while the hostile remains visible. */
+  /** enemy-sighted latch stays armed while the hostile remains visible. */
   static RefreshEnemySightedLatch(){
     if(this.enemySightedLatchUntil > 0){
       this.enemySightedLatchUntil = Date.now() + 10000;
@@ -164,7 +164,7 @@ export class AutoPauseManager {
     this.AutoPaused = false;
     this.CurrentReason = AutoPauseState.Generic;
     GameState.State = EngineState.RUNNING;
-    // Retail SetPausedByCombat(0) → SetSoundMode(0)
+    // SetPausedByCombat(0) → SetSoundMode(0)
     if(AudioEngine.GetSoundMode() === SoundMode.PAUSE){
       AudioEngine.SetSoundMode(SoundMode.POP, 0);
     }

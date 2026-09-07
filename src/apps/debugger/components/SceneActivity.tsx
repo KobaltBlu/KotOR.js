@@ -46,7 +46,7 @@ const SectionView: React.FC<{ section: InspectorSection }> = ({ section }) => {
 
 /**
  * World pins → map texture pixel space for TopDownMap.
- * Retail GetMapPixel is in logical pixels (440×256 / 588×294); lbl_map* is often
+ * GetMapPixel is in logical pixels (440×256 / 588×294); lbl_map* is often
  * 512×256. Scene draws the texture at native size and scales pins by UV so we do
  * not squash X (logical aspect 1.72 vs texture 2.0), which reads as an X shift.
  */
@@ -66,7 +66,7 @@ function pinsToMapSpace(
     mapped.push({
       ...p,
       x: u * texW,
-      // Same Y flip as AreaMap.toMapCoordinates: uv.y = 1 - retailV
+      // Same Y flip as AreaMap.toMapCoordinates: uv.y = 1 - odysseyV
       y: (1 - v) * texH,
     });
   }

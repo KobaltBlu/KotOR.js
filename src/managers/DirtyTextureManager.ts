@@ -10,7 +10,7 @@ import { GameState } from "@/GameState";
 const DIRTY_RESREFS = ['dirtytex', 'dirtytex2', 'dirtytex3'] as const;
 
 /**
- * Scene dirtytex / dirtytex2 / dirtytex3 slots (retail constant[0..2]).
+ * Scene dirtytex / dirtytex2 / dirtytex3 slots (constant[0..2]).
  * Loads the three resrefs and optionally regenerates pixels from ARE Dirty*
  * when TXI proceduretype is dirty / dirty2 / dirty3.
  */

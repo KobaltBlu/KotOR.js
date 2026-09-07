@@ -1,11 +1,11 @@
 import { asExtentInt, asGuiSize, clampFrameDim, truncDiv } from "@/gui/GUICoord";
 
 /**
- * Matches retail GetInnerExtent for width/height.
+ * matches engine behavior GetInnerExtent for width/height.
  *
  * corner/edge sizes come from GetBorderDim (DIMENSION, else edge/corner texture
  * height), clamped with {@link asGuiSize} / {@link clampFrameDim}. INNEROFFSET
- * is then applied with retail's axis asymmetry:
+ * is then applied with 's axis asymmetry:
  * width = (w - 2*corner) + 2*min(INNEROFFSET, DIMENSION)
  * height = (h - 2*corner) + 2*effectiveY (raw, no cap)
  *

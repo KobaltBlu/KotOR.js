@@ -60,7 +60,7 @@ describe('drainHeardStringHead', () => {
 });
 
 describe('listenerHearsSpeaker', () => {
-  it('gates on HEARD bit (retail BroadcastDialog)', () => {
+  it('gates on HEARD bit (engine BroadcastDialog)', () => {
     const speaker = {};
     const listener = { perceptionList: [{ object: speaker, data: PerceptionMask.SEEN }] };
     expect(listenerHearsSpeaker(listener, speaker)).toBe(false);

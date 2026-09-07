@@ -4,11 +4,11 @@ import type { OdysseyLight3D } from "@/three/odyssey/OdysseyLight3D";
 import type { ModuleArea } from "@/module/ModuleArea";
 import { sceneHitCheckSegment } from "@/engine/scene-hit-check";
 import {
-  RETAIL_FLARE_SPEED,
-  RETAIL_HIT_CHECK_FLARE,
-  RETAIL_LENS_FLARE_SIZE,
-  RETAIL_RENDER_LENS_FLARES,
-  RETAIL_REVERSE_FLARE_HIT,
+  ODYSSEY_FLARE_SPEED,
+  ODYSSEY_HIT_CHECK_FLARE,
+  ODYSSEY_LENS_FLARE_SIZE,
+  ODYSSEY_RENDER_LENS_FLARES,
+  ODYSSEY_REVERSE_FLARE_HIT,
   flareElementColor,
   flareElementSize,
   flareFacing,
@@ -38,19 +38,19 @@ const FLARE_FRAG = /* glsl */`
 `;
 
 /**
- * OdysseyLensFlarePass — retail Scene::RenderLensFlares (K1 00457ec0).
+ * OdysseyLensFlarePass — (K1 00457ec0).
  *
  * After FB mods, before GUI. Additive ONE,ONE; depth off.
- * Element screen position: −lightNDC × flarepositions[i] (retail S = −hit).
+ * Element screen position: −lightNDC × flarepositions[i] (S = −hit).
  *
  * @file OdysseyLensFlarePass.ts
  */
 export class OdysseyLensFlarePass extends Pass {
-  renderLensFlares = RETAIL_RENDER_LENS_FLARES;
-  lensFlareSize = RETAIL_LENS_FLARE_SIZE;
-  hitCheckFlare = RETAIL_HIT_CHECK_FLARE;
-  flareSpeed = RETAIL_FLARE_SPEED;
-  reverseFlareHit = RETAIL_REVERSE_FLARE_HIT;
+  renderLensFlares = ODYSSEY_RENDER_LENS_FLARES;
+  lensFlareSize = ODYSSEY_LENS_FLARE_SIZE;
+  hitCheckFlare = ODYSSEY_HIT_CHECK_FLARE;
+  flareSpeed = ODYSSEY_FLARE_SPEED;
+  reverseFlareHit = ODYSSEY_REVERSE_FLARE_HIT;
 
   private lightsProvider: (() => OdysseyLight3D[]) | null = null;
   private cameraProvider: (() => THREE.Camera | undefined) | null = null;
@@ -210,7 +210,7 @@ export class OdysseyLensFlarePass extends Pass {
 
       const facing = flareFacing(viewDirZ);
 
-      // Light NDC — same screen position retail gets from z=−2 plane intersection.
+      // Light NDC — same screen position gets from z=−2 plane intersection.
       this._lightNdc.copy(this._lightPos).project(camera);
 
       const count = Math.min(
@@ -253,7 +253,7 @@ export class OdysseyLensFlarePass extends Pass {
           continue;
         }
 
-        // Retail: S = −hit, element at S × flarepositions[i].
+        // : S = −hit, element at S × flarepositions[i].
         const ndcX = -this._lightNdc.x * pos;
         const ndcY = -this._lightNdc.y * pos;
 

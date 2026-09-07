@@ -17,7 +17,7 @@ describe("selectTopmostHitChildIndex (HitCheckMouse)", () => {
   });
 
   it("picks the last overlapping sibling (topmost / reverse walk)", () => {
-    // Children 0 and 2 both under the cursor — retail returns child 2 only.
+    // Children 0 and 2 both under the cursor — returns child 2 only.
     expect(selectTopmostHitChildIndex([true, false, true])).toBe(2);
   });
 

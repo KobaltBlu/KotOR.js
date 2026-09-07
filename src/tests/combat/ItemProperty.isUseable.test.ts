@@ -15,7 +15,7 @@ jest.mock('@/GameState', () => ({
 import { ItemProperty } from '@/engine/ItemProperty';
 import { TalentObjectType } from '@/enums/engine/TalentObjectType';
 
-/** Build a bare ItemProperty for isUseable() without UTI / 2DA load. */
+/** Build a bare ItemProperty for isUseable without UTI / 2DA load. */
 function propWithUpgrade(upgradeType: number, upgrades = 0): ItemProperty {
   const prop = Object.create(ItemProperty.prototype) as ItemProperty;
   prop.upgradeType = upgradeType;

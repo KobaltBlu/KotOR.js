@@ -31,7 +31,7 @@ function makePortrait(partial: Partial<SWPortrait> & { id: number }): SWPortrait
 }
 
 describe("chargen-appearance helpers", () => {
-  it("exposes retail classSelection soundsets", () => {
+  it("exposes engine classSelection soundsets", () => {
     expect(CHARGEN_SLOT_SOUNDSET).toEqual([85, 85, 85, 83, 83, 83]);
     expect(getCharGenSlotSoundSet(0)).toBe(85);
     expect(getCharGenSlotSoundSet(5)).toBe(83);

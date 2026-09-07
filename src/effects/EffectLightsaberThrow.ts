@@ -14,7 +14,7 @@ import { MDLLoader, TextureLoader } from "@/loaders";
 import { OdysseyModel3D } from "@/three/odyssey";
 import * as THREE from "three";
 
-/** Default projectile rate when spells.2da speed unavailable (retail fallback). */
+/** Default projectile rate when spells.2da speed unavailable (fallback). */
 const DEFAULT_THROW_RATE = 37.0;
 /** Travel VFX (temporary beam-like). */
 const VFX_THROW_TRAVEL = 6000;
@@ -22,7 +22,7 @@ const VFX_THROW_TRAVEL = 6000;
 const VFX_THROW_IMPACT = 0x1771;
 
 /**
- * EffectLightsaberThrow — retail OnApplyLightsaberThrow / OnRemove.
+ * EffectLightsaberThrow — effect apply / OnRemove.
  * object[0..2] = up to 3 targets; int[0] selects spell speed row (0→spell 0x31, else 4).
  * Schedules travel VFX + ENERGY damage along the path, then return to thrower.
  * Client: hides hand saber and flies a weapon-model copy along the path.
@@ -52,7 +52,7 @@ export class EffectLightsaberThrow extends GameEffect {
   private getThrowRate(creature: ModuleCreature): number {
     const spellId = (this.getInt(0) || 0) === 0 ? 0x31 : 4;
     const spell = GameState.SWRuleSet?.spells?.[spellId];
-    // Retail reads projectile speed from the spell row (proj column when present).
+    // reads projectile speed from the spell row (proj column when present).
     if(spell){
       const n = spell.proj | 0;
       if(n > 0) return n;
@@ -284,7 +284,7 @@ export class EffectLightsaberThrow extends GameEffect {
       const isReturn = to === thrower;
       if(!isReturn && BitWise.InstanceOfObject(to, ModuleObjectType.ModuleCreature)){
         let amount = Dice.roll(diceCount, DiceType.d6, 0);
-        // Retail ResistDamage-style adjust vs ENERGY (0x1000) — use amount as mitigated
+        // ResistDamage-style adjust vs ENERGY (0x1000) — use amount as mitigated
         const impactDelay = (elapsedMs + segMs) / 1000;
         this.scheduleApply(to, this.makeDamage(thrower, amount), impactDelay);
         this.scheduleApply(to, this.makeImpactVfx(thrower), impactDelay);

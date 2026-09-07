@@ -14,12 +14,12 @@ import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
 
 /**
- * ActionTakeItem — retail take-item action.
+ * ActionTakeItem — take-item action.
  *
  * Params:
- *  0 - dword: oItem
- *  1 - dword: oTakeFrom
- *  2 - int: bDisplayStatus (UpdateStatus 8 when source is PC)
+ * 0 - dword: oItem
+ * 1 - dword: oTakeFrom
+ * 2 - int: bDisplayStatus (UpdateStatus 8 when source is PC)
  *
  * No range / pathfind. Actor must be creature or placeable.
  *

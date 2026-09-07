@@ -1,5 +1,5 @@
 /**
- * Retail item-cast item-type timing table.
+ * item-cast item-type timing table.
  * @jest-environment node
  */
 import { describe, expect, it } from '@jest/globals';
@@ -36,7 +36,7 @@ describe('resolveActivateItemAnim', () => {
 });
 
 describe('itemCastAnimPlaysOnTarget', () => {
-  it('matches retail types 0x19 / 0x2d / 0x2f only', () => {
+  it('matches engine types 0x19 / 0x2d / 0x2f only', () => {
     expect(itemCastAnimPlaysOnTarget(ItemTypeCategory.OTHER)).toBe(true);
     expect(itemCastAnimPlaysOnTarget(ItemTypeCategory.MEDICAL_A)).toBe(true);
     expect(itemCastAnimPlaysOnTarget(ItemTypeCategory.MEDICAL_B)).toBe(true);

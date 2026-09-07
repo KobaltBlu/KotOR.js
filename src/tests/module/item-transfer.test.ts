@@ -88,8 +88,8 @@ describe("item-transfer helpers (Give/Take)", () => {
   });
 });
 
-describe("ActionHeal retail contract", () => {
-  it("Treat Injury skill id is 7 (retail GetSkillRank always uses 7)", () => {
+describe("ActionHeal engine contract", () => {
+  it("Treat Injury skill id is 7 (engine GetSkillRank always uses 7)", () => {
     expect(SkillType.TREAT_INJURY).toBe(7);
   });
 

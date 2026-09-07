@@ -18,11 +18,11 @@ export class OdysseyTexture extends THREE.Texture {
   bumpMapType: string;
   /**
    * TGA descriptor origin (bits 4–5): 0=BL, 1=BR, 2=UL, 3=UR.
-   * Used so cycle contact-sheet splits match retail ImageGetSubImage on raw buffers.
+   * Used so cycle contact-sheet splits match ImageGetSubImage on raw buffers.
    */
   tgaOrigin: number = 0;
   /**
-   * Retail gl_textures[] — one GPU texture per cycle frame.
+   * gl_textures — one GPU texture per cycle frame.
    * Index 0 is this texture itself when proceduretype is cycle.
    */
   cycleFrames: THREE.Texture[] = [];

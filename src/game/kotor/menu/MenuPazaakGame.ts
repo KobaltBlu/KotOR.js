@@ -182,7 +182,7 @@ export class MenuPazaakGame extends GameMenu {
         if(this.noClicks()){
           return;
         }
-        // Retail HandleContinue — warn if tutorial + total > 15.
+        // HandleContinue — warn if tutorial + total > 15.
         const total = GameState.PazaakManager.Tables[PazaakTurnMode.PLAYER].points;
         if(PazaakTutorial.enabled && total > 15){
           GameState.PazaakManager.queueTutorialHelp(PazaakTutorial.beginContinueHighWarn());
@@ -198,7 +198,7 @@ export class MenuPazaakGame extends GameMenu {
         if(this.noClicks()){
           return;
         }
-        // Retail HandleStand — warn if tutorial + total < 14.
+        // HandleStand — warn if tutorial + total < 14.
         const total = GameState.PazaakManager.Tables[PazaakTurnMode.PLAYER].points;
         if(PazaakTutorial.enabled && total < 14){
           GameState.PazaakManager.queueTutorialHelp(PazaakTutorial.beginStandLowWarn());
@@ -228,7 +228,7 @@ export class MenuPazaakGame extends GameMenu {
    */
   playHandCard(tableIndex: number, cardIndex: number){
     const flipped = GameState.PazaakManager.Tables[tableIndex].flipCards.get(cardIndex);
-    // Retail HandlePlayHandCard — warn if tutorial + total < 13.
+    // HandlePlayHandCard — warn if tutorial + total < 13.
     if(tableIndex === PazaakTurnMode.PLAYER && PazaakTutorial.enabled){
       const total = GameState.PazaakManager.Tables[tableIndex].points;
       if(total < 13){
@@ -335,7 +335,7 @@ export class MenuPazaakGame extends GameMenu {
   open(){
     super.open();
     GameState.PazaakManager.BeginGame();
-    // Retail StartNewGame — game-start help 0x96e7..0x96e8 once.
+    // StartNewGame — game-start help 0x96e7..0x96e8 once.
     PazaakTutorial.setEnabled(!!GameState.PazaakManager.ShowTutorial);
     GameState.PazaakManager.queueTutorialHelp(PazaakTutorial.beginGameIfNeeded());
   }

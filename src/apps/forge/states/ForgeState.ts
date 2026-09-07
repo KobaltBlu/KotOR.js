@@ -39,9 +39,9 @@ import { getSessionSettings, shouldRestoreOpenTabs } from "@/apps/forge/settings
 import { forgeAudioSettings } from "@/apps/forge/settings/forgeEditorsSettings";
 
 export class ForgeState {
-  // static MenuTop: MenuTop = new MenuTop()
+  // static MenuTop: MenuTop = new MenuTop
   static project: Project
-  // static loader: LoadingScreen = new KotOR.LoadingScreen();
+  // static loader: LoadingScreen = new KotOR.LoadingScreen;
   static modalManager: ModalManagerState = new ModalManagerState();
   static tabManager: EditorTabManager = new EditorTabManager();
   static explorerTabManager: EditorTabManager = new EditorTabManager();
@@ -464,10 +464,10 @@ export class ForgeState {
   }
 
   static InitManagers(){
-    // ForgeState.tabManager = new EditorTabManager();
-    // ForgeState.explorerTabManager = new EditorTabManager();
-    // ForgeState.projectExplorerTab = new ProjectExplorerTab();
-    // ForgeState.resourceExplorerTab = new ResourceExplorerTab();
+    // ForgeState.tabManager = new EditorTabManager;
+    // ForgeState.explorerTabManager = new EditorTabManager;
+    // ForgeState.projectExplorerTab = new ProjectExplorerTab;
+    // ForgeState.resourceExplorerTab = new ResourceExplorerTab;
   }
 
   static initNWScriptParser(){

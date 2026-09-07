@@ -14,7 +14,7 @@ const TLK_AVAILABLE = 0x61c;
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * retail (partyselect_p): extends K1 pending-toggle flow
+ * (partyselect_p): extends K1 pending-toggle flow
  * with 12 slots, charrec_light 3D preview, and nAllowCancel.
  *
  * @file MenuPartySelection.ts
@@ -196,7 +196,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
   }
 
   /**
-   * TSL: load creature into LBL_3D scene (retail charrec_light + Setup3DScene).
+   * TSL: load creature into LBL_3D scene (charrec_light + Setup3DScene).
    */
   protected async updatePreview(npcId: number, _creature: ModuleCreature){
     if(this.previewNpcId == npcId && this.char instanceof ModuleCreature){

@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 import {
-  RETAIL_BLOOM_FILTER_MULTIPLIER,
-  RETAIL_BLOOM_KERNEL_5X5,
+  ODYSSEY_BLOOM_FILTER_MULTIPLIER,
+  ODYSSEY_BLOOM_KERNEL_5X5,
 } from '@/shaders/pass/FrameBufferEffectGates';
 
 /**
- * Convolution / bloom helpers — retail RenderOverlayConvolution
+ * Convolution / bloom helpers — RenderOverlayConvolution
  * + bright-extract LUTs from InitializeFrameBufferModifications (GOG K1)
  * + BloomFilter kernel / multiplier (= 0.35).
  *
@@ -14,33 +14,33 @@ import {
  * G/B: cutoff 0xD8 (216), scale (i-216)*0.025641026*178.5
  *
  * Greys in 216–233 extract as (0, g, g) — a cyan bloom band. That asymmetry is
- * intentional Odyssey retail (GOG K1). Aspyr K2 keeps the same cutoffs/algebra
+ * intentional Odyssey (GOG K1). Aspyr K2 keeps the same cutoffs/algebra
  * (`/21` and `/39` × 255×0.7); their worse-looking bloom is from FBO/alpha path
  * differences, not a different blue tint formula. Do not symmetrize thresholds.
  */
 
-/** Retail bright-extract channel value — matches GOG K1 __ftol2 (trunc toward 0). */
-export function retailBrightExtractChannel(i: number, cutoff: number, scale: number): number {
+/** bright-extract channel value — matches GOG K1 __ftol2 (trunc toward 0). */
+export function odysseyBrightExtractChannel(i: number, cutoff: number, scale: number): number {
   if(i < cutoff){ return 0; }
   return Math.max(0, Math.min(255, Math.trunc((i - cutoff) * scale * 178.5)));
 }
 
 /** Per-input grey sample of the combined R/G/B bright-extract LUT. */
-export function retailBrightExtractRgb(i: number): { r: number; g: number; b: number } {
-  const r = retailBrightExtractChannel(i, 0xea, 0.04761905);
-  const g = retailBrightExtractChannel(i, 0xd8, 0.025641026);
+export function odysseyBrightExtractRgb(i: number): { r: number; g: number; b: number } {
+  const r = odysseyBrightExtractChannel(i, 0xea, 0.04761905);
+  const g = odysseyBrightExtractChannel(i, 0xd8, 0.025641026);
   return { r, g, b: g };
 }
 
 export function createBrightExtractLutTexture(): THREE.DataTexture {
   const data = new Uint8Array(256 * 4);
-  const a = Math.max(0, Math.min(255, Math.trunc(RETAIL_BLOOM_FILTER_MULTIPLIER * 255)));
+  const a = Math.max(0, Math.min(255, Math.trunc(ODYSSEY_BLOOM_FILTER_MULTIPLIER * 255)));
   for(let i = 0; i < 256; i++){
-    const { r, g, b } = retailBrightExtractRgb(i);
+    const { r, g, b } = odysseyBrightExtractRgb(i);
     data[i * 4] = r;
     data[i * 4 + 1] = g;
     data[i * 4 + 2] = b;
-    // Retail BloomFilter burns bloomFilterMultiplier into RGB via
+    // BloomFilter burns bloomFilterMultiplier into RGB via
     // glColor4f(..., 0.35) + SRC_ALPHA/ONE during the 5×5 accumulate;
     // final composite uses glColor alpha 1. We store 0.35 in LUT alpha and
     // apply scene + bloom.rgb * a once at composite (same single ×0.35).
@@ -80,7 +80,7 @@ export const BrightExtractShader = {
     }`,
 };
 
-/** Retail MipmapFilter — simple fullscreen downsample (decal / copy). */
+/** MipmapFilter — simple fullscreen downsample (decal / copy). */
 export const DownsampleShader = {
   uniforms: {
     tDiffuse: { value: null as THREE.Texture | null },
@@ -100,14 +100,14 @@ export const DownsampleShader = {
 };
 
 /**
- * Retail BloomFilter 5×5 kernel (bloomFiltersATI).
+ * BloomFilter 5×5 kernel (bloomFiltersATI).
  * Weights applied per-texel; alpha preserved for SRC_ALPHA, ONE composite.
  */
 export const BloomKernel5x5Shader = {
   uniforms: {
     tDiffuse: { value: null as THREE.Texture | null },
     texelSize: { value: new THREE.Vector2(1, 1) },
-    kernel: { value: Float32Array.from(RETAIL_BLOOM_KERNEL_5X5) },
+    kernel: { value: Float32Array.from(ODYSSEY_BLOOM_KERNEL_5X5) },
   },
   vertexShader: /* glsl */ `
     varying vec2 vUv;
@@ -136,7 +136,7 @@ export const BloomKernel5x5Shader = {
 };
 
 /**
- * Retail final composite (RenderOverlayConvolution):
+ * final composite (RenderOverlayConvolution):
  * glBlendFunc(GL_SRC_ALPHA, GL_ONE) + glColor4f(1,1,1,1) → scene + bloom.rgb.
  * BloomFilter already burned bloomFilterMultiplier (0.35) into bloom RGB via
  * glColor4f(..., 0.35) during the 5×5 accumulate. We keep extract/kernel RGB
@@ -146,8 +146,8 @@ export const AdditiveCompositeShader = {
   uniforms: {
     tDiffuse: { value: null as THREE.Texture | null },
     tBloom: { value: null as THREE.Texture | null },
-    /** Fallback when bloom.a is lost; retail bloomFilterMultiplier = 0.35. */
-    bloomStrength: { value: RETAIL_BLOOM_FILTER_MULTIPLIER },
+    /** Fallback when bloom.a is lost; bloomFilterMultiplier = 0.35. */
+    bloomStrength: { value: ODYSSEY_BLOOM_FILTER_MULTIPLIER },
   },
   vertexShader: /* glsl */ `
     varying vec2 vUv;
@@ -164,9 +164,9 @@ export const AdditiveCompositeShader = {
       vec4 scene = texture2D( tDiffuse, vUv );
       vec4 bloom = texture2D( tBloom, vUv );
       float a = bloom.a > 0.0 ? bloom.a : bloomStrength;
-      // Single ×0.35 — equivalent to retail BloomFilter burn-in + alpha=1 composite.
+      // Single ×0.35 — equivalent to BloomFilter burn-in + alpha=1 composite.
       gl_FragColor = vec4( scene.rgb + bloom.rgb * a, scene.a );
     }`,
 };
 
-export { RETAIL_BLOOM_FILTER_MULTIPLIER, RETAIL_BLOOM_KERNEL_5X5 };
+export { ODYSSEY_BLOOM_FILTER_MULTIPLIER, ODYSSEY_BLOOM_KERNEL_5X5 };

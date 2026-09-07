@@ -5,14 +5,14 @@ import { getAttackEffectBonus } from "@/effects/effect-bonuses";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
 
-/** Retail GuiInGameEquipSlotInfo — empty icon stem + TLK slot names (human/droid). */
+/** GuiInGameEquipSlotInfo — empty icon stem + TLK slot names (human/droid). */
 export interface EquipSlotInfo {
   icon: string;
   humanStrRef: number;
   droidStrRef: number;
 }
 
-/** Race id for droids (retail GetIcon race == 5). */
+/** Race id for droids (GetIcon race == 5). */
 export const RACE_DROID = 5;
 /** Race id for humans (InventoryManager / droidOrHuman). */
 export const RACE_HUMAN = 6;
@@ -35,7 +35,7 @@ export const STR_OFFHAND_BLOCKED = 42344;
 export const STR_NOTHING_AVAILABLE = 42345;
 
 /**
- * Retail slotInfo table, keyed by EquipmentSlots bitmask.
+ * slotInfo table, keyed by EquipmentSlots bitmask.
  * Icon stem is formatted as `i` + (`d` if droid) + stem.
  */
 export const EQUIP_SLOT_INFO: Partial<Record<ModuleCreatureArmorSlot, EquipSlotInfo>> = {
@@ -75,9 +75,9 @@ export function formatDamageRange(min: number, max: number): string {
   return `${min}-${max}`;
 }
 
-/** Retail colorBlue for equip labels. */
+/** colorBlue for equip labels. */
 export const EQUIP_COLOR_BLUE = { r: 0, g: 0.658824, b: 0.980392 };
-/** Retail colorGreen when a stat beats baseline. */
+/** colorGreen when a stat beats baseline. */
 export const EQUIP_COLOR_GREEN = { r: 0, g: 1, b: 0 };
 
 export function isTwoHandedWeapon(item?: ModuleItem): boolean {
@@ -97,7 +97,7 @@ export function isLargeWeapon(item?: ModuleItem): boolean {
 export function getEquipScreenAttackBonus(creature: ModuleCreature, weapon: ModuleItem | undefined, offHand: boolean): number {
   const ranged = !!weapon?.isRangedWeapon?.();
   const ability = Math.floor(((ranged ? creature.getDEX() : creature.getSTR()) - 10) / 2);
-  // Off-hand does not get full STR contribution in dual wield; retail GetMeleeAttackBonus
+  // Off-hand does not get full STR contribution in dual wield; GetMeleeAttackBonus
   // with offHand=1 still includes ability — keep ability for both hands here.
   void offHand;
   return creature.getBaseAttackBonus() + ability + (weapon?.getAttackBonus?.() || 0) + getAttackEffectBonus(creature);

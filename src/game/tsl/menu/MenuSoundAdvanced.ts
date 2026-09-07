@@ -3,7 +3,7 @@ import { GameState } from "@/GameState";
 import type { GUILabel, GUIListBox, GUICheckBox, GUIButton } from "@/gui";
 import { MenuSoundAdvanced as K1_MenuSoundAdvanced } from "@/game/kotor/KOTOR";
 
-/** retail CSWGuiOptionsSoundAdvanced description TLKs (TSL). */
+/** sound advanced options description TLKs (TSL). */
 const TLK_DESC_FORCESOFTWARE = 0xbe4e;
 const TLK_DESC_EAX = 0xbe4f;
 

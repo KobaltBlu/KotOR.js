@@ -3,7 +3,7 @@ import { ProjectilePath } from "@/enums/combat/ProjectilePath";
 import { SPELL_PROJECTILE_PATH6_EXTRA_MS } from "@/combat/spell-projectile-time";
 
 /**
- * Client spell-projectile motion samples — approximates retail projectile
+ * Client spell-projectile motion samples — approximates projectile
  * SetProjectileType / MoveProjectile* for the paths SpellCastInstance uses.
  *
  * Path 6 (grenade): SetBehaviorListSpiral — approach then 2500ms spiral.
@@ -19,7 +19,7 @@ const _tmp = new THREE.Vector3();
 /**
  * Sample world position along a spell projectile path.
  * @param t - 0 at launch, 1 at impact
- * @param spiralSign - ±1 lateral spiral handedness (retail rand bit)
+ * @param spiralSign - ±1 lateral spiral handedness (rand bit)
  */
 export function sampleSpellProjectilePosition(
   pathType: number,
@@ -52,7 +52,7 @@ export function sampleSpellProjectilePosition(
 }
 
 /**
- * Retail path 6: travel for (totalMs - 2500), then spiral hang of 2500ms near dest.
+ * path 6: travel for (totalMs - 2500), then spiral hang of 2500ms near dest.
  * Lateral offset magnitude ~2 matches SetBehaviorListSpiral's 2*normalized perp.
  */
 function sampleSpiralGrenade(
@@ -67,7 +67,7 @@ function sampleSpiralGrenade(
   const hangT = hangMs / totalMs;
   const travelT = Math.max(0.05, 1 - hangT);
 
-  // Horizontal perpendicular (retail spiral lateral axis)
+  // Horizontal perpendicular (spiral lateral axis)
   const dx = dest.x - origin.x;
   const dy = dest.y - origin.y;
   let px = -dy;
@@ -84,7 +84,7 @@ function sampleSpiralGrenade(
   if(t < travelT){
     const u = t / travelT;
     out.lerpVectors(origin, dest, u);
-    // Modest lob during the approach leg (visual throw, not retail spiral)
+    // Modest lob during the approach leg (visual throw, not spiral)
     const dist = origin.distanceTo(dest);
     out.z += Math.sin(u * Math.PI) * Math.min(2.5, dist * 0.12);
     return out;
@@ -105,7 +105,7 @@ function sampleSpiralGrenade(
   return out;
 }
 
-/** Path 2 ballistic — gravity-style arc (accel −9.81 in retail VelAndAccel). */
+/** Path 2 ballistic — gravity-style arc (accel −9.81 in VelAndAccel). */
 function sampleBallistic(
   origin: THREE.Vector3,
   dest: THREE.Vector3,
@@ -120,7 +120,7 @@ function sampleBallistic(
 }
 
 /**
- * Path 3 high ballistic — retail raises mid waypoint +30 on first half
+ * Path 3 high ballistic — raises mid waypoint +30 on first half
  * (SetBehaviorListHighBallistic).
  */
 function sampleHighBallistic(

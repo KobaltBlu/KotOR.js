@@ -1,7 +1,7 @@
 /**
- * Party follow state helpers — WalkUpdateLocation_QuickWalk_FollowLeader.
+ * Party follow state helpers — follow-leader quick-walk.
  *
- * Retail uses an 11-state SM on party-member follow data + a ring buffer of
+ * uses an 11-state SM on party-member follow data + a ring buffer of
  * leader path points. KotOR.js ports those states and drives them from
  * ActionFollowLeader; ForceFollow uses Offset / MovingToOffset / Teleport only.
  *
@@ -16,29 +16,29 @@ export {
 export const FOLLOW_COMFORT = 2.0;
 /** Begin / continue approach when farther than this from offset. */
 export const FOLLOW_REPATH = 3.5;
-/** Retail: dist >= 4 to offset goal uses run. */
+/** : dist >= 4 to offset goal uses run. */
 export const FOLLOW_RUN_DIST = 4.0;
 /** Drop run only below this after having been running (hysteresis). */
 export const FOLLOW_RUN_DROP = 3.0;
-/** Retail: dist 15; beyond this we teleport forward. */
+/** : dist 15; beyond this we teleport forward. */
 export const FOLLOW_TELEPORT_DIST = 15.0;
 /** Seconds of failed/short hops while Moving → teleport. */
 export const FOLLOW_STUCK_SEC = 2.5;
 /** Abort → Reset after 50 inner iterations. */
 export const FOLLOW_STUCK_ITERATIONS = 50;
 /**
- * Retail WaitingForPath — hold until follow ring count > 4.
+ * WaitingForPath — hold until follow ring count > 4.
  */
 export const FOLLOW_RING_WARM_COUNT = 4;
 /**
- * Retail safety gate: chase only when not in-safety OR
+ * safety gate: chase only when not in-safety OR
  * leader distance² ≥ 49 (dist ≥ 7).
  */
 export const FOLLOW_SAFETY_DIST_SQ = 49.0;
 
 /**
- * Retail party-member follow SM states from
- * WalkUpdateLocation_QuickWalk_FollowLeader.
+ * party-member follow SM states from
+ * follow-leader quick-walk.
  */
 export enum FollowLeaderState {
   Reset = -1,
@@ -154,7 +154,7 @@ export function isFollowWaitState(state: FollowLeaderState): boolean {
  * High-level entry: far/stuck → Teleport; else keep or enter approach states.
  * Detailed transitions happen inside stepFollowLeaderState.
  *
- * Retail Teleport (10) is ring soft-catch-up (TeleportForward → MovingToPath),
+ * Teleport (10) is ring soft-catch-up (TeleportForward → MovingToPath),
  * not JumpToPoint. Do not force Teleport while the follow ring is still cold
  * Jump fallback would target feet (cold GetFollowPosition) and spam.
  */

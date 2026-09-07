@@ -5,13 +5,13 @@ import * as THREE from "three";
  *
  * This texture represents the exact original expression:
  *
- *   vec3 pMid = vec3(
- *     p * vec2(1.6, 2.3) +
- *     vec2(-t * 0.014, t * 0.009),
- *     t * 0.028
- *   );
+ * vec3 pMid = vec3(
+ * p * vec2(1.6, 2.3) +
+ * vec2(-t * 0.014, t * 0.009),
+ * t * 0.028
+ *);
  *
- *   simplex3d_fractal(pMid * 2.6 + 6.0);
+ * simplex3d_fractal(pMid * 2.6 + 6.0);
  *
  * The noise itself is evaluated by GLSL during baking, using the
  * engine's currently registered <shadertoy_perlin> chunk.
@@ -93,7 +93,7 @@ const TEMP_ATLAS_HEIGHT =
  *
  * IMPORTANT:
  *
- * This intentionally evaluates simplex3d_fractal() in GLSL instead
+ * This intentionally evaluates simplex3d_fractal in GLSL instead
  * of duplicating its implementation in TypeScript.
  *
  * Therefore if your unpublished <shadertoy_perlin> chunk changes,
@@ -220,7 +220,7 @@ export function createGUIFogVolumeTexture(
             );
 
           /**
-           * simplex3d_fractal() itself is not temporally periodic.
+           * simplex3d_fractal itself is not temporally periodic.
            *
            * Preserve the original field completely for most of the
            * cycle, then smoothly crossfade toward the equivalent
@@ -323,8 +323,8 @@ export function createGUIFogVolumeTexture(
    *
    * Contains 33 grayscale frames:
    *
-   * 0 ... 31 = normal animation frames
-   * 32       = exact t = period loop endpoint
+   * 0... 31 = normal animation frames
+   * 32 = exact t = period loop endpoint
    */
   const renderTarget =
     new THREE.WebGLRenderTarget(
@@ -683,7 +683,7 @@ export function createGUIFogVolumeTexture(
    * Do not mip the noise volume.
    *
    * Mips would intentionally destroy the fine structure we're moving
-   * out of simplex3d_fractal().
+   * out of simplex3d_fractal.
    */
   texture.generateMipmaps =
     false;

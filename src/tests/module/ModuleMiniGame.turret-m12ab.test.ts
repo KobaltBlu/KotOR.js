@@ -78,7 +78,7 @@ function keepInTunnel(
       if(value < min){ return min; }
       return value;
     }
-    // Turret infinite: wrap degrees 0–360 (retail KeepInTunnel).
+    // Turret infinite: wrap degrees 0–360 (KeepInTunnel).
     if(value < 0){ return value + 360; }
     if(value >= 360){ return value - 360; }
     return value;

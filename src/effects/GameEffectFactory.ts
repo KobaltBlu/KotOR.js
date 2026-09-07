@@ -540,15 +540,15 @@ export class GameEffectFactory {
         effect.setFloatList(floatList);
         effect.setStringList(stringList);
         effect.setObjectList(objectList as any);
-        //console.log('Handled Effect', eType, struct.ToJSON());
-        //effect.initialize();
+        //console.log('Handled Effect', eType, struct.ToJSON);
+        //effect.initialize;
       }else{
         console.log('Unhandled Effect', eType, struct.toJSON());
       }
       return effect;
     }else{
       if(typeof effect !== 'undefined'){
-        //console.log('Skipped Effect', eType, struct.ToJSON());
+        //console.log('Skipped Effect', eType, struct.ToJSON);
       }else{
         console.log('Unhandled Skipped Effect', eType, struct.toJSON());
       }

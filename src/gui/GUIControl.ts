@@ -57,7 +57,7 @@ import {
   createGuiChrome,
   GUI_HOVER_MODE_OVERLAY,
   GUI_HOVER_MODE_SWAP,
-  retailBorderDim,
+  odysseyBorderDim,
 } from "@/gui/guiChrome";
 
 const itemSize = 2
@@ -162,9 +162,9 @@ export class GUIControl {
 
   /** Backing field for `pulsing` (enable / text pulse). */
   private _pulsing: boolean = false;
-  /** Retail SetPulsingAlpha edge flag (Draw bit for corners/edges). */
+  /** SetPulsingAlpha edge flag (Draw bit for corners/edges). */
   runtimePulseEdge: boolean = false;
-  /** Retail SetPulsingAlpha fill flag (Draw bit for fill). */
+  /** SetPulsingAlpha fill flag (Draw bit for fill). */
   runtimePulseFill: boolean = false;
   pulse: number = 1;
   opacity: number = 1;
@@ -630,7 +630,7 @@ export class GUIControl {
 
     this.padding = ( control.hasField('PADDING') ? control.getFieldByLabel('PADDING')?.getValue() : 0 );
 
-    //Extent — retail Load (ReadFieldINT)
+    //Extent — Load (ReadFieldINT)
     this.hasExtent = control.hasField('EXTENT');
     if(this.hasExtent){
       let extent = control.getFieldByLabel('EXTENT')?.getChildStructs()[0];
@@ -740,7 +740,7 @@ export class GUIControl {
       }
     }
 
-    //Moveto — retail Load (IDs into panel controls[]; resolved later)
+    //Moveto — Load (IDs into panel controls; resolved later)
     this.hasMoveTo = control.hasField('MOVETO');
     if(this.hasMoveTo){
       let moveTo = control.getFieldByLabel('MOVETO')?.getChildStructs()[0];
@@ -774,7 +774,7 @@ export class GUIControl {
         bindChromeTexture(this.chrome.material, slot, texture);
         onReady?.(texture);
         this.syncChromeEnableFlags();
-        // Retail GetBorderDim falls back to edge/corner image size when DIMENSION is 0.
+        // GetBorderDim falls back to edge/corner image size when DIMENSION is 0.
         // Rebuild chrome (and let subclasses remeasure) once that size is known.
         const isFrameSlot =
           slot === 'edgeMap' || slot === 'cornerMap' ||
@@ -883,7 +883,7 @@ export class GUIControl {
   }
 
   /**
-   * Retail GetIsSelectable — mouse hover / click targets are
+   * GetIsSelectable — mouse hover / click targets are
    * navigable controls (buttons, etc.), not decorative labels (LBLH_*, slot
    * icon LBL_INV_*). Labels only qualify when they actually have click handlers.
    */
@@ -994,7 +994,7 @@ export class GUIControl {
 
   /**
    * Called when a border/hilight edge or corner texture finishes loading and
-   * DIMENSION was 0 (retail GetBorderDim texture-size fallback). Default
+   * DIMENSION was 0 (GetBorderDim texture-size fallback). Default
    * rebuilds chrome via the caller; subclasses may remeasure extents.
    */
   protected onChromeTextureLoaded(): void {
@@ -1018,7 +1018,7 @@ export class GUIControl {
     }
     
     //if(this.parent === undefined){
-    //  this.widget.add(this.menu.backgroundSprite);
+    // this.widget.add(this.menu.backgroundSprite);
     //}
 
     this.buildChrome();
@@ -1092,7 +1092,7 @@ export class GUIControl {
 
   /**
    * Whether this control needs continuous opacity animation.
-   * Retail pulses only via GFF PULSING / SetPulsingAlpha — not hover or selected alone.
+   * pulses only via GFF PULSING / SetPulsingAlpha — not hover or selected alone.
    */
   wantsPulseAnimation(): boolean {
     return !!(
@@ -1106,7 +1106,7 @@ export class GUIControl {
   }
 
   /**
-   * Retail CSWGuiBorderParams::SetPulsingAlpha(enable, pulseEdge, pulseFill).
+   * (enable, pulseEdge, pulseFill).
    * Edge/fill map to Draw bits (GFF PULSING bit0 / bit1). Prefer this when edge and
    * fill must differ (HUD icons are fill-only; key-capture is both).
    */
@@ -1123,7 +1123,7 @@ export class GUIControl {
 
   update(delta: number){
     const opacity = this.disableSelection ? 0.5 : 1;
-    // Retail CSWGuiBorder::Draw: m_fPulsingAlpha when enable + edge/fill bits set.
+    // : m_fPulsingAlpha when enable + edge/fill bits set.
     // GFF PULSING → SetPulsingAlpha(nonzero, bit0, bit1): bit0 = edges/corners, bit1 = fill.
     // Runtime flags from `pulsing = true` / setPulsingAlpha; GFF bits still apply.
     const borderFlags = this.border.pulsing | 0;
@@ -1450,7 +1450,7 @@ export class GUIControl {
    * Panel-local mouse (top-left Y-down ints) for this control's menu root panel.
    *
    * Matches our Three.js projection: panel design rect is centered in the viewport
-   * (and optionally scaled / offset on the root widget). This is retail GetLocalMouseCoords
+   * (and optionally scaled / offset on the root widget). This is GetLocalMouseCoords
    * with CenterInViewport when UseExtentOffset is set; letterbox path when cleared.
    *
    * `tGuiPanel.offset` (MenuTop offset.y=198, CharGen offset.x/y, …) moves the widget in
@@ -1467,7 +1467,7 @@ export class GUIControl {
     const offsetX = asExtentInt(panel?.offset?.x ?? 0);
     const offsetY = asExtentInt(panel?.offset?.y ?? 0);
 
-    // Retail 640×480 letterbox path (bit0 clear)
+    // 640×480 letterbox path (bit0 clear)
     if ((flags & GUIPanelCoordFlags.UseExtentOffset) === 0) {
       return applyPanelOffsetToLetterboxLocal(
         getLocalMouseCoords(
@@ -1496,7 +1496,7 @@ export class GUIControl {
   }
 
   /**
-   * Retail HitCheckMouse — inclusive int AABB.
+   * HitCheckMouse — inclusive int AABB.
    * List rows store extents in list viewport-local space (HitCheckMouseLocal).
    * Row mouse is derived from the list world/UI box so viewport-docked lists
    * (dialog LB_REPLIES) still pick correctly when extent.left/top are not panel-local.
@@ -1505,9 +1505,9 @@ export class GUIControl {
    * Anchored HUD controls are viewport-pinned; test their integer world box instead.
    *
    * Nested Obj_Parent children may extend outside this control's AABB (abchrgen /
-   * skchrgen: STR_POINTS_BTN → STR_PLUS_BTN / STR_LBL). Retail HitCheckMouse
+   * skchrgen: STR_POINTS_BTN → STR_PLUS_BTN / STR_LBL). HitCheckMouse
    * walks a flat panel control list, so those children are tested directly.
-   * With a nested children[] tree, treat descendant hits as a hit on this control so
+   * With a nested children tree, treat descendant hits as a hit on this control so
    * {@link getActiveControls} can recurse into the branch and prefer the child.
    */
   hitCheckMouse(localX: number, localY: number): boolean {
@@ -1688,7 +1688,7 @@ export class GUIControl {
   }
 
   /**
-   * Retail HitCheckMouse — walk children reverse (topmost
+   * HitCheckMouse — walk children reverse (topmost
    * first) and return only the first hit branch. Overlapping siblings do not both
    * receive hover/click.
    */
@@ -1787,7 +1787,7 @@ export class GUIControl {
     let left = asExtentInt(this.extent.left) - truncDiv(asExtentInt(parentExtent.width) - asExtentInt(this.extent.width), 2);
     let top = -asExtentInt(this.extent.top) + truncDiv(asExtentInt(parentExtent.height) - asExtentInt(this.extent.height), 2);
 
-    // Retail SetExtent: only shift content left when scrollbar is on the left
+    // SetExtent: only shift content left when scrollbar is on the left
     const shrinkWidth = asExtentInt(this.getShrinkWidth());
     if (shrinkWidth && this.flipLeft()) {
       left += shrinkWidth;
@@ -1802,7 +1802,7 @@ export class GUIControl {
   }
 
   /**
-   * Text layout box — retail sets GUI text extent from border GetInnerExtent
+   * Text layout box — sets GUI text extent from border GetInnerExtent
    * (Label/EditBox). Buttons / hilight-labels use the
    * intersection of border + hilight GetInnerExtent (SetExtent).
    * Both rects are centered on the control, so intersecting sizes is enough.
@@ -1900,7 +1900,7 @@ export class GUIControl {
 
   getBorderSize(){
     const u = this.chrome?.material?.uniforms;
-    return retailBorderDim(
+    return odysseyBorderDim(
       this.border.dimension || 0,
       chromeTextureGuiSize(u?.edgeMap?.value),
       chromeTextureGuiSize(u?.cornerMap?.value),
@@ -1909,7 +1909,7 @@ export class GUIControl {
 
   getHighlightSize(){
     const u = this.chrome?.material?.uniforms;
-    return retailBorderDim(
+    return odysseyBorderDim(
       this.highlight.dimension || 0,
       chromeTextureGuiSize(u?.highlightEdgeMap?.value),
       chromeTextureGuiSize(u?.highlightCornerMap?.value),
@@ -1940,7 +1940,7 @@ export class GUIControl {
     let shrinkWidth = 0;
     if(BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIListBox)){
       const lb = this as any;
-      // Retail SetExtent: content width -= scrollbar.extent.width only
+      // SetExtent: content width -= scrollbar.extent.width only
       if (lb.scrollbar?.extent?.width) {
         shrinkWidth = lb.scrollbar.extent.width;
       }
@@ -1950,7 +1950,7 @@ export class GUIControl {
 
   /**
    * Border edge/corner quads in widget-local space (ints).
-   * Retail Draw uses int left/top/width/height.
+   * Draw uses int left/top/width/height.
    */
   getBorderExtent(side: string){
     return this.getFrameExtent(side, this.getBorderSize());
@@ -2338,7 +2338,7 @@ export class GUIControl {
   }
 
   /**
-   * Retail SetMoveToControl — stores a resolved neighbor pointer
+   * SetMoveToControl — stores a resolved neighbor pointer
    * (or clears the link). Before panel resolve, GFF MOVETO IDs live in {@link moveTo}.
    */
   setMoveToControl(direction: string, control?: GUIControl){
@@ -2363,7 +2363,7 @@ export class GUIControl {
     }
   }
 
-  /** Retail GetMoveToControl — neighbor pointer after resolve. */
+  /** GetMoveToControl — neighbor pointer after resolve. */
   getMoveToControl(direction: string): GUIControl | undefined {
     if(typeof direction == 'string'){
       direction = direction.toLowerCase();
@@ -2383,7 +2383,7 @@ export class GUIControl {
   }
 
   /**
-   * Retail HandleInputEvent for D-pad / arrow keys.
+   * HandleInputEvent for D-pad / arrow keys.
    * Follows resolved MoveTo neighbors and activates via the parent menu.
    */
   directionalNavigate(direction = ''){
@@ -2396,7 +2396,7 @@ export class GUIControl {
 
     let next = this.getMoveToControl(direction);
 
-    // Skip non-focusable / hidden neighbors (retail clears bit 0x8 to keep walking).
+    // Skip non-focusable / hidden neighbors (clears bit 0x8 to keep walking).
     while(next && (!next.isVisible() || next.disableSelection)){
       next = next.getMoveToControl(direction);
     }

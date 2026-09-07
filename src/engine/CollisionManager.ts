@@ -317,7 +317,7 @@ export class CollisionManager {
       // Update ground positioning first
       this.updateGroundPositioning();
 
-      // Predicted / swept position for capsule probes (retail-style lookahead contact)
+      // Predicted / swept position for capsule probes (-style lookahead contact)
       this.tempPosition.copy(this.object.position).add(this.object.forceVector);
       this.originalPosition.copy(this.object.position);
 
@@ -735,7 +735,7 @@ export class CollisionManager {
     // Resolve creature collisions separately (no occlusion filtering)
     const creatureCollisions = this.collisionState.collisions.get(CollisionType.CREATURE) || [];
     if (creatureCollisions.length > 0) {
-      // Closest creature becomes blocking_creature_id; hostiles → foundEnemy (retail PlotPathAroundCreature)
+      // Closest creature becomes blocking_creature_id; hostiles → foundEnemy (PlotPathAroundCreature)
       creatureCollisions.sort((a, b) => a.distance - b.distance);
       const blocker = creatureCollisions[0]?.blocker;
       if (blocker) {

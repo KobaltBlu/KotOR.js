@@ -32,12 +32,12 @@ export class ModuleMGObstacle extends ModuleObject {
   layout: ILayoutObstacle;
   /** One-shot latch after DoObstacleHitCheck (accel pads, etc.). */
   hit: boolean = false;
-  /** Retail last_follower_hit_index — player who last bumped this obstacle. */
+  /** last_follower_hit_index — player who last bumped this obstacle. */
   lastFollowerHit: ModuleMGPlayer | undefined;
   lastHPChange: number = 0;
   models: OdysseyModel3D[] = [];
   animationManagers: OdysseyModelAnimationManager[] = [];
-  /** Retail OnAnimKeyEvent custom_* → OnAnimEvent (obstacles have no track loop). */
+  /** OnAnimKeyEvent custom_* → OnAnimEvent (obstacles have no track loop). */
   private animPlayEventHandler = (e: { event?: string; target?: { name?: string } }) => {
     this.handleAnimPlayEvent(e);
   };
@@ -60,7 +60,7 @@ export class ModuleMGObstacle extends ModuleObject {
         this.position.copy(layout.position);
       }
     }
-    // retail ctor → retail registers in MGO array.
+    // ctor → registers in MGO array.
     MiniGameObjectArray.register(this);
   }
 
@@ -81,7 +81,7 @@ export class ModuleMGObstacle extends ModuleObject {
       this.models[i]?.update?.(delta);
     }
 
-    // Retail Update — OnHeartbeat every frame.
+    // Update — OnHeartbeat every frame.
     if(GameState.module){
       this.triggerHeartbeat();
     }
@@ -97,7 +97,7 @@ export class ModuleMGObstacle extends ModuleObject {
 
   /**
    * Obstacles are not TrackFollowers; Adjust still queues delta for script/default apply.
-   * SetFollowerHitPoints → nAbsolute (only if nHP > 0, retail SetHitPoints).
+   * SetFollowerHitPoints → nAbsolute (only if nHP > 0, SetHitPoints).
    */
   adjustHitPoints(nHP = 0, nAbsolute = 0){
     if(nAbsolute){
@@ -123,7 +123,7 @@ export class ModuleMGObstacle extends ModuleObject {
 
   /**
    * Named collision part on loaded Gob (`hitbullet` / `hitbump`).
-   * Retail GetPart on obstacle aurora object.
+   * GetPart on obstacle aurora object.
    */
   getHitPart(partName: string): OdysseyObject3D | THREE.Object3D | undefined {
     const key = partName.toLowerCase();
@@ -137,7 +137,7 @@ export class ModuleMGObstacle extends ModuleObject {
   }
 
   /**
-   * Retail AddObstacle — NewCAurObject(LYT name), SetPosition once on Gob,
+   * AddObstacle — NewCAurObject(LYT name), SetPosition once on Gob,
    * AttachToScene(main_scene), PlayAnimation("ready"). Model stays at local origin.
    */
   async loadModel(): Promise<void> {
@@ -149,7 +149,7 @@ export class ModuleMGObstacle extends ModuleObject {
 
     try{
       const mdl: OdysseyModel = await MDLLoader.loader.load(resref);
-      // Same lit path as placeables / MG player & enemies — GetNearestLights via
+      // Same lit path as placeables / MG player & enemies — nearest light selection via
       // collectLightingModels. Authored flagShadow still selects casters.
       const model = await OdysseyModel3D.FromMDL(mdl, {
         context: this.context,
@@ -178,7 +178,7 @@ export class ModuleMGObstacle extends ModuleObject {
   }
 
   /**
-   * Retail OnAnimKeyEvent custom_* path — record suffix for SWMG_GetLastEvent, run OnAnimEvent.
+   * OnAnimKeyEvent custom_* path — record suffix for SWMG_GetLastEvent, run OnAnimEvent.
    */
   handleAnimPlayEvent(e: { event?: string; target?: { name?: string } }){
     const raw = String(e?.event ?? '');
@@ -207,7 +207,7 @@ export class ModuleMGObstacle extends ModuleObject {
   }
 
   /**
-   * Retail SWMG_PlayAnimation / PlayAnimation
+   * SWMG_PlayAnimation / PlayAnimation
    * loop/queue/overlay flags match player path.
    */
   playAnimation(name = '', bLooping = 0, bQueue = 0, bOverlay = 0){
@@ -256,7 +256,7 @@ export class ModuleMGObstacle extends ModuleObject {
   }
 
   /**
-   * Retail OnHitFollower
+   * OnHitFollower
    * run OnHitFollower script (accelpad.nss etc). `follower` is the player bumper.
    */
   onHitFollower(follower?: ModuleMGPlayer){

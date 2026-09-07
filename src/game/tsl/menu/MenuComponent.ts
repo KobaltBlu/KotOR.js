@@ -28,7 +28,7 @@ type BreakFilter = 'ALL' | 'WEAPONS' | 'ARMOR' | 'USEABLE' | 'MISC';
 /**
  * MenuComponent — TSL GUI (`component_p` / itemcreate.2da).
  *
- * Create spends PartyManager.ComponentCount at max(1, GetCost()/20).
+ * Create spends PartyManager.ComponentCount at max(1, GetCost/20).
  * Breakdown refunds the same piece value into ComponentCount.
  *
  * @file MenuComponent.ts

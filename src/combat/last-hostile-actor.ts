@@ -1,5 +1,5 @@
 /**
- * Retail CSWSObject::SetLastHostileActor / GetLastHostileActor helpers.
+ * / get hostile actor helpers.
  * @file last-hostile-actor.ts
  */
 import type { ModuleObject } from "@/module/ModuleObject";
@@ -8,12 +8,12 @@ import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { BitWise } from "@/utility/BitWise";
 
 /**
- * Retail CSWSObject::SetLastHostileActor.
+ *.
  * @param self - object receiving the hostile actor
  * @param hostileActor - attacker / damager / harmful caster (or undefined to clear)
  * @param force - when true, write without plot/faction/alive checks (CancelCombat clear)
  */
-export function setLastHostileActor(
+export function assignHostileActor(
   self: ModuleObject,
   hostileActor: ModuleObject | undefined,
   force: boolean = false
@@ -44,7 +44,7 @@ export function setLastHostileActor(
     self.combatData.lastHostileActor = undefined;
     return;
   }
-  // Same faction → do not overwrite (retail faction_id compare)
+  // Same faction → do not overwrite (faction_id compare)
   if(
     BitWise.InstanceOfObject(self, ModuleObjectType.ModuleCreature) &&
     (self as ModuleCreature).factionId === creature.factionId
@@ -55,13 +55,13 @@ export function setLastHostileActor(
 }
 
 /**
- * Retail ExecuteCommandGetLastHostileActor — returns last_hostile_actor_id
+ * ExecuteCommandget hostile actor — returns last_hostile_actor_id
  * when still a living creature (AOE resolves to creator); clears stale refs.
  */
 export function getLastHostileActor(self: ModuleObject): ModuleObject | undefined {
   if(self.plot){
     if(self.combatData.lastHostileActor){
-      setLastHostileActor(self, undefined, true);
+      assignHostileActor(self, undefined, true);
     }
     return undefined;
   }
@@ -74,12 +74,12 @@ export function getLastHostileActor(self: ModuleObject): ModuleObject | undefine
     actor = (actor as any).creator;
   }
   if(!BitWise.InstanceOfObject(actor, ModuleObjectType.ModuleCreature)){
-    setLastHostileActor(self, undefined, true);
+    assignHostileActor(self, undefined, true);
     return undefined;
   }
   const creature = actor as ModuleCreature;
   if(creature.isDead() || (typeof creature.getDeadTemp === 'function' && creature.getDeadTemp())){
-    setLastHostileActor(self, undefined, true);
+    assignHostileActor(self, undefined, true);
     return undefined;
   }
   return creature;

@@ -157,8 +157,8 @@ export class SaveGame {
    *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
-   * await saveGame.loadNFO();
-   * console.log(saveGame.getAreaName()); // "Endar Spire"
+   * await saveGame.loadNFO;
+   * console.log(saveGame.getAreaName); // "Endar Spire"
    */
   async loadNFO(){
     try{
@@ -267,7 +267,7 @@ export class SaveGame {
    *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
-   * await saveGame.loadPIFO();
+   * await saveGame.loadPIFO;
    * // Player template is now available in GameState.PartyManager.PlayerTemplate
    */
   async loadPIFO(){
@@ -301,7 +301,7 @@ export class SaveGame {
    *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
-   * await saveGame.loadPC();
+   * await saveGame.loadPC;
    * // PC data is now available in saveGame.pc
    */
   async loadPC(){
@@ -335,7 +335,7 @@ export class SaveGame {
    *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
-   * await saveGame.load();
+   * await saveGame.load;
    * // Game state is now restored and ready to play
    */
   async load(){
@@ -377,7 +377,7 @@ export class SaveGame {
       locs: GameState.GlobalVariableManager?.Globals?.Location?.size || 0,
     });
     //Load Inventory
-    // await this.loadInventory();
+    // await this.loadInventory;
     //Load PartyTable
     await this.loadPartyTable();
 
@@ -409,7 +409,7 @@ export class SaveGame {
     await this.loadPC();
     //Load The Last Module
     console.log('SaveGame', this.getLastModule(), 'Loading Module...');
-    // Retail LoadGame / DoQuickLoad: SetSoundMode(0) then BusyWaitMuteSound before ShowLoadScreen.
+    // LoadGame / DoQuickLoad: SetSoundMode(0) then BusyWaitMuteSound before ShowLoadScreen.
     AudioEngine.SetSoundMode(SoundMode.POP, 0);
     await AudioEngine.BusyWaitMuteSound();
     GameState.LoadModule(this.getLastModule(), null);
@@ -430,7 +430,7 @@ export class SaveGame {
    *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
-   * await saveGame.initGameInProgressFolder();
+   * await saveGame.initGameInProgressFolder;
    * // Game resources are now available in the game in progress folder
    */
   async initGameInProgressFolder(){
@@ -454,7 +454,7 @@ export class SaveGame {
    *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
-   * await saveGame.initSaveGameResourceLoader();
+   * await saveGame.initSaveGameResourceLoader;
    * // SAVEGAME.sav is now loaded and ready for resource extraction
    */
   async initSaveGameResourceLoader(){
@@ -484,7 +484,7 @@ export class SaveGame {
    *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
-   * await saveGame.loadGlobalVARS();
+   * await saveGame.loadGlobalVARS;
    * // Global variables are now available in GameState.GlobalVariableManager
    */
   async loadGlobalVARS(){
@@ -539,7 +539,7 @@ export class SaveGame {
     for(let i = 0; i < boolBytes.length; i++){
       for(let j = 0; j < 8; j++){
         let index = (i * 8) + j;
-        let bit = (boolBytes[i] >> (7 - j)) & 1; // retail MSB-first
+        let bit = (boolBytes[i] >> (7 - j)) & 1; // MSB-first
 
         let boolCat = catBooleans[index];
         if(boolCat){
@@ -571,7 +571,7 @@ export class SaveGame {
       }
     }
 
-    // Rebuild Catalog from Cat* list order so load→save preserves retail identifier order
+    // Rebuild Catalog from Cat* list order so load→save preserves identifier order
     const GVM = GameState.GlobalVariableManager;
     const catalog: { name: string; type: 'Boolean' | 'Number' | 'String' | 'Location' }[] = [];
     const pushCat = (structs: any[], type: 'Boolean' | 'Number' | 'String' | 'Location') => {
@@ -604,7 +604,7 @@ export class SaveGame {
    *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
-   * await saveGame.loadPartyTable();
+   * await saveGame.loadPartyTable;
    * // Party data is now available in GameState.PartyManager
    */
   async loadPartyTable(){
@@ -614,7 +614,7 @@ export class SaveGame {
       const gff = new GFFObject(data);
       await GameState.PartyManager.Load(gff);
       // this.partytable = new GameState.PartyTableManager(gff);
-      // await this.partytable.Load();
+      // await this.partytable.Load;
     }catch(e){
       console.error(e);
     }
@@ -635,7 +635,7 @@ export class SaveGame {
    *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
-   * await saveGame.loadInventory();
+   * await saveGame.loadInventory;
    * // Inventory items are now available in GameState.InventoryManager
    */
   async loadInventory(){
@@ -663,7 +663,7 @@ export class SaveGame {
    *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
-   * console.log(saveGame.getAreaName()); // "Endar Spire"
+   * console.log(saveGame.getAreaName); // "Endar Spire"
    */
   getAreaName(){
     return this.AREANAME;
@@ -676,7 +676,7 @@ export class SaveGame {
    *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
-   * console.log(saveGame.getLastModule()); // "001EBO"
+   * console.log(saveGame.getLastModule); // "001EBO"
    */
   getLastModule(){
     return this.LASTMODULE;
@@ -689,7 +689,7 @@ export class SaveGame {
    *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
-   * console.log(saveGame.getSaveName()); // "My Save Game" or ""
+   * console.log(saveGame.getSaveName); // "My Save Game" or ""
    */
   getSaveName(){
     return this.SAVEGAMENAME;
@@ -706,11 +706,11 @@ export class SaveGame {
    *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
-   * console.log(saveGame.getFullName()); // "AUTOSAVE"
+   * console.log(saveGame.getFullName); // "AUTOSAVE"
    *
    * const customSave = new SaveGame('000002 - Game1');
    * customSave.SAVEGAMENAME = 'My Adventure';
-   * console.log(customSave.getFullName()); // "Game1 - My Adventure"
+   * console.log(customSave.getFullName); // "Game1 - My Adventure"
    */
   getFullName(){
     if(this.getIsQuickSave()) {
@@ -731,10 +731,10 @@ export class SaveGame {
    *
    * @example
    * const autoSave = new SaveGame('000001 - AUTOSAVE');
-   * console.log(autoSave.getIsAutoSave()); // true
+   * console.log(autoSave.getIsAutoSave); // true
    *
    * const manualSave = new SaveGame('000002 - Game1');
-   * console.log(manualSave.getIsAutoSave()); // false
+   * console.log(manualSave.getIsAutoSave); // false
    */
   getIsAutoSave(){
     return this.folderName.split(' - ')[1] == 'AUTOSAVE';
@@ -747,10 +747,10 @@ export class SaveGame {
    *
    * @example
    * const quickSave = new SaveGame('000000 - QUICKSAVE');
-   * console.log(quickSave.getIsQuickSave()); // true
+   * console.log(quickSave.getIsQuickSave); // true
    *
    * const manualSave = new SaveGame('000002 - Game1');
-   * console.log(manualSave.getIsQuickSave()); // false
+   * console.log(manualSave.getIsQuickSave); // false
    */
   getIsQuickSave(){
     return this.folderName.split(' - ')[1] == 'QUICKSAVE';
@@ -763,10 +763,10 @@ export class SaveGame {
    *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
-   * console.log(saveGame.getSaveNumber()); // 1
+   * console.log(saveGame.getSaveNumber); // 1
    *
    * const quickSave = new SaveGame('000000 - QUICKSAVE');
-   * console.log(quickSave.getSaveNumber()); // 0
+   * console.log(quickSave.getSaveNumber); // 0
    */
   getSaveNumber(){
     return parseInt(this.folderName.split(' - ')[0]);
@@ -780,7 +780,7 @@ export class SaveGame {
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
    * saveGame.TIMEPLAYED = 7200; // 2 hours in seconds
-   * console.log(saveGame.getHoursPlayed()); // 2
+   * console.log(saveGame.getHoursPlayed); // 2
    */
   getHoursPlayed(){
     return Math.floor(this.TIMEPLAYED / 3600);
@@ -794,7 +794,7 @@ export class SaveGame {
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
    * saveGame.TIMEPLAYED = 7320; // 2 hours and 2 minutes in seconds
-   * console.log(saveGame.getMinutesPlayed()); // 2
+   * console.log(saveGame.getMinutesPlayed); // 2
    */
   getMinutesPlayed(){
     return Math.floor(60 * ((this.TIMEPLAYED / 3600) % 1));
@@ -815,7 +815,7 @@ export class SaveGame {
    *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
-   * const thumbnail = await saveGame.getThumbnail();
+   * const thumbnail = await saveGame.getThumbnail;
    * // Use thumbnail in UI
    */
   async getThumbnail(){
@@ -888,7 +888,7 @@ export class SaveGame {
   /**
    * Shared writer used by named saves, overwrite, autosave, and quicksave.
    * Packs module ERF, sidecars (NFO/globals/party), and screenshot.
-   * pifo.ifo is written only for PC autosave (save_id === 1), matching retail DoPCAutosave.
+   * pifo.ifo is written only for PC autosave (save_id === 1), matching DoPCAutosave.
    *
    * @param nfoModuleName - Optional LASTMODULE / AreaName override (module-enter autosave uses destination).
    */
@@ -917,7 +917,7 @@ export class SaveGame {
     await SaveGame.ExportSaveNFO(save_dir, name, save_id, save_id === 1, nfoModuleName);
     await SaveGame.ExportGlobalVars( save_dir );
     await GameState.PartyManager.Export( save_dir );
-    // Retail DoPCAutosave copies TEMP:pifo only into 000001 - AUTOSAVE.
+    // DoPCAutosave copies TEMP:pifo only into 000001 - AUTOSAVE.
     // Manual / quick saves never include pifo.ifo.
     if(save_id === 1){
       await SaveGame.ExportPIFO(save_dir);
@@ -984,7 +984,7 @@ export class SaveGame {
   }
 
   /**
-   * Retail-style autosave into `000001 - AUTOSAVE`.
+   * -style autosave into `000001 - AUTOSAVE`.
    */
   static async AutoSave(){
     if(!GameState.module){ return; }
@@ -1000,7 +1000,7 @@ export class SaveGame {
   }
 
   /**
-   * Retail DoPCAutosave during StartNewModule — NFO LASTMODULE/AREANAME use the destination module.
+   * DoPCAutosave during StartNewModule — NFO LASTMODULE/AREANAME use the destination module.
    * LoadScreen is already open for the transition, so UI chrome is suppressed.
    */
   static async AutoSaveOnModuleEnter(destinationModule: string){
@@ -1017,7 +1017,7 @@ export class SaveGame {
   }
 
   /**
-   * Retail-style quicksave into `000000 - QUICKSAVE`.
+   * -style quicksave into `000000 - QUICKSAVE`.
    */
   static async QuickSave(){
     if(!GameState.module){ return; }
@@ -1033,7 +1033,7 @@ export class SaveGame {
   }
 
   /**
-   * Retail DoQuickLoad — load slot 000000 QUICKSAVE; no-op if missing.
+   * DoQuickLoad — load slot 000000 QUICKSAVE; no-op if missing.
    */
   static async QuickLoad(){
     const save = SaveGame.saves.find(s => s.getIsQuickSave());
@@ -1049,7 +1049,7 @@ export class SaveGame {
 
   /**
    * Exports player template as pifo.ifo.
-   * Retail only copies TEMP:pifo into the PC autosave folder (DoPCAutosave);
+   * only copies TEMP:pifo into the PC autosave folder (DoPCAutosave);
    * callers must gate this to save_id === 1.
    */
   static async ExportPIFO(directory: string){
@@ -1127,7 +1127,7 @@ export class SaveGame {
     nfo.RootNode.addField(new GFFField(GFFDataType.DWORD, 'TIMEPLAYED')).value = GameState.time | 0;
 
     if(GameState.GameKey == GameEngineType.TSL){
-      // Retail TSL: TIMESTAMP, PCNAME, PCAUTOSAVE, SAVENUMBER, STORYHINT0..9
+      // TSL: TIMESTAMP, PCNAME, PCAUTOSAVE, SAVENUMBER, STORYHINT0..9
       const fileTime = BigInt(Date.now() - winEpoch) * 10000n;
       const timestampBuf = new Uint8Array(8);
       new DataView(timestampBuf.buffer).setBigUint64(0, fileTime, true);
@@ -1142,7 +1142,7 @@ export class SaveGame {
         nfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'STORYHINT'+i)).setValue(GameState.PartyManager.StoryHints[i] | 0);
       }
     }else{
-      // Retail K1: single STORYHINT; PCAUTOSAVE on autosave
+      // K1: single STORYHINT; PCAUTOSAVE on autosave
       nfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'STORYHINT')).value = GameState.PartyManager.StoryHint | 0;
       if(isPCAutoSave){
         nfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'PCAUTOSAVE')).setValue(1);
@@ -1180,7 +1180,7 @@ export class SaveGame {
     gvt.FileType = 'GVT ';
 
     const GVM = GameState.GlobalVariableManager;
-    // Retail WriteTable walks identifiers in globalcat row order per type.
+    // WriteTable walks identifiers in globalcat row order per type.
     const boolEntries = GVM.getCatalogByType('Boolean');
     const locEntries = GVM.getCatalogByType('Location');
     const numEntries = GVM.getCatalogByType('Number');
@@ -1188,7 +1188,7 @@ export class SaveGame {
 
     //Global Booleans
     const catBooleanList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatBoolean'));
-    // Retail WriteTable: ValBoolean size = (boolean_count >> 3) + 1
+    // WriteTable: ValBoolean size = (boolean_count >> 3) + 1
     const boolCount = boolEntries.length;
     const boolBuffer = new Uint8Array( (boolCount >> 3) + 1 );
     for(let i = 0; i < boolEntries.length; i++){
@@ -1197,7 +1197,7 @@ export class SaveGame {
       const byte_offset = Math.floor( i / 8 );
       const bit_index = (i % 8);
 
-      // Retail MSB-first packing (WriteTable / SetBit)
+      // MSB-first packing (WriteTable / SetBit)
       if(boolean?.value){
         boolBuffer[byte_offset] |= 1 << (7 - bit_index);
       }
@@ -1281,7 +1281,7 @@ export class SaveGame {
    * @throws {Error} Throws an error if the save directory cannot be read.
    *
    * @example
-   * await SaveGame.GetSaveGames();
+   * await SaveGame.GetSaveGames;
    * console.log(SaveGame.saves.length); // Number of save games found
    * console.log(SaveGame.NEXT_SAVE_ID); // Next available save ID
    */

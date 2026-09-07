@@ -95,7 +95,7 @@ describe("BuildSortedFeatList / CreateFeatChart", () => {
   const otherRoot = makeFeat(3, { name: 103 });
   const feats = [root, mid, end, otherRoot];
 
-  it("featChainDepth matches retail 0/1/2", () => {
+  it("featChainDepth matches engine 0/1/2", () => {
     expect(MenuAbilities.featChainDepth(root)).toBe(0);
     expect(MenuAbilities.featChainDepth(mid)).toBe(1);
     expect(MenuAbilities.featChainDepth(end)).toBe(2);

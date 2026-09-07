@@ -11,7 +11,7 @@ const _qTmp = new THREE.Quaternion();
 const _fwd = new THREE.Vector3();
 
 /**
- * Retail `Yaw(Vector*)` — degrees.
+ * `Yaw(Vector*)` — degrees.
  */
 export function auroraYawFromVector(x: number, y: number, _z: number): number {
   if(y === 0 && x === 0) return 0;
@@ -19,7 +19,7 @@ export function auroraYawFromVector(x: number, y: number, _z: number): number {
 }
 
 /**
- * Retail `Pitch(Vector*)` — degrees.
+ * `Pitch(Vector*)` — degrees.
  */
 export function auroraPitchFromVector(x: number, y: number, z: number): number {
   return Math.atan2(z, Math.sqrt(x * x + y * y)) * RAD2DEG;
@@ -40,20 +40,20 @@ function auroraFacingFromQuaternion(q: THREE.Quaternion, out: THREE.Vector3): TH
   return out;
 }
 
-/** Retail `Yaw(Quaternion*)` — degrees. */
+/** `Yaw(Quaternion*)` — degrees. */
 export function auroraYawFromQuaternion(q: THREE.Quaternion): number {
   auroraFacingFromQuaternion(q, _fwd);
   return auroraYawFromVector(_fwd.x, _fwd.y, _fwd.z);
 }
 
-/** Retail `Pitch(Quaternion*)` — degrees. */
+/** `Pitch(Quaternion*)` — degrees. */
 export function auroraPitchFromQuaternion(q: THREE.Quaternion): number {
   auroraFacingFromQuaternion(q, _fwd);
   return auroraPitchFromVector(_fwd.x, _fwd.y, _fwd.z);
 }
 
 /**
- * Retail `Roll(Quaternion)` — undo yaw then pitch, then extract
+ * `Roll(Quaternion)` — undo yaw then pitch, then extract
  * remaining rotation about Y (degrees).
  */
 export function auroraRollFromQuaternion(q: THREE.Quaternion): number {
@@ -71,7 +71,7 @@ export function auroraRollFromQuaternion(q: THREE.Quaternion): number {
 }
 
 /**
- * Retail `YawPitchRoll` — angles in degrees.
+ * `YawPitchRoll` — angles in degrees.
  * Composition: (yaw_Z * pitch_X) * roll_Y.
  */
 export function auroraYawPitchRoll(

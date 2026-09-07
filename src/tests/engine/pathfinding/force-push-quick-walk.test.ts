@@ -1,5 +1,5 @@
 /**
- * Force Push — retail OnApplyForcePush / QuickWalk_ForcePushed helpers.
+ * Force Push — effect apply / QuickWalk_ForcePushed helpers.
  * @jest-environment node
  */
 import { describe, expect, it, jest } from '@jest/globals';
@@ -27,9 +27,9 @@ jest.mock('@/engine/pathfinding/ComputedPath', () => ({
   },
 }));
 
-jest.mock('@/engine/pathfinding/drive-update-location', () => ({
+jest.mock('@/engine/pathfinding/update-creature-drive', () => ({
   DriveUpdateResult: { OK: 0, ARRIVED: 1, BLOCKED: 2 },
-  driveUpdateLocation: jest.fn((creature: any, dest: THREE.Vector3, _run: boolean, delta: number, rate?: number) => {
+  updateCreatureDrive: jest.fn((creature: any, dest: THREE.Vector3, _run: boolean, delta: number, rate?: number) => {
     const speed = rate && rate > 0 ? rate : 1.7;
     const step = speed * Math.max(0, delta);
     const dx = dest.x - creature.position.x;

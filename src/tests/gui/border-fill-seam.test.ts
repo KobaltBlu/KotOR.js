@@ -90,7 +90,7 @@ describe("BTN_AUTO / BTN_LEVELUP odd-width seams", () => {
   });
 });
 
-describe("asGuiSize / clampFrameDim (retail int frame)", () => {
+describe("asGuiSize / clampFrameDim (engine int frame)", () => {
   it("0.4 clamps to 1 so thin frames are not discarded", () => {
     expect(asGuiSize(0.4)).toBe(1);
     expect(asGuiSize(0)).toBe(0);
@@ -99,7 +99,7 @@ describe("asGuiSize / clampFrameDim (retail int frame)", () => {
   });
 
   it("oversized dim clamps to half extent; fill hole becomes 0", () => {
-    // 10×10 control, dim 8 → each side 5, hole 0 (retail Draw when edges do not fit)
+    // 10×10 control, dim 8 → each side 5, hole 0 (Draw when edges do not fit)
     expect(clampFrameDim(8, 10, 10)).toBe(5);
     expect(
       borderInnerExtent({ width: 10, height: 10, dimension: 8, innerOffset: 0 }),
@@ -117,7 +117,7 @@ describe("asGuiSize / clampFrameDim (retail int frame)", () => {
 
   it("odd width with oversized dim: fill collapses to 0, frame takes half", () => {
     // 11×11, dim 8 → clamp 5; GetInnerExtent degenerate test zeros the 1px leftover
-    // (w < edge/2). Frame still uses half-extent corners (retail Draw).
+    // (w < edge/2). Frame still uses half-extent corners (Draw).
     expect(clampFrameDim(8, 11, 11)).toBe(5);
     expect(
       borderInnerExtent({ width: 11, height: 11, dimension: 8, innerOffset: 0 }),

@@ -2,7 +2,7 @@ import type { ItemProperty } from "@/engine/ItemProperty";
 import { ModuleItemProperty } from "@/enums/module/ModuleItemProperty";
 
 /**
- * Retail GetUsedActivePropertyUsesLeft
+ * GetUsedActivePropertyUsesLeft
  * DecrementUses.
  *
  * @file item-property-uses.ts
@@ -110,7 +110,7 @@ export type DecrementUsesResult = {
 };
 
 /**
- * Retail DecrementUses cost_value switch — pure state transform.
+ * DecrementUses cost_value switch — pure state transform.
  */
 export function applyDecrementUses(input: DecrementUsesInput): DecrementUsesResult {
   let charges = input.charges | 0;
@@ -177,7 +177,7 @@ export function applyDecrementUses(input: DecrementUsesInput): DecrementUsesResu
       break;
   }
 
-  // Retail destroy path: stack-empty (bVar4) or charge-exhausted with
+  // destroy path: stack-empty (bVar4) or charge-exhausted with
   // usable==0 (and not uses-per-day / timed props which set skipDestroy).
   // Medical item types only skip the "scan remaining charge props" branch —
   // they still destroy when usable==0 and !bVar5.
@@ -189,7 +189,7 @@ export function applyDecrementUses(input: DecrementUsesInput): DecrementUsesResu
 }
 
 /**
- * Retail AddItemCastSpellActions visibility gate (non-party creatures).
+ * AddItemCastSpellActions visibility gate (non-party creatures).
  * Fail when no perception entry, HEARD-only (flags&0xC)==4, or invisible & !SEEN.
  */
 export function canTargetItemCastByPerception(

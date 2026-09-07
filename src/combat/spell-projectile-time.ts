@@ -1,5 +1,5 @@
 /**
- * Retail CalculateLastSpellProjectileTime.
+ * CalculateLastSpellProjectileTime.
  *
  * Speed = ln(distance) * 3 + 2 (with path-type multipliers), then
  * flightMs = (distance / speed) * 1000. Path type 6 adds +2500 ms.
@@ -7,7 +7,7 @@
 
 import { ProjectilePath } from "@/enums/combat/ProjectilePath";
 
-/** Retail path type 6 hang time after base flight (0x9C4). */
+/** path type 6 hang time after base flight (0x9C4). */
 export const SPELL_PROJECTILE_PATH6_EXTRA_MS = 2500;
 
 /**
@@ -23,7 +23,7 @@ export function calculateLastSpellProjectileTimeMs(
     return 1;
   }
 
-  // retail: ln(mag)*3+2 via 0.693147 * log2(mag) * 3 + 2
+  // : ln(mag)*3+2 via 0.693147 * log2(mag) * 3 + 2
   let speed = Math.log(mag) * 3.0 + 2.0;
   const path = pathType | 0;
 
@@ -51,14 +51,14 @@ export function calculateLastSpellProjectileTimeMs(
   }
 
   let ms = Math.floor((mag / speed) * 1000);
-  // Retail checks spell path field == 6 after the switch (not only param)
+  // checks spell path field == 6 after the switch (not only param)
   if(path === 6){
     ms += SPELL_PROJECTILE_PATH6_EXTRA_MS;
   }
   return Math.max(1, ms);
 }
 
-/** Map spells.2da projtype strings → retail path ids. */
+/** Map spells.2da projtype strings → path ids. */
 const PROJTYPE_NAME_TO_PATH: Record<string, number> = {
   default: ProjectilePath.DEFAULT,
   homing: ProjectilePath.HOMING,
@@ -91,8 +91,8 @@ export function resolveSpellProjectilePathType(projtype: unknown): number {
 
 /**
  * Whether SpellCastAndImpact should delay impact until projectile landing
- * (retail range L / W, or explicit grenade / impactAtProjectileLanding).
- * Retail CalculateLastSpellProjectileTime: proj==0 → no travel delay.
+ * (range L / W, or explicit grenade / impactAtProjectileLanding).
+ * CalculateLastSpellProjectileTime: proj==0 → no travel delay.
  */
 export function shouldDelaySpellImpactToLanding(
   spell: { range?: string; proj?: number; projtype?: unknown } | undefined,
@@ -117,7 +117,7 @@ function spellHasProjectileFlag(
 }
 
 /**
- * Retail CalculateLastSpellProjectileTime entry: proj==0 → delay 0.
+ * CalculateLastSpellProjectileTime entry: proj==0 → delay 0.
  * Otherwise flight ms from distance + path (path 6 adds +2500).
  */
 export function calculateSpellProjectileImpactDelayMs(

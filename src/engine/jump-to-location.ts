@@ -1,5 +1,5 @@
 /**
- * Jump destination resolution — retail AIActionJumpToPoint
+ * Jump destination resolution — AIActionJumpToPoint
  * (AddToArea when dest area ≠ current; same-area SetPosition).
  *
  * KotOR.js modules are typically one area; when dest area belongs to another
@@ -54,7 +54,7 @@ export function classifyJumpDestination(
     return { kind: 'same', area: destArea };
   }
 
-  // Different area object, same (or unknown) module — retail AddToArea.
+  // Different area object, same (or unknown) module — AddToArea.
   return { kind: 'reattach', area: destArea };
 }
 

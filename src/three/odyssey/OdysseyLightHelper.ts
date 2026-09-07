@@ -1,9 +1,9 @@
 import * as THREE from "three";
 import type { OdysseyLight3D } from "@/three/odyssey/OdysseyLight3D";
 
-/** Distance scale where retail atten ≈ 0.5: d/r = sqrt((1/0.5 - 1) / 4.5). */
+/** Distance scale where atten ≈ 0.5: d/r = sqrt((1/0.5 - 1) / 4.5). */
 const ATTEN_HALF_SCALE = Math.sqrt((1 / 0.5 - 1) / 4.5);
-/** Distance scale where retail atten ≈ 0.25. */
+/** Distance scale where atten ≈ 0.25. */
 const ATTEN_QUARTER_SCALE = Math.sqrt((1 / 0.25 - 1) / 4.5);
 
 const SHADOW_RING_COLOR = new THREE.Color(0xffaa33);
@@ -62,7 +62,7 @@ function makeFillMat(color: THREE.ColorRepresentation, opacity: number){
 }
 
 /**
- * Debug gizmo for an Odyssey point light: real radius, retail falloff rings,
+ * Debug gizmo for an Odyssey point light: real radius, falloff rings,
  * and selection/ambient state — sparse outlines, not a dense wireframe cage.
  */
 export class OdysseyLightHelper extends THREE.Object3D {
@@ -129,7 +129,7 @@ export class OdysseyLightHelper extends THREE.Object3D {
 
   /**
    * Sync world pose, radius shells, color, and bound/ambient styling.
-   * @param bound Whether the light is in the current ControlLightsFade bound set.
+   * @param bound Whether the light is in the current light fade pass bound set.
    */
   update(bound: boolean){
     const light = this.light;

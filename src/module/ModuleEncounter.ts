@@ -18,11 +18,11 @@ import { EncounterSpawnPointEntry } from "@/module/EncounterSpawnPointEntry";
 import { EncounterSpawnEntry } from "@/module/EncounterSpawnEntry";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 import type { ModuleCreature } from "@/module/ModuleCreature";
-import { computeNonVisibleLocation, computeSafeLocation } from "@/engine/pathfinding/compute-safe-location";
+import { findNonVisibleLocation, findSafeLocation } from "@/engine/pathfinding/find-safe-location";
 import type { OdysseyModel3D } from "@/three/odyssey";
 
 /**
- * Retail CalculatePointsFromCR.
+ * CalculatePointsFromCR.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -34,7 +34,7 @@ import type { OdysseyModel3D } from "@/three/odyssey";
 /**
  * Convert challenge rating to encounter spawn-pool points.
  * Fractional (0,1): fractionalcr.2da min ladder → 1.0 / 1.5^-1…^-4.
- * Else: 1.5^CR (retail uses powerLookUp table for CR∈[0,50)).
+ * Else: 1.5^CR (uses powerLookUp table for CR∈[0,50)).
  */
 function calculatePointsFromCR(challengeRating: number): number {
   const cr = Number(challengeRating);
@@ -55,7 +55,7 @@ function calculatePointsFromCR(challengeRating: number): number {
     if(!mins.length){
       mins.push(0.4, 0.3, 0.2, 0.15, -99999);
     }
-    // Retail: first min where min <= cr wins
+    // : first min where min <= cr wins
     if(mins[0] !== undefined && mins[0] <= cr) return 1.0;
     if(mins[1] !== undefined && mins[1] <= cr) return Math.pow(1.5, -1);
     if(mins[2] !== undefined && mins[2] <= cr) return Math.pow(1.5, -2);
@@ -71,14 +71,14 @@ function calculatePointsFromCR(challengeRating: number): number {
 }
 
 /**
- * Encounter spawn helpers — retail:
+ * Encounter spawn helpers — :
  * SpawnIfAppropriate, CalculateSpawnPool,
  * BuildSpawnList, BuildInitialSpawnList,
  * AddCreaturesToSpawnList, PadOutCreatureCount,
- * SpawnCreatureFromSpawnList ,
+ * SpawnCreatureFromSpawnList,
  * TallyEnemyRadiusPoints.
  *
- * Placement uses ComputeSafeLocation / ComputeNonVisibleLocation.
+ * Placement uses find safe location / find non-visible location.
  *
  * (formerly encounter-spawn.ts)
  */
@@ -90,7 +90,7 @@ function creaturePoints(entry: EncounterCreatureEntry): number {
 }
 
 /**
- * Retail TallyEnemyRadiusPoints — sum CR-points of hostiles near lastEntered (±30).
+ * TallyEnemyRadiusPoints — sum CR-points of hostiles near lastEntered (±30).
  */
 function tallyEnemyRadiusPoints(encounter: ModuleEncounter): number {
   const area = encounter.area || GameState.module?.area;
@@ -120,11 +120,11 @@ function tallyEnemyRadiusPoints(encounter: ModuleEncounter): number {
     if(Math.abs(dx) > TALLY_RADIUS || Math.abs(dy) > TALLY_RADIUS) continue;
     if(dx * dx + dy * dy > TALLY_RADIUS * TALLY_RADIUS) continue;
 
-    // Retail: reputation hostile to the encounter object
+    // : reputation hostile to the encounter object
     if(!encounter.isHostile?.(c)) continue;
 
     let level = levelOf(c);
-    // Retail halves when == 0 (cached is_pc from PostProcess)
+    // halves when == 0 (cached is_pc from PostProcess)
     if(!c.isPC){
       level = Math.floor(level / 2);
     }
@@ -135,7 +135,7 @@ function tallyEnemyRadiusPoints(encounter: ModuleEncounter): number {
 }
 
 /**
- * Retail CalculateSpawnPool.
+ * CalculateSpawnPool.
  * @param challengeRatingHint -1 = tally radius; else points from that CR
  */
 function calculateSpawnPool(encounter: ModuleEncounter, challengeRatingHint: number = -1){
@@ -166,7 +166,7 @@ function pushSpawnEntry(out: EncounterSpawnEntry[], c: EncounterCreatureEntry, p
 }
 
 /**
- * Retail PadOutCreatureCount — fill to (rec − spawned) by repeatedly
+ * PadOutCreatureCount — fill to (rec − spawned) by repeatedly
  * selecting the highest CR-points band among eligible creatures, then random within band.
  */
 function padOutCreatureCount(
@@ -210,7 +210,7 @@ function padOutCreatureCount(
         c.pickMark = true;
         marked++;
       }
-      // Retail exits when every single-spawn in the band has been tried
+      // exits when every single-spawn in the band has been tried
       if(band.length === singleInBand && marked === singleInBand) break;
     }
     if(marked === 0) break;
@@ -218,7 +218,7 @@ function padOutCreatureCount(
 }
 
 /**
- * Retail AddCreaturesToSpawnList
+ * AddCreaturesToSpawnList
  * Truncate spawn list from `atIndex`, then refill with creatures cheaper than the seed CR budget.
  */
 function addCreaturesToSpawnList(
@@ -231,7 +231,7 @@ function addCreaturesToSpawnList(
 ){
   const seedPts = calculatePointsFromCR(seed.spawnCR || 0);
   const areaPts = Number(encounter.areaPoints) || 0;
-  // Retail: skip when seed points == (area points)
+  // : skip when seed points == (area points)
   if(seedPts === areaPts) return;
 
   if(out.length === 1){
@@ -253,7 +253,7 @@ function addCreaturesToSpawnList(
     if(!(pts < remaining)) continue;
 
     while(pts < remaining){
-      // Retail: break when pts > remaining-0.001, at max, or single-spawn used
+      // : break when pts > remaining-0.001, at max, or single-spawn used
       if(pts > threshold) break;
       if(out.length >= maxCreatures) break;
       if(c.singleSpawn && c.usedThisWave) break;
@@ -277,7 +277,7 @@ function buildSpawnList(encounter: ModuleEncounter){
   const slotsLeft = Math.max(0, maxCreatures - already);
   if(slotsLeft <= 0) return;
 
-  // Retail BuildSpawnList uses recovered − active; no underflow pad when recovered is 0
+  // BuildSpawnList uses recovered − active; no underflow pad when recovered is 0
   let budget = (Number(encounter.spawnPoolRecovered) || 0) - (Number(encounter.spawnPoolActive) || 0);
   if(budget < 0) budget = 0;
 
@@ -287,7 +287,7 @@ function buildSpawnList(encounter: ModuleEncounter){
   const recovered = Number(encounter.spawnPoolRecovered) || 0;
   const areaPts = Number(encounter.areaPoints) || 0;
 
-  // Reset per-wave singleSpawn markers (Retail)
+  // Reset per-wave singleSpawn markers 
   for(const c of list){
     c.usedThisWave = false;
     c.pickMark = false;
@@ -314,7 +314,7 @@ function buildSpawnList(encounter: ModuleEncounter){
 
     if(!(c.cr) || pts > soft) continue;
 
-    // Same-CR band: random among contiguous equal-CR peers (retail)
+    // Same-CR band: random among contiguous equal-CR peers 
     const next = list[i + 1];
     if(next && Number(next.cr) === Number(c.cr)){
       const bandStart = i;
@@ -378,7 +378,7 @@ function buildSpawnList(encounter: ModuleEncounter){
     padOutCreatureCount(list, out, targetCount, slotsLeft);
   }
 
-  // Retail: if recovered < area points, zero recovered after build
+  // : if recovered < area points, zero recovered after build
   if(recovered < areaPts){
     encounter.spawnPoolRecovered = 0;
   }
@@ -387,7 +387,7 @@ function buildSpawnList(encounter: ModuleEncounter){
 }
 
 /**
- * Retail SpawnIfAppropriate
+ * SpawnIfAppropriate
  * only builds when spawnPoolRecovered > 0.
  */
 function spawnIfAppropriate(encounter: ModuleEncounter){
@@ -400,7 +400,7 @@ function spawnIfAppropriate(encounter: ModuleEncounter){
   }
 
   calculateSpawnPool(encounter, -1);
-  // Retail: if (0.0 <) BuildSpawnList
+  // : if (0.0 <) BuildSpawnList
   if((Number(encounter.spawnPoolRecovered) || 0) > 0){
     buildSpawnList(encounter);
     if(encounter.spawnList.length > 0){
@@ -412,7 +412,7 @@ function spawnIfAppropriate(encounter: ModuleEncounter){
 const NONVISIBLE_SENTINEL = -1;
 
 /**
- * Retail SpawnCreatureFromSpawnList placement.
+ * SpawnCreatureFromSpawnList placement.
  * @returns undefined when NonVisible returns (−1,−1,−1) — abort spawn (retry next tick).
  */
 function pickSpawnPosition(
@@ -439,7 +439,7 @@ function pickSpawnPosition(
       const dy = p.y - oy;
       const dz = p.z - oz;
       const d2 = dx * dx + dy * dy + dz * dz;
-      // Retail picks farthest spawn point from lastEntered
+      // picks farthest spawn point from lastEntered
       if(d2 > bestDistSq){
         bestDistSq = d2;
         bestIdx = i;
@@ -454,20 +454,20 @@ function pickSpawnPosition(
 
   const scratch = new THREE.Vector3();
   if(area && usedSpawnPoint){
-    // Retail: ComputeSafeLocation(spawnPoint, 20) — on success use it; on fail fall through
-    if(computeSafeLocation(area, result.pos, scratch, { radius: 20 })){
+    // : find safe location(spawnPoint, 20) — on success use it; on fail fall through
+    if(findSafeLocation(area, result.pos, scratch, { radius: 20 })){
       result.pos.copy(scratch);
       return result;
     }
   }
 
   if(area){
-    // Retail: ComputeNonVisibleLocation(encounter.pos, …, 40)
-    if(computeNonVisibleLocation(area, encounter.position, scratch, { radius: 40 })){
+    // : find non-visible location(encounter.pos, …, 40)
+    if(findNonVisibleLocation(area, encounter.position, scratch, { radius: 40 })){
       result.pos.copy(scratch);
       return result;
     }
-    // Retail abort when out is (−1,−1,−1)
+    // abort when out is (−1,−1,−1)
     if(
       scratch.x === NONVISIBLE_SENTINEL &&
       scratch.y === NONVISIBLE_SENTINEL &&
@@ -475,7 +475,7 @@ function pickSpawnPosition(
     ){
       return undefined;
     }
-    // Partial NonVisible write (non-sentinel) — retail still places there
+    // Partial NonVisible write (non-sentinel) — still places there
     if(Number.isFinite(scratch.x) && scratch.x !== NONVISIBLE_SENTINEL){
       result.pos.copy(scratch);
     }
@@ -485,7 +485,7 @@ function pickSpawnPosition(
 }
 
 /**
- * Retail SpawnCreatureFromSpawnList — spawn head of queue (one per AI tick).
+ * SpawnCreatureFromSpawnList — spawn head of queue (one per AI tick).
  */
 function spawnCreatureFromSpawnList(encounter: ModuleEncounter): ModuleCreature | undefined {
   if(!encounter.spawnList?.length) return undefined;
@@ -507,7 +507,7 @@ function spawnCreatureFromSpawnList(encounter: ModuleEncounter): ModuleCreature 
   }
 
   const placement = pickSpawnPosition(encounter);
-  // Retail: NonVisible (−1,−1,−1) destroys creature and returns without dequeue (retry)
+  // : NonVisible (−1,−1,−1) destroys creature and returns without dequeue (retry)
   if(!placement){
     return undefined;
   }
@@ -517,14 +517,14 @@ function spawnCreatureFromSpawnList(encounter: ModuleEncounter): ModuleCreature 
   creature.clearAllActions?.();
   creature.position.copy(pos);
   creature.setFacing?.(facing, true);
-  // Retail = 0 at spawn (mirrors is_pc cache; NPCs already 0)
+  // = 0 at spawn (mirrors is_pc cache; NPCs already 0)
   creature.isPC = 0;
 
   const poolCost =
     entry.poolPoints ||
     calculatePointsFromCR(entry.spawnCR || creature.challengeRating || 0);
 
-  // registerSpawnedCreature increments numberSpawned + pool; mirror retail then dequeue
+  // registerSpawnedCreature increments numberSpawned + pool; mirror then dequeue
   encounter.registerSpawnedCreature(creature, poolCost);
   encounter.spawnPoolRecovered = Math.max(
     0,
@@ -600,7 +600,7 @@ export class ModuleEncounter extends ModuleObject {
   customScriptId: any;
   areaListMaxSize: any;
   spawnPoolActive: any;
-  /** Retail CR points recovered via DestroySelf unlink. */
+  /** CR points recovered via DestroySelf unlink. */
   spawnPoolRecovered: number = 0;
 
   constructor ( gff = new GFFObject() ) {
@@ -652,7 +652,7 @@ export class ModuleEncounter extends ModuleObject {
   }
 
   /**
-   * Retail AIUpdate — occupancy, spawn reset, spawn queue.
+   * AIUpdate — occupancy, spawn reset, spawn queue.
    */
   aiUpdate(delta = 0){
     super.aiUpdate(delta);
@@ -722,7 +722,7 @@ export class ModuleEncounter extends ModuleObject {
       }
     }
 
-    // Retail AIUpdate: Single-shot + Reset → re-activate after ResetTime
+    // AIUpdate: Single-shot + Reset → re-activate after ResetTime
     // Gate: current_spawns < max_spawns (Respawns) || max_spawns == -1
     if(
       this.spawnOption === 1 &&
@@ -751,7 +751,7 @@ export class ModuleEncounter extends ModuleObject {
       }
     }
 
-    // Retail AIUpdate: SpawnCreatureFromSpawnList each tick while queue non-empty
+    // AIUpdate: SpawnCreatureFromSpawnList each tick while queue non-empty
     if(this.active && this.spawnList?.length){
       spawnCreatureFromSpawnList(this);
     }
@@ -789,7 +789,7 @@ export class ModuleEncounter extends ModuleObject {
   }
 
   /**
-   * Mark a creature as spawned from this encounter (Retail).
+   * Mark a creature as spawned from this encounter.
    */
   registerSpawnedCreature(creature: ModuleCreature, poolCost: number = 0){
     if(!creature) return;
@@ -803,10 +803,10 @@ export class ModuleEncounter extends ModuleObject {
   }
 
   /**
-   * Retail RemoveFromActiveCreatureCount.
+   * RemoveFromActiveCreatureCount.
    * @param challengeRating creature CR
    * @param fromDestroySelf 1 = AIActionEncounterCreatureDestroySelf (recover to);
-   * 0 = OnApplyDeath (may fire OnExhausted when count hits 0)
+   * 0 = effect apply (may fire OnExhausted when count hits 0)
    */
   removeFromActiveCreatureCount(challengeRating: number, fromDestroySelf: number = 0){
     let spawned = this.numberSpawned || 0;
@@ -827,16 +827,16 @@ export class ModuleEncounter extends ModuleObject {
 
     if(spawned === 0){
       this.onExhausted();
-      // Retail clears per-creature spawn flags, then:
+      // clears per-creature spawn flags, then:
       this.active = 0;
       this.started = 0;
       this.exhausted = 1;
       if(this.reset === 1){
-        // Retail stamps world timer last_spawn_day / last_spawn_time
+        // stamps world timer last_spawn_day / last_spawn_time
         const tm = GameState.module?.timeManager;
         this.lastSpawnDay = tm?.pauseDay ?? 0;
         this.lastSpawnTime = tm?.pauseTime ?? 0;
-        // Avoid day=0 looking "unstamped" — retail treats 0 as empty
+        // Avoid day=0 looking "unstamped" — treats 0 as empty
         if(!this.lastSpawnDay && !this.lastSpawnTime){
           this.lastSpawnDay = 1;
         }
@@ -854,7 +854,7 @@ export class ModuleEncounter extends ModuleObject {
         this.initProperties();
         this.loadScripts();
         try{ this.buildGeometry(); }catch(e){console.error(e)}
-        //this.initObjectsInside();
+        //this.initObjectsInside;
       }else{
         console.error('Failed to load ModuleTrigger template');
         if(this.template instanceof GFFObject){
@@ -907,7 +907,7 @@ export class ModuleEncounter extends ModuleObject {
       })
     }
 
-    // trigGeom.computeFaceNormals();
+    // trigGeom.computeFaceNormals;
     trigGeom.computeVertexNormals();
     trigGeom.computeBoundingSphere();
 

@@ -255,7 +255,7 @@ export class BinkAudioDCTDecoder {
     return out;
   }
 
-  // Read float as in FFmpeg get_float(): 5-bit power and 23-bit mantissa, with sign bit afterwards.
+  // Read float as in FFmpeg get_float: 5-bit power and 23-bit mantissa, with sign bit afterwards.
   private readFloat(br: BitReaderLE): number {
     if (br.bitsLeft() < 1 + 5 + 23) throw new RangeError('bitstream underrun: readFloat');
     const power = br.readBits(5);

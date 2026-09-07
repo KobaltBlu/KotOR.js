@@ -77,7 +77,7 @@ describe("blank UT* blueprints", () => {
     expect(gff.RootNode.hasField("ActionList")).toBe(false);
   });
 
-  test("other UT* blank FileTypes match retail templates", () => {
+  test("other UT* blank FileTypes match engine templates", () => {
     expect(new ForgeCreature(undefined, "new_creature").blueprint.FileType).toBe("UTC ");
     expect(new ForgeDoor(undefined, "new_door").blueprint.FileType).toBe("UTD ");
     expect(new ForgeEncounter(undefined, "new_encounter").blueprint.FileType).toBe("UTE ");

@@ -57,7 +57,7 @@ export type AudioPlaylistStreamEntry = {
   title: string;
   resRef: string;
   label: string;
-  /** Index in `getAmbientMusicPlaylistEntries()` order. */
+  /** Index in `getAmbientMusicPlaylistEntries` order. */
   ambientPhysicalIndex: number;
 };
 
@@ -88,9 +88,9 @@ export type AudioPlayerStopOptions = {
 
 export class AudioPlayerState {
   
-  // this.gainNode = AudioEngine.GetAudioEngine().audioCtx.createGain();
+  // this.gainNode = AudioEngine.GetAudioEngine.audioCtx.createGain;
   // this.gainNode.gain.value = 0.25;
-  // this.source = AudioEngine.GetAudioEngine().audioCtx.createBufferSource();
+  // this.source = AudioEngine.GetAudioEngine.audioCtx.createBufferSource;
   static file?: EditorFile;
   static audioFile: KotOR.AudioFile;
   static buffer: any;
@@ -955,8 +955,8 @@ export class AudioPlayerState {
   }
 
   static ResumeLoop(){
-    // AudioPlayerState.loopId = global.setInterval(() => {
-    //   //
+    // AudioPlayerState.loopId = global.setInterval(=> {
+    // //
     // }, 100);
   }
 
@@ -976,7 +976,7 @@ export class AudioPlayerState {
   static Stop(options?: AudioPlayerStopOptions){
     try{
       if(AudioPlayerState.source){
-        // stop() schedules onended; clear first so user Stop / Pause / skip
+        // stop schedules onended; clear first so user Stop / Pause / skip
         // are not treated as a natural track end (which would advance OST).
         AudioPlayerState.source.onended = null;
         AudioPlayerState.source.disconnect();

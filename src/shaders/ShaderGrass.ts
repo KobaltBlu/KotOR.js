@@ -276,4 +276,4 @@ export class ShaderGrass extends Shader {
 
 }
 
-// ShaderGrass.Init();
+// ShaderGrass.Init;

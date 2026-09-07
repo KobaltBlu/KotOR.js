@@ -12,7 +12,7 @@ import { isWalkCheckBlockingFace } from "@/engine/pathfinding/walk-check-materia
  * Approximate NoNonWalkPolys
  * NoNonWalkPolysOnRoom.
  *
- * Retail (retail): personal-space stadium corridor vs walk-check
+ * : personal-space stadium corridor vs walk-check
  * faces — IntersectLineSegments2d × stadium edges, IntersectCircle2d ends,
  * interior containment.
  *
@@ -180,7 +180,7 @@ function faceVerts(face: OdysseyFace3): [THREE.Vector3, THREE.Vector3, THREE.Vec
 }
 
 /**
- * Retail NoNonWalkPolys stadium vs triangle ():
+ * NoNonWalkPolys stadium vs triangle :
  * IntersectLineSegments2d × stadium edges, IntersectCircle2d ends, interior samples.
  */
 function corridorHitsFace(
@@ -299,11 +299,11 @@ const _invMatrix = new THREE.Matrix4();
 
 /**
  * Test a single walkmesh (door / placeable surface) against the stadium corridor.
- * Applies WorldToLocal () when `matrixWorld` is set — retail door mesh
+ * Applies WorldToLocal  when `matrixWorld` is set — door mesh
  * stores verts in object space after obj_position_/orientation.
  *
  * `blockAllFaces`: door meshes often lack walkcheck bits — treat every face as blocking
- * (retail door surface mesh is dedicated collision geo).
+ * (door surface mesh is dedicated collision geo).
  */
 export function noNonWalkPolysOnWalkMesh(
   wok: OdysseyWalkMesh | undefined,

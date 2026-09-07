@@ -1,5 +1,5 @@
 /**
- * CreateNewAttackActions sticky / nearest behavior (retail EndCombatRound).
+ * QueueAttackActions sticky / nearest behavior (end combat round).
  * @jest-environment node
  */
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
@@ -37,7 +37,7 @@ jest.mock('@/utility/BitWise', () => ({
   },
 }));
 
-import { createNewAttackActions } from '@/combat/create-new-attack-actions';
+import { queueAttackActions } from '@/combat/queue-attack-actions';
 import { ModuleCreatureAnimState } from '@/enums/module/ModuleCreatureAnimState';
 
 function makeCreature(overrides: Record<string, unknown> = {}) {
@@ -76,7 +76,7 @@ function makeCreature(overrides: Record<string, unknown> = {}) {
   return creature;
 }
 
-describe('createNewAttackActions', () => {
+describe('queueAttackActions', () => {
   beforeEach(() => {
     mockGetNearestEnemy.mockReset();
     mockShowObject.mockReset();
@@ -87,7 +87,7 @@ describe('createNewAttackActions', () => {
     const queued = { target: creature._A };
     creature.combatRound.scheduledActionList = [queued];
 
-    expect(createNewAttackActions(creature)).toBe(false);
+    expect(queueAttackActions(creature)).toBe(false);
     expect(mockGetNearestEnemy).not.toHaveBeenCalled();
     expect(creature.attackCreature).not.toHaveBeenCalled();
     expect(creature.combatRound.scheduledActionList).toEqual([queued]);
@@ -97,10 +97,10 @@ describe('createNewAttackActions', () => {
     const creature = makeCreature();
     creature.combatData.lastAttacker = creature._A;
 
-    expect(createNewAttackActions(creature)).toBe(true);
+    expect(queueAttackActions(creature)).toBe(true);
     expect(mockGetNearestEnemy).not.toHaveBeenCalled();
     expect(creature.attackCreature).toHaveBeenCalledWith(creature._A);
-    // Retail clears lastAttacker when it equals the (re)queued target
+    // clears lastAttacker when it equals the (re)queued target
     expect(creature.combatData.lastAttacker).toBeUndefined();
   });
 
@@ -108,7 +108,7 @@ describe('createNewAttackActions', () => {
     const creature = makeCreature();
     mockGetNearestEnemy.mockReturnValue(creature._B);
 
-    createNewAttackActions(creature);
+    queueAttackActions(creature);
 
     expect(creature.attackCreature).toHaveBeenCalledWith(creature._A);
     expect(creature.attackCreature).not.toHaveBeenCalledWith(creature._B);
@@ -122,7 +122,7 @@ describe('createNewAttackActions', () => {
     creature.combatRound.scheduledActionList = [{ target: creature._A }];
     mockGetNearestEnemy.mockReturnValue(creature._B);
 
-    expect(createNewAttackActions(creature, { forceNearest: true })).toBe(true);
+    expect(queueAttackActions(creature, { forceNearest: true })).toBe(true);
     expect(mockGetNearestEnemy).toHaveBeenCalled();
     expect(creature.attackCreature).toHaveBeenCalledWith(creature._B);
     expect(creature.combatRound.setAttackTarget).toHaveBeenCalledWith(creature._B);
@@ -134,7 +134,7 @@ describe('createNewAttackActions', () => {
     creature.combatRound.newAttackTarget = undefined;
     mockGetNearestEnemy.mockReturnValue(creature._B);
 
-    expect(createNewAttackActions(creature)).toBe(true);
+    expect(queueAttackActions(creature)).toBe(true);
     expect(creature.attackCreature).toHaveBeenCalledWith(creature._B);
   });
 });

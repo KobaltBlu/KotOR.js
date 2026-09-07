@@ -3,7 +3,7 @@ import * as THREE from 'three';
 /**
  * MiniGameAspectMaskShader — widescreen 4:3 letterbox for swoop / turret.
  *
- * Retail minigame HUDs were authored for 4:3. On wider viewports the world
+ * minigame HUDs were authored for 4:3. On wider viewports the world
  * continues past the HUD frame; this pass fills that excess with black bars.
  *
  * @file MiniGameAspectMaskShader.ts
@@ -15,7 +15,7 @@ interface MiniGameAspectMaskShader {
   fragmentShader: string;
 }
 
-/** Design aspect matching retail GUI / MG HUD framing. */
+/** Design aspect matching GUI / MG HUD framing. */
 export const MINIGAME_SAFE_ASPECT = 4 / 3;
 
 export const MiniGameAspectMaskShader: MiniGameAspectMaskShader = {

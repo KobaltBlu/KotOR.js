@@ -31,7 +31,7 @@ export class CharGenName extends GameMenu {
     await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve) => {
-      // retail max length 0x12
+      // max length 0x12
       this.NAME_BOX_EDIT.setMaxLength(18);
 
       this.BTN_BACK.addEventListener('click', (e) => {

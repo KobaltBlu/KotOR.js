@@ -1,7 +1,7 @@
 /**
  * Pathing checkpoint + over-time validation suite.
  *
- * Covers the major retail pipeline gates (TestDirectLine → Plot/Grid →
+ * Covers the major pipeline gates (TestDirectLine → Plot/Grid →
  * WalkUpdate → FollowLeader SM / ring) and multi-frame regressions that
  * caused Carth stuck-walk / WaitDest thrash in playtests.
  *
@@ -99,9 +99,9 @@ const mockWalkUpdate = jest.fn((
   return 1; // OK
 });
 
-jest.mock("@/engine/pathfinding/walk-update-location", () => ({
-  walkUpdateLocation: (...args: unknown[]) => (mockWalkUpdate as Function)(...args),
-  WalkUpdateResult: { OK: 1, ARRIVED: 2, BLOCKED: 3 },
+jest.mock("@/engine/pathfinding/update-creature-walk", () => ({
+  updateCreatureWalk: (...args: unknown[]) => (mockWalkUpdate as Function)(...args),
+  CreatureWalkResult: { OK: 1, ARRIVED: 2, BLOCKED: 3 },
 }));
 
 jest.mock("@/combat/attack-range", () => ({
@@ -613,7 +613,7 @@ describe("Pathing over time — multi-frame regressions", () => {
 });
 
 describe("Pathing invariants — constants & harness sanity", () => {
-  it("retail comfort < repath < teleport distances", () => {
+  it("engine comfort < repath < teleport distances", () => {
     expect(FOLLOW_COMFORT).toBeLessThan(FOLLOW_REPATH);
     expect(FOLLOW_REPATH).toBeLessThan(FOLLOW_TELEPORT_DIST);
   });

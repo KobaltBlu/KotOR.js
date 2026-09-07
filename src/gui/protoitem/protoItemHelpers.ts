@@ -9,7 +9,7 @@ import type { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import * as THREE from "three";
 
 /**
- * Stack-size → hex border texture (retail lbl_hex_* / uibit_eqp_itm*).
+ * Stack-size → hex border texture (lbl_hex_* / uibit_eqp_itm*).
  */
 export function getProtoItemHexTextureName(stackSize: number): string {
   const isK1 = GameState.GameKey == GameEngineType.KOTOR;
@@ -49,7 +49,7 @@ export function applyProtoSelectVisuals(
   if(selected){
     ctrl.showHighlight();
     ctrl.hideBorder();
-    // Retail list selection — SetPulsingAlpha(1, 1, 0): edges only
+    // list selection — SetPulsingAlpha(1, 1, 0): edges only
     ctrl.setPulsingAlpha(true, true, false);
     ctrl.text.color.copy(hi);
     if(ctrl.text.material?.uniforms?.diffuse){
@@ -120,7 +120,7 @@ export function getAbilityArrowTextureName(): string {
 }
 
 /**
- * Retail SetSkillStatus status byte (K1 / TSL).
+ * SetSkillStatus status byte (K1 / TSL).
  * CharGen BuildButtons assigns these; in-game SetCharacter uses InGame (6) for all.
  */
 export enum SkillFlowStatus {
@@ -143,17 +143,17 @@ export enum SkillFlowStatus {
   InGame = 6,
 }
 
-/** Retail SetSkillStatus locked/unavailable icon alpha (case 0 / 3). */
+/** SetSkillStatus locked/unavailable icon alpha (case 0 / 3). */
 export const ABILITY_LOCKED_ICON_ALPHA = 0.25;
 
-/** Retail SetSkillStatus case 1/2 unselected border_params.alpha. */
+/** SetSkillStatus case 1/2 unselected border_params.alpha. */
 export const ABILITY_OWNED_BORDER_ALPHA = 0.5;
 
-/** Retail colorYellow / COLOR_YELLOW. */
+/** colorYellow / COLOR_YELLOW. */
 export const SKILL_FLOW_COLOR_YELLOW = { r: 0.980392, g: 1, b: 0 };
-/** Retail colorGreen. */
+/** colorGreen. */
 export const SKILL_FLOW_COLOR_GREEN = { r: 0, g: 1, b: 0 };
-/** Retail colorRed. */
+/** colorRed. */
 export const SKILL_FLOW_COLOR_RED = { r: 1, g: 0, b: 0 };
 
 export type SkillFlowSlotVisuals = {
@@ -167,7 +167,7 @@ export type SkillFlowSlotVisuals = {
 };
 
 /**
- * Apply retail SetSkillStatus visuals for one feat/power slot.
+ * Apply SetSkillStatus visuals for one feat/power slot.
  * Pass `chromeOnly: false` (default) for full status; use `alphasOnly` after
  * GUIControl.update so locked icon/fill alphas stick without killing pulse.
  */
@@ -278,7 +278,7 @@ export function applySkillFlowStatus(
     return;
   }
 
-  // Retail SetSkillStatus — SetPulsingAlpha(1, 1, 0): edges only (fill stays solid).
+  // SetSkillStatus — SetPulsingAlpha(1, 1, 0): edges only (fill stays solid).
   if(pulse){
     button.setPulsingAlpha(true, true, false);
   }else{

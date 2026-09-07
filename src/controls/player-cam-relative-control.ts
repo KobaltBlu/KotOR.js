@@ -1,5 +1,5 @@
 /**
- * Camera-relative player locomotion — retail cam-relative control.
+ * Camera-relative player locomotion — cam-relative control.
  *
  * Accel: A*input - (A/Vmax)*v; if Vmax < 1.8 then A *= Vmax/1.8.
  * Walk scales desired input by 0.5. RK4 integration. Stop when |vx|,|vy| < 0.25.
@@ -26,20 +26,20 @@ import {
 } from "@/engine/pathfinding/movement-rate";
 import { GameState } from "@/GameState";
 
-/** Retail turbo GetMaxSpeed when turbo is enabled. */
+/** turbo GetMaxSpeed when turbo is enabled. */
 export const PLAYER_TURBO_MAX_SPEED = 15;
 
-/** Retail stop threshold for cam-relative velocity (world units/sec). */
+/** stop threshold for cam-relative velocity (world units/sec). */
 export const PLAYER_VEL_STOP = 0.25;
 
-/** Vmax below which accel is scaled (retail 1.8). */
+/** Vmax below which accel is scaled (1.8). */
 export const PLAYER_ACCL_SCALE_VMAX = 1.8;
 
 /** DriveAnimationUpdate run threshold factor (0.6). */
 export const DRIVE_ANIM_RUN_FACTOR = 0.6;
 
 /**
- * Retail Control zeros SetSWAnimationSpeed when velocity magnitude <= this
+ * Control zeros SetSWAnimationSpeed when velocity magnitude <= this
  * (still coasts via RK4 until PLAYER_VEL_STOP).
  */
 export const PLAYER_ANIM_SPEED_CUTOFF = 1.0;
@@ -62,14 +62,14 @@ export const PLAYER_TURN_GATE_DEG = 0.1;
 export const PLAYER_COMBAT_FACE_RATE_DEG = 900;
 
 export interface PlayerCamRelativeState {
-  /** Camera-relative desired axes: +forward / +right (retail up_down / left_right). */
+  /** Camera-relative desired axes: +forward / +right (up_down / left_right). */
   axisForward: number;
   axisRight: number;
   walking: boolean;
   /** Persistent world velocity (x,y). */
   velX: number;
   velY: number;
-  /** Last integrated world acceleration (retail controller state). */
+  /** Last integrated world acceleration (controller state). */
   accelX: number;
   accelY: number;
   /** Previous desired world direction (for accel helper). */
@@ -106,7 +106,7 @@ export function createPlayerCamRelativeState(): PlayerCamRelativeState {
 }
 
 /**
- * Retail GetMaxSpeed / GetDriveAcceleration — activity_ bit 0 (stealth) uses
+ * GetMaxSpeed / GetDriveAcceleration — activity_ bit 0 (stealth) uses
  * DriveAnimWalk + fixed accel 15; otherwise appearance DriveMaxSpeed / DRIVEACCl.
  * Client activity mirrors server activity_ (UpdateLastUpdateObject flags 0x40).
  */
@@ -122,7 +122,7 @@ export function resolvePlayerDriveLimits(
       maxSpeed: coalesceDriveAnimWalk(driveAnimWalk),
     };
   }
-  // Retail turbo_enabled → GetMaxSpeed returns 15.0
+  // turbo_enabled → GetMaxSpeed returns 15.0
   if(GameState.turboEnabled){
     return {
       driveAccl: coalesceDriveAccl(driveAccl),
@@ -135,7 +135,7 @@ export function resolvePlayerDriveLimits(
   };
 }
 
-/** Retail Control turn gate before Min/MaxTurnRate step. */
+/** Control turn gate before Min/MaxTurnRate step. */
 export function playerShouldApplyTurn(
   facingErrorDeg: number,
   lastAnimMoveSpeed: number
@@ -190,7 +190,7 @@ function clampAxis(v: number): number {
 }
 
 /**
- * Retail GetAcceleration: a = A*desired - (A/Vmax)*v
+ * GetAcceleration: a = A*desired - (A/Vmax)*v
  */
 export function playerGetAcceleration(
   velX: number,
@@ -214,7 +214,7 @@ export function playerGetAcceleration(
 
 /**
  * Classic RK4 on 2D velocity with accel = f(v, desired).
- * Retail averages current desired with the previous frame before integrating.
+ * averages current desired with the previous frame before integrating.
  * Position step = integrated velocity * dt (caller applies).
  */
 export function playerIntegrateRk4(
@@ -245,7 +245,7 @@ export function playerIntegrateRk4(
     return { dx: 0, dy: 0, speed: 0 };
   }
 
-  // Retail: desired_rk4 = 0.5 * (current + previous)
+  // : desired_rk4 = 0.5 * (current + previous)
   const avgX = (desiredX + state.prevDesiredX) * 0.5;
   const avgY = (desiredY + state.prevDesiredY) * 0.5;
 
@@ -292,7 +292,7 @@ export function playerIntegrateRk4(
 }
 
 /**
- * Retail Control: when exactly one stick axis is held, kill velocity along the
+ * Control: when exactly one stick axis is held, kill velocity along the
  * released camera axis immediately (strafe stops when A/D is released while W
  * is held). When both axes are released, do nothing — drag coasts until
  * |vx|,|vy| < 0.25.
@@ -305,7 +305,7 @@ export function playerKillReleasedAxisVelocity(
 ): void {
   const fwdReleased = Math.abs(axisForward) < 1e-4;
   const rightReleased = Math.abs(axisRight) < 1e-4;
-  // Full release: leave velocity for GetAcceleration drag (retail Control).
+  // Full release: leave velocity for GetAcceleration drag (Control).
   if(fwdReleased && rightReleased) return;
 
   const forwardX = -Math.cos(cameraFacing);
@@ -326,7 +326,7 @@ export function playerKillReleasedAxisVelocity(
 }
 
 /**
- * Retail Control → SetSWAnimationSpeed magnitude: total |v|; 0 when
+ * Control → SetSWAnimationSpeed magnitude: total |v|; 0 when
  * !finite or |v| <= 1.0 (idle cutover while RK4 may still coast to 0.25).
  */
 export function playerSetSWAnimationSpeedMag(speedMag: number): number {
@@ -347,7 +347,7 @@ export function cameraRelativeDesired(
   cameraFacing: number,
   walking: boolean
 ): { x: number; y: number } {
-  // Retail stick compose: (-left_right, up_down). Normalize only when both
+  // stick compose: (-left_right, up_down). Normalize only when both
   // axes are active (diagonal). Axis-aligned partial sticks keep magnitude.
   let ix = -axisRight;
   let iy = axisForward;
@@ -378,7 +378,7 @@ export function cameraRelativeDesired(
 }
 
 /**
- * Retail Control turn target: yaw of stick world desired (atan2 − π/2),
+ * Control turn target: yaw of stick world desired (atan2 − π/2),
  * not velocity. Returns 0 when desired is ~zero.
  */
 export function playerDesiredFacingRad(desiredX: number, desiredY: number): number {
@@ -387,7 +387,7 @@ export function playerDesiredFacingRad(desiredX: number, desiredY: number): numb
 }
 
 /**
- * Retail SetPrecalculatedPosition step: normalize(orientation) * |delta|.
+ * SetPrecalculatedPosition step: normalize(orientation) * |delta|.
  * Forward = (cos(z+π/2), sin(z+π/2)) — same as legacy force-mover.
  */
 export function playerStepAlongFacing(
@@ -403,7 +403,7 @@ export function playerStepAlongFacing(
 }
 
 /**
- * Retail turn: rate = lerp(max, min, |v|/Vmax) * sign * dt (degrees).
+ * turn: rate = lerp(max, min, |v|/Vmax) * sign * dt (degrees).
  * Faster when slow (MaxTurnRate), slower at Vmax (MinTurnRate).
  * Returns new facing radians.
  */
@@ -419,7 +419,7 @@ export function playerApplyTurn(
   const Vmax = coalesceDriveMaxSpeed(maxSpeed);
   const spd = Math.max(0, speed);
   const t = Vmax > 1e-6 ? Math.min(1, spd / Vmax) : 0;
-  // Retail: (Max-Min)*(1 - |v|/Vmax) + Min  → Max at rest, Min at Vmax
+  // : (Max-Min)*(1 - |v|/Vmax) + Min → Max at rest, Min at Vmax
   const rateDeg =
     (maxTurnRateDeg - minTurnRateDeg) * (1 - t) + minTurnRateDeg;
   let err = ((desiredYawRad - facingRad) * 180) / Math.PI;
@@ -437,7 +437,7 @@ export function isDriveAnimRunning(forwardSpeed: number, driveMaxSpeed: number):
 }
 
 /**
- * Playback rate ≈ speed * animLen / animDist (retail DriveAnimationUpdate).
+ * Playback rate ≈ speed * animLen / animDist (DriveAnimationUpdate).
  * animLenSec from model; animDist from appearance driveanimwalk/run.
  */
 export function driveAnimPlaybackRate(

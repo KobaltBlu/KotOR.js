@@ -74,14 +74,14 @@ export class CreatureClass {
   featgain: string = '';
 
   level: number;
-  /** Retail classes[i].negative_levels — drained levels (EffectNegativeLevel). */
+  /** classes[i].negative_levels — drained levels (EffectNegativeLevel). */
   negativeLevels: number = 0;
   spells: TalentSpell[] = [];
 
   savingThrows: SWSavingThrow[] = [];
   attackBonuses: SWAttackBonus[] = [];
   featGainPoints: number[] = [];
-  /** featgain.2da *_bon columns — retail CalcLevelUpNumberFeats second out. */
+  /** featgain.2da *_bon columns — CalcLevelUpNumberFeats second out. */
   featGainBonuses: number[] = [];
   spellGainPoints: number[] = [];
   acbonuses: number[] = [];
@@ -172,19 +172,19 @@ export class CreatureClass {
     return this.acbonuses[this.level];
   }
 
-  /** Retail GetFortSaveBonus — fort_saves[level-1]. */
+  /** GetFortSaveBonus — fort_saves[level-1]. */
   getFortSaveBonus(){
     if(this.level <= 0) return 0;
     return this.savingThrows[this.level - 1]?.fortsave ?? 0;
   }
 
-  /** Retail GetRefSaveBonus. */
+  /** GetRefSaveBonus. */
   getRefSaveBonus(){
     if(this.level <= 0) return 0;
     return this.savingThrows[this.level - 1]?.refsave ?? 0;
   }
 
-  /** Retail GetWillSaveBonus. */
+  /** GetWillSaveBonus. */
   getWillSaveBonus(){
     if(this.level <= 0) return 0;
     return this.savingThrows[this.level - 1]?.willsave ?? 0;
@@ -393,7 +393,7 @@ export class CreatureClass {
   }
 
   /**
-   * Retail IsJedi — K1: 3/4/5; TSL also 0xB–0x10 (prestige Jedi).
+   * IsJedi — K1: 3/4/5; TSL also 0xB–0x10 (prestige Jedi).
    */
   isJedi(): boolean {
     const id = this.id | 0;
@@ -410,7 +410,7 @@ export class CreatureClass {
     _class.addField( new GFFField(GFFDataType.INT, 'Class') ).setValue(this.id);
     _class.addField( new GFFField(GFFDataType.SHORT, 'ClassLevel') ).setValue(this.level);
 
-    // Retail SaveClassInfo: SpellsPerDayList only for Jedi classes
+    // SaveClassInfo: SpellsPerDayList only for Jedi classes
     if(this.isJedi()){
       let spellsPerDay = _class.addField( new GFFField(GFFDataType.LIST, 'SpellsPerDayList') );
       let spellsPerDayStruct = new GFFStruct(17767);
@@ -418,7 +418,7 @@ export class CreatureClass {
       spellsPerDay.addChildStruct(spellsPerDayStruct);
     }
 
-    // Retail SaveClassInfo: KnownList0 only when known_spells.size > 0
+    // SaveClassInfo: KnownList0 only when known_spells.size > 0
     if(this.spells.length > 0){
       let knownList0 = _class.addField( new GFFField(GFFDataType.LIST, 'KnownList0') );
       for(let i = 0; i < this.spells.length; i++){

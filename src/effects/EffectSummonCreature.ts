@@ -9,10 +9,10 @@ import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleArea } from "@/module/ModuleArea";
 import * as THREE from "three";
-import { computeSafeLocation } from "@/engine/pathfinding/compute-safe-location";
+import { findSafeLocation } from "@/engine/pathfinding/find-safe-location";
 
 /**
- * EffectSummonCreature — retail OnApplySummonCreature / OnRemove.
+ * EffectSummonCreature — effect apply / OnRemove.
  * string[0] = UTC resref; int[0] = appear VFX (−1 = none); float[0..2] = pos;
  * float[3] = delay seconds; object[0] = area; object[1] = summoned creature (set on apply).
  *
@@ -28,7 +28,7 @@ export class EffectSummonCreature extends GameEffect {
     if(this.applied) return;
     if(!this.object || !GameState.module) return;
 
-    // Retail skips spawn when loading from save; creature already exists
+    // skips spawn when loading from save; creature already exists
     if(this.skipOnLoad && this.getObject(1)){
       super.onApply();
       return;
@@ -63,10 +63,10 @@ export class EffectSummonCreature extends GameEffect {
       return;
     }
 
-    // Retail ComputeSafeLocation(area, requested, 20.0, pathfind, 0, out)
+    // find safe location(area, requested, 20.0, pathfind, 0, out)
     const requested = new THREE.Vector3(x, y, z);
     const safe = new THREE.Vector3();
-    if(computeSafeLocation(area, requested, safe, { radius: 20, owner })){
+    if(findSafeLocation(area, requested, safe, { radius: 20, owner })){
       x = safe.x;
       y = safe.y;
       z = safe.z;
@@ -112,7 +112,7 @@ export class EffectSummonCreature extends GameEffect {
     super.onRemove();
     const summoned = this.getObject(1) as ModuleCreature | undefined;
     if(!BitWise.InstanceOfObject(summoned, ModuleObjectType.ModuleCreature)) return;
-    // Retail UnsummonMyself — destroy summoned creature
+    // UnsummonMyself — destroy summoned creature
     try{
       summoned.destroy?.();
     }catch(e){

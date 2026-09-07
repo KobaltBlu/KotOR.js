@@ -3,7 +3,7 @@ import type { TalentSpell } from "@/talents/TalentSpell";
 
 /**
  * Resolve the MDL resref used for a spell projectile visual.
- * Retail projectile loads spells.2da projmodel; grenades fall back to the
+ * projectile loads spells.2da projmodel; grenades fall back to the
  * thrown item's defaultModel when projmodel is empty.
  *
  * @file spell-projectile-model.ts
@@ -51,7 +51,7 @@ export function resolveSpellProjectileModelCandidates(
   spell: Pick<TalentSpell, 'projmodel' | 'proj'> | undefined,
   item?: ModuleItem
 ): string[] {
-  // Retail client skips projectile when spells.2da proj == 0
+  // client skips projectile when spells.2da proj == 0
   if(spell && typeof spell.proj === 'number' && (spell.proj | 0) === 0){
     return [];
   }

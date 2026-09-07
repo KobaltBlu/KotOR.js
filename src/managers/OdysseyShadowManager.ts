@@ -5,15 +5,15 @@ import { LightManager as LightManagerClass } from '@/managers/LightManager';
 import type { OdysseyLight3D } from '@/three/odyssey';
 import { GameState } from '@/GameState';
 import {
-  isRetailShadowColorVisible,
-  retailShadowDistantFactor,
-  retailShadowEffectiveRadius,
-  retailShadowFadeStep,
-  retailShadowLightPosition,
-  retailShadowProjectionStrength,
-  retailSoftShadowLightElevationOk,
-  RETAIL_MAX_SHADOW_DISTANCE,
-} from '@/utility/retailLighting';
+  isOdysseyShadowColorVisible,
+  odysseyShadowDistantFactor,
+  odysseyShadowEffectiveRadius,
+  odysseyShadowFadeStep,
+  odysseyShadowLightPosition,
+  odysseyShadowProjectionStrength,
+  odysseySoftShadowLightElevationOk,
+  ODYSSEY_MAX_SHADOW_DISTANCE,
+} from '@/utility/odysseyLighting';
 import {
   aimShadowProxyAtFocus,
   buildAngledSpotShadowCameraParams,
@@ -83,7 +83,7 @@ interface IShadowProxySlot {
 }
 
 /**
- * Retail-aligned shadow maps.
+ * engine-aligned shadow maps.
  *
  * Soft Shadows ON → steady 1 map (RenderShadows), up to 2 while crossfading.
  * Soft Shadows OFF → steady NumShadowCastingLights, +1 transient for fade.
@@ -151,8 +151,8 @@ export class OdysseyShadowManager {
     shadowFadeFactor: number,
     radius = 8
   ): number {
-    const base = retailShadowProjectionStrength(shadowAlpha, shadowFadeFactor);
-    return odysseyShadowAdaptiveStrength(base, retailShadowDistantFactor(radius));
+    const base = odysseyShadowProjectionStrength(shadowAlpha, shadowFadeFactor);
+    return odysseyShadowAdaptiveStrength(base, odysseyShadowDistantFactor(radius));
   }
 
   init(lightManager: LightManager, scene?: THREE.Scene | THREE.Object3D){
@@ -164,7 +164,7 @@ export class OdysseyShadowManager {
   }
 
   /**
-   * Steady-state concurrent maps (retail Soft=1 / hard=NumShadowCastingLights).
+   * Steady-state concurrent maps (Soft=1 / hard=NumShadowCastingLights).
    */
   get steadyMaxShadowMaps(): number {
     if(this.softShadowMaps){
@@ -382,7 +382,7 @@ export class OdysseyShadowManager {
 
   /**
    * Soft Shadows: sticky elevated light + fade residency (up to 2).
-   * Hard: GetShadowLights(mode=0) fading set (steady+1), then mode-1/2 fallback.
+   * Hard: shadow light selection(mode=0) fading set (steady+1), then mode-1/2 fallback.
    */
   private selectShadowLights(delta = 0): OdysseyLight3D[] {
     const out = this._scratchSelected;
@@ -397,7 +397,7 @@ export class OdysseyShadowManager {
     const seen = new Set<string>();
     const push = (light: OdysseyLight3D | undefined) => {
       if(!light || out.length >= max || seen.has(light.uuid)){ return; }
-      const strength = retailShadowProjectionStrength(
+      const strength = odysseyShadowProjectionStrength(
         GameState.shadowAlpha,
         light.shadowFadeFactor || 0
       );
@@ -437,15 +437,15 @@ export class OdysseyShadowManager {
 
   private softCandidateOk(light: OdysseyLight3D, focusZ: number): boolean {
     if(light.isAmbient){ return false; }
-    if(!isRetailShadowColorVisible(light.color.r, light.color.g, light.color.b)){
+    if(!isOdysseyShadowColorVisible(light.color.r, light.color.g, light.color.b)){
       return false;
     }
     if(light.illuminationScore > 1){ return false; }
-    return retailSoftShadowLightElevationOk(light.worldPosition.z, focusZ);
+    return odysseySoftShadowLightElevationOk(light.worldPosition.z, focusZ);
   }
 
   /**
-   * Retail RenderShadows Soft Shadows path with sticky winner + fade crossfade.
+   * RenderShadows Soft Shadows path with sticky winner + fade crossfade.
    * Elevation gate, then most-overhead elevated bound light; stick until a
    * challenger leads by margin for hold time (or large instant margin).
    */
@@ -532,12 +532,12 @@ export class OdysseyShadowManager {
     for(let i = 0; i < this._softResidents.length; i++){
       const light = this._softResidents[i];
       if(desiredSet.has(light.uuid)){ continue; }
-      light.shadowFadeFactor = retailShadowFadeStep(light.shadowFadeFactor || 0, 0, delta);
+      light.shadowFadeFactor = odysseyShadowFadeStep(light.shadowFadeFactor || 0, 0, delta);
       if(light.shadowFadeFactor > 0){ next.push(light); }
     }
     for(let i = 0; i < desired.length; i++){
       const light = desired[i];
-      light.shadowFadeFactor = retailShadowFadeStep(light.shadowFadeFactor || 0, 1, delta);
+      light.shadowFadeFactor = odysseyShadowFadeStep(light.shadowFadeFactor || 0, 1, delta);
       next.push(light);
     }
 
@@ -565,7 +565,7 @@ export class OdysseyShadowManager {
     this._softResidents = next.slice();
     for(let i = 0; i < next.length; i++){
       const light = next[i];
-      const strength = retailShadowProjectionStrength(
+      const strength = odysseyShadowProjectionStrength(
         GameState.shadowAlpha,
         light.shadowFadeFactor || 0
       );
@@ -584,7 +584,7 @@ export class OdysseyShadowManager {
     h = Math.imul(h ^ Math.round(this._focus.z * 1000), 16777619);
     for(let i = 0; i < lights.length; i++){
       const light = lights[i];
-      const strength = retailShadowProjectionStrength(
+      const strength = odysseyShadowProjectionStrength(
         GameState.shadowAlpha,
         light.shadowFadeFactor || 0
       );
@@ -788,14 +788,14 @@ export class OdysseyShadowManager {
   private syncSlot(index: number, light: OdysseyLight3D){
     const slot = this.slots[index];
     const radius = light.getRadius();
-    const influenceR = retailShadowEffectiveRadius(radius, light.shadowRadius || 0);
-    const distantFactor = retailShadowDistantFactor(influenceR);
-    const baseStrength = retailShadowProjectionStrength(
+    const influenceR = odysseyShadowEffectiveRadius(radius, light.shadowRadius || 0);
+    const distantFactor = odysseyShadowDistantFactor(influenceR);
+    const baseStrength = odysseyShadowProjectionStrength(
       GameState.shadowAlpha,
       light.shadowFadeFactor || 0
     );
     const strength = odysseyShadowAdaptiveStrength(baseStrength, distantFactor);
-    const lp = retailShadowLightPosition({
+    const lp = odysseyShadowLightPosition({
       x: light.worldPosition.x,
       y: light.worldPosition.y,
       z: light.worldPosition.z,
@@ -844,11 +844,11 @@ export class OdysseyShadowManager {
 
     if(type === 'spot'){
       configureSpotShadowProxyForFloorContact(this._proxyPos, this._focus, influenceR, slot.spot);
-      // Cover the light's influence around focus, clamped to retail focus-shadow
+      // Cover the light's influence around focus, clamped to focus-shadow
       // distance — not MIN_HALF*1.5 (~7.5), which made map-edge fade track camera zoom.
       const coverage = Math.min(
         Math.max(influenceR, ODYSSEY_SHADOW_MIN_HALF_EXTENT),
-        RETAIL_MAX_SHADOW_DISTANCE
+        ODYSSEY_MAX_SHADOW_DISTANCE
       );
       const spotParams = buildAngledSpotShadowCameraParams(
         slot.spot.position,
@@ -939,7 +939,7 @@ export class OdysseyShadowManager {
       const ir = this.slots[i]?.state.influenceRadius ?? 0;
       if(ir > maxR){ maxR = ir; }
     }
-    if(maxR <= 0){ maxR = RETAIL_MAX_SHADOW_DISTANCE; }
+    if(maxR <= 0){ maxR = ODYSSEY_MAX_SHADOW_DISTANCE; }
     const r2 = maxR * maxR;
     const fx = this._focus.x;
     const fy = this._focus.y;
@@ -980,7 +980,7 @@ export class OdysseyShadowManager {
   }
 
   /**
-   * Mark all active proxy maps dirty for the next `renderer.render()` call.
+   * Mark all active proxy maps dirty for the next `renderer.render` call.
    * No-ops when `_needsShadowMapRender` is false (static light/focus/casters).
    */
   markShadowMapForRender(renderer: THREE.WebGLRenderer): boolean {

@@ -1,7 +1,7 @@
 /**
  * ModuleCamera save export must preserve the raw GIT Orientation / Pitch —
  * building the THREE view camera composes YawPitchRoll(Yaw, Pitch(q)+Pitch, Roll)
- * for rendering, but that composed quaternion must never leak into `save()`.
+ * for rendering, but that composed quaternion must never leak into `save`.
  * @jest-environment node
  */
 import { describe, expect, it, jest } from '@jest/globals';

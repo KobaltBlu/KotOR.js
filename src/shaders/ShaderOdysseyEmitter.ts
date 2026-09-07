@@ -46,7 +46,7 @@ export class ShaderOdysseyEmitter extends Shader {
       { cameraNear: { value: 0.1 } },
       { cameraFar: { value: 1000.0 } },
       { parentAlpha: { value: 1.0 } },
-      // Retail RenderStandard: percentStart==255 → start↔end; else three-key breakpoints
+      // RenderStandard: percentStart==255 → start↔end; else three-key breakpoints
       { lifePercents: { value: new THREE.Vector3(255, 0.5, 1) } },
     ];
 
@@ -131,7 +131,7 @@ export class ShaderOdysseyEmitter extends Shader {
     }
 
     float getFloatOverLifetime( in float positionInTime, in vec3 attr ) {
-      // Retail: percentStart == 255 → lerp start→end over full life (skip mid)
+      // : percentStart == 255 → lerp start→end over full life (skip mid)
       if(lifePercents.x >= 254.5){
         return mix(attr.x, attr.z, clamp(positionInTime, 0.0, 1.0));
       }
@@ -215,7 +215,7 @@ export class ShaderOdysseyEmitter extends Shader {
       float framesY = textureAnimation.y;
       float loopCount = textureAnimation.w;
       float totalFrames = textureAnimation.z;
-      // Retail updateParticleFrame: frames advance only when fps > 0.
+      // updateParticleFrame: frames advance only when fps > 0.
       // fps <= 0 → stay on frameStart. Non-random clamps at frameEnd (one-shot).
       float startF = frameRange.x;
       float endF = frameRange.y;
@@ -309,7 +309,7 @@ export class ShaderOdysseyEmitter extends Shader {
           #endif
         #else
           #ifdef Motion_Blur
-            // Retail RenderMotionBlurred:
+            // RenderMotionBlurred:
             // halfW = size (after size*0.5 doubled); alongPad = sizeY*0.25 (or size*0.25).
             // Quad spans head↔tail, then extends ±alongPad past each end.
             vec3 head = offset;
@@ -345,7 +345,7 @@ export class ShaderOdysseyEmitter extends Shader {
                 vec3 worldPos = offset + t * (position.x * scaleF) + b * (position.y * scaleF);
                 gl_Position = projectionMatrix * viewMatrix * vec4(worldPos, 1.0);
               }else{
-                // Retail RenderStandard Aligned_to_Particle_Dir:
+                // RenderStandard Aligned_to_Particle_Dir:
                 // corners = center ± xdir(q)·(sizeX/2) ± zdir(q)·(sizeY/2).
                 // matrix = rotation-only emitter world quat (columns = ex,ey,ez).
                 // PlaneGeometry position ∈ [-0.5,0.5] → ×scale = half-extent.
@@ -370,7 +370,7 @@ export class ShaderOdysseyEmitter extends Shader {
             vec3 scaledPos = vec3(position.x * scaleF, position.y * scaleFY, position.z);
 
             #ifdef CPU_PHYSICS
-              // Retail: particle offset is world-space; billboard in view without emitter model matrix.
+              // : particle offset is world-space; billboard in view without emitter model matrix.
               // Splatted (props.w): plane lies on hit surface — normal in velocity.xyz (RenderStandard).
               if(props.w > 0.5){
                 vec3 n = normalize(velocity.xyz + vec3(1e-6));
@@ -398,7 +398,7 @@ export class ShaderOdysseyEmitter extends Shader {
                   gl_Position = projectionMatrix * worldZMatrix * ( vec4(scaledPos, 1.0) * rotationZ(rotate * age) );
                 #else
                   #ifdef Billboard_to_Local_Z
-                    // Retail RenderStandard localZ: emitter world quat
+                    // RenderStandard localZ: emitter world quat
                     // (matrix) + particleRot about emitter Z. Plane = emitter XY.
                     vec3 ex = matrix[0].xyz;
                     vec3 ey = matrix[1].xyz;
@@ -539,7 +539,7 @@ export class ShaderOdysseyEmitter extends Shader {
       #endif
 
       #ifdef PUNCH_THROUGH
-        // Retail RenderStandard Punch-Through: glEnable(ALPHA_TEST).
+        // RenderStandard Punch-Through: glEnable(ALPHA_TEST).
         // Material.alphaTest is unused without alphatest_fragment — discard here.
         if ( finalAlpha < 0.5 ) discard;
       #endif

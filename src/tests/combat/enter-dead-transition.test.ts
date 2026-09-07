@@ -1,5 +1,5 @@
 /**
- * Retail enter-DEAD SetAnimation DIE insert.
+ * enter-DEAD SetAnimation DIE insert.
  * @jest-environment node
  */
 import { describe, expect, it, jest } from '@jest/globals';

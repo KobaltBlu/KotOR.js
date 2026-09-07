@@ -6,7 +6,7 @@ import { DLGObject } from "@/resource/DLGObject";
 import { BitWise } from "@/utility/BitWise";
 
 /**
- * Retail ExecuteCommandBeginConversation → StartDialog ownership.
+ * ExecuteCommandBeginConversation → StartDialog ownership.
  *
  * The if-condition assigns pCVar8/uVar6 with C short-circuit side effects:
  * 1. listener == player → StartDialog(caller, listener)
@@ -36,7 +36,7 @@ export function resolveDialogStartOwner(
   const callerIsCreature = BitWise.InstanceOfObject(caller, ModuleObjectType.ModuleCreature);
   const callerIsParty = callerIsCreature && !!(caller as ModuleCreature).isPartyMember?.();
 
-  // Order matches retail || short-circuit (listener check before caller check).
+  // Order matches engine behavior || short-circuit (listener check before caller check).
   if(listenerIsPlayer){
     return caller;
   }
@@ -51,7 +51,7 @@ export function resolveDialogStartOwner(
 }
 
 /**
- * Retail BeginConversation blank sResRef → (ActionStartConversation override),
+ * BeginConversation blank sResRef → (ActionStartConversation override),
  * else StartDialog GetDialogResref on the StartDialog owner.
  */
 export function resolveBeginConversationDialog(

@@ -9,7 +9,7 @@ import { BitWise } from "@/utility/BitWise";
 const DEG2RAD = Math.PI / 180;
 
 /**
- * Retail SetFormation.
+ * SetFormation.
  * formations.2da ANGLE_n / DISTANCE_n → MoveToPoint + ChangeFacingPoint.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -43,13 +43,13 @@ export function setCreatureFormation(
     return false;
   }
 
-  // Retail Yaw on anchor orientation, then + ANGLE degrees.
+  // Yaw on anchor orientation, then + ANGLE degrees.
   const ox = typeof anchor.getXOrientation === "function" ? anchor.getXOrientation() : 0;
   const oy = typeof anchor.getYOrientation === "function" ? anchor.getYOrientation() : 1;
   const yaw = -Math.atan2(ox, oy);
   const theta = yaw + angleDeg * DEG2RAD;
 
-  // Rotate (distance, 0, 0) by yaw+angle around Z (retail Quaternion * Vector).
+  // Rotate (distance, 0, 0) by yaw+angle around Z (Quaternion * Vector).
   const target = new THREE.Vector3(
     anchor.position.x + distance * Math.cos(theta),
     anchor.position.y + distance * Math.sin(theta),
@@ -68,7 +68,7 @@ export function setCreatureFormation(
   move.setParameter(8, ActionParameterType.FLOAT, 30.0);
   creature.actionQueue.add(move);
 
-  // Retail trailing action 0x31 ActionChangeFacingPoint toward computed spot.
+  // trailing action 0x31 ActionChangeFacingPoint toward computed spot.
   const face = new GameState.ActionFactory.ActionChangeFacingPoint();
   face.setParameter(0, ActionParameterType.FLOAT, target.x);
   face.setParameter(1, ActionParameterType.FLOAT, target.y);

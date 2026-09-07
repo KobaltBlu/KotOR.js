@@ -62,13 +62,13 @@ export class PazaakTutorialDriver {
   queue: number[] = [];
   /** Strref currently (or last) shown. */
   current = 0;
-  /** retail bit 8 — StartNewGame intro. */
+  /** bit 8 — StartNewGame intro. */
   gameStartShown = false;
-  /** retail bit 2 — first draw help. */
+  /** bit 2 — first draw help. */
   drawnCardHelpShown = false;
-  /** retail bit 4 — enemy turn help. */
+  /** bit 4 — enemy turn help. */
   enemyTurnHelpShown = false;
-  /** retail bit 0x10 — twenty help. */
+  /** bit 0x10 — twenty help. */
   twentyHelpShown = false;
   /** Hand index deferred for PLAY_SIDE (HandlePlayHandCard state). */
   pendingHandIndex = -1;

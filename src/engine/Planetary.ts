@@ -48,7 +48,7 @@ export class Planetary {
   }
 
   /**
-   * Retail SetSelectedPlanet — only commits when the planet is
+   * SetSelectedPlanet — only commits when the planet is
    * both available and selectable (index in 0..15).
    */
   static SetSelectedPlanet( index = 0 ){
@@ -64,7 +64,7 @@ export class Planetary {
   }
 
   /**
-   * Retail SetPlanetAvailable — no-op unless index in 0..15.
+   * SetPlanetAvailable — no-op unless index in 0..15.
    */
   static SetPlanetAvailable(index: number, bState: boolean){
     if((index >>> 0) >= 16){ return; }
@@ -74,8 +74,8 @@ export class Planetary {
   }
 
   /**
-   * Retail SetPlanetSelectable — no-op unless index in 0..15.
-   * Scripts may pass live-content index 16 or scripting constants; retail ignores those.
+   * SetPlanetSelectable — no-op unless index in 0..15.
+   * Scripts may pass live-content index 16 or scripting constants; ignores those.
    */
   static SetPlanetSelectable(index: number, bState: boolean){
     if((index >>> 0) >= 16){ return; }
@@ -99,13 +99,13 @@ export class Planetary {
     return Planetary.planets[index];
   }
 
-  /** Retail GetPlanetAvailable — 0 when index out of 0..15. */
+  /** GetPlanetAvailable — 0 when index out of 0..15. */
   static GetPlanetAvailable(index: number): boolean {
     if((index >>> 0) >= 16){ return false; }
     return !!Planetary.planets[index]?.enabled;
   }
 
-  /** Retail GetPlanetSelectable — 0 when index out of 0..15. */
+  /** GetPlanetSelectable — 0 when index out of 0..15. */
   static GetPlanetSelectable(index: number): boolean {
     if((index >>> 0) >= 16){ return false; }
     return !!Planetary.planets[index]?.selectable;
@@ -114,11 +114,11 @@ export class Planetary {
   static SaveStruct(){
     let struct = new GFFStruct();
 
-    // Retail SaveTableInfo hardcodes GlxyMapNumPnts = 16
+    // SaveTableInfo hardcodes GlxyMapNumPnts = 16
     const planetCount = 16;
     struct.addField( new GFFField(GFFDataType.DWORD, 'GlxyMapNumPnts') ).setValue(planetCount);
 
-    // Retail packs available in bits 0..15 and selectable in bits 16..31
+    // packs available in bits 0..15 and selectable in bits 16..31
     let planetMask = 0;
     for(let i = 0; i < planetCount; i++){
       const planet = Planetary.planets[i];

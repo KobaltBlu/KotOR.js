@@ -568,7 +568,7 @@ export class GFFObject {
   getDword64(offset: number): Uint8Array {
     let OriginalPos = this.reader.tell();//Store the original position of the reader object
     this.reader.seek(this.FieldDataOffset + offset);
-    // let Dword64 = this.reader.readUInt64();
+    // let Dword64 = this.reader.readUInt64;
     let Dword64 = this.reader.readBytes(8);
     this.reader.seek(OriginalPos);//Return the reader position to the original
     return Dword64;
@@ -578,7 +578,7 @@ export class GFFObject {
   getInt64(offset: number): Uint8Array {
     let OriginalPos = this.reader.tell();//Store the original position of the reader object
     this.reader.seek(this.FieldDataOffset + offset);
-    // let value = this.reader.readInt64();
+    // let value = this.reader.readInt64;
     let value = this.reader.readBytes(8);
     this.reader.seek(OriginalPos);//Return the reader position to the original
     return value;
@@ -594,7 +594,7 @@ export class GFFObject {
   }
 
   //Gets data from the FieldDataHeader
-  // Retail ReadFieldQuaternion stores Orientation as W,X,Y,Z.
+  // ReadFieldQuaternion stores Orientation as W,X,Y,Z.
   getOrientation(offset: number): {x: number, y: number, z: number, w: number}{
     let OriginalPos = this.reader.tell();//Store the original position of the reader object
     this.reader.seek(this.FieldDataOffset + offset);
@@ -694,7 +694,7 @@ export class GFFObject {
       let templateResRef = this.RootNode.getFieldByLabel('TemplateResRef');
       if(templateResRef instanceof GFFField){
         fileInfo.name = templateResRef.value = fileInfo.name.substr(0, 16);
-        //fileInfo.base = fileInfo.name + '.'+this.FileType.substr(0, 3).toLowerCase();
+        //fileInfo.base = fileInfo.name + '.'+this.FileType.substr(0, 3).toLowerCase;
         fileInfo.base = fileInfo.name + fileInfo.ext;
       }
 
@@ -1018,7 +1018,7 @@ export class GFFObject {
             break;
           case GFFDataType.ORIENTATION:
             //Export the Orientation data to the FieldData block and record the offset with the field
-            // Retail WriteFieldQuaternion writes W,X,Y,Z.
+            // WriteFieldQuaternion writes W,X,Y,Z.
             this.BWFields.writeUInt32(this.BWFieldData.position);
             this.BWFieldData.writeSingle(field.getOrientation().w);
             this.BWFieldData.writeSingle(field.getOrientation().x);

@@ -11,7 +11,7 @@ import {
  * NoNonWalkPolysDetailed +
  * NoNonWalkPolysOnRoom (doors / placeables / mesh).
  *
- * Retail static placeables: NoNonWalkPolys →
+ * static placeables: NoNonWalkPolys →
  * collision mesh only (no bare AABB). Closed doors keep facing-plane
  * door-wok tests; room non-walk materials via NoNonWalkPolysOnRoom.
  *
@@ -42,7 +42,7 @@ function segmentHitsBox(a: THREE.Vector3, b: THREE.Vector3, box: THREE.Box3): bo
 }
 
 /**
- * Door walkmesh — retail NoNonWalkPolysInDoor runs collision mesh
+ * Door walkmesh — NoNonWalkPolysInDoor runs collision mesh
  * on the open_state surface mesh. Missing/empty open mesh = clear (no faces).
  * Facing-plane fallback is closed-only (GetDoorCrossed).
  */
@@ -60,7 +60,7 @@ function closedDoorBlocksLine(
       ? door.getWalkmeshForOpenState()
       : undefined) ?? door.collisionManager?.walkmesh;
 
-  // Empty / missing open-state mesh → clear (retail LoadMesh with no faces)
+  // Empty / missing open-state mesh → clear (LoadMesh with no faces)
   if(!wok?.faces?.length){
     if(typeof door.isOpen === 'function' && door.isOpen()) return false;
   }else{
@@ -117,7 +117,7 @@ function closedDoorBlocksLine(
 
 /**
  * Test static non-walk blockers on the segment (doors + placeables + mesh).
- * Returns clear=false → retail TestDirectLine −2 (DetailedBlock).
+ * Returns clear=false → TestDirectLine −2 (DetailedBlock).
  */
 export function noNonWalkPolysDetailed(
   area: ModuleArea | undefined,
@@ -154,7 +154,7 @@ export function noNonWalkPolysDetailed(
     }
   }
 
-  // Retail NoNoneWalkPolysInStaticObject → NoNonWalkPolys
+  // NoNoneWalkPolysInStaticObject → NoNonWalkPolys
   // → collision mesh only. Static placeables with no surface wok
   // (InfoTerm / invisible cameras / speak placeholders) must not AABB-block.
   const placeables = area.placeables;
@@ -183,7 +183,7 @@ export function noNonWalkPolysDetailed(
     }
   }
 
-  // Retail NoNonWalkPolysOnRoom — non-walk surface materials in corridor
+  // NoNonWalkPolysOnRoom — non-walk surface materials in corridor
   if(options.skipMesh !== true){
     const mesh = noNonWalkPolysOnAreaMesh(area, from, to, {
       personalSpace: expand,

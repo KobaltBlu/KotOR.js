@@ -1,5 +1,5 @@
 /**
- * Retail-correct GUI control GFF authoring helpers.
+ * -correct GUI control GFF authoring helpers.
  * Shared by the engine (`GUIControl.buildDefaultControl`) and Forge GUI editor.
  *
  * @file guiControlSchema.ts
@@ -123,7 +123,7 @@ export function createGuiImageNestStruct(image = ""): GFFStruct {
 
 /**
  * Ensure a border-like nested STRUCT exists on `parent` under `label`.
- * Fills missing leaf fields without wiping existing retail data.
+ * Fills missing leaf fields without wiping existing data.
  */
 export function ensureGuiBorderNest(
   parent: GFFStruct,
@@ -249,7 +249,7 @@ export function ensureGuiTypeNests(
 }
 
 /**
- * Create a retail-shaped GUI control GFFStruct (common nests + optional type nests).
+ * Create a -shaped GUI control GFFStruct (common nests + optional type nests).
  */
 export function createGuiControlStruct(options: GuiControlSchemaOptions = {}): GFFStruct {
   const includeY = !!options.includeInnerOffsetY;

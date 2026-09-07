@@ -9,17 +9,17 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import { LevelUpManager } from "@/managers/LevelUpManager";
 import * as THREE from "three";
 
-/** retail MAIN_TITLE_LBL SetStrRef */
+/** MAIN_TITLE_LBL SetStrRef */
 const TLK_LEVEL_UP_TITLE = 0x42f; // 1071
 
 /**
  * CharGenMain class.
  *
- * retail — gui3D_room + charrec_light (not
+ * — gui3D_room + charrec_light (not
  * cgbody_light), Setup3DScene camera on camerahook with AttachTranslate
- * world Z = getCameraHeight(), SetViewAngle 22.726.
+ * world Z = getCameraHeight, SetViewAngle 22.726.
  *
- * Also hosts in-game level-up as retail (same MAINCG
+ * Also hosts in-game level-up as (same MAINCG
  * layout) with MenuLevelUp (LEVELUPPNL) as childMenu.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -79,7 +79,7 @@ export class CharGenMain extends GameMenu {
 
   /** True while hosting in-game level-up (GUI). */
   levelUpMode: boolean = false;
-  /** Portrait clone for level-up — never the live party model (retail uses a retail copy). */
+  /** Portrait clone for level-up — never the live party model (uses a copy). */
   portraitModel: OdysseyModel3D;
   portraitGen: number = 0;
 
@@ -110,7 +110,7 @@ export class CharGenMain extends GameMenu {
   }
 
   /**
-   * Retail MAINCG / LevelUpCharGen uses charrec_light. Chargen Init loads it;
+   * MAINCG / LevelUpCharGen uses charrec_light. Chargen Init loads it;
    * in-game level-up (EnsureLevelUpMenus) must load it lazily.
    */
   async Init3D() {
@@ -146,8 +146,8 @@ export class CharGenMain extends GameMenu {
   }
 
   /**
-   * Retail Setup3DScene AttachTranslate
-   * camerahook pose + world-space (0, 0, getCameraHeight()).
+   * Setup3DScene AttachTranslate
+   * camerahook pose + world-space (0, 0, getCameraHeight).
    */
   updateCamera() {
     if(!this._3dViewModel?.camerahook) return;
@@ -168,7 +168,7 @@ export class CharGenMain extends GameMenu {
   }
 
   /**
-   * Retail ShowLevelUpGUI
+   * ShowLevelUpGUI
    * opens MAINCG with LEVELUPPNL attached (our childMenu).
    */
   openForLevelUp(creature: ModuleCreature) {
@@ -200,8 +200,8 @@ export class CharGenMain extends GameMenu {
   }
 
   /**
-   * Build a disposable appearance clone for level-up 3D (retail SetAppearance on
-   * a dedicated retail — never reparent the live party model).
+   * Build a disposable appearance clone for level-up 3D (SetAppearance on
+   * a dedicated — never reparent the live party model).
    */
   attachLevelUpPortrait(source: ModuleCreature) {
     if(!source || !this._3dView) return;

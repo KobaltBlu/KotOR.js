@@ -63,9 +63,9 @@ export class GameMenu {
   width: number = 640;
   height: number = 480;
   /**
-   * Retail GUI panel bit_flags for GetLocalMouseCoords.
+   * GUI panel bit_flags for GetLocalMouseCoords.
    * UseExtentOffset|CenterInViewport matches our centered Three.js panel projection
-   * (clear UseExtentOffset for retail 640×480 mouse letterbox).
+   * (clear UseExtentOffset for 640×480 mouse letterbox).
    */
   panelCoordFlags: number = GUIPanelCoordFlags.UseExtentOffset | GUIPanelCoordFlags.CenterInViewport;
 
@@ -142,7 +142,7 @@ export class GameMenu {
     //You can just use this.CONTROL_NAME 
     this.assignChildControlsToMenu(this.tGuiPanel);
 
-    // Retail StopLoadFromLayout — MOVETO IDs → control pointers
+    // StopLoadFromLayout — MOVETO IDs → control pointers
     this.resolveMoveToControls();
 
     await this.menuControlInitializer();
@@ -168,7 +168,7 @@ export class GameMenu {
   }
 
   /**
-   * Retail StopLoadFromLayout — replace MOVETO control IDs with pointers.
+   * StopLoadFromLayout — replace MOVETO control IDs with pointers.
    * IDs index the panel control list the same way InitControl places controls by GFF ID.
    */
   resolveMoveToControls(){
@@ -208,7 +208,7 @@ export class GameMenu {
   }
 
   /**
-   * Retail SetActiveControl — deactivate previous, activate next (hover visual).
+   * SetActiveControl — deactivate previous, activate next (hover visual).
    */
   setActiveControl(control?: GUIControl, _playSound: boolean = true){
     if(this.selectedControl === control){
@@ -239,7 +239,7 @@ export class GameMenu {
      */
     if(this.voidFill){
       const geometry = new THREE.PlaneGeometry( 1, 1, 1 );
-      // this.backgroundVoidMaterial = new THREE.MeshBasicMaterial( {color: new THREE.Color(0x000000), side: THREE.DoubleSide} );
+      // this.backgroundVoidMaterial = new THREE.MeshBasicMaterial({color: new THREE.Color(0x000000), side: THREE.DoubleSide});
       this.backgroundVoidMaterial = new THREE.ShaderMaterial({
         uniforms: THREE.UniformsUtils.merge([
           ShaderManager.Shaders.get('void-gui').getUniforms(),
@@ -371,7 +371,7 @@ export class GameMenu {
     this.hide();
     this.manager.Remove(this);
     // if(!this.isOverlayGUI){
-    //   GameState.RestoreEnginePlayMode;
+    // GameState.RestoreEnginePlayMode;
     // }
   }
 
@@ -444,7 +444,7 @@ export class GameMenu {
   }
 
   /**
-   * Retail mouse-over is a single control (GUI manager hover slot /
+   * mouse-over is a single control (GUI manager hover slot /
    * SetActiveControl). Activating one clears any other hover.
    */
   setWidgetHoverActive(control: GUIControl, bActive: boolean = false){
@@ -459,7 +459,7 @@ export class GameMenu {
     let idx = this.activeControls.indexOf(control);
 
     if(bActive){
-      // Deactivate every other hovered control first (retail one-at-a-time).
+      // Deactivate every other hovered control first (one-at-a-time).
       for(let i = this.activeControls.length - 1; i >= 0; i--){
         const other = this.activeControls[i];
         if(other === control){

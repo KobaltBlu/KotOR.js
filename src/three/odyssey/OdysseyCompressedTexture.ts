@@ -21,7 +21,7 @@ export class OdysseyCompressedTexture extends OdysseyTexture {
 		this.mipmaps = mipmaps;
 
 		// no flipping for cube textures
-		// (also flipping doesn't work for compressed textures )
+		// (also flipping doesn't work for compressed textures)
 
 		this.flipY = false;
 

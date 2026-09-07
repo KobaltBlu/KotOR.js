@@ -10,8 +10,8 @@ import { asExtentInt, truncDiv } from "@/gui/GUICoord";
 import { resolveProtoItemHeight } from "@/gui/listrow/protoItemHeight";
 import { applyProtoTemplateSkin } from "@/gui/listrow/applyProtoTemplateSkin";
 
-/** Retail GUI extent supplied to a row by menu/entry-class code (never the PROTOITEM GFF). */
-export type RetailRowExtent = {
+/** GUI extent supplied to a row by menu/entry-class code (never the PROTOITEM GFF). */
+export type ProtoRowExtent = {
   left: number;
   top: number;
   width: number;
@@ -57,7 +57,7 @@ export class GUIProtoItem extends GUIControl{
       this.setExtentWidth(Math.max(1, asExtentInt(vw - list.padding * 2)));
     }
 
-    // Retail SetSelectedControl drives row chrome via
+    // SetSelectedControl drives row chrome via
     // HandleInputEvent on selection change — not mouse hover. Hover-select lists
     // still pulse because hover calls SetSelectedControl first.
     this.onSelect = () => {
@@ -66,18 +66,18 @@ export class GUIProtoItem extends GUIControl{
   }
 
   /**
-   * Retail base row extent — supplied by the menu / entry class, NOT the PROTOITEM GFF.
+   * base row extent — supplied by the menu / entry class, NOT the PROTOITEM GFF.
    *
-   * In retail, PopulateGameList (K1), retail GUI (TSL)
+   * In, PopulateGameList (K1), GUI (TSL)
    * and Initialize (K1) each construct a stack extent
    * and pass it into Initialize, which copies the extent then
    * re-initializes border/text from the proto's PARAMS. The proto extent is never read
-   * for height. Override per row class with the retail-sourced value.
+   * for height. Override per row class with the -sourced value.
    *
    * This base implementation is the UNVERIFIED fallback: it returns the PROTOITEM extent
    * (matching legacy KotOR.js behavior) so unmigrated rows keep working.
    */
-  getRetailBaseExtent(list: GUIListBox): RetailRowExtent {
+  getProtoBaseExtent(list: GUIListBox): ProtoRowExtent {
     return {
       left: 0,
       top: 0,
@@ -89,9 +89,9 @@ export class GUIProtoItem extends GUIControl{
   /**
    * Mirrors Initialize: assign the caller-supplied base extent,
    * then take font/texture (params analog) from the PROTOITEM template. Must NOT read
-   * `template.extent` — retail derives row height only from the base extent above.
+   * `template.extent` — derives row height only from the base extent above.
    */
-  initializeRow(base: RetailRowExtent, template: GUIControl): void {
+  initializeRow(base: ProtoRowExtent, template: GUIControl): void {
     this.setExtentLeft(asExtentInt(base.left));
     this.setExtentTop(asExtentInt(base.top));
     if (asExtentInt(base.width) > 0) {
@@ -115,13 +115,13 @@ export class GUIProtoItem extends GUIControl{
   /**
    * Selected-row chrome only. Do not key off hover — description panes
    * (LB_DESC / noSelectMode) are hoverable for scroll hit-tests but must not
-   * pulse or take the highlight text color (retail OptionsMain sets field).
+   * pulse or take the highlight text color (OptionsMain sets field).
    */
   onSelectStateChanged(){
     if(this.selected){
       this.showHighlight();
       this.hideBorder();
-      // Retail list selection — SetPulsingAlpha(1, 1, 0): edges only
+      // list selection — SetPulsingAlpha(1, 1, 0): edges only
       this.setPulsingAlpha(true, true, false);
       this.text.color.copy(this.defaultHighlightColor);
       this.text.material.uniforms.diffuse.value = this.text.color;

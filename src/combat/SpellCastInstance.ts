@@ -79,7 +79,7 @@ export class SpellCastInstance {
   allowCounterSpell: boolean = true;
   /**
    * When true, run impact at end of projectile flight (grenade / throw),
-   * matching retail SpellCastAndImpact delayed impact — not at cast-start.
+   * matching SpellCastAndImpact delayed impact — not at cast-start.
    */
   impactAtProjectileLanding: boolean = false;
   /** Initial flight duration when impactAtProjectileLanding (for progress 1→0). */
@@ -90,9 +90,9 @@ export class SpellCastInstance {
   castItem: ModuleItem | undefined;
   /** Snapshot of MDL resrefs at cast start — survives item destroy. */
   projectileModelCandidates: string[] = [];
-  /** Retail LoadCastVisual + castsound fired once at cast-phase start. */
+  /** LoadCastVisual + castsound fired once at cast-phase start. */
   private castPhaseStarted = false;
-  /** Retail SetBehaviorListSpiral rand handedness (±1). */
+  /** SetBehaviorListSpiral rand handedness (±1). */
   private spiralSign: number = 1;
   conjureTime = 3000;
   conjuring: boolean = false;
@@ -242,7 +242,7 @@ export class SpellCastInstance {
   }
 
   /**
-   * Stamp retail spell-target fields so GetSpellTargetLocation / GetSpellTargetObject
+   * Stamp spell-target fields so GetSpellTargetLocation / GetSpellTargetObject
    * work for item casts that never called useTalentOnObject.
    */
   stampSpellTarget(){
@@ -303,7 +303,7 @@ export class SpellCastInstance {
     if(fromType !== ProjectilePath.DEFAULT){
       return fromType;
     }
-    // Retail SpellCastAndImpact item/throw path defaults to 6 when spawning
+    // SpellCastAndImpact item/throw path defaults to 6 when spawning
     if(shouldDelaySpellImpactToLanding(this.spell, this.impactAtProjectileLanding)){
       return ProjectilePath.GRENADE;
     }
@@ -311,7 +311,7 @@ export class SpellCastInstance {
   }
 
   /**
-   * Retail HandleServerToPlayerSafeProjectileSpell projspwnpoint byte:
+   * HandleServerToPlayerSafeProjectileSpell projspwnpoint byte:
    * 1/hand → handconjure, 2/head → headconjure, 3/rhand → rhand, else root.
    */
   private resolveProjectileHook(): any {
@@ -359,7 +359,7 @@ export class SpellCastInstance {
 
     this.stampSpellTarget();
 
-    // Retail CalculateLastSpellProjectileTime for delayed-impact throws / L / W.
+    // CalculateLastSpellProjectileTime for delayed-impact throws / L / W.
     // proj==0 only means no projectile delay — keep spells.2da casttime for VFX.
     if(shouldDelaySpellImpactToLanding(this.spell, this.impactAtProjectileLanding)){
       this.impactAtProjectileLanding = true;
@@ -415,16 +415,16 @@ export class SpellCastInstance {
       castItemId: castItem?.id,
     });
 
-    // Single-process: SpellCastInstance.castTime IS the retail AddEventDeltaTime
-    // delay — run impactscript in impact() at landing. Do not also queue
-    // EventSpellImpact here (that path skipped impact() and often never fired).
+    // Single-process: SpellCastInstance.castTime IS the AddEventDeltaTime
+    // delay — run impactscript in impact at landing. Do not also queue
+    // EventSpellImpact here (that path skipped impact and often never fired).
     this.spiralSign = Math.random() < 0.5 ? -1 : 1;
     void this.spawnProjectileModel();
   }
 
   /**
    * Load spells.2da projmodel, falling back to the thrown item MDL (grenades).
-   * Retail projectile loads projmodel; empty grenade rows use the item mesh.
+   * projectile loads projmodel; empty grenade rows use the item mesh.
    */
   private async spawnProjectileModel(){
     const candidates =
@@ -519,7 +519,7 @@ export class SpellCastInstance {
     }
   }
 
-  /** Retail HandleServerToPlayerSafeProjectileSpell Play3DOneShotSound(projsound). */
+  /** HandleServerToPlayerSafeProjectileSpell Play3DOneShotSound(projsound). */
   private playProjectileLaunchSound(){
     const resRef = String(this.spell?.projsound ?? '').trim().toLowerCase();
     if(!resRef || resRef === '****') return;
@@ -537,7 +537,7 @@ export class SpellCastInstance {
   }
 
   /**
-   * Retail LoadCastVisual + castsound — once at cast-phase start.
+   * LoadCastVisual + castsound — once at cast-phase start.
    * Head → headconjure, hand → handconjure, ground → root; loop cast01.
    */
   private beginCastPhase(){
@@ -619,7 +619,7 @@ export class SpellCastInstance {
           continue;
         }
         TextureLoader.LoadQueue?.();
-        // Retail PlayAnimation("cast01", loop=1)
+        // PlayAnimation("cast01", loop=1)
         visual.playAnimation('cast01', true);
         spec.assign(visual);
       }catch(e){
@@ -846,7 +846,7 @@ export class SpellCastInstance {
       return;
     }
     this.impacted = true;
-    // InstantUseItem / zero-casttime paths may call impact() without update()
+    // InstantUseItem / zero-casttime paths may call impact without update
     this.beginCastPhase();
 
     this.stampSpellTarget();
@@ -866,7 +866,7 @@ export class SpellCastInstance {
       talentTargetId: this.spell?.oTarget?.id,
     });
 
-    // Retail GrenadeSND bounce at impact point for grenade item casts
+    // GrenadeSND bounce at impact point for grenade item casts
     const castItem =
       this.castItem ||
       (this.owner as ModuleCreature)?.spellCastItem as ModuleItem | undefined;
@@ -877,7 +877,7 @@ export class SpellCastInstance {
       );
     }
 
-    // Retail EventSpellImpact (0x08) runs the impactscript after flight.
+    // EventSpellImpact (0x08) runs the impactscript after flight.
     // SpellCastInstance.castTime is that delay in-process — run it here.
     if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
       const cd = (this.owner as ModuleCreature).combatData;

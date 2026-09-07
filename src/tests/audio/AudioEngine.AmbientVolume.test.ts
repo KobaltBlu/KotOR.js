@@ -104,7 +104,7 @@ describe('AudioEngine ambient volume compose', () => {
 });
 
 describe('AudioEngine occlusion budget', () => {
-  test('OCCLUSION_BUDGET_MS defaults to retail 3ms', () => {
+  test('OCCLUSION_BUDGET_MS defaults to engine 3ms', () => {
     expect(AudioEngine.OCCLUSION_BUDGET_MS).toBe(3);
   });
 });

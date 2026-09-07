@@ -12,7 +12,7 @@ import { IMMUNITY_KNOCKDOWN } from "@/effects/set-state";
 import * as THREE from "three";
 
 /**
- * EffectKnockdown — retail OnApplyKnockdown.
+ * EffectKnockdown — effect apply.
  * Immunity 0x1C; pause combat; play fall anim; apply companion SetState 0x0E.
  *
  * @file EffectKnockdown.ts
@@ -38,7 +38,7 @@ export class EffectKnockdown extends GameEffect {
     if(hasImmunityType(creature, IMMUNITY_KNOCKDOWN)){
       return;
     }
-    // Retail skip if already in knockdown SetState 0x0E
+    // skip if already in knockdown SetState 0x0E
     if(creature.hasSetState?.(GameEffectSetStateType.KNOCKDOWN)){
       return;
     }
@@ -76,7 +76,7 @@ export class EffectKnockdown extends GameEffect {
       fromBehind ? ModuleCreatureAnimState.KNOCKED_DOWN2 : ModuleCreatureAnimState.KNOCKED_DOWN
     );
 
-    // Retail apply SetState type 8, int0=0x0E (companion hold)
+    // apply SetState type 8, int0=0x0E (companion hold)
     const setState = new GameState.GameEffectFactory.EffectSetState();
     setState.setCreator(this.getCreator() || this.creator);
     setState.setSpellId(this.getSpellId());

@@ -1,6 +1,6 @@
 /**
- * GameObjUpdate write helpers — retail WriteGameObjUpdate_* family.
- * These encode payload fragments into a CSWMessage; callers pass structured field bags
+ * GameObjUpdate write helpers — WriteGameObjUpdate_* family.
+ * These encode payload fragments into a OdysseyMessage; callers pass structured field bags
  * (no live server-player / last-update state required for the unwired port).
  *
  * Includes UpdateObject, UpdateAppearance, and PlayerUpdate fragments.
@@ -12,21 +12,21 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import type { CSWMessage, MessageVector3 } from "@/server/message/CSWMessage";
+import type { OdysseyMessage, MessageVector3 } from "@/server/message/OdysseyMessage";
 import { OBJECT_INVALID } from "@/server/message/types";
 
-/** Write a server OBJECTID (same as CSWSMessage.writeOBJECTIDServer). */
-export function writeObjectId(msg: CSWMessage, objectId: number): void {
+/** Write a server OBJECTID (same as OdysseyServerMessage.writeOBJECTIDServer). */
+export function writeObjectId(msg: OdysseyMessage, objectId: number): void {
   let id = objectId >>> 0;
   if (id !== OBJECT_INVALID) id = id | 0x80000000;
   msg.writeDWORD(id);
 }
 
 /**
- * Retail WriteGameObjUpdate_WriteInventorySlotAdd — simplified.
+ * WriteGameObjUpdate_WriteInventorySlotAdd — simplified.
  */
 export function writeInventorySlotAdd(
-  msg: CSWMessage,
+  msg: OdysseyMessage,
   slot: number,
   itemObjectId: number,
   packedItemAppearance?: Uint8Array
@@ -45,7 +45,7 @@ export function writeInventorySlotAdd(
  * Creature add header fragment used by several Update_Add paths.
  */
 export function writeCreatureAddHeader(
-  msg: CSWMessage,
+  msg: OdysseyMessage,
   objectId: number,
   appearance: number,
   pos: MessageVector3,
@@ -62,7 +62,7 @@ export function writeCreatureAddHeader(
 /**
  * Door/placeable/trigger delete — OBJECTID only.
  */
-export function writeObjectDelete(msg: CSWMessage, objectId: number): void {
+export function writeObjectDelete(msg: OdysseyMessage, objectId: number): void {
   writeObjectId(msg, objectId);
 }
 
@@ -71,7 +71,7 @@ export function writeObjectDelete(msg: CSWMessage, objectId: number): void {
  * Matches the compare/assign list shape used around CompareVisualEffectLists.
  */
 export function writeVisualEffectList(
-  msg: CSWMessage,
+  msg: OdysseyMessage,
   effects: { id: number; creatorId?: number; duration?: number }[]
 ): void {
   msg.writeBYTE(effects.length & 0xff);
@@ -85,7 +85,7 @@ export function writeVisualEffectList(
 /**
  * Work-remaining progress byte — WriteGameObjUpdate_WorkRemaining.
  */
-export function writeWorkRemaining(msg: CSWMessage, remaining: number): void {
+export function writeWorkRemaining(msg: OdysseyMessage, remaining: number): void {
   msg.writeBYTE(remaining & 0xff);
 }
 
@@ -93,7 +93,7 @@ export function writeWorkRemaining(msg: CSWMessage, remaining: number): void {
  * Party AI state fragment — WriteGameObjUpdate_PartyAIState.
  */
 export function writePartyAIState(
-  msg: CSWMessage,
+  msg: OdysseyMessage,
   entries: { objectId: number; aiState: number }[]
 ): void {
   msg.writeBYTE(entries.length & 0xff);
@@ -107,7 +107,7 @@ export function writePartyAIState(
  * Character sheet panel fragment — WriteGameObjUpdate_CharacterSheet.
  * Accepts opaque packed bytes from a higher-level packer.
  */
-export function writeCharacterSheetBlob(msg: CSWMessage, packed: Uint8Array): void {
+export function writeCharacterSheetBlob(msg: OdysseyMessage, packed: Uint8Array): void {
   msg.writeDWORD(packed.length);
   msg.writeVOIDPtr(packed);
 }
@@ -115,7 +115,7 @@ export function writeCharacterSheetBlob(msg: CSWMessage, packed: Uint8Array): vo
 /**
  * Minor GUI panels fragment — WriteGameObjUpdate_MinorGUIPanels.
  */
-export function writeMinorGUIPanels(msg: CSWMessage, packed: Uint8Array): void {
+export function writeMinorGUIPanels(msg: OdysseyMessage, packed: Uint8Array): void {
   msg.writeDWORD(packed.length);
   msg.writeVOIDPtr(packed);
 }
@@ -123,7 +123,7 @@ export function writeMinorGUIPanels(msg: CSWMessage, packed: Uint8Array): void {
 /**
  * Major GUI panels fragment — WriteGameObjUpdate_MajorGUIPanels.
  */
-export function writeMajorGUIPanels(msg: CSWMessage, packed: Uint8Array): void {
+export function writeMajorGUIPanels(msg: OdysseyMessage, packed: Uint8Array): void {
   msg.writeDWORD(packed.length);
   msg.writeVOIDPtr(packed);
 }
@@ -131,7 +131,7 @@ export function writeMajorGUIPanels(msg: CSWMessage, packed: Uint8Array): void {
 /**
  * Appearance update blob — WriteGameObjUpdate_UpdateAppearance.
  */
-export function writeUpdateAppearance(msg: CSWMessage, objectId: number, packed: Uint8Array): void {
+export function writeUpdateAppearance(msg: OdysseyMessage, objectId: number, packed: Uint8Array): void {
   writeObjectId(msg, objectId);
   msg.writeDWORD(packed.length);
   msg.writeVOIDPtr(packed);
@@ -142,7 +142,7 @@ export function writeUpdateAppearance(msg: CSWMessage, objectId: number, packed:
  * Mirrors the category routing around SelectCategoryForGameObject.
  */
 export function writeObjectUpdateEnvelope(
-  msg: CSWMessage,
+  msg: OdysseyMessage,
   category: number,
   objectId: number,
   packedDelta: Uint8Array
@@ -156,7 +156,7 @@ export function writeObjectUpdateEnvelope(
 /**
  * Player-update fragment — WriteGameObjUpdate_PlayerUpdate.
  */
-export function writePlayerUpdate(msg: CSWMessage, objectId: number, packed: Uint8Array): void {
+export function writePlayerUpdate(msg: OdysseyMessage, objectId: number, packed: Uint8Array): void {
   writeObjectId(msg, objectId);
   msg.writeDWORD(packed.length);
   msg.writeVOIDPtr(packed);
@@ -167,7 +167,7 @@ export function writePlayerUpdate(msg: CSWMessage, objectId: number, packed: Uin
  * @param isBeam When true, appends beam target/source/bytes/pos (+ duration if objectId invalid).
  */
 export function writeVisEffect(
-  msg: CSWMessage,
+  msg: OdysseyMessage,
   writeObjectIdFn: (id: number) => void,
   data: {
     objectId: number;
@@ -205,7 +205,7 @@ export function writeVisEffect(
 /**
  * Write a WorkRemaining category fragment for minor-1 streams.
  */
-export function writeWorkRemainingCategory(msg: CSWMessage, current: number, total: number): void {
+export function writeWorkRemainingCategory(msg: OdysseyMessage, current: number, total: number): void {
   msg.writeBYTE(0x57); // 'W'
   msg.writeBYTE(current & 0xff);
   msg.writeBYTE(total & 0xff);
@@ -215,7 +215,7 @@ export function writeWorkRemainingCategory(msg: CSWMessage, current: number, tot
  * Write a Delete+Creature category fragment (simplified leaf matching reads).
  */
 export function writeCreatureDeleteCategory(
-  msg: CSWMessage,
+  msg: OdysseyMessage,
   writeObjectIdFn: (id: number) => void,
   data: { objectId: number; bool0: boolean; bool1: boolean; dword0: number; bool2: boolean }
 ): void {
@@ -229,16 +229,16 @@ export function writeCreatureDeleteCategory(
 }
 
 /** Control-object update — SendServerToPlayerGameObjUpdate_ObjControl. */
-export function writeObjControl(msg: CSWMessage, objectId: number): void {
+export function writeObjControl(msg: OdysseyMessage, objectId: number): void {
   writeObjectId(msg, objectId);
 }
 
 /**
  * Stub compute helpers that need live last-update state — return conservative defaults.
- * Documented with retail addresses for future wiring.
+ * Documented with addresses for future wiring.
  */
 export const GameObjUpdateCompute = {
-  /** ComputeUpdateRequired */
+  /** update required */
   computeUpdateRequired(): boolean {
     return false;
   },
@@ -246,7 +246,7 @@ export const GameObjUpdateCompute = {
   testObjectVisible(): boolean {
     return true;
   },
-  /** ComputeGameObjectUpdateForObject */
+  /** game object update */
   computeGameObjectUpdateForObject(): Uint8Array {
     return new Uint8Array(0);
   },

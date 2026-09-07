@@ -10,7 +10,7 @@
  */
 export enum CombatActionType {
   ATTACK = 1,
-  /** Retail scheduled pause (AIActionCombat case 3). */
+  /** scheduled pause (AIActionCombat case 3). */
   PAUSE = 3,
   ITEM_EQUIP = 6,
   ITEM_UNEQUIP = 7,

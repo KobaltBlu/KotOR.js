@@ -4,7 +4,7 @@ import type { ModuleObject } from "@/module";
 
 /**
  * Resolve a saved CombatRound / AttackList object id.
- * Retail LoadCombatRound stores DWORDs and looks them up when used;
+ * LoadCombatRound stores DWORDs and looks them up when used;
  * KotOR.js may call this during fromStruct (early) and again after all
  * creatures are registered.
  */

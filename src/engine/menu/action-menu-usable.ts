@@ -41,7 +41,7 @@ export {
   passesDroidOrHumanRestriction,
 } from "@/engine/menu/action-menu-usable-pure";
 
-/** Retail GetUsableItems mask bits (GetPersonalActions). */
+/** GetUsableItems mask bits (GetPersonalActions). */
 export const UsableItemMask = {
   MEDICAL: 1,
   MINES: 2,
@@ -54,7 +54,7 @@ function getItemType(item: ModuleItem): number {
 }
 
 /**
- * Retail IsLeaderUsableItem medical / ItemType 0x19 path:
+ * IsLeaderUsableItem medical / ItemType 0x19 path:
  * CastSpell property present and useable. Item powers use UserType 4
  * (not 1); do not filter on usertype here.
  */
@@ -73,7 +73,7 @@ function hasUseableCastSpellProperty(item: ModuleItem): boolean {
 }
 
 /**
- * Retail IsLeaderUsableItem fallthrough for forearm/droid devices:
+ * IsLeaderUsableItem fallthrough for forearm/droid devices:
  * CastSpell + spells.ItemTargeting == 1.
  */
 function hasItemTargetingCastSpellProperty(item: ModuleItem): boolean {
@@ -125,7 +125,7 @@ function collectUseLimitationProps(item: ModuleItem): UseLimitationProp[] {
 }
 
 /**
- * Retail CheckItemRaceRestrictions (menu subset via CanUseItem).
+ * CheckItemRaceRestrictions (menu subset via CanUseItem).
  */
 export function passesItemRaceRestriction(creature: ModuleCreature, item: ModuleItem): boolean {
   return checkItemRaceRestrictionsPure(
@@ -138,7 +138,7 @@ export function passesItemRaceRestriction(creature: ModuleCreature, item: Module
 }
 
 /**
- * Retail CanUseItem UseLimitation gates
+ * CanUseItem UseLimitation gates
  * (alignment / class / race / feat). Weapon size + CheckProficiencies omitted
  * for personal-use HUD items (weapon_type typically 0).
  */
@@ -175,7 +175,7 @@ export function canUseItemForMenu(creature: ModuleCreature, item: ModuleItem): b
 }
 
 /**
- * Retail IsLeaderUsableItem — whether an item belongs in a personal-use HUD slot.
+ * IsLeaderUsableItem — whether an item belongs in a personal-use HUD slot.
  * Category gates first; every success path ends in CanUseItem.
  */
 export function isLeaderUsableItem(
@@ -227,7 +227,7 @@ export function isLeaderUsableItem(
 
 /**
  * Whether a usable medical/recovery item should appear active (not dimmed).
- * Retail CreateUsableItemEntry:
+ * CreateUsableItemEntry:
  * - item_type 0x2d / 0x1a (medpac / droid repair): disable when caster at full HP
  * - item_type 0x2f (squad kit): disable when no party member is injured
  * - equipped non-medical: enable bit from CastSpell.usable (property)
@@ -282,7 +282,7 @@ export function isUsableItemActive(
     return false;
   }
 
-  // Retail CreateUsableItemEntry: equipped non-medical XOR enable from CastSpell.usable.
+  // CreateUsableItemEntry: equipped non-medical XOR enable from CastSpell.usable.
   if(fromEquipment){
     for(let i = 0; i < item.properties.length; i++){
       const prop = item.properties[i];
@@ -295,7 +295,7 @@ export function isUsableItemActive(
   return true;
 }
 
-/** Retail CreateUsableItemEntry name: "%s (%s)" with TLK 0x9475 "(Self)". */
+/** CreateUsableItemEntry name: "%s (%s)" with TLK 0x9475 "(Self)". */
 export function getUsableItemMenuName(item: ModuleItem): string {
   const base = item?.getName?.() || '';
   const selfLabel = GameState.TLKManager?.GetStringById?.(0x9475)?.Value;
@@ -315,12 +315,12 @@ export function isStealthDeviceItem(item: ModuleItem): boolean {
 
 export function isGrenadeHostileItem(item: ModuleItem): boolean {
   if(!item || item.plot) return false;
-  // Retail CreateHostileItemEntry: item_type == 6 only.
+  // CreateHostileItemEntry: item_type == 6 only.
   return getItemType(item) === ItemTypeCategory.GRENADE;
 }
 
 /**
- * Retail GetDoorInterfaceMines / GetPlaceableInterfaceMines — Trap subtype
+ * GetDoorInterfaceMines / GetPlaceableInterfaceMines — Trap subtype
  * whitelist for planting on locked doors/placeables.
  */
 const DOOR_PLACEABLE_MINE_SUBTYPES = new Set([
@@ -341,7 +341,7 @@ function getUseableTrapSubtype(item: ModuleItem): number {
   return -1;
 }
 
-/** Retail GetSpikeDetails(param=1): ItemType 0x1b + ThievesTools. */
+/** GetSpikeDetails(param=1): ItemType 0x1b + ThievesTools. */
 export function isSecuritySpikeItem(item: ModuleItem): boolean {
   if(!item) return false;
   if(getItemType(item) !== ItemTypeCategory.SECURITY_SPIKES) return false;
@@ -355,7 +355,7 @@ export function isSecuritySpikeItem(item: ModuleItem): boolean {
 }
 
 /**
- * Retail GetDoorInterfaceMines / GetPlaceableInterfaceMines mine row:
+ * GetDoorInterfaceMines / GetPlaceableInterfaceMines mine row:
  * non-plot, ItemType 0x1c, Trap subtype in the door/placeable whitelist.
  */
 export function isDoorOrPlaceableMineItem(item: ModuleItem): boolean {
@@ -365,7 +365,7 @@ export function isDoorOrPlaceableMineItem(item: ModuleItem): boolean {
 }
 
 /**
- * Retail placeable GetUseItems: CastSpell with spells.ItemTargeting == 2.
+ * placeable GetUseItems: CastSpell with spells.ItemTargeting == 2.
  */
 export function isPlaceableTargetUseItem(item: ModuleItem): boolean {
   if(!item) return false;
@@ -387,7 +387,7 @@ export function isPlaceableTargetUseItem(item: ModuleItem): boolean {
 }
 
 /**
- * Retail GetMineStrengthLevel — maps traps.2da row → strength tier.
+ * GetMineStrengthLevel — maps traps.2da row → strength tier.
  * Returns -1 when the trap type has no Force-counter path.
  */
 export function getMineStrengthLevel(trapType: number): number {

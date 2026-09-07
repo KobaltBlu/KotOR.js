@@ -14,7 +14,7 @@ import * as THREE from "three";
 *
 * Class representing a gunbank attached to players and enemy objects found in minigame modules.
 *
-* Retail: CreateGunBank then AttachGuns enumerates parts named `gunbank%d-*`
+* : CreateGunBank then AttachGuns enumerates parts named `gunbank%d-*`
 * and AddGun places a Gun_Model Gob on each. Fire fires every gun.
 *
 * @file ModuleMGGunBank.ts
@@ -37,20 +37,20 @@ export class ModuleMGGunBank extends ModuleObject {
   fireSound: any;
   horizSpread: number = 0;
   inaccuracy: number = 0;
-  /** Retail TargettingGunBank — Sensing_Radius from enemy LoadGun. */
+  /** TargettingGunBank — Sensing_Radius from enemy LoadGun. */
   sensingRadius: number = 0;
   vertSpread: number = 0;
   /** Set by Die — blocks Fire; model may still play die. */
   disabled: boolean = false;
   /**
-   * Retail gun Gob list (AddGun →). Each entry is one Gun_Model on an attach part.
+   * gun Gob list (AddGun →). Each entry is one Gun_Model on an attach part.
    */
   guns: OdysseyModel3D[] = [];
   /** Parallel bullet hooks for each gun Gob. */
   gunHooks: (THREE.Object3D | undefined)[] = [];
-  /** Indices still playing die after Die(). */
+  /** Indices still playing die after Die. */
   private dyingGunFlags: boolean[] = [];
-  /** Retail BehaviorFire — per-gun fire cooldown. */
+  /** BehaviorFire — per-gun fire cooldown. */
   gunFireTimers: number[] = [];
   /** Bound playEvent listeners so removeGunAt can detach. */
   private gunEventHandlers: (((e: any) => void) | undefined)[] = [];
@@ -83,13 +83,13 @@ export class ModuleMGGunBank extends ModuleObject {
     
   }
 
-  /** Retail IsGunBankTargetting — Sensing_Radius > 0. */
+  /** IsGunBankTargetting — Sensing_Radius > 0. */
   isTargetting(): boolean {
     return this.sensingRadius > 0;
   }
 
   /**
-   * Retail AttachGuns / EnumGunAttachPoints — parts named `gunbank{id}` or `gunbank{id}-*`.
+   * AttachGuns / EnumGunAttachPoints — parts named `gunbank{id}` or `gunbank{id}-*`.
    */
   static findGunAttachPoints(root: THREE.Object3D, bankID: number): THREE.Object3D[] {
     const out: THREE.Object3D[] = [];
@@ -175,7 +175,7 @@ export class ModuleMGGunBank extends ModuleObject {
   }
 
   update(delta = 0){
-    // Retail Control — decay per-gun fire timers.
+    // Control — decay per-gun fire timers.
     for(let i = 0; i < this.gunFireTimers.length; i++){
       if(this.gunFireTimers[i] > 0){
         this.gunFireTimers[i] = Math.max(0, this.gunFireTimers[i] - delta);
@@ -204,12 +204,12 @@ export class ModuleMGGunBank extends ModuleObject {
       this.spawnBulletFromGun(i, 0);
     }
 
-    // Retail Control — aim targeting guns at player.
+    // Control — aim targeting guns at player.
     if(this.isTargetting() && !this.disabled){
       this.updateGunTracking();
     }
 
-    // Retail GunDie / donedie — purge gun Gob when die anim ends.
+    // GunDie / donedie — purge gun Gob when die anim ends.
     for(let i = this.guns.length - 1; i >= 0; i--){
       if(!this.dyingGunFlags[i]){ continue; }
       const gun = this.guns[i];
@@ -242,7 +242,7 @@ export class ModuleMGGunBank extends ModuleObject {
   }
 
   /**
-   * Retail Die / Die
+   * Die / Die
    * stop fire behavior; play die on each gun Gob or RemoveGun if missing.
    */
   die(){
@@ -266,7 +266,7 @@ export class ModuleMGGunBank extends ModuleObject {
     }
   }
 
-  /** Retail RemoveGun — detach + drop gun Gob. */
+  /** RemoveGun — detach + drop gun Gob. */
   removeGunAt(index: number){
     if(index < 0 || index >= this.guns.length){ return; }
     const gun = this.guns[index];
@@ -298,7 +298,7 @@ export class ModuleMGGunBank extends ModuleObject {
   }
 
   /**
-   * Retail Fire → Fire
+   * Fire → Fire
    * when timer==0: set rate timer, play fire+ready, fire SFX. Bullets spawn from
    * FireGunCallback on anim events `fire` / `fire%d`.
    */
@@ -336,14 +336,14 @@ export class ModuleMGGunBank extends ModuleObject {
           gun.odysseyAnimationMap?.get?.('ready') ||
           gun.odysseyAnimationMap?.get?.('Ready_01');
         if(ready){
-          // Retail queues ready after fire (overlay/flag 0x20).
+          // queues ready after fire (overlay/flag 0x20).
         }
         if(!hasFireEvents){
           // No fire* anim events — spawn immediately (FireGunCallback would never run).
           this.spawnBulletFromGun(i, 0);
           this.pendingFallbackFire[i] = false;
         }else{
-          // Wait for fire*/fire%d playEvent; update() falls back if the event never runs.
+          // Wait for fire*/fire%d playEvent; update falls back if the event never runs.
           this.pendingFallbackFire[i] = true;
         }
       }
@@ -354,7 +354,7 @@ export class ModuleMGGunBank extends ModuleObject {
   }
 
   /**
-   * Retail FireGunCallback — anim event `fire`/`fire%d` → bullethook%d bullet;
+   * FireGunCallback — anim event `fire`/`fire%d` → bullethook%d bullet;
    * `startfire` → OnFire (follower OnFire script).
    */
   onGunAnimEvent(gunIndex: number, eventName: string){
@@ -374,7 +374,7 @@ export class ModuleMGGunBank extends ModuleObject {
     this.spawnBulletFromGun(gunIndex, Number.isFinite(hookIndex) ? hookIndex : 0);
   }
 
-  /** Retail OnFire — run follower OnFire script. */
+  /** OnFire — run follower OnFire script. */
   onFireScript(){
     const owner = this.owner as any;
     if(typeof owner?.onFire === 'function'){
@@ -408,7 +408,7 @@ export class ModuleMGGunBank extends ModuleObject {
     const bullet = new ModuleMGGunBullet( this.bulletTemplate, this );
     bullet.load().then( () => {
       if(this.disabled || !hook || !bullet.model){ return; }
-      // Retail FireGunCallback — GetPartPosition(bullethook) → pos + ori.
+      // FireGunCallback — GetPartPosition(bullethook) → pos + ori.
       hook.updateMatrixWorld?.(true);
       hook.getWorldPosition(bullet.position);
 
@@ -421,7 +421,7 @@ export class ModuleMGGunBank extends ModuleObject {
         bullet.direction.set(0, 1, 0).applyQuaternion(bullet.quaternion);
       }
 
-      // Retail: PlayAnimation("ready") → AttachToScene → SetPosition/Orientation.
+      // : PlayAnimation("ready") → AttachToScene → SetPosition/Orientation.
       // Sync mesh before the next bank update or the bolt sits at world origin for a frame.
       const model = bullet.model as OdysseyModel3D;
       model.position.copy(bullet.position);
@@ -453,10 +453,10 @@ export class ModuleMGGunBank extends ModuleObject {
   }
 
   /**
-   * Retail Control
+   * Control
    * when player is within Sensing_Radius, yaw/pitch gun toward them; clamp to
    * Horiz_Spread / Vert_Spread (degrees; ≤0 or −1 = unbound). Still orients when
-   * outside the fire cone (retail clears TrackAndFire flag but keeps clamped aim).
+   * outside the fire cone (clears TrackAndFire flag but keeps clamped aim).
    */
   updateGunTracking(){
     const player = GameState.module?.area?.miniGame?.player;
@@ -536,7 +536,7 @@ export class ModuleMGGunBank extends ModuleObject {
   }
 
   /**
-   * Retail FireGunCallback targeting path
+   * FireGunCallback targeting path
    * aim at player sphere center; when Inaccuracy > 0, offset the aim point by a
    * random unit * (player sphere_radius * Inaccuracy) projected perpendicular to
    * the line of fire (AddGun copies sphere_radius into Track).
@@ -591,7 +591,7 @@ export class ModuleMGGunBank extends ModuleObject {
   }
 
   /**
-   * Retail AttachGuns + AddGun
+   * AttachGuns + AddGun
    * place Gun_Model on each `gunbank{id}` / `gunbank{id}-*` part under follower models.
    */
   async attachGuns(followerRoot: THREE.Object3D): Promise<number> {
@@ -613,7 +613,7 @@ export class ModuleMGGunBank extends ModuleObject {
     return added;
   }
 
-  /** Retail AddGun — NewCAurObject(Gun_Model), attach to part, BehaviorFire + FireGunCallback. */
+  /** AddGun — NewCAurObject(Gun_Model), attach to part, BehaviorFire + FireGunCallback. */
   async addGun(attachPoint: THREE.Object3D): Promise<boolean> {
     if(!attachPoint || !this.gunModel){ return false; }
     const resref = String(this.gunModel).replace(/\0[\s\S]*$/g,'').toLowerCase();

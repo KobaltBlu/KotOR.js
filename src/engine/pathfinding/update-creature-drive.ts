@@ -15,23 +15,23 @@ import {
 } from "@/engine/pathfinding/test-direct-line";
 
 /**
- * Retail DriveUpdateLocation + GetDoorCrossed
- * + WalkUpdateLocationTestDistance creature/BumpFriends gate
+ * creature drive update + GetDoorCrossed
+ * + walk step distance test creature/BumpFriends gate
  * + AIActionDrive TestDirectLine binary/wall-slide.
  *
  * Moves toward the path point by walk/run × delta, clips via TestDirectLine
  * (NoNonWalkPolysDetailed), NoCreaturesOnLine + BumpFriends, fires OnClicked
  * (0x1e) when crossing open linked doors.
  *
- * @file drive-update-location.ts
+ * @file update-creature-drive.ts
  */
 
 export enum DriveUpdateResult {
-  /** Moved (retail return 1) */
+  /** Moved (return 1) */
   OK = 1,
-  /** Snapped to / reached path point (retail return 2) */
+  /** Snapped to / reached path point (return 2) */
   ARRIVED = 2,
-  /** Blocked by walkmesh / creature / linked door (retail return 3) */
+  /** Blocked by walkmesh / creature / linked door (return 3) */
   BLOCKED = 3,
 }
 
@@ -52,7 +52,7 @@ function isLinkedTransitionDoor(door: ModuleDoor): boolean {
 
 /**
  * Approximate GetDoorCrossed: segment from→to crosses an open linked door box
- * with facing-side flip (retail orientation plane test).
+ * with facing-side flip (orientation plane test).
  */
 export function getDoorCrossed(
   area: ModuleArea | undefined,
@@ -156,7 +156,7 @@ export function driveResolveMoveTarget(
     return ideal.clone();
   }
 
-  // Binary search along origin→ideal (retail fStack_134=0.5, fStack_130=0.25)
+  // Binary search along origin→ideal (fStack_134=0.5, fStack_130=0.25)
   let t = 0.5;
   let step = 0.25;
   let found = false;
@@ -186,7 +186,7 @@ export function driveResolveMoveTarget(
     return _slideBest.clone();
   }
 
-  // Wall-slide: accumulate ±perpendicular of intended move (retail VStack_bc / perp)
+  // Wall-slide: accumulate ±perpendicular of intended move (VStack_bc / perp)
   _moveDir.set(ideal.x - origin.x, ideal.y - origin.y, 0);
   if(_moveDir.lengthSq() < 1e-10){
     return origin.clone();
@@ -257,7 +257,7 @@ export function driveResolveMoveTarget(
     }
   }
 
-  // Retail: slide step length *= max(dot, 0.25) via state speed factor
+  // : slide step length *= max(dot, 0.25) via state speed factor
   if(best){
     const factor = Math.max(0.25, Math.min(1, bestDot > 0 ? bestDot : 0.25));
     if(creature){
@@ -332,7 +332,7 @@ function clipWalkable(
   return _lo.clone();
 }
 
-/** Queue Door OnClicked (script event 0x1e) — retail DriveUpdateLocation linked-door path. */
+/** Queue Door OnClicked (script event 0x1e) — creature drive update linked-door path. */
 function signalDoorClicked(creature: ModuleCreature, door: ModuleDoor){
   const tm = GameState.module?.timeManager;
   const event = new GameState.GameEventFactory.EventSignalEvent();
@@ -345,11 +345,11 @@ function signalDoorClicked(creature: ModuleCreature, door: ModuleDoor){
 }
 
 /**
- * Retail DriveUpdateLocation — one frame of drive motion toward dest.
- * @param running Use run rate (retail arg1).
+ * creature drive update — one frame of drive motion toward dest.
+ * @param running Use run rate (arg1).
  * @param rateOverride Optional world-units/sec (strafe 0x275e/0x275f → 1.6).
  */
-export function driveUpdateLocation(
+export function updateCreatureDrive(
   creature: ModuleCreature,
   dest: THREE.Vector3,
   running: boolean,
@@ -408,7 +408,7 @@ export function driveUpdateLocation(
     return DriveUpdateResult.BLOCKED;
   }
 
-  // DriveUpdateLocation: NoCreaturesOnLine only (no BumpFriends
+  // creature drive update: NoCreaturesOnLine only (no BumpFriends
   // bump happens in AIActionDrive / WalkUpdate / driveResolveMoveTarget).
   // Party members are soft-bumped earlier; do not hard-block the final step.
   const creatures = noCreaturesOnLine(area, creature.position, clipped, {

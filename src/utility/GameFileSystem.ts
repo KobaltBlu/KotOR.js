@@ -21,7 +21,7 @@ const spleep = (time: number = 0) => {
  * 
  * Handles file system access for the application.
  * It will use either the File System Access API or the fs module built into node
- * depending on the ENVIRONMENT ( BROWSER|ELECTRON ) the app was loaded under.
+ * depending on the ENVIRONMENT (BROWSER|ELECTRON) the app was loaded under.
  * 
  * This class should only access the directory that the user supplied and not escape it.
  * Under the web this is forced, but the node implementation is not so strict.
@@ -581,16 +581,16 @@ export class GameFileSystem {
 
     }else{
       // const pickerOpts = {
-      //   types: [
-      //     {
-      //       description: 'Images',
-      //       accept: {
-      //         'image/*': ['.png', '.gif', '.jpeg', '.jpg']
-      //       }
-      //     },
-      //   ],
-      //   excludeAcceptAllOption: true,
-      //   multiple: false
+      // types: [
+      // {
+      // description: 'Images',
+      // accept: {
+      // 'image/*': ['.png', '.gif', '.jpeg', '.jpg']
+      // }
+      // },
+      // ],
+      // excludeAcceptAllOption: true,
+      // multiple: false
       // };
       let [fileHandle] = await window.showOpenFilePicker({multiple: false});
       return fileHandle;

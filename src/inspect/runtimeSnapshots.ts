@@ -316,15 +316,15 @@ export function flattenGffTemplate(obj: ModuleObject, maxDepth: number = 4): Gff
   return flattenStruct(template.RootNode, 'root', 0, maxDepth);
 }
 
-/** Flatten a GFF root (e.g. from obj.save()). */
+/** Flatten a GFF root (e.g. from obj.save). */
 export function flattenGffFromRoot(root: GFFStruct | undefined | null, maxDepth: number = 4): GffTreeNode[] {
   if(!root){ return []; }
   return flattenStruct(root, 'root', 0, maxDepth);
 }
 
 /**
- * Call obj.save() once and flatten the returned GFF.
- * Side effect: most ModuleObject.save() implementations also assign this.template.
+ * Call obj.save once and flatten the returned GFF.
+ * Side effect: most ModuleObject.save implementations also assign this.template.
  */
 export function dumpLiveGff(obj: ModuleObject, maxDepth: number = 4): GffTreeNode[] {
   const save = (obj as any).save;

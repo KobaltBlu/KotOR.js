@@ -43,9 +43,9 @@ export class TLKObject {
 
   /**
    * Parses a dialog.tlk buffer in two sequential passes:
-   *   Pass 1 — reads all 40-byte DataElement records with no random seeks.
-   *   Pass 2 — decodes string values from the string-data section using
-   *             Uint8Array.subarray() (zero-copy views) and a single TextDecoder.
+   * Pass 1 — reads all 40-byte DataElement records with no random seeks.
+   * Pass 2 — decodes string values from the string-data section using
+   * Uint8Array.subarray (zero-copy views) and a single TextDecoder.
    *
    * The BinaryReader and raw buffer are released immediately after parsing.
    */
@@ -199,7 +199,7 @@ export class TLKObject {
   }
 
   /**
-   * Serialize the talk table to binary .tlk bytes.
+   * Serialize the talk table to binary.tlk bytes.
    */
   toExportBuffer(): Uint8Array {
     const count = this.TLKStrings.length;

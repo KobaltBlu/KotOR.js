@@ -93,7 +93,7 @@ export const getGodRayTexture = (size: number = 256): THREE.DataTexture => {
     );
 
     // Convert texture coordinate into the same coordinate domain
-    // consumed by godRays().
+    // consumed by godRays.
     const py = (
       (v * 2.0 - 1.0) *
       extent
@@ -116,7 +116,7 @@ export const getGodRayTexture = (size: number = 256): THREE.DataTexture => {
       );
 
       /*
-       * atan() is expensive in a fragment shader.
+       * atan is expensive in a fragment shader.
        *
        * Here it doesn't matter because this runs once.
        */
@@ -172,7 +172,7 @@ export const getGodRayTexture = (size: number = 256): THREE.DataTexture => {
        * Original shader:
        *
        * exp(-dist * 1.55)
-       *   *
+       * *
        * smoothstep(1.4, 0.05, dist)
        *
        * Rewritten here without reversed smoothstep edges.
@@ -194,7 +194,7 @@ export const getGodRayTexture = (size: number = 256): THREE.DataTexture => {
       /*
        * Bake some spatial breakup into the ray texture.
        *
-       * This replaces the runtime simplex3d() call.
+       * This replaces the runtime simplex3d call.
        *
        * Use a combination of angular and Cartesian noise so the
        * shafts don't look like perfectly clean spokes.

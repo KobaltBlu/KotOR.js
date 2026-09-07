@@ -2,8 +2,8 @@
  * Duel / combat-round choreography debug logging.
  *
  * Toggle at runtime from the browser console:
- *   window.__DUEL_DEBUG = false  // silence
- *   window.__DUEL_DEBUG = true   // re-enable
+ * window.__DUEL_DEBUG = false // silence
+ * window.__DUEL_DEBUG = true // re-enable
  *
  * Per-owner consecutive-duplicate collapsing keeps per-frame wait states
  * (paused slave, slave waiting for master) from flooding the console.

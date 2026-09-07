@@ -15,7 +15,7 @@ import {
 } from "@/engine/jump-to-location";
 
 /**
- * ActionJumpToPoint — retail jump-to-point action.
+ * ActionJumpToPoint — jump-to-point action.
  *
  * Same area: SetPosition. Foreign loaded area: AddToArea (detach/attach).
  * Foreign module: LoadModuleWithJumpSpawn (party leader / controlled).
@@ -44,7 +44,7 @@ export class ActionJumpToPoint extends Action {
     // 2 - float: z
     // 3 - dword: target area object id
     // 4 - int: unknown (takeStraightLine)
-    // 5 - float: ComputeSafeLocation radius (default 20)
+    // 5 - float: find safe location radius (default 20)
     // 6 - float: rotation x
     // 7 - float: rotation y
   }
@@ -64,7 +64,7 @@ export class ActionJumpToPoint extends Action {
 
     const creature = this.owner as ModuleCreature;
 
-    // Retail: leave limbo when jumping from area-less state
+    // : leave limbo when jumping from area-less state
     if(GameState.module?.isObjectInLimbo(creature) && !creature.area){
       GameState.module.removeObjectFromLimbo(creature);
     }
@@ -132,7 +132,7 @@ export class ActionJumpToPoint extends Action {
   }
 }
 
-/** Retail AddToArea when dest area ≠ current. */
+/** AddToArea when dest area ≠ current. */
 export function applyAddToArea(creature: ModuleCreature, destArea: ModuleArea){
   if(!creature || !destArea) return;
   if(creature.area && creature.area !== destArea){
@@ -149,7 +149,7 @@ export function applyLocalJump(
   facing: number
 ){
   creature.setPosition(new THREE.Vector3(x, y, z));
-  // Retail jump-to-point → SetOrientation (instant).
+  // jump-to-point → SetOrientation (instant).
   creature.setFacing(facing, true);
   if(creature.collisionManager){
     creature.collisionManager.groundFace = undefined;

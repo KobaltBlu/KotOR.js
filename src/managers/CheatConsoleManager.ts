@@ -19,7 +19,7 @@ import {
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * Retail ConsoleFunc handlers (string table).
+ * ConsoleFunc handlers (string table).
  *
  * @file CheatConsoleManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -33,7 +33,7 @@ export class CheatConsoleManager {
   static readonly RESREF_SEC_SPIKE = 'g_i_secspike01';
   static readonly RESREF_SITH_ARMOR = 'ptar_sitharmor';
 
-  /** Retail turbo GetMaxSpeed when turbo is enabled. */
+  /** turbo GetMaxSpeed when turbo is enabled. */
   static readonly TURBO_MAX_SPEED = 15;
 
   static shouldSkipItemConsume(): boolean {
@@ -132,7 +132,7 @@ export class CheatConsoleManager {
   }
 
   /**
-   * Retail givemed/giverepair/spikes: 0 or >99 → 99.
+   * givemed/giverepair/spikes: 0 or >99 → 99.
    */
   static clampGiveItemCount(raw: string | undefined): number {
     let n = CheatConsoleManager.parseIntParam(raw, 0);
@@ -142,7 +142,7 @@ export class CheatConsoleManager {
 
   //Gives your character the amount of Dark Side points you want
   static addDarkSide(points: number = 0){
-    // Retail adddarkside — ModifyAlignment(-param), clamped ±100
+    // adddarkside — ModifyAlignment(-param), clamped ±100
     let n = -Math.trunc(points);
     if(n > 100) n = 100;
     if(n < -100) n = -100;
@@ -154,7 +154,7 @@ export class CheatConsoleManager {
 
   //Gives your character the amount of Light Side points you want
   static addLightSide(points: number = 0){
-    // Retail addlightside — ModifyAlignment(param), clamped ±100
+    // addlightside — ModifyAlignment(param), clamped ±100
     let n = Math.trunc(points);
     if(n > 100) n = 100;
     if(n < -100) n = -100;
@@ -175,7 +175,7 @@ export class CheatConsoleManager {
   }
 
   /**
-   * Retail addlevel — XP needed for next level; L15 cap unless Jedi; L20 hard cap.
+   * addlevel — XP needed for next level; L15 cap unless Jedi; L20 hard cap.
    */
   static addLevel(){
     const player = GameState.getCurrentPlayer();
@@ -201,7 +201,7 @@ export class CheatConsoleManager {
   }
 
   /**
-   * Retail bright → ForceBrightSunAndMoon.
+   * bright → ForceBrightSunAndMoon.
    */
   static bright(){
     GameState.module?.area?.forceBrightSunAndMoon?.();
@@ -236,7 +236,7 @@ export class CheatConsoleManager {
   }
 
   /**
-   * Retail givecredits — n > 0; if n < 100 force 99.
+   * givecredits — n > 0; if n < 100 force 99.
    */
   static giveCredits(amount: number = 0){
     let n = Math.trunc(amount);
@@ -263,7 +263,7 @@ export class CheatConsoleManager {
     CheatConsoleManager.giveItem(CheatConsoleManager.RESREF_SITH_ARMOR, 1);
   }
 
-  /** Retail heal — full vitals on controlled PC. */
+  /** heal — full vitals on controlled PC. */
   static heal(){
     const player = GameState.getCurrentPlayer();
     if(player){
@@ -272,7 +272,7 @@ export class CheatConsoleManager {
     }
   }
 
-  /** Retail revealmap — toggle overlay flag. */
+  /** revealmap — toggle overlay flag. */
   static revealmap(){
     GameState.cheatRevealMap = !GameState.cheatRevealMap;
   }
@@ -289,7 +289,7 @@ export class CheatConsoleManager {
     GameState.infiniteUses = !GameState.infiniteUses;
   }
 
-  /** Toggle NWScript ShipBuild() — TRUE mimics retail shipping builds (default). */
+  /** Toggle NWScript ShipBuild — TRUE mimics shipping build builds (default). */
   static shipBuild(){
     GameState.shipBuild = !GameState.shipBuild;
     const line = `ShipBuild: ${GameState.shipBuild ? 'ON' : 'OFF'}`;
@@ -331,7 +331,7 @@ export class CheatConsoleManager {
     }
   }
 
-  /** Retail whereami — Module + Position via AurPostString (feedback + console). */
+  /** whereami — Module + Position via AurPostString (feedback + console). */
   static whereami(){
     const player = GameState.getCurrentPlayer();
     if(!player){ return; }
@@ -356,7 +356,7 @@ export class CheatConsoleManager {
   }
 
   /**
-   * Retail CheatSetAbility — clamp 0–99.
+   * CheatSetAbility — clamp 0–99.
    * index: 0 STR, 1 DEX, 2 CON, 3 INT, 4 WIS, 5 CHA
    */
   static setAbility(index: number, raw: string | undefined){
@@ -376,7 +376,7 @@ export class CheatConsoleManager {
   }
 
   /**
-   * Retail CheatSetSkill — clamp 0–99; skillIndex matches SkillType.
+   * CheatSetSkill — clamp 0–99; skillIndex matches SkillType.
    */
   static setSkill(skillIndex: number, raw: string | undefined){
     const player = GameState.getCurrentPlayer();
@@ -387,7 +387,7 @@ export class CheatConsoleManager {
     player.skills[skillIndex].rank = n;
   }
 
-  /** Sorted unique console command names (retail + KotOR.js aliases). */
+  /** Sorted unique console command names (+ KotOR.js aliases). */
   static getCommandNames(): string[] {
     return [
       'adddark',
@@ -511,7 +511,7 @@ export class CheatConsoleManager {
         CheatConsoleManager.giveRandomLoot(CheatConsoleManager.parseIntParam(params[0], 1));
         break;
       case 'restartminigame':
-        // Retail ConsoleFunc "restartminigame" → RestartMiniGame.
+        // ConsoleFunc "restartminigame" → RestartMiniGame.
         void GameState.module?.area?.restartMiniGame?.();
         break;
       case 'dancedancemalak':

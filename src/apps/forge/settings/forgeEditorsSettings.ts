@@ -115,7 +115,7 @@ export interface ForgeModuleSettings {
   workbenchEnabled: boolean;
   /** Prefer transactional command history; fall back to full snapshots when false. */
   commandHistoryEnabled: boolean;
-  /** Autosave recovery snapshots into .forge/recovery. */
+  /** Autosave recovery snapshots into.forge/recovery. */
   autosaveEnabled: boolean;
   /** Autosave interval in seconds. */
   autosaveIntervalSec: number;

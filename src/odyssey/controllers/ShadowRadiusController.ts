@@ -10,8 +10,8 @@ import type { OdysseyLight3D } from "@/three/odyssey/OdysseyLight3D";
 /**
  * ShadowRadiusController class.
  *
- * Animates PartLight shadow radius used by
- * DoGobShadowsForThisLight / ProjectDynamicShadow.
+ * Animates light node shadow radius used by
+ * gob shadowsForThisLight / ProjectDynamicShadow.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 /**
- * OdysseyShader — retail VideoEffects saturation + film/scan noise.
+ * OdysseyShader — VideoEffects saturation + film/scan noise.
  *
  * Saturation: RenderSaturationAdjustment
  * (luma weights 0.3086 / 0.6094 / 0.082).
@@ -19,7 +19,7 @@ export const OdysseyShader: OdysseyShader = {
     tFilmNoise: { value: null },
     saturation: { value: 1.0 },
     modulation: new THREE.Uniform( new THREE.Vector3(1, 1, 1) ),
-    /** Retail film-noise UV tile (~7.5 on one axis in RenderOverlayFilmNoise). */
+    /** film-noise UV tile (~7.5 on one axis in RenderOverlayFilmNoise). */
     filmNoiseScale: { value: 7.5 },
     time: { value: 0.0 },
     bFilmNoise: { value: 0 },
@@ -48,14 +48,14 @@ export const OdysseyShader: OdysseyShader = {
       vec4 cTextureScreen = texture2D( tDiffuse, vUv );
       vec3 cResult = cTextureScreen.rgb;
 
-      // Retail RenderOverlayFilmNoise: scene + filmnoisetex (additive)
+      // RenderOverlayFilmNoise: scene + filmnoisetex (additive)
       if( bFilmNoise ){
         vec2 noiseUv = vec2( vUv.x * filmNoiseScale, vUv.y * filmNoiseScale + time * 0.15 );
         vec3 noise = texture2D( tFilmNoise, noiseUv ).rgb;
         cResult = cResult + noise;
       }
 
-      // Retail saturation matrix (weights 0.3086 / 0.6094 / 0.082)
+      // saturation matrix (weights 0.3086 / 0.6094 / 0.082)
       if( bmodulate ){
         vec3 lumaWeights = vec3( 0.3086, 0.6094, 0.082 );
         vec3 grey = vec3( dot( lumaWeights, cResult ) );

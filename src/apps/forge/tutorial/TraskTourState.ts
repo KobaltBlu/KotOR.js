@@ -22,7 +22,7 @@ type TraskTourListeners = {
   onChange: Function[];
 };
 
-/** Sync localStorage key — ConfigClient/IDB can race with Init() and drop session flags. */
+/** Sync localStorage key — ConfigClient/IDB can race with Init and drop session flags. */
 export const TRASK_TOUR_COMPLETED_STORAGE_KEY = "forge.traskTour.completed";
 
 function readTourCompletedFromStorage(): boolean | null {

@@ -99,7 +99,7 @@ export class ResourceLoader {
         for(let i = 0; i < resources.length; i++){
           const resource = resources[i];
           const buffer = await archive.getResourceBuffer(resource);
-          // console.log('InitModuleCache: RIM', resource.resRef.toLocaleLowerCase(), buffer);
+          // console.log('InitModuleCache: RIM', resource.resRef.toLocaleLowerCase, buffer);
           scope.get(resource.resType)?.set(
             resource.resRef.toLocaleLowerCase(),
             buffer
@@ -110,7 +110,7 @@ export class ResourceLoader {
         for(let i = 0; i < keyList.length; i++){
           const key = keyList[i];
           const buffer = await archive.getResourceBufferByResRef(key.resRef, key.resType);
-          // console.log('InitModuleCache: ERF', resource.resRef.toLocaleLowerCase(), buffer);
+          // console.log('InitModuleCache: ERF', resource.resRef.toLocaleLowerCase, buffer);
           scope.get(key.resType)?.set(
             key.resRef.toLocaleLowerCase(),
             buffer
@@ -151,8 +151,8 @@ export class ResourceLoader {
 
     // data = await this.searchLocal(resId, resRef);
     // if(data){
-    //   ResourceLoader.setCache(null, resId, resRef, data);
-    //   return data;
+    // ResourceLoader.setCache(null, resId, resRef, data);
+    // return data;
     // }
 
     data = await this.searchKeyTable(resId, resRef);

@@ -5,7 +5,7 @@ import { OdysseyFace3 } from "@/three/odyssey";
 
 /**
  * Approximate ClippedLineSegmentWalkable
- * (+ ComputeClippedLineSegment exit semantics).
+ * (+ clipped line segment exit semantics).
  *
  * Walks walkable faces from origin toward dest via adjacency. Fails when the
  * ray exits through a non-transition WalkmeshEdge (GetAdjacentRoom == -1).
@@ -40,7 +40,7 @@ function findWalkFaceAt(
 }
 
 /**
- * Retail IntersectLineSegments2d — writes intersection into `out`.
+ * IntersectLineSegments2d — writes intersection into `out`.
  * Inclusive endpoints (clip needs edge hits).
  */
 function intersectLineSegments2d(
@@ -61,7 +61,7 @@ function intersectLineSegments2d(
   return true;
 }
 
-/** Dest is outside edge vi→vj when cross < 0 (retail ClippedLine orientation). */
+/** Dest is outside edge vi→vj when cross < 0 (ClippedLine orientation). */
 function destOutsideEdge(
   destX: number, destY: number,
   vx: number, vy: number,
@@ -202,7 +202,7 @@ export function clippedLineSegmentWalkable(
         clearPoint.set(curX, curY, curZ);
         const t = Math.hypot(curX - origin.x, curY - origin.y) / fullDist;
 
-        // Non-transition = wall (retail GetAdjacentRoom == -1)
+        // Non-transition = wall (GetAdjacentRoom == -1)
         if(adj.transition === -1){
           return { ok: false, clearPoint, clearT: t, minZ, maxZ };
         }

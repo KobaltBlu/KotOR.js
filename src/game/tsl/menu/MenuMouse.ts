@@ -2,7 +2,7 @@ import { GameState } from "@/GameState";
 import type { GUILabel, GUIListBox, GUISlider, GUICheckBox, GUIButton } from "@/gui";
 import { MenuMouse as K1_MenuMouse } from "@/game/kotor/KOTOR";
 
-/** retail CSWGuiOptionsMouse custom_value (TSL). */
+/** mouse options custom_value (TSL). */
 const TLK_MOUSE_SENSITIVITY = 0xbe51;
 const TLK_REVERSE_BUTTONS = 0xbe52;
 

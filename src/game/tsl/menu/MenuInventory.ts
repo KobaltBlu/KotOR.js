@@ -10,7 +10,7 @@ import {
   type InventoryListNode,
 } from "@/game/inventory-menu-utils";
 
-/** Retail COLOR_YELLOW for active K2 filter buttons. */
+/** COLOR_YELLOW for active K2 filter buttons. */
 const FILTER_COLOR_YELLOW = { r: 1, g: 1, b: 0 };
 /** Disabled / inactive filter button text. */
 const FILTER_COLOR_DISABLED = { r: 0.5, g: 0.5, b: 0.5 };
@@ -112,13 +112,13 @@ export class MenuInventory extends K1_MenuInventory {
         this.useSelectedItem();
       });
 
-      // Retail leaves GFF PADDING (inventory_p.gui LB_ITEMS); do not force 5.
+      // leaves GFF PADDING (inventory_p.gui LB_ITEMS); do not force 5.
       this.LB_ITEMS.offset.x = 0;
       resolve();
     });
   }
 
-  /** Retail SetNextFilter(int) — set category and highlight active button yellow. */
+  /** SetNextFilter(int) — set category and highlight active button yellow. */
   setFilter(filter: InventoryFilter){
     setCurrentInventoryFilter(filter);
     this.updateFilterButton();
@@ -155,7 +155,7 @@ export class MenuInventory extends K1_MenuInventory {
 
   show() {
     // Skip K1 portrait / party-change / filter-cycle labels (inventory_p).
-    // Retail OnPanelAdded keeps global filter and only PopulateItemListBox.
+    // OnPanelAdded keeps global filter and only PopulateItemListBox.
     GameMenu.prototype.show.call(this);
     this.manager.MenuTop.LBLH_INV.onHoverIn();
     this.selectedControl = this.LB_ITEMS;

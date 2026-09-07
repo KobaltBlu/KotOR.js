@@ -9,8 +9,8 @@ import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
 import {
   DriveUpdateResult,
   driveResolveMoveTarget,
-  driveUpdateLocation,
-} from "@/engine/pathfinding/drive-update-location";
+  updateCreatureDrive,
+} from "@/engine/pathfinding/update-creature-drive";
 import { DRIVE_STRAFE_RATE } from "@/engine/pathfinding/locomotion";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { BitWise } from "@/utility/BitWise";
@@ -27,17 +27,17 @@ const DRIVE_YAW_RIGHT = 0x20;
 const DEG2RAD = Math.PI / 180;
 const ARRIVAL_DIST = 0.5;
 const YAW_DEG = 30;
-/** Retail destination lookahead = GetWalk/RunRate * 0.0004 (milli-units) ≈ 0.4s of travel. */
+/** destination lookahead = GetWalk/RunRate * 0.0004 (milli-units) ≈ 0.4s of travel. */
 const DEST_LOOKAHEAD_SEC = 0.4;
 
 /**
  * ActionDrive class.
- * Vehicle / stick drive — retail drive action
- * + DriveUpdateLocation.
+ * Vehicle / stick drive — drive action
+ * + creature drive update.
  *
  * Params match AddDriveAction:
- *  0 FLOAT x, 1 FLOAT y, 2 INT facing*10, 3 INT pathId,
- *  4 INT flags, 5 INT retry, 6 INT refresh
+ * 0 FLOAT x, 1 FLOAT y, 2 INT facing*10, 3 INT pathId,
+ * 4 INT flags, 5 INT retry, 6 INT refresh
  *
  * @file ActionDrive.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -85,7 +85,7 @@ export class ActionDrive extends Action {
     return action;
   }
 
-  /** Pack facing radians to retail degrees×10 */
+  /** Pack facing radians to degrees×10 */
   static packFacingRad(facingRad: number): number {
     let deg = (facingRad * 180) / Math.PI;
     while(deg < 0) deg += 360;
@@ -133,9 +133,9 @@ export class ActionDrive extends Action {
     if((flags & DRIVE_RUN) === DRIVE_RUN){
       owner.setAnimationState(ModuleCreatureAnimState.RUNNING);
     }else if((flags & DRIVE_STRAFE_LEFT) !== 0){
-      owner.setAnimationState(ModuleCreatureAnimState.WALKING); // retail 0x275e
+      owner.setAnimationState(ModuleCreatureAnimState.WALKING); // 0x275e
     }else if((flags & DRIVE_STRAFE_RIGHT) !== 0){
-      owner.setAnimationState(ModuleCreatureAnimState.WALKING); // retail 0x275f
+      owner.setAnimationState(ModuleCreatureAnimState.WALKING); // 0x275f
     }else if((flags & DRIVE_BACKWARD) === DRIVE_BACKWARD){
       owner.setAnimationState(ModuleCreatureAnimState.WALKING_BACK);
     }else{
@@ -144,7 +144,7 @@ export class ActionDrive extends Action {
 
     const strafing =
       (flags & DRIVE_STRAFE_LEFT) !== 0 || (flags & DRIVE_STRAFE_RIGHT) !== 0;
-    const result = driveUpdateLocation(
+    const result = updateCreatureDrive(
       owner,
       this.destination,
       this.running,
@@ -163,7 +163,7 @@ export class ActionDrive extends Action {
       owner.speed = 0;
       owner.setAnimationState(ModuleCreatureAnimState.IDLE);
 
-      // Retail: on return 2 with retry > 1, requeue AddDriveAction
+      // : on return 2 with retry > 1, requeue AddDriveAction
       if(retry > 1){
         const cont = ActionDrive.create(
           owner.position.x,
@@ -231,7 +231,7 @@ export class ActionDrive extends Action {
     this.running = (flags & DRIVE_RUN) === DRIVE_RUN;
     const walk = owner.getWalkSpeed() || 1.7;
     const run = owner.getRunSpeed() || 5.4;
-    // Retail: destination offset = normalize(move) * (GetWalk/RunRate * 0.0004)
+    // : destination offset = normalize(move) * (GetWalk/RunRate * 0.0004)
     // JS rates are world units/sec → use DEST_LOOKAHEAD_SEC of travel.
     if(this.running){
       move.add(fwd);
@@ -246,7 +246,7 @@ export class ActionDrive extends Action {
       stepScale = walk * DEST_LOOKAHEAD_SEC * 0.8;
     }
 
-    // Retail applies ±30° yaw to both move and facing after stick compose
+    // applies ±30° yaw to both move and facing after stick compose
     let orientRad = facingRad;
     if(flags & (DRIVE_YAW_LEFT | DRIVE_YAW_RIGHT)){
       const yaw = (flags & DRIVE_YAW_LEFT) ? YAW_DEG * DEG2RAD : -YAW_DEG * DEG2RAD;
@@ -279,7 +279,7 @@ export class ActionDrive extends Action {
       move.normalize().multiplyScalar(stepScale);
       dest.x += move.x;
       dest.y += move.y;
-      // drive action: TestDirectLine binary + wall-slide before DriveUpdateLocation
+      // drive action: TestDirectLine binary + wall-slide before creature drive update
       if(owner.area){
         this.destination.copy(
           driveResolveMoveTarget(owner.area, owner.position, dest, owner, stepScale)

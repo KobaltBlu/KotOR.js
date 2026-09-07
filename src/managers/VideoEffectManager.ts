@@ -8,10 +8,10 @@ import { resolveAlwaysOnFrameBufferPasses } from "@/shaders/pass/FrameBufferEffe
 /**
  * VideoEffectManager class.
  *
- * Retail EnableVideoEffect / DisableVideoEffect — drives saturation, film noise,
+ * EnableVideoEffect / DisableVideoEffect — drives saturation, film noise,
  * K2 clairvoyance/dream, fury, and force-sight framebuffer flags.
  *
- * Always-on FB stages (overbrighten / convolution) use retail visualizePass*
+ * Always-on FB stages (overbrighten / convolution) use visualizePass*
  * gates via resolveAlwaysOnFrameBufferPasses — shipping leaves overbrighten off.
  *
  * @file VideoEffectManager.ts
@@ -24,13 +24,13 @@ export class VideoEffectManager {
   static videoEffect: VideoEffect;
   static videoEffectId: number = -1;
 
-  /** AurEnableForceSight flag (retail constant). Cubemap/scene path — not a color grade. */
+  /** AurEnableForceSight flag (constant). Cubemap/scene path — not a color grade. */
   static forceSightActive: boolean = false;
   /** EffectForceSight refcount so VideoEffect + game effect can coexist. */
   static forceSightEffectCount: number = 0;
 
   /**
-   * Debug override for retail visualizePass1 (overbrighten).
+   * Debug override for visualizePass1 (overbrighten).
    * Shipping default is false (BSS zero / never written).
    */
   static debugVisualizeOverbrighten: boolean = false;
@@ -59,9 +59,9 @@ export class VideoEffectManager {
   }
 
   /**
-   * Retail AurEnableForceSight / AurDisableForceSight.
+   * AurEnableForceSight / AurDisableForceSight.
    * Cubemap / material path not yet ported — flag retained for callers.
-   * Does not drive OdysseyShader color grade (that was non-retail).
+   * Does not drive OdysseyShader color grade (that was non-).
    */
   static SetForceSight(active: boolean){
     if(active){
@@ -168,7 +168,7 @@ export class VideoEffectManager {
         GameState.odysseyShaderPass.uniforms.bFilmNoise.value = false;
       }
 
-      // Force Sight is a scene/cubemap flag in retail — do not enable this pass for it.
+      // Force Sight is a scene/cubemap flag in — do not enable this pass for it.
       GameState.odysseyShaderPass.enabled = fbOn && (wantSat || wantNoise);
     }
 
@@ -202,7 +202,7 @@ export class VideoEffectManager {
       GameState.furyPass.enabled = fbOn && wantFury;
     }
 
-    // Always-on stages: retail mask 0x1F in a room, but visualizePass1 (overbrighten)
+    // Always-on stages: mask 0x1F in a room, but visualizePass1 (overbrighten)
     // stays 0 in shipping while visualizePass2 (convolution) stays 1.
     const rooms = GameState.module?.area?.rooms;
     const roomedOk = !!(rooms && rooms.length > 0);

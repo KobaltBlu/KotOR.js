@@ -140,7 +140,7 @@ function propsOfType(item: ItemPropertyDescriptionHost, propertyName: number): I
   return usableProperties(item).filter(p => p.propertyName === propertyName);
 }
 
-/** Retail GetPropertyDamageRange — iprp_damagecost NumDice/Die. */
+/** GetPropertyDamageRange — iprp_damagecost NumDice/Die. */
 function getPropertyDamageRange(costValue: number): { min: number; max: number } {
   const row = costValue | 0;
   const table = GameState.TwoDAManager?.datatables?.get('iprp_damagecost');
@@ -159,7 +159,7 @@ function getPropertyDamageRange(costValue: number): { min: number; max: number }
   return { min: numDice, max: numDice * die };
 }
 
-/** Retail GetDamageTypeString */
+/** GetDamageTypeString */
 function getDamageTypeString(flags: number): string {
   const parts: string[] = [];
   if((flags & 7) !== 0){
@@ -174,7 +174,7 @@ function getDamageTypeString(flags: number): string {
 }
 
 /**
- * Retail GetPropertyStrings
+ * GetPropertyStrings
  * returns [propertyName, subtypeName, costValueName, param1Name].
  */
 function getPropertyStrings(
@@ -211,7 +211,7 @@ function getPropertyStrings(
   }
 
   if(param1Value !== 0xff && def && def.param1resref >= 0){
-    // Retail GetIPRPParamTable — param tables are named iprp_param*.2da via iprp_paramtable
+    // GetIPRPParamTable — param tables are named iprp_param*.2da via iprp_paramtable
     const paramLookup = GameState.TwoDAManager?.datatables?.get('iprp_paramtable');
     const paramRow = paramLookup?.rows?.[def.param1resref];
     const paramTableName = paramRow ? String(paramRow.name || '').toLowerCase() : '';
@@ -245,7 +245,7 @@ function getFeatName(featId: number): string {
   return formatFeatDisplayName(tlk(nameRef));
 }
 
-/** Retail AddFeatRequirements */
+/** AddFeatRequirements */
 function addFeatRequirements(item: ItemPropertyDescriptionHost, out: string[]) {
   const base = item.baseItem;
   if(!base) return;
@@ -255,7 +255,7 @@ function addFeatRequirements(item: ItemPropertyDescriptionHost, out: string[]) {
     base.requiredFeat3, base.requiredFeat4,
   ].filter(id => typeof id === 'number' && id > 0);
 
-  // Prefer a single weapon-proficiency family member (retail 4/5/6 filter).
+  // Prefer a single weapon-proficiency family member (4/5/6 filter).
   let preferredProf = 5;
   for(const id of reqFeats){
     if(id === 6 && preferredProf === 5) preferredProf = 6;
@@ -285,7 +285,7 @@ function addFeatRequirements(item: ItemPropertyDescriptionHost, out: string[]) {
   append(out, '\n');
 }
 
-/** Retail AddDamageProperties — base damage line + bonus damage summaries. */
+/** AddDamageProperties — base damage line + bonus damage summaries. */
 function addDamageProperties(item: ItemPropertyDescriptionHost, out: string[]) {
   append(out, `${tlk(STR_DAMAGE)}: `);
 
@@ -389,7 +389,7 @@ function addOffTypeDamageBonuses(item: ItemPropertyDescriptionHost, out: string[
   append(out, '\n\n');
 }
 
-/** Retail AddRangeProperties */
+/** AddRangeProperties */
 function addRangeProperties(item: ItemPropertyDescriptionHost, out: string[]) {
   const base = item.baseItem;
   if(!base?.rangedWeapon) return;
@@ -397,7 +397,7 @@ function addRangeProperties(item: ItemPropertyDescriptionHost, out: string[]) {
   append(out, `${tlk(STR_RANGE)}: ${rangeM}m\n\n`);
 }
 
-/** Retail AddCriticalThreatProperties */
+/** AddCriticalThreatProperties */
 function addCriticalThreatProperties(item: ItemPropertyDescriptionHost, out: string[]) {
   const base = item.baseItem;
   if(!base) return;
@@ -424,7 +424,7 @@ function addCriticalThreatProperties(item: ItemPropertyDescriptionHost, out: str
   }
 }
 
-/** Retail AddWeaponSizeProperties — weapon_size == 2 (SMALL). */
+/** AddWeaponSizeProperties — weapon_size == 2 (SMALL). */
 function addWeaponSizeProperties(item: ItemPropertyDescriptionHost, out: string[]) {
   if(item.baseItem?.weaponSize === WeaponSize.SMALL){
     const note = tlk(STR_WEAPON_SIZE_SMALL);
@@ -432,7 +432,7 @@ function addWeaponSizeProperties(item: ItemPropertyDescriptionHost, out: string[
   }
 }
 
-/** Retail AddAttackModifierProperties */
+/** AddAttackModifierProperties */
 function addAttackModifierProperties(item: ItemPropertyDescriptionHost, out: string[]) {
   let bonus = 0;
   for(const prop of usableProperties(item)){
@@ -479,13 +479,13 @@ function addAttackBonusStrings(item: ItemPropertyDescriptionHost, out: string[],
   }
 }
 
-/** Retail AddDefenceProperties */
+/** AddDefenceProperties */
 function addDefenceProperties(item: ItemPropertyDescriptionHost, out: string[]) {
   const base = item.baseItem;
   let ac = base?.baseAC || 0;
   for(const prop of propsOfType(item, ModuleItemProperty.Armor)){
     if(base?.acEnchant){
-      // When ac_enchant is set, only the highest Armor bonus applies (retail GetExistsHigherValuedProperty).
+      // When ac_enchant is set, only the highest Armor bonus applies (GetExistsHigherValuedProperty).
       continue;
     }
     ac += prop.costValue | 0;
@@ -535,7 +535,7 @@ function addDefenceProperties(item: ItemPropertyDescriptionHost, out: string[]) 
   }
 }
 
-/** Retail AddOnHitProperties — simplified GetPropertyStrings line. */
+/** AddOnHitProperties — simplified GetPropertyStrings line. */
 function addOnHitProperties(item: ItemPropertyDescriptionHost, out: string[]) {
   for(const prop of usableProperties(item)){
     if(
@@ -558,7 +558,7 @@ function addOnHitProperties(item: ItemPropertyDescriptionHost, out: string[]) {
 }
 
 /**
- * Retail AddMiscellaneousProperties — remaining usable props via GetPropertyStrings.
+ * AddMiscellaneousProperties — remaining usable props via GetPropertyStrings.
  * Full cast-spell charge math is approximated as name + subtype + cost labels.
  */
 function addMiscellaneousProperties(item: ItemPropertyDescriptionHost, out: string[]) {
@@ -593,7 +593,7 @@ function addMiscellaneousProperties(item: ItemPropertyDescriptionHost, out: stri
 }
 
 /**
- * Retail GetPropertyDescription.
+ * GetPropertyDescription.
  */
 function getItemPropertyDescription(item: ItemPropertyDescriptionHost): string {
   if(!item) return '';
@@ -601,7 +601,7 @@ function getItemPropertyDescription(item: ItemPropertyDescriptionHost): string {
   const parts: string[] = [];
   const itemType = item.baseItem?.itemType ?? -1;
 
-  // Retail skips item_type 0x2E and grenades (6).
+  // skips item_type 0x2E and grenades (6).
   if(itemType !== 0x2e && itemType !== 6){
     addFeatRequirements(item, parts);
     if((item.baseItem?.weaponType || 0) !== 0){
@@ -627,7 +627,7 @@ function getItemPropertyDescription(item: ItemPropertyDescriptionHost): string {
   return parts.join('') + identified;
 }
 
-/** Retail InstantUseItem combat lockout (= 3000). */
+/** InstantUseItem combat lockout (= 3000). */
 export const INSTANT_ITEM_USE_COOLDOWN_MS = 3000;
 /** TLK: one item per combat round (inventory InstantUseItem gate). */
 export const TLK_ITEM_USE_COMBAT_ROUND = 42409;
@@ -651,7 +651,7 @@ export class ModuleItem extends ModuleObject {
   addCost: number;
   cost: number;
   modelVariation: number;
-  /** Retail item BodyVariation BYTE (A=1, B=2, …); used when baseItem.modelType == 1. */
+  /** item BodyVariation BYTE (A=1, B=2, …); used when baseItem.modelType == 1. */
   bodyVariation: number;
   textureVariation: number;
   palleteID: number;
@@ -708,7 +708,7 @@ export class ModuleItem extends ModuleObject {
     this.placedInWorld = false;
     this.possessor = undefined;
 
-    // GIT ground items defer until loadItems → load() (retail LoadItems + AddToArea).
+    // GIT ground items defer until loadItems → load (LoadItems + AddToArea).
     if(!deferInit){
       this.initProperties();
     }
@@ -741,7 +741,7 @@ export class ModuleItem extends ModuleObject {
   }
 
   /**
-   * Retail GetPropertyDescription — stats/properties + DescIdentified
+   * GetPropertyDescription — stats/properties + DescIdentified
    * for equip / inventory / store description panes.
    */
   getPropertyDescription(): string {
@@ -762,7 +762,7 @@ export class ModuleItem extends ModuleObject {
   }
 
   /**
-   * Retail SaveItem BodyVariation BYTE when modeltype == 1.
+   * SaveItem BodyVariation BYTE when modeltype == 1.
    * Falls back to bodyVar letter → A=1, B=2, …
    */
   getBodyVariationByte(): number {
@@ -796,7 +796,7 @@ export class ModuleItem extends ModuleObject {
   }
 
   isRangedWeapon(){
-    // Retail grenade baseitems set RangedWeapon=1 but they are UseItem casts,
+    // grenade baseitems set RangedWeapon=1 but they are UseItem casts,
     // never equipped weapons — exclude ItemType 6 so inventory classifiers
     // cannot treat a grenade as a blaster.
     if(isGrenadeItemType(this.baseItem?.itemType)) return false;
@@ -819,7 +819,7 @@ export class ModuleItem extends ModuleObject {
 
   /**
    * Whether this item should be transferred into a body bag.
-   * retail Dropable bit (flags & 8): LoadDataFromGff defaults missing to 0;
+   * Dropable bit (flags & 8): LoadDataFromGff defaults missing to 0;
    * LoadItem keeps UTI value when the instance struct omits Dropable.
    */
   isDropable(): boolean {
@@ -843,7 +843,7 @@ export class ModuleItem extends ModuleObject {
     return !!(this.infinite | 0);
   }
 
-  /** Retail item bit 2 (0x4) — store Infinite stock only; player copies clear this. */
+  /** item bit 2 (0x4) — store Infinite stock only; player copies clear this. */
   setInfinite(value: number = 0){
     this.infinite = value ? 1 : 0;
     if(this.template?.RootNode?.hasField?.('Infinite')){
@@ -852,7 +852,7 @@ export class ModuleItem extends ModuleObject {
   }
 
   /**
-   * Retail GetCost — plot items are worthless; otherwise
+   * GetCost — plot items are worthless; otherwise
    * floor(Cost * baseitems.itemmultiplier), with results under 2 treated as 1.
    */
   getGoldPieceValue(): number {
@@ -919,7 +919,7 @@ export class ModuleItem extends ModuleObject {
   }
 
   /**
-   * Retail GetUsedActivePropertyUsesLeft.
+   * GetUsedActivePropertyUsesLeft.
    */
   getUsedActivePropertyUsesLeft(propertyIndex: number = 0): number {
     const prop = this.properties?.[propertyIndex | 0];
@@ -1211,13 +1211,13 @@ export class ModuleItem extends ModuleObject {
   }
 
   /**
-   * Retail UseItem → AddItemCastSpellActions (mipc / PartyMenuUseItem).
+   * UseItem → AddItemCastSpellActions (mipc / PartyMenuUseItem).
    * Schedules ITEM_CAST_SPELL on the combat round, then ensures ActionCombat.
    */
   scheduleItemCastSpell(oCaster: ModuleCreature, oTarget: ModuleObject, spellId: number, options: { isUserAction?: boolean; activePropertyIndex?: number } = {}){
     if(!oCaster?.combatRound) return;
 
-    // Retail AddItemCastSpellActions visibility (non-party ==0)
+    // AddItemCastSpellActions visibility (non-party ==0)
     if(oTarget && oTarget !== oCaster){
       const isPartyUI = !!(oCaster.isPartyMember?.() || oCaster.isPlayer || oCaster.isPM);
       const entry = oCaster.perceptionList?.find((o) => o.object === oTarget || o.objectId === oTarget.id);
@@ -1258,10 +1258,10 @@ export class ModuleItem extends ModuleObject {
     combatAction.animationTime = timing.pauseMs;
 
     oCaster.combatRound.addAction(combatAction);
-    // Retail GetSpellCastItem — stamp caster for spell scripts
+    // GetSpellCastItem — stamp caster for spell scripts
     oCaster.spellCastItem = this;
 
-    // Retail AddItemCastSpellActions (arg9==0): player with pending combat
+    // AddItemCastSpellActions (arg9==0): player with pending combat
     // action → ClearAllActions on the action queue (combat round list kept).
     if(hadPending && oCaster === GameState.getCurrentPlayer?.()){
       oCaster.actionQueue.clear();
@@ -1274,7 +1274,7 @@ export class ModuleItem extends ModuleObject {
   }
 
   /**
-   * Retail DecrementUses — cost_value drives stack
+   * DecrementUses — cost_value drives stack
    * charge / uses-per-day burn; may mark the property unusable and destroy.
    */
   decrementUses(oCaster?: ModuleCreature, propertyIndex: number = 0): void {
@@ -1331,7 +1331,7 @@ export class ModuleItem extends ModuleObject {
   }
 
   /**
-   * Retail InstantUseItem — inventory Use Item (immediate SpellCastAndImpact).
+   * InstantUseItem — inventory Use Item (immediate SpellCastAndImpact).
    * During combat sets a 3s lockout (TLK 42409 / one item per round).
    */
   instantUseItem(oCaster: ModuleCreature): boolean {
@@ -1358,7 +1358,7 @@ export class ModuleItem extends ModuleObject {
       cast.castItem = this;
       cast.conjureTime = 0;
       cast.allowCounterSpell = false;
-      // Retail InstantUseItem still SpellCastAndImpact — stamp caster level
+      // InstantUseItem still SpellCastAndImpact — stamp caster level
       // GetSpellCastItem; delay impact when the spell is a throw / projectile.
       const lastClass = oCaster.classes?.[oCaster.classes.length - 1];
       oCaster.baseClassLevel = (lastClass?.level | 0);
@@ -1402,7 +1402,7 @@ export class ModuleItem extends ModuleObject {
       if(!property.isUseable()){ continue; }
 
       if(property.is(ModuleItemProperty.CastSpell)){
-        // Retail UseItem → AddItemCastSpellActions (combat round path)
+        // UseItem → AddItemCastSpellActions (combat round path)
         this.scheduleItemCastSpell(oCaster, oTarget, property.subType, {
           isUserAction: options.isUserAction,
           activePropertyIndex: i,
@@ -1452,7 +1452,7 @@ export class ModuleItem extends ModuleObject {
   }
 
   load(){
-    // Retail LoadItem: LoadFromTemplate then re-apply instance Dropable /
+    // LoadItem: LoadFromTemplate then re-apply instance Dropable /
     // Pickpocketable only when present on the Equip_ItemList / ItemList struct.
     const hadDropable = this.template?.RootNode?.hasField('Dropable');
     const instanceDropable = hadDropable
@@ -1463,7 +1463,7 @@ export class ModuleItem extends ModuleObject {
       ? this.template.getFieldByLabel('Pickpocketable').getValue()
       : undefined;
     const applyInstanceFlags = () => {
-      // Retail LoadItem: only overwrite Dropable/Pickpocketable when the instance
+      // LoadItem: only overwrite Dropable/Pickpocketable when the instance
       // Equip_ItemList / ItemList struct has the field; otherwise keep UTI values.
       if(hadDropable){
         this.dropable = instanceDropable;
@@ -1510,7 +1510,7 @@ export class ModuleItem extends ModuleObject {
     }else{
       //We already have the template (From SAVEGAME)
       this.initProperties();
-      // this.loadScripts();
+      // this.loadScripts;
       return true;
     }
   }
@@ -1538,7 +1538,7 @@ export class ModuleItem extends ModuleObject {
       const model = await OdysseyModel3D.FromMDL(mdl, {
         context: this.context,
         lighting: true,
-        // Retail SetEnvMap — baseitems.2da PartEnvMap flags item parts to receive the
+        // envmap assign — baseitems.2da PartEnvMap flags item parts to receive the
         // area envmap ("DEFAULT" resolves to the area's DefaultEnvMap).
         envMapOverride: this.baseItem.partEnvMap ? 'DEFAULT' : undefined,
         //castShadow: false,
@@ -1558,14 +1558,14 @@ export class ModuleItem extends ModuleObject {
     return name + value;
   }
 
-  /** Desired PowerItem state — true while combat-powered (Retail). */
+  /** Desired PowerItem state — true while combat-powered. */
   poweredDesired: boolean = false;
   /** Queue looping `powered` after non-looping `powerup` finishes (PowerItem). */
   pendingPoweredAnim: boolean = false;
 
   /**
    * Set the weapon powered state and update the powered animation.
-   * Retail PowerItem plays powerup then queues powered (flag 0x20 follow-up).
+   * PowerItem plays powerup then queues powered (flag 0x20 follow-up).
    * @param powered - Whether the weapon should be powered
    */
   setPowered(powered: boolean){
@@ -1630,7 +1630,7 @@ export class ModuleItem extends ModuleObject {
   }
 
   /**
-   * Play a fire-forget gesture clip on this item Gob (retail AnimBaseWield path).
+   * Play a fire-forget gesture clip on this item Gob (AnimBaseWield path).
    * Used for weapon flourish while body drive continues on the creature model.
    */
   playWeaponGesture(clipName: string): boolean {
@@ -1692,7 +1692,7 @@ export class ModuleItem extends ModuleObject {
     if(this.template.RootNode.hasField('BodyVariation')){
       this.bodyVariation = this.template.getFieldByLabel('BodyVariation').getValue();
     }else if(this.baseItem?.modelType == 1){
-      // Retail LoadDataFromGff seeds body_variation from baseitems when modeltype == 1
+      // LoadDataFromGff seeds body_variation from baseitems when modeltype == 1
       const letter = this.baseItem.bodyVar;
       if(typeof letter === 'string' && letter.length){
         this.bodyVariation = Math.max(0, letter.toUpperCase().charCodeAt(0) - 64);
@@ -1714,7 +1714,7 @@ export class ModuleItem extends ModuleObject {
     if(this.template.RootNode.hasField('Description'))
       this.description = this.template.getFieldByLabel('Description').getCExoLocString();
 
-    // Retail LoadDataFromGff / ReadItemsFromGff: Dropable BYTE default 0
+    // LoadDataFromGff / ReadItemsFromGff: Dropable BYTE default 0
     if(this.template.RootNode.hasField('Dropable'))
       this.dropable = this.template.getFieldByLabel('Dropable').getValue();
     else if(this.dropable === undefined || this.dropable === null)
@@ -1836,7 +1836,7 @@ export class ModuleItem extends ModuleObject {
     if(this.template.RootNode.hasField('PaletteID'))
       this.palleteID = this.template.RootNode.getFieldByLabel('PaletteID').getValue();
 
-    // Retail PlaySwingSound indexes weaponsounds by baseitems.weaponmattype
+    // PlaySwingSound indexes weaponsounds by baseitems.weaponmattype
     this.weaponSound = GameState.SWRuleSet.weaponSounds[this.baseItem?.weaponMaterialType];
 
     if(needsRegister){
@@ -1894,7 +1894,7 @@ export class ModuleItem extends ModuleObject {
   save(){
     let itemStruct = new GFFStruct(0);
 
-    // Retail SaveItem does not write ObjectId
+    // SaveItem does not write ObjectId
     itemStruct.addField( new GFFField(GFFDataType.INT, 'BaseItem') ).setValue(this.getBaseItemId());
     itemStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Identified') ).setValue(this.identified);
@@ -1923,7 +1923,7 @@ export class ModuleItem extends ModuleObject {
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Dropable') ).setValue(this.isDropable() ? 1 : 0);
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Pickpocketable') ).setValue(this.pickpocketable ? 1 : 0);
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'ModelVariation') ).setValue(this.modelVariation);
-    // Retail SaveItem: BodyVariation + TextureVar only when baseitems.modeltype == 1
+    // SaveItem: BodyVariation + TextureVar only when baseitems.modeltype == 1
     if(this.baseItem?.modelType == 1){
       itemStruct.addField( new GFFField(GFFDataType.BYTE, 'BodyVariation') ).setValue(this.getBodyVariationByte());
       itemStruct.addField( new GFFField(GFFDataType.BYTE, 'TextureVar') ).setValue(this.getTextureVariation());
@@ -1937,7 +1937,7 @@ export class ModuleItem extends ModuleObject {
     let propertiesList = itemStruct.addField( new GFFField(GFFDataType.LIST, 'PropertiesList') );
     for(let i = 0; i < this.properties.length; i++){
       const propStruct = this.properties[i].save();
-      // Retail SaveItemProperties: list element struct id = index
+      // SaveItemProperties: list element struct id = index
       propStruct.setType(i);
       propertiesList.addChildStruct( propStruct );
     }

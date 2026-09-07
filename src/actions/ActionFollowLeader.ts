@@ -31,8 +31,8 @@ const _followOffset = new THREE.Vector3();
 
 /**
  * ActionFollowLeader class.
- * Party companion follow — retail WalkUpdateLocation_QuickWalk_FollowLeader
- * 11-state SM + follow ring + WalkUpdateLocation.
+ * Party companion follow — follow-leader quick-walk
+ * 11-state SM + follow ring + creature walk update.
  *
  * @file ActionFollowLeader.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -52,7 +52,7 @@ export class ActionFollowLeader extends Action {
     }
 
     const owner = this.owner as ModuleCreature;
-    // Retail AIActionPartyFollowLeader @ 00511130 — field438 = 3
+    // party follow leader action — field438 = 3
     setQuickWalkLocoState(owner, QuickWalkLocoState.FollowLeader);
 
     if(GameState.Mode == EngineMode.DIALOG){
@@ -90,7 +90,7 @@ export class ActionFollowLeader extends Action {
     _followOffset.copy(GameState.PartyManager.GetFollowPosition(owner));
     const offset = _followOffset;
 
-    // Retail retry loop; abort after stuck iterations → Reset
+    // retry loop; abort after stuck iterations → Reset
     let iterations = 0;
     let teleport = false;
     while(iterations < FOLLOW_STUCK_ITERATIONS){
@@ -189,7 +189,7 @@ export class ActionFollowLeader extends Action {
   }
 
   /**
-   * Retail TeleportForward — advance one safe ring slot, seed the
+   * TeleportForward — advance one safe ring slot, seed the
    * walk sample, then enter MovingToPath (not JumpToPoint + WaitingForPath).
    * Jump only if the ring cannot catch up and the companion is still ≥15m out.
    */
@@ -216,7 +216,7 @@ export class ActionFollowLeader extends Action {
       this.followRuntime.lastSampleX = dest.x;
       this.followRuntime.lastSampleY = dest.y;
       this.followRuntime.lastSampleZ = dest.z;
-      // Retail TeleportForward → state MovingToPath (2)
+      // TeleportForward → state MovingToPath (2)
       this.followRuntime.state = FollowLeaderState.MovingToPath;
       return;
     }

@@ -4,7 +4,7 @@ import type { GUILabel, GUIButton, GUIEditBox } from "@/gui";
 /**
  * MenuSaveName class.
  *
- * retail — overlay edit box for new save names.
+ * — overlay edit box for new save names.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -33,7 +33,7 @@ export class MenuSaveName extends GameMenu {
     await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve) => {
-      // Retail save edit max length 0x10 (GUIEditBox default)
+      // save edit max length 0x10 (GUIEditBox default)
 
       this.BTN_OK.addEventListener('click', () => {
         this.acceptSaveName();

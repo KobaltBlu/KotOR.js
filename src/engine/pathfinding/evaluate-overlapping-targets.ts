@@ -7,13 +7,13 @@ import { getCreaturePersonalSpace } from "@/combat/attack-range";
  *
  * Called after a geometric capsule hit in NoCreaturesOnLine. Soft-clears when
  * the blocker already overlaps the line start (stacked / starting intersection)
- * or an optional soft-pair creature (retail pathfind target).
+ * or an optional soft-pair creature (pathfind target).
  *
  * @file evaluate-overlapping-targets.ts
  */
 
 export type EvaluateOverlappingResult = {
-  /** true = treat geometric hit as clear (retail return 1). */
+  /** true = treat geometric hit as clear (return 1). */
   allow: boolean;
 };
 
@@ -27,7 +27,7 @@ export function evaluateOverlappingTargets(
   lineStart: { x: number; y: number; z?: number },
   combinedRadius: number,
   options: {
-    /** Soft-pair creature (retail pathfind state) — allow if already overlapping it. */
+    /** Soft-pair creature (pathfind state) — allow if already overlapping it. */
     softCreature?: ModuleObject;
     owner?: ModuleObject;
   } = {}

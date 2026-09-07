@@ -3,14 +3,14 @@ import { Pass, FullScreenQuad } from 'three/examples/jsm/postprocessing/Pass';
 import { CopyShader } from 'three/examples/jsm/shaders/CopyShader';
 import {
   AccumulationBlurShader,
-  RETAIL_ACCUMULATION_SIZE,
+  ODYSSEY_ACCUMULATION_SIZE,
 } from '@/shaders/pass/AccumulationBlurShader';
 
 /**
- * AccumulationBlurPass — retail FrameBufferModifications bit 0x10
+ * AccumulationBlurPass — FrameBufferModifications bit 0x10
  * (RenderAccumulationBlur + RenderFrameToTexture).
  *
- * Previous frame is stored in a fixed 128x128 buffer (retail pbuffer). Upsampling
+ * Previous frame is stored in a fixed 128x128 buffer (pbuffer). Upsampling
  * that soft buffer while mixing with the current full-res frame is what gives
  * Force Speed / swoop their characteristic smear.
  *
@@ -27,7 +27,7 @@ export class AccumulationBlurPass extends Pass {
   private copyMaterial: THREE.ShaderMaterial;
   private copyQuad: FullScreenQuad;
   private accumRT: THREE.WebGLRenderTarget | null = null;
-  /** Retail previousFrameWasSpeed — skip mix until one frame has been saved. */
+  /** previousFrameWasSpeed — skip mix until one frame has been saved. */
   private hasPreviousFrame = false;
 
   constructor(ratio: number = 0.75) {
@@ -78,8 +78,8 @@ export class AccumulationBlurPass extends Pass {
   private ensureAccum() {
     if(this.accumRT){ return; }
     this.accumRT = new THREE.WebGLRenderTarget(
-      RETAIL_ACCUMULATION_SIZE,
-      RETAIL_ACCUMULATION_SIZE,
+      ODYSSEY_ACCUMULATION_SIZE,
+      ODYSSEY_ACCUMULATION_SIZE,
       {
         minFilter: THREE.LinearFilter,
         magFilter: THREE.LinearFilter,

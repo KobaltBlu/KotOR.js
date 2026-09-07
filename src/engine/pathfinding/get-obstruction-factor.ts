@@ -8,7 +8,7 @@ import { noNonWalkPolysDetailed } from "@/engine/pathfinding/no-non-walk-polys";
 import { createWalkHitInfo } from "@/engine/pathfinding/walk-hit-info";
 
 /**
- * Retail sound internal / GetObstructionFactor.
+ * sound internal / GetObstructionFactor.
  *
  * Walks ClearLineOfSight from source → listener, accumulating Miles-style
  * obstruction: wall/placeable +0.4, door +0.55, capped at 1.0. After each hit,
@@ -130,7 +130,7 @@ function probeObstructionHit(
 }
 
 /**
- * Retail GetObstructionFactor(sourceXYZ, listenerXYZ) → [0, 1].
+ * GetObstructionFactor(sourceXYZ, listenerXYZ) → [0, 1].
  * 0 = clear path; 1 = fully obstructed.
  */
 export function getObstructionFactor(
@@ -153,7 +153,7 @@ export function getObstructionFactor(
   const ignoreIds: number[] = [];
   const t0 = typeof performance !== "undefined" ? performance.now() : 0;
 
-  // Retail loops while ClearLineOfSight fails and elapsed < 100ms.
+  // loops while ClearLineOfSight fails and elapsed < 100ms.
   for(let guard = 0; guard < 64; guard++){
     if(typeof performance !== "undefined" && performance.now() - t0 >= OBSTRUCTION_CALL_BUDGET_MS){
       break;

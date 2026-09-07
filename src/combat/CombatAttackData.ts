@@ -120,13 +120,13 @@ export class CombatAttackData {
 
   /**
    * On-hit effects queued by Resolve*SpecialAttack (e.g. Crit Strike stun).
-   * Applied with damage at impact time (retail attack effect list @ +0x88).
+   * Applied with damage at impact time (attack effect list @ +0x88).
    */
   pendingOnHitEffects: GameEffect[] = [];
 
   /**
    * Attack roll total (d20 + modifiers) for status-summary feedback.
-   * Retail Attack-data fields packed as CC ints[2].
+   * Attack-data fields packed as CC ints[2].
    */
   toHitTotal: number = 0;
 
@@ -213,7 +213,7 @@ export class CombatAttackData {
   damageApplied: boolean = false;
 
   /**
-   * SetState type stamped by OnApplySetStateInternal
+   * SetState type stamped by effect apply
    * (FORCEPUSH=9) for attack-summary feedback.
    */
   setStateType: number = 0;
@@ -298,7 +298,7 @@ export class CombatAttackData {
         }
       }
 
-      // Retail GetDamageBonus — combat-mode Power Attack (mode 2=+5, 3=+10)
+      // GetDamageBonus — combat-mode Power Attack (mode 2=+5, 3=+10)
       // plus ResolveSpecialAttackDamageBonus (feat attack_type).
       const modeDamage = CombatAttackData.getCombatModeDamageBonus(creature);
       const specialDamage = (feat?.getDamageBonus?.() || 0) + modeDamage;
@@ -315,7 +315,7 @@ export class CombatAttackData {
         }
       }
 
-      // Retail GetDamageRoll Massive Criticals (IP 0x31) — once on crit, not × multiplier
+      // GetDamageRoll Massive Criticals (IP 0x31) — once on crit, not × multiplier
       if(isCritial){
         const massive = CombatAttackData.getMassiveCriticalBonus(this.attackWeapon);
         if(massive > 0){
@@ -425,7 +425,7 @@ export class CombatAttackData {
   }
 
   /**
-   * Retail ResolveDamage resultsCalculated path — SetBaseDamage + SetDamage.
+   * ResolveDamage resultsCalculated path — SetBaseDamage + SetDamage.
    * SetBaseDamage writes damage_list[0xE] (PHYSICAL); SetDamage writes the
    * weapon GetDamageFlags channel (flags 1 when unarmed).
    */
@@ -433,7 +433,7 @@ export class CombatAttackData {
     const scripted = amount | 0;
     if(scripted < 0) return;
 
-    // SetBaseDamage @ 004d2030
+    // SetBaseDamage 
     const base = this.damageList[DamageType.PHYSICAL];
     if(base.damageValue > 0){
       base.addDamage(scripted);
@@ -441,7 +441,7 @@ export class CombatAttackData {
       base.setDamage(scripted);
     }
 
-    // SetDamage(GetDamageFlags, amount) @ 004d2070 / GetDamageFlags @ 004ed5e0
+    // SetDamage(GetDamageFlags, amount) / GetDamageFlags 
     const flags = (weapon?.getDamageFlags?.() ?? 0) | 0;
     const channel = damageTypeFlagToChannel(flags || 1);
     this.damageList[channel].setDamage(scripted);
@@ -462,8 +462,8 @@ export class CombatAttackData {
 
     const scripted = !!opts?.scriptedResults;
 
-    // Retail GetDamageRoll: Immunity → Resistance → Reduction before packaging.
-    // SignalMeleeDamage sets int[19]=1 so OnApplyDamage skips a second pass.
+    // GetDamageRoll: Immunity → Resistance → Reduction before packaging.
+    // SignalMeleeDamage sets int[19]=1 so effect apply skips a second pass.
     // Scripted ResolveDamage stamps raw amount (no mitigate); EffectDamage still
     // zeroes plot on apply.
     if(!scripted){
@@ -495,11 +495,11 @@ export class CombatAttackData {
     damageEffect.setInt(19, 1);
 
     target.addEffect(damageEffect, GameEffectDurationType.INSTANT);
-    // Retail ResolveDamageShields after mitigated combat damage
+    // ResolveDamageShields after mitigated combat damage
     if(owner && !target.plot && this.getTotalDamage() > 0){
       CombatAttackData.resolveDamageShields(target, owner);
     }
-    // Retail Signal*Damage applies queued special-attack effects (SETSTATE stun, etc.)
+    // Signal*Damage applies queued special-attack effects (SETSTATE stun, etc.)
     // Scripted ResolveDamage skips ResolveOnHitEffect — do not apply pending on-hit.
     if(!scripted){
       for(let i = 0; i < this.pendingOnHitEffects.length; i++){
@@ -546,7 +546,7 @@ export class CombatAttackData {
 
   /**
    * Convert the combat attack data to a GFF struct
-   * Retail SaveData (list element type 0xAAEE)
+   * SaveData (list element type 0xAAEE)
    * @param structIdx - The index of the struct
    * @returns The GFF struct
    */
@@ -595,7 +595,7 @@ export class CombatAttackData {
   }
 
   /**
-   * Retail LoadData 
+   * LoadData 
    */
   fromStruct(struct: GFFStruct){
     if(!struct) return;
@@ -664,14 +664,14 @@ export class CombatAttackData {
     return Math.floor((abilityScore - 10) / 2);
   }
 
-  /** Retail GetDamageBonus combat-mode branch — modes 2/3. */
+  /** GetDamageBonus combat-mode branch — modes 2/3. */
   static getCombatModeDamageBonus(creature: ModuleCreature): number {
     if(creature.combatMode === CombatMode.MODE_2) return 5;
     if(creature.combatMode === CombatMode.MODE_3) return 10;
     return 0;
   }
 
-  /** Retail Massive Criticals item property (0x31) via iprp_damagecost. */
+  /** Massive Criticals item property (0x31) via iprp_damagecost. */
   static getMassiveCriticalBonus(weapon: ModuleItem | undefined): number {
     if(!weapon?.properties) return 0;
     for(let i = 0; i < weapon.properties.length; i++){
@@ -684,7 +684,7 @@ export class CombatAttackData {
     return 0;
   }
 
-  /** Retail ResolveDamageShields after mitigated combat damage lands. */
+  /** ResolveDamageShields after mitigated combat damage lands. */
   static resolveDamageShields(defender: ModuleCreature, attacker: ModuleCreature){
     if(!defender || !attacker || defender === attacker || attacker.plot) return;
 

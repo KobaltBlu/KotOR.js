@@ -36,7 +36,7 @@ export class FeedbackMessageManager {
   static Entries: FeedbackMessageEntry[] = [];
 
   /**
-   * Retail SuppressStatusSummaryEntry — next N AddEntry calls are dropped.
+   * SuppressStatusSummaryEntry — next N AddEntry calls are dropped.
    * Replace (not accumulate); 0 clears.
    */
   static suppressStatusSummaryCount: number = 0;
@@ -92,7 +92,7 @@ export class FeedbackMessageManager {
   }
 
   /**
-   * Retail SendFeedbackMessage → client
+   * SendFeedbackMessage → client
    * AddFeedbackMessage.
    * Simple IDs map to GetGUIString / TLK indices (case N → TLK).
    */
@@ -110,7 +110,7 @@ export class FeedbackMessageManager {
   };
 
   /**
-   * Retail BroadcastSkillData — skill check summary to feedback.
+   * BroadcastSkillData — skill check summary to feedback.
    * Full CC message path is net-oriented; we surface roll/rank/DC/result in the log.
    */
   static BroadcastSkillData(data: {
@@ -137,7 +137,7 @@ export class FeedbackMessageManager {
   }
 
   /**
-   * Send a retail combat/action feedback message by ID.
+   * Send a combat/action feedback message by ID.
    * @param feedbackId ushort passed to SendFeedbackMessage
    */
   static SendFeedbackMessage(
@@ -153,7 +153,7 @@ export class FeedbackMessageManager {
   }
 
   /**
-   * Retail DisplayFeedBackText — FeedBackText.2da row → floaty + status summary.
+   * DisplayFeedBackText — FeedBackText.2da row → floaty + status summary.
    * Rows: 0 Resisted, 1 Immune, 2 Saved.
    */
   static DisplayFeedBackText(target: ModuleObject | undefined, textConstant: number){
@@ -187,7 +187,7 @@ export class FeedbackMessageManager {
   }
 
   /**
-   * Retail FloatingTextStrRefOnCreature / FloatingTextStringOnCreature (simplified).
+   * FloatingTextStrRefOnCreature / FloatingTextStringOnCreature (simplified).
    * Floaty above the creature and Messages-buffer line.
    */
   static FloatingTextOnCreature(
@@ -214,7 +214,7 @@ export class FeedbackMessageManager {
     this.FloatingTextOnCreature(text, creature, broadcastToFaction);
   }
 
-  /** Retail SuppressStatusSummaryEntry — replace, do not accumulate. */
+  /** SuppressStatusSummaryEntry — replace, do not accumulate. */
   static SuppressStatusSummaryEntry(count: number){
     this.suppressStatusSummaryCount = Math.max(0, count | 0);
   }
@@ -260,7 +260,7 @@ export class FeedbackMessageManager {
       break;
       case FeedbackOption.MiniMap:
         this.FeedbackOptions.MiniMap = value;
-        // Retail OnMiniMap → InitializeMap
+        // OnMiniMap → InitializeMap
         GameState.MenuManager?.InGameOverlay?.updateMiniMapVisibility?.();
       break;
       case FeedbackOption.FloatingNumbers:

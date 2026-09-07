@@ -16,9 +16,9 @@ import type { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 /**
  * InGameComputer class.
  *
- * retail — computer terminal dialog UI.
+ * — computer terminal dialog UI.
  * SetType backgrounds follow K1 (Aspyr TSL SetType is a stub).
- * UpdateSkills ; ambient computer_lp_04 @ ctor.
+ * UpdateSkills; ambient computer_lp_04 @ ctor.
  *
  * @file InGameComputer.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -65,7 +65,7 @@ export class InGameComputer extends GameMenu {
   conversation_name: string = '';
   computerType: number = 0;
 
-  /** Retail looping ambient — volume 0x1e (30). */
+  /** looping ambient — volume 0x1e (30). */
   private ambientEmitter: AudioEmitter | undefined;
   private ambientPlaying: boolean = false;
 
@@ -93,7 +93,7 @@ export class InGameComputer extends GameMenu {
   }
 
   /**
-   * Retail K1 SetType
+   * K1 SetType
    * comptypes.2da[ComputerType].ComputerBackground → panel background.
    * Out-of-range index clamps to row 0.
    */
@@ -138,7 +138,7 @@ export class InGameComputer extends GameMenu {
   }
 
   /**
-   * Retail UpdateSkills — Computer Use / Repair ranks and
+   * UpdateSkills — Computer Use / Repair ranks and
    * k_computer_spike / k_repair_part stack totals for party leader.
    */
   updateSkills() {
@@ -179,7 +179,7 @@ export class InGameComputer extends GameMenu {
     return this.ambientEmitter;
   }
 
-  /** Retail computer_lp_04 loop @ volume 0x1e. */
+  /** computer_lp_04 loop @ volume 0x1e. */
   startAmbient() {
     if(this.ambientPlaying){ return; }
     const emitter = this.ensureAmbientEmitter();
@@ -215,13 +215,13 @@ export class InGameComputer extends GameMenu {
       .map((r, i) => (i + 1) + '. ' + r.getCompiledString());
     this.LB_REPLIES.setItems(texts);
     this.LB_REPLIES.show();
-    // Retail Computer::SetReplies keeps the spoken entry listbox visible under replies.
+    // keeps the spoken entry listbox visible under replies.
     this.LB_MESSAGE?.show?.();
     this.updateSkills();
   }
 
   /**
-   * Retail Computer::SetDialogMessage — clear LB_MESSAGE, size the row to
+   * — clear LB_MESSAGE, size the row to
    * GetIdealHeight / font height, AddControls(message label).
    */
   setEntry(entry: DLGNode) {
@@ -234,7 +234,7 @@ export class InGameComputer extends GameMenu {
   }
 
   /**
-   * Match retail SetDialogMessage height: empty → font height, else wrapped text height.
+   * Match SetDialogMessage height: empty → font height, else wrapped text height.
    * Keeps the PROTOITEM row extent in sync so OrganizeControls places it correctly.
    */
   private syncMessageItemHeight(text: string) {
@@ -262,8 +262,8 @@ export class InGameComputer extends GameMenu {
   }
 
   setDialogMode(state: ConversationState) {
-    // Retail: replies listbox toggles visibility; LB_MESSAGE stays at GUI layout
-    // (Computer::SetReplies even forces message_label visible when replies show).
+    // : replies listbox toggles visibility; LB_MESSAGE stays at GUI layout
+    // (even forces message_label visible when replies show).
     if(state == ConversationState.LISTENING_TO_SPEAKER){
       this.LB_REPLIES?.hide?.();
       this.LB_MESSAGE?.show?.();

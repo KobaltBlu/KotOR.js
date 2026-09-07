@@ -4,7 +4,7 @@ import { ActionType } from "@/enums/actions/ActionType";
 
 /**
  * ActionRest class.
- * Retail rest action — always returns COMPLETE.
+ * rest action — always returns COMPLETE.
  *
  * @file ActionRest.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>

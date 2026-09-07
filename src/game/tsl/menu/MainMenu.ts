@@ -12,7 +12,7 @@ import { MainMenu as K1_MainMenu } from "@/game/kotor/KOTOR";
 /**
  * MainMenu class.
  *
- * retail (mainmenu8x6_p) — TSL adds Music between Movies and Options.
+ * (mainmenu8x6_p) — TSL adds Music between Movies and Options.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

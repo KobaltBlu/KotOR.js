@@ -1,5 +1,5 @@
 /**
- * Retail HitCheckPart stand-in for minigame collisions.
+ * HitCheckPart stand-in for minigame collisions.
  * World segment → gob local → bounding-sphere cull → part mesh raycast → world hit.
  *
  * @file MGHitCheck.ts
@@ -48,7 +48,7 @@ export function hitCheckPart(
     root.updateMatrixWorld(true);
   }
 
-  // Local-space BS cull (retail SphereIntersect after inverse-orient).
+  // Local-space BS cull (SphereIntersect after inverse-orient).
   _inv.copy(root.matrixWorld).invert();
   _localFrom.copy(fromWorld).applyMatrix4(_inv);
   _localTo.copy(toWorld).applyMatrix4(_inv);

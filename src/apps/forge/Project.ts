@@ -436,7 +436,7 @@ export class Project {
   }
 
   /**
-   * Compile NSS, apply live module-editor overrides, and pack a playable .mod buffer.
+   * Compile NSS, apply live module-editor overrides, and pack a playable.mod buffer.
    * Shared by save-as export and install-to-game.
    */
   async buildModuleExportBuffer(): Promise<PackProjectModuleResult & { cancelled?: boolean }> {
@@ -483,7 +483,7 @@ export class Project {
     });
   }
 
-  //Exports the finished project to a .mod file
+  //Exports the finished project to a.mod file
   async export(): Promise<boolean> {
     if(!ProjectFileSystem.hasRoot()){
       return false;
@@ -584,7 +584,7 @@ export class Project {
     }
   }
 
-  /** Export the full project tree (including .forge and source) as a ZIP. */
+  /** Export the full project tree (including.forge and source) as a ZIP. */
   async exportAsZip(): Promise<boolean> {
     if(!ProjectFileSystem.hasRoot()){
       return false;

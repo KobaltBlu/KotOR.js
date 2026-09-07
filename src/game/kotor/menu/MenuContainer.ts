@@ -25,7 +25,7 @@ const STR_GIVE_ITEMS = 38543;
 /**
  * MenuContainer class.
  *
- * retail — take-all from container inventory, or give
+ * — take-all from container inventory, or give
  * non-plot items into the container (click item / OK in give mode).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -94,7 +94,7 @@ export class MenuContainer extends GameMenu {
         this.selectedItem = item;
       };
 
-      // Retail: list-item activate (0x27/0x2d) calls GiveItem
+      // : list-item activate (0x27/0x2d) calls GiveItem
       this.LB_ITEMS.onClicked = (item: ModuleItem) => {
         this.selectedItem = item;
         if(this.mode == MenuContainerMode.GIVE_ITEMS){
@@ -172,7 +172,7 @@ export class MenuContainer extends GameMenu {
     this.refreshItemList(false);
   }
 
-  /** Retail SetContainer message selection for take mode. */
+  /** SetContainer message selection for take mode. */
   getTakeModeMessage(): string {
     const inventory = this.container?.inventory;
     const empty = !Array.isArray(inventory) || inventory.length === 0;
@@ -216,7 +216,7 @@ export class MenuContainer extends GameMenu {
     }
   }
 
-  /** Retail HandleInputEvent OK in take mode — loot all and close. */
+  /** HandleInputEvent OK in take mode — loot all and close. */
   takeAllItems(){
     this.LB_ITEMS.setItems([]);
     if(this.container instanceof GameState.Module.ModuleArea.ModulePlaceable){
@@ -229,7 +229,7 @@ export class MenuContainer extends GameMenu {
   }
 
   /**
-   * Retail GiveItem — move count from party inventory into
+   * GiveItem — move count from party inventory into
    * the container. Shift holds the full stack (g_bShiftActionState).
    */
   giveItem(item: ModuleItem){
@@ -245,7 +245,7 @@ export class MenuContainer extends GameMenu {
     const donated = item.clone();
     donated.setStackSize(count);
     this.container.addItem(donated);
-    // Retail Update bit flags → SetupGiveMode(1) refresh
+    // Update bit flags → SetupGiveMode(1) refresh
     this.refreshItemList(true);
   }
 

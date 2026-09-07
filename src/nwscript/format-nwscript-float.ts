@@ -1,5 +1,5 @@
 /**
- * Retail FloatToString / PrintFloat width + decimal formatting.
+ * FloatToString / PrintFloat width + decimal formatting.
  * Width clamped to [0, 18] (default 18); decimals to [0, 9] (default 9).
  */
 export function formatNWScriptFloat(

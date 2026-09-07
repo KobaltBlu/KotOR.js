@@ -47,7 +47,7 @@ export class ModulePreviewSession {
     tab.processEventListener("onPreviewProgress", [stage, detail || ""]);
   }
 
-  /** Temporarily apply camera spawn into module entry fields for pack. Waypoint spawn uses LoadModuleFromArchives tag (retail warp). */
+  /** Temporarily apply camera spawn into module entry fields for pack. Waypoint spawn uses LoadModuleFromArchives tag (warp). */
   private static withSpawnOverrides<T>(tab: TabModuleEditorState, fn: () => T): T {
     const mod = tab.module;
     if(!mod || tab.previewSpawnMode !== "camera"){

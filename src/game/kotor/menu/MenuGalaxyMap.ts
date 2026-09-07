@@ -11,7 +11,7 @@ import { AuroraAnimationFlag } from "@/enums/animation/AuroraAnimationFlag";
 /**
  * MenuGalaxyMap class.
  *
- * Aligned with retail K1.
+ * engine-aligned K1.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -49,7 +49,7 @@ export class MenuGalaxyMap extends GameMenu {
   _3dViewPlanet: LBL_3DView;
   _3dViewPlanetModel: OdysseyModel3D;
 
-  /** Retail DisplayPlanet current_planet — last model shown (-1 = none). */
+  /** DisplayPlanet current_planet — last model shown (-1 = none). */
   currentPlanet: number = -1;
 
   /**
@@ -58,7 +58,7 @@ export class MenuGalaxyMap extends GameMenu {
    */
   planetAtOpen: number = -1;
 
-  /** Selected planet button held in highlight (retail Draw SetActive(1)). */
+  /** Selected planet button held in highlight (Draw SetActive(1)). */
   private activePlanetControl: GUIControl | undefined;
 
   /** After DisplayPlanet, wait for zoomin to finish then start rotate. */
@@ -113,7 +113,7 @@ export class MenuGalaxyMap extends GameMenu {
     this._3dView.camera.position.copy(model.camerahook.position);
     this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
     this._3dView.addModel(this._3dViewModel);
-    // Retail PlayAnimation("default", 1.0, 0) — keep spinning for visual parity
+    // PlayAnimation("default", 1.0, 0) — keep spinning for visual parity
     this._3dViewModel.playAnimation('default', true);
 
     this.bindPlanetButtons();
@@ -125,7 +125,7 @@ export class MenuGalaxyMap extends GameMenu {
   }
 
   /**
-   * Retail ctor: InitControl from planetary.2da GUITag, Icon fill on both
+   * ctor: InitControl from planetary.2da GUITag, Icon fill on both
    * borders, custom_value = row, AButton → OnPlanetClicked.
    */
   protected bindPlanetButtons(){
@@ -164,7 +164,7 @@ export class MenuGalaxyMap extends GameMenu {
   }
 
   /**
-   * Retail OnPlanetClicked — SetSelectedPlanet then DisplayPlanet(…, animate).
+   * OnPlanetClicked — SetSelectedPlanet then DisplayPlanet(…, animate).
    */
   onPlanetClicked(planet: Planet){
     if(!planet){ return; }
@@ -173,7 +173,7 @@ export class MenuGalaxyMap extends GameMenu {
     const previous = Planetary.selectedIndex;
     Planetary.SetSelectedPlanet(planet.id);
     if(Planetary.selectedIndex === previous){
-      // Not available+selectable — retail SetSelectedPlanet no-ops
+      // Not available+selectable — SetSelectedPlanet no-ops
       return;
     }
 
@@ -183,7 +183,7 @@ export class MenuGalaxyMap extends GameMenu {
   }
 
   /**
-   * Retail DisplayPlanet — name/desc TLK, replace 3D model, zoomin + queued rotate.
+   * DisplayPlanet — name/desc TLK, replace 3D model, zoomin + queued rotate.
    */
   displayPlanet(planetIndex: number, animate: boolean){
     if(planetIndex === -1 || planetIndex === this.currentPlanet){
@@ -209,7 +209,7 @@ export class MenuGalaxyMap extends GameMenu {
 
         this.pendingPlanetRotate = false;
         if(animate){
-          // Retail: PlayAnimation("zoomin", FIRE_FORGET) then
+          // : PlayAnimation("zoomin", FIRE_FORGET) then
           // PlayAnimation("rotate", QUEUE=0x20). Manager QUEUE support is
           // incomplete, so hand off to rotate when zoomin ends.
           const zoomin = model.odysseyAnimationMap.get('zoomin');
@@ -232,7 +232,7 @@ export class MenuGalaxyMap extends GameMenu {
   }
 
   /**
-   * Retail Draw SetActive on the selected planet button (highlight).
+   * Draw SetActive on the selected planet button (highlight).
    */
   setPlanetButtonActive(planetIndex: number, active: boolean){
     if(planetIndex < 0){ return; }
@@ -263,7 +263,7 @@ export class MenuGalaxyMap extends GameMenu {
 
   update(delta = 0) {
     super.update(delta);
-    // Retail Draw: keep selected planet SetActive(1)
+    // Draw: keep selected planet SetActive(1)
     if(Planetary.selectedIndex !== -1){
       this.setPlanetButtonActive(Planetary.selectedIndex, true);
     }
@@ -318,7 +318,7 @@ export class MenuGalaxyMap extends GameMenu {
   }
 
   /**
-   * Retail NextPlanet — wrap 0..15, only available+selectable.
+   * NextPlanet — wrap 0..15, only available+selectable.
    */
   nextPlanet(){
     const start = Planetary.selectedIndex;
@@ -341,7 +341,7 @@ export class MenuGalaxyMap extends GameMenu {
   }
 
   /**
-   * Retail PrevPlanet — wrap 0..15, only available+selectable.
+   * PrevPlanet — wrap 0..15, only available+selectable.
    */
   prevPlanet(){
     const start = Planetary.selectedIndex;
@@ -364,7 +364,7 @@ export class MenuGalaxyMap extends GameMenu {
   }
 
   /**
-   * Retail OnPanelAdded — default selection, visibility from available, DisplayPlanet.
+   * OnPanelAdded — default selection, visibility from available, DisplayPlanet.
    */
   show() {
     super.show();
@@ -389,7 +389,7 @@ export class MenuGalaxyMap extends GameMenu {
       const control = this.getControlByName(planet.guitag);
       if(!control){ continue; }
 
-      // Retail: bit_flags visibility from GetPlanetAvailable only
+      // : bit_flags visibility from GetPlanetAvailable only
       if(planet.enabled){
         control.show();
       }else{
@@ -404,7 +404,7 @@ export class MenuGalaxyMap extends GameMenu {
   }
 
   hide() {
-    // Retail OnPanelRemoved — clear active highlights, reset current_planet
+    // OnPanelRemoved — clear active highlights, reset current_planet
     for(let i = 0; i < 16; i++){
       this.setPlanetButtonActive(i, false);
     }

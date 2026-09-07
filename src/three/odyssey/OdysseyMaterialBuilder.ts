@@ -26,14 +26,14 @@ export interface ApplyTXIOptions {
 
 export class OdysseyMaterialBuilder {
   /**
-   * Current area DefaultEnvMap resref. Retail SetEnvMap resolves
+   * Current area DefaultEnvMap resref. envmap assign resolves
    * the envmap resref "DEFAULT" to the module area's DefaultEnvMap before binding.
    * Set by ModuleArea (game) / ForgeArea (forge) when an area is loaded.
    */
   static defaultEnvMap: string = '';
 
   /**
-   * Resolve an envmap resref like retail SetEnvMap:
+   * Resolve an envmap resref like envmap assign:
    * "DEFAULT" maps to the current area's DefaultEnvMap; an empty result means skip binding.
    */
   static resolveEnvMapResRef(resRef: string): string {
@@ -127,7 +127,7 @@ export class OdysseyMaterialBuilder {
     };
 
     // Object-level envmap override (appearance.2da ENVMAP / baseitems partEnvMap) wins over the
-    // TXI envmap — retail RenderEnvironmentMapped checks the gob envmap first.
+    // TXI envmap — RenderEnvironmentMapped checks the gob envmap first.
     const envMapResRef = OdysseyMaterialBuilder.resolveEnvMapResRef(
       (material.userData?.envMapOverride as string) || texture.txi.envMapTexture
     );
@@ -137,7 +137,7 @@ export class OdysseyMaterialBuilder {
       if(!!envmap){
         registerManagedTexture(envmap);
         if((envmap as any).header?.isCubemap || (envmap as any).isCubeTexture){
-          // Retail CreateCubeTexture — GL_CLAMP_TO_EDGE on S/T/R.
+          // CreateCubeTexture — GL_CLAMP_TO_EDGE on S/T/R.
           envmap.wrapS = envmap.wrapT = THREE.ClampToEdgeWrapping;
         }else{
           envmap.wrapS = envmap.wrapT = THREE.RepeatWrapping;
@@ -156,20 +156,20 @@ export class OdysseyMaterialBuilder {
           // Per-fragment env sampling — same effect master got from #define PHONG
           // (Three envmap chunks set ENV_WORLDPOS for worldpos/envmap varyings).
           material.defines.ENV_WORLDPOS = "";
-          // Default TXI envmaps use ADD (master / retail environmentMapDest!=0 @
+          // Default TXI envmaps use ADD (master / environmentMapDest!=0 @
           // : glBlendFunc(ONE_MINUS_DST_ALPHA, ONE) → litDiffuse + env*(1-a)).
           // dest==0 LERP replaces albedo with the cubemap and crushes dark maps
           // like CM_Baremetal; ADD keeps armor color and layers sparse highlights.
           material.defines.ENVMAP_BLENDING_ADD = "";
-          // Envmapped meshes are lit in retail RenderFlat — clear IGNORE so the binder
+          // Envmapped meshes are lit in RenderFlat — clear IGNORE so the binder
           // packs nearest lights (same pattern as lightmaps in TextureLoader).
           delete material.defines.IGNORE_LIGHTING;
           if(material.uniforms.envMapAlpha){
-            // TXI envmapalpha — retail one-pass writes this to output alpha; multipass
+            // TXI envmapalpha — one-pass writes this to output alpha; multipass
             // does not scale the RGB blend. Kept for alpha / gob scaling callers.
             material.uniforms.envMapAlpha.value = texture.txi.envMapAlpha ?? 1;
           }
-          // TPC faces are uploaded in GL order (retail CreateCubeTexture). Do not apply
+          // TPC faces are uploaded in GL order (CreateCubeTexture). Do not apply
           // Three's CubeTextureLoader X-flip (would mirror / look color-inverted).
           if(material.uniforms.flipEnvMap){
             material.uniforms.flipEnvMap.value = 1;
@@ -220,7 +220,7 @@ export class OdysseyMaterialBuilder {
           if(bumpMap.txi.procedureType){
             switch(bumpMap.txi.procedureType){
               case TXIPROCEDURETYPE.CYCLE:
-                // Retail swaps the bound texture — no CYCLE_BUMP UV offset
+                // swaps the bound texture — no CYCLE_BUMP UV offset
                 break;
               case TXIPROCEDURETYPE.RANDOM:
                 material.defines.RANDOM = "";
@@ -280,7 +280,7 @@ export class OdysseyMaterialBuilder {
         if(texture.txi.waterAlpha != null && (material instanceof THREE.RawShaderMaterial || material instanceof THREE.ShaderMaterial)){
           material.defines = material.defines || {};
           material.defines.WATER = "";
-          // Retail uses height→normal bump lighting only (ConvertHeightFieldAndLoadNormalMapTexture
+          // uses height→normal bump lighting only (ConvertHeightFieldAndLoadNormalMapTexture
           //) — no vertex displacement.
           delete material.defines.USE_DISPLACEMENTMAP;
           material.defines.ENVMAP_BLENDING_MIX = "";
@@ -332,7 +332,7 @@ export class OdysseyMaterialBuilder {
       if(texture.txi.procedureType){
         switch(texture.txi.procedureType){
           case TXIPROCEDURETYPE.CYCLE:
-            // Retail CycleTIDTextureController — swap bound map texture, do not remesh UVs
+            // CycleTIDTextureController — swap bound map texture, do not remesh UVs
             TextureAnimationManager.register(texture, material, 'map');
             break;
           case TXIPROCEDURETYPE.RANDOM:

@@ -6,7 +6,7 @@ import { GameState } from "@/GameState";
 
 /**
  * ActionDisappear class.
- * Retail disappear action — 2000ms anim 0x274e, then 0x2711.
+ * disappear action — 2000ms anim 0x274e, then 0x2711.
  * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  * 

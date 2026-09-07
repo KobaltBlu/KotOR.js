@@ -13,7 +13,7 @@ export interface ReverbEngineOptions {
   /** Keep legacy behavior and connect the engine output to context.destination. */
   autoConnectDestination?: boolean;
 
-  /** Initial dry level for sources connected through connectSource(). */
+  /** Initial dry level for sources connected through connectSource. */
   dryLevel?: number;
 
   /** Global multiplier applied to the worklet's wet output. */
@@ -33,8 +33,8 @@ export interface ReverbSourceConnection {
  * Browser EAX/EFX-style environmental reverb.
  *
  * The class is deliberately split into two layers:
- *   - ReverbEngine: graph/routing, preset selection and game-facing API.
- *   - EAXReverbProcessor: early reflections + diffusion + 4-line FDN DSP.
+ * - ReverbEngine: graph/routing, preset selection and game-facing API.
+ * - EAXReverbProcessor: early reflections + diffusion + 4-line FDN DSP.
  *
  * Use one shared instance per active acoustic environment. Do not create one
  * ReverbEngine per sound source.
@@ -126,7 +126,7 @@ export class ReverbEngine {
 
   /**
    * Legacy entry point: routes a source through both dry and wet paths.
-   * For a real game mixer, prefer createReverbSend() so direct audio keeps its
+   * For a real game mixer, prefer createReverbSend so direct audio keeps its
    * existing spatialization path and only the environment send enters here.
    */
   connectSource(source: AudioNode): void {

@@ -25,7 +25,7 @@ export class EffectForceFizzle extends GameEffect {
       
     super.onApply();
 
-    // Retail GetWasForcePowerSuccessful — fizzle clears caster success flag
+    // GetWasForcePowerSuccessful — fizzle clears caster success flag
     const creator = this.getCreator?.() || this.creator;
     if(BitWise.InstanceOfObject(creator, ModuleObjectType.ModuleCreature)){
       const cd = (creator as any).combatData;

@@ -29,13 +29,13 @@ import { ModuleMGTrack } from "@/module/ModuleMGTrack";
 * @memberof KotOR
 */
 export class ModuleMGEnemy extends ModuleObject {
-  /** retail ctor — default track playback speed. */
+  /** ctor — default track playback speed. */
   static readonly DEFAULT_TRACK_SPEED = 100;
 
   gunBanks: ModuleMGGunBank[] = [];
   models: OdysseyModel3D[] = [];
   track: THREE.Object3D;
-  /** retail Sounds + SWMG sound properties. */
+  /** Sounds + SWMG sound properties. */
   trackFollowerSounds: MGTrackFollowerSounds = new MGTrackFollowerSounds();
   /** Engine loop + death oneshot (Go / Stop / OnDeath). */
   trackFollowerAudio: MGTrackFollowerAudio = new MGTrackFollowerAudio(this.trackFollowerSounds, false);
@@ -50,7 +50,7 @@ export class ModuleMGEnemy extends ModuleObject {
   boostVelocity: number;
   invince: number;
   alive: boolean;
-  /** retail Trigger byte @ — SWMG_IsTrigger / IsObstacle fallthrough. */
+  /** Trigger byte @ — SWMG_IsTrigger / IsObstacle fallthrough. */
   isTrigger: boolean = false;
   sphere_geom: THREE.Mesh;
   sphere_radius: number;
@@ -66,24 +66,24 @@ export class ModuleMGEnemy extends ModuleObject {
   maximum_speed: number = 0;
   minimum_speed: number = 0;
   num_loops: any;
-  /** retail bit0 — Go sets, Stop clears. */
+  /** bit0 — Go sets, Stop clears. */
   running: boolean = false;
   /** True when track model was created for this follower. */
   ownsTrack: boolean = false;
   /**
-   * Retail ForceSetTrack 3rd arg — AddEnemy always passes 0.
+   * ForceSetTrack 3rd arg — AddEnemy always passes 0.
    */
   trackAttachType: number = 0;
   /**
-   * retail ctor — speed = 100.
+   * ctor — speed = 100.
    * Go / SetSpeed play "track" at speed * 0.01.
    */
   speed: number = 100;
-  /** Retail PlayAnimation("track", speed * 0.01). */
+  /** PlayAnimation("track", speed * 0.01). */
   trackAnimRate: number = 0;
   trackName: any;
   /**
-   * Retail OnAnimKeyEvent — playEvent on track + models.
+   * OnAnimKeyEvent — playEvent on track + models.
    */
   private animPlayEventHandler = (e: { event?: string; target?: { name?: string } }) => {
     this.handleAnimPlayEvent(e);
@@ -126,7 +126,7 @@ export class ModuleMGEnemy extends ModuleObject {
     this.sphere_geom = new THREE.Mesh( geometry, material );
     this.sphere_geom.visible = false;
 
-    // retail → retail.
+    // →.
     MiniGameObjectArray.register(this);
   }
 
@@ -225,7 +225,7 @@ export class ModuleMGEnemy extends ModuleObject {
       }
     }
 
-    // Retail TrackFollowerPartDie / donedie — purge model when non-looping die ends.
+    // TrackFollowerPartDie / donedie — purge model when non-looping die ends.
     if(!this.alive && this.died){
       for(let i = this.models.length - 1; i >= 0; i--){
         const child_model = this.models[i];
@@ -251,7 +251,7 @@ export class ModuleMGEnemy extends ModuleObject {
     if(this.track instanceof OdysseyModel3D){
       if(this.alive && this.running){
         this.ensureTrackAnimation();
-        // Retail SetSpeed/Go: rate = speed*0.01 — never fall back to 1 when speed is 0.
+        // SetSpeed/Go: rate = speed*0.01 — never fall back to 1 when speed is 0.
         const rate = this.trackAnimRate;
         this.track.update(delta * rate);
       }else if(!this.alive && this.track.animationManager?.currentAnimation){
@@ -269,7 +269,7 @@ export class ModuleMGEnemy extends ModuleObject {
       const player = GameState.module?.area?.miniGame?.player;
       if(!player?.alive){ continue; }
 
-      // Retail TargettingGunBank: Sensing_Radius gates auto-fire; else forward ray LOS.
+      // TargettingGunBank: Sensing_Radius gates auto-fire; else forward ray LOS.
       if(bank.isTargetting()){
         if(bank.isPlayerInSensingRange(player)){
           bank.fire();
@@ -283,7 +283,7 @@ export class ModuleMGEnemy extends ModuleObject {
       }
     }
 
-    // Retail Update — OnHeartbeat every frame.
+    // Update — OnHeartbeat every frame.
     if(GameState.module){
       this.triggerHeartbeat();
     }
@@ -300,7 +300,7 @@ export class ModuleMGEnemy extends ModuleObject {
   }
 
   /**
-   * Retail AdjustHitPoints — queue hp_adjust then OnDamage(0).
+   * AdjustHitPoints — queue hp_adjust then OnDamage(0).
    * SetFollowerHitPoints → SetHitPoints (nAbsolute; only if nHP > 0).
    */
   adjustHitPoints(nHP = 0, nAbsolute = 0){
@@ -315,7 +315,7 @@ export class ModuleMGEnemy extends ModuleObject {
   }
 
   /**
-   * Retail OnDamage default apply path.
+   * OnDamage default apply path.
    */
   applyQueuedHitPoints(){
     const adjust = this.lastHPChange;
@@ -436,7 +436,7 @@ export class ModuleMGEnemy extends ModuleObject {
   }
 
   /**
-   * Retail OnAnimKeyEvent stand-in via OdysseyModel3D playEvent.
+   * OnAnimKeyEvent stand-in via OdysseyModel3D playEvent.
    */
   handleAnimPlayEvent(e: { event?: string; target?: { name?: string } }){
     const raw = String(e?.event ?? '');
@@ -499,7 +499,7 @@ export class ModuleMGEnemy extends ModuleObject {
     onCreate.run(this, 0);
   }
 
-  /** Retail Go. */
+  /** Go. */
   go(){
     if(this.running || !this.alive){ return; }
 
@@ -522,7 +522,7 @@ export class ModuleMGEnemy extends ModuleObject {
   }
 
   /**
-   * Retail OnDeath.
+   * OnDeath.
    * skipScript=true = DefaultImpl path (OnDeath(1)).
    */
   die(skipScript: boolean = false){
@@ -540,7 +540,7 @@ export class ModuleMGEnemy extends ModuleObject {
     this.stopTrack();
     void this.trackFollowerAudio.playDeathSound();
 
-    // Play die on each model; RemoveModel immediately if die missing (retail).
+    // Play die on each model; RemoveModel immediately if die missing.
     for(let i = this.models.length - 1; i >= 0; i--){
       const model = this.models[i];
       if(!(model instanceof OdysseyModel3D) || !model.bonesInitialized){
@@ -556,7 +556,7 @@ export class ModuleMGEnemy extends ModuleObject {
       this.died = true;
     }
 
-    // Retail OnDeath → each gun bank Die.
+    // OnDeath → each gun bank Die.
     for(let i = 0; i < this.gunBanks.length; i++){
       this.gunBanks[i]?.die?.();
     }
@@ -574,7 +574,7 @@ export class ModuleMGEnemy extends ModuleObject {
     }
   }
 
-  /** Retail RemoveModel. */
+  /** RemoveModel. */
   removeModelAt(index: number){
     if(index < 0 || index >= this.models.length){ return; }
     const model = this.models[index];
@@ -585,7 +585,7 @@ export class ModuleMGEnemy extends ModuleObject {
   }
 
   /**
-   * Retail Stop
+   * Stop
    * PlayAnimation("track", 0, flags) then clear running + engine Stop.
    */
   stopTrack(){
@@ -640,7 +640,7 @@ export class ModuleMGEnemy extends ModuleObject {
   }
 
   /**
-   * Retail OnDamage
+   * OnDamage
    * param 0: script if present; else / param 1: apply lastHPChange.
    */
   onDamaged(skipScript: boolean = false){
@@ -682,7 +682,7 @@ export class ModuleMGEnemy extends ModuleObject {
   }
 
   /**
-   * Retail OnHitObstacle — script if set (param 0); else OnDeath(0).
+   * OnHitObstacle — script if set (param 0); else OnDeath(0).
    * skipScript=true = SWMG_OnObstacleHit DefaultImpl (param 1).
    */
   onHitObstacle(skipScript: boolean = false){

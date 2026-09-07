@@ -4,7 +4,7 @@ import { GameState } from "@/GameState";
 import type { ModuleObject } from "@/module/ModuleObject";
 
 /**
- * Retail PlayVisualEffect (NWScript PlayVisualAreaEffect) — fire a
+ * PlayVisualEffect (NWScript PlayVisualAreaEffect) — fire a
  * visualeffects.2da row at a world location. Grenade / mine impact scripts
  * use this for the explosion visual and its soundimpact.
  *

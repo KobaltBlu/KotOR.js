@@ -145,7 +145,7 @@ export class FactionManager {
     // -> 0-10 means oSource is hostile to oTarget
     // -> 11-89 means oSource is neutral to oTarget
     // -> 90-100 means oSource is friendly to oTarget
-    // Retail GetReputation — missing faction → 0x32 (50)
+    // GetReputation — missing faction → 0x32 (50)
     if(!(BitWise.InstanceOf(oSource?.objectType, ModuleObjectType.ModuleObject)) || !(BitWise.InstanceOf(oTarget?.objectType, ModuleObjectType.ModuleObject)))
       return 0;
 
@@ -376,7 +376,7 @@ export class FactionManager {
   }
 
   /**
-   * Retail ExecuteCommandChangeByFaction
+   * ExecuteCommandChangeByFaction
    * ChangeFactionByFaction / SurrenderByFaction.
    *
    * All creatures in the caller's area whose FactionID matches `fromFactionId`

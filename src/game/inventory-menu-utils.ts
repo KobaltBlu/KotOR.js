@@ -14,7 +14,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
 
 /**
- * Retail CheckFilter / SetNextFilter filter indices.
+ * CheckFilter / SetNextFilter filter indices.
  * K1 cycles 0–5 via BTN_QUESTITEMS. K2 category buttons set 0 / 6–11.
  */
 export enum InventoryFilter {
@@ -38,7 +38,7 @@ export enum InventoryFilter {
   MISC_K2 = 11,
 }
 
-/** Retail itemFilterStrRefs (K1). */
+/** itemFilterStrRefs (K1). */
 export const ITEM_FILTER_STR_REFS: readonly number[] = [
   41822, // All
   42165, // New
@@ -61,7 +61,7 @@ export const STR_INV_FULL_HEALTH = 0xa603;
 /** TLK 0xbd6e — SquadFullHealth */
 export const STR_INV_SQUAD_FULL_HEALTH = 0xbd6e;
 
-/** Retail datapad itemtype (CheckFilter case 6). */
+/** datapad itemtype (CheckFilter case 6). */
 export const ITEM_TYPE_DATAPAD = 0x18;
 
 /** Hand slots for K2 weapons filter (equipableSlots & 0x30). */
@@ -71,7 +71,7 @@ export const INV_WEAPON_HAND_SLOTS =
 export const INV_ARMBAND_SLOTS =
   ModuleCreatureArmorSlot.LEFTARMBAND | ModuleCreatureArmorSlot.RIGHTARMBAND;
 /**
- * Retail armor filter mask 0x78b:
+ * armor filter mask 0x78b:
  * HEAD|ARMOR|ARMS|LEFTARMBAND|RIGHTARMBAND|IMPLANT|BELT
  */
 export const INV_ARMOR_SLOTS =
@@ -103,7 +103,7 @@ export type InventoryListNode = (ModuleItem | GUIItemEquipped) & {
   inventoryDenyStrRef?: number;
 };
 
-/** Persistent filter (retail current inventory filter). */
+/** Persistent filter (current inventory filter). */
 let currentInventoryFilter: InventoryFilter = InventoryFilter.ALL;
 
 export function getCurrentInventoryFilter(): InventoryFilter {
@@ -138,14 +138,14 @@ export function getInventoryFilterLabel(filter: InventoryFilter): string {
   return GameState.TLKManager.GetStringById(strRef)?.Value ?? '';
 }
 
-/** Retail LBL_INV: Inventory - &lt;filter&gt; */
+/** LBL_INV: Inventory - &lt;filter&gt; */
 export function formatInventoryTitle(filter: InventoryFilter = currentInventoryFilter): string {
   const inv = GameState.TLKManager.GetStringById(STR_INVENTORY_TITLE)?.Value ?? 'Inventory';
   const name = getInventoryFilterLabel(filter);
   return `${inv} - ${name}`;
 }
 
-/** Retail BTN_QUESTITEMS: &lt;prefix&gt; &lt;next filter&gt; */
+/** BTN_QUESTITEMS: &lt;prefix&gt; &lt;next filter&gt; */
 export function formatQuestItemsButtonText(filter: InventoryFilter = currentInventoryFilter): string {
   const prefix = GameState.TLKManager.GetStringById(STR_FILTER_NEXT_PREFIX)?.Value ?? '';
   const nextName = getInventoryFilterLabel(getNextK1InventoryFilter(filter));
@@ -164,7 +164,7 @@ function getEquipableSlots(item: ModuleItem): number {
 function isWristWeaponItem(item: ModuleItem): boolean {
   const slots = getEquipableSlots(item);
   if((slots & INV_ARMBAND_SLOTS) === 0) return false;
-  // Retail CheckFilter: baseitem field @ == 2 (weaponWield ONE_HANDED_SWORD).
+  // CheckFilter: baseitem field @ == 2 (weaponWield ONE_HANDED_SWORD).
   return (item.baseItem?.weaponWield | 0) === WeaponWield.ONE_HANDED_SWORD;
 }
 
@@ -174,7 +174,7 @@ function isK2UseableBaseItem(item: ModuleItem): boolean {
 }
 
 /**
- * Retail CheckFilter.
+ * CheckFilter.
  * @param fromEquipmentSlot armband/belt equipped-item usable-mask path
  */
 export function checkInventoryFilter(
@@ -198,7 +198,7 @@ export function checkInventoryFilter(
     case InventoryFilter.MISC:
       return !item.plot && getEquipableSlots(item) === 0;
     case InventoryFilter.USEABLE: {
-      // Retail mask 0xff; CanUseItem is applied inside isLeaderUsableItem success paths.
+      // mask 0xff; CanUseItem is applied inside isLeaderUsableItem success paths.
       return isLeaderUsableItem(creature, item, fromEquipmentSlot, 0xff);
     }
     case InventoryFilter.DATAPADS:
@@ -228,7 +228,7 @@ export function checkInventoryFilter(
 }
 
 /**
- * Retail CreateItemEntry canUse / deny message selection.
+ * CreateItemEntry canUse / deny message selection.
  * Returns canUse 1 when Accept/Use Item should InstantUseItem.
  */
 export function getInventoryItemCanUse(
@@ -301,7 +301,7 @@ function shouldSkipEquipSlot(slot: number, isK2: boolean): boolean {
 }
 
 /**
- * Retail PopulateItemListBox item order: equipped slots first, then bag.
+ * PopulateItemListBox item order: equipped slots first, then bag.
  */
 export function collectInventoryListNodes(
   creature: ModuleCreature,

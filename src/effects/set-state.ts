@@ -12,14 +12,14 @@ import type { GameEffect } from "@/effects/GameEffect";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
 /**
- * Retail OnApplySetState / OnApplySetStateInternal /
- * OnRemoveSetState / RecomputeAmbientAnimationState.
+ * effect apply / effect apply /
+ * effect remove / RecomputeAmbientAnimationState.
  *
  * Outer EffectSetState handles immunities + priority; Internal does clear /
  * pause / child VFX / animation. Shared by K1 and K2 (same effect opcodes).
  */
 
-/** IMMUNITY_TYPE_* used by OnApplySetState */
+/** IMMUNITY_TYPE_* used by effect apply */
 export const IMMUNITY_MIND = 1;
 export const IMMUNITY_FEAR = 4;
 export const IMMUNITY_PARALYZE = 6;
@@ -30,12 +30,12 @@ export const IMMUNITY_KNOCKDOWN = 0x1c;
 /** K2 — EffectDroidConfused (always checked; no cutscene int1 bypass) */
 export const IMMUNITY_DROID_CONFUSED = 0x21;
 
-/** VFX ids from OnApplySetStateInternal */
+/** VFX ids from effect apply */
 export const VFX_DROID_STUN = 0x3ef;
 export const VFX_STUN = 0x7d2;
 
 /**
- * Retail OnApplySetState always applies SETAISTATE −0x101 before Internal —
+ * effect apply always applies SETAISTATE −0x101 before Internal —
  * activity &= 0xFEFF (clears bit 0x100).
  */
 export const SET_STATE_OUTER_AI_ACTIVITY_MASK = 0xfeff;
@@ -81,7 +81,7 @@ export function isSetStateImmune(
       if(ignoreImmunity) return false;
       return hasImmunityType(creature, IMMUNITY_KNOCKDOWN, versus);
     case GameEffectSetStateType.DROID_CONFUSED:
-      // Retail no int1 cutscene bypass
+      // no int1 cutscene bypass
       return hasImmunityType(creature, IMMUNITY_DROID_CONFUSED, versus);
     case GameEffectSetStateType.MIND_TRICK:
       if(ignoreImmunity) return false;
@@ -145,7 +145,7 @@ function removeInternals(creature: ModuleCreature){
 
 /**
  * Keep a single Internal matching the highest active outer SetState.
- * Mirrors retail priority + OnRemoveSetState re-apply.
+ * matches engine behavior priority + effect remove re-apply.
  */
 export function rebalanceSetState(creature: ModuleCreature, trigger?: GameEffect){
   if(!BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature)){

@@ -8,7 +8,7 @@ import {
 } from "@/utility/aurora-camera-orientation";
 
 /**
- * Retail GetCameraParameters.
+ * GetCameraParameters.
  * Shot types match DLG CameraAngle 1–3 (speaker / OTS / two-shot).
  * Pseudo-random: InitializePsuedoRandomCameraAngles +
  * SendDialogEntryNode / SendDialogReplyNode.
@@ -17,7 +17,7 @@ import {
 
 const DEG2RAD = Math.PI / 180;
 
-/** Retail dialog constructor table (19 entries). */
+/** dialog constructor table (19 entries). */
 export const DIALOG_PSEUDO_RANDOM_ANGLES: readonly number[] = [
   1, 3, 1, 3, 2, 2, 1, 3, 1, 2, 1, 2, 1, 3, 2, 3, 1, 1, 1,
 ];
@@ -40,7 +40,7 @@ export interface DialogCameraShotOptions {
   side?: number;
   /**
    * TSL Aspyr vanilla camera hacks (UpdateShotCamera)
-   * only applied when !isDialogGameModded().
+   * only applied when !isDialogGameModded.
    */
   aspyrDistanceOverride?: number;
   aspyrHeightOverride?: number;
@@ -61,7 +61,7 @@ export interface DialogPseudoRandomState {
 }
 
 /**
- * Map DLG angle to retail GetCameraParameters shot type (1/2/3).
+ * Map DLG angle to GetCameraParameters shot type (1/2/3).
  * ANGLE_FOCUS_PLAYER (5) does not call SetShot in UpdateShotCamera.
  */
 export function dlgAngleToShotType(angle: DLGCameraAngle): number {
@@ -78,7 +78,7 @@ export function dlgAngleToShotType(angle: DLGCameraAngle): number {
 }
 
 /**
- * Retail InitializePsuedoRandomCameraAngles
+ * InitializePsuedoRandomCameraAngles
  * hash dialog resref → (parity, %19, %5+1).
  * Hash: u += ((int)pow(10, i) + 1) * char
  */
@@ -90,11 +90,11 @@ export function hashDialogResref(resref: string): {
   const s = (resref || '').toLowerCase();
   let u = 0;
   for(let i = 0; i < s.length; i++){
-    // Retail: __ftol2(pow(10,i)) + 1, then * char (signed MOVSX)
+    // : __ftol2(pow(10,i)) + 1, then * char (signed MOVSX)
     const place = (Math.pow(10, i) | 0) + 1;
     u = (u + place * (s.charCodeAt(i) << 24 >> 24)) | 0;
   }
-  // Match unsigned DIV remainders used in retail stores
+  // Match unsigned DIV remainders used in stores
   const uu = u >>> 0;
   return {
     parity: uu & 1,
@@ -171,7 +171,7 @@ export function resolveReplyCameraAngle(
 }
 
 /**
- * Retail IsLoopingDialogStuntAnimation.
+ * IsLoopingDialogStuntAnimation.
  * CUT ids in the `l` / `wl` bands (1401..1727) loop; base / `w` cuts are one-shot.
  */
 export function isLoopingDialogStuntAnimation(animationId: number): boolean {
@@ -180,7 +180,7 @@ export function isLoopingDialogStuntAnimation(animationId: number): boolean {
 }
 
 /**
- * Retail GetCameraAnimationName.
+ * GetCameraAnimationName.
  * Ranges: 1000+ base, 1200+ w, 1400+ l, 1600+ wl; 0x2772 → none.
  * Note: cut029 is missing — offs 28 and 38 map to cut039.
  */
@@ -207,7 +207,7 @@ export function getCameraAnimationName(animationId: number): string {
   }
 
   const off = id - base;
-  // Retail: 0..27 → cut001..028; 28 → cut039; 29..37 → cut030..038; 38 → cut039; 39..127 → cut040..128
+  // : 0..27 → cut001..028; 28 → cut039; 29..37 → cut030..038; 38 → cut039; 39..127 → cut040..128
   let num: number;
   if(off <= 27){
     num = off + 1;
@@ -242,7 +242,7 @@ export function computeDialogCameraShot(
   let sp = speaker.clone();
   let lp = listener.clone();
 
-  // Coincident participants — retail nudges listener
+  // Coincident participants — nudges listener
   if(sp.distanceToSquared(lp) < 1e-8){
     lp.x += 1.5;
     lp.y += 1.5;
@@ -381,7 +381,7 @@ export const ANIMATED_CAMERA_NEAR = 0.1;
 export const ANIMATED_CAMERA_FAR = 10000;
 
 /**
- * Retail UpdateShotCamera — for shot type 1, if the speaker's
+ * UpdateShotCamera — for shot type 1, if the speaker's
  * AnimList id is a fire-forget or looping dialog animation, read
  * dialoganimations.2da `CU_PB_Range` at row (animId - 10000).
  */
@@ -398,7 +398,7 @@ export function lookupDialogCloseUpExtra(
   if(!fireForget && !looping) return 0;
   const range = Number(row.cu_pb_range);
   if(!Number.isFinite(range)) return 0;
-  // Retail treats |x| < 0.001 as zero
+  // treats |x| < 0.001 as zero
   if(range > -0.001 && range < 0.001) return 0;
   return range;
 }
@@ -414,7 +414,7 @@ export function isDialogGameModded(enableOverride?: boolean, lookInOverride?: bo
 /**
  * TSL Aspyr `StartDialog` — the vanilla camera hacks
  * (placeable +110° pitch / offset and appearance-pair overrides) are gated on
- * `retail constant`, which is set only when the conversation resref equals
+ * ` constant`, which is set only when the conversation resref equals
  * `"carth"` (case-insensitive ResRef compare). Every other
  * dialog leaves the flag clear, so the hacks must not run.
  */

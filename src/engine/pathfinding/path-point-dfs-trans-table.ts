@@ -37,7 +37,7 @@ export class PathPointDfsTransTable {
   }
 
   /**
-   * Retail Get: match primary then overflow.
+   * Get: match primary then overflow.
    * Returns stored g/remaining, or undefined on miss.
    */
   get(px: number, py: number): TransTableEntry | undefined {
@@ -53,7 +53,7 @@ export class PathPointDfsTransTable {
   }
 
   /**
-   * Retail Put: write primary, or overflow when primary occupied by worse entry.
+   * Put: write primary, or overflow when primary occupied by worse entry.
    */
   put(px: number, py: number, gCost: number, remainingBudget: number): void {
     let h = this.hash(px, py);
@@ -71,7 +71,7 @@ export class PathPointDfsTransTable {
   }
 
   /**
-   * Retail prune: stored_g < current_g OR current_remaining <= stored_remaining.
+   * prune: stored_g < current_g OR current_remaining <= stored_remaining.
    */
   shouldPrune(px: number, py: number, gCost: number, remainingBudget: number): boolean {
     const prev = this.get(px, py);

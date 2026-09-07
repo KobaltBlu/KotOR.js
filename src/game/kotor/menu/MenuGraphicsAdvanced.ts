@@ -4,7 +4,7 @@ import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "@/gui";
 import { TextureLoader } from "@/loaders/TextureLoader";
 import { TextureLoaderState } from "@/loaders/TextureLoaderState";
 
-/** retail CSWGuiOptionsGraphicsAdvanced description TLKs (K1). */
+/** graphics advanced options description TLKs (K1). */
 const TLK_SOFT_SHADOWS = 0xbb51;
 const TLK_FRAME_BUFFER = 0xbb55;
 const TLK_ANISOTROPY = 0xbb59;
@@ -12,21 +12,21 @@ const TLK_VSYNC = 0xbb61;
 const TLK_ANTI_ALIAS = 0xbb63;
 const TLK_TEX_QUAL = 0xbb5d;
 
-/** Retail SetAntiAliasText display TLKs keyed by sample count (K1). */
+/** SetAntiAliasText display TLKs keyed by sample count (K1). */
 const TLK_AA_OFF = 0xbb7c;
 const TLK_AA_2X = 0xbb7d;
 const TLK_AA_4X = 0xbb7f;
 const TLK_AA_6X = 0xbfe4;
 const TLK_AA_8X = 0xbfe5;
 
-/** Retail SetAnisotropyText display TLKs keyed by anisotropy level (K1). */
+/** SetAnisotropyText display TLKs keyed by anisotropy level (K1). */
 const TLK_ANISO_1X = 0xbfb7;
 const TLK_ANISO_2X = 0xbfb8;
 const TLK_ANISO_4X = 0xbfb9;
 const TLK_ANISO_8X = 0xbfba;
 const TLK_ANISO_16X = 0xbfbb;
 
-/** Retail anti-aliasing mode ladder (AurQueryAntiAliasingMode samples). */
+/** anti-aliasing mode ladder (AurQueryAntiAliasingMode samples). */
 const AA_MODES: ReadonlyArray<number> = [0, 2, 4, 6, 8];
 
 const INI_TEXTURE_QUALITY = 'Graphics Options.Texture Quality';
@@ -37,7 +37,7 @@ const INI_VSYNC = 'Graphics Options.V-Sync';
 const INI_SOFT_SHADOWS = 'Graphics Options.Soft Shadows';
 const INI_SHADOWS = 'Graphics Options.Shadows';
 
-/** Retail SetDefaultAdvancedGraphicsOptions. */
+/** SetDefaultAdvancedGraphicsOptions. */
 const DEFAULT_FRAME_BUFFER = 1;
 const DEFAULT_ANISOTROPY = 1;
 const DEFAULT_TEXTURE_QUALITY = 0;
@@ -50,7 +50,7 @@ const DEFAULT_SOFT_SHADOWS = 1;
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * retail (optgraphicsadv).
+ * (optgraphicsadv).
  *
  * @file MenuGraphicsAdvanced.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -76,14 +76,14 @@ export class MenuGraphicsAdvanced extends GameMenu {
   CB_VSYNC: GUICheckBox;
   CB_SOFTSHADOWS: GUICheckBox;
 
-  /** Draft values edited in-panel; applied on Back (retail SetNewOptions). */
+  /** Draft values edited in-panel; applied on Back (SetNewOptions). */
   private draftTextureQuality = DEFAULT_TEXTURE_QUALITY;
   private draftAnisotropy = DEFAULT_ANISOTROPY;
   private draftAntiAlias = DEFAULT_ANTI_ALIAS;
   private draftFrameBuffer = DEFAULT_FRAME_BUFFER;
   private draftVSync = DEFAULT_VSYNC;
   private draftSoftShadows = DEFAULT_SOFT_SHADOWS;
-  /** When true, Back/close skips SetNewOptions (retail OnDiscardChanges). */
+  /** When true, Back/close skips SetNewOptions (OnDiscardChanges). */
   private discardChanges = false;
 
   constructor(){
@@ -210,7 +210,7 @@ export class MenuGraphicsAdvanced extends GameMenu {
     super.close();
   }
 
-  /** Retail SetUpOptions — load current client options into draft controls. */
+  /** SetUpOptions — load current client options into draft controls. */
   setupOptions(){
     this.draftTextureQuality = this.readIniNumber(INI_TEXTURE_QUALITY, DEFAULT_TEXTURE_QUALITY);
     this.draftAnisotropy = this.normalizeAnisotropy(
@@ -232,7 +232,7 @@ export class MenuGraphicsAdvanced extends GameMenu {
     this.updateAnisotropyLabel();
   }
 
-  /** Retail OnDefault / SetDefaultAdvancedGraphicsOptions. */
+  /** OnDefault / SetDefaultAdvancedGraphicsOptions. */
   resetToDefaults(){
     this.draftFrameBuffer = DEFAULT_FRAME_BUFFER;
     this.draftAnisotropy = DEFAULT_ANISOTROPY;
@@ -250,7 +250,7 @@ export class MenuGraphicsAdvanced extends GameMenu {
     this.updateAnisotropyLabel();
   }
 
-  /** Retail SetNewOptions + INI persistence on accept. */
+  /** SetNewOptions + INI persistence on accept. */
   applyNewOptions(){
     const prevQuality = this.readIniNumber(INI_TEXTURE_QUALITY, DEFAULT_TEXTURE_QUALITY);
     const prevAnisotropy = this.normalizeAnisotropy(
@@ -263,7 +263,7 @@ export class MenuGraphicsAdvanced extends GameMenu {
     GameState.iniConfig.setProperty(INI_ANISOTROPY, this.draftAnisotropy);
     GameState.iniConfig.setProperty(INI_VSYNC, this.draftVSync);
     GameState.iniConfig.setProperty(INI_SOFT_SHADOWS, this.draftSoftShadows);
-    // Retail SetNewOptions forces Shadows on when Soft Shadows is enabled.
+    // SetNewOptions forces Shadows on when Soft Shadows is enabled.
     if(this.draftSoftShadows){
       GameState.iniConfig.setProperty(INI_SHADOWS, 1);
     }
@@ -282,7 +282,7 @@ export class MenuGraphicsAdvanced extends GameMenu {
     GameState.odysseyShadowManager?.syncQualityFromLightManager?.();
     void GameState.iniConfig.save();
 
-    // Retail HandleInputEvent → SetUpOptions after pop.
+    // HandleInputEvent → SetUpOptions after pop.
     const parent = this.manager?.MenuGraphics;
     if(parent?.CB_SHADOWS){
       parent.CB_SHADOWS.setValue(GameState.iniConfig.getProperty(INI_SHADOWS) == 1);
@@ -386,7 +386,7 @@ export class MenuGraphicsAdvanced extends GameMenu {
     }
   }
 
-  /** Retail OnAntiAliasLeft / OnAntiAliasRight — step through supported modes. */
+  /** OnAntiAliasLeft / OnAntiAliasRight — step through supported modes. */
   private stepAntiAlias(direction: -1 | 1){
     const available = this.getAvailableAntiAliasModes();
     if(!available.length){
@@ -405,8 +405,8 @@ export class MenuGraphicsAdvanced extends GameMenu {
   }
 
   private getAvailableAntiAliasModes(): number[] {
-    // WebGL contexts are created once; expose the full retail ladder for INI
-    // fidelity (retail gates each mode via AurQueryAntiAliasingMode).
+    // WebGL contexts are created once; expose the full ladder for INI
+    // fidelity (gates each mode via AurQueryAntiAliasingMode).
     return AA_MODES.slice();
   }
 
@@ -432,7 +432,7 @@ export class MenuGraphicsAdvanced extends GameMenu {
 
   private normalizeAnisotropy(value: number): number {
     let level = Math.max(1, Math.floor(Number(value) || DEFAULT_ANISOTROPY));
-    // Snap down to the nearest power of two (retail anisotropy ladder).
+    // Snap down to the nearest power of two (anisotropy ladder).
     let pow = 1;
     while(pow * 2 <= level && pow < 16){
       pow *= 2;

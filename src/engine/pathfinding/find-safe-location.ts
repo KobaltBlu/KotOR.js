@@ -12,31 +12,31 @@ import { clearLineOfSight } from "@/engine/pathfinding/clear-line-of-sight";
 import { countVisibleToPlayers } from "@/engine/pathfinding/count-visible-to-players";
 
 /**
- * Retail ComputeSafeLocation
- * ComputeNonVisibleLocation (Pass AF).
+ * find safe location
+ * find non-visible location (Pass AF).
  *
  * Safe: expanding ring of TestSafeLocationPoint (center first).
  * NonVisible: prefers candidates with lower CountVisibleToPlayers; on total
  * failure writes (−1,−1,−1) and returns false (spawn aborts / retries).
  *
- * @file compute-safe-location.ts
+ * @file find-safe-location.ts
  */
 
 const _probe = new THREE.Vector3();
 
-export type ComputeSafeLocationOptions = {
-  /** Search radius (retail summon/encounter use 20). */
+export type FindSafeLocationOptions = {
+  /** Search radius (summon/encounter use 20). */
   radius?: number;
   /** Step / personal_space; defaults to owner appearance.perspace. */
   personalSpace?: number;
-  /** When true, require TestDirectLine clear to center (retail arg4). */
+  /** When true, require TestDirectLine clear to center (arg4). */
   requireLineOfSight?: boolean;
   /** Creature for perspace / creature-blocking tests. */
   owner?: ModuleObject;
 };
 
 /**
- * Snap Z to walkmesh (retail ComputeHeight approx via getWalkHeightAt).
+ * Snap Z to walkmesh (walk height approx via getWalkHeightAt).
  */
 export function computeHeightAtPoint(
   area: ModuleArea | undefined,
@@ -57,7 +57,7 @@ function tryCandidate(
   center: THREE.Vector3,
   x: number,
   y: number,
-  options: ComputeSafeLocationOptions,
+  options: FindSafeLocationOptions,
   out: THREE.Vector3
 ): boolean {
   _probe.set(x, y, center.z);
@@ -73,7 +73,7 @@ function tryCandidate(
       owner: options.owner,
       checkCreatures: false,
     });
-    // Retail accepts Ok (1) or Creature (−3)
+    // accepts Ok (1) or Creature (−3)
     if(line.code !== TestDirectLineCode.Ok && line.code !== TestDirectLineCode.Creature){
       return false;
     }
@@ -88,7 +88,7 @@ function searchRing(
   center: THREE.Vector3,
   r: number,
   step: number,
-  options: ComputeSafeLocationOptions,
+  options: FindSafeLocationOptions,
   out: THREE.Vector3
 ): boolean {
   const minX = center.x - r;
@@ -111,11 +111,11 @@ function searchRing(
  * Find a safe spawn/stand point near `center`.
  * @returns true and writes `out` on success; false leaves `out` as center (+height).
  */
-export function computeSafeLocation(
+export function findSafeLocation(
   area: ModuleArea | undefined,
   center: THREE.Vector3,
   out: THREE.Vector3,
-  options: ComputeSafeLocationOptions = {}
+  options: FindSafeLocationOptions = {}
 ): boolean {
   if(!area || !center || !out) return false;
 
@@ -139,16 +139,16 @@ export function computeSafeLocation(
 }
 
 /**
- * Retail ComputeNonVisibleLocation (Pass AF).
+ * find non-visible location (Pass AF).
  * Prefers safe points with fewer player LOS hits via CountVisibleToPlayers
  * (30 m + eye Z); candidates within 30 of center need ClearLineOfSight from center.
  * On total failure sets out to (−1,−1,−1) and returns false.
  */
-export function computeNonVisibleLocation(
+export function findNonVisibleLocation(
   area: ModuleArea | undefined,
   center: THREE.Vector3,
   out: THREE.Vector3,
-  options: ComputeSafeLocationOptions = {}
+  options: FindSafeLocationOptions = {}
 ): boolean {
   if(!area || !center || !out) return false;
 
@@ -181,7 +181,7 @@ export function computeNonVisibleLocation(
     return visible === 0;
   };
 
-  // Retail: try center first (no center→self LOS gate)
+  // : try center first (no center→self LOS gate)
   if(consider(center.x, center.y, false) && bestScore === 0){
     out.copy(candidate);
     return true;

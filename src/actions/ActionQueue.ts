@@ -26,7 +26,7 @@ export class ActionQueue extends Array {
    * ActionQueue
    * initializes a new ActionQueue object
    *
-   * @param ...items - an array of actions to initialize the queue with
+   * @param...items - an array of actions to initialize the queue with
    * @returns void
    *
    */

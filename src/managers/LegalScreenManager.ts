@@ -8,7 +8,7 @@ import { AudioEngine } from "@/audio/AudioEngine";
 import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
 
 /**
- * LegalScreenManager — TSL retail legal screen.
+ * LegalScreenManager — TSL legal screen.
  *
  * After intro movies (leclogo, obsidianent), BeginIntro shows the "legal" texture GUI:
  * fade-in 250ms → hold 2000ms → fade-out 250ms (empty resref second Show call), then main menu.
@@ -63,7 +63,7 @@ export class LegalScreenManager {
   }
 
   /**
-   * Enter LEGAL mode after intro movies (retail post-PlayMovieQueue path).
+   * Enter LEGAL mode after intro movies (post-PlayMovieQueue path).
    */
   static Start(){
     this.timer = 0;

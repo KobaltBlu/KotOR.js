@@ -71,11 +71,11 @@ export class VISObject {
     /**
      * VIS Object File Format
      * [Parent Room] 
-     *  - room_name number_of_child_rooms
-     *  - regex: ^([^\s]+)[\s|\t](\d+)\n
+     * - room_name number_of_child_rooms
+     * - regex: ^([^\s]+)[\s|\t](\d+)\n
      * [Child Room] 
-     *  - child_room_name
-     *  - regex: ^\s{2}([^\s]+)\n
+     * - child_room_name
+     * - regex: ^\s{2}([^\s]+)\n
      */
 
     for( let i = 0; i < lineCount; i++ ) {

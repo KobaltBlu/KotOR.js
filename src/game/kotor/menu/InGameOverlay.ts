@@ -23,9 +23,9 @@ const TLK_TOOLTIP_FULL_HEALTH = 42498;
 const TLK_TOOLTIP_SOLOMODE = 48035;
 const TLK_TOOLTIP_STEALTH = 247;
 const TLK_TOOLTIP_PAUSE = 48019;
-/** Retail clear_all_button / CancleCombat tooltip */
+/** clear_all_button / CancleCombat tooltip */
 const TLK_TOOLTIP_CLEARALL = 48518;
-/** Retail clear_one_button / ClearOneAction tooltip */
+/** clear_one_button / ClearOneAction tooltip */
 const TLK_TOOLTIP_CLEARONE = 48456;
 
 const TLK_TOOLTIP_QUEST     = 48218;
@@ -50,7 +50,7 @@ const ARROW_DIR_LEFT = 0;
 const ARROW_DIR_DOWN = Math.PI / 2;
 const ARROW_DIR_RIGHT = Math.PI;
 const ARROW_DIR_UP = -Math.PI / 2;
-/** Retail PositionMenu / UpdateIndicator edge inset (0x20). */
+/** PositionMenu / UpdateIndicator edge inset (0x20). */
 const TARGET_MENU_EDGE = 0x20;
 
 /** Screen-space menu anchor from GetMenuPoint / object vtable 0x13c. */
@@ -76,7 +76,7 @@ type TargetMenuLayout = {
   healthGap: number;
   /** BTN_TARGET0.top - (LBL_NAME.top + LBL_NAME.height) */
   actionGap: number;
-  /** BTN_TARGET0.left - LBL_NAME.left (retail inset under nameplate) */
+  /** BTN_TARGET0.left - LBL_NAME.left (inset under nameplate) */
   actionOffsetLeft: number;
   healthHeight: number;
   actionButtonWidth: number;
@@ -231,7 +231,7 @@ export class InGameOverlay extends GameMenu {
     this.voidFill = false;
     this.enablePositionScaling = true;
     this.userCanClose = false;
-    // Retail HUD docks to 640×480 letterbox (not centered modal panels).
+    // HUD docks to 640×480 letterbox (not centered modal panels).
     this.panelCoordFlags =
       GUIPanelCoordFlags.UseExtentOffset |
       GUIPanelCoordFlags.DockDesignX |
@@ -243,9 +243,9 @@ export class InGameOverlay extends GameMenu {
     if(skipInit) return;
     return new Promise<void>(async (resolve, reject) => {
       this.tGuiPanel.hideFill();
-      //this.TB_STEALTH.hideBorder();
-      //this.TB_PAUSE.hideBorder();
-      //this.TB_SOLO.hideBorder();
+      //this.TB_STEALTH.hideBorder;
+      //this.TB_PAUSE.hideBorder;
+      //this.TB_SOLO.hideBorder;
       this.LBL_MENUBG.setDepthMode(2);
 
       this.LBL_LIGHTSHIFT?.hide();
@@ -258,7 +258,7 @@ export class InGameOverlay extends GameMenu {
       this.LBL_ITEMLOST?.hide();
 
       //Map INIT
-      //this.LBL_MAPBORDER.hideBorder();
+      //this.LBL_MAPBORDER.hideBorder;
       this.LBL_MAP?.hide();
       this.LBL_ARROW_MARGIN?.hide();
       this.LBL_ARROW?.hide();
@@ -298,9 +298,9 @@ export class InGameOverlay extends GameMenu {
 
       this.LBL_CMBTMSGBG?.hide();
       this.LBL_CMBTMODEMSG?.hide();
-      // Retail ShowActionQueue(0) — combat queue starts hidden
+      // ShowActionQueue(0) — combat queue starts hidden
       this.hideCombatUI();
-      //this.BTN_CLEARALL.hideBorder();
+      //this.BTN_CLEARALL.hideBorder;
 
 
       this.BTN_MSG.addEventListener('click', (e) => {
@@ -359,7 +359,7 @@ export class InGameOverlay extends GameMenu {
         GameState.TLKManager.TLKStrings[TLK_TOOLTIP_EQUIPMENT].Value
       );
 
-      // Retail OnPauseButtonPressed — SetPausedByCombat toggle reason 4, clear auto-pause
+      // OnPauseButtonPressed — SetPausedByCombat toggle reason 4, clear auto-pause
       this.TB_PAUSE.addEventListener('click', (e) => {
         e.stopPropagation();
         GameState.AutoPauseManager.ToggleManualPause();
@@ -419,7 +419,7 @@ export class InGameOverlay extends GameMenu {
         }
       });
 
-      // Retail OnClearAllButtonPressed → ClearAllActions (keymap CancleCombat / 0xf0)
+      // OnClearAllButtonPressed → ClearAllActions (keymap CancleCombat / 0xf0)
       this.BTN_CLEARALL.addEventListener('click', (e) => {
         e.stopPropagation();
         this.onClearAllButtonPressed();
@@ -427,7 +427,7 @@ export class InGameOverlay extends GameMenu {
         GameState.TLKManager.TLKStrings[TLK_TOOLTIP_CLEARALL]?.Value ?? ''
       );
 
-      // Retail OnClearOneButtonPressed → OnCombatYButton (keymap ClearOneAction / 0xf5)
+      // OnClearOneButtonPressed → OnCombatYButton (keymap ClearOneAction / 0xf5)
       const onClearOne = (e: { stopPropagation: () => void }) => {
         e.stopPropagation();
         this.onClearOneButtonPressed();
@@ -555,7 +555,7 @@ export class InGameOverlay extends GameMenu {
   }
 
   /**
-   * Retail Initialize — store width_ and vertical gaps
+   * Initialize — store width_ and vertical gaps
    * between name, health bar, and target action buttons from GUI extents.
    */
   captureTargetMenuLayout() {
@@ -593,7 +593,7 @@ export class InGameOverlay extends GameMenu {
   }
 
   /**
-   * Retail ClearAllActions
+   * ClearAllActions
    * (OnClearAllButtonPressed / CancleCombat keymap).
    * Client SetCombatMode(0) → restore combat camera, then ClearAllActions(1)
    * + RemoveAllActions (server ClearAllActions path). Does not CancelCombat
@@ -602,15 +602,15 @@ export class InGameOverlay extends GameMenu {
   onClearAllButtonPressed() {
     const oPC = GameState.getCurrentPlayer();
     if(!oPC) return;
-    // Retail ClearAllActions → SetCombatMode(0) then ClearAllActions (not CancelCombat).
+    // ClearAllActions → SetCombatMode(0) then ClearAllActions (not CancelCombat).
     setClientCombatMode(oPC, false);
     oPC.clearAllActions(true);
-    // Retail ClearAllActions also RemoveAllActions on the round.
+    // ClearAllActions also RemoveAllActions on the round.
     oPC.combatRound?.clearActions?.();
   }
 
   /**
-   * Retail OnCombatYButton (OnClearOneButtonPressed / ClearOneAction).
+   * OnCombatYButton (OnClearOneButtonPressed / ClearOneAction).
    * RemoveLastAction from the combat round; if the schedule was empty, ClearAllActions(1).
    */
   onClearOneButtonPressed() {
@@ -672,7 +672,7 @@ export class InGameOverlay extends GameMenu {
         switch (nth) {
         case 0:
           if (GameState.PartyManager.party[nth].canLevelUp()) {
-            // Retail SetPulsingAlpha(1, 0, 1) — fill only
+            // SetPulsingAlpha(1, 0, 1) — fill only
             this.getControlByName('LBL_LEVELUP1')?.setPulsingAlpha(true, false, true);
             this.getControlByName('LBL_LEVELUP1')?.show();
           } else {
@@ -713,7 +713,7 @@ export class InGameOverlay extends GameMenu {
   _canShowTargetUI() {
     if (BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleCreature) && GameState.CursorManager.selectedObject.isDead())
       return false;
-    // Retail still shows edge arrow + nameplate when reticle is off-screen (UpdateIndicator status 2)
+    // still shows edge arrow + nameplate when reticle is off-screen (UpdateIndicator status 2)
     return (
       !this.manager.MenuContainer.bVisible &&
       !!GameState.CursorManager.selectedObject &&
@@ -771,7 +771,7 @@ export class InGameOverlay extends GameMenu {
   }
 
   /**
-   * Retail OnStealthButtonPressed → PartyMenuStealth (solo-mode query when party > 1).
+   * OnStealthButtonPressed → PartyMenuStealth (solo-mode query when party > 1).
    */
   onStealthToggle(){
     const pc = GameState.getCurrentPlayer();
@@ -829,7 +829,7 @@ export class InGameOverlay extends GameMenu {
   }
 
   /**
-   * Retail GetMenuPoint / object vtable.
+   * GetMenuPoint / object vtable.
    * Returns top-left screen pixels and visibility status (1 front, 2 behind).
    */
   getTargetMenuPoint(selectedObject: ModuleObject): TargetMenuPoint {
@@ -843,7 +843,7 @@ export class InGameOverlay extends GameMenu {
     if(BitWise.InstanceOfObject(selectedObject, ModuleObjectType.ModuleCreature)){
       this.#menuPointWorld.copy(selectedObject.position);
       const tag = (selectedObject.tag || '').toLowerCase();
-      // Retail: +2.0 for zaalbar/hk47, else +1.75
+      // : +2.0 for zaalbar/hk47, else +1.75
       this.#menuPointWorld.z += (tag === 'zaalbar' || tag === 'hk47') ? 2.0 : 1.75;
     }else{
       const node = selectedObject.getReticleNode?.();
@@ -875,7 +875,7 @@ export class InGameOverlay extends GameMenu {
   }
 
   /**
-   * Retail MainInterface ctor clamp rect:
+   * MainInterface ctor clamp rect:
    * left = arrow_margin.left
    * top = menubg.top + menubg.height
    * width = viewportWidth - 2 * arrow_margin.left
@@ -903,7 +903,7 @@ export class InGameOverlay extends GameMenu {
   }
 
   /**
-   * Retail PositionMenu.
+   * PositionMenu.
    * Positions the floating target menu viewport origin (top-left screen pixels).
    */
   positionTargetMenu(point: TargetMenuPoint, menuWidth: number, menuHeight: number): { x: number; y: number } {
@@ -982,7 +982,7 @@ export class InGameOverlay extends GameMenu {
   }
 
   /**
-   * Retail UpdateIndicator edge-arrow path when target is
+   * UpdateIndicator edge-arrow path when target is
    * outside LBL_ARROW_MARGIN (or behind camera). On-screen reticles stay in CursorManager.
    */
   updateArrow(selectedObject: ModuleObject, point?: TargetMenuPoint) {
@@ -1018,7 +1018,7 @@ export class InGameOverlay extends GameMenu {
       screenY >= marginTop + TARGET_MENU_EDGE &&
       screenY <= marginBottom - TARGET_MENU_EDGE;
 
-    // On-screen inside margin: retail draws the world reticle, not the edge arrow
+    // On-screen inside margin: draws the world reticle, not the edge arrow
     if(inside){
       this.namePlateArrow.visible = false;
       return;
@@ -1127,7 +1127,7 @@ export class InGameOverlay extends GameMenu {
 
     const layout = this.targetMenuLayout;
     const menuWidth = layout?.menuWidth || this.LBL_NAME.extent.width;
-    // Retail SetNameLabel: name height from ideal text height, then stack health/actions
+    // SetNameLabel: name height from ideal text height, then stack health/actions
     const nameHeight = Math.max(this.LBL_NAME.getTextSize()?.y || 0, this.LBL_NAME.extent.height);
     const healthGap = layout?.healthGap ?? 0;
     const actionGap = layout?.actionGap ?? 0;
@@ -1236,7 +1236,7 @@ export class InGameOverlay extends GameMenu {
     /**
      * Item Lost
      */
-    // Retail CSWGuiMainInterfaceStatus::Initialize — SetPulsingAlpha(1, 0, 1) fill-only
+    // — SetPulsingAlpha(1, 0, 1) fill-only
     if(GameState.UINotificationManager.ItemLostTimer > 0){
       this.LBL_ITEMLOST.show();
       this.LBL_ITEMLOST.setPulsingAlpha(true, false, true);
@@ -1332,7 +1332,7 @@ export class InGameOverlay extends GameMenu {
   }
 
   /**
-   * Retail GetMiniMapVisible / InitializeMap
+   * GetMiniMapVisible / InitializeMap
    * Feedback Mini Map option and minigame gate HUD map border + MapView.
    */
   updateMiniMapVisibility(){
@@ -1370,7 +1370,7 @@ export class InGameOverlay extends GameMenu {
     this.UpdateHUDNotificationIcons(delta);
     const timingBar = GameState.GuiTimingBarManager;
     if(timingBar?.isActive()){
-      // Retail only shows the bar for the client-controlled creature.
+      // only shows the bar for the client-controlled creature.
       const ownerId = timingBar.ownerId;
       if(ownerId < 0 || oPC?.id === ownerId){
         timingBar.update(delta, this);
@@ -1382,7 +1382,7 @@ export class InGameOverlay extends GameMenu {
       this.UpdateActionDescription();
     }
 
-    //update minimap — retail uses creature yaw, not camera
+    //update minimap — uses creature yaw, not camera
     if(this.miniMap?.visible){
       this.miniMap.setPosition(oPC.position.x, oPC.position.y);
       this.miniMap.setRotation(oPC.getFacing());
@@ -1418,7 +1418,7 @@ export class InGameOverlay extends GameMenu {
         this.getControlByName('LBL_DEBILATATED' + (id + 1))?.hide();
       }
     }
-    // Retail ShowActionQueue(GetCombatMode()) — client combat mode only
+    // ShowActionQueue(GetCombatMode) — client combat mode only
     // (not ExcitedDuration / SetCombatState timer / queue length).
     if (getClientCombatMode()) {
       this.showCombatUI();
@@ -1475,7 +1475,7 @@ export class InGameOverlay extends GameMenu {
     if (GameState.CursorManager.selectedObject) {
       if (typeof GameState.CursorManager.selectedObject.onClick === 'function') {
         const pc = GameState.getCurrentPlayer();
-        // Retail AddAttackActions(clear=0) while fighting — do not ClearAllActions.
+        // AddAttackActions(clear=0) while fighting — do not ClearAllActions.
         if (!pc.combatData?.combatState) {
           pc.clearAllActions(true);
         }

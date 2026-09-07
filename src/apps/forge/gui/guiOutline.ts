@@ -395,7 +395,7 @@ export function nextGuiControlId(gff: GFFObject): number {
   return max + 1;
 }
 
-/** Retail / KotOR.js sentinel: no d-pad navigation target in this direction. */
+/** / KotOR.js sentinel: no d-pad navigation target in this direction. */
 export const GUI_MOVETO_NONE = -1;
 
 export interface GuiMoveToTargetOption {

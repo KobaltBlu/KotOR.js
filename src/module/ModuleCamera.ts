@@ -19,9 +19,9 @@ import * as THREE from "three";
  * @example
  * ```typescript
  * // Create a new camera from GFF data
- * const cameraGFF = new GFFObject();
+ * const cameraGFF = new GFFObject;
  * const camera = new ModuleCamera(cameraGFF);
- * camera.load();
+ * camera.load;
  *
  * // Access camera properties
  * console.log(camera.cameraID); // Camera identifier
@@ -71,16 +71,16 @@ export class ModuleCamera {
   /**
    * Creates a new ModuleCamera instance.
    *
-   * @param {GFFObject} [gff=new GFFObject()] - The GFF template containing camera data
+   * @param {GFFObject} [gff=new GFFObject] - The GFF template containing camera data
    *
    * @example
    * ```typescript
    * // Create camera from existing GFF data
-   * const cameraGFF = new GFFObject();
+   * const cameraGFF = new GFFObject;
    * const camera = new ModuleCamera(cameraGFF);
    *
    * // Create camera with default empty GFF
-   * const camera = new ModuleCamera();
+   * const camera = new ModuleCamera;
    * ```
    */
   constructor ( gff = new GFFObject() ) {
@@ -96,7 +96,7 @@ export class ModuleCamera {
    * @example
    * ```typescript
    * const camera = new ModuleCamera(cameraGFF);
-   * camera.load(); // Loads data and builds Three.js camera
+   * camera.load; // Loads data and builds Three.js camera
    * ```
    */
   load(){
@@ -113,10 +113,10 @@ export class ModuleCamera {
    *
    * @example
    * ```typescript
-   * const camera = new ModuleCamera();
+   * const camera = new ModuleCamera;
    * camera.fov = 75;
    * camera.position.set(10, 5, 10);
-   * camera.buildCamera(); // Creates the Three.js camera
+   * camera.buildCamera; // Creates the Three.js camera
    * ```
    */
   buildCamera(){
@@ -124,13 +124,13 @@ export class ModuleCamera {
       this.perspectiveCamera.removeFromParent();
       this.perspectiveCamera = undefined;
     }
-    // Retail LoadPlaceableCameras / SetShotFromScript
+    // LoadPlaceableCameras / SetShotFromScript
     // / UpdateShotCamera (angle 6) / Control:
     // position.z += Height; FOV default 55;
     // orientation = YawPitchRoll(Yaw(q), Pitch(q)+Pitch, Roll(q)).
     // GFF Orientation is WXYZ (ReadFieldQuaternion).
     // Aurora Camera and Three.js both look along local −Z.
-    // No near-plane pad — retail SetShot uses the rebuilt pose as-is.
+    // No near-plane pad — SetShot uses the rebuilt pose as-is.
     const fov = (typeof this.fov === 'number' && this.fov > 0) ? this.fov : 55;
     this.perspectiveCamera = new THREE.PerspectiveCamera(
       fov,
@@ -166,7 +166,7 @@ export class ModuleCamera {
    * @example
    * ```typescript
    * const camera = new ModuleCamera(cameraGFF);
-   * camera.initProperties(); // Loads all properties from GFF data
+   * camera.initProperties; // Loads all properties from GFF data
    * console.log(camera.cameraID); // Now populated from GFF
    * ```
    */
@@ -209,12 +209,12 @@ export class ModuleCamera {
    *
    * @example
    * ```typescript
-   * const camera = new ModuleCamera();
+   * const camera = new ModuleCamera;
    * camera.cameraID = 1;
    * camera.fov = 75;
    * camera.position.set(10, 5, 10);
    *
-   * const gff = camera.save();
+   * const gff = camera.save;
    * console.log(gff.RootNode.type); // 14 (camera type)
    * ```
    */
@@ -223,7 +223,7 @@ export class ModuleCamera {
     gff.RootNode.type = 14;
 
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'CameraID') ).setValue(this.cameraID);
-    // Retail SavePlaceableCameras — FieldOfView / Height / Pitch are FLOAT
+    // SavePlaceableCameras — FieldOfView / Height / Pitch are FLOAT
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'FieldOfView') ).setValue(this.fov);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Height') ).setValue(this.height);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'MicRange') ).setValue(this.micRange);

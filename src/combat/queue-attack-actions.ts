@@ -12,21 +12,21 @@ import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
 
 /**
- * Retail CreateNewAttackActions .
+ * QueueAttackActions.
  *
- * EndCombatRound passes forceNearest only when the combat-round sticky
+ * end combat round passes forceNearest only when the combat-round sticky
  * (NewAttackTarget / field 0xb20) died this end-round. Otherwise:
- *  - non-empty schedule → keep queued actions (do not retarget)
- *  - empty schedule + valid sticky → re-queue the same sticky target
- *  - empty schedule + invalid sticky → GetNearestEnemy (MaxCleaveRange)
+ * - non-empty schedule → keep queued actions (do not retarget)
+ * - empty schedule + valid sticky → re-queue the same sticky target
+ * - empty schedule + invalid sticky → GetNearestEnemy (MaxCleaveRange)
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * @file create-new-attack-actions.ts
+ * @file queue-attack-actions.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-export type CreateNewAttackActionsOptions = {
+export type QueueAttackActionsOptions = {
   /** Sticky target died during end-round cleanup (force nearest-enemy retarget). */
   forceNearest?: boolean;
 };
@@ -42,7 +42,7 @@ function isDeadOrMissing(target: ModuleObject | undefined): boolean {
 }
 
 /**
- * Sticky validation for the non-spell CreateNewAttackActions path
+ * Sticky validation for the non-spell QueueAttackActions path
  * (alive + hostile). Spell-round MaxCleaveRange gate is unused here.
  */
 export function isValidCreateNewAttackSticky(
@@ -87,7 +87,7 @@ function applyNearestTarget(creature: ModuleCreature, next: ModuleObject): void 
     round.newAttackTarget = next;
     round.setAttackTarget(next);
   }
-  // Retail CreateNewAttackActions → SetLastTarget (client UI focus)
+  // QueueAttackActions → SetLastTarget (client UI focus)
   if(
     creature === GameState.getCurrentPlayer?.() &&
     GameState.ModuleObjectManager?.showObject
@@ -96,9 +96,9 @@ function applyNearestTarget(creature: ModuleCreature, next: ModuleObject): void 
   }
 }
 
-export function createNewAttackActions(
+export function queueAttackActions(
   creature: ModuleCreature,
-  options?: CreateNewAttackActionsOptions
+  options?: QueueAttackActionsOptions
 ): boolean {
   if(!creature || creature.isDead()){
     return false;
@@ -114,7 +114,7 @@ export function createNewAttackActions(
   const sticky = round.newAttackTarget;
   const stickyValid = isValidCreateNewAttackSticky(creature, sticky);
 
-  // Retail: (sticky INVALID || schedule non-empty) → only force nearest when
+  // : (sticky INVALID || schedule non-empty) → only force nearest when
   // sticky INVALID && schedule empty. Valid sticky + empty → requeue sticky.
   // Non-empty schedule + !forceNearest → keep queue unchanged.
   let useNearest = forceNearest;
@@ -173,7 +173,7 @@ export function createNewAttackActions(
 
   creature.attackCreature(next);
 
-  // Retail AddAttackAction / CreateNewAttackActions: clear lastAttacker when
+  // AddAttackAction / QueueAttackActions: clear lastAttacker when
   // it equals the (re)queued target so hits cannot keep pulling focus.
   if(creature.combatData.lastAttacker === next){
     creature.combatData.lastAttacker = undefined;

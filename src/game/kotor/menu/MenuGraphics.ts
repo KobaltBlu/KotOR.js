@@ -3,7 +3,7 @@ import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton, GUISlider, GUICheckBox } from "@/gui";
 
 /**
- * retail CSWGuiOptionsGraphics description TLKs (ctor custom_value / OnEnterSlot).
+ * graphics options description TLKs (ctor custom_value / OnEnterSlot).
  */
 const TLK_DESC_GAMMA = 0xa546;
 const TLK_DESC_RESOLUTION = 0xbb5f;

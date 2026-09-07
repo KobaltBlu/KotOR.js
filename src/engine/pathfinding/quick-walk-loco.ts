@@ -1,18 +1,18 @@
 /**
- * Retail CSWSCreature field438_0xa8c — WalkUpdateLocation_QuickWalk loco mode.
+ * Quick-walk locomotion mode for per-frame movers.
  *
- * QuickWalk @ 0051d9c0 routes on this field before ordinary path walk:
- *   3 → FollowLeader SM
- *   4..6 → ForcePushed
- *   1 → paused / end-of-path (early return)
- *  -1 → repath / reset path end
+ * Routes on this field before ordinary path walk:
+ * 3 → FollowLeader SM
+ * 4..6 → ForcePushed
+ * 1 → paused / end-of-path (early return)
+ * -1 → repath / reset path end
  *
  * @file quick-walk-loco.ts
  */
 
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
-/** Retail WalkUpdateLocation_QuickWalk loco modes (field438_0xa8c). */
+/** quick-walk locomotion loco modes (internal field). */
 export enum QuickWalkLocoState {
   /** Live chase / path end invalid — replot next frame. */
   Repath = -1,
@@ -20,11 +20,11 @@ export enum QuickWalkLocoState {
   PathWalk = 0,
   /** Paused / ResetAtEndOfPath — QuickWalk early-outs. */
   Paused = 1,
-  /** Retail gate preserved (path-complete checks exclude this). */
+  /** gate preserved (path-complete checks exclude this). */
   PathHold = 2,
   /** Party FollowLeader SM. */
   FollowLeader = 3,
-  /** Force Push slide (OnApplyForcePush). */
+  /** Force Push slide (effect apply). */
   ForcePushed = 4,
   /** Force Push alternate mode. */
   ForcePushedAlt = 5,
@@ -32,7 +32,7 @@ export enum QuickWalkLocoState {
   ForcePushedEnd = 6,
 }
 
-/** Retail OnApplyForcePush sets loco mode 4. */
+/** effect apply sets loco mode 4. */
 export const FORCE_PUSH_LOCO_STATE = QuickWalkLocoState.ForcePushed;
 
 export function getQuickWalkLocoState(creature: ModuleCreature | undefined): number {

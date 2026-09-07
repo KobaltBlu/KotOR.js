@@ -1,5 +1,5 @@
 /**
- * PlotPathAroundCreature — FindEntryAndExit miss must not splice (retail return 0).
+ * PlotPathAroundCreature — FindEntryAndExit miss must not splice (return 0).
  * @jest-environment node
  */
 import { describe, expect, it, jest } from "@jest/globals";
@@ -24,7 +24,7 @@ jest.mock("@/engine/pathfinding/test-direct-line", () => ({
   testDirectLine: () => ({ ok: true }),
 }));
 
-jest.mock("@/engine/pathfinding/compute-safe-location", () => ({
+jest.mock("@/engine/pathfinding/find-safe-location", () => ({
   computeHeightAtPoint: (_area: unknown, p: THREE.Vector3) => p.z,
 }));
 
@@ -49,7 +49,7 @@ function makeCreature(
 }
 
 describe("plotPathAroundCreature", () => {
-  it("does not splice when FindEntryAndExit misses (retail return 0)", () => {
+  it("does not splice when FindEntryAndExit misses (engine return 0)", () => {
     // Path and blocker are far apart — no segment crosses the hex
     const creature = makeCreature(
       new THREE.Vector3(0, 0, 0),

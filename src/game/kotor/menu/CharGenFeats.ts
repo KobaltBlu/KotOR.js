@@ -12,7 +12,7 @@ import {
   isUnsetFeatPrereq,
 } from "@/gui/protoitem/protoItemHelpers";
 
-/** Retail colorBlue for enabled Select button text. */
+/** colorBlue for enabled Select button text. */
 const COLOR_SELECT_ENABLED = { r: 0, g: 0.658824, b: 0.980392 };
 
 /**
@@ -99,7 +99,7 @@ export class CharGenFeats extends GameMenu {
       this.creature = GameState.CharGenManager.selectedCreature;
     }
     this.chosenFeats = [];
-    // Retail InitiateFeats
+    // InitiateFeats
     const grantedIds = this.collectAndAddGrantedFeats();
     if(this.levelUpMode && GameState.LevelUpManager?.draft){
       this.selectionsRemaining = GameState.LevelUpManager.draft.featPicksRemaining | 0;
@@ -113,7 +113,7 @@ export class CharGenFeats extends GameMenu {
     this.updateSelectionsLabel();
 
     const finishIfNoPicks = () => {
-      // Retail: if no picks remain, auto OnAcceptButton
+      // : if no picks remain, auto OnAcceptButton
       if(this.selectionsRemaining <= 0 && !this.levelUpMode){
         this.manager.CharGenCustomPanel?.featCreationCompleted?.();
         this.close();
@@ -128,7 +128,7 @@ export class CharGenFeats extends GameMenu {
       }
     };
 
-    // Retail OnPanelAdded:
+    // OnPanelAdded:
     // if granted flag: ShowTutorialWindow(0x12); if shown, SetCallback(ShowGranted);
     // else AddPanel(skill_info_box) immediately.
     if(grantedIds.length && !this.levelUpMode){
@@ -150,7 +150,7 @@ export class CharGenFeats extends GameMenu {
     }
   }
 
-  /** Retail AddGrantedFeats + return newly granted feat ids for ShowGranted. */
+  /** AddGrantedFeats + return newly granted feat ids for ShowGranted. */
   collectAndAddGrantedFeats(): number[] {
     const granted: number[] = [];
     if(!this.creature) return granted;
@@ -171,7 +171,7 @@ export class CharGenFeats extends GameMenu {
     return granted;
   }
 
-  /** Retail ShowGranted — TLK 0xa512 (42258). */
+  /** ShowGranted — TLK 0xa512 (42258). */
   async showGrantedFeats(featIds: number[]): Promise<void> {
     await GameState.MenuManager.EnsureSkillInfoMenu?.();
     const skillInfo = GameState.MenuManager.MenuSkillInfo;
@@ -180,7 +180,7 @@ export class CharGenFeats extends GameMenu {
       GameState.TLKManager.GetStringById?.(42258)?.Value
       ?? GameState.TLKManager.TLKStrings?.[42258]?.Value
       ?? 'You have been granted the following feats:';
-    // Retail SetSkillList(feats, 1) — skill-entry feat branch.
+    // SetSkillList(feats, 1) — skill-entry feat branch.
     const feats = featIds
       .map((id) => GameState.SWRuleSet.feats[id])
       .filter((f): f is NonNullable<typeof f> => !!f);
@@ -216,8 +216,8 @@ export class CharGenFeats extends GameMenu {
   }
 
   /**
-   * Retail DetermineFeat / BuildButtons:
-   * chosen-this-session  → 4 / button Remove;
+   * DetermineFeat / BuildButtons:
+   * chosen-this-session → 4 / button Remove;
    * owned → 1; available (CanChooseFeat) → 0; else locked → 3.
    */
   getFeatSlotStatus(feat: any): SkillFlowStatus {
@@ -230,7 +230,7 @@ export class CharGenFeats extends GameMenu {
   }
 
   /**
-   * Retail OnEnterFeat — enable Select for Available (Add Feat) and Chosen (Remove Feat).
+   * OnEnterFeat — enable Select for Available (Add Feat) and Chosen (Remove Feat).
    * TLK 0x9637 "Add" / 0x9638 "Remove" + 0xa5f7 "Feat".
    */
   updateSelectButtonState(){
@@ -278,7 +278,7 @@ export class CharGenFeats extends GameMenu {
   }
 
   /**
-   * Retail OnFeatPicked — Add (status 0) or Remove (status 1) chosen feat.
+   * OnFeatPicked — Add (status 0) or Remove (status 1) chosen feat.
    */
   onSelectButton() {
     if(!this.creature || !this.selectedFeat) return;
@@ -292,13 +292,13 @@ export class CharGenFeats extends GameMenu {
     }
   }
 
-  /** @deprecated use onSelectButton() */
+  /** @deprecated use onSelectButton */
   pickSelectedFeat() {
     this.onSelectButton();
   }
 
   /**
-   * Retail AddChosenFeat — move feat into session picks, spend a selection.
+   * AddChosenFeat — move feat into session picks, spend a selection.
    */
   addChosenFeat(featId: number) {
     if(!this.creature || this.selectionsRemaining <= 0) return;
@@ -319,7 +319,7 @@ export class CharGenFeats extends GameMenu {
   }
 
   /**
-   * Retail RemoveChosenFeat — unpick session feat and cascade dependents.
+   * RemoveChosenFeat — unpick session feat and cascade dependents.
    */
   removeChosenFeat(featId: number) {
     if(!this.creature) return;
@@ -362,14 +362,14 @@ export class CharGenFeats extends GameMenu {
     if(feat) this.selectFeat(feat);
   }
 
-  /** Owned on creature or picked this session (retail FeatAcquired +). */
+  /** Owned on creature or picked this session (FeatAcquired +). */
   private hasFeatOrChosen(featId: number): boolean {
     if(this.chosenFeats.indexOf(featId) >= 0) return true;
     return !!this.creature?.getHasFeat(featId);
   }
 
   /**
-   * Retail HasFeatPrereq + class list gate before adding a pick.
+   * HasFeatPrereq + class list gate before adding a pick.
    * Tier-3 feats stay locked until tier-2 (prereq) is owned or chosen this session.
    */
   canChooseFeat(feat: any): boolean {
@@ -432,7 +432,7 @@ export class CharGenFeats extends GameMenu {
     this.STD_SELECTIONS_REMAINING_LBL?.setText(String(this.selectionsRemaining));
   }
 
-  /** @deprecated use collectAndAddGrantedFeats() */
+  /** @deprecated use collectAndAddGrantedFeats */
   addGrantedFeats() {
     this.collectAndAddGrantedFeats();
   }
@@ -464,7 +464,7 @@ export class CharGenFeats extends GameMenu {
     const groups = [];
     for (let i = 0; i < list.length; i++) {
       const feat = list[i];
-      // Retail CreateFeatChart: only root feats (no prereq) start a group.
+      // CreateFeatChart: only root feats (no prereq) start a group.
       if (!isUnsetPrereq(feat.prereqFeat1) || !isUnsetPrereq(feat.prereqFeat2)) continue;
 
       const group = [];

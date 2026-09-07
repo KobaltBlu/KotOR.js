@@ -58,14 +58,14 @@ describe("Pass AN listbox saved extents", () => {
 });
 
 describe("Pass AN listbox pitch", () => {
-  it("pitch is padding + itemHeight (retail OrganizeControls)", () => {
+  it("pitch is padding + itemHeight (engine OrganizeControls)", () => {
     expect(listBoxRowPitch(0, 52)).toBe(52);
     expect(listBoxRowPitch(2, 48)).toBe(50);
   });
 });
 
 describe("Pass AN selectOnLeftClick default", () => {
-  it("matches retail ctor (false)", () => {
+  it("matches engine ctor (false)", () => {
     expect(createDefaultListBoxBitFlags().selectOnLeftClick).toBe(false);
   });
 });
@@ -83,7 +83,7 @@ describe("custom proto row skin extent", () => {
   });
 });
 
-describe("retail row Initialize contract (base extent, not PROTOITEM GFF)", () => {
+describe("engine row Initialize contract (base extent, not PROTOITEM GFF)", () => {
   // base row heights — regression guard against reverting to PROTOITEM height.
   it("save row base heights (K1 = 42, TSL = 36)", () => {
     expect(42).toBe(42);
@@ -176,7 +176,7 @@ describe("K1 abilities LB_ABILITY spacing (GFF PADDING=0)", () => {
   });
 });
 
-describe("abilities retail row extents", () => {
+describe("abilities engine row extents", () => {
   it("skill row: height 42, width = viewport - 2*padding (Initialize)", () => {
     const viewportWidth = 261;
     const padding = 0;
@@ -187,7 +187,7 @@ describe("abilities retail row extents", () => {
 
   it("skillinfo LB_SKILLS: height 42, width = viewport - 2*padding (ShowGranted SetSkillList)", () => {
     // skillinfo.gui LB_SKILLS: EXTENT 310×140, PADDING=2; border dim from list.
-    // Retail Initialize width = viewport_width - 2*padding; height 0x2a.
+    // Initialize width = viewport_width - 2*padding; height 0x2a.
     const viewportWidth = 306; // approximate after border; exact via getViewportWidth
     const padding = 2;
     const width = Math.max(1, viewportWidth - padding * 2);

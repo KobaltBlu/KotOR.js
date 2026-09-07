@@ -11,7 +11,7 @@ import { BitWise } from "@/utility/BitWise";
 import { Utility } from "@/utility/Utility";
 
 /**
- * Retail use-range helpers (GetUseRange / GetIsInUseRange).
+ * use-range helpers (GetUseRange / GetIsInUseRange).
  *
  * Creature targets: cre_personal_space(self) + cre_personal_space(target) + 0.3
  * Door / placeable: personal_space + 0.75 (+5 for corpse placeables) at nearest action point
@@ -82,7 +82,7 @@ export function getUseRange(
 }
 
 /**
- * Retail GetIsInUseRange:
+ * GetIsInUseRange:
  * GetUseRange → ClearLineOfSight(eye→usePoint) → dist² ≤ (useRange + extra + 0.1)².
  * Doors/placeables use the nearest action point, not object origin.
  */
@@ -109,13 +109,13 @@ export function isInUseRange(
     return false;
   }
 
-  // Already on / at the use point — no meaningful LOS segment (retail still calls
+  // Already on / at the use point — no meaningful LOS segment (still calls
   // ClearLineOfSight, but a zero-length ray is undefined in three.js).
   if(dist < 0.05){
     return true;
   }
 
-  // Retail ClearLineOfSight to use point (local_30), excluding source + target ids.
+  // ClearLineOfSight to use point (local_30), excluding source + target ids.
   // Skip room walkmesh face tests — those false-block door/placeable use.
   return owner.hasLineOfSight(target, Math.max(allow + 2.0, dist + 2.0), {
     ignorePerceptionRange: true,
@@ -155,7 +155,7 @@ export function queueMoveIntoUseRange(
   move.setParameter(3, ActionParameterType.DWORD, target.area?.id ?? owner.area?.id ?? GameState.module?.area?.id ?? 0);
   move.setParameter(4, ActionParameterType.DWORD, target.id);
   move.setParameter(5, ActionParameterType.INT, options.run === false ? 0 : 1);
-  // Retail Move arrive = useRange + extra (GetIsInUseRange adds another +0.1 slack)
+  // Move arrive = useRange + extra (GetIsInUseRange adds another +0.1 slack)
   move.setParameter(6, ActionParameterType.FLOAT, use.range + (options.extraRange ?? 0));
   move.setParameter(7, ActionParameterType.INT, 0);
   move.setParameter(8, ActionParameterType.FLOAT, options.timeout ?? 30.0);

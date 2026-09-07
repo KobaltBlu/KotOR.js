@@ -141,7 +141,7 @@ export class CurrentGame {
   }
 
   /**
-   * Retail StallEventSaveGame packs GAMEINPROGRESS with Mod_IsSaveGame=1 on every module.
+   * StallEventSaveGame packs GAMEINPROGRESS with Mod_IsSaveGame=1 on every module.
    * Mid-transition module.sav files may still have 0 — patch before packing SAVEGAME.sav.
    */
   static async markModulesAsSaveGame(){
@@ -181,7 +181,7 @@ export class CurrentGame {
   static async ExportToSaveFolder( folder: string ){
     await CurrentGame.markModulesAsSaveGame();
     let sav = new ERFObject();
-    // Retail CERFFile create path uses "MOD V1.0"
+    // CERFFile create path uses "MOD V1.0"
     sav.header.fileType = 'MOD ';
     sav.header.fileVersion = 'V1.0';
     try{
@@ -198,7 +198,7 @@ export class CurrentGame {
             console.warn('CurrentGame.ExportToSaveFolder: skipping empty file', file_path);
             continue;
           }
-          // Retail inventory resource is lowercase inventory.res
+          // inventory resource is lowercase inventory.res
           const resName = file_info.name.toLowerCase() === 'inventory' ? 'inventory' : file_info.name.toLowerCase();
           sav.addResource(resName, ResourceTypes[ext], data);
         }catch(e){

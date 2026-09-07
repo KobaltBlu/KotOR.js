@@ -5,10 +5,10 @@ export const shadertoy_perlin = `
 * The MIT License
 * Copyright © 2013 Nikita Miropolskiy
 * 
-* ( license has been changed from CCA-NC-SA 3.0 to MIT
+* (license has been changed from CCA-NC-SA 3.0 to MIT
 *
-*   but thanks for attributing your source code when deriving from this sample 
-*   with a following link: https://www.shadertoy.com/view/XsX3zB )
+* but thanks for attributing your source code when deriving from this sample 
+* with a following link: https://www.shadertoy.com/view/XsX3zB)
 *
 * ~
 * ~ if you're looking for procedural noise implementation examples you might 
@@ -17,16 +17,16 @@ export const shadertoy_perlin = `
 * ~ Noise Lab shader by candycat: https://www.shadertoy.com/view/4sc3z2
 * ~
 * ~ Noise shaders by iq:
-* ~     Value    Noise 2D, Derivatives: https://www.shadertoy.com/view/4dXBRH
-* ~     Gradient Noise 2D, Derivatives: https://www.shadertoy.com/view/XdXBRH
-* ~     Value    Noise 3D, Derivatives: https://www.shadertoy.com/view/XsXfRH
-* ~     Gradient Noise 3D, Derivatives: https://www.shadertoy.com/view/4dffRH
-* ~     Value    Noise 2D             : https://www.shadertoy.com/view/lsf3WH
-* ~     Value    Noise 3D             : https://www.shadertoy.com/view/4sfGzS
-* ~     Gradient Noise 2D             : https://www.shadertoy.com/view/XdXGW8
-* ~     Gradient Noise 3D             : https://www.shadertoy.com/view/Xsl3Dl
-* ~     Simplex  Noise 2D             : https://www.shadertoy.com/view/Msf3WH
-* ~     Voronoise: https://www.shadertoy.com/view/Xd23Dh
+* ~ Value Noise 2D, Derivatives: https://www.shadertoy.com/view/4dXBRH
+* ~ Gradient Noise 2D, Derivatives: https://www.shadertoy.com/view/XdXBRH
+* ~ Value Noise 3D, Derivatives: https://www.shadertoy.com/view/XsXfRH
+* ~ Gradient Noise 3D, Derivatives: https://www.shadertoy.com/view/4dffRH
+* ~ Value Noise 2D : https://www.shadertoy.com/view/lsf3WH
+* ~ Value Noise 3D : https://www.shadertoy.com/view/4sfGzS
+* ~ Gradient Noise 2D : https://www.shadertoy.com/view/XdXGW8
+* ~ Gradient Noise 3D : https://www.shadertoy.com/view/Xsl3Dl
+* ~ Simplex Noise 2D : https://www.shadertoy.com/view/Msf3WH
+* ~ Voronoise: https://www.shadertoy.com/view/Xd23Dh
 * ~ 
 *
 */

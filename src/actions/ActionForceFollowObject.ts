@@ -13,7 +13,7 @@ import * as THREE from "three";
 
 const _followGoal = new THREE.Vector3();
 
-/** Retail Wait duration (0.25s). */
+/** Wait duration (0.25s). */
 const FORCE_FOLLOW_WAIT = 0.25;
 /** Party-member wait (0.1s). */
 const FORCE_FOLLOW_WAIT_PARTY = 0.1;
@@ -21,7 +21,7 @@ const FORCE_FOLLOW_WAIT_PARTY = 0.1;
 /**
  * ActionForceFollowObject class.
  *
- * Retail force-follow:
+ * force-follow:
  * when outside range: front-load MoveTo + Wait + CheckForceFollow;
  * when in range: hold (IN_PROGRESS). Not a continuous WalkUpdate SM.
  *
@@ -54,7 +54,7 @@ export class ActionForceFollowObject extends Action {
     }
 
     const followTarget = this.target as ModuleCreature;
-    // NWScript fFollowDistance; retail re-queue also uses GetFollowRange
+    // NWScript fFollowDistance; re-queue also uses GetFollowRange
     const scriptDist = fDistance > 0 ? fDistance : 0;
     const partyRange = partyFollowPath.getFollowRange?.() ?? 5.0;
     const followDistance = scriptDist > 0 ? scriptDist : partyRange;
@@ -62,7 +62,7 @@ export class ActionForceFollowObject extends Action {
     this.computeFollowGoal(owner, followTarget, followDistance, _followGoal);
     const goal = _followGoal;
     const distGoal = Utility.Distance2D(owner.position, goal);
-    // Retail: GetFollowRange² vs |goal − follower|² (hold when inside)
+    // : GetFollowRange² vs |goal − follower|² (hold when inside)
     const holdRange = scriptDist > 0 ? followDistance : partyRange;
 
     if(distGoal <= holdRange){
@@ -70,13 +70,13 @@ export class ActionForceFollowObject extends Action {
       return ActionStatus.IN_PROGRESS;
     }
 
-    // Outside range — retail AddMoveToFront + Wait + Check(0x37), then pop self
+    // Outside range — AddMoveToFront + Wait + Check(0x37), then pop self
     this.enqueueCatchUp(owner, followTarget, goal, holdRange);
     return ActionStatus.COMPLETE;
   }
 
   /**
-   * Retail order via successive AddActionToFront:
+   * order via successive AddActionToFront:
    * MoveTo → Wait → CheckForceFollow (re-enters ForceFollow).
    */
   private enqueueCatchUp(

@@ -89,7 +89,7 @@ export class MenuCharacter extends GameMenu {
   char: OdysseyModel3D;
   /** Invalidate overlapping async portrait loads (prevents duplicate meshes). */
   portraitGen: number = 0;
-  /** Yaw applied by BTN_3DCHAR rotate (retail RotateCharacter ±10°). */
+  /** Yaw applied by BTN_3DCHAR rotate (RotateCharacter ±10°). */
   portraitYaw: number = 0;
 
   constructor(){
@@ -128,7 +128,7 @@ export class MenuCharacter extends GameMenu {
       });
       this._button_x = this.BTN_LEVELUP;
 
-      // retail HandleInputEvent 0x29 → ScriptSelect.
+      // HandleInputEvent 0x29 → ScriptSelect.
       this.BTN_SCRIPTS?.addEventListener('click', (e) => {
         e.stopPropagation();
         const creature = GameState.PartyManager?.party?.[0];
@@ -156,7 +156,7 @@ export class MenuCharacter extends GameMenu {
         }
       });
 
-      // Retail RotateCharacterLeft/Right — ±10° yaw while held.
+      // RotateCharacterLeft/Right — ±10° yaw while held.
       // Approximate with click nudges until hold-axis input is wired.
       this.BTN_3DCHAR?.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -217,7 +217,7 @@ export class MenuCharacter extends GameMenu {
   }
 
   /**
-   * Retail AttachModel — camerahook + world Z = getCameraHeight().
+   * AttachModel — camerahook + world Z = getCameraHeight.
    */
   attachPortraitCamera(creature?: ModuleCreature) {
     if(!this._3dView || !this._3dViewModel?.camerahook) return;
@@ -229,7 +229,7 @@ export class MenuCharacter extends GameMenu {
     );
   }
 
-  /** Retail RotateCharacter — yaw degrees about upright axis. */
+  /** RotateCharacter — yaw degrees about upright axis. */
   rotatePortrait(yawDeg: number) {
     if(!this.char) return;
     this.portraitYaw += (yawDeg * Math.PI) / 180;
@@ -349,13 +349,13 @@ export class MenuCharacter extends GameMenu {
   }
 
   /**
-   * Retail SetStats 3D path — copy appearance onto a dedicated
+   * SetStats 3D path — copy appearance onto a dedicated
    * client creature, identity pose + Setup3DScene (never the live party model).
    */
   updateCharacterPortrait( creature: ModuleCreature ){
     if(!creature || !this._3dView) return;
 
-    // Retail SetCurValue(sld_align, 100 - goodEvil)
+    // SetCurValue(sld_align, 100 - goodEvil)
     const goodEvil = creature.getGoodEvil?.() ?? creature.goodEvil | 0;
     this.SLD_ALIGN?.setValue((100 - goodEvil) / 100);
 
@@ -390,7 +390,7 @@ export class MenuCharacter extends GameMenu {
     });
   }
 
-  /** Retail Setup3DScene light-room anim from alignment. */
+  /** Setup3DScene light-room anim from alignment. */
   playCharRecAlignmentAnim(goodEvil: number) {
     if(!this._3dViewModel) return;
     let anim = 'align10';
@@ -417,7 +417,7 @@ export class MenuCharacter extends GameMenu {
     this._3dViewModel.playAnimation(anim);
   }
 
-  /** Retail Setup3DScene creature idle: good / neutral / evil thresholds. */
+  /** Setup3DScene creature idle: good / neutral / evil thresholds. */
   getPortraitIdleAnim(goodEvil: number): string {
     if (goodEvil >= 60) return 'good';
     if (goodEvil >= 40) return 'neutral';

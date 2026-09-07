@@ -7,7 +7,7 @@ import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
 /**
- * EffectTimeStop — retail OnApplyTimestop / OnRemove.
+ * EffectTimeStop — effect apply / OnRemove.
  *
  * K1 has no NWScript EffectTimeStop (unused by stock scripts), but handlers
  * exist: pause bit + exclusion list so the host keeps updating while others freeze.
@@ -59,7 +59,7 @@ export class EffectTimeStop extends GameEffect {
     if(BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
       GameState.timeStopExclusions?.delete((this.object as ModuleCreature).id);
     }
-    // Retail TogglePauseState(1) + RemoveFromExclusionList
+    // TogglePauseState(1) + RemoveFromExclusionList
     if(GameState.timeStopPausedByEffect){
       GameState.State = EngineState.RUNNING;
       GameState.timeStopPausedByEffect = false;

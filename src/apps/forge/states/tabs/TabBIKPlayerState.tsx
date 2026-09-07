@@ -7,7 +7,7 @@ import * as KotOR from "@/apps/forge/KotOR";
 
 /**
  * Tab state for the BIK video player. Loads the opened EditorFile into a BIKObject
- * and plays from buffer via playFromBuffer(). The tab content view renders the
+ * and plays from buffer via playFromBuffer. The tab content view renders the
  * video to a canvas and provides play/stop controls.
  */
 export class TabBIKPlayerState extends TabState {
@@ -26,7 +26,7 @@ export class TabBIKPlayerState extends TabState {
   }
 
   /**
-   * Reads the current (or given) EditorFile and starts playback from its buffer via playFromBuffer().
+   * Reads the current (or given) EditorFile and starts playback from its buffer via playFromBuffer.
    */
   openFile(file?: EditorFile) {
     return new Promise<void>((resolve, reject) => {

@@ -36,7 +36,7 @@ enum AbilityFilter {
   FEATS = 3
 }
 
-/** TLK label strrefs — retail UpdateView / OnEnterPower / OnEnterSkill. */
+/** TLK label strrefs — UpdateView / OnEnterPower / OnEnterSkill. */
 const STRREF_SKILL_RANK = 0x62b;
 const STRREF_BONUS = 0x7d81;
 const STRREF_TOTAL = 0xa3b0;
@@ -67,7 +67,7 @@ export class MenuAbilities extends GameMenu {
   }
 
   /**
-   * Retail feat chain depth for BuildSortedFeatList:
+   * feat chain depth for BuildSortedFeatList:
    * 0 = root (no prereqFeat1), 1 = mid (prereqFeat2 unset), 2 = end.
    */
   static featChainDepth(feat: {
@@ -80,7 +80,7 @@ export class MenuAbilities extends GameMenu {
   }
 
   /**
-   * Retail BuildSortedFeatList — feats with name != 0, ordered by depth ascending.
+   * BuildSortedFeatList — feats with name != 0, ordered by depth ascending.
    */
   static buildSortedFeatIds(feats: readonly (TalentFeat | undefined | null)[]): number[] {
     const sorted: number[] = [];
@@ -107,7 +107,7 @@ export class MenuAbilities extends GameMenu {
   }
 
   /**
-   * Retail CreateFeatChart (in-game).
+   * CreateFeatChart (in-game).
    * Known roots only; mid/end only when HasFeat. Sparse [root, mid?, end?].
    */
   static createInGameFeatChart(
@@ -155,7 +155,7 @@ export class MenuAbilities extends GameMenu {
   }
 
   /**
-   * Retail Load subradial encode.
+   * Load subradial encode.
    * Returns the first radial key (FORCEFRIENDLY, then HOSTILE, then PASSIVE order in Load).
    * -1 when no force menu column is set.
    */
@@ -178,13 +178,13 @@ export class MenuAbilities extends GameMenu {
     return -1;
   }
 
-  /** Retail GetPriority */
+  /** GetPriority */
   static spellSubRadialPriority(key: number): number {
     if (key < 0) return -1;
     return key % 10;
   }
 
-  /** Retail GetSlot */
+  /** GetSlot */
   static spellSubRadialSlot(key: number): number {
     if (key < 0) return -1;
     return Math.floor((key % 1000) / 10);
@@ -215,7 +215,7 @@ export class MenuAbilities extends GameMenu {
   }
 
   /**
-   * Retail BuildSortedPowerList — usertype==1, name!=0;
+   * BuildSortedPowerList — usertype==1, name!=0;
    * sort by priority, then family, then slot.
    */
   static buildSortedPowerIds(spells: readonly (TalentSpell | undefined | null)[]): number[] {
@@ -227,7 +227,7 @@ export class MenuAbilities extends GameMenu {
       if (!this.spellNameRef(spell)) continue;
 
       const key = this.encodeSpellSubRadial(spell);
-      // Missing subradial sorts like retail unsigned 0xffffffff priority (before 0).
+      // Missing subradial sorts like unsigned 0xffffffff priority (before 0).
       const pri = key < 0 ? -1 : this.spellSubRadialPriority(key);
       const fam = key < 0 ? -1 : this.spellSubRadialFamily(key);
       const slot = key < 0 ? -1 : this.spellSubRadialSlot(key);
@@ -270,7 +270,7 @@ export class MenuAbilities extends GameMenu {
   }
 
   /**
-   * Retail HasSpell with arg3 != 0:
+   * HasSpell with arg3 != 0:
    * known and adjusted force cost ≤ current FP.
    */
   private static hasSpellAffordable(
@@ -290,7 +290,7 @@ export class MenuAbilities extends GameMenu {
   }
 
   /**
-   * Retail root test in CreatePowerChart: ones digit == 0, OR GetPriority < 0
+   * root test in CreatePowerChart: ones digit == 0, OR GetPriority < 0
    * (no subradial → 0xffffffff → signed priority < 0).
    */
   static isSpellChartRoot(key: number): boolean {
@@ -299,7 +299,7 @@ export class MenuAbilities extends GameMenu {
   }
 
   /**
-   * Retail CreatePowerChart with arg2=0 (in-game abilities).
+   * CreatePowerChart with arg2=0 (in-game abilities).
    * Roots: known + root priority. Children: same family/slot; HasSpell afford gate.
    * Sparse [root, mid?, end?].
    */
@@ -505,7 +505,7 @@ export class MenuAbilities extends GameMenu {
   }
 
   /**
-   * Retail CreateFeatChart (in-game SetCharacter).
+   * CreateFeatChart (in-game SetCharacter).
    */
   buildFeatList(creature: ModuleCreature): any[][] {
     const feats = GameState.SWRuleSet?.feats ?? SWRuleSet.feats ?? [];
@@ -513,7 +513,7 @@ export class MenuAbilities extends GameMenu {
   }
 
   /**
-   * Retail CreatePowerChart (CreatePowerList arg2=0).
+   * CreatePowerChart (CreatePowerList arg2=0).
    */
   buildSpellsList(creature: ModuleCreature): any[][] {
     const spells = GameState.SWRuleSet?.spells ?? SWRuleSet.spells ?? [];
@@ -549,7 +549,7 @@ export class MenuAbilities extends GameMenu {
   }
 
   /**
-   * Retail OnEnterSkill — populate rank / bonus / total / desc.
+   * OnEnterSkill — populate rank / bonus / total / desc.
    */
   selectSkill(skill: TalentSkill) {
     const creature = GameState.PartyManager.party[0];
@@ -584,7 +584,7 @@ export class MenuAbilities extends GameMenu {
   }
 
   /**
-   * Retail OnEnterPower — force cost with alignment adjust.
+   * OnEnterPower — force cost with alignment adjust.
    */
   selectPower(spell: any) {
     if(!spell){
@@ -604,7 +604,7 @@ export class MenuAbilities extends GameMenu {
       if(row){
         const mult = goodEvil === 'G' ? row.goodcost : row.evilcost;
         if(isFinite(mult) && mult > 0){
-          // Retail OnEnterPower: ftol(base * mult + 0.5) - base
+          // OnEnterPower: ftol(base * mult + 0.5) - base
           delta = Math.floor(base * mult + 0.5) - base;
         }
       }
@@ -643,7 +643,7 @@ export class MenuAbilities extends GameMenu {
   }
 
   /**
-   * Retail in-game feat slots are always SetSkillStatus(6).
+   * in-game feat slots are always SetSkillStatus(6).
    * Selection chrome is the yellow pulsing border (SetSelectedSkill).
    */
   getFeatSlotStatus(_feat: TalentFeat | any): SkillFlowStatus {
@@ -651,7 +651,7 @@ export class MenuAbilities extends GameMenu {
   }
 
   /**
-   * Retail OnEnterFeat — name + description only.
+   * OnEnterFeat — name + description only.
    * Also mirrors SetSelectedSkill selection visuals on feat proto items.
    */
   selectFeat(feat: TalentFeat | any) {
@@ -718,7 +718,7 @@ export class MenuAbilities extends GameMenu {
     this.LB_DESC_FEATS?.setItem?.(null);
     const items = this.getFilteredItems();
 
-    // Retail UpdateView: selected tab yellow, others blue.
+    // UpdateView: selected tab yellow, others blue.
     const yellow = { r: 1, g: 1, b: 0 };
     const blue = COLOR_BLUE;
     const paintTab = (btn: GUIButton | undefined, selected: boolean) => {

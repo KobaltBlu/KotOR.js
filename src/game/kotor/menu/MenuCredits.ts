@@ -5,13 +5,13 @@ import { GameMenu } from "@/gui";
 import type { GUIListBox } from "@/gui";
 import { TwoDAObject } from "@/resource/TwoDAObject";
 
-/** Retail fade-in duration (UpdateFading). */
+/** fade-in duration (UpdateFading). */
 const FADE_IN_SEC = 1.0;
 /** Visible hold ends at 3s from fade-cycle start when fading up. */
 const FADE_HOLD_END_SEC = 3.0;
 /** Next-text trigger while faded out (fadingUp == 0) at 2s. */
 const FADE_NEXT_SEC = 2.0;
-/** Retail scroll interval numerator: 305 / listbox height. */
+/** scroll interval numerator: 305 / listbox height. */
 const SCROLL_INTERVAL_NUMERATOR = 305.0;
 
 enum CreditsMode {
@@ -22,7 +22,7 @@ enum CreditsMode {
 /**
  * MenuCredits class.
  *
- * retail — loads credits.2da Name strrefs, fades then scrolls.
+ * — loads credits.2da Name strrefs, fades then scrolls.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -36,11 +36,11 @@ export class MenuCredits extends GameMenu {
 
   /** Strrefs from credits.2da Name column. */
   sectionStrRefs: number[] = [];
-  /** Current section index (retail m_nCurrentText). */
+  /** Current section index (m_nCurrentText). */
   currentIndex: number = 0;
-  /** Fade vs scroll mode (retail m_nMode). */
+  /** Fade vs scroll mode (m_nMode). */
   mode: CreditsMode = CreditsMode.Fade;
-  /** Retail m_bFadingUp. */
+  /** m_bFadingUp. */
   fadingUp: boolean = true;
   /** Fade / scroll accumulators. */
   fadeTimer: number = 0;
@@ -78,7 +78,7 @@ export class MenuCredits extends GameMenu {
   }
 
   /**
-   * Retail C2DA("credits") GetINTEntry(..., "Name").
+   * C2DA("credits") GetINTEntry(..., "Name").
    */
   protected loadCreditSections() {
     this.sectionStrRefs = [];
@@ -124,7 +124,7 @@ export class MenuCredits extends GameMenu {
 
   protected showScrollText() {
     const lines: string[] = [];
-    // Leading padding roughly matching retail height / font padding.
+    // Leading padding roughly matching height / font padding.
     for(let i = 0; i < 8; i++) lines.push(' ');
     for(const strRef of this.sectionStrRefs){
       const text = this.getString(strRef);
@@ -143,7 +143,7 @@ export class MenuCredits extends GameMenu {
   }
 
   /**
-   * Retail SetNextText — advance section; last entry switches to scroll mode.
+   * SetNextText — advance section; last entry switches to scroll mode.
    */
   protected setNextText() {
     const count = this.sectionStrRefs.length;
@@ -215,7 +215,7 @@ export class MenuCredits extends GameMenu {
     }
   }
 
-  /** Retail UpdateFading. */
+  /** UpdateFading. */
   protected updateFading(delta: number) {
     this.fadeTimer += delta;
     if(this.fadeTimer >= FADE_IN_SEC){
@@ -242,13 +242,13 @@ export class MenuCredits extends GameMenu {
     }
   }
 
-  /** Retail UpdateScrolling. */
+  /** UpdateScrolling. */
   protected updateScrolling(delta: number) {
     const lb = this.LB_CREDITS;
     if(!lb) return;
 
     if(lb.scroll >= lb.maxScroll){
-      // Retail waits for music end, then closes the panel chain.
+      // waits for music end, then closes the panel chain.
       const emitter = AudioEngine.GetAudioEngine().areaMusicDayAudioEmitter;
       if(!this.musicPlaying || !emitter?.playing){
         this.closeCredits();

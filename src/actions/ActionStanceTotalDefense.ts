@@ -13,14 +13,14 @@ import { BitWise } from "@/utility/BitWise";
  * RunActions case 0x44. ActivityManager(4) clears minor activities.
  *
  * PARAMS
- *  0 - dword: target object id
+ * 0 - dword: target object id
  *
  * @file ActionStanceTotalDefense.ts
  */
 export class ActionStanceTotalDefense extends Action {
   private elapsed = 0;
   private started = false;
-  /** Retail SubtractWorldTimes threshold 0x5dc ms. */
+  /** SubtractWorldTimes threshold 0x5dc ms. */
   private static readonly HOLD_SEC = 1.5;
 
   constructor( actionId: number = -1, groupId: number = -1 ){

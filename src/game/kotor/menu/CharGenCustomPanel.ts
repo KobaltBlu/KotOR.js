@@ -98,7 +98,7 @@ export class CharGenCustomPanel extends GameMenu {
     });
   }
 
-  /** Retail SetState */
+  /** SetState */
   setState(step: number) {
     GameState.CharGenManager.customStep = step;
     this.applyStepVisibility();

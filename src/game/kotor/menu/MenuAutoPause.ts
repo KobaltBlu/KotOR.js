@@ -3,7 +3,7 @@ import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "@/gui";
 import { AutoPauseState } from "@/enums/engine/AutoPauseState";
 
-/** retail CSWGuiInGameAutoPause description TLKs (ctor custom_value). */
+/** auto-pause menu description TLKs (ctor custom_value). */
 const TLK_DESC_ENDROUND = 0xa5cd;
 const TLK_DESC_ENEMYSIGHTED = 0xa5ce;
 const TLK_DESC_MINESIGHTED = 0xbfdd;
@@ -58,7 +58,7 @@ export class MenuAutoPause extends GameMenu {
     ];
   }
 
-  /** Retail default checkbox states (K1). */
+  /** default checkbox states (K1). */
   protected getDefaultEnabled(): ReadonlyArray<boolean> {
     return [false, true, true, true, false, true];
   }

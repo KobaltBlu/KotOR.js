@@ -1,7 +1,7 @@
 /**
  * AutoPauseState enum.
  *
- * Retail statusType / reason bytes passed to SetAutoPaused / SetPaused /
+ * statusType / reason bytes passed to SetAutoPaused / SetPaused /
  * SetPauseReason (sparse codes, not a compact 0..n index).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -29,7 +29,7 @@ export enum AutoPauseState {
   NewTargetSelected = 8,
   /** Party Killed. */
   PartyMemberKilled = 9,
-  /** Present in SetPauseReason only (no SetAutoPaused call site in retail). */
+  /** Present in SetPauseReason only (no SetAutoPaused call site in). */
   UnusedReason10 = 10,
   /** Mine Sighted auto-pause (hides LBL_PRESS). */
   MineSighted = 11,

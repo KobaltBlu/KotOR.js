@@ -1,5 +1,5 @@
 /**
- * retail sound slots (Engine=0, Death=1).
+ * sound slots (Engine=0, Death=1).
  * Layout @: volume,: frequency,: frequencyIsRandom (stride 0xc).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -12,11 +12,11 @@ export const MG_SOUND_DEATH = 1;
 export const MG_SOUND_SLOT_COUNT = 2;
 
 export interface IMGTrackFollowerSoundSlot {
-  /** Retail Miles volume byte when applied to engine source. */
+  /** Miles volume byte when applied to engine source. */
   volume: number;
-  /** Retail. */
+  /**. */
   frequency: number;
-  /** Retail. */
+  /**. */
   frequencyIsRandom: number;
 }
 
@@ -32,7 +32,7 @@ export class MGTrackFollowerSounds {
   engineResRef: string = '';
   deathResRef: string = '';
 
-  /** Optional hook when engine (slot 0) volume changes — retail SetVolume on Miles source. */
+  /** Optional hook when engine (slot 0) volume changes — SetVolume on Miles source. */
   onEngineVolumeChanged?: (volume: number) => void;
 
   loadFromSoundsStruct(soundsNode: { hasField: (n: string) => boolean; getFieldByLabel: (n: string) => { getValue: () => any } } | undefined){
@@ -78,7 +78,7 @@ export class MGTrackFollowerSounds {
     if(!this.validIndex(index)){ return; }
     const v = volume >>> 0;
     this.slots[index].volume = v;
-    // Retail SetSoundVolume: only slot 0 (engine) pushes to SetVolume.
+    // SetSoundVolume: only slot 0 (engine) pushes to SetVolume.
     if(index === MG_SOUND_ENGINE && this.onEngineVolumeChanged){
       this.onEngineVolumeChanged(v & 0xff);
     }

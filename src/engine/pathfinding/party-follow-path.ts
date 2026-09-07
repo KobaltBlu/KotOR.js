@@ -6,16 +6,16 @@ import { testSafeLocationPoint } from "@/engine/pathfinding/test-safe-location-p
 import { GameState } from "@/GameState";
 
 /**
- * Approximate retail party follow ring — leader trail points
+ * Approximate party follow ring — leader trail points
  * used by QuickWalk_FollowLeader / TeleportForward / RecaulateFollowPoint.
  *
- * Retail: ProcessPoint, GetPointBackFromStart,
+ * : ProcessPoint, GetPointBackFromStart,
  * RecaulateFollowPoint (center trail @ range±stagger),
  * TeleportForward (center trail + TestSafeLocationPoint).
  *
  * ProcessPoint follow_data entry:
  * center Vector3
- * bearing float — retail stores **degrees** (consumers DegToRad);
+ * bearing float — stores **degrees** (consumers DegToRad);
  * KotOR.js stores **radians** (`leader.rotation.z`) and uses cos/sin directly
  * lateral slot1 Vector3 — stamped at writeHead−2 via
  * ZQuat(bearing writeHead−1) * party formation offsets
@@ -27,11 +27,11 @@ import { GameState } from "@/GameState";
  */
 
 export const FOLLOW_RING_SIZE = 100;
-/** Retail: skip new point when sqdist to previous < 0.25 and LOS clear. */
+/** : skip new point when sqdist to previous < 0.25 and LOS clear. */
 const MIN_POINT_DIST_SQ = 0.25;
 /** Default PrimaryRange from ranges.2da when table missing (GetFollowRange). */
 const DEFAULT_FOLLOW_RANGE = 5.0;
-/** Stagger between party slots (Retail approx). */
+/** Stagger between party slots (approx). */
 const SLOT_STAGGER = 0.35;
 /** Fallback formation locals when PartyManager unavailable (pattern 0). */
 const DEFAULT_FORMATION_SLOT1 = { x: 1.5, y: -0.7 };
@@ -65,17 +65,17 @@ function emptyPoint(): FollowPathPoint {
  */
 export class PartyFollowPath {
   readonly points: FollowPathPoint[] = Array.from({ length: FOLLOW_RING_SIZE }, emptyPoint);
-  /** Write head — next slot to write (Retail). */
+  /** Write head — next slot to write. */
   writeHead = 0;
-  /** Valid point count capped at 100 (Retail). */
+  /** Valid point count capped at 100. */
   count = 0;
   /** Last clear LOS sample when a wall break inserts an intermediate point. */
   private lastClear = new THREE.Vector3();
   private hasLastClear = false;
 
-  /** Per party-slot ring cursor for TeleportForward (Retail). */
+  /** Per party-slot ring cursor for TeleportForward. */
   memberCursor: number[] = [0, 0, 0];
-  /** Cached goal index from Recalculate (Retail). */
+  /** Cached goal index from Recalculate. */
   memberGoalIndex: number[] = [0, 0, 0];
   private memberGoal = [
     new THREE.Vector3(),
@@ -99,7 +99,7 @@ export class PartyFollowPath {
   }
 
   /**
-   * Retail GetFollowRange
+   * GetFollowRange
    * PT_FOLLOWSTATE 0 → ranges.2da row 14 (close), 1 → row 15 (far).
    * Default PrimaryRange 5.0 when table missing.
    */
@@ -139,7 +139,7 @@ export class PartyFollowPath {
   }
 
   /**
-   * Retail ProcessPoint lateral stamp: center(writeHead−2) +
+   * ProcessPoint lateral stamp: center(writeHead−2) +
    * ZQuat(bearing writeHead−1) * formation offsets for slots 1–2.
    */
   private stampProcessPointLaterals(){
@@ -169,8 +169,8 @@ export class PartyFollowPath {
   }
 
   /**
-   * Retail ProcessPoint — record leader position when moved enough / LOS broken.
-   * Bearing is stored in radians (JS); Retail is degrees.
+   * ProcessPoint — record leader position when moved enough / LOS broken.
+   * Bearing is stored in radians (JS); is degrees.
    */
   processPoint(
     leader: ModuleCreature,
@@ -201,7 +201,7 @@ export class PartyFollowPath {
     const distSq = dx * dx + dy * dy + dz * dz;
 
     this._tmp.set(last.x, last.y, last.z);
-    // Retail ProcessPoint: clear (1) OR creature-block (-3) if party member
+    // ProcessPoint: clear (1) OR creature-block (-3) if party member
     const hit = area
       ? testDirectLine(area, this._tmp, point, {
           owner: leader,
@@ -225,7 +225,7 @@ export class PartyFollowPath {
     if(los){
       this.lastClear.copy(point);
     }else{
-      // Insert last clear sample before continuing (retail wall-break branch)
+      // Insert last clear sample before continuing (wall-break branch)
       this.pushPoint(this.lastClear.x, this.lastClear.y, this.lastClear.z, bearing);
       this.lastClear.copy(point);
     }
@@ -238,7 +238,7 @@ export class PartyFollowPath {
     this.pushPoint(point.x, point.y, point.z, bearing);
     if(this.count >= 3){
       this.recalculateFollowPoints();
-      // Retail ProcessPoint → SmoothFollowPath when party_count > 1
+      // ProcessPoint → SmoothFollowPath when party_count > 1
       const partyCount = GameState.PartyManager?.party?.length ?? 0;
       if(partyCount > 1 && this.count > 4 && this.needsSmoothDensify()){
         this.smoothFollowPath(area, leader);
@@ -246,7 +246,7 @@ export class PartyFollowPath {
     }
   }
 
-  /** True when any consecutive trail segment is longer than 1.0 (retail densify trigger). */
+  /** True when any consecutive trail segment is longer than 1.0 (densify trigger). */
   private needsSmoothDensify(): boolean {
     if(this.count < 2) return false;
     let i = this.prevIndex(this.writeHead);
@@ -265,9 +265,9 @@ export class PartyFollowPath {
   }
 
   /**
-   * Walk back along the center trail by `distance` (retail GetPointBackFromStart).
+   * Walk back along the center trail by `distance` (GetPointBackFromStart).
    * Uses leader path points (state), not lateral offsets.
-   * `stopAtCursor` — stop if ring index hits member cursor (Retail).
+   * `stopAtCursor` — stop if ring index hits member cursor.
    */
   getPointBackFromStart(
     distance: number,
@@ -319,13 +319,13 @@ export class PartyFollowPath {
     }
 
     // Exhausted trail before covering `distance` — still return oldest point
-    // (retail GetPointBackFromStart succeeds with the far end of the ring).
+    // (GetPointBackFromStart succeeds with the far end of the ring).
     out.set(x, y, z);
     return true;
   }
 
   /**
-   * Retail RecaulateFollowPoint
+   * RecaulateFollowPoint
    * slot1 = GetPointBackFromStart(range - stagger),
    * slot2 = GetPointBackFromStart(range + stagger).
    * Goals are **center trail** points (not lateral offsets).
@@ -360,7 +360,7 @@ export class PartyFollowPath {
   }
 
   /**
-   * Retail AdvancePointOnPath — walk center trail forward by
+   * AdvancePointOnPath — walk center trail forward by
    * `budget` from `from` / member cursor toward Recalc goal / write head−1.
    * @returns remaining unused budget (≥0).
    */
@@ -385,7 +385,7 @@ export class PartyFollowPath {
     const startY = from.y;
     const startZ = from.z;
 
-    // Retail: if Recalc goal is within original budget of start, snap
+    // : if Recalc goal is within original budget of start, snap
     const gdx = goal.x - startX;
     const gdy = goal.y - startY;
     const gdz = goal.z - startZ;
@@ -423,7 +423,7 @@ export class PartyFollowPath {
       outAdvanced.set(x, y, z);
       outIndex.value = i;
 
-      // Retail re-checks goal vs original start each iteration
+      // re-checks goal vs original start each iteration
       const ogx = goal.x - startX;
       const ogy = goal.y - startY;
       const ogz = goal.z - startZ;
@@ -457,7 +457,7 @@ export class PartyFollowPath {
   }
 
   /**
-   * Formation lateral at a ring center + bearing (retail Offset).
+   * Formation lateral at a ring center + bearing (Offset).
    */
   applyFormationLateral(
     partyIndex: number,
@@ -485,7 +485,7 @@ export class PartyFollowPath {
 
   /**
    * WaitingForPath / Offset approach goal — Recalc center + formation lateral
-   * rotated by trail bearing (retail applies formation offsets).
+   * rotated by trail bearing (applies formation offsets).
    */
   getApproachGoal(partyIndex: number, out: THREE.Vector3): boolean {
     if(!this.getFollowGoal(partyIndex, out)) return false;
@@ -496,7 +496,7 @@ export class PartyFollowPath {
   }
 
   /**
-   * Pick a WaitingForPath trail back-point into member goals (retail).
+   * Pick a WaitingForPath trail back-point into member goals.
    * @returns false if ring too cold or GetPointBack fails.
    */
   pickWaitingForPathGoal(partyIndex: number, outCenter: THREE.Vector3): boolean {
@@ -514,7 +514,7 @@ export class PartyFollowPath {
   }
 
   /**
-   * Retail SmoothFollowPath — string-pull densify (≥1m steps) then Recalc.
+   * SmoothFollowPath — string-pull densify (≥1m steps) then Recalc.
    * Called from ProcessPoint when party_count > 1 and ring is warm enough.
    */
   smoothFollowPath(area?: ModuleArea, leader?: ModuleCreature): void {
@@ -616,7 +616,7 @@ export class PartyFollowPath {
     this.recalculateFollowPoints();
   }
 
-  /** Densify so consecutive points advance ≤1.0 (retail SmoothFollowPath unit steps). */
+  /** Densify so consecutive points advance ≤1.0 (SmoothFollowPath unit steps). */
   private appendDensified(
     out: { x: number; y: number; z: number; bearing: number }[],
     ax: number, ay: number, az: number,
@@ -647,7 +647,7 @@ export class PartyFollowPath {
   }
 
   /**
-   * Retail TeleportForward — advance center-trail ring until TestSafeLocationPoint.
+   * TeleportForward — advance center-trail ring until TestSafeLocationPoint.
    */
   teleportForward(
     partyIndex: number,
@@ -666,7 +666,7 @@ export class PartyFollowPath {
       if(i === writeLimit) break;
 
       const p = this.points[i];
-      // Retail uses center trail, not lateral offsets
+      // uses center trail, not lateral offsets
       this._tmp.set(p.x, p.y, p.z);
 
       if(!testSafeLocationPoint(area, this._tmp)){

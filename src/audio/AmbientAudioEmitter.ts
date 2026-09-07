@@ -5,7 +5,7 @@ import { GameState } from "@/GameState";
 /**
  * AmbientAudioEmitter class.
  *
- * Streaming-style ambient / music source. Mirrors retail
+ * Streaming-style ambient / music source. matches engine behavior
  * SetPriorityGroup: group id + volume byte.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -34,7 +34,7 @@ export class AmbientAudioEmitter extends EventListener {
 
   /**
    * prioritygroups.2da row.
-   * Retail: ambient=4, area/battle music=2, stingers=1,
+   * : ambient=4, area/battle music=2, stingers=1,
    * dialog AmbientTrack=4 (LoadAmbientTrackForDialog).
    */
   priorityGroupId: number = undefined;
@@ -43,7 +43,7 @@ export class AmbientAudioEmitter extends EventListener {
   priorityGroupVolume: number = 127;
 
   /**
-   * Retail SetStreamingMusicForMovie.
+   * SetStreamingMusicForMovie.
    * PauseAllButStreamingMusicForMovie skips streams with this set.
    */
   streamingMusicForMovie: boolean = false;
@@ -57,7 +57,7 @@ export class AmbientAudioEmitter extends EventListener {
   }
 
   /**
-   * Retail SetPriorityGroup — store group id and copy volume byte from the priority group.
+   * SetPriorityGroup — store group id and copy volume byte from the priority group.
    */
   setPriorityGroupId(priorityGroupId: number): this {
     this.priorityGroupId = priorityGroupId;
@@ -76,7 +76,7 @@ export class AmbientAudioEmitter extends EventListener {
   }
 
   /**
-   * volume × (groupVolume / 127) × dialog duck — retail streaming SetVolume compose.
+   * volume × (groupVolume / 127) × dialog duck — streaming SetVolume compose.
    * Duck (K2) applies when slider type is music (groups 1/2) or group is 4/5.
    * Result is Miles volume_levels / Web Audio GainNode linear amplitude (0–1).
    */
@@ -91,7 +91,7 @@ export class AmbientAudioEmitter extends EventListener {
     return gain;
   }
 
-  /** Retail streaming SetVolume: music slider (groups 1/2) or priority 4/5. */
+  /** streaming SetVolume: music slider (groups 1/2) or priority 4/5. */
   shouldApplyMusicAmbientDuck(): boolean {
     const g = this.priorityGroupId;
     return g === 1 || g === 2 || g === 4 || g === 5;
@@ -103,7 +103,7 @@ export class AmbientAudioEmitter extends EventListener {
     return this;
   }
 
-  /** Push getEffectiveVolume() onto the GainNode (cancels fade automation). */
+  /** Push getEffectiveVolume onto the GainNode (cancels fade automation). */
   applyEffectiveGain(){
     if(!this.gainNode || !this.engine?.audioCtx){ return; }
     const t = this.engine.audioCtx.currentTime;
@@ -169,7 +169,7 @@ export class AmbientAudioEmitter extends EventListener {
         distanceSq: 0,
         is3D: false,
         onStolen: () => {
-          // Retail InterruptPlayingSound → hard stop (no fadetime).
+          // InterruptPlayingSound → hard stop (no fadetime).
           this.stop();
         },
       });
@@ -187,7 +187,7 @@ export class AmbientAudioEmitter extends EventListener {
 
     this.onendedFired = false;
     this.loaded = false;
-    // Keep a local source so a concurrent stop()/play() during decode can't null this.node mid-setup
+    // Keep a local source so a concurrent stop/play during decode can't null this.node mid-setup
     const node = this.engine.audioCtx.createBufferSource();
     this.node = node;
     let buffer: AudioBuffer;
@@ -286,8 +286,8 @@ export class AmbientAudioEmitter extends EventListener {
   }
 
   /**
-   * Retail FadeAndStop — fade then hard-stop.
-   * Default 800ms matches PlayBattleMusic / PlayMusic transitions .
+   * FadeAndStop — fade then hard-stop.
+   * Default 800ms matches PlayBattleMusic / PlayMusic transitions.
    */
   fadeOutAndStop(duration: number = 0.8): Promise<void> {
     if(!this.playing){

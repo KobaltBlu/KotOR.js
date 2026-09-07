@@ -34,7 +34,7 @@ export class ModuleSound extends ModuleObject {
   soundType: AudioEmitterType = AudioEmitterType.GLOBAL;
   active: boolean = true;
   /**
-   * Client-only time-of-day gate (retail).
+   * Client-only time-of-day gate.
    * Does not persist — never overwrite Active from UpdateTimeOfDay.
    */
   timeOfDayActive: boolean = true;
@@ -191,7 +191,7 @@ export class ModuleSound extends ModuleObject {
   async loadSound(){
     const priorityGroup = GameState.SWRuleSet.getPriorityGroupById(this.priority);
     const type = !!this.positional ? AudioEmitterType.POSITIONAL : AudioEmitterType.GLOBAL;
-    // Retail LoadFromMessage promote: Continuous && 1 sound && Interval==0 && !RandomPosition → Looping.
+    // LoadFromMessage promote: Continuous && 1 sound && Interval==0 && !RandomPosition → Looping.
     if(this.continuous && this.soundResRefs.length === 1 && !this.randomPosition && (this.interval | 0) === 0){
       this.looping = true;
     }
@@ -238,7 +238,7 @@ export class ModuleSound extends ModuleObject {
   }
 
   /**
-   * Retail UpdateTimeOfDay.
+   * UpdateTimeOfDay.
    * Times: 0 = Hours bitmask, 1 = day-only, 2 = night-only, other = always.
    * Client-only: updates timeOfDayActive; never mutates persisted Active.
    */
@@ -291,7 +291,7 @@ export class ModuleSound extends ModuleObject {
   }
 
   setFixedVariance(fixedVariance: number = 1.0): ModuleSound {
-    // Retail SetFixedVariance accepts [0.5, 2]; outside range is ignored on the source.
+    // SetFixedVariance accepts [0.5, 2]; outside range is ignored on the source.
     const v = Math.max(0, Math.min(2.0, fixedVariance));
     this.fixedVariance = v;
     if(this.audioEmitter){
@@ -301,7 +301,7 @@ export class ModuleSound extends ModuleObject {
   }
 
   start(): ModuleSound {
-    // Retail Play sets Active = 1 before starting the source.
+    // Play sets Active = 1 before starting the source.
     this.active = true;
     if(this.audioEmitter){
       const combined = this.active && (this.timeOfDayActive ?? true);
@@ -323,8 +323,8 @@ export class ModuleSound extends ModuleObject {
   }
 
   /**
-   * Retail FadeAndStop — deactivate then fade/stop the source.
-   * @param fadeSeconds NWScript fSeconds (converted to ms in retail; Web Audio uses seconds).
+   * FadeAndStop — deactivate then fade/stop the source.
+   * @param fadeSeconds NWScript fSeconds (converted to ms in; Web Audio uses seconds).
    */
   fadeAndStop(fadeSeconds: number = 0): ModuleSound {
     this.active = false;
@@ -468,8 +468,8 @@ export class ModuleSound extends ModuleObject {
     gff.FileType = 'UTS ';
     gff.RootNode.type = 6;
 
-    // Retail Save field set (no TemplateResRef / Priority / Elevation).
-    // Commandable is written by retail SaveObjectState after Save.
+    // Save field set (no TemplateResRef / Priority / Elevation).
+    // Commandable is written by SaveObjectState after Save.
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Active') ).setValue(this.active ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Positional') ).setValue(this.positional ? 1 : 0);
@@ -494,7 +494,7 @@ export class ModuleSound extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).setValue(this.position.y);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).setValue(this.position.z);
 
-    // Retail SaveObjectState writes Commandable for every object
+    // SaveObjectState writes Commandable for every object
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue(this.commandable ? 1 : 0);
 
     // KotOR.js engine extras (ObjectId / locals / actions) for round-trip within engine

@@ -1,5 +1,5 @@
 /**
- * Melee backoff / TestDirectLine clip (retail physical-attack action).
+ * Melee backoff / TestDirectLine clip (physical-attack action).
  * @jest-environment node
  */
 import { describe, expect, it, jest } from '@jest/globals';

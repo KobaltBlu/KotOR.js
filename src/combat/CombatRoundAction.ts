@@ -36,7 +36,7 @@ export class CombatRoundAction {
   targetObjectId: number = 0;
   retargettable: number = 0;
   /**
-   * Equipment slot for ITEM_EQUIP (retail InventorySlot dword).
+   * Equipment slot for ITEM_EQUIP (InventorySlot dword).
    * ModuleCreatureArmorSlot / INVENTORY_SLOT_* — not an object id.
    */
   inventorySlot: number = 0;
@@ -47,20 +47,20 @@ export class CombatRoundAction {
   isUserAction: boolean = false; //Was this action created by the player
 
   /**
-   * Retail Combat-round action — designer-precomputed attack
+   * Combat-round action — designer-precomputed attack
    * (CutsceneAttack). Distinct from `resolved`, which gates ResolveAttack once.
    */
   resultsCalculated: boolean = false;
   /** Set once ResolveAttack has run for this scheduled action. */
   resolved: boolean = false;
-  /** animations.2da row index when resultsCalculated (retail `animation`). */
+  /** animations.2da row index when resultsCalculated (`animation`). */
   attackAnimation: number = 0;
   attackResult: AttackResult = AttackResult.MISS;
   attackDamage: number = 0;
 
-  /** CutsceneMove destination (retail move_to_position). */
+  /** CutsceneMove destination (move_to_position). */
   moveToPosition?: { x: number; y: number; z: number };
-  /** CutsceneMove run flag (retail should_run). */
+  /** CutsceneMove run flag (should_run). */
   shouldRun: number = 0;
 
   iconResRef: string;
@@ -187,7 +187,7 @@ export class CombatRoundAction {
     }
     
     let animationName = attackKey+weaponWield+'a'+attackType;
-    // Retail GetClientMeleeAnimation — resultsCalculated returns nAnimation row
+    // GetClientMeleeAnimation — resultsCalculated returns nAnimation row
     if(this.resultsCalculated && this.attackAnimation){
       const animFromId = GameState.SWRuleSet.animationIdMap.get(this.attackAnimation);
       if(animFromId){
@@ -200,7 +200,7 @@ export class CombatRoundAction {
   }
 
   /**
-   * Retail SaveData (list element type 0xDAEA)
+   * SaveData (list element type 0xDAEA)
    */
   toStruct(structIdx: number = 0xDAEA): GFFStruct {
     const struct = new GFFStruct(structIdx);
@@ -223,7 +223,7 @@ export class CombatRoundAction {
   }
 
   /**
-   * Retail LoadData 
+   * LoadData 
    */
   fromStruct(struct: GFFStruct, owner?: ModuleObject){
     if(!struct) return;

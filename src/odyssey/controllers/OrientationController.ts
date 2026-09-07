@@ -38,8 +38,8 @@ export class OrientationController extends OdysseyController {
     if(manager.modelNode.controllerHelpers.hasOrientation){
 
       // if(manager.trans && this.frameCount > 1){
-      //   manager.modelNode.transitionState.quaternion.copy(manager.modelNode.quaternion);
-      //   anim._quaternion.copy(manager.modelNode.transitionState.quaternion);
+      // manager.modelNode.transitionState.quaternion.copy(manager.modelNode.quaternion);
+      // anim._quaternion.copy(manager.modelNode.transitionState.quaternion);
       // }else{
         anim._quaternion.copy(manager.modelNode.controllerHelpers.orientation.data[0] as any);
       // }
@@ -53,7 +53,7 @@ export class OrientationController extends OdysseyController {
     }
 
     // if(manager.trans && this.frameCount > 1){
-    //   manager.modelNode.quaternion.slerp(manager._quat.copy(anim._quaternion), 0);
+    // manager.modelNode.quaternion.slerp(manager._quat.copy(anim._quaternion), 0);
     // }else{
       manager.modelNode.quaternion.set(data.x, data.y, data.z, data.w);
     // }
@@ -65,12 +65,12 @@ export class OrientationController extends OdysseyController {
     if(manager.modelNode.emitter){
 
       // if(manager.trans && manager.lastFrame == 0){
-      //   manager.modelNode.position.copy(manager.modelNode.transitionState.position);
+      // manager.modelNode.position.copy(manager.modelNode.transitionState.position);
       // }
       manager._quat.slerp(next as any, fl);
   
-      //manager.modelNode.emitter.velocity.value.copy(manager.modelNode.emitterOptions.velocity.value.copy().applyQuaternion(manager._quat));
-      //manager.modelNode.emitter.velocity.spread.copy(manager.modelNode.emitterOptions.velocity.spread.copy().applyQuaternion(manager._quat));
+      //manager.modelNode.emitter.velocity.value.copy(manager.modelNode.emitterOptions.velocity.value.copy.applyQuaternion(manager._quat));
+      //manager.modelNode.emitter.velocity.spread.copy(manager.modelNode.emitterOptions.velocity.spread.copy.applyQuaternion(manager._quat));
       //manager.modelNode.emitter.updateFlags['velocity'] = true;
   
       manager.modelNode.rotation.z = 0;
@@ -80,8 +80,8 @@ export class OrientationController extends OdysseyController {
   
       if(next != last){
         // if(manager.trans && manager.lastFrame == 0){
-        //   manager.modelNode.quaternion.copy(manager.modelNode.transitionState.quaternion);
-        //   manager.modelNode.transitionState.quaternion.copy(manager.modelNode.quaternion.slerp(manager._quat, fl));
+        // manager.modelNode.quaternion.copy(manager.modelNode.transitionState.quaternion);
+        // manager.modelNode.transitionState.quaternion.copy(manager.modelNode.quaternion.slerp(manager._quat, fl));
         // }else{
           manager.modelNode.quaternion.copy(last as any);
           manager.modelNode.quaternion.slerp(manager._quat, fl);

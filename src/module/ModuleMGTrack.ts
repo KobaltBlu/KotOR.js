@@ -9,7 +9,7 @@ import { MDLLoader } from "@/loaders";
 /**
 * ModuleMGTrack class.
 *
-* LYT track prototype (name + world position). Retail MiniGame stores proto tracks
+* LYT track prototype (name + world position). MiniGame stores proto tracks
 * (AddTrack); each follower gets its own track Gob via ForceSetTrack / NewCAurObject.
 *
 * @file ModuleMGTrack.ts
@@ -42,11 +42,11 @@ export class ModuleMGTrack extends ModuleObject {
   }
 
   async load(){
-    // Proto only — follower models are created in createFollowerModel().
+    // Proto only — follower models are created in createFollowerModel.
   }
 
   /**
-   * Retail SetPlayer/AddEnemy path — NewCAurObject(trackResRef) per follower,
+   * SetPlayer/AddEnemy path — NewCAurObject(trackResRef) per follower,
    * positioned from proto track Vector.
    */
   async createFollowerModel(): Promise<OdysseyModel3D> {

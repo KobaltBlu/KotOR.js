@@ -15,7 +15,7 @@ import { MineSkillResult, resolveMineSetCheck, signalTrapTriggered } from "@/act
 
 /**
  * ActionSetMine class.
- * Retail set-mine action
+ * set-mine action
  * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  * 
@@ -92,7 +92,7 @@ export class ActionSetMine extends Action {
       action.setParameter(1, ActionParameterType.FLOAT, 1);
       action.setParameter(2, ActionParameterType.FLOAT, 2.0);
       owner.actionQueue.addFront(action);
-      // Retail SetMine uses a shorter bar (~2s) vs Flag/Disarm 4500 ms
+      // SetMine uses a shorter bar (~2s) vs Flag/Disarm 4500 ms
       if(owner === GameState.getCurrentPlayer()){
         GameState.GuiTimingBarManager?.start?.(2.0, 'Set Mine', owner, 1);
       }

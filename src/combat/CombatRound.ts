@@ -24,7 +24,7 @@ import { BitWise } from "@/utility/BitWise";
 import { CombatAttackData } from "@/combat/CombatAttackData";
 import type { CombatRoundAction } from "@/combat/CombatRoundAction";
 import { CombatRoundAction as CombatRoundActionClass } from "@/combat/CombatRoundAction";
-import { createNewAttackActions } from "@/combat/create-new-attack-actions";
+import { queueAttackActions } from "@/combat/queue-attack-actions";
 import { duelLog, duelWho } from "@/combat/duel-debug";
 import { shouldEndRoundOnPauseExpiry, shouldSnapCombatReady } from "@/combat/combat-round-pause";
 import { getProjectileImpactPosition, spawnCombatProjectile } from "@/combat/combat-projectile";
@@ -48,7 +48,7 @@ import {
 } from "@/combat/resolve-combat-object-id";
 import * as THREE from 'three';
 
-/** Retail reaxn_delay ≈ distance * (1000/42) ms. */
+/** reaxn_delay ≈ distance * (1000/42) ms. */
 export const PROJECTILE_TRAVEL_MS_PER_UNIT = 1000 / 42;
 
 /** VFX_COM_PARRY — ResolveOnHitVisuals int 0xFB7 for attack_result 8..10. */
@@ -73,7 +73,7 @@ export type WeaponDischargeInfo = {
 };
 
 /**
- * Retail ResolveRangedAttack packs every discharge into sub_attacks;
+ * ResolveRangedAttack packs every discharge into sub_attacks;
  * shots without an AttackList roll are visual-only (ResolveRangedMiss).
  */
 export type PendingDischargeVisual = {
@@ -112,7 +112,7 @@ export class CombatRound {
    */
   static ROUND_LENGTH: number = 3000;
 
-  /** Retail damagehitvisual loop skips BLUDGEONING/PIERCING/SLASHING (0..2). */
+  /** damagehitvisual loop skips BLUDGEONING/PIERCING/SLASHING (0..2). */
   private static DAMAGE_HIT_VISUAL_TYPE_COUNT = 14;
 
   static filterLiveAttackActions<T extends PrunableCombatAction>(
@@ -133,7 +133,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail OnApplyDamage / SignalMeleeDamage floaty gate:
+   * effect apply / SignalMeleeDamage floaty gate:
    * AddFloatyText only when attacker/damager is GetPlayerCreatureId.
    * DEBUG_COMBAT_FLOATY_ALL_ATTACKERS restores pre-alignment (any attacker).
    */
@@ -150,7 +150,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail ResolveMeleeAnimations reaction gate:
+   * ResolveMeleeAnimations reaction gate:
    * target has combatRound && attacker.engaged &&
    * (CheckActionLengthAtTime || resultsCalculated).
    */
@@ -168,7 +168,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail ResolveRangedAnimations play gate:
+   * ResolveRangedAnimations play gate:
    * CheckActionLengthAtTime && attacker.engaged.
    */
   static canSyncRangedReaction(opts: {
@@ -273,7 +273,7 @@ export class CombatRound {
 
   /**
    * Map combat animation name (e.g. b5a1) → weapondischarge row label.
-   * Retail GetWeaponDischargeRow.
+   * GetWeaponDischargeRow.
    */
   static getWeaponDischargeRowLabel(
     creature: ModuleCreature,
@@ -412,7 +412,7 @@ export class CombatRound {
     return indices;
   }
 
-  /** Retail ResolveRangedHit / Miss: reaxn_delay = |Δpos| * 23.809525 */
+  /** ResolveRangedHit / Miss: reaxn_delay = |Δpos| * 23.809525 */
   static getProjectileTravelDelayMs(
     from: THREE.Vector3,
     to: THREE.Vector3
@@ -435,13 +435,13 @@ export class CombatRound {
       return attacker.position.clone();
     }
 
-    // Retail defaults when target is not a creature
+    // defaults when target is not a creature
     let lateralScale = 0.40002003;
     let scatterMul = 1.0;
 
     if(BitWise.InstanceOfObject(target, ModuleObjectType.ModuleCreature)){
       lateralScale = getPathPersonalSpace(target) * 0.6667;
-      // attack_result == '\n' (10) → sum of three rand()%3
+      // attack_result == '\n' (10) → sum of three rand%3
       if((attackResult | 0) === 10){
         scatterMul =
           (Math.floor(Math.random() * 3)) +
@@ -459,7 +459,7 @@ export class CombatRound {
       toAttacker.set(1, 0, 0);
     }
     const perp = new THREE.Vector3().crossVectors(toAttacker, new THREE.Vector3(0, 0, 1));
-    // Retail: flip when (rand & 1) != 0
+    // : flip when (rand & 1) != 0
     if((Math.floor(Math.random() * 2) & 1) !== 0){
       perp.negate();
     }
@@ -551,7 +551,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail ResolveOnHitVisuals + ranged miss impact.
+   * ResolveOnHitVisuals + ranged miss impact.
    * Call from CombatRound.signalAttackResult for every attack.
    */
   static resolveOnHitVisuals(
@@ -577,7 +577,7 @@ export class CombatRound {
       }
     }
 
-    // attack_result 8..10 → VFX 0xFB7 (PARRIED / DEFLECTED / retail result 10)
+    // attack_result 8..10 → VFX 0xFB7 (PARRIED / DEFLECTED / result 10)
     const result = attack.attackResult as number;
     if(target && result >= AttackResult.PARRIED && result <= 10){
       CombatRound.applyInstantVisualEffect(target, VFX_COM_PARRY_DEFLECT, target);
@@ -633,8 +633,8 @@ export class CombatRound {
 
   currentAttack: number = 0;
   parryIndex: number = 0;
-  numAOOs: number = 1; //Attacks of Opportunity - unused (retail AOO stub)
-  numCleaves: number = 1; //Cleave Attacks - unused (retail AOO stub)
+  numAOOs: number = 1; //Attacks of Opportunity - unused (AOO stub)
+  numCleaves: number = 1; //Cleave Attacks - unused (AOO stub)
   onHandAttacks: number = 0;
   offHandAttacks: number = 0;
   /**
@@ -651,7 +651,7 @@ export class CombatRound {
 
   attackList: CombatAttackData[] = [];
   specialAttackList: any[] = []; // (?)
-  /** Retail special_attack_id_list (SpecAttackIdList GFF). */
+  /** special_attack_id_list (SpecAttackIdList GFF). */
   specialAttackIdList: number[] = [];
   scheduledActionList: CombatRoundAction[] = [];
   action: CombatRoundAction;
@@ -713,7 +713,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail StartCombatRound.
+   * StartCombatRound.
    * @param target - Attack target (also dodge_target / lock orientation)
    * @param engaged - ResolveEngagedState result
    * @param master - ResolveMasterState result
@@ -740,12 +740,12 @@ export class CombatRound {
       cutscene: !!this.action?.resultsCalculated,
     });
 
-    // Retail: engaged slave re-enters via EndCombatRound mid-start.
+    // : engaged slave re-enters via end combat round mid-start.
     // endCombatRound clears engaged/master, so re-apply the slave flags —
     // otherwise the master's ResolveMeleeAnimations sees engaged=false later.
     if(this.engaged && !this.master){
       const savedAction = this.action;
-      this.endCombatRound({ skipCreateNewAttackActions: true });
+      this.endCombatRound({ skipQueueAttackActions: true });
       this.action = savedAction;
       this.engaged = true;
       this.master = false;
@@ -783,7 +783,7 @@ export class CombatRound {
     this.dodgeTarget = target;
     this.pendingDischargeVisuals.length = 0;
 
-    // Retail StartCombatRound — NewAttackTarget (0xb20) sticky:
+    // StartCombatRound — NewAttackTarget (0xb20) sticky:
     // set to attack target, or INVALID when targeting self.
     if(target && target !== owner){
       this.newAttackTarget = target;
@@ -831,7 +831,7 @@ export class CombatRound {
   }
 
     /**
-   * Retail CalculateOnHandAttacks.
+   * CalculateOnHandAttacks.
    * Always 1 + effect_attacks; +1 for Flurry / Rapid Shot feat ids.
    */
   calculateOnHandAttacks(featId = 0): number {
@@ -853,7 +853,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail CalculateOffHandAttacks.
+   * CalculateOffHandAttacks.
    * Dual-wield when MH weapon size ≤ creature size and OH is a real weapon;
    * else oversized MELEE_TWO_HAND gets one bonus main-hand-style slot.
    */
@@ -908,17 +908,17 @@ export class CombatRound {
 
   /**
    * End the combat round.
-   * Retail EndCombatRound — master clears slave engaged link.
+   * end combat round — master clears slave engaged link.
    */
-  endCombatRound(options?: { skipCreateNewAttackActions?: boolean }){
+  endCombatRound(options?: { skipQueueAttackActions?: boolean }){
     duelLog(this.owner, 'round:end', {
       engaged: this.engaged,
       master: this.master,
       slave: duelWho(this.duelPartner),
-      reentry: !!options?.skipCreateNewAttackActions,
+      reentry: !!options?.skipQueueAttackActions,
     });
     const shouldAutoPause = (
-      !options?.skipCreateNewAttackActions &&
+      !options?.skipQueueAttackActions &&
       !!this.action &&
       this.owner === GameState.getCurrentPlayer() &&
       !this.owner.isDead()
@@ -991,16 +991,16 @@ export class CombatRound {
     }
     this.owner.onCombatRoundEnd();
 
-    // Retail Body Fuel at EndCombatRound: temporary FP = max FP
+    // Body Fuel at end combat round: temporary FP = max FP
     if(this.owner.bodyFuel){
       this.owner.temporaryForce = this.owner.getMaxFP();
     }
 
     // Drop scheduled physical attacks whose target is already dead/invalid so
-    // EndCombatRound can CreateNewAttackActions (retail sticky-target clear).
+    // end combat round can QueueAttackActions (sticky-target clear).
     this.pruneDeadAttackActions();
 
-    // Retail EndCombatRound: if NewAttackTarget sticky died, force GetNearestEnemy.
+    // end combat round: if NewAttackTarget sticky died, force GetNearestEnemy.
     // Alive sticky keeps focus.
     let forceNearest = false;
     const sticky = this.newAttackTarget;
@@ -1014,15 +1014,15 @@ export class CombatRound {
       }
     }
 
-    // Retail EndCombatRound auto-pause fires before CreateNewAttackActions.
+    // end combat round auto-pause fires before QueueAttackActions.
     if(shouldAutoPause){
       GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.CombatRoundEnd);
     }
 
-    // Retail EndCombatRound → CreateNewAttackActions for controlled PC.
-    // CreateNewAttackActions itself keeps a non-empty schedule when sticky lives.
+    // end combat round → QueueAttackActions for controlled PC.
+    // QueueAttackActions itself keeps a non-empty schedule when sticky lives.
     if(
-      !options?.skipCreateNewAttackActions &&
+      !options?.skipQueueAttackActions &&
       BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)
     ){
       const creature = this.owner as ModuleCreature;
@@ -1030,14 +1030,14 @@ export class CombatRound {
         GameState.getCurrentPlayer() === creature &&
         !creature.isDead()
       ){
-        createNewAttackActions(creature, { forceNearest });
+        queueAttackActions(creature, { forceNearest });
       }
     }
   }
 
   /**
    * Remove ATTACK / ATTACK_USE_FEAT sched entries whose target is dead or missing.
-   * Prevents a backlog of dead-target swings from blocking CreateNewAttackActions.
+   * Prevents a backlog of dead-target swings from blocking QueueAttackActions.
    */
   pruneDeadAttackActions(){
     if(!this.scheduledActionList.length) return;
@@ -1067,7 +1067,7 @@ export class CombatRound {
       if(this.pauseTimer < 0) this.pauseTimer = 0;
       if(this.pauseTimer <= 0 && !this.infinitePause){
         this.flushPendingDamage();
-        // Retail UpdateCombatRoundTimer — the expired pause resets the
+        // UpdateCombatRoundTimer — the expired pause resets the
         // combat animations (both duel partners when master) and the round keeps
         // running until the timer reaches roundLength. Only a dead/invalid target
         // ends the round early.
@@ -1183,12 +1183,12 @@ export class CombatRound {
 
     const owner = this.owner as ModuleCreature;
     const scripted = !!this.resultsCalculated;
-    // Retail ResolveOnHitVisuals — skipped on resultsCalculated (ResolveDamage scripted)
+    // ResolveOnHitVisuals — skipped on resultsCalculated (ResolveDamage scripted)
     if(!scripted){
       CombatRound.resolveOnHitVisuals(attack, owner);
     }
 
-    // Retail OnApplyDamage / SignalMeleeDamage — floaty only for player attacker
+    // effect apply / SignalMeleeDamage — floaty only for player attacker
     const showFloaty = CombatRound.shouldShowCombatFloaty(owner);
 
     const tlkFloaty = (strRef: number) =>
@@ -1215,13 +1215,13 @@ export class CombatRound {
       }
       attack.damageApplied = true;
     }else if(attack.attackResult == AttackResult.PARRIED && attack.reactObject){
-      // Retail attack_result 8 floaty uses Deflected! (0xa5ab)
+      // attack_result 8 floaty uses Deflected! (0xa5ab)
       if(showFloaty){
         TextSprite3D.CreateOnObject(attack.reactObject, tlkFloaty(AttackSummaryStrRef.DEFLECTED) || 'Deflected!', TextSprite3DType.NEUTRAL, 1500);
       }
       attack.damageApplied = true;
     }else if(attack.attackResult == AttackResult.DEFLECTED && attack.reactObject){
-      // Retail attack_result 9 floaty uses Returned! (0xa5b5)
+      // attack_result 9 floaty uses Returned! (0xa5b5)
       if(showFloaty){
         TextSprite3D.CreateOnObject(attack.reactObject, tlkFloaty(AttackSummaryStrRef.RETURNED) || 'Returned!', TextSprite3DType.NEUTRAL, 1500);
       }
@@ -1232,9 +1232,9 @@ export class CombatRound {
   }
 
   /**
-   * Retail GetSpellActionPending
+   * GetSpellActionPending
    * true when a cast is in progress or a CAST_SPELL is still scheduled.
-   * (Retail list check uses action-type byte; KotOR Combat uses CAST_SPELL=9.)
+   * (list check uses action-type byte; KotOR Combat uses CAST_SPELL=9.)
    */
   getSpellActionPending(): boolean {
     if(this.spellCastRound) return true;
@@ -1248,7 +1248,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail SetSpellCastRound
+   * SetSpellCastRound
    * marks this round as a spell cast and stores the spell id on the creature.
    */
   setSpellCastRound(_spellId: number = -1, _metaFlag: number = 0){
@@ -1256,8 +1256,8 @@ export class CombatRound {
   }
 
   /**
-   * Retail RemoveSpellAction
-   * drop pending spell/item-cast entries (retail action-type byte 2 covers both)
+   * RemoveSpellAction
+   * drop pending spell/item-cast entries (action-type byte 2 covers both)
    * from the scheduled list and clear the active round action when it is a cast.
    */
   removeSpellAction(){
@@ -1275,7 +1275,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail RemoveSpellActionFromRound.
+   * RemoveSpellActionFromRound.
    */
   removeSpellActionFromRound(){
     if(this.getSpellActionPending()){
@@ -1286,7 +1286,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail CheckActionLengthAtTime
+   * CheckActionLengthAtTime
    * whether the target's round can absorb a reaction of `actionLengthMs`.
    */
   checkActionLengthAtTime(
@@ -1312,7 +1312,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail DecrementRoundLength (simplified)
+   * DecrementRoundLength (simplified)
    * shrink remaining round by attack/reaction animation length.
    */
   decrementRoundLength(amountMs: number){
@@ -1332,7 +1332,7 @@ export class CombatRound {
 
   /**
    * Pause the round for the given pause owner and pause timer.
-   * Retail SetRoundPaused + SetPauseTimer — infinitePause holds slave until master ends.
+   * SetRoundPaused + SetPauseTimer — infinitePause holds slave until master ends.
    */
   pauseRound(pauseOwner: ModuleObject, pauseTimer: number = 0, infinitePause: boolean = false){
     duelLog(this.owner, 'round:pause', {
@@ -1366,7 +1366,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail ResetCombatAnimations
+   * ResetCombatAnimations
    * clear the pause, carry the overshoot into the round timer, and drop the
    * owner into combat READY for the remainder of the round (cinematic duel
    * stance). Scripted rounds (resultsCalculated) keep their posed animation.
@@ -1408,7 +1408,7 @@ export class CombatRound {
    * @param action - The action to add
    */
   addAction(action: CombatRoundAction){
-    // Retail AddAction — reject when count > 3 (max 4).
+    // AddAction — reject when count > 3 (max 4).
     if(this.scheduledActionList.length > 3){
       return;
     }
@@ -1417,7 +1417,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail AddEquipAction
+   * AddEquipAction
    * queue ITEM_EQUIP at list head (deferred while casting / combat busy).
    */
   addEquipAction(item: ModuleItem, slot: number, instant: boolean = false){
@@ -1434,7 +1434,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail AddUnequipAction.
+   * AddUnequipAction.
    */
   addUnequipAction(item: ModuleItem, instant: boolean = false){
     if(!item) return;
@@ -1450,7 +1450,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail GetActionPending
+   * GetActionPending
    * head scheduled action's timer has elapsed.
    */
   getActionPending(): boolean {
@@ -1460,7 +1460,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail ProcessPendingCombatActions
+   * ProcessPendingCombatActions
    * promote deferred ITEM_EQUIP / ITEM_UNEQUIP onto the creature action queue
    * (called after CastSpell fail/complete).
    */
@@ -1506,7 +1506,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail ClearAllAttacks
+   * ClearAllAttacks
    * reset AttackList[5] swing data. Does **not** clear the scheduled action list.
    */
   clearAllAttacks(){
@@ -1517,7 +1517,7 @@ export class CombatRound {
 
   /**
    * Clear the last scheduled combat-round action.
-   * Retail RemoveLastAction (RemoveTail).
+   * RemoveLastAction (RemoveTail).
    * @returns True if an action was removed
    */
   removeLastAction(): boolean {
@@ -1530,7 +1530,7 @@ export class CombatRound {
 
   /**
    * Clear all scheduled combat-round actions (and the current action).
-   * Retail RemoveAllActions.
+   * RemoveAllActions.
    */
   clearActions(){
     this.action = undefined;
@@ -1572,7 +1572,7 @@ export class CombatRound {
    */
   /**
    * Retarget scheduled *attack* actions only.
-   * Retail InitializeNewAttackTarget / CreateNewAttackActions must not rewrite
+   * InitializeNewAttackTarget / QueueAttackActions must not rewrite
    * CAST_SPELL / ITEM_CAST_SPELL targets (personal menu stamps the caster).
    */
   setAttackTarget(target: ModuleObject): boolean {
@@ -1593,8 +1593,8 @@ export class CombatRound {
   }
 
   /**
-   * Retail ResolveAttack entry — melee vs ranged by main-hand weapon.
-   * Fills AttackList slots (JS flattens retail sub_attacks into attackList[5]).
+   * ResolveAttack entry — melee vs ranged by main-hand weapon.
+   * Fills AttackList slots (JS flattens sub_attacks into attackList[5]).
    * @param creature - The creature to calculate the attack damage for
    * @param combatAction - The combat action to calculate the attack damage for
    */
@@ -1603,7 +1603,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail ResolveAttack 
+   * ResolveAttack 
    */
   resolveAttack(creature: ModuleCreature, combatAction: CombatRoundAction){
     if(!combatAction || combatAction.resolved)
@@ -1612,9 +1612,9 @@ export class CombatRound {
     creature.weaponPowered(true);
 
     combatAction.resolved = true;
-    // Retail ResolveAttack — ActivityManager(4) clears stealth/dialog soft modes
+    // ResolveAttack — ActivityManager(4) clears stealth/dialog soft modes
     creature.activityManager?.(4);
-    // Retail ResolveAttack — GetAttackTarget = attackee
+    // ResolveAttack — GetAttackTarget = attackee
     if(combatAction.target){
       creature.combatData.lastAttackTarget = combatAction.target;
     }
@@ -1633,7 +1633,7 @@ export class CombatRound {
     this.offHandTaken = false;
     this.pendingDischargeVisuals.length = 0;
 
-    // Retail ResolveAttack — always branch melee/ranged.
+    // ResolveAttack — always branch melee/ranged.
     // resultsCalculated only short-circuits roll/damage dice inside those paths.
     if(!combatAction.resultsCalculated){
       combatAction.attackResult = (hasAssuredHit) ? AttackResult.AUTOMATIC_HIT : AttackResult.MISS;
@@ -1672,13 +1672,13 @@ export class CombatRound {
       if(!attack) continue;
       // Ranged resolveRangedAttack already set discharge + travel delays
       if(attack.damageApplyDelay >= 0) continue;
-      // Stagger multi-attacks slightly (retail GetWeaponImpactTime per swing)
+      // Stagger multi-attacks slightly (GetWeaponImpactTime per swing)
       attack.damageApplyDelay = damageDelayMs + (i * 200);
     }
   }
 
   /**
-   * Retail ResolveMeleeAttack — loop GetTotalAttacks, SetOffHandAttack by index.
+   * ResolveMeleeAttack — loop GetTotalAttacks, SetOffHandAttack by index.
    */
   resolveMeleeAttack(creature: ModuleCreature, combatAction: CombatRoundAction){
     const maxSlots = this.attackList.length;
@@ -1715,7 +1715,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail ResolveRangedAttack
+   * ResolveRangedAttack
    * weapondischarge.2da Shots/Hits + random attack-shot assignment + travel delay.
    * Every discharge shot fires a bolt; only randomly assigned shots get AttackList rolls.
    */
@@ -1730,7 +1730,7 @@ export class CombatRound {
     this.attackGroup = (this.attackGroup + 1) & 0xff;
     this.pendingDischargeVisuals.length = 0;
 
-    // Retail ResolveRangedAttack: when resultsCalculated, GetWeaponDischargeShots uses
+    // ResolveRangedAttack: when resultsCalculated, GetWeaponDischargeShots uses
     // the designer animations.2da row; otherwise GetClientRangedAnimation.
     let animName: string;
     if(combatAction.resultsCalculated){
@@ -1773,7 +1773,7 @@ export class CombatRound {
       const weaponAttackType = dischargeHand !== 0 ? 2 : (slot === ModuleCreatureArmorSlot.LEFTHAND ? 2 : 1);
 
       if(!attackShotSet.has(shot)){
-        // Retail: discharge-only → ResolveRangedMiss + sub_attack (no AttackList roll)
+        // : discharge-only → ResolveRangedMiss + sub_attack (no AttackList roll)
         if(this.pendingDischargeVisuals.length >= 16) continue;
         const impactPos = CombatRound.getProjectileMissLocation(creature, combatAction.target, AttackResult.MISS);
         const travelMs = CombatRound.getProjectileTravelDelayMs(creature.position, impactPos);
@@ -1817,7 +1817,7 @@ export class CombatRound {
 
       let impactPos: THREE.Vector3;
       if(hit){
-        // ResolveRangedHit — impact node or body z+1.25 (retail projectile)
+        // ResolveRangedHit — impact node or body z+1.25 (projectile)
         impactPos = getProjectileImpactPosition(combatAction.target);
         attack.rangedTargetX = impactPos.x;
         attack.rangedTargetY = impactPos.y;
@@ -1863,7 +1863,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail ResolveMeleeAttack coup_de_grace gate:
+   * ResolveMeleeAttack coup_de_grace gate:
    * target creature debilitated/dying, total level &lt; 5, not party-UI path → Automatic Hit.
    */
   shouldCoupDeGrace(target: ModuleCreature): boolean {
@@ -2072,7 +2072,7 @@ export class CombatRound {
   }
 
   /**
-   * Check if the creature is dual-wielding (retail CalculateOffHandAttacks dual path).
+   * Check if the creature is dual-wielding (CalculateOffHandAttacks dual path).
    */
   isDualWielding(creature: ModuleCreature): boolean {
     const rightHand = creature.equipment.RIGHTHAND;
@@ -2332,7 +2332,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail GetEffectImmunity.
+   * GetEffectImmunity.
    * Combat uses 30 (sneak) and 31 (critical hits).
    * @param versus - optional attacker for race / alignment filters on the effect
    */
@@ -2348,7 +2348,7 @@ export class CombatRound {
     if(versus){
       versusRace = versus.getRace?.() ?? versus.race ?? raceCount;
       const ge = versus.getGoodEvil?.() ?? 50;
-      // Retail: <41 evil(3), >59 good(2), else neutral(1)
+      // : <41 evil(3), >59 good(2), else neutral(1)
       versusAlign = ge < 41 ? 3 : (ge > 59 ? 2 : 1);
     }
     for(let i = 0; i < creature.effects.length; i++){
@@ -2432,7 +2432,7 @@ export class CombatRound {
 
   /**
    * Resolve a weapon attack roll and its damage.
-   * @param swingIndex - Retail ResolveMeleeAttack loop index (for impact timing / OH gate)
+   * @param swingIndex - ResolveMeleeAttack loop index (for impact timing / OH gate)
    */
   calculateWeaponAttack(
     creature: ModuleCreature,
@@ -2455,7 +2455,7 @@ export class CombatRound {
     attack.coupDeGrace = false;
     attack.weaponAttackType = weaponSlot == ModuleCreatureArmorSlot.LEFTHAND ? 2 : 1;
 
-    // Retail ResolveAttackRoll / ResolveDamage when resultsCalculated:
+    // ResolveAttackRoll / ResolveDamage when resultsCalculated:
     // stamp designer result + SetBaseDamage/SetDamage(scripted); skip dice and on-hit.
     if(combatAction.resultsCalculated){
       attack.attackResult = combatAction.attackResult;
@@ -2485,7 +2485,7 @@ export class CombatRound {
     const targetCreature = BitWise.InstanceOfObject(combatAction.target, ModuleObjectType.ModuleCreature)
       ? combatAction.target as ModuleCreature
       : undefined;
-    // Retail ResolveAttackRoll — AC only via GetArmorClassVersus on creatures; else 0
+    // ResolveAttackRoll — AC only via GetArmorClassVersus on creatures; else 0
     const targetAC = targetCreature
       ? targetCreature.getArmorClassVersus(creature, false)
       : 0;
@@ -2500,7 +2500,7 @@ export class CombatRound {
       }
     }
 
-    // Coup de grace → Automatic Hit (retail ResolveAttackRoll)
+    // Coup de grace → Automatic Hit (ResolveAttackRoll)
     if(attack.coupDeGrace){
       combatAction.attackResult = AttackResult.AUTOMATIC_HIT;
       attack.attackResult = AttackResult.AUTOMATIC_HIT;
@@ -2511,7 +2511,7 @@ export class CombatRound {
       return;
     }
 
-    // Attacker MissChance (retail Blindness child MissChance 50%)
+    // Attacker MissChance (Blindness child MissChance 50%)
     if(!hasAssuredHit){
       const missChance = this.getMissChancePercent(creature);
       if(missChance > 0){
@@ -2593,7 +2593,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail ResolveMeleeSpecialAttack / ResolveRangedSpecialAttack
+   * ResolveMeleeSpecialAttack / ResolveRangedSpecialAttack
    * on first swing only: queue Crit Strike / Sniper SETSTATE stun when the attack hits.
    * (AC penalties are applied earlier via TalentFeat.impactCaster.)
    */
@@ -2620,7 +2620,7 @@ export class CombatRound {
 
   /**
    * Calculate the round animations for the given creature and combat action.
-   * Retail ResolveMeleeAnimations / ResolveRangedAnimations
+   * ResolveMeleeAnimations / ResolveRangedAnimations
    * engaged duels sync target reaction when CheckActionLengthAtTime.
    * Ranged dodge requires the *target* round engaged (not merely the shooter),
    * so a melee PC closing distance does not dodge-slide mid-sprint.
@@ -2632,8 +2632,8 @@ export class CombatRound {
     let weaponWield = creature.getCombatAnimationWeaponType();
     let attackType = 1;
 
-    // Engaged melee choreography uses c*aN attack set (retail duel anims).
-    // Do NOT gate on predicted killingBlow — retail only checks actual death
+    // Engaged melee choreography uses c*aN attack set (duel anims).
+    // Do NOT gate on predicted killingBlow — only checks actual death
     // (GetDeadTemp) later in ResolveMeleeAnimations, so hits/crits still duel.
     if(attackKey == 'm' && this.engaged){
       attackKey = 'c';
@@ -2665,7 +2665,7 @@ export class CombatRound {
       combatAction.animationTime || 1500
     );
 
-    // Stamp AttackList[0] reaction metadata (retail GetAttack(current))
+    // Stamp AttackList[0] reaction metadata (GetAttack(current))
     const primary = this.attackList[0];
     if(primary){
       primary.animationLength = animLength;
@@ -2700,7 +2700,7 @@ export class CombatRound {
       ? combatAction.target as ModuleCreature
       : undefined;
 
-    // Retail ResolveMelee/RangedAnimations gates only on the target being actually
+    // ResolveMelee/RangedAnimations gates only on the target being actually
     // dead (GetDeadTemp), never on predicted killingBlow — hits must react.
     if(target && !target.isDead?.()){
       let reaction: number;
@@ -2712,7 +2712,7 @@ export class CombatRound {
       );
 
       if(isRanged){
-        // Retail ResolveRangedAnimations 
+        // ResolveRangedAnimations 
         const rolled: AttackResult[] = [];
         for(let i = 0; i < this.currentAttack; i++){
           const r = this.attackList[i]?.attackResult;
@@ -2736,7 +2736,7 @@ export class CombatRound {
         });
       }else{
         reaction = CombatRound.pickMeleeReaction(combatAction.attackResult);
-        // Retail ResolveMeleeAnimations:
+        // ResolveMeleeAnimations:
         // engaged && (CheckActionLengthAtTime || resultsCalculated).
         shouldReact = CombatRound.canSyncMeleeReaction({
           engaged: this.engaged,
@@ -2746,7 +2746,7 @@ export class CombatRound {
         });
       }
 
-      // Retail stamps reaction metadata; do not wipe ranged travel delay
+      // stamps reaction metadata; do not wipe ranged travel delay
       // (ResolveRangedHit/Miss reaxn_delay) used for bolt flight.
       if(primary){
         primary.reaxnAnimation = reaction;
@@ -2757,7 +2757,7 @@ export class CombatRound {
       }
 
       if(shouldReact && reaction !== ModuleCreatureAnimState.READY){
-        // Prefer combatanimations-mapped clip; if missing, retail SetAnimation(reaction)
+        // Prefer combatanimations-mapped clip; if missing, SetAnimation(reaction)
         // so hits never leave a stale ATTACK clip (playTwoDAAnimation no-ops on undefined).
         let mapped: ReturnType<ModuleCreature['getDamageAnimation']> | undefined;
         if(reaction === ModuleCreatureAnimState.DAMAGE){
@@ -2780,7 +2780,7 @@ export class CombatRound {
         }else{
           target.setAnimationState(reaction);
         }
-        // Retail always decrements defender round length when reaction plays
+        // always decrements defender round length when reaction plays
         if(target.combatRound){
           target.combatRound.decrementRoundLength(animLength);
         }
@@ -2795,7 +2795,7 @@ export class CombatRound {
           cutscene: !!combatAction.resultsCalculated,
           checkActionLengthOk,
         });
-        // Retail else path: reaxn_animation = READY (0x2711)
+        // else path: reaxn_animation = READY (0x2711)
         primary.reaxnAnimation = ModuleCreatureAnimState.READY;
       }
     }else{
@@ -2821,7 +2821,7 @@ export class CombatRound {
 
   /**
    * Convert the combat round to a GFF struct
-   * Retail SaveCombatRound (struct type 0xCADA)
+   * SaveCombatRound (struct type 0xCADA)
    * @param structIdx - The index of the struct
    * @returns The GFF struct
    */
@@ -2839,7 +2839,7 @@ export class CombatRound {
     struct.addField(new GFFField(GFFDataType.INT, 'Engaged')).setValue(this.engaged ? 1 : 0);
     struct.addField(new GFFField(GFFDataType.INT, 'Master')).setValue(this.master ? 1 : 0);
     struct.addField(new GFFField(GFFDataType.DWORD, 'MasterID')).setValue(objId(this.masterID));
-    // DuelPartner is not written by retail K1 SaveCombatRound 
+    // DuelPartner is not written by K1 SaveCombatRound 
     if(GameState.GameKey == GameEngineType.TSL){
       struct.addField(new GFFField(GFFDataType.DWORD, 'DuelPartner')).setValue(objId(this.duelPartner));
     }
@@ -2880,7 +2880,7 @@ export class CombatRound {
       specAttackList.addChildStruct(spec);
     }
 
-    // SpecAttackIdList — retail special_attack_id_list at SaveCombatRound
+    // SpecAttackIdList — special_attack_id_list at SaveCombatRound
     const specAttackIdList = struct.addField(new GFFField(GFFDataType.LIST, 'SpecAttackIdList'));
     for(let i = 0; i < this.specialAttackIdList.length; i++){
       const spec = new GFFStruct(0xDAAE);
@@ -2891,7 +2891,7 @@ export class CombatRound {
     }
 
     const schedList = struct.addField(new GFFField(GFFDataType.LIST, 'SchedActionList'));
-    // Retail actions linked-list includes the in-flight head; JS keeps that on `action`
+    // actions linked-list includes the in-flight head; JS keeps that on `action`
     // after ActionCombat.shift — prepend so mid-combat saves do not drop it.
     if(this.action){
       schedList.addChildStruct(this.action.toStruct(0xDAEA));
@@ -2904,7 +2904,7 @@ export class CombatRound {
   }
 
   /**
-   * Retail LoadCombatRound
+   * LoadCombatRound
    * only restores when RoundStarted is non-zero.
    */
   fromStruct(struct: GFFStruct): boolean {
@@ -2935,7 +2935,7 @@ export class CombatRound {
       get('RoundPausedBy', ModuleObjectConstant.OBJECT_INVALID)
     );
     this.roundPausedBy = lookupCombatObjectById(this.roundPausedByObjectId);
-    this.infinitePause = false; // retail clears after load
+    this.infinitePause = false; // clears after load
     this.pauseTimer = get('PauseTimer');
     this.engaged = !!get('Engaged');
     this.master = !!get('Master');
@@ -2960,7 +2960,7 @@ export class CombatRound {
     this.onHandAttacks = get('OnHandAttacks');
     this.offHandAttacks = get('OffHandAttacks');
     this.additionalAttacks = get('AdditAttacks');
-    this.effectAttacks = 0; // retail zeroes EffectAttacks on load
+    this.effectAttacks = 0; // zeroes EffectAttacks on load
     this.parryActions = get('ParryActions');
     this.offHandTaken = !!get('OffHandTaken');
     this.extraTaken = !!get('ExtraTaken');
@@ -3003,7 +3003,7 @@ export class CombatRound {
       }
     }
 
-    // Retail AttackList has no damageApplyDelay — resume unapplied swings from CurrentAttack
+    // AttackList has no damageApplyDelay — resume unapplied swings from CurrentAttack
     this.restorePendingDamageTimers();
 
     return true;
@@ -3058,7 +3058,7 @@ export class CombatRound {
 
   /**
    * After individual resolve: ensure master ↔ slave duelPartner / masterID agree
-   * so EndCombatRound can release the slave.
+   * so end combat round can release the slave.
    */
   wireBidirectionalDuelLinks(){
     if(!this.engaged || !this.owner){
@@ -3085,7 +3085,7 @@ export class CombatRound {
   /**
    * After load resolve: if the round is started but every attack sched target is
    * missing, retarget from DodgeTarget/NewAttackTarget or end the round so
-   * OnEndRound / CreateNewAttackActions can requeue.
+   * OnEndRound / QueueAttackActions can requeue.
    */
   recoverEmptyOrInvalidScheduleAfterLoad(){
     if(!this.roundStarted){
@@ -3137,7 +3137,7 @@ export class CombatRound {
         creature.combatData.lastAttemptedAttackTarget = fallback;
         this.newAttackTarget = fallback;
         this.setAttackTarget(fallback);
-        createNewAttackActions(creature);
+        queueAttackActions(creature);
       }
       return;
     }
@@ -3147,7 +3147,7 @@ export class CombatRound {
 
   /**
    * Seed CombatData attack targets from resolved CombatRound refs.
-   * Retail does not GFF-persist lastAttackTarget — reconstruct after load.
+   * does not GFF-persist lastAttackTarget — reconstruct after load.
    */
   rehydrateCombatTargets(){
     if(!this.roundStarted || !this.owner){
@@ -3205,11 +3205,11 @@ export class CombatRound {
 
   /**
    * Log the attack result to the Messages feedback buffer.
-   * Mirrors retail SendAttackSummaryFeedback → CC 0x12 TLK assembly.
+   * matches engine behavior SendAttackSummaryFeedback → CC 0x12 TLK assembly.
    */
   /**
    * Log the attack result to the Messages feedback buffer.
-   * Mirrors retail SendAttackSummaryFeedback → CC 0x12 TLK assembly.
+   * matches engine behavior SendAttackSummaryFeedback → CC 0x12 TLK assembly.
    */
   logAttackResult(creature: ModuleCreature, _weapon: ModuleItem | undefined, combatAction: CombatRoundAction, isCritical: boolean, hasAssuredHit: boolean) {
     const { FeedbackMessageManager } = GameState;

@@ -3,7 +3,7 @@ import { AutoPauseState } from "@/enums/engine/AutoPauseState";
 import type { GUILabel, GUIButton } from "@/gui";
 import { InGamePause as K1_InGamePause } from "@/game/kotor/KOTOR";
 
-/** Retail SetPauseReason TLK ids (TSL). */
+/** SetPauseReason TLK ids (TSL). */
 const TLK_PAUSE_GENERIC = 0x5e4;
 const TLK_PAUSE_ENEMY = 0xbe5c;
 const TLK_PAUSE_END_ROUND = 0xa5c0;

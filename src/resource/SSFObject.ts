@@ -83,7 +83,7 @@ export class SSFObject {
   }
 
   /**
-   * Serialize to binary .ssf bytes (12-byte header + 28 × uint32 STRREFs).
+   * Serialize to binary.ssf bytes (12-byte header + 28 × uint32 STRREFs).
    */
   toExportBuffer(): Uint8Array {
     this.normalizeSlots();

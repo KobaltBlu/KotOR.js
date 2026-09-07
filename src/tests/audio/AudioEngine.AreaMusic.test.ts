@@ -121,7 +121,7 @@ describe('AudioEngine area BGM want / MusicDelay', () => {
     expect(engine.bgmTimer).toBe(0);
   });
 
-  test('AMBIENT_SOUND_FADE_MS is retail 6000', () => {
+  test('AMBIENT_SOUND_FADE_MS is engine 6000', () => {
     expect(AMBIENT_SOUND_FADE_MS).toBe(6000);
   });
 });

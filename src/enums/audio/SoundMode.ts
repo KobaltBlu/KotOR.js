@@ -1,7 +1,7 @@
 /**
  * SoundMode enum.
  *
- * Retail SetSoundMode modes ().
+ * SetSoundMode modes.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

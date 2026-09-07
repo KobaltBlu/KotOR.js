@@ -6,7 +6,7 @@ import { GameState } from "@/GameState";
 /**
  * InGameComputerCam class.
  *
- * retail — placeable-cam overlay during
+ * — placeable-cam overlay during
  * computer ConversationType==1 + CameraAngle==6. LBL_RETURN skips the current
  * entry; SetLiveFeedMessageVisible toggles the live-feed label.
  *
@@ -70,7 +70,7 @@ export class InGameComputerCam extends GameMenu {
   }
 
   /**
-   * Retail SetLiveFeedMessageVisible
+   * SetLiveFeedMessageVisible
    * hidden when CamVidEffect is -2 or 10.
    */
   setLiveFeedVisible(visible: boolean) {

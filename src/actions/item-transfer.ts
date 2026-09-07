@@ -15,7 +15,7 @@ import { BitWise } from "@/utility/BitWise";
 export const ITEM_TYPE_CREDITS = 0x17;
 export const ITEM_TYPE_PAZAAK_CARD = 0x2a;
 
-/** Retail UpdateStatus ids from Give/Take. */
+/** UpdateStatus ids from Give/Take. */
 export const UPDATE_STATUS_ITEM_GIVEN = 7;
 export const UPDATE_STATUS_ITEM_TAKEN = 8;
 
@@ -52,7 +52,7 @@ export function isPartyCreature(obj: ModuleObject | undefined): boolean {
 }
 
 /**
- * Retail SplitItem — detach nCount from a stack.
+ * SplitItem — detach nCount from a stack.
  * nCount ≤ 0 or ≥ stack → returns the original item (no split).
  */
 export function splitItemStack(item: ModuleItem, nCount: number): ModuleItem {

@@ -9,7 +9,7 @@ import { GameState } from "@/GameState";
 import type { BufferAttribute } from "three";
 
 /**
- * GUIEditBox — retail edit box.
+ * GUIEditBox — edit box.
  *
  * Navigable control with border + editable text.
  * Load: TEXT → BORDER → base. SetExtent: border full → text inner.
@@ -65,7 +65,7 @@ export class GUIEditBox extends GUIControl {
         return;
       }
 
-      // Printable single code point — letters/digits (retail save-name charset).
+      // Printable single code point — letters/digits (save-name charset).
       if(e.key.length === 1 && /^[0-9A-Za-z]$/.test(e.key)){
         this.setText(this.editValue + e.key);
         e.preventDefault?.();
@@ -86,7 +86,7 @@ export class GUIEditBox extends GUIControl {
   }
 
   /**
-   * Retail SetExtent — border full extent; text uses GetInnerExtent.
+   * SetExtent — border full extent; text uses GetInnerExtent.
    * Border rebuild is handled by super; text geometry already uses getInnerSize.
    */
   resizeControl(): void {

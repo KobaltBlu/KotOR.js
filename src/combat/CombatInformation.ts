@@ -5,7 +5,7 @@ import { GameState } from "@/GameState";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 
 /**
- * One AttackList / DamageList element — retail CCombatInformationNode (5 bytes).
+ * One AttackList / DamageList element — CCombatInformationNode (5 bytes).
  * Attack list type 0xAAEE; Damage list type 0xDDEE.
  */
 export class CombatInformationNode {
@@ -49,7 +49,7 @@ export class CombatInformationNode {
 }
 
 /**
- * Retail CCombatInformation — SaveData / LoadData.
+ * CCombatInformation — SaveData / LoadData.
  * GFF struct type 0xCAAA under creature "CombatInfo".
  *
  * @file CombatInformation.ts

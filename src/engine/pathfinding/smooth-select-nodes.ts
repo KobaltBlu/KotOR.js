@@ -7,12 +7,12 @@ import { hasDirectLine } from "@/engine/pathfinding/test-direct-line";
  * Approximate SmoothSelectNodes
  * SmoothSelectNodesRestartable + SmoothSelectionRestartable.
  *
- * Retail SmoothSelectionRestartable (retail):
+ * SmoothSelectionRestartable :
  * state stage 2: densify only — arg5=1, arg6=0, arg7=**5.0**
  * state stage 3: densify + look-ahead string-pull — (1, 1, **1.1**)
  * state stage 4: string-pull only — (0, 1, 1.1)
  *
- * Time budget: retail compares Exo high-res delta to retail constant (=10000);
+ * Time budget: compares Exo high-res delta to constant (=10000);
  * JS uses ~10ms wall clock and may return mid-pipeline with resume
  * (state + mid-pass densify cursor state/state/state).
  *
@@ -24,7 +24,7 @@ const DENSIFY_STEP = 1.0;
 const DENSIFY_MIN_COARSE = 5.0;
 /** Pass-2/3 threshold. */
 const DENSIFY_MIN_FINE = 1.1;
-/** retail constant = 10000 timer ticks ≈ 10ms wall slice. */
+/** constant = 10000 timer ticks ≈ 10ms wall slice. */
 export const SMOOTH_SELECTION_BUDGET_MS = 10;
 
 /** SmoothSelectionRestartable stage. */
@@ -33,7 +33,7 @@ export type SmoothSelectionStage = 2 | 3 | 4;
 /**
  * Resume across frames when SmoothSelectNodesRestartable returns 1.
  * Working polyline is the input for the next stage (or current if mid-stage).
- * Densify cursor mirrors retail/132/133 on CPathfindInformation.
+ * Densify cursor matches engine behavior/132/133 on CPathfindInformation.
  */
 export type SmoothSelectionResume = {
   stage: SmoothSelectionStage;
@@ -67,7 +67,7 @@ function cloneVecList(points: THREE.Vector3[]): THREE.Vector3[] {
 }
 
 /**
- * Build insert points along segment a→b when length ≥ minLength (retail densify).
+ * Build insert points along segment a→b when length ≥ minLength (densify).
  */
 function buildEdgeInserts(
   a: THREE.Vector3,
@@ -93,7 +93,7 @@ function buildEdgeInserts(
 }
 
 /**
- * Insert points along segments longer than `minLength` (retail densify).
+ * Insert points along segments longer than `minLength` (densify).
  * Sync convenience — no time slice.
  */
 export function densifyPathPoints(
@@ -239,7 +239,7 @@ export function smoothSelectNodes(
       }
     }
 
-    // Retail: when look-ahead fails and span≥5, binary-halve span
+    // : when look-ahead fails and span≥5, binary-halve span
     if(farthest === i + 1 && points.length - 1 - i >= 5){
       let span = points.length - 1 - i;
       while(span >= 5){
@@ -287,7 +287,7 @@ function makeDensifyResume(
 }
 
 /**
- * Retail SmoothSelectionRestartable three-pass pipeline ().
+ * SmoothSelectionRestartable three-pass pipeline.
  * May return early with `timedOut` + `resume` when wall budget exhausted.
  */
 export function smoothSelectionRestartable(

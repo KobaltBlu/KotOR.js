@@ -83,14 +83,14 @@ export class MDLLoader {
    * // Load a character model
    * const model = await MDLLoader.loader.load('p_male01');
    * if (model) {
-   *   console.log('Model loaded successfully');
+   * console.log('Model loaded successfully');
    * }
    * 
    * @example
    * // Load an environmental object
    * const doorModel = await MDLLoader.loader.load('door_01');
    * if (doorModel) {
-   *   // Use the model in the game
+   * // Use the model in the game
    * }
    */
 	async load (resref: string = ''): Promise<OdysseyModel> {
@@ -128,19 +128,19 @@ export class MDLLoader {
    * 
    * This method removes all cached models from memory, which can be useful
    * for memory management or when you need to force reload models with
-   * updated data. After calling this method, subsequent load() calls will
+   * updated data. After calling this method, subsequent load calls will
    * need to load models from the file system again.
    * 
    * @returns {void}
    * 
    * @example
    * // Clear the cache to free up memory
-   * MDLLoader.loader.reset();
+   * MDLLoader.loader.reset;
    * console.log('Model cache cleared');
    * 
    * @example
    * // Force reload a model after cache clear
-   * MDLLoader.loader.reset();
+   * MDLLoader.loader.reset;
    * const model = await MDLLoader.loader.load('p_male01'); // Will load from disk
    */
   reset(){

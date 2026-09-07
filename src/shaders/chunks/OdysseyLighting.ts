@@ -1,17 +1,17 @@
 import * as THREE from "three";
 
 /**
- * Retail-aligned Odyssey lighting GLSL + uniform helpers.
+ * engine-aligned Odyssey lighting GLSL + uniform helpers.
  * Positions uploaded by OdysseyLightingBinder are view-space (xyz); w = quadratic atten.
  * Packed arrays avoid Three.js struct-array upload crashes.
  *
- * Attenuation: 1/(1 + (4.5/r²)*d²) with r = max(radius, 0.1) — SetLightGL
- * Ambient-only: ambient channel only — SetLightGL
- * Active loop capped at retail per-model allowed_lights (3); array size stays 8.
+ * Attenuation: 1/(1 + (4.5/r²)*d²) with r = max(radius, 0.1) — light upload
+ * Ambient-only: ambient channel only — light upload
+ * Active loop capped at per-model allowed_lights (3); array size stays 8.
  */
 
 export const MAX_ODYSSEY_LIGHTS = 8;
-/** Retail VertexProgram allowed_lights — GLSL accumulate loop bound. */
+/** VertexProgram allowed_lights — GLSL accumulate loop bound. */
 export const MAX_ODYSSEY_LIGHTS_LOOP = 3;
 
 /** GLSL fragment lighting helpers (included once in Odyssey model fragment shader). */
@@ -35,11 +35,11 @@ uniform vec3 odysseyHeadLightDiffuse;
 // xyz = view-space position (binder-transformed), w = quadratic attenuation coeff (4.5/r²)
 uniform vec4 odysseyLightPos[ MAX_ODYSSEY_LIGHTS ];
 // rgb = light color (fade×color for rooms; authored color for nearest/gob
-// VP SetUpVertexProgramLightShaderConstants; no PartLight.multiplier),
+// VP SetUpVertexProgramLightShaderConstants; no light node.multiplier),
 // w = ambientOnly
 uniform vec4 odysseyLightColor[ MAX_ODYSSEY_LIGHTS ];
 
-float odysseyRetailAttenuation( const in float lightDistance, const in float quadratic ) {
+float odysseyAttenuation( const in float lightDistance, const in float quadratic ) {
   if ( quadratic <= 0.0 ) return 0.0;
   return 1.0 / ( 1.0 + quadratic * lightDistance * lightDistance );
 }
@@ -61,7 +61,7 @@ vec3 odysseyBlinnPhong(
   return pow( dotNH, shininess ) * specularColor;
 }
 
-// Packed GL_LIGHT0..2 irradiance (SetLightGL). Diffuse terms are
+// Packed GL_LIGHT0..2 irradiance (light upload). Diffuse terms are
 // lighting only — the caller multiplies by albedo afterward. Default TXI
 // envmaps ADD env*(1-texAlpha) after lighting (not albedo LERP).
 void odysseyAccumulatePointLights(
@@ -82,11 +82,11 @@ void odysseyAccumulatePointLights(
       // lightPos.xyz already view-space (OdysseyLightingBinder)
       vec3 lVector = lightPos.xyz - geometryPosition;
       float lightDistance = length( lVector );
-      float atten = odysseyRetailAttenuation( lightDistance, lightPos.w );
+      float atten = odysseyAttenuation( lightDistance, lightPos.w );
       vec3 lightColor = lightCol.rgb * atten;
       if ( lightColor != vec3( 0.0 ) ) {
         if ( lightCol.w > 0.5 ) {
-          // Ambient-only PartLight — SetLightGL ambient channel, no N·L
+          // Ambient-only light node — light upload ambient channel, no N·L
           indirectDiffuse += lightColor;
         } else {
           vec3 lightDir = normalize( lVector );
@@ -202,9 +202,9 @@ export function createOdysseyMaterialBaseUniforms(): Record<string, { value: unk
     displacementBias: { value: 0 },
     envMap: { value: null },
     envMapIntensity: { value: 1 },
-    /** TXI envmapalpha — retail one-pass output alpha; not an RGB blend scale. */
+    /** TXI envmapalpha — one-pass output alpha; not an RGB blend scale. */
     envMapAlpha: { value: 1 },
-    // Retail samples cubemaps with GL_REFLECTION_MAP (no X flip). Three defaults
+    // samples cubemaps with GL_REFLECTION_MAP (no X flip). Three defaults
     // CubeTexture to -1 for its loader convention; TPC faces are uploaded in GL order.
     flipEnvMap: { value: 1 },
     /** DoEnvMapTransform — camera world rotation; identity until binder uploads. */

@@ -1,5 +1,5 @@
 /**
- * camera_mode — retail K1 UpdateCameraFollow,
+ * camera_mode — K1 UpdateCameraFollow,
  * SetCameraMode, SetFreeLookCamera, SetNavigateCamera,
  * SetCombatCamera (mode 6).
  *
@@ -20,7 +20,7 @@ export enum ClientCameraMode {
   RESERVED_4 = 4,
   /**
    * FreeLook behavior + CamRelative drive yaw (SetFreeLookCamera / drive scripts).
-   * Same numeric value as retail FreeLook and drive-control gate.
+   * Same numeric value as FreeLook and drive-control gate.
    */
   FREELOOK = 5,
   /** Alias — scripts / IngameControls drive gate use mode 5 */

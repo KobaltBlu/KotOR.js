@@ -18,7 +18,7 @@ export class VideoEffect {
   enableForceSight: boolean = false;
   enableClairVoyanceFull: boolean = false;
   enableFury: boolean = false;
-  /** Retail EnableFury column is an int 1–3 selecting fx_Fury0N. */
+  /** EnableFury column is an int 1–3 selecting fx_Fury0N. */
   furyLevel: number = 0;
 
   saturation: number = 0;

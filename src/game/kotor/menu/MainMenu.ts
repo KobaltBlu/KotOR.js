@@ -14,7 +14,7 @@ import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
 /**
  * MainMenu class.
  *
- * retail — title screen buttons, 3D backdrop, theme music.
+ * — title screen buttons, 3D backdrop, theme music.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -50,7 +50,7 @@ export class MainMenu extends GameMenu {
     this.userCanClose = false;
   }
 
-  /** Visible title buttons in retail order (New → Load → Movies → Options → Exit). */
+  /** Visible title buttons in order (New → Load → Movies → Options → Exit). */
   protected getNavButtons(): GUIButton[] {
     return [
       this.BTN_NEWGAME,

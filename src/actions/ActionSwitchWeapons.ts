@@ -23,7 +23,7 @@ export class ActionSwitchWeapons extends Action {
     this.type = ActionType.ActionSwitchWeapons;
   }
 
-  /** Clear trailing queue actions; current head stays until process() shifts it. */
+  /** Clear trailing queue actions; current head stays until process shifts it. */
   private clearTrailingActions(owner: ModuleCreature){
     const queue = owner.actionQueue;
     while(queue.length > 1){
@@ -54,7 +54,7 @@ export class ActionSwitchWeapons extends Action {
     const right2 = owner.GetItemInSlot(ModuleCreatureArmorSlot.RIGHTHAND2);
     const left2 = owner.GetItemInSlot(ModuleCreatureArmorSlot.LEFTHAND2);
 
-    // Retail ClearAllActions while current node is already off the list
+    // ClearAllActions while current node is already off the list
     this.clearTrailingActions(owner);
 
     owner.unequipSlot(ModuleCreatureArmorSlot.LEFTHAND2);
@@ -62,7 +62,7 @@ export class ActionSwitchWeapons extends Action {
     owner.unequipSlot(ModuleCreatureArmorSlot.LEFTHAND);
     owner.unequipSlot(ModuleCreatureArmorSlot.RIGHTHAND);
 
-    // Retail equip order: RH2→RH, LH2→LH, old RH→RH2, old LH→LH2
+    // equip order: RH2→RH, LH2→LH, old RH→RH2, old LH→LH2
     if(right2){
       void owner.equipItem(ModuleCreatureArmorSlot.RIGHTHAND, right2);
     }
@@ -76,7 +76,7 @@ export class ActionSwitchWeapons extends Action {
       void owner.equipItem(ModuleCreatureArmorSlot.LEFTHAND2, left1);
     }
 
-    // Retail: if party PC in combat with attack target, re-queue attack
+    // : if party PC in combat with attack target, re-queue attack
     const attackTarget = owner.combatData?.lastAttemptedAttackTarget as ModuleObject | undefined;
     if(
       owner.combatData?.combatState &&

@@ -6,7 +6,7 @@ import type { TalentFeat } from "@/talents/TalentFeat";
 /**
  * MenuSkillInfo class.
  *
- * retail — used by ShowGranted
+ * — used by ShowGranted
  * to list feats granted when CharGen feats panel opens (TLK 0xa512 = 42258).
  * Rows are GUI (K1) via {@link GUICreatureSkill}.
  *
@@ -48,7 +48,7 @@ export class MenuSkillInfo extends GameMenu {
       this.tGuiPanel.extent.top = 0;
     }
 
-    // Retail ctor: noSelectMode + SetEnabled(0) on LB_SKILLS;
+    // ctor: noSelectMode + SetEnabled(0) on LB_SKILLS;
     // rows are InGameSkillEntry (GUICreatureSkill), not raw PROTOITEM text.
     if(this.LB_SKILLS){
       this.LB_SKILLS.setProtoBuilder(GUICreatureSkill);
@@ -59,7 +59,7 @@ export class MenuSkillInfo extends GameMenu {
 
   /**
    * Open with message + talent list (feats / skills / powers).
-   * Retail SetSkillList — AddControls of InGameSkillEntry rows.
+   * SetSkillList — AddControls of InGameSkillEntry rows.
    */
   openWithContent(message: string, items: Array<TalentFeat | { getName?: () => string; getIcon?: () => string } | string>, onDismiss?: () => void) {
     this.onDismiss = onDismiss;

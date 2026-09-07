@@ -31,7 +31,7 @@ function emptyTable(): IPazaakTable {
 describe('TSL Pazaak gold specials (SetCard)', () => {
   const side = PazaakConfig_TSL.data.sideDeckCards;
 
-  it('gold order matches retail 0x12..0x16', () => {
+  it('gold order matches engine 0x12..0x16', () => {
     expect(side[18].name).toBe('Tie Breaker');
     expect(side[19].name).toBe('Double');
     expect(side[20].name).toBe('Flip2&4');

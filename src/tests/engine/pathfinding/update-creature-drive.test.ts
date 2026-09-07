@@ -1,5 +1,5 @@
 /**
- * DriveUpdateLocation creature-block gates.
+ * creature drive update creature-block gates.
  * @jest-environment node
  */
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
@@ -39,7 +39,7 @@ jest.mock("@/engine/pathfinding/test-direct-line", () => ({
   TestDirectLineCode: { Ok: 1, Fail: 0, NonWalk: -1, DetailedBlock: -2, Creature: -3 },
 }));
 
-import { driveResolveMoveTarget } from "@/engine/pathfinding/drive-update-location";
+import { driveResolveMoveTarget } from "@/engine/pathfinding/update-creature-drive";
 import type { ModuleArea } from "@/module/ModuleArea";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 

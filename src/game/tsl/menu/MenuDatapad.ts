@@ -2,13 +2,13 @@ import { GameMenu } from "@/gui";
 import type { GUIListBox, GUIButton } from "@/gui";
 import type { ModuleItem } from "@/module/ModuleItem";
 
-/** Retail SetLocalBoolean index on DisplayDatapad (ExecuteCommandDisplayDatapad). */
+/** SetLocalBoolean index on DisplayDatapad (ExecuteCommandDisplayDatapad). */
 export const DATAPAD_SHOWN_LOCAL_BOOL = 0x5e;
 
 /**
  * MenuDatapad — TSL datapad popup (`datapad_p`).
  *
- * Retail: GUI datapad mode ; opened by
+ * : GUI datapad mode; opened by
  * ExecuteCommandDisplayDatapad (InGameGui panel).
  * Cancel is hidden (SetAllowCancel(0)); OK dismisses. Text = DescIdentified.
  *
@@ -40,7 +40,7 @@ export class MenuDatapad extends GameMenu {
       });
       this._button_a = this.BTN_OK;
 
-      // Retail SetAllowCancel(0) — cancel control exists in layout but stays hidden
+      // SetAllowCancel(0) — cancel control exists in layout but stays hidden
       this.BTN_CANCEL?.hide();
       this.BTN_CANCEL?.addEventListener('click', (e) => {
         e.stopPropagation();

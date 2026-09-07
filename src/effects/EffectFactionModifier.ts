@@ -2,7 +2,7 @@ import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 
 /**
- * EffectFactionModifier — retail type 0x73 (ExecuteCommandEffectFactionModifier).
+ * EffectFactionModifier — type 0x73 (ExecuteCommandEffectFactionModifier).
  * int[0] = faction modifier value.
  *
  * @file EffectFactionModifier.ts

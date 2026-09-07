@@ -56,7 +56,7 @@ function ensureCaches(): void {
 
 /**
  * Bitmask of surface material indices that block NoNonWalk corridor tests.
- * Uses low 5 bits of material index (retail `1 << (mat & 0x1f)`).
+ * Uses low 5 bits of material index (`1 << (mat & 0x1f)`).
  */
 export function getWalkCheckMaterialMask(): number {
   ensureCaches();

@@ -249,7 +249,7 @@ export class TabModelViewerState extends TabState {
     this.groundGeometry = new THREE.WireframeGeometry(new THREE.PlaneGeometry( 2500, 2500, 100, 100 ));
     this.groundMaterial = new THREE.LineBasicMaterial( { color: this.groundColor, linewidth: 2 } );
     this.groundMesh = new THREE.LineSegments( this.groundGeometry, this.groundMaterial );
-    // this.unselectable.add( this.groundMesh );
+    // this.unselectable.add(this.groundMesh);
     
     this.ui3DRenderer = new UI3DRenderer();
     this.ui3DRenderer.windowPower = forgeViewportSettings.get().windPower;
@@ -444,7 +444,7 @@ export class TabModelViewerState extends TabState {
                 lightHelpers: this.ui3DRenderer.group.light_helpers,
               });
 
-              // this.updateCameraFocus();
+              // this.updateCameraFocus;
               this.processEventListener('onEditorFileLoad', [this]);
               this.processEventListener<TabModelViewerStateEventListenerTypes>('onKeyframeEditorChange', [this]);
               resolve(this.model);
@@ -558,15 +558,15 @@ export class TabModelViewerState extends TabState {
 
   playAnimation(){
     // if(!this.currentAnimation){
-    //   this.pause();
-    //   return;
+    // this.pause;
+    // return;
     // }
     // if(this.currentAnimation != this.model.animationManager.currentAnimation){
-    //   this.model.playAnimation(this.currentAnimation, this.looping);
+    // this.model.playAnimation(this.currentAnimation, this.looping);
     // }else{
-    //   this.stopAnimation();
+    // this.stopAnimation;
     // }
-    // this.play();
+    // this.play;
   }
 
   stopAnimation(){
@@ -631,7 +631,7 @@ export class TabModelViewerState extends TabState {
       return new Promise<void>( async (resolve, reject) => {
         const data = await KotOR.KEYManager.Key.getFileBuffer(key);
         // this.tab.tabLoader.SetMessage(`Loading: Layout...`);
-        // this.tab.tabLoader.Show();
+        // this.tab.tabLoader.Show;
         const lyt = new KotOR.LYTObject(data);
         this.layout = lyt;
         for(let i = 0, len = this.layout.rooms.length; i < len; i++){
@@ -661,7 +661,7 @@ export class TabModelViewerState extends TabState {
         KotOR.TextureLoader.LoadQueue().then(() => {
           if(this.ui3DRenderer.renderer)
             this.ui3DRenderer.renderer.compile(this.ui3DRenderer.scene, this.ui3DRenderer.currentCamera);
-          // this.tab.tabLoader.Hide();
+          // this.tab.tabLoader.Hide;
           resolve();
         }, (texObj: KotOR.ITextureLoaderQueuedRef) => {
           if(texObj.material){
@@ -697,7 +697,7 @@ export class TabModelViewerState extends TabState {
           modelIndex--;
         }
       }
-      // this.modelViewSideBarComponent.buildNodeTree();
+      // this.modelViewSideBarComponent.buildNodeTree;
     }catch(e){
       console.error(e);
     }

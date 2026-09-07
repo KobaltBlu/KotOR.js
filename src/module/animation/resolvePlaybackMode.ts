@@ -2,13 +2,13 @@ import { AnimationPlaybackMode } from "@/enums/animation/AnimationPlaybackMode";
 import type { SWAnimation } from "@/engine/rules/SWAnimation";
 
 /**
- * Retail reverse-mode special server ID (SetAnimation mode tables).
+ * reverse-mode special server ID (SetAnimation mode tables).
  * Outside band A/B tables → defaults to NORMAL except this ID.
  */
 export const ANIMATION_REVERSE_SERVER_ID = 10256;
 
 /**
- * Server IDs that retail SetOverlayAnimation () treats as additive
+ * Server IDs that SetOverlayAnimation  treats as additive
  * (flag 0x400 on stop). Used as a mode-1 overlay band when 2DA overlay is unset.
  */
 const OVERLAY_ADDITIVE_SERVER_IDS = new Set<number>([
@@ -52,7 +52,7 @@ export function resolveOverlayStartFlags(serverId: number): number {
   if(OVERLAY_ADDITIVE_SERVER_IDS.has(id)){
     flags |= 0x400; // ADDITIVE_GESTURE
   }
-  // Retail ORs fire-forget (0x001) except for certain looping overlay bands.
+  // ORs fire-forget (0x001) except for certain looping overlay bands.
   if(id < 0x273b){
     if(id > 0x2735){
       return flags;

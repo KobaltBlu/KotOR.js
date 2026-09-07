@@ -1,7 +1,7 @@
 import { TwoDAObject } from "@/resource/TwoDAObject";
 
 /**
- * Retail GrenadeSND.2da row — surface material index → bounce/impact sound.
+ * GrenadeSND.2da row — surface material index → bounce/impact sound.
  * Loaded by Load2DArrays_GrenadeSound.
  * Rows share indices with surfacemat.2da (Dirt, Grass, Stone, …).
  *

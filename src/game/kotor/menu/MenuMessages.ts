@@ -4,15 +4,15 @@ import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 import { FeebackMessageColor } from "@/enums/engine/FeedbackMessageColor";
 
-/** Retail TLK 0x61b — "Journal" title prefix. */
+/** TLK 0x61b — "Journal" title prefix. */
 const TLK_JOURNAL = 0x61b;
-/** Retail TLK 0x173 — Dialog mode suffix. */
+/** TLK 0x173 — Dialog mode suffix. */
 const TLK_DIALOG = 0x173;
-/** Retail TLK 0xa4b7 — Feedback mode suffix. */
+/** TLK 0xa4b7 — Feedback mode suffix. */
 const TLK_FEEDBACK = 0xa4b7;
-/** Retail BTN_SHOW Show Dialog (0xa49e). */
+/** BTN_SHOW Show Dialog (0xa49e). */
 const TLK_SHOW_DIALOG = 0xa49e;
-/** Retail BTN_SHOW Show Feedback (0xa49f). */
+/** BTN_SHOW Show Feedback (0xa49f). */
 const TLK_SHOW_FEEDBACK = 0xa49f;
 
 /**
@@ -35,7 +35,7 @@ export class MenuMessages extends GameMenu {
   mode: number = 0;
 
   /**
-   * Retail HandleInputEvent
+   * HandleInputEvent
    * key sequence)/') → "Punch it, Chewie!" + hsMode=1.
    */
   static readonly HS_MODE_CHEAT_KEYS = [')', '/', "'", ')'] as const;
@@ -50,7 +50,7 @@ export class MenuMessages extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    // Retail LabelHilight rows — run for K1 and TSL (TSL passes skipInit=true).
+    // LabelHilight rows — run for K1 and TSL (TSL passes skipInit=true).
     if(this.LB_DIALOG && this.LB_MESSAGES){
       this.LB_DIALOG.setProtoBuilder(GUIMessageItem);
       this.LB_MESSAGES.setProtoBuilder(GUIMessageItem);
@@ -58,7 +58,7 @@ export class MenuMessages extends GameMenu {
       this.LB_MESSAGES.bitFlags.clipPartiallyVisibleItems = true;
       this.LB_DIALOG.setVariableItemHeight(true);
       this.LB_MESSAGES.setVariableItemHeight(true);
-      // Messages lists hover-select like retail list ctor (not inventory click-select).
+      // Messages lists hover-select like list ctor (not inventory click-select).
       this.LB_DIALOG.protoClickSelects = false;
       this.LB_MESSAGES.protoClickSelects = false;
     }
@@ -88,7 +88,7 @@ export class MenuMessages extends GameMenu {
   }
 
   /**
-   * Retail HandleInputEvent sequence)/') decrypts "Pvpfh!kw,!Ekexkh!" →
+   * HandleInputEvent sequence)/') decrypts "Pvpfh!kw,!Ekexkh!" →
    * "Punch it, Chewie!", AppendToMsgBuffer type 0x80, hsMode=1.
    */
   handleHsModeCheatKey(e: KeyboardEvent){
@@ -102,7 +102,7 @@ export class MenuMessages extends GameMenu {
     if(this.hsModeCheatIdx < seq.length) return;
 
     this.hsModeCheatIdx = 0;
-    // Encrypted retail bytes: each char -= (i & 3)
+    // Encrypted bytes: each char -= (i & 3)
     const encrypted = 'Pvpfh!kw,!Ekexkh!';
     let decoded = '';
     for(let i = 0; i < 0x11; i++){
@@ -122,7 +122,7 @@ export class MenuMessages extends GameMenu {
     super.show();
     this.manager.MenuTop.LBLH_MSG.onHoverIn();
 
-    // Retail buffer order: chronological oldest→newest; select last (newest).
+    // buffer order: chronological oldest→newest; select last (newest).
     const dlg_entries = GameState.DialogMessageManager.Entries.slice(0);
     this.LB_DIALOG.setItems(dlg_entries);
     if(dlg_entries.length > 0){
@@ -153,7 +153,7 @@ export class MenuMessages extends GameMenu {
   }
 
   /**
-   * Retail ShowDialogMessages / ShowFeedbackMessages —
+   * ShowDialogMessages / ShowFeedbackMessages —
    * LBL_MESSAGES = TLK(0x61b) + " - " + TLK(dialog|feedback).
    */
   private setMessagesTitle(suffixStrRef: number){

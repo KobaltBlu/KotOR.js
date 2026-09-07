@@ -9,7 +9,7 @@ import { GameState } from "@/GameState";
 /**
  * EventApplyEffect class.
  *
- * Delayed ApplyEffect from EventQueue — retail type ApplyEffect.
+ * Delayed ApplyEffect from EventQueue — type ApplyEffect.
  * Save/Load: effect nested under EventData (type 0x1111).
  *
  * @file EventApplyEffect.ts

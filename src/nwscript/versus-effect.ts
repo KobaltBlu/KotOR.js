@@ -2,7 +2,7 @@ import { GameEffectType } from "@/enums/effects/GameEffectType";
 import type { GameEffect } from "@/effects/GameEffect";
 
 /**
- * Retail ExecuteCommandVersusEffect.
+ * ExecuteCommandVersusEffect.
  * Sets race / alignment / trap-versus integers at type-specific slots.
  *
  * @file versus-effect.ts
@@ -96,7 +96,7 @@ export function versusAlignmentEffect(
 }
 
 /**
- * VersusTrapEffect — retail marks supported bonus effects as trap-versus.
+ * VersusTrapEffect — marks supported bonus effects as trap-versus.
  * Saving-throw layout already uses type ints; stamp int[6]=1 as trap flag
  * for attack/AC/skill style effects (consumers that ignore unknown ints are fine).
  */

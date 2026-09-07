@@ -7,7 +7,7 @@ import { BitWise } from "@/utility/BitWise";
 
 /**
  * ActionEncounterCreatureDestroySelf class.
- * Retail encounter destroy-self:
+ * encounter destroy-self:
  * unregisters from encounter, clears commandable, schedules destroy +5s.
  *
  * @file ActionEncounterCreatureDestroySelf.ts
@@ -33,10 +33,10 @@ export class ActionEncounterCreatureDestroySelf extends Action {
       return ActionStatus.ERROR;
     }
 
-    // Retail: unlink from encounter active list, then mark encounter-unlinked
+    // : unlink from encounter active list, then mark encounter-unlinked
     owner.unlinkFromEncounter(true);
 
-    // Retail clears commandable and queues destroy in 5000ms
+    // clears commandable and queues destroy in 5000ms
     owner.setCommandable(false);
     owner.setWillDestroy?.(true);
 

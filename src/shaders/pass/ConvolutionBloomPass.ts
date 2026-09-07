@@ -9,10 +9,10 @@ import {
 } from '@/shaders/pass/ConvolutionBloomShader';
 
 /**
- * ConvolutionBloomPass — retail FrameBufferModifications bit 0x02
+ * ConvolutionBloomPass — FrameBufferModifications bit 0x02
  * (RenderOverlayConvolution, GOG K1).
  *
- * Retail cascade: bright-extract @ 512 → MipmapFilter 256/128/64 →
+ * cascade: bright-extract @ 512 → MipmapFilter 256/128/64 →
  * BloomFilter 5×5 (bloomFiltersATI) with glColor alpha 0.35 burn-in →
  * final SRC_ALPHA/ONE composite at glColor alpha 1. We apply the single
  * ×0.35 at composite (bloom LUT alpha) for the same net intensity.
@@ -62,7 +62,7 @@ export class ConvolutionBloomPass extends Pass {
       depthTest: false,
       depthWrite: false,
     });
-    // UniformsUtils.clone can drop typed-array contents; restore retail kernel.
+    // UniformsUtils.clone can drop typed-array contents; restore kernel.
     this.bloomMaterial.uniforms.kernel.value = Float32Array.from(
       BloomKernel5x5Shader.uniforms.kernel.value as ArrayLike<number>
     );
@@ -92,7 +92,7 @@ export class ConvolutionBloomPass extends Pass {
 
   private ensureTargets() {
     if(this.rt512){ return; }
-    // Retail fixed pbuffer cascade sizes
+    // fixed pbuffer cascade sizes
     this.rt512 = this.makeRT(512);
     this.rt256 = this.makeRT(256);
     this.rt128 = this.makeRT(128);
@@ -139,7 +139,7 @@ export class ConvolutionBloomPass extends Pass {
     const rt64 = this.rt64!;
     const rtBloom = this.rtBloom!;
 
-    // 1) Bright extract into 512² (retail convolutionHDCBuffer[3])
+    // 1) Bright extract into 512² (convolutionHDCBuffer[3])
     this.blit(renderer, this.extractMaterial, readBuffer.texture, rt512);
 
     // 2) MipmapFilter chain: 512 → 256 → 128 → 64
@@ -147,7 +147,7 @@ export class ConvolutionBloomPass extends Pass {
     this.blit(renderer, this.downsampleMaterial, rt256.texture, rt128);
     this.blit(renderer, this.downsampleMaterial, rt128.texture, rt64);
 
-    // 3) BloomFilter 5×5 on 256² using the 256 mip (retail BloomFilter target)
+    // 3) BloomFilter 5×5 on 256² using the 256 mip (BloomFilter target)
     this.bloomMaterial.uniforms.tDiffuse.value = rt256.texture;
     this.bloomMaterial.uniforms.texelSize.value.set(1 / 256, 1 / 256);
     this.fsQuad.material = this.bloomMaterial;
@@ -155,7 +155,7 @@ export class ConvolutionBloomPass extends Pass {
     renderer.clear();
     this.fsQuad.render(renderer);
 
-    // Touch rt64 so the full cascade stays live (matches retail mip usage)
+    // Touch rt64 so the full cascade stays live (matches engine behavior mip usage)
     void rt64;
 
     // 4) SRC_ALPHA, ONE composite onto full-res scene

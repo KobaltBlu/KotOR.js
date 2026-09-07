@@ -120,7 +120,7 @@ export class Action {
       if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) {
         const creature = this.owner as ModuleCreature;
         creature.clearLocomotionState(false);
-        // Retail ResetAtEndOfPath → field438 = 1 (paused)
+        // ResetAtEndOfPath → field438 = 1 (paused)
         setQuickWalkLocoState(creature, QuickWalkLocoState.Paused);
         const computedPath = creature.getComputedPath();
         if(!!computedPath && computedPath === this.computedPath){
@@ -195,7 +195,7 @@ export class Action {
     struct.addField(new GFFField(GFFDataType.DWORD, 'ActionId', this.type));
     struct.addField(new GFFField(GFFDataType.WORD, 'GroupActionId', this.groupId));
 
-    // Only emit defined params; NumParams must match list length (retail LoadActionQueue loops NumParams)
+    // Only emit defined params; NumParams must match list length (LoadActionQueue loops NumParams)
     const definedParams = this.parameters.filter((p) => !!p);
     struct.addField(new GFFField(GFFDataType.WORD, 'NumParams', definedParams.length));
 

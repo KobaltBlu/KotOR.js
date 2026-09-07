@@ -44,7 +44,7 @@ export class MenuInventory extends GameMenu {
   BTN_EXIT: GUIButton;
 
   selected: InventoryListNode | undefined;
-  /** Retail activating_item_id — refresh selection after InstantUseItem. */
+  /** activating_item_id — refresh selection after InstantUseItem. */
   protected activatingItem: ModuleItem | undefined;
   protected activatedScroll: number = 0;
   protected activatedIndex: number = -1;
@@ -70,7 +70,7 @@ export class MenuInventory extends GameMenu {
       this._button_b = this.BTN_EXIT;
 
       this.LB_ITEMS.setProtoBuilder(GUIInventoryItem);
-      // Retail leaves GFF PADDING (inventory.gui LB_ITEMS = 0); do not force 5.
+      // leaves GFF PADDING (inventory.gui LB_ITEMS = 0); do not force 5.
       this.LB_ITEMS.onSelected = (item: InventoryListNode) => {
         this.selected = item;
         this.UpdateSelected();
@@ -98,7 +98,7 @@ export class MenuInventory extends GameMenu {
         this.useSelectedItem();
       });
 
-      // Retail BTN_QUESTITEMS → SetNextFilter (X button cycles K1 filters 0–5).
+      // BTN_QUESTITEMS → SetNextFilter (X button cycles K1 filters 0–5).
       this.BTN_QUESTITEMS?.addEventListener('click', (e) => {
         e.stopPropagation();
         cycleK1InventoryFilter();
@@ -131,7 +131,7 @@ export class MenuInventory extends GameMenu {
   }
 
   /**
-   * Retail PopulateItemListBox — equipped slots then bag, CheckFilter applied.
+   * PopulateItemListBox — equipped slots then bag, CheckFilter applied.
    */
   populateItemListBox(preserveSelection: boolean = false){
     const pc = this.getActiveCreature();
@@ -185,7 +185,7 @@ export class MenuInventory extends GameMenu {
     this.LBL_CREDITS_VALUE?.setText(String(GameState.PartyManager.Gold));
   }
 
-  /** @deprecated use populateItemListBox — kept for subclasses that call filterInventory(). */
+  /** @deprecated use populateItemListBox — kept for subclasses that call filterInventory. */
   filterInventory(){
     this.populateItemListBox();
   }
@@ -208,7 +208,7 @@ export class MenuInventory extends GameMenu {
       return;
     }
 
-    // Retail OnControlSelected: InstantUseItem, keep panel open, dirty-refresh list.
+    // OnControlSelected: InstantUseItem, keep panel open, dirty-refresh list.
     this.activatingItem = item;
     this.activatedScroll = this.LB_ITEMS.scroll | 0;
     this.activatedIndex = this.LB_ITEMS.listItems?.indexOf(this.selected) ?? -1;

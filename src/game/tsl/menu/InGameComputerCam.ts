@@ -4,7 +4,7 @@ import { InGameComputerCam as K1_InGameComputerCam } from "@/game/kotor/KOTOR";
 /**
  * InGameComputerCam class.
  *
- * TSL layout resref `computercam_p` (retail ctor).
+ * TSL layout resref `computercam_p` (ctor).
  *
  * @file InGameComputerCam.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>

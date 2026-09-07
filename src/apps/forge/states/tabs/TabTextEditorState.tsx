@@ -605,8 +605,8 @@ export class TabTextEditorState extends TabState {
 
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
     const destExt = (ext || '').replace(/^\./, '').toLowerCase();
-    // Save/Save As from an .ncs tab always writes decompiled NSS. Compiled bytecode
-    // is only emitted by Compile (sibling .ncs), never by overwriting the opened file.
+    // Save/Save As from an.ncs tab always writes decompiled NSS. Compiled bytecode
+    // is only emitted by Compile (sibling.ncs), never by overwriting the opened file.
     if (destExt === 'ncs' && !this.isNcsFile()) {
       return this.ncs?.length ? this.ncs : new Uint8Array(0);
     }

@@ -1,6 +1,6 @@
 /**
  * Regression: skin bind resolves bone_parts as GatherBones DFS indices
- * (retail PostProcess / ExecuteSkinTransforms), keeps MDL inverses, and updates
+ * (PostProcess / ExecuteSkinTransforms), keeps MDL inverses, and updates
  * bone matrices in skin-local space.
  * p_bastilabb-style nameIndex≠DFS slots must bind dfsNodes[parts], not names[parts].
  */
@@ -207,7 +207,7 @@ describe('OdysseySkeletonBind DFS bone_parts', () => {
     expect(dfsNodes[1]).toBe(a);
     expect(dfsNodes[2]).toBe(b);
 
-    // Retail bone_parts store DFS: slot0 → dfs 1 (a), slot1 → dfs 2 (b)
+    // bone_parts store DFS: slot0 → dfs 1 (a), slot1 → dfs 2 (b)
     bindByDfsParts(skin, dfsNodes, [1, 2], inverseMats);
 
     expect(skin.skeleton.bones[0]).toBe(a);

@@ -1,5 +1,5 @@
 /**
- * Personal / friendly force cast self-bind (retail GetSelfForcePowers).
+ * Personal / friendly force cast self-bind (GetSelfForcePowers).
  * @jest-environment node
  */
 import { describe, expect, it } from '@jest/globals';

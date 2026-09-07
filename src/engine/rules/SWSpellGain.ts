@@ -23,7 +23,7 @@ export class SWSpellGain {
   /**
    * Get the number of spell points gained for a class per level
    * @param classCode
-   * @returns number[]
+   * @returns number
    */
   getSpellGain(classCode: string){
     return this.classMap.get(classCode.toLowerCase())?.points || [];

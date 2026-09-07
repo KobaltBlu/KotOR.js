@@ -6,7 +6,7 @@ import { getCreaturePersonalSpace, getPathPersonalSpace } from "@/combat/attack-
 import { hasDirectLine } from "@/engine/pathfinding/test-direct-line";
 
 /**
- * Retail PathPointDFSGenerateSuccessors creature detour:
+ * PathPointDFSGenerateSuccessors creature detour:
  * When NoCreaturesOnLine fails, cost = |A→offset| + |offset→B| where
  * offset = blocker.pos + normalize(⊥(B−A)) * (blocker.perspace + self.perspace).
  *
@@ -24,7 +24,7 @@ export type CreatureEdgeDetour = {
 };
 
 /**
- * Compute retail-style detour around a creature blocking A→B.
+ * Compute -style detour around a creature blocking A→B.
  */
 export function computeCreatureEdgeDetour(
   area: ModuleArea | undefined,
@@ -45,7 +45,7 @@ export function computeCreatureEdgeDetour(
     || getCreaturePersonalSpace(blocker as ModuleCreature);
   const radius = selfSpace + blockSpace;
 
-  // Retail: perp = normalize(-(By-Ay), Bx-Ax)
+  // : perp = normalize(-(By-Ay), Bx-Ax)
   const px = -dy / len;
   const py = dx / len;
 
@@ -89,7 +89,7 @@ export function computeCreatureEdgeDetour(
 }
 
 /**
- * Pathfind step_tolerance in grid cells — retail path_find_info field.
+ * Pathfind step_tolerance in grid cells — path_find_info field.
  * appearance.2da has no step_tolerance column (perspace/creperspace only);
  * approx from personal_space.
  */

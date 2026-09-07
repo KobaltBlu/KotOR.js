@@ -91,7 +91,7 @@ export class MenuUpgradeItems extends GameMenu {
         equipSlot: this.findEquippedCreature(this.forcedItem)?.equipSlot,
       }];
       this.LB_ITEMS.setItems(this.sources.map(s => s.item));
-      // Retail forced-item path opens the upgrade panel immediately.
+      // forced-item path opens the upgrade panel immediately.
       this.setSelected(this.forcedItem);
       this.openUpgradePanel();
       return;

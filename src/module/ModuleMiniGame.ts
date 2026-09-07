@@ -16,7 +16,7 @@ import { MiniGameObjectArray } from "@/module/minigame/MiniGameObjectArray";
 import type { OdysseyModel3D } from "@/three/odyssey";
 import * as THREE from "three";
 
-/** Retail MiniGame physics state (24 bytes: accel + vel). */
+/** MiniGame physics state (24 bytes: accel + vel). */
 export interface MGMPhysicsState {
   acceleration: THREE.Vector3;
   velocity: THREE.Vector3;
@@ -55,39 +55,39 @@ export class ModuleMiniGame {
   lateralAccel: number = 0;
   movementPerSec: number = 0;
   /**
-   * Retail MiniGame.Music — CResRef (streammusic), not ambientmusic.2da index.
-   * K1 Win Load ; Go plays via Play(..., STREAMMUSIC=8).
+   * MiniGame.Music — CResRef (streammusic), not ambientmusic.2da index.
+   * K1 Win Load; Go plays via Play(..., STREAMMUSIC=8).
    */
   music: string = '';
   nearClip: number = 0;
   useInertia: number = 0;
 
   /**
-   * Retail Player.Mouse AxisX/Y (signed: abs 1/2/3 → x/y/z; negative flips).
+   * Player.Mouse AxisX/Y (signed: abs 1/2/3 → x/y/z; negative flips).
    * UpdateMouse.
    */
   axisX: number = 0;
   axisY: number = 0;
 
   /**
-   * Retail ctor defaults to **1** (AxisAcceleration).
-   * 0 → AxisVelocity ; 1 → AxisAcceleration.
+   * ctor defaults to **1** (AxisAcceleration).
+   * 0 → AxisVelocity; 1 → AxisAcceleration.
    */
   axisMode: number = 1;
 
-  /** Retail previous physics state. */
+  /** previous physics state. */
   physicsPrev: MGMPhysicsState = {
     acceleration: new THREE.Vector3(),
     velocity: new THREE.Vector3(),
   };
-  /** Retail next physics state (written by AxisAcceleration). */
+  /** next physics state (written by AxisAcceleration). */
   physicsNext: MGMPhysicsState = {
     acceleration: new THREE.Vector3(),
     velocity: new THREE.Vector3(),
   };
-  /** retail..46 — last axis input for Accel midpoint. */
+  /**..46 — last axis input for Accel midpoint. */
   lastAxisInput: THREE.Vector3 = new THREE.Vector3();
-  /** Retail axis_velocity @ — mouse accum / Velocity-mode output. */
+  /** axis_velocity @ — mouse accum / Velocity-mode output. */
   axisVelocity: THREE.Vector3 = new THREE.Vector3();
 
   /**
@@ -99,7 +99,7 @@ export class ModuleMiniGame {
   /** True after streammusic buffer is loaded for `music`. */
   musicLoaded: boolean = false;
   /**
-   * Retail MiniGame owns a dedicated CExoStreamingSoundSource (ctor).
+   * MiniGame owns a dedicated CExoStreamingSoundSource (ctor).
    * Do not reuse area day music.
    */
   musicEmitter: AmbientAudioEmitter | null = null;
@@ -119,14 +119,14 @@ export class ModuleMiniGame {
   enemies: ModuleMGEnemy[] = [];
   /**
    * Enemies removed from the live hit list (RemoveEnemy) but still playing die anim.
-   * Retail Gobs keep updating via scene; we tick these until models are gone.
+   * Gobs keep updating via scene; we tick these until models are gone.
    */
   dyingEnemies: ModuleMGEnemy[] = [];
   obstacles: ModuleMGObstacle[] = [];
   tracks: ModuleMGTrack[] = [];
   /**
    * ARE Obstacles Name → Scripts structs for LYT merge.
-   * Live MGOs register in MiniGameObjectArray (retail 255-slot client registry).
+   * Live MGOs register in MiniGameObjectArray (255-slot client registry).
    */
   obstacleTemplates: Map<string, GFFObject> = new Map();
 
@@ -137,7 +137,7 @@ export class ModuleMiniGame {
       this.type === MiniGameType.SWOOPRACE ? 6 :
       this.type === MiniGameType.TURRET ? 90 : 0;
 
-    // Retail Load defaults.
+    // Load defaults.
     this.movementPerSec = ModuleMiniGame.readFloat(struct, 'MovementPerSec', movementDefault);
     this.lateralAccel = ModuleMiniGame.readFloat(struct, 'LateralAccel', 60);
     this.bumpPlane = ModuleMiniGame.readDword(struct, 'Bump_Plane', 0);
@@ -170,7 +170,7 @@ export class ModuleMiniGame {
   }
 
   /**
-   * Retail Load Obstacles — ARE Name list; Scripts loaded onto live MGO
+   * Load Obstacles — ARE Name list; Scripts loaded onto live MGO
    * found via GetMiniGameObjectByName. We index ARE structs here for LYT Name merge.
    */
   parseObstacleTemplates(struct: GFFStruct){
@@ -187,7 +187,7 @@ export class ModuleMiniGame {
     }
   }
 
-  /** Match retail CResRef/CExoString obstacle Name compare (lowercased, null-trimmed). */
+  /** Match CResRef/CExoString obstacle Name compare (lowercased, null-trimmed). */
   static normalizeMgoName(name: string | undefined | null): string {
     return String(name ?? '').replace(/\0[\s\S]*$/g, '').toLowerCase();
   }
@@ -203,7 +203,7 @@ export class ModuleMiniGame {
   }
 
   /**
-   * Retail Load reads Player.Mouse AxisX/Y + FlipAxisX/Y.
+   * Load reads Player.Mouse AxisX/Y + FlipAxisX/Y.
    * Flip negates the stored axis enum (UpdateMouse uses signed abs).
    */
   parseMouseFromPlayer(){
@@ -227,26 +227,26 @@ export class ModuleMiniGame {
     this.axisY = axisY;
   }
 
-  /** Retail ReadFieldFLOAT with default when field missing. */
+  /** ReadFieldFLOAT with default when field missing. */
   static readFloat(struct: GFFStruct, label: string, defaultValue: number): number {
     if(!struct?.hasField?.(label)){ return defaultValue; }
     const v = struct.getFieldByLabel(label).getValue();
     return (typeof v === 'number' && Number.isFinite(v)) ? v : defaultValue;
   }
 
-  /** Retail ReadFieldDWORD with default when field missing. */
+  /** ReadFieldDWORD with default when field missing. */
   static readDword(struct: GFFStruct, label: string, defaultValue: number): number {
     if(!struct?.hasField?.(label)){ return defaultValue; }
     const v = struct.getFieldByLabel(label).getValue();
     return (typeof v === 'number' && Number.isFinite(v)) ? v : defaultValue;
   }
 
-  /** Retail ReadFieldBYTE with default when field missing. */
+  /** ReadFieldBYTE with default when field missing. */
   static readByte(struct: GFFStruct, label: string, defaultValue: number): number {
     return ModuleMiniGame.readDword(struct, label, defaultValue);
   }
 
-  /** Retail ReadFieldCResRef("Music"); tolerate legacy DWORD forge exports. */
+  /** ReadFieldCResRef("Music"); tolerate legacy DWORD forge exports. */
   static parseMusicResRef(struct: GFFStruct): string {
     if(!struct?.hasField?.('Music')){ return ''; }
     const raw = struct.getFieldByLabel('Music').getValue();
@@ -265,14 +265,14 @@ export class ModuleMiniGame {
     return resRef;
   }
 
-  /** Retail SWMG_SetJumpSpeed (TSL Win) — writes MiniGame jumpSpeed. K1 has no op. */
+  /** SWMG_SetJumpSpeed (TSL Win) — writes MiniGame jumpSpeed. K1 has no op. */
   setJumpSpeed(speed: number = 0){
     if(GameState.GameKey != GameEngineType.TSL){ return; }
     this.jumpSpeed = speed;
   }
 
   /**
-   * Retail BumpPlane
+   * BumpPlane
    * bump_plane 1/2/3 → quat x/y/z direction; else zero.
    */
   bumpPlaneNormal(quat: THREE.Quaternion, out: THREE.Vector3 = new THREE.Vector3()): THREE.Vector3 {
@@ -295,7 +295,7 @@ export class ModuleMiniGame {
       this.enemies[i]?.update?.(delta);
     }
 
-    // Finish die anims after RemoveEnemy (retail Gob continues until donedie).
+    // Finish die anims after RemoveEnemy (Gob continues until donedie).
     for(let i = this.dyingEnemies.length - 1; i >= 0; i--){
       const enemy = this.dyingEnemies[i];
       if(!enemy){
@@ -313,14 +313,14 @@ export class ModuleMiniGame {
       this.obstacles[i]?.update?.(delta);
     }
 
-    // Retail Update — DoHitCheck only while follower running bit set.
+    // Update — DoHitCheck only while follower running bit set.
     if(this.player?.alive && this.player.running){
       this.doHitCheck();
     }
   }
 
   /**
-   * Retail DoHitCheck
+   * DoHitCheck
    * live bullets → obstacles vs player → follower sphere bumps.
    */
   doHitCheck(){
@@ -386,7 +386,7 @@ export class ModuleMiniGame {
       await this.loadMGPlayer();
     }catch(e){
       console.error(e);
-      // Retail type-2 Load aborts when Camera missing/invalid — propagate.
+      // type-2 Load aborts when Camera missing/invalid — propagate.
       throw e;
     }
     try { await this.loadMGEnemies(); } catch(e){ console.error(e); }
@@ -395,7 +395,7 @@ export class ModuleMiniGame {
   }
 
   /**
-   * Retail Load stores Music CResRef; buffer load happens before Go.
+   * Load stores Music CResRef; buffer load happens before Go.
    * Dedicated CExoStreamingSoundSource on MiniGame (not area day music).
    */
   async loadMusic(): Promise<void> {
@@ -412,7 +412,7 @@ export class ModuleMiniGame {
     }
   }
 
-  /** Retail MiniGame ctor allocates streaming source + SetLooping(1). */
+  /** MiniGame ctor allocates streaming source + SetLooping(1). */
   ensureMusicEmitter(): AmbientAudioEmitter {
     if(this.musicEmitter){ return this.musicEmitter; }
     const engine = AudioEngine.GetAudioEngine();
@@ -436,14 +436,14 @@ export class ModuleMiniGame {
     }
 
     this.player?.onCreate?.();
-    // Retail Go — start track followers + streammusic.
+    // Go — start track followers + streammusic.
     this.go();
   }
 
   /**
-   * Retail Go (K1) / (TSL Aspyr)
+   * Go (K1) / (TSL Aspyr)
    * TSL: when type==1 (swoop), clear global FORFEIT_SWOOPRACE before follower Go/music.
-   * player/enemies Go(); if streaming source set, Play(musicResRef, STREAMMUSIC=8, loop).
+   * player/enemies Go; if streaming source set, Play(musicResRef, STREAMMUSIC=8, loop).
    */
   go(){
     if(this.type === MiniGameType.SWOOPRACE){
@@ -456,12 +456,12 @@ export class ModuleMiniGame {
     this.playMusic();
   }
 
-  /** Retail streaming Play with SetLooping from MiniGame ctor. */
+  /** streaming Play with SetLooping from MiniGame ctor. */
   playMusic(){
     if(!this.music || !this.musicLoaded){ return; }
     const emitter = this.ensureMusicEmitter();
     if(!emitter.data){ return; }
-    // Pause area BGM while MG owns the music bus (dedicated source in retail).
+    // Pause area BGM while MG owns the music bus (dedicated source in).
     const engine = AudioEngine.GetAudioEngine();
     engine.areaMusicDayAudioEmitter?.stop?.();
     engine.areaMusicNightAudioEmitter?.stop?.();
@@ -475,7 +475,7 @@ export class ModuleMiniGame {
   }
 
   /**
-   * Retail UpdateMouse
+   * UpdateMouse
    * accumulates into axis_velocity (=.velocity @). Call after UpdateAxis.
    */
   updateMouse(dx: number, dy: number, delta: number = 0){
@@ -489,7 +489,7 @@ export class ModuleMiniGame {
   }
 
   /**
-   * Retail UpdateAxis
+   * UpdateAxis
    * type remap then AxisAcceleration (default) or AxisVelocity into.
    * Always call (including zero stick) so Accel damping runs.
    */
@@ -517,7 +517,7 @@ export class ModuleMiniGame {
   }
 
   /**
-   * Retail GetAcceleration
+   * GetAcceleration
    * A_lat * axis - (A_lat / MovementPerSec) * state.acceleration
    */
   getAcceleration(axis: THREE.Vector3, state: MGMPhysicsState, out: THREE.Vector3): THREE.Vector3 {
@@ -530,7 +530,7 @@ export class ModuleMiniGame {
   }
 
   /**
-   * Retail AxisVelocity
+   * AxisVelocity
    *.velocity =.velocity + MovementPerSec * axis * dt
    */
   axisVelocityIntegrate(axis: THREE.Vector3, dt: number){
@@ -545,7 +545,7 @@ export class ModuleMiniGame {
   }
 
   /**
-   * Retail AxisAcceleration — RK4 on retail.
+   * AxisAcceleration — RK4 on.
    * Derivative: { GetAcceleration(axis, state), state.acceleration }.
    */
   axisAcceleration(axis: THREE.Vector3, dt: number){
@@ -643,7 +643,7 @@ export class ModuleMiniGame {
   };
 
   /**
-   * Retail Control → Control
+   * Control → Control
    * offset += (.velocity -.velocity), then copy next→prev.
    * Call after UseInertia has added DoInertia into physicsNext.acceleration
    * (inertia affects the *next* AxisAcceleration frame, not this delta).
@@ -655,14 +655,14 @@ export class ModuleMiniGame {
     const dz = this.physicsNext.velocity.z - this.physicsPrev.velocity.z;
 
     if(this.type === MiniGameType.SWOOPRACE){
-      // Retail: +=(&offset, &tmp44) with full XYZ velocity delta.
+      // : +=(&offset, &tmp44) with full XYZ velocity delta.
       this.player.playerOffset.x += dx;
       this.player.playerOffset.y += dy;
       this.player.playerOffset.z += dz;
       // Bank from axis input magnitude (not post-commit velocity rate).
       this.player.lateralForce = this.lastAxisInput.x * this.lateralAccel;
     }else if(this.type === MiniGameType.TURRET){
-      // Retail Control — offset += velocity delta in **degrees**, then
+      // Control — offset += velocity delta in **degrees**, then
       // KeepInTunnel + write offset to ori controllers. Not radians (was ~57× fast).
       this.player.playerOffset.x += dx;
       this.player.playerOffset.y += dy;
@@ -675,7 +675,7 @@ export class ModuleMiniGame {
     this.physicsPrev.velocity.copy(this.physicsNext.velocity);
   }
 
-  /** Reset axis physics state (not called after KeepInTunnel — retail Control does not). */
+  /** Reset axis physics state (not called after KeepInTunnel — Control does not). */
   clearAxisPhysics(){
     this.physicsPrev.acceleration.set(0, 0, 0);
     this.physicsPrev.velocity.set(0, 0, 0);
@@ -723,7 +723,7 @@ export class ModuleMiniGame {
   }
 
   /**
-   * LYT proto track by normalized ResRef/name (retail AddTrack list).
+   * LYT proto track by normalized ResRef/name (AddTrack list).
    */
   findTrackByName(name: string | undefined | null): ModuleMGTrack | undefined {
     const n = ModuleMGTrack.normalizeName(name);
@@ -732,7 +732,7 @@ export class ModuleMiniGame {
   }
 
   /**
-   * Retail GetAttachType — swoop=1, turret=2, else 0.
+   * GetAttachType — swoop=1, turret=2, else 0.
    */
   getAttachType(): number {
     if(this.type === MiniGameType.SWOOPRACE){ return 1; }
@@ -741,9 +741,9 @@ export class ModuleMiniGame {
   }
 
   /**
-   * Retail ForceSetTrack path — NewCAurObject(trackResRef) per follower, not a shared LYT mesh.
+   * ForceSetTrack path — NewCAurObject(trackResRef) per follower, not a shared LYT mesh.
    * attachType: SetPlayer passes GetAttachType (1/2); AddEnemy passes 0.
-   * Returns false when Track has no LYT proto (retail AddEnemy skips the follower entirely).
+   * Returns false when Track has no LYT proto (AddEnemy skips the follower entirely).
    */
   async bindFollowerTrack(
     follower: {
@@ -811,12 +811,12 @@ export class ModuleMiniGame {
     }
     this.obstacles.length = 0;
 
-    // Retail client MGO array is cleared when the minigame tears down.
+    // client MGO array is cleared when the minigame tears down.
     MiniGameObjectArray.clear();
   }
 
   /**
-   * Retail RemoveEnemy — drop enemy from live list by identity.
+   * RemoveEnemy — drop enemy from live list by identity.
    * Does not destroy the follower (die anim / DestroyMiniGameObject handle teardown).
    */
   removeEnemy(enemy: ModuleMGEnemy): boolean {
@@ -872,7 +872,7 @@ export class ModuleMiniGame {
     const player: ModuleMGPlayer = this.player;
     if(!player){ return; }
     await player.load();
-    // Retail type 2 Load requires valid Camera ResRef (return 0 if missing).
+    // type 2 Load requires valid Camera ResRef (return 0 if missing).
     if(this.type === MiniGameType.TURRET && !player.cameraName){
       throw new Error('ModuleMiniGame: turret Player.Camera ResRef required');
     }
@@ -886,7 +886,7 @@ export class ModuleMiniGame {
     if(!player.accel_lateral_secs && this.lateralAccel){
       player.accel_lateral_secs = this.lateralAccel;
     }
-    // Retail SetPlayer order: models → ForceSetTrack → SetCameraHook(CameraRotate).
+    // SetPlayer order: models → ForceSetTrack → SetCameraHook(CameraRotate).
     const bound = await this.bindFollowerTrack(player, this.getAttachType());
     if(!bound){
       throw new Error(
@@ -899,7 +899,7 @@ export class ModuleMiniGame {
   }
 
   /**
-   * Retail AddTrack — store LYT proto (name + Vector). Follower Gobs created in bindFollowerTrack.
+   * AddTrack — store LYT proto (name + Vector). Follower Gobs created in bindFollowerTrack.
    */
   async loadMGTracks(): Promise<void>{
     for(let i = 0; i < this.tracks.length; i++){
@@ -910,7 +910,7 @@ export class ModuleMiniGame {
   }
 
   async loadMGEnemies(): Promise<void> {
-    // Retail AddEnemy — invalid Track skips the follower (no orphan Gob).
+    // AddEnemy — invalid Track skips the follower (no orphan Gob).
     // initProperties (via load) must run first — Track lives on the ARE template.
     for(let i = this.enemies.length - 1; i >= 0; i--){
       const enemy = this.enemies[i];
@@ -944,7 +944,7 @@ export class ModuleMiniGame {
   }
 
   /**
-   * Retail AddObstacle — load Gob from LYT name + ready anim.
+   * AddObstacle — load Gob from LYT name + ready anim.
    * ARE Scripts already applied in ModuleArea layout parse.
    */
   async loadMGObstacles(): Promise<void> {
@@ -957,14 +957,14 @@ export class ModuleMiniGame {
 
   runMiniGameScripts(){
     // Enemy/obstacle/player OnCreate already ran in initMiniGameObjects.
-    // Retail Go follows OnCreate; keep this hook for restart / late script bind.
+    // Go follows OnCreate; keep this hook for restart / late script bind.
   }
 
   /**
    * Push MG OdysseyModel3Ds into the area lighting dynamics list.
    * ModuleMG* `.model` / `.position` is the container (tunnel-local for followers)
    * omit position so OdysseyLightingBinder uses each child model's world pose
-   * (same GetNearestLights query point as scene AttachToObject gobs).
+   * (same nearest light selection query point as scene AttachToObject gobs).
    * Camera HUD stays unlit (IGNORE_LIGHTING / MG_CAMERA_HUD) — do not bind it.
    */
   collectLightingModels(

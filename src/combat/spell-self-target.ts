@@ -12,12 +12,12 @@ export function parseForceMenuIndex(raw: unknown): number {
 }
 
 /**
- * Whether a cast should bind to the caster (retail GetSelfForcePowers /
+ * Whether a cast should bind to the caster (GetSelfForcePowers /
  * ForceMenuAction self stamp, or spells.2da range P).
  *
  * - Range `P` (personal): always the caster
  * - FORCEFRIENDLY-only powers (no FORCEHOSTILE): self-menu powers — user casts
- *   always hit the controlled creature, never the look-at target
+ * always hit the controlled creature, never the look-at target
  */
 export function shouldBindSpellCastToCaster(
   spell: {

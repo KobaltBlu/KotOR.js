@@ -6,7 +6,7 @@ import { BitWise } from "@/utility/BitWise";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
 /**
- * EffectResurrection — retail OnApplyResurrection.
+ * EffectResurrection — effect apply.
  * Clamp HP to ≥1, clear actions, strip HitPointChangeWhenDying (temp), refresh anim.
  * K2: int[0] may be % of max HP to restore (when > 0).
  *
@@ -37,7 +37,7 @@ export class EffectResurrection extends GameEffect {
     }
 
     creature.clearAllActions?.(true);
-    // Retail restores listening / ambient anim authority; clear our death pipeline flags
+    // restores listening / ambient anim authority; clear our death pipeline flags
     // and any KeepCorpse shell so AIUpdate (excited timer, movement) runs again.
     creature.deathStarted = false;
     creature.deathAnimationPlayed = false;

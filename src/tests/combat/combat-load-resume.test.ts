@@ -68,8 +68,8 @@ jest.mock('@/combat/combat-round-pause', () => ({
   shouldSnapCombatReady: () => false,
 }));
 
-jest.mock('@/combat/create-new-attack-actions', () => ({
-  createNewAttackActions: jest.fn(() => false),
+jest.mock('@/combat/queue-attack-actions', () => ({
+  queueAttackActions: jest.fn(() => false),
 }));
 
 jest.mock('@/combat/damage-mitigation', () => ({
@@ -97,7 +97,7 @@ import { CombatRoundAction } from '@/combat/CombatRoundAction';
 import { CombatActionType } from '@/enums/combat/CombatActionType';
 import { ModuleObjectConstant } from '@/enums/module/ModuleObjectConstant';
 import { ModuleObjectType } from '@/enums/module/ModuleObjectType';
-import { createNewAttackActions } from '@/combat/create-new-attack-actions';
+import { queueAttackActions } from '@/combat/queue-attack-actions';
 
 function makeCreature(id: number){
   const combatData = {
@@ -172,7 +172,7 @@ describe('GameEffect deferred CreatorId / ObjectList', () => {
 describe('CombatRound mid-load duel / schedule recovery', () => {
   beforeEach(() => {
     objectMap.clear();
-    (createNewAttackActions as jest.Mock).mockClear();
+    (queueAttackActions as jest.Mock).mockClear();
   });
 
   it('wires bidirectional duelPartner after reconstruct', () => {
@@ -201,7 +201,7 @@ describe('CombatRound mid-load duel / schedule recovery', () => {
     expect(slaveRound.masterID).toBe(master);
   });
 
-  it('retargets via createNewAttackActions when attack sched targets are missing', () => {
+  it('retargets via queueAttackActions when attack sched targets are missing', () => {
     const owner = makeCreature(5001);
     const foe = makeCreature(5002);
     const round = owner.combatRound as CombatRound;
@@ -215,7 +215,7 @@ describe('CombatRound mid-load duel / schedule recovery', () => {
 
     round.recoverEmptyOrInvalidScheduleAfterLoad();
 
-    expect(createNewAttackActions).toHaveBeenCalled();
+    expect(queueAttackActions).toHaveBeenCalled();
     expect(owner.combatData.lastAttackTarget).toBe(foe);
   });
 

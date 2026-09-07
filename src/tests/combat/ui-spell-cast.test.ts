@@ -23,7 +23,7 @@ import { TalentObjectType } from '@/enums/engine/TalentObjectType';
 import { CombatActionType } from '@/enums/combat/CombatActionType';
 
 /**
- * Retail UnReadySpell — drain cost from FP pool, clamp at 0, always
+ * UnReadySpell — drain cost from FP pool, clamp at 0, always
  * succeed when the spell row exists. Menu enable is the soft gate.
  */
 function unreadySpellRetail(
@@ -49,7 +49,7 @@ function unreadySpellRetail(
 }
 
 /**
- * Retail ForceMenuAction class pick — Jedi Guardian/Consular/Sentinel (3/4/5)
+ * ForceMenuAction class pick — Jedi Guardian/Consular/Sentinel (3/4/5)
  * in the first two class slots.
  */
 function getForceSpellClassIndex(classIds: number[]): number {
@@ -71,7 +71,7 @@ function resolveTalentKind(objectType: number): 'spell' | 'feat' | 'skill' | 'no
   return 'none';
 }
 
-describe('unreadySpell retail drain/clamp', () => {
+describe('unreadySpell engine drain/clamp', () => {
   it('succeeds when FP < cost and clamps to zero', () => {
     const state = { currentForce: 5, temporaryForce: 0 };
     expect(unreadySpellRetail(state, 20, true)).toBe(true);
@@ -168,7 +168,7 @@ describe('ForceMenuAction spellClassIndex', () => {
     expect(getForceSpellClassIndex([4])).toBe(0);
     expect(getForceSpellClassIndex([0, 1])).toBe(0);
     expect(getForceSpellClassIndex([3, 5])).toBe(0);
-    // Third slot Jedi is ignored (retail only scans first two)
+    // Third slot Jedi is ignored (only scans first two)
     expect(getForceSpellClassIndex([0, 1, 5])).toBe(0);
   });
 });
@@ -201,7 +201,7 @@ describe('activateMenuItem talent-before-item preference', () => {
 });
 
 /**
- * Retail GetSelfForcePowers / ForceMenuAction — friendly-only and personal
+ * GetSelfForcePowers / ForceMenuAction — friendly-only and personal
  * powers cast on the controlled creature, not the look-at target.
  */
 function parseForceMenuIndex(raw: unknown): number {

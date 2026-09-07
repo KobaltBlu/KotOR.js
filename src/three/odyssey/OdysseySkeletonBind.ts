@@ -7,15 +7,15 @@ const _matrix = /*@__PURE__*/ new THREE.Matrix4();
 const _basePosition = /*@__PURE__*/ new THREE.Vector3();
 
 /**
- * Retail GatherBones space: bone matrices are skin-local (inv(skinWorld) * boneWorld)
+ * GatherBones space: bone matrices are skin-local (inv(skinWorld) * boneWorld)
  * then multiplied by MDL qbone/tbone inverses already stored on the skeleton.
  *
  * Three.js default Skeleton.update uses bone.matrixWorld * boneInverse. When
- * boneInverse comes from calculateInverses() at a world translation, bone rotation
+ * boneInverse comes from calculateInverses at a world translation, bone rotation
  * produces (I-R)*T_world blowup — spaghetti on long-span weights (pelvis↔foot).
  *
  * r149 SkinnedMesh.boneTransform also multiplies matrixWorld*boneInverse directly
- * (ignores boneMatrices). Patch it to use the skin-local boneMatrices from update().
+ * (ignores boneMatrices). Patch it to use the skin-local boneMatrices from update.
  */
 export function installOdysseySkeletonUpdate(
   skeleton: THREE.Skeleton,
@@ -67,11 +67,11 @@ export function installOdysseySkeletonUpdate(
   };
 }
 
-/** Identity bindMatrix passed to SkinnedMesh.bind to skip calculateInverses(). */
+/** Identity bindMatrix passed to SkinnedMesh.bind to skip calculateInverses. */
 export const ODYSSEY_IDENTITY_BIND_MATRIX = new THREE.Matrix4();
 
 export interface IOdysseyGatherBonesDfs {
-  /** Nodes in retail GatherBones / hierarchy DFS order. */
+  /** Nodes in GatherBones / hierarchy DFS order. */
   dfsNodes: THREE.Object3D[];
   /** nameIndex → index into dfsNodes / qbone_ref_inv. */
   dfsIndexByNameIndex: number[];
@@ -82,8 +82,8 @@ export interface IOdysseyGatherBonesDfs {
  * Only includes Object3Ds whose odysseyModelNode.nameIndex maps to names[nameIndex]
  * (keeps head/weapon attaches out of another model's table).
  *
- * Retail bone_parts[slot] and QBone/TBone are parallel to this DFS order
- * (PartSkin::PostProcess / FindPartIndexDFS / ExecuteSkinTransforms).
+ * bone_parts[slot] and QBone/TBone are parallel to this DFS order
+ * (/ FindPartIndexDFS / ExecuteSkinTransforms).
  * On p_bastilabb nameIndex ≠ DFS for leg bones — bind must use DFS, not nameIndex.
  */
 export function buildGatherBonesDfsOrder(
@@ -98,7 +98,7 @@ export function buildGatherBonesDfsOrder(
     if(odysseyNode && typeof odysseyNode.nameIndex === 'number' && odysseyNode.nameIndex >= 0){
       const nameIndex = odysseyNode.nameIndex;
       // First-wins: head/weapon attaches can share nameIndex namespaces that collide
-      // with body names[] (e.g. cutscenedummy). Do not overwrite body DFS slots.
+      // with body names (e.g. cutscenedummy). Do not overwrite body DFS slots.
       if(names[nameIndex] === obj.name && typeof dfsIndexByNameIndex[nameIndex] === 'undefined'){
         dfsIndexByNameIndex[nameIndex] = dfsNodes.length;
         dfsNodes.push(obj);

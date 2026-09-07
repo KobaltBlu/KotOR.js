@@ -18,7 +18,7 @@ type DecodedAudioPacket = {
 /**
  * BIKObject class.
  * Decodes and streams BIK video/audio. Does not own any Three.js state;
- * VideoManager owns planes and textures and pulls current frame via getCurrentFrame().
+ * VideoManager owns planes and textures and pulls current frame via getCurrentFrame.
  *
  * @file BIKObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -47,14 +47,14 @@ export class BIKObject {
   nextFrameToRequest: number;
   decodeInFlight: number;
   lastDisplayedFrameIndex: number;
-  /** Last YUV frame we decided to display; VideoManager reads this in update(). */
+  /** Last YUV frame we decided to display; VideoManager reads this in update. */
   lastDisplayedYuv: YUVFrame | null;
 
   private static readonly FRAME_BUFFER_MAX = 8;
   private static readonly MAX_DECODE_IN_FLIGHT = 4;
 
   /**
-   * Creates a BIKObject. Initializes frame/audio state and worker-related fields; actual worker is created in play().
+   * Creates a BIKObject. Initializes frame/audio state and worker-related fields; actual worker is created in play.
    */
   constructor(){
 
@@ -222,7 +222,7 @@ export class BIKObject {
 
       this.isPlaying = true;
 
-      // Kick off initial decode requests so frames are buffered before first update()
+      // Kick off initial decode requests so frames are buffered before first update
       const frameCount = this.header?.frameCount ?? 0;
       for (let i = 0; i < Math.min(BIKObject.MAX_DECODE_IN_FLIGHT, frameCount); i++) {
         this.requestDecode(this.nextFrameToRequest);
@@ -238,7 +238,7 @@ export class BIKObject {
   }
 
   /**
-   * Plays a BIK movie from an in-memory buffer (e.g. Forge editor). Same as play() but skips loading from filesystem.
+   * Plays a BIK movie from an in-memory buffer (e.g. Forge editor). Same as play but skips loading from filesystem.
    * @param buffer - Full BIK file contents (ArrayBuffer).
    */
   async playFromBuffer(buffer: ArrayBuffer, onComplete?: Function, onReady?: (width: number, height: number) => void): Promise<void> {

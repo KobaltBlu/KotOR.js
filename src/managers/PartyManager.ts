@@ -29,7 +29,7 @@ import { AILevel } from "@/enums/module/AILevel";
 import { BitWise } from "@/utility/BitWise";
 import { getPathPersonalSpace } from "@/combat/attack-range";
 import { partyFollowPath } from "@/engine/pathfinding/party-follow-path";
-import { computeSafeLocation } from "@/engine/pathfinding/compute-safe-location";
+import { findSafeLocation } from "@/engine/pathfinding/find-safe-location";
 
 export interface CurrentMember {
   isLeader: boolean,
@@ -82,10 +82,10 @@ export class PartyManager {
   static aiStyle = 0;
 
   /**
-   * Retail SetSoloMode + TogglePartyFollow (runs k_sup_solo).
+   * SetSoloMode + TogglePartyFollow (runs k_sup_solo).
    * @param enabled - solo mode on/off
-   * @param options.unstealthOnDisable - when turning solo off, strip party stealth (retail UnstealthParty)
-   * @param options.runScript - run k_sup_solo after the flag changes (retail TogglePartyFollow)
+   * @param options.unstealthOnDisable - when turning solo off, strip party stealth (UnstealthParty)
+   * @param options.runScript - run k_sup_solo after the flag changes (TogglePartyFollow)
    */
   static setSoloMode(enabled: boolean, options: { unstealthOnDisable?: boolean; runScript?: boolean } = {}){
     const unstealthOnDisable = options.unstealthOnDisable !== false;
@@ -108,7 +108,7 @@ export class PartyManager {
       try{
         const script = GameState.NWScript.Load('k_sup_solo');
         if(script){
-          // Retail runs on OBJECT_INVALID (0x7f000000)
+          // runs on OBJECT_INVALID (0x7f000000)
           script.run(PartyManager.party[0] || GameState.module?.area);
         }
       }catch(e){
@@ -125,7 +125,7 @@ export class PartyManager {
   static PlayerTemplate: GFFObject;
 
   /**
-   * GetFirstPC / GetNextPC iterator (retail server player list).
+   * GetFirstPC / GetNextPC iterator (server player list).
    * Single-player: Player when set, else party[0] for minigame edges.
    */
   static pcIteratorIndex: number = -1;
@@ -154,10 +154,10 @@ export class PartyManager {
   static CurrentPuppets: CurrentPuppet[] = [];
 
   static InfluenceMap: Map<number, number> = new Map<number, number>();
-  /** Retail UpdateStatus 9/10 pending bitmasks (TSL). */
+  /** UpdateStatus 9/10 pending bitmasks (TSL). */
   static influenceGainedMask: number = 0;
   static influenceLostMask: number = 0;
-  /** Dirty flag for a future MenuStatusSummary (retail +0x68). */
+  /** Dirty flag for a future MenuStatusSummary (+0x68). */
   static influenceStatusPending: boolean = false;
 
   /**
@@ -169,11 +169,11 @@ export class PartyManager {
   ];
   static ChemicalCount: number = 0;
   static ComponentCount: number = 0;
-  /** Party XP pool (retail PT_XP_POOL). */
+  /** Party XP pool (PT_XP_POOL). */
   static XPPool: number = 0;
-  /** Controlled party index; -1 = PC (retail PT_CONTROLLED_NPC). */
+  /** Controlled party index; -1 = PC (PT_CONTROLLED_NPC). */
   static ControlledNPC: number = -1;
-  /** Party AI / follow state (retail PT_AISTATE / PT_FOLLOWSTATE). */
+  /** Party AI / follow state (PT_AISTATE / PT_FOLLOWSTATE). */
   static AIState: number = 0;
   static FollowState: number = 0;
   /** TSL: DisableMap / DisableHealthRegen (PT_DISABLEMAP / PT_DISABLEREGEN). */
@@ -182,7 +182,7 @@ export class PartyManager {
   /** TSL: battle-circle forfeit (FORFEITCONDS / FORFEITVIOL). */
   static ForfeitConditions: number = 0;
   static LastForfeitViolation: number = 0;
-  /** Retail CHEATUSED / PT_CHEAT_USED — set when cheat console is used */
+  /** CHEATUSED / PT_CHEAT_USED — set when cheat console is used */
   static CheatUsed: boolean = false;
   /** NFO GAMEPLAYHINT (BYTE) */
   static GameplayHint: number = 0;
@@ -190,7 +190,7 @@ export class PartyManager {
   static StoryHint: number = 0;
   /** TSL NFO STORYHINT0..9 */
   static StoryHints: number[] = [0,0,0,0,0,0,0,0,0,0];
-  /** Retail PT_LAST_GUI_PNL */
+  /** PT_LAST_GUI_PNL */
   static LastGuiPanel: number = 0;
   /** TSL PT_COM_MSG_LIST entries */
   static CombatMessages: { msg: string; type: number; color: number }[] = [];
@@ -201,13 +201,13 @@ export class PartyManager {
   static SwoopUpgrade3: number = -1;
   /**
    * Extra runtime slots from OnAssemble (6 total).
-   * Retail partytable only persists PT_SWOOP1..3 — slots 4–6 are session-only.
+   * partytable only persists PT_SWOOP1..3 — slots 4–6 are session-only.
    */
   static SwoopUpgrade4: number = -1;
   static SwoopUpgrade5: number = -1;
   static SwoopUpgrade6: number = -1;
 
-  /** Retail OnAssemble writes swoopupgrade.2da row ids into slots 0..5. */
+  /** OnAssemble writes swoopupgrade.2da row ids into slots 0..5. */
   static setSwoopUpgradeSlot(slot: number, rowIndex: number){
     const v = (typeof rowIndex === 'number' && Number.isFinite(rowIndex)) ? rowIndex : -1;
     switch(slot){
@@ -233,7 +233,7 @@ export class PartyManager {
   }
 
   /**
-   * Retail player list for GetFirstPC / GetNextPC.
+   * player list for GetFirstPC / GetNextPC.
    * Prefer PartyManager.Player; fall back to party[0] when Player is unset
    * (minigame loads can leave party empty but keep Player).
    */
@@ -383,7 +383,7 @@ export class PartyManager {
 
   /** Status feedback + HandleAlignmentInfluence after a real change. */
   static onInfluenceChanged(nNPC: number, prev: number, next: number){
-    // Retail UpdateStatus 9 = gained, 10 = lost (-1 counts as below any set value)
+    // UpdateStatus 9 = gained, 10 = lost (-1 counts as below any set value)
     const gained = next > prev;
     PartyManager.notifyInfluenceChange(nNPC, gained);
 
@@ -578,7 +578,7 @@ export class PartyManager {
       }
     }
 
-    //TSL: PT_ITEM_CHEMICAL / PT_ITEM_COMPONENT (retail SaveTableInfo)
+    //TSL: PT_ITEM_CHEMICAL / PT_ITEM_COMPONENT (SaveTableInfo)
     if(gff.RootNode.hasField('PT_ITEM_CHEMICAL')){
       GameState.PartyManager.ChemicalCount = gff.RootNode.getFieldByLabel('PT_ITEM_CHEMICAL').getValue();
     }
@@ -616,7 +616,7 @@ export class PartyManager {
 
     GameState.PartyManager.Gold = gff.RootNode.getFieldByLabel('PT_GOLD').getValue();
 
-    // Retail label is PT_CONTROLLED_NPC (16 chars); accept legacy truncated PT_CONTROLLED_NP
+    // label is PT_CONTROLLED_NPC (16 chars); accept legacy truncated PT_CONTROLLED_NP
     const controlledField =
       gff.RootNode.getFieldByLabel('PT_CONTROLLED_NPC') ||
       gff.RootNode.getFieldByLabel('PT_CONTROLLED_NP');
@@ -647,7 +647,7 @@ export class PartyManager {
       }
     }
 
-    // TSL LoadTableInfo — PT_SWOOP1..3 only (no PT_SWOOP4..6 in retail).
+    // TSL LoadTableInfo — PT_SWOOP1..3 only (no PT_SWOOP4..6 in).
     if(gff.RootNode.hasField('PT_SWOOP1')){
       GameState.PartyManager.SwoopUpgrade1 = gff.RootNode.getFieldByLabel('PT_SWOOP1').getValue() | 0;
     }
@@ -737,7 +737,7 @@ export class PartyManager {
       }
     }
 
-    // Retail LoadTableInfo — restore per-baseitem cost multipliers (retail),
+    // LoadTableInfo — restore per-baseitem cost multipliers,
     // independent of baseitems.itemmultiplier used by GetCost.
     const costMultField =
       gff.RootNode.getFieldByLabel('PT_COST_MULT_LIST') ||
@@ -855,7 +855,7 @@ export class PartyManager {
         availNPCSList.addChildStruct(availStruct);
       }
 
-      // Retail SaveTableInfo WriteFieldBYTE PT_CHEAT_USED
+      // SaveTableInfo WriteFieldBYTE PT_CHEAT_USED
       partytable.RootNode.addField(new GFFField(GFFDataType.BYTE, 'PT_CHEAT_USED')).setValue(GameState.PartyManager.CheatUsed ? 1 : 0);
       const controlledIdx = GameState.getCurrentPlayer() == GameState.PartyManager.Player
         ? -1
@@ -863,7 +863,7 @@ export class PartyManager {
       GameState.PartyManager.ControlledNPC = controlledIdx;
       partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_CONTROLLED_NPC')).setValue(controlledIdx);
 
-      // Retail SaveTableInfo — one PT_COST_MULT_VALUE per baseitems row (default 1.0)
+      // SaveTableInfo — one PT_COST_MULT_VALUE per baseitems row (default 1.0)
       const costMultList = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_COST_MULT_LIST'));
       const baseItems = GameState.SWRuleSet?.baseItems || [];
       for(let i = 0; i < baseItems.length; i++){
@@ -910,7 +910,7 @@ export class PartyManager {
       let numMembers = 0;
       for(let i = 0; i < GameState.PartyManager.party.length; i++){
         let member = GameState.PartyManager.party[i];
-        // Retail GetNPCObject: unavailable CNPCs are not active party members
+        // GetNPCObject: unavailable CNPCs are not active party members
         if(member != GameState.PartyManager.Player && PartyManager.IsAvailable(member.npcId)){
           let memberStruct = new GFFStruct();
           memberStruct.addField( new GFFField(GFFDataType.BYTE, 'PT_IS_LEADER') ).setValue( GameState.getCurrentPlayer() == member ? 1 : 0 );
@@ -927,7 +927,7 @@ export class PartyManager {
         const pc = GameState.PartyManager.Player || GameState.getCurrentPlayer();
         const pcName = (pc && typeof pc.getName === 'function') ? (pc.getName() || '') : '';
         partytable.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'PT_PCNAME')).setValue(pcName);
-        // Retail SaveTableInfo — PT_SWOOP1..3 only.
+        // SaveTableInfo — PT_SWOOP1..3 only.
         partytable.RootNode.addField(new GFFField(GFFDataType.DWORD, 'PT_SWOOP1')).setValue(
           GameState.PartyManager.SwoopUpgrade1 | 0
         );
@@ -963,7 +963,7 @@ export class PartyManager {
           GameState.PartyManager.ChemicalCount | 0
         );
 
-        // Retail SaveTableInfo — 12 influence entries
+        // SaveTableInfo — 12 influence entries
         const influenceList = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_INFLUENCE'));
         for(let i = 0; i < 12; i++){
           const inflStruct = new GFFStruct(0);
@@ -1023,11 +1023,11 @@ export class PartyManager {
       partytable.RootNode.addField(new GFFField(GFFDataType.BYTE, 'PT_SOLOMODE')).setValue(GameState.SOLOMODE ? 1 : 0);
 
       const tutorial2DA = GameState.TwoDAManager.datatables.get('tutorial');
-      // Retail: K1 writes 6 bytes; TSL writes 0x21 (33) bytes from GUI tutorial bitarray
-      const retailTutBytes = GameState.GameKey == GameEngineType.TSL ? 0x21 : 6;
-      let byteCount = retailTutBytes;
+      // : K1 writes 6 bytes; TSL writes 0x21 (33) bytes from GUI tutorial bitarray
+      const odysseyTutorialBytes = GameState.GameKey == GameEngineType.TSL ? 0x21 : 6;
+      let byteCount = odysseyTutorialBytes;
       if(tutorial2DA){
-        byteCount = Math.max(retailTutBytes, Math.ceil(tutorial2DA.RowCount / 8));
+        byteCount = Math.max(odysseyTutorialBytes, Math.ceil(tutorial2DA.RowCount / 8));
       }
       let buffer = new Uint8Array(byteCount);
       for(let i = 0; i < byteCount; i++){
@@ -1112,7 +1112,7 @@ export class PartyManager {
 
   /**
    * Remove the NPC by the ID.
-   * Retail RemovePartyMember updates the active party list; CurrentMembers (PT_MEMBERS)
+   * RemovePartyMember updates the active party list; CurrentMembers (PT_MEMBERS)
    * must stay in sync or GetPartyMemberCount vs IsNPCPartyMember diverge (k_ptar_duelring).
    * @param npcId - The ID of the NPC to remove
    * @param leaveInWorld - Whether to leave the NPC in the world
@@ -1137,7 +1137,7 @@ export class PartyManager {
     PartyManager.RemoveCurrentMemberByNPCId(npcId);
     PartyManager.RebuildPortraitOrder();
 
-    // Retail SetInParty(0) → AI level NORMAL when left in world
+    // SetInParty(0) → AI level NORMAL when left in world
     if(leaveInWorld){
       GameState.module?.aiScheduler.setAILevel(partyMember, AILevel.NORMAL);
       if(partyMember.container){
@@ -1319,7 +1319,7 @@ export class PartyManager {
   }
 
   /**
-   * Retail GetNPCSelectability — -1 if unavailable, else canSelect (0/1).
+   * GetNPCSelectability — -1 if unavailable, else canSelect (0/1).
    */
   static GetNPCSelectability(nID = 0): number {
     if(nID < 0 || nID >= PartyManager.MaxPartyCount) return -1;
@@ -1355,7 +1355,7 @@ export class PartyManager {
 
   /**
    * Set the PartyMember to unavailable.
-   * Retail RemoveNPC — clears available only.
+   * RemoveNPC — clears available only.
    * @param npcId - The ID of the NPC to set to unavailable
    * @returns void
    */
@@ -1602,7 +1602,7 @@ export class PartyManager {
       return true;
     }
     if(PartyManager.CurrentPuppets.length >= PartyManager.MaxPuppetCount) return false;
-    // Retail: reject if another slot already caches this object id
+    // : reject if another slot already caches this object id
     if(object && BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature)){
       for(let i = 0; i < PartyManager.MaxPuppetCount; i++){
         if(i !== pupId && PartyManager.Puppets[i]?.moduleObject === object) return false;
@@ -1655,7 +1655,7 @@ export class PartyManager {
         memberID: slot,
       });
     }
-    // Retail SetInParty → AI level VERY_HIGH
+    // SetInParty → AI level VERY_HIGH
     GameState.module?.aiScheduler.setAILevel(creature, AILevel.VERY_HIGH);
     //Check to see if the creature needs to be removed from the creatures array
     let cIdx = GameState.module.area.creatures.indexOf(creature);
@@ -1726,7 +1726,7 @@ export class PartyManager {
 
   /**
    * Save the current party member templates.
-   * Retail GetNPCObject requires availability — unavailable CNPCs (e.g. prologue
+   * GetNPCObject requires availability — unavailable CNPCs (e.g. prologue
    * 3CFD after RemoveAvailableNPC(NPC_MIRA)) must not remain in PT_MEMBERS
    * CurrentMembers or they will respawn on the next module load.
    * @returns void
@@ -1745,7 +1745,7 @@ export class PartyManager {
   }
 
   /**
-   * Apply retail PT_CONTROLLED_NPC after party spawn (-1 = PC at index 0).
+   * Apply PT_CONTROLLED_NPC after party spawn (-1 = PC at index 0).
    */
   static ApplyControlledNPC(){
     const idx = PartyManager.ControlledNPC;
@@ -1869,7 +1869,7 @@ export class PartyManager {
 
   /**
    * Load the PartyMember by it's index in the CurrentMembers array.
-   * Retail GetNPCObject — unavailable → OBJECT_INVALID
+   * GetNPCObject — unavailable → OBJECT_INVALID
    * (SpawnNPC no-ops). Prologue skip uses RemoveAvailableNPC(7) for 3CFD.
    * @param nIdx - The index of the party member to load
    * @returns void
@@ -1922,7 +1922,7 @@ export class PartyManager {
         PartyManager.AddPortraitToOrder( partyMember.getPortraitResRef() );
         PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(partyMember) ] = partyMember;
         let spawn = PartyManager.GetSpawnLocation(partyMember);
-        // Retail PositionParty: companions share the leader/waypoint orientation (Yaw).
+        // PositionParty: companions share the leader/waypoint orientation (Yaw).
         const spawnFacing = -Math.atan2(spawn.rotation.x, spawn.rotation.y);
         partyMember.position.copy(spawn.position);
         partyMember.setFacing(spawnFacing, true);
@@ -1993,7 +1993,7 @@ export class PartyManager {
   }
 
   /**
-   * retail formation local offsets (retail ctor →).
+   * formation local offsets (ctor →).
    * Each pattern stores companion slot1 then slot2 (+X right, +Y forward).
    * Leader is always (0,0). SetFormation selects pattern 0–2.
    */
@@ -2009,11 +2009,11 @@ export class PartyManager {
   ];
 
   /**
-   * Active party follow formation (retail.formation). Default 0 after ctor SetFormation(0).
+   * Active party follow formation (.formation). Default 0 after ctor SetFormation(0).
    * −9999 cycles to next unlocked pattern.
    */
   static formation: number = 0;
-  /** Retail when set, SetFormation swaps slot1/slot2 offsets. */
+  /** when set, SetFormation swaps slot1/slot2 offsets. */
   static formationInvert: boolean = false;
 
   /**
@@ -2033,13 +2033,13 @@ export class PartyManager {
     return [ { x: 0, y: 0 }, c0, c1 ];
   }
 
-  /** @deprecated Prefer getFormationOffsets(); kept for callers expecting formation-0 shape. */
+  /** @deprecated Prefer getFormationOffsets; kept for callers expecting formation-0 shape. */
   static get FORMATION_OFFSETS(): ReadonlyArray<Readonly<{ x: number; y: number }>> {
     return PartyManager.getFormationOffsets();
   }
 
   /**
-   * Retail SetFormation.
+   * SetFormation.
    * @param pattern 0–2, or −9999 to cycle
    */
   static setFormation(pattern: number): void {
@@ -2059,7 +2059,7 @@ export class PartyManager {
   }
 
   /**
-   * Retail InvertFormation — toggle companion offset swap.
+   * InvertFormation — toggle companion offset swap.
    */
   static invertFormation(on?: boolean): void {
     if(typeof on === 'boolean'){
@@ -2075,8 +2075,8 @@ export class PartyManager {
 
   /**
    * Get the spawn location of the creature when entering a module.
-   * Retail: MovePlayerToArea (waypoint/entry + ComputeSafeLocation r=20) then
-   * PositionParty (formation offsets + ComputeSafeLocation r=10).
+   * : MovePlayerToArea (waypoint/entry + find safe location r=20) then
+   * PositionParty (formation offsets + find safe location r=10).
    * @param creature - The creature to get the spawn location of
    * @returns EngineLocation
    */
@@ -2099,7 +2099,7 @@ export class PartyManager {
     const spawnLoc = GameState.module.area.getSpawnLocation();
     const ox = spawnLoc.rotation.x;
     const oy = spawnLoc.rotation.y;
-    // Retail Yaw: atan2(-x, y) in degrees → radians here.
+    // Yaw: atan2(-x, y) in degrees → radians here.
     const yaw = -Math.atan2(ox, oy);
 
     let index = PartyManager.party.indexOf(creature);
@@ -2122,7 +2122,7 @@ export class PartyManager {
     // MovePlayerToArea uses r=20 for the PC; PositionParty uses r=10 for NPCs.
     const radius = index === 0 ? 20 : 10;
     const area = GameState.module?.area;
-    if(computeSafeLocation(area, PartyManager.#spawnPos, PartyManager.#spawnSafe, {
+    if(findSafeLocation(area, PartyManager.#spawnPos, PartyManager.#spawnSafe, {
       radius,
       owner: creature,
     })){
@@ -2142,7 +2142,7 @@ export class PartyManager {
   static #tmpFollowPositionTarget = new THREE.Vector3();
   static #tmpFollowPosition = new THREE.Vector3();
   /**
-   * Record leader trail for party follow (retail ProcessPoint).
+   * Record leader trail for party follow (ProcessPoint).
    * Call when the controlled party leader moves.
    */
   static processLeaderFollowPoint(leader: ModuleCreature){
@@ -2196,7 +2196,7 @@ export class PartyManager {
           : point);
     };
 
-    // Retail WaitingForPath holds until count > 4 — keep cold goals at feet
+    // WaitingForPath holds until count > 4 — keep cold goals at feet
     if(partyFollowPath.count <= 4){
       return this.#tmpFollowPosition.copy(creature.position);
     }
@@ -2229,7 +2229,7 @@ export class PartyManager {
   }
 
   /**
-   * Retail TeleportForward — advance along the follow ring to a safe offset.
+   * TeleportForward — advance along the follow ring to a safe offset.
    */
   static teleportFollowForward(creature: ModuleCreature, out: THREE.Vector3): boolean {
     const idx = PartyManager.party.indexOf(creature);
@@ -2238,7 +2238,7 @@ export class PartyManager {
   }
 
   /**
-   * Give XP to the party (retail DistributeExperience).
+   * Give XP to the party (DistributeExperience).
    * Adds to PT_XP_POOL and awards the full amount to each active party member + player.
    */
   static GiveXP(nXP = 0){
@@ -2329,7 +2329,7 @@ export class PartyManager {
    * @returns void
    */
   static async ExportPlayerCharacter(){
-    // Retail GAMEINPROGRESS:PC only while controlling an NPC (pt_controlled_npc != -1)
+    // GAMEINPROGRESS:PC only while controlling an NPC (pt_controlled_npc != -1)
     const player = GameState.PartyManager.Player;
     if(!(player?.npcId >= 0)){ return; }
     if(!GameState.PartyManager.ActualPlayerTemplate){ return; }
@@ -2443,7 +2443,7 @@ export class PartyManager {
     pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'SoundSetFile') ).setValue(85);
     pTPL.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Race') ).setValue(6);
 
-    /*let spawnLoc = this.getSpawnLocation();
+    /*let spawnLoc = this.getSpawnLocation;
     pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'XPosition') ).setValue(spawnLoc.XPosition);
     pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'YPosition') ).setValue(spawnLoc.YPosition);
     pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'ZPosition') ).setValue(spawnLoc.ZPosition);

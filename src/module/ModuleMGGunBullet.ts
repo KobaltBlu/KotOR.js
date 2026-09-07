@@ -38,10 +38,10 @@ export class ModuleMGGunBullet extends ModuleObject {
   damage_amt: number = 0;
   /** True after a hit; culled next update (unless exploding). */
   hit: boolean = false;
-  /** Retail explode-anim hold before gob destroy. */
+  /** explode-anim hold before gob destroy. */
   exploding: boolean = false;
 
-  /** Retail GetPreviousPosition → GetPosition segment for HitCheckPart. */
+  /** GetPreviousPosition → GetPosition segment for HitCheckPart. */
   directionLine: THREE.Line3 = new THREE.Line3();
   directionLinePoint: THREE.Vector3 = new THREE.Vector3();
   /** Last HitCheckPart world hit (explode orient). */
@@ -66,7 +66,7 @@ export class ModuleMGGunBullet extends ModuleObject {
   }
 
   /**
-   * Motion / lifetime only — collision runs from MiniGame.doHitCheck (retail order).
+   * Motion / lifetime only — collision runs from MiniGame.doHitCheck (order).
    */
   update(delta = 0){
     this.life += delta;
@@ -88,7 +88,7 @@ export class ModuleMGGunBullet extends ModuleObject {
     this.velocity.set(0, this.speed * delta, 0);
     this.velocity.applyQuaternion(this.quaternion);
 
-    // Prev → curr segment (retail GetPreviousPosition / GetPosition).
+    // Prev → curr segment (GetPreviousPosition / GetPosition).
     this.directionLine.start.copy(this.position);
     this.directionLine.end.copy(this.position).add(this.velocity);
 
@@ -103,7 +103,7 @@ export class ModuleMGGunBullet extends ModuleObject {
   }
 
   /**
-   * Retail DoBulletHitCheck / HitCheckBullet — HitCheckPart on hitbullet parts.
+   * DoBulletHitCheck / HitCheckBullet — HitCheckPart on hitbullet parts.
    */
   doHitCheck(){
     if(this.hit || this.exploding){ return; }
@@ -146,7 +146,7 @@ export class ModuleMGGunBullet extends ModuleObject {
   }
 
   /**
-   * Retail HitCheckBullet
+   * HitCheckBullet
    * segment previous→current vs obstacle part "hitbullet" via HitCheckPart.
    */
   hitsObstacle(obstacle: ModuleMGObstacle): boolean {
@@ -168,12 +168,12 @@ export class ModuleMGGunBullet extends ModuleObject {
       }
     }
 
-    // Retail HitCheckBullet — no hitbullet part → miss (no proximity stand-in).
+    // HitCheckBullet — no hitbullet part → miss (no proximity stand-in).
     return false;
   }
 
   /**
-   * Retail DoBulletHitCheck on follower models — hitbullet HitCheckPart; else sphere.
+   * DoBulletHitCheck on follower models — hitbullet HitCheckPart; else sphere.
    */
   hitsFollower(target: ModuleMGPlayer | ModuleMGEnemy): boolean {
     if(!target){ return false; }
@@ -194,7 +194,7 @@ export class ModuleMGGunBullet extends ModuleObject {
           return true;
         }
       }
-      // Models present but no hitbullet part — no sphere fallback (retail requires part).
+      // Models present but no hitbullet part — no sphere fallback (requires part).
       // If none of the models had a part, fall through to sphere.
       let anyPart = false;
       for(let i = 0; i < models.length; i++){
@@ -247,11 +247,11 @@ export class ModuleMGGunBullet extends ModuleObject {
     if(this.damage_amt){
       obstacle.adjustHitPoints?.(-this.damage_amt, 0);
     }
-    // Retail: PlayAnimation("explode"); on success RegisterCallBack(doneexplode); else destroy gob.
+    // : PlayAnimation("explode"); on success RegisterCallBack(doneexplode); else destroy gob.
     this.playExplodeThenCull();
   }
 
-  /** Retail Collision_Sound on bullet hit (follower or obstacle). */
+  /** Collision_Sound on bullet hit (follower or obstacle). */
   playCollisionSound(){
     const sfx = (this.collision_sound || '').replace(/\0[\s\S]*$/g, '').trim();
     if(!sfx){ return; }
@@ -259,7 +259,7 @@ export class ModuleMGGunBullet extends ModuleObject {
   }
 
   /**
-   * Retail HitCheckBullet explode path — play "explode" if present, else dispose next frame.
+   * HitCheckBullet explode path — play "explode" if present, else dispose next frame.
    */
   playExplodeThenCull(){
     const model = this.model as OdysseyModel3D | undefined;

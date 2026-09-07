@@ -16,7 +16,7 @@ export class ForgeMiniGame {
   farClip: number = 100;
   lateralAccel: number = 60;
   movementPerSec: number = 6;
-  /** Retail MiniGame.Music CResRef (streammusic). */
+  /** MiniGame.Music CResRef (streammusic). */
   music: string = '';
   nearClip: number = 0.1;
   useInertia: number = 0;
@@ -125,7 +125,7 @@ export class ForgeMiniGame {
     }
   }
 
-  /** Retail ReadFieldCResRef("Music"); tolerate legacy DWORD ambientmusic indices. */
+  /** ReadFieldCResRef("Music"); tolerate legacy DWORD ambientmusic indices. */
   static parseMusicResRef(struct: KotOR.GFFStruct): string {
     if(!struct?.hasField?.('Music')){ return ''; }
     const raw = struct.getFieldByLabel('Music').getValue();

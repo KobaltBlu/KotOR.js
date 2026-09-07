@@ -1,7 +1,7 @@
 import type { SWPortrait } from "@/engine/rules/SWPortrait";
 import type { SWCreatureAppearance } from "@/engine/rules/SWCreatureAppearance";
 
-/** Retail classSelection soundset (CHAR_TYPE). */
+/** classSelection soundset (CHAR_TYPE). */
 export const CHARGEN_SLOT_SOUNDSET: readonly number[] = [85, 85, 85, 83, 83, 83];
 
 export interface CharGenPortraitEntry {
@@ -10,7 +10,7 @@ export interface CharGenPortraitEntry {
 }
 
 /**
- * Retail GetPortraitsList — portraits.2da rows with
+ * GetPortraitsList — portraits.2da rows with
  * Sex match + ForPC == 1; appearance column by class:
  * Soldier(0)→Appearance_L, Scout(1)→AppearanceNumber, Scoundrel(2)→Appearance_S.
  */

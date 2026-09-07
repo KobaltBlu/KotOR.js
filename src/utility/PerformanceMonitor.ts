@@ -10,9 +10,9 @@
 class PerformanceMonitorEvent {
   /** The name identifier for this performance event */
   name: string;
-  /** The start time of the event in milliseconds (from performance.now()) */
+  /** The start time of the event in milliseconds (from performance.now) */
   startTime: number;
-  /** The end time of the event in milliseconds (from performance.now()) */
+  /** The end time of the event in milliseconds (from performance.now) */
   endTime: number;
   /** The calculated duration of the event in milliseconds */
   duration: number;
@@ -37,9 +37,9 @@ class PerformanceMonitorEvent {
    * 
    * @example
    * const event = new PerformanceMonitorEvent('database_query');
-   * event.start();
-   * // ... perform database operation ...
-   * event.stop();
+   * event.start;
+   * //... perform database operation...
+   * event.stop;
    */
   start(){
     this.startTime = performance.now();
@@ -58,9 +58,9 @@ class PerformanceMonitorEvent {
    * 
    * @example
    * const event = new PerformanceMonitorEvent('database_query');
-   * event.start();
-   * // ... perform database operation ...
-   * event.stop();
+   * event.start;
+   * //... perform database operation...
+   * event.stop;
    * console.log(event.duration); // Duration in milliseconds
    */
   stop(){
@@ -78,10 +78,10 @@ class PerformanceMonitorEvent {
    * 
    * @example
    * const event = new PerformanceMonitorEvent('database_query');
-   * event.start();
-   * // ... perform operation ...
-   * event.stop();
-   * console.log(event.toString()); // "database_query: 150ms"
+   * event.start;
+   * //... perform operation...
+   * event.stop;
+   * console.log(event.toString); // "database_query: 150ms"
    */
   toString(){
     const duration = this.duration < 1000 ? `${this.duration}ms` : `${(this.duration / 1000).toFixed(2)}s`;
@@ -103,13 +103,13 @@ class PerformanceMonitorEvent {
  * // Start timing an operation
  * PerformanceMonitor.start('module_loading');
  * 
- * // ... perform some operation ...
+ * //... perform some operation...
  * 
  * // Stop timing and record the duration
  * PerformanceMonitor.stop('module_loading');
  * 
  * // Get a formatted report of all performance events
- * console.log(PerformanceMonitor.toString());
+ * console.log(PerformanceMonitor.toString);
  */
 export class PerformanceMonitor {
   
@@ -149,7 +149,7 @@ export class PerformanceMonitor {
    * 
    * @example
    * PerformanceMonitor.start('texture_loading');
-   * // ... load textures ...
+   * //... load textures...
    * PerformanceMonitor.stop('texture_loading');
    */
   static start(name: string){
@@ -170,7 +170,7 @@ export class PerformanceMonitor {
    * 
    * @example
    * PerformanceMonitor.start('database_query');
-   * // ... perform database operation ...
+   * //... perform database operation...
    * PerformanceMonitor.stop('database_query');
    */
   static stop(name: string){
@@ -192,11 +192,11 @@ export class PerformanceMonitor {
    * @example
    * PerformanceMonitor.start('operation1');
    * PerformanceMonitor.start('operation2');
-   * // ... perform operations ...
+   * //... perform operations...
    * PerformanceMonitor.stop('operation1');
    * PerformanceMonitor.stop('operation2');
    * 
-   * console.log(PerformanceMonitor.toString());
+   * console.log(PerformanceMonitor.toString);
    * // Output:
    * // operation2: 250ms
    * // operation1: 150ms

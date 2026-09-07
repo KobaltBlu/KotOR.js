@@ -5,7 +5,7 @@ import { TXI } from "@/resource/TXI";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { createQuadElements as createIndicies } from "@/utility/QuadIndices";
 
-/** Retail Draw UV inset to reduce atlas bleeding. */
+/** Draw UV inset to reduce atlas bleeding. */
 const UV_BIAS = 0.0001;
 
 interface Line {
@@ -43,7 +43,7 @@ export class GUIFont {
 
       this.ratio = texture.image.width / texture.image.height;
 
-      // Retail GetFontPixelHeight / GetIdealPixelHeight
+      // GetFontPixelHeight / GetIdealPixelHeight
       this.height = asExtentInt(this.txi.fontheight     * 100 * this.scale);
       this.bsline = asExtentInt(this.txi.baselineheight * 100 * this.scale);
       this.spaceR = asExtentInt(this.txi.spacingr       * 100 * this.scale);
@@ -65,7 +65,7 @@ export class GUIFont {
   }
 
   /**
-   * Retail TextOutA / WrapStrings clamp char index to the smaller UV array size.
+   * TextOutA / WrapStrings clamp char index to the smaller UV array size.
    */
   getChar(charCode: number): GUIFontChar {
     let idx = charCode | 0;
@@ -121,7 +121,7 @@ export class GUIFont {
   }
 
   /**
-   * Wrap a single paragraph to maxWidth using retail WrapStrings break rules:
+   * Wrap a single paragraph to maxWidth using WrapStrings break rules:
    * spaces, soft hyphen between alpha chars, and forced mid-word splits.
    */
   private wrapParagraph(paragraph: string, maxWidth: number, startY: number, out: Line[]): number {
@@ -170,7 +170,7 @@ export class GUIFont {
     }
 
     while(i < codes.length){
-      // Soft hyphen break opportunity: alpha '-' alpha (retail WrapStrings)
+      // Soft hyphen break opportunity: alpha '-' alpha (WrapStrings)
       if(
         codes[i] === 0x2d &&
         i > lineStart &&
@@ -192,7 +192,7 @@ export class GUIFont {
       }
 
       const nextChar = this.getChar(codes[next]);
-      // Subsequent chars: content + spacingR (+0.25 bias in retail WrapStrings)
+      // Subsequent chars: content + spacingR (+0.25 bias in WrapStrings)
       const advance = Math.floor(nextChar.contentWidth + this.spaceR + 0.25);
       const nextWidth = lineWidth + advance;
 
@@ -205,7 +205,7 @@ export class GUIFont {
       // Need to break
       if(lastBreak > lineStart || (lastBreak === lineStart && codes[lastBreak] === 0x20)){
         if(codes[lastBreak] === 0x20){
-          // Break at space; space itself is omitted from both lines (retail)
+          // Break at space; space itself is omitted from both lines 
           flushLine(lastBreak, lastBreak + 1);
         }else{
           // Soft hyphen: keep hyphen on current line
@@ -273,7 +273,7 @@ export class GUIFont {
         const char = line.chars[c];
         const stride = charIndex * 8;
         const quadW = char.contentWidth;
-        // Retail Draw always uses fontheight for quad height; UVs only sample the atlas
+        // Draw always uses fontheight for quad height; UVs only sample the atlas
         const quadH = this.height;
 
         // BL
@@ -340,7 +340,7 @@ export class GUIFontChar {
   contentWidth: number = 0;
   /** Advance including spacingR (contentWidth + spaceR). Prefer getCharsWidth for strings. */
   width: number = 0;
-  /** Quad height — always fontheight * 100 (retail Draw / TextOutA). */
+  /** Quad height — always fontheight * 100 (Draw / TextOutA). */
   height: number = 0;
 
   constructor(font: GUIFont, charCode: number){
@@ -363,7 +363,7 @@ export class GUIFontChar {
     this.ul = ulArr[idx] || {x: 0, y: 0, z: 0};
     this.lr = lrArr[idx] || {x: 0, y: 0, z: 0};
 
-    // Retail: (lr.x - ul.x) * texturewidth [world] → * 100 for GUI pixels
+    // : (lr.x - ul.x) * texturewidth [world] → * 100 for GUI pixels
     this.contentWidth = asExtentInt(((this.lr.x - this.ul.x) * font.txi.texturewidth) * font.scale * 100);
     this.width = this.contentWidth + font.spaceR;
     this.height = font.height;

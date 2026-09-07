@@ -7,7 +7,7 @@ import { describe, expect, it } from '@jest/globals';
 
 /**
  * Mirrors SpellCastInstance.update branch selection for impact.
- * Returns whether impact() should run when entering the final else
+ * Returns whether impact should run when entering the final else
  * (conjure done, castTime == 0).
  */
 function shouldImpactOnCastComplete(opts: {
@@ -42,8 +42,8 @@ describe('SpellCastInstance force-power impact (proj==0 / castTime==0)', () => {
   it('does not double-impact if castTime>0 path already impacted', () => {
     // Non-delayed spell with castTime>0 impacts during castTime branch
     expect(shouldImpactDuringCastTime(false)).toBe(true);
-    // Else branch then sees alreadyImpacted — impact() no-ops via guard,
-    // but the condition still calls impact(); the method itself is idempotent.
+    // Else branch then sees alreadyImpacted — impact no-ops via guard,
+    // but the condition still calls impact; the method itself is idempotent.
     expect(shouldImpactOnCastComplete({
       delayImpactToLanding: false,
       alreadyImpacted: true,

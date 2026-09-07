@@ -1,5 +1,5 @@
 /**
- * ForceFollow retail Check+Wait+MoveTo model (G1).
+ * ForceFollow Check+Wait+MoveTo model (G1).
  * @jest-environment node
  */
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
@@ -82,7 +82,7 @@ let mockTarget: {
   rotation: { z: number };
 };
 
-describe("ActionForceFollowObject retail model", () => {
+describe("ActionForceFollowObject engine model", () => {
   beforeEach(() => {
     queue.length = 0;
     mockTarget = {

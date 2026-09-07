@@ -93,7 +93,7 @@ export enum ModuleObjectScript {
   TriggerOnExit = 'ScriptOnExit',
   TriggerOnUserDefined = 'ScriptUserDefine',
 
-  // Area of Effect (retail save field names)
+  // Area of Effect (save field names)
   AoEOnHeartbeat = 'OnHeartbeat',
   AoEOnEnter = 'OnObjEnter',
   AoEOnExit = 'OnObjExit',

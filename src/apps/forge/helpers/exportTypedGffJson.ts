@@ -1,5 +1,5 @@
 /**
- * Convert retail-style typed GFF JSON dumps ({ type, value } wrappers) into GFFStruct/GFFObject.
+ * Convert -style typed GFF JSON dumps ({ type, value } wrappers) into GFFStruct/GFFObject.
  * Research/test helper only — not part of module authoring import/export (binary IFO/ARE/GIT).
  * Do not use this for Forge Project save/load/new module; those paths stay binary GFF.
  * Distinct from gffJsonCodec (editor clipboard document shape).
@@ -103,7 +103,7 @@ function addFieldFromTyped(struct: GFFStruct, label: string, node: TypedNode): v
   struct.addField(new GFFField(gffType, label, node.value as never));
 }
 
-/** Build a GFFStruct from one object in a retail typed JSON dump. */
+/** Build a GFFStruct from one object in a typed JSON dump. */
 export function structFromExportObject(obj: Record<string, unknown>): GFFStruct {
   const typeId = typeof obj.__struct_id === "number" ? obj.__struct_id : 0;
   const struct = new GFFStruct(typeId);

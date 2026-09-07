@@ -41,9 +41,9 @@ export class GameEffect {
   objectListIds: number[] = [];
   object: ModuleObject;
   type: GameEffectType;
-  /** Retail id — DWORD64 allocated from Module.effectNextId */
+  /** id — DWORD64 allocated from Module.effectNextId */
   id: number = 0;
-  /** Retail is_exposed — whether the effect is shown on the character sheet */
+  /** is_exposed — whether the effect is shown on the character sheet */
   isExposed: boolean = true;
   
   constructor(){
@@ -53,7 +53,7 @@ export class GameEffect {
     this.expireDay = 0;
     this.expireTime = 0;
     this.spellId = -1;
-    // Retail / NWN default subtype bit = MAGICAL (dispellable when TEMPORARY/PERMANENT)
+    // / NWN default subtype bit = MAGICAL (dispellable when TEMPORARY/PERMANENT)
     this.subType = GameEffectSubType.MAGICAL;
     this.skipOnLoad = false;
     this.id = 0;
@@ -368,7 +368,7 @@ export class GameEffect {
     effectStruct.addField( new GFFField(GFFDataType.DWORD, 'CreatorId') ).setValue( typeof this.creator === 'object' ? this.creator.id : 2130706432 );
     effectStruct.addField( new GFFField(GFFDataType.DWORD, 'SpellId') ).setValue(this.getSpellId() >= 0 ? this.getSpellId() : 4294967295);
     effectStruct.addField( new GFFField(GFFDataType.INT, 'IsExposed') ).setValue(this.isExposed ? 1 : 0);
-    // Retail SaveGameEffect: NumIntegers + IntList length match; ObjectList is exactly 4 × type 6
+    // SaveGameEffect: NumIntegers + IntList length match; ObjectList is exactly 4 × type 6
     const numIntegers = (this.numIntegers | 0) > 0 ? (this.numIntegers | 0) : 8;
     effectStruct.addField( new GFFField(GFFDataType.INT, 'NumIntegers') ).setValue(numIntegers);
 

@@ -213,7 +213,7 @@ export class LBL_MapView {
     this.camera.updateProjectionMatrix();
   }
 
-  /** Retail MapZoom — only applied to HUD minimap (InitializeMap). */
+  /** MapZoom — only applied to HUD minimap (InitializeMap). */
   getMapZoom(): number {
     if(this.mode != MapMode.MINIMAP || !this.areaMap) return 1;
     return Math.max(1, this.areaMap.mapZoom || 1);
@@ -234,7 +234,7 @@ export class LBL_MapView {
   applyMapPlaneScale(){
     if(!this.mapTexture) return;
 
-    // Retail positions in logical map pixels; TGA is stretched to that rect (not raw mip size).
+    // positions in logical map pixels; TGA is stretched to that rect (not raw mip size).
     const scaleSize = this.getMapTextureScaleSize();
     const planeW = Math.max(1, asExtentInt(scaleSize.width));
     const planeH = Math.max(1, asExtentInt(scaleSize.height));
@@ -347,7 +347,7 @@ export class LBL_MapView {
     this.applyMapPlaneScale();
     const scaleSize = this.getMapTextureScaleSize();
     
-    // Retail UpdateMapData: SetWorldPointExplored(..., 1)
+    // UpdateMapData: SetWorldPointExplored(..., 1)
     this.areaMap.revealPosition(this.position.x, this.position.y, 1);
     const mapPos = this.areaMap.toMapCoordinates(this.position.x, this.position.y);
     this.currentCamera.position.x = asExtentInt(scaleSize.width * mapPos.x);
@@ -386,7 +386,7 @@ export class LBL_MapView {
       }
     }
 
-    // Retail Draw — companion dots for party[1..] on both minimap and full map
+    // Draw — companion dots for party[1..] on both minimap and full map
     for(let i = 0; i < 2; i++){
       const pm = GameState.PartyManager.party[i+1];
       const mesh = this.partyGroup.children[i];
@@ -456,7 +456,7 @@ export class LBL_MapView {
   }
 
   /**
-   * Logical map display size. MINIMAP applies retail MapZoom (extent *= 1/MapZoom).
+   * Logical map display size. MINIMAP applies MapZoom (extent *= 1/MapZoom).
    */
   getMapTextureScaleSize(): { width: number, height: number } {
     const logical = AreaMap.getLogicalMapSize();
@@ -484,8 +484,8 @@ export class LBL_MapView {
   }
 
   /**
-   * Retail GetMapRotateCCWFromWorldOrientation / SetPartyMemberWorldOrientation.
-   * `angle` is creature yaw (radians); NorthAxis offsets are retail degrees.
+   * GetMapRotateCCWFromWorldOrientation / SetPartyMemberWorldOrientation.
+   * `angle` is creature yaw (radians); NorthAxis offsets are degrees.
    */
   setRotation(angle: number = 0){
     if(!this.areaMap){

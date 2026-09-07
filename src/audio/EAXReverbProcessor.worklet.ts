@@ -132,7 +132,7 @@ function limitedHFRatio(
 
 /**
  * RBJ-style shelving biquad. Coefficients are updated outside the sample loop;
- * process() is transposed direct-form II and allocation free.
+ * process is transposed direct-form II and allocation free.
  */
 class Biquad {
   private b0 = 1;
@@ -256,7 +256,7 @@ class EAXReverbProcessor extends AudioWorkletProcessor {
   private current: EAXReverbParams = { ...DEFAULT_PARAMS };
   private target: EAXReverbParams = { ...DEFAULT_PARAMS };
 
-  // Fixed-capacity rings: no allocation or resizing is ever done in process().
+  // Fixed-capacity rings: no allocation or resizing is ever done in process.
   private readonly mainRingSize: number;
   private readonly mainRingMask: number;
   private readonly mainDelay: Float32Array[];
@@ -772,7 +772,7 @@ class EAXReverbProcessor extends AudioWorkletProcessor {
 
       // ---- Late reverb / four-line FDN --------------------------------------
       // OpenAL-style additive modulation: one cheap parabolic LFO controls
-      // all four feedback reads. This avoids sin() in the inner loop.
+      // all four feedback reads. This avoids sin in the inner loop.
       let x = this.lfoPhase;
       const lfo = x < 0.5
         ? (-16 * x * x + 8 * x)

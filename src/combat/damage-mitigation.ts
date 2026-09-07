@@ -3,7 +3,7 @@ import type { GameEffect } from "@/effects/GameEffect";
 import type { ModuleObject } from "@/module";
 
 /**
- * Retail-shaped damage mitigation (OnApplyDamage / GetDamageRoll):
+ * -shaped damage mitigation (effect apply / GetDamageRoll):
  * Immunity → Resistance → Reduction.
  * Resistance int[0]=flags, int[1]=amount, int[2]=limit (0=infinite).
  * Reduction int[0]=amount, int[1]=bypass power, int[2]=limit.
@@ -142,7 +142,7 @@ export function applyDamageReduction(
   }
 
   if(!bestEffect || bestAmount <= 0) return damage;
-  // Retail: only reduce when attack power is below the effect's bypass power
+  // : only reduce when attack power is below the effect's bypass power
   if(attackPower >= bypassPower) return damage;
 
   const limit = bestEffect.getInt(2) || 0;
@@ -162,7 +162,7 @@ export function applyDamageReduction(
 }
 
 /**
- * Full retail mitigation chain. Returns remaining damage (>= 0).
+ * Full mitigation chain. Returns remaining damage (>= 0).
  */
 export function mitigateDamageAmount(
   target: ModuleObject,
@@ -173,7 +173,7 @@ export function mitigateDamageAmount(
   let amount = Math.max(0, damage);
   amount = applyDamageImmunity(target, amount, damageFlags);
   amount = applyDamageResistance(target, amount, damageFlags);
-  // Retail skips DR when power tier == 6 (magical/max)
+  // skips DR when power tier == 6 (magical/max)
   if(attackPower !== 6){
     amount = applyDamageReduction(target, amount, attackPower);
   }

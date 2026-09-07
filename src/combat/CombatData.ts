@@ -37,8 +37,8 @@ export class CombatData {
   lastDamager: ModuleObject;
   lastAttacker: ModuleObject;
   /**
-   * Retail CSWSObject.last_hostile_actor_id — set by SetLastHostileActor on
-   * attacked / damage / harmful spell-at. Used by GetLastHostileActor (not
+   * module object.last_hostile_actor_id — set by assign hostile actor on
+   * attacked / damage / harmful spell-at. Used by get hostile actor (not
    * lastAttackTarget).
    */
   lastHostileActor: ModuleObject;
@@ -73,7 +73,7 @@ export class CombatData {
 
   reset(){
     this.initialize();
-    // Retail ClearAllActions clears attempted/current
+    // ClearAllActions clears attempted/current
     // attack + spell targets together with the action queue.
     this.lastAttemptedAttackTarget = undefined;
     this.lastAttackTarget = undefined;
@@ -87,7 +87,7 @@ export class CombatData {
   }
 
   /**
-   * Retail AddAttackActions / AddAttackAction / AddCutsceneAttackAction —
+   * AddAttackActions / AddAttackAction / queue cutscene attack —
    * sticky attempted target: set only when currently INVALID (unset).
    */
   setAttemptedAttackTargetIfInvalid(target: ModuleObject): void {

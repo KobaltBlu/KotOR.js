@@ -135,7 +135,7 @@ export class NWScriptLanguageService {
         
         comment: [
           [/[^\/*]+/, 'comment'],
-          // [/\/\*/,    'comment', '@push' ],    // no nested comments :-(
+          // [/\/\*/, 'comment', '@push' ], // no nested comments :-(
           ['\\*/', 'comment', '@pop'],
           [/[\/*]/, 'comment']
         ],

@@ -25,10 +25,10 @@ import { shouldFailItemCastForNoUses } from "@/combat/item-property-uses";
 import { isGrenadeItemType } from "@/combat/item-cast-grenade";
 import * as THREE from "three";
 
-/** Retail item-cast action SendFeedbackMessage when uses left == 0. */
+/** item-cast action SendFeedbackMessage when uses left == 0. */
 const FEEDBACK_ITEM_NO_USES = 0x17;
 
-/** Retail item-cast action per-item-type animation + gate + pause. */
+/** item-cast action per-item-type animation + gate + pause. */
 type ItemCastTiming = ItemCastTimingResolved;
 
 /** Debug prefix — filter console on `[ItemCast]`. */
@@ -36,7 +36,7 @@ const LOG = (...args: unknown[]) => console.log('[ItemCast]', ...args);
 
 /**
  * ActionItemCastSpell class.
- * Retail item-cast action — stays IN_PROGRESS until SpellCastAndImpact.
+ * item-cast action — stays IN_PROGRESS until SpellCastAndImpact.
  *
  * @file ActionItemCastSpell.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -48,7 +48,7 @@ export class ActionItemCastSpell extends Action {
   spellCastInstance: SpellCastInstance | undefined;
   private castStarted = false;
   private chargesConsumed = false;
-  /** Retail elapsed-since-action-start used for the conjure gate / pause. */
+  /** elapsed-since-action-start used for the conjure gate / pause. */
   private elapsedMs = 0;
   private throwAnim: ModuleCreatureAnimState | undefined;
   private timing: ItemCastTiming | undefined;
@@ -77,7 +77,7 @@ export class ActionItemCastSpell extends Action {
   }
 
   dispose(){
-    // Retail SpellCastAndImpact is fire-and-forget — after castStarted the
+    // SpellCastAndImpact is fire-and-forget — after castStarted the
     // area.spellInstances flight must not be interrupted by action dispose.
     const wouldInterrupt =
       !this.castStarted &&
@@ -106,7 +106,7 @@ export class ActionItemCastSpell extends Action {
       propIndex,
       party: !!(this.owner as ModuleCreature)?.isPartyMember?.(),
     });
-    // Retail DecrementUses — cost_value stack / charges / uses-per-day
+    // DecrementUses — cost_value stack / charges / uses-per-day
     oItem.decrementUses(this.owner as ModuleCreature, propIndex);
   }
 
@@ -122,7 +122,7 @@ export class ActionItemCastSpell extends Action {
       spellCastInstance.targetLocation.set(x, y, z);
       spellCastInstance.projectileTarget.set(x, y, z);
     }
-    // Retail SpellCastAndImpact runs the spell's impact script; item casts are
+    // SpellCastAndImpact runs the spell's impact script; item casts are
     // not force powers, so they can never be counterspelled.
     spellCastInstance.applySpellData();
     spellCastInstance.allowCounterSpell = false;
@@ -132,14 +132,14 @@ export class ActionItemCastSpell extends Action {
     if(pathParam > 0){
       spellCastInstance.projectilePathOverride = pathParam;
     }
-    // The action already held the wind-up through its conjure gate — retail
+    // The action already held the wind-up through its conjure gate — 
     // enters at the impact call, so only the projectile flight remains.
     spellCastInstance.conjureTime = 0;
-    // Grenade / throw: impact after CalculateLastSpellProjectileTime (),
+    // Grenade / throw: impact after CalculateLastSpellProjectileTime,
     // not at cast-start like instant non-L spells.
     let flightMs = 0;
     if(this.timing?.grenade){
-      // Retail CalculateLastSpellProjectileTime: proj==0 → delay 0, no mesh
+      // CalculateLastSpellProjectileTime: proj==0 → delay 0, no mesh
       const origin = this.owner.position;
       const dest = spellCastInstance.targetLocation;
       const distance = origin.distanceTo(dest);
@@ -209,7 +209,7 @@ export class ActionItemCastSpell extends Action {
   }
 
   /**
-   * Retail item-cast action switch on baseitems ItemType.
+   * item-cast action switch on baseitems ItemType.
    */
   private resolveItemCastTiming(oItem: ModuleItem, targetPosition: THREE.Vector3): ItemCastTiming {
     const creature = this.owner as ModuleCreature;
@@ -222,7 +222,7 @@ export class ActionItemCastSpell extends Action {
       distanceSq,
       ActionItemCastSpell.parseSpellCastTimeMs(this.spell)
     );
-    // Retail case 0xc: gate = GetAnimationLength(0x2AF9) - 0x32
+    // case 0xc: gate = GetAnimationLength(0x2AF9) - 0x32
     if(timing.postImpactAnim){
       const lenSec = creature.getAnimationLength?.(timing.animation) || 0;
       timing.gateMs = resolveDroidUtilityGateMs(lenSec);
@@ -270,7 +270,7 @@ export class ActionItemCastSpell extends Action {
       }
     }
 
-    // Before SpellCastAndImpact the item must resolve; after cast, retail may
+    // Before SpellCastAndImpact the item must resolve; after cast, may
     // DestroyItem while the action still holds until pause ends.
     if(!this.castStarted && (!this.spell || !oItem)){
       LOG('FAIL pre-cast missing spell/item', {
@@ -305,7 +305,7 @@ export class ActionItemCastSpell extends Action {
         return ActionStatus.FAILED;
       }
       if(this.spellCastInstance.completed){
-        // Impact resolved — retail still holds the action until the pause ends
+        // Impact resolved — still holds the action until the pause ends
         this.spellCastInstance = undefined;
       }
     }
@@ -318,7 +318,7 @@ export class ActionItemCastSpell extends Action {
           this.getParameter<number>(4) || 0
         );
 
-    // Retail still MoveTo vs spell range after FORCEHOSTILE clears oTarget
+    // still MoveTo vs spell range after FORCEHOSTILE clears oTarget
     const inRange = this.target
       ? this.spell.inRange(this.target, this.owner)
       : isWithinSpellCastRange(
@@ -349,7 +349,7 @@ export class ActionItemCastSpell extends Action {
       return ActionStatus.FAILED;
     }
 
-    // Resolved once — retail picks the throw arc from the distance at wind-up
+    // Resolved once — picks the throw arc from the distance at wind-up
     if(!this.timing && oItem){
       this.timing = this.resolveItemCastTiming(oItem, targetPosition);
       LOG('timing', {
@@ -370,7 +370,7 @@ export class ActionItemCastSpell extends Action {
     this.elapsedMs += delta * 1000;
 
     if(!combatRound.roundPaused && !this.castStarted){
-      // Retail: hostilesetting==0 → ActivityManager(2); else ActivityManager(1)
+      // : hostilesetting==0 → ActivityManager(2); else ActivityManager(1)
       // + SetCombatState(1,1). Grenades force StartCombatRound(engaged=1).
       const hostile = (this.spell.hostilesetting | 0) === 1;
       owner.activityManager(hostile ? 1 : 2);
@@ -383,7 +383,7 @@ export class ActionItemCastSpell extends Action {
       }else{
         combatRound.beginCombatRound();
       }
-      // Retail SetSpellCastRound(0, 0) before pause
+      // SetSpellCastRound(0, 0) before pause
       combatRound.setSpellCastRound(0, 0);
       combatRound.pauseRound(this.owner, timing.pauseMs);
       combatRound.decrementRoundLength(timing.pauseMs);
@@ -400,7 +400,7 @@ export class ActionItemCastSpell extends Action {
       combatRound.action.animationTime = timing.pauseMs;
     }
 
-    // Retail holds the throw/cast pose until the conjure gate, then releases.
+    // holds the throw/cast pose until the conjure gate, then releases.
     // Medical / OTHER (0x19, 0x2d, 0x2f) play the anim on the target when present.
     if(this.throwAnim !== timing.animation){
       this.throwAnim = timing.animation;
@@ -413,7 +413,7 @@ export class ActionItemCastSpell extends Action {
       animTarget.setAnimationState(timing.animation);
     }
 
-    // Retail AddItemCastSpellActions queues ChangeFacingObject / FacingPoint
+    // AddItemCastSpellActions queues ChangeFacingObject / FacingPoint
     // before ItemCastSpell; combat-round dispatch skips that — animate turn
     // (FacePoint is instant and snaps every tick).
     if(this.target){
@@ -437,7 +437,7 @@ export class ActionItemCastSpell extends Action {
       const prop =
         oItem.getActiveCastSpellProperty?.(propIndex) ||
         oItem.properties?.[propIndex | 0];
-      // Retail GetUsedActivePropertyUsesLeft — abort with feedback 0x17
+      // GetUsedActivePropertyUsesLeft — abort with feedback 0x17
       if(
         shouldFailItemCastForNoUses(
           prop,
@@ -459,12 +459,12 @@ export class ActionItemCastSpell extends Action {
 
       // Object target only when present — never fall back to owner (location casts)
       this.startSpellInstance(this.target || undefined, oItem);
-      // Retail DecrementUses fires with SpellCastAndImpact, not at round end
+      // DecrementUses fires with SpellCastAndImpact, not at round end
       this.consumeItemCharges(oItem);
-      // Retail item-cast action — after SpellCastAndImpact,
+      // item-cast action — after SpellCastAndImpact,
       // RemoveSpellAction if GetSpellActionPending (clears combat-queue icon).
       combatRound.removeSpellAction();
-      // Retail droid utility (0x0c): post-impact hold uses anim 0x2AFA
+      // droid utility (0x0c): post-impact hold uses anim 0x2AFA
       if(timing.postImpactAnim){
         owner.setAnimationState(timing.postImpactAnim);
         this.throwAnim = timing.postImpactAnim;
@@ -480,8 +480,8 @@ export class ActionItemCastSpell extends Action {
       ){
         (this.target as ModuleCreature).setAnimationState(ModuleCreatureAnimState.READY);
       }
-      // Retail SpellCastAndImpact is a fire-and-forget event — a grenade still
-      // in flight must finish on the area, not be interrupted by dispose().
+      // SpellCastAndImpact is a fire-and-forget event — a grenade still
+      // in flight must finish on the area, not be interrupted by dispose.
       LOG('COMPLETE pause ended', {
         elapsedMs: this.elapsedMs,
         pauseMs: timing.pauseMs,

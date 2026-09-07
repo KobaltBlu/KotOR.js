@@ -113,7 +113,7 @@ export class ItemProperty {
 
   //Determine if the property requires an upgrade to use, or if it is always useable.
   // GFF BYTE 255 = "none" (same sentinel as UpgradeSlot* / save path -1↔255).
-  // Retail usable==0 (DecrementUses) also blocks.
+  // usable==0 (DecrementUses) also blocks.
   isUseable(){
     if(this.useable === 0){
       return false;
@@ -251,7 +251,7 @@ export class ItemProperty {
     let propStruct = new GFFStruct(0);
 
     propStruct.addField( new GFFField(GFFDataType.WORD, 'PropertyName') )?.setValue( this.propertyName == -1 ? 255 : this.propertyName);
-    // Retail item property labels: Subtype / Useable (load already accepts these)
+    // item property labels: Subtype / Useable (load already accepts these)
     propStruct.addField( new GFFField(GFFDataType.WORD, 'Subtype') )?.setValue( this.subType == -1 ? 255 : this.subType);
     propStruct.addField( new GFFField(GFFDataType.BYTE, 'CostTable') )?.setValue( this.costTable == -1 ? 255 : this.costTable);
     propStruct.addField( new GFFField(GFFDataType.WORD, 'CostValue') )?.setValue( this.costValue == -1 ? 255 : this.costValue);

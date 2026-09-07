@@ -6,7 +6,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import { LevelUpAbilityIndex } from "@/engine/rules/level-up";
 
 /**
- * MenuLevelUp — retail (LEVELUPPNL).
+ * MenuLevelUp — (LEVELUPPNL).
  * Steps: Abilities / Skills / Feats / Powers / Accept (conditionally enabled).
  */
 export class MenuLevelUp extends GameMenu {
@@ -80,7 +80,7 @@ export class MenuLevelUp extends GameMenu {
   }
 
   /**
-   * Prepare LEVELUPPNL as CharGenMain.childMenu (retail).
+   * Prepare LEVELUPPNL as CharGenMain.childMenu.
    * Do not Add this menu to the stack — the MAINCG host owns visibility.
    */
   prepareFor(creature: ModuleCreature) {

@@ -100,13 +100,13 @@ export class Module {
   itemActivator: ModuleCreature = undefined;
   itemActivatedTarget: any = undefined;
   itemActivatedTargetLocation: EngineLocation = undefined;
-  /** Pass AL — ModuleAccess last-player slots (retail 0x16c / 0x170 / 0x174) */
+  /** Pass AL — ModuleAccess last-player slots (0x16c / 0x170 / 0x174) */
   lastPlayerDied: ModuleCreature = undefined;
   lastPlayerDying: ModuleCreature = undefined;
   lastRespawnButtonPresser: ModuleCreature = undefined;
   /** Credit sequence (StartCreditSequence / IsCreditSequenceInProgress). */
   creditSequenceInProgress: boolean = false;
-  /** ExportAllCharacters pending flag (retail SetExportAllCharactersPending). */
+  /** ExportAllCharacters pending flag (SetExportAllCharactersPending). */
   exportAllCharactersPending: boolean = false;
 
   /**
@@ -217,7 +217,7 @@ export class Module {
   cutSceneList: ModuleCutSceneEntry[] = [];
 
   /**
-   * Retail limbo creature list (IFO "Creature List", struct type 4).
+   * limbo creature list (IFO "Creature List", struct type 4).
    */
   limboCreatures: ModuleCreature[] = [];
 
@@ -235,11 +235,11 @@ export class Module {
   readyToProcessEvents: boolean = false;
   isSaveGame: boolean = false;
   /**
-   * Retail DoUpdate flip-flop — alternates module vs area AIUpdate each frame.
+   * DoUpdate flip-flop — alternates module vs area AIUpdate each frame.
    * 1 = next doUpdate runs module.aiUpdate; 0 = area.aiUpdate.
    */
   _doUpdateFlip: number = 1;
-  /** Elapsed ms since last module heartbeat (retail 5999ms threshold). */
+  /** Elapsed ms since last module heartbeat (5999ms threshold). */
   _moduleHeartbeatElapsedMs: number = 0;
   _moduleHeartbeatInitialized: boolean = false;
 
@@ -356,7 +356,7 @@ export class Module {
       if(playerList.length){
         GameState.PartyManager.PlayerTemplate = GFFObject.FromStruct(playerList[0]);
         GameState.PartyManager.ActualPlayerTemplate = GameState.SaveGame.pc || GameState.PartyManager.PlayerTemplate;
-        // if(GameState.PartyManager.PlayerTemplate.getFieldByLabel('IsPC').getValue()){
+        // if(GameState.PartyManager.PlayerTemplate.getFieldByLabel('IsPC').getValue){
         // GameState.PartyManager.ActualPlayerTemplate = GameState.PartyManager.PlayerTemplate;
         // }else{
         // GameState.PartyManager.ActualPlayerTemplate = GameState.SaveGame.pc;
@@ -414,14 +414,14 @@ export class Module {
       this.effectNextId = 1;
     }
 
-    // Limbo creatures (retail LoadLimboCreatures)
+    // Limbo creatures (LoadLimboCreatures)
     this.limboCreatures = [];
     if(isLoadingSave && ifo.RootNode.hasField('Creature List')){
       const limboList = ifo.getFieldByLabel('Creature List').getChildStructs();
       for(let i = 0; i < limboList.length; i++){
         const strt = limboList[i];
         if(strt.type !== 4 && strt.type !== undefined){
-          // Retail only loads element type 4; accept missing type from older writers
+          // only loads element type 4; accept missing type from older writers
         }
         try{
           const creature = new ModuleCreature(GFFObject.FromStruct(strt));
@@ -525,7 +525,7 @@ export class Module {
     return swVarTableStruct;
   }
 
-  /** Retail module SWVarTable — Get/SetLocalBoolean on GetModule() */
+  /** module SWVarTable — Get/SetLocalBoolean on GetModule */
   getLocalBoolean(index: number){
     return !!this._locals.Booleans[index];
   }
@@ -545,7 +545,7 @@ export class Module {
   addEffect(effect?: GameEffect, lLocation?: EngineLocation){
     if(!(effect instanceof GameEffect)){ return; }
 
-    // Retail location AOE: spawn ModuleAreaOfEffect at lLocation
+    // location AOE: spawn ModuleAreaOfEffect at lLocation
     if(effect.type === GameEffectType.EffectAreaOfEffect && lLocation){
       const aoeEffect = effect as import("@/effects/EffectAreaOfEffect").EffectAreaOfEffect;
       aoeEffect.applyLocation = lLocation;
@@ -626,7 +626,7 @@ export class Module {
   }
 
   /**
-   * Retail DoUpdate — alternates each frame between
+   * DoUpdate — alternates each frame between
    * module AIUpdate and area AIUpdate.
    */
   doUpdate(delta: number = 0){
@@ -642,7 +642,7 @@ export class Module {
   }
 
   /**
-   * Retail AIUpdate — Mod_OnHeartbeat every 5999ms.
+   * AIUpdate — Mod_OnHeartbeat every 5999ms.
    */
   aiUpdate(delta: number = 0){
     if(!this._moduleHeartbeatInitialized){
@@ -735,7 +735,7 @@ export class Module {
     }
   }
 
-  /** Pass AL — set lastPlayerDied + Mod_OnPlrDeath (retail ModuleAccess 0x16c). */
+  /** Pass AL — set lastPlayerDied + Mod_OnPlrDeath (ModuleAccess 0x16c). */
   notifyPlayerDied(creature: ModuleCreature){
     if(!creature) return;
     this.lastPlayerDied = creature;
@@ -746,7 +746,7 @@ export class Module {
     }
   }
 
-  /** Pass AL — set lastPlayerDying + Mod_OnPlrDying (retail ModuleAccess 0x170). */
+  /** Pass AL — set lastPlayerDying + Mod_OnPlrDying (ModuleAccess 0x170). */
   notifyPlayerDying(creature: ModuleCreature){
     if(!creature) return;
     this.lastPlayerDying = creature;
@@ -757,7 +757,7 @@ export class Module {
     }
   }
 
-  /** Pass AL — set lastRespawnButtonPresser + Mod_OnSpawnBtnDn (retail ModuleAccess 0x174). */
+  /** Pass AL — set lastRespawnButtonPresser + Mod_OnSpawnBtnDn (ModuleAccess 0x174). */
   notifyRespawnButtonPresser(creature: ModuleCreature){
     if(!creature) return;
     this.lastRespawnButtonPresser = creature;
@@ -811,7 +811,7 @@ export class Module {
     //Clear walkmesh list
     while (GameState.walkmeshList.length){
       let wlkmesh = GameState.walkmeshList.shift();
-      //wlkmesh.dispose();
+      //wlkmesh.dispose;
       GameState.group.room_walkmeshes.remove(wlkmesh);
     }
 
@@ -841,7 +841,7 @@ export class Module {
       const creature = this.limboCreatures[i];
       if(!creature) continue;
       const root = creature.save().RootNode;
-      root.setType(4); // retail limbo element type
+      root.setType(4); // limbo element type
       creatureList.addChildStruct(root);
     }
     const eventQueue = ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'EventQueue') );
@@ -916,7 +916,7 @@ export class Module {
     ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_PauseDay') ).setValue(this.timeManager.pauseDay);
     ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_PauseTime') ).setValue(this.timeManager.pauseTime);
 
-    // Player — retail SavePlayers: list element type 0xBEAD + Mod_* wrapper fields
+    // Player — SavePlayers: list element type 0xBEAD + Mod_* wrapper fields
     const playerList = ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'Mod_PlayerList') );
     if(GameState.PartyManager.Player){
       const player = GameState.PartyManager.Player;
@@ -939,12 +939,12 @@ export class Module {
     ifo.RootNode.addField( new GFFField(GFFDataType.WORD, 'Mod_StartMiliSec') ).setValue(this.timeManager.milisecond);
     ifo.RootNode.addField( new GFFField(GFFDataType.WORD, 'Mod_StartMinute') ).setValue(this.timeManager.minute);
     ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_StartMonth') ).setValue(this.timeManager.month);
-    // Retail SaveModuleIFOStart does not write Mod_StartMovie (load-only in LoadModuleStart)
+    // SaveModuleIFOStart does not write Mod_StartMovie (load-only in LoadModuleStart)
     ifo.RootNode.addField( new GFFField(GFFDataType.WORD, 'Mod_StartSecond') ).setValue(this.timeManager.second);
     ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_StartYear') ).setValue(this.timeManager.year);
     ifo.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Mod_Tag') ).setValue(this.tag);
     const tokenList = ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'Mod_Tokens') );
-    // Retail SaveModuleIFOStart skips built-in tokens 0..9
+    // SaveModuleIFOStart skips built-in tokens 0..9
     this.customTokens.forEach( (tokenValue, tokenNumber) => {
       if(tokenNumber <= 9) return;
       const tokenStruct = new GFFStruct(7);
@@ -954,7 +954,7 @@ export class Module {
     });
     ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_Transition') ).setValue(this.timeManager.transition);
     ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_Version') ).setValue(this.version);
-    // Retail SaveModuleIFOStart does not write Mod_VO_ID (K1/TSL)
+    // SaveModuleIFOStart does not write Mod_VO_ID (K1/TSL)
     ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_XPScale') ).setValue(this.xpScale);
     // Module-level SWVarTable + named VarTable
     const swVarTable = ifo.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
@@ -965,7 +965,7 @@ export class Module {
     this.ifo = ifo;
 
     const sav = new ERFObject();
-    // Retail module saves are MOD V1.0 ERFs
+    // module saves are MOD V1.0 ERFs
     sav.header.fileType = 'MOD ';
     sav.header.fileVersion = 'V1.0';
     sav.addResource('module', ResourceTypes['ifo'], this.ifo.getExportBuffer());
@@ -987,7 +987,7 @@ export class Module {
   }
 
   /**
-   * Retail IncludeModuleInSave (modulesave.2da IncludeInSave).
+   * IncludeModuleInSave (modulesave.2da IncludeInSave).
    * Default true when the table/row is missing.
    */
   includeInSave(){
@@ -1228,7 +1228,7 @@ export class Module {
       module.area.setTransitionWaypoint(module.transWP);
       await module.area.load();
 
-      // Retail area game ObjectId comes from Mod_Area_list (not ARE ID header).
+      // area game ObjectId comes from Mod_Area_list (not ARE ID header).
       // Apply before AddObjectById so IFO/save ObjectId is preserved.
       if(module.areaList[0]?.objectId){
         module.area.id = module.areaList[0].objectId >>> 0;

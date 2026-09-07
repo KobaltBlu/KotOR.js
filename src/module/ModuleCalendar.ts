@@ -122,7 +122,7 @@ export class ModuleCalendar {
     return (aTime | 0) - (bTime | 0);
   }
 
-  /** Format Mod_PauseDay as DD/MM/YYYY using the retail 28-day / 12-month calendar. */
+  /** Format Mod_PauseDay as DD/MM/YYYY using the 28-day / 12-month calendar. */
   static formatPauseDayLabel(pauseDay = 0){
     const day = (pauseDay % ModuleCalendar.DAYS_IN_MONTH + 1) | 0;
     const month = (pauseDay / ModuleCalendar.DAYS_IN_MONTH % ModuleCalendar.MONTHS_IN_YEAR + 1) | 0;

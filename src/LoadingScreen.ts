@@ -68,7 +68,7 @@ export class LoadingScreen {
   SetMessage(msg: string = ''){
     this.message = msg;
     this.messageElement.innerHTML = this.message;
-    //this.loading_container.css('left', '50%').css('left', '-='+this.message.width()/2+'px');
+    //this.loading_container.css('left', '50%').css('left', '-='+this.message.width/2+'px');
   }
 
   Show(msg?: string){
@@ -86,7 +86,7 @@ export class LoadingScreen {
     this.loader.classList.remove('fade-out');
     this.loader.classList.add('fade-in');
     // this.loader.stop(true, true).fadeIn('slow');
-    //this.loading_container.css('left', '50%').css('left', '-='+this.message.width()/2+'px');
+    //this.loading_container.css('left', '50%').css('left', '-='+this.message.width/2+'px');
   }
 
   Hide(){

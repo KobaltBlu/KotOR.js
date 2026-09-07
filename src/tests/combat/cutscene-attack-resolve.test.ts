@@ -118,8 +118,8 @@ jest.mock('@/combat/combat-round-pause', () => ({
   shouldSnapCombatReady: () => false,
 }));
 
-jest.mock('@/combat/create-new-attack-actions', () => ({
-  createNewAttackActions: () => {},
+jest.mock('@/combat/queue-attack-actions', () => ({
+  queueAttackActions: () => {},
 }));
 
 jest.mock('@/combat/damage-mitigation', () => ({
@@ -222,7 +222,7 @@ describe('CutsceneAttack calculateWeaponAttack stamp', () => {
 
     const attack = round.attackList[0];
     expect(attack.attackResult).toBe(AttackResult.HIT_SUCCESSFUL);
-    // Retail SetBaseDamage → PHYSICAL (0xE); SetDamage(ENERGY flags) → ENERGY
+    // SetBaseDamage → PHYSICAL (0xE); SetDamage(ENERGY flags) → ENERGY
     expect(attack.damageList[DamageType.PHYSICAL].damageValue).toBe(42);
     expect(attack.damageList[DamageType.ENERGY].damageValue).toBe(42);
     expect(attack.damageList[DamageType.BASE].damageValue).not.toBe(42);

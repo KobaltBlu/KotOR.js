@@ -6,7 +6,7 @@ import { Action } from "@/actions/Action";
 /**
  * ActionResumeDialog class.
  *
- * Retail resume-dialog action — clears pause; deferred
+ * resume-dialog action — clears pause; deferred
  * SendDialogEntry / SendDialogReplies flush happens in UpdateDialog
  * (CutsceneManager.update), not here.
  *
@@ -19,7 +19,7 @@ export class ActionResumeDialog extends Action {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
     this.type = ActionType.ActionResumeDialog;
-    // Retail ClearAllActions (SetState path) keeps conversation
+    // ClearAllActions (SetState path) keeps conversation
     // control actions — losing Resume while Pause is set hangs the dialog
     // (tar08_calo082 / k_ptar_calofade: Pause → Wait → Resume, then Horrified).
     this.clearable = false;

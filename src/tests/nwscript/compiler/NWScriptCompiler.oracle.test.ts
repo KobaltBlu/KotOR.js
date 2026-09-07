@@ -5,22 +5,22 @@
  * Run: npx jest --config jest.compiler.config.js --coverage=false
  *
  * Mismatch classes (see plan):
- *   A — align KotOR.js to retail CScriptCompiler / CNsc semantics
- *   B — smell-test: keep KotOR.js (oracle/retail wrong or intentional)
- *   C — undecided / needs more retail investigation
+ * A — align KotOR.js to CScriptCompiler / CNsc semantics
+ * B — smell-test: keep KotOR.js (oracle/ wrong or intentional)
+ * C — undecided / needs more investigation
  *
- * Retail mapping (NWN EE CScriptCompiler, not legacy CNsc* names):
- *   InitializeFinalCode → "NCS V1.0", size cursor 0x0d
- *   PreVisitGenerateCode node 0x29 → STORE_STATE 0x2C type 0x10 + JMP
- *   PreVisitGenerateCode node 0x49 → #globals label
- *   GenerateCodeForSwitchLabels → JMP 0x1d + case label symbols
+ * mapping (NWN EE CScriptCompiler, not legacy CNsc* names):
+ * InitializeFinalCode → "NCS V1.0", size cursor 0x0d
+ * PreVisitGenerateCode node 0x29 → STORE_STATE 0x2C type 0x10 + JMP
+ * PreVisitGenerateCode node 0x49 → #globals label
+ * GenerateCodeForSwitchLabels → JMP 0x1d + case label symbols
  */
 import { describe, expect, test } from '@jest/globals';
 import {
   compareFixture,
   compileKotOR,
   hexDump,
-} from '../../retailHarness';
+} from '../../compileOracleHarness';
 
 function expectMatch(name: string, source: string) {
   const r = compareFixture(name, source);
@@ -146,7 +146,7 @@ describe('NWScriptCompiler vs nwnnsscomp (K1)', () => {
     );
   });
 
-  /** Exercises STORE_STATE (0x2C/0x10) + JMP + action thunk — retail PreVisitGenerateCode node 0x29. */
+  /** Exercises STORE_STATE (0x2C/0x10) + JMP + action thunk — PreVisitGenerateCode node 0x29. */
   test('DelayCommand action callback (STORE_STATE)', () => {
     expectMatch(
       'store_state_delay',
@@ -156,28 +156,28 @@ describe('NWScriptCompiler vs nwnnsscomp (K1)', () => {
 });
 
 /**
- * Retail smell-test notes (living list — prefer annotations over separate md):
+ * smell-test notes (living list — prefer annotations over separate md):
  *
  * B1 — NWN EE uses CScriptCompiler, not CNscCodeGenerator symbols. Same NCS
- *      conventions; EE may fix legacy BioWare bugs — do not blindly match EE when
- *      KotOR shipped NCS / Torlack nwnnsscomp disagree and EE looks like a fix.
+ * conventions; EE may fix legacy BioWare bugs — do not blindly match EE when
+ * KotOR shipped NCS / Torlack nwnnsscomp disagree and EE looks like a fix.
  *
- * B2 — nwnnsscomp.exe in exports/ is a community toolchain, not proprietary retail.
- *      Prefer retail CScriptCompiler semantics when nwnnsscomp and KotOR.js disagree.
+ * B2 — nwnnsscomp.exe in exports/ is a community toolchain, not proprietary.
+ * Prefer CScriptCompiler semantics when nwnnsscomp and KotOR.js disagree.
  *
  * B3 — PreVisitGenerateCode labels globals via a "#globals" string; some toolchains
- *      mis-report that write. Smell-test: ignore the quirk; label name remains "#globals".
+ * mis-report that write. Smell-test: ignore the quirk; label name remains "#globals".
  *
  * B4 — nwnnsscomp -g 1 rejects `const` keyword; KotOR.js supports const scalar folding.
- *      K1 nwscript.nss never uses `const`. Keep KotOR const support.
+ * K1 nwscript.nss never uses `const`. Keep KotOR const support.
  *
  * A1 — Lexer must not case-fold identifiers into keywords (Vector ≠ vector). Exact
- *      KEYWORDS match; INT/OBJECT_ID accepted as types via case-insensitive tryParseDataType
- *      (K1 nwscript.nss uses those spellings; nwnnsscomp accepts INT).
+ * KEYWORDS match; INT/OBJECT_ID accepted as types via case-insensitive tryParseDataType
+ * (K1 nwscript.nss uses those spellings; nwnnsscomp accepts INT).
  *
  * A2 — Struct locals with vector fields must RSADD three floats (12 bytes), not one.
  */
-describe('retail smell-test annotations', () => {
+describe('engine smell-test annotations', () => {
   test('documents EE CScriptCompiler vs CNsc naming', () => {
     expect(true).toBe(true);
   });

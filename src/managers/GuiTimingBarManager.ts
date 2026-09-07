@@ -2,15 +2,15 @@ import type { InGameOverlay } from "@/game/kotor/menu/InGameOverlay";
 import type { ModuleObject } from "@/module/ModuleObject";
 
 /**
- * GuiTimingBarManager — retail StartGuiTimingBar / StopGuiTimingBar host.
+ * GuiTimingBarManager — StartGuiTimingBar / StopGuiTimingBar host.
  *
- * Retail: StartGuiTimingBar → SendServerToPlayerGuiTimingEvent
- * (duration ms + type byte); StopGuiTimingBar ; client cancel → ClearAllActions
+ * : StartGuiTimingBar → SendServerToPlayerGuiTimingEvent
+ * (duration ms + type byte); StopGuiTimingBar; client cancel → ClearAllActions
  * (HandlePlayerToServerInputCancelGuiTimingEvent).
  *
  * JS surfaces progress on InGameOverlay LBL_ACTIONDESC / LBL_ACTIONDESCBG fill scale
  * (no dedicated PB_TIMING control in the overlay GUI). Callers should only start for the
- * client-controlled creature (Retail == 1).
+ * client-controlled creature (== 1).
  *
  * @file GuiTimingBarManager.ts
  */
@@ -31,10 +31,10 @@ export class GuiTimingBarManager {
 
   /**
    * Start a timing bar.
-   * @param durationSeconds Duration in seconds (retail sends ms; callers convert).
+   * @param durationSeconds Duration in seconds (sends ms; callers convert).
    * @param label Action description text.
-   * @param owner Creature starting the bar (retail PC-only).
-   * @param eventType Optional retail type byte.
+   * @param owner Creature starting the bar (PC-only).
+   * @param eventType Optional type byte.
    */
   static start(
     durationSeconds: number,
@@ -52,7 +52,7 @@ export class GuiTimingBarManager {
     this.fillCaptured = false;
   }
 
-  /** Retail StartGuiTimingBar duration is milliseconds. */
+  /** StartGuiTimingBar duration is milliseconds. */
   static startMs(
     durationMs: number,
     label: string = '',
@@ -121,8 +121,8 @@ export class GuiTimingBarManager {
     // ? `${this.label} (${pct}%)`
     //: `${remaining.toFixed(1)}s`;
     // overlay.LBL_ACTIONDESC.setText(text);
-    // overlay.LBL_ACTIONDESC.show();
-    // overlay.LBL_ACTIONDESCBG?.show();
+    // overlay.LBL_ACTIONDESC.show;
+    // overlay.LBL_ACTIONDESCBG?.show;
     // this.applyFillProgress(overlay, progress);
     // }
 

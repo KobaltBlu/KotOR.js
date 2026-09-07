@@ -16,7 +16,7 @@ export const VISION_FLAG_DARKNESS_BLIND = 0x08;
 export const VISION_FLAG_BLIND = 0x10;
 
 /**
- * EffectBlindness — retail OnApplyBlindness.
+ * EffectBlindness — effect apply.
  * int[0] must be 0x10 (true blind) or 8 (darkness-blind).
  * Spawns MissChance 50%, Vision(4), VFX 0x138A; ORs visionFlags.
  *
@@ -40,7 +40,7 @@ export class EffectBlindness extends GameEffect {
     const creature = this.object as ModuleCreature;
     const mode = this.getInt(0);
 
-    // Retail: only 0x10 or 8 are valid apply modes
+    // : only 0x10 or 8 are valid apply modes
     if(mode !== VISION_FLAG_BLIND && mode !== VISION_FLAG_DARKNESS_BLIND){
       return;
     }
@@ -126,7 +126,7 @@ export function recomputeVisionFlags(creature: ModuleCreature){
   creature.visionFlags = flags;
 }
 
-/** Retail GetBlind */
+/** GetBlind */
 export function isCreatureBlind(creature: ModuleCreature): boolean {
   const flags = creature.visionFlags || 0;
   if(flags & VISION_FLAG_BLIND) return true;

@@ -1,5 +1,5 @@
 /**
- * Force-cast retail alignment — castTime preserve (proj==0) + STORE_STATE talent.
+ * Force-cast alignment — castTime preserve (proj==0) + STORE_STATE talent.
  * @jest-environment node
  */
 import { describe, expect, it } from '@jest/globals';

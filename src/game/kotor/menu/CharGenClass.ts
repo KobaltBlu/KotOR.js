@@ -154,7 +154,7 @@ export class CharGenClass extends GameMenu {
           GameState.CharGenManager.models.set(nth, background_model);
           _3dViewModel = background_model;
           _3dView.addModel(_3dViewModel);
-          // Retail ClassSel: AttachToObject(camerahook, behavior 0) + SetViewAngle 22.726
+          // ClassSel: AttachToObject(camerahook, behavior 0) + SetViewAngle 22.726
           // — no forced camera.z override.
           _3dView.attachCameraToHook(_3dViewModel.camerahook);
           _3dView.setViewAngle();
@@ -166,7 +166,7 @@ export class CharGenClass extends GameMenu {
             TextureLoader.LoadQueue().then(() => {
               this.manager.LoadScreen.setProgress((nth + 1) / 6 * 100);
               _3dViewModel.playAnimation(0, true);
-              // Retail CGPauseCycle(0, 1) — pause1 or pause2
+              // CGPauseCycle(0, 1) — pause1 or pause2
               try {
                 creature.model?.playAnimation?.(this.GetRandomAnimation(), true);
               } catch (e) {}
@@ -270,7 +270,7 @@ export class CharGenClass extends GameMenu {
   }
 
   GetRandomAnimation(): string {
-    // Retail CGPauseCycle initial branch — pause1 or pause2
+    // CGPauseCycle initial branch — pause1 or pause2
     return Math.random() < 0.5 ? 'pause1' : 'pause2';
   }
 

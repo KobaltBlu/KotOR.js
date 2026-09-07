@@ -2,9 +2,9 @@
  * @jest-environment node
  */
 import { describe, expect, it } from "@jest/globals";
-import { CSWSMessage } from "@/server/message/CSWSMessage";
-import { CSWCMessage } from "@/server/message/CSWCMessage";
-import { CSWMessage } from "@/server/message/CSWMessage";
+import { OdysseyServerMessage } from "@/server/message/OdysseyServerMessage";
+import { OdysseyClientMessage } from "@/server/message/OdysseyClientMessage";
+import { OdysseyMessage } from "@/server/message/OdysseyMessage";
 import { MemoryMessageTransport } from "@/server/message/transport";
 import { writeLocString, readLocString } from "@/server/message/loc-string";
 import {
@@ -26,8 +26,8 @@ import {
 describe("CS messaging round-trips", () => {
   it("Camera SetMode server→client", () => {
     const transport = new MemoryMessageTransport();
-    const server = new CSWSMessage(transport);
-    const client = new CSWCMessage();
+    const server = new OdysseyServerMessage(transport);
+    const client = new OdysseyClientMessage();
     let parsed: Record<string, unknown> | undefined;
     client.onParsed = (info) => {
       parsed = info.payload;
@@ -43,8 +43,8 @@ describe("CS messaging round-trips", () => {
 
   it("Input Attack client→server", () => {
     const transport = new MemoryMessageTransport();
-    const client = new CSWCMessage(transport);
-    const server = new CSWSMessage();
+    const client = new OdysseyClientMessage(transport);
+    const server = new OdysseyServerMessage();
     let parsed: Record<string, unknown> | undefined;
     server.onParsed = (info) => {
       parsed = info.payload;
@@ -60,7 +60,7 @@ describe("CS messaging round-trips", () => {
 
   it("CCMessage case 0x12 encodes attacker/target ints", () => {
     const transport = new MemoryMessageTransport();
-    const server = new CSWSMessage(transport);
+    const server = new OdysseyServerMessage(transport);
     expect(
       server.sendServerToPlayerCCMessage(1, 0x12, {
         objectIds: [10, 20],
@@ -71,14 +71,14 @@ describe("CS messaging round-trips", () => {
   });
 
   it("unknown major returns 0", () => {
-    const client = new CSWCMessage();
+    const client = new OdysseyClientMessage();
     expect(client.handleServerToPlayerMessage(new Uint8Array([0x50, 0xfe, 0x01]))).toBe(0);
   });
 
   it("GameObjUpdate ObjControl uses minor 2", () => {
     const transport = new MemoryMessageTransport();
-    const server = new CSWSMessage(transport);
-    const client = new CSWCMessage();
+    const server = new OdysseyServerMessage(transport);
+    const client = new OdysseyClientMessage();
     let parsed: Record<string, unknown> | undefined;
     client.onParsed = (info) => {
       parsed = info.payload;
@@ -94,7 +94,7 @@ describe("CS messaging round-trips", () => {
 
   it("GameObjUpdate VisEffect uses minor 3", () => {
     const transport = new MemoryMessageTransport();
-    const server = new CSWSMessage(transport);
+    const server = new OdysseyServerMessage(transport);
     server.sendServerToPlayerGameObjUpdateVisEffect(1, {
       objectId: 10,
       vfxId: 42,
@@ -106,21 +106,21 @@ describe("CS messaging round-trips", () => {
 
   it("GameObjUpdate DestroyItem uses minor 7", () => {
     const transport = new MemoryMessageTransport();
-    const server = new CSWSMessage(transport);
+    const server = new OdysseyServerMessage(transport);
     server.sendServerPlayerItemUpdate_DestroyItem(1, 99);
     expect(transport.toPlayer[0].message[2]).toBe(GameObjUpdateMessageMinor.DestroyItem);
   });
 
   it("GameObjUpdate category stream W and D", () => {
     const transport = new MemoryMessageTransport();
-    const server = new CSWSMessage(transport);
-    const client = new CSWCMessage();
+    const server = new OdysseyServerMessage(transport);
+    const client = new OdysseyClientMessage();
     let events: unknown;
     client.onParsed = (info) => {
       events = info.payload.events;
     };
 
-    const w = new CSWMessage();
+    const w = new OdysseyMessage();
     w.createWriteMessage(64);
     writeWorkRemainingCategory(w, 3, 10);
     writeCreatureDeleteCategory(w, (id) => writeObjectId(w, id), {
@@ -142,8 +142,8 @@ describe("CS messaging round-trips", () => {
 
   it("Ambient MusicPlay round-trip", () => {
     const transport = new MemoryMessageTransport();
-    const server = new CSWSMessage(transport);
-    const client = new CSWCMessage();
+    const server = new OdysseyServerMessage(transport);
+    const client = new OdysseyClientMessage();
     let parsed: Record<string, unknown> | undefined;
     client.onParsed = (info) => {
       parsed = info.payload;
@@ -156,8 +156,8 @@ describe("CS messaging round-trips", () => {
 
   it("CustomToken single round-trip", () => {
     const transport = new MemoryMessageTransport();
-    const server = new CSWSMessage(transport);
-    const client = new CSWCMessage();
+    const server = new OdysseyServerMessage(transport);
+    const client = new OdysseyClientMessage();
     let parsed: Record<string, unknown> | undefined;
     client.onParsed = (info) => {
       parsed = info.payload;
@@ -170,7 +170,7 @@ describe("CS messaging round-trips", () => {
 
   it("SafeProjectile Projectile minor 2", () => {
     const transport = new MemoryMessageTransport();
-    const server = new CSWSMessage(transport);
+    const server = new OdysseyServerMessage(transport);
     server.sendServerToPlayerSafeProjectileProjectile(1, {
       oid0: 1,
       oid1: 2,
@@ -188,8 +188,8 @@ describe("CS messaging round-trips", () => {
 
   it("MapPin Enabled round-trip", () => {
     const transport = new MemoryMessageTransport();
-    const server = new CSWSMessage(transport);
-    const client = new CSWCMessage();
+    const server = new OdysseyServerMessage(transport);
+    const client = new OdysseyClientMessage();
     let parsed: Record<string, unknown> | undefined;
     client.onParsed = (info) => {
       parsed = info.payload;
@@ -203,12 +203,12 @@ describe("CS messaging round-trips", () => {
 
 describe("LocString wire", () => {
   it("round-trips text and strref forms", () => {
-    const w = new CSWMessage();
+    const w = new OdysseyMessage();
     w.createWriteMessage(64);
     writeLocString(w, { isStrRef: false, text: "abc" });
     writeLocString(w, { isStrRef: true, language: 0, strRef: 12345 });
     const { buffer, size } = w.getWriteMessage();
-    const r = new CSWMessage();
+    const r = new OdysseyMessage();
     r.setReadMessage(buffer.subarray(3, size), size - 3);
     expect(readLocString(r)).toEqual({ isStrRef: false, text: "abc" });
     expect(readLocString(r)).toEqual({ isStrRef: true, language: 0, strRef: 12345 });

@@ -25,7 +25,7 @@ export class Keymap {
   actionstrref: number  = -1;
   descstrref:   number  = -1;
   language0:    number  =  0; //keycode?
-  /** Language0 from keymap.2da before INI remap (retail ResetToDefault source). */
+  /** Language0 from keymap.2da before INI remap (ResetToDefault source). */
   defaultLanguage0: number = 0;
   character:    string  = '';
   /** Character string from keymap.2da before INI remap. */
@@ -66,7 +66,7 @@ export class Keymap {
     this.processCallback = callback;
   }
 
-  /** Retail keymap category_flags from ICPC* columns. */
+  /** keymap category_flags from ICPC* columns. */
   getCategoryFlags(): number {
     let flags = 0;
     if(this.icpc) flags |= 0x01;
@@ -97,7 +97,7 @@ export class Keymap {
     this.editDirty = false;
   }
 
-  /** Retail CreateOption visibility: remappable or forcedisplay, not disabled. */
+  /** CreateOption visibility: remappable or forcedisplay, not disabled. */
   isKeyMapperVisible(): boolean {
     if(this.disabled) return false;
     return this.remappable || this.forcedisplay;
@@ -500,7 +500,7 @@ export class KeyMapper {
       }
     }
 
-    // Retail swoop/turret defaults when keymap.2da/INI left MG actions unbound
+    // swoop/turret defaults when keymap.2da/INI left MG actions unbound
     // (language0 failed to resolve to a KeyInput).
     const bindMgDefault = (action: KeyMapAction, key: KeyInput | undefined) => {
       if(!key){ return; }
@@ -933,7 +933,7 @@ export enum KeyCodeToLanguage0 {
   Digit0 =          86, 
   Space =           87, 
   NumpadEnter =     88, //NUM Enter 
-  // Enter =        88, 
+  // Enter = 88, 
   CapsLock =        89, 
   Pause =           90,
   Minus =           94, 

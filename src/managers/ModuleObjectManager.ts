@@ -19,7 +19,7 @@ import { EngineState } from "@/enums/engine/EngineState";
 import { MiniGameObjectArray } from "@/module/minigame/MiniGameObjectArray";
 
 /**
- * Retail NWScript shape constants (GetObjectInShape).
+ * NWScript shape constants (GetObjectInShape).
  */
 export const ShapeType = {
   SPELLCYLINDER: 0,
@@ -29,15 +29,15 @@ export const ShapeType = {
   SPHERE: 4,
 } as const;
 
-/** Retail SPELLCYLINDER off-axis radius squared (1.5²). */
+/** SPELLCYLINDER off-axis radius squared (1.5²). */
 export const SPELLCYLINDER_RADIUS_SQ = 2.25;
 
-/** Retail SPELLCONE forward half-angle cos(30°) ≈ 0.866. */
+/** SPELLCONE forward half-angle cos(30°) ≈ 0.866. */
 export const SPELLCONE_MIN_DOT = 0.866;
-/** First non-MG object id — retail SWMG StackPushObject uses mgo_index 0..0xfe. */
+/** First non-MG object id — SWMG StackPushObject uses mgo_index 0..0xfe. */
 const FIRST_MODULE_OBJECT_ID = MiniGameObjectArray.CAPACITY + 1; // 0x100
 
-/** Retail object_lookup_table node. */
+/** object_lookup_table node. */
 export type TagLookupNode = { tag: string; id: number };
 
 export type NearestCandidate = { obj: ModuleObject; distSq: number };
@@ -52,7 +52,7 @@ export type FindNearestInAreaOptions = {
   matches: (obj: ModuleObject) => boolean;
 };
 
-/** Retail GetNearestObjects / DoPassiveSelection range (√900). */
+/** GetNearestObjects / DoPassiveSelection range (√900). */
 const NEAREST_OBJECT_RANGE = 30;
 const NEAREST_OBJECT_RANGE_SQ = NEAREST_OBJECT_RANGE * NEAREST_OBJECT_RANGE;
 /** Front cone cos(~30°) from GetNearestObjects. */
@@ -61,9 +61,9 @@ const FRONT_CONE_DOT = 0.866;
 const FRONT_CONE_ORIGIN_BACK = 4;
 /** LOS grace while sticky target briefly occluded. */
 const STICKY_LOS_GRACE_SEC = 1.0;
-/** Combat dead-target grace (retail target_changing = 0x3fc00000). */
+/** Combat dead-target grace (target_changing = 0x3fc00000). */
 const TARGET_CHANGING_SEC = 1.5;
-/** Enemy / mine sighted latch (). */
+/** Enemy / mine sighted latch. */
 const SIGHTED_LATCH_SEC = 10.0;
 
 type NearestValid = { ok: boolean; hostile: boolean };
@@ -85,7 +85,7 @@ export class ModuleObjectManager {
 
   static ObjectList: Map<any, ModuleObject> = new Map();
   /**
-   * Retail object_lookup_table — sorted by tag; equal tags keep insertion order.
+   * object_lookup_table — sorted by tag; equal tags keep insertion order.
    * FindObjectByTagOrdinal / AddObjectToLookupTable.
    */
   static tagLookup: TagLookupNode[] = [];
@@ -98,7 +98,7 @@ export class ModuleObjectManager {
     if(id == ModuleObjectConstant.OBJECT_INVALID)
       return undefined;
 
-    // Retail MG StackPushObject uses mgo_index; 0xff = empty / invalid for MG.
+    // MG StackPushObject uses mgo_index; 0xff = empty / invalid for MG.
     if(id === MiniGameObjectArray.INVALID_INDEX)
       return undefined;
 
@@ -112,14 +112,14 @@ export class ModuleObjectManager {
         serverDestroyed?: boolean;
         isRetainedCorpse?: boolean;
       };
-      // Retail GetGameObject fails after event 0xb; KeepCorpse is client-only.
+      // GetGameObject fails after event 0xb; KeepCorpse is client-only.
       if(obj?.destroyed || obj?.serverDestroyed || obj?.isRetainedCorpse){
         return undefined;
       }
       return obj;
     }
 
-    // Retail SWMG_* StackPopObject → GetMiniGameObject(mgo_index).
+    // SWMG_* StackPopObject → GetMiniGameObject(mgo_index).
     if(typeof id === 'number' && id >= 0 && id < MiniGameObjectArray.CAPACITY){
       return MiniGameObjectArray.get(id);
     }
@@ -209,14 +209,14 @@ export class ModuleObjectManager {
       }
     }
     this.ObjectList.set(object.id, object);
-    // retail* ctor AddObject(aiMaster, VERY_LOW) — only if not already registered
+    // * ctor AddObject(aiMaster, VERY_LOW) — only if not already registered
     if(object.aiLevel === AILevel.INVALID){
       GameState.module?.aiScheduler.addObject(object);
     }
   }
 
   /**
-   * Retail AddToArea / Load* registration: ObjectList + tag lookup after Tag is known.
+   * AddToArea / Load* registration: ObjectList + tag lookup after Tag is known.
    * Call at end of initProperties (after Tag field read), not mid-init.
    */
   static RegisterObject(object: ModuleObject){
@@ -248,7 +248,7 @@ export class ModuleObjectManager {
   }
 
   /**
-   * Retail case 0 — corridor from origin to target end, 1.5m off-axis radius.
+   * case 0 — corridor from origin to target end, 1.5m off-axis radius.
    */
   static isInSpellCylinder(
     point: THREE.Vector3,
@@ -270,7 +270,7 @@ export class ModuleObjectManager {
   }
 
   /**
-   * Retail case 1 — cone that widens toward the end.
+   * case 1 — cone that widens toward the end.
    */
   static isInCone(
     point: THREE.Vector3,
@@ -291,7 +291,7 @@ export class ModuleObjectManager {
   }
 
   /**
-   * Retail case 3 — forward cone with cosθ ≥ 0.866 and distance ≤ size.
+   * case 3 — forward cone with cosθ ≥ 0.866 and distance ≤ size.
    */
   static isInSpellCone(
     point: THREE.Vector3,
@@ -311,7 +311,7 @@ export class ModuleObjectManager {
   }
 
   /**
-   * True when `point` lies in the retail shape described by nShape.
+   * True when `point` lies in the shape described by nShape.
    */
   static isPointInShape(
     shape: number,
@@ -337,7 +337,7 @@ export class ModuleObjectManager {
   }
 
   /**
-   * Retail FindTagPositionInTable — first index where tag >= needle (lower_bound).
+   * FindTagPositionInTable — first index where tag >= needle (lower_bound).
    */
   static findTagPositionInTable(table: TagLookupNode[], tag: string): number {
     const needle = (tag ?? '').toLowerCase();
@@ -413,7 +413,7 @@ export class ModuleObjectManager {
     return undefined;
   }
 
-  /** Insert candidate into ascending distSq list (retail CExoArrayList Insert). */
+  /** Insert candidate into ascending distSq list (CExoArrayList Insert). */
   static insertByDistSq(candidates: NearestCandidate[], obj: ModuleObject, distSq: number): void {
     let i = 0;
     while(i < candidates.length && candidates[i].distSq <= distSq){
@@ -423,7 +423,7 @@ export class ModuleObjectManager {
   }
 
   /**
-   * Retail ExecuteCommandGetNearestObject spiral walk:
+   * ExecuteCommandGetNearestObject spiral walk:
    * start at GetFirstObjectIndiceByX, expand +1/-1/+2/-2…, insert by distSq,
    * abort a direction when |dx|² already exceeds the current nth-furthest distSq.
    */
@@ -502,21 +502,21 @@ export class ModuleObjectManager {
   }
 
   /**
-   * Retail FindTagPositionInTable on the manager table.
+   * FindTagPositionInTable on the manager table.
    */
   static FindTagPositionInTable(tag: string): number {
     return ModuleObjectManager.findTagPositionInTable(this.tagLookup, tag);
   }
 
   /**
-   * Retail AddObjectToLookupTable — insert after last equal-tag entry.
+   * AddObjectToLookupTable — insert after last equal-tag entry.
    */
   static AddObjectToLookupTable(tag: string, id: number){
     ModuleObjectManager.addObjectToLookupTable(this.tagLookup, tag, id);
   }
 
   /**
-   * Retail RemoveObjectFromLookupTable — remove by tag + id.
+   * RemoveObjectFromLookupTable — remove by tag + id.
    */
   static RemoveObjectFromLookupTable(tag: string, id: number): boolean {
     return ModuleObjectManager.removeObjectFromLookupTable(this.tagLookup, tag, id);
@@ -590,7 +590,7 @@ export class ModuleObjectManager {
   public static GetObjectByTag(sTag = '', iNum = 0, oType = NWModuleObjectType.ALL){
 
     sTag = sTag.toLowerCase();
-    // Retail FindObjectByTagOrdinal matches "" like any tag against the module
+    // FindObjectByTagOrdinal matches "" like any tag against the module
     // tag lookup table. The PC's tag is empty, so an empty lookup resolves to
     // the player — scripts rely on this (e.g. k_pend_traskdl40 moves Trask to
     // GetObjectByTag("")). Alias both '' and 'player' to party[0].
@@ -598,7 +598,7 @@ export class ModuleObjectManager {
       return PartyManager.party[0];
     }
 
-    // Retail FindObjectByTagOrdinal / FindObjectByTagTypeOrdinal
+    // FindObjectByTagOrdinal / FindObjectByTagTypeOrdinal
     const filterType = oType | 0;
     const useTypeFilter = filterType !== NWModuleObjectType.ALL;
     const id = ModuleObjectManager.findObjectIdByTagOrdinal(
@@ -750,7 +750,7 @@ export class ModuleObjectManager {
   }
 
   /**
-   * Single CREATURE_TYPE_* criterion for GetNearestCreature* (retail).
+   * Single CREATURE_TYPE_* criterion for GetNearestCreature*.
    */
   private static creatureMatchesNearestCriterion(
     creature: ModuleCreature,
@@ -841,7 +841,7 @@ export class ModuleObjectManager {
   }
 
   /**
-   * Pass AL — GetNearestCreatureToLocation (retail ExecuteCommandGetNearestObject).
+   * Pass AL — GetNearestCreatureToLocation (ExecuteCommandGetNearestObject).
    * Same criteria as GetNearestCreature; distance sorted vs location XYZ.
    * Reputation/perception reference the party leader when present.
    */
@@ -889,7 +889,7 @@ export class ModuleObjectManager {
   }
 
   /**
-   * Pass AL — GetNearestObjectToLocation (retail ExecuteCommandGetNearestObject).
+   * Pass AL — GetNearestObjectToLocation (ExecuteCommandGetNearestObject).
    */
   public static GetNearestObjectToLocation(oType = 0, lLocation: EngineLocation, iNum = 0){
     const area = this.module?.area;
@@ -907,7 +907,7 @@ export class ModuleObjectManager {
   }
 
   /**
-   * Pass AL — GetNearestTrapToObject (retail ExecuteCommandGetNearestMine).
+   * Pass AL — GetNearestTrapToObject (ExecuteCommandGetNearestMine).
    * Trap objects = triggers/doors/placeables with trapFlag (or TRAP-type triggers).
    */
   public static GetNearestTrapToObject(oTarget: ModuleObject, nTrapDetected = 0): ModuleObject {
@@ -1055,14 +1055,14 @@ export class ModuleObjectManager {
   static #nearestHostileFlags = new WeakMap<ModuleObject, boolean>();
   static #currentVisibleObject: ModuleObject;
   static #currentVisibleObjectIndex: number = 0;
-  /** Sticky LOS grace timer (Retail). */
+  /** Sticky LOS grace timer. */
   static #stickyLosGrace = 0;
-  /** Combat dead-target grace (retail target_changing). */
+  /** Combat dead-target grace (target_changing). */
   static #targetChanging = 0;
-  /** Enemy first-sight latch (retail enemy_sighted +). */
+  /** Enemy first-sight latch (enemy_sighted +). */
   static #enemySighted = false;
   static #enemySightedLatch = 0;
-  /** Mine first-sight latch (Retail +). */
+  /** Mine first-sight latch (+). */
   static #mineSighted = false;
   static #mineSightedLatch = 0;
   static #cachedFront: ModuleObject[] = [];
@@ -1072,7 +1072,7 @@ export class ModuleObjectManager {
   static #tmpDelta = new THREE.Vector3();
 
   /**
-   * Retail ValidNearestObjectType.
+   * ValidNearestObjectType.
    */
   static validNearestObjectType(player: ModuleObject, obj: ModuleObject): NearestValid {
     if(!obj || obj === player || !obj.area){
@@ -1126,7 +1126,7 @@ export class ModuleObjectManager {
       if(!plc.isUseable()){
         return { ok: false, hostile: false };
       }
-      // Retail ValidNearest placeable: hostile only when
+      // ValidNearest placeable: hostile only when
       // != 0 && reputation < 11. That field is not GFF-loaded
       // and stays 0 for normal containers, so nearest-hostile is never set.
       return { ok: true, hostile: false };
@@ -1155,7 +1155,7 @@ export class ModuleObjectManager {
   }
 
   /**
-   * Retail GetNearestObjects (both ranges 30).
+   * GetNearestObjects (both ranges 30).
    * around: yaw-sorted; front: distance-sorted within ~30° cone from 4u behind.
    */
   static getNearestObjects(player: ModuleObject): NearestLists {
@@ -1228,14 +1228,14 @@ export class ModuleObjectManager {
     return this.#nearestHostileFlags.get(obj) === true;
   }
 
-  /** Approximate retail CanSee for selection. */
+  /** Approximate CanSee for selection. */
   static canSeeObject(player: ModuleObject, obj: ModuleObject): boolean {
     if(!player || !obj) return false;
     return obj.hasLineOfSight(player, NEAREST_OBJECT_RANGE);
   }
 
   /**
-   * Retail ShowObject (presentation subset).
+   * ShowObject (presentation subset).
    * @param doLookAt - arg2: creature LookAt
    * @param doCameraFocus - arg3: SetLookAtTarget. Tab/SelectNearest and
    * enemy/mine first-sight pass true. Continuous combat-mode auto-focus is
@@ -1260,7 +1260,7 @@ export class ModuleObjectManager {
     this.#currentVisibleObject = obj;
     this.#currentVisibleObjectIndex = this.playerSelectableObjects.indexOf(obj);
 
-    // Retail only touches camera when arg2 (LookAt) is set.
+    // only touches camera when arg2 (LookAt) is set.
     if(doLookAt && doCameraFocus){
       FollowerCamera.setFocusObject(obj);
     }else if(doLookAt && !doCameraFocus){
@@ -1314,7 +1314,7 @@ export class ModuleObjectManager {
   }
 
   /**
-   * Retail DoPassiveSelection.
+   * DoPassiveSelection.
    */
   static doPassiveSelection(player: ModuleObject, delta: number = 0){
     if(!player){
@@ -1322,7 +1322,7 @@ export class ModuleObjectManager {
       return;
     }
 
-    // Retail rebuilds GetNearestObjects every DoPassiveSelection call
+    // rebuilds GetNearestObjects every DoPassiveSelection call
     this.GetSelectableObjectsInRange(player);
 
     const around = this.playerSelectableObjects;
@@ -1331,7 +1331,7 @@ export class ModuleObjectManager {
     const combat = !!GameState.CursorManager?.isClientCombatMode?.();
     const paused = GameState.State === EngineState.PAUSED;
 
-    // Retail DoPassiveSelection first loop: creatures → hostile pool,
+    // DoPassiveSelection first loop: creatures → hostile pool,
     // trap triggers → mine pool. Placeables/doors never open either scan.
     let hasHostileInPool = false;
     let hasMineInPool = false;
@@ -1352,7 +1352,7 @@ export class ModuleObjectManager {
     let forceLookAt = false;
     let forceCameraFocus = false;
 
-    // Combat dead-target grace when last left the pool (retail target_changing)
+    // Combat dead-target grace when last left the pool (target_changing)
     if(last && !inAround(last) && combat && hasHostileInPool){
       const cre = BitWise.InstanceOfObject(last, ModuleObjectType.ModuleCreature)
         ? (last as ModuleCreature)
@@ -1414,7 +1414,7 @@ export class ModuleObjectManager {
           sawHostileCanSee = true;
         }
 
-        // Retail skips force-pick while paused; first match wins, scan continues for latches
+        // skips force-pick while paused; first match wins, scan continues for latches
         if(paused || forceCameraFocus) continue;
 
         if(mineRising && isMine){
@@ -1428,7 +1428,7 @@ export class ModuleObjectManager {
           continue;
         }
 
-        // Retail EnemySighted force-pick: creatures only (not placeables/doors).
+        // EnemySighted force-pick: creatures only (not placeables/doors).
         // Do not steal UI focus from a live sticky selection while already in
         // combat — queued attacks keep the current combat target.
         if(
@@ -1449,7 +1449,7 @@ export class ModuleObjectManager {
       }
     }
 
-    // Latch refresh / decay (Retail)
+    // Latch refresh / decay 
     if(sawHostileCanSee){
       this.#enemySighted = true;
       this.#enemySightedLatch = SIGHTED_LATCH_SEC;
@@ -1473,7 +1473,7 @@ export class ModuleObjectManager {
     }
 
     if(keepSticky && last){
-      // Retail sticky+CanSee: LookAt only when force-sight is set
+      // sticky+CanSee: LookAt only when force-sight is set
       this.showObject(last, forceLookAt, forceCameraFocus);
       return;
     }
@@ -1506,13 +1506,13 @@ export class ModuleObjectManager {
       }
       this.showObject(pick, true, false);
     }else{
-      // Retail clears whenever presentation flag stays 0
+      // clears whenever presentation flag stays 0
       this.showObject(undefined, false, false);
     }
   }
 
   /**
-   * Retail SelectNearestObject.
+   * SelectNearestObject.
    * @param previous - true = SelectPrev (arg1 != 0)
    */
   static selectNearestObject(previous: boolean = false): ModuleObject | undefined {
@@ -1563,7 +1563,7 @@ export class ModuleObjectManager {
       idx = idx >= list.length - 1 ? 0 : idx + 1;
     }
 
-    // Walk until a matching CanSee object (retail cycle loop)
+    // Walk until a matching CanSee object (cycle loop)
     for(let n = 0; n < list.length; n++){
       const obj = list[idx];
       if(matches(obj)){
@@ -1596,7 +1596,7 @@ export class ModuleObjectManager {
 
   /**
    * Run DoPassiveSelection every tick (rebuilds nearest lists internally).
-   * Retail MainLoop skips while IsGlobalFading / IsGlobalFadeObscuring
+   * MainLoop skips while IsGlobalFading / IsGlobalFadeObscuring
    * (and while area_not_ready_to_display).
    */
   static TickSelectableObjects(delta: number = 0){
@@ -1605,7 +1605,7 @@ export class ModuleObjectManager {
       return;
     }
 
-    // Retail: DoPassiveSelection only after world fade is clear
+    // : DoPassiveSelection only after world fade is clear
     const fade = GameState.FadeOverlayManager;
     if(fade?.isFading?.() || fade?.isObscuring?.()){
       return;

@@ -38,7 +38,7 @@ function buttonTextInnerSize(params: {
   };
 }
 
-describe("MenuMap BTN_PRTYSLCT / BTN_RETURN text inner (retail)", () => {
+describe("MenuMap BTN_PRTYSLCT / BTN_RETURN text inner (engine)", () => {
   it("intersects border+hilight GetInnerExtent for skinny INNEROFFSET buttons", () => {
     const inner = buttonTextInnerSize({
       width: 278,

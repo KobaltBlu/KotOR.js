@@ -142,7 +142,7 @@ export class ForgeGameObject extends EventListenerModel {
   }
 
   /**
-   * Seed a retail-style blueprint GFF. Child classes replace this with the
+   * Seed a -style blueprint GFF. Child classes replace this with the
    * pipeline field list for their UT* FileType.
    */
   exportToBlueprint(): KotOR.GFFObject {

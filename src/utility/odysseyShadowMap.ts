@@ -1,15 +1,15 @@
 import * as THREE from 'three';
 
 import {
-  RETAIL_AREA_DIRECTIONAL_SHADOW_RADIUS,
-  RETAIL_SHADOW_LENGTH,
-} from '@/utility/retailLighting';
+  ODYSSEY_AREA_DIRECTIONAL_SHADOW_RADIUS,
+  ODYSSEY_SHADOW_LENGTH,
+} from '@/utility/odysseyLighting';
 
 /** Minimum spot/directional shadow camera near plane. */
 export const ODYSSEY_SHADOW_CAMERA_NEAR = 0.1;
 
 /**
- * Depth bias for packed shadow-map compares (NDC). Retail stencil bias (0.05) is far too
+ * Depth bias for packed shadow-map compares (NDC). stencil bias (0.05) is far too
  * large for perspective maps where useful depths cluster near 1.0.
  */
 export const ODYSSEY_SHADOW_MAP_DEPTH_BIAS = 0.001;
@@ -18,11 +18,11 @@ export const ODYSSEY_SHADOW_MAP_DEPTH_BIAS = 0.001;
 export const ODYSSEY_SHADOW_MAP_LIGHT_BIAS = -0.001;
 
 /** Default orthographic half-extent when influence radius is tiny. */
-export const ODYSSEY_SHADOW_MIN_HALF_EXTENT = RETAIL_SHADOW_LENGTH;
+export const ODYSSEY_SHADOW_MIN_HALF_EXTENT = ODYSSEY_SHADOW_LENGTH;
 
 /**
  * Max ortho half-extent for directional/sun shadow maps. Tighter than the
- * retail focus cull distance (40) so 2048² maps keep usable texel density on
+ * focus cull distance (40) so 2048² maps keep usable texel density on
  * characters (~0.016 world units/texel at ±16).
  */
 export const ODYSSEY_SHADOW_DIRECTIONAL_MAX_HALF_EXTENT = 16;
@@ -143,7 +143,7 @@ export function buildOrthoShadowCameraParams(
 
 /**
  * Place a directional shadow proxy along the authored light→focus ray, close
- * enough for usable ortho depth precision (auroralight01, retail gidy_sun).
+ * enough for usable ortho depth precision (auroralight01, gidy_sun).
  */
 export function placeDirectionalShadowProxyAlongLight(
   lightPos: THREE.Vector3 | { x: number; y: number; z: number },
@@ -170,7 +170,7 @@ export function placeDirectionalShadowProxyAlongLight(
 
 /** True when the shadow map should use a directional/ortho camera (module key lights). */
 export function isDistantShadowLightRadius(radius: number): boolean {
-  return radius >= RETAIL_AREA_DIRECTIONAL_SHADOW_RADIUS;
+  return radius >= ODYSSEY_AREA_DIRECTIONAL_SHADOW_RADIUS;
 }
 
 /**
@@ -213,9 +213,9 @@ export function adjustShadowProxyPositionForMap(
 }
 
 /**
- * Local spot shadow map: keep the retail lamp XY so shadows cast away from the
+ * Local spot shadow map: keep the lamp XY so shadows cast away from the
  * source, but elevate coplanar (z≈floor) lamps so the depth pass can see body
- * over floor along the light ray. Lighting still uses the real PartLight.
+ * over floor along the light ray. Lighting still uses the real light node.
  */
 export function configureSpotShadowProxyForFloorContact(
   sourceLight: THREE.Vector3,
@@ -230,7 +230,7 @@ export function configureSpotShadowProxyForFloorContact(
   return outProxyPos;
 }
 
-/** Aim a spot/directional proxy at focus from a retail-adjusted light position. */
+/** Aim a spot/directional proxy at focus from a -adjusted light position. */
 export function aimShadowProxyAtFocus(
   lightPos: THREE.Vector3,
   focus: THREE.Vector3,

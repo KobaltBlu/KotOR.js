@@ -22,7 +22,7 @@ import {
 } from '@/engine/pathfinding/get-obstruction-factor';
 
 describe('obstructionVolumeScale', () => {
-  test('maps retail factor to Miles-like gain multiplier', () => {
+  test('maps engine factor to Miles-like gain multiplier', () => {
     expect(obstructionVolumeScale(0)).toBe(1);
     expect(obstructionVolumeScale(-1)).toBe(1);
     expect(obstructionVolumeScale(0.4)).toBeCloseTo(0.6);

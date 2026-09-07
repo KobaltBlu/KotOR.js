@@ -95,7 +95,7 @@ export class MenuEquipment extends GameMenu {
   equipmentSelectionActive: boolean = false;
   selectedItem: EquipListNode = undefined;
 
-  /** Snapshot of the item in `slot` when selection mode began (retail previously_equipped). */
+  /** Snapshot of the item in `slot` when selection mode began (previously_equipped). */
   previouslyEquipped: ModuleItem = undefined;
   /** Off-hand item removed when previewing a LARGE main-hand weapon. */
   previouslyEquippedOffHand: ModuleItem = undefined;
@@ -164,7 +164,7 @@ export class MenuEquipment extends GameMenu {
       });
 
       this.LB_ITEMS.setProtoBuilder(GUIInventoryItem);
-      // Retail leaves GFF PADDING (equip.gui LB_ITEMS = 0); do not force 5.
+      // leaves GFF PADDING (equip.gui LB_ITEMS = 0); do not force 5.
       this.LB_ITEMS.onSelected = (item: EquipListNode) => {
         this.updateSelected(item);
       };
@@ -200,7 +200,7 @@ export class MenuEquipment extends GameMenu {
   }
 
   /**
-   * Retail OnSelectSlot — enter item-selection mode for a slot.
+   * OnSelectSlot — enter item-selection mode for a slot.
    */
   onSelectSlot(slot: ModuleCreatureArmorSlot) {
     const currentPC = this.getActiveCreature();
@@ -225,7 +225,7 @@ export class MenuEquipment extends GameMenu {
     this.previouslyEquippedOffHandSlot = null;
     this.updateList();
 
-    // Retail: if only the "None" row exists, show nothing-available message.
+    // : if only the "None" row exists, show nothing-available message.
     if(this.LB_ITEMS.children.length <= 1){
       GameState.MenuManager.InGameConfirm.fromStringRef(STR_NOTHING_AVAILABLE);
       this.slot = null;
@@ -239,7 +239,7 @@ export class MenuEquipment extends GameMenu {
   }
 
   /**
-   * Retail OnOKPressed — commit preview (clear revert snapshot) and leave selection mode.
+   * OnOKPressed — commit preview (clear revert snapshot) and leave selection mode.
    */
   commitEquipmentSelection() {
     if(!this.equipmentSelectionActive) return;
@@ -254,7 +254,7 @@ export class MenuEquipment extends GameMenu {
   }
 
   /**
-   * Retail Back while selecting — revert preview and leave selection mode.
+   * Back while selecting — revert preview and leave selection mode.
    */
   async cancelEquipmentSelection() {
     if(this.previewActive){
@@ -297,7 +297,7 @@ export class MenuEquipment extends GameMenu {
   }
 
   /**
-   * Retail OnItemSelected — preview-equip on list selection.
+   * OnItemSelected — preview-equip on list selection.
    */
   async previewEquipSelection(item: EquipListNode) {
     if(this._suppressPreview || !this.equipmentSelectionActive || !this.slot) return;
@@ -322,7 +322,7 @@ export class MenuEquipment extends GameMenu {
     if(item instanceof GUIItemNone){
       if(!currentEquipped) return;
       this.previewActive = true;
-      // Unequipping main hand with offhand — retail also drops offhand.
+      // Unequipping main hand with offhand — also drops offhand.
       if(isMainHandSlot(this.slot)){
         const offSlot = getOffHandSlotForMain(this.slot);
         if(offSlot){
@@ -352,7 +352,7 @@ export class MenuEquipment extends GameMenu {
 
     this.previewActive = true;
 
-    // LARGE main-hand preview unequips offhand (retail weapon_size == 4).
+    // LARGE main-hand preview unequips offhand (weapon_size == 4).
     if(isMainHandSlot(this.slot) && isLargeWeapon(targetItem)){
       const offSlot = getOffHandSlotForMain(this.slot);
       if(offSlot){
@@ -379,7 +379,7 @@ export class MenuEquipment extends GameMenu {
   }
 
   /**
-   * Retail ShowCantEquipMessage.
+   * ShowCantEquipMessage.
    */
   showCantEquipMessage(show: boolean, strRef: number = 0) {
     const combatLabels = [
@@ -508,7 +508,7 @@ export class MenuEquipment extends GameMenu {
   }
 
   /**
-   * Build LB_ITEMS for a slot (None, Equipped, inventory) — retail OnEnterSlot.
+   * Build LB_ITEMS for a slot (None, Equipped, inventory) — OnEnterSlot.
    */
   protected populateItemList(slot: ModuleCreatureArmorSlot, selectDefault: boolean) {
     const currentPC = this.getActiveCreature();
@@ -542,7 +542,7 @@ export class MenuEquipment extends GameMenu {
     });
 
     if(selectDefault){
-      // Retail OnSelectSlot: SetSelectedControl(1) only when the slot is occupied.
+      // OnSelectSlot: SetSelectedControl(1) only when the slot is occupied.
       // Empty slots leave selection cleared — user must click a row to preview-equip.
       const kids = this.LB_ITEMS.children;
       if(equipped && kids.length > 1){
@@ -560,7 +560,7 @@ export class MenuEquipment extends GameMenu {
     mainWeapon: ModuleItem | undefined,
     offWeapon: ModuleItem | undefined,
   ): number {
-    // Dual-wield style mismatch → canUse 3 (retail).
+    // Dual-wield style mismatch → canUse 3.
     if(isMainHandSlot(slot) && offWeapon){
       const a = item.getWeaponWield();
       const b = offWeapon.getWeaponWield();
@@ -596,7 +596,7 @@ export class MenuEquipment extends GameMenu {
   }
 
   /**
-   * Retail UpdateInventory — slot icons + attack/damage/AC/HP.
+   * UpdateInventory — slot icons + attack/damage/AC/HP.
    */
   updateInventoryDisplay(force: boolean = false) {
     const currentPC = this.getActiveCreature();
@@ -614,7 +614,7 @@ export class MenuEquipment extends GameMenu {
     const bab = currentPC.getBaseAttackBonus();
     const twoHand = isTwoHandedWeapon(rWeap);
 
-    // Right hand (unarmed uses right-hand to-hit when no weapons — retail empty path)
+    // Right hand (unarmed uses right-hand to-hit when no weapons — empty path)
     if(rWeap){
       const atk = getEquipScreenAttackBonus(currentPC, rWeap, false);
       const dmg = getEquipScreenDamageRange(rWeap);

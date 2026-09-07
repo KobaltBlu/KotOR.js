@@ -34,7 +34,7 @@ export class GUIControlFactory {
   static GUIScrollBar: typeof GUIScrollBar = GUIScrollBar;
 
   /**
-   * Retail InitControl constructs edit box by TAG (NAME_BOX_EDIT / EDITBOX),
+   * InitControl constructs edit box by TAG (NAME_BOX_EDIT / EDITBOX),
    * not GFF CONTROLTYPE — chargen / save-name.
    */
   static FromStruct(struct: GFFStruct, menu: GameMenu, parent: GUIControl, scale: boolean): GUIControl {

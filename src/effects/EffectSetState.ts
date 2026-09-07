@@ -7,7 +7,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import { isSetStateImmune, rebalanceSetState, SET_STATE_OUTER_AI_ACTIVITY_MASK } from "@/effects/set-state";
 
 /**
- * EffectSetState — retail outer type 0x08 (OnApplySetState).
+ * EffectSetState — outer type 0x08 (effect apply).
  * int[0] = GameEffectSetStateType; int[1] != 0 → cutscene (skip stun/paralyze/horror immunities).
  *
  * @file EffectSetState.ts
@@ -42,7 +42,7 @@ export class EffectSetState extends GameEffect {
     }
 
     super.onApply();
-    // Retail OnApplySetState: SETAISTATE −0x101 → activity &= 0xFEFF
+    // effect apply: SETAISTATE −0x101 → activity &= 0xFEFF
     creature.activity = (creature.activity | 0) & SET_STATE_OUTER_AI_ACTIVITY_MASK;
     rebalanceSetState(creature, this);
   }

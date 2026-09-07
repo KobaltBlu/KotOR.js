@@ -4,7 +4,7 @@ import { AutoPauseState } from "@/enums/engine/AutoPauseState";
 import { GameMenu } from "@/gui";
 import type { GUILabel, GUIButton } from "@/gui";
 
-/** Retail SetPauseReason TLK ids (K1). */
+/** SetPauseReason TLK ids (K1). */
 const TLK_PAUSE_GENERIC = 0x5e4;
 const TLK_PAUSE_ENEMY = 0xbc54;
 const TLK_PAUSE_END_ROUND = 0xa5c0;
@@ -80,7 +80,7 @@ export class InGamePause extends GameMenu {
   }
 
   /**
-   * Retail SetPauseReason — map reason byte → LBL_PAUSEREASON
+   * SetPauseReason — map reason byte → LBL_PAUSEREASON
    * TLK and show/hide LBL_PRESS (enemy/mine hide press).
    */
   setPauseReason(reason: AutoPauseState | number){

@@ -11,7 +11,7 @@ import { SaveGame } from "@/engine/SaveGame";
 /**
  * MenuSaveLoad class.
  *
- * retail — list, load/save/overwrite/delete, selection details.
+ * — list, load/save/overwrite/delete, selection details.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -158,7 +158,7 @@ export class MenuSaveLoad extends GameMenu {
       this._button_b = this.BTN_BACK;
 
       this.LB_GAMES.setProtoBuilder(GUISaveGameItem);
-      // Retail AddControls(..., varyItemHeights=0) @ PopulateGameList
+      // AddControls(..., varyItemHeights=0) @ PopulateGameList
       this.LB_GAMES.setVariableItemHeight(false);
       this.LB_GAMES.onSelected = (save: SaveGame) => {
         this.selected = save;

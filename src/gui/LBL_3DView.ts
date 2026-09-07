@@ -6,7 +6,7 @@ import type { GUIControl } from "@/gui/GUIControl";
 import { asExtentInt } from "@/gui/GUICoord";
 
 /**
- * Retail SetViewAngle value used by ClassSel / MainCG / PORTCUST /
+ * SetViewAngle value used by ClassSel / MainCG / PORTCUST /
  * Setup3DScene / Upgrade (≈ 22.726°).
  */
 export const GUI_3D_VIEW_FOV = 22.72;
@@ -45,8 +45,8 @@ export class LBL_3DView {
   frustumMat4: THREE.Matrix4;
   viewportFrustum: THREE.Frustum;
   /**
-   * PrioritizeLights focus (retail Scene.focus_position, default origin).
-   * GUI gobs score / GetNearestLights against the subject, not the camera.
+   * PrioritizeLights focus (Scene.focus_position, default origin).
+   * GUI gobs score / nearest light selection against the subject, not the camera.
    */
   lightFocus = new THREE.Vector3(0, 0, 0);
 
@@ -117,14 +117,14 @@ export class LBL_3DView {
     this.control.setFillColor(1, 1, 1);
   }
 
-  /** Retail SetViewAngle — ClassSel / MainCG / PORTCUST / Setup3DScene. */
+  /** SetViewAngle — ClassSel / MainCG / PORTCUST / Setup3DScene. */
   setViewAngle(fov: number = GUI_3D_VIEW_FOV){
     this.camera.fov = fov;
     this.camera.updateProjectionMatrix();
   }
 
   /**
-   * Copy pose from a light-model camerahook (retail AttachToObject).
+   * Copy pose from a light-model camerahook (AttachToObject).
    * Optional AttachTranslate offset:
    * - worldSpace true → field=1 (Setup3DScene / MainCG): position += offset
    * - worldSpace false → field=0 (PORTCUST): rotate offset by camera orientation
@@ -207,7 +207,7 @@ export class LBL_3DView {
       this.viewportFrustum.setFromProjectionMatrix(this.frustumMat4);
       // Score lights vs subject focus (Scene.focus_position, default origin).
       this.lightManager.update(delta, { position: this.lightFocus });
-      // Mainmenu is an AddModel gob: GetNearestLights around focus (not room globals).
+      // Mainmenu is an AddModel gob: nearest light selection around focus (not room globals).
       for(let i = 0; i < this.scene.children.length; i++){
         const element = this.scene.children[i];
         if(element instanceof OdysseyModel3D){

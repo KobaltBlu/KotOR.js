@@ -2,7 +2,7 @@ import type { IGUIControlExtent } from "@/interface/gui/IGUIControlExtent";
 import { GameEngineType } from "@/enums/engine/GameEngineType";
 
 /**
- * Retail GUI design letterbox base (GUI panel HitCheckMouse / GetLocalMouseCoords).
+ * GUI design letterbox base (GUI panel HitCheckMouse / GetLocalMouseCoords).
  * K1 / TSL Aspyr — same 0x280 / 0x1e0 constants.
  */
 export const GUI_DESIGN_WIDTH = 640;
@@ -36,14 +36,14 @@ export function truncDiv(a: number, b: number): number {
   return Math.trunc(a / b);
 }
 
-/** Coerce to a retail GUI extent field (ReadFieldINT / int store). */
+/** Coerce to a GUI extent field (ReadFieldINT / int store). */
 export function asExtentInt(n: number): number {
   return Math.trunc(n) | 0;
 }
 
 /**
  * Drawable GUI size in int space (border DIMENSION, edge/corner thickness, etc.).
- * Truncates like retail ints, but any positive sub-pixel value clamps up to 1
+ * Truncates like ints, but any positive sub-pixel value clamps up to 1
  * (e.g. 0.4 → 1) so thin frames are never discarded as 0.
  */
 export function asGuiSize(n: number): number {
@@ -55,7 +55,7 @@ export function asGuiSize(n: number): number {
 }
 
 /**
- * Retail Draw / GetInnerExtent frame thickness: clamp so L+R and T+B never exceed
+ * Draw / GetInnerExtent frame thickness: clamp so L+R and T+B never exceed
  * the control. When dim would consume the whole rect, each side gets half and the
  * center fill hole is 0.
  */
@@ -149,7 +149,7 @@ export function copyExtentInt(src: IGUIControlExtent): IGUIControlExtent {
 }
 
 /**
- * Retail GetExtentAccountingForPanelOffset.
+ * GetExtentAccountingForPanelOffset.
  * K1 — center (bit3) returns early; else dock X/Y (bits 5/6).
  * TSL Aspyr — if bit3 set, copy only; else dock when dock flags set.
  */
@@ -238,7 +238,7 @@ export function applyPanelOffsetToLetterboxLocal(
 }
 
 /**
- * Retail GetLocalMouseCoords K1 / TSL Aspyr.
+ * GetLocalMouseCoords K1 / TSL Aspyr.
  * Both use design letterbox 640×480 (0x280 / 0x1e0). Returns mouse in panel-local
  * top-left Y-down integer space.
  *
@@ -274,7 +274,7 @@ export function getLocalMouseCoords(
 }
 
 /**
- * Retail HitCheckMouse.
+ * HitCheckMouse.
  * Inclusive AABB: left ≤ x ≤ left+width AND top ≤ y ≤ top+height.
  */
 export function hitCheckMouseLocal(
@@ -292,12 +292,12 @@ export function hitCheckMouseLocal(
 }
 
 /**
- * Retail HitCheckMouse — children walked last→first;
+ * HitCheckMouse — children walked last→first;
  * first hit wins. Overlapping siblings do not both receive input.
  * `childHit[i]` is true when child i's HitCheckMouse succeeds.
  *
  * When `childSelectable` is provided, prefer the topmost *selectable* hit
- * (retail HandleMouseMove / GetIsSelectable — decorative labels like LBLH_*
+ * (HandleMouseMove / GetIsSelectable — decorative labels like LBLH_*
  * and equip LBL_INV_* must not steal hover from their buttons).
  */
 export function selectTopmostHitChildIndex(
@@ -392,7 +392,7 @@ export function hitCheckMouseWorldBox(
 }
 
 /**
- * Convert retail TL Y-down extent to centered Y-up widget center (Three.js ortho).
+ * Convert TL Y-down extent to centered Y-up widget center (Three.js ortho).
  * Uses truncating integer math so widget XY stay on the pixel grid.
  */
 export function extentToCenteredPosition(

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@jest/globals";
 import { costToDecreaseAbility, costToIncreaseAbility } from "@/engine/rules/ability-points";
 
-describe("ability-points retail costs", () => {
+describe("ability-points engine costs", () => {
   it("matches DetermineCostToIncreaseScore thresholds", () => {
     expect(costToIncreaseAbility(8)).toBe(1);
     expect(costToIncreaseAbility(13)).toBe(1);

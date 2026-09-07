@@ -237,7 +237,7 @@ export class SWRuleSet {
 
     /**
      * Initialize Feat Gains
-     * - required by CreatureClass.apply2DA()
+     * - required by CreatureClass.apply2DA
      */
     const featGains = GameState.TwoDAManager.datatables.get('featgain');
     if(featGains){
@@ -654,7 +654,7 @@ export class SWRuleSet {
     }
 
     /**
-     * Initialize Grenade Sounds (surface → bounce/impact; retail GrenadeSND.2da)
+     * Initialize Grenade Sounds (surface → bounce/impact; GrenadeSND.2da)
      */
     const grenadeSounds = GameState.TwoDAManager.datatables.get('grenadesnd');
     if(grenadeSounds){

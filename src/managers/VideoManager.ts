@@ -246,7 +246,7 @@ export class VideoManager {
 
       this.currentMovie = { name: movieName, skippable: skipable };
       this.isPlaying = true;
-      // Retail ExecuteCommandPlayMovie: SetSoundMode(3) when not skippable
+      // ExecuteCommandPlayMovie: SetSoundMode(3) when not skippable
       AudioEngine.SetSoundMode(SoundMode.PAUSE_LOAD, 0);
       // AddMovieToExoArrayList → SetMovieShown
       MainMovies.setMovieShown(movieName, true);
@@ -385,7 +385,7 @@ export class VideoManager {
 
     this.currentMovie = null;
     this.isPlaying = false;
-    // Retail after PlayMovie: SetSoundMode(0) → ResumeAllSounds
+    // after PlayMovie: SetSoundMode(0) → ResumeAllSounds
     AudioEngine.SetSoundMode(SoundMode.POP, 0);
 
     if (GameState.Mode === EngineMode.MOVIE) {

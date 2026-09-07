@@ -30,7 +30,7 @@ function fieldPreview(field?: KotOR.GFFField): string {
 }
 
 /**
- * Compare a project override GFF against a retail/base template GFF.
+ * Compare a project override GFF against a /base template GFF.
  * Marks fields that differ as overrides; identical fields are inherited.
  */
 export function diffBlueprintGff(

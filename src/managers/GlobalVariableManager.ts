@@ -28,7 +28,7 @@ export class GlobalVariableManager {
   };
 
   /**
-   * retail identifiers walk order from globalcat.2da
+   * identifiers walk order from globalcat.2da
    * (row index 0.. RowCount-1). ExportGlobalVars emits Cat and Val lists in this order.
    */
   static Catalog: GlobalVariableCatalogEntry[] = [];
@@ -70,7 +70,7 @@ export class GlobalVariableManager {
     }
   }
 
-  /** Catalog entries of a given type in retail identifier / globalcat row order. */
+  /** Catalog entries of a given type in identifier / globalcat row order. */
   public static getCatalogByType(type: GlobalVariableCatalogType): GlobalVariableCatalogEntry[] {
     return GlobalVariableManager.Catalog.filter((e) => e.type === type);
   }

@@ -9,7 +9,7 @@ import { BitWise } from "@/utility/BitWise";
 /**
  * EffectDeath class.
  *
- * Retail OnApplyDeath:
+ * effect apply:
  * plot → ignore; Min1HP → clamp to 1; else SetCurrentHitPoints(-11) + death pipeline.
  *
  * @file EffectDeath.ts
@@ -32,7 +32,7 @@ export class EffectDeath extends GameEffect {
 
     if(!this.object) return;
 
-    // Retail OnApplyDeath plot / Min1HP early-outs
+    // effect apply plot / Min1HP early-outs
     if((this.object as ModuleCreature).plot){
       return;
     }

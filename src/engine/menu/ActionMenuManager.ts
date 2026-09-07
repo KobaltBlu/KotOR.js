@@ -25,9 +25,9 @@ import {
 } from "@/engine/menu/action-menu-usable";
 import { shouldShowCounterSpellAction } from "@/combat/spell-cast-gates";
 
-/** Appearance racialtype 5 (droid) — retail global. */
+/** Appearance racialtype 5 (droid) — global. */
 const APPEARANCE_RACIALTYPE_DROID = 5;
-/** Appearance racialtype 6 — retail global. */
+/** Appearance racialtype 6 — global. */
 const APPEARANCE_RACIALTYPE_ALT = 6;
 
 /** Spell exclusion flags passed into GetMenuInfo (GetHostileForcePowers). */
@@ -95,7 +95,7 @@ const MINE_FORCE_SPELL_SHOCK = 0x2f;
  * ActionMenuManager class.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * Populates mipc personal/target action slots like retail
+ * Populates mipc personal/target action slots like 
  * {GetPersonalActions,GetTargetActions}.
  *
  * @file ActionMenuManager.ts
@@ -114,7 +114,7 @@ export class ActionMenuManager {
   static oTarget: ModuleObject;
   /**
    * When the look-at / selected target changes, slot 0 defaults to Attack
-   * (retail appends Attack after combat feats). Per-frame rebuilds must not
+   * (appends Attack after combat feats). Per-frame rebuilds must not
    * reset the player's cycled selection (Power Attack, Flurry, …).
    */
   static #preferDefaultAttack = false;
@@ -167,7 +167,7 @@ export class ActionMenuManager {
   }
 
   /**
-   * Retail GetCombatFeatsSkills → CheckFeat: one highest-owned feat per chain,
+   * GetCombatFeatsSkills → CheckFeat: one highest-owned feat per chain,
    * in the fixed menu order used by K1.
    */
   static getCombatMenuFeatIds(
@@ -192,7 +192,7 @@ export class ActionMenuManager {
     return !!(target && typeof (target as ModuleCreature).getAppearance === 'function');
   }
 
-  /** Retail GetHostileForcePowers tmp14 — exclusion bits for the current target. */
+  /** GetHostileForcePowers tmp14 — exclusion bits for the current target. */
   static getHostileTargetExclusionFlags(target: ModuleObject | undefined): number {
     if(!ActionMenuManager.#isCreatureLike(target)){
       return ForceMenuExclusion.NON_CREATURE;
@@ -207,12 +207,12 @@ export class ActionMenuManager {
     return ForceMenuExclusion.NONE;
   }
 
-  /** Retail: include when `(spell.exclusion & flags) == 0`. */
+  /** : include when `(spell.exclusion & flags) == 0`. */
   static spellPassesForceMenuExclusion(spell: TalentSpell, flags: number): boolean {
     return ((spell.exclusion | 0) & (flags | 0)) === 0;
   }
 
-  /** retail secondary_ranges used by GetMinSpellRange. */
+  /** secondary_ranges used by GetMinSpellRange. */
   static resolveForceMenuMinRange(rangeLetter: string): number {
     const key = (rangeLetter || '').toUpperCase();
     if(Object.prototype.hasOwnProperty.call(FORCE_MENU_MIN_RANGE_FALLBACK, key)){
@@ -222,7 +222,7 @@ export class ActionMenuManager {
   }
 
   /**
-   * Retail GetMenuInfo range gate: disable when secondary > 0 and
+   * GetMenuInfo range gate: disable when secondary > 0 and
    * distanceSq <= secondary² (too close). Max/primary range is not checked here.
    */
   static isWithinForceMenuMinRange(rangeLetter: string, distanceSq: number): boolean {
@@ -231,7 +231,7 @@ export class ActionMenuManager {
     return distanceSq > minRange * minRange;
   }
 
-  /** Retail forbid/require item-mask checks from GetMenuInfo. */
+  /** forbid/require item-mask checks from GetMenuInfo. */
   static passesForceItemMask(spell: TalentSpell, forceItemMask: number): boolean {
     const forbid = spell.forbiditemmask | 0;
     const require = spell.requireitemmask | 0;
@@ -268,7 +268,7 @@ export class ActionMenuManager {
   }
 
   /**
-   * Retail GetMenuInfo known-spell pass: filter by menu column + exclusion,
+   * GetMenuInfo known-spell pass: filter by menu column + exclusion,
    * keep highest FORCEPRIORITY per sort index, ascending sort order.
    */
   static buildForceMenuSpellList(
@@ -295,14 +295,14 @@ export class ActionMenuManager {
     return Array.from(bySort.values()).sort((a, b) => a.sortIndex - b.sortIndex);
   }
 
-  /** Retail caster appearance.racialtype == 5 → GetEquipmentForcePowers for hostile menu. */
+  /** caster appearance.racialtype == 5 → GetEquipmentForcePowers for hostile menu. */
   static isDroidForceMenuCaster(creature: ModuleCreature | undefined): boolean {
     if(!creature) return false;
     return creature.getAppearance()?.racialtype === APPEARANCE_RACIALTYPE_DROID;
   }
 
   /**
-   * Retail GetEquipmentForcePowers — hostile (category 1) powers from equipped items.
+   * GetEquipmentForcePowers — hostile (category 1) powers from equipped items.
    */
   static buildEquipmentForceMenuSpellList(
     creature: ModuleCreature,
@@ -331,7 +331,7 @@ export class ActionMenuManager {
     return list;
   }
 
-  /** Retail GetSelfForcePowers → personal slot 0. */
+  /** GetSelfForcePowers → personal slot 0. */
   static populateSelfForcePowers(){
     if(!ActionMenuManager.oPC) return;
     // GetMenuInfo returns empty while area restrict_mode != 0.
@@ -348,7 +348,7 @@ export class ActionMenuManager {
     for(let i = 0; i < entries.length; i++){
       const { spell } = entries[i];
       const cost = ActionMenuManager.oPC.getAdjustedForcePointCost(spell);
-      // Retail GetSelfForcePowers passes distanceSq = 0.0001
+      // GetSelfForcePowers passes distanceSq = 0.0001
       const enabled = ActionMenuManager.isForceMenuSpellEnabled(spell, {
         resource,
         cost,
@@ -365,7 +365,7 @@ export class ActionMenuManager {
     }
   }
 
-  /** Retail GetHostileForcePowers → target slot 1. */
+  /** GetHostileForcePowers → target slot 1. */
   static populateHostileForcePowers(){
     if(!ActionMenuManager.oPC || !ActionMenuManager.oTarget) return;
     if(ActionMenuManager.areaIsRestricted()) return;
@@ -419,13 +419,13 @@ export class ActionMenuManager {
     }
   }
 
-  /** Retail GetUsableItems(mask) for a personal slot. */
+  /** GetUsableItems(mask) for a personal slot. */
   static populateUsableItems(panelIndex: number, mask: number){
     if(!ActionMenuManager.oPC) return;
     const panel = ActionMenuManager.ActionPanels.selfPanels[panelIndex];
     if(!panel) return;
 
-    // Retail skips equipped bands/belt in restricted areas, but still scans
+    // skips equipped bands/belt in restricted areas, but still scans
     // inventory so plot items can pass IsLeaderUsableItem.
     if(!ActionMenuManager.areaIsRestricted()){
       const equipSlots: (keyof ModuleCreature['equipment'])[] = ['LEFTARMBAND', 'RIGHTARMBAND', 'BELT'];
@@ -458,7 +458,7 @@ export class ActionMenuManager {
     }
   }
 
-  /** Retail GetHostileItems — grenades on hostile creature/placeable target slot 2. */
+  /** GetHostileItems — grenades on hostile creature/placeable target slot 2. */
   static populateHostileItems(){
     if(!ActionMenuManager.oPC || !ActionMenuManager.oTarget || ActionMenuManager.areaIsRestricted()) return;
     const inventory = ActionMenuManager.oPC.getInventory() || [];
@@ -476,7 +476,7 @@ export class ActionMenuManager {
   }
 
   /**
-   * Retail GetTargetActions CounterSpell when the hostile target is mid-cast
+   * GetTargetActions CounterSpell when the hostile target is mid-cast
    * (SpellCastRound / live SpellCastInstance). Slot 1 (hostile Force panel).
    */
   static populateCounterSpell(){
@@ -507,7 +507,7 @@ export class ActionMenuManager {
   }
 
   /**
-   * Retail door/placeable GetUseItems → GetSpikeDetails(1):
+   * door/placeable GetUseItems → GetSpikeDetails(1):
    * security spikes after Security on locked targets (TSL).
    */
   static populateSecuritySpikes(target: ModuleObject){
@@ -527,7 +527,7 @@ export class ActionMenuManager {
   }
 
   /**
-   * Retail placeable GetUseItems: CastSpell + ItemTargeting == 2 (TSL).
+   * placeable GetUseItems: CastSpell + ItemTargeting == 2 (TSL).
    */
   static populatePlaceableUseItems(target: ModuleObject){
     if(!ActionMenuManager.oPC || !target) return;
@@ -546,7 +546,7 @@ export class ActionMenuManager {
   }
 
   /**
-   * Retail GetDoorInterfaceMines / GetPlaceableInterfaceMines → target slot 2.
+   * GetDoorInterfaceMines / GetPlaceableInterfaceMines → target slot 2.
    * Client pre-gate: trapFlag clear (door / placeable).
    */
   static populateDoorOrPlaceableMines(target: ModuleObject, plantStrRef: number = 0xbbd9){
@@ -582,7 +582,7 @@ export class ActionMenuManager {
   }
 
   /**
-   * Retail GetTargetActions slot 2 — one best mine-counter Force power.
+   * GetTargetActions slot 2 — one best mine-counter Force power.
    */
   static populateTrapMineForcePowers(trapType: number){
     if(!ActionMenuManager.oPC || !ActionMenuManager.oTarget) return;
@@ -627,7 +627,7 @@ export class ActionMenuManager {
     }));
   }
 
-  /** Retail GetBehaviors → personal slot 4 (TSL). */
+  /** GetBehaviors → personal slot 4 (TSL). */
   static populateBehaviors(){
     if(!ActionMenuManager.oPC || GameState.GameKey !== GameEngineType.TSL) return;
     const table = GameState.TwoDAManager?.datatables?.get?.('aiscripts');
@@ -636,7 +636,7 @@ export class ActionMenuManager {
     const panel = ActionMenuManager.ActionPanels.selfPanels[4];
     if(!panel) return;
 
-    // Retail clamps invalid AIState to Aggressive (9).
+    // clamps invalid AIState to Aggressive (9).
     let current = ActionMenuManager.oPC.aiState | 0;
     if(current !== 9 && current !== 0xb && current !== 0xc && current !== 0xd){
       current = 9;
@@ -683,7 +683,7 @@ export class ActionMenuManager {
     }
   }
 
-  /** Retail GetStances → personal slot 5 (TSL Jedi Forms via GetMenuInfo). */
+  /** GetStances → personal slot 5 (TSL Jedi Forms via GetMenuInfo). */
   static populateStances(){
     if(!ActionMenuManager.oPC || GameState.GameKey !== GameEngineType.TSL) return;
     // GetMenuInfo returns empty while restrict_mode != 0.
@@ -809,7 +809,7 @@ export class ActionMenuManager {
         }
       }else if(ActionMenuManager.oTarget instanceof GameState.Module.ModuleArea.ModuleDoor){
         const door = ActionMenuManager.oTarget;
-        // Early open/anim gate for Bash/DoorSaber (retail OPENED1/OPENED2 or open flag).
+        // Early open/anim gate for Bash/DoorSaber (OPENED1/OPENED2 or open flag).
         const doorOpen = door.isOpen();
 
         if(door.isLocked() && !doorOpen){
@@ -866,7 +866,7 @@ export class ActionMenuManager {
         ActionMenuManager.oTarget instanceof GameState.Module.ModuleArea.ModuleCreature &&
         ActionMenuManager.oTarget.isHostile(ActionMenuManager.oPC as ModuleObject)
       ){
-        // Retail GetTargetActions slot 0: GetCombatFeatsSkills then Attack.
+        // GetTargetActions slot 0: GetCombatFeatsSkills then Attack.
         if(!restricted){
           const featIds = ActionMenuManager.getCombatMenuFeatIds(
             id => ActionMenuManager.oPC.getHasFeat(id),
@@ -937,7 +937,7 @@ export class ActionMenuManager {
 
     }
 
-    // Retail GetPersonalActions slots 0–3 (+ TSL 4–5 Behaviors/Stances)
+    // GetPersonalActions slots 0–3 (+ TSL 4–5 Behaviors/Stances)
     ActionMenuManager.populateSelfForcePowers();
     ActionMenuManager.populateUsableItems(1, UsableItemMask.MEDICAL);
     ActionMenuManager.populateUsableItems(2, UsableItemMask.OTHER);
@@ -992,7 +992,7 @@ export class ActionMenuManager {
   }
 
   /**
-   * Retail player input: ActionManager(1) only when **not** already in combat
+   * player input: ActionManager(1) only when **not** already in combat
    * (HandlePlayerToServerInputMessage UseItem case 9 / CastSpell case 0x12).
    * Attack case 2 calls AddAttackActions with clear=0 so the combat-round
    * schedule appends — never wipe it here.
@@ -1026,12 +1026,12 @@ export class ActionMenuManager {
       return;
     }
 
-    // Retail: ActionManager(1) only when combat state is off.
+    // : ActionManager(1) only when combat state is off.
     if(!pc.combatData?.combatState){
       pc.clearAllActions(true);
     }
 
-    // Combat feats (Power Attack, Flurry, …) before basic Attack — retail
+    // Combat feats (Power Attack, Flurry, …) before basic Attack — 
     // SendPlayerToServerInput_Attack(targetId, featId).
     if(menuItem.talent instanceof TalentFeat){
       pc.attackCreature(target as ModuleCreature, menuItem.talent);
@@ -1090,14 +1090,14 @@ export class ActionMenuManager {
     const action = ActionMenuManager.ActionPanels.selfPanels[index].getSelectedAction();
     if(!action){ return; }
 
-    // Retail GetSelfForcePowers stamps the controlled creature's object id onto
+    // GetSelfForcePowers stamps the controlled creature's object id onto
     // every entry; ForceMenuAction casts at that id — never the look-at target.
     action.target = ActionMenuManager.oPC;
     ActionMenuManager.activateMenuItem(action, ActionMenuManager.oPC);
   }
 
   /**
-   * Inventory BTN_USEITEM — retail InstantUseItem (not animated UseItem).
+   * Inventory BTN_USEITEM — InstantUseItem (not animated UseItem).
    * Target is ignored; impact applies on the controlled PC.
    */
   static useInventoryItem(item: ModuleItem, _target?: ModuleObject){

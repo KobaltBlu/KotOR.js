@@ -91,7 +91,7 @@ export class ModuleAreaOfEffect extends ModuleObject {
   }
 
   /**
-   * Load shape/scripts from vfx_persistent.2da (retail LoadAreaEffect).
+   * Load shape/scripts from vfx_persistent.2da (LoadAreaEffect).
    */
   loadFromPersistentRow(
     rowId: number,
@@ -247,14 +247,14 @@ export class ModuleAreaOfEffect extends ModuleObject {
   }
 
   /**
-   * Retail AIUpdate — follow, occupants, 6s AoE heartbeat.
+   * AIUpdate — follow, occupants, 6s AoE heartbeat.
    */
   aiUpdate(delta = 0){
     if(this.destroyRequested || this.destroyed) return;
 
     super.aiUpdate(delta);
 
-    // Follow linked creature (retail circle + linked_to_object)
+    // Follow linked creature (circle + linked_to_object)
     if(
       this.shape !== AreaOfEffectShape.RECTANGLE &&
       this.linkedToObject &&
@@ -289,7 +289,7 @@ export class ModuleAreaOfEffect extends ModuleObject {
       if(party[i]) this.updateObjectInside(party[i]);
     }
 
-    // Heartbeat ~6s (retail AIUpdate > 5999ms); skip first tick
+    // Heartbeat ~6s (AIUpdate > 5999ms); skip first tick
     if(this.lastHeartBeatDay === 0 && this.lastHeartbeatTime === 0){
       this.lastHeartBeatDay = GameState.module.timeManager.pauseDay;
       this.lastHeartbeatTime = GameState.module.timeManager.pauseTime;

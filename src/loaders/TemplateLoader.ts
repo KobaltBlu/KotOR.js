@@ -58,42 +58,42 @@ export class TemplateLoader {
 
     // if(true){
 
-    //   let resKey = GameState.module.rim_s.getResource(args.ResRef.toLowerCase(), args.ResType);
-    //   if(resKey != null){
-    //     //console.log('Template Resource found');
-    //     GameState.module.rim_s.getResourceBuffer(resKey, (buffer) => {
-    //       if(args.onLoad != null)
-    //         args.onLoad(buffer);
-    //     });
+    // let resKey = GameState.module.rim_s.getResource(args.ResRef.toLowerCase, args.ResType);
+    // if(resKey != null){
+    // //console.log('Template Resource found');
+    // GameState.module.rim_s.getResourceBuffer(resKey, (buffer) => {
+    // if(args.onLoad != null)
+    // args.onLoad(buffer);
+    // });
 
-    //     return;
-    //   }
+    // return;
+    // }
 
-    //   resKey = BIFManager.GetBIFByName('templates').getResource(args.ResRef.toLowerCase(), args.ResType);
-    //   if(resKey != null){
-    //     //console.log('Template Resource found');
-    //     BIFManager.GetBIFByName('templates').getResourceBuffer(resKey, (buffer) => {
-    //       if(args.onLoad != null)
-    //         args.onLoad(buffer);
-    //     });
+    // resKey = BIFManager.GetBIFByName('templates').getResource(args.ResRef.toLowerCase, args.ResType);
+    // if(resKey != null){
+    // //console.log('Template Resource found');
+    // BIFManager.GetBIFByName('templates').getResourceBuffer(resKey, (buffer) => {
+    // if(args.onLoad != null)
+    // args.onLoad(buffer);
+    // });
 
-    //     return;
-    //   }
+    // return;
+    // }
 
-    //   resKey = ResourceLoader.getResource(args.ResType, args.ResRef.toLowerCase());
-    //   if(resKey){
-    //     if(!resKey.inArchive){
+    // resKey = ResourceLoader.getResource(args.ResType, args.ResRef.toLowerCase);
+    // if(resKey){
+    // if(!resKey.inArchive){
           
-    //     }else{
-
-    //     }
-    //   }
-      
-    //   if(args.onFail != null)
-    //     args.onFail();
     // }else{
-    //   if(args.onFail != null)
-    //     args.onFail();
+
+    // }
+    // }
+      
+    // if(args.onFail != null)
+    // args.onFail;
+    // }else{
+    // if(args.onFail != null)
+    // args.onFail;
     // }
   }
 

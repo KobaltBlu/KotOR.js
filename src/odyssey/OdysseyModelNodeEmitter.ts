@@ -33,7 +33,7 @@ export class OdysseyModelNodeEmitter extends OdysseyModelNode {
    * Not referenced in K1 PartEmitter RenderStandard.
    */
   frameBlending: number;
-  /** 32-char depth texture resref; retail stores "NULL" when unused. */
+  /** 32-char depth texture resref; stores "NULL" when unused. */
   depthTextureName: string = '';
   nFlags: number;
   branchCount: number;

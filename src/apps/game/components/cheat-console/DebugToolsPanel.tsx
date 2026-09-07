@@ -323,7 +323,7 @@ export const DebugToolsPanel: React.FC = () => {
                   active={shipBuild}
                   onClick={onToggleShipBuild}
                   className="flex-1"
-                  title="When on (default), NWScript ShipBuild() returns TRUE (retail shipping). Off = debug-capable build."
+                  title="When on (default), NWScript ShipBuild() returns TRUE (shipping build). Off = debug-capable build."
                 >
                   Ship Build
                 </ConsoleToggle>
@@ -371,7 +371,7 @@ export const DebugToolsPanel: React.FC = () => {
               active={floatyAllAttackers}
               onClick={onToggleFloatyAllAttackers}
               className="flex-1"
-              title="When on, combat floaties show for any attacker (pre-retail). Off = player attacker only."
+              title="When on, combat floaties show for any attacker (legacy). Off = player attacker only."
             >
               Floaty All Attackers
             </ConsoleToggle>

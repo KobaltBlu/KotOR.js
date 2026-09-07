@@ -5,20 +5,20 @@ import { GameState } from "@/GameState";
 import { clearLineOfSight } from "@/engine/pathfinding/clear-line-of-sight";
 
 /**
- * Retail CountVisibleToPlayers
- * used by ComputeNonVisibleLocation.
+ * CountVisibleToPlayers
+ * used by find non-visible location.
  *
  * Counts player creatures with ClearLineOfSight to `point`, early-out at `maxCount`
- * (retail starts at 0x60 and shrinks to the best score found so far).
+ * (starts at 0x60 and shrinks to the best score found so far).
  *
  * Pass AF: dist² < 900 (30 m), eye Z +1.5 on both ends before LOS.
  *
  * @file count-visible-to-players.ts
  */
 
-/** Retail squared range gate before LOS. */
+/** squared range gate before LOS. */
 export const COUNT_VISIBLE_RANGE_SQ = 900.0;
-/** Retail eye-height offset applied to both endpoints before ClearLineOfSight. */
+/** eye-height offset applied to both endpoints before ClearLineOfSight. */
 export const COUNT_VISIBLE_EYE_Z = 1.5;
 
 const _from = new THREE.Vector3();
@@ -77,7 +77,7 @@ export function countVisibleToPlayers(
     const dy = point.y - mp.y;
     const dz = point.z - mp.z;
     const distSq = dx * dx + dy * dy + dz * dz;
-    // Retail: fVar1 < 900.0 (strict)
+    // : fVar1 < 900.0 (strict)
     if(!(distSq < COUNT_VISIBLE_RANGE_SQ)) continue;
 
     _from.set(mp.x, mp.y, mp.z + COUNT_VISIBLE_EYE_Z);

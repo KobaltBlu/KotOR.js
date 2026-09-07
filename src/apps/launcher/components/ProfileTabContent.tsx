@@ -35,14 +35,14 @@ export const ProfileTabContent = forwardRef(function(props: ProfileTabContentPro
   
 
   let onComponentResize = () => {
-    // updateScroll();
-    // updateScrollButtons();
+    // updateScroll;
+    // updateScrollButtons;
   }
 
   useEffect(() => {
     window.addEventListener('resize', onComponentResize);
-    // updateScroll();
-    // updateScrollButtons();
+    // updateScroll;
+    // updateScrollButtons;
     return () => {
       window.removeEventListener('resize', onComponentResize);
     };

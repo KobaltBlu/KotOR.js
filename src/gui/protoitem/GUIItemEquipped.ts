@@ -15,7 +15,7 @@ const STR_EQUIPPED = 32346;
 export class GUIItemEquipped {
   node: ModuleItem;
   equipped: boolean = true;
-  /** Retail in-game item entry canUse: 1 = currently equipped. */
+  /** in-game item entry canUse: 1 = currently equipped. */
   equipCanUse: number = 1;
   constructor(node: ModuleItem){
     this.node = node;

@@ -22,7 +22,7 @@ export interface TLKSearchResult {
  * - Numeric-only query returns the entry at that string ID directly.
  * - Otherwise performs a linear text scan with optional case folding and limit.
  * - Uses cached lowercase haystacks on each {@link TLKString} to avoid per-scan
- *   `getDisplayText()` regex / `toLowerCase()` allocations.
+ * `getDisplayText` regex / `toLowerCase` allocations.
  */
 export function searchTLKStrings(
   strings: TLKString[],

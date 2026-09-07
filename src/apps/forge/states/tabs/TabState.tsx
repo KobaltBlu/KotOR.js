@@ -76,7 +76,7 @@ export class TabState extends EventListenerModel {
 
   /**
    * Push the current state onto the undo stack before making a change.
-   * Subclasses must override `captureUndoState()` to return the current
+   * Subclasses must override `captureUndoState` to return the current
    * snapshot. Clears the redo stack on every new change.
    */
   captureUndoSnapshot(): void {
@@ -165,7 +165,7 @@ export class TabState extends EventListenerModel {
    * Return `true` if the base class should handle Ctrl+Z / Ctrl+Y for this
    * key event. Override to return `false` when another element (e.g. Monaco
    * editor) should handle undo/redo natively for that event.
-   * Default: returns `true` only if `captureUndoState()` is overridden.
+   * Default: returns `true` only if `captureUndoState` is overridden.
    */
   protected shouldHandleUndoKeyboard(_e: KeyboardEvent): boolean {
     return this.captureUndoState() !== undefined || this.undoStack.length > 0 || this.redoStack.length > 0;

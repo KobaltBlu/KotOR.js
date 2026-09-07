@@ -1,5 +1,5 @@
 /**
- * Unwired retail client/server messaging port (CSWMessage / CSWSMessage / CSWCMessage).
+ * Unwired client/server messaging (OdysseyMessage / OdysseyServerMessage / OdysseyClientMessage).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -8,9 +8,9 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-export * from "@/server/message/CSWMessage";
-export * from "@/server/message/CSWSMessage";
-export * from "@/server/message/CSWCMessage";
+export * from "@/server/message/OdysseyMessage";
+export * from "@/server/message/OdysseyServerMessage";
+export * from "@/server/message/OdysseyClientMessage";
 export * from "@/server/message/transport";
 export * from "@/server/message/types";
 export * from "@/server/message/loc-string";

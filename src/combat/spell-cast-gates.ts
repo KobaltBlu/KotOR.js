@@ -3,7 +3,7 @@ import type { TalentSpell } from "@/talents/TalentSpell";
 import { canTargetItemCastByPerception } from "@/combat/item-property-uses";
 
 /**
- * Retail cast-spell action / AddCastSpellActions spell gates.
+ * cast-spell action / AddCastSpellActions spell gates.
  *
  * @file spell-cast-gates.ts
  */
@@ -46,7 +46,7 @@ export function passesSpellKnownGate(
 }
 
 /**
- * Retail AddCastSpellActions visibility gate — same bit rules as ItemCastSpell
+ * AddCastSpellActions visibility gate — same bit rules as ItemCastSpell
  * (non-party creatures).
  */
 export function canTargetSpellCastByPerception(
@@ -58,7 +58,7 @@ export function canTargetSpellCastByPerception(
 
 /**
  * Whether the hostile action menu should offer CounterSpell for this target.
- * Retail GetTargetActions: mid-cast (SpellCastRound / live SpellCastInstance).
+ * GetTargetActions: mid-cast (SpellCastRound / live SpellCastInstance).
  */
 export function shouldShowCounterSpellAction(opts: {
   restricted?: boolean;

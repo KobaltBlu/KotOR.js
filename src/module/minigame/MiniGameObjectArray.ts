@@ -1,5 +1,5 @@
 /**
- * retail
+ * 
  * client-global 255-slot registry of live minigame objects (followers + obstacles).
  * Ctor claims findNextEmptyIndex; dtor clears the slot.
  * GetMiniGameObjectByName scans objects[0..0xfe] by name.
@@ -12,13 +12,13 @@
 import type { ModuleObject } from '@/module/ModuleObject';
 
 export class MiniGameObjectArray {
-  /** Retail loop bound — 0xff slots (indices 0..254). */
+  /** loop bound — 0xff slots (indices 0..254). */
   static readonly CAPACITY = 0xff;
-  /** Retail empty / invalid mgo_index. */
+  /** empty / invalid mgo_index. */
   static readonly INVALID_INDEX = 0xff;
 
   static objects: (ModuleObject | undefined)[] = new Array(MiniGameObjectArray.CAPACITY);
-  /** Retail findNextEmptyIndex cursor (wraps at 0xff). */
+  /** findNextEmptyIndex cursor (wraps at 0xff). */
   static index = 0;
 
   static normalizeName(name: string | undefined | null): string {
@@ -33,7 +33,7 @@ export class MiniGameObjectArray {
   }
 
   /**
-   * Retail findNextEmptyIndex
+   * findNextEmptyIndex
    * walk from cursor to first empty slot; wrap; return 0xff if full.
    */
   static findNextEmptyIndex(): number {
@@ -56,9 +56,9 @@ export class MiniGameObjectArray {
   }
 
   /**
-   * retail ctor registration.
+   * ctor registration.
    * Stores slot on `object.mgoIndex` and syncs `object.id` for NWScript
-   * StackPushObject / StoreState (retail pushes mgo_index).
+   * StackPushObject / StoreState (pushes mgo_index).
    */
   static register(object: ModuleObject | undefined): number {
     if(!object){ return MiniGameObjectArray.INVALID_INDEX; }
@@ -77,7 +77,7 @@ export class MiniGameObjectArray {
     }
     MiniGameObjectArray.objects[slot] = object;
     object.mgoIndex = slot;
-    // Retail StackPushObject(VirtualMachine, mgo_index) — NWScript object id == slot.
+    // StackPushObject(VirtualMachine, mgo_index) — NWScript object id == slot.
     object.id = slot;
     MiniGameObjectArray.index = slot + 1;
     if(MiniGameObjectArray.index === MiniGameObjectArray.CAPACITY){
@@ -86,7 +86,7 @@ export class MiniGameObjectArray {
     return slot;
   }
 
-  /** Retail ~retail — clear objects[mgo_index]. */
+  /** ~ — clear objects[mgo_index]. */
   static unregister(object: ModuleObject | undefined): void {
     if(!object){ return; }
     const slot = object.mgoIndex;
@@ -99,14 +99,14 @@ export class MiniGameObjectArray {
     object.mgoIndex = MiniGameObjectArray.INVALID_INDEX;
   }
 
-  /** Retail GetMiniGameObject — by index. */
+  /** GetMiniGameObject — by index. */
   static get(index: number): ModuleObject | undefined {
     if(index < 0 || index >= MiniGameObjectArray.CAPACITY){ return undefined; }
     return MiniGameObjectArray.objects[index];
   }
 
   /**
-   * Retail GetMiniGameObjectByName
+   * GetMiniGameObjectByName
    * linear scan of live slots; name compare is case-insensitive.
    */
   static getByName(name: string | undefined | null): ModuleObject | undefined {

@@ -26,8 +26,8 @@ export class PositionController extends OdysseyController {
     if(typeof manager.modelNode.controllers.get(OdysseyModelControllerType.Position) != 'undefined'){
 
       // if(manager.trans && this.frameCount > 1){
-      //   manager.modelNode.transitionState.position.copy(manager.modelNode.position);
-      //   anim._position.copy(manager.modelNode.transitionState.position);
+      // manager.modelNode.transitionState.position.copy(manager.modelNode.position);
+      // anim._position.copy(manager.modelNode.transitionState.position);
       // }else{
         anim._position.copy(manager.modelNode.controllers.get(OdysseyModelControllerType.Position).data[0] as any);
       // }
@@ -38,7 +38,7 @@ export class PositionController extends OdysseyController {
 
     }
     //if(manager.trans && this.frameCount > 1){
-    //  manager.modelNode.position.lerp(anim._position.add(data), anim.data.delta);
+    // manager.modelNode.position.lerp(anim._position.add(data), anim.data.delta);
     //}else{
       manager.modelNode.position.copy(anim._position.add(data as any));
     //}
@@ -47,7 +47,7 @@ export class PositionController extends OdysseyController {
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
     //if(last.x == next.x && last.y == next.y && last.z == next.z)
-    //  break;
+    // break;
 
     //Cache the position controller
     if(manager.modelNode.controllerHelpers.hasPosition === undefined){
@@ -83,8 +83,8 @@ export class PositionController extends OdysseyController {
         manager._vec3.copy(next.bezier.getPoint( next.lastFrame ? 0 : 0.5 )).add(anim._position);
         manager.modelNode.position.lerp(manager._vec3, fl);
       //}else{
-      //  manager._vec3.copy(next.bezier.getPoint(0.5 * fl).add(anim._position));
-      //  manager.modelNode.position.lerp(manager._vec3, fl);
+      // manager._vec3.copy(next.bezier.getPoint(0.5 * fl).add(anim._position));
+      // manager.modelNode.position.lerp(manager._vec3, fl);
       //}
     }else if(next.isBezier){
       //Last point
@@ -101,7 +101,7 @@ export class PositionController extends OdysseyController {
     }else{
       
       //if(manager.trans && lastFrame == 0){
-      //  manager.modelNode.position.copy(manager.modelNode.transitionState.position);
+      // manager.modelNode.position.copy(manager.modelNode.transitionState.position);
       //}else{
         manager._vec3.copy(last as any).add(anim._position);
         manager.modelNode.position.copy(manager._vec3);
@@ -111,8 +111,8 @@ export class PositionController extends OdysseyController {
       manager._vec3.add(anim._position);
 
       // if(anim.data.elapsed > anim.transition){
-      //   manager.modelNode.position.copy(last);
-      //   manager.modelNode.position.add(anim._position);
+      // manager.modelNode.position.copy(last);
+      // manager.modelNode.position.add(anim._position);
       // }
       manager.modelNode.position.lerp(manager._vec3, fl);
     }

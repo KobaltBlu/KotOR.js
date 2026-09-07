@@ -7,7 +7,7 @@ import { Module } from "@/module";
 import { NWScript } from "@/nwscript/NWScript";
 
 /**
- * retail CSWGuiInGameOptions::OnEnterSlot description TLKs (K1).
+ * description TLKs (K1).
  */
 const TLK_DESC_LOADGAME = 0xa53c;
 const TLK_DESC_SAVEGAME = 0xa53d;

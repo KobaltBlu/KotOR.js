@@ -1,7 +1,7 @@
 import * as THREE from "three";
 
 /**
- * Retail-aligned CWalkHitInfo helpers (NoCreaturesOnLine / NoNonWalkPolys).
+ * engine-aligned CWalkHitInfo helpers (NoCreaturesOnLine / NoNonWalkPolys).
  *
  * @file walk-hit-info.ts
  */

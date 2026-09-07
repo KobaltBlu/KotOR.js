@@ -142,7 +142,7 @@ export class MenuEquipment extends K1_MenuEquipment {
       });
 
       this.LB_ITEMS.setProtoBuilder(GUIInventoryItem);
-      // Retail leaves GFF PADDING (equip_p.gui LB_ITEMS); do not force 2.
+      // leaves GFF PADDING (equip_p.gui LB_ITEMS); do not force 2.
       this.LB_ITEMS.onSelected = (item: ModuleItem | any) => {
         this.updateSelected(item);
       };
@@ -190,7 +190,7 @@ export class MenuEquipment extends K1_MenuEquipment {
   }
 
   /**
-   * Retail PerformToggleEquip / BTN_SWAPWEAPONS — swap config 1 ↔ 2 without destroying items.
+   * PerformToggleEquip / BTN_SWAPWEAPONS — swap config 1 ↔ 2 without destroying items.
    */
   private async swapWeaponConfigs() {
     const currentPC = this.getActiveCreature();
@@ -437,7 +437,7 @@ export class MenuEquipment extends K1_MenuEquipment {
     let locked = npc.creatureAppearance?.equipslotslocked ?? 0;
     if(locked === -1) return false;
 
-    // Retail UpdateSlotLocks: locking primary hand also locks secondary config.
+    // UpdateSlotLocks: locking primary hand also locks secondary config.
     if(slot === ModuleCreatureArmorSlot.LEFTHAND2 && (locked & ModuleCreatureArmorSlot.LEFTHAND)){
       return true;
     }

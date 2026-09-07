@@ -4,7 +4,7 @@ import { MainMovies as K1_MainMovies, GUIMovieItem } from "@/game/kotor/menu/Mai
 /**
  * MainMovies class (TSL).
  *
- * retail (titlemovie_p) — no hardcoded credits row;
+ * (titlemovie_p) — no hardcoded credits row;
  * LBL_UNLOCKED_VALUE = unlocked / movies.2da RowCount.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -58,7 +58,7 @@ export class MainMovies extends K1_MainMovies {
   }
 
   protected onMovieListUpdated(): void {
-    // Retail Format("%d / %d", unlockedCount, movies.2da.RowCount)
+    // Format("%d / %d", unlockedCount, movies.2da.RowCount)
     const unlocked = this.movieList.length;
     const total = this.moviesTableRowCount;
     this.LBL_UNLOCKED_VALUE?.setText(`${unlocked} / ${total}`);

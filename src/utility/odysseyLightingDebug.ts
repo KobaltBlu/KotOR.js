@@ -8,12 +8,12 @@ import {
   ODYSSEY_SHADOW_MAP_DEPTH_BIAS,
   ODYSSEY_SHADOW_MAP_LIGHT_BIAS,
 } from '@/utility/odysseyShadowMap';
-import { RETAIL_SHADOW_MIN_VERTEX_COLOR } from '@/utility/retailLighting';
+import { ODYSSEY_SHADOW_MIN_VERTEX_COLOR } from '@/utility/odysseyLighting';
 
 export interface IOdysseyLightingDebugValues {
-  /** Multiplier on retail opacity for local lamps. */
+  /** Multiplier on opacity for local lamps. */
   strengthScaleLocal: number;
-  /** Multiplier on retail opacity for area/sun lights. */
+  /** Multiplier on opacity for area/sun lights. */
   strengthScaleDistant: number;
   /** Soft ON: local UV tap spacing (texels). */
   softTexelSpreadLocal: number;
@@ -41,7 +41,7 @@ export interface IOdysseyLightingDebugValues {
   slopeBias: number;
   /** Three.js LightShadow.bias for depth pass. */
   lightBias: number;
-  /** ProjectDynamicShadow darkness floor (0.25 retail). */
+  /** ProjectDynamicShadow darkness floor (0.25). */
   minVertexColor: number;
   /** Soft sticky: challenger hold time (seconds). */
   softStickyHoldSec: number;
@@ -69,7 +69,7 @@ export const ODYSSEY_LIGHTING_DEBUG_DEFAULTS: Readonly<IOdysseyLightingDebugValu
   constantBias: ODYSSEY_SHADOW_MAP_DEPTH_BIAS,
   slopeBias: 0.001,
   lightBias: ODYSSEY_SHADOW_MAP_LIGHT_BIAS,
-  minVertexColor: RETAIL_SHADOW_MIN_VERTEX_COLOR,
+  minVertexColor: ODYSSEY_SHADOW_MIN_VERTEX_COLOR,
   softStickyHoldSec: 0.3,
   softStickyScoreMargin: 0.08,
   softStickyInstantMargin: 0.25,

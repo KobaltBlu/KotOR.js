@@ -31,21 +31,21 @@ const _faceBoxScratch = new THREE.Box3();
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class OdysseyWalkMesh {
-  // static SURFACEMATERIALS: SurfaceMaterial[] = [];
+  // static SURFACEMATERIALS: SurfaceMaterial =;
   static TILECOLORS: TileColor[] = [];
   name: string;
   moduleObject: ModuleObject;
   header: any = { };
   /**
-   * Retail relative_use_positions[0] —
+   * relative_use_positions[0] —
    * loaded by LoadMeshBinary into relative_use_position_1.
    * Used by GetNearestActionPoint.
    */
   relativeUsePosition1: THREE.Vector3 = new THREE.Vector3();
-  /** Retail relative_use_positions[1] → relative_use_position_2. */
+  /** relative_use_positions[1] → relative_use_position_2. */
   relativeUsePosition2: THREE.Vector3 = new THREE.Vector3();
   /**
-   * Retail absolute_use_positions[0/1].
+   * absolute_use_positions[0/1].
    * Present in the 136-byte header; LoadMeshBinary does not copy these into
    * the collision mesh (only the relative pair is used at runtime).
    */
@@ -215,8 +215,8 @@ export class OdysseyWalkMesh {
 
     for(let i = 0; i < this.aabbNodes.length; i++){
       let node = this.aabbNodes[i];
-      //node.boxHelper = new THREE.Box3Helper( node.box, 0xffff00 );
-      //this.aabbGroup.add( node.boxHelper );
+      //node.boxHelper = new THREE.Box3Helper(node.box, 0xffff00);
+      //this.aabbGroup.add(node.boxHelper);
 
       node.face = this.faces[node.faceIdx];
       node.leftNode = this.aabbNodes[node.leftNodeOffset];
@@ -521,12 +521,12 @@ export class OdysseyWalkMesh {
   }
 
   readHeader(){
-    // Retail walkmesh header (size 0x88 = 136) —
+    // walkmesh header (size 0x88 = 136) —
     // written by SaveBinaryMesh, read by LoadMeshBinary.
     return {
       fileType: this.wokReader.readChars(4),
       version: this.wokReader.readChars(4),
-      // Retail name: world_coords (LocalToWorld treats non-zero as already-world)
+      // name: world_coords (LocalToWorld treats non-zero as already-world)
       walkMeshType: this.wokReader.readUInt32(),
       relativeUsePosition1: new THREE.Vector3(this.wokReader.readSingle(), this.wokReader.readSingle(), this.wokReader.readSingle()),
       relativeUsePosition2: new THREE.Vector3(this.wokReader.readSingle(), this.wokReader.readSingle(), this.wokReader.readSingle()),
@@ -600,7 +600,7 @@ export class OdysseyWalkMesh {
 
   /**
    * World-space relative use/action point —
-   * retail LocalToWorld of relative_use_position_1/2.
+   * LocalToWorld of relative_use_position_1/2.
    * Returns undefined when the local vector is zero (GetNearestActionPoint fallback).
    *
    * Baked area PWK/DWK use non-identity mat4; parented/spawned placeables (bodybags)
@@ -927,7 +927,7 @@ export class OdysseyWalkMesh {
 
   /**
    * Set a face's walk index and update mesh color in real time (for editor painting).
-   * Does not rebuild adjacency; call rebuild() before export if needed.
+   * Does not rebuild adjacency; call rebuild before export if needed.
    */
   setFaceWalkIndex(faceIndex: number, walkIndex: number): void {
     if (faceIndex < 0 || faceIndex >= this.faces.length) return;
@@ -1272,7 +1272,7 @@ export class OdysseyWalkMesh {
     const edgeList: WalkmeshEdge[] = [];
     for(const edge of this.edges.values()){
       if(!edge?.line) continue;
-      // Ensure cached box is current (edges may be queried before update()).
+      // Ensure cached box is current (edges may be queried before update).
       if(edge.box.isEmpty()){
         edge.box.expandByPoint(edge.line.start);
         edge.box.expandByPoint(edge.line.end);

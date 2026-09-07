@@ -1,5 +1,5 @@
 /**
- * Retail CSWSModule tag lookup table helpers —
+ * module tag lookup table helpers —
  * FindObjectByTagOrdinal / AddObjectToLookupTable.
  * @jest-environment node
  */
@@ -21,7 +21,7 @@ import {
   type TagLookupNode,
 } from "@/managers/ModuleObjectManager";
 
-describe("tag-lookup-table (retail CSWSModule)", () => {
+describe("tag-lookup-table (engine module)", () => {
   test("inserts equal tags after the existing equal-tag run", () => {
     const table: TagLookupNode[] = [];
     ModuleObjectManager.addObjectToLookupTable(table, "b", 2);

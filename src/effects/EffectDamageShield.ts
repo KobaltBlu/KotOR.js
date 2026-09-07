@@ -2,7 +2,7 @@ import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 
 /**
- * EffectDamageShield — no dedicated OnApply in retail; resolved in ResolveDamageShields.
+ * EffectDamageShield — no dedicated OnApply in; resolved in ResolveDamageShields.
  * int[0] flat amount, int[1] DAMAGE_BONUS dice code, int[2] DAMAGE_TYPE_* flags.
  *
  * @file EffectDamageShield.ts

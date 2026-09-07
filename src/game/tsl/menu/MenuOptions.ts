@@ -7,7 +7,7 @@ import { NWScript } from "@/nwscript/NWScript";
 import { MenuOptions as K1_MenuOptions } from "@/game/kotor/KOTOR";
 
 /**
- * retail CSWGuiInGameOptions::OnEnterSlot description TLKs (TSL).
+ * description TLKs (TSL).
  */
 const TLK_DESC_LOADGAME = 0xa53c;
 const TLK_DESC_SAVEGAME = 0xa53d;

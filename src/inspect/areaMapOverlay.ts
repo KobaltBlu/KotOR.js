@@ -79,7 +79,7 @@ export function worldToOverlayMapPixels(
 
 /**
  * Continuous map pixels (no trunc) for Dev Tools overlay — same scale/offset as
- * retail GetMapPixelFromWorldCoord, but without quantizing MapPt corners or the result.
+ * GetMapPixelFromWorldCoord, but without quantizing MapPt corners or the result.
  * Better pin-on-art alignment when MapPts are FLOAT UVs.
  */
 export function worldToOverlayMapPoint(

@@ -8,7 +8,7 @@ import type { ModuleAreaOfEffect } from "@/module/ModuleAreaOfEffect";
 import type EngineLocation from "@/engine/EngineLocation";
 
 /**
- * EffectAreaOfEffect — retail OnApplyAreaOfEffect /
+ * EffectAreaOfEffect — effect apply /
  * location path via ApplyEffect.
  *
  * int[0] = vfx_persistent row; string[0..2] = OnEnter / Heartbeat / OnExit overrides;

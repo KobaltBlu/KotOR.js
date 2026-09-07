@@ -28,7 +28,7 @@ export interface EditorFileReadResponse {
  * **Output:** Call {@link EditorFile.toReferenceURI} for stable equality and `.forge/settings.json` `open_files`.
  * **Input:** Prefer {@link EditorFile.fromReference} / {@link EditorFile.revive}.
  *
- * **`getPath`** returns a shorthand (bare relative fragment or legacy `archive?res.ext`). Use `toReferenceURI()` for persistence and dedupe.
+ * **`getPath`** returns a shorthand (bare relative fragment or legacy `archive?res.ext`). Use `toReferenceURI` for persistence and dedupe.
  */
 export class EditorFile extends EventListenerModel {
 
@@ -124,7 +124,7 @@ export class EditorFile extends EventListenerModel {
     }, options);
 
     // Captured before the reskey/ext setters cross-trample each other; used as
-    // a last-resort fallback so non-engine extensions (tsv, bat, ps1, ...) are
+    // a last-resort fallback so non-engine extensions (tsv, bat, ps1,...) are
     // not lost when ResourceTypes has no entry for them.
     const rawOptionsExt = typeof options.ext === 'string' && options.ext.length
       ? options.ext.toLowerCase()

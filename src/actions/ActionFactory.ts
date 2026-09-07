@@ -435,7 +435,7 @@ export class ActionFactory {
     move.setParameter(7, ActionParameterType.INT, 0);
     move.setParameter(8, ActionParameterType.FLOAT, 30.0);
 
-    // Retail front-queue order: CounterSpell, CheckMoveToObjectRadius, MoveToPoint
+    // front-queue order: CounterSpell, CheckMoveToObjectRadius, MoveToPoint
     creature.actionQueue.addFront(counter);
     creature.actionQueue.addFront(check);
     creature.actionQueue.addFront(move);

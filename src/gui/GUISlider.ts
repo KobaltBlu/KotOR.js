@@ -11,7 +11,7 @@ import type { GameMenu } from "@/gui/GameMenu";
 import { GUIControlType } from "@/enums/gui/GUIControlType";
 import { asExtentInt, hitCheckMouseLocal, truncDiv } from "@/gui/GUICoord";
 
-/** Retail HitCheckSlider result codes. */
+/** HitCheckSlider result codes. */
 export enum SliderHit {
   MISS = 0,
   THUMB = 1,
@@ -151,7 +151,7 @@ export class GUISlider extends GUIControl{
   }
 
   /**
-   * Retail HitCheckSlider.
+   * HitCheckSlider.
    * Thumb (1) / before (2) / after (3) / miss (0) in panel-local ints.
    * Axis: vertical when extent.width < extent.height.
    */

@@ -1,20 +1,20 @@
 import { describe, expect, test } from '@jest/globals';
 import {
   FrameBufferModBit,
-  RetailVisualizePassDefaults,
-  RETAIL_BLOOM_FILTER_MULTIPLIER,
-  RETAIL_BLOOM_KERNEL_5X5,
+  OdysseyVisualizePassDefaults,
+  ODYSSEY_BLOOM_FILTER_MULTIPLIER,
+  ODYSSEY_BLOOM_KERNEL_5X5,
   resolveAlwaysOnFrameBufferPasses,
   resolveSpeedBlurPass,
   isMotionBlurProgFX,
   MOTION_BLUR_PROGFX_ENABLE,
-  retailOverbrightenCurve,
+  odysseyOverbrightenCurve,
 } from '@/shaders/pass/FrameBufferEffectGates';
 
 describe('FrameBufferEffectGates', () => {
   test('shipping visualizePass defaults leave overbrighten off and convolution on', () => {
-    expect(RetailVisualizePassDefaults.overbrighten).toBe(false);
-    expect(RetailVisualizePassDefaults.convolution).toBe(true);
+    expect(OdysseyVisualizePassDefaults.overbrighten).toBe(false);
+    expect(OdysseyVisualizePassDefaults.convolution).toBe(true);
   });
 
   test('dispatcher mask includes overbrighten bit even when visualize gate is off', () => {
@@ -24,7 +24,7 @@ describe('FrameBufferEffectGates', () => {
     expect(0x1f & FrameBufferModBit.Convolution).toBeTruthy();
   });
 
-  test('resolveAlwaysOnFrameBufferPasses matches retail shipping in a room', () => {
+  test('resolveAlwaysOnFrameBufferPasses matches shipping build in a room', () => {
     const on = resolveAlwaysOnFrameBufferPasses({
       frameBufferIniEnabled: true,
       roomedArea: true,
@@ -62,20 +62,20 @@ describe('FrameBufferEffectGates', () => {
   });
 
   test('overbrighten curve crushes midtones (why always-on looked dark)', () => {
-    expect(retailOverbrightenCurve(0)).toBeCloseTo(0);
-    expect(retailOverbrightenCurve(0.25)).toBeCloseTo(0.125);
-    expect(retailOverbrightenCurve(0.4)).toBeCloseTo(0.32);
-    expect(retailOverbrightenCurve(0.5)).toBeCloseTo(0.5);
-    expect(retailOverbrightenCurve(1)).toBeCloseTo(Math.sqrt(0.25) + 0.5);
+    expect(odysseyOverbrightenCurve(0)).toBeCloseTo(0);
+    expect(odysseyOverbrightenCurve(0.25)).toBeCloseTo(0.125);
+    expect(odysseyOverbrightenCurve(0.4)).toBeCloseTo(0.32);
+    expect(odysseyOverbrightenCurve(0.5)).toBeCloseTo(0.5);
+    expect(odysseyOverbrightenCurve(1)).toBeCloseTo(Math.sqrt(0.25) + 0.5);
   });
 
-  test('retail bloom multiplier and 5x5 kernel constants', () => {
-    expect(RETAIL_BLOOM_FILTER_MULTIPLIER).toBeCloseTo(0.35);
-    expect(RETAIL_BLOOM_KERNEL_5X5).toHaveLength(25);
-    expect(RETAIL_BLOOM_KERNEL_5X5[12]).toBeCloseTo(0.67); // center
-    expect(RETAIL_BLOOM_KERNEL_5X5[0]).toBeCloseTo(0.12);
-    expect(RETAIL_BLOOM_KERNEL_5X5[24]).toBeCloseTo(0.12);
-    const kernelSum = RETAIL_BLOOM_KERNEL_5X5.reduce((a, b) => a + b, 0);
+  test('engine bloom multiplier and 5x5 kernel constants', () => {
+    expect(ODYSSEY_BLOOM_FILTER_MULTIPLIER).toBeCloseTo(0.35);
+    expect(ODYSSEY_BLOOM_KERNEL_5X5).toHaveLength(25);
+    expect(ODYSSEY_BLOOM_KERNEL_5X5[12]).toBeCloseTo(0.67); // center
+    expect(ODYSSEY_BLOOM_KERNEL_5X5[0]).toBeCloseTo(0.12);
+    expect(ODYSSEY_BLOOM_KERNEL_5X5[24]).toBeCloseTo(0.12);
+    const kernelSum = ODYSSEY_BLOOM_KERNEL_5X5.reduce((a, b) => a + b, 0);
     expect(kernelSum).toBeCloseTo(8.59, 2);
   });
 

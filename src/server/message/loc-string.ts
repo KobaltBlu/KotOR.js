@@ -1,6 +1,6 @@
 /**
- * LocString wire helpers for CSWSMessage / CSWCMessage.
- * Retail WriteCExoLocStringServer / ReadCExoLocStringClient.
+ * LocString wire helpers for OdysseyServerMessage / OdysseyClientMessage.
+ * WriteCExoLocStringServer / ReadCExoLocStringClient.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -9,11 +9,11 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import type { CSWMessage } from "@/server/message/CSWMessage";
+import type { OdysseyMessage } from "@/server/message/OdysseyMessage";
 import type { MessageLocString } from "@/server/message/types";
 
-/** Simplified LocString writer matching the two wire forms retail emits. */
-export function writeLocString(msg: CSWMessage, value: MessageLocString): void {
+/** Simplified LocString writer matching the two wire forms emits. */
+export function writeLocString(msg: OdysseyMessage, value: MessageLocString): void {
   if (value.isStrRef === true) {
     msg.writeBOOL(1);
     msg.writeBYTE(value.language & 0xff);
@@ -25,7 +25,7 @@ export function writeLocString(msg: CSWMessage, value: MessageLocString): void {
 }
 
 /** Simplified LocString reader — returns wire form without TLK resolve. */
-export function readLocString(msg: CSWMessage): MessageLocString {
+export function readLocString(msg: OdysseyMessage): MessageLocString {
   const isStrRef = msg.readBOOL();
   if (isStrRef) {
     return {

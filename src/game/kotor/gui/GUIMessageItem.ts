@@ -6,14 +6,14 @@ import type { GameMenu, GUIControl } from "@/gui";
 import { asExtentInt } from "@/gui/GUICoord";
 import { chromeFrameDimension } from "@/gui/guiChrome";
 import type { GUIListBox } from "@/gui/GUIListBox";
-import type { RetailRowExtent } from "@/gui/GUIProtoItem";
+import type { ProtoRowExtent } from "@/gui/GUIProtoItem";
 import type { GFFStruct } from "@/resource/GFFStruct";
 
-/** Retail colorRed — feedback ATTACK rows. */
+/** colorRed — feedback ATTACK rows. */
 const COLOR_RED = { r: 1, g: 0, b: 0 };
-/** Retail colorBlue — feedback INFO rows. */
+/** colorBlue — feedback INFO rows. */
 const COLOR_BLUE = { r: 0, g: 0.658824, b: 0.980392 };
-/** Retail colorYellow — LabelHilight selection. */
+/** colorYellow — LabelHilight selection. */
 const COLOR_YELLOW = { r: 0.980392, g: 1, b: 0 };
 
 /**
@@ -21,7 +21,7 @@ const COLOR_YELLOW = { r: 0.980392, g: 1, b: 0 };
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * Retail CSWGuiLabelHilight rows for Messages LB_DIALOG / LB_MESSAGES:
+ * label highlight rows for Messages LB_DIALOG / LB_MESSAGES:
  * base extent height 10, then height = GetIdealHeight + GetBorderDim*2.
  *
  * @file GUIMessageItem.ts
@@ -40,10 +40,10 @@ export class GUIMessageItem extends GUIProtoItem {
   }
 
   /**
-   * Retail AddMessages / AddDialogMessages stack extent before SetText:
+   * AddMessages / AddDialogMessages stack extent before SetText:
    * {left 0, top 0, width 0 → viewport-2*padding, height 10}.
    */
-  getRetailBaseExtent(_list: GUIListBox): RetailRowExtent {
+  getProtoBaseExtent(_list: GUIListBox): ProtoRowExtent {
     return { left: 0, top: 0, width: 0, height: 10 };
   }
 
@@ -51,7 +51,7 @@ export class GUIMessageItem extends GUIProtoItem {
     try{
       super.createControl();
       this.applyNodeContent();
-      this.syncRetailRowHeight();
+      this.syncProtoRowHeight();
     }catch(e){
       console.error(e);
     }
@@ -90,12 +90,12 @@ export class GUIMessageItem extends GUIProtoItem {
   }
 
   /**
-   * Retail: height = GetIdealHeight() + GetBorderDim()*2 after SetText.
+   * : height = GetIdealHeight + GetBorderDim*2 after SetText.
    * Use hilight-aware chrome frame dim (not idle BORDER only) so the hover
-   * selection frame pads around the text. Unclamped — retail GetBorderDim is
+   * selection frame pads around the text. Unclamped — GetBorderDim is
    * not limited by the provisional height-10 extent before SetExtent.
    */
-  private syncRetailRowHeight(){
+  private syncProtoRowHeight(){
     if(this.text?.geometry?.boundingBox){
       this.text.geometry.computeBoundingBox();
       this.text.geometry.boundingBox.getSize(this.textSize);
@@ -119,7 +119,7 @@ export class GUIMessageItem extends GUIProtoItem {
    */
   protected onChromeTextureLoaded(): void {
     const prevH = asExtentInt(this.extent.height);
-    this.syncRetailRowHeight();
+    this.syncProtoRowHeight();
     if(asExtentInt(this.extent.height) !== prevH && this.list){
       this.list.relayoutAfterRowHeightChange();
     }

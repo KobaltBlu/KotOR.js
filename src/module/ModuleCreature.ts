@@ -112,7 +112,7 @@ import {
   setClientCombatMode,
   updateClientCombatMode,
 } from "@/combat/combat-engagement";
-import { createNewAttackActions } from "@/combat/create-new-attack-actions";
+import { queueAttackActions } from "@/combat/queue-attack-actions";
 import { getNearestEnemy } from "@/combat/nearest-enemy";
 import {
   isChoreographedMeleeWeapon,
@@ -138,7 +138,7 @@ import {
   coalesceDriveAnimWalk,
   coalesceDriveMaxSpeed,
 } from "@/engine/pathfinding/movement-rate";
-import { resetWalkSpeedFactor } from "@/engine/pathfinding/walk-update-location";
+import { resetWalkSpeedFactor } from "@/engine/pathfinding/update-creature-walk";
 import {
   forcePushQuickWalkUpdate,
   isForcePushLocoActive,
@@ -175,7 +175,7 @@ import { ModuleCreatureAmbientState } from "@/enums/module/ModuleCreatureAmbient
 import { GameEffectSetStateType } from "@/enums/effects/GameEffectSetStateType";
 import type { SWAnimation } from "@/engine/rules/SWAnimation";
 
-/** Retail party-follow info fields (FollowInfo GFF struct). */
+/** party-follow info fields (FollowInfo GFF struct). */
 export interface CreaturePartyFollowInfo {
   followObject: number;
   followLocation: THREE.Vector3;
@@ -198,7 +198,7 @@ export function createDefaultPartyFollowInfo(): CreaturePartyFollowInfo {
     stickToPos: 0,
     result: 2,
     timeElapsed: 0,
-    // Retail party-member defaults 0 after place/reset; only saved
+    // party-member defaults 0 after place/reset; only saved
     // FollowInfo.InSafetyRange=1 should hold chase until leader ≥7.
     inSafetyRange: 0,
   };
@@ -218,7 +218,7 @@ export function createDefaultPartyFollowInfo(): CreaturePartyFollowInfo {
 */
 export class ModuleCreature extends ModuleObject {
   /**
-   * Retail SetAnimation — when entering looping DEAD/DEAD1 from a non-dead
+   * SetAnimation — when entering looping DEAD/DEAD1 from a non-dead
    * pose, insert DIE/DIE1 fireforget before the corpse hold.
    */
   static resolveEnterDeadTransition(
@@ -240,7 +240,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail SurrenderToEnemies walks area game objects. Party members are
+   * SurrenderToEnemies walks area game objects. Party members are
    * removed from area.creatures on join, so merge them in without duplicates.
    */
   static collectSurrenderNearbyCreatures<T extends object>(
@@ -273,18 +273,18 @@ export class ModuleCreature extends ModuleObject {
   aiStyle: number;
   isCommandable: boolean;
   bodyBag: number;
-  /** Object id of the body-bag placeable spawned from this corpse (retail client link). */
+  /** Object id of the body-bag placeable spawned from this corpse (client link). */
   bodyBagObjectId: number = 0;
   bodyVariation: number;
   /** Carried credits moved into body bags as g_i_credits001. */
   gold: number;
   /**
-   * Retail SetKeepCorpse — transient client shell after event 0xb.
+   * SetKeepCorpse — transient client shell after event 0xb.
    * Runtime-only; never serialized.
    */
   isRetainedCorpse: boolean = false;
   /**
-   * True once retail destroy event 0xb has run (bag spawned / authority removed).
+   * True once destroy event 0xb has run (bag spawned / authority removed).
    * Excludes the creature from area save even while a fade visual remains.
    */
   serverDestroyed: boolean = false;
@@ -292,36 +292,36 @@ export class ModuleCreature extends ModuleObject {
   keepCorpseOnDestroy: boolean = false;
   /** Eviction fade timer for retained shells (seconds remaining). */
   retainedCorpseFadeRemaining: number = -1;
-  /** Party stealth mode (retail stealth_mode). */
+  /** Party stealth mode (stealth_mode). */
   stealthMode: boolean = false;
   /** TSL SetFakeCombatState — combat anims without real combat. */
   fakeCombatState: boolean = false;
   /** Last object targeted by ActionMoveToObject / ForceMove (GetAttemptedMovementTarget). */
   attemptedMovementTarget: ModuleObject = undefined;
   /**
-   * Retail path_find_info ignore-object id (DoDoorAction IGNORE).
+   * path_find_info ignore-object id (DoDoorAction IGNORE).
    * Skipped as a door blocker in noNonWalkPolys / path cost checks.
    */
   pathFindIgnoreObjectId: number = 0;
   /**
-   * Search / detect mode (retail detect_mode).
+   * Search / detect mode (detect_mode).
    * KotOR defaults ON (constructor + Load* force SetActivity(2,1)); no player UI toggle.
    * Affects passive mine range/bonus and contested Awareness vs Stealth.
    */
   detectMode: boolean = true;
-  /** Retail Silence / Psychic Static */
+  /** Silence / Psychic Static */
   silenced: boolean = false;
   /** Deafness flag (perception / ASF parent) */
   deaf: boolean = false;
   /** Max ArcaneSpellFailure percent from effects */
   arcaneSpellFailure: number = 0;
-  /** Retail combat information — creature CombatInfo GFF (0xCAAA). */
+  /** combat information — creature CombatInfo GFF (0xCAAA). */
   combatInformation: CombatInformation = new CombatInformation();
-  /** Retail body_fuel_ @ — Body Fuel active */
+  /** body_fuel_ @ — Body Fuel active */
   bodyFuel: boolean = false;
-  /** Retail Lightsaber Throw in progress */
+  /** Lightsaber Throw in progress */
   throwingLightsaber: boolean = false;
-  /** Retail saber throw projectile rate */
+  /** saber throw projectile rate */
   lightsaberThrowRate: number = 37;
   /**
    * Inter-area waypoint list (path_find_info /36).
@@ -329,7 +329,7 @@ export class ModuleCreature extends ModuleObject {
    */
   interAreaWaypoints: InterAreaWaypoint[] = [];
   /**
-   * Retail CPathfindInformation
+   * CPathfindInformation
    * transition object ids excluded after PlotPathInArea failure (failed portals).
    */
   interAreaExcludedIds: number[] = [];
@@ -341,21 +341,21 @@ export class ModuleCreature extends ModuleObject {
    */
   driveControlActive: boolean = false;
   /**
-   * Retail activity_ bitfield (SetActivity).
+   * activity_ bitfield (SetActivity).
    * Combat modes use 0x100–0x2000; stealth=1, detect=2, dialog=4.
-   * Default includes detect (2) — matches retail ctor.
+   * Default includes detect (2) — matches engine behavior ctor.
    */
   activity: number = 0x2;
   /** Bits that ActivityManager / SetActivity will not auto-clear. */
   activityLocked: number = 0;
-  /** Retail SetCombatMode (stance / activity bits). */
+  /** SetCombatMode (stance / activity bits). */
   combatMode: CombatMode = CombatMode.NONE;
   /**
-   * Retail CSWCCreature client combat-mode bit (UI + combat camera).
+   * creature client combat-mode bit (UI + combat camera).
    * Distinct from stance `combatMode` and from SetCombatState timer.
    */
   clientCombatMode: boolean = false;
-  /** Deferred combat mode while round_started (Retail). */
+  /** Deferred combat mode while round_started. */
   pendingCombatMode: number = -1;
   isHasted: boolean = false;
   isSlowed: boolean = false;
@@ -370,7 +370,7 @@ export class ModuleCreature extends ModuleObject {
    * (walk-back toward a goal behind the creature).
    */
   moveDirOverride: { x: number; y: number } | undefined;
-  /** Retail creature vision/detect bits. */
+  /** creature vision/detect bits. */
   visionFlags: number = 0;
 
   cha: number;
@@ -385,25 +385,25 @@ export class ModuleCreature extends ModuleObject {
 
   challengeRating: number;
   /**
-   * Retail encounter game-object id when spawned from an encounter.
+   * encounter game-object id when spawned from an encounter.
    * OBJECT_INVALID when not an encounter creature.
    */
   encounterObjectId: number = ModuleObjectConstant.OBJECT_INVALID;
-  /** Retail already unlinked from encounter active count. */
+  /** already unlinked from encounter active count. */
   encounterUnlinked: boolean = false;
-  /** Retail item used for current spell cast (GetSpellCastItem). */
+  /** item used for current spell cast (GetSpellCastItem). */
   spellCastItem: ModuleItem = undefined;
   /**
-   * Retail base_class_level — stamped before item SpellCastAndImpact from the
+   * base_class_level — stamped before item SpellCastAndImpact from the
    * last class level; GetCasterLevel returns this while itemSpellCastActive.
    */
   baseClassLevel: number = 0;
-  /** Retail true during item SpellCastAndImpact / delayed impact. */
+  /** true during item SpellCastAndImpact / delayed impact. */
   itemSpellCastActive: boolean = false;
   classes: CreatureClass[];
   comment: string;
   currentForce: number;
-  /** Temporary force points spent before currentForce (retail CreatureStats temp FP). */
+  /** Temporary force points spent before currentForce (CreatureStats temp FP). */
   temporaryForce: number;
   /** Active Jedi Form spell id (TSL); 0 = none. */
   currentForm: number;
@@ -418,7 +418,7 @@ export class ModuleCreature extends ModuleObject {
   gender: number = 0;
   goodEvil: number = 50;
   /**
-   * Retail base_npc_alignment — template GoodEvil used by HandleAlignmentInfluence
+   * base_npc_alignment — template GoodEvil used by HandleAlignmentInfluence
    * for non-Kreia sync (not overwritten by live influence math).
    */
   baseGoodEvil: number = 50;
@@ -426,9 +426,9 @@ export class ModuleCreature extends ModuleObject {
   interruptable: number;
   isPC: number;
   lastName: CExoLocString;
-  /** retail — present for party members. */
+  /** — present for party members. */
   partyFollowInfo: CreaturePartyFollowInfo | undefined;
-  /** retail history (LvlStatList) for the real PC. */
+  /** history (LvlStatList) for the real PC. */
   levelStats: LevelStatRecord[];
   maxHitPoints: number;
   naturalAC: number;
@@ -437,9 +437,9 @@ export class ModuleCreature extends ModuleObject {
   palletID: number;
   partyInteract: number;
   phenotype: number;
-  /** Retail Appearance_Head (0xFF = use appearance.2da normalhead/backuphead). */
+  /** Appearance_Head (0xFF = use appearance.2da normalhead/backuphead). */
   appearanceHead: number;
-  /** Retail Color_Hair / Color_Skin / Color_Tattoo* */
+  /** Color_Hair / Color_Skin / Color_Tattoo* */
   colorHair: number;
   colorSkin: number;
   colorTattoo1: number;
@@ -454,13 +454,13 @@ export class ModuleCreature extends ModuleObject {
   specialAbilities: any[];
   subrace: number;
   subraceIndex: number;
-  /** Retail SaveStats Age */
+  /** SaveStats Age */
   age: number;
-  /** Retail SaveStats AIState */
+  /** SaveStats AIState */
   aiState: number;
-  /** Retail SaveCreature AmbientAnimState */
+  /** SaveCreature AmbientAnimState */
   ambientAnimState: number;
-  /** Retail SaveStats StartingPackage */
+  /** SaveStats StartingPackage */
   startingPackage: number;
   /** AreaId from last save (DWORD); live area is this.area */
   savedAreaId: number = 0;
@@ -469,27 +469,27 @@ export class ModuleCreature extends ModuleObject {
   walkRate: number;
   blockingTimer: number;
   /**
-   * Retail WalkUpdateLocation_QuickWalk loco mode (field438_0xa8c).
+   * quick-walk locomotion loco mode (internal field).
    * 3 = FollowLeader, 4..6 = ForcePushed, 1 = paused, -1 = repath.
    */
   quickWalkLocoState: number;
-  /** Retail distance traveled during Force Push slide. */
+  /** distance traveled during Force Push slide. */
   forcePushDistanceTraveled: number;
   /** True once QuickWalk_ForcePushed reaches path end (land/getup phase). */
   forcePushArrived: boolean;
   /** Seconds since force-push arrival (drives fp_land / fp_getup). */
   forcePushArriveElapsed: number;
   /**
-   * Retail WalkUpdateLocation — previous frame speed factor.
+   * creature walk update — previous frame speed factor.
    */
   walkSpeedFactor: number;
   /**
-   * Retail pathfind-info — consecutive WalkUpdateDistance
+   * pathfind-info — consecutive walk frame distance
    * TestDistance fails before giving up (hex while &lt; 6).
    */
   pathBlockFailCount: number;
   /**
-   * Camera-relative client controller state (retail).
+   * Camera-relative client controller state.
    * Used for direct WASD / stick; ActionDrive remains the discrete server path.
    */
   playerControl: PlayerCamRelativeState;
@@ -512,12 +512,12 @@ export class ModuleCreature extends ModuleObject {
   skillPoints: any;
   npcId: number;
   /**
-   * TSL assigned puppet slot id (retail).
+   * TSL assigned puppet slot id.
    * Set by AssignPUP; -1 when none.
    */
   assignedPuppetId: number = -1;
   /**
-   * TSL SetIsPuppet flag (retail).
+   * TSL SetIsPuppet flag.
    * True after AddPartyPuppet; GetIsPuppet reads this.
    */
   isPuppet: boolean = false;
@@ -525,7 +525,7 @@ export class ModuleCreature extends ModuleObject {
 
   /**
    * Drive / base-layer animation (walk, run, ready, combat). Parallel to overlay + weapon gesture.
-   * Maps retail DriveAnimationUpdate output onto the body Gob base slot.
+   * Maps DriveAnimationUpdate output onto the body Gob base slot.
    */
   animationState: ICreatureAnimationState;
   /** Mode-1 overlay (dialog/emote) — must not block drive locomotion. */
@@ -560,16 +560,16 @@ export class ModuleCreature extends ModuleObject {
   } | undefined;
   regenTimer: number;
   regenTimerMax: number;
-  /** Battle-music timer (ms). Retail / ExcitedDuration.2da. */
+  /** Battle-music timer (ms). / ExcitedDuration.2da. */
   excitedDuration: number;
-  /** Combat engagement timer (ms). Retail; SetCombatState refreshes to 8000. */
+  /** Combat engagement timer (ms).; SetCombatState refreshes to 8000. */
   combatStateTimer: number;
-  /** Retail ResolveInitiative — non-party AI combat refresh pending. */
+  /** ResolveInitiative — non-party AI combat refresh pending. */
   combatAiRefreshPending: boolean = false;
-  /** Retail 1=Damage, 2=SpellCast; Damage sticks over SpellCast. */
+  /** 1=Damage, 2=SpellCast; Damage sticks over SpellCast. */
   combatStateReason: number;
   /**
-   * Retail InstantUseItem lockout. While > 0 during hostile combat,
+   * InstantUseItem lockout. While > 0 during hostile combat,
    * inventory Use Item shows TLK 42409.
    */
   instantItemCooldownMs: number;
@@ -578,7 +578,7 @@ export class ModuleCreature extends ModuleObject {
   /** One-shot guard for Animation Missing console spam. */
   private animationMissingLogged: boolean = false;
   deathStarted: boolean;
-  /** Pass AL — last trap this creature detected (retail). */
+  /** Pass AL — last trap this creature detected. */
   lastTrapDetected: ModuleObject;
   getUpAnimationPlayed: boolean;
   /** True once scheduleDestroyAsCorpse applied appearance DestroyObjectDelay / FadeDelayOnDeath. */
@@ -610,7 +610,7 @@ export class ModuleCreature extends ModuleObject {
    */
   headMaxVerticalAngle: number = Math.PI / 3;
   /**
-   * Bumps on each loadModel() so overlapping armor/head rebuilds discard stale
+   * Bumps on each loadModel so overlapping armor/head rebuilds discard stale
    * bodies instead of disposing live hand/headgear models attached to them.
    */
   private modelLoadGeneration: number = 0;
@@ -656,7 +656,7 @@ export class ModuleCreature extends ModuleObject {
     this.combatData.lastDamager = undefined;
     //Last creature who attacked this creature
     this.combatData.lastAttacker = undefined;
-    // Retail last_hostile_actor_id
+    // last_hostile_actor_id
     this.combatData.lastHostileActor = undefined;
     //Last creature who attacked this creature with a spell
     this.combatData.lastSpellAttacker = undefined;
@@ -753,7 +753,7 @@ export class ModuleCreature extends ModuleObject {
     this.partyInteract = 0;
     this.perceptionRange = GameState.SWRuleSet.ranges[11];
     this.phenotype = 0;
-    /** Retail Appearance_Head 0xFF = use appearance.2da normalhead/backuphead. */
+    /** Appearance_Head 0xFF = use appearance.2da normalhead/backuphead. */
     this.appearanceHead = 255;
     this.colorHair = 0;
     this.colorSkin = 0;
@@ -806,7 +806,7 @@ export class ModuleCreature extends ModuleObject {
     this.perceptionList = [];
 
     // Do not resolve pause/inj here — HP is still 0 until initProperties.
-    // Retail SetAnimation runs after ReadStatsFromGff (LoadCreature).
+    // SetAnimation runs after ReadStatsFromGff (LoadCreature).
     this.combatData.combatActionTimer = 3; 
     this.combatData.combatState = false;
     this.combatData.lastAttackAction = ActionType.ActionInvalid;
@@ -874,7 +874,7 @@ export class ModuleCreature extends ModuleObject {
 
   /**
    * Recalc movement_rate_factor from MSI/MSD effects.
-   * Retail: best increase (absolute %) × (100 − best decrease %) / 100,
+   * : best increase (absolute %) × (100 − best decrease %) / 100,
    * clamped to [0.125, 1.5] like GetWalkRate / GetRunRate.
    * TSL GetMovementRateFactor: Mobility feat (0xc3) adds +0.1 before clamp.
    */
@@ -908,7 +908,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail WalkUpdateLocation_QuickWalk — every-frame locomotion for movers.
+   * quick-walk locomotion — every-frame locomotion for movers.
    * Advances the head MoveTo/Follow/Drive action so motion never skips frames
    * when aiUpdate is budget-deferred. Sets _quickWalkedThisFrame so aiUpdate
    * does not re-process the same action.
@@ -923,7 +923,7 @@ export class ModuleCreature extends ModuleObject {
     // aiUpdate is budget-deferred; keep area current for every-frame follow/move.
     this.area = GameState.module.area;
 
-    // Retail: field438 == 1 → early return (paused / end-of-path)
+    // : field438 == 1 → early return (paused / end-of-path)
     if(isQuickWalkPaused(this) && !isForcePushLocoActive(this)){
       return;
     }
@@ -941,7 +941,7 @@ export class ModuleCreature extends ModuleObject {
     if(!action) return;
     const type = action.type;
 
-    // Retail field438 == 3 → FollowLeader; AIActionPartyFollowLeader stamps 3.
+    // field438 == 3 → FollowLeader; party follow leader action stamps 3.
     if(type === ActionType.ActionFollowLeader){
       setQuickWalkLocoState(this, QuickWalkLocoState.FollowLeader);
       this.actionQueue.process(delta);
@@ -950,7 +950,7 @@ export class ModuleCreature extends ModuleObject {
       return;
     }
 
-    // Stale FollowLeader mode without the action — pause like retail end-of-path.
+    // Stale FollowLeader mode without the action — pause like end-of-path.
     if(isFollowLeaderLocoActive(this)){
       setQuickWalkLocoState(this, QuickWalkLocoState.Paused);
     }
@@ -1052,7 +1052,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail AIUpdate AI-level self-adjustment.
+   * AIUpdate AI-level self-adjustment.
    * Party/PC → VERY_HIGH; combat → NORMAL; else LOW (area occupied) or VERY_LOW.
    */
   adjustAILevel(){
@@ -1106,7 +1106,7 @@ export class ModuleCreature extends ModuleObject {
       return;
     }
 
-    // Retail: DestroyObjectDelay runs before remove; corpse must keep playing DIE→DEAD + model fade.
+    // : DestroyObjectDelay runs before remove; corpse must keep playing DIE→DEAD + model fade.
     if(this.willDestroy){
       this.updateCorpsePendingDestroy(delta);
       return;
@@ -1129,7 +1129,7 @@ export class ModuleCreature extends ModuleObject {
       }
 
       if(!this.isReady){
-        //this.getModel().visible = true;
+        //this.getModel.visible = true;
         return;
       }else{
 
@@ -1140,7 +1140,7 @@ export class ModuleCreature extends ModuleObject {
 
       this.area = GameState.module.area;
 
-      /*if(this == GameState.getCurrentPlayer() && this.room instanceof ModuleRoom){
+      /*if(this == GameState.getCurrentPlayer && this.room instanceof ModuleRoom){
         //this.room.show(true);
       }else if(this.room instanceof ModuleRoom){
         if(this.room.model instanceof OdysseyModel3D){
@@ -1274,9 +1274,9 @@ export class ModuleCreature extends ModuleObject {
         !!this.playerControl &&
         Math.hypot(this.playerControl.velX, this.playerControl.velY) > 0;
       // Direct WASD/stick overrides path actions while axes are held. Keep
-      // running the controller after release so retail drag can decelerate.
+      // running the controller after release so drag can decelerate.
       // Dialog mode still ticks creatures; sticky axes must not keep coasting.
-      // Retail Force Push: QuickWalk_ForcePushed only SetPosition — no cam turn.
+      // Force Push: QuickWalk_ForcePushed only SetPosition — no cam turn.
       const forcePushLocked =
         this.isForcePushed() ||
         isForcePushLocoActive(this);
@@ -1366,7 +1366,7 @@ export class ModuleCreature extends ModuleObject {
         if(this.speed > 0){
           this.speed = 0;
         }
-        // Retail WalkUpdateLocation end-of-path: vtable(0x2710 / PAUSE).
+        // creature walk update end-of-path: vtable(0x2710 / PAUSE).
         // Walk/run clips are forced looping — without this, a transit or cancelled
         // move leaves the creature frozen on the last walk frame forever.
         this.clearLocomotionAnimation();
@@ -1447,13 +1447,13 @@ export class ModuleCreature extends ModuleObject {
           !!this.collisionManager.blockingObject &&
           this.collisionManager.blockingObject !== this.collisionManager.lastBlockingObject;
         this.collisionManager.lastBlockingObject = this.collisionManager.blockingObject;
-        // Retail OnBlocked fires on enter; clearing contact is not a new block event
+        // OnBlocked fires on enter; clearing contact is not a new block event
         if(enteredBlock){
           this.onBlocked();
         }
       }
 
-      // Predicted RK4 sweep; DriveUpdateLocation already calls updateCollision for path/drive.
+      // Predicted RK4 sweep; creature drive update already calls updateCollision for path/drive.
       if(this.forceVector.length()){
         this.updateCollision(delta);
       }
@@ -1461,7 +1461,7 @@ export class ModuleCreature extends ModuleObject {
       // Perception / listening moved to aiUpdate
 
 
-      // Party companion stuck timer — retail FollowLeader TeleportForward is owned by
+      // Party companion stuck timer — FollowLeader TeleportForward is owned by
       // the FollowLeader SM (ActionFollowLeader.softTeleportForward). Do not also
       // advance the ring from collisionTimer while following (dual TeleportForward).
       if(this.npcId != undefined && this != (GameState.getCurrentPlayer() as any) && this.collisionTimer >= 2){
@@ -1592,7 +1592,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   updateActionQueue(delta = 0){
-    // Retail AIUpdate always calls RunActions — there is
+    // AIUpdate always calls RunActions — there is
     // no debilitated early-out. Locomotion is gated in quickWalkUpdate / move
     // actions; conversation Wait/Resume (k_ptar_calofade after EffectHorrified)
     // must still tick or Pause hangs forever.
@@ -1632,7 +1632,7 @@ export class ModuleCreature extends ModuleObject {
     const str = this.heardStrings[0];
     if(!this.isListening || !str){ return;  }
 
-    // Retail TestListenExpression — scan registered expressions in
+    // TestListenExpression — scan registered expressions in
     // order; first match wins. No exact-string fast path.
     let patternNum: number | undefined;
     let matchedSubstrings: string[] = [];
@@ -1646,7 +1646,7 @@ export class ModuleCreature extends ModuleObject {
       }
     }
     // Always drain the head — unmatched shouts must not stall the queue.
-    // Retail BroadcastDialog only enqueues OnDialogue on a match (no backlog).
+    // BroadcastDialog only enqueues OnDialogue on a match (no backlog).
     drainHeardStringHead(this.heardStrings);
     if(typeof patternNum === 'undefined'){ return; }
 
@@ -1711,7 +1711,7 @@ export class ModuleCreature extends ModuleObject {
         
         this.notifyPerceptionSeenObject(creature, true);
       }else if(distance < this.getPerceptionRangeSecondary() && detected){
-        // Listen does not require LOS in retail; still require contested detect while stealthed
+        // Listen does not require LOS in; still require contested detect while stealthed
         this.notifyPerceptionSeenObject(creature, false);
         this.notifyPerceptionHeardObject(creature, true);
       }else{
@@ -1752,7 +1752,7 @@ export class ModuleCreature extends ModuleObject {
       }
     }
 
-    // Passive trap detect — retail UpdateMineCheck:
+    // Passive trap detect — UpdateMineCheck:
     // Awareness + d10 (or d10+10) vs DetectDC; not ActionFlagMine.
     const detectMode = !!this.detectMode;
     const range = detectMode ? 20.0 : 3.0;
@@ -1770,7 +1770,7 @@ export class ModuleCreature extends ModuleObject {
         continue;
       }
 
-      // Hostile / non-friendly traps only (retail reputation < 90).
+      // Hostile / non-friendly traps only (reputation < 90).
       if(typeof (this as any).isHostile === 'function' && !this.isHostile(trig as any)){
         continue;
       }
@@ -1810,7 +1810,7 @@ export class ModuleCreature extends ModuleObject {
       this.combatData.lastDamager = undefined;
 
     if(this.combatData.lastHostileActor instanceof ModuleObject && this.combatData.lastHostileActor.isDead())
-      this.setLastHostileActor(undefined, true);
+      this.assignHostileActor(undefined, true);
 
     if(this.combatData.lastSpellAttacker instanceof ModuleObject && this.combatData.lastSpellAttacker.isDead())
       this.combatData.lastSpellAttacker = undefined;
@@ -1821,12 +1821,12 @@ export class ModuleCreature extends ModuleObject {
     }
 
     // Auto-requeue only for hostile Damage engagement — not flourish (SpellCast reason).
-    // Retail CreateNewAttackActions prefers combat-round sticky / keeps queued
+    // QueueAttackActions prefers combat-round sticky / keeps queued
     // actions; never retarget to lastAttacker (who just hit the PC).
     if(this.isHostileCombatEngaged()){
       if(GameState.getCurrentPlayer() == this){
         if(!this.combatRound.scheduledActionList.length && !this.combatRound.action){
-          createNewAttackActions(this);
+          queueAttackActions(this);
         }
       }
     }else if(!this.combatData.combatState){
@@ -1838,7 +1838,7 @@ export class ModuleCreature extends ModuleObject {
 
   updateCasting(delta = 0){
     // Live spell casts are owned by area.spellInstances (ticked/disposed in ModuleArea).
-    // The legacy per-creature casting[] array is never populated; nothing to tick here.
+    // The legacy per-creature casting array is never populated; nothing to tick here.
   }
 
   clearTarget(){
@@ -1919,7 +1919,7 @@ export class ModuleCreature extends ModuleObject {
       }
     }
 
-    // Dialog listen/talk owns the pose while stationary (retail AnimationDialog drive block).
+    // Dialog listen/talk owns the pose while stationary (AnimationDialog drive block).
     if((GameState.Mode == EngineMode.DIALOG) && this.dialogAnimation && !this.speed && !this.isDead())
       return;
 
@@ -1967,7 +1967,7 @@ export class ModuleCreature extends ModuleObject {
           this.animationState.index == ModuleCreatureAnimState.DIE1
         ){
           // DIE fireforget finished → DEAD (corpses and living Min1HP scripted defeat).
-          // Retail SetAnimation keeps looping DEAD while DIE FAF plays; we promote here.
+          // SetAnimation keeps looping DEAD while DIE FAF plays; we promote here.
           const deadPose =
             this.animationState.index == ModuleCreatureAnimState.DIE1
               ? ModuleCreatureAnimState.DEAD1
@@ -1983,14 +1983,14 @@ export class ModuleCreature extends ModuleObject {
           // Scripted living dead pose — re-loop; never fall through to READY/PAUSE.
           this.animationState.started = false;
         }else if(this.combatData.combatState){
-          // Retail GetPauseReadyAnimation while engaged — don't drop to out-of-combat pause.
+          // GetPauseReadyAnimation while engaged — don't drop to out-of-combat pause.
           if(this.animationState.index == ModuleCreatureAnimState.READY){
             this.animationState.started = false;
           }else{
             this.setAnimationState(ModuleCreatureAnimState.READY);
           }
         }else if(GameState.Mode == EngineMode.DIALOG && this.animationState.index != ModuleCreatureAnimState.PAUSE){
-          // Retail SetDialogAnimations owns the pose until the next entry — re-apply
+          // SetDialogAnimations owns the pose until the next entry — re-apply
           // looping talk/listen/READY instead of falling through to idle pause.
           this.animationState.started = false;
         }else if(
@@ -2024,7 +2024,7 @@ export class ModuleCreature extends ModuleObject {
     }else{
       if(!this.animationMissingLogged){
         this.animationMissingLogged = true;
-        // console.error('Animation Missing', this.getTag(), this.getName(), this.animationState);
+        // console.error('Animation Missing', this.getTag, this.getName, this.animationState);
       }
       this.setAnimationState(
         this.combatData.combatState ? ModuleCreatureAnimState.READY : ModuleCreatureAnimState.PAUSE
@@ -2035,7 +2035,7 @@ export class ModuleCreature extends ModuleObject {
 
   /**
    * Apply the current drive clip to the skeleton without requiring EngineMode
-   * INGAME. loadModel runs under LOADING, where update() skips animation — without
+   * INGAME. loadModel runs under LOADING, where update skips animation — without
    * this, creatures render MDL bind/rest pose until the first real tick.
    */
   primeAnimationPose(){
@@ -2067,7 +2067,7 @@ export class ModuleCreature extends ModuleObject {
     }
     this.combatData.lastDamager = oAttacker;
     this.combatData.lastAttacker = oAttacker;
-    this.setLastHostileActor(oAttacker);
+    this.assignHostileActor(oAttacker);
 
     // Only adopt the damager as attack target when we have no live focus
     // including sticky attempted target — so a hit from another creature cannot
@@ -2121,14 +2121,14 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Enqueue AIActionMoveToPoint. Retail AddMoveToPointAction: timeout 0 = no
+   * Enqueue AIActionMoveToPoint. AddMoveToPointAction: timeout 0 = no
    * Jump fallback (ActionMoveTo*); timeout > 0 = ForceMove jump-on-expiry.
    * Arrive range: max(script fRange, GetUseRange) — ExecuteCommandMoveToObject.
    */
   moveToObject(target: ModuleObject, bRun = true, distance = 1.0, timeout = 0){
 
     if(target instanceof ModuleObject){
-      // Retail attempted-move object id (GetAttemptedMovementTarget)
+      // attempted-move object id (GetAttemptedMovementTarget)
       this.attemptedMovementTarget = target;
 
       // this.openSpot = undefined;
@@ -2185,7 +2185,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Enqueue AIActionMoveToPoint. Retail: ActionMoveToLocation timeout 0;
+   * Enqueue AIActionMoveToPoint. : ActionMoveToLocation timeout 0;
    * ActionForceMoveToLocation passes script timeout (default 30).
    */
   moveToLocation(target: ModuleObject|EngineLocation, bRun = true, timeout = 0){
@@ -2267,23 +2267,23 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Enter/refresh combat. Retail AddAttackActions → BroadcastCombatStateToParty →
+   * Enter/refresh combat. AddAttackActions → BroadcastCombatStateToParty →
    * SetCombatState(1) (8000ms) + SetExcitedState (ExcitedDuration.2da).
    */
   setCombatEngaged(reason: ExcitedDurationRow = ExcitedDurationRow.Damage){
     const wasCombat = this.combatData.combatState;
     this.setCombatState(true, reason);
     this.setExcitedState(reason);
-    // Retail ActionMenuAttack / engage → client SetCombatMode(1)
+    // ActionMenuAttack / engage → client SetCombatMode(1)
     setClientCombatMode(this, true);
-    // Retail RemoveCombatInvisibilityEffects on hostile engagement
+    // RemoveCombatInvisibilityEffects on hostile engagement
     if(!wasCombat){
       this.removeCombatInvisibilityEffects();
     }
   }
 
   /**
-   * Retail BroadcastCombatStateToParty.
+   * BroadcastCombatStateToParty.
    * Refreshes SetCombatState(1) on self when hostile to `other` (or `other` is self),
    * then party/faction mates in spot range get SetCombatState + SetExcitedState(Damage).
    * Used on attack start and OnPhysicalAttacked (including misses).
@@ -2297,7 +2297,7 @@ export class ModuleCreature extends ModuleObject {
       if(!otherCreature){
         return ExcitedDurationRow.SpellCast;
       }
-      // Retail BroadcastCombatStateToParty
+      // BroadcastCombatStateToParty
       // reason 1 (Damage) when other's last attack/spell target is subject.
       const data = otherCreature.combatData;
       if(
@@ -2341,7 +2341,7 @@ export class ModuleCreature extends ModuleObject {
         continue;
       }
 
-      // Retail: GetReputation(member, arg1) < 11 — skip when other is self/friendly
+      // : GetReputation(member, arg1) < 11 — skip when other is self/friendly
       if(other && member.getReputation(other) >= 11){
         continue;
       }
@@ -2355,11 +2355,11 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail ResolveInitiative
+   * ResolveInitiative
    * sets = (== 0) — non-party AI refresh flag.
    */
   resolveInitiative(){
-    // Party / player-UI creatures () → 0; others → 1
+    // Party / player-UI creatures  → 0; others → 1
     this.combatAiRefreshPending = GameState.PartyManager?.party?.indexOf(this) < 0;
     if(!this.combatData.combatState){
       this.setCombatState(true, ExcitedDurationRow.SpellCast);
@@ -2374,7 +2374,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail SetCombatState.
+   * SetCombatState.
    * Active → refresh 8000ms timer; inactive → clear combat engagement.
    */
   setCombatState(active: boolean, reason: number = ExcitedDurationRow.Damage){
@@ -2382,20 +2382,20 @@ export class ModuleCreature extends ModuleObject {
       this.combatData.combatState = false;
       this.combatStateTimer = 0;
       this.combatStateReason = 0;
-      // Retail SetCombatState(0) clears attempted/current attack+spell targets
+      // SetCombatState(0) clears attempted/current attack+spell targets
       this.combatData.lastAttemptedAttackTarget = undefined;
       this.combatData.lastAttackTarget = undefined;
       this.combatData.lastAttemptedSpellTarget = undefined;
       this.combatData.lastSpellTarget = undefined;
-      // Retail SetCombatState(0): ClearAllAttacks + RemoveAllActions, then
-      // EndCombatRound if a round is in progress. Mirrors combat-round teardown here.
+      // SetCombatState(0): ClearAllAttacks + RemoveAllActions, then
+      // end combat round if a round is in progress. Mirrors combat-round teardown here.
       if(this.combatRound){
         if(this.combatRound.specialAttackList){
           this.combatRound.specialAttackList.length = 0;
         }
         this.combatRound.clearActions();
         if(this.combatRound.roundStarted){
-          this.combatRound.endCombatRound({ skipCreateNewAttackActions: true });
+          this.combatRound.endCombatRound({ skipQueueAttackActions: true });
         }
       }
       // Client combat camera follows SetCombatMode, not SetCombatState.
@@ -2403,14 +2403,14 @@ export class ModuleCreature extends ModuleObject {
     }
     this.combatData.combatState = true;
     this.combatStateTimer = COMBAT_STATE_DURATION_MS;
-    // Retail: Damage reason (1) sticks; SpellCast (2) does not overwrite it.
+    // : Damage reason (1) sticks; SpellCast (2) does not overwrite it.
     if(this.combatStateReason !== ExcitedDurationRow.Damage){
       this.combatStateReason = reason;
     }
   }
 
   /**
-   * Retail SetExcitedState — only extend if new DURATION is greater.
+   * SetExcitedState — only extend if new DURATION is greater.
    * When extended for a client-controlled creature with GetNearestEnemy(30) present,
    * calls area PlayBattleMusic(1).
    */
@@ -2420,7 +2420,7 @@ export class ModuleCreature extends ModuleObject {
       return;
     }
     this.excitedDuration = duration;
-    // Retail: GetClientObjectByObjectId must succeed (controlled PC)
+    // : GetClientObjectByObjectId must succeed (controlled PC)
     if(this !== GameState.getCurrentPlayer()){
       return;
     }
@@ -2428,14 +2428,14 @@ export class ModuleCreature extends ModuleObject {
     if(!area){
       return;
     }
-    // Retail GetNearestEnemy(this, 30.0, OBJECT_INVALID, OBJECT_INVALID)
+    // GetNearestEnemy(this, 30.0, OBJECT_INVALID, OBJECT_INVALID)
     if(getNearestEnemy(this, 30)){
       area.playBattleMusic(true);
     }
   }
 
   /**
-   * Retail RemoveCombatInvisibilityEffects
+   * RemoveCombatInvisibilityEffects
    * strip INVISIBILITY when int[0]==1 and all SANCTUARY.
    */
   removeCombatInvisibilityEffects(){
@@ -2463,7 +2463,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail AIUpdate combat-state tick — countdown to SetCombatState(0).
+   * AIUpdate combat-state tick — countdown to SetCombatState(0).
    * While still closing on a living combat target (PhysicalAttacks / chase Move),
    * refresh the 8000ms timer instead of wiping the combat schedule mid-approach.
    */
@@ -2532,7 +2532,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail UpdateExcitedStateTimer — battle music timer only (not stance).
+   * UpdateExcitedStateTimer — battle music timer only (not stance).
    * On expiry for a client-controlled creature → PlayBattleMusic(0).
    */
   updateExcitedDuration(delta = 0){
@@ -2563,7 +2563,7 @@ export class ModuleCreature extends ModuleObject {
     return resolveChoreographedState(this, target);
   }
 
-  /** Retail ResolveChoreographedState weapon gate (excludes stun baton / ranged). */
+  /** ResolveChoreographedState weapon gate (excludes stun baton / ranged). */
   isDuelingWeaponEquipped(){
     return isChoreographedMeleeWeapon(this);
   }
@@ -2606,7 +2606,7 @@ export class ModuleCreature extends ModuleObject {
     if(target.isDead())
       return;
 
-    // Retail AddAttackActions — sticky GetAttemptedAttackTarget
+    // AddAttackActions — sticky GetAttemptedAttackTarget
     this.combatData.setAttemptedAttackTargetIfInvalid(target);
 
     let combatAction = new CombatRoundAction();
@@ -2622,9 +2622,9 @@ export class ModuleCreature extends ModuleObject {
 
     this.combatRound.addAction(combatAction);
 
-    // Retail AddAttackActions → BroadcastCombatStateToParty(this, this.id)
+    // AddAttackActions → BroadcastCombatStateToParty(this, this.id)
     this.broadcastCombatStateToParty(this);
-    // Retail ActionMenuAttack → SetCombatMode(1) on the attacker
+    // ActionMenuAttack → SetCombatMode(1) on the attacker
     setClientCombatMode(this, true);
 
     if(!this.actionQueue.actionTypeExists(ActionType.ActionCombat)){
@@ -2635,8 +2635,8 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail AddCutsceneAttackActions
-   * AddCutsceneAttackAction.
+   * queue cutscene attacks
+   * queue cutscene attack.
    */
   addCutsceneAttackActions(
     target: ModuleObject,
@@ -2644,7 +2644,7 @@ export class ModuleCreature extends ModuleObject {
     attackResult: AttackResult,
     damage: number
   ){
-    // Retail passes oTarget through; ResolveAttack filters creature/door/placeable
+    // passes oTarget through; ResolveAttack filters creature/door/placeable
     if(!target){
       return;
     }
@@ -2654,9 +2654,9 @@ export class ModuleCreature extends ModuleObject {
     const combatAction = new CombatRoundAction(this);
     combatAction.actionType = CombatActionType.ATTACK;
     combatAction.target = target;
-    // Retail animation_id = 0x2719 (ATTACK)
+    // animation_id = 0x2719 (ATTACK)
     combatAction.animation = ModuleCreatureAnimState.ATTACK;
-    // Retail (combatStretch + 3000) / 2 — stretch defaults to 0
+    // (combatStretch + 3000) / 2 — stretch defaults to 0
     combatAction.animationTime = Math.floor((0 + CombatRound.ROUND_LENGTH) / 2);
     combatAction.resultsCalculated = true;
     combatAction.attackAnimation = animationRow | 0;
@@ -2671,10 +2671,10 @@ export class ModuleCreature extends ModuleObject {
 
     this.combatRound.addAction(combatAction);
 
-    // Retail: no BroadcastCombatStateToParty on cutscene path
-    // Retail field68_0x4e0==0 (PC) + client object: ComputeAIState + ClearAllActions(1)
+    // : no BroadcastCombatStateToParty on cutscene path
+    // internal field==0 (PC) + client object: transient AI refresh + ClearAllActions(1)
     if(this.isPC){
-      this.computeAIState();
+      this.refreshTransientAIState();
       this.clearAllActions(true);
     }
 
@@ -2685,7 +2685,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail AddCutsceneMoveActions
+   * AddCutsceneMoveActions
    * AddCutsceneMoveActions.
    */
   addCutsceneMoveActions(
@@ -2705,9 +2705,9 @@ export class ModuleCreature extends ModuleObject {
 
     this.combatRound.addAction(combatAction);
 
-    // Retail AddCutsceneMoveActions — same PC ClearAllActions(1) gate as attack
+    // AddCutsceneMoveActions — same PC ClearAllActions(1) gate as attack
     if(this.isPC){
-      this.computeAIState();
+      this.refreshTransientAIState();
       this.clearAllActions(true);
     }
 
@@ -2718,12 +2718,12 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail ComputeAIState @ 004f1460 — zeroes transient AI action tracking then
-   * rescans the action list via ComputeAIStateOnAction. Full OnAction reverse
-   * is deferred; ClearAllActions(1) follows immediately on the cutscene path.
+   * Refresh transient AI action tracking, then rescan the action list.
+   * Full per-action reverse is deferred; ClearAllActions(1) follows immediately
+   * on the cutscene path.
    */
-  computeAIState(){
-    // Placeholder for retail field_0x9f2 / field400 reset + action walk.
+  refreshTransientAIState(){
+    // Placeholder for transient AI field reset + action walk.
   }
 
   /**
@@ -2764,11 +2764,11 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getDebilitatedState(): number {
-    // Prefer highest SetState (retail priority).
+    // Prefer highest SetState (priority).
     if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
       const highest = getActiveSetStateType(this as ModuleCreature);
       if(highest > 0) return highest;
-      // Retail ambient_animation_state = 9 while force-pushed.
+      // ambient_animation_state = 9 while force-pushed.
       const ambient = (this as ModuleCreature).ambientAnimState | 0;
       if(ambient === ModuleCreatureAmbientState.PRONE_FORCE_PUSHED){
         return GameEffectSetStateType.FORCEPUSH;
@@ -2824,7 +2824,7 @@ export class ModuleCreature extends ModuleObject {
           }else{
             return animations[72];
           }
-        case 16: //Droid Confused — confused pose; not IsDebilitated in retail
+        case 16: //Droid Confused — confused pose; not IsDebilitated in 
           return animations[15];
         case 17: //Held (K2 0x11) — choke-like lock
           if(this.isSimpleCreature()){
@@ -2844,7 +2844,7 @@ export class ModuleCreature extends ModuleObject {
   setAnimationState(animState: ModuleCreatureAnimState){
     if(!animState){ return; }
 
-    // Retail SetAnimation — insert DIE/DIE1 before looping DEAD.
+    // SetAnimation — insert DIE/DIE1 before looping DEAD.
     animState = ModuleCreature.resolveEnterDeadTransition(animState, this.animationState?.index);
 
     this.animationState.index = animState;
@@ -2866,7 +2866,7 @@ export class ModuleCreature extends ModuleObject {
 
   playTwoDAAnimation(animation: SWAnimation){
     if(animation){
-      // Retail combat/cutscene swings use SetAnimation — clear dialog slot so
+      // combat/cutscene swings use SetAnimation — clear dialog slot so
       // updateAnimationState is not blocked by a lingering dialog READY pose.
       this.dialogAnimation = null;
       this.resetAnimationState();
@@ -2913,7 +2913,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail SetOverlayAnimation — body + head Gobs.
+   * SetOverlayAnimation — body + head Gobs.
    */
   applyOverlayToBodyAndHead(name: string, data: SWAnimation){
     const flags = resolveOverlayStartFlags(this.overlayAnimationState?.animationIndex || 0);
@@ -2926,7 +2926,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Stop overlay runs (dialog end / pose change). Uses retail stop flags 0x80 / 0x400.
+   * Stop overlay runs (dialog end / pose change). Uses stop flags 0x80 / 0x400.
    */
   stopOverlayAnimation(){
     const stopFlag = this.overlayAnimationState.stopFlag || 0x80;
@@ -3026,7 +3026,7 @@ export class ModuleCreature extends ModuleObject {
       console.log(this, anim);
       return; 
     }
-    // Retail IsLoopingDialogStuntAnimation — l/wl CUT ids loop.
+    // IsLoopingDialogStuntAnimation — l/wl CUT ids loop.
     const looping = animationId > 0x577 && animationId < 0x6c0;
     this.dialogAnimation = {
       animation: anim,
@@ -3053,22 +3053,22 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail CancelCombat.
-   * ClearAllActions(1) → SetCombatState(0) → SetLastHostileActor(INVALID) →
-   * ClearHostileActionsVersus(null) → EndCombatRound → client SetCombatMode(0).
+   * CancelCombat.
+   * ClearAllActions(1) → SetCombatState(0) → assign hostile actor(INVALID) →
+   * ClearHostileActionsVersus(null) → end combat round → client SetCombatMode(0).
    */
   cancelCombat(){
     this.clearAllActions(true);
     // Heavy SetCombatState(0) already clears combat-round attacks/actions + ends the round.
     this.setCombatState(false);
     this.clearTarget();
-    // Retail SetLastHostileActor(INVALID, force)
-    this.setLastHostileActor(undefined, true);
+    // assign hostile actor(INVALID, force)
+    this.assignHostileActor(undefined, true);
     // ClearHostileActionsVersus(null): drop every queued hostile action group.
     this.clearHostileActionsVersus(undefined);
     if(this.combatRound){
       if(this.combatRound.roundStarted){
-        this.combatRound.endCombatRound({ skipCreateNewAttackActions: true });
+        this.combatRound.endCombatRound({ skipQueueAttackActions: true });
       }
       this.combatRound.clearActions();
     }
@@ -3083,14 +3083,14 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail SurrenderToEnemies.
+   * SurrenderToEnemies.
    * @param retainSelfBuffs - 1 for SurrenderRetainBuffs (keep self-created effects)
    */
   surrenderToEnemies(retainSelfBuffs: boolean = false){
     this.cancelCombat();
     this.clearAllEffects(retainSelfBuffs);
 
-    // Retail walks area game_objects (GetCreatureByGameObjectID). Party members
+    // walks area game_objects (GetCreatureByGameObjectID). Party members
     // are removed from area.creatures on join — include them like GetObjectsInShape.
     const nearby = ModuleCreature.collectSurrenderNearbyCreatures(
       this.area?.creatures,
@@ -3099,7 +3099,7 @@ export class ModuleCreature extends ModuleObject {
 
     if(nearby.length){
       const origin = this.position;
-      const radiusSq = 250 * 250; // retail 62500 — not the NWScript 10m comment
+      const radiusSq = 250 * 250; // 62500 — not the NWScript 10m comment
       for(let i = 0; i < nearby.length; i++){
         const other = nearby[i];
         if(!other || other === this) continue;
@@ -3107,14 +3107,14 @@ export class ModuleCreature extends ModuleObject {
         const dy = other.position.y - origin.y;
         const dz = other.position.z - origin.z;
         if(dx * dx + dy * dy + dz * dz > radiusSq) continue;
-        // Retail GetReputation(self, other) < 11
+        // GetReputation(self, other) < 11
         if(this.getReputation(other) >= 11) continue;
         other.cancelCombat();
         other.clearAllEffects(retainSelfBuffs);
       }
     }
 
-    // Retail AddMember to FactionManager's primary faction (repute row 0 = Player)
+    // AddMember to FactionManager's primary faction (repute row 0 = Player)
     const playerFaction = GameState.FactionManager?.factions?.get(0);
     if(playerFaction && this.faction !== playerFaction){
       this.faction?.removeMember?.(this);
@@ -3125,7 +3125,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail ClearVisibleList + UpdateVisibleList(0)
+   * ClearVisibleList + UpdateVisibleList(0)
    * used by ChangeFactionByFaction after AddMember.
    */
   clearVisibleList(){
@@ -3136,10 +3136,10 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail ClearHostileActionsVersus
+   * ClearHostileActionsVersus
    * drop queued action groups whose head is a hostile action (Attack 0xC
    * CastSpell 0xF / ItemCastSpell 0x2E). When `versus` is provided the group
-   * must also target it; when omitted (retail null) every hostile group is dropped.
+   * must also target it; when omitted (null) every hostile group is dropped.
    */
   clearHostileActionsVersus(versus?: ModuleCreature){
     if(!this.actionQueue?.length) return;
@@ -3174,7 +3174,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail PacifyCreature
+   * PacifyCreature
    * area creatures that have this as a combat/hostile ref leave combat vs us.
    */
   pacifyCreature(){
@@ -3204,7 +3204,7 @@ export class ModuleCreature extends ModuleObject {
       }
       if(cd.lastAttacker === this) cd.lastAttacker = undefined;
       if(cd.lastDamager === this) cd.lastDamager = undefined;
-      if(cd.lastHostileActor === this) other.setLastHostileActor(undefined, true);
+      if(cd.lastHostileActor === this) other.assignHostileActor(undefined, true);
       if(cd.lastSpellTarget === this) cd.lastSpellTarget = undefined;
       if(cd.lastAttemptedSpellTarget === this) cd.lastAttemptedSpellTarget = undefined;
       if(cd.lastSpellAttacker === this) cd.lastSpellAttacker = undefined;
@@ -3283,7 +3283,7 @@ export class ModuleCreature extends ModuleObject {
         const dodgeAnimID = combatAnimation.getDodgeAnimation(weaponWield);
         const dodgeAnim = GameState.SWRuleSet.animationIdMap.get(dodgeAnimID);
         if(dodgeAnim && this.getModelAnimationByName(dodgeAnim.name)){
-          //console.log('dodge/parry anim', this.getName(), damageAnim.name)
+          //console.log('dodge/parry anim', this.getName, damageAnim.name)
           return OdysseyModelAnimation.GetAnimation2DA(dodgeAnim.name);
         }
       }
@@ -3291,7 +3291,7 @@ export class ModuleCreature extends ModuleObject {
       const dodgeAnimID = combatAnimation.getDodgeAnimation(weaponWield);
       const dodgeAnim = GameState.SWRuleSet.animationIdMap.get(dodgeAnimID);
       if(dodgeAnim && this.getModelAnimationByName(dodgeAnim.name)){
-        //console.log('dodge anim', this.getName(), dodgeAnim.name)
+        //console.log('dodge anim', this.getName, dodgeAnim.name)
         return OdysseyModelAnimation.GetAnimation2DA(dodgeAnim.name);
       }
     }
@@ -3365,7 +3365,7 @@ export class ModuleCreature extends ModuleObject {
   getCombatAnimationAttackType(): string {
     let weapon = this.equipment.RIGHTHAND;
     let weaponType = 0;
-    //let weaponWield = this.getCombatAnimationWeaponType();
+    //let weaponWield = this.getCombatAnimationWeaponType;
 
     if(this.equipment.RIGHTHAND){
       weaponType = (this.equipment.RIGHTHAND.getWeaponType());
@@ -3409,7 +3409,7 @@ export class ModuleCreature extends ModuleObject {
       return 'g';
     }
 
-    /*if(weaponWield == 0)//this.isSimpleCreature())
+    /*if(weaponWield == 0)//this.isSimpleCreature)
       return 'm';
 
     if(weaponWield == 5 || weaponWield == 6 || weaponWield == 7 || weaponWield == 8 || weaponWield == 9){
@@ -3612,7 +3612,7 @@ export class ModuleCreature extends ModuleObject {
       if(this.weaponGestureState.remaining <= 0){
         this.weaponGestureState.active = false;
         this.resetWeaponGestureState();
-        // Retail OnFlourishClipFinished → RestoreWeaponPoweredState (keep on while combat).
+        // OnFlourishClipFinished → RestoreWeaponPoweredState (keep on while combat).
         if(this.combatData.combatState){
           this.weaponPowered(true);
         }
@@ -3672,7 +3672,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail PlaySwingSound — weaponsounds row from weaponmattype,
+   * PlaySwingSound — weaponsounds row from weaponmattype,
    * preferring off-hand when it is a lightsaber.
    */
   private getPlaySwingWeaponSound(){
@@ -3701,7 +3701,7 @@ export class ModuleCreature extends ModuleObject {
     let footstepSoundResRef = '';
     let footstepIsLooping = false;
 
-    // MDL event names match retail RegisterCallbacks casing; compare case-insensitively.
+    // MDL event names match RegisterCallbacks casing; compare case-insensitively.
     const eventName = String(event.event || '').toLowerCase();
 
     switch(eventName){
@@ -3722,15 +3722,15 @@ export class ModuleCreature extends ModuleObject {
         weaponSoundResRef = swingSounds?.getSwingTwirlResRef() || '';
       break;
       case 'hitparry':
-        // Retail HitParryEvent → PlaySwingSound("Parry", 2)
+        // HitParryEvent → PlaySwingSound("Parry", 2)
         weaponSoundResRef = swingSounds?.getHitParryResRef() || '';
       break;
       case 'contact':
-        // Retail HitContactEvent → ShowLightSaberContactVisual (VFX only)
+        // HitContactEvent → ShowLightSaberContactVisual (VFX only)
         this.showLightSaberContactVisual();
       break;
       case 'clash':
-        // Retail HitClashEvent → PlaySwingSound("Clash", 2)
+        // HitClashEvent → PlaySwingSound("Clash", 2)
         weaponSoundResRef = swingSounds?.getClashResRef() || '';
       break;
       case 'hit':
@@ -3775,7 +3775,7 @@ export class ModuleCreature extends ModuleObject {
 
   /**
    * True when legs should keep drive locomotion under a flourish overlay.
-   * Retail PlayerFlourishWeapons checks player-control forward/strafe != 0.
+   * PlayerFlourishWeapons checks player-control forward/strafe != 0.
    */
   isFlourishMoving(): boolean {
     if(this.speed > 0.01 || this.force > 0.01){
@@ -3790,7 +3790,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   flourish(){
-    // Retail PlayerFlourishWeapons: PowerItem + SetCombatState(1, 2);
+    // PlayerFlourishWeapons: PowerItem + SetCombatState(1, 2);
     // moving → SetOverlayAnimation(MELEE_WIELD 0x27ad); standing → InsertFireForget(MELEE_COMBAT_WIELD 0x27ae).
     this.setCombatState(true, ExcitedDurationRow.SpellCast);
     let isSimple = this.isSimpleCreature();
@@ -3814,11 +3814,11 @@ export class ModuleCreature extends ModuleObject {
           stopFlag: resolveOverlayStopFlags(ModuleCreatureAnimState.MELEE_WIELD),
         };
       }
-      // Retail does not play body g*w1 clips on weapon MDLs here — PowerItem only.
+      // does not play body g*w1 clips on weapon MDLs here — PowerItem only.
       return;
     }
 
-    // Standing: fire-forget body gesture (retail InsertFireForgetAnimation MELEE_COMBAT_WIELD).
+    // Standing: fire-forget body gesture (InsertFireForgetAnimation MELEE_COMBAT_WIELD).
     const combatWield = this.animationConstantToAnimation(ModuleCreatureAnimState.MELEE_COMBAT_WIELD);
     const duration = this.getAnimationLength(ModuleCreatureAnimState.MELEE_COMBAT_WIELD)
       || this.getAnimationLength(ModuleCreatureAnimState.FLOURISH)
@@ -3840,7 +3840,7 @@ export class ModuleCreature extends ModuleObject {
 
   /**
    * True when engagement came from hostile combat (Damage), not flourish/SpellCast-only.
-   * Matches retail client sync gate: SetCombatState client update iff arg2 == 1.
+   * matches engine behavior client sync gate: SetCombatState client update iff arg2 == 1.
    */
   isHostileCombatEngaged(): boolean {
     return !!(this.combatData.combatState && this.combatStateReason === ExcitedDurationRow.Damage);
@@ -3966,7 +3966,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail GetReticlePoint
+   * GetReticlePoint
    * head / head_g / rootdummy (then ModuleObject lookathook fallback).
    */
   getReticleNode(){
@@ -4087,13 +4087,13 @@ export class ModuleCreature extends ModuleObject {
     for(let i = 0; i < tLen; i++){
       triggers[i].updateObjectInside(this);
     }
-    // Area of Effect enter/exit (retail UpdateSubAreas)
+    // Area of Effect enter/exit (UpdateSubAreas)
     const aoes = GameState.module.area.areaOfEffects;
     const aLen = aoes?.length || 0;
     for(let i = 0; i < aLen; i++){
       aoes[i].updateObjectInside(this);
     }
-    // Retail ProcessPoint on leader walk — feed party follow ring
+    // ProcessPoint on leader walk — feed party follow ring
     if(GameState.PartyManager.party[0] === this){
       GameState.PartyManager.processLeaderFollowPoint(this);
     }
@@ -4107,7 +4107,7 @@ export class ModuleCreature extends ModuleObject {
     if(this.combatData.lastAttemptedAttackTarget instanceof ModuleObject && this.combatData.lastAttemptedAttackTarget.isDead())
       this.combatData.lastAttemptedAttackTarget = undefined;
 
-    // Retail EndCombatRound fires ScriptEndRound without a CombatState gate.
+    // end combat round fires ScriptEndRound without a CombatState gate.
     // Keep the dead check only so corpses do not re-run OnEndRound AI.
     if(this.isDead())
       return true;
@@ -4119,7 +4119,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail OnApplyDeath encounter unlink (arg2=0)
+   * effect apply encounter unlink (arg2=0)
    * AIActionEncounterCreatureDestroySelf (arg2=1).
    */
   unlinkFromEncounter(fromDestroySelf: boolean = false){
@@ -4147,14 +4147,14 @@ export class ModuleCreature extends ModuleObject {
       instance.run(this);
     }
 
-    // Retail OnApplyDeath → RemoveFromActiveCreatureCount(..., 0)
+    // effect apply → RemoveFromActiveCreatureCount(..., 0)
     this.unlinkFromEncounter(false);
 
-    // Retail OnApplyDeath strips combat/buff VFX before corpse schedule (else willDestroy
+    // effect apply strips combat/buff VFX before corpse schedule (else willDestroy
     // / KeepCorpse skips effect updates and leaves frozen emitters in the world).
     this.clearEffectsOnDeath();
 
-    // Retail SetAutoPaused Party Killed when a party member dies (not full wipe)
+    // SetAutoPaused Party Killed when a party member dies (not full wipe)
     if(GameState.PartyManager.party.indexOf(this) >= 0){
       GameState.GameOverManager?.NotifyPartyMemberDeath?.(this);
       // Pass AL — Mod_OnPlrDeath / GetLastPlayerDied
@@ -4165,14 +4165,14 @@ export class ModuleCreature extends ModuleObject {
       }
     }
 
-    // Retail OnApplyDeath: GetDeadTemp (party + HP≤0) skips DestroyObjectDelay / KeepCorpse.
+    // effect apply: GetDeadTemp (party + HP≤0) skips DestroyObjectDelay / KeepCorpse.
     // Dead PMs stay until TempDeath resurrection or party wipe — do not bag them.
     this.scheduleDestroyAsCorpse();
     return true;
   }
 
   /**
-   * Retail GetDeadTemp — true when this creature is in the
+   * GetDeadTemp — true when this creature is in the
    * client party and current HP < 1 (awaiting combat-clear resurrection).
    */
   getDeadTemp(): boolean {
@@ -4182,7 +4182,7 @@ export class ModuleCreature extends ModuleObject {
 
   /**
    * Begin destroy scheduling for a destroyable corpse.
-   * Retail OnApplyDeath: wait appearance.DestroyObjectDelay (default 3.0s),
+   * effect apply: wait appearance.DestroyObjectDelay (default 3.0s),
    * then event `0xb` spawns the bag and either SetFadeOutTime (FadeDelayOnDeath ms)
    * or SetKeepCorpse (missing FadeDelayOnDeath) — not an 8s fade-as-authority.
    * Non-destroyable corpses stay selectable with loot on the creature.
@@ -4191,7 +4191,7 @@ export class ModuleCreature extends ModuleObject {
   scheduleDestroyAsCorpse(){
     if(!this.isDestroyable) return;
     if(this.destroyed || this.serverDestroyed || this.isRetainedCorpse) return;
-    // Retail GetDeadTemp branch — no event 0xb / KeepCorpse for live party members
+    // GetDeadTemp branch — no event 0xb / KeepCorpse for live party members
     if(this.isPartyMember()) return;
     // Re-apply after OnDeath DestroyObject(OBJECT_SELF) defaults so bare willDestroy
     // with delay 0 does not skip DestroyObjectDelay / FadeDelayOnDeath.
@@ -4271,7 +4271,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Placeable appearance id for the bag — retail GetBodyBagAppearance.
+   * Placeable appearance id for the bag — GetBodyBagAppearance.
    * bodybag.Appearance → else appearance.Body_Bag row's appearance → else 3.
    */
   getBodyBagAppearance(): number {
@@ -4362,7 +4362,7 @@ export class ModuleCreature extends ModuleObject {
   /**
    * Create a body-bag placeable, move droppable loot into it, and schedule
    * EventSpawnBodyBag (~500ms) to load its model.
-   * Retail: destroy event 0xb when destroyable + dead.
+   * : destroy event 0xb when destroyable + dead.
    */
   spawnBodyBag(): number {
     if(!this.shouldSpawnBodyBag()) return ModuleObjectConstant.OBJECT_INVALID;
@@ -4381,8 +4381,8 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail event 0xb body: SpawnBodyBag then KeepCorpse or fade-out visual.
-   * Called when DestroyObjectDelay elapses (and as destroy() backup).
+   * event 0xb body: SpawnBodyBag then KeepCorpse or fade-out visual.
+   * Called when DestroyObjectDelay elapses (and as destroy backup).
    */
   onServerDestroyEvent(){
     if(this.serverDestroyed || this.isRetainedCorpse) return;
@@ -4402,15 +4402,15 @@ export class ModuleCreature extends ModuleObject {
       bag.setBodyBagVisible(true);
     }
 
-    // Retail event 0xb removes the object from GetGameObject / tag lookup so
+    // event 0xb removes the object from GetGameObject / tag lookup so
     // GetIsObjectValid / GetObjectByTag fail (k_ptar_ramp Calo082 gate). KeepCorpse
     // shells stay in area.creatures for visuals only.
     GameState.ModuleObjectManager.RemoveObject(this);
-    // Fade path continues via willDestroy / updateDestroyFade → destroy()
+    // Fade path continues via willDestroy / updateDestroyFade → destroy
   }
 
   /**
-   * Convert to a runtime-only KeepCorpse shell (retail client corpse cache entry).
+   * Convert to a runtime-only KeepCorpse shell (client corpse cache entry).
    * Stays in area.creatures for updates/selection but is excluded from save.
    */
   enterRetainedCorpse(){
@@ -4536,11 +4536,11 @@ export class ModuleCreature extends ModuleObject {
   }
 
   onDialog(oSpeaker: ModuleObject, listenPatternNumber = -1, conversation: DLGObject = undefined, matchedSubstrings: string[] = []){
-    // Retail EventHandler case 7: store captures on the object, then run OnDialogue.
+    // EventHandler case 7: store captures on the object, then run OnDialogue.
     this.setMatchedSubstrings(matchedSubstrings || []);
 
     let nwscript = this.scripts[ModuleObjectScript.CreatureOnDialog];
-    // Retail: empty or "default" OnDialogue resref → k_hen_dialogue01 (written back into the slot).
+    // : empty or "default" OnDialogue resref → k_hen_dialogue01 (written back into the slot).
     const resRef = nwscript?.name || '';
     if(!nwscript || !resRef || resRef.toLowerCase() === 'default'){
       const fallback = GameState.NWScript.Load('k_hen_dialogue01');
@@ -4560,7 +4560,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail ScriptEndDialogu — k_def_endconv → k_ai_master case 1011
+   * ScriptEndDialogu — k_def_endconv → k_ai_master case 1011
    * (re-enable commandable, DCR if enemy seen, else post-dialog walk).
    */
   onEndDialog(){
@@ -4574,12 +4574,12 @@ export class ModuleCreature extends ModuleObject {
   }
 
   onAttacked(attackType: CombatActionType){
-    // Retail EventHandler physical-attacked (0xf) — runs for hit and miss.
+    // EventHandler physical-attacked (0xf) — runs for hit and miss.
     // BroadcastCombatStateToParty on attacker + target refreshes 8000ms combat + party ExcitedDuration.
     const attacker = this.combatData.lastAttacker;
-    // Retail SetLastHostileActor(attacker) before ScriptAttacked
+    // assign hostile actor(attacker) before ScriptAttacked
     if(BitWise.InstanceOfObject(attacker, ModuleObjectType.ModuleObject)){
-      this.setLastHostileActor(attacker as ModuleObject);
+      this.assignHostileActor(attacker as ModuleObject);
     }
     if(BitWise.InstanceOfObject(attacker, ModuleObjectType.ModuleCreature)){
       const atk = attacker as ModuleCreature;
@@ -4603,7 +4603,7 @@ export class ModuleCreature extends ModuleObject {
     if(this.isDead())
       return true;
 
-    // Retail OnApplyDamage — creatures do not BroadcastCombatStateToParty
+    // effect apply — creatures do not BroadcastCombatStateToParty
     // (engagement is OnAttacked / harmful OnSpellCastAt). Door/placeable path is on
     // ModuleObject.onDamaged. Refresh ExcitedDuration Damage row when HP is lost.
     this.setExcitedState(ExcitedDurationRow.Damage);
@@ -4620,7 +4620,7 @@ export class ModuleCreature extends ModuleObject {
       return;
 
     const blocker = this.collisionManager?.blockingObject;
-    // Retail PlotPathAroundCreature:
+    // PlotPathAroundCreature:
     // GetReputation(blocker, mover) < 11 → pathfail with foundEnemy=blocker;
     // if mover commandable → return without hex;
     // both arcs fail → pathfail with foundEnemy=INVALID;
@@ -4633,7 +4633,7 @@ export class ModuleCreature extends ModuleObject {
         }
       };
 
-      // Retail WalkUpdateLocationTestDistance → BumpFriends before hex/pathfail
+      // walk step distance test → BumpFriends before hex/pathfail
       const bumpTo = this.position.clone();
       if(this.forceVector?.lengthSq?.() > 1e-8){
         bumpTo.addScaledVector(this.forceVector.clone().normalize(), 1);
@@ -4648,13 +4648,13 @@ export class ModuleCreature extends ModuleObject {
         return;
       }
 
-      // Retail: reputation of blocker toward this mover (GetReputation < 11)
+      // : reputation of blocker toward this mover (GetReputation < 11)
       const blockerCreature = blocker as ModuleCreature;
       const hostileBlocker = (blockerCreature.getReputation?.(this) ?? 100) < 11;
       if(hostileBlocker){
         this.collisionManager.foundEnemyCreature = blocker;
         runPathfail();
-        // Retail: commandable mover skips hex after hostile pathfail
+        // : commandable mover skips hex after hostile pathfail
         if(this.getCommadable?.()){
           return;
         }
@@ -4671,7 +4671,7 @@ export class ModuleCreature extends ModuleObject {
         return;
       }
 
-      // Both CW/CCW failed — retail clears foundEnemy then pathfail
+      // Both CW/CCW failed — clears foundEnemy then pathfail
       this.collisionManager.foundEnemyCreature = undefined;
       runPathfail();
       return;
@@ -4722,7 +4722,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail IsInjured — skip when appearance.disableinjuredanim.
+   * IsInjured — skip when appearance.disableinjuredanim.
    */
   isInjured(){
     if(this.getAppearance()?.disableinjuredanim) return false;
@@ -4793,7 +4793,7 @@ export class ModuleCreature extends ModuleObject {
     return this.hasSetState(14);
   }
 
-  /** K2 EffectDroidConfused — SetState 16 (not IsDebilitated in retail) */
+  /** K2 EffectDroidConfused — SetState 16 (not IsDebilitated in) */
   isDroidConfused(){
     return this.hasSetState(16);
   }
@@ -4819,7 +4819,7 @@ export class ModuleCreature extends ModuleObject {
     ) || this.isKnockdownHeld();
   }
 
-  /** Retail EffectEntangle — aborts AIActionCastSpell mid-cast. */
+  /** EffectEntangle — aborts AIActionCastSpell mid-cast. */
   isEntangled(){
     return this.hasEffect(GameEffectType.EffectEntangle);
   }
@@ -4978,7 +4978,7 @@ export class ModuleCreature extends ModuleObject {
     this.refreshAppearanceAlignment(oldValue);
   }
 
-  /** Prestige tier from class level (retail HandleAlignmentInfluence). */
+  /** Prestige tier from class level (HandleAlignmentInfluence). */
   static #prestigeTierFromLevel(level: number): number {
     const lv = level | 0;
     if(lv <= 0) return 0;
@@ -4989,7 +4989,7 @@ export class ModuleCreature extends ModuleObject {
     return 5;
   }
 
-  /** Retail PC prestige multiplier (local_2c = 1 + 0.2 * tier) + CHA*3 bonus. */
+  /** PC prestige multiplier (local_2c = 1 + 0.2 * tier) + CHA*3 bonus. */
   static #getPcPrestigeFactor(pc: ModuleCreature | undefined): { factor: number; bonus: number } {
     if(!pc){
       return { factor: 1.0, bonus: 0 };
@@ -5188,7 +5188,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail SetAppearanceAlignment — reload body/head when GoodEvil crosses
+   * SetAppearanceAlignment — reload body/head when GoodEvil crosses
    * headtex bands or the TEX*Evil threshold (GoodEvil &lt; 0x29).
    */
   refreshAppearanceAlignment(oldGoodEvil: number){
@@ -5208,7 +5208,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   setHP(nAmount = 0){
-    // Keep currentHitPoints consistent with getHP() for every subrace.
+    // Keep currentHitPoints consistent with getHP for every subrace.
     // Default: getHP = maxHitPoints + currentHitPoints - hitPoints
     // Wookiee/Beast: getHP = hitPoints + currentHitPoints
     // EffectDeath setHP(-11) used only the default inversion, so beast NPCs
@@ -5274,7 +5274,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail GetCurrentForcePoints: temporary + current.
+   * GetCurrentForcePoints: temporary + current.
    */
   getFP(){
     return (this.temporaryForce || 0) + (this.currentForce || 0);
@@ -5301,7 +5301,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail UnReadySpell spend order: temporary FP first, then current.
+   * UnReadySpell spend order: temporary FP first, then current.
    */
   subtractFP(nAmount = 0){
     if(nAmount <= 0) return;
@@ -5319,12 +5319,12 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail GetAdjustedForcePoints — forceadjust.2da by alignment band.
+   * GetAdjustedForcePoints — forceadjust.2da by alignment band.
    */
   getAdjustedForcePointCost(spell: { forcepoints?: number; goodEvil?: string }): number {
     const base = typeof spell?.forcepoints === 'number' ? spell.forcepoints : (parseInt(String(spell?.forcepoints)) || 0);
     if(base <= 0) return 0;
-    // NPCs outside party use base cost (retail arg2 == 0)
+    // NPCs outside party use base cost (arg2 == 0)
     if(!this.isPartyMember() && !this.isPC){
       return base;
     }
@@ -5342,7 +5342,7 @@ export class ModuleCreature extends ModuleObject {
 
   /**
    * FP available for Force-menu enable checks.
-   * Retail GetSelfForcePowers / GetHostileForcePowers: body_fuel → use HP instead of FP.
+   * GetSelfForcePowers / GetHostileForcePowers: body_fuel → use HP instead of FP.
    */
   getForceMenuResource(): number {
     if(this.bodyFuel){
@@ -5352,7 +5352,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail UnReadySpell — drain adjusted FP
+   * UnReadySpell — drain adjusted FP
    * (clamp at 0). Always succeeds when the spell row is valid; menu enable is
    * the soft FP/HP gate (GetSelfForcePowers / GetHostileForcePowers).
    */
@@ -5366,7 +5366,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail ForceMenuAction class-slot pick — first Jedi class (3/4/5) in the
+   * ForceMenuAction class-slot pick — first Jedi class (3/4/5) in the
    * first two class slots; otherwise 0.
    */
   getForceSpellClassIndex(): number {
@@ -5389,7 +5389,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * NWScript GetAC / simple AC — retail GetArmorClass.
+   * NWScript GetAC / simple AC — GetArmorClass.
    */
   getAC(){
     return this.getArmorClassVersus(undefined, false);
@@ -5397,7 +5397,7 @@ export class ModuleCreature extends ModuleObject {
 
   /**
    * Whether this creature currently SEES `object` (perception bit 0x01).
-   * Retail GetVisibleListElement bit_flags & 1.
+   * GetVisibleListElement bit_flags & 1.
    */
   hasSeenObject(object: ModuleObject): boolean {
     if(!object || object === this) return true;
@@ -5406,7 +5406,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail GetArmorClassVersus.
+   * GetArmorClassVersus.
    * @param attacker - creature rolling the attack (for invis / SEEN gates)
    * @param touch - when true, omit armor / shield / natural equipment AC and
    * armor/shield effect AC (types 2–3); dodge + deflection still apply
@@ -5439,7 +5439,7 @@ export class ModuleCreature extends ModuleObject {
     }
 
     // Flat-footed / can't see attacker: deny positive DEX (negative still hurts).
-    // Retail: GetInvisible(attacker, defender) || !(SEEN bit) → no GetDEXMod / dodge field.
+    // : GetInvisible(attacker, defender) || !(SEEN bit) → no GetDEXMod / dodge field.
     const loseDex =
       !!attacker &&
       (this.isInvisibleToObserver(attacker) || !this.hasSeenObject(attacker));
@@ -5489,7 +5489,7 @@ export class ModuleCreature extends ModuleObject {
         default: dodgeBonus += signed; break;
       }
     }
-    // Retail applies effect dodge even when DEX is denied; natural effects apply on touch.
+    // applies effect dodge even when DEX is denied; natural effects apply on touch.
     ac += dodgeBonus + naturalBonus + armorEffect + shieldEffect + deflectEffect;
 
     // Dueling AC feat mod (GetTotalACFeatMod) — one-handed with free off-hand
@@ -5514,7 +5514,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail ExecuteCommandDoTouchAttack.
+   * ExecuteCommandDoTouchAttack.
    * @returns 0 miss, 1 hit, 2 critical
    */
   doTouchAttack(target: ModuleObject, ranged = false): number {
@@ -5684,7 +5684,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail CalculateSpellSaveDC
+   * CalculateSpellSaveDC
    * 5 + total level + WIS mod + CHA mod + Force Focus (+1/+2/+4).
    */
   getSpellSaveDC(){
@@ -5801,7 +5801,7 @@ export class ModuleCreature extends ModuleObject {
     this.locomotionScale = 1;
     this.moveDirOverride = undefined;
     resetWalkSpeedFactor(this);
-    // Retail WalkUpdateLocation end-of-path: SetAnimation(10000 / PAUSE).
+    // creature walk update end-of-path: SetAnimation(10000 / PAUSE).
     // Walk/run clips are forced looping, so they never demote on their own.
     this.clearLocomotionAnimation();
     if(resetPlayerControl && this.playerControl){
@@ -5832,20 +5832,20 @@ export class ModuleCreature extends ModuleObject {
     }
   }
 
-  /** Path/Drive movers call this from DriveUpdateLocation; RK4 uses forceVector sweep. */
+  /** Path/Drive movers call this from creature drive update; RK4 uses forceVector sweep. */
   updateCollision(delta: number = 0){
     this.collisionManager?.updateCollision(delta);
   }
 
   /**
-   * Retail Control — RK4 accel/drag + turn + DriveAnimationUpdate gate.
+   * Control — RK4 accel/drag + turn + DriveAnimationUpdate gate.
    */
   applyPlayerCamRelativeControl(delta: number = 0){
     const ctrl = this.playerControl;
     if(!ctrl) return;
     const appearance = this.getAppearance();
     const walking = !!ctrl.walking;
-    // Retail GetMaxSpeed / GetDriveAcceleration: activity_ bit 0 = stealth, not detect
+    // GetMaxSpeed / GetDriveAcceleration: activity_ bit 0 = stealth, not detect
     const limits = resolvePlayerDriveLimits(
       !!this.stealthMode,
       appearance?.driveaccl ?? 0,
@@ -5878,7 +5878,7 @@ export class ModuleCreature extends ModuleObject {
     this.speed = step.speed;
     this.force = step.speed > 1e-4 ? 1 : 0;
 
-    // Retail SetSWAnimationSpeed(mag, 0): total |v|; 0 when |v| <= 1
+    // SetSWAnimationSpeed(mag, 0): total |v|; 0 when |v| <= 1
     let animMoveSpeed = playerSetSWAnimationSpeedMag(step.speed);
     // DriveAnimationUpdate: stealth clamps to drive_anim_walk before gate
     if(this.stealthMode && animMoveSpeed > 0){
@@ -5886,7 +5886,7 @@ export class ModuleCreature extends ModuleObject {
       if(animMoveSpeed > walkCap) animMoveSpeed = walkCap;
     }
 
-    // Retail: turn only while stick non-zero, toward stick world desired (not velocity).
+    // : turn only while stick non-zero, toward stick world desired (not velocity).
     // Full-release coast freezes facing.
     if(!stickZero && step.speed > 1e-4){
       const desiredFacing = playerDesiredFacingRad(desired.x, desired.y);
@@ -5906,7 +5906,7 @@ export class ModuleCreature extends ModuleObject {
           maxTurn,
           delta
         );
-        // Retail SetOrientation applies the rate-limited yaw immediately.
+        // SetOrientation applies the rate-limited yaw immediately.
         // Do not route through facingAnim (TURN_SPEED_SLOW) — that overrides Min/MaxTurnRate.
         this.setFacing(nextFacing, true);
       }
@@ -5915,7 +5915,7 @@ export class ModuleCreature extends ModuleObject {
       step.speed <= 1e-4 &&
       (GameState.clientCameraMode | 0) === ClientCameraMode.COMBAT
     ){
-      // Retail Control camera_mode 6 idle face toward last hostile target @ 900°/s
+      // Control camera_mode 6 idle face toward last hostile target @ 900°/s
       const target = FollowerCamera.getCombatLookTarget(this);
       if(
         target &&
@@ -5935,16 +5935,16 @@ export class ModuleCreature extends ModuleObject {
       }
     }
 
-    // Retail: pos += normalize(orientation) * |RK4 delta| (facing-aligned; no slide).
+    // : pos += normalize(orientation) * |RK4 delta| (facing-aligned; no slide).
     const stepMag = Math.hypot(step.dx, step.dy);
     const aligned = playerStepAlongFacing(stepMag, this.rotation.z);
     this.forceVector.set(aligned.dx, aligned.dy, 0);
 
     // DriveAnimationUpdate: run when speed > 0.6*DriveMaxSpeed, else
-    // walk while SetSWAnimationSpeed mag > 0. On key release, retail coasts:
+    // walk while SetSWAnimationSpeed mag > 0. On key release, coasts:
     // run → walk (below 0.6*Vmax) → idle (|v|<=1) while RK4 still slides to 0.25.
     // Only change the base clip when the state changes — restarting walk every
-    // frame (setAnimationState clears started) is not retail.
+    // frame (setAnimationState clears started) is not.
     if(animMoveSpeed > 0){
       let nextAnim: ModuleCreatureAnimState;
       if(isDriveAnimRunning(animMoveSpeed, driveMax) && !walking && !this.stealthMode){
@@ -5986,7 +5986,7 @@ export class ModuleCreature extends ModuleObject {
       this.animSpeed = 1;
     }
 
-    // Retail SetSWAnimationSpeed — next frame's turn gate reads this ()
+    // SetSWAnimationSpeed — next frame's turn gate reads this 
     ctrl.lastAnimMoveSpeed = animMoveSpeed;
 
     // Consume one-shot axes each frame (keyboard processors re-assert while held)
@@ -5998,7 +5998,7 @@ export class ModuleCreature extends ModuleObject {
 
   /**
    * Path/Drive animation pacing uses appearance walkdist/rundist and the
-   * actual world speed produced by WalkUpdateLocation/DriveUpdateLocation.
+   * actual world speed produced by creature walk update/creature drive update.
    */
   private updateServerLocomotionAnimationRate(){
     if(!(this.speed > 0)){
@@ -6022,7 +6022,7 @@ export class ModuleCreature extends ModuleObject {
 
   getMovementSpeed(){
     const scale = (this.locomotionScale > 0 ? this.locomotionScale : 1) * this.movementSpeed;
-    // Retail LimitMovementSpeed caps to walk while slowed
+    // LimitMovementSpeed caps to walk while slowed
     if(this.limitMovementSpeed){
       return this.getWalkSpeed() * scale;
     }
@@ -6056,7 +6056,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * @param subtractNegatives — retail GetLevel(stats, 1): subtract class.negativeLevels
+   * @param subtractNegatives — GetLevel(stats, 1): subtract class.negativeLevels
    */
   getTotalClassLevel(subtractNegatives = false){
     let total = 0;
@@ -6072,7 +6072,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail GetForceItemMask — bit flags from equipped baseitem types
+   * GetForceItemMask — bit flags from equipped baseitem types
    * used by AIActionCastSpell forbid/require mask checks.
    */
   getForceItemMask(): number {
@@ -6182,7 +6182,7 @@ export class ModuleCreature extends ModuleObject {
         return true;
       }
     }
-    // Retail bonus_feats list from EffectBonusFeat
+    // bonus_feats list from EffectBonusFeat
     if(this.effects?.length){
       for(let i = 0; i < this.effects.length; i++){
         const e = this.effects[i];
@@ -6216,14 +6216,14 @@ export class ModuleCreature extends ModuleObject {
    * @returns True if the creature can use the given skill, false otherwise.
    */
   getCanUseSkill(value: number): boolean {
-    // Retail aliases the mine subskills 100–102 to Demolitions.
+    // aliases the mine subskills 100–102 to Demolitions.
     const skillId = value === 100 || value === 101 || value === 102
       ? 1
       : value;
     const skill = this.skills[skillId];
     if(!skill) return false;
     if(!skill.isUntrained()){
-      // Retail stores ranks as signed bytes; 0xff is -1, not 255 ranks.
+      // stores ranks as signed bytes; 0xff is -1, not 255 ranks.
       return ((skill.rank << 24) >> 24) > 0;
     }
     if(skill.canAllClassesUse()){
@@ -6435,7 +6435,7 @@ export class ModuleCreature extends ModuleObject {
    */
   doSpotDetection(target: ModuleCreature): boolean {
     if(!target) return false;
-    // Retail DoSpotDetection: GetBlind observer fails spot
+    // DoSpotDetection: GetBlind observer fails spot
     if(isCreatureBlind(this)){
       return false;
     }
@@ -6513,7 +6513,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail IsStealthCapable — skill + stealth device on belt/hide.
+   * IsStealthCapable — skill + stealth device on belt/hide.
    */
   isStealthCapable(): boolean {
     if(this.area?.restrictMode) return false;
@@ -6531,7 +6531,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail SetStealthMode — toggle invisibility for party stealth.
+   * SetStealthMode — toggle invisibility for party stealth.
    */
   setStealthMode(enabled: boolean){
     const next = !!enabled;
@@ -6555,7 +6555,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail SetDetectMode — sets detect_mode; ComputeModifiedMovementRate
+   * SetDetectMode — sets detect_mode; modified movement rate
    * only applies LimitMovementSpeed for stealth in KotOR (detect is a no-op there).
    */
   setDetectMode(enabled: boolean){
@@ -6565,7 +6565,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail SetActivity — set/clear activity bits with combat-mode exclusivity.
+   * SetActivity — set/clear activity bits with combat-mode exclusivity.
    */
   setActivity(bits: number, enable: boolean, _param3: number = 0){
     const mask = bits | 0;
@@ -6619,7 +6619,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail ActivityManager
+   * ActivityManager
    * param 1 clears skill/combat soft modes; param 4 clears stealth/dialog for CounterSpell.
    */
   activityManager(reason: number){
@@ -6663,7 +6663,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail SetCombatMode — maps mode → activity bit; defers while round started.
+   * SetCombatMode — maps mode → activity bit; defers while round started.
    */
   setCombatMode(mode: number, forceImmediate: boolean = false){
     const next = (mode | 0) as CombatMode;
@@ -6692,7 +6692,7 @@ export class ModuleCreature extends ModuleObject {
     }
     if(prev === CombatMode.MODE_1){
       this.setActivity(0x400, false, 0);
-      // Retail stops here when leaving mode 1; still apply next when forced
+      // stops here when leaving mode 1; still apply next when forced
       if(next === CombatMode.NONE) return;
     }
 
@@ -6742,7 +6742,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail AIActionCounterSpell combat-mode enter
+   * AIActionCounterSpell combat-mode enter
    * ActivityManager(4) then set mode 4 / activity 0x800 (or clear prior mode bit).
    */
   enterCounterSpellMode(){
@@ -6763,7 +6763,7 @@ export class ModuleCreature extends ModuleObject {
     }
   }
 
-  /** Clear combat mode (CreateNewAttackActions / leave CounterSpell). */
+  /** Clear combat mode (QueueAttackActions / leave CounterSpell). */
   clearCombatMode(){
     this.pendingCombatMode = -1;
     if(this.combatMode === CombatMode.NONE) return;
@@ -7127,8 +7127,8 @@ export class ModuleCreature extends ModuleObject {
     
     try{
       const mdl = await MDLLoader.loader.load(this.bodyModel);
-      // Retail CreateSimple / CreateBTypeBody — appearance.2da ENVMAP
-      // is applied to all body parts via SetEnvMap, falling back to "DEFAULT" when blank.
+      // CreateSimple / CreateBTypeBody — appearance.2da ENVMAP
+      // is applied to all body parts via envmap assign, falling back to "DEFAULT" when blank.
       const envMapOverride = appearance.envmap?.length ? appearance.envmap : 'DEFAULT';
       const model = await OdysseyModel3D.FromMDL(mdl, {
         castShadow: true,
@@ -7194,7 +7194,7 @@ export class ModuleCreature extends ModuleObject {
 
   /**
    * Resolve the live heads.2da row for rendered creatures.
-   * Retail creature appearance selection uses appearance.2da NORMALHEAD
+   * creature appearance selection uses appearance.2da NORMALHEAD
    * BACKUPHEAD for normal creatures; do not treat UTC Appearance_Head as a
    * global render override here or NPCs collapse onto a shared heads row.
    */
@@ -7208,8 +7208,8 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail death anim path — play appearance.DeathVFX (visualeffects.2da id).
-   * EffectVisualEffect attaches to the model's impact node (retail DeathVFXNode default).
+   * death anim path — play appearance.DeathVFX (visualeffects.2da id).
+   * EffectVisualEffect attaches to the model's impact node (DeathVFXNode default).
    */
   playAppearanceDeathVFX(){
     const appearance = this.creatureAppearance;
@@ -7295,7 +7295,7 @@ export class ModuleCreature extends ModuleObject {
     }
   }
 
-  /*getEquip_ItemList(){
+  /*getEquip_ItemList{
     if(this.template.RootNode.hasField('Equip_ItemList')){
       return this.template.getFieldByLabel('Equip_ItemList').getChildStructs()
     }
@@ -7522,7 +7522,7 @@ export class ModuleCreature extends ModuleObject {
 
   /**
    * Dialog HideEquippedItems — stash slot refs then unequip so ShowEquippedItems
-   * can restore at conversation end (retail SetDialogDelay).
+   * can restore at conversation end (SetDialogDelay).
    */
   hideEquippedItemsForDialog(unequipItems: boolean = false, unequipHead: boolean = false){
     if(!this.dialogEquipmentStash){
@@ -7659,7 +7659,7 @@ export class ModuleCreature extends ModuleObject {
       }
 
       if(this.template.RootNode.hasField('AreaId')){
-        // Retail SaveCreature AreaId — area attach restores live area; keep as metadata only
+        // SaveCreature AreaId — area attach restores live area; keep as metadata only
         this.savedAreaId = this.template.getFieldByLabel('AreaId').getValue() >>> 0;
       }
 
@@ -7724,7 +7724,7 @@ export class ModuleCreature extends ModuleObject {
       if(this.template.RootNode.hasField('HitPoints'))
         this.hitPoints = this.template.getFieldByLabel('HitPoints').getValue();
 
-      // Retail ReadStatsFromGff: CurrentHitPoints defaults to HitPoints when absent.
+      // ReadStatsFromGff: CurrentHitPoints defaults to HitPoints when absent.
       if(this.template.RootNode.hasField('CurrentHitPoints')){
         this.currentHitPoints = this.template.getFieldByLabel('CurrentHitPoints').getValue();
       }else{
@@ -7744,10 +7744,10 @@ export class ModuleCreature extends ModuleObject {
         this.setCommadable(this.template.RootNode.getFieldByLabel('Commandable').getValue());
       }
 
-      // Retail LoadCreature / LoadCreatureData / LoadCharacterFromIFO:
+      // LoadCreature / LoadCreatureData / LoadCharacterFromIFO:
       // DetectMode GFF is read then ignored; SetActivity(2,1) always enables detect.
       // StealthMode goes through SetActivity(1, value) — blocked while detect activity bit is set
-      // (same as retail; stealth is typically off on load).
+      // (same as; stealth is typically off on load).
       if((this.activity & 2) === 0){
         this.setActivity(2, true, 0);
       }else{
@@ -7883,7 +7883,7 @@ export class ModuleCreature extends ModuleObject {
       if(this.template.RootNode.hasField('MaxHitPoints')){
         this.maxHitPoints = this.template.getFieldByLabel('MaxHitPoints').getValue();
       }
-      // Retail computes max HP from stats; toolset UTCs that omit MaxHitPoints
+      // computes max HP from stats; toolset UTCs that omit MaxHitPoints
       // must not leave max at 0 (that made pause resolve as pauseinj).
       if(this.maxHitPoints <= 0 && this.hitPoints > 0){
         this.maxHitPoints = this.hitPoints;
@@ -7892,7 +7892,7 @@ export class ModuleCreature extends ModuleObject {
       if(this.template.RootNode.hasField('MaxForcePoints')){
         this.maxForcePoints = this.template.getFieldByLabel('MaxForcePoints').getValue();
       }
-      // CurrentForce is the spendable pool (retail CreatureStats current FP).
+      // CurrentForce is the spendable pool (CreatureStats current FP).
       // Toolset UTCs often leave ForcePoints filled and CurrentForce at 0.
       if(this.currentForce <= 0 && this.forcePoints > 0){
         this.currentForce = this.maxForcePoints > 0
@@ -7983,7 +7983,7 @@ export class ModuleCreature extends ModuleObject {
       if(this.template.RootNode.hasField('TextureVar'))
         this.textureVar = this.template.getFieldByLabel('TextureVar').getValue();
 
-      // Retail ReadStatsFromGff: MovementRate primary; WalkRate fallback if MovementRate missing
+      // ReadStatsFromGff: MovementRate primary; WalkRate fallback if MovementRate missing
       if(this.template.RootNode.hasField('MovementRate')){
         this.walkRate = this.template.getFieldByLabel('MovementRate').getValue();
       }else if(this.template.RootNode.hasField('WalkRate')){
@@ -8088,7 +8088,7 @@ export class ModuleCreature extends ModuleObject {
             let equipped_item = undefined;
             let slot_type = strt.type;
             // Always FromStruct so Equip_ItemList Dropable/Pickpocketable survive UTI merge
-            // (retail ReadItemsFromGff: LoadFromTemplate then re-apply Dropable from the struct).
+            // (ReadItemsFromGff: LoadFromTemplate then re-apply Dropable from the struct).
             equipped_item = new GameState.Module.ModuleArea.ModuleItem(GFFObject.FromStruct(strt));
             
             switch(slot_type){
@@ -8161,7 +8161,7 @@ export class ModuleCreature extends ModuleObject {
 
       this.loadActionList();
 
-      // CombatRoundData — retail LoadCombatRound only applies when RoundStarted != 0
+      // CombatRoundData — LoadCombatRound only applies when RoundStarted != 0
       try{
         if(this.template.RootNode.hasField('CombatRoundData')){
           const crField = this.template.RootNode.getFieldByLabel('CombatRoundData');
@@ -8169,8 +8169,8 @@ export class ModuleCreature extends ModuleObject {
           const crStruct = crStructs[0];
           if(crStruct){
             if(this.combatRound.fromStruct(crStruct)){
-              // Retail does not GFF-persist CombatState; mid-round load must
-              // re-enter combat so EndCombatRound / OnEndRound / CreateNewAttackActions work.
+              // does not GFF-persist CombatState; mid-round load must
+              // re-enter combat so end combat round / OnEndRound / QueueAttackActions work.
               this.setCombatState(true, ExcitedDurationRow.Damage);
               this.setExcitedState(ExcitedDurationRow.Damage);
             }
@@ -8180,7 +8180,7 @@ export class ModuleCreature extends ModuleObject {
         console.error('ModuleCreature.initProperties CombatRoundData', e);
       }
 
-      // CombatInfo — retail LoadData
+      // CombatInfo — LoadData
       try{
         if(this.template.RootNode.hasField('CombatInfo')){
           const ciField = this.template.RootNode.getFieldByLabel('CombatInfo');
@@ -8226,7 +8226,7 @@ export class ModuleCreature extends ModuleObject {
       console.error(e);
     }
 
-    // Retail LoadCreature — ReadFieldINT("Animation", default 10000)
+    // LoadCreature — ReadFieldINT("Animation", default 10000)
     // then SetAnimation. Always re-resolve after HP is loaded so pause is not
     // stuck on pauseinj from a pre-stats constructor resolve.
     let anim = ModuleCreatureAnimState.PAUSE;
@@ -8346,7 +8346,7 @@ export class ModuleCreature extends ModuleObject {
   updateDestroyFade(delta: number = 0): void {
     if(this.destroyed || this.isRetainedCorpse) return;
 
-    // Retail EventHandler destroy (0xb) — fires at DestroyObjectDelay
+    // EventHandler destroy (0xb) — fires at DestroyObjectDelay
     if(!this.serverDestroyed && this.timeSinceDestroyStarted >= this.delayUntilFade){
       this.onServerDestroyEvent();
       // KeepCorpse converts to retained shell — stop the destroy timer path
@@ -8382,7 +8382,7 @@ export class ModuleCreature extends ModuleObject {
       return;
     }
 
-    // Retail EventHandler destroy (0xb)
+    // EventHandler destroy (0xb)
     this.unlinkFromEncounter(false);
 
     if(!this.serverDestroyed){
@@ -8397,7 +8397,7 @@ export class ModuleCreature extends ModuleObject {
     this.disposeCreatureVisuals();
   }
 
-  /** Tear down head/equipment/inventory visuals after ModuleObject.destroy(). */
+  /** Tear down head/equipment/inventory visuals after ModuleObject.destroy. */
   disposeCreatureVisuals(){
     if(this.head instanceof OdysseyModel3D){
       if(this.head.parent instanceof THREE.Object3D){
@@ -8499,7 +8499,7 @@ export class ModuleCreature extends ModuleObject {
 
   /**
    * Sync combat information fields from live equipment/stats before SaveData.
-   * Retail Compute/Update fills these before SaveData.
+   * Compute/Update fills these before SaveData.
    */
   syncCombatInformationForSave(){
     const info = this.combatInformation;
@@ -8550,7 +8550,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail SaveClassInfo LvlStatList element (struct type 0).
+   * SaveClassInfo LvlStatList element (struct type 0).
    * Omits LvlStatAbility for level index 0 or when no ability bump.
    */
   saveLevelStatStruct(rec: LevelStatRecord, levelIndex: number): GFFStruct {
@@ -8597,7 +8597,7 @@ export class ModuleCreature extends ModuleObject {
 
     let gff = new GFFObject();
     gff.FileType = 'UTC ';
-    // Retail Creature List element struct type
+    // Creature List element struct type
     gff.RootNode.type = 4;
     
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
@@ -8624,12 +8624,12 @@ export class ModuleCreature extends ModuleObject {
     for(let i = 0; i < this.classes.length; i++){
       classList.addChildStruct( this.classes[i].save() );
     }
-    // Retail SaveStats: MClassLevUpIn = class_count - 1
+    // SaveStats: MClassLevUpIn = class_count - 1
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'MClassLevUpIn') ).setValue(
       Math.max(0, (this.classes?.length || 1) - 1)
     );
 
-    // Retail SaveClassInfo: LvlStatList only for is_pc && pt_controlled_npc == -1
+    // SaveClassInfo: LvlStatList only for is_pc && pt_controlled_npc == -1
     if(this.isPC && GameState.PartyManager.ControlledNPC === -1 && this.levelStats.length > 0){
       const lvlStatList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'LvlStatList') );
       for(let i = 0; i < this.levelStats.length; i++){
@@ -8643,12 +8643,12 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Color_Tattoo2') ).setValue(this.colorTattoo2 | 0);
 
     let combatInfoStruct = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'CombatInfo') );
-    // Retail SaveData — sync live fields before write
+    // SaveData — sync live fields before write
     this.syncCombatInformationForSave();
     combatInfoStruct.addChildStruct(this.combatInformation.toStruct(0xCAAA));
 
     let combatRoundDataStruct = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'CombatRoundData') );
-    // Retail SaveCreature: always add CombatRoundData (0xCADA); populate only when RoundStarted
+    // SaveCreature: always add CombatRoundData (0xCADA); populate only when RoundStarted
     if(this.combatRound.roundStarted){
       combatRoundDataStruct.addChildStruct( this.combatRound.toStruct(0xCADA) );
     }else{
@@ -8677,13 +8677,13 @@ export class ModuleCreature extends ModuleObject {
       effectList.addChildStruct( this.effects[i].save() );
     }
 
-    //Equipment — retail SaveCreature walks slot bits 1<<0.. 1<<17 (18 slots)
+    //Equipment — SaveCreature walks slot bits 1<<0.. 1<<17 (18 slots)
     let equipItemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'Equip_ItemList') );
     for(let slot = 1, n = 0; n < 18; slot <<= 1, n++){
       const equipped = this.GetItemInSlot(slot);
       if(!equipped) continue;
       const equipItem = equipped.save();
-      // Retail SaveCreature writes ObjectId before SaveItem (inventory.res omits it)
+      // SaveCreature writes ObjectId before SaveItem (inventory.res omits it)
       equipItem.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(equipped.id >>> 0);
       equipItem.setType(slot);
       equipItemList.addChildStruct(equipItem);
@@ -8691,7 +8691,7 @@ export class ModuleCreature extends ModuleObject {
 
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Experience') ).setValue(this.experience);
     
-    // Retail SaveListenData: ExpressionList only when size > 0; element struct type 5
+    // SaveListenData: ExpressionList only when size > 0; element struct type 5
     if(this.listeningPatterns.length > 0){
       let expressionList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ExpressionList') );
       for(let i = 0; i < this.listeningPatterns.length; i++){
@@ -8705,12 +8705,12 @@ export class ModuleCreature extends ModuleObject {
 
     gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'FactionID') ).setValue(this.faction ? this.faction.id : this.factionId);
 
-    //Feats — retail SaveClassInfo only writes FeatList when feats.size > 0
+    //Feats — SaveClassInfo only writes FeatList when feats.size > 0
     if(this.feats.length > 0){
       let featList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'FeatList') );
       for(let i = 0; i < this.feats.length; i++){
         const featStruct = this.feats[i].save();
-        // Retail FeatList element struct type is 1
+        // FeatList element struct type is 1
         if(typeof featStruct.setType === 'function') featStruct.setType(1);
         featList.addChildStruct(featStruct);
       }
@@ -8739,7 +8739,7 @@ export class ModuleCreature extends ModuleObject {
     for(let i = 0; i < this.inventory.length; i++){
       const invItem = this.inventory[i];
       let itemStruct = invItem.save();
-      // Retail SaveCreature writes ObjectId before SaveItem
+      // SaveCreature writes ObjectId before SaveItem
       itemStruct.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(invItem.id >>> 0);
       itemList.addChildStruct(itemStruct);
     }
@@ -8779,7 +8779,7 @@ export class ModuleCreature extends ModuleObject {
       perceptionList.addChildStruct(perceptionStruct);
     }
 
-    // PerceptionRange is not written by retail SaveCreature / SaveStats (GIT)
+    // PerceptionRange is not written by SaveCreature / SaveStats (GIT)
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'Phenotype') ).setValue(this.phenotype);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Plot') ).setValue(this.plot ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') ).setValue(this.portraitId);
@@ -8815,7 +8815,7 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'SkillPoints') ).setValue( this.skillPoints ? this.skillPoints : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'SoundSetFile') ).setValue(this.soundSetFile);
 
-    // Retail SaveClassInfo: SpecAbilityList only when special_abilities.size > 0
+    // SaveClassInfo: SpecAbilityList only when special_abilities.size > 0
     if(this.specialAbilities.length > 0){
       const specAbilityList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'SpecAbilityList') );
       for(let i = 0; i < this.specialAbilities.length; i++){
@@ -8852,7 +8852,7 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).setValue( 1 * Math.sin(theta) );
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZOrientation') ).setValue( 0 );
 
-    // Retail SaveCreature: FollowInfo when party_follow_info allocated (party members)
+    // SaveCreature: FollowInfo when party_follow_info allocated (party members)
     if(this.isPM){
       const follow = this.partyFollowInfo || createDefaultPartyFollowInfo();
       this.partyFollowInfo = follow;

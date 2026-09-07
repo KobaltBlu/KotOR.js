@@ -16,7 +16,7 @@ import { GameState } from "@/GameState";
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * retail (PORTCUST)
+ * (PORTCUST)
  * gui3D_room + cghead_light, camerahookm/f, SetViewAngle 22.726,
  * AttachTranslate (0, headHeight, 0) local-space (=0).
  *
@@ -48,9 +48,9 @@ export class CharGenPortCust extends GameMenu {
   sceneModel3D: OdysseyModel3D;
 
   isCharLoading: boolean = false;
-  /** Retail GetPortraitsList parallel arrays (portrait id + appearance id). */
+  /** GetPortraitsList parallel arrays (portrait id + appearance id). */
   portraitList: CharGenPortraitEntry[] = [];
-  /** Index into portraitList (Retail). */
+  /** Index into portraitList. */
   portraitListIndex: number = 0;
 
   constructor(){
@@ -198,7 +198,7 @@ export class CharGenPortCust extends GameMenu {
     }
   }
 
-  /** Retail UpdatePortraitButton plays pause1 on body (0xff) and head (0xfe). */
+  /** UpdatePortraitButton plays pause1 on body (0xff) and head (0xfe). */
   playPauseAnimation(creature: { model?: OdysseyModel3D }) {
     try{
       creature?.model?.playAnimation?.('pause1', true);
@@ -219,7 +219,7 @@ export class CharGenPortCust extends GameMenu {
       try{
         this.sceneModel3D = sceneModel3D;
         this._3dView.addModel(this.sceneModel3D);
-        // Retail PlayAnimation("default") on cghead_light
+        // PlayAnimation("default") on cghead_light
         this.sceneModel3D.playAnimation('default', true);
         this.updateCamera();
       }catch(e){
@@ -276,8 +276,8 @@ export class CharGenPortCust extends GameMenu {
   }
 
   /**
-   * Retail UpdatePortraitButton AttachTranslate
-   * camerahookm/f pose + local-space (0, getCameraHeight(), 0).
+   * UpdatePortraitButton AttachTranslate
+   * camerahookm/f pose + local-space (0, getCameraHeight, 0).
    */
   updateCamera() {
     const creature = GameState.CharGenManager.selectedCreature;

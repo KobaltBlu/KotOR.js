@@ -1,16 +1,15 @@
 /**
- * CSWCMessage — port of retail client messaging.
- * Client-side SendPlayerToServer* / HandleServerToPlayer* messaging.
+ * OdysseyClientMessage — client-side SendPlayerToServer* / HandleServerToPlayer* messaging.
  * Unwired: transport defaults to no-op; Handle* reads payloads only (no game side effects).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * @file CSWCMessage.ts
+ * @file OdysseyClientMessage.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { CSWMessage, type MessageVector3 } from "@/server/message/CSWMessage";
+import { OdysseyMessage, type MessageVector3 } from "@/server/message/OdysseyMessage";
 import {
   IMessageTransport,
   NoopMessageTransport,
@@ -55,8 +54,8 @@ import {
   SoundMessageMinor,
 } from "@/enums/server/message/MessageMinors";
 
-export class CSWCMessage {
-  readonly internal: CSWMessage = new CSWMessage();
+export class OdysseyClientMessage {
+  readonly internal: OdysseyMessage = new OdysseyMessage();
   transport: IMessageTransport;
   onParsed?: MessageParseHook;
 
@@ -65,20 +64,20 @@ export class CSWCMessage {
   }
 
   /**
-   * Client OBJECTID write — retail uses WriteBOOL(oid) @ SendPlayerToServerInput_Attack.
+   * Client OBJECTID write — uses WriteBOOL(oid) @ SendPlayerToServerInput_Attack.
    * Stores raw 4-byte object id (not coerced to 0/1).
    */
   writeOBJECTIDClient(objectId: number): void {
     this.internal.writeBOOL(objectId | 0);
   }
 
-  /** Retail ReadOBJECTIDClient — raw DWORD. */
+  /** ReadOBJECTIDClient — raw DWORD. */
   readOBJECTIDClient(): number {
     return this.internal.readDWORD();
   }
 
   /**
-   * Retail SendPlayerToServerMessage — stamps 'p' + major + minor.
+   * SendPlayerToServerMessage — stamps 'p' + major + minor.
    */
   sendPlayerToServerMessage(
     major: PlayerServerMessageId | number,
@@ -108,7 +107,7 @@ export class CSWCMessage {
   }
 
   /**
-   * Retail HandleServerToPlayerMessage.
+   * HandleServerToPlayerMessage.
    * Reads payloads only — no client object mutation.
    */
   handleServerToPlayerMessage(message: Uint8Array, size: number = message.length): number {
@@ -360,12 +359,12 @@ export class CSWCMessage {
     return this.finishSend(PlayerServerMessageId.Input, InputMessageMinor.GiveItem);
   }
 
-  /** — retail is local-only (TogglePauseState); no net stamp. */
+  /** — is local-only (TogglePauseState); no net stamp. */
   sendPlayerToServerInput_TogglePauseRequest(): boolean {
     return true;
   }
 
-  /** companion — WalkToWaypoint @ retail Input minor 1 */
+  /** companion — WalkToWaypoint @ Input minor 1 */
   sendPlayerToServerInput_WalkToWaypoint(opts: {
     areaId: number;
     pos: MessageVector3;

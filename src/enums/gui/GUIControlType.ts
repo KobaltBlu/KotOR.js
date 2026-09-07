@@ -19,6 +19,6 @@ export enum GUIControlType {
   ScrollBar = 9,
   Progress  = 10,
   Listbox   = 11,
-  /** Retail edit box — constructed by TAG, not GFF CONTROLTYPE. */
+  /** edit box — constructed by TAG, not GFF CONTROLTYPE. */
   EditBox   = 12,
 }

@@ -28,13 +28,13 @@ function spellTimeMs(value: unknown, fallback: number = 0): number {
   return n;
 }
 
-/** Retail packs bInstantSpell in bit 30 of the projectile-path dword. */
+/** packs bInstantSpell in bit 30 of the projectile-path dword. */
 const INSTANT_CAST_FLAG = 0x40000000;
 
 /**
  * ActionCastSpell class.
  *
- * Retail cast-spell action — phase gate on conjure/cast/catch,
+ * cast-spell action — phase gate on conjure/cast/catch,
  * entangled fail, RemoveSpellActionFromRound on fail/complete, duel pause sync.
  *
  * @file ActionCastSpell.ts
@@ -75,7 +75,7 @@ export class ActionCastSpell extends Action {
     return this.getParameter<number>(12) === 1;
   }
 
-  /** Retail cast-spell action instant path (param flags bit 30). */
+  /** cast-spell action instant path (param flags bit 30). */
   get isInstant(): boolean {
     return ((this.getParameter<number>(9) || 0) & INSTANT_CAST_FLAG) !== 0;
   }
@@ -89,7 +89,7 @@ export class ActionCastSpell extends Action {
   }
 
   dispose(){
-    // Retail SpellCastAndImpact is fire-and-forget — after castStarted the
+    // SpellCastAndImpact is fire-and-forget — after castStarted the
     // area.spellInstances flight must not be interrupted by action dispose.
     if(
       !this.castStarted &&
@@ -127,7 +127,7 @@ export class ActionCastSpell extends Action {
     return !!(owner.isDead() || owner.isDebilitated() || owner.plot || owner.silenced);
   }
 
-  /** Retail ArcaneSpellFailure percent → random cast fail */
+  /** ArcaneSpellFailure percent → random cast fail */
   private rollArcaneSpellFailure(owner: ModuleCreature): boolean {
     const pct = owner.arcaneSpellFailure || 0;
     if(pct <= 0) return false;
@@ -139,7 +139,7 @@ export class ActionCastSpell extends Action {
   }
 
   /**
-   * Retail GetForceItemMask vs spell forbid/require masks.
+   * GetForceItemMask vs spell forbid/require masks.
    * Fail when forbidden bits overlap, or required bits are missing.
    */
   private failsForceItemMask(owner: ModuleCreature, castSpell: any): boolean {
@@ -213,7 +213,7 @@ export class ActionCastSpell extends Action {
     combatRound.pauseRound(owner, pauseMs);
     combatRound.decrementRoundLength?.(pauseMs);
 
-    // Retail: when engaged, pause the duel partner for the same duration
+    // : when engaged, pause the duel partner for the same duration
     if(combatRound.engaged && combatRound.duelPartner?.combatRound){
       const partnerRound = combatRound.duelPartner.combatRound;
       partnerRound.pauseRound(combatRound.duelPartner, pauseMs);
@@ -222,7 +222,7 @@ export class ActionCastSpell extends Action {
   }
 
   private faceCastTarget(owner: ModuleCreature){
-    // Retail AddCastSpellActions queues ChangeFacingObject / FacingPoint —
+    // AddCastSpellActions queues ChangeFacingObject / FacingPoint —
     // animate turn (FacePoint snaps every tick).
     if(this.target){
       owner.setFacingObject(this.target);
@@ -238,7 +238,7 @@ export class ActionCastSpell extends Action {
   }
 
   /**
-   * Retail hostilesetting → ActivityManager(1)+SetCombatState /
+   * hostilesetting → ActivityManager(1)+SetCombatState /
    * ActivityManager(2) for non-hostile (mirrors item-cast action).
    */
   private applyHostileActivity(owner: ModuleCreature, castSpell: any){
@@ -254,7 +254,7 @@ export class ActionCastSpell extends Action {
 
   private startSpellInstance(castTarget: ModuleObject | undefined, castSpell: any, fake: boolean): boolean {
     const owner = this.owner as ModuleCreature;
-    // Retail DecrementSpellReadyCount / UnReadySpell at cast-start gate
+    // DecrementSpellReadyCount / UnReadySpell at cast-start gate
     if(!fake && !this.isCheat && !this.forceSpent){
       if(!owner.unreadySpell(castSpell)){
         return false;
@@ -286,13 +286,13 @@ export class ActionCastSpell extends Action {
 
     const owner = this.owner as ModuleCreature;
 
-    // Retail: dead / plot / debilitated → RemoveSpellActionFromRound + ERROR
+    // : dead / plot / debilitated → RemoveSpellActionFromRound + ERROR
     if(this.isCasterBlocked(owner)){
       return this.failCast(owner, ActionStatus.ERROR);
     }
 
     if(this.spellCastInstance){
-      // Retail: ENTANGLED during cast gate aborts
+      // : ENTANGLED during cast gate aborts
       if(this.isEntangled(owner)){
         return this.failCast(owner, ActionStatus.ERROR);
       }
@@ -333,29 +333,29 @@ export class ActionCastSpell extends Action {
       return this.failCast(owner, ActionStatus.FAILED);
     }
 
-    // Retail GetSelfForcePowers / range P — rebind after resolve so a selected
+    // GetSelfForcePowers / range P — rebind after resolve so a selected
     // party member never becomes MoveTo / GetSpellTargetObject.
     if(shouldBindSpellCastToCaster(this.spell, { isUserAction: this.isUserAction })){
       this.target = owner;
       this.targetPosition.copy(owner.position);
     }
 
-    // Retail force-item forbid/require masks
+    // force-item forbid/require masks
     if(this.failsForceItemMask(owner, this.spell)){
       return this.failCast(owner, ActionStatus.ERROR);
     }
 
-    // Retail spell-tree / feat prerequisite gate (N8 residual)
+    // spell-tree / feat prerequisite gate (N8 residual)
     if(!this.isCheat && !this.isFake && !passesSpellPrerequisiteGate(owner, this.spell)){
       return this.failCast(owner, ActionStatus.FAILED);
     }
 
-    // Retail known-spell gate (skipped for cheat / fake)
+    // known-spell gate (skipped for cheat / fake)
     if(!this.isCheat && !this.isFake && !passesSpellKnownGate(owner, this.spell?.id ?? this.getParameter<number>(0))){
       return this.failCast(owner, ActionStatus.FAILED);
     }
 
-    // Retail AddCastSpellActions visibility (non-party creatures)
+    // AddCastSpellActions visibility (non-party creatures)
     if(this.target && this.target !== owner && !this.isCheat && !this.isFake){
       const isPartyUI = !!(owner.isPartyMember?.() || owner.isPlayer || owner.isPM);
       const entry = owner.perceptionList?.find(
@@ -420,12 +420,12 @@ export class ActionCastSpell extends Action {
       return ActionStatus.IN_PROGRESS;
     }
 
-    // Retail: cannot start cast while entangled
+    // : cannot start cast while entangled
     if(this.isEntangled(owner)){
       return this.failCast(owner, ActionStatus.ERROR);
     }
 
-    // Retail instant-cast bit path — 1500ms ATTACK anim, immediate SpellCastAndImpact
+    // instant-cast bit path — 1500ms ATTACK anim, immediate SpellCastAndImpact
     if(this.isInstant){
       const castTarget = combatRound.action?.target || this.target;
       const castSpell = combatRound.action?.spell || this.spell;
@@ -443,7 +443,7 @@ export class ActionCastSpell extends Action {
         if(!this.startSpellInstance(castTarget, castSpell, false)){
           return this.failCast(owner, ActionStatus.FAILED);
         }
-        // Zero conjure/cast so impact runs immediately (retail SpellCastAndImpact)
+        // Zero conjure/cast so impact runs immediately (SpellCastAndImpact)
         if(this.spellCastInstance){
           this.spellCastInstance.conjureTime = 0;
           this.spellCastInstance.castTime = 0;

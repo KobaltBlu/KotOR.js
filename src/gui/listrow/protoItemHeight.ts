@@ -1,7 +1,7 @@
 /**
  * Resolve GUIProtoItem list-row body height.
  *
- * When alignExtentToWrappedText is false (inventory / save / equip), retail uses the
+ * When alignExtentToWrappedText is false (inventory / save / equip), uses the
  * PROTOITEM extent height only — text may wrap visually but does not change pitch.
  * When true (description-style rows), grow to fit text geometry.
  */

@@ -1,13 +1,13 @@
 import { GameState } from "@/GameState";
 
 /**
- * Retail SetAreaTransitionBMP +
+ * SetAreaTransitionBMP +
  * SendServerToPlayerArea_ClientArea consumption.
  *
  * Pending id is one-shot for the next module/area load, then reset to -1.
  * -1 / unset → area LoadScreenID or `load_<module>`
  * 0 → random loadscreens.2da row (≥2)
- * 1 (USER_DEFINED) → retail ClientArea remaps to area LoadScreenID
+ * 1 (USER_DEFINED) → ClientArea remaps to area LoadScreenID
  * >1 → loadscreens.2da row id
  */
 
@@ -44,7 +44,7 @@ export function consumeAreaTransitionLoadBackground(
   const custom = pendingCustom;
   clearAreaTransitionBMP();
 
-  // Retail ClientArea: -1 or USER_DEFINED(1) → destination area load_screen_ID
+  // ClientArea: -1 or USER_DEFINED(1) → destination area load_screen_ID
   if(id === -1 || id === 1){
     if(destAreaLoadScreenId > 0){
       id = destAreaLoadScreenId;

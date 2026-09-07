@@ -386,7 +386,7 @@ export class ForgeEncounter extends ForgeGameObject {
     if(geometryField){
       for(let i = 0, len = geometryField.getChildStructs().length; i < len; i++){
         const geometryStruct = geometryField.getChildStructs()[i];
-        // Retail uses X/Y/Z; older Forge used PointX/PointY/PointZ
+        // uses X/Y/Z; older Forge used PointX/PointY/PointZ
         const x = geometryStruct.hasField('X')
           ? geometryStruct.getFieldByLabel('X').getValue() as number
           : geometryStruct.getFieldByLabel('PointX').getValue() as number;

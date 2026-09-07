@@ -18,7 +18,7 @@ export class ForgeMGEnemy {
   trackName: string = '';
   trigger: number = 0;
 
-  /** Player-only fields: only re-emit if present on the loaded retail struct. */
+  /** Player-only fields: only re-emit if present on the loaded struct. */
   private hadAccelSecs = false;
   private hadCamera = false;
   private hadCameraRotate = false;

@@ -11,7 +11,7 @@ import { resolveSpellCastTarget, parseForceMenuIndex } from "@/combat/spell-self
 /**
  * ActionCombat class.
  *
- * Retail combat-dispatch action — dispatches scheduled CombatRound actions.
+ * combat-dispatch action — dispatches scheduled CombatRound actions.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -38,10 +38,10 @@ export class ActionCombat extends Action {
    * 
    * @param delta - Time elapsed since last update in seconds
    * @returns ActionStatus indicating the current state of the combat action:
-   *          - FAILED if owner is not a creature
-   *          - COMPLETE if no combat round exists
-   *          - IN_PROGRESS if round is paused
-   *          - Status from processing scheduled actions
+   * - FAILED if owner is not a creature
+   * - COMPLETE if no combat round exists
+   * - IN_PROGRESS if round is paused
+   * - Status from processing scheduled actions
    */
   update(delta: number = 0): ActionStatus {
     if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) return ActionStatus.FAILED;
@@ -51,10 +51,10 @@ export class ActionCombat extends Action {
 
     const scheduledActionList = combatRound.scheduledActionList;
 
-    // Retail: round_paused or server combat-pause → IN_PROGRESS (1)
+    // : round_paused or server combat-pause → IN_PROGRESS (1)
     if(combatRound.roundPaused) return ActionStatus.IN_PROGRESS;
     if(!scheduledActionList.length){
-      // Retail: empty pending + round_started → IN_PROGRESS; else COMPLETE (2)
+      // : empty pending + round_started → IN_PROGRESS; else COMPLETE (2)
       return combatRound.roundStarted ? ActionStatus.IN_PROGRESS : ActionStatus.COMPLETE;
     }
     const combatAction = scheduledActionList.shift();
@@ -92,12 +92,12 @@ export class ActionCombat extends Action {
       }
 
       case CombatActionType.PAUSE:
-        // Retail case 3 — pause round for animationTime
+        // case 3 — pause round for animationTime
         combatRound.pauseRound(this.owner, pauseMs);
         return ActionStatus.IN_PROGRESS;
 
       case CombatActionType.CAST_SPELL: {
-        // Retail GetSelfForcePowers / range P — bind to caster before queueing
+        // GetSelfForcePowers / range P — bind to caster before queueing
         // ActionCastSpell (look-at companion must not become MoveTo destination).
         const castTarget = resolveSpellCastTarget(
           combatAction.spell,
@@ -125,7 +125,7 @@ export class ActionCombat extends Action {
       }
 
       case CombatActionType.ITEM_CAST_SPELL: {
-        // Retail AIActionCombat case 10 — FORCEHOSTILE < 1 clears non-self
+        // AIActionCombat case 10 — FORCEHOSTILE < 1 clears non-self
         // object id but keeps the scheduled position (grenade location casts).
         // Compare by id so a stamped self-target cannot be treated as "other".
         const rawTarget = combatAction.target;
@@ -167,7 +167,7 @@ export class ActionCombat extends Action {
       }
 
       case CombatActionType.ITEM_EQUIP: {
-        // Retail case 6 — pause then RunEquip
+        // case 6 — pause then RunEquip
         combatRound.pauseRound(this.owner, pauseMs);
         const equipAction = new GameState.ActionFactory.ActionEquipItem();
         equipAction.setParameter(0, ActionParameterType.DWORD, combatAction.item);
@@ -179,7 +179,7 @@ export class ActionCombat extends Action {
       }
 
       case CombatActionType.ITEM_UNEQUIP: {
-        // Retail case 7 — pause then RunUnequip
+        // case 7 — pause then RunUnequip
         combatRound.pauseRound(this.owner, pauseMs);
         const unequipAction = new GameState.ActionFactory.ActionUnequipItem();
         unequipAction.setParameter(0, ActionParameterType.DWORD, combatAction.item);
@@ -191,7 +191,7 @@ export class ActionCombat extends Action {
       }
 
       case CombatActionType.ATTACK_CUTSCENE_MOVE: {
-        // Retail combat-dispatch action case 0xC — MoveToPoint/Object then continue combat
+        // combat-dispatch action case 0xC — MoveToPoint/Object then continue combat
         const moveTarget = combatAction.target;
         const pos = combatAction.moveToPosition;
         const run = combatAction.shouldRun ? 1 : 0;

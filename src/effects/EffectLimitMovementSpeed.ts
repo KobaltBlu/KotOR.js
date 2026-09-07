@@ -5,7 +5,7 @@ import { BitWise } from "@/utility/BitWise";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
 /**
- * EffectLimitMovementSpeed — retail slow child sets run-limit flag (0x8E8).
+ * EffectLimitMovementSpeed — slow child sets run-limit flag (0x8E8).
  *
  * @file EffectLimitMovementSpeed.ts
  */

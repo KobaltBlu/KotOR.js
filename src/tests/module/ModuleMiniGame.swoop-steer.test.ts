@@ -115,7 +115,7 @@ describe('ModuleMiniGame swoop lateral steer', () => {
 
     for(let i = 0; i < 30; i++){
       mg.updateAxis(1, 0, 0, dt);
-      // Retail: DoInertia would += physicsNext.acceleration here — must not touch offset.
+      // : DoInertia would += physicsNext.acceleration here — must not touch offset.
       const offsetBeforeInertia = mg.player.playerOffset.x;
       mg.physicsNext.acceleration.x += 0.01;
       expect(mg.player.playerOffset.x).toBe(offsetBeforeInertia);
@@ -185,7 +185,7 @@ describe('ModuleMiniGame swoop lateral steer', () => {
     mg.player = { playerOffset: new THREE.Vector3(), rotate: () => {} } as any;
 
     const dt = 1 / 30;
-    // Retail remap (x,0,z) → (-z, 0, -x)
+    // remap (x,0,z) → (-z, 0, -x)
     mg.updateAxis(1, 0, 0.5, dt);
     expect(mg.lastAxisInput.x).toBeCloseTo(-0.5, 5);
     expect(mg.lastAxisInput.y).toBeCloseTo(0, 5);
@@ -210,7 +210,7 @@ describe('ModuleMiniGame swoop lateral steer', () => {
     expect(mg.lastAxisInput.z).toBeCloseTo(0, 5);
   });
 
-  it('retail ProcessInput axis packing clamps stick+keys sum to [-1,1]', () => {
+  it('engine ProcessInput axis packing clamps stick+keys sum to [-1,1]', () => {
     const pack = (stick: number, key: number) => Math.max(-1, Math.min(1, stick + key));
     expect(pack(0, 1)).toBe(1);
     expect(pack(0, -1)).toBe(-1);
@@ -247,7 +247,7 @@ describe('ModuleMiniGame swoop lateral steer', () => {
     expect(v.x).toBe(20);
     expect(v.y).toBe(0);
     expect(v.z).toBe(0);
-    // Pre-fix bug: first pop into .x swapped X/Z → TunnelX stayed 0.
+    // Pre-fix bug: first pop into.x swapped X/Z → TunnelX stayed 0.
     const wrongStack = [20, 0, 0];
     const wrong = new THREE.Vector3(wrongStack.pop(), wrongStack.pop(), wrongStack.pop());
     expect(wrong.x).toBe(0);

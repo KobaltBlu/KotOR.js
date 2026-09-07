@@ -11,7 +11,7 @@ import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
 
 /**
- * Retail GetNearestEnemy / HasTargetBeenDetected.
+ * GetNearestEnemy / HasTargetBeenDetected.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -40,9 +40,9 @@ export function hasPerceptionSeen(
 }
 
 /**
- * Retail HasTargetBeenDetected.
+ * HasTargetBeenDetected.
  * Doors / placeables always; creatures require SEEN.
- * Retail party-UI path skips the visibility gate — mirrored for party members.
+ * party-UI path skips the visibility gate — mirrored for party members.
  */
 export function hasTargetBeenDetected(
   attacker: ModuleCreature,
@@ -108,7 +108,7 @@ export type GetNearestEnemyOptions = {
 };
 
 /**
- * Retail GetNearestEnemy.
+ * GetNearestEnemy.
  * Hostile + alive + SEEN + combat LOS + creperspace gap within maxRange.
  */
 export function getNearestEnemy(

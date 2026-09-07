@@ -1,6 +1,6 @@
 import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
 
-/** Retail `racialtypes`: 5 = droid, 6 = human. */
+/** `racialtypes`: 5 = droid, 6 = human. */
 export const RACIALTYPE_DROID = 5;
 export const RACIALTYPE_HUMAN = 6;
 

@@ -172,7 +172,7 @@ export class NWScriptASTBuilder {
     const isConst = this.is("keyword", "CONST");
     if (isConst) this.next();
 
-    // `struct Pt p` inside a block — file-level STRUCT only handled in parseStructDeclOrVar().
+    // `struct Pt p` inside a block — file-level STRUCT only handled in parseStructDeclOrVar.
     if (this.is("keyword", "STRUCT")) {
       this.next();
       const typeNameTok = this.expectNameToken();
@@ -267,7 +267,7 @@ export class NWScriptASTBuilder {
 
       const properties: any[] = [];
       while (!this.is("punct", "}")) {
-        // datatype name ;
+        // datatype name;
         const propType = this.mustParseDataType();
         const propNameTok = this.expectNameToken();
         this.expect("punct", ";");
@@ -279,7 +279,7 @@ export class NWScriptASTBuilder {
         });
       }
       this.expect("punct", "}");
-      // optional ;
+      // optional;
       if (this.is("punct", ";")) this.next();
 
       return {
@@ -364,7 +364,7 @@ export class NWScriptASTBuilder {
   }
 
   private finishVariableDecl(isConst: boolean, datatype: DataTypeNode, firstName: string, firstNameTok: Token): VariableNode | VariableListNode {
-    // parse: name (, name)* (= expr)? ;
+    // parse: name (, name)* (= expr)?;
     const names: VariableListNode["names"] = [{ name: firstName, source: firstNameTok.source }];
 
     while (this.is("punct", ",")) {

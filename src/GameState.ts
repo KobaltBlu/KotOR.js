@@ -112,7 +112,7 @@ export class GameState implements EngineContext {
 
     "beforeRender": [],
     "afterRender": [],
-    // "mgPazaakStart": []
+    // "mgPazaakStart": 
   };
 
   static PerformanceMonitor: typeof PerformanceMonitor;
@@ -200,24 +200,24 @@ export class GameState implements EngineContext {
   static DEBUG_PC_DAMAGE_SCALE = 1;
 
   /**
-   * When true, combat floaties spawn for any attacker (pre-retail gate).
-   * Default false = retail: only GetPlayerCreatureId attacker/damager.
+   * When true, combat floaties spawn for any attacker (legacy gate).
+   * Default false = : only GetPlayerCreatureId attacker/damager.
    */
   static DEBUG_COMBAT_FLOATY_ALL_ATTACKERS = false;
 
-  /** Retail client turbo_enabled — GetMaxSpeed returns 15 when set. */
+  /** client turbo_enabled — GetMaxSpeed returns 15 when set. */
   static turboEnabled = false;
-  /** Retail party invulnerability cheat (server immortal for party). */
+  /** party invulnerability cheat (server immortal for party). */
   static cheatInvulnerable = false;
-  /** Retail infiniteuses — skip usable item charge/stack consume. */
+  /** infiniteuses — skip usable item charge/stack consume. */
   static infiniteUses = false;
-  /** Retail revealmap toggle — hide minimap fog overlay without wiping explored data. */
+  /** revealmap toggle — hide minimap fog overlay without wiping explored data. */
   static cheatRevealMap = false;
-  /** Retail dancedancemalak GUI / GetCheatCode(0) flag. */
+  /** dancedancemalak GUI / GetCheatCode(0) flag. */
   static danceDanceMalak = false;
   /**
-   * NWScript ShipBuild() — retail shipping builds always return TRUE.
-   * Default TRUE to match retail; cheat console can toggle off for debug scripts.
+   * NWScript ShipBuild — shipping build builds always return TRUE.
+   * Default TRUE to match; cheat console can toggle off for debug scripts.
    */
   static shipBuild = true;
   /** TSL SetDisableTransit — blocks galaxy map transit when true. */
@@ -255,16 +255,16 @@ export class GameState implements EngineContext {
   
   static IsPaused = false;
 
-  /** TimeStop effect: world paused with exclusion list (retail pause bit 1). */
+  /** TimeStop effect: world paused with exclusion list (pause bit 1). */
   static timeStopActive = false;
   static timeStopPausedByEffect = false;
   static timeStopExclusions: Set<number> = new Set();
   
   static Mode: EngineMode = EngineMode.GUI;
-  /** Retail camera_mode — default 3 (OnAStick); SetCameraMode / drive gate */
+  /** camera_mode — default 3 (OnAStick); SetCameraMode / drive gate */
   static clientCameraMode: number = 3;
   /**
-   * Retail hsMode — message-panel key sequence sets 1;
+   * hsMode — message-panel key sequence sets 1;
    * freelook then enters Navigate (hover) and bumps to 2.
    */
   static cameraHsMode: number = 0;
@@ -298,7 +298,7 @@ export class GameState implements EngineContext {
   static time: number = 0;
   static deltaTime: number = 0;
   static deltaTimeFixed: number = 0;
-  /** Retail SetGameSpeed / world timer snapshot scale (death sequence slows this). */
+  /** SetGameSpeed / world timer snapshot scale (death sequence slows this). */
   static timeScale: number = 1;
 
   static canvas: HTMLCanvasElement;
@@ -314,7 +314,7 @@ export class GameState implements EngineContext {
   /**
    * Set by force-distortion emitters (TILE / Gob.distortion) during tick when
    * the area has rooms. Enables ForceDistortionPass for that frame
-   * (retail forcePushBucket nonempty → FrameBufferModifications bit 0x20).
+   * (forcePushBucket nonempty → FrameBufferModifications bit 0x20).
    */
   static forceDistortionNeeded: boolean = false;
   /** Global "distortiontex" from Scene ctor — heat-warp lookup. */
@@ -352,13 +352,13 @@ export class GameState implements EngineContext {
   static ambientColor = new THREE.Color(0xFFFFFF);
   static sunAmbientColor = new THREE.Color(0x000000);
   static sunColor = new THREE.Color(0xFFFFFF);
-  /** Direction toward retail gidy_sun at (4000, 4500, 7000) — LoadArea. */
+  /** Direction toward gidy_sun at (4000, 4500, 7000) — LoadArea. */
   static sunDirection = new THREE.Vector3(4000, 4500, 7000).normalize();
   /** @deprecated Use ambientColor — kept for rare debug callers. */
   static globalLight: { color: THREE.Color; intensity: number } | undefined;
   /** @deprecated Use sunColor — kept for rare debug callers. */
   static sunLight: { color: THREE.Color; intensity: number; position: THREE.Vector3 } | undefined;
-  /** Retail global `shadowAlpha` (0–1) from day/night cycle — stencil shadow darkness. */
+  /** global `shadowAlpha` (0–1) from day/night cycle — stencil shadow darkness. */
   static shadowAlpha = 0;
   /**
    * ARE SunShadows / MoonShadows for the active day/night lighting period.
@@ -367,10 +367,10 @@ export class GameState implements EngineContext {
   static areaShadowsEnabled = true;
   /** INI Graphics Options.Shadows — user toggle for all shadow rendering. */
   static userShadowsEnabled = true;
-  /** Retail global `beamingProjectionAlpha` (0–0.05) from dawn/dusk — SetBeaming blend alpha. */
+  /** global `beamingProjectionAlpha` (0–0.05) from dawn/dusk — SetBeaming blend alpha. */
   static beamingProjectionAlpha = 0;
 
-  /** Combined retail shadow enable: INI + area ShadowOpacity curve. */
+  /** Combined shadow enable: INI + area ShadowOpacity curve. */
   static areShadowsEnabled(): boolean {
     return GameState.userShadowsEnabled && GameState.shadowAlpha > 0;
   }
@@ -417,12 +417,12 @@ export class GameState implements EngineContext {
   static odysseyShaderPass: OdysseyShaderPass;
   static forceDistortionPass: ForceDistortionPass;
   /**
-   * Retail FrameBufferModifications bit 0x01 + visualizePass1.
+   * FrameBufferModifications bit 0x01 + visualizePass1.
    * Shipping visualizePass1 = 0 → stays disabled unless debug override.
    */
   static overbrightenPass: OverbrightenPass;
   /**
-   * Retail FrameBufferModifications bit 0x02 + visualizePass2 (= 1).
+   * FrameBufferModifications bit 0x02 + visualizePass2 (= 1).
    * Always-on for roomed scenes when Frame Buffer INI is enabled.
    */
   static convolutionBloomPass: ConvolutionBloomPass;
@@ -431,7 +431,7 @@ export class GameState implements EngineContext {
   /** K2 force fury overlay (fx_Fury01/02/03). */
   static furyPass: FuryPass;
   /**
-   * Retail Scene::RenderLensFlares — after primary FB mods, before GUI.
+   * — after primary FB mods, before GUI.
    */
   static lensFlarePass: OdysseyLensFlarePass;
   /**
@@ -441,19 +441,19 @@ export class GameState implements EngineContext {
   static miniGameAspectMaskPass: MiniGameAspectMaskPass;
   static copyPass: ShaderPass;
   static renderPassGUI: RenderPass;
-  /** MG camera HUD after AccumulationBlurPass — retail screen-stable gauges stay sharp. */
+  /** MG camera HUD after AccumulationBlurPass — screen-stable gauges stay sharp. */
   static renderPassMGHud: RenderPass;
   static bloomPass: BloomPass;
   static bokehPass: BokehPass;
   /**
-   * Retail AurEnable/DisableSpeedBlur + AurSetSpeedBlurRatio
+   * AurEnable/DisableSpeedBlur + AurSetSpeedBlurRatio
    * (SWMG_SetSpeedBlurEffect / Force Speed ApplyMotionBlur).
    */
   static speedBlurPass: AccumulationBlurPass;
   static speedBlurEnabled: boolean = false;
   static speedBlurRatio: number = 0.75;
   /**
-   * Retail motionBlurVFXCount — Force Speed progFX 0x641/0x642 refcount
+   * motionBlurVFXCount — Force Speed progFX 0x641/0x642 refcount
    * (ApplyMotionBlur / RemoveMotionBlur).
    */
   static motionBlurVFXCount: number = 0;
@@ -551,7 +551,7 @@ export class GameState implements EngineContext {
   }
 
   /**
-   * Retail SWMG_SetSpeedBlurEffect —
+   * SWMG_SetSpeedBlurEffect —
    * AurSetSpeedBlurRatio (default 0.75) + AurEnable/DisableSpeedBlur.
    * Accumulation via AccumulationBlurPass (RenderAccumulationBlur + 128^2 RenderFrameToTexture).
    */
@@ -570,7 +570,7 @@ export class GameState implements EngineContext {
   }
 
   /**
-   * Retail ApplyMotionBlur — progFX 0x641/0x642 on the player (not during MG).
+   * ApplyMotionBlur — progFX 0x641/0x642 on the player (not during MG).
    */
   static applyMotionBlurVFX(target: ModuleCreature | undefined, progFX: number){
     if(progFX !== 0x641 && progFX !== 0x642){
@@ -586,7 +586,7 @@ export class GameState implements EngineContext {
   }
 
   /**
-   * Retail RemoveMotionBlur — disable when refcount hits zero (outside MG).
+   * RemoveMotionBlur — disable when refcount hits zero (outside MG).
    */
   static removeMotionBlurVFX(){
     GameState.motionBlurVFXCount--;
@@ -603,7 +603,7 @@ export class GameState implements EngineContext {
   }
 
   /**
-   * Retail UpdateMotionBlur — ratio = clamp(speed/driveMax, 1) * 0.75.
+   * UpdateMotionBlur — ratio = clamp(speed/driveMax, 1) * 0.75.
    *
    * Must run AFTER locomotion this frame. WASD calls cancelLocomotionActions
    * (zeros speed) in controls.Update before creature.update; pathfinding
@@ -611,7 +611,7 @@ export class GameState implements EngineContext {
    * post-movement speed for both.
    *
    * Prefers playerControl.lastAnimMoveSpeed when live,
-   * else creature.speed (WalkUpdateLocation).
+   * else creature.speed (creature walk update).
    */
   static syncMotionBlurRatio(){
     if(GameState.motionBlurVFXCount <= 0 || !GameState.speedBlurEnabled){
@@ -690,27 +690,27 @@ export class GameState implements EngineContext {
         }
 
         // for(let i = 0; i < GameState.module.area.doors.length; i++){
-        //   const creature = GameState.module.area.doors[i]
-        //   if(!creature.debugLabel){
-        //     continue;
-        //   }
-        //   creature.debugLabel.container.visible = enabled;
+        // const creature = GameState.module.area.doors[i]
+        // if(!creature.debugLabel){
+        // continue;
+        // }
+        // creature.debugLabel.container.visible = enabled;
         // }
 
         // for(let i = 0; i < GameState.module.area.placeables.length; i++){
-        //   const creature = GameState.module.area.placeables[i]
-        //   if(!creature.debugLabel){
-        //     continue;
-        //   }
-        //   creature.debugLabel.container.visible = enabled;
+        // const creature = GameState.module.area.placeables[i]
+        // if(!creature.debugLabel){
+        // continue;
+        // }
+        // creature.debugLabel.container.visible = enabled;
         // }
 
         // for(let i = 0; i < GameState.module.area.triggers.length; i++){
-        //   const creature = GameState.module.area.triggers[i]
-        //   if(!creature.debugLabel){
-        //     continue;
-        //   }
-        //   creature.debugLabel.container.visible = enabled;
+        // const creature = GameState.module.area.triggers[i]
+        // if(!creature.debugLabel){
+        // continue;
+        // }
+        // creature.debugLabel.container.visible = enabled;
         // }
       break;
       case EngineDebugType.ROOM_WALKMESH:
@@ -906,14 +906,14 @@ export class GameState implements EngineContext {
       GameState.domElement.appendChild(GameState.canvas);
     }
     
-    //transferToOffscreen() causes issues with savegame screenshots
-    //GameState.canvas = GameState.canvas.transferControlToOffscreen();
+    //transferToOffscreen causes issues with savegame screenshots
+    //GameState.canvas = GameState.canvas.transferControlToOffscreen;
 
     GameState.canvas.style.setProperty('width', '0');
     GameState.canvas.style.setProperty('height', '0');
 
     GameState.rendererUpscaleFactor = 1;
-    // Request stencil up front for retail-equivalent shadow disks. Attributes
+    // Request stencil up front for -equivalent shadow disks. Attributes
     // must be set on the first getContext call for the canvas.
     GameState.context = GameState.canvas.getContext('webgl', {
       antialias: false,
@@ -995,7 +995,7 @@ export class GameState implements EngineContext {
     FollowerCamera.facing = Math.PI/2;
     FollowerCamera.speed = 0;
 
-    //Static Camera's that are in the .git file of the module
+    //Static Camera's that are in the.git file of the module
     GameState.staticCameras = [];
 
     GameState.staticCameraIndex = 0;
@@ -1089,7 +1089,7 @@ export class GameState implements EngineContext {
 
     //BEGIN: PostProcessing
     GameState.composer = new EffectComposer(GameState.renderer);
-    // Enable stencil on composer targets for retail-equivalent shadow disks.
+    // Enable stencil on composer targets for -equivalent shadow disks.
     const composerRT = {
       minFilter: THREE.LinearFilter,
       magFilter: THREE.LinearFilter,
@@ -1152,8 +1152,8 @@ export class GameState implements EngineContext {
       focus: 1.0,
       aperture:	0.0001,
       maxblur:	1.0,
-      // width: ResolutionManager.getViewportWidth(),
-      // height: ResolutionManager.getViewportHeight()
+      // width: ResolutionManager.getViewportWidth,
+      // height: ResolutionManager.getViewportHeight
     });
 
     GameState.speedBlurPass = new AccumulationBlurPass(GameState.speedBlurRatio);
@@ -1182,9 +1182,9 @@ export class GameState implements EngineContext {
 
     GameState.composer.addPass(GameState.renderPass);
     GameState.composer.addPass(GameState.speedBlurPass);
-    // MG camera HUD after accumulation blur (retail screen-stable gauges).
+    // MG camera HUD after accumulation blur (screen-stable gauges).
     GameState.composer.addPass(GameState.renderPassMGHud);
-    // Retail FrameBufferModifications order before GUI:
+    // FrameBufferModifications order before GUI:
     // 0x01 overbrighten (visualizePass1 off in shipping) →
     // 0x02 convolution (visualizePass2 on) → 0x20 force distortion →
     // film/sat (VideoEffects) → K2 dream → K2 fury
@@ -1194,7 +1194,7 @@ export class GameState implements EngineContext {
     GameState.composer.addPass(GameState.odysseyShaderPass);
     GameState.composer.addPass(GameState.dreamDistortionPass);
     GameState.composer.addPass(GameState.furyPass);
-    // Retail RenderLensFlares after FrameBufferModifications, before GUI.
+    // lens flare render after FrameBufferModifications, before GUI.
     GameState.composer.addPass(GameState.lensFlarePass);
     // Soft 4:3 cockpit mask for swoop/turret — after world FX, before GUI.
     GameState.composer.addPass(GameState.miniGameAspectMaskPass);
@@ -1272,7 +1272,7 @@ export class GameState implements EngineContext {
       GameState.windManager.init(GameState);
       GameState.lightManager.setLightHelpersVisible(ConfigClient.get('GameState.debug.light_helpers') ? true : false);
 
-      //AudioEngine.Unmute()
+      //AudioEngine.Unmute
       GameState.SetEngineMode(EngineMode.GUI);
       GameState.State = EngineState.RUNNING;
       GameState.inMenu = false;
@@ -1322,7 +1322,7 @@ export class GameState implements EngineContext {
       );
       void GameState.ensureForceDistortionTexture();
 
-      // Retail BeginIntro: K1 queues leclogo/biologo/legal BIKs; TSL queues
+      // BeginIntro: K1 queues leclogo/biologo/legal BIKs; TSL queues
       // leclogo/obsidianent then legal screen texture, not a Legal movie.
       if(GameState.GameKey == GameEngineType.KOTOR){
         GameState.VideoManager.queueMovie('leclogo', true);
@@ -1360,15 +1360,15 @@ export class GameState implements EngineContext {
       }
 
       // if(GameState.GameKey == GameEngineType.TSL){
-      //   GameState.SetEngineMode(EngineMode.LEGAL);
-      //   GameState.State = EngineState.RUNNING;
-      //   GameState.Update();
-      //   return;
+      // GameState.SetEngineMode(EngineMode.LEGAL);
+      // GameState.State = EngineState.RUNNING;
+      // GameState.Update;
+      // return;
       // }
 
       const onIntroComplete = () => {
         window.dispatchEvent(new Event('resize'));
-        // TSL retail: after PlayMovieQueue, legal screen then main menu
+        // TSL : after PlayMovieQueue, legal screen then main menu
         if(GameState.GameKey == GameEngineType.TSL){
           GameState.LegalScreenManager.Start();
           return;
@@ -1463,14 +1463,14 @@ export class GameState implements EngineContext {
     this.audioEmitter = new AudioEmitter(AudioEngine.GetAudioEngine(), AudioEngineChannel.VO);
     // this.audioEmitter.maxDistance = 50;
     this.audioEmitter.type = AudioEmitterType.GLOBAL;
-    // Retail dialog VO uses One_Shot_Streams (group 3), not Unmaskable.
+    // dialog VO uses One_Shot_Streams (group 3), not Unmaskable.
     this.audioEmitter.setPriorityGroupId(AudioPriorityGroup.ONE_SHOT_STREAMS);
     this.audioEmitter.load();
     AudioEngine.ensureGameBusesAudible();
   }
 
   /**
-   * Retail door/trigger area transition: StartGlobalFade(0, wait=0, length=0.5)
+   * door/trigger area transition: StartGlobalFade(0, wait=0, length=0.5)
    * then load after the fade. Skips the pre-fade if a load is already in progress.
    */
   static LoadModuleWithAreaTransitionFade(name = '', waypoint: string = null){
@@ -1480,7 +1480,7 @@ export class GameState implements EngineContext {
     if(!name){
       return;
     }
-    // Retail door/trigger EventHandler → SetTransitionPending(1, nextId) before fade/load
+    // door/trigger EventHandler → SetTransitionPending(1, nextId) before fade/load
     if(GameState.module?.area){
       GameState.module.area.setTransitionPending(true);
     }
@@ -1571,14 +1571,14 @@ export class GameState implements EngineContext {
       GameState.SetEngineMode(EngineMode.LOADING);
       
       if(GameState.module){
-        // Retail StallEventSaveGame → SaveModuleStart sets is_save_game = 1
+        // StallEventSaveGame → SaveModuleStart sets is_save_game = 1
         // TransPending remains set from LoadModuleWithAreaTransitionFade until after stall save
         // Skip stall-save when restoring a save (isLoadingSave) — GAMEINPROGRESS already extracted
         if(!GameState.isLoadingSave){
           try{ await GameState.module.save(true); }catch(e){
             console.error(e);
           }
-          // Retail StartNewModule: DoModuleEnterSaveCleanup then AutoSaveOnEnteringModule → DoPCAutosave
+          // StartNewModule: DoModuleEnterSaveCleanup then AutoSaveOnEnteringModule → DoPCAutosave
           try{
             await ModuleSaveTable.doModuleEnterSaveCleanup(name);
             if(ModuleSaveTable.shouldAutoSaveOnEnteringModule(name)){
@@ -1638,7 +1638,7 @@ export class GameState implements EngineContext {
         GameState.renderer.setClearColor( new THREE.Color(GameState.module.area.sun.fogColor) );
         
         console.log('ModuleArea.initAreaObjects');
-        // Retail minigame areas: no party InGame HUD (swoop/turret).
+        // minigame areas: no party InGame HUD (swoop/turret).
         if(GameState.module.area.miniGame){
           GameState.SetEngineMode(EngineMode.MINIGAME);
         }else{
@@ -1655,7 +1655,7 @@ export class GameState implements EngineContext {
         await GameState.module.area.initAreaObjects(runSpawnScripts);
         console.log('ModuleArea: ready to play');
         GameState.module.readyToProcessEvents = true;
-        // Prime PC room VIS before any TickSelectableObjects (retail UpdateRoom)
+        // Prime PC room VIS before any TickSelectableObjects (UpdateRoom)
         GameState.module.area.updateRoomVisibility(0);
         GameState.module.area.syncObjectModelVisibility();
 
@@ -1666,11 +1666,11 @@ export class GameState implements EngineContext {
           }
         }
 
-        //Reveal the area — retail MainLoop StartGlobalFade(1, wait=0.5, length=1.0)
+        //Reveal the area — MainLoop StartGlobalFade(1, wait=0.5, length=1.0)
         GameState.MenuManager.LoadScreen.close();
-        // Retail MainLoop after StartSounds: SetSoundMode(0) again (clears BusyWait mute under load).
+        // MainLoop after StartSounds: SetSoundMode(0) again (clears BusyWait mute under load).
         AudioEngine.clearSoundModeStack();
-        // Retail also defers when dialog already active and forces holdWorld.
+        // also defers when dialog already active and forces holdWorld.
         if(GameState.Mode == EngineMode.DIALOG || GameState.CutsceneManager?.active){
           GameState.holdWorldFadeInForDialog = true;
         }
@@ -1934,7 +1934,7 @@ export class GameState implements EngineContext {
     }
 
     // Minigame: keep party InGameOverlay off the menu stack so GUI pop
-    // (options etc.) cannot reshow the HUD via Remove → show().
+    // (options etc.) cannot reshow the HUD via Remove → show.
     if(mode == EngineMode.MINIGAME){
       const overlay = GameState.MenuManager.InGameOverlay;
       if(overlay && (overlay.isVisible() || GameState.MenuManager.activeMenus.indexOf(overlay) >= 0)){
@@ -1979,7 +1979,7 @@ export class GameState implements EngineContext {
     GameState.GameOverManager?.Reset?.();
     GameState.MenuManager.ClearMenus();
     GameState.deltaTime = 0;
-    // GameState.initTimers();
+    // GameState.initTimers;
     ResourceLoader.clearCache();
 
     GameState.scene.visible = false;
@@ -1991,7 +1991,7 @@ export class GameState implements EngineContext {
     GameState.areaTransitionPending = false;
     GameState.FadeOverlayManager.Reset();
     // SWMG_SetSpeedBlurEffect / Force Speed leave AurEnableSpeedBlur set; clear so
-    // AccumulationBlurPass does not smear the next module (retail AurDisableSpeedBlur).
+    // AccumulationBlurPass does not smear the next module (AurDisableSpeedBlur).
     GameState.motionBlurVFXCount = 0;
     GameState.SetSpeedBlurEffect(false);
     if(GameState.speedBlurPass){
@@ -2075,7 +2075,7 @@ export class GameState implements EngineContext {
     }
 
     GameState.VideoEffectManager.Update(delta);
-    // Retail CycleTIDTextureController — once per rendered frame
+    // CycleTIDTextureController — once per rendered frame
     TextureAnimationManager.update(delta);
 
     GameState.MenuManager.Update(delta);
@@ -2110,7 +2110,7 @@ export class GameState implements EngineContext {
         break;
     }
 
-    // Retail MainLoop: UpdateAreaTransitionGUI after world/object updates.
+    // MainLoop: UpdateAreaTransitionGUI after world/object updates.
     if(GameState.MenuManager.InGameAreaTransition)
       GameState.MenuManager.InGameAreaTransition.updateAreaTransitionGUI();
 
@@ -2170,7 +2170,7 @@ export class GameState implements EngineContext {
   }
 
   static UpdateIngame(delta: number = 0){
-    // Retail MainLoop: UpdateRoom(pos) before DoPassiveSelection
+    // MainLoop: UpdateRoom(pos) before DoPassiveSelection
     if(GameState.module?.readyToProcessEvents && GameState.module.area){
       GameState.module.area.updateRoomVisibility(0);
     }
@@ -2178,7 +2178,7 @@ export class GameState implements EngineContext {
     //Get Selectable Objects In Range (gated on fade inside TickSelectableObjects)
     GameState.ModuleObjectManager.TickSelectableObjects(delta);
 
-    // Retail AIActionDialogObject waits on IsGlobalFading then swaps PC into the
+    // AIActionDialogObject waits on IsGlobalFading then swaps PC into the
     // leader slot — still INGAME until startConversation resumes after fade-out.
     GameState.CutsceneManager.tickPendingPartyDialogSwitch();
 
@@ -2216,7 +2216,7 @@ export class GameState implements EngineContext {
     // Party wipe / combat-clear resurrect (TempDeathUpdate) — wall-clock delta
     GameState.GameOverManager.TempDeathUpdate(delta);
 
-    // Retail UpdateAutoSaveTimer — drives AutoSaveOnEnter=yes on next module transition
+    // UpdateAutoSaveTimer — drives AutoSaveOnEnter=yes on next module transition
     if(GameState.State != EngineState.PAUSED && !GameState.isLoadingSave){
       ModuleSaveTable.updateAutoSaveTimer(delta);
     }
@@ -2230,7 +2230,7 @@ export class GameState implements EngineContext {
     GameState.module.area.updateRoomWindUniforms();
     GameState.CameraShakeManager.update(delta, GameState.currentCamera);
     
-    //Handle the visibility of the PAUSE overlay (retail SetPaused reason set)
+    //Handle the visibility of the PAUSE overlay (SetPaused reason set)
     if(
       GameState.State == EngineState.PAUSED &&
       !GameState.timeStopActive &&
@@ -2253,7 +2253,7 @@ export class GameState implements EngineContext {
     if(isEntryMode){
       GameState.scene_cursor_holder.visible = false;
     }
-    // Retail MainLoop: UpdateCamera before UpdateRoom so dialog room cull
+    // MainLoop: UpdateCamera before UpdateRoom so dialog room cull
     // probes the current shot pose, not the previous frame's.
     GameState.CutsceneManager.update(delta);
     // World timer keeps running in dialog unless paused (same policy as freelook).
@@ -2274,7 +2274,7 @@ export class GameState implements EngineContext {
     GameState.module.area.updateRoomWindUniforms();
     GameState.CameraShakeManager.update(delta, GameState.currentCamera);
     
-    //Handle the visibility of the PAUSE overlay (retail SetPaused reason set)
+    //Handle the visibility of the PAUSE overlay (SetPaused reason set)
     if(
       GameState.State == EngineState.PAUSED &&
       !GameState.timeStopActive &&
@@ -2347,7 +2347,7 @@ export class GameState implements EngineContext {
       GameState.updateTime(delta);
     }
 
-    // Keep world ticking while freelooking (retail keeps simulation running)
+    // Keep world ticking while freelooking (keeps simulation running)
     if(GameState.module){
       if(GameState.State == EngineState.PAUSED || GameState.MenuManager.activeModals.length){
         GameState.module.tickPaused(delta);
@@ -2405,10 +2405,10 @@ export class GameState implements EngineContext {
 
     GameState.renderDepthPrepass();
 
-    // Retail UpdateMotionBlur — after WASD / path locomotion this frame.
+    // UpdateMotionBlur — after WASD / path locomotion this frame.
     GameState.syncMotionBlurRatio();
 
-    // Retail FrameBufferModifications bit 0x10 — speed blur / Force Speed.
+    // FrameBufferModifications bit 0x10 — speed blur / Force Speed.
     if(GameState.speedBlurPass){
       GameState.speedBlurPass.ratio = GameState.speedBlurRatio;
       GameState.speedBlurPass.enabled = resolveSpeedBlurPass({
@@ -2417,7 +2417,7 @@ export class GameState implements EngineContext {
       });
     }
 
-    // Retail doFrameBufferFX (INI "Graphics Options"."Frame Buffer") + nonempty
+    // doFrameBufferFX (INI "Graphics Options"."Frame Buffer") + nonempty
     // forcePushBucket → RenderForceDistortion before GUI.
     if(GameState.forceDistortionPass){
       const needed = GameState.forceDistortionNeeded;
@@ -2428,7 +2428,7 @@ export class GameState implements EngineContext {
         GameState.forceDistortionPass.setDistortionTexture(GameState.forceDistortionTexture);
         void GameState.ensureForceDistortionTexture();
       }
-      // Retail ManageSceneBSP only fills forcePushBucket when rooms.size != 0.
+      // ManageSceneBSP only fills forcePushBucket when rooms.size != 0.
       const rooms = GameState.module?.area?.rooms;
       const roomedOk = !GameState.module?.area || !!(rooms && rooms.length > 0);
       GameState.forceDistortionPass.enabled =
@@ -2481,7 +2481,7 @@ export class GameState implements EngineContext {
   }
 
   /**
-   * Retail SetFrameBuffer / AurEnableFrameBufferEffects — INI
+   * SetFrameBuffer / AurEnableFrameBufferEffects — INI
    * "Graphics Options"."Frame Buffer" (defaults to "1" in swkotor*-config).
    */
   static isFrameBufferEffectsEnabled(): boolean {
@@ -2492,7 +2492,7 @@ export class GameState implements EngineContext {
   }
 
   /**
-   * Retail ClientOptions minigame_yaxis — INI
+   * ClientOptions minigame_yaxis — INI
    * "Game Options"."Reverse Minigame YAxis" (turret Z / mouse Y invert).
    */
   static isMinigameYAxisReversed(): boolean {

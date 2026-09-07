@@ -18,7 +18,7 @@ export class EffectDamageResistance extends GameEffect {
     // intList[0] : nDamageType flags (DAMAGE_TYPE_*)
     // intList[1] : nAmount absorbed per hit
     // intList[2] : nLimit total pool (0 = infinite)
-    // intList[3] : vulnerability / double-cost flags (retail)
+    // intList[3] : vulnerability / double-cost flags 
 
   }
 

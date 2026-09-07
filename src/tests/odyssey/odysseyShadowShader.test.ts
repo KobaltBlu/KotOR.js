@@ -23,7 +23,7 @@ describe('OdysseyShadow primary map shader chunk', () => {
     expect(ODYSSEY_SHADOW_PARS_FRAGMENT).not.toContain('odysseyComputeScreenSpaceShadow');
   });
 
-  test('supports retail maxShadowLights concurrent maps plus transient crossfade slot', () => {
+  test('supports engine maxShadowLights concurrent maps plus transient crossfade slot', () => {
     expect(MAX_ODYSSEY_SHADOW_MAPS).toBe(4);
     expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('MAX_ODYSSEY_SHADOW_MAPS');
     expect(ODYSSEY_SHADOW_PARS_FRAGMENT).toContain('odysseyShadowMap1');

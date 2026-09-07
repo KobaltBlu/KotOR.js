@@ -20,7 +20,7 @@ export class DeepObject {
   /**
    * Deep merge two objects.
    * @param target
-   * @param ...sources
+   * @param...sources
    */
   static Merge(target: any, ...sources: any): any {
     if (!sources.length) return target;

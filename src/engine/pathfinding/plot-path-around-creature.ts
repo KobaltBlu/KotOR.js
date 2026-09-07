@@ -2,13 +2,13 @@ import * as THREE from "three";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { PathPoint } from "@/engine/pathfinding/PathPoint";
 import { testDirectLine } from "@/engine/pathfinding/test-direct-line";
-import { computeHeightAtPoint } from "@/engine/pathfinding/compute-safe-location";
+import { computeHeightAtPoint } from "@/engine/pathfinding/find-safe-location";
 import { getCreaturePersonalSpace } from "@/combat/attack-range";
 
 /**
  * Approximate PlotPathAroundCreature.
  *
- * Retail: ComputeHexPoints around blocker (cre_personal_space sum), FindEntryAndExit
+ * : hex points around blocker (cre_personal_space sum), FindEntryAndExit
  * on current path, dual FindPath (CW/CCW), IsPathClear scoring, InsertPathSegmentBetween.
  * Reputation < 11 triggers k_def_pathfail01 (handled by caller / onBlocked).
  *
@@ -21,7 +21,7 @@ const HEX_COUNT = 6;
 const _tmp = new THREE.Vector3();
 const _hit = new THREE.Vector3();
 
-/** Extra radius padding — retail `plotPathAroundCreatureAdditionalSpace`. */
+/** Extra radius padding — `plotPathAroundCreatureAdditionalSpace`. */
 const HEX_EXTRA_SPACE = 0.35;
 
 export type PlotAroundResult = {
@@ -44,9 +44,9 @@ type EntryExit = {
 };
 
 /**
- * Build hex vertices around center (retail ComputeHexPoints).
+ * Build hex vertices around center (hex points).
  * First vertex = center + normalize(-facing) * (radius / 0.866025);
- * then rotate −60° about Z five times. Z via ComputeHeight approx.
+ * then rotate −60° about Z five times. Z via walk height approx.
  */
 export function computeHexPoints(
   center: THREE.Vector3,
@@ -55,7 +55,7 @@ export function computeHexPoints(
   area?: Parameters<typeof computeHeightAtPoint>[0]
 ): THREE.Vector3[] {
   const pts: THREE.Vector3[] = [];
-  // Retail: opposite of orientation, scaled by r / cos(30°)
+  // : opposite of orientation, scaled by r / cos(30°)
   const scale = radius / 0.86602540378;
   let vx = -Math.cos(facingRad) * scale;
   let vy = -Math.sin(facingRad) * scale;
@@ -77,17 +77,17 @@ export function computeHexPoints(
 }
 
 /**
- * Retail IsPointInHex — point inside all six inward half-planes.
+ * IsPointInHex — point inside all six inward half-planes.
  */
 export function isPointInHex(hex: THREE.Vector3[], p: THREE.Vector3): boolean {
   if(hex.length < 3) return false;
   for(let i = 0; i < HEX_COUNT; i++){
     const a = hex[i];
     const b = hex[(i + 1) % HEX_COUNT];
-    // Edge a→b; inward normal is rotate edge 90° toward center (cross with +Z, then negate like retail)
+    // Edge a→b; inward normal is rotate edge 90° toward center (cross with +Z, then negate like)
     const ex = b.x - a.x;
     const ey = b.y - a.y;
-    // cross(Z, edge) = (-ey, ex) — outward for CCW hex; retail uses -cross so inward
+    // cross(Z, edge) = (-ey, ex) — outward for CCW hex; uses -cross so inward
     const nx = ey;
     const ny = -ex;
     const len = Math.hypot(nx, ny) || 1;
@@ -101,7 +101,7 @@ export function isPointInHex(hex: THREE.Vector3[], p: THREE.Vector3): boolean {
 }
 
 /**
- * 2D segment intersection (retail IntersectLineSegments2d). Returns true + writes hit.
+ * 2D segment intersection (IntersectLineSegments2d). Returns true + writes hit.
  */
 function intersectSegments2d(
   a0: THREE.Vector3,
@@ -126,7 +126,7 @@ function intersectSegments2d(
 }
 
 /**
- * Retail FindEntryAndExit — walk path segments vs hex edges.
+ * FindEntryAndExit — walk path segments vs hex edges.
  */
 export function findEntryAndExit(
   pathPoints: { vector: THREE.Vector3 }[],
@@ -155,7 +155,7 @@ export function findEntryAndExit(
         entryPoint.copy(_hit);
         hits = 1;
       }else{
-        // Shift previous entry → "first hit" storage like retail..state
+        // Shift previous entry → "first hit" storage like..state
         exitPathIdx = entryPathIdx;
         exitHexEdge = entryHexEdge;
         exitPoint.copy(entryPoint);
@@ -164,12 +164,12 @@ export function findEntryAndExit(
         entryHexEdge = e;
         entryPoint.copy(_hit);
         hits++;
-        break; // next path segment (retail breaks inner after intersect)
+        break; // next path segment (breaks inner after intersect)
       }
     }
   }
 
-  // After loop retail stores: state=entry path idx, state=exit path idx (swapped naming).
+  // After loop stores: state=entry path idx, state=exit path idx (swapped naming).
   // We want chronological entry then exit along the path.
   if(hits >= 2){
     // Last two hits: exitPoint was previous, entryPoint is latest — swap to chronological
@@ -189,7 +189,7 @@ export function findEntryAndExit(
     };
   }
 
-  // Fallback: closest hex verts to start/end (retail GetClosestPointTo)
+  // Fallback: closest hex verts to start/end (GetClosestPointTo)
   if(hits === 1){
     let closest = 0;
     let bestD = Infinity;
@@ -223,7 +223,7 @@ function snapWalkable(
 }
 
 /**
- * Score an arc like retail IsPathClear: 2 = fully clear, 1 = blocked by creature, 0 = fail.
+ * Score an arc like IsPathClear: 2 = fully clear, 1 = blocked by creature, 0 = fail.
  */
 function scoreArc(
   creature: ModuleCreature,
@@ -274,8 +274,8 @@ function scoreArc(
 /**
  * Try to detour around blocker. Returns splice result + optional enemy on arc.
  *
- * Retail PlotPathAroundCreature: FindEntryAndExit
- * miss → return 0 (no splice). We pop consumed waypoints (retail keeps them and
+ * PlotPathAroundCreature: FindEntryAndExit
+ * miss → return 0 (no splice). We pop consumed waypoints (keeps them and
  * advances state), so the remaining path may be only the destination while the
  * blocker sits on the creature→dest segment. Prepend the live position for
  * FindEntryAndExit / splice so that segment is visible — still fail closed when
@@ -303,14 +303,14 @@ export function plotPathAroundCreature(
     snapWalkable(creature, p)
   );
 
-  // Retail: if path *end* is inside the hex, abort (return -2)
+  // : if path *end* is inside the hex, abort (return -2)
   const endPt = path.points[path.points.length - 1].vector;
   if(isPointInHex(hex, endPt)){
     return { spliced: false };
   }
 
-  // Retail FindEntryAndExit walks the full paths_ array (unconsumed prefix kept).
-  // After ComputedPath.pop(), prepend live position when the next waypoint is not
+  // FindEntryAndExit walks the full paths_ array (unconsumed prefix kept).
+  // After ComputedPath.pop, prepend live position when the next waypoint is not
   // already at the creature so creature→dest can intersect the hex.
   const head = path.points[0].vector;
   const headDistSq =
@@ -320,7 +320,7 @@ export function plotPathAroundCreature(
     ? [{ vector: creature.position.clone() }, ...path.points]
     : path.points;
 
-  // Retail: FindEntryAndExit == 0 → return 0 (do not splice)
+  // : FindEntryAndExit == 0 → return 0 (do not splice)
   const ee = findEntryAndExit(workPoints, hex);
   if(!ee){
     return { spliced: false };
@@ -358,7 +358,7 @@ export function plotPathAroundCreature(
   cands.sort((x, y) => y.score - x.score);
   const best = cands[0].idx;
 
-  // Dual FindPath: CW and CCW — pick higher IsPathClear score (retail uVar10 vs uVar9)
+  // Dual FindPath: CW and CCW — pick higher IsPathClear score (uVar10 vs uVar9)
   const endEdge = ee.exitHexEdge ?? best;
   const arcs = [
     buildArcBetween(hex, best, endEdge, 1),
@@ -389,7 +389,7 @@ export function plotPathAroundCreature(
   }
 
   // Map workPoints indices back onto path.points (skip synthetic prepend at 0).
-  // Retail InsertPathSegmentBetween: keep [0..entry] + arc + [exit..end].
+  // InsertPathSegmentBetween: keep [0..entry] + arc + [exit..end].
   if(ee.exitPathIdx <= ee.entryPathIdx){
     return { spliced: false };
   }

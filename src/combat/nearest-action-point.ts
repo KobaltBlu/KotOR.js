@@ -8,11 +8,11 @@ import type { OdysseyWalkMesh } from "@/odyssey/OdysseyWalkMesh";
 import { BitWise } from "@/utility/BitWise";
 
 /**
- * Retail GetNearestActionPoint
+ * GetNearestActionPoint
  * GetNearestActionPoint.
  *
  * Prefer nearer walkable candidate (mesh use positions / transition line).
- * Retail uses PositionWalkable — it does NOT shove the point by personal space.
+ * uses PositionWalkable — it does NOT shove the point by personal space.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -31,7 +31,7 @@ type AreaWalk = {
 };
 
 /**
- * Retail PositionWalkable gate: keep the point if walkable; otherwise a tiny
+ * PositionWalkable gate: keep the point if walkable; otherwise a tiny
  * snap only. Passing owner perspace into getNearestWalkablePoint pushed
  * doorway points deep into the room ("walk away then use").
  */
@@ -75,7 +75,7 @@ function pushMeshUsePositions(obj: ModuleObject, out: THREE.Vector3[]): void {
 
 /**
  * Among candidates, pick the nearest to `from` that is walkable (or soft-snapped).
- * Mirrors retail: nearer first, require PositionWalkable.
+ * matches engine behavior: nearer first, require PositionWalkable.
  */
 function pickNearestWalkable(
   area: AreaWalk | undefined,

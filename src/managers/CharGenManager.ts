@@ -38,14 +38,14 @@ import {
 } from "@/engine/rules/chargen-appearance";
 import { createDefaultPartyFollowInfo } from "@/module/ModuleCreature";
 
-/** retail step indices. */
+/** step indices. */
 export enum CharGenQuickStep {
   PORTRAIT = 0,
   NAME = 1,
   PLAY = 2,
 }
 
-/** retail step indices. */
+/** step indices. */
 export enum CharGenCustomStep {
   PORTRAIT = 0,
   ABILITIES = 1,
@@ -97,7 +97,7 @@ export class CharGenManager {
   static cgmain_light: OdysseyModel;
   static cgbody_light: OdysseyModel;
   static cghead_light: OdysseyModel;
-  /** Retail MainCG / Setup3DScene light model (not cgbody_light). */
+  /** MainCG / Setup3DScene light model (not cgbody_light). */
   static charrec_light: OdysseyModel;
 
   /** Highest unlocked quick-panel step (portrait → name → play). */
@@ -165,7 +165,7 @@ export class CharGenManager {
   }
 
   /**
-   * Retail quick/custom PlayGame: strip temporary chargen armor, save player
+   * quick/custom PlayGame: strip temporary chargen armor, save player
    * template, init game-in-progress, load starting module.
    */
   static finalizeAndStartGame() {
@@ -194,7 +194,7 @@ export class CharGenManager {
   }
 
   /**
-   * Seed LvlStatList[0] for a newly created PC (retail CharGen / first level).
+   * Seed LvlStatList[0] for a newly created PC (CharGen / first level).
    */
   static seedInitialLevelStat(creature: ModulePlayer) {
     if(!creature) return;
@@ -219,7 +219,7 @@ export class CharGenManager {
   }
 
   /**
-   * Retail DoQuickStats — apply class package attributes,
+   * DoQuickStats — apply class package attributes,
    * granted/package feats, and recommended skills.
    */
   static doQuickStats() {
@@ -289,7 +289,7 @@ export class CharGenManager {
     }
   }
 
-  /** Retail AddDefaultPackageFeats for first-level picks. */
+  /** AddDefaultPackageFeats for first-level picks. */
   static applyDefaultPackageFeats(creature: ModulePlayer, classData: CreatureClass, picks: number = 1) {
     const feats = GameState.SWRuleSet.feats;
     if(!feats || picks <= 0) return;
@@ -308,7 +308,7 @@ export class CharGenManager {
     }
   }
 
-  /** Retail AddDefaultPackageSkills for first-level CharGen. */
+  /** AddDefaultPackageSkills for first-level CharGen. */
   static applyDefaultPackageSkills(creature: ModulePlayer) {
     CharGenManager.resetSkillPoints();
     CharGenManager.skillRankBaseline = [0, 0, 0, 0, 0, 0, 0, 0];
@@ -454,7 +454,7 @@ export class CharGenManager {
     template.RootNode.addField(new GFFField(GFFDataType.WORD, 'CurrentForce')).setValue(0);
     template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Gender')).setValue(gender);
     let equipment = template.RootNode.addField(new GFFField(GFFDataType.LIST, 'Equip_ItemList'));
-    // Retail SaveCharGenCreature script set
+    // SaveCharGenCreature script set
     template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptAttacked')).setValue('k_hen_attacked01');
     template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptDamaged')).setValue('k_def_damage01');
     template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptDeath')).setValue('');
@@ -508,8 +508,8 @@ export class CharGenManager {
   }
 
   /**
-   * Apply portrait/appearance choice (retail UpdatePortraitButton / OnSelectDisplayButton).
-   * Soundset stays on the class slot (retail does not retarget it on cycle).
+   * Apply portrait/appearance choice (UpdatePortraitButton / OnSelectDisplayButton).
+   * Soundset stays on the class slot (does not retarget it on cycle).
    */
   static applyPortraitAppearance(creature: ModulePlayer, appearanceId: number, portraitId: number) {
     if(!creature) return;
@@ -598,7 +598,7 @@ export class CharGenManager {
     }
   }
 
-  /** Retail AddSkillPointsPerLevel for first-level CharGen. */
+  /** AddSkillPointsPerLevel for first-level CharGen. */
   static getMaxSkillPoints() {
     const creature = CharGenManager.selectedCreature;
     if(!creature) return 4;
@@ -611,7 +611,7 @@ export class CharGenManager {
     );
   }
 
-  /** Retail uses the last (most recently gained) class for skill table columns. */
+  /** uses the last (most recently gained) class for skill table columns. */
   static getCreatureSkillClass(creature?: { classes?: { skillstable?: string }[] }) {
     const c = creature ?? CharGenManager.selectedCreature;
     const classes = c?.classes;

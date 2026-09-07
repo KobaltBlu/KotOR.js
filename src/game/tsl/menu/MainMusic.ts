@@ -6,7 +6,7 @@ import type { GUILabel, GUIButton, GUIListBox, GUISlider } from "@/gui";
 import { GUIMusicItem } from "@/game/tsl/gui/GUIMusicItem";
 import { TwoDAObject } from "@/resource/TwoDAObject";
 
-/** TLK 0xBDAC — retail LBL_TRACKNUM default strref (GUI ctor). */
+/** TLK 0xBDAC — LBL_TRACKNUM default strref (GUI ctor). */
 const TLK_TRACKNUM_DEFAULT = 0xBDAC;
 
 interface MusicItem {
@@ -20,7 +20,7 @@ interface MusicItem {
 /**
  * MainMusic class.
  *
- * retail (titlemusic_p) — UnlockedPlanetSongs bitmask,
+ * (titlemusic_p) — UnlockedPlanetSongs bitmask,
  * PopulateSongList / OnSongPicked / OnPlayPicked / OnLoopPicked / OnNextPicked / OnStopPicked.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -76,7 +76,7 @@ export class MainMusic extends GameMenu {
         this.onSongPicked(node);
       };
 
-      // Retail list item A-button → OnPlayPicked
+      // list item A-button → OnPlayPicked
       this.LB_MUSIC.onClicked = (node: MusicItem) => {
         this.onSongPicked(node);
         this.onPlayPicked();
@@ -109,7 +109,7 @@ export class MainMusic extends GameMenu {
         this.onLoopPicked();
       });
 
-      // Retail options = Sound Options.Music Volume (0–100)
+      // options = Sound Options.Music Volume (0–100)
       this.SLI_VOLUME.attachINIProperty('Sound Options.Music Volume');
       this.SLI_VOLUME.onValueChanged = (value: number) => {
         value = Math.min(1, Math.max(0, value));

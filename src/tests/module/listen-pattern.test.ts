@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  *
- * Retail CSWSExpression semantics (ParseString / TestString).
+ * listen pattern semantics (ParseString / TestString).
  */
 import { describe, expect, test } from '@jest/globals';
 import { parsePattern, testStringAgainstPattern } from '@/utility/listen-pattern';
@@ -24,7 +24,7 @@ describe('parsePattern', () => {
   });
 });
 
-describe('testStringAgainstPattern (Odyssey CSWSExpression)', () => {
+describe('testStringAgainstPattern (Odyssey listen pattern)', () => {
   test('** matches any string and captures it', () => {
     const r = testStringAgainstPattern('**', 'hello world');
     expect(r.matched).toBe(true);

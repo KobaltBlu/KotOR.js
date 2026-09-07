@@ -288,7 +288,7 @@ export class ForgeModule {
 
     // Mod_Name
     const modNameField = ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'Mod_Name'))!;
-    // const modNameLocString = new KotOR.CExoLocString();
+    // const modNameLocString = new KotOR.CExoLocString;
     // modNameLocString.addSubString(name, 0); // Male English (StringID 0 = language 0, gender 0)
     // modNameField.setCExoLocString(modNameLocString);
     modNameField.setCExoLocString(this.name);

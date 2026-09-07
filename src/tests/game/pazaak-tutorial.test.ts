@@ -14,7 +14,7 @@ import {
   PazaakTutorialDriver,
 } from '@/engine/minigames/pazaak-tutorial';
 
-describe('PazaakTutorialDriver (CSWGuiTutorial)', () => {
+describe('PazaakTutorialDriver (tutorial UI)', () => {
   let tut: PazaakTutorialDriver;
 
   beforeEach(() => {

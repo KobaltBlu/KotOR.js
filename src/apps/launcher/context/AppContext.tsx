@@ -82,10 +82,10 @@ export const AppProvider = (props: any) => {
     ConfigClient.set(['Launcher', 'selected_profile'], selectedProfileValue?.key || 'kotor');
     if(selectedProfileValue){
       try{
-        // if(img.src == selectedProfileValue.background ){
-        //   img.src = selectedProfileValue.background_fallback;
+        // if(img.src == selectedProfileValue.background){
+        // img.src = selectedProfileValue.background_fallback;
         // }else{
-        //   setBackgroundImage(selectedProfileValue.background);
+        // setBackgroundImage(selectedProfileValue.background);
         // }
         beautifyBackgroundImage(selectedProfileValue?.background).then( (background: string) => {
           setBackgroundImage(background);

@@ -1,5 +1,5 @@
 /**
- * Retail DetermineCostToIncreaseScore
+ * DetermineCostToIncreaseScore
  * DetermineCostToDecreaseScore point-buy costs.
  */
 export function costToIncreaseAbility(currentScore: number): number {

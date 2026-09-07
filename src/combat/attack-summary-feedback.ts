@@ -5,7 +5,7 @@ import type { TalentFeat } from "@/talents";
 import { formatTlkWithCustoms, tlkText } from "@/utility/tlk-tokens";
 
 /**
- * Retail TLK strrefs for SendAttackSummaryFeedback
+ * TLK strrefs for SendAttackSummaryFeedback
  * HandleServerToPlayerCCMessage case 0x12 (client xx).
  */
 export const AttackSummaryStrRef = {
@@ -37,7 +37,7 @@ export const AttackSummaryStrRef = {
   DEFLECTED: 0xa5ab,
   /** "Returned!" — attack_result == 9 (DEFLECTED / return damage) */
   RETURNED: 0xa5b5,
-  /** "<CUSTOM0> Force Resisted!" — OnApplyForceResisted feedback */
+  /** "<CUSTOM0> Force Resisted!" — effect apply feedback */
   FORCE_RESISTED: 0x96be,
 } as const;
 
@@ -45,9 +45,9 @@ export interface AttackSummaryFeedbackInput {
   attacker: ModuleCreature;
   defender?: ModuleObject;
   attackResult: AttackResult;
-  /** Total attack roll (d20 + modifiers), retail ints[2]. */
+  /** Total attack roll (d20 + modifiers), ints[2]. */
   toHitTotal: number;
-  /** Target defense / AC, retail ints[3]. */
+  /** Target defense / AC, ints[3]. */
   targetDefense: number;
   /** Base / total damage shown in summary (clamped >= 0). */
   damage: number;
@@ -86,7 +86,7 @@ function isHitGroup(result: AttackResult): boolean {
 }
 
 /**
- * Build the Messages-menu combat line matching retail CC 0x12 formatting.
+ * Build the Messages-menu combat line matching CC 0x12 formatting.
  */
 export function formatAttackSummaryFeedback(input: AttackSummaryFeedbackInput): {
   message: string;
@@ -116,7 +116,7 @@ export function formatAttackSummaryFeedback(input: AttackSummaryFeedbackInput): 
     String(damage),
   ]);
 
-  // Retail appends suffix + trailing space for each flag.
+  // appends suffix + trailing space for each flag.
   if (input.critical) {
     message += tlkText(AttackSummaryStrRef.CRITICAL) + ' ';
   }

@@ -236,7 +236,7 @@ export class NWScriptLexer {
       while (/[A-Za-z0-9_#]/.test(this.peekChar(0))) s += this.nextChar();
 
       // NWScript keywords are case-sensitive (vector vs engine action Vector).
-      // Matching toLowerCase() incorrectly keywordizes Vector/Object/etc.
+      // Matching toLowerCase incorrectly keywordizes Vector/Object/etc.
       const kw = KEYWORDS.get(s);
       // `vector Vector(float x, float y, float z)` is both the type and the constructor.
       // Keep the identifier when a call follows so expression parsing can treat it as a name.

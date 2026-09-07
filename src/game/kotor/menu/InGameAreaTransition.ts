@@ -11,7 +11,7 @@ import { BitWise } from "@/utility/BitWise";
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * Retail UpdateAreaTransitionGUI /
+ * UpdateAreaTransitionGUI /
  * HideAreaTransition (K1, K2).
  *
  * @file InGameAreaTransition.ts
@@ -21,10 +21,10 @@ import { BitWise } from "@/utility/BitWise";
 export class InGameAreaTransition extends GameMenu {
 
   engineMode: EngineMode = EngineMode.INGAME;
-  /** Overlay so show does not force EngineMode via GameMenu.show(). */
+  /** Overlay so show does not force EngineMode via GameMenu.show. */
   isOverlayGUI = true;
   /**
-   * Retail ctor: bit_flags = flags & ~DockDesignY | DockDesignX
+   * ctor: bit_flags = flags & ~DockDesignY | DockDesignX
    * (K1).
    */
   panelCoordFlags: number = GUIPanelCoordFlags.UseExtentOffset | GUIPanelCoordFlags.DockDesignX;
@@ -33,7 +33,7 @@ export class InGameAreaTransition extends GameMenu {
   LBL_TEXTBG: GUILabel;
   LBL_DESCRIPTION: GUILabel;
 
-  /** Object currently driving the destination label (Retail). */
+  /** Object currently driving the destination label. */
   transitionObject: ModuleObject;
 
   constructor(){
@@ -56,7 +56,7 @@ export class InGameAreaTransition extends GameMenu {
   }
 
   /**
-   * Retail SetTransitionObject.
+   * SetTransitionObject.
    * Pass undefined / falsy to clear (OBJECT_INVALID / 0x7F000000).
    */
   setTransitionObject(object: ModuleObject | undefined){
@@ -80,13 +80,13 @@ export class InGameAreaTransition extends GameMenu {
   }
 
   /**
-   * Retail UpdateAreaTransitionGUI.
+   * UpdateAreaTransitionGUI.
    * Show when a candidate object is set and TransPending is clear; otherwise hide
    * (keeping the panel during TransPending).
    */
   updateAreaTransitionGUI(){
     const area = GameState.module?.area;
-    // Retail: require module/area/server area and sw_gui_status == 1 (in-game).
+    // : require module/area/server area and sw_gui_status == 1 (in-game).
     if(!area || GameState.Mode !== EngineMode.INGAME){
       this.hideAreaTransition();
       return;
@@ -98,7 +98,7 @@ export class InGameAreaTransition extends GameMenu {
     }
 
     if(area.transPending){
-      // Retail: PanelExists → SendPanelToBack; do not RemovePanel.
+      // : PanelExists → SendPanelToBack; do not RemovePanel.
       return;
     }
 
@@ -108,7 +108,7 @@ export class InGameAreaTransition extends GameMenu {
   }
 
   /**
-   * Retail HideAreaTransition.
+   * HideAreaTransition.
    * While TransPending, leave the panel up (SendPanelToBack). Otherwise clear the
    * transition object and RemovePanel.
    */

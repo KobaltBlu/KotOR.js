@@ -8,7 +8,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import { isDispelEligible } from "@/effects/EffectDispelMagicAll";
 
 /**
- * EffectDispelMagicBest — retail OnApplyDispelBestMagic.
+ * EffectDispelMagicBest — effect apply.
  * Tries effects until one succeeds: d20+casterLevel >= 12 removes that effect and stops.
  * Skips creator-level 0 effects when a creature creator exists.
  *
@@ -47,7 +47,7 @@ export class EffectDispelMagicBest extends GameEffect {
         if(creator && typeof creator.getTotalClassLevel === 'function'){
           if((creator.getTotalClassLevel() & 0xff) === 0) continue;
         }
-        // No creator → treat like retail picking creatoreless for attempt
+        // No creator → treat like picking creatoreless for attempt
         candidate = e;
         break;
       }

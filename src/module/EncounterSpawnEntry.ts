@@ -15,7 +15,7 @@ export class EncounterSpawnEntry {
 
   spawnResref = '';
   spawnCR = 0;
-  /** Precomputed pool cost (Retail). */
+  /** Precomputed pool cost. */
   poolPoints = 0;
 
   save(){

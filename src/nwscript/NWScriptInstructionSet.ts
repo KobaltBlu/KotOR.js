@@ -144,7 +144,7 @@ export const CALL_ACTION = function( this: NWScriptInstance, instruction: NWScri
       case NWScriptDataType.OBJECT:
         args.push( this.stack.pop()?.value );
         //Test for and fix instances where an object id is pushed instead of an object reference
-        // (module ObjectList id, or retail SWMG mgo_index 0..0xfe).
+        // (module ObjectList id, or SWMG mgo_index 0..0xfe).
         if(typeof args[i] == 'number') args[i] = GameState.ModuleObjectManager.GetObjectById(args[i]);
       break;
       case NWScriptDataType.STRING:
@@ -160,7 +160,7 @@ export const CALL_ACTION = function( this: NWScriptInstance, instruction: NWScri
         args.push( this.state.pop() );
       break;
       case NWScriptDataType.VECTOR: {
-        // Retail: Z on top — pop z, y, x into Vector3(x, y, z).
+        // : Z on top — pop z, y, x into Vector3(x, y, z).
         const z = this.stack.pop()?.value;
         const y = this.stack.pop()?.value;
         const x = this.stack.pop()?.value;

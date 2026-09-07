@@ -3,7 +3,7 @@ import type { LightManager } from '@/managers/LightManager';
 import type { OdysseyLight3D } from '@/three/odyssey/OdysseyLight3D';
 import type { OdysseyModel3D } from '@/three/odyssey/OdysseyModel3D';
 import { OdysseyModelControllerType } from '@/enums/odyssey/OdysseyModelControllerType';
-import { retailPointAttenuation } from '@/utility/retailLighting';
+import { odysseyPointAttenuation } from '@/utility/odysseyLighting';
 
 /** Mesh entry tracked for dispose / rebake. */
 export interface IOdysseyBakedLightmap {
@@ -25,7 +25,7 @@ export interface IOdysseyLightmapBakeOptions {
   root?: THREE.Object3D;
   /**
    * When true (default for OdysseyModel3D), skip skin/dangly/multi-frame
-   * transform meshes so they stay on GetNearestLights.
+   * transform meshes so they stay on nearest light selection.
    */
   classifyAnimated?: boolean;
   /**
@@ -47,8 +47,8 @@ const USERDATA_DYNAMIC = 'odysseyDynamicLit';
 /**
  * Runtime lightmap baker for any Odyssey model / mesh / geometry.
  * Bakes DynAmbient + sun + n_dynamic_type == 0 into USE_LIGHTMAP textures.
- * Animated / skin / dangly meshes can stay on GetNearestLights.
- * Placeable hybrid bind overlays GetNearestLights (not exclusive_dynamic) so
+ * Animated / skin / dangly meshes can stay on nearest light selection.
+ * Placeable hybrid bind overlays nearest light selection (not exclusive_dynamic) so
  * gob type-2 lights still shade without being baked (avoids idle over-bright).
  */
 export class OdysseyLightmapBaker {
@@ -83,7 +83,7 @@ export class OdysseyLightmapBaker {
     this.dirty.set(entry.model, entry);
   }
 
-  /** Process invalidate() queue once per frame. */
+  /** Process invalidate queue once per frame. */
   static flushDirty(lightManager?: LightManager): void {
     if(this.baking || this.dirty.size === 0){ return; }
     this.baking = true;
@@ -263,7 +263,7 @@ export class OdysseyLightmapBaker {
     return dynamic;
   }
 
-  /** Skins and dangly meshes only — always stay on GetNearestLights. */
+  /** Skins and dangly meshes only — always stay on nearest light selection. */
   static classifySkinsAndDangly(model: OdysseyModel3D): Set<THREE.Object3D> {
     const dynamic = new Set<THREE.Object3D>();
     const skins = model.skins || [];
@@ -385,7 +385,7 @@ export class OdysseyLightmapBaker {
     if(!lm?.lights){ return out; }
     for(let i = 0, il = lm.lights.length; i < il; i++){
       const light = lm.lights[i];
-      // Room-static only. Type 1/2 stay on the binder overlay / GetNearestLights
+      // Room-static only. Type 1/2 stay on the binder overlay / nearest light selection
       // so idle freezes do not over-brighten vs the animating gob path.
       if((light.dynamicType | 0) !== 0){ continue; }
       if(!(light.getRadius() > 0)){ continue; }
@@ -593,7 +593,7 @@ export class OdysseyLightmapBaker {
           for(let li = 0; li < bakeLights.length; li++){
             const light = bakeLights[li];
             const dist = this._scratchPos.distanceTo(light.worldPosition);
-            const atten = retailPointAttenuation(dist, light.getRadius());
+            const atten = odysseyPointAttenuation(dist, light.getRadius());
             if(atten <= 0){ continue; }
             const scale = light.getIntensity();
             const lr = light.color.r * scale * atten;

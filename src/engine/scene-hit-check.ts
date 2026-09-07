@@ -30,10 +30,10 @@ function collectLosBlockingFaces(faces: OdysseyFace3[] | undefined): OdysseyFace
 }
 
 /**
- * Walkmesh approximation of retail Scene::HitCheck for a world segment.
+ * Walkmesh approximation of for a world segment.
  *
  * Tests LOS-blocking room WOK faces + closed door DWKs.
- * Residual vs full retail Scene::HitCheck: room model AABB/BSP and placeable
+ * Residual vs full : room model AABB/BSP and placeable
  * gob hits are not tested.
  *
  * @returns true when the segment is occluded

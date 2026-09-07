@@ -6,14 +6,14 @@ import { hasDirectLine } from "@/engine/pathfinding/test-direct-line";
 import { SMOOTH_SELECTION_BUDGET_MS } from "@/engine/pathfinding/smooth-select-nodes";
 
 /**
- * SmoothCornerOptimize + ComputeBestCorner.
+ * SmoothCornerOptimize + find best corner chord.
  *
  * For sharp corners (BA·BC normalized < 0.9), binary-search a chord that cuts
  * the corner, then nested CBC passes refine near/far sides of the chord
- * (retail SmoothCornerOptimize control flow).
+ * (SmoothCornerOptimize control flow).
  *
- * Restartable variant is KotOR.js hitch hardening (retail runs corners sync after
- * SmoothSelectionRestartable returns 0). Budget matches retail constant ≈ 10ms.
+ * Restartable variant is KotOR.js hitch hardening (runs corners sync after
+ * SmoothSelectionRestartable returns 0). Budget matches engine behavior constant ≈ 10ms.
  *
  * @file smooth-corner-optimize.ts
  */
@@ -91,22 +91,22 @@ export function smoothCornerOptimizeRestartable(
     const b = source[cornerIndex].vector;
     const c = source[cornerIndex + 1].vector;
 
-    // Retail SmoothCornerOptimize — nested ComputeBestCorner passes
-    const chord = computeBestCorner(area, a, b, c, owner);
+    // SmoothCornerOptimize — nested find best corner chord passes
+    const chord = findBestCornerChord(area, a, b, c, owner);
     if(!chord){
       workingVecs.push(b.clone());
       continue;
     }
-    const near = computeBestCorner(area, a, chord.p0, chord.p1, owner);
+    const near = findBestCornerChord(area, a, chord.p0, chord.p1, owner);
     if(near){
-      const far = computeBestCorner(area, near.p1, chord.p1, c, owner);
+      const far = findBestCornerChord(area, near.p1, chord.p1, c, owner);
       if(far){
         workingVecs.push(near.p0.clone(), near.p1.clone(), far.p0.clone(), far.p1.clone());
       }else{
         workingVecs.push(near.p0.clone(), near.p1.clone(), chord.p1.clone());
       }
     }else{
-      const far = computeBestCorner(area, chord.p0, chord.p1, c, owner);
+      const far = findBestCornerChord(area, chord.p0, chord.p1, c, owner);
       if(far){
         workingVecs.push(chord.p0.clone(), far.p0.clone(), far.p1.clone());
       }else{
@@ -142,9 +142,9 @@ function vectorsToPathPoints(vecs: THREE.Vector3[], markEnd: boolean): PathPoint
 type CornerChord = { p0: THREE.Vector3; p1: THREE.Vector3 };
 
 /**
- * Retail ComputeBestCorner: chord across corner B of polyline A-B-C.
+ * find best corner chord: chord across corner B of polyline A-B-C.
  */
-export function computeBestCorner(
+export function findBestCornerChord(
   area: ModuleArea,
   a: THREE.Vector3,
   b: THREE.Vector3,
@@ -155,7 +155,7 @@ export function computeBestCorner(
   const lenBC = Math.hypot(c.x - b.x, c.y - b.y);
   if(lenAB < MIN_LEN || lenBC < MIN_LEN) return undefined;
 
-  // Retail: (BA · BC) / (|BA| |BC|) < 0.9 → sharp enough to cut
+  // : (BA · BC) / (|BA| |BC|) < 0.9 → sharp enough to cut
   const bax = a.x - b.x;
   const bay = a.y - b.y;
   const bcx = c.x - b.x;

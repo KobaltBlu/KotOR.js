@@ -45,7 +45,7 @@ export const FuryShader: FuryShader = {
       }
       vec3 warped = texture2D( tDiffuse, vUv + offset ).rgb;
       vec4 fury = texture2D( tFury, vUv );
-      // Retail: SGE(fury.a + c7.a, 0.5); MAD rgb = warped * mask + fury
+      // : SGE(fury.a + c7.a, 0.5); MAD rgb = warped * mask + fury
       float mask = step( 0.5, fury.a + alphaBias );
       vec3 rgb = warped * mask + fury.rgb;
       gl_FragColor = vec4( rgb, max( fury.a, 1.0 ) );

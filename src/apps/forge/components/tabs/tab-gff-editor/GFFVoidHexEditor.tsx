@@ -1,5 +1,5 @@
 /**
- * Compact hex editor for GFF VOID fields, with .bin import/export.
+ * Compact hex editor for GFF VOID fields, with.bin import/export.
  *
  * @file GFFVoidHexEditor.tsx
  * @author KobaltBlu <https://github.com/KobaltBlu>

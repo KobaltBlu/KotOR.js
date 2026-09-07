@@ -52,10 +52,10 @@ function resolveKeyboardForwardAxis(): number {
 }
 
 /**
- * Retail ProcessInput LMB-forward inject:
+ * ProcessInput LMB-forward inject:
  * When chase-cam look is active (`rightClickHeld`, inverted if Mouse Look) and
  * `leftMouseDown`, inject forward if the keyboard/stick up_down axis is 0.
- * Retail writes raw up_down = -1.0 (stick-forward); our axisForward is +forward.
+ * writes raw up_down = -1.0 (stick-forward); our axisForward is +forward.
  * Mouse Look on: look is active while RMB is up → LMB alone walks/runs forward.
  * Classic: RMB look + LMB → forward while turning the camera.
  */
@@ -69,7 +69,7 @@ function resolvePlayerForwardAxis(): number {
 
 /**
  * Build swoop/turret lateral axis from A+D together (same race-avoidance as resolveKeyboardForwardAxis).
- * Retail keys feed UpdateAxis as ±1.
+ * keys feed UpdateAxis as ±1.
  */
 function resolveMinigameKeyAxisX(): number {
   const left = !!KeyMapper.Actions[KeyMapAction.MGActionLeft]?.keyboardInput?.down
@@ -83,7 +83,7 @@ function resolveMinigameKeyAxisX(): number {
 }
 
 /**
- * Turret pitch axis from W+S / d-pad up+down — retail PollInput Z pair → UpdateAxis z.
+ * Turret pitch axis from W+S / d-pad up+down — PollInput Z pair → UpdateAxis z.
  */
 function resolveMinigameKeyAxisZ(): number {
   const up = !!KeyMapper.Actions[KeyMapAction.MGActionUp]?.keyboardInput?.down
@@ -96,7 +96,7 @@ function resolveMinigameKeyAxisZ(): number {
   return z;
 }
 
-/** Retail ProcessInput mouse Poll / 20.0 before UpdateMouse. */
+/** ProcessInput mouse Poll / 20.0 before UpdateMouse. */
 const MG_MOUSE_POLL_SCALE = 20;
 
 /**
@@ -119,7 +119,7 @@ export class IngameControls {
   static readonly DRIVE_YAW_RIGHT = 0x20;
 
   /**
-   * Retail drive-control gate: camera mode 5 (FREELOOK/DRIVE) or creature.driveControlActive.
+   * drive-control gate: camera mode 5 (FREELOOK/DRIVE) or creature.driveControlActive.
    * Mode 5 is shared with FreeLook (SetFreeLookCamera). Not swoop MG.
    */
   static isDriveControlActive(creature: ModuleCreature | undefined): boolean {
@@ -189,7 +189,7 @@ export class IngameControls {
     document.addEventListener('pointerlockchange', this.plChangeCallback.bind(this), true);
     document.addEventListener('pointerlockerror', this.plErrorCallback.bind(this), true);
 
-    // Browser context menu breaks RMB hold tracking; retail captures RMB for look.
+    // Browser context menu breaks RMB hold tracking; captures RMB for look.
     this.element.addEventListener('contextmenu', (event: Event) => {
       event.preventDefault();
     });
@@ -202,7 +202,7 @@ export class IngameControls {
     window.addEventListener('keydown', (e: KeyboardEvent) => {
       this.keyboard.onKeyDown(e);
 
-      // Retail HandleInputEvent: while game_over_state, hurry the death fade
+      // HandleInputEvent: while game_over_state, hurry the death fade
       if(GameState.GameOverManager?.GetGameOver?.()){
         GameState.GameOverManager.OnDeathSequenceInput();
       }
@@ -496,7 +496,7 @@ export class IngameControls {
         return;
       }
 
-      // Retail: click during death sequence hurries the fade (before UI click handling)
+      // : click during death sequence hurries the fade (before UI click handling)
       if(GameState.GameOverManager?.GetGameOver?.()){
         GameState.GameOverManager.OnDeathSequenceInput();
       }
@@ -557,7 +557,7 @@ export class IngameControls {
 
               if(GameState.CursorManager.selectedObject == moduleObject && distance <= distanceThreshold){
                 if(typeof moduleObject.onClick === 'function'){
-                  // Retail case-2 attack → AddAttackActions(clear=0) appends with no
+                  // case-2 attack → AddAttackActions(clear=0) appends with no
                   // ClearAllActions. Only clear the action queue when not already
                   // fighting (exploration → combat), matching ActionManager(1).
                   const pc = GameState.getCurrentPlayer();
@@ -594,7 +594,7 @@ export class IngameControls {
       Mouse.clickItem = undefined;
     });
 
-    // Wheel → retail one-index (or oversized page-step) scroll via GUIListBox.scrollUp/Down
+    // Wheel → one-index (or oversized page-step) scroll via GUIListBox.scrollUp/Down
     document.body.addEventListener('wheel', (e: WheelEvent) => {
       if(!this.isGameCanvasMouseTarget(e)){
         return;
@@ -824,7 +824,7 @@ export class IngameControls {
 
     KeyMapper.Actions[KeyMapAction.Freelook].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      // Retail freelook key: hsMode==1 → SetNavigateCamera + hsMode++
+      // freelook key: hsMode==1 → SetNavigateCamera + hsMode++
       if(GameState.cameraHsMode === 1
         && (GameState.clientCameraMode | 0) !== ClientCameraMode.FREELOOK
         && (GameState.clientCameraMode | 0) !== ClientCameraMode.NAVIGATE){
@@ -944,7 +944,7 @@ export class IngameControls {
     });
 
     // Keys feed UpdateAxis via resolveMinigameKeyAxis* — do not rotate here.
-    // Swoop accelerate (MGActionUp) is polled in ProcessInput → onAccelerate().
+    // Swoop accelerate (MGActionUp) is polled in ProcessInput → onAccelerate.
     KeyMapper.Actions[KeyMapAction.MGActionUp].setProcessor( (_keymap, _delta = 0) => {});
 
     KeyMapper.Actions[KeyMapAction.MGActionDown].setProcessor( (_keymap, _delta = 0) => {});
@@ -955,12 +955,12 @@ export class IngameControls {
 
     KeyMapper.Actions[KeyMapAction.PauseMinigame].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      // Same manual combat-pause reason 4 as TB_PAUSE (retail pause overlay path)
+      // Same manual combat-pause reason 4 as TB_PAUSE (pause overlay path)
       GameState.AutoPauseManager.ToggleManualPause();
     });
 
     KeyMapper.Actions[KeyMapAction.MGshoot].setProcessor( (keymap) => {
-      // Held fire — GunBank RoF timer gates spawn (retail BehaviorFire).
+      // Held fire — GunBank RoF timer gates spawn (BehaviorFire).
       const keyOrPad = !!(keymap.keyboardInput?.down || keymap.gamepadInput?.down || keymap.gamepadInput?.pressed);
       const mouseFire =
         GameState.Mode === EngineMode.MINIGAME &&
@@ -996,7 +996,7 @@ export class IngameControls {
 
       const currentMenu = GameState.MenuManager.GetCurrentMenu();
       if(currentMenu == GameState.MenuManager.InGameOverlay){
-        // Retail pause key — same as TB_PAUSE / OnPauseButtonPressed (reason 4)
+        // pause key — same as TB_PAUSE / OnPauseButtonPressed (reason 4)
         GameState.AutoPauseManager.ToggleManualPause();
       }else if( currentMenu == GameState.MenuManager.InGameConfirm){
         GameState.MenuManager.InGameConfirm.close();
@@ -1008,7 +1008,7 @@ export class IngameControls {
       GameState.getCurrentPlayer().flourish();
     });
 
-    // Retail CancleCombat (action240 / BTN_CLEARALL) — ClearAllActions GUI path
+    // CancleCombat (action240 / BTN_CLEARALL) — ClearAllActions GUI path
     KeyMapper.Actions[KeyMapAction.CancleCombat]?.setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
@@ -1016,7 +1016,7 @@ export class IngameControls {
       GameState.MenuManager.InGameOverlay.onClearAllButtonPressed();
     });
 
-    // Retail ClearOneAction (action245 / BTN_CLEARONE) — OnCombatYButton
+    // ClearOneAction (action245 / BTN_CLEARONE) — OnCombatYButton
     KeyMapper.Actions[KeyMapAction.ClearOneAction]?.setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
@@ -1024,7 +1024,7 @@ export class IngameControls {
       GameState.MenuManager.InGameOverlay.onClearOneButtonPressed();
     });
 
-    // HUD action-menu activate (retail Personal*/Target*Act digit binds)
+    // HUD action-menu activate (Personal*/Target*Act digit binds)
     const actionMenuPressed = (keymap: { keyboardInput?: { pressed?: boolean }; gamepadInput?: { pressed?: boolean } }) =>
       !!(keymap.keyboardInput?.pressed || keymap.gamepadInput?.pressed);
     const actionMenuInGame = () =>
@@ -1153,7 +1153,7 @@ export class IngameControls {
       GameState.MenuManager.MenuOptions.open();
     });
 
-    // Retail DoQuickSave / DoQuickLoad
+    // DoQuickSave / DoQuickLoad
     KeyMapper.Actions[KeyMapAction.Quicksave]?.setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
@@ -1279,7 +1279,7 @@ export class IngameControls {
                 const lx = this.gamePad.stick_l_x.value;
                 const ly = this.gamePad.stick_l_y.value;
                 const ctrl = ensurePlayerControl(followee);
-                // stick: -y forward, x right (retail left_right / up_down)
+                // stick: -y forward, x right (left_right / up_down)
                 setPlayerAxes(ctrl, -ly, lx, !!followee.walk);
                 followee.controlled = true;
                 GameState.scene_cursor_holder.visible = false;
@@ -1298,7 +1298,7 @@ export class IngameControls {
     
     KeyMapper.ProcessMappings(GameState.Mode, delta);
 
-    // Retail look state: RMB hold, or always-on when Mouse Look (inverted RMB)
+    // look state: RMB hold, or always-on when Mouse Look (inverted RMB)
     Mouse.syncCameraHold();
 
     // Leave pointer lock when not in a gameplay camera mode (menus, loading, etc.)
@@ -1310,7 +1310,7 @@ export class IngameControls {
       Mouse.exitPointerLock();
     }
 
-    // Retail UpdateCamera mouse look while rightClickHeld (or Mouse Look)
+    // UpdateCamera mouse look while rightClickHeld (or Mouse Look)
     if(Mouse.isCameraHoldDesired() && GameState.Mode == EngineMode.INGAME){
       const dx = Mouse.MouseX - Mouse.OldMouseX;
       const dy = Mouse.MouseY - Mouse.OldMouseY;
@@ -1327,11 +1327,11 @@ export class IngameControls {
       !Mouse.cameraHoldActive &&
       currentMenu == GameState.MenuManager.InGameOverlay
     ){
-      // Retail UpdateCamera edge turn — cursor near left/right screen frame
+      // UpdateCamera edge turn — cursor near left/right screen frame
       this.updateScreenEdgeCameraTurn();
     }
 
-    // Retail ProcessInput — UpdateAxis (always) then UpdateMouse (type2);
+    // ProcessInput — UpdateAxis (always) then UpdateMouse (type2);
     // combat/Engine pause blocks Fire only, not axis damping.
     if(GameState.Mode == EngineMode.MINIGAME){
       const mg = GameState.module?.area?.miniGame;
@@ -1344,7 +1344,7 @@ export class IngameControls {
         const reverseY = GameState.isMinigameYAxisReversed();
 
         if(mg.type === MiniGameType.SWOOPRACE){
-          // Retail ProcessInput: clamp(Poll(L)+Poll(R), -1, 1) — stick and keys sum.
+          // ProcessInput: clamp(Poll(L)+Poll(R), -1, 1) — stick and keys sum.
           const x = Math.max(-1, Math.min(1, stickX + keyX));
           mg.updateAxis(x, 0, 0, delta);
           // Swoop accelerate (W / MGActionUp / pad up) → OnAccelerate every frame while held.
@@ -1358,7 +1358,7 @@ export class IngameControls {
             mg.player.onAccelerate();
           }
         }else if(mg.type === MiniGameType.TURRET){
-          // Retail: UpdateAxis(x,0,z); optional negate Z for Reverse Minigame YAxis.
+          // : UpdateAxis(x,0,z); optional negate Z for Reverse Minigame YAxis.
           const x = Math.max(-1, Math.min(1, stickX + keyX));
           let z = Math.max(-1, Math.min(1, stickY + resolveMinigameKeyAxisZ()));
           if(reverseY){ z = -z; }
@@ -1372,7 +1372,7 @@ export class IngameControls {
             if(reverseY){ my = -my; }
             mg.updateMouse(mx, my, delta);
           }
-          // Retail recenter cursor unless combat-paused.
+          // recenter cursor unless combat-paused.
           if(GameState.State == EngineState.RUNNING){
             const cx = (this.element?.clientWidth || window.innerWidth) * 0.5;
             const cy = (this.element?.clientHeight || window.innerHeight) * 0.5;
@@ -1413,7 +1413,7 @@ export class IngameControls {
   }
 
   /**
-   * Retail UpdateCamera — turn when cursor is within screenFramePercentage
+   * UpdateCamera — turn when cursor is within screenFramePercentage
    * of the left/right viewport edge (min 2px). Skip while over GUI so floating
    * target-menu clicks are not invalidated by camera motion.
    */
@@ -1436,7 +1436,7 @@ export class IngameControls {
   }
 
   /**
-   * Retail HandleZMouse — wheel over action buttons
+   * HandleZMouse — wheel over action buttons
    * cycles the matching ActionMenuPanel (BTN_TARGET* / BTN_ACTION*).
    */
   cycleHoveredActionMenu(direction: number){

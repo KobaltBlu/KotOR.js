@@ -59,8 +59,8 @@ export const App = (props: any) => {
     }, 100);
 
     // console.log('start');
-    // TabResourceExplorerState.GenerateResourceList().then( () => {
-    //   console.log('end');
+    // TabResourceExplorerState.GenerateResourceList.then(=> {
+    // console.log('end');
     // })
   };
 
@@ -220,7 +220,7 @@ export const App = (props: any) => {
 
     } else {
       // Browser: use FileSystemFileHandle via dataTransfer.items.
-      // All getAsFileSystemHandle() calls must be initiated synchronously before
+      // All getAsFileSystemHandle calls must be initiated synchronously before
       // any await, because the browser clears the DataTransfer object on the
       // first yield back to the event loop.
       const items = Array.from(e.dataTransfer.items).filter(item => item.kind === 'file');

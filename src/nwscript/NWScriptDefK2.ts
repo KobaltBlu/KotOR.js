@@ -1511,7 +1511,7 @@ NWScriptDefK2.Actions = {
      */
     action: function(this: NWScriptInstance, args: [ModuleObject, string, number, number, number, string, string, string, string, string, string, number, number, number, number]){
       if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
-        // Retail clears party[0] before dialog unless TSL bDontClearAllActions
+        // clears party[0] before dialog unless TSL bDontClearAllActions
         const bDontClearAllActions = !!args[14];
         if(!bDontClearAllActions){
           const partyLeader = GameState.PartyManager.party[0];
@@ -1519,7 +1519,7 @@ NWScriptDefK2.Actions = {
             partyLeader.clearAllActions(true);
           }
         }
-        // Retail pops bIgnoreStartRange then forces it to 1 before AddAction.
+        // pops bIgnoreStartRange then forces it to 1 before AddAction.
         const ignoreNames = [args[5], args[6], args[7], args[8], args[9], args[10]]
           .filter((s) => typeof s === 'string' && s.trim().length > 0);
         // TSL bUseLeader (args[11]) — force party leader as listener/owner pairing
@@ -1536,7 +1536,7 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.VOID,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // Retail ExecuteCommandActionPauseConversation — sets
+      // ExecuteCommandActionPauseConversation — sets
       // immediately (does not AddAction). Resume stays queued.
       GameState.CutsceneManager.pauseConversation();
     }
@@ -4423,7 +4423,7 @@ NWScriptDefK2.Actions = {
   590: {
     comment: '590: adjusts a followers hit points, can specify the absolute value to set to\nSWMG_AdjustFollowerHitPoints',
     name: 'SWMG_AdjustFollowerHitPoints',
-    // Retail ExecuteCommand — no StackPushInteger (VOID).
+    // ExecuteCommand — no StackPushInteger (VOID).
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
     action: undefined
@@ -5724,7 +5724,7 @@ NWScriptDefK2.Actions = {
     comment: 'FAK-OEI 12/15/2003\n771: Get the number of components for an item',
     name: 'GetItemComponent',
     type: NWScriptDataType.INTEGER,
-    // Retail nss/object pop (ExecuteCommandGetChemical pattern). Aspyr command table
+    // nss/object pop (ExecuteCommandGetChemical pattern). Aspyr command table
     // aliases 771→GetGold — KotOR.js returns party PT_ITEM_COMPONENT (intended).
     args: [ NWScriptDataType.OBJECT ],
     action: function(this: NWScriptInstance, _args: [ModuleObject]){
@@ -5735,7 +5735,7 @@ NWScriptDefK2.Actions = {
     comment: 'FAK-OEI 12/15/2003\n771: Get the number of components for an item in pieces',
     name: 'GetItemComponentPieceValue',
     type: NWScriptDataType.INTEGER,
-    // Retail: GetCost() / 0x14 (same as GetChemicalPieceValue).
+    // : GetCost / 0x14 (same as GetChemicalPieceValue).
     args: [ NWScriptDataType.OBJECT ],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleItem)){
@@ -5751,7 +5751,7 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT ],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      // ShowChemicalUpgradeScreen → retail (chemical_p).
+      // ShowChemicalUpgradeScreen → (chemical_p).
       const character = BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)
         ? (args[0] as ModuleCreature)
         : undefined;
@@ -5773,7 +5773,7 @@ NWScriptDefK2.Actions = {
     comment: 'FAK-OEI 12/15/2003\n775: Get the number of chemicals for an item in pieces',
     name: 'GetChemicalPieceValue',
     type: NWScriptDataType.INTEGER,
-    // ExecuteCommandGetChemicalPieceValue — GetCost() / 0x14.
+    // ExecuteCommandGetChemicalPieceValue — GetCost / 0x14.
     args: [ NWScriptDataType.OBJECT ],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleItem)){
@@ -5920,7 +5920,7 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.VOID,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // TSL retail — ShowSwoopUpgradeScreen opens swoopup_p.
+      // TSL — ShowSwoopUpgradeScreen opens swoopup_p.
       GameState.MenuManager.MenuSwoopUp?.open();
     }
   },
@@ -6781,7 +6781,7 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.VOID,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // Retail ExecuteCommandActionSwitchWeapons → AddAction(0x47)
+      // ExecuteCommandActionSwitchWeapons → AddAction(0x47)
       if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
         return;
       }
@@ -6827,7 +6827,7 @@ NWScriptDefK2.Actions = {
       if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
         return;
       }
-      // Immediate destroy (retail detonation VFX is visual-only; damage is via script)
+      // Immediate destroy (detonation VFX is visual-only; damage is via script)
       args[0].destroy();
     }
   },

@@ -3,21 +3,21 @@ import type { OdysseyModelNodeSaber } from "@/odyssey/OdysseyModelNodeSaber";
 import type { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
 
 /**
- * Retail PartLightsaber trail — Animate / Draw.
+ * light nodesaber trail — Animate / Draw.
  *
  * Ring capacity 0x14 (20); min Δt ≈ 0.01; segment interval ≈ 0.012.
  * Trail profile cross-section starts at MDL vert 0x58 (88); idle blade uses verts 0..7.
  */
 
-/** Retail ring size. */
+/** ring size. */
 export const SABER_TRAIL_RING = 20;
-/** Retail lightsaberDelta. */
+/** lightsaberDelta. */
 export const SABER_TRAIL_MIN_DELTA = 0.01;
-/** Retail lightsaberSegmentInterval. */
+/** lightsaberSegmentInterval. */
 export const SABER_TRAIL_SEGMENT_INTERVAL = 0.012;
-/** Retail teleport clear threshold in Animate */
+/** teleport clear threshold in Animate */
 export const SABER_TRAIL_TELEPORT_MAG = 1.0;
-/** Retail Draw trail profile base vert index (float bits 0x58) */
+/** Draw trail profile base vert index (float bits 0x58) */
 export const SABER_TRAIL_PROFILE_VERT = 88;
 /** Idle blade: two cross-sections (verts 0..7) */
 export const SABER_IDLE_VERT_COUNT = 8;
@@ -105,7 +105,7 @@ function clearTrail(sim: SaberTrailState): void {
 }
 
 /**
- * Retail Animate — age ring samples and push world pose when the blade moves.
+ * Animate — age ring samples and push world pose when the blade moves.
  */
 export function animateSaberTrail(mesh: THREE.Mesh, delta: number): void {
   const sim = mesh.userData.saberTrail as SaberTrailState | undefined;
@@ -166,7 +166,7 @@ export function animateSaberTrail(mesh: THREE.Mesh, delta: number): void {
   sim.positions[w].copy(_worldPos);
   sim.orientations[w].copy(_worldQuat);
 
-  // Retail: when ring is full, overwrite current write slot and do not advance.
+  // : when ring is full, overwrite current write slot and do not advance.
   if (sim.segmentCount === SABER_TRAIL_RING) {
     return;
   }
@@ -277,7 +277,7 @@ function rebuildIdleBlade(sim: SaberTrailState, vertCount: { n: number }, indexC
 }
 
 /**
- * Retail Draw — rebuild ribbon from history × MDL profile, or idle blade.
+ * Draw — rebuild ribbon from history × MDL profile, or idle blade.
  */
 export function rebuildSaberRibbon(mesh: THREE.Mesh): void {
   const sim = mesh.userData.saberTrail as SaberTrailState | undefined;

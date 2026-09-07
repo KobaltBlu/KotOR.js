@@ -297,7 +297,7 @@ export const TopDownMap: React.FC<TopDownMapProps> = ({
       const viewScale = base * v.zoom;
       const viewScaleCss = viewScale / dpr;
 
-      // Area map texture — FlipY-encoded so retail top is at bitmap top / maxY.
+      // Area map texture — FlipY-encoded so top is at bitmap top / maxY.
       const overlay = mapImageRef.current;
       if(overlay){
         const imgX = v.panX;

@@ -4,7 +4,7 @@ import { GFFStruct } from "@/resource/GFFStruct";
 import EngineLocation from "@/engine/EngineLocation";
 
 /**
- * retail type constants (SaveVarTable / LoadVarTable).
+ * type constants (SaveVarTable / LoadVarTable).
  */
 export enum ScriptVarType {
   Int = 1,
@@ -21,8 +21,8 @@ export interface ScriptVarEntry {
 }
 
 /**
- * Named VarTable (not SWVarTable) — load/re-export for retail round-trip.
- * KotOR scripts use LocalBoolean/LocalNumber; this preserves engine vars from retail saves.
+ * Named VarTable (not SWVarTable) — load/re-export for save round-trip.
+ * KotOR scripts use LocalBoolean/LocalNumber; this preserves engine vars from original game saves.
  */
 export class ScriptVarTable {
   entries: ScriptVarEntry[] = [];

@@ -5,7 +5,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
 import { TwoDAObject } from "@/resource/TwoDAObject";
 
-/** retail / GUI category ids. */
+/** / GUI category ids. */
 export enum UpgradeCategory {
   NONE = 0,
   LIGHTSABER = 1,
@@ -20,7 +20,7 @@ export interface UpgradeSlotInfo {
   upgradeType: number;
   emptyIcon: string;
   nameStrRef: number;
-  /** True when the slot uses upcrystals.2da (retail LS middle / crystal slot). */
+  /** True when the slot uses upcrystals.2da (LS middle / crystal slot). */
   isCrystal: boolean;
 }
 
@@ -50,7 +50,7 @@ export interface UpgradeSessionSlot {
   templateTag: string;
 }
 
-/** Retail K1 SLOT_INFO — indexed by (slotIndex-4)+category*4. */
+/** K1 SLOT_INFO — indexed by (slotIndex-4)+category*4. */
 const K1_SLOT_INFO: Record<UpgradeCategory, UpgradeSlotInfo[]> = {
   [UpgradeCategory.NONE]: [],
   [UpgradeCategory.LIGHTSABER]: [
@@ -75,7 +75,7 @@ const K1_SLOT_INFO: Record<UpgradeCategory, UpgradeSlotInfo[]> = {
   ],
 };
 
-/** Retail K2 SLOT_INFO — 6 entries per category. */
+/** K2 SLOT_INFO — 6 entries per category. */
 const K2_SLOT_INFO: Record<UpgradeCategory, UpgradeSlotInfo[]> = {
   [UpgradeCategory.NONE]: [],
   [UpgradeCategory.LIGHTSABER]: [
@@ -108,7 +108,7 @@ const LIGHTSABER_BASE_ITEMS = [
   BaseItemType.SHORT_LIGHTSABER,
 ];
 
-/** TLK 0xa42a — "Upgrades" label used by retail OnEnterSlot. */
+/** TLK 0xa42a — "Upgrades" label used by OnEnterSlot. */
 export const TLK_UPGRADES_LABEL = 0xa42a;
 /** TLK 0xa5f9 — CantEquip confirmation used when verifying upgrades. */
 export const TLK_UPGRADE_CANT_EQUIP = 0xa5f9;
@@ -151,7 +151,7 @@ export function getSlotCount(category: UpgradeCategory): number {
 }
 
 /**
- * Retail GetUpgradableType.
+ * GetUpgradableType.
  * K1 maps item-property UpgradeType rows through upgrade.2da.
  * K2 uses baseitems.itemtype plus UpgradeLevel > 0.
  */
@@ -333,7 +333,7 @@ export function findInventoryItemByTag(tag: string): ModuleItem | undefined {
 }
 
 /**
- * Split one unit from a stacked inventory item (retail SplitItem).
+ * Split one unit from a stacked inventory item (SplitItem).
  * Returns the reserved unit; mutates/removes the source stack.
  */
 export function reserveInventoryUnit(item: ModuleItem): ModuleItem | undefined {
@@ -481,7 +481,7 @@ export function listCompatibleComponents(
     if(!table) return choices;
     const currentTag = (item.getTag?.() || '').toLowerCase();
     const keys = Object.keys(table.rows);
-    // Currently installed crystal first (retail CreateItemEntry with current).
+    // Currently installed crystal first (CreateItemEntry with current).
     choices.push({
       item: undefined,
       rowIndex: findCrystalRowForItem(item),

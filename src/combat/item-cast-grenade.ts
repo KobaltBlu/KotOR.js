@@ -1,7 +1,7 @@
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 
 /**
- * Retail grenade throw helpers — item-cast action
+ * grenade throw helpers — item-cast action
  * case 6 (baseitems ItemType 6).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -15,10 +15,10 @@ export const GRENADE_ITEM_TYPE = 6;
 /** Under-handed throw when the target is within 10m. */
 export const GRENADE_CLOSE_RANGE = 10;
 
-/** Retail pause timer 0x5DC for every grenade throw. */
+/** pause timer 0x5DC for every grenade throw. */
 export const GRENADE_PAUSE_MS = 1500;
 
-/** Retail conjure gate 0x320 (high throw) / 0x2BC (close, low throw). */
+/** conjure gate 0x320 (high throw) / 0x2BC (close, low throw). */
 export const GRENADE_THROW_HIGH_GATE_MS = 800;
 export const GRENADE_THROW_LOW_GATE_MS = 700;
 
@@ -27,7 +27,7 @@ export function isGrenadeItemType(itemType: number | undefined): boolean {
 }
 
 /**
- * Retail appearance MODELTYPE check — only B (body) and F (full) rigs carry the
+ * appearance MODELTYPE check — only B (body) and F (full) rigs carry the
  * grenade throw animations. Everything else snaps to READY.
  */
 export function canPlayGrenadeThrowAnim(modeltype: string | undefined): boolean {
@@ -36,7 +36,7 @@ export function canPlayGrenadeThrowAnim(modeltype: string | undefined): boolean 
 }
 
 /**
- * Retail case 6 animation pick. Distance is compared squared against
+ * case 6 animation pick. Distance is compared squared against
  * GRENADE_CLOSE_RANGE to match the engine.
  */
 export function resolveGrenadeThrowAnim(
@@ -52,7 +52,7 @@ export function resolveGrenadeThrowAnim(
 }
 
 /**
- * Retail conjure gate before SpellCastAndImpact fires. The low (close) throw
+ * conjure gate before SpellCastAndImpact fires. The low (close) throw
  * releases slightly earlier than the high lob.
  */
 export function resolveGrenadeGateMs(anim: ModuleCreatureAnimState): number {

@@ -1,7 +1,7 @@
 import { GUIProtoItem, GUIButton } from "@/gui";
 import type { GUIControl, GameMenu } from "@/gui";
 import type { GUIListBox } from "@/gui/GUIListBox";
-import type { RetailRowExtent } from "@/gui/GUIProtoItem";
+import type { ProtoRowExtent } from "@/gui/GUIProtoItem";
 import * as THREE from "three";
 import type { GFFStruct } from "@/resource/GFFStruct";
 import { GameState } from "@/GameState";
@@ -36,11 +36,11 @@ export class GUISpellItem extends GUIProtoItem {
   }
 
   /**
-   * Retail AddPowerSet SetExtent (same as AddFeatSet):
+   * AddPowerSet SetExtent (same as AddFeatSet):
    * K1: {0,0,0xf2 (242), 0x28 (40)}
    * TSL: width 0x106 (262), height ftol(scalar * 40.0)
    */
-  getRetailBaseExtent(_list: GUIListBox): RetailRowExtent {
+  getProtoBaseExtent(_list: GUIListBox): ProtoRowExtent {
     const isTsl = GameState.GameKey == GameEngineType.TSL;
     return {
       left: 0,

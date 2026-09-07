@@ -23,7 +23,7 @@ export class ForgeTrigger extends ForgeGameObject {
   ];
 
   /**
-   * Retail ZOrientation: third component of the GIT orientation unit vector
+   * ZOrientation: third component of the GIT orientation unit vector
    * (XO/YO/ZO). LoadTrigger uses Yaw of that vector to rotate geometry; typically ZO is 0.
    */
   zOrientation: number = 0;

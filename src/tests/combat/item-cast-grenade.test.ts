@@ -1,5 +1,5 @@
 /**
- * Retail grenade throw alignment — item-cast action case 6.
+ * grenade throw alignment — item-cast action case 6.
  * @jest-environment node
  */
 import { describe, expect, it } from '@jest/globals';
@@ -45,7 +45,7 @@ describe('grenade throw animation', () => {
   it('lobs high beyond the 10m close range', () => {
     expect(resolveGrenadeThrowAnim('B', sq(GRENADE_CLOSE_RANGE + 5)))
       .toBe(ModuleCreatureAnimState.THROW_HIGH);
-    // retail compares squared distance, boundary is a high throw
+    // compares squared distance, boundary is a high throw
     expect(resolveGrenadeThrowAnim('B', sq(GRENADE_CLOSE_RANGE)))
       .toBe(ModuleCreatureAnimState.THROW_HIGH);
   });
@@ -86,7 +86,7 @@ describe('grenade timing', () => {
 });
 
 describe('item cast impact script contract', () => {
-  // SpellCastInstance.impact() no-ops on an empty impactscript, so a cast that
+  // SpellCastInstance.impact no-ops on an empty impactscript, so a cast that
   // skips applySpellData never runs grenade splash damage.
   const willRunImpactScript = (appliedSpellData: boolean, impactscript: string) =>
     appliedSpellData && !!impactscript;

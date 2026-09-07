@@ -39,9 +39,9 @@ export enum ModuleCreatureAnimState {
   CASTOUT2 = 10016,
   CASTOUT1_LP = 10017,
   CASTOUT2_LP = 10018,
-  /** Retail castanim 3 → 0x2723 */
+  /** castanim 3 → 0x2723 */
   CASTOUT3_LP = 10019,
-  /** Retail castanim 4 → 0x2724 */
+  /** castanim 4 → 0x2724 */
   CASTOUT4_LP = 10020,
   SPASM = 10023,
   TAUNT = 10028,
@@ -199,9 +199,9 @@ export enum ModuleCreatureAnimState {
   CASTOUT3 = 11000,
   CRITICAL_STRIKE2_SS = 11001,
   CRITICAL_STRIKE3_SS = 11002,
-  /** Retail AIActionItemCastSpell droid utility gate anim 0x2AF9. */
+  /** AIActionItemCastSpell droid utility gate anim 0x2AF9. */
   DROID_UTILITY_USE = 11001,
-  /** Retail AIActionItemCastSpell droid utility post-impact hold 0x2AFA. */
+  /** AIActionItemCastSpell droid utility post-impact hold 0x2AFA. */
   DROID_UTILITY_USE_LP = 11002,
 
   KNEEL_TALK_ANGRY = 10031,

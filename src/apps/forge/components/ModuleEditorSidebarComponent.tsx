@@ -326,7 +326,7 @@ function getGITPropertyDefinitions(gameObject: ForgeGameObject): GITPropertyDef[
       break;
 
     case 'ForgeEncounter':
-      // Retail encounter GIT has no orientation — position only from common props
+      // encounter GIT has no orientation — position only from common props
       props = [
         { propertyName: 'templateResRef', label: 'Template ResRef', type: 'string', gitFieldLabel: 'TemplateResRef', section: 'Identity' },
         { propertyName: 'position', label: 'Position', type: 'position', section: 'Transform' },
@@ -670,7 +670,7 @@ const PropertyEditor = function(props: {
     case 'number':
       return (
         <div className="property-editor-row">
-          <label className="property-editor-label property-editor-label--ellipsis" title={propertyDef.gitFieldLabel === 'ZOrientation' ? 'Third component of retail orientation vector; geometry yaw uses full X/Y/Z vector' : undefined}>
+          <label className="property-editor-label property-editor-label--ellipsis" title={propertyDef.gitFieldLabel === 'ZOrientation' ? 'Third component of orientation vector; geometry yaw uses full X/Y/Z vector' : undefined}>
             {propertyDef.label}:
           </label>
           <input
@@ -1601,7 +1601,7 @@ const AreaPropertiesEditor = function(props: { tab: TabModuleEditorState }){
             </select>
           </ScalarRow>
           <div className="git-instance-properties-editor__hint">
-            Retail MovementPerSec defaults differ by type (swoop ≈ 6, turret ≈ 90); existing values are not overwritten.
+            MovementPerSec defaults differ by type (swoop ≈ 6, turret ≈ 90); existing values are not overwritten.
           </div>
           <ScalarRow label="Bump Plane">
             <NumberField value={miniGame.bumpPlane} onChange={(value) => { miniGame.bumpPlane = value; mark("mg-bumpPlane"); }} />
@@ -1636,7 +1636,7 @@ const AreaPropertiesEditor = function(props: { tab: TabModuleEditorState }){
           {miniGame.type === KotOR.MiniGameType.TURRET && miniGame.player ? (
             <>
               <div className="git-instance-properties-editor__hint">
-                Turret (Type 2): retail requires Player Camera when loading the player.
+                Turret (Type 2): engine requires Player Camera when loading the player.
               </div>
               <ScalarRow label="Player Camera">
                 <TextField

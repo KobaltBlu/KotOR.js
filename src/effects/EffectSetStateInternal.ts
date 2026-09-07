@@ -19,7 +19,7 @@ import {
 } from "@/engine/pathfinding/force-push-quick-walk";
 
 /**
- * EffectSetStateInternal — retail type 0x09 (OnApplySetStateInternal).
+ * EffectSetStateInternal — type 0x09 (effect apply).
  * Clears actions (except ForcePush), pauses combat, applies
  * child VFX/saves, sets ambient / anim.
  *
@@ -43,7 +43,7 @@ function usesSetStateAIMaskNeg3(state: number): boolean {
 }
 
 function firesOnUserDefined(state: number): boolean {
-  // Retail OnRemoveSetStateInternal: 1, 3–10, 0x0E–0x13
+  // effect remove: 1, 3–10, 0x0E–0x13
   return (
     state === GameEffectSetStateType.CONFUSED ||
     (state >= GameEffectSetStateType.DROID_STUN && state <= GameEffectSetStateType.WHIRLWIND) ||
@@ -72,7 +72,7 @@ export class EffectSetStateInternal extends GameEffect {
     const state = this.getInt(0) | 0;
     this.elapsed = 0;
 
-    // Retail ClearAllActions + RemoveAllActions except ForcePush (state 9)
+    // ClearAllActions + RemoveAllActions except ForcePush (state 9)
     if(state !== GameEffectSetStateType.FORCEPUSH){
       creature.clearAllActions?.(true);
       creature.combatRound?.clearActions?.();
@@ -157,7 +157,7 @@ export class EffectSetStateInternal extends GameEffect {
         creature.setAnimationState?.(animForSetState(state));
         break;
       case GameEffectSetStateType.KNOCKDOWN:
-        // Retail case 0x0E → ambient 0x0F
+        // case 0x0E → ambient 0x0F
         creature.ambientAnimState = ModuleCreatureAmbientState.KNOCKDOWN;
         creature.setAnimationState?.(animForSetState(state));
         break;
@@ -168,12 +168,12 @@ export class EffectSetStateInternal extends GameEffect {
       case GameEffectSetStateType.CUT_SCENE_STUNNED:
       case GameEffectSetStateType.MIND_TRICK:
       case GameEffectSetStateType.DROID_SCRAMBLE:
-        // Retail cases 4 / 0x12 / 0x13 → ambient 2
+        // cases 4 / 0x12 / 0x13 → ambient 2
         creature.ambientAnimState = ModuleCreatureAmbientState.PAUSE_POISONED;
         creature.setAnimationState?.(animForSetState(state));
         break;
       case GameEffectSetStateType.HELD:
-        // Retail case 0x11 RecomputeAmbient else → ambient 0
+        // case 0x11 RecomputeAmbient else → ambient 0
         creature.ambientAnimState = ModuleCreatureAmbientState.IDLE;
         creature.setAnimationState?.(animForSetState(state));
         break;
@@ -227,7 +227,7 @@ export class EffectSetStateInternal extends GameEffect {
       case GameEffectSetStateType.CUT_SCENE_STUNNED:
       case GameEffectSetStateType.MIND_TRICK:
       case GameEffectSetStateType.DROID_SCRAMBLE:
-        // Retail cases 4 / 0x12 / 0x13 share VFX_STUN 0x7d2
+        // cases 4 / 0x12 / 0x13 share VFX_STUN 0x7d2
         this.addVfx(creature, VFX_STUN);
         break;
       default:

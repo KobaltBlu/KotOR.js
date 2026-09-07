@@ -58,13 +58,13 @@ export class OdysseyFace3 {
 
 	/**
 	 * Array of 3 vertex normals.
-	 * @default []
+	 * @default 
 	 */
 	vertexNormals: THREE.Vector3[];
 
 	/**
 	 * Face centroid
-	 * @default []
+	 * @default 
 	 */
 	centroid: THREE.Vector3 = new THREE.Vector3();
 
@@ -76,7 +76,7 @@ export class OdysseyFace3 {
 
 	/**
 	 * Array of 3 vertex colors.
-	 * @default []
+	 * @default 
 	 */
 	vertexColors: THREE.Color[];
 

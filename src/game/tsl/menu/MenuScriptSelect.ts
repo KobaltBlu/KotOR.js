@@ -22,7 +22,7 @@ export class MenuScriptSelect extends K1_MenuScriptSelect {
     super();
     this.gui_resref = 'scriptselect_p';
     this.background = '';
-    // Modal over character — no void fill (K1 CSWGuiScriptSelect / AddPanel overlay).
+    // Modal over character — no void fill (K1 script select / AddPanel overlay).
     this.voidFill = false;
     this.isOverlayGUI = true;
   }

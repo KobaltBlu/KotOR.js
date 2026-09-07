@@ -14,24 +14,24 @@ import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
 import { Dice } from "@/utility/Dice";
 
-/** Retail PlayAnimation id for heal (0x2721). */
+/** PlayAnimation id for heal (0x2721). */
 const HEAL_ANIM = 0x2721;
-/** Retail EffectVisualEffect int0 for heal impact. */
+/** EffectVisualEffect int0 for heal impact. */
 const HEAL_VFX = 0x3e9;
 /** BroadcastSkillData skill-broadcast id used by the heal action. */
 const HEAL_SKILL_BROADCAST_ID = 0x14a;
 
 /**
- * ActionHeal — retail heal / medpac / repair-kit action.
+ * ActionHeal — heal / medpac / repair-kit action.
  *
  * Params:
- *  0 - dword: oTarget
- *  1 - dword: oMedpac
- *  2 - int: requeue scratch (not skill — retail always Treat Injury / skill 7)
- *  3 - int: bAllowMove
+ * 0 - dword: oTarget
+ * 1 - dword: oMedpac
+ * 2 - int: requeue scratch (not skill — always Treat Injury / skill 7)
+ * 3 - int: bAllowMove
  *
  * Repair kits also enqueue this action (TalentSkill); skill remains Treat Injury
- * per retail GetSkillRank(7).
+ * per GetSkillRank(7).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -77,7 +77,7 @@ export class ActionHeal extends Action {
         this.animQueued = false;
         return ActionStatus.ERROR;
       }
-      // Retail clears bAllowMove on requeue; keep same instance behind Move.
+      // clears bAllowMove on requeue; keep same instance behind Move.
       this.setParameter(3, ActionParameterType.INT, 0);
       const face = new GameState.ActionFactory.ActionChangeFacingObject(undefined, this.groupId);
       face.setParameter(0, ActionParameterType.DWORD, this.target);
@@ -98,7 +98,7 @@ export class ActionHeal extends Action {
       return ActionStatus.IN_PROGRESS;
     }
 
-    // Retail always GetSkillRank(7 /* Treat Injury */, target, 0)
+    // always GetSkillRank(7 /* Treat Injury */, target, 0)
     const skillRank = owner.getSkillLevel(SkillType.TREAT_INJURY) | 0;
     let roll = Dice.roll(1, DiceType.d20);
     // auto-20 cheat — no JS hook yet; leave natural roll.

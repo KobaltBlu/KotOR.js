@@ -1,21 +1,21 @@
 /**
- * Shared locomotion helpers — retail-aligned numbers for KotOR.js force movers.
+ * Shared locomotion helpers — engine-aligned numbers for KotOR.js force movers.
  *
  * Foot motion stays force/walk (ModuleCreature); these tune rate/ease/follow
- * to match GetWalkRate clamp, FollowLeader bands, and WalkUpdateLocation ease.
+ * to match GetWalkRate clamp, FollowLeader bands, and creature walk update ease.
  *
  * @file locomotion.ts
  */
 
-/** Retail GetWalkRate / GetRunRate movement_rate_factor clamp. */
+/** GetWalkRate / GetRunRate movement_rate_factor clamp. */
 export const MOVEMENT_RATE_MIN = 0.125;
 export const MOVEMENT_RATE_MAX = 1.5;
 
-/** Retail DriveUpdateLocation special strafe rate (0x275e/0x275f → 1600 milli-units). */
+/** creature drive update special strafe rate (0x275e/0x275f → 1600 milli-units). */
 export const DRIVE_STRAFE_RATE = 1.6;
 
 /**
- * Clamp effect movement factor like retail GetWalkRate / GetRunRate.
+ * Clamp effect movement factor like GetWalkRate / GetRunRate.
  */
 export function clampMovementRateFactor(factor: number): number {
   if(!(factor > 0) || !Number.isFinite(factor)) return 1;
@@ -47,9 +47,9 @@ export function normalizeSpeedIncreasePercent(n: number): number {
 }
 
 /**
- * Path-approach ease — retail WalkUpdateLocation.
+ * Path-approach ease — creature walk update.
  * Far (remaining > rate×0.5) → 1; near → √(remaining/thresh), min 0.1.
- * When near, retail also subtracts dt_ms*0.001 from the approach target.
+ * When near, also subtracts dt_ms*0.001 from the approach target.
  */
 export function pathApproachScale(remaining: number, baseSpeed: number, deltaSec = 0): number {
   const thresh = Math.max(0.25, (baseSpeed > 0 ? baseSpeed : 1.7) * 0.5);
@@ -64,7 +64,7 @@ export function pathApproachScale(remaining: number, baseSpeed: number, deltaSec
 }
 
 /**
- * Retail speed-factor ramp toward approach target.
+ * speed-factor ramp toward approach target.
  * Ramps up by dt when previous factor < 1 and below target.
  */
 export function walkSpeedFactorRamp(
@@ -84,7 +84,7 @@ export function walkSpeedFactorRamp(
 }
 
 /**
- * Trapezoidal step distance — retail:
+ * Trapezoidal step distance — :
  * step = dt_ms * (new + old) * rate_milli * 0.5 * 1e-6
  * With world rate (units/sec) and delta seconds:
  * step = delta * (new + old) * 0.5 * rate
@@ -101,7 +101,7 @@ export function walkTrapezoidStep(
 }
 
 /**
- * Retail FollowLeader post-rate dist² bands ():
+ * FollowLeader post-rate dist² bands :
  * dist² < 1 → ×0.9; < 225 → ×1.2; else ×1.5
  */
 export function getFollowRateScale(distToOffset: number): number {
@@ -112,6 +112,6 @@ export function getFollowRateScale(distToOffset: number): number {
 }
 
 /**
- * Cosine of max turn before walk-back (retail dot < -0.707 ≈ 135°).
+ * Cosine of max turn before walk-back (dot < -0.707 ≈ 135°).
  */
 export const WALK_BACK_DOT = -0.707;

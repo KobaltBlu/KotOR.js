@@ -1,7 +1,7 @@
 import type { OdysseyObject3D } from "@/three/odyssey/OdysseyObject3D";
 
 /**
- * Tree node shape used by retail SynchronizeNodes (name + id + children).
+ * Tree node shape used by SynchronizeNodes (name + id + children).
  */
 export interface IOdysseySyncNode {
   name: string;
@@ -16,14 +16,14 @@ export interface IOdysseyAnimForSync {
 }
 
 /**
- * Retail MaxTree::SynchronizeTree / MdlNode::SynchronizeNodes.
+ * /.
  *
  * Walk two hierarchies in parallel. Matching children (case-insensitive name)
- * copy `nodeNumber` (MdlNode.id) from the reference tree onto the target.
+ * copy `nodeNumber` (model node.id) from the reference tree onto the target.
  * Unmatched target nodes receive sequential ids starting at `nextId.value`.
  *
  * LoadAddInAnimations syncs the incoming anim/add-in tree onto the creature
- * model so AnimateHierarchy can match Part.field5_0x28 to anim MdlNode.id.
+ * model so AnimateHierarchy can match Part.internal field to anim model node.id.
  */
 export function synchronizeNodeIds(
   target: IOdysseySyncNode,
@@ -126,7 +126,7 @@ export function buildReferenceSyncForest(
 
 /**
  * Clone anim nodes (so supermodel cache is not mutated) and remap nodeNumber
- * onto the geometry model's id space by name — retail SynchronizeNodes direction
+ * onto the geometry model's id space by name — SynchronizeNodes direction
  * for LoadAddInAnimations / supermodel anim merge.
  */
 export function synchronizeAnimationToModel(

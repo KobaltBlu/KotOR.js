@@ -9,7 +9,7 @@ import { UIIconTimerType } from "@/enums/engine/UIIconTimerType";
 import { GameState } from "@/GameState";
 import { ModuleCalendar } from "@/module/ModuleCalendar";
 
-/** Retail module world-notice entry (AddJournalWorldEntry*). */
+/** module world-notice entry (AddJournalWorldEntry*). */
 export interface JournalWorldEntry {
   id: number;
   text: string;
@@ -33,7 +33,7 @@ export interface JournalWorldEntry {
 export class JournalManager {
   static Categories: JournalCategory[] = [];
   static Entries: JournalEntry[] = [];
-  /** Retail world notices (script-visible; MenuJournal UI not wired yet). */
+  /** world notices (script-visible; MenuJournal UI not wired yet). */
   static WorldEntries: JournalWorldEntry[] = [];
   static SortOrder: number = 0;
   static gff: GFFObject;
@@ -93,7 +93,7 @@ export class JournalManager {
     GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.JOURNAL_ENTRY_ADDED);
     let entry = JournalManager.GeJournalEntryByTag(szPlotID);
     if(entry){
-      // Retail: advance state unless new state is lower without allowOverrideHigher
+      // : advance state unless new state is lower without allowOverrideHigher
       if(state >= entry.state || allowOverrideHigher){
         entry.state = state;
         JournalManager.stampEntryTime(entry);
@@ -131,7 +131,7 @@ export class JournalManager {
     entry.time = tm?.pauseTime ?? 0;
   }
 
-  /** Retail AddWorldJournalEntry — replace existing id if present. */
+  /** AddWorldJournalEntry — replace existing id if present. */
   static AddWorldEntry(id: number, text: string = '', title: string = ''): void {
     const entryId = id | 0;
     let entry = JournalManager.WorldEntries.find((e) => e.id === entryId);
@@ -146,7 +146,7 @@ export class JournalManager {
     JournalManager.stampWorldEntryTime(entry);
   }
 
-  /** Retail AddWorldJournalEntryStrref. */
+  /** AddWorldJournalEntryStrref. */
   static AddWorldEntryStrref(strrefText: number, strrefTitle: number): void {
     const textRef = strrefText | 0;
     const titleRef = strrefTitle | 0;

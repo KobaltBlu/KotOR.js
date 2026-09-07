@@ -331,7 +331,7 @@ export enum CCMessageCase {
   ObjectSimple = 0x1b,
 }
 
-/** Retail GAME_OBJECT_TYPES used in Add/Delete category headers. */
+/** GAME_OBJECT_TYPES used in Add/Delete category headers. */
 export enum MessageGameObjectType {
   Creature = 5,
   Item = 6,

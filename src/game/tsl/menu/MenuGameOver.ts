@@ -19,7 +19,7 @@ export class MenuGameOver extends GameMenu {
   declare BTN_QUIT: GUIButton;
   declare LBL_MESSAGE: GUILabel;
 
-  /** Retail button input lock (0.5s after open). */
+  /** button input lock (0.5s after open). */
   buttonEnableDelay = 0;
 
   constructor(){

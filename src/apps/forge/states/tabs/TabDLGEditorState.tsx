@@ -8,7 +8,7 @@ import { prefetchDlgNodeTexts } from "@/apps/forge/dlg/dlgLocString";
 import { forgeDlgSettings } from "@/apps/forge/settings/forgeEditorsSettings";
 
 /**
- * Conversation editor tab for .dlg GFF files.
+ * Conversation editor tab for.dlg GFF files.
  *
  * @file TabDLGEditorState.tsx
  * @author KobaltBlu <https://github.com/KobaltBlu>

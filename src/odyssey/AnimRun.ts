@@ -9,7 +9,7 @@ export const ANIM_RUN_STACK_CAP = 8;
 export const ANIM_RUN_DEFAULT_TRANSITION = 0;
 
 /**
- * Retail Aurora AnimRun (~0x24) — one clip instance on a Gob stack.
+ * Aurora AnimRun (~0x24) — one clip instance on a Gob stack.
  */
 export interface AnimRun {
   animation: OdysseyModelAnimation;

@@ -26,7 +26,7 @@ import { CExoLocString } from "./CExoLocString";
  * 
  * // Check if a field exists
  * if (struct.hasField('Name')) {
- *   console.log('Name field exists');
+ * console.log('Name field exists');
  * }
  * ```
  * 
@@ -54,15 +54,15 @@ export class GFFStruct {
    * Creates a new GFFStruct instance.
    * 
    * @param {number} [type=0] - The type identifier for this structure. Different types
-   *                           represent different kinds of data structures (e.g., creature,
-   *                           item, area, etc.)
+   * represent different kinds of data structures (e.g., creature,
+   * item, area, etc.)
    * 
    * @example
    * ```typescript
    * // Create a creature structure
    * const creatureStruct = new GFFStruct(0x0007);
    * 
-   * // Create an item structure  
+   * // Create an item structure 
    * const itemStruct = new GFFStruct(0x0008);
    * ```
    */
@@ -80,7 +80,7 @@ export class GFFStruct {
    * 
    * @example
    * ```typescript
-   * const struct = new GFFStruct();
+   * const struct = new GFFStruct;
    * struct.setType(0x0007); // Set to creature type
    * ```
    */
@@ -216,7 +216,7 @@ export class GFFStruct {
    * 
    * @example
    * ```typescript
-   * const struct = new GFFStruct();
+   * const struct = new GFFStruct;
    * const nameField = new GFFField('Name', GFFDataType.CExoString, 'PlayerName');
    * struct.addField(nameField);
    * ```
@@ -235,7 +235,7 @@ export class GFFStruct {
    * 
    * @example
    * ```typescript
-   * const struct = new GFFStruct();
+   * const struct = new GFFStruct;
    * struct.addField(new GFFField('Name', GFFDataType.CExoString, 'PlayerName'));
    * 
    * const removed = struct.removeFieldByLabel('Name');
@@ -274,7 +274,7 @@ export class GFFStruct {
    * @example
    * ```typescript
    * const struct = new GFFStruct(0x0007);
-   * console.log(struct.getType()); // 0x0007
+   * console.log(struct.getType); // 0x0007
    * ```
    */
   getType(){
@@ -284,15 +284,15 @@ export class GFFStruct {
   /**
    * Gets all fields contained within this structure.
    * 
-   * @returns {GFFField[]} Array of all fields in this structure
+   * @returns {GFFField} Array of all fields in this structure
    * 
    * @example
    * ```typescript
-   * const struct = new GFFStruct();
+   * const struct = new GFFStruct;
    * struct.addField(new GFFField('Name', GFFDataType.CExoString, 'PlayerName'));
    * struct.addField(new GFFField('Level', GFFDataType.UInt32, 1));
    * 
-   * const fields = struct.getFields();
+   * const fields = struct.getFields;
    * console.log(fields.length); // 2
    * ```
    */
@@ -308,12 +308,12 @@ export class GFFStruct {
    * 
    * @example
    * ```typescript
-   * const struct = new GFFStruct();
+   * const struct = new GFFStruct;
    * struct.addField(new GFFField('Name', GFFDataType.CExoString, 'PlayerName'));
    * 
    * const nameField = struct.getFieldByLabel('Name');
    * if (nameField) {
-   *   console.log(nameField.getValue()); // 'PlayerName'
+   * console.log(nameField.getValue); // 'PlayerName'
    * }
    * ```
    */
@@ -325,7 +325,7 @@ export class GFFStruct {
         return field;
       }
 
-      /*if (field.getType() == GFFDataType.LIST || field.getType() == GFFDataType.STRUCT){
+      /*if (field.getType == GFFDataType.LIST || field.getType == GFFDataType.STRUCT){
         for(let j = 0; j!=field.getChildStructs().length; j++){
           let str = field.getChildStructs()[j];
           let child = str.getFieldByLabel(Label);
@@ -347,14 +347,14 @@ export class GFFStruct {
    * 
    * @example
    * ```typescript
-   * const struct1 = new GFFStruct();
+   * const struct1 = new GFFStruct;
    * struct1.addField(new GFFField('Name', GFFDataType.CExoString, 'PlayerName'));
    * 
-   * const struct2 = new GFFStruct();
+   * const struct2 = new GFFStruct;
    * struct2.addField(new GFFField('Level', GFFDataType.UInt32, 1));
    * 
    * struct1.mergeStruct(struct2);
-   * console.log(struct1.getFields().length); // 2
+   * console.log(struct1.getFields.length); // 2
    * ```
    */
   mergeStruct(strt: GFFStruct){
@@ -374,15 +374,15 @@ export class GFFStruct {
    * 
    * @example
    * ```typescript
-   * const struct = new GFFStruct();
+   * const struct = new GFFStruct;
    * struct.addField(new GFFField('Name', GFFDataType.CExoString, 'PlayerName'));
    * 
    * if (struct.hasField('Name')) {
-   *   console.log('Name field exists');
+   * console.log('Name field exists');
    * }
    * 
    * if (!struct.hasField('Level')) {
-   *   console.log('Level field does not exist');
+   * console.log('Level field does not exist');
    * }
    * ```
    */
@@ -405,7 +405,7 @@ export class GFFStruct {
    * ```typescript
    * const struct = new GFFStruct(0x0007);
    * struct.addField(new GFFField(GFFDataType.CEXOSTRING, 'Name', 'PlayerName'));
-   * const json = struct.toJSON();
+   * const json = struct.toJSON;
    * // { __struct_id: 7, Name: { type: 'cexostring', value: 'PlayerName' } }
    * ```
    */

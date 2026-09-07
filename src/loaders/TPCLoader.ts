@@ -98,7 +98,7 @@ export class TPCLoader {
     }
   };
   
-  /*fetchLocal( resRef = '', onLoad?: Function, onProgress?: Function, onError?: Function ) {
+  /*fetchLocal(resRef = '', onLoad?: Function, onProgress?: Function, onError?: Function) {
   
     let file_info = path.parse(resRef);
     if(file_info.ext == '.tpc'){

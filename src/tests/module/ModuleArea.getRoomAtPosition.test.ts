@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  *
- * Retail GetRoomIndex(pos, 0): vertical segment (x,y,z±1000) vs room AABB.
+ * GetRoomIndex(pos, 0): vertical segment (x,y,z±1000) vs room AABB.
  */
 import { describe, expect, test, jest } from '@jest/globals';
 import * as THREE from 'three';
@@ -48,7 +48,7 @@ function makeArea(rooms: any[]): ModuleArea {
   return area;
 }
 
-describe('ModuleArea.getRoomAtPosition (retail GetRoomIndex)', () => {
+describe('ModuleArea.getRoomAtPosition (engine GetRoomIndex)', () => {
   test('camera above room still hits via vertical ±1000 probe', () => {
     const room = makeRoom({
       name: 'm01aa_01a',
@@ -93,7 +93,7 @@ describe('ModuleArea.getRoomAtPosition (retail GetRoomIndex)', () => {
       walkmesh: { min: [0, 0, 0], max: [10, 10, 2] },
     });
     const area = makeArea([room]);
-    // Inside model box but outside walkmesh XY → miss (retail CheckAABBWalkable).
+    // Inside model box but outside walkmesh XY → miss (CheckAABBWalkable).
     expect(area.getRoomAtPosition(new THREE.Vector3(50, 50, 1))).toBeUndefined();
     expect(area.getRoomAtPosition(new THREE.Vector3(5, 5, 1))).toBe(room);
   });

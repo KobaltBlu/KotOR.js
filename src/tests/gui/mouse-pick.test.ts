@@ -26,7 +26,7 @@ import {
   MOUSE_PICK_RANGE_SQ,
 } from "@/managers/CursorManager";
 
-describe("getStickyMouseThresholdSq (retail GetStickyMouseThreshhold)", () => {
+describe("getStickyMouseThresholdSq (engine GetStickyMouseThreshhold)", () => {
   it("returns (w/10)² + (h/10)²", () => {
     expect(CursorManager.getStickyMouseThresholdSq(800, 600)).toBe(80 * 80 + 60 * 60);
     expect(CursorManager.getStickyMouseThresholdSq(640, 480)).toBe(64 * 64 + 48 * 48);
@@ -39,7 +39,7 @@ describe("screenDistanceSq", () => {
   });
 });
 
-describe("passesMousePickGates (retail ProcessInput)", () => {
+describe("passesMousePickGates (engine ProcessInput)", () => {
   const cam = new Vector3(0, -10, 5);
   const player = new Vector3(0, 0, 0);
 

@@ -83,7 +83,7 @@ export class MenuUpgrade extends GameMenu {
   originalTag: string = '';
   pendingCrystalTemplate: string = '';
 
-  /** retail on 3D_MODEL / 3D_MODEL_LS. */
+  /** on 3D_MODEL / 3D_MODEL_LS. */
   _3dView: LBL_3DView;
   _3dViewRoom: OdysseyModel3D;
   _3dViewLight: OdysseyModel3D;
@@ -141,7 +141,7 @@ export class MenuUpgrade extends GameMenu {
   }
 
   /**
-   * retail ctor — both 3D_MODEL scenes load `gui3D_room` + `upgitem_light`.
+   * ctor — both 3D_MODEL scenes load `gui3D_room` + `upgitem_light`.
    */
   async init3DPreview(){
     const lbl = this._3D_MODEL || this._3D_MODEL_LS;
@@ -149,7 +149,7 @@ export class MenuUpgrade extends GameMenu {
 
     this._3dView = new LBL_3DView();
     this._3dView.visible = true;
-    // Retail Update3DView FOV ≈ 22.72; LBL_3DView default matches.
+    // Update3DView FOV ≈ 22.72; LBL_3DView default matches.
     this._3dView.camera.fov = 22.72;
     if(lbl.extent?.width && lbl.extent?.height){
       this._3dView.camera.aspect = lbl.extent.width / lbl.extent.height;
@@ -190,7 +190,7 @@ export class MenuUpgrade extends GameMenu {
   }
 
   /**
-   * Retail GetArmorModelAndTextureResRef
+   * GetArmorModelAndTextureResRef
    * appearance.2da row 0x89, columns Model{A–N} / TEX{A–N} from clamped model
    * variation; texture gets `%02d` textureVariation with Exists fallbacks.
    */
@@ -230,7 +230,7 @@ export class MenuUpgrade extends GameMenu {
   }
 
   /**
-   * Retail Update3DView (Aspyr)
+   * Update3DView (Aspyr)
    * RemoveModel item, AddModel from GetModelResRef / armor path, camera on
    * camerahook{itemType}, parent to rotatehook{itemType}, play rotate / powered.
    * itemType = baseitem (baseitems.2da itemtype); specials 0+baseId1 → 0a,
@@ -247,13 +247,13 @@ export class MenuUpgrade extends GameMenu {
     }
 
     const base = this.workingItem.getBaseItem?.() || this.workingItem.baseItem;
-    // Retail Format("camerahook%d", *(baseitem)) — itemtype column.
+    // Format("camerahook%d", *(baseitem)) — itemtype column.
     const itemType = base?.itemType ?? 0;
     const baseId = this.workingItem.getBaseItemId?.() ?? this.workingItem.baseItemId ?? 0;
 
     let camHook = `camerahook${itemType}`;
     let rotHook = `rotatehook${itemType}`;
-    // Retail switch on *(baseitem) with baseId (item) specials:
+    // switch on *(baseitem) with baseId (item) specials:
     if(itemType === 0 && baseId === 1){
       camHook = 'camerahook0a';
       rotHook = 'rotatehook0a';
@@ -348,7 +348,7 @@ export class MenuUpgrade extends GameMenu {
       return;
     }
 
-    // Detach one unit of the item for the upgrade session (retail SplitItem
+    // Detach one unit of the item for the upgrade session (SplitItem
     // when stacked; otherwise remove from party repository / equipment).
     let working = source.item;
     if(source.equipped && source.creature && source.equipSlot){
@@ -413,7 +413,7 @@ export class MenuUpgrade extends GameMenu {
     return [this.LBL_UPGRADE41, this.LBL_UPGRADE42, this.LBL_UPGRADE43, this.LBL_UPGRADE44];
   }
 
-  /** Retail ShowItems(showList). */
+  /** ShowItems(showList). */
   showItems(showList: boolean) {
     this.showingComponentList = showList;
     const isLS = this.category === UpgradeCategory.LIGHTSABER;
@@ -489,7 +489,7 @@ export class MenuUpgrade extends GameMenu {
         setVisible(labels3[i], false);
       }
       if(this.category === UpgradeCategory.ARMOR){
-        // Retail shows slots 1 and 2 of the 4-button group.
+        // shows slots 1 and 2 of the 4-button group.
         for(let i = 0; i < 4; i++){
           const visible = (i === 1 || i === 2);
           setVisible(buttons4[i], visible);
@@ -533,7 +533,7 @@ export class MenuUpgrade extends GameMenu {
       return;
     }
 
-    // Toggle-off if already filled (retail removes installed upgrade on second click for non-list path).
+    // Toggle-off if already filled (removes installed upgrade on second click for non-list path).
     // Prefer opening the component list so the player can choose.
     this.selectedSlotIndex = slotIndex;
     this.componentChoices = listCompatibleComponents(
@@ -707,7 +707,7 @@ export class MenuUpgrade extends GameMenu {
     this.returnedToInventory = [];
     this.close();
 
-    // Refresh item list if parent is open().
+    // Refresh item list if parent is open.
     if(GameState.MenuManager.MenuUpgradeItems?.bVisible){
       GameState.MenuManager.MenuUpgradeItems.open();
     }

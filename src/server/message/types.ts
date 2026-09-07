@@ -8,9 +8,9 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import type { MessageVector3 } from "@/server/message/CSWMessage";
+import type { MessageVector3 } from "@/server/message/OdysseyMessage";
 
-/** Retail OBJECT_INVALID. */
+/** OBJECT_INVALID. */
 export const OBJECT_INVALID = 0x7f000000;
 
 /** Broadcast / all-players id used by some LoadBar sends. */

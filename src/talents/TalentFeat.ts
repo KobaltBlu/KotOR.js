@@ -17,9 +17,9 @@ import { BitWise } from "@/utility/BitWise";
 import { TalentObject } from "@/talents/TalentObject";
 import type { GameEffect } from "@/effects/GameEffect";
 
-/** Retail Resolve*SpecialAttack ACDECREASE duration (seconds). */
+/** Resolve*SpecialAttack ACDECREASE duration (seconds). */
 const FEAT_PENALTY_DURATION_SEC = 3;
-/** Retail Crit Strike / Sniper SETSTATE stun duration (seconds). */
+/** Crit Strike / Sniper SETSTATE stun duration (seconds). */
 const FEAT_STUN_DURATION_SEC = 6;
 
 /**
@@ -278,7 +278,7 @@ export class TalentFeat extends TalentObject {
   impactCaster(object: ModuleObject){
     if(!BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature)) return;
 
-    // AC penalties (Flurry / Crit Strike / Sniper / Rapid Shot) — retail
+    // AC penalties (Flurry / Crit Strike / Sniper / Rapid Shot) — 
     // ResolveMeleeSpecialAttack / ResolveRangedSpecialAttack.
     // Attack/damage modifiers stay in CombatRound (not EffectAttackDecrease).
     const armorClassPenalty = this.getArmorClassPenalty();
@@ -297,7 +297,7 @@ export class TalentFeat extends TalentObject {
   }
 
   /**
-   * Retail on-hit SETSTATE stun from Crit Strike (STR DC) / Sniper Shot (INT DC).
+   * on-hit SETSTATE stun from Crit Strike (STR DC) / Sniper Shot (INT DC).
    * ResolveMeleeSpecialAttack / ResolveRangedSpecialAttack —
    * Fort save DC = total level + ability mod; duration 6s; state = CUT_SCENE_STUNNED.
    * Caller queues the returned effect onto the first swing's CombatAttackData.
@@ -353,12 +353,12 @@ export class TalentFeat extends TalentObject {
     return (classData?.featstable || '').toLowerCase();
   }
 
-  /** Retail in-game skill entry SetSkill (feat branch) — icon resref. */
+  /** in-game skill entry SetSkill (feat branch) — icon resref. */
   getIcon(){
     return this.icon || '';
   }
 
-  /** Retail in-game skill entry SetSkill (feat branch) — name TLK. */
+  /** in-game skill entry SetSkill (feat branch) — name TLK. */
   getName(){
     return this.name != null && this.name != -1
       ? (GameState.TLKManager.GetStringById(this.name)?.Value ?? this.label ?? '')

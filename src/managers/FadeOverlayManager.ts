@@ -3,7 +3,7 @@ import { GameState } from "@/GameState";
 import { FadeOverlayState } from "@/enums/engine/FadeOverlayState";
 
 /**
- * FadeOverlayManager — retail / StartGlobalFade.
+ * FadeOverlayManager — / StartGlobalFade.
  *
  * Timing mirrors SetFade and Draw:
  * wait then linear alpha; hitch clamp 5s; elapsed seed 0.1.
@@ -20,11 +20,11 @@ export class FadeOverlayManager {
   static material = new THREE.MeshBasicMaterial( {color: 0x000000, side: THREE.FrontSide, transparent: true, opacity: 0} );
   static plane = new THREE.Mesh( FadeOverlayManager.geometry, FadeOverlayManager.material );
 
-  /** Fade length (seconds) — retail SetFade. */
+  /** Fade length (seconds) — SetFade. */
   static duration = 0;
-  /** Total elapsed since SetFade (seconds), includes wait — Retail. */
+  /** Total elapsed since SetFade (seconds), includes wait —. */
   static elapsed = 0;
-  /** Pre-fade wait (seconds) — Retail. */
+  /** Pre-fade wait (seconds) —. */
   static wait = 0;
   static state: FadeOverlayState = FadeOverlayState.NONE;
 
@@ -38,7 +38,7 @@ export class FadeOverlayManager {
   static readonly FADE_RENDER_ORDER = 9999990;
 
   /**
-   * Retail post-LevelLoad world fade-in (MainLoop → StartGlobalFade
+   * post-LevelLoad world fade-in (MainLoop → StartGlobalFade
    * direction=1, wait=0.5, length=1.0).
    */
   static readonly WORLD_FADE_IN_WAIT = 0.5;
@@ -113,13 +113,13 @@ export class FadeOverlayManager {
            FadeOverlayManager.state === FadeOverlayState.FADING_OUT;
   }
 
-  /** Retail IsGlobalFadeObscuring — panel alpha > 0.001. */
+  /** IsGlobalFadeObscuring — panel alpha > 0.001. */
   static isObscuring(): boolean {
     return FadeOverlayManager.material.visible &&
            FadeOverlayManager.material.opacity > FadeOverlayManager.OBSCURING_ALPHA;
   }
 
-  /** Retail IsFadeDone: inactive (elapsed==0 / terminal state) or elapsed > wait + length. */
+  /** IsFadeDone: inactive (elapsed==0 / terminal state) or elapsed > wait + length. */
   static isFadeDone(): boolean {
     if(FadeOverlayManager.state === FadeOverlayState.NONE ||
        FadeOverlayManager.state === FadeOverlayState.FADED_IN ||
@@ -182,7 +182,7 @@ export class FadeOverlayManager {
     FadeOverlayManager.elapsed = FadeOverlayManager.ELAPSED_SEED;
     FadeOverlayManager.state = state;
 
-    // Retail SetFade: out starts α=0, in starts α=1.
+    // SetFade: out starts α=0, in starts α=1.
     // Length 0: instant cut to final alpha (out→1, in→0) then terminal state.
     if(length === 0 && wait === 0){
       if(state === FadeOverlayState.FADING_OUT){
@@ -200,7 +200,7 @@ export class FadeOverlayManager {
   }
 
   /**
-   * Retail Draw — wait then linear ramp; hitch clamp 5s.
+   * Draw — wait then linear ramp; hitch clamp 5s.
    */
   static Update(delta = 0){
     if(FadeOverlayManager.state === FadeOverlayState.NONE ||

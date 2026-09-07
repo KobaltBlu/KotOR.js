@@ -1,5 +1,5 @@
 /**
- * Retail DoGameSequence — set vs match SFX after score bump.
+ * DoGameSequence — set vs match SFX after score bump.
  * Tie has no result SFX (warnbust is on bust draw, not tie).
  */
 export type PazaakRoundWinner = "player" | "opponent";

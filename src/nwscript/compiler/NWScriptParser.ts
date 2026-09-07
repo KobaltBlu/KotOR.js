@@ -635,10 +635,10 @@ export class NWScriptParser {
     semanticNode.scope.is_global = true;
     const statements = program.statements.slice()
 
-    //detect void main()
+    //detect void main
     const main = statements.find( (s: any) => s.type == 'function' && s.name == 'main' && s.returntype && this.isDataType(s.returntype, 'void') );
 
-    //detect int startingConditional()
+    //detect int startingConditional
     const startingConditional = program.statements.find( (s: any) => s.type == 'function' && s.name == 'StartingConditional' && s.returntype && this.isDataType(s.returntype, 'int') );
 
     //detect the global function headers
@@ -658,7 +658,7 @@ export class NWScriptParser {
     }
     this.program.functions = global_functions as SemanticFunctionNode[];
 
-    //validate presence of void main() and int StartingConditional()
+    //validate presence of void main and int StartingConditional
     if(main && startingConditional){
       this.throwError("You cannot have both `void main()` and `int StartingConditional()` declared in the same script", program, program);
     }else if(!main && !startingConditional){

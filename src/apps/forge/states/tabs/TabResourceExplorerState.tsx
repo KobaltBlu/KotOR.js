@@ -88,10 +88,10 @@ export class TabResourceExplorerState extends TabState {
     modules.sort();
     lips.sort();
     textures.sort();
-    // waves.sort();
-    // sounds.sort();
-    // music.sort();
-    // voice.sort();
+    // waves.sort;
+    // sounds.sort;
+    // music.sort;
+    // voice.sort;
 
     TabResourceExplorerState.Resources.push( 
       ...talkTables,
@@ -580,7 +580,7 @@ export class TabResourceExplorerState extends TabState {
             })
           );
 
-          /*targetFolder.nodeList.sort( (a, b) => {
+          /*targetFolder.nodeList.sort((a, b) => {
             return a.type == 'group' ? 0 : 1;
           });*/
         }

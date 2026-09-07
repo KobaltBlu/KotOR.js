@@ -5,7 +5,7 @@ import * as THREE from "three";
 
 /**
  * Soft party-member separation when GetIsCreatureBumpable cannot push
- * state party-UI creatures (retail PC bump returns 0 for companions).
+ * state party-UI creatures (PC bump returns 0 for companions).
  *
  * Gently nudges overlapping companions apart so they don't stack forever.
  *

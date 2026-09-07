@@ -1,5 +1,5 @@
 /**
- * Retail combat floaty eligibility helper.
+ * combat floaty eligibility helper.
  * @jest-environment node
  */
 import { describe, expect, it, beforeEach, jest } from '@jest/globals';
@@ -50,7 +50,7 @@ describe('shouldShowCombatFloaty', () => {
     expect(CombatRound.shouldShowCombatFloaty(mockPlayer as any)).toBe(false);
   });
 
-  it('returns true for player attacker (retail)', () => {
+  it('returns true for player attacker (engine)', () => {
     expect(CombatRound.shouldShowCombatFloaty(mockPlayer as any)).toBe(true);
   });
 

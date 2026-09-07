@@ -4,14 +4,14 @@ import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { BitWise } from "@/utility/BitWise";
 
 /**
- * Retail corpse ring — effective capacity 3 retained KeepCorpse shells.
+ * corpse ring — effective capacity 3 retained KeepCorpse shells.
  * Overflow reveals the oldest linked body bag and fades out the oldest shell.
  */
 export class CorpseCache {
-  /** Retail ring holds 4 slots with one empty sentinel → 3 live corpses. */
+  /** ring holds 4 slots with one empty sentinel → 3 live corpses. */
   static readonly CAPACITY = 3;
 
-  /** Retail SetDesiredFadeState eviction fade length (seconds). */
+  /** SetDesiredFadeState eviction fade length (seconds). */
   static readonly EVICT_FADE_SEC = 1.0;
 
   private shells: ModuleCreature[] = [];

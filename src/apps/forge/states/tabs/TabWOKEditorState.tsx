@@ -185,7 +185,7 @@ export class TabWOKEditorState extends TabState {
   }
 
   /**
-   * `OdysseyWalkMesh.toExportBuffer()` calls `rebuild()`, which allocates a new
+   * `OdysseyWalkMesh.toExportBuffer` calls `rebuild`, which allocates a new
    * `BufferGeometry` and disposes the previous one. The editor wireframe still
    * referenced the old geometry, so it stopped updating when vertices moved.
    */
@@ -817,8 +817,8 @@ export class TabWOKEditorState extends TabState {
 
   /**
    * Flip winding of the selected triangle (swap b ↔ c) so the geometric normal inverts.
-   * Runs `OdysseyWalkMesh.rebuild()` so edge data, AABB tree, and exported normals stay consistent
-   * (a negate-only edit would be overwritten the next time `toExportBuffer()` runs).
+   * Runs `OdysseyWalkMesh.rebuild` so edge data, AABB tree, and exported normals stay consistent
+   * (a negate-only edit would be overwritten the next time `toExportBuffer` runs).
    */
   flipNormalOfSelectedFace(): void {
     if (!this.wok || this.selectedFaceIndex < 0) return;

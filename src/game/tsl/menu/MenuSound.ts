@@ -5,7 +5,7 @@ import { MenuSound as K1_MenuSound } from "@/game/kotor/KOTOR";
 
 const DEFAULT_GAIN = 0.75;
 
-/** retail CSWGuiOptionsSound description TLKs (TSL). */
+/** sound options description TLKs (TSL). */
 const TLK_DESC_MUSIC = 0xa547;
 const TLK_DESC_VO = 0xa548;
 const TLK_DESC_FX = 0xa549;

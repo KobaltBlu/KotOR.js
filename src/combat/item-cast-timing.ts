@@ -9,13 +9,13 @@ import {
 } from "@/combat/item-cast-grenade";
 
 /**
- * Retail item-cast action — per-baseitems ItemType animation,
+ * item-cast action — per-baseitems ItemType animation,
  * conjure gate, and combat-round pause.
  *
  * @file item-cast-timing.ts
  */
 
-/** Retail default CASTOUT1_LP (0x2721). */
+/** default CASTOUT1_LP (0x2721). */
 export const ITEM_CAST_DEFAULT_ANIM = ModuleCreatureAnimState.CASTOUT1_LP;
 
 /** Medical / OTHER (0x19, 0x1a, 0x2d): gate 0x2EE, pause 0x5DC. */
@@ -30,7 +30,7 @@ export const ITEM_CAST_FOREARM_PAUSE_MS = 1000;
 export const ITEM_CAST_DROID_UTILITY_GATE_MS = 300;
 
 /**
- * Retail droid utility gate: GetAnimationLength(0x2AF9) - 50ms, else 300ms.
+ * droid utility gate: GetAnimationLength(0x2AF9) - 50ms, else 300ms.
  */
 export function resolveDroidUtilityGateMs(animationLengthSec: number): number {
   if(!(animationLengthSec > 0)){
@@ -47,21 +47,21 @@ export type ItemCastTimingResolved = {
   gateMs: number;
   pauseMs: number;
   /**
-   * Retail item-cast action droid utility (0x0c): after SpellCastAndImpact
+   * item-cast action droid utility (0x0c): after SpellCastAndImpact
    * hold anim 0x2AFA until pause ends (post-impact phase).
    */
   postImpactAnim?: ModuleCreatureAnimState;
 };
 
 /**
- * Retail appearance MODELTYPE B/F check shared by grenade + medical inject.
+ * appearance MODELTYPE B/F check shared by grenade + medical inject.
  */
 export function canPlayItemCastBodyAnim(modeltype: string | undefined): boolean {
   return canPlayGrenadeThrowAnim(modeltype);
 }
 
 /**
- * Retail `(-(bVar3) & 0x45) + 0x2711` → INJECT when B/F, else READY.
+ * `(-(bVar3) & 0x45) + 0x2711` → INJECT when B/F, else READY.
  */
 export function resolveMedicalInjectAnim(
   modeltype: string | undefined
@@ -72,7 +72,7 @@ export function resolveMedicalInjectAnim(
 }
 
 /**
- * Retail `(-(bVar3) & 0x87) + 0x2711` → ACTIVATE_ITEM2 when B/F, else READY.
+ * `(-(bVar3) & 0x87) + 0x2711` → ACTIVATE_ITEM2 when B/F, else READY.
  */
 export function resolveActivateItemAnim(
   modeltype: string | undefined
@@ -83,7 +83,7 @@ export function resolveActivateItemAnim(
 }
 
 /**
- * Whether retail plays the cast anim on the target creature
+ * Whether plays the cast anim on the target creature
  * (item types 0x19 / 0x2d / 0x2f).
  */
 export function itemCastAnimPlaysOnTarget(itemType: number | undefined): boolean {
@@ -98,7 +98,7 @@ export function itemCastAnimPlaysOnTarget(itemType: number | undefined): boolean
 /**
  * Resolve anim / gate / pause for an ItemCastSpell by baseitems ItemType.
  *
- * @param spellCastTimeMs - spells.2da casttime (+1 in retail default case)
+ * @param spellCastTimeMs - spells.2da casttime (+1 in default case)
  */
 export function resolveItemCastTiming(
   itemType: number | undefined,
@@ -123,7 +123,7 @@ export function resolveItemCastTiming(
       return {
         grenade: false,
         animOnTarget: false,
-        // Retail gate anim 0x2AF9 / post-impact 0x2AFA
+        // gate anim 0x2AF9 / post-impact 0x2AFA
         animation: ModuleCreatureAnimState.DROID_UTILITY_USE,
         postImpactAnim: ModuleCreatureAnimState.DROID_UTILITY_USE_LP,
         gateMs: ITEM_CAST_DROID_UTILITY_GATE_MS,

@@ -2,11 +2,11 @@
  * @jest-environment node
  */
 import { describe, expect, it } from "@jest/globals";
-import { CSWMessage } from "@/server/message/CSWMessage";
+import { OdysseyMessage } from "@/server/message/OdysseyMessage";
 
-describe("CSWMessage", () => {
+describe("OdysseyMessage", () => {
   it("CreateWriteMessage reserves 3 header bytes", () => {
-    const msg = new CSWMessage();
+    const msg = new OdysseyMessage();
     msg.createWriteMessage(1);
     expect(msg.writeIndex).toBe(3);
     msg.writeBYTE(0x42);
@@ -17,7 +17,7 @@ describe("CSWMessage", () => {
   });
 
   it("round-trips BYTE WORD DWORD FLOAT BOOL string resref vector", () => {
-    const w = new CSWMessage();
+    const w = new OdysseyMessage();
     w.createWriteMessage(64);
     w.writeBYTE(7);
     w.writeWORD(0x1234);
@@ -29,7 +29,7 @@ describe("CSWMessage", () => {
     w.writeVector({ x: 1, y: 2, z: 3 });
     const { buffer, size } = w.getWriteMessage();
 
-    const r = new CSWMessage();
+    const r = new OdysseyMessage();
     r.setReadMessage(buffer.subarray(3, size), size - 3);
     expect(r.readBYTE()).toBe(7);
     expect(r.readWORD()).toBe(0x1234);
@@ -47,19 +47,19 @@ describe("CSWMessage", () => {
   });
 
   it("ReadBYTE past end advances and returns 0 (overflow)", () => {
-    const r = new CSWMessage();
+    const r = new OdysseyMessage();
     r.setReadMessage(new Uint8Array(0), 0);
     expect(r.readBYTE()).toBe(0);
     expect(r.messageReadOverflow()).toBe(true);
   });
 
   it("WriteVOIDPtr / ReadVOIDPtr round-trip", () => {
-    const w = new CSWMessage();
+    const w = new OdysseyMessage();
     w.createWriteMessage(8);
     const data = new Uint8Array([1, 2, 3, 4]);
     w.writeVOIDPtr(data);
     const { buffer, size } = w.getWriteMessage();
-    const r = new CSWMessage();
+    const r = new OdysseyMessage();
     r.setReadMessage(buffer.subarray(3, size), size - 3);
     const got = r.readVOIDPtr(4);
     expect(got).not.toBeNull();

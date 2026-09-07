@@ -20,7 +20,7 @@ function wireDefaultRowClick(
     return;
   }
 
-  // Retail HandleLMouseDown: selectOnLeftClick → select on mouse down
+  // HandleLMouseDown: selectOnLeftClick → select on mouse down
   if (list.bitFlags.selectOnLeftClick || list.protoClickSelects) {
     ctrl.addEventListener("mouseDown", (e: unknown) => {
       (e as { stopPropagation?: () => void }).stopPropagation?.();
@@ -87,7 +87,7 @@ export function createDefaultCheckBoxRow(
   const menu = list.menu;
   const ctrl = new menu.factory.GUICheckBox(menu, protoTemplate.control, list, scale);
   applyProtoTemplateSkin(ctrl, protoTemplate);
-  // Retail OptionsCheckbox Initialize(proto->extent, proto) — PROTOITEM extent is fixed pitch.
+  // OptionsCheckbox Initialize(proto->extent, proto) — PROTOITEM extent is fixed pitch.
   const protoH = protoTemplate.extent?.height | 0;
   const protoW = protoTemplate.extent?.width | 0;
   if(protoH > 0){
@@ -134,7 +134,7 @@ export function createDefaultButtonRow(
   try {
     ctrl = new menu.factory.GUIButton(menu, protoTemplate.control, list, scale);
     // Height comes from the GFF-loaded extent (unverified fallback for default button rows);
-    // retail supplies row height from menu/entry code, never the PROTOITEM template.
+    // supplies row height from menu/entry code, never the PROTOITEM template.
     ctrl.setExtentWidth(protoTemplate.extent.width);
     ctrl.guiFont = protoTemplate.guiFont;
     ctrl.isProtoItem = false;

@@ -35,9 +35,9 @@ export class LauncherWindow {
     });
     // and load the index.html of the app.
     this.browserWindow.loadFile(path.join(Main.ApplicationPath, 'dist', 'launcher', 'index.html'));
-    //this.browserWindow.openDevTools();
+    //this.browserWindow.openDevTools;
     this.browserWindow.on('ready-to-show', () => {
-      // this.browserWindow.webcontents.openDevTools();
+      // this.browserWindow.webcontents.openDevTools;
       if(!this.browserWindow) { return; }
       this.browserWindow.webContents.setWindowOpenHandler((details) => {
         console.log(details);

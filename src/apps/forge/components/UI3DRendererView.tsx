@@ -24,7 +24,7 @@ export const UI3DRendererView = function(props: UI3DRendererViewProps){
     }
     return () => {
       if(props.context){
-        // props.context.destroy();
+        // props.context.destroy;
       }
     }
   });

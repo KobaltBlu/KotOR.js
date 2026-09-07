@@ -67,7 +67,7 @@ export default class EngineLocation {
   }
 
   //Use the rotation values to update the facing value
-  // Retail Yaw: atan2(-x, y) — matches ModuleCreature loadPlayer facing.
+  // Yaw: atan2(-x, y) — matches ModuleCreature loadPlayer facing.
   updateFacing(){
     this.facing = -Math.atan2(this.rotation.x, this.rotation.y);
   }

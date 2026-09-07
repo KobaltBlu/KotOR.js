@@ -3,7 +3,7 @@ import { GameState } from "@/GameState";
 import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "@/gui";
 
-/** retail CSWGuiOptionsSoundAdvanced description TLKs (K1). */
+/** sound advanced options description TLKs (K1). */
 const TLK_DESC_FORCESOFTWARE = 0xbdc1;
 const TLK_DESC_EAX = 0xbdc2;
 

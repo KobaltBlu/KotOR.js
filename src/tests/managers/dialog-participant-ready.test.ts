@@ -8,7 +8,7 @@ import {
 } from '@/managers/CutsceneManager';
 
 describe('dialog-participant-ready', () => {
-  test('retail retry window is 1500ms', () => {
+  test('engine retry window is 1500ms', () => {
     expect(DIALOG_PARTICIPANT_RETRY_MS).toBe(1500);
   });
 

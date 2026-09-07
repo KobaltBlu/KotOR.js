@@ -32,7 +32,7 @@ export class CameraShakeManager {
   static time: number = 0;
 
   /**
-   * No-op. Pre-shake pose is cached in update() after FollowerCamera has run.
+   * No-op. Pre-shake pose is cached in update after FollowerCamera has run.
    * Caching at frame-start (old beforeRender hook) restored a stale position
    * in afterRender and undid the follower camera every frame.
    */

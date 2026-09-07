@@ -1,5 +1,5 @@
 /**
- * Retail node-id mapping: MdlNode.id (nodeNumber) is shared across the
+ * node-id mapping: model node.id (nodeNumber) is shared across the
  * supermodel chain; nameIndex is per-model. Anim resolve prefers nodesById.
  */
 import { describe, expect, test } from '@jest/globals';

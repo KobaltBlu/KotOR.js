@@ -65,7 +65,7 @@ export class ModuleTrigger extends ModuleObject {
 
     this.triggered = false;
     this.highlightHeight = 0.10000000149011612;
-    // Defer initProperties until loadTriggers → load() (retail Load* + AddToArea).
+    // Defer initProperties until loadTriggers → load (Load* + AddToArea).
 
     this.container.add(this.reticleNode);
     this.reticleNode.position.z = this.highlightHeight;
@@ -146,7 +146,7 @@ export class ModuleTrigger extends ModuleObject {
       })
     }
 
-    // trigGeom.computeFaceNormals();
+    // trigGeom.computeFaceNormals;
     trigGeom.computeVertexNormals();
     trigGeom.computeBoundingSphere();
 
@@ -155,7 +155,7 @@ export class ModuleTrigger extends ModuleObject {
 
   load( onLoad?: Function ){
     // GIT TriggerList entries only carry TemplateResRef + geometry. initProperties is
-    // deferred until load(), so templateResRef is still unset here — read it from the
+    // deferred until load, so templateResRef is still unset here — read it from the
     // GFF before choosing the UTT-merge path. Skipping this took the savegame branch
     // on new games (no Tag/ScriptOnEnter), so triggers never fired scripts.
     if(!this.templateResRef && this.template?.RootNode?.hasField('TemplateResRef')){
@@ -243,7 +243,7 @@ export class ModuleTrigger extends ModuleObject {
 
     /*
      * Orientation values are wrong in savegames. If rotation is not set they are always placed correctly
-     * // this.mesh.rotation.set(this.getXOrientation(), this.getYOrientation(), this.getZOrientation());
+     * // this.mesh.rotation.set(this.getXOrientation, this.getYOrientation, this.getZOrientation);
      */
 
     this.mesh.userData.moduleObject = this;
@@ -332,7 +332,7 @@ export class ModuleTrigger extends ModuleObject {
   }
 
   /**
-   * Retail AIUpdate — heartbeat/effects + action queue.
+   * AIUpdate — heartbeat/effects + action queue.
    */
   aiUpdate(delta = 0){
     super.aiUpdate(delta);
@@ -365,7 +365,7 @@ export class ModuleTrigger extends ModuleObject {
     }
     
     //Call the function to update the objectsInside array
-    //this.autoUpdateObjectsInside();
+    //this.autoUpdateObjectsInside;
 
     if(this.mesh){
       this.mesh.visible = ConfigClient.get('Game.debug.trigger_geometry_show') ? true : false;
@@ -405,7 +405,7 @@ export class ModuleTrigger extends ModuleObject {
   /**
    * Update the objectsInside array and fire enter/exit for occupancy changes.
    *
-   * Retail HandleSubAreaStateChanges queues OnObjectEnter
+   * HandleSubAreaStateChanges queues OnObjectEnter
    * (0xc) for every newly occupied generic/transition trigger — no hostility or
    * global one-shot gate. A previous `!triggered && isHostile` lock meant the first
    * NPC through a Faction=1 trigger on new-game spawn set `triggered` and blocked
@@ -733,7 +733,7 @@ export class ModuleTrigger extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'SetByPlayerParty') ).setValue(this.setByPlayerParty);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'TransitionDestin') ).setValue(this.transitionDestin);
-    // Retail SaveTrigger omits TrapDetectDC / TrapDisarmDC / TrapFlag (UTT-only)
+    // SaveTrigger omits TrapDetectDC / TrapDisarmDC / TrapFlag (UTT-only)
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDetectable') ).setValue(this.trapDetectable);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDisarmable') ).setValue(this.trapDisarmable);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapOneShot') ).setValue(this.trapOneShot);

@@ -65,7 +65,7 @@ export class ActionRecoverMine extends Action {
     if(!this.animQueued){
       this.animQueued = true;
       owner.setFacingObject(this.target);
-      // Retail recover-mine action: door/placeable 0x274c, trigger 0x279d
+      // recover-mine action: door/placeable 0x274c, trigger 0x279d
       const isDoorOrPlaceable =
         BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor) ||
         BitWise.InstanceOfObject(this.target, ModuleObjectType.ModulePlaceable);

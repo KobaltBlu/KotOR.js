@@ -43,7 +43,7 @@ describe("aurora-camera-orientation", () => {
     expect(d.z).toBeCloseTo(0, 5);
   });
 
-  it("rebuilds end_m01aa CameraID 2 facing from retail WXYZ Orientation", () => {
+  it("rebuilds end_m01aa CameraID 2 facing from engine WXYZ Orientation", () => {
     // Raw GIT floats are W,X,Y,Z — pure Z-yaw ≈ 78.75°, Pitch 90 → horizontal.
     const orient = new THREE.Quaternion(0, 0, 0.6343932151794434, 0.7730104327201843);
     const q = placeableCameraOrientation(orient, 90);
@@ -62,8 +62,8 @@ describe("aurora-camera-orientation", () => {
     ];
     for(const s of samples){
       const correct = new THREE.Quaternion(0, 0, s.z, s.w);
-      const retailQ = placeableCameraOrientation(correct, s.pitch);
-      const retailLook = cameraLook(retailQ).clone();
+      const odysseyQ = placeableCameraOrientation(correct, s.pitch);
+      const odysseyLook = cameraLook(odysseyQ).clone();
 
       // Legacy mis-read: first float → x, fourth → w
       const misX = s.w;
@@ -77,9 +77,9 @@ describe("aurora-camera-orientation", () => {
       const legacyQ = new THREE.Quaternion().setFromEuler(euler);
       const legacyLook = cameraLook(legacyQ);
 
-      expect(legacyLook.x).toBeCloseTo(retailLook.x, 4);
-      expect(legacyLook.y).toBeCloseTo(retailLook.y, 4);
-      expect(legacyLook.z).toBeCloseTo(retailLook.z, 4);
+      expect(legacyLook.x).toBeCloseTo(odysseyLook.x, 4);
+      expect(legacyLook.y).toBeCloseTo(odysseyLook.y, 4);
+      expect(legacyLook.z).toBeCloseTo(odysseyLook.z, 4);
     }
   });
 

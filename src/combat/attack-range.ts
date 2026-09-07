@@ -4,7 +4,7 @@ import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
 
 /**
- * Retail DesiredAttackRange
+ * DesiredAttackRange
  * MaxAttackRange.
  *
  * Melee engage does NOT use PrefAttackDist / appearance PREFATCKDIST —
@@ -47,7 +47,7 @@ export function getPathPersonalSpace(obj: ModuleObject | undefined): number {
 }
 
 /**
- * Retail DesiredAttackRange(targetId, engaged).
+ * DesiredAttackRange(targetId, engaged).
  * @param engaged ResolveChoreographedState (melee weapon pair), not ResolveEngagedState
  */
 export function desiredAttackRange(
@@ -63,7 +63,7 @@ export function desiredAttackRange(
     return getHitRadius(attacker) + getHitRadius(targetCreature) + 1.6;
   }
 
-  // Door / placeable / other: retail falls through GetUseRange.
+  // Door / placeable / other: falls through GetUseRange.
   // Importing use-range here would be circular; caller may prefer getUseRange.
   // Minimal fallback matches Default branch (~1.5) when GetUseRange fails.
   if(
@@ -77,7 +77,7 @@ export function desiredAttackRange(
 }
 
 /**
- * Retail MaxAttackRange(targetId, engaged, findNearestEnemyOverride).
+ * MaxAttackRange(targetId, engaged, findNearestEnemyOverride).
  * Melee: Desired + 0.5. Ranged: baseitems.MaxAttackRange, else 30 (or 20 when override).
  */
 export function maxAttackRange(
@@ -98,7 +98,7 @@ export function maxAttackRange(
   }
 
   const max = weapon.getBaseItem?.()?.maxAttackRange ?? 0;
-  // Retail: use MaxAttackRange when non-zero; else 30
+  // : use MaxAttackRange when non-zero; else 30
   if(typeof max === 'number' && max > 0){
     return max;
   }
@@ -118,8 +118,8 @@ export function getAttackMoveArriveRange(
 }
 
 /**
- * Retail MaxCleaveRange = MaxAttackRange(..., findNearestEnemyOverride) + 2.
- * Used by CreateNewAttackActions / GetNearestEnemy search radius.
+ * MaxCleaveRange = MaxAttackRange(..., findNearestEnemyOverride) + 2.
+ * Used by QueueAttackActions / GetNearestEnemy search radius.
  */
 export function maxCleaveRange(
   attacker: ModuleCreature,
@@ -131,7 +131,7 @@ export function maxCleaveRange(
 }
 
 /**
- * Retail ClearLineOfSight from physical-attack action / GetIsInUseRange:
+ * ClearLineOfSight from physical-attack action / GetIsInUseRange:
  * eye height +1.5, no perception clamp; maxDistance typically MaxAttackRange.
  */
 export function hasCombatLineOfSight(

@@ -376,7 +376,7 @@ export class NWScriptInstance {
    * Execute bytecode until end, or until a debugger halt.
    *
    * When halted at a breakpoint / step, returns early without flushing DelayCommands or
-   * calling init(). Sync callers still receive undefined for that early return — a full
+   * calling init. Sync callers still receive undefined for that early return — a full
    * async invocation rewrite is required to hold the original caller's return value.
    */
   runScript(ignoreBreakPoint: boolean = false){
@@ -534,7 +534,7 @@ export class NWScriptInstance {
      * then dispose of it as it won't be used again
      */
     // if(this.isStoreState){
-      // this.dispose();
+      // this.dispose;
     // }
 
     return returnValue;
@@ -612,7 +612,7 @@ export class NWScriptInstance {
   }
 
   saveEventSituation(){
-    // Retail SaveActionQueue case 5: AddStructToStruct("Value", 2) then SaveScriptSituation
+    // SaveActionQueue case 5: AddStructToStruct("Value", 2) then SaveScriptSituation
     let scriptSituation = new GFFStruct(2);
 
     scriptSituation.addField( new GFFField(GFFDataType.DWORD, 'CRC' ) ).setValue(0);
@@ -621,7 +621,7 @@ export class NWScriptInstance {
     scriptSituation.addField( new GFFField(GFFDataType.INT, 'InstructionPtr' ) ).setValue(this.address);
     scriptSituation.addField( new GFFField(GFFDataType.CEXOSTRING, 'Name' ) ).setValue( this.name );
     scriptSituation.addField( new GFFField(GFFDataType.INT, 'SecondaryPtr' ) ).setValue(0);
-    // Retail SaveScriptSituation writes StackSize before nested Stack STRUCT
+    // SaveScriptSituation writes StackSize before nested Stack STRUCT
     scriptSituation.addField( new GFFField(GFFDataType.INT, 'StackSize' ) ).setValue( this.stack?.stack?.length ?? 0 );
 
     let stack = scriptSituation.addField( new GFFField(GFFDataType.STRUCT, 'Stack') );

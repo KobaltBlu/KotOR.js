@@ -12,7 +12,7 @@ export enum ModuleCreatureAmbientState {
   IDLE =               0,
   READY =              1,
   /**
-   * Retail ambient 2: poisoned pause, and also stun / Mind Trick / Droid Scramble
+   * ambient 2: poisoned pause, and also stun / Mind Trick / Droid Scramble
    * (RecomputeAmbientAnimationState maps SetState 4 / 0x12 / 0x13 → 2).
    */
   PAUSE_POISONED =     2,

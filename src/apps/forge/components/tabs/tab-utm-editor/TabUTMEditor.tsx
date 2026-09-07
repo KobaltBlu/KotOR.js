@@ -139,7 +139,7 @@ export const TabUTMEditor = function(props: BaseTabProps){
               </FormField>
               <FormField 
                 label="Buy/Sell Flag" 
-                info="Retail BuySellFlag: 1 = Buy only, 2 = Sell only, 3 = Buy and Sell (Examine toggles mode)."
+                info="BuySellFlag: 1 = Buy only, 2 = Sell only, 3 = Buy and Sell (Examine toggles mode)."
               >
                 <select value={buySellFlag} onChange={(e) => { setBuySellFlag(Number(e.target.value)); tab.store.buySellFlag = Number(e.target.value); tab.updateFile(); }}>
                   <option value={1}>Buy Only</option>

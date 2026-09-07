@@ -31,7 +31,7 @@ export class ModuleWaypoint extends ModuleObject {
     this.objectType |= ModuleObjectType.ModuleWaypoint;
 
     this.template = gff;
-    // Defer initProperties until loadWaypoints → load() (retail Load* + AddToArea).
+    // Defer initProperties until loadWaypoints → load (Load* + AddToArea).
 
   }
 
@@ -62,7 +62,7 @@ export class ModuleWaypoint extends ModuleObject {
   }
 
   /**
-   * Retail GetScriptLocation — copy live X/Y/ZOrientation from the waypoint
+   * GetScriptLocation — copy live X/Y/ZOrientation from the waypoint
    * (GIT fields), not a bearing rebuild.
    */
   getLocation(){
@@ -82,7 +82,7 @@ export class ModuleWaypoint extends ModuleObject {
   }
 
   load(){
-    // GIT entries only carry TemplateResRef until load(); initProperties is deferred,
+    // GIT entries only carry TemplateResRef until load; initProperties is deferred,
     // so read the GFF field before choosing the UTW-merge path (same as ModuleTrigger).
     if(!this.templateResRef && this.template?.RootNode?.hasField('TemplateResRef')){
       this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();
@@ -134,7 +134,7 @@ export class ModuleWaypoint extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
     this.writeNamedVarTable(gff.RootNode);
 
-    // Retail SaveWaypoint — live orientation, not template snapshot
+    // SaveWaypoint — live orientation, not template snapshot
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).setValue(this.getXOrientation());
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).setValue(this.position.x);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).setValue(this.getYOrientation());

@@ -5,9 +5,9 @@ import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 import { GUIKeyMapItem } from "@/game/kotor/gui/GUIKeyMapItem";
 import { TwoDAManager } from "@/managers/TwoDAManager";
 
-/** Retail colorYellow — active filter tab. */
+/** colorYellow — active filter tab. */
 const FILTER_YELLOW = { r: 0.980392, g: 1, b: 0 };
-/** Retail colorStandardBlue — inactive filter tab. */
+/** colorStandardBlue — inactive filter tab. */
 const FILTER_BLUE = { r: 0, g: 0.658824, b: 0.980392 };
 
 /**
@@ -15,7 +15,7 @@ const FILTER_BLUE = { r: 0, g: 0.658824, b: 0.980392 };
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * retail (OPTKeyMapping).
+ * (OPTKeyMapping).
  *
  * @file MenuKeyboardMapping.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -32,7 +32,7 @@ export class MenuKeyboardMapping extends GameMenu {
   BTN_Filter_Game: GUIButton;
   BTN_Filter_Mini: GUIButton;
 
-  /** Retail filter_category: 0 Movement, 1 Game, 2 Minigame. */
+  /** filter_category: 0 Movement, 1 Game, 2 Minigame. */
   page = 0;
   capturing = false;
   captureItem: GUIKeyMapItem | undefined;
@@ -163,7 +163,7 @@ export class MenuKeyboardMapping extends GameMenu {
 
     const lang0 = (KeyCodeToLanguage0 as any)[e.code];
     if(typeof lang0 !== 'number'){
-      // Retail return 2 — not bindable; keep capturing.
+      // return 2 — not bindable; keep capturing.
       return;
     }
 
@@ -178,7 +178,7 @@ export class MenuKeyboardMapping extends GameMenu {
   }
 
   /**
-   * Retail UpdateEvent bindablekeys check: row KEY{language0-6}, Bindable != 0.
+   * UpdateEvent bindablekeys check: row KEY{language0-6}, Bindable != 0.
    * If the table is missing, allow any KeyCodeToLanguage0 mapping.
    */
   isKeyBindable(language0: number): boolean {
@@ -194,7 +194,7 @@ export class MenuKeyboardMapping extends GameMenu {
   }
 
   /**
-   * Retail IsKeyUsedAlready + UpdateEvent: assign key, clear conflicts that share category flags.
+   * IsKeyUsedAlready + UpdateEvent: assign key, clear conflicts that share category flags.
    */
   assignKey(item: GUIKeyMapItem, language0: number, character: string){
     const target = item.node;
@@ -223,7 +223,7 @@ export class MenuKeyboardMapping extends GameMenu {
     }
   }
 
-  /** Retail OnDefaultClick / ResetToDefault — Language0 from keymap.2da. */
+  /** OnDefaultClick / ResetToDefault — Language0 from keymap.2da. */
   resetToDefaults(){
     this.clearCapture();
     for(const action of KeyMapper.ACTIONS_ALL){
@@ -235,7 +235,7 @@ export class MenuKeyboardMapping extends GameMenu {
     this.updateList();
   }
 
-  /** Retail OnAcceptClick / PostChangeToEvent — write INI Keymapping + apply bindings. */
+  /** OnAcceptClick / PostChangeToEvent — write INI Keymapping + apply bindings. */
   acceptAndClose(){
     this.clearCapture();
     for(const action of KeyMapper.ACTIONS_ALL){

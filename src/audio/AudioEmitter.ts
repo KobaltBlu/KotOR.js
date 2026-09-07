@@ -46,7 +46,7 @@ export class AudioEmitter {
   isActive: boolean = true;
   isLooping: boolean = false;
   /**
-   * Retail UTS Continuous. When false, sequence stops after last sound
+   * UTS Continuous. When false, sequence stops after last sound
    * and deactivates (GetNextSound → SetIsActive(0)). Default true matches
    * prior wrap behavior for non-UTS emitters.
    */
@@ -66,7 +66,7 @@ export class AudioEmitter {
   playbackRate: number = 1;
   playbackRateVariation: number = 0;
   /**
-   * Retail FixedVariance (UTS / SoundObjectSetFixedVariance).
+   * FixedVariance (UTS / SoundObjectSetFixedVariance).
    * Playback-rate multiplier in [0.5, 2]; when set, random pitch variance is ignored
    * (SetFixedVariance clears fixed-variance).
    */
@@ -92,7 +92,7 @@ export class AudioEmitter {
   disabled: boolean = false;
 
   /**
-   * Retail GetWithinRangeOfListener: positional sources are in range when
+   * GetWithinRangeOfListener: positional sources are in range when
    * distance-to-listener <= maxDistance. Globals (2D) are always in range.
    */
   inListenerRange: boolean = true;
@@ -101,7 +101,7 @@ export class AudioEmitter {
   pendingResume: boolean = false;
 
   /**
-   * Retail Miles obstruction factor [0,1] on positional / streaming sources.
+   * Miles obstruction factor [0,1] on positional / streaming sources.
    * Gain multiplies by (1 − factor) — approximates AIL_set_sample_obstruction.
    */
   obstructionFactor: number = 0;
@@ -165,7 +165,7 @@ export class AudioEmitter {
     }
     this.disabled = disabled;
     if(disabled){
-      // Room hide / disable: hard-stop and free priority slots (retail ShutDownSource).
+      // Room hide / disable: hard-stop and free priority slots (ShutDownSource).
       const wantsResume = this.isLooping || this.sounds.length > 0;
       this.suspendForCullOrDisable(wantsResume);
       return;
@@ -204,7 +204,7 @@ export class AudioEmitter {
   /**
    * Miles-like 3D falloff via Web Audio linear distance model:
    * full level until refDistance (min), silent at maxDistance.
-   * Retail SetDistance stores min/max range; range gate uses max.
+   * SetDistance stores min/max range; range gate uses max.
    */
   applyPannerDistances(): void {
     if(!(this.mainNode instanceof PannerNode)){ return; }
@@ -234,7 +234,7 @@ export class AudioEmitter {
   }
 
   /**
-   * Retail GetWithinRangeOfListener.
+   * GetWithinRangeOfListener.
    * Non-positional (2D) always true; else distance <= maxDistance.
    */
   isWithinListenerRange(): boolean {
@@ -269,7 +269,7 @@ export class AudioEmitter {
   }
 
   /**
-   * Retail OcclusionRender / PlaySourceOn3DVoice obstruction sample.
+   * OcclusionRender / PlaySourceOn3DVoice obstruction sample.
    * Non-positional sources stay at factor 0.
    * @returns true if a fresh GetObstructionFactor was run (for per-frame budget).
    */
@@ -516,7 +516,7 @@ export class AudioEmitter {
       distanceSq: this.getListenerDistanceSq(),
       is3D: this.type === AudioEmitterType.POSITIONAL,
       onStolen: onStolen ?? (() => {
-        // Retail InterruptPlayingSound → ShutDownSource: hard stop, no fade.
+        // InterruptPlayingSound → ShutDownSource: hard stop, no fade.
         if(holdAcrossSequence){
           this.stop(0);
         }else{
@@ -568,7 +568,7 @@ export class AudioEmitter {
   async playSoundFireAndForget(resRef = ''): Promise<AudioBufferSourceNode>{
     if(resRef == '****' || !resRef?.length){ return; }
     if(this.disabled || !this.isWithinListenerRange()){ return; }
-    // Retail PlaySourceOn3DVoice obstruction sample for oneshots.
+    // PlaySourceOn3DVoice obstruction sample for oneshots.
     this.updateObstruction(true);
     try{
       let buffer: AudioBuffer = (this.buffers.has(resRef)) ? this.buffers.get(resRef) : undefined;
@@ -700,7 +700,7 @@ export class AudioEmitter {
     }
     this.currentVoiceId = acquired.voiceId;
 
-    // Ensure emitter gain is current (load() may have been long ago; duck/mute may have changed buses).
+    // Ensure emitter gain is current (load may have been long ago; duck/mute may have changed buses).
     if(this.gainNode){
       this.gainNode.gain.value = this.getVolume();
     }
@@ -778,7 +778,7 @@ export class AudioEmitter {
     this.disposeCurrentSound();
     this.releaseCurrentVoice();
     this.interationCount = 0;
-    // Retail PlaySourceOn3DVoice samples obstruction before resume.
+    // PlaySourceOn3DVoice samples obstruction before resume.
     this.updateObstruction(true);
     this.gainNode.gain.setValueAtTime(this.getVolume(), this.getCurrentTime());
     this.playNextSound();
@@ -790,7 +790,7 @@ export class AudioEmitter {
 
   /**
    * Advance playlist index after a oneshot ends.
-   * @returns false when Continuous=0 and the list is exhausted (retail empty resref).
+   * @returns false when Continuous=0 and the list is exhausted (empty resref).
    */
   advanceToNextSound(): boolean {
     if(!this.sounds.length){ return false; }
@@ -819,7 +819,7 @@ export class AudioEmitter {
   }
 
   getPlaybackRate(): number {
-    // Retail: FixedVariance in [0.5, 2] replaces random pitch (helper).
+    // : FixedVariance in [0.5, 2] replaces random pitch (helper).
     const fv = this.fixedVariance;
     if(Number.isFinite(fv) && fv >= 0.5 && fv <= 2 && fv !== 1){
       return this.playbackRate * fv;
@@ -833,14 +833,14 @@ export class AudioEmitter {
     }
     let gain = (this.volume + this.getRandomVariation(this.volumeVariation)) / 127;
     gain *= this.priorityGroupVolume / 127;
-    // Retail Render multiplies playing/streaming sources by ambient scale.
+    // Render multiplies playing/streaming sources by ambient scale.
     // Apply to SFX channel emitters (area AmbientScale from UpdateRoom).
     if(this.channel === AudioEngineChannel.SFX && this.engine){
       gain *= this.engine.currentAmbientScale;
     }
-    // Retail oneshot SetVolume does not multiply by K2 music/ambient duck scale
+    // oneshot SetVolume does not multiply by K2 music/ambient duck scale
     // (only streaming SetVolume does for music/4/5).
-    // Retail DoObstructionWork / AIL_set_sample_obstruction → volume × (1 − factor).
+    // DoObstructionWork / AIL_set_sample_obstruction → volume × (1 − factor).
     if(this.type === AudioEmitterType.POSITIONAL){
       gain *= obstructionVolumeScale(this.obstructionFactor);
     }
@@ -904,7 +904,7 @@ export class AudioEmitter {
         return;
       }
       if(!this.advanceToNextSound()){
-        // Retail Continuous=0 at end of list → SetIsActive(0).
+        // Continuous=0 at end of list → SetIsActive(0).
         this.isActive = false;
         this.state = AudioEmitterState.STOPPED;
         this.disposeCurrentSound();

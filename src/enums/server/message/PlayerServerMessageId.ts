@@ -1,5 +1,5 @@
 /**
- * Retail PLAYER_SERVER_MESSAGE_IDS — major message types.
+ * PLAYER_SERVER_MESSAGE_IDS — major message types.
  * From HandlePlayerToServerMessage and HandleServerToPlayerMessage.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II

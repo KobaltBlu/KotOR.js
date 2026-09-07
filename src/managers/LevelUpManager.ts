@@ -97,7 +97,7 @@ export class LevelUpManager {
 
   /**
    * Open the level-up wizard. Returns TRUE if shown (NWScript ShowLevelUpGUI).
-   * Retail ShowLevelUpGUI → ShowLevelUpGUI
+   * ShowLevelUpGUI → ShowLevelUpGUI
    * creates GUI (MAINCG / CharGenMain) hosting LEVELUPPNL.
    */
   static async showLevelUpGUIAsync(creature?: ModuleCreature): Promise<boolean> {
@@ -125,7 +125,7 @@ export class LevelUpManager {
   }
 
   /**
-   * Apply a pending level draft (retail LevelUp).
+   * Apply a pending level draft (LevelUp).
    */
   public static applyLevelUp(creature: ModuleCreature, draft: LevelUpDraft): boolean {
     if(!draft || !validateLevelUpDraft(draft)){
@@ -202,7 +202,7 @@ export class LevelUpManager {
       }
     }
 
-    // Retail: set current HP to max after level-up
+    // : set current HP to max after level-up
     try{
       const maxHp = typeof creature.getMaxHP === 'function' ? creature.getMaxHP() : creature.maxHitPoints;
       if(typeof creature.setHP === 'function'){
@@ -218,7 +218,7 @@ export class LevelUpManager {
     return true;
   }
 
-  /** Retail Mod_OnPlrLvlUp after successful LevelUp. */
+  /** Mod_OnPlrLvlUp after successful LevelUp. */
   public static fireOnPlayerLevelUp(creature: ModuleCreature){
     const mod = GameState.module;
     if(!mod) return;
@@ -230,7 +230,7 @@ export class LevelUpManager {
   }
 
   /**
-   * Retail AutoLevelup — build recommended draft and apply.
+   * AutoLevelup — build recommended draft and apply.
    * Loops while XP remains sufficient for another level.
    */
   public static autoLevelUp(creature: ModuleCreature){
@@ -245,7 +245,7 @@ export class LevelUpManager {
   }
 
   /**
-   * Build one auto-level draft for the last class (retail AutoLevelup).
+   * Build one auto-level draft for the last class (AutoLevelup).
    */
   public static buildAutoLevelUpDraft(creature: ModuleCreature): LevelUpDraft | null {
     const draft = beginLevelUpDraft(creature, GameState.GameKey);
@@ -281,7 +281,7 @@ export class LevelUpManager {
       }
     }
     // If still remaining picks, clear hasFeatsStep requirement by accepting leftover as 0 picks needed
-    // Retail ValidateLevelUp would fail — spend by forcing remaining to 0 only if no feats available
+    // ValidateLevelUp would fail — spend by forcing remaining to 0 only if no feats available
     if(draft.featPicksRemaining > 0 && draft.hasFeatsStep){
       draft.featPicksRemaining = 0;
     }

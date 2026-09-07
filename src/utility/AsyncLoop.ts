@@ -55,13 +55,13 @@ export class AsyncLoop {
     this.next();
   }
 
-  // _Loop(){
-  //   //console.warn('AsyncLoop._Loop() is depricated. please use AsyncLoop.next() instead');
-  //   this.next();
+  // _Loop{
+  // //console.warn('AsyncLoop._Loop is depricated. please use AsyncLoop.next instead');
+  // this.next;
   // }
 
   Begin( onComplete: Function ){
-    //console.warn('AsyncLoop.iterate() is depricated. please use AsyncLoop.iterate() instead');
+    //console.warn('AsyncLoop.iterate is depricated. please use AsyncLoop.iterate instead');
     this.iterate( onComplete );
   }
 

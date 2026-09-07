@@ -11,16 +11,16 @@ import {
 
 /**
  * ActionOrientCamera class.
- * Retail orient-camera action — sends
+ * orient-camera action — sends
  * SendServerToPlayerCamera_ChangeLocation then completes
  * immediately (transition is client-side).
  *
  * Action params (NWScript SetCameraFacing packing):
- *  0 - int: flags (bit0 facing, bit1 pitch, bit2 distance, bit3 transition)
- *  1 - float: float1 (facing degrees when bit0)
- *  2 - float: float2 (pitch degrees when bit1)
- *  3 - float: float3 (distance when bit2)
- *  4 - int: CAMERA_TRANSITION_TYPE_* (written when bit3)
+ * 0 - int: flags (bit0 facing, bit1 pitch, bit2 distance, bit3 transition)
+ * 1 - float: float1 (facing degrees when bit0)
+ * 2 - float: float2 (pitch degrees when bit1)
+ * 3 - float: float3 (distance when bit2)
+ * 4 - int: CAMERA_TRANSITION_TYPE_* (written when bit3)
  *
  * @file ActionOrientCamera.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -41,7 +41,7 @@ export class ActionOrientCamera extends Action {
     const transitionRaw = this.getParameter<number>(4);
 
     // Legacy KotOR.js packing used floats in slots 0–3 (facing/pitch/distance/height).
-    // Retail packing uses INT flags in slot 0. Detect legacy by non-integer / out-of-range flags.
+    // packing uses INT flags in slot 0. Detect legacy by non-integer / out-of-range flags.
     const looksLikeLegacy =
       typeof flagsRaw === 'number' &&
       (flagsRaw > 15 || flagsRaw < 0 || !Number.isInteger(flagsRaw));
@@ -68,7 +68,7 @@ export class ActionOrientCamera extends Action {
       transitionType: (flags & CAMERA_LOC_FLAG_TRANSITION) ? transitionType : 0,
     });
 
-    // Retail always returns COMPLETE (2); lerp runs on the client camera
+    // always returns COMPLETE (2); lerp runs on the client camera
     return ActionStatus.COMPLETE;
   }
 

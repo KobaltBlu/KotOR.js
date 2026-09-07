@@ -152,7 +152,7 @@ export class GameEventFactory {
         event = new EventFeedbackMessage();
       break;
       case GameEventType.EventAbilityEffectApplied: //EventAbilityEffectApplied
-        // event = new EventAbilityEffectApplied();
+        // event = new EventAbilityEffectApplied;
       break;
       case GameEventType.EventSummonCreature: //EventSummonCreature
         event = new EventSummonCreature();

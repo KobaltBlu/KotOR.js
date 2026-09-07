@@ -57,7 +57,7 @@ export class NWScriptStack {
         console.warn('NWScriptStack', data, type);
 
       if(type == NWScriptDataType.VECTOR){
-        // Retail: X deepest, Z on top (push x, y, z). Matches CONSTF / vector locals.
+        // : X deepest, Z on top (push x, y, z). Matches CONSTF / vector locals.
         if(typeof data == 'object'){
           this.stack.push( new NWScriptStackVariable({ value: data.x || 0.0, type: NWScriptDataType.FLOAT }) );
           this.stack.push( new NWScriptStackVariable({ value: data.y || 0.0, type: NWScriptDataType.FLOAT }) );
@@ -223,12 +223,12 @@ export class NWScriptStack {
   saveForEventSituation(){
     let struct = new GFFStruct();
 
-    // Retail SaveStack stores dword indices; load multiplies by 4.
+    // SaveStack stores dword indices; load multiplies by 4.
     struct.addField( new GFFField(GFFDataType.INT, 'BasePointer') ).setValue(this.basePointer / 4);
     struct.addField( new GFFField(GFFDataType.INT, 'StackPointer') ).setValue(this.pointer / 4);
     struct.addField( new GFFField(GFFDataType.INT, 'TotalSize') ).setValue(this.stack.length);
 
-    // Retail SaveStack only emits Stack LIST when total_size > 0
+    // SaveStack only emits Stack LIST when total_size > 0
     if(this.stack.length > 0){
       let stack = struct.addField( new GFFField(GFFDataType.LIST, 'Stack') );
       for(let i = 0; i < this.stack.length; i++){

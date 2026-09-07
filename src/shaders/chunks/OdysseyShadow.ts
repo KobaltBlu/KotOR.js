@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { OdysseyLightingDebug } from "@/utility/odysseyLightingDebug";
 
 /**
- * Shader / binder map capacity. Steady-state still targets retail
+ * Shader / binder map capacity. Steady-state still targets 
  * NumShadowCastingLights (3) or Soft Shadows (1); the 4th slot is for
  * transient crossfade residency (MAX+1) so caster swaps can blend.
  */
@@ -56,13 +56,13 @@ export const ODYSSEY_SHADOW_SOFT_DEPTH_WIDTH_LOCAL = 0.012;
 /** Soft ON: distant/sun depth compare half-width (crisper). */
 export const ODYSSEY_SHADOW_SOFT_DEPTH_WIDTH_DISTANT = 0.003;
 
-/** Multiplier on retail projection strength for local lamps. */
+/** Multiplier on projection strength for local lamps. */
 export const ODYSSEY_SHADOW_STRENGTH_SCALE_LOCAL = 0.50;
-/** Multiplier on retail projection strength for area/sun lights. */
+/** Multiplier on projection strength for area/sun lights. */
 export const ODYSSEY_SHADOW_STRENGTH_SCALE_DISTANT = 1.35;
 
 /**
- * Apply local↔distant strength scale to retail base opacity. Clamped to [0, 1].
+ * Apply local↔distant strength scale to base opacity. Clamped to [0, 1].
  * Reads live scales from {@link OdysseyLightingDebug}.
  */
 export function odysseyShadowAdaptiveStrength(
@@ -124,7 +124,7 @@ const ODYSSEY_SHADOW_SLOT_BODY = (slot: number, map: string) => `
             : vec3( 0.0, 0.0, 1.0 );
           float cosTheta${slot} = clamp( dot( n, lightDir${slot} ), 0.0, 1.0 );
           float slopeBias${slot} = odysseyShadowSlopeBias
-            * sqrt( 1.0 - cosTheta${slot} * cosTheta${slot} )
+            * sqrt(1.0 - cosTheta${slot} * cosTheta${slot})
             / max( cosTheta${slot}, 0.05 );
           float biasScale${slot} = 1.0;
           #ifdef USE_LIGHTMAP
@@ -157,7 +157,7 @@ const ODYSSEY_SHADOW_SLOT_BODY = (slot: number, map: string) => `
               float tapWeight${slot} = mix( hardTap${slot}, 1.0, odysseyShadowSoft );
               if ( tapWeight${slot} > 0.0 ) {
                 vec2 offset${slot} = vec2( float( x${slot} ), float( y${slot} ) )
-                  * texelSize * mix( 1.0, softSpread${slot}, odysseyShadowSoft );
+                  * texelSize * mix(1.0, softSpread${slot}, odysseyShadowSoft);
                 float depth${slot} = unpackRGBAToDepth(
                   texture2D( ${map}, shadowCoord${slot}.xy + offset${slot} )
                 );
@@ -257,7 +257,7 @@ float odysseyComputeShadowMapFactor( const in vec3 worldPos, const in vec3 world
     return factor;
   }
 
-  // Retail Soft Shadows: one soft disk. Hard: ProjectDynamicShadow per light.
+  // Soft Shadows: one soft disk. Hard: ProjectDynamicShadow per light.
   return odysseyShadowMapsAt( worldPos, worldNormal );
 }
 `;

@@ -7,8 +7,8 @@ import { PathPointDfsTransTable } from "@/engine/pathfinding/path-point-dfs-tran
  * Approximate PathPointDFSearch + GenerateSuccessors.
  *
  * Goal-ordered DFS with iterative cost budget (PlotPathPointPath)
- * and TransTable pruning. Wall-clock time slice mirrors retail return-1;
- * continuation reuses TransTable + cost budget (state/state) — retail
+ * and TransTable pruning. Wall-clock time slice matches engine behavior return-1;
+ * continuation reuses TransTable + cost budget (state/state) — 
  * does not save the mid-DFS call stack.
  *
  * @file path-point-dfs.ts
@@ -26,11 +26,11 @@ export type PathPointDfsResult = {
   end?: PathPoint;
   detours: WeakMap<PathPoint, THREE.Vector3>;
   visits: number;
-  /** True when wall-clock budget expired before a full solution (retail return 1). */
+  /** True when wall-clock budget expired before a full solution (return 1). */
   timedOut?: boolean;
-  /** TransTable to reuse on the next frame (Retail). */
+  /** TransTable to reuse on the next frame. */
   transTable?: PathPointDfsTransTable;
-  /** Cost budget to continue deepening from (retail). */
+  /** Cost budget to continue deepening from. */
   costBudget?: number;
 };
 
@@ -239,7 +239,7 @@ function generateSuccessors(
     });
   }
 
-  // Retail insertion-sort: lower goal heuristic first (DFS tries closest first)
+  // insertion-sort: lower goal heuristic first (DFS tries closest first)
   out.sort((a, b) => a.h - b.h);
   return out;
 }

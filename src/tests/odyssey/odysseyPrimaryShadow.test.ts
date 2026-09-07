@@ -25,7 +25,7 @@ import {
   SOFT_SHADOW_STICKY_HOLD_SEC,
 } from '@/managers/OdysseyShadowManager';
 import { LightManager } from '@/managers/LightManager';
-import { RETAIL_DISTANT_SHADOW_RADIUS } from '@/utility/retailLighting';
+import { ODYSSEY_DISTANT_SHADOW_RADIUS } from '@/utility/odysseyLighting';
 
 type MockShadowLight = {
   uuid: string;
@@ -104,7 +104,7 @@ describe('OdysseyShadowManager primary shadow map', () => {
     expect(manager.mapResolution).toBe(2048);
   });
 
-  test('selects one primary light with retail fade strength', () => {
+  test('selects one primary light with engine fade strength', () => {
     const light = mockShadowLight({
       uuid: 'a',
       worldPosition: new THREE.Vector3(10, 0, 0),
@@ -130,7 +130,7 @@ describe('OdysseyShadowManager primary shadow map', () => {
     const light = mockShadowLight({
       uuid: 'sun',
       worldPosition: new THREE.Vector3(100, 50, 200),
-      getRadius: () => RETAIL_DISTANT_SHADOW_RADIUS,
+      getRadius: () => ODYSSEY_DISTANT_SHADOW_RADIUS,
     }) as any;
 
     lightManager.staticMeshShadowLights = [light];
@@ -156,7 +156,7 @@ describe('OdysseyShadowManager primary shadow map', () => {
       uuid: 'sun',
       worldPosition: new THREE.Vector3(100, 0, 200),
       shadowFadeFactor: 1,
-      getRadius: () => RETAIL_DISTANT_SHADOW_RADIUS,
+      getRadius: () => ODYSSEY_DISTANT_SHADOW_RADIUS,
     }) as any;
 
     lightManager.shadowLights = [lamp];
@@ -174,12 +174,12 @@ describe('OdysseyShadowManager primary shadow map', () => {
     expect(sunDistant).toBe(1);
     expect(sunStrength).toBeGreaterThan(lampStrength);
     expect(sunStrength).toBeCloseTo(
-      OdysseyShadowManager.shadowStrengthForLight(1, 1, RETAIL_DISTANT_SHADOW_RADIUS),
+      OdysseyShadowManager.shadowStrengthForLight(1, 1, ODYSSEY_DISTANT_SHADOW_RADIUS),
       5
     );
   });
 
-  test('spot map coverage follows light influence up to retail focus distance', () => {
+  test('spot map coverage follows light influence up to engine focus distance', () => {
     const light = mockShadowLight({
       uuid: 'lamp',
       worldPosition: new THREE.Vector3(0, 0, 8),
@@ -390,7 +390,7 @@ describe('OdysseyShadowManager soft sticky + crossfade', () => {
     const side = softLamp('side', 3, 5, 1);
     lightManager.boundLights = [ceiling, side];
 
-    // One full retail fade-in step so cold-start residency is established.
+    // One full fade-in step so cold-start residency is established.
     manager.update(undefined, focus, 0.3);
     expect(manager.activeLightUuid).toBe('ceiling');
     expect(ceiling.shadowFadeFactor).toBeCloseTo(1);

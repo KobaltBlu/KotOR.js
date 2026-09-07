@@ -6,7 +6,7 @@ import { describe, expect, it } from '@jest/globals';
 import * as THREE from 'three';
 
 /**
- * Pure core of retail ResolveProjectileMissLocation
+ * Pure core of ResolveProjectileMissLocation
  * (without ClearLineOfSight) for unit testing.
  */
 function missBesideTarget(opts: {
@@ -23,7 +23,7 @@ function missBesideTarget(opts: {
     lateralScale = opts.personalSpace * 0.6667;
   }
   if((opts.attackResult | 0) === 10){
-    // Deterministic stand-in for three rand()%3 draws
+    // Deterministic stand-in for three rand%3 draws
     scatterMul = 3;
   }
 

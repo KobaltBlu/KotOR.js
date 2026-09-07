@@ -116,7 +116,7 @@ export class InventoryManager {
     }
 
     item.initProperties();
-    // Retail CreatureAcquireItem / SellItem clear Infinite (bit 2) on
+    // CreatureAcquireItem / SellItem clear Infinite (bit 2) on
     // copies that enter creature inventory — Infinite is store-stock only.
     item.setInfinite(0);
     if(item.getBaseItemId() == BaseItemType.CREDITS){
@@ -129,7 +129,7 @@ export class InventoryManager {
       GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.ITEM_RECEIVED);
       item.load();
       let hasItem = InventoryManager.getItemByTag(item.getTag());
-      // Retail stacks only identical items; differently upgraded variants must not merge.
+      // stacks only identical items; differently upgraded variants must not merge.
       const canStack = hasItem && InventoryManager.canStackItems(hasItem as ModuleItem, item);
       if(hasItem && canStack){
 
@@ -229,7 +229,7 @@ export class InventoryManager {
 
   static Save(){
     return new Promise( async (resolve, reject) => {
-      //console.log('InventoryManager.Save()', 'Exporting...');
+      //console.log('InventoryManager.Save', 'Exporting...');
       let gff = new GFFObject();
       gff.FileType = 'INV ';
 

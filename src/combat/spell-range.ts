@@ -3,16 +3,16 @@ import { GameState } from "@/GameState";
 /**
  * Spell cast range from ranges.2da (K1/K2 identical rows).
  *
- * | Letter | Row | Label         | Primary |
+ * | Letter | Row | Label | Primary |
  * |--------|-----|---------------|---------|
- * | P      | 0   | SpellRngPers  | 0       |
- * | T      | 1   | SpellRngTouch | 2.25    |
- * | S      | 2   | SpellRngShrt  | 10      |
- * | M      | 3   | SpellRngMed   | 15      |
- * | L      | 4   | SpellRngLng   | 28      |
- * | W      | 19  | SpellRngThrow | 15      |
+ * | P | 0 | SpellRngPers | 0 |
+ * | T | 1 | SpellRngTouch | 2.25 |
+ * | S | 2 | SpellRngShrt | 10 |
+ * | M | 3 | SpellRngMed | 15 |
+ * | L | 4 | SpellRngLng | 28 |
+ * | W | 19 | SpellRngThrow | 15 |
  *
- * Retail ComputeSpellRange remaps `P` → `T` before
+ * resolve spell range remaps `P` → `T` before
  * reading primary_ranges (approach / MoveTo distance). Targeting for personal
  * powers is still forced onto the caster by ForceMenu / TalentSpell.
  */
@@ -26,7 +26,7 @@ const SPELL_RANGE_ROW: Record<string, number> = {
   W: 19,
 };
 
-/** Fallbacks when ranges.2da is not loaded (match retail CSV). */
+/** Fallbacks when ranges.2da is not loaded (match CSV). */
 const SPELL_RANGE_FALLBACK: Record<string, number> = {
   P: 0,
   T: 2.25,
@@ -36,7 +36,7 @@ const SPELL_RANGE_FALLBACK: Record<string, number> = {
   W: 15,
 };
 
-/** Retail ComputeSpellRange: personal uses Touch primary for distance. */
+/** resolve spell range: personal uses Touch primary for distance. */
 export function normalizeSpellRangeLetter(rangeLetter: string): string {
   const key = (rangeLetter || '').toUpperCase();
   return key === 'P' ? 'T' : key;
@@ -51,7 +51,7 @@ export function getSpellRangeRowIndex(rangeLetter: string): number {
 
 /**
  * Primary cast range for a spells.2da `range` letter.
- * Personal (`P`) uses Touch primary (retail ComputeSpellRange).
+ * Personal (`P`) uses Touch primary (resolve spell range).
  */
 export function resolveSpellCastRange(rangeLetter: string): number {
   const key = normalizeSpellRangeLetter(rangeLetter);

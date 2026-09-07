@@ -208,10 +208,10 @@ export enum CombatFeatType {
   FINESSE_LIGHTSABERS = 193,
   FINESSE_MELEE_WEAPONS = 194,
   XXXX_MOBILITY = 195,
-  /** TSL Mobility feat — GetMovementRateFactor +0.1 (). Alias of XXXX_MOBILITY. */
+  /** TSL Mobility feat — GetMovementRateFactor +0.1. Alias of XXXX_MOBILITY. */
   MOBILITY = 195,
   REGENERATE_VITALITY_POINTS = 196,
-  /** TSL Stealth Run — GetWalkRate activity branch (). */
+  /** TSL Stealth Run — GetWalkRate activity branch. */
   STEALTH_RUN = 197,
   KINETIC_COMBAT = 198,
   SURVIVAL = 199,

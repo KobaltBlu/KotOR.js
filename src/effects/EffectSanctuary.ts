@@ -5,7 +5,7 @@ import { BitWise } from "@/utility/BitWise";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
 /**
- * EffectSanctuary — retail OnApplySanctuary.
+ * EffectSanctuary — effect apply.
  * int[4] = Will DC. Hostile observers must fail Will to see the target.
  * Full vis-node cache is approximated via ModuleCreature.isInvisibleToObserver.
  *
@@ -15,7 +15,7 @@ export class EffectSanctuary extends GameEffect {
   constructor(){
     super();
     this.type = GameEffectType.EffectSanctuary;
-    // intList[4] : Will DC (retail)
+    // intList[4] : Will DC 
   }
 
   onApply(){

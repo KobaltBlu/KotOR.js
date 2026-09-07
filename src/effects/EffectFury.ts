@@ -2,7 +2,7 @@ import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 
 /**
- * EffectFury — retail type 0x6F (ExecuteCommandEffectFury).
+ * EffectFury — type 0x6F (ExecuteCommandEffectFury).
  *
  * @file EffectFury.ts
  */

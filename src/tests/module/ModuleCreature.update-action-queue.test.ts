@@ -1,5 +1,5 @@
 /**
- * updateActionQueue must tick while debilitated (retail RunActions).
+ * updateActionQueue must tick while debilitated (RunActions).
  * @jest-environment node
  */
 import { describe, expect, it } from "@jest/globals";

@@ -17,10 +17,10 @@ import type { ModuleItem } from "@/module/ModuleItem";
 import type { ModuleObject } from "@/module/ModuleObject";
 
 /**
- * EventBroadcastSafeProjectile — retail SpellCastAndImpact →
+ * EventBroadcastSafeProjectile — SpellCastAndImpact →
  * BroadcastSafeProjectile → HandleServerToPlayerSafeProjectileSpell.
  *
- * Single-process: execute() spawns the spells.2da projmodel visual when the
+ * Single-process: execute spawns the spells.2da projmodel visual when the
  * cast path did not already attach one via SpellCastInstance.
  *
  * @file EventBroadcastSafeProjectile.ts

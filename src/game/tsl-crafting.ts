@@ -1,9 +1,9 @@
 /**
- * TSL workbench / chemical helpers — retail create-item / create-medical cost rules.
+ * TSL workbench / chemical helpers — create-item / create-medical cost rules.
  *
- * Chemical create cost: max(1, GetCost() >> 1)
- * Component create/breakdown piece value: max(1, GetCost() / 20)
- * NWScript GetChemicalPieceValue / GetItemComponentPieceValue: GetCost() / 20
+ * Chemical create cost: max(1, GetCost >> 1)
+ * Component create/breakdown piece value: max(1, GetCost / 20)
+ * NWScript GetChemicalPieceValue / GetItemComponentPieceValue: GetCost / 20
  */
 
 export const CHEMICAL_CREATE_GROUPS = {
@@ -85,7 +85,7 @@ export function parseItemCreateRow(row: any, rowIndex: number): CraftRecipeRow |
   };
 }
 
-/** Retail SetItemList gate: skillLevel <= GetSkillRank(base_skill) + 8 && group match. */
+/** SetItemList gate: skillLevel <= GetSkillRank(base_skill) + 8 && group match. */
 export function chemicalRecipeVisible(
   recipe: CraftRecipeRow,
   group: number,
@@ -95,7 +95,7 @@ export function chemicalRecipeVisible(
   return recipe.skillLevel <= (getSkillRank(recipe.baseSkill) | 0) + 8;
 }
 
-/** Retail ItemCreate SetItemList gate (group + skill+8 + optional level/align). */
+/** ItemCreate SetItemList gate (group + skill+8 + optional level/align). */
 export function itemCreateRecipeVisible(
   recipe: CraftRecipeRow,
   group: number,
@@ -113,7 +113,7 @@ export function itemCreateRecipeVisible(
 
 /**
  * Good/Evil alignment bucket for ItemCreate `align` column.
- * Retail uses short at stats thresholds 0x29 / 0x3c → buckets 3 / 1 / 2.
+ * uses short at stats thresholds 0x29 / 0x3c → buckets 3 / 1 / 2.
  */
 export function itemCreateAlignBucket(goodEvil: number): number {
   const ge = goodEvil | 0;

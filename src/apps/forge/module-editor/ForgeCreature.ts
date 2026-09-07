@@ -453,7 +453,7 @@ export class ForgeCreature extends ForgeGameObject {
     }
     this.container.add(this.model);
 
-    // this.updateCameraFocus();
+    // this.updateCameraFocus;
 
     return this.model;
   }
@@ -488,7 +488,7 @@ export class ForgeCreature extends ForgeGameObject {
       });
       this.model.attachHead(head);
 
-      // this.updateCameraFocus();
+      // this.updateCameraFocus;
     }
     catch(e)
     {
@@ -780,9 +780,9 @@ export class ForgeCreature extends ForgeGameObject {
       this.tag = root.getFieldByLabel('Tag').getValue() || '';
     }
     if(root.hasField('TemplateList')){
-      // this.templateList = root.getFieldByLabel('TemplateList').getChildStructs().map( (struct) => {
-      //   return struct.getFieldByLabel('Template').getValue() || '';
-      // }) || [];
+      // this.templateList = root.getFieldByLabel('TemplateList').getChildStructs.map((struct) => {
+      // return struct.getFieldByLabel('Template').getValue || '';
+      // }) ||;
     }
     if(root.hasField('TemplateResRef')){
       this.templateResRef = root.getFieldByLabel('TemplateResRef').getValue() || '';

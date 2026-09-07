@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 /**
- * Retail RenderForceDistortion +
+ * RenderForceDistortion +
  * forceDistortionShaderATI @ InitializeFrameBufferModificationFragmentShadersATI.
  *
  * ATI fragment: sample distortiontex (stage0), bias×2 *(tex−0.5), scale by
@@ -18,7 +18,7 @@ export const ForceDistortionShader: ForceDistortionShader = {
   uniforms: {
     tDiffuse: { value: null },
     tDistortion: { value: null },
-    /** Retail multi-texcoord1 scale; normalized equivalent of screen*0.1 / screen. */
+    /** multi-texcoord1 scale; normalized equivalent of screen*0.1 / screen. */
     distortionScale: { value: 0.1 },
   },
 

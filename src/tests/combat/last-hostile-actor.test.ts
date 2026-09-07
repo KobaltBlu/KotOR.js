@@ -1,5 +1,5 @@
 /**
- * lastHostileActor / GetLastHostileActor parity + BroadcastDialog HEARD gate.
+ * lastHostileActor / get hostile actor parity + BroadcastDialog HEARD gate.
  * @jest-environment node
  */
 import { describe, expect, it } from '@jest/globals';
@@ -8,7 +8,7 @@ import { ModuleObjectType } from '@/enums/module/ModuleObjectType';
 import { PerceptionMask } from '@/enums/engine/PerceptionMask';
 import {
   getLastHostileActor,
-  setLastHostileActor,
+  assignHostileActor,
 } from '@/combat/last-hostile-actor';
 import {
   drainHeardStringHead,
@@ -28,11 +28,11 @@ function makeCreature(id: number, opts: { plot?: boolean; factionId?: number; de
   return c;
 }
 
-describe('lastHostileActor / SetLastHostileActor', () => {
+describe('lastHostileActor / assign hostile actor', () => {
   it('stores attacker and returns it from getLastHostileActor', () => {
     const self = makeCreature(1, { factionId: 1 });
     const foe = makeCreature(2, { factionId: 2 });
-    setLastHostileActor(self, foe);
+    assignHostileActor(self, foe);
     expect(self.combatData.lastHostileActor).toBe(foe);
     expect(getLastHostileActor(self)).toBe(foe);
   });
@@ -43,7 +43,7 @@ describe('lastHostileActor / SetLastHostileActor', () => {
     const other = makeCreature(3, { factionId: 2 });
     self.combatData.lastAttackTarget = other;
     self.combatData.lastAttacker = foe;
-    setLastHostileActor(self, foe);
+    assignHostileActor(self, foe);
     expect(getLastHostileActor(self)).toBe(foe);
     expect(getLastHostileActor(self)).not.toBe(other);
   });
@@ -51,22 +51,22 @@ describe('lastHostileActor / SetLastHostileActor', () => {
   it('refuses same-faction overwrite', () => {
     const self = makeCreature(1, { factionId: 5 });
     const ally = makeCreature(2, { factionId: 5 });
-    setLastHostileActor(self, ally);
+    assignHostileActor(self, ally);
     expect(self.combatData.lastHostileActor).toBeUndefined();
   });
 
   it('clears on plot objects', () => {
     const self = makeCreature(1, { plot: true, factionId: 1 });
     const foe = makeCreature(2, { factionId: 2 });
-    setLastHostileActor(self, foe);
+    assignHostileActor(self, foe);
     expect(self.combatData.lastHostileActor).toBeUndefined();
   });
 
   it('force-clear works for CancelCombat', () => {
     const self = makeCreature(1, { factionId: 1 });
     const foe = makeCreature(2, { factionId: 2 });
-    setLastHostileActor(self, foe);
-    setLastHostileActor(self, undefined, true);
+    assignHostileActor(self, foe);
+    assignHostileActor(self, undefined, true);
     expect(self.combatData.lastHostileActor).toBeUndefined();
     expect(getLastHostileActor(self)).toBeUndefined();
   });
@@ -74,7 +74,7 @@ describe('lastHostileActor / SetLastHostileActor', () => {
   it('clears and returns undefined when stored hostile is dead', () => {
     const self = makeCreature(1, { factionId: 1 });
     const foe = makeCreature(2, { factionId: 2 });
-    setLastHostileActor(self, foe);
+    assignHostileActor(self, foe);
     foe.isDead = () => true;
     expect(getLastHostileActor(self)).toBeUndefined();
     expect(self.combatData.lastHostileActor).toBeUndefined();

@@ -4,8 +4,8 @@ import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "@/gui";
 
 /**
- * Retail PopulateOptionsListbox strrefs / custom_value (K1).
- * Label TLK + description TLK + INI key + FeedbackOption + retail default.
+ * PopulateOptionsListbox strrefs / custom_value (K1).
+ * Label TLK + description TLK + INI key + FeedbackOption + default.
  */
 const FEEDBACK_OPTIONS: ReadonlyArray<{
   label: number;
@@ -30,7 +30,7 @@ const FEEDBACK_OPTIONS: ReadonlyArray<{
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * retail (optfeedback).
+ * (optfeedback).
  *
  * @file MenuFeedback.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -80,7 +80,7 @@ export class MenuFeedback extends GameMenu {
   }
 
   /**
-   * Retail PopulateOptionsListbox — GUI rows from getFeedbackOptions().
+   * PopulateOptionsListbox — GUI rows from getFeedbackOptions.
    * AddControls(..., suppressCleanUp=1, restoreExtents=1, varyItemHeights=0).
    */
   populateOptionsListbox(){
@@ -118,7 +118,7 @@ export class MenuFeedback extends GameMenu {
     }
   }
 
-  /** Retail SetUpOptions — sync checkbox state from INI / client options. */
+  /** SetUpOptions — sync checkbox state from INI / client options. */
   setupOptions(){
     const options = this.getFeedbackOptions();
     for(let i = 0; i < options.length; i++){
@@ -131,7 +131,7 @@ export class MenuFeedback extends GameMenu {
     }
   }
 
-  /** Retail OnDefault / SetDefaultFeedbackOptions (bit_flags_2 defaults). */
+  /** OnDefault / SetDefaultFeedbackOptions (bit_flags_2 defaults). */
   resetToDefaults(){
     const options = this.getFeedbackOptions();
     for(let i = 0; i < options.length; i++){

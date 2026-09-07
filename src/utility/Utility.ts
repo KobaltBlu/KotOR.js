@@ -105,14 +105,14 @@ export class Utility {
         if(onComplete != null)
           onComplete(exists);
         // if(err == null) {
-        //   if(onComplete != null)
-        //     onComplete(true);
+        // if(onComplete != null)
+        // onComplete(true);
         // } else if(err.code == 'ENOENT') {
-        //   if(onComplete != null)
-        //     onComplete(false);
+        // if(onComplete != null)
+        // onComplete(false);
         // } else {
-        //   if(onComplete != null)
-        //     onComplete(false);
+        // if(onComplete != null)
+        // onComplete(false);
         // }
       });
     }else{

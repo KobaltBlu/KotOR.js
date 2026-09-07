@@ -19,7 +19,7 @@ export enum GameEffectSetStateType {
   CUT_SCENE_HORRIFIED = 8,
   FORCEPUSH = 9,
   WHIRLWIND = 10,
-  /** K2 — companion SetState from OnApplyKnockdown */
+  /** K2 — companion SetState from effect apply */
   KNOCKDOWN = 14,
   /** K2-only — EffectCrush */
   CRUSH = 15,

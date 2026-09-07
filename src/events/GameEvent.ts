@@ -64,7 +64,7 @@ export class GameEvent {
     return BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleObject) ? this.object : this.setObject(GameState.ModuleObjectManager.GetObjectById(this.objectId));
   }
 
-  /** OBJECT_INVALID / retail sentinel used in event-queue GFF. */
+  /** OBJECT_INVALID / sentinel used in event-queue GFF. */
   static readonly INVALID_OBJECT_ID = 2130706432;
 
   /** Persist CallerId for event-queue save (script caller, else event caller). */

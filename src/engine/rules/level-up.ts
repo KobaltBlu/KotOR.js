@@ -9,7 +9,7 @@ import {
 } from "@/engine/rules/skill-points";
 
 /**
- * Retail ability index for attribute_index / LevelUp.
+ * ability index for attribute_index / LevelUp.
  * Order is STR,DEX,CON,INT,WIS,CHA (not CharGenAttribute).
  */
 export enum LevelUpAbilityIndex {
@@ -22,7 +22,7 @@ export enum LevelUpAbilityIndex {
   CHA = 5,
 }
 
-/** Pending level draft mirroring retail. */
+/** Pending level draft mirroring. */
 export interface LevelUpDraft {
   classId: number;
   /** New class level after this level-up (1-based). */
@@ -47,7 +47,7 @@ export interface LevelUpDraft {
   hasPowersStep: boolean;
 }
 
-/** Persisted retail entry (LvlStatList element). */
+/** Persisted entry (LvlStatList element). */
 export interface LevelStatRecord {
   classId: number;
   hpChange: number;
@@ -102,7 +102,7 @@ export function primaryAbilityToIndex(primary: string): LevelUpAbilityIndex {
   }
 }
 
-/** Retail: ability bump when (newClassLevel & 3) == 0 → levels 4/8/12/16/20. */
+/** : ability bump when (newClassLevel & 3) == 0 → levels 4/8/12/16/20. */
 export function shouldOfferAbilityBump(newClassLevel: number): boolean {
   return ((newClassLevel | 0) & 3) === 0;
 }
@@ -168,7 +168,7 @@ export interface LevelUpCreatureLike {
 }
 
 /**
- * Build a blank draft for leveling the last class (retail AutoLevelup class pick).
+ * Build a blank draft for leveling the last class (AutoLevelup class pick).
  */
 export function beginLevelUpDraft(
   creature: LevelUpCreatureLike,
@@ -216,7 +216,7 @@ export function beginLevelUpDraft(
 }
 
 /**
- * Retail AutoLevelup skill spend — walk recommended skills and spend points.
+ * AutoLevelup skill spend — walk recommended skills and spend points.
  * `getRecommendedSkill(recom)` should return skill index or -1.
  */
 export function autoSpendSkillPoints(
@@ -291,6 +291,6 @@ export function validateLevelUpDraft(draft: LevelUpDraft): boolean {
   if(draft.hasAbilityStep && draft.attributeIndex < 0) return false;
   if(draft.hasFeatsStep && draft.featPicksRemaining > 0) return false;
   if(draft.hasPowersStep && draft.powerPicksRemaining > 0) return false;
-  // Skills may leave leftover points (retail stores skill_points_remaining).
+  // Skills may leave leftover points (stores skill_points_remaining).
   return true;
 }

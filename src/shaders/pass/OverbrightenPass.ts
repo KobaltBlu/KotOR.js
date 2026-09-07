@@ -6,7 +6,7 @@ import {
 } from '@/shaders/pass/OverbrightenShader';
 
 /**
- * OverbrightenPass — retail FrameBufferModifications bit 0x01.
+ * OverbrightenPass — FrameBufferModifications bit 0x01.
  *
  * @file OverbrightenPass.ts
  */

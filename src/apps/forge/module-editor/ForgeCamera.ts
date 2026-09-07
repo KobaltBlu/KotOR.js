@@ -15,7 +15,7 @@ export class ForgeCamera extends ForgeGameObject {
   micRange: number = 0;
   pitch: number = 90;
 
-  /** Retail GIT Orientation (yaw-only). Not the container display quaternion. */
+  /** GIT Orientation (yaw-only). Not the container display quaternion. */
   orientation: THREE.Quaternion = cameraOrientationFromYaw(0);
 
   perspectiveCamera: THREE.PerspectiveCamera;
@@ -32,7 +32,7 @@ export class ForgeCamera extends ForgeGameObject {
   }
 
   /**
-   * Compose container display pose from authored Pitch + Orientation (retail YZX).
+   * Compose container display pose from authored Pitch + Orientation (YZX).
    * Does not bake pitch into Orientation.
    */
   applyEditorPose(): void {

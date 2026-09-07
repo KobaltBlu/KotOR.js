@@ -35,8 +35,8 @@ export function applyProtoTemplateSkin(row: GUIControl, template: GUIControl): v
 
 /**
  * Pure skin rule for tests: the PROTOITEM template contributes font/texture only.
- * Row extent (width AND height) is authoritative — retail derives height from the
- * menu/entry-class base extent (GUIProtoItem.getRetailBaseExtent), never the template.
+ * Row extent (width AND height) is authoritative — derives height from the
+ * menu/entry-class base extent (GUIProtoItem.getProtoBaseExtent), never the template.
  */
 export function customProtoRowExtentFromTemplate(
   rowExtent: { width: number; height: number },

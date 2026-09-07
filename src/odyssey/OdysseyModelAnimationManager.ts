@@ -17,9 +17,9 @@ import {
 } from "@/odyssey/AnimRun";
 
 /**
- * OdysseyModelAnimationManager — Gob AnimRun stack (retail-style MVP).
+ * OdysseyModelAnimationManager — Gob AnimRun stack (-style MVP).
  *
- * Ordered `runs[]` (oldest = base). Per-run blend weight + Aurora flags.
+ * Ordered `runs` (oldest = base). Per-run blend weight + Aurora flags.
  * Compatibility: `currentAnimation` / `overlayAnimation` accessors map to
  * primary base and newest overlay runs.
  *
@@ -32,7 +32,7 @@ export class OdysseyModelAnimationManager {
   runs: AnimRun[] = [];
 
   /**
-   * @deprecated Compatibility — prefer runs[]. Synced from primary base run.
+   * @deprecated Compatibility — prefer runs. Synced from primary base run.
    * Direct assignment still supported for cutscene / forge / pose paths.
    */
   lastAnimation: OdysseyModelAnimation;
@@ -222,7 +222,7 @@ export class OdysseyModelAnimationManager {
   // --- Play / stop ---
 
   /**
-   * Insert an AnimRun (retail PlayAnimation).
+   * Insert an AnimRun (PlayAnimation).
    * @returns the new or reused run
    */
   playAnimation(
@@ -262,7 +262,7 @@ export class OdysseyModelAnimationManager {
       !!(flags & AuroraAnimationFlag.OVERLAY_SLOT) ||
       !!(flags & AuroraAnimationFlag.ADDITIVE_GESTURE);
 
-    // Base same-name promote (retail 0x40 spirit): reuse any matching base on
+    // Base same-name promote (0x40 spirit): reuse any matching base on
     // the stack — not only newest — so walk↔run chatter does not stack weight-0.
     if(!incomingOverlay){
       const want = anim.name?.toLowerCase();
@@ -306,7 +306,7 @@ export class OdysseyModelAnimationManager {
       run.flags |= AuroraAnimationFlag.LOOPING;
     }
 
-    // Retail transtime fades between two clips. With no partner base, weight-0
+    // transtime fades between two clips. With no partner base, weight-0
     // lerps from a static skeleton (freeze/slide) — start fully visible.
     if(!incomingOverlay){
       const hasPartnerBase = this.runs.some((r) => !isOverlayRun(r) && !r.done);
@@ -405,7 +405,7 @@ export class OdysseyModelAnimationManager {
   }
 
   /**
-   * Filter-remove overlay runs by stop flag (retail 0x80 / 0x400).
+   * Filter-remove overlay runs by stop flag (0x80 / 0x400).
    * - 0x400: fade out additive (0x400) runs
    * - 0x80: remove non-additive overlays; fade additives
    * - neither: clear all overlays (legacy single-slot)
@@ -590,7 +590,7 @@ export class OdysseyModelAnimationManager {
   private purgeOlderNonOverlay(keep: AnimRun){
     const keepIdx = this.runs.indexOf(keep);
     if(keepIdx < 0) return;
-    // Retail: when a non-overlay run hits weight 1, remove deeper (older) bases only
+    // : when a non-overlay run hits weight 1, remove deeper (older) bases only
     for(let i = keepIdx - 1; i >= 0; i--){
       if(!isOverlayRun(this.runs[i])){
         this.runs.splice(i, 1);
@@ -707,7 +707,7 @@ export class OdysseyModelAnimationManager {
 
   /**
    * Sample one anim node onto the skeleton.
-   * @param blendWeight retail NewController weight — lerp from current bone pose
+   * @param blendWeight NewController weight — lerp from current bone pose
    */
   updateAnimationNode(
     anim: OdysseyModelAnimation,
@@ -719,7 +719,7 @@ export class OdysseyModelAnimationManager {
       state = this.createAnimationState();
     }
     if(!node) return;
-    // Retail AnimateHierarchy: match Part / anim node by MdlNode.id (nodeNumber).
+    // AnimateHierarchy: match Part / anim node by model node.id (nodeNumber).
     // Always clear first so a missing id cannot reuse the previous bone.
     this.modelNode = undefined;
     if(typeof node.nodeNumber === 'number' && node.nodeNumber >= 0){
@@ -797,7 +797,7 @@ export class OdysseyModelAnimationManager {
         continue;
       }
 
-      // Retail NewController: blend sampled clip into current part pose by weight
+      // NewController: blend sampled clip into current part pose by weight
       if(controller.type == OdysseyModelControllerType.Position){
         this._animPosition.copy(this.modelNode.position);
         if(controller.frameCount == 1){

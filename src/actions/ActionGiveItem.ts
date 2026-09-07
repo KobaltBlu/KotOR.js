@@ -18,13 +18,13 @@ import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
 
 /**
- * ActionGiveItem — retail give-item action.
+ * ActionGiveItem — give-item action.
  *
  * Params:
- *  0 - dword: oItem
- *  1 - dword: oGiveTo
- *  2 - int: nCount (-1 = whole stack)
- *  3 - int: bDisplayStatus (party GUI UpdateStatus 7)
+ * 0 - dword: oItem
+ * 1 - dword: oGiveTo
+ * 2 - int: nCount (-1 = whole stack)
+ * 3 - int: bDisplayStatus (party GUI UpdateStatus 7)
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -57,7 +57,7 @@ export class ActionGiveItem extends Action {
     if (BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) {
       const owner = this.owner as ModuleCreature;
       if (!isInUseRange(owner, oGiveTo)) {
-        // Retail: run if squared dist to use-point > 25
+        // : run if squared dist to use-point > 25
         const use = getUseRange(owner, oGiveTo, false);
         const dx = owner.position.x - use.point.x;
         const dy = owner.position.y - use.point.y;

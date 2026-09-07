@@ -22,7 +22,7 @@ export enum DamageType {
   SONIC       = 10,
   ION         = 11,
   ENERGY      = 12,
-  // POISON      = 13,
+  // POISON = 13,
   BASE        = 13,
   PHYSICAL    = 14,
 };

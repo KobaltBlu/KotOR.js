@@ -1,7 +1,7 @@
 /**
  * IGUIControlExtent interface.
  *
- * Mirrors retail GUI extent (16 bytes): int left, top, width, height.
+ * matches engine behavior GUI extent (16 bytes): int left, top, width, height.
  * K1 Load reads LEFT/TOP/WIDTH/HEIGHT as INT.
  * Runtime values must stay integers (see asExtentInt / GUIControl setters).
  *

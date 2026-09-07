@@ -38,15 +38,15 @@ export class EffectVisualEffect extends GameEffect {
   private disposed: boolean = false;
   /** In-flight impact/root/head/progFX model loads. */
   private pendingImpactLoads: number = 0;
-  /** Retail ApplyBumpedOutShell — shell lives on creature model, not this.model. */
+  /** ApplyBumpedOutShell — shell lives on creature model, not this.model. */
   private bumpedOutShell: boolean = false;
   /**
-   * Retail impact-phase hardcoded VFX timer.
-   * Default 1000ms in retail — then RemoveBumpedOutShell for type_fd 'F'.
+   * impact-phase hardcoded VFX timer.
+   * Default 1000ms in — then RemoveBumpedOutShell for type_fd 'F'.
    * Undefined = inactive; <0 = already fired.
    */
   private impactProgFXTimerMs: number | undefined = undefined;
-  /** Retail ApplyMotionBlur — this effect holds a motionBlurVFXCount ref. */
+  /** ApplyMotionBlur — this effect holds a motionBlurVFXCount ref. */
   private motionBlurActive: boolean = false;
 
   constructor(){
@@ -79,7 +79,7 @@ export class EffectVisualEffect extends GameEffect {
       return;
     }
 
-    // Retail Update — impact progFX expires after ~1s
+    // Update — impact progFX expires after ~1s
     if(this.impactProgFXTimerMs != null && this.impactProgFXTimerMs >= 0){
       this.impactProgFXTimerMs -= 1000 * delta;
       if(this.impactProgFXTimerMs <= 0){
@@ -400,7 +400,7 @@ export class EffectVisualEffect extends GameEffect {
   }
 
   /**
-   * Retail ApplyBumpedOutShell / EnableBumpedOutShell.
+   * ApplyBumpedOutShell / EnableBumpedOutShell.
    * ProgFX 1400–1499 attaches a normal-offset shell to the target creature (and head
    * item) so it inherits transform + skinning — not a separate scene-rooted model.
    */
@@ -419,7 +419,7 @@ export class EffectVisualEffect extends GameEffect {
 
     const fx_tex = this.getProgFXTexture(id);
     creature.model.generateForceShieldGeometry(fx_tex);
-    // Retail also EnableBumpedOutShell on equipped Head item
+    // also EnableBumpedOutShell on equipped Head item
     const headItem = creature.equipment?.HEAD;
     if(headItem?.model instanceof OdysseyModel3D){
       headItem.model.generateForceShieldGeometry(fx_tex);
@@ -428,7 +428,7 @@ export class EffectVisualEffect extends GameEffect {
     TextureLoader.LoadQueue();
   }
 
-  /** Retail RemoveBumpedOutShell */
+  /** RemoveBumpedOutShell */
   private removeBumpedOutShell(){
     if(!this.bumpedOutShell) return;
     this.bumpedOutShell = false;
@@ -449,7 +449,7 @@ export class EffectVisualEffect extends GameEffect {
       return;
     this.applyBumpedOutShell(this.visualEffect.progfx_impact);
     this.applyMotionBlurProgFX(this.visualEffect.progfx_impact);
-    // retail default — impact hardcoded VFX lasts 1000ms
+    // default — impact hardcoded VFX lasts 1000ms
     if(this.bumpedOutShell){
       this.impactProgFXTimerMs = 1000;
     }
@@ -463,7 +463,7 @@ export class EffectVisualEffect extends GameEffect {
   }
 
   /**
-   * Retail ApplyHardCodedVisualEffect → ApplyMotionBlur
+   * ApplyHardCodedVisualEffect → ApplyMotionBlur
    * for progFX in [0x640, 0x6a4). Only 0x641/0x642 enable speed blur
    * (VFX_DUR_SPEED progfx_duration = 1601).
    */
@@ -483,7 +483,7 @@ export class EffectVisualEffect extends GameEffect {
     this.motionBlurActive = true;
   }
 
-  /** Retail RemoveHardCodedVisualEffect → RemoveMotionBlur. */
+  /** RemoveHardCodedVisualEffect → RemoveMotionBlur. */
   private removeMotionBlurProgFX(){
     if(!this.motionBlurActive) return;
     this.motionBlurActive = false;

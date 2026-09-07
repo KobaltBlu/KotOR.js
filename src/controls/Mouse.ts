@@ -6,7 +6,7 @@ import { MouseAxis } from "@/enums/controls/MouseAxis";
 import { GameState } from "@/GameState";
 import { EngineMode } from "@/enums/engine/EngineMode";
 
-/** Retail default mouse sensitivity (0x2C). */
+/** default mouse sensitivity (0x2C). */
 const DEFAULT_MOUSE_SENSITIVITY = 0x2c;
 const INI_MOUSE_SENSITIVITY = 'Game Options.Mouse Sensitivity';
 const INI_REVERSE_BUTTONS = 'Game Options.Reverse Mouse Buttons';
@@ -55,11 +55,11 @@ export class Mouse {
   static rightDown: boolean = false;
   static rightClick: boolean = false;
   static middleDown: boolean = false;
-  /** Retail g_bShiftActionState — full-stack give/transfer when true. */
+  /** g_bShiftActionState — full-stack give/transfer when true. */
   static shiftKey: boolean = false;
 
   /**
-   * Retail rightClickHeld / mouseCameraRotateToggle — chase-cam look is active.
+   * rightClickHeld / mouseCameraRotateToggle — chase-cam look is active.
    * Enter stores software cursor; exit restores it (Store/RestoreOldMousePosition).
    */
   static cameraHoldActive: boolean = false;
@@ -81,7 +81,7 @@ export class Mouse {
   static positionUI: THREE.Vector2 = new THREE.Vector2();
 
   /**
-   * Retail GuiManager mouse_x / mouse_y — top-left viewport pixel ints.
+   * GuiManager mouse_x / mouse_y — top-left viewport pixel ints.
    * Drive GUI HitCheckMouse / GetLocalMouseCoords from these.
    */
   static positionViewportInt: { x: number; y: number } = { x: 0, y: 0 };
@@ -159,7 +159,7 @@ export class Mouse {
   }
 
   /**
-   * Retail GetMouseSenSetting —
+   * GetMouseSenSetting —
    * sensitivity * 0.01 * 45.0 + 10.0 (degrees scale for mouse deltas).
    */
   static getSensitivityDegrees(): number {
@@ -168,12 +168,12 @@ export class Mouse {
     return sensitivity * 0.01 * 45.0 + 10.0;
   }
 
-  /** Retail client_options->mouse_look (Game Options.Mouse Look). */
+  /** client_options->mouse_look (Game Options.Mouse Look). */
   static isMouseLookEnabled(): boolean {
     return Number(GameState.iniConfig?.getProperty?.(INI_MOUSE_LOOK)) === 1;
   }
 
-  /** Retail reverse_mouse_buttons (Game Options.Reverse Mouse Buttons). */
+  /** reverse_mouse_buttons (Game Options.Reverse Mouse Buttons). */
   static isReverseButtonsEnabled(): boolean {
     return !!Number(GameState.iniConfig?.getProperty?.(INI_REVERSE_BUTTONS));
   }
@@ -227,7 +227,7 @@ export class Mouse {
 
   /**
    * Whether chase-camera mouse look should consume deltas this frame.
-   * Retail UpdateCamera / ProcessInput: look state is `rightClickHeld`, inverted
+   * UpdateCamera / ProcessInput: look state is `rightClickHeld`, inverted
    * when `mouse_look` is set — never left-button hold.
    */
   static isCameraHoldDesired(): boolean {

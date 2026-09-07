@@ -214,7 +214,7 @@ export class CharGenSkills extends GameMenu {
     if(!creature) return;
 
     const mgr = GameState.CharGenManager;
-    // Retail OnRecommendButton:
+    // OnRecommendButton:
     // CharGen clears ranks + recalculates points; level-up restores baseline + budget.
     if(this.levelUpMode){
       const draft = GameState.LevelUpManager?.draft;

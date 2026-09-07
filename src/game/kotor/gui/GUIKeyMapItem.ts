@@ -1,16 +1,16 @@
 import { GameMenu, GUIButton, GUIControl, GUIProtoItem } from "@/gui";
 import type { GUIListBox } from "@/gui/GUIListBox";
-import type { RetailRowExtent } from "@/gui/GUIProtoItem";
+import type { ProtoRowExtent } from "@/gui/GUIProtoItem";
 import { GameState } from "@/GameState";
 import { asExtentInt, truncDiv } from "@/gui/GUICoord";
 import type { GFFStruct } from "@/resource/GFFStruct";
 import type { Keymap } from "@/controls";
 
-/** Retail colorYellow (active filter / capture border). */
+/** colorYellow (active filter / capture border). */
 const COLOR_YELLOW = { r: 0.980392, g: 1, b: 0 };
-/** Retail colorStandardBlue (idle binding border). */
+/** colorStandardBlue (idle binding border). */
 const COLOR_BLUE = { r: 0, g: 0.658824, b: 0.980392 };
-/** Retail colorPurple (dirty / pending remap border). */
+/** colorPurple (dirty / pending remap border). */
 const COLOR_PURPLE = { r: 0.95, g: 0, b: 0.85 };
 /** TLK 0xBC10 — unassigned key display. */
 const TLK_UNASSIGNED = 0xbc10;
@@ -20,7 +20,7 @@ const TLK_UNASSIGNED = 0xbc10;
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * retail: action label + mapped key, capture/dirty colors.
+ * : action label + mapped key, capture/dirty colors.
  *
  * @file GUIKeyMapItem.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -41,12 +41,12 @@ export class GUIKeyMapItem extends GUIProtoItem {
   buildText(){}
 
   /**
-   * Retail base row extent — CreateOption computes
+   * base row extent — CreateOption computes
    * height = (GetIdealHeight + max(border1Dim, border2Dim)) * 2 (two text rows +
    * border). PROVISIONAL: we approximate with a fixed 71 until GetIdealHeight is emulated;
-   * the retail value is font/binding dependent, not a GFF constant.
+   * the value is font/binding dependent, not a GFF constant.
    */
-  getRetailBaseExtent(_list: GUIListBox): RetailRowExtent {
+  getProtoBaseExtent(_list: GUIListBox): ProtoRowExtent {
     return { left: 0, top: 0, width: 0, height: 71 };
   }
 
@@ -132,7 +132,7 @@ export class GUIKeyMapItem extends GUIProtoItem {
     if(!this.buttonKey) return;
     if(capturing){
       this.buttonKey.setBorderColor(COLOR_YELLOW.r, COLOR_YELLOW.g, COLOR_YELLOW.b);
-      // Retail SetCaptureEvent — SetPulsingAlpha(1, 1, 1) edges + fill
+      // SetCaptureEvent — SetPulsingAlpha(1, 1, 1) edges + fill
       this.buttonKey.setPulsingAlpha(true, true, true);
     }else{
       this.buttonKey.setPulsingAlpha(false);

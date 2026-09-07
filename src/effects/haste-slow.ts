@@ -8,7 +8,7 @@ import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { BitWise } from "@/utility/BitWise";
 
 /**
- * Retail OnApplyHasteOrSlow / OnRemoveHasteOrSlow.
+ * effect apply / effect remove.
  * Net-balance HASTE(+1) vs SLOW(-1), then sync HASTEINTERNAL / SLOWINTERNAL children.
  */
 

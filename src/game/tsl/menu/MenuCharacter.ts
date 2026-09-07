@@ -105,7 +105,7 @@ export class MenuCharacter extends K1_MenuCharacter {
         GameState.LevelUpManager?.showLevelUpGUI?.(GameState.getCurrentPlayer());
       });
 
-      // Retail HandleInputEvent 0x29 — TSL skips K1 init, so re-wire here.
+      // HandleInputEvent 0x29 — TSL skips K1 init, so re-wire here.
       this.BTN_SCRIPTS?.addEventListener('click', (e) => {
         e.stopPropagation();
         const creature = GameState.PartyManager?.party?.[0];

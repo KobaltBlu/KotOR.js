@@ -22,7 +22,7 @@ export class TXI {
   isbumpmap: boolean;
   bumpMapTexture: any;
   envMapTexture: any;
-  /** TXI envmapalpha — retail one-pass fragment output alpha (default 1). */
+  /** TXI envmapalpha — one-pass fragment output alpha (default 1). */
   envMapAlpha: number;
   waterAlpha: any;
   defaultWidth: number;
@@ -78,7 +78,7 @@ export class TXI {
     this.upperleftcoords = [];
     this.lowerrightcoords = [];
 
-    //Animation — retail cycle texture controller defaults fps to 1.0
+    //Animation — cycle texture controller defaults fps to 1.0
     this.isAnimated = false;
     this.numx = 0;
     this.numy = 0;
@@ -217,7 +217,7 @@ export class TXI {
           this.numy = parseInt(args[1]);
         break;
         case 'fps':
-          // Retail ParseField — Parse_float
+          // ParseField — Parse_float
           this.fps = parseFloat(args[1]);
           if(isNaN(this.fps) || this.fps <= 0) this.fps = 1;
         break;

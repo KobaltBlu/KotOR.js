@@ -2,8 +2,8 @@ import * as THREE from "three";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import {
   DriveUpdateResult,
-  driveUpdateLocation,
-} from "@/engine/pathfinding/drive-update-location";
+  updateCreatureDrive,
+} from "@/engine/pathfinding/update-creature-drive";
 import {
   pathApproachScale,
   walkSpeedFactorRamp,
@@ -20,44 +20,44 @@ import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 
 /**
- * Retail WalkUpdateLocation.
+ * creature walk update.
  *
  * SQRT approach + persistent speed-factor ramp (state) + trapezoidal step,
- * then DriveUpdateLocation walkable clip / door-cross / NoCreaturesOnLine.
+ * then creature drive update walkable clip / door-cross / NoCreaturesOnLine.
  * Mid-step creature block → BumpFriends / PlotPathAroundCreature (state).
  *
- * @file walk-update-location.ts
+ * @file update-creature-walk.ts
  */
 
-export { DriveUpdateResult as WalkUpdateResult };
+export { DriveUpdateResult as CreatureWalkResult };
 
 const _dest = new THREE.Vector3();
 const _probe = new THREE.Vector3();
 
-export interface WalkUpdateOptions {
-  /** Remaining path length in world units (ComputeTotalWalkDistance). */
+export interface CreatureWalkOptions {
+  /** Remaining path length in world units (total walk distance). */
   remainingDistance?: number;
   /** Allow walk-back facing when short reverse path. */
   allowWalkBack?: boolean;
   /** Extra locomotion scale (FollowLeader bands). */
   followScale?: number;
-  /** Retail pathfind state — UseRange early-out target id. */
+  /** pathfind state — UseRange early-out target id. */
   useRangeTargetId?: number;
 }
 
 /**
- * Advance one frame toward the next path point with retail accel/trapezoid.
+ * Advance one frame toward the next path point with accel/trapezoid.
  */
-export function walkUpdateLocation(
+export function updateCreatureWalk(
   creature: ModuleCreature,
   dest: THREE.Vector3,
   running: boolean,
   delta: number,
-  options: WalkUpdateOptions = {}
+  options: CreatureWalkOptions = {}
 ): DriveUpdateResult {
   if(!creature?.area || !dest) return DriveUpdateResult.BLOCKED;
 
-  // Retail WalkUpdateLocationDistance UseRange early-out (state)
+  // walk frame distance UseRange early-out (state)
   if(options.useRangeTargetId != null && options.useRangeTargetId !== 0x7f000000){
     const target = GameState.ModuleObjectManager?.GetObjectById?.(options.useRangeTargetId);
     if(
@@ -92,14 +92,14 @@ export function walkUpdateLocation(
   const step = walkTrapezoidStep(prev, factor, base, delta);
   creature.walkSpeedFactor = factor;
 
-  // Scale so driveUpdateLocation's speed*delta ≈ trapezoid step
+  // Scale so updateCreatureDrive's speed*delta ≈ trapezoid step
   const nominal = Math.max(1e-6, base * Math.max(0, delta));
   const trapezoidScale = step / nominal;
   const follow = options.followScale && options.followScale > 0 ? options.followScale : 1;
   const savedScale = creature.locomotionScale;
   creature.locomotionScale = Math.max(0.1, trapezoidScale * follow);
 
-  // Walk-back: keep facing, move toward goal (retail WalkUpdateLocationDistance)
+  // Walk-back: keep facing, move toward goal (walk frame distance)
   if(options.allowWalkBack && !running){
     const dx = dest.x - creature.position.x;
     const dy = dest.y - creature.position.y;
@@ -116,8 +116,8 @@ export function walkUpdateLocation(
     }
   }
 
-  // Retail WalkUpdateLocationTestDistance: test the actual frame step, then
-  // BumpFriends; on fail state < 6 → PlotPathAroundCreature ().
+  // walk step distance test: test the actual frame step, then
+  // BumpFriends; on fail state < 6 → PlotPathAroundCreature.
   const toX = dest.x - creature.position.x;
   const toY = dest.y - creature.position.y;
   const toLen = Math.hypot(toX, toY);
@@ -140,7 +140,7 @@ export function walkUpdateLocation(
         options.useRangeTargetId !== 0x7f000000 &&
         creatures.blockingCreatureId === options.useRangeTargetId
       ){
-        // Retail WalkUpdateLocationDistance stops when the intended use target
+        // walk frame distance stops when the intended use target
         // itself blocks the final approach; do not shove or hex around it.
         creature.setComputedPath?.(undefined);
         creature.pathBlockFailCount = 0;
@@ -172,8 +172,8 @@ export function walkUpdateLocation(
               creature.locomotionScale = savedScale;
               return DriveUpdateResult.BLOCKED;
             }
-            // Retail PlotPathAroundCreature return 0 → PauseReady + ResetAtEndOfPath
-            // via WalkUpdateLocationDistance return-1 / ARRIVED ().
+            // PlotPathAroundCreature return 0 → PauseReady + ResetAtEndOfPath
+            // via walk frame distance return-1 / ARRIVED.
             // Clearing here drops a poisoned path (e.g. FindEntryAndExit miss) so
             // ActionMoveToPoint replots instead of walking a stale far waypoint.
             creature.setComputedPath?.(undefined);
@@ -182,7 +182,7 @@ export function walkUpdateLocation(
             creature.blockingTimer = (creature.blockingTimer || 0) + 1;
             return DriveUpdateResult.BLOCKED;
           }else{
-            // Retail: clear path / pause after 6 fails
+            // : clear path / pause after 6 fails
             creature.setComputedPath?.(undefined);
             creature.pathBlockFailCount = 0;
             creature.walkSpeedFactor = 0;
@@ -198,7 +198,7 @@ export function walkUpdateLocation(
   }
 
   _dest.copy(dest);
-  const result = driveUpdateLocation(creature, _dest, running, delta);
+  const result = updateCreatureDrive(creature, _dest, running, delta);
 
   creature.locomotionScale = savedScale;
   if(result === DriveUpdateResult.BLOCKED){

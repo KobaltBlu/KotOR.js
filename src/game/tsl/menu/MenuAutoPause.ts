@@ -2,7 +2,7 @@ import type { GUILabel, GUICheckBox, GUIListBox, GUIButton } from "@/gui";
 import { AutoPauseState } from "@/enums/engine/AutoPauseState";
 import { MenuAutoPause as K1_MenuAutoPause } from "@/game/kotor/KOTOR";
 
-/** retail CSWGuiInGameAutoPause description TLKs (ctor custom_value). */
+/** auto-pause menu description TLKs (ctor custom_value). */
 const TLK_DESC_ENDROUND = 0xa5cd;
 const TLK_DESC_ENEMYSIGHTED = 0xa5ce;
 const TLK_DESC_MINESIGHTED = 0xbe40;
@@ -54,7 +54,7 @@ export class MenuAutoPause extends K1_MenuAutoPause {
     ];
   }
 
-  /** Retail default checkbox states (TSL). */
+  /** default checkbox states (TSL). */
   protected getDefaultEnabled(): ReadonlyArray<boolean> {
     return [false, true, false, true, false, true];
   }

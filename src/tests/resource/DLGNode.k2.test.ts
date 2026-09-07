@@ -163,7 +163,7 @@ describe('DLGNode.estimateSpokenTimeSeconds', () => {
     expect(DLGNode.estimateSpokenTimeSeconds('   ')).toBe(0);
   });
 
-  test('retail length * 0.11 + 1.0', () => {
+  test('engine length * 0.11 + 1.0', () => {
     expect(DLGNode.estimateSpokenTimeSeconds('abcd')).toBeCloseTo(4 * 0.11 + 1.0, 5);
   });
 });

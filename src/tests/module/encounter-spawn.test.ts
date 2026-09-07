@@ -14,9 +14,9 @@ jest.mock("@/GameState", () => ({
   },
 }));
 
-jest.mock("@/engine/pathfinding/compute-safe-location", () => ({
-  computeSafeLocation: (...args: unknown[]) => safeMock(...args),
-  computeNonVisibleLocation: (...args: unknown[]) => nonVisMock(...args),
+jest.mock("@/engine/pathfinding/find-safe-location", () => ({
+  findSafeLocation: (...args: unknown[]) => safeMock(...args),
+  findNonVisibleLocation: (...args: unknown[]) => nonVisMock(...args),
 }));
 
 jest.mock("@/loaders", () => ({ ResourceLoader: {} }));

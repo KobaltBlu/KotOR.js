@@ -300,7 +300,7 @@ export class LIPObject {
 
   export( onComplete?: Function ){
 
-    //this.reIndexKeyframes();
+    //this.reIndexKeyframes;
 
     console.log('Exporting LIP file to ', this.file);
 
@@ -320,21 +320,21 @@ export class LIPObject {
   async exportAs( onComplete?: Function ){
 
     // let payload = await dialog.showSaveDialog({
-    //   title: 'Export LIP',
-    //   defaultPath: this.file,
-    //   properties: ['createDirectory'],
-    //   filters: [
-    //     {name: 'LIP', extensions: ['lip']}
-    //   ]
+    // title: 'Export LIP',
+    // defaultPath: this.file,
+    // properties: ['createDirectory'],
+    // filters: [
+    // {name: 'LIP', extensions: ['lip']}
+    // ]
     // });
 
     // if(!payload.canceled && typeof payload.filePath != 'undefined'){
-    //   this.file = payload.filePath;
-    //   this.export(onComplete);
+    // this.file = payload.filePath;
+    // this.export(onComplete);
     // }else{
-    //   console.warn('LIP export aborted');
-    //   if(typeof onComplete === 'function')
-    //     onComplete();
+    // console.warn('LIP export aborted');
+    // if(typeof onComplete === 'function')
+    // onComplete;
     // }
 
   }

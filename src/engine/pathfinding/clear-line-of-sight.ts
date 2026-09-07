@@ -9,7 +9,7 @@ import { createWalkHitInfo } from "@/engine/pathfinding/walk-hit-info";
 /**
  * Approximate ClearLineOfSight.
  *
- * Retail order (retail):
+ * order :
  * 1. NoNonWalkPolysDetailed(…, personal_space=0.001, exclude source+target)
  * — static doors/placeables only (not room walk-check mesh)
  * 2. Per-room CheckAABBLineOfSight with los_material_mask
@@ -65,7 +65,7 @@ export function clearLineOfSight(
   if(options.ignoreSource?.id != null) ignoreIds.push(options.ignoreSource.id);
   if(options.ignoreObject?.id != null) ignoreIds.push(options.ignoreObject.id);
 
-  // Retail step 1: NoNonWalkPolysDetailed @ 0.001 (static objects)
+  // step 1: NoNonWalkPolysDetailed @ 0.001 (static objects)
   const walkHit = createWalkHitInfo();
   const detailed = noNonWalkPolysDetailed(area, a, b, {
     personalSpace: 0.001,
@@ -89,7 +89,7 @@ export function clearLineOfSight(
   GameState.raycaster.ray.direction.copy(_dir);
   GameState.raycaster.far = dist;
 
-  // Retail step 2: CheckAABBLineOfSight / los_material_mask on room woks
+  // step 2: CheckAABBLineOfSight / los_material_mask on room woks
   const rooms = area.rooms;
   if(!rooms?.length) return finish(true);
   _losBox.setFromPoints([a, b]).expandByScalar(0.05);
@@ -110,7 +110,7 @@ export function clearLineOfSight(
       const hit = intersects[k];
       if(hit.distance >= dist) continue;
       const wokFace = (hit as any).face;
-      // Retail: only faces in los_material_mask
+      // : only faces in los_material_mask
       if(wokFace && !isLineOfSightBlockingFace(wokFace)) continue;
       if(!wokFace) continue; // no metadata → skip (avoid false blocks)
       const d2 = hit.distance * hit.distance;

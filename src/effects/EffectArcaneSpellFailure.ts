@@ -5,7 +5,7 @@ import { BitWise } from "@/utility/BitWise";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
 /**
- * EffectArcaneSpellFailure — retail OnApplyArcaneSpellFailure.
+ * EffectArcaneSpellFailure — effect apply.
  * int[0] = percent chance to fail Force/spell cast.
  *
  * @file EffectArcaneSpellFailure.ts

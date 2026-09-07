@@ -19,27 +19,27 @@ export class OdysseyLight3D extends OdysseyObject3D {
   sphere: THREE.Sphere = new THREE.Sphere();
   isAnimated: boolean = false;
   parentUUID: string;
-  /** Runtime PartLight.priority (may be cleared independently of MDL). */
+  /** Runtime light node.priority (may be cleared independently of MDL). */
   priority: number = 0;
-  /** Authored MDL lightpriority; lightcmp fallback when priority is 0. */
+  /** Authored MDL lightpriority; light sort fallback when priority is 0. */
   authoredPriority: number = 0;
 
   isAmbient: boolean = false;
   isDynamic: boolean = false;
   affectDynamic: boolean = false;
   /**
-   * Retail PartLight n_dynamic_type (MDL dynamic flag). lightcmp prefers 1 > 2 > 0.
+   * light node n_dynamic_type (MDL dynamic flag). light sort prefers 1 > 2 > 0.
    * Separate from affectDynamic.
    */
   dynamicType: number = 0;
   isFading: number = 0;
 
   /**
-   * Authored MDL generateflare flag. Retail CollectLightsForGivenRoom /
-   * RenderLensFlares do not gate on this — selection uses flarecolorshifts.
+   * Authored MDL generateflare flag. CollectLightsForGivenRoom /
+   * lens flare render do not gate on this — selection uses flarecolorshifts.
    */
   genFlare: boolean = false;
-  /** MDL shadow flag — used for GetShadowLights mode 2 (distant/static) only. */
+  /** MDL shadow flag — used for shadow light selection mode 2 (distant/static) only. */
   castShadow: boolean = false;
 
   /** MDL flareradius — distance cull + size/color falloff (not light radius). */
@@ -50,21 +50,21 @@ export class OdysseyLight3D extends OdysseyObject3D {
   /** Loaded flare textures (parallel to flareTextures resrefs / sizes). */
   flareTextures: (THREE.Texture | null)[] = [];
   /**
-   * Retail PartLight+0x88 occlusion fade 0–1 (RenderLensFlares hit-check).
-   * Independent of ControlLightsFade fadeFactor.
+   * light node+0x88 occlusion fade 0–1 (lens flare render hit-check).
+   * Independent of light fade pass fadeFactor.
    */
   flareOcclusionFade: number = 0;
 
   intensity: number = 0;
   maxIntensity: number = 1;
-  /** Retail fade factor 0–1 (ControlLightsFade). */
+  /** fade factor 0–1 (light fade pass). */
   fadeFactor: number = 1;
   /**
-   * Retail secondary fade 0–1 (ControlLightsFade). Advanced only
-   * while the light is in the static-geometry pool (EnableLightsDynamicOnly).
+   * secondary fade 0–1 (light fade pass). Advanced only
+   * while the light is in the static-geometry pool (dynamic-only lights).
    */
   dynamicOnlyFadeFactor: number = 0;
-  /** Retail shadow fade 0–1 (GetShadowLights). */
+  /** shadow fade 0–1 (shadow light selection). */
   shadowFadeFactor: number = 0;
 
   color: THREE.Color = new THREE.Color(1, 1, 1);
@@ -78,11 +78,11 @@ export class OdysseyLight3D extends OdysseyObject3D {
   illuminationScore: number = Number.POSITIVE_INFINITY;
   /**
    * Monotonic registration ordinal assigned by LightManager.addLight.
-   * Used as the lightcmp tie-break (retail uses PartLight pointer order).
+   * Used as the light sort tie-break (uses light node pointer order).
    */
   registrationOrder: number = -1;
   /**
-   * Scratch sort key filled by LightManager before lightcmp sorts.
+   * Scratch sort key filled by LightManager before light sort sorts.
    * Reused across frames so compare callbacks do not allocate.
    */
   sortKey: {
@@ -106,7 +106,7 @@ export class OdysseyLight3D extends OdysseyObject3D {
     this.type = 'OdysseyLight';
   }
 
-  /** Authored light multiplier (retail PartLight). */
+  /** Authored light multiplier (light node). */
   getIntensity(){
     return this.multiplier;
   }
@@ -122,8 +122,8 @@ export class OdysseyLight3D extends OdysseyObject3D {
   /**
    * VP-aligned room/global RGB: fade × color.
    * SetUpVertexProgramLightShaderConstants (non-dynamic path) never
-   * multiplies PartLight.multiplier. FFP ControlLightsFade →
-   * SetLightGL does fade × color × multiplier; Odyssey GLSL follows the VP path.
+   * multiplies light node.multiplier. FFP light fade pass →
+   * light upload does fade × color × multiplier; Odyssey GLSL follows the VP path.
    */
   getEffectiveColor(out: THREE.Color = new THREE.Color()): THREE.Color {
     return out.copy(this.color).multiplyScalar(this.fadeFactor);
@@ -131,8 +131,8 @@ export class OdysseyLight3D extends OdysseyObject3D {
 
   /**
    * VP-aligned nearest/gob RGB: authored color only (no fade, no multiplier).
-   * Used when packing GetNearestLights results into Odyssey shader uniforms.
-   * FFP GetNearestLights → SetLightGL uses multiplier × color; VP upload does not.
+   * Used when packing nearest light selection results into Odyssey shader uniforms.
+   * FFP nearest light selection → light upload uses multiplier × color; VP upload does not.
    */
   getIntensityColor(out: THREE.Color = new THREE.Color()): THREE.Color {
     return out.copy(this.color);
@@ -142,7 +142,7 @@ export class OdysseyLight3D extends OdysseyObject3D {
    * VP-aligned static-geometry pool RGB: secondary fade × color
    * (SetUpVertexProgramLightShaderConstants with dynamic path uses fade 1 and
    * still omits multiplier; we keep the secondary fade channel from
-   * EnableLightsDynamicOnly / ControlLightsFade dynamic-only = 1).
+   * dynamic-only lights / light fade pass dynamic-only = 1).
    */
   getDynamicOnlyColor(out: THREE.Color = new THREE.Color()): THREE.Color {
     return out.copy(this.color).multiplyScalar(this.dynamicOnlyFadeFactor);

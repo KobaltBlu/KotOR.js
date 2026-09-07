@@ -265,7 +265,7 @@ export class ForgeMGPlayer {
     if(this.trackName !== undefined && this.trackName !== ''){
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Track', this.trackName));
     }
-    // Retail Player structs omit Type / UseInertia (UseInertia lives on MiniGame root only).
+    // Player structs omit Type / UseInertia (UseInertia lives on MiniGame root only).
 
     // Offset fields
     if(this.startOffsetX !== undefined){
@@ -287,7 +287,7 @@ export class ForgeMGPlayer {
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Target_Offset_Z', this.targetOffsetZ));
     }
 
-    // Tunnel fields (retail spellings)
+    // Tunnel fields (spellings)
     if(this.tunnelXNeg !== undefined){
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'TunnelXNeg', this.tunnelXNeg));
     }

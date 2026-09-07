@@ -3,7 +3,7 @@ import { TwoDAObject } from "@/resource/TwoDAObject";
 /**
  * SWPriorityGroup class.
  *
- * Mirrors retail sound priority group (0x18 bytes) loaded by
+ * matches engine behavior sound priority group (0x18 bytes) loaded by
  * LoadPriorityGroups (Linux TSL).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -27,17 +27,17 @@ export class SWPriorityGroup {
    */
   priority: number = 0;
 
-  /** Volume from 0 to 127 (retail default 0x7f). */
+  /** Volume from 0 to 127 (default 0x7f). */
   volume: number = 127;
 
   /**
-   * Maximum concurrent voices for this group (byte in retail).
+   * Maximum concurrent voices for this group (byte in).
    * **** keeps ctor default 255.
    */
   maxplaying: number = 255;
 
   /**
-   * Retail Interrupt field (sound priority group).
+   * Interrupt field (sound priority group).
    * When at maxplaying during Play:
    * - interrupt == 0 → deny the new play
    * - interrupt != 0 → InterruptPlayingSound (preempt one same-group voice)
@@ -64,7 +64,7 @@ export class SWPriorityGroup {
 
   /**
    * True when a new play at maxplaying may preempt a same-group voice
-   * (retail InterruptPlayingSound path).
+   * (InterruptPlayingSound path).
    */
   canPreemptSameGroup(): boolean {
     return (this.interrupt | 0) !== 0;
@@ -110,17 +110,17 @@ export class SWPriorityGroup {
     if(row.hasOwnProperty('priority'))
       group.priority = TwoDAObject.normalizeValue(row.priority, 'number', 0) as number;
 
-    // K1: volume. K2: volume_pc / volume_xbox (PC preferred). Retail blank → 127.
+    // K1: volume. K2: volume_pc / volume_xbox (PC preferred). blank → 127.
     group.volume = SWPriorityGroup.readNumber(row, ['volume', 'volume_pc'], 127);
 
-    // **** → retail ctor default 255.
+    // **** → ctor default 255.
     if(row.hasOwnProperty('maxplaying') && SWPriorityGroup.isBlank2DACell(row.maxplaying)){
       group.maxplaying = 255;
     }else{
       group.maxplaying = SWPriorityGroup.readNumber(row, ['maxplaying'], 255);
     }
 
-    // **** → retail ctor default 1 (can preempt same group).
+    // **** → ctor default 1 (can preempt same group).
     if(row.hasOwnProperty('interrupt') && SWPriorityGroup.isBlank2DACell(row.interrupt)){
       group.interrupt = 1;
     }else{
@@ -132,7 +132,7 @@ export class SWPriorityGroup {
         ? 0
         : TwoDAObject.normalizeValue(row.fadetime, 'number', 0) as number;
 
-    // K1: maxvolumedist/minvolumedist. K2: *_pc preferred. Retail blanks → 20 / 10.
+    // K1: maxvolumedist/minvolumedist. K2: *_pc preferred. blanks → 20 / 10.
     group.maxvolumedist = SWPriorityGroup.readNumber(row, ['maxvolumedist', 'maxvolumedist_pc'], 20);
     group.minvolumedist = SWPriorityGroup.readNumber(row, ['minvolumedist', 'minvolumedist_pc'], 10);
 

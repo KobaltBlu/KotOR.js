@@ -30,7 +30,7 @@ export interface FocusNearFar {
 
 /**
  * True when this object (and its entire subtree) should be ignored for camera framing.
- * Covers retail skyboxes (`affectedByFog === false` on OdysseyModel3D), MDL
+ * Covers skyboxes (`affectedByFog === false` on OdysseyModel3D), MDL
  * `m_bIsBackgroundGeometry`, hidden subtrees, and editor helpers marked via userData.
  */
 export function isExcludedFromCameraFocus(object: THREE.Object3D): boolean {

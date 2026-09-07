@@ -39,7 +39,7 @@ export type MeleeBackoffResult = {
 /**
  * ActionPhysicalAttacks class.
  *
- * Retail physical-attack action:
+ * physical-attack action:
  * MaxAttackRange for "too far", DesiredAttackRange for melee arrive /
  * too-close. Move arrive = ranged ? max : desired.
  * Duel: ResolveChoreographedState / ResolveEngagedState / ResolveMasterState
@@ -61,7 +61,7 @@ export class ActionPhysicalAttacks extends Action {
     this.type = ActionType.ActionPhysicalAttacks;
 
     //PARAMS
-    // 0 - resultsCalculated (INT) — retail CutsceneAttack precomputed flag
+    // 0 - resultsCalculated (INT) — CutsceneAttack precomputed flag
     // 1 - Target (DWORD)
     // 2 - actionType (INT)
     // 3 - AnimationIndex (INT)
@@ -170,7 +170,7 @@ export class ActionPhysicalAttacks extends Action {
 
     owner.resetExcitedDuration();
 
-    // Retail physical-attack action — load params 0/7/8/9 onto current action
+    // physical-attack action — load params 0/7/8/9 onto current action
     const combatRound = owner.combatRound;
     if(combatRound?.action){
       const resultsCalculated = !!this.getParameter<number>(0);
@@ -184,20 +184,20 @@ export class ActionPhysicalAttacks extends Action {
 
     if(typeof (target as any).isDead === 'function' && target.isDead()){
       // Always tear down / retarget — even when roundStarted is already false
-      // (remaining sched swings at a corpse must not block CreateNewAttackActions).
+      // (remaining sched swings at a corpse must not block QueueAttackActions).
       if(owner.combatRound){
         owner.combatRound.endCombatRound();
       }
       return ActionStatus.FAILED;
     }
 
-    // Retail HasTargetBeenDetected — doors/placeables always; creatures need SEEN
+    // HasTargetBeenDetected — doors/placeables always; creatures need SEEN
     // (CutsceneAttack does NOT skip detection/range — only ResolveAttackRoll/Damage short-circuit)
     if(!hasTargetBeenDetected(owner, target)){
       return ActionStatus.FAILED;
     }
 
-    // Retail ResolveChoreographedState — drives Desired/MaxAttackRange (not engaged)
+    // ResolveChoreographedState — drives Desired/MaxAttackRange (not engaged)
     const duel = resolveDuelRoundFlags(owner, target);
     const choreographed = duel.choreographed;
     const desired = desiredAttackRange(owner, target, choreographed);
@@ -207,7 +207,7 @@ export class ActionPhysicalAttacks extends Action {
     const maxSq = max * max;
     const desiredSq = desired * desired;
 
-    // Retail: too far OR (too close by desired²−0.2 when not party-ui) OR no LOS
+    // : too far OR (too close by desired²−0.2 when not party-ui) OR no LOS
     // Hysteresis: enter at desired²−0.2, stay until dist² ≥ desired²
     const tooFar = distSq > maxSq;
     const isPartyMember = GameState.PartyManager.party.indexOf(owner) >= 0;
@@ -252,7 +252,7 @@ export class ActionPhysicalAttacks extends Action {
       actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
       actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
 
-      // Retail AIActionPhysicalAttacks (too far / too close): AddActionToFront(self)
+      // AIActionPhysicalAttacks (too far / too close): AddActionToFront(self)
       // then MoveToPoint, return COMPLETE (2). Keeps PhysicalAttacks behind Move so
       // resetExcitedDuration / combat-state refresh run again between approach hops.
       // Returning IN_PROGRESS left this action blocked behind a continuous live chase
@@ -271,7 +271,7 @@ export class ActionPhysicalAttacks extends Action {
       return ActionStatus.COMPLETE;
     }
 
-    // In range but ClearLineOfSight blocked — retail may retarget via GetNearestEnemy
+    // In range but ClearLineOfSight blocked — may retarget via GetNearestEnemy
     // when the attacker has been standing still (stuck) at the same position.
     if(!hasLos){
       owner.force = 0;
@@ -295,7 +295,7 @@ export class ActionPhysicalAttacks extends Action {
       return ActionStatus.FAILED;
     }
 
-    // Retail physical-attack action — round_paused early return
+    // physical-attack action — round_paused early return
     // before duel resolution. Infinite-paused duel slaves wait here and never
     // resolve their own swing while the master drives the round.
     if(combatRound.roundPaused){
@@ -326,7 +326,7 @@ export class ActionPhysicalAttacks extends Action {
     });
 
     // CutsceneAttack (resultsCalculated) uses the same engaged/master/slave
-    // path as normal attacks — retail never forces them non-engaged.
+    // path as normal attacks — never forces them non-engaged.
     if(!duel.engaged){
       // Non-duel: StartCombatRound(target, engaged=0, master)
       duelLog(owner, 'branch:non-engaged-start', { target: duelWho(target) });
@@ -353,7 +353,7 @@ export class ActionPhysicalAttacks extends Action {
             ? ModuleCreatureAnimState.ATTACK_DUELING
             : ModuleCreatureAnimState.ATTACK;
         }
-        // Retail SetPauseTimer(slave, …, infinitePause=1) while master drives
+        // SetPauseTimer(slave, …, infinitePause=1) while master drives
         target.combatRound.pauseRound(owner, pauseMs, true);
       }
     }else{

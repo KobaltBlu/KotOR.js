@@ -17,7 +17,7 @@ jest.mock("@/engine/pathfinding/clear-line-of-sight", () => ({ clearLineOfSight:
 import * as THREE from "three";
 import { ModuleObjectManager, type NearestCandidate } from "@/managers/ModuleObjectManager";
 
-/** Mirror of retail nearest insert by squared world distance. */
+/** Mirror of nearest insert by squared world distance. */
 function nearestObjectToLocation(
   objects: { position: THREE.Vector3 }[],
   origin: THREE.Vector3,

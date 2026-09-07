@@ -69,7 +69,7 @@ describe("resolveDialogStartOwner", () => {
   });
 
   it("uses the NPC when the player is the BeginConversation caller (Trask→PC)", () => {
-    // Retail: caller==player reassigns StartDialog owner to the listener
+    // : caller==player reassigns StartDialog owner to the listener
     expect(resolveDialogStartOwner(player, npc)).toBe(npc);
   });
 

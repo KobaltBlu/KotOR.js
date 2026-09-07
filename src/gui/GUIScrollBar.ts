@@ -18,7 +18,7 @@ import {
 } from "@/gui/scrollBarThumb";
 import type { IGUIControlExtent } from "@/interface/gui/IGUIControlExtent";
 
-/** retail GUI */
+/** GUI */
 export enum ScrollBarHit {
   MISS = 0,
   DOWN_ARROW = 1,
@@ -29,7 +29,7 @@ export enum ScrollBarHit {
 }
 
 /**
- * GUIScrollBar — aligned with retail scroll bar index-unit API
+ * GUIScrollBar — engine-aligned scroll bar index-unit API
  * (setMaxValue / setCurValue / setVisibleValue+).
  */
 export class GUIScrollBar extends GUIControl{
@@ -53,29 +53,29 @@ export class GUIScrollBar extends GUIControl{
 
   arrowSize: number = 16;
 
-  /** Retail max_value */
+  /** max_value */
   maxValue: number = 1;
-  /** Retail current_value */
+  /** current_value */
   currentValue: number = 0;
-  /** Retail visible_item_count */
+  /** visible_item_count */
   visibleItemCount: number = 1;
   noSelectMode: boolean = false;
-  /** Retail DRAWMODE bit (Load) — when set, CanScroll gates arrow draw. */
+  /** DRAWMODE bit (Load) — when set, CanScroll gates arrow draw. */
   drawMode: boolean = false;
   /** Full control height including arrows (list-matched); extent.height is the track. */
   private listMatchedHeight: number = 0;
 
   private dragStartMouseY = 0;
   private dragging = false;
-  /** Retail field — scroll index at BAR mouse-down (1-based when shouldScroll). */
+  /** field — scroll index at BAR mouse-down (1-based when shouldScroll). */
   private dragStartValue = 0;
 
-  /** Retail hold-repeat while mouse captured on arrow/page (Draw). */
+  /** hold-repeat while mouse captured on arrow/page (Draw). */
   private holdHit: ScrollBarHit = ScrollBarHit.MISS;
   private holdRepeatTimer = 0.5;
   private readonly HOLD_REPEAT_INTERVAL = 0.1;
 
-  /** Shared arrow alpha pulse (retail UpdateArrowPulsing). */
+  /** Shared arrow alpha pulse (UpdateArrowPulsing). */
   private static arrowPulseTime = 0.75;
   private static arrowPulseUp = true;
   private static arrowAlpha = 1.0;
@@ -94,7 +94,7 @@ export class GUIScrollBar extends GUIControl{
 
     this.arrowTex = undefined;
 
-    // Retail Load — optional GFF seed values (list organize overrides later)
+    // Load — optional GFF seed values (list organize overrides later)
     if (this.control.hasField('MAXVALUE')) {
       this.setMaxValue(this.control.getFieldByLabel('MAXVALUE').getValue() | 0, false);
     }
@@ -263,7 +263,7 @@ export class GUIScrollBar extends GUIControl{
       const hit = this.hitCheckScrollbar(local.x, local.y);
       if (hit === ScrollBarHit.BAR) {
         this.dragging = true;
-        // Retail HandleLMouseDown — store panel-local mouse Y.
+        // HandleLMouseDown — store panel-local mouse Y.
         this.dragStartMouseY = asExtentInt(local.y);
         this.list?.beginScrollBarDrag();
         this.dragStartValue = this.list?.getScrollBarDragStartValue() ?? this.currentValue;
@@ -295,7 +295,7 @@ export class GUIScrollBar extends GUIControl{
   }
 
   /**
-   * Retail SetScrollBarExtent — match full list height; keep track = full − 2×arrows.
+   * SetScrollBarExtent — match full list height; keep track = full − 2×arrows.
    */
   syncToListHeight(listHeight: number): void {
     this.listMatchedHeight = Math.max(1, asExtentInt(listHeight));
@@ -319,7 +319,7 @@ export class GUIScrollBar extends GUIControl{
   }
 
   /**
-   * Retail setMaxValue.
+   * setMaxValue.
    */
   setMaxValue(maxValue: number, noSelectMode: boolean = false): void {
     if (maxValue < 0) return;
@@ -334,7 +334,7 @@ export class GUIScrollBar extends GUIControl{
   }
 
   /**
-   * Retail setCurValue.
+   * setCurValue.
    */
   setCurValue(curValue: number): void {
     if (curValue < 0) {
@@ -349,7 +349,7 @@ export class GUIScrollBar extends GUIControl{
   }
 
   /**
-   * Retail setVisibleValue.
+   * setVisibleValue.
    */
   setVisibleValue(visibleValue: number): void {
     if (visibleValue < 0 || (visibleValue === 0 && this.maxValue !== 0)) {
@@ -360,7 +360,7 @@ export class GUIScrollBar extends GUIControl{
     this.layoutThumb();
   }
 
-  /** Position/size thumb from max/cur/visible (retail SetExtent). */
+  /** Position/size thumb from max/cur/visible (SetExtent). */
   layoutThumb(): void {
     if (!this.thumb) return;
 
@@ -388,13 +388,13 @@ export class GUIScrollBar extends GUIControl{
     this.syncArrowVisibility();
   }
 
-  /** Retail CanScrollUp. */
+  /** CanScrollUp. */
   canScrollUp(): boolean {
     if (this.maxValue <= this.visibleItemCount) return false;
     return this.currentValue >= 1;
   }
 
-  /** Retail CanScrollDown. */
+  /** CanScrollDown. */
   canScrollDown(): boolean {
     let limit = this.maxValue;
     // bit 2 = noSelectMode on scrollbar
@@ -405,7 +405,7 @@ export class GUIScrollBar extends GUIControl{
       && (this.currentValue + this.visibleItemCount) < limit;
   }
 
-  /** Show/hide DIR arrows (retail Draw DRAWMODE / CanScroll). */
+  /** Show/hide DIR arrows (Draw DRAWMODE / CanScroll). */
   syncArrowVisibility(): void {
     if (this.drawMode) {
       if (this.upArrow) this.upArrow.visible = this.canScrollUp();
@@ -417,7 +417,7 @@ export class GUIScrollBar extends GUIControl{
   }
 
   /**
-   * Retail UpdateArrowPulsing — write alpha into arrow MeshBasicMaterial.
+   * UpdateArrowPulsing — write alpha into arrow MeshBasicMaterial.
    * Keeps modern Three.js materials; does not use legacy GL immediate mode.
    */
   updateArrowPulse(delta: number): void {
@@ -446,7 +446,7 @@ export class GUIScrollBar extends GUIControl{
     }
   }
 
-  /** Begin hold-repeat for arrow/page (retail mouse capture path). */
+  /** Begin hold-repeat for arrow/page (mouse capture path). */
   beginHoldRepeat(hit: ScrollBarHit): void {
     this.holdHit = hit;
     this.holdRepeatTimer = 0.5;
@@ -458,7 +458,7 @@ export class GUIScrollBar extends GUIControl{
   }
 
   /**
-   * Retail Draw hold-repeat: while LMB held and hit region unchanged, fire scroll every 0.1s.
+   * Draw hold-repeat: while LMB held and hit region unchanged, fire scroll every 0.1s.
    */
   updateHoldRepeat(delta: number): void {
     if (this.holdHit === ScrollBarHit.MISS || !Mouse.leftDown || !this.list) {
@@ -531,7 +531,7 @@ export class GUIScrollBar extends GUIControl{
   }
 
   /**
-   * Retail HitCheckScrollbar — int panel-local mouse vs arrow/thumb/track.
+   * HitCheckScrollbar — int panel-local mouse vs arrow/thumb/track.
    * Our mesh places scroll-up at visual top (panel Y-down top) and scroll-down at bottom.
    */
   hitCheckScrollbar(panelLocalX?: number, panelLocalY?: number): ScrollBarHit {
@@ -603,7 +603,7 @@ export class GUIScrollBar extends GUIControl{
   mouseInside(){
     if (!this.list || !this.thumb || !this.dragging) return;
 
-    // Retail HandleMouseCapturedMovement
+    // HandleMouseCapturedMovement
     // deltaY = currentPanelLocalY - scroll_mouse_y (Y-down);
     // travel = inner.height - thumbHeight.
     const local = this.getPanelLocalMouse();

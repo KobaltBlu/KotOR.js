@@ -1,4 +1,4 @@
-/** Retail GetPersonalActions / IsLeaderUsableItem item_type constants. */
+/** GetPersonalActions / IsLeaderUsableItem item_type constants. */
 export const ItemTypeCategory = {
   OTHER: 0x19,
   STEALTH_DEVICE: 0x2c,
@@ -20,7 +20,7 @@ export const RACE_DROID = 5;
 export const RACE_HUMAN = 6;
 
 /**
- * Retail CheckItemRaceRestrictions droid_or_human:
+ * CheckItemRaceRestrictions droid_or_human:
  * 1 = human (race 6), 2 = droid (race 5).
  */
 export function passesDroidOrHumanRestriction(race: number, droidOrHuman: number): boolean {
@@ -31,17 +31,17 @@ export function passesDroidOrHumanRestriction(race: number, droidOrHuman: number
   return true;
 }
 
-/** Retail CreateUsableItemEntry: medpac / droid repair — caster HP only. */
+/** CreateUsableItemEntry: medpac / droid repair — caster HP only. */
 export function isSelfMedicalItemType(itemType: number): boolean {
   return itemType === ItemTypeCategory.MEDICAL_A || itemType === ItemTypeCategory.MEDICAL_C;
 }
 
-/** Retail CreateUsableItemEntry: squad kit — any party member injured. */
+/** CreateUsableItemEntry: squad kit — any party member injured. */
 export function isSquadMedicalItemType(itemType: number): boolean {
   return itemType === ItemTypeCategory.MEDICAL_B;
 }
 
-/** Retail CastSpell item types that also require spells.ItemTargeting == 1. */
+/** CastSpell item types that also require spells.ItemTargeting == 1. */
 export function isSpecialOtherCastSpellItemType(itemType: number): boolean {
   return (
     itemType === ItemTypeCategory.DROID_UTILITY ||
@@ -67,7 +67,7 @@ export function isMedicalItemType(itemType: number): boolean {
 }
 
 /**
- * Retail CheckItemRaceRestrictions denysubrace:
+ * CheckItemRaceRestrictions denysubrace:
  * item denied when (denySubrace & (1 << subraceIndex)) != 0.
  */
 export function passesDenySubraceMask(subraceIndex: number, denySubrace: number): boolean {
@@ -77,7 +77,7 @@ export function passesDenySubraceMask(subraceIndex: number, denySubrace: number)
 }
 
 /**
- * Retail GetSimpleAlignmentGoodEvil
+ * GetSimpleAlignmentGoodEvil
  * adjustAlignment labels: 1 = NEUTRAL, 2 = LIGHT, 3 = DARK.
  */
 export const SimpleAlignment = {
@@ -115,7 +115,7 @@ function hasUseableProp(props: UseLimitationProp[], propertyName: number): boole
 }
 
 /**
- * Retail CheckItemAlignmentRestrictions.
+ * CheckItemAlignmentRestrictions.
  * Bypass when HasFeat(PROFICIENCY_ALL / 0x5d).
  */
 export function checkItemAlignmentRestrictions(
@@ -135,7 +135,7 @@ export function checkItemAlignmentRestrictions(
 }
 
 /**
- * Retail CheckItemClassRestrictions.
+ * CheckItemClassRestrictions.
  * OR across UseLimitationClass props — any matching class passes.
  */
 export function checkItemClassRestrictions(
@@ -156,7 +156,7 @@ export function checkItemClassRestrictions(
 }
 
 /**
- * Retail CheckItemFeatRestrictions.
+ * CheckItemFeatRestrictions.
  * Fail when any UseLimitationFeat has zero remaining uses.
  * Menu uses hasFeat as remaining-uses proxy (non-zero if owned).
  */
@@ -176,7 +176,7 @@ export function checkItemFeatRestrictions(
 }
 
 /**
- * Retail CheckItemRaceRestrictions UseLimitationRacial branch
+ * CheckItemRaceRestrictions UseLimitationRacial branch
  * (after denysubrace clear): if prop exists, creature race must match a subtype.
  */
 export function checkItemUseLimitationRacial(
@@ -210,7 +210,7 @@ export function hasCastSpellSkipDroidOrHuman(props: UseLimitationProp[]): boolea
 }
 
 /**
- * Retail CheckItemRaceRestrictions core (droid_or_human + deny + UseLimitationRacial).
+ * CheckItemRaceRestrictions core (droid_or_human + deny + UseLimitationRacial).
  */
 export function checkItemRaceRestrictionsPure(
   race: number,

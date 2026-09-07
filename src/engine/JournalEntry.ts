@@ -34,7 +34,7 @@ export class JournalEntry {
     return this.category?.name?.getTLKValue?.() ?? '';
   }
 
-  /** Used by default list PROTOITEM rows (`setText(node)` → `toString()`). */
+  /** Used by default list PROTOITEM rows (`setText(node)` → `toString`). */
   toString(): string {
     return this.getName();
   }
@@ -44,7 +44,7 @@ export class JournalEntry {
   }
 
   /**
-   * Retail SJournalEntry done flag — category entry `End != 0` puts the quest
+   * SJournalEntry done flag — category entry `End != 0` puts the quest
    * on the completed (done) list instead of the active list.
    */
   isComplete(): boolean {
@@ -53,7 +53,7 @@ export class JournalEntry {
 
   /**
    * Format JNL_Date / JNL_Time as a calendar date string for UI lists.
-   * Uses the retail 28-day / 12-month conversion from Mod_PauseDay.
+   * Uses the 28-day / 12-month conversion from Mod_PauseDay.
    */
   getReceivedDateLabel(): string {
     return ModuleCalendar.formatPauseDayLabel(this.date);

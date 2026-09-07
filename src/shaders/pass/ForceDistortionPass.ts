@@ -4,7 +4,7 @@ import { CopyShader } from 'three/examples/jsm/shaders/CopyShader';
 import { ForceDistortionShader } from '@/shaders/pass/ForceDistortionShader';
 
 /**
- * Stencil bit for force-distortion masks. Retail uses bit 0 (mask 1) after
+ * Stencil bit for force-distortion masks. uses bit 0 (mask 1) after
  * DoEmitterBucket clears stencil. KotOR.js shadow disks keep bits 0–7 during
  * the scene pass, so emitters write bit 7 (0x80) instead — avoids clobbering
  * shadow Equal refs for lights 0–6.
@@ -12,7 +12,7 @@ import { ForceDistortionShader } from '@/shaders/pass/ForceDistortionShader';
 export const FORCE_DISTORTION_STENCIL_BIT = 0x80;
 
 /**
- * ForceDistortionPass — retail RenderForceDistortion fullscreen warp.
+ * ForceDistortionPass — RenderForceDistortion fullscreen warp.
  *
  * Emitters write stencil during the scene (colorWrite off). This pass copies
  * scene color then warps in-place with glStencilFunc(NOTEQUAL, 0, bit)
@@ -106,7 +106,7 @@ export class ForceDistortionPass extends Pass {
 
     this.ensureColorCopy(readBuffer);
 
-    // Copy scene color (retail glCopyTexSubImage2D) — leave stencil intact
+    // Copy scene color (glCopyTexSubImage2D) — leave stencil intact
     this.copyMaterial.uniforms.tDiffuse.value = readBuffer.texture;
     renderer.setRenderTarget(this.colorCopy);
     this.copyQuad.render(renderer);

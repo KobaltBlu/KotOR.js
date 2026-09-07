@@ -11,7 +11,7 @@ import {
   AREA_MAP_LOGICAL_SIZE_K1,
 } from "@/module/AreaMap";
 
-/** Live TSL scene Map corners (NorthAxis=SOUTH) captured during retail alignment. */
+/** Live TSL scene Map corners (NorthAxis=SOUTH) captured during alignment. */
 const LIVE_TSL_SOUTH = {
   northAxis: MapNorthAxis.SOUTH,
   mapResX: 24,
@@ -53,7 +53,7 @@ function applyMapFields(areaMap: AreaMap, fields: Partial<AreaMap> & {
   areaMap.init();
 }
 
-describe("AreaMap retail coordinates", () => {
+describe("AreaMap engine coordinates", () => {
   let previousGameKey: GameEngineType;
 
   beforeEach(() => {
@@ -64,14 +64,14 @@ describe("AreaMap retail coordinates", () => {
     ApplicationProfile.GameKey = previousGameKey;
   });
 
-  test("NorthAxis transform matches retail Initialize / GetMapPixelFromWorldCoord", () => {
+  test("NorthAxis transform matches engine Initialize / GetMapPixelFromWorldCoord", () => {
     expect(AreaMap.transformWorldByNorthAxis(3, 5, MapNorthAxis.NORTH)).toEqual({ x: 3, y: 5 });
     expect(AreaMap.transformWorldByNorthAxis(3, 5, MapNorthAxis.EAST)).toEqual({ x: -3, y: -5 });
     expect(AreaMap.transformWorldByNorthAxis(3, 5, MapNorthAxis.SOUTH)).toEqual({ x: 5, y: -3 });
     expect(AreaMap.transformWorldByNorthAxis(3, 5, MapNorthAxis.WEST)).toEqual({ x: -5, y: 3 });
   });
 
-  test("live TSL SOUTH scene maps PC to retail pixels (370, 188)", () => {
+  test("live TSL SOUTH scene maps PC to engine pixels (370, 188)", () => {
     ApplicationProfile.GameKey = GameEngineType.TSL;
     const areaMap = new AreaMap();
     applyMapFields(areaMap, LIVE_TSL_SOUTH);
@@ -83,7 +83,7 @@ describe("AreaMap retail coordinates", () => {
 
     const uv = areaMap.toMapCoordinates(LIVE_TSL_SOUTH.pc.x, LIVE_TSL_SOUTH.pc.y);
     expect(uv.x).toBeCloseTo(LIVE_TSL_SOUTH.expectedPixel.x / AREA_MAP_LOGICAL_SIZE_TSL.width, 5);
-    // Display Y is flipped vs retail pixels (AurGUI top-origin → Three.js bottom-origin)
+    // Display Y is flipped vs pixels (AurGUI top-origin → Three.js bottom-origin)
     expect(uv.y).toBeCloseTo(1 - LIVE_TSL_SOUTH.expectedPixel.y / AREA_MAP_LOGICAL_SIZE_TSL.height, 5);
   });
 
@@ -189,7 +189,7 @@ describe("AreaMap retail coordinates", () => {
     expect(fromInt!.mapPt2Y).toBeCloseTo(294 / height);
   });
 
-  test("toGridPixels matches retail GetGridPixelFromMapPixel", () => {
+  test("toGridPixels matches engine GetGridPixelFromMapPixel", () => {
     ApplicationProfile.GameKey = GameEngineType.TSL;
     const areaMap = new AreaMap();
     applyMapFields(areaMap, LIVE_TSL_SOUTH);

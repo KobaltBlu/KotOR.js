@@ -8,7 +8,7 @@ import { GameEngineType } from "@/enums/engine";
 export class SaveLoadAudit {
   static PREFIX = '[SaveLoadAudit]';
 
-  /** Retail WriteTable ValBoolean size */
+  /** WriteTable ValBoolean size */
   static valBooleanByteSize(booleanCount: number): number {
     return (booleanCount >> 3) + 1;
   }
@@ -66,7 +66,7 @@ export class SaveLoadAudit {
   }
 
   /**
-   * Retail round-trip checklist — logs pass/fail for critical fidelity items.
+   * save round-trip checklist — logs pass/fail for critical fidelity items.
    * Grep: [SaveLoadAudit] checklist
    */
   static runRetailCompatChecklist(when: 'export' | 'load' = 'export'){
@@ -76,7 +76,7 @@ export class SaveLoadAudit {
     const pm = GameState.PartyManager;
     const isTSL = GameState.GameKey == GameEngineType.TSL;
 
-    // Static formula smoke (retailWriteTable)
+    // Static formula smoke (odysseyWriteTable)
     const vbSamples = [0, 1, 7, 8, 9, 16];
     const vbOk = vbSamples.every(n => {
       const expected = (n >> 3) + 1;
@@ -201,7 +201,7 @@ export class SaveLoadAudit {
       detail: isTSL ? '0x21 bytes TSL' : '6 bytes K1',
     });
 
-    // K1 must not emit TSL-only / non-retail fields on export samples
+    // K1 must not emit TSL-only / non- fields on export samples
     if(!isTSL){
       const pc = pm?.Player || (typeof (GameState as any).getCurrentPlayer === 'function'
         ? (GameState as any).getCurrentPlayer()
@@ -234,7 +234,7 @@ export class SaveLoadAudit {
         }
       }
       checks.push({
-        name: 'K1 creature export omits TSL/non-retail fields',
+        name: 'K1 creature export omits TSL/non-engine fields',
         ok: sampleCreatureOk,
         detail: sampleDetail,
       });
@@ -254,7 +254,7 @@ export class SaveLoadAudit {
     }
 
     // Accepted-empty stores (not gaps unless scripts rely on them mid-playthrough)
-    // Limbo: retailAddObjectToLimbo is load-only — empty at playtime is retail-accurate
+    // Limbo: odysseyAddObjectToLimbo is load-only — empty at playtime is engine-accurate
     if(when === 'export' && (mod?.limboCreatures?.length ?? 0) === 0){
       SaveLoadAudit.summary('accepted-empty', { limbo: 0 });
     }

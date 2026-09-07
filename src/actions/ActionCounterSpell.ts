@@ -14,7 +14,7 @@ import { Utility } from "@/utility/Utility";
 
 /**
  * ActionCounterSpell class.
- * Retail counter-spell action
+ * counter-spell action
  * Holds counter-spell stance (IN_PROGRESS) while the target remains valid;
  * interrupt is resolved during SpellCastInstance conjure.
  *
@@ -66,9 +66,9 @@ export class ActionCounterSpell extends Action {
     if(distance > range || owner.area !== target.area){
       // Out of range: if not already in combat, feedback + ERROR; else chase
       // (requeue Move + Check + CounterSpell). combatState stands in for the
-      // retail "already fighting" gate.
+      // "already fighting" gate.
       if(!owner.combatData?.combatState){
-        // Retail SendFeedbackMessage(7) → CC 0xb → GetGUIString/TLK 0x595
+        // SendFeedbackMessage(7) → CC 0xb → GetGUIString/TLK 0x595
         GameState.FeedbackMessageManager.SendFeedbackMessage(7);
         this.leaveStance(owner);
         return ActionStatus.ERROR;
@@ -99,11 +99,11 @@ export class ActionCounterSpell extends Action {
       return ActionStatus.COMPLETE;
     }
 
-    // Retail: ActivityManager(4) + SetCombatMode(4) / activity 0x800
+    // : ActivityManager(4) + SetCombatMode(4) / activity 0x800
     owner.enterCounterSpellMode();
     owner.setFacingObject(target);
     owner.setAnimationState(ModuleCreatureAnimState.CASTOUT1_LP);
-    // Retail counter-spell action — BroadcastCombatStateToParty + ResolveInitiative
+    // counter-spell action — BroadcastCombatStateToParty + ResolveInitiative
     owner.broadcastCombatStateToParty(target);
     owner.resolveInitiative();
     return ActionStatus.IN_PROGRESS;

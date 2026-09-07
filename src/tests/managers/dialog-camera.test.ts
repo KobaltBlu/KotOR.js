@@ -34,7 +34,7 @@ describe('isLoopingDialogStuntAnimation (IsLoopingDialogStuntAnimation)', () => 
 });
 
 describe('isAspyrCarthDialogCameraHack', () => {
-  it('matches the retail "carth" conversation (case-insensitive)', () => {
+  it('matches the engine "carth" conversation (case-insensitive)', () => {
     expect(isAspyrCarthDialogCameraHack('carth')).toBe(true);
     expect(isAspyrCarthDialogCameraHack('Carth')).toBe(true);
     expect(isAspyrCarthDialogCameraHack('CARTH')).toBe(true);

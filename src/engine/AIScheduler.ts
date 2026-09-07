@@ -22,7 +22,7 @@ const AI_OVERFLOW_US = 75000;
  * Priority AI scheduler for Module.tick — budgeted `aiUpdate`, every-frame
  * locomotion, and delayed-event drain between object updates.
  *
- * @see Retail CServerAIMaster (Odyssey fidelity reference)
+ * @see CServerAIMaster (Odyssey fidelity reference)
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -286,7 +286,7 @@ export class AIScheduler {
     const tm = module.timeManager;
     if(!tm) return;
 
-    // Process oldest-first; retail removes head. Our queue is unsorted array —
+    // Process oldest-first; removes head. Our queue is unsorted array —
     // scan and execute all currently due.
     let i = module.eventQueue.length - 1;
     for(; i >= 0; i--){

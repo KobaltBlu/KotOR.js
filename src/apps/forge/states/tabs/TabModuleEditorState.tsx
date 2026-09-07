@@ -95,7 +95,7 @@ export class TabModuleEditorState extends TabState {
   showKeymapHelp: boolean = false;
   /** Preview spawn: module entry, editor camera, or waypoint tag */
   previewSpawnMode: 'entry' | 'camera' | 'waypoint' = 'entry';
-  /** Non-permanent warp waypoint tag for preview (retail area-transition style). */
+  /** Non-permanent warp waypoint tag for preview (area-transition style). */
   previewWarpWaypointTag: string | null = null;
   private ghostBoundsToken: number = 0;
 
@@ -204,7 +204,7 @@ export class TabModuleEditorState extends TabState {
     this.addEventListener('onKeyUp', this.onKeyUp.bind(this));
 
     // Add ground mesh and ghost preview to scene when scene is available
-    // The scene is initialized in UI3DRenderer, but buildScene() is called when canvas is attached
+    // The scene is initialized in UI3DRenderer, but buildScene is called when canvas is attached
     const addMeshesToScene = () => {
       if(this.ui3DRenderer?.scene){
         if(!this.ui3DRenderer.scene.children.includes(this.groundMesh)){
@@ -598,7 +598,7 @@ export class TabModuleEditorState extends TabState {
     }
     
     this.ui3DRenderer.destroy();
-    // this.disposeLayout();
+    // this.disposeLayout;
     super.destroy();
   }
 
@@ -835,7 +835,7 @@ export class TabModuleEditorState extends TabState {
       return;
     }
     // if(this.controlMode === TabModuleEditorControlMode.SELECT){
-    //   this.ui3DRenderer.selectObject(undefined);
+    // this.ui3DRenderer.selectObject(undefined);
     // }
   }
 
@@ -1753,7 +1753,7 @@ export class TabModuleEditorState extends TabState {
     return wp;
   }
 
-  /** Open the area's .pth in the path editor (creates tab; deep editing stays there). */
+  /** Open the area's.pth in the path editor (creates tab; deep editing stays there). */
   async openAreaPath(): Promise<void> {
     const area = this.module?.area;
     if(!area){

@@ -98,11 +98,11 @@ export class ModulePlaceable extends ModuleObject {
   dieWhenEmpty: boolean = false;
   isCorpse: boolean = false;
   /**
-   * Retail IsBodyBagVisible — ordinary bags start hidden under a KeepCorpse shell.
+   * IsBodyBagVisible — ordinary bags start hidden under a KeepCorpse shell.
    * Persisted as 1 on save (shells are never serialized); runtime may hide.
    */
   isBodyBagVisible: boolean = true;
-  /** Creature/object id that spawned this body bag (retail). */
+  /** Creature/object id that spawned this body bag. */
   sourceCreatureId: number = 0;
   groundPile: boolean = false;
   lightState: any;
@@ -133,7 +133,7 @@ export class ModulePlaceable extends ModuleObject {
     this.autoRemoveKey = false;
     this.bodyBag = 0;
     this.closeLockDC = 0;
-    // Retail LoadObjectState Commandable default = 1
+    // LoadObjectState Commandable default = 1
     this.commandable = true;
     this.currentHP = 0;
     this.description = new CExoLocString();
@@ -156,7 +156,7 @@ export class ModulePlaceable extends ModuleObject {
     this.paletteID = 0;
     this.partyInteract = false;
     this.plot = false;
-    // retail ctor portrait_id = 0xFFFF (save writes empty Portrait when unset)
+    // ctor portrait_id = 0xFFFF (save writes empty Portrait when unset)
     this.portraitId = 0xFFFF;
     this.ref = 0;
     this.static = false;
@@ -196,7 +196,7 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   /**
-   * Retail EventHandler script case 7 (OnDialog).
+   * EventHandler script case 7 (OnDialog).
    * Empty or "default" OnDialog → k_hen_dialogue01.
    */
   onDialog(oSpeaker: ModuleObject, listenPatternNumber = -1, conversation: DLGObject = undefined, matchedSubstrings: string[] = []): boolean {
@@ -231,7 +231,7 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   /**
-   * Retail AIUpdate — heartbeat/effects + action queue.
+   * AIUpdate — heartbeat/effects + action queue.
    */
   aiUpdate(delta = 0){
     super.aiUpdate(delta);
@@ -278,7 +278,7 @@ export class ModulePlaceable extends ModuleObject {
     // Action queue processed in aiUpdate
 
     // if(this.animState == ModulePlaceableAnimState.DEFAULT){
-    // if(this.isOpen()){
+    // if(this.isOpen){
     // this.setAnimationState(ModulePlaceableAnimState.OPEN);
     // }else{
     // this.setAnimationState(ModulePlaceableAnimState.CLOSE);
@@ -399,7 +399,7 @@ export class ModulePlaceable extends ModuleObject {
   isUseable(){
     // Hidden bags are looted via the retained corpse shell, not direct select
     if(this.isBodyBag && !this.isBodyBagVisible) return false;
-    // Retail Static placeables are non-interactable (Bash / selection).
+    // Static placeables are non-interactable (Bash / selection).
     return !!this.useable && !this.static;
   }
 
@@ -415,7 +415,7 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   /**
-   * Retail GetReticlePoint
+   * GetReticlePoint
    * corpses use rootdummy; others fall back to lookathook.
    */
   getReticleNode(){
@@ -426,7 +426,7 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   isOpen(){
-    // Retail: open or destroyed — Bash is suppressed for both.
+    // : open or destroyed — Bash is suppressed for both.
     return this.openState || this.state == ModulePlaceableState.DEAD;
   }
 
@@ -543,7 +543,7 @@ export class ModulePlaceable extends ModuleObject {
     this.animStateInfo.started = false;
     if(animState == ModulePlaceableAnimState.OPEN) this.animStateInfo.loop = true;
     if(animState == ModulePlaceableAnimState.DEFAULT) this.animStateInfo.loop = true;
-    // Resting OPEN / DEAD sync openState for Bash gates (Retail).
+    // Resting OPEN / DEAD sync openState for Bash gates.
     if(animState == ModulePlaceableAnimState.OPEN){
       this.setOpenState(ModulePlaceableState.OPEN);
     }else if(animState == ModulePlaceableAnimState.DEAD){
@@ -559,7 +559,7 @@ export class ModulePlaceable extends ModuleObject {
         this.playObjectSound(ModulePlaceableObjectSound.OPENED);
       break;
       case ModulePlaceableEvent.OPEN_END:
-        // Retail: has_inventory = !corpse, but corpse bags with items remain useable
+        // : has_inventory = !corpse, but corpse bags with items remain useable
         if(this.hasInventory || (this.isCorpse && this.inventory.length > 0)){
           GameState.MenuManager.MenuContainer.AttachContainer(this);
           GameState.MenuManager.MenuContainer.open();
@@ -741,7 +741,7 @@ export class ModulePlaceable extends ModuleObject {
       const shadowSize = this.getAppearance()?.shadowsize ?? 1;
       void this.applyShadowBlob(ModuleObject.shadowBlobResRefFromPlaceableShadowSize(shadowSize));
 
-      // Queue bake for late spawns; area load finishes with bakeArea().
+      // Queue bake for late spawns; area load finishes with bakeArea.
       PlaceableLightmapBaker.noteActivity(this);
       PlaceableLightmapBaker.invalidate(this);
     }catch(e){
@@ -983,7 +983,7 @@ export class ModulePlaceable extends ModuleObject {
     if(this.template.RootNode.hasField('PaletteID'))
       this.paletteID = this.template.getFieldByLabel('PaletteID').getValue();
 
-    // Retail LoadPlaceable: Invulnerable aliases Plot; missing Static → !Useable;
+    // LoadPlaceable: Invulnerable aliases Plot; missing Static → !Useable;
     // Static forces plot = 1.
     if(this.template.RootNode.hasField('Invulnerable')){
       this.plot = !!this.template.getFieldByLabel('Invulnerable').getValue();
@@ -1092,18 +1092,18 @@ export class ModulePlaceable extends ModuleObject {
       }
     }
 
-    // Retail LoadPlaceable: closed placeables settle on CLOSE (10076) rather than DEFAULT
+    // LoadPlaceable: closed placeables settle on CLOSE (10076) rather than DEFAULT
     if(this.animState === ModulePlaceableAnimState.DEFAULT && !this.isOpen()){
       this.setAnimationState(ModulePlaceableAnimState.CLOSE);
     }
 
-    // Retail PostProcess — hardness applies a permanent
+    // PostProcess — hardness applies a permanent
     // DamageResistance effect (subtype |= 2, int0 = 0x3FFF, int1 = hardness, is_exposed = 0).
     if((this.hardness | 0) > 0 && !this.effects.some(e => e.type === GameEffectType.EffectDamageResistance)){
       const eDamageResist = new GameEffectFactory.EffectDamageResistance();
-      // Retail PostProcess: subtype & 0xfff8 | 2 (PERMANENT only — not MAGICAL|PERMANENT = 10)
+      // PostProcess: subtype & 0xfff8 | 2 (PERMANENT only — not MAGICAL|PERMANENT = 10)
       eDamageResist.setSubTypeUnMasked(GameEffectDurationType.PERMANENT);
-      // Retail ApplyEffect with = 1 during PostProcess → SkipOnLoad = 1
+      // ApplyEffect with = 1 during PostProcess → SkipOnLoad = 1
       eDamageResist.setSkipOnLoad(true);
       eDamageResist.setInt(0, 0x3FFF);
       eDamageResist.setInt(1, this.hardness | 0);
@@ -1143,7 +1143,7 @@ export class ModulePlaceable extends ModuleObject {
 
   destroy(): void {
     PlaceableLightmapBaker.dispose(this);
-    // Retail SpawnBodyBag accepts placeables with items when destroyable
+    // SpawnBodyBag accepts placeables with items when destroyable
     if(!this.isBodyBag && this.isDestroyable){
       this.spawnBodyBag();
     }
@@ -1175,7 +1175,7 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   /**
-   * Spawn a body bag from this placeable's inventory (retail placeable SpawnBodyBag).
+   * Spawn a body bag from this placeable's inventory (placeable SpawnBodyBag).
    */
   spawnBodyBag(): number {
     if(this.isBodyBag) return ModuleObjectConstant.OBJECT_INVALID;
@@ -1187,7 +1187,7 @@ export class ModulePlaceable extends ModuleObject {
   save(){
     let gff = new GFFObject();
     gff.FileType = 'UTP ';
-    // Retail Placeable List element struct type
+    // Placeable List element struct type
     gff.RootNode.type = 9;
 
     const actionList = gff.RootNode.addField( this.actionQueueToActionList() );
@@ -1223,13 +1223,13 @@ export class ModulePlaceable extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsBodyBagVisible') ).setValue(this.isBodyBagVisible ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsCorpse') ).setValue(this.isCorpse ? 1 : 0);
 
-    // Retail SavePlaceable: ItemList only when inventory non-empty
+    // SavePlaceable: ItemList only when inventory non-empty
     if(this.inventory.length){
       const itemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ItemList') );
       for(let i = 0; i < this.inventory.length; i++){
         const invItem = this.inventory[i];
         const itemStruct = invItem.save();
-        // Retail SavePlaceable writes ObjectId before SaveItem
+        // SavePlaceable writes ObjectId before SaveItem
         itemStruct.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(invItem.id >>> 0);
         itemList.addChildStruct(itemStruct);
       }
@@ -1244,7 +1244,7 @@ export class ModulePlaceable extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Min1HP') ).setValue(this.min1HP);
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
 
-    //Scripts — retail SavePlaceable field order includes OnDialog
+    //Scripts — SavePlaceable field order includes OnDialog
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnClosed) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnClosed]?.name || '');
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnDamaged) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnDamaged]?.name || '');
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnDeath) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnDeath]?.name || '');
@@ -1266,7 +1266,7 @@ export class ModulePlaceable extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'OpenLockDC') ).setValue(this.openLockDC);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PartyInteract') ).setValue(this.partyInteract);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Plot') ).setValue(this.plot);
-    // Retail SavePlaceable: PortraitId if id != -1, else Portrait RESREF
+    // SavePlaceable: PortraitId if id != -1, else Portrait RESREF
     if((this.portraitId | 0) !== 0xFFFF && (this.portraitId | 0) !== -1){
       gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') ).setValue(this.portraitId);
     }else{
@@ -1417,7 +1417,7 @@ export class ModulePlaceable extends ModuleObject {
     placeable.currentHP = 15;
     placeable.hardness = 5;
     placeable.fort = 16;
-    // Retail: has_inventory = !is_corpse; plot = !is_corpse; dieWhenEmpty for non-corpse bags
+    // : has_inventory = !is_corpse; plot = !is_corpse; dieWhenEmpty for non-corpse bags
     placeable.hasInventory = !bodyBag.corpse;
     placeable.isCorpse = !!bodyBag.corpse;
     placeable.min1HP = true;
@@ -1437,7 +1437,7 @@ export class ModulePlaceable extends ModuleObject {
   /**
    * Create a body-bag placeable from a creature or placeable, move droppable loot,
    * and schedule EventSpawnBodyBag (~500ms) to place it in the area.
-   * @param placeableAppearance Optional retail GetBodyBagAppearance override.
+   * @param placeableAppearance Optional GetBodyBagAppearance override.
    */
   static spawnBodyBagFrom(
     source: ModuleObject,
@@ -1457,7 +1457,7 @@ export class ModulePlaceable extends ModuleObject {
       bagRule.name = 38151;
       bagRule.corpse = 0;
     }
-    // Retail GetBodyBagAppearance: **** / missing → backpack placeable (3)
+    // GetBodyBagAppearance: **** / missing → backpack placeable (3)
     const appearanceId = (placeableAppearance != null && placeableAppearance > 0)
       ? placeableAppearance
       : (bagRule.appearance > 0 ? bagRule.appearance : 3);
@@ -1477,7 +1477,7 @@ export class ModulePlaceable extends ModuleObject {
     GameState.ModuleObjectManager.RegisterObject(placeable);
     placeable.acquireItemsFromObject(source, true);
 
-    // Retail: corpse bags with no items clear useable; keep has_inventory = !corpse
+    // : corpse bags with no items clear useable; keep has_inventory = !corpse
     if(bagRule.corpse){
       placeable.useable = placeable.inventory.length > 0;
     }
@@ -1608,7 +1608,7 @@ export class ModulePlaceable extends ModuleObject {
     model.userData.moduleObject = this;
     model.hasCollision = true;
     model.userData.tag = this.getTag();
-    // Retail/area load path: container carries world transform (position === container.position)
+    // /area load path: container carries world transform (position === container.position)
     if(this.container.parent !== GameState.group.placeables){
       GameState.group.placeables.add(this.container);
     }

@@ -3,7 +3,7 @@ import { NW_FALSE, NW_TRUE } from "@/nwscript/NWScriptConstants";
 
 /**
  * Mirrors NWScript GetCommandable — must accept placeables/doors, not only creatures.
- * (Deadeye win: k_ptar_invis_speaker OnDialog → k_ai_master requires GetCommandable().)
+ * (Deadeye win: k_ptar_invis_speaker OnDialog → k_ai_master requires GetCommandable.)
  */
 function getCommandable(obj: any): number {
   if(!obj || typeof obj !== 'object'){

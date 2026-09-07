@@ -6,8 +6,8 @@ import {
   hasLensFlareData,
   isBeyondFlareRadius,
   stepFlareOcclusionFade,
-  RETAIL_FLARE_SPEED,
-  RETAIL_LENS_FLARE_SIZE,
+  ODYSSEY_FLARE_SPEED,
+  ODYSSEY_LENS_FLARE_SIZE,
 } from "@/utility/odyssey-lens-flare-math";
 
 describe("odyssey-lens-flare-math", () => {
@@ -33,7 +33,7 @@ describe("odyssey-lens-flare-math", () => {
       expect(flareRadiusFalloff(100, 100)).toBeCloseTo(0);
     });
 
-    it("skips divide when radius is 0 (retail guard)", () => {
+    it("skips divide when radius is 0 (engine guard)", () => {
       expect(flareRadiusFalloff(5, 0)).toBe(-5);
       expect(flareRadiusFalloff(0, 0)).toBe(0);
     });
@@ -49,9 +49,9 @@ describe("odyssey-lens-flare-math", () => {
   });
 
   describe("flareElementSize", () => {
-    it("matches retail size formula with default lensFlareSize", () => {
+    it("matches engine size formula with default lensFlareSize", () => {
       // size = flaresize * (radius-dist)/radius * 0.1
-      expect(flareElementSize(10, 50, 100)).toBeCloseTo(10 * 0.5 * RETAIL_LENS_FLARE_SIZE);
+      expect(flareElementSize(10, 50, 100)).toBeCloseTo(10 * 0.5 * ODYSSEY_LENS_FLARE_SIZE);
     });
 
     it("applies custom lensFlareSize", () => {
@@ -116,23 +116,23 @@ describe("odyssey-lens-flare-math", () => {
 
   describe("stepFlareOcclusionFade", () => {
     it("fades up when clear and does not skip draw", () => {
-      const r = stepFlareOcclusionFade(0.5, false, 0.1, RETAIL_FLARE_SPEED);
-      expect(r.fade).toBeCloseTo(0.5 + RETAIL_FLARE_SPEED * 0.1);
+      const r = stepFlareOcclusionFade(0.5, false, 0.1, ODYSSEY_FLARE_SPEED);
+      expect(r.fade).toBeCloseTo(0.5 + ODYSSEY_FLARE_SPEED * 0.1);
       expect(r.skipDraw).toBe(false);
     });
 
     it("clamps fade up to 1", () => {
-      const r = stepFlareOcclusionFade(0.95, false, 1, RETAIL_FLARE_SPEED);
+      const r = stepFlareOcclusionFade(0.95, false, 1, ODYSSEY_FLARE_SPEED);
       expect(r.fade).toBe(1);
       expect(r.skipDraw).toBe(false);
     });
 
     it("fades down when occluded and skips when fade hits 0", () => {
-      const mid = stepFlareOcclusionFade(0.5, true, 0.1, RETAIL_FLARE_SPEED);
-      expect(mid.fade).toBeCloseTo(0.5 - RETAIL_FLARE_SPEED * 0.1);
+      const mid = stepFlareOcclusionFade(0.5, true, 0.1, ODYSSEY_FLARE_SPEED);
+      expect(mid.fade).toBeCloseTo(0.5 - ODYSSEY_FLARE_SPEED * 0.1);
       expect(mid.skipDraw).toBe(false);
 
-      const zero = stepFlareOcclusionFade(0.1, true, 1, RETAIL_FLARE_SPEED);
+      const zero = stepFlareOcclusionFade(0.1, true, 1, ODYSSEY_FLARE_SPEED);
       expect(zero.fade).toBe(0);
       expect(zero.skipDraw).toBe(true);
     });

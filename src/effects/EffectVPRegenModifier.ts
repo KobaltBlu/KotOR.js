@@ -2,7 +2,7 @@ import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 
 /**
- * EffectVPRegenModifier — retail type 0x71 (ExecuteCommandEffectVPRegenModifier).
+ * EffectVPRegenModifier — type 0x71 (ExecuteCommandEffectVPRegenModifier).
  * int[0] = vitality/HP regen modifier amount.
  *
  * @file EffectVPRegenModifier.ts

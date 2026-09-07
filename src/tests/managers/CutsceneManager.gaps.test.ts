@@ -186,7 +186,7 @@ describe('CutsceneManager party-dialog leader switch fade', () => {
     expect(CutsceneManager.needsPartyDialogLeaderSwitch(npc as any, cnpcLeader as any)).toBe(true);
   });
 
-  test('skips switch when PartyInteract is set (retail gate)', () => {
+  test('skips switch when PartyInteract is set (engine gate)', () => {
     expect(CutsceneManager.needsPartyDialogLeaderSwitch(
       { ...npc, partyInteract: 1 } as any,
       cnpcLeader as any,

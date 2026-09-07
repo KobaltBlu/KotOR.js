@@ -40,7 +40,7 @@ jest.mock("@/utility/BitWise", () => ({
 
 import { InGameAreaTransition } from "@/game/kotor/menu/InGameAreaTransition";
 
-describe("InGameAreaTransition hide/show (retail UpdateAreaTransitionGUI)", () => {
+describe("InGameAreaTransition hide/show (engine UpdateAreaTransitionGUI)", () => {
   let menu: InGameAreaTransition;
 
   beforeEach(() => {
@@ -76,7 +76,7 @@ describe("InGameAreaTransition hide/show (retail UpdateAreaTransitionGUI)", () =
     expect(menu.bVisible).toBe(false);
   });
 
-  it("keeps the panel during TransPending (retail SendPanelToBack path)", () => {
+  it("keeps the panel during TransPending (engine SendPanelToBack path)", () => {
     menu.transitionObject = { id: 1 } as any;
     menu.bVisible = true;
     mockGameState.module.area.transPending = 1;

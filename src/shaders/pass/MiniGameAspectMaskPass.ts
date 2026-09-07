@@ -10,7 +10,7 @@ import {
  * MiniGameAspectMaskPass — hard 4:3 black bars for swoop / turret.
  *
  * Place after MG HUD + framebuffer FX and before GUI so menus / fade /
- * cursor stay full-bleed while the world is masked to retail framing.
+ * cursor stay full-bleed while the world is masked to framing.
  *
  * @file MiniGameAspectMaskPass.ts
  */

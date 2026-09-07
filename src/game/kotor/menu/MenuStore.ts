@@ -8,7 +8,7 @@ import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
 import type { ModuleCreature, ModuleItem, ModuleStore } from "@/module";
 import { BitWise } from "@/utility/BitWise";
 
-/** Retail CheckFilter modes (store_p filter buttons). */
+/** CheckFilter modes (store_p filter buttons). */
 export enum StoreFilter {
   ALL = 0,
   WEAPONS = 1,
@@ -16,7 +16,7 @@ export enum StoreFilter {
   MISC = 3,
 }
 
-/** Retail BuySellFlag (retail + InitializeStoreType). */
+/** BuySellFlag (+ InitializeStoreType). */
 export enum StoreBuySellFlag {
   BUY_ONLY = 1,
   SELL_ONLY = 2,
@@ -28,7 +28,7 @@ const TLK_INFINITE = 41951;
 const TLK_CONFIRM_SELL = 41985;
 const TLK_CONFIRM_BUY = 42020;
 
-/** Armor / wearable slots used by retail CheckFilter case 2 (0x78b). */
+/** Armor / wearable slots used by CheckFilter case 2 (0x78b). */
 const STORE_ARMOR_SLOTS =
   ModuleCreatureArmorSlot.HEAD |
   ModuleCreatureArmorSlot.ARMOR |
@@ -125,7 +125,7 @@ export class MenuStore extends GameMenu {
   }
 
   /**
-   * Retail CheckFilter — equipableSlots masks.
+   * CheckFilter — equipableSlots masks.
    * WEAPONS: 0x30 (RIGHTHAND|LEFTHAND); ARMOR: 0x78b; MISC: no slots.
    */
   checkFilter(item: ModuleItem): boolean {
@@ -184,7 +184,7 @@ export class MenuStore extends GameMenu {
   }
 
   /**
-   * Retail InitializeStoreType — BuySellFlag drives buy/sell and Examine visibility.
+   * InitializeStoreType — BuySellFlag drives buy/sell and Examine visibility.
    */
   initializeStoreType(){
     const flag = this.getBuySellFlag();
@@ -205,7 +205,7 @@ export class MenuStore extends GameMenu {
     super.open();
   }
 
-  /** Retail expensive threshold: GetSkillRank(0)*50; sell capped at 250. */
+  /** expensive threshold: GetSkillRank(0)*50; sell capped at 250. */
   getExpensiveThreshold(forSell: boolean): number {
     const pc = this.creature || GameState.PartyManager.party[0];
     if(!pc){
@@ -273,7 +273,7 @@ export class MenuStore extends GameMenu {
   }
 
   /**
-   * Retail OnControlEntered stock / on-hand labels.
+   * OnControlEntered stock / on-hand labels.
    * K1: LBL_STOCK_VALUE is always the selected item's stack (or Infinite on that item).
    * K2 buy: STOCK = store item stack/Infinite; ONHAND = party matching count.
    * K2 sell: STOCK = store matching count; ONHAND = party possession of selected item.
@@ -319,7 +319,7 @@ export class MenuStore extends GameMenu {
   }
 
   /**
-   * Retail SellItem — infinite store stock is copied with Infinite cleared
+   * SellItem — infinite store stock is copied with Infinite cleared
    * and StackSize=1 before AcquireItem.
    */
   buyItem(item: ModuleItem){
@@ -330,7 +330,7 @@ export class MenuStore extends GameMenu {
     }
     GameState.PartyManager.AddGold(-price);
     this.LBL_CREDITS_VALUE?.setText(String(GameState.PartyManager.Gold || 0));
-    // InventoryManager.addItem clears Infinite (retail SellItem / CreatureAcquireItem).
+    // InventoryManager.addItem clears Infinite (SellItem / CreatureAcquireItem).
     GameState.InventoryManager.addItem(item.template, true);
     if(!item.isInfinite?.()){
       item.setStackSize(item.getStackSize() - 1);

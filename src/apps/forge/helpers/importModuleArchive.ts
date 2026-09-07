@@ -1,5 +1,5 @@
 /**
- * Inspect and flatten a module .rim / .erf / .mod into a Forge project folder.
+ * Inspect and flatten a module.rim /.erf /.mod into a Forge project folder.
  *
  * @file importModuleArchive.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -31,9 +31,9 @@ export interface ModuleArchivePreview {
   hasLayout: boolean;
   /** True when entry-area `.vis` is present in the archive (or companion merge set). */
   hasVis: boolean;
-  /** Archive lacks .lyt but retail KEY/BIF has it. */
+  /** Archive lacks.lyt but KEY/BIF has it. */
   layoutInGame: boolean;
-  /** Archive lacks .vis but retail KEY/BIF has it. */
+  /** Archive lacks.vis but KEY/BIF has it. */
   visInGame: boolean;
   warnings: string[];
   isCompanionRim: boolean;
@@ -217,7 +217,7 @@ function archiveHasRes(entries: ModuleArchiveEntry[], resRef: string, resType: n
   return entries.some((entry) => entry.resType === resType && entryResRefMatches(entry, ref));
 }
 
-/** True when KEY/BIF can Demand this resource — retail incomplete-module case. */
+/** True when KEY/BIF can Demand this resource — incomplete-module case. */
 export function gameHasResource(resRef: string, resType: number): boolean {
   const ref = String(resRef || "").trim().toLowerCase();
   if (!ref.length) {
@@ -246,16 +246,16 @@ export function layoutPresenceForEntries(
   const warnings: string[] = [];
   if (!hasLayout && layoutInGame) {
     warnings.push(
-      `Entry area "${area}" has no .lyt in the archive; retail game files provide it (incomplete module restore).`,
+      `Entry area "${area}" has no .lyt in the archive; original game files provide it (incomplete module restore).`,
     );
   } else if (!hasLayout) {
     warnings.push(
-      `Entry area "${area}" has no .lyt in the archive or game files (retail would load 0 layout rooms).`,
+      `Entry area "${area}" has no .lyt in the archive or game files (would load 0 layout rooms).`,
     );
   }
   if (!hasVis && visInGame) {
     warnings.push(
-      `Entry area "${area}" has no .vis in the archive; retail game files provide it.`,
+      `Entry area "${area}" has no .vis in the archive; original game files provide it.`,
     );
   } else if (!hasVis) {
     warnings.push(`Entry area "${area}" has no .vis in the archive or game files.`);

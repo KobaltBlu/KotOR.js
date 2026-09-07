@@ -5,7 +5,7 @@ import { LevelUpManager } from "@/managers/LevelUpManager";
 import { addSpellToDraft } from "@/engine/rules/level-up";
 
 /**
- * MenuPowerLevelUp — retail (pwrlvlup).
+ * MenuPowerLevelUp — (pwrlvlup).
  */
 export class MenuPowerLevelUp extends GameMenu {
 

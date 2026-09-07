@@ -90,7 +90,7 @@ describe('ModuleSaveTable', () => {
     expect(ModuleSaveTable.autoSaveDue).toBe(true);
   });
 
-  it('getAutoSaveOnEnter parses retail values', () => {
+  it('getAutoSaveOnEnter parses engine values', () => {
     GameState.TwoDAManager.datatables.set('modulesave', makeTable({
       0: { modulename: 'x', autosaveonenter: 'FORCE' },
     }));

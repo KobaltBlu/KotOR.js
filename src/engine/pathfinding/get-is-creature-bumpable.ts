@@ -8,7 +8,7 @@ import { GameState } from "@/GameState";
  * Returns true when `other` is a soft friendly that may be pushed
  * (BumpFriends) rather than treated as a hard path blocker.
  *
- * Retail gates:
+ * gates:
  * - reputation > 9
  * - other is non-party / non-player-UI — mirrored as !isPartyMember
  * - Party / player-UI mover: never bumps world creatures out of the way
@@ -49,13 +49,13 @@ export function getIsCreatureBumpable(
   if(!self || !other || self === other) return false;
   if(other.isDead?.()) return false;
 
-  // Retail: GetReputation(self, other) > 9
+  // : GetReputation(self, other) > 9
   const rep = typeof self.getReputation === 'function'
     ? self.getReputation(other)
     : 0;
   if(!(rep > 9)) return false;
 
-  // Retail: party / player-UI creatures are not bumpable
+  // : party / player-UI creatures are not bumpable
   if(isPartyUiCreature(other)) return false;
   // Party followers use FollowLeader direct-line recovery, not world-creature pushes.
   if(isPartyUiCreature(self)) return false;

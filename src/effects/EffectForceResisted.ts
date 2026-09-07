@@ -8,7 +8,7 @@ import { AttackSummaryStrRef } from "@/combat/attack-summary-feedback";
 import { FeebackMessageColor } from "@/enums/engine/FeedbackMessageColor";
 
 /**
- * EffectForceResisted — retail OnApplyForceResisted.
+ * EffectForceResisted — effect apply.
  * Spawns temporary VFX 0xFC5 on the target and status-summary
  * "<CUSTOM0> Force Resisted!" (TLK 38598). Scripts also call
  * DisplayFeedBackText for the short Resisted/Immune/Saved floaty.
@@ -19,7 +19,7 @@ export class EffectForceResisted extends GameEffect {
   constructor(){
     super();
     this.type = GameEffectType.EffectForceResisted;
-    // objectList[0] : oTarget (retail)
+    // objectList[0] : oTarget 
   }
 
   onApply(){
@@ -49,7 +49,7 @@ export class EffectForceResisted extends GameEffect {
       FeebackMessageColor.INFO,
     );
 
-    // Retail GetWasForcePowerSuccessful — clear on caster (effect creator)
+    // GetWasForcePowerSuccessful — clear on caster (effect creator)
     const creator = this.getCreator?.() || this.creator;
     if(BitWise.InstanceOfObject(creator, ModuleObjectType.ModuleCreature)){
       const cd = (creator as any).combatData;

@@ -58,7 +58,7 @@ const App = function() {
         )
       );
       document.body.style.display = '';
-      // getProfileByKey();
+      // getProfileByKey;
     })
   };
 
@@ -123,7 +123,7 @@ const App = function() {
   }, [appContext.profileCategories])
 
   const onBtnMinimize = (e: React.MouseEvent<HTMLDivElement>) => {
-    // e.preventDefault();
+    // e.preventDefault;
     if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
       window.electron.minimize();
     }

@@ -16,12 +16,12 @@ import {
   excludeFailedInterAreaPortal,
   tryUseInterAreaTransition,
 } from "@/engine/pathfinding/inter-area-path";
-import { computeAwayVector } from "@/engine/pathfinding/compute-away-vector";
+import { findAwayVector } from "@/engine/pathfinding/find-away-vector";
 import { canPathToPoint } from "@/engine/pathfinding/can-path-to";
 import { isInUseRange } from "@/actions/use-range";
 
 /**
- * ActionCheckPath — retail path-validation ActionTypes.
+ * ActionCheckPath — path-validation ActionTypes.
  * Runtime movement pathfinds inside MoveToPoint; these enqueue the
  * corresponding move when params resolve so ActionList/scripts behave correctly.
  *
@@ -162,14 +162,14 @@ export class ActionCheckMoveAwayFromObject extends ActionCheckPath {
     const fleeFrom = this.getParameter<ModuleObject>(0);
     const range = this.getParameter<number>(1) || 10.0;
     const bRun = this.getParameter<number>(2) ? 1 : 0;
-    // Retail retry counter (param often 5–10); default 5
+    // retry counter (param often 5–10); default 5
     let retries = this.getParameter<number>(3);
     if(typeof retries !== 'number') retries = 5;
 
     if(!BitWise.InstanceOfObject(fleeFrom, ModuleObjectType.ModuleObject)){
       return ActionStatus.ERROR;
     }
-    // Same-area gate (retail)
+    // Same-area gate 
     if(fleeFrom.area && owner.area && fleeFrom.area !== owner.area){
       return ActionStatus.COMPLETE;
     }
@@ -182,12 +182,12 @@ export class ActionCheckMoveAwayFromObject extends ActionCheckPath {
       return ActionStatus.COMPLETE;
     }
 
-    const away = computeAwayVector(owner, fleeFrom.position, range);
+    const away = findAwayVector(owner, fleeFrom.position, range);
     if(!canPathToPoint(owner, away)){
       return ActionStatus.ERROR;
     }
 
-    // Retail AddActionToFront order → final queue: Wait, Move, Recheck
+    // AddActionToFront order → final queue: Wait, Move, Recheck
     const recheck = new GameState.ActionFactory.ActionCheckMoveAwayFromObject(undefined, this.groupId);
     recheck.setParameter(0, ActionParameterType.DWORD, fleeFrom.id);
     recheck.setParameter(1, ActionParameterType.FLOAT, range);
@@ -213,7 +213,7 @@ export class ActionCheckMoveAwayFromObject extends ActionCheckPath {
 }
 
 /**
- * Retail: inter-area pathfinding check action
+ * : inter-area pathfinding check action
  * Advances inter-area waypoint list; SetIntraAreaGoal → MoveTo + Wait(0.75).
  * When in use-range of the portal: OpenDoor / LoadModule / JumpTo linked.
  */
@@ -275,7 +275,7 @@ export class ActionCheckInterAreaPathfinding extends ActionCheckPath {
       if(tryUseInterAreaTransition(owner, wp, this.groupId)){
         return ActionStatus.COMPLETE;
       }
-      // Retail PlotInterAreaPath: exclude failed portal + recompute
+      // PlotInterAreaPath: exclude failed portal + recompute
       if(excludeFailedInterAreaPortal(owner, wp.object.id)){
         const recheck = new GameState.ActionFactory.ActionCheckInterAreaPathfinding(undefined, this.groupId);
         owner.actionQueue.addFront(recheck);
@@ -285,7 +285,7 @@ export class ActionCheckInterAreaPathfinding extends ActionCheckPath {
       return ActionStatus.ERROR;
     }
 
-    // Retail Add*ToFront order → final: Wait, Move, Recheck
+    // Add*ToFront order → final: Wait, Move, Recheck
     const recheck = new GameState.ActionFactory.ActionCheckInterAreaPathfinding(undefined, this.groupId);
     owner.actionQueue.addFront(recheck);
 
@@ -431,12 +431,12 @@ export class ActionCheckMoveAwayFromLocation extends ActionCheckPath {
       return ActionStatus.COMPLETE;
     }
 
-    const away = computeAwayVector(owner, threat, range);
+    const away = findAwayVector(owner, threat, range);
     if(!canPathToPoint(owner, away)){
       return ActionStatus.ERROR;
     }
 
-    // Retail: re-queue Check, MoveTo, Wait → final Wait, Move, Recheck
+    // : re-queue Check, MoveTo, Wait → final Wait, Move, Recheck
     const recheck = new GameState.ActionFactory.ActionCheckMoveAwayFromLocation(undefined, this.groupId);
     recheck.setParameter(0, ActionParameterType.FLOAT, x);
     recheck.setParameter(1, ActionParameterType.FLOAT, y);

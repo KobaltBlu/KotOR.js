@@ -47,7 +47,7 @@ export class BaseItem {
   baseCost: number = 0;
   stacking: number = 1;
   itemMultiplier: number = 1;
-  /** retail — PARTYTABLE PT_COST_MULT_VALUE (defaults to 1.0; not itemmultiplier). */
+  /** — PARTYTABLE PT_COST_MULT_VALUE (defaults to 1.0; not itemmultiplier). */
   costMultiplier: number = 1;
   description: number = 0;
   invSoundType: number = -1;

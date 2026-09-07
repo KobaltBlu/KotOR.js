@@ -8,7 +8,7 @@ import { BitWise } from "@/utility/BitWise";
 /**
  * ActionWaitForEndOfRound class.
  *
- * Retail wait-for-end-of-round action —
+ * wait-for-end-of-round action —
  * IN_PROGRESS while round_started && !GetSpellActionPending; else COMPLETE.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -42,7 +42,7 @@ export class ActionWaitForEndOfRound extends Action {
       return ActionStatus.COMPLETE;
     }
 
-    // Retail GetSpellActionPending — casting in progress ends the wait
+    // GetSpellActionPending — casting in progress ends the wait
     if(combatRound.getSpellActionPending()){
       return ActionStatus.COMPLETE;
     }

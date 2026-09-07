@@ -84,7 +84,7 @@ describe("Pass AH recipe filters", () => {
     expect(itemCreateRecipeVisible(aligned, 0, () => 20, 10, 2)).toBe(true);
   });
 
-  it("itemCreateAlignBucket matches retail thresholds", () => {
+  it("itemCreateAlignBucket matches engine thresholds", () => {
     expect(itemCreateAlignBucket(0)).toBe(3);
     expect(itemCreateAlignBucket(0x28)).toBe(3);
     expect(itemCreateAlignBucket(0x29)).toBe(1);

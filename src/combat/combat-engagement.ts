@@ -2,7 +2,7 @@ import { FollowerCamera } from "@/engine/FollowerCamera";
 import { GameState } from "@/GameState";
 
 /**
- * Retail ExcitedDuration.2da row indices (SetExcitedState).
+ * ExcitedDuration.2da row indices (SetExcitedState).
  * DURATION column is remaining timer in milliseconds; only applied when greater than current.
  */
 export enum ExcitedDurationRow {
@@ -11,7 +11,7 @@ export enum ExcitedDurationRow {
   SpellCast = 2,
 }
 
-/** Retail SetCombatState(true) always refreshes the combat timer to 8000ms. */
+/** SetCombatState(true) always refreshes the combat timer to 8000ms. */
 export const COMBAT_STATE_DURATION_MS = 8000;
 
 /** Fallback ExcitedDuration.2da DURATION values when 2DA missing. */
@@ -62,7 +62,7 @@ function isLivingCombatOid(target: { isDead?: () => boolean } | null | undefined
 }
 
 /**
- * Retail UpdateCombatMode living-target checks (attack / spell / sticky oid).
+ * UpdateCombatMode living-target checks (attack / spell / sticky oid).
  * Corpses fail GetDead and do not keep client combat mode active.
  */
 export function hasLivingCombatTarget(creature: ClientCombatModeCreature | undefined | null): boolean {
@@ -79,9 +79,9 @@ export function hasLivingCombatTarget(creature: ClientCombatModeCreature | undef
 }
 
 /**
- * Retail CSWCCreature::SetCombatMode(0/1).
+ * (0/1).
  * Per-creature bit; when the creature is the controlled PC, also sets
- * CClientExoApp combat_mode (camera + overlay ShowActionQueue).
+ * client app combat_mode (camera + overlay ShowActionQueue).
  */
 export function setClientCombatMode(
   creature: ClientCombatModeCreature | undefined | null,
@@ -92,14 +92,14 @@ export function setClientCombatMode(
   }
   const next = !!on;
   creature.clientCombatMode = next;
-  // Retail: only the controlled PC updates CClientExoApp::combat_mode + camera.
+  // : only the controlled PC updates + camera.
   if(creature === GameState.getCurrentPlayer?.()){
     FollowerCamera.setCombatCameraActive(next);
   }
 }
 
 /**
- * Retail UpdateCombatMode (creature living-target path).
+ * UpdateCombatMode (creature living-target path).
  * On while living attack/spell targets exist; off when none remain.
  */
 export function updateClientCombatMode(
@@ -118,7 +118,7 @@ export function updateClientCombatMode(
 }
 
 /**
- * Retail CClientExoApp::GetCombatMode — controlled PC client combat-mode bit.
+ * — controlled PC client combat-mode bit.
  */
 export function getClientCombatMode(): boolean {
   const pc = GameState.getCurrentPlayer?.();

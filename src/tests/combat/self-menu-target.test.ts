@@ -1,6 +1,6 @@
 /**
  * Self / personal action-menu targeting regressions.
- * Retail GetSelfForcePowers / GetUsableItems stamp the controlled creature;
+ * GetSelfForcePowers / GetUsableItems stamp the controlled creature;
  * setAttackTarget must not rewrite CAST_SPELL / ITEM_CAST_SPELL targets.
  * @jest-environment node
  */

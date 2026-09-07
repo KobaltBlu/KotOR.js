@@ -40,7 +40,7 @@ describe('SWPriorityGroup.From2DA', () => {
     expect(group.playbackvariance).toBeCloseTo(0.3);
   });
 
-  test('**** maxplaying and interrupt use retail ctor defaults', () => {
+  test('**** maxplaying and interrupt use engine ctor defaults', () => {
     const group = SWPriorityGroup.From2DA({
       __index: 2,
       label: 'Streams_Music',
@@ -85,7 +85,7 @@ describe('AudioPriorityManager', () => {
     for(const key of Object.keys(groups)){
       delete groups[Number(key)];
     }
-    // Combat: interrupt=0 → deny at max (retail Play)
+    // Combat: interrupt=0 → deny at max (Play)
     groups[AudioPriorityGroup.COMBAT] = SWPriorityGroup.From2DA({
       __index: AudioPriorityGroup.COMBAT,
       label: 'Combat',

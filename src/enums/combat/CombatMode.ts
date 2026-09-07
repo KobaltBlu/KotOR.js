@@ -1,5 +1,5 @@
 /**
- * Retail creature combat mode ↔ SetActivity bits.
+ * creature combat mode ↔ SetActivity bits.
  *
  * @file CombatMode.ts
  * @see SetCombatMode, SetActivity

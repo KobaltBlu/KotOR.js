@@ -46,8 +46,8 @@ jest.mock("@/engine/pathfinding/test-safe-location-point", () => ({
   testSafeLocationPoint: () => true,
 }));
 
-jest.mock("@/engine/pathfinding/walk-update-location", () => ({
-  walkUpdateLocation: () => {},
+jest.mock("@/engine/pathfinding/update-creature-walk", () => ({
+  updateCreatureWalk: () => {},
 }));
 
 jest.mock("@/combat/attack-range", () => ({

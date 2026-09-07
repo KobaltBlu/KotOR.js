@@ -16,7 +16,7 @@ export class ForgePath extends ForgeGameObject {
   }
 
   async load(){
-    // No mesh yet — module editor opens area .pth via forge.module.openAreaPth
+    // No mesh yet — module editor opens area.pth via forge.module.openAreaPth
   }
 
   getEditorName(): string {

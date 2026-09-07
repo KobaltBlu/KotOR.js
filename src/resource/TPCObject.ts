@@ -16,7 +16,7 @@ import { ITPCExportOptions } from "@/interface/resource/ITPCExportOptions";
 const TPCHeaderLength = 128;
 
 /**
- * Retail CreateCubeTexture (uncompressed cubemaps only):
+ * CreateCubeTexture (uncompressed cubemaps only):
  * source face i is quarter-rotated clockwise CUBEMAP_FACE_ROTATIONS[i] times
  * and uploaded to GL face CUBEMAP_FACE_REMAP[i].
  * The DXT path (CreateProcessedCubeTexture) uploads faces in order, unrotated.
@@ -197,7 +197,7 @@ export class TPCObject {
   }
 
   /**
-   * Retail cycle TPCs often store mipMapCount=1 while packing a full
+   * cycle TPCs often store mipMapCount=1 while packing a full
    * per-frame mip chain (dataSize is then the whole pixel payload).
    * Using the header count would treat those smaller mips as later frames.
    */
@@ -235,8 +235,8 @@ export class TPCObject {
    * Extract DDS/mipmap data from the TPC.
    * @param compressMipMaps Keep DXT compressed (true) or decompress to RGBA (false).
    * @param options.stitchCycleFrames When true, rebuild cycle frames into one contact-sheet
-   *   atlas (Forge preview). Engine path keeps frames split — retail glImage
-   *   uploads one GL texture per frame.
+   * atlas (Forge preview). Engine path keeps frames split — glImage
+   * uploads one GL texture per frame.
    */
   getDDS( compressMipMaps: boolean = true, options?: { stitchCycleFrames?: boolean } ) {
 
@@ -283,9 +283,9 @@ export class TPCObject {
     let dataOffset = TPCHeaderLength;
 
     // TXI proceduretype cycle:
-    //  - Compressed (CreateProcessedTexture): sequential per-frame mip chains
-    //    with stride from GetCompressedContactSheetOffset (full chain, square frameW).
-    //  - Uncompressed (CreateTexture): 2D contact sheet + ImageGetSubImage.
+    // - Compressed (CreateProcessedTexture): sequential per-frame mip chains
+    // with stride from GetCompressedContactSheetOffset (full chain, square frameW).
+    // - Uncompressed (CreateTexture): 2D contact sheet + ImageGetSubImage.
     const isCycle = this.txi.procedureType == TXIPROCEDURETYPE.CYCLE
       && (this.txi.numx | 0) > 0 && (this.txi.numy | 0) > 0
       && (this.txi.numx * this.txi.numy) > 1;
@@ -383,7 +383,7 @@ export class TPCObject {
   }
 
   /**
-   * Compressed cycle TPCs — retail CreateProcessedTexture /
+   * Compressed cycle TPCs — CreateProcessedTexture /
    * GetCompressedContactSheetOffset.
    *
    * On disk: [frame0 full mip chain][frame1 full mip chain]... with stride
@@ -396,7 +396,7 @@ export class TPCObject {
     const frameCount = numx * numy;
     const frameW = Math.max(1, Math.floor(this.header.width / numx));
     const frameH = Math.max(1, Math.floor(this.header.height / numy));
-    // Retail GetBPP: DXT5 → 4, DXT1 → 3
+    // GetBPP: DXT5 → 4, DXT1 → 3
     const bpp = this.header.encoding == ENCODING.RGBA ? 4 : 3;
     const uploadMips = Math.max(1, this.header.mipMapCount);
     const dxtFlag = this.header.encoding == ENCODING.RGB ? dxtJs.flags.DXT1 : dxtJs.flags.DXT5;
@@ -498,7 +498,7 @@ export class TPCObject {
 
   /**
    * Uncompressed cycle contact sheet → per-frame mip chains.
-   * Retail CreateTexture ImageGetSubImage(x = (i%numx)*fw, y = (i/numx)*fh).
+   * CreateTexture ImageGetSubImage(x = (i%numx)*fw, y = (i/numx)*fh).
    */
   private splitUncompressedCycleContactSheet(dds: any): any {
     const numx = this.txi.numx | 0;
@@ -533,7 +533,7 @@ export class TPCObject {
     return dds;
   }
 
-  /** Retail ImageGetSubImage — RGBA8 rectangle copy. */
+  /** ImageGetSubImage — RGBA8 rectangle copy. */
   static extractRgbaSubImage(
     src: Uint8Array, srcW: number, srcH: number,
     x: number, y: number, w: number, h: number
@@ -550,8 +550,8 @@ export class TPCObject {
   }
 
   /**
-   * Retail GetCompressedContactSheetOffset.
-   * Returns byte offset to frameIndex's mip chain. Assumes square frames (retail uses frameW only).
+   * GetCompressedContactSheetOffset.
+   * Returns byte offset to frameIndex's mip chain. Assumes square frames (uses frameW only).
    * bpp == 4 → DXT5 (16-byte blocks), else DXT1 (8-byte blocks).
    */
   static getCompressedContactSheetOffset(frameIndex: number, frameWidth: number, bpp: number): number {
@@ -799,7 +799,7 @@ export class TPCObject {
   }
 
   //Convert the TPC into a THREE.CompressedTexture for use in the engine
-  // Retail glImage — cycle textures get one GL tid per frame.
+  // glImage — cycle textures get one GL tid per frame.
   toCompressedTexture(){
     let images = [];
     let texDatas = this.getDDS( true );
@@ -813,7 +813,7 @@ export class TPCObject {
         tex.minFilter = THREE.LinearFilter;
       }
       tex.format = texDatas.format;
-      // Retail CreateTexture — default wrap is GL_REPEAT when TXI clamp bits are clear.
+      // CreateTexture — default wrap is GL_REPEAT when TXI clamp bits are clear.
       tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
       tex.needsUpdate = true;
       (tex as any).bumpMapType = 'NORMAL';
@@ -832,7 +832,7 @@ export class TPCObject {
         const frameTex = buildFrameTexture(frameMips, texDatas.width, texDatas.height);
         cycleFrames.push(frameTex);
       }
-      // Index 0 is the returned texture itself (mirrors retail gl_textures[0] == first_gl_texture)
+      // Index 0 is the returned texture itself (matches engine behavior gl_textures[0] == first_gl_texture)
       const _texture = cycleFrames[0];
       _texture.cycleFrames = cycleFrames;
       for ( let f = 1; f < cycleFrames.length; f++ ) {
@@ -857,15 +857,15 @@ export class TPCObject {
 
       if ( texDatas.isCubemap ) {
         const faces = texDatas.mipmaps.length / texDatas.mipmapCount;
-        // Only the uncompressed path is remapped/rotated by retail (CreateCubeTexture);
+        // Only the uncompressed path is remapped/rotated by (CreateCubeTexture);
         // DXT cubemaps (CreateProcessedCubeTexture) upload faces in order, unrotated.
-        const applyRetailOrientation = !this.header.compressed;
+        const applyOdysseyCubemapOrientation = !this.header.compressed;
         for ( let f = 0; f < faces; f ++ ) {
-          const targetFace = applyRetailOrientation ? CUBEMAP_FACE_REMAP[ f ] : f;
+          const targetFace = applyOdysseyCubemapOrientation ? CUBEMAP_FACE_REMAP[ f ] : f;
           images[ targetFace ] = { mipmaps : [], width: texDatas.width, height: texDatas.height } as any;
           for ( let i = 0; i < texDatas.mipmapCount; i++ ) {
             const mipmap = texDatas.mipmaps[ f * texDatas.mipmapCount + i ];
-            if(applyRetailOrientation){
+            if(applyOdysseyCubemapOrientation){
               for(let r = 0; r < CUBEMAP_FACE_ROTATIONS[ f ]; r++){
                 mipmap.data = PixelManager.Rotate90deg(mipmap.data, 4, mipmap.width, mipmap.height);
               }
@@ -877,7 +877,7 @@ export class TPCObject {
         _texture.image.width = texDatas.width;
         _texture.image.height = texDatas.height;
         _texture.mipmaps = images[ 0 ].mipmaps;
-        // Retail CreateCubeTexture — GL_TEXTURE_CUBE_MAP with GL_CLAMP_TO_EDGE on S/T/R.
+        // CreateCubeTexture — GL_TEXTURE_CUBE_MAP with GL_CLAMP_TO_EDGE on S/T/R.
         // Mark as CubeTexture so Three binds via setTextureCube (WebGLRenderer.initTexture).
         (_texture as any).isCubeTexture = true;
         _texture.mapping = THREE.CubeReflectionMapping;
@@ -967,7 +967,7 @@ export class TPCObject {
       }
       return sum + n;
     }, 0);
-    // Retail cycle TPCs set mipMapCount=1 and dataSize to the whole pixel blob
+    // cycle TPCs set mipMapCount=1 and dataSize to the whole pixel blob
     // so CResTPC can find TXI without knowing about numx/numy.
     const headerMipMapCount = cycle && compressed ? 1 : mipMapCount;
     const dataSize = !compressed ? 0 : (cycle ? payloadBytes : mip0Size);

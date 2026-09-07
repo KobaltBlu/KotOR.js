@@ -35,7 +35,7 @@ export class DLGObject {
   resref: string;
   gff: GFFObject;
   conversationType: number;
-  /** Root ComputerType BYTE — default 0 (retail LoadDialog). */
+  /** Root ComputerType BYTE — default 0 (LoadDialog). */
   computerType: number = 0;
   entryList: DLGNode[] = [];
   replyList: DLGNode[] = [];
@@ -54,7 +54,7 @@ export class DLGObject {
   ambientTrack: string;
   unequipHeadItem: boolean;
   unequipItems: boolean;
-  /** Root Skippable BYTE — default true (retail LoadDialog). */
+  /** Root Skippable BYTE — default true (LoadDialog). */
   skippable: boolean = true;
   isAnimatedCutscene: boolean;
   animatedCameraResRef: string;
@@ -63,9 +63,9 @@ export class DLGObject {
   oldHitCheck: boolean;
   postProcOwner: number;
   alienRaceOwner: number;
-  /** DLG root DelayEntry — default entry delay in seconds when node Delay is -1 (retail). */
+  /** DLG root DelayEntry — default entry delay in seconds when node Delay is -1. */
   delayEntry: number = 0;
-  /** DLG root DelayReply — default reply delay in seconds (retail). */
+  /** DLG root DelayReply — default reply delay in seconds. */
   delayReply: number = 0;
 
   constructor(resref = ''){
@@ -89,7 +89,7 @@ export class DLGObject {
       this.conversationType = conversationType.getValue();
     }
 
-    // Retail LoadDialog default ComputerType = 0
+    // LoadDialog default ComputerType = 0
     if(this.gff.RootNode.hasField('ComputerType')){
       this.computerType = this.gff.RootNode.getFieldByLabel('ComputerType').getValue() & 0xff;
     }else{
@@ -128,7 +128,7 @@ export class DLGObject {
       }
     }
 
-    // Retail LoadDialog default Skippable = 1
+    // LoadDialog default Skippable = 1
     if(this.gff.RootNode.hasField('Skippable')){
       this.skippable = this.gff.RootNode.getFieldByLabel('Skippable').getValue() ? true : false;
     }else{
@@ -489,20 +489,20 @@ export class DLGObject {
   }
 
   /**
-   * Load the dialog AmbientTrack (retail LoadAmbientTrackForDialog).
+   * Load the dialog AmbientTrack (LoadAmbientTrackForDialog).
    * Empty / missing track destroys any prior dialog stream without recreating.
    */
   async loadBackgroundMusic() {
     const audio = AudioEngine.GetAudioEngine();
     if (!this.ambientTrack) {
-      // Retail empty LoadAmbientTrack: hard-destroy prior source (no fade).
+      // empty LoadAmbientTrack: hard-destroy prior source (no fade).
       audio.dialogMusicAudioEmitter.stop();
       return;
     }
     const bgm = await AudioLoader.LoadMusic(this.ambientTrack);
     if(!bgm){ return; }
     audio.setAudioBuffer('DIALOG', bgm.buffer as ArrayBuffer, this.ambientTrack);
-    // Retail: new streaming sound source → looping off; Play never SetLooping.
+    // : new streaming sound source → looping off; Play never SetLooping.
     // AIL loop_count with looping off → 1 (play once). Play's 4th arg is STREAMMUSIC path, not loop.
     // Layers over ducked area BGM (do not stop area).
     audio.dialogMusicAudioEmitter.play(false);

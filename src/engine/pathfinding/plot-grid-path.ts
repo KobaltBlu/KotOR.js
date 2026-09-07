@@ -17,9 +17,9 @@ import { getPathStepTolerance } from "@/engine/pathfinding/path-point-creature-d
  */
 
 const MAX_ALONG = 96;
-/** Retail PlotGridPath expands DFS budget up to along + 0x24 (36). */
+/** PlotGridPath expands DFS budget up to along + 0x24 (36). */
 const MAX_LATERAL = 36;
-/** retail abort after 0x3f recursive frames. */
+/** abort after 0x3f recursive frames. */
 const MAX_DFS_DEPTH = 64;
 const MAX_NODES = 12000;
 
@@ -148,7 +148,7 @@ export function plotGridPath(
     return hit.ok || hit.clearT >= 0.85;
   };
 
-  // Retail widens: along+2 … along+36
+  // widens: along+2 … along+36
   const lateralPasses = [8, 16, maxLateralCap].filter(
     (v, i, arr) => v > 0 && v <= maxLateralCap && arr.indexOf(v) === i
   );

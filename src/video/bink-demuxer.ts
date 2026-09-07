@@ -177,7 +177,7 @@ export class BinkDemuxer {
   }
 
   // Lightweight structural check: does this payload look like a Bink1 video packet header?
-  // We read the same sequence of trees as PlaneContext.readAllTrees() for one plane (no row data).
+  // We read the same sequence of trees as PlaneContext.readAllTrees for one plane (no row data).
   public validateVideoHeader(pkt: Uint8Array, versionChar: string, hasAlpha: boolean, width: number, height: number): boolean {
     try {
       const br = new BitReaderLE(pkt);

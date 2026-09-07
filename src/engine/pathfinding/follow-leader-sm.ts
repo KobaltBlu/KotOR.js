@@ -33,7 +33,7 @@ export const FOLLOW_PATH_REPATH_DRIFT = 1.25;
 export const FOLLOW_STEP_ANIM_EPS = 0.02;
 
 export type FollowStepResult = {
-  /** Spend remaining inner-loop budget (retail iVar14 == 1). */
+  /** Spend remaining inner-loop budget (iVar14 == 1). */
   continueInner: boolean;
   /** Request JumpToPoint / teleport this frame. */
   teleport: boolean;
@@ -47,7 +47,7 @@ const _sample = new THREE.Vector3();
 const _moveGoal = new THREE.Vector3();
 
 /**
- * Retail QuickWalk_FollowLeader rate: GetWalkRate / GetRunRate × movementSpeed.
+ * QuickWalk_FollowLeader rate: GetWalkRate / GetRunRate × movementSpeed.
  * Stealth activity forces walk (QuickWalk GetActivity(1)); without STEALTH_RUN
  * (0xc5) K2 GetWalkRate stays on walk even when otherwise running.
  */
@@ -56,7 +56,7 @@ export function getEffectiveFollowRate(owner: ModuleCreature, run: boolean): num
   const hasStealthRun =
     typeof owner.getHasFeat === "function" &&
     owner.getHasFeat(CombatFeatType.STEALTH_RUN);
-  // Retail: stealth activity → GetWalkRate; STEALTH_RUN allows run while stealthed
+  // : stealth activity → GetWalkRate; STEALTH_RUN allows run while stealthed
   const useRun = run && (!stealth || hasStealthRun);
   const base = useRun
     ? (owner.getRunSpeed?.() || 5.4)
@@ -68,7 +68,7 @@ export function getEffectiveFollowRate(owner: ModuleCreature, run: boolean): num
 }
 
 /**
- * Frame step budget — retail QuickWalk_FollowLeader outer uses
+ * Frame step budget — QuickWalk_FollowLeader outer uses
  * `dt_ms * rate_milli * 1e-06` (= delta * worldRate) after dist² bands.
  * walkSpeedFactor is still ramped for MoveTo handoff continuity.
  */
@@ -90,7 +90,7 @@ export function computeFollowStepBudget(
 }
 
 /**
- * Drive one FollowLeader SM iteration (retail do/while switch).
+ * Drive one FollowLeader SM iteration (do/while switch).
  */
 export function stepFollowLeaderState(
   runtime: FollowLeaderRuntime,
@@ -184,7 +184,7 @@ function handleFindPath(
   runtime.pathPointY = offset.y;
   runtime.pathPointZ = offset.z;
   runtime.waitFrames = 0;
-  // Retail: safe lateral → OffsetWaitDest (6); else PathWaitDest (7)
+  // : safe lateral → OffsetWaitDest (6); else PathWaitDest (7)
   runtime.state = ok
     ? FollowLeaderState.OffsetWaitDest
     : FollowLeaderState.PathWaitDest;
@@ -192,7 +192,7 @@ function handleFindPath(
 }
 
 /**
- * Retail WaitingForPath — hold until ring count > 4, then pick
+ * WaitingForPath — hold until ring count > 4, then pick
  * trail back-point; safety gate; LOS to lateral → MovingToOffset, else center
  * → MovingToPath, else FindPath.
  */
@@ -203,7 +203,7 @@ function handleWaitingForPath(
   offset: THREE.Vector3
 ): FollowStepResult {
   void offset;
-  // Retail: if (!(4 < count)) return 2 — hold
+  // : if (!(4 < count)) return 2 — hold
   if(partyFollowPath.count <= FOLLOW_RING_WARM_COUNT){
     runtime.stuckCounter = 0;
     runtime.stuckTimer = 0;
@@ -226,7 +226,7 @@ function handleWaitingForPath(
   const dz = leader.position.z - owner.position.z;
   const distLeaderSq = dx * dx + dy * dy + dz * dz;
 
-  // Retail: hold while in-safety and leader within 7 units
+  // : hold while in-safety and leader within 7 units
   if(runtime.inSafetyRange !== 0 && distLeaderSq < FOLLOW_SAFETY_DIST_SQ){
     runtime.stuckCounter = 0;
     runtime.stuckTimer = 0;
@@ -244,7 +244,7 @@ function handleWaitingForPath(
   runtime.goalY = _lateral.y;
   runtime.goalZ = _lateral.z;
 
-  // Sample start: lastSample (retail); seeded on Reset
+  // Sample start: lastSample; seeded on Reset
   _sample.set(runtime.lastSampleX, runtime.lastSampleY, runtime.lastSampleZ);
 
   const area = owner.area ?? GameState.module?.area;
@@ -276,7 +276,7 @@ function hasFollowLos(
 }
 
 /**
- * Retail OffsetWaitDest / PathWaitDest
+ * OffsetWaitDest / PathWaitDest
  * walk ring indices from cursor→goal; hold while writeHead not yet at goal,
  * else → Offset (1) or FollowingPath (3).
  */
@@ -317,7 +317,7 @@ function handleWaitDest(
 
   if(foundGoal && goalIdx === cursor){
     // At goal index: stay waiting if pathPoint is closer to ring[cursor]
-    // than Recalc goal (retail dist² compare)
+    // than Recalc goal (dist² compare)
     const p = partyFollowPath.points[cursor];
     if(p){
       const dPath =
@@ -339,7 +339,7 @@ function handleWaitDest(
     runtime.state === FollowLeaderState.OffsetWaitDest ||
     runtime.state === FollowLeaderState.ToOffsetWaitDest
   ){
-    // Retail OffsetWaitDest → Offset (1) when already in formation band.
+    // OffsetWaitDest → Offset (1) when already in formation band.
     // If still outside comfort, enter MovingToPath so we actually walk
     // otherwise FindPath↔WaitDest↔Offset thrash freezes companions far away.
     const distGoal = Math.hypot(
@@ -350,14 +350,14 @@ function handleWaitDest(
       ? FollowLeaderState.MovingToPath
       : FollowLeaderState.Offset;
   }else{
-    // Retail PathWaitDest → FollowingPath (3)
+    // PathWaitDest → FollowingPath (3)
     runtime.state = FollowLeaderState.FollowingPath;
   }
   return { continueInner: true, teleport: false };
 }
 
 /**
- * Retail Offset — AdvancePointOnPath + formation lateral sample,
+ * Offset — AdvancePointOnPath + formation lateral sample,
  * direct SetPosition toward that sample (no parkIdle). Leave → MovingToPath
  * only on LOS fail or distOffset ≥ FOLLOW_REPATH.
  */
@@ -370,7 +370,7 @@ function handleOffset(
   distLeader: number,
   distOffset: number
 ): FollowStepResult {
-  // Retail Offset success path clears stuck counters
+  // Offset success path clears stuck counters
   runtime.stuckTimer = 0;
   runtime.stuckCounter = 0;
   runtime.offsetStepped = false;
@@ -393,7 +393,7 @@ function handleOffset(
     delta
   );
 
-  // Seed path cursor (retail) from Recalc center if unset
+  // Seed path cursor from Recalc center if unset
   if(
     Math.abs(runtime.pathPointX) < 1e-8 &&
     Math.abs(runtime.pathPointY) < 1e-8 &&
@@ -417,7 +417,7 @@ function handleOffset(
   runtime.pathPointY = _center.y;
   runtime.pathPointZ = _center.z;
 
-  // Retail Offset — lerp formation laterals between ring[idx] and ring[idx−1]
+  // Offset — lerp formation laterals between ring[idx] and ring[idx−1]
   const idx = idxBox.value;
   const prevIdx = idx > 0 ? idx - 1 : FOLLOW_RING_SIZE - 1;
   const curr = partyFollowPath.points[idx];
@@ -462,7 +462,7 @@ function handleOffset(
     _sample.copy(owner.position);
   }
 
-  // Retail: LOS sample → new lateral; fail → MovingToPath when still outside
+  // : LOS sample → new lateral; fail → MovingToPath when still outside
   // comfort. If already within FOLLOW_COMFORT, stay Offset and park — otherwise
   // ActionFollowLeader's inner loop thrash Offset↔Moving forever (LOS fail then
   // comfort re-enter), leaving companions stuck on RUNNING with zero displacement.
@@ -509,7 +509,7 @@ function handleOffset(
     ) > 0.02;
 
   if(distToSample > 0.05 || sampleMoved){
-    // Retail FollowLeader — after Advance burns budget into state,
+    // FollowLeader — after Advance burns budget into state,
     // SetPosition toward that sample (not WalkUpdate trapezoid).
     const beforeX = owner.position.x;
     const beforeY = owner.position.y;
@@ -534,7 +534,7 @@ function handleMoving(
   if(distOffset <= FOLLOW_COMFORT){
     runtime.stuckTimer = 0;
     runtime.state = FollowLeaderState.Offset;
-    // Seed path cursor (retail) from Recalc center for AdvancePointOnPath
+    // Seed path cursor from Recalc center for AdvancePointOnPath
     const partyIdx = GameState.PartyManager?.party?.indexOf?.(owner) ?? -1;
     const slot = partyIdx === 2 ? 2 : 1;
     if(partyFollowPath.getFollowGoal(slot, _center)){
@@ -587,7 +587,7 @@ function handleMoving(
 }
 
 /**
- * Retail FollowLeader outer SetPosition toward last sample.
+ * FollowLeader outer SetPosition toward last sample.
  * Budget already burned by AdvancePointOnPath; step toward sample with
  * TestDirectLine / TestSafeLocationPoint gate.
  * @returns world units actually displaced this call
@@ -682,8 +682,8 @@ function isPartyCreatureId(id: number | undefined): boolean {
 }
 
 /**
- * Retail FollowLeader Moving* step: direct TestDirectLine to the next follow
- * path/sample point. Unlike generic WalkUpdateLocation, this does not call
+ * FollowLeader Moving* step: direct TestDirectLine to the next follow
+ * path/sample point. Unlike generic creature walk update, this does not call
  * BumpFriends, so followers cannot shove ambient creatures out of the way.
  */
 function applyFollowDirectMove(
@@ -765,7 +765,7 @@ function applyFollowDirectMove(
 }
 
 /**
- * Retail direct-line motion toward follow offset / path sample (Moving* states).
+ * direct-line motion toward follow offset / path sample (Moving* states).
  */
 export function driveTowardOffset(
   owner: ModuleCreature,

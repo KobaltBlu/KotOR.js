@@ -1,5 +1,5 @@
 /**
- * retail engine + death playback.
+ * engine + death playback.
  * LoadSounds, Go, Stop, OnDeath,
  * SetSoundVolume (engine Miles volume only).
  *
@@ -35,7 +35,7 @@ export class MGTrackFollowerAudio {
   }
 
   /**
-   * Retail LoadSounds: create looping 3D engine source when Engine resref valid.
+   * LoadSounds: create looping 3D engine source when Engine resref valid.
    */
   async load(): Promise<void> {
     if(this.destroyed){ return; }
@@ -72,7 +72,7 @@ export class MGTrackFollowerAudio {
     }
   }
 
-  /** Retail Go — Play engine if not already playing. */
+  /** Go — Play engine if not already playing. */
   go(x: number = 0, y: number = 0, z: number = 0){
     if(this.destroyed || this.going){ return; }
     this.going = true;
@@ -86,7 +86,7 @@ export class MGTrackFollowerAudio {
     }
   }
 
-  /** Retail Stop — Stop engine source. */
+  /** Stop — Stop engine source. */
   stop(){
     this.going = false;
     this.engineEmitter?.stop();
@@ -98,7 +98,7 @@ export class MGTrackFollowerAudio {
   }
 
   /**
-   * Retail OnDeath death oneshot after Stop (when default death path runs).
+   * OnDeath death oneshot after Stop (when default death path runs).
    * Volume 100; 127 when death resref is mgs_accelpad.
    */
   async playDeathSound(): Promise<void> {

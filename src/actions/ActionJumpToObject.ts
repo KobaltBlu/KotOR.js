@@ -12,7 +12,7 @@ import {
 import { applyAddToArea, applyLocalJump } from "@/actions/ActionJumpToPoint";
 
 /**
- * ActionJumpToObject — retail jump-to-object action.
+ * ActionJumpToObject — jump-to-object action.
  * Uses target object's area; AddToArea when crossing loaded areas.
  *
  * @file ActionJumpToObject.ts

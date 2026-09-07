@@ -13,7 +13,7 @@ export interface IOdysseyModelLoaderOptions {
   /** true: force cast; false: never cast (rooms/doors); omit: use MDL flagShadow */
   castShadow?: boolean,
   receiveShadow?: boolean, //force recieve shadow on mesh nodes
-  /** When false, retail TurnOffShadows — skip hull/volume projection for this model. */
+  /** When false, TurnOffShadows — skip hull/volume projection for this model. */
   shadowsEnabled?: boolean,
   /**
    * true (default): register light nodes with context.lightManager.
@@ -32,7 +32,7 @@ export interface IOdysseyModelLoaderOptions {
   parseChildren?: boolean,
   isHologram?: boolean,
   /**
-   * Object-level envmap resref applied to mesh materials, like retail SetEnvMap
+   * Object-level envmap resref applied to mesh materials, like envmap assign
    * (appearance.2da ENVMAP / baseitems partEnvMap). "DEFAULT" resolves to the
    * area's DefaultEnvMap. Takes precedence over the diffuse TXI envmaptexture.
    */

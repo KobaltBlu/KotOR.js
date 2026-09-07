@@ -15,7 +15,7 @@ export interface CameraOrientationXY {
   w: number;
 }
 
-/** Decode retail camera Orientation to editor yaw (rotation.z radians). */
+/** Decode camera Orientation to editor yaw (rotation.z radians). */
 export function yawFromCameraOrientation(
   orientation: Pick<THREE.Quaternion, "x" | "w"> | { x: number; w: number },
 ): number {
@@ -23,13 +23,13 @@ export function yawFromCameraOrientation(
 }
 
 /**
- * Encode editor yaw (rotation.z radians) to a retail-style camera Orientation.
+ * Encode editor yaw (rotation.z radians) to a -style camera Orientation.
  * y/z are 0; pitch lives in the separate Pitch field.
  */
 export function cameraOrientationFromYaw(yaw: number): THREE.Quaternion {
   const half = yaw / 2;
   // Inverse of yaw = -atan2(w, -x) * 2:
-  // atan2(w, -x) = -yaw/2  =>  w = sin(-yaw/2), -x = cos(-yaw/2)
+  // atan2(w, -x) = -yaw/2 => w = sin(-yaw/2), -x = cos(-yaw/2)
   return new THREE.Quaternion(-Math.cos(half), 0, 0, -Math.sin(half));
 }
 

@@ -16,7 +16,7 @@ export class ActionMenuItem {
   talent: any = undefined;
   icon = '';
   item: ModuleItem;
-  /** retail bit0: false → dimmed / inactive icon. */
+  /** bit0: false → dimmed / inactive icon. */
   enabled: boolean = true;
   name: string = '';
   /** TSL GetBehaviors — ActionMenuSelectBehavior AISTATE value. */
@@ -29,7 +29,7 @@ export class ActionMenuItem {
       action: undefined,
       talent: undefined,
       // Do not default to oTarget — self/force entries must stamp the caster
-      // (retail GetSelfForcePowers). Missing target falls through to activateMenuItem.
+      // (GetSelfForcePowers). Missing target falls through to activateMenuItem.
       target: undefined,
       icon: '',
       item: undefined,

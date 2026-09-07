@@ -6,17 +6,17 @@ import { TwoDAObject } from "@/resource/TwoDAObject";
 import { AudioEngine } from "@/audio/AudioEngine";
 import { SoundMode } from "@/enums/audio/SoundMode";
 
-/** Retail loading label TLK (LoadScreen show). */
+/** loading label TLK (LoadScreen show). */
 const TLK_LOADING = 42493;
-/** Retail saving title TLK. */
+/** saving title TLK. */
 const TLK_SAVING = 42528;
-/** Retail saving hint TLK. */
+/** saving hint TLK. */
 const TLK_SAVING_HINT = 41926;
 
 /**
  * LoadScreen class.
  *
- * retail — progress, loadscreenhints.2da tips, background image.
+ * — progress, loadscreenhints.2da tips, background image.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -35,9 +35,9 @@ export class LoadScreen extends GameMenu {
   LBL_LOADING: GUILabel;
   defaultTex: any;
 
-  /** Retail rotating GamePlayHint row index. */
+  /** rotating GamePlayHint row index. */
   protected gameplayHintIndex: number = 0;
-  /** Retail rotating StoryHint row index. */
+  /** rotating StoryHint row index. */
   protected storyHintIndex: number = 0;
 
   constructor(){
@@ -95,7 +95,7 @@ export class LoadScreen extends GameMenu {
   }
 
   /**
-   * Retail GetNextLoadScreenHintSTRREF GamePlayHint path.
+   * GetNextLoadScreenHintSTRREF GamePlayHint path.
    * Advances PartyManager.GameplayHint so NFO GAMEPLAYHINT persists across saves.
    */
   protected getNextGameplayHintStrRef(): number {
@@ -103,7 +103,7 @@ export class LoadScreen extends GameMenu {
     if(!table || table.RowCount <= 0) return 0;
 
     const rowCount = table.RowCount;
-    // Seed from PartyManager (retail client hint counter)
+    // Seed from PartyManager (client hint counter)
     this.gameplayHintIndex = (GameState.PartyManager.GameplayHint | 0) % rowCount;
     let index = this.gameplayHintIndex % rowCount;
     let row = table.getRowByIndex(index);
@@ -133,7 +133,7 @@ export class LoadScreen extends GameMenu {
   }
 
   /**
-   * Retail story-hint counter path (NFO STORYHINT / STORYHINT0).
+   * story-hint counter path (NFO STORYHINT / STORYHINT0).
    * Advances PartyManager.StoryHint even when UI currently shows GamePlayHint text.
    */
   protected advanceStoryHintIndex(){
@@ -205,7 +205,7 @@ export class LoadScreen extends GameMenu {
     super.show();
     this.setProgress(0);
     GameState.FadeOverlayManager.plane.visible = false;
-    // Retail ShowLoadScreen: SetSoundMode(4) (or 3) → PauseAllSounds
+    // ShowLoadScreen: SetSoundMode(4) (or 3) → PauseAllSounds
     AudioEngine.SetSoundMode(SoundMode.PAUSE_GUI, 0);
     this.soundModeHeld = true;
   }
@@ -214,7 +214,7 @@ export class LoadScreen extends GameMenu {
     super.hide();
     GameState.FadeOverlayManager.plane.visible = true;
     this.setProgress(0);
-    // Retail StartSounds / load complete: SetSoundMode(0)
+    // StartSounds / load complete: SetSoundMode(0)
     if(this.soundModeHeld){
       AudioEngine.SetSoundMode(SoundMode.POP, 0);
       this.soundModeHeld = false;

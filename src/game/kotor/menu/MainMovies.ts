@@ -4,7 +4,7 @@ import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 import { TwoDAObject } from "@/resource/TwoDAObject";
 import { GameFileSystem } from "@/utility/GameFileSystem";
 
-/** TLK 0xBB2E — retail hardcoded credits list entry label (K1 PopulateMovies). */
+/** TLK 0xBB2E — hardcoded credits list entry label (K1 PopulateMovies). */
 const TLK_CREDITS_ENTRY = 0xBB2E;
 
 export interface MovieItem {
@@ -23,7 +23,7 @@ export interface MovieItem {
    * The order of the movie in the list
    */
   order: number;
-  /** Retail credits row: custom_value == 0 → StartCreditSequence. */
+  /** credits row: custom_value == 0 → StartCreditSequence. */
   isCredits?: boolean;
 }
 
@@ -55,7 +55,7 @@ export class GUIMovieItem implements MovieItem {
 /**
  * MainMovies class.
  *
- * retail — PopulateMovies / OnMoviePicked / GetMovieShown.
+ * — PopulateMovies / OnMoviePicked / GetMovieShown.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -81,7 +81,7 @@ export class MainMovies extends GameMenu {
   }
 
   /**
-   * Retail `Movie%2d` INI key under [Movies Shown] — space-padded width 2 (`Movie 0` … `Movie10`).
+   * `Movie%2d` INI key under [Movies Shown] — space-padded width 2 (`Movie 0` … `Movie10`).
    */
   static movieShownIniKey(byteIndex: number): string {
     return `Movies Shown.Movie${String(byteIndex).padStart(2, ' ')}`;
@@ -146,7 +146,7 @@ export class MainMovies extends GameMenu {
   }
 
   /**
-   * Retail GetDirectoryList on MOVIES: / alias movies folders (0x80F filter).
+   * GetDirectoryList on MOVIES: / alias movies folders (0x80F filter).
    */
   protected async listMovieResrefsFromDisk(): Promise<string[]> {
     try{
@@ -164,7 +164,7 @@ export class MainMovies extends GameMenu {
   }
 
   /**
-   * Whether this build prepends the retail hardcoded credits entry (K1 only).
+   * Whether this build prepends the hardcoded credits entry (K1 only).
    */
   protected includeHardcodedCredits(): boolean {
     return true;
@@ -226,7 +226,7 @@ export class MainMovies extends GameMenu {
       });
     }
 
-    // Credits stays first; remaining entries sorted by Order (retail insert-by-order after credits).
+    // Credits stays first; remaining entries sorted by Order (insert-by-order after credits).
     const credits = this.movieList.filter(m => m.isCredits);
     const rest = this.movieList.filter(m => !m.isCredits).sort((a, b) => a.order - b.order);
     this.movieList = [...credits, ...rest];

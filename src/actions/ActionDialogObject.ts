@@ -32,16 +32,16 @@ export class ActionDialogObject extends Action {
     this.clearable = false;
 
     //PARAMS
-    // 0 - dword:   speaker object id
-    // 1 - string:  conversation resref
-    // 2 - int:     bPrivateConversation 
-    // 3 - int:     (?) nConversationType
-    // 4 - int:     ignoreStartRange
-    // 5 - dword:   listener object id (OBJECT_INVALID = use owner; bUseLeader → party[0])
+    // 0 - dword: speaker object id
+    // 1 - string: conversation resref
+    // 2 - int: bPrivateConversation 
+    // 3 - int: (?) nConversationType
+    // 4 - int: ignoreStartRange
+    // 5 - dword: listener object id (OBJECT_INVALID = use owner; bUseLeader → party[0])
     // 6-11 - string: sNameObjectToIgnore1-6 (DialogNonDependantList)
-    // 12 - int:    TSL nBarkX (−1 default)
-    // 13 - int:    TSL nBarkY (−1 default)
-    // 14 - int:    TSL bUseLeader
+    // 12 - int: TSL nBarkX (−1 default)
+    // 13 - int: TSL nBarkY (−1 default)
+    // 14 - int: TSL bUseLeader
   }
 
   update(delta: number = 0): ActionStatus {
@@ -74,7 +74,7 @@ export class ActionDialogObject extends Action {
 
     // Only resolve an explicit ActionStartConversation resref here.
     // Blank leaves this.conversation unset so OnDialog → BeginConversation uses
-    // StartDialog GetDialogResref on the retail dialog owner (often the last speaker).
+    // StartDialog GetDialogResref on the dialog owner (often the last speaker).
     if(!this.validate_conversation_resref){
       this.validate_conversation_resref = true;
       if(conversation_resref){
@@ -123,7 +123,7 @@ export class ActionDialogObject extends Action {
     this.owner.heardStrings = [];
     this.target.heardStrings = [];
 
-    // Retail ActionDialogObject fires OnDialog on oObjectToConverseWith (creatures,
+    // ActionDialogObject fires OnDialog on oObjectToConverseWith (creatures,
     // doors, placeables). Pass only an explicit resref DLG; blank leaves
     // instance.conversation unset so BeginConversation matches StartDialog.
     // If OnDialog runs but does not enter dialog (e.g. GetCommandable failed),

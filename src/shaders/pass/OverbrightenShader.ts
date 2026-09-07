@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 /**
- * OverbrightenShader — retail RenderOverlayOverbrighten +
+ * OverbrightenShader — RenderOverlayOverbrighten +
  * LUT init in InitializeFrameBufferModifications.
  *
  * Full-screen REPLACE (glBlendFunc GL_ONE, GL_ZERO). ARBfp ADD_SAT only merges
@@ -10,7 +10,7 @@ import * as THREE from 'three';
  * Shipping leaves this pass off: visualizePass1 is BSS-zero with no writers.
  * Enable only via VideoEffectManager.debugVisualizeOverbrighten.
  *
- * Curve (retail = 0.5):
+ * Curve (= 0.5):
  * f >= 0.5 → sqrt((f-0.5)*0.5) + 0.5
  * else → 2*f*f
  */
@@ -40,7 +40,7 @@ export const OverbrightenShader: OverbrightenShader = {
 
     void main() {
       vec4 c = texture2D( tDiffuse, vUv );
-      // Same LUT for R/G/B (retail builds three identical curves)
+      // Same LUT for R/G/B (builds three identical curves)
       float r = texture2D( tLut, vec2( c.r, 0.5 ) ).r;
       float g = texture2D( tLut, vec2( c.g, 0.5 ) ).r;
       float b = texture2D( tLut, vec2( c.b, 0.5 ) ).r;
@@ -48,7 +48,7 @@ export const OverbrightenShader: OverbrightenShader = {
     }`,
 };
 
-/** Build the retail overbrighten 1D LUT as a 256×1 DataTexture. */
+/** Build the overbrighten 1D LUT as a 256×1 DataTexture. */
 export function createOverbrightenLutTexture(): THREE.DataTexture {
   const data = new Uint8Array(256 * 4);
   for(let i = 0; i < 256; i++){

@@ -7,9 +7,9 @@ import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { ApplicationProfile } from "@/utility/ApplicationProfile";
 import type { ModuleWaypoint } from "@/module/ModuleWaypoint";
 
-/** Retail K1 logical map size (retail / GetMapPixelFromWorldCoord). */
+/** K1 logical map size (/ GetMapPixelFromWorldCoord). */
 export const AREA_MAP_LOGICAL_SIZE_K1 = { width: 440, height: 256 } as const;
-/** Retail TSL Aspyr logical map size (0x24C x 0x126). */
+/** TSL Aspyr logical map size (0x24C x 0x126). */
 export const AREA_MAP_LOGICAL_SIZE_TSL = { width: 588, height: 294 } as const;
 
 export interface AreaMapPixelResult {
@@ -81,7 +81,7 @@ export class AreaMap {
 
   }
 
-  /** Retail logical map pixel size for the active game. */
+  /** logical map pixel size for the active game. */
   static getLogicalMapSize(): { width: number, height: number } {
     // Use ApplicationProfile (not GameState) to avoid circular init via @/module barrel.
     if(ApplicationProfile.GameKey == GameEngineType.TSL){
@@ -91,7 +91,7 @@ export class AreaMap {
   }
 
   /**
-   * Retail NorthAxis world transform (CSWSAreaMap::Initialize / GetMapPixelFromWorldCoord).
+   * NorthAxis world transform (/ GetMapPixelFromWorldCoord).
    * NORTH identity, EAST negate both, SOUTH (y,-x), WEST (-y,x).
    */
   static transformWorldByNorthAxis(x: number, y: number, northAxis: number): { x: number, y: number } {
@@ -184,7 +184,7 @@ export class AreaMap {
   }
 
   /**
-   * Retail GetMapPixelFromWorldCoord — returns logical map pixels and in-bounds validity.
+   * GetMapPixelFromWorldCoord — returns logical map pixels and in-bounds validity.
    * Pass `logicalSize` when the caller already knows K1/TSL size (e.g. Dev Tools IPC).
    */
   toMapPixels(
@@ -226,7 +226,7 @@ export class AreaMap {
     const pixelX = Math.trunc((local.x - offsetX) / scaleX + 0.5);
     const pixelY = Math.trunc((local.y - offsetY) / scaleY + 0.5);
 
-    // Raw pixels kept for UV conversion even when OOB (retail returns -1,-1 to callers).
+    // Raw pixels kept for UV conversion even when OOB (returns -1,-1 to callers).
     this._mapPixels.x = pixelX;
     this._mapPixels.y = pixelY;
     this._mapPixels.valid = pixelX >= 0 && pixelX <= width && pixelY >= 0 && pixelY <= height;
@@ -235,8 +235,8 @@ export class AreaMap {
 
   /**
    * World XY → map UV for LBL_MapView.
-   * X matches retail GetMapPixelFromWorldCoord / logical width.
-   * Y is flipped: retail/AurGUI map pixels are top-origin (Y-down), while the
+   * X matches engine behavior GetMapPixelFromWorldCoord / logical width.
+   * Y is flipped: /AurGUI map pixels are top-origin (Y-down), while the
    * Three.js map scene is bottom-origin (Y-up) with the TGA on the plane.
    */
   toMapCoordinates(x: number = 0, y: number = 0): THREE.Vector2 {
@@ -248,7 +248,7 @@ export class AreaMap {
   }
 
   /**
-   * Retail GetGridPixelFromMapPixel — map pixels → fog grid cell.
+   * GetGridPixelFromMapPixel — map pixels → fog grid cell.
    */
   toGridPixels(mapPixelX: number, mapPixelY: number): { x: number, y: number, valid: boolean } {
     const { width, height } = AreaMap.getLogicalMapSize();
@@ -289,7 +289,7 @@ export class AreaMap {
   }
 
   /**
-   * Retail SetWorldPointExplored — default radius 1 (UpdateMapData).
+   * SetWorldPointExplored — default radius 1 (UpdateMapData).
    * Radius uses a manhattan diamond of grid cells; -1 reveals the entire map.
    */
   revealPosition(x: number = 0, y: number = 0, radius: number = 1){
@@ -376,7 +376,7 @@ export class AreaMap {
   }
 
   exportData(){
-    // Retail SaveMaps — AreaMap struct type 0x65 (101)
+    // SaveMaps — AreaMap struct type 0x65 (101)
     let dataStruct = new GFFStruct(0x65);
 
     this.data.fill(0);
@@ -434,7 +434,7 @@ export class AreaMap {
 
   /**
    * Load ARE MapPt as UV. FLOAT fields are already UV; INT fields are logical pixels
-   * (retail LoadAreaHeader) and are normalized by logical map size.
+   * (LoadAreaHeader) and are normalized by logical map size.
    */
   static readMapPtUV(struct: GFFStruct, label: string, logicalSize: number, fallback = 0): number {
     const field = struct.getFieldByLabel(label);

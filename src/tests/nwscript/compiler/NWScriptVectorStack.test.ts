@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  *
- * Retail VECTOR stack: X deepest, Z on top.
+ * VECTOR stack: X deepest, Z on top.
  * Run: npx jest --config jest.audio-priority.config.js src/nwscript/NWScriptVectorStack.test.ts --coverage=false
  */
 import { describe, expect, it, jest } from '@jest/globals';
@@ -17,7 +17,7 @@ jest.mock('@/resource/GFFStruct', () => ({ GFFStruct: class {} }));
 import { NWScriptDataType } from '@/enums/nwscript/NWScriptDataType';
 import { NWScriptStack } from '@/nwscript/NWScriptStack';
 
-/** Mirrors CALL_ACTION VECTOR arg pop (retail: Z on top). */
+/** Mirrors CALL_ACTION VECTOR arg pop (: Z on top). */
 function popVectorArg(stack: NWScriptStack): THREE.Vector3 {
   const z = stack.pop()?.value;
   const y = stack.pop()?.value;
@@ -32,7 +32,7 @@ function pushScriptVector(stack: NWScriptStack, x: number, y: number, z: number)
   stack.push(z, NWScriptDataType.FLOAT);
 }
 
-describe('NWScript VECTOR stack (retail Z-on-top)', () => {
+describe('NWScript VECTOR stack (engine Z-on-top)', () => {
   it('engine-returned Vector3 round-trips through push(VECTOR) + ACTION pop', () => {
     const stack = new NWScriptStack();
     stack.push(new THREE.Vector3(20, 0, 0), NWScriptDataType.VECTOR);

@@ -26,7 +26,7 @@ function resolveId(id: string, owner?: string): string {
 
 /**
  * Publish status bar items from a React view. Removed on unmount or when `active` is false.
- * Prefer `tab.setStatusBarItems()` from a TabState when the tab owns the contribution.
+ * Prefer `tab.setStatusBarItems` from a TabState when the tab owns the contribution.
  */
 export function useForgeStatusBarItems(
   items: Array<Omit<ForgeStatusBarItem, "id"> & { id: string }>,

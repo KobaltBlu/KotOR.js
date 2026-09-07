@@ -31,7 +31,7 @@ const MSG_YOU_WIN = 32334;
 const MSG_TIED = 32338;
 const MSG_YOU_LOSE = 32335;
 
-/** Retail PlayAITurn / DoAITurn return codes (next AI_state). */
+/** PlayAITurn / DoAITurn return codes (next AI_state). */
 enum PazaakAIResult {
   DONE = 0,
   DRAW = 1,
@@ -47,7 +47,7 @@ interface IPazaakSidecardPick {
 }
 
 /**
- * Retail FindPotentialSidecardTotal.
+ * FindPotentialSidecardTotal.
  * maximize=true → arg3==0 (highest non-bust total); false → arg3==1 (lowest).
  */
 function findPotentialSidecardTotal(
@@ -185,9 +185,9 @@ export class PazaakManager {
   static EndScriptInstance: NWScriptInstance = undefined;
   static ShowTutorial: boolean = false;
   static Opponent: ModuleCreature = undefined;
-  // static OpponentDeck: Map<PazaakSideDeckSlots, PazaakCards> = new Map<PazaakSideDeckSlots, PazaakCards>();
+  // static OpponentDeck: Map<PazaakSideDeckSlots, PazaakCards> = new Map<PazaakSideDeckSlots, PazaakCards>;
   static Cards: Map<PazaakCards, IPTPazaakCard> = new Map<PazaakCards, IPTPazaakCard>();
-  // static SideDeck: Map<PazaakSideDeckSlots, PazaakCards> = new Map<PazaakSideDeckSlots, PazaakCards>();
+  // static SideDeck: Map<PazaakSideDeckSlots, PazaakCards> = new Map<PazaakSideDeckSlots, PazaakCards>;
   static Won: boolean = false;
 
   static TotalSideDeckCards: number = 0;
@@ -232,7 +232,7 @@ export class PazaakManager {
   static TurnMode: PazaakTurnMode = PazaakTurnMode.PLAYER;
   static Actions: IPazaakAction[] = [];
   static TargetWins: number = 3;
-  /** retail — PlayAITurn state (0..4). */
+  /** — PlayAITurn state (0..4). */
   static AIState: number = 0;
 
   static {
@@ -285,7 +285,7 @@ export class PazaakManager {
     }else{
       PazaakManager.Config = PazaakConfig_TSL;
     }
-    // Retail ExecuteCommandPlayPazaak — MaxWager<=0 mutes credits + wager UI.
+    // ExecuteCommandPlayPazaak — MaxWager<=0 mutes credits + wager UI.
     if(this.MaxWager <= 0){
       this.MaxWager = 0;
       this.Wager = 0;
@@ -518,7 +518,7 @@ export class PazaakManager {
       if(table.stand){
         this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [tableIndex, 1]);
       }else if(tableIndex == PazaakTurnMode.OPPONENT){
-        // Retail DoAITurn: AI_state starts at 0 (draw via PlayAITurn).
+        // DoAITurn: AI_state starts at 0 (draw via PlayAITurn).
         this.AIState = 0;
         this.AddActionFront(tableIndex, PazaakActionType.AI_DETERMINE_MOVE, [tableIndex]);
         this.AddActionFront(tableIndex, PazaakActionType.WAIT, [0.5, 0]);
@@ -556,7 +556,7 @@ export class PazaakManager {
       const playerPoints = this.Tables[0].points;
       const opponentPoints = this.Tables[1].points;
       const bBusted = (playerPoints > this.TargetPoints || opponentPoints > this.TargetPoints);
-      // Retail DetermineWinner: bust forces both stand before comparing.
+      // DetermineWinner: bust forces both stand before comparing.
       if(bBusted){
         this.Tables[0].stand = true;
         this.Tables[1].stand = true;
@@ -587,7 +587,7 @@ export class PazaakManager {
       const playerPoints = this.Tables[PazaakTurnMode.PLAYER].points;
       const opponentPoints = this.Tables[PazaakTurnMode.OPPONENT].points;
       console.log(`PazaakManager: End round ${playerPoints} - ${opponentPoints}`);
-      //[Results] retail DetermineWinner:
+      //[Results] DetermineWinner:
       // bust totals → -1000000; higher non-bust total wins; equal → tie.
       // -1 - tied
       // 0 - player wins
@@ -610,7 +610,7 @@ export class PazaakManager {
         }
       }
 
-      // Retail DoGameSequence case 8/9: message first, then set/match SFX after score++.
+      // DoGameSequence case 8/9: message first, then set/match SFX after score++.
       if(result == -1){
         this.AddAction(this.TurnMode, PazaakActionType.SHOW_MESSAGE, [MSG_TIED]);
       }else if(result == PazaakTurnMode.PLAYER){
@@ -635,7 +635,7 @@ export class PazaakManager {
 
       if(this.Tables[PazaakTurnMode.PLAYER].winCount >= this.TargetWins){
         if(PazaakTutorial.enabled){
-          // Retail HandleEndDialog — 0x96f9 then EndPazaakGame on close.
+          // HandleEndDialog — 0x96f9 then EndPazaakGame on close.
           this.queueTutorialHelp(PazaakTutorial.beginMatchOverHelp());
         }else{
           this.AddAction(this.TurnMode, PazaakActionType.END_GAME, [PazaakTurnMode.PLAYER]);
@@ -659,7 +659,7 @@ export class PazaakManager {
     else if(action.type == PazaakActionType.END_GAME){
       const winner = this.GetActionPropertyAsNumber(0, 0);
       this.Won = winner == PazaakTurnMode.PLAYER;
-      // Retail: MaxWager<=0 → do not modify player credits.
+      // : MaxWager<=0 → do not modify player credits.
       if(this.MaxWager > 0 && this.Wager !== 0){
         const winnings = this.Won ? this.Wager * 2 : -this.Wager * 2;
         if(GameState.PartyManager.Player){
@@ -704,7 +704,7 @@ export class PazaakManager {
        * Player: stand on 20 / bust ends round / full board ends turn.
        * Opponent: AI continues via queued AI_DETERMINE_MOVE (PlayAITurn state 1).
        */
-      // Retail DoGameSequence: drawmain after Draw*Card; warnbust when total > 20.
+      // DoGameSequence: drawmain after Draw*Card; warnbust when total > 20.
       if(tableIndex == PazaakTurnMode.PLAYER){
         if(table.points == this.TargetPoints){
           this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [tableIndex, 1]);
@@ -731,7 +731,7 @@ export class PazaakManager {
         this.AddActionFront(tableIndex, PazaakActionType.PLAY_GUI_SOUND, ['mgs_drawmain']);
       }
       if(tableIndex == PazaakTurnMode.PLAYER && cardDrawn){
-        // Retail DoGameSequence case 2 — first-draw help 0x96e9; else bust/20 help.
+        // DoGameSequence case 2 — first-draw help 0x96e9; else bust/20 help.
         const drawnHelp = PazaakTutorial.beginDrawnCardHelpIfNeeded();
         if(drawnHelp){
           this.queueTutorialHelp(drawnHelp);
@@ -797,13 +797,13 @@ export class PazaakManager {
       this.AddActionFront(tableIndex, PazaakActionType.WAIT, [1, 0]);
       this.AddActionFront(tableIndex, PazaakActionType.PLAY_GUI_SOUND, ['mgs_playside']);
 
-      // Opponent side-card: retail returns state 2; next AI_DETERMINE_MOVE continues PlayAITurn.
+      // Opponent side-card: returns state 2; next AI_DETERMINE_MOVE continues PlayAITurn.
       // Player side-card: UI / player chooses stand separately.
 
       actionStatus = ActionStatus.COMPLETE;
     }
     /**
-     * AI determines a move — retail PlayAITurn.
+     * AI determines a move — PlayAITurn.
      */
     else if(action.type == PazaakActionType.AI_DETERMINE_MOVE){
       console.log(`PazaakManager: AI determining move (state ${this.AIState})...`);
@@ -897,7 +897,7 @@ export class PazaakManager {
   }
 
   /**
-   * Retail PlayAITurn.
+   * PlayAITurn.
    * AI = enemy table, human = player table; aiState =.
    */
   static playAITurn(aiState: number): { code: number; handIndex: number; flipped: boolean } {
@@ -955,7 +955,7 @@ export class PazaakManager {
           }
         }
       }
-      // falls through to post-side / stand logic (retail case 2)
+      // falls through to post-side / stand logic (case 2)
       case 2: {
         const aiCmp = ai.points > 20 ? -1000000 : ai.points;
         if(player.stand && aiCmp < playerTotal){
@@ -1067,7 +1067,7 @@ export class PazaakManager {
   }
 
   /**
-   * Show GUI help via InGameConfirm (OK-only; retail SetAllowCancel 0).
+   * Show GUI help via InGameConfirm (OK-only; SetAllowCancel 0).
    * ProcessActionQueue is already paused while confirm is visible.
    */
   static queueTutorialHelp(strRef: number){
@@ -1084,7 +1084,7 @@ export class PazaakManager {
   }
 
   /**
-   * Retail HandleTutorialClose / Aspyr retail.
+   * HandleTutorialClose / Aspyr.
    */
   static onTutorialHelpClosed(closedStrRef: number){
     const result = PazaakTutorial.onHelpClosed(closedStrRef);

@@ -1,10 +1,7 @@
 /**
- * Helpers for comparing KotOR.js NCS output against nwnnsscomp (secondary oracle)
- * and classifying mismatches vs retail CScriptCompiler / CNsc semantics.
- *
- * Retail note: BioWare-era CNsc* is rewritten as CScriptCompiler in NWN EE.
+ * Helpers for comparing KotOR.js NCS output against nwnnsscomp (secondary oracle).
  * Bytecode conventions (#loader, #globals, STORE_STATE 0x2C/0x10, NCS V1.0)
- * still match; treat EE and nwnnsscomp as oracles that can disagree.
+ * still apply; treat EE and nwnnsscomp as oracles that can disagree.
  */
 import * as fs from 'fs';
 import * as path from 'path';

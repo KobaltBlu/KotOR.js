@@ -120,7 +120,7 @@ describe('writeScaledBlockClamped', () => {
     for (let col = 8; col < 20; col++) {
       expect(dst[col]).toBe(0xee);
     }
-    // Next row must not receive spill from an unclamped 16-wide set()
+    // Next row must not receive spill from an unclamped 16-wide set
     for (let col = 0; col < 8; col++) {
       expect(dst[stride + col]).toBe(0x11);
     }

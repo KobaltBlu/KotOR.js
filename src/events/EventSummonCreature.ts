@@ -12,7 +12,7 @@ import type { OdysseyModel3D } from "@/three/odyssey";
 import * as THREE from "three";
 
 /**
- * EventSummonCreature — retail event type 0x18 from OnApplySummonCreature.
+ * EventSummonCreature — event type 0x18 from effect apply.
  * Places a pre-created summon into the area at the stored position.
  *
  * @file EventSummonCreature.ts

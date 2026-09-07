@@ -4,7 +4,7 @@ import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "@/gui";
 
 /**
- * retail CSWGuiInGameGameplay description TLKs (ctor custom_value / OnEnterSlot).
+ * gameplay options description TLKs (ctor custom_value / OnEnterSlot).
  */
 const TLK_DESC_DIFFICULTY = 0xa519;
 const TLK_DESC_LEVELUP = 0xa51a;

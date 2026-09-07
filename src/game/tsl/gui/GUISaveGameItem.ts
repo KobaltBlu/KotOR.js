@@ -3,7 +3,7 @@ import { GameState } from "@/GameState";
 import { GUIProtoItem } from "@/gui";
 import type { GameMenu, GUIControl } from "@/gui";
 import type { GUIListBox } from "@/gui/GUIListBox";
-import type { RetailRowExtent } from "@/gui/GUIProtoItem";
+import type { ProtoRowExtent } from "@/gui/GUIProtoItem";
 import { GFFStruct } from "@/resource/GFFStruct";
 
 const toPaddedDigit = (num: number, len = 2) => {
@@ -30,12 +30,12 @@ export class GUISaveGameItem extends GUIProtoItem {
   }
 
   /**
-   * Retail base row extent — TSL GUI ctor builds
+   * base row extent — TSL GUI ctor builds
    * {left 0, top 0, width 0, height 0x24} then scales height by GetResolutionTextScalar
    * (1.0 below 2048px) before Initialize. Row height
    * is 36 at base resolution; the PROTOITEM GFF height is never used for the row.
    */
-  getRetailBaseExtent(_list: GUIListBox): RetailRowExtent {
+  getProtoBaseExtent(_list: GUIListBox): ProtoRowExtent {
     return { left: 0, top: 0, width: 0, height: 36 };
   }
 

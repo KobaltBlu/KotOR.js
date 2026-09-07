@@ -15,7 +15,7 @@ import { BitWise } from "@/utility/BitWise";
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * Retail OnApplyDamage
+ * effect apply
  *
  * @file EffectDamage.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -53,7 +53,7 @@ export class EffectDamage extends GameEffect {
 
     const channels = this.getChannelArray();
 
-    // Plot / immortal: zero damage (retail zeroes non-negative channels)
+    // Plot / immortal: zero damage (zeroes non-negative channels)
     if(this.object.plot){
       for(let i = 0; i < 15; i++){
         if(channels[i] >= 0) channels[i] = 0;
@@ -62,11 +62,11 @@ export class EffectDamage extends GameEffect {
       this.resolvedDamage = 0;
       this.object.combatData.lastDamager = this.creator;
       this.object.combatData.lastAttacker = this.creator;
-      this.object.setLastHostileActor(this.creator);
+      this.object.assignHostileActor(this.creator);
       return;
     }
 
-    // Retail invulnerability cheat — party members only
+    // invulnerability cheat — party members only
     if(GameState.cheatInvulnerable && this.object.isPartyMember?.()){
       for(let i = 0; i < 15; i++){
         if(channels[i] >= 0) channels[i] = 0;
@@ -75,13 +75,13 @@ export class EffectDamage extends GameEffect {
       this.resolvedDamage = 0;
       this.object.combatData.lastDamager = this.creator;
       this.object.combatData.lastAttacker = this.creator;
-      this.object.setLastHostileActor(this.creator);
+      this.object.assignHostileActor(this.creator);
       return;
     }
 
     const alreadyMitigated = this.getInt(19) === 1;
     // Combat-packaged: sum typed channels (already mitigated).
-    // Script EffectDamage: retail mitigates using int[14] (also written beside the typed channel).
+    // Script EffectDamage: mitigates using int[14] (also written beside the typed channel).
     let amount = alreadyMitigated
       ? sumDamageChannels(channels)
       : (this.getInt(14) >= 0 ? this.getInt(14) : sumDamageChannels(channels));
@@ -93,7 +93,7 @@ export class EffectDamage extends GameEffect {
       }
       const power = Math.max(0, this.getInt(18) || 0);
       amount = mitigateDamageAmount(this.object, amount, flags, power);
-      // Mirror retail: write resolved total into every positive channel for last-damage state
+      // Mirror : write resolved total into every positive channel for last-damage state
       for(let i = 0; i < 15; i++){
         if(channels[i] >= 0) channels[i] = amount;
       }
@@ -108,7 +108,7 @@ export class EffectDamage extends GameEffect {
       amount = Math.floor(amount * scale);
     }
 
-    // Retail DoDamage — difficultyopt MULTIPLIER + DiffSettings MinHP1
+    // DoDamage — difficultyopt MULTIPLIER + DiffSettings MinHP1
     if(typeof (this.object as any)?.isPartyMember === 'function'){
       amount = applyPartyDifficultyDamage(this.object as any, amount);
     }
@@ -119,8 +119,8 @@ export class EffectDamage extends GameEffect {
     }
     this.object.combatData.lastDamager = this.creator;
     this.object.combatData.lastAttacker = this.creator;
-    this.object.setLastHostileActor(this.creator);
-    // Retail GetLastDamageAmountByFlags / GetTotalDamageDealt state
+    this.object.assignHostileActor(this.creator);
+    // GetLastDamageAmountByFlags / GetTotalDamageDealt state
     const lastDmg = this.object.combatData.lastDamageAmounts;
     if(lastDmg){
       for(let i = 0; i < 15; i++){
@@ -128,7 +128,7 @@ export class EffectDamage extends GameEffect {
       }
     }
 
-    // Retail OnApplyDamage schedules OnDamaged / door-placeable combat broadcast.
+    // effect apply schedules OnDamaged / door-placeable combat broadcast.
     // Door/placeable onDamaged handlers BroadcastCombatStateToParty(attacker, INVALID).
     if(amount > 0 && typeof this.object.onDamaged === 'function'){
       this.object.onDamaged();

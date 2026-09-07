@@ -6,10 +6,10 @@ export interface AudioPriorityAcquireOptions {
   owner: object;
   /** prioritygroups.2da row index. */
   groupId: number;
-  /** Squared distance to listener (reserved; retail same-group preempt is list-order). */
+  /** Squared distance to listener (reserved; same-group preempt is list-order). */
   distanceSq?: number;
   /**
-   * Retail GetFree3DVoice vs GetFree2DVoice pool selection.
+   * GetFree3DVoice vs GetFree2DVoice pool selection.
    * Positional emitters → true; globals / streaming → false.
    */
   is3D?: boolean;
@@ -33,7 +33,7 @@ export interface AudioPriorityVoice {
 }
 
 /**
- * Soft DIG mixer channel total (retail _AIL_set_preference(3, 0x40) → 64).
+ * Soft DIG mixer channel total (_AIL_set_preference(3, 0x40) → 64).
  * Split evenly across GetFree2DVoice / GetFree3DVoice pools.
  */
 export const SOFT_GLOBAL_VOICE_BUDGET = 64;
@@ -41,16 +41,16 @@ export const SOFT_2D_VOICE_BUDGET = 32;
 export const SOFT_3D_VOICE_BUDGET = 32;
 
 /**
- * Retail prioritygroups.2da voice allocator.
+ * prioritygroups.2da voice allocator.
  *
  * Behavior:
  * - LoadPriorityGroups — 2DA → priority group table
  * - Play — if count >= maxplaying: interrupt==0 deny, else InterruptPlayingSound
  * - InterruptPlayingSound — shut down first same-group voice in playing list
- *   (AddToPlayingList uses AddHead → first = newest)
+ * (AddToPlayingList uses AddHead → first = newest)
  * - AddToPlayingList / RemoveFromPlayingList — group count ±1
  * - GetFree2DVoice / GetFree3DVoice — Miles HW slot steal by
- *   priority rank (lower better); soft-budgeted here via separate 2D/3D pools
+ * priority rank (lower better); soft-budgeted here via separate 2D/3D pools
  * - GetPriorityGroup — invalid id clamps to row 0x17 (DEFAULT)
  *
  * Volume: source copies group volume byte at construct; emitters multiply
@@ -113,7 +113,7 @@ export class AudioPriorityManager {
     const ids = this.byGroup.get(groupId);
 
     if(!unlimited && ids && ids.length >= maxPlaying){
-      // Retail Play: interrupt==0 → deny; else InterruptPlayingSound then continue.
+      // Play: interrupt==0 → deny; else InterruptPlayingSound then continue.
       if(!group.canPreemptSameGroup()){
         return { allowed: false };
       }
@@ -196,7 +196,7 @@ export class AudioPriorityManager {
   }
 
   /**
-   * Retail InterruptPlayingSound: first match from playing-list head.
+   * InterruptPlayingSound: first match from playing-list head.
    * We append on acquire (AddHead analogue) so newest is at the end — steal from end.
    */
   private pickNewestVictim(ids: number[]): AudioPriorityVoice | undefined {
@@ -210,7 +210,7 @@ export class AudioPriorityManager {
   }
 
   /**
-   * Retail GetFree*Voice victim pick: among voices in the same 2D/3D pool with
+   * GetFree*Voice victim pick: among voices in the same 2D/3D pool with
    * priority > requesterPriority, choose the highest (worst) priority value.
    */
   private pickHwStealVictim(requesterPriority: number, is3D: boolean): AudioPriorityVoice | undefined {

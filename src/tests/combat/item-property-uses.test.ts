@@ -1,5 +1,5 @@
 /**
- * Retail GetUsedActivePropertyUsesLeft / DecrementUses.
+ * GetUsedActivePropertyUsesLeft / DecrementUses.
  * @jest-environment node
  */
 import { describe, expect, it } from '@jest/globals';
@@ -129,7 +129,7 @@ describe('applyDecrementUses', () => {
     expect(r.useable).toBe(1);
   });
 
-  it('destroys medical items on final charge burn (retail !bVar5 path)', () => {
+  it('destroys medical items on final charge burn (engine !bVar5 path)', () => {
     const r = applyDecrementUses({
       costValue: 6,
       charges: 1,

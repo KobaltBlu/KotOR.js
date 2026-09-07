@@ -75,7 +75,7 @@ export class TextureLoader {
     const texture = await TextureLoader.tpcLoader.fetch(resRef);
     if(!!texture){
       texture.anisotropy = TextureLoader.Anisotropy;
-      // Cubemaps keep GL_CLAMP_TO_EDGE set by TPCObject (retail CreateCubeTexture).
+      // Cubemaps keep GL_CLAMP_TO_EDGE set by TPCObject (CreateCubeTexture).
       if(!(texture as any).header?.isCubemap && !(texture as any).isCubeTexture){
         texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
       }
@@ -94,7 +94,7 @@ export class TextureLoader {
   }
 
   /**
-   * Retail CreateTexture applies wrap/filter to every cycle frame GL tid.
+   * CreateTexture applies wrap/filter to every cycle frame GL tid.
    * TextureLoader only configures the returned texture (frame 0); copy that sampler
    * state onto the rest of cycleFrames so animateuv scroll tiles correctly.
    */
@@ -272,7 +272,7 @@ export class TextureLoader {
           //I think this has to do with alphaTesting... Not sure...
           if(typeof texture.header === 'object'){
             // An object-level envmap override consumes texture alpha as the reflection
-            // mask (retail RenderEnvironmentMapped), the same as a TXI envmap.
+            // mask (RenderEnvironmentMapped), the same as a TXI envmap.
             if(texture.header.alphaTest != 1 && texture.txi.envMapTexture == null && !tex.material.userData?.envMapOverride){
               if(texture.txi.blending != TXIBlending.PUNCHTHROUGH){
                 tex.material.transparent = true;
@@ -293,7 +293,7 @@ export class TextureLoader {
               }
 
               //if(!texture.txi.blending)
-              //  tex.material.alphaTest = texture.header.alphaTest;
+              // tex.material.alphaTest = texture.header.alphaTest;
             }
           }
 

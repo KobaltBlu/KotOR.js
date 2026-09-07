@@ -103,7 +103,7 @@ class CollisionPlaceableBVH {
 export class ModuleRoom extends ModuleObject {
   ambientScale: number = 0;
   envAudio: number = 0;
-  /** Retail ARE Rooms.DisableWeather — suppress weather FX in this room. */
+  /** ARE Rooms.DisableWeather — suppress weather FX in this room. */
   disableWeather: boolean = false;
   roomName: string;
   visObject: VISObject;
@@ -493,7 +493,7 @@ export class ModuleRoom extends ModuleObject {
     }
 
     //Disable matrix update for static objects
-    //room.disableMatrixUpdate();
+    //room.disableMatrixUpdate;
 
     try{
       this.buildGrass();

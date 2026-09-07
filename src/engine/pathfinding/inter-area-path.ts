@@ -14,7 +14,7 @@ import { getNearestActionPoint } from "@/combat/nearest-action-point";
 import { getPathPersonalSpace } from "@/combat/attack-range";
 
 /**
- * Inter-area pathfinding (retail PlotInterAreaPath / ComputeInterAreaPath
+ * Inter-area pathfinding (PlotInterAreaPath / build inter-area path
  * InterAreaDFS).
  *
  * Builds a waypoint list of transition doors/triggers. Same-module hops use
@@ -71,7 +71,7 @@ function getLoadedAreas(): ModuleArea[] {
   return [];
 }
 
-/** Clear Retail on all loaded areas. */
+/** Clear on all loaded areas. */
 export function clearInterAreaVisitMarks(){
   const areas = getLoadedAreas();
   for(let i = 0; i < areas.length; i++){
@@ -110,7 +110,7 @@ export function resolveTransitionDest(
     };
   }
 
-  // Retail GetTargetArea — TRANSITION trigger LinkedTo → waypoint → area
+  // GetTargetArea — TRANSITION trigger LinkedTo → waypoint → area
   if(BitWise.InstanceOfObject(transition, ModuleObjectType.ModuleTrigger)){
     const trigger = transition as ModuleTrigger;
     if((trigger.type | 0) !== ModuleTriggerType.TRANSITION) return undefined;
@@ -131,7 +131,7 @@ export function resolveTransitionDest(
 }
 
 /**
- * Retail CountAreaTransitionTriggers.
+ * CountAreaTransitionTriggers.
  * Linked doors (flags 1|2) + TRANSITION triggers with resolvable dest.
  * LinkedToModule portals included for cross-module chase (KotOR.js).
  * When `out` is provided, fills it and sets dest area interAreaVisitMark (one portal per dest).
@@ -175,7 +175,7 @@ export function countAreaTransitionTriggers(
   for(let i = 0; i < doors.length; i++){
     const d = doors[i];
     if(!d) continue;
-    // Retail: GetIsLinked only; we also allow LinkedToModule
+    // : GetIsLinked only; we also allow LinkedToModule
     if(d.getLinkedToModule?.() || isDoorLinked(d)){
       consider(d);
     }
@@ -248,7 +248,7 @@ function listAllLoadedEdges(excludedIds?: ReadonlyArray<number>): TransitionEdge
 }
 
 /**
- * Retail InterAreaDFS — depth-limited search for dest key.
+ * InterAreaDFS — depth-limited search for dest key.
  * Returns transition objects along the path (excluding start).
  */
 export function interAreaDFS(
@@ -303,9 +303,9 @@ export function interAreaDFS(
 }
 
 /**
- * Retail ComputeInterAreaPath — try depths 1..9.
+ * build inter-area path — try depths 1..9.
  */
-export function computeInterAreaPath(
+export function buildInterAreaPath(
   startAreaId: number,
   destAreaId?: number,
   preferredModule?: string,
@@ -325,10 +325,10 @@ export function computeInterAreaPath(
     return undefined;
   }
 
-  // Retail clears start-area visit mark before each depth attempt
+  // clears start-area visit mark before each depth attempt
   clearInterAreaVisitMarks();
 
-  // Increasing depth like retail (iVar4 = 1..9)
+  // Increasing depth like (iVar4 = 1..9)
   for(let depth = 1; depth <= MAX_DFS_DEPTH; depth++){
     const path = interAreaDFS(startKey, destKey, depth, excludedIds);
     if(path) return path;
@@ -375,7 +375,7 @@ export function findBestTransition(
 }
 
 /**
- * Retail SetIntraAreaGoal — place start goal at door action point
+ * SetIntraAreaGoal — place start goal at door action point
  * or trigger closest point.
  */
 export function setIntraAreaGoal(
@@ -409,9 +409,9 @@ export function setIntraAreaGoal(
 }
 
 /**
- * Seed creature.interAreaWaypoints via ComputeInterAreaPath / DFS.
+ * Seed creature.interAreaWaypoints via build inter-area path / DFS.
  * Falls back to nearest transition when no dest specified or DFS fails.
- * Honors creature.interAreaExcludedIds (Retail).
+ * Honors creature.interAreaExcludedIds.
  */
 export function beginInterAreaPath(
   creature: ModuleCreature,
@@ -450,7 +450,7 @@ export function beginInterAreaPath(
 
   const excluded = creature.interAreaExcludedIds;
   clearInterAreaVisitMarks();
-  const edges = computeInterAreaPath(startAreaId, destId, prefer, excluded);
+  const edges = buildInterAreaPath(startAreaId, destId, prefer, excluded);
   if(edges?.length){
     const wps: InterAreaWaypoint[] = [];
     for(let i = 0; i < edges.length; i++){
@@ -483,7 +483,7 @@ export function beginInterAreaPath(
 }
 
 /**
- * Retail PlotInterAreaPath failed-portal retry:
+ * PlotInterAreaPath failed-portal retry:
  * append first hop transition id to the exclusion list, reset path search, recompute.
  * Returns true if a new path was found.
  */
@@ -504,7 +504,7 @@ export function excludeFailedInterAreaPortal(
 }
 
 /**
- * Clear inter-area search state (retail ResetInterAreaSearchData).
+ * Clear inter-area search state (ResetInterAreaSearchData).
  */
 export function resetInterAreaSearch(creature: ModuleCreature){
   if(!creature) return;
@@ -516,7 +516,7 @@ export function resetInterAreaSearch(creature: ModuleCreature){
 }
 
 /**
- * Advance / consume the front inter-area waypoint (retail CheckInterArea shift).
+ * Advance / consume the front inter-area waypoint (CheckInterArea shift).
  * Returns the waypoint to move toward, or undefined if list exhausted.
  */
 export function advanceInterAreaWaypoint(
@@ -525,7 +525,7 @@ export function advanceInterAreaWaypoint(
   const list = creature.interAreaWaypoints;
   if(!list?.length) return undefined;
   if(list.length < 2){
-    // Retail: count < 2 → ResetInterAreaSearchData; keep single goal for approach
+    // : count < 2 → ResetInterAreaSearchData; keep single goal for approach
     return list[0];
   }
   list.shift();
