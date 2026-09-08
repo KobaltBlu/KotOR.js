@@ -24,16 +24,10 @@ import {
   placeDirectionalShadowProxyAlongLight,
 } from '@/utility/odysseyShadowMap';
 import { OdysseyLightingDebug } from '@/utility/odysseyLightingDebug';
-import { RenderPerfStats } from '@/utility/RenderPerfStats';
-import { ShadowCasterRegistry } from '@/managers/ShadowCasterRegistry';
-import { getOdysseyBoneMatricesFingerprint } from '@/three/odyssey/OdysseySkeletonBind';
 import {
   MAX_ODYSSEY_SHADOW_MAPS,
   odysseyShadowAdaptiveStrength,
 } from '@/shaders/chunks/OdysseyShadow';
-
-/** Matches OdysseySkeletonBind's private dirty flag (anim flush → skeleton.update). */
-const ODYSSEY_SKELETON_DIRTY = 'odysseyBonesDirty';
 
 export type OdysseyPrimaryShadowLightType = 'spot' | 'directional';
 
@@ -68,10 +62,10 @@ export interface IOdysseyShadowDiagnostics {
   } | null;
 }
 
-// Soft and hard both use 512 — hard used to drop to 512, which made sun
+// Soft and hard both use 2048 — hard used to drop to 512, which made sun
 // ortho maps (~±16 half-extent) only ~11 texels tall per character.
-const DEFAULT_MAP_RES_SOFT = 1024;
-const DEFAULT_MAP_RES_HARD = 1024;
+const DEFAULT_MAP_RES_SOFT = 2048;
+const DEFAULT_MAP_RES_HARD = 2048;
 const SHADOW_MAP_NORMAL_BIAS = 0.005;
 
 /** Soft sticky: challenger must lead by this overhead score for hold duration. */
@@ -118,9 +112,6 @@ export class OdysseyShadowManager {
   lastRenderTimeMs = 0;
   lastCasterDrawCount = 0;
 
-  /** Mesh cast/receive registry for radius-filtered shadow passes. */
-  readonly casterRegistry = new ShadowCasterRegistry();
-
   readonly diagnostics: IOdysseyShadowDiagnostics = {
     activeLightUuid: null,
     activeLightUuids: [],
@@ -153,11 +144,6 @@ export class OdysseyShadowManager {
   private _softChallengerHold = 0;
   /** Soft residency including fade-out (up to 2). */
   private _softResidents: OdysseyLight3D[] = [];
-  /** Pose fingerprint of nearby casters — skip redraw when unchanged. */
-  private _lastNearbyCasterPoseHash = 0;
-  /** BoneMatrices content hash subset — distinguishes bone vs root motion dirty. */
-  private _lastNearbyCasterBoneHash = 0;
-  private _casterFilterActive = false;
 
   /** Combined projection opacity with adaptive local/distant scale (tests / diagnostics). */
   static shadowStrengthForLight(
@@ -739,7 +725,7 @@ export class OdysseyShadowManager {
       this.lightWorld.copy(this.slots[0].state.lightWorld);
     }
 
-    this.dirtyIfNearbyCasterMotion();
+    this.dirtyIfNearbyAnimatedCasters();
 
     this.refreshDiagnostics();
     this.updateShadowFrustumHelper();
@@ -942,10 +928,10 @@ export class OdysseyShadowManager {
   }
 
   /**
-   * Dirty maps when a nearby caster's world/skin pose actually changed.
-   * Idle party with no matrix / bone dirty → skip 512² redraw.
+   * Dirty maps when a visible creature is animating near the shadow focus.
+   * Avoids full scene.traverse; equipment casters move with the creature.
    */
-  private dirtyIfNearbyCasterMotion(){
+  private dirtyIfNearbyAnimatedCasters(){
     if(this._needsShadowMapRender || this.activeLightCount <= 0){ return; }
 
     let maxR = this.influenceRadius;
@@ -959,144 +945,38 @@ export class OdysseyShadowManager {
     const fy = this._focus.y;
     const fz = this._focus.z;
 
-    let poseHash = 0;
-    let boneHash = 0;
-    let pendingBoneDirty = false;
-
-    const consider = (obj: {
+    const nearAnimated = (obj: {
       position?: THREE.Vector3;
-      quaternion?: THREE.Quaternion;
-      model?: THREE.Object3D & {
-        visible?: boolean;
-        matrixWorld?: THREE.Matrix4;
-        traverse?: (cb: (o: THREE.Object3D) => void) => void;
-      };
-    } | undefined) => {
-      if(!obj?.model?.visible || !obj.position){ return; }
+      model?: { visible?: boolean; animateFrame?: boolean };
+    } | undefined): boolean => {
+      if(!obj?.model?.visible || !obj.model.animateFrame || !obj.position){ return false; }
       const dx = obj.position.x - fx;
       const dy = obj.position.y - fy;
       const dz = obj.position.z - fz;
-      if((dx * dx + dy * dy + dz * dz) > r2){ return; }
-
-      poseHash = Math.imul(poseHash ^ (Math.round(obj.position.x * 100) | 0), 16777619) | 0;
-      poseHash = Math.imul(poseHash ^ (Math.round(obj.position.y * 100) | 0), 16777619) | 0;
-      poseHash = Math.imul(poseHash ^ (Math.round(obj.position.z * 100) | 0), 16777619) | 0;
-      if(obj.quaternion){
-        poseHash = Math.imul(poseHash ^ (Math.round(obj.quaternion.x * 1000) | 0), 16777619) | 0;
-        poseHash = Math.imul(poseHash ^ (Math.round(obj.quaternion.y * 1000) | 0), 16777619) | 0;
-        poseHash = Math.imul(poseHash ^ (Math.round(obj.quaternion.z * 1000) | 0), 16777619) | 0;
-        poseHash = Math.imul(poseHash ^ (Math.round(obj.quaternion.w * 1000) | 0), 16777619) | 0;
-      }
-      const mw = obj.model.matrixWorld?.elements;
-      if(mw){
-        poseHash = Math.imul(poseHash ^ (Math.round(mw[12] * 100) | 0), 16777619) | 0;
-        poseHash = Math.imul(poseHash ^ (Math.round(mw[13] * 100) | 0), 16777619) | 0;
-        poseHash = Math.imul(poseHash ^ (Math.round(mw[14] * 100) | 0), 16777619) | 0;
-      }
-      if(typeof obj.model.traverse === 'function'){
-        // Do NOT call skeleton.update() here — container/world matrices may still be
-        // stale; an early flush uploaded bad boneTextures and cleared dirty so the
-        // real render early-returned (skinned bodies gone, rigid weapons fine).
-        obj.model.traverse((o) => {
-          const skin = o as THREE.SkinnedMesh;
-          if(!skin.isSkinnedMesh || !skin.skeleton){ return; }
-          const skel = skin.skeleton;
-          if((skel as any)[ODYSSEY_SKELETON_DIRTY]){
-            pendingBoneDirty = true;
-          }
-          const boneFp = getOdysseyBoneMatricesFingerprint(skel);
-          if(boneFp){
-            boneHash = Math.imul(boneHash ^ boneFp, 16777619) | 0;
-            poseHash = Math.imul(poseHash ^ boneFp, 16777619) | 0;
-          }
-        });
-      }
+      return (dx * dx + dy * dy + dz * dz) <= r2;
     };
 
     const party = GameState.PartyManager?.party;
     if(party){
       for(let i = 0; i < party.length; i++){
-        consider(party[i] as any);
+        if(nearAnimated(party[i])){
+          this._needsShadowMapRender = true;
+          this.lastUpdateReason = 'animated-caster';
+          return;
+        }
       }
     }
 
     const creatures = GameState.module?.area?.creatures;
     if(creatures){
       for(let i = 0; i < creatures.length; i++){
-        consider(creatures[i] as any);
+        if(nearAnimated(creatures[i])){
+          this._needsShadowMapRender = true;
+          this.lastUpdateReason = 'animated-caster';
+          return;
+        }
       }
     }
-
-    // Anim-marked dirty must redraw this frame even if last fingerprint is stale.
-    if(pendingBoneDirty){
-      this._needsShadowMapRender = true;
-      this.lastUpdateReason = 'caster-bone-dirty';
-    }
-
-    if(poseHash !== this._lastNearbyCasterPoseHash){
-      const boneChanged = boneHash !== this._lastNearbyCasterBoneHash;
-      this._lastNearbyCasterPoseHash = poseHash;
-      this._lastNearbyCasterBoneHash = boneHash;
-      this._needsShadowMapRender = true;
-      if(!pendingBoneDirty){
-        this.lastUpdateReason = boneChanged ? 'caster-bone-dirty' : 'caster-motion';
-      }
-    }
-  }
-
-  /**
-   * Enable castShadow only for casters in active light influence + shadow
-   * camera frustum / focus distance, then mark maps.
-   */
-  private applyCasterRadiusFilter(): number {
-    if(this._casterFilterActive){
-      this.casterRegistry.restoreCastShadow();
-      this._casterFilterActive = false;
-    }
-    const lights: Array<{
-      x: number;
-      y: number;
-      z: number;
-      radius: number;
-      shadowRadius?: number;
-      shadowCamera?: THREE.Camera;
-    }> = [];
-    for(let i = 0; i < this.activeLightCount; i++){
-      const slot = this.slots[i];
-      if(!slot?.state.active){ continue; }
-      const lw = slot.state.lightWorld;
-      const proxy = this.getActiveProxy(i);
-      const shadowCam = proxy?.shadow?.camera;
-      if(shadowCam){
-        // Keep camera synced to proxy before frustum test.
-        proxy.updateMatrixWorld(true);
-        shadowCam.updateMatrixWorld(true);
-      }
-      lights.push({
-        x: lw.x,
-        y: lw.y,
-        z: lw.z,
-        // Cap huge directional influence for caster selection — full 800 keeps
-        // every prop casting. Frustum further culls inside this sphere.
-        radius: Math.min(slot.state.influenceRadius || this.influenceRadius || 40, 80),
-        shadowRadius: 0,
-        shadowCamera: shadowCam,
-      });
-    }
-    const count = this.casterRegistry.filterCastersForLights(lights, {
-      focus: this._focus,
-      maxFocusDistance: 60,
-    });
-    this._casterFilterActive = true;
-    this.lastCasterDrawCount = count;
-    RenderPerfStats.noteCasterDraws(count);
-    return count;
-  }
-
-  restoreCasterFilter(): void {
-    if(!this._casterFilterActive){ return; }
-    this.casterRegistry.restoreCastShadow();
-    this._casterFilterActive = false;
   }
 
   /**
@@ -1108,8 +988,6 @@ export class OdysseyShadowManager {
       return false;
     }
 
-    this.applyCasterRadiusFilter();
-
     let any = false;
     for(let i = 0; i < this.activeLightCount; i++){
       const proxy = this.getActiveProxy(i);
@@ -1120,18 +998,11 @@ export class OdysseyShadowManager {
       }
       any = true;
     }
-    if(!any){
-      this.restoreCasterFilter();
-      return false;
-    }
+    if(!any){ return false; }
 
     renderer.shadowMap.needsUpdate = true;
     this._uniformsRefreshNeeded = true;
-    // Keep the reason that marked dirty (caster-bone-dirty / caster-motion / …).
-    if(!this.lastUpdateReason || this.lastUpdateReason === 'pending-render'){
-      this.lastUpdateReason = 'pending-render';
-    }
-    RenderPerfStats.noteShadowRedraw(this.lastUpdateReason);
+    this.lastUpdateReason = 'pending-render';
     this.refreshDiagnostics();
     return true;
   }
@@ -1146,7 +1017,6 @@ export class OdysseyShadowManager {
   }
 
   noteShadowMapRendered(): void {
-    this.restoreCasterFilter();
     let matrixChanged = false;
     for(let i = 0; i < this.activeLightCount; i++){
       const proxy = this.getActiveProxy(i);

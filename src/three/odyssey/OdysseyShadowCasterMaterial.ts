@@ -68,13 +68,7 @@ export function syncShadowCasterDepthMaterialFromSource(
   depthMat.map = map;
   depthMat.alphaTest = map ? alphaTest : 0;
   depthMat.side = THREE.DoubleSide;
-  const prevMap = depthMat.userData.odysseyDepthAlphaMap as THREE.Texture | null | undefined;
-  const prevAlpha = depthMat.userData.odysseyDepthAlphaTest as number | undefined;
-  if(prevMap !== map || prevAlpha !== depthMat.alphaTest){
-    depthMat.userData.odysseyDepthAlphaMap = map;
-    depthMat.userData.odysseyDepthAlphaTest = depthMat.alphaTest;
-    depthMat.needsUpdate = true;
-  }
+  depthMat.needsUpdate = true;
 }
 
 /** Materials excluded from shadow-map casting. */

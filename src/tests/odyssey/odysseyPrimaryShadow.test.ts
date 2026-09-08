@@ -98,12 +98,10 @@ describe('OdysseyShadowManager primary shadow map', () => {
     manager.useQualityPreset(false);
   });
 
-  test('quality presets keep soft map resolution', () => {
-    expect(manager.mapResolution).toBe(1024);
+  test('hard quality preset keeps 2048 map resolution', () => {
+    expect(manager.mapResolution).toBe(2048);
     manager.useQualityPreset(true);
-    expect(manager.mapResolution).toBe(1024);
-    manager.useQualityPreset(false);
-    expect(manager.mapResolution).toBe(1024);
+    expect(manager.mapResolution).toBe(2048);
   });
 
   test('selects one primary light with engine fade strength', () => {
@@ -312,7 +310,7 @@ describe('OdysseyShadowManager primary shadow map', () => {
     expect(manager.markShadowMapForRender(renderer)).toBe(true);
   });
 
-  test('nearby caster pose change dirties shadow maps without light motion', () => {
+  test('nearby animated creature dirties shadow maps without light motion', () => {
     const light = mockShadowLight({
       uuid: 'lamp',
       worldPosition: new THREE.Vector3(2, 0, 0),
@@ -327,102 +325,19 @@ describe('OdysseyShadowManager primary shadow map', () => {
     manager.markShadowMapForRender(renderer);
     manager.noteShadowMapRendered();
     expect(manager.needsShadowMapRender).toBe(false);
-
-    const { GameState } = require('@/GameState');
-    const partyMember = {
-      position: new THREE.Vector3(0.5, 0, 0),
-      quaternion: new THREE.Quaternion(),
-      model: {
-        visible: true,
-        animateFrame: true,
-        matrixWorld: new THREE.Matrix4().setPosition(0.5, 0, 0),
-      },
-    };
-    GameState.PartyManager = { party: [partyMember] };
-
-    manager.update(undefined, focus);
-    expect(manager.needsShadowMapRender).toBe(true);
-    expect(manager.lastUpdateReason).toBe('caster-motion');
-    expect(manager.markShadowMapForRender(renderer)).toBe(true);
-    manager.noteShadowMapRendered();
-
-    // Same pose + animateFrame alone must not re-dirty.
-    manager.update(undefined, focus);
-    expect(manager.needsShadowMapRender).toBe(false);
-
-    partyMember.position.set(0.8, 0, 0);
-    partyMember.model.matrixWorld.setPosition(0.8, 0, 0);
-    manager.update(undefined, focus);
-    expect(manager.needsShadowMapRender).toBe(true);
-    expect(manager.lastUpdateReason).toBe('caster-motion');
-
-    GameState.PartyManager = undefined;
-  });
-
-  test('nearby caster bone pose flush dirties soft maps without root motion', () => {
-    const light = mockShadowLight({
-      uuid: 'lamp',
-      worldPosition: new THREE.Vector3(2, 0, 0),
-      shadowFadeFactor: 1,
-    }) as any;
-    lightManager.shadowLights = [light];
-    lightManager.staticMeshShadowLights = [];
-    const focus = new THREE.Vector3(0, 0, 0);
-    const renderer = { shadowMap: { needsUpdate: false } } as THREE.WebGLRenderer;
-
-    const {
-      installOdysseySkeletonUpdate,
-      markOdysseySkeletonDirty,
-      ODYSSEY_IDENTITY_BIND_MATRIX,
-    } = require('@/three/odyssey/OdysseySkeletonBind');
-
-    const bone = new THREE.Bone();
-    bone.position.set(0, 1, 0);
-    bone.updateMatrixWorld(true);
-    const inv = new THREE.Matrix4().copy(bone.matrixWorld).invert();
-    const skeleton = new THREE.Skeleton([bone], [inv]);
-    const geo = new THREE.BoxGeometry(1, 1, 1);
-    const n = geo.getAttribute('position').count;
-    const skinIndex = new Float32Array(n * 4);
-    const skinWeight = new Float32Array(n * 4);
-    for(let i = 0; i < n; i++) skinWeight[i * 4] = 1;
-    geo.setAttribute('skinIndex', new THREE.Float32BufferAttribute(skinIndex, 4));
-    geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(skinWeight, 4));
-    const skin = new THREE.SkinnedMesh(geo, new THREE.MeshBasicMaterial());
-    skin.bind(skeleton, ODYSSEY_IDENTITY_BIND_MATRIX);
-    installOdysseySkeletonUpdate(skeleton, skin);
-    skeleton.boneTexture = new THREE.DataTexture(
-      new Float32Array(16 * 16 * 4), 16, 16, THREE.RGBAFormat, THREE.FloatType
-    );
-    skeleton.update();
-
-    const model = new THREE.Group();
-    model.visible = true;
-    model.add(bone);
-    model.add(skin);
-    model.position.set(0.5, 0, 0);
-    model.updateMatrixWorld(true);
 
     const { GameState } = require('@/GameState');
     GameState.PartyManager = {
       party: [{
-        position: model.position,
-        quaternion: model.quaternion,
-        model,
+        position: new THREE.Vector3(0.5, 0, 0),
+        model: { visible: true, animateFrame: true },
       }],
     };
 
     manager.update(undefined, focus);
-    manager.markShadowMapForRender(renderer);
-    manager.noteShadowMapRendered();
-    expect(manager.needsShadowMapRender).toBe(false);
-
-    // In-place bone change + dirty flag (as anim flush would set) — no root motion.
-    bone.position.set(0, 1.4, 0);
-    markOdysseySkeletonDirty(skeleton);
-    manager.update(undefined, focus);
     expect(manager.needsShadowMapRender).toBe(true);
-    expect(manager.lastUpdateReason).toBe('caster-bone-dirty');
+    expect(manager.lastUpdateReason).toBe('animated-caster');
+    expect(manager.markShadowMapForRender(renderer)).toBe(true);
 
     GameState.PartyManager = undefined;
   });

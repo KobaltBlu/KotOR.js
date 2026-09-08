@@ -2324,28 +2324,15 @@ export class OdysseyModel3D extends OdysseyObject3D {
     }
   }
 
-  /**
-   * Register mesh with shadow receive + caster registry when casting/receiving.
-   */
   static registerMeshShadow(mesh: THREE.Mesh | THREE.SkinnedMesh, options?: IOdysseyModelLoaderOptions){
     if(options?.shadowsEnabled === false){ return; }
-    if(mesh?.receiveShadow){
-      enableOdysseyMaterialShadowReceive(mesh.material);
-    }
-    const mgr = GameState.odysseyShadowManager;
-    if(mgr?.casterRegistry && (mesh.castShadow || mesh.receiveShadow)){
-      mgr.casterRegistry.registerMesh(mesh, {
-        castShadow: !!mesh.castShadow,
-        receiveShadow: !!mesh.receiveShadow,
-        isStatic: !!options?.mergeStatic || !!options?.static,
-      });
-    }
+    if(!mesh?.receiveShadow){ return; }
+    enableOdysseyMaterialShadowReceive(mesh.material);
   }
 
   static unregisterMeshShadow(mesh: THREE.Mesh | THREE.SkinnedMesh){
     mesh.customDepthMaterial = undefined;
     mesh.customDistanceMaterial = undefined;
-    GameState.odysseyShadowManager?.casterRegistry?.unregisterMesh(mesh);
   }
 
 };
