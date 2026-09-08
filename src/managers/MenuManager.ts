@@ -261,6 +261,9 @@ export class MenuManager {
     if(MenuManager.InGameOverlay?.bVisible){
       MenuManager.InGameOverlay.resize();
     }
+    if(MenuManager.InGamePause?.bVisible){
+      MenuManager.InGamePause.resize();
+    }
   }
 
   static Update(delta = 0){

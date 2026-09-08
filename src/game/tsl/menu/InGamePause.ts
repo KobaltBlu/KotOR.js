@@ -44,10 +44,11 @@ export class InGamePause extends K1_InGamePause {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      resolve();
       this.BTN_UNPAUSE.addEventListener('click', (e) => {
         GameState.AutoPauseManager.Unpause();
       });
+      this.recalculatePosition();
+      resolve();
     });
   }
 
@@ -69,11 +70,4 @@ export class InGamePause extends K1_InGamePause {
     if(pressText) this.LBL_PRESS?.setText(pressText);
   }
 
-  update(delta: number = 0) {
-    super.update(delta);
-    this.tGuiPanel.extent.left = (GameState.ResolutionManager.getViewportWidth() / 2) - (this.tGuiPanel.extent.width / 2) - 5;
-    this.tGuiPanel.extent.top = (-GameState.ResolutionManager.getViewportHeight() / 2) + (this.tGuiPanel.extent.height / 2) + 45;
-    this.recalculatePosition();
-  }
-  
 }
