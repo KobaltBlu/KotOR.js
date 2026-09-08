@@ -2,7 +2,8 @@ import * as THREE from "three";
 
 /**
  * engine-aligned Odyssey lighting GLSL + uniform helpers.
- * Positions uploaded by OdysseyLightingBinder are view-space (xyz); w = quadratic atten.
+ * Positions uploaded by OdysseyLightingBinder are world-space (xyz); w = quadratic atten.
+ * Fragment code transforms light xyz / sun by viewMatrix to match view-space geometry.
  * Packed arrays avoid Three.js struct-array upload crashes.
  *
  * Attenuation: 1/(1 + (4.5/r²)*d²) with r = max(radius, 0.1) — light upload
@@ -32,7 +33,7 @@ uniform int numOdysseyLights;
 uniform int odysseyHeadLightEnabled;
 uniform vec3 odysseyHeadLightAmbient;
 uniform vec3 odysseyHeadLightDiffuse;
-// xyz = view-space position (binder-transformed), w = quadratic attenuation coeff (4.5/r²)
+// xyz = world-space position (binder); viewMatrix applied in accumulate; w = quadratic atten (4.5/r²)
 uniform vec4 odysseyLightPos[ MAX_ODYSSEY_LIGHTS ];
 // rgb = light color (fade×color for rooms; authored color for nearest/gob
 // VP SetUpVertexProgramLightShaderConstants; no light node.multiplier),
@@ -79,8 +80,9 @@ void odysseyAccumulatePointLights(
     if ( i < numOdysseyLights ) {
       vec4 lightPos = odysseyLightPos[ i ];
       vec4 lightCol = odysseyLightColor[ i ];
-      // lightPos.xyz already view-space (OdysseyLightingBinder)
-      vec3 lVector = lightPos.xyz - geometryPosition;
+      // World → view so lVector matches view-space geometryPosition / normals
+      vec3 lightView = ( viewMatrix * vec4( lightPos.xyz, 1.0 ) ).xyz;
+      vec3 lVector = lightView - geometryPosition;
       float lightDistance = length( lVector );
       float atten = odysseyAttenuation( lightDistance, lightPos.w );
       vec3 lightColor = lightCol.rgb * atten;
@@ -117,8 +119,8 @@ void odysseyAccumulateLights(
   // Directional sun/moon ambient channel (SetAsDay/Night day/night ambient) — no N·L
   indirectDiffuse += odysseySunAmbientColor;
 
-  // Area sun/moon diffuse (gidy_sun_diff) — direction is view-space
-  vec3 sunDir = normalize( odysseySunDirection );
+  // Area sun/moon diffuse — world-space direction, transformed to view
+  vec3 sunDir = normalize( mat3( viewMatrix ) * odysseySunDirection );
   float sunDotNL = max( dot( geometryNormal, sunDir ), 0.0 );
   if ( sunDotNL > 0.0 && length( odysseySunColor ) > 0.0 ) {
     vec3 sunIrradiance = sunDotNL * odysseySunColor;

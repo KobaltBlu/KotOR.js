@@ -79,7 +79,7 @@ export class ShaderGrass extends Shader {
       return fract(sin(x * 12.9898) * 43758.5453);
     }
 
-    void calculateMultiEntityTrample(vec3 worldPosition, out float totalTrampleEffect) {
+    void calculateMultiEntityTrample(vec3 grassWorldPos, out float totalTrampleEffect) {
       totalTrampleEffect = 0.0;
       
       // Sample all entities from the position texture (using constant loop bound)
@@ -98,7 +98,7 @@ export class ShaderGrass extends Shader {
         if (isActive < 0.5) continue;
         
         // Calculate distance to this entity
-        float distanceToEntity = distance(worldPosition, entityPosition);
+        float distanceToEntity = distance(grassWorldPos, entityPosition);
         
         if (distanceToEntity <= trampleRadius) {
           // Calculate trample strength based on distance
@@ -153,15 +153,15 @@ export class ShaderGrass extends Shader {
         transformed.xyz += windOffset;
       }
 
-      // Calculate world position for distance fade and trample effects
-      vec4 worldPosition = vec4(transformed, 1.0);
+      // World position for fade/trample (named to avoid clash with <worldpos_vertex>)
+      vec4 grassWorldPos = vec4(transformed, 1.0);
       #ifdef USE_INSTANCING
-        worldPosition = instanceMatrix * worldPosition;
+        grassWorldPos = instanceMatrix * grassWorldPos;
       #endif
-      worldPosition = modelMatrix * worldPosition;
+      grassWorldPos = modelMatrix * grassWorldPos;
 
       // Calculate distance fade effect (still using player position for camera distance)
-      float distanceFromPlayer = distance(worldPosition.xyz, playerPosition);
+      float distanceFromPlayer = distance(grassWorldPos.xyz, playerPosition);
       if (useDistanceFade) {
         // Calculate fade factor (1.0 = fully visible, 0.0 = invisible)
         if (distanceFromPlayer <= fadeStartDistance) {
@@ -177,7 +177,7 @@ export class ShaderGrass extends Shader {
       }
       
       // Calculate multi-entity trample effect
-      calculateMultiEntityTrample(worldPosition.xyz, vTrampleEffect);
+      calculateMultiEntityTrample(grassWorldPos.xyz, vTrampleEffect);
 
       // Apply trample effect - bend grass away from all affecting entities
       if (vTrampleEffect > 0.0 && constraint > 0.0) {
@@ -197,9 +197,9 @@ export class ShaderGrass extends Shader {
           
           if (isActive < 0.5) continue;
           
-          float distanceToEntity = distance(worldPosition.xyz, entityPosition);
+          float distanceToEntity = distance(grassWorldPos.xyz, entityPosition);
           if (distanceToEntity <= trampleRadius) {
-            vec3 directionFromEntity = normalize(worldPosition.xyz - entityPosition);
+            vec3 directionFromEntity = normalize(grassWorldPos.xyz - entityPosition);
             float weight = 1.0 - (distanceToEntity / trampleRadius);
             averageDirection += directionFromEntity * weight;
             directionWeight += weight;

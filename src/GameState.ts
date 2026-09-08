@@ -38,7 +38,8 @@ import { EngineState, EngineMode, GameEngineType, GameEngineEnv, EngineDebugType
 import { TextureType } from "@/enums/loaders/TextureType";
 
 import { runOdysseyDepthPrepass } from "@/utility/odysseyDepthPrepass";
-
+import { RenderPerfStats } from "@/utility/RenderPerfStats";
+import { odysseyOpaqueRenderSort } from "@/utility/odysseyOpaqueRenderSort";
 import { ConfigClient } from "@/utility/ConfigClient";
 import { FollowerCamera } from "@/engine/FollowerCamera";
 import { asExtentInt, orthoFrustumInt } from "@/gui/GUICoord";
@@ -52,6 +53,7 @@ import { MiniGameAspectMaskPass } from "@/shaders/pass/MiniGameAspectMaskPass";
 import { resolveMiniGameAspectMaskPass } from "@/shaders/pass/MiniGameAspectMaskGates";
 import { OdysseyLensFlarePass } from "@/shaders/pass/OdysseyLensFlarePass";
 import { ResourceLoader, TextureLoader } from "@/loaders";
+import { warmRoomGpuResources, compileAreaRoomsVisible } from "@/three/odyssey/warmRoomGpuResources";
 
 //THREE.js imports
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
@@ -723,6 +725,9 @@ export class GameState implements EngineContext {
             const room = GameState.module.area.rooms[i];
             if(room.collisionManager.walkmesh){
               room.collisionManager.walkmesh.mesh.visible = GameState.debug[EngineDebugType.ROOM_WALKMESH];
+              if(GameState.debug[EngineDebugType.ROOM_WALKMESH]){
+                room.collisionManager.walkmesh.buildEdgeNormalHelpers();
+              }
             }
           }
           for(let i = 0; i < GameState.module.area.doors.length; i++){
@@ -735,6 +740,9 @@ export class GameState implements EngineContext {
             const placeable = GameState.module.area.placeables[i];
             if(placeable.collisionManager.walkmesh){
               placeable.collisionManager.walkmesh.mesh.visible = GameState.debug[EngineDebugType.PLACEABLE_WALKMESH];
+              if(GameState.debug[EngineDebugType.PLACEABLE_WALKMESH]){
+                placeable.collisionManager.walkmesh.buildEdgeNormalHelpers();
+              }
             }
           }
         }
@@ -937,6 +945,7 @@ export class GameState implements EngineContext {
     GameState.renderer.shadowMap.enabled = true;
     GameState.renderer.shadowMap.autoUpdate = false;
     GameState.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    GameState.renderer.setOpaqueSort(odysseyOpaqueRenderSort);
     GameState.renderer.setSize( GameState.ResolutionManager.getViewportWidth(), GameState.ResolutionManager.getViewportHeight() );
     GameState.renderer.setClearColor(0x000000);
 
@@ -1619,6 +1628,21 @@ export class GameState implements EngineContext {
         }
       });
 
+      try {
+        const { collapseAreaRoomLightmaps } = await import("@/three/odyssey/OdysseyLightmapAtlas");
+        collapseAreaRoomLightmaps(module.area?.rooms || []);
+      }catch(e){
+        console.warn('Lightmap atlas collapse failed', e);
+      }
+
+      // Full GPU warm-up under LoadScreen: maps/lightmaps/env/bump/grass + programs.
+      // Moves first-visible stalls off gameplay VIS / frustum reveals.
+      const rooms = module.area?.rooms || [];
+      warmRoomGpuResources(rooms, GameState.renderer);
+      if(GameState.currentCamera){
+        compileAreaRoomsVisible(rooms, GameState.renderer, GameState.scene, GameState.currentCamera);
+      }
+
       module.initEventQueue();
 
       console.log('Module.initScripts');
@@ -1634,7 +1658,6 @@ export class GameState implements EngineContext {
 
         GameState.ResetModuleAudio();
 
-        GameState.renderer.compile(GameState.scene, GameState.currentCamera);
         GameState.renderer.setClearColor( new THREE.Color(GameState.module.area.sun.fogColor) );
         
         console.log('ModuleArea.initAreaObjects');
@@ -1843,6 +1866,19 @@ export class GameState implements EngineContext {
         }
       });
 
+      try {
+        const { collapseAreaRoomLightmaps } = await import("@/three/odyssey/OdysseyLightmapAtlas");
+        collapseAreaRoomLightmaps(module.area?.rooms || []);
+      }catch(e){
+        console.warn('Lightmap atlas collapse failed', e);
+      }
+
+      const rooms = module.area?.rooms || [];
+      warmRoomGpuResources(rooms, GameState.renderer);
+      if(GameState.currentCamera){
+        compileAreaRoomsVisible(rooms, GameState.renderer, GameState.scene, GameState.currentCamera);
+      }
+
       module.initEventQueue();
       await module.initScripts();
 
@@ -1860,7 +1896,6 @@ export class GameState implements EngineContext {
         console.warn('LoadModuleFromArchives: overlay', e);
       }
 
-      GameState.renderer.compile(GameState.scene, GameState.currentCamera);
       GameState.renderer.setClearColor( new THREE.Color(GameState.module.area.sun.fogColor) );
 
       GameState.SetEngineMode(GameState.module.area.miniGame ? EngineMode.MINIGAME : EngineMode.INGAME);
@@ -2375,6 +2410,8 @@ export class GameState implements EngineContext {
   }
 
   static Render(delta: number = 0){
+    RenderPerfStats.beginFrame(GameState.renderer);
+
     GameState.renderPass.camera = GameState.currentCamera;
     GameState.renderPassAA.camera = GameState.currentCamera;
     GameState.bokehPass.camera = GameState.currentCamera;
@@ -2403,7 +2440,13 @@ export class GameState implements EngineContext {
       }
     }
 
+    if(RenderPerfStats.enabled){
+      RenderPerfStats.beginPhase('depthPre');
+    }
     GameState.renderDepthPrepass();
+    if(RenderPerfStats.enabled){
+      RenderPerfStats.endPhase();
+    }
 
     // UpdateMotionBlur — after WASD / path locomotion this frame.
     GameState.syncMotionBlurRatio();
@@ -2467,7 +2510,11 @@ export class GameState implements EngineContext {
       cam.layers.disable(RenderLayer.MG_CAMERA_HUD);
     }
 
-    composer.render(delta);
+    if(RenderPerfStats.enabled){
+      GameState.renderComposerWithPerfPhases(composer, delta);
+    }else{
+      composer.render(delta);
+    }
     if(cam && prevCamLayers !== undefined){
       cam.layers.mask = prevCamLayers;
     }
@@ -2476,6 +2523,46 @@ export class GameState implements EngineContext {
       GameState.odysseyShadowManager?.noteShadowMapRendered();
       if(GameState.odysseyShadowManager?.consumeUniformsRefreshNeeded()){
         OdysseyLightingBinder.refreshSceneShadowMapUniforms(GameState.scene);
+      }
+    }
+
+    if(RenderPerfStats.enabled){
+      RenderPerfStats.endFrame();
+      RenderPerfStats.maybeLog(60);
+    }
+  }
+
+  /**
+   * Run EffectComposer while attributing `renderer.info` draw deltas to
+   * world / gui / post buckets (shadow depth is hooked via shadowMap.render).
+   */
+  static renderComposerWithPerfPhases(composer: { passes: any[]; render: (delta?: number) => void }, delta: number): void {
+    const wraps: Array<{ pass: any; orig: (...args: any[]) => void }> = [];
+    for(let i = 0; i < composer.passes.length; i++){
+      const pass = composer.passes[i];
+      if(!pass?.enabled || typeof pass.render !== 'function'){ continue; }
+      const orig = pass.render.bind(pass);
+      wraps.push({ pass, orig });
+      const name = pass.constructor?.name || '';
+      pass.render = (...args: any[]) => {
+        if(pass === GameState.renderPassGUI || pass === GameState.renderPassMGHud){
+          RenderPerfStats.beginPhase('gui');
+        }else if(pass === GameState.renderPass){
+          RenderPerfStats.beginPhase('world');
+        }else{
+          RenderPerfStats.beginPhase('post');
+        }
+        const ret = orig(...args);
+        RenderPerfStats.endPhase();
+        return ret;
+      };
+      void name;
+    }
+    try {
+      composer.render(delta);
+    }finally{
+      for(let i = 0; i < wraps.length; i++){
+        wraps[i].pass.render = wraps[i].orig;
       }
     }
   }

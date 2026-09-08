@@ -347,6 +347,7 @@ export class ModuleRoom extends ModuleObject {
   show(showLinkedRooms = false){
     if(this.model){
       this.model.visible = true;
+      this.model.userData.visActive = true;
     }
 
     if(this.grass){
@@ -362,6 +363,7 @@ export class ModuleRoom extends ModuleObject {
         }
         if(typeof room.model === 'object'){
           room.model.visible = true;
+          room.model.userData.visActive = true;
         }
       }
     }
@@ -374,10 +376,6 @@ export class ModuleRoom extends ModuleObject {
       GameState.group.room_walkmeshes.add(this.collisionManager.walkmesh.mesh);
     }
 
-    if(this.collisionManager.walkmesh){
-      this.collisionManager.walkmesh.buildEdgeNormalHelpers();
-    }
-
     for(let i = 0, sLen = this.sounds.length; i < sLen; i++){
       this.sounds[i].audioEmitter.setDisabled(false);
     }
@@ -386,6 +384,7 @@ export class ModuleRoom extends ModuleObject {
   hide(hideLinkedRooms = false){
     if(this.model){
       this.model.visible = false;
+      this.model.userData.visActive = false;
     }
 
     if(this.grass){
@@ -399,6 +398,7 @@ export class ModuleRoom extends ModuleObject {
           continue;
         }
         linkedRooms[i].model.visible = false;
+        linkedRooms[i].model.userData.visActive = false;
       }
     }
 
@@ -453,7 +453,7 @@ export class ModuleRoom extends ModuleObject {
       context: this.context,
       castShadow: false,
       receiveShadow: true,
-      //Merge Static Geometry *Experimental*
+      //Merge Static Geometry
       mergeStatic: !this.area.miniGame ? true : false
     });
 
@@ -496,7 +496,7 @@ export class ModuleRoom extends ModuleObject {
     //room.disableMatrixUpdate;
 
     try{
-      this.buildGrass();
+      await this.buildGrass();
     }catch(e){
       console.error(e);
     }
@@ -517,7 +517,7 @@ export class ModuleRoom extends ModuleObject {
     }
   }
 
-  buildGrass(){
+  async buildGrass(): Promise<void> {
     if(!this.area.grass.textureName){
       // console.warn('ModuleRoom.buildGrass: No grass texture found for room', this.roomName);
       return;
@@ -751,8 +751,8 @@ export class ModuleRoom extends ModuleObject {
     this.grass.position.copy(this.position).add(aabb.position);
     GameState.group.grass.add(this.grass);
 
-    // Load textures asynchronously
-    this.loadGrassTextures(grass_material, lm_texture);
+    // Settle textures before area warm-up / renderer.compile
+    await this.loadGrassTextures(grass_material, lm_texture);
   }
 
   /**
@@ -991,42 +991,38 @@ export class ModuleRoom extends ModuleObject {
   }
 
   /**
-   * Load grass textures asynchronously
+   * Load grass textures before GPU warm-up / compile so first grass draw
+   * does not pay deferred define flips + texture uploads.
    */
-  private loadGrassTextures(grass_material: THREE.ShaderMaterial, lm_texture: any): void {
+  private async loadGrassTextures(grass_material: THREE.ShaderMaterial, lm_texture: any): Promise<void> {
     if(!this.area.grass.textureName){
-      // console.warn('ModuleRoom.buildGrass: No grass texture found for room ' + this.roomName);
       return;
     }
 
-    TextureLoader.Load(this.area.grass.textureName).then((diffuseMap: OdysseyTexture) => {
-      if(!diffuseMap) return;
+    const diffuseMap: OdysseyTexture = await TextureLoader.Load(this.area.grass.textureName);
+    if(!diffuseMap){ return; }
 
-      diffuseMap.minFilter = THREE.LinearFilter;
-      diffuseMap.magFilter = THREE.LinearFilter;
-      grass_material.uniforms.map.value = diffuseMap;
-      grass_material.uniformsNeedUpdate = true;
-      grass_material.defines.USE_MAP = '';
-      grass_material.defines.USE_UV = '';
-      grass_material.needsUpdate = true;
+    diffuseMap.minFilter = THREE.LinearFilter;
+    diffuseMap.magFilter = THREE.LinearFilter;
+    grass_material.uniforms.map.value = diffuseMap;
+    grass_material.uniformsNeedUpdate = true;
+    grass_material.defines.USE_MAP = '';
+    grass_material.defines.USE_UV = '';
+    grass_material.needsUpdate = true;
 
-      if(!lm_texture){
-        // console.warn('ModuleRoom.buildGrass: No grass lightmap found for room ' + this.roomName);
-        return;
-      }
+    if(!lm_texture){
+      return;
+    }
 
-      // Load lightmap texture
-      TextureLoader.Load(lm_texture).then((lightMap: OdysseyTexture) => {
-        if(!lightMap) return;
+    const lightMap: OdysseyTexture = await TextureLoader.Load(lm_texture);
+    if(!lightMap){ return; }
 
-        lightMap.minFilter = THREE.LinearFilter;
-        lightMap.magFilter = THREE.LinearFilter;
-        grass_material.uniforms.lightMap.value = lightMap;
-        grass_material.uniformsNeedUpdate = true;
-        grass_material.defines.USE_LIGHTMAP = '';
-        grass_material.needsUpdate = true;
-      });
-    });
+    lightMap.minFilter = THREE.LinearFilter;
+    lightMap.magFilter = THREE.LinearFilter;
+    grass_material.uniforms.lightMap.value = lightMap;
+    grass_material.uniformsNeedUpdate = true;
+    grass_material.defines.USE_LIGHTMAP = '';
+    grass_material.needsUpdate = true;
   }
 
 

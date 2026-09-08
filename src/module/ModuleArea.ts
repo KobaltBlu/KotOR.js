@@ -712,6 +712,7 @@ export class ModuleArea extends ModuleObject {
     }
 
     this.updateRoomVisibility(delta);
+    this.applyRoomRenderFrustumCull();
     // Same-frame object cull after room VIS (avoids one-frame blank props/doors)
     this.syncObjectModelVisibility();
     FollowerCamera.update(delta, this);
@@ -779,6 +780,7 @@ export class ModuleArea extends ModuleObject {
     }
 
     this.updateRoomVisibility(delta);
+    this.applyRoomRenderFrustumCull();
     this.syncObjectModelVisibility();
     FollowerCamera.update(delta, this);
 
@@ -1633,6 +1635,67 @@ export class ModuleArea extends ModuleObject {
       break;
     }
   }
+
+  /**
+   * Render-only cull for VIS-linked rooms that miss the view frustum.
+   * Keeps VIS show/hide (audio / gameplay) via userData.visActive; only
+   * toggles model/grass draw visibility. Player room always stays drawn.
+   */
+  applyRoomRenderFrustumCull(): void {
+    const cam = GameState.currentCamera;
+    if(!cam){ return; }
+
+    cam.updateMatrixWorld(true);
+    const persp = cam as THREE.PerspectiveCamera;
+    if(typeof persp.updateProjectionMatrix === 'function'){
+      persp.updateProjectionMatrix();
+    }
+
+    ModuleArea._frustumProj.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+    ModuleArea._viewFrustum.setFromProjectionMatrix(ModuleArea._frustumProj);
+
+    const playerRoom = GameState.getCurrentPlayer()?.room;
+    const pad = 4;
+
+    for(let i = 0, len = this.rooms.length; i < len; i++){
+      const room = this.rooms[i];
+      const model = room?.model;
+      if(!model){ continue; }
+      if(!model.userData.visActive){
+        model.visible = false;
+        if(room.grass){ room.grass.visible = false; }
+        continue;
+      }
+      if(room === playerRoom){
+        model.visible = true;
+        if(room.grass){ room.grass.visible = true; }
+        continue;
+      }
+
+      const box = room.box?.isEmpty?.() === false ? room.box : model.box;
+      if(!box || box.isEmpty()){
+        model.visible = true;
+        if(room.grass){ room.grass.visible = true; }
+        continue;
+      }
+
+      ModuleArea._frustumBox.copy(box);
+      ModuleArea._frustumBox.min.x -= pad;
+      ModuleArea._frustumBox.min.y -= pad;
+      ModuleArea._frustumBox.min.z -= pad;
+      ModuleArea._frustumBox.max.x += pad;
+      ModuleArea._frustumBox.max.y += pad;
+      ModuleArea._frustumBox.max.z += pad;
+
+      const onScreen = ModuleArea._viewFrustum.intersectsBox(ModuleArea._frustumBox);
+      model.visible = onScreen;
+      if(room.grass){ room.grass.visible = onScreen; }
+    }
+  }
+
+  private static readonly _viewFrustum = new THREE.Frustum();
+  private static readonly _frustumProj = new THREE.Matrix4();
+  private static readonly _frustumBox = new THREE.Box3();
 
   /**
    * Re-sync object model visibility to current room.model.visible.
@@ -2987,7 +3050,7 @@ export class ModuleArea extends ModuleObject {
           pwk.mesh.updateMatrix();
           pwk.mesh.updateMatrixWorld(true);
         }
-        pwk.buildEdgeNormalHelpers();
+        // Edge normal helpers are debug-only; built lazily when walkmesh debug is on.
         //pwk.mesh.position.copy(plc.position);
         GameState.group.room_walkmeshes.add( pwk.mesh );
       }

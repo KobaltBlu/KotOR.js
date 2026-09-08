@@ -306,7 +306,18 @@ export class OdysseyWalkMesh {
     this.buildEdgeAABBTree();
   }
 
-  buildEdgeNormalHelpers(color: number = 0xff0000, maxLength: number = 0.5){
+  /**
+   * Debug-only edge normal ArrowHelpers. Idempotent unless `force` — do not
+   * call from ModuleRoom.show (rebuild stalls on every VIS activation).
+   */
+  buildEdgeNormalHelpers(color: number = 0xff0000, maxLength: number = 0.5, force: boolean = false){
+    if(this.edgeNormalHelpers && !force){
+      if(this.mesh && !this.edgeNormalHelpers.parent){
+        this.mesh.add(this.edgeNormalHelpers);
+      }
+      return;
+    }
+
     if(this.edgeNormalHelpers){
       this.edgeNormalHelpers.removeFromParent();
       this.edgeNormalHelpers.traverse((obj: any) => {

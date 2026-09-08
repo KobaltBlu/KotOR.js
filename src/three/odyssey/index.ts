@@ -10,3 +10,4 @@ export * from "@/three/odyssey/OdysseyFace3";
 export * from "@/three/odyssey/OdysseyLightingBinder";
 export * from "@/three/odyssey/OdysseyMaterialBuilder";
 export * from "@/three/odyssey/OdysseyDepthPrepassMaterial";
+export * from "@/three/odyssey/warmRoomGpuResources";

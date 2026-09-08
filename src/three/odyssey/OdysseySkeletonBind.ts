@@ -1,10 +1,42 @@
 import * as THREE from "three";
+import { RenderPerfStats } from "@/utility/RenderPerfStats";
 
 const _skinIndex = /*@__PURE__*/ new THREE.Vector4();
 const _skinWeight = /*@__PURE__*/ new THREE.Vector4();
 const _vector = /*@__PURE__*/ new THREE.Vector3();
 const _matrix = /*@__PURE__*/ new THREE.Matrix4();
 const _basePosition = /*@__PURE__*/ new THREE.Vector3();
+
+const ODYSSEY_SKELETON_DIRTY = 'odysseyBonesDirty';
+const ODYSSEY_SKIN_MW_FP = 'odysseySkinMatrixWorldFp';
+
+/** Mark a skeleton so the next {@link THREE.Skeleton.update} fills boneMatrices and uploads. */
+export function markOdysseySkeletonDirty(skeleton: THREE.Skeleton | undefined | null): void {
+  if(!skeleton){ return; }
+  (skeleton as any)[ODYSSEY_SKELETON_DIRTY] = true;
+}
+
+/** Mark every Skeleton under a root (pose flush / equipment attach). */
+export function markOdysseySkeletonsDirtyUnder(root: THREE.Object3D | undefined | null): void {
+  if(!root || typeof (root as any).traverse !== 'function'){ return; }
+  root.traverse((obj) => {
+    const skin = obj as THREE.SkinnedMesh;
+    if(skin.isSkinnedMesh && skin.skeleton){
+      markOdysseySkeletonDirty(skin.skeleton);
+    }
+  });
+}
+
+function skinMatrixWorldFingerprint(skinNode: THREE.Object3D): number {
+  const e = skinNode.matrixWorld.elements;
+  let h = Math.round(e[0] * 1e4) | 0;
+  h = Math.imul(h ^ (Math.round(e[5] * 1e4) | 0), 16777619);
+  h = Math.imul(h ^ (Math.round(e[10] * 1e4) | 0), 16777619);
+  h = Math.imul(h ^ (Math.round(e[12] * 1e3) | 0), 16777619);
+  h = Math.imul(h ^ (Math.round(e[13] * 1e3) | 0), 16777619);
+  h = Math.imul(h ^ (Math.round(e[14] * 1e3) | 0), 16777619);
+  return h | 0;
+}
 
 /**
  * GatherBones space: bone matrices are skin-local (inv(skinWorld) * boneWorld)
@@ -25,7 +57,17 @@ export function installOdysseySkeletonUpdate(
   const boneLocal = new THREE.Matrix4();
   const skinInverse = new THREE.Matrix4();
 
+  // First bind / LOD / attach must upload once.
+  markOdysseySkeletonDirty(skeleton);
+
   skeleton.update = function odysseySkeletonUpdate(this: THREE.Skeleton){
+    const dirtyFlag = !!(this as any)[ODYSSEY_SKELETON_DIRTY];
+    const skinFp = skinMatrixWorldFingerprint(skinNode);
+    const lastSkinFp = (this as any)[ODYSSEY_SKIN_MW_FP] as number | undefined;
+    if(!dirtyFlag && lastSkinFp === skinFp){
+      return;
+    }
+
     const bones = this.bones;
     const boneInverses = this.boneInverses;
     const boneMatrices = this.boneMatrices;
@@ -43,8 +85,12 @@ export function installOdysseySkeletonUpdate(
       offsetMatrix.toArray(boneMatrices, i * 16);
     }
 
+    (this as any)[ODYSSEY_SKELETON_DIRTY] = false;
+    (this as any)[ODYSSEY_SKIN_MW_FP] = skinFp;
+
     if(this.boneTexture !== null){
       this.boneTexture.needsUpdate = true;
+      RenderPerfStats.noteBoneTextureUpload();
     }
   };
 

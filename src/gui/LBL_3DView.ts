@@ -27,7 +27,8 @@ export class LBL_3DView {
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
   texture: THREE.WebGLRenderTarget;
-  tDepth: THREE.WebGLRenderTarget;
+  /** @deprecated Unused depth RT — disposed after construction. */
+  tDepth: THREE.WebGLRenderTarget | null = null;
   clearColor: THREE.Color;
   currentCamera: THREE.Camera;
   globalLight: THREE.AmbientLight;
@@ -44,6 +45,7 @@ export class LBL_3DView {
   control: any;
   frustumMat4: THREE.Matrix4;
   viewportFrustum: THREE.Frustum;
+  private _fillBound = false;
   /**
    * PrioritizeLights focus (Scene.focus_position, default origin).
    * GUI gobs score / nearest light selection against the subject, not the camera.
@@ -65,7 +67,7 @@ export class LBL_3DView {
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera( GUI_3D_VIEW_FOV, this.width/this.height, 0.1, 15000 );
     this.texture = new THREE.WebGLRenderTarget( this.width, this.height, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter});
-		this.tDepth = new THREE.WebGLRenderTarget( this.width, this.height, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat } );
+    this.tDepth = null;
     this.clearColor = new THREE.Color(0x000000);
 
     this.currentCamera = this.camera;
@@ -113,8 +115,9 @@ export class LBL_3DView {
     this.setSize(w, h);
 
     this.control.setFillTexture(this.texture.texture);
-    // this.control.getFill.material.uniforms.map.value = this.texture.texture;
     this.control.setFillColor(1, 1, 1);
+    this.control.setFillOpaque(false);
+    this._fillBound = true;
   }
 
   /** SetViewAngle — ClassSel / MainCG / PORTCUST / Setup3DScene. */
@@ -174,7 +177,6 @@ export class LBL_3DView {
   setSize(width = 0, height = 0){
     this.width = Math.max(1, asExtentInt(width));
     this.height = Math.max(1, asExtentInt(height));
-    this.tDepth.setSize(this.width, this.height);
     this.updateRatio();
   }
 
@@ -232,9 +234,10 @@ export class LBL_3DView {
     GameState.renderer.setRenderTarget(null);
     //GameState.renderer.setClearColor(oldClearColor, 1);
 
-    if(this.control){
+    if(this.control && !this._fillBound){
       this.control.setFillTexture(this.texture.texture);
       this.control.setFillOpaque(false);
+      this._fillBound = true;
     }
 
   }

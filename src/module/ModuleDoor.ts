@@ -1076,6 +1076,8 @@ export class ModuleDoor extends ModuleObject {
           castShadow: false,
           receiveShadow: true,
           shadowsEnabled: false,
+          // Static shell merges; anim-dummy open/close meshes stay live.
+          mergeStatic: true,
         }).then((door: OdysseyModel3D) => {
           if(this.model instanceof OdysseyModel3D){
             this.model.removeFromParent();

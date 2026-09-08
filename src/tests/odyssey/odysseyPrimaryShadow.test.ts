@@ -98,10 +98,12 @@ describe('OdysseyShadowManager primary shadow map', () => {
     manager.useQualityPreset(false);
   });
 
-  test('hard quality preset keeps 2048 map resolution', () => {
-    expect(manager.mapResolution).toBe(2048);
+  test('quality presets keep 512 map resolution', () => {
+    expect(manager.mapResolution).toBe(512);
     manager.useQualityPreset(true);
-    expect(manager.mapResolution).toBe(2048);
+    expect(manager.mapResolution).toBe(512);
+    manager.useQualityPreset(false);
+    expect(manager.mapResolution).toBe(512);
   });
 
   test('selects one primary light with engine fade strength', () => {
@@ -310,7 +312,7 @@ describe('OdysseyShadowManager primary shadow map', () => {
     expect(manager.markShadowMapForRender(renderer)).toBe(true);
   });
 
-  test('nearby animated creature dirties shadow maps without light motion', () => {
+  test('nearby caster pose change dirties shadow maps without light motion', () => {
     const light = mockShadowLight({
       uuid: 'lamp',
       worldPosition: new THREE.Vector3(2, 0, 0),
@@ -327,17 +329,32 @@ describe('OdysseyShadowManager primary shadow map', () => {
     expect(manager.needsShadowMapRender).toBe(false);
 
     const { GameState } = require('@/GameState');
-    GameState.PartyManager = {
-      party: [{
-        position: new THREE.Vector3(0.5, 0, 0),
-        model: { visible: true, animateFrame: true },
-      }],
+    const partyMember = {
+      position: new THREE.Vector3(0.5, 0, 0),
+      quaternion: new THREE.Quaternion(),
+      model: {
+        visible: true,
+        animateFrame: true,
+        matrixWorld: new THREE.Matrix4().setPosition(0.5, 0, 0),
+      },
     };
+    GameState.PartyManager = { party: [partyMember] };
 
     manager.update(undefined, focus);
     expect(manager.needsShadowMapRender).toBe(true);
-    expect(manager.lastUpdateReason).toBe('animated-caster');
+    expect(manager.lastUpdateReason).toBe('caster-motion');
     expect(manager.markShadowMapForRender(renderer)).toBe(true);
+    manager.noteShadowMapRendered();
+
+    // Same pose + animateFrame alone must not re-dirty.
+    manager.update(undefined, focus);
+    expect(manager.needsShadowMapRender).toBe(false);
+
+    partyMember.position.set(0.8, 0, 0);
+    partyMember.model.matrixWorld.setPosition(0.8, 0, 0);
+    manager.update(undefined, focus);
+    expect(manager.needsShadowMapRender).toBe(true);
+    expect(manager.lastUpdateReason).toBe('caster-motion');
 
     GameState.PartyManager = undefined;
   });

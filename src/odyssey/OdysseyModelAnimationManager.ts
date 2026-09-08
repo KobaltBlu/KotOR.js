@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { OdysseyModel3D, OdysseyObject3D } from "@/three/odyssey";
+import { markOdysseySkeletonsDirtyUnder } from "@/three/odyssey/OdysseySkeletonBind";
 import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
 import type { OdysseyModelAnimationNode } from "@/odyssey/OdysseyModelAnimationNode";
 import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
@@ -102,6 +103,8 @@ export class OdysseyModelAnimationManager {
     }
     this._touchedTransformNodes.length = 0;
     this._touchedTransformNodeSet.clear();
+    // Pose batch wrote bone locals — next Skeleton.update must refill boneTexture.
+    markOdysseySkeletonsDirtyUnder(this.model);
   }
 
   createAnimationState(): OdysseyModelAnimationManagerState {

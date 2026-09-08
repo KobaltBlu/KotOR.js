@@ -721,6 +721,9 @@ export class ModulePlaceable extends ModuleObject {
         // alone would stamp IGNORE_LIGHTING (flat albedo) on unusable placeables.
         lighting: true,
         static: this.static,
+        // Merge non-anim-dummy leaves (exclusions match rooms). Animated / AABB /
+        // emitter nodes stay live so containers and scripted props keep working.
+        mergeStatic: true,
         useTweakColor: this.useTweakColor,
         tweakColor: this.tweakColor
       });

@@ -22,6 +22,7 @@ export * from "@/managers/LightManager";
 export * from "@/managers/OdysseyLightmapBaker";
 export * from "@/managers/PlaceableLightmapBaker";
 export * from "@/managers/OdysseyShadowManager";
+export * from "@/managers/ShadowCasterRegistry";
 export * from "@/managers/WindManager";
 export * from "@/managers/MenuManager";
 export * from "@/managers/ModuleObjectManager";

@@ -283,9 +283,8 @@ export class MenuManager {
     const to = MenuManager.pulseAscending ? 1.0 : 0.4;
     MenuManager.pulseOpacity = (to - from) * (HALF_CYCLE - MenuManager.pulse) * (1 / HALF_CYCLE) + from;
 
-    if(GameState.Mode == EngineMode.INGAME && MenuManager.InGameOverlay.bVisible){
-      MenuManager.InGameOverlay.update(delta);
-    }
+    // InGameOverlay lives on activeMenus (isOverlayGUI is false). Do not
+    // special-case update here — that doubled LBL_MapView 120² RTT each frame.
 
     if(GameState.Mode == EngineMode.INGAME && GameState.State == EngineState.PAUSED){
       MenuManager.InGamePause.update(delta);

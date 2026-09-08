@@ -1,0 +1,91 @@
+import { describe, expect, test, jest } from '@jest/globals';
+import * as THREE from 'three';
+import {
+  warmRoomGpuResources,
+  compileAreaRoomsVisible,
+} from '@/three/odyssey/warmRoomGpuResources';
+
+describe('warmRoomGpuResources', () => {
+  test('inits map, lightMap, envMap, bumpMap, and grass uniforms', () => {
+    const inited: THREE.Texture[] = [];
+    const renderer = {
+      initTexture: (tex: THREE.Texture) => { inited.push(tex); },
+    } as unknown as THREE.WebGLRenderer;
+
+    const map = new THREE.Texture();
+    const lightMap = new THREE.Texture();
+    const envMap = new THREE.Texture();
+    const bumpMap = new THREE.Texture();
+    const grassMap = new THREE.Texture();
+
+    const material = new THREE.ShaderMaterial({
+      uniforms: {
+        map: { value: map },
+        lightMap: { value: lightMap },
+        envMap: { value: envMap },
+        bumpMap: { value: bumpMap },
+      },
+    });
+
+    const model = new THREE.Group() as any;
+    model.materials = [material];
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(), material);
+    model.add(mesh);
+
+    const grassMat = new THREE.ShaderMaterial({
+      uniforms: { map: { value: grassMap } },
+    });
+    const grass = new THREE.Mesh(new THREE.PlaneGeometry(), grassMat);
+
+    warmRoomGpuResources([{ model, grass }], renderer);
+
+    expect(inited).toEqual(
+      expect.arrayContaining([map, lightMap, envMap, bumpMap, grassMap])
+    );
+    // Deduped across materials array + mesh.material
+    expect(inited.filter((t) => t === map).length).toBe(1);
+  });
+
+  test('no-ops without renderer.initTexture', () => {
+    expect(() => warmRoomGpuResources([], null)).not.toThrow();
+    expect(() => warmRoomGpuResources([], {} as any)).not.toThrow();
+  });
+});
+
+describe('compileAreaRoomsVisible', () => {
+  test('forces rooms visible for compile then restores', () => {
+    const model = new THREE.Group();
+    model.visible = false;
+    const grass = new THREE.Mesh();
+    grass.visible = false;
+
+    const compile = jest.fn();
+    const renderer = { compile } as unknown as THREE.WebGLRenderer;
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera();
+
+    compileAreaRoomsVisible([{ model: model as any, grass }], renderer, scene, camera);
+
+    expect(compile).toHaveBeenCalledWith(scene, camera);
+    expect(model.visible).toBe(false);
+    expect(grass.visible).toBe(false);
+  });
+
+  test('restores visibility if compile throws', () => {
+    const model = new THREE.Group();
+    model.visible = false;
+    const renderer = {
+      compile: () => { throw new Error('compile fail'); },
+    } as unknown as THREE.WebGLRenderer;
+
+    expect(() =>
+      compileAreaRoomsVisible(
+        [{ model: model as any }],
+        renderer,
+        new THREE.Scene(),
+        new THREE.PerspectiveCamera()
+      )
+    ).toThrow('compile fail');
+    expect(model.visible).toBe(false);
+  });
+});

@@ -7,6 +7,7 @@ import { MapMode } from "@/enums/engine/MapMode";
 import * as THREE from "three";
 import { TextureLoader } from "@/loaders";
 import { asExtentInt, truncDiv } from "@/gui/GUICoord";
+import { RenderPerfStats } from "@/utility/RenderPerfStats";
 
 const FOG_SIZE = 64;
 const FOG_SIZE_HALF = FOG_SIZE/2;
@@ -36,7 +37,8 @@ export class LBL_MapView {
   scene: THREE.Scene;
   camera: THREE.OrthographicCamera;
   texture: THREE.WebGLRenderTarget;
-  tDepth: THREE.WebGLRenderTarget;
+  /** @deprecated Unused depth RT — disposed after construction. */
+  tDepth: THREE.WebGLRenderTarget | null = null;
   clearColor: THREE.Color;
   currentCamera: THREE.Camera;
   frustumMat4: THREE.Matrix4;
@@ -73,6 +75,19 @@ export class LBL_MapView {
   mousePosition: THREE.Vector2 = new THREE.Vector2(0, 0);
   globalLight: THREE.AmbientLight;
 
+  /** Skip RTT when nothing visible changed. */
+  private _rttDirty = true;
+  private _lastRttPosX = Number.NaN;
+  private _lastRttPosY = Number.NaN;
+  private _lastRttAngle = Number.NaN;
+  private _lastRttPulse = Number.NaN;
+  private _lastRttParty0X = Number.NaN;
+  private _lastRttParty0Y = Number.NaN;
+  private _lastRttParty1X = Number.NaN;
+  private _lastRttParty1Y = Number.NaN;
+  private _lastCheatReveal = false;
+  private _fillBound = false;
+
   constructor(
     LBL_MAPVIEW: GUILabel,
   ) {
@@ -94,7 +109,7 @@ export class LBL_MapView {
     );
 
     this.texture = new THREE.WebGLRenderTarget( this.width, this.height, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter});
-    this.tDepth = new THREE.WebGLRenderTarget( this.width, this.height, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat } );
+    this.tDepth = null;
     this.clearColor = new THREE.Color(0x000000);
 
     this.currentCamera = this.camera;
@@ -184,22 +199,27 @@ export class LBL_MapView {
 
     this.control.setFillTexture(this.texture.texture);
     this.control.setFillColor(1, 1, 1);
+    this.control.setFillOpaque(false);
+    this._fillBound = true;
+    this._rttDirty = true;
   }
 
   setVisible(bVisible: boolean){
     this.visible = bVisible;
+    this._rttDirty = true;
   }
 
   setMode(mode: MapMode){
     this.mode = mode;
+    this._rttDirty = true;
   }
 
   setSize(width = 0, height = 0){
     this.width = Math.max(1, asExtentInt(width));
     this.height = Math.max(1, asExtentInt(height));
     this.texture.setSize(this.width, this.height);
-    this.tDepth.setSize(this.width, this.height);
     this.updateRatio();
+    this._rttDirty = true;
   }
 
   updateRatio(){
@@ -229,6 +249,7 @@ export class LBL_MapView {
     material.map = this.mapTexture;
 
     this.applyMapPlaneScale();
+    this._rttDirty = true;
   }
 
   applyMapPlaneScale(){
@@ -251,6 +272,7 @@ export class LBL_MapView {
 
   setAreaMap(areaMap: AreaMap){
     this.areaMap = areaMap;
+    this._rttDirty = true;
     if(!this.areaMap) return;
 
     (this.fogPlane.material as THREE.ShaderMaterial).uniforms.alphaMap.value = this.areaMap.fogAlphaTexture;
@@ -299,6 +321,9 @@ export class LBL_MapView {
   }
 
   updateMousePosition(x: number = 0, y: number = 0){
+    if(this.mousePosition.x !== x || this.mousePosition.y !== y){
+      this._rttDirty = true;
+    }
     this.mousePosition.set(x, y);
   }
 
@@ -331,6 +356,24 @@ export class LBL_MapView {
     if(!this.visible || !this.control || !this.areaMap)
       return;
 
+    // Fog reveal can change alpha even when pose is static — always try reveal,
+    // then decide whether the RTT needs a redraw.
+    this.areaMap.revealPosition(this.position.x, this.position.y, 1);
+
+    const pulse = this.mode == MapMode.FULLMAP ? GameState.MenuManager.pulseOpacity : Number.NaN;
+    const cheat = !!GameState.cheatRevealMap;
+    if(
+      !this._rttDirty &&
+      this.position.x === this._lastRttPosX &&
+      this.position.y === this._lastRttPosY &&
+      this.arrowAngle === this._lastRttAngle &&
+      pulse === this._lastRttPulse &&
+      cheat === this._lastCheatReveal &&
+      !this.partyDirty()
+    ){
+      return;
+    }
+
     if(!this.currentCamera) this.currentCamera = this.camera;
 
     if(this.currentCamera){
@@ -346,9 +389,7 @@ export class LBL_MapView {
 
     this.applyMapPlaneScale();
     const scaleSize = this.getMapTextureScaleSize();
-    
-    // UpdateMapData: SetWorldPointExplored(..., 1)
-    this.areaMap.revealPosition(this.position.x, this.position.y, 1);
+
     const mapPos = this.areaMap.toMapCoordinates(this.position.x, this.position.y);
     this.currentCamera.position.x = asExtentInt(scaleSize.width * mapPos.x);
     this.currentCamera.position.y = asExtentInt(scaleSize.height * mapPos.y);
@@ -448,11 +489,15 @@ export class LBL_MapView {
     GameState.renderer.setRenderTarget(null);
     GameState.renderer.setClearColor(oldClearColor, 1);
 
-    if(this.control){
+    if(this.control && !this._fillBound){
       this.control.setFillTexture(this.texture.texture);
       this.control.setFillOpaque(false);
+      this._fillBound = true;
     }
 
+    this._rttDirty = false;
+    this.captureRttState();
+    RenderPerfStats.noteMinimapRtt();
   }
 
   /**
@@ -480,6 +525,9 @@ export class LBL_MapView {
   }
 
   setPosition(x: number, y: number){
+    if(this.position.x !== x || this.position.y !== y){
+      this._rttDirty = true;
+    }
     this.position.set(x, y, 0);
   }
 
@@ -489,23 +537,64 @@ export class LBL_MapView {
    */
   setRotation(angle: number = 0){
     if(!this.areaMap){
+      if(this.arrowAngle !== angle){ this._rttDirty = true; }
       this.arrowAngle = angle;
       return;
     }
+    let next = angle;
     switch(this.areaMap.northAxis){
       case MapNorthAxis.EAST:
-        this.arrowAngle = angle + Math.PI;
+        next = angle + Math.PI;
         break;
       case MapNorthAxis.SOUTH:
-        this.arrowAngle = angle + (Math.PI / 2);
+        next = angle + (Math.PI / 2);
         break;
       case MapNorthAxis.WEST:
-        this.arrowAngle = angle + (3 * Math.PI / 2);
+        next = angle + (3 * Math.PI / 2);
         break;
       case MapNorthAxis.NORTH:
       default:
-        this.arrowAngle = angle;
+        next = angle;
         break;
+    }
+    if(this.arrowAngle !== next){ this._rttDirty = true; }
+    this.arrowAngle = next;
+  }
+
+  /** Force next render to redraw the RTT (fog reveal, map note, etc.). */
+  markDirty(){
+    this._rttDirty = true;
+  }
+
+  private partyDirty(): boolean {
+    for(let i = 0; i < 2; i++){
+      const pm = GameState.PartyManager?.party?.[i + 1];
+      const lx = i === 0 ? this._lastRttParty0X : this._lastRttParty1X;
+      const ly = i === 0 ? this._lastRttParty0Y : this._lastRttParty1Y;
+      if(!pm){
+        if(!Number.isNaN(lx) || !Number.isNaN(ly)){ return true; }
+        continue;
+      }
+      if(pm.position.x !== lx || pm.position.y !== ly){ return true; }
+    }
+    return false;
+  }
+
+  private captureRttState(){
+    this._lastRttPosX = this.position.x;
+    this._lastRttPosY = this.position.y;
+    this._lastRttAngle = this.arrowAngle;
+    this._lastRttPulse = this.mode == MapMode.FULLMAP ? GameState.MenuManager.pulseOpacity : Number.NaN;
+    this._lastCheatReveal = !!GameState.cheatRevealMap;
+    for(let i = 0; i < 2; i++){
+      const pm = GameState.PartyManager?.party?.[i + 1];
+      if(i === 0){
+        this._lastRttParty0X = pm ? pm.position.x : Number.NaN;
+        this._lastRttParty0Y = pm ? pm.position.y : Number.NaN;
+      }else{
+        this._lastRttParty1X = pm ? pm.position.x : Number.NaN;
+        this._lastRttParty1Y = pm ? pm.position.y : Number.NaN;
+      }
     }
   }
 

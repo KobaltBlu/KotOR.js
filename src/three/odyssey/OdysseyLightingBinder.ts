@@ -19,8 +19,8 @@ import { envMapRotationFromCamera } from "@/utility/envMapRotation";
  * OdysseyLightingBinder — pushes packed Odyssey light + area ambient/sun
  * uniforms onto ShaderMaterials. Materials must use lights: false.
  *
- * Light positions are transformed to view-space on upload (camera required for
- * correct lighting). Area ambient/sun state is owned by each LightManager.
+ * Light positions / sun direction are uploaded in **world space**; the fragment
+ * shader applies viewMatrix. Camera motion no longer invalidates light arrays.
  *
  * split (LoadArea / SetAsDay):
  * - ambientColor = ARE DynAmbientColor → SetAmbient
@@ -103,13 +103,18 @@ export class OdysseyLightingBinder {
     this.sunDirection.set(x, y, z).normalize();
   }
 
-  /** Integer hash of sampled camera.matrixWorldInverse elements. */
+  /** Integer hash of the complete camera basis plus translation. */
   private static cameraViewFingerprint(camera?: THREE.Camera): number {
     if(!camera){ return 0; }
+    camera.updateMatrixWorld();
     const e = camera.matrixWorldInverse.elements;
-    let h = Math.round(e[0] * 1e5) | 0;
-    h = Math.imul(h ^ (Math.round(e[5] * 1e5) | 0), 16777619);
-    h = Math.imul(h ^ (Math.round(e[10] * 1e5) | 0), 16777619);
+    // Diagonal-only fingerprints alias opposite yaw/pitch angles, leaving the
+    // envmap rotation frozen until a coarse threshold changes (visible snaps).
+    const basis = [0, 1, 2, 4, 5, 6, 8, 9, 10];
+    let h = 0x811c9dc5;
+    for(let i = 0; i < basis.length; i++){
+      h = Math.imul(h ^ (Math.round(e[basis[i]] * 1e6) | 0), 16777619);
+    }
     h = Math.imul(h ^ (Math.round(e[12] * 1e4) | 0), 16777619);
     h = Math.imul(h ^ (Math.round(e[13] * 1e4) | 0), 16777619);
     h = Math.imul(h ^ (Math.round(e[14] * 1e4) | 0), 16777619);
@@ -124,6 +129,7 @@ export class OdysseyLightingBinder {
     camera: THREE.Camera | undefined,
     sunDir: THREE.Vector3
   ): THREE.Vector3 {
+    // Kept for envmap / legacy callers; lighting uploads use world sun.
     if(!camera){
       return sunDir;
     }
@@ -145,8 +151,8 @@ export class OdysseyLightingBinder {
 
   private static areaFingerprint(
     lightManager: LightManager | undefined,
-    camera: THREE.Camera | undefined
-  ): { ambientHex: number; sunAmbientHex: number; sunHex: number; headKey: number; viewFp: number; viewSun: THREE.Vector3; areaFp: number } {
+    _camera: THREE.Camera | undefined
+  ): { ambientHex: number; sunAmbientHex: number; sunHex: number; headKey: number; viewFp: number; viewSun: THREE.Vector3; areaFp: number; sunDirFp: number } {
     const ambient = lightManager?.ambientColor ?? this.ambientColor;
     const sunAmbient = lightManager?.sunAmbientColor ?? this.sunAmbientColor;
     const sun = lightManager?.sunColor ?? this.sunColor;
@@ -158,45 +164,33 @@ export class OdysseyLightingBinder {
     if(lightManager?.headLightEnabled){
       headKey = this.mixHash(1, this.mixHash(lightManager.headLightAmbient.getHex(), lightManager.headLightDiffuse.getHex()));
     }
-    const viewSun = this.resolveViewSunDir(camera, sunDir);
-    const viewFp = this.mixHash(
-      this.cameraViewFingerprint(camera),
-      this.mixHash(
-        Math.round(viewSun.x * 1e5) | 0,
-        this.mixHash(Math.round(viewSun.y * 1e5) | 0, Math.round(viewSun.z * 1e5) | 0)
-      )
+    const sunDirFp = this.mixHash(
+      Math.round(sunDir.x * 1e5) | 0,
+      this.mixHash(Math.round(sunDir.y * 1e5) | 0, Math.round(sunDir.z * 1e5) | 0)
     );
+    // Camera is intentionally excluded — lights/sun are world-space; shader applies viewMatrix.
     let areaFp = ambientHex;
     areaFp = this.mixHash(areaFp, sunAmbientHex);
     areaFp = this.mixHash(areaFp, sunHex);
     areaFp = this.mixHash(areaFp, headKey);
-    areaFp = this.mixHash(areaFp, viewFp);
+    areaFp = this.mixHash(areaFp, sunDirFp);
     if(lightManager){
       areaFp = this.mixHash(areaFp, lightManager.getAreaFingerprint());
     }
-    return { ambientHex, sunAmbientHex, sunHex, headKey, viewFp, viewSun, areaFp };
+    return { ambientHex, sunAmbientHex, sunHex, headKey, viewFp: 0, viewSun: sunDir, areaFp, sunDirFp };
   }
 
   /**
-   * Copy world-space light slots into material arrays, transforming xyz to
-   * view-space when a camera is provided.
+   * Copy world-space light slots into material arrays (no view transform).
    */
   private static copyLightArrays(
     posArr: THREE.Vector4[],
     colArr: THREE.Vector4[],
     lightSet: IOdysseyLightUniformSlot,
-    camera?: THREE.Camera
+    _camera?: THREE.Camera
   ){
-    const inv = camera ? camera.matrixWorldInverse : undefined;
     for(let i = 0; i < MAX_ODYSSEY_LIGHTS; i++){
-      const srcPos = lightSet.odysseyLightPos[i];
-      const dstPos = posArr[i];
-      if(inv && (srcPos.x !== 0 || srcPos.y !== 0 || srcPos.z !== 0 || srcPos.w !== 0)){
-        this._scratchViewPos.set(srcPos.x, srcPos.y, srcPos.z).applyMatrix4(inv);
-        dstPos.set(this._scratchViewPos.x, this._scratchViewPos.y, this._scratchViewPos.z, srcPos.w);
-      }else{
-        dstPos.copy(srcPos);
-      }
+      posArr[i].copy(lightSet.odysseyLightPos[i]);
       colArr[i].copy(lightSet.odysseyLightColor[i]);
     }
   }
@@ -272,16 +266,16 @@ export class OdysseyLightingBinder {
 
     const fp = this.areaFingerprint(lightManager, camera);
     const lightCacheOk = material.userData[cacheKey] === lightSet.cacheID;
-    // Lightmapped materials bind no area uniforms, so only the view transform
-    // used for view-space light positions has to stay current.
+    // World-space lights: area fingerprint has no camera term.
     const areaOk = usesLightmap
-      ? material.userData.odysseyViewSunBound === fp.viewFp
+      ? material.userData.odysseyAreaBound === fp.areaFp
       : (
         material.userData.odysseyAmbientBound === fp.ambientHex &&
         material.userData.odysseySunAmbientBound === fp.sunAmbientHex &&
         material.userData.odysseySunBound === fp.sunHex &&
         material.userData.odysseyHeadLightBound === fp.headKey &&
-        material.userData.odysseyViewSunBound === fp.viewFp
+        material.userData.odysseySunDirBound === fp.sunDirFp &&
+        material.userData.odysseyAreaBound === fp.areaFp
       );
 
     if(lightCacheOk && areaOk && material.userData.odysseyLightArraysSkipped !== true){
@@ -309,7 +303,6 @@ export class OdysseyLightingBinder {
       material.userData.odysseyLightColorOwned = true;
     }
 
-    // View-space positions must refresh when the camera moves even if lightSet is unchanged.
     if(!lightCacheOk || material.userData.odysseyLightArraysSkipped === true || !areaOk){
       this.copyLightArrays(posArr, colArr, lightSet, camera);
     }
@@ -322,15 +315,14 @@ export class OdysseyLightingBinder {
       this.writeHeadLightUniforms(material, lightManager);
     }
     material.userData[cacheKey] = lightSet.cacheID;
-    // Leave the area bound keys unset for lightmapped materials so a material
-    // that later loses USE_LIGHTMAP still gets its area uniforms written.
     if(!usesLightmap){
       material.userData.odysseyAmbientBound = fp.ambientHex;
       material.userData.odysseySunAmbientBound = fp.sunAmbientHex;
       material.userData.odysseySunBound = fp.sunHex;
       material.userData.odysseyHeadLightBound = fp.headKey;
+      material.userData.odysseySunDirBound = fp.sunDirFp;
     }
-    material.userData.odysseyViewSunBound = fp.viewFp;
+    material.userData.odysseyAreaBound = fp.areaFp;
     material.userData.odysseyLightArraysSkipped = false;
     material.uniformsNeedUpdate = true;
   }
@@ -356,13 +348,9 @@ export class OdysseyLightingBinder {
       material.uniforms.odysseySunColor.value.copy(sun);
     }
     if(material.uniforms.odysseySunDirection){
-      if(precomputedViewSun){
-        material.uniforms.odysseySunDirection.value.copy(precomputedViewSun);
-      }else if(camera){
-        material.uniforms.odysseySunDirection.value.copy(this.resolveViewSunDir(camera, sunDir));
-      }else{
-        material.uniforms.odysseySunDirection.value.copy(sunDir);
-      }
+      // World-space; fragment applies mat3(viewMatrix).
+      const worldSun = precomputedViewSun ?? sunDir;
+      material.uniforms.odysseySunDirection.value.copy(worldSun);
     }
   }
 
@@ -681,6 +669,11 @@ export class OdysseyLightingBinder {
   ){
     const focusPos = focus ?? model.getWorldPosition(this._scratchWorldPos);
     const fp = this.areaFingerprint(lightManager, camera);
+    // Retail DoEnvMapTransform applies the current camera orientation every
+    // render. Lighting cache keys intentionally exclude the camera now that
+    // light arrays are world-space, so update env rotations outside the
+    // potentially cached light-uniform path.
+    this.bindModelEnvMapRotations(model, camera);
 
     if(lightPath === 'gob'){
       const nearestFp = lightManager.fingerprintNearestLights(focusPos);
@@ -753,6 +746,23 @@ export class OdysseyLightingBinder {
   ){
     const seen = this._bindSeen;
     seen.clear();
+    this.bindMaterialsUnique(model.materials, bindOne, seen);
+    model.traverse((obj) => {
+      if(obj !== model && (obj as OdysseyModel3D).materials){
+        this.bindMaterialsUnique((obj as OdysseyModel3D).materials, bindOne, seen);
+      }
+    });
+  }
+
+  private static bindModelEnvMapRotations(
+    model: OdysseyModel3D,
+    camera?: THREE.Camera
+  ){
+    const seen = this._bindSeen;
+    seen.clear();
+    const bindOne = (material: THREE.ShaderMaterial) => {
+      this.writeEnvMapRotation(material, camera);
+    };
     this.bindMaterialsUnique(model.materials, bindOne, seen);
     model.traverse((obj) => {
       if(obj !== model && (obj as OdysseyModel3D).materials){

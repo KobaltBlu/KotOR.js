@@ -6,6 +6,8 @@ import { applyProfileSeo } from "@/apps/common/seo/applyProfileSeo";
 import { buildProfileSeo } from "@/apps/common/seo/profileSeo";
 import { persistGameDirectoryHandle, restoreGameDirectoryHandlesToProfiles } from "@/utility/gameDirectoryAccess";
 
+const STATS_MODE_KEY = 'kotor.statsMode';
+
 export class AppState {
   static eulaAccepted: boolean = false;
   static directoryLocated: boolean = false;
@@ -264,6 +266,8 @@ export class AppState {
     AppState.loaderMessage('GameState: Initializing...');
     await KotOR.GameState.Init();
     document.body.append(KotOR.GameState.stats.domElement);
+    AppState.statsMode = AppState.loadStatsMode();
+    AppState.applyStatsMode();
     console.log('init complete');
     AppState.loaderHide();
   }
@@ -316,6 +320,31 @@ export class AppState {
     KotOR.GameState.CheatConsoleManager.processCommand(command);
   }
 
+  static loadStatsMode(): number|undefined {
+    try{
+      const v = localStorage.getItem(STATS_MODE_KEY);
+      if(v === null || v === ''){ return undefined; }
+      const n = parseInt(v, 10);
+      if(n === 0 || n === 1 || n === 2){ return n; }
+    }catch{ /* ignore */ }
+    return undefined;
+  }
+
+  static saveStatsMode(mode: number|undefined){
+    try{
+      if(mode === undefined){
+        localStorage.removeItem(STATS_MODE_KEY);
+      }else{
+        localStorage.setItem(STATS_MODE_KEY, String(mode));
+      }
+    }catch{ /* ignore */ }
+  }
+
+  static applyStatsMode(){
+    if(!KotOR.GameState.stats){ return; }
+    KotOR.GameState.stats.showPanel(AppState.statsMode as any);
+  }
+
   static togglePerformanceMonitor(){
     let mode: number|undefined = AppState.statsMode;
     if(mode == undefined){
@@ -327,7 +356,8 @@ export class AppState {
       mode = undefined;
     }
     AppState.statsMode = mode;
-    KotOR.GameState.stats.showPanel(mode as any);
+    AppState.saveStatsMode(mode);
+    AppState.applyStatsMode();
   }
 
   static toggleDebugger(){

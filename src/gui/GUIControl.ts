@@ -27,6 +27,7 @@ import { GUIControlType } from "@/enums/gui/GUIControlType";
 import { KeyMapAction } from "@/enums/controls/KeyMapAction";
 import { GFFField } from "@/resource/GFFField";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { RenderPerfStats } from "@/utility/RenderPerfStats";
 import {
   asExtentInt,
   asGuiSize,
@@ -395,7 +396,7 @@ export class GUIControl {
       ]),
       vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
       fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
-      side: THREE.DoubleSide,
+      side: THREE.FrontSide,
       transparent: true,
       fog: false,
       visible: true,
@@ -408,6 +409,7 @@ export class GUIControl {
     //new THREE.MeshBasicMaterial({color: this.text.color, side: THREE.DoubleSide, transparent: true});
     this.text.mesh = new THREE.Mesh( this.text.geometry, this.text.material );
     this.text.mesh.frustumCulled = false;
+    this.text.mesh.visible = false;
 
     //--------//
     // MoveTo
@@ -976,12 +978,41 @@ export class GUIControl {
     const u = this.chrome.material.uniforms;
     const hovered = u.hovered.value > 0.5;
     const swap = this.swapBorderAndHighlightOnHover;
+    let enableFrame: number;
+    let enableFill: number;
     if(hovered && swap){
-      u.enableFrame.value = this.highlightEnabled ? 1 : 0;
-      u.enableFill.value = this.highlightFillEnabled ? 1 : 0;
+      enableFrame = this.highlightEnabled ? 1 : 0;
+      enableFill = this.highlightFillEnabled ? 1 : 0;
     }else{
-      u.enableFrame.value = this.borderEnabled ? 1 : 0;
-      u.enableFill.value = this.borderFillEnabled ? 1 : 0;
+      enableFrame = this.borderEnabled ? 1 : 0;
+      enableFill = this.borderFillEnabled ? 1 : 0;
+    }
+    const flagsChanged = u.enableFrame.value !== enableFrame || u.enableFill.value !== enableFill;
+    if(flagsChanged){
+      u.enableFrame.value = enableFrame;
+      u.enableFill.value = enableFill;
+    }
+    if(this.chrome.mesh){
+      const drawChrome = enableFrame !== 0 || enableFill !== 0;
+      if(this.chrome.mesh.visible !== drawChrome){
+        this.chrome.mesh.visible = drawChrome;
+        if(!drawChrome){
+          RenderPerfStats.noteGuiEmptyDrawSkipped();
+        }
+      }
+    }
+  }
+
+  /** Hide text mesh when geometry has no indices (Spector empty draws). */
+  protected syncTextMeshVisibility(){
+    if(!this.text?.mesh) return;
+    const count = this.text.geometry?.index?.count ?? 0;
+    const show = count > 0;
+    if(this.text.mesh.visible !== show){
+      this.text.mesh.visible = show;
+      if(!show){
+        RenderPerfStats.noteGuiEmptyDrawSkipped();
+      }
     }
   }
 
@@ -2034,6 +2065,11 @@ export class GUIControl {
 
     if(this.text.text != '' || (this.text.strref != 0 && typeof GameState.TLKManager.TLKStrings[this.text.strref] != 'undefined'))
       this.updateTextGeometry(this.text.text != '' ? this.menu.gameStringParse(this.text.text) : this.menu.gameStringParse(GameState.TLKManager.TLKStrings[this.text.strref].Value));
+    else if(this.text.geometry?.index){
+      // Keep empty index buffer; hide mesh so Three skips the draw.
+      this.text.geometry.setIndex(new THREE.BufferAttribute(new Uint16Array(), 1).setUsage(THREE.StaticDrawUsage));
+    }
+    this.syncTextMeshVisibility();
     
     this.text.geometry.computeBoundingSphere = function () {
       if (this.boundingSphere === null) {
@@ -2101,6 +2137,7 @@ export class GUIControl {
     if(this.text.geometry && this.text.geometry.boundingBox){
       this.text.geometry.boundingBox.getSize(this.textSize);
     }
+    this.syncTextMeshVisibility();
     
   }
 
