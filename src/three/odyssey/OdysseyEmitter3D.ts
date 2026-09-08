@@ -932,10 +932,10 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     const currentWorldPos = this._frameWorldPos;
     const currentWorldQuat = this._frameWorldQuat;
 
-    // Tinting: update tint color from scene ambient if isTinted
-    if(this.node.flags.isTinted && this.context){
-      const ambient = this.context?.module?.area?.sun?.ambientColor || this.context?.ambientColor;
-      if(ambient){
+    // Tinting: DynAmbient (SetAmbient) — not packed ARE sun.ambientColor DWORD
+    if(this.node.flags.isTinted && this.material?.uniforms?.tintColor){
+      const ambient = this.context?.ambientColor || GameState.ambientColor;
+      if(ambient?.isColor){
         this.material.uniforms.tintColor.value.copy(ambient);
       }
     }
@@ -945,6 +945,9 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       this.material.uniforms.parentAlpha.value =
         this.getParentGobAlpha() * this.getEmitterFadeAlpha();
     }
+
+    // POINTS need viewport resolution for projection-correct gl_PointSize
+    this.updatePointsResolutionUniform();
 
     // Soft particles: bind scene depth when DEPTH_TEXTURE flag is set
     this.updateDepthTextureUniforms();
@@ -1431,6 +1434,22 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   /** World-unit soft fade distance for DEPTH_TEXTURE emitters. */
   private static readonly SOFT_PARTICLE_DISTANCE = 0.5;
 
+  /** Viewport size for POINTS gl_PointSize and soft-particle depth sampling. */
+  private getViewportResolution(out: THREE.Vector2): THREE.Vector2 {
+    const rt = this.context?.depthTarget || GameState.depthTarget;
+    const w = rt?.width || GameState.ResolutionManager?.getViewportWidth?.() || 1;
+    const h = rt?.height || GameState.ResolutionManager?.getViewportHeight?.() || 1;
+    return out.set(w, h);
+  }
+
+  /** Keep resolution current for POINTS emitters (vertex gl_PointSize). */
+  private updatePointsResolutionUniform(): void {
+    if(!this.material?.defines || !('POINTS' in this.material.defines)) return;
+    const u = this.material.uniforms;
+    if(!u?.resolution?.value) return;
+    this.getViewportResolution(u.resolution.value);
+  }
+
   /** Bind GameState/context depth target for soft-particle DEPTH_TEXTURE emitters. */
   private updateDepthTextureUniforms(): void {
     if(!this.node?.flags?.isDepthTexture || !this.material) return;
@@ -1452,10 +1471,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     }
 
     u.tDepth.value = depthTex;
-    const rt = this.context?.depthTarget || GameState.depthTarget;
-    const w = rt?.width || GameState.ResolutionManager?.getViewportWidth?.() || 1;
-    const h = rt?.height || GameState.ResolutionManager?.getViewportHeight?.() || 1;
-    u.resolution.value.set(w, h);
+    this.getViewportResolution(u.resolution.value);
 
     const cam = (this.context?.currentCamera || GameState.currentCamera) as
       THREE.PerspectiveCamera | THREE.OrthographicCamera | undefined;

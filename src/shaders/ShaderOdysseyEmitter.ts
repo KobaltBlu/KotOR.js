@@ -78,6 +78,11 @@ export class ShaderOdysseyEmitter extends Shader {
     #endif
 
     #ifdef POINTS
+      // Viewport size for projection-correct gl_PointSize (world diameter → pixels).
+      uniform vec2 resolution;
+    #endif
+
+    #ifdef POINTS
 
     #else
       attribute vec3 offset;
@@ -283,17 +288,19 @@ export class ShaderOdysseyEmitter extends Shader {
         //Override the modelViewMatrix so we can ignore preset rotation's (That way the plane will lay flat on the ground)
         mat4 worldZMatrix = viewMatrix * mat4(1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0);
 
-        //Points mode renders particles always facing the camera
+        //Points mode renders particles always facing the camera.
+        // Diameter in pixels: world size × (viewportH × projY) / (2 × viewZ).
+        // Factor 2 matches billboard PlaneGeometry ∈ [-0.5,0.5] × scaleF.
         #ifdef CPU_PHYSICS
           // position attribute holds world-space particle centers
           vec3 newPos = position;
           vec4 mvPos = viewMatrix * vec4( newPos, 1.0);
-          gl_PointSize = (scaleF*2000.0) / length( mvPos.xyz );
+          gl_PointSize = scaleF * abs(projectionMatrix[1][1]) * resolution.y / max(-mvPos.z * 2.0, 1e-4);
           gl_Position = projectionMatrix * mvPos;
         #else
           vec3 newPos = position + force;
           vec4 mvPos = worldZMatrix * vec4( newPos, 1.0);
-          gl_PointSize = (scaleF*2000.0) / length( mvPos.xyz );
+          gl_PointSize = scaleF * abs(projectionMatrix[1][1]) * resolution.y / max(-mvPos.z * 2.0, 1e-4);
           gl_Position = projectionMatrix * worldZMatrix * (vec4(newPos, 1.0));
         #endif
       #else
