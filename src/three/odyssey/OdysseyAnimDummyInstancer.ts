@@ -4,11 +4,25 @@ export interface IAnimDummyInstanceBatch {
   instanced: THREE.InstancedMesh;
   /** Nodes whose matrixWorld drives each instance (same order as setMatrixAt). */
   sources: THREE.Object3D[];
+  /** Per-source matrixWorld fingerprints from the last upload. */
+  sourceFps?: Int32Array;
 }
 
 const _mat = /*@__PURE__*/ new THREE.Matrix4();
 const _invRoot = /*@__PURE__*/ new THREE.Matrix4();
 
+function matrixWorldFingerprint(obj: THREE.Object3D): number {
+  const e = obj.matrixWorld.elements;
+  const basis = [0, 1, 2, 4, 5, 6, 8, 9, 10];
+  let h = 0x811c9dc5;
+  for(let i = 0; i < basis.length; i++){
+    h = Math.imul(h ^ (Math.round(e[basis[i]] * 1e4) | 0), 16777619);
+  }
+  h = Math.imul(h ^ (Math.round(e[12] * 1e3) | 0), 16777619);
+  h = Math.imul(h ^ (Math.round(e[13] * 1e3) | 0), 16777619);
+  h = Math.imul(h ^ (Math.round(e[14] * 1e3) | 0), 16777619);
+  return h | 0;
+}
 function geometryFingerprint(geometry: THREE.BufferGeometry): string {
   const pos = geometry.getAttribute("position") as THREE.BufferAttribute | undefined;
   const idx = geometry.getIndex();
@@ -107,7 +121,11 @@ export function buildAnimDummyInstanceBatches(
     }
 
     batchRoot.add(instanced);
-    batches.push({ instanced, sources });
+    batches.push({
+      instanced,
+      sources,
+      sourceFps: new Int32Array(sources.length),
+    });
   }
 
   if(batches.length){
@@ -128,11 +146,19 @@ export function updateAnimDummyInstances(
   _invRoot.copy(root.matrixWorld).invert();
 
   for(let b = 0; b < batches.length; b++){
-    const { instanced, sources } = batches[b];
+    const batch = batches[b];
+    const { instanced, sources } = batch;
+    if(!batch.sourceFps || batch.sourceFps.length !== sources.length){
+      batch.sourceFps = new Int32Array(sources.length);
+    }
+    const fps = batch.sourceFps;
     let changed = false;
     for(let i = 0; i < sources.length; i++){
       const src = sources[i];
       if(!src){ continue; }
+      const fp = matrixWorldFingerprint(src);
+      if(fps[i] === fp){ continue; }
+      fps[i] = fp;
       // Mesh was child of animated node — use that node's world matrix.
       _mat.multiplyMatrices(_invRoot, src.matrixWorld);
       instanced.setMatrixAt(i, _mat);

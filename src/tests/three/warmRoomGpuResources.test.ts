@@ -35,9 +35,11 @@ describe('warmRoomGpuResources', () => {
     const grassMat = new THREE.ShaderMaterial({
       uniforms: { map: { value: grassMap } },
     });
-    const grass = new THREE.Mesh(new THREE.PlaneGeometry(), grassMat);
+    const grassMesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(), grassMat, 1);
+    const grass = new THREE.Group();
+    grass.add(grassMesh);
 
-    warmRoomGpuResources([{ model, grass }], renderer);
+    warmRoomGpuResources([{ model, grass, grassBins: [{ mesh: grassMesh, center: new THREE.Vector3(), fade: 1 }] }], renderer);
 
     expect(inited).toEqual(
       expect.arrayContaining([map, lightMap, envMap, bumpMap, grassMap])

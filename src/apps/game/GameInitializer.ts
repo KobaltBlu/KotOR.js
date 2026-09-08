@@ -119,6 +119,7 @@ export class GameInitializer {
     KotOR.GameState.JournalManager = KotOR.JournalManager;
     KotOR.GameState.LightManager = KotOR.LightManager;
     KotOR.GameState.WindManager = KotOR.WindManager;
+    KotOR.GameState.GrassManager = KotOR.GrassManager;
     KotOR.GameState.MenuManager = KotOR.MenuManager;
     KotOR.GameState.ModuleObjectManager = KotOR.ModuleObjectManager;
     KotOR.GameState.PartyManager = KotOR.PartyManager;

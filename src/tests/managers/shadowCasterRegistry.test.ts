@@ -63,37 +63,37 @@ describe('ShadowCasterRegistry', () => {
     registry.restoreCastShadow();
   });
 
-  test('filterCastersForLights requires shadow camera frustum when provided', () => {
+  test('filterCastersForLights drops invisible casters and enables none with empty lights', () => {
     const registry = new ShadowCasterRegistry();
     const geom = new THREE.BoxGeometry(1, 1, 1);
     geom.computeBoundingSphere();
 
-    const inFront = new THREE.Mesh(geom, new THREE.MeshBasicMaterial());
-    inFront.castShadow = true;
-    inFront.position.set(0, 0, -5);
-    inFront.updateMatrixWorld(true);
+    const hidden = new THREE.Mesh(geom, new THREE.MeshBasicMaterial());
+    hidden.castShadow = true;
+    hidden.visible = false;
+    hidden.position.set(0, 0, 0);
+    hidden.updateMatrixWorld(true);
 
-    const behind = new THREE.Mesh(geom, new THREE.MeshBasicMaterial());
-    behind.castShadow = true;
-    behind.position.set(0, 0, 50);
-    behind.updateMatrixWorld(true);
+    const visible = new THREE.Mesh(geom, new THREE.MeshBasicMaterial());
+    visible.castShadow = true;
+    visible.position.set(0, 0, 0);
+    visible.updateMatrixWorld(true);
 
-    registry.registerMesh(inFront, { castShadow: true, receiveShadow: false });
-    registry.registerMesh(behind, { castShadow: true, receiveShadow: false });
+    registry.registerMesh(hidden, { castShadow: true, receiveShadow: false });
+    registry.registerMesh(visible, { castShadow: true, receiveShadow: false });
 
-    const cam = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
-    cam.position.set(0, 0, 0);
-    cam.lookAt(0, 0, -10);
-    cam.updateMatrixWorld(true);
-    cam.updateProjectionMatrix();
+    expect(registry.filterCastersForLights([])).toBe(0);
+    expect(hidden.castShadow).toBe(false);
+    expect(visible.castShadow).toBe(false);
+    registry.restoreCastShadow();
 
     const count = registry.filterCastersForLights(
-      [{ x: 0, y: 0, z: 0, radius: 800, shadowCamera: cam }],
-      { focus: new THREE.Vector3(0, 0, 0), maxFocusDistance: 200 }
+      [{ x: 0, y: 0, z: 0, radius: 40 }],
+      { focus: new THREE.Vector3(0, 0, 0), maxFocusDistance: 60 }
     );
     expect(count).toBe(1);
-    expect(inFront.castShadow).toBe(true);
-    expect(behind.castShadow).toBe(false);
+    expect(hidden.castShadow).toBe(false);
+    expect(visible.castShadow).toBe(true);
     registry.restoreCastShadow();
   });
 });

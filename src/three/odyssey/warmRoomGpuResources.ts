@@ -1,9 +1,11 @@
 import * as THREE from "three";
 import type { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
+import type { GrassBin } from "@/managers/GrassManager";
 
 export type WarmRoomGpuRoom = {
   model?: OdysseyModel3D;
   grass?: THREE.Object3D & { material?: THREE.Material | THREE.Material[] };
+  grassBins?: GrassBin[];
 };
 
 /**
@@ -76,8 +78,16 @@ export function warmRoomGpuResources(
         warmMaterials(mesh.materials);
       });
     }
-    if(room.grass){
+    if(room.grassBins?.length){
+      for(let b = 0; b < room.grassBins.length; b++){
+        warmMaterials(room.grassBins[b].mesh.material);
+      }
+    }else if(room.grass){
       warmMaterials(room.grass.material);
+      room.grass.traverse?.((obj: THREE.Object3D) => {
+        const mesh = obj as THREE.Mesh;
+        warmMaterials(mesh.material);
+      });
     }
   }
 }
@@ -94,6 +104,7 @@ export function compileAreaRoomsVisible(
 ): void {
   const savedModel: Array<boolean | undefined> = new Array(rooms.length);
   const savedGrass: Array<boolean | undefined> = new Array(rooms.length);
+  const savedBins: Array<Array<boolean | undefined> | undefined> = new Array(rooms.length);
 
   for(let i = 0; i < rooms.length; i++){
     const room = rooms[i];
@@ -101,7 +112,13 @@ export function compileAreaRoomsVisible(
       savedModel[i] = room.model.visible;
       room.model.visible = true;
     }
-    if(room.grass){
+    if(room.grassBins?.length){
+      savedBins[i] = room.grassBins.map((bin) => {
+        const v = bin.mesh.visible;
+        bin.mesh.visible = true;
+        return v;
+      });
+    }else if(room.grass){
       savedGrass[i] = room.grass.visible;
       room.grass.visible = true;
     }
@@ -115,7 +132,14 @@ export function compileAreaRoomsVisible(
       if(room.model && savedModel[i] !== undefined){
         room.model.visible = savedModel[i] as boolean;
       }
-      if(room.grass && savedGrass[i] !== undefined){
+      if(room.grassBins?.length && savedBins[i]){
+        for(let b = 0; b < room.grassBins.length; b++){
+          const v = savedBins[i]![b];
+          if(v !== undefined){
+            room.grassBins[b].mesh.visible = v;
+          }
+        }
+      }else if(room.grass && savedGrass[i] !== undefined){
         room.grass.visible = savedGrass[i] as boolean;
       }
     }

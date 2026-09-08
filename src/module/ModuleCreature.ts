@@ -534,6 +534,9 @@ export class ModuleCreature extends ModuleObject {
   gestureState: IGestureAnimationState;
   /** Weapon-item Gob gesture (flourish while moving). */
   weaponGestureState: IWeaponGestureState;
+  /** Last XY used for grass point-source gusts. */
+  private _grassGustLastX = Number.NaN;
+  private _grassGustLastY = Number.NaN;
   
   equipment: { 
     HEAD: ModuleItem; 
@@ -1376,6 +1379,8 @@ export class ModuleCreature extends ModuleObject {
       // END: Move Speed Logic //
       //-----------------------//
 
+      this.pushGrassWindGust();
+
       // IDLE == PAUSE (10000); promote out-of-combat idle to combat ready while engaged.
       if(this.combatMode === CombatMode.COUNTERSPELL){
         if(
@@ -1889,6 +1894,52 @@ export class ModuleCreature extends ModuleObject {
   //Return the best point surrounding this object for the attacker to move towards
   getBestAttackPoint(targeter: ModuleObject){
     return {x: 0, y: 0, z: 0};
+  }
+
+  /**
+   * Moving creatures inject short-lived point gusts so grass tips part (retail gob wind).
+   * Gated to outdoor areas with wind; capped by WindManager.MAX_POINT_SOURCES.
+   */
+  private pushGrassWindGust(): void {
+    const wm = GameState.windManager;
+    const area = this.area || GameState.module?.area;
+    if(!wm || !area){
+      return;
+    }
+    if((area.flags & 1) !== 0){
+      return;
+    }
+    if(this.isDead?.()){
+      return;
+    }
+
+    const locomoting =
+      this.animationState.index == ModuleCreatureAnimState.RUNNING ||
+      this.animationState.index == ModuleCreatureAnimState.WALKING ||
+      this.animationState.index == ModuleCreatureAnimState.WALKING_BACK ||
+      this.forceVector.lengthSq() > 1e-6;
+
+    if(!locomoting){
+      this._grassGustLastX = this.position.x;
+      this._grassGustLastY = this.position.y;
+      return;
+    }
+
+    if(Number.isNaN(this._grassGustLastX)){
+      this._grassGustLastX = this.position.x;
+      this._grassGustLastY = this.position.y;
+      return;
+    }
+
+    const dx = this.position.x - this._grassGustLastX;
+    const dy = this.position.y - this._grassGustLastY;
+    if((dx * dx + dy * dy) < 0.04){
+      return;
+    }
+
+    this._grassGustLastX = this.position.x;
+    this._grassGustLastY = this.position.y;
+    wm.addPointSourceWind(this.position, 2.5, 0.2, 1.0);
   }
 
   updateAnimationState(){

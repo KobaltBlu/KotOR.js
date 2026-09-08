@@ -26,10 +26,14 @@ import {
 import { OdysseyLightingDebug } from '@/utility/odysseyLightingDebug';
 import { RenderPerfStats } from '@/utility/RenderPerfStats';
 import { ShadowCasterRegistry } from '@/managers/ShadowCasterRegistry';
+import { getOdysseyBoneMatricesFingerprint } from '@/three/odyssey/OdysseySkeletonBind';
 import {
   MAX_ODYSSEY_SHADOW_MAPS,
   odysseyShadowAdaptiveStrength,
 } from '@/shaders/chunks/OdysseyShadow';
+
+/** Matches OdysseySkeletonBind's private dirty flag (anim flush → skeleton.update). */
+const ODYSSEY_SKELETON_DIRTY = 'odysseyBonesDirty';
 
 export type OdysseyPrimaryShadowLightType = 'spot' | 'directional';
 
@@ -66,8 +70,8 @@ export interface IOdysseyShadowDiagnostics {
 
 // Soft and hard both use 512 — hard used to drop to 512, which made sun
 // ortho maps (~±16 half-extent) only ~11 texels tall per character.
-const DEFAULT_MAP_RES_SOFT = 512;
-const DEFAULT_MAP_RES_HARD = 512;
+const DEFAULT_MAP_RES_SOFT = 1024;
+const DEFAULT_MAP_RES_HARD = 1024;
 const SHADOW_MAP_NORMAL_BIAS = 0.005;
 
 /** Soft sticky: challenger must lead by this overhead score for hold duration. */
@@ -151,6 +155,8 @@ export class OdysseyShadowManager {
   private _softResidents: OdysseyLight3D[] = [];
   /** Pose fingerprint of nearby casters — skip redraw when unchanged. */
   private _lastNearbyCasterPoseHash = 0;
+  /** BoneMatrices content hash subset — distinguishes bone vs root motion dirty. */
+  private _lastNearbyCasterBoneHash = 0;
   private _casterFilterActive = false;
 
   /** Combined projection opacity with adaptive local/distant scale (tests / diagnostics). */
@@ -954,7 +960,8 @@ export class OdysseyShadowManager {
     const fz = this._focus.z;
 
     let poseHash = 0;
-    let anyBoneDirty = false;
+    let boneHash = 0;
+    let pendingBoneDirty = false;
 
     const consider = (obj: {
       position?: THREE.Vector3;
@@ -987,10 +994,20 @@ export class OdysseyShadowManager {
         poseHash = Math.imul(poseHash ^ (Math.round(mw[14] * 100) | 0), 16777619) | 0;
       }
       if(typeof obj.model.traverse === 'function'){
+        // Do NOT call skeleton.update() here — container/world matrices may still be
+        // stale; an early flush uploaded bad boneTextures and cleared dirty so the
+        // real render early-returned (skinned bodies gone, rigid weapons fine).
         obj.model.traverse((o) => {
           const skin = o as THREE.SkinnedMesh;
-          if(skin.isSkinnedMesh && skin.skeleton && (skin.skeleton as any).odysseyBonesDirty){
-            anyBoneDirty = true;
+          if(!skin.isSkinnedMesh || !skin.skeleton){ return; }
+          const skel = skin.skeleton;
+          if((skel as any)[ODYSSEY_SKELETON_DIRTY]){
+            pendingBoneDirty = true;
+          }
+          const boneFp = getOdysseyBoneMatricesFingerprint(skel);
+          if(boneFp){
+            boneHash = Math.imul(boneHash ^ boneFp, 16777619) | 0;
+            poseHash = Math.imul(poseHash ^ boneFp, 16777619) | 0;
           }
         });
       }
@@ -1010,14 +1027,20 @@ export class OdysseyShadowManager {
       }
     }
 
-    if(anyBoneDirty){
-      poseHash = Math.imul(poseHash ^ 0xB01E, 16777619) | 0;
+    // Anim-marked dirty must redraw this frame even if last fingerprint is stale.
+    if(pendingBoneDirty){
+      this._needsShadowMapRender = true;
+      this.lastUpdateReason = 'caster-bone-dirty';
     }
 
     if(poseHash !== this._lastNearbyCasterPoseHash){
+      const boneChanged = boneHash !== this._lastNearbyCasterBoneHash;
       this._lastNearbyCasterPoseHash = poseHash;
+      this._lastNearbyCasterBoneHash = boneHash;
       this._needsShadowMapRender = true;
-      this.lastUpdateReason = anyBoneDirty ? 'caster-bone-dirty' : 'caster-motion';
+      if(!pendingBoneDirty){
+        this.lastUpdateReason = boneChanged ? 'caster-bone-dirty' : 'caster-motion';
+      }
     }
   }
 
@@ -1104,7 +1127,10 @@ export class OdysseyShadowManager {
 
     renderer.shadowMap.needsUpdate = true;
     this._uniformsRefreshNeeded = true;
-    this.lastUpdateReason = 'pending-render';
+    // Keep the reason that marked dirty (caster-bone-dirty / caster-motion / …).
+    if(!this.lastUpdateReason || this.lastUpdateReason === 'pending-render'){
+      this.lastUpdateReason = 'pending-render';
+    }
     RenderPerfStats.noteShadowRedraw(this.lastUpdateReason);
     this.refreshDiagnostics();
     return true;

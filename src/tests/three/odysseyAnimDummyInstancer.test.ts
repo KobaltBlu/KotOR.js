@@ -61,11 +61,47 @@ describe('OdysseyAnimDummyInstancer', () => {
     expect(staticMesh.visible).toBe(true);
   });
 
-  test('updateAnimDummyInstances writes relative matrices', () => {
+  test('updateAnimDummyInstances skips upload when matrices unchanged', () => {
     const root = new THREE.Group();
     root.position.set(10, 0, 0);
     const mat = new THREE.MeshBasicMaterial();
     (mat as any).userData = { odysseyMaterialCacheId: 'shared' };
+    const geo = new THREE.BoxGeometry(1, 1, 1);
+
+    const nodeA = new THREE.Object3D();
+    nodeA.position.set(1, 0, 0);
+    root.add(nodeA);
+    makeAnimDummyLeaf(nodeA, mat, geo, 'a');
+
+    const nodeB = new THREE.Object3D();
+    nodeB.position.set(3, 0, 0);
+    root.add(nodeB);
+    makeAnimDummyLeaf(nodeB, mat, geo, 'b');
+
+    buildAnimDummyInstanceBatches(root);
+    root.updateMatrixWorld(true);
+    updateAnimDummyInstances(root as any);
+
+    const batches = (root as any).animDummyInstanceBatches as {
+      instanced: THREE.InstancedMesh;
+    }[];
+    expect(batches.length).toBe(1);
+    const versionAfterFirst = batches[0].instanced.instanceMatrix.version;
+
+    updateAnimDummyInstances(root as any);
+    expect(batches[0].instanced.instanceMatrix.version).toBe(versionAfterFirst);
+
+    nodeA.position.set(2, 0, 0);
+    root.updateMatrixWorld(true);
+    updateAnimDummyInstances(root as any);
+    expect(batches[0].instanced.instanceMatrix.version).toBeGreaterThan(versionAfterFirst);
+  });
+
+  test('updateAnimDummyInstances writes relative matrices', () => {
+    const root = new THREE.Group();
+    root.position.set(10, 0, 0);
+    const mat = new THREE.MeshBasicMaterial();
+    (mat as any).userData = { odysseyMaterialCacheId: 'shared2' };
     const geo = new THREE.BoxGeometry(1, 1, 1);
 
     const nodeA = new THREE.Object3D();

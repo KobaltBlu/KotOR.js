@@ -1663,19 +1663,19 @@ export class ModuleArea extends ModuleObject {
       if(!model){ continue; }
       if(!model.userData.visActive){
         model.visible = false;
-        if(room.grass){ room.grass.visible = false; }
+        GameState.grassManager?.setRoomVisible(room, false);
         continue;
       }
       if(room === playerRoom){
         model.visible = true;
-        if(room.grass){ room.grass.visible = true; }
+        GameState.grassManager?.setRoomVisible(room, true);
         continue;
       }
 
       const box = room.box?.isEmpty?.() === false ? room.box : model.box;
       if(!box || box.isEmpty()){
         model.visible = true;
-        if(room.grass){ room.grass.visible = true; }
+        GameState.grassManager?.setRoomVisible(room, true);
         continue;
       }
 
@@ -1689,7 +1689,7 @@ export class ModuleArea extends ModuleObject {
 
       const onScreen = ModuleArea._viewFrustum.intersectsBox(ModuleArea._frustumBox);
       model.visible = onScreen;
-      if(room.grass){ room.grass.visible = onScreen; }
+      GameState.grassManager?.setRoomVisible(room, onScreen);
     }
   }
 
@@ -1816,7 +1816,7 @@ export class ModuleArea extends ModuleObject {
         upperRight: this.are.getFieldByLabel('Grass_Prob_UR').getValue()
       },
       quadSize: this.are.getFieldByLabel('Grass_QuadSize').getValue(),
-      textureName: this.are.getFieldByLabel('Grass_TexName').getValue()
+      textureName: this.are.getFieldByLabel('Grass_TexName').getValue() || 'grass'
     };
 
     // TSL dirt layers (DirtyARGB/Size/Formula/Func One–Three). swaps formula 0↔1 on load.

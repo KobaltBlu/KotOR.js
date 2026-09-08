@@ -38,6 +38,7 @@ export class ShadowCasterRegistry {
   private static readonly _tmp = new THREE.Vector3();
   private static readonly _sphere = new THREE.Sphere();
   private static readonly _proj = new THREE.Matrix4();
+  private static readonly _frustumScratch: THREE.Frustum[] = [];
 
   registerMesh(mesh: THREE.Mesh, opts: IShadowCasterRegistration): number {
     const id = (mesh.userData.odysseyShadowCasterId as number) || this._nextId++;
@@ -141,7 +142,8 @@ export class ShadowCasterRegistry {
     const maxFocus = opts?.maxFocusDistance ?? 0;
     const maxFocus2 = maxFocus > 0 ? maxFocus * maxFocus : 0;
 
-    const frustums: THREE.Frustum[] = [];
+    const frustums = ShadowCasterRegistry._frustumScratch;
+    let frustumCount = 0;
     for(let i = 0; i < lights.length; i++){
       const cam = lights[i].shadowCamera;
       if(!cam){ continue; }
@@ -150,70 +152,73 @@ export class ShadowCasterRegistry {
       if(typeof persp.updateProjectionMatrix === 'function'){
         persp.updateProjectionMatrix();
       }
-      const f = new THREE.Frustum();
-      f.setFromProjectionMatrix(
+      if(!frustums[frustumCount]){
+        frustums[frustumCount] = new THREE.Frustum();
+      }
+      frustums[frustumCount].setFromProjectionMatrix(
         ShadowCasterRegistry._proj.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse)
       );
-      frustums.push(f);
+      frustumCount++;
     }
 
     for(const e of this._entries.values()){
       e.authoredCastShadow = e.mesh.castShadow;
-      if(!e.castShadow){
+      if(!e.castShadow || !e.mesh.visible){
         e.mesh.castShadow = false;
         continue;
       }
-      const p = e.mesh.getWorldPosition(ShadowCasterRegistry._tmp);
+
+      const sphere = ShadowCasterRegistry._sphere;
+      const geom = e.mesh.geometry;
+      if(geom){
+        if(!geom.boundingSphere){ geom.computeBoundingSphere(); }
+        if(geom.boundingSphere){
+          sphere.copy(geom.boundingSphere);
+          sphere.applyMatrix4(e.mesh.matrixWorld);
+        }else{
+          e.mesh.getWorldPosition(sphere.center);
+          sphere.radius = 1.5;
+        }
+      }else{
+        e.mesh.getWorldPosition(sphere.center);
+        sphere.radius = 1.5;
+      }
 
       if(maxFocus2 > 0 && focus){
-        const fdx = p.x - focus.x;
-        const fdy = p.y - focus.y;
-        const fdz = p.z - focus.z;
-        if((fdx * fdx + fdy * fdy + fdz * fdz) > maxFocus2){
+        const fdx = sphere.center.x - focus.x;
+        const fdy = sphere.center.y - focus.y;
+        const fdz = sphere.center.z - focus.z;
+        const dist = Math.sqrt(fdx * fdx + fdy * fdy + fdz * fdz) - sphere.radius;
+        if(dist > 0 && (dist * dist) > maxFocus2){
           e.mesh.castShadow = false;
           continue;
         }
       }
 
-      let inRange = lights.length === 0;
-      if(!inRange){
-        for(let i = 0; i < lights.length; i++){
-          const L = lights[i];
-          const limit = odysseyShadowCasterDistanceLimit(L.radius, L.shadowRadius ?? 0);
-          const dx = p.x - L.x;
-          const dy = p.y - L.y;
-          const dz = p.z - L.z;
-          if((dx * dx + dy * dy + dz * dz) > limit * limit){
-            continue;
-          }
-          if(frustums.length){
-            const sphere = ShadowCasterRegistry._sphere;
-            const geom = e.mesh.geometry;
-            if(geom){
-              if(!geom.boundingSphere){ geom.computeBoundingSphere(); }
-              if(geom.boundingSphere){
-                sphere.copy(geom.boundingSphere);
-                sphere.applyMatrix4(e.mesh.matrixWorld);
-              }else{
-                sphere.center.copy(p);
-                sphere.radius = 1.5;
-              }
-            }else{
-              sphere.center.copy(p);
-              sphere.radius = 1.5;
-            }
-            let inFrustum = false;
-            for(let fi = 0; fi < frustums.length; fi++){
-              if(frustums[fi].intersectsSphere(sphere)){
-                inFrustum = true;
-                break;
-              }
-            }
-            if(!inFrustum){ continue; }
-          }
-          inRange = true;
-          break;
+      // No active lights → enable nobody (do not leave all casters on).
+      let inRange = false;
+      for(let i = 0; i < lights.length; i++){
+        const L = lights[i];
+        const limit = odysseyShadowCasterDistanceLimit(L.radius, L.shadowRadius ?? 0);
+        const dx = sphere.center.x - L.x;
+        const dy = sphere.center.y - L.y;
+        const dz = sphere.center.z - L.z;
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) - sphere.radius;
+        if(dist > limit){
+          continue;
         }
+        if(frustumCount > 0){
+          let inFrustum = false;
+          for(let fi = 0; fi < frustumCount; fi++){
+            if(frustums[fi].intersectsSphere(sphere)){
+              inFrustum = true;
+              break;
+            }
+          }
+          if(!inFrustum){ continue; }
+        }
+        inRange = true;
+        break;
       }
       e.mesh.castShadow = inRange;
     }

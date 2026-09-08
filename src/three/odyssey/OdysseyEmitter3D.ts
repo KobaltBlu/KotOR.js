@@ -252,6 +252,14 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   private _chunkMatrix: THREE.Matrix4 = new THREE.Matrix4();
   private _chunkQuat: THREE.Quaternion = new THREE.Quaternion();
   private _chunkScale: THREE.Vector3 = new THREE.Vector3(1, 1, 1);
+  /** Skip sortParticles when camera+emitter view fingerprint is unchanged. */
+  private _sortViewFp = 0;
+  /** Invalidate sort when particle buffers change without a camera move. */
+  private _particleSortGen = 0;
+  /** Skip chunk instanceMatrix upload when composed content is unchanged. */
+  private _chunkContentFp = 0;
+  /** Highest particle slot ever written — caps updateRange for large pools. */
+  private _particleHighWater = 0;
   private _chunkColor: THREE.Color = new THREE.Color(1, 1, 1);
   private _chunkColors: THREE.InstancedBufferAttribute = null;
 
@@ -1341,14 +1349,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
     this.updateEmitterOrientationMatrix();
 
-    if(updatePositions)
-      this.offsets.needsUpdate = true;
-
-    if(updateVelocity)
-      this.velocities.needsUpdate = true;
-
-    if(updateProperties)
-      this.props.needsUpdate = true;
+    this.flushParticleAttrUploads(updatePositions, updateVelocity, updateProperties);
 
     if(!this._birthTimer){
       this._birthTimer = this.birthRate > 0 ? 1/this.birthRate : 1;
@@ -1379,7 +1380,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     this.sortParticles();
 
     // Update chunk instances if this is a chunk emitter
-    if(this._isChunkEmitter && this._chunkLoaded){
+    if(this._isChunkEmitter && this._chunkLoaded && (updatePositions || updateVelocity || updateProperties)){
       this.updateChunkInstances();
     }
 
@@ -1466,10 +1467,22 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       u.softFactor.value = OdysseyEmitter3D.SOFT_PARTICLE_DISTANCE;
     }
 
-    // Request depth prepass before the next composed frame
-    GameState.softDepthNeeded = true;
-    if(this.context){
-      this.context.softDepthNeeded = true;
+    // Request depth prepass only when this soft emitter will actually draw.
+    if(this.visible && this.parent?.visible !== false){
+      const cam = this.context?.currentCamera || GameState.currentCamera;
+      let onScreen = true;
+      if(cam){
+        // Cheap distance gate — full frustum is overkill for the boolean request.
+        this.getWorldPosition(OdysseyEmitter3D._v3A);
+        cam.getWorldPosition(OdysseyEmitter3D._v3B);
+        onScreen = OdysseyEmitter3D._v3A.distanceToSquared(OdysseyEmitter3D._v3B) < (80 * 80);
+      }
+      if(onScreen){
+        GameState.softDepthNeeded = true;
+        if(this.context){
+          this.context.softDepthNeeded = true;
+        }
+      }
     }
   }
 
@@ -2700,7 +2713,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         }
         this.props.setX(i, 0);
       }
-      this.props.needsUpdate = true;
+      this.flushParticleAttrUploads(false, false, true);
       if(this._isChunkEmitter && this._chunkLoaded){
         this.updateChunkInstances();
       }
@@ -2730,7 +2743,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
             this.particleCount = Math.max(0, this.particleCount - 1);
           }
         }
-        this.props.needsUpdate = true;
+        this.flushParticleAttrUploads(false, false, true);
         if(this._isChunkEmitter && this._chunkLoaded){
           this.updateChunkInstances();
         }
@@ -2746,7 +2759,9 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       }
       this.props.setX(live, age);
       this.props.setY(live, life >= 0 ? life : -1);
-      this.props.needsUpdate = true;
+      let updatePositions = false;
+      let updateVelocity = false;
+      let prevDirty = false;
 
       if(this.node.renderMode === 'Motion_Blur' && this.prevOffsets && this.blurLength > 0){
         const t = Math.min(delta, this.blurLength) / this.blurLength;
@@ -2754,7 +2769,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         this.prevOffsets.setX(live, omt * this.prevOffsets.getX(live) + t * this.offsets.getX(live));
         this.prevOffsets.setY(live, omt * this.prevOffsets.getY(live) + t * this.offsets.getY(live));
         this.prevOffsets.setZ(live, omt * this.prevOffsets.getZ(live) + t * this.offsets.getZ(live));
-        this.prevOffsets.needsUpdate = true;
+        prevDirty = true;
       }
 
       if(this.node.flags.canInherit && this._hasLastWorldPos){
@@ -2784,22 +2799,29 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
           this.offsets.setY(live, this.offsets.getY(live) + this._worldPosDelta.y);
           this.offsets.setZ(live, this.offsets.getZ(live) + this._worldPosDelta.z);
         }
-        this.offsets.needsUpdate = true;
-        this.velocities.needsUpdate = true;
+        updatePositions = true;
+        updateVelocity = true;
       }
-      this.integrateStandardParticles(delta, count);
+      if(this.integrateStandardParticles(delta, count)){
+        updatePositions = true;
+        updateVelocity = true;
+      }
       if(this.isWeather){
-        this.wrapWeatherParticles(count);
+        if(this.wrapWeatherParticles(count)){
+          updatePositions = true;
+        }
       }
+      if(live > this._particleHighWater){
+        this._particleHighWater = live;
+      }
+      this.flushParticleAttrUploads(updatePositions, updateVelocity, true, prevDirty);
     }else{
       this.spawnParticle(0, delta);
       this.particleCount = 1;
       for(let i = 1; i < count; i++){
         this.props.setZ(i, 0);
       }
-      this.props.needsUpdate = true;
-      this.offsets.needsUpdate = true;
-      this.velocities.needsUpdate = true;
+      this.flushParticleAttrUploads(true, true, true);
     }
 
     this.sortParticles();
@@ -2843,9 +2865,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       updateProperties = true;
     }
 
-    if(updatePositions) this.offsets.needsUpdate = true;
-    if(updateVelocity) this.velocities.needsUpdate = true;
-    if(updateProperties) this.props.needsUpdate = true;
+    this.flushParticleAttrUploads(updatePositions, updateVelocity, updateProperties);
     this.isDetonated = false;
     this.sortParticles();
   }
@@ -2982,9 +3002,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       updateProperties = true;
     }
 
-    if(updatePositions) this.offsets.needsUpdate = true;
-    if(updateVelocity) this.velocities.needsUpdate = true;
-    if(updateProperties) this.props.needsUpdate = true;
+    this.flushParticleAttrUploads(updatePositions, updateVelocity, updateProperties);
 
     this.isDetonated = false;
     this.sortParticles();
@@ -3175,9 +3193,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       updateProperties = true;
     }
 
-    if(updatePositions) this.offsets.needsUpdate = true;
-    if(updateVelocity) this.velocities.needsUpdate = true;
-    if(updateProperties) this.props.needsUpdate = true;
+    this.flushParticleAttrUploads(updatePositions, updateVelocity, updateProperties);
 
     this.isDetonated = false;
     this.sortParticles();
@@ -3548,6 +3564,9 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   }
 
   spawnParticle(i = 0, delta: number = 0){
+    if(i > this._particleHighWater){
+      this._particleHighWater = i;
+    }
     let newPosition = this.getRandomPosition();
     if(this.node.renderMode != 'Linked'){
       this.offsets.setX(i, newPosition.x);
@@ -3767,9 +3786,26 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       return;
     }
 
+    const cam = this.context.currentCamera;
+    const ce = cam.matrixWorldInverse.elements;
+    const me = this.mesh.matrixWorld.elements;
+    let viewFp = Math.round(ce[12] * 1e2) | 0;
+    viewFp = Math.imul(viewFp ^ (Math.round(ce[13] * 1e2) | 0), 16777619);
+    viewFp = Math.imul(viewFp ^ (Math.round(ce[14] * 1e2) | 0), 16777619);
+    viewFp = Math.imul(viewFp ^ (Math.round(ce[0] * 1e3) | 0), 16777619);
+    viewFp = Math.imul(viewFp ^ (Math.round(ce[5] * 1e3) | 0), 16777619);
+    viewFp = Math.imul(viewFp ^ (Math.round(me[12] * 1e2) | 0), 16777619);
+    viewFp = Math.imul(viewFp ^ (Math.round(me[13] * 1e2) | 0), 16777619);
+    viewFp = Math.imul(viewFp ^ (Math.round(me[14] * 1e2) | 0), 16777619);
+    viewFp = Math.imul(viewFp ^ (this._particleSortGen | 0), 16777619);
+    if(viewFp === this._sortViewFp){
+      return;
+    }
+    this._sortViewFp = viewFp;
+
     const vector = OdysseyEmitter3D._v3A;
     const matrix = OdysseyEmitter3D._mat4;
-    matrix.multiplyMatrices( this.context.currentCamera.projectionMatrix, this.context.currentCamera.matrixWorldInverse );
+    matrix.multiplyMatrices( cam.projectionMatrix, cam.matrixWorldInverse );
     matrix.multiply( this.mesh.matrixWorld );
 
     let index = this.geometry.getIndex();
@@ -3801,6 +3837,47 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     
   }
 
+  /**
+   * Gate particle InstancedBufferAttribute uploads and prefer updateRange when the
+   * pool is large (avoids full-buffer bufferSubData storms for mostly-empty pools).
+   */
+  private flushParticleAttrUploads(
+    updatePositions: boolean,
+    updateVelocity: boolean,
+    updateProperties: boolean,
+    prevOffsetsDirty: boolean = false,
+  ): void {
+    if(updatePositions || updateVelocity || updateProperties || prevOffsetsDirty){
+      this._particleSortGen = (this._particleSortGen + 1) | 0;
+    }
+    this.markDynamicAttrDirty(this.offsets, updatePositions);
+    this.markDynamicAttrDirty(this.velocities, updateVelocity);
+    this.markDynamicAttrDirty(this.props, updateProperties);
+    if(prevOffsetsDirty){
+      this.markDynamicAttrDirty(this.prevOffsets, true);
+    }
+  }
+
+  private markDynamicAttrDirty(
+    attr: THREE.BufferAttribute | THREE.InterleavedBufferAttribute | null | undefined,
+    dirty: boolean,
+  ): void {
+    if(!attr || !dirty || !('needsUpdate' in attr)) return;
+    const ba = attr as THREE.BufferAttribute;
+    ba.needsUpdate = true;
+    if(typeof ba.count !== 'number' || !ba.updateRange) return;
+    const itemSize = ba.itemSize || 1;
+    const hw = Math.min(ba.count - 1, Math.max(this._particleHighWater, 0));
+    // Large pools: upload only through the high-water slot (spawn fills from low indices).
+    if(ba.count > 64 && hw + 1 < ba.count){
+      ba.updateRange.offset = 0;
+      ba.updateRange.count = (hw + 1) * itemSize;
+    }else{
+      ba.updateRange.offset = 0;
+      ba.updateRange.count = -1;
+    }
+  }
+
   /** Clears trail distance state (spawntype 1) so the next effect does not get one huge first segment. */
   private resetTrailSpawnState(){
     this._hasLastTrailPos = false;
@@ -3829,7 +3906,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     for(let i = 0; i < spawnableParticleCount; i++){
       this.props.setX(i, 0);
     }
-    if(this.props) this.props.needsUpdate = true;
+    if(this.props) this.markDynamicAttrDirty(this.props, true);
     this.material.uniforms.time.value = 0;
     this.material.uniformsNeedUpdate = true;
 
@@ -4005,7 +4082,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     }
 
     if(changed){
-      this.offsets.needsUpdate = true;
+      this.markDynamicAttrDirty(this.offsets, true);
     }
     return changed;
   }
@@ -4190,6 +4267,24 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     const fade = this.getParentGobAlpha() * this.getEmitterFadeAlpha();
     const local = OdysseyEmitter3D._v3A;
     const up = OdysseyEmitter3D._v3B.set(0, 0, 1);
+
+    let fp = count | 0;
+    fp = Math.imul(fp ^ (Math.round(fade * 1e3) | 0), 16777619);
+    fp = Math.imul(fp ^ (Math.round(parentScale * 1e3) | 0), 16777619);
+    for(let i = 0; i < count; i++){
+      const alive = this.props.getZ(i) === 1;
+      fp = Math.imul(fp ^ (alive ? 1 : 0), 16777619);
+      if(!alive) continue;
+      fp = Math.imul(fp ^ (Math.round(this.props.getX(i) * 1e2) | 0), 16777619);
+      fp = Math.imul(fp ^ (Math.round(this.offsets.getX(i) * 1e2) | 0), 16777619);
+      fp = Math.imul(fp ^ (Math.round(this.offsets.getY(i) * 1e2) | 0), 16777619);
+      fp = Math.imul(fp ^ (Math.round(this.offsets.getZ(i) * 1e2) | 0), 16777619);
+      fp = Math.imul(fp ^ (Math.round(this.props.getW(i)) | 0), 16777619);
+    }
+    if(fp === this._chunkContentFp && this._chunkMesh.count === count){
+      return;
+    }
+    this._chunkContentFp = fp;
 
     for(let i = 0; i < count; i++){
       const alive = this.props.getZ(i) === 1;

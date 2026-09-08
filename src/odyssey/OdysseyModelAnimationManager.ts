@@ -98,15 +98,19 @@ export class OdysseyModelAnimationManager {
   }
 
   private flushTouchedNodeMatrices(): void {
-    for(let i = 0, len = this._touchedTransformNodes.length; i < len; i++){
+    const len = this._touchedTransformNodes.length;
+    for(let i = 0; i < len; i++){
       const node = this._touchedTransformNodes[i];
       node.updateMatrix();
       node.matrixWorldNeedsUpdate = true;
     }
     this._touchedTransformNodes.length = 0;
     this._touchedTransformNodeSet.clear();
-    // Pose batch wrote bone locals — next Skeleton.update must refill boneTexture.
-    markOdysseySkeletonsDirtyUnder(this.model);
+    // Only dirty skins when this batch actually wrote bone locals — empty flushes
+    // were forcing boneTexture uploads + shadow caster-bone-dirty every tick.
+    if(len > 0){
+      markOdysseySkeletonsDirtyUnder(this.model);
+    }
   }
 
   createAnimationState(): OdysseyModelAnimationManagerState {

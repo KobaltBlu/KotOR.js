@@ -4,21 +4,18 @@ import * as THREE from "three";
 import { GameState } from "@/GameState";
 import { OdysseyFace3, OdysseyModel3D } from "@/three/odyssey";
 import { Utility } from "@/utility/Utility";
-import { OdysseyModelNodeAABB, OdysseyWalkMesh } from "@/odyssey";
+import { OdysseyWalkMesh } from "@/odyssey";
 import { BinaryReader } from "@/utility/binary/BinaryReader";
 import { ResourceTypes } from "@/resource/ResourceTypes";
-import { MDLLoader, ResourceLoader, TextureLoader } from "@/loaders";
-import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { MDLLoader, ResourceLoader } from "@/loaders";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GFFField } from "@/resource/GFFField";
-import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils";
-// import { ShaderManager } from "@/managers";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { BitWise } from "@/utility/BitWise";
 import { VISObject } from "@/resource/VISObject";
 import { IVISRoom } from "@/interface";
-import { EngineMode } from "@/enums/engine/EngineMode";
+import type { GrassBin } from "@/managers/GrassManager";
 
 type CollisionPlaceableBVHEntry = {
   placeable: ModulePlaceable;
@@ -120,14 +117,9 @@ export class ModuleRoom extends ModuleObject {
   triggers: ModuleTrigger[] = [];
   encounters: ModuleEncounter[] = [];
   sounds: ModuleSound[] = [];
-  grass: THREE.InstancedMesh<THREE.BufferGeometry, THREE.ShaderMaterial>;
-  grassWindOffsets?: Float32Array;
-
-  private _grassWindMid = new THREE.Vector3();
-  private _grassWindMatrix = new THREE.Matrix4();
-  private _grassWindForce = new THREE.Vector3();
-  private _grassWindSample = new THREE.Vector3();
-  private _grassWindGust = new THREE.Vector3();
+  /** Parent group of grass bin meshes (owned by GrassManager). */
+  grass?: THREE.Group;
+  grassBins?: GrassBin[];
 
   linkedRoomData: IVISRoom[] = [];
   linkedRoomNames: string[] = [];
@@ -325,23 +317,6 @@ export class ModuleRoom extends ModuleObject {
 
       this.model.update(delta);
     }
-
-    if(this.grass){
-      this.grass.material.uniforms.time.value += delta;
-
-      // Update camera position for distance fade and player position for trample
-      if(GameState.getCurrentPlayer()?.position){
-        this.grass.material.uniforms.playerPosition.value.copy(GameState.getCurrentPlayer()?.position);
-        this.grass.material.uniforms.useDistanceFade.value = (GameState.Mode == EngineMode.DIALOG) ? false : true;
-      }
-
-      // Update entity positions in texture for multi-entity trample
-      this.updatePositionDataTexture();
-
-      this.updateGrassForWind(delta);
-
-      this.grass.material.uniformsNeedUpdate = true;
-    }
   }
 
   show(showLinkedRooms = false){
@@ -350,17 +325,13 @@ export class ModuleRoom extends ModuleObject {
       this.model.userData.visActive = true;
     }
 
-    if(this.grass){
-      this.grass.visible = true;
-    }
+    GameState.grassManager?.setRoomVisible(this, true);
 
     if(showLinkedRooms){
       const linkedRooms = this.linkedRoomsArray;
       for(let i = 0, rLen = linkedRooms.length; i < rLen; i++){
         const room = linkedRooms[i];
-        if(room.grass){
-          room.grass.visible = true;
-        }
+        GameState.grassManager?.setRoomVisible(room, true);
         if(typeof room.model === 'object'){
           room.model.visible = true;
           room.model.userData.visActive = true;
@@ -387,9 +358,7 @@ export class ModuleRoom extends ModuleObject {
       this.model.userData.visActive = false;
     }
 
-    if(this.grass){
-      this.grass.visible = false;
-    }
+    GameState.grassManager?.setRoomVisible(this, false);
 
     if(hideLinkedRooms){
       const linkedRooms = this.linkedRoomsArray;
@@ -496,7 +465,7 @@ export class ModuleRoom extends ModuleObject {
     //room.disableMatrixUpdate;
 
     try{
-      await this.buildGrass();
+      await GameState.grassManager?.buildForRoom(this);
     }catch(e){
       console.error(e);
     }
@@ -516,516 +485,6 @@ export class ModuleRoom extends ModuleObject {
       console.error(e);
     }
   }
-
-  async buildGrass(): Promise<void> {
-    if(!this.area.grass.textureName){
-      // console.warn('ModuleRoom.buildGrass: No grass texture found for room', this.roomName);
-      return;
-    }
-
-    const density = this.area.grass.density;
-    const quadOffsetZ = this.area.grass.quadSize/2;
-    if(!this.model){
-      // console.warn('ModuleRoom.buildGrass: No model found for room', this.roomName);
-      return;
-    }
-
-    const aabb = this.model.aabb;
-    if(!(aabb instanceof OdysseyModelNodeAABB)){
-      // console.warn('ModuleRoom.buildGrass: No grass faces found for room', this.roomName);
-      return;
-    }
-
-    const grassFaces = this.getGrassFaces(aabb);
-    if(!grassFaces.length){
-      // console.warn('ModuleRoom.buildGrass: No grass faces found for room', this.roomName);
-      return;
-    }
-
-    const grassProbability = new THREE.Vector4(
-      this.area.grass.probability.lowerLeft,
-      this.area.grass.probability.lowerRight,
-      this.area.grass.probability.upperLeft,
-      this.area.grass.probability.upperRight
-    );
-    this.normalizeGrassProbability(grassProbability);
-
-    // Pre-calculate grass blade geometry once
-    const grassGeometry = this.createGrassBladeGeometry();
-
-    const geometry = new THREE.InstancedBufferGeometry();
-    geometry.index = grassGeometry.index;
-    geometry.attributes.position = grassGeometry.attributes.position;
-    geometry.attributes.normal = grassGeometry.attributes.normal;
-    geometry.attributes.constraint = grassGeometry.attributes.constraint;
-    geometry.attributes.quadIdx = grassGeometry.attributes.quadIdx;
-    geometry.attributes.uv = grassGeometry.attributes.uv;
-
-    // Create position data texture for multi-entity trample
-    const positionTexture = this.createPositionDataTexture(64); // 64 entities max
-
-    const grass_material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        THREE.UniformsLib["common"],
-        {
-          map: { value: null },
-          lightMap: { value: null },
-          positionMap: { value: positionTexture },
-          positionMapSize: { value: new THREE.Vector2(8, 8) }, // 8x8 texture = 64 entities
-          maxEntities: { value: 64 },
-          time: { value: 0 },
-          ambientColor: { value: new THREE.Color().setHex(parseInt('0x'+(this.area.sun.fogColor).toString(16))) },
-          planeHeightJitter: { value: 0.05 },
-          playerPosition: { value: new THREE.Vector3 },
-          alphaTest: { value: this.area.alphaTest },
-          // Fade distance uniforms
-          fadeStartDistance: { value: 25.0 },
-          fadeEndDistance: { value: 100.0 },
-          useDistanceFade: { value: true },
-          // Trample effect uniforms
-          trampleRadius: { value: 3.0 },    // Radius around player where grass gets trampled
-          trampleStrength: { value: 1.0 }   // Strength of the trample effect
-        }
-      ]),
-      vertexShader: GameState.ShaderManager.Shaders.get('grass').getVertex(),
-      fragmentShader: GameState.ShaderManager.Shaders.get('grass').getFragment(),
-      visible: true,
-      side: THREE.DoubleSide
-    });
-
-    // Pre-calculate face data and grass counts
-    const faceData = this.precalculateFaceData(aabb, grassFaces, density);
-    const totalGrassCount = faceData.totalGrassCount;
-
-    if(totalGrassCount === 0){
-      // console.warn('ModuleRoom.buildGrass: No grass instances to create for room', this.roomName);
-      return;
-    }
-
-    this.grassWindOffsets = new Float32Array(totalGrassCount * 2);
-    geometry.setAttribute(
-      'grassWindOffset',
-      new THREE.InstancedBufferAttribute(this.grassWindOffsets, 2)
-    );
-
-    this.grass = new THREE.InstancedMesh(geometry, grass_material, totalGrassCount);
-    this.grass.frustumCulled = false;
-
-    // Pre-allocate reusable objects
-    const objForMatrix = new THREE.Object3D();
-    const tmpVec3 = new THREE.Vector3();
-    const FA = new THREE.Vector3();
-    const FB = new THREE.Vector3();
-    const FC = new THREE.Vector3();
-    const uvA = new THREE.Vector2();
-    const uvB = new THREE.Vector2();
-    const uvC = new THREE.Vector2();
-
-
-    const lm_texture = aabb.textureMap2;
-
-    // Pre-allocate arrays
-    const instanceIndices = new Float32Array(totalGrassCount);
-    const grassQuadIndices = new Float32Array(totalGrassCount);
-    const lightmapUV = new Float32Array(totalGrassCount * 2);
-
-    // Initialize instance indices (also set per placed blade below)
-    for(let i = 0; i < totalGrassCount; i++){
-      instanceIndices[i] = i;
-      grassQuadIndices[i] = 0;
-    }
-
-    // Pre-cache model data for UV calculation
-    const pos = aabb.vertices;
-    const uv2 = aabb.tvectors[1];
-    const faceIndexByRef = new Map<OdysseyFace3, number>();
-    for(let i = 0; i < aabb.faces.length; i++){
-      faceIndexByRef.set(aabb.faces[i], i);
-    }
-    const grassFaceIndexSet = new Set<number>();
-    for(let i = 0; i < grassFaces.length; i++){
-      const idx = faceIndexByRef.get(grassFaces[i]);
-      if(typeof idx === 'number'){
-        grassFaceIndexSet.add(idx);
-      }
-    }
-    const edgePadding = this.area.grass.quadSize * 0.5;
-    const maxPlacementAttempts = 8;
-
-    let instanceIndex = 0;
-
-    // Process each face
-    for(let k = 0; k < grassFaces.length; k++){
-      const face = grassFaces[k];
-      const grassCount = faceData.faceGrassCounts[k];
-
-      if(grassCount < 1) continue;
-
-      // Set face vertices
-      FA.set(pos[face.a * 3], pos[(face.a * 3) + 1], pos[(face.a * 3) + 2]);
-      FB.set(pos[face.b * 3], pos[(face.b * 3) + 1], pos[(face.b * 3) + 2]);
-      FC.set(pos[face.c * 3], pos[(face.c * 3) + 1], pos[(face.c * 3) + 2]);
-
-      // Set UV coordinates
-      const tvI1 = face.a * 2;
-      const tvI2 = face.b * 2;
-      const tvI3 = face.c * 2;
-
-      uvA.set(uv2[tvI1], uv2[tvI1 + 1]);
-      uvB.set(uv2[tvI2], uv2[tvI2 + 1]);
-      uvC.set(uv2[tvI3], uv2[tvI3 + 1]);
-      const blockedEdgeAB = this.isBlockedGrassEdge(face, 0, grassFaceIndexSet);
-      const blockedEdgeBC = this.isBlockedGrassEdge(face, 1, grassFaceIndexSet);
-      const blockedEdgeCA = this.isBlockedGrassEdge(face, 2, grassFaceIndexSet);
-
-      // Generate grass instances for this face
-      for(let j = 0; j < grassCount; j++){
-        let accepted = false;
-        let a = 0;
-        let b = 0;
-        let c = 0;
-
-        for(let attempt = 0; attempt < maxPlacementAttempts; attempt++){
-          // Generate random barycentric coordinates
-          a = Math.random();
-          b = Math.random();
-
-          if (a + b > 1) {
-            a = 1 - a;
-            b = 1 - b;
-          }
-
-          c = 1 - a - b;
-
-          // Calculate position
-          tmpVec3.x = (a * FA.x) + (b * FB.x) + (c * FC.x);
-          tmpVec3.y = (a * FA.y) + (b * FB.y) + (c * FC.y);
-          tmpVec3.z = (a * FA.z) + (b * FB.z) + (c * FC.z);
-
-          // Keep blades away from edges that border non-grass faces.
-          if(blockedEdgeAB && this.pointToSegmentDistance(tmpVec3, FA, FB) < edgePadding) continue;
-          if(blockedEdgeBC && this.pointToSegmentDistance(tmpVec3, FB, FC) < edgePadding) continue;
-          if(blockedEdgeCA && this.pointToSegmentDistance(tmpVec3, FC, FA) < edgePadding) continue;
-
-          accepted = true;
-          break;
-        }
-
-        if(!accepted){
-          continue;
-        }
-
-        // Set matrix
-        objForMatrix.rotation.z = Math.floor(Math.random() * 360);
-        objForMatrix.position.copy(tmpVec3);
-        objForMatrix.position.z += quadOffsetZ * 0.90;
-        objForMatrix.updateMatrix();
-
-        // Calculate lightmap UV using current face's barycentric coordinates
-        if(lm_texture){
-          // Use the barycentric coordinates (a, b, c) we already calculated for positioning
-          // to interpolate the UV coordinates from the current face
-          const uv = new THREE.Vector2()
-            .addScaledVector(uvA, a)
-            .addScaledVector(uvB, b)
-            .addScaledVector(uvC, c);
-
-          lightmapUV[(instanceIndex * 2) + 0] = uv.x;
-          lightmapUV[(instanceIndex * 2) + 1] = uv.y;
-        }
-
-        instanceIndices[instanceIndex] = instanceIndex;
-        grassQuadIndices[instanceIndex] = this.pickGrassTextureQuad(grassProbability);
-
-        this.grass.setMatrixAt(instanceIndex, objForMatrix.matrix);
-        instanceIndex++;
-      }
-    }
-
-    this.grass.count = instanceIndex;
-    this.grass.instanceMatrix.needsUpdate = true;
-    geometry.setAttribute('instanceID', new THREE.InstancedBufferAttribute(instanceIndices, 1));
-    geometry.setAttribute('grassQuad', new THREE.InstancedBufferAttribute(grassQuadIndices, 1));
-    geometry.setAttribute('lightmapUV', new THREE.InstancedBufferAttribute(lightmapUV, 2));
-
-    this.grass.position.copy(this.position).add(aabb.position);
-    GameState.group.grass.add(this.grass);
-
-    // Settle textures before area warm-up / renderer.compile
-    await this.loadGrassTextures(grass_material, lm_texture);
-  }
-
-  /**
-   * Resolve grass-eligible faces, preferring runtime walkmesh surfacemat data.
-   */
-  private getGrassFaces(aabb: OdysseyModelNodeAABB): OdysseyFace3[] {
-    return aabb.grassFaces;
-  }
-
-  private isBlockedGrassEdge(face: OdysseyFace3, edgeIndex: number, grassFaceIndexSet: Set<number>): boolean {
-    const adjacentFaceIndex = face.adjacent?.[edgeIndex];
-    if(typeof adjacentFaceIndex !== 'number' || adjacentFaceIndex < 0){
-      return true;
-    }
-    return !grassFaceIndexSet.has(adjacentFaceIndex);
-  }
-
-  private readonly _edgeTmp = new THREE.Vector3();
-  private readonly _pointTmp = new THREE.Vector3();
-  private readonly _closestTmp = new THREE.Vector3();
-
-  private pointToSegmentDistance(point: THREE.Vector3, segA: THREE.Vector3, segB: THREE.Vector3): number {
-    this._edgeTmp.subVectors(segB, segA);
-    this._pointTmp.subVectors(point, segA);
-    const edgeLenSq = this._edgeTmp.lengthSq();
-    if(edgeLenSq <= 0){
-      return point.distanceTo(segA);
-    }
-    const t = Math.max(0, Math.min(1, this._pointTmp.dot(this._edgeTmp) / edgeLenSq));
-    this._closestTmp.copy(segA).addScaledVector(this._edgeTmp, t);
-    return point.distanceTo(this._closestTmp);
-  }
-
-  /**
-   * Supports both [0..1] and percentage-style [0..100] probability values.
-   */
-  private normalizeGrassProbability(probability: THREE.Vector4): void {
-    probability.x = Math.max(0, probability.x);
-    probability.y = Math.max(0, probability.y);
-    probability.z = Math.max(0, probability.z);
-    probability.w = Math.max(0, probability.w);
-
-    let total = probability.x + probability.y + probability.z + probability.w;
-    if(total <= 0){
-      probability.set(0.25, 0.25, 0.25, 0.25);
-      return;
-    }
-
-    // If authors use percentage values (e.g. 25,25,25,25), normalize to 1.0.
-    probability.divideScalar(total);
-  }
-
-  /** Weighted random pick from a 2×2 grass texture atlas (LL, LR, UL, UR). */
-  private pickGrassTextureQuad(probability: THREE.Vector4): number {
-    const r = Math.random();
-    const t0 = probability.x;
-    const t1 = t0 + probability.y;
-    const t2 = t1 + probability.z;
-    if (r < t0) return 0;
-    if (r < t1) return 1;
-    if (r < t2) return 2;
-    return 3;
-  }
-
-  /**
-   * Create the grass blade geometry with all four orientations
-   */
-  private createGrassBladeGeometry(): THREE.BufferGeometry {
-    let grassGeometry: THREE.BufferGeometry | undefined = undefined;
-
-    for(let i = 0; i < 4; i++){
-      const blade = new THREE.PlaneGeometry(this.area.grass.quadSize, this.area.grass.quadSize, 1, 1);
-      blade.rotateX(Math.PI/2);
-      blade.rotateZ(Math.PI/4 * i);
-
-      if(!grassGeometry){
-        grassGeometry = blade;
-        continue;
-      }
-
-      grassGeometry = BufferGeometryUtils.mergeBufferGeometries([grassGeometry, blade]);
-    }
-
-    // Set constraint array for wind effect
-    const constraint = new Float32Array([
-      1, 1, 0, 0,
-      1, 1, 0, 0,
-      1, 1, 0, 0,
-      1, 1, 0, 0
-    ]);
-    grassGeometry.setAttribute('constraint', new THREE.BufferAttribute(constraint, 1));
-
-    // Set quad index for vertex shader
-    const quadIdx = new Float32Array([
-      0, 0, 0, 0,
-      1, 1, 1, 1,
-      2, 2, 2, 2,
-      3, 3, 3, 3,
-    ]);
-    grassGeometry.setAttribute('quadIdx', new THREE.BufferAttribute(quadIdx, 1));
-
-    return grassGeometry;
-  }
-
-  /**
-   * Pre-calculate face data and grass counts
-   */
-  private precalculateFaceData(aabb: OdysseyModelNodeAABB, grassFaces: OdysseyFace3[], density: number): { totalGrassCount: number, faceGrassCounts: number[] } {
-    const faceGrassCounts: number[] = [];
-    let totalGrassCount = 0;
-
-    const FA = new THREE.Vector3();
-    const FB = new THREE.Vector3();
-    const FC = new THREE.Vector3();
-
-    for(let i = 0; i < grassFaces.length; i++){
-      const face = grassFaces[i];
-
-      FA.set(aabb.vertices[face.a * 3], aabb.vertices[(face.a * 3) + 1], aabb.vertices[(face.a * 3) + 2]);
-      FB.set(aabb.vertices[face.b * 3], aabb.vertices[(face.b * 3) + 1], aabb.vertices[(face.b * 3) + 2]);
-      FC.set(aabb.vertices[face.c * 3], aabb.vertices[(face.c * 3) + 1], aabb.vertices[(face.c * 3) + 2]);
-
-      const triangle = new THREE.Triangle(FA, FB, FC);
-      const tArea = triangle.getArea();
-      let grassCount = Math.max(1, Math.floor((tArea * density) * 0.50));
-
-      totalGrassCount += grassCount;
-      faceGrassCounts.push(grassCount);
-    }
-
-    return { totalGrassCount, faceGrassCounts };
-  }
-
-  /**
-   * CPU-integrated tip displacement per grass blade.
-   */
-  private updateGrassForWind(delta: number = 0): void {
-    if (!this.grass || !this.grassWindOffsets) return;
-
-    const wm = GameState.windManager;
-    if (!wm) return;
-    if (wm.windLevel <= 0 && wm.pointSourceWinds.length === 0) return;
-
-    const dt = Math.min(delta, 0.1);
-    const quadSize = this.area.grass.quadSize > 0 ? this.area.grass.quadSize : 0.25;
-    const stiffness = 1.0;
-    const capScale = wm.getGlobalWindCapScale();
-    const offsets = this.grassWindOffsets;
-    const count = this.grass.count;
-
-    for (let i = 0; i < count; i++) {
-      this.grass.getMatrixAt(i, this._grassWindMatrix);
-      this._grassWindMid.setFromMatrixPosition(this._grassWindMatrix);
-
-      this._grassWindSample.copy(wm.getGlobalWindNoPoint(this._grassWindMid, 1.0)).multiplyScalar(capScale);
-      this._grassWindGust.copy(wm.getGlobalPointWind(this._grassWindMid));
-
-      const ox = offsets[i * 2];
-      const oy = offsets[i * 2 + 1];
-
-      // spring = bottom - top (XY); bottom at rest origin, tip offset stored in ox/oy
-      this._grassWindForce.set(
-        this._grassWindSample.x + this._grassWindGust.x - ox,
-        this._grassWindSample.y + this._grassWindGust.y - oy,
-        this._grassWindSample.z + this._grassWindGust.z
-      );
-
-      if (this._grassWindForce.x !== 0 || this._grassWindForce.y !== 0 || this._grassWindForce.z !== 0) {
-        offsets[i * 2] = ox + this._grassWindForce.x * stiffness * quadSize * dt;
-        offsets[i * 2 + 1] = oy + this._grassWindForce.y * stiffness * quadSize * dt;
-      }
-    }
-
-    const attr = this.grass.geometry.getAttribute('grassWindOffset');
-    if (attr) attr.needsUpdate = true;
-  }
-
-  /**
-   * Create a data texture to store entity positions for trample effects
-   */
-  private createPositionDataTexture(maxEntities: number = 64): THREE.DataTexture {
-    // Create a texture to store entity positions
-    // Format: RGBA where R=X, G=Y, B=Z, A=active flag
-    const textureSize = Math.ceil(Math.sqrt(maxEntities));
-    const data = new Float32Array(textureSize * textureSize * 4);
-
-    // Initialize all positions to (0,0,0,0) - inactive
-    for (let i = 0; i < data.length; i += 4) {
-      data[i] = 0;     // X
-      data[i + 1] = 0; // Y
-      data[i + 2] = 0; // Z
-      data[i + 3] = 0; // Active flag (0 = inactive, 1 = active)
-    }
-
-    const texture = new THREE.DataTexture(
-      data,
-      textureSize,
-      textureSize,
-      THREE.RGBAFormat,
-      THREE.FloatType
-    );
-
-    texture.needsUpdate = true;
-    return texture;
-  }
-
-  /**
-   * Update entity positions in the position data texture
-   */
-  private updatePositionDataTexture(): void {
-    if (!this.grass || !this.grass.material.uniforms.positionMap.value) return;
-
-    const texture = this.grass.material.uniforms.positionMap.value;
-    const data = texture.image.data;
-    const textureSize = texture.image.width;
-    let entityIndex = 0;
-
-    // Clear all positions
-    for (let i = 0; i < data.length; i += 4) {
-      data[i + 3] = 0; // Set all to inactive
-    }
-
-    // Add creature positions
-    for (const creature of this.creatures) {
-      if (entityIndex >= textureSize * textureSize) break;
-
-      const pixelIndex = entityIndex * 4;
-      data[pixelIndex] = creature.position.x;
-      data[pixelIndex + 1] = creature.position.y;
-      data[pixelIndex + 2] = creature.position.z;
-      data[pixelIndex + 3] = 1.0; // Active
-      entityIndex++;
-    }
-
-    texture.needsUpdate = true;
-  }
-
-  /**
-   * Load grass textures before GPU warm-up / compile so first grass draw
-   * does not pay deferred define flips + texture uploads.
-   */
-  private async loadGrassTextures(grass_material: THREE.ShaderMaterial, lm_texture: any): Promise<void> {
-    if(!this.area.grass.textureName){
-      return;
-    }
-
-    const diffuseMap: OdysseyTexture = await TextureLoader.Load(this.area.grass.textureName);
-    if(!diffuseMap){ return; }
-
-    diffuseMap.minFilter = THREE.LinearFilter;
-    diffuseMap.magFilter = THREE.LinearFilter;
-    grass_material.uniforms.map.value = diffuseMap;
-    grass_material.uniformsNeedUpdate = true;
-    grass_material.defines.USE_MAP = '';
-    grass_material.defines.USE_UV = '';
-    grass_material.needsUpdate = true;
-
-    if(!lm_texture){
-      return;
-    }
-
-    const lightMap: OdysseyTexture = await TextureLoader.Load(lm_texture);
-    if(!lightMap){ return; }
-
-    lightMap.minFilter = THREE.LinearFilter;
-    lightMap.magFilter = THREE.LinearFilter;
-    grass_material.uniforms.lightMap.value = lightMap;
-    grass_material.uniformsNeedUpdate = true;
-    grass_material.defines.USE_LIGHTMAP = '';
-    grass_material.needsUpdate = true;
-  }
-
-
 
   containsPoint2d(point: any){
 
@@ -1080,11 +539,7 @@ export class ModuleRoom extends ModuleObject {
     }
 
     try{
-      if(this.grass){
-        this.grass.geometry.dispose();
-        this.grass.material.dispose();
-        this.grass.removeFromParent();
-      }
+      GameState.grassManager?.destroyForRoom(this);
     }catch(e){
       console.error(e);
     }

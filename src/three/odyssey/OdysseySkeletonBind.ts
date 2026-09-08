@@ -9,11 +9,39 @@ const _basePosition = /*@__PURE__*/ new THREE.Vector3();
 
 const ODYSSEY_SKELETON_DIRTY = 'odysseyBonesDirty';
 const ODYSSEY_SKIN_MW_FP = 'odysseySkinMatrixWorldFp';
+/** Last boneMatrices content hash — used to skip no-op GPU uploads + shadow dirty. */
+export const ODYSSEY_BONE_MATRICES_FP = 'odysseyBoneMatricesFp';
+/** Bone DataTexture identity last pushed to the GPU (computeBoneTexture replaces it). */
+const ODYSSEY_BONE_TEX_SYNCED = 'odysseyBoneTexSynced';
 
 /** Mark a skeleton so the next {@link THREE.Skeleton.update} fills boneMatrices and uploads. */
 export function markOdysseySkeletonDirty(skeleton: THREE.Skeleton | undefined | null): void {
   if(!skeleton){ return; }
   (skeleton as any)[ODYSSEY_SKELETON_DIRTY] = true;
+}
+
+/** Read the last boneMatrices content fingerprint (0 if never computed). */
+export function getOdysseyBoneMatricesFingerprint(
+  skeleton: THREE.Skeleton | undefined | null
+): number {
+  if(!skeleton){ return 0; }
+  return ((skeleton as any)[ODYSSEY_BONE_MATRICES_FP] as number) | 0;
+}
+
+/** Cheap content hash of skinning boneMatrices (basis diagonals + translation per bone). */
+export function fingerprintBoneMatrices(boneMatrices: Float32Array | number[]): number {
+  let h = 0x811c9dc5;
+  const n = boneMatrices.length;
+  // Per mat4: diagonal (0,5,10) + translation (12,13,14). Stride-4 from 0 misses ty/tz.
+  for(let o = 0; o + 15 < n; o += 16){
+    h = Math.imul(h ^ (Math.round((boneMatrices[o] as number) * 1e4) | 0), 16777619);
+    h = Math.imul(h ^ (Math.round((boneMatrices[o + 5] as number) * 1e4) | 0), 16777619);
+    h = Math.imul(h ^ (Math.round((boneMatrices[o + 10] as number) * 1e4) | 0), 16777619);
+    h = Math.imul(h ^ (Math.round((boneMatrices[o + 12] as number) * 1e3) | 0), 16777619);
+    h = Math.imul(h ^ (Math.round((boneMatrices[o + 13] as number) * 1e3) | 0), 16777619);
+    h = Math.imul(h ^ (Math.round((boneMatrices[o + 14] as number) * 1e3) | 0), 16777619);
+  }
+  return h | 0;
 }
 
 /** Mark every Skeleton under a root (pose flush / equipment attach). */
@@ -43,9 +71,12 @@ export function markOdysseySkeletonsDirtyUnder(root: THREE.Object3D | undefined 
 
 function skinMatrixWorldFingerprint(skinNode: THREE.Object3D): number {
   const e = skinNode.matrixWorld.elements;
-  let h = Math.round(e[0] * 1e4) | 0;
-  h = Math.imul(h ^ (Math.round(e[5] * 1e4) | 0), 16777619);
-  h = Math.imul(h ^ (Math.round(e[10] * 1e4) | 0), 16777619);
+  // Full basis + translation — diagonal-only aliases opposite yaw/pitch.
+  const basis = [0, 1, 2, 4, 5, 6, 8, 9, 10];
+  let h = 0x811c9dc5;
+  for(let i = 0; i < basis.length; i++){
+    h = Math.imul(h ^ (Math.round(e[basis[i]] * 1e4) | 0), 16777619);
+  }
   h = Math.imul(h ^ (Math.round(e[12] * 1e3) | 0), 16777619);
   h = Math.imul(h ^ (Math.round(e[13] * 1e3) | 0), 16777619);
   h = Math.imul(h ^ (Math.round(e[14] * 1e3) | 0), 16777619);
@@ -80,7 +111,9 @@ export function installOdysseySkeletonUpdate(
     const lastSkinFp = (this as any)[ODYSSEY_SKIN_MW_FP] as number | undefined;
     // Always fill once before the first boneTexture exists (bind-time upload).
     const needsFirstUpload = this.boneTexture === null && lastSkinFp === undefined;
-    if(!dirtyFlag && !needsFirstUpload && lastSkinFp === skinFp){
+    const synced = (this as any)[ODYSSEY_BONE_TEX_SYNCED] as THREE.DataTexture | undefined;
+    const texNeedsSync = this.boneTexture !== null && synced !== this.boneTexture;
+    if(!dirtyFlag && !needsFirstUpload && !texNeedsSync && lastSkinFp === skinFp){
       return;
     }
 
@@ -104,9 +137,20 @@ export function installOdysseySkeletonUpdate(
     (this as any)[ODYSSEY_SKELETON_DIRTY] = false;
     (this as any)[ODYSSEY_SKIN_MW_FP] = skinFp;
 
+    const boneFp = fingerprintBoneMatrices(boneMatrices);
+    const lastBoneFp = (this as any)[ODYSSEY_BONE_MATRICES_FP] as number | undefined;
+    (this as any)[ODYSSEY_BONE_MATRICES_FP] = boneFp;
+
+    // Held / single-keyframe poses refill CPU matrices but need no GPU upload —
+    // unless boneTexture was created after a CPU-only fill (computeBoneTexture)
+    // and has never been synced from this update path.
     if(this.boneTexture !== null){
-      this.boneTexture.needsUpdate = true;
-      RenderPerfStats.noteBoneTextureUpload();
+      const texChanged = synced !== this.boneTexture;
+      if(texChanged || lastBoneFp !== boneFp){
+        this.boneTexture.needsUpdate = true;
+        (this as any)[ODYSSEY_BONE_TEX_SYNCED] = this.boneTexture;
+        RenderPerfStats.noteBoneTextureUpload();
+      }
     }
   };
 

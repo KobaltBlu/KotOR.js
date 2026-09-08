@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import {
   AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, LevelUpManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager,
-  FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, OdysseyLightmapBaker, PlaceableLightmapBaker, OdysseyShadowManager, WindManager, MenuManager, ModuleObjectManager, PartyManager,
+  FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, OdysseyLightmapBaker, PlaceableLightmapBaker, OdysseyShadowManager, WindManager, GrassManager, MenuManager, ModuleObjectManager, PartyManager,
   ResolutionManager, ShaderManager, TwoDAManager, FactionManager,
   VideoEffectManager, VideoManager, PazaakManager, UINotificationManager, GuiTimingBarManager, GameOverManager, CutsceneManager, LegalScreenManager, EventManager, TextureAnimationManager, TutorialManager
 } from "@/managers";
@@ -135,6 +135,7 @@ export class GameState implements EngineContext {
   static JournalManager: typeof JournalManager;
   static LightManager: typeof LightManager;
   static WindManager: typeof WindManager;
+  static GrassManager: typeof GrassManager;
   static MenuManager: typeof MenuManager;
   static ModuleObjectManager: typeof ModuleObjectManager;
   static PartyManager: typeof PartyManager;
@@ -327,6 +328,7 @@ export class GameState implements EngineContext {
   static lightManager: LightManager;
   static odysseyShadowManager: OdysseyShadowManager;
   static windManager: WindManager;
+  static grassManager: GrassManager;
 
   static visible: boolean;
 
@@ -896,6 +898,8 @@ export class GameState implements EngineContext {
     GameState.odysseyShadowManager = new OdysseyShadowManager();
     GameState.windManager = new GameState.WindManager();
     WindManager.setInstance(GameState.windManager);
+    GameState.grassManager = new GameState.GrassManager();
+    GrassManager.setInstance(GameState.grassManager);
     GameState.processEventListener('init');
 
     GameState.VideoEffectManager.SetVideoEffect(-1);
@@ -1279,6 +1283,7 @@ export class GameState implements EngineContext {
       GameState.odysseyShadowManager.init(GameState.lightManager, GameState.scene);
       GameState.odysseyShadowManager.syncQualityFromLightManager();
       GameState.windManager.init(GameState);
+      GameState.grassManager?.init(GameState);
       GameState.lightManager.setLightHelpersVisible(ConfigClient.get('GameState.debug.light_helpers') ? true : false);
 
       //AudioEngine.Unmute
@@ -2037,6 +2042,7 @@ export class GameState implements EngineContext {
 
     GameState.lightManager.clearLights();
     GameState.windManager.clear();
+    GameState.grassManager?.clear();
 
     GameState.CursorManager.selected = undefined;
     GameState.CursorManager.selectedObject = undefined;
@@ -2261,6 +2267,7 @@ export class GameState implements EngineContext {
     GameState.lightManager.update(delta, GameState.getCurrentPlayer());
     GameState.updateShadowSystems(delta, GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition);
     GameState.windManager.update(delta);
+    GameState.grassManager?.update(delta);
     GameState.module.area.updateRoomAnimatedLights(delta);
     GameState.module.area.updateRoomWindUniforms();
     GameState.CameraShakeManager.update(delta, GameState.currentCamera);
@@ -2305,6 +2312,7 @@ export class GameState implements EngineContext {
     GameState.lightManager.update(delta, GameState.currentCamera);
     GameState.updateShadowSystems(delta, GameState.currentCamera?.position ?? GameState.currentCameraPosition);
     GameState.windManager.update(delta);
+    GameState.grassManager?.update(delta);
     GameState.module.area.updateRoomAnimatedLights(delta);
     GameState.module.area.updateRoomWindUniforms();
     GameState.CameraShakeManager.update(delta, GameState.currentCamera);
@@ -2343,6 +2351,7 @@ export class GameState implements EngineContext {
     GameState.lightManager.update(delta, GameState.getCurrentPlayer());
     GameState.updateShadowSystems(delta, GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition);
     GameState.windManager.update(delta);
+    GameState.grassManager?.update(delta);
     GameState.module.area.updateRoomAnimatedLights(delta);
     GameState.module.area.updateRoomWindUniforms();
     GameState.CameraShakeManager.update(delta, GameState.currentCamera);
@@ -2396,6 +2405,7 @@ export class GameState implements EngineContext {
     GameState.lightManager.update(delta, GameState.getCurrentPlayer());
     GameState.updateShadowSystems(delta, GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition);
     GameState.windManager.update(delta);
+    GameState.grassManager?.update(delta);
     if(GameState.module?.area){
       GameState.module.area.updateRoomAnimatedLights(delta);
       GameState.module.area.updateRoomWindUniforms();

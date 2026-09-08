@@ -1,11 +1,13 @@
 import * as THREE from "three";
 import { Shader } from "@/shaders/Shader";
+import { ODYSSEY_WIND_VERTEX_LIBRARY } from "@/shaders/odysseyWind";
+import { GRASS_ALPHA_TEST_DEFAULT } from "@/managers/grass/grassHelpers";
 
 /**
- * ShaderGrass class.
- * 
+ * ShaderGrass — retail-shaped billboard grass with GPU wind tip sway.
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ShaderGrass.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -21,14 +23,13 @@ export class ShaderGrass extends Shader {
         map: { value: null },
         lightMap: { value: null },
         time: { value: 0 },
-        ambientColor: { value: new THREE.Color() },
-        planeHeightJitter: { value: 0.0 },
-        playerPosition: { value: new THREE.Vector3() },
-        alphaTest: { value: 1 },
-        // Fade distance uniforms
-        fadeStartDistance: { value: 50.0 }, // Distance where fade starts
-        fadeEndDistance: { value: 100.0 },  // Distance where grass becomes invisible
-        useDistanceFade: { value: true }    // Toggle for distance fade
+        ambientColor: { value: new THREE.Color(0xffffff) },
+        diffuseColor: { value: new THREE.Color(0xffffff) },
+        planeHeightJitter: { value: 0.05 },
+        quadSize: { value: 1.0 },
+        grassStiffness: { value: 1.0 },
+        binFade: { value: 1.0 },
+        alphaTest: { value: GRASS_ALPHA_TEST_DEFAULT },
       }
     ]) as any;
     this.vertex = `
@@ -36,190 +37,80 @@ export class ShaderGrass extends Shader {
     #include <uv_pars_vertex>
     #include <logdepthbuf_pars_vertex>
 
-    //instanceID
+    ${ODYSSEY_WIND_VERTEX_LIBRARY}
+
     attribute float instanceID;
     varying float vInstanceID;
 
-    //time
     uniform float time;
-
-    // Per-instance wind tip offset (CPU-integrated each frame)
-    attribute vec2 grassWindOffset;
     uniform float planeHeightJitter;
+    uniform float quadSize;
+    uniform float grassStiffness;
+    uniform float binFade;
+    uniform float windGrassDt;
+
     attribute float constraint;
-
-    // Per-instance sprite sheet quadrant (0=LL, 1=LR, 2=UL, 3=UR)
     attribute float grassQuad;
-
     attribute float quadIdx;
     varying vec4 vSpriteSheet;
-    
+
     attribute vec2 lightmapUV;
     varying vec2 vLightmapUV;
+    varying float vBinFade;
 
-    // Camera distance fade
-    uniform float fadeStartDistance;
-    uniform float fadeEndDistance;
-    uniform bool useDistanceFade;
-    varying float vDistanceFade;
-
-    // Trample effect
-    uniform vec3 playerPosition;
-    uniform float trampleRadius;
-    uniform float trampleStrength;
-    varying float vTrampleEffect;
-    
-    // Multi-entity trample using position texture
-    uniform sampler2D positionMap;
-    uniform vec2 positionMapSize;
-    uniform int maxEntities;
-
-    // Deterministic random from instanceID
     float rand01(float x) {
       return fract(sin(x * 12.9898) * 43758.5453);
     }
 
-    void calculateMultiEntityTrample(vec3 grassWorldPos, out float totalTrampleEffect) {
-      totalTrampleEffect = 0.0;
-      
-      // Sample all entities from the position texture (using constant loop bound)
-      for (int i = 0; i < 64; i++) {
-        // Convert index to texture coordinates (avoiding modulo operator)
-        float x = float(i) - float(int(positionMapSize.x)) * floor(float(i) / positionMapSize.x);
-        float y = floor(float(i) / positionMapSize.x);
-        vec2 texCoord = vec2(x / positionMapSize.x, y / positionMapSize.y);
-        
-        // Sample entity data
-        vec4 entityData = texture2D(positionMap, texCoord);
-        vec3 entityPosition = entityData.xyz;
-        float isActive = entityData.w;
-        
-        // Skip inactive entities
-        if (isActive < 0.5) continue;
-        
-        // Calculate distance to this entity
-        float distanceToEntity = distance(grassWorldPos, entityPosition);
-        
-        if (distanceToEntity <= trampleRadius) {
-          // Calculate trample strength based on distance
-          float trampleFactor = 1.0 - (distanceToEntity / trampleRadius);
-          totalTrampleEffect += trampleFactor * trampleStrength;
-        }
-      }
-      
-      // Clamp total effect
-      totalTrampleEffect = min(totalTrampleEffect, 2.0);
-    }
-
     void main() {
-      //instanceID
       vInstanceID = instanceID;
-      
       vLightmapUV = lightmapUV;
+      vBinFade = binFade;
 
-      //uv (THREE.js)
       #include <uv_vertex>
 
       float uvFrameIndex = grassQuad;
-
-      //BEGIN: SpriteSheet Calculations
       float framesX = 2.0;
       float framesY = 2.0;
-      float totalFrames = 4.0;
-
-      float column = floor(mod( uvFrameIndex, framesX ));
-      float row = floor( (uvFrameIndex - column) / framesX );
-      float columnNorm = column / framesX;
-      float rowNorm = row / framesY;
-
-      vSpriteSheet.x = columnNorm;
-      vSpriteSheet.y = rowNorm;
+      float column = floor(mod(uvFrameIndex, framesX));
+      float row = floor((uvFrameIndex - column) / framesX);
+      vSpriteSheet.x = column / framesX;
+      vSpriteSheet.y = row / framesY;
       vSpriteSheet.z = (1.0 / framesX);
       vSpriteSheet.w = (1.0 / framesY);
-      //END: SpriteSheet Calculations
 
-      //begin_vertex (THREE.js)
       #include <begin_vertex>
 
-      // Subtle per-plane height variation to break perfectly even blade tops.
       float planeHeightOffset = (rand01((vInstanceID * 29.0) + (quadIdx * 113.0)) - 0.5) * planeHeightJitter;
-      transformed.z += planeHeightOffset;
+      transformed.y += planeHeightOffset;
 
-      mat3 rotationComponent = mat3(instanceMatrix);
-
-      // Grass tip displacement from CPU-integrated wind offset
-      if (constraint > 0.0) {
-        vec3 windOffset = rotationComponent * vec3(grassWindOffset.x, grassWindOffset.y, 0.0) * constraint;
-        transformed.xyz += windOffset;
-      }
-
-      // World position for fade/trample (named to avoid clash with <worldpos_vertex>)
-      vec4 grassWorldPos = vec4(transformed, 1.0);
+      // Instance mid (blade root / bottom center) in world space
+      vec4 midLocal = vec4(0.0, 0.0, 0.0, 1.0);
       #ifdef USE_INSTANCING
-        grassWorldPos = instanceMatrix * grassWorldPos;
+        midLocal = instanceMatrix * midLocal;
       #endif
-      grassWorldPos = modelMatrix * grassWorldPos;
+      vec4 midWorld4 = modelMatrix * midLocal;
+      vec3 midWorld = midWorld4.xyz;
 
-      // Calculate distance fade effect (still using player position for camera distance)
-      float distanceFromPlayer = distance(grassWorldPos.xyz, playerPosition);
-      if (useDistanceFade) {
-        // Calculate fade factor (1.0 = fully visible, 0.0 = invisible)
-        if (distanceFromPlayer <= fadeStartDistance) {
-          vDistanceFade = 1.0;
-        } else if (distanceFromPlayer >= fadeEndDistance) {
-          vDistanceFade = 0.0;
-        } else {
-          // Linear interpolation between fadeStartDistance and fadeEndDistance
-          vDistanceFade = 1.0 - ((distanceFromPlayer - fadeStartDistance) / (fadeEndDistance - fadeStartDistance));
-        }
-      } else {
-        vDistanceFade = 1.0;
+      // Steady-state tip offset ≈ wind + gust (retail spring equilibrium, Z flattened)
+      vec3 wind = odyssey_get_global_wind_no_point(midWorld, 1.0);
+      float windMag = length(wind);
+      if (windMag > 5.0) {
+        wind *= (5.0 / windMag);
       }
-      
-      // Calculate multi-entity trample effect
-      calculateMultiEntityTrample(grassWorldPos.xyz, vTrampleEffect);
+      vec3 gust = odyssey_point_source_wind(midWorld);
+      vec3 tipForce = wind + gust;
+      tipForce.z = 0.0;
 
-      // Apply trample effect - bend grass away from all affecting entities
-      if (vTrampleEffect > 0.0 && constraint > 0.0) {
-        // Calculate average direction from all affecting entities
-        vec3 averageDirection = vec3(0.0);
-        float directionWeight = 0.0;
-        
-        for (int i = 0; i < 64; i++) {
-          // Convert index to texture coordinates (avoiding modulo operator)
-          float x = float(i) - float(int(positionMapSize.x)) * floor(float(i) / positionMapSize.x);
-          float y = floor(float(i) / positionMapSize.x);
-          vec2 texCoord = vec2(x / positionMapSize.x, y / positionMapSize.y);
-          
-          vec4 entityData = texture2D(positionMap, texCoord);
-          vec3 entityPosition = entityData.xyz;
-          float isActive = entityData.w;
-          
-          if (isActive < 0.5) continue;
-          
-          float distanceToEntity = distance(grassWorldPos.xyz, entityPosition);
-          if (distanceToEntity <= trampleRadius) {
-            vec3 directionFromEntity = normalize(grassWorldPos.xyz - entityPosition);
-            float weight = 1.0 - (distanceToEntity / trampleRadius);
-            averageDirection += directionFromEntity * weight;
-            directionWeight += weight;
-          }
-        }
-        
-        if (directionWeight > 0.0) {
-          averageDirection = normalize(averageDirection / directionWeight);
-          vec3 trampleOffset = rotationComponent * averageDirection * vTrampleEffect * 0.5;
-          transformed.xyz -= trampleOffset;
-        }
+      if (constraint > 0.0) {
+        float dt = clamp(windGrassDt, 0.0, 0.1);
+        // Scale matches retail tip integration strength without per-blade CPU state.
+        vec3 tipOffset = tipForce * grassStiffness * quadSize * max(dt * 8.0, 0.35);
+        transformed.xyz += tipOffset * constraint;
       }
 
-      //project_vertex (THREE.js)
       #include <project_vertex>
-
-      //logdepthbuf_vertex (THREE.js)
       #include <logdepthbuf_vertex>
-
-      //worldpos_vertex (THREE.js)
       #include <worldpos_vertex>
     }`;
 
@@ -227,6 +118,8 @@ export class ShaderGrass extends Shader {
     uniform vec3 diffuse;
     uniform float opacity;
     uniform float alphaTest;
+    uniform vec3 ambientColor;
+    uniform vec3 diffuseColor;
     #include <common>
     #include <uv_pars_fragment>
     #include <map_pars_fragment>
@@ -234,46 +127,40 @@ export class ShaderGrass extends Shader {
     #include <logdepthbuf_pars_fragment>
     varying float vInstanceID;
     varying vec4 vSpriteSheet;
-    varying float vDistanceFade;
-    varying float vTrampleEffect;
+    varying float vBinFade;
     #ifdef USE_LIGHTMAP
       uniform sampler2D lightMap;
       varying vec2 vLightmapUV;
     #endif
     void main() {
       vec2 uvTransform = vec2(
-        vSpriteSheet.x + (vSpriteSheet.z * (1.0 - vUv.x)), 
+        vSpriteSheet.x + (vSpriteSheet.z * (1.0 - vUv.x)),
         vSpriteSheet.y + (vSpriteSheet.w * vUv.y)
       );
-      vec4 texelColor = texture2D( map, uvTransform );
-      vec4 lightmapColor = vec4(1.0, 1.0, 1.0, 1.0);
+      vec4 texelColor = texture2D(map, uvTransform);
+      vec3 lightmapColor = vec3(1.0);
 
       #ifdef USE_LIGHTMAP
-        lightmapColor = texture2D( lightMap, vLightmapUV );
+        lightmapColor = texture2D(lightMap, vLightmapUV).rgb;
       #endif
 
-      texelColor.rgb *= lightmapColor.rgb;
-
-      // Apply distance fade to alpha
-      texelColor.a *= vDistanceFade;
-
-      // Apply trample effect to alpha (make trampled grass slightly more transparent)
-      if (vTrampleEffect > 0.0) {
-        texelColor.a *= (1.0 - vTrampleEffect * 0.3);
+      // ARE Grass_Ambient / Grass_Diffuse tinted by lightmap (white if both unset)
+      vec3 tint = mix(ambientColor, diffuseColor, 0.5);
+      if (dot(tint, tint) < 1e-6) {
+        tint = vec3(1.0);
       }
+      texelColor.rgb *= tint * lightmapColor;
 
-      if (texelColor[3] < alphaTest) {
+      texelColor.a *= vBinFade;
+
+      if (texelColor.a < alphaTest) {
         discard;
       }
 
-      //logdepthbuf_fragment (THREE.js)
       #include <logdepthbuf_fragment>
 
-      //output fragment color
-      gl_FragColor = vec4( texelColor.rgb, texelColor.a );
+      gl_FragColor = vec4(texelColor.rgb, texelColor.a);
     }`;
   }
 
 }
-
-// ShaderGrass.Init;

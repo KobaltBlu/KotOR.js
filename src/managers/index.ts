@@ -24,6 +24,7 @@ export * from "@/managers/PlaceableLightmapBaker";
 export * from "@/managers/OdysseyShadowManager";
 export * from "@/managers/ShadowCasterRegistry";
 export * from "@/managers/WindManager";
+export * from "@/managers/GrassManager";
 export * from "@/managers/MenuManager";
 export * from "@/managers/ModuleObjectManager";
 export * from "@/managers/PartyManager";
