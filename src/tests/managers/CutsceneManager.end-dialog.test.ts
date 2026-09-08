@@ -95,6 +95,11 @@ jest.mock('@/managers/cutscene/dialog-camera', () => ({
   isAspyrCarthDialogCameraHack: jest.fn(() => false),
   applyAspyrPlaceableCameraHack: jest.fn(),
 }));
+jest.mock('@/managers/cutscene/dialog-alien-vo', () => ({
+  createDialogAlienVOPrngState: jest.fn(),
+  advanceAlienVOTake: jest.fn(() => 1),
+  DIALOG_ALIEN_VO_TAKES: [1, 1, 2, 3, 1, 2, 1, 2, 2, 3, 3, 3, 1, 3, 2, 1, 3, 2, 2],
+}));
 jest.mock('@/utility/aurora-camera-orientation', () => ({
   auroraCameraLookOrientation: jest.fn(),
 }));
@@ -124,6 +129,7 @@ jest.mock('@/resource/DLGNode', () => {
     static estimateSpokenTimeSeconds() { return 0; }
     getVoiceResRef() { return ''; }
     getCompiledString() { return ''; }
+    applyAlienVOTake() {}
   }
   return { DLGNode };
 });

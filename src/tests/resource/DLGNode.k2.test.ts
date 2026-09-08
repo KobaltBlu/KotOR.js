@@ -105,6 +105,44 @@ describe('DLGNode.resolveAlienVO (LoadDialogBase)', () => {
     node.resolveAlienVO(node.dialog);
     expect(node.vo_resref).toBe('avo_r1_h');
   });
+
+  test('resolves when Sound is set but VO_ResRef is empty', () => {
+    node.sound = 'sfx_extra';
+    node.alienRaceNode = 1;
+    node.resolveAlienVO(node.dialog);
+    expect(node.vo_resref).toBe('avo_r1_n');
+    expect(node.soundExists & 3).toBe(3);
+  });
+});
+
+describe('DLGNode.applyAlienVOTake (SendDialogEntry)', () => {
+  test('appends take and sets SoundExists bit4 once', () => {
+    const node = new DLGNode();
+    node.vo_resref = 'avo_r1_n';
+    node.soundExists = 0x80 | 3;
+    node.applyAlienVOTake(2);
+    expect(node.vo_resref).toBe('avo_r1_n2');
+    expect(node.soundExists & 4).toBe(4);
+    node.applyAlienVOTake(3);
+    expect(node.vo_resref).toBe('avo_r1_n2');
+  });
+
+  test('no-op when SoundExists bit2 clear', () => {
+    const node = new DLGNode();
+    node.vo_resref = 'avo_r1_n';
+    node.soundExists = 0x80;
+    node.applyAlienVOTake(1);
+    expect(node.vo_resref).toBe('avo_r1_n');
+  });
+
+  test('no-op when vo_resref empty', () => {
+    const node = new DLGNode();
+    node.vo_resref = '';
+    node.soundExists = 0x80 | 3;
+    node.applyAlienVOTake(1);
+    expect(node.vo_resref).toBe('');
+    expect(node.soundExists & 4).toBe(0);
+  });
 });
 
 describe('DLGNode.runActiveScripts Logic (SendDialogReplies)', () => {

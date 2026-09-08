@@ -91,12 +91,17 @@ export class InGameBark extends GameMenu {
     }
     this.LBL_BARKTEXT.setText(entry.text);
 
-    if (!!entry.getVoiceResRef()?.length) {
+    const baseVo = entry.getVoiceResRef();
+    if (!!baseVo?.length) {
+      // BarkOneLine: SoundExists bit2 → append rand()%3+1 on a local copy
+      const voResRef = ((entry.soundExists & 2) !== 0)
+        ? `${baseVo}${((Math.random() * 3) | 0) + 1}`
+        : baseVo;
       this.bHasAudio = true;
       this.bAudioPlayed = false;
-      console.log('lip', entry.getVoiceResRef());
-      void entry.loadLIP();
-      GameState.CutsceneManager.audioEmitter.playStreamWave(entry.getVoiceResRef()).then((audioNode) => {
+      console.log('lip', voResRef);
+      void entry.loadLIP(voResRef);
+      GameState.CutsceneManager.audioEmitter.playStreamWave(voResRef).then((audioNode) => {
         if(audioGeneration !== this.barkAudioGeneration){
           try { audioNode?.stop?.(0); } catch { /* superseded */ }
           return;

@@ -404,8 +404,8 @@ export class DLGNode {
     });
   }
 
-  async loadLIP(): Promise<boolean> {
-    const resref = this.getVoiceResRef();
+  async loadLIP(resrefOverride?: string): Promise<boolean> {
+    const resref = resrefOverride || this.getVoiceResRef();
     if(resref){
       const lip = await LIPObject.Load(resref);
       if (BitWise.InstanceOfObject(this.speaker, ModuleObjectType.ModuleCreature)) {
@@ -990,8 +990,27 @@ export class DLGNode {
    * When VO_ResRef is empty: race row from AlienRaceNode (or AlienRaceOwner for
    * empty Speaker); emotion.2da[Emotion].LABEL names the alienvo.2da column.
    */
+  /**
+   * SendDialogEntry alien take append (SoundExists bit2, not yet bit4).
+   * Appends the take digit to VO_ResRef and sets bit4 so it runs once.
+   */
+  applyAlienVOTake(take: number){
+    if((this.soundExists & 2) === 0){
+      return;
+    }
+    if((this.soundExists & 4) !== 0){
+      return;
+    }
+    if(!this.vo_resref){
+      return;
+    }
+    this.vo_resref = `${this.vo_resref}${take | 0}`;
+    this.soundExists = (this.soundExists | 4) >>> 0;
+  }
+
   resolveAlienVO(dialog: DLGObject){
-    if(this.vo_resref || this.sound){
+    // LoadDialogBase gates only on empty VO_ResRef (Sound alone does not block).
+    if(this.vo_resref){
       return;
     }
     const speakerEmpty = !(this.speakerTag && String(this.speakerTag).trim().length);

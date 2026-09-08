@@ -41,6 +41,11 @@ import {
   type DialogPseudoRandomState,
 } from "@/managers/cutscene/dialog-camera";
 import {
+  advanceAlienVOTake,
+  createDialogAlienVOPrngState,
+  type DialogAlienVOPrngState,
+} from "@/managers/cutscene/dialog-alien-vo";
+import {
   auroraCameraLookOrientation,
 } from "@/utility/aurora-camera-orientation";
 import { ConfigClient } from "@/utility/ConfigClient";
@@ -78,6 +83,8 @@ export class CutsceneManager {
   static conversationEpoch: number = 0;
   /** pseudo-random camera angle state. */
   static dialogCameraPrng: DialogPseudoRandomState | undefined;
+  /** TSL alien VO take PRNG (InitializePseudoRandomAlienVOVariation). */
+  static dialogAlienVOPrng: DialogAlienVOPrngState | undefined;
   /** When true, conversation is private (scripted bPrivateConversation). */
   static privateConversation: boolean = false;
   /**
@@ -534,6 +541,7 @@ export class CutsceneManager {
     this.barkScreenY = typeof barkScreenY === 'number' ? barkScreenY : -1;
     this.cameraState.currentCameraAnimation = undefined;
     this.dialogCameraPrng = createDialogPseudoRandomState(dialog?.resref || '');
+    this.dialogAlienVOPrng = createDialogAlienVOPrngState(dialog?.resref || '');
     this.owner = owner;
     this.listener = listener;
     this.paused = false;
@@ -887,6 +895,12 @@ export class CutsceneManager {
     //replies
     const replies = this.dialog.getAvailableReplies(entry);
     this.currentReplies = replies;
+
+    // GetStartEntryOneLiner + SendDialogEntry alien take append
+    if(this.dialogAlienVOPrng){
+      const take = advanceAlienVOTake(this.dialogAlienVOPrng);
+      entry.applyAlienVOTake(take);
+    }
 
     //vo
     entry.playVoiceOver(this.audioEmitter);

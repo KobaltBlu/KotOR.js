@@ -47,6 +47,11 @@ jest.mock('@/managers/cutscene/dialog-camera', () => ({
   isDialogGameModded: jest.fn(() => false),
   applyAspyrPlaceableCameraHack: jest.fn(),
 }));
+jest.mock('@/managers/cutscene/dialog-alien-vo', () => ({
+  createDialogAlienVOPrngState: jest.fn(),
+  advanceAlienVOTake: jest.fn(() => 1),
+  DIALOG_ALIEN_VO_TAKES: [1, 1, 2, 3, 1, 2, 1, 2, 2, 3, 3, 3, 1, 3, 2, 1, 3, 2, 2],
+}));
 jest.mock('@/utility/aurora-camera-orientation', () => ({
   auroraCameraLookOrientation: jest.fn(),
 }));
@@ -59,6 +64,7 @@ jest.mock('@/resource/DLGNode', () => {
     text = '';
     sound = '';
     vo_resref = '';
+    soundExists = 0x80;
     static DELAY_UNSET = 0xFFFFFFFF >>> 0;
     static WAIT_EXPLICIT_DELAY = 0x10;
     static estimateSpokenTimeSeconds(text: string) {
@@ -74,6 +80,7 @@ jest.mock('@/resource/DLGNode', () => {
     getCompiledString() {
       return this.text || '';
     }
+    applyAlienVOTake() {}
   }
   return { DLGNode };
 });
