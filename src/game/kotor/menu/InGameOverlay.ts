@@ -1,4 +1,5 @@
 import { GameState } from "@/GameState";
+import { FollowerCamera } from "@/engine/FollowerCamera";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { FeedbackOption } from "@/enums/engine/FeedbackOption";
 import { GameMenu, LBL_MapView, GUIPanelCoordFlags } from "@/gui";
@@ -1382,10 +1383,10 @@ export class InGameOverlay extends GameMenu {
       this.UpdateActionDescription();
     }
 
-    //update minimap — uses creature yaw, not camera
+    // update minimap — DrawMap uses camera yaw + NorthAxis (not creature facing)
     if(this.miniMap?.visible){
       this.miniMap.setPosition(oPC.position.x, oPC.position.y);
-      this.miniMap.setRotation(oPC.getFacing());
+      this.miniMap.setRotation(FollowerCamera.facing);
       this.miniMap.render(delta);
     }
 

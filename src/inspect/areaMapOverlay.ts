@@ -59,6 +59,10 @@ export function areaMapFromOverlay(snap: AreaMapOverlaySnapshot): AreaMap {
   map.mapPt1Y = snap.mapPt1Y;
   map.mapPt2X = snap.mapPt2X;
   map.mapPt2Y = snap.mapPt2Y;
+  map.recomputeCalibration({
+    width: snap.logicalWidth || AreaMap.getLogicalMapSize().width,
+    height: snap.logicalHeight || AreaMap.getLogicalMapSize().height,
+  });
   return map;
 }
 
@@ -78,9 +82,8 @@ export function worldToOverlayMapPixels(
 }
 
 /**
- * Continuous map pixels (no trunc) for Dev Tools overlay — same scale/offset as
- * GetMapPixelFromWorldCoord, but without quantizing MapPt corners or the result.
- * Better pin-on-art alignment when MapPts are FLOAT UVs.
+ * Continuous map pixels (no final trunc) for Dev Tools overlay.
+ * MapPt corners use retail floor(uv * size + 0.5); result stays continuous for pin art.
  */
 export function worldToOverlayMapPoint(
   snap: AreaMapOverlaySnapshot,
@@ -92,10 +95,10 @@ export function worldToOverlayMapPoint(
   }
   const width = snap.logicalWidth;
   const height = snap.logicalHeight;
-  const mapPt1Xpx = snap.mapPt1X * width;
-  const mapPt1Ypx = snap.mapPt1Y * height;
-  const mapPt2Xpx = snap.mapPt2X * width;
-  const mapPt2Ypx = snap.mapPt2Y * height;
+  const mapPt1Xpx = AreaMap.uvToLogicalPixel(snap.mapPt1X, width);
+  const mapPt1Ypx = AreaMap.uvToLogicalPixel(snap.mapPt1Y, height);
+  const mapPt2Xpx = AreaMap.uvToLogicalPixel(snap.mapPt2X, width);
+  const mapPt2Ypx = AreaMap.uvToLogicalPixel(snap.mapPt2Y, height);
 
   const w1 = AreaMap.transformWorldByNorthAxis(snap.worldPt1X, snap.worldPt1Y, snap.northAxis);
   const w2 = AreaMap.transformWorldByNorthAxis(snap.worldPt2X, snap.worldPt2Y, snap.northAxis);

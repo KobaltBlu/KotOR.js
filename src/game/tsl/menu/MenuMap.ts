@@ -1,7 +1,7 @@
 import { MapMode } from "@/enums/engine/MapMode";
 import { LBL_MapView } from "@/gui";
 import type { GUILabel, GUIButton } from "@/gui";
-import { AreaMap, type ModuleWaypoint } from "@/module";
+import type { ModuleWaypoint } from "@/module";
 import { CExoLocString } from "@/resource/CExoLocString";
 import { MenuMap as K1_MenuMap } from "@/game/kotor/KOTOR";
 
@@ -66,7 +66,6 @@ export class MenuMap extends K1_MenuMap {
       this.miniMap.setControl(this.LBL_Map);
       this.miniMap.setSize(this.LBL_Map.extent.width, this.LBL_Map.extent.height);
       this.miniMap.setMode(MapMode.FULLMAP);
-      this.miniMap.scene.scale.setScalar(this.LBL_Map.extent.width / AreaMap.getLogicalMapSize().width);
 
       resolve();
     });

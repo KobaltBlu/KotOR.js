@@ -550,7 +550,8 @@ export class LBL_MapView {
 
   /**
    * GetMapRotateCCWFromWorldOrientation / SetPartyMemberWorldOrientation.
-   * `angle` is creature yaw (radians); NorthAxis offsets are degrees.
+   * `angle` is yaw in radians (HUD: camera facing; full map: creature facing).
+   * NorthAxis adds the same degree offsets as retail (converted to radians).
    */
   setRotation(angle: number = 0){
     if(!this.areaMap){

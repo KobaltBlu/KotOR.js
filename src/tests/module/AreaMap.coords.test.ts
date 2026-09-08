@@ -11,7 +11,7 @@ import {
   AREA_MAP_LOGICAL_SIZE_K1,
 } from "@/module/AreaMap";
 
-/** Live TSL scene Map corners (NorthAxis=SOUTH) captured during alignment. */
+/** Live TSL scene Map corners (NorthAxis=SOUTH). Expected pixels use retail floor(uv*size+0.5). */
 const LIVE_TSL_SOUTH = {
   northAxis: MapNorthAxis.SOUTH,
   mapResX: 24,
@@ -25,7 +25,7 @@ const LIVE_TSL_SOUTH = {
   mapPt2X: 0.2460000067949295,
   mapPt2Y: 0.2150000035762787,
   pc: { x: 2.6319277773757, y: -62.99151798317822 },
-  expectedPixel: { x: 370, y: 188 },
+  expectedPixel: { x: 371, y: 189 },
 };
 
 function applyMapFields(areaMap: AreaMap, fields: Partial<AreaMap> & {
@@ -71,7 +71,18 @@ describe("AreaMap engine coordinates", () => {
     expect(AreaMap.transformWorldByNorthAxis(3, 5, MapNorthAxis.WEST)).toEqual({ x: -5, y: 3 });
   });
 
-  test("live TSL SOUTH scene maps PC to engine pixels (370, 188)", () => {
+  test("uvToLogicalPixel uses retail floor(uv * size + 0.5), not trunc", () => {
+    const { width, height } = AREA_MAP_LOGICAL_SIZE_TSL;
+    // Live MapPts where trunc and round diverge
+    expect(AreaMap.uvToLogicalPixel(LIVE_TSL_SOUTH.mapPt1X, width)).toBe(461);
+    expect(Math.trunc(LIVE_TSL_SOUTH.mapPt1X * width)).toBe(460);
+    expect(AreaMap.uvToLogicalPixel(LIVE_TSL_SOUTH.mapPt1Y, height)).toBe(189);
+    expect(Math.trunc(LIVE_TSL_SOUTH.mapPt1Y * height)).toBe(188);
+    expect(AreaMap.uvToLogicalPixel(LIVE_TSL_SOUTH.mapPt2X, width)).toBe(145);
+    expect(Math.trunc(LIVE_TSL_SOUTH.mapPt2X * width)).toBe(144);
+  });
+
+  test("live TSL SOUTH scene maps PC to engine pixels (371, 189)", () => {
     ApplicationProfile.GameKey = GameEngineType.TSL;
     const areaMap = new AreaMap();
     applyMapFields(areaMap, LIVE_TSL_SOUTH);
@@ -87,6 +98,17 @@ describe("AreaMap engine coordinates", () => {
     expect(uv.y).toBeCloseTo(1 - LIVE_TSL_SOUTH.expectedPixel.y / AREA_MAP_LOGICAL_SIZE_TSL.height, 5);
   });
 
+  test("display UV Y-flip leaves raw pixels unchanged", () => {
+    ApplicationProfile.GameKey = GameEngineType.TSL;
+    const areaMap = new AreaMap();
+    applyMapFields(areaMap, LIVE_TSL_SOUTH);
+    const pix = areaMap.toMapPixels(LIVE_TSL_SOUTH.pc.x, LIVE_TSL_SOUTH.pc.y);
+    const uv = areaMap.toMapCoordinates(LIVE_TSL_SOUTH.pc.x, LIVE_TSL_SOUTH.pc.y);
+    expect(pix.y).toBe(189);
+    expect(uv.y).not.toBeCloseTo(pix.y / AREA_MAP_LOGICAL_SIZE_TSL.height, 5);
+    expect(uv.y + pix.y / AREA_MAP_LOGICAL_SIZE_TSL.height).toBeCloseTo(1, 5);
+  });
+
   test("NORTH: worldPt1 maps near mapPt1 pixels", () => {
     ApplicationProfile.GameKey = GameEngineType.TSL;
     const areaMap = new AreaMap();
@@ -96,12 +118,60 @@ describe("AreaMap engine coordinates", () => {
     });
 
     const pix = areaMap.toMapPixels(LIVE_TSL_SOUTH.worldPt1X, LIVE_TSL_SOUTH.worldPt1Y);
-    const mp1x = Math.trunc(LIVE_TSL_SOUTH.mapPt1X * AREA_MAP_LOGICAL_SIZE_TSL.width);
-    const mp1y = Math.trunc(LIVE_TSL_SOUTH.mapPt1Y * AREA_MAP_LOGICAL_SIZE_TSL.height);
-    // +0.5 truncation can land on mapPt pixel exactly when at the calibration corner
+    const mp1x = AreaMap.uvToLogicalPixel(LIVE_TSL_SOUTH.mapPt1X, AREA_MAP_LOGICAL_SIZE_TSL.width);
+    const mp1y = AreaMap.uvToLogicalPixel(LIVE_TSL_SOUTH.mapPt1Y, AREA_MAP_LOGICAL_SIZE_TSL.height);
     expect(pix.x).toBe(mp1x);
     expect(pix.y).toBe(mp1y);
     expect(pix.valid).toBe(true);
+  });
+
+  test.each([
+    [GameEngineType.KOTOR, AREA_MAP_LOGICAL_SIZE_K1],
+    [GameEngineType.TSL, AREA_MAP_LOGICAL_SIZE_TSL],
+  ] as const)("synthetic calibration %s: worldPt1 → mapPt1 for all NorthAxis", (gameKey, logical) => {
+    ApplicationProfile.GameKey = gameKey;
+    const axes = [
+      MapNorthAxis.NORTH,
+      MapNorthAxis.EAST,
+      MapNorthAxis.SOUTH,
+      MapNorthAxis.WEST,
+    ];
+
+    for(const axis of axes){
+      const areaMap = new AreaMap();
+      applyMapFields(areaMap, {
+        northAxis: axis,
+        mapResX: 32,
+        worldPt1X: 10,
+        worldPt1Y: 20,
+        worldPt2X: 110,
+        worldPt2Y: 120,
+        mapPt1X: 0.25,
+        mapPt1Y: 0.25,
+        mapPt2X: 0.75,
+        mapPt2Y: 0.75,
+      });
+
+      const pix1 = areaMap.toMapPixels(10, 20);
+      const expectedX = AreaMap.uvToLogicalPixel(0.25, logical.width);
+      const expectedY = AreaMap.uvToLogicalPixel(0.25, logical.height);
+      expect(pix1.valid).toBe(true);
+      expect(pix1.x).toBe(expectedX);
+      expect(pix1.y).toBe(expectedY);
+
+      const pix2 = areaMap.toMapPixels(110, 120);
+      expect(pix2.valid).toBe(true);
+      expect(pix2.x).toBe(AreaMap.uvToLogicalPixel(0.75, logical.width));
+      expect(pix2.y).toBe(AreaMap.uvToLogicalPixel(0.75, logical.height));
+
+      // Interior midpoint stays in-bounds
+      const mid = areaMap.toMapPixels(60, 70);
+      expect(mid.valid).toBe(true);
+      expect(mid.x).toBeGreaterThanOrEqual(0);
+      expect(mid.y).toBeGreaterThanOrEqual(0);
+      expect(mid.x).toBeLessThanOrEqual(logical.width);
+      expect(mid.y).toBeLessThanOrEqual(logical.height);
+    }
   });
 
   test("EAST / WEST / SOUTH transforms stay in-bounds for worldPt1", () => {
@@ -144,6 +214,20 @@ describe("AreaMap engine coordinates", () => {
     expect(atFar.x).toBe(AREA_MAP_LOGICAL_SIZE_K1.width);
     expect(atFar.y).toBe(AREA_MAP_LOGICAL_SIZE_K1.height);
     expect(atFar.valid).toBe(true);
+  });
+
+  test("generateResY uses game aspect (K1 256/440, TSL 294/588)", () => {
+    ApplicationProfile.GameKey = GameEngineType.KOTOR;
+    const k1 = new AreaMap();
+    k1.mapResX = 32;
+    k1.generateResY();
+    expect(k1.mapResY).toBe(Math.floor((32 * 256) / 440));
+
+    ApplicationProfile.GameKey = GameEngineType.TSL;
+    const tsl = new AreaMap();
+    tsl.mapResX = 24;
+    tsl.generateResY();
+    expect(tsl.mapResY).toBe(Math.floor((24 * 294) / 588));
   });
 
   test("FromStruct FLOAT MapPt keeps UV; INT MapPt normalizes by logical size", () => {
@@ -194,10 +278,9 @@ describe("AreaMap engine coordinates", () => {
     const areaMap = new AreaMap();
     applyMapFields(areaMap, LIVE_TSL_SOUTH);
 
-    // mapPixel / (logical / mapRes) + 0.5
-    const grid = areaMap.toGridPixels(370, 188);
+    const grid = areaMap.toGridPixels(371, 189);
     expect(grid.valid).toBe(true);
-    expect(grid.x).toBe(Math.trunc(370 / (AREA_MAP_LOGICAL_SIZE_TSL.width / LIVE_TSL_SOUTH.mapResX) + 0.5));
-    expect(grid.y).toBe(Math.trunc(188 / (AREA_MAP_LOGICAL_SIZE_TSL.height / areaMap.mapResY) + 0.5));
+    expect(grid.x).toBe(Math.trunc(371 / (AREA_MAP_LOGICAL_SIZE_TSL.width / LIVE_TSL_SOUTH.mapResX) + 0.5));
+    expect(grid.y).toBe(Math.trunc(189 / (AREA_MAP_LOGICAL_SIZE_TSL.height / areaMap.mapResY) + 0.5));
   });
 });

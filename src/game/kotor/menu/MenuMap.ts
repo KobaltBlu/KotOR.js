@@ -104,7 +104,7 @@ export class MenuMap extends GameMenu {
     if (!GameState.module.area.miniGame) {
       const oPC = GameState.getCurrentPlayer();
 
-      //update minimap — uses creature yaw, not camera
+      // update minimap — full map uses creature yaw (SetPartyMemberWorldOrientation)
       this.miniMap.setPosition(oPC.position.x, oPC.position.y);
       this.miniMap.setRotation(oPC.getFacing());
       this.miniMap.updateMousePosition(

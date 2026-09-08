@@ -7,9 +7,22 @@ import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { ApplicationProfile } from "@/utility/ApplicationProfile";
 import type { ModuleWaypoint } from "@/module/ModuleWaypoint";
 
-/** K1 logical map size (/ GetMapPixelFromWorldCoord). */
+/**
+ * Dual-game minimap contract (CSWSAreaMap / LoadAreaHeader / GetMapPixelFromWorldCoord):
+ *
+ * Shared for K1 and TSL:
+ * - NorthAxis world transform (N identity, E negate, S (y,-x), W (-y,x))
+ * - Scale/offset from WorldPt + integer MapPt corners
+ * - Pixel = trunc((local - offset) / scale + 0.5)
+ * - FLOAT MapPt → pixel via floor(uv * size + 0.5)
+ * - mapResY = floor(mapResX * height / width)
+ * - Display Y flip only for Three.js (AurGUI is Y-down); fog uses raw pixels
+ *
+ * Game-specific logical size only:
+ * - K1 GoG/CD: 440×256
+ * - TSL Aspyr: 588×294 (canonical for KotOR.js; original CD TSL out of scope)
+ */
 export const AREA_MAP_LOGICAL_SIZE_K1 = { width: 440, height: 256 } as const;
-/** TSL Aspyr logical map size (0x24C x 0x126). */
 export const AREA_MAP_LOGICAL_SIZE_TSL = { width: 588, height: 294 } as const;
 
 export interface AreaMapPixelResult {
@@ -47,6 +60,17 @@ export class AreaMap {
   mapZoom: number;
   dataSize: number;
 
+  /** Cached Initialize scale/offset (retail CSWSAreaMap fields). */
+  private _scaleX = 0;
+  private _scaleY = 0;
+  private _offsetX = 0;
+  private _offsetY = 0;
+  private _mapPt1Xpx = 0;
+  private _mapPt1Ypx = 0;
+  private _mapPt2Xpx = 0;
+  private _mapPt2Ypx = 0;
+  private _calibrationValid = false;
+
   fogAlphaPixelData: Uint8Array;
   fogAlphaTexture: THREE.DataTexture;
 
@@ -81,7 +105,7 @@ export class AreaMap {
 
   }
 
-  /** logical map pixel size for the active game. */
+  /** Logical map pixel size for the active game (K1 440×256 / TSL Aspyr 588×294). */
   static getLogicalMapSize(): { width: number, height: number } {
     // Use ApplicationProfile (not GameState) to avoid circular init via @/module barrel.
     if(ApplicationProfile.GameKey == GameEngineType.TSL){
@@ -90,8 +114,19 @@ export class AreaMap {
     return { width: AREA_MAP_LOGICAL_SIZE_K1.width, height: AREA_MAP_LOGICAL_SIZE_K1.height };
   }
 
+  /** LoadAreaHeader FLOAT MapPt → logical pixel: floor(uv * size + 0.5). */
+  static uvToLogicalPixel(uv: number, size: number): number {
+    return Math.floor(uv * size + 0.5);
+  }
+
+  /** Inverse of uvToLogicalPixel for UV export. */
+  static logicalPixelToUv(pixel: number, size: number): number {
+    if(size <= 0) return 0;
+    return pixel / size;
+  }
+
   /**
-   * NorthAxis world transform (/ GetMapPixelFromWorldCoord).
+   * NorthAxis world transform (GetMapPixelFromWorldCoord / Initialize).
    * NORTH identity, EAST negate both, SOUTH (y,-x), WEST (-y,x).
    */
   static transformWorldByNorthAxis(x: number, y: number, northAxis: number): { x: number, y: number } {
@@ -110,6 +145,7 @@ export class AreaMap {
 
   init(){
     this.generateResY();
+    this.recomputeCalibration();
     this.generateMapData();
   }
 
@@ -122,6 +158,45 @@ export class AreaMap {
   generateResY(){
     const { width, height } = AreaMap.getLogicalMapSize();
     this.mapResY = Math.max(1, Math.floor((this.mapResX * height) / width));
+  }
+
+  /**
+   * CSWSAreaMap::Initialize — round MapPts, transform WorldPts by NorthAxis,
+   * cache scale/offset once (not per GetMapPixel call).
+   */
+  recomputeCalibration(logicalSize?: { width: number, height: number }){
+    const { width, height } = logicalSize || AreaMap.getLogicalMapSize();
+    this._mapPt1Xpx = AreaMap.uvToLogicalPixel(this.mapPt1X, width);
+    this._mapPt1Ypx = AreaMap.uvToLogicalPixel(this.mapPt1Y, height);
+    this._mapPt2Xpx = AreaMap.uvToLogicalPixel(this.mapPt2X, width);
+    this._mapPt2Ypx = AreaMap.uvToLogicalPixel(this.mapPt2Y, height);
+
+    const w1 = AreaMap.transformWorldByNorthAxis(this.worldPt1X, this.worldPt1Y, this.northAxis);
+    const w2 = AreaMap.transformWorldByNorthAxis(this.worldPt2X, this.worldPt2Y, this.northAxis);
+
+    const denomX = this._mapPt2Xpx - this._mapPt1Xpx;
+    const denomY = this._mapPt2Ypx - this._mapPt1Ypx;
+    if(denomX == 0 || denomY == 0){
+      this._scaleX = 0;
+      this._scaleY = 0;
+      this._offsetX = 0;
+      this._offsetY = 0;
+      this._calibrationValid = false;
+      return;
+    }
+
+    this._scaleX = (w2.x - w1.x) / denomX;
+    this._scaleY = (w2.y - w1.y) / denomY;
+    if(this._scaleX == 0 || this._scaleY == 0){
+      this._offsetX = 0;
+      this._offsetY = 0;
+      this._calibrationValid = false;
+      return;
+    }
+
+    this._offsetX = w1.x - this._mapPt1Xpx * this._scaleX;
+    this._offsetY = w1.y - this._mapPt1Ypx * this._scaleY;
+    this._calibrationValid = true;
   }
 
   generateMapData(){
@@ -193,40 +268,55 @@ export class AreaMap {
     logicalSize?: { width: number, height: number }
   ): AreaMapPixelResult {
     const { width, height } = logicalSize || AreaMap.getLogicalMapSize();
-    const mapPt1Xpx = Math.trunc(this.mapPt1X * width);
-    const mapPt1Ypx = Math.trunc(this.mapPt1Y * height);
-    const mapPt2Xpx = Math.trunc(this.mapPt2X * width);
-    const mapPt2Ypx = Math.trunc(this.mapPt2Y * height);
 
-    const w1 = AreaMap.transformWorldByNorthAxis(this.worldPt1X, this.worldPt1Y, this.northAxis);
-    const w2 = AreaMap.transformWorldByNorthAxis(this.worldPt2X, this.worldPt2Y, this.northAxis);
+    // Dev Tools may pass an explicit size that differs from ApplicationProfile —
+    // recompute calibration for that size without mutating the instance cache.
+    if(logicalSize){
+      const mapPt1Xpx = AreaMap.uvToLogicalPixel(this.mapPt1X, width);
+      const mapPt1Ypx = AreaMap.uvToLogicalPixel(this.mapPt1Y, height);
+      const mapPt2Xpx = AreaMap.uvToLogicalPixel(this.mapPt2X, width);
+      const mapPt2Ypx = AreaMap.uvToLogicalPixel(this.mapPt2Y, height);
+      const w1 = AreaMap.transformWorldByNorthAxis(this.worldPt1X, this.worldPt1Y, this.northAxis);
+      const w2 = AreaMap.transformWorldByNorthAxis(this.worldPt2X, this.worldPt2Y, this.northAxis);
+      const local = AreaMap.transformWorldByNorthAxis(x, y, this.northAxis);
+      const denomX = mapPt2Xpx - mapPt1Xpx;
+      const denomY = mapPt2Ypx - mapPt1Ypx;
+      if(denomX == 0 || denomY == 0){
+        this._mapPixels.x = -1;
+        this._mapPixels.y = -1;
+        this._mapPixels.valid = false;
+        return this._mapPixels;
+      }
+      const scaleX = (w2.x - w1.x) / denomX;
+      const scaleY = (w2.y - w1.y) / denomY;
+      if(scaleX == 0 || scaleY == 0){
+        this._mapPixels.x = -1;
+        this._mapPixels.y = -1;
+        this._mapPixels.valid = false;
+        return this._mapPixels;
+      }
+      const offsetX = w1.x - mapPt1Xpx * scaleX;
+      const offsetY = w1.y - mapPt1Ypx * scaleY;
+      const pixelX = Math.trunc((local.x - offsetX) / scaleX + 0.5);
+      const pixelY = Math.trunc((local.y - offsetY) / scaleY + 0.5);
+      this._mapPixels.x = pixelX;
+      this._mapPixels.y = pixelY;
+      this._mapPixels.valid = pixelX >= 0 && pixelX <= width && pixelY >= 0 && pixelY <= height;
+      return this._mapPixels;
+    }
+
+    if(!this._calibrationValid){
+      this._mapPixels.x = -1;
+      this._mapPixels.y = -1;
+      this._mapPixels.valid = false;
+      return this._mapPixels;
+    }
+
     const local = AreaMap.transformWorldByNorthAxis(x, y, this.northAxis);
+    const pixelX = Math.trunc((local.x - this._offsetX) / this._scaleX + 0.5);
+    const pixelY = Math.trunc((local.y - this._offsetY) / this._scaleY + 0.5);
 
-    const denomX = mapPt2Xpx - mapPt1Xpx;
-    const denomY = mapPt2Ypx - mapPt1Ypx;
-    if(denomX == 0 || denomY == 0){
-      this._mapPixels.x = -1;
-      this._mapPixels.y = -1;
-      this._mapPixels.valid = false;
-      return this._mapPixels;
-    }
-
-    const scaleX = (w2.x - w1.x) / denomX;
-    const scaleY = (w2.y - w1.y) / denomY;
-    if(scaleX == 0 || scaleY == 0){
-      this._mapPixels.x = -1;
-      this._mapPixels.y = -1;
-      this._mapPixels.valid = false;
-      return this._mapPixels;
-    }
-
-    const offsetX = w1.x - mapPt1Xpx * scaleX;
-    const offsetY = w1.y - mapPt1Ypx * scaleY;
-
-    const pixelX = Math.trunc((local.x - offsetX) / scaleX + 0.5);
-    const pixelY = Math.trunc((local.y - offsetY) / scaleY + 0.5);
-
-    // Raw pixels kept for UV conversion even when OOB (returns -1,-1 to callers).
+    // Raw pixels kept for UV conversion even when OOB (retail zeros to -1 on fail).
     this._mapPixels.x = pixelX;
     this._mapPixels.y = pixelY;
     this._mapPixels.valid = pixelX >= 0 && pixelX <= width && pixelY >= 0 && pixelY <= height;
@@ -235,9 +325,10 @@ export class AreaMap {
 
   /**
    * World XY → map UV for LBL_MapView.
-   * X matches engine behavior GetMapPixelFromWorldCoord / logical width.
-   * Y is flipped: /AurGUI map pixels are top-origin (Y-down), while the
+   * X matches GetMapPixelFromWorldCoord / logical width.
+   * Y is flipped: AurGUI map pixels are top-origin (Y-down), while the
    * Three.js map scene is bottom-origin (Y-up) with the TGA on the plane.
+   * Fog / toGridPixels use raw pixels — never flip those.
    */
   toMapCoordinates(x: number = 0, y: number = 0): THREE.Vector2 {
     const { width, height } = AreaMap.getLogicalMapSize();
@@ -450,7 +541,7 @@ export class AreaMap {
     }
     // INT (and other integer types): already in logical pixels
     if(logicalSize > 0){
-      return value / logicalSize;
+      return AreaMap.logicalPixelToUv(value, logicalSize);
     }
     return fallback;
   }
