@@ -358,7 +358,9 @@ export class OdysseyMaterialBuilder {
 
     switch(texture.txi.blending){
       case TXIBlending.ADDITIVE:
-        material.transparent = false;
+        // Sabers stay in the transparent list so they draw after TXI decals /
+        // other non-depth-writing surfaces. Non-saber additive FX stay opaque.
+        material.transparent = !!(material as any).defines && 'SABER' in (material as any).defines;
         material.blending = THREE.AdditiveBlending;
         material.depthWrite = false;
         break;

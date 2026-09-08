@@ -276,8 +276,11 @@ export class GrassManager {
       vertexShader: grassShader.getVertex(),
       fragmentShader: grassShader.getFragment(),
       side: THREE.DoubleSide,
+      // Transparent so grass draws after opaque terrain (avoids z-disappear).
+      // depthWrite still on — retail DoBinBucket does not disable depth mask —
+      // so later additive sabers depth-test against blades.
       transparent: true,
-      depthWrite: false,
+      depthWrite: true,
       blending: THREE.NormalBlending,
     });
     return material;

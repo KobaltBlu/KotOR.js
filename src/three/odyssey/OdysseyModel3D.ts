@@ -1854,6 +1854,8 @@ export class OdysseyModel3D extends OdysseyObject3D {
             if (isSaber) {
               initSaberTrailMesh(mesh, odysseyNode as OdysseyModelNodeSaber);
               odysseyModel.saberMeshes.push(mesh);
+              // Late transparent sort after default-order TXI decals.
+              mesh.renderOrder = 2;
             }
             const isAabb = (odysseyNode.nodeType & OdysseyModelNodeType.AABB) === OdysseyModelNodeType.AABB;
             if(!isAabb || options.attachMdlAabbMesh){

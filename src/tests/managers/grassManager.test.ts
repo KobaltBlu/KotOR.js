@@ -1,4 +1,4 @@
-import { describe, expect, test } from '@jest/globals';
+import { describe, expect, test, jest } from '@jest/globals';
 import * as THREE from 'three';
 import {
   GRASS_FAR_RADIUS_SQ,
@@ -12,6 +12,32 @@ import {
   pickGrassTextureQuad,
   resolveGrassFaces,
 } from '@/managers/grass/grassHelpers';
+
+jest.mock('@/GameState', () => ({
+  GameState: {
+    ShaderManager: {
+      Shaders: new Map([
+        ['grass', {
+          getVertex: () => 'void main(){}',
+          getFragment: () => 'void main(){}',
+        }],
+      ]),
+    },
+  },
+}));
+
+import { GrassManager } from '@/managers/GrassManager';
+
+describe('GrassManager material depth', () => {
+  test('grass is transparent with depthWrite for terrain draw order and saber occlusion', () => {
+    const mgr = new GrassManager();
+    const material = (mgr as any).createMaterial({ grass: {} }, 1) as THREE.ShaderMaterial;
+    expect(material.transparent).toBe(true);
+    expect(material.depthWrite).toBe(true);
+    expect(material.side).toBe(THREE.DoubleSide);
+    expect(material.blending).toBe(THREE.NormalBlending);
+  });
+});
 
 describe('grassHelpers', () => {
   test('computeFaceGrassCount matches retail round(area * density)', () => {
