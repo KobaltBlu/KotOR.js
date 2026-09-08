@@ -144,3 +144,62 @@ describe('LightManager shadow selection (shadow light selection modes 0/1)', () 
     expect(incoming.shadowFadeFactor).toBeGreaterThan(0);
   });
 });
+
+describe('LightManager isPrioritizeEligible vs room frustum cull', () => {
+  function mockPrioritizeLight(opts: {
+    visActive?: boolean;
+    visible?: boolean;
+    radius?: number;
+    black?: boolean;
+  }){
+    const model = new THREE.Object3D();
+    model.visible = opts.visible ?? true;
+    if(opts.visActive !== undefined){
+      model.userData.visActive = opts.visActive;
+    }
+    const color = opts.black ? new THREE.Color(0, 0, 0) : new THREE.Color(1, 1, 1);
+    const radius = opts.radius ?? 8;
+    return {
+      odysseyModel: model,
+      getRadius: () => radius,
+      isColorBlack: () => color.r === 0 && color.g === 0 && color.b === 0,
+      color,
+    } as never;
+  }
+
+  test('VIS-active room light stays eligible when mesh draw-culled', () => {
+    const lm = new LightManager();
+    const light = mockPrioritizeLight({ visActive: true, visible: false });
+    expect(lm.isPrioritizeEligible(light)).toBe(true);
+    expect(lm.isPrioritizeModelVisible((light as any).odysseyModel)).toBe(true);
+  });
+
+  test('VIS-inactive room light is not eligible', () => {
+    const lm = new LightManager();
+    const light = mockPrioritizeLight({ visActive: false, visible: false });
+    expect(lm.isPrioritizeEligible(light)).toBe(false);
+  });
+
+  test('non-room model without visActive uses model.visible', () => {
+    const lm = new LightManager();
+    expect(lm.isPrioritizeEligible(mockPrioritizeLight({ visible: false }))).toBe(false);
+    expect(lm.isPrioritizeEligible(mockPrioritizeLight({ visible: true }))).toBe(true);
+  });
+
+  test('frustum-hidden VIS sun still passes prioritize candidate filter', () => {
+    const lm = new LightManager();
+    const model = new THREE.Object3D();
+    model.userData.visActive = true;
+    model.visible = false;
+    const sun = mockLight({
+      uuid: 'sun',
+      radius: 800,
+      illuminationScore: 0.23,
+      dynamicType: 0,
+      castShadow: true,
+    }) as any;
+    sun.odysseyModel = model;
+    expect(lm.isPrioritizeEligible(sun)).toBe(true);
+    expect(sun.illuminationScore <= 1).toBe(true);
+  });
+});

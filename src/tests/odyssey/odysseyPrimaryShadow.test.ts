@@ -451,4 +451,21 @@ describe('OdysseyShadowManager soft sticky + crossfade', () => {
       expect(b.shadowFadeFactor).toBeGreaterThan(0);
     }
   });
+
+  test('soft primary keeps elevated VIS room light when mesh is frustum-hidden', () => {
+    const focus = new THREE.Vector3(0, 0, 8);
+    const model = new THREE.Object3D();
+    model.userData.visActive = true;
+    model.visible = false; // draw-culled adjacent room
+    const sun = softLamp('sun', 0, 287, 0);
+    sun.odysseyModel = model;
+    sun.getRadius = () => 800;
+    // Prioritize into bound despite draw cull
+    expect(lightManager.isPrioritizeEligible(sun)).toBe(true);
+    lightManager.boundLights = [sun];
+
+    manager.update(undefined, focus, 0.3);
+    expect(manager.activeLightCount).toBe(1);
+    expect(manager.activeLightUuid).toBe('sun');
+  });
 });

@@ -627,13 +627,29 @@ export class LightManager {
   }
 
   /**
+   * PrioritizeLights membership follows VIS / gameplay visibility, not room
+   * mesh draw cull. `applyRoomRenderFrustumCull` toggles `model.visible` for
+   * draw only; `userData.visActive` stays true for VIS-linked rooms. Retail
+   * PrioritizeLights scores render_lights without a camera frustum gate on
+   * the parent mesh — tying eligibility to `visible` dropped elevated suns
+   * (and soft shadow primaries) when looking away from their room AABB.
+   */
+  isPrioritizeModelVisible(model: THREE.Object3D | undefined | null): boolean {
+    if(!model){ return false; }
+    if(model.userData?.visActive !== undefined){
+      return !!model.userData.visActive;
+    }
+    return !!model.visible;
+  }
+
+  /**
    * illumination prioritize eligibility for the room/global render set:
    * radius != 0 and color not black. Score <= 1 is applied by the caller.
    * Unlike nearest light selection, static lights (no dynamic/affectDynamic) are included.
    */
   isPrioritizeEligible(light: OdysseyLight3D): boolean {
     return !!light &&
-      !!light.odysseyModel?.visible &&
+      this.isPrioritizeModelVisible(light.odysseyModel) &&
       light.getRadius() > 0 &&
       !light.isColorBlack();
   }
@@ -641,7 +657,7 @@ export class LightManager {
   /** @deprecated Use isPrioritizeEligible / isNearestLightEligible. */
   isEligibleLight(light: OdysseyLight3D): boolean {
     return this.isNearestLightEligible(light) &&
-      !!light.odysseyModel?.visible &&
+      this.isPrioritizeModelVisible(light.odysseyModel) &&
       !light.isColorBlack();
   }
 
