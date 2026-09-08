@@ -47,7 +47,6 @@ export class InGamePause extends K1_InGamePause {
       this.BTN_UNPAUSE.addEventListener('click', (e) => {
         GameState.AutoPauseManager.Unpause();
       });
-      this.recalculatePosition();
       resolve();
     });
   }
@@ -68,6 +67,20 @@ export class InGamePause extends K1_InGamePause {
   protected applyPressLabelText(){
     const pressText = GameState.TLKManager.GetStringById(TLK_PRESS_CONTINUE)?.Value;
     if(pressText) this.LBL_PRESS?.setText(pressText);
+  }
+
+  recalculatePosition() {
+    if(!this.tGuiPanel){ return; }
+    this.tGuiPanel.extent.left =
+      (GameState.ResolutionManager.getViewportWidth() / 2) - (this.tGuiPanel.extent.width / 2) - 5;
+    this.tGuiPanel.extent.top =
+      (-GameState.ResolutionManager.getViewportHeight() / 2) + (this.tGuiPanel.extent.height / 2) + 45;
+    this.tGuiPanel.recalculate();
+  }
+
+  update(delta: number = 0) {
+    super.update(delta);
+    this.recalculatePosition();
   }
 
 }

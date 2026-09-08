@@ -1,13 +1,7 @@
 import { GameState } from "@/GameState";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { AutoPauseState } from "@/enums/engine/AutoPauseState";
-import {
-  GameMenu,
-  GUI_DESIGN_HEIGHT,
-  GUI_DESIGN_WIDTH,
-  asExtentInt,
-  truncDiv,
-} from "@/gui";
+import { GameMenu } from "@/gui";
 import type { GUILabel, GUIButton } from "@/gui";
 
 /** SetPauseReason TLK ids (K1). */
@@ -36,10 +30,6 @@ export class InGamePause extends GameMenu {
   LBL_PRESS: GUILabel;
   BTN_UNPAUSE: GUIButton;
 
-  /** pause.gui / pause_p EXTENT LEFT/TOP (CSWGuiInGamePause saves these after load). */
-  protected designLeft = 0;
-  protected designTop = 0;
-
   constructor(){
     super();
     this.gui_resref = 'pause';
@@ -52,20 +42,11 @@ export class InGamePause extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    // Retail keeps design LEFT/TOP; root widget is otherwise centered at (0,0).
-    // Capture before skipInit so TSL (pause_p) still gets its layout origin.
-    if(this.tGuiPanel){
-      this.designLeft = asExtentInt(this.tGuiPanel.extent.left);
-      this.designTop = asExtentInt(this.tGuiPanel.extent.top);
-      this.tGuiPanel.extent.left = 0;
-      this.tGuiPanel.extent.top = 0;
-    }
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_UNPAUSE.addEventListener('click', (e) => {
         GameState.AutoPauseManager.Unpause();
       });
-      this.recalculatePosition();
       resolve();
     });
   }
@@ -135,22 +116,15 @@ export class InGamePause extends GameMenu {
   }
 
   /**
-   * Place the banner from pause.gui design LEFT/TOP inside the centered 640×480
-   * letterbox (retail: left=195, top=96 → upper play space, not viewport center).
-   * Uses root offset so getPanelLocalMouse tracks the translate.
+   * Top-right of the viewport. Root panel position is extent.left / -extent.top
+   * when parent size equals panel size (GameMenu centers the widget at 0,0).
    */
   recalculatePosition() {
     if(!this.tGuiPanel){ return; }
-    const w = asExtentInt(this.tGuiPanel.extent.width);
-    const h = asExtentInt(this.tGuiPanel.extent.height);
-    this.tGuiPanel.extent.left = 0;
-    this.tGuiPanel.extent.top = 0;
-    this.tGuiPanel.offset.x = asExtentInt(
-      -truncDiv(GUI_DESIGN_WIDTH, 2) + this.designLeft + truncDiv(w, 2)
-    );
-    this.tGuiPanel.offset.y = asExtentInt(
-      truncDiv(GUI_DESIGN_HEIGHT, 2) - this.designTop - truncDiv(h, 2)
-    );
+    this.tGuiPanel.extent.left =
+      (GameState.ResolutionManager.getViewportWidth() / 2) - (this.tGuiPanel.extent.width / 2);
+    this.tGuiPanel.extent.top =
+      (-GameState.ResolutionManager.getViewportHeight() / 2) + (this.tGuiPanel.extent.height / 2) + 36;
     this.tGuiPanel.recalculate();
   }
 
