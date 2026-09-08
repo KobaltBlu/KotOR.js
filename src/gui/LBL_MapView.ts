@@ -197,11 +197,32 @@ export class LBL_MapView {
     this.control = control;
     if(!this.control) return;
 
+    this.bindFillToControl(false);
+    this._rttDirty = true;
+  }
+
+  /**
+   * Bind the RTT to the GUI fill slot. Clears named FILL so initTextures /
+   * TextureLoader cannot race-overwrite the procedural map.
+   */
+  private bindFillToControl(opaque: boolean){
+    if(!this.control){ return; }
+    if(this.control.border?.fill){ this.control.border.fill.texture = ''; }
+    if(this.control.highlight?.fill){ this.control.highlight.fill.texture = ''; }
     this.control.setFillTexture(this.texture.texture);
     this.control.setFillColor(1, 1, 1);
-    this.control.setFillOpaque(false);
+    this.control.setFillOpaque(opaque);
     this._fillBound = true;
-    this._rttDirty = true;
+  }
+
+  private ensureFillBound(){
+    if(!this.control){ return; }
+    const current = this.control.getFillTexture?.();
+    if(!this._fillBound || current !== this.texture.texture){
+      const mat = this.control.chrome?.material;
+      const opaque = mat ? !mat.transparent : false;
+      this.bindFillToControl(opaque);
+    }
   }
 
   setVisible(bVisible: boolean){
@@ -489,11 +510,7 @@ export class LBL_MapView {
     GameState.renderer.setRenderTarget(null);
     GameState.renderer.setClearColor(oldClearColor, 1);
 
-    if(this.control && !this._fillBound){
-      this.control.setFillTexture(this.texture.texture);
-      this.control.setFillOpaque(false);
-      this._fillBound = true;
-    }
+    this.ensureFillBound();
 
     this._rttDirty = false;
     this.captureRttState();

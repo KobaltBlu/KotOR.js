@@ -76,6 +76,8 @@ export class OdysseyModelAnimationManager {
     if(this._matrixBatchDepth === 0){
       node.updateMatrix();
       node.matrixWorldNeedsUpdate = true;
+      // Non-batch path still moves bones — boneTexture must refill next render.
+      markOdysseySkeletonsDirtyUnder(this.model);
       return;
     }
     if(!this._touchedTransformNodeSet.has(node)){

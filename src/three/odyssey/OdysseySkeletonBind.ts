@@ -18,7 +18,21 @@ export function markOdysseySkeletonDirty(skeleton: THREE.Skeleton | undefined | 
 
 /** Mark every Skeleton under a root (pose flush / equipment attach). */
 export function markOdysseySkeletonsDirtyUnder(root: THREE.Object3D | undefined | null): void {
-  if(!root || typeof (root as any).traverse !== 'function'){ return; }
+  if(!root){ return; }
+  // Prefer tracked skins — covers head-merged skins and avoids missing meshes
+  // if traverse is pruned. Also walk childModels.
+  const model = root as { skins?: THREE.SkinnedMesh[]; childModels?: THREE.Object3D[] };
+  if(Array.isArray(model.skins)){
+    for(let i = 0; i < model.skins.length; i++){
+      markOdysseySkeletonDirty(model.skins[i]?.skeleton);
+    }
+  }
+  if(Array.isArray(model.childModels)){
+    for(let i = 0; i < model.childModels.length; i++){
+      markOdysseySkeletonsDirtyUnder(model.childModels[i]);
+    }
+  }
+  if(typeof (root as any).traverse !== 'function'){ return; }
   root.traverse((obj) => {
     const skin = obj as THREE.SkinnedMesh;
     if(skin.isSkinnedMesh && skin.skeleton){
@@ -64,7 +78,9 @@ export function installOdysseySkeletonUpdate(
     const dirtyFlag = !!(this as any)[ODYSSEY_SKELETON_DIRTY];
     const skinFp = skinMatrixWorldFingerprint(skinNode);
     const lastSkinFp = (this as any)[ODYSSEY_SKIN_MW_FP] as number | undefined;
-    if(!dirtyFlag && lastSkinFp === skinFp){
+    // Always fill once before the first boneTexture exists (bind-time upload).
+    const needsFirstUpload = this.boneTexture === null && lastSkinFp === undefined;
+    if(!dirtyFlag && !needsFirstUpload && lastSkinFp === skinFp){
       return;
     }
 

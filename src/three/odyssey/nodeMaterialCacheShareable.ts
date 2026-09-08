@@ -12,6 +12,9 @@ export function nodeMaterialCacheShareable(
   options?: IOdysseyModelLoaderOptions
 ): boolean {
   if(odysseyNode.nAnimateUV){ return false; }
+  // Skinned materials must stay unique: USE_SKINNING is applied after cache
+  // lookup and must not leak onto rigid meshes (or be missing on skins).
+  if((odysseyNode.nodeType & OdysseyModelNodeType.Skin) === OdysseyModelNodeType.Skin){ return false; }
   if((odysseyNode.nodeType & OdysseyModelNodeType.Dangly) === OdysseyModelNodeType.Dangly){ return false; }
   if((odysseyNode.nodeType & OdysseyModelNodeType.Saber) === OdysseyModelNodeType.Saber){ return false; }
   if(odysseyNode.beaming){ return false; }

@@ -46,4 +46,10 @@ describe('nodeMaterialCacheShareable', () => {
     ).toBe(false);
     expect(nodeMaterialCacheShareable(meshNode({}), { isHologram: true } as any)).toBe(false);
   });
+
+  test('blocks Skin meshes (USE_SKINNING must not share)', () => {
+    expect(
+      nodeMaterialCacheShareable(meshNode({ nodeType: OdysseyModelNodeType.Skin }), {})
+    ).toBe(false);
+  });
 });

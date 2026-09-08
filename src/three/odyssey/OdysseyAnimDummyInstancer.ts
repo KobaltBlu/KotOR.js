@@ -47,6 +47,7 @@ export function buildAnimDummyInstanceBatches(
   root.traverse((obj) => {
     const mesh = obj as THREE.Mesh;
     if(!mesh.isMesh || !mesh.geometry || !mesh.material){ return; }
+    if((mesh as THREE.SkinnedMesh).isSkinnedMesh){ return; }
     if((mesh as any).isInstancedMesh){ return; }
     if(mesh.userData?.odysseyMergedStatic){ return; }
     if(mesh.userData?.skipAnimDummyInstance){ return; }

@@ -46,6 +46,8 @@ export class LBL_3DView {
   frustumMat4: THREE.Matrix4;
   viewportFrustum: THREE.Frustum;
   private _fillBound = false;
+  /** Last setFillOpaque for rebinds after async chrome loads steal the map. */
+  private _fillOpaque = false;
   /**
    * PrioritizeLights focus (Scene.focus_position, default origin).
    * GUI gobs score / nearest light selection against the subject, not the camera.
@@ -114,10 +116,34 @@ export class LBL_3DView {
     const h = Math.max(1, asExtentInt(control.extent?.height ?? this.height));
     this.setSize(w, h);
 
+    this.bindFillToControl(false);
+  }
+
+  /**
+   * Bind the RTT to the GUI fill slot. Clears named FILL so initTextures /
+   * TextureLoader cannot race-overwrite the procedural map (that was the
+   * mainmenu black-screen regression after _fillBound skipped per-frame rebinds).
+   */
+  private bindFillToControl(opaque: boolean = this._fillOpaque){
+    if(!this.control){ return; }
+    this._fillOpaque = opaque;
+    if(this.control.border?.fill){ this.control.border.fill.texture = ''; }
+    if(this.control.highlight?.fill){ this.control.highlight.fill.texture = ''; }
     this.control.setFillTexture(this.texture.texture);
     this.control.setFillColor(1, 1, 1);
-    this.control.setFillOpaque(false);
+    this.control.setFillOpaque(opaque);
     this._fillBound = true;
+  }
+
+  /** Rebind if async GUI chrome loads replaced the RTT or setSize recreated it. */
+  private ensureFillBound(){
+    if(!this.control){ return; }
+    const current = this.control.getFillTexture?.();
+    if(!this._fillBound || current !== this.texture.texture){
+      const mat = this.control.chrome?.material;
+      const opaque = mat ? !mat.transparent : this._fillOpaque;
+      this.bindFillToControl(opaque);
+    }
   }
 
   /** SetViewAngle — ClassSel / MainCG / PORTCUST / Setup3DScene. */
@@ -161,6 +187,13 @@ export class LBL_3DView {
   addModel(model: THREE.Object3D){
     if(model instanceof THREE.Object3D){
       this.scene.add(model);
+      // SkinnedMesh bounds ignore bone deformation — GUI cameras often cull
+      // character skins incorrectly (esp. after head attach / odd FOV).
+      if(model instanceof OdysseyModel3D){
+        for(let i = 0; i < model.skins.length; i++){
+          model.skins[i].frustumCulled = false;
+        }
+      }
     }
   }
 
@@ -186,6 +219,22 @@ export class LBL_3DView {
     this.camera.updateProjectionMatrix();
   }
 
+  /** Update every OdysseyModel3D in the view (nested portraits under light rigs). */
+  private forEachOdysseyModel(fn: (model: OdysseyModel3D) => void){
+    this.scene.traverse((obj) => {
+      if(obj instanceof OdysseyModel3D){
+        fn(obj);
+      }
+    });
+  }
+
+  /** SkinnedMesh bounds ignore bone deformation — keep GUI portraits visible. */
+  private ensureSkinFrustumState(model: OdysseyModel3D){
+    for(let i = 0; i < model.skins.length; i++){
+      model.skins[i].frustumCulled = false;
+    }
+  }
+
   render(delta = 0, options?: { skipModelUpdate?: boolean }){
 
     if(!this.visible)
@@ -196,12 +245,26 @@ export class LBL_3DView {
     }
 
     if(!options?.skipModelUpdate){
-      for(let i = 0; i < this.scene.children.length; i++){
-        let element = this.scene.children[i];
-        if(element instanceof OdysseyModel3D){
-          element.update(delta);
+      // Nested portraits (MenuCharacter under charrec_light) are NOT in
+      // parent.childModels — still need their own update(). Skip only models
+      // that a parent OdysseyModel3D already ticks via childModels.
+      this.forEachOdysseyModel((model) => {
+        this.ensureSkinFrustumState(model);
+        let parent: THREE.Object3D | null = model.parent;
+        while(parent && parent !== this.scene){
+          if(parent instanceof OdysseyModel3D){
+            const kids = parent.childModels;
+            if(Array.isArray(kids) && kids.indexOf(model) >= 0){
+              return;
+            }
+            break;
+          }
+          parent = parent.parent;
         }
-      }
+        model.update(delta);
+      });
+    }else{
+      this.forEachOdysseyModel((model) => this.ensureSkinFrustumState(model));
     }
 
     if(this.currentCamera){
@@ -210,18 +273,22 @@ export class LBL_3DView {
       // Score lights vs subject focus (Scene.focus_position, default origin).
       this.lightManager.update(delta, { position: this.lightFocus });
       // Mainmenu is an AddModel gob: nearest light selection around focus (not room globals).
-      for(let i = 0; i < this.scene.children.length; i++){
-        const element = this.scene.children[i];
-        if(element instanceof OdysseyModel3D){
-          OdysseyLightingBinder.bindSceneModel(
-            this.lightManager,
-            element,
-            this.currentCamera,
-            this.lightFocus,
-            'gob'
-          );
+      this.forEachOdysseyModel((model) => {
+        let parent: THREE.Object3D | null = model.parent;
+        while(parent && parent !== this.scene){
+          if(parent instanceof OdysseyModel3D){
+            return;
+          }
+          parent = parent.parent;
         }
-      }
+        OdysseyLightingBinder.bindSceneModel(
+          this.lightManager,
+          model,
+          this.currentCamera,
+          this.lightFocus,
+          'gob'
+        );
+      });
     }
 
     let oldClearColor = new THREE.Color()
@@ -234,11 +301,7 @@ export class LBL_3DView {
     GameState.renderer.setRenderTarget(null);
     //GameState.renderer.setClearColor(oldClearColor, 1);
 
-    if(this.control && !this._fillBound){
-      this.control.setFillTexture(this.texture.texture);
-      this.control.setFillOpaque(false);
-      this._fillBound = true;
-    }
+    this.ensureFillBound();
 
   }
 

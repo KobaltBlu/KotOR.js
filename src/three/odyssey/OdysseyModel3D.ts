@@ -1758,7 +1758,13 @@ export class OdysseyModel3D extends OdysseyObject3D {
           // SKIN MESH
           //-----------//
           if ((odysseyNode.nodeType & OdysseyModelNodeType.Skin) == OdysseyModelNodeType.Skin) {
+            material.defines = material.defines || {};
             material.defines.USE_SKINNING = '';
+            // Defines changed after ShaderMaterial construction — force recompile.
+            material.needsUpdate = true;
+            if(material.userData){
+              delete material.userData.odysseyProgramSortKey;
+            }
             mesh = new THREE.SkinnedMesh( geometry , material );
             odysseyModel.skins.push(mesh);
             const shadowFlags = OdysseyModel3D.resolveMeshShadowFlags(odysseyNode, options, false);
@@ -1946,6 +1952,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
       (odysseyNode.MDXDataBitmap & OdysseyModelMDXFlag.UV4) ||
       ((odysseyNode.nodeType & OdysseyModelNodeType.Saber) === OdysseyModelNodeType.Saber)
     ) ? 1 : 0;
+    const skin = ((odysseyNode.nodeType & OdysseyModelNodeType.Skin) === OdysseyModelNodeType.Skin) ? 1 : 0;
 
     return [
       `T1:${tMap1 || 'NONE'}`, `T2:${tMap2 || 'NONE'}`, `LM:${hasLm ? 1 : 0}`,
@@ -1954,7 +1961,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
       `HOL:${hol}`, `FS:${fs}`, `TC:${tc}`, `TCV:${tcv}`, `EMO:${emo}`,
       `FSH:${fsh}`, `TAN:${tan}`, `BG:${bg}`, `FR:${fr}`, `TH:${th}`,
       `SI:${si}`, `A:${alpha}`, `AUV:${auv}`, `DAN:${dan}`, `BM:${bm}`,
-      `DIRT:${dirt}`, `D:${diff}`, `HH:${hh}`, `UV:${uv}`,
+      `DIRT:${dirt}`, `D:${diff}`, `HH:${hh}`, `UV:${uv}`, `SKIN:${skin}`,
     ].join('|');
   }
 
