@@ -2297,6 +2297,26 @@ export class GUIControl {
     return this.textSize;
   }
 
+  /**
+   * GetIdealHeight — line count < 0x10 → GetHeight()+1, else GetHeight(-1).
+   * Uses built wrap lines + text mesh height as GetHeight.
+   */
+  getIdealHeight(): number {
+    if(!this.text?.geometry || !this.guiFont){
+      return 0;
+    }
+    this.getTextSize();
+    const lineCount = this.guiFont.builtLines?.length ?? 0;
+    if(lineCount < 1){
+      return 0;
+    }
+    const h = asExtentInt(this.textSize.y);
+    if(lineCount < 0x10){
+      return h + 1;
+    }
+    return h;
+  }
+
   _onCreate(){
     //Dummy Method
   }

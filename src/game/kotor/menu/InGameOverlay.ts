@@ -2,7 +2,7 @@ import { GameState } from "@/GameState";
 import { FollowerCamera } from "@/engine/FollowerCamera";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { FeedbackOption } from "@/enums/engine/FeedbackOption";
-import { GameMenu, LBL_MapView, GUIPanelCoordFlags } from "@/gui";
+import { GameMenu, LBL_MapView, GUIPanelCoordFlags, asExtentInt, truncDiv } from "@/gui";
 import type { GUILabel, GUIButton, GUICheckBox, GUIProgressBar } from "@/gui";
 import { TextureLoader } from "@/loaders";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
@@ -62,7 +62,7 @@ type TargetMenuPoint = {
   status: 0 | 1 | 2;
 };
 
-/** Clamp rect from LBL_ARROW_MARGIN + LBL_MENUBG + TB_PAUSE (MainInterface ctor). */
+/** Full-viewport clamp for floating target menu (KotOR.js dock+scale). */
 type TargetMenuBounds = {
   left: number;
   top: number;
@@ -73,6 +73,9 @@ type TargetMenuBounds = {
 /** Relative layout captured from GUI extents (Initialize). */
 type TargetMenuLayout = {
   menuWidth: number;
+  /** LBL_NAME.left / top in GUI local space (AurGUISetupViewport origin). */
+  nameOffsetLeft: number;
+  nameOffsetTop: number;
   /** PB_HEALTH.top - (LBL_NAME.top + LBL_NAME.height) */
   healthGap: number;
   /** BTN_TARGET0.top - (LBL_NAME.top + LBL_NAME.height) */
@@ -574,6 +577,8 @@ export class InGameOverlay extends GameMenu {
     const down0 = this.BTN_TARGETDOWN0;
     this.targetMenuLayout = {
       menuWidth: name.extent.width,
+      nameOffsetLeft: name.extent.left,
+      nameOffsetTop: name.extent.top,
       healthGap: health.extent.top - nameBottom,
       actionGap: btn0.extent.top - nameBottom,
       // mipc28x6: name L=0, BTN_TARGET0 L=43 — actions are inset under the plate
@@ -838,7 +843,7 @@ export class InGameOverlay extends GameMenu {
     const vpH = GameState.ResolutionManager.getViewportHeight();
     const camera = GameState.currentCamera;
     if(!camera || !selectedObject){
-      return { x: vpW / 2, y: vpH / 2, status: 0 };
+      return { x: truncDiv(vpW, 2), y: truncDiv(vpH, 2), status: 0 };
     }
 
     if(BitWise.InstanceOfObject(selectedObject, ModuleObjectType.ModuleCreature)){
@@ -855,20 +860,52 @@ export class InGameOverlay extends GameMenu {
       }
     }
 
-    this.reticlePosition.copy(this.#menuPointWorld);
+    return this.#projectWorldToMenuPoint(this.#menuPointWorld, camera, vpW, vpH);
+  }
+
+  /**
+   * GetReticlePoint screen projection for UpdateIndicator edge arrow
+   * (head / head_g / rootdummy — not GetMenuPoint Z offset).
+   */
+  getReticleScreenPoint(selectedObject: ModuleObject): TargetMenuPoint {
+    const vpW = GameState.ResolutionManager.getViewportWidth();
+    const vpH = GameState.ResolutionManager.getViewportHeight();
+    const camera = GameState.currentCamera;
+    if(!camera || !selectedObject){
+      return { x: truncDiv(vpW, 2), y: truncDiv(vpH, 2), status: 0 };
+    }
+
+    const node = selectedObject.getReticleNode?.();
+    if(node){
+      node.getWorldPosition(this.#menuPointWorld);
+    }else{
+      this.#menuPointWorld.copy(selectedObject.position);
+      this.#menuPointWorld.z += 1;
+    }
+
+    return this.#projectWorldToMenuPoint(this.#menuPointWorld, camera, vpW, vpH);
+  }
+
+  #projectWorldToMenuPoint(
+    world: THREE.Vector3,
+    camera: THREE.Camera,
+    vpW: number,
+    vpH: number,
+  ): TargetMenuPoint {
+    this.reticlePosition.copy(world);
 
     // Do NOT call camera.getWorldDirection — it runs updateWorldMatrix and
     // desyncs matrixWorld from matrixWorldInverse mid-frame, which corrupts
     // GameState frustum / currentCameraPosition while the camera turns.
     // FollowerCamera forward is local +Y (Z-up, YZX).
     this.#camForward.set(0, 1, 0).applyQuaternion(camera.quaternion);
-    const toPointX = this.#menuPointWorld.x - camera.position.x;
-    const toPointY = this.#menuPointWorld.y - camera.position.y;
-    const toPointZ = this.#menuPointWorld.z - camera.position.z;
+    const toPointX = world.x - camera.position.x;
+    const toPointY = world.y - camera.position.y;
+    const toPointZ = world.z - camera.position.z;
     const inFront = (toPointX * this.#camForward.x + toPointY * this.#camForward.y + toPointZ * this.#camForward.z) > 0;
     const status: 1 | 2 = inFront ? 1 : 2;
 
-    this.#menuPointNdc.copy(this.#menuPointWorld).project(camera);
+    this.#menuPointNdc.copy(world).project(camera);
     const x = (this.#menuPointNdc.x * 0.5 + 0.5) * vpW;
     const y = (-this.#menuPointNdc.y * 0.5 + 0.5) * vpH;
     this.reticleScreenPosition.set(x, y, 0);
@@ -876,30 +913,18 @@ export class InGameOverlay extends GameMenu {
   }
 
   /**
-   * MainInterface ctor clamp rect:
-   * left = arrow_margin.left
-   * top = menubg.top + menubg.height
-   * width = viewportWidth - 2 * arrow_margin.left
-   * height = pause.top - top
+   * Full viewport clamp for floating target menu.
+   * Diverges from MainInterface ctor (ARROW_MARGIN / MENUBG / PAUSE gutters):
+   * single mipc28x6 + dock/scale needs the whole ResolutionManager viewport.
    */
   getTargetMenuBounds(): TargetMenuBounds {
-    const vpW = GameState.ResolutionManager.getViewportWidth();
-    const vpH = GameState.ResolutionManager.getViewportHeight();
-    const panelW = this.tGuiPanel?.extent?.width || 640;
-    const panelH = this.tGuiPanel?.extent?.height || 480;
-    const sx = vpW / panelW;
-    const sy = vpH / panelH;
-
-    const marginLeft = (this.LBL_ARROW_MARGIN?.extent.left ?? 0) * sx;
-    const menuBg = this.LBL_MENUBG?.extent;
-    const marginTop = menuBg ? (menuBg.top + menuBg.height) * sy : 0;
-    const pauseTop = (this.TB_PAUSE?.extent.top ?? panelH) * sy;
-
+    const vpW = asExtentInt(GameState.ResolutionManager.getViewportWidth());
+    const vpH = asExtentInt(GameState.ResolutionManager.getViewportHeight());
     return {
-      left: marginLeft,
-      top: marginTop,
-      width: Math.max(0, vpW - marginLeft * 2),
-      height: Math.max(0, pauseTop - marginTop),
+      left: 0,
+      top: 0,
+      width: vpW,
+      height: vpH,
     };
   }
 
@@ -909,16 +934,20 @@ export class InGameOverlay extends GameMenu {
    */
   positionTargetMenu(point: TargetMenuPoint, menuWidth: number, menuHeight: number): { x: number; y: number } {
     const bounds = this.getTargetMenuBounds();
-    const halfW = menuWidth / 2;
+    const halfW = truncDiv(menuWidth, 2);
     let menuX = 0;
     let menuY = 0;
     const screenX = point.x;
     const screenY = point.y;
     const edge = TARGET_MENU_EDGE;
+    const vpW = asExtentInt(GameState.ResolutionManager.getViewportWidth());
+    const vpH = asExtentInt(GameState.ResolutionManager.getViewportHeight());
+    const sx = asExtentInt(screenX);
+    const sy = asExtentInt(screenY);
 
     if(point.status === 2){
       // Behind camera: pin to left/right half and vertical edges
-      menuX = screenX <= GameState.ResolutionManager.getViewportWidth() / 2
+      menuX = screenX <= vpW / 2
         ? bounds.left
         : bounds.left + bounds.width - menuWidth;
 
@@ -926,10 +955,12 @@ export class InGameOverlay extends GameMenu {
         menuY = (bounds.top + bounds.height) - menuHeight - edge;
       }else if(screenY > bounds.top + bounds.height - edge){
         menuY = bounds.top;
-      }else if(screenY < GameState.ResolutionManager.getViewportHeight() / 2){
-        menuY = GameState.ResolutionManager.getViewportHeight() - Math.floor(menuHeight + screenY + edge);
+      }else if(screenY < vpH / 2){
+        // ftol(height + screenY + 32); menuY = vpH - that
+        menuY = vpH - asExtentInt(menuHeight + screenY + edge);
       }else{
-        menuY = Math.floor(screenY - edge - menuHeight);
+        // ftol(screenY) - height - 32
+        menuY = sy - menuHeight - edge;
       }
     }else{
       // In front: center on point horizontally; place menu above point with 32px gap
@@ -940,7 +971,7 @@ export class InGameOverlay extends GameMenu {
         }else if(screenY > bounds.top + bounds.height - edge){
           menuY = bounds.top + bounds.height - menuHeight - edge;
         }else{
-          menuY = Math.floor(screenY - edge - menuHeight);
+          menuY = sy - menuHeight - edge;
         }
       }else if(screenX + halfW > bounds.left + bounds.width){
         menuX = bounds.left + bounds.width - menuWidth;
@@ -949,16 +980,17 @@ export class InGameOverlay extends GameMenu {
         }else if(screenY > bounds.top + bounds.height - edge){
           menuY = bounds.top + bounds.height - menuHeight - edge;
         }else{
-          menuY = Math.floor(screenY - edge - menuHeight);
+          menuY = sy - menuHeight - edge;
         }
       }else{
-        menuX = Math.floor(screenX - halfW);
+        // ftol(screenX) - halfW
+        menuX = sx - halfW;
         if(screenY < bounds.top + edge){
           menuY = bounds.top;
         }else if(screenY > bounds.top + bounds.height - edge){
           menuY = bounds.top + bounds.height - menuHeight - edge;
         }else{
-          menuY = Math.floor(screenY - edge - menuHeight);
+          menuY = sy - menuHeight - edge;
         }
       }
     }
@@ -984,7 +1016,9 @@ export class InGameOverlay extends GameMenu {
 
   /**
    * UpdateIndicator edge-arrow path when target is
-   * outside LBL_ARROW_MARGIN (or behind camera). On-screen reticles stay in CursorManager.
+   * outside the viewport (or behind camera). On-screen reticles stay in CursorManager.
+   * `point` must be GetReticlePoint screen projection (not GetMenuPoint).
+   * Uses full viewport (not design LBL_ARROW_MARGIN) so arrows pin to real screen edges.
    */
   updateArrow(selectedObject: ModuleObject, point?: TargetMenuPoint) {
     if(!this.namePlateArrow){
@@ -995,20 +1029,13 @@ export class InGameOverlay extends GameMenu {
       return;
     }
 
-    const margin = this.LBL_ARROW_MARGIN?.extent;
-    const panelW = this.tGuiPanel?.extent?.width || 640;
-    const panelH = this.tGuiPanel?.extent?.height || 480;
-    const vpW = GameState.ResolutionManager.getViewportWidth();
-    const vpH = GameState.ResolutionManager.getViewportHeight();
-    const sx = vpW / panelW;
-    const sy = vpH / panelH;
+    const vpW = asExtentInt(GameState.ResolutionManager.getViewportWidth());
+    const vpH = asExtentInt(GameState.ResolutionManager.getViewportHeight());
 
-    const marginLeft = (margin?.left ?? 0) * sx;
-    const marginTop = (margin?.top ?? 0) * sy;
-    const marginW = (margin?.width ?? panelW) * sx;
-    const marginH = (margin?.height ?? panelH) * sy;
-    const marginRight = marginLeft + marginW;
-    const marginBottom = marginTop + marginH;
+    const marginLeft = 0;
+    const marginTop = 0;
+    const marginRight = vpW;
+    const marginBottom = vpH;
 
     const screenX = point.x;
     const screenY = point.y;
@@ -1040,7 +1067,7 @@ export class InGameOverlay extends GameMenu {
       }else if(screenY > marginBottom - TARGET_MENU_EDGE){
         arrowTop = marginBottom - size;
       }else{
-        arrowTop = Math.floor(screenY - size / 2);
+        arrowTop = asExtentInt(screenY - size / 2);
       }
     }else if(screenX > marginRight - TARGET_MENU_EDGE){
       arrowLeft = marginRight - size;
@@ -1051,26 +1078,26 @@ export class InGameOverlay extends GameMenu {
       }else if(screenY > marginBottom - TARGET_MENU_EDGE){
         arrowTop = marginBottom - size;
       }else{
-        arrowTop = Math.floor(screenY - size / 2);
+        arrowTop = asExtentInt(screenY - size / 2);
       }
     }else if(screenY < marginTop + TARGET_MENU_EDGE){
       arrowTop = marginTop;
       rotation = ARROW_DIR_UP;
       size = ARROW_SCALE;
-      arrowLeft = Math.floor(screenX - size / 2);
+      arrowLeft = asExtentInt(screenX - size / 2);
     }else{
       arrowTop = marginBottom - size;
       rotation = ARROW_DIR_DOWN;
       size = ARROW_SCALE;
-      arrowLeft = Math.floor(screenX - size / 2);
+      arrowLeft = asExtentInt(screenX - size / 2);
     }
 
     arrowLeft = Math.min(Math.max(arrowLeft, marginLeft), marginRight - size);
     arrowTop = Math.min(Math.max(arrowTop, marginTop), marginBottom - size);
 
     // Mesh lives in panel-centered GUI space (Y up)
-    this.namePlateArrow.position.x = -vpW / 2 + arrowLeft + size / 2;
-    this.namePlateArrow.position.y = vpH / 2 - arrowTop - size / 2;
+    this.namePlateArrow.position.x = -truncDiv(vpW, 2) + arrowLeft + truncDiv(size, 2);
+    this.namePlateArrow.position.y = truncDiv(vpH, 2) - arrowTop - truncDiv(size, 2);
     this.namePlateArrow.rotation.z = rotation;
     this.namePlateArrow.scale.set(size, size, 1);
     this.namePlateArrow.renderOrder = 5;
@@ -1124,21 +1151,25 @@ export class InGameOverlay extends GameMenu {
     this.PB_HEALTH.setProgress(health);
 
     const point = this.getTargetMenuPoint(selected);
-    this.updateArrow(selected, point);
+    const reticlePoint = this.getReticleScreenPoint(selected);
+    this.updateArrow(selected, reticlePoint);
 
     const layout = this.targetMenuLayout;
     const menuWidth = layout?.menuWidth || this.LBL_NAME.extent.width;
-    // SetNameLabel: name height from ideal text height, then stack health/actions
-    const nameHeight = Math.max(this.LBL_NAME.getTextSize()?.y || 0, this.LBL_NAME.extent.height);
+    const nameOffsetLeft = layout?.nameOffsetLeft ?? 0;
+    const nameOffsetTop = layout?.nameOffsetTop ?? 0;
+    // SetNameLabel: height = GetIdealHeight only, then stack health/actions
+    const nameHeight = this.LBL_NAME.getIdealHeight() || this.LBL_NAME.extent.height;
     const healthGap = layout?.healthGap ?? 0;
     const actionGap = layout?.actionGap ?? 0;
     const healthHeight = layout?.healthHeight ?? this.PB_HEALTH.extent.height;
+    const actionButtonHeight = layout?.actionButtonHeight ?? 0;
     const hasActions = !!GameState.ActionMenuManager.targetActionCount();
-    const actionBottom = hasActions
-      ? (actionGap + (layout?.actionButtonHeight ?? 0))
-      : 0;
-    const healthBottom = healthGap + healthHeight;
-    const menuHeight = nameHeight + Math.max(healthBottom, actionBottom);
+    // field7_0x15b8: action bottom if any target actions, else health bottom
+    const nameBottom = nameOffsetTop + nameHeight;
+    const menuHeight = hasActions
+      ? (nameBottom + actionGap + actionButtonHeight)
+      : (nameBottom + healthGap + healthHeight);
 
     const menuPos = this.positionTargetMenu(point, menuWidth, menuHeight);
     this.targetScreenPosition.set(menuPos.x, menuPos.y, 0);
@@ -1148,19 +1179,21 @@ export class InGameOverlay extends GameMenu {
     this.PB_HEALTH?.show();
     this.LBL_HEALTHBG?.show();
 
-    this.placeUserControl(this.LBL_NAME, menuPos.x, menuPos.y, menuWidth, nameHeight);
-    this.placeUserControl(this.LBL_NAMEBG, menuPos.x, menuPos.y, menuWidth, nameHeight);
+    const nameLeft = menuPos.x + nameOffsetLeft;
+    const nameTop = menuPos.y + nameOffsetTop;
+    this.placeUserControl(this.LBL_NAME, nameLeft, nameTop, menuWidth, nameHeight);
+    this.placeUserControl(this.LBL_NAMEBG, nameLeft, nameTop, menuWidth, nameHeight);
 
-    const healthTop = menuPos.y + nameHeight + healthGap;
-    this.placeUserControl(this.PB_HEALTH, menuPos.x, healthTop, menuWidth, healthHeight);
-    this.placeUserControl(this.LBL_HEALTHBG, menuPos.x, healthTop, menuWidth, healthHeight);
+    const healthTop = nameTop + nameHeight + healthGap;
+    this.placeUserControl(this.PB_HEALTH, nameLeft, healthTop, menuWidth, healthHeight);
+    this.placeUserControl(this.LBL_HEALTHBG, nameLeft, healthTop, menuWidth, healthHeight);
 
     if (hasActions) {
       const stride = layout?.actionSlotStride ?? (this.BTN_TARGET0.extent.width + 5);
       const actionOffsetLeft = layout?.actionOffsetLeft ?? 43;
-      const actionTop = menuPos.y + nameHeight + actionGap;
+      const actionTop = nameTop + nameHeight + actionGap;
       for (let i = 0; i < GameState.ActionMenuManager.TARGET_MENU_COUNT; i++) {
-        const slotLeft = menuPos.x + actionOffsetLeft + stride * i;
+        const slotLeft = nameLeft + actionOffsetLeft + stride * i;
         const btn = this.getControlByName('BTN_TARGET' + i) as GUIButton;
         const lbl = this.getControlByName('LBL_TARGET' + i) as GUIButton;
         const up = this.getControlByName('BTN_TARGETUP' + i) as GUIButton;
