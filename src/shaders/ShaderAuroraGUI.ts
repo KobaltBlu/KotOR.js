@@ -59,34 +59,40 @@ export class ShaderAuroraGUI extends Shader {
       uniform float fillOpacity;
       uniform float enableFrame;
       uniform float enableFill;
+      // GUIControl.flipY — chrome samples raw vUv (no texture matrix), so flip fill V here.
+      uniform float fillFlipY;
       varying float vRegion;
 
       vec4 sampleChromeMap(float region, float useHighlight){
         vec4 tex = vec4(1.0);
         float hasMap = 0.0;
+        vec2 uv = vUv;
+        if(region >= 1.5 && fillFlipY > 0.5){
+          uv.y = 1.0 - uv.y;
+        }
         if(region < 0.5){
           if(useHighlight > 0.5){
             hasMap = hasHighlightEdgeMap;
-            if(hasMap > 0.5) tex = texture2D(highlightEdgeMap, vUv);
+            if(hasMap > 0.5) tex = texture2D(highlightEdgeMap, uv);
           }else{
             hasMap = hasEdgeMap;
-            if(hasMap > 0.5) tex = texture2D(edgeMap, vUv);
+            if(hasMap > 0.5) tex = texture2D(edgeMap, uv);
           }
         }else if(region < 1.5){
           if(useHighlight > 0.5){
             hasMap = hasHighlightCornerMap;
-            if(hasMap > 0.5) tex = texture2D(highlightCornerMap, vUv);
+            if(hasMap > 0.5) tex = texture2D(highlightCornerMap, uv);
           }else{
             hasMap = hasCornerMap;
-            if(hasMap > 0.5) tex = texture2D(cornerMap, vUv);
+            if(hasMap > 0.5) tex = texture2D(cornerMap, uv);
           }
         }else{
           if(useHighlight > 0.5){
             hasMap = hasHighlightFillMap;
-            if(hasMap > 0.5) tex = texture2D(highlightFillMap, vUv);
+            if(hasMap > 0.5) tex = texture2D(highlightFillMap, uv);
           }else{
             hasMap = hasFillMap;
-            if(hasMap > 0.5) tex = texture2D(fillMap, vUv);
+            if(hasMap > 0.5) tex = texture2D(fillMap, uv);
           }
         }
         if(hasMap < 0.5){
@@ -279,6 +285,7 @@ export class ShaderAuroraGUI extends Shader {
         fillOpacity: { value: 1 },
         enableFrame: { value: 1 },
         enableFill: { value: 1 },
+        fillFlipY: { value: 0 },
       }
     ])
   }

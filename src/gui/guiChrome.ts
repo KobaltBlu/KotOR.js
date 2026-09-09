@@ -122,6 +122,7 @@ export function createGuiChromeMaterial(
   material.uniforms.hoverMode.value = 0;
   material.uniforms.enableFrame.value = 1;
   material.uniforms.enableFill.value = 1;
+  material.uniforms.fillFlipY.value = 0;
   return material;
 }
 

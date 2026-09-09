@@ -1466,6 +1466,9 @@ export class InGameOverlay extends GameMenu {
     this.BTN_ACTIONDOWN1.flipY();
     this.BTN_ACTIONDOWN2.flipY();
     this.BTN_ACTIONDOWN3.flipY();
+    this.BTN_TARGETDOWN0.flipY();
+    this.BTN_TARGETDOWN1.flipY();
+    this.BTN_TARGETDOWN2.flipY();
   }
 
   resize() {

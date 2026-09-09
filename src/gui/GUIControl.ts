@@ -1449,19 +1449,16 @@ export class GUIControl {
     return true;
   }
 
+  /**
+   * Vertically flip the chrome fill (action-panel down arrows, etc.).
+   * Odyssey-gui chrome samples fill maps with raw vUv, so this sets the
+   * fillFlipY uniform rather than texture.repeat (which the shader ignores).
+   */
   flipY(flip = true){
-    let texture = this.chrome.material.uniforms.fillMap.value;
-    if(texture instanceof THREE.Texture){
-      texture.repeat.y = flip ? -1 : 1;
-      texture.updateMatrix();
-      texture.needsUpdate = true;
-    }
-
-    texture = this.chrome.material.uniforms.highlightFillMap.value;
-    if(texture instanceof THREE.Texture){
-      texture.repeat.y = flip ? -1 : 1;
-      texture.updateMatrix();
-      texture.needsUpdate = true;
+    const u = this.chrome?.material?.uniforms;
+    if(u?.fillFlipY){
+      u.fillFlipY.value = flip ? 1 : 0;
+      this.chrome.material.uniformsNeedUpdate = true;
     }
   }
 

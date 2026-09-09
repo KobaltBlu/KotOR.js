@@ -402,12 +402,15 @@ export class InGameOverlay extends K1_InGameOverlay {
   show() {
     super.show();
     GameState.SetEngineMode(EngineMode.INGAME);
-    // this.BTN_ACTIONDOWN0.flipY;
-    // this.BTN_ACTIONDOWN1.flipY;
-    // this.BTN_ACTIONDOWN2.flipY;
-    // this.BTN_ACTIONDOWN3.flipY;
+    this.BTN_ACTIONDOWN0.flipY();
+    this.BTN_ACTIONDOWN1.flipY();
+    this.BTN_ACTIONDOWN2.flipY();
+    this.BTN_ACTIONDOWN3.flipY();
     this.BTN_ACTIONDOWN4.flipY();
     this.BTN_ACTIONDOWN5.flipY();
+    this.BTN_TARGETDOWN0.flipY();
+    this.BTN_TARGETDOWN1.flipY();
+    this.BTN_TARGETDOWN2.flipY();
   }
 
   resize() {
