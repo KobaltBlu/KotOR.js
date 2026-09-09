@@ -16,8 +16,7 @@ import type { ModuleWaypoint } from "@/module/ModuleWaypoint";
  * - Pixel = trunc((local - offset) / scale + 0.5)
  * - FLOAT MapPt → pixel via floor(uv * size + 0.5)
  * - mapResY = floor(mapResX * height / width)
- * - Display Y flip for Three.js (AurGUI Y-down). Map/fog planes use negative Y
- *   scale so TPC (flipY=false) art top matches marker Y; fog bits stay raw pixels
+ * - Display Y flip only for Three.js (AurGUI is Y-down); fog uses raw pixels
  *
  * Game-specific logical size only:
  * - K1 GoG/CD: 440×256
@@ -213,9 +212,7 @@ export class AreaMap {
     this.fogAlphaTexture = new THREE.DataTexture(this.fogAlphaPixelData as any, resX, resY, THREE.AlphaFormat);
     this.fogAlphaTexture.minFilter = THREE.LinearFilter;
     this.fogAlphaTexture.magFilter = THREE.LinearFilter;
-    // Match map TPC orientation: flipY=false; LBL_MapView uses negative plane Y
-    // (compressed textures ignore repeat.y). No extra V-flip on the fog DataTexture.
-    this.fogAlphaTexture.flipY = false;
+    this.fogAlphaTexture.flipY = true;
     this.fogAlphaTexture.needsUpdate = true;
 
     const stride = resX;
@@ -329,9 +326,9 @@ export class AreaMap {
   /**
    * World XY → map UV for LBL_MapView.
    * X matches GetMapPixelFromWorldCoord / logical width.
-   * Y is flipped for display: AurGUI map pixels are top-origin (Y-down).
-   * LBL_MapView uses negative plane Y scale so TPC (flipY=false) art top
-   * lands at high Three Y with this flip. Fog explore uses raw pixels.
+   * Y is flipped: AurGUI map pixels are top-origin (Y-down), while the
+   * Three.js map scene is bottom-origin (Y-up) with the TGA on the plane.
+   * Fog / toGridPixels use raw pixels — never flip those.
    */
   toMapCoordinates(x: number = 0, y: number = 0): THREE.Vector2 {
     const { width, height } = AreaMap.getLogicalMapSize();
