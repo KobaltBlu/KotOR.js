@@ -143,6 +143,7 @@ export class LBL_MapView {
     fogPlaneMaterial.defines.USE_UV = '';
     fogPlaneMaterial.defines.USE_ALPHAMAP = '';
     fogPlaneMaterial.transparent = true;
+    fogPlaneMaterial.side = THREE.DoubleSide;
 
     this.fogPlane = new THREE.Mesh(planeGeometry, fogPlaneMaterial);
     this.fogPlane.position.set(0, 0, 0);
@@ -266,8 +267,18 @@ export class LBL_MapView {
 
     this.mapTexture.wrapS = THREE.RepeatWrapping;
     this.mapTexture.wrapT = THREE.RepeatWrapping;
+    // Non-compressed TGAs can flip via repeat; compressed TPC ignores repeat.y.
+    // applyMapPlaneScale uses negative Y scale so art top matches AurGUI Y-flip coords.
+    if(!(this.mapTexture as { isCompressedTexture?: boolean }).isCompressedTexture){
+      this.mapTexture.offset.set(0, 1);
+      this.mapTexture.repeat.set(1, -1);
+    }else{
+      this.mapTexture.offset.set(0, 0);
+      this.mapTexture.repeat.set(1, 1);
+    }
     const material = this.mapPlane.material as THREE.MeshBasicMaterial;
     material.map = this.mapTexture;
+    material.side = THREE.DoubleSide;
 
     this.applyMapPlaneScale();
     this._rttDirty = true;
@@ -277,15 +288,17 @@ export class LBL_MapView {
     if(!this.mapTexture) return;
 
     // positions in logical map pixels; TGA is stretched to that rect (not raw mip size).
+    // Negative Y: TPC flipY=false puts image top at UV v=0; negate scale so that
+    // maps to high Three Y together with toMapCoordinates' AurGUI Y-flip.
     const scaleSize = this.getMapTextureScaleSize();
     const planeW = Math.max(1, asExtentInt(scaleSize.width));
     const planeH = Math.max(1, asExtentInt(scaleSize.height));
 
-    this.mapPlane.scale.set(planeW, planeH, 1);
+    this.mapPlane.scale.set(planeW, -planeH, 1);
     this.mapGroup.position.x = truncDiv(planeW, 2);
     this.mapGroup.position.y = truncDiv(planeH, 2);
 
-    this.fogPlane.scale.set(planeW, planeH, 1);
+    this.fogPlane.scale.set(planeW, -planeH, 1);
     this.fogPlane.position.z = 5;
     this.fogPlane.position.x = truncDiv(planeW, 2);
     this.fogPlane.position.y = truncDiv(planeH, 2);
@@ -550,31 +563,36 @@ export class LBL_MapView {
 
   /**
    * GetMapRotateCCWFromWorldOrientation / SetPartyMemberWorldOrientation.
-   * `angle` is yaw in radians (HUD: camera facing; full map: creature facing).
-   * NorthAxis adds the same degree offsets as retail (converted to radians).
+   * `angle` is yaw in radians (HUD: camera facing / ydir; full map: creature facing).
+   * NorthAxis adds the same degree offsets as retail (E+180, S+90, W+270).
+   *
+   * Retail AurGUI fill_angle is CCW from +X with Y-down. mm_barrow rests pointing
+   * +Y in our Three map scene (after display Y-flip), so subtract π/2.
    */
   setRotation(angle: number = 0){
     if(!this.areaMap){
-      if(this.arrowAngle !== angle){ this._rttDirty = true; }
-      this.arrowAngle = angle;
+      const fallback = angle - Math.PI / 2;
+      if(this.arrowAngle !== fallback){ this._rttDirty = true; }
+      this.arrowAngle = fallback;
       return;
     }
-    let next = angle;
+    let retail = angle;
     switch(this.areaMap.northAxis){
       case MapNorthAxis.EAST:
-        next = angle + Math.PI;
+        retail = angle + Math.PI;
         break;
       case MapNorthAxis.SOUTH:
-        next = angle + (Math.PI / 2);
+        retail = angle + (Math.PI / 2);
         break;
       case MapNorthAxis.WEST:
-        next = angle + (3 * Math.PI / 2);
+        retail = angle + (3 * Math.PI / 2);
         break;
       case MapNorthAxis.NORTH:
       default:
-        next = angle;
+        retail = angle;
         break;
     }
+    const next = retail - Math.PI / 2;
     if(this.arrowAngle !== next){ this._rttDirty = true; }
     this.arrowAngle = next;
   }
