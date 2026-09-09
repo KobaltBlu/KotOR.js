@@ -10,6 +10,7 @@ import {
   ODYSSEY_RENDER_LENS_FLARES,
   ODYSSEY_REVERSE_FLARE_HIT,
   flareElementColor,
+  flareElementNdc,
   flareElementSize,
   flareFacing,
   isBeyondFlareRadius,
@@ -41,7 +42,8 @@ const FLARE_FRAG = /* glsl */`
  * OdysseyLensFlarePass — (K1 00457ec0).
  *
  * After FB mods, before GUI. Additive ONE,ONE; depth off.
- * Element screen position: −lightNDC × flarepositions[i] (S = −hit).
+ * Retail: planelineintersection(n=(0,0,-1), d=2) → z=+2 hit; S=−hit;
+ * element at S×flarepositions[i] on z=−2 draw plane ≡ lightNDC×pos.
  *
  * @file OdysseyLensFlarePass.ts
  */
@@ -210,7 +212,7 @@ export class OdysseyLensFlarePass extends Pass {
 
       const facing = flareFacing(viewDirZ);
 
-      // Light NDC — same screen position gets from z=−2 plane intersection.
+      // Light NDC (perspective-equivalent to front-plane hit toward the light).
       this._lightNdc.copy(this._lightPos).project(camera);
 
       const count = Math.min(
@@ -253,9 +255,12 @@ export class OdysseyLensFlarePass extends Pass {
           continue;
         }
 
-        // : S = −hit, element at S × flarepositions[i].
-        const ndcX = -this._lightNdc.x * pos;
-        const ndcY = -this._lightNdc.y * pos;
+        // Retail S×pos with z=+2 hit ⇒ lightNDC×pos (on light when pos=1).
+        const { x: ndcX, y: ndcY } = flareElementNdc(
+          this._lightNdc.x,
+          this._lightNdc.y,
+          pos,
+        );
 
         // Half-extent in NDC from eye-space size on the z=−2 plane.
         const c0 = this.projectEye(camera, 0, 0, -2);

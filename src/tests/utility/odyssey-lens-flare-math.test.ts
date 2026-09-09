@@ -1,5 +1,6 @@
 import {
   flareElementColor,
+  flareElementNdc,
   flareElementSize,
   flareFacing,
   flareRadiusFalloff,
@@ -56,6 +57,20 @@ describe("odyssey-lens-flare-math", () => {
 
     it("applies custom lensFlareSize", () => {
       expect(flareElementSize(8, 0, 100, 0.2)).toBeCloseTo(8 * 1 * 0.2);
+    });
+  });
+
+  describe("flareElementNdc", () => {
+    it("places pos=1 on the light", () => {
+      expect(flareElementNdc(0.15, 0.6, 1)).toEqual({ x: 0.15, y: 0.6 });
+    });
+
+    it("places pos=0 at screen center", () => {
+      expect(flareElementNdc(0.15, 0.6, 0)).toEqual({ x: 0, y: 0 });
+    });
+
+    it("places pos=-1 opposite the light", () => {
+      expect(flareElementNdc(0.15, 0.6, -1)).toEqual({ x: -0.15, y: -0.6 });
     });
   });
 

@@ -52,6 +52,24 @@ export function flareElementSize(
   return flareSize * flareRadiusFalloff(distance, flareRadius) * lensFlareSize;
 }
 
+/**
+ * Element center in NDC (K1 00457ec0).
+ *
+ * Retail intersects plane n·x + 2 = 0 (z = +2), sets S = −hit, then places
+ * the sprite at S × flarepositions[i] on the z = −2 draw plane. That equals
+ * lightNDC × pos (pos = 1 on the light; 0 at screen center; −1 opposite).
+ */
+export function flareElementNdc(
+  lightNdcX: number,
+  lightNdcY: number,
+  flarePosition: number,
+): { x: number; y: number } {
+  return {
+    x: lightNdcX * flarePosition,
+    y: lightNdcY * flarePosition,
+  };
+}
+
 export interface FlareElementColorInput {
   shiftR: number;
   shiftG: number;
