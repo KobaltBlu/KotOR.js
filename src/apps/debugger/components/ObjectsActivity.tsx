@@ -12,7 +12,7 @@ import {
 
 const KIND_ORDER: OverviewObjectKind[] = [
   'party', 'creature', 'door', 'placeable', 'trigger', 'waypoint',
-  'sound', 'store', 'encounter', 'item', 'other',
+  'sound', 'store', 'encounter', 'item', 'area', 'module', 'other',
 ];
 
 const KvRow: React.FC<{ label: string; value: string }> = ({ label, value }) => (
@@ -85,11 +85,12 @@ export const ObjectsActivity: React.FC = () => {
 
   const openScripts = () => {
     if(!detail){ return; }
-    const scriptsSection = detail.sections.find((s) => s.id === 'scripts');
-    const names = (scriptsSection?.rows || [])
-      .map((r) => r.value.trim())
-      .filter((v) => v && v.toLowerCase() !== 'none');
-    stateRef.current?.setScriptNameFilter(names);
+    stateRef.current?.setScriptOwnerFilter({
+      objectId: detail.objectId,
+      tag: detail.tag || '',
+      label: detail.name || detail.tag || 'object',
+      kind: detail.kind,
+    });
     setActivity('scripts');
   };
 

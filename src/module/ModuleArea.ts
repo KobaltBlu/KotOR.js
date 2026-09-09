@@ -3291,7 +3291,7 @@ export class ModuleArea extends ModuleObject {
     for(let [key, resRef] of this.scriptResRefs){
       const script = GameState.NWScript.Load(resRef);
       if(!script){ continue; }
-      script.caller = this;
+      script.bindOwner(this, String(key));
       this.scripts[key as any] = script;
     }
   }

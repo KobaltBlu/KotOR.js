@@ -23,6 +23,8 @@ export type OverviewObjectKind =
   | 'store'
   | 'encounter'
   | 'item'
+  | 'area'
+  | 'module'
   | 'other';
 
 export interface OverviewEntry {
@@ -66,6 +68,8 @@ export const OVERVIEW_KIND_COLORS: Record<OverviewObjectKind, string> = {
   store: '#3498db',
   encounter: '#e91e63',
   item: '#95a5a6',
+  area: '#26a69a',
+  module: '#5c6bc0',
   other: '#7f8c8d',
 };
 
@@ -84,6 +88,8 @@ export const OVERVIEW_KIND_LABELS: Record<OverviewObjectKind, string> = {
   store: 'Stores',
   encounter: 'Encounters',
   item: 'Items',
+  area: 'Areas',
+  module: 'Module',
   other: 'Other',
 };
 
@@ -98,6 +104,8 @@ export const DEFAULT_KIND_FILTERS: Record<OverviewObjectKind, boolean> = {
   store: true,
   encounter: true,
   item: true,
+  area: true,
+  module: true,
   other: true,
 };
 
@@ -352,6 +360,7 @@ export function getObjectKind(obj: ModuleObject): OverviewObjectKind {
   if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleStore)) return 'store';
   if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleEncounter)) return 'encounter';
   if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleItem)) return 'item';
+  if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleArea)) return 'area';
   return 'other';
 }
 

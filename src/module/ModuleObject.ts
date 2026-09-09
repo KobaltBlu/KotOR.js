@@ -558,7 +558,11 @@ export class ModuleObject {
   getScriptInstance(scriptKey: ModuleObjectScript): NWScriptInstance | undefined {
     const script = this.scripts[scriptKey];
     if(!script || !script.nwscript){ return undefined; }
-    return this.scripts[scriptKey].newInstance();
+    const instance = this.scripts[scriptKey].newInstance();
+    if(instance){
+      instance.bindOwner(this, scriptKey);
+    }
+    return instance;
   }
 
   /**
@@ -2179,13 +2183,19 @@ export class ModuleObject {
 
     if(trap.trapscript?.length && trap.trapscript != '****'){
       const nwscript = NWScript.Load(trap.trapscript);
-      nwscript.caller = this;
+      let trapKey: ModuleObjectScript | undefined;
       if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleTrigger)){
-        this.scripts[ModuleObjectScript.TriggerOnTrapTriggered] = nwscript;
+        trapKey = ModuleObjectScript.TriggerOnTrapTriggered;
+        this.scripts[trapKey] = nwscript;
       }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlaceable)){
-        this.scripts[ModuleObjectScript.PlaceableOnTrapTriggered] = nwscript;
+        trapKey = ModuleObjectScript.PlaceableOnTrapTriggered;
+        this.scripts[trapKey] = nwscript;
       }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleDoor)){
-        this.scripts[ModuleObjectScript.DoorOnTrapTriggered] = nwscript;
+        trapKey = ModuleObjectScript.DoorOnTrapTriggered;
+        this.scripts[trapKey] = nwscript;
+      }
+      if(nwscript){
+        nwscript.bindOwner(this, trapKey);
       }
     }
 
@@ -2267,8 +2277,10 @@ export class ModuleObject {
 
     if(trap.trapscript?.length && trap.trapscript != '****'){
       const nwscript = NWScript.Load(trap.trapscript);
-      nwscript.caller = trigger;
       trigger.scripts[ModuleObjectScript.TriggerOnTrapTriggered] = nwscript;
+      if(nwscript){
+        nwscript.bindOwner(trigger, ModuleObjectScript.TriggerOnTrapTriggered);
+      }
     }
 
     // CreateNewGeometry(2.0, plantPos) @ SetMine; resref for RecoverMine kit

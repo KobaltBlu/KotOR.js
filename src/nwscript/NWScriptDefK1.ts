@@ -191,7 +191,7 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [ModuleObject, any]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
         if(typeof args[1] === 'object'){
-          args[1].script.caller = args[0];
+          args[1].script.setCaller(args[0]);
           args[1].script.seekTo(args[1].offset);
           args[1].script.runScript();
         }else{

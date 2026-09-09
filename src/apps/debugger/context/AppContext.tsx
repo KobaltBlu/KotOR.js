@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import * as KotOR from "@/apps/debugger/KotOR";
-import { DebuggerState } from "@/apps/debugger/states/DebuggerState";
+import { DebuggerState, type ScriptOwnerFilter } from "@/apps/debugger/states/DebuggerState";
 import type {
   GlobalsSnapshotEntry,
   LiveObjectSnapshot,
@@ -25,7 +25,7 @@ export interface AppProviderValues {
   objectList: ObjectListEntry[];
   selectedObjectDetail: LiveObjectSnapshot | null;
   globalsSnapshot: GlobalsSnapshotEntry[];
-  scriptNameFilter: string[];
+  scriptOwnerFilter: ScriptOwnerFilter | null;
   hostMode: InspectorHostMode;
 }
 export const AppContext = createContext<AppProviderValues>({} as any);
@@ -45,7 +45,7 @@ export const AppProvider = (props: {children: any; appState: DebuggerState; host
   const [objectList, setObjectList] = useState<ObjectListEntry[]>([]);
   const [selectedObjectDetail, setSelectedObjectDetail] = useState<LiveObjectSnapshot | null>(null);
   const [globalsSnapshot, setGlobalsSnapshot] = useState<GlobalsSnapshotEntry[]>([]);
-  const [scriptNameFilter, setScriptNameFilter] = useState<string[]>([]);
+  const [scriptOwnerFilter, setScriptOwnerFilter] = useState<ScriptOwnerFilter | null>(null);
   const hostMode: InspectorHostMode = props.hostMode === 'iframe' ? 'iframe' : 'window';
 
   const stateRef = useRef<DebuggerState>(props.appState);
@@ -84,17 +84,18 @@ export const AppProvider = (props: {children: any; appState: DebuggerState; host
     appState.addEventListener('script-created', refreshMaps);
     appState.addEventListener('script-destroyed', refreshMaps);
     appState.addEventListener('instance-updated', refreshMaps);
+    appState.addEventListener('script-owner-updated', refreshMaps);
     appState.addEventListener('module-snapshot', setModuleSnapshot);
     appState.addEventListener('object-list', setObjectList);
     appState.addEventListener('object-detail', setSelectedObjectDetail);
     appState.addEventListener('globals-snapshot', setGlobalsSnapshot);
-    appState.addEventListener('script-name-filter', setScriptNameFilter);
+    appState.addEventListener('script-owner-filter', setScriptOwnerFilter);
 
     setModuleSnapshot(appState.moduleSnapshot);
     setObjectList(appState.objectList);
     setSelectedObjectDetail(appState.selectedObjectDetail);
     setGlobalsSnapshot(appState.globalsSnapshot);
-    setScriptNameFilter(appState.scriptNameFilter);
+    setScriptOwnerFilter(appState.scriptOwnerFilter);
 
     return () => {
       appState.removeEventListener('update', onUpdateState);
@@ -103,11 +104,12 @@ export const AppProvider = (props: {children: any; appState: DebuggerState; host
       appState.removeEventListener('script-created', refreshMaps);
       appState.removeEventListener('script-destroyed', refreshMaps);
       appState.removeEventListener('instance-updated', refreshMaps);
+      appState.removeEventListener('script-owner-updated', refreshMaps);
       appState.removeEventListener('module-snapshot', setModuleSnapshot);
       appState.removeEventListener('object-list', setObjectList);
       appState.removeEventListener('object-detail', setSelectedObjectDetail);
       appState.removeEventListener('globals-snapshot', setGlobalsSnapshot);
-      appState.removeEventListener('script-name-filter', setScriptNameFilter);
+      appState.removeEventListener('script-owner-filter', setScriptOwnerFilter);
       appState.dispose();
     };
   }, []);
@@ -127,7 +129,7 @@ export const AppProvider = (props: {children: any; appState: DebuggerState; host
     objectList,
     selectedObjectDetail,
     globalsSnapshot,
-    scriptNameFilter,
+    scriptOwnerFilter,
     hostMode,
   };
 

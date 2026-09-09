@@ -30,6 +30,7 @@ import type { ModuleItem } from "@/module/ModuleItem";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { ModuleTimeManager } from "@/module/ModuleTimeManager";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
+import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
 import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { ScriptVarTable } from "@/engine/ScriptVarTable";
@@ -720,6 +721,16 @@ export class Module {
       const script = GameState.NWScript.Load(resRef);
       if(!script){ continue; }
       this.scripts[key] = script;
+      if(this.area){
+        script.bindOwner(this.area, key);
+      }else{
+        script.scriptKey = key;
+        script.ownerObjectId = -1;
+        script.ownerTag = this.tag || '';
+        script.ownerLabel = this.tag || 'Module';
+        script.ownerKind = 'module';
+        script.sendToDebugger(IPCMessageType.UpdateScriptOwner);
+      }
     }
 
     const onLoad = this.scripts[ModuleObjectScript.ModuleOnLoad];

@@ -290,7 +290,7 @@ export class ModuleMGObstacle extends ModuleObject {
         console.warn(`ModuleMGObstacle.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
         continue;
       }
-      nwscript.caller = this;
+      nwscript.bindOwner(this, scriptKey);
       this.scripts[scriptKey] = nwscript;
     }
   }

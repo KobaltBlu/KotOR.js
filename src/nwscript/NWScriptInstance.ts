@@ -1,5 +1,6 @@
 import type EngineLocation from "@/engine/EngineLocation";
 import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { DebuggerState } from "@/enums/server/DebuggerState";
 import { IPCDataType } from "@/enums/server/ipc/IPCDataType";
@@ -18,6 +19,7 @@ import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
 import { NWScriptStack } from "@/nwscript/NWScriptStack";
 import type { NWScriptStackVariable } from "@/nwscript/NWScriptStackVariable";
 import type { NWScriptSubroutine } from "@/nwscript/NWScriptSubroutine";
+import { BitWise } from "@/utility/BitWise";
 
 /**
  * NWScriptInstance class.
@@ -38,6 +40,14 @@ export class NWScriptInstance {
   isStoreState: boolean = false;
   nwscript: NWScript;
   caller: ModuleObject;
+  /** Debugger: engine object id of owner / OBJECT_SELF (-1 if unassigned). */
+  ownerObjectId: number = -1;
+  ownerTag: string = '';
+  ownerLabel: string = '';
+  /** Debugger: OverviewObjectKind-compatible string. */
+  ownerKind: string = '';
+  /** GFF event slot key (e.g. ScriptHeartbeat) when known. */
+  scriptKey: string = '';
   scriptVar: number;
   subRoutines: NWScriptSubroutine[] = [];
   subRoutine: NWScriptSubroutine;
@@ -218,6 +228,13 @@ export class NWScriptInstance {
   
   sendToDebugger(type: IPCMessageType){
     if(!GameState.debugMode) return;
+    if(type == IPCMessageType.UpdateScriptOwner){
+      const ipcMessage = new GameState.Debugger.IPCMessage(type);
+      ipcMessage.addParam(new GameState.Debugger.IPCMessageParam(IPCDataType.STRING, this.uuid));
+      this.appendOwnerParams(ipcMessage);
+      GameState.Debugger.send(ipcMessage);
+      return;
+    }
     const ipcMessage = new GameState.Debugger.IPCMessage(type);
     ipcMessage.addParam(new GameState.Debugger.IPCMessageParam(IPCDataType.STRING, this.uuid));
     ipcMessage.addParam(new GameState.Debugger.IPCMessageParam(IPCDataType.STRING, this.parentUUID));
@@ -225,6 +242,7 @@ export class NWScriptInstance {
     if(type == IPCMessageType.CreateScript && !!this.nwscript){
       ipcMessage.addParam(new GameState.Debugger.IPCMessageParam(IPCDataType.INTEGER, this.nwscript?.progSize));
       ipcMessage.addParam(new GameState.Debugger.IPCMessageParam(IPCDataType.VOID, this.nwscript?.code));
+      this.appendOwnerParams(ipcMessage);
     }
     if(type == IPCMessageType.UpdateScriptState){
       ipcMessage.addParam(new GameState.Debugger.IPCMessageParam(IPCDataType.INTEGER, this.currentInstruction.address));
@@ -232,6 +250,120 @@ export class NWScriptInstance {
       ipcMessage.addParam(new GameState.Debugger.IPCMessageParam(IPCDataType.VOID, this.packCallStackForDebugger()));
     }
     GameState.Debugger.send(ipcMessage);
+  }
+
+  private appendOwnerParams(ipcMessage: { addParam: (param: any) => void }){
+    ipcMessage.addParam(new GameState.Debugger.IPCMessageParam(IPCDataType.INTEGER, this.ownerObjectId | 0));
+    ipcMessage.addParam(new GameState.Debugger.IPCMessageParam(IPCDataType.STRING, this.ownerTag || ''));
+    ipcMessage.addParam(new GameState.Debugger.IPCMessageParam(IPCDataType.STRING, this.ownerLabel || ''));
+    ipcMessage.addParam(new GameState.Debugger.IPCMessageParam(IPCDataType.STRING, this.ownerKind || ''));
+    ipcMessage.addParam(new GameState.Debugger.IPCMessageParam(IPCDataType.STRING, this.scriptKey || ''));
+  }
+
+  /** Copy owner/slot metadata from another instance (e.g. template → child). */
+  copyOwnerFrom(source: NWScriptInstance){
+    if(!source){ return; }
+    this.ownerObjectId = source.ownerObjectId;
+    this.ownerTag = source.ownerTag;
+    this.ownerLabel = source.ownerLabel;
+    this.ownerKind = source.ownerKind;
+    this.scriptKey = source.scriptKey;
+    if(source.caller){
+      this.caller = source.caller;
+    }
+  }
+
+  /**
+   * Bind this instance to an owning ModuleObject (and optional GFF script slot),
+   * then push UpdateScriptOwner to the debugger.
+   */
+  bindOwner(obj: any, scriptKey?: string){
+    this.setCaller(obj, scriptKey, true);
+  }
+
+  /** Resolve owner snapshot from live caller + scripts map (late debugger attach). */
+  refreshOwnerFromLiveState(){
+    if(this.caller){
+      this.applyOwnerSnapshot(this.caller, this.scriptKey || undefined);
+    }else{
+      this.clearOwnerSnapshot();
+    }
+  }
+
+  private clearOwnerSnapshot(){
+    this.ownerObjectId = -1;
+    this.ownerTag = '';
+    this.ownerLabel = '';
+    this.ownerKind = '';
+  }
+
+  private lookupScriptKeyOnObject(obj: any): string {
+    if(!obj?.scripts || typeof obj.scripts !== 'object'){ return this.scriptKey || ''; }
+    for(const key of Object.keys(obj.scripts)){
+      const inst = obj.scripts[key];
+      if(!inst){ continue; }
+      if(inst === this || inst.uuid === this.uuid){ return key; }
+      // Template match: this instance was spawned from the slot template.
+      if(this.parentUUID && inst.uuid === this.parentUUID){ return key; }
+      if(this.name && inst.name === this.name && inst.uuid && !this.scriptKey){
+        // Prefer exact uuid/parent match; fall through.
+      }
+    }
+    // Second pass: match by shared nwscript name when this is the stored template.
+    for(const key of Object.keys(obj.scripts)){
+      const inst = obj.scripts[key];
+      if(inst === this){ return key; }
+    }
+    return this.scriptKey || '';
+  }
+
+  private resolveOwnerKind(obj: any): string {
+    if(!obj){ return ''; }
+    const ot = obj.objectType;
+    if(ot == null){ return 'other'; }
+    if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleCreature) || BitWise.InstanceOf(ot, ModuleObjectType.ModulePlayer)){
+      const party = GameState.PartyManager?.party || [];
+      if(party.includes(obj)){ return 'party'; }
+      return 'creature';
+    }
+    if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleDoor)) return 'door';
+    if(BitWise.InstanceOf(ot, ModuleObjectType.ModulePlaceable)) return 'placeable';
+    if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleTrigger)) return 'trigger';
+    if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleWaypoint)) return 'waypoint';
+    if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleSound)) return 'sound';
+    if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleStore)) return 'store';
+    if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleEncounter)) return 'encounter';
+    if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleItem)) return 'item';
+    if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleArea)) return 'area';
+    if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleAreaOfEffect)) return 'other';
+    return 'other';
+  }
+
+  private resolveOwnerLabel(obj: any): string {
+    if(!obj){ return ''; }
+    const name = typeof obj.getName === 'function' ? obj.getName() : undefined;
+    if(typeof name === 'string' && name.trim()){ return name; }
+    const tag = typeof obj.getTag === 'function' ? obj.getTag() : (obj.tag || '');
+    if(tag){ return String(tag); }
+    return obj.templateResRef || obj.name || 'object';
+  }
+
+  applyOwnerSnapshot(obj: any, scriptKey?: string){
+    if(!obj){
+      this.clearOwnerSnapshot();
+      if(scriptKey != null && scriptKey !== ''){ this.scriptKey = scriptKey; }
+      return;
+    }
+    const id = obj.id;
+    this.ownerObjectId = (typeof id === 'number' && !Number.isNaN(id)) ? id : -1;
+    this.ownerTag = (typeof obj.getTag === 'function' ? obj.getTag() : obj.tag) || '';
+    this.ownerLabel = this.resolveOwnerLabel(obj);
+    this.ownerKind = this.resolveOwnerKind(obj);
+    if(scriptKey != null && scriptKey !== ''){
+      this.scriptKey = scriptKey;
+    }else if(!this.scriptKey){
+      this.scriptKey = this.lookupScriptKeyOnObject(obj);
+    }
   }
 
   //Dispose of this NWScriptInstance and any currently running code so it can hopefully be garbage collected
@@ -256,6 +388,8 @@ export class NWScriptInstance {
 
     this.caller = undefined;
     this.scriptVar = 0;
+    this.clearOwnerSnapshot();
+    this.scriptKey = '';
 
     this.subRoutines = [];
     this.subRoutine = undefined;
@@ -295,10 +429,14 @@ export class NWScriptInstance {
 
   }
 
-  setCaller(obj: any){
+  setCaller(obj: any, scriptKey?: string, notifyDebugger = true){
     this.caller = obj;
     if(typeof this.caller == 'number'){
       this.caller = GameState.ModuleObjectManager.GetObjectById(this.caller);
+    }
+    this.applyOwnerSnapshot(this.caller, scriptKey);
+    if(notifyDebugger){
+      this.sendToDebugger(IPCMessageType.UpdateScriptOwner);
     }
   }
 
@@ -308,7 +446,7 @@ export class NWScriptInstance {
   }
 
   run(caller: any = null, scriptVar = 0){
-    this.caller = caller;
+    this.setCaller(caller, this.scriptKey || undefined, true);
     this.scriptVar = scriptVar;
 
     this.subRoutines = [];

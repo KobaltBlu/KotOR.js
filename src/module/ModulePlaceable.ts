@@ -207,8 +207,8 @@ export class ModulePlaceable extends ModuleObject {
     if(!nwscript || !resRef || resRef.toLowerCase() === 'default'){
       const fallback = GameState.NWScript.Load('k_hen_dialogue01');
       if(fallback){
-        fallback.caller = this;
         this.scripts[ModuleObjectScript.PlaceableOnDialog] = fallback;
+        fallback.bindOwner(this, ModuleObjectScript.PlaceableOnDialog);
         nwscript = fallback;
       }
     }
@@ -786,7 +786,7 @@ export class ModulePlaceable extends ModuleObject {
           console.warn(`ModulePlaceable.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
           continue;
         }
-        nwscript.caller = this;
+        nwscript.bindOwner(this, scriptKey);
         this.scripts[scriptKey] = nwscript;
       }
     }

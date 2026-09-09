@@ -162,7 +162,7 @@ export class ModuleAreaOfEffect extends ModuleObject {
       if(!ref) continue;
       const nwscript = GameState.NWScript.Load(ref);
       if(!nwscript) continue;
-      nwscript.caller = this;
+      nwscript.bindOwner(this, scriptKey);
       this.scripts[scriptKey] = nwscript;
       if(scriptKey === ModuleObjectScript.AoEOnHeartbeat) this.onHeartbeat = nwscript;
       if(scriptKey === ModuleObjectScript.AoEOnEnter) this.onObjectEnter = nwscript;
@@ -303,7 +303,6 @@ export class ModuleAreaOfEffect extends ModuleObject {
       this.lastHeartbeatTime = GameState.module.timeManager.pauseTime;
       const hb = this.getScriptInstance(ModuleObjectScript.AoEOnHeartbeat) || this.onHeartbeat;
       if(hb){
-        hb.caller = this;
         hb.run(this);
       }
     }

@@ -8,8 +8,16 @@ import type {
   LiveObjectSnapshot,
   ModuleAreaSnapshot,
   ObjectListEntry,
+  OverviewObjectKind,
 } from "@/inspect/runtimeSnapshots";
 import type { AreaMapOverlaySnapshot } from "@/inspect/areaMapOverlay";
+
+export interface ScriptOwnerFilter {
+  objectId: number;
+  tag: string;
+  label: string;
+  kind: OverviewObjectKind | string;
+}
 
 export class DebuggerState {
 
@@ -27,8 +35,8 @@ export class DebuggerState {
   selectedObjectDetail: LiveObjectSnapshot | null = null;
   globalsSnapshot: GlobalsSnapshotEntry[] = [];
   areaMapOverlay: AreaMapOverlaySnapshot | null = null;
-  /** Script resrefs to highlight/filter when jumping from Objects → Scripts. */
-  scriptNameFilter: string[] = [];
+  /** Filter Scripts browser to a specific owner object (Objects/Scene jump). */
+  scriptOwnerFilter: ScriptOwnerFilter | null = null;
 
   constructor(uuid: string){
     this.init(uuid);
@@ -55,6 +63,10 @@ export class DebuggerState {
             name = uuid;
           }
           if(KotOR.NWScript.NWScriptInstanceMap.has(uuid)){
+            const existing = KotOR.NWScript.NWScriptInstanceMap.get(uuid)!;
+            this.applyOwnerFromCreateMessage(existing, message);
+            this.dispatchEvent('script-owner-updated', existing);
+            this.dispatchEvent('instance-updated', existing);
             return;
           }
           if(!this.scriptMap.has(name)){
@@ -73,6 +85,7 @@ export class DebuggerState {
             instance.parentUUID = parentUUID;
             instance.nwscript = script;
             instance.name = name;
+            this.applyOwnerFromCreateMessage(instance, message);
             KotOR.NWScript.NWScriptInstanceMap.set(uuid, instance);
             this.instanceMap.set(uuid, instance);
             if(!this.parentMap.has(parentUUID)){
@@ -120,6 +133,23 @@ export class DebuggerState {
             instance.dispatchEvent('update');
             this.dispatchEvent('instance-updated', instance);
           }
+        }else if(message.type == IPCMessageType.UpdateScriptOwner){
+          const uuid = message.getParam(0)?.getString();
+          if(uuid){
+            const instance = KotOR.NWScript.NWScriptInstanceMap.get(uuid) || this.instanceMap.get(uuid);
+            if(instance){
+              this.applyOwnerFields(
+                instance,
+                message.getParam(1)?.getInt32?.() ?? -1,
+                message.getParam(2)?.getString?.() || '',
+                message.getParam(3)?.getString?.() || '',
+                message.getParam(4)?.getString?.() || '',
+                message.getParam(5)?.getString?.() || '',
+              );
+              this.dispatchEvent('script-owner-updated', instance);
+              this.dispatchEvent('instance-updated', instance);
+            }
+          }
         }else if(message.type == IPCMessageType.ModuleSnapshot){
           this.moduleSnapshot = this.parseJsonParam(message.getParam(0), null);
           this.dispatchEvent('module-snapshot', this.moduleSnapshot);
@@ -144,6 +174,37 @@ export class DebuggerState {
     const listMsg = new IPCMessage(IPCMessageType.ListLiveScripts);
     this.sendMessage(listMsg.toBuffer());
     this.requestModuleSnapshot();
+  }
+
+  applyOwnerFromCreateMessage(instance: KotOR.NWScriptInstance, message: IPCMessage){
+    // CreateScript layout: 0 uuid, 1 parent, 2 name, 3 progSize, 4 code, 5..9 owner fields
+    const idParam = message.getParam(5);
+    if(!idParam){ return; }
+    this.applyOwnerFields(
+      instance,
+      idParam.getInt32?.() ?? -1,
+      message.getParam(6)?.getString?.() || '',
+      message.getParam(7)?.getString?.() || '',
+      message.getParam(8)?.getString?.() || '',
+      message.getParam(9)?.getString?.() || '',
+    );
+  }
+
+  applyOwnerFields(
+    instance: KotOR.NWScriptInstance,
+    objectId: number,
+    tag: string,
+    label: string,
+    kind: string,
+    scriptKey: string,
+  ){
+    instance.ownerObjectId = (typeof objectId === 'number' && !Number.isNaN(objectId)) ? objectId : -1;
+    instance.ownerTag = tag || '';
+    instance.ownerLabel = label || '';
+    instance.ownerKind = kind || '';
+    if(scriptKey){
+      instance.scriptKey = scriptKey;
+    }
   }
 
   parseJsonParam<T>(param: IPCMessageParam | undefined, fallback: T): T {
@@ -193,9 +254,9 @@ export class DebuggerState {
     this.sendMessage(msg.toBuffer());
   }
 
-  setScriptNameFilter(names: string[]){
-    this.scriptNameFilter = names.filter(Boolean);
-    this.dispatchEvent('script-name-filter', this.scriptNameFilter);
+  setScriptOwnerFilter(filter: ScriptOwnerFilter | null){
+    this.scriptOwnerFilter = filter;
+    this.dispatchEvent('script-owner-filter', this.scriptOwnerFilter);
   }
 
   applyScriptLevelBreakpoints(instance: KotOR.NWScriptInstance){

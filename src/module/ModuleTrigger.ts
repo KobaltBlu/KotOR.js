@@ -503,7 +503,7 @@ export class ModuleTrigger extends ModuleObject {
         if(!resRef){ continue; }
         const nwscript = GameState.NWScript.Load(resRef);
         if(!nwscript){ continue; }
-        nwscript.caller = this;
+        nwscript.bindOwner(this, scriptKey);
         this.scripts[scriptKey] = nwscript;
       }
     }

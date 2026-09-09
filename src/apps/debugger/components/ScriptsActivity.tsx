@@ -5,21 +5,28 @@ import { ScriptDebugSouthPane } from "@/apps/debugger/components/ScriptDebugSout
 import { useApp } from "@/apps/debugger/context/AppContext";
 
 export const ScriptsActivity: React.FC = () => {
-  const { scriptNameFilter, stateRef } = useApp();
-  const filterActive = scriptNameFilter.length > 0;
+  const { scriptOwnerFilter, stateRef } = useApp();
+  const filterActive = !!scriptOwnerFilter;
+
+  const bannerText = scriptOwnerFilter
+    ? [
+        scriptOwnerFilter.label || 'object',
+        scriptOwnerFilter.tag ? `tag ${scriptOwnerFilter.tag}` : '',
+        scriptOwnerFilter.objectId >= 0 ? `id ${scriptOwnerFilter.objectId}` : '',
+      ].filter(Boolean).join(' · ')
+    : '';
 
   return (
     <div className="inspector-activity scripts-activity">
       {filterActive && (
         <div className="scripts-filter-banner">
           <span>
-            Filtered by object scripts:{' '}
-            {scriptNameFilter.join(', ')}
+            Filtered by {bannerText}
           </span>
           <button
             type="button"
             className="inspector-refresh"
-            onClick={() => stateRef.current?.setScriptNameFilter([])}
+            onClick={() => stateRef.current?.setScriptOwnerFilter(null)}
           >
             Clear filter
           </button>
@@ -27,7 +34,7 @@ export const ScriptsActivity: React.FC = () => {
       )}
       <div className="scripts-activity-layout">
         <div className="scripts-activity-west">
-          <ScriptBrowserWindow nameFilter={scriptNameFilter} />
+          <ScriptBrowserWindow ownerFilter={scriptOwnerFilter} />
         </div>
         <div className="scripts-activity-center">
           <ScriptInstanceWindow />

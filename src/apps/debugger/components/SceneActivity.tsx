@@ -189,11 +189,12 @@ export const SceneActivity: React.FC = () => {
 
   const openScripts = () => {
     if(!detail){ return; }
-    const scriptsSection = detail.sections.find((s) => s.id === 'scripts');
-    const names = (scriptsSection?.rows || [])
-      .map((r) => r.value.trim())
-      .filter((v) => v && v.toLowerCase() !== 'none');
-    stateRef.current?.setScriptNameFilter(names);
+    stateRef.current?.setScriptOwnerFilter({
+      objectId: detail.objectId,
+      tag: detail.tag || '',
+      label: detail.name || detail.tag || 'object',
+      kind: detail.kind,
+    });
     setActivity('scripts');
   };
 

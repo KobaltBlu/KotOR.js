@@ -217,6 +217,11 @@ export class OdysseyModel3D extends OdysseyObject3D {
   mergedMesh: THREE.Mesh;
   /** True when any merged static part had MDL flagShadow / castShadow. */
   mergedCastsShadow = false;
+  /**
+   * Node names with Position/Orientation/Scale keys in any clip.
+   * mergeStatic must keep these live (doors/placeables are not under room `*a` dummies).
+   */
+  mergeExcludeAnimatedNodeNames: Set<string> = new Set();
   /** Anim-dummy leaf InstancedMesh batches (hangar ships, etc.). */
   animDummyInstanceBatches: IAnimDummyInstanceBatch[] = [];
   mergedBufferDanglyGeometry: THREE.BufferGeometry;
@@ -1470,6 +1475,11 @@ export class OdysseyModel3D extends OdysseyObject3D {
           
           // Material-based geometry grouping for optimized merging
           odysseyModel.geometryGroupsByMaterial = new Map<THREE.Material, THREE.BufferGeometry[]>();
+
+          // Doors/placeables animate mesh nodes under the root (not room `modela`).
+          // Exclude those from static merge so open/close clips still move geometry.
+          odysseyModel.mergeExcludeAnimatedNodeNames =
+            OdysseyModel3D.collectMergeExcludeAnimatedNodeNames(odysseyModel.odysseyAnimations);
         }
 
         const parseContext = createNodeParseContext(options, {
@@ -1596,6 +1606,34 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
   }
 
+  /**
+   * Names of nodes with Position / Orientation / Scale controllers in any clip.
+   * Used by mergeStatic so door/placeable panels are not baked into the closed pose.
+   */
+  static collectMergeExcludeAnimatedNodeNames(
+    animations: OdysseyModelAnimation[] | undefined,
+  ): Set<string> {
+    const names = new Set<string>();
+    if(!animations?.length) return names;
+    for(let i = 0; i < animations.length; i++){
+      const nodes = animations[i]?.nodes;
+      if(!nodes?.length) continue;
+      for(let j = 0; j < nodes.length; j++){
+        const animNode = nodes[j];
+        const controllers = animNode?.controllers;
+        if(!controllers || !animNode.name) continue;
+        if(
+          controllers.has(OdysseyModelControllerType.Position) ||
+          controllers.has(OdysseyModelControllerType.Orientation) ||
+          controllers.has(OdysseyModelControllerType.Scale)
+        ){
+          names.add(animNode.name.toLowerCase());
+        }
+      }
+    }
+    return names;
+  }
+
   /** Delegates to {@link parseOdysseyNode}; retained as `OdysseyModel3D.NodeParser` for existing call sites. */
   static NodeParser(
     odysseyModel: OdysseyModel3D,
@@ -1623,6 +1661,10 @@ export class OdysseyModel3D extends OdysseyObject3D {
         if(!odysseyNode.isAnimDummyNode){
           //de-opt geometry if no uv's are present, we currently cannot handle this issue.
           if(!odysseyNode.tvectors[0].length) odysseyNode.isAnimDummyNode = true;
+          else if(odysseyModel.mergeExcludeAnimatedNodeNames?.has(odysseyNode.name?.toLowerCase())){
+            // Transform-animated mesh (door panels, etc.) — keep out of mergeStatic.
+            odysseyNode.isAnimDummyNode = true;
+          }
         }
 
         // Visible skin meshes cast SSCS shadows via the depth prepass (used invisible bone trimesh proxies).

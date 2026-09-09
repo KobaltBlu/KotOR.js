@@ -4596,8 +4596,8 @@ export class ModuleCreature extends ModuleObject {
     if(!nwscript || !resRef || resRef.toLowerCase() === 'default'){
       const fallback = GameState.NWScript.Load('k_hen_dialogue01');
       if(fallback){
-        fallback.caller = this;
         this.scripts[ModuleObjectScript.CreatureOnDialog] = fallback;
+        fallback.bindOwner(this, ModuleObjectScript.CreatureOnDialog);
         nwscript = fallback;
       }
     }
@@ -7059,7 +7059,7 @@ export class ModuleCreature extends ModuleObject {
           console.warn(`ModuleCreature.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
           continue; 
         }
-        nwscript.caller = this;
+        nwscript.bindOwner(this, scriptKey);
         this.scripts[scriptKey] = nwscript;
       }
     }

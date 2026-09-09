@@ -319,6 +319,29 @@ export const ScriptInstanceWindow = () => {
   };
 
   const shortId = instance?.uuid ? instance.uuid.slice(0, 8) : '';
+  const ownerBits = instance
+    ? [
+        instance.ownerLabel || instance.ownerTag || (instance.ownerObjectId >= 0 ? `id ${instance.ownerObjectId}` : ''),
+        instance.ownerTag && instance.ownerLabel !== instance.ownerTag ? `tag ${instance.ownerTag}` : '',
+        instance.ownerObjectId >= 0 ? `id ${instance.ownerObjectId}` : '',
+        instance.scriptKey || '',
+        instance.name || '',
+        shortId,
+      ].filter(Boolean)
+    : [];
+  const titleText = instance
+    ? ownerBits.join(' · ')
+    : 'Instance';
+  const titleTooltip = instance
+    ? [
+        instance.ownerLabel && `Owner: ${instance.ownerLabel}`,
+        instance.ownerTag && `Tag: ${instance.ownerTag}`,
+        instance.ownerObjectId >= 0 && `Id: ${instance.ownerObjectId}`,
+        instance.scriptKey && `Slot: ${instance.scriptKey}`,
+        `Script: ${instance.name}`,
+        `UUID: ${instance.uuid}`,
+      ].filter(Boolean).join('\n')
+    : undefined;
   const functionOutline = decompile?.functions?.length ? (
     <div className="debugger-function-list">
       {decompile.functions.map((fn) => (
@@ -337,8 +360,8 @@ export const ScriptInstanceWindow = () => {
   return (
     <div className="script-debugger-instance">
       <div className="title">
-        <span title={instance ? `${instance.name} | ${instance.uuid}` : undefined}>
-          {instance ? `Instance: ${instance.name} · ${shortId}` : 'Instance'}
+        <span title={titleTooltip}>
+          {titleText}
         </span>
         {instance ? (
           <div className="view-mode-toggle">

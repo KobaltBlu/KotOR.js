@@ -1131,6 +1131,7 @@ export const CALL_STORE_STATE = function( this: NWScriptInstance, instruction: N
   state.script.stack.basePointer = this.stack.basePointer;
   state.script.stack.pointer = this.stack.pointer;
   state.script.caller = this.caller;
+  state.script.copyOwnerFrom(this);
   state.script.enteringObject = this.enteringObject;
   state.script.listenPatternNumber = this.listenPatternNumber;
   state.script.listenPatternSpeaker = this.listenPatternSpeaker;

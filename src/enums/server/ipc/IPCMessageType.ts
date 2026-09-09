@@ -23,6 +23,8 @@ export enum IPCMessageType {
   StepOutInstruction = 0x0D,
   /** Debugger requests (or game pushes) CreateScript for all live instances. */
   ListLiveScripts = 0x10,
+  /** Game pushes owner/slot metadata after CreateScript (caller bind / run). */
+  UpdateScriptOwner = 0x11,
 
   // Dev Tools snapshot opcodes (0x20+; keep clear of Script ops)
   RequestModuleSnapshot = 0x20,

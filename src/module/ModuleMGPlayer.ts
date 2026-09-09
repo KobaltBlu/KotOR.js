@@ -2029,7 +2029,7 @@ export class ModuleMGPlayer extends ModuleObject {
             console.warn(`ModuleMGPlayer.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
             continue; 
           }
-          nwscript.caller = this;
+          nwscript.bindOwner(this, scriptKey);
           this.scripts[scriptKey] = nwscript;
         }
       }

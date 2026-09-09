@@ -1,20 +1,51 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useApp } from "@/apps/debugger/context/AppContext";
+import type { ScriptOwnerFilter } from "@/apps/debugger/states/DebuggerState";
 import * as KotOR from "@/apps/debugger/KotOR";
+import {
+  OVERVIEW_KIND_COLORS,
+  OVERVIEW_KIND_LABELS,
+  type OverviewObjectKind,
+} from "@/inspect/runtimeSnapshots";
 
-/**
- * Script Browser Window
- */
+const KIND_ORDER: OverviewObjectKind[] = [
+  'party', 'creature', 'door', 'placeable', 'trigger', 'waypoint',
+  'sound', 'store', 'encounter', 'item', 'area', 'module', 'other',
+];
+
+const UNASSIGNED_KEY = '__unassigned__';
 
 function shortUuid(uuid: string): string {
   return (uuid || "").slice(0, 8);
 }
 
+function ownerBucketKey(instance: KotOR.NWScriptInstance): string {
+  if(instance.ownerObjectId >= 0){
+    return `id:${instance.ownerObjectId}`;
+  }
+  if(instance.ownerKind === 'module' || instance.ownerTag || instance.ownerLabel){
+    return `meta:${instance.ownerKind || ''}:${instance.ownerTag || ''}:${instance.ownerLabel || ''}`;
+  }
+  return UNASSIGNED_KEY;
+}
+
+function slotKeyOf(instance: KotOR.NWScriptInstance): string {
+  return instance.scriptKey || '—';
+}
+
 function instanceMatchesQuery(instance: KotOR.NWScriptInstance, q: string): boolean {
   if(!q){ return true; }
-  const name = (instance.name || "").toLowerCase();
-  const id = (instance.uuid || "").toLowerCase();
-  return name.includes(q) || id.includes(q) || shortUuid(id).includes(q);
+  const hay = [
+    instance.name,
+    instance.uuid,
+    shortUuid(instance.uuid),
+    instance.ownerTag,
+    instance.ownerLabel,
+    instance.ownerKind,
+    String(instance.ownerObjectId >= 0 ? instance.ownerObjectId : ''),
+    instance.scriptKey,
+  ].join(' ').toLowerCase();
+  return hay.includes(q);
 }
 
 function buildChildMap(
@@ -31,7 +62,6 @@ function buildChildMap(
     const kids: KotOR.NWScriptInstance[] = [];
     for(const childId of childIds){
       const child = byUuid.get(childId) || instanceMap.get(childId);
-      // Only nest children that belong to this same script group.
       if(child && byUuid.has(child.uuid)){
         kids.push(child);
       }
@@ -53,6 +83,21 @@ function buildChildMap(
 
   return { roots, childrenOf };
 }
+
+type OwnerGroup = {
+  key: string;
+  objectId: number;
+  tag: string;
+  label: string;
+  kind: string;
+  instances: KotOR.NWScriptInstance[];
+};
+
+type SlotGroup = {
+  slot: string;
+  resref: string;
+  instances: KotOR.NWScriptInstance[];
+};
 
 const InstanceTreeItem: React.FC<{
   instance: KotOR.NWScriptInstance;
@@ -108,33 +153,20 @@ const InstanceTreeItem: React.FC<{
   );
 };
 
-const NWScriptListItem: React.FC<{
-  script: KotOR.NWScript;
+const SlotGroupItem: React.FC<{
+  group: SlotGroup;
   parentMap: Map<string, Set<string>>;
   instanceMap: Map<string, KotOR.NWScriptInstance>;
   selectedInstance: KotOR.NWScriptInstance | undefined;
   onSelectInstance: (instance: KotOR.NWScriptInstance) => void;
-  expanded: boolean;
-  onToggle: () => void;
   query: string;
-}> = ({
-  script,
-  parentMap,
-  instanceMap,
-  selectedInstance,
-  onSelectInstance,
-  expanded,
-  onToggle,
-  query,
-}) => {
-  const instances = script.instances || [];
+}> = ({ group, parentMap, instanceMap, selectedInstance, onSelectInstance, query }) => {
   const { roots, childrenOf } = useMemo(
-    () => buildChildMap(instances, parentMap, instanceMap),
-    [instances, parentMap, instanceMap]
+    () => buildChildMap(group.instances, parentMap, instanceMap),
+    [group.instances, parentMap, instanceMap]
   );
 
-  const nameMatch = !!query && script.name.toLowerCase().includes(query);
-  const visibleRoots = query && !nameMatch
+  const visibleRoots = query
     ? roots.filter((root) => {
         const stack = [root];
         while(stack.length){
@@ -147,37 +179,119 @@ const NWScriptListItem: React.FC<{
       })
     : roots;
 
-  const showGroup = !query
-    || nameMatch
-    || visibleRoots.length > 0
-    || instances.some((inst) => instanceMatchesQuery(inst, query));
-
-  if(!showGroup){
-    return null;
+  if(query && !visibleRoots.length){
+    const slotHit = group.slot.toLowerCase().includes(query)
+      || group.resref.toLowerCase().includes(query);
+    if(!slotHit){ return null; }
   }
 
   return (
-    <li className={`script-browser-list-item ${expanded ? "expanded" : "collapsed"}`}>
+    <li className="script-browser-slot-item">
+      <div className="script-browser-slot-header" title={`${group.slot} · ${group.resref}`}>
+        <span className="script-browser-slot-key">{group.slot}</span>
+        <span className="script-browser-slot-resref">{group.resref}</span>
+      </div>
+      <ul className="script-browser-list-instance-list">
+        {(query && visibleRoots.length ? visibleRoots : roots).map((instance) => (
+          <InstanceTreeItem
+            key={instance.uuid}
+            instance={instance}
+            depth={0}
+            childrenOf={childrenOf}
+            selectedInstance={selectedInstance}
+            onSelect={onSelectInstance}
+            query={query}
+          />
+        ))}
+      </ul>
+    </li>
+  );
+};
+
+const OwnerGroupItem: React.FC<{
+  owner: OwnerGroup;
+  parentMap: Map<string, Set<string>>;
+  instanceMap: Map<string, KotOR.NWScriptInstance>;
+  selectedInstance: KotOR.NWScriptInstance | undefined;
+  onSelectInstance: (instance: KotOR.NWScriptInstance) => void;
+  expanded: boolean;
+  onToggle: () => void;
+  query: string;
+}> = ({
+  owner,
+  parentMap,
+  instanceMap,
+  selectedInstance,
+  onSelectInstance,
+  expanded,
+  onToggle,
+  query,
+}) => {
+  const slots = useMemo(() => {
+    const map = new Map<string, SlotGroup>();
+    for(const inst of owner.instances){
+      const slot = slotKeyOf(inst);
+      const resref = inst.name || '(unnamed)';
+      const key = `${slot}::${resref}`;
+      let g = map.get(key);
+      if(!g){
+        g = { slot, resref, instances: [] };
+        map.set(key, g);
+      }
+      g.instances.push(inst);
+    }
+    return [...map.values()].sort((a, b) => {
+      const sa = a.slot.localeCompare(b.slot);
+      if(sa) return sa;
+      return a.resref.localeCompare(b.resref);
+    });
+  }, [owner.instances]);
+
+  const kind = (owner.kind || 'other') as OverviewObjectKind;
+  const kindColor = OVERVIEW_KIND_COLORS[kind] || OVERVIEW_KIND_COLORS.other;
+  const kindLabel = owner.key === UNASSIGNED_KEY
+    ? 'Unassigned'
+    : (OVERVIEW_KIND_LABELS[kind] || kind || 'Other').replace(/s$/, '') || kind;
+
+  const titlePrimary = owner.key === UNASSIGNED_KEY
+    ? 'Unassigned'
+    : `${kindLabel} · ${owner.label || owner.tag || 'object'}`;
+
+  return (
+    <li className={`script-browser-list-item script-browser-owner-item ${expanded ? "expanded" : "collapsed"}`}>
       <button
         type="button"
-        className="script-browser-script-toggle"
+        className="script-browser-script-toggle script-browser-owner-toggle"
         onClick={onToggle}
-        title={script.name}
+        title={
+          owner.key === UNASSIGNED_KEY
+            ? 'No owner'
+            : `${titlePrimary}${owner.tag ? ` · tag ${owner.tag}` : ''}${owner.objectId >= 0 ? ` · id ${owner.objectId}` : ''}`
+        }
       >
         <span className="script-browser-chevron">{expanded ? "▼" : "▶"}</span>
-        <span className="script-browser-script-name">{script.name}</span>
-        <span className="script-browser-script-count">{instances.length}</span>
+        <span className="script-browser-owner-swatch" style={{ background: kindColor }} />
+        <span className="script-browser-script-name script-browser-owner-title">
+          <span className="script-browser-owner-primary">{titlePrimary}</span>
+          {owner.key !== UNASSIGNED_KEY && owner.tag ? (
+            <span className="script-browser-owner-tag">tag {owner.tag}</span>
+          ) : null}
+          {owner.key !== UNASSIGNED_KEY && owner.objectId >= 0 ? (
+            <span className="script-browser-owner-id">id {owner.objectId}</span>
+          ) : null}
+        </span>
+        <span className="script-browser-script-count">{owner.instances.length}</span>
       </button>
       {expanded ? (
-        <ul className="script-browser-list-instance-list">
-          {visibleRoots.map((instance) => (
-            <InstanceTreeItem
-              key={instance.uuid}
-              instance={instance}
-              depth={0}
-              childrenOf={childrenOf}
+        <ul className="script-browser-slot-list">
+          {slots.map((slot) => (
+            <SlotGroupItem
+              key={`${slot.slot}::${slot.resref}`}
+              group={slot}
+              parentMap={parentMap}
+              instanceMap={instanceMap}
               selectedInstance={selectedInstance}
-              onSelect={onSelectInstance}
+              onSelectInstance={onSelectInstance}
               query={query}
             />
           ))}
@@ -187,15 +301,17 @@ const NWScriptListItem: React.FC<{
   );
 };
 
-export const ScriptBrowserWindow = (props: { nameFilter?: string[] } = {}) => {
-  const { nameFilter = [] } = props;
+export const ScriptBrowserWindow = (props: {
+  ownerFilter?: ScriptOwnerFilter | null;
+} = {}) => {
+  const { ownerFilter = null } = props;
   const appContext = useApp();
-  const [scriptMap] = appContext.scriptMap;
   const [instanceMap] = appContext.instanceMap;
   const [parentMap] = appContext.parentMap;
   const [selectedInstance] = appContext.selectedInstance;
   const setSelectedInstanceHelper = appContext.setSelectedInstanceHelper;
   const [search, setSearch] = useState("");
+  const [kindFilter, setKindFilter] = useState<OverviewObjectKind | 'all'>('all');
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
 
   const onSelectInstance = (instance: KotOR.NWScriptInstance) => {
@@ -204,51 +320,116 @@ export const ScriptBrowserWindow = (props: { nameFilter?: string[] } = {}) => {
 
   const query = search.trim().toLowerCase();
 
-  const names = useMemo(() => {
-    const filterSet = nameFilter.length
-      ? new Set(nameFilter.map((n) => n.toLowerCase()))
-      : null;
-    return [...scriptMap.keys()]
-      .sort((a, b) => (a > b ? 1 : b > a ? -1 : 0))
-      .filter((name) => {
-        if(!filterSet){ return true; }
-        return filterSet.has(name.toLowerCase())
-          || [...filterSet].some((f) => name.toLowerCase().includes(f) || f.includes(name.toLowerCase()));
-      });
-  }, [scriptMap, nameFilter]);
+  const owners = useMemo(() => {
+    const all = [...instanceMap.values()];
+    const filtered = all.filter((inst) => {
+      if(ownerFilter && ownerFilter.objectId >= 0){
+        return inst.ownerObjectId === ownerFilter.objectId;
+      }
+      if(ownerFilter && ownerFilter.objectId < 0){
+        const tagMatch = ownerFilter.tag
+          ? (inst.ownerTag || '').toLowerCase() === ownerFilter.tag.toLowerCase()
+          : true;
+        const kindMatch = ownerFilter.kind
+          ? (inst.ownerKind || '') === ownerFilter.kind
+          : true;
+        return tagMatch && kindMatch;
+      }
+      if(kindFilter !== 'all'){
+        const k = (inst.ownerKind || 'other') as OverviewObjectKind;
+        if(ownerBucketKey(inst) === UNASSIGNED_KEY){
+          return kindFilter === 'other';
+        }
+        return k === kindFilter;
+      }
+      return true;
+    });
 
-  // Auto-expand selected script and search hits.
+    const map = new Map<string, OwnerGroup>();
+    for(const inst of filtered){
+      const key = ownerBucketKey(inst);
+      let g = map.get(key);
+      if(!g){
+        g = {
+          key,
+          objectId: inst.ownerObjectId,
+          tag: inst.ownerTag || '',
+          label: inst.ownerLabel || '',
+          kind: inst.ownerKind || (key === UNASSIGNED_KEY ? '' : 'other'),
+          instances: [],
+        };
+        map.set(key, g);
+      }
+      g.instances.push(inst);
+    }
+
+    let list = [...map.values()];
+    if(query){
+      list = list.filter((owner) => {
+        const ownerHay = [
+          owner.label,
+          owner.tag,
+          owner.kind,
+          String(owner.objectId >= 0 ? owner.objectId : ''),
+          owner.key === UNASSIGNED_KEY ? 'unassigned' : '',
+        ].join(' ').toLowerCase();
+        if(ownerHay.includes(query)){ return true; }
+        return owner.instances.some((inst) => instanceMatchesQuery(inst, query));
+      });
+    }
+
+    list.sort((a, b) => {
+      if(a.key === UNASSIGNED_KEY) return 1;
+      if(b.key === UNASSIGNED_KEY) return -1;
+      const ka = KIND_ORDER.indexOf((a.kind || 'other') as OverviewObjectKind);
+      const kb = KIND_ORDER.indexOf((b.kind || 'other') as OverviewObjectKind);
+      if(ka !== kb) return (ka < 0 ? 999 : ka) - (kb < 0 ? 999 : kb);
+      const la = (a.label || a.tag || '').localeCompare(b.label || b.tag || '');
+      if(la) return la;
+      return a.objectId - b.objectId;
+    });
+    return list;
+  }, [instanceMap, ownerFilter, kindFilter, query]);
+
   useEffect(() => {
     setExpanded((prev) => {
       const next = new Set(prev);
       let changed = false;
-      if(selectedInstance?.name && names.includes(selectedInstance.name)){
-        if(!next.has(selectedInstance.name)){
-          next.add(selectedInstance.name);
+      if(selectedInstance){
+        const key = ownerBucketKey(selectedInstance);
+        if(!next.has(key)){
+          next.add(key);
+          changed = true;
+        }
+      }
+      if(ownerFilter){
+        const match = owners.find((o) =>
+          ownerFilter.objectId >= 0
+            ? o.objectId === ownerFilter.objectId
+            : o.tag === ownerFilter.tag
+        );
+        if(match && !next.has(match.key)){
+          next.add(match.key);
           changed = true;
         }
       }
       if(query){
-        for(const name of names){
-          const script = scriptMap.get(name);
-          if(!script){ continue; }
-          const hit = name.toLowerCase().includes(query)
-            || script.instances.some((inst) => instanceMatchesQuery(inst, query));
-          if(hit && !next.has(name)){
-            next.add(name);
+        for(const owner of owners){
+          if(!next.has(owner.key)){
+            next.add(owner.key);
             changed = true;
           }
         }
       }
       return changed ? next : prev;
     });
-  }, [selectedInstance, query, names, scriptMap]);
+  }, [selectedInstance, ownerFilter, query, owners]);
 
-  const toggleExpanded = (name: string) => {
+  const toggleExpanded = (key: string) => {
     setExpanded((prev) => {
       const next = new Set(prev);
-      if(next.has(name)){ next.delete(name); }
-      else { next.add(name); }
+      if(next.has(key)){ next.delete(key); }
+      else { next.add(key); }
       return next;
     });
   };
@@ -263,30 +444,51 @@ export const ScriptBrowserWindow = (props: { nameFilter?: string[] } = {}) => {
           <input
             className="inspector-search script-browser-search"
             type="search"
-            placeholder="Filter scripts…"
+            placeholder="Filter tag / name / id / slot…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+          <div className="script-browser-kind-chips">
+            <button
+              type="button"
+              className={`kind-chip ${kindFilter === 'all' ? 'active' : ''}`}
+              onClick={() => setKindFilter('all')}
+            >
+              All
+            </button>
+            {KIND_ORDER.map((kind) => (
+              <button
+                key={kind}
+                type="button"
+                className={`kind-chip ${kindFilter === kind ? 'active' : ''}`}
+                style={{ borderColor: OVERVIEW_KIND_COLORS[kind] }}
+                onClick={() => setKindFilter(kind)}
+                title={OVERVIEW_KIND_LABELS[kind]}
+              >
+                {OVERVIEW_KIND_LABELS[kind].replace(/s$/, '')}
+              </button>
+            ))}
+          </div>
         </div>
-        <ul className="script-browser-list">
-          {names.map((scriptName) => {
-            const script = scriptMap.get(scriptName);
-            if(!script){ return <React.Fragment key={scriptName} />; }
-            return (
-              <NWScriptListItem
-                key={scriptName}
-                script={script}
+        {owners.length === 0 ? (
+          <div className="script-browser-empty">No matching scripts</div>
+        ) : (
+          <ul className="script-browser-list">
+            {owners.map((owner) => (
+              <OwnerGroupItem
+                key={owner.key}
+                owner={owner}
                 parentMap={parentMap}
                 instanceMap={instanceMap}
                 selectedInstance={selectedInstance}
                 onSelectInstance={onSelectInstance}
-                expanded={expanded.has(scriptName)}
-                onToggle={() => toggleExpanded(scriptName)}
+                expanded={expanded.has(owner.key)}
+                onToggle={() => toggleExpanded(owner.key)}
                 query={query}
               />
-            );
-          })}
-        </ul>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );

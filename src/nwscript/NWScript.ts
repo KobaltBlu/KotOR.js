@@ -239,6 +239,7 @@ export class NWScript {
       instance.lastPerceived = parentInstance.lastPerceived;
       instance.listenPatternNumber = parentInstance.listenPatternNumber;
       instance.listenPatternSpeaker = parentInstance.listenPatternSpeaker;
+      instance.copyOwnerFrom(parentInstance);
     }
 
     instance.sendToDebugger(IPCMessageType.CreateScript);

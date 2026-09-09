@@ -478,8 +478,8 @@ export class ModuleDoor extends ModuleObject {
     if(!nwscript || resRef.toLowerCase() === 'default'){
       const fallback = GameState.NWScript.Load('k_hen_dialogue01');
       if(fallback){
-        fallback.caller = this;
         this.scripts[ModuleObjectScript.DoorOnDialog] = fallback;
+        fallback.bindOwner(this, ModuleObjectScript.DoorOnDialog);
         nwscript = fallback;
       }
     }
@@ -1161,7 +1161,7 @@ export class ModuleDoor extends ModuleObject {
       this.scriptResRefs[scriptKey] = resRef;
       const nwscript = GameState.NWScript.Load(resRef);
       if(!nwscript){ continue; }
-      nwscript.caller = this;
+      nwscript.bindOwner(this, scriptKey);
       this.scripts[scriptKey] = nwscript;
     }
   }
