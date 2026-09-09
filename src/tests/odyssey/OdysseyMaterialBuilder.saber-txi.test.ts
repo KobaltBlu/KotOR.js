@@ -14,11 +14,26 @@ function makeShaderMaterial(defines: Record<string, string> = {}): THREE.ShaderM
   });
 }
 
-describe('OdysseyMaterialBuilder additive TXI vs SABER', () => {
+describe('OdysseyMaterialBuilder additive TXI vs SABER / FORCE_SHIELD', () => {
   const resolveTexture = async () => null as any;
 
   test('SABER + additive TXI stays transparent with no depth write', async () => {
     const material = makeShaderMaterial({ SABER: '', IGNORE_LIGHTING: '' });
+    material.transparent = true;
+    material.depthWrite = false;
+
+    const texture = new OdysseyTexture();
+    texture.txi = new TXI('blending additive\r\n');
+
+    await OdysseyMaterialBuilder.applyTXIToMaterial(texture, material, { resolveTexture });
+
+    expect(material.blending).toBe(THREE.AdditiveBlending);
+    expect(material.transparent).toBe(true);
+    expect(material.depthWrite).toBe(false);
+  });
+
+  test('FORCE_SHIELD + additive TXI stays transparent with no depth write', async () => {
+    const material = makeShaderMaterial({ FORCE_SHIELD: '', IGNORE_LIGHTING: '' });
     material.transparent = true;
     material.depthWrite = false;
 

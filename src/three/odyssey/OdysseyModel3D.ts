@@ -1321,6 +1321,11 @@ export class OdysseyModel3D extends OdysseyObject3D {
       skinMaterial.defines.USE_SKINNING = '';
       skinMaterial.defines.MAX_ODYSSEY_LIGHTS = '8';
       skinMaterial.uniforms.diffuse.value.setRGB(1, 1, 1);
+      // Additive shell — stay in transparent list so body opaques draw first
+      // (same pattern as SABER / beaming; TXI re-affirms via FORCE_SHIELD).
+      skinMaterial.transparent = true;
+      skinMaterial.blending = THREE.AdditiveBlending;
+      skinMaterial.depthWrite = false;
 
       if(typeof shieldTexName == 'string' && shieldTexName.length){
         skinMaterial.userData.shield = shieldTexName;

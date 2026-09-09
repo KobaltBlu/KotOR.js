@@ -358,9 +358,12 @@ export class OdysseyMaterialBuilder {
 
     switch(texture.txi.blending){
       case TXIBlending.ADDITIVE:
-        // Sabers stay in the transparent list so they draw after TXI decals /
-        // other non-depth-writing surfaces. Non-saber additive FX stay opaque.
-        material.transparent = !!(material as any).defines && 'SABER' in (material as any).defines;
+        // Sabers and force-shield shells stay in the transparent list so they
+        // draw after opaque body / TXI decals. Other additive FX stay opaque.
+        {
+          const defines = (material as any).defines;
+          material.transparent = !!(defines && ('SABER' in defines || 'FORCE_SHIELD' in defines));
+        }
         material.blending = THREE.AdditiveBlending;
         material.depthWrite = false;
         break;
