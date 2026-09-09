@@ -258,7 +258,7 @@ export class ModulePlaceable extends ModuleObject {
       if(this.room){
         if(this.room.model instanceof OdysseyModel3D){
           if(this.model){
-            const visible = this.room.model.visible;
+            const visible = !!this.room.model.userData?.visActive;
             if(this.model.visible !== visible){
               this.model.visible = visible;
               this.markCollisionBoundsDirty('visibility');

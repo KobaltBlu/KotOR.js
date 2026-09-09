@@ -348,7 +348,7 @@ export class ModuleTrigger extends ModuleObject {
     
     if(!this.room) this.getCurrentRoom();
     try{
-      if(!this.room.model.visible)
+      if(!this.room.model?.userData?.visActive)
         return;
     }catch(e){}
 

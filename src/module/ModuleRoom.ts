@@ -457,6 +457,7 @@ export class ModuleRoom extends ModuleObject {
           wok.mesh.position.z += 0.001;
         }
       }
+      this.seedBoxFromWalkmesh();
     }catch(e){
       console.error(e);
     }
@@ -484,6 +485,26 @@ export class ModuleRoom extends ModuleObject {
     }catch(e){
       console.error(e);
     }
+  }
+
+  /**
+   * When setFromObject leaves room.box empty (common while the mesh is hidden),
+   * copy the walkmesh world AABB so frustum cull / containment have real bounds.
+   */
+  seedBoxFromWalkmesh(): void {
+    const wokBox = this.collisionManager?.walkmesh?.box;
+    if(!wokBox || wokBox.isEmpty()){ return; }
+    if(!this.box || this.box.isEmpty()){
+      this.box.copy(wokBox);
+    }
+  }
+
+  computeBoundingBox(force: boolean = false){
+    const box = super.computeBoundingBox(force);
+    if(box?.isEmpty?.()){
+      this.seedBoxFromWalkmesh();
+    }
+    return this.box;
   }
 
   containsPoint2d(point: any){
@@ -514,7 +535,7 @@ export class ModuleRoom extends ModuleObject {
           object.collisionManager.groundFace = face;
           object.collisionManager.lastGroundFace = object.collisionManager.groundFace;
           object.collisionManager.surfaceId = object.collisionManager.groundFace.walkIndex;
-          object.room = this;
+          object.attachToRoom(this);
 
           face.triangle.closestPointToPoint(object.position, object.collisionManager.wm_c_point);
           object.position.z = object.collisionManager.wm_c_point.z + .005;

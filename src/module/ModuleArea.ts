@@ -1672,8 +1672,13 @@ export class ModuleArea extends ModuleObject {
         continue;
       }
 
-      const box = room.box?.isEmpty?.() === false ? room.box : model.box;
-      if(!box || box.isEmpty()){
+      // Prefer room.box; else walkmesh world AABB. Never use local model.box
+      // (placeholder near origin) as a world frustum test.
+      const wokBox = room.collisionManager?.walkmesh?.box;
+      const box = (room.box && !room.box.isEmpty()) ? room.box
+        : (wokBox && !wokBox.isEmpty()) ? wokBox
+        : undefined;
+      if(!box){
         model.visible = true;
         GameState.grassManager?.setRoomVisible(room, true);
         continue;
@@ -1698,7 +1703,7 @@ export class ModuleArea extends ModuleObject {
   private static readonly _frustumBox = new THREE.Box3();
 
   /**
-   * Re-sync object model visibility to current room.model.visible.
+   * Re-sync object model visibility to current room VIS (visActive).
    * Call after updateRoomVisibility so same-frame props/doors match room cull.
    */
   syncObjectModelVisibility(){

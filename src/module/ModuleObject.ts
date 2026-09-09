@@ -766,7 +766,9 @@ export class ModuleObject {
         this.model.visible = true;
         return;
       }else{
-        this.model.visible = !!this.room?.model?.visible;
+        // VIS / gameplay gate — not room mesh draw cull (frustum may hide
+        // room.model while visActive stays true; mirrors LightManager).
+        this.model.visible = !!this.room?.model?.userData?.visActive;
       }
 
       //Check to see if the model is inside the current camera's frustum
@@ -783,7 +785,7 @@ export class ModuleObject {
         isPartyMember: this.isPartyMember(),
         objectCutsceneMode: !!this.cutsceneMode,
         hasRoom: !!this.room,
-        roomModelVisible: this.room?.model?.visible,
+        roomModelVisible: this.room?.model?.userData?.visActive,
       });
     }
   }

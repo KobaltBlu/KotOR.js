@@ -1664,7 +1664,7 @@ export class ModuleCreature extends ModuleObject {
       return true;
 
     if(this.room){
-      if(!this.room.model.visible){
+      if(!this.room.model?.userData?.visActive){
         return;
       }
     }

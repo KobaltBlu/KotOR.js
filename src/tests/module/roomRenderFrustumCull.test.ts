@@ -4,12 +4,14 @@ import * as THREE from 'three';
 /**
  * Minimal stand-in for ModuleArea.applyRoomRenderFrustumCull:
  * VIS-active rooms outside the view frustum are render-hidden; player room stays.
+ * Cull AABB: non-empty room.box, else walkmesh.box, else keep drawn (never local model.box).
  */
 function applyRoomRenderFrustumCull(opts: {
   rooms: Array<{
     model: THREE.Object3D & { userData: { visActive?: boolean } };
     grass?: { visible: boolean } | null;
     box: THREE.Box3;
+    walkmeshBox?: THREE.Box3;
   }>;
   playerRoomIndex: number;
   camera: THREE.Camera;
@@ -40,7 +42,17 @@ function applyRoomRenderFrustumCull(opts: {
       if(room.grass){ room.grass.visible = true; }
       continue;
     }
-    scratch.copy(room.box);
+
+    const box = (room.box && !room.box.isEmpty()) ? room.box
+      : (room.walkmeshBox && !room.walkmeshBox.isEmpty()) ? room.walkmeshBox
+      : undefined;
+    if(!box){
+      model.visible = true;
+      if(room.grass){ room.grass.visible = true; }
+      continue;
+    }
+
+    scratch.copy(box);
     scratch.min.x -= pad;
     scratch.min.y -= pad;
     scratch.min.z -= pad;
@@ -92,5 +104,47 @@ describe('room render frustum cull', () => {
     expect(linkedOffScreen.model.visible).toBe(false);
     expect(linkedOffScreen.grass.visible).toBe(false);
     expect(hiddenVis.model.visible).toBe(false);
+  });
+
+  test('empty room.box falls back to on-screen walkmesh.box', () => {
+    const cam = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+    cam.position.set(0, 0, 10);
+    cam.lookAt(0, 0, 0);
+    cam.updateMatrixWorld(true);
+
+    const player = {
+      model: Object.assign(new THREE.Object3D(), { userData: { visActive: true } }),
+      grass: { visible: true },
+      box: new THREE.Box3(new THREE.Vector3(-1, -1, -1), new THREE.Vector3(1, 1, 1)),
+    };
+    const emptyBoxWalkmeshOnScreen = {
+      model: Object.assign(new THREE.Object3D(), { userData: { visActive: true } }),
+      grass: { visible: true },
+      box: new THREE.Box3().makeEmpty(),
+      walkmeshBox: new THREE.Box3(new THREE.Vector3(-2, -2, -2), new THREE.Vector3(2, 2, 2)),
+    };
+    const emptyBoxWalkmeshOffScreen = {
+      model: Object.assign(new THREE.Object3D(), { userData: { visActive: true } }),
+      grass: { visible: true },
+      box: new THREE.Box3().makeEmpty(),
+      walkmeshBox: new THREE.Box3(new THREE.Vector3(500, 0, 0), new THREE.Vector3(510, 10, 10)),
+    };
+    const emptyNoWalkmesh = {
+      model: Object.assign(new THREE.Object3D(), { userData: { visActive: true } }),
+      grass: { visible: true },
+      box: new THREE.Box3().makeEmpty(),
+    };
+
+    applyRoomRenderFrustumCull({
+      rooms: [player, emptyBoxWalkmeshOnScreen, emptyBoxWalkmeshOffScreen, emptyNoWalkmesh],
+      playerRoomIndex: 0,
+      camera: cam,
+    });
+
+    expect(emptyBoxWalkmeshOnScreen.model.visible).toBe(true);
+    expect(emptyBoxWalkmeshOnScreen.grass.visible).toBe(true);
+    expect(emptyBoxWalkmeshOffScreen.model.visible).toBe(false);
+    expect(emptyBoxWalkmeshOffScreen.grass.visible).toBe(false);
+    expect(emptyNoWalkmesh.model.visible).toBe(true);
   });
 });
