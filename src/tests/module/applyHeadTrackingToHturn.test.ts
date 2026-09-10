@@ -5,7 +5,7 @@
  * @jest-environment node
  */
 import { describe, expect, test } from '@jest/globals';
-import { applyHeadTrackingToHturn } from '@/module/applyHeadTrackingToHturn';
+import { applyHeadTrackingToHturn, stripHeadTrackingFromHturn } from '@/module/applyHeadTrackingToHturn';
 
 function makeHturn(x: number, z = 0) {
   return { rotation: { x, z }, userData: {} as Record<string, unknown> };
@@ -80,5 +80,36 @@ describe('applyHeadTrackingToHturn', () => {
 
     expect(hturn.userData._hturnAnimZ).toBeCloseTo(0);
     expect(hturn.rotation.z).toBeCloseTo(0.05);
+  });
+
+  test('strip then anim reset then apply does not double pitch', () => {
+    const hturn = makeHturn(0, 0);
+    applyHeadTrackingToHturn(hturn, 0.05, -0.05);
+    expect(hturn.rotation.x).toBeCloseTo(-0.05);
+
+    stripHeadTrackingFromHturn(hturn);
+    expect(hturn.rotation.x).toBeCloseTo(0);
+
+    hturn.rotation.x = 0;
+    hturn.rotation.z = 0;
+    applyHeadTrackingToHturn(hturn, 0.05, -0.05);
+
+    expect(hturn.userData._hturnAnimX).toBeCloseTo(0);
+    expect(hturn.rotation.x).toBeCloseTo(-0.05);
+  });
+
+  test('strip before apply prevents blend-remnant baseline bake', () => {
+    const hturn = makeHturn(0, 0);
+    applyHeadTrackingToHturn(hturn, 0, -0.2618);
+    expect(hturn.rotation.x).toBeCloseTo(-0.2618);
+
+    // Contaminated mid-blend remnant (would bake without strip)
+    hturn.rotation.x = -0.20;
+    stripHeadTrackingFromHturn(hturn);
+    expect(hturn.rotation.x).toBeCloseTo(0);
+
+    applyHeadTrackingToHturn(hturn, 0, -0.2618);
+    expect(hturn.userData._hturnAnimX).toBeCloseTo(0);
+    expect(hturn.rotation.x).toBeCloseTo(-0.2618);
   });
 });

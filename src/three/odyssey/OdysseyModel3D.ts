@@ -1502,6 +1502,13 @@ export class OdysseyModel3D extends OdysseyObject3D {
           for(const name of odysseyModel.materialUniqueAnimatedNodeNames){
             odysseyModel.mergeExcludeAnimatedNodeNames.add(name);
           }
+          // Mesh children under animated dummies (e.g. ani1_dummy → object02) are
+          // not named in clips — keep their descendants out of mergeStatic too.
+          odysseyModel.mergeExcludeAnimatedNodeNames =
+            OdysseyModel3D.expandMergeExcludeWithDescendants(
+              odysseyModel.mergeExcludeAnimatedNodeNames,
+              model.rootNode,
+            );
         }
 
         const parseContext = createNodeParseContext(options, {
@@ -1653,6 +1660,30 @@ export class OdysseyModel3D extends OdysseyObject3D {
         }
       }
     }
+    return names;
+  }
+
+  /**
+   * Once a node is merge-excluded, all descendants must stay live too
+   * (animated dummy → child mesh with no clip entry of its own).
+   */
+  static expandMergeExcludeWithDescendants(
+    seed: Set<string>,
+    root: OdysseyModelNode | undefined,
+  ): Set<string> {
+    const names = new Set(seed);
+    if(!root) return names;
+    const walk = (node: OdysseyModelNode, underExcluded: boolean): void => {
+      const name = (node.name || '').toLowerCase();
+      const excluded = underExcluded || (!!name && names.has(name));
+      if(excluded && name) names.add(name);
+      const children = node.children;
+      if(!children?.length) return;
+      for(let i = 0; i < children.length; i++){
+        walk(children[i], excluded);
+      }
+    };
+    walk(root, false);
     return names;
   }
 

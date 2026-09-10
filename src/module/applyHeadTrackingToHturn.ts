@@ -1,3 +1,27 @@
+type HturnBone = { rotation: { x: number; z: number }; userData?: Record<string, unknown> };
+
+type HturnLookUserData = {
+  _hturnAnimX?: number;
+  _hturnAnimZ?: number;
+  _hturnComposedX?: number;
+  _hturnComposedZ?: number;
+};
+
+/**
+ * Restore post-anim hturn baselines before the next model.update.
+ * Look must not remain on the bone overnight - anim blend from a looked pose
+ * leaves remnants that applyHeadTrackingToHturn can bake into _hturnAnimX/Z.
+ * No-op until applyHeadTrackingToHturn has stored baselines.
+ */
+export function stripHeadTrackingFromHturn(hturn: HturnBone): void {
+  const ud = hturn.userData as HturnLookUserData | undefined;
+  if(!ud || typeof ud._hturnAnimX !== 'number' || typeof ud._hturnAnimZ !== 'number'){
+    return;
+  }
+  hturn.rotation.x = ud._hturnAnimX;
+  hturn.rotation.z = ud._hturnAnimZ;
+}
+
 /**
  * Apply creature look-at offsets onto hturn_g after animation has posed it.
  *
@@ -11,19 +35,16 @@
  * Sticky detection compares against the last composed (x,z) pair, not
  * anim+prevLook per axis. Tiny Euler/quat drift (>1e-4) otherwise looks like
  * an anim write, bakes look into the baseline, and double-applies pitch.
+ * Prefer stripHeadTrackingFromHturn before model.update so anim never blends
+ * from a looked pose.
  */
 export function applyHeadTrackingToHturn(
-  hturn: { rotation: { x: number; z: number }; userData?: Record<string, unknown> },
+  hturn: HturnBone,
   yaw: number,
   pitch: number,
   epsilon = 0.001,
 ): void {
-  const ud = (hturn.userData || (hturn.userData = {})) as {
-    _hturnAnimX?: number;
-    _hturnAnimZ?: number;
-    _hturnComposedX?: number;
-    _hturnComposedZ?: number;
-  };
+  const ud = (hturn.userData || (hturn.userData = {})) as HturnLookUserData;
 
   const stickyEps = 1e-3;
   const hasComposed =

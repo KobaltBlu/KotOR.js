@@ -26,7 +26,7 @@ import { TalentSkill } from "@/talents/TalentSkill";
 import { TalentSpell } from "@/talents/TalentSpell";
 import { TalentObjectType } from "@/enums/engine/TalentObjectType";
 import { OdysseyModel3D, OdysseyObject3D } from "@/three/odyssey";
-import { applyHeadTrackingToHturn } from "@/module/applyHeadTrackingToHturn";
+import { applyHeadTrackingToHturn, stripHeadTrackingFromHturn } from "@/module/applyHeadTrackingToHturn";
 import { OdysseyModel, OdysseyModelAnimation } from "@/odyssey";
 import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
 import { LIPObject } from "@/resource/LIPObject";
@@ -1423,6 +1423,11 @@ export class ModuleCreature extends ModuleObject {
           }
         }
         //END: Animation Optimization
+
+        // Strip look before anim so blend does not start from a looked pose.
+        if(this.model.hturn_g){
+          stripHeadTrackingFromHturn(this.model.hturn_g);
+        }
 
         if(GameState.Mode != EngineMode.DIALOG){
           const locomoting =
