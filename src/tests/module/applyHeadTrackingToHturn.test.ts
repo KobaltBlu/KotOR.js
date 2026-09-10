@@ -1,6 +1,7 @@
 /**
  * Idle look tracking must preserve post-anim hturn.x (female +/-0.1745 cancel).
  * Active look must not accumulate pitch across frames.
+ * Tiny Euler drift must not bake look into the anim baseline.
  * @jest-environment node
  */
 import { describe, expect, test } from '@jest/globals';
@@ -52,5 +53,32 @@ describe('applyHeadTrackingToHturn', () => {
     applyHeadTrackingToHturn(hturn, 0, 0);
     expect(hturn.rotation.x).toBeCloseTo(0.1745);
     expect(hturn.rotation.z).toBeCloseTo(0);
+  });
+
+  test('small x drift after compose does not double pitch', () => {
+    const hturn = makeHturn(0, 0);
+    applyHeadTrackingToHturn(hturn, 0.05, -0.05);
+    expect(hturn.rotation.x).toBeCloseTo(-0.05);
+    expect(hturn.userData._hturnAnimX).toBeCloseTo(0);
+
+    // Euler/quat noise larger than the old 1e-4 threshold
+    hturn.rotation.x += 2e-4;
+    applyHeadTrackingToHturn(hturn, 0.05, -0.05);
+
+    expect(hturn.userData._hturnAnimX).toBeCloseTo(0);
+    expect(hturn.rotation.x).toBeCloseTo(-0.05);
+  });
+
+  test('small z drift after compose does not bake look yaw into anim baseline', () => {
+    const hturn = makeHturn(0, 0);
+    applyHeadTrackingToHturn(hturn, 0.05, -0.05);
+    expect(hturn.rotation.z).toBeCloseTo(0.05);
+    expect(hturn.userData._hturnAnimZ).toBeCloseTo(0);
+
+    hturn.rotation.z += 2e-4;
+    applyHeadTrackingToHturn(hturn, 0.05, -0.05);
+
+    expect(hturn.userData._hturnAnimZ).toBeCloseTo(0);
+    expect(hturn.rotation.z).toBeCloseTo(0.05);
   });
 });

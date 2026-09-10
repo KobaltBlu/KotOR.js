@@ -71,10 +71,13 @@ export class CombatData {
     this.lastForcePowerSuccess = false;
   }
 
+  /**
+   * Explicit combat-target teardown (SetCombatState(0) / cancelCombat).
+   * Not used by ClearAllActions — retail keeps attack/spell targets so
+   * OnEndRound AI (GN_EquipAppropriateWeapon) can still read GetAttackTarget.
+   */
   reset(){
     this.initialize();
-    // ClearAllActions clears attempted/current
-    // attack + spell targets together with the action queue.
     this.lastAttemptedAttackTarget = undefined;
     this.lastAttackTarget = undefined;
     this.lastSpellTarget = undefined;

@@ -5776,7 +5776,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
       // oVersus (args[0]) is optional combat-target context; the subject is always OBJECT_SELF.
-      // EquipMostDamagingMeleeWeapon â€” used by GN_EquipAppropriateWeapon.
+      // EquipMostDamagingMeleeWeapon — used by GN_EquipAppropriateWeapon.
       if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
         return;
       }
@@ -5787,18 +5787,23 @@ NWScriptDefK1.Actions = {
       }
 
       const offHand = !!args[1];
+      const slot = offHand ? ModuleCreatureArmorSlot.LEFTHAND : ModuleCreatureArmorSlot.RIGHTHAND;
       const equipped = offHand ? creature.equipment.LEFTHAND : creature.equipment.RIGHTHAND;
       const weapon = creature.findMostDamagingMelee(offHand);
-      console.log('ActionEquipMostDamagingMelee', weapon, equipped, this.caller, args[0], args[1]);
       if(!weapon || weapon === equipped){
         return;
       }
 
-      const action = new GameState.ActionFactory.ActionEquipItem();
-      action.setParameter(0, ActionParameterType.DWORD, weapon);
-      action.setParameter(1, ActionParameterType.INT, offHand ? ModuleCreatureArmorSlot.LEFTHAND : ModuleCreatureArmorSlot.RIGHTHAND);
-      action.setParameter(2, ActionParameterType.INT, NW_FALSE);
-      this.caller.actionQueue.add(action);
+      // Same combat deferral as ActionEquipItem (opcode 32).
+      if(creature.combatData?.combatState && creature.combatRound){
+        creature.combatRound.addEquipAction(weapon, slot, false);
+      }else{
+        const action = new GameState.ActionFactory.ActionEquipItem();
+        action.setParameter(0, ActionParameterType.DWORD, weapon);
+        action.setParameter(1, ActionParameterType.INT, slot);
+        action.setParameter(2, ActionParameterType.INT, NW_FALSE);
+        creature.actionQueue.addFront(action);
+      }
     }
   },
   400:{
@@ -5808,7 +5813,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       // oVersus (args[0]) is optional combat-target context; the subject is always OBJECT_SELF.
-      // EquipMostDamagingRangedWeapon â€” used by GN_EquipAppropriateWeapon.
+      // EquipMostDamagingRangedWeapon — used by GN_EquipAppropriateWeapon.
       if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
         return;
       }
@@ -5824,11 +5829,16 @@ NWScriptDefK1.Actions = {
         return;
       }
 
-      const action = new GameState.ActionFactory.ActionEquipItem();
-      action.setParameter(0, ActionParameterType.DWORD, weapon);
-      action.setParameter(1, ActionParameterType.INT, ModuleCreatureArmorSlot.RIGHTHAND);
-      action.setParameter(2, ActionParameterType.INT, NW_FALSE);
-      this.caller.actionQueue.add(action);
+      const slot = ModuleCreatureArmorSlot.RIGHTHAND;
+      if(creature.combatData?.combatState && creature.combatRound){
+        creature.combatRound.addEquipAction(weapon, slot, false);
+      }else{
+        const action = new GameState.ActionFactory.ActionEquipItem();
+        action.setParameter(0, ActionParameterType.DWORD, weapon);
+        action.setParameter(1, ActionParameterType.INT, slot);
+        action.setParameter(2, ActionParameterType.INT, NW_FALSE);
+        creature.actionQueue.addFront(action);
+      }
     }
   },
   401:{
@@ -5874,6 +5884,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [],
     action: function(this: NWScriptInstance, args: []){
+      console.log('ActionEquipMostEffectiveArmor', args);
       if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
         return;
       }
@@ -7289,10 +7300,11 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
+      // ExecuteCommandGetWeaponRanged — baseitems.ranged_weapon != 0
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleItem)){
-        return (args[0] as ModuleItem).getWeaponType() == 4 ? true : false;
+        return (args[0] as ModuleItem).isRangedWeapon() ? NW_TRUE : NW_FALSE;
       }
-      return false;
+      return NW_FALSE;
     }
   },
   512:{

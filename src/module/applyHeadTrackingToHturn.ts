@@ -7,6 +7,10 @@
  * Must not `+=` pitch every frame - anims that skip hturn (e.g. listen) leave
  * last frame's look in the euler, and += accumulates into a spin.
  * Compose look against a tracked post-anim baseline instead.
+ *
+ * Sticky detection compares against the last composed (x,z) pair, not
+ * anim+prevLook per axis. Tiny Euler/quat drift (>1e-4) otherwise looks like
+ * an anim write, bakes look into the baseline, and double-applies pitch.
  */
 export function applyHeadTrackingToHturn(
   hturn: { rotation: { x: number; z: number }; userData?: Record<string, unknown> },
@@ -17,29 +21,23 @@ export function applyHeadTrackingToHturn(
   const ud = (hturn.userData || (hturn.userData = {})) as {
     _hturnAnimX?: number;
     _hturnAnimZ?: number;
-    _hturnLookPitch?: number;
-    _hturnLookYaw?: number;
+    _hturnComposedX?: number;
+    _hturnComposedZ?: number;
   };
 
-  const prevPitch = ud._hturnLookPitch ?? 0;
-  const prevYaw = ud._hturnLookYaw;
-  const hasAnimX = typeof ud._hturnAnimX === 'number';
-  const expectedX = (ud._hturnAnimX ?? 0) + prevPitch;
-  // If current x still matches last compose, anim did not overwrite hturn this frame.
-  const animWroteX = !hasAnimX || Math.abs(hturn.rotation.x - expectedX) > 1e-4;
+  const stickyEps = 1e-3;
+  const hasComposed =
+    typeof ud._hturnComposedX === 'number' && typeof ud._hturnComposedZ === 'number';
+  const sticky =
+    hasComposed &&
+    Math.abs(hturn.rotation.x - (ud._hturnComposedX as number)) <= stickyEps &&
+    Math.abs(hturn.rotation.z - (ud._hturnComposedZ as number)) <= stickyEps;
 
-  if(animWroteX){
-    ud._hturnAnimX = hturn.rotation.x;
-  }else if(hasAnimX){
+  if(sticky){
     hturn.rotation.x = ud._hturnAnimX as number;
-  }
-
-  const hasAnimZ = typeof ud._hturnAnimZ === 'number';
-  const yawWasReplaced = typeof prevYaw === 'number';
-  if(yawWasReplaced && hasAnimZ && Math.abs(hturn.rotation.z - (prevYaw as number)) <= 1e-4){
-    // Still showing our replaced yaw; restore anim baseline before recompose.
     hturn.rotation.z = ud._hturnAnimZ as number;
   }else{
+    ud._hturnAnimX = hturn.rotation.x;
     ud._hturnAnimZ = hturn.rotation.z;
   }
 
@@ -47,13 +45,12 @@ export function applyHeadTrackingToHturn(
   const lookYaw = Math.abs(yaw) > epsilon ? yaw : undefined;
 
   hturn.rotation.x = (ud._hturnAnimX as number) + lookPitch;
-  ud._hturnLookPitch = lookPitch;
-
   if(typeof lookYaw === 'number'){
     hturn.rotation.z = lookYaw;
-    ud._hturnLookYaw = lookYaw;
   }else{
     hturn.rotation.z = ud._hturnAnimZ as number;
-    ud._hturnLookYaw = undefined;
   }
+
+  ud._hturnComposedX = hturn.rotation.x;
+  ud._hturnComposedZ = hturn.rotation.z;
 }

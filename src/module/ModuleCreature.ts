@@ -73,6 +73,11 @@ import {
   resolveOverlayStopFlags,
   resolveOverlayStartFlags,
 } from "@/module/animation/resolvePlaybackMode";
+import {
+  combatAnimationAttackKey,
+  combatAnimationWeaponDigit,
+  combatReactionClipDigit,
+} from "@/module/animation/combat-wield-digit";
 import { WeaponWield } from "@/enums/combat/WeaponWield";
 import { WeaponType } from "@/enums/combat/WeaponType";
 import { CombatFeatType } from "@/enums/combat/CombatFeatType";
@@ -1610,19 +1615,25 @@ export class ModuleCreature extends ModuleObject {
     if(!(this.action)){
       const currentPlayer = GameState.getCurrentPlayer();
       if(
-        !this.combatData.combatState && 
-        this.isPartyMember() && 
-        this != currentPlayer && 
+        this.isPartyMember() &&
+        this != currentPlayer &&
         !this.facingAnim
       ){
-        this.lookAtObject = currentPlayer;
-        const targetFacing = Math.atan2(
-          this.position.y - currentPlayer.position.y,
-          this.position.x - currentPlayer.position.x
-        ) + Math.PI/2;
-        const diff = Math.abs(Utility.NormalizeRadian(targetFacing - this.rotation.z));
-        if(diff > Math.PI / 6){
-          this.setFacing(targetFacing, false);
+        if(this.combatData.combatState){
+          // Do not keep staring at the PC once combat starts.
+          if(this.lookAtObject === currentPlayer){
+            this.lookAtObject = undefined;
+          }
+        }else{
+          this.lookAtObject = currentPlayer;
+          const targetFacing = Math.atan2(
+            this.position.y - currentPlayer.position.y,
+            this.position.x - currentPlayer.position.x
+          ) + Math.PI/2;
+          const diff = Math.abs(Utility.NormalizeRadian(targetFacing - this.rotation.z));
+          if(diff > Math.PI / 6){
+            this.setFacing(targetFacing, false);
+          }
         }
       }
     }
@@ -3275,6 +3286,8 @@ export class ModuleCreature extends ModuleObject {
 
     let modeltype = this.creatureAppearance.modeltype;
     let weaponWield = this.getCombatAnimationWeaponType();
+    // Heavy (9) shares g7* clips / combatanimations *7 columns with rifle.
+    const clipDigit = combatReactionClipDigit(weaponWield);
     
     const attackAnim = GameState.SWRuleSet.animationNameMap.get(attackAnimNamel);
 
@@ -3313,7 +3326,7 @@ export class ModuleCreature extends ModuleObject {
           || this.animationConstantToAnimation(ModuleCreatureAnimState.DAMAGE);
     }
 
-    return OdysseyModelAnimation.GetAnimation2DA('g'+weaponWield+'d1')
+    return OdysseyModelAnimation.GetAnimation2DA('g'+clipDigit+'d1')
       || this.animationConstantToAnimation(ModuleCreatureAnimState.DAMAGE);
 
   }
@@ -3325,6 +3338,7 @@ export class ModuleCreature extends ModuleObject {
     const modeltype = this.creatureAppearance.modeltype;
     const attackKey = this.getCombatAnimationAttackType();
     const weaponWield = this.getCombatAnimationWeaponType();
+    const clipDigit = combatReactionClipDigit(weaponWield);
     
     const attackAnim = GameState.SWRuleSet.animationNameMap.get(attackAnimNamel);
 
@@ -3366,7 +3380,7 @@ export class ModuleCreature extends ModuleObject {
         return OdysseyModelAnimation.GetAnimation2DA('c2d5')
     }
 
-    return OdysseyModelAnimation.GetAnimation2DA('g'+weaponWield+'g1');
+    return OdysseyModelAnimation.GetAnimation2DA('g'+clipDigit+'g1');
 
   }
 
@@ -3377,6 +3391,7 @@ export class ModuleCreature extends ModuleObject {
     const modeltype = this.creatureAppearance.modeltype;
     const attackKey = this.getCombatAnimationAttackType();
     const weaponWield = this.getCombatAnimationWeaponType();
+    const clipDigit = combatReactionClipDigit(weaponWield);
     
     const attackAnim = GameState.SWRuleSet.animationNameMap.get(attackAnimNamel);
 
@@ -3409,114 +3424,24 @@ export class ModuleCreature extends ModuleObject {
         return OdysseyModelAnimation.GetAnimation2DA('c2p5')
     }
 
-    return OdysseyModelAnimation.GetAnimation2DA('g'+weaponWield+'g1');
+    return OdysseyModelAnimation.GetAnimation2DA('g'+clipDigit+'g1');
     
   }
 
+  /**
+   * Attack family letter for combat clip names (m/b/g).
+   * Matches UpdateWeaponClass weapon_type source: dual uses off-hand item.
+   */
   getCombatAnimationAttackType(): string {
-    let weapon = this.equipment.RIGHTHAND;
-    let weaponType = 0;
-    //let weaponWield = this.getCombatAnimationWeaponType;
-
-    if(this.equipment.RIGHTHAND){
-      weaponType = (this.equipment.RIGHTHAND.getWeaponType());
-
-      switch(weaponType){
-        case 4:
-          return 'b';
-        case 1:
-          return 'm';
-        break;
-      }
-
-    }else if(this.equipment.CLAW1){
-      weaponType = (this.equipment.CLAW1.getWeaponType());
-
-      switch(weaponType){
-        case 1:
-        case 3:
-        case 4:
-          return 'm';
-      }
-    }else if(this.equipment.CLAW2){
-      weaponType = (this.equipment.CLAW2.getWeaponType());
-
-      switch(weaponType){
-        case 1:
-        case 3:
-        case 4:
-          return 'm';
-      }
-    }else if(this.equipment.CLAW3){
-      weaponType = (this.equipment.CLAW3.getWeaponType());
-
-      switch(weaponType){
-        case 1:
-        case 3:
-        case 4:
-          return 'm';
-      }
-    }else{
-      return 'g';
-    }
-
-    /*if(weaponWield == 0)//this.isSimpleCreature)
-      return 'm';
-
-    if(weaponWield == 5 || weaponWield == 6 || weaponWield == 7 || weaponWield == 8 || weaponWield == 9){
-      return 'b';
-    }
-    return 'c';*/
+    return combatAnimationAttackKey(this.equipment);
   }
 
-  //Return the WeaponType ID for the current equipped items
-  // g*r1 in this case * is the value we are trying to determine
-
+  /**
+   * Combat animation weapon digit (g*r1 / m*a1 *).
+   * CSWCCreature::UpdateWeaponClass @ 00613710.
+   */
   getCombatAnimationWeaponType(){
-    let lWeapon = this.equipment.LEFTHAND;
-    let rWeapon = this.equipment.RIGHTHAND;
-    let cWeapon1 = this.equipment.CLAW1;
-    let cWeapon2 = this.equipment.CLAW2;
-    let cWeapon3 = this.equipment.CLAW3;
-    let bothHands = (lWeapon) && (rWeapon);
-
-    if(cWeapon1 || cWeapon2 || cWeapon3 || this.isSimpleCreature()){
-      return 0;
-    }
-
-    let weapon = rWeapon || lWeapon;
-
-    if(weapon){
-
-      if(bothHands){
-        switch((weapon.getWeaponWield())){
-          case 1: //Stun Baton
-          case 2: //Single Blade Melee
-            return 4;
-          case 4: //Blaster
-            return 6;
-        }
-      }else{
-        switch((weapon.getWeaponWield())){
-          case 1: //Stun Baton
-            return 1;
-          case 2: //Single Blade Melee
-            return 2;
-          case 3: //Double Blade Melee
-            return 3;
-          case 4: //Blaster
-            return 5;
-          case 5: //Blaster Rifle
-            return 7;
-          case 6: //Heavy Carbine
-            return 9;
-        }
-      }
-    }
-
-    //If no weapons are equipped then use unarmed animations
-    return 8;
-
+    return combatAnimationWeaponDigit(this.equipment, this.isSimpleCreature());
   }
 
   getEquippedWeaponType(){
@@ -3676,7 +3601,10 @@ export class ModuleCreature extends ModuleObject {
         this.resetGestureState();
         if(this.combatData.combatState){
           this.weaponPowered(true);
-          if(this.animationState.index == ModuleCreatureAnimState.MELEE_COMBAT_WIELD){
+          if(
+            this.animationState.index == ModuleCreatureAnimState.MELEE_COMBAT_WIELD ||
+            this.animationState.index == ModuleCreatureAnimState.FLOURISH
+          ){
             this.setAnimationState(ModuleCreatureAnimState.READY);
           }
         }
@@ -3890,6 +3818,37 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
+   * PlayDrawAnimation(FLOURISH / 0x2806) — UpdateVisibleWeapons on MainHand/OffHand
+   * equip when not instant. Hides the model swap behind the new weapon's g*w1.
+   * Duration matches retail InsertFireForgetAnimation(..., 0x5dc).
+   */
+  playDrawAnimation(){
+    if(this.isSimpleCreature()){ return; }
+    const weaponType = this.getCombatAnimationWeaponType();
+    if(!weaponType){ return; }
+
+    // EquipItem → SetCombatState(1, 2) for hand slots when not instant.
+    this.setCombatState(true, ExcitedDurationRow.SpellCast);
+    this.weaponPowered(true);
+
+    const draw = this.animationConstantToAnimation(ModuleCreatureAnimState.FLOURISH);
+    // PlayDrawAnimation always uses 1500ms (0x5dc), not clip length.
+    const duration = 1.5;
+    this.setAnimationState(ModuleCreatureAnimState.FLOURISH);
+    if(!this.animationState.animation && draw){
+      this.animationState.animation = draw;
+      this.animationState.started = false;
+    }
+    this.gestureState = {
+      serverId: ModuleCreatureAnimState.FLOURISH,
+      animation: draw || this.animationState.animation,
+      started: false,
+      remaining: duration,
+      active: true,
+    };
+  }
+
+  /**
    * True when engagement came from hostile combat (Damage), not flourish/SpellCast-only.
    * matches engine behavior client sync gate: SetCombatState client update iff arg2 == 1.
    */
@@ -4043,13 +4002,31 @@ export class ModuleCreature extends ModuleObject {
   static readonly HEAD_TRACKING_V_SPEED = Math.PI * 0.25;
   lookAtPosition: THREE.Vector3 = new THREE.Vector3();
 
+  /** Unwind look compose on hturn when tracking has no valid target. */
+  private unwindHeadTrackingLook(){
+    if(!(this.model instanceof OdysseyModel3D) || !this.model.hturn_g) return;
+    this.headTrackingAngle = 0;
+    this.headTrackingPitch = 0;
+    applyHeadTrackingToHturn(this.model.hturn_g, 0, 0);
+  }
+
   updateHeadTracking(delta: number){
-    if(!this.lookAtObject) return;
-    if(this.lookAtObject === this || this.lookAtObject.isDead()){
-      this.lookAtObject = undefined;
+    if(!this.lookAtObject){
+      this.unwindHeadTrackingLook();
       return;
     }
-    if(!(this.model instanceof OdysseyModel3D) || !this.model.hturn_g || !this.headTrackingEnabled) return;
+    if(this.lookAtObject === this || this.lookAtObject.isDead()){
+      this.lookAtObject = undefined;
+      this.unwindHeadTrackingLook();
+      return;
+    }
+    if(!(this.model instanceof OdysseyModel3D) || !this.model.hturn_g){
+      return;
+    }
+    if(!this.headTrackingEnabled){
+      this.unwindHeadTrackingLook();
+      return;
+    }
 
     let targetYaw = 0;
     let targetPitch = 0;
@@ -4061,6 +4038,7 @@ export class ModuleCreature extends ModuleObject {
       this.lookAtPosition.copy(this.lookAtObject.position);
     }else{
       this.lookAtObject = undefined;
+      this.unwindHeadTrackingLook();
       return;
     }
     const dx = this.lookAtPosition.x - this.position.x;
@@ -7365,6 +7343,30 @@ export class ModuleCreature extends ModuleObject {
       GameState.module.lastItemEquipped = item;
     }
     item.onEquip(this);
+
+    // Stamp hand slots before await so GN_GetWeaponType / attack resolve see the
+    // new weapon immediately (ActionEquipItem does not await equipItem).
+    switch(slot){
+      case ModuleCreatureArmorSlot.RIGHTHAND:
+        this.equipment.RIGHTHAND = item;
+        await item.loadModel();
+        if(item.model instanceof OdysseyModel3D)
+          this.model?.rhand?.add(item.model);
+        return;
+      case ModuleCreatureArmorSlot.LEFTHAND:
+        this.equipment.LEFTHAND = item;
+        await item.loadModel();
+        if(item.model instanceof OdysseyModel3D)
+          this.model?.lhand?.add(item.model);
+        return;
+      case ModuleCreatureArmorSlot.RIGHTHAND2:
+        this.equipment.RIGHTHAND2 = item;
+        return;
+      case ModuleCreatureArmorSlot.LEFTHAND2:
+        this.equipment.LEFTHAND2 = item;
+        return;
+    }
+
     await item.loadModel();
     switch(slot){
       case ModuleCreatureArmorSlot.IMPLANT:
@@ -7389,24 +7391,6 @@ export class ModuleCreature extends ModuleObject {
       break;
       case ModuleCreatureArmorSlot.BELT:
         this.equipment.BELT = item;
-      break;
-      case ModuleCreatureArmorSlot.RIGHTHAND:
-        this.equipment.RIGHTHAND = item;
-        await item.loadModel();
-        if(item.model instanceof OdysseyModel3D)
-          this.model.rhand.add(item.model);
-      break;
-      case ModuleCreatureArmorSlot.LEFTHAND:
-        this.equipment.LEFTHAND = item;
-        await item.loadModel();
-        if(item.model instanceof OdysseyModel3D)
-          this.model.lhand.add(item.model);
-      break;
-      case ModuleCreatureArmorSlot.RIGHTHAND2:
-        this.equipment.RIGHTHAND2 = item;
-      break;
-      case ModuleCreatureArmorSlot.LEFTHAND2:
-        this.equipment.LEFTHAND2 = item;
       break;
       case ModuleCreatureArmorSlot.CLAW1:
         this.equipment.CLAW1 = item;

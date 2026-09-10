@@ -143,7 +143,8 @@ export class SWCombatAnimation {
   }
 
   getParryAnimation( weaponWield: number ): number {
-    switch (weaponWield) {
+    const digit = weaponWield === 9 ? 7 : weaponWield;
+    switch (digit) {
       case 0: return this.parry0;
       case 1: return this.parry1;
       case 2: return this.parry2;
@@ -159,7 +160,8 @@ export class SWCombatAnimation {
   }
 
   getDamageAnimation( weaponWield: number ): number {
-    switch (weaponWield) {
+    const digit = weaponWield === 9 ? 7 : weaponWield;
+    switch (digit) {
       case 0: return this.damage0;
       case 1: return this.damage1;
       case 2: return this.damage2;
@@ -175,7 +177,8 @@ export class SWCombatAnimation {
   }
 
   getDodgeAnimation( weaponWield: number ): number {
-    switch (weaponWield) {
+    const digit = weaponWield === 9 ? 7 : weaponWield;
+    switch (digit) {
       case 0: return this.dodge0;
       case 1: return this.dodge1;
       case 2: return this.dodge2;

@@ -13,6 +13,12 @@ import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { GameEffectSetStateType } from "@/enums/effects/GameEffectSetStateType";
 import { GameEngineType } from "@/enums/engine";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import {
+  readyAnimationRow as readyAnimRow,
+  damagedAnimationRow as damagedAnimRow,
+  blasterDeflection1HAnimationRow as blasterDeflect1HRow,
+  blasterDeflection2HAnimationRow as blasterDeflect2HRow,
+} from "@/module/animation/combat-wield-digit";
 import { ModulePlaceableAnimState } from "@/enums/module/ModulePlaceableAnimState";
 import { NWScriptEventType } from "@/enums/nwscript/NWScriptEventType";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
@@ -175,6 +181,26 @@ export class ModuleObject {
   /** Same g*w1 table as FLOURISH. */
   static meleeCombatWieldAnimationRow(weaponType: number): number {
     return ModuleObject.flourishAnimationRow(weaponType);
+  }
+
+  /** READY / READY_ALT → g*r1 (ServerToClientAnimation 0x2711). */
+  static readyAnimationRow(weaponType: number): number {
+    return readyAnimRow(weaponType);
+  }
+
+  /** DAMAGED (10302) weapon-dependent rows. */
+  static damagedAnimationRow(weaponType: number): number {
+    return damagedAnimRow(weaponType);
+  }
+
+  /** BLASTER_DEFLECTION_1H (10300). */
+  static blasterDeflection1HAnimationRow(weaponType: number): number {
+    return blasterDeflect1HRow(weaponType);
+  }
+
+  /** BLASTER_DEFLECTION_2H (10301). */
+  static blasterDeflection2HAnimationRow(weaponType: number): number {
+    return blasterDeflect2HRow(weaponType);
   }
 
   facingSpeed: number = TURN_SPEED_SLOW;
@@ -855,7 +881,10 @@ export class ModuleObject {
     // CancelGuiTimingEvent clears actions; clearing actions must also StopGuiTimingBar.
     GameState.GuiTimingBarManager?.cancelFor?.(this);
 
-    this.combatData.reset();
+    // Retail CSWSObject::ClearAllActions does not clear GetAttackTarget /
+    // GetAttemptedAttackTarget (or spell targets). GN_EquipAppropriateWeapon runs
+    // after ClearAllActions and needs GetAttackTarget for the melee switch.
+    // Those fields clear on SetCombatState(0) / cancelCombat instead.
     if(this.collisionManager){
       this.collisionManager.foundEnemyCreature = undefined;
     }
@@ -1421,42 +1450,16 @@ export class ModuleObject {
         if(this.isSimpleCreature()){
           return animations[278];
         }else{
-          switch(this.getCombatAnimationWeaponType()){
-            case 1:
-              return animations[92];
-            case 2:
-              return animations[133];
-            case 3:
-              return animations[174];
-            case 4:
-              return animations[215];
-            case 5:
-              return animations[223];
-            case 6:
-              return animations[237];
-            case 7:
-              return animations[245];
-            case 9:
-              return animations[84]; //84 == pushed | 85 == hit ground prone back | 86 == get up from ground prone
-            default:
-              return animations[249];
-          }
+          return animations[ModuleObject.readyAnimationRow(this.getCombatAnimationWeaponType())];
         }
       break;
       case ModuleCreatureAnimState.DODGE:
-        if(this.isSimpleCreature()){
-          return animations[281];
-        }else{
-          return animations[302];
-        }
+        // ServerToClientAnimation: fixed 302 for all creature types
+        return animations[302];
       break;
       case ModuleCreatureAnimState.PARRY:
-        // Same pose family as dodge for SetAnimation(PARRY) fallback
-        if(this.isSimpleCreature()){
-          return animations[281];
-        }else{
-          return animations[302];
-        }
+        // ServerToClientAnimation: fixed 301 (not dodge 302)
+        return animations[301];
       break;
       case ModuleCreatureAnimState.SPASM:
         if(this.isSimpleCreature()){
@@ -1551,6 +1554,15 @@ export class ModuleObject {
       break;
       case ModuleCreatureAnimState.DAMAGE:
         return animations[303];
+      break;
+      case ModuleCreatureAnimState.DAMAGED:
+        return animations[ModuleObject.damagedAnimationRow(this.getCombatAnimationWeaponType())];
+      break;
+      case ModuleCreatureAnimState.BLASTER_DEFLECTION_1H:
+        return animations[ModuleObject.blasterDeflection1HAnimationRow(this.getCombatAnimationWeaponType())];
+      break;
+      case ModuleCreatureAnimState.BLASTER_DEFLECTION_2H:
+        return animations[ModuleObject.blasterDeflection2HAnimationRow(this.getCombatAnimationWeaponType())];
       break;
       case ModuleCreatureAnimState.USE_COMPUTER_LP:
         return animations[44];
