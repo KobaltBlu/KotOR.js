@@ -70,7 +70,10 @@ import {
   updateAnimDummyInstances,
   type IAnimDummyInstanceBatch,
 } from "@/three/odyssey/OdysseyAnimDummyInstancer";
-import { nodeMaterialCacheShareable } from "@/three/odyssey/nodeMaterialCacheShareable";
+import {
+  collectMaterialUniqueAnimatedNodeNames as collectMaterialUniqueAnimNodeNames,
+  nodeMaterialCacheShareable,
+} from "@/three/odyssey/nodeMaterialCacheShareable";
 import { ensureMergeCompatibleAttributes } from "@/three/odyssey/ensureMergeCompatibleAttributes";
 
 export { resolveDanglyWindPower } from "@/three/odyssey/windPowerContext";
@@ -220,8 +223,14 @@ export class OdysseyModel3D extends OdysseyObject3D {
   /**
    * Node names with Position/Orientation/Scale keys in any clip.
    * mergeStatic must keep these live (doors/placeables are not under room `*a` dummies).
+   * Also includes SelfIllumColor / Alpha animated nodes (cannot bake into mergedMesh).
    */
   mergeExcludeAnimatedNodeNames: Set<string> = new Set();
+  /**
+   * Node names with SelfIllumColor / Alpha keys in any clip.
+   * Those materials mutate per-mesh uniforms and must not share a ShaderMaterial.
+   */
+  materialUniqueAnimatedNodeNames: Set<string> = new Set();
   /** Anim-dummy leaf InstancedMesh batches (hangar ships, etc.). */
   animDummyInstanceBatches: IAnimDummyInstanceBatch[] = [];
   mergedBufferDanglyGeometry: THREE.BufferGeometry;
@@ -1469,6 +1478,10 @@ export class OdysseyModel3D extends OdysseyObject3D {
         odysseyModel.modelHeader = model.modelHeader;
         odysseyModel.affectedByFog = model.modelHeader.fogged ? true : false;
 
+        // SelfIllum / Alpha clips mutate material uniforms — never share those ShaderMaterials.
+        odysseyModel.materialUniqueAnimatedNodeNames =
+          collectMaterialUniqueAnimNodeNames(odysseyModel.odysseyAnimations);
+
         if(options.mergeStatic){
           odysseyModel.mergedGeometries = [];
           odysseyModel.mergedDanglyGeometries = [];
@@ -1483,8 +1496,12 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
           // Doors/placeables animate mesh nodes under the root (not room `modela`).
           // Exclude those from static merge so open/close clips still move geometry.
+          // Also keep SelfIllum/Alpha animated meshes live (cannot bake into mergedMesh).
           odysseyModel.mergeExcludeAnimatedNodeNames =
             OdysseyModel3D.collectMergeExcludeAnimatedNodeNames(odysseyModel.odysseyAnimations);
+          for(const name of odysseyModel.materialUniqueAnimatedNodeNames){
+            odysseyModel.mergeExcludeAnimatedNodeNames.add(name);
+          }
         }
 
         const parseContext = createNodeParseContext(options, {
@@ -1637,6 +1654,16 @@ export class OdysseyModel3D extends OdysseyObject3D {
       }
     }
     return names;
+  }
+
+  /**
+   * Names of nodes with SelfIllumColor / Alpha controllers in any clip.
+   * Those meshes need unique materials (and must stay out of mergeStatic).
+   */
+  static collectMaterialUniqueAnimatedNodeNames(
+    animations: OdysseyModelAnimation[] | undefined,
+  ): Set<string> {
+    return collectMaterialUniqueAnimNodeNames(animations);
   }
 
   /** Delegates to {@link parseOdysseyNode}; retained as `OdysseyModel3D.NodeParser` for existing call sites. */
@@ -2019,8 +2046,12 @@ export class OdysseyModel3D extends OdysseyObject3D {
    * Anim-dummy leaves without lightmaps may share (same T1/defines) so hangar
    * ships and props stop minting one ShaderMaterial per mesh.
    */
-  static NodeMaterialCacheShareable(odysseyNode: OdysseyModelNodeMesh, options?: IOdysseyModelLoaderOptions): boolean {
-    return nodeMaterialCacheShareable(odysseyNode, options);
+  static NodeMaterialCacheShareable(
+    odysseyNode: OdysseyModelNodeMesh,
+    options?: IOdysseyModelLoaderOptions,
+    uniqueMaterialNodeNames?: Set<string>,
+  ): boolean {
+    return nodeMaterialCacheShareable(odysseyNode, options, uniqueMaterialNodeNames);
   }
 
   static NodeMaterialBuilder(odysseyModel: OdysseyModel3D, parentNode: THREE.Object3D, odysseyNode: OdysseyModelNodeMesh, options: IOdysseyModelLoaderOptions){
@@ -2049,8 +2080,13 @@ export class OdysseyModel3D extends OdysseyObject3D {
       });
     }else{
       const cacheId = OdysseyModel3D.NodeMaterialCacheId(odysseyNode, options, odysseyModel);
-      const canShare = OdysseyModel3D.NodeMaterialCacheShareable(odysseyNode, options);
+      const canShare = OdysseyModel3D.NodeMaterialCacheShareable(
+        odysseyNode,
+        options,
+        odysseyModel.materialUniqueAnimatedNodeNames,
+      );
       // Share across placeables/doors/rooms — mergeStatic is no longer required.
+      // SelfIllum/Alpha animated nodes never share (per-mesh uniform mutation).
       if(canShare && odysseyModel.cachedMaterials.has(cacheId)){
         return odysseyModel.cachedMaterials.get(cacheId)!;
       }
