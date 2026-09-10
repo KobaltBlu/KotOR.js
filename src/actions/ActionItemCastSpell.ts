@@ -240,7 +240,22 @@ export class ActionItemCastSpell extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
-    this.target = this.getParameter<ModuleObject>(0);
+    // Self-stamped casts: prefer owner when DWORD id matches owner.id so a
+    // colliding ObjectList entry (companion on PLAYER_ID) cannot become MoveTo.
+    const targetParam = this.parameters[0];
+    const rawTargetId =
+      targetParam && targetParam.type === ActionParameterType.DWORD
+        ? (targetParam.value as number)
+        : undefined;
+    if(
+      rawTargetId != null &&
+      this.owner &&
+      rawTargetId === this.owner.id
+    ){
+      this.target = this.owner;
+    }else{
+      this.target = this.getParameter<ModuleObject>(0);
+    }
     const spellId = this.getParameter<number>(5);
     const oItemParam = this.getParameter<ModuleItem>(10);
     if(oItemParam){

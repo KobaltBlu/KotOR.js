@@ -5,6 +5,7 @@ import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import { AILevel } from "@/enums/module/AILevel";
 import { ReputationType } from "@/enums/nwscript/ReputationType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { BitWise } from "@/utility/BitWise";
 import { PartyManager } from "@/managers/PartyManager";
 import * as THREE from "three";
@@ -17,6 +18,7 @@ import { FollowerCamera } from "@/engine/FollowerCamera";
 import { AutoPauseState } from "@/enums/engine/AutoPauseState";
 import { EngineState } from "@/enums/engine/EngineState";
 import { MiniGameObjectArray } from "@/module/minigame/MiniGameObjectArray";
+import { GFFField } from "@/resource/GFFField";
 
 /**
  * NWScript shape constants (GetObjectInShape).
@@ -201,15 +203,88 @@ export class ModuleObjectManager {
     return this.PLAYER_ID--;
   }
 
+  /**
+   * Char / player pool — retail next_char_id range (0x7F000001..0x7FFFFFFF).
+   * Module pool is everything below OBJECT_INVALID (0x7F000000).
+   */
+  static isCharPoolId(id: number): boolean {
+    return (
+      typeof id === 'number' &&
+      !isNaN(id) &&
+      id > ModuleObjectConstant.OBJECT_INVALID &&
+      id <= ModuleObjectConstant.PLAYER_ID
+    );
+  }
+
+  /** Missing / OBJECT_INVALID — needs AddInternalObject-style assignment. */
+  static isObjectIdUnset(id: number | undefined | null): boolean {
+    return (
+      id == null ||
+      id === 0 ||
+      id === ModuleObjectConstant.OBJECT_INVALID ||
+      (typeof id === 'number' && isNaN(id))
+    );
+  }
+
+  /**
+   * True PC only — retail AddInternalObject(isPlayerCharacter=1).
+   * Companions (isPM) use the module pool.
+   */
+  static isPlayerCharacterObject(object: ModuleObject): boolean {
+    if(!object) return false;
+    if(object.isPlayer) return true;
+    return BitWise.InstanceOf(object.objectType, ModuleObjectType.ModulePlayer);
+  }
+
+  /** Allocate a free id from the module or char pool (never overwrites). */
+  static allocateFreeObjectId(useCharPool: boolean): number {
+    let id = useCharPool ? this.GetNextPlayerId() : this.GetNextObjectId();
+    while(this.ObjectList.has(id)){
+      id = useCharPool ? this.GetNextPlayerId() : this.GetNextObjectId();
+    }
+    return id;
+  }
+
+  /** Realloc in the same pool as requestedId (AddObjectAtPos collision). */
+  static allocateFreeObjectIdMatchingPool(requestedId: number): number {
+    return this.allocateFreeObjectId(this.isCharPoolId(requestedId));
+  }
+
+  /** Stamp live id + template ObjectId so saves stay consistent. */
+  static persistObjectId(object: ModuleObject, id: number): void {
+    object.id = id;
+    const root = object.template?.RootNode;
+    if(!root) return;
+    if(root.hasField('ObjectId')){
+      root.getFieldByLabel('ObjectId').setValue(id);
+    }else{
+      root.addField(new GFFField(GFFDataType.DWORD, 'ObjectId')).setValue(id);
+    }
+  }
+
+  /**
+   * AddInternalObject + AddObjectAtPos — never silently overwrite another object.
+   * PC → char pool; everyone else (incl. party NPCs) → module pool.
+   */
   static AddObjectById(object: ModuleObject){
-    if(!object.id){
-      object.id = this.GetNextObjectId();
-      while(this.ObjectList.has(object.id)){
-        object.id = this.GetNextObjectId();
+    if(!object) return;
+
+    if(this.isObjectIdUnset(object.id)){
+      const useCharPool = this.isPlayerCharacterObject(object);
+      this.persistObjectId(object, this.allocateFreeObjectId(useCharPool));
+    }else{
+      const existing = this.ObjectList.get(object.id);
+      if(existing && existing !== object){
+        // Collision — realloc in the pool of the requested id (retail AddObjectAtPos).
+        this.persistObjectId(
+          object,
+          this.allocateFreeObjectIdMatchingPool(object.id)
+        );
       }
     }
+
     this.ObjectList.set(object.id, object);
-    // * ctor AddObject(aiMaster, VERY_LOW) — only if not already registered
+    // * ctor AddObject(aiMaster, PRIORITY_LOW) — only if not already registered
     if(object.aiLevel === AILevel.INVALID){
       GameState.module?.aiScheduler.addObject(object);
     }

@@ -1890,13 +1890,25 @@ export class PartyManager {
       return;
     }
     // Prefer saved ObjectId so CombatRound Target/MasterID refs still resolve after load.
+    // Companions use the module id pool (retail GetNPCObject isPlayerCharacter=0),
+    // not GetNextPlayerId / char pool.
+    const MOM = GameState.ModuleObjectManager;
     const savedId = template.RootNode.hasField('ObjectId')
       ? template.getFieldByLabel('ObjectId').getValue()
       : 0;
+    let assignId: number | undefined;
     if(!savedId || savedId === ModuleObjectConstant.OBJECT_INVALID){
-      template.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(
-        GameState.ModuleObjectManager.GetNextPlayerId()
-      );
+      assignId = MOM.allocateFreeObjectId(false);
+    }else if(MOM.ObjectList.has(savedId)){
+      // Taken by another object — realloc in the pool matching the saved id.
+      assignId = MOM.allocateFreeObjectIdMatchingPool(savedId);
+    }
+    if(assignId != null){
+      if(template.RootNode.hasField('ObjectId')){
+        template.getFieldByLabel('ObjectId').setValue(assignId);
+      }else{
+        template.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(assignId);
+      }
     }
     const partyMember = new ModuleCreature(template);
 
