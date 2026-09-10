@@ -1076,8 +1076,9 @@ export class ModuleDoor extends ModuleObject {
           castShadow: false,
           receiveShadow: true,
           shadowsEnabled: false,
-          // Static shell merges; anim-dummy open/close meshes stay live.
-          mergeStatic: true,
+          // Door panels/dummies are almost all clip-driven; mergeStatic left little
+          // static geo and caused closed-pose leftovers. Rooms/placeables keep it.
+          mergeStatic: false,
         }).then((door: OdysseyModel3D) => {
           if(this.model instanceof OdysseyModel3D){
             this.model.removeFromParent();
