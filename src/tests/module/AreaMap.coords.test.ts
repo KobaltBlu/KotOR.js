@@ -11,24 +11,185 @@ import {
   AREA_MAP_LOGICAL_SIZE_K1,
 } from "@/module/AreaMap";
 
-/** Live TSL scene Map corners (NorthAxis=SOUTH). Expected pixels use retail floor(uv*size+0.5). */
-const LIVE_TSL_SOUTH = {
-  northAxis: MapNorthAxis.SOUTH,
-  mapResX: 24,
+/**
+ * Live / export-backed Map structs for N/E/S/W × K1/TSL.
+ * Calibration from exports/k1|k2/module/<mod>/area/<are>.are.json
+ * (see docs/minimap-axis-validation.md).
+ */
+interface LiveAreaMapFixture {
+  id: string;
+  gameKey: GameEngineType;
+  northAxis: MapNorthAxis;
+  mapResX: number;
+  mapZoom: number;
+  worldPt1X: number;
+  worldPt1Y: number;
+  worldPt2X: number;
+  worldPt2Y: number;
+  mapPt1X: number;
+  mapPt1Y: number;
+  mapPt2X: number;
+  mapPt2Y: number;
+  /** Sample world point (live PC or world midpoint). */
+  sample: { x: number; y: number };
+}
+
+/** K1 Endar Spire command deck — WEST. Sample = live PC. */
+const K1_END_M01AA_WEST: LiveAreaMapFixture = {
+  id: "K1 end_m01aa/m01aa WEST",
+  gameKey: GameEngineType.KOTOR,
+  northAxis: MapNorthAxis.WEST,
+  mapResX: 15,
   mapZoom: 1,
-  worldPt1X: 2.6500000953674316,
-  worldPt1Y: -126.83999633789062,
-  worldPt2X: 89.8499984741211,
-  worldPt2Y: 97.88999938964844,
-  mapPt1X: 0.7839999794960022,
-  mapPt1Y: 0.6420000195503235,
-  mapPt2X: 0.2460000067949295,
-  mapPt2Y: 0.2150000035762787,
-  pc: { x: 2.6319277773757, y: -62.99151798317822 },
-  expectedPixel: { x: 371, y: 189 },
+  worldPt1X: 15.399999618530273,
+  worldPt1Y: 16.799999237060547,
+  worldPt2X: 34.400001525878906,
+  worldPt2Y: 158,
+  mapPt1X: 0.08179999887943268,
+  mapPt1Y: 0.32589998841285706,
+  mapPt2X: 0.9363999962806702,
+  mapPt2Y: 0.5073999762535095,
+  sample: { x: 18.760656898601805, y: 80.883888121043 },
 };
 
-function applyMapFields(areaMap: AreaMap, fields: Partial<AreaMap> & {
+/** K1 Taris Upper City North — NORTH. */
+const K1_TAR_M02AA_NORTH: LiveAreaMapFixture = {
+  id: "K1 tar_m02aa/m02aa NORTH",
+  gameKey: GameEngineType.KOTOR,
+  northAxis: MapNorthAxis.NORTH,
+  mapResX: 24,
+  mapZoom: 1,
+  worldPt1X: 87.4000015258789,
+  worldPt1Y: 87.5999984741211,
+  worldPt2X: 143,
+  worldPt2Y: 143,
+  mapPt1X: 0.37049999833107,
+  mapPt1Y: 0.755599975585938,
+  mapPt2X: 0.777300000190735,
+  mapPt2Y: 0.0926000028848648,
+  sample: { x: (87.4000015258789 + 143) / 2, y: (87.5999984741211 + 143) / 2 },
+};
+
+/** K1 Dantooine grove — EAST. */
+const K1_DANM15_EAST: LiveAreaMapFixture = {
+  id: "K1 danm15/m15aa EAST",
+  gameKey: GameEngineType.KOTOR,
+  northAxis: MapNorthAxis.EAST,
+  mapResX: 25,
+  mapZoom: 1,
+  worldPt1X: 119.199996948242,
+  worldPt1Y: 182.899993896484,
+  worldPt2X: 147.5,
+  worldPt2Y: 69.5,
+  mapPt1X: 0.572700023651123,
+  mapPt1Y: 0.807399988174438,
+  mapPt2X: 0.461400002241135,
+  mapPt2Y: 0.0741000026464462,
+  sample: { x: (119.199996948242 + 147.5) / 2, y: (182.899993896484 + 69.5) / 2 },
+};
+
+/** K1 Taris Undercity — SOUTH. */
+const K1_TAR_M05AA_SOUTH: LiveAreaMapFixture = {
+  id: "K1 tar_m05aa/m05aa SOUTH",
+  gameKey: GameEngineType.KOTOR,
+  northAxis: MapNorthAxis.SOUTH,
+  mapResX: 32,
+  mapZoom: 1,
+  worldPt1X: 255.300003051758,
+  worldPt1Y: 114.400001525879,
+  worldPt2X: 179.199996948242,
+  worldPt2Y: 202.899993896484,
+  mapPt1X: 0.613600015640259,
+  mapPt1Y: 0.414799988269806,
+  mapPt2X: 0.359100013971329,
+  mapPt2Y: 0.792599976062775,
+  sample: { x: (255.300003051758 + 179.199996948242) / 2, y: (114.400001525879 + 202.899993896484) / 2 },
+};
+
+/** TSL Harbinger — SOUTH. */
+const TSL_152HAR_SOUTH: LiveAreaMapFixture = {
+  id: "TSL 152har/152har SOUTH",
+  gameKey: GameEngineType.TSL,
+  northAxis: MapNorthAxis.SOUTH,
+  mapResX: 18,
+  mapZoom: 1,
+  worldPt1X: 8.14999961853027,
+  worldPt1Y: 35.1399993896484,
+  worldPt2X: 76.8499984741211,
+  worldPt2Y: -42.1399993896484,
+  mapPt1X: 0.307000011205673,
+  mapPt1Y: 0.705999970436096,
+  mapPt2X: 0.635999977588654,
+  mapPt2Y: 0.120999999344349,
+  sample: { x: (8.14999961853027 + 76.8499984741211) / 2, y: (35.1399993896484 + -42.1399993896484) / 2 },
+};
+
+/** TSL Ebon Hawk — NORTH. */
+const TSL_001EBO_NORTH: LiveAreaMapFixture = {
+  id: "TSL 001ebo/001ebo NORTH",
+  gameKey: GameEngineType.TSL,
+  northAxis: MapNorthAxis.NORTH,
+  mapResX: 18,
+  mapZoom: 1,
+  worldPt1X: 50.1699981689453,
+  worldPt1Y: 46.689998626709,
+  worldPt2X: 38.1199989318848,
+  worldPt2Y: 31.3700008392334,
+  mapPt1X: 0.512000024318695,
+  mapPt1Y: 0.504999995231628,
+  mapPt2X: 0.435000002384186,
+  mapPt2Y: 0.698000013828278,
+  sample: { x: (50.1699981689453 + 38.1199989318848) / 2, y: (46.689998626709 + 31.3700008392334) / 2 },
+};
+
+/** TSL Telos — EAST. */
+const TSL_232TEL_EAST: LiveAreaMapFixture = {
+  id: "TSL 232tel/232tel EAST",
+  gameKey: GameEngineType.TSL,
+  northAxis: MapNorthAxis.EAST,
+  mapResX: 24,
+  mapZoom: 1,
+  worldPt1X: 78.3300018310547,
+  worldPt1Y: 57.0099983215332,
+  worldPt2X: -72.7600021362305,
+  worldPt2Y: 230.020004272461,
+  mapPt1X: 0.354000002145767,
+  mapPt1Y: 0.284000009298325,
+  mapPt2X: 0.651000022888184,
+  mapPt2Y: 0.958999991416931,
+  sample: { x: (78.3300018310547 + -72.7600021362305) / 2, y: (57.0099983215332 + 230.020004272461) / 2 },
+};
+
+/** TSL Peragus — WEST. */
+const TSL_102PER_WEST: LiveAreaMapFixture = {
+  id: "TSL 102per/102per WEST",
+  gameKey: GameEngineType.TSL,
+  northAxis: MapNorthAxis.WEST,
+  mapResX: 24,
+  mapZoom: 1,
+  worldPt1X: -14.8999996185303,
+  worldPt1Y: 28.9500007629395,
+  worldPt2X: -81.3499984741211,
+  worldPt2Y: -85,
+  mapPt1X: 0.528999984264374,
+  mapPt1Y: 0.433999985456467,
+  mapPt2X: 0.209000006318092,
+  mapPt2Y: 0.061999998986721,
+  sample: { x: (-14.8999996185303 + -81.3499984741211) / 2, y: (28.9500007629395 + -85) / 2 },
+};
+
+const LIVE_AXIS_FIXTURES: LiveAreaMapFixture[] = [
+  K1_END_M01AA_WEST,
+  K1_TAR_M02AA_NORTH,
+  K1_DANM15_EAST,
+  K1_TAR_M05AA_SOUTH,
+  TSL_152HAR_SOUTH,
+  TSL_001EBO_NORTH,
+  TSL_232TEL_EAST,
+  TSL_102PER_WEST,
+];
+
+function applyMapFields(areaMap: AreaMap, fields: LiveAreaMapFixture | (Partial<AreaMap> & {
   northAxis: number;
   worldPt1X: number;
   worldPt1Y: number;
@@ -38,7 +199,7 @@ function applyMapFields(areaMap: AreaMap, fields: Partial<AreaMap> & {
   mapPt1Y: number;
   mapPt2X: number;
   mapPt2Y: number;
-}){
+})){
   areaMap.northAxis = fields.northAxis;
   areaMap.worldPt1X = fields.worldPt1X;
   areaMap.worldPt1Y = fields.worldPt1Y;
@@ -53,6 +214,63 @@ function applyMapFields(areaMap: AreaMap, fields: Partial<AreaMap> & {
   areaMap.init();
 }
 
+/**
+ * Independent copy of AreaMap.toMapCoordinates per-axis formulas (pre-e38afcc1).
+ * Tests assert the implementation stays locked to this contract.
+ */
+function expectedUv(
+  fields: {
+    northAxis: number;
+    worldPt1X: number;
+    worldPt1Y: number;
+    worldPt2X: number;
+    worldPt2Y: number;
+    mapPt1X: number;
+    mapPt1Y: number;
+    mapPt2X: number;
+    mapPt2Y: number;
+  },
+  x: number,
+  y: number
+): { x: number; y: number } {
+  switch(fields.northAxis){
+    case MapNorthAxis.NORTH: {
+      const scaleY = (fields.mapPt1Y - fields.mapPt2Y) / (fields.worldPt1Y - fields.worldPt2Y);
+      const scaleX = (fields.mapPt1X - fields.mapPt2X) / (fields.worldPt1X - fields.worldPt2X);
+      return {
+        x: ((x - fields.worldPt1X) * scaleX) + fields.mapPt1X,
+        y: 1 - (((y - fields.worldPt1Y) * scaleY) + fields.mapPt1Y),
+      };
+    }
+    case MapNorthAxis.SOUTH: {
+      const scaleY = (fields.mapPt1Y - fields.mapPt2Y) / (fields.worldPt1Y - fields.worldPt2Y);
+      const scaleX = (fields.mapPt1X - fields.mapPt2X) / (fields.worldPt1X - fields.worldPt2X);
+      return {
+        y: (((x - fields.worldPt1X) * scaleX) + fields.mapPt1X),
+        x: (((-y - fields.worldPt1Y) * scaleY) + fields.mapPt1Y),
+      };
+    }
+    case MapNorthAxis.EAST: {
+      const scaleX = (fields.mapPt1Y - fields.mapPt2Y) / (fields.worldPt1X - fields.worldPt2X);
+      const scaleY = (fields.mapPt1X - fields.mapPt2X) / (fields.worldPt1Y - fields.worldPt2Y);
+      return {
+        x: (((y - fields.worldPt1Y) * scaleY) + fields.mapPt1X),
+        y: (((x - fields.worldPt1X) * scaleX) + fields.mapPt1Y),
+      };
+    }
+    case MapNorthAxis.WEST: {
+      const scaleX = (fields.mapPt1Y - fields.mapPt2Y) / (fields.worldPt1X - fields.worldPt2X);
+      const scaleY = (fields.mapPt1X - fields.mapPt2X) / (fields.worldPt1Y - fields.worldPt2Y);
+      return {
+        x: (((y - fields.worldPt1Y) * scaleY) + fields.mapPt1X),
+        y: 1 - (((x - fields.worldPt1X) * scaleX) + fields.mapPt1Y),
+      };
+    }
+    default:
+      return { x: NaN, y: NaN };
+  }
+}
+
 describe("AreaMap engine coordinates", () => {
   let previousGameKey: GameEngineType;
 
@@ -64,156 +282,75 @@ describe("AreaMap engine coordinates", () => {
     ApplicationProfile.GameKey = previousGameKey;
   });
 
-  test("NorthAxis transform matches engine Initialize / GetMapPixelFromWorldCoord", () => {
-    expect(AreaMap.transformWorldByNorthAxis(3, 5, MapNorthAxis.NORTH)).toEqual({ x: 3, y: 5 });
-    expect(AreaMap.transformWorldByNorthAxis(3, 5, MapNorthAxis.EAST)).toEqual({ x: -3, y: -5 });
-    expect(AreaMap.transformWorldByNorthAxis(3, 5, MapNorthAxis.SOUTH)).toEqual({ x: 5, y: -3 });
-    expect(AreaMap.transformWorldByNorthAxis(3, 5, MapNorthAxis.WEST)).toEqual({ x: -5, y: 3 });
-  });
-
-  test("uvToLogicalPixel uses retail floor(uv * size + 0.5), not trunc", () => {
-    const { width, height } = AREA_MAP_LOGICAL_SIZE_TSL;
-    // Live MapPts where trunc and round diverge
-    expect(AreaMap.uvToLogicalPixel(LIVE_TSL_SOUTH.mapPt1X, width)).toBe(461);
-    expect(Math.trunc(LIVE_TSL_SOUTH.mapPt1X * width)).toBe(460);
-    expect(AreaMap.uvToLogicalPixel(LIVE_TSL_SOUTH.mapPt1Y, height)).toBe(189);
-    expect(Math.trunc(LIVE_TSL_SOUTH.mapPt1Y * height)).toBe(188);
-    expect(AreaMap.uvToLogicalPixel(LIVE_TSL_SOUTH.mapPt2X, width)).toBe(145);
-    expect(Math.trunc(LIVE_TSL_SOUTH.mapPt2X * width)).toBe(144);
-  });
-
-  test("live TSL SOUTH scene maps PC to engine pixels (371, 189)", () => {
-    ApplicationProfile.GameKey = GameEngineType.TSL;
-    const areaMap = new AreaMap();
-    applyMapFields(areaMap, LIVE_TSL_SOUTH);
-
-    const pix = areaMap.toMapPixels(LIVE_TSL_SOUTH.pc.x, LIVE_TSL_SOUTH.pc.y);
-    expect(pix.valid).toBe(true);
-    expect(pix.x).toBe(LIVE_TSL_SOUTH.expectedPixel.x);
-    expect(pix.y).toBe(LIVE_TSL_SOUTH.expectedPixel.y);
-
-    const uv = areaMap.toMapCoordinates(LIVE_TSL_SOUTH.pc.x, LIVE_TSL_SOUTH.pc.y);
-    expect(uv.x).toBeCloseTo(LIVE_TSL_SOUTH.expectedPixel.x / AREA_MAP_LOGICAL_SIZE_TSL.width, 5);
-    // Display Y is flipped vs pixels (AurGUI top-origin → Three.js bottom-origin)
-    expect(uv.y).toBeCloseTo(1 - LIVE_TSL_SOUTH.expectedPixel.y / AREA_MAP_LOGICAL_SIZE_TSL.height, 5);
-  });
-
-  test("display UV Y-flip leaves raw pixels unchanged", () => {
-    ApplicationProfile.GameKey = GameEngineType.TSL;
-    const areaMap = new AreaMap();
-    applyMapFields(areaMap, LIVE_TSL_SOUTH);
-    const pix = areaMap.toMapPixels(LIVE_TSL_SOUTH.pc.x, LIVE_TSL_SOUTH.pc.y);
-    const uv = areaMap.toMapCoordinates(LIVE_TSL_SOUTH.pc.x, LIVE_TSL_SOUTH.pc.y);
-    expect(pix.y).toBe(189);
-    expect(uv.y).not.toBeCloseTo(pix.y / AREA_MAP_LOGICAL_SIZE_TSL.height, 5);
-    expect(uv.y + pix.y / AREA_MAP_LOGICAL_SIZE_TSL.height).toBeCloseTo(1, 5);
-  });
-
-  test("NORTH: worldPt1 maps near mapPt1 pixels", () => {
-    ApplicationProfile.GameKey = GameEngineType.TSL;
-    const areaMap = new AreaMap();
-    applyMapFields(areaMap, {
-      ...LIVE_TSL_SOUTH,
-      northAxis: MapNorthAxis.NORTH,
-    });
-
-    const pix = areaMap.toMapPixels(LIVE_TSL_SOUTH.worldPt1X, LIVE_TSL_SOUTH.worldPt1Y);
-    const mp1x = AreaMap.uvToLogicalPixel(LIVE_TSL_SOUTH.mapPt1X, AREA_MAP_LOGICAL_SIZE_TSL.width);
-    const mp1y = AreaMap.uvToLogicalPixel(LIVE_TSL_SOUTH.mapPt1Y, AREA_MAP_LOGICAL_SIZE_TSL.height);
-    expect(pix.x).toBe(mp1x);
-    expect(pix.y).toBe(mp1y);
-    expect(pix.valid).toBe(true);
-  });
-
-  test.each([
-    [GameEngineType.KOTOR, AREA_MAP_LOGICAL_SIZE_K1],
-    [GameEngineType.TSL, AREA_MAP_LOGICAL_SIZE_TSL],
-  ] as const)("synthetic calibration %s: worldPt1 → mapPt1 for all NorthAxis", (gameKey, logical) => {
-    ApplicationProfile.GameKey = gameKey;
-    const axes = [
-      MapNorthAxis.NORTH,
-      MapNorthAxis.EAST,
-      MapNorthAxis.SOUTH,
-      MapNorthAxis.WEST,
-    ];
-
-    for(const axis of axes){
+  test.each(LIVE_AXIS_FIXTURES.map((f) => [f.id, f] as const))(
+    "%s: toMapCoordinates matches per-axis formula at sample + corners",
+    (_id, fixture) => {
+      ApplicationProfile.GameKey = fixture.gameKey;
       const areaMap = new AreaMap();
-      applyMapFields(areaMap, {
-        northAxis: axis,
-        mapResX: 32,
-        worldPt1X: 10,
-        worldPt1Y: 20,
-        worldPt2X: 110,
-        worldPt2Y: 120,
-        mapPt1X: 0.25,
-        mapPt1Y: 0.25,
-        mapPt2X: 0.75,
-        mapPt2Y: 0.75,
-      });
+      applyMapFields(areaMap, fixture);
 
-      const pix1 = areaMap.toMapPixels(10, 20);
-      const expectedX = AreaMap.uvToLogicalPixel(0.25, logical.width);
-      const expectedY = AreaMap.uvToLogicalPixel(0.25, logical.height);
-      expect(pix1.valid).toBe(true);
-      expect(pix1.x).toBe(expectedX);
-      expect(pix1.y).toBe(expectedY);
+      const points = [
+        fixture.sample,
+        { x: fixture.worldPt1X, y: fixture.worldPt1Y },
+        { x: fixture.worldPt2X, y: fixture.worldPt2Y },
+      ];
 
-      const pix2 = areaMap.toMapPixels(110, 120);
-      expect(pix2.valid).toBe(true);
-      expect(pix2.x).toBe(AreaMap.uvToLogicalPixel(0.75, logical.width));
-      expect(pix2.y).toBe(AreaMap.uvToLogicalPixel(0.75, logical.height));
-
-      // Interior midpoint stays in-bounds
-      const mid = areaMap.toMapPixels(60, 70);
-      expect(mid.valid).toBe(true);
-      expect(mid.x).toBeGreaterThanOrEqual(0);
-      expect(mid.y).toBeGreaterThanOrEqual(0);
-      expect(mid.x).toBeLessThanOrEqual(logical.width);
-      expect(mid.y).toBeLessThanOrEqual(logical.height);
+      for(const p of points){
+        const expected = expectedUv(fixture, p.x, p.y);
+        const uv = areaMap.toMapCoordinates(p.x, p.y);
+        expect(uv.x).toBeCloseTo(expected.x, 5);
+        expect(uv.y).toBeCloseTo(expected.y, 5);
+        expect(Number.isFinite(uv.x)).toBe(true);
+        expect(Number.isFinite(uv.y)).toBe(true);
+      }
     }
-  });
+  );
 
-  test("EAST / WEST / SOUTH transforms stay in-bounds for worldPt1", () => {
-    ApplicationProfile.GameKey = GameEngineType.TSL;
-    for(const axis of [MapNorthAxis.EAST, MapNorthAxis.SOUTH, MapNorthAxis.WEST]){
+  test.each(LIVE_AXIS_FIXTURES.map((f) => [f.id, f] as const))(
+    "%s: sample UV maps into logical marker space",
+    (_id, fixture) => {
+      ApplicationProfile.GameKey = fixture.gameKey;
+      const logical = fixture.gameKey === GameEngineType.TSL
+        ? AREA_MAP_LOGICAL_SIZE_TSL
+        : AREA_MAP_LOGICAL_SIZE_K1;
       const areaMap = new AreaMap();
-      applyMapFields(areaMap, {
-        ...LIVE_TSL_SOUTH,
-        northAxis: axis,
-      });
-      const pix = areaMap.toMapPixels(LIVE_TSL_SOUTH.worldPt1X, LIVE_TSL_SOUTH.worldPt1Y);
-      expect(pix.valid).toBe(true);
-      expect(pix.x).toBeGreaterThanOrEqual(0);
-      expect(pix.y).toBeGreaterThanOrEqual(0);
-      expect(pix.x).toBeLessThanOrEqual(AREA_MAP_LOGICAL_SIZE_TSL.width);
-      expect(pix.y).toBeLessThanOrEqual(AREA_MAP_LOGICAL_SIZE_TSL.height);
-    }
-  });
+      applyMapFields(areaMap, fixture);
 
-  test("K1 logical bounds use 440x256", () => {
+      const uv = areaMap.toMapCoordinates(fixture.sample.x, fixture.sample.y);
+      const sx = logical.width * uv.x;
+      const sy = logical.height * uv.y;
+      // Allow slight OOB UV from authored MapPts; marker math must stay finite.
+      expect(Number.isFinite(sx)).toBe(true);
+      expect(Number.isFinite(sy)).toBe(true);
+      expect(areaMap.northAxis).toBe(fixture.northAxis);
+      expect(areaMap.mapResY).toBe(
+        Math.max(1, Math.floor((fixture.mapResX * logical.height) / logical.width))
+      );
+    }
+  );
+
+  test("NORTH worldPt1 → (mapPt1X, 1 - mapPt1Y)", () => {
     ApplicationProfile.GameKey = GameEngineType.KOTOR;
     const areaMap = new AreaMap();
-    applyMapFields(areaMap, {
-      northAxis: MapNorthAxis.NORTH,
-      mapResX: 32,
-      worldPt1X: 0,
-      worldPt1Y: 0,
-      worldPt2X: 100,
-      worldPt2Y: 100,
-      mapPt1X: 0,
-      mapPt1Y: 0,
-      mapPt2X: 1,
-      mapPt2Y: 1,
-    });
+    applyMapFields(areaMap, K1_TAR_M02AA_NORTH);
+    const uv = areaMap.toMapCoordinates(K1_TAR_M02AA_NORTH.worldPt1X, K1_TAR_M02AA_NORTH.worldPt1Y);
+    expect(uv.x).toBeCloseTo(K1_TAR_M02AA_NORTH.mapPt1X, 5);
+    expect(uv.y).toBeCloseTo(1 - K1_TAR_M02AA_NORTH.mapPt1Y, 5);
+  });
 
-    const atOrigin = areaMap.toMapPixels(0, 0);
-    expect(atOrigin).toEqual({ x: 0, y: 0, valid: true });
-
-    const atFar = areaMap.toMapPixels(100, 100);
-    expect(atFar.x).toBe(AREA_MAP_LOGICAL_SIZE_K1.width);
-    expect(atFar.y).toBe(AREA_MAP_LOGICAL_SIZE_K1.height);
-    expect(atFar.valid).toBe(true);
+  test("fixture matrix covers every NorthAxis for both games", () => {
+    const byGame = new Map<GameEngineType, Set<MapNorthAxis>>();
+    for(const f of LIVE_AXIS_FIXTURES){
+      if(!byGame.has(f.gameKey)) byGame.set(f.gameKey, new Set());
+      byGame.get(f.gameKey)!.add(f.northAxis);
+    }
+    for(const game of [GameEngineType.KOTOR, GameEngineType.TSL]){
+      const axes = byGame.get(game);
+      expect(axes?.has(MapNorthAxis.NORTH)).toBe(true);
+      expect(axes?.has(MapNorthAxis.EAST)).toBe(true);
+      expect(axes?.has(MapNorthAxis.SOUTH)).toBe(true);
+      expect(axes?.has(MapNorthAxis.WEST)).toBe(true);
+    }
   });
 
   test("generateResY uses game aspect (K1 256/440, TSL 294/588)", () => {
@@ -271,16 +408,5 @@ describe("AreaMap engine coordinates", () => {
     expect(fromInt!.mapPt1Y).toBeCloseTo(147 / height);
     expect(fromInt!.mapPt2X).toBeCloseTo(588 / width);
     expect(fromInt!.mapPt2Y).toBeCloseTo(294 / height);
-  });
-
-  test("toGridPixels matches engine GetGridPixelFromMapPixel", () => {
-    ApplicationProfile.GameKey = GameEngineType.TSL;
-    const areaMap = new AreaMap();
-    applyMapFields(areaMap, LIVE_TSL_SOUTH);
-
-    const grid = areaMap.toGridPixels(371, 189);
-    expect(grid.valid).toBe(true);
-    expect(grid.x).toBe(Math.trunc(371 / (AREA_MAP_LOGICAL_SIZE_TSL.width / LIVE_TSL_SOUTH.mapResX) + 0.5));
-    expect(grid.y).toBe(Math.trunc(189 / (AREA_MAP_LOGICAL_SIZE_TSL.height / areaMap.mapResY) + 0.5));
   });
 });

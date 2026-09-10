@@ -47,7 +47,7 @@ export function emptyAreaMapOverlay(): AreaMapOverlaySnapshot {
   };
 }
 
-/** Build a calibrated AreaMap from an overlay snapshot (no fog / reveal data). */
+/** Build an AreaMap from an overlay snapshot (no fog / reveal data). */
 export function areaMapFromOverlay(snap: AreaMapOverlaySnapshot): AreaMap {
   const map = new AreaMap();
   map.northAxis = snap.northAxis | 0;
@@ -59,69 +59,47 @@ export function areaMapFromOverlay(snap: AreaMapOverlaySnapshot): AreaMap {
   map.mapPt1Y = snap.mapPt1Y;
   map.mapPt2X = snap.mapPt2X;
   map.mapPt2Y = snap.mapPt2Y;
-  map.recomputeCalibration({
-    width: snap.logicalWidth || AreaMap.getLogicalMapSize().width,
-    height: snap.logicalHeight || AreaMap.getLogicalMapSize().height,
-  });
   return map;
 }
 
-export function worldToOverlayMapPixels(
+/**
+ * World → display UV via AreaMap.toMapCoordinates (same path as in-game minimap).
+ */
+export function worldToOverlayMapUV(
   snap: AreaMapOverlaySnapshot,
   worldX: number,
   worldY: number
-): { x: number; y: number; valid: boolean } {
-  if(!snap.available || !snap.logicalWidth || !snap.logicalHeight){
-    return { x: -1, y: -1, valid: false };
+): { u: number; v: number; valid: boolean } {
+  if(!snap.available){
+    return { u: 0, v: 0, valid: false };
   }
   const map = areaMapFromOverlay(snap);
-  return map.toMapPixels(worldX, worldY, {
-    width: snap.logicalWidth,
-    height: snap.logicalHeight,
-  });
+  const uv = map.toMapCoordinates(worldX, worldY);
+  const u = uv.x;
+  const v = uv.y;
+  const valid = Number.isFinite(u) && Number.isFinite(v) && u >= 0 && u <= 1 && v >= 0 && v <= 1;
+  return { u, v, valid };
 }
 
 /**
- * Continuous map pixels (no final trunc) for Dev Tools overlay.
- * MapPt corners use retail floor(uv * size + 0.5); result stays continuous for pin art.
+ * World → native texture pixel space for Dev Tools TopDownMap pins.
+ * Uses toMapCoordinates UV × texture size (matches LBL_MapView display UV).
  */
 export function worldToOverlayMapPoint(
   snap: AreaMapOverlaySnapshot,
   worldX: number,
   worldY: number
 ): { x: number; y: number; valid: boolean } {
-  if(!snap.available || !snap.logicalWidth || !snap.logicalHeight){
+  const texW = snap.textureWidth > 0 ? snap.textureWidth : snap.logicalWidth;
+  const texH = snap.textureHeight > 0 ? snap.textureHeight : snap.logicalHeight;
+  if(!snap.available || !texW || !texH){
     return { x: -1, y: -1, valid: false };
   }
-  const width = snap.logicalWidth;
-  const height = snap.logicalHeight;
-  const mapPt1Xpx = AreaMap.uvToLogicalPixel(snap.mapPt1X, width);
-  const mapPt1Ypx = AreaMap.uvToLogicalPixel(snap.mapPt1Y, height);
-  const mapPt2Xpx = AreaMap.uvToLogicalPixel(snap.mapPt2X, width);
-  const mapPt2Ypx = AreaMap.uvToLogicalPixel(snap.mapPt2Y, height);
-
-  const w1 = AreaMap.transformWorldByNorthAxis(snap.worldPt1X, snap.worldPt1Y, snap.northAxis);
-  const w2 = AreaMap.transformWorldByNorthAxis(snap.worldPt2X, snap.worldPt2Y, snap.northAxis);
-  const local = AreaMap.transformWorldByNorthAxis(worldX, worldY, snap.northAxis);
-
-  const denomX = mapPt2Xpx - mapPt1Xpx;
-  const denomY = mapPt2Ypx - mapPt1Ypx;
-  if(denomX == 0 || denomY == 0){
-    return { x: -1, y: -1, valid: false };
-  }
-  const scaleX = (w2.x - w1.x) / denomX;
-  const scaleY = (w2.y - w1.y) / denomY;
-  if(scaleX == 0 || scaleY == 0){
-    return { x: -1, y: -1, valid: false };
-  }
-  const offsetX = w1.x - mapPt1Xpx * scaleX;
-  const offsetY = w1.y - mapPt1Ypx * scaleY;
-  const x = (local.x - offsetX) / scaleX;
-  const y = (local.y - offsetY) / scaleY;
+  const { u, v, valid } = worldToOverlayMapUV(snap, worldX, worldY);
   return {
-    x,
-    y,
-    valid: x >= 0 && x <= width && y >= 0 && y <= height,
+    x: u * texW,
+    y: v * texH,
+    valid,
   };
 }
 

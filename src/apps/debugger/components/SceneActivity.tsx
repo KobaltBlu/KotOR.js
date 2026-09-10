@@ -46,28 +46,22 @@ const SectionView: React.FC<{ section: InspectorSection }> = ({ section }) => {
 
 /**
  * World pins → map texture pixel space for TopDownMap.
- * GetMapPixel is in logical pixels (440×256 / 588×294); lbl_map* is often
- * 512×256. Scene draws the texture at native size and scales pins by UV so we do
- * not squash X (logical aspect 1.72 vs texture 2.0), which reads as an X shift.
+ * Uses the same toMapCoordinates UV as the in-game minimap, scaled to native
+ * lbl_map* texture size (often 512×256).
  */
 function pinsToMapSpace(
   pins: SceneMapPin[],
   overlay: AreaMapOverlaySnapshot
 ): { pins: SceneMapPin[]; bounds: OverviewBounds } {
-  const logicalW = overlay.logicalWidth;
-  const logicalH = overlay.logicalHeight;
-  const texW = overlay.textureWidth > 0 ? overlay.textureWidth : logicalW;
-  const texH = overlay.textureHeight > 0 ? overlay.textureHeight : logicalH;
+  const texW = overlay.textureWidth > 0 ? overlay.textureWidth : overlay.logicalWidth;
+  const texH = overlay.textureHeight > 0 ? overlay.textureHeight : overlay.logicalHeight;
   const mapped: SceneMapPin[] = [];
   for(const p of pins){
-    const pix = worldToOverlayMapPoint(overlay, p.x, p.y);
-    const u = logicalW > 0 ? pix.x / logicalW : 0;
-    const v = logicalH > 0 ? pix.y / logicalH : 0;
+    const pt = worldToOverlayMapPoint(overlay, p.x, p.y);
     mapped.push({
       ...p,
-      x: u * texW,
-      // Same Y flip as AreaMap.toMapCoordinates: uv.y = 1 - odysseyV
-      y: (1 - v) * texH,
+      x: pt.x,
+      y: pt.y,
     });
   }
   return {

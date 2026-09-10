@@ -276,19 +276,27 @@ export class LBL_MapView {
   applyMapPlaneScale(){
     if(!this.mapTexture) return;
 
-    // positions in logical map pixels; TGA is stretched to that rect (not raw mip size).
+    // Pre-e38afcc1: map art uses native texture size; markers/fog use logical scaleSize.
+    const zoom = this.getMapZoom();
+    const textureSize = this.getMapTextureSize();
     const scaleSize = this.getMapTextureScaleSize();
-    const planeW = Math.max(1, asExtentInt(scaleSize.width));
-    const planeH = Math.max(1, asExtentInt(scaleSize.height));
 
-    this.mapPlane.scale.set(planeW, planeH, 1);
-    this.mapGroup.position.x = truncDiv(planeW, 2);
-    this.mapGroup.position.y = truncDiv(planeH, 2);
+    this.mapPlane.scale.set(
+      Math.max(1, asExtentInt(textureSize.width / zoom)),
+      Math.max(1, asExtentInt(textureSize.height / zoom)),
+      1
+    );
+    this.mapGroup.position.x = truncDiv(asExtentInt(textureSize.width / zoom), 2);
+    this.mapGroup.position.y = truncDiv(asExtentInt(textureSize.height / zoom), 2);
 
-    this.fogPlane.scale.set(planeW, planeH, 1);
+    this.fogPlane.scale.set(
+      Math.max(1, asExtentInt(scaleSize.width)),
+      Math.max(1, asExtentInt(scaleSize.height)),
+      1
+    );
     this.fogPlane.position.z = 5;
-    this.fogPlane.position.x = truncDiv(planeW, 2);
-    this.fogPlane.position.y = truncDiv(planeH, 2);
+    this.fogPlane.position.x = truncDiv(asExtentInt(scaleSize.width), 2);
+    this.fogPlane.position.y = truncDiv(asExtentInt(scaleSize.height), 2);
   }
 
   setAreaMap(areaMap: AreaMap){
@@ -518,7 +526,7 @@ export class LBL_MapView {
   }
 
   /**
-   * Logical map display size. MINIMAP applies MapZoom (extent *= 1/MapZoom).
+   * Logical map display size for markers/fog/camera. MINIMAP applies MapZoom (extent /= MapZoom).
    */
   getMapTextureScaleSize(): { width: number, height: number } {
     const logical = AreaMap.getLogicalMapSize();
