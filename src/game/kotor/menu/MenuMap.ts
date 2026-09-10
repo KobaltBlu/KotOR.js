@@ -106,7 +106,7 @@ export class MenuMap extends GameMenu {
 
       // update minimap — full map uses creature yaw (SetPartyMemberWorldOrientation)
       this.miniMap.setPosition(oPC.position.x, oPC.position.y);
-      this.miniMap.setRotation(oPC.getFacing());
+      this.miniMap.setRotation(GameState.FollowerCamera.facing - Math.PI / 2);
       this.miniMap.updateMousePosition(
         Mouse.positionUI.x + (this.LBL_Map.extent.width/2)  + (this.LBL_Map.widget.position.x * -1),
         Mouse.positionUI.y + (this.LBL_Map.extent.height/2) + (this.LBL_Map.widget.position.y * -1),

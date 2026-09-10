@@ -558,8 +558,9 @@ export class LBL_MapView {
 
   /**
    * GetMapRotateCCWFromWorldOrientation / SetPartyMemberWorldOrientation.
-   * `angle` is yaw in radians (HUD: camera facing; full map: creature facing).
-   * NorthAxis adds the same degree offsets as retail (converted to radians).
+   * `angle` is model/map yaw in radians where 0 faces +Y (creature rotation.z /
+   * EngineLocation bearing). HUD must pass FollowerCamera.facing − π/2 because
+   * chase facing uses 0 = +X. NorthAxis adds retail degree offsets as radians.
    */
   setRotation(angle: number = 0){
     if(!this.areaMap){
@@ -570,17 +571,17 @@ export class LBL_MapView {
     let next = angle;
     switch(this.areaMap.northAxis){
       case MapNorthAxis.EAST:
-        next = angle + Math.PI;
+        next = angle;
         break;
       case MapNorthAxis.SOUTH:
-        next = angle + (Math.PI / 2);
+        next = angle - (Math.PI / 2);
         break;
       case MapNorthAxis.WEST:
-        next = angle + (3 * Math.PI / 2);
+        next = angle + (Math.PI / 2);
         break;
       case MapNorthAxis.NORTH:
       default:
-        next = angle;
+        next = angle + Math.PI;
         break;
     }
     if(this.arrowAngle !== next){ this._rttDirty = true; }
