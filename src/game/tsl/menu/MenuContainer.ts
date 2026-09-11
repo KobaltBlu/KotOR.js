@@ -1,6 +1,6 @@
 import { GameState } from "@/GameState";
 import { GUILabel, GUIListBox, GUIButton } from "@/gui";
-import { ModulePlaceable } from "@/module";
+import { ModulePlaceable } from "@/module/ModulePlaceable";
 import { MenuContainer as K1_MenuContainer } from "@/game/kotor/KOTOR";
 
 /**

@@ -2,7 +2,7 @@ import { GameState } from "@/GameState";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel } from "@/gui";
-import { ModuleObject } from "@/module";
+import type { ModuleObject } from "@/module/ModuleObject";
 import { DLGObject } from "@/resource/DLGObject";
 import { DLGNode } from "@/resource/DLGNode";
 import { ConversationState } from "@/enums/dialog/ConversationState";

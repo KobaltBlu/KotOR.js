@@ -1,5 +1,7 @@
 import { CurrentGame } from "@/engine/CurrentGame";
-import type { ModuleArea, ModuleCreature, ModuleObject } from "@/module";
+import type { ModuleArea } from "@/module/ModuleArea";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import type { ModuleObject } from "@/module/ModuleObject";
 import { GFFObject } from "@/resource/GFFObject";
 import { GFFStruct } from "@/resource/GFFStruct";
 
@@ -175,7 +177,7 @@ export class FactionManager {
         faction.label = sw.label;
         faction.global = 1;
         FactionManager.factions.set(faction.id, faction);
-        faction.initReputations(ReputationConstant.FRIENDLY);
+        faction.initReputations(FactionManager.FACTION_COUNT, ReputationConstant.FRIENDLY);
       }
 
       FactionManager.factions.forEach( (faction1, faction1_id) => {
@@ -218,7 +220,7 @@ export class FactionManager {
         let faction = Faction.From2DARow(twoDA_factions[i]);
         if(faction){
           FactionManager.factions.set(faction.id, faction);
-          faction.initReputations(ReputationConstant.FRIENDLY);
+          faction.initReputations(FactionManager.FACTION_COUNT, ReputationConstant.FRIENDLY);
         }
       }
 
@@ -269,7 +271,7 @@ export class FactionManager {
 
       for (let id of FactionManager.factions.keys()) {
         let faction = FactionManager.factions.get(id);
-        faction.initReputations(ReputationConstant.FRIENDLY);
+        faction.initReputations(FactionManager.FACTION_COUNT, ReputationConstant.FRIENDLY);
       }
 
       let repList = gff.RootNode.getFieldByLabel('RepList').getChildStructs();

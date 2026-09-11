@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@/module";
+import type { ModuleArea } from "@/module/ModuleArea";
 import { GameState } from "@/GameState";
 
 /**

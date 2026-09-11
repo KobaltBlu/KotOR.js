@@ -2,7 +2,7 @@ import { GameState } from "@/GameState";
 import { LBL_3DView } from "@/gui";
 import type { GUILabel, GUICheckBox, GUIButton } from "@/gui";
 import { MDLLoader } from "@/loaders";
-import { ModuleCreature } from "@/module";
+import { ModuleCreature } from "@/module/ModuleCreature";
 import { OdysseyModel } from "@/odyssey";
 import { OdysseyModel3D } from "@/three/odyssey";
 import { MenuPartySelection as K1_MenuPartySelection } from "@/game/kotor/KOTOR";

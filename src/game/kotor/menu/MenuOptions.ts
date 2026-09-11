@@ -3,7 +3,7 @@ import { MenuSaveLoadMode } from "@/enums/gui/MenuSaveLoadMode";
 import { GameState } from "@/GameState";
 import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
-import { Module } from "@/module";
+import { Module } from "@/module/Module";
 import { NWScript } from "@/nwscript/NWScript";
 
 /**

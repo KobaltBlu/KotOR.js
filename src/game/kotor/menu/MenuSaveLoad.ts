@@ -4,7 +4,7 @@ import { GameMenu } from "@/gui";
 import { GUISaveGameItem } from "@/game/kotor/gui/GUISaveGameItem";
 import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 import { TextureLoader } from "@/loaders";
-import { Module } from "@/module";
+import { Module } from "@/module/Module";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { SaveGame } from "@/engine/SaveGame";
 

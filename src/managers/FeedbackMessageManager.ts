@@ -5,7 +5,7 @@ import { FeebackMessageColor } from "@/enums/engine/FeedbackMessageColor";
 import { TextSprite3DType } from "@/enums/engine/TextSprite3DType";
 import { TextSprite3D } from "@/engine/TextSprite3D";
 import { GameState } from "@/GameState";
-import type { ModuleObject } from "@/module";
+import type { ModuleObject } from "@/module/ModuleObject";
 import { formatTlkWithCustoms } from "@/utility/tlk-tokens";
 
 /**

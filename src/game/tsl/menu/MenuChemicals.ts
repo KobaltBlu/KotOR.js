@@ -3,7 +3,8 @@ import type { GUILabel, GUIListBox, GUIButton } from "@/gui";
 import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
 import { GameState } from "@/GameState";
 import { InventoryManager } from "@/managers/InventoryManager";
-import type { ModuleCreature, ModuleItem } from "@/module";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import type { ModuleItem } from "@/module/ModuleItem";
 import { TwoDAObject } from "@/resource/TwoDAObject";
 import {
   CHEMICAL_CREATE_GROUPS,

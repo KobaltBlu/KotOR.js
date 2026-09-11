@@ -5,7 +5,7 @@ import { OdysseyWalkMeshType } from "@/enums/odyssey/OdysseyWalkMeshType";
 import { IOdysseyModelAABBNode } from "@/interface/odyssey/IOdysseyModelAABBNode";
 import { IWalkmeshEdgeAABBNode } from "@/interface/odyssey/IWalkmeshEdgeAABBNode";
 import { TwoDAManager } from "@/managers/TwoDAManager";
-import { ModuleObject } from "@/module";
+import type { ModuleObject } from "@/module/ModuleObject";
 import { OdysseyFace3 } from "@/three/odyssey/OdysseyFace3";
 import { SurfaceMaterial } from "@/engine/SurfaceMaterial";
 import { TileColor } from "@/engine/TileColor";

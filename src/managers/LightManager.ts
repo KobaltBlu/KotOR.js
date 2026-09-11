@@ -5,7 +5,7 @@ import {
   OdysseyShadowHelperRole,
   OdysseyShadowLightHelper,
 } from "@/three/odyssey/OdysseyShadowLightHelper";
-import type { ModuleObject } from "@/module";
+import type { ModuleObject } from "@/module/ModuleObject";
 import { TwoDAManager } from "@/managers/TwoDAManager";
 import { MAX_ODYSSEY_LIGHTS } from "@/shaders/chunks/OdysseyLighting";
 import { EngineDebugType } from "@/enums/engine/EngineDebugType";

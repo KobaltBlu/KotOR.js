@@ -1,4 +1,6 @@
-import type { ModuleCreature, ModuleItem, ModuleObject } from "@/module";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import type { ModuleItem } from "@/module/ModuleItem";
+import type { ModuleObject } from "@/module/ModuleObject";
 import { CombatActionType } from "@/enums/combat/CombatActionType";
 import { TalentFeat, TalentSpell } from "@/talents";
 import { AttackResult } from "@/enums/combat/AttackResult";

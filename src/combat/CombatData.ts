@@ -1,4 +1,5 @@
-import type { ModuleCreature, ModuleObject } from "@/module";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import type { ModuleObject } from "@/module/ModuleObject";
 import type { TalentFeat, TalentSpell } from "@/talents";
 import { ICombatAction } from "@/interface/combat/ICombatAction";
 import { AttackResult } from "@/enums/combat/AttackResult";

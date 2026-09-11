@@ -1,6 +1,6 @@
 import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
-import { ModuleItem } from "@/module";
+import { ModuleItem } from "@/module/ModuleItem";
 import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
 import { GameState } from "@/GameState";
 import {

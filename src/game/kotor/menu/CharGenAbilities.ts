@@ -1,5 +1,5 @@
 import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
-import type { ModuleCreature } from "@/module";
+import type { ModuleCreature } from "@/module/ModuleCreature";
 import { CharGenAttribute } from "@/enums/chargen/CharGenAttribute";
 import { costToDecreaseAbility, costToIncreaseAbility } from "@/engine/rules/ability-points";
 import { GameMenu } from "@/gui";

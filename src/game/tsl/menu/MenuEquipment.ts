@@ -1,6 +1,7 @@
 import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
 import type { GUILabel, GUIButton, GUIListBox } from "@/gui";
-import { ModuleCreature, ModuleItem } from "@/module";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import type { ModuleItem } from "@/module/ModuleItem";
 import { MenuEquipment as K1_MenuEquipment } from "@/game/kotor/KOTOR";
 import { GameState } from "@/GameState";
 import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";

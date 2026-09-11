@@ -2,7 +2,6 @@ import { GameEvent } from "@/events/GameEvent";
 import { GameEventType } from "@/enums/events/GameEventType";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import type { NWScriptEvent } from "@/nwscript/events/NWScriptEvent";
-import { NWScriptEventFactory } from "@/nwscript/events/NWScriptEventFactory";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { BitWise } from "@/utility/BitWise";
@@ -12,7 +11,8 @@ import { ModuleObjectScript, SignalEventType } from "@/enums";
 import { NWScriptEventType } from "@/enums/nwscript/NWScriptEventType";
 import EngineLocation from "@/engine/EngineLocation";
 import { GameState } from "@/GameState";
-import type { ModuleCreature, ModuleItem } from "@/module";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import type { ModuleItem } from "@/module/ModuleItem";
 
 /**
  * EventSignalEvent class.

@@ -1,5 +1,7 @@
 import { GameState } from "@/GameState";
-import type { ModuleCreature, ModuleObject, ModuleRoom } from "@/module";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import type { ModuleObject } from "@/module/ModuleObject";
+import type { ModuleRoom } from "@/module/ModuleRoom";
 import { OdysseyWalkMesh, WalkmeshEdge } from "@/odyssey";
 import * as THREE from "three";
 import { Utility } from "@/utility/Utility";

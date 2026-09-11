@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { TextureLoader } from "@/loaders";
 import { Mouse } from "@/controls/Mouse";
-import type { ModuleObject } from "@/module";
+import type { ModuleObject } from "@/module/ModuleObject";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleDoor } from "@/module/ModuleDoor";
 import type { ModulePlaceable } from "@/module/ModulePlaceable";

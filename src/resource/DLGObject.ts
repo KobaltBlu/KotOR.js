@@ -1,5 +1,6 @@
 import { GameState } from "@/GameState";
-import type { ModuleCreature, ModuleObject } from "@/module";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import type { ModuleObject } from "@/module/ModuleObject";
 import { OdysseyModel3D } from "@/three/odyssey";
 import { DLGNode } from "@/resource/DLGNode";
 import { GFFObject } from "@/resource/GFFObject";

@@ -1,9 +1,10 @@
 import * as THREE from "three";
-import type { ModuleArea, ModuleObject } from "@/module";
+import type { ModuleArea } from "@/module/ModuleArea";
+import type { ModuleObject } from "@/module/ModuleObject";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { IGUIControlText } from "@/interface/gui/IGUIControlText";
 import { ShaderManager } from "@/managers/ShaderManager";
-import { createQuadElements as createIndicies } from "@/utility/QuadIndices";
+// import { createQuadElements as createIndicies } from "@/utility/QuadIndices";
 import { TLKManager } from "@/managers/TLKManager";
 import { TextureLoader } from "@/loaders/TextureLoader";
 import { TextureType } from "@/enums/loaders/TextureType";

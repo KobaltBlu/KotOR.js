@@ -5,7 +5,8 @@ import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 // import { ModuleObjectManager } from "@/managers/ModuleObjectManager";
-import type { Module, ModuleObject } from "@/module";
+import type { Module } from "@/module/Module";
+import type { ModuleObject } from "@/module/ModuleObject";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
 

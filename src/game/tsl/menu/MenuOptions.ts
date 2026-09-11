@@ -2,7 +2,7 @@ import { EngineState } from "@/enums/engine/EngineState";
 import { MenuSaveLoadMode } from "@/enums/gui/MenuSaveLoadMode";
 import { GameState } from "@/GameState";
 import type { GUIButton, GUILabel, GUIListBox } from "@/gui";
-import { Module } from "@/module";
+import { Module } from "@/module/Module";
 import { NWScript } from "@/nwscript/NWScript";
 import { MenuOptions as K1_MenuOptions } from "@/game/kotor/KOTOR";
 

@@ -1,6 +1,6 @@
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import { GameState } from "@/GameState";
-import type { ModuleObject } from "@/module";
+import type { ModuleObject } from "@/module/ModuleObject";
 
 /**
  * Resolve a saved CombatRound / AttackList object id.

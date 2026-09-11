@@ -7,7 +7,7 @@ import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { MapMode } from "@/enums/engine/MapMode";
 import { Mouse } from "@/controls";
-import type { ModuleWaypoint } from "@/module";
+import type { ModuleWaypoint } from "@/module/ModuleWaypoint";
 import { CExoLocString } from "@/resource/CExoLocString";
 
 /**

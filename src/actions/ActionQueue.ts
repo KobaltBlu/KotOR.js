@@ -1,6 +1,6 @@
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
-import type { ModuleObject } from "@/module";
+import type { ModuleObject } from "@/module/ModuleObject";
 import type { Action } from "@/actions/Action";
 
 /**

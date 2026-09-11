@@ -2,7 +2,7 @@ import { GameState } from "@/GameState";
 import { GameMenu, LBL_3DView } from "@/gui";
 import type { GUILabel, GUIButton, GUISlider, GUIControl } from "@/gui";
 import { MDLLoader, TextureLoader } from "@/loaders";
-import type { ModuleCreature, ModuleItem } from "@/module";
+import type { ModuleCreature } from "@/module/ModuleCreature";
 import { OdysseyModel3D } from "@/three/odyssey";
 import * as THREE from "three";
 import { OdysseyModel } from "@/odyssey";

@@ -1,6 +1,6 @@
 import { GameState } from "@/GameState";
 import { InventoryManager } from "@/managers/InventoryManager";
-import { ModuleItem } from "@/module";
+import { ModuleItem } from "@/module/ModuleItem";
 import { GFFObject } from "@/resource/GFFObject";
 import { ResourceLoader } from "@/loaders";
 import { ResourceTypes } from "@/resource/ResourceTypes";

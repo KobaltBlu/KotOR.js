@@ -3,8 +3,6 @@ import EngineLocation from "@/engine/EngineLocation";
 import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GameState } from "@/GameState";
-// import { ModuleObjectManager } from "@/managers";
-// import { ModuleObject } from "@/module";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
 // import { TalentFeat, TalentSkill, TalentSpell } from "@/talents";

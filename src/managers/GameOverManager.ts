@@ -5,7 +5,6 @@ import { FadeOverlayState } from "@/enums/engine/FadeOverlayState";
 import { MenuSaveLoadMode } from "@/enums/gui/MenuSaveLoadMode";
 import { PerceptionMask } from "@/enums/engine/PerceptionMask";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { Module } from "@/module";
 import { NWScript } from "@/nwscript/NWScript";
 import { SaveGame } from "@/engine/SaveGame";
 import { FactionManager } from "@/managers/FactionManager";
@@ -496,7 +495,7 @@ export class GameOverManager {
     GameState.UnloadModule();
     GameState.State = EngineState.RUNNING;
 
-    if(GameState.module instanceof Module){
+    if(GameState.module){
       GameState.module.dispose();
       GameState.module = undefined;
     }
@@ -518,7 +517,7 @@ export class GameOverManager {
     this.Reset();
     GameState.FadeOverlayManager.Stop();
     GameState.MenuManager.ClearMenus();
-    if(GameState.module instanceof Module){
+    if(GameState.module){
       GameState.module.dispose();
       GameState.module = undefined;
     }

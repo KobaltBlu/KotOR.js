@@ -1,6 +1,7 @@
 import { AttackResult } from "@/enums/combat/AttackResult";
 import { FeebackMessageColor } from "@/enums/engine/FeedbackMessageColor";
-import type { ModuleCreature, ModuleObject } from "@/module";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import type { ModuleObject } from "@/module/ModuleObject";
 import type { TalentFeat } from "@/talents";
 import { formatTlkWithCustoms, tlkText } from "@/utility/tlk-tokens";
 

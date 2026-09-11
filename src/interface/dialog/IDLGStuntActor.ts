@@ -1,4 +1,4 @@
-import { ModuleObject} from "@/module";
+import type { ModuleObject } from "@/module/ModuleObject";
 import { OdysseyModelAnimation } from "@/odyssey";
 import { OdysseyModel3D } from "@/three/odyssey";
 

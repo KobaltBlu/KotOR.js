@@ -1,5 +1,11 @@
 import { ModuleObject } from "@/module/ModuleObject";
-import type { ModuleArea, ModuleCreature, ModuleDoor, ModuleEncounter, ModulePlaceable, ModuleSound, ModuleTrigger } from "@/module";
+import type { ModuleArea } from "@/module/ModuleArea";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import type { ModuleDoor } from "@/module/ModuleDoor";
+import type { ModuleEncounter } from "@/module/ModuleEncounter";
+import type { ModulePlaceable } from "@/module/ModulePlaceable";
+import type { ModuleSound } from "@/module/ModuleSound";
+import type { ModuleTrigger } from "@/module/ModuleTrigger";
 import * as THREE from "three";
 import { GameState } from "@/GameState";
 import { OdysseyFace3, OdysseyModel3D } from "@/three/odyssey";

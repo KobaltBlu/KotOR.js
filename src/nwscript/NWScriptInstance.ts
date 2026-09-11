@@ -9,7 +9,7 @@ import type { EventTimedEvent } from "@/events";
 import { GameState } from "@/GameState";
 import type { IPerceptionInfo } from "@/interface/engine/IPerceptionInfo";
 import type { INWScriptStoreState } from "@/interface/nwscript/INWScriptStoreState";
-import type { ModuleObject } from "@/module";
+import type { ModuleObject } from "@/module/ModuleObject";
 import type { DLGObject } from "@/resource/DLGObject";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";

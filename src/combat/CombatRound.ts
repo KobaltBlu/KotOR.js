@@ -1,4 +1,6 @@
-import type { ModuleCreature, ModuleItem, ModuleObject } from "@/module";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import type { ModuleItem } from "@/module/ModuleItem";
+import type { ModuleObject } from "@/module/ModuleObject";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { Dice } from "@/utility/Dice";
 import { OdysseyModelAnimation } from "@/odyssey";

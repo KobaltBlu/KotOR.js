@@ -1,6 +1,6 @@
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 import type { GameEffect } from "@/effects/GameEffect";
-import type { ModuleObject } from "@/module";
+import type { ModuleObject } from "@/module/ModuleObject";
 
 /**
  * -shaped damage mitigation (effect apply / GetDamageRoll):

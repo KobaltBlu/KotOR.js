@@ -3,7 +3,7 @@ import { GameMenu, GUIControl } from "@/gui";
 import type { GUILabel, GUIButton, GUICheckBox } from "@/gui";
 import { KEYManager } from "@/managers/KEYManager";
 import { TextureLoader } from "@/loaders";
-import { ModuleCreature } from "@/module";
+import { ModuleCreature } from "@/module/ModuleCreature";
 import { NWScript } from "@/nwscript/NWScript";
 import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import { ResourceTypes } from "@/resource/ResourceTypes";

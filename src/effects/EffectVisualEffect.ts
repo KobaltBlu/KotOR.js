@@ -5,7 +5,7 @@ import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
 import { MDLLoader, TextureLoader } from "@/loaders";
 // import { TwoDAManager } from "@/managers";
-import type { ModuleCreature } from "@/module";
+import type { ModuleCreature } from "@/module/ModuleCreature";
 import { OdysseyModel } from "@/odyssey";
 import { OdysseyModel3D } from "@/three/odyssey";
 import { BitWise } from "@/utility/BitWise";

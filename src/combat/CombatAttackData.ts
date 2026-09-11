@@ -1,5 +1,7 @@
 import { CombatAttackDamage } from "@/combat/CombatAttackDamage";
-import type { ModuleCreature, ModuleItem, ModuleObject } from "@/module";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import type { ModuleItem } from "@/module/ModuleItem";
+import type { ModuleObject } from "@/module/ModuleObject";
 import { CExoLocString } from "@/resource/CExoLocString";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { GFFField } from "@/resource/GFFField";

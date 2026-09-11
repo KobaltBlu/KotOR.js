@@ -1,9 +1,7 @@
 import { GameMenu } from "@/gui";
 import type { GUIControl, GUILabel, GUIButton } from "@/gui";
 import { TextureLoader } from "@/loaders";
-import type { ModulePlayer } from "@/module";
 import { OdysseyModel3D } from "@/three/odyssey";
-import * as THREE from "three";
 import { CharGenClasses } from "@/game/CharGenClasses";
 import { GameState } from "@/GameState";
 

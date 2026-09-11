@@ -1,4 +1,4 @@
-import type { ModuleObject } from "@/module";
+import type { ModuleObject } from "@/module/ModuleObject";
 import type { PerceptionType } from "@/enums/engine/PerceptionType";
 
 /**

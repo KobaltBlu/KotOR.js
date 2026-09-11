@@ -1,7 +1,7 @@
 import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 import { GUIFeatItem } from "@/game/kotor/gui/GUIFeatItem";
-import type { ModuleCreature } from "@/module";
+import type { ModuleCreature } from "@/module/ModuleCreature";
 import { TalentFeat } from "@/talents";
 import { GameState } from "@/GameState";
 import { getFeatPicksForLevel } from "@/engine/rules/level-up";

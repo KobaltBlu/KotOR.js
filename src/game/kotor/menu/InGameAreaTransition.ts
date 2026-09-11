@@ -2,7 +2,7 @@ import { EngineMode } from "@/enums/engine/EngineMode";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameMenu, GUIPanelCoordFlags } from "@/gui";
 import type { GUILabel } from "@/gui";
-import type { ModuleObject } from "@/module";
+import type { ModuleObject } from "@/module/ModuleObject";
 import { GameState } from "@/GameState";
 import { BitWise } from "@/utility/BitWise";
 

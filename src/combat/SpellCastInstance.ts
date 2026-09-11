@@ -1,4 +1,4 @@
-import type { ModuleObject } from "@/module";
+import type { ModuleObject } from "@/module/ModuleObject";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { TalentSpell } from "@/talents";
 import * as THREE from "three";

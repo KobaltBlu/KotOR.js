@@ -5,7 +5,9 @@ import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
-import type { ModuleCreature, ModuleItem, ModuleStore } from "@/module";
+import type { ModuleCreature, } from "@/module/ModuleCreature";
+import type { ModuleItem } from "@/module/ModuleItem";
+import type { ModuleStore } from "@/module/ModuleStore";
 import { BitWise } from "@/utility/BitWise";
 
 /** CheckFilter modes (store_p filter buttons). */

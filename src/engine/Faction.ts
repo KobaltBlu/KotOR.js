@@ -1,11 +1,13 @@
 // import { FactionManager } from "@/managers";
-import { ModuleCreature, ModuleObject, ModulePlayer } from "@/module";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import type { ModuleObject } from "@/module/ModuleObject";
 import { Reputation } from "@/engine/Reputation";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { GFFField } from "@/resource/GFFField";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { ReputationConstant } from "@/enums/engine/ReputationConstant";
-import { GameState } from "@/GameState";
+import { BitWise } from "@/utility/BitWise";
+import { ModuleObjectType } from "@/enums";
 
 /**
  * Faction class.
@@ -27,7 +29,7 @@ export class Faction {
   reputations: Reputation[] = [];
 
   addMember( creature: ModuleCreature ){
-    if(creature instanceof ModuleCreature){
+    if(BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature)){
       if(this.creatures.indexOf(creature) == -1){
         this.creatures.push(creature);
       }
@@ -35,7 +37,7 @@ export class Faction {
   }
 
   removeMember( creature: ModuleCreature ){
-    if(creature instanceof ModuleCreature){
+    if(BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature)){
       let index = this.creatures.indexOf(creature);
       if(index >= 0){
         this.creatures.splice(index, 1);
@@ -43,9 +45,9 @@ export class Faction {
     }
   }
 
-  initReputations( value = ReputationConstant.FRIENDLY ){
+  initReputations( factionCount: number, value = ReputationConstant.FRIENDLY ){
     this.reputations = [];
-    for(let i = 0; i < GameState.FactionManager.FACTION_COUNT; i++){
+    for(let i = 0; i < factionCount; i++){
       this.reputations[i] = new Reputation(this.id, i, value);
     }
   }
@@ -74,7 +76,7 @@ export class Faction {
   }
 
   getCreatureReputation(oTarget: ModuleObject){
-    if(oTarget instanceof ModuleCreature && oTarget.faction){
+    if(BitWise.InstanceOfObject(oTarget, ModuleObjectType.ModuleCreature) && oTarget.faction){
       let reputation = this.reputations[oTarget.faction.id];
       if(reputation instanceof Reputation){
         return reputation.reputation;
@@ -216,7 +218,7 @@ export class Faction {
   }
 
   getAverageReputation(oTarget: ModuleObject){
-    if(oTarget instanceof ModuleCreature){
+    if(BitWise.InstanceOfObject(oTarget, ModuleObjectType.ModuleCreature)){
       let totalRep = 0;
       let totalCreatures = 0;
       for(let i = 0, len = this.creatures.length; i < len; i++){
@@ -314,7 +316,7 @@ export class Faction {
       let creature = this.creatures[i];
       if(creature.faction == this){
         if(cIdx == index){
-          if(!isPCOnly || creature instanceof ModulePlayer)
+          if(!isPCOnly || BitWise.InstanceOfObject(creature, ModuleObjectType.ModulePlayer))
             return creature;
         }
         cIdx++;

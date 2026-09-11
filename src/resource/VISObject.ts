@@ -1,6 +1,7 @@
 import { BinaryWriter } from "@/utility/binary/BinaryWriter";
 import { ModuleObjectType } from "@/enums";
-import type { ModuleArea, ModuleRoom } from "@/module";
+import type { ModuleArea } from "@/module/ModuleArea";
+import type { ModuleRoom } from "@/module/ModuleRoom";
 import { BitWise } from "@/utility/BitWise";
 import { GameFileSystem } from "@/utility/GameFileSystem";
 import type { IVISRoom } from "@/interface/module/IVISRoom";

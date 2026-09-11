@@ -1419,7 +1419,7 @@ export class InGameOverlay extends GameMenu {
     // update minimap — DrawMap uses camera yaw + NorthAxis (not creature facing).
     // FollowerCamera.facing is 0 = +X (cos/sin); map arrow / creature yaw is 0 = +Y
     // (−sin/cos). Convert before NorthAxis offsets in setRotation.
-    if(this.miniMap?.visible){
+    if(this.miniMap?.visible && oPC){
       this.miniMap.setPosition(oPC.position.x, oPC.position.y);
       this.miniMap.setRotation(FollowerCamera.facing - Math.PI / 2);
       this.miniMap.render(delta);
