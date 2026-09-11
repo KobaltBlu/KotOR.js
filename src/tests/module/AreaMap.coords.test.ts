@@ -332,8 +332,11 @@ describe("AreaMap engine coordinates", () => {
     }
   );
 
+  /** Native lbl_map TPC size used for LBL_MapView display (both games). */
+  const MAP_TEXTURE_DISPLAY_SIZE = { width: 512, height: 256 } as const;
+
   test.each(LIVE_AXIS_FIXTURES.map((f) => [f.id, f] as const))(
-    "%s: sample UV maps into logical marker space",
+    "%s: sample UV maps into texture display space (512×256)",
     (_id, fixture) => {
       ApplicationProfile.GameKey = fixture.gameKey;
       const logical = logicalSizeFor(fixture.gameKey);
@@ -341,8 +344,9 @@ describe("AreaMap engine coordinates", () => {
       applyMapFields(areaMap, fixture);
 
       const uv = areaMap.toMapCoordinates(fixture.sample.x, fixture.sample.y);
-      const sx = logical.width * uv.x;
-      const sy = logical.height * uv.y;
+      // Display: UV × native TPC (not logical 440/588)
+      const sx = MAP_TEXTURE_DISPLAY_SIZE.width * uv.x;
+      const sy = MAP_TEXTURE_DISPLAY_SIZE.height * uv.y;
       expect(Number.isFinite(sx)).toBe(true);
       expect(Number.isFinite(sy)).toBe(true);
       expect(areaMap.northAxis).toBe(fixture.northAxis);

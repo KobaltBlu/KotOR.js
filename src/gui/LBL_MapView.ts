@@ -8,6 +8,8 @@ import * as THREE from "three";
 import { TextureLoader } from "@/loaders";
 import { asExtentInt, truncDiv } from "@/gui/GUICoord";
 import { RenderPerfStats } from "@/utility/RenderPerfStats";
+import { GameEngineType } from "@/enums/engine/GameEngineType";
+import { ApplicationProfile } from "@/utility/ApplicationProfile";
 
 const FOG_SIZE = 64;
 const FOG_SIZE_HALF = FOG_SIZE/2;
@@ -529,9 +531,12 @@ export class LBL_MapView {
    * Logical map display size for markers/fog/camera. MINIMAP applies MapZoom (extent /= MapZoom).
    */
   getMapTextureScaleSize(): { width: number, height: number } {
-    const logical = AreaMap.getLogicalMapSize();
+    const textureSize = (ApplicationProfile.GameKey == GameEngineType.TSL) ? this.getMapTextureSize() : AreaMap.getLogicalMapSize();
     const zoom = this.getMapZoom();
-    return { width: logical.width / zoom, height: logical.height / zoom };
+    return {
+      width: textureSize.width / zoom,
+      height: textureSize.height / zoom,
+    };
   }
 
   getMapTextureSize(): { width: number, height: number } {

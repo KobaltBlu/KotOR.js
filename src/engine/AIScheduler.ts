@@ -22,8 +22,6 @@ const AI_OVERFLOW_US = 75000;
  * Priority AI scheduler for Module.tick — budgeted `aiUpdate`, every-frame
  * locomotion, and delayed-event drain between object updates.
  *
- * @see CServerAIMaster (Odyssey fidelity reference)
- *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
  * @file AIScheduler.ts
