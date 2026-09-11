@@ -5,6 +5,7 @@ export * from "@/module/ModuleTimeManager";
 export * from "@/module/Module";
 
 export * from "@/module/ModuleObject";
+export * from "@/module/guards";
 
 export * from "@/module/ModuleArea";
 export * from "@/module/ModuleAreaOfEffect";
