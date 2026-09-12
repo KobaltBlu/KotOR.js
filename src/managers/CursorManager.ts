@@ -14,6 +14,10 @@ import { BitWise } from "@/utility/BitWise";
 import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import { OdysseyObject3D } from "@/three/odyssey/OdysseyObject3D";
 import { getClientCombatMode } from "@/combat/combat-engagement";
+import { isCreature } from "@/module/guards/isCreature";
+import { isDoor } from "@/module/guards/isDoor";
+import { isPlaceable } from "@/module/guards/isPlaceable";
+import { isTrigger } from "@/module/guards/isTrigger";
 
 /** ProcessInput pick range (√900) — XY distance player↔object. */
 export const MOUSE_PICK_RANGE = 30;
@@ -196,7 +200,7 @@ export class CursorManager {
 	}
 
 	static getReticleKind(object: ModuleObject | undefined): ReticleKind {
-		if(BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature)){
+		if(isCreature(object)){
 			return 'creature';
 		}
 		return 'object';
@@ -221,27 +225,27 @@ export class CursorManager {
 		const viewer = observer ?? GameState.getCurrentPlayer();
 		if(!viewer) return false;
 
-		if(BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature)){
+		if(isCreature(object)){
 			const cre = object as ModuleCreature;
 			if(cre.isDead()) return false;
 			return cre.isHostile(viewer);
 		}
 
-		if(BitWise.InstanceOfObject(object, ModuleObjectType.ModulePlaceable)){
+		if(isPlaceable(object)){
 			const plc = object as ModulePlaceable;
 			if(!plc.isUseable()) return false;
 			if(plc.plot || plc.isBodyBag || plc.isCorpse) return false;
 			return !!plc.locked;
 		}
 
-		if(BitWise.InstanceOfObject(object, ModuleObjectType.ModuleDoor)){
+		if(isDoor(object)){
 			const door = object as ModuleDoor;
 			if(!door.isUseable()) return false;
 			if(door.plot) return false;
 			return door.isLocked() && !door.isOpen();
 		}
 
-		if(BitWise.InstanceOfObject(object, ModuleObjectType.ModuleTrigger)){
+		if(isTrigger(object)){
 			return !!object.isHostile?.(viewer);
 		}
 
@@ -266,7 +270,7 @@ export class CursorManager {
 			return { hostile: false, material: 'reticleF2' };
 		}
 		if(
-			BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature) &&
+			isCreature(object) &&
 			CursorManager.isClientCombatMode()
 		){
 			return { hostile: true, material: 'reticleCombat' };

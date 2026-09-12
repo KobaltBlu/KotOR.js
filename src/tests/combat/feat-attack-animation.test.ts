@@ -19,6 +19,7 @@ jest.mock('@/odyssey', () => ({
 jest.mock('@/utility/BitWise', () => ({
   BitWise: {
     InstanceOfObject: (obj: unknown) => !!obj,
+    InstanceOf: () => true,
   },
 }));
 

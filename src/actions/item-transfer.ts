@@ -1,12 +1,15 @@
 import { BaseItemType } from "@/enums/combat/BaseItemType";
 import { UIIconTimerType } from "@/enums/engine/UIIconTimerType";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
 import type { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
+
+import { isCreature } from "@/module/guards/isCreature";
+import { isItem } from "@/module/guards/isItem";
+import { isPlaceable } from "@/module/guards/isPlaceable";
+import { isStore } from "@/module/guards/isStore";
 
 /**
  * baseitems.2da itemtype values used by give-item action.
@@ -44,7 +47,7 @@ export function isPazaakCardItem(item: ModuleItem): boolean {
 }
 
 export function isPartyCreature(obj: ModuleObject | undefined): boolean {
-  if (!BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature)) {
+  if (!isCreature(obj)) {
     return false;
   }
   const cre = obj as ModuleCreature;
@@ -157,13 +160,13 @@ export function acquireItem(
   if (isPartyCreature(target)) {
     GameState.InventoryManager.addItem(item);
   } else if (
-    BitWise.InstanceOfObject(target, ModuleObjectType.ModuleCreature) ||
-    BitWise.InstanceOfObject(target, ModuleObjectType.ModulePlaceable) ||
-    BitWise.InstanceOfObject(target, ModuleObjectType.ModuleStore)
+    isCreature(target) ||
+    isPlaceable(target) ||
+    isStore(target)
   ) {
     target.addItem(item);
   } else if (
-    BitWise.InstanceOfObject(target, ModuleObjectType.ModuleItem) &&
+    isItem(target) &&
     (target as ModuleItem).baseItem?.container
   ) {
     (target as ModuleObject).addItem(item);
@@ -194,7 +197,7 @@ function notifyModuleItemLost(item: ModuleItem, owner: ModuleObject){
   const mod = GameState.module;
   if(!mod) return;
   mod.lastItemLost = item;
-  mod.lastItemLostBy = BitWise.InstanceOfObject(owner, ModuleObjectType.ModuleCreature)
+  mod.lastItemLostBy = isCreature(owner)
     ? (owner as ModuleCreature)
     : undefined;
   const script = mod.scripts?.[ModuleObjectScript.ModuleOnUnAcquireItem];

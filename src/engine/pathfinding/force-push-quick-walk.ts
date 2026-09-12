@@ -11,8 +11,7 @@ import {
   updateCreatureDrive,
 } from "@/engine/pathfinding/update-creature-drive";
 import { getPathPersonalSpace } from "@/combat/attack-range";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { BitWise } from "@/utility/BitWise";
+import { isCreature } from "@/module/guards/isCreature";
 import {
   FORCE_PUSH_LOCO_STATE,
   QuickWalkLocoState,
@@ -245,7 +244,7 @@ export function stampForcePushAttackSummary(
   creator: ModuleCreature | undefined,
   target: ModuleCreature
 ): void {
-  if(!BitWise.InstanceOfObject(creator, ModuleObjectType.ModuleCreature)){
+  if(!isCreature(creator)){
     return;
   }
   const round = creator.combatRound;

@@ -2,13 +2,12 @@ import { Action } from "@/actions/Action";
 import { DiceType } from "@/enums/combat/DiceType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { SkillType } from "@/enums/nwscript/SkillType";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
 import { Dice } from "@/utility/Dice";
 import { queueMoveIntoUseRange } from "@/actions/use-range";
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * ActionAnimalEmpathy class.
@@ -31,10 +30,10 @@ export class ActionAnimalEmpathy extends Action {
 
   update(delta: number = 0): ActionStatus {
     this.target = this.getParameter<ModuleObject>(0);
-    if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.target)){
       return ActionStatus.FAILED;
     }
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.owner)){
       return ActionStatus.FAILED;
     }
 

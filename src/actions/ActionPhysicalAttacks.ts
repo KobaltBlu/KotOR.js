@@ -12,7 +12,7 @@ import { duelLog, duelWho } from "@/combat/duel-debug";
 import { hasTargetBeenDetected } from "@/combat/nearest-enemy";
 import { tryStuckLosRetarget } from "@/combat/initialize-new-attack-target";
 import { getNearestActionPoint } from "@/combat/nearest-action-point";
-import { ModuleObjectConstant, ModuleObjectType, SSFType } from "@/enums";
+import { ModuleObjectConstant, SSFType } from "@/enums";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
@@ -20,11 +20,12 @@ import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState"
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
 import { Utility } from "@/utility/Utility";
 import { Action } from "@/actions/Action";
 import * as THREE from 'three';
 import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
+import { isCreature } from "@/module/guards/isCreature";
+import { isObject } from "@/module/guards/isObject";
 import {
   testDirectLine,
   TestDirectLineCode,
@@ -157,11 +158,11 @@ export class ActionPhysicalAttacks extends Action {
     
     this.target = this.getParameter<ModuleObject>(1);
 
-    if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleObject)){
+    if(!isObject(this.target)){
       return ActionStatus.FAILED;
     }
 
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.owner)){
       return ActionStatus.FAILED;
     }
 
@@ -374,7 +375,7 @@ export class ActionPhysicalAttacks extends Action {
 
     if(combatRound.roundStarted){
 
-      if(BitWise.InstanceOfObject(combatRound.newAttackTarget, ModuleObjectType.ModuleObject)){
+      if(isObject(combatRound.newAttackTarget)){
         combatRound.setAttackTarget(combatRound.newAttackTarget);
         this.setParameter(1, ActionParameterType.DWORD, combatRound.newAttackTarget.id);
         this.target = combatRound.newAttackTarget;

@@ -25,6 +25,7 @@ jest.mock("@/actions/use-range", () => ({
 jest.mock("@/utility/BitWise", () => ({
   BitWise: {
     InstanceOfObject: (v: unknown) => !!v,
+    InstanceOf: () => true,
   },
 }));
 

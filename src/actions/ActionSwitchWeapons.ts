@@ -3,11 +3,11 @@ import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * ActionSwitchWeapons class.
@@ -35,7 +35,7 @@ export class ActionSwitchWeapons extends Action {
 
   update(_delta: number = 0): ActionStatus {
     console.log('ActionSwitchWeapons update', this);
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.owner)){
       return ActionStatus.ERROR;
     }
 
@@ -80,7 +80,7 @@ export class ActionSwitchWeapons extends Action {
     const attackTarget = owner.combatData?.lastAttemptedAttackTarget as ModuleObject | undefined;
     if(
       owner.combatData?.combatState &&
-      BitWise.InstanceOfObject(attackTarget, ModuleObjectType.ModuleCreature)
+      isCreature(attackTarget)
     ){
       owner.attackCreature?.(attackTarget as ModuleCreature, undefined);
     }

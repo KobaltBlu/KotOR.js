@@ -3,8 +3,6 @@ import { PathPoint } from "@/engine/pathfinding/PathPoint";
 import type { ModuleObject } from "@/module/ModuleObject";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { GameState } from "@/GameState";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { BitWise } from "@/utility/BitWise";
 import { smoothCornerOptimizeRestartable, type SmoothCornerResume } from "@/engine/pathfinding/smooth-corner-optimize";
 import {
   smoothSelectionRestartable,
@@ -17,6 +15,8 @@ import type { PathPointDfsTransTable } from "@/engine/pathfinding/path-point-dfs
 import { noNonWalkPolysDetailed } from "@/engine/pathfinding/no-non-walk-polys";
 import { noCreaturesOnLine } from "@/engine/pathfinding/no-creatures-on-line";
 import { isPthEdgeBlockedByObject } from "@/engine/pathfinding/pth-edge-block";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /** Resume state for PlotPathPointPath state / state across timed-out searches. */
 export type PathPointDfsResume = {
@@ -193,7 +193,7 @@ export class ComputedPath {
     }
 
     const polys = noNonWalkPolysDetailed(area, from.vector, to.vector, {
-      ignoreObjectIds: BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)
+      ignoreObjectIds: isCreature(this.owner)
         ? (() => {
             const id = (this.owner as ModuleCreature).pathFindIgnoreObjectId | 0;
             return id ? [id] : undefined;

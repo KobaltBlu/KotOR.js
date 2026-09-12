@@ -4,7 +4,6 @@ import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { BaseItemType } from "@/enums/combat/BaseItemType";
 import { TalentObjectType } from "@/enums/engine/TalentObjectType";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { SkillType } from "@/enums/nwscript/SkillType";
 import { SubSkillType } from "@/enums/nwscript/SubSkillType";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
@@ -15,7 +14,9 @@ import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { TwoDAObject } from "@/resource/TwoDAObject";
 import { TalentObject } from "@/talents/TalentObject";
-import { BitWise } from "@/utility/BitWise";
+
+import { isCreature } from "@/module/guards/isCreature";
+import { isItem } from "@/module/guards/isItem";
 
 interface SkillClass {
   class: string;
@@ -84,11 +85,11 @@ export class TalentSkill extends TalentObject {
     }
 
     if(this.id == SkillType.TREAT_INJURY || this.id == SkillType.REPAIR){
-      if(!BitWise.InstanceOfObject(oCaster, ModuleObjectType.ModuleCreature)){
+      if(!isCreature(oCaster)){
         return;
       }
       const caster = oCaster as ModuleCreature;
-      let kit = BitWise.InstanceOfObject(oItemUsed, ModuleObjectType.ModuleItem)
+      let kit = isItem(oItemUsed)
         ? oItemUsed as ModuleItem
         : undefined;
 

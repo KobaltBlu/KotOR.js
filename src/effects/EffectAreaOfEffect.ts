@@ -1,11 +1,11 @@
 import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { BitWise } from "@/utility/BitWise";
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleAreaOfEffect } from "@/module/ModuleAreaOfEffect";
 import type EngineLocation from "@/engine/EngineLocation";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * EffectAreaOfEffect — effect apply /
@@ -34,7 +34,7 @@ export class EffectAreaOfEffect extends GameEffect {
 
     const aoeId = (this.getInt(0) || 0) & 0xff;
     const host = this.object;
-    const isCreatureHost = BitWise.InstanceOfObject(host, ModuleObjectType.ModuleCreature);
+    const isCreatureHost = isCreature(host);
 
     if(!this.applyLocation && !isCreatureHost){
       return;

@@ -4,7 +4,6 @@ import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
 import {
   DriveUpdateResult,
@@ -13,7 +12,7 @@ import {
 } from "@/engine/pathfinding/update-creature-drive";
 import { DRIVE_STRAFE_RATE } from "@/engine/pathfinding/locomotion";
 import type { ModuleCreature } from "@/module/ModuleCreature";
-import { BitWise } from "@/utility/BitWise";
+import { isCreature } from "@/module/guards/isCreature";
 
 /** Control flag bits from drive action */
 const DRIVE_FORWARD = 0x01;
@@ -94,7 +93,7 @@ export class ActionDrive extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.owner)){
       return ActionStatus.ERROR;
     }
 

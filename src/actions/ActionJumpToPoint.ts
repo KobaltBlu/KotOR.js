@@ -1,13 +1,12 @@
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import type { ModuleArea } from "@/module/ModuleArea";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
 import { Action } from "@/actions/Action";
 import * as THREE from "three";
 import { GameState } from "@/GameState";
+import { isCreature } from "@/module/guards/isCreature";
 import {
   classifyJumpDestination,
   isAreaLike,
@@ -58,7 +57,7 @@ export class ActionJumpToPoint extends Action {
     const oy = this.getParameter<number>(7) || 0;
     this.facing = jumpFacingFromOrientation(ox, oy);
 
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.owner)){
       return ActionStatus.FAILED;
     }
 

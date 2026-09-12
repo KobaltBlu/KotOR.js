@@ -1,7 +1,7 @@
 import type { ModuleObject } from "@/module/ModuleObject";
 import type { ModuleDoor } from "@/module/ModuleDoor";
-import { BitWise } from "@/utility/BitWise";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { isDoor } from "@/module/guards/isDoor";
+import { isPlaceable } from "@/module/guards/isPlaceable";
 
 /**
  * PathPointDFSGenerateSuccessors — when NoNonWalkPolysDetailed
@@ -12,10 +12,10 @@ import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
  */
 export function isPthEdgeBlockedByObject(obj: ModuleObject | undefined | null): boolean {
   if(!obj) return false;
-  if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
+  if(isPlaceable(obj)){
     return true;
   }
-  if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)){
+  if(isDoor(obj)){
     return !!(obj as ModuleDoor).static;
   }
   return false;

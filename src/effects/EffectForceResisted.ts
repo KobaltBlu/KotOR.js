@@ -1,11 +1,12 @@
 import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { BitWise } from "@/utility/BitWise";
 import { GameState } from "@/GameState";
 import { AttackSummaryStrRef } from "@/combat/attack-summary-feedback";
 import { FeebackMessageColor } from "@/enums/engine/FeedbackMessageColor";
+
+import { isCreature } from "@/module/guards/isCreature";
+import { isObject } from "@/module/guards/isObject";
 
 /**
  * EffectForceResisted — effect apply.
@@ -28,7 +29,7 @@ export class EffectForceResisted extends GameEffect {
 
     super.onApply();
 
-    if(!BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleObject)){
+    if(!isObject(this.object)){
       return;
     }
 
@@ -51,7 +52,7 @@ export class EffectForceResisted extends GameEffect {
 
     // GetWasForcePowerSuccessful — clear on caster (effect creator)
     const creator = this.getCreator?.() || this.creator;
-    if(BitWise.InstanceOfObject(creator, ModuleObjectType.ModuleCreature)){
+    if(isCreature(creator)){
       const cd = (creator as any).combatData;
       if(cd){
         cd.lastForcePowerSuccess = false;

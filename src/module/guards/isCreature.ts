@@ -3,6 +3,6 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import { BitWise } from "@/utility/BitWise";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 
-export const isCreature = (o: ModuleObject | undefined): o is ModuleCreature => {
-    return BitWise.InstanceOfObject(o, ModuleObjectType.ModuleCreature);
+export const isCreature: (o: ModuleObject | undefined) => o is ModuleCreature = (o): o is ModuleCreature => {
+    return !!BitWise.InstanceOfObject(o, ModuleObjectType.ModuleCreature);
 }

@@ -6,8 +6,6 @@ import { OdysseyModel3D } from "@/three/odyssey";
 import { GameState } from "@/GameState";
 import { MDLLoader, TextureLoader } from "@/loaders";
 import { ActionType } from "@/enums/actions/ActionType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { BitWise } from "@/utility/BitWise";
 import { Utility } from "@/utility/Utility";
 import { getCounterSpellRange } from "@/combat/spell-range";
 import {
@@ -24,6 +22,8 @@ import { EventBroadcastSafeProjectile } from "@/events/EventBroadcastSafeProject
 import { ProjectilePath } from "@/enums/combat/ProjectilePath";
 import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
 import { SWGrenadeSound } from "@/engine/rules/SWGrenadeSound";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 const _projLookAhead = new THREE.Vector3();
 
@@ -380,7 +380,7 @@ export class SpellCastInstance {
     const castItem =
       this.castItem ||
       (this.owner as ModuleCreature)?.spellCastItem as ModuleItem | undefined;
-    if(castItem && BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(castItem && isCreature(this.owner)){
       (this.owner as ModuleCreature).spellCastItem = castItem;
     }
 
@@ -659,7 +659,7 @@ export class SpellCastInstance {
 
   private clearOwnerSpellRound(options: { unpause?: boolean } = {}){
     const round = (this.owner as any)?.combatRound;
-    if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this.owner)){
       (this.owner as ModuleCreature).itemSpellCastActive = false;
     }
     if(!round){
@@ -694,7 +694,7 @@ export class SpellCastInstance {
 
     for(let i = 0; i < candidates.length; i++){
       const creature = candidates[i] as ModuleCreature;
-      if(!BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature)){
+      if(!isCreature(creature)){
         continue;
       }
       if(creature === this.owner || creature.isDead?.() || creature.isDebilitated?.()){
@@ -879,7 +879,7 @@ export class SpellCastInstance {
 
     // EventSpellImpact (0x08) runs the impactscript after flight.
     // SpellCastInstance.castTime is that delay in-process — run it here.
-    if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this.owner)){
       const cd = (this.owner as ModuleCreature).combatData;
       if(cd){
         cd.lastForcePowerSuccess = true;

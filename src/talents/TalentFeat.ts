@@ -2,7 +2,7 @@ import { CombatRound } from "@/combat/CombatRound";
 import { type CreatureClass } from "@/combat/CreatureClass";
 import { EffectACDecrease, EffectSetState } from "@/effects";
 import { isSetStateImmune } from "@/effects/set-state";
-import { CombatFeatType, ModuleObjectType, TalentObjectType } from "@/enums";
+import { CombatFeatType, TalentObjectType } from "@/enums";
 import { GameEffectDurationType } from "@/enums/effects";
 import { GameEffectSetStateType } from "@/enums/effects/GameEffectSetStateType";
 import { GameEngineType } from "@/enums/engine/GameEngineType";
@@ -14,9 +14,10 @@ import type { ModuleObject } from "@/module/ModuleObject";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { TwoDAObject } from "@/resource/TwoDAObject";
-import { BitWise } from "@/utility/BitWise";
 import { TalentObject } from "@/talents/TalentObject";
 import type { GameEffect } from "@/effects/GameEffect";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /** Resolve*SpecialAttack ACDECREASE duration (seconds). */
 const FEAT_PENALTY_DURATION_SEC = 3;
@@ -277,7 +278,7 @@ export class TalentFeat extends TalentObject {
   }
   
   impactCaster(object: ModuleObject){
-    if(!BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature)) return;
+    if(!isCreature(object)) return;
 
     // AC penalties (Flurry / Crit Strike / Sniper / Rapid Shot) — 
     // ResolveMeleeSpecialAttack / ResolveRangedSpecialAttack.
@@ -304,8 +305,8 @@ export class TalentFeat extends TalentObject {
    * Caller queues the returned effect onto the first swing's CombatAttackData.
    */
   impactTarget(caster: ModuleObject, target: ModuleObject): GameEffect | undefined {
-    if(!BitWise.InstanceOfObject(caster, ModuleObjectType.ModuleCreature)) return undefined;
-    if(!BitWise.InstanceOfObject(target, ModuleObjectType.ModuleCreature)) return undefined;
+    if(!isCreature(caster)) return undefined;
+    if(!isCreature(target)) return undefined;
 
     const meleeStun =
       this.id === CombatFeatType.CRITICAL_STRIKE ||

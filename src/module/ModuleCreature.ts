@@ -180,6 +180,12 @@ import { ModuleCreatureAmbientState } from "@/enums/module/ModuleCreatureAmbient
 import { GameEffectSetStateType } from "@/enums/effects/GameEffectSetStateType";
 import type { SWAnimation } from "@/engine/rules/SWAnimation";
 
+import { isCreature } from "@/module/guards/isCreature";
+import { isDoor } from "@/module/guards/isDoor";
+import { isEncounter } from "@/module/guards/isEncounter";
+import { isObject } from "@/module/guards/isObject";
+import { isPlaceable } from "@/module/guards/isPlaceable";
+
 /** party-follow info fields (FollowInfo GFF struct). */
 export interface CreaturePartyFollowInfo {
   followObject: number;
@@ -2356,7 +2362,7 @@ export class ModuleCreature extends ModuleObject {
    * Used on attack start and OnPhysicalAttacked (including misses).
    */
   broadcastCombatStateToParty(other?: ModuleObject){
-    const otherCreature = BitWise.InstanceOfObject(other, ModuleObjectType.ModuleCreature)
+    const otherCreature = isCreature(other)
       ? (other as ModuleCreature)
       : undefined;
 
@@ -2832,7 +2838,7 @@ export class ModuleCreature extends ModuleObject {
 
   getDebilitatedState(): number {
     // Prefer highest SetState (priority).
-    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this)){
       const highest = getActiveSetStateType(this as ModuleCreature);
       if(highest > 0) return highest;
       // ambient_animation_state = 9 while force-pushed.
@@ -4163,7 +4169,7 @@ export class ModuleCreature extends ModuleObject {
     const encounter = GameState.ModuleObjectManager.GetObjectById(this.encounterObjectId);
     if(
       encounter &&
-      BitWise.InstanceOfObject(encounter, ModuleObjectType.ModuleEncounter)
+      isEncounter(encounter)
     ){
       (encounter as ModuleEncounter).removeFromActiveCreatureCount(
         this.challengeRating || 0,
@@ -4330,7 +4336,7 @@ export class ModuleCreature extends ModuleObject {
   getBodyBagPlaceable(): ModulePlaceable | undefined {
     if(!this.bodyBagObjectId) return undefined;
     const bag = GameState.ModuleObjectManager.GetObjectById(this.bodyBagObjectId) as unknown as ModulePlaceable;
-    if(BitWise.InstanceOfObject(bag, ModuleObjectType.ModulePlaceable)){
+    if(isPlaceable(bag)){
       return bag as ModulePlaceable;
     }
     return undefined;
@@ -4372,7 +4378,8 @@ export class ModuleCreature extends ModuleObject {
   shouldSpawnBodyBag(): boolean {
     if(!this.isDestroyable) return false;
     if(GameState.PartyManager?.party?.indexOf(this) >= 0) return false;
-    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlayer)) return false;
+    // Use objectType check — isPlayer(this) type-narrows ModuleCreature to never in the false branch
+    if(BitWise.InstanceOf(this.objectType, ModuleObjectType.ModulePlayer)) return false;
     if(this.bodyBagObjectId) return false;
 
     const rule = this.getBodyBagRule();
@@ -4612,16 +4619,16 @@ export class ModuleCreature extends ModuleObject {
     // BroadcastCombatStateToParty on attacker + target refreshes 8000ms combat + party ExcitedDuration.
     const attacker = this.combatData.lastAttacker;
     // assign hostile actor(attacker) before ScriptAttacked
-    if(BitWise.InstanceOfObject(attacker, ModuleObjectType.ModuleObject)){
+    if(isObject(attacker)){
       this.assignHostileActor(attacker as ModuleObject);
     }
-    if(BitWise.InstanceOfObject(attacker, ModuleObjectType.ModuleCreature)){
+    if(isCreature(attacker)){
       const atk = attacker as ModuleCreature;
       atk.broadcastCombatStateToParty(this);
       atk.removeCombatInvisibilityEffects();
     }
     this.broadcastCombatStateToParty(
-      BitWise.InstanceOfObject(attacker, ModuleObjectType.ModuleObject)
+      isObject(attacker)
         ? (attacker as ModuleObject)
         : undefined
     );
@@ -4659,7 +4666,7 @@ export class ModuleCreature extends ModuleObject {
     // if mover commandable → return without hex;
     // both arcs fail → pathfail with foundEnemy=INVALID;
     // splice ok + hostile on arc → pathfail with that enemy.
-    if(BitWise.InstanceOfObject(blocker, ModuleObjectType.ModuleCreature)){
+    if(isCreature(blocker)){
       const runPathfail = () => {
         const pathfail = GameState.NWScript.Load('k_def_pathfail01');
         if(pathfail){
@@ -5554,12 +5561,12 @@ export class ModuleCreature extends ModuleObject {
   doTouchAttack(target: ModuleObject, ranged = false): number {
     if(!target) return 0;
     if(
-      BitWise.InstanceOfObject(target, ModuleObjectType.ModuleDoor) ||
-      BitWise.InstanceOfObject(target, ModuleObjectType.ModulePlaceable)
+      isDoor(target) ||
+      isPlaceable(target)
     ){
       return 1;
     }
-    if(!BitWise.InstanceOfObject(target, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(target)){
       return 0;
     }
     const defender = target as ModuleCreature;
@@ -7677,7 +7684,7 @@ export class ModuleCreature extends ModuleObject {
       });
       
       if(needsRegister){
-        if(BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlayer)){
+        if(BitWise.InstanceOf(this.objectType, ModuleObjectType.ModulePlayer)){
           // Prefer saved ObjectId from pc.utc so mid-combat Target/MasterID refs resolve.
           const savedId = this.template?.RootNode?.hasField('ObjectId')
             ? this.template.getFieldByLabel('ObjectId').getValue()

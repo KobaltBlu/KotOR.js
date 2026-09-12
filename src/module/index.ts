@@ -5,7 +5,26 @@ export * from "@/module/ModuleTimeManager";
 export * from "@/module/Module";
 
 export * from "@/module/ModuleObject";
-export * from "@/module/guards";
+export * from "@/module/guards/isArea";
+export * from "@/module/guards/isAreaOfEffect";
+export * from "@/module/guards/isCreature";
+export * from "@/module/guards/isDoor";
+export * from "@/module/guards/isEncounter";
+export * from "@/module/guards/isItem";
+export * from "@/module/guards/isMGEnemy";
+export * from "@/module/guards/isMGGunBank";
+export * from "@/module/guards/isMGGunBullet";
+export * from "@/module/guards/isMGObstacle";
+export * from "@/module/guards/isMGPlayer";
+export * from "@/module/guards/isMGTrack";
+export * from "@/module/guards/isObject";
+export * from "@/module/guards/isPlaceable";
+export * from "@/module/guards/isPlayer";
+export * from "@/module/guards/isRoom";
+export * from "@/module/guards/isSound";
+export * from "@/module/guards/isStore";
+export * from "@/module/guards/isTrigger";
+export * from "@/module/guards/isWaypoint";
 
 export * from "@/module/ModuleArea";
 export * from "@/module/ModuleAreaOfEffect";

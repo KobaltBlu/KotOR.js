@@ -23,13 +23,13 @@ import { FeebackMessageColor } from "@/enums/engine/FeedbackMessageColor";
 import { PazaakCards } from "@/enums/minigames/PazaakCards";
 import { PazaakSideDeckSlots } from "@/enums/minigames/PazaakSideDeckSlots";
 import { type SWPortrait } from "@/engine/rules/SWPortrait";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import { AILevel } from "@/enums/module/AILevel";
-import { BitWise } from "@/utility/BitWise";
 import { getPathPersonalSpace } from "@/combat/attack-range";
 import { partyFollowPath } from "@/engine/pathfinding/party-follow-path";
 import { findSafeLocation } from "@/engine/pathfinding/find-safe-location";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 export interface CurrentMember {
   isLeader: boolean,
@@ -1156,7 +1156,7 @@ export class PartyManager {
    * Remove a specific party creature (when scripts pass an OBJECT into RemovePartyMember).
    */
   static RemovePartyMemberCreature(creature: ModuleCreature, leaveInWorld = false): boolean {
-    if(!BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(creature)){
       return false;
     }
     if(creature === PartyManager.Player){
@@ -1397,7 +1397,7 @@ export class PartyManager {
   }
 
   static AddAvailableNPCByObject(npcId = 0, object: ModuleCreature): boolean {
-    if(!BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(object)){
       return false;
     }
     PartyManager.NPCS[npcId].available = true;
@@ -1438,7 +1438,7 @@ export class PartyManager {
     if(GameState.GameKey != GameEngineType.TSL) return false;
     if(pupId < 0 || pupId >= PartyManager.MaxPuppetCount) return false;
     if(PartyManager.Puppets[pupId]?.available) return false;
-    if(!BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature)) return false;
+    if(!isCreature(object)) return false;
     const pup = PartyManager.Puppets[pupId] || { available: false, select: true };
     pup.available = true;
     pup.select = true;
@@ -1461,7 +1461,7 @@ export class PartyManager {
     const owner =
       PartyManager.GetPartyMemberByNPCId(npcId) ||
       PartyManager.NPCS[npcId]?.moduleObject;
-    if(!BitWise.InstanceOfObject(owner, ModuleObjectType.ModuleCreature)) return false;
+    if(!isCreature(owner)) return false;
     owner.assignedPuppetId = pupId;
     return true;
   }
@@ -1477,7 +1477,7 @@ export class PartyManager {
     if(!pup?.available) return undefined;
 
     let partyMember = pup.moduleObject;
-    if(!BitWise.InstanceOfObject(partyMember, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(partyMember)){
       if(!(pup.template instanceof GFFObject)) return undefined;
       partyMember = new ModuleCreature(pup.template);
       pup.moduleObject = partyMember;
@@ -1509,7 +1509,7 @@ export class PartyManager {
    * TSL GetPUPID — puppet slot index for a spawned puppet object, or -1.
    */
   static GetPUPID(object: ModuleCreature): number {
-    if(!BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature)) return -1;
+    if(!isCreature(object)) return -1;
     for(let i = 0; i < PartyManager.MaxPuppetCount; i++){
       if(PartyManager.Puppets[i]?.moduleObject === object) return i;
     }
@@ -1528,7 +1528,7 @@ export class PartyManager {
       if(member?.assignedPuppetId === pupId) return member;
     }
     const player = PartyManager.Player;
-    if(BitWise.InstanceOfObject(player, ModuleObjectType.ModuleCreature) && player.assignedPuppetId === pupId){
+    if(isCreature(player) && player.assignedPuppetId === pupId){
       return player;
     }
     return undefined;
@@ -1539,7 +1539,7 @@ export class PartyManager {
    */
   static SaveNPCByObject(npcId = 0, object: ModuleCreature): void {
     if(npcId < 0 || npcId >= PartyManager.MaxPartyCount) return;
-    if(!BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature)) return;
+    if(!isCreature(object)) return;
     object.clearAllActions();
     const npc = PartyManager.NPCS[npcId] || {
       available: false,
@@ -1562,14 +1562,14 @@ export class PartyManager {
     for(let i = 0; i < tags.length; i++){
       if(!PartyManager.NPCS[i]?.available) continue;
       const obj = GameState.ModuleObjectManager.GetObjectByTag(tags[i], 0);
-      if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature)){
+      if(isCreature(obj)){
         PartyManager.NPCS[i].moduleObject = obj as ModuleCreature;
         (obj as ModuleCreature).npcId = i;
       }
     }
     if(PartyManager.Puppets[0]?.available){
       const remote = GameState.ModuleObjectManager.GetObjectByTag('remote', 0);
-      if(BitWise.InstanceOfObject(remote, ModuleObjectType.ModuleCreature)){
+      if(isCreature(remote)){
         PartyManager.Puppets[0].moduleObject = remote as ModuleCreature;
       }
     }
@@ -1581,7 +1581,7 @@ export class PartyManager {
   static SavePUPByObject(pupId = 0, object: ModuleCreature): void {
     if(GameState.GameKey != GameEngineType.TSL) return;
     if(pupId < 0 || pupId >= PartyManager.MaxPuppetCount) return;
-    if(!BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature)) return;
+    if(!isCreature(object)) return;
     object.clearAllActions();
     const pup = PartyManager.Puppets[pupId] || { available: false, select: true };
     pup.template = object.save();
@@ -1603,7 +1603,7 @@ export class PartyManager {
     }
     if(PartyManager.CurrentPuppets.length >= PartyManager.MaxPuppetCount) return false;
     // : reject if another slot already caches this object id
-    if(object && BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature)){
+    if(object && isCreature(object)){
       for(let i = 0; i < PartyManager.MaxPuppetCount; i++){
         if(i !== pupId && PartyManager.Puppets[i]?.moduleObject === object) return false;
       }
@@ -1621,7 +1621,7 @@ export class PartyManager {
    * TSL GetIsPuppet — reads creature isPuppet (SetIsPuppet), not mere spawn cache.
    */
   static GetIsPartyPuppet(object: ModuleCreature): boolean {
-    if(!BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature)) return false;
+    if(!isCreature(object)) return false;
     return !!object.isPuppet;
   }
 
@@ -1632,7 +1632,7 @@ export class PartyManager {
    * @returns void
    */
   static AddCreatureToParty(slot = 1, creature: ModuleCreature){
-    if(!BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(creature)){
       return;
     }
 
@@ -2093,7 +2093,7 @@ export class PartyManager {
    * @returns EngineLocation
    */
   static GetSpawnLocation( creature: ModuleCreature ){
-    if( !BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature) ){
+    if( !isCreature(creature) ){
       return GameState.module.area.getSpawnLocation();
     }
 

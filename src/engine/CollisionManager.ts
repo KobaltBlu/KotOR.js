@@ -6,11 +6,10 @@ import { OdysseyWalkMesh, WalkmeshEdge } from "@/odyssey";
 import * as THREE from "three";
 import { Utility } from "@/utility/Utility";
 import { OdysseyFace3 } from "@/three/odyssey";
-import { BitWise } from "@/utility/BitWise";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { EngineDebugType } from "@/enums/engine/EngineDebugType";
 import { ModuleDoorOpenState } from "@/enums/module/ModuleDoorOpenState";
 
+import { isCreature } from "@/module/guards/isCreature";
 // =============================================
 // TYPE DEFINITIONS
 // =============================================
@@ -395,7 +394,7 @@ export class CollisionManager {
   }
 
   private getHitDistance(): number {
-    if (BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)) {
+    if (isCreature(this.object)) {
       return (this.object as ModuleCreature).getAppearance().creperspace;
     }
     return 1; // Default hit distance

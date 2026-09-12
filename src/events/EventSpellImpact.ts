@@ -5,12 +5,13 @@ import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { BitWise } from "@/utility/BitWise";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 import type { TalentSpell } from "@/talents/TalentSpell";
 import * as THREE from "three";
+
+import { isCreature } from "@/module/guards/isCreature";
+import { isObject } from "@/module/guards/isObject";
 
 /**
  * EventSpellImpact — SpellCastAndImpact AddEventDeltaTime type 0x08.
@@ -57,7 +58,7 @@ export class EventSpellImpact extends GameEvent {
 
     // Stamp spell-target fields before the impactscript runs
     caster.spellTargetPosition.copy(this.impactPosition);
-    if(BitWise.InstanceOfObject(caster, ModuleObjectType.ModuleCreature)){
+    if(isCreature(caster)){
       const cre = caster as ModuleCreature;
       if(this.itemId !== ModuleObjectConstant.OBJECT_INVALID){
         const item = GameState.ModuleObjectManager.GetObjectById(this.itemId);
@@ -70,7 +71,7 @@ export class EventSpellImpact extends GameEvent {
       spell = new GameState.TalentSpell(this.spellId);
       if(this.targetId !== ModuleObjectConstant.OBJECT_INVALID){
         const target = GameState.ModuleObjectManager.GetObjectById(this.targetId);
-        if(BitWise.InstanceOfObject(target, ModuleObjectType.ModuleObject)){
+        if(isObject(target)){
           spell.oTarget = target as ModuleObject;
         }
       }else{

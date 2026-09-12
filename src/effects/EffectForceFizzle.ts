@@ -1,7 +1,7 @@
 import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { BitWise } from "@/utility/BitWise";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * EffectForceFizzle class.
@@ -27,7 +27,7 @@ export class EffectForceFizzle extends GameEffect {
 
     // GetWasForcePowerSuccessful — fizzle clears caster success flag
     const creator = this.getCreator?.() || this.creator;
-    if(BitWise.InstanceOfObject(creator, ModuleObjectType.ModuleCreature)){
+    if(isCreature(creator)){
       const cd = (creator as any).combatData;
       if(cd){
         cd.lastForcePowerSuccess = false;

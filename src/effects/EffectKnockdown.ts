@@ -2,14 +2,14 @@ import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { GameEffectSetStateType } from "@/enums/effects/GameEffectSetStateType";
 import { GameEffectSubType } from "@/enums/effects/GameEffectSubType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { GameState } from "@/GameState";
-import { BitWise } from "@/utility/BitWise";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { hasImmunityType } from "@/effects/haste-slow";
 import { IMMUNITY_KNOCKDOWN } from "@/effects/set-state";
 import * as THREE from "three";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * EffectKnockdown — effect apply.
@@ -27,7 +27,7 @@ export class EffectKnockdown extends GameEffect {
     if(this.applied)
       return;
 
-    if(!BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.object)){
       return;
     }
     const creature = this.object as ModuleCreature;
@@ -54,7 +54,7 @@ export class EffectKnockdown extends GameEffect {
     // Facing vs creator: behind (dot < 0.707) → KNOCKED_DOWN2, else KNOCKED_DOWN
     let fromBehind = false;
     const creator = this.getCreator();
-    if(BitWise.InstanceOfObject(creator, ModuleObjectType.ModuleCreature)){
+    if(isCreature(creator)){
       const toSelf = creature.position.clone().sub((creator as ModuleCreature).position);
       toSelf.z = 0;
       if(toSelf.lengthSq() > 0.0001){
@@ -92,7 +92,7 @@ export class EffectKnockdown extends GameEffect {
 
   onRemove(){
     super.onRemove();
-    if(!BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.object)){
       return;
     }
     const creature = this.object as ModuleCreature;

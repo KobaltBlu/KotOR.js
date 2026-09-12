@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
 import { NWModuleObjectType } from "@/enums/nwscript/NWModuleObjectType";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
@@ -8,10 +7,12 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleDoor } from "@/module/ModuleDoor";
 import type { ModuleObject } from "@/module/ModuleObject";
 import type { ModuleTrigger } from "@/module/ModuleTrigger";
-import { BitWise } from "@/utility/BitWise";
 import { GameState } from "@/GameState";
 import { getNearestActionPoint } from "@/combat/nearest-action-point";
 import { getPathPersonalSpace } from "@/combat/attack-range";
+
+import { isDoor } from "@/module/guards/isDoor";
+import { isTrigger } from "@/module/guards/isTrigger";
 
 /**
  * Inter-area pathfinding (PlotInterAreaPath / build inter-area path
@@ -96,7 +97,7 @@ export function resolveTransitionDest(
     };
   }
 
-  if(BitWise.InstanceOfObject(transition, ModuleObjectType.ModuleDoor)){
+  if(isDoor(transition)){
     const door = transition as ModuleDoor;
     if(!isDoorLinked(door)) return undefined;
     const tag = (door.getLinkedTo?.() || '').trim();
@@ -111,7 +112,7 @@ export function resolveTransitionDest(
   }
 
   // GetTargetArea — TRANSITION trigger LinkedTo → waypoint → area
-  if(BitWise.InstanceOfObject(transition, ModuleObjectType.ModuleTrigger)){
+  if(isTrigger(transition)){
     const trigger = transition as ModuleTrigger;
     if((trigger.type | 0) !== ModuleTriggerType.TRANSITION) return undefined;
     const tag = (trigger.linkedTo || trigger.getLinkedTo?.() || '').trim();
@@ -387,10 +388,10 @@ export function setIntraAreaGoal(
   let goal = transition.position.clone();
   let range = perspace + 0.5;
 
-  if(BitWise.InstanceOfObject(transition, ModuleObjectType.ModuleDoor)){
+  if(isDoor(transition)){
     goal = getNearestActionPoint(transition as ModuleDoor, creature.position, creature);
     range = perspace + 0.5;
-  }else if(BitWise.InstanceOfObject(transition, ModuleObjectType.ModuleTrigger)){
+  }else if(isTrigger(transition)){
     const t = transition as ModuleTrigger;
     if(t.box){
       t.box.getCenter(goal);
@@ -575,7 +576,7 @@ export function tryUseInterAreaTransition(
   const obj = wp?.object;
   if(!creature || !obj) return false;
 
-  if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)){
+  if(isDoor(obj)){
     const door = obj as ModuleDoor;
 
     if(!door.isOpen()){
@@ -630,7 +631,7 @@ export function tryUseInterAreaTransition(
     return true;
   }
 
-  if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleTrigger)){
+  if(isTrigger(obj)){
     const trigger = obj as ModuleTrigger;
     const linkedModule = (trigger.linkedToModule || '').trim();
     if(linkedModule){

@@ -41,6 +41,8 @@ import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import * as THREE from "three";
 
+import { isCreature } from "@/module/guards/isCreature";
+
 interface AnimStateInfo {
   lastAnimState: ModulePlaceableAnimState;
   currentAnimState: ModulePlaceableAnimState;
@@ -1153,7 +1155,7 @@ export class ModulePlaceable extends ModuleObject {
     // Unlink KeepCorpse shell → bag (does not evict the shell from the cache)
     if(this.isBodyBag && this.sourceCreatureId){
       const source = GameState.ModuleObjectManager.GetObjectById(this.sourceCreatureId);
-      if(BitWise.InstanceOfObject(source, ModuleObjectType.ModuleCreature)){
+      if(isCreature(source)){
         const creature = source as ModuleCreature;
         if(creature.bodyBagObjectId === this.id){
           creature.bodyBagObjectId = 0;
@@ -1472,7 +1474,7 @@ export class ModulePlaceable extends ModuleObject {
     placeable.position.copy(source.position);
     placeable.rotation.copy(source.rotation);
     placeable.bearing = source.getFacing?.() ?? source.rotation.z;
-    if(BitWise.InstanceOfObject(source, ModuleObjectType.ModuleCreature)){
+    if(isCreature(source)){
       placeable.sourceCreatureId = source.id;
     }
     // Visible by default; KeepCorpse shells hide ordinary bags after spawn
@@ -1514,7 +1516,7 @@ export class ModulePlaceable extends ModuleObject {
     if(!source) return 0;
     let transferred = 0;
 
-    if(BitWise.InstanceOfObject(source, ModuleObjectType.ModuleCreature)){
+    if(isCreature(source)){
       const creature = source as ModuleCreature;
       const slots = Object.keys(creature.equipment) as (keyof typeof creature.equipment)[];
       for(let i = 0; i < slots.length; i++){

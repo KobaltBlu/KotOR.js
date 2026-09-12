@@ -4,8 +4,8 @@ import type { ModuleObject } from "@/module/ModuleObject";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ComputedPath } from "@/engine/pathfinding/ComputedPath";
 import { beginInterAreaPath } from "@/engine/pathfinding/inter-area-path";
-import { BitWise } from "@/utility/BitWise";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * PlotPath / PlotPathInArea return codes.
@@ -71,7 +71,7 @@ export function plotPath(
     typeof ownerAreaId === 'number' &&
     destAreaId !== ownerAreaId
   ){
-    if(!BitWise.InstanceOfObject(owner, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(owner)){
       return { code: PlotPathCode.Fail };
     }
     const creature = owner as ModuleCreature;

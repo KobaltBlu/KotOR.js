@@ -4,11 +4,9 @@ import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
 import { getPathPersonalSpace } from "@/combat/attack-range";
 import {
   advanceInterAreaWaypoint,
@@ -19,6 +17,8 @@ import {
 import { findAwayVector } from "@/engine/pathfinding/find-away-vector";
 import { canPathToPoint } from "@/engine/pathfinding/can-path-to";
 import { isInUseRange } from "@/actions/use-range";
+import { isCreature } from "@/module/guards/isCreature";
+import { isObject } from "@/module/guards/isObject";
 
 /**
  * ActionCheckPath — path-validation ActionTypes.
@@ -37,7 +37,7 @@ export class ActionCheckPath extends Action {
   }
 
   protected ownerIsValid(): boolean {
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.owner)){
       return false;
     }
     const owner = this.owner as ModuleCreature;
@@ -76,7 +76,7 @@ export class ActionCheckPath extends Action {
       typeof areaId === 'number' &&
       typeof ownerAreaId === 'number' &&
       areaId !== ownerAreaId &&
-      BitWise.InstanceOfObject(owner, ModuleObjectType.ModuleCreature)
+      isCreature(owner)
     ){
       if(!owner.interAreaWaypoints?.length){
         beginInterAreaPath(owner, undefined, areaId);
@@ -89,7 +89,7 @@ export class ActionCheckPath extends Action {
       return ActionStatus.ERROR;
     }
     const walked = this.clampWalkable(x, y, z);
-    if(validatePath && BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(validatePath && isCreature(this.owner)){
       if(!canPathToPoint(this.owner as ModuleCreature, walked)){
         return ActionStatus.ERROR;
       }
@@ -112,10 +112,10 @@ export class ActionCheckPath extends Action {
     if(!this.ownerIsValid()){
       return ActionStatus.ERROR;
     }
-    if(!BitWise.InstanceOfObject(target, ModuleObjectType.ModuleObject)){
+    if(!isObject(target)){
       return ActionStatus.ERROR;
     }
-    if(BitWise.InstanceOfObject(target, ModuleObjectType.ModuleCreature) && (target as ModuleCreature).isDead?.()){
+    if(isCreature(target) && target.isDead()){
       return ActionStatus.ERROR;
     }
     return this.queueMoveTo(
@@ -166,7 +166,7 @@ export class ActionCheckMoveAwayFromObject extends ActionCheckPath {
     let retries = this.getParameter<number>(3);
     if(typeof retries !== 'number') retries = 5;
 
-    if(!BitWise.InstanceOfObject(fleeFrom, ModuleObjectType.ModuleObject)){
+    if(!isObject(fleeFrom)){
       return ActionStatus.ERROR;
     }
     // Same-area gate 
@@ -473,10 +473,10 @@ export class ActionCheckForceFollowObject extends ActionCheckPath {
     }
     const target = this.getParameter<ModuleObject>(0);
     const distance = this.getParameter<number>(1) || 2.0;
-    if(!BitWise.InstanceOfObject(target, ModuleObjectType.ModuleObject)){
+    if(!isObject(target)){
       return ActionStatus.ERROR;
     }
-    if(BitWise.InstanceOfObject(target, ModuleObjectType.ModuleCreature) && (target as ModuleCreature).isDead?.()){
+    if(isCreature(target) && target.isDead()){
       return ActionStatus.ERROR;
     }
     const follow = new GameState.ActionFactory.ActionForceFollowObject(undefined, this.groupId);

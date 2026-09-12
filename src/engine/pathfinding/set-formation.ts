@@ -1,10 +1,11 @@
 import * as THREE from "three";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
+
+import { isCreature } from "@/module/guards/isCreature";
+import { isObject } from "@/module/guards/isObject";
 
 const DEG2RAD = Math.PI / 180;
 
@@ -22,10 +23,10 @@ export function setCreatureFormation(
   pattern: number,
   position: number
 ): boolean {
-  if(!BitWise.InstanceOfObject(anchor, ModuleObjectType.ModuleObject)){
+  if(!isObject(anchor)){
     return false;
   }
-  if(!BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature)){
+  if(!isCreature(creature)){
     return false;
   }
   if(position < 1 || position > 10){

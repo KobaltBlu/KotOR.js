@@ -1,11 +1,12 @@
 import * as THREE from "three";
 import type { ModuleArea } from "@/module/ModuleArea";
 import { GameState } from "@/GameState";
-import { BitWise } from "@/utility/BitWise";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { isLineOfSightBlockingFace } from "@/engine/pathfinding/walk-check-material-mask";
 import { noNonWalkPolysDetailed } from "@/engine/pathfinding/no-non-walk-polys";
 import { createWalkHitInfo } from "@/engine/pathfinding/walk-hit-info";
+
+import { isDoor } from "@/module/guards/isDoor";
+import { isPlaceable } from "@/module/guards/isPlaceable";
 
 /**
  * sound internal / GetObstructionFactor.
@@ -51,10 +52,10 @@ function obstructionForObjectId(objectId: number | undefined): number {
   if(!obj){
     return OBSTRUCTION_WALL;
   }
-  if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)){
+  if(isDoor(obj)){
     return OBSTRUCTION_DOOR;
   }
-  if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
+  if(isPlaceable(obj)){
     return OBSTRUCTION_PLACEABLE;
   }
   return OBSTRUCTION_WALL;

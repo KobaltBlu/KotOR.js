@@ -19,6 +19,7 @@ jest.mock("@/GameState", () => ({
 jest.mock("@/utility/BitWise", () => ({
   BitWise: {
     InstanceOfObject: (v: unknown) => !!v,
+    InstanceOf: () => true,
   },
 }));
 

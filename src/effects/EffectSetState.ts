@@ -1,10 +1,10 @@
 import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { GameEffectSetStateType } from "@/enums/effects/GameEffectSetStateType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { BitWise } from "@/utility/BitWise";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { isSetStateImmune, rebalanceSetState, SET_STATE_OUTER_AI_ACTIVITY_MASK } from "@/effects/set-state";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * EffectSetState — outer type 0x08 (effect apply).
@@ -22,7 +22,7 @@ export class EffectSetState extends GameEffect {
     if(this.applied)
       return;
 
-    if(!BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.object)){
       return;
     }
     const creature = this.object as ModuleCreature;
@@ -33,7 +33,7 @@ export class EffectSetState extends GameEffect {
     const state = this.getInt(0) | 0;
     const ignoreImmunity = (this.getInt(1) | 0) !== 0;
     const versus = this.getCreator() as ModuleCreature | undefined;
-    const versusCreature = BitWise.InstanceOfObject(versus, ModuleObjectType.ModuleCreature)
+    const versusCreature = isCreature(versus)
       ? versus
       : undefined;
 
@@ -49,7 +49,7 @@ export class EffectSetState extends GameEffect {
 
   onRemove(){
     super.onRemove();
-    if(BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this.object)){
       rebalanceSetState(this.object as ModuleCreature);
     }
   }

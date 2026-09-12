@@ -49,6 +49,7 @@ jest.mock('@/engine/pathfinding/update-creature-drive', () => ({
 jest.mock('@/utility/BitWise', () => ({
   BitWise: {
     InstanceOfObject: (obj: any, _type: number) => !!obj && typeof obj === 'object',
+    InstanceOf: () => true,
   },
 }));
 

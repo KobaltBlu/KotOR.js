@@ -1,13 +1,13 @@
-import { ModuleObjectType } from "@/enums";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { ModuleDoor } from "@/module/ModuleDoor";
-import { BitWise } from "@/utility/BitWise";
 import { Action } from "@/actions/Action";
 import { queueMoveIntoUseRange } from "@/actions/use-range";
+import { isDoor } from "@/module/guards/isDoor";
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * ActionCloseDoor class.
@@ -29,13 +29,13 @@ export class ActionCloseDoor extends Action {
 
     this.target = this.getParameter<ModuleObject>(0);
 
-    if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor))
+    if(!isDoor(this.target))
       return ActionStatus.FAILED;
 
     if(!(this.target as ModuleDoor).isOpen())
       return ActionStatus.FAILED;
 
-    if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this.owner)){
       const owner = this.owner as ModuleCreature;
       if(queueMoveIntoUseRange(owner, this.target, this.groupId)){
         return ActionStatus.IN_PROGRESS;

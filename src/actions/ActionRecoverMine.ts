@@ -2,7 +2,6 @@ import { GameState } from "@/GameState";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
 import { ResourceLoader } from "@/loaders/ResourceLoader";
 import type { ModuleCreature } from "@/module/ModuleCreature";
@@ -10,9 +9,12 @@ import type { ModuleObject } from "@/module/ModuleObject";
 import type { ModuleTrigger } from "@/module/ModuleTrigger";
 import { GFFObject } from "@/resource/GFFObject";
 import { ResourceTypes } from "@/resource/ResourceTypes";
-import { BitWise } from "@/utility/BitWise";
 import { Action } from "@/actions/Action";
 import { queueMoveIntoUseRange } from "@/actions/use-range";
+import { isCreature } from "@/module/guards/isCreature";
+import { isDoor } from "@/module/guards/isDoor";
+import { isPlaceable } from "@/module/guards/isPlaceable";
+import { isTrigger } from "@/module/guards/isTrigger";
 import {
   fadeDestroyTrap,
   MineSkillResult,
@@ -52,7 +54,7 @@ export class ActionRecoverMine extends Action {
       return ActionStatus.FAILED;
     }
 
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.owner)){
       GameState.GuiTimingBarManager?.stopFor?.(this.owner);
       return ActionStatus.FAILED;
     }
@@ -67,8 +69,8 @@ export class ActionRecoverMine extends Action {
       owner.setFacingObject(this.target);
       // recover-mine action: door/placeable 0x274c, trigger 0x279d
       const isDoorOrPlaceable =
-        BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor) ||
-        BitWise.InstanceOfObject(this.target, ModuleObjectType.ModulePlaceable);
+        isDoor(this.target) ||
+        isPlaceable(this.target);
       const animId = isDoorOrPlaceable ? 0x274c : 0x279d;
       const playAnim = new GameState.ActionFactory.ActionPlayAnimation();
       playAnim.setParameter(0, ActionParameterType.INT, animId);
@@ -83,7 +85,7 @@ export class ActionRecoverMine extends Action {
 
     const stopBar = () => GameState.GuiTimingBarManager?.stopFor?.(owner);
 
-    if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleTrigger)){
+    if(!isTrigger(this.target)){
       stopBar();
       return ActionStatus.FAILED;
     }

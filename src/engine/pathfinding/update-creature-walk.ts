@@ -15,9 +15,9 @@ import { bumpFriends } from "@/engine/pathfinding/bump-friends";
 import { plotPathAroundCreature } from "@/engine/pathfinding/plot-path-around-creature";
 import { isInUseRange } from "@/actions/use-range";
 import { GameState } from "@/GameState";
-import { BitWise } from "@/utility/BitWise";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * creature walk update.
@@ -62,7 +62,7 @@ export function updateCreatureWalk(
     const target = GameState.ModuleObjectManager?.GetObjectById?.(options.useRangeTargetId);
     if(
       target &&
-      BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature) &&
+      isCreature(creature) &&
       typeof isInUseRange === 'function' &&
       isInUseRange(creature, target)
     ){
@@ -153,7 +153,7 @@ export function updateCreatureWalk(
       const blocker =
         creature.area.creatures?.find((c) => c.id === creatures.blockingCreatureId) ??
         GameState.PartyManager?.party?.find((c) => c.id === creatures.blockingCreatureId);
-      if(BitWise.InstanceOfObject(blocker, ModuleObjectType.ModuleCreature)){
+      if(isCreature(blocker)){
         const bumped = bumpFriends(
           creature,
           blocker as ModuleCreature,

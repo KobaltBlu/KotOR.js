@@ -4,11 +4,10 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleDoor } from "@/module/ModuleDoor";
 import { getPathPersonalSpace } from "@/combat/attack-range";
 import { GameState } from "@/GameState";
-import { BitWise } from "@/utility/BitWise";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { SignalEventType } from "@/enums/events/SignalEventType";
 import { noCreaturesOnLine } from "@/engine/pathfinding/no-creatures-on-line";
 import { bumpFriends } from "@/engine/pathfinding/bump-friends";
+import { isCreature } from "@/module/guards/isCreature";
 import {
   testDirectLine,
   TestDirectLineCode,
@@ -136,7 +135,7 @@ export function driveResolveMoveTarget(
     const blocker =
       area.creatures?.find((c) => c.id === creatures.blockingCreatureId) ??
       GameState.PartyManager?.party?.find((c) => c.id === creatures.blockingCreatureId);
-    if(BitWise.InstanceOfObject(blocker, ModuleObjectType.ModuleCreature)){
+    if(isCreature(blocker)){
       if(!bumpFriends(creature, blocker as ModuleCreature, ideal, origin)){
         return origin.clone();
       }

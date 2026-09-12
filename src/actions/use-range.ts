@@ -2,13 +2,16 @@ import * as THREE from "three";
 import { getCreaturePersonalSpace, getPathPersonalSpace } from "@/combat/attack-range";
 import { getNearestActionPoint } from "@/combat/nearest-action-point";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 import type { ModulePlaceable } from "@/module/ModulePlaceable";
-import { BitWise } from "@/utility/BitWise";
 import { Utility } from "@/utility/Utility";
+
+import { isCreature } from "@/module/guards/isCreature";
+import { isDoor } from "@/module/guards/isDoor";
+import { isPlaceable } from "@/module/guards/isPlaceable";
+import { isTrigger } from "@/module/guards/isTrigger";
 
 /**
  * use-range helpers (GetUseRange / GetIsInUseRange).
@@ -33,7 +36,7 @@ export function getUseRange(
 ): UseRangeResult {
   let range = getPathPersonalSpace(owner);
 
-  if(BitWise.InstanceOfObject(target, ModuleObjectType.ModuleCreature)){
+  if(isCreature(target)){
     range = getCreaturePersonalSpace(owner) + getCreaturePersonalSpace(target) + 0.3;
     return {
       ok: true,
@@ -42,7 +45,7 @@ export function getUseRange(
     };
   }
 
-  if(BitWise.InstanceOfObject(target, ModuleObjectType.ModuleTrigger)){
+  if(isTrigger(target)){
     range = range + 0.5;
     return {
       ok: true,
@@ -51,7 +54,7 @@ export function getUseRange(
     };
   }
 
-  if(BitWise.InstanceOfObject(target, ModuleObjectType.ModuleDoor)){
+  if(isDoor(target)){
     range = range + 0.75;
     return {
       ok: true,
@@ -60,7 +63,7 @@ export function getUseRange(
     };
   }
 
-  if(BitWise.InstanceOfObject(target, ModuleObjectType.ModulePlaceable)){
+  if(isPlaceable(target)){
     range = range + 0.75;
     const placeable = target as ModulePlaceable;
     if(placeable.isCorpse){

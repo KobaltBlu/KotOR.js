@@ -4,10 +4,9 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { getCreaturePersonalSpace } from "@/combat/attack-range";
 import { GameState } from "@/GameState";
-import { BitWise } from "@/utility/BitWise";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { evaluateOverlappingTargets } from "@/engine/pathfinding/evaluate-overlapping-targets";
 import { getIsCreatureBumpable } from "@/engine/pathfinding/get-is-creature-bumpable";
+import { isCreature } from "@/module/guards/isCreature";
 import {
   setHitInfoForCreature,
   type WalkHitInfo,
@@ -120,7 +119,7 @@ export function noCreaturesOnLine(
     const creature = candidates[i];
     if(!creature || creature.id === ownerId) continue;
     if(ignore?.length && ignore.indexOf(creature.id) >= 0) continue;
-    if(!BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature)) continue;
+    if(!isCreature(creature)) continue;
     if(creature.isDead?.()) continue;
     if(allowParty && isPartyCreature(creature)) continue;
     if(

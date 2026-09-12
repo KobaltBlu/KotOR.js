@@ -1,11 +1,11 @@
 import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { BitWise } from "@/utility/BitWise";
 import { GameState } from "@/GameState";
 import { hasImmunityType } from "@/effects/haste-slow";
 import type { ModuleCreature } from "@/module/ModuleCreature";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /** IMMUNITY_TYPE_NEGATIVE_LEVEL */
 const IMMUNITY_NEGATIVE_LEVEL = 0x1d;
@@ -44,13 +44,13 @@ export class EffectNegativeLevel extends GameEffect {
     const levels = this.getInt(0) || 0;
     if(levels < 0 || levels >= 0x65) return;
 
-    if(!BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.object)){
       return;
     }
     const creature = this.object as ModuleCreature;
 
     const creatorObj = this.getCreator();
-    const versus = BitWise.InstanceOfObject(creatorObj, ModuleObjectType.ModuleCreature)
+    const versus = isCreature(creatorObj)
       ? creatorObj as ModuleCreature
       : undefined;
     if(hasImmunityType(creature, IMMUNITY_NEGATIVE_LEVEL, versus)){
@@ -128,7 +128,7 @@ export class EffectNegativeLevel extends GameEffect {
 
   onRemove(){
     super.onRemove();
-    if(!BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)) return;
+    if(!isCreature(this.object)) return;
     const creature = this.object as ModuleCreature;
     const classIdx = this.getInt(1) || 0;
     const levels = this.getInt(0) || 0;

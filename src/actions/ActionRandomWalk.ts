@@ -1,9 +1,10 @@
 import * as THREE from "three";
 import { GameState } from "@/GameState";
-import { ActionParameterType, ActionStatus, ActionType, ModuleObjectType } from "@/enums";
+import { ActionParameterType, ActionStatus, ActionType } from "@/enums";
 import type { ModuleCreature } from "@/module/ModuleCreature";
-import { BitWise } from "@/utility/BitWise";
 import { Action } from "@/actions/Action";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * ActionRandomWalk class.
@@ -28,7 +29,7 @@ export class ActionRandomWalk extends Action {
       return ActionStatus.FAILED;
     }
 
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.owner)){
       return ActionStatus.FAILED;
     }
 

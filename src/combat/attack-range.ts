@@ -1,7 +1,9 @@
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
+
+import { isCreature } from "@/module/guards/isCreature";
+import { isDoor } from "@/module/guards/isDoor";
+import { isPlaceable } from "@/module/guards/isPlaceable";
 
 /**
  * DesiredAttackRange
@@ -13,7 +15,7 @@ import { BitWise } from "@/utility/BitWise";
  */
 
 function asCreature(obj: ModuleObject | undefined): ModuleCreature | undefined {
-  if(!obj || !BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature)){
+  if(!obj || !isCreature(obj)){
     return undefined;
   }
   return obj as ModuleCreature;
@@ -67,8 +69,8 @@ export function desiredAttackRange(
   // Importing use-range here would be circular; caller may prefer getUseRange.
   // Minimal fallback matches Default branch (~1.5) when GetUseRange fails.
   if(
-    BitWise.InstanceOfObject(target, ModuleObjectType.ModuleDoor) ||
-    BitWise.InstanceOfObject(target, ModuleObjectType.ModulePlaceable)
+    isDoor(target) ||
+    isPlaceable(target)
   ){
     return getPathPersonalSpace(attacker) + 0.75;
   }

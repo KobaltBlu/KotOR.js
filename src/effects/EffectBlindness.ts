@@ -2,11 +2,11 @@ import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
 import { GameEffectSubType } from "@/enums/effects/GameEffectSubType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { BitWise } from "@/utility/BitWise";
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { hasImmunityType } from "@/effects/haste-slow";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /** Vision flags (creature.visionFlags). */
 export const VISION_FLAG_SEE_INVISIBLE = 0x01;
@@ -34,7 +34,7 @@ export class EffectBlindness extends GameEffect {
     if(this.applied)
       return;
 
-    if(!BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.object)){
       return;
     }
     const creature = this.object as ModuleCreature;
@@ -86,7 +86,7 @@ export class EffectBlindness extends GameEffect {
 
   onRemove(){
     super.onRemove();
-    if(BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this.object)){
       recomputeVisionFlags(this.object as ModuleCreature);
     }
     for(let i = 0; i < this.children.length; i++){

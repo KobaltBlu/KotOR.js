@@ -11,7 +11,8 @@ import { GameEffectFactory } from "@/effects/GameEffectFactory";
 import { GameState } from "@/GameState";
 import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
 import { SignalEventType } from "@/enums/events/SignalEventType";
-import { BitWise } from "@/utility/BitWise";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * ModuleAreaOfEffect class.
@@ -203,7 +204,7 @@ export class ModuleAreaOfEffect extends ModuleObject {
 
   updateObjectInside(object: ModuleObject){
     if(!object || this.destroyRequested) return;
-    if(BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature) && (object as any).isDead?.()){
+    if(isCreature(object) && (object as any).isDead?.()){
       // still allow exit when dying
     }
     const inside = this.isInsideBoundingBox(object);
@@ -258,7 +259,7 @@ export class ModuleAreaOfEffect extends ModuleObject {
     if(
       this.shape !== AreaOfEffectShape.RECTANGLE &&
       this.linkedToObject &&
-      BitWise.InstanceOfObject(this.linkedToObject, ModuleObjectType.ModuleCreature)
+      isCreature(this.linkedToObject)
     ){
       if((this.linkedToObject as any).isDead?.() || !this.linkedToObject.area){
         this.requestDestroy();

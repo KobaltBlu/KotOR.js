@@ -1,10 +1,10 @@
 import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { BitWise } from "@/utility/BitWise";
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * EffectHitPointChangeWhenDying — OnApply / OnRemove.
@@ -27,7 +27,7 @@ export class EffectHitPointChangeWhenDying extends GameEffect {
     if(this.applied)
       return;
 
-    if(!BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.object)){
       return;
     }
     const creature = this.object as ModuleCreature;
@@ -62,7 +62,7 @@ export class EffectHitPointChangeWhenDying extends GameEffect {
 
   onRemove(){
     super.onRemove();
-    if(!BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.object)){
       return;
     }
     const creature = this.object as ModuleCreature;

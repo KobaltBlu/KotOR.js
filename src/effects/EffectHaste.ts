@@ -1,9 +1,8 @@
 import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { BitWise } from "@/utility/BitWise";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { rebalanceHasteSlow } from "@/effects/haste-slow";
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * EffectHaste — outer type 0x01; net-balance via effect apply.
@@ -21,14 +20,14 @@ export class EffectHaste extends GameEffect {
     if(this.applied)
       return;
     super.onApply();
-    if(BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this.object)){
       rebalanceHasteSlow(this.object as ModuleCreature, this);
     }
   }
 
   onRemove(){
     super.onRemove();
-    if(BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this.object)){
       rebalanceHasteSlow(this.object as ModuleCreature, this);
     }
   }

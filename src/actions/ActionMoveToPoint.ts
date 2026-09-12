@@ -5,8 +5,6 @@ import { Action } from "@/actions/Action";
 import { Utility } from "@/utility/Utility";
 import { GameState } from "@/GameState";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
-import { BitWise } from "@/utility/BitWise";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
 import { getPathPersonalSpace } from "@/combat/attack-range";
@@ -28,6 +26,9 @@ import {
 } from "@/engine/pathfinding/quick-walk-loco";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
+
+import { isCreature } from "@/module/guards/isCreature";
+import { isObject } from "@/module/guards/isObject";
 
 /**
  * ActionMoveToPoint class.
@@ -51,7 +52,7 @@ export class ActionMoveToPoint extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature))
+    if(!isCreature(this.owner))
       return ActionStatus.FAILED;
 
     const owner = this.owner as ModuleCreature;
@@ -96,7 +97,7 @@ export class ActionMoveToPoint extends Action {
     }
     const chaseLive = !!(
       this.target &&
-      BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature) &&
+      isCreature(this.target) &&
       typeof this.target.isDead === 'function' &&
       !this.target.isDead()
     );
@@ -106,7 +107,7 @@ export class ActionMoveToPoint extends Action {
     // behind a never-finishing Move (arrive + re-click to interact).
     const useRangeTarget = !!(
       this.target &&
-      BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleObject)
+      isObject(this.target)
     );
 
     if(useRangeTarget){
@@ -259,7 +260,7 @@ export class ActionMoveToPoint extends Action {
     // Live chase: ease against distance-to-target−arrive so SQRT engages earlier
     if(
       this.target &&
-      BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)
+      isCreature(this.target)
     ){
       const range = this.getParameter<number>(6) || 0.1;
       const liveGap = Math.max(
@@ -334,7 +335,7 @@ export class ActionMoveToPoint extends Action {
   }
 
   shouldRepathToMovingTarget(distanceToLive: number): boolean {
-    if(!this.target || !BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)){
+    if(!this.target || !isCreature(this.target)){
       return false;
     }
     const storedToLive = Utility.Distance2D(this.target_position, this.real_target_position);
@@ -348,7 +349,7 @@ export class ActionMoveToPoint extends Action {
    * does not ClearAllAttacks / RemoveAllActions mid-approach.
    */
   private refreshCombatStateDuringChase(owner: ModuleObject): void {
-    if(!BitWise.InstanceOfObject(owner, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(owner)){
       return;
     }
     const creature = owner as ModuleCreature;
@@ -433,7 +434,7 @@ export class ActionMoveToPoint extends Action {
   }
 
   calculatePath(){
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) return;
+    if(!isCreature(this.owner)) return;
 
     const area = this.owner?.area ?? GameState.module?.area;
     if(!this.pathFindInfo){

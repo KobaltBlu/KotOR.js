@@ -5,8 +5,8 @@ import { ICombatAction } from "@/interface/combat/ICombatAction";
 import { AttackResult } from "@/enums/combat/AttackResult";
 import { ActionType } from "@/enums/actions/ActionType";
 import { WeaponType } from "@/enums/combat/WeaponType";
-import { BitWise } from "@/utility/BitWise";
-import { ModuleObjectType } from "@/enums";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * CombatData class.
@@ -102,7 +102,7 @@ export class CombatData {
   }
 
   getEquippedWeaponType(){
-    if(BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this.object)){
       const owner: ModuleCreature = this.object as any;
       let lWeapon = owner.equipment.LEFTHAND;
       let rWeapon = owner.equipment.RIGHTHAND;

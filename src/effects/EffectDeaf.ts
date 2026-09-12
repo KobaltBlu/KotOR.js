@@ -1,10 +1,10 @@
 import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { BitWise } from "@/utility/BitWise";
 import { GameState } from "@/GameState";
 import { hasImmunityType } from "@/effects/haste-slow";
 import type { ModuleCreature } from "@/module/ModuleCreature";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /** IMMUNITY_TYPE_DEAFNESS */
 const IMMUNITY_DEAF = 8;
@@ -31,14 +31,14 @@ export class EffectDeaf extends GameEffect {
 
   onApply(){
     if(this.applied) return;
-    if(!BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.object)){
       return;
     }
     const creature = this.object as ModuleCreature;
     if(creature.plot) return;
 
     const creator = this.getCreator();
-    const versus = BitWise.InstanceOfObject(creator, ModuleObjectType.ModuleCreature)
+    const versus = isCreature(creator)
       ? creator as ModuleCreature
       : undefined;
     if(hasImmunityType(creature, IMMUNITY_DEAF, versus)){
@@ -58,7 +58,7 @@ export class EffectDeaf extends GameEffect {
 
   onRemove(){
     super.onRemove();
-    if(!BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)) return;
+    if(!isCreature(this.object)) return;
     const creature = this.object as ModuleCreature;
     for(let i = 0; i < this.children.length; i++){
       creature.removeEffect?.(this.children[i]);

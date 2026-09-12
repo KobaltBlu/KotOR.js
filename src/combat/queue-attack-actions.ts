@@ -5,11 +5,11 @@ import {
 } from "@/combat/nearest-enemy";
 import { duelLog, duelWho } from "@/combat/duel-debug";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
+
+import { isObject } from "@/module/guards/isObject";
 
 /**
  * QueueAttackActions.
@@ -165,7 +165,7 @@ export function queueAttackActions(
 
   if(
     !next ||
-    !BitWise.InstanceOfObject(next, ModuleObjectType.ModuleObject)
+    !isObject(next)
   ){
     clearCombatModeNoEnemy(creature, maxRange);
     return false;

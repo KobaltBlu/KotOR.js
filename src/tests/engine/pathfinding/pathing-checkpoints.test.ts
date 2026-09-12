@@ -142,7 +142,7 @@ import {
   simulateFollowFrames,
   totalDisplacement,
   uniqueStates,
-} from "@/engine/pathfinding/__harness__/pathing-harness";
+} from "@/tests/engine/pathfinding/pathing-harness";
 
 const plotPathMock = jest.fn();
 jest.mock("@/engine/pathfinding/plot-path", () => ({

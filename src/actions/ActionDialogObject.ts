@@ -4,14 +4,15 @@ import { ActionType } from "@/enums/actions/ActionType";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
 import { resolveBeginConversationDialog, resolveDialogStartOwner } from "@/actions/dialog-start";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { DLGObject } from "@/resource/DLGObject";
-import { BitWise } from "@/utility/BitWise";
 import { Utility } from "@/utility/Utility";
 import { Action } from "@/actions/Action";
+
+import { isCreature } from "@/module/guards/isCreature";
+import { isObject } from "@/module/guards/isObject";
 
 /**
  * ActionDialogObject class.
@@ -50,7 +51,7 @@ export class ActionDialogObject extends Action {
     const bPrivate = !!this.getParameter<number>(2);
     const ignoreStartRange = this.getParameter<number>(4) || 0;
     const listenerParam = this.getParameter<ModuleObject>(5);
-    const listener = BitWise.InstanceOfObject(listenerParam, ModuleObjectType.ModuleObject) &&
+    const listener = isObject(listenerParam) &&
       (listenerParam as any).id !== ModuleObjectConstant.OBJECT_INVALID
       ? listenerParam
       : this.owner;
@@ -96,7 +97,7 @@ export class ActionDialogObject extends Action {
       effectiveListener = GameState.PartyManager.party[0];
     }
 
-    if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature))
+    if(isCreature(this.owner))
     {
       const distance = Utility.Distance2D(this.owner.position, this.target.position);
       if(distance > 4.5 && !ignoreStartRange){

@@ -67,9 +67,7 @@ import { CopyShader } from "three/examples/jsm/shaders/CopyShader";
 import { AccumulationBlurPass } from "@/shaders/pass/AccumulationBlurPass";
 import { resolveSpeedBlurPass } from "@/shaders/pass/FrameBufferEffectGates";
 import Stats from 'three/examples/jsm/libs/stats.module'
-// import { BitWise } from "@/utility/BitWise";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
+// import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
 // import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 
 // import { ModuleTriggerType } from "@/enums";
@@ -92,6 +90,8 @@ import {
 } from "@/inspect/runtimeSnapshots";
 import { snapshotAreaMapOverlay } from "@/inspect/areaMapOverlay";
 import { clearWorldMarkers, syncWorldMarkers } from "@/inspect/worldMarkers";
+import { AudioEmitterType } from "./enums/audio/AudioEmitterType";
+import { EngineContext } from "./engine/EngineContext";
 
 export interface GameStateInitializeOptions {
   Game: GameEngineType,

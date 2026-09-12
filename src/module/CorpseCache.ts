@@ -1,7 +1,7 @@
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModulePlaceable } from "@/module/ModulePlaceable";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { BitWise } from "@/utility/BitWise";
+
+import { isPlaceable } from "@/module/guards/isPlaceable";
 
 /**
  * corpse ring — effective capacity 3 retained KeepCorpse shells.
@@ -58,7 +58,7 @@ export class CorpseCache {
     const bag = creature.getBodyBagPlaceable?.();
     if(
       bag &&
-      BitWise.InstanceOfObject(bag, ModuleObjectType.ModulePlaceable)
+      isPlaceable(bag)
     ){
       (bag as ModulePlaceable).setBodyBagVisible(true);
     }

@@ -1,11 +1,11 @@
 import { getNearestEnemy } from "@/combat/nearest-enemy";
 import { maxAttackRange } from "@/combat/attack-range";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import type { Action } from "@/actions/Action";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * InitializeNewAttackTarget
@@ -84,7 +84,7 @@ export function tryStuckLosRetarget(
   const next = getNearestEnemy(attacker, range, { exclude: currentTarget });
   if(
     next &&
-    BitWise.InstanceOfObject(next, ModuleObjectType.ModuleCreature)
+    isCreature(next)
   ){
     initializeNewAttackTarget(attacker, next, physicalAttackAction);
     return 'retargeted';

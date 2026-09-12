@@ -1,12 +1,12 @@
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
-import { BitWise } from "@/utility/BitWise";
 import { Utility } from "@/utility/Utility";
 import { Action } from "@/actions/Action";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * ActionFollowOwner class.
@@ -26,7 +26,7 @@ export class ActionFollowOwner extends Action {
   }
 
   update(_delta: number = 0): ActionStatus {
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.owner)){
       return ActionStatus.ERROR;
     }
 
@@ -41,7 +41,7 @@ export class ActionFollowOwner extends Action {
 
     const range = this.getParameter<number>(0) || 0.0;
     const followOwner = GameState.PartyManager.GetPUPOwner(owner);
-    if(!BitWise.InstanceOfObject(followOwner, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(followOwner)){
       return ActionStatus.IN_PROGRESS;
     }
 

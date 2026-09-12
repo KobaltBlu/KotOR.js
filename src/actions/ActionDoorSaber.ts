@@ -3,13 +3,13 @@ import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleDoor } from "@/module/ModuleDoor";
 import type { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
 import { queueMoveIntoUseRange } from "@/actions/use-range";
+import { isCreature } from "@/module/guards/isCreature";
+import { isDoor } from "@/module/guards/isDoor";
 
 /** PlayAnimation id 0x28bd during DoorSaber timing bar. */
 const DOOR_SABER_ANIM = 0x28bd;
@@ -60,7 +60,7 @@ export class ActionDoorSaber extends Action {
   }
 
   update(_delta: number = 0): ActionStatus {
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.owner)){
       return ActionStatus.ERROR;
     }
 
@@ -71,29 +71,28 @@ export class ActionDoorSaber extends Action {
     }
 
     this.target = this.getParameter<ModuleObject>(0);
-    if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor)){
+    if(!isDoor(this.target)){
       this.stopBar(owner);
       return ActionStatus.ERROR;
     }
 
-    const door = this.target as ModuleDoor;
     const faced = this.getParameter<number>(1) || 0;
     const timingStarted = this.getParameter<number>(2) || 0;
 
     this.powerSabers(owner);
 
-    if(queueMoveIntoUseRange(owner, door, this.groupId)){
+    if(queueMoveIntoUseRange(owner, this.target, this.groupId)){
       return ActionStatus.IN_PROGRESS;
     }
 
     owner.force = 0;
     owner.speed = 0;
-    owner.setFacingObject?.(door);
+    owner.setFacingObject?.(this.target);
 
     if(!faced){
-      this.requeueSelf(owner, door, 1, 0);
+      this.requeueSelf(owner, this.target, 1, 0);
       const face = new GameState.ActionFactory.ActionChangeFacingObject(undefined, this.groupId);
-      face.setParameter(0, ActionParameterType.DWORD, door.id);
+      face.setParameter(0, ActionParameterType.DWORD, this.target.id);
       owner.actionQueue.addFront(face);
       return ActionStatus.COMPLETE;
     }
@@ -105,7 +104,7 @@ export class ActionDoorSaber extends Action {
       anim.setParameter(2, ActionParameterType.FLOAT, 2.0);
       anim.setParameter(3, ActionParameterType.INT, 1);
 
-      this.requeueSelf(owner, door, 1, 1);
+      this.requeueSelf(owner, this.target, 1, 1);
       owner.actionQueue.addFront(anim);
 
       GameState.GuiTimingBarManager?.startMs?.(
@@ -118,9 +117,9 @@ export class ActionDoorSaber extends Action {
     }
 
     // Timing finished — open locked door (clears lock then OpenDoor)
-    if(door.isLocked() || door.locked){
-      door.setLocked(false);
-      door.openDoor(owner);
+    if(this.target.isLocked() || this.target.locked){
+      this.target.setLocked(false);
+      this.target.openDoor(owner);
     }else{
       GameState.FeedbackMessageManager?.SendFeedbackMessage?.(0xe);
       this.stopBar(owner);

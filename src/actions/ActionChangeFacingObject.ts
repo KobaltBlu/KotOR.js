@@ -1,9 +1,9 @@
 import { Action } from "@/actions/Action";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { isCreature } from "@/module/guards/isCreature";
+import { isObject } from "@/module/guards/isObject";
 import type { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
 
 /**
  * ActionChangeFacingObject class.
@@ -26,11 +26,11 @@ export class ActionChangeFacingObject extends Action {
 
   update(delta: number = 0): ActionStatus {
     this.target = this.getParameter<ModuleObject>(0);
-    if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleObject)){
+    if(!isObject(this.target)){
       return ActionStatus.FAILED;
     }
 
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.owner)){
       return ActionStatus.FAILED;
     }
 

@@ -1,10 +1,8 @@
 import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import { DiceType } from "@/enums/combat/DiceType";
-import { BitWise } from "@/utility/BitWise";
 import { Dice } from "@/utility/Dice";
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
@@ -13,6 +11,9 @@ import type { ModuleObject } from "@/module/ModuleObject";
 import { MDLLoader, TextureLoader } from "@/loaders";
 import { OdysseyModel3D } from "@/three/odyssey";
 import * as THREE from "three";
+
+import { isCreature } from "@/module/guards/isCreature";
+import { isObject } from "@/module/guards/isObject";
 
 /** Default projectile rate when spells.2da speed unavailable (fallback). */
 const DEFAULT_THROW_RATE = 37.0;
@@ -224,7 +225,7 @@ export class EffectLightsaberThrow extends GameEffect {
 
   onApply(){
     if(this.applied) return;
-    if(!BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.object)){
       return;
     }
     const thrower = this.object as ModuleCreature;
@@ -238,7 +239,7 @@ export class EffectLightsaberThrow extends GameEffect {
     const targets: ModuleObject[] = [];
     for(let i = 0; i < 3; i++){
       const o = this.getObject(i);
-      if(BitWise.InstanceOfObject(o, ModuleObjectType.ModuleObject) &&
+      if(isObject(o) &&
          o.id !== ModuleObjectConstant.OBJECT_INVALID){
         targets.push(o);
       }
@@ -282,7 +283,7 @@ export class EffectLightsaberThrow extends GameEffect {
       this.scheduleApply(to, this.makeTravelVfx(to, thrower), delaySec);
 
       const isReturn = to === thrower;
-      if(!isReturn && BitWise.InstanceOfObject(to, ModuleObjectType.ModuleCreature)){
+      if(!isReturn && isCreature(to)){
         let amount = Dice.roll(diceCount, DiceType.d6, 0);
         // ResistDamage-style adjust vs ENERGY (0x1000) — use amount as mitigated
         const impactDelay = (elapsedMs + segMs) / 1000;
@@ -298,7 +299,7 @@ export class EffectLightsaberThrow extends GameEffect {
     super.onRemove();
     this.throwMesh?.dispose();
     this.throwMesh = undefined;
-    if(!BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)) return;
+    if(!isCreature(this.object)) return;
     (this.object as ModuleCreature).throwingLightsaber = false;
   }
 }

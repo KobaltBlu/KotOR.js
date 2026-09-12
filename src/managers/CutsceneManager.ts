@@ -11,8 +11,6 @@ import { DLGConversationType } from "@/enums/dialog/DLGConversationType";
 import { DLGCameraAngle } from "@/enums/dialog/DLGCameraAngle";
 import { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
-import { BitWise } from "@/utility/BitWise";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { AILevel } from "@/enums/module/AILevel";
 import { AudioLoader } from "@/audio/AudioLoader";
 import { AudioEngine } from "@/audio/AudioEngine";
@@ -50,6 +48,9 @@ import {
   auroraCameraLookOrientation,
 } from "@/utility/aurora-camera-orientation";
 import { ConfigClient } from "@/utility/ConfigClient";
+
+import { isCreature } from "@/module/guards/isCreature";
+import { isObject } from "@/module/guards/isObject";
 
 /** SendDialogEntryNode AnimList retry window (0x5dc = 1500ms). */
 export const DIALOG_PARTICIPANT_RETRY_MS = 0x5dc;
@@ -289,7 +290,7 @@ export class CutsceneManager {
     if(!this.active || !this.dialog) return;
     this.paused = true;
     const owner = this.getCurrentOwner();
-    if(BitWise.InstanceOfObject(owner, ModuleObjectType.ModuleCreature)){
+    if(isCreature(owner)){
       (owner as ModuleCreature).setActivity(4, true, 0);
     }
   }
@@ -303,7 +304,7 @@ export class CutsceneManager {
     if(!this.dialog) return;
     this.paused = false;
     const owner = this.getCurrentOwner();
-    if(BitWise.InstanceOfObject(owner, ModuleObjectType.ModuleCreature)){
+    if(isCreature(owner)){
       const creature = owner as ModuleCreature;
       creature.activityManager(2);
       creature.setActivity(4, false, 0);
@@ -494,7 +495,7 @@ export class CutsceneManager {
     const privateConvo = this.privateConversation;
     for(let i = 0; i < party.length; i++){
       const member = party[i];
-      if(!BitWise.InstanceOfObject(member, ModuleObjectType.ModuleCreature)) continue;
+      if(!isCreature(member)) continue;
       if(privateConvo && !this.isDialogParticipant(member)){
         continue;
       }
@@ -689,7 +690,7 @@ export class CutsceneManager {
     if(!party?.length) return;
     for(let i = 0; i < party.length; i++){
       const member = party[i];
-      if(BitWise.InstanceOfObject(member, ModuleObjectType.ModuleCreature) && member.stealthMode){
+      if(isCreature(member) && member.stealthMode){
         (member as ModuleCreature).setStealthMode(false);
       }
     }
@@ -705,7 +706,7 @@ export class CutsceneManager {
     }
     const seen = new Set<ModuleCreature>();
     const tryUnequip = (obj: ModuleObject | undefined) => {
-      if(!BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature)) return;
+      if(!isCreature(obj)) return;
       const creature = obj as ModuleCreature;
       if(seen.has(creature)) return;
       seen.add(creature);
@@ -838,14 +839,14 @@ export class CutsceneManager {
     // UpdateShotCamera: skip participant look-at when computer panel active.
     if(this.dialog.getConversationType() != DLGConversationType.COMPUTER){
       // N16: only force look-at on dialog participants (speaker/listener).
-      if(BitWise.InstanceOfObject(this.currentEntry.speaker, ModuleObjectType.ModuleCreature)){
+      if(isCreature(this.currentEntry.speaker)){
         const creature = this.currentEntry.speaker as ModuleCreature;
         if(this.isDialogParticipant(creature)){
           creature.lookAt(this.currentEntry.listener);
         }
       }
 
-      if(BitWise.InstanceOfObject(this.currentEntry.listener, ModuleObjectType.ModuleCreature)){
+      if(isCreature(this.currentEntry.listener)){
         const creature = this.currentEntry.listener as ModuleCreature;
         if(this.isDialogParticipant(creature)){
           creature.lookAt(this.currentEntry.speaker);
@@ -864,19 +865,19 @@ export class CutsceneManager {
 
     //participant facing — skip for computer (no head-look framing)
     if (this.cutsceneMode == CutsceneMode.DIALOG && this.dialog.getConversationType() != DLGConversationType.COMPUTER) {
-      if (BitWise.InstanceOfObject(this.currentEntry.listener, ModuleObjectType.ModuleObject) && BitWise.InstanceOfObject(this.currentEntry.speaker, ModuleObjectType.ModuleObject)) {
+      if (isObject(this.currentEntry.listener) && isObject(this.currentEntry.speaker)) {
         const listenerCre = this.currentEntry.listener as ModuleCreature;
         const speakerCre = this.currentEntry.speaker as ModuleCreature;
         if (
           !this.currentEntry.listener.lockDialogOrientation &&
-          BitWise.InstanceOfObject(this.currentEntry.listener, ModuleObjectType.ModuleCreature) &&
+          isCreature(this.currentEntry.listener) &&
           listenerCre.orientOnClick !== false
         ) {
           this.currentEntry.listener.FacePoint(this.currentEntry.speaker.position);
         }
         if (
           !this.currentEntry.speaker.lockDialogOrientation &&
-          BitWise.InstanceOfObject(this.currentEntry.speaker, ModuleObjectType.ModuleCreature) &&
+          isCreature(this.currentEntry.speaker) &&
           speakerCre.orientOnClick !== false
         ) {
           this.currentEntry.speaker.FacePoint(this.currentEntry.listener.position);
@@ -1052,7 +1053,7 @@ export class CutsceneManager {
 
     //Update Speaker Animation State
     try {
-      if(BitWise.InstanceOfObject(this.getCurrentOwner(), ModuleObjectType.ModuleCreature)){
+      if(isCreature(this.getCurrentOwner())){
         this.playDialogCreatureAnimation(this.getCurrentOwner(), ModuleCreatureAnimState.LISTEN);
       }
     } catch (e: any) {
@@ -1061,7 +1062,7 @@ export class CutsceneManager {
 
     //Update Listener Animation State
     try {
-      if(BitWise.InstanceOfObject(this.getCurrentListener(), ModuleObjectType.ModuleCreature)){
+      if(isCreature(this.getCurrentListener())){
         this.playDialogCreatureAnimation(this.getCurrentListener(), ModuleCreatureAnimState.LISTEN);
       }
     } catch (e: any) {
@@ -1178,7 +1179,7 @@ export class CutsceneManager {
 
     // overlay stop when leaving dialog (SetOverlayAnimation arg3=0).
     const stopOverlayOn = (obj: ModuleObject | undefined) => {
-      if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature)){
+      if(isCreature(obj)){
         const c = obj as ModuleCreature;
         if(typeof c.stopOverlayAnimation === 'function'){
           c.stopOverlayAnimation();
@@ -1215,9 +1216,9 @@ export class CutsceneManager {
           if(!actor){ continue; }
           // Unbound after SpawnAvailableNPC race — try live tag; retry window
           // reloads stunt CUT anims via rebindMissingStuntActors.
-          if(!BitWise.InstanceOfObject(actor.moduleObject, ModuleObjectType.ModuleCreature)){
+          if(!isCreature(actor.moduleObject)){
             const live = this.resolveDialogParticipantObject(participant.participant);
-            if(BitWise.InstanceOfObject(live, ModuleObjectType.ModuleCreature)){
+            if(isCreature(live)){
               actor.moduleObject = live;
               live.setCutsceneMode(true);
             }else{
@@ -1281,7 +1282,7 @@ export class CutsceneManager {
    */
   static playDialogCreatureAnimation(actor: ModuleObject, animationConstant: number) {
     this.registerDialogAnimParticipant(actor);
-    if(!BitWise.InstanceOfObject(actor, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(actor)){
       const anim = actor.animationConstantToAnimation(animationConstant);
       if(anim){
         actor.dialogPlayAnimation(anim);
@@ -1326,7 +1327,7 @@ export class CutsceneManager {
   static setEntryAnimations(entry: DLGNode) {
     // Speaker — SetDialogAnimations (0x2736 / 0x27aa)
     if (
-      BitWise.InstanceOfObject(this.currentEntry.speaker, ModuleObjectType.ModuleCreature) &&
+      isCreature(this.currentEntry.speaker) &&
       this.canPlayDialogAnimations(this.currentEntry.speaker)
     ) {
       this.playDialogCreatureAnimation(
@@ -1337,7 +1338,7 @@ export class CutsceneManager {
 
     // Listener — SetDialogAnimations (0x272e / 0x27ab)
     if (
-      BitWise.InstanceOfObject(this.currentEntry.listener, ModuleObjectType.ModuleCreature) &&
+      isCreature(this.currentEntry.listener) &&
       this.canPlayDialogAnimations(this.currentEntry.listener)
     ) {
       this.playDialogCreatureAnimation(
@@ -1921,7 +1922,7 @@ export class CutsceneManager {
    * forever-loop must not block entry advance (Delay still applies).
    */
   static isDialogAnimationPlaying(obj: ModuleObject): boolean {
-    if(!BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature)) return false;
+    if(!isCreature(obj)) return false;
     const creature = obj as ModuleCreature;
     const da = creature.dialogAnimation;
     if(da){
@@ -2162,10 +2163,10 @@ export class CutsceneManager {
     const listenerObj = swapParticipants
       ? this.cameraState.speaker.participant
       : this.cameraState.listener.participant;
-    const spApp = BitWise.InstanceOfObject(speakerObj, ModuleObjectType.ModuleCreature)
+    const spApp = isCreature(speakerObj)
       ? (speakerObj as ModuleCreature).getAppearance()?.id ?? -1
       : -1;
-    const lpApp = BitWise.InstanceOfObject(listenerObj, ModuleObjectType.ModuleCreature)
+    const lpApp = isCreature(listenerObj)
       ? (listenerObj as ModuleCreature).getAppearance()?.id ?? -1
       : -1;
     const modded = isDialogGameModded(

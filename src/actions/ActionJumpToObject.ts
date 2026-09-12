@@ -1,15 +1,15 @@
-import { ModuleObjectType } from "@/enums";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
 import { Action } from "@/actions/Action";
 import { GameState } from "@/GameState";
 import {
   classifyJumpDestination,
 } from "@/engine/jump-to-location";
 import { applyAddToArea, applyLocalJump } from "@/actions/ActionJumpToPoint";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * ActionJumpToObject — jump-to-object action.
@@ -34,7 +34,7 @@ export class ActionJumpToObject extends Action {
     if(!this.target)
       return ActionStatus.FAILED;
 
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.owner)){
       return ActionStatus.FAILED;
     }
 

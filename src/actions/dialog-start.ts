@@ -1,9 +1,9 @@
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { DLGObject } from "@/resource/DLGObject";
-import { BitWise } from "@/utility/BitWise";
+import { isCreature } from "@/module/guards/isCreature";
+import { isObject } from "@/module/guards/isObject";
 
 /**
  * ExecuteCommandBeginConversation → StartDialog ownership.
@@ -23,17 +23,17 @@ export function resolveDialogStartOwner(
   caller: ModuleObject,
   listener: ModuleObject
 ): ModuleObject {
-  if(!BitWise.InstanceOfObject(caller, ModuleObjectType.ModuleObject)){
+  if(!isObject(caller)){
     return listener;
   }
-  if(!BitWise.InstanceOfObject(listener, ModuleObjectType.ModuleObject)){
+  if(!isObject(listener)){
     return caller;
   }
 
   const player = GameState.PartyManager?.Player;
   const listenerIsPlayer = !!(listener.isPlayer || (player && listener === player));
   const callerIsPlayer = !!(caller.isPlayer || (player && caller === player));
-  const callerIsCreature = BitWise.InstanceOfObject(caller, ModuleObjectType.ModuleCreature);
+  const callerIsCreature = isCreature(caller);
   const callerIsParty = callerIsCreature && !!(caller as ModuleCreature).isPartyMember?.();
 
   // Order matches engine behavior || short-circuit (listener check before caller check).
@@ -66,7 +66,7 @@ export function resolveBeginConversationDialog(
   if(instanceConversation){
     return instanceConversation;
   }
-  if(BitWise.InstanceOfObject(dialogOwner, ModuleObjectType.ModuleObject)){
+  if(isObject(dialogOwner)){
     return dialogOwner.getConversation?.();
   }
   return undefined;

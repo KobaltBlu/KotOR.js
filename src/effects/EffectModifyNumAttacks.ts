@@ -1,8 +1,8 @@
 import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { BitWise } from "@/utility/BitWise";
 import type { ModuleCreature } from "@/module/ModuleCreature";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * EffectModifyNumAttacks — effect apply.
@@ -21,7 +21,7 @@ export class EffectModifyNumAttacks extends GameEffect {
     if(this.applied)
       return;
 
-    if(!BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.object)){
       return;
     }
     const creature = this.object as ModuleCreature;
@@ -39,7 +39,7 @@ export class EffectModifyNumAttacks extends GameEffect {
 
   onRemove(){
     super.onRemove();
-    if(!BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.object)){
       return;
     }
     const creature = this.object as ModuleCreature;

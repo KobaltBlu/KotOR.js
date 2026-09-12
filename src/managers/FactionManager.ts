@@ -17,6 +17,8 @@ import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
 import { TwoDAManager } from "@/managers/TwoDAManager";
 
+import { isArea } from "@/module/guards/isArea";
+
 const blacklist = ['(Row Label)', '__index', 'label'];
 
 const REPUTATION_STATUS = {
@@ -371,7 +373,7 @@ export class FactionManager {
    */
   static resolveCallerArea(caller: ModuleObject | undefined): ModuleArea | undefined {
     if(!caller) return undefined;
-    if(BitWise.InstanceOfObject(caller, ModuleObjectType.ModuleArea)){
+    if(isArea(caller)){
       return caller as ModuleArea;
     }
     return caller.area;

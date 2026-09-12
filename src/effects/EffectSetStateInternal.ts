@@ -6,11 +6,10 @@ import { GameEffectSetStateType } from "@/enums/effects/GameEffectSetStateType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { ModuleCreatureAmbientState } from "@/enums/module/ModuleCreatureAmbientState";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
-import { BitWise } from "@/utility/BitWise";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { animForSetState, VFX_DROID_STUN, VFX_STUN } from "@/effects/set-state";
+import { isCreature } from "@/module/guards/isCreature";
 import {
   applyForcePushAIActivityMask,
   clearForcePushLoco,
@@ -63,7 +62,7 @@ export class EffectSetStateInternal extends GameEffect {
   onApply(){
     if(this.applied)
       return;
-    if(!BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.object)){
       return;
     }
     super.onApply();
@@ -96,7 +95,7 @@ export class EffectSetStateInternal extends GameEffect {
   update(delta: number = 0){
     super.update(delta);
     if(this.getInt(0) === GameEffectSetStateType.FORCEPUSH){
-      if(BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+      if(isCreature(this.object)){
         const creature = this.object as ModuleCreature;
         if(!creature._quickWalkedThisFrame){
           updateForcePushAnimFlags(creature, delta);
@@ -108,7 +107,7 @@ export class EffectSetStateInternal extends GameEffect {
 
   onRemove(){
     super.onRemove();
-    if(BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this.object)){
       const creature = this.object as ModuleCreature;
       const state = this.getInt(0) | 0;
       this.clearAmbient(creature, state);
@@ -147,7 +146,7 @@ export class EffectSetStateInternal extends GameEffect {
         creature.ambientAnimState = ModuleCreatureAmbientState.PRONE_FORCE_PUSHED;
         {
           const creator = this.getCreator();
-          if(BitWise.InstanceOfObject(creator, ModuleObjectType.ModuleCreature)){
+          if(isCreature(creator)){
             stampForcePushAttackSummary(creator as ModuleCreature, creature);
           }
         }

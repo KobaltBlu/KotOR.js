@@ -2,10 +2,11 @@ import { Action } from "@/actions/Action";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
+
+import { isCreature } from "@/module/guards/isCreature";
+import { isObject } from "@/module/guards/isObject";
 
 /**
  * ActionStanceTotalDefense class.
@@ -29,7 +30,7 @@ export class ActionStanceTotalDefense extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.owner)){
       return ActionStatus.ERROR;
     }
 
@@ -40,7 +41,7 @@ export class ActionStanceTotalDefense extends Action {
     }
 
     this.target = this.getParameter<ModuleObject>(0);
-    if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleObject)){
+    if(!isObject(this.target)){
       owner.clearCombatMode?.();
       return ActionStatus.ERROR;
     }

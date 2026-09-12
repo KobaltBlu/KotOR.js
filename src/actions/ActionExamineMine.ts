@@ -2,13 +2,13 @@ import { GameState } from "@/GameState";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
 import { Action } from "@/actions/Action";
 import { markTrapDetected, MineSkillResult, resolveMineSkillCheck } from "@/actions/mine-skill";
 import { queueMoveIntoUseRange } from "@/actions/use-range";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * ActionExamineMine class.
@@ -40,7 +40,7 @@ export class ActionExamineMine extends Action {
       return ActionStatus.FAILED;
     }
 
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.owner)){
       GameState.GuiTimingBarManager?.stopFor?.(this.owner);
       return ActionStatus.FAILED;
     }

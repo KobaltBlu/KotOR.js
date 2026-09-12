@@ -4,14 +4,14 @@ import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { SkillType } from "@/enums/nwscript/SkillType";
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
 import { Dice } from "@/utility/Dice";
 import { Utility } from "@/utility/Utility";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * ActionTaunt class.
@@ -34,10 +34,10 @@ export class ActionTaunt extends Action {
 
   update(delta: number = 0): ActionStatus {
     this.target = this.getParameter<ModuleObject>(0);
-    if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.target)){
       return ActionStatus.FAILED;
     }
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.owner)){
       return ActionStatus.FAILED;
     }
 

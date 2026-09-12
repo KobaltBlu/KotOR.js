@@ -11,10 +11,10 @@ import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import { LIPObject } from "@/resource/LIPObject";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { DialogMessageEntry } from "@/engine/DialogMessageEntry";
-import { BitWise } from "@/utility/BitWise";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { DLGCameraAngle } from "@/enums/dialog/DLGCameraAngle";
 import type { DLGObject } from "@/resource/DLGObject";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 class DummyScriptInstance extends NWScriptInstance {
   name: string = 'SWG_DUMMY_SCRIPT';
@@ -409,7 +409,7 @@ export class DLGNode {
     const resref = resrefOverride || this.getVoiceResRef();
     if(resref){
       const lip = await LIPObject.Load(resref);
-      if (BitWise.InstanceOfObject(this.speaker, ModuleObjectType.ModuleCreature)) {
+      if (isCreature(this.speaker)) {
         (this.speaker as ModuleCreature).setLIP(lip);
       }
       return true;
@@ -419,7 +419,7 @@ export class DLGNode {
   }
 
   resetLIP(){
-    if (BitWise.InstanceOfObject(this.speaker, ModuleObjectType.ModuleCreature)) {
+    if (isCreature(this.speaker)) {
       (this.speaker as ModuleCreature).setLIP(undefined);
     }
   }

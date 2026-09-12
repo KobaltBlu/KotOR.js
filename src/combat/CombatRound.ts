@@ -8,7 +8,6 @@ import { CombatActionType } from "@/enums/combat/CombatActionType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
 import { TextSprite3DType } from "@/enums/engine/TextSprite3DType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { CombatFeatType } from "@/enums/combat/CombatFeatType";
 import { AttackResult } from "@/enums/combat/AttackResult";
@@ -22,7 +21,6 @@ import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { FeedbackOption } from "@/enums/engine/FeedbackOption";
 import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
 import { TextSprite3D } from "@/engine/TextSprite3D";
-import { BitWise } from "@/utility/BitWise";
 import { CombatAttackData } from "@/combat/CombatAttackData";
 import type { CombatRoundAction } from "@/combat/CombatRoundAction";
 import { CombatRoundAction as CombatRoundActionClass } from "@/combat/CombatRoundAction";
@@ -49,6 +47,9 @@ import {
   normalizeCombatObjectId,
 } from "@/combat/resolve-combat-object-id";
 import * as THREE from 'three';
+
+import { isCreature } from "@/module/guards/isCreature";
+import { isItem } from "@/module/guards/isItem";
 
 /** reaxn_delay ≈ distance * (1000/42) ms. */
 export const PROJECTILE_TRAVEL_MS_PER_UNIT = 1000 / 42;
@@ -441,7 +442,7 @@ export class CombatRound {
     let lateralScale = 0.40002003;
     let scatterMul = 1.0;
 
-    if(BitWise.InstanceOfObject(target, ModuleObjectType.ModuleCreature)){
+    if(isCreature(target)){
       lateralScale = getPathPersonalSpace(target) * 0.6667;
       // attack_result == '\n' (10) → sum of three rand%3
       if((attackResult | 0) === 10){
@@ -727,7 +728,7 @@ export class CombatRound {
     master: boolean = false,
     featId: number = 0
   ){
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) return;
+    if(!isCreature(this.owner)) return;
 
     const owner: ModuleCreature = this.owner as any;
 
@@ -1025,7 +1026,7 @@ export class CombatRound {
     // QueueAttackActions itself keeps a non-empty schedule when sticky lives.
     if(
       !options?.skipQueueAttackActions &&
-      BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)
+      isCreature(this.owner)
     ){
       const creature = this.owner as ModuleCreature;
       if(
@@ -1477,7 +1478,7 @@ export class CombatRound {
 
       if(ca.actionType === CombatActionType.ITEM_EQUIP){
         const item = ca.item || (
-          BitWise.InstanceOfObject(ca.target, ModuleObjectType.ModuleItem)
+          isItem(ca.target)
             ? ca.target as ModuleItem
             : undefined
         );
@@ -1491,7 +1492,7 @@ export class CombatRound {
         this.scheduledActionList.splice(i, 1);
       }else if(ca.actionType === CombatActionType.ITEM_UNEQUIP){
         const item = ca.item || (
-          BitWise.InstanceOfObject(ca.target, ModuleObjectType.ModuleItem)
+          isItem(ca.target)
             ? ca.target as ModuleItem
             : undefined
         );
@@ -1952,7 +1953,7 @@ export class CombatRound {
     // Melee vs target holding a ranged weapon (+10)
     if(
       weapon && !weapon.isRangedWeapon() &&
-      BitWise.InstanceOfObject(combatAction.target, ModuleObjectType.ModuleCreature)
+      isCreature(combatAction.target)
     ){
       const target = combatAction.target as ModuleCreature;
       const targetWeapon = target.equipment?.RIGHTHAND;
@@ -2279,7 +2280,7 @@ export class CombatRound {
     attackTotal: number,
     wouldHit: boolean
   ): boolean {
-    if(!BitWise.InstanceOfObject(target, ModuleObjectType.ModuleCreature)) return false;
+    if(!isCreature(target)) return false;
 
     const canDeflect = { value: true };
     if(!this.isProjectileParryable(attacker, target, attack.rangedAttack, canDeflect)){
@@ -2371,7 +2372,7 @@ export class CombatRound {
    * Resolve sneak-attack eligibility (flank / rear / ranged proximity).
    */
   resolveSneakAttack(attacker: ModuleCreature, target: ModuleCreature, attack: CombatAttackData): boolean {
-    if(!target || !BitWise.InstanceOfObject(target, ModuleObjectType.ModuleCreature)) return false;
+    if(!target || !isCreature(target)) return false;
 
     let dice = 0;
     for(let i = CombatFeatType.SNEAK_ATTACK_10D6; i >= CombatFeatType.SNEAK_ATTACK_1D6; i--){
@@ -2484,7 +2485,7 @@ export class CombatRound {
     const attackTotal = naturalRoll + attackMod;
     const hasAssuredHit = creature.hasEffect(GameEffectType.EffectAssuredHit);
 
-    const targetCreature = BitWise.InstanceOfObject(combatAction.target, ModuleObjectType.ModuleCreature)
+    const targetCreature = isCreature(combatAction.target)
       ? combatAction.target as ModuleCreature
       : undefined;
     // ResolveAttackRoll — AC only via GetArmorClassVersus on creatures; else 0
@@ -2698,7 +2699,7 @@ export class CombatRound {
       creature.animationState.index = attackAnim;
     }
 
-    const target = BitWise.InstanceOfObject(combatAction.target, ModuleObjectType.ModuleCreature)
+    const target = isCreature(combatAction.target)
       ? combatAction.target as ModuleCreature
       : undefined;
 
@@ -3133,7 +3134,7 @@ export class CombatRound {
           sched.splice(i, 1);
         }
       }
-      if(!sched.length && BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+      if(!sched.length && isCreature(this.owner)){
         const creature = this.owner as ModuleCreature;
         creature.combatData.lastAttackTarget = fallback;
         creature.combatData.lastAttemptedAttackTarget = fallback;

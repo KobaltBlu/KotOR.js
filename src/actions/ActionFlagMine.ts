@@ -2,15 +2,17 @@ import { GameState } from "@/GameState";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 import type { ModuleTrigger } from "@/module/ModuleTrigger";
-import { BitWise } from "@/utility/BitWise";
 import { Action } from "@/actions/Action";
 import { markTrapDetected, MineSkillResult, resolveMineSkillCheck } from "@/actions/mine-skill";
 import { queueMoveIntoUseRange } from "@/actions/use-range";
+import { isCreature } from "@/module/guards/isCreature";
+import { isDoor } from "@/module/guards/isDoor";
+import { isPlaceable } from "@/module/guards/isPlaceable";
+import { isTrigger } from "@/module/guards/isTrigger";
 
 /**
  * ActionFlagMine class.
@@ -43,20 +45,17 @@ export class ActionFlagMine extends Action {
       return ActionStatus.FAILED;
     }
 
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.owner)){
       GameState.GuiTimingBarManager?.stopFor?.(this.owner);
       return ActionStatus.FAILED;
     }
 
-    const isTrigger = BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleTrigger);
-    const isDoor = BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor);
-    const isPlaceable = BitWise.InstanceOfObject(this.target, ModuleObjectType.ModulePlaceable);
-    if(!isTrigger && !isDoor && !isPlaceable){
+    if(!isTrigger(this.target) && !isDoor(this.target) && !isPlaceable(this.target)){
       GameState.GuiTimingBarManager?.stopFor?.(this.owner);
       return ActionStatus.FAILED;
     }
 
-    if(isTrigger){
+    if(isTrigger(this.target)){
       const trap = this.target as ModuleTrigger;
       if(trap.type != ModuleTriggerType.TRAP){
         GameState.GuiTimingBarManager?.stopFor?.(this.owner);

@@ -4,13 +4,12 @@ import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { CombatMode } from "@/enums/combat/CombatMode";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
 import { getCounterSpellRange } from "@/combat/spell-range";
 import { Utility } from "@/utility/Utility";
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * ActionCounterSpell class.
@@ -39,7 +38,7 @@ export class ActionCounterSpell extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.owner)){
       return ActionStatus.ERROR;
     }
 
@@ -50,7 +49,7 @@ export class ActionCounterSpell extends Action {
     }
 
     this.target = this.getParameter<ModuleObject>(0);
-    if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.target)){
       this.leaveStance(owner);
       return ActionStatus.ERROR;
     }

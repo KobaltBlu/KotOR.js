@@ -82,6 +82,17 @@ import { ModuleCreatureAmbientState } from "@/enums/module/ModuleCreatureAmbient
 import type { SWAnimation } from "@/engine/rules/SWAnimation";
 import type { ModuleTrigger } from "@/module/ModuleTrigger";
 
+import { isArea } from "@/module/guards/isArea";
+import { isAreaOfEffect } from "@/module/guards/isAreaOfEffect";
+import { isCreature } from "@/module/guards/isCreature";
+import { isDoor } from "@/module/guards/isDoor";
+import { isEncounter } from "@/module/guards/isEncounter";
+import { isMGEnemy } from "@/module/guards/isMGEnemy";
+import { isMGObstacle } from "@/module/guards/isMGObstacle";
+import { isMGPlayer } from "@/module/guards/isMGPlayer";
+import { isPlaceable } from "@/module/guards/isPlaceable";
+import { isTrigger } from "@/module/guards/isTrigger";
+
 export interface DialogModelVisibilityInput {
   mode: EngineMode;
   cutsceneMode: CutsceneMode;
@@ -723,8 +734,8 @@ export class ModuleObject {
     // Triggers/doors are static — roomCheck findWalkableFace would snap Z by +0.005.
     // They attach rooms via their own getCurrentRoom without mutating position.
     if(this.spawned
-      && !BitWise.InstanceOfObject(this, ModuleObjectType.ModuleTrigger)
-      && !BitWise.InstanceOfObject(this, ModuleObjectType.ModuleDoor)){
+      && !isTrigger(this)
+      && !isDoor(this)){
       this.collisionManager.roomCheck(delta);
     }
 
@@ -773,8 +784,8 @@ export class ModuleObject {
       if(
         !this.room &&
         this.area &&
-        !BitWise.InstanceOfObject(this, ModuleObjectType.ModuleTrigger) &&
-        !BitWise.InstanceOfObject(this, ModuleObjectType.ModuleDoor)
+        !isTrigger(this) &&
+        !isDoor(this)
       ){
         this.collisionManager.roomCheck(delta);
       }else{
@@ -1836,19 +1847,19 @@ export class ModuleObject {
     if(!(event instanceof NWScriptEvent)){ return; }
 
     let onUserDefined: NWScriptInstance;
-    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this)){
       onUserDefined = this.scripts[ModuleObjectScript.CreatureOnUserDefined];
-    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlaceable)){
+    }else if(isPlaceable(this)){
       onUserDefined = this.scripts[ModuleObjectScript.PlaceableOnUserDefined];
-    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleDoor)){
+    }else if(isDoor(this)){
       onUserDefined = this.scripts[ModuleObjectScript.DoorOnUserDefined];
-    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleTrigger)){
+    }else if(isTrigger(this)){
       onUserDefined = this.scripts[ModuleObjectScript.TriggerOnUserDefined];
-    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleArea)){
+    }else if(isArea(this)){
       onUserDefined = this.scripts[ModuleObjectScript.AreaOnUserDefined];
-    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleAreaOfEffect)){
+    }else if(isAreaOfEffect(this)){
       onUserDefined = this.scripts[ModuleObjectScript.AoEOnUserDefined];
-    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleEncounter)){
+    }else if(isEncounter(this)){
       onUserDefined = this.scripts[ModuleObjectScript.EncounterOnUserDefined];
     }
 
@@ -1874,9 +1885,9 @@ export class ModuleObject {
     const caster = event.getObject(0);
     const harmful = !!event.getInt(1);
 
-    if(harmful && BitWise.InstanceOfObject(caster, ModuleObjectType.ModuleCreature)){
+    if(harmful && isCreature(caster)){
       const c = caster as ModuleCreature;
-      if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
+      if(isCreature(this)){
         // Creature target: engage both sides 
         const target = this as any as ModuleCreature;
         // EventHandler OnSpellCastAt sets last hostile when harmful
@@ -1896,11 +1907,11 @@ export class ModuleObject {
     }
 
     let onSpellAt: NWScriptInstance;
-    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this)){
       onSpellAt = this.scripts[ModuleObjectScript.CreatureOnSpellAt];
-    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlaceable)){
+    }else if(isPlaceable(this)){
       onSpellAt = this.scripts[ModuleObjectScript.PlaceableOnSpellCastAt];
-    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleDoor)){
+    }else if(isDoor(this)){
       onSpellAt = this.scripts[ModuleObjectScript.DoorOnSpellCastAt];
     }
 
@@ -1943,21 +1954,21 @@ export class ModuleObject {
     }
 
     let onHeartbeat: NWScriptInstance;
-    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this)){
       onHeartbeat = this.scripts[ModuleObjectScript.CreatureOnHeartbeat];
-    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlaceable)){
+    }else if(isPlaceable(this)){
       onHeartbeat = this.scripts[ModuleObjectScript.PlaceableOnHeartbeat];
-    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleDoor)){
+    }else if(isDoor(this)){
       onHeartbeat = this.scripts[ModuleObjectScript.DoorOnHeartbeat];
-    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleTrigger)){
+    }else if(isTrigger(this)){
       onHeartbeat = this.scripts[ModuleObjectScript.TriggerOnHeartbeat];
-    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleEncounter)){
+    }else if(isEncounter(this)){
       onHeartbeat = this.scripts[ModuleObjectScript.EncounterOnHeartbeat];
-    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleMGObstacle)){
+    }else if(isMGObstacle(this)){
       onHeartbeat = this.scripts[ModuleObjectScript.MGObstacleOnHeartbeat];
-    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleMGEnemy)){
+    }else if(isMGEnemy(this)){
       onHeartbeat = this.scripts[ModuleObjectScript.MGEnemyOnHeartbeat];
-    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleMGPlayer)){
+    }else if(isMGPlayer(this)){
       onHeartbeat = this.scripts[ModuleObjectScript.MGPlayerOnHeartbeat];
     }
     if(!onHeartbeat){ return; }
@@ -1980,7 +1991,7 @@ export class ModuleObject {
   onSpawn(runScript = true){
 
     let onSpawn: NWScriptInstance;
-    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this)){
       onSpawn = this.scripts[ModuleObjectScript.CreatureOnSpawn];
     }
 
@@ -2201,13 +2212,13 @@ export class ModuleObject {
     if(trap.trapscript?.length && trap.trapscript != '****'){
       const nwscript = NWScript.Load(trap.trapscript);
       let trapKey: ModuleObjectScript | undefined;
-      if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleTrigger)){
+      if(isTrigger(this)){
         trapKey = ModuleObjectScript.TriggerOnTrapTriggered;
         this.scripts[trapKey] = nwscript;
-      }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlaceable)){
+      }else if(isPlaceable(this)){
         trapKey = ModuleObjectScript.PlaceableOnTrapTriggered;
         this.scripts[trapKey] = nwscript;
-      }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleDoor)){
+      }else if(isDoor(this)){
         trapKey = ModuleObjectScript.DoorOnTrapTriggered;
         this.scripts[trapKey] = nwscript;
       }
@@ -2322,7 +2333,7 @@ export class ModuleObject {
       this.trapDetectedByIds.push(id);
     }
     this.trapDetected = true;
-    if(BitWise.InstanceOfObject(detector, ModuleObjectType.ModuleCreature)){
+    if(isCreature(detector)){
       (detector as ModuleCreature).lastTrapDetected = this;
     }
     return true;
@@ -2461,21 +2472,21 @@ export class ModuleObject {
 
     // effect apply door/placeable — BroadcastCombatStateToParty(attacker, INVALID)
     if(
-      BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlaceable) ||
-      BitWise.InstanceOfObject(this, ModuleObjectType.ModuleDoor)
+      isPlaceable(this) ||
+      isDoor(this)
     ){
       const damager = this.combatData.lastDamager ?? this.combatData.lastAttacker;
-      if(BitWise.InstanceOfObject(damager, ModuleObjectType.ModuleCreature)){
+      if(isCreature(damager)){
         (damager as ModuleCreature).broadcastCombatStateToParty();
       }
     }
 
     let onDamaged: NWScriptInstance;
-    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this)){
       onDamaged = this.scripts[ModuleObjectScript.CreatureOnDamaged];
-    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlaceable)){
+    }else if(isPlaceable(this)){
       onDamaged = this.scripts[ModuleObjectScript.PlaceableOnDamaged];
-    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleDoor)){
+    }else if(isDoor(this)){
       onDamaged = this.scripts[ModuleObjectScript.DoorOnDamaged];
     }
 
@@ -2522,9 +2533,9 @@ export class ModuleObject {
    * Creatures / doors override with their own handlers.
    */
   onAttacked(attackType: CombatActionType){
-    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlaceable)){
+    if(isPlaceable(this)){
       const attacker = this.combatData.lastAttacker;
-      if(BitWise.InstanceOfObject(attacker, ModuleObjectType.ModuleCreature)){
+      if(isCreature(attacker)){
         const atk = attacker as ModuleCreature;
         atk.broadcastCombatStateToParty();
         atk.removeCombatInvisibilityEffects();
@@ -3038,7 +3049,7 @@ export class ModuleObject {
    * Creatures: CON + FortSaveThrow + class/conditioning + effects.
    */
   getFortitudeSave(){
-    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this)){
       return this.getCreatureSavingThrowBase(1) + getSavingThrowEffectBonus(this, 1);
     }
     return this.fortitudeSaveThrow + getSavingThrowEffectBonus(this, 1);
@@ -3048,7 +3059,7 @@ export class ModuleObject {
    * Get the reflex save — GetReflexSavingThrow.
    */
   getReflexSave(){
-    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this)){
       return this.getCreatureSavingThrowBase(2) + getSavingThrowEffectBonus(this, 2);
     }
     return this.reflexSaveThrow + getSavingThrowEffectBonus(this, 2);
@@ -3090,7 +3101,7 @@ export class ModuleObject {
    * Get the will save — GetWillSavingThrow.
    */
   getWillSave(){
-    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this)){
       return this.getCreatureSavingThrowBase(3) + getSavingThrowEffectBonus(this, 3);
     }
     return this.willSaveThrow + getSavingThrowEffectBonus(this, 3);
@@ -3168,7 +3179,7 @@ export class ModuleObject {
     nSaveType: number,
     oVersus?: ModuleObject
   ): number {
-    if(!BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this)){
       const base =
         kind === 1 ? (this.fortitudeSaveThrow | 0) :
         kind === 2 ? (this.reflexSaveThrow | 0) :
@@ -3177,7 +3188,7 @@ export class ModuleObject {
     }
 
     const creature = this as unknown as ModuleCreature;
-    const versus = BitWise.InstanceOfObject(oVersus, ModuleObjectType.ModuleCreature)
+    const versus = isCreature(oVersus)
       ? oVersus as ModuleCreature
       : undefined;
     const base = this.getCreatureSavingThrowBase(kind);
@@ -3228,7 +3239,7 @@ export class ModuleObject {
    * @returns
    */
   resistForce(oCaster: ModuleObject){
-    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature) && BitWise.InstanceOfObject(oCaster, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this) && isCreature(oCaster)){
       //https://gamefaqs.gamespot.com/boards-star-wars-knights-of-the-old-republic
       //1d20 + target level + ForceResistance± vs. DC of caster level + 10
       const frBonus = getForceResistanceBonus(this);
@@ -3466,7 +3477,7 @@ export class ModuleObject {
    */
   JumpToLocation(lLocation: EngineLocation){
     if(!lLocation) return;
-    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this)){
       const action = new GameState.ActionFactory.ActionJumpToPoint();
       action.setParameter(0, ActionParameterType.FLOAT, lLocation.position.x);
       action.setParameter(1, ActionParameterType.FLOAT, lLocation.position.y);
@@ -4032,7 +4043,7 @@ export class ModuleObject {
     }
 
     let onNotice: NWScriptInstance;
-    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this)){
       onNotice = this.scripts[ModuleObjectScript.CreatureOnNotice];
     }
 
@@ -4089,7 +4100,7 @@ export class ModuleObject {
     }
 
     let onNotice: NWScriptInstance;
-    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this)){
       onNotice = this.scripts[ModuleObjectScript.CreatureOnNotice];
     }
 
@@ -4175,7 +4186,7 @@ export class ModuleObject {
     if(opts?.skipRoomWalkmesh){
       // Use-range: Detailed-only (personal_space 0.001), no AABB LOS
       const ignoreIds = [this.id, ignoreObject?.id].filter((id) => id != null) as number[];
-      if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
+      if(isCreature(this)){
         const ignoreDoor = ((this as unknown) as ModuleCreature).pathFindIgnoreObjectId | 0;
         if(ignoreDoor) ignoreIds.push(ignoreDoor);
       }
@@ -4622,7 +4633,7 @@ export class ModuleObject {
   }
 
   setDelayUntilFade(delay: number){
-    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature) || BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlaceable)){
+    if(isCreature(this) || isPlaceable(this)){
       this.delayUntilFade = delay;
       return;
     }
@@ -4638,7 +4649,7 @@ export class ModuleObject {
   }
 
   setNoFadeOnDestroy(noFade: boolean){
-    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature) || BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlaceable)){
+    if(isCreature(this) || isPlaceable(this)){
       this.noFadeOnDestroy = noFade;
       return;
     }

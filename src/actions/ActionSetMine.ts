@@ -4,14 +4,18 @@ import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
 import { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
 import { Utility } from "@/utility/Utility";
 import { Action } from "@/actions/Action";
 import { MineSkillResult, resolveMineSetCheck, signalTrapTriggered } from "@/actions/mine-skill";
+
+import { isCreature } from "@/module/guards/isCreature";
+import { isDoor } from "@/module/guards/isDoor";
+import { isItem } from "@/module/guards/isItem";
+import { isObject } from "@/module/guards/isObject";
+import { isPlaceable } from "@/module/guards/isPlaceable";
 
 /**
  * ActionSetMine class.
@@ -50,18 +54,18 @@ export class ActionSetMine extends Action {
     const y = this.getParameter<number>(3);
     const z = this.getParameter<number>(4);
 
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.owner)){
       GameState.GuiTimingBarManager?.stopFor?.(this.owner);
       return ActionStatus.FAILED;
     }
-    if(!BitWise.InstanceOfObject(this.oItem, ModuleObjectType.ModuleItem)){
+    if(!isItem(this.oItem)){
       GameState.GuiTimingBarManager?.stopFor?.(this.owner);
       return ActionStatus.FAILED;
     }
 
     const owner = this.owner as ModuleCreature;
     const stopBar = () => GameState.GuiTimingBarManager?.stopFor?.(owner);
-    const hasTarget = BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleObject);
+    const hasTarget = isObject(this.target);
     const plantPos = hasTarget
       ? this.target.position
       : { x: typeof x === 'number' ? x : owner.position.x, y: typeof y === 'number' ? y : owner.position.y, z: typeof z === 'number' ? z : owner.position.z };
@@ -127,8 +131,8 @@ export class ActionSetMine extends Action {
       let plantedTrigger: ModuleObject | undefined;
       if(
         hasTarget &&
-        (BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor) ||
-          BitWise.InstanceOfObject(this.target, ModuleObjectType.ModulePlaceable))
+        (isDoor(this.target) ||
+          isPlaceable(this.target))
       ){
         this.target.addTrap(trapSubtype, owner);
         plantedTrigger = this.target;

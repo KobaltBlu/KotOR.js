@@ -1,10 +1,9 @@
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { Action } from "@/actions/Action";
-import { BitWise } from "@/utility/BitWise";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
+import { isCreature } from "@/module/guards/isCreature";
 enum ActionPlayAnimationType
 {
   LOOPING = 0,
@@ -60,7 +59,7 @@ export class ActionPlayAnimation extends Action {
 
     const owner = this.owner as ModuleCreature;
     if(!this.bInitialized){
-      if(BitWise.InstanceOfObject(owner, ModuleObjectType.ModuleCreature) && typeof owner.applyAnimationByMode === 'function'){
+      if(isCreature(owner) && typeof owner.applyAnimationByMode === 'function'){
         if(this.overlayAnimation && typeof owner.playOverlayAnimation === 'function'){
           owner.playOverlayAnimation(this.animation);
         }else{

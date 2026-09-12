@@ -1,9 +1,9 @@
 import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { BitWise } from "@/utility/BitWise";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { hasImmunityType, rebalanceHasteSlow } from "@/effects/haste-slow";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * EffectSlow — outer type 0x03; immunity type 9 rejects apply.
@@ -20,7 +20,7 @@ export class EffectSlow extends GameEffect {
     if(this.applied)
       return;
 
-    if(BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this.object)){
       // IMMUNITY_TYPE_SLOW = 9
       if(hasImmunityType(this.object as ModuleCreature, 9)){
         return;
@@ -28,14 +28,14 @@ export class EffectSlow extends GameEffect {
     }
 
     super.onApply();
-    if(BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this.object)){
       rebalanceHasteSlow(this.object as ModuleCreature, this);
     }
   }
 
   onRemove(){
     super.onRemove();
-    if(BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this.object)){
       rebalanceHasteSlow(this.object as ModuleCreature, this);
     }
   }

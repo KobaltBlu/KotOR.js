@@ -1,5 +1,4 @@
 import { GameEventType } from "@/enums/events/GameEventType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GameState } from "@/GameState";
 import { GameEvent } from "@/events/GameEvent";
@@ -7,9 +6,10 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleArea } from "@/module/ModuleArea";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
-import { BitWise } from "@/utility/BitWise";
 import type { OdysseyModel3D } from "@/three/odyssey";
 import * as THREE from "three";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * EventSummonCreature — event type 0x18 from effect apply.
@@ -38,7 +38,7 @@ export class EventSummonCreature extends GameEvent {
 
   execute(){
     const creature = GameState.ModuleObjectManager.GetObjectById(this.summonId) as ModuleCreature;
-    if(!BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(creature)){
       return;
     }
 

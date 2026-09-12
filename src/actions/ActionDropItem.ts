@@ -1,10 +1,12 @@
 import { Action } from "@/actions/Action";
-import { ActionStatus, ActionType, ModuleObjectType } from "@/enums";
+import { ActionStatus, ActionType } from "@/enums";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
-import { BitWise } from "@/utility/BitWise";
+
+import { isCreature } from "@/module/guards/isCreature";
+import { isItem } from "@/module/guards/isItem";
 
 /**
  * ActionDropItem class.
@@ -26,14 +28,14 @@ export class ActionDropItem extends Action {
   }
 
   update(delta?: number): ActionStatus {
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.owner)){
       return ActionStatus.FAILED;
     }
 
     const owner: ModuleCreature = this.owner as ModuleCreature;
     const oItem = this.getParameter<ModuleItem>(0);
 
-    if(!BitWise.InstanceOfObject(oItem, ModuleObjectType.ModuleItem)){
+    if(!isItem(oItem)){
       return ActionStatus.FAILED;
     }
 

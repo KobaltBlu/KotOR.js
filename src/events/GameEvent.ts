@@ -1,10 +1,10 @@
 
 import { GameState } from "@/GameState";
-import { ModuleObjectType } from "@/enums";
 import type { ModuleObject } from "@/module/ModuleObject";
 import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import { GFFStruct } from "@/resource/GFFStruct";
-import { BitWise } from "@/utility/BitWise";
+
+import { isObject } from "@/module/guards/isObject";
 
 /**
  * GameEvent class.
@@ -42,12 +42,12 @@ export class GameEvent {
 
   setCaller(caller: ModuleObject){
     this.caller = caller;
-    this.callerId = BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject) ? this.caller.id : 0;
+    this.callerId = isObject(this.caller) ? this.caller.id : 0;
     return this.caller;
   }
 
   getCaller(){
-    return BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject) ? this.caller : this.setCaller(GameState.ModuleObjectManager.GetObjectById(this.callerId));
+    return isObject(this.caller) ? this.caller : this.setCaller(GameState.ModuleObjectManager.GetObjectById(this.callerId));
   }
 
   setObjectId(nObjectId: number){
@@ -56,12 +56,12 @@ export class GameEvent {
 
   setObject(obj: ModuleObject){
     this.object = obj;
-    this.objectId = BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleObject) ? this.object.id : 0;
+    this.objectId = isObject(this.object) ? this.object.id : 0;
     return this.object;
   }
 
   getObject(){
-    return BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleObject) ? this.object : this.setObject(GameState.ModuleObjectManager.GetObjectById(this.objectId));
+    return isObject(this.object) ? this.object : this.setObject(GameState.ModuleObjectManager.GetObjectById(this.objectId));
   }
 
   /** OBJECT_INVALID / sentinel used in event-queue GFF. */
@@ -69,10 +69,10 @@ export class GameEvent {
 
   /** Persist CallerId for event-queue save (script caller, else event caller). */
   exportCallerId(): number {
-    if(BitWise.InstanceOfObject(this.script?.caller, ModuleObjectType.ModuleObject)){
+    if(isObject(this.script?.caller)){
       return this.script.caller.id;
     }
-    if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
+    if(isObject(this.caller)){
       return this.caller.id;
     }
     if((this.callerId | 0) !== 0){
@@ -83,10 +83,10 @@ export class GameEvent {
 
   /** Persist ObjectId for event-queue save (script object, else event object). */
   exportObjectId(): number {
-    if(BitWise.InstanceOfObject(this.script?.object, ModuleObjectType.ModuleObject)){
+    if(isObject(this.script?.object)){
       return this.script.object.id;
     }
-    if(BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleObject)){
+    if(isObject(this.object)){
       return this.object.id;
     }
     if((this.objectId | 0) !== 0){

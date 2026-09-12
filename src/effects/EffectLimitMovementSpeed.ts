@@ -1,8 +1,8 @@
 import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { BitWise } from "@/utility/BitWise";
 import type { ModuleCreature } from "@/module/ModuleCreature";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * EffectLimitMovementSpeed — slow child sets run-limit flag (0x8E8).
@@ -20,14 +20,14 @@ export class EffectLimitMovementSpeed extends GameEffect {
     if(this.applied)
       return;
     super.onApply();
-    if(BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this.object)){
       (this.object as ModuleCreature).limitMovementSpeed = true;
     }
   }
 
   onRemove(){
     super.onRemove();
-    if(BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this.object)){
       const creature = this.object as ModuleCreature;
       const still = (creature.effects || []).some(
         e => e && e !== this && e.type === GameEffectType.EffectLimitMovementSpeed

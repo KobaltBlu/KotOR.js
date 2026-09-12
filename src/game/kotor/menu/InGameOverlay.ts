@@ -11,9 +11,11 @@ import { Anchor } from "@/enums/gui/Anchor";
 import { SSFType } from "@/enums/resource/SSFType";
 import { TalentObject } from "@/talents";
 import { AutoPauseState } from "@/enums/engine/AutoPauseState";
-import { BitWise } from "@/utility/BitWise";
-import { KeyMapAction, ModuleObjectType } from "@/enums";
+import { KeyMapAction } from "@/enums";
 import type { ModuleObject } from "@/module/ModuleObject";
+import { isCreature } from "@/module/guards/isCreature";
+import { isObject } from "@/module/guards/isObject";
+import { isRoom } from "@/module/guards/isRoom";
 import {
   getClientCombatMode,
   setClientCombatMode,
@@ -717,14 +719,14 @@ export class InGameOverlay extends GameMenu {
   }
 
   _canShowTargetUI() {
-    if (BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleCreature) && GameState.CursorManager.selectedObject.isDead())
+    if (isCreature(GameState.CursorManager.selectedObject) && GameState.CursorManager.selectedObject.isDead())
       return false;
     // still shows edge arrow + nameplate when reticle is off-screen (UpdateIndicator status 2)
     return (
       !this.manager.MenuContainer.bVisible &&
       !!GameState.CursorManager.selectedObject &&
-      BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleObject) &&
-      !BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleRoom)
+      isObject(GameState.CursorManager.selectedObject) &&
+      !isRoom(GameState.CursorManager.selectedObject)
     );
   }
 
@@ -846,7 +848,7 @@ export class InGameOverlay extends GameMenu {
       return { x: truncDiv(vpW, 2), y: truncDiv(vpH, 2), status: 0 };
     }
 
-    if(BitWise.InstanceOfObject(selectedObject, ModuleObjectType.ModuleCreature)){
+    if(isCreature(selectedObject)){
       this.#menuPointWorld.copy(selectedObject.position);
       const tag = (selectedObject.tag || '').toLowerCase();
       // : +2.0 for zaalbar/hk47, else +1.75
@@ -1121,7 +1123,7 @@ export class InGameOverlay extends GameMenu {
     }
 
     const selected = GameState.CursorManager.selectedObject;
-    const isHostile = BitWise.InstanceOfObject(selected, ModuleObjectType.ModuleCreature)
+    const isHostile = isCreature(selected)
       && selected.isHostile(GameState.getCurrentPlayer());
 
     if (isHostile) {

@@ -1,15 +1,16 @@
 import { GameState } from "@/GameState";
-import { ActionParameterType, ModuleObjectType } from "@/enums";
+import { ActionParameterType } from "@/enums";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { getPathPersonalSpace } from "@/combat/attack-range";
 import { partyFollowPath } from "@/engine/pathfinding/party-follow-path";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
 import { Utility } from "@/utility/Utility";
 import { Action } from "@/actions/Action";
 import * as THREE from "three";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 const _followGoal = new THREE.Vector3();
 
@@ -37,7 +38,7 @@ export class ActionForceFollowObject extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.owner)){
       return ActionStatus.FAILED;
     }
 
@@ -45,7 +46,7 @@ export class ActionForceFollowObject extends Action {
     this.target = this.getParameter<ModuleObject>(0);
     const fDistance = this.getParameter<number>(1) || 0.0;
 
-    if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.target)){
       return ActionStatus.FAILED;
     }
 

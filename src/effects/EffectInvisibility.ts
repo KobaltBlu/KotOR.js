@@ -1,8 +1,8 @@
 import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { BitWise } from "@/utility/BitWise";
 import type { ModuleCreature } from "@/module/ModuleCreature";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * EffectInvisibility class.
@@ -26,7 +26,7 @@ export class EffectInvisibility extends GameEffect {
     super.onApply();
 
     // Force an immediate perception re-eval for nearby creatures
-    if(BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this.object)){
       const self = this.object as ModuleCreature;
       self.perceptionTimer = 3;
       const area = self.area;

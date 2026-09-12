@@ -1,11 +1,12 @@
 import * as THREE from "three";
 import { getPathPersonalSpace } from "@/combat/attack-range";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import type { ModuleDoor } from "@/module/ModuleDoor";
 import type { ModuleObject } from "@/module/ModuleObject";
 import type { ModulePlaceable } from "@/module/ModulePlaceable";
 import type { OdysseyWalkMesh } from "@/odyssey/OdysseyWalkMesh";
-import { BitWise } from "@/utility/BitWise";
+
+import { isDoor } from "@/module/guards/isDoor";
+import { isPlaceable } from "@/module/guards/isPlaceable";
 
 /**
  * GetNearestActionPoint
@@ -210,10 +211,10 @@ export function getNearestActionPoint(
   owner?: ModuleObject
 ): THREE.Vector3 {
   const perspace = getPathPersonalSpace(owner as any);
-  if(BitWise.InstanceOfObject(target, ModuleObjectType.ModuleDoor)){
+  if(isDoor(target)){
     return getDoorNearestActionPoint(target as ModuleDoor, from, perspace);
   }
-  if(BitWise.InstanceOfObject(target, ModuleObjectType.ModulePlaceable)){
+  if(isPlaceable(target)){
     return getPlaceableNearestActionPoint(target as ModulePlaceable, from, perspace);
   }
   return target.position.clone();

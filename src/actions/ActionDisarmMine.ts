@@ -3,13 +3,15 @@ import { ModuleTriggerType } from "@/enums";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 import type { ModuleTrigger } from "@/module/ModuleTrigger";
-import { BitWise } from "@/utility/BitWise";
 import { Action } from "@/actions/Action";
 import { queueMoveIntoUseRange } from "@/actions/use-range";
+import { isCreature } from "@/module/guards/isCreature";
+import { isDoor } from "@/module/guards/isDoor";
+import { isPlaceable } from "@/module/guards/isPlaceable";
+import { isTrigger } from "@/module/guards/isTrigger";
 import {
   fadeDestroyTrap,
   MineSkillResult,
@@ -49,7 +51,7 @@ export class ActionDisarmMine extends Action {
       return ActionStatus.FAILED;
     }
 
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.owner)){
       GameState.GuiTimingBarManager?.stopFor?.(this.owner);
       return ActionStatus.FAILED;
     }
@@ -63,9 +65,7 @@ export class ActionDisarmMine extends Action {
       this.animQueued = true;
       owner.setFacingObject(this.target);
       // disarm-mine action: door 0x2796, placeable 0x2797, trigger 0x2794
-      const isDoor = BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor);
-      const isPlaceable = BitWise.InstanceOfObject(this.target, ModuleObjectType.ModulePlaceable);
-      const animId = isDoor ? 0x2796 : (isPlaceable ? 0x2797 : 0x2794);
+      const animId = isDoor(this.target) ? 0x2796 : (isPlaceable(this.target) ? 0x2797 : 0x2794);
       const playAnim = new GameState.ActionFactory.ActionPlayAnimation();
       playAnim.setParameter(0, ActionParameterType.INT, animId);
       playAnim.setParameter(1, ActionParameterType.FLOAT, 1.0);
@@ -79,7 +79,7 @@ export class ActionDisarmMine extends Action {
 
     const stopBar = () => GameState.GuiTimingBarManager?.stopFor?.(owner);
 
-    if(BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleTrigger)){
+    if(isTrigger(this.target)){
       const trap = this.target as ModuleTrigger;
       if(trap.type != ModuleTriggerType.TRAP){
         stopBar();

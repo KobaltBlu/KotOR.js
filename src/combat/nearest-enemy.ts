@@ -4,11 +4,13 @@ import {
   maxCleaveRange,
 } from "@/combat/attack-range";
 import { PerceptionMask } from "@/enums/engine/PerceptionMask";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
+
+import { isCreature } from "@/module/guards/isCreature";
+import { isDoor } from "@/module/guards/isDoor";
+import { isPlaceable } from "@/module/guards/isPlaceable";
 
 /**
  * GetNearestEnemy / HasTargetBeenDetected.
@@ -52,8 +54,8 @@ export function hasTargetBeenDetected(
     return false;
   }
   if(
-    BitWise.InstanceOfObject(target, ModuleObjectType.ModuleDoor) ||
-    BitWise.InstanceOfObject(target, ModuleObjectType.ModulePlaceable)
+    isDoor(target) ||
+    isPlaceable(target)
   ){
     return true;
   }
@@ -134,7 +136,7 @@ export function getNearestEnemy(
     const candidate = candidates[i];
     if(!candidate || candidate === attacker) continue;
     if(excludeId !== undefined && candidate.id === excludeId) continue;
-    if(!BitWise.InstanceOfObject(candidate, ModuleObjectType.ModuleCreature)) continue;
+    if(!isCreature(candidate)) continue;
     if(candidate.isDead?.()) continue;
     if(!attacker.isHostile(candidate)) continue;
     if(!hasPerceptionSeen(attacker, candidate)) continue;
@@ -186,7 +188,7 @@ export function explainNearestEnemyMiss(
     const candidate = list[i];
     if(!candidate || candidate === attacker) continue;
     if(excludeId !== undefined && candidate.id === excludeId) continue;
-    if(!BitWise.InstanceOfObject(candidate, ModuleObjectType.ModuleCreature)) continue;
+    if(!isCreature(candidate)) continue;
     candidates++;
     if(candidate.isDead?.()) continue;
     if(!attacker.isHostile(candidate)) continue;

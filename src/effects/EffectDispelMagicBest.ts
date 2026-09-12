@@ -1,11 +1,11 @@
 import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { BitWise } from "@/utility/BitWise";
 import { Dice } from "@/utility/Dice";
 import { DiceType } from "@/enums/combat/DiceType";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { isDispelEligible } from "@/effects/EffectDispelMagicAll";
+
+import { isObject } from "@/module/guards/isObject";
 
 /**
  * EffectDispelMagicBest — effect apply.
@@ -26,7 +26,7 @@ export class EffectDispelMagicBest extends GameEffect {
       return;
     super.onApply();
 
-    if(!BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleObject)){
+    if(!isObject(this.object)){
       return;
     }
 

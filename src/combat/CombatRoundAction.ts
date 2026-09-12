@@ -10,13 +10,12 @@ import type { SWAnimation } from "@/engine/rules/SWAnimation";
 import { SpellCastInstance } from "@/combat/SpellCastInstance";
 import { resolveSpellProjectilePathType } from "@/combat/spell-projectile-time";
 import { CombatFeatType } from "@/enums/combat/CombatFeatType";
-import { BitWise } from "@/utility/BitWise";
-import { ModuleObjectType } from "@/enums";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { GFFField } from "@/resource/GFFField";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import { GameState } from "@/GameState";
+import { isCreature } from "@/module/guards/isCreature";
 import {
   lookupCombatObjectById,
   normalizeCombatObjectId,
@@ -124,7 +123,7 @@ export class CombatRoundAction {
   }
 
   calculateAttackAnimation(){
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) return;
+    if(!isCreature(this.owner)) return;
 
     const owner: ModuleCreature = this.owner as any;
     let attackKey = owner.getCombatAnimationAttackType();
@@ -180,7 +179,7 @@ export class CombatRoundAction {
     }
 
     //Get random basic melee attack in combat with another melee creature that is targeting you
-    if(attackKey == 'm' && BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)){
+    if(attackKey == 'm' && isCreature(this.target)){
       const target: ModuleCreature = this.target as any;
       if(owner.isDuelingObject(target)){
         attackKey = 'c';

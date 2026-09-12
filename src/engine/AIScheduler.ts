@@ -1,11 +1,14 @@
 import { AILevel } from "@/enums/module/AILevel";
 import { ActionType } from "@/enums/actions/ActionType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
-import { BitWise } from "@/utility/BitWise";
 import { GameState } from "@/GameState";
 import type { ModuleObject } from "@/module/ModuleObject";
 import type { ModuleCreature } from "@/module/ModuleCreature";
+import { isAreaOfEffect } from "@/module/guards/isAreaOfEffect";
+import { isCreature } from "@/module/guards/isCreature";
+import { isDoor } from "@/module/guards/isDoor";
+import { isPlaceable } from "@/module/guards/isPlaceable";
+import { isTrigger } from "@/module/guards/isTrigger";
 import {
   isForcePushLocoActive,
   isFollowLeaderLocoActive,
@@ -113,7 +116,7 @@ export class AIScheduler {
       const obj = objects[i];
       if(!obj) continue;
       if(
-        BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature) &&
+        isCreature(obj) &&
         obj.aiLevel === AILevel.LOW
       ){
         this.setAILevel(obj, AILevel.VERY_LOW);
@@ -123,14 +126,14 @@ export class AIScheduler {
 
   /** Creatures, AoEs, triggers, transition doors, non-static placeables. */
   shouldPromoteOnAreaEntry(obj: ModuleObject): boolean {
-    if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature)) return true;
-    if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleAreaOfEffect)) return true;
-    if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleTrigger)) return true;
-    if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)){
+    if(isCreature(obj)) return true;
+    if(isAreaOfEffect(obj)) return true;
+    if(isTrigger(obj)) return true;
+    if(isDoor(obj)){
       const door = obj as any;
       return !!(door.getLinkedToModule?.() || door.linkedToModule);
     }
-    if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
+    if(isPlaceable(obj)){
       return !(obj as any).static;
     }
     return false;
@@ -309,7 +312,7 @@ export class AIScheduler {
   private quickWalkPass(list: ModuleObject[], delta: number){
     for(let i = 0; i < list.length; i++){
       const obj = list[i];
-      if(!obj || !BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature)) continue;
+      if(!obj || !isCreature(obj)) continue;
       const creature = obj as ModuleCreature;
       if(creature.destroyed || creature.willDestroy) continue;
       if(!this.creatureNeedsQuickWalk(creature)) continue;

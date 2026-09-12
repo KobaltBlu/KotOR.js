@@ -26,6 +26,11 @@ import { EngineState } from "@/enums/engine/EngineState";
 import { MiniGameObjectArray } from "@/module/minigame/MiniGameObjectArray";
 import { GFFField } from "@/resource/GFFField";
 
+import { isCreature } from "@/module/guards/isCreature";
+import { isDoor } from "@/module/guards/isDoor";
+import { isPlaceable } from "@/module/guards/isPlaceable";
+import { isTrigger } from "@/module/guards/isTrigger";
+
 /**
  * NWScript shape constants (GetObjectInShape).
  */
@@ -1160,7 +1165,7 @@ export class ModuleObjectManager {
       return { ok: false, hostile: false };
     }
 
-    if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature)){
+    if(isCreature(obj)){
       const cre = obj as ModuleCreature;
       const deadOrCorpse = (typeof cre.isDead === 'function' && cre.isDead())
         || !!(cre as ModuleCreature).isRetainedCorpse;
@@ -1186,7 +1191,7 @@ export class ModuleObjectManager {
       return { ok: true, hostile };
     }
 
-    if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleTrigger)){
+    if(isTrigger(obj)){
       const trig = obj as ModuleTrigger;
       if(trig.type !== ModuleTriggerType.TRAP){
         return { ok: false, hostile: false };
@@ -1202,7 +1207,7 @@ export class ModuleObjectManager {
       return { ok: false, hostile: false };
     }
 
-    if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
+    if(isPlaceable(obj)){
       const plc = obj as ModulePlaceable;
       if(!plc.isUseable()){
         return { ok: false, hostile: false };
@@ -1213,7 +1218,7 @@ export class ModuleObjectManager {
       return { ok: true, hostile: false };
     }
 
-    if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)){
+    if(isDoor(obj)){
       const door = obj as ModuleDoor;
       if(door.isOpen()){
         return { ok: false, hostile: false };
@@ -1389,7 +1394,7 @@ export class ModuleObjectManager {
   /** True when object is a trap trigger suitable for MineSighted force-pick. */
   static #isMineTarget(obj: ModuleObject): boolean {
     return (
-      BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleTrigger) &&
+      isTrigger(obj) &&
       (obj as ModuleTrigger).type === ModuleTriggerType.TRAP
     );
   }
@@ -1421,7 +1426,7 @@ export class ModuleObjectManager {
       if(!this.isNearestHostile(obj)) continue;
       if(this.#isMineTarget(obj)){
         hasMineInPool = true;
-      }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature)){
+      }else if(isCreature(obj)){
         hasHostileInPool = true;
       }
     }
@@ -1435,7 +1440,7 @@ export class ModuleObjectManager {
 
     // Combat dead-target grace when last left the pool (target_changing)
     if(last && !inAround(last) && combat && hasHostileInPool){
-      const cre = BitWise.InstanceOfObject(last, ModuleObjectType.ModuleCreature)
+      const cre = isCreature(last)
         ? (last as ModuleCreature)
         : undefined;
       const dead = !!(cre && typeof cre.isDead === 'function' && cre.isDead());
@@ -1515,7 +1520,7 @@ export class ModuleObjectManager {
         if(
           enemyRising &&
           !isMine &&
-          BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature)
+          isCreature(obj)
         ){
           if(!combat){
             GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.EnemySighted);
@@ -1616,7 +1621,7 @@ export class ModuleObjectManager {
         const obj = list[i];
         if(
           this.isNearestHostile(obj) &&
-          BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature) &&
+          isCreature(obj) &&
           this.canSeeObject(player, obj)
         ){
           hostileOnly = true;
@@ -1629,7 +1634,7 @@ export class ModuleObjectManager {
       if(!this.canSeeObject(player, obj)) return false;
       if(!hostileOnly) return true;
       return (
-        BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature) &&
+        isCreature(obj) &&
         this.isNearestHostile(obj)
       );
     };

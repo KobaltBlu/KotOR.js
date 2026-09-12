@@ -1,15 +1,16 @@
 import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { ResourceLoader } from "@/loaders";
 import { GFFObject } from "@/resource/GFFObject";
 import { ResourceTypes } from "@/resource/ResourceTypes";
-import { BitWise } from "@/utility/BitWise";
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleArea } from "@/module/ModuleArea";
 import * as THREE from "three";
 import { findSafeLocation } from "@/engine/pathfinding/find-safe-location";
+
+import { isArea } from "@/module/guards/isArea";
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * EffectSummonCreature — effect apply / OnRemove.
@@ -36,7 +37,7 @@ export class EffectSummonCreature extends GameEffect {
 
     const owner = this.object as ModuleCreature;
     let area = this.getObject(0) as ModuleArea | undefined;
-    if(!BitWise.InstanceOfObject(area, ModuleObjectType.ModuleArea)){
+    if(!isArea(area)){
       area = (owner.area || GameState.module.area) as ModuleArea;
       if(area) this.setObject(0, area as any);
     }
@@ -45,7 +46,7 @@ export class EffectSummonCreature extends GameEffect {
     let x = this.getFloat(0);
     let y = this.getFloat(1);
     let z = this.getFloat(2);
-    if(!x && !y && !z && BitWise.InstanceOfObject(owner, ModuleObjectType.ModuleCreature)){
+    if(!x && !y && !z && isCreature(owner)){
       x = owner.position.x;
       y = owner.position.y;
       z = owner.position.z;
@@ -81,7 +82,7 @@ export class EffectSummonCreature extends GameEffect {
     creature.load();
     creature.clearAllActions?.();
     creature.position.set(x, y, z);
-    if(BitWise.InstanceOfObject(owner, ModuleObjectType.ModuleCreature)){
+    if(isCreature(owner)){
       creature.setFacing?.(owner.getFacing?.() ?? 0, true);
     }
     GameState.ModuleObjectManager.RegisterObject(creature);
@@ -101,7 +102,7 @@ export class EffectSummonCreature extends GameEffect {
     const event = new GameState.GameEventFactory.EventSummonCreature();
     event.summonId = creature.id;
     event.position = new THREE.Vector3(x, y, z);
-    event.setCaller(BitWise.InstanceOfObject(owner, ModuleObjectType.ModuleCreature) ? owner : area as any);
+    event.setCaller(isCreature(owner) ? owner : area as any);
     event.setObject(area as any);
     event.setDay(future.pauseDay);
     event.setTime(future.pauseTime);
@@ -111,7 +112,7 @@ export class EffectSummonCreature extends GameEffect {
   onRemove(){
     super.onRemove();
     const summoned = this.getObject(1) as ModuleCreature | undefined;
-    if(!BitWise.InstanceOfObject(summoned, ModuleObjectType.ModuleCreature)) return;
+    if(!isCreature(summoned)) return;
     // UnsummonMyself — destroy summoned creature
     try{
       summoned.destroy?.();

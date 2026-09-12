@@ -4,8 +4,6 @@ import { GFFDataType } from "@/enums/resource/GFFDataType";
 import type { NWScriptEvent } from "@/nwscript/events/NWScriptEvent";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
-import { BitWise } from "@/utility/BitWise";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { ModuleObjectScript, SignalEventType } from "@/enums";
 import { NWScriptEventType } from "@/enums/nwscript/NWScriptEventType";
@@ -13,6 +11,15 @@ import EngineLocation from "@/engine/EngineLocation";
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
+
+import { isCreature } from "@/module/guards/isCreature";
+import { isDoor } from "@/module/guards/isDoor";
+import { isMGEnemy } from "@/module/guards/isMGEnemy";
+import { isMGObstacle } from "@/module/guards/isMGObstacle";
+import { isMGPlayer } from "@/module/guards/isMGPlayer";
+import { isObject } from "@/module/guards/isObject";
+import { isPlaceable } from "@/module/guards/isPlaceable";
+import { isTrigger } from "@/module/guards/isTrigger";
 
 /**
  * EventSignalEvent class.
@@ -77,24 +84,24 @@ export class EventSignalEvent extends GameEvent {
           return;
         }
       }
-      if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleObject)){
+      if(isObject(obj)){
         obj.scriptEventHandler(this.event);
       }
       return;
     }
 
-    if(!BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleObject)){
+    if(!isObject(obj)){
       return;
     }
 
     switch(this.eventType){
       case SignalEventType.OnClose:
-        if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
+        if(isPlaceable(obj)){
           const instance = obj.getScriptInstance(ModuleObjectScript.PlaceableOnClosed);
           if(instance){
             instance.run(obj);
           }
-        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)){
+        }else if(isDoor(obj)){
           const instance = obj.getScriptInstance(ModuleObjectScript.DoorOnClosed);
           if(instance){
             instance.run(obj);
@@ -102,12 +109,12 @@ export class EventSignalEvent extends GameEvent {
         }
       break;
       case SignalEventType.OnOpen:
-        if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
+        if(isPlaceable(obj)){
           const instance = obj.getScriptInstance(ModuleObjectScript.PlaceableOnOpen);
           if(instance){
             instance.run(obj);
           }
-        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)){
+        }else if(isDoor(obj)){
           const instance = obj.getScriptInstance(ModuleObjectScript.DoorOnOpen);
           if(instance){
             instance.run(obj);
@@ -115,27 +122,27 @@ export class EventSignalEvent extends GameEvent {
         }
       break;
       case SignalEventType.OnDamaged:
-        if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
+        if(isPlaceable(obj)){
           const instance = obj.getScriptInstance(ModuleObjectScript.PlaceableOnDamaged);
           if(instance){
             instance.run(obj);
           }
-        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)){
+        }else if(isDoor(obj)){
           const instance = obj.getScriptInstance(ModuleObjectScript.DoorOnDamaged);
           if(instance){
             instance.run(obj);
           }
-        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleMGObstacle)){
+        }else if(isMGObstacle(obj)){
           const instance = obj.getScriptInstance(ModuleObjectScript.MGEnemyOnDamage);
           if(instance){
             instance.run(obj);
           }
-        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleMGEnemy)){
+        }else if(isMGEnemy(obj)){
           const instance = obj.getScriptInstance(ModuleObjectScript.MGEnemyOnDamage);
           if(instance){
             instance.run(obj);
           }
-        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleMGPlayer)){
+        }else if(isMGPlayer(obj)){
           const instance = obj.getScriptInstance(ModuleObjectScript.MGPlayerOnDamage);
           if(instance){
             instance.run(obj);
@@ -143,32 +150,32 @@ export class EventSignalEvent extends GameEvent {
         }
       break;
       case SignalEventType.OnDeath:
-        if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature)){
+        if(isCreature(obj)){
           const instance = obj.getScriptInstance(ModuleObjectScript.CreatureOnDeath);
           if(instance){
             instance.run(obj);
           }
-        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
+        }else if(isPlaceable(obj)){
           const instance = obj.getScriptInstance(ModuleObjectScript.PlaceableOnDeath);
           if(instance){
             instance.run(obj);
           }
-        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)){
+        }else if(isDoor(obj)){
           const instance = obj.getScriptInstance(ModuleObjectScript.DoorOnDeath);
           if(instance){
             instance.run(obj);
           }
-        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleMGObstacle)){
+        }else if(isMGObstacle(obj)){
           const instance = obj.getScriptInstance(ModuleObjectScript.MGEnemyOnDeath);
           if(instance){
             instance.run(obj);
           }
-        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleMGEnemy)){
+        }else if(isMGEnemy(obj)){
           const instance = obj.getScriptInstance(ModuleObjectScript.MGEnemyOnDeath);
           if(instance){
             instance.run(obj);
           }
-        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleMGPlayer)){
+        }else if(isMGPlayer(obj)){
           const instance = obj.getScriptInstance(ModuleObjectScript.MGPlayerOnDeath);
           if(instance){
             instance.run(obj);
@@ -176,12 +183,12 @@ export class EventSignalEvent extends GameEvent {
         }
       break;
       case SignalEventType.OnDisarm:
-        if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
+        if(isPlaceable(obj)){
           const instance = obj.getScriptInstance(ModuleObjectScript.PlaceableOnDisarm);
           if(instance){
             instance.run(obj);
           }
-        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)){
+        }else if(isDoor(obj)){
           const instance = obj.getScriptInstance(ModuleObjectScript.DoorOnDisarm);
           if(instance){
             instance.run(obj);
@@ -189,7 +196,7 @@ export class EventSignalEvent extends GameEvent {
         }
       break;
       case SignalEventType.OnFailToOpen:
-        if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)){
+        if(isDoor(obj)){
           const instance = obj.getScriptInstance(ModuleObjectScript.DoorOnFailToOpen);
           if(instance){
             instance.run(obj);
@@ -197,7 +204,7 @@ export class EventSignalEvent extends GameEvent {
         }
       break;
       case SignalEventType.OnObjectEnter:
-        if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleTrigger)){
+        if(isTrigger(obj)){
           const onEnter = obj.getScriptInstance(ModuleObjectScript.TriggerOnEnter);
           if(onEnter){
             onEnter.enteringObject = this.getCaller();
@@ -206,7 +213,7 @@ export class EventSignalEvent extends GameEvent {
         }
       break;
       case SignalEventType.OnObjectExit:
-        if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleTrigger)){
+        if(isTrigger(obj)){
           const onExit = obj.getScriptInstance(ModuleObjectScript.TriggerOnExit);
           if(onExit){
             onExit.exitingObject = this.getCaller();
@@ -215,23 +222,23 @@ export class EventSignalEvent extends GameEvent {
         }
       break;
       case SignalEventType.OnTrapTriggered:
-        if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
+        if(isPlaceable(obj)){
           const instance = obj.getScriptInstance(ModuleObjectScript.PlaceableOnTrapTriggered);
           if(instance){
             instance.run(obj);
           }
-        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)){
+        }else if(isDoor(obj)){
           const instance = obj.getScriptInstance(ModuleObjectScript.DoorOnTrapTriggered);
           if(instance){
             instance.run(obj);
           }
-        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleTrigger)){
+        }else if(isTrigger(obj)){
           const instance = obj.getScriptInstance(ModuleObjectScript.TriggerOnTrapTriggered);
           if(instance){
             instance.run(obj);
           }
         }
-        if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor) || BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
+        if(isDoor(obj) || isPlaceable(obj)){
           obj.setHP(-11);
           obj.onDamaged();
           if(obj.linkedToObject){
@@ -240,7 +247,7 @@ export class EventSignalEvent extends GameEvent {
             }
             obj.linkedToObject.destroy();
           }
-        }else if (BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleTrigger)){
+        }else if (isTrigger(obj)){
           if(obj.audioEmitter){
             obj.audioEmitter.playSound((obj as any).trapExplosionSound);
           }

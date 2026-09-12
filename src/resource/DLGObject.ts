@@ -11,10 +11,10 @@ import { DLGNodeType } from "@/enums/dialog/DLGNodeType";
 import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 // import { NWScript } from "@/nwscript/NWScript";
 import { MDLLoader, ResourceLoader } from "@/loaders";
-import { BitWise } from "@/utility/BitWise";
-import { ModuleObjectType } from "@/enums";
 import { AudioLoader } from "@/audio/AudioLoader";
 import { AudioEngine } from "@/audio/AudioEngine";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 export interface DLGObjectScripts {
   onEndConversationAbort: NWScriptInstance,
@@ -397,7 +397,7 @@ export class DLGObject {
 
       // SpawnAvailableNPC returns before loadModel finishes. Poll first so we
       // don't bump modelLoadGeneration and discard the in-flight spawn load.
-      if(BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature)){
+      if(isCreature(creature)){
         const c = creature as ModuleCreature;
         if(!c.model){
           await DLGObject.waitForCreatureModel(c, 1500);
@@ -426,7 +426,7 @@ export class DLGObject {
 
       if(
         (this.unequipItems || this.unequipHeadItem) &&
-        BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature)
+        isCreature(creature)
       ){
         GameState.CutsceneManager.hideEquippedItemsForDialog(creature as ModuleCreature);
       }
@@ -466,7 +466,7 @@ export class DLGObject {
     for(const actor of this.stuntActors.values()){
       const needsReload =
         !actor.moduleObject ||
-        (BitWise.InstanceOfObject(actor.moduleObject, ModuleObjectType.ModuleCreature) &&
+        (isCreature(actor.moduleObject) &&
           !(actor.moduleObject as ModuleCreature).model) ||
         (actor.resref && !actor.animations?.length);
       if(needsReload){

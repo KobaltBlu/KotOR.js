@@ -2,11 +2,10 @@ import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
 import { GameEffectSubType } from "@/enums/effects/GameEffectSubType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { BitWise } from "@/utility/BitWise";
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { VISION_FLAG_DARKNESS_BLIND } from "@/effects/EffectBlindness";
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * EffectDarkness — effect apply.
@@ -26,7 +25,7 @@ export class EffectDarkness extends GameEffect {
     if(this.applied)
       return;
 
-    if(!BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.object)){
       return;
     }
     const creature = this.object as ModuleCreature;

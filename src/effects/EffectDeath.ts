@@ -1,10 +1,10 @@
 import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { SSFType } from "@/enums/resource/SSFType";
 import type { ModuleCreature } from "@/module/ModuleCreature";
-import { BitWise } from "@/utility/BitWise";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * EffectDeath class.
@@ -46,7 +46,7 @@ export class EffectDeath extends GameEffect {
     this.object.setHP(-11);
 
     if(
-      BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature) &&
+      isCreature(this.object) &&
       this.object.isDead() &&
       !(this.object as ModuleCreature).deathStarted
     ){

@@ -1,7 +1,6 @@
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { Action } from "@/actions/Action";
 import {
   acquireItem,
@@ -15,7 +14,10 @@ import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
 import type { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
+
+import { isCreature } from "@/module/guards/isCreature";
+import { isItem } from "@/module/guards/isItem";
+import { isObject } from "@/module/guards/isObject";
 
 /**
  * ActionGiveItem — give-item action.
@@ -46,15 +48,15 @@ export class ActionGiveItem extends Action {
     const nCount = typeof nCountRaw === "number" ? nCountRaw | 0 : -1;
     const bDisplayStatus = (this.getParameter<number>(3) | 0) !== 0;
 
-    if (!BitWise.InstanceOfObject(oItem, ModuleObjectType.ModuleItem)) {
+    if (!isItem(oItem)) {
       return ActionStatus.ERROR;
     }
-    if (!BitWise.InstanceOfObject(oGiveTo, ModuleObjectType.ModuleObject)) {
+    if (!isObject(oGiveTo)) {
       return ActionStatus.ERROR;
     }
 
     // Creature giver out of use-range → front-queue Move (run if dist² > 25).
-    if (BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) {
+    if (isCreature(this.owner)) {
       const owner = this.owner as ModuleCreature;
       if (!isInUseRange(owner, oGiveTo)) {
         // : run if squared dist to use-point > 25

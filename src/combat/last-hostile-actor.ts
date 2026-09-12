@@ -4,8 +4,9 @@
  */
 import type { ModuleObject } from "@/module/ModuleObject";
 import type { ModuleCreature } from "@/module/ModuleCreature";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { BitWise } from "@/utility/BitWise";
+
+import { isAreaOfEffect } from "@/module/guards/isAreaOfEffect";
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  *.
@@ -32,10 +33,10 @@ export function assignHostileActor(
   }
 
   let actor: ModuleObject | undefined = hostileActor;
-  if(BitWise.InstanceOfObject(hostileActor, ModuleObjectType.ModuleAreaOfEffect)){
+  if(isAreaOfEffect(hostileActor)){
     actor = (hostileActor as any).creator;
   }
-  if(!BitWise.InstanceOfObject(actor, ModuleObjectType.ModuleCreature)){
+  if(!isCreature(actor)){
     self.combatData.lastHostileActor = undefined;
     return;
   }
@@ -46,7 +47,7 @@ export function assignHostileActor(
   }
   // Same faction → do not overwrite (faction_id compare)
   if(
-    BitWise.InstanceOfObject(self, ModuleObjectType.ModuleCreature) &&
+    isCreature(self) &&
     (self as ModuleCreature).factionId === creature.factionId
   ){
     return;
@@ -70,10 +71,10 @@ export function getLastHostileActor(self: ModuleObject): ModuleObject | undefine
   if(!actor){
     return undefined;
   }
-  if(BitWise.InstanceOfObject(actor, ModuleObjectType.ModuleAreaOfEffect)){
+  if(isAreaOfEffect(actor)){
     actor = (actor as any).creator;
   }
-  if(!BitWise.InstanceOfObject(actor, ModuleObjectType.ModuleCreature)){
+  if(!isCreature(actor)){
     assignHostileActor(self, undefined, true);
     return undefined;
   }

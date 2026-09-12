@@ -1,6 +1,5 @@
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { Action } from "@/actions/Action";
 import {
   acquireItem,
@@ -11,7 +10,11 @@ import {
 } from "@/actions/item-transfer";
 import type { ModuleItem } from "@/module/ModuleItem";
 import type { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
+
+import { isCreature } from "@/module/guards/isCreature";
+import { isItem } from "@/module/guards/isItem";
+import { isPlaceable } from "@/module/guards/isPlaceable";
+import { isStore } from "@/module/guards/isStore";
 
 /**
  * ActionTakeItem — take-item action.
@@ -38,8 +41,8 @@ export class ActionTakeItem extends Action {
 
   update(_delta?: number): ActionStatus {
     if (
-      !BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature) &&
-      !BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModulePlaceable)
+      !isCreature(this.owner) &&
+      !isPlaceable(this.owner)
     ) {
       return ActionStatus.ERROR;
     }
@@ -48,13 +51,13 @@ export class ActionTakeItem extends Action {
     const oTakeFrom = this.getParameter<ModuleObject>(1);
     const bDisplayStatus = (this.getParameter<number>(2) | 0) !== 0;
 
-    if (!BitWise.InstanceOfObject(oItem, ModuleObjectType.ModuleItem)) {
+    if (!isItem(oItem)) {
       return ActionStatus.ERROR;
     }
     if (
-      !BitWise.InstanceOfObject(oTakeFrom, ModuleObjectType.ModuleCreature) &&
-      !BitWise.InstanceOfObject(oTakeFrom, ModuleObjectType.ModulePlaceable) &&
-      !BitWise.InstanceOfObject(oTakeFrom, ModuleObjectType.ModuleStore)
+      !isCreature(oTakeFrom) &&
+      !isPlaceable(oTakeFrom) &&
+      !isStore(oTakeFrom)
     ) {
       return ActionStatus.ERROR;
     }

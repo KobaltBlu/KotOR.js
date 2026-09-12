@@ -3,11 +3,13 @@ import { ActionType } from "@/enums/actions/ActionType";
 import { Action } from "@/actions/Action";
 import { CombatActionType } from "@/enums/combat/CombatActionType";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
-import { ModuleObjectConstant, ModuleObjectType } from "@/enums";
-import { BitWise } from "@/utility/BitWise";
+import { ModuleObjectConstant } from "@/enums";
 import { GameState } from "@/GameState";
 import { CombatRound } from "@/combat/CombatRound";
 import { resolveSpellCastTarget, parseForceMenuIndex } from "@/combat/spell-self-target";
+import { isCreature } from "@/module/guards/isCreature";
+import { isObject } from "@/module/guards/isObject";
+
 /**
  * ActionCombat class.
  *
@@ -44,7 +46,7 @@ export class ActionCombat extends Action {
    * - Status from processing scheduled actions
    */
   update(delta: number = 0): ActionStatus {
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) return ActionStatus.FAILED;
+    if(!isCreature(this.owner)) return ActionStatus.FAILED;
 
     const combatRound = this.owner.combatRound;
     if(!combatRound) return ActionStatus.COMPLETE;
@@ -197,7 +199,7 @@ export class ActionCombat extends Action {
         const run = combatAction.shouldRun ? 1 : 0;
         const areaId = this.owner.area?.id ?? ModuleObjectConstant.OBJECT_INVALID;
 
-        if(moveTarget && BitWise.InstanceOfObject(moveTarget, ModuleObjectType.ModuleObject)){
+        if(moveTarget && isObject(moveTarget)){
           const actionMove = new GameState.ActionFactory.ActionMoveToPoint(undefined, this.groupId);
           actionMove.setParameter(0, ActionParameterType.FLOAT, moveTarget.position.x);
           actionMove.setParameter(1, ActionParameterType.FLOAT, moveTarget.position.y);

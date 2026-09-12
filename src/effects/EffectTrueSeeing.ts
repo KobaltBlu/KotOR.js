@@ -1,8 +1,7 @@
 import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { BitWise } from "@/utility/BitWise";
 import type { ModuleCreature } from "@/module/ModuleCreature";
+import { isCreature } from "@/module/guards/isCreature";
 import {
   VISION_FLAG_TRUE_SEEING,
   recomputeVisionFlags,
@@ -25,7 +24,7 @@ export class EffectTrueSeeing extends GameEffect {
       return;
     super.onApply();
 
-    if(BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this.object)){
       const creature = this.object as ModuleCreature;
       creature.visionFlags = (creature.visionFlags || 0) | VISION_FLAG_TRUE_SEEING;
       const effects = creature.effects ? creature.effects.slice() : [];
@@ -40,7 +39,7 @@ export class EffectTrueSeeing extends GameEffect {
 
   onRemove(){
     super.onRemove();
-    if(BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this.object)){
       recomputeVisionFlags(this.object as ModuleCreature);
     }
   }

@@ -5,14 +5,15 @@ import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { DiceType } from "@/enums/combat/DiceType";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { SkillType } from "@/enums/nwscript/SkillType";
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
 import type { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
 import { Dice } from "@/utility/Dice";
+
+import { isCreature } from "@/module/guards/isCreature";
+import { isItem } from "@/module/guards/isItem";
 
 /** PlayAnimation id for heal (0x2721). */
 const HEAL_ANIM = 0x2721;
@@ -49,7 +50,7 @@ export class ActionHeal extends Action {
   }
 
   update(_delta: number = 0): ActionStatus {
-    if (!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) {
+    if (!isCreature(this.owner)) {
       return ActionStatus.ERROR;
     }
 
@@ -63,11 +64,11 @@ export class ActionHeal extends Action {
     const item = this.getParameter<ModuleItem>(1);
     const allowMove = this.getParameter<number>(3) !== 0;
 
-    if (!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)) {
+    if (!isCreature(this.target)) {
       this.animQueued = false;
       return ActionStatus.ERROR;
     }
-    if (!BitWise.InstanceOfObject(item, ModuleObjectType.ModuleItem)) {
+    if (!isItem(item)) {
       this.animQueued = false;
       return ActionStatus.ERROR;
     }

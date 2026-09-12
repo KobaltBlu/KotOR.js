@@ -1,4 +1,3 @@
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
@@ -12,7 +11,6 @@ import { type ModuleCreature } from "@/module/ModuleCreature";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
-import { BitWise } from "@/utility/BitWise";
 import { ActionParameter } from "@/actions/ActionParameter";
 import { ActionQueue } from "@/actions/ActionQueue";
 import { ComputedPath } from "@/engine/pathfinding/ComputedPath";
@@ -20,6 +18,8 @@ import {
   QuickWalkLocoState,
   setQuickWalkLocoState,
 } from "@/engine/pathfinding/quick-walk-loco";
+import { isCreature } from "@/module/guards/isCreature";
+import { isObject } from "@/module/guards/isObject";
 
 /**
  * Base class for all game actions in the engine.
@@ -117,7 +117,7 @@ export class Action {
       this.type === ActionType.ActionDrive
     ){
       // Path sticky only — do not zero cam-relative playerControl (WASD re-asserts each frame)
-      if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) {
+      if(isCreature(this.owner)) {
         const creature = this.owner as ModuleCreature;
         creature.clearLocomotionState(false);
         // ResetAtEndOfPath → field438 = 1 (paused)
@@ -254,7 +254,7 @@ export class Action {
         param.value = !isNaN(parseFloat(value)) ? parseFloat(value) : 0;
         break;
       case ActionParameterType.DWORD:
-        if (BitWise.InstanceOfObject(value, ModuleObjectType.ModuleObject)) {
+        if (isObject(value)) {
           param.value = value.id ? value.id : ModuleObjectConstant.OBJECT_INVALID;
         } else {
           param.value = !isNaN(parseInt(value)) ? parseInt(value) : 0;

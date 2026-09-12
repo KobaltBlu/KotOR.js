@@ -1,10 +1,11 @@
 import { EngineMode } from "@/enums/engine/EngineMode";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameMenu, GUIPanelCoordFlags } from "@/gui";
 import type { GUILabel } from "@/gui";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { GameState } from "@/GameState";
-import { BitWise } from "@/utility/BitWise";
+
+import { isDoor } from "@/module/guards/isDoor";
+import { isTrigger } from "@/module/guards/isTrigger";
 
 /**
  * InGameAreaTransition class.
@@ -65,7 +66,7 @@ export class InGameAreaTransition extends GameMenu {
       return;
     }
 
-    if(BitWise.InstanceOfObject(object, ModuleObjectType.ModuleDoor) || BitWise.InstanceOfObject(object, ModuleObjectType.ModuleTrigger)){
+    if(isDoor(object) || isTrigger(object)){
       if(this.transitionObject !== object){
         this.transitionObject = object;
         this.SetDescription(object.getTransitionDestin());

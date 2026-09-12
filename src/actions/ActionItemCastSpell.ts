@@ -1,6 +1,5 @@
 import { Action } from "@/actions/Action";
 import { SpellCastInstance } from "@/combat";
-import { ModuleObjectType } from "@/enums";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
@@ -10,7 +9,6 @@ import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
 import type { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
 import {
   resolveItemCastTiming,
   resolveDroidUtilityGateMs,
@@ -24,6 +22,8 @@ import { isWithinSpellCastRange } from "@/combat/spell-range";
 import { shouldFailItemCastForNoUses } from "@/combat/item-property-uses";
 import { isGrenadeItemType } from "@/combat/item-cast-grenade";
 import * as THREE from "three";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /** item-cast action SendFeedbackMessage when uses left == 0. */
 const FEEDBACK_ITEM_NO_USES = 0x17;
@@ -272,7 +272,7 @@ export class ActionItemCastSpell extends Action {
     if(
       !this.target &&
       this.isUserAction &&
-      BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature) &&
+      isCreature(this.owner) &&
       !isGrenadeItemType(oItem?.baseItem?.itemType)
     ){
       const forceHostile = this.spell?.forcehostile ?? -1;
@@ -297,7 +297,7 @@ export class ActionItemCastSpell extends Action {
       return ActionStatus.FAILED;
     }
 
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.owner)){
       return ActionStatus.FAILED;
     }
 
@@ -422,7 +422,7 @@ export class ActionItemCastSpell extends Action {
       const animTarget =
         timing.animOnTarget &&
         this.target &&
-        BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)
+        isCreature(this.target)
           ? (this.target as ModuleCreature)
           : owner;
       animTarget.setAnimationState(timing.animation);
@@ -491,7 +491,7 @@ export class ActionItemCastSpell extends Action {
       if(
         timing.animOnTarget &&
         this.target &&
-        BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)
+        isCreature(this.target)
       ){
         (this.target as ModuleCreature).setAnimationState(ModuleCreatureAnimState.READY);
       }

@@ -18,7 +18,6 @@ import { TalentSpell } from "@/talents";
 import { OdysseyModel3D } from "@/three/odyssey";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { CombatFeatType } from "@/enums/combat/CombatFeatType";
-import { BitWise } from "@/utility/BitWise";
 import { Dice } from "@/utility/Dice";
 import { ItemProperty } from "@/engine/ItemProperty";
 import { GameState } from "@/GameState";
@@ -39,6 +38,8 @@ import {
   canTargetItemCastByPerception,
 } from "@/combat/item-property-uses";
 import type { SWWeaponSound } from "@/engine/rules/SWWeaponSound";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 interface ItemPropertyDescriptionProperty {
   propertyName: number;
@@ -986,7 +987,7 @@ export class ModuleItem extends ModuleObject {
       }
     }
 
-    if(BitWise.InstanceOfObject(this.possessor, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this.possessor)){
       switch(this.getWeaponWield()){
         case WeaponWield.BLASTER_PISTOL:
           if(this.possessor.getHasFeat(CombatFeatType.WEAPON_FOCUS_BLASTER)){

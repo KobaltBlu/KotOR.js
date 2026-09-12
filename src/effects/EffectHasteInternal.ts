@@ -2,10 +2,9 @@ import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
 import { GameEffectSubType } from "@/enums/effects/GameEffectSubType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { BitWise } from "@/utility/BitWise";
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * EffectHasteInternal — effect apply.
@@ -26,7 +25,7 @@ export class EffectHasteInternal extends GameEffect {
       return;
     super.onApply();
 
-    if(!BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.object)){
       return;
     }
     const creature = this.object as ModuleCreature;
@@ -53,7 +52,7 @@ export class EffectHasteInternal extends GameEffect {
 
   onRemove(){
     super.onRemove();
-    if(BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this.object)){
       (this.object as ModuleCreature).isHasted = false;
     }
     for(let i = 0; i < this.children.length; i++){

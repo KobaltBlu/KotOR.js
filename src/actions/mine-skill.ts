@@ -1,13 +1,13 @@
 import { DiceType } from "@/enums/combat/DiceType";
 import { SignalEventType } from "@/enums";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { SkillType } from "@/enums/nwscript/SkillType";
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
 import { Dice } from "@/utility/Dice";
+
+import { isTrigger } from "@/module/guards/isTrigger";
 
 export enum MineSkillResult {
   SUCCESS = 0,
@@ -145,7 +145,7 @@ export function signalTrapDisarm(target: ModuleObject, disarmer: ModuleObject){
 }
 
 export function signalTrapTriggered(target: ModuleObject, triggerer: ModuleObject){
-  if(BitWise.InstanceOfObject(target, ModuleObjectType.ModuleTrigger)){
+  if(isTrigger(target)){
     (target as any).trapTriggered = true;
   }
   const event = new GameState.GameEventFactory.EventSignalEvent();
@@ -164,7 +164,7 @@ export function fadeDestroyTrap(target: ModuleObject){
 }
 
 export function runTriggerOnDisarmScript(target: ModuleObject){
-  if(!BitWise.InstanceOfObject(target, ModuleObjectType.ModuleTrigger)){
+  if(!isTrigger(target)){
     return;
   }
   const instance = target.getScriptInstance?.(ModuleObjectScript.TriggerOnDisarm);
@@ -174,7 +174,7 @@ export function runTriggerOnDisarmScript(target: ModuleObject){
 }
 
 export function markTrapDetected(target: ModuleObject, detector?: ModuleObject){
-  if(BitWise.InstanceOfObject(target, ModuleObjectType.ModuleTrigger)){
+  if(isTrigger(target)){
     (target as any).detectTrap?.(detector);
     return;
   }

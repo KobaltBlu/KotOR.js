@@ -10,15 +10,15 @@ import {
 import { passesSpellKnownGate, passesSpellPrerequisiteGate, canTargetSpellCastByPerception } from "@/combat/spell-cast-gates";
 import { shouldBindSpellCastToCaster } from "@/combat/spell-self-target";
 import { ExcitedDurationRow } from "@/combat/combat-engagement";
-import { ModuleObjectType } from "@/enums";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import { GameState } from "@/GameState";
-import { BitWise } from "@/utility/BitWise";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
+import { isCreature } from "@/module/guards/isCreature";
+import { isObject } from "@/module/guards/isObject";
 
 /** Parse spells.2da conjure/cast/catch time to milliseconds. */
 function spellTimeMs(value: unknown, fallback: number = 0): number {
@@ -108,7 +108,7 @@ export class ActionCastSpell extends Action {
     const y = this.getParameter<number>(7);
     const z = this.getParameter<number>(8);
 
-    if(BitWise.InstanceOfObject(targetObj, ModuleObjectType.ModuleObject)){
+    if(isObject(targetObj)){
       this.target = targetObj;
       this.targetPosition.copy(targetObj.position);
       return true;
@@ -173,7 +173,7 @@ export class ActionCastSpell extends Action {
 
   private isTargetInvalid(): boolean {
     if(!this.target) return false;
-    if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.target)){
       return false;
     }
     const creature = this.target as ModuleCreature;
@@ -280,11 +280,11 @@ export class ActionCastSpell extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.owner)){
       return ActionStatus.FAILED;
     }
 
-    const owner = this.owner as ModuleCreature;
+    const owner = this.owner;
 
     // : dead / plot / debilitated → RemoveSpellActionFromRound + ERROR
     if(this.isCasterBlocked(owner)){

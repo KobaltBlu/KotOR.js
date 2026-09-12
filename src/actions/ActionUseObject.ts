@@ -1,4 +1,3 @@
-import { ModuleObjectType } from "@/enums";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
@@ -6,9 +5,10 @@ import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState"
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
 import { Action } from "@/actions/Action";
 import { queueMoveIntoUseRange } from "@/actions/use-range";
+import { isCreature } from "@/module/guards/isCreature";
+import { isObject } from "@/module/guards/isObject";
 
 /**
  * ActionUseObject class.
@@ -39,19 +39,19 @@ export class ActionUseObject extends Action {
       target = this.getParameter<ModuleObject>(0);
     }
 
-    if(!BitWise.InstanceOfObject(target, ModuleObjectType.ModuleObject)){
+    if(!isObject(target)){
       return undefined;
     }
 
     // Mid-action bag spawn / KeepCorpse: loot via getLootUseTarget
-    if(BitWise.InstanceOfObject(target, ModuleObjectType.ModuleCreature)){
+    if(isCreature(target)){
       const creature = target as ModuleCreature;
       if(
         (typeof creature.isDead === 'function' && creature.isDead())
         || creature.isRetainedCorpse
       ){
         const lootTarget = creature.getLootUseTarget?.();
-        if(BitWise.InstanceOfObject(lootTarget, ModuleObjectType.ModuleObject)){
+        if(isObject(lootTarget)){
           if(lootTarget.id !== target.id){
             this.setParameter(0, ActionParameterType.DWORD, lootTarget.id);
           }
@@ -67,11 +67,11 @@ export class ActionUseObject extends Action {
 
     this.target = this.resolveUseTarget();
 
-    if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleObject)){
+    if(!isObject(this.target)){
       return ActionStatus.FAILED;
     }
 
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.owner)){
       return ActionStatus.FAILED;
     }
 

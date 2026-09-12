@@ -35,7 +35,7 @@ jest.mock("@/gui", () => ({
 }));
 
 jest.mock("@/utility/BitWise", () => ({
-  BitWise: { InstanceOfObject: () => true },
+  BitWise: { InstanceOfObject: () => true, InstanceOf: () => true },
 }));
 
 import { InGameAreaTransition } from "@/game/kotor/menu/InGameAreaTransition";

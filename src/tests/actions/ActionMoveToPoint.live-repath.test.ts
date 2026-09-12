@@ -56,7 +56,7 @@ jest.mock("@/engine/pathfinding/inter-area-path", () => ({
 jest.mock("@/utility/BitWise", () => ({
   BitWise: {
     InstanceOfObject: (value: unknown) => typeof value === "object" && value !== null,
-    InstanceOf: (value: unknown) => typeof value === "object" && value !== null,
+    InstanceOf: () => true,
   },
 }));
 

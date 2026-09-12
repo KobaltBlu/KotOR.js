@@ -1,9 +1,9 @@
 import { WeaponWield } from "@/enums/combat/WeaponWield";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * melee duel / choreography helpers —
@@ -17,7 +17,7 @@ import { BitWise } from "@/utility/BitWise";
  */
 
 function asCreature(obj: ModuleObject | undefined): ModuleCreature | undefined {
-  if(!obj || !BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature)){
+  if(!obj || !isCreature(obj)){
     return undefined;
   }
   return obj as ModuleCreature;

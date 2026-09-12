@@ -4,8 +4,8 @@ import { GameEffectSubType } from "@/enums/effects/GameEffectSubType";
 import { GameState } from "@/GameState";
 import type { GameEffect } from "@/effects/GameEffect";
 import type { ModuleCreature } from "@/module/ModuleCreature";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { BitWise } from "@/utility/BitWise";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * effect apply / effect remove.
@@ -64,7 +64,7 @@ export function hasImmunityType(
 }
 
 export function rebalanceHasteSlow(creature: ModuleCreature, trigger?: GameEffect){
-  if(!BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature)){
+  if(!isCreature(creature)){
     return;
   }
 

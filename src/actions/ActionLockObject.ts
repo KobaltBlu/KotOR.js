@@ -1,15 +1,16 @@
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { SkillType } from "@/enums/nwscript/SkillType";
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
 import { Action } from "@/actions/Action";
 import { queueMoveIntoUseRange } from "@/actions/use-range";
 
+import { isCreature } from "@/module/guards/isCreature";
+import { isDoor } from "@/module/guards/isDoor";
+import { isPlaceable } from "@/module/guards/isPlaceable";
 type Lockable = ModuleObject & {
   locked?: boolean;
   keyRequired?: boolean;
@@ -48,13 +49,13 @@ export class ActionLockObject extends Action {
   update(_delta: number = 0): ActionStatus {
     this.target = this.getParameter<ModuleObject>(0);
 
-    if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor) &&
-       !BitWise.InstanceOfObject(this.target, ModuleObjectType.ModulePlaceable)){
+    if(!isDoor(this.target) &&
+       !isPlaceable(this.target)){
       GameState.GuiTimingBarManager?.stopFor?.(this.owner);
       return ActionStatus.FAILED;
     }
 
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.owner)){
       GameState.GuiTimingBarManager?.stopFor?.(this.owner);
       return ActionStatus.FAILED;
     }
@@ -84,9 +85,8 @@ export class ActionLockObject extends Action {
       owner.setFacingObject(this.target);
       owner.force = 0;
 
-      const isDoor = BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor);
       // : door 0x2790 (UNLOCK_DOOR), placeable 0x2793 (UNLOCK_CONTAINER)
-      const animId = isDoor ? 0x2790 : 0x2793;
+      const animId = isDoor(this.target) ? 0x2790 : 0x2793;
       const playAnim = new GameState.ActionFactory.ActionPlayAnimation();
       playAnim.setParameter(0, ActionParameterType.INT, animId);
       playAnim.setParameter(1, ActionParameterType.FLOAT, 1.0);

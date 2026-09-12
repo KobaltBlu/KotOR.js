@@ -1,13 +1,14 @@
 import { GameEventType } from "@/enums/events/GameEventType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GameState } from "@/GameState";
 import { GameEvent } from "@/events/GameEvent";
 import type { ModulePlaceable } from "@/module/ModulePlaceable";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
-import { BitWise } from "@/utility/BitWise";
 import * as THREE from "three";
+
+import { isArea } from "@/module/guards/isArea";
+import { isPlaceable } from "@/module/guards/isPlaceable";
 
 /**
  * EventSpawnBodyBag class.
@@ -41,7 +42,7 @@ export class EventSpawnBodyBag extends GameEvent {
 
   execute(){
     const placeable = GameState.ModuleObjectManager.GetObjectById(this.bodyBagId) as ModulePlaceable;
-    if(!BitWise.InstanceOfObject(placeable, ModuleObjectType.ModulePlaceable)){
+    if(!isPlaceable(placeable)){
       return;
     }
 
@@ -49,7 +50,7 @@ export class EventSpawnBodyBag extends GameEvent {
     // Event object is the area (SpawnBodyBag AddEventDeltaTime target)
     const obj = this.getObject();
     let area = GameState.module?.area;
-    if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleArea)){
+    if(isArea(obj)){
       area = obj as any;
     }else if(obj?.area){
       area = obj.area;

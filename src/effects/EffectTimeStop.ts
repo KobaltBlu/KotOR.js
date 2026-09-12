@@ -1,10 +1,10 @@
 import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { EngineState } from "@/enums/engine";
-import { BitWise } from "@/utility/BitWise";
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * EffectTimeStop — effect apply / OnRemove.
@@ -24,7 +24,7 @@ export class EffectTimeStop extends GameEffect {
     if(this.applied)
       return;
 
-    if(!BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.object)){
       return;
     }
     const creature = this.object as ModuleCreature;
@@ -56,7 +56,7 @@ export class EffectTimeStop extends GameEffect {
 
   onRemove(){
     super.onRemove();
-    if(BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(isCreature(this.object)){
       GameState.timeStopExclusions?.delete((this.object as ModuleCreature).id);
     }
     // TogglePauseState(1) + RemoveFromExclusionList

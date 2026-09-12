@@ -6,8 +6,9 @@ import { GFFStruct } from "@/resource/GFFStruct";
 import { GFFField } from "@/resource/GFFField";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { ReputationConstant } from "@/enums/engine/ReputationConstant";
-import { BitWise } from "@/utility/BitWise";
-import { ModuleObjectType } from "@/enums";
+
+import { isCreature } from "@/module/guards/isCreature";
+import { isPlayer } from "@/module/guards/isPlayer";
 
 /**
  * Faction class.
@@ -29,7 +30,7 @@ export class Faction {
   reputations: Reputation[] = [];
 
   addMember( creature: ModuleCreature ){
-    if(BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature)){
+    if(isCreature(creature)){
       if(this.creatures.indexOf(creature) == -1){
         this.creatures.push(creature);
       }
@@ -37,7 +38,7 @@ export class Faction {
   }
 
   removeMember( creature: ModuleCreature ){
-    if(BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature)){
+    if(isCreature(creature)){
       let index = this.creatures.indexOf(creature);
       if(index >= 0){
         this.creatures.splice(index, 1);
@@ -76,7 +77,7 @@ export class Faction {
   }
 
   getCreatureReputation(oTarget: ModuleObject){
-    if(BitWise.InstanceOfObject(oTarget, ModuleObjectType.ModuleCreature) && oTarget.faction){
+    if(isCreature(oTarget) && oTarget.faction){
       let reputation = this.reputations[oTarget.faction.id];
       if(reputation instanceof Reputation){
         return reputation.reputation;
@@ -218,7 +219,7 @@ export class Faction {
   }
 
   getAverageReputation(oTarget: ModuleObject){
-    if(BitWise.InstanceOfObject(oTarget, ModuleObjectType.ModuleCreature)){
+    if(isCreature(oTarget)){
       let totalRep = 0;
       let totalCreatures = 0;
       for(let i = 0, len = this.creatures.length; i < len; i++){
@@ -316,7 +317,7 @@ export class Faction {
       let creature = this.creatures[i];
       if(creature.faction == this){
         if(cIdx == index){
-          if(!isPCOnly || BitWise.InstanceOfObject(creature, ModuleObjectType.ModulePlayer))
+          if(!isPCOnly || isPlayer(creature))
             return creature;
         }
         cIdx++;

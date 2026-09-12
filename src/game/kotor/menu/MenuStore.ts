@@ -1,14 +1,15 @@
 import { GameState } from "@/GameState";
 import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
 import type { ModuleCreature, } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
 import type { ModuleStore } from "@/module/ModuleStore";
-import { BitWise } from "@/utility/BitWise";
+
+import { isItem } from "@/module/guards/isItem";
+import { isStore } from "@/module/guards/isStore";
 
 /** CheckFilter modes (store_p filter buttons). */
 export enum StoreFilter {
@@ -370,7 +371,7 @@ export class MenuStore extends GameMenu {
 
     if(!this.sellMode){
       const selected = this.LB_SHOPITEMS?.selectedItem?.node;
-      if(!BitWise.InstanceOfObject(selected, ModuleObjectType.ModuleItem)){
+      if(!isItem(selected)){
         return;
       }
       const item = selected as ModuleItem;
@@ -391,7 +392,7 @@ export class MenuStore extends GameMenu {
     }
 
     const selected = this.LB_INVITEMS?.selectedItem?.node;
-    if(!BitWise.InstanceOfObject(selected, ModuleObjectType.ModuleItem)){
+    if(!isItem(selected)){
       return;
     }
     const item = selected as ModuleItem;
@@ -424,7 +425,7 @@ export class MenuStore extends GameMenu {
 
   show() {
     super.show();
-    if (BitWise.InstanceOfObject(this.storeObject, ModuleObjectType.ModuleStore)) {
+    if (isStore(this.storeObject)) {
       this.LB_DESCRIPTION.setItem(null);
       this.LB_DESCRIPTION.hide();
       this.LB_INVITEMS.hide();

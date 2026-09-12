@@ -4,12 +4,12 @@ import { GameEffectSubType } from "@/enums/effects/GameEffectSubType";
 import { GameEffectSetStateType } from "@/enums/effects/GameEffectSetStateType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { CombatFeatType } from "@/enums/combat/CombatFeatType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
-import { BitWise } from "@/utility/BitWise";
 import { hasImmunityType } from "@/effects/haste-slow";
 import type { GameEffect } from "@/effects/GameEffect";
 import type { ModuleCreature } from "@/module/ModuleCreature";
+
+import { isCreature } from "@/module/guards/isCreature";
 
 /**
  * effect apply / effect apply /
@@ -148,7 +148,7 @@ function removeInternals(creature: ModuleCreature){
  * matches engine behavior priority + effect remove re-apply.
  */
 export function rebalanceSetState(creature: ModuleCreature, trigger?: GameEffect){
-  if(!BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature)){
+  if(!isCreature(creature)){
     return;
   }
 

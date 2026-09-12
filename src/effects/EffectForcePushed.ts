@@ -1,11 +1,11 @@
 import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { GameEffectSetStateType } from "@/enums/effects/GameEffectSetStateType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
-import { BitWise } from "@/utility/BitWise";
 import { GameEffect } from "@/effects/GameEffect";
 import type { ModuleCreature } from "@/module/ModuleCreature";
+import { isCreature } from "@/module/guards/isCreature";
+import { isObject } from "@/module/guards/isObject";
 import {
   clipForcePushDestination,
   computeForcePushDestination,
@@ -35,13 +35,13 @@ export class EffectForcePushed extends GameEffect {
     if(this.applied)
       return;
 
-    if(!BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+    if(!isCreature(this.object)){
       return;
     }
 
     const creature = this.object as ModuleCreature;
     const creator = this.getCreator();
-    const creatorOk = BitWise.InstanceOfObject(creator, ModuleObjectType.ModuleObject);
+    const creatorOk = isObject(creator);
     if(!creatorOk){
       return;
     }

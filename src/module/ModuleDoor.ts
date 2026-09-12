@@ -38,6 +38,8 @@ import { CombatActionType, ModulePlaceableObjectSound, SkillType } from "@/enums
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
+import { isCreature } from "@/module/guards/isCreature";
+
 interface AnimStateInfo {
   lastAnimState: ModuleDoorAnimState;
   currentAnimState: ModuleDoorAnimState;
@@ -724,7 +726,7 @@ export class ModuleDoor extends ModuleObject {
   onAttacked(attackType: CombatActionType){
     // EventHandler 0xf — BroadcastCombatStateToParty(attacker, INVALID)
     const attacker = this.combatData.lastAttacker;
-    if(BitWise.InstanceOfObject(attacker, ModuleObjectType.ModuleCreature)){
+    if(isCreature(attacker)){
       const atk = attacker as ModuleCreature;
       atk.broadcastCombatStateToParty();
       atk.removeCombatInvisibilityEffects();
@@ -739,7 +741,7 @@ export class ModuleDoor extends ModuleObject {
   onDamaged(): boolean{
     // effect apply door/placeable — BroadcastCombatStateToParty(attacker, INVALID)
     const damager = this.combatData.lastDamager ?? this.combatData.lastAttacker;
-    if(BitWise.InstanceOfObject(damager, ModuleObjectType.ModuleCreature)){
+    if(isCreature(damager)){
       (damager as ModuleCreature).broadcastCombatStateToParty();
     }
 

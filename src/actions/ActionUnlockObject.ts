@@ -5,18 +5,17 @@ import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState"
 import { GameState } from "@/GameState";
 import { SSFType } from "@/enums/resource/SSFType";
 import { Action } from "@/actions/Action";
-import { BitWise } from "@/utility/BitWise";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { queueMoveIntoUseRange } from "@/actions/use-range";
-// import type { ModulePlaceable } from "@/module/ModulePlaceable";
-// import type { ModuleDoor } from "@/module/ModuleDoor";
 import type { ModuleItem } from "@/module/ModuleItem";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { SkillType } from "@/enums/nwscript/SkillType";
 import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
 import { ModuleItemProperty } from "@/enums/module/ModuleItemProperty";
 import { SignalEventType } from "@/enums/events/SignalEventType";
+import { isCreature } from "@/module/guards/isCreature";
+import { isDoor } from "@/module/guards/isDoor";
+import { isPlaceable } from "@/module/guards/isPlaceable";
 
 /**
  * ActionUnlockObject class.
@@ -49,12 +48,12 @@ export class ActionUnlockObject extends Action {
     this.target = this.getParameter<ModuleObject>(0);
     this.oItem = this.getParameter<ModuleItem>(1);
 
-    if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor) && !BitWise.InstanceOfObject(this.target, ModuleObjectType.ModulePlaceable)){
+    if(!isDoor(this.target) && !isPlaceable(this.target)){
       GameState.GuiTimingBarManager?.stopFor?.(this.owner);
       return ActionStatus.FAILED;
     }
 
-    if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleDoor) || BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModulePlaceable)){
+    if(isDoor(this.owner) || isPlaceable(this.owner)){
       GameState.GuiTimingBarManager?.stopFor?.(this.owner);
       return ActionStatus.FAILED;
     }
@@ -64,7 +63,7 @@ export class ActionUnlockObject extends Action {
       this.owner.playSoundSet(SSFType.UNLOCK);
     }
 
-    if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature) &&
+    if(isCreature(this.owner) &&
        queueMoveIntoUseRange(this.owner as ModuleCreature, this.target, this.groupId)){
       return ActionStatus.IN_PROGRESS;
     }else{
@@ -91,7 +90,7 @@ export class ActionUnlockObject extends Action {
       this.owner.force = 0;
       this.owner.speed = 0;
                         
-      if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature))
+      if(isCreature(this.owner))
         this.owner.setFacingObject( this.target );
 
       if(!this.timingBarStarted){
@@ -104,7 +103,7 @@ export class ActionUnlockObject extends Action {
       }
 
       if(!this.owner.isSimpleCreature()){
-        if(BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor)){
+        if(isDoor(this.target)){
           this.owner.setAnimationState(ModuleCreatureAnimState.UNLOCK_DOOR);
         }else{
           this.owner.setAnimationState(ModuleCreatureAnimState.UNLOCK_CONTAINER);

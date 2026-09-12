@@ -9,9 +9,10 @@ import { MDLLoader } from "@/loaders";
 import type { ModuleMGEnemy } from "@/module/ModuleMGEnemy";
 import type { ModuleMGPlayer } from "@/module/ModuleMGPlayer";
 import type { ModuleMGObstacle } from "@/module/ModuleMGObstacle";
-import { BitWise } from "@/utility/BitWise";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 import { hitCheckPart, type MGHitCheckOut } from "@/module/minigame/MGHitCheck";
+
+import { isMGPlayer } from "@/module/guards/isMGPlayer";
 
 /**
 * ModuleMGGunBullet class.
@@ -221,7 +222,7 @@ export class ModuleMGGunBullet extends ModuleObject {
       shooter: this.owner,
       follower: target,
     });
-    if(BitWise.InstanceOfObject(target, ModuleObjectType.ModuleMGPlayer)){
+    if(isMGPlayer(target)){
       (target as ModuleMGPlayer).onHitBullet(this);
       return;
     }
