@@ -27,10 +27,11 @@ export class ActionSwitchWeapons extends Action {
   private clearTrailingActions(owner: ModuleCreature){
     const queue = owner.actionQueue;
     while(queue.length > 1){
-      const removed = queue.pop();
-      removed?.dispose?.();
+      const removed = queue.pop() as Action | undefined;
+      if(!removed) continue;
+      removed.dispose();
     }
-    owner.combatRound?.clearActions?.();
+    owner.combatRound.clearActions();
   }
 
   update(_delta: number = 0): ActionStatus {
