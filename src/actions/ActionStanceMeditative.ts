@@ -18,6 +18,9 @@ export class ActionStanceMeditative extends Action {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
     this.type = ActionType.ActionStanceMeditative;
+
+    //PARAMS
+    // none
   }
 
   update(delta: number = 0): ActionStatus {

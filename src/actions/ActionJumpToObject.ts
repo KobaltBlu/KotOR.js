@@ -23,8 +23,8 @@ export class ActionJumpToObject extends Action {
     this.type = ActionType.ActionJumpToObject;
 
     //PARAMS
-    // 0 - dword: target object id
-    // 1 - int: walkStraightLineToPoint 0 | 1
+    // 0 - dword: oTarget (target object id to jump to)
+    // 1 - int: bWalkStraight (safe location check flag, default 1)
   }
 
   update(delta: number = 0): ActionStatus {

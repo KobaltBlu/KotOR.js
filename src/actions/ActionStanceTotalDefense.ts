@@ -13,7 +13,7 @@ import { isObject } from "@/module/guards/isObject";
  * RunActions case 0x44. ActivityManager(4) clears minor activities.
  *
  * PARAMS
- * 0 - dword: target object id
+ * 0 - dword: oTarget (target combatant object id)
  *
  * @file ActionStanceTotalDefense.ts
  */
@@ -26,6 +26,9 @@ export class ActionStanceTotalDefense extends Action {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
     this.type = ActionType.ActionStanceTotalDefense;
+
+    //PARAMS
+    // 0 - dword: oTarget (target combatant object id)
   }
 
   update(delta: number = 0): ActionStatus {

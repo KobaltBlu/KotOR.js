@@ -43,7 +43,7 @@ export class ActionLockObject extends Action {
     this.type = ActionType.ActionLockObject;
 
     //PARAMS
-    // 0 - dword: object id
+    // 0 - dword: oTarget (door or placeable object id to lock)
   }
 
   update(_delta: number = 0): ActionStatus {

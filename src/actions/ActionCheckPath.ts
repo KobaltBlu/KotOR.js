@@ -136,6 +136,10 @@ export class ActionCheckPath extends Action {
 export class ActionCheckMoveToObject extends ActionCheckPath {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(ActionType.ActionCheckMoveToObject, actionId, groupId);
+
+    //PARAMS
+    // 0 - dword: oTarget (target object id)
+    // 1 - int: bRun (run vs walk)
   }
 
   update(delta: number = 0): ActionStatus {
@@ -149,6 +153,12 @@ export class ActionCheckMoveToObject extends ActionCheckPath {
 export class ActionCheckMoveAwayFromObject extends ActionCheckPath {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(ActionType.ActionCheckMoveAwayFromObject, actionId, groupId);
+
+    //PARAMS
+    // 0 - dword: oTarget (object id to flee from)
+    // 1 - int: bRun (run vs walk)
+    // 2 - float: fRange (flee distance threshold)
+    // 3 - int: nRetries (remaining pathfinding retries)
   }
 
   update(delta: number = 0): ActionStatus {
@@ -216,6 +226,9 @@ export class ActionCheckMoveAwayFromObject extends ActionCheckPath {
 export class ActionCheckInterAreaPathfinding extends ActionCheckPath {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(ActionType.ActionCheckInterAreaPathfinding, actionId, groupId);
+
+    //PARAMS
+    // none (uses creature CPathfindInformation)
   }
 
   update(delta: number = 0): ActionStatus {
@@ -316,6 +329,14 @@ export class ActionCheckInterAreaPathfinding extends ActionCheckPath {
 export class ActionCheckMoveToPoint extends ActionCheckPath {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(ActionType.ActionCheckMoveToPoint, actionId, groupId);
+
+    //PARAMS
+    // 0 - float: target x
+    // 1 - float: target y
+    // 2 - float: target z
+    // 3 - dword: target area object id
+    // 4 - dword: target object id (or 0x7f000000)
+    // 5 - int: bRun (run vs walk)
   }
 
   update(delta: number = 0): ActionStatus {
@@ -353,6 +374,15 @@ export class ActionCheckMoveToPoint extends ActionCheckPath {
 export class ActionCheckMoveToObjectRadius extends ActionCheckPath {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(ActionType.ActionCheckMoveToObjectRadius, actionId, groupId);
+
+    //PARAMS
+    // 0 - dword: oTarget (target object id)
+    // 1 - int: bRun (run vs walk)
+    // 2 - float: fRange (target arrival distance)
+    // 3 - float: fTolerance (arrival tolerance / range slack)
+    // 4 - int: bWalkStraight (straight line check flag)
+    // 5 - int: bIgnoreOrientation (ignore orientation flag)
+    // 6 - int: nPersonalSpace (personal space padding)
   }
 
   update(delta: number = 0): ActionStatus {
@@ -365,6 +395,16 @@ export class ActionCheckMoveToObjectRadius extends ActionCheckPath {
 export class ActionCheckMoveToPointRadius extends ActionCheckPath {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(ActionType.ActionCheckMoveToPointRadius, actionId, groupId);
+
+    //PARAMS
+    // 0 - float: target x
+    // 1 - float: target y
+    // 2 - float: target z
+    // 3 - dword: target area object id
+    // 4 - dword: target object id
+    // 5 - int: bRun (run vs walk)
+    // 6 - float: fRange (target arrival distance)
+    // 7 - int: nPersonalSpace (personal space padding)
   }
 
   update(delta: number = 0): ActionStatus {
@@ -398,6 +438,14 @@ export class ActionCheckMoveToPointRadius extends ActionCheckPath {
 export class ActionCheckMoveAwayFromLocation extends ActionCheckPath {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(ActionType.ActionCheckMoveAwayFromLocation, actionId, groupId);
+
+    //PARAMS
+    // 0 - float: threat location x
+    // 1 - float: threat location y
+    // 2 - float: threat location z
+    // 3 - int: bRun (run vs walk)
+    // 4 - float: fRange (flee distance threshold)
+    // 5 - int: nRetries (remaining pathfinding retries)
   }
 
   update(delta: number = 0): ActionStatus {
@@ -457,6 +505,12 @@ export class ActionCheckMoveAwayFromLocation extends ActionCheckPath {
 export class ActionCheckForceFollowObject extends ActionCheckPath {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(ActionType.ActionCheckForceFollowObject, actionId, groupId);
+
+    //PARAMS
+    // 0 - dword: oTarget (target object id to follow)
+    // 1 - int: bRun (run vs walk)
+    // 2 - float: offset x
+    // 3 - float: offset y
   }
 
   update(delta: number = 0): ActionStatus {
@@ -482,6 +536,15 @@ export class ActionCheckForceFollowObject extends ActionCheckPath {
 export class ActionCheckMoveToFollowRadius extends ActionCheckPath {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(ActionType.ActionCheckMoveToFollowRadius, actionId, groupId);
+
+    //PARAMS
+    // 0 - float: target x
+    // 1 - float: target y
+    // 2 - float: target z
+    // 3 - dword: target area object id
+    // 4 - dword: target object id
+    // 5 - int: bRun (run vs walk)
+    // 6 - float: fRange (follow distance radius)
   }
 
   update(delta: number = 0): ActionStatus {

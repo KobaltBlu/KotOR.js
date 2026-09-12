@@ -20,8 +20,8 @@ export class ActionSpeak extends Action {
     this.type = ActionType.ActionSpeak;
 
     //PARAMS
-    // 0 - string: string to speak
-    // 1 - int: talk_volume
+    // 0 - string: sStringToSpeak (text to speak)
+    // 1 - int: nTalkVolume (TalkVolume enum: TALK, WHISPER, SHOUT, SILENT_TALK, SILENT_SHOUT)
     
   }
 

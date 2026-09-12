@@ -35,10 +35,12 @@ export class ActionPlayAnimation extends Action {
     this.type = ActionType.ActionPlayAnimation;
 
     //PARAMS
-    // 0 - int: animation constant value like (10000, 10001, etc...)
-    // 1 - float: speed
-    // 2 - float: duration
-    // 3 - int: unknown
+    // 0 - int: nAnimation (animation state id, e.g. 10000+)
+    // 1 - float: fSpeed (speed multiplier, default 1.0)
+    // 2 - float: fDurationSeconds (duration in seconds; 0.0 = fire & forget, -1.0 = looping, >0 = timed)
+    // 3 - int: bFirstRun (state flag: 1 on enqueue, cleared to 0 once started)
+    // 4 - int: bSoundPlayed (tracks whether associated animation sound effect triggered)
+    // 5 - int: nSoundDelayMS (sound delay offset in milliseconds)
     
   }
 

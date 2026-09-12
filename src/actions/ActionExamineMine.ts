@@ -28,7 +28,7 @@ export class ActionExamineMine extends Action {
     this.type = ActionType.ActionExamineMine;
 
     //PARAMS
-    //0 - DWORD: oTarget
+    // 0 - dword: oTarget (trap trigger, door, or placeable object id)
   }
 
   update(delta?: number): ActionStatus {

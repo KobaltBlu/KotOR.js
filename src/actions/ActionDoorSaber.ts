@@ -23,9 +23,9 @@ const DOOR_SABER_BAR_TYPE = 9;
  * RunActions case 0x43.
  *
  * PARAMS
- * 0 - dword: door object id
- * 1 - int: faced (creature field ≈ 0x10ac)
- * 2 - int: timingStarted (creature field ≈ 0x10b0)
+ * 0 - dword: oDoor (door object id)
+ * 1 - int: bFaced (orientation alignment flag: 1 = faced)
+ * 2 - int: bTimingStarted (timing bar / cut animation started flag: 1 = in progress)
  *
  * @file ActionDoorSaber.ts
  */
@@ -34,6 +34,11 @@ export class ActionDoorSaber extends Action {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
     this.type = ActionType.ActionDoorSaber;
+
+    //PARAMS
+    // 0 - dword: oDoor (door object id)
+    // 1 - int: bFaced (orientation alignment flag: 1 = faced)
+    // 2 - int: bTimingStarted (timing bar / cut animation started flag: 1 = in progress)
   }
 
   private stopBar(owner: ModuleCreature){

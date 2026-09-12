@@ -24,7 +24,7 @@ export class ActionAnimalEmpathy extends Action {
     this.type = ActionType.ActionAnimalEmpathy;
 
     //PARAMS
-    // 0 - dword: target object id
+    // 0 - dword: oTarget (target creature object id)
   }
 
   update(delta: number = 0): ActionStatus {

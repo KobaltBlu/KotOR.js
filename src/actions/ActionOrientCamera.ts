@@ -31,6 +31,13 @@ export class ActionOrientCamera extends Action {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
     this.type = ActionType.ActionOrientCamera;
+
+    //PARAMS
+    // 0 - int: nFlags (packed camera flags: bit 0 = facing, bit 1 = pitch, bit 2 = distance, bit 3 = transition)
+    // 1 - float: fFacing (facing degrees when bit 0 set)
+    // 2 - float: fPitch (pitch degrees when bit 1 set)
+    // 3 - float: fDistance (camera distance when bit 2 set)
+    // 4 - int: nTransitionType (CAMERA_TRANSITION_TYPE_* when bit 3 set)
   }
 
   update(delta: number = 0): ActionStatus {

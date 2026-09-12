@@ -60,6 +60,21 @@ export class ActionItemCastSpell extends Action {
     this.type = ActionType.ActionItemCastSpell;
 
     //PARAMS
+    // Retail Odyssey Engine Layout (AddItemCastSpellActions / AIActionItemCastSpell):
+    // 0 - dword: oItem (item object id)
+    // 1 - int: nActivePropertyIndex (item property index)
+    // 2 - int: nSubPropertyIndex (class/sub-property index)
+    // 3 - dword: oTarget (target object id or OBJECT_INVALID)
+    // 4 - float: vTargetLocation.x
+    // 5 - float: vTargetLocation.y
+    // 6 - float: vTargetLocation.z
+    // 7 - dword: timestampDays (runtime world timer days)
+    // 8 - dword: timestampMS (runtime world timer ms)
+    // 9 - int: bImpactTriggered (internal stage / impact flag)
+    // 10 - int: nAnimation (animation state id)
+    // 11 - int: nAnimationDurationMS (animation duration in ms)
+    //
+    // KotOR.js ActionCombat Legacy Layout:
     // 0 - dword: oTarget
     // 1 - dword: oArea
     // 2 - float: x

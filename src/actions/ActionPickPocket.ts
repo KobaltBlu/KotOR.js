@@ -27,7 +27,7 @@ export class ActionPickPocket extends Action {
     this.type = ActionType.ActionPickPocket;
 
     //PARAMS
-    // 0 - dword: target object id
+    // 0 - dword: oTarget (target creature object id)
   }
 
   update(delta: number = 0): ActionStatus {

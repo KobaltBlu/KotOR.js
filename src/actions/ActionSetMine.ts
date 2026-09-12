@@ -38,11 +38,11 @@ export class ActionSetMine extends Action {
     this.type = ActionType.ActionSetMine;
 
     //PARAMS
-    //0 - DWORD: oItem
-    //1 - DWORD: oTarget
-    //2 - FLOAT: x
-    //3 - FLOAT: y
-    //4 - FLOAT: z
+    // 0 - dword: oItem (mine item object id to plant)
+    // 1 - dword: oTarget (target door/placeable id, or OBJECT_INVALID for ground)
+    // 2 - float: vTargetLocation.x (ground plant location x)
+    // 3 - float: vTargetLocation.y (ground plant location y)
+    // 4 - float: vTargetLocation.z (ground plant location z)
   }
 
   update(delta?: number): ActionStatus {

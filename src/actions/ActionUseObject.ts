@@ -23,6 +23,9 @@ export class ActionUseObject extends Action {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
     this.type = ActionType.ActionUseObject;
+
+    //PARAMS
+    // 0 - dword: oTarget (placeable, door, or item object id to interact with)
   }
 
   /**

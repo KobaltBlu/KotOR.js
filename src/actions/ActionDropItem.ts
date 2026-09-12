@@ -23,7 +23,11 @@ export class ActionDropItem extends Action {
     this.type = ActionType.ActionDropItem;
 
     //PARAMS
-    // 0 - dword: oItem
+    // 0 - dword: oItem (item object id)
+    // 1 - float: vDropLocation.x (target drop location x)
+    // 2 - float: vDropLocation.y (target drop location y)
+    // 3 - float: vDropLocation.z (target drop location z)
+    // 4 - int: bDropGold (1 = gold drop, 0 = regular item)
   }
 
   update(delta?: number): ActionStatus {

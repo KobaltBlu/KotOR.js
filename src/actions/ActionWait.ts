@@ -22,10 +22,8 @@ export class ActionWait extends Action {
     super(actionId, groupId);
     this.type = ActionType.ActionWait;
 
-    /**
-     * PARAMS
-     * @param {number} 0 - float: delta time left to wait
-     */
+    //PARAMS
+    // 0 - float: fSeconds (wait duration / delta remaining)
   }
 
   /**

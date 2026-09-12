@@ -20,9 +20,9 @@ import { isStore } from "@/module/guards/isStore";
  * ActionTakeItem — take-item action.
  *
  * Params:
- * 0 - dword: oItem
- * 1 - dword: oTakeFrom
- * 2 - int: bDisplayStatus (UpdateStatus 8 when source is PC)
+ * 0 - dword: oItem (item object id)
+ * 1 - dword: oTakeFrom (source object id)
+ * 2 - int: bDisplayStatus (1 = display party GUI feedback status; UpdateStatus 8 when source is PC)
  *
  * No range / pathfind. Actor must be creature or placeable.
  *
@@ -37,6 +37,11 @@ export class ActionTakeItem extends Action {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
     this.type = ActionType.ActionTakeItem;
+
+    //PARAMS
+    // 0 - dword: oItem (item object id)
+    // 1 - dword: oTakeFrom (source object id)
+    // 2 - int: bDisplayStatus (1 = display party GUI feedback status)
   }
 
   update(_delta?: number): ActionStatus {

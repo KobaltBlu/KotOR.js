@@ -22,6 +22,10 @@ export class ActionOpenDoor extends Action {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
     this.type = ActionType.ActionOpenDoor;
+
+    //PARAMS
+    // 0 - dword: oTarget (door object id)
+    // 1 - int: bRun (run into use range vs walk, default 1)
   }
 
   update(delta: number = 0): ActionStatus {

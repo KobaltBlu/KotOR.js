@@ -18,7 +18,7 @@ export class ActionPlaySound extends Action {
     this.type = ActionType.ActionPlaySound;
 
     //PARAMS
-    // 0 - string: sound resref
+    // 0 - string: sSoundName (sound resref)
   }
 
   update(delta: number = 0): ActionStatus {

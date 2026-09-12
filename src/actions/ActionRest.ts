@@ -17,6 +17,7 @@ export class ActionRest extends Action {
     this.type = ActionType.ActionRest;
 
     //PARAMS
+    // none
   }
 
   update(delta: number = 0): ActionStatus {

@@ -55,6 +55,15 @@ export class ActionDrive extends Action {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
     this.type = ActionType.ActionDrive;
+
+    //PARAMS
+    // 0 - float: target position x
+    // 1 - float: target position y
+    // 2 - int: nFacing (packed facing orientation in degrees * 10)
+    // 3 - int: nPathId (client-side drive path id)
+    // 4 - int: nFlags (drive control flag bitmask)
+    // 5 - int: nRetry (retry counter, default 2)
+    // 6 - int: bRefresh (destination recompute flag: 1 = recompute on first tick)
   }
 
   /**

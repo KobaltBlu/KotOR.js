@@ -49,6 +49,21 @@ export class ActionMoveToPoint extends Action {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
     this.type = ActionType.ActionMoveToPoint;
+
+    //PARAMS
+    // 0 - float: target x
+    // 1 - float: target y
+    // 2 - float: target z
+    // 3 - dword: destination area object id
+    // 4 - dword: target object id (or 0x7f000000 / OBJECT_INVALID)
+    // 5 - int: packed flags (bit 0 = bRun, bit 1 = client path, bit 2 = timeout check, bit 3 = cutscene/direct walk, bit 9 = straight line, bit 10 = personal space)
+    // 6 - float: arrival distance tolerance / range
+    // 7 - int: client-side path id
+    // 8 - float: timeout countdown in seconds (default 30.0; <=0 disables timeout / jump)
+    // 9 - float: formation offset X
+    // 10 - float: formation offset Y
+    // 11 - dword: timeout expiration timestamp days
+    // 12 - dword: timeout expiration timestamp ms
   }
 
   update(delta: number = 0): ActionStatus {
@@ -89,7 +104,7 @@ export class ActionMoveToPoint extends Action {
     // Client resolve so KeepCorpse shells (removed from GetObjectById) still work
     // as use-range destinations for ActionUseObject → queueMoveIntoUseRange.
     const param4 = this.parameters[4];
-    if(param4?.type === ActionParameterType.DWORD){
+    if(param4?.type === ActionParameterType.DWORD && typeof GameState.ModuleObjectManager?.GetClientObjectById === 'function'){
       this.target = GameState.ModuleObjectManager.GetClientObjectById(param4.value as number);
     }else{
       this.target = this.getParameter<ModuleObject>(4);

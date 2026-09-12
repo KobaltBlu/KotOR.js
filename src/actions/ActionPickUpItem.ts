@@ -24,7 +24,9 @@ export class ActionPickUpItem extends Action {
     this.type = ActionType.ActionPickUpItem;
 
     //PARAMS
-    // 0 - dword: oItem
+    // 0 - dword: oItem (item object id)
+    // 1 - dword: oTargetAreaOrInventory (target container/area id, or 0x7f000000 for ground)
+    // 2 - int: bDisplayStatus (status feedback broadcast flag)
   }
 
   update(delta?: number): ActionStatus {

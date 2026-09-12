@@ -21,9 +21,9 @@ export class ActionUnequipItem extends Action {
     this.type = ActionType.ActionUnequipItem;
 
     //PARAMS
-    // 0 - Item (DWORD)
-    // 1 - (?) (DWORD)
-    // 2 - bInstant (INT)
+    // 0 - dword: oItem (item object id)
+    // 1 - dword: oTargetAreaOrInventory (destination container or 0x7f000000 for ground)
+    // 2 - int: bInstant / bForce (1 = instant unequip, 0 = standard)
   }
 
   update(delta?: number): ActionStatus {

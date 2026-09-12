@@ -22,6 +22,9 @@ export class ActionPauseDialog extends Action {
     this.type = ActionType.ActionPauseDialog;
     // Keep with ActionResumeDialog — see ClearAllActions skipUnclearable path.
     this.clearable = false;
+
+    //PARAMS
+    // none
   }
 
   update(delta: number = 0): ActionStatus {

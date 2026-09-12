@@ -20,7 +20,7 @@ export class ActionBarkString extends Action {
     this.type = ActionType.ActionBarkString;
 
     //PARAMS
-    // 0 - int: strref
+    // 0 - int: nStrRef (talk string reference index from dialog.tlk)
 
   }
 

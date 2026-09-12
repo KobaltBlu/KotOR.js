@@ -22,10 +22,10 @@ import { isObject } from "@/module/guards/isObject";
  * ActionGiveItem — give-item action.
  *
  * Params:
- * 0 - dword: oItem
- * 1 - dword: oGiveTo
- * 2 - int: nCount (-1 = whole stack)
- * 3 - int: bDisplayStatus (party GUI UpdateStatus 7)
+ * 0 - dword: oItem (item object id)
+ * 1 - dword: oGiveTo (recipient object id)
+ * 2 - int: nStackSize (quantity to give; -1 = entire stack)
+ * 3 - int: bDisplayStatus (1 = display party GUI feedback status)
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -38,6 +38,12 @@ export class ActionGiveItem extends Action {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
     this.type = ActionType.ActionGiveItem;
+
+    //PARAMS
+    // 0 - dword: oItem (item object id)
+    // 1 - dword: oGiveTo (recipient object id)
+    // 2 - int: nStackSize (quantity to give; -1 = entire stack)
+    // 3 - int: bDisplayStatus (1 = display party GUI feedback status)
   }
 
   update(_delta: number = 0): ActionStatus {

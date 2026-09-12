@@ -23,6 +23,9 @@ export class ActionResumeDialog extends Action {
     // control actions — losing Resume while Pause is set hangs the dialog
     // (tar08_calo082 / k_ptar_calofade: Pause → Wait → Resume, then Horrified).
     this.clearable = false;
+
+    //PARAMS
+    // none
   }
 
   update(delta: number = 0): ActionStatus {

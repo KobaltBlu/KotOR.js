@@ -38,8 +38,9 @@ export class ActionUnlockObject extends Action {
     this.timer = 1.5;
 
     //PARAMS
-    // 0 - dword: object id
-    // 1 - dword: item id (security tunneler)
+    // 0 - dword: oTarget (door or placeable object id to unlock)
+    // 1 - dword: oItem (security spike / thieves tools item id, or OBJECT_INVALID)
+    // 2 - int: nActivePropertyIndex (item property index used for security bonus)
     
   }
 

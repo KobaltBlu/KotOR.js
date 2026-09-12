@@ -27,7 +27,7 @@ export class ActionAppear extends Action {
     this.type = ActionType.ActionAppear;
 
     //PARAMS
-    // 0 - int: animation type (optional override)
+    // 0 - int: nAnimation (optional appearance animation override, default 0x274f)
   }
 
   update(delta: number = 0): ActionStatus {

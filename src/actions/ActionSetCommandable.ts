@@ -18,7 +18,7 @@ export class ActionSetCommandable extends Action {
     this.type = ActionType.ActionSetCommandable;
 
     //PARAMS
-    // 0 - int: commandable value
+    // 0 - int: bCommandable (1 = commandable, 0 = non-commandable)
     
   }
 

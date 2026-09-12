@@ -20,8 +20,8 @@ export class ActionSpeakStrRef extends Action {
     this.type = ActionType.ActionSpeakStrRef;
 
     //PARAMS
-    // 0 - int: strref
-    // 1 - int: talk_volume
+    // 0 - int: nStrRef (talk string reference index from dialog.tlk)
+    // 1 - int: nTalkVolume (TalkVolume enum)
     
   }
 

@@ -38,14 +38,14 @@ export class ActionJumpToPoint extends Action {
     this.target = undefined;
 
     //PARAMS
-    // 0 - float: x
-    // 1 - float: y
-    // 2 - float: z
+    // 0 - float: target x
+    // 1 - float: target y
+    // 2 - float: target z
     // 3 - dword: target area object id
-    // 4 - int: unknown (takeStraightLine)
-    // 5 - float: find safe location radius (default 20)
-    // 6 - float: rotation x
-    // 7 - float: rotation y
+    // 4 - int: bWalkStraight (safe location check flag)
+    // 5 - float: fSearchRange (radius for safe location search, default 20.0)
+    // 6 - float: orientation vector x
+    // 7 - float: orientation vector y
   }
 
   update(delta: number = 0): ActionStatus {

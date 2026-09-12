@@ -41,7 +41,7 @@ export class ActionRecoverMine extends Action {
     this.type = ActionType.ActionRecoverMine;
 
     //PARAMS
-    //0 - DWORD: oTarget
+    // 0 - dword: oTarget (trap trigger, door, or placeable object id)
   }
 
   update(delta?: number): ActionStatus {

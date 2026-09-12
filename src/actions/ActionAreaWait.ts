@@ -19,7 +19,7 @@ export class ActionAreaWait extends Action {
     this.type = ActionType.ActionAreaWait;
 
     //PARAMS
-    // 0 - float: remaining time
+    // 0 - float: fRemainingTime (time left to wait in area)
   }
 
   update(delta: number = 0): ActionStatus {

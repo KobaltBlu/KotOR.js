@@ -62,16 +62,16 @@ export class ActionPhysicalAttacks extends Action {
     this.type = ActionType.ActionPhysicalAttacks;
 
     //PARAMS
-    // 0 - resultsCalculated (INT) — CutsceneAttack precomputed flag
-    // 1 - Target (DWORD)
-    // 2 - actionType (INT)
-    // 3 - AnimationIndex (INT)
-    // 4 - AnimationLength (INT)
-    // 5 - numAttacks (INT)
-    // 6 - featId (INT)
-    // 7 - attackAnimation row (INT) when resultsCalculated
-    // 8 - attackResult (INT) when resultsCalculated
-    // 9 - attackDamage (INT) when resultsCalculated
+    // 0 - int: bResultsCalculated (cutscene precomputed attack flag)
+    // 1 - dword: oTarget (target object id)
+    // 2 - int: nActionType (CombatActionType)
+    // 3 - int: nAnimationIndex (animation state id)
+    // 4 - int: nAnimationLength (animation duration in milliseconds)
+    // 5 - int: nNumAttacks (number of attack swings)
+    // 6 - int: nFeatId (feat id used in attack, 0 if normal)
+    // 7 - int: nAttackAnimation (precomputed attack animation index)
+    // 8 - int: nAttackResult (precomputed attack result enum)
+    // 9 - int: nAttackDamage (precomputed attack damage amount)
   }
 
   static resolveMeleeTooCloseHysteresis(

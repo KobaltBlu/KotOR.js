@@ -25,10 +25,10 @@ const HEAL_SKILL_BROADCAST_ID = 0x14a;
  * ActionHeal — heal / medpac / repair-kit action.
  *
  * Params:
- * 0 - dword: oTarget
- * 1 - dword: oMedpac
- * 2 - int: requeue scratch (not skill — always Treat Injury / skill 7)
- * 3 - int: bAllowMove
+ * 0 - dword: oTarget (target creature object id to heal)
+ * 1 - dword: oItem (medpac / repair kit item object id)
+ * 2 - int: nRequeueScratch (internal requeue scratch pad)
+ * 3 - int: bAllowMove (1 = move into use range allowed, cleared to 0 on requeue)
  *
  * Repair kits also enqueue this action (TalentSkill); skill remains Treat Injury
  * per GetSkillRank(7).
@@ -46,6 +46,12 @@ export class ActionHeal extends Action {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
     this.type = ActionType.ActionHeal;
+
+    //PARAMS
+    // 0 - dword: oTarget (target creature object id to heal)
+    // 1 - dword: oItem (medpac / repair kit item object id)
+    // 2 - int: nRequeueScratch (internal requeue scratch pad)
+    // 3 - int: bAllowMove (1 = move into use range allowed, cleared to 0 on requeue)
   }
 
   update(_delta: number = 0): ActionStatus {

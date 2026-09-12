@@ -21,6 +21,9 @@ export class ActionSwitchWeapons extends Action {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
     this.type = ActionType.ActionSwitchWeapons;
+
+    //PARAMS
+    // none
   }
 
   /** Clear trailing queue actions; current head stays until process shifts it. */

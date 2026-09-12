@@ -21,6 +21,10 @@ export class ActionCloseDoor extends Action {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
     this.type = ActionType.ActionCloseDoor;
+
+    //PARAMS
+    // 0 - dword: oTarget (door object id)
+    // 1 - int: bRun (run into use range vs walk, default 0)
   }
 
   update(delta: number = 0): ActionStatus {

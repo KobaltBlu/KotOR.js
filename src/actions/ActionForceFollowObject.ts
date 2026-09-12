@@ -35,6 +35,15 @@ export class ActionForceFollowObject extends Action {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
     this.type = ActionType.ActionForceFollowObject;
+
+    //PARAMS
+    // 0 - dword: oTarget (target object id to follow)
+    // 1 - int: bRun (run vs walk)
+    // 2 - float: vOffset.x (follow offset relative to target x)
+    // 3 - float: vOffset.y (follow offset relative to target y)
+    // 4 - int: bArrived (arrival status tracking flag)
+    // 5 - float: vLastTargetPos.x (last recorded target position x)
+    // 6 - float: vLastTargetPos.y (last recorded target position y)
   }
 
   update(delta: number = 0): ActionStatus {

@@ -23,9 +23,9 @@ export class ActionEquipItem extends Action {
     this.type = ActionType.ActionEquipItem;
 
     //PARAMS
-    // 0 - Item (DWORD)
-    // 1 - InventorySlot (INT / bit-slot)
-    // 2 - bInstant (INT)
+    // 0 - dword: oItem (item object id)
+    // 1 - int: nInventorySlot (ModuleCreatureArmorSlot inventory slot bitmask / index)
+    // 2 - int: bInstant / bCheckRequirements (1 = instant equip / skip weapon flourish, 0 = play draw animation)
   }
 
   update(delta?: number): ActionStatus {

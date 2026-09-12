@@ -55,19 +55,19 @@ export class ActionCastSpell extends Action {
     this.type = ActionType.ActionCastSpell;
 
     //PARAMS
-    // 0 - int: nSpellId
-    // 1 - int: classIndex (ForceMenu) OR -1 if cheat
-    // 2 - int: nDomainLevel
-    // 3 - int: Unknown: Always 0?
-    // 4 - int: Unknown: Always 0?
-    // 5 - dword: target object id
+    // 0 - int: nSpellId (spells.2da row index)
+    // 1 - int: nClassIndex (caster class index, or -1 for cheat/force menu)
+    // 2 - int: nDomainLevel (domain level, default 0)
+    // 3 - int: nMetaMagic (metamagic cost/flags, default 0)
+    // 4 - int: bCheat (cheat cast flag: 1 = free cast, 0 = normal)
+    // 5 - dword: oTarget (target object id or OBJECT_INVALID)
     // 6 - float: target x
     // 7 - float: target y
     // 8 - float: target z
-    // 9 - int: nProjectilePath (+ bit 30 = bInstantSpell)
-    // 10 - int: Unknown: Always -1?
-    // 11 - int: override spell id (−1 = none)
-    // 12 - int: fake cast (1 = visuals only)
+    // 9 - int: nProjectilePath (+ bit 30 = bInstantSpell flag 0x40000000)
+    // 10 - int: nFeatId (feat id associated with cast, -1 if none)
+    // 11 - int: nOverrideSpellId (override spell id, -1 if none)
+    // 12 - int: bFakeCast (1 = visuals only)
 
   }
 

@@ -44,6 +44,9 @@ export class ActionFollowLeader extends Action {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
     this.type = ActionType.ActionFollowLeader;
+
+    //PARAMS
+    // none
   }
 
   update(delta: number = 0): ActionStatus {

@@ -33,16 +33,21 @@ export class ActionDialogObject extends Action {
     this.clearable = false;
 
     //PARAMS
-    // 0 - dword: speaker object id
-    // 1 - string: conversation resref
-    // 2 - int: bPrivateConversation 
-    // 3 - int: (?) nConversationType
-    // 4 - int: ignoreStartRange
-    // 5 - dword: listener object id (OBJECT_INVALID = use owner; bUseLeader → party[0])
-    // 6-11 - string: sNameObjectToIgnore1-6 (DialogNonDependantList)
-    // 12 - int: TSL nBarkX (−1 default)
-    // 13 - int: TSL nBarkY (−1 default)
-    // 14 - int: TSL bUseLeader
+    // 0 - dword: oTarget (speaker / target object id to converse with)
+    // 1 - string: sDialogResRef (conversation dialog resref)
+    // 2 - int: bPrivate (private conversation flag)
+    // 3 - int: nConversationType (conversation type, default 0)
+    // 4 - int: bIgnoreStartRange (1 = ignore start distance check)
+    // 5 - dword: oListener (listener object id; OBJECT_INVALID = use owner)
+    // 6 - string: sNameObjectToIgnore1 (dialog non-dependant list item 1)
+    // 7 - string: sNameObjectToIgnore2 (dialog non-dependant list item 2)
+    // 8 - string: sNameObjectToIgnore3 (dialog non-dependant list item 3)
+    // 9 - string: sNameObjectToIgnore4 (dialog non-dependant list item 4)
+    // 10 - string: sNameObjectToIgnore5 (dialog non-dependant list item 5)
+    // 11 - string: sNameObjectToIgnore6 (dialog non-dependant list item 6)
+    // 12 - float: fBarkScreenX (TSL bark screen coordinate X, -1 default)
+    // 13 - float: fBarkScreenY (TSL bark screen coordinate Y, -1 default)
+    // 14 - int: bUseLeader (TSL flag: 1 = route listener to party leader)
   }
 
   update(delta: number = 0): ActionStatus {

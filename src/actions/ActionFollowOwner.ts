@@ -22,6 +22,9 @@ export class ActionFollowOwner extends Action {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
     this.type = ActionType.ActionFollowOwner;
+
+    //PARAMS
+    // 0 - float: fFollowDistance (follow distance threshold from PUP owner)
   }
 
   update(_delta: number = 0): ActionStatus {

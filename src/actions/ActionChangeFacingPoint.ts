@@ -19,8 +19,9 @@ export class ActionChangeFacingPoint extends Action {
     this.type = ActionType.ActionChangeFacingPoint;
 
     //PARAMS
-    // 0 - float: x
-    // 1 - float: y
+    // 0 - float: vTarget.x (target point x)
+    // 1 - float: vTarget.y (target point y)
+    // 2 - float: vTarget.z (target point z, optional)
   }
 
   update(delta: number = 0): ActionStatus {

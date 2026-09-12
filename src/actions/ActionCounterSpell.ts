@@ -28,7 +28,7 @@ export class ActionCounterSpell extends Action {
     this.type = ActionType.ActionCounterSpell;
 
     //PARAMS
-    // 0 - dword: target caster
+    // 0 - dword: oTarget (target spell caster object id)
   }
 
   private leaveStance(owner: ModuleCreature){

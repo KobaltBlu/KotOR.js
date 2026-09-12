@@ -20,7 +20,7 @@ export class ActionDoCommand extends Action {
     this.type = ActionType.ActionDoCommand;
 
     //PARAMS
-    // 0 - script_situation: NWScriptInstance
+    // 0 - script_situation: scriptSituation (NWScriptInstance execution context)
 
   }
 

@@ -28,7 +28,7 @@ export class ActionCombat extends Action {
     this.type = ActionType.ActionCombat;
 
     //PARAMS
-    // 0 - int: (?) 1 or 0
+    // 0 - int: bClear (1 = initialize combat round, 0 = default)
 
   }
   

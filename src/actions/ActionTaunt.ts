@@ -28,7 +28,7 @@ export class ActionTaunt extends Action {
     this.type = ActionType.ActionTaunt;
 
     //PARAMS
-    // 0 - dword: target object id
+    // 0 - dword: oTarget (target creature object id)
   }
 
   update(delta: number = 0): ActionStatus {

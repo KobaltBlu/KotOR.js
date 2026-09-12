@@ -21,6 +21,7 @@ export class ActionRandomWalk extends Action {
     this.type = ActionType.ActionRandomWalk;
 
     //PARAMS
+    // none
   }
 
   update(delta?: number): ActionStatus {

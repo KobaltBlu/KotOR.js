@@ -21,7 +21,7 @@ export class ActionChangeFacingObject extends Action {
     this.type = ActionType.ActionChangeFacingObject;
 
     //PARAMS
-    // 0 - dword: oObject
+    // 0 - dword: oTarget (target object id to face)
   }
 
   update(delta: number = 0): ActionStatus {

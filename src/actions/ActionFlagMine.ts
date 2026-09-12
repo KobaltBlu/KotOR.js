@@ -32,7 +32,7 @@ export class ActionFlagMine extends Action {
     this.type = ActionType.ActionFlagMine;
 
     //PARAMS
-    //0 - DWORD: oTarget
+    // 0 - dword: oTarget (trap trigger, door, or placeable object id)
   }
 
   update(delta?: number): ActionStatus {

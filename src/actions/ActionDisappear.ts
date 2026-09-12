@@ -27,7 +27,7 @@ export class ActionDisappear extends Action {
     this.type = ActionType.ActionDisappear;
 
     //PARAMS
-    // 0 - int: animation type (optional override)
+    // 0 - int: nAnimation (optional disappearance animation override, default 0x274e)
   }
 
   update(delta: number = 0): ActionStatus {
