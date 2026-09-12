@@ -176,8 +176,7 @@ export class ActionCastSpell extends Action {
     if(!isCreature(this.target)){
       return false;
     }
-    const creature = this.target as ModuleCreature;
-    return !!(creature.isDead?.() || creature.plot);
+    return !!(this.target.isDead?.() || this.target.plot);
   }
 
   private failCast(owner: ModuleCreature, status: ActionStatus): ActionStatus {
@@ -253,10 +252,12 @@ export class ActionCastSpell extends Action {
   }
 
   private startSpellInstance(castTarget: ModuleObject | undefined, castSpell: any, fake: boolean): boolean {
-    const owner = this.owner as ModuleCreature;
+    if(!isCreature(this.owner)){
+      return false;
+    }
     // DecrementSpellReadyCount / UnReadySpell at cast-start gate
     if(!fake && !this.isCheat && !this.forceSpent){
-      if(!owner.unreadySpell(castSpell)){
+      if(!this.owner.unreadySpell(castSpell)){
         return false;
       }
       this.forceSpent = true;
@@ -284,88 +285,86 @@ export class ActionCastSpell extends Action {
       return ActionStatus.FAILED;
     }
 
-    const owner = this.owner;
-
     // : dead / plot / debilitated → RemoveSpellActionFromRound + ERROR
-    if(this.isCasterBlocked(owner)){
-      return this.failCast(owner, ActionStatus.ERROR);
+    if(this.isCasterBlocked(this.owner)){
+      return this.failCast(this.owner, ActionStatus.ERROR);
     }
 
     if(this.spellCastInstance){
       // : ENTANGLED during cast gate aborts
-      if(this.isEntangled(owner)){
-        return this.failCast(owner, ActionStatus.ERROR);
+      if(this.isEntangled(this.owner)){
+        return this.failCast(this.owner, ActionStatus.ERROR);
       }
       if(this.spellCastInstance.interrupted){
         this.spellCastInstance = undefined;
-        owner.combatRound?.removeSpellActionFromRound();
+        this.owner.combatRound?.removeSpellActionFromRound();
         this.castStarted = false;
         this.forceSpent = false;
         return ActionStatus.FAILED;
       }
       if(this.spellCastInstance.completed){
         this.spellCastInstance = undefined;
-        owner.combatRound?.removeSpellActionFromRound();
-        owner.combatRound?.processPendingCombatActions?.();
+        this.owner.combatRound?.removeSpellActionFromRound();
+        this.owner.combatRound?.processPendingCombatActions?.();
         this.castStarted = false;
         this.forceSpent = false;
         return ActionStatus.COMPLETE;
       }
       if(this.spellCastInstance.conjuring){
-        this.applyConjureAnim(owner, this.spellCastInstance.spell || this.spell);
+        this.applyConjureAnim(this.owner, this.spellCastInstance.spell || this.spell);
       }else{
-        this.applyCastAnim(owner, this.spellCastInstance.spell || this.spell);
+        this.applyCastAnim(this.owner, this.spellCastInstance.spell || this.spell);
       }
-      this.faceCastTarget(owner);
+      this.faceCastTarget(this.owner);
       return ActionStatus.IN_PROGRESS;
     }
 
     if(!this.resolveTarget()){
-      return this.failCast(owner, ActionStatus.FAILED);
+      return this.failCast(this.owner, ActionStatus.FAILED);
     }
 
     if(this.isTargetInvalid()){
-      return this.failCast(owner, ActionStatus.ERROR);
+      return this.failCast(this.owner, ActionStatus.ERROR);
     }
 
     this.spell = new GameState.TalentSpell( this.getParameter<number>(0));
     if(!this.spell){
-      return this.failCast(owner, ActionStatus.FAILED);
+      return this.failCast(this.owner, ActionStatus.FAILED);
     }
 
     // GetSelfForcePowers / range P — rebind after resolve so a selected
     // party member never becomes MoveTo / GetSpellTargetObject.
     if(shouldBindSpellCastToCaster(this.spell, { isUserAction: this.isUserAction })){
-      this.target = owner;
-      this.targetPosition.copy(owner.position);
+      this.target = this.owner;
+      this.targetPosition.copy(this.owner.position);
     }
 
     // force-item forbid/require masks
-    if(this.failsForceItemMask(owner, this.spell)){
-      return this.failCast(owner, ActionStatus.ERROR);
+    if(this.failsForceItemMask(this.owner, this.spell)){
+      return this.failCast(this.owner, ActionStatus.ERROR);
     }
 
     // spell-tree / feat prerequisite gate (N8 residual)
-    if(!this.isCheat && !this.isFake && !passesSpellPrerequisiteGate(owner, this.spell)){
-      return this.failCast(owner, ActionStatus.FAILED);
+    if(!this.isCheat && !this.isFake && !passesSpellPrerequisiteGate(this.owner, this.spell)){
+      return this.failCast(this.owner, ActionStatus.FAILED);
     }
 
     // known-spell gate (skipped for cheat / fake)
-    if(!this.isCheat && !this.isFake && !passesSpellKnownGate(owner, this.spell?.id ?? this.getParameter<number>(0))){
-      return this.failCast(owner, ActionStatus.FAILED);
+    if(!this.isCheat && !this.isFake && !passesSpellKnownGate(this.owner, this.spell?.id ?? this.getParameter<number>(0))){
+      return this.failCast(this.owner, ActionStatus.FAILED);
     }
 
     // AddCastSpellActions visibility (non-party creatures)
-    if(this.target && this.target !== owner && !this.isCheat && !this.isFake){
-      const isPartyUI = !!(owner.isPartyMember?.() || owner.isPlayer || owner.isPM);
-      const entry = owner.perceptionList?.find(
+    if(this.target && this.target !== this.owner && !this.isCheat && !this.isFake){
+      const isPartyUI = !!(this.owner.isPartyMember?.() || this.owner.isPlayer || this.owner.isPM);
+      const entry = this.owner.perceptionList?.find(
         (o) => o.object === this.target || o.objectId === this.target.id
       );
       if(!canTargetSpellCastByPerception(entry?.data, {
         isPartyOrPlayerUI: isPartyUI,
         isSelf: false,
       })){
-        return this.failCast(owner, ActionStatus.FAILED);
+        return this.failCast(this.owner, ActionStatus.FAILED);
       }
     }
 
@@ -386,43 +385,43 @@ export class ActionCastSpell extends Action {
       return ActionStatus.IN_PROGRESS;
     }
 
-    owner.force = 0;
-    owner.speed = 0;
+    this.owner.force = 0;
+    this.owner.speed = 0;
 
-    this.faceCastTarget(owner);
+    this.faceCastTarget(this.owner);
 
     if(this.isFake){
-      this.applyConjureAnim(owner, this.spell);
+      this.applyConjureAnim(this.owner, this.spell);
 
       if(!this.castStarted){
         if(!this.startSpellInstance(this.target, this.spell, true)){
-          return this.failCast(owner, ActionStatus.FAILED);
+          return this.failCast(this.owner, ActionStatus.FAILED);
         }
       }
       return ActionStatus.IN_PROGRESS;
     }
 
-    if(!owner.combatRound){
+    if(!this.owner.combatRound){
       return ActionStatus.FAILED;
     }
 
     // Deaf / ArcaneSpellFailure: percent chance to fizzle the cast
-    if(this.rollArcaneSpellFailure(owner)){
-      return this.failCast(owner, ActionStatus.FAILED);
+    if(this.rollArcaneSpellFailure(this.owner)){
+      return this.failCast(this.owner, ActionStatus.FAILED);
     }
 
-    const combatRound = owner.combatRound;
+    const combatRound = this.owner.combatRound;
     if(combatRound.roundPaused && this.castStarted){
       // Switch to cast-phase anim once conjure elapses
       if(this.spellCastInstance && !this.spellCastInstance.conjuring){
-        this.applyCastAnim(owner, this.spellCastInstance.spell || this.spell);
+        this.applyCastAnim(this.owner, this.spellCastInstance.spell || this.spell);
       }
       return ActionStatus.IN_PROGRESS;
     }
 
     // : cannot start cast while entangled
-    if(this.isEntangled(owner)){
-      return this.failCast(owner, ActionStatus.ERROR);
+    if(this.isEntangled(this.owner)){
+      return this.failCast(this.owner, ActionStatus.ERROR);
     }
 
     // instant-cast bit path — 1500ms ATTACK anim, immediate SpellCastAndImpact
@@ -432,16 +431,16 @@ export class ActionCastSpell extends Action {
       if(!combatRound.roundStarted){
         combatRound.beginCombatRound();
       }
-      this.applyHostileActivity(owner, castSpell);
+      this.applyHostileActivity(this.owner, castSpell);
       combatRound.setSpellCastRound(castSpell?.id ?? this.getParameter<number>(0) ?? -1, 0);
-      this.pauseCasterAndPartner(owner, INSTANT_CAST_PAUSE_MS);
+      this.pauseCasterAndPartner(this.owner, INSTANT_CAST_PAUSE_MS);
       if(combatRound.action){
         combatRound.action.animation = INSTANT_CAST_ANIM;
       }
-      owner.setAnimationState(INSTANT_CAST_ANIM);
+      this.owner.setAnimationState(INSTANT_CAST_ANIM);
       if(!this.castStarted){
         if(!this.startSpellInstance(castTarget, castSpell, false)){
-          return this.failCast(owner, ActionStatus.FAILED);
+          return this.failCast(this.owner, ActionStatus.FAILED);
         }
         // Zero conjure/cast so impact runs immediately (SpellCastAndImpact)
         if(this.spellCastInstance){
@@ -469,15 +468,15 @@ export class ActionCastSpell extends Action {
       if(!combatRound.roundStarted){
         combatRound.beginCombatRound();
       }
-      this.applyHostileActivity(owner, castSpell);
+      this.applyHostileActivity(this.owner, castSpell);
       combatRound.setSpellCastRound(castSpell?.id ?? this.getParameter<number>(0) ?? -1, 0);
-      this.pauseCasterAndPartner(owner, pauseMs);
+      this.pauseCasterAndPartner(this.owner, pauseMs);
 
-      this.applyConjureAnim(owner, castSpell);
+      this.applyConjureAnim(this.owner, castSpell);
 
       if(combatRound.roundStarted && !this.castStarted){
         if(!this.startSpellInstance(castTarget, castSpell, false)){
-          return this.failCast(owner, ActionStatus.FAILED);
+          return this.failCast(this.owner, ActionStatus.FAILED);
         }
       }
     }

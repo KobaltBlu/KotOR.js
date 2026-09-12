@@ -4,7 +4,6 @@ import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
-import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
 import { ModuleObject } from "@/module/ModuleObject";
 import { Utility } from "@/utility/Utility";
@@ -63,14 +62,13 @@ export class ActionSetMine extends Action {
       return ActionStatus.FAILED;
     }
 
-    const owner = this.owner as ModuleCreature;
-    const stopBar = () => GameState.GuiTimingBarManager?.stopFor?.(owner);
+    const stopBar = () => GameState.GuiTimingBarManager?.stopFor?.(this.owner);
     const hasTarget = isObject(this.target);
     const plantPos = hasTarget
       ? this.target.position
-      : { x: typeof x === 'number' ? x : owner.position.x, y: typeof y === 'number' ? y : owner.position.y, z: typeof z === 'number' ? z : owner.position.z };
+      : { x: typeof x === 'number' ? x : this.owner.position.x, y: typeof y === 'number' ? y : this.owner.position.y, z: typeof z === 'number' ? z : this.owner.position.z };
 
-    const distance = Utility.Distance2D(owner.position, plantPos as any);
+    const distance = Utility.Distance2D(this.owner.position, plantPos as any);
     if(distance > 1.5){
       const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
       actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, plantPos.x);
@@ -82,23 +80,23 @@ export class ActionSetMine extends Action {
       actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, hasTarget ? 0.5 : 1.0);
       actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
       actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
-      owner.actionQueue.addFront(actionMoveToTarget);
+      this.owner.actionQueue.addFront(actionMoveToTarget);
       return ActionStatus.IN_PROGRESS;
     }
 
     if(!this.bAnimQueued){
       this.bAnimQueued = true;
       if(hasTarget){
-        owner.setFacingObject(this.target);
+        this.owner.setFacingObject(this.target);
       }
       const action = new GameState.ActionFactory.ActionPlayAnimation();
       action.setParameter(0, ActionParameterType.INT, ModuleCreatureAnimState.SET_MINE);
       action.setParameter(1, ActionParameterType.FLOAT, 1);
       action.setParameter(2, ActionParameterType.FLOAT, 2.0);
-      owner.actionQueue.addFront(action);
+      this.owner.actionQueue.addFront(action);
       // SetMine uses a shorter bar (~2s) vs Flag/Disarm 4500 ms
-      if(owner === GameState.getCurrentPlayer()){
-        GameState.GuiTimingBarManager?.start?.(2.0, 'Set Mine', owner, 1);
+      if(this.owner === GameState.getCurrentPlayer()){
+        GameState.GuiTimingBarManager?.start?.(2.0, 'Set Mine', this.owner, 1);
       }
       return ActionStatus.IN_PROGRESS;
     }
@@ -118,7 +116,7 @@ export class ActionSetMine extends Action {
         continue;
       }
 
-      const check = resolveMineSetCheck(owner, property.subType | 0);
+      const check = resolveMineSetCheck(this.owner, property.subType | 0);
       if(check.result === MineSkillResult.FAIL){
         stopBar();
         return ActionStatus.FAILED;
@@ -134,17 +132,17 @@ export class ActionSetMine extends Action {
         (isDoor(this.target) ||
           isPlaceable(this.target))
       ){
-        this.target.addTrap(trapSubtype, owner);
+        this.target.addTrap(trapSubtype, this.owner);
         plantedTrigger = this.target;
         planted = true;
       }else{
         // Free-ground: area trigger at plantPos (not hosted on the creature).
-        const area = owner.area ?? GameState.module?.area;
-        plantedTrigger = ModuleObject.plantGroundTrap(area, trapSubtype, plantPos as any, owner);
+        const area = this.owner.area ?? GameState.module?.area;
+        plantedTrigger = ModuleObject.plantGroundTrap(area, trapSubtype, plantPos as any, this.owner);
         planted = !!plantedTrigger;
       }
       if(shouldTrigger && plantedTrigger){
-        signalTrapTriggered(plantedTrigger, owner);
+        signalTrapTriggered(plantedTrigger, this.owner);
       }
       break;
     }
@@ -162,7 +160,7 @@ export class ActionSetMine extends Action {
       }else if((this.oItem.charges | 0) > 1){
         this.oItem.charges -= 1;
       }else{
-        owner.removeItem(this.oItem, 1);
+        this.owner.removeItem(this.oItem, 1);
       }
     }
 

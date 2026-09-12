@@ -1,8 +1,6 @@
 import { Action } from "@/actions/Action";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-
 import { isCreature } from "@/module/guards/isCreature";
 
 /**
@@ -31,14 +29,13 @@ export class ActionSurrenderToEnemies extends Action {
       return ActionStatus.FAILED;
     }
 
-    const owner = this.owner as ModuleCreature;
     // == 1 → FAILED (plot/immortal gate)
-    if(owner.plot){
+    if(this.owner.plot){
       return ActionStatus.FAILED;
     }
 
-    owner.surrenderToEnemies(false);
-    owner.setCommandable(false);
+    this.owner.surrenderToEnemies(false);
+    this.owner.setCommandable(false);
     return ActionStatus.COMPLETE;
   }
 

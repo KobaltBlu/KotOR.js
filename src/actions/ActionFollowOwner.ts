@@ -2,7 +2,6 @@ import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { GameState } from "@/GameState";
-import type { ModuleCreature } from "@/module/ModuleCreature";
 import { Utility } from "@/utility/Utility";
 import { Action } from "@/actions/Action";
 
@@ -30,25 +29,24 @@ export class ActionFollowOwner extends Action {
       return ActionStatus.ERROR;
     }
 
-    const owner = this.owner as ModuleCreature;
-    if(owner.isDead?.() || owner.isDebilitated?.()){
+    if(this.owner.isDead?.() || this.owner.isDebilitated?.()){
       return ActionStatus.ERROR;
     }
 
-    if(!owner.area){
+    if(!this.owner.area){
       return ActionStatus.IN_PROGRESS;
     }
 
     const range = this.getParameter<number>(0) || 0.0;
-    const followOwner = GameState.PartyManager.GetPUPOwner(owner);
+    const followOwner = GameState.PartyManager.GetPUPOwner(this.owner);
     if(!isCreature(followOwner)){
       return ActionStatus.IN_PROGRESS;
     }
 
-    const dist = Utility.Distance2D(owner.position, followOwner.position);
+    const dist = Utility.Distance2D(this.owner.position, followOwner.position);
     if(dist <= range){
-      owner.force = 0;
-      owner.speed = 0;
+      this.owner.force = 0;
+      this.owner.speed = 0;
       return ActionStatus.IN_PROGRESS;
     }
 
@@ -56,7 +54,7 @@ export class ActionFollowOwner extends Action {
     move.setParameter(0, ActionParameterType.FLOAT, followOwner.position.x);
     move.setParameter(1, ActionParameterType.FLOAT, followOwner.position.y);
     move.setParameter(2, ActionParameterType.FLOAT, followOwner.position.z);
-    move.setParameter(3, ActionParameterType.DWORD, owner.area.id);
+    move.setParameter(3, ActionParameterType.DWORD, this.owner.area.id);
     move.setParameter(4, ActionParameterType.DWORD, followOwner.id);
     move.setParameter(5, ActionParameterType.INT, 1);
     move.setParameter(6, ActionParameterType.FLOAT, range);
@@ -66,8 +64,8 @@ export class ActionFollowOwner extends Action {
     const follow = new GameState.ActionFactory.ActionFollowOwner(undefined, this.groupId);
     follow.setParameter(0, ActionParameterType.FLOAT, range);
 
-    owner.actionQueue.add(move);
-    owner.actionQueue.add(follow);
+    this.owner.actionQueue.add(move);
+    this.owner.actionQueue.add(follow);
     return ActionStatus.COMPLETE;
   }
 

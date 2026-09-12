@@ -1,5 +1,4 @@
 import { GameState } from "@/GameState";
-import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { DLGObject } from "@/resource/DLGObject";
 import { isCreature } from "@/module/guards/isCreature";
@@ -33,8 +32,7 @@ export function resolveDialogStartOwner(
   const player = GameState.PartyManager?.Player;
   const listenerIsPlayer = !!(listener.isPlayer || (player && listener === player));
   const callerIsPlayer = !!(caller.isPlayer || (player && caller === player));
-  const callerIsCreature = isCreature(caller);
-  const callerIsParty = callerIsCreature && !!(caller as ModuleCreature).isPartyMember?.();
+  const callerIsParty = isCreature(caller) && !!caller.isPartyMember?.();
 
   // Order matches engine behavior || short-circuit (listener check before caller check).
   if(listenerIsPlayer){
@@ -43,7 +41,7 @@ export function resolveDialogStartOwner(
   if(callerIsPlayer){
     return listener;
   }
-  if(!callerIsCreature || !callerIsParty){
+  if(!isCreature(caller) || !callerIsParty){
     return caller;
   }
   // Party CNPC → StartDialog(listener) — last speaker / ActionStartConversation caller

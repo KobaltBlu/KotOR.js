@@ -51,31 +51,30 @@ export class ActionFollowLeader extends Action {
       return ActionStatus.FAILED;
     }
 
-    const owner = this.owner as ModuleCreature;
     // party follow leader action — field438 = 3
-    setQuickWalkLocoState(owner, QuickWalkLocoState.FollowLeader);
+    setQuickWalkLocoState(this.owner, QuickWalkLocoState.FollowLeader);
 
     if(GameState.Mode == EngineMode.DIALOG){
-      owner.force = 0;
-      owner.speed = 0;
+      this.owner.force = 0;
+      this.owner.speed = 0;
       return ActionStatus.FAILED;
     }
 
     if(GameState.SOLOMODE){
-      this.parkIdle(owner);
+      this.parkIdle(this.owner);
       return ActionStatus.COMPLETE;
     }
 
     const leader = GameState.PartyManager.party[0];
-    if(!leader || leader === owner){
-      this.parkIdle(owner);
+    if(!leader || leader === this.owner){
+      this.parkIdle(this.owner);
       return ActionStatus.COMPLETE;
     }
 
     this.target = leader;
     // Sync in-safety range from party follow info into the SM runtime
-    if(owner.partyFollowInfo){
-      this.followRuntime.inSafetyRange = owner.partyFollowInfo.inSafetyRange | 0;
+    if(this.owner.partyFollowInfo){
+      this.followRuntime.inSafetyRange = this.owner.partyFollowInfo.inSafetyRange | 0;
     }
     // Seed lastSample once before first WaitingForPath LOS
     if(
@@ -83,11 +82,11 @@ export class ActionFollowLeader extends Action {
       this.followRuntime.lastSampleY === 0 &&
       this.followRuntime.lastSampleZ === 0
     ){
-      this.followRuntime.lastSampleX = owner.position.x;
-      this.followRuntime.lastSampleY = owner.position.y;
-      this.followRuntime.lastSampleZ = owner.position.z;
+      this.followRuntime.lastSampleX = this.owner.position.x;
+      this.followRuntime.lastSampleY = this.owner.position.y;
+      this.followRuntime.lastSampleZ = this.owner.position.z;
     }
-    _followOffset.copy(GameState.PartyManager.GetFollowPosition(owner));
+    _followOffset.copy(GameState.PartyManager.GetFollowPosition(this.owner));
     const offset = _followOffset;
 
     // retry loop; abort after stuck iterations → Reset
@@ -97,7 +96,7 @@ export class ActionFollowLeader extends Action {
       iterations++;
       const step = stepFollowLeaderState(
         this.followRuntime,
-        owner,
+        this.owner,
         leader,
         offset,
         delta
@@ -110,7 +109,7 @@ export class ActionFollowLeader extends Action {
     }
 
     if(teleport || this.followRuntime.state === FollowLeaderState.Teleport){
-      this.softTeleportForward(owner, leader, offset);
+      this.softTeleportForward(this.owner, leader, offset);
       return ActionStatus.IN_PROGRESS;
     }
 
@@ -120,10 +119,10 @@ export class ActionFollowLeader extends Action {
 
     // WaitDest / WaitingForPath — hold without clearing a pending path
     if(isFollowWaitState(this.followRuntime.state)){
-      owner.force = 0;
-      owner.speed = 0;
-      owner.moveDirOverride = undefined;
-      owner.clearLocomotionAnimation?.();
+      this.owner.force = 0;
+      this.owner.speed = 0;
+      this.owner.moveDirOverride = undefined;
+      this.owner.clearLocomotionAnimation?.();
       return ActionStatus.IN_PROGRESS;
     }
 
@@ -136,19 +135,19 @@ export class ActionFollowLeader extends Action {
         return ActionStatus.IN_PROGRESS;
       }
       this.followRuntime.offsetIdleTime += Math.max(0, delta);
-      owner.force = 0;
-      owner.speed = 0;
-      owner.moveDirOverride = undefined;
+      this.owner.force = 0;
+      this.owner.speed = 0;
+      this.owner.moveDirOverride = undefined;
       if(this.followRuntime.offsetIdleTime >= 0.25){
-        this.parkIdleSoft(owner);
+        this.parkIdleSoft(this.owner);
       }
-      this.lookAtLeader(owner, leader);
+      this.lookAtLeader(this.owner, leader);
       return ActionStatus.IN_PROGRESS;
     }
 
     // Fallback idle
-    this.parkIdle(owner);
-    this.lookAtLeader(owner, leader);
+    this.parkIdle(this.owner);
+    this.lookAtLeader(this.owner, leader);
     return ActionStatus.IN_PROGRESS;
   }
 

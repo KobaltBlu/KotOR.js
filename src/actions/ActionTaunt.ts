@@ -6,7 +6,6 @@ import { ActionType } from "@/enums/actions/ActionType";
 import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
 import { SkillType } from "@/enums/nwscript/SkillType";
 import { GameState } from "@/GameState";
-import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { Dice } from "@/utility/Dice";
 import { Utility } from "@/utility/Utility";
@@ -41,39 +40,36 @@ export class ActionTaunt extends Action {
       return ActionStatus.FAILED;
     }
 
-    const owner = this.owner as ModuleCreature;
-    const target = this.target as ModuleCreature;
-
-    const distance = Utility.Distance2D(owner.position, target.position);
+    const distance = Utility.Distance2D(this.owner.position, this.target.position);
     if(distance > 4.0){
       const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
-      actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, target.position.x);
-      actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, target.position.y);
-      actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, target.position.z);
+      actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
+      actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
+      actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);
       actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
-      actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, target.id);
+      actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, this.target.id);
       actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
       actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, 4.0);
       actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
       actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
-      owner.actionQueue.addFront(actionMoveToTarget);
+      this.owner.actionQueue.addFront(actionMoveToTarget);
       return ActionStatus.IN_PROGRESS;
     }
 
-    owner.setFacingObject(target);
+    this.owner.setFacingObject(this.target);
 
-    const tauntRoll = (owner.getSkillLevel(SkillType.PERSUADE) | 0) + Dice.roll(1, DiceType.d20);
-    const dc = 10 + (target.getSkillLevel(SkillType.PERSUADE) | 0);
+    const tauntRoll = (this.owner.getSkillLevel(SkillType.PERSUADE) | 0) + Dice.roll(1, DiceType.d20);
+    const dc = 10 + (this.target.getSkillLevel(SkillType.PERSUADE) | 0);
     if(tauntRoll < dc){
       return ActionStatus.FAILED;
     }
 
     const penalty = new GameState.GameEffectFactory.EffectAttackDecrease();
-    penalty.setCreator(owner);
+    penalty.setCreator(this.owner);
     penalty.setInt(0, 2);
     penalty.setDurationType(GameEffectDurationType.TEMPORARY);
     penalty.setDuration(30);
-    target.addEffect(penalty);
+    this.target.addEffect(penalty);
 
     return ActionStatus.COMPLETE;
   }

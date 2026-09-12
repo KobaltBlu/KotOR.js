@@ -3,7 +3,6 @@ import { DiceType } from "@/enums/combat/DiceType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { SkillType } from "@/enums/nwscript/SkillType";
-import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { Dice } from "@/utility/Dice";
 import { queueMoveIntoUseRange } from "@/actions/use-range";
@@ -37,23 +36,20 @@ export class ActionAnimalEmpathy extends Action {
       return ActionStatus.FAILED;
     }
 
-    const owner = this.owner as ModuleCreature;
-    const target = this.target as ModuleCreature;
-
-    if(queueMoveIntoUseRange(owner, target, this.groupId)){
+    if(queueMoveIntoUseRange(this.owner, this.target, this.groupId)){
       return ActionStatus.IN_PROGRESS;
     }
 
-    owner.setFacingObject(target);
+    this.owner.setFacingObject(this.target);
 
     // KotOR has no dedicated Animal Empathy skill; Awareness stands in as the check.
-    const roll = (owner.getSkillLevel(SkillType.AWARENESS) | 0) + Dice.roll(1, DiceType.d20);
-    const dc = 10 + (target.challengeRating | 0);
+    const roll = (this.owner.getSkillLevel(SkillType.AWARENESS) | 0) + Dice.roll(1, DiceType.d20);
+    const dc = 10 + (this.target.challengeRating | 0);
     if(roll < dc){
       return ActionStatus.FAILED;
     }
 
-    target.clearTarget();
+    this.target.clearTarget();
     return ActionStatus.COMPLETE;
   }
 

@@ -1,9 +1,7 @@
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
-import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
-import { ModuleDoor } from "@/module/ModuleDoor";
 import { Action } from "@/actions/Action";
 import { queueMoveIntoUseRange } from "@/actions/use-range";
 import { isDoor } from "@/module/guards/isDoor";
@@ -32,24 +30,23 @@ export class ActionCloseDoor extends Action {
     if(!isDoor(this.target))
       return ActionStatus.FAILED;
 
-    if(!(this.target as ModuleDoor).isOpen())
+    if(!this.target.isOpen())
       return ActionStatus.FAILED;
 
     if(isCreature(this.owner)){
-      const owner = this.owner as ModuleCreature;
-      if(queueMoveIntoUseRange(owner, this.target, this.groupId)){
+      if(queueMoveIntoUseRange(this.owner, this.target, this.groupId)){
         return ActionStatus.IN_PROGRESS;
       }
 
-      owner.setAnimationState(ModuleCreatureAnimState.IDLE);
-      owner.force = 0;
-      owner.speed = 0;
-      owner.setFacingObject(this.target);
-      (this.target as ModuleDoor).closeDoor(owner);
+      this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
+      this.owner.force = 0;
+      this.owner.speed = 0;
+      this.owner.setFacingObject(this.target);
+      this.target.closeDoor(this.owner);
       return ActionStatus.COMPLETE;
     }
 
-    (this.target as ModuleDoor).closeDoor(this.owner);
+    this.target.closeDoor(this.owner);
     return ActionStatus.COMPLETE;
   }
 

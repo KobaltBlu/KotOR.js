@@ -6,7 +6,6 @@ import { GameState } from "@/GameState";
 import { ICombatAction } from "@/interface/combat/ICombatAction";
 // import { ModuleObjectManager, PartyManager } from "@/managers";
 import { type ModuleObject } from "@/module/ModuleObject";
-import { type ModuleCreature } from "@/module/ModuleCreature";
 // import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GFFField } from "@/resource/GFFField";
@@ -118,13 +117,12 @@ export class Action {
     ){
       // Path sticky only — do not zero cam-relative playerControl (WASD re-asserts each frame)
       if(isCreature(this.owner)) {
-        const creature = this.owner as ModuleCreature;
-        creature.clearLocomotionState(false);
+        this.owner.clearLocomotionState(false);
         // ResetAtEndOfPath → field438 = 1 (paused)
-        setQuickWalkLocoState(creature, QuickWalkLocoState.Paused);
-        const computedPath = creature.getComputedPath();
+        setQuickWalkLocoState(this.owner, QuickWalkLocoState.Paused);
+        const computedPath = this.owner.getComputedPath();
         if(!!computedPath && computedPath === this.computedPath){
-          creature.setComputedPath(undefined);
+          this.owner.setComputedPath(undefined);
         }
       }
     }

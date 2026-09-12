@@ -6,7 +6,6 @@ import { ActionType } from "@/enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import { GameState } from "@/GameState";
-import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
 import type { ModuleObject } from "@/module/ModuleObject";
 import {
@@ -97,6 +96,7 @@ export class ActionItemCastSpell extends Action {
 
   private consumeItemCharges(oItem: ModuleItem){
     if(this.chargesConsumed || !oItem) return;
+    if(!isCreature(this.owner)) return;
     this.chargesConsumed = true;
     const propIndex = this.getParameter<number>(12) ?? 0;
     LOG('decrementUses', {
@@ -104,10 +104,10 @@ export class ActionItemCastSpell extends Action {
       tag: oItem.getTag?.(),
       stack: oItem.getStackSize?.(),
       propIndex,
-      party: !!(this.owner as ModuleCreature)?.isPartyMember?.(),
+      party: !!this.owner.isPartyMember?.(),
     });
     // DecrementUses — cost_value stack / charges / uses-per-day
-    oItem.decrementUses(this.owner as ModuleCreature, propIndex);
+    oItem.decrementUses(this.owner, propIndex);
   }
 
   private startSpellInstance(castTarget: ModuleObject | undefined, oItem?: ModuleItem){
@@ -161,27 +161,29 @@ export class ActionItemCastSpell extends Action {
     if(this.spell){
       this.spell.oTarget = castTarget;
     }
-    const owner = this.owner as ModuleCreature;
+    if(!isCreature(this.owner)){
+      return;
+    }
     if(oItem){
-      owner.spellCastItem = oItem;
+      this.owner.spellCastItem = oItem;
     }
     // Stamp caster level from the creature's last class; mark item-cast active
-    const lastClass = owner.classes?.[owner.classes.length - 1];
-    owner.baseClassLevel = (lastClass?.level | 0);
-    owner.itemSpellCastActive = true;
+    const lastClass = this.owner.classes?.[this.owner.classes.length - 1];
+    this.owner.baseClassLevel = (lastClass?.level | 0);
+    this.owner.itemSpellCastActive = true;
     if(this.spell?.setCasterLevel){
-      this.spell.setCasterLevel(owner.baseClassLevel);
+      this.spell.setCasterLevel(this.owner.baseClassLevel);
     }
-    if(owner.combatData){
-      owner.combatData.lastSpellTarget = castTarget;
+    if(this.owner.combatData){
+      this.owner.combatData.lastSpellTarget = castTarget;
     }
     if(castTarget){
       if(castTarget.combatData){
-        castTarget.combatData.lastSpellAttacker = owner;
+        castTarget.combatData.lastSpellAttacker = this.owner;
       }
       spellCastInstance.targetLocation.copy(castTarget.position);
     }
-    owner.spellTargetPosition.copy(spellCastInstance.targetLocation);
+    this.owner.spellTargetPosition.copy(spellCastInstance.targetLocation);
     const loc = spellCastInstance.targetLocation;
     LOG('SpellCastAndImpact', {
       spellId: this.spell?.id,
@@ -212,9 +214,9 @@ export class ActionItemCastSpell extends Action {
    * item-cast action switch on baseitems ItemType.
    */
   private resolveItemCastTiming(oItem: ModuleItem, targetPosition: THREE.Vector3): ItemCastTiming {
-    const creature = this.owner as ModuleCreature;
-    const modeltype = creature.creatureAppearance?.modeltype
-      ?? creature.getAppearance?.()?.modeltype;
+    const modeltype = isCreature(this.owner)
+      ? (this.owner.creatureAppearance?.modeltype ?? this.owner.getAppearance?.()?.modeltype)
+      : undefined;
     const distanceSq = targetPosition.distanceToSquared(this.owner.position);
     const timing = resolveItemCastTiming(
       oItem?.baseItem?.itemType,
@@ -224,7 +226,7 @@ export class ActionItemCastSpell extends Action {
     );
     // case 0xc: gate = GetAnimationLength(0x2AF9) - 0x32
     if(timing.postImpactAnim){
-      const lenSec = creature.getAnimationLength?.(timing.animation) || 0;
+      const lenSec = this.owner.getAnimationLength?.(timing.animation) || 0;
       timing.gateMs = resolveDroidUtilityGateMs(lenSec);
     }
     return timing;
@@ -240,7 +242,7 @@ export class ActionItemCastSpell extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
-    // Self-stamped casts: prefer owner when DWORD id matches owner.id so a
+    // Self-stamped casts: prefer this.owner when DWORD id matches this.owner.id so a
     // colliding ObjectList entry (companion on PLAYER_ID) cannot become MoveTo.
     const targetParam = this.parameters[0];
     const rawTargetId =
@@ -267,7 +269,7 @@ export class ActionItemCastSpell extends Action {
     this.spell = this.cachedSpell;
     const oItem = this.cachedItem || oItemParam;
     // Personal item casts (medpac etc.): if the stamped caster id failed to
-    // resolve, fall back to owner — never leave GetSpellTargetObject invalid
+    // resolve, fall back to this.owner — never leave GetSpellTargetObject invalid
     // so a nearby party member wins via shape queries.
     if(
       !this.target &&
@@ -301,8 +303,7 @@ export class ActionItemCastSpell extends Action {
       return ActionStatus.FAILED;
     }
 
-    const owner = this.owner as ModuleCreature;
-    if(owner.isDead() || owner.isDebilitated()){
+    if(this.owner.isDead() || this.owner.isDebilitated()){
       if(
         !this.castStarted &&
         this.spellCastInstance &&
@@ -388,9 +389,9 @@ export class ActionItemCastSpell extends Action {
       // : hostilesetting==0 → ActivityManager(2); else ActivityManager(1)
       // + SetCombatState(1,1). Grenades force StartCombatRound(engaged=1).
       const hostile = (this.spell.hostilesetting | 0) === 1;
-      owner.activityManager(hostile ? 1 : 2);
+      this.owner.activityManager(hostile ? 1 : 2);
       if(hostile){
-        owner.setCombatState(true, ExcitedDurationRow.SpellCast);
+        this.owner.setCombatState(true, ExcitedDurationRow.SpellCast);
       }
 
       if(timing.grenade){
@@ -404,9 +405,9 @@ export class ActionItemCastSpell extends Action {
       combatRound.decrementRoundLength(timing.pauseMs);
 
       if(timing.grenade || hostile){
-        owner.broadcastCombatStateToParty(owner);
-        owner.setExcitedState(ExcitedDurationRow.SpellCast);
-        owner.removeCombatInvisibilityEffects();
+        this.owner.broadcastCombatStateToParty(this.owner);
+        this.owner.setExcitedState(ExcitedDurationRow.SpellCast);
+        this.owner.removeCombatInvisibilityEffects();
       }
     }
 
@@ -423,8 +424,8 @@ export class ActionItemCastSpell extends Action {
         timing.animOnTarget &&
         this.target &&
         isCreature(this.target)
-          ? (this.target as ModuleCreature)
-          : owner;
+          ? this.target
+          : this.owner;
       animTarget.setAnimationState(timing.animation);
     }
 
@@ -432,12 +433,12 @@ export class ActionItemCastSpell extends Action {
     // before ItemCastSpell; combat-round dispatch skips that — animate turn
     // (FacePoint is instant and snaps every tick).
     if(this.target){
-      owner.setFacingObject(this.target);
+      this.owner.setFacingObject(this.target);
     }else{
-      owner.setFacing(
+      this.owner.setFacing(
         Math.atan2(
-          owner.position.y - targetPosition.y,
-          owner.position.x - targetPosition.x
+          this.owner.position.y - targetPosition.y,
+          this.owner.position.x - targetPosition.x
         ) + Math.PI / 2,
         false
       );
@@ -465,14 +466,14 @@ export class ActionItemCastSpell extends Action {
           stack: oItem.getStackSize?.(),
           costValue: prop?.costValue,
         });
-        owner.setAnimationState(ModuleCreatureAnimState.READY);
+        this.owner.setAnimationState(ModuleCreatureAnimState.READY);
         GameState.FeedbackMessageManager?.SendFeedbackMessage?.(FEEDBACK_ITEM_NO_USES);
         combatRound.removeSpellActionFromRound?.();
         combatRound.processPendingCombatActions?.();
         return ActionStatus.FAILED;
       }
 
-      // Object target only when present — never fall back to owner (location casts)
+      // Object target only when present — never fall back to this.owner (location casts)
       this.startSpellInstance(this.target || undefined, oItem);
       // DecrementUses fires with SpellCastAndImpact, not at round end
       this.consumeItemCharges(oItem);
@@ -481,19 +482,19 @@ export class ActionItemCastSpell extends Action {
       combatRound.removeSpellAction();
       // droid utility (0x0c): post-impact hold uses anim 0x2AFA
       if(timing.postImpactAnim){
-        owner.setAnimationState(timing.postImpactAnim);
+        this.owner.setAnimationState(timing.postImpactAnim);
         this.throwAnim = timing.postImpactAnim;
       }
     }
 
     if(this.elapsedMs >= timing.pauseMs){
-      owner.setAnimationState(ModuleCreatureAnimState.READY);
+      this.owner.setAnimationState(ModuleCreatureAnimState.READY);
       if(
         timing.animOnTarget &&
         this.target &&
         isCreature(this.target)
       ){
-        (this.target as ModuleCreature).setAnimationState(ModuleCreatureAnimState.READY);
+        this.target.setAnimationState(ModuleCreatureAnimState.READY);
       }
       // SpellCastAndImpact is a fire-and-forget event — a grenade still
       // in flight must finish on the area, not be interrupted by dispose.

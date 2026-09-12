@@ -2,7 +2,6 @@ import { Action } from "@/actions/Action";
 import { ActionParameterType, ActionStatus, ActionType } from "@/enums";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { GameState } from "@/GameState";
-import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
 import { queueMoveIntoUseRange } from "@/actions/use-range";
 
@@ -33,21 +32,20 @@ export class ActionPickUpItem extends Action {
       return ActionStatus.FAILED;
     }
 
-    const owner: ModuleCreature = this.owner as ModuleCreature;
     const oItem = this.getParameter<ModuleItem>(0);
 
     if(!isItem(oItem)){
       return ActionStatus.FAILED;
     }
 
-    if(queueMoveIntoUseRange(owner, oItem, this.groupId)){
+    if(queueMoveIntoUseRange(this.owner, oItem, this.groupId)){
       return ActionStatus.IN_PROGRESS;
     }
 
-    owner.setAnimationState(ModuleCreatureAnimState.IDLE);
-    owner.force = 0;
-    owner.speed = 0;
-    owner.setFacingObject(oItem);
+    this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
+    this.owner.force = 0;
+    this.owner.speed = 0;
+    this.owner.setFacingObject(oItem);
 
     oItem.placedInWorld = false;
     if(oItem.area){
@@ -63,10 +61,10 @@ export class ActionPickUpItem extends Action {
       oItem.model.removeFromParent();
     }
 
-    if(GameState.PartyManager.party.indexOf(owner) >= 0){
+    if(GameState.PartyManager.party.indexOf(this.owner) >= 0){
       GameState.InventoryManager.addItem(oItem);
     }else{
-      owner.addItem(oItem);
+      this.owner.addItem(oItem);
     }
 
     return ActionStatus.COMPLETE;

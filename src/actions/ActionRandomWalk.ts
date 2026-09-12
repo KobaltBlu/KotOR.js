@@ -1,7 +1,6 @@
 import * as THREE from "three";
 import { GameState } from "@/GameState";
 import { ActionParameterType, ActionStatus, ActionType } from "@/enums";
-import type { ModuleCreature } from "@/module/ModuleCreature";
 import { Action } from "@/actions/Action";
 
 import { isCreature } from "@/module/guards/isCreature";
@@ -33,9 +32,7 @@ export class ActionRandomWalk extends Action {
       return ActionStatus.FAILED;
     }
 
-    const owner: ModuleCreature = this.owner as ModuleCreature;
-
-    if(!owner.room || !owner.room.collisionManager.walkmesh){
+    if(!this.owner.room || !this.owner.room.collisionManager.walkmesh){
       return ActionStatus.FAILED;
     }
 
@@ -43,7 +40,7 @@ export class ActionRandomWalk extends Action {
     let maxDistance = 1.5;
     let position = new THREE.Vector3();
 
-    const faces = owner.room.collisionManager.walkmesh.walkableFaces;
+    const faces = this.owner.room.collisionManager.walkmesh.walkableFaces;
     const face = faces[Math.floor(Math.random()*faces.length)];
 
     if(!face){
@@ -62,7 +59,7 @@ export class ActionRandomWalk extends Action {
     action.setParameter(6, ActionParameterType.FLOAT, Math.max(1.5, maxDistance));
     action.setParameter(7, ActionParameterType.INT, 0);
     action.setParameter(8, ActionParameterType.FLOAT, 30.0);
-    owner.actionQueue.addFront(action);
+    this.owner.actionQueue.addFront(action);
 
     return ActionStatus.IN_PROGRESS;
   }

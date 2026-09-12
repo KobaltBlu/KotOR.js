@@ -1,7 +1,6 @@
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { Action } from "@/actions/Action";
-import type { ModuleCreature } from "@/module/ModuleCreature";
 
 import { isCreature } from "@/module/guards/isCreature";
 enum ActionPlayAnimationType
@@ -57,20 +56,19 @@ export class ActionPlayAnimation extends Action {
       return ActionStatus.FAILED;
     }
 
-    const owner = this.owner as ModuleCreature;
     if(!this.bInitialized){
-      if(isCreature(owner) && typeof owner.applyAnimationByMode === 'function'){
-        if(this.overlayAnimation && typeof owner.playOverlayAnimation === 'function'){
-          owner.playOverlayAnimation(this.animation);
+      if(isCreature(this.owner) && typeof this.owner.applyAnimationByMode === 'function'){
+        if(this.overlayAnimation && typeof this.owner.playOverlayAnimation === 'function'){
+          this.owner.playOverlayAnimation(this.animation);
         }else{
-          owner.applyAnimationByMode(this.animation, this.speed || 1);
+          this.owner.applyAnimationByMode(this.animation, this.speed || 1);
         }
       }else{
-        owner.setAnimationState(this.animation);
+        this.owner.setAnimationState(this.animation);
       }
     }
 
-    this.animationLength = owner.getAnimationLength(this.animation);
+    this.animationLength = this.owner.getAnimationLength(this.animation);
     this.bInitialized = true;
 
     //If the time is -1, the animation will loop until the next animation is applied

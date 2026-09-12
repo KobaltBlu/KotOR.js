@@ -3,7 +3,6 @@ import { ActionType } from "@/enums/actions/ActionType";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { GameState } from "@/GameState";
-import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { Action } from "@/actions/Action";
 import { queueMoveIntoUseRange } from "@/actions/use-range";
@@ -45,12 +44,11 @@ export class ActionUseObject extends Action {
 
     // Mid-action bag spawn / KeepCorpse: loot via getLootUseTarget
     if(isCreature(target)){
-      const creature = target as ModuleCreature;
       if(
-        (typeof creature.isDead === 'function' && creature.isDead())
-        || creature.isRetainedCorpse
+        (typeof target.isDead === 'function' && target.isDead())
+        || target.isRetainedCorpse
       ){
-        const lootTarget = creature.getLootUseTarget?.();
+        const lootTarget = target.getLootUseTarget?.();
         if(isObject(lootTarget)){
           if(lootTarget.id !== target.id){
             this.setParameter(0, ActionParameterType.DWORD, lootTarget.id);
@@ -75,21 +73,20 @@ export class ActionUseObject extends Action {
       return ActionStatus.FAILED;
     }
 
-    const owner = this.owner as ModuleCreature;
-    if(queueMoveIntoUseRange(owner, this.target, this.groupId)){
+    if(queueMoveIntoUseRange(this.owner, this.target, this.groupId)){
       return ActionStatus.IN_PROGRESS;
     }
 
     // Match ActionOpenDoor: once GetIsInUseRange (queueMove returned false), use.
     // Do not FAILED-out — WalkUpdate can leave us in the +0.1 slack band where a
     // second isInUseRange flake would drop the interaction (re-click required).
-    owner.setAnimationState(ModuleCreatureAnimState.IDLE);
-    owner.force = 0;
-    owner.speed = 0;
-    owner.setFacingObject(this.target);
+    this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
+    this.owner.force = 0;
+    this.owner.speed = 0;
+    this.owner.setFacingObject(this.target);
 
     if(this.target != GameState.PartyManager.Player){
-      this.target.use(owner);
+      this.target.use(this.owner);
     }
 
     return ActionStatus.COMPLETE;

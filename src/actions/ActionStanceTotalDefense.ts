@@ -2,7 +2,6 @@ import { Action } from "@/actions/Action";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
-import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 
 import { isCreature } from "@/module/guards/isCreature";
@@ -34,26 +33,25 @@ export class ActionStanceTotalDefense extends Action {
       return ActionStatus.ERROR;
     }
 
-    const owner = this.owner as ModuleCreature;
-    if(owner.isDead?.() || owner.isDebilitated?.()){
-      owner.clearCombatMode?.();
+    if(this.owner.isDead?.() || this.owner.isDebilitated?.()){
+      this.owner.clearCombatMode?.();
       return ActionStatus.ERROR;
     }
 
     this.target = this.getParameter<ModuleObject>(0);
     if(!isObject(this.target)){
-      owner.clearCombatMode?.();
+      this.owner.clearCombatMode?.();
       return ActionStatus.ERROR;
     }
 
     if(!this.started){
       this.started = true;
       this.elapsed = 0;
-      owner.setAnimationState?.(ModuleCreatureAnimState.READY);
-      owner.combatData?.setAttemptedAttackTargetIfInvalid?.(this.target);
-      owner.setFacingObject?.(this.target);
-      if(typeof owner.broadcastCombatStateToParty === 'function'){
-        owner.broadcastCombatStateToParty();
+      this.owner.setAnimationState?.(ModuleCreatureAnimState.READY);
+      this.owner.combatData?.setAttemptedAttackTargetIfInvalid?.(this.target);
+      this.owner.setFacingObject?.(this.target);
+      if(typeof this.owner.broadcastCombatStateToParty === 'function'){
+        this.owner.broadcastCombatStateToParty();
       }
     }
 

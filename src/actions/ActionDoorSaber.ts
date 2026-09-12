@@ -64,36 +64,35 @@ export class ActionDoorSaber extends Action {
       return ActionStatus.ERROR;
     }
 
-    const owner = this.owner as ModuleCreature;
-    if(owner.isDead?.() || owner.isDebilitated?.()){
-      this.stopBar(owner);
+    if(this.owner.isDead?.() || this.owner.isDebilitated?.()){
+      this.stopBar(this.owner);
       return ActionStatus.ERROR;
     }
 
     this.target = this.getParameter<ModuleObject>(0);
     if(!isDoor(this.target)){
-      this.stopBar(owner);
+      this.stopBar(this.owner);
       return ActionStatus.ERROR;
     }
 
     const faced = this.getParameter<number>(1) || 0;
     const timingStarted = this.getParameter<number>(2) || 0;
 
-    this.powerSabers(owner);
+    this.powerSabers(this.owner);
 
-    if(queueMoveIntoUseRange(owner, this.target, this.groupId)){
+    if(queueMoveIntoUseRange(this.owner, this.target, this.groupId)){
       return ActionStatus.IN_PROGRESS;
     }
 
-    owner.force = 0;
-    owner.speed = 0;
-    owner.setFacingObject?.(this.target);
+    this.owner.force = 0;
+    this.owner.speed = 0;
+    this.owner.setFacingObject?.(this.target);
 
     if(!faced){
-      this.requeueSelf(owner, this.target, 1, 0);
+      this.requeueSelf(this.owner, this.target, 1, 0);
       const face = new GameState.ActionFactory.ActionChangeFacingObject(undefined, this.groupId);
       face.setParameter(0, ActionParameterType.DWORD, this.target.id);
-      owner.actionQueue.addFront(face);
+      this.owner.actionQueue.addFront(face);
       return ActionStatus.COMPLETE;
     }
 
@@ -104,13 +103,13 @@ export class ActionDoorSaber extends Action {
       anim.setParameter(2, ActionParameterType.FLOAT, 2.0);
       anim.setParameter(3, ActionParameterType.INT, 1);
 
-      this.requeueSelf(owner, this.target, 1, 1);
-      owner.actionQueue.addFront(anim);
+      this.requeueSelf(this.owner, this.target, 1, 1);
+      this.owner.actionQueue.addFront(anim);
 
       GameState.GuiTimingBarManager?.startMs?.(
         DOOR_SABER_BAR_MS,
         '',
-        owner,
+        this.owner,
         DOOR_SABER_BAR_TYPE
       );
       return ActionStatus.COMPLETE;
@@ -119,15 +118,15 @@ export class ActionDoorSaber extends Action {
     // Timing finished — open locked door (clears lock then OpenDoor)
     if(this.target.isLocked() || this.target.locked){
       this.target.setLocked(false);
-      this.target.openDoor(owner);
+      this.target.openDoor(this.owner);
     }else{
       GameState.FeedbackMessageManager?.SendFeedbackMessage?.(0xe);
-      this.stopBar(owner);
+      this.stopBar(this.owner);
       return ActionStatus.ERROR;
     }
 
-    this.stopBar(owner);
-    owner.setAnimationState?.(ModuleCreatureAnimState.IDLE);
+    this.stopBar(this.owner);
+    this.owner.setAnimationState?.(ModuleCreatureAnimState.IDLE);
     return ActionStatus.COMPLETE;
   }
 

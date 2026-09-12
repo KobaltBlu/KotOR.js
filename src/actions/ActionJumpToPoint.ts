@@ -61,11 +61,9 @@ export class ActionJumpToPoint extends Action {
       return ActionStatus.FAILED;
     }
 
-    const creature = this.owner as ModuleCreature;
-
     // : leave limbo when jumping from area-less state
-    if(GameState.module?.isObjectInLimbo(creature) && !creature.area){
-      GameState.module.removeObjectFromLimbo(creature);
+    if(GameState.module?.isObjectInLimbo(this.owner) && !this.owner.area){
+      GameState.module.removeObjectFromLimbo(this.owner);
     }
 
     let destArea: ModuleArea | undefined;
@@ -91,18 +89,18 @@ export class ActionJumpToPoint extends Action {
     }
 
     if(!destArea){
-      destArea = creature.area || GameState.module?.area;
+      destArea = this.owner.area || GameState.module?.area;
     }
 
     const classified = classifyJumpDestination(
-      creature.area,
+      this.owner.area,
       destArea,
       GameState.module?.filename || ''
     );
 
     if(classified.kind === 'loadModule' && classified.moduleName){
       const pc = GameState.getCurrentPlayer?.() || GameState.PartyManager?.party?.[0];
-      if(creature === pc || creature.controlled){
+      if(this.owner === pc || this.owner.controlled){
         GameState.LoadModuleWithJumpSpawn(classified.moduleName.toLowerCase(), {
           x: this.x,
           y: this.y,
@@ -117,14 +115,14 @@ export class ActionJumpToPoint extends Action {
     }
 
     if(classified.kind === 'reattach' && classified.area){
-      applyAddToArea(creature, classified.area);
+      applyAddToArea(this.owner, classified.area);
     }
 
-    applyLocalJump(creature, this.x, this.y, this.z, this.facing);
+    applyLocalJump(this.owner, this.x, this.y, this.z, this.facing);
 
     const leader = GameState.PartyManager?.party?.[0];
-    if(creature === leader){
-      GameState.PartyManager.resetFollowPath(creature);
+    if(this.owner === leader){
+      GameState.PartyManager.resetFollowPath(this.owner);
     }
 
     return ActionStatus.COMPLETE;

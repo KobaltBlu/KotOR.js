@@ -42,7 +42,6 @@ export class ActionForceFollowObject extends Action {
       return ActionStatus.FAILED;
     }
 
-    const owner = this.owner as ModuleCreature;
     this.target = this.getParameter<ModuleObject>(0);
     const fDistance = this.getParameter<number>(1) || 0.0;
 
@@ -50,29 +49,28 @@ export class ActionForceFollowObject extends Action {
       return ActionStatus.FAILED;
     }
 
-    if(this.target.isDead() || owner.isDead() || owner.isDebilitated()){
+    if(this.target.isDead() || this.owner.isDead() || this.owner.isDebilitated()){
       return ActionStatus.ERROR;
     }
 
-    const followTarget = this.target as ModuleCreature;
     // NWScript fFollowDistance; re-queue also uses GetFollowRange
     const scriptDist = fDistance > 0 ? fDistance : 0;
     const partyRange = partyFollowPath.getFollowRange?.() ?? 5.0;
     const followDistance = scriptDist > 0 ? scriptDist : partyRange;
 
-    this.computeFollowGoal(owner, followTarget, followDistance, _followGoal);
+    this.computeFollowGoal(this.owner, this.target, followDistance, _followGoal);
     const goal = _followGoal;
-    const distGoal = Utility.Distance2D(owner.position, goal);
+    const distGoal = Utility.Distance2D(this.owner.position, goal);
     // : GetFollowRange² vs |goal − follower|² (hold when inside)
     const holdRange = scriptDist > 0 ? followDistance : partyRange;
 
     if(distGoal <= holdRange){
-      this.parkHold(owner);
+      this.parkHold(this.owner);
       return ActionStatus.IN_PROGRESS;
     }
 
     // Outside range — AddMoveToFront + Wait + Check(0x37), then pop self
-    this.enqueueCatchUp(owner, followTarget, goal, holdRange);
+    this.enqueueCatchUp(this.owner, this.target, goal, holdRange);
     return ActionStatus.COMPLETE;
   }
 

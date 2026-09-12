@@ -1,7 +1,6 @@
 import { Action } from "@/actions/Action";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
-import type { ModuleCreature } from "@/module/ModuleCreature";
 import { isCreature } from "@/module/guards/isCreature";
 
 /**
@@ -27,19 +26,18 @@ export class ActionEncounterCreatureDestroySelf extends Action {
       return ActionStatus.ERROR;
     }
 
-    const owner = this.owner as ModuleCreature;
-    if(owner.isDead?.()){
+    if(this.owner.isDead?.()){
       return ActionStatus.ERROR;
     }
 
     // : unlink from encounter active list, then mark encounter-unlinked
-    owner.unlinkFromEncounter(true);
+    this.owner.unlinkFromEncounter(true);
 
     // clears commandable and queues destroy in 5000ms
-    owner.setCommandable(false);
-    owner.setWillDestroy?.(true);
+    this.owner.setCommandable(false);
+    this.owner.setWillDestroy?.(true);
 
-    const creature = owner;
+    const creature = this.owner;
     setTimeout(() => {
       if(!creature.destroyed){
         creature.destroy();

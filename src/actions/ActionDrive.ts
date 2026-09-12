@@ -97,8 +97,7 @@ export class ActionDrive extends Action {
       return ActionStatus.ERROR;
     }
 
-    const owner = this.owner as ModuleCreature;
-    if(owner.isDead?.() || !owner.area){
+    if(this.owner.isDead?.() || !this.owner.area){
       return ActionStatus.ERROR;
     }
 
@@ -110,16 +109,16 @@ export class ActionDrive extends Action {
     const clientY = this.getParameter<number>(1);
 
     if(!this.destInitialized || refresh){
-      this.buildDestination(owner, flags, packedFacing, clientX, clientY);
+      this.buildDestination(this.owner, flags, packedFacing, clientX, clientY);
       this.setParameter(6, ActionParameterType.INT, 0);
       this.destInitialized = true;
     }
 
     // Facing-only (or empty move): orientation applied in buildDestination
-    if(this.destination.distanceToSquared(owner.position) < 1e-8){
-      owner.force = 0;
-      owner.speed = 0;
-      owner.setAnimationState(ModuleCreatureAnimState.IDLE);
+    if(this.destination.distanceToSquared(this.owner.position) < 1e-8){
+      this.owner.force = 0;
+      this.owner.speed = 0;
+      this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
       return ActionStatus.COMPLETE;
     }
 
@@ -127,24 +126,24 @@ export class ActionDrive extends Action {
     let facingRad = this.facingRadFromPacked(packedFacing);
     if(flags & DRIVE_YAW_LEFT) facingRad += YAW_DEG * DEG2RAD;
     else if(flags & DRIVE_YAW_RIGHT) facingRad -= YAW_DEG * DEG2RAD;
-    owner.setFacing(facingRad - Math.PI / 2, false, TURN_SPEED_FAST);
+    this.owner.setFacing(facingRad - Math.PI / 2, false, TURN_SPEED_FAST);
 
     if((flags & DRIVE_RUN) === DRIVE_RUN){
-      owner.setAnimationState(ModuleCreatureAnimState.RUNNING);
+      this.owner.setAnimationState(ModuleCreatureAnimState.RUNNING);
     }else if((flags & DRIVE_STRAFE_LEFT) !== 0){
-      owner.setAnimationState(ModuleCreatureAnimState.WALKING); // 0x275e
+      this.owner.setAnimationState(ModuleCreatureAnimState.WALKING); // 0x275e
     }else if((flags & DRIVE_STRAFE_RIGHT) !== 0){
-      owner.setAnimationState(ModuleCreatureAnimState.WALKING); // 0x275f
+      this.owner.setAnimationState(ModuleCreatureAnimState.WALKING); // 0x275f
     }else if((flags & DRIVE_BACKWARD) === DRIVE_BACKWARD){
-      owner.setAnimationState(ModuleCreatureAnimState.WALKING_BACK);
+      this.owner.setAnimationState(ModuleCreatureAnimState.WALKING_BACK);
     }else{
-      owner.setAnimationState(ModuleCreatureAnimState.WALKING);
+      this.owner.setAnimationState(ModuleCreatureAnimState.WALKING);
     }
 
     const strafing =
       (flags & DRIVE_STRAFE_LEFT) !== 0 || (flags & DRIVE_STRAFE_RIGHT) !== 0;
     const result = updateCreatureDrive(
-      owner,
+      this.owner,
       this.destination,
       this.running,
       delta,
@@ -152,21 +151,21 @@ export class ActionDrive extends Action {
     );
 
     if(result === DriveUpdateResult.BLOCKED){
-      owner.force = 0;
-      owner.setAnimationState(ModuleCreatureAnimState.IDLE);
+      this.owner.force = 0;
+      this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
       return ActionStatus.ERROR;
     }
 
     if(result === DriveUpdateResult.ARRIVED){
-      owner.force = 0;
-      owner.speed = 0;
-      owner.setAnimationState(ModuleCreatureAnimState.IDLE);
+      this.owner.force = 0;
+      this.owner.speed = 0;
+      this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
 
       // : on return 2 with retry > 1, requeue AddDriveAction
       if(retry > 1){
         const cont = ActionDrive.create(
-          owner.position.x,
-          owner.position.y,
+          this.owner.position.x,
+          this.owner.position.y,
           this.facingDegFromPacked(packedFacing),
           flags,
           {
@@ -176,16 +175,16 @@ export class ActionDrive extends Action {
             groupId: this.groupId,
           }
         );
-        owner.actionQueue.addFront(cont);
+        this.owner.actionQueue.addFront(cont);
       }
       return ActionStatus.COMPLETE;
     }
 
-    if((owner as any).blockingTimer >= 5 || owner.collisionTimer >= 1){
-      (owner as any).blockingTimer = 0;
-      owner.collisionTimer = 0;
-      owner.force = 0;
-      owner.setAnimationState(ModuleCreatureAnimState.IDLE);
+    if((this.owner as any).blockingTimer >= 5 || this.owner.collisionTimer >= 1){
+      (this.owner as any).blockingTimer = 0;
+      this.owner.collisionTimer = 0;
+      this.owner.force = 0;
+      this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
       return ActionStatus.ERROR;
     }
 

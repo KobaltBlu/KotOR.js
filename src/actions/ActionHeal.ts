@@ -7,7 +7,6 @@ import { DiceType } from "@/enums/combat/DiceType";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { SkillType } from "@/enums/nwscript/SkillType";
 import { GameState } from "@/GameState";
-import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { Dice } from "@/utility/Dice";
@@ -54,8 +53,7 @@ export class ActionHeal extends Action {
       return ActionStatus.ERROR;
     }
 
-    const owner = this.owner as ModuleCreature;
-    if (owner.isDead() || owner.isDebilitated()) {
+    if (this.owner.isDead() || this.owner.isDebilitated()) {
       this.animQueued = false;
       return ActionStatus.ERROR;
     }
@@ -73,7 +71,7 @@ export class ActionHeal extends Action {
       return ActionStatus.ERROR;
     }
 
-    if (!isInUseRange(owner, this.target)) {
+    if (!isInUseRange(this.owner, this.target)) {
       if (!allowMove) {
         this.animQueued = false;
         return ActionStatus.ERROR;
@@ -82,12 +80,12 @@ export class ActionHeal extends Action {
       this.setParameter(3, ActionParameterType.INT, 0);
       const face = new GameState.ActionFactory.ActionChangeFacingObject(undefined, this.groupId);
       face.setParameter(0, ActionParameterType.DWORD, this.target);
-      owner.actionQueue.addFront(face);
-      queueMoveIntoUseRange(owner, this.target, this.groupId);
+      this.owner.actionQueue.addFront(face);
+      queueMoveIntoUseRange(this.owner, this.target, this.groupId);
       return ActionStatus.IN_PROGRESS;
     }
 
-    owner.setFacingObject(this.target);
+    this.owner.setFacingObject(this.target);
 
     if (!this.animQueued) {
       this.animQueued = true;
@@ -95,12 +93,12 @@ export class ActionHeal extends Action {
       playAnim.setParameter(0, ActionParameterType.INT, HEAL_ANIM);
       playAnim.setParameter(1, ActionParameterType.FLOAT, 1.0);
       playAnim.setParameter(2, ActionParameterType.FLOAT, 2.0);
-      owner.actionQueue.addFront(playAnim);
+      this.owner.actionQueue.addFront(playAnim);
       return ActionStatus.IN_PROGRESS;
     }
 
-    // always GetSkillRank(7 /* Treat Injury */, target, 0)
-    const skillRank = owner.getSkillLevel(SkillType.TREAT_INJURY) | 0;
+    // always GetSkillRank(7 /* Treat Injury */, target)
+    const skillRank = this.owner.getSkillLevel(SkillType.TREAT_INJURY) | 0;
     let roll = Dice.roll(1, DiceType.d20);
     // auto-20 cheat — no JS hook yet; leave natural roll.
     const autoFlag = 0;
@@ -142,7 +140,7 @@ export class ActionHeal extends Action {
       result,
     });
 
-    const inventory = owner.getInventory();
+    const inventory = this.owner.getInventory();
     if (!GameState.infiniteUses && inventory.includes(item)) {
       const stack = item.getStackSize();
       if (stack <= 1) {
@@ -157,12 +155,12 @@ export class ActionHeal extends Action {
     }
 
     const healEffect = new GameState.GameEffectFactory.EffectHeal();
-    healEffect.setCreator(owner);
+    healEffect.setCreator(this.owner);
     healEffect.setInt(0, total);
     this.target.addEffect(healEffect);
 
     const vfx = new GameState.GameEffectFactory.EffectVisualEffect();
-    vfx.setCreator(owner);
+    vfx.setCreator(this.owner);
     vfx.setInt(0, HEAL_VFX);
     this.target.addEffect(vfx);
 

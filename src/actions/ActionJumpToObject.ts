@@ -1,6 +1,5 @@
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
-import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { Action } from "@/actions/Action";
 import { GameState } from "@/GameState";
@@ -38,17 +37,16 @@ export class ActionJumpToObject extends Action {
       return ActionStatus.FAILED;
     }
 
-    const creature = this.owner as ModuleCreature;
     const destArea = this.target.area || GameState.module?.area;
     const classified = classifyJumpDestination(
-      creature.area,
+      this.owner.area,
       destArea,
       GameState.module?.filename || ''
     );
 
     if(classified.kind === 'loadModule' && classified.moduleName){
       const pc = GameState.getCurrentPlayer?.() || GameState.PartyManager?.party?.[0];
-      if(creature === pc || creature.controlled){
+      if(this.owner === pc || this.owner.controlled){
         const rot = this.target.getRotationFromBearing?.() || this.target.rotation;
         GameState.LoadModuleWithJumpSpawn(classified.moduleName.toLowerCase(), {
           x: this.target.position.x,
@@ -63,11 +61,11 @@ export class ActionJumpToObject extends Action {
     }
 
     if(classified.kind === 'reattach' && classified.area){
-      applyAddToArea(creature, classified.area);
+      applyAddToArea(this.owner, classified.area);
     }
 
     applyLocalJump(
-      creature,
+      this.owner,
       this.target.position.x,
       this.target.position.y,
       this.target.position.z,
@@ -75,8 +73,8 @@ export class ActionJumpToObject extends Action {
     );
 
     const leader = GameState.PartyManager?.party?.[0];
-    if(creature === leader){
-      GameState.PartyManager.resetFollowPath(creature);
+    if(this.owner === leader){
+      GameState.PartyManager.resetFollowPath(this.owner);
     }
 
     return ActionStatus.COMPLETE;

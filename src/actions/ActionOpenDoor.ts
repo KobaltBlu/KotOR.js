@@ -1,8 +1,6 @@
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import type { ModuleDoor } from "@/module/ModuleDoor";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { Action } from "@/actions/Action";
 import { queueMoveIntoUseRange } from "@/actions/use-range";
@@ -34,27 +32,25 @@ export class ActionOpenDoor extends Action {
       return ActionStatus.FAILED;
     }
 
-    const door = this.target as ModuleDoor;
-    if(door.isOpen()){
+    if(this.target.isOpen()){
       return ActionStatus.FAILED;
     }
 
     if(isCreature(this.owner)){
-      const owner = this.owner as ModuleCreature;
-      if(queueMoveIntoUseRange(owner, this.target, this.groupId)){
+      if(queueMoveIntoUseRange(this.owner, this.target, this.groupId)){
         return ActionStatus.IN_PROGRESS;
       }
 
-      owner.setAnimationState(ModuleCreatureAnimState.IDLE);
-      owner.force = 0;
-      owner.speed = 0;
-      owner.setFacingObject(this.target);
-      door.use(owner);
+      this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
+      this.owner.force = 0;
+      this.owner.speed = 0;
+      this.owner.setFacingObject(this.target);
+      this.target.use(this.owner);
       return ActionStatus.COMPLETE;
     }
 
     // AssignCommand(oDoor, ActionOpenDoor(oDoor)) — open directly (parity with ActionCloseDoor)
-    door.openDoor(this.owner);
+    this.target.openDoor(this.owner);
     return ActionStatus.COMPLETE;
   }
 

@@ -3,9 +3,7 @@ import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
-import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
-import type { ModuleTrigger } from "@/module/ModuleTrigger";
 import { Action } from "@/actions/Action";
 import { markTrapDetected, MineSkillResult, resolveMineSkillCheck } from "@/actions/mine-skill";
 import { queueMoveIntoUseRange } from "@/actions/use-range";
@@ -56,12 +54,11 @@ export class ActionFlagMine extends Action {
     }
 
     if(isTrigger(this.target)){
-      const trap = this.target as ModuleTrigger;
-      if(trap.type != ModuleTriggerType.TRAP){
+      if(this.target.type != ModuleTriggerType.TRAP){
         GameState.GuiTimingBarManager?.stopFor?.(this.owner);
         return ActionStatus.FAILED;
       }
-      if(trap.trapDetected){
+      if(this.target.trapDetected){
         GameState.GuiTimingBarManager?.stopFor?.(this.owner);
         return ActionStatus.COMPLETE;
       }
@@ -70,34 +67,33 @@ export class ActionFlagMine extends Action {
       return ActionStatus.COMPLETE;
     }
 
-    const owner = this.owner as ModuleCreature;
-    if(queueMoveIntoUseRange(owner, this.target, this.groupId, { extraRange: 0.0 })){
+    if(queueMoveIntoUseRange(this.owner, this.target, this.groupId, { extraRange: 0.0 })){
       return ActionStatus.IN_PROGRESS;
     }
 
     if(!this.animQueued){
       this.animQueued = true;
-      owner.setFacingObject(this.target);
+      this.owner.setFacingObject(this.target);
       // : 0x274b trigger, 0x274c door/placeable
       const animId = (isDoor || isPlaceable) ? 0x274c : 0x274b;
       const playAnim = new GameState.ActionFactory.ActionPlayAnimation();
       playAnim.setParameter(0, ActionParameterType.INT, animId);
       playAnim.setParameter(1, ActionParameterType.FLOAT, 1.0);
       playAnim.setParameter(2, ActionParameterType.FLOAT, 4.5);
-      owner.actionQueue.addFront(playAnim);
+      this.owner.actionQueue.addFront(playAnim);
       // StartGuiTimingBar(this, 0x1194, 1) — 4500 ms, type 1
-      if(owner === GameState.getCurrentPlayer()){
-        GameState.GuiTimingBarManager?.startMs?.(0x1194, 'Flag Mine', owner, 1);
+      if(this.owner === GameState.getCurrentPlayer()){
+        GameState.GuiTimingBarManager?.startMs?.(0x1194, 'Flag Mine', this.owner, 1);
       }
       return ActionStatus.IN_PROGRESS;
     }
 
-    const check = resolveMineSkillCheck(owner, this.target, { flag: true });
+    const check = resolveMineSkillCheck(this.owner, this.target, { flag: true });
     if(check.result === MineSkillResult.SUCCESS || check.result === MineSkillResult.OWNED){
-      markTrapDetected(this.target, owner);
+      markTrapDetected(this.target, this.owner);
     }
 
-    GameState.GuiTimingBarManager?.stopFor?.(owner);
+    GameState.GuiTimingBarManager?.stopFor?.(this.owner);
     return ActionStatus.COMPLETE;
   }
 

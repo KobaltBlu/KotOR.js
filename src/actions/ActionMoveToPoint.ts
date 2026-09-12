@@ -55,21 +55,20 @@ export class ActionMoveToPoint extends Action {
     if(!isCreature(this.owner))
       return ActionStatus.FAILED;
 
-    const owner = this.owner as ModuleCreature;
 
     const destAreaId = this.getRawNumberParameter(3);
-    const ownerAreaId = owner.area?.id ?? GameState.module?.area?.id;
+    const ownerAreaId = this.owner.area?.id ?? GameState.module?.area?.id;
     if(
       typeof destAreaId === 'number' &&
       typeof ownerAreaId === 'number' &&
       destAreaId !== ownerAreaId
     ){
-      if(!owner.interAreaWaypoints?.length){
-        beginInterAreaPath(owner, undefined, destAreaId);
+      if(!this.owner.interAreaWaypoints?.length){
+        beginInterAreaPath(this.owner, undefined, destAreaId);
       }
-      if(owner.interAreaWaypoints?.length){
+      if(this.owner.interAreaWaypoints?.length){
         const check = new GameState.ActionFactory.ActionCheckInterAreaPathfinding(undefined, this.groupId);
-        owner.actionQueue.addFront(check);
+        this.owner.actionQueue.addFront(check);
         return ActionStatus.COMPLETE;
       }
       return ActionStatus.FAILED;
@@ -121,8 +120,8 @@ export class ActionMoveToPoint extends Action {
       // end_m01aa k_pend_traskdl40 Pause→Move→Resume stuck forever, and the same
       // gap blocked door/placeable UseObject after walking into range.
       // Dead corpses / KeepCorpse shells are static use targets (not live chase).
-      if(isInUseRange(owner, this.target) || Utility.Distance2D(owner.position, this.real_target_position) <= range){
-        this.stopMoving(owner);
+      if(isInUseRange(this.owner, this.target) || Utility.Distance2D(this.owner.position, this.real_target_position) <= range){
+        this.stopMoving(this.owner);
         this.setComputedPath(undefined);
         return ActionStatus.COMPLETE;
       }
@@ -131,8 +130,8 @@ export class ActionMoveToPoint extends Action {
         // Continuous live chase can last longer than COMBAT_STATE_DURATION_MS (8s).
         // Refresh SetCombatState while still closing on a living combat target so
         // SetCombatState(0) does not wipe combatRound.scheduledActionList mid-approach.
-        this.refreshCombatStateDuringChase(owner);
-        const distanceToLive = Utility.Distance2D(owner.position, this.real_target_position);
+        this.refreshCombatStateDuringChase(this.owner);
+        const distanceToLive = Utility.Distance2D(this.owner.position, this.real_target_position);
         if(this.shouldRepathToMovingTarget(distanceToLive)){
           // In-place live chase — keep walkSpeedFactor (no COMPLETE / dispose)
           this.repathToLiveTargetInPlace();
@@ -141,7 +140,7 @@ export class ActionMoveToPoint extends Action {
     }
 
     if(!this.computedPath){
-      const area = owner.area;
+      const area = this.owner.area;
       if(area && typeof area.isPointWalkable === 'function' && !area.isPointWalkable(this.target_position)){
         this.target_position.copy(area.getNearestWalkablePoint(this.target_position, 0.05));
       }else if(area && typeof area.getNearestWalkablePoint === 'function' && typeof area.isPointWalkable !== 'function'){
@@ -156,37 +155,37 @@ export class ActionMoveToPoint extends Action {
     }
 
     if(!this.computedPath?.points?.length){
-      this.stopMoving(owner);
+      this.stopMoving(this.owner);
       this.setComputedPath(undefined);
       return ActionStatus.FAILED;
     }
 
-    const distance = Utility.Distance2D(owner.position, this.target_position);
+    const distance = Utility.Distance2D(this.owner.position, this.target_position);
     if(distance > (this.computedPath.points.length > 1 ? 0.5 : range)){
       let walkResult: CreatureWalkResult | undefined;
 
       const point = this.computedPath.points[0];
       if(point){
-        const pointDistance = Utility.Distance2D(owner.position, point.vector);
+        const pointDistance = Utility.Distance2D(this.owner.position, point.vector);
         const arriveAtPoint = this.computedPath.points.length > 1 ? 0.5 : range;
         if(pointDistance > arriveAtPoint){
-          walkResult = this.stepWalkUpdate(owner, point.vector, run, delta);
+          walkResult = this.stepWalkUpdate(this.owner, point.vector, run, delta);
         }else{
           this.computedPath.pop();
           const next = this.computedPath.points[0];
           if(next){
-            walkResult = this.stepWalkUpdate(owner, next.vector, run, delta);
+            walkResult = this.stepWalkUpdate(this.owner, next.vector, run, delta);
           }
         }
       }
 
       if(walkResult === CreatureWalkResult.ARRIVED){
-        this.consumeArrivedPathPoint(owner, range);
+        this.consumeArrivedPathPoint(this.owner, range);
       }else if(walkResult === CreatureWalkResult.BLOCKED){
-        this.syncBlockedComputedPath(owner);
+        this.syncBlockedComputedPath(this.owner);
       }
 
-      // WalkUpdate may clear the owner path on hard block (6 fails) — sync leaves
+      // WalkUpdate may clear the this.owner path on hard block (6 fails) — sync leaves
       // computedPath undefined; skip timer until next frame replot.
       if(this.computedPath){
         if(this.computedPath.timer < 0){
@@ -203,7 +202,7 @@ export class ActionMoveToPoint extends Action {
       if(typeof moveTimeout === 'number' && moveTimeout > 0){
         const timeout = moveTimeout - delta;
         if(timeout <= 0){
-          this.stopMoving(owner);
+          this.stopMoving(this.owner);
           // ForceMove expiry — JumpToPoint (NWScript MoveTo*)
           const fallback_action = new GameState.ActionFactory.ActionJumpToPoint(undefined, this.groupId);
           fallback_action.setParameter(0, ActionParameterType.FLOAT, this.real_target_position.x);
@@ -214,7 +213,7 @@ export class ActionMoveToPoint extends Action {
           fallback_action.setParameter(5, ActionParameterType.FLOAT, 20.0);
           fallback_action.setParameter(6, ActionParameterType.FLOAT, 0);
           fallback_action.setParameter(7, ActionParameterType.FLOAT, 0);
-          owner.actionQueue.addFront(fallback_action);
+          this.owner.actionQueue.addFront(fallback_action);
           return ActionStatus.FAILED;
         }
         this.setParameter(8, ActionParameterType.FLOAT, timeout);
@@ -223,22 +222,22 @@ export class ActionMoveToPoint extends Action {
       return ActionStatus.IN_PROGRESS;
     }else{
       if(chaseLive){
-        if(!isInUseRange(owner, this.target)){
-          const liveDist = Utility.Distance2D(owner.position, this.target.position);
+        if(!isInUseRange(this.owner, this.target)){
+          const liveDist = Utility.Distance2D(this.owner.position, this.target.position);
           if(liveDist > range){
             // Arrived at stale path end but live target still out — repath in place
             this.repathToLiveTargetInPlace();
             if(this.computedPath?.points?.length){
               const next = this.computedPath.points[0];
               if(next){
-                this.stepWalkUpdate(owner, next.vector, run, delta);
+                this.stepWalkUpdate(this.owner, next.vector, run, delta);
               }
               return ActionStatus.IN_PROGRESS;
             }
           }
         }
       }
-      this.stopMoving(owner);
+      this.stopMoving(this.owner);
       this.setComputedPath(undefined);
       return ActionStatus.COMPLETE;
     }
@@ -352,31 +351,30 @@ export class ActionMoveToPoint extends Action {
     if(!isCreature(owner)){
       return;
     }
-    const creature = owner as ModuleCreature;
-    if(!creature.combatData?.combatState){
+    if(!owner.combatData?.combatState){
       return;
     }
     const chase = this.target;
-    if(!chase || (typeof (chase as ModuleCreature).isDead === 'function' && (chase as ModuleCreature).isDead())){
+    if(!chase || (isCreature(chase) && chase.isDead())){
       return;
     }
-    const data = creature.combatData;
-    const roundActionTarget = creature.combatRound?.action?.target;
+    const data = owner.combatData;
+    const roundActionTarget = owner.combatRound?.action?.target;
     const isCombatChase =
       data.lastAttackTarget === chase ||
       data.lastAttemptedAttackTarget === chase ||
       data.lastSpellTarget === chase ||
       data.lastAttemptedSpellTarget === chase ||
       roundActionTarget === chase ||
-      creature.combatRound?.newAttackTarget === chase;
+      owner.combatRound?.newAttackTarget === chase;
     if(!isCombatChase){
       return;
     }
     // Refresh SetCombatState timer only — do not re-run full setCombatEngaged each tick.
-    if(typeof creature.setCombatState === 'function'){
-      creature.setCombatState(true);
+    if(typeof owner.setCombatState === 'function'){
+      owner.setCombatState(true);
     }else{
-      creature.combatStateTimer = 8000;
+      owner.combatStateTimer = 8000;
     }
   }
 
@@ -385,7 +383,7 @@ export class ActionMoveToPoint extends Action {
    * Used instead of COMPLETE → enqueueMoveToLiveTarget for ordinary chase drift.
    */
   repathToLiveTargetInPlace(){
-    if(!this.target || !this.owner?.area) return;
+    if(!this.target || !isCreature(this.owner) || !this.owner.area) return;
 
     let dest = this.real_target_position.clone();
     if(typeof this.owner.area.getNearestWalkablePoint === 'function'){
@@ -397,7 +395,7 @@ export class ActionMoveToPoint extends Action {
     this.setParameter(1, ActionParameterType.FLOAT, dest.y);
     this.setParameter(2, ActionParameterType.FLOAT, dest.z);
     // creature-target drift (dist² >= 4) → field438 = -1
-    setQuickWalkLocoState(this.owner as ModuleCreature, QuickWalkLocoState.Repath);
+    setQuickWalkLocoState(this.owner, QuickWalkLocoState.Repath);
     // Clear path only — do not stopMoving / clearLocomotionState
     this.setComputedPath(undefined);
     if(this.pathFindInfo){
@@ -407,7 +405,7 @@ export class ActionMoveToPoint extends Action {
     this.calculatePath();
     // After replot, resume ordinary path walk
     if(this.computedPath?.points?.length){
-      setQuickWalkLocoState(this.owner as ModuleCreature, QuickWalkLocoState.PathWalk);
+      setQuickWalkLocoState(this.owner, QuickWalkLocoState.PathWalk);
     }
   }
 
@@ -481,7 +479,7 @@ export class ActionMoveToPoint extends Action {
     path.fixWalkEdges(getPathPersonalSpace(this.owner));
     path.setColor(this.owner.helperColor);
     this.setComputedPath(path);
-    setQuickWalkLocoState(this.owner as ModuleCreature, QuickWalkLocoState.PathWalk);
+    setQuickWalkLocoState(this.owner, QuickWalkLocoState.PathWalk);
   }
 
   private getRawNumberParameter(index: number): number | undefined {

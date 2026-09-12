@@ -11,7 +11,6 @@ import {
 } from "@/actions/item-transfer";
 import { getUseRange, isInUseRange, queueMoveIntoUseRange } from "@/actions/use-range";
 import { GameState } from "@/GameState";
-import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
 import type { ModuleObject } from "@/module/ModuleObject";
 
@@ -57,19 +56,18 @@ export class ActionGiveItem extends Action {
 
     // Creature giver out of use-range → front-queue Move (run if dist² > 25).
     if (isCreature(this.owner)) {
-      const owner = this.owner as ModuleCreature;
-      if (!isInUseRange(owner, oGiveTo)) {
+      if (!isInUseRange(this.owner, oGiveTo)) {
         // : run if squared dist to use-point > 25
-        const use = getUseRange(owner, oGiveTo, false);
-        const dx = owner.position.x - use.point.x;
-        const dy = owner.position.y - use.point.y;
-        const dz = (owner.position.z ?? 0) - (use.point.z ?? 0);
+        const use = getUseRange(this.owner, oGiveTo, false);
+        const dx = this.owner.position.x - use.point.x;
+        const dy = this.owner.position.y - use.point.y;
+        const dz = (this.owner.position.z ?? 0) - (use.point.z ?? 0);
         const run = (dx * dx + dy * dy + dz * dz) > 25.0;
         const face = new GameState.ActionFactory.ActionChangeFacingPoint(undefined, this.groupId);
         face.setParameter(0, ActionParameterType.FLOAT, oGiveTo.position.x);
         face.setParameter(1, ActionParameterType.FLOAT, oGiveTo.position.y);
-        owner.actionQueue.addFront(face);
-        queueMoveIntoUseRange(owner, oGiveTo, this.groupId, { run });
+        this.owner.actionQueue.addFront(face);
+        queueMoveIntoUseRange(this.owner, oGiveTo, this.groupId, { run });
         return ActionStatus.IN_PROGRESS;
       }
     }

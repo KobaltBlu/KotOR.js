@@ -166,13 +166,11 @@ export class ActionPhysicalAttacks extends Action {
       return ActionStatus.FAILED;
     }
 
-    const owner: ModuleCreature = this.owner as any;
-    const target: ModuleCreature = this.target as any;
 
-    owner.resetExcitedDuration();
+    this.owner.resetExcitedDuration();
 
     // physical-attack action — load params 0/7/8/9 onto current action
-    const combatRound = owner.combatRound;
+    const combatRound = this.owner.combatRound;
     if(combatRound?.action){
       const resultsCalculated = !!this.getParameter<number>(0);
       if(resultsCalculated){
@@ -183,27 +181,27 @@ export class ActionPhysicalAttacks extends Action {
       }
     }
 
-    if(typeof (target as any).isDead === 'function' && target.isDead()){
+    if(this.target.isDead()){
       // Always tear down / retarget — even when roundStarted is already false
       // (remaining sched swings at a corpse must not block QueueAttackActions).
-      if(owner.combatRound){
-        owner.combatRound.endCombatRound();
+      if(this.owner.combatRound){
+        this.owner.combatRound.endCombatRound();
       }
       return ActionStatus.FAILED;
     }
 
     // HasTargetBeenDetected — doors/placeables always; creatures need SEEN
     // (CutsceneAttack does NOT skip detection/range — only ResolveAttackRoll/Damage short-circuit)
-    if(!hasTargetBeenDetected(owner, target)){
+    if(!hasTargetBeenDetected(this.owner, this.target)){
       return ActionStatus.FAILED;
     }
 
     // ResolveChoreographedState — drives Desired/MaxAttackRange (not engaged)
-    const duel = resolveDuelRoundFlags(owner, target);
+    const duel = resolveDuelRoundFlags(this.owner, this.target);
     const choreographed = duel.choreographed;
-    const desired = desiredAttackRange(owner, target, choreographed);
-    const max = maxAttackRange(owner, target, choreographed);
-    const dist = Utility.Distance2D(owner.position, target.position);
+    const desired = desiredAttackRange(this.owner, this.target, choreographed);
+    const max = maxAttackRange(this.owner, this.target, choreographed);
+    const dist = Utility.Distance2D(this.owner.position, this.target.position);
     const distSq = dist * dist;
     const maxSq = max * max;
     const desiredSq = desired * desired;
@@ -211,9 +209,9 @@ export class ActionPhysicalAttacks extends Action {
     // : too far OR (too close by desired²−0.2 when not party-ui) OR no LOS
     // Hysteresis: enter at desired²−0.2, stay until dist² ≥ desired²
     const tooFar = distSq > maxSq;
-    const isPartyMember = GameState.PartyManager.party.indexOf(owner) >= 0;
+    const isPartyMember = GameState.PartyManager.party.indexOf(this.owner) >= 0;
     let tooClose = false;
-    if(!isPartyMember && !owner.isRangedEquipped()){
+    if(!isPartyMember && !this.owner.isRangedEquipped()){
       const latch = ActionPhysicalAttacks.resolveMeleeTooCloseHysteresis(
         distSq,
         desiredSq,
@@ -222,23 +220,23 @@ export class ActionPhysicalAttacks extends Action {
       tooClose = latch.tooClose;
       this.meleeBackoffActive = latch.active;
     }
-    const hasLos = hasCombatLineOfSight(owner, target, max);
+    const hasLos = hasCombatLineOfSight(this.owner, this.target, max);
     const needCloseOrBack =
-      tooFar || (tooClose && !isPartyMember && !owner.isRangedEquipped());
+      tooFar || (tooClose && !isPartyMember && !this.owner.isRangedEquipped());
 
     if(needCloseOrBack){
-      let arriveRange = getAttackMoveArriveRange(owner, target, choreographed);
-      let target_position = getNearestActionPoint(target, owner.position, owner);
+      let arriveRange = getAttackMoveArriveRange(this.owner, this.target, choreographed);
+      let target_position = getNearestActionPoint(this.target, this.owner.position, this.owner);
 
       // Too close: DesiredAttackRange back-off + TestDirectLine / CWalkHitInfo clip
       if(tooClose && !tooFar){
-        const backoff = ActionPhysicalAttacks.resolveMeleeBackoff(owner, target, desired);
+        const backoff = ActionPhysicalAttacks.resolveMeleeBackoff(this.owner, this.target, desired);
         target_position = backoff.position;
         arriveRange = 0;
-      }else if(owner.area?.getNearestWalkablePoint){
-        target_position = owner.area.getNearestWalkablePoint(
+      }else if(this.owner.area?.getNearestWalkablePoint){
+        target_position = this.owner.area.getNearestWalkablePoint(
           target_position,
-          getPathPersonalSpace(owner)
+          getPathPersonalSpace(this.owner)
         );
       }
 
@@ -246,8 +244,8 @@ export class ActionPhysicalAttacks extends Action {
       actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, target_position.x);
       actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, target_position.y);
       actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, target_position.z);
-      actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, target.area.id);
-      actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, tooClose && !tooFar ? ModuleObjectConstant.OBJECT_INVALID : target.id);
+      actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, this.target.area.id);
+      actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, tooClose && !tooFar ? ModuleObjectConstant.OBJECT_INVALID : this.target.id);
       actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
       actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, arriveRange);
       actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
@@ -266,8 +264,8 @@ export class ActionPhysicalAttacks extends Action {
         }
       }
       requeue.isUserAction = this.isUserAction;
-      owner.actionQueue.addFront(requeue);
-      owner.actionQueue.addFront(actionMoveToTarget);
+      this.owner.actionQueue.addFront(requeue);
+      this.owner.actionQueue.addFront(actionMoveToTarget);
 
       return ActionStatus.COMPLETE;
     }
@@ -275,9 +273,9 @@ export class ActionPhysicalAttacks extends Action {
     // In range but ClearLineOfSight blocked — may retarget via GetNearestEnemy
     // when the attacker has been standing still (stuck) at the same position.
     if(!hasLos){
-      owner.force = 0;
-      owner.speed = 0;
-      const result = tryStuckLosRetarget(owner, target, this);
+      this.owner.force = 0;
+      this.owner.speed = 0;
+      const result = tryStuckLosRetarget(this.owner, this.target, this);
       if(result === 'cancelled'){
         return ActionStatus.COMPLETE;
       }
@@ -285,12 +283,12 @@ export class ActionPhysicalAttacks extends Action {
       return ActionStatus.IN_PROGRESS;
     }
 
-    if(owner.combatRound){
-      owner.combatRound.losStuckPosition = undefined;
+    if(this.owner.combatRound){
+      this.owner.combatRound.losStuckPosition = undefined;
     }
 
-    owner.force = 0;
-    owner.speed = 0;
+    this.owner.force = 0;
+    this.owner.speed = 0;
 
     if(!combatRound){
       return ActionStatus.FAILED;
@@ -300,7 +298,7 @@ export class ActionPhysicalAttacks extends Action {
     // before duel resolution. Infinite-paused duel slaves wait here and never
     // resolve their own swing while the master drives the round.
     if(combatRound.roundPaused){
-      duelLog(owner, 'wait:roundPaused', {
+      duelLog(this.owner, 'wait:roundPaused', {
         infinite: combatRound.infinitePause,
         pausedBy: duelWho(combatRound.roundPausedBy),
         engaged: combatRound.engaged,
@@ -317,8 +315,8 @@ export class ActionPhysicalAttacks extends Action {
       CombatRound.ROUND_LENGTH
     );
 
-    duelLog(owner, 'duel-flags', {
-      target: duelWho(target),
+    duelLog(this.owner, 'duel-flags', {
+      target: duelWho(this.target),
       choreographed: duel.choreographed,
       engaged: duel.engaged,
       master: duel.master,
@@ -330,32 +328,32 @@ export class ActionPhysicalAttacks extends Action {
     // path as normal attacks — never forces them non-engaged.
     if(!duel.engaged){
       // Non-duel: StartCombatRound(target, engaged=0, master)
-      duelLog(owner, 'branch:non-engaged-start', { target: duelWho(target) });
-      combatRound.startCombatRound(target, false, duel.master, featId);
+      duelLog(this.owner, 'branch:non-engaged-start', { target: duelWho(this.target) });
+      combatRound.startCombatRound(this.target, false, duel.master, featId);
       if(combatRound.action){
         combatRound.action.animation = ModuleCreatureAnimState.ATTACK;
       }
-      combatRound.pauseRound(owner, pauseMs);
+      combatRound.pauseRound(this.owner, pauseMs);
     }else if(duel.master){
       // Engaged master: start both rounds; slave paused with infinitePause
-      duelLog(owner, 'branch:master-start', { slave: duelWho(target) });
-      combatRound.startCombatRound(target, true, true, featId);
+      duelLog(this.owner, 'branch:master-start', { slave: duelWho(this.target) });
+      combatRound.startCombatRound(this.target, true, true, featId);
       if(combatRound.action){
         combatRound.action.animation = duel.useDuelingAnim
           ? ModuleCreatureAnimState.ATTACK_DUELING
           : ModuleCreatureAnimState.ATTACK;
       }
-      combatRound.pauseRound(owner, pauseMs);
+      combatRound.pauseRound(this.owner, pauseMs);
 
-      if(target.combatRound){
-        target.combatRound.startCombatRound(owner, true, false, 0);
-        if(target.combatRound.action){
-          target.combatRound.action.animation = duel.useDuelingAnim
+      if(this.target.combatRound){
+        this.target.combatRound.startCombatRound(this.owner, true, false, 0);
+        if(this.target.combatRound.action){
+          this.target.combatRound.action.animation = duel.useDuelingAnim
             ? ModuleCreatureAnimState.ATTACK_DUELING
             : ModuleCreatureAnimState.ATTACK;
         }
         // SetPauseTimer(slave, …, infinitePause=1) while master drives
-        target.combatRound.pauseRound(owner, pauseMs, true);
+        this.target.combatRound.pauseRound(this.owner, pauseMs, true);
       }
     }else{
       // Engaged slave: master already StartCombatRound'd us — just ensure anim
@@ -366,11 +364,11 @@ export class ActionPhysicalAttacks extends Action {
       }
       if(!combatRound.roundStarted){
         // Master hasn't synced yet — wait
-        duelLog(owner, 'branch:slave-wait-master', { master: duelWho(target) });
+        duelLog(this.owner, 'branch:slave-wait-master', { master: duelWho(this.target) });
         return ActionStatus.IN_PROGRESS;
       }
-      duelLog(owner, 'branch:slave-resolve', { master: duelWho(target) });
-      combatRound.pauseRound(owner, pauseMs);
+      duelLog(this.owner, 'branch:slave-resolve', { master: duelWho(this.target) });
+      combatRound.pauseRound(this.owner, pauseMs);
     }
 
     if(combatRound.roundStarted){
@@ -382,16 +380,16 @@ export class ActionPhysicalAttacks extends Action {
         combatRound.newAttackTarget = undefined;
       }
 
-      duelLog(owner, 'resolve-attack', {
-        target: duelWho(target),
+      duelLog(this.owner, 'resolve-attack', {
+        target: duelWho(this.target),
         cutscene: !!combatRound.action?.resultsCalculated,
       });
-      combatRound.calculateAttackDamage(owner, combatRound.action);
+      combatRound.calculateAttackDamage(this.owner, combatRound.action);
 
-      owner.setFacing(
+      this.owner.setFacing(
         Math.atan2(
-          owner.position.y - target.position.y,
-          owner.position.x - target.position.x
+          this.owner.position.y - this.target.position.y,
+          this.owner.position.x - this.target.position.x
         ) + Math.PI/2,
         false,
         TURN_SPEED_FAST
@@ -400,13 +398,13 @@ export class ActionPhysicalAttacks extends Action {
       const attack_sound = THREE.MathUtils.randInt(0, 2);
       switch(attack_sound){
         case 1:
-          owner.playSoundSet(SSFType.ATTACK_2);
+          this.owner.playSoundSet(SSFType.ATTACK_2);
         break;
         case 2:
-          owner.playSoundSet(SSFType.ATTACK_3);
+          this.owner.playSoundSet(SSFType.ATTACK_3);
         break;
         default:
-          owner.playSoundSet(SSFType.ATTACK_1);
+          this.owner.playSoundSet(SSFType.ATTACK_1);
         break;
       }
 

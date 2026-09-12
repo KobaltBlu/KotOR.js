@@ -2,8 +2,6 @@ import { Action } from "@/actions/Action";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-
 import { isCreature } from "@/module/guards/isCreature";
 
 /**
@@ -27,15 +25,14 @@ export class ActionStanceMeditative extends Action {
       return ActionStatus.ERROR;
     }
 
-    const owner = this.owner as ModuleCreature;
-    if(owner.isDead?.() || owner.isDebilitated?.()){
+    if(this.owner.isDead?.() || this.owner.isDebilitated?.()){
       return ActionStatus.ERROR;
     }
 
     if(this.phase === 'enter'){
       // ActivityManager(2) → SetActivity(0x3f00, 0) clear combat modes
-      owner.clearCombatMode?.();
-      owner.setAnimationState?.(ModuleCreatureAnimState.PAUSE);
+      this.owner.clearCombatMode?.();
+      this.owner.setAnimationState?.(ModuleCreatureAnimState.PAUSE);
       this.phase = 'hold';
       this.holdTimer = 0;
       return ActionStatus.IN_PROGRESS;

@@ -42,69 +42,67 @@ export class ActionCounterSpell extends Action {
       return ActionStatus.ERROR;
     }
 
-    const owner = this.owner as ModuleCreature;
-    if(owner.isDead() || owner.isDebilitated()){
-      this.leaveStance(owner);
+    if(this.owner.isDead() || this.owner.isDebilitated()){
+      this.leaveStance(this.owner);
       return ActionStatus.ERROR;
     }
 
     this.target = this.getParameter<ModuleObject>(0);
     if(!isCreature(this.target)){
-      this.leaveStance(owner);
+      this.leaveStance(this.owner);
       return ActionStatus.ERROR;
     }
 
-    const target = this.target as ModuleCreature;
-    if(target.isDead()){
-      this.leaveStance(owner);
+    if(this.target.isDead()){
+      this.leaveStance(this.owner);
       return ActionStatus.ERROR;
     }
 
     const range = getCounterSpellRange();
-    const distance = Utility.Distance2D(owner.position, target.position);
-    if(distance > range || owner.area !== target.area){
+    const distance = Utility.Distance2D(this.owner.position, this.target.position);
+    if(distance > range || this.owner.area !== this.target.area){
       // Out of range: if not already in combat, feedback + ERROR; else chase
       // (requeue Move + Check + CounterSpell). combatState stands in for the
       // "already fighting" gate.
-      if(!owner.combatData?.combatState){
+      if(!this.owner.combatData?.combatState){
         // SendFeedbackMessage(7) → CC 0xb → GetGUIString/TLK 0x595
         GameState.FeedbackMessageManager.SendFeedbackMessage(7);
-        this.leaveStance(owner);
+        this.leaveStance(this.owner);
         return ActionStatus.ERROR;
       }
 
       const counter = new GameState.ActionFactory.ActionCounterSpell(undefined, this.groupId);
-      counter.setParameter(0, ActionParameterType.DWORD, target.id);
+      counter.setParameter(0, ActionParameterType.DWORD, this.target.id);
 
       const check = new GameState.ActionFactory.ActionCheckMoveToObjectRadius(undefined, this.groupId);
-      check.setParameter(0, ActionParameterType.DWORD, target.id);
+      check.setParameter(0, ActionParameterType.DWORD, this.target.id);
       check.setParameter(1, ActionParameterType.FLOAT, range);
 
       const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint(undefined, this.groupId);
-      actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, target.position.x);
-      actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, target.position.y);
-      actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, target.position.z);
-      actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, target.area?.id ?? GameState.module.area.id);
-      actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, target.id);
+      actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
+      actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
+      actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);
+      actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, this.target.area?.id ?? GameState.module.area.id);
+      actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, this.target.id);
       actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
       actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, range);
       actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
       actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
 
-      this.leaveStance(owner);
-      owner.actionQueue.addFront(counter);
-      owner.actionQueue.addFront(check);
-      owner.actionQueue.addFront(actionMoveToTarget);
+      this.leaveStance(this.owner);
+      this.owner.actionQueue.addFront(counter);
+      this.owner.actionQueue.addFront(check);
+      this.owner.actionQueue.addFront(actionMoveToTarget);
       return ActionStatus.COMPLETE;
     }
 
     // : ActivityManager(4) + SetCombatMode(4) / activity 0x800
-    owner.enterCounterSpellMode();
-    owner.setFacingObject(target);
-    owner.setAnimationState(ModuleCreatureAnimState.CASTOUT1_LP);
+    this.owner.enterCounterSpellMode();
+    this.owner.setFacingObject(this.target);
+    this.owner.setAnimationState(ModuleCreatureAnimState.CASTOUT1_LP);
     // counter-spell action — BroadcastCombatStateToParty + ResolveInitiative
-    owner.broadcastCombatStateToParty(target);
-    owner.resolveInitiative();
+    this.owner.broadcastCombatStateToParty(this.target);
+    this.owner.resolveInitiative();
     return ActionStatus.IN_PROGRESS;
   }
 

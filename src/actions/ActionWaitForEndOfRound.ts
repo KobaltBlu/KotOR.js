@@ -1,7 +1,6 @@
 import { Action } from "@/actions/Action";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
-import type { ModuleCreature } from "@/module/ModuleCreature";
 import { isCreature } from "@/module/guards/isCreature";
 
 /**
@@ -31,12 +30,11 @@ export class ActionWaitForEndOfRound extends Action {
       return ActionStatus.FAILED;
     }
 
-    const owner = this.owner as ModuleCreature;
-    if(owner.isDead?.() || owner.plot){
+    if(this.owner.isDead?.() || this.owner.plot){
       return ActionStatus.FAILED;
     }
 
-    const combatRound = owner.combatRound;
+    const combatRound = this.owner.combatRound;
     if(!combatRound?.roundStarted){
       return ActionStatus.COMPLETE;
     }

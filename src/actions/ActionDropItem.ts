@@ -2,7 +2,6 @@ import { Action } from "@/actions/Action";
 import { ActionStatus, ActionType } from "@/enums";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { GameState } from "@/GameState";
-import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
 
 import { isCreature } from "@/module/guards/isCreature";
@@ -32,22 +31,21 @@ export class ActionDropItem extends Action {
       return ActionStatus.FAILED;
     }
 
-    const owner: ModuleCreature = this.owner as ModuleCreature;
     const oItem = this.getParameter<ModuleItem>(0);
 
     if(!isItem(oItem)){
       return ActionStatus.FAILED;
     }
 
-    owner.setAnimationState(ModuleCreatureAnimState.IDLE);
-    owner.force = 0;
-    owner.speed = 0;
+    this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
+    this.owner.force = 0;
+    this.owner.speed = 0;
 
     let dropped: ModuleItem;
-    if(GameState.PartyManager.party.indexOf(owner) >= 0){
+    if(GameState.PartyManager.party.indexOf(this.owner) >= 0){
       dropped = GameState.InventoryManager.removeItem(oItem, 1) as ModuleItem;
     }else{
-      dropped = owner.removeItem(oItem, 1);
+      dropped = this.owner.removeItem(oItem, 1);
     }
 
     if(!dropped){
@@ -55,9 +53,9 @@ export class ActionDropItem extends Action {
     }
 
     dropped.placedInWorld = true;
-    dropped.position.copy(owner.position);
-    dropped.position.x += Math.cos(owner.getFacing()) * 0.5;
-    dropped.position.y += Math.sin(owner.getFacing()) * 0.5;
+    dropped.position.copy(this.owner.position);
+    dropped.position.x += Math.cos(this.owner.getFacing()) * 0.5;
+    dropped.position.y += Math.sin(this.owner.getFacing()) * 0.5;
     dropped.load();
     dropped.loadModel().then( (model: any) => {
       if(!model){ return; }

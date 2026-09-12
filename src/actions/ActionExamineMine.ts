@@ -2,7 +2,6 @@ import { GameState } from "@/GameState";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
-import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { Action } from "@/actions/Action";
 import { markTrapDetected, MineSkillResult, resolveMineSkillCheck } from "@/actions/mine-skill";
@@ -45,31 +44,30 @@ export class ActionExamineMine extends Action {
       return ActionStatus.FAILED;
     }
 
-    const owner = this.owner as ModuleCreature;
-    if(queueMoveIntoUseRange(owner, this.target, this.groupId, { extraRange: 0.0 })){
+    if(queueMoveIntoUseRange(this.owner, this.target, this.groupId, { extraRange: 0.0 })){
       return ActionStatus.IN_PROGRESS;
     }
 
     if(!this.animQueued){
       this.animQueued = true;
-      owner.setFacingObject(this.target);
+      this.owner.setFacingObject(this.target);
       const playAnim = new GameState.ActionFactory.ActionPlayAnimation();
       playAnim.setParameter(0, ActionParameterType.INT, 0x274b);
       playAnim.setParameter(1, ActionParameterType.FLOAT, 1.0);
       playAnim.setParameter(2, ActionParameterType.FLOAT, 4.5);
-      owner.actionQueue.addFront(playAnim);
-      if(owner === GameState.getCurrentPlayer()){
-        GameState.GuiTimingBarManager?.startMs?.(0x1194, 'Examine Mine', owner, 1);
+      this.owner.actionQueue.addFront(playAnim);
+      if(this.owner === GameState.getCurrentPlayer()){
+        GameState.GuiTimingBarManager?.startMs?.(0x1194, 'Examine Mine', this.owner, 1);
       }
       return ActionStatus.IN_PROGRESS;
     }
 
-    const check = resolveMineSkillCheck(owner, this.target, { examine: true });
+    const check = resolveMineSkillCheck(this.owner, this.target, { examine: true });
     if(check.result === MineSkillResult.SUCCESS || check.result === MineSkillResult.OWNED){
       markTrapDetected(this.target);
     }
 
-    GameState.GuiTimingBarManager?.stopFor?.(owner);
+    GameState.GuiTimingBarManager?.stopFor?.(this.owner);
     return ActionStatus.COMPLETE;
   }
 

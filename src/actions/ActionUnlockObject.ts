@@ -5,7 +5,6 @@ import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState"
 import { GameState } from "@/GameState";
 import { SSFType } from "@/enums/resource/SSFType";
 import { Action } from "@/actions/Action";
-import type { ModuleCreature } from "@/module/ModuleCreature";
 import { queueMoveIntoUseRange } from "@/actions/use-range";
 import type { ModuleItem } from "@/module/ModuleItem";
 import type { ModuleObject } from "@/module/ModuleObject";
@@ -64,7 +63,7 @@ export class ActionUnlockObject extends Action {
     }
 
     if(isCreature(this.owner) &&
-       queueMoveIntoUseRange(this.owner as ModuleCreature, this.target, this.groupId)){
+       queueMoveIntoUseRange(this.owner, this.target, this.groupId)){
       return ActionStatus.IN_PROGRESS;
     }else{
 

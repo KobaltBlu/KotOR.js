@@ -3,9 +3,7 @@ import { ModuleTriggerType } from "@/enums";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
-import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
-import type { ModuleTrigger } from "@/module/ModuleTrigger";
 import { Action } from "@/actions/Action";
 import { queueMoveIntoUseRange } from "@/actions/use-range";
 import { isCreature } from "@/module/guards/isCreature";
@@ -56,39 +54,37 @@ export class ActionDisarmMine extends Action {
       return ActionStatus.FAILED;
     }
 
-    const owner = this.owner as ModuleCreature;
-    if(queueMoveIntoUseRange(owner, this.target, this.groupId, { extraRange: 0.25 })){
+    if(queueMoveIntoUseRange(this.owner, this.target, this.groupId, { extraRange: 0.25 })){
       return ActionStatus.IN_PROGRESS;
     }
 
     if(!this.animQueued){
       this.animQueued = true;
-      owner.setFacingObject(this.target);
+      this.owner.setFacingObject(this.target);
       // disarm-mine action: door 0x2796, placeable 0x2797, trigger 0x2794
       const animId = isDoor(this.target) ? 0x2796 : (isPlaceable(this.target) ? 0x2797 : 0x2794);
       const playAnim = new GameState.ActionFactory.ActionPlayAnimation();
       playAnim.setParameter(0, ActionParameterType.INT, animId);
       playAnim.setParameter(1, ActionParameterType.FLOAT, 1.0);
       playAnim.setParameter(2, ActionParameterType.FLOAT, 4.5);
-      owner.actionQueue.addFront(playAnim);
-      if(owner === GameState.getCurrentPlayer()){
-        GameState.GuiTimingBarManager?.startMs?.(0x1194, 'Disarm Mine', owner, 1);
+      this.owner.actionQueue.addFront(playAnim);
+      if(this.owner === GameState.getCurrentPlayer()){
+        GameState.GuiTimingBarManager?.startMs?.(0x1194, 'Disarm Mine', this.owner, 1);
       }
       return ActionStatus.IN_PROGRESS;
     }
 
-    const stopBar = () => GameState.GuiTimingBarManager?.stopFor?.(owner);
+    const stopBar = () => GameState.GuiTimingBarManager?.stopFor?.(this.owner);
 
     if(isTrigger(this.target)){
-      const trap = this.target as ModuleTrigger;
-      if(trap.type != ModuleTriggerType.TRAP){
+      if(this.target.type != ModuleTriggerType.TRAP){
         stopBar();
         return ActionStatus.FAILED;
       }
 
-      const check = resolveMineSkillCheck(owner, trap);
+      const check = resolveMineSkillCheck(this.owner, this.target);
       if(check.result === MineSkillResult.FAIL_TRIGGER){
-        signalTrapTriggered(trap, owner);
+        signalTrapTriggered(this.target, this.owner);
         stopBar();
         return ActionStatus.FAILED;
       }
@@ -97,17 +93,17 @@ export class ActionDisarmMine extends Action {
         return ActionStatus.FAILED;
       }
 
-      signalTrapDisarm(trap, owner);
-      runTriggerOnDisarmScript(trap);
-      fadeDestroyTrap(trap);
+      signalTrapDisarm(this.target, this.owner);
+      runTriggerOnDisarmScript(this.target);
+      fadeDestroyTrap(this.target);
       stopBar();
       return ActionStatus.COMPLETE;
     }
 
     // Door / placeable trap
-    const check = resolveMineSkillCheck(owner, this.target);
+    const check = resolveMineSkillCheck(this.owner, this.target);
     if(check.result === MineSkillResult.FAIL_TRIGGER){
-      signalTrapTriggered(this.target, owner);
+      signalTrapTriggered(this.target, this.owner);
       stopBar();
       return ActionStatus.FAILED;
     }
@@ -116,7 +112,7 @@ export class ActionDisarmMine extends Action {
       return ActionStatus.FAILED;
     }
 
-    signalTrapDisarm(this.target, owner);
+    signalTrapDisarm(this.target, this.owner);
     stopBar();
     return ActionStatus.COMPLETE;
   }

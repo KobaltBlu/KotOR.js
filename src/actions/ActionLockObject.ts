@@ -60,30 +60,27 @@ export class ActionLockObject extends Action {
       return ActionStatus.FAILED;
     }
 
-    const owner = this.owner as ModuleCreature;
-    const target = this.target as Lockable;
-
-    if(queueMoveIntoUseRange(owner, this.target, this.groupId)){
+    if(queueMoveIntoUseRange(this.owner, this.target, this.groupId)){
       return ActionStatus.IN_PROGRESS;
     }
 
     // Already locked — SendFeedbackMessage 0x0d (needs object context;
     // full CC payload TBD — fail closed like).
-    if(target.isLocked?.() || target.locked){
-      GameState.GuiTimingBarManager?.stopFor?.(owner);
+    if(this.target.isLocked?.() || this.target.locked){
+      GameState.GuiTimingBarManager?.stopFor?.(this.owner);
       return ActionStatus.FAILED;
     }
 
     // KeyRequired blocks ActionLockObject (door/placeable path)
-    if(target.keyRequired){
-      GameState.GuiTimingBarManager?.stopFor?.(owner);
+    if(this.target.keyRequired){
+      GameState.GuiTimingBarManager?.stopFor?.(this.owner);
       return ActionStatus.FAILED;
     }
 
     if(!this.animQueued){
       this.animQueued = true;
-      owner.setFacingObject(this.target);
-      owner.force = 0;
+      this.owner.setFacingObject(this.target);
+      this.owner.force = 0;
 
       // : door 0x2790 (UNLOCK_DOOR), placeable 0x2793 (UNLOCK_CONTAINER)
       const animId = isDoor(this.target) ? 0x2790 : 0x2793;
@@ -91,30 +88,30 @@ export class ActionLockObject extends Action {
       playAnim.setParameter(0, ActionParameterType.INT, animId);
       playAnim.setParameter(1, ActionParameterType.FLOAT, 1.0);
       playAnim.setParameter(2, ActionParameterType.FLOAT, 1.5);
-      owner.actionQueue.addFront(playAnim);
+      this.owner.actionQueue.addFront(playAnim);
 
       // StartGuiTimingBar(this, 0x5dc, 8) — 1500 ms, type 8
-      if(owner === GameState.getCurrentPlayer()){
-        GameState.GuiTimingBarManager?.startMs?.(0x5dc, 'Lock', owner, 8);
+      if(this.owner === GameState.getCurrentPlayer()){
+        GameState.GuiTimingBarManager?.startMs?.(0x5dc, 'Lock', this.owner, 8);
       }
       return ActionStatus.IN_PROGRESS;
     }
 
     // EvaluateLock(target, 1): key can lock without a skill check
-    if(this.tryLockWithKey(owner, target)){
-      GameState.GuiTimingBarManager?.stopFor?.(owner);
+    if(this.tryLockWithKey(this.owner, this.target)){
+      GameState.GuiTimingBarManager?.stopFor?.(this.owner);
       return ActionStatus.COMPLETE;
     }
 
     // Security skill + d20 vs CloseLockDC (: no WIS/2; DC min 1)
-    const skill = owner.getSkillLevel(SkillType.SECURITY) | 0;
-    const roll = owner.combatData?.combatState ? ((Math.random() * 20) | 0) + 1 : 20;
-    const dc = Math.max(1, target.closeLockDC | 0);
+    const skill = this.owner.getSkillLevel(SkillType.SECURITY) | 0;
+    const roll = this.owner.combatData?.combatState ? ((Math.random() * 20) | 0) + 1 : 20;
+    const dc = Math.max(1, this.target.closeLockDC | 0);
     if(skill + roll >= dc){
-      target.lock?.(owner);
+      this.target.lock?.(this.owner);
     }
 
-    GameState.GuiTimingBarManager?.stopFor?.(owner);
+    GameState.GuiTimingBarManager?.stopFor?.(this.owner);
     return ActionStatus.COMPLETE;
   }
 

@@ -5,7 +5,6 @@ import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { SkillType } from "@/enums/nwscript/SkillType";
 import { GameState } from "@/GameState";
-import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { Dice } from "@/utility/Dice";
 import { queueMoveIntoUseRange } from "@/actions/use-range";
@@ -40,30 +39,27 @@ export class ActionPickPocket extends Action {
       return ActionStatus.FAILED;
     }
 
-    const owner = this.owner as ModuleCreature;
-    const target = this.target as ModuleCreature;
-
-    if(queueMoveIntoUseRange(owner, target, this.groupId, { extraRange: 0.0 })){
+    if(queueMoveIntoUseRange(this.owner, this.target, this.groupId, { extraRange: 0.0 })){
       return ActionStatus.IN_PROGRESS;
     }
 
-    owner.setFacingObject(target);
+    this.owner.setFacingObject(this.target);
 
-    const stealRoll = (owner.getSkillLevel(SkillType.STEALTH) | 0) + Dice.roll(1, DiceType.d20);
-    const noticeDC = 10 + (target.getSkillLevel(SkillType.AWARENESS) | 0);
+    const stealRoll = (this.owner.getSkillLevel(SkillType.STEALTH) | 0) + Dice.roll(1, DiceType.d20);
+    const noticeDC = 10 + (this.target.getSkillLevel(SkillType.AWARENESS) | 0);
     if(stealRoll < noticeDC){
       return ActionStatus.FAILED;
     }
 
-    const gold = (target.gold | 0) || (target.getGold() | 0);
+    const gold = (this.target.gold | 0) || (this.target.getGold() | 0);
     if(gold > 0){
       const stolen = Math.max(1, Math.min(gold, Math.floor(gold * 0.1) || 1));
-      if(target.gold > 0){
-        target.gold = Math.max(0, target.gold - stolen);
+      if(this.target.gold > 0){
+        this.target.gold = Math.max(0, this.target.gold - stolen);
       }else{
-        target.removeGold(stolen);
+        this.target.removeGold(stolen);
       }
-      owner.addGold(stolen);
+      this.owner.addGold(stolen);
     }
 
     return ActionStatus.COMPLETE;

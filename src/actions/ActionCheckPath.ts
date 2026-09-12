@@ -36,12 +36,11 @@ export class ActionCheckPath extends Action {
     this.type = type;
   }
 
-  protected ownerIsValid(): boolean {
+  protected ownerIsValid(): this is this & { owner: ModuleCreature } {
     if(!isCreature(this.owner)){
       return false;
     }
-    const owner = this.owner as ModuleCreature;
-    if(owner.isDead?.() || owner.isDebilitated?.()){
+    if(this.owner.isDead?.() || this.owner.isDebilitated?.()){
       return false;
     }
     return true;
@@ -53,7 +52,7 @@ export class ActionCheckPath extends Action {
     if(!area?.getNearestWalkablePoint){
       return point;
     }
-    const pathRadius = getPathPersonalSpace(this.owner as ModuleCreature);
+    const pathRadius = getPathPersonalSpace(this.owner);
     return area.getNearestWalkablePoint(point, pathRadius);
   }
 
@@ -66,31 +65,29 @@ export class ActionCheckPath extends Action {
     bRun: number = 1,
     validatePath: boolean = true
   ): ActionStatus {
-    if(!this.owner){
+    if(!isCreature(this.owner)){
       return ActionStatus.ERROR;
     }
-    const owner = this.owner as ModuleCreature;
-    const ownerAreaId = owner.area?.id ?? GameState.module?.area?.id;
+    const ownerAreaId = this.owner.area?.id ?? GameState.module?.area?.id;
     // Foreign area → inter-area path (do not validate local walkmesh to remote coords)
     if(
       typeof areaId === 'number' &&
       typeof ownerAreaId === 'number' &&
-      areaId !== ownerAreaId &&
-      isCreature(owner)
+      areaId !== ownerAreaId
     ){
-      if(!owner.interAreaWaypoints?.length){
-        beginInterAreaPath(owner, undefined, areaId);
+      if(!this.owner.interAreaWaypoints?.length){
+        beginInterAreaPath(this.owner, undefined, areaId);
       }
-      if(owner.interAreaWaypoints?.length){
+      if(this.owner.interAreaWaypoints?.length){
         const check = new GameState.ActionFactory.ActionCheckInterAreaPathfinding(undefined, this.groupId);
-        owner.actionQueue.addFront(check);
+        this.owner.actionQueue.addFront(check);
         return ActionStatus.COMPLETE;
       }
       return ActionStatus.ERROR;
     }
     const walked = this.clampWalkable(x, y, z);
-    if(validatePath && isCreature(this.owner)){
-      if(!canPathToPoint(this.owner as ModuleCreature, walked)){
+    if(validatePath){
+      if(!canPathToPoint(this.owner, walked)){
         return ActionStatus.ERROR;
       }
     }
@@ -158,7 +155,6 @@ export class ActionCheckMoveAwayFromObject extends ActionCheckPath {
     if(!this.ownerIsValid()){
       return ActionStatus.ERROR;
     }
-    const owner = this.owner as ModuleCreature;
     const fleeFrom = this.getParameter<ModuleObject>(0);
     const range = this.getParameter<number>(1) || 10.0;
     const bRun = this.getParameter<number>(2) ? 1 : 0;
@@ -170,20 +166,20 @@ export class ActionCheckMoveAwayFromObject extends ActionCheckPath {
       return ActionStatus.ERROR;
     }
     // Same-area gate 
-    if(fleeFrom.area && owner.area && fleeFrom.area !== owner.area){
+    if(fleeFrom.area && this.owner.area && fleeFrom.area !== this.owner.area){
       return ActionStatus.COMPLETE;
     }
 
-    const dx = owner.position.x - fleeFrom.position.x;
-    const dy = owner.position.y - fleeFrom.position.y;
-    const dz = owner.position.z - fleeFrom.position.z;
+    const dx = this.owner.position.x - fleeFrom.position.x;
+    const dy = this.owner.position.y - fleeFrom.position.y;
+    const dz = this.owner.position.z - fleeFrom.position.z;
     const distSq = dx * dx + dy * dy + dz * dz;
     if(distSq >= range * range || retries < 1){
       return ActionStatus.COMPLETE;
     }
 
-    const away = findAwayVector(owner, fleeFrom.position, range);
-    if(!canPathToPoint(owner, away)){
+    const away = findAwayVector(this.owner, fleeFrom.position, range);
+    if(!canPathToPoint(this.owner, away)){
       return ActionStatus.ERROR;
     }
 
@@ -193,11 +189,11 @@ export class ActionCheckMoveAwayFromObject extends ActionCheckPath {
     recheck.setParameter(1, ActionParameterType.FLOAT, range);
     recheck.setParameter(2, ActionParameterType.INT, bRun);
     recheck.setParameter(3, ActionParameterType.INT, retries - 1);
-    owner.actionQueue.addFront(recheck);
+    this.owner.actionQueue.addFront(recheck);
 
     this.queueMoveTo(
       away.x, away.y, away.z,
-      owner.area?.id ?? GameState.module.area.id,
+      this.owner.area?.id ?? GameState.module.area.id,
       ModuleObjectConstant.OBJECT_INVALID,
       1.0,
       30.0,
@@ -207,7 +203,7 @@ export class ActionCheckMoveAwayFromObject extends ActionCheckPath {
 
     const wait = new GameState.ActionFactory.ActionWait(undefined, this.groupId);
     wait.setParameter(0, ActionParameterType.FLOAT, 0.75);
-    owner.actionQueue.addFront(wait);
+    this.owner.actionQueue.addFront(wait);
     return ActionStatus.COMPLETE;
   }
 }
@@ -226,14 +222,13 @@ export class ActionCheckInterAreaPathfinding extends ActionCheckPath {
     if(!this.ownerIsValid()){
       return ActionStatus.ERROR;
     }
-    const owner = this.owner as ModuleCreature;
 
     // Prefer explicit inter-area waypoints (PlotInterAreaPath seed)
-    let wp = owner.interAreaWaypoints?.[0];
+    let wp = this.owner.interAreaWaypoints?.[0];
     if(!wp){
-      if(!beginInterAreaPath(owner)){
+      if(!beginInterAreaPath(this.owner)){
         // Fall back to local computedPath hop
-        const path = owner.getComputedPath?.() || this.computedPath;
+        const path = this.owner.getComputedPath?.() || this.computedPath;
         if(!path || !path.points || path.points.length < 2){
           return ActionStatus.ERROR;
         }
@@ -245,7 +240,7 @@ export class ActionCheckInterAreaPathfinding extends ActionCheckPath {
           next.vector.x,
           next.vector.y,
           next.vector.z,
-          owner.area?.id ?? GameState.module.area.id,
+          this.owner.area?.id ?? GameState.module.area.id,
           ModuleObjectConstant.OBJECT_INVALID,
           0.5,
           30.0,
@@ -257,43 +252,43 @@ export class ActionCheckInterAreaPathfinding extends ActionCheckPath {
         }
         const waitLocal = new GameState.ActionFactory.ActionWait(undefined, this.groupId);
         waitLocal.setParameter(0, ActionParameterType.FLOAT, 0.75);
-        owner.actionQueue.addFront(waitLocal);
+        this.owner.actionQueue.addFront(waitLocal);
         return ActionStatus.COMPLETE;
       }
-      wp = owner.interAreaWaypoints[0];
-    }else if(owner.interAreaWaypoints.length >= 2){
-      wp = advanceInterAreaWaypoint(owner);
+      wp = this.owner.interAreaWaypoints[0];
+    }else if(this.owner.interAreaWaypoints.length >= 2){
+      wp = advanceInterAreaWaypoint(this.owner);
     }
 
     if(!wp?.goal){
-      owner.interAreaWaypoints = [];
+      this.owner.interAreaWaypoints = [];
       return ActionStatus.ERROR;
     }
 
     // In range of portal → open / transit / jump (last hop or mid-hop door)
-    if(wp.object && isInUseRange(owner, wp.object)){
-      if(tryUseInterAreaTransition(owner, wp, this.groupId)){
+    if(wp.object && isInUseRange(this.owner, wp.object)){
+      if(tryUseInterAreaTransition(this.owner, wp, this.groupId)){
         return ActionStatus.COMPLETE;
       }
       // PlotInterAreaPath: exclude failed portal + recompute
-      if(excludeFailedInterAreaPortal(owner, wp.object.id)){
+      if(excludeFailedInterAreaPortal(this.owner, wp.object.id)){
         const recheck = new GameState.ActionFactory.ActionCheckInterAreaPathfinding(undefined, this.groupId);
-        owner.actionQueue.addFront(recheck);
+        this.owner.actionQueue.addFront(recheck);
         return ActionStatus.COMPLETE;
       }
-      owner.interAreaWaypoints = [];
+      this.owner.interAreaWaypoints = [];
       return ActionStatus.ERROR;
     }
 
     // Add*ToFront order → final: Wait, Move, Recheck
     const recheck = new GameState.ActionFactory.ActionCheckInterAreaPathfinding(undefined, this.groupId);
-    owner.actionQueue.addFront(recheck);
+    this.owner.actionQueue.addFront(recheck);
 
     const toDoor = this.queueMoveTo(
       wp.goal.x,
       wp.goal.y,
       wp.goal.z,
-      owner.area?.id ?? GameState.module.area.id,
+      this.owner.area?.id ?? GameState.module.area.id,
       wp.object?.id ?? ModuleObjectConstant.OBJECT_INVALID,
       wp.range || 0.5,
       30.0,
@@ -302,9 +297,9 @@ export class ActionCheckInterAreaPathfinding extends ActionCheckPath {
     );
     if(toDoor === ActionStatus.ERROR){
       // Path to this portal blocked — exclude and try another 
-      if(wp.object && excludeFailedInterAreaPortal(owner, wp.object.id)){
+      if(wp.object && excludeFailedInterAreaPortal(this.owner, wp.object.id)){
         const retry = new GameState.ActionFactory.ActionCheckInterAreaPathfinding(undefined, this.groupId);
-        owner.actionQueue.addFront(retry);
+        this.owner.actionQueue.addFront(retry);
         return ActionStatus.COMPLETE;
       }
       return ActionStatus.ERROR;
@@ -312,7 +307,7 @@ export class ActionCheckInterAreaPathfinding extends ActionCheckPath {
 
     const wait = new GameState.ActionFactory.ActionWait(undefined, this.groupId);
     wait.setParameter(0, ActionParameterType.FLOAT, 0.75);
-    owner.actionQueue.addFront(wait);
+    this.owner.actionQueue.addFront(wait);
 
     return ActionStatus.COMPLETE;
   }
@@ -333,17 +328,16 @@ export class ActionCheckMoveToPoint extends ActionCheckPath {
     if(typeof x !== 'number' || typeof y !== 'number' || typeof z !== 'number'){
       return ActionStatus.ERROR;
     }
-    const owner = this.owner as ModuleCreature;
     const areaId = this.getParameter<number>(3) ?? GameState.module.area.id;
-    const ownerAreaId = owner.area?.id ?? GameState.module.area.id;
+    const ownerAreaId = this.owner.area?.id ?? GameState.module.area.id;
     // Destination in another area → seed inter-area waypoints + CheckInterArea
     if(areaId !== ownerAreaId){
-      if(!owner.interAreaWaypoints?.length){
-        beginInterAreaPath(owner, undefined, areaId);
+      if(!this.owner.interAreaWaypoints?.length){
+        beginInterAreaPath(this.owner, undefined, areaId);
       }
-      if(owner.interAreaWaypoints?.length){
+      if(this.owner.interAreaWaypoints?.length){
         const check = new GameState.ActionFactory.ActionCheckInterAreaPathfinding(undefined, this.groupId);
-        owner.actionQueue.addFront(check);
+        this.owner.actionQueue.addFront(check);
         return ActionStatus.COMPLETE;
       }
       return ActionStatus.ERROR;
@@ -383,16 +377,15 @@ export class ActionCheckMoveToPointRadius extends ActionCheckPath {
     if(typeof x !== 'number' || typeof y !== 'number' || typeof z !== 'number'){
       return ActionStatus.ERROR;
     }
-    const owner = this.owner as ModuleCreature;
     const areaId = this.getParameter<number>(3) ?? GameState.module.area.id;
-    const ownerAreaId = owner.area?.id ?? GameState.module.area.id;
+    const ownerAreaId = this.owner.area?.id ?? GameState.module.area.id;
     if(areaId !== ownerAreaId){
-      if(!owner.interAreaWaypoints?.length){
-        beginInterAreaPath(owner, undefined, areaId);
+      if(!this.owner.interAreaWaypoints?.length){
+        beginInterAreaPath(this.owner, undefined, areaId);
       }
-      if(owner.interAreaWaypoints?.length){
+      if(this.owner.interAreaWaypoints?.length){
         const check = new GameState.ActionFactory.ActionCheckInterAreaPathfinding(undefined, this.groupId);
-        owner.actionQueue.addFront(check);
+        this.owner.actionQueue.addFront(check);
         return ActionStatus.COMPLETE;
       }
       return ActionStatus.ERROR;
@@ -411,7 +404,6 @@ export class ActionCheckMoveAwayFromLocation extends ActionCheckPath {
     if(!this.ownerIsValid()){
       return ActionStatus.ERROR;
     }
-    const owner = this.owner as ModuleCreature;
     const x = this.getParameter<number>(0);
     const y = this.getParameter<number>(1);
     const z = this.getParameter<number>(2);
@@ -420,19 +412,19 @@ export class ActionCheckMoveAwayFromLocation extends ActionCheckPath {
     }
     const range = this.getParameter<number>(3) || 10.0;
     const bRun = this.getParameter<number>(4) ? 1 : 0;
-    const threatZ = typeof z === 'number' ? z : owner.position.z;
+    const threatZ = typeof z === 'number' ? z : this.owner.position.z;
     const threat = new THREE.Vector3(x, y, threatZ);
 
-    const dx = owner.position.x - x;
-    const dy = owner.position.y - y;
-    const dz = owner.position.z - threatZ;
+    const dx = this.owner.position.x - x;
+    const dy = this.owner.position.y - y;
+    const dz = this.owner.position.z - threatZ;
     const distSq = dx * dx + dy * dy + dz * dz;
     if(distSq >= range * range){
       return ActionStatus.COMPLETE;
     }
 
-    const away = findAwayVector(owner, threat, range);
-    if(!canPathToPoint(owner, away)){
+    const away = findAwayVector(this.owner, threat, range);
+    if(!canPathToPoint(this.owner, away)){
       return ActionStatus.ERROR;
     }
 
@@ -443,11 +435,11 @@ export class ActionCheckMoveAwayFromLocation extends ActionCheckPath {
     recheck.setParameter(2, ActionParameterType.FLOAT, threatZ);
     recheck.setParameter(3, ActionParameterType.FLOAT, range);
     recheck.setParameter(4, ActionParameterType.INT, bRun);
-    owner.actionQueue.addFront(recheck);
+    this.owner.actionQueue.addFront(recheck);
 
     this.queueMoveTo(
       away.x, away.y, away.z,
-      owner.area?.id ?? GameState.module.area.id,
+      this.owner.area?.id ?? GameState.module.area.id,
       ModuleObjectConstant.OBJECT_INVALID,
       1.0,
       30.0,
@@ -457,7 +449,7 @@ export class ActionCheckMoveAwayFromLocation extends ActionCheckPath {
 
     const wait = new GameState.ActionFactory.ActionWait(undefined, this.groupId);
     wait.setParameter(0, ActionParameterType.FLOAT, 0.75);
-    owner.actionQueue.addFront(wait);
+    this.owner.actionQueue.addFront(wait);
     return ActionStatus.COMPLETE;
   }
 }

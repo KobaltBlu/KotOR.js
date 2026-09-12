@@ -5,7 +5,6 @@ import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
-import type { ModulePlaceable } from "@/module/ModulePlaceable";
 import { Utility } from "@/utility/Utility";
 
 import { isCreature } from "@/module/guards/isCreature";
@@ -65,8 +64,7 @@ export function getUseRange(
 
   if(isPlaceable(target)){
     range = range + 0.75;
-    const placeable = target as ModulePlaceable;
-    if(placeable.isCorpse){
+    if(target.isCorpse){
       range = range + 5.0;
     }
     return {

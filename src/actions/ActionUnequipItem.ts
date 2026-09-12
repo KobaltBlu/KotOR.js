@@ -1,7 +1,6 @@
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
-import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
 import { Action } from "@/actions/Action";
 import { isCreature } from "@/module/guards/isCreature";
@@ -34,34 +33,33 @@ export class ActionUnequipItem extends Action {
     }
 
     const item = this.getParameter<ModuleItem>(0);
-    const obj = this.owner as ModuleCreature;
 
-    if(obj.equipment.HEAD == item){
-      obj.unequipSlot(ModuleCreatureArmorSlot.HEAD);
-    }else if(obj.equipment.ARMS == item){
-      obj.unequipSlot(ModuleCreatureArmorSlot.ARMS);
-    }else if(obj.equipment.IMPLANT == item){
-      obj.unequipSlot(ModuleCreatureArmorSlot.IMPLANT);
-    }else if(obj.equipment.LEFTARMBAND == item){
-      obj.unequipSlot(ModuleCreatureArmorSlot.LEFTARMBAND);
-    }else if(obj.equipment.RIGHTARMBAND == item){
-      obj.unequipSlot(ModuleCreatureArmorSlot.RIGHTARMBAND);
-    }else if(obj.equipment.LEFTHAND == item){
-      obj.unequipSlot(ModuleCreatureArmorSlot.LEFTHAND);
-    }else if(obj.equipment.BELT == item){
-      obj.unequipSlot(ModuleCreatureArmorSlot.BELT);
-    }else if(obj.equipment.RIGHTHAND == item){
-      obj.unequipSlot(ModuleCreatureArmorSlot.RIGHTHAND);
-    }else if(obj.equipment.RIGHTHAND2 == item){
-      obj.unequipSlot(ModuleCreatureArmorSlot.RIGHTHAND2);
-    }else if(obj.equipment.LEFTHAND2 == item){
-      obj.unequipSlot(ModuleCreatureArmorSlot.LEFTHAND2);
-    }else if(obj.equipment.CLAW1 == item){
-      obj.unequipSlot(ModuleCreatureArmorSlot.CLAW1);
-    }else if(obj.equipment.CLAW2 == item){
-      obj.unequipSlot(ModuleCreatureArmorSlot.CLAW2);
-    }else if(obj.equipment.CLAW3 == item){
-      obj.unequipSlot(ModuleCreatureArmorSlot.CLAW3);
+    if(this.owner.equipment.HEAD == item){
+      this.owner.unequipSlot(ModuleCreatureArmorSlot.HEAD);
+    }else if(this.owner.equipment.ARMS == item){
+      this.owner.unequipSlot(ModuleCreatureArmorSlot.ARMS);
+    }else if(this.owner.equipment.IMPLANT == item){
+      this.owner.unequipSlot(ModuleCreatureArmorSlot.IMPLANT);
+    }else if(this.owner.equipment.LEFTARMBAND == item){
+      this.owner.unequipSlot(ModuleCreatureArmorSlot.LEFTARMBAND);
+    }else if(this.owner.equipment.RIGHTARMBAND == item){
+      this.owner.unequipSlot(ModuleCreatureArmorSlot.RIGHTARMBAND);
+    }else if(this.owner.equipment.LEFTHAND == item){
+      this.owner.unequipSlot(ModuleCreatureArmorSlot.LEFTHAND);
+    }else if(this.owner.equipment.BELT == item){
+      this.owner.unequipSlot(ModuleCreatureArmorSlot.BELT);
+    }else if(this.owner.equipment.RIGHTHAND == item){
+      this.owner.unequipSlot(ModuleCreatureArmorSlot.RIGHTHAND);
+    }else if(this.owner.equipment.RIGHTHAND2 == item){
+      this.owner.unequipSlot(ModuleCreatureArmorSlot.RIGHTHAND2);
+    }else if(this.owner.equipment.LEFTHAND2 == item){
+      this.owner.unequipSlot(ModuleCreatureArmorSlot.LEFTHAND2);
+    }else if(this.owner.equipment.CLAW1 == item){
+      this.owner.unequipSlot(ModuleCreatureArmorSlot.CLAW1);
+    }else if(this.owner.equipment.CLAW2 == item){
+      this.owner.unequipSlot(ModuleCreatureArmorSlot.CLAW2);
+    }else if(this.owner.equipment.CLAW3 == item){
+      this.owner.unequipSlot(ModuleCreatureArmorSlot.CLAW3);
     }else{
       return ActionStatus.FAILED;
     }

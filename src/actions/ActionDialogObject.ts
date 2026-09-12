@@ -118,7 +118,7 @@ export class ActionDialogObject extends Action {
 
       this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
       // Zero path + cam-relative locomotion (WASD/stick axes survive mode change otherwise)
-      (this.owner as any).clearLocomotionState?.(true);
+      this.owner.clearLocomotionState?.(true);
     }
 
     this.owner.heardStrings = [];

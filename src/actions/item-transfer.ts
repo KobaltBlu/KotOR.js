@@ -2,7 +2,6 @@ import { BaseItemType } from "@/enums/combat/BaseItemType";
 import { UIIconTimerType } from "@/enums/engine/UIIconTimerType";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 import { GameState } from "@/GameState";
-import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
 import type { ModuleObject } from "@/module/ModuleObject";
 
@@ -50,8 +49,7 @@ export function isPartyCreature(obj: ModuleObject | undefined): boolean {
   if (!isCreature(obj)) {
     return false;
   }
-  const cre = obj as ModuleCreature;
-  return !!(cre.isPartyMember?.() || cre.isPC || GameState.PartyManager.party.indexOf(cre) >= 0);
+  return !!(obj.isPartyMember?.() || obj.isPC || GameState.PartyManager.party.indexOf(obj) >= 0);
 }
 
 /**
@@ -167,9 +165,9 @@ export function acquireItem(
     target.addItem(item);
   } else if (
     isItem(target) &&
-    (target as ModuleItem).baseItem?.container
+    target.baseItem?.container
   ) {
-    (target as ModuleObject).addItem(item);
+    target.addItem(item);
   } else {
     return false;
   }
@@ -198,7 +196,7 @@ function notifyModuleItemLost(item: ModuleItem, owner: ModuleObject){
   if(!mod) return;
   mod.lastItemLost = item;
   mod.lastItemLostBy = isCreature(owner)
-    ? (owner as ModuleCreature)
+    ? owner
     : undefined;
   const script = mod.scripts?.[ModuleObjectScript.ModuleOnUnAcquireItem];
   if(script){

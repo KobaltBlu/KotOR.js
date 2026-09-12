@@ -4,9 +4,7 @@ import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
 import { ResourceLoader } from "@/loaders/ResourceLoader";
-import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
-import type { ModuleTrigger } from "@/module/ModuleTrigger";
 import { GFFObject } from "@/resource/GFFObject";
 import { ResourceTypes } from "@/resource/ResourceTypes";
 import { Action } from "@/actions/Action";
@@ -59,14 +57,13 @@ export class ActionRecoverMine extends Action {
       return ActionStatus.FAILED;
     }
 
-    const owner = this.owner as ModuleCreature;
-    if(queueMoveIntoUseRange(owner, this.target, this.groupId, { extraRange: 0.25 })){
+    if(queueMoveIntoUseRange(this.owner, this.target, this.groupId, { extraRange: 0.25 })){
       return ActionStatus.IN_PROGRESS;
     }
 
     if(!this.animQueued){
       this.animQueued = true;
-      owner.setFacingObject(this.target);
+      this.owner.setFacingObject(this.target);
       // recover-mine action: door/placeable 0x274c, trigger 0x279d
       const isDoorOrPlaceable =
         isDoor(this.target) ||
@@ -76,29 +73,28 @@ export class ActionRecoverMine extends Action {
       playAnim.setParameter(0, ActionParameterType.INT, animId);
       playAnim.setParameter(1, ActionParameterType.FLOAT, 1.0);
       playAnim.setParameter(2, ActionParameterType.FLOAT, 4.5);
-      owner.actionQueue.addFront(playAnim);
-      if(owner === GameState.getCurrentPlayer()){
-        GameState.GuiTimingBarManager?.startMs?.(0x1194, 'Recover Mine', owner, 1);
+      this.owner.actionQueue.addFront(playAnim);
+      if(this.owner === GameState.getCurrentPlayer()){
+        GameState.GuiTimingBarManager?.startMs?.(0x1194, 'Recover Mine', this.owner, 1);
       }
       return ActionStatus.IN_PROGRESS;
     }
 
-    const stopBar = () => GameState.GuiTimingBarManager?.stopFor?.(owner);
+    const stopBar = () => GameState.GuiTimingBarManager?.stopFor?.(this.owner);
 
     if(!isTrigger(this.target)){
       stopBar();
       return ActionStatus.FAILED;
     }
 
-    const trap = this.target as ModuleTrigger;
-    if(trap.type != ModuleTriggerType.TRAP){
+    if(this.target.type != ModuleTriggerType.TRAP){
       stopBar();
       return ActionStatus.FAILED;
     }
 
-    const check = resolveMineSkillCheck(owner, trap);
+    const check = resolveMineSkillCheck(this.owner, this.target);
     if(check.result === MineSkillResult.FAIL_TRIGGER){
-      signalTrapTriggered(trap, owner);
+      signalTrapTriggered(this.target, this.owner);
       stopBar();
       return ActionStatus.FAILED;
     }
@@ -107,19 +103,19 @@ export class ActionRecoverMine extends Action {
       return ActionStatus.FAILED;
     }
 
-    signalTrapDisarm(trap, owner);
-    runTriggerOnDisarmScript(trap);
+    signalTrapDisarm(this.target, this.owner);
+    runTriggerOnDisarmScript(this.target);
 
-    const resRef = trap.trapResRef || trap.templateResRef;
+    const resRef = this.target.trapResRef || this.target.templateResRef;
     if(resRef){
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utp'], resRef);
       if(buffer){
         const item = new GameState.Module.ModuleArea.ModuleItem(new GFFObject(buffer));
-        owner.addItem(item);
+        this.owner.addItem(item);
       }
     }
 
-    fadeDestroyTrap(trap);
+    fadeDestroyTrap(this.target);
     stopBar();
     return ActionStatus.COMPLETE;
   }
