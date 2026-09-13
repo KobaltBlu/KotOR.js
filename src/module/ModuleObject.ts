@@ -1415,20 +1415,43 @@ export class ModuleObject {
 
   /**
    * Add the item
+   * Merges into existing stacks by tag up to baseitems.stacking (retail MergeItem).
    * @param item
    * @returns
    */
   addItem(item: ModuleItem){
     item.load();
 
-    const eItem = this.getItemByTag(item.getTag());
-    if(eItem){
-      eItem.setStackSize(eItem.getStackSize() + item.getStackSize());
-      return eItem;
-    }else{
-      this.inventory.push(item);
-      return item;
+    const tag = (item.getTag() || '').toLowerCase();
+    const maxStack = (item.baseItem?.stacking | 0) || 1;
+    let remaining = item.getStackSize() | 0;
+    let lastMerged: ModuleItem = undefined;
+
+    for(let i = 0; i < this.inventory.length && remaining > 0; i++){
+      const eItem = this.inventory[i];
+      if((eItem.getTag() || '').toLowerCase() !== tag){
+        continue;
+      }
+
+      const room = maxStack - (eItem.getStackSize() | 0);
+      if(room <= 0){
+        continue;
+      }
+
+      const add = Math.min(room, remaining);
+      eItem.setStackSize((eItem.getStackSize() | 0) + add);
+      remaining -= add;
+      lastMerged = eItem;
     }
+
+    if(remaining <= 0){
+      item.setStackSize(0);
+      return lastMerged || item;
+    }
+
+    item.setStackSize(remaining);
+    this.inventory.push(item);
+    return item;
   }
 
   /**
@@ -1505,9 +1528,10 @@ export class ModuleObject {
       return GameState.InventoryManager.getItemByTag(sTag) as ModuleItem;
     }
 
+    sTag = (sTag || '').toLowerCase();
     for(let i = 0; i < this.inventory.length; i++){
       let item = this.inventory[i];
-      if(item.getTag() == sTag)
+      if((item.getTag() || '').toLowerCase() == sTag)
         return item;
     }
     return;

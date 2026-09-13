@@ -156,9 +156,9 @@ export class ModuleStore extends ModuleObject {
       let items = this.template.RootNode.getFieldByLabel('ItemList').getChildStructs() || [];
       for(let i = 0; i < items.length; i++){
         const moduleItem = new ModuleItem(GFFObject.FromStruct(items[i]));
-        this.inventory.push(moduleItem)
-        moduleItem.setPossessor(this);
-        moduleItem.load();
+        // LoadStore → AddItemToInventory → MergeItem: merge duplicate stock on load.
+        const stacked = this.addItem(moduleItem);
+        stacked.setPossessor(this);
       }
     }
     

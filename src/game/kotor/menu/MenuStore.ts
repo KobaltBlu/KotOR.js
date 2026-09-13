@@ -360,8 +360,8 @@ export class MenuStore extends GameMenu {
       sold.setStackSize?.(1);
       // Sold player items are finite store stock, not Infinite.
       sold.setInfinite?.(0);
-      sold.setPossessor?.(this.storeObject);
-      this.storeObject.getInventory().push(sold);
+      const stacked = this.storeObject.addItem(sold);
+      stacked.setPossessor?.(this.storeObject);
     }catch(_e){ /* optional stock return */ }
     this.show();
   }
