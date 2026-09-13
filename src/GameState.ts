@@ -54,6 +54,7 @@ import { resolveMiniGameAspectMaskPass } from "@/shaders/pass/MiniGameAspectMask
 import { OdysseyLensFlarePass } from "@/shaders/pass/OdysseyLensFlarePass";
 import { ResourceLoader, TextureLoader } from "@/loaders";
 import { warmRoomGpuResources, compileAreaRoomsVisible } from "@/three/odyssey/warmRoomGpuResources";
+import { GUIListBox } from "@/gui/GUIListBox";
 
 //THREE.js imports
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
@@ -1736,9 +1737,11 @@ export class GameState implements EngineContext {
       }
       GameState.applyForgePreviewCanvasLayout();
       GameState.EventOnResize();
+      GameState.ensureGuiListHexTextures();
       return;
     }
     await GameState.Init();
+    GameState.ensureGuiListHexTextures();
     if(GameState.canvas){
       if(GameState.canvas.parentElement !== host){
         host.appendChild(GameState.canvas);
@@ -1746,6 +1749,12 @@ export class GameState implements EngineContext {
       GameState.applyForgePreviewCanvasLayout();
       GameState.EventOnResize();
     }
+  }
+
+  /** AppState loads these for the full game; Forge preview must as well. */
+  static ensureGuiListHexTextures(): void {
+    if(GUIListBox.hexTextures?.size){ return; }
+    GUIListBox.InitTextures?.();
   }
 
   /** Size/position the play canvas to the preview host without CSS stretch. */

@@ -116,6 +116,8 @@ export class Mouse {
       Mouse.position.y = Mouse.Vector.y = - ( localY / vpH ) * 2 + 1;
       Mouse.positionUI.x = Mouse.Vector.x = ( localX - (vpW / 2) );
       Mouse.positionUI.y = Mouse.Vector.y = - ( localY - (vpH / 2) );
+      Mouse.positionViewportInt.x = Math.trunc(Mouse.positionViewport.x) | 0;
+      Mouse.positionViewportInt.y = Math.trunc(Mouse.positionViewport.y) | 0;
       return;
     }
 
