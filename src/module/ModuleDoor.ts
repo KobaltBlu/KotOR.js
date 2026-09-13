@@ -480,7 +480,7 @@ export class ModuleDoor extends ModuleObject {
    * EventHandler script case 7 (OnDialog).
    * OnDialog "default" → k_hen_dialogue01 (doors do not treat empty like creatures).
    */
-  onDialog(oSpeaker: ModuleObject, listenPatternNumber = -1, conversation: DLGObject = undefined, matchedSubstrings: string[] = []): boolean {
+  override onDialog(oSpeaker: ModuleObject, listenPatternNumber = -1, conversation: DLGObject = undefined, matchedSubstrings: string[] = []): boolean {
     this.setMatchedSubstrings(matchedSubstrings || []);
 
     let nwscript = this.scripts[ModuleObjectScript.DoorOnDialog];
@@ -703,9 +703,9 @@ export class ModuleDoor extends ModuleObject {
       //Check Creatures
       const creatures = this.area?.creatures;
       if(creatures){
-        let creatureLen = creatures.length;
+        const creatureLen = creatures.length;
         for(let i = 0; i < creatureLen; i++){
-          let creature = creatures[i];
+          const creature = creatures[i];
           if(this.box.containsPoint(creature.position)){
             if(this.objectsInside.indexOf(creature) == -1){
               this.objectsInside.push(creature);
@@ -737,13 +737,12 @@ export class ModuleDoor extends ModuleObject {
     }
   }
 
-  onAttacked(attackType: CombatActionType){
+  override onAttacked(attackType: CombatActionType){
     // EventHandler 0xf — BroadcastCombatStateToParty(attacker, INVALID)
     const attacker = this.combatData.lastAttacker;
     if(isCreature(attacker)){
-      const atk = attacker as ModuleCreature;
-      atk.broadcastCombatStateToParty();
-      atk.removeCombatInvisibilityEffects();
+      attacker.broadcastCombatStateToParty();
+      attacker.removeCombatInvisibilityEffects();
     }
 
     const isSpellAttack = attackType == CombatActionType.CAST_SPELL || attackType == CombatActionType.ITEM_CAST_SPELL;
@@ -752,11 +751,11 @@ export class ModuleDoor extends ModuleObject {
     instance.run(this);
   }
 
-  onDamaged(): boolean{
+  override onDamaged(): boolean{
     // effect apply door/placeable — BroadcastCombatStateToParty(attacker, INVALID)
     const damager = this.combatData.lastDamager ?? this.combatData.lastAttacker;
     if(isCreature(damager)){
-      (damager as ModuleCreature).broadcastCombatStateToParty();
+      damager.broadcastCombatStateToParty();
     }
 
     const instance = this.scripts[ModuleObjectScript.DoorOnDamaged];

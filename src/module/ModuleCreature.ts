@@ -4133,7 +4133,7 @@ export class ModuleCreature extends ModuleObject {
   // SCRIPT EVENTS
   //---------------//
 
-  onCombatRoundEnd(){
+  override onCombatRoundEnd(){
     if(this.combatData.lastAttemptedAttackTarget instanceof ModuleObject && this.combatData.lastAttemptedAttackTarget.isDead())
       this.combatData.lastAttemptedAttackTarget = undefined;
 
@@ -4169,7 +4169,7 @@ export class ModuleCreature extends ModuleObject {
     this.encounterUnlinked = true;
   }
 
-  onDeath(){
+  override onDeath(){
     this.weaponPowered(false);
     const nwscript = this.scripts[ModuleObjectScript.CreatureOnDeath];
     if(nwscript){
@@ -4566,7 +4566,7 @@ export class ModuleCreature extends ModuleObject {
     this.disposeCreatureVisuals();
   }
 
-  onDialog(oSpeaker: ModuleObject, listenPatternNumber = -1, conversation: DLGObject = undefined, matchedSubstrings: string[] = []){
+  override onDialog(oSpeaker: ModuleObject, listenPatternNumber = -1, conversation: DLGObject = undefined, matchedSubstrings: string[] = []){
     // EventHandler case 7: store captures on the object, then run OnDialogue.
     this.setMatchedSubstrings(matchedSubstrings || []);
 
@@ -4594,7 +4594,7 @@ export class ModuleCreature extends ModuleObject {
    * ScriptEndDialogu — k_def_endconv → k_ai_master case 1011
    * (re-enable commandable, DCR if enemy seen, else post-dialog walk).
    */
-  onEndDialog(){
+  override onEndDialog(){
     const nwscript = this.scripts[ModuleObjectScript.CreatureOnEndDialog];
     if(!nwscript){ return; }
     const instance = nwscript.newInstance();
@@ -4604,22 +4604,21 @@ export class ModuleCreature extends ModuleObject {
     instance.run(this, script_num);
   }
 
-  onAttacked(attackType: CombatActionType){
+  override onAttacked(attackType: CombatActionType){
     // EventHandler physical-attacked (0xf) — runs for hit and miss.
     // BroadcastCombatStateToParty on attacker + target refreshes 8000ms combat + party ExcitedDuration.
     const attacker = this.combatData.lastAttacker;
     // assign hostile actor(attacker) before ScriptAttacked
     if(isObject(attacker)){
-      this.assignHostileActor(attacker as ModuleObject);
+      this.assignHostileActor(attacker);
     }
     if(isCreature(attacker)){
-      const atk = attacker as ModuleCreature;
-      atk.broadcastCombatStateToParty(this);
-      atk.removeCombatInvisibilityEffects();
+      attacker.broadcastCombatStateToParty(this);
+      attacker.removeCombatInvisibilityEffects();
     }
     this.broadcastCombatStateToParty(
       isObject(attacker)
-        ? (attacker as ModuleObject)
+        ? attacker
         : undefined
     );
 
@@ -4630,7 +4629,7 @@ export class ModuleCreature extends ModuleObject {
     instance.run(this, script_num);
   }
 
-  onDamaged(){
+  override onDamaged(){
     if(this.isDead())
       return true;
 
@@ -4646,7 +4645,7 @@ export class ModuleCreature extends ModuleObject {
     instance.run(this, script_num);
   }
 
-  onBlocked(){
+  override onBlocked(){
     if(this == GameState.getCurrentPlayer())
       return;
 
@@ -4673,15 +4672,14 @@ export class ModuleCreature extends ModuleObject {
         bumpTo.x += Math.cos(facing);
         bumpTo.y += Math.sin(facing);
       }
-      if(bumpFriends(this, blocker as ModuleCreature, bumpTo, this.position)){
+      if(bumpFriends(this, blocker, bumpTo, this.position)){
         this.collisionManager.blockingObject = undefined;
         this.collisionTimer = 0;
         return;
       }
 
       // : reputation of blocker toward this mover (GetReputation < 11)
-      const blockerCreature = blocker as ModuleCreature;
-      const hostileBlocker = (blockerCreature.getReputation?.(this) ?? 100) < 11;
+      const hostileBlocker = (blocker.getReputation?.(this) ?? 100) < 11;
       if(hostileBlocker){
         this.collisionManager.foundEnemyCreature = blocker;
         runPathfail();
@@ -4693,7 +4691,7 @@ export class ModuleCreature extends ModuleObject {
         this.collisionManager.foundEnemyCreature = undefined;
       }
 
-      const result = plotPathAroundCreature(this, blockerCreature);
+      const result = plotPathAroundCreature(this, blocker);
       if(result.spliced){
         if(result.foundEnemyOnPath && (result.foundEnemyOnPath.getReputation?.(this) ?? 100) < 11){
           this.collisionManager.foundEnemyCreature = result.foundEnemyOnPath;

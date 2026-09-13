@@ -42,6 +42,7 @@ import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
 import { SWBodyBag } from "@/engine/rules/SWBodyBag";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
+import { CombatActionType } from "@/enums";
 import * as THREE from "three";
 
 import { isCreature } from "@/module/guards/isCreature";
@@ -207,11 +208,15 @@ export class ModulePlaceable extends ModuleObject {
     GameState.getCurrentPlayer().actionUseObject( this );
   }
 
+  //---------------//
+  // SCRIPT EVENTS
+  //---------------//
+
   /**
    * EventHandler script case 7 (OnDialog).
    * Empty or "default" OnDialog → k_hen_dialogue01.
    */
-  onDialog(oSpeaker: ModuleObject, listenPatternNumber = -1, conversation: DLGObject = undefined, matchedSubstrings: string[] = []): boolean {
+  override onDialog(oSpeaker: ModuleObject, listenPatternNumber = -1, conversation: DLGObject = undefined, matchedSubstrings: string[] = []): boolean {
     this.setMatchedSubstrings(matchedSubstrings || []);
 
     let nwscript = this.scripts[ModuleObjectScript.PlaceableOnDialog];
@@ -231,6 +236,42 @@ export class ModulePlaceable extends ModuleObject {
     instance.conversation = conversation;
     instance.run(this, 0);
     return true;
+  }
+
+  /**
+   * On damaged — effect apply door/placeable BroadcastCombatStateToParty(attacker, INVALID).
+   */
+  override onDamaged(){
+    if(this.isDead())
+      return true;
+
+    const damager = this.combatData.lastDamager ?? this.combatData.lastAttacker;
+    if(isCreature(damager)){
+      damager.broadcastCombatStateToParty();
+    }
+
+    const onDamaged = this.scripts[ModuleObjectScript.PlaceableOnDamaged];
+    if(onDamaged){
+      onDamaged.run(this);
+    }
+  }
+
+  /**
+   * On attacked — EventHandler 0xf attacker broadcast.
+   */
+  override onAttacked(attackType: CombatActionType){
+    const attacker = this.combatData.lastAttacker;
+    if(isCreature(attacker)){
+      attacker.broadcastCombatStateToParty();
+      attacker.removeCombatInvisibilityEffects();
+    }
+    const isSpell = attackType == CombatActionType.CAST_SPELL || attackType == CombatActionType.ITEM_CAST_SPELL;
+    const onAttacked = this.scripts[
+      isSpell ? ModuleObjectScript.PlaceableOnSpellCastAt : ModuleObjectScript.PlaceableOnMeleeAttacked
+    ];
+    if(onAttacked){
+      onAttacked.run(this);
+    }
   }
 
   detachFromRoom(room: ModuleRoom): void {

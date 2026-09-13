@@ -1889,35 +1889,10 @@ export class ModuleObject {
   //---------------//
 
   /**
-   * On damaged
+   * On damaged — virtual lifecycle hook; subtypes override.
    */
   onDamaged(){
-    if(this.isDead())
-      return true;
-
-    // effect apply door/placeable — BroadcastCombatStateToParty(attacker, INVALID)
-    if(
-      isPlaceable(this) ||
-      isDoor(this)
-    ){
-      const damager = this.combatData.lastDamager ?? this.combatData.lastAttacker;
-      if(isCreature(damager)){
-        (damager as ModuleCreature).broadcastCombatStateToParty();
-      }
-    }
-
-    let onDamaged: NWScriptInstance;
-    if(isCreature(this)){
-      onDamaged = this.scripts[ModuleObjectScript.CreatureOnDamaged];
-    }else if(isPlaceable(this)){
-      onDamaged = this.scripts[ModuleObjectScript.PlaceableOnDamaged];
-    }else if(isDoor(this)){
-      onDamaged = this.scripts[ModuleObjectScript.DoorOnDamaged];
-    }
-
-    if(onDamaged){
-      onDamaged.run(this);
-    }
+    //stub
   }
 
   /**
@@ -1954,25 +1929,10 @@ export class ModuleObject {
   }
 
   /**
-   * On attacked — placeable uses EventHandler 0xf attacker broadcast.
-   * Creatures / doors override with their own handlers.
+   * On attacked — virtual lifecycle hook; subtypes override.
    */
-  onAttacked(attackType: CombatActionType){
-    if(isPlaceable(this)){
-      const attacker = this.combatData.lastAttacker;
-      if(isCreature(attacker)){
-        const atk = attacker as ModuleCreature;
-        atk.broadcastCombatStateToParty();
-        atk.removeCombatInvisibilityEffects();
-      }
-      const isSpell = attackType == CombatActionType.CAST_SPELL || attackType == CombatActionType.ITEM_CAST_SPELL;
-      const onAttacked = this.scripts[
-        isSpell ? ModuleObjectScript.PlaceableOnSpellCastAt : ModuleObjectScript.PlaceableOnMeleeAttacked
-      ];
-      if(onAttacked){
-        onAttacked.run(this);
-      }
-    }
+  onAttacked(_attackType: CombatActionType){
+    //stub
   }
 
   /**
