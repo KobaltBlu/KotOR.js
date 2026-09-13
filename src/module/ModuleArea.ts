@@ -533,9 +533,10 @@ export class ModuleArea extends ModuleObject {
       }
     }
 
-    //clear area room objects
+    //clear area room objects (ModuleRoom is not a ModuleObject — destroy does not detach)
     while (this.rooms.length){
-      this.rooms[0].destroy();
+      const room = this.rooms.shift();
+      room?.destroy();
     }
 
     //clear area areaOfEffect objects

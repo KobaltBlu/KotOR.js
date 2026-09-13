@@ -1716,6 +1716,7 @@ export class GameState implements EngineContext {
         GameState.loadingModule = false;
       });
     }catch(e){
+      GameState.loadingModule = false;
       console.error(e);
       throw e;
     }

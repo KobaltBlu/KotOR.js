@@ -607,6 +607,8 @@ export class ModuleRoom {
     }catch(e){
       console.error(e);
     }
+
+    this.area = undefined;
   }
 
 }
