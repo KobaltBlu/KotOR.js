@@ -2171,6 +2171,7 @@ export class ModuleObject {
   /**
    * Apply a visual effect
    * @param resref
+   * @deprecated
    */
   applyVisualEffect(resref = 'v_light'){
     if(this.model instanceof OdysseyModel3D){
