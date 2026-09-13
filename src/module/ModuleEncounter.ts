@@ -3,6 +3,7 @@ import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GameState } from "@/GameState";
 import { NWScript } from "@/nwscript/NWScript";
 import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { NWScriptEvent } from "@/nwscript/events";
 import { GFFField } from "@/resource/GFFField";
 import { GFFObject } from "@/resource/GFFObject";
 import { GFFStruct } from "@/resource/GFFStruct";
@@ -779,6 +780,17 @@ export class ModuleEncounter extends ModuleObject {
     const instance = nwscript.newInstance();
     instance.exitingObject = object;
     instance.run(this, 0);
+  }
+
+  override triggerHeartbeat(){
+    if(!this.canProcessHeartbeat()){ return; }
+    const onHeartbeat = this.scripts[ModuleObjectScript.EncounterOnHeartbeat];
+    if(!onHeartbeat){ return; }
+    onHeartbeat.run(this);
+  }
+
+  override triggerUserDefinedEvent(event: NWScriptEvent){
+    this.runUserDefinedScript(event, this.scripts[ModuleObjectScript.EncounterOnUserDefined]);
   }
 
   onExhausted(){

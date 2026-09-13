@@ -1917,11 +1917,18 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   onCreate(){
-    // Allow triggerHeartbeat (spawned gate in ModuleObject.triggerHeartbeat).
+    // Allow triggerHeartbeat (spawned gate via canProcessHeartbeat).
     this.spawned = true;
     const instance = this.scripts[ModuleObjectScript.MGPlayerOnCreate];
     if(!instance){ return; }
     instance.run(this, 0);
+  }
+
+  override triggerHeartbeat(){
+    if(!this.canProcessHeartbeat()){ return; }
+    const onHeartbeat = this.scripts[ModuleObjectScript.MGPlayerOnHeartbeat];
+    if(!onHeartbeat){ return; }
+    onHeartbeat.run(this);
   }
 
   onDamaged(skipScript: boolean = false): boolean{

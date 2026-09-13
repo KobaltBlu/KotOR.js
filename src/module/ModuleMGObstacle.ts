@@ -249,6 +249,13 @@ export class ModuleMGObstacle extends ModuleObject {
     onCreate.run(this, 0);
   }
 
+  override triggerHeartbeat(){
+    if(!this.canProcessHeartbeat()){ return; }
+    const onHeartbeat = this.scripts[ModuleObjectScript.MGObstacleOnHeartbeat];
+    if(!onHeartbeat){ return; }
+    onHeartbeat.run(this);
+  }
+
   onHitBullet(){
     const onHitBullet = this.scripts[ModuleObjectScript.MGObstacleOnHitBullet];
     if(!onHitBullet){ return; }

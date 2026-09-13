@@ -4,6 +4,8 @@ import { AudioEmitter } from "@/audio/AudioEmitter";
 import { GameState } from "@/GameState";
 import { SSFType } from "@/enums/resource/SSFType";
 import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { NWScriptEvent } from "@/nwscript/events";
+import { ExcitedDurationRow } from "@/combat/combat-engagement";
 import { CExoLocString } from "@/resource/CExoLocString";
 import { GFFObject } from "@/resource/GFFObject";
 import { OdysseyModel3D } from "@/three/odyssey";
@@ -719,7 +721,7 @@ export class ModuleDoor extends ModuleObject {
     }
   }
 
-  onSpawn(runScript = true){
+  override onSpawn(runScript = true){
     super.onSpawn(runScript);
 
     if(this.model instanceof OdysseyModel3D){
@@ -735,6 +737,41 @@ export class ModuleDoor extends ModuleObject {
     if(this.collisionManager.walkmesh && this.model){
       this.syncWalkmeshMatrix();
     }
+  }
+
+  override triggerHeartbeat(){
+    if(!this.canProcessHeartbeat()){ return; }
+    const onHeartbeat = this.scripts[ModuleObjectScript.DoorOnHeartbeat];
+    if(!onHeartbeat){ return; }
+    onHeartbeat.run(this);
+  }
+
+  override triggerUserDefinedEvent(event: NWScriptEvent){
+    this.runUserDefinedScript(event, this.scripts[ModuleObjectScript.DoorOnUserDefined]);
+  }
+
+  /**
+   * door EventHandler OnSpellCastAt — harmful engages caster only.
+   */
+  override triggerSpellCastAtEvent(event: NWScriptEvent){
+    if(!(event instanceof NWScriptEvent)){ return; }
+
+    const caster = event.getObject(0);
+    const harmful = !!event.getInt(1);
+
+    if(harmful && isCreature(caster)){
+      this.assignHostileActor(caster);
+      caster.broadcastCombatStateToParty();
+      caster.setExcitedState(ExcitedDurationRow.SpellCast);
+      caster.removeCombatInvisibilityEffects();
+    }
+
+    this.runSpellCastAtScript(event, this.scripts[ModuleObjectScript.DoorOnSpellCastAt]);
+  }
+
+  override bindTrapTriggeredScript(nwscript: NWScriptInstance): ModuleObjectScript | undefined {
+    this.scripts[ModuleObjectScript.DoorOnTrapTriggered] = nwscript;
+    return ModuleObjectScript.DoorOnTrapTriggered;
   }
 
   override onAttacked(attackType: CombatActionType){

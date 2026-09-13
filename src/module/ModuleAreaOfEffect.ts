@@ -1,5 +1,6 @@
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { NWScriptEvent } from "@/nwscript/events";
 import { GFFField } from "@/resource/GFFField";
 import { GFFObject } from "@/resource/GFFObject";
 import { ModuleObject } from "@/module/ModuleObject";
@@ -245,6 +246,10 @@ export class ModuleAreaOfEffect extends ModuleObject {
     event.setTime(GameState.module.timeManager.pauseTime);
     event.eventType = SignalEventType.OnObjectExit;
     GameState.module.addEvent(event);
+  }
+
+  override triggerUserDefinedEvent(event: NWScriptEvent){
+    this.runUserDefinedScript(event, this.scripts[ModuleObjectScript.AoEOnUserDefined]);
   }
 
   /**

@@ -14,6 +14,7 @@ import { AILevel } from "@/enums/module/AILevel";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GameState } from "@/GameState";
 import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { NWScriptEvent } from "@/nwscript/events";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { CExoLocString } from "@/resource/CExoLocString";
@@ -4132,6 +4133,48 @@ export class ModuleCreature extends ModuleObject {
   //---------------//
   // SCRIPT EVENTS
   //---------------//
+
+  override triggerHeartbeat(){
+    if(!this.canProcessHeartbeat()){ return; }
+    const onHeartbeat = this.scripts[ModuleObjectScript.CreatureOnHeartbeat];
+    if(!onHeartbeat){ return; }
+    onHeartbeat.run(this);
+  }
+
+  override triggerUserDefinedEvent(event: NWScriptEvent){
+    this.runUserDefinedScript(event, this.scripts[ModuleObjectScript.CreatureOnUserDefined]);
+  }
+
+  /**
+   * creature EventHandler case 2:
+   * harmful → BroadcastCombatStateToParty + SetExcitedState on both sides.
+   */
+  override triggerSpellCastAtEvent(event: NWScriptEvent){
+    if(!(event instanceof NWScriptEvent)){ return; }
+
+    const caster = event.getObject(0);
+    const harmful = !!event.getInt(1);
+
+    if(harmful && isCreature(caster)){
+      // EventHandler OnSpellCastAt sets last hostile when harmful
+      this.assignHostileActor(caster);
+      caster.broadcastCombatStateToParty(this);
+      caster.setExcitedState(ExcitedDurationRow.SpellCast);
+      caster.removeCombatInvisibilityEffects();
+      this.broadcastCombatStateToParty(caster);
+      this.setExcitedState(ExcitedDurationRow.Damage);
+    }
+
+    this.runSpellCastAtScript(event, this.scripts[ModuleObjectScript.CreatureOnSpellAt]);
+  }
+
+  override runSpawnScript(): void {
+    const onSpawn = this.scripts[ModuleObjectScript.CreatureOnSpawn];
+    if(onSpawn){
+      onSpawn.run(this, 0);
+      console.log('spawned', this.getName());
+    }
+  }
 
   override onCombatRoundEnd(){
     if(this.combatData.lastAttemptedAttackTarget instanceof ModuleObject && this.combatData.lastAttemptedAttackTarget.isDead())

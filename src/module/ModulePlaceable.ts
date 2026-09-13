@@ -12,6 +12,8 @@ import { SSFType } from "@/enums/resource/SSFType";
 import type { SWAnimation } from "@/engine/rules/SWAnimation";
 import { NWScript } from "@/nwscript/NWScript";
 import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { NWScriptEvent } from "@/nwscript/events";
+import { ExcitedDurationRow } from "@/combat/combat-engagement";
 import { OdysseyModel, OdysseyWalkMesh } from "@/odyssey";
 import { CExoLocString } from "@/resource/CExoLocString";
 import { DLGObject } from "@/resource/DLGObject";
@@ -272,6 +274,41 @@ export class ModulePlaceable extends ModuleObject {
     if(onAttacked){
       onAttacked.run(this);
     }
+  }
+
+  override triggerHeartbeat(){
+    if(!this.canProcessHeartbeat()){ return; }
+    const onHeartbeat = this.scripts[ModuleObjectScript.PlaceableOnHeartbeat];
+    if(!onHeartbeat){ return; }
+    onHeartbeat.run(this);
+  }
+
+  override triggerUserDefinedEvent(event: NWScriptEvent){
+    this.runUserDefinedScript(event, this.scripts[ModuleObjectScript.PlaceableOnUserDefined]);
+  }
+
+  /**
+   * placeable EventHandler OnSpellCastAt — harmful engages caster only.
+   */
+  override triggerSpellCastAtEvent(event: NWScriptEvent){
+    if(!(event instanceof NWScriptEvent)){ return; }
+
+    const caster = event.getObject(0);
+    const harmful = !!event.getInt(1);
+
+    if(harmful && isCreature(caster)){
+      this.assignHostileActor(caster);
+      caster.broadcastCombatStateToParty();
+      caster.setExcitedState(ExcitedDurationRow.SpellCast);
+      caster.removeCombatInvisibilityEffects();
+    }
+
+    this.runSpellCastAtScript(event, this.scripts[ModuleObjectScript.PlaceableOnSpellCastAt]);
+  }
+
+  override bindTrapTriggeredScript(nwscript: NWScriptInstance): ModuleObjectScript | undefined {
+    this.scripts[ModuleObjectScript.PlaceableOnTrapTriggered] = nwscript;
+    return ModuleObjectScript.PlaceableOnTrapTriggered;
   }
 
   detachFromRoom(room: ModuleRoom): void {

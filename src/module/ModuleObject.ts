@@ -36,7 +36,6 @@ import type { ModuleDoor } from "@/module/ModuleDoor";
 import type { ModuleItem } from "@/module/ModuleItem";
 import type { ModuleRoom } from "@/module/ModuleRoom";
 import type { ModuleCreature } from "@/module/ModuleCreature";
-import { ExcitedDurationRow } from "@/combat/combat-engagement";
 import { getSpeakStringNotifyPlan, listenerHearsSpeaker } from "@/combat/speak-string-broadcast";
 import {
   assignHostileActor as assignHostileActorHelper,
@@ -74,14 +73,8 @@ import { ModuleCreatureAmbientState } from "@/enums/module/ModuleCreatureAmbient
 import type { SWAnimation } from "@/engine/rules/SWAnimation";
 import type { ModuleTrigger } from "@/module/ModuleTrigger";
 
-import { isArea } from "@/module/guards/isArea";
-import { isAreaOfEffect } from "@/module/guards/isAreaOfEffect";
 import { isCreature } from "@/module/guards/isCreature";
 import { isDoor } from "@/module/guards/isDoor";
-import { isEncounter } from "@/module/guards/isEncounter";
-import { isMGEnemy } from "@/module/guards/isMGEnemy";
-import { isMGObstacle } from "@/module/guards/isMGObstacle";
-import { isMGPlayer } from "@/module/guards/isMGPlayer";
 import { isPlaceable } from "@/module/guards/isPlaceable";
 import { isTrigger } from "@/module/guards/isTrigger";
 
@@ -1264,89 +1257,46 @@ export class ModuleObject {
   }
 
   /**
-   * Trigger the user defined event
-   * : EventHandler SignalEvent 0x0B runs script_on_user_defined;
-   * EventHandler case 0x0B runs Mod_OnUsrDefined.
-   * @param event
+   * Match onDamaged / onSpellAt: always newInstance. Reusing the stored
+   * template instance can leave STORE_STATE / stack residue across UD events
+   * (Deadeye duel latch GetLocalBoolean(0) observed stuck after a partial run).
    */
-  triggerUserDefinedEvent( event: NWScriptEvent ){
-    if(!(event instanceof NWScriptEvent)){ return; }
-
-    let onUserDefined: NWScriptInstance;
-    if(isCreature(this)){
-      onUserDefined = this.scripts[ModuleObjectScript.CreatureOnUserDefined];
-    }else if(isPlaceable(this)){
-      onUserDefined = this.scripts[ModuleObjectScript.PlaceableOnUserDefined];
-    }else if(isDoor(this)){
-      onUserDefined = this.scripts[ModuleObjectScript.DoorOnUserDefined];
-    }else if(isTrigger(this)){
-      onUserDefined = this.scripts[ModuleObjectScript.TriggerOnUserDefined];
-    }else if(isArea(this)){
-      onUserDefined = this.scripts[ModuleObjectScript.AreaOnUserDefined];
-    }else if(isAreaOfEffect(this)){
-      onUserDefined = this.scripts[ModuleObjectScript.AoEOnUserDefined];
-    }else if(isEncounter(this)){
-      onUserDefined = this.scripts[ModuleObjectScript.EncounterOnUserDefined];
-    }
-
-    if(!onUserDefined){ return; }
-    // Match onDamaged / onSpellAt: always newInstance. Reusing the stored
-    // template instance can leave STORE_STATE / stack residue across UD events
-    // (Deadeye duel latch GetLocalBoolean(0) observed stuck after a partial run).
-    const instance = onUserDefined.nwscript
-      ? onUserDefined.nwscript.newInstance()
-      : onUserDefined.newInstance();
+  protected runUserDefinedScript(event: NWScriptEvent, script: NWScriptInstance | undefined): void {
+    if(!(event instanceof NWScriptEvent) || !script){ return; }
+    const instance = script.nwscript
+      ? script.nwscript.newInstance()
+      : script.newInstance();
     instance.run(this, parseInt(event.getInt(0)));
   }
 
   /**
-   * Trigger the spell cast at event
+   * Trigger the user defined event — subtypes override.
+   * : EventHandler SignalEvent 0x0B runs script_on_user_defined;
+   * EventHandler case 0x0B runs Mod_OnUsrDefined.
+   */
+  triggerUserDefinedEvent( _event: NWScriptEvent ){
+    //stub
+  }
+
+  /**
+   * Run OnSpellCastAt / ScriptSpellAt with lastSpell* fields populated.
+   */
+  protected runSpellCastAtScript(event: NWScriptEvent, script: NWScriptInstance | undefined): void {
+    if(!(event instanceof NWScriptEvent) || !script){ return; }
+    const instance = script.nwscript.newInstance();
+    instance.lastSpellCaster = event.getObject(0);
+    instance.lastSpell = event.getInt(0);
+    instance.lastSpellHarmful = !!event.getInt(1);
+    instance.run(this);
+  }
+
+  /**
+   * Trigger the spell cast at event — subtypes override.
    * creature EventHandler case 2 / placeable-door:
    * harmful → BroadcastCombatStateToParty + SetExcitedState.
-   * @param event
    */
-  triggerSpellCastAtEvent( event: NWScriptEvent ){
-    if(!(event instanceof NWScriptEvent)){ return; }
-
-    const caster = event.getObject(0);
-    const harmful = !!event.getInt(1);
-
-    if(harmful && isCreature(caster)){
-      const c = caster as ModuleCreature;
-      if(isCreature(this)){
-        // Creature target: engage both sides 
-        const target = this as any as ModuleCreature;
-        // EventHandler OnSpellCastAt sets last hostile when harmful
-        target.assignHostileActor(c);
-        c.broadcastCombatStateToParty(target);
-        c.setExcitedState(ExcitedDurationRow.SpellCast);
-        c.removeCombatInvisibilityEffects();
-        target.broadcastCombatStateToParty(c);
-        target.setExcitedState(ExcitedDurationRow.Damage);
-      }else{
-        // Door / placeable: engage caster only 
-        this.assignHostileActor(c);
-        c.broadcastCombatStateToParty();
-        c.setExcitedState(ExcitedDurationRow.SpellCast);
-        c.removeCombatInvisibilityEffects();
-      }
-    }
-
-    let onSpellAt: NWScriptInstance;
-    if(isCreature(this)){
-      onSpellAt = this.scripts[ModuleObjectScript.CreatureOnSpellAt];
-    }else if(isPlaceable(this)){
-      onSpellAt = this.scripts[ModuleObjectScript.PlaceableOnSpellCastAt];
-    }else if(isDoor(this)){
-      onSpellAt = this.scripts[ModuleObjectScript.DoorOnSpellCastAt];
-    }
-
-    if(!onSpellAt){ return; }
-    const instance = onSpellAt.nwscript.newInstance();
-    instance.lastSpellCaster = caster;
-    instance.lastSpell = event.getInt(0);
-    instance.lastSpellHarmful = harmful;
-    instance.run(this);
+  triggerSpellCastAtEvent( _event: NWScriptEvent ){
+    //stub
   }
 
   /**
@@ -1371,35 +1321,17 @@ export class ModuleObject {
   }
 
   /**
-   * Trigger the heartbeat
+   * Heartbeat gate — only after onSpawn and module event processing is ready.
+   */
+  protected canProcessHeartbeat(): boolean {
+    return this.spawned === true && !!GameState.module?.readyToProcessEvents;
+  }
+
+  /**
+   * Trigger the heartbeat — subtypes override.
    */
   triggerHeartbeat(){
-    //Only allow the heartbeat script to run after the onspawn is called
-    if(!(this.spawned === true && GameState.module.readyToProcessEvents)){
-      return;
-    }
-
-    let onHeartbeat: NWScriptInstance;
-    if(isCreature(this)){
-      onHeartbeat = this.scripts[ModuleObjectScript.CreatureOnHeartbeat];
-    }else if(isPlaceable(this)){
-      onHeartbeat = this.scripts[ModuleObjectScript.PlaceableOnHeartbeat];
-    }else if(isDoor(this)){
-      onHeartbeat = this.scripts[ModuleObjectScript.DoorOnHeartbeat];
-    }else if(isTrigger(this)){
-      onHeartbeat = this.scripts[ModuleObjectScript.TriggerOnHeartbeat];
-    }else if(isEncounter(this)){
-      onHeartbeat = this.scripts[ModuleObjectScript.EncounterOnHeartbeat];
-    }else if(isMGObstacle(this)){
-      onHeartbeat = this.scripts[ModuleObjectScript.MGObstacleOnHeartbeat];
-    }else if(isMGEnemy(this)){
-      onHeartbeat = this.scripts[ModuleObjectScript.MGEnemyOnHeartbeat];
-    }else if(isMGPlayer(this)){
-      onHeartbeat = this.scripts[ModuleObjectScript.MGPlayerOnHeartbeat];
-    }
-    if(!onHeartbeat){ return; }
-
-    onHeartbeat.run(this);
+    //stub
   }
 
   /**
@@ -1411,25 +1343,32 @@ export class ModuleObject {
   }
 
   /**
+   * Subtype OnSpawn / ScriptSpawn — creatures override.
+   */
+  protected runSpawnScript(): void {
+    //stub
+  }
+
+  /**
    * On spawn
    * @param runScript
    */
   onSpawn(runScript = true){
-
-    let onSpawn: NWScriptInstance;
-    if(isCreature(this)){
-      onSpawn = this.scripts[ModuleObjectScript.CreatureOnSpawn];
-    }
-
-    if(runScript && onSpawn){
-      onSpawn.run(this, 0);
-      console.log('spawned', this.getName());
+    if(runScript){
+      this.runSpawnScript();
     }
 
     this.spawned = true;
 
     this.initEffects();
     this.computeBoundingBox();
+  }
+
+  /**
+   * Bind trapscript into the host's OnTrapTriggered slot — trigger/placeable/door override.
+   */
+  protected bindTrapTriggeredScript(_nwscript: NWScriptInstance): ModuleObjectScript | undefined {
+    return undefined;
   }
 
   /**
@@ -1637,19 +1576,12 @@ export class ModuleObject {
 
     if(trap.trapscript?.length && trap.trapscript != '****'){
       const nwscript = NWScript.Load(trap.trapscript);
-      let trapKey: ModuleObjectScript | undefined;
-      if(isTrigger(this)){
-        trapKey = ModuleObjectScript.TriggerOnTrapTriggered;
-        this.scripts[trapKey] = nwscript;
-      }else if(isPlaceable(this)){
-        trapKey = ModuleObjectScript.PlaceableOnTrapTriggered;
-        this.scripts[trapKey] = nwscript;
-      }else if(isDoor(this)){
-        trapKey = ModuleObjectScript.DoorOnTrapTriggered;
-        this.scripts[trapKey] = nwscript;
-      }
       if(nwscript){
-        nwscript.bindOwner(this, trapKey);
+        const trapKey = this.bindTrapTriggeredScript(nwscript);
+        if(trapKey){
+          this.scripts[trapKey] = nwscript;
+          nwscript.bindOwner(this, trapKey);
+        }
       }
     }
 

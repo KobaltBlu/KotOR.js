@@ -499,6 +499,13 @@ export class ModuleMGEnemy extends ModuleObject {
     onCreate.run(this, 0);
   }
 
+  override triggerHeartbeat(){
+    if(!this.canProcessHeartbeat()){ return; }
+    const onHeartbeat = this.scripts[ModuleObjectScript.MGEnemyOnHeartbeat];
+    if(!onHeartbeat){ return; }
+    onHeartbeat.run(this);
+  }
+
   /** Go. */
   go(){
     if(this.running || !this.alive){ return; }

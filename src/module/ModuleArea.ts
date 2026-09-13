@@ -16,6 +16,7 @@ import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import { NWScript } from "@/nwscript/NWScript";
+import { NWScriptEvent } from "@/nwscript/events";
 import { ResourceTypes } from "@/resource/ResourceTypes";
 import { LYTObject } from "@/resource/LYTObject";
 import { Utility } from "@/utility/Utility";
@@ -3394,6 +3395,10 @@ export class ModuleArea extends ModuleObject {
     if(!nwscript){ return; }
     nwscript.enteringObject = GameState.PartyManager.party[0];
     nwscript.run(this, 0);
+  }
+
+  override triggerUserDefinedEvent(event: NWScriptEvent){
+    this.runUserDefinedScript(event, this.scripts[ModuleObjectScript.AreaOnUserDefined]);
   }
 
   async runStartScripts(){

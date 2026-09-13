@@ -14,6 +14,8 @@ import { EngineMode } from "@/enums/engine/EngineMode";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { ModuleDoorAnimState, SignalEventType } from "@/enums";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
+import { NWScriptEvent } from "@/nwscript/events";
+import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 
 
 const OBJECTS_INSIDE_UPDATE_THRESHOLD = 15; // 15 frame ticks
@@ -488,6 +490,26 @@ export class ModuleTrigger extends ModuleObject {
     event.setTime(GameState.module.timeManager.pauseTime);
     event.eventType = SignalEventType.OnObjectExit;
     GameState.module.addEvent(event);
+  }
+
+  //---------------//
+  // SCRIPT EVENTS
+  //---------------//
+
+  override triggerHeartbeat(){
+    if(!this.canProcessHeartbeat()){ return; }
+    const onHeartbeat = this.scripts[ModuleObjectScript.TriggerOnHeartbeat];
+    if(!onHeartbeat){ return; }
+    onHeartbeat.run(this);
+  }
+
+  override triggerUserDefinedEvent(event: NWScriptEvent){
+    this.runUserDefinedScript(event, this.scripts[ModuleObjectScript.TriggerOnUserDefined]);
+  }
+
+  override bindTrapTriggeredScript(nwscript: NWScriptInstance): ModuleObjectScript | undefined {
+    this.scripts[ModuleObjectScript.TriggerOnTrapTriggered] = nwscript;
+    return ModuleObjectScript.TriggerOnTrapTriggered;
   }
 
   loadScripts(){
