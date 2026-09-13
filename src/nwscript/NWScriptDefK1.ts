@@ -88,6 +88,7 @@ import { isItem } from "@/module/guards/isItem";
 import { isMGEnemy } from "@/module/guards/isMGEnemy";
 import { isMGObstacle } from "@/module/guards/isMGObstacle";
 import { isMGPlayer } from "@/module/guards/isMGPlayer";
+import { resolveScriptAnimationConstant } from "@/module/animation/resolveScriptAnimationConstant";
 import { isObject } from "@/module/guards/isObject";
 import { isPlaceable } from "@/module/guards/isPlaceable";
 import { isSaveCapable } from "@/module/guards/isSaveCapable";
@@ -780,7 +781,7 @@ NWScriptDefK1.Actions = {
       }
 
       const action = new GameState.ActionFactory.ActionPlayAnimation();
-      action.setParameter(0, ActionParameterType.INT, this.caller.getAnimationNameById(args[0]));
+      action.setParameter(0, ActionParameterType.INT, resolveScriptAnimationConstant(args[0]));
       action.setParameter(1, ActionParameterType.FLOAT, args[1] || 1.0);
       action.setParameter(2, ActionParameterType.FLOAT, args[2]);
       this.caller.actionQueue.add(action);
@@ -4367,7 +4368,7 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [number, number, number]){
       if(isObject(this.caller)){
         let action = new GameState.ActionFactory.ActionPlayAnimation();
-        action.setParameter(0, ActionParameterType.INT, this.caller.getAnimationNameById(args[0]))
+        action.setParameter(0, ActionParameterType.INT, resolveScriptAnimationConstant(args[0]))
         action.setParameter(1, ActionParameterType.FLOAT, args[1])
         action.setParameter(2, ActionParameterType.FLOAT, args[2])
         this.caller.actionQueue.addFront(action);
