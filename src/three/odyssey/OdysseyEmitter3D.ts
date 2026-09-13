@@ -1436,9 +1436,17 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
   /** Viewport size for POINTS gl_PointSize and soft-particle depth sampling. */
   private getViewportResolution(out: THREE.Vector2): THREE.Vector2 {
-    const rt = this.context?.depthTarget || GameState.depthTarget;
-    const w = rt?.width || GameState.ResolutionManager?.getViewportWidth?.() || 1;
-    const h = rt?.height || GameState.ResolutionManager?.getViewportHeight?.() || 1;
+    const ctx = this.context as {
+      depthTarget?: THREE.WebGLRenderTarget;
+      width?: number;
+      height?: number;
+    } | undefined;
+    // Prefer the owning view's depthTarget / RTT size (LBL_3DView, LBL_MapView).
+    // GameState.depthTarget is full-viewport — using it for GUI POINTS made
+    // particles viewport/rtt times too large (CharGen gas_neut smoke wall).
+    const rt = ctx?.depthTarget || GameState.depthTarget;
+    const w = rt?.width || ctx?.width || GameState.ResolutionManager?.getViewportWidth?.() || 1;
+    const h = rt?.height || ctx?.height || GameState.ResolutionManager?.getViewportHeight?.() || 1;
     return out.set(w, h);
   }
 

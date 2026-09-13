@@ -4,6 +4,7 @@ import type { LightManager } from "@/managers";
 import { OdysseyModel3D, OdysseyLightingBinder } from "@/three/odyssey";
 import type { GUIControl } from "@/gui/GUIControl";
 import { asExtentInt } from "@/gui/GUICoord";
+import { runOdysseyDepthPrepass } from "@/utility/odysseyDepthPrepass";
 
 /**
  * SetViewAngle value used by ClassSel / MainCG / PORTCUST /
@@ -27,7 +28,16 @@ export class LBL_3DView {
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
   texture: THREE.WebGLRenderTarget;
-  /** @deprecated Unused depth RT — disposed after construction. */
+  /**
+   * Soft-particle / POINTS resolution target — sized to this view's RTT.
+   * Emitters read context.depthTarget for gl_PointSize and DEPTH_TEXTURE.
+   * Falling back to GameState.depthTarget (full viewport) made GUI POINTS
+   * ~viewport/rtt times too large (CharGenMain gas_neut wall of smoke).
+   */
+  depthTarget: THREE.WebGLRenderTarget | null = null;
+  /** Set by DEPTH_TEXTURE emitters during tick; cleared after prepass. */
+  softDepthNeeded: boolean = false;
+  /** @deprecated Unused — kept for older call sites; prefer depthTarget. */
   tDepth: THREE.WebGLRenderTarget | null = null;
   clearColor: THREE.Color;
   currentCamera: THREE.Camera;
@@ -70,6 +80,7 @@ export class LBL_3DView {
     this.camera = new THREE.PerspectiveCamera( GUI_3D_VIEW_FOV, this.width/this.height, 0.1, 15000 );
     this.texture = new THREE.WebGLRenderTarget( this.width, this.height, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter});
     this.tDepth = null;
+    this.ensureDepthTarget();
     this.clearColor = new THREE.Color(0x000000);
 
     this.currentCamera = this.camera;
@@ -215,8 +226,38 @@ export class LBL_3DView {
 
   updateRatio(){
     this.texture.setSize(this.width, this.height);
+    this.ensureDepthTarget();
     this.camera.aspect = this.width / this.height;
     this.camera.updateProjectionMatrix();
+  }
+
+  /** Allocate/resize depthTarget to match the color RTT. */
+  private ensureDepthTarget(){
+    const w = Math.max(1, this.width);
+    const h = Math.max(1, this.height);
+    if(!this.depthTarget){
+      this.depthTarget = new THREE.WebGLRenderTarget(w, h, {
+        minFilter: THREE.NearestFilter,
+        magFilter: THREE.NearestFilter,
+      });
+      this.depthTarget.texture.generateMipmaps = false;
+      this.depthTarget.stencilBuffer = false;
+      this.depthTarget.depthBuffer = true;
+      this.depthTarget.depthTexture = new THREE.DepthTexture(w, h);
+      this.depthTarget.depthTexture.type = THREE.UnsignedShortType;
+    }else{
+      this.depthTarget.setSize(w, h);
+    }
+    const dt = this.depthTarget.depthTexture;
+    if(dt){
+      if(!dt.image){
+        dt.image = { width: w, height: h } as any;
+      }else{
+        dt.image.width = w;
+        dt.image.height = h;
+      }
+      dt.needsUpdate = true;
+    }
   }
 
   /** Update every OdysseyModel3D in the view (nested portraits under light rigs). */
@@ -293,6 +334,17 @@ export class LBL_3DView {
 
     let oldClearColor = new THREE.Color()
     GameState.renderer.getClearColor(oldClearColor);
+    // Soft-particle depth prepass into this view's depthTarget (not the
+    // full-screen GameState.depthTarget — wrong size for POINTS / tDepth UV).
+    if(this.softDepthNeeded && this.depthTarget && this.currentCamera){
+      this.softDepthNeeded = false;
+      runOdysseyDepthPrepass({
+        scene: this.scene,
+        renderer: GameState.renderer,
+        camera: this.currentCamera,
+        depthTarget: this.depthTarget,
+      });
+    }
     //GameState.renderer.setClearColor(this.clearColor, 1);
     GameState.renderer.setRenderTarget(this.texture);
     GameState.renderer.clear();
