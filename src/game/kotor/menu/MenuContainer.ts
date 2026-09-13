@@ -220,12 +220,13 @@ export class MenuContainer extends GameMenu {
   /** HandleInputEvent OK in take mode — loot all and close. */
   takeAllItems(){
     this.LB_ITEMS.setItems([]);
-    if(this.container instanceof GameState.Module.ModuleArea.ModulePlaceable){
-      this.container.retrieveInventory();
-      this.container.close(GameState.PartyManager.party[0]);
-    }else if(this.container instanceof GameState.Module.ModuleArea.ModuleCreature){
+    if(
+      this.container instanceof GameState.Module.ModuleArea.ModulePlaceable ||
+      this.container instanceof GameState.Module.ModuleArea.ModuleCreature
+    ){
       this.container.retrieveInventory();
     }
+    // Do not placeable.close() here — this.close() → closeContainerObject() does it once.
     this.close();
   }
 
