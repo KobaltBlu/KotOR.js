@@ -7,12 +7,19 @@ import {
   classifyJumpDestination,
 } from "@/engine/jump-to-location";
 import { applyAddToArea, applyLocalJump } from "@/actions/ActionJumpToPoint";
+import { findSafeLocation } from "@/engine/pathfinding/find-safe-location";
+import { getPathPersonalSpace } from "@/combat/attack-range";
 
 import { isCreature } from "@/module/guards/isCreature";
+import * as THREE from "three";
+
+const _jumpCenter = new THREE.Vector3();
+const _jumpSafe = new THREE.Vector3();
 
 /**
- * ActionJumpToObject — jump-to-object action.
- * Uses target object's area; AddToArea when crossing loaded areas.
+ * ActionJumpToObject — retail AIActionJumpToObject.
+ * Always ComputeSafeLocation(radius 20). Param 1 (bWalkStraight) is
+ * require-LOS for offset candidates, not exact-vs-safe. Search failure → FAILED.
  *
  * @file ActionJumpToObject.ts
  */
@@ -24,7 +31,7 @@ export class ActionJumpToObject extends Action {
 
     //PARAMS
     // 0 - dword: oTarget (target object id to jump to)
-    // 1 - int: bWalkStraight (safe location check flag, default 1)
+    // 1 - int: bWalkStraight — ComputeSafeLocation requireLOS (default 1)
   }
 
   update(delta: number = 0): ActionStatus {
@@ -64,11 +71,26 @@ export class ActionJumpToObject extends Action {
       applyAddToArea(this.owner, classified.area);
     }
 
+    // Retail default TRUE — require TestDirectLine to center for offset hits.
+    const requireLineOfSight = (this.getParameter<number>(1) ?? 1) !== 0;
+    const area = this.owner.area || this.target.area;
+    _jumpCenter.copy(this.target.position);
+
+    if(!findSafeLocation(area, _jumpCenter, _jumpSafe, {
+      radius: 20,
+      personalSpace: getPathPersonalSpace(this.owner),
+      owner: this.owner,
+      requireLineOfSight,
+      allowPartyCreatures: false,
+    })){
+      return ActionStatus.FAILED;
+    }
+
     applyLocalJump(
       this.owner,
-      this.target.position.x,
-      this.target.position.y,
-      this.target.position.z,
+      _jumpSafe.x,
+      _jumpSafe.y,
+      _jumpSafe.z,
       this.target.rotation?.z ?? 0
     );
 

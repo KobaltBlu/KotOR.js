@@ -65,4 +65,35 @@ describe("noCreaturesOnLine", () => {
 
     expect(result.clear).toBe(true);
   });
+
+  it("soft-clears start-overlap by default (walk path)", () => {
+    const owner = creature(1, 0, 0);
+    // Blocker sits on the segment start — EvaluateOverlappingTargets soft-allows.
+    const blocker = creature(9, 0.05, 0);
+    const area = { creatures: [owner, blocker] } as unknown as ModuleArea;
+
+    const result = noCreaturesOnLine(
+      area,
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(5, 0, 0),
+      { owner }
+    );
+
+    expect(result.clear).toBe(true);
+  });
+
+  it("hard-blocks start-overlap when softClearStartOverlap is false", () => {
+    const owner = creature(1, 10, 10);
+    const blocker = creature(9, 0.05, 0);
+    const area = { creatures: [owner, blocker] } as unknown as ModuleArea;
+
+    const result = noCreaturesOnLine(
+      area,
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(5, 0, 0),
+      { owner, softClearStartOverlap: false }
+    );
+
+    expect(result).toEqual({ clear: false, blockingCreatureId: 9 });
+  });
 });

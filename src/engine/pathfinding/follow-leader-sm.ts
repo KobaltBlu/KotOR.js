@@ -635,7 +635,9 @@ function applyFollowSetPosition(
     if(!hit.ok && hit.code !== TestDirectLineCode.Ok){
       if(hit.clearPoint){
         _tmp.copy(hit.clearPoint);
-      }else if(!testSafeLocationPoint(area, _tmp, owner)){
+      }else if(!testSafeLocationPoint(area, _tmp, owner, {
+        allowPartyCreatures: true,
+      })){
         faceToward(owner, goal);
         owner.clearLocomotionAnimation?.();
         return 0;

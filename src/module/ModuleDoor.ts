@@ -49,6 +49,10 @@ import {
   combineSavingThrow,
   rollSavingThrow,
 } from "@/module/savingThrow/savingThrowMath";
+import {
+  logAlertzelkOnOpen,
+  shouldLogAlertzelkOnOpen,
+} from "@/module/door-onopen-diagnostics";
 
 interface AnimStateInfo {
   lastAnimState: ModuleDoorAnimState;
@@ -613,6 +617,11 @@ export class ModuleDoor extends ModuleObject {
     }
 
     const onOpen = this.scripts[ModuleObjectScript.DoorOnOpen];
+    // Zelka lab-door OnOpen (k_ptar_alertzelk): log party leader vs GetFirstPC
+    // so JumpToObject gather can be confirmed when a CNPC is party[0].
+    if(onOpen && shouldLogAlertzelkOnOpen(onOpen.name)){
+      logAlertzelkOnOpen(this, object);
+    }
     if(onOpen){
       onOpen.run(this);
     }

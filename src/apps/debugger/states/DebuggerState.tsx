@@ -129,7 +129,11 @@ export class DebuggerState {
             }else{
               instance.debugCallStack = [];
             }
-            this.setSelectedInstance(instance);
+            // Focus the paused script only when selection actually changes.
+            // Always emit instance-updated so the open view can refresh seek/stack.
+            if(this.selectedInstance?.uuid !== instance.uuid){
+              this.setSelectedInstance(instance);
+            }
             instance.dispatchEvent('update');
             this.dispatchEvent('instance-updated', instance);
           }

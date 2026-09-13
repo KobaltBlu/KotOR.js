@@ -221,8 +221,11 @@ export class CutsceneManager {
   }
 
   /**
-   * True when the conversation listener is a party member and the real PC is not
-   * already party leader — AIActionDialogObject CNPC→PC swap gate.
+   * True when a controlled CNPC is the conversation listener and the real PC
+   * is not already party leader — AIActionDialogObject CNPC→PC swap gate.
+   * Retail only swaps when the dialog initiator is a controlled non-PC; our
+   * click-talk path uses that CNPC as listener. Scripted StartConversation
+   * with the PC as listener must not swap (e.g. Zelka ActionStartConversation).
    */
   static needsPartyDialogLeaderSwitch(
     owner: ModuleObject | undefined,
@@ -235,7 +238,10 @@ export class CutsceneManager {
       resolvedOwner = resolvedListener;
       resolvedListener = tmp;
     }
-    if(!resolvedListener?.isPM){ return false; }
+    // CNPC only — real PC listener (isPM) must not trigger the swap.
+    if(!resolvedListener?.isPM || resolvedListener.isPlayer){ return false; }
+    const player = GameState.PartyManager?.Player;
+    if(player && resolvedListener === player){ return false; }
     if(GameState.PartyManager?.IsPlayerPartyLeader?.()){ return false; }
     // : only when the converse-with object has PartyInteract == 0.
     const target = resolvedOwner as { partyInteract?: number | boolean } | undefined;
@@ -507,6 +513,17 @@ export class CutsceneManager {
       const creature = member as ModuleCreature;
       creature.cancelLocomotionActions();
       creature.clearLocomotionState(true);
+      // Clear sticky use clips (e.g. unlockdr) left by ActionUnlockObject —
+      // clearLocomotionAnimation only demotes walk/run.
+      const anim = creature.animationState?.index ?? creature.animState;
+      if(
+        anim === ModuleCreatureAnimState.UNLOCK_DOOR ||
+        anim === ModuleCreatureAnimState.UNLOCK_DOOR2 ||
+        anim === ModuleCreatureAnimState.UNLOCK_CONTAINER ||
+        anim === ModuleCreatureAnimState.UNLOCK_CONTAINER2
+      ){
+        creature.setAnimationState(ModuleCreatureAnimState.IDLE);
+      }
     }
   }
 
@@ -654,7 +671,12 @@ export class CutsceneManager {
     this.cutsceneMode = (this.dialog.isAnimatedCutscene) ? CutsceneMode.ANIMATED : CutsceneMode.DIALOG;
 
     // Safety net: primary CNPC→PC swap + fade runs before active (pendingPartyDialogSwitch).
-    if(this.listener.isPM && !GameState.PartyManager.IsPlayerPartyLeader()){
+    // Same gate as needsPartyDialogLeaderSwitch — CNPC listener only, not PC.
+    const listenerIsCNPC =
+      !!this.listener?.isPM &&
+      !this.listener.isPlayer &&
+      this.listener !== GameState.PartyManager?.Player;
+    if(listenerIsCNPC && !GameState.PartyManager.IsPlayerPartyLeader()){
       const speakTarget = this.owner as { partyInteract?: number | boolean };
       if(!speakTarget?.partyInteract){
         GameState.PartyManager.MakePlayerLeader();

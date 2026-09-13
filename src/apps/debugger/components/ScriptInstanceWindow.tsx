@@ -234,14 +234,15 @@ export const ScriptInstanceWindow = () => {
 
   useEffect(() => {
     const appState = stateRef.current;
-    const onStateInstanceUpdate = (inst: KotOR.NWScriptInstance) => refreshInstance(inst);
-    const onSelectedInstance = (inst: KotOR.NWScriptInstance) => refreshInstance(inst);
-    const onBreakpoint = () => {
-      if(instance){
-        setBpVersion(instance.breakPointVersion);
-        forceRender((n) => n + 1);
+    // Only refresh the open source view when *this* instance updates.
+    // Owner/create traffic also fires instance-updated for other scripts;
+    // treating those as selection would thrash the decompiled viewport.
+    const onStateInstanceUpdate = (inst: KotOR.NWScriptInstance) => {
+      if(instance && inst.uuid === instance.uuid){
+        refreshInstance(inst);
       }
     };
+    const onSelectedInstance = (inst: KotOR.NWScriptInstance) => refreshInstance(inst);
 
     appState.addEventListener('instance-updated', onStateInstanceUpdate);
     appState.addEventListener('selected-instance', onSelectedInstance);

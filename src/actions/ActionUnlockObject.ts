@@ -18,24 +18,23 @@ import { isPlaceable } from "@/module/guards/isPlaceable";
 
 /**
  * ActionUnlockObject class.
- * 
- * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
+ * Retail AIActionUnlockObject: move into range → PlayAnimation
+ * (door 0x2790 / placeable 0x2793, 1.5s) + StartGuiTimingBar → EvaluateLock /
+ * OpenDoor. Do not leave UNLOCK_* sticky after complete (dialog can start
+ * from OnOpen while the clip would otherwise loop).
+ *
  * @file ActionUnlockObject.ts
- * @author KobaltBlu <https://github.com/KobaltBlu>
- * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ActionUnlockObject extends Action {
-  timer: number;
   shouted: boolean;
   usedItem: boolean;
   oItem: ModuleItem;
-  private timingBarStarted = false;
+  private animQueued = false;
 
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
     this.type = ActionType.ActionUnlockObject;
-    this.timer = 1.5;
 
     //PARAMS
     // 0 - dword: oTarget (door or placeable object id to unlock)
@@ -44,18 +43,32 @@ export class ActionUnlockObject extends Action {
     
   }
 
+  private finishFailed(): ActionStatus {
+    GameState.GuiTimingBarManager?.stopFor?.(this.owner);
+    if(isCreature(this.owner)){
+      this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
+    }
+    return ActionStatus.FAILED;
+  }
+
+  private finishComplete(): ActionStatus {
+    GameState.GuiTimingBarManager?.stopFor?.(this.owner);
+    if(isCreature(this.owner)){
+      this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
+    }
+    return ActionStatus.COMPLETE;
+  }
+
   update(delta: number = 0): ActionStatus {
     this.target = this.getParameter<ModuleObject>(0);
     this.oItem = this.getParameter<ModuleItem>(1);
 
     if(!isDoor(this.target) && !isPlaceable(this.target)){
-      GameState.GuiTimingBarManager?.stopFor?.(this.owner);
-      return ActionStatus.FAILED;
+      return this.finishFailed();
     }
 
     if(isDoor(this.owner) || isPlaceable(this.owner)){
-      GameState.GuiTimingBarManager?.stopFor?.(this.owner);
-      return ActionStatus.FAILED;
+      return this.finishFailed();
     }
     
     if(!this.shouted){
@@ -66,84 +79,75 @@ export class ActionUnlockObject extends Action {
     if(isCreature(this.owner) &&
        queueMoveIntoUseRange(this.owner, this.target, this.groupId)){
       return ActionStatus.IN_PROGRESS;
-    }else{
-
-      if(this.oItem && !this.usedItem){
-        for(let i = 0, len = this.oItem.properties.length; i < len; i++){
-          let property = this.oItem.properties[i];
-          if(!property.isUseable()){ continue; }
-    
-          if(property.is(ModuleItemProperty.ThievesTools)){
-            const effect = new GameState.GameEffectFactory.EffectSkillIncrease();
-            effect.setCreator(this.owner);
-            effect.setSpellId(-1);
-            effect.setInt(0, SkillType.SECURITY);
-            effect.setInt(1, property.getValue());
-            effect.setInt(2, GameState.SWRuleSet.racialTypeCount);
-            this.owner.addEffect(effect.initialize(), GameEffectDurationType.TEMPORARY, 3);
-          }
-        }
-        this.usedItem = true;
-      }
-
-      this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
-      this.owner.force = 0;
-      this.owner.speed = 0;
-                        
-      if(isCreature(this.owner))
-        this.owner.setFacingObject( this.target );
-
-      if(!this.timingBarStarted){
-        this.timingBarStarted = true;
-        this.target.audioEmitter.playSound('gui_lockpick');
-        // StartGuiTimingBar(this, 0x5dc, 8) — 1500 ms, type 8
-        if(this.owner === GameState.getCurrentPlayer()){
-          GameState.GuiTimingBarManager?.startMs?.(0x5dc, 'Unlock', this.owner, 8);
-        }
-      }
-
-      if(!this.owner.isSimpleCreature()){
-        if(isDoor(this.target)){
-          this.owner.setAnimationState(ModuleCreatureAnimState.UNLOCK_DOOR);
-        }else{
-          this.owner.setAnimationState(ModuleCreatureAnimState.UNLOCK_CONTAINER);
-        }
-      }
-
-      this.timer -= delta;
-
-      if(this.timer <= 0){
-        const unlocked = (this.target as any).attemptUnlock(this.owner);
-        if(!unlocked){
-          const event = new GameState.GameEventFactory.EventSignalEvent();
-          event.setCaller(this.getOwner());
-          event.setObject(this.target);
-          event.setDay(GameState.module.timeManager.pauseDay);
-          event.setTime(GameState.module.timeManager.pauseTime);
-          event.eventType = SignalEventType.OnFailToOpen;
-          GameState.module.addEvent(event);
-        }
-        GameState.GuiTimingBarManager?.stopFor?.(this.owner);
-        return ActionStatus.COMPLETE;
-      }
-      
-      if(this.oItem && !GameState.infiniteUses){
-        //If we have more charges, reduce the charges count by 1
-        if(this.oItem.charges > 1){
-          this.oItem.charges -= 1;
-        }
-        //If we are out of charges remove the item from the owners inventory
-        else
-        {
-          this.owner.removeItem(this.oItem, 1);
-        }
-      }
-
-      return ActionStatus.IN_PROGRESS;
-      
     }
 
-    return ActionStatus.FAILED;
+    if(this.oItem && !this.usedItem){
+      for(let i = 0, len = this.oItem.properties.length; i < len; i++){
+        let property = this.oItem.properties[i];
+        if(!property.isUseable()){ continue; }
+  
+        if(property.is(ModuleItemProperty.ThievesTools)){
+          const effect = new GameState.GameEffectFactory.EffectSkillIncrease();
+          effect.setCreator(this.owner);
+          effect.setSpellId(-1);
+          effect.setInt(0, SkillType.SECURITY);
+          effect.setInt(1, property.getValue());
+          effect.setInt(2, GameState.SWRuleSet.racialTypeCount);
+          this.owner.addEffect(effect.initialize(), GameEffectDurationType.TEMPORARY, 3);
+        }
+      }
+      this.usedItem = true;
+    }
+
+    if(isCreature(this.owner)){
+      this.owner.force = 0;
+      this.owner.speed = 0;
+      this.owner.setFacingObject(this.target);
+    }
+
+    // Retail: PlayAnimation(0x2790/0x2793, 1.0, 1.5) then resume unlock.
+    if(!this.animQueued){
+      this.animQueued = true;
+      this.target.audioEmitter.playSound('gui_lockpick');
+
+      if(isCreature(this.owner) && !this.owner.isSimpleCreature()){
+        const animId = isDoor(this.target)
+          ? ModuleCreatureAnimState.UNLOCK_DOOR
+          : ModuleCreatureAnimState.UNLOCK_CONTAINER;
+        const playAnim = new GameState.ActionFactory.ActionPlayAnimation();
+        playAnim.setParameter(0, ActionParameterType.INT, animId);
+        playAnim.setParameter(1, ActionParameterType.FLOAT, 1.0);
+        playAnim.setParameter(2, ActionParameterType.FLOAT, 1.5);
+        this.owner.actionQueue.addFront(playAnim);
+      }
+
+      // StartGuiTimingBar(this, 0x5dc, 8) — 1500 ms, type 8
+      if(this.owner === GameState.getCurrentPlayer()){
+        GameState.GuiTimingBarManager?.startMs?.(0x5dc, 'Unlock', this.owner, 8);
+      }
+      return ActionStatus.IN_PROGRESS;
+    }
+
+    const unlocked = (this.target as any).attemptUnlock(this.owner);
+    if(!unlocked){
+      const event = new GameState.GameEventFactory.EventSignalEvent();
+      event.setCaller(this.getOwner());
+      event.setObject(this.target);
+      event.setDay(GameState.module.timeManager.pauseDay);
+      event.setTime(GameState.module.timeManager.pauseTime);
+      event.eventType = SignalEventType.OnFailToOpen;
+      GameState.module.addEvent(event);
+    }
+
+    if(this.oItem && !GameState.infiniteUses){
+      if(this.oItem.charges > 1){
+        this.oItem.charges -= 1;
+      }else{
+        this.owner.removeItem(this.oItem, 1);
+      }
+    }
+
+    return this.finishComplete();
   }
 
 }

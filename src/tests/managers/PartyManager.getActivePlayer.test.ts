@@ -121,3 +121,34 @@ describe('PartyManager.getActivePlayer', () => {
     expect(carth.setPosition).toHaveBeenCalled();
   });
 });
+
+/**
+ * k_ptar_alertzelk InitConversation gate:
+ * JumpToObject runs only when GetFirstPC() != GetPartyMemberByIndex(0).
+ */
+describe('PartyManager alertzelk GetFirstPC vs party[0] gate', () => {
+  beforeEach(() => {
+    PartyManager.party = [];
+    PartyManager.Player = undefined as any;
+  });
+
+  test('PC party leader: GetFirstPC === party[0] (no JumpToObject branch)', () => {
+    const pc = makeCreature({ id: 1, isPlayer: true, npcId: -1 });
+    const carth = makeCreature({ id: 2, isPlayer: false, npcId: 2 });
+    PartyManager.party = [pc, carth];
+    PartyManager.Player = pc;
+    expect(PartyManager.getFirstPC()).toBe(pc);
+    expect(PartyManager.getFirstPC()).toBe(PartyManager.party[0]);
+  });
+
+  test('Carth party leader: GetFirstPC !== party[0] (JumpToObject branch)', () => {
+    const carth = makeCreature({ id: 2, isPlayer: false, npcId: 2 });
+    const pc = makeCreature({ id: 1, isPlayer: true, npcId: -1 });
+    PartyManager.party = [carth, pc];
+    PartyManager.Player = pc;
+    expect(PartyManager.party[0]).toBe(carth);
+    expect(PartyManager.getFirstPC()).toBe(pc);
+    expect(PartyManager.getFirstPC()).not.toBe(PartyManager.party[0]);
+  });
+});
+

@@ -5600,7 +5600,9 @@ NWScriptDefK1.Actions = {
       if(!(isCreature(this.caller))) return;
       if(!(isObject(args[0]))) return;
 
-      (this.caller as ModuleCreature).jumpToObject(args[0]);
+      // args[1] = bWalkStraight → ComputeSafeLocation requireLOS; retail default TRUE
+      const bWalkStraight = args[1] === undefined || args[1] === null ? 1 : (args[1] | 0);
+      (this.caller as ModuleCreature).jumpToObject(args[0], bWalkStraight);
     }
   },
   386:{

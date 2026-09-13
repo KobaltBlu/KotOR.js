@@ -80,6 +80,13 @@ export function noCreaturesOnLine(
      * (NoCreatures arg5 gate — rarely set by callers).
      */
     skipBumpable?: boolean;
+    /**
+     * When true (default), EvaluateOverlappingTargets soft-clears creatures
+     * already overlapping the segment start (walk/path splicing).
+     * Retail TestSafeLocationPoint passes param_7=0 — set false so occupied
+     * cells hard-block (JumpToObject / findSafeLocation).
+     */
+    softClearStartOverlap?: boolean;
     /** Optional CWalkHitInfo out-param. */
     hit?: WalkHitInfo;
   } = {}
@@ -93,6 +100,7 @@ export function noCreaturesOnLine(
   const ignore = options.ignoreCreatureIds;
   const allowParty = options.allowPartyCreatures === true;
   const skipBumpable = options.skipBumpable === true;
+  const softClearStart = options.softClearStartOverlap !== false;
 
   const candidates: ModuleCreature[] = [];
   if(area.creatures?.length){
@@ -137,11 +145,13 @@ export function noCreaturesOnLine(
     const radius = getCreaturePersonalSpace(creature) + selfSpace;
     const dist = distPointToSegment2D(px, py, from.x, from.y, to.x, to.y);
     if(dist < radius){
-      const soft = evaluateOverlappingTargets(
-        creature.position, from, radius,
-        { owner: options.owner, softCreature: options.softCreature }
-      );
-      if(soft.allow) continue;
+      if(softClearStart){
+        const soft = evaluateOverlappingTargets(
+          creature.position, from, radius,
+          { owner: options.owner, softCreature: options.softCreature }
+        );
+        if(soft.allow) continue;
+      }
       if(options.hit){
         setHitInfoForCreature(
           creature.position, radius, from, to, options.hit

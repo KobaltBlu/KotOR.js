@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useApp } from "@/apps/debugger/context/AppContext";
 import * as KotOR from "@/apps/debugger/KotOR";
 import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
@@ -43,15 +43,22 @@ export const ScriptDebugSouthPane = () => {
   const appContext = useApp();
   const stateRef = appContext.stateRef;
   const [instance, setInstance] = useState<KotOR.NWScriptInstance>();
+  const instanceRef = useRef<KotOR.NWScriptInstance | undefined>(undefined);
   const [, rerender] = useState(0);
 
   useEffect(() => {
     const appState = stateRef.current;
     const onUpdate = (inst: KotOR.NWScriptInstance) => {
+      // Stay pinned to the user/debugger selection; ignore unrelated instance traffic.
+      if(instanceRef.current?.uuid !== inst.uuid){
+        return;
+      }
+      instanceRef.current = inst;
       setInstance(inst);
       rerender((n) => n + 1);
     };
     const onSelect = (inst: KotOR.NWScriptInstance) => {
+      instanceRef.current = inst;
       setInstance(inst);
       rerender((n) => n + 1);
     };

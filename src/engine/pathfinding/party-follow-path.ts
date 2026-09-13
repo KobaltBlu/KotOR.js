@@ -669,7 +669,10 @@ export class PartyFollowPath {
       // uses center trail, not lateral offsets
       this._tmp.set(p.x, p.y, p.z);
 
-      if(!testSafeLocationPoint(area, this._tmp)){
+      // Party trail probes allow overlapping party (follow TeleportForward).
+      if(!testSafeLocationPoint(area, this._tmp, undefined, {
+        allowPartyCreatures: true,
+      })){
         continue;
       }
 

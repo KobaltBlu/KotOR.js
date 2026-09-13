@@ -2325,12 +2325,13 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
-  jumpToObject(target: ModuleObject){
+  jumpToObject(target: ModuleObject, bWalkStraight: number = 1){
     if(target instanceof ModuleObject){
 
       let action = new GameState.ActionFactory.ActionJumpToObject();
       action.setParameter(0, ActionParameterType.DWORD, target.id );
-      action.setParameter(1, ActionParameterType.INT, 0);
+      // Retail: bWalkStraight → ComputeSafeLocation requireLOS (default TRUE)
+      action.setParameter(1, ActionParameterType.INT, bWalkStraight | 0);
       this.actionQueue.add(action);
 
     }

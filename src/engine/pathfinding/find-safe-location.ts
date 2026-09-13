@@ -29,10 +29,15 @@ export type FindSafeLocationOptions = {
   radius?: number;
   /** Step / personal_space; defaults to owner appearance.perspace. */
   personalSpace?: number;
-  /** When true, require TestDirectLine clear to center (arg4). */
+  /** When true, require TestDirectLine clear to center (ComputeSafeLocation param_4 / bWalkStraight). */
   requireLineOfSight?: boolean;
   /** Creature for perspace / creature-blocking tests. */
   owner?: ModuleObject;
+  /**
+   * When true, party members do not block TestSafeLocationPoint.
+   * Retail JumpToObject / TestSafeLocationPoint: false (default).
+   */
+  allowPartyCreatures?: boolean;
 };
 
 /**
@@ -63,7 +68,9 @@ function tryCandidate(
   _probe.set(x, y, center.z);
   _probe.z = computeHeightAtPoint(area, _probe);
 
-  if(!testSafeLocationPoint(area, _probe, options.owner)){
+  if(!testSafeLocationPoint(area, _probe, options.owner, {
+    allowPartyCreatures: options.allowPartyCreatures,
+  })){
     return false;
   }
 
@@ -163,7 +170,9 @@ export function findNonVisibleLocation(
   const consider = (x: number, y: number, requireCenterLos: boolean): boolean => {
     _probe.set(x, y, center.z);
     _probe.z = computeHeightAtPoint(area, _probe);
-    if(!testSafeLocationPoint(area, _probe, options.owner)) return false;
+    if(!testSafeLocationPoint(area, _probe, options.owner, {
+      allowPartyCreatures: options.allowPartyCreatures,
+    })) return false;
 
     if(requireCenterLos){
       const dx = center.x - _probe.x;

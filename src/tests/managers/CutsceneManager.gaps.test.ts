@@ -194,6 +194,11 @@ describe('CutsceneManager party-dialog leader switch fade', () => {
     expect(CutsceneManager.needsPartyDialogLeaderSwitch(npc as any, cnpcLeader as any)).toBe(true);
   });
 
+  test('skips switch when listener is the real PC (scripted StartConversation)', () => {
+    // Zelka ActionStartConversation(oPC) while Carth is party[0] — no position swap.
+    expect(CutsceneManager.needsPartyDialogLeaderSwitch(npc as any, pc as any)).toBe(false);
+  });
+
   test('skips switch when PartyInteract is set (engine gate)', () => {
     expect(CutsceneManager.needsPartyDialogLeaderSwitch(
       { ...npc, partyInteract: 1 } as any,

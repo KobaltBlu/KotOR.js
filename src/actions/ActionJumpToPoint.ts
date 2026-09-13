@@ -2,7 +2,6 @@ import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import type { ModuleArea } from "@/module/ModuleArea";
 import type { ModuleCreature } from "@/module/ModuleCreature";
-import type { ModuleObject } from "@/module/ModuleObject";
 import { Action } from "@/actions/Action";
 import * as THREE from "three";
 import { GameState } from "@/GameState";
@@ -12,9 +11,16 @@ import {
   isAreaLike,
   jumpFacingFromOrientation,
 } from "@/engine/jump-to-location";
+import { findSafeLocation } from "@/engine/pathfinding/find-safe-location";
+import { getPathPersonalSpace } from "@/combat/attack-range";
+
+const _jumpCenter = new THREE.Vector3();
+const _jumpSafe = new THREE.Vector3();
 
 /**
- * ActionJumpToPoint — jump-to-point action.
+ * ActionJumpToPoint — retail AIActionJumpToPoint.
+ * Always ComputeSafeLocation(fSearchRange). Param 4 (bWalkStraight) is
+ * require-LOS for offset candidates. Search failure → FAILED.
  *
  * Same area: SetPosition. Foreign loaded area: AddToArea (detach/attach).
  * Foreign module: LoadModuleWithJumpSpawn (party leader / controlled).
@@ -42,7 +48,7 @@ export class ActionJumpToPoint extends Action {
     // 1 - float: target y
     // 2 - float: target z
     // 3 - dword: target area object id
-    // 4 - int: bWalkStraight (safe location check flag)
+    // 4 - int: bWalkStraight — ComputeSafeLocation requireLOS (default 1)
     // 5 - float: fSearchRange (radius for safe location search, default 20.0)
     // 6 - float: orientation vector x
     // 7 - float: orientation vector y
@@ -116,9 +122,32 @@ export class ActionJumpToPoint extends Action {
 
     if(classified.kind === 'reattach' && classified.area){
       applyAddToArea(this.owner, classified.area);
+      destArea = classified.area;
     }
 
-    applyLocalJump(this.owner, this.x, this.y, this.z, this.facing);
+    // Retail AIActionJumpToPoint: always ComputeSafeLocation.
+    // Param 4 default TRUE; ActionJumpToLocation often passes 0 (no LOS).
+    const requireLineOfSight = (this.getParameter<number>(4) ?? 1) !== 0;
+    const radius = this.getParameter<number>(5) ?? 20.0;
+    _jumpCenter.set(this.x, this.y, this.z);
+
+    if(!findSafeLocation(destArea, _jumpCenter, _jumpSafe, {
+      radius,
+      personalSpace: getPathPersonalSpace(this.owner),
+      owner: this.owner,
+      requireLineOfSight,
+      allowPartyCreatures: false,
+    })){
+      return ActionStatus.FAILED;
+    }
+
+    applyLocalJump(
+      this.owner,
+      _jumpSafe.x,
+      _jumpSafe.y,
+      _jumpSafe.z,
+      this.facing
+    );
 
     const leader = GameState.PartyManager?.party?.[0];
     if(this.owner === leader){
