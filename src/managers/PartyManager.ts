@@ -294,11 +294,75 @@ export class PartyManager {
   }
 
   /**
+   * True when creature is a living party PC (isPlayer / npcId < 0).
+   * Dead, destroyed, or missing creatures fail.
+   */
+  static isLivingPartyPC(creature: ModuleCreature | undefined | null): boolean {
+    if(!creature){ return false; }
+    if((creature as { destroyed?: boolean }).destroyed){ return false; }
+    if(typeof creature.isDead === 'function' && creature.isDead()){ return false; }
+    if(creature.isPlayer){ return true; }
+    if(typeof creature.npcId === 'number' && creature.npcId < 0){ return true; }
+    return false;
+  }
+
+  /**
+   * Living PC for dialog camera / GetFirstPC when PartyManager.Player can
+   * desync from party[0] (orphaned corpse, mid SwitchPlayerCharacter).
+   * Prefer living party[0] PC, then living Player in party, then any living
+   * PC in party; fall back to party[0] or Player.
+   */
+  static getActivePlayer(): ModuleCreature | undefined {
+    const party0 = PartyManager.party[0];
+    if(PartyManager.isLivingPartyPC(party0)){
+      return party0;
+    }
+    const player = PartyManager.Player;
+    if(
+      player &&
+      PartyManager.party.indexOf(player) >= 0 &&
+      PartyManager.isLivingPartyPC(player)
+    ){
+      return player;
+    }
+    for(let i = 0; i < PartyManager.party.length; i++){
+      const pm = PartyManager.party[i];
+      if(PartyManager.isLivingPartyPC(pm)){
+        return pm;
+      }
+    }
+    return party0 || player || undefined;
+  }
+
+  /**
+   * If Player is dead/orphaned and party[0] is a living PC, point Player at
+   * party[0] so MakePlayerLeader / GetFirstPC stay coherent.
+   * No-op when party[0] is a CNPC leader.
+   */
+  static syncPlayerToActivePartyPC(): void {
+    const party0 = PartyManager.party[0];
+    if(!PartyManager.isLivingPartyPC(party0)){ return; }
+    const player = PartyManager.Player;
+    const playerOk =
+      !!player &&
+      PartyManager.party.indexOf(player) >= 0 &&
+      !(player as { destroyed?: boolean }).destroyed &&
+      !(typeof player.isDead === 'function' && player.isDead());
+    if(!playerOk){
+      PartyManager.Player = party0;
+    }
+  }
+
+  /**
    * player list for GetFirstPC / GetNextPC.
-   * Prefer PartyManager.Player; fall back to party[0] when Player is unset
+   * Prefer living active PC; fall back to party[0]/Player when unset
    * (minigame loads can leave party empty but keep Player).
    */
   static getPCIteratorList(): ModuleCreature[] {
+    const active = PartyManager.getActivePlayer();
+    if(active){
+      return [active];
+    }
     if(PartyManager.Player){
       return [PartyManager.Player];
     }
@@ -1872,7 +1936,24 @@ export class PartyManager {
    * @returns void
    */
   static MakePlayerLeader(swapWorldPositions: boolean = true){
-    const idx = PartyManager.party.indexOf(PartyManager.Player);
+    // Dialog CNPC→PC fade switch: PartyManager.Player can be orphaned/dead and
+    // missing from party — resolve the PC still in the party before promoting.
+    let idx = PartyManager.party.indexOf(PartyManager.Player);
+    if(idx < 0){
+      let pcIdx = -1;
+      for(let i = 0; i < PartyManager.party.length; i++){
+        const pm = PartyManager.party[i];
+        if(!pm){ continue; }
+        if((pm as { destroyed?: boolean }).destroyed){ continue; }
+        if(pm.isPlayer || (typeof pm.npcId === 'number' && pm.npcId < 0)){
+          pcIdx = i;
+          break;
+        }
+      }
+      if(pcIdx < 0){ return; }
+      PartyManager.Player = PartyManager.party[pcIdx];
+      idx = pcIdx;
+    }
     if(idx <= 0){ return; }
 
     const old_pm = PartyManager.party[0];

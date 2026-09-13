@@ -186,6 +186,8 @@ describe('CutsceneManager party-dialog leader switch fade', () => {
     (GameState.PartyManager.IsPlayerPartyLeader as jest.Mock).mockReturnValue(false);
     GameState.PartyManager.party = [cnpcLeader as any, pc as any];
     GameState.PartyManager.Player = pc as any;
+    (GameState.PartyManager as any).getActivePlayer = jest.fn(() => pc);
+    (GameState.PartyManager as any).syncPlayerToActivePartyPC = jest.fn();
   });
 
   test('needs switch when CNPC leads and target PartyInteract is clear', () => {
@@ -233,8 +235,17 @@ describe('CutsceneManager party-dialog leader switch fade', () => {
     const resume = jest.spyOn(CutsceneManager, 'startConversation').mockImplementation(() => {});
     CutsceneManager.tickPendingPartyDialogSwitch();
     expect(GameState.PartyManager.MakePlayerLeader).toHaveBeenCalled();
+    expect(GameState.PartyManager.syncPlayerToActivePartyPC).toHaveBeenCalled();
     expect(CutsceneManager.pendingPartyDialogSwitch).toBeUndefined();
-    expect(resume).toHaveBeenCalled();
+    expect(resume).toHaveBeenCalledWith(
+      expect.anything(),
+      npc,
+      pc,
+      false,
+      [],
+      -1,
+      -1,
+    );
     resume.mockRestore();
   });
 });
@@ -256,6 +267,55 @@ describe('InGameComputer setDialogMode', () => {
 
     menu.setDialogMode(ConversationState.WAITING_FOR_PC_CHOICE);
     expect(show).toHaveBeenCalled();
+  });
+});
+
+describe('CutsceneManager setReplyCamera uses living party PC', () => {
+  const livingPc = { id: 647, isPlayer: true, isPM: true, npcId: -1, isDead: () => false };
+  const stalePlayer = { id: 645, isPlayer: true, isPM: true, npcId: -1, isDead: () => true, destroyed: false };
+  const zelka = { id: 258, isPlayer: false, isPM: false };
+
+  beforeEach(() => {
+    GameState.PartyManager.party = [livingPc as any];
+    GameState.PartyManager.Player = stalePlayer as any;
+    (GameState.PartyManager as any).getActivePlayer = jest.fn(() => livingPc);
+    (GameState.PartyManager as any).syncPlayerToActivePartyPC = jest.fn(() => {
+      GameState.PartyManager.Player = livingPc as any;
+    });
+    CutsceneManager.listener = stalePlayer as any;
+    CutsceneManager.owner = zelka as any;
+    CutsceneManager.dialog = undefined as any;
+    CutsceneManager.dialogCameraPrng = undefined;
+    CutsceneManager.cameraState = {
+      speaker: { participant: zelka },
+      listener: { participant: stalePlayer },
+      cameraAngle: 0,
+      mode: 0,
+      camHeightOffset: 0,
+      tarHeightOffset: 0,
+      closeUpExtra: 0,
+      camFieldOfView: undefined,
+      dialogCamSide: undefined,
+    } as any;
+    jest.spyOn(CutsceneManager, 'setDialogCamera').mockImplementation(() => {});
+    jest.spyOn(CutsceneManager, 'trySetAnimatedCamera').mockReturnValue(false);
+    jest.spyOn(CutsceneManager, 'resolveCloseUpExtra').mockReturnValue(0);
+  });
+
+  test('frames party[0] PC when listener is orphaned dead Player', () => {
+    const entry = { speaker: zelka } as any;
+    const reply = { cameraAngle: 1, camHeightOffset: 0, tarHeightOffset: 0 } as any;
+    CutsceneManager.setReplyCamera(entry, reply);
+    // Swapped pair: speaker = player, listener = previous speaker
+    expect(CutsceneManager.cameraState.speaker.participant).toBe(livingPc);
+    expect(CutsceneManager.cameraState.listener.participant).toBe(zelka);
+    expect(CutsceneManager.cameraState.speaker.participant).not.toBe(stalePlayer);
+  });
+
+  test('rebindStaleDialogListener swaps orphaned dead listener to living PC', () => {
+    CutsceneManager.rebindStaleDialogListener();
+    expect(CutsceneManager.listener).toBe(livingPc);
+    expect(GameState.PartyManager.syncPlayerToActivePartyPC).toHaveBeenCalled();
   });
 });
 

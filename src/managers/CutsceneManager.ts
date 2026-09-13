@@ -253,10 +253,15 @@ export class CutsceneManager {
     if(GameState.FadeOverlayManager?.isFading?.()){ return; }
     this.pendingPartyDialogSwitch = undefined;
     GameState.PartyManager.MakePlayerLeader();
+    GameState.PartyManager.syncPlayerToActivePartyPC?.();
+    const listener =
+      GameState.PartyManager.getActivePlayer?.()
+      ?? GameState.PartyManager.party[0]
+      ?? pending.listener;
     this.startConversation(
       pending.dialog,
       pending.owner,
-      GameState.PartyManager.party[0] ?? pending.listener,
+      listener,
       pending.privateConversation,
       pending.ignoreObjectNames,
       pending.barkScreenX,
@@ -556,10 +561,11 @@ export class CutsceneManager {
         GameState.module?.aiScheduler.setAILevel(participant, AILevel.LOW);
       }
     }
-    // If the party leader is a switched CNPC (ControlledNPC >= 0), schedule
-    // restore to the prior controlled character after dialog unless cancelled.
+    // If a CNPC is the controlled character (PT_CONTROLLED_NPC > 0 — same gate
+    // as ApplyControlledNPC; 0/-1 mean the real PC), schedule restore to the PC
+    // after dialog unless CancelPostDialogCharacterSwitch.
     const controlled = GameState.PartyManager?.ControlledNPC;
-    if(typeof controlled === 'number' && controlled >= 0){
+    if(typeof controlled === 'number' && controlled > 0){
       this.schedulePostDialogCharacterSwitch(-1);
     }
     this.currentEntry = null;
@@ -568,6 +574,8 @@ export class CutsceneManager {
       this.listener = owner;
       this.owner = listener;
     }
+    // Rebind orphaned/dead PartyManager.Player used as listener (GetFirstPC desync).
+    this.rebindStaleDialogListener();
     this.unequipHeadItem = false;
     this.unequipItems = false;
     this.dialogUnequippedCreatures = [];
@@ -650,7 +658,10 @@ export class CutsceneManager {
       const speakTarget = this.owner as { partyInteract?: number | boolean };
       if(!speakTarget?.partyInteract){
         GameState.PartyManager.MakePlayerLeader();
-        this.listener = this.dialog.listener = GameState.PartyManager.party[0];
+        GameState.PartyManager.syncPlayerToActivePartyPC?.();
+        this.listener = this.dialog.listener =
+          GameState.PartyManager.getActivePlayer?.()
+          || GameState.PartyManager.party[0];
       }
     }
 
@@ -1544,6 +1555,33 @@ export class CutsceneManager {
   }
 
   /**
+   * If conversation listener is a dead/orphaned PM or PC, rebind to the
+   * living party PC and sync PartyManager.Player.
+   */
+  static rebindStaleDialogListener(){
+    const listener = this.listener;
+    if(!listener){ return; }
+    const isPmOrPc = !!(listener.isPM || listener.isPlayer);
+    if(!isPmOrPc){ return; }
+
+    const destroyed = !!(listener as { destroyed?: boolean }).destroyed;
+    const dead = typeof (listener as ModuleCreature).isDead === 'function'
+      && (listener as ModuleCreature).isDead();
+    const notInParty = GameState.PartyManager.party.indexOf(listener as ModuleCreature) < 0;
+    if(!destroyed && !dead && !notInParty){ return; }
+
+    GameState.PartyManager.syncPlayerToActivePartyPC?.();
+    const active = GameState.PartyManager.getActivePlayer?.()
+      || GameState.PartyManager.party[0];
+    if(active && active !== listener){
+      this.listener = active;
+      if(this.dialog){
+        this.dialog.listener = active;
+      }
+    }
+  }
+
+  /**
    * ShowDialogReplies — swap so player is speaker, then
    * UpdateShotCamera with the first reply's camera angle / heights / id.
    */
@@ -1552,10 +1590,13 @@ export class CutsceneManager {
       this.cameraState.speaker.participant
       || entry.speaker
       || this.owner;
+    // Prefer living party PC — listener.isPM alone can be a stale dead Player
+    // parked at a companion's position after PartyManager.Player desync.
     const player =
-      (this.listener && this.listener.isPM)
-        ? this.listener
-        : (GameState.PartyManager.party[0] || this.listener);
+      GameState.PartyManager.getActivePlayer?.()
+      || (this.listener && this.listener.isPM ? this.listener : undefined)
+      || GameState.PartyManager.party[0]
+      || this.listener;
 
     let angle = reply.cameraAngle;
     if(this.dialogCameraPrng){
