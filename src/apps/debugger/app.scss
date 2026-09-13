@@ -317,10 +317,18 @@ html, body {
 
         .nss-line-text {
           color: #e0e0e0;
+
+          .nss-tok-keyword { color: #c586c0; }
+          .nss-tok-string { color: #ce9178; }
+          .nss-tok-comment { color: #6a9955; font-style: italic; }
+          .nss-tok-number { color: #b5cea8; }
+          .nss-tok-ident { color: #dcdcaa; }
+          .nss-tok-punct { color: #d4d4d4; }
+          .nss-tok-plain { color: inherit; }
         }
 
         &:not(.mappable) .nss-line-text {
-          color: #9a9a9a;
+          opacity: 0.72;
         }
       }
     }
@@ -587,6 +595,11 @@ html, body {
 
   .script-browser-slot-item {
     border-top: 1px solid #252830;
+
+    &.focused > .script-browser-slot-header {
+      background: #2a3a4a;
+      outline: 1px solid #4ec9b0;
+    }
   }
 
   .script-browser-slot-header {
@@ -958,6 +971,12 @@ html, body {
 
   &:hover {
     background: #30343c;
+  }
+
+  &.inspector-kv-action span:last-child {
+    color: #4ec9b0;
+    text-decoration: underline;
+    text-underline-offset: 2px;
   }
 
   span:last-child {

@@ -20,26 +20,54 @@ import {
   worldToOverlayMapPoint,
 } from "@/inspect/areaMapOverlay";
 
-const KvRow: React.FC<{ label: string; value: string }> = ({ label, value }) => (
-  <div className="inspector-kv" title="Click to copy" onClick={() => {
-    try{ void navigator.clipboard?.writeText(value); }catch{ /* ignore */ }
-  }}>
+const KvRow: React.FC<{
+  label: string;
+  value: string;
+  title?: string;
+  onActivate?: () => void;
+}> = ({ label, value, title, onActivate }) => (
+  <div
+    className={`inspector-kv ${onActivate ? 'inspector-kv-action' : ''}`}
+    title={title || (onActivate ? 'Open in Scripts' : 'Click to copy')}
+    onClick={() => {
+      if(onActivate){
+        onActivate();
+        return;
+      }
+      try{ void navigator.clipboard?.writeText(value); }catch{ /* ignore */ }
+    }}
+  >
     <span>{label}</span>
     <span>{value}</span>
   </div>
 );
 
-const SectionView: React.FC<{ section: InspectorSection }> = ({ section }) => {
+const SectionView: React.FC<{
+  section: InspectorSection;
+  onScriptRow?: (slot: string, resref: string) => void;
+}> = ({ section, onScriptRow }) => {
   const [open, setOpen] = useState(INSPECTOR_DEFAULT_OPEN[section.id] ?? true);
+  const isScripts = section.id === 'scripts';
   return (
     <div className={`inspector-section ${open ? 'open' : 'collapsed'}`}>
       <button type="button" className="inspector-section-toggle" onClick={() => setOpen(!open)}>
         <span>{open ? '▼' : '▶'}</span>
         <span>{section.title}</span>
       </button>
-      {open && section.rows.map((row) => (
-        <KvRow key={`${section.id}:${row.label}:${row.value}`} label={row.label} value={row.value} />
-      ))}
+      {open && section.rows.map((row) => {
+        const canOpenScript = isScripts
+          && onScriptRow
+          && row.value
+          && row.value.toLowerCase() !== 'none';
+        return (
+          <KvRow
+            key={`${section.id}:${row.label}:${row.value}`}
+            label={row.label}
+            value={row.value}
+            onActivate={canOpenScript ? () => onScriptRow!(row.label, row.value) : undefined}
+          />
+        );
+      })}
     </div>
   );
 };
@@ -192,6 +220,12 @@ export const SceneActivity: React.FC = () => {
     setActivity('scripts');
   };
 
+  const openScriptRow = (slot: string, resref: string) => {
+    if(!detail){ return; }
+    stateRef.current?.openObjectScript(detail, slot, resref);
+    setActivity('scripts');
+  };
+
   const kinds = Object.keys(OVERVIEW_KIND_LABELS) as OverviewObjectKind[];
   const mapLabel = overlay?.available
     ? `lbl_map${overlay.areaResRef || ''}`
@@ -260,7 +294,7 @@ export const SceneActivity: React.FC = () => {
                 </button>
               </div>
               {detail.sections.map((section) => (
-                <SectionView key={section.id} section={section} />
+                <SectionView key={section.id} section={section} onScriptRow={openScriptRow} />
               ))}
             </>
           )}

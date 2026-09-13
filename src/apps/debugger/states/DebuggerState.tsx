@@ -17,6 +17,10 @@ export interface ScriptOwnerFilter {
   tag: string;
   label: string;
   kind: OverviewObjectKind | string;
+  /** Optional GFF script slot (e.g. ScriptHeartbeat) from Scene/Objects jump. */
+  scriptKey?: string;
+  /** Optional script resref from Scene/Objects jump. */
+  resref?: string;
 }
 
 export class DebuggerState {
@@ -261,6 +265,96 @@ export class DebuggerState {
   setScriptOwnerFilter(filter: ScriptOwnerFilter | null){
     this.scriptOwnerFilter = filter;
     this.dispatchEvent('script-owner-filter', this.scriptOwnerFilter);
+  }
+
+  /**
+   * Scene/Objects: filter Scripts browser to an owner and try to open a specific
+   * slot/resref for decompile. Prefer live instances; fall back to a view-only
+   * instance when bytecode is already in scriptMap.
+   */
+  openObjectScript(
+    detail: Pick<LiveObjectSnapshot, 'objectId' | 'tag' | 'name' | 'kind'>,
+    slot: string,
+    resref: string,
+  ){
+    const scriptKey = (slot || '').trim();
+    const name = (resref || '').trim();
+    if(!name || name.toLowerCase() === 'none'){
+      this.setScriptOwnerFilter({
+        objectId: detail.objectId,
+        tag: detail.tag || '',
+        label: detail.name || detail.tag || 'object',
+        kind: detail.kind,
+      });
+      return;
+    }
+
+    this.setScriptOwnerFilter({
+      objectId: detail.objectId,
+      tag: detail.tag || '',
+      label: detail.name || detail.tag || 'object',
+      kind: detail.kind,
+      scriptKey: scriptKey || undefined,
+      resref: name,
+    });
+
+    const instance = this.resolveInstanceForObjectScript(detail, scriptKey, name);
+    if(instance){
+      this.setSelectedInstance(instance);
+    }
+  }
+
+  resolveInstanceForObjectScript(
+    detail: Pick<LiveObjectSnapshot, 'objectId' | 'tag' | 'name' | 'kind'>,
+    scriptKey: string,
+    resref: string,
+  ): KotOR.NWScriptInstance | undefined {
+    const all = [...this.instanceMap.values()];
+    const nameLower = resref.toLowerCase();
+    const keyLower = scriptKey.toLowerCase();
+    const ownerObjectId = detail.objectId;
+
+    const ownerMatches = (inst: KotOR.NWScriptInstance) =>
+      ownerObjectId >= 0 && inst.ownerObjectId === ownerObjectId;
+
+    const byOwnerAndSlot = scriptKey
+      ? all.find((inst) =>
+          ownerMatches(inst)
+          && (inst.scriptKey || '').toLowerCase() === keyLower
+        )
+      : undefined;
+    if(byOwnerAndSlot){ return byOwnerAndSlot; }
+
+    const byOwnerAndName = all.find((inst) =>
+      ownerMatches(inst)
+      && (inst.name || '').toLowerCase() === nameLower
+    );
+    if(byOwnerAndName){ return byOwnerAndName; }
+
+    const byName = all.find((inst) => (inst.name || '').toLowerCase() === nameLower);
+    if(byName){ return byName; }
+
+    const script = this.scriptMap.get(resref)
+      || [...this.scriptMap.entries()].find(([k]) => k.toLowerCase() === nameLower)?.[1];
+    if(!script){ return undefined; }
+
+    if(script.instances?.length){
+      const owned = script.instances.find((inst) => ownerMatches(inst));
+      if(owned){ return owned; }
+      return script.instances[0];
+    }
+
+    // View-only: bytecode known but no live run. Not added to instanceMap.
+    const view = new KotOR.NWScriptInstance(script.instructions);
+    view.nwscript = script;
+    view.name = script.name || resref;
+    view.scriptKey = scriptKey || '';
+    view.ownerObjectId = ownerObjectId;
+    view.ownerTag = detail.tag || '';
+    view.ownerLabel = detail.name || detail.tag || '';
+    view.ownerKind = String(detail.kind || '');
+    view.seek = -1;
+    return view;
   }
 
   applyScriptLevelBreakpoints(instance: KotOR.NWScriptInstance){

@@ -8,6 +8,10 @@ import {
   type NssCodeLineMap,
 } from "@/nwscript/inspect/nssCodeLineMap";
 import { decompileScriptWithLineMap } from "@/nwscript/inspect/decompileScriptWithLineMap";
+import {
+  highlightNssDocument,
+  type NssTokenSpan,
+} from "@/apps/debugger/nss/highlightNssDocument";
 
 /**
  * Script Instance Window
@@ -18,6 +22,7 @@ type SourceViewMode = 'decompiled' | 'assembly';
 type CachedDecompile = {
   nss: string;
   lines: string[];
+  highlightedLines: NssTokenSpan[][];
   lineMap: NssCodeLineMap;
   functions: Array<{ codeOffset: number; name: string }>;
 };
@@ -25,9 +30,11 @@ type CachedDecompile = {
 function getCachedDecompile(script: KotOR.NWScript | undefined | null): CachedDecompile | undefined {
   if (!script) return undefined;
   const result = decompileScriptWithLineMap(script);
+  const lines = result.nss.length ? result.nss.split('\n') : [];
   return {
     nss: result.nss,
-    lines: result.nss.length ? result.nss.split('\n') : [],
+    lines,
+    highlightedLines: highlightNssDocument(result.nss),
     lineMap: result.lineMap,
     functions: result.functions,
   };
@@ -165,11 +172,12 @@ const NssSourceLine = (props: {
   instance: KotOR.NWScriptInstance;
   lineNumber: number;
   text: string;
+  spans?: NssTokenSpan[];
   codeOffset?: number;
   isSeeked: boolean;
   bpVersion: number;
 }) => {
-  const { instance, lineNumber, text, codeOffset, isSeeked, bpVersion } = props;
+  const { instance, lineNumber, text, spans, codeOffset, isSeeked, bpVersion } = props;
   const canBreak = codeOffset != null;
   const isBreakpoint = canBreak && instance.breakPoints.has(codeOffset);
   const lineRef = useRef<HTMLLIElement>(null);
@@ -185,6 +193,12 @@ const NssSourceLine = (props: {
     instance.toggleBreakpoint(codeOffset);
   };
 
+  const renderedSpans = spans?.length
+    ? spans.map((span, index) => (
+        <span key={`${lineNumber}-${index}`} className={span.className}>{span.text}</span>
+      ))
+    : (text.length ? text : '\u00a0');
+
   return (
     <li
       ref={lineRef}
@@ -198,7 +212,7 @@ const NssSourceLine = (props: {
         onClick={callToggleBreakpoint}
       ></div>
       <span className="nss-line-number">{lineNumber}</span>
-      <span className="nss-line-text">{text.length ? text : '\u00a0'}</span>
+      <span className="nss-line-text">{renderedSpans}</span>
     </li>
   );
 };
@@ -416,6 +430,7 @@ export const ScriptInstanceWindow = () => {
                         instance={instance}
                         lineNumber={lineNumber}
                         text={text}
+                        spans={decompile.highlightedLines[index]}
                         codeOffset={codeOffset}
                         isSeeked={seekedNssLine === lineNumber}
                         bpVersion={bpVersion}

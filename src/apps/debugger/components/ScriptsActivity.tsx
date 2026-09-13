@@ -13,6 +13,8 @@ export const ScriptsActivity: React.FC = () => {
         scriptOwnerFilter.label || 'object',
         scriptOwnerFilter.tag ? `tag ${scriptOwnerFilter.tag}` : '',
         scriptOwnerFilter.objectId >= 0 ? `id ${scriptOwnerFilter.objectId}` : '',
+        scriptOwnerFilter.scriptKey ? `slot ${scriptOwnerFilter.scriptKey}` : '',
+        scriptOwnerFilter.resref ? `script ${scriptOwnerFilter.resref}` : '',
       ].filter(Boolean).join(' · ')
     : '';
 

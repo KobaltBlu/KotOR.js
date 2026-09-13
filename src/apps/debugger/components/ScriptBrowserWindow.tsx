@@ -160,7 +160,8 @@ const SlotGroupItem: React.FC<{
   selectedInstance: KotOR.NWScriptInstance | undefined;
   onSelectInstance: (instance: KotOR.NWScriptInstance) => void;
   query: string;
-}> = ({ group, parentMap, instanceMap, selectedInstance, onSelectInstance, query }) => {
+  focused?: boolean;
+}> = ({ group, parentMap, instanceMap, selectedInstance, onSelectInstance, query, focused }) => {
   const { roots, childrenOf } = useMemo(
     () => buildChildMap(group.instances, parentMap, instanceMap),
     [group.instances, parentMap, instanceMap]
@@ -186,7 +187,7 @@ const SlotGroupItem: React.FC<{
   }
 
   return (
-    <li className="script-browser-slot-item">
+    <li className={`script-browser-slot-item ${focused ? 'focused' : ''}`}>
       <div className="script-browser-slot-header" title={`${group.slot} · ${group.resref}`}>
         <span className="script-browser-slot-key">{group.slot}</span>
         <span className="script-browser-slot-resref">{group.resref}</span>
@@ -217,6 +218,8 @@ const OwnerGroupItem: React.FC<{
   expanded: boolean;
   onToggle: () => void;
   query: string;
+  focusScriptKey?: string;
+  focusResref?: string;
 }> = ({
   owner,
   parentMap,
@@ -226,6 +229,8 @@ const OwnerGroupItem: React.FC<{
   expanded,
   onToggle,
   query,
+  focusScriptKey,
+  focusResref,
 }) => {
   const slots = useMemo(() => {
     const map = new Map<string, SlotGroup>();
@@ -256,6 +261,19 @@ const OwnerGroupItem: React.FC<{
   const titlePrimary = owner.key === UNASSIGNED_KEY
     ? 'Unassigned'
     : `${kindLabel} · ${owner.label || owner.tag || 'object'}`;
+
+  const focusKeyLower = (focusScriptKey || '').toLowerCase();
+  const focusResrefLower = (focusResref || '').toLowerCase();
+  const isFocusedSlot = (slot: SlotGroup) => {
+    if(!focusKeyLower && !focusResrefLower){ return false; }
+    const slotMatch = focusKeyLower
+      ? slot.slot.toLowerCase() === focusKeyLower
+      : true;
+    const resrefMatch = focusResrefLower
+      ? slot.resref.toLowerCase() === focusResrefLower
+      : true;
+    return slotMatch && resrefMatch;
+  };
 
   return (
     <li className={`script-browser-list-item script-browser-owner-item ${expanded ? "expanded" : "collapsed"}`}>
@@ -293,6 +311,7 @@ const OwnerGroupItem: React.FC<{
               selectedInstance={selectedInstance}
               onSelectInstance={onSelectInstance}
               query={query}
+              focused={isFocusedSlot(slot)}
             />
           ))}
         </ul>
@@ -485,6 +504,8 @@ export const ScriptBrowserWindow = (props: {
                 expanded={expanded.has(owner.key)}
                 onToggle={() => toggleExpanded(owner.key)}
                 query={query}
+                focusScriptKey={ownerFilter?.scriptKey}
+                focusResref={ownerFilter?.resref}
               />
             ))}
           </ul>
