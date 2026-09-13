@@ -218,7 +218,8 @@ export class CursorManager {
 	 * Hostile for reticle fill.
 	 * Creatures: live hostile only (dead → friendly loot).
 	 * Placeables: locked + useable + non-plot (dual-flag bash path).
-	 * Doors: locked and closed (door dual-flag path).
+	 * Doors: UpdateStickyTarget dual-flag — object-update 0x10 bits
+	 * is_hostile (rep < 90 + faction≠) AND hasTrap (trap visible). Locked/Plot unused.
 	 */
 	static isReticleHostile(object: ModuleObject | undefined, observer?: ModuleObject): boolean {
 		if(!object) return false;
@@ -240,9 +241,14 @@ export class CursorManager {
 
 		if(isDoor(object)){
 			const door = object as ModuleDoor;
-			if(!door.isUseable()) return false;
-			if(door.plot) return false;
-			return door.isLocked() && !door.isOpen();
+			if(!door.trapFlag) return false;
+			// Trap visible: global latch or DetectedBy list (WriteGameObjUpdate hasTrap bit)
+			if(!door.trapDetected && !door.isTrapDetectedBy(viewer)) return false;
+			const rep = GameState.FactionManager.GetReputation(door, viewer);
+			if(rep >= 90) return false;
+			const doorFac = door.faction?.id ?? door.factionId ?? 0;
+			const viewFac = viewer.faction?.id ?? (viewer as ModuleCreature).factionId ?? 0;
+			return doorFac !== viewFac;
 		}
 
 		if(isTrigger(object)){

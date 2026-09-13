@@ -1121,8 +1121,7 @@ export class InGameOverlay extends GameMenu {
     }
 
     const selected = GameState.CursorManager.selectedObject;
-    const isHostile = isCreature(selected)
-      && selected.isHostile(GameState.getCurrentPlayer());
+    const isHostile = GameState.CursorManager.isReticleHostile(selected);
 
     if (isHostile) {
       if (this.PB_HEALTH.getFillTextureName() != 'enemy_bar') {
