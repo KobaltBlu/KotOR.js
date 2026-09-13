@@ -8,7 +8,6 @@ import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { CExoLocString } from "@/resource/CExoLocString";
 import { ResourceLoader } from "@/loaders";
-import { GameState } from "@/GameState";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import EngineLocation from "@/engine/EngineLocation";
 
@@ -69,7 +68,7 @@ export class ModuleWaypoint extends ModuleObject {
     return new EngineLocation(
       this.position.x, this.position.y, this.position.z,
       this.getXOrientation(), this.getYOrientation(), this.getZOrientation() || 0,
-      this.area || GameState?.module?.area
+      this.area
     );
   }
 
@@ -147,14 +146,10 @@ export class ModuleWaypoint extends ModuleObject {
   }
 
   destroy(): void {
-    super.destroy();
-    if(this.area) this.area.detachObject(this);
-
     if(this.hasMapNote){
-      if(GameState.module){
-        GameState.module.area.areaMap.removeMapNote(this);
-      }
+      this.area?.areaMap?.removeMapNote(this);
     }
+    super.destroy();
   }
 
 }

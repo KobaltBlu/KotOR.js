@@ -74,7 +74,7 @@ export class ActionSetMine extends Action {
       actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, plantPos.x);
       actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, plantPos.y);
       actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, plantPos.z);
-      actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
+      actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, this.owner.area?.id ?? 0);
       actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, hasTarget ? this.target.id : ModuleObjectConstant.OBJECT_INVALID);
       actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
       actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, hasTarget ? 0.5 : 1.0);
@@ -137,7 +137,7 @@ export class ActionSetMine extends Action {
         planted = true;
       }else{
         // Free-ground: area trigger at plantPos (not hosted on the creature).
-        const area = this.owner.area ?? GameState.module?.area;
+        const area = this.owner.area;
         plantedTrigger = ModuleObject.plantGroundTrap(area, trapSubtype, plantPos as any, this.owner);
         planted = !!plantedTrigger;
       }

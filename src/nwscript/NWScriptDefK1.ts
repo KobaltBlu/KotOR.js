@@ -3136,7 +3136,7 @@ NWScriptDefK1.Actions = {
       action.setParameter(0, ActionParameterType.FLOAT, args[0].position.x);
       action.setParameter(1, ActionParameterType.FLOAT, args[0].position.y);
       action.setParameter(2, ActionParameterType.FLOAT, args[0].position.z);
-      const areaId = args[0].area?.id ?? GameState.module?.area?.id ?? 0;
+      const areaId = args[0].area?.id ?? this.caller.area?.id ?? 0;
       action.setParameter(3, ActionParameterType.DWORD, areaId);
       action.setParameter(4, ActionParameterType.INT, 0);
       action.setParameter(5, ActionParameterType.FLOAT, 20.0);
@@ -3152,7 +3152,9 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.VECTOR, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [THREE.Vector3, number]){
       let location = new EngineLocation(
-        args[0].x, args[0].y, args[0].z
+        args[0].x, args[0].y, args[0].z,
+        0, 0, 0,
+        GameState.module?.area
       );
       location.setBearing(args[1]);
       return location;
@@ -3260,7 +3262,7 @@ NWScriptDefK1.Actions = {
         return new EngineLocation(
           p.x, p.y, p.z,
           rot.x, rot.y, rot.z,
-          caster.area || GameState?.module?.area
+          caster.area
         );
       }
       if(isObject(caster)){
@@ -6028,7 +6030,8 @@ NWScriptDefK1.Actions = {
       if(!module) return undefined;
       return new EngineLocation(
         module.entryX || 0, module.entryY || 0, module.entryZ || 0,
-        module.entryDirectionX || 0, module.entryDirectionY || 0, 0
+        module.entryDirectionX || 0, module.entryDirectionY || 0, 0,
+        module.area
       );
     }
   },

@@ -153,7 +153,7 @@ export function queueMoveIntoUseRange(
   move.setParameter(0, ActionParameterType.FLOAT, dest.x);
   move.setParameter(1, ActionParameterType.FLOAT, dest.y);
   move.setParameter(2, ActionParameterType.FLOAT, dest.z);
-  move.setParameter(3, ActionParameterType.DWORD, target.area?.id ?? owner.area?.id ?? GameState.module?.area?.id ?? 0);
+  move.setParameter(3, ActionParameterType.DWORD, target.area?.id ?? owner.area?.id ?? 0);
   move.setParameter(4, ActionParameterType.DWORD, target.id);
   move.setParameter(5, ActionParameterType.INT, options.run === false ? 0 : 1);
   // Move arrive = useRange + extra (GetIsInUseRange adds another +0.1 slack)

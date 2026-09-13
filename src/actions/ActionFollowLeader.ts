@@ -268,7 +268,7 @@ export class ActionFollowLeader extends Action {
     jump.setParameter(0, ActionParameterType.FLOAT, dest.x);
     jump.setParameter(1, ActionParameterType.FLOAT, dest.y);
     jump.setParameter(2, ActionParameterType.FLOAT, dest.z);
-    jump.setParameter(3, ActionParameterType.DWORD, area?.id ?? GameState.module.area.id);
+    jump.setParameter(3, ActionParameterType.DWORD, area?.id ?? owner.area?.id ?? 0);
     jump.setParameter(4, ActionParameterType.INT, 0);
     jump.setParameter(5, ActionParameterType.FLOAT, 20.0);
     jump.setParameter(6, ActionParameterType.FLOAT, 0);

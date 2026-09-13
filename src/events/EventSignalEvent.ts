@@ -75,7 +75,9 @@ export class EventSignalEvent extends GameEvent {
           mod.itemActivatedTargetLocation = new EngineLocation(
             this.event.getFloat(0) || 0,
             this.event.getFloat(1) || 0,
-            this.event.getFloat(2) || 0
+            this.event.getFloat(2) || 0,
+            0, 0, 0,
+            mod.area ?? mod.itemActivator?.area
           );
           const onActivate = mod.scripts[ModuleObjectScript.ModuleOnPlayerActivateItem];
           if(onActivate){

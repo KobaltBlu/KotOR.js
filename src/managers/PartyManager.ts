@@ -1933,6 +1933,10 @@ export class PartyManager {
         }*/
         PartyManager.AddPortraitToOrder( partyMember.getPortraitResRef() );
         PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(partyMember) ] = partyMember;
+        const area = GameState.module?.area;
+        if(area){
+          area.assignArea(partyMember);
+        }
         let spawn = PartyManager.GetSpawnLocation(partyMember);
         // PositionParty: companions share the leader/waypoint orientation (Yaw).
         const spawnFacing = -Math.atan2(spawn.rotation.x, spawn.rotation.y);
@@ -2104,7 +2108,8 @@ export class PartyManager {
         creature.position.z,
         creature.getXOrientation(),
         creature.getYOrientation(),
-        creature.getZOrientation()
+        creature.getZOrientation(),
+        creature.area ?? GameState.module?.area
       );
     }
 
@@ -2147,7 +2152,8 @@ export class PartyManager {
       PartyManager.#spawnPos.z,
       ox,
       oy,
-      0
+      0,
+      area ?? creature.area
     );
   }
 

@@ -66,9 +66,9 @@ export class ActionDropItem extends Action {
       model.userData.moduleObject = dropped;
       model.name = dropped.getTag();
       GameState.group.placeables.add(model);
-      if(GameState.module?.area){
-        GameState.module.area.items.push(dropped);
-        dropped.area = GameState.module.area;
+      const area = this.owner.area;
+      if(area){
+        area.attachObject(dropped);
         dropped.getCurrentRoom();
       }
     });

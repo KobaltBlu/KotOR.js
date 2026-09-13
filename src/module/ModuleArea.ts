@@ -2492,7 +2492,7 @@ export class ModuleArea extends ModuleObject {
     if(GameState.pendingJumpSpawn){
       const s = GameState.pendingJumpSpawn;
       GameState.pendingJumpSpawn = undefined;
-      return new EngineLocation(s.x, s.y, s.z, s.ox, s.oy, 0);
+      return new EngineLocation(s.x, s.y, s.z, s.ox, s.oy, 0, this);
     }
     if(GameState.isLoadingSave){
       return new EngineLocation(
@@ -2501,7 +2501,8 @@ export class ModuleArea extends ModuleObject {
         GameState.PartyManager.PlayerTemplate.RootNode.getFieldByLabel('ZPosition').getValue(),
         GameState.PartyManager.PlayerTemplate.RootNode.getFieldByLabel('XOrientation').getValue(),
         GameState.PartyManager.PlayerTemplate.RootNode.getFieldByLabel('YOrientation').getValue(),
-        0
+        0,
+        this
       );
     }else if(this.transWP instanceof GFFObject){
       console.log('TransWP', this.transWP);
@@ -2511,7 +2512,8 @@ export class ModuleArea extends ModuleObject {
         this.transWP.RootNode.getFieldByLabel('ZPosition').getValue(),
         this.transWP.RootNode.getFieldByLabel('XOrientation').getValue(),
         this.transWP.RootNode.getFieldByLabel('YOrientation').getValue(),
-        0
+        0,
+        this
       );
     }else{
       console.log('No TransWP');
@@ -2521,7 +2523,8 @@ export class ModuleArea extends ModuleObject {
         this.module.entryZ,
         this.module.entryDirectionX,
         this.module.entryDirectionY,
-        0
+        0,
+        this
       );
     }
   }
@@ -2542,6 +2545,18 @@ export class ModuleArea extends ModuleObject {
     }else{
       return GameState.PartyManager.GeneratePlayerTemplate();
     }
+  }
+
+  /**
+   * Set object.area without list membership.
+   * Party members live in PartyManager.party, not area.creatures.
+   */
+  assignArea(object: ModuleObject){
+    if(!object) return;
+    if(object.area && object.area !== this){
+      object.area.detachObject(object);
+    }
+    object.area = this;
   }
 
   attachObject(object: ModuleObject){
@@ -2742,6 +2757,8 @@ export class ModuleArea extends ModuleObject {
           GameState.PartyManager.party[ GameState.PartyManager.GetCreatureStartingPartyIndex(GameState.PartyManager.Player) ] = GameState.PartyManager.Player;
         }
 
+        this.assignArea(GameState.PartyManager.Player);
+
         // Reset actions between modules; preserve mid-combat ActionList on save load.
         if(!GameState.isLoadingSave){
           GameState.PartyManager.Player.clearAllActions();
@@ -2778,6 +2795,8 @@ export class ModuleArea extends ModuleObject {
         if(!this.miniGame){
           GameState.PartyManager.party[ GameState.PartyManager.GetCreatureStartingPartyIndex(player) ] = player;
         }
+
+        this.assignArea(player);
 
         try{
           const model = await player.loadModel();
@@ -2847,7 +2866,11 @@ export class ModuleArea extends ModuleObject {
     // controlled NPC as party[0] must have a room for UpdateRoom VIS).
     for(let i = 0; i < GameState.PartyManager.party.length; i++){
       const pm = GameState.PartyManager.party[i];
-      if(pm && !pm.room){
+      if(!pm) continue;
+      if(pm.area !== this){
+        this.assignArea(pm);
+      }
+      if(!pm.room){
         pm.getCurrentRoom();
       }
     }

@@ -61,7 +61,7 @@ export function setCreatureFormation(
   move.setParameter(0, ActionParameterType.FLOAT, target.x);
   move.setParameter(1, ActionParameterType.FLOAT, target.y);
   move.setParameter(2, ActionParameterType.FLOAT, target.z);
-  move.setParameter(3, ActionParameterType.DWORD, creature.area?.id ?? GameState.module?.area?.id ?? 0);
+  move.setParameter(3, ActionParameterType.DWORD, creature.area?.id ?? 0);
   move.setParameter(4, ActionParameterType.DWORD, 0x7f000000);
   move.setParameter(5, ActionParameterType.INT, 1); // run
   move.setParameter(6, ActionParameterType.FLOAT, 1.0);

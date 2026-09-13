@@ -950,9 +950,6 @@ export class ModuleCreature extends ModuleObject {
     if(this.isDead()) return;
     if(!GameState.module?.readyToProcessEvents) return;
 
-    // aiUpdate is budget-deferred; keep area current for every-frame follow/move.
-    this.area = GameState.module.area;
-
     // : field438 == 1 → early return (paused / end-of-path)
     if(isQuickWalkPaused(this) && !isForcePushLocoActive(this)){
       return;
@@ -1017,7 +1014,6 @@ export class ModuleCreature extends ModuleObject {
     }
 
     this.action = this.actionQueue[0];
-    this.area = GameState.module.area;
 
     if(!this.isDead()){
       // Process DamageList
@@ -1167,8 +1163,6 @@ export class ModuleCreature extends ModuleObject {
 
       //Get the first action in the queue
       this.action = this.actionQueue[0];
-
-      this.area = GameState.module.area;
 
       /*if(this == GameState.getCurrentPlayer && this.room instanceof ModuleRoom){
         //this.room.show(true);
@@ -1719,9 +1713,13 @@ export class ModuleCreature extends ModuleObject {
     this.perceptionTimer = 0;
 
     //Check modules creatures
-    let creatureLen = GameState.module.area.creatures.length;
+    const creatures = this.area?.creatures;
+    if(!creatures){
+      return;
+    }
+    let creatureLen = creatures.length;
     for(let i = 0; i < creatureLen; i++ ){
-      let creature = GameState.module.area.creatures[i];
+      let creature = creatures[i];
       //creature cannot perceive itself
       if(this == creature){
         continue;
@@ -1940,7 +1938,7 @@ export class ModuleCreature extends ModuleObject {
    */
   private pushGrassWindGust(): void {
     const wm = GameState.windManager;
-    const area = this.area || GameState.module?.area;
+    const area = this.area;
     if(!wm || !area){
       return;
     }
@@ -2225,7 +2223,7 @@ export class ModuleCreature extends ModuleObject {
       action.setParameter(0, ActionParameterType.FLOAT, target.position.x);
       action.setParameter(1, ActionParameterType.FLOAT, target.position.y);
       action.setParameter(2, ActionParameterType.FLOAT, target.position.z);
-      action.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
+      action.setParameter(3, ActionParameterType.DWORD, this.area?.id ?? target.area?.id ?? 0);
       action.setParameter(4, ActionParameterType.DWORD, target.id);
       action.setParameter(5, ActionParameterType.INT, bRun ? 1 : 0);
       const use = getUseRange(this, target, false);
@@ -2260,7 +2258,7 @@ export class ModuleCreature extends ModuleObject {
         action.setParameter(0, ActionParameterType.FLOAT, position.x);
         action.setParameter(1, ActionParameterType.FLOAT, position.y);
         action.setParameter(2, ActionParameterType.FLOAT, position.z);
-        action.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
+        action.setParameter(3, ActionParameterType.DWORD, this.area?.id ?? 0);
         action.setParameter(4, ActionParameterType.DWORD, 0xFFFFFFFF);
         action.setParameter(5, ActionParameterType.INT, run ? 1 : 0);
         action.setParameter(6, ActionParameterType.FLOAT, Math.max(1.5, maxDistance));
@@ -2282,7 +2280,7 @@ export class ModuleCreature extends ModuleObject {
     if(target instanceof EngineLocation || target instanceof ModuleObject){
 
       let distance = 0.1;
-      let creatures = GameState.module.area.creatures;
+      let creatures = this.area?.creatures ?? [];
 
       //Check if creatures are too close to location
       for(let i = 0; i < creatures.length; i++){
@@ -2314,7 +2312,7 @@ export class ModuleCreature extends ModuleObject {
       action.setParameter(0, ActionParameterType.FLOAT, target.position.x);
       action.setParameter(1, ActionParameterType.FLOAT, target.position.y);
       action.setParameter(2, ActionParameterType.FLOAT, target.position.z);
-      action.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
+      action.setParameter(3, ActionParameterType.DWORD, this.area?.id ?? target.area?.id ?? 0);
       action.setParameter(4, ActionParameterType.DWORD, target instanceof EngineLocation ? ModuleObjectConstant.OBJECT_INVALID : target.id );
       action.setParameter(5, ActionParameterType.INT, bRun ? 1 : 0);
       action.setParameter(6, ActionParameterType.FLOAT, Math.max(1.5, distance));
@@ -2344,7 +2342,7 @@ export class ModuleCreature extends ModuleObject {
       action.setParameter(0, ActionParameterType.FLOAT, target.position.x);
       action.setParameter(1, ActionParameterType.FLOAT, target.position.y);
       action.setParameter(2, ActionParameterType.FLOAT, target.position.z);
-      const areaId = target.area?.id ?? GameState.module?.area?.id ?? 0;
+      const areaId = target.area?.id ?? this.area?.id ?? 0;
       action.setParameter(3, ActionParameterType.DWORD, areaId);
       action.setParameter(4, ActionParameterType.INT, 0);
       action.setParameter(5, ActionParameterType.FLOAT, 20.0);
@@ -3911,8 +3909,11 @@ export class ModuleCreature extends ModuleObject {
         }
       }
       if(typeof closest != 'undefined'){
-        for(let i = 0, len = GameState.module.area.creatures.length; i < len; i++){
-          GameState.module.area.creatures[i].removeObjectFromTargetPositions(oObject);
+        const creatures = this.area?.creatures;
+        if(creatures){
+          for(let i = 0, len = creatures.length; i < len; i++){
+            creatures[i].removeObjectFromTargetPositions(oObject);
+          }
         }
 
         for(let i = 0, len = GameState.PartyManager.party.length; i < len; i++){
@@ -4109,13 +4110,15 @@ export class ModuleCreature extends ModuleObject {
   onPositionChanged(){
     this.positionChanged = false;
     //check if the creature is inside a trigger
-    const triggers = GameState.module.area.triggers;
-    const tLen = triggers.length;
-    for(let i = 0; i < tLen; i++){
-      triggers[i].updateObjectInside(this);
+    const triggers = this.area?.triggers;
+    if(triggers){
+      const tLen = triggers.length;
+      for(let i = 0; i < tLen; i++){
+        triggers[i].updateObjectInside(this);
+      }
     }
     // Area of Effect enter/exit (UpdateSubAreas)
-    const aoes = GameState.module.area.areaOfEffects;
+    const aoes = this.area?.areaOfEffects;
     const aLen = aoes?.length || 0;
     for(let i = 0; i < aLen; i++){
       aoes[i].updateObjectInside(this);
@@ -4444,7 +4447,7 @@ export class ModuleCreature extends ModuleObject {
   enterRetainedCorpse(){
     if(this.isRetainedCorpse || this.destroyed) return;
 
-    const area = this.area || GameState.module?.area;
+    const area = this.area;
     this.isRetainedCorpse = true;
     this.willDestroy = false;
     this.keepCorpseOnDestroy = false;
@@ -4523,7 +4526,7 @@ export class ModuleCreature extends ModuleObject {
     const wasScriptHidden = !!(this.isRetainedCorpse || this.serverDestroyed);
     const stillInObjectList = GameState.ModuleObjectManager.ObjectList.has(this.id);
     if(this.isRetainedCorpse){
-      const area = this.area || GameState.module?.area;
+      const area = this.area;
       area?.corpseCache?.remove(this);
       this.isRetainedCorpse = false;
     }
@@ -4548,7 +4551,7 @@ export class ModuleCreature extends ModuleObject {
    */
   disposeRetainedCorpse(revealBag: boolean = false){
     if(this.destroyed) return;
-    const area = this.area || GameState.module?.area;
+    const area = this.area;
     area?.corpseCache?.remove(this);
 
     if(revealBag){

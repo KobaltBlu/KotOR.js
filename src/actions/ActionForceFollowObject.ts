@@ -93,7 +93,7 @@ export class ActionForceFollowObject extends Action {
     goal: THREE.Vector3,
     arriveRange: number
   ){
-    const area = owner.area ?? GameState.module?.area;
+    const area = owner.area;
     let dest = goal.clone();
     if(area && typeof area.getNearestWalkablePoint === 'function'){
       dest = area.getNearestWalkablePoint(dest, getPathPersonalSpace(owner));
@@ -170,7 +170,7 @@ export class ActionForceFollowObject extends Action {
       );
     }
 
-    const area = owner.area ?? GameState.module?.area;
+    const area = owner.area;
     if(area && typeof area.isPointWalkable === 'function' && !area.isPointWalkable(out)){
       if(typeof area.getNearestWalkablePoint === 'function'){
         out.copy(area.getNearestWalkablePoint(out, 0.05));

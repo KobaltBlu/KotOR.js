@@ -68,7 +68,6 @@ export class EffectAreaOfEffect extends GameEffect {
       aoe.linkedToObjectId = creature.id;
     }
 
-    aoe.area = area;
     GameState.ModuleObjectManager.RegisterObject(aoe);
     area.attachObject(aoe);
     aoe.loadScripts();

@@ -1463,7 +1463,7 @@ export class ModulePlaceable extends ModuleObject {
     placeableAppearance?: number
   ): number {
     if(!source || !GameState.module) return ModuleObjectConstant.OBJECT_INVALID;
-    const area = source.area || GameState.module.area;
+    const area = source.area;
     if(!area) return ModuleObjectConstant.OBJECT_INVALID;
 
     let bagRule = rule || GameState.SWRuleSet?.bodyBags?.[bodyBagRowId];
@@ -1505,7 +1505,6 @@ export class ModulePlaceable extends ModuleObject {
     }
 
     // Attach to area immediately so save/reload always has the authoritative bag
-    placeable.area = area;
     area.attachObject(placeable);
 
     const future = GameState.module.timeManager.getFutureTimeFromSeconds(0.5);
@@ -1582,7 +1581,6 @@ export class ModulePlaceable extends ModuleObject {
    */
   async placeInArea(area: ModuleArea){
     if(!area || this.destroyed) return;
-    this.area = area;
     area.attachObject(this);
     GameState.ModuleObjectManager.RegisterObject(this);
 

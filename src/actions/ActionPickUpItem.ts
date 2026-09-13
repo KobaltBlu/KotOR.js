@@ -50,14 +50,7 @@ export class ActionPickUpItem extends Action {
     this.owner.setFacingObject(oItem);
 
     oItem.placedInWorld = false;
-    if(oItem.area){
-      oItem.area.detachObject(oItem);
-    }else if(GameState.module?.area){
-      const idx = GameState.module.area.items.indexOf(oItem);
-      if(idx >= 0){
-        GameState.module.area.items.splice(idx, 1);
-      }
-    }
+    oItem.area?.detachObject(oItem);
 
     if(oItem.model){
       oItem.model.removeFromParent();

@@ -89,7 +89,7 @@ export class ActionJumpToPoint extends Action {
     }
 
     if(!destArea){
-      destArea = this.owner.area || GameState.module?.area;
+      destArea = this.owner.area;
     }
 
     const classified = classifyJumpDestination(

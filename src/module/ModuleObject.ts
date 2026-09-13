@@ -209,7 +209,7 @@ export class ModuleObject {
   speed: number;
   movementSpeed: number;
 
-  area: ModuleArea;
+  area?: ModuleArea;
 
   //Room
   room: ModuleRoom;
@@ -1692,7 +1692,7 @@ export class ModuleObject {
 
     trigger.load();
 
-    this.area.triggers.push(trigger);
+    this.area?.attachObject(trigger);
   }
 
   /**
@@ -1727,7 +1727,6 @@ export class ModuleObject {
     trigger.ownerDemolitions = ownerDemolitions;
     trigger.trapCreator = owner;
     trigger.position.set(position.x, position.y, position.z);
-    trigger.area = area;
 
     if(trap.trapscript?.length && trap.trapscript != '****'){
       const nwscript = NWScript.Load(trap.trapscript);
@@ -1742,7 +1741,7 @@ export class ModuleObject {
     ModuleObject.applyTrapGroundGeometry(trigger);
 
     trigger.load();
-    area.triggers.push(trigger);
+    area.attachObject(trigger);
     return trigger;
   }
 
@@ -2024,7 +2023,7 @@ export class ModuleObject {
     }
 
     if(plan.notifyCreatures){
-      const creatures = GameState.module?.area?.creatures;
+      const creatures = this.area?.creatures;
       if(creatures){
         for(let i = 0, len = creatures.length; i < len; i++){
           pushHeard(creatures[i], true);
@@ -2394,7 +2393,7 @@ export class ModuleObject {
     const location = new EngineLocation(
       this.position.x, this.position.y, this.position.z,
       rotation.x, rotation.y, rotation.z,
-      this.area || GameState?.module?.area
+      this.area
     );
 
     return location;
@@ -2534,7 +2533,7 @@ export class ModuleObject {
    * object.area_id for save export — area game ObjectId, not ARE template ID.
    */
   getSaveAreaId(): number {
-    return (this.area?.id ?? GameState.module?.area?.id ?? 0) >>> 0;
+    return (this.area?.id ?? 0) >>> 0;
   }
 
   /**
@@ -2731,7 +2730,7 @@ export class ModuleObject {
       action.setParameter(0, ActionParameterType.FLOAT, lLocation.position.x);
       action.setParameter(1, ActionParameterType.FLOAT, lLocation.position.y);
       action.setParameter(2, ActionParameterType.FLOAT, lLocation.position.z);
-      const areaId = lLocation.area?.id ?? GameState.module?.area?.id ?? 0;
+      const areaId = lLocation.area?.id ?? this.area?.id ?? 0;
       action.setParameter(3, ActionParameterType.DWORD, areaId);
       action.setParameter(4, ActionParameterType.INT, 1);
       action.setParameter(5, ActionParameterType.FLOAT, 20.0);
@@ -3282,11 +3281,11 @@ export class ModuleObject {
         this.perceptionList.push(newObject);
         triggerOnNotice = true;
         if(object.isPlayer && this.isHostile(object)){
-          this.area.subtractStealthXP();
+          this.area?.subtractStealthXP();
         }
       }else{
         if(object.isPlayer && this.isHostile(object)){
-          this.area.addStealthXP();
+          this.area?.addStealthXP();
         }
       }
     }
@@ -3339,11 +3338,11 @@ export class ModuleObject {
         this.perceptionList.push(newObject);
         triggerOnNotice = true;
         if(object.isPlayer && this.isHostile(object)){
-          this.area.subtractStealthXP();
+          this.area?.subtractStealthXP();
         }
       }else{
         if(object.isPlayer && this.isHostile(object)){
-          this.area.addStealthXP();
+          this.area?.addStealthXP();
         }
       }
     }
@@ -3430,6 +3429,10 @@ export class ModuleObject {
       if(distance > max_distance){
         return false;
       }
+    }
+
+    if(!this.area){
+      return false;
     }
 
     if(opts?.skipRoomWalkmesh){
@@ -4016,11 +4019,7 @@ export class ModuleObject {
         this.v21 = undefined;
       }
 
-      if(this.area){
-        this.area.detachObject(this);
-      }else if (GameState.module.area){
-        GameState.module.area.detachObject(this);
-      }
+      this.area?.detachObject(this);
 
       //Clear references to prevent circular references
       this.area = undefined;

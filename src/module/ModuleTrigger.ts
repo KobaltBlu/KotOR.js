@@ -113,8 +113,12 @@ export class ModuleTrigger extends ModuleObject {
 
   getCurrentRoom(){
     let _distance = 1000000000;
-    for(let i = 0; i < GameState.module.area.rooms.length; i++){
-      let room = GameState.module.area.rooms[i];
+    const rooms = this.area?.rooms;
+    if(!rooms){
+      return;
+    }
+    for(let i = 0; i < rooms.length; i++){
+      let room = rooms[i];
       let model = room.model;
       if(model instanceof OdysseyModel3D){
         let pos = this.position.clone();
@@ -287,16 +291,19 @@ export class ModuleTrigger extends ModuleObject {
       }
     }else{
       //Check Creatures
-      const creatureLen = GameState.module.area.creatures.length;
-      for(let i = 0; i < creatureLen; i++){
-        const creature = GameState.module.area.creatures[i];
-        const pos = creature.position;
-        if(!this.boxContainsPoint(pos)){ continue; }
+      const creatures = this.area?.creatures;
+      if(creatures){
+        const creatureLen = creatures.length;
+        for(let i = 0; i < creatureLen; i++){
+          const creature = creatures[i];
+          const pos = creature.position;
+          if(!this.boxContainsPoint(pos)){ continue; }
 
-        const added = this.addObjectInside(creature);
-        if(!added){ continue; }
-        creature.lastTriggerEntered = this;
-        this.lastObjectEntered = creature;
+          const added = this.addObjectInside(creature);
+          if(!added){ continue; }
+          creature.lastTriggerEntered = this;
+          this.lastObjectEntered = creature;
+        }
       }
     }
   }
@@ -390,7 +397,7 @@ export class ModuleTrigger extends ModuleObject {
     this.#autoObjectsInsideTimer = 0;
 
     const creaturesToCheck = [
-      ...GameState.module.area.creatures.filter(object => this.boxContainsPoint(object.position)), 
+      ...(this.area?.creatures ?? []).filter(object => this.boxContainsPoint(object.position)), 
       ...GameState.PartyManager.party.filter(object => this.boxContainsPoint(object.position))
     ];
 

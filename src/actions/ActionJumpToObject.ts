@@ -37,7 +37,7 @@ export class ActionJumpToObject extends Action {
       return ActionStatus.FAILED;
     }
 
-    const destArea = this.target.area || GameState.module?.area;
+    const destArea = this.target.area;
     const classified = classifyJumpDestination(
       this.owner.area,
       destArea,

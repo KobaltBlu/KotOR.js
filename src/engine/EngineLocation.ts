@@ -1,6 +1,5 @@
 import * as THREE from "three";
 import type { ModuleArea } from "@/module/ModuleArea";
-import { GameState } from "@/GameState";
 
 /**
  * EngineLocation class.
@@ -14,10 +13,10 @@ import { GameState } from "@/GameState";
 export default class EngineLocation {
   position: THREE.Vector3;
   rotation: THREE.Vector3;
-  area: ModuleArea;
+  area?: ModuleArea;
   facing: number;
 
-  constructor(x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, area: ModuleArea = GameState.module?.area){
+  constructor(x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, area?: ModuleArea){
     this.position = new THREE.Vector3(x, y, z);
     this.rotation = new THREE.Vector3(rx, ry, rz);
     this.area = area;

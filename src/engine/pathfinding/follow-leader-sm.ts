@@ -247,7 +247,7 @@ function handleWaitingForPath(
   // Sample start: lastSample; seeded on Reset
   _sample.set(runtime.lastSampleX, runtime.lastSampleY, runtime.lastSampleZ);
 
-  const area = owner.area ?? GameState.module?.area;
+  const area = owner.area;
   if(area && hasFollowLos(area, owner, _sample, _lateral)){
     runtime.state = FollowLeaderState.MovingToOffset;
     return { continueInner: false, teleport: false };
@@ -452,7 +452,7 @@ function handleOffset(
     _lateral.copy(offset);
   }
 
-  const area = owner.area ?? GameState.module?.area;
+  const area = owner.area;
   _sample.set(runtime.lastSampleX, runtime.lastSampleY, runtime.lastSampleZ);
   if(
     Math.abs(_sample.x) < 1e-8 &&
@@ -625,7 +625,7 @@ function applyFollowSetPosition(
     owner.position.z
   );
 
-  const area = owner.area ?? GameState.module?.area;
+  const area = owner.area;
   if(area){
     const hit = testDirectLine(area, owner.position, _tmp, {
       owner,
@@ -720,7 +720,7 @@ function applyFollowDirectMove(
     owner.position.z
   );
 
-  const area = owner.area ?? GameState.module?.area;
+  const area = owner.area;
   if(area){
     const hit = testDirectLine(area, owner.position, _tmp, {
       owner,
@@ -803,7 +803,7 @@ export function driveTowardOffset(
 }
 
 export function ensurePathToOffset(owner: ModuleCreature, offset: THREE.Vector3): boolean {
-  const area = owner.area ?? GameState.module?.area;
+  const area = owner.area;
   if(!area?.path?.traverseToPoint) return false;
 
   const path = owner.getComputedPath();

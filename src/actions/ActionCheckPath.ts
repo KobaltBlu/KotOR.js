@@ -48,7 +48,7 @@ export class ActionCheckPath extends Action {
 
   protected clampWalkable(x: number, y: number, z: number): THREE.Vector3 {
     const point = new THREE.Vector3(x, y, z);
-    const area = this.owner?.area ?? GameState.module?.area;
+    const area = this.owner?.area;
     if(!area?.getNearestWalkablePoint){
       return point;
     }
@@ -68,7 +68,7 @@ export class ActionCheckPath extends Action {
     if(!isCreature(this.owner)){
       return ActionStatus.ERROR;
     }
-    const ownerAreaId = this.owner.area?.id ?? GameState.module?.area?.id;
+    const ownerAreaId = this.owner.area?.id;
     // Foreign area → inter-area path (do not validate local walkmesh to remote coords)
     if(
       typeof areaId === 'number' &&
@@ -119,7 +119,7 @@ export class ActionCheckPath extends Action {
       target.position.x,
       target.position.y,
       target.position.z,
-      target.area?.id ?? GameState.module.area.id,
+      target.area?.id ?? this.owner.area?.id ?? 0,
       target.id,
       range,
       timeout,
@@ -203,7 +203,7 @@ export class ActionCheckMoveAwayFromObject extends ActionCheckPath {
 
     this.queueMoveTo(
       away.x, away.y, away.z,
-      this.owner.area?.id ?? GameState.module.area.id,
+      this.owner.area?.id ?? 0,
       ModuleObjectConstant.OBJECT_INVALID,
       1.0,
       30.0,
@@ -253,7 +253,7 @@ export class ActionCheckInterAreaPathfinding extends ActionCheckPath {
           next.vector.x,
           next.vector.y,
           next.vector.z,
-          this.owner.area?.id ?? GameState.module.area.id,
+          this.owner.area?.id ?? 0,
           ModuleObjectConstant.OBJECT_INVALID,
           0.5,
           30.0,
@@ -301,7 +301,7 @@ export class ActionCheckInterAreaPathfinding extends ActionCheckPath {
       wp.goal.x,
       wp.goal.y,
       wp.goal.z,
-      this.owner.area?.id ?? GameState.module.area.id,
+      this.owner.area?.id ?? 0,
       wp.object?.id ?? ModuleObjectConstant.OBJECT_INVALID,
       wp.range || 0.5,
       30.0,
@@ -349,8 +349,8 @@ export class ActionCheckMoveToPoint extends ActionCheckPath {
     if(typeof x !== 'number' || typeof y !== 'number' || typeof z !== 'number'){
       return ActionStatus.ERROR;
     }
-    const areaId = this.getParameter<number>(3) ?? GameState.module.area.id;
-    const ownerAreaId = this.owner.area?.id ?? GameState.module.area.id;
+    const areaId = this.getParameter<number>(3) ?? this.owner.area?.id ?? 0;
+    const ownerAreaId = this.owner.area?.id ?? 0;
     // Destination in another area → seed inter-area waypoints + CheckInterArea
     if(areaId !== ownerAreaId){
       if(!this.owner.interAreaWaypoints?.length){
@@ -417,8 +417,8 @@ export class ActionCheckMoveToPointRadius extends ActionCheckPath {
     if(typeof x !== 'number' || typeof y !== 'number' || typeof z !== 'number'){
       return ActionStatus.ERROR;
     }
-    const areaId = this.getParameter<number>(3) ?? GameState.module.area.id;
-    const ownerAreaId = this.owner.area?.id ?? GameState.module.area.id;
+    const areaId = this.getParameter<number>(3) ?? this.owner.area?.id ?? 0;
+    const ownerAreaId = this.owner.area?.id ?? 0;
     if(areaId !== ownerAreaId){
       if(!this.owner.interAreaWaypoints?.length){
         beginInterAreaPath(this.owner, undefined, areaId);
@@ -487,7 +487,7 @@ export class ActionCheckMoveAwayFromLocation extends ActionCheckPath {
 
     this.queueMoveTo(
       away.x, away.y, away.z,
-      this.owner.area?.id ?? GameState.module.area.id,
+      this.owner.area?.id ?? 0,
       ModuleObjectConstant.OBJECT_INVALID,
       1.0,
       30.0,

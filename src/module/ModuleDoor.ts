@@ -630,11 +630,14 @@ export class ModuleDoor extends ModuleObject {
 
     //Notice all creatures within range that someone opened this door
     if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
-      for(let i = 0, len = GameState.module.area.creatures.length; i < len; i++){
-        let creature = GameState.module.area.creatures[i];
-        let distance = creature.position.distanceTo(this.position);
-        if(distance <= creature.getPerceptionRangePrimary()){
-          creature.notifyPerceptionHeardObject(object, true);
+      const creatures = this.area?.creatures;
+      if(creatures){
+        for(let i = 0, len = creatures.length; i < len; i++){
+          let creature = creatures[i];
+          let distance = creature.position.distanceTo(this.position);
+          if(distance <= creature.getPerceptionRangePrimary()){
+            creature.notifyPerceptionHeardObject(object, true);
+          }
         }
       }
     }
@@ -698,15 +701,18 @@ export class ModuleDoor extends ModuleObject {
       }
     }else{
       //Check Creatures
-      let creatureLen = GameState.module.area.creatures.length;
-      for(let i = 0; i < creatureLen; i++){
-        let creature = GameState.module.area.creatures[i];
-        if(this.box.containsPoint(creature.position)){
-          if(this.objectsInside.indexOf(creature) == -1){
-            this.objectsInside.push(creature);
+      const creatures = this.area?.creatures;
+      if(creatures){
+        let creatureLen = creatures.length;
+        for(let i = 0; i < creatureLen; i++){
+          let creature = creatures[i];
+          if(this.box.containsPoint(creature.position)){
+            if(this.objectsInside.indexOf(creature) == -1){
+              this.objectsInside.push(creature);
 
-            creature.lastDoorEntered = this;
-            this.lastObjectEntered = creature;
+              creature.lastDoorEntered = this;
+              this.lastObjectEntered = creature;
+            }
           }
         }
       }
@@ -919,10 +925,14 @@ export class ModuleDoor extends ModuleObject {
     let aabbFaces = [];
     let intersects;// = GameState.raycaster.intersectOctreeObjects(meshesSearch);
     let box = this.box.clone();
+    const rooms = this.area?.rooms;
+    if(!rooms){
+      return;
+    }
 
     this.rooms = [];
-    for(let i = 0; i < GameState.module.area.rooms.length; i++){
-      let room = GameState.module.area.rooms[i];
+    for(let i = 0; i < rooms.length; i++){
+      let room = rooms[i];
       if(room.box.containsPoint(this.position)){
         this.roomIds.push(i);
       }
@@ -930,7 +940,7 @@ export class ModuleDoor extends ModuleObject {
 
     if(box){
       for(let j = 0, jl = this.roomIds.length; j < jl; j++){
-        let room = GameState.module.area.rooms[this.roomIds[j]];
+        let room = rooms[this.roomIds[j]];
         if(room && room.collisionManager.walkmesh && room.collisionManager.walkmesh.aabbNodes.length){
           aabbFaces.push({
             object: room, 
@@ -957,7 +967,7 @@ export class ModuleDoor extends ModuleObject {
       }
     }
     if(this.rooms.length){
-      this.attachToRoom(GameState.module.area.rooms[this.roomIds[0]]);
+      this.attachToRoom(rooms[this.roomIds[0]]);
       return;
     }
   }

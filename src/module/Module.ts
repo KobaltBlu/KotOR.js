@@ -488,6 +488,7 @@ export class Module {
 
   addObjectToLimbo(creature: ModuleCreature){
     if(!creature) return;
+    creature.area?.detachObject(creature);
     if(this.limboCreatures.indexOf(creature) < 0){
       this.limboCreatures.push(creature);
     }
