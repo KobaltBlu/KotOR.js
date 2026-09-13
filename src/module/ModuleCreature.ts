@@ -4188,8 +4188,7 @@ export class ModuleCreature extends ModuleObject {
     
     const nwscript = this.scripts[ModuleObjectScript.CreatureOnEndRound];
     if(!nwscript){ return true; }
-    const instance = nwscript.newInstance();
-    instance.run(this);
+    nwscript.run(this);
   }
 
   /**
@@ -4217,8 +4216,7 @@ export class ModuleCreature extends ModuleObject {
     this.weaponPowered(false);
     const nwscript = this.scripts[ModuleObjectScript.CreatureOnDeath];
     if(nwscript){
-      const instance = nwscript.newInstance();
-      instance.run(this);
+      nwscript.run(this);
     }
 
     // effect apply → RemoveFromActiveCreatureCount(..., 0)
@@ -4626,11 +4624,10 @@ export class ModuleCreature extends ModuleObject {
       }
     }
     if(!nwscript){ return false; }
-    const instance = nwscript.newInstance();
-    instance.listenPatternNumber = listenPatternNumber;
-    instance.listenPatternSpeaker = oSpeaker;
-    instance.conversation = conversation;
-    instance.run(this, 0);
+    nwscript.listenPatternNumber = listenPatternNumber;
+    nwscript.listenPatternSpeaker = oSpeaker;
+    nwscript.conversation = conversation;
+    nwscript.run(this, 0);
     return true;
   }
 
@@ -4641,11 +4638,10 @@ export class ModuleCreature extends ModuleObject {
   override onEndDialog(){
     const nwscript = this.scripts[ModuleObjectScript.CreatureOnEndDialog];
     if(!nwscript){ return; }
-    const instance = nwscript.newInstance();
     // Wrappers hardcode KOTOR_DEFAULT_EVENT_ON_GLOBAL_DIALOGUE_END (1011).
     // Party templates leave this slot empty.
     const script_num = (GameState.PartyManager.party.indexOf(this) > -1) ? 2011 : 1011;
-    instance.run(this, script_num);
+    nwscript.run(this, script_num);
   }
 
   override onAttacked(attackType: CombatActionType){
@@ -4668,9 +4664,8 @@ export class ModuleCreature extends ModuleObject {
 
     const nwscript = this.scripts[ModuleObjectScript.CreatureOnAttacked];
     if(!nwscript){ return; }
-    const instance = nwscript.newInstance();
     const script_num = (GameState.PartyManager.party.indexOf(this) > -1) ? 2005 : 1005;
-    instance.run(this, script_num);
+    nwscript.run(this, script_num);
   }
 
   override onDamaged(){
@@ -4684,9 +4679,8 @@ export class ModuleCreature extends ModuleObject {
 
     const nwscript = this.scripts[ModuleObjectScript.CreatureOnDamaged];
     if(!nwscript){ return true; }
-    const instance = nwscript.newInstance();
     const script_num = (GameState.PartyManager.party.indexOf(this) > -1) ? 2006 : 1006;
-    instance.run(this, script_num);
+    nwscript.run(this, script_num);
   }
 
   override onBlocked(){
@@ -4701,10 +4695,7 @@ export class ModuleCreature extends ModuleObject {
     // splice ok + hostile on arc → pathfail with that enemy.
     if(isCreature(blocker)){
       const runPathfail = () => {
-        const pathfail = GameState.NWScript.Load('k_def_pathfail01');
-        if(pathfail){
-          pathfail.newInstance().run(this);
-        }
+        GameState.NWScript.Run('k_def_pathfail01', this);
       };
 
       // walk step distance test → BumpFriends before hex/pathfail
@@ -4753,9 +4744,8 @@ export class ModuleCreature extends ModuleObject {
     this.collisionManager.foundEnemyCreature = undefined;
     const nwscript = this.scripts[ModuleObjectScript.CreatureOnBlocked];
     if(!nwscript){ return; }
-    const instance = nwscript.newInstance();
     const script_num = (GameState.PartyManager.party.indexOf(this) > -1) ? 2009 : 1009;
-    instance.run(this, script_num);
+    nwscript.run(this, script_num);
   }
 
   use(object: ModuleObject){

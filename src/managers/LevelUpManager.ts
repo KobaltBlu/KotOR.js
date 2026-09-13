@@ -224,8 +224,7 @@ export class LevelUpManager {
     if(!mod) return;
     const nwscript = mod.scripts?.[ModuleObjectScript.ModuleOnPlayerLevelUp];
     if(nwscript){
-      const instance = nwscript.newInstance();
-      instance.run(creature);
+      nwscript.run(creature);
     }
   }
 

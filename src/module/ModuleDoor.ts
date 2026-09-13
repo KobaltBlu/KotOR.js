@@ -500,11 +500,10 @@ export class ModuleDoor extends ModuleObject {
       }
     }
     if(!nwscript){ return false; }
-    const instance = nwscript.newInstance();
-    instance.listenPatternNumber = listenPatternNumber;
-    instance.listenPatternSpeaker = oSpeaker;
-    instance.conversation = conversation;
-    instance.run(this, 0);
+    nwscript.listenPatternNumber = listenPatternNumber;
+    nwscript.listenPatternSpeaker = oSpeaker;
+    nwscript.conversation = conversation;
+    nwscript.run(this, 0);
     return true;
   }
 

@@ -115,6 +115,11 @@ export class NWScriptInstance {
   debugCallStack: number[] = [];
   /** Breakpoint map version — bump to force UI remount of gutters. */
   breakPointVersion: number = 0;
+  /**
+   * When true, dispose after this run completes (re-entrant ExecuteScript clones).
+   * Object slot instances and the shared execute runner leave this false.
+   */
+  disposeAfterRun: boolean = false;
 
   #eventListener: { [key: string]: Function[] } = {};
 
@@ -373,18 +378,37 @@ export class NWScriptInstance {
 
     this.sendToDebugger(IPCMessageType.DestroyScript);
 
-    //This is used to dispose of STORE_STATE instances once they complete
-    if(this.isStoreState){
-      this.nwscript.disposeInstance(this);
+    if(this.nwscript){
+      const idx = this.nwscript.instances.indexOf(this);
+      if(idx >= 0){
+        this.nwscript.instances.splice(idx, 1);
+      }
+      this.nwscript.instanceUUIDMap.delete(this.uuid);
+      if(this.nwscript.executeInstance === this){
+        this.nwscript.executeInstance = undefined;
+      }
     }
 
-    // this.nwscript = undefined;
     this.instructions = undefined;
-    this.init();
+    this.init({ preserveOwner: false });
     this.dispatchEvent('dispose', this.uuid);
   }
 
-  init(){
+  /**
+   * Clear transient execution + event context so the next run is not polluted.
+   * Preserves identity (uuid/name/nwscript/instructions) and, for long-lived slot
+   * / execute-runner instances, owner snapshot + scriptKey.
+   */
+  init(options: { preserveOwner?: boolean } = {}){
+    const preserveOwner = options.preserveOwner ?? (!this.isStoreState && !this.disposeAfterRun);
+    const savedScriptKey = preserveOwner ? this.scriptKey : '';
+    const savedOwner = preserveOwner ? {
+      caller: this.caller,
+      ownerObjectId: this.ownerObjectId,
+      ownerTag: this.ownerTag,
+      ownerLabel: this.ownerLabel,
+      ownerKind: this.ownerKind,
+    } : undefined;
 
     this.caller = undefined;
     this.scriptVar = 0;
@@ -395,12 +419,16 @@ export class NWScriptInstance {
     this.subRoutine = undefined;
     this.suspended = false;
     this.debugCallStack = [];
+    this.running = false;
 
     this.enteringObject = undefined;
     this.exitingObject = undefined;
-    this.listenPatternNumber = 1;
+    this.listenPatternNumber = -1;
+    this.listenPatternSpeaker = undefined;
+    this.conversation = undefined;
 
     this.state = [];
+    this.delayCommands = [];
 
     this.var1 = undefined;
     this.var2 = undefined;
@@ -411,6 +439,24 @@ export class NWScriptInstance {
     this.params = [0, 0, 0, 0, 0];
     this.paramString = '';
     this.verified = false;
+
+    this.lastPerceived = undefined;
+    this.lastSpeaker = undefined;
+    this.object = undefined;
+    this.talent = undefined;
+    this.lastSpellCaster = undefined;
+    this.lastSpellAttacker = undefined;
+    this.lastSpell = undefined;
+    this.lastSpellHarmful = undefined;
+    this.healTarget = undefined;
+    this.lastDisturbed = undefined;
+
+    this.currentInstruction = undefined;
+    this.prevByteCode = undefined;
+    this.seek = undefined;
+    this.address = undefined;
+    this.offset = undefined;
+    this.parentUUID = undefined;
 
     if(this.stack instanceof NWScriptStack)
       this.stack.dispose();
@@ -427,6 +473,54 @@ export class NWScriptInstance {
     this.mgFollower = undefined;
     this.mgObstacle = undefined;
 
+    if(savedOwner){
+      this.scriptKey = savedScriptKey || '';
+      this.caller = savedOwner.caller;
+      this.ownerObjectId = savedOwner.ownerObjectId;
+      this.ownerTag = savedOwner.ownerTag;
+      this.ownerLabel = savedOwner.ownerLabel;
+      this.ownerKind = savedOwner.ownerKind;
+    }
+  }
+
+  /**
+   * Reset execution machinery at the start of run(). Does not clear event-context
+   * fields callers may have set immediately before run (lastPerceived, lastSpell*, …).
+   * Those are cleared by init() at the end of the previous run.
+   *
+   * Callers must set event fields before run(); resetForRun only rebuilds the stack
+   * and iteration indexes so a reused slot cannot keep prior STORE_STATE / stack residue.
+   */
+  resetForRun(){
+    this.subRoutines = [];
+    this.subRoutine = undefined;
+    this.suspended = false;
+    this.debugCallStack = [];
+    this.running = false;
+
+    if(this.stack instanceof NWScriptStack){
+      this.stack.dispose();
+    }
+    this.stack = new NWScriptStack();
+    this.state = [];
+    this.delayCommands = [];
+
+    this.var1 = undefined;
+    this.var2 = undefined;
+    this.var3 = undefined;
+    this.struct1 = undefined;
+    this.struct2 = undefined;
+    this.params = [0, 0, 0, 0, 0];
+    this.paramString = '';
+    this.verified = false;
+
+    this.persistentObjectIndex = new Map<number, number>();
+    this.objectInventoryIndex = new Map<number, number>();
+    this.creatureEffectIndex = new Map<number, number>();
+    this.creatureAttackerIndex = new Map<number, number>();
+    this.factionMemberIndex = new Map<number, number>();
+    this.objectInSphapeIndex = new Map<number, number>();
+    this.objectInShapeResults = [];
   }
 
   setCaller(obj: any, scriptKey?: string, notifyDebugger = true){
@@ -446,23 +540,9 @@ export class NWScriptInstance {
   }
 
   run(caller: any = null, scriptVar = 0){
+    this.resetForRun();
     this.setCaller(caller, this.scriptKey || undefined, true);
     this.scriptVar = scriptVar;
-
-    this.subRoutines = [];
-    this.stack = new NWScriptStack();
-    this.state = [];
-    this.delayCommands = [];
-
-    this.lastSpeaker = undefined;
-
-    this.persistentObjectIndex = new Map<number, number>();
-    this.objectInventoryIndex = new Map<number, number>();
-    this.creatureEffectIndex = new Map<number, number>();
-    this.creatureAttackerIndex = new Map<number, number>();
-    this.factionMemberIndex = new Map<number, number>();
-    this.objectInSphapeIndex = new Map<number, number>();
-    this.objectInShapeResults = [];
 
     if(this.globalCache != null){
       //I'm trying to cache instructions from the global scope so they are not processed again when the script is run again.
@@ -668,12 +748,11 @@ export class NWScriptInstance {
     this.init();
 
     /**
-     * If this instance was generated from a StoreState,
-     * then dispose of it as it won't be used again
+     * StoreState clones and re-entrant ExecuteScript instances are one-shot.
      */
-    // if(this.isStoreState){
-      // this.dispose;
-    // }
+    if(this.isStoreState || this.disposeAfterRun){
+      this.dispose();
+    }
 
     return returnValue;
   }

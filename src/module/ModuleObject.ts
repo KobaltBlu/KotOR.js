@@ -524,12 +524,11 @@ export class ModuleObject {
 
   getScriptInstance(scriptKey: ModuleObjectScript): NWScriptInstance | undefined {
     const script = this.scripts[scriptKey];
-    if(!script || !script.nwscript){ return undefined; }
-    const instance = this.scripts[scriptKey].newInstance();
-    if(instance){
-      instance.bindOwner(this, scriptKey);
+    if(!script){ return undefined; }
+    if(!script.scriptKey){
+      script.bindOwner(this, scriptKey);
     }
-    return instance;
+    return script;
   }
 
   /**
@@ -1096,16 +1095,12 @@ export class ModuleObject {
   }
 
   /**
-   * Match onDamaged / onSpellAt: always newInstance. Reusing the stored
-   * template instance can leave STORE_STATE / stack residue across UD events
-   * (Deadeye duel latch GetLocalBoolean(0) observed stuck after a partial run).
+   * Run OnUserDefined on the object slot instance.
+   * Sync execution + resetForRun/init keep STORE_STATE / stack residue from polluting the next fire.
    */
   protected runUserDefinedScript(event: NWScriptEvent, script: NWScriptInstance | undefined): void {
     if(!(event instanceof NWScriptEvent) || !script){ return; }
-    const instance = script.nwscript
-      ? script.nwscript.newInstance()
-      : script.newInstance();
-    instance.run(this, parseInt(event.getInt(0)));
+    script.run(this, parseInt(event.getInt(0)));
   }
 
   /**
@@ -1122,11 +1117,10 @@ export class ModuleObject {
    */
   protected runSpellCastAtScript(event: NWScriptEvent, script: NWScriptInstance | undefined): void {
     if(!(event instanceof NWScriptEvent) || !script){ return; }
-    const instance = script.nwscript.newInstance();
-    instance.lastSpellCaster = event.getObject(0);
-    instance.lastSpell = event.getInt(0);
-    instance.lastSpellHarmful = !!event.getInt(1);
-    instance.run(this);
+    script.lastSpellCaster = event.getObject(0);
+    script.lastSpell = event.getInt(0);
+    script.lastSpellHarmful = !!event.getInt(1);
+    script.run(this);
   }
 
   /**
@@ -3056,14 +3050,13 @@ export class ModuleObject {
     }
 
     if(triggerOnNotice && onNotice){
-      const instance = onNotice.nwscript.newInstance();
       // sets discrete event flags (0x904 Heard / 0x90c Inaudible) — not cumulative list bits
-      instance.lastPerceived = {
+      onNotice.lastPerceived = {
         object: object,
         objectId: object.id,
         data: heard ? PerceptionMask.HEARD : PerceptionMask.INAUDIBLE
       };
-      instance.run(this);
+      onNotice.run(this);
       return true;
     }
   }
@@ -3113,14 +3106,13 @@ export class ModuleObject {
     }
 
     if(triggerOnNotice && onNotice){
-      const instance = onNotice.nwscript.newInstance();
       // sets discrete event flags (0x908 Seen / 0x910 Vanished)
-      instance.lastPerceived = {
+      onNotice.lastPerceived = {
         object: object,
         objectId: object.id,
         data: seen ? PerceptionMask.SEEN : PerceptionMask.INVISIBLE
       };
-      instance.run(this);
+      onNotice.run(this);
       return true;
     }
   }
@@ -3713,8 +3705,8 @@ export class ModuleObject {
         if(this.scripts[key] instanceof NWScriptInstance){
           this.scripts[key].dispose();
         }
-        this.scripts = {};
       });
+      this.scripts = {};
 
       //Clear action queue
       if(this.actionQueue){

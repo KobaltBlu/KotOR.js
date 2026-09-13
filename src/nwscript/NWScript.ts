@@ -86,6 +86,12 @@ export class NWScript {
   instanceUUIDMap: Map<string, NWScriptInstance> = new Map();
 
   /**
+   * Shared runner for ExecuteScript / one-off script fires (not object event slots).
+   * Reused when not already mid-run; re-entrant calls clone with disposeAfterRun.
+   */
+  executeInstance: NWScriptInstance | undefined;
+
+  /**
    * The instructions of the script
    */
   instructions: Map<number, NWScriptInstruction>;
@@ -255,6 +261,54 @@ export class NWScript {
   }
 
   /**
+   * Instance for ExecuteScript / ad-hoc runs: reuse a dedicated runner when idle,
+   * otherwise clone and mark disposeAfterRun for nested re-entry.
+   */
+  getInstanceForExecute(parentInstance?: NWScriptInstance): NWScriptInstance {
+    if(
+      this.executeInstance &&
+      !this.executeInstance._disposed &&
+      !this.executeInstance.running
+    ){
+      if(parentInstance instanceof NWScriptInstance){
+        this.executeInstance.parentUUID = parentInstance.uuid;
+      }
+      return this.executeInstance;
+    }
+
+    if(this.executeInstance && this.executeInstance.running){
+      const nested = this.newInstance(parentInstance);
+      nested.disposeAfterRun = true;
+      return nested;
+    }
+
+    this.executeInstance = this.newInstance(parentInstance);
+    return this.executeInstance;
+  }
+
+  /**
+   * Ensure the named script is parsed into the cache (no new object-slot instance).
+   */
+  static Ensure(scriptName = ''): NWScript | undefined {
+    if(!scriptName){ return undefined; }
+    if(NWScript.scripts.has(scriptName)){
+      return NWScript.scripts.get(scriptName);
+    }
+    NWScript.Load(scriptName, false);
+    return NWScript.scripts.get(scriptName);
+  }
+
+  /**
+   * Run a script by name on a reusable execute instance (not an object event slot).
+   */
+  static Run(scriptName: string, caller: any, scriptVar = 0, parentInstance?: NWScriptInstance){
+    const script = NWScript.Ensure(scriptName);
+    if(!script){ return undefined; }
+    const instance = script.getInstanceForExecute(parentInstance);
+    return instance.run(caller, scriptVar);
+  }
+
+  /**
    * Set a script as global or not
    */
   static SetGlobalScript( scriptName = '', isGlobal = true ){
@@ -267,7 +321,10 @@ export class NWScript {
   }
 
   /**
-   * Load a script from the game resources into memory and return an instance of the script
+   * Load a script from the game resources into memory and return an instance of the script.
+   *
+   * - No parentInstance: always newInstance (object loadScripts / slot assignment).
+   * - With parentInstance (ExecuteScript): reuse getInstanceForExecute (disposeAfterRun if re-entrant).
    */
   static Load( scriptName = '', returnInstance = true, parentInstance?: NWScriptInstance ): NWScriptInstance {
     //If the script name is empty, return undefined
@@ -278,7 +335,11 @@ export class NWScript {
     //If the script is already loaded, create a new instance and return it
     if( NWScript.scripts.has( scriptName ) ){
       const script = NWScript.scripts.get( scriptName );
-      return script.newInstance(parentInstance)
+      if(!returnInstance){ return undefined; }
+      if(parentInstance instanceof NWScriptInstance){
+        return script.getInstanceForExecute(parentInstance);
+      }
+      return script.newInstance()
     }
 
     //Fetch the script from the game resource list
@@ -293,8 +354,11 @@ export class NWScript {
     //Store a refernece to the script object inside the static "scripts" variable
     NWScript.scripts.set( scriptName, script );
 
-    //Create a new instance of the script and return it
-    return returnInstance ? script.newInstance(parentInstance) : undefined;
+    if(!returnInstance){ return undefined; }
+    if(parentInstance instanceof NWScriptInstance){
+      return script.getInstanceForExecute(parentInstance);
+    }
+    return script.newInstance();
   }
 
   /**
@@ -305,6 +369,7 @@ export class NWScript {
       //Only dispose of non global scripts
       //global scripts would be like the ones attached to Game Menus
       if(script.isGlobal){  return; }
+      script.executeInstance = undefined;
       script.disposeInstances();
       NWScript.scripts.delete(key);
     });
@@ -315,11 +380,7 @@ export class NWScript {
    */
   disposeInstance( instance: NWScriptInstance ){
     if(instance instanceof NWScriptInstance){
-      let idx = this.instances.indexOf(instance);
-      if(idx >= 0){
-        this.instances.splice(idx, 1);
-        instance.dispose();
-      }
+      instance.dispose();
     }
   }
 
@@ -329,11 +390,12 @@ export class NWScript {
   disposeInstances(){
     let i = this.instances.length;
     while(i--){
-      let instance = this.instances.splice(i, 1)[0];
+      let instance = this.instances[i];
       if(instance instanceof NWScriptInstance){
         instance.dispose();
       }
     }
+    this.executeInstance = undefined;
   }
   
   /**

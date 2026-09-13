@@ -769,17 +769,15 @@ export class ModuleEncounter extends ModuleObject {
   onEnter(object: ModuleObject){
     const nwscript = this.scripts[ModuleObjectScript.EncounterOnEntered];
     if(!nwscript){ return; }
-    const instance = nwscript.newInstance();
-    instance.enteringObject = object;
-    instance.run(this, 0);
+    nwscript.enteringObject = object;
+    nwscript.run(this, 0);
   }
 
   onExit(object: ModuleObject){
     const nwscript = this.scripts[ModuleObjectScript.EncounterOnExit];
     if(!nwscript){ return; }
-    const instance = nwscript.newInstance();
-    instance.exitingObject = object;
-    instance.run(this, 0);
+    nwscript.exitingObject = object;
+    nwscript.run(this, 0);
   }
 
   override triggerHeartbeat(){
@@ -796,8 +794,7 @@ export class ModuleEncounter extends ModuleObject {
   onExhausted(){
     const nwscript = this.scripts[ModuleObjectScript.EncounterOnExhausted];
     if(!nwscript){ return; }
-    const instance = nwscript.newInstance();
-    instance.run(this, 0);
+    nwscript.run(this, 0);
   }
 
   /**

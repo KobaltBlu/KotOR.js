@@ -753,8 +753,7 @@ export class Module {
     this.lastPlayerDied = creature;
     const script = this.scripts[ModuleObjectScript.ModuleOnPlayerDeath];
     if(script){
-      const instance = script.newInstance();
-      instance.run(this.area ?? this, 0);
+      script.run(this.area ?? this, 0);
     }
   }
 
@@ -764,8 +763,7 @@ export class Module {
     this.lastPlayerDying = creature;
     const script = this.scripts[ModuleObjectScript.ModuleOnPlayerDying];
     if(script){
-      const instance = script.newInstance();
-      instance.run(this.area ?? this, 0);
+      script.run(this.area ?? this, 0);
     }
   }
 
@@ -775,8 +773,7 @@ export class Module {
     this.lastRespawnButtonPresser = creature;
     const script = this.scripts[ModuleObjectScript.ModuleOnSpawnButtonDown];
     if(script){
-      const instance = script.newInstance();
-      instance.run(this.area ?? this, 0);
+      script.run(this.area ?? this, 0);
     }
   }
 
