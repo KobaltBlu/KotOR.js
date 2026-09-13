@@ -1,5 +1,6 @@
 import { GameMenu } from "@/gui";
 import type { GUIControl, GUILabel, GUIButton } from "@/gui";
+import { truncDiv } from "@/gui/GUICoord";
 import { TextureLoader } from "@/loaders";
 import { OdysseyModel3D } from "@/three/odyssey";
 import { CharGenClasses } from "@/game/CharGenClasses";
@@ -44,6 +45,13 @@ export class CharGenClass extends GameMenu {
   /** Hovered (larger) target sizes; non-hovered slots animate toward base, hovered toward hover. */
   private _hoverModelExtent: { width: number; height: number } = { width: 0, height: 0 };
   private _hoverBtnExtent: { width: number; height: number } = { width: 0, height: 0 };
+  /**
+   * Fixed layout centers per slot (from classsel.gui extents before anim).
+   * Slot 1 is authored at hover size; 2–6 at base — growing/shrinking must
+   * re-anchor left/top on these centers or pane 1 sits offset after reset.
+   */
+  private _modelCenters: { x: number; y: number }[] = [];
+  private _btnCenters: { x: number; y: number }[] = [];
   private _baseExtentsCaptured: boolean = false;
 
   constructor(){
@@ -180,30 +188,104 @@ export class CharGenClass extends GameMenu {
   }
 
   /**
-   * Capture base (rest) and hover target extents from the first model/button control.
-   * Layout (classsel.gui) defines the intended size; we animate between base and a slightly
-   * larger hover size so portraits never shrink below the layout dimensions.
+   * Capture base/hover sizes and per-slot layout centers from classsel.gui.
+   * MODEL1/BTN_SEL1 are authored at hover size; MODEL2+/BTN_SEL2+ at base.
    */
   protected captureBaseExtents(): void {
-    if (this._baseExtentsCaptured) return;
-    //Hover extents can be calculated from the first model and button control
-    //They are sized differently from the other 5 controls
-    const modelControlHovered = this.getControlByName('_3D_MODEL1');
-    const btnControlHovered = this.getControlByName('BTN_SEL1');
-    this._hoverModelExtent.width = modelControlHovered.extent.width;
-    this._hoverModelExtent.height = modelControlHovered.extent.height;
-    this._hoverBtnExtent.width = btnControlHovered.extent.width;
-    this._hoverBtnExtent.height = btnControlHovered.extent.height;
+    if (this._baseExtentsCaptured && this._modelCenters.length === 6) return;
 
-    //Base extents can be calculated from the 2nd model and button controls
-    const modelControl = this.getControlByName('_3D_MODEL2');
-    const btnControl = this.getControlByName('BTN_SEL2');
-    if (!modelControl || !btnControl || modelControl.extent.width <= 0 || modelControl.extent.height <= 0) return;
-    this._baseModelExtent.width = modelControl.extent.width;
-    this._baseModelExtent.height = modelControl.extent.height;
-    this._baseBtnExtent.width = btnControl.extent.width;
-    this._baseBtnExtent.height = btnControl.extent.height;
+    // Sizes already captured but centers missing (e.g. HMR after field add):
+    // rebuild centers from current left/top + authored sizes. Slot 0 still
+    // carries hover-authored offsets when only width/height were snapped.
+    if(this._baseExtentsCaptured){
+      this._modelCenters = [];
+      this._btnCenters = [];
+      for(let i = 0; i < 6; i++){
+        const modelControl = this.getControlByName('_3D_MODEL' + (i + 1));
+        const btnControl = this.getControlByName('BTN_SEL' + (i + 1));
+        if(!modelControl || !btnControl) return;
+        const mw = i === 0 ? this._hoverModelExtent.width : this._baseModelExtent.width;
+        const mh = i === 0 ? this._hoverModelExtent.height : this._baseModelExtent.height;
+        const bw = i === 0 ? this._hoverBtnExtent.width : this._baseBtnExtent.width;
+        const bh = i === 0 ? this._hoverBtnExtent.height : this._baseBtnExtent.height;
+        this._modelCenters.push({
+          x: modelControl.extent.left + truncDiv(mw, 2),
+          y: modelControl.extent.top + truncDiv(mh, 2),
+        });
+        this._btnCenters.push({
+          x: btnControl.extent.left + truncDiv(bw, 2),
+          y: btnControl.extent.top + truncDiv(bh, 2),
+        });
+      }
+      return;
+    }
+
+    this._modelCenters = [];
+    this._btnCenters = [];
+    for(let i = 0; i < 6; i++){
+      const modelControl = this.getControlByName('_3D_MODEL' + (i + 1));
+      const btnControl = this.getControlByName('BTN_SEL' + (i + 1));
+      if(!modelControl || !btnControl) return;
+      this._modelCenters.push({
+        x: modelControl.extent.left + truncDiv(modelControl.extent.width, 2),
+        y: modelControl.extent.top + truncDiv(modelControl.extent.height, 2),
+      });
+      this._btnCenters.push({
+        x: btnControl.extent.left + truncDiv(btnControl.extent.width, 2),
+        y: btnControl.extent.top + truncDiv(btnControl.extent.height, 2),
+      });
+    }
+
+    const modelHover = this.getControlByName('_3D_MODEL1');
+    const btnHover = this.getControlByName('BTN_SEL1');
+    this._hoverModelExtent.width = modelHover.extent.width;
+    this._hoverModelExtent.height = modelHover.extent.height;
+    this._hoverBtnExtent.width = btnHover.extent.width;
+    this._hoverBtnExtent.height = btnHover.extent.height;
+
+    const modelBase = this.getControlByName('_3D_MODEL2');
+    const btnBase = this.getControlByName('BTN_SEL2');
+    if(!modelBase || !btnBase || modelBase.extent.width <= 0 || modelBase.extent.height <= 0) return;
+    this._baseModelExtent.width = modelBase.extent.width;
+    this._baseModelExtent.height = modelBase.extent.height;
+    this._baseBtnExtent.width = btnBase.extent.width;
+    this._baseBtnExtent.height = btnBase.extent.height;
     this._baseExtentsCaptured = true;
+  }
+
+  /** Set size and re-anchor left/top on the slot's fixed layout center. */
+  protected applyCenteredExtent(
+    control: GUIControl,
+    center: { x: number; y: number },
+    width: number,
+    height: number,
+  ): void {
+    control.extent.width = width;
+    control.extent.height = height;
+    control.extent.left = center.x - truncDiv(width, 2);
+    control.extent.top = center.y - truncDiv(height, 2);
+    control.resizeControl();
+    control.recalculate();
+  }
+
+  /** Step width/height one px toward target, then re-center on the slot anchor. */
+  protected stepCenteredExtent(
+    control: GUIControl,
+    center: { x: number; y: number },
+    targetW: number,
+    targetH: number,
+    growing: boolean,
+  ): void {
+    let w = control.extent.width;
+    let h = control.extent.height;
+    if(growing){
+      if(h < targetH) h = Math.min(h + 1, targetH);
+      if(w < targetW) w = Math.min(w + 1, targetW);
+    }else{
+      if(h > targetH) h = Math.max(h - 1, targetH);
+      if(w > targetW) w = Math.max(w - 1, targetW);
+    }
+    this.applyCenteredExtent(control, center, w, h);
   }
 
   update(delta = 0) {
@@ -219,34 +301,46 @@ export class CharGenClass extends GameMenu {
         if (creature) {
           creature.update(delta);
         }
-        if (btnControl.hover) {
+        const modelCenter = this._modelCenters[i];
+        const btnCenter = this._btnCenters[i];
+        if(btnControl.hover){
           if (GameState.CharGenManager.hoveredClass != i) {
             GameState.CharGenManager.hoveredClass = i;
             this.textNeedsUpdate = true;
           }
-          if (btnControl.extent.height < this._hoverBtnExtent.height) {
-            btnControl.extent.height = Math.min(btnControl.extent.height + 1, this._hoverBtnExtent.height);
-            btnControl.extent.width = Math.min(btnControl.extent.width + 1, this._hoverBtnExtent.width);
+          if(btnCenter){
+            this.stepCenteredExtent(
+              btnControl, btnCenter,
+              this._hoverBtnExtent.width, this._hoverBtnExtent.height,
+              true,
+            );
           }
-          if (modelControl.extent.height < this._hoverModelExtent.height) {
-            modelControl.extent.height = Math.min(modelControl.extent.height + 1, this._hoverModelExtent.height);
-            modelControl.extent.width = Math.min(modelControl.extent.width + 1, this._hoverModelExtent.width);
+          if(modelCenter){
+            this.stepCenteredExtent(
+              modelControl, modelCenter,
+              this._hoverModelExtent.width, this._hoverModelExtent.height,
+              true,
+            );
           }
-        } else {
-          if (btnControl.extent.height > this._baseBtnExtent.height) {
-            btnControl.extent.height = Math.max(btnControl.extent.height - 1, this._baseBtnExtent.height);
-            btnControl.extent.width = Math.max(btnControl.extent.width - 1, this._baseBtnExtent.width);
+        }else{
+          if(btnCenter){
+            this.stepCenteredExtent(
+              btnControl, btnCenter,
+              this._baseBtnExtent.width, this._baseBtnExtent.height,
+              false,
+            );
           }
-          if (modelControl.extent.height > this._baseModelExtent.height) {
-            modelControl.extent.height = Math.max(modelControl.extent.height - 1, this._baseModelExtent.height);
-            modelControl.extent.width = Math.max(modelControl.extent.width - 1, this._baseModelExtent.width);
+          if(modelCenter){
+            this.stepCenteredExtent(
+              modelControl, modelCenter,
+              this._baseModelExtent.width, this._baseModelExtent.height,
+              false,
+            );
           }
         }
         _3dView.setSize(modelControl.extent.width * 2, modelControl.extent.height * 2);
         _3dView.render(delta);
         modelControl.markChromeNeedsUpdate();
-        btnControl.resizeControl();
-        modelControl.resizeControl();
       }
       if (this.textNeedsUpdate) {
         this.LBL_DESC.setText(GameState.TLKManager.TLKStrings[CharGenClasses[GameState.CharGenManager.hoveredClass].strings.description].Value);
@@ -258,8 +352,56 @@ export class CharGenClass extends GameMenu {
     }
   }
 
+  /**
+   * Snap every class pane back to layout base size (centered) and clear hover.
+   * Hover anim mutates extent in place; leaving while enlarged (then
+   * returning via CharGenMain.close → MenuManager.Remove → show) left
+   * panes stuck at the hover size / hover-authored offset.
+   */
+  protected resetClassPaneExtents(): void {
+    if(!this._baseExtentsCaptured){
+      this.captureBaseExtents();
+    }
+    if(!this._baseExtentsCaptured) return;
+
+    for(let i = 0; i < 6; i++){
+      const modelControl = this.getControlByName('_3D_MODEL' + (i + 1));
+      const btnControl = this.getControlByName('BTN_SEL' + (i + 1));
+      if(modelControl && this._modelCenters[i]){
+        this.applyCenteredExtent(
+          modelControl,
+          this._modelCenters[i],
+          this._baseModelExtent.width,
+          this._baseModelExtent.height,
+        );
+      }
+      if(btnControl && this._btnCenters[i]){
+        this.applyCenteredExtent(
+          btnControl,
+          this._btnCenters[i],
+          this._baseBtnExtent.width,
+          this._baseBtnExtent.height,
+        );
+        if(btnControl.hover){
+          btnControl.onHoverOut();
+        }
+      }
+      const view = GameState.CharGenManager.lbl_3d_views.get(i);
+      if(view){
+        view.setSize(this._baseModelExtent.width * 2, this._baseModelExtent.height * 2);
+      }
+    }
+    this.activeControls.length = 0;
+  }
+
+  hide() {
+    this.resetClassPaneExtents();
+    super.hide();
+  }
+
   show() {
     super.show();
+    this.resetClassPaneExtents();
   }
 
   async Init() {
