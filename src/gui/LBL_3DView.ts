@@ -123,6 +123,8 @@ export class LBL_3DView {
    * Bind the RTT to the GUI fill slot. Clears named FILL so initTextures /
    * TextureLoader cannot race-overwrite the procedural map (that was the
    * mainmenu black-screen regression after _fillBound skipped per-frame rebinds).
+   * `opaque` is retained for callers; chrome stays on the transparent pass
+   * (see GUIControl.setFillOpaque).
    */
   private bindFillToControl(opaque: boolean = this._fillOpaque){
     if(!this.control){ return; }
@@ -140,9 +142,7 @@ export class LBL_3DView {
     if(!this.control){ return; }
     const current = this.control.getFillTexture?.();
     if(!this._fillBound || current !== this.texture.texture){
-      const mat = this.control.chrome?.material;
-      const opaque = mat ? !mat.transparent : this._fillOpaque;
-      this.bindFillToControl(opaque);
+      this.bindFillToControl(this._fillOpaque);
     }
   }
 

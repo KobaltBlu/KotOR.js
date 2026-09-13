@@ -1319,11 +1319,24 @@ export class GUIControl {
     return this.chrome.mesh;
   }
 
-  /** Opaque 3D/RTT fill: transparent=false, material visible. */
+  /**
+   * Solid vs alpha GUI fill. Chrome must stay on the transparent pass —
+   * renderPassGUI composites with needsSwap:false over the prior color
+   * buffer, and opaque/NoBlending meshes are dropped there (PORTCUST /
+   * mainmenu LBL_3DView went black when transparent was forced false).
+   */
   setFillOpaque(opaque: boolean){
     if(!this.chrome?.material) return;
-    this.chrome.material.transparent = !opaque;
+    this.chrome.material.transparent = true;
     this.chrome.material.visible = true;
+    if(this.chrome.material.uniforms?.fillOpacity){
+      this.chrome.material.uniforms.fillOpacity.value = 1;
+    }
+    // opaque=true: NormalBlending solid RTT; false: keep default blending
+    // for alpha PNGs. Both remain transparent=true for the GUI pass.
+    if(opaque){
+      this.chrome.material.blending = THREE.NormalBlending;
+    }
     this.chrome.material.needsUpdate = true;
   }
 

@@ -221,9 +221,9 @@ export class LBL_MapView {
     if(!this.control){ return; }
     const current = this.control.getFillTexture?.();
     if(!this._fillBound || current !== this.texture.texture){
-      const mat = this.control.chrome?.material;
-      const opaque = mat ? !mat.transparent : false;
-      this.bindFillToControl(opaque);
+      // Keep prior bind mode; do not infer from material.transparent
+      // (setFillOpaque no longer toggles that flag — see GUIControl).
+      this.bindFillToControl(false);
     }
   }
 
