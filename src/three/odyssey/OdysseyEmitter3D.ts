@@ -276,9 +276,14 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         this.geometry = new THREE.BufferGeometry();
       break;
       default:
-        // Motion_Blur and billboard modes: instanced plane quads
+        // Motion_Blur and billboard modes: instanced plane quads.
+        // Own index buffer — never share PlaneGeometry.index. sortParticles used to
+        // rewrite that shared triangle list as a 4-vert particle order, leaving one
+        // degenerate triangle (hard diagonal particle edges).
+        // Pass a plain number[] so Three wraps a BufferAttribute (TypedArray alone
+        // becomes geometry.index without .array and breaks indexed draws).
         this.geometry = new THREE.InstancedBufferGeometry();
-        this.geometry.index = OdysseyEmitter3D.PlaneGeometry.index;
+        this.geometry.setIndex([0, 2, 1, 2, 3, 1]);
         this.geometry.attributes.position = OdysseyEmitter3D.PlaneGeometry.attributes.position;
         this.geometry.attributes.uv = OdysseyEmitter3D.PlaneGeometry.attributes.uv;
       break;
@@ -3795,9 +3800,11 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
   //https://github.com/mrdoob/three.js/blob/master/examples/webgl_custom_attributes_points2.html#L173
   sortParticles(){
-
-    // if(!(this.mesh instanceof THREE.Points))
-    // return;
+    // Points only: rewrites geometry index as particle draw order.
+    // Billboard meshes share a 2-triangle plane index — sorting by the 4 corner
+    // positions corrupts that index into a single degenerate triangle (hard edges).
+    if(!(this.mesh instanceof THREE.Points))
+      return;
 
     if(this.node.renderMode == 'Linked')
       return;
