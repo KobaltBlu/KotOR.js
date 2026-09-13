@@ -96,7 +96,7 @@ export function buildFocusSpotShadowCameraParams(
  * body from floor without forcing an overhead proxy.
  *
  * Uses the real light→focus distance for near/far/FOV. Clamping dist to
- * {@link ODYSSEY_SHADOW_MIN_HALF_EXTENT} made low local lamps (dist &lt; 5)
+ * {@link ODYSSEY_SHADOW_MIN_HALF_EXTENT} made low local lamps (dist < 5)
  * compute near≈1.5 while the camera sat ~2 units from focus, clipping
  * everything above the shins out of the depth map.
  */

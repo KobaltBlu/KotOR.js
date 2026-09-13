@@ -5,7 +5,7 @@ import { Utility } from "@/utility/Utility";
 export const APPEARANCE_BODY_MAX_K1 = 0xa;
 export const APPEARANCE_BODY_MAX_K2 = 0xe;
 
-/** SetAppearanceAlignment: evil body tex when GoodEvil &lt; 41 (0x29). */
+/** SetAppearanceAlignment: evil body tex when GoodEvil < 41 (0x29). */
 export const APPEARANCE_EVIL_BODY_ALIGN_MAX = 0x29;
 
 /**
@@ -210,7 +210,7 @@ export class SWCreatureAppearance {
    * @param bodyVariation Armor bodyVar letter (or '' for ModelA).
    * @param textureVariation TextureVar (min 1).
    * @param maxBodyIndex K1=10 / K2=14 clamp.
-   * @param goodEvil Creature GoodEvil for TEX*Evil (&lt; 41).
+   * @param goodEvil Creature GoodEvil for TEX*Evil (< 41).
    * @param hasBodyVariation True when armor supplies a body letter (use_body_variation_).
    */
   getBodyModelInfo(

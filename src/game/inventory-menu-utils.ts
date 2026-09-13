@@ -138,14 +138,14 @@ export function getInventoryFilterLabel(filter: InventoryFilter): string {
   return GameState.TLKManager.GetStringById(strRef)?.Value ?? '';
 }
 
-/** LBL_INV: Inventory - &lt;filter&gt; */
+/** LBL_INV: Inventory - <filter> */
 export function formatInventoryTitle(filter: InventoryFilter = currentInventoryFilter): string {
   const inv = GameState.TLKManager.GetStringById(STR_INVENTORY_TITLE)?.Value ?? 'Inventory';
   const name = getInventoryFilterLabel(filter);
   return `${inv} - ${name}`;
 }
 
-/** BTN_QUESTITEMS: &lt;prefix&gt; &lt;next filter&gt; */
+/** BTN_QUESTITEMS: <prefix> <next filter> */
 export function formatQuestItemsButtonText(filter: InventoryFilter = currentInventoryFilter): string {
   const prefix = GameState.TLKManager.GetStringById(STR_FILTER_NEXT_PREFIX)?.Value ?? '';
   const nextName = getInventoryFilterLabel(getNextK1InventoryFilter(filter));

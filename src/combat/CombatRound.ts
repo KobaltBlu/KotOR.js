@@ -1867,7 +1867,7 @@ export class CombatRound {
 
   /**
    * ResolveMeleeAttack coup_de_grace gate:
-   * target creature debilitated/dying, total level &lt; 5, not party-UI path → Automatic Hit.
+   * target creature debilitated/dying, total level < 5, not party-UI path → Automatic Hit.
    */
   shouldCoupDeGrace(target: ModuleCreature): boolean {
     if(!target) return false;

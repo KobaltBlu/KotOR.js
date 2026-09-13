@@ -84,7 +84,7 @@ export class FeedbackMessageManager {
   }
 
   /**
-   * Append a TLK string (with optional &lt;CUSTOM*&gt; tokens) to the Messages buffer.
+   * Append a TLK string (with optional <CUSTOM*> tokens) to the Messages buffer.
    */
   static AddStrRef(strRef: number, customs: string[] = [], color: FeebackMessageColor = FeebackMessageColor.INFO){
     const message = formatTlkWithCustoms(strRef, customs);

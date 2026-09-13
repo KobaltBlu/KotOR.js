@@ -116,7 +116,7 @@ export function createFollowRuntime(): FollowLeaderRuntime {
 }
 
 /**
- * Distance-based run flag with hysteresis (enter ≥4, leave &lt;3).
+ * Distance-based run flag with hysteresis (enter ≥4, leave <3).
  */
 export function shouldFollowRun(
   distToLeader: number,

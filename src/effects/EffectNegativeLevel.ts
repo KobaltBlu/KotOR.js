@@ -12,7 +12,7 @@ const IMMUNITY_NEGATIVE_LEVEL = 0x1d;
 
 /**
  * EffectNegativeLevel — effect apply / OnRemove.
- * int[0] = levels drained (&lt; 101); int[1] = class index hit (set on apply).
+ * int[0] = levels drained (< 101); int[1] = class index hit (set on apply).
  * Spawns Attack/Save/Skill decreases; tracks class.negativeLevels; death at effective 0;
  * creator gains permanent THP = levels×5.
  *

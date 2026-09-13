@@ -510,7 +510,7 @@ export class ModuleCreature extends ModuleObject {
   walkSpeedFactor: number;
   /**
    * pathfind-info — consecutive walk frame distance
-   * TestDistance fails before giving up (hex while &lt; 6).
+   * TestDistance fails before giving up (hex while < 6).
    */
   pathBlockFailCount: number;
   /**
@@ -5261,7 +5261,7 @@ export class ModuleCreature extends ModuleObject {
 
   /**
    * SetAppearanceAlignment — reload body/head when GoodEvil crosses
-   * headtex bands or the TEX*Evil threshold (GoodEvil &lt; 0x29).
+   * headtex bands or the TEX*Evil threshold (GoodEvil < 0x29).
    */
   refreshAppearanceAlignment(oldGoodEvil: number){
     if(!this.isReady || !this.model) return;
