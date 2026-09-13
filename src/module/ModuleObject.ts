@@ -8,7 +8,6 @@ import type { EffectLink } from "@/effects";
 import type { GameEffect } from "@/effects/GameEffect";
 import EngineLocation from "@/engine/EngineLocation";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
-import { CombatFeatType } from "@/enums/combat/CombatFeatType";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { GameEffectSetStateType } from "@/enums/effects/GameEffectSetStateType";
 import { GameEngineType } from "@/enums/engine";
@@ -69,9 +68,8 @@ import type { SWPortrait } from "@/engine/rules/SWPortrait";
 import type { IHeardString } from "@/interface/dialog/IHeardString";
 import type { SWRange } from "@/engine/rules/SWRange";
 import { TURN_SPEED_SLOW } from "@/engine/TurnSpeeds";
-import { getForceResistanceBonus, getSavingThrowEffectBonus } from "@/effects/effect-bonuses";
+import { getForceResistanceBonus } from "@/effects/effect-bonuses";
 import { getActiveSetStateType } from "@/effects/set-state";
-import { hasImmunityType } from "@/effects/haste-slow";
 import { ModuleCreatureAmbientState } from "@/enums/module/ModuleCreatureAmbientState";
 import type { SWAnimation } from "@/engine/rules/SWAnimation";
 import type { ModuleTrigger } from "@/module/ModuleTrigger";
@@ -310,9 +308,6 @@ export class ModuleObject {
   _inventoryPointer: number;
 
   //stats
-  fortitudeSaveThrow: number;
-  reflexSaveThrow: number;
-  willSaveThrow: number;
   min1HP: boolean;
 
   //attributes
@@ -532,10 +527,6 @@ export class ModuleObject {
 
     this.v20 = new THREE.Vector2();
     this.v21 = new THREE.Vector2();
-
-    this.fortitudeSaveThrow = 0;
-    this.reflexSaveThrow = 0;
-    this.willSaveThrow = 0;
 
   }
 
@@ -2458,35 +2449,6 @@ export class ModuleObject {
   }
 
   /**
-   * Get the fortitude save — GetFortSavingThrow.
-   * Creatures: CON + FortSaveThrow + class/conditioning + effects.
-   */
-  getFortitudeSave(){
-    if(isCreature(this)){
-      return this.getCreatureSavingThrowBase(1) + getSavingThrowEffectBonus(this, 1);
-    }
-    return this.fortitudeSaveThrow + getSavingThrowEffectBonus(this, 1);
-  }
-
-  /**
-   * Get the reflex save — GetReflexSavingThrow.
-   */
-  getReflexSave(){
-    if(isCreature(this)){
-      return this.getCreatureSavingThrowBase(2) + getSavingThrowEffectBonus(this, 2);
-    }
-    return this.reflexSaveThrow + getSavingThrowEffectBonus(this, 2);
-  }
-
-  /**
-   * Fortitude save — SavingThrowRoll type 1.
-   * @returns 0 fail, 1 success, 2 immune
-   */
-  fortitudeSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
-    return this.savingThrowRoll(1, nDC, nSaveType, oVersus);
-  }
-
-  /**
    * Get the CON
    * @returns
    */
@@ -2495,137 +2457,10 @@ export class ModuleObject {
   }
 
   /**
-   * Reflex save — SavingThrowRoll type 2.
-   * @returns 0 fail, 1 success, 2 immune
-   */
-  reflexSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
-    return this.savingThrowRoll(2, nDC, nSaveType, oVersus);
-  }
-
-  /**
    * Get the DEX
    * @returns
    */
   getDEX(): number {
-    return 0;
-  }
-
-  /**
-   * Get the will save — GetWillSavingThrow.
-   */
-  getWillSave(){
-    if(isCreature(this)){
-      return this.getCreatureSavingThrowBase(3) + getSavingThrowEffectBonus(this, 3);
-    }
-    return this.willSaveThrow + getSavingThrowEffectBonus(this, 3);
-  }
-
-  /**
-   * Will save — SavingThrowRoll type 3.
-   * @returns 0 fail, 1 success, 2 immune
-   */
-  willSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
-    return this.savingThrowRoll(3, nDC, nSaveType, oVersus);
-  }
-
-  private getConditioningSaveBonus(creature: ModuleCreature): number {
-    if(creature.getHasFeat?.(CombatFeatType.MASTER_CONDITIONING)) return 3;
-    if(creature.getHasFeat?.(CombatFeatType.IMPROVED_CONDITIONING)) return 2;
-    if(creature.getHasFeat?.(CombatFeatType.CONDITIONING)) return 1;
-    return 0;
-  }
-
-  private getClassSavingThrowBonus(creature: ModuleCreature, kind: number): number {
-    let total = 0;
-    const classes = creature.classes || [];
-    for(let i = 0; i < classes.length; i++){
-      const creatureClass = classes[i];
-      if(!creatureClass) continue;
-      if(kind === 1){
-        total += creatureClass.getFortSaveBonus?.() || 0;
-      }else if(kind === 2){
-        total += creatureClass.getRefSaveBonus?.() || 0;
-      }else{
-        total += creatureClass.getWillSaveBonus?.() || 0;
-      }
-    }
-    return total + this.getConditioningSaveBonus(creature);
-  }
-
-  private getCreatureSavingThrowBase(kind: number): number {
-    const creature = this as unknown as ModuleCreature;
-    let abilityMod = 0;
-    let gffBonus = 0;
-    if(kind === 1){
-      abilityMod = CombatRound.GetMod(creature.getCON());
-      gffBonus = creature.fortitudeSaveThrow | 0;
-    }else if(kind === 2){
-      abilityMod = CombatRound.GetMod(creature.getDEX());
-      if(creature.isDebilitated?.() && abilityMod > 0){
-        abilityMod = 0;
-      }
-      gffBonus = creature.reflexSaveThrow | 0;
-    }else{
-      abilityMod = CombatRound.GetMod(creature.getWIS());
-      gffBonus = creature.willSaveThrow | 0;
-    }
-    return abilityMod + gffBonus + this.getClassSavingThrowBonus(creature, kind);
-  }
-
-  private savingThrowTypeToImmunity(saveType: number, lastSpellSchool?: number): number {
-    switch(saveType | 0){
-      case 10: return 1;
-      case 12: return 2;
-      case 5: return 3;
-      case 8: return 4;
-      case 14: return 5;
-      case 4:
-        if(lastSpellSchool === 1 || lastSpellSchool === 2) return 0x20;
-        return 0;
-      default: return 0;
-    }
-  }
-
-  private savingThrowRoll(
-    kind: number,
-    nDC: number,
-    nSaveType: number,
-    oVersus?: ModuleObject
-  ): number {
-    if(!isCreature(this)){
-      const base =
-        kind === 1 ? (this.fortitudeSaveThrow | 0) :
-        kind === 2 ? (this.reflexSaveThrow | 0) :
-        (this.willSaveThrow | 0);
-      return Dice.roll(1, DiceType.d20) + base >= (nDC | 0) ? 1 : 0;
-    }
-
-    const creature = this as unknown as ModuleCreature;
-    const versus = isCreature(oVersus)
-      ? oVersus as ModuleCreature
-      : undefined;
-    const base = this.getCreatureSavingThrowBase(kind);
-    let effectBonus = getSavingThrowEffectBonus(creature, kind, nSaveType | 0, versus);
-    if(effectBonus > 20) effectBonus = 20;
-    if(Dice.roll(1, DiceType.d20) + effectBonus + base >= (nDC | 0)){
-      return 1;
-    }
-
-    const spellId = creature.combatData?.lastForcePowerUsed?.id
-      ?? (creature as any).lastSpellId;
-    let spellSchool: number | undefined;
-    if(typeof spellId === 'number' && spellId >= 0){
-      const spellRow = (GameState as any).SWRuleSet?.spells?.[spellId]
-        ?? (GameState as any).TwoDAManager?.datatables?.get?.('spells')?.rows?.[spellId];
-      const school = spellRow?.school ?? spellRow?.School;
-      if(school !== undefined && school !== ''){
-        spellSchool = parseInt(school, 10);
-      }
-    }
-    const immunityType = this.savingThrowTypeToImmunity(nSaveType, spellSchool);
-    if(immunityType && hasImmunityType(creature, immunityType, versus)){
-      return 2;
-    }
     return 0;
   }
 
@@ -3842,15 +3677,6 @@ export class ModuleObject {
 
     if(this.template.RootNode.hasField('ZOrientation'))
       this.zOrientation = this.template.RootNode.getFieldByLabel('ZOrientation').getValue();
-
-    if(this.template.RootNode.hasField('FortSaveThrow'))
-      this.fortitudeSaveThrow = this.template.RootNode.getFieldByLabel('FortSaveThrow').getValue();
-
-    if(this.template.RootNode.hasField('RefSaveThrow'))
-      this.reflexSaveThrow = this.template.RootNode.getFieldByLabel('RefSaveThrow').getValue();
-
-    if(this.template.RootNode.hasField('WillSaveThrow'))
-      this.willSaveThrow = this.template.RootNode.getFieldByLabel('WillSaveThrow').getValue();
 
     if(this.template.RootNode.hasField('SWVarTable')){
       let swVarTableStruct = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0];

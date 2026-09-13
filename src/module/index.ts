@@ -20,10 +20,14 @@ export * from "@/module/guards/isMGTrack";
 export * from "@/module/guards/isObject";
 export * from "@/module/guards/isPlaceable";
 export * from "@/module/guards/isPlayer";
+export * from "@/module/guards/isSaveCapable";
 export * from "@/module/guards/isSound";
 export * from "@/module/guards/isStore";
 export * from "@/module/guards/isTrigger";
 export * from "@/module/guards/isWaypoint";
+
+export * from "@/module/savingThrow/SaveCapable";
+export * from "@/module/savingThrow/savingThrowMath";
 
 export * from "@/module/ModuleArea";
 export * from "@/module/ModuleAreaOfEffect";

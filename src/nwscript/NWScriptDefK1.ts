@@ -90,6 +90,7 @@ import { isMGObstacle } from "@/module/guards/isMGObstacle";
 import { isMGPlayer } from "@/module/guards/isMGPlayer";
 import { isObject } from "@/module/guards/isObject";
 import { isPlaceable } from "@/module/guards/isPlaceable";
+import { isSaveCapable } from "@/module/guards/isSaveCapable";
 import { isSound } from "@/module/guards/isSound";
 import { isStore } from "@/module/guards/isStore";
 import { isTrigger } from "@/module/guards/isTrigger";
@@ -1653,7 +1654,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number, ModuleObject]){
-      if(isObject(args[0]))
+      if(isSaveCapable(args[0]))
         return args[0].fortitudeSave(args[1], args[2], args[3]);
 
       return 0;
@@ -1665,7 +1666,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number, ModuleObject]){
-      if(isObject(args[0]))
+      if(isSaveCapable(args[0]))
         return args[0].reflexSave(args[1], args[2], args[3]);
 
       return 0;
@@ -1677,7 +1678,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number, ModuleObject]){
-      if(isObject(args[0]))
+      if(isSaveCapable(args[0]))
         return args[0].willSave(args[1], args[2], args[3]);
 
       return 0;
@@ -4340,7 +4341,7 @@ NWScriptDefK1.Actions = {
       const nDC = args[2] | 0;
       const nSaveType = args[3] | 0;
       const oVersus = args[4];
-      if(!isObject(target)){
+      if(!isSaveCapable(target)){
         return damage;
       }
       const result = target.reflexSave(nDC, nSaveType, oVersus);
@@ -7045,7 +7046,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if(isObject(args[0]))
+      if(isSaveCapable(args[0]))
         return args[0].getFortitudeSave();
       return 0;
     }
@@ -7056,7 +7057,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if(isObject(args[0]))
+      if(isSaveCapable(args[0]))
         return args[0].getWillSave();
       return 0;
     }
@@ -7067,7 +7068,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if(isObject(args[0]))
+      if(isSaveCapable(args[0]))
         return args[0].getReflexSave();
       return 0;
     }

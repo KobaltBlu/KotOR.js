@@ -134,12 +134,19 @@ import {
   getAttackEffectBonus,
   getDetectFlags,
   getForceResistanceBonus,
+  getSavingThrowEffectBonus,
 } from "@/effects/effect-bonuses";
+import { hasImmunityType } from "@/effects/haste-slow";
 import { isCreatureBlind } from "@/effects/EffectBlindness";
 import type { EffectSanctuary } from "@/effects/EffectSanctuary";
 import { getAbilityModifier } from "@/engine/rules/skill-points";
 import { Dice } from "@/utility/Dice";
 import { DiceType } from "@/enums/combat/DiceType";
+import {
+  combineSavingThrow,
+  rollSavingThrow,
+  savingThrowTypeToImmunity,
+} from "@/module/savingThrow/savingThrowMath";
 import {
   getCreatureSpeedRates,
   coalesceDriveAnimRun,
@@ -396,6 +403,9 @@ export class ModuleCreature extends ModuleObject {
   fortbonus: number;
   refbonus: number;
   willbonus: number;
+  fortitudeSaveThrow: number;
+  reflexSaveThrow: number;
+  willSaveThrow: number;
 
   challengeRating: number;
   /**
@@ -699,6 +709,9 @@ export class ModuleCreature extends ModuleObject {
     this.fortbonus = 0;
     this.refbonus = 0;
     this.willbonus = 0;
+    this.fortitudeSaveThrow = 0;
+    this.reflexSaveThrow = 0;
+    this.willSaveThrow = 0;
 
     this.appearance = 0;
     this.pm_Appearance = 0;
@@ -5677,6 +5690,128 @@ export class ModuleCreature extends ModuleObject {
     }
   }
 
+  /**
+   * Get the fortitude save — GetFortSavingThrow.
+   * CON + FortSaveThrow + class/conditioning + effects.
+   */
+  getFortitudeSave(){
+    return combineSavingThrow(this.getCreatureSavingThrowBase(1), getSavingThrowEffectBonus(this, 1));
+  }
+
+  /**
+   * Get the reflex save — GetReflexSavingThrow.
+   */
+  getReflexSave(){
+    return combineSavingThrow(this.getCreatureSavingThrowBase(2), getSavingThrowEffectBonus(this, 2));
+  }
+
+  /**
+   * Get the will save — GetWillSavingThrow.
+   */
+  getWillSave(){
+    return combineSavingThrow(this.getCreatureSavingThrowBase(3), getSavingThrowEffectBonus(this, 3));
+  }
+
+  /**
+   * Fortitude save — SavingThrowRoll type 1.
+   * @returns 0 fail, 1 success, 2 immune
+   */
+  fortitudeSave(nDC = 0, nSaveType = 0, oVersus: ModuleObject = undefined){
+    return this.savingThrowRoll(1, nDC, nSaveType, oVersus);
+  }
+
+  /**
+   * Reflex save — SavingThrowRoll type 2.
+   * @returns 0 fail, 1 success, 2 immune
+   */
+  reflexSave(nDC = 0, nSaveType = 0, oVersus: ModuleObject = undefined){
+    return this.savingThrowRoll(2, nDC, nSaveType, oVersus);
+  }
+
+  /**
+   * Will save — SavingThrowRoll type 3.
+   * @returns 0 fail, 1 success, 2 immune
+   */
+  willSave(nDC = 0, nSaveType = 0, oVersus: ModuleObject = undefined){
+    return this.savingThrowRoll(3, nDC, nSaveType, oVersus);
+  }
+
+  private getConditioningSaveBonus(): number {
+    if(this.getHasFeat?.(CombatFeatType.MASTER_CONDITIONING)) return 3;
+    if(this.getHasFeat?.(CombatFeatType.IMPROVED_CONDITIONING)) return 2;
+    if(this.getHasFeat?.(CombatFeatType.CONDITIONING)) return 1;
+    return 0;
+  }
+
+  private getClassSavingThrowBonus(kind: number): number {
+    let total = 0;
+    const classes = this.classes || [];
+    for(let i = 0; i < classes.length; i++){
+      const creatureClass = classes[i];
+      if(!creatureClass) continue;
+      if(kind === 1){
+        total += creatureClass.getFortSaveBonus?.() || 0;
+      }else if(kind === 2){
+        total += creatureClass.getRefSaveBonus?.() || 0;
+      }else{
+        total += creatureClass.getWillSaveBonus?.() || 0;
+      }
+    }
+    return total + this.getConditioningSaveBonus();
+  }
+
+  private getCreatureSavingThrowBase(kind: number): number {
+    let abilityMod = 0;
+    let gffBonus = 0;
+    if(kind === 1){
+      abilityMod = CombatRound.GetMod(this.getCON());
+      gffBonus = this.fortitudeSaveThrow | 0;
+    }else if(kind === 2){
+      abilityMod = CombatRound.GetMod(this.getDEX());
+      if(this.isDebilitated?.() && abilityMod > 0){
+        abilityMod = 0;
+      }
+      gffBonus = this.reflexSaveThrow | 0;
+    }else{
+      abilityMod = CombatRound.GetMod(this.getWIS());
+      gffBonus = this.willSaveThrow | 0;
+    }
+    return abilityMod + gffBonus + this.getClassSavingThrowBonus(kind);
+  }
+
+  private savingThrowRoll(
+    kind: number,
+    nDC: number,
+    nSaveType: number,
+    oVersus?: ModuleObject
+  ): number {
+    const versus = isCreature(oVersus) ? oVersus : undefined;
+    const base = this.getCreatureSavingThrowBase(kind);
+    let effectBonus = getSavingThrowEffectBonus(this, kind, nSaveType | 0, versus);
+    if(effectBonus > 20) effectBonus = 20;
+    const d20 = Dice.roll(1, DiceType.d20);
+    if(rollSavingThrow(combineSavingThrow(base, effectBonus), nDC, d20)){
+      return 1;
+    }
+
+    const spellId = this.combatData?.lastForcePowerUsed?.id
+      ?? (this as any).lastSpellId;
+    let spellSchool: number | undefined;
+    if(typeof spellId === 'number' && spellId >= 0){
+      const spellRow = (GameState as any).SWRuleSet?.spells?.[spellId]
+        ?? (GameState as any).TwoDAManager?.datatables?.get?.('spells')?.rows?.[spellId];
+      const school = spellRow?.school ?? spellRow?.School;
+      if(school !== undefined && school !== ''){
+        spellSchool = parseInt(school, 10);
+      }
+    }
+    const immunityType = savingThrowTypeToImmunity(nSaveType, spellSchool);
+    if(immunityType && hasImmunityType(this, immunityType, versus)){
+      return 2;
+    }
+    return 0;
+  }
+
   getINT(calculateBonuses = true){
     if(!calculateBonuses){
       return this.int;
@@ -6435,7 +6570,7 @@ export class ModuleCreature extends ModuleObject {
           : (this.factionId !== target.factionId);
         if(!hostile) continue;
         const dc = (e as EffectSanctuary).getWillDC?.() || e.getInt(4) || 0;
-        if(dc <= 0 || !this.willSave?.(dc, 0, target)){
+        if(dc <= 0 || !this.willSave(dc, 0, target)){
           return true;
         }
       }

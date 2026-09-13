@@ -45,6 +45,13 @@ import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import * as THREE from "three";
 
 import { isCreature } from "@/module/guards/isCreature";
+import { getSavingThrowEffectBonus } from "@/effects/effect-bonuses";
+import { Dice } from "@/utility/Dice";
+import { DiceType } from "@/enums/combat/DiceType";
+import {
+  combineSavingThrow,
+  rollSavingThrow,
+} from "@/module/savingThrow/savingThrowMath";
 
 interface AnimStateInfo {
   lastAnimState: ModulePlaceableAnimState;
@@ -1317,6 +1324,30 @@ export class ModulePlaceable extends ModuleObject {
         this.getAnimationResolveContext(),
         GameState.SWRuleSet.animations,
       );
+  }
+
+  getFortitudeSave(){
+    return combineSavingThrow(this.fort, getSavingThrowEffectBonus(this, 1));
+  }
+
+  getReflexSave(){
+    return combineSavingThrow(this.ref, getSavingThrowEffectBonus(this, 2));
+  }
+
+  getWillSave(){
+    return combineSavingThrow(this.will, getSavingThrowEffectBonus(this, 3));
+  }
+
+  fortitudeSave(nDC = 0, _nSaveType = 0, _oVersus: ModuleObject = undefined){
+    return rollSavingThrow(this.fort, nDC, Dice.roll(1, DiceType.d20));
+  }
+
+  reflexSave(nDC = 0, _nSaveType = 0, _oVersus: ModuleObject = undefined){
+    return rollSavingThrow(this.ref, nDC, Dice.roll(1, DiceType.d20));
+  }
+
+  willSave(nDC = 0, _nSaveType = 0, _oVersus: ModuleObject = undefined){
+    return rollSavingThrow(this.will, nDC, Dice.roll(1, DiceType.d20));
   }
 
   private getAnimationResolveContext(): CreatureAnimationContext {
