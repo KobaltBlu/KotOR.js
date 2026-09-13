@@ -8,6 +8,8 @@ import { isCreature } from "@/module/guards/isCreature";
 /**
  * EffectResurrection — effect apply.
  * Clamp HP to ≥1, clear actions, strip HitPointChangeWhenDying (temp), refresh anim.
+ * Retail OnApplyResurrection (004e13c0): RecomputeAmbientAnimationState → PAUSE (10000),
+ * never GET_UP_DEAD. Instant apply returns 1 (freed — not kept on EffectList).
  * K2: int[0] may be % of max HP to restore (when > 0).
  *
  * @file EffectResurrection.ts
@@ -57,8 +59,10 @@ export class EffectResurrection extends GameEffect {
       }
     }
 
+    // Retail RecomputeAmbientAnimationState → SetAnimation(10000) → PAUSE.
+    // Do not force GET_UP_DEAD (scripts often rez living party before cutscenes).
     if(!creature.isDead()){
-      creature.setAnimationState(ModuleCreatureAnimState.GET_UP_DEAD);
+      creature.setAnimationState(ModuleCreatureAnimState.PAUSE);
     }
   }
 }

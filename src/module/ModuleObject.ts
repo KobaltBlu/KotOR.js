@@ -2481,7 +2481,12 @@ export class ModuleObject {
     // ApplyEffect — effect apply returns 1 so the
     // effect is freed and never inserted into EffectList. Keeping it caused
     // re-apply (and OnDamaged) during initEffects on module load.
-    if(effect.type === GameEffectType.EffectDamage){
+    // Retail OnApplyResurrection / OnApplyHeal also return 1 (instant free).
+    if(
+      effect.type === GameEffectType.EffectDamage ||
+      effect.type === GameEffectType.EffectResurrection ||
+      effect.type === GameEffectType.EffectHeal
+    ){
       return;
     }
     this.effects.push(effect);
