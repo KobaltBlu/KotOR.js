@@ -165,3 +165,33 @@ export function blasterDeflection2HAnimationRow(weaponType: number): number {
     default: return 110;
   }
 }
+
+/** MELEE_WIELD → G*F1 overlay rows (overlay=1). */
+export function meleeWieldAnimationRow(weaponType: number): number {
+  switch(weaponType){
+    case 2: return 377;
+    case 4: return 376;
+    default: return 378;
+  }
+}
+
+/** FLOURISH / MELEE_COMBAT_WIELD → g*w1 fireforget rows. */
+export function flourishAnimationRow(weaponType: number): number {
+  switch(weaponType){
+    case 1: return 91;
+    case 2: return 132;
+    case 3: return 173;
+    case 4: return 214;
+    case 5: return 222;
+    case 6: return 136;
+    case 7:
+    case 9: return 244;
+    case 8:
+    default: return 373;
+  }
+}
+
+/** Same g*w1 table as FLOURISH. */
+export function meleeCombatWieldAnimationRow(weaponType: number): number {
+  return flourishAnimationRow(weaponType);
+}

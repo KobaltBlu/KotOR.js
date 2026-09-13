@@ -19,6 +19,7 @@ import { GFFStruct } from "@/resource/GFFStruct";
 import { ModuleDoorAnimState } from "@/enums/module/ModuleDoorAnimState";
 import { ModuleDoorOpenState } from "@/enums/module/ModuleDoorOpenState";
 import { ModuleDoorInteractSide } from "@/enums/module/ModuleDoorInteractSide";
+import { resolveDoorAnimation } from "@/module/animation/resolveDoorAnimation";
 // import { AppearanceManager, InventoryManager, MenuManager, ModuleObjectManager, PartyManager, TwoDAManager, FactionManager } from "@/managers";
 import { MDLLoader, ResourceLoader } from "@/loaders";
 import { EngineMode } from "@/enums/engine/EngineMode";
@@ -1570,31 +1571,8 @@ export class ModuleDoor extends ModuleObject {
     return gff;
   }
 
-  animationConstantToAnimation( animation_constant = 10000 ): SWAnimation {
-    switch( animation_constant ){
-      case ModuleDoorAnimState.DEFAULT:       //10000, //327 -
-        return GameState.SWRuleSet.animationIdMap.get(327);
-      case ModuleDoorAnimState.OPENED1:       //10050, //331 -
-        return GameState.SWRuleSet.animationIdMap.get(331);
-      case ModuleDoorAnimState.OPENED2:       //10051, //332 -
-        return GameState.SWRuleSet.animationIdMap.get(332);
-      case ModuleDoorAnimState.CLOSED:        //10022, //333 -
-        return GameState.SWRuleSet.animationIdMap.get(333);
-      case ModuleDoorAnimState.OPENING1:      //10052, //334 -
-        return GameState.SWRuleSet.animationIdMap.get(334);
-      case ModuleDoorAnimState.OPENING2:      //10053, //335 -
-        return GameState.SWRuleSet.animationIdMap.get(335);
-      case ModuleDoorAnimState.CLOSING1:      //10054, //336 -
-        return GameState.SWRuleSet.animationIdMap.get(336);
-      case ModuleDoorAnimState.CLOSING2:      //10055, //337 -
-        return GameState.SWRuleSet.animationIdMap.get(337);
-      case ModuleDoorAnimState.BUSTED:        //10153, //366 -
-        return GameState.SWRuleSet.animationIdMap.get(366);
-      case ModuleDoorAnimState.TRANS:         //10269, //344 -
-        return GameState.SWRuleSet.animationIdMap.get(344);
-    }
-
-    return super.animationConstantToAnimation( animation_constant );
+  animationConstantToAnimation( animation_constant = 10000 ): SWAnimation | undefined {
+    return resolveDoorAnimation(animation_constant, GameState.SWRuleSet.animationIdMap);
   }
 
   static GenerateTemplate(){

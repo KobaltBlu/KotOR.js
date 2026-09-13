@@ -78,6 +78,9 @@ import {
   combatAnimationWeaponDigit,
   combatReactionClipDigit,
 } from "@/module/animation/combat-wield-digit";
+import type { CreatureAnimationContext } from "@/module/animation/CreatureAnimationContext";
+import { resolveCreatureAnimation } from "@/module/animation/resolveCreatureAnimation";
+import { resolveDebilitatedCreatureAnimation } from "@/module/animation/resolveDebilitatedCreatureAnimation";
 import { WeaponWield } from "@/enums/combat/WeaponWield";
 import { WeaponType } from "@/enums/combat/WeaponType";
 import { CombatFeatType } from "@/enums/combat/CombatFeatType";
@@ -2851,67 +2854,38 @@ export class ModuleCreature extends ModuleObject {
     return e ? (e.getInt(0) | 0) : 0;
   }
 
-  animationConstantToAnimation( animation_constant = 10000 ): SWAnimation{
-    const val = super.animationConstantToAnimation(animation_constant);
+  animationConstantToAnimation( animation_constant = 10000 ): SWAnimation | undefined {
+    const animations = GameState.SWRuleSet.animations;
 
-    const debilitatedState = this.getDebilitatedState();
-    if(debilitatedState > 0){
-      const animations = GameState.SWRuleSet.animations;
-      switch(debilitatedState){
-        case 1: //Confused
-          return animations[15];
-        case 2: //Frightened
-          return animations[73];
-        case 3: //Droid Stun
-          return animations[270];
-        case 4: //Stunned
-          return animations[78];
-        case 5: //Paralyzed
-          return animations[78];
-        case 6: //Sleep
-          return animations[76];
-        case 7: //Choke
-          if(this.isSimpleCreature()){
-            return animations[264];
-          }else{
-            return animations[72];
-          }
-        break;
-        case 8: //Horrified
-          return animations[74];
-        case 9: //Force Pushed
-          if(!this.fp_push_played)
-            return animations[84];
-          if(!this.fp_land_played)
-            return animations[85];
-          if(!this.fp_getup_played)
-            return animations[86];
-        break;
-        case 10: //Whirlwind
-          return animations[75];
-        case 14: //Knockdown hold (K2 SetState 0x0E)
-          return animations[85];
-        case 15: //Crush (K2) — choke-like victim pose; ambient 16 set separately
-          if(this.isSimpleCreature()){
-            return animations[264];
-          }else{
-            return animations[72];
-          }
-        case 16: //Droid Confused — confused pose; not IsDebilitated in 
-          return animations[15];
-        case 17: //Held (K2 0x11) — choke-like lock
-          if(this.isSimpleCreature()){
-            return animations[264];
-          }else{
-            return animations[72];
-          }
-        case 18: //Mind Trick — stun cohort
-        case 19: //Droid Scramble — stun cohort
-          return animations[78];
-      }
+    const debilitated = resolveDebilitatedCreatureAnimation(
+      this.getDebilitatedState(),
+      {
+        simple: this.isSimpleCreature(),
+        fp_push_played: this.fp_push_played,
+        fp_land_played: this.fp_land_played,
+        fp_getup_played: this.fp_getup_played,
+      },
+      animations,
+    );
+    if(debilitated !== undefined){
+      return debilitated;
     }
 
-    return val;
+    return resolveCreatureAnimation(
+      animation_constant,
+      this.getAnimationResolveContext(),
+      animations,
+    );
+  }
+
+  private getAnimationResolveContext(): CreatureAnimationContext {
+    return {
+      simple: this.isSimpleCreature(),
+      injured: this.isInjured(),
+      poisoned: this.isPoisoned(),
+      diseased: this.isDiseased(),
+      weaponType: this.getCombatAnimationWeaponType(),
+    };
   }
 
   setAnimationState(animState: ModuleCreatureAnimState){

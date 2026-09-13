@@ -1,0 +1,132 @@
+/**
+ * @jest-environment node
+ */
+import { describe, expect, it, jest } from '@jest/globals';
+import { ModuleCreatureAnimState } from '@/enums/module/ModuleCreatureAnimState';
+import type { SWAnimation } from '@/engine/rules/SWAnimation';
+import { resolveCreatureAnimation } from '@/module/animation/resolveCreatureAnimation';
+import type { CreatureAnimationContext } from '@/module/animation/CreatureAnimationContext';
+
+function stubAnim(index: number, name = `anim_${index}`): SWAnimation {
+  return { index, name, nameLower: name.toLowerCase() } as SWAnimation;
+}
+
+function makeTable(indices: number[]): SWAnimation[] {
+  const max = Math.max(...indices);
+  const table: SWAnimation[] = new Array(max + 1);
+  for(const i of indices){
+    table[i] = stubAnim(i);
+  }
+  return table;
+}
+
+const healthy: CreatureAnimationContext = {
+  simple: false,
+  injured: false,
+  poisoned: false,
+  diseased: false,
+  weaponType: 0,
+};
+
+describe('resolveCreatureAnimation', () => {
+  it('maps healthy vs simple pause', () => {
+    const animations = makeTable([6, 8, 15, 256]);
+    expect(resolveCreatureAnimation(ModuleCreatureAnimState.PAUSE, healthy, animations)).toBe(animations[6]);
+    expect(
+      resolveCreatureAnimation(ModuleCreatureAnimState.PAUSE, { ...healthy, simple: true }, animations)
+    ).toBe(animations[256]);
+  });
+
+  it('maps poisoned/diseased pause to drunk row 15', () => {
+    const animations = makeTable([6, 15]);
+    expect(
+      resolveCreatureAnimation(ModuleCreatureAnimState.PAUSE, { ...healthy, poisoned: true }, animations)
+    ).toBe(animations[15]);
+    expect(
+      resolveCreatureAnimation(ModuleCreatureAnimState.PAUSE2, { ...healthy, diseased: true }, animations)
+    ).toBe(animations[15]);
+  });
+
+  it('maps injured walk and run', () => {
+    const animations = makeTable([1, 4, 0, 2]);
+    expect(
+      resolveCreatureAnimation(ModuleCreatureAnimState.WALKING, { ...healthy, injured: true }, animations)
+    ).toBe(animations[1]);
+    expect(
+      resolveCreatureAnimation(ModuleCreatureAnimState.RUNNING, { ...healthy, injured: true }, animations)
+    ).toBe(animations[4]);
+  });
+
+  it('maps walking by weapon type including default row 0', () => {
+    const animations = makeTable([0, 338, 341, 339, 340]);
+    expect(
+      resolveCreatureAnimation(ModuleCreatureAnimState.WALKING, { ...healthy, weaponType: 2 }, animations)
+    ).toBe(animations[338]);
+    expect(
+      resolveCreatureAnimation(ModuleCreatureAnimState.WALKING, { ...healthy, weaponType: 0 }, animations)
+    ).toBe(animations[0]);
+  });
+
+  it('maps walking-back with same weapon walk set', () => {
+    const animations = makeTable([0, 338, 253]);
+    expect(
+      resolveCreatureAnimation(ModuleCreatureAnimState.WALKING_BACK, { ...healthy, weaponType: 2 }, animations)
+    ).toBe(animations[338]);
+    expect(
+      resolveCreatureAnimation(ModuleCreatureAnimState.WALKING_BACK, { ...healthy, simple: true }, animations)
+    ).toBe(animations[253]);
+  });
+
+  it('maps running by weapon type', () => {
+    const animations = makeTable([2, 343, 345, 3]);
+    expect(
+      resolveCreatureAnimation(ModuleCreatureAnimState.RUNNING, { ...healthy, weaponType: 1 }, animations)
+    ).toBe(animations[343]);
+    expect(
+      resolveCreatureAnimation(ModuleCreatureAnimState.RUNNING, healthy, animations)
+    ).toBe(animations[2]);
+  });
+
+  it('maps ready / damaged / blaster / wield / flourish via row helpers', () => {
+    const animations = makeTable([249, 303, 109, 110, 378, 91]);
+    expect(
+      resolveCreatureAnimation(ModuleCreatureAnimState.READY, healthy, animations)
+    ).toBe(animations[249]);
+    expect(
+      resolveCreatureAnimation(ModuleCreatureAnimState.DAMAGED, healthy, animations)
+    ).toBe(animations[303]);
+    expect(
+      resolveCreatureAnimation(ModuleCreatureAnimState.BLASTER_DEFLECTION_1H, { ...healthy, weaponType: 2 }, animations)
+    ).toBe(animations[109]);
+    expect(
+      resolveCreatureAnimation(ModuleCreatureAnimState.BLASTER_DEFLECTION_2H, { ...healthy, weaponType: 2 }, animations)
+    ).toBe(animations[110]);
+    expect(
+      resolveCreatureAnimation(ModuleCreatureAnimState.MELEE_WIELD, healthy, animations)
+    ).toBe(animations[378]);
+    expect(
+      resolveCreatureAnimation(ModuleCreatureAnimState.FLOURISH, { ...healthy, weaponType: 1 }, animations)
+    ).toBe(animations[91]);
+    expect(
+      resolveCreatureAnimation(ModuleCreatureAnimState.MELEE_COMBAT_WIELD, { ...healthy, weaponType: 1 }, animations)
+    ).toBe(animations[91]);
+  });
+
+  it('maps direct social/talk and TSL constants', () => {
+    const animations = makeTable([31, 18, 25, 302, 301, 567]);
+    expect(resolveCreatureAnimation(ModuleCreatureAnimState.GREETING, healthy, animations)).toBe(animations[31]);
+    expect(resolveCreatureAnimation(ModuleCreatureAnimState.LISTEN, healthy, animations)).toBe(animations[18]);
+    expect(resolveCreatureAnimation(ModuleCreatureAnimState.TALK_NORMAL, healthy, animations)).toBe(animations[25]);
+    expect(resolveCreatureAnimation(ModuleCreatureAnimState.DODGE, healthy, animations)).toBe(animations[302]);
+    expect(resolveCreatureAnimation(ModuleCreatureAnimState.PARRY, healthy, animations)).toBe(animations[301]);
+    expect(resolveCreatureAnimation(ModuleCreatureAnimState.DIVE_ROLL, healthy, animations)).toBe(animations[567]);
+  });
+
+  it('returns undefined for unknown constants', () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const animations = makeTable([6]);
+    expect(resolveCreatureAnimation(99999, healthy, animations)).toBeUndefined();
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+});
