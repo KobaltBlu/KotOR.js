@@ -4,7 +4,6 @@ import type { ModuleRoom } from "@/module/ModuleRoom";
 import { GameFileSystem } from "@/utility/GameFileSystem";
 import type { IVISRoom } from "@/interface/module/IVISRoom";
 
-import { isRoom } from "@/module/guards/isRoom";
 enum VISReadMode {
   ROOM = 0,
   CHILD_ROOMS = 1
@@ -172,7 +171,7 @@ export class VISObject {
       const visRoom = rooms[i];
       for(let j = 0; j < this.area.rooms.length; j++){
         const room = this.area.rooms[j];
-        if( isRoom(room) && (room.roomName == visRoom.name) ){
+        if( (room.roomName == visRoom.name) ){
           room.visObject = this;
         }
       }

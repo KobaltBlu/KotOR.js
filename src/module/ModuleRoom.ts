@@ -8,20 +8,18 @@ import type { ModuleSound } from "@/module/ModuleSound";
 import type { ModuleTrigger } from "@/module/ModuleTrigger";
 import * as THREE from "three";
 import { GameState } from "@/GameState";
-import { OdysseyFace3, OdysseyModel3D } from "@/three/odyssey";
+import { OdysseyFace3, OdysseyModel3D, OdysseyObject3D } from "@/three/odyssey";
 import { Utility } from "@/utility/Utility";
 import { OdysseyWalkMesh } from "@/odyssey";
 import { BinaryReader } from "@/utility/binary/BinaryReader";
 import { ResourceTypes } from "@/resource/ResourceTypes";
 import { MDLLoader, ResourceLoader } from "@/loaders";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GFFField } from "@/resource/GFFField";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { BitWise } from "@/utility/BitWise";
 import { VISObject } from "@/resource/VISObject";
 import { IVISRoom } from "@/interface";
 import type { GrassBin } from "@/managers/GrassManager";
+import { CollisionManager } from "@/engine/CollisionManager";
 
 type CollisionPlaceableBVHEntry = {
   placeable: ModulePlaceable;
@@ -103,13 +101,21 @@ class CollisionPlaceableBVH {
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
 * @memberof KotOR
 */
-export class ModuleRoom extends ModuleObject {
+export class ModuleRoom {
   ambientScale: number = 0;
   envAudio: number = 0;
   /** ARE Rooms.DisableWeather — suppress weather FX in this room. */
   disableWeather: boolean = false;
   roomName: string;
   visObject: VISObject;
+  box: THREE.Box3;
+  area: ModuleArea;
+  position: THREE.Vector3;
+  model: OdysseyModel3D;
+  objectType: number = ModuleObjectType.ModuleRoom;
+  container: OdysseyObject3D;
+  context: any;
+  collisionManager: CollisionManager;
 
   doors: ModuleDoor[] = [];
   placeables: ModulePlaceable[] = [];
@@ -133,12 +139,17 @@ export class ModuleRoom extends ModuleObject {
   linkedRoomsArray: ModuleRoom[] = [];
 
   constructor( roomName: string, area: ModuleArea ){
-    super();
-    this.objectType |= ModuleObjectType.ModuleRoom;
-
-    this.id = -1;
     this.roomName = roomName?.toLocaleLowerCase();
     this.area = area;
+    this.context = GameState;
+
+    this.container = new OdysseyObject3D();
+    this.container.userData.moduleObject = this;
+    this.position = this.container.position;
+    this.box = new THREE.Box3();
+    this.model = null;
+    // Walkmesh ownership only — creature collision paths are unused on rooms.
+    this.collisionManager = new CollisionManager(this as unknown as ModuleObject);
   }
 
   setAmbientScale(scale: number){
@@ -151,6 +162,10 @@ export class ModuleRoom extends ModuleObject {
 
   setDisableWeather(disabled: boolean){
     this.disableWeather = !!disabled;
+  }
+
+  isVisible(){
+    return !!this.model?.visible;
   }
 
   #boxSize: THREE.Vector3 = new THREE.Vector3();
@@ -312,15 +327,7 @@ export class ModuleRoom extends ModuleObject {
 
   update(delta: number = 0){
     if(this.model instanceof OdysseyModel3D){
-      //BEGIN: Animation Optimization
       this.model.animateFrame = true;
-      if(!BitWise.InstanceOf(this.objectType, ModuleObjectType.ModuleRoom)){
-        if(!this.model.visible){
-          this.model.animateFrame = false;
-        }
-      }
-      //END: Animation Optimization
-
       this.model.update(delta);
     }
   }
@@ -506,8 +513,27 @@ export class ModuleRoom extends ModuleObject {
   }
 
   computeBoundingBox(force: boolean = false){
-    const box = super.computeBoundingBox(force);
-    if(box?.isEmpty?.()){
+    if(this.container){
+      this.container.updateMatrixWorld(force);
+      this.container.updateMatrix();
+      if(force){
+        this.container.traverse( n => {
+          n.updateMatrixWorld(true);
+          n.updateMatrix();
+        });
+      }
+    }
+
+    if(this.model){
+      this.model.updateMatrixWorld(force);
+      this.model.updateMatrix();
+    }
+
+    if(this.model instanceof THREE.Object3D){
+      this.box.setFromObject(this.model);
+    }
+
+    if(this.box?.isEmpty?.()){
       this.seedBoxFromWalkmesh();
     }
     return this.box;
@@ -553,16 +579,27 @@ export class ModuleRoom extends ModuleObject {
   }
 
   destroy(): void {
-    super.destroy();
-
-    if(this.collisionManager.walkmesh)
-      this.collisionManager.walkmesh.dispose();
-
     try{
-      let wmIdx = GameState.walkmeshList.indexOf(this.collisionManager.walkmesh.mesh);
-      GameState.walkmeshList.splice(wmIdx, 1);
-    }catch(e){
-      console.error(e);
+      this.container?.removeFromParent();
+    }catch(e){}
+
+    if(this.model instanceof OdysseyModel3D){
+      this.model.removeFromParent();
+      try{ this.model.dispose(); }catch(e){}
+      this.model = undefined;
+    }
+
+    if(this.collisionManager?.walkmesh){
+      try{
+        const wmIdx = GameState.walkmeshList.indexOf(this.collisionManager.walkmesh.mesh);
+        if(wmIdx >= 0){
+          GameState.walkmeshList.splice(wmIdx, 1);
+        }
+      }catch(e){
+        console.error(e);
+      }
+      this.collisionManager.walkmesh.dispose();
+      this.collisionManager.setWalkmesh(undefined);
     }
 
     try{

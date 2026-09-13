@@ -714,7 +714,9 @@ export class CursorManager {
 				for(let h = 0; h < hits.length; h++){
 					if(hits[h].distance < bestDist){
 						bestDist = hits[h].distance;
-						bestDoor = door;
+						bestDoor = BitWise.InstanceOf(door?.objectType, ModuleObjectType.ModuleDoor)
+							? (door as ModuleDoor)
+							: undefined;
 					}
 				}
 			}

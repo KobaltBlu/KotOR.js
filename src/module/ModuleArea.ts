@@ -2602,11 +2602,6 @@ export class ModuleArea extends ModuleObject {
       this.areaOfEffects.push(object as ModuleAreaOfEffect);
     }
 
-    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleRoom)){
-      if(this.rooms.indexOf(object as ModuleRoom) >= 0) return;
-      this.rooms.push(object as ModuleRoom);
-    }
-
     // AddToArea: promote VERY_LOW → LOW while players occupy the area
     if(this.playersInArea > 0 && object.aiLevel === AILevel.VERY_LOW){
       if(GameState.module.aiScheduler.shouldPromoteOnAreaEntry(object)){
@@ -2614,9 +2609,7 @@ export class ModuleArea extends ModuleObject {
       }
     }
 
-    if(!BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleRoom)){
-      this.gameObjectsDirty = true;
-    }
+    this.gameObjectsDirty = true;
   }
 
   detachObject(object: ModuleObject){
@@ -2674,18 +2667,11 @@ export class ModuleArea extends ModuleObject {
       if(idx >= 0){
         this.items.splice(idx, 1);
       }
-    }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleRoom)){
-      const idx = this.rooms.indexOf(object as ModuleRoom);
-      if(idx >= 0){
-        this.rooms.splice(idx, 1);
-      }
     }else{
       console.warn(`destroyObject: unhandled objectType, ${object.objectType}`);
     }
 
-    if(!BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleRoom)){
-      this.gameObjectsDirty = true;
-    }
+    this.gameObjectsDirty = true;
   }
 
   /**

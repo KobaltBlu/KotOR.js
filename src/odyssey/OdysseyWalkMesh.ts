@@ -6,6 +6,7 @@ import { IOdysseyModelAABBNode } from "@/interface/odyssey/IOdysseyModelAABBNode
 import { IWalkmeshEdgeAABBNode } from "@/interface/odyssey/IWalkmeshEdgeAABBNode";
 import { TwoDAManager } from "@/managers/TwoDAManager";
 import type { ModuleObject } from "@/module/ModuleObject";
+import type { ModuleRoom } from "@/module/ModuleRoom";
 import { OdysseyFace3 } from "@/three/odyssey/OdysseyFace3";
 import { SurfaceMaterial } from "@/engine/SurfaceMaterial";
 import { TileColor } from "@/engine/TileColor";
@@ -34,7 +35,7 @@ export class OdysseyWalkMesh {
   // static SURFACEMATERIALS: SurfaceMaterial =;
   static TILECOLORS: TileColor[] = [];
   name: string;
-  moduleObject: ModuleObject;
+  moduleObject: ModuleObject | ModuleRoom;
   header: any = { };
   /**
    * relative_use_positions[0] —

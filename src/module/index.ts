@@ -20,7 +20,6 @@ export * from "@/module/guards/isMGTrack";
 export * from "@/module/guards/isObject";
 export * from "@/module/guards/isPlaceable";
 export * from "@/module/guards/isPlayer";
-export * from "@/module/guards/isRoom";
 export * from "@/module/guards/isSound";
 export * from "@/module/guards/isStore";
 export * from "@/module/guards/isTrigger";

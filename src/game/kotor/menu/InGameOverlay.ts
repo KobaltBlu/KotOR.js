@@ -15,7 +15,6 @@ import { KeyMapAction } from "@/enums";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { isCreature } from "@/module/guards/isCreature";
 import { isObject } from "@/module/guards/isObject";
-import { isRoom } from "@/module/guards/isRoom";
 import {
   getClientCombatMode,
   setClientCombatMode,
@@ -725,8 +724,7 @@ export class InGameOverlay extends GameMenu {
     return (
       !this.manager.MenuContainer.bVisible &&
       !!GameState.CursorManager.selectedObject &&
-      isObject(GameState.CursorManager.selectedObject) &&
-      !isRoom(GameState.CursorManager.selectedObject)
+      isObject(GameState.CursorManager.selectedObject) 
     );
   }
 

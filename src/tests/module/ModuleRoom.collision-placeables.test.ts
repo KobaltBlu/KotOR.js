@@ -12,19 +12,13 @@ jest.mock("@/GameState", () => ({
   },
 }));
 
-jest.mock("@/module/ModuleObject", () => ({
-  ModuleObject: class {
-    objectType = 0;
-    box: any;
-    position: any;
-    sphere: any;
-    collisionManager: any = {};
-
-    constructor(){
-      const THREE = require("three");
-      this.box = new THREE.Box3();
-      this.position = new THREE.Vector3();
-      this.sphere = new THREE.Sphere();
+jest.mock("@/engine/CollisionManager", () => ({
+  CollisionManager: class {
+    walkmesh: any;
+    edges: any[] = [];
+    setWalkmesh(walkmesh: any){
+      this.walkmesh = walkmesh;
+      this.edges = walkmesh?.edges ? Array.from(walkmesh.edges.values()) : [];
     }
   },
 }));
@@ -32,6 +26,15 @@ jest.mock("@/module/ModuleObject", () => ({
 jest.mock("@/three/odyssey", () => ({
   OdysseyModel3D: class {},
   OdysseyFace3: class {},
+  OdysseyObject3D: class {
+    position = new (require("three").Vector3)();
+    userData: Record<string, unknown> = {};
+    add(){ return this; }
+    removeFromParent(){ return this; }
+    updateMatrix(){}
+    updateMatrixWorld(){}
+    traverse(){}
+  },
 }));
 
 jest.mock("@/odyssey", () => ({
