@@ -164,12 +164,16 @@ export class CreatureClass {
     return this.spells;
   }
 
+  /** GetBaseAttackBonus — CLS_ATK_* row at level-1 (same indexing as saves). */
   getBaseAttackBonus(){
-    return this.attackBonuses[this.level].bab;
+    if(this.level <= 0) return 0;
+    return this.attackBonuses[this.level - 1]?.bab ?? 0;
   }
 
+  /** GetACBonus — acbonus.2da row at level-1. */
   getACBonus(){
-    return this.acbonuses[this.level];
+    if(this.level <= 0) return 0;
+    return this.acbonuses[this.level - 1] ?? 0;
   }
 
   /** GetFortSaveBonus — fort_saves[level-1]. */
