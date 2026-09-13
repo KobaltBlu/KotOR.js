@@ -2124,28 +2124,6 @@ export class ModuleObject {
     return this.#tmpLIOVec3.distanceTo(this.position) <= this.getHitDistance();
   }
 
-  // findWalkableFace(object?: ModuleObject){
-  // let face;
-  // let room;
-  // for(let i = 0, il = this.area.rooms.length; i < il; i++){
-  // room = this.area.rooms[i];
-  // if(room.walkmesh){
-  // for(let j = 0, jl = room.walkmesh.walkableFaces.length; j < jl; j++){
-  // face = room.walkmesh.walkableFaces[j];
-  // if(face.triangle.containsPoint(this.position)){
-  // this.groundFace = face;
-  // this.lastGroundFace = this.groundFace;
-  // this.surfaceId = this.groundFace.walkIndex;
-  // this.attachToRoom(room);
-  // face.triangle.closestPointToPoint(this.position, this.collisionManager.wm_c_point);
-  // this.position.z = this.collisionManager.wm_c_point.z +.005;
-  // }
-  // }
-  // }
-  // }
-  // return face;
-  // }
-
   #tmpCHVec3 = new THREE.Vector3();
 
   /**
