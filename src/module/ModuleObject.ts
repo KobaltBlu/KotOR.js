@@ -9,8 +9,6 @@ import type { GameEffect } from "@/effects/GameEffect";
 import EngineLocation from "@/engine/EngineLocation";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
-import { GameEffectSetStateType } from "@/enums/effects/GameEffectSetStateType";
-import { GameEngineType } from "@/enums/engine";
 import { NWScriptEventType } from "@/enums/nwscript/NWScriptEventType";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GameState } from "@/GameState";
@@ -66,8 +64,6 @@ import type { IHeardString } from "@/interface/dialog/IHeardString";
 import type { SWRange } from "@/engine/rules/SWRange";
 import { TURN_SPEED_SLOW } from "@/engine/TurnSpeeds";
 import { getForceResistanceBonus } from "@/effects/effect-bonuses";
-import { getActiveSetStateType } from "@/effects/set-state";
-import { ModuleCreatureAmbientState } from "@/enums/module/ModuleCreatureAmbientState";
 import type { SWAnimation } from "@/engine/rules/SWAnimation";
 import type { ModuleTrigger } from "@/module/ModuleTrigger";
 
