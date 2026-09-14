@@ -2346,7 +2346,12 @@ export class GameState implements EngineContext {
 
     // Death sequence: slow world time (UpdateDeathSequence → SetGameSpeed)
     GameState.GameOverManager.UpdateDeathSequence(delta);
-    const simDelta = delta * (GameState.timeScale > 0 ? GameState.timeScale : 1);
+    // Cap hitch frames so movement / collision cannot tunnel walls or trip stuck teleports
+    const MAX_SIM_DELTA = 0.1;
+    const simDelta = Math.min(
+      delta * (GameState.timeScale > 0 ? GameState.timeScale : 1),
+      MAX_SIM_DELTA
+    );
 
     if(GameState.State != EngineState.PAUSED){
       GameState.updateTime(simDelta);

@@ -191,11 +191,22 @@ export class CollisionManager {
 
   // Temporary position vector for calculations
   tempPosition = new THREE.Vector3();
+  /** Scratch for swept edge↔movement segment closest points. */
+  private sweepClosestOnEdge = new THREE.Vector3();
+  private sweepClosestOnMove = new THREE.Vector3();
+  private sweepToActor = new THREE.Vector3();
+  private sweepEdgeDelta = new THREE.Vector3();
+  private sweepMoveDelta = new THREE.Vector3();
+  private sweepSegOffset = new THREE.Vector3();
 
   edges: WalkmeshEdge[] = [];
 
   // Collision state management
   private collisionState = new CollisionState();
+
+  /** Min/max collision substeps per frame; step size capped at half creperspace. */
+  private static readonly MIN_COLLISION_STEPS = 4;
+  private static readonly MAX_COLLISION_STEPS = 16;
 
   // Visual debug helpers for collision edges
   private edgeHelperColors: THREE.Float32BufferAttribute;
@@ -302,23 +313,32 @@ export class CollisionManager {
     this.blockingObject = undefined;
 
     const originalForce = this.object.forceVector.clone();
-    const steps = 4;
+    const hitDistance = this.getHitDistance();
+    const forceLen = Math.hypot(originalForce.x, originalForce.y);
+    const maxStep = Math.max(hitDistance * 0.5, CollisionConfig.TOLERANCE);
+    const steps = Math.max(
+      CollisionManager.MIN_COLLISION_STEPS,
+      Math.min(
+        CollisionManager.MAX_COLLISION_STEPS,
+        Math.ceil(forceLen / maxStep) || CollisionManager.MIN_COLLISION_STEPS
+      )
+    );
     const stepForce = originalForce.clone().multiplyScalar(1 / steps);
     let collided = false;
 
     for (let step = 0; step < steps; step++) {
       // Initialize collision state for this frame
       this.collisionState.clear();
-      this.collisionState.hitDistance = this.getHitDistance();
-      this.collisionState.hitDistanceHalf = this.collisionState.hitDistance; // / 2
+      this.collisionState.hitDistance = hitDistance;
+      this.collisionState.hitDistanceHalf = hitDistance;
 
-      // Apply step movement
+      // Apply step movement (full intended travel is always collision-tested)
       this.object.forceVector.copy(stepForce);
 
       // Update ground positioning first
       this.updateGroundPositioning();
 
-      // Predicted / swept position for capsule probes (-style lookahead contact)
+      // Predicted / swept position for capsule probes
       this.tempPosition.copy(this.object.position).add(this.object.forceVector);
       this.originalPosition.copy(this.object.position);
 
@@ -336,14 +356,8 @@ export class CollisionManager {
 
       const hadCollisions = this.collisionState.hasCollisions();
 
-      // Resolve all detected collisions
+      // Resolve all detected collisions (may slide / zero forceVector)
       this.resolveAllCollisions();
-
-      if (hadCollisions) {
-        // Preserve full movement distance for the remainder of the frame
-        const remainingSteps = steps - step;
-        this.object.forceVector.multiplyScalar(remainingSteps);
-      }
 
       // Validate final position against placeables
       this.validatePlaceablePenetration();
@@ -354,7 +368,6 @@ export class CollisionManager {
 
       if (hadCollisions) {
         collided = true;
-        break;
       }
     }
 
@@ -682,46 +695,106 @@ export class CollisionManager {
     return collisions;
   }
 
+  /**
+   * Closest points between two clamped 3D segments (edge ↔ movement sweep).
+   * Writes into sweepClosestOnEdge / sweepClosestOnMove; returns distance.
+   */
+  private closestPointsOnSegments(
+    a0: THREE.Vector3,
+    a1: THREE.Vector3,
+    b0: THREE.Vector3,
+    b1: THREE.Vector3
+  ): number {
+    const EPS = 1e-8;
+    this.sweepEdgeDelta.subVectors(a1, a0);
+    this.sweepMoveDelta.subVectors(b1, b0);
+    this.sweepSegOffset.subVectors(a0, b0);
+
+    const a = this.sweepEdgeDelta.lengthSq();
+    const e = this.sweepMoveDelta.lengthSq();
+    const f = this.sweepMoveDelta.dot(this.sweepSegOffset);
+
+    let s: number;
+    let t: number;
+
+    if (a <= EPS && e <= EPS) {
+      this.sweepClosestOnEdge.copy(a0);
+      this.sweepClosestOnMove.copy(b0);
+      return this.sweepClosestOnEdge.distanceTo(this.sweepClosestOnMove);
+    }
+
+    if (a <= EPS) {
+      s = 0;
+      t = Math.min(1, Math.max(0, f / e));
+    } else {
+      const c = this.sweepEdgeDelta.dot(this.sweepSegOffset);
+      if (e <= EPS) {
+        t = 0;
+        s = Math.min(1, Math.max(0, -c / a));
+      } else {
+        const b = this.sweepEdgeDelta.dot(this.sweepMoveDelta);
+        const denom = a * e - b * b;
+        s = denom !== 0 ? Math.min(1, Math.max(0, (b * f - c * e) / denom)) : 0;
+        t = (b * s + f) / e;
+        if (t < 0) {
+          t = 0;
+          s = Math.min(1, Math.max(0, -c / a));
+        } else if (t > 1) {
+          t = 1;
+          s = Math.min(1, Math.max(0, (b - c) / a));
+        }
+      }
+    }
+
+    this.sweepClosestOnEdge.copy(a0).addScaledVector(this.sweepEdgeDelta, s);
+    this.sweepClosestOnMove.copy(b0).addScaledVector(this.sweepMoveDelta, t);
+    return this.sweepClosestOnEdge.distanceTo(this.sweepClosestOnMove);
+  }
+
   private detectSingleEdgeCollision(edge: any, collisionType: CollisionType): ProcessedCollision | null {
     const collision = CollisionPool.getProcessedCollision();
     collision.edge = edge;
     collision.type = collisionType;
 
-    // Use current position for more stable collision detection
-    // Avoid using predicted position (tempPosition) to prevent frame-to-frame jitter
-    const checkPosition = this.object.position.clone();
-
-    // Find closest point on edge to current position
-    edge.line.closestPointToPoint(checkPosition, true, collision.closestPoint);
-    collision.distance = collision.closestPoint.distanceTo(checkPosition);
-
-    // Check if within collision range (with conservative tolerance)
-    // const profile = CollisionConfig.PROFILES[collisionType];
-    // // Use more conservative tolerance to reduce false collision detections
-    // const effectiveTolerance = profile.tolerance * 0.8;
-    if (collision.distance >= this.collisionState.hitDistanceHalf /*- effectiveTolerance*/) {
+    const edgeLine: THREE.Line3 = edge.line;
+    if (!edgeLine) {
       CollisionPool.releaseProcessedCollision(collision);
       return null;
     }
 
-    const toActor = checkPosition.clone().sub(collision.closestPoint);
-    if (toActor.dot(edge.normal) <= 0) {
-      CollisionPool.releaseProcessedCollision(collision);
-      return null; // backside, ignore
+    // Swept probe: closest approach between wall edge and movement segment
+    // (position → position+force). Falls back to feet-only when force is ~0.
+    this.tempPosition.copy(this.object.position).add(this.object.forceVector);
+    const moveLenSq =
+      (this.tempPosition.x - this.object.position.x) ** 2 +
+      (this.tempPosition.y - this.object.position.y) ** 2;
+
+    if (moveLenSq > 1e-12) {
+      collision.distance = this.closestPointsOnSegments(
+        edgeLine.start,
+        edgeLine.end,
+        this.object.position,
+        this.tempPosition
+      );
+      collision.closestPoint.copy(this.sweepClosestOnEdge);
+    } else {
+      edgeLine.closestPointToPoint(this.object.position, true, collision.closestPoint);
+      collision.distance = collision.closestPoint.distanceTo(this.object.position);
     }
 
-    // Calculate penetration based on distance from center of collision sphere
+    if (collision.distance >= this.collisionState.hitDistanceHalf) {
+      CollisionPool.releaseProcessedCollision(collision);
+      return null;
+    }
+
+    // Backside: use current feet for normal facing (stable when grazing)
+    this.sweepToActor.copy(this.object.position).sub(collision.closestPoint);
+    if (edge.normal && this.sweepToActor.dot(edge.normal) <= 0) {
+      CollisionPool.releaseProcessedCollision(collision);
+      return null;
+    }
+
     collision.penetration = Math.max(0, this.collisionState.hitDistanceHalf - collision.distance);
-
-    // Ensure penetration is reasonable (prevent extreme values)
-    // collision.penetration = Math.min(collision.penetration, this.collisionState.hitDistanceHalf * 0.5);
-
-    // Ignore very small penetrations that could cause micro-jitter
-    // if (collision.penetration < 0.002) {
-    // CollisionPool.releaseProcessedCollision(collision);
-    // return null;
-    // }
-
     collision.priority = CollisionConfig.PROFILES[collisionType].priority;
     return collision;
   }
