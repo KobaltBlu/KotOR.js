@@ -715,6 +715,15 @@ export class ModuleObject {
     if(!this.model){ return; }
     this.model.wasOffscreen = !this.model.visible;
 
+    // Retail FreeLook: controlled PC is not drawn (camera on FreeLookHook).
+    if(GameState.Mode == EngineMode.FREELOOK){
+      const player = GameState.getCurrentPlayer();
+      if(player && this.id === player.id){
+        this.model.visible = false;
+        return;
+      }
+    }
+
     if(GameState.Mode == EngineMode.INGAME){
       if(!this.room){
         this.model.visible = true;
@@ -1974,6 +1983,13 @@ export class ModuleObject {
   /** HideShadowBlob / ShowShadowBlob — area shadows + per-object flag. */
   updateShadowBlobVisibility(){
     if(!this.shadowBlobModel){ return; }
+    if(GameState.Mode == EngineMode.FREELOOK){
+      const player = GameState.getCurrentPlayer();
+      if(player && this.id === player.id){
+        this.shadowBlobModel.visible = false;
+        return;
+      }
+    }
     this.shadowBlobModel.visible = GameState.areShadowsEnabled() && this.shadowsEnabled;
   }
 

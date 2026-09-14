@@ -270,24 +270,6 @@ export class FollowerCamera {
     let viewAngle = FollowerCamera.parseStyleFloat(cameraStyle?.viewangle, 0);
     if(viewAngle === 0) viewAngle = FollowerCamera.DEFAULT_FOV;
 
-    // FreeLook columns (FL_TiltSpeed / FL_RotateSpeed / FL_LOOKUP / FL_LOOKDOWN)
-    const flTilt = FollowerCamera.parseStyleFloat(
-      cameraStyle?.fl_tiltspeed ?? cameraStyle?.FL_TiltSpeed,
-      60
-    );
-    const flRotate = FollowerCamera.parseStyleFloat(
-      cameraStyle?.fl_rotatespeed ?? cameraStyle?.FL_RotateSpeed,
-      60
-    );
-    const flLookUp = FollowerCamera.parseStyleFloat(
-      cameraStyle?.fl_lookup ?? cameraStyle?.FL_LOOKUP,
-      60
-    );
-    const flLookDown = FollowerCamera.parseStyleFloat(
-      cameraStyle?.fl_lookdown ?? cameraStyle?.FL_LOOKDOWN,
-      60
-    );
-
     FollowerCamera.distance = FollowerCamera.maxDistance = dist;
     FollowerCamera.styleSpeed = speed;
     FollowerCamera.pitch = THREE.MathUtils.degToRad(pitchDeg);
@@ -297,10 +279,8 @@ export class FollowerCamera {
     FollowerCamera.tiltDown = tiltDown;
     FollowerCamera.tiltSpeed = tiltSpeed;
     FollowerCamera.rotation = rotation;
-    FollowerCamera.flTiltSpeed = flTilt;
-    FollowerCamera.flRotateSpeed = flRotate;
-    FollowerCamera.flLookUp = flLookUp;
-    FollowerCamera.flLookDown = flLookDown;
+    // FreeLook columns (FL_TiltSpeed / FL_RotateSpeed / FL_LOOKUP / FL_LOOKDOWN)
+    FollowerCamera.applyFreeLookStyleColumns(cameraStyle);
 
     // CamRelative Control caches Min/MaxTurnRate (controller Init / SetCameraStyle)
     FollowerCamera.minTurnRateDeg = FollowerCamera.parseStyleFloat(
@@ -314,6 +294,57 @@ export class FollowerCamera {
 
     FollowerCamera.refreshKeyboardTurnOptions();
     FollowerCamera.setCameraFOV(viewAngle);
+  }
+
+  /**
+   * UpdateCamraStyle — load FL_* from camerastyle.2da (area camera_style row).
+   * Caps look pitch to [-FL_LOOKDOWN, FL_LOOKUP] degrees.
+   */
+  static applyFreeLookStyleColumns(cameraStyle: any = {}){
+    FollowerCamera.flTiltSpeed = FollowerCamera.parseStyleFloat(
+      cameraStyle?.fl_tiltspeed ?? cameraStyle?.FL_TiltSpeed,
+      60
+    );
+    FollowerCamera.flRotateSpeed = FollowerCamera.parseStyleFloat(
+      cameraStyle?.fl_rotatespeed ?? cameraStyle?.FL_RotateSpeed,
+      60
+    );
+    FollowerCamera.flLookUp = FollowerCamera.parseStyleFloat(
+      cameraStyle?.fl_lookup ?? cameraStyle?.FL_LOOKUP,
+      60
+    );
+    FollowerCamera.flLookDown = FollowerCamera.parseStyleFloat(
+      cameraStyle?.fl_lookdown ?? cameraStyle?.FL_LOOKDOWN,
+      60
+    );
+  }
+
+  /** UpdateCamraStyle — re-read FL_* from the active area style. */
+  static refreshFreeLookStyle(){
+    const style = GameState.module?.area?.getCameraStyle?.()
+      ?? FollowerCamera.cameraStyle
+      ?? {};
+    FollowerCamera.applyFreeLookStyleColumns(style);
+    FollowerCamera.cameraStyle = style;
+  }
+
+  /**
+   * Clamp FreeLook pitch to [-FL_LOOKDOWN, FL_LOOKUP] after ±180 wrap (Control).
+   * Zero RK4 velocity when against a stop so look cannot push past the cap.
+   */
+  static clampFreeLookPitch(){
+    let pitch = FollowerCamera.wrapDeg180(FollowerCamera.freeLookPitchDeg);
+    const lookDown = Math.max(0, FollowerCamera.flLookDown);
+    const lookUp = Math.max(0, FollowerCamera.flLookUp);
+    if(pitch < -lookDown){
+      pitch = -lookDown;
+      if(FollowerCamera.freeLookPitchVel < 0) FollowerCamera.freeLookPitchVel = 0;
+    }
+    if(pitch > lookUp){
+      pitch = lookUp;
+      if(FollowerCamera.freeLookPitchVel > 0) FollowerCamera.freeLookPitchVel = 0;
+    }
+    FollowerCamera.freeLookPitchDeg = pitch;
   }
 
   /**
@@ -442,6 +473,8 @@ export class FollowerCamera {
     }
 
     FollowerCamera.saveChasePose();
+    // UpdateCamraStyle — FL_LOOKUP / FL_LOOKDOWN / tilt+rotate speeds for this area
+    FollowerCamera.refreshFreeLookStyle();
 
     // Face creature along normalize(pc − cam) so freelook matches chase forward.
     const followee = GameState.getCurrentPlayer();
@@ -452,6 +485,13 @@ export class FollowerCamera {
       if(len > 1e-4){
         const facing = Utility.NormalizeRadian(-Math.atan2(dx / len, dy / len));
         followee.setFacing?.(facing, true);
+      }
+      // Same-frame hide — area sync gate also keeps PC hidden while FREELOOK.
+      if(followee.model){
+        followee.model.visible = false;
+      }
+      if(followee.shadowBlobModel){
+        followee.shadowBlobModel.visible = false;
       }
     }
 
@@ -486,6 +526,11 @@ export class FollowerCamera {
       GameState.clientCameraMode = restore;
       FollowerCamera.lastAppliedCameraMode = -1;
     }
+
+    // Mode is already non-FREELOOK when called from SetEngineMode — restore VIS.
+    const followee = GameState.getCurrentPlayer();
+    followee?.updateModelVisibility?.();
+    followee?.updateShadowBlobVisibility?.();
   }
 
   /**
@@ -612,10 +657,11 @@ export class FollowerCamera {
    * Impulse (deg/s desire) drives velocity toward ±maxDps with accel; coasts when 0.
    */
   static integrateFreeLookPitchRk4(delta: number, impulseDeg: number): number {
+    // UpdateCamraStyle sets RK4 keyboard DPS to max(FL_LOOKUP, FL_LOOKDOWN)
     const maxDps = Math.max(
-      FollowerCamera.FREELOOK_RK4_DPS,
       FollowerCamera.flLookUp,
-      FollowerCamera.flLookDown
+      FollowerCamera.flLookDown,
+      1
     );
     const accel = FollowerCamera.FREELOOK_RK4_ACCEL;
     let v = FollowerCamera.freeLookPitchVel;
@@ -684,15 +730,8 @@ export class FollowerCamera {
       FollowerCamera.freeLookPitchImpulse = 0;
     }
 
-    FollowerCamera.freeLookPitchDeg = FollowerCamera.wrapDeg180(
-      FollowerCamera.freeLookPitchDeg
-    );
-    if(FollowerCamera.freeLookPitchDeg < -FollowerCamera.flLookDown){
-      FollowerCamera.freeLookPitchDeg = -FollowerCamera.flLookDown;
-    }
-    if(FollowerCamera.freeLookPitchDeg > FollowerCamera.flLookUp){
-      FollowerCamera.freeLookPitchDeg = FollowerCamera.flLookUp;
-    }
+    // Control — clamp to [-FL_LOOKDOWN, FL_LOOKUP]
+    FollowerCamera.clampFreeLookPitch();
 
     FollowerCamera.resolveFreeLookHook(followee);
     FollowerCamera.camera.position.copy(FollowerCamera.tmpHookPos);
