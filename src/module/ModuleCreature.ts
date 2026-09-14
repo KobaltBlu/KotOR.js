@@ -1109,6 +1109,26 @@ export class ModuleCreature extends ModuleObject {
     }
   }
 
+  /**
+   * Walkmesh room attach + model visibility (findWalkableFace when unroomed).
+   */
+  protected updateRoomAttachment(delta: number = 0){
+    if(this.spawned){
+      this.collisionManager.roomCheck(delta);
+    }
+  }
+
+  updatePaused(delta: number = 0){
+    if(this.spawned){
+      // Allow PC/party room attach while paused so auto-pause cannot leave a blank VIS
+      if(!this.room && this.area){
+        this.updateRoomAttachment(delta);
+      }else{
+        this.updateModelVisibility();
+      }
+    }
+  }
+
   update( delta = 0 ){
 
     if(this.destroyed){

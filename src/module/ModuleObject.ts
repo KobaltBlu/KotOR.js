@@ -664,12 +664,12 @@ export class ModuleObject {
   }
 
   /**
-   * Attach this object to a room via walkmesh roomCheck.
-   * Doors/triggers override as a no-op — roomCheck would snap Z; they use getCurrentRoom.
+   * Refresh room/model visibility. Creatures override to run walkmesh roomCheck.
+   * Doors/triggers override as a no-op — they use getCurrentRoom.
    */
-  protected updateRoomAttachment(delta: number = 0){
+  protected updateRoomAttachment(_delta: number = 0){
     if(this.spawned){
-      this.collisionManager.roomCheck(delta);
+      this.updateModelVisibility();
     }
   }
 
@@ -704,12 +704,7 @@ export class ModuleObject {
     // this.force = 0;
     // this.forceVector.set(0, 0, 0);
     if(this.spawned){
-      // Allow PC/party room attach while paused so auto-pause cannot leave a blank VIS
-      if(!this.room && this.area){
-        this.updateRoomAttachment(delta);
-      }else{
-        this.updateModelVisibility();
-      }
+      this.updateModelVisibility();
     }
   }
 

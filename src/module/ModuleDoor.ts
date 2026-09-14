@@ -825,12 +825,6 @@ export class ModuleDoor extends ModuleObject {
    */
   protected updateRoomAttachment(_delta: number = 0){}
 
-  updatePaused(delta: number = 0){
-    if(this.spawned){
-      this.updateModelVisibility();
-    }
-  }
-
   update(delta = 0){
     
     super.update(delta);
