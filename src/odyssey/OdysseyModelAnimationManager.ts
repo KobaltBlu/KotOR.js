@@ -12,11 +12,23 @@ import {
   ANIM_RUN_STACK_CAP,
   AnimRun,
   createAnimRun,
+  invalidateAnimRunFrameCursors,
   isAdditiveRun,
   isLoopingRun,
   isOverlayRun,
   isQueuedRun,
 } from "@/odyssey/AnimRun";
+import {
+  bindAnimation,
+  ensureRunFrameCursorArray,
+  type BoundAnimation,
+  type BoundController,
+} from "@/odyssey/BoundAnimation";
+import {
+  binarySearchFrameCursor,
+  isPlaybackDiscontinuity,
+  resolveFrameCursor,
+} from "@/odyssey/resolveFrameCursor";
 
 /**
  * OdysseyModelAnimationManager — Gob AnimRun multi-clip stack.
@@ -49,7 +61,8 @@ export class OdysseyModelAnimationManager {
   /** @deprecated Weight ramp replaces transtime dual-clip path. */
   transElapsed: number = 0;
 
-  animLoopStates: Map<number, OdysseyModelAnimationManagerState> = new Map();
+  /** Contiguous per-animLoop playback states (index == animLoops index). */
+  animLoopStates: OdysseyModelAnimationManagerState[] = [];
 
   _vec3: THREE.Vector3 = new THREE.Vector3();
   _quat: THREE.Quaternion = new THREE.Quaternion();
@@ -62,6 +75,8 @@ export class OdysseyModelAnimationManager {
   private _matrixBatchDepth = 0;
   private _touchedTransformNodes: OdysseyObject3D[] = [];
   private _touchedTransformNodeSet = new Set<OdysseyObject3D>();
+  /** Model-local bound animation cache (targets are instance-specific). */
+  private _boundAnimations = new WeakMap<OdysseyModelAnimation, BoundAnimation>();
 
   constructor(model: OdysseyModel3D){
     this.model = model;
@@ -265,8 +280,10 @@ export class OdysseyModelAnimationManager {
           existing.weight = Math.max(existing.weight, 0.01);
           existing.state.elapsed = state?.elapsed ?? 0;
           existing.state.lastTime = 0;
-          existing.state.events = [];
+          existing.state.events.length = 0;
+          existing.state.lastEvent = -1;
           existing.state.elapsedCount = 0;
+          invalidateAnimRunFrameCursors(existing);
           if(typeof state?.speed === "number") existing.state.speed = state.speed;
           if(state?.animation !== undefined) existing.state.animation = state.animation;
           return existing;
@@ -507,34 +524,36 @@ export class OdysseyModelAnimationManager {
 
     this.beginMatrixBatch();
     try{
-      // Pose: oldest -> newest, blend by weight (skip queued)
+      // Pose: oldest -> newest, blend by weight (skip queued / zero contribution)
       if(this.model.bonesInitialized && this.model.animateFrame){
-      for(let i = 0; i < this.runs.length; i++){
-        const run = this.runs[i];
-        if(!run.animation || run.weight <= 1e-4 || isQueuedRun(run)) continue;
-        const rate =
-          typeof run.state.speed === "number" ? run.state.speed : 1;
-        this.applyRunPose(run, Math.abs(rate) > 0 ? run.weight : 0);
-      }
-    }
-
-      // World Model Animation Loops (unchanged path)
-      if(this.model.bonesInitialized && this.model.animLoops.length){
-      for(let i = 0, len = this.model.animLoops.length; i < len; i++){
-        if(!this.animLoopStates.has(i)){
-          this.animLoopStates.set(i, {
-            loop: true,
-            cFrame: 0,
-            elapsed: 0,
-            elapsedCount: 0,
-            lastTime: 0,
-            delta: 0,
-            lastEvent: -1,
-            events: [],
-          });
+        for(let i = 0; i < this.runs.length; i++){
+          const run = this.runs[i];
+          if(!run.animation || isQueuedRun(run)) continue;
+          const rate =
+            typeof run.state.speed === "number" ? run.state.speed : 1;
+          const effectiveWeight = Math.abs(rate) > 0 ? run.weight : 0;
+          if(effectiveWeight <= 1e-4) continue;
+          this.applyRunPose(run, effectiveWeight);
         }
-        this.updateAnimation(this.model.animLoops[i], this.animLoopStates.get(i), delta);
       }
+
+      // World Model Animation Loops (legacy scan path; contiguous state array)
+      if(this.model.bonesInitialized && this.model.animLoops.length){
+        for(let i = 0, len = this.model.animLoops.length; i < len; i++){
+          if(!this.animLoopStates[i]){
+            this.animLoopStates[i] = {
+              loop: true,
+              cFrame: 0,
+              elapsed: 0,
+              elapsedCount: 0,
+              lastTime: 0,
+              delta: 0,
+              lastEvent: -1,
+              events: [],
+            };
+          }
+          this.updateAnimation(this.model.animLoops[i], this.animLoopStates[i], delta);
+        }
       }
     }finally{
       this.endMatrixBatch();
@@ -597,7 +616,8 @@ export class OdysseyModelAnimationManager {
         if(isLoopingRun(run)){
           state.elapsed = ((state.elapsed % len) + len) % len;
           state.elapsedCount++;
-          state.events = [];
+          state.events.length = 0;
+          state.lastEvent = -1;
         }else{
           state.elapsed = len;
           state.lastTime = len;
@@ -619,7 +639,8 @@ export class OdysseyModelAnimationManager {
         if(isLoopingRun(run) && len > 0){
           state.elapsed = ((state.elapsed % len) + len) % len;
           state.elapsedCount++;
-          state.events = [];
+          state.events.length = 0;
+          state.lastEvent = -1;
         }else{
           state.elapsed = 0;
           run.done = true;
@@ -650,12 +671,21 @@ export class OdysseyModelAnimationManager {
     }
   }
 
+  private getBoundAnimation(anim: OdysseyModelAnimation): BoundAnimation {
+    let bound = this._boundAnimations.get(anim);
+    if(!bound){
+      bound = bindAnimation(this.model, anim);
+      this._boundAnimations.set(anim, bound);
+    }
+    return bound;
+  }
+
   private applyRunPose(run: AnimRun, blendWeight: number){
-    const anim = run.animation;
-    const state = run.state;
-    if(!anim?.nodes) return;
-    for(let i = 0, nl = anim.nodes.length; i < nl; i++){
-      this.updateAnimationNode(anim, anim.nodes[i], state, blendWeight);
+    if(!run.animation) return;
+    const bound = this.getBoundAnimation(run.animation);
+    ensureRunFrameCursorArray(run, bound);
+    for(let i = 0, nl = bound.nodes.length; i < nl; i++){
+      this.updateAnimationNode(run, bound.nodes[i], blendWeight);
     }
   }
 
@@ -711,12 +741,20 @@ export class OdysseyModelAnimationManager {
   }
 
   private syncLegacyLastAnimation(){
-    // Keep lastAnimation pointing at previous base for any legacy readers
-    const bases = this.runs.filter(
-      (r) => !isOverlayRun(r) && !r.done && !isQueuedRun(r)
-    );
-    if(bases.length >= 2){
-      const prev = bases[bases.length - 2];
+    // Reverse scan for newest two eligible bases (no filter alloc)
+    let newest: AnimRun | undefined;
+    let prev: AnimRun | undefined;
+    for(let i = this.runs.length - 1; i >= 0; i--){
+      const r = this.runs[i];
+      if(isOverlayRun(r) || r.done || isQueuedRun(r)) continue;
+      if(!newest){
+        newest = r;
+        continue;
+      }
+      prev = r;
+      break;
+    }
+    if(prev && newest){
       this.lastAnimation = prev.animation;
       this.lastAnimationState = prev.state;
       this.transElapsed = prev.transition > 0 ? prev.weight * prev.transition : 0;
@@ -747,7 +785,7 @@ export class OdysseyModelAnimationManager {
     try{
       if(this.model.animateFrame){
         for(let i = 0, nl = anim.nodes.length; i < nl; i++){
-          this.updateAnimationNode(anim, anim.nodes[i], state, 1);
+          this.updateAnimationNodeLegacy(anim, anim.nodes[i], state, 1);
         }
       }
     }finally{
@@ -762,6 +800,8 @@ export class OdysseyModelAnimationManager {
       if(state.loop && anim.length > 0){
         state.elapsed = ((state.elapsed % anim.length) + anim.length) % anim.length;
         state.elapsedCount++;
+        state.events.length = 0;
+        state.lastEvent = -1;
       }else{
         state.elapsed = 0;
       }
@@ -774,6 +814,8 @@ export class OdysseyModelAnimationManager {
       state.lastTime = anim.length;
       state.elapsed = 0;
       state.elapsedCount++;
+      state.events.length = 0;
+      state.lastEvent = -1;
       return false;
     }
     return true;
@@ -791,19 +833,100 @@ export class OdysseyModelAnimationManager {
     if(!anim?.events?.length) return;
     if(!state.events) state.events = [];
 
-    for(let f = 0, el = anim.events.length; f < el; f++){
-      if(anim.events[f].length <= state.elapsed && !state.events[f]){
-        this.model.playEvent(anim.events[f].name, f);
-        state.events[f] = true;
+    // Monotonic event cursor via lastEvent; reset on loop (events.length = 0)
+    let f = Math.max(0, (state.lastEvent | 0) + 1);
+    for(let el = anim.events.length; f < el; f++){
+      if(anim.events[f].length <= state.elapsed){
+        if(!state.events[f]){
+          this.model.playEvent(anim.events[f].name, f);
+          state.events[f] = true;
+        }
+        state.lastEvent = f;
+      }else{
+        break;
       }
     }
   }
 
   /**
-   * Sample one anim node onto the skeleton.
-   * @param blendWeight NewController weight — lerp from current bone pose
+   * Stack pose path: sample one bound node using per-AnimRun frame cursors.
    */
   updateAnimationNode(
+    run: AnimRun,
+    boundNode: BoundAnimation["nodes"][number],
+    blendWeight: number = 1
+  ){
+    const anim = run.animation;
+    const state = run.state;
+    if(!anim || !boundNode) return;
+
+    this.modelNode = boundNode.target;
+    if(!this.modelNode) return;
+
+    anim._position.x = anim._position.y = anim._position.z = 0;
+    anim._quaternion.x = anim._quaternion.y = anim._quaternion.z = 0;
+    anim._quaternion.w = 1;
+
+    const w = Math.max(0, Math.min(1, blendWeight));
+    const canBlend = w < 1 - 1e-6;
+    const rate = typeof state.speed === "number" ? state.speed : 1;
+    const discontinuity = isPlaybackDiscontinuity(state.elapsed, state.lastTime, rate);
+    const cursors = run.frameCursorArray;
+    let transformDirty = false;
+
+    for(let i = 0, cl = boundNode.controllers.length; i < cl; i++){
+      const bc: BoundController = boundNode.controllers[i];
+      const controller = bc.controller;
+      if(!controller || !bc.valid) continue;
+
+      if(controller.frameCount == 1 && !canBlend){
+        controller.setFrame(this, anim, controller.data[0]);
+        continue;
+      }
+
+      let lastFrame = 0;
+      if(cursors && controller.frameCount > 1){
+        let cursor = cursors[bc.cursorIndex];
+        if(discontinuity || cursor < 0 || cursor >= controller.data.length){
+          cursor = binarySearchFrameCursor(controller.data, state.elapsed);
+        }else{
+          cursor = resolveFrameCursor(controller.data, state.elapsed, cursor);
+        }
+        cursors[bc.cursorIndex] = cursor;
+        lastFrame = cursor;
+      }else if(controller.frameCount > 1){
+        // Map fallback when Int32Array not sized yet
+        if(!run.frameCursors) run.frameCursors = new Map();
+        let cursor = run.frameCursors.get(controller) ?? 0;
+        if(discontinuity || cursor < 0 || cursor >= controller.data.length){
+          cursor = binarySearchFrameCursor(controller.data, state.elapsed);
+        }else{
+          cursor = resolveFrameCursor(controller.data, state.elapsed, cursor);
+        }
+        run.frameCursors.set(controller, cursor);
+        lastFrame = cursor;
+      }
+
+      const applied = this.applyControllerSample(
+        anim,
+        state,
+        controller,
+        lastFrame,
+        w,
+        canBlend
+      );
+      if(applied) transformDirty = true;
+    }
+
+    if(transformDirty){
+      this.markNodeTransformDirty(this.modelNode);
+    }
+  }
+
+  /**
+   * Legacy animLoops path — scan-from-zero (no AnimRun cursors).
+   */
+  updateAnimationNodeLegacy(
     anim: OdysseyModelAnimation,
     node: OdysseyModelAnimationNode,
     state: OdysseyModelAnimationManagerState,
@@ -813,10 +936,8 @@ export class OdysseyModelAnimationManager {
       state = this.createAnimationState();
     }
     if(!node) return;
-    // AnimateHierarchy: match Part / anim node by model node.id (nodeNumber).
-    // Always clear first so a missing id cannot reuse the previous bone.
     this.modelNode = undefined;
-    if(typeof node.nodeNumber === 'number' && node.nodeNumber >= 0){
+    if(typeof node.nodeNumber === "number" && node.nodeNumber >= 0){
       this.modelNode = this.model.nodesById?.[node.nodeNumber];
     }
     if(!this.modelNode){
@@ -830,11 +951,7 @@ export class OdysseyModelAnimationManager {
 
     const w = Math.max(0, Math.min(1, blendWeight));
     const canBlend = w < 1 - 1e-6;
-
-    let last: IOdysseyControllerFrameGeneric;
-    let next: IOdysseyControllerFrameGeneric;
-    let fl = 0;
-    let lastFrame = 0;
+    let transformDirty = false;
 
     for(let c of node.controllers){
       const controller: OdysseyController = c[1];
@@ -844,12 +961,11 @@ export class OdysseyModelAnimationManager {
         continue;
       }
 
-      if(controller.data.length != controller.frameCount){
-        console.log("Missing Controller Data", controller);
+      if(!controller.data || controller.data.length != controller.frameCount){
         continue;
       }
 
-      lastFrame = 0;
+      let lastFrame = 0;
       for(let f = 0, fc = controller.frameCount; f < fc; f++){
         if(controller.data[f].time <= state.elapsed){
           lastFrame = f;
@@ -858,70 +974,102 @@ export class OdysseyModelAnimationManager {
         break;
       }
 
-      last = controller.data[lastFrame];
-      if(!last) continue;
+      const applied = this.applyControllerSample(
+        anim,
+        state,
+        controller,
+        lastFrame,
+        w,
+        canBlend
+      );
+      if(applied) transformDirty = true;
+    }
 
-      if(this.model.wasOffscreen){
-        controller.setFrame(this, anim, last);
-      }
+    if(transformDirty){
+      this.markNodeTransformDirty(this.modelNode);
+    }
+  }
 
-      next = controller.data[lastFrame + 1];
-      fl = 0;
+  /**
+   * Shared last/next/fl interpolation + blend. Returns true if Position or
+   * Orientation mutated the node (caller marks dirty once per node).
+   * Preserves wasOffscreen setFrame-then-animate.
+   */
+  private applyControllerSample(
+    anim: OdysseyModelAnimation,
+    state: OdysseyModelAnimationManagerState,
+    controller: OdysseyController,
+    lastFrame: number,
+    w: number,
+    canBlend: boolean
+  ): boolean {
+    let last: IOdysseyControllerFrameGeneric = controller.data[lastFrame];
+    if(!last) return false;
 
-      if(next){
-        fl = Math.abs((state.elapsed - last.time) / (next.time - last.time)) % 1;
+    // Keep wasOffscreen setFrame before animate — controller sampling is not
+    // proven fully stateless across all subclasses.
+    if(this.model.wasOffscreen){
+      controller.setFrame(this, anim, last);
+    }
+
+    let next: IOdysseyControllerFrameGeneric = controller.data[lastFrame + 1];
+    let fl = 0;
+
+    if(next){
+      fl = Math.abs((state.elapsed - last.time) / (next.time - last.time)) % 1;
+    }else{
+      fl = 1;
+      next = controller.data[lastFrame];
+      last = controller.data[lastFrame - 1] || controller.data[lastFrame];
+    }
+
+    if(state.elapsed < last.time) fl = 0;
+    if(fl == Infinity) fl = 1.0;
+    if(isNaN(fl)) fl = 0;
+    if(fl > 1) fl = 1;
+    if(fl < 0) fl = 0;
+
+    if(!canBlend){
+      if(controller.frameCount == 1){
+        controller.setFrame(this, anim, controller.data[0]);
       }else{
-        fl = 1;
-        next = controller.data[lastFrame];
-        last = controller.data[lastFrame - 1] || controller.data[lastFrame];
+        controller.animate(this, anim, last, next, fl);
       }
+      return false;
+    }
 
-      if(state.elapsed < last.time) fl = 0;
-      if(fl == Infinity) fl = 1.0;
-      if(isNaN(fl)) fl = 0;
-      if(fl > 1) fl = 1;
-      if(fl < 0) fl = 0;
-
-      if(!canBlend){
-        if(controller.frameCount == 1){
-          controller.setFrame(this, anim, controller.data[0]);
-        }else{
-          controller.animate(this, anim, last, next, fl);
-        }
-        continue;
-      }
-
-      // NewController: blend sampled clip into current part pose by weight
-      if(controller.type == OdysseyModelControllerType.Position){
-        this._animPosition.copy(this.modelNode.position);
-        if(controller.frameCount == 1){
-          controller.setFrame(this, anim, controller.data[0]);
-        }else{
-          controller.animate(this, anim, last, next, fl);
-        }
-        this._animPosition2.copy(this.modelNode.position);
-        this.modelNode.position.copy(this._animPosition).lerp(this._animPosition2, w);
-        this.markNodeTransformDirty(this.modelNode);
-      }else if(controller.type == OdysseyModelControllerType.Orientation){
-        this._animQuaternion.copy(this.modelNode.quaternion);
-        if(controller.frameCount == 1){
-          controller.setFrame(this, anim, controller.data[0]);
-        }else{
-          controller.animate(this, anim, last, next, fl);
-        }
-        this._animQuaternion2.copy(this.modelNode.quaternion);
-        this.modelNode.quaternion.copy(this._animQuaternion).slerp(this._animQuaternion2, w);
-        this.markNodeTransformDirty(this.modelNode);
+    if(controller.type == OdysseyModelControllerType.Position){
+      this._animPosition.copy(this.modelNode.position);
+      if(controller.frameCount == 1){
+        controller.setFrame(this, anim, controller.data[0]);
       }else{
-        // Non-transform controllers: apply only when weight is significant
-        if(w >= 0.5){
-          if(controller.frameCount == 1){
-            controller.setFrame(this, anim, controller.data[0]);
-          }else{
-            controller.animate(this, anim, last, next, fl);
-          }
-        }
+        controller.animate(this, anim, last, next, fl);
+      }
+      this._animPosition2.copy(this.modelNode.position);
+      this.modelNode.position.copy(this._animPosition).lerp(this._animPosition2, w);
+      return true;
+    }
+
+    if(controller.type == OdysseyModelControllerType.Orientation){
+      this._animQuaternion.copy(this.modelNode.quaternion);
+      if(controller.frameCount == 1){
+        controller.setFrame(this, anim, controller.data[0]);
+      }else{
+        controller.animate(this, anim, last, next, fl);
+      }
+      this._animQuaternion2.copy(this.modelNode.quaternion);
+      this.modelNode.quaternion.copy(this._animQuaternion).slerp(this._animQuaternion2, w);
+      return true;
+    }
+
+    // Non-transform controllers: apply only when weight is significant
+    if(w >= 0.5){
+      if(controller.frameCount == 1){
+        controller.setFrame(this, anim, controller.data[0]);
+      }else{
+        controller.animate(this, anim, last, next, fl);
       }
     }
+    return false;
   }
 }

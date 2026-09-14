@@ -50,7 +50,8 @@ export function markOdysseySkeletonsDirtyUnder(root: THREE.Object3D | undefined 
   // Prefer tracked skins — covers head-merged skins and avoids missing meshes
   // if traverse is pruned. Also walk childModels.
   const model = root as { skins?: THREE.SkinnedMesh[]; childModels?: THREE.Object3D[] };
-  if(Array.isArray(model.skins)){
+  const hasSkins = Array.isArray(model.skins) && model.skins.length > 0;
+  if(hasSkins){
     for(let i = 0; i < model.skins.length; i++){
       markOdysseySkeletonDirty(model.skins[i]?.skeleton);
     }
@@ -60,6 +61,8 @@ export function markOdysseySkeletonsDirtyUnder(root: THREE.Object3D | undefined 
       markOdysseySkeletonsDirtyUnder(model.childModels[i]);
     }
   }
+  // When skins[] is populated, skip full traverse — tracked list is authoritative.
+  if(hasSkins){ return; }
   if(typeof (root as any).traverse !== 'function'){ return; }
   root.traverse((obj) => {
     const skin = obj as THREE.SkinnedMesh;

@@ -7,6 +7,8 @@ export * from "@/odyssey/OdysseyModelNodeMesh";
 export * from "@/odyssey/OdysseyModelAnimation";
 export * from "@/odyssey/OdysseyModelAnimationManager";
 export * from "@/odyssey/AnimRun";
+export * from "@/odyssey/BoundAnimation";
+export * from "@/odyssey/resolveFrameCursor";
 export * from "@/odyssey/OdysseyModelAnimationNode";
 export * from "@/odyssey/OdysseyModelNodeAABB";
 export * from "@/odyssey/OdysseyModelNodeAnimMesh";

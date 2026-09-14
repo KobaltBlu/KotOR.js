@@ -1,4 +1,5 @@
 import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
+import type { OdysseyController } from "@/odyssey/controllers/OdysseyController";
 import { AuroraAnimationFlag } from "@/enums/animation/AuroraAnimationFlag";
 import type { OdysseyModelAnimationManagerState } from "@/enums/odyssey/OdysseyModelAnimationManagerState";
 
@@ -16,6 +17,10 @@ export const ANIM_RUN_DEFAULT_TRANSITION = 0;
  * Aurora AnimRun (~0x24) — one clip instance on a Gob stack.
  * Retail layout: animation*, speed, flags, prevTime, curTime, weight,
  * transition, scale, deactivated.
+ *
+ * Frame cursors are playback state (per run), never stored on shared
+ * OdysseyController assets. Phase-1 uses Map; BoundAnimation migrates to
+ * Int32Array indexed by BoundController.cursorIndex.
  */
 export interface AnimRun {
   animation: OdysseyModelAnimation;
@@ -35,6 +40,18 @@ export interface AnimRun {
    * Mirrors retail Animate skipping runs with 0x20 set.
    */
   queued: boolean;
+  /**
+   * Per-controller keyframe cursors for this run only.
+   * Lazy-allocated on first sample. Prefer frameCursorArray when bound.
+   */
+  frameCursors?: Map<OdysseyController, number>;
+  /**
+   * BoundAnimation Int32Array cursors (Phase 2). Indexed by
+   * BoundController.cursorIndex. When set, preferred over frameCursors Map.
+   */
+  frameCursorArray?: Int32Array;
+  /** BoundAnimation used to size/index frameCursorArray. */
+  boundAnimation?: import("@/odyssey/BoundAnimation").BoundAnimation;
 }
 
 export function isOverlayRun(run: AnimRun): boolean {
@@ -54,6 +71,16 @@ export function isLoopingRun(run: AnimRun): boolean {
 
 export function isQueuedRun(run: AnimRun): boolean {
   return run.queued || !!(run.flags & AuroraAnimationFlag.QUEUE);
+}
+
+/** Clear keyframe cursors after an explicit elapsed seek/reset/reuse. */
+export function invalidateAnimRunFrameCursors(run: AnimRun): void {
+  if(run.frameCursors){
+    run.frameCursors.clear();
+  }
+  if(run.frameCursorArray){
+    run.frameCursorArray.fill(0);
+  }
 }
 
 export function createAnimRun(
