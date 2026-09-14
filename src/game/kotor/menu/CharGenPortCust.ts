@@ -202,6 +202,7 @@ export class CharGenPortCust extends GameMenu {
   playPauseAnimation(creature: { model?: OdysseyModel3D }) {
     try{
       creature?.model?.playAnimation?.('pause1', true);
+      creature?.model?.update?.(1.0);
     }catch(e){
       // ignore missing anim
     }
@@ -221,6 +222,7 @@ export class CharGenPortCust extends GameMenu {
         this._3dView.addModel(this.sceneModel3D);
         // PlayAnimation("default") on cghead_light
         this.sceneModel3D.playAnimation('default', true);
+        this.sceneModel3D.update(1.0);
         this.updateCamera();
       }catch(e){
         console.error(e);

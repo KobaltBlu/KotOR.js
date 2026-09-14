@@ -135,6 +135,7 @@ export class MainMenu extends GameMenu {
           this._3dView.addModel(this._3dViewModel);
           TextureLoader.LoadQueue().then(() => {
             this._3dViewModel.playAnimation(0, true);
+            this._3dViewModel.update(1.0);
             resolve();
           }).catch(() => resolve());
         }).catch(() => resolve());

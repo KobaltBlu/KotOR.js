@@ -163,6 +163,7 @@ export class MenuCharacter extends K1_MenuCharacter {
 
           TextureLoader.LoadQueue().then(() => {
             this._3dViewModel.playAnimation(0, true);
+            this._3dViewModel.update(1.0);
             resolve();
           });
         }).catch( (e: any) => {

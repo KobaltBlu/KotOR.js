@@ -115,6 +115,7 @@ export class MenuGalaxyMap extends GameMenu {
     this._3dView.addModel(this._3dViewModel);
     // PlayAnimation("default", 1.0, 0) — keep spinning for visual parity
     this._3dViewModel.playAnimation('default', true);
+    this._3dViewModel.update(1.0);
 
     this.bindPlanetButtons();
 

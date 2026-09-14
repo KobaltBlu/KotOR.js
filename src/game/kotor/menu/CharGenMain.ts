@@ -138,6 +138,7 @@ export class CharGenMain extends GameMenu {
           this.updateCamera();
           // Setup3DScene plays alignment anim on charrec_light; chargen starts neutral.
           this._3dViewModel.playAnimation?.('align10', true);
+          this._3dViewModel.update?.(1.0);
           resolve();
         },
         context: this._3dView

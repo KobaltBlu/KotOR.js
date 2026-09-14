@@ -141,6 +141,8 @@ export class MenuPartySelection extends K1_MenuPartySelection {
 
           this.LBL_3D_VIEW.camera.updateProjectionMatrix();
           this.LBL_3D_VIEW.visible = true;
+          this.LBL_3D_VIEW.model.playAnimation(0, true);
+          this.LBL_3D_VIEW.model.update(1.0);
           resolve();
         }).catch(() => {
           resolve();

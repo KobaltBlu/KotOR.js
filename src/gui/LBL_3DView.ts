@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { GameState } from "@/GameState";
 import type { LightManager } from "@/managers";
-import { OdysseyModel3D, OdysseyLightingBinder } from "@/three/odyssey";
+import { OdysseyModel3D, OdysseyEmitter3D, OdysseyLightingBinder } from "@/three/odyssey";
 import type { GUIControl } from "@/gui/GUIControl";
 import { asExtentInt } from "@/gui/GUICoord";
 import { runOdysseyDepthPrepass } from "@/utility/odysseyDepthPrepass";
@@ -63,6 +63,12 @@ export class LBL_3DView {
    * GUI gobs score / nearest light selection against the subject, not the camera.
    */
   lightFocus = new THREE.Vector3(0, 0, 0);
+
+  /**
+   * Emitters already matured. Async / late attaches warm on next render
+   * (or immediately in addModel) without re-simulating prior emitters.
+   */
+  private warmedEmitters = new WeakSet<OdysseyEmitter3D>();
 
   /** Scratch for AttachTranslate local-space offsets. */
   private static readonly _tmpOffset = new THREE.Vector3();
@@ -276,10 +282,45 @@ export class LBL_3DView {
     }
   }
 
+  /** Collect dict + model emitters for maturity warmup. */
+  private collectEmitters(): OdysseyEmitter3D[] {
+    const seen = new Set<OdysseyEmitter3D>();
+    const list: OdysseyEmitter3D[] = [];
+    const push = (e: unknown) => {
+      if(e instanceof OdysseyEmitter3D && !seen.has(e)){
+        seen.add(e);
+        list.push(e);
+      }
+    };
+    for(const key in this.emitters){
+      push(this.emitters[key]);
+    }
+    this.forEachOdysseyModel((model) => {
+      for(let i = 0; i < model.emitters.length; i++){
+        push(model.emitters[i]);
+      }
+    });
+    return list;
+  }
+
+  /** Mature any emitters in the view that have not been warmed yet. */
+  private warmEmittersIfNeeded(){
+    const emitters = this.collectEmitters();
+    for(let i = 0; i < emitters.length; i++){
+      const e = emitters[i];
+      if(!this.warmedEmitters.has(e)){
+        OdysseyEmitter3D.warmToMaturity(e);
+        this.warmedEmitters.add(e);
+      }
+    }
+  }
+
   render(delta = 0, options?: { skipModelUpdate?: boolean }){
 
     if(!this.visible)
       return;
+
+    this.warmEmittersIfNeeded();
 
     for(let emitter in this.emitters){
       this.emitters[emitter].tick(delta);

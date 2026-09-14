@@ -172,9 +172,11 @@ export class CharGenClass extends GameMenu {
             TextureLoader.LoadQueue().then(() => {
               this.manager.LoadScreen.setProgress((nth + 1) / 6 * 100);
               _3dViewModel.playAnimation(0, true);
+              _3dViewModel.update(1.0);
               // CGPauseCycle(0, 1) — pause1 or pause2
               try {
                 creature.model?.playAnimation?.(this.GetRandomAnimation(), true);
+                creature.model?.update?.(1.0);
               } catch (e) {}
               resolve();
             });

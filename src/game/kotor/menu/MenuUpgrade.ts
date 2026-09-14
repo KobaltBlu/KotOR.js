@@ -317,6 +317,7 @@ export class MenuUpgrade extends GameMenu {
       if(rotNode){
         rotNode.add(itemModel);
         room.playAnimation?.('rotate', true);
+        room.update?.(1.0);
       }else{
         this._3dView.addModel(itemModel);
       }
@@ -327,6 +328,7 @@ export class MenuUpgrade extends GameMenu {
       if(this.category === UpgradeCategory.ARMOR){
         itemModel.playAnimation?.('neutral', true);
       }
+      itemModel.update?.(1.0);
 
       await TextureLoader.LoadQueue().catch(() => {});
     }catch(e){

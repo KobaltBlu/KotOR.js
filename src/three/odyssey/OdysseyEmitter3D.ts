@@ -910,6 +910,16 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     });
   }
 
+  /**
+   * Pre-simulate particles to steady state (100 × 0.1s ticks).
+   * Emitter-only — does not advance model animation.
+   */
+  static warmToMaturity(emitter: OdysseyEmitter3D) {
+    for(let i = 0; i < 100; i++){
+      emitter.tick(OdysseyEmitter3D.MAX_ANIMATE_DT);
+    }
+  }
+
   //Update the emitter
   tick(delta: number = 0){
 

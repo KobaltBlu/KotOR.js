@@ -204,6 +204,7 @@ export class MenuCharacter extends GameMenu {
           TextureLoader.LoadQueue().then(() => {
             this.LBL_3DCHAR.setFillTexture(this.LBL_3DCHAR.getFillTexture());
             this._3dViewModel.playAnimation(0, true);
+            this._3dViewModel.update(1.0);
             resolve();
           });
 
@@ -386,6 +387,7 @@ export class MenuCharacter extends GameMenu {
       void TextureLoader.LoadQueue().then(() => {
         if(gen !== this.portraitGen || !this.char) return;
         this.char.playAnimation(this.getPortraitIdleAnim(goodEvil), true);
+        this.char.update(1.0);
       });
     });
   }
@@ -415,6 +417,7 @@ export class MenuCharacter extends GameMenu {
     else if (goodEvil >= 5) anim = 'align1';
     else anim = 'evil';
     this._3dViewModel.playAnimation(anim);
+    this._3dViewModel.update(1.0);
   }
 
   /** Setup3DScene creature idle: good / neutral / evil thresholds. */

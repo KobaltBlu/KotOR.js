@@ -95,6 +95,7 @@ export class MenuGalaxyMap extends K1_MenuGalaxyMap {
 
           this._3dView.addModel(this._3dViewModel);
           this._3dViewModel.playAnimation('default', true);
+          this._3dViewModel.update(1.0);
 
           this.bindPlanetButtons();
 
