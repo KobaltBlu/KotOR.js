@@ -33,7 +33,7 @@ export const AppProvider = (props: any) => {
   const [showCheatConsole, setShowCheatConsole] = useState<boolean>(false);
   const [showPerformanceMonitor, setShowPerformanceMonitor] = useState<boolean>(false);
 
-  const [showLoadingScreen, setShowLoadingScreen] = useState<boolean>(true);
+  const [showLoadingScreen, setShowLoadingScreen] = useState<boolean>(false);
   const [loadingScreenMessage, setLoadingScreenMessage] = useState<string>('Loading...');
   const [loadingScreenBackgroundURL, setLoadingScreenBackgroundURL] = useState<string>('');
   const [loadingScreenLogoURL, setLoadingScreenLogoURL] = useState<string>('');
@@ -45,6 +45,10 @@ export const AppProvider = (props: any) => {
     setShowEULAModal(showEula);
     setShowGrantModal(showGrant);
     setShowClickToBeginModal(showClickToBegin && !showEula && !showGrant);
+    // Setup modals must stay clickable; the loader sits above them in z-order.
+    if(showEula || showGrant || (showClickToBegin && !showEula && !showGrant)){
+      setShowLoadingScreen(false);
+    }
   };
 
   const onAppReady = () => {

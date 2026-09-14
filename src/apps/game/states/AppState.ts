@@ -64,14 +64,16 @@ export class AppState {
     AppState.eulaAccepted = !!gameEULAConfig.accepted;
     window.localStorage.setItem('acceptEULA', JSON.stringify(eulaState));
 
-    AppState.loaderShow();
-
     console.log('gameEULAConfig', gameEULAConfig);
     console.log('eulaState', eulaState);
     AppState.directoryLocated = await AppState.checkGameDirectory();
     AppState.processEventListener('on-ready', [AppState.eulaAccepted]);
-    if(AppState.eulaAccepted && !AppState.shouldDeferForAudioUnlock()){
+    // Only start loading once EULA is accepted and a game directory is available.
+    // Otherwise leave setup modals interactive (loader would cover them).
+    if(AppState.eulaAccepted && AppState.directoryLocated && !AppState.shouldDeferForAudioUnlock()){
       await AppState.loadGameDirectory();
+    }else{
+      AppState.loaderHide();
     }
   }
 
@@ -108,7 +110,8 @@ export class AppState {
    */
   static async acceptEULA(){
     AppState.eulaAccepted = true;
-    if(AppState.shouldDeferForAudioUnlock()){
+    if(!AppState.directoryLocated || AppState.shouldDeferForAudioUnlock()){
+      AppState.loaderHide();
       AppState.processEventListener('on-preload', []);
       return;
     }
@@ -164,6 +167,7 @@ export class AppState {
       }
     }
     AppState.directoryLocated = false;
+    AppState.loaderHide();
     AppState.processEventListener('on-preload', []);
   }
 
