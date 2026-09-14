@@ -136,13 +136,14 @@ function resolveWeaponWalkRow(weaponType: number): number {
 }
 
 function resolveWeaponRunRow(weaponType: number): number {
+  // ServerToClientAnimation 0x2714 — rifle/heavy (7/9) → runRF (0x156),
+  // not walkRF (0x154). Stun baton (1) falls through to default run.
   switch(weaponType){
-    case 1: return 343;
-    case 2:
-    case 3: return 345;
+    case 2: return 345;
+    case 3: return 343;
     case 4: return 3;
     case 7:
-    case 9: return 340;
+    case 9: return 342;
     default: return 2;
   }
 }

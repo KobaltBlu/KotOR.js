@@ -78,10 +78,22 @@ describe('resolveCreatureAnimation', () => {
   });
 
   it('maps running by weapon type', () => {
-    const animations = makeTable([2, 343, 345, 3]);
+    const animations = makeTable([2, 342, 343, 345, 3]);
     expect(
       resolveCreatureAnimation(ModuleCreatureAnimState.RUNNING, { ...healthy, weaponType: 1 }, animations)
+    ).toBe(animations[2]);
+    expect(
+      resolveCreatureAnimation(ModuleCreatureAnimState.RUNNING, { ...healthy, weaponType: 2 }, animations)
+    ).toBe(animations[345]);
+    expect(
+      resolveCreatureAnimation(ModuleCreatureAnimState.RUNNING, { ...healthy, weaponType: 3 }, animations)
     ).toBe(animations[343]);
+    expect(
+      resolveCreatureAnimation(ModuleCreatureAnimState.RUNNING, { ...healthy, weaponType: 7 }, animations)
+    ).toBe(animations[342]);
+    expect(
+      resolveCreatureAnimation(ModuleCreatureAnimState.RUNNING, { ...healthy, weaponType: 9 }, animations)
+    ).toBe(animations[342]);
     expect(
       resolveCreatureAnimation(ModuleCreatureAnimState.RUNNING, healthy, animations)
     ).toBe(animations[2]);
