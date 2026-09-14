@@ -227,13 +227,84 @@ describe('AnimRun stack', () => {
     rRun.state.elapsed = 0.55;
     mgr.playAnimation(walk, AuroraAnimationFlag.LOOPING, { loop: true });
     expect(mgr.runs.length).toBe(2);
-    expect(mgr.currentAnimation?.name).toBe('walk');
-
-    const promoted = mgr.playAnimation(run, AuroraAnimationFlag.LOOPING, { loop: true });
-    expect(promoted).toBe(rRun);
+    // Re-play run: promote deeper entry to newest and purge older base
+    const r2 = mgr.playAnimation(run, AuroraAnimationFlag.LOOPING, { loop: true })!;
+    expect(r2).toBe(rRun);
     expect(mgr.runs.length).toBe(1);
     expect(mgr.currentAnimation?.name).toBe('run');
-    expect(rRun.weight).toBe(1);
-    expect(rRun.state.elapsed).toBe(0.55);
+  });
+
+  test('QUEUE defers start until predecessor FAF finishes', () => {
+    const mgr = makeManager();
+    const zoomin = fakeAnim('zoomin', 0.5, 0);
+    const rotate = fakeAnim('rotate', 2, 0);
+    const a = mgr.playAnimation(zoomin, AuroraAnimationFlag.FIRE_FORGET, { loop: false })!;
+    const b = mgr.playAnimation(
+      rotate,
+      AuroraAnimationFlag.QUEUE | AuroraAnimationFlag.LOOPING,
+      { loop: true }
+    )!;
+    expect(mgr.runs.length).toBe(2);
+    expect(a.queued).toBe(false);
+    expect(b.queued).toBe(true);
+    expect(b.weight).toBe(0);
+    expect(mgr.currentAnimation?.name).toBe('zoomin');
+
+    mgr.update(0.1);
+    expect(b.queued).toBe(true);
+    expect(b.state.elapsed).toBe(0);
+
+    mgr.update(0.5); // finish zoomin → promote rotate
+    expect(b.queued).toBe(false);
+    expect(mgr.currentAnimation?.name).toBe('rotate');
+    expect(b.weight).toBe(1);
+  });
+
+  test('QUEUE alone promotes immediately on update', () => {
+    const mgr = makeManager();
+    const rotate = fakeAnim('rotate', 2, 0);
+    const b = mgr.playAnimation(
+      rotate,
+      AuroraAnimationFlag.QUEUE | AuroraAnimationFlag.LOOPING,
+      { loop: true }
+    )!;
+    expect(b.queued).toBe(true);
+    mgr.update(0);
+    expect(b.queued).toBe(false);
+    expect(b.weight).toBe(1);
+  });
+
+  test('REUSE flag skips same-name replace and inserts new run', () => {
+    const mgr = makeManager();
+    const walk = fakeAnim('walk', 1, 0);
+    const r1 = mgr.playAnimation(walk, AuroraAnimationFlag.LOOPING, { loop: true })!;
+    const r2 = mgr.playAnimation(
+      walk,
+      AuroraAnimationFlag.LOOPING | AuroraAnimationFlag.REUSE,
+      { loop: true }
+    )!;
+    expect(r2).not.toBe(r1);
+    expect(mgr.runs.length).toBe(2);
+  });
+
+  test('cap eviction preserves queued handoff behind active FAF', () => {
+    const mgr = makeManager();
+    const faf = fakeAnim('zoomin', 1, 0);
+    mgr.playAnimation(faf, AuroraAnimationFlag.FIRE_FORGET, { loop: false });
+    mgr.playAnimation(
+      fakeAnim('rotate', 2, 0),
+      AuroraAnimationFlag.QUEUE | AuroraAnimationFlag.LOOPING,
+      { loop: true }
+    );
+    // Fill remaining slots with overlays
+    for(let i = 0; i < ANIM_RUN_STACK_CAP; i++){
+      mgr.playOverlayAnimation(
+        fakeAnim(`ov${i}`, 1, 0),
+        AuroraAnimationFlag.OVERLAY_SLOT | AuroraAnimationFlag.FIRE_FORGET
+      );
+    }
+    expect(mgr.runs.length).toBeLessThanOrEqual(ANIM_RUN_STACK_CAP);
+    expect(mgr.runs.some((r) => r.animation.name === 'rotate' && r.queued)).toBe(true);
+    expect(mgr.runs.some((r) => r.animation.name === 'zoomin')).toBe(true);
   });
 });

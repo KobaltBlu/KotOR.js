@@ -1,5 +1,8 @@
 import { describe, expect, it } from "@jest/globals";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { AnimationPlaybackMode } from "@/enums/animation/AnimationPlaybackMode";
+import { isAnimation2DAFlagSet } from "@/module/animation/animation2daFlag";
+import { resolvePlaybackMode } from "@/module/animation/resolvePlaybackMode";
 import {
   flourishAnimationRow,
   meleeCombatWieldAnimationRow,
@@ -27,26 +30,51 @@ describe("flourish-wield-dispatch", () => {
   });
 });
 
-describe("flourish moving overlay routing (smoke)", () => {
-  const ROW_NAME: Record<number, { name: string; overlay: string }> = {
-    378: { name: "G3F1", overlay: "1" },
-    91: { name: "g1w1", overlay: "0" },
+describe("isAnimation2DAFlagSet", () => {
+  it("accepts boolean true, numeric 1, and string '1'", () => {
+    expect(isAnimation2DAFlagSet(true)).toBe(true);
+    expect(isAnimation2DAFlagSet(1)).toBe(true);
+    expect(isAnimation2DAFlagSet("1")).toBe(true);
+  });
+
+  it("rejects false, 0, '0', undefined", () => {
+    expect(isAnimation2DAFlagSet(false)).toBe(false);
+    expect(isAnimation2DAFlagSet(0)).toBe(false);
+    expect(isAnimation2DAFlagSet("0")).toBe(false);
+    expect(isAnimation2DAFlagSet(undefined)).toBe(false);
+  });
+
+  it("regression: String(true)==='1' was the broken overlay gate", () => {
+    expect(String(true) === "1").toBe(false);
+    expect(isAnimation2DAFlagSet(true)).toBe(true);
+  });
+});
+
+describe("flourish moving overlay routing", () => {
+  const ROW_NAME: Record<number, { name: string; overlay: boolean }> = {
+    378: { name: "G3F1", overlay: true },
+    91: { name: "g1w1", overlay: false },
   };
 
+  /** Mirrors ModuleCreature.isFlourishMoving (PC axes path). */
   function isFlourishMoving(host: {
+    isPlayer?: boolean;
+    isPM?: boolean;
+    isPC?: boolean;
     speed: number;
     force: number;
-    animationState: { index: number };
+    playerControl?: { axisForward: number; axisRight: number };
   }): boolean {
-    if(host.speed > 0.01 || host.force > 0.01){
-      return true;
+    const pc = host.playerControl;
+    if(pc && (host.isPlayer || host.isPM || host.isPC)){
+      return Math.abs(pc.axisForward) > 1e-4 || Math.abs(pc.axisRight) > 1e-4;
     }
-    const idx = host.animationState?.index;
-    return (
-      idx === ModuleCreatureAnimState.WALKING ||
-      idx === ModuleCreatureAnimState.RUNNING ||
-      idx === ModuleCreatureAnimState.WALKING_BACK
-    );
+    return host.speed > 0.01 || host.force > 0.01;
+  }
+
+  /** Mirrors updateAnimationState overlayOk gate. */
+  function overlayOk(animation: { overlay?: unknown } | undefined): boolean {
+    return !!animation && isAnimation2DAFlagSet(animation.overlay);
   }
 
   function routeFlourish(moving: boolean, weaponType: number){
@@ -66,34 +94,68 @@ describe("flourish moving overlay routing (smoke)", () => {
       serverId: ModuleCreatureAnimState.MELEE_COMBAT_WIELD,
       row,
       name: ROW_NAME[row]?.name?.toLowerCase() || "g1w1",
-      overlay: ROW_NAME[row]?.overlay || "0",
+      overlay: ROW_NAME[row]?.overlay ?? false,
+      duration: 1.5,
     };
   }
 
-  it("while moving routes to MELEE_WIELD overlay G*F1, not FLOURISH base", () => {
+  it("while stick held routes to MELEE_WIELD overlay G*F1 even if speed is 0", () => {
     const host = {
+      isPlayer: true,
       speed: 0,
       force: 0,
-      animationState: { index: ModuleCreatureAnimState.RUNNING },
+      playerControl: { axisForward: 1, axisRight: 0 },
     };
     expect(isFlourishMoving(host)).toBe(true);
     const route = routeFlourish(true, 1);
     expect(route.path).toBe("overlay");
     expect(route.serverId).toBe(ModuleCreatureAnimState.MELEE_WIELD);
     expect(route.name).toBe("g3f1");
-    expect(route.overlay).toBe("1");
+    expect(overlayOk({ overlay: route.overlay })).toBe(true);
     expect(route.serverId).not.toBe(ModuleCreatureAnimState.FLOURISH);
   });
 
-  it("while standing routes to MELEE_COMBAT_WIELD fireforget", () => {
+  it("while stick released takes standing path even if still coasting in anim", () => {
     const host = {
-      speed: 0,
+      isPlayer: true,
+      speed: 3,
       force: 0,
-      animationState: { index: ModuleCreatureAnimState.PAUSE },
+      playerControl: { axisForward: 0, axisRight: 0 },
     };
     expect(isFlourishMoving(host)).toBe(false);
     const route = routeFlourish(false, 1);
     expect(route.path).toBe("fireforget");
     expect(route.serverId).toBe(ModuleCreatureAnimState.MELEE_COMBAT_WIELD);
+    expect(route.duration).toBe(1.5);
+  });
+
+  it("strafe axis alone counts as moving", () => {
+    expect(
+      isFlourishMoving({
+        isPC: true,
+        speed: 0,
+        force: 0,
+        playerControl: { axisForward: 0, axisRight: -0.5 },
+      })
+    ).toBe(true);
+  });
+
+  it("NPC without playerControl falls back to speed/force", () => {
+    expect(isFlourishMoving({ speed: 2, force: 0 })).toBe(true);
+    expect(isFlourishMoving({ speed: 0, force: 0 })).toBe(false);
+  });
+
+  it("boolean overlay on SWAnimation shape opens the playback gate", () => {
+    expect(overlayOk({ overlay: true })).toBe(true);
+    expect(overlayOk({ overlay: false })).toBe(false);
+    expect(overlayOk(undefined)).toBe(false);
+  });
+});
+
+describe("resolvePlaybackMode boolean overlay fallback", () => {
+  it("returns OVERLAY for SWAnimation.overlay === true", () => {
+    expect(resolvePlaybackMode(10000, { overlay: true } as any)).toBe(
+      AnimationPlaybackMode.OVERLAY
+    );
   });
 });

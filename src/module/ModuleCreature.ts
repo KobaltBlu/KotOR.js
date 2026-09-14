@@ -74,6 +74,7 @@ import {
   resolveOverlayStopFlags,
   resolveOverlayStartFlags,
 } from "@/module/animation/resolvePlaybackMode";
+import { isAnimation2DAFlagSet } from "@/module/animation/animation2daFlag";
 import {
   combatAnimationAttackKey,
   combatAnimationWeaponDigit,
@@ -557,7 +558,7 @@ export class ModuleCreature extends ModuleObject {
   overlayAnimationState: IOverlayAnimationState;
   /** Standing fire-forget body gesture (e.g. flourish while idle). */
   gestureState: IGestureAnimationState;
-  /** Weapon-item Gob gesture (flourish while moving). */
+  /** Weapon-item Gob gesture (equip draw / PowerItem paths — not moving flourish). */
   weaponGestureState: IWeaponGestureState;
   /** Last XY used for grass point-source gusts. */
   private _grassGustLastX = Number.NaN;
@@ -2009,7 +2010,7 @@ export class ModuleCreature extends ModuleObject {
     // Overlay runs concurrently with drive — never early-return past locomotion.
     if(this.overlayAnimationState.animationName && !this.isDead()){
       const overlayOk = this.overlayAnimationState.animation
-        && String(this.overlayAnimationState.animation.overlay) === '1';
+        && isAnimation2DAFlagSet(this.overlayAnimationState.animation.overlay);
       if(overlayOk){
         const overlayPlaying = this.model.animationManager?.overlayAnimation?.name?.toLowerCase()
           === this.overlayAnimationState.animationName.toLowerCase();
@@ -2019,7 +2020,7 @@ export class ModuleCreature extends ModuleObject {
             this.overlayAnimationState.animationName,
             this.overlayAnimationState.animation
           );
-        }else if(!overlayPlaying && String(this.overlayAnimationState.animation.looping) !== '1'){
+        }else if(!overlayPlaying && !isAnimation2DAFlagSet(this.overlayAnimationState.animation.looping)){
           this.stopOverlayAnimation();
         }
       }else if(this.overlayAnimationState.started){
@@ -2980,7 +2981,7 @@ export class ModuleCreature extends ModuleObject {
 
     const anim = OdysseyModelAnimation.GetAnimation2DA(animationName);
     const mode = resolvePlaybackMode(NWScriptAnimId, anim);
-    if(mode === AnimationPlaybackMode.OVERLAY || (anim && String(anim.overlay) === '1')){
+    if(mode === AnimationPlaybackMode.OVERLAY || (anim && isAnimation2DAFlagSet(anim.overlay))){
       this.overlayAnimationState.animationIndex = NWScriptAnimId;
       this.overlayAnimationState.animationName = animationName;
       this.overlayAnimationState.animation = anim;
@@ -3775,15 +3776,11 @@ export class ModuleCreature extends ModuleObject {
    * PlayerFlourishWeapons checks player-control forward/strafe != 0.
    */
   isFlourishMoving(): boolean {
-    if(this.speed > 0.01 || this.force > 0.01){
-      return true;
+    const pc = this.playerControl;
+    if(pc && (this.isPlayer || this.isPM || this.isPC)){
+      return Math.abs(pc.axisForward) > 1e-4 || Math.abs(pc.axisRight) > 1e-4;
     }
-    const idx = this.animationState?.index;
-    return (
-      idx === ModuleCreatureAnimState.WALKING ||
-      idx === ModuleCreatureAnimState.RUNNING ||
-      idx === ModuleCreatureAnimState.WALKING_BACK
-    );
+    return this.speed > 0.01 || this.force > 0.01;
   }
 
   flourish(){
@@ -3815,11 +3812,9 @@ export class ModuleCreature extends ModuleObject {
       return;
     }
 
-    // Standing: fire-forget body gesture (InsertFireForgetAnimation MELEE_COMBAT_WIELD).
+    // Standing: fire-forget body gesture (InsertFireForgetAnimation MELEE_COMBAT_WIELD, 0x5dc).
     const combatWield = this.animationConstantToAnimation(ModuleCreatureAnimState.MELEE_COMBAT_WIELD);
-    const duration = this.getAnimationLength(ModuleCreatureAnimState.MELEE_COMBAT_WIELD)
-      || this.getAnimationLength(ModuleCreatureAnimState.FLOURISH)
-      || 1.5;
+    const duration = 1.5;
     this.setAnimationState(ModuleCreatureAnimState.MELEE_COMBAT_WIELD);
     // Ensure clip resolves even if setAnimationState left animation undefined for edge types.
     if(!this.animationState.animation && combatWield){

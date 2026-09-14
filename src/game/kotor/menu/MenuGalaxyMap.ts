@@ -61,9 +61,6 @@ export class MenuGalaxyMap extends GameMenu {
   /** Selected planet button held in highlight (Draw SetActive(1)). */
   private activePlanetControl: GUIControl | undefined;
 
-  /** After DisplayPlanet, wait for zoomin to finish then start rotate. */
-  private pendingPlanetRotate: boolean = false;
-
   constructor(){
     super();
     this.gui_resref = 'galaxymap';
@@ -208,20 +205,31 @@ export class MenuGalaxyMap extends GameMenu {
         this._3dViewPlanet.camera.quaternion.copy(model.camerahook.quaternion);
         this._3dViewPlanet.addModel(this._3dViewPlanetModel);
 
-        this.pendingPlanetRotate = false;
         if(animate){
-          // : PlayAnimation("zoomin", FIRE_FORGET) then
-          // PlayAnimation("rotate", QUEUE=0x20). Manager QUEUE support is
-          // incomplete, so hand off to rotate when zoomin ends.
+          // DisplayPlanet: PlayAnimation("zoomin", FIRE_FORGET) then
+          // PlayAnimation("rotate", QUEUE|LOOPING) — manager promotes rotate
+          // when zoomin finishes (Gob::Animate 0x20).
           const zoomin = model.odysseyAnimationMap.get('zoomin');
+          const rotate = model.odysseyAnimationMap.get('rotate');
           if(zoomin){
-            model.animationManager.playAnimation(zoomin, AuroraAnimationFlag.FIRE_FORGET, { loop: false });
-            this.pendingPlanetRotate = true;
-          }else{
-            const rotate = model.odysseyAnimationMap.get('rotate');
+            model.animationManager.playAnimation(
+              zoomin,
+              AuroraAnimationFlag.FIRE_FORGET,
+              { loop: false }
+            );
             if(rotate){
-              model.animationManager.playAnimation(rotate, AuroraAnimationFlag.LOOPING, { loop: true });
+              model.animationManager.playAnimation(
+                rotate,
+                AuroraAnimationFlag.QUEUE | AuroraAnimationFlag.LOOPING,
+                { loop: true }
+              );
             }
+          }else if(rotate){
+            model.animationManager.playAnimation(
+              rotate,
+              AuroraAnimationFlag.LOOPING,
+              { loop: true }
+            );
           }
         }
 
@@ -293,21 +301,6 @@ export class MenuGalaxyMap extends GameMenu {
         if(planetModel.camerahook){
           _3dView.camera.position.copy(planetModel.camerahook.position);
           _3dView.camera.quaternion.copy(planetModel.camerahook.quaternion);
-        }
-
-        if(this.pendingPlanetRotate){
-          const name = planetModel.getAnimationName()?.toLowerCase();
-          if(!name || name !== 'zoomin'){
-            const rotate = planetModel.odysseyAnimationMap.get('rotate');
-            if(rotate){
-              planetModel.animationManager.playAnimation(
-                rotate,
-                AuroraAnimationFlag.LOOPING,
-                { loop: true }
-              );
-            }
-            this.pendingPlanetRotate = false;
-          }
         }
       }
 

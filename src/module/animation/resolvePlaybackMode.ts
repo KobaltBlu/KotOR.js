@@ -1,42 +1,34 @@
 import { AnimationPlaybackMode } from "@/enums/animation/AnimationPlaybackMode";
 import type { SWAnimation } from "@/engine/rules/SWAnimation";
+import { isAnimation2DAFlagSet } from "@/module/animation/animation2daFlag";
+import {
+  OVERLAY_START_NO_FIRE_FORGET_IDS,
+  OVERLAY_STOP_ADDITIVE_IDS,
+  resolveModeFromRetailSets,
+  SET_ANIMATION_OVERLAY_IDS,
+} from "@/module/animation/setAnimationModeTables";
 
 /**
- * reverse-mode special server ID (SetAnimation mode tables).
- * Outside band A/B tables → defaults to NORMAL except this ID.
+ * reverse-mode special server ID (SetAnimation 0x2810).
+ * Also covered by SET_ANIMATION_REVERSE_IDS; kept for callers/tests.
  */
 export const ANIMATION_REVERSE_SERVER_ID = 10256;
 
 /**
- * Server IDs that SetOverlayAnimation  treats as additive
- * (flag 0x400 on stop). Used as a mode-1 overlay band when 2DA overlay is unset.
- */
-const OVERLAY_ADDITIVE_SERVER_IDS = new Set<number>([
-  0x272d, 0x272e, 0x2732,
-  0x2736, 0x2737, 0x2738, 0x2739, 0x273a,
-  0x2756, 0x2757,
-  0x2798, 0x27a1,
-  0x27aa, 0x27ab,
-]);
-
-/**
  * Resolve SetAnimation playback mode for a creature server animation ID.
- * Prefer embedded overlay-ID set + animations.2da `overlay` column; full
- * kSetAnimationModeA/B tables remain a follow-up extraction.
+ * Prefer retail SetAnimationInternal switch sets; animations.2da `overlay`
+ * column remains a fallback for IDs outside the switch.
  */
 export function resolvePlaybackMode(
   serverId: number,
   twoDA?: SWAnimation | null
 ): AnimationPlaybackMode {
-  if(serverId === ANIMATION_REVERSE_SERVER_ID){
-    return AnimationPlaybackMode.REVERSE;
+  const fromTables = resolveModeFromRetailSets(serverId);
+  if(fromTables !== AnimationPlaybackMode.NORMAL){
+    return fromTables;
   }
 
-  if(OVERLAY_ADDITIVE_SERVER_IDS.has(serverId & 0xffff)){
-    return AnimationPlaybackMode.OVERLAY;
-  }
-
-  if(twoDA && String(twoDA.overlay) === '1'){
+  if(twoDA && isAnimation2DAFlagSet(twoDA.overlay)){
     return AnimationPlaybackMode.OVERLAY;
   }
 
@@ -44,25 +36,24 @@ export function resolvePlaybackMode(
 }
 
 /**
- * Aurora flags when starting an overlay (arg3 != 0 → 0x08 | often 0x001).
+ * Aurora flags when starting an overlay (SetOverlayAnimation arg3 != 0).
+ * Retail: base 0x08; OR 0x001 fire-forget except looping overlay bands.
+ * KotOR.js also ORs 0x400 for stop-additive IDs so AnimRun fade matches
+ * additive gesture semantics (retail stop uses 0x400; start is 0x08 only).
  */
 export function resolveOverlayStartFlags(serverId: number): number {
   let flags = 0x08; // OVERLAY_SLOT
   const id = serverId & 0xffff;
-  if(OVERLAY_ADDITIVE_SERVER_IDS.has(id)){
-    flags |= 0x400; // ADDITIVE_GESTURE
+  if(OVERLAY_STOP_ADDITIVE_IDS.has(id) || SET_ANIMATION_OVERLAY_IDS.has(id)){
+    // Additive gesture fade-out on the Gob stack
+    if(OVERLAY_STOP_ADDITIVE_IDS.has(id)){
+      flags |= 0x400;
+    }
   }
-  // ORs fire-forget (0x001) except for certain looping overlay bands.
-  if(id < 0x273b){
-    if(id > 0x2735){
-      return flags;
-    }
-    if(id === 0x175 || id === 0x272e){
-      return flags;
-    }
-  }else if(id > 0x27a9 && id < 0x27ac){
+  if(OVERLAY_START_NO_FIRE_FORGET_IDS.has(id)){
     return flags;
   }
+  // Retail: ids in 0x2736..0x273a already covered above; remaining get FAF
   return flags | 0x001;
 }
 
@@ -72,7 +63,7 @@ export function resolveOverlayStartFlags(serverId: number): number {
  */
 export function resolveOverlayStopFlags(serverId: number): number {
   const id = serverId & 0xffff;
-  if(OVERLAY_ADDITIVE_SERVER_IDS.has(id)){
+  if(OVERLAY_STOP_ADDITIVE_IDS.has(id)){
     return 0x400;
   }
   return 0x80;

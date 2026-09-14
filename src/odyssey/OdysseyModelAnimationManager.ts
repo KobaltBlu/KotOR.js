@@ -15,13 +15,14 @@ import {
   isAdditiveRun,
   isLoopingRun,
   isOverlayRun,
+  isQueuedRun,
 } from "@/odyssey/AnimRun";
 
 /**
- * OdysseyModelAnimationManager — Gob AnimRun stack (-style MVP).
+ * OdysseyModelAnimationManager — Gob AnimRun multi-clip stack.
  *
- * Ordered `runs` (oldest = base). Per-run blend weight + Aurora flags.
- * Compatibility: `currentAnimation` / `overlayAnimation` accessors map to
+ * Ordered `runs` (oldest first). Per-run blend weight + Aurora flags
+ * including QUEUE (0x20) deferred start. Compatibility accessors map to
  * primary base and newest overlay runs.
  *
  * @file OdysseyModelAnimationManager.ts
@@ -139,8 +140,9 @@ export class OdysseyModelAnimationManager {
    */
   getActiveBaseRun(): AnimRun | undefined {
     for(let i = this.runs.length - 1; i >= 0; i--){
-      if(!isOverlayRun(this.runs[i]) && !this.runs[i].done){
-        return this.runs[i];
+      const r = this.runs[i];
+      if(!isOverlayRun(r) && !r.done && !isQueuedRun(r)){
+        return r;
       }
     }
     return undefined;
@@ -168,7 +170,7 @@ export class OdysseyModelAnimationManager {
     const want = name.toLowerCase();
     for(let i = 0; i < this.runs.length; i++){
       const r = this.runs[i];
-      if(isOverlayRun(r) || r.done || r.fadingOut) continue;
+      if(isOverlayRun(r) || r.done || r.fadingOut || isQueuedRun(r)) continue;
       if(r.animation?.name?.toLowerCase() === want) return true;
     }
     return false;
@@ -231,7 +233,7 @@ export class OdysseyModelAnimationManager {
   // --- Play / stop ---
 
   /**
-   * Insert an AnimRun (PlayAnimation).
+   * Insert an AnimRun (Gob::PlayAnimation).
    * @returns the new or reused run
    */
   playAnimation(
@@ -243,7 +245,10 @@ export class OdysseyModelAnimationManager {
       return undefined;
     }
 
-    // Additive reuse: same name already active with 0x400 → refresh that run
+    const incomingQueued = !!(flags & AuroraAnimationFlag.QUEUE);
+    const skipSameName = !!(flags & AuroraAnimationFlag.REUSE);
+
+    // Additive same-name: OR flags and refresh (retail 0x400 path)
     if(flags & AuroraAnimationFlag.ADDITIVE_GESTURE){
       for(let i = 0; i < this.runs.length; i++){
         const existing = this.runs[i];
@@ -255,6 +260,8 @@ export class OdysseyModelAnimationManager {
           existing.flags |= flags;
           existing.fadingOut = false;
           existing.done = false;
+          existing.queued = false;
+          existing.flags &= ~AuroraAnimationFlag.QUEUE;
           existing.weight = Math.max(existing.weight, 0.01);
           existing.state.elapsed = state?.elapsed ?? 0;
           existing.state.lastTime = 0;
@@ -271,14 +278,14 @@ export class OdysseyModelAnimationManager {
       !!(flags & AuroraAnimationFlag.OVERLAY_SLOT) ||
       !!(flags & AuroraAnimationFlag.ADDITIVE_GESTURE);
 
-    // Base same-name promote (0x40 spirit): reuse any matching base on
-    // the stack — not only newest — so walk↔run chatter does not stack weight-0.
-    if(!incomingOverlay){
+    // Same-name base replace when REUSE (0x40) is clear — retail default.
+    // When REUSE is set, skip and allocate a new run.
+    if(!incomingOverlay && !incomingQueued && !skipSameName){
       const want = anim.name?.toLowerCase();
       let matchIdx = -1;
       for(let i = 0; i < this.runs.length; i++){
         const existing = this.runs[i];
-        if(isOverlayRun(existing) || existing.done) continue;
+        if(isOverlayRun(existing) || existing.done || isQueuedRun(existing)) continue;
         if(existing.animation?.name?.toLowerCase() === want){
           matchIdx = i;
           break;
@@ -288,6 +295,8 @@ export class OdysseyModelAnimationManager {
         const existing = this.runs[matchIdx];
         existing.fadingOut = false;
         existing.done = false;
+        existing.queued = false;
+        existing.flags &= ~AuroraAnimationFlag.QUEUE;
         if(state?.loop || (flags & AuroraAnimationFlag.LOOPING)){
           existing.state.loop = true;
           existing.flags |= AuroraAnimationFlag.LOOPING;
@@ -297,7 +306,6 @@ export class OdysseyModelAnimationManager {
         }
         if(typeof state?.speed === "number") existing.state.speed = state.speed;
         if(state?.animation !== undefined) existing.state.animation = state.animation;
-        // Keep elapsed; snap visible so pose does not freeze on a weight-0 insert
         existing.weight = 1;
         if(matchIdx !== this.runs.length - 1){
           this.runs.splice(matchIdx, 1);
@@ -317,18 +325,23 @@ export class OdysseyModelAnimationManager {
 
     // transtime fades between two clips. With no partner base, weight-0
     // lerps from a static skeleton (freeze/slide) — start fully visible.
-    if(!incomingOverlay){
-      const hasPartnerBase = this.runs.some((r) => !isOverlayRun(r) && !r.done);
+    // Queued runs stay at weight 0 until promoted.
+    if(!incomingOverlay && !incomingQueued){
+      const hasPartnerBase = this.runs.some(
+        (r) => !isOverlayRun(r) && !r.done && !isQueuedRun(r)
+      );
       if(!hasPartnerBase){
         run.weight = 1;
       }
     }
 
-    this.ensureStackCapacity(incomingOverlay);
+    this.ensureStackCapacity(incomingOverlay, incomingQueued);
     this.runs.push(run);
 
-    // Immediate base replace when no transition
-    if(!incomingOverlay && run.weight >= 1){
+    // Non-overlay non-QUEUE at full weight: purge older bases.
+    // REUSE (0x40) keeps the prior same-name on stack for crossfade until
+    // the new run reaches weight 1 (retail inserts without same-name remove).
+    if(!incomingOverlay && !incomingQueued && !skipSameName && run.weight >= 1){
       this.purgeOlderNonOverlay(run);
     }
 
@@ -403,14 +416,24 @@ export class OdysseyModelAnimationManager {
     this.playOverlayAnimation(anim, flags, state);
   }
 
-  /** Clear all non-overlay runs (and optionally everything). */
+  /** Clear all runs (full stop). Overlays are cleared too. */
   stopAnimation(){
-    this.runs = this.runs.filter((r) => isOverlayRun(r) && !r.done);
-    // Also clear overlays for full stop parity with old stopAnimation
     this.runs = [];
     this.lastAnimation = undefined;
     this.lastAnimationState = this.createAnimationState();
     this.transElapsed = 0;
+  }
+
+  /**
+   * Clear non-overlay runs. When keepOverlay is true, overlay/additive runs remain.
+   */
+  clearBaseRuns(keepOverlay: boolean = true){
+    if(keepOverlay){
+      this.runs = this.runs.filter((r) => isOverlayRun(r) && !r.done);
+    }else{
+      this.runs = [];
+    }
+    this.syncLegacyLastAnimation();
   }
 
   /**
@@ -454,10 +477,17 @@ export class OdysseyModelAnimationManager {
   update(delta = 0){
     if(!this.model) return;
 
-    // Advance + weight ramp (newest→oldest for bookkeeping is fine; we iterate all)
+    // Promote queued runs whose predecessors have finished (Gob::Animate 0x20).
+    this.promoteQueuedRuns();
+
+    // Advance + weight ramp (skip still-queued)
     for(let i = this.runs.length - 1; i >= 0; i--){
+      if(isQueuedRun(this.runs[i])) continue;
       this.advanceRun(this.runs[i], delta);
     }
+
+    // After FAF finish starts fading, promote any queued sibling under it.
+    this.promoteQueuedRuns();
 
     // Purge done / zero-weight
     for(let i = this.runs.length - 1; i >= 0; i--){
@@ -470,21 +500,20 @@ export class OdysseyModelAnimationManager {
     // When a non-overlay run reaches full weight, drop older bases
     for(let i = 0; i < this.runs.length; i++){
       const run = this.runs[i];
-      if(!isOverlayRun(run) && run.weight >= 1 && !run.fadingOut){
+      if(!isOverlayRun(run) && !isQueuedRun(run) && run.weight >= 1 && !run.fadingOut){
         this.purgeOlderNonOverlay(run);
       }
     }
 
     this.beginMatrixBatch();
     try{
-      // Pose: oldest -> newest, blend by weight
+      // Pose: oldest -> newest, blend by weight (skip queued)
       if(this.model.bonesInitialized && this.model.animateFrame){
       for(let i = 0; i < this.runs.length; i++){
         const run = this.runs[i];
-        if(!run.animation || run.weight <= 1e-4) continue;
+        if(!run.animation || run.weight <= 1e-4 || isQueuedRun(run)) continue;
         const rate =
           typeof run.state.speed === "number" ? run.state.speed : 1;
-        // state.delta already advanced; apply pose at current elapsed
         this.applyRunPose(run, Math.abs(rate) > 0 ? run.weight : 0);
       }
     }
@@ -512,6 +541,40 @@ export class OdysseyModelAnimationManager {
     }
 
     this.syncLegacyLastAnimation();
+  }
+
+  /**
+   * Clear QUEUE on the oldest queued run that has no active non-queued
+   * predecessor (retail Animate promotes when FAF ends / tip is queued).
+   */
+  private promoteQueuedRuns(){
+    for(let i = 0; i < this.runs.length; i++){
+      const run = this.runs[i];
+      if(!isQueuedRun(run) || run.done) continue;
+
+      let blocked = false;
+      for(let j = 0; j < i; j++){
+        const prev = this.runs[j];
+        if(isQueuedRun(prev) || prev.done) continue;
+        // Overlays do not block base QUEUE handoff
+        if(isOverlayRun(prev)) continue;
+        // Predecessor still playing (not yet finished / fading out)
+        if(!prev.fadingOut){
+          blocked = true;
+          break;
+        }
+      }
+      if(blocked) continue;
+
+      run.queued = false;
+      run.flags &= ~AuroraAnimationFlag.QUEUE;
+      // Start visible unless MDL transition requires a ramp
+      if(!(run.transition > 0)){
+        run.weight = 1;
+      }
+      // Only one promote per pass (FIFO queue)
+      break;
+    }
   }
 
   private advanceRun(run: AnimRun, delta: number){
@@ -599,37 +662,59 @@ export class OdysseyModelAnimationManager {
   private purgeOlderNonOverlay(keep: AnimRun){
     const keepIdx = this.runs.indexOf(keep);
     if(keepIdx < 0) return;
-    // : when a non-overlay run hits weight 1, remove deeper (older) bases only
+    // When a non-overlay run hits weight 1, remove older bases only.
+    // Preserve queued runs that are waiting behind the keep run.
     for(let i = keepIdx - 1; i >= 0; i--){
-      if(!isOverlayRun(this.runs[i])){
-        this.runs.splice(i, 1);
-      }
+      const r = this.runs[i];
+      if(isOverlayRun(r) || isQueuedRun(r)) continue;
+      this.runs.splice(i, 1);
     }
   }
 
-  private clearBaseRuns(_keepOverlay: boolean){
-    if(_keepOverlay){
-      this.runs = this.runs.filter((r) => isOverlayRun(r));
-    }else{
-      this.runs = this.runs.filter((r) => isOverlayRun(r));
-    }
-  }
-
-  private ensureStackCapacity(incomingOverlay: boolean){
+  /**
+   * Evict to make room for a new run. Prefer done → oldest finished-looking
+   * overlay → oldest non-overlay (when inserting base). Never evict a queued
+   * run that is the sole pending handoff behind an active FAF, and prefer
+   * not evicting that FAF predecessor either.
+   */
+  private ensureStackCapacity(incomingOverlay: boolean, incomingQueued: boolean = false){
     while(this.runs.length >= ANIM_RUN_STACK_CAP){
-      // Evict oldest finished, else oldest non-overlay, else oldest
       let idx = this.runs.findIndex((r) => r.done);
-      if(idx < 0 && !incomingOverlay){
-        idx = this.runs.findIndex((r) => !isOverlayRun(r));
+      if(idx < 0){
+        // Prefer evicting an overlay that is not the only stack content
+        idx = this.runs.findIndex((r) => isOverlayRun(r));
+      }
+      if(idx < 0 && !incomingOverlay && !incomingQueued){
+        idx = this.runs.findIndex(
+          (r) => !isOverlayRun(r) && !isQueuedRun(r) && !this.isQueueHandoffPredecessor(r)
+        );
+      }
+      if(idx < 0){
+        idx = this.runs.findIndex(
+          (r) => !isQueuedRun(r) && !this.isQueueHandoffPredecessor(r)
+        );
       }
       if(idx < 0) idx = 0;
       this.runs.splice(idx, 1);
     }
   }
 
+  /** True if this run is an active base with a queued successor (galaxy handoff). */
+  private isQueueHandoffPredecessor(run: AnimRun): boolean {
+    if(isOverlayRun(run) || isQueuedRun(run) || run.done) return false;
+    const idx = this.runs.indexOf(run);
+    if(idx < 0) return false;
+    for(let i = idx + 1; i < this.runs.length; i++){
+      if(isQueuedRun(this.runs[i]) && !this.runs[i].done) return true;
+    }
+    return false;
+  }
+
   private syncLegacyLastAnimation(){
     // Keep lastAnimation pointing at previous base for any legacy readers
-    const bases = this.runs.filter((r) => !isOverlayRun(r) && !r.done);
+    const bases = this.runs.filter(
+      (r) => !isOverlayRun(r) && !r.done && !isQueuedRun(r)
+    );
     if(bases.length >= 2){
       const prev = bases[bases.length - 2];
       this.lastAnimation = prev.animation;
