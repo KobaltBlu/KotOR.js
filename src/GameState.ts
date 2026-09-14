@@ -2647,10 +2647,10 @@ export class GameState implements EngineContext {
     }
 
     if(GameState.areShadowsEnabled()){
+      // May bump frameEpoch / set _uniformsRefreshNeeded when shadow matrices
+      // changed during the compose pass. Defer the full receiver refresh to the
+      // next frame's pre-compose path so dirty frames do not pay twice.
       GameState.odysseyShadowManager?.noteShadowMapRendered();
-      if(GameState.odysseyShadowManager?.consumeUniformsRefreshNeeded()){
-        OdysseyLightingBinder.refreshSceneShadowMapUniforms(GameState.scene);
-      }
     }
 
     if(RenderPerfStats.enabled){

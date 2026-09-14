@@ -54,6 +54,8 @@ export class OdysseyLightingBinder {
   private static _bindSeen = new Set<THREE.Material>();
   private static _envMapRotation = new THREE.Matrix3();
   private static _envMapRotationFp = 0;
+  /** Materials with USE_ODYSSEY_SHADOW — avoids full scene.traverse on refresh. */
+  private static _shadowReceivers = new Set<THREE.ShaderMaterial>();
 
   static setActiveManager(manager?: LightManager){
     this.activeManager = manager;
@@ -526,8 +528,25 @@ export class OdysseyLightingBinder {
     material.uniformsNeedUpdate = true;
   }
 
+  /**
+   * Track a shadow-receiving material for registry refreshes.
+   * Dispose unwraps so disposed materials do not leak in the set.
+   */
+  static registerShadowReceiver(material: THREE.ShaderMaterial){
+    if(material.userData.odysseyShadowReceiverRegistered){ return; }
+    material.userData.odysseyShadowReceiverRegistered = true;
+    this._shadowReceivers.add(material);
+    const previousDispose = material.dispose.bind(material);
+    material.dispose = () => {
+      OdysseyLightingBinder._shadowReceivers.delete(material);
+      delete material.userData.odysseyShadowReceiverRegistered;
+      previousDispose();
+    };
+  }
+
   /** Rebind live shadow-map texture/matrix right before each shadow receiver draws. */
   static ensureShadowMapBeforeRenderHook(material: THREE.ShaderMaterial){
+    OdysseyLightingBinder.registerShadowReceiver(material);
     if(material.userData.odysseyShadowBeforeRenderHook){ return; }
     material.userData.odysseyShadowBeforeRenderHook = true;
     const previous = material.onBeforeRender;
@@ -550,23 +569,27 @@ export class OdysseyLightingBinder {
     };
   }
 
-  /** Force shadow-map uniform refresh for every receiver under `root`. */
-  static refreshSceneShadowMapUniforms(root: THREE.Object3D){
-    root.traverse((obj) => {
-      const mesh = obj as THREE.Mesh;
-      if(!mesh.isMesh && !(mesh as THREE.SkinnedMesh).isSkinnedMesh){ return; }
-      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-      for(let i = 0; i < mats.length; i++){
-        const material = mats[i];
-        if(!(material instanceof THREE.ShaderMaterial)){ continue; }
-        if(!Object.prototype.hasOwnProperty.call(material.defines || {}, 'USE_ODYSSEY_SHADOW')){
-          continue;
-        }
-        this.ensureShadowMapBeforeRenderHook(material);
-        delete material.userData.odysseyShadowBoundEpoch;
-        this.bindShadowMapUniforms(material, GameState.odysseyShadowManager, GameState.currentCamera ?? undefined);
+  /**
+   * Force shadow-map uniform refresh for every registered receiver.
+   * `root` is retained for call-site compatibility; iteration uses the registry
+   * instead of scene.traverse.
+   */
+  static refreshSceneShadowMapUniforms(_root?: THREE.Object3D){
+    const camera = GameState.currentCamera ?? undefined;
+    const manager = GameState.odysseyShadowManager;
+    // Snapshot so dispose / stale removal during bind cannot disturb iteration.
+    const receivers = Array.from(this._shadowReceivers);
+    for(let i = 0; i < receivers.length; i++){
+      const material = receivers[i];
+      if(!Object.prototype.hasOwnProperty.call(material.defines || {}, 'USE_ODYSSEY_SHADOW')){
+        this._shadowReceivers.delete(material);
+        delete material.userData.odysseyShadowReceiverRegistered;
+        continue;
       }
-    });
+      this.ensureShadowMapBeforeRenderHook(material);
+      delete material.userData.odysseyShadowBoundEpoch;
+      this.bindShadowMapUniforms(material, manager, camera);
+    }
   }
 
   /** @deprecated Use bindShadowMapUniforms */
@@ -643,13 +666,26 @@ export class OdysseyLightingBinder {
    * `'gob'` = nearest light selection (RenderOnlyGobs / GUI AddModel).
    */
   private static bindModelShadowUniforms(model: OdysseyModel3D){
+    const manager = GameState.odysseyShadowManager;
+    const epoch = manager?.frameEpoch ?? 0;
+    const softBound = manager?.softShadowMaps ? 1 : 0;
+    const lightingRev = OdysseyLightingDebug.revision;
+    if(
+      model.userData.odysseyShadowBoundEpoch === epoch &&
+      model.userData.odysseyShadowGatingBound === GameState.shadowAlpha &&
+      model.userData.odysseyBeamingBound === GameState.beamingProjectionAlpha &&
+      model.userData.odysseyShadowSoftBound === softBound &&
+      model.userData.odysseyLightingDebugRevision === lightingRev
+    ){
+      return;
+    }
+
     const seen = this._bindSeen;
     seen.clear();
+    // bindMaterialsUnique already dedupes via `seen`; do not re-check here.
     const bindShadow = (material: THREE.ShaderMaterial) => {
-      if(seen.has(material)){ return; }
-      seen.add(material);
       if(Object.prototype.hasOwnProperty.call(material.defines || {}, 'USE_ODYSSEY_SHADOW')){
-        this.bindShadowMapUniforms(material, GameState.odysseyShadowManager, GameState.currentCamera ?? undefined);
+        this.bindShadowMapUniforms(material, manager, GameState.currentCamera ?? undefined);
       }
     };
     this.bindMaterialsUnique(model.materials, bindShadow, seen);
@@ -658,6 +694,12 @@ export class OdysseyLightingBinder {
         this.bindMaterialsUnique((obj as OdysseyModel3D).materials, bindShadow, seen);
       }
     });
+
+    model.userData.odysseyShadowBoundEpoch = epoch;
+    model.userData.odysseyShadowGatingBound = GameState.shadowAlpha;
+    model.userData.odysseyBeamingBound = GameState.beamingProjectionAlpha;
+    model.userData.odysseyShadowSoftBound = softBound;
+    model.userData.odysseyLightingDebugRevision = lightingRev;
   }
 
   static bindSceneModel(
