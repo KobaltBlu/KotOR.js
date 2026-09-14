@@ -102,4 +102,7 @@ export enum KeyMapAction {
   ResolutionScaleReset = "action1004",
   MovieSkip = "action901m",
 
+  /** Aspyr TSL Y — PopupGamepadMenu (UI deferred; processor stub). */
+  GamepadQuickMenu = "action1100",
+
 }

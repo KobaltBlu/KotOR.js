@@ -2212,7 +2212,10 @@ export class GameState implements EngineContext {
     }
 
     GameState.controls.Update(delta);
-    GameState.scene_cursor_holder.visible = GameState.Mode != EngineMode.MOVIE && GameState.Mode != EngineMode.LEGAL;
+    GameState.scene_cursor_holder.visible =
+      GameState.Mode != EngineMode.MOVIE &&
+      GameState.Mode != EngineMode.LEGAL &&
+      !GameState.controls?.controllerHidesCursor;
     if(GameState.Mode == EngineMode.MOVIE || GameState.VideoManager.isMoviePlaying()){
       GameState.Mode = EngineMode.MOVIE;
       GameState.UpdateMovie(delta);

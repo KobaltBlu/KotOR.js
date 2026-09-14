@@ -17,6 +17,7 @@ import { Keyboard } from "@/controls/Keyboard";
 import { GamePad } from "@/controls/GamePad";
 import { Mouse } from "@/controls/Mouse";
 import { KeyMapper } from "@/controls/KeyMapper";
+import type { KeyInput } from "@/controls/KeyInput";
 import { AnalogInput } from "@/controls/AnalogInput";
 import { TGAObject } from "@/resource/TGAObject";
 import { GameFileSystem } from "@/utility/GameFileSystem";
@@ -29,6 +30,7 @@ import { EventManager } from "@/managers/EventManager";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { ActionType } from "@/enums/actions/ActionType";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { GameEngineType } from "@/enums/engine/GameEngineType";
 
 function ensurePlayerControl(creature: { playerControl?: ReturnType<typeof createPlayerCamRelativeState> }){
   if(!creature.playerControl){
@@ -174,6 +176,18 @@ export class IngameControls {
 
   gamePadMovement: boolean = false;
 
+  /**
+   * When true, hide the software cursor until a keyboard or mouse event arrives.
+   * Set by gamepad activity; cleared by key/mouse handlers.
+   */
+  controllerHidesCursor: boolean = false;
+
+  /**
+   * Aspyr DAT_009f2b8c equivalent — selected HUD action panel for d-pad / A.
+   * -1 = none (A → DefaultAction on selected object).
+   */
+  selectedActionPanelIndex: number = -1;
+
   plMoveEvent: (e: any) => void;
 
   constructor(camera: THREE.Camera, element: HTMLElement){
@@ -200,6 +214,7 @@ export class IngameControls {
     });
 
     window.addEventListener('keydown', (e: KeyboardEvent) => {
+      this.notifyKeyboardOrMouseInput();
       this.keyboard.onKeyDown(e);
 
       // HandleInputEvent: while game_over_state, hurry the death fade
@@ -258,6 +273,7 @@ export class IngameControls {
     });
 
     window.addEventListener('keyup', (e: KeyboardEvent) => {
+      this.notifyKeyboardOrMouseInput();
       /**
        * Debugger Hotkey
        */
@@ -335,6 +351,7 @@ export class IngameControls {
     });
 
     window.addEventListener('mousedown', (event: MouseEvent) => {
+      this.notifyKeyboardOrMouseInput();
       // Ignore clicks on React/chrome overlays that sit above the game canvas.
       if(!this.isGameCanvasMouseTarget(event)){
         return;
@@ -405,7 +422,16 @@ export class IngameControls {
       }
     });
 
+    window.addEventListener('wheel', () => {
+      this.notifyKeyboardOrMouseInput();
+    }, { passive: true });
+
     window.addEventListener('mousemove', (event: MouseEvent) => {
+      // Real mouse motion restores the cursor after gamepad use (any target).
+      if(event.movementX || event.movementY){
+        this.notifyKeyboardOrMouseInput();
+      }
+
       // Allow look while pointer-locked; otherwise only track when over the canvas
       // (or while a canvas-started drag is held).
       if(!this.isGameCanvasMouseTarget(event) && !Mouse.leftDown && !Mouse.rightDown){
@@ -457,6 +483,7 @@ export class IngameControls {
       }
 
       const showCursor =
+        !this.controllerHidesCursor &&
         !Mouse.pointerLock &&
         GameState.Mode != EngineMode.FREELOOK &&
         !(Mouse.cameraHoldActive && !Mouse.isMouseLookEnabled());
@@ -653,6 +680,36 @@ export class IngameControls {
     return event.target === this.element;
   }
 
+  /** Keyboard / mouse activity — show software cursor again. */
+  notifyKeyboardOrMouseInput(){
+    this.controllerHidesCursor = false;
+  }
+
+  /** Any meaningful pad activity — hide software cursor until KBM returns. */
+  pollGamepadHidesCursor(){
+    if(!(this.gamePad.gamePad instanceof Gamepad)) return;
+    const gp = this.gamePad;
+    const stick =
+      Math.abs(gp.stick_l_x.value) > 0.2 || Math.abs(gp.stick_l_y.value) > 0.2 ||
+      Math.abs(gp.stick_r_x.value) > 0.2 || Math.abs(gp.stick_r_y.value) > 0.2 ||
+      Math.abs(gp.trigger_l.value) > 0.25 || Math.abs(gp.trigger_r.value) > 0.25;
+    const btn =
+      gp.button_a.down || gp.button_b.down || gp.button_x.down || gp.button_y.down ||
+      gp.button_bumper_l.down || gp.button_bumper_r.down ||
+      gp.button_d_up.down || gp.button_d_down.down || gp.button_d_left.down || gp.button_d_right.down ||
+      gp.button_start.down || gp.button_back.down ||
+      gp.stick_l.down || gp.stick_r.down ||
+      gp.button_a.pressed || gp.button_b.pressed || gp.button_x.pressed || gp.button_y.pressed ||
+      gp.button_bumper_l.pressed || gp.button_bumper_r.pressed ||
+      gp.button_d_up.pressed || gp.button_d_down.pressed || gp.button_d_left.pressed || gp.button_d_right.pressed ||
+      gp.button_start.pressed || gp.button_back.pressed ||
+      gp.stick_l.pressed || gp.stick_r.pressed ||
+      gp.trigger_l.pressed || gp.trigger_r.pressed;
+    if(stick || btn){
+      this.controllerHidesCursor = true;
+    }
+  }
+
   initKeys(){
     KeyMapper.BindKeyboard(this.keyboard, GameState.iniConfig);
     KeyMapper.BindGamepad(this.gamePad);
@@ -760,15 +817,16 @@ export class IngameControls {
 
     //A
     KeyMapper.Actions[KeyMapAction.CameraRotateLeft].setProcessor( (keymap) => {
+      const padAxis = (keymap.gamepadInput as AnalogInput | undefined)?.value;
       if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){
-        if(keymap.keyboardInput?.down || (keymap.gamepadInput as AnalogInput)?.value < 0){
+        if(keymap.keyboardInput?.down || (padAxis != null && padAxis < 0)){
           FollowerCamera.setNavigateAxes(1);
         }
         return;
       }
       // if(GameState.State == EngineState.PAUSED) return;
       if(GameState.Mode == EngineMode.FREELOOK){
-        if(keymap.keyboardInput?.down || (keymap.gamepadInput as AnalogInput)?.value < 0){
+        if(keymap.keyboardInput?.down || (padAxis != null && padAxis < 0)){
           const stick = this.gamePad.stick_r_x.value;
           FollowerCamera.setFreeLookAxes(stick ? -stick : 1, 0);
         }
@@ -780,10 +838,7 @@ export class IngameControls {
         IngameControls.applyDriveInput(followee, IngameControls.DRIVE_YAW_LEFT);
         return;
       }
-      if(
-        (keymap.keyboardInput.down || 
-        (keymap.gamepadInput as AnalogInput).value < 0)
-      ){
+      if(keymap.keyboardInput?.down || (padAxis != null && padAxis < 0)){
         FollowerCamera.clearFocusObject();
         FollowerCamera.turning = true;
         if(this.gamePad.stick_r_x.value){
@@ -798,15 +853,16 @@ export class IngameControls {
 
     //D
     KeyMapper.Actions[KeyMapAction.CameraRotateRight].setProcessor( (keymap) => {
+      const padAxis = (keymap.gamepadInput as AnalogInput | undefined)?.value;
       if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){
-        if(keymap.keyboardInput?.down || (keymap.gamepadInput as AnalogInput)?.value > 0){
+        if(keymap.keyboardInput?.down || (padAxis != null && padAxis > 0)){
           FollowerCamera.setNavigateAxes(-1);
         }
         return;
       }
       // if(GameState.State == EngineState.PAUSED) return;
       if(GameState.Mode == EngineMode.FREELOOK){
-        if(keymap.keyboardInput?.down || (keymap.gamepadInput as AnalogInput)?.value > 0){
+        if(keymap.keyboardInput?.down || (padAxis != null && padAxis > 0)){
           const stick = this.gamePad.stick_r_x.value;
           FollowerCamera.setFreeLookAxes(stick ? -stick : -1, 0);
         }
@@ -818,10 +874,7 @@ export class IngameControls {
         IngameControls.applyDriveInput(followee, IngameControls.DRIVE_YAW_RIGHT);
         return;
       }
-      if(
-        (keymap.keyboardInput.down || 
-        (keymap.gamepadInput as AnalogInput).value > 0)
-      ){
+      if(keymap.keyboardInput?.down || (padAxis != null && padAxis > 0)){
         FollowerCamera.clearFocusObject();
         FollowerCamera.turning = true;
         if(this.gamePad.stick_r_x.value){
@@ -976,7 +1029,9 @@ export class IngameControls {
 
     KeyMapper.Actions[KeyMapAction.MGshoot].setProcessor( (keymap) => {
       // Held fire — GunBank RoF timer gates spawn (BehaviorFire).
-      const keyOrPad = !!(keymap.keyboardInput?.down || keymap.gamepadInput?.down || keymap.gamepadInput?.pressed);
+      const pad = keymap.gamepadInput as KeyInput | AnalogInput | undefined;
+      const padDown = !!(pad && ('down' in pad ? pad.down : false) || pad?.pressed);
+      const keyOrPad = !!(keymap.keyboardInput?.down || padDown);
       const mouseFire =
         GameState.Mode === EngineMode.MINIGAME &&
         GameState.module?.area?.miniGame?.type === MiniGameType.TURRET &&
@@ -1023,20 +1078,101 @@ export class IngameControls {
       GameState.getCurrentPlayer().flourish();
     });
 
-    // CancleCombat (action240 / BTN_CLEARALL) — ClearAllActions GUI path
+    // CancleCombat (action240 / BTN_CLEARALL) — keyboard ClearAll;
+    // Aspyr B: deselect action panel, else RemoveLastAction (ClearOne).
     KeyMapper.Actions[KeyMapAction.CancleCombat]?.setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
       if(GameState.MenuManager.GetCurrentMenu() != GameState.MenuManager.InGameOverlay) return;
+      if(keymap.gamepadInput?.pressed){
+        if(this.selectedActionPanelIndex >= 0){
+          this.clearSelectedActionPanel();
+          return;
+        }
+        GameState.MenuManager.InGameOverlay.onClearOneButtonPressed();
+        return;
+      }
       GameState.MenuManager.InGameOverlay.onClearAllButtonPressed();
     });
 
-    // ClearOneAction (action245 / BTN_CLEARONE) — OnCombatYButton
+    // ClearOneAction (action245 / BTN_CLEARONE) — keyboard Y / ClearOne
     KeyMapper.Actions[KeyMapAction.ClearOneAction]?.setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
       if(GameState.MenuManager.GetCurrentMenu() != GameState.MenuManager.InGameOverlay) return;
       GameState.MenuManager.InGameOverlay.onClearOneButtonPressed();
+    });
+
+    // Aspyr A — DefaultAction / activate selected HUD action panel
+    KeyMapper.Actions[KeyMapAction.DefaultAction]?.setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      if(GameState.MenuManager.GetCurrentMenu() != GameState.MenuManager.InGameOverlay) return;
+      if(this.selectedActionPanelIndex >= 0){
+        this.activateSelectedActionPanel();
+        return;
+      }
+      GameState.MenuManager.InGameOverlay.triggerControllerAPress();
+    });
+
+    // Aspyr Y — GamepadQuickMenu stub (full UI in a later pass)
+    KeyMapper.Actions[KeyMapAction.GamepadQuickMenu]?.setProcessor( (keymap: { keyboardInput?: { pressed?: boolean }; gamepadInput?: { pressed?: boolean } }) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      // Pass 2: PopupGamepadMenu (map / party / solo / stealth / save / options / switch weaps / help)
+    });
+
+    // Aspyr d-pad L/R — cycle action-panel slot
+    KeyMapper.Actions[KeyMapAction.ActionMenuLeft]?.setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      this.cycleActionPanelSlot(-1);
+    });
+    KeyMapper.Actions[KeyMapAction.ActionMenuRight]?.setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      this.cycleActionPanelSlot(1);
+    });
+    // Aspyr d-pad U/D — cycle action within selected slot
+    KeyMapper.Actions[KeyMapAction.ActionMenuUp]?.setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      this.cycleActionWithinSelectedPanel(-1);
+    });
+    KeyMapper.Actions[KeyMapAction.ActionMenuDown]?.setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      this.cycleActionWithinSelectedPanel(1);
+    });
+
+    // LB/RB — PrevSWInGameGui / NextSWInGameGui (menu tab cycle)
+    KeyMapper.Actions[KeyMapAction.PrevMenu]?.setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      const menu = GameState.MenuManager.GetCurrentMenu();
+      if(menu && menu !== GameState.MenuManager.InGameOverlay){
+        menu.triggerControllerBumperLPress();
+      }
+    });
+    KeyMapper.Actions[KeyMapAction.NextMenu]?.setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      const menu = GameState.MenuManager.GetCurrentMenu();
+      if(menu && menu !== GameState.MenuManager.InGameOverlay){
+        menu.triggerControllerBumperRPress();
+      }
+    });
+
+    // Quick-menu helpers (unbound on face buttons; for Pass 2 / keyboard)
+    KeyMapper.Actions[KeyMapAction.STEALTH]?.setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      GameState.MenuManager.InGameOverlay?.onStealthToggle?.();
+    });
+    KeyMapper.Actions[KeyMapAction.PartyActive]?.setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      GameState.PartyManager.setSoloMode(!GameState.SOLOMODE);
+    });
+    KeyMapper.Actions[KeyMapAction.SwitchWeaps]?.setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      const pc = GameState.getCurrentPlayer() as ModuleCreature | undefined;
+      if(!pc || GameState.GameKey !== GameEngineType.TSL) return;
+      GameState.ActionFactory.AddSwitchWeaponsAction(pc);
     });
 
     // HUD action-menu activate (Personal*/Target*Act digit binds)
@@ -1232,8 +1368,11 @@ export class IngameControls {
       KeyMapper.BindGamepad(this.gamePad);
     }
     this.gamePad.updateState(delta);
+    this.pollGamepadHidesCursor();
 
-    if(currentMenu){
+    // GUI menus only — INGAME overlay pad actions go through KeyMapper (Aspyr layout).
+    // Bumpers use PrevMenu/NextMenu processors (avoid double-fire).
+    if(currentMenu && currentMenu !== GameState.MenuManager.InGameOverlay){
       if(this.gamePad.button_a.pressed){
         currentMenu.triggerControllerAPress();
       }else if(this.gamePad.button_b.pressed){
@@ -1242,10 +1381,6 @@ export class IngameControls {
         currentMenu.triggerControllerXPress();
       }else if(this.gamePad.button_y.pressed){
         currentMenu.triggerControllerYPress();
-      }else if(this.gamePad.button_bumper_l.pressed){
-        currentMenu.triggerControllerBumperLPress();
-      }else if(this.gamePad.button_bumper_r.pressed){
-        currentMenu.triggerControllerBumperRPress();
       }else if(this.gamePad.button_d_up.pressed){
         currentMenu.triggerControllerDUpPress();
       }else if(this.gamePad.button_d_down.pressed){
@@ -1377,10 +1512,11 @@ export class IngameControls {
           mg.updateAxis(x, 0, 0, delta);
           // Swoop accelerate (W / MGActionUp / pad up) → OnAccelerate every frame while held.
           // onaccelerate.ncs gates on MIN_RACE_GEAR / speed thresholds (gear 0 → 1+).
+          const mgUpPad = KeyMapper.Actions[KeyMapAction.MGActionUp]?.gamepadInput;
           const accelHeld =
             !!KeyMapper.Actions[KeyMapAction.MGActionUp]?.keyboardInput?.down
-            || !!KeyMapper.Actions[KeyMapAction.MGActionUp]?.gamepadInput?.pressed
-            || !!KeyMapper.Actions[KeyMapAction.MGActionUp]?.gamepadInput?.down
+            || !!mgUpPad?.pressed
+            || !!(mgUpPad && 'down' in mgUpPad && mgUpPad.down)
             || !!KeyMapper.Actions[KeyMapAction.ActionUp]?.keyboardInput?.down;
           if(accelHeld && GameState.State == EngineState.RUNNING && mg.player?.running){
             mg.player.onAccelerate();
@@ -1413,6 +1549,40 @@ export class IngameControls {
             Mouse.OldMouseY = cy;
           }
         }
+      }
+    }
+
+    // Chase / combat camera: right stick yaw+pitch (Aspyr RS look; not FreeLook-only).
+    // Use camerastyle FL_RotateSpeed / FL_TiltSpeed (~60°/s), not Keyboard Camera DPS (~200°/s).
+    if(
+      GameState.State == EngineState.RUNNING &&
+      GameState.Mode == EngineMode.INGAME &&
+      currentMenu == GameState.MenuManager.InGameOverlay
+    ){
+      const dead = 0.15;
+      const rx = this.gamePad.stick_r_x.value;
+      const ry = this.gamePad.stick_r_y.value;
+      if(Math.abs(rx) > dead){
+        const yawSpeed = THREE.MathUtils.degToRad(FollowerCamera.flRotateSpeed || 60);
+        FollowerCamera.facing = Utility.NormalizeRadian(
+          FollowerCamera.facing + (-rx) * yawSpeed * delta
+        );
+        FollowerCamera.clearFocusObject();
+        GameState.scene_cursor_holder.visible = false;
+      }
+      if(Math.abs(ry) > dead){
+        const tiltSpeed = FollowerCamera.flTiltSpeed || 60;
+        const pitchMin = FollowerCamera.stylePitch
+          - THREE.MathUtils.degToRad(Math.max(0, FollowerCamera.tiltDown));
+        const pitchMax = FollowerCamera.stylePitch
+          + THREE.MathUtils.degToRad(Math.max(0, FollowerCamera.tiltUp));
+        let nextPitch = FollowerCamera.pitch + THREE.MathUtils.degToRad(-ry * tiltSpeed * delta);
+        if(nextPitch < pitchMin) nextPitch = pitchMin;
+        if(nextPitch > pitchMax) nextPitch = pitchMax;
+        if(nextPitch < 0) nextPitch = 0;
+        if(nextPitch > Math.PI * 0.5) nextPitch = Math.PI * 0.5;
+        FollowerCamera.pitch = nextPitch;
+        FollowerCamera.clearFocusObject();
       }
     }
 
@@ -1503,6 +1673,111 @@ export class IngameControls {
     }
   }
 
+  /** Self panels then target panels — Aspyr action-slot order for d-pad L/R. */
+  getActionPanelSlots(): { isTarget: boolean; index: number }[] {
+    const slots: { isTarget: boolean; index: number }[] = [];
+    const selfCount = GameState.ActionMenuManager.SELF_MENU_COUNT;
+    const targetCount = GameState.ActionMenuManager.TARGET_MENU_COUNT;
+    for(let i = 0; i < selfCount; i++){
+      slots.push({ isTarget: false, index: i });
+    }
+    for(let i = 0; i < targetCount; i++){
+      slots.push({ isTarget: true, index: i });
+    }
+    return slots;
+  }
+
+  getActionPanelAtSlot(slotIndex: number){
+    const slots = this.getActionPanelSlots();
+    const slot = slots[slotIndex];
+    if(!slot) return undefined;
+    const panels = slot.isTarget
+      ? GameState.ActionMenuManager.ActionPanels.targetPanels
+      : GameState.ActionMenuManager.ActionPanels.selfPanels;
+    return { slot, panel: panels?.[slot.index] };
+  }
+
+  /** Aspyr 0x2f / 0x30 — cycle which HUD action panel is selected. */
+  cycleActionPanelSlot(direction: number){
+    if(GameState.Mode != EngineMode.INGAME) return;
+    if(GameState.MenuManager.GetCurrentMenu() != GameState.MenuManager.InGameOverlay) return;
+
+    const slots = this.getActionPanelSlots();
+    if(!slots.length) return;
+
+    let idx = this.selectedActionPanelIndex;
+    for(let n = 0; n < slots.length; n++){
+      if(idx < 0){
+        idx = direction > 0 ? 0 : slots.length - 1;
+      }else{
+        idx = (idx + direction + slots.length) % slots.length;
+      }
+      const entry = this.getActionPanelAtSlot(idx);
+      if(entry?.panel && entry.panel.actions.length > 0){
+        this.selectedActionPanelIndex = idx;
+        this.refreshSelectedActionPanelUI(entry.slot.isTarget, entry.slot.index);
+        GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.ActionMenuUsed);
+        return;
+      }
+    }
+  }
+
+  /** Aspyr 0x31 / 0x32 — cycle actions within the selected panel. */
+  cycleActionWithinSelectedPanel(direction: number){
+    if(GameState.Mode != EngineMode.INGAME) return;
+    if(GameState.MenuManager.GetCurrentMenu() != GameState.MenuManager.InGameOverlay) return;
+
+    if(this.selectedActionPanelIndex < 0){
+      this.cycleActionPanelSlot(1);
+      return;
+    }
+
+    const entry = this.getActionPanelAtSlot(this.selectedActionPanelIndex);
+    if(!entry?.panel || entry.panel.actions.length <= 1) return;
+
+    if(direction < 0){
+      entry.panel.previousAction();
+    }else{
+      entry.panel.nextAction();
+    }
+    this.refreshSelectedActionPanelUI(entry.slot.isTarget, entry.slot.index);
+    GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.ActionMenuUsed);
+  }
+
+  activateSelectedActionPanel(){
+    const entry = this.getActionPanelAtSlot(this.selectedActionPanelIndex);
+    if(!entry) return;
+    if(entry.slot.isTarget){
+      GameState.ActionMenuManager.onTargetMenuAction(entry.slot.index);
+    }else{
+      GameState.ActionMenuManager.onSelfMenuAction(entry.slot.index);
+    }
+  }
+
+  /** Aspyr B with a panel selected — clear slot highlight / hover. */
+  clearSelectedActionPanel(){
+    this.selectedActionPanelIndex = -1;
+    const overlay = GameState.MenuManager.InGameOverlay;
+    overlay?.setActiveControl?.(undefined);
+  }
+
+  refreshSelectedActionPanelUI(isTarget: boolean, index: number){
+    const overlay = GameState.MenuManager.InGameOverlay;
+    if(!overlay) return;
+    if(isTarget){
+      overlay.UpdateTargetUIIcon?.(index);
+    }else{
+      overlay.UpdateSelfUIIcon?.(index);
+      overlay.UpdateActionDescription?.();
+    }
+    // Aspyr StartRotation + SetActiveControl — d-pad selection drives button hover.
+    const btnName = isTarget ? `BTN_TARGET${index}` : `BTN_ACTION${index}`;
+    const btn = overlay.getControlByName?.(btnName);
+    if(btn){
+      overlay.setActiveControl(btn);
+    }
+  }
+
   plChangeCallback(_e: Event){
     if(document.pointerLockElement === this.element){
       Mouse.pointerLock = true;
@@ -1519,7 +1794,11 @@ export class IngameControls {
       // Esc / focus loss: keep looking via absolute mouse if hold still desired.
       if(!Mouse.cameraHoldActive){
         Mouse.pointerLockWanted = false;
-        if(GameState.scene_cursor_holder && GameState.Mode != EngineMode.FREELOOK){
+        if(
+          GameState.scene_cursor_holder &&
+          GameState.Mode != EngineMode.FREELOOK &&
+          !this.controllerHidesCursor
+        ){
           GameState.scene_cursor_holder.visible = true;
         }
       }

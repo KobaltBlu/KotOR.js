@@ -282,7 +282,10 @@ export class Mouse {
       Mouse.Update(Mouse.storedCursorX, Mouse.storedCursorY);
     }
     if(GameState.scene_cursor_holder && !Mouse.pointerLock){
-      GameState.scene_cursor_holder.visible = true;
+      // Don't revive the cursor while gamepad input mode is active.
+      if(!GameState.controls?.controllerHidesCursor){
+        GameState.scene_cursor_holder.visible = true;
+      }
     }
   }
 

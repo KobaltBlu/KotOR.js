@@ -235,6 +235,7 @@ interface KeyMapperActions {
   action1003: Keymap;
   action1004: Keymap;
   action1005: Keymap;
+  action1100: Keymap;
 
   action901m: Keymap;
 }
@@ -333,6 +334,7 @@ export class KeyMapper {
     action1003: undefined,
     action1004: undefined,
     action1005: undefined,
+    action1100: undefined,
     action901m: undefined,
   };
 
@@ -423,6 +425,59 @@ export class KeyMapper {
         remappable: 0,
         icmovie: 1,
       });
+
+      // Aspyr TSL GOG — Y opens GamepadMenu (UI deferred; keep action for processors).
+      if(typeof KeyMapper.Actions[KeyMapAction.GamepadQuickMenu] === 'undefined'){
+        this.CreateCustomAction(KeyMapAction.GamepadQuickMenu, {
+          name: 'GamepadQuickMenu',
+          remappable: 0,
+          icpc: 1,
+          icpcgui: 1,
+        });
+      }
+
+      // Ensure action-menu navigate actions exist for Aspyr d-pad (may be absent from keymap.2da).
+      const ensureActionMenuNav = (action: KeyMapAction, name: string) => {
+        if(typeof KeyMapper.Actions[action] === 'undefined'){
+          this.CreateCustomAction(action, {
+            name,
+            remappable: 0,
+            icpc: 1,
+          });
+        }
+      };
+      ensureActionMenuNav(KeyMapAction.ActionMenuLeft, 'ActionMenuLeft');
+      ensureActionMenuNav(KeyMapAction.ActionMenuRight, 'ActionMenuRight');
+      ensureActionMenuNav(KeyMapAction.ActionMenuUp, 'ActionMenuUp');
+      ensureActionMenuNav(KeyMapAction.ActionMenuDown, 'ActionMenuDown');
+
+      // LB/RB must run in GUI menus (PrevSWInGameGui / NextSWInGameGui).
+      const ensureGuiPadNav = (action: KeyMapAction) => {
+        const map = KeyMapper.Actions[action];
+        if(!map) return;
+        if(!map.icpcgui){
+          map.icpcgui = true;
+          KeyMapper.ACTIONS_GUI.push(map);
+        }
+      };
+      ensureGuiPadNav(KeyMapAction.PrevMenu);
+      ensureGuiPadNav(KeyMapAction.NextMenu);
+
+      if(typeof KeyMapper.Actions[KeyMapAction.SwitchWeaps] === 'undefined'){
+        this.CreateCustomAction(KeyMapAction.SwitchWeaps, {
+          name: 'SwitchWeaps',
+          remappable: 0,
+          icpc: 1,
+        });
+      }
+
+      if(typeof KeyMapper.Actions[KeyMapAction.DefaultAction] === 'undefined'){
+        this.CreateCustomAction(KeyMapAction.DefaultAction, {
+          name: 'DefaultAction',
+          remappable: 0,
+          icpc: 1,
+        });
+      }
     }
   }
 
@@ -599,33 +654,90 @@ export class KeyMapper {
 
   }
 
+  /**
+   * Aspyr TSL GOG default gamepad layout (shared K1/K2).
+   * LS locomotion / RS chase look are handled in IngameControls.Update.
+   * LT/RT → target cycle (Xbox / community; Aspyr left triggers unbound by default).
+   */
   static BindGamepad(gamepad: GamePad){
+    const clearPad = (action: KeyMapAction) => {
+      const map = this.Actions[action];
+      if(map) map.gamepadInput = undefined;
+    };
 
-    //Movement
-    this.Actions[KeyMapAction.ActionUp].gamepadInput = gamepad.stick_l_y;
-    this.Actions[KeyMapAction.ActionDown].gamepadInput = gamepad.stick_l_y;
-    this.Actions[KeyMapAction.CameraRotateLeft].gamepadInput = gamepad.stick_l_x;
-    this.Actions[KeyMapAction.CameraRotateRight].gamepadInput = gamepad.stick_l_x;
-    this.Actions[KeyMapAction.Freelook].gamepadInput = gamepad.stick_l;
-    this.Actions[KeyMapAction.SelectPrev].gamepadInput = gamepad.trigger_l;
-    this.Actions[KeyMapAction.SelectNext].gamepadInput = gamepad.trigger_r;
+    // Unbind prior / non-Aspyr pad routes
+    clearPad(KeyMapAction.STEALTH);
+    clearPad(KeyMapAction.Pause);
+    clearPad(KeyMapAction.AlternateActions);
+    clearPad(KeyMapAction.ClearOneAction);
+    clearPad(KeyMapAction.ActionUp);
+    clearPad(KeyMapAction.ActionDown);
+    clearPad(KeyMapAction.ActionLeft);
+    clearPad(KeyMapAction.ActionRight);
+    clearPad(KeyMapAction.CameraRotateLeft);
+    clearPad(KeyMapAction.CameraRotateRight);
+    clearPad(KeyMapAction.MoveForward);
+    clearPad(KeyMapAction.MoveBack);
+    clearPad(KeyMapAction.StrafeLeft);
+    clearPad(KeyMapAction.StrafeRight);
 
-    //Game
-    this.Actions[KeyMapAction.Options].gamepadInput = gamepad.button_start;
-    this.Actions[KeyMapAction.Pause].gamepadInput = gamepad.button_bumper_l;
-    this.Actions[KeyMapAction.ChangeChar].gamepadInput = gamepad.button_bumper_r;
-    this.Actions[KeyMapAction.STEALTH].gamepadInput = gamepad.button_back;
-    this.Actions[KeyMapAction.Flourish].gamepadInput = gamepad.button_y;
-    this.Actions[KeyMapAction.ClearOneAction].gamepadInput = gamepad.button_y;
-    this.Actions[KeyMapAction.ActionUp].gamepadInput = gamepad.button_d_up;
-    this.Actions[KeyMapAction.ActionDown].gamepadInput = gamepad.button_d_down;
-    this.Actions[KeyMapAction.ActionLeft].gamepadInput = gamepad.button_d_left;
-    this.Actions[KeyMapAction.ActionRight].gamepadInput = gamepad.button_d_right;
-    this.Actions[KeyMapAction.CancleCombat].gamepadInput = gamepad.button_b;
-    this.Actions[KeyMapAction.AlternateActions].gamepadInput = gamepad.button_x;
+    // Face buttons — OnA/B/X/YButtonPressed
+    if(this.Actions[KeyMapAction.DefaultAction]){
+      this.Actions[KeyMapAction.DefaultAction].gamepadInput = gamepad.button_a;
+    }
+    if(this.Actions[KeyMapAction.CancleCombat]){
+      this.Actions[KeyMapAction.CancleCombat].gamepadInput = gamepad.button_b;
+    }
+    if(this.Actions[KeyMapAction.ChangeChar]){
+      this.Actions[KeyMapAction.ChangeChar].gamepadInput = gamepad.button_x;
+    }
+    if(this.Actions[KeyMapAction.GamepadQuickMenu]){
+      this.Actions[KeyMapAction.GamepadQuickMenu].gamepadInput = gamepad.button_y;
+    }
 
-    // Minigame — d-pad L/R when stick unused; stick still drives UpdateAxis directly.
-    const bindPadIfEmpty = (action: KeyMapAction, input: AnalogInput | any) => {
+    // Triggers — SelectPrev / SelectNext
+    if(this.Actions[KeyMapAction.SelectPrev]){
+      this.Actions[KeyMapAction.SelectPrev].gamepadInput = gamepad.trigger_l;
+    }
+    if(this.Actions[KeyMapAction.SelectNext]){
+      this.Actions[KeyMapAction.SelectNext].gamepadInput = gamepad.trigger_r;
+    }
+
+    // D-pad — action-panel slot cycle (L/R) and within-slot cycle (U/D)
+    if(this.Actions[KeyMapAction.ActionMenuLeft]){
+      this.Actions[KeyMapAction.ActionMenuLeft].gamepadInput = gamepad.button_d_left;
+    }
+    if(this.Actions[KeyMapAction.ActionMenuRight]){
+      this.Actions[KeyMapAction.ActionMenuRight].gamepadInput = gamepad.button_d_right;
+    }
+    if(this.Actions[KeyMapAction.ActionMenuUp]){
+      this.Actions[KeyMapAction.ActionMenuUp].gamepadInput = gamepad.button_d_up;
+    }
+    if(this.Actions[KeyMapAction.ActionMenuDown]){
+      this.Actions[KeyMapAction.ActionMenuDown].gamepadInput = gamepad.button_d_down;
+    }
+
+    // Shoulders — PrevSWInGameGui / NextSWInGameGui when a menu is open
+    if(this.Actions[KeyMapAction.PrevMenu]){
+      this.Actions[KeyMapAction.PrevMenu].gamepadInput = gamepad.button_bumper_l;
+    }
+    if(this.Actions[KeyMapAction.NextMenu]){
+      this.Actions[KeyMapAction.NextMenu].gamepadInput = gamepad.button_bumper_r;
+    }
+
+    // Start → Options; L3 Flourish; R3 Freelook
+    if(this.Actions[KeyMapAction.Options]){
+      this.Actions[KeyMapAction.Options].gamepadInput = gamepad.button_start;
+    }
+    if(this.Actions[KeyMapAction.Flourish]){
+      this.Actions[KeyMapAction.Flourish].gamepadInput = gamepad.stick_l;
+    }
+    if(this.Actions[KeyMapAction.Freelook]){
+      this.Actions[KeyMapAction.Freelook].gamepadInput = gamepad.stick_r;
+    }
+
+    // Minigame — mode-gated lists only; stick still drives UpdateAxis in Update.
+    const bindPadIfEmpty = (action: KeyMapAction, input: AnalogInput | KeyInput) => {
       const map = this.Actions[action];
       if(map && !map.gamepadInput){
         map.gamepadInput = input;
@@ -636,23 +748,12 @@ export class KeyMapper {
     bindPadIfEmpty(KeyMapAction.MGActionUp, gamepad.button_d_up);
     bindPadIfEmpty(KeyMapAction.MGActionDown, gamepad.button_d_down);
     bindPadIfEmpty(KeyMapAction.MGshoot, gamepad.button_a);
-    // Start is Options in INGAME; MINIGAME keymap only runs PauseMinigame.
     bindPadIfEmpty(KeyMapAction.PauseMinigame, gamepad.button_start);
-    
-    //GUI
-    this.Actions[KeyMapAction.PrevMenu].gamepadInput = gamepad.button_bumper_l;
-    this.Actions[KeyMapAction.NextMenu].gamepadInput = gamepad.button_bumper_r;
-    this.Actions[KeyMapAction.MoveForward].gamepadInput = gamepad.button_d_up;
-    this.Actions[KeyMapAction.MoveBack].gamepadInput = gamepad.button_d_down;
-    this.Actions[KeyMapAction.StrafeLeft].gamepadInput = gamepad.button_d_left;
-    this.Actions[KeyMapAction.StrafeRight].gamepadInput = gamepad.button_d_right;
-    this.Actions[KeyMapAction.PrevMenu].gamepadInput = gamepad.button_bumper_l;
-    this.Actions[KeyMapAction.PrevMenu].gamepadInput = gamepad.button_bumper_l;
-    this.Actions[KeyMapAction.PrevMenu].gamepadInput = gamepad.button_bumper_l;
 
-    //Movie
-    this.Actions[KeyMapAction.MovieSkip].gamepadInput = gamepad.button_y;
-    
+    // Movie — Y skips (INGAME uses GamepadQuickMenu on the same button via mode lists)
+    if(this.Actions[KeyMapAction.MovieSkip]){
+      this.Actions[KeyMapAction.MovieSkip].gamepadInput = gamepad.button_y;
+    }
   }
 
 }

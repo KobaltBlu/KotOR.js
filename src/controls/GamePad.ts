@@ -143,6 +143,7 @@ export class GamePad {
       if (connecting) {
         GamePad.GamePads[gamepad.index] = gamepad;
         if(GamePad.CurrentGamePadIndex == -1){
+          GamePad.CurrentGamePadIndex = gamepad.index;
           GamePad.CurrentGamePad = gamepad;
         }
       } else {
