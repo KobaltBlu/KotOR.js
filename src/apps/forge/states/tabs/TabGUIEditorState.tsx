@@ -89,6 +89,8 @@ export class TabGUIEditorState extends TabState {
       if (this.ui3DRenderer.orbitControls) {
         this.ui3DRenderer.orbitControls.enabled = false;
       }
+      // openFile/rebuildMenu often runs before the canvas/WebGLRenderer exists.
+      this.menu?.ensureVoidFogVolume?.(this.ui3DRenderer.renderer);
     });
 
     this.openFile();
@@ -118,6 +120,7 @@ export class TabGUIEditorState extends TabState {
 
   destroy(): void {
     this.disposeSelectionRect();
+    this.menu?.menuGroup?.removeFromParent();
     if (this.menu?.tGuiPanel?.widget) {
       this.menu.tGuiPanel.widget.removeFromParent();
     }
@@ -660,6 +663,7 @@ export class TabGUIEditorState extends TabState {
 
     const preservedSub = this.inspectorSubPath;
 
+    this.menu?.menuGroup?.removeFromParent();
     if (this.menu?.tGuiPanel?.widget) {
       this.menu.tGuiPanel.widget.removeFromParent();
     }
@@ -668,9 +672,11 @@ export class TabGUIEditorState extends TabState {
     this.menu.voidFill = true;
     this.menu.bVisible = true;
     this.menu.context = this.ui3DRenderer;
-    await this.menu.loadBackground();
+    await this.menu.loadBackground(this.ui3DRenderer.renderer);
+    this.menu.ensureVoidFogVolume(this.ui3DRenderer.renderer);
     await this.menu.buildMenu(this.gff);
-    this.ui3DRenderer.scene.add(this.menu.tGuiPanel.widget);
+    // menuGroup includes void/background sprites + the root panel widget
+    this.ui3DRenderer.scene.add(this.menu.menuGroup);
     if (this.canvasScale !== 1) {
       this.setCanvasScale(this.canvasScale);
     }

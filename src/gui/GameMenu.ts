@@ -124,7 +124,7 @@ export class GameMenu {
 
     const panelControl = this.tGuiPanel.createControl();
 
-    if(this.voidFill){
+    if(this.voidFill && this.backgroundVoidSprite){
       this.menuGroup.add(this.backgroundVoidSprite);
     }
 
@@ -233,11 +233,17 @@ export class GameMenu {
     }
   }
 
-  async loadBackground(){
+  async loadBackground(renderer?: THREE.WebGLRenderer){
     /**
      * Background black void to fill the screen behind the menu
      */
     if(this.voidFill){
+      const bakeRenderer = renderer ?? GameState.renderer;
+      // Forge (and other hosts) may not have GameState.renderer yet — bake later via ensureVoidFogVolume.
+      if(!fogVolumeTexture && bakeRenderer){
+        fogVolumeTexture = createGUIFogVolumeTexture(bakeRenderer);
+      }
+
       const geometry = new THREE.PlaneGeometry( 1, 1, 1 );
       // this.backgroundVoidMaterial = new THREE.MeshBasicMaterial({color: new THREE.Color(0x000000), side: THREE.DoubleSide});
       this.backgroundVoidMaterial = new THREE.ShaderMaterial({
@@ -251,7 +257,7 @@ export class GameMenu {
               value: getGodRayTexture(1024)
             },
             u_fogVolumeMap: {
-              value: fogVolumeTexture || createGUIFogVolumeTexture(GameState.renderer)
+              value: fogVolumeTexture || null
             }
           }
         ]),
@@ -388,12 +394,29 @@ export class GameMenu {
     return this.bVisible;
   }
 
+  /**
+   * Bake/bind the void-gui fog volume once a WebGLRenderer is available.
+   * Safe to call repeatedly (Forge attaches its canvas after the menu may already exist).
+   */
+  ensureVoidFogVolume(renderer?: THREE.WebGLRenderer){
+    if(!this.backgroundVoidMaterial){
+      return;
+    }
+    const bakeRenderer = renderer ?? GameState.renderer;
+    if(!fogVolumeTexture && bakeRenderer){
+      fogVolumeTexture = createGUIFogVolumeTexture(bakeRenderer);
+    }
+    if(fogVolumeTexture){
+      this.backgroundVoidMaterial.uniforms.u_fogVolumeMap.value = fogVolumeTexture;
+    }
+  }
+
   update(delta: number = 0){
     //Only update if the Menu is visible
     if(!this.bVisible)
       return;
 
-    if(this.voidFill){
+    if(this.voidFill && this.backgroundVoidMaterial && this.backgroundVoidSprite){
       this.backgroundVoidMaterial.uniforms.u_time.value = this.context.deltaTimeFixed;
       this.backgroundVoidSprite.scale.set(ResolutionManager.getViewportWidth(), ResolutionManager.getViewportHeight(), 1);
       this.backgroundVoidMaterial.uniforms.u_resolution.value.set(ResolutionManager.getViewportWidth(), ResolutionManager.getViewportHeight());
@@ -415,7 +438,7 @@ export class GameMenu {
       );
     }
 
-    if(this.background){
+    if(this.background && this.backgroundMaterial){
       this.backgroundMaterial.uniforms.u_time.value = this.context.deltaTimeFixed;
       this.backgroundMaterial.uniforms.u_resolution.value.set(1600, 1200);
     }
