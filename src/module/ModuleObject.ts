@@ -69,9 +69,7 @@ import type { ModuleTrigger } from "@/module/ModuleTrigger";
 
 import { resolveScriptAnimationConstant } from "@/module/animation/resolveScriptAnimationConstant";
 import { isCreature } from "@/module/guards/isCreature";
-import { isDoor } from "@/module/guards/isDoor";
 import { isPlaceable } from "@/module/guards/isPlaceable";
-import { isTrigger } from "@/module/guards/isTrigger";
 
 export interface DialogModelVisibilityInput {
   mode: EngineMode;
@@ -653,13 +651,7 @@ export class ModuleObject {
       this.distanceToCamera = this.position.distanceTo(GameState.currentCameraPosition);
     }
 
-    // Triggers/doors are static — roomCheck findWalkableFace would snap Z by +0.005.
-    // They attach rooms via their own getCurrentRoom without mutating position.
-    if(this.spawned
-      && !isTrigger(this)
-      && !isDoor(this)){
-      this.collisionManager.roomCheck(delta);
-    }
+    this.updateRoomAttachment(delta);
 
     if(this.shadowBlobModel){
       this.updateShadowBlobVisibility();
@@ -669,6 +661,16 @@ export class ModuleObject {
     this.sphere.center.copy(this.position);
     this.sphere.radius = this.getHitDistance() * 2;
 
+  }
+
+  /**
+   * Attach this object to a room via walkmesh roomCheck.
+   * Doors/triggers override as a no-op — roomCheck would snap Z; they use getCurrentRoom.
+   */
+  protected updateRoomAttachment(delta: number = 0){
+    if(this.spawned){
+      this.collisionManager.roomCheck(delta);
+    }
   }
 
   updateDestroy(delta: number = 0){
@@ -703,13 +705,8 @@ export class ModuleObject {
     // this.forceVector.set(0, 0, 0);
     if(this.spawned){
       // Allow PC/party room attach while paused so auto-pause cannot leave a blank VIS
-      if(
-        !this.room &&
-        this.area &&
-        !isTrigger(this) &&
-        !isDoor(this)
-      ){
-        this.collisionManager.roomCheck(delta);
+      if(!this.room && this.area){
+        this.updateRoomAttachment(delta);
       }else{
         this.updateModelVisibility();
       }

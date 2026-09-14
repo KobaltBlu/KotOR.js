@@ -351,6 +351,17 @@ export class ModuleTrigger extends ModuleObject {
     this.actionQueue.process(delta);
   }
 
+  /**
+   * Static — skip walkmesh roomCheck (would snap Z). Room via getCurrentRoom.
+   */
+  protected updateRoomAttachment(_delta: number = 0){}
+
+  updatePaused(delta: number = 0){
+    if(this.spawned){
+      this.updateModelVisibility();
+    }
+  }
+
   update(delta = 0){
     
     super.update(delta);
