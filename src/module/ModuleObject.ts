@@ -1229,23 +1229,20 @@ export class ModuleObject {
   //----------------------//
 
   /**
+   * Get the object's inventory bag.
+   * Party members override this to return the shared party inventory.
+   */
+  getInventory(): ModuleItem[] {
+    return this.inventory;
+  }
+
+  /**
    * Check if the object has the item by tag
    * @param sTag
    * @returns
    */
   hasItemByTag(sTag=''){
-    sTag = sTag.toLowerCase();
-    if(this.isPartyMember()){
-      return !!GameState.InventoryManager.getItemByTag(sTag);
-    }
-
-    for(let i = 0; i < this.inventory.length; i++){
-      const cItem = this.inventory[i];
-      if(cItem.tag.toLocaleLowerCase() == sTag)
-        return true;
-    }
-
-    return false;
+    return !!this.getItemByTag(sTag);
   }
 
   /**
@@ -1359,13 +1356,10 @@ export class ModuleObject {
    * @returns
    */
   getItemByTag(sTag = ''): ModuleItem {
-    if(this.isPartyMember()){
-      return GameState.InventoryManager.getItemByTag(sTag) as ModuleItem;
-    }
-
     sTag = (sTag || '').toLowerCase();
-    for(let i = 0; i < this.inventory.length; i++){
-      let item = this.inventory[i];
+    const inventory = this.getInventory();
+    for(let i = 0; i < inventory.length; i++){
+      const item = inventory[i];
       if((item.getTag() || '').toLowerCase() == sTag)
         return item;
     }
