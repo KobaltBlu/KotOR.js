@@ -134,6 +134,20 @@ export class FollowerCamera {
   static freeLookPitchAxis: number = 0;
   static freeLookYawAxis: number = 0;
   static freeLookActive: boolean = false;
+  /** Pre-FreeLook chase mode restored on exit (SetFreeLookCamera / RestoreCamera). */
+  static preFreeLookCameraMode = ClientCameraMode.ON_A_STICK;
+  /** Chase pitch/facing saved before FreeLook or Navigate so exit does not keep fly/look pose. */
+  static preChasePitch = 0;
+  static preChaseFacing = 0;
+  static chasePoseSaved = false;
+  /**
+   * FreeLook pitch RK4 state — CSWRK4Acceleration when axis==0.
+   * Ctor defaults: keyboard DPS 200, accel 500 (UpdateCamraStyle may raise DPS).
+   */
+  static freeLookPitchVel = 0;
+  static freeLookPitchImpulse = 0;
+  static readonly FREELOOK_RK4_DPS = 200.0;
+  static readonly FREELOOK_RK4_ACCEL = 500.0;
 
   /** Keyboard turn rate state — RK4 acceleration / Keyboard Camera DPS path */
   static speed: number = 0;
@@ -226,6 +240,11 @@ export class FollowerCamera {
   static navigateRaise = 0;
   static navigateRoll = 0;
   static navigateLastRoll = 0;
+  /** Mode restored when leaving Navigate (SetNavigateCamera saves OnAStick). */
+  static preNavigateCameraMode = ClientCameraMode.ON_A_STICK;
+  /** Fly-cam orientation — isolated from chase FollowerCamera.pitch/facing. */
+  static navigateYaw = 0;
+  static navigatePitch = 0;
 
   private static parseStyleFloat(value: any, fallback: number): number {
     if(value === undefined || value === null || value === '****') return fallback;
@@ -326,26 +345,147 @@ export class FollowerCamera {
     FollowerCamera.resize();
   }
 
-  /** Enter FreeLook — freelook camera ctor resets look offsets. */
+  /** Snapshot chase pitch/facing before leaving OnAStick (once per excursion). */
+  static saveChasePose(){
+    if(FollowerCamera.freeLookActive || FollowerCamera.navigateActive){
+      return;
+    }
+    FollowerCamera.preChasePitch = FollowerCamera.pitch;
+    FollowerCamera.preChaseFacing = FollowerCamera.facing;
+    FollowerCamera.chasePoseSaved = true;
+  }
+
+  /**
+   * Restore chase pitch/facing and snap camera back onto the stick.
+   * Prefer saved pose; fall back to stylePitch when nothing was saved.
+   */
+  static restoreChasePose(carryYawDeg: number = 0){
+    if(FollowerCamera.chasePoseSaved){
+      FollowerCamera.pitch = FollowerCamera.preChasePitch;
+      FollowerCamera.facing = Utility.NormalizeRadian(
+        FollowerCamera.preChaseFacing + THREE.MathUtils.degToRad(carryYawDeg)
+      );
+    }else{
+      FollowerCamera.pitch = FollowerCamera.stylePitch || FollowerCamera.pitch;
+      if(carryYawDeg){
+        FollowerCamera.facing = Utility.NormalizeRadian(
+          FollowerCamera.facing + THREE.MathUtils.degToRad(carryYawDeg)
+        );
+      }
+    }
+    FollowerCamera.chasePoseSaved = false;
+    FollowerCamera.snapToChasePosition();
+  }
+
+  /**
+   * Place camera at chase stick pose (behind followee) and clear Navigate roll.
+   * Used when leaving FreeLook / Navigate so the next frame is not stuck mid-air.
+   */
+  static snapToChasePosition(){
+    const followee = GameState.getCurrentPlayer();
+    FollowerCamera.camera.rotation.order = 'YZX';
+    FollowerCamera.camera.rotation.set(
+      FollowerCamera.pitch,
+      0,
+      FollowerCamera.facing + HALF_PI
+    );
+    if(!followee){
+      FollowerCamera.camera.updateProjectionMatrix();
+      return;
+    }
+
+    const headHeight = FollowerCamera.getFolloweeHeadHeight(followee);
+    const camHeight = headHeight + FollowerCamera.height;
+    const distance = Math.max(
+      0.5,
+      FollowerCamera.distance || FollowerCamera.maxDistance || FollowerCamera.DEFAULT_STYLE_DISTANCE
+    );
+    FollowerCamera.tmpOrigin.set(
+      followee.position.x,
+      followee.position.y,
+      followee.position.z + camHeight
+    );
+    const dirX = Math.cos(FollowerCamera.facing);
+    const dirY = Math.sin(FollowerCamera.facing);
+    FollowerCamera.tmpDesiredCam.set(
+      FollowerCamera.tmpOrigin.x + distance * dirX,
+      FollowerCamera.tmpOrigin.y + distance * dirY,
+      FollowerCamera.tmpOrigin.z
+    );
+
+    const area = GameState.module?.area;
+    if(area){
+      FollowerCamera.hitCheckCamera(
+        area,
+        followee,
+        FollowerCamera.tmpOrigin,
+        FollowerCamera.tmpDesiredCam,
+        FollowerCamera.tmpSafeCam
+      );
+      FollowerCamera.camera.position.copy(FollowerCamera.tmpSafeCam);
+    }else{
+      FollowerCamera.camera.position.copy(FollowerCamera.tmpDesiredCam);
+    }
+    FollowerCamera.camera.updateProjectionMatrix();
+  }
+
+  /**
+   * SetFreeLookCamera — save OnAStick settings, face PC along cam→PC,
+   * switch client mode to FREELOOK (5), reset look offsets.
+   */
   static beginFreeLook(){
+    const mode = GameState.clientCameraMode | 0;
+    if(mode === ClientCameraMode.ON_A_STICK || mode === ClientCameraMode.CHASE
+      || mode === ClientCameraMode.STIFF_CHASE || mode === ClientCameraMode.TOP_DOWN
+      || mode === ClientCameraMode.COMBAT){
+      FollowerCamera.preFreeLookCameraMode = mode;
+    }
+
+    FollowerCamera.saveChasePose();
+
+    // Face creature along normalize(pc − cam) so freelook matches chase forward.
+    const followee = GameState.getCurrentPlayer();
+    if(followee){
+      const dx = followee.position.x - FollowerCamera.camera.position.x;
+      const dy = followee.position.y - FollowerCamera.camera.position.y;
+      const len = Math.hypot(dx, dy);
+      if(len > 1e-4){
+        const facing = Utility.NormalizeRadian(-Math.atan2(dx / len, dy / len));
+        followee.setFacing?.(facing, true);
+      }
+    }
+
+    GameState.clientCameraMode = ClientCameraMode.FREELOOK;
+    FollowerCamera.lastAppliedCameraMode = ClientCameraMode.FREELOOK;
     FollowerCamera.freeLookActive = true;
     FollowerCamera.freeLookPitchDeg = 0;
     FollowerCamera.freeLookYawDeg = 0;
     FollowerCamera.freeLookPitchAxis = 0;
     FollowerCamera.freeLookYawAxis = 0;
+    FollowerCamera.freeLookPitchVel = 0;
+    FollowerCamera.freeLookPitchImpulse = 0;
     FollowerCamera.clearFocusObject();
   }
 
+  /** Leave FreeLook — restore chase pose; carry look yaw into chase facing. */
   static endFreeLook(){
+    const carryYaw = FollowerCamera.freeLookYawDeg;
     FollowerCamera.freeLookActive = false;
     FollowerCamera.freeLookPitchAxis = 0;
     FollowerCamera.freeLookYawAxis = 0;
-    // Carry freelook yaw back into chase facing when possible
-    FollowerCamera.facing = Utility.NormalizeRadian(
-      FollowerCamera.facing + THREE.MathUtils.degToRad(FollowerCamera.freeLookYawDeg)
-    );
+    FollowerCamera.freeLookPitchVel = 0;
+    FollowerCamera.freeLookPitchImpulse = 0;
     FollowerCamera.freeLookYawDeg = 0;
     FollowerCamera.freeLookPitchDeg = 0;
+    FollowerCamera.restoreChasePose(carryYaw);
+
+    if((GameState.clientCameraMode | 0) === ClientCameraMode.FREELOOK){
+      const restore = FollowerCamera.combatCameraActive
+        ? ClientCameraMode.COMBAT
+        : (FollowerCamera.preFreeLookCameraMode | 0) || ClientCameraMode.ON_A_STICK;
+      GameState.clientCameraMode = restore;
+      FollowerCamera.lastAppliedCameraMode = -1;
+    }
   }
 
   /**
@@ -432,7 +572,7 @@ export class FollowerCamera {
   }
 
   /**
-   * Resolve FreeLookHook → CameraHook → root+2 (Control).
+   * Resolve FreeLookHook → CameraHook → root+2 (Control GetPartPosition).
    */
   static resolveFreeLookHook(followee: ModuleObject): boolean {
     const model = (followee as any).model;
@@ -446,14 +586,57 @@ export class FollowerCamera {
       model.camerahook.getWorldQuaternion(FollowerCamera.tmpHookQuat);
       return true;
     }
+    // root + z+2 fallback
+    if(model){
+      model.getWorldPosition(FollowerCamera.tmpHookPos);
+      model.getWorldQuaternion(FollowerCamera.tmpHookQuat);
+      FollowerCamera.tmpHookPos.z += 2.0;
+      return false;
+    }
     FollowerCamera.tmpHookPos.copy(followee.position);
     FollowerCamera.tmpHookPos.z += 2.0;
     FollowerCamera.tmpHookQuat.identity();
     return false;
   }
 
+  /** Wrap degrees into [-180, 180] like FreeLook Control. */
+  static wrapDeg180(deg: number): number {
+    let d = deg;
+    while(d < -180) d += 360;
+    while(d > 180) d -= 360;
+    return d;
+  }
+
+  /**
+   * FreeLook pitch RK4 when axis==0 — CSWRK4Acceleration::Update on pitch impulse.
+   * Impulse (deg/s desire) drives velocity toward ±maxDps with accel; coasts when 0.
+   */
+  static integrateFreeLookPitchRk4(delta: number, impulseDeg: number): number {
+    const maxDps = Math.max(
+      FollowerCamera.FREELOOK_RK4_DPS,
+      FollowerCamera.flLookUp,
+      FollowerCamera.flLookDown
+    );
+    const accel = FollowerCamera.FREELOOK_RK4_ACCEL;
+    let v = FollowerCamera.freeLookPitchVel;
+    const desired = Math.max(-maxDps, Math.min(maxDps, impulseDeg));
+    if(desired !== 0){
+      const dir = Math.sign(desired);
+      v += dir * accel * delta;
+      if(Math.abs(v) > Math.abs(desired)) v = desired;
+    }else if(v !== 0){
+      const decel = accel * 2;
+      const step = Math.sign(v) * decel * delta;
+      if(Math.abs(step) >= Math.abs(v)) v = 0;
+      else v -= step;
+    }
+    FollowerCamera.freeLookPitchVel = v;
+    return v * delta;
+  }
+
   /**
    * Control — attach to FreeLookHook, apply yaw/pitch look limits.
+   * Orientation: YawPitchRoll(hookYaw + yawOff, pitch + 90°, 0).
    */
   static updateFreeLook(delta: number = 0){
     const followee = GameState.getCurrentPlayer();
@@ -461,24 +644,49 @@ export class FollowerCamera {
 
     const dt = Math.max(0, delta);
 
-    // Axis look (keyboard / stick) — FL_RotateSpeed / FL_TiltSpeed deg/s
+    // Axis look — FL_RotateSpeed / FL_TiltSpeed deg/s (Message tilt/turn axes)
     FollowerCamera.freeLookYawDeg +=
       FollowerCamera.freeLookYawAxis * FollowerCamera.flRotateSpeed * dt;
-    FollowerCamera.freeLookPitchDeg +=
-      FollowerCamera.freeLookPitchAxis * FollowerCamera.flTiltSpeed * dt;
 
-    // Mouse look when cursor is hidden / pointer-driven (HideMouse)
-    // Scale by GetMouseSenSetting vs default (~29.8) — was hard-coded 0.15
+    const pitchAxis = FollowerCamera.freeLookPitchAxis;
+    if(pitchAxis !== 0){
+      FollowerCamera.freeLookPitchDeg +=
+        pitchAxis * FollowerCamera.flTiltSpeed * dt;
+      FollowerCamera.freeLookPitchVel = 0;
+      FollowerCamera.freeLookPitchImpulse = 0;
+    }
+
+    // Mouse look — GetMouseSenSetting scale; yaw direct, pitch via RK4 when no axis
     const mx = Mouse.MouseX - Mouse.OldMouseX;
     const my = Mouse.MouseY - Mouse.OldMouseY;
     if(mx || my){
-      const sensScale = Mouse.getSensitivityDegrees() / 29.8;
-      const lookScale = 0.15 * sensScale;
-      FollowerCamera.freeLookYawDeg -= mx * lookScale;
-      FollowerCamera.freeLookPitchDeg -= my * lookScale;
+      const sens = Mouse.getSensitivityDegrees();
+      const norm = FollowerCamera.MOUSE_DELTA_NORMALIZE_PX;
+      let nx = mx / norm;
+      let ny = my / norm;
+      if(nx > 1) nx = 1;
+      else if(nx < -1) nx = -1;
+      if(ny > 1) ny = 1;
+      else if(ny < -1) ny = -1;
+      FollowerCamera.freeLookYawDeg -= nx * sens;
+      if(pitchAxis === 0){
+        // Impulse ≈ deg/s desire for this frame (sens * normalized delta / dt)
+        const impulse = dt > 1e-6 ? (-ny * sens) / dt : 0;
+        FollowerCamera.freeLookPitchImpulse = impulse;
+      }
     }
 
-    // Clamp pitch to FL_LOOKUP / FL_LOOKDOWN
+    if(pitchAxis === 0){
+      FollowerCamera.freeLookPitchDeg += FollowerCamera.integrateFreeLookPitchRk4(
+        dt,
+        FollowerCamera.freeLookPitchImpulse
+      );
+      FollowerCamera.freeLookPitchImpulse = 0;
+    }
+
+    FollowerCamera.freeLookPitchDeg = FollowerCamera.wrapDeg180(
+      FollowerCamera.freeLookPitchDeg
+    );
     if(FollowerCamera.freeLookPitchDeg < -FollowerCamera.flLookDown){
       FollowerCamera.freeLookPitchDeg = -FollowerCamera.flLookDown;
     }
@@ -489,17 +697,13 @@ export class FollowerCamera {
     FollowerCamera.resolveFreeLookHook(followee);
     FollowerCamera.camera.position.copy(FollowerCamera.tmpHookPos);
 
+    // Hook yaw (YZX .z) + look yaw; pitch = lookPitch + 90° (retail YawPitchRoll)
     FollowerCamera.tmpEuler.setFromQuaternion(FollowerCamera.tmpHookQuat, 'YZX');
-    FollowerCamera.tmpEuler.x += THREE.MathUtils.degToRad(FollowerCamera.freeLookPitchDeg);
-    FollowerCamera.tmpEuler.z += THREE.MathUtils.degToRad(FollowerCamera.freeLookYawDeg);
+    const hookYaw = FollowerCamera.tmpEuler.z;
+    const yaw = hookYaw + THREE.MathUtils.degToRad(FollowerCamera.freeLookYawDeg);
+    const pitch = THREE.MathUtils.degToRad(FollowerCamera.freeLookPitchDeg + 90);
     FollowerCamera.camera.rotation.order = 'YZX';
-    FollowerCamera.camera.rotation.copy(FollowerCamera.tmpEuler);
-
-    // Keep chase facing in sync for exit / movement relative to look
-    FollowerCamera.tmpForward.set(0, 1, 0).applyQuaternion(FollowerCamera.camera.quaternion);
-    FollowerCamera.facing = Utility.NormalizeRadian(
-      Math.atan2(FollowerCamera.tmpForward.y, FollowerCamera.tmpForward.x)
-    );
+    FollowerCamera.camera.rotation.set(pitch, 0, yaw);
 
     FollowerCamera.freeLookPitchAxis = 0;
     FollowerCamera.freeLookYawAxis = 0;
@@ -768,8 +972,7 @@ export class FollowerCamera {
     }
 
     if(mode !== ClientCameraMode.NAVIGATE && FollowerCamera.navigateActive){
-      FollowerCamera.navigateActive = false;
-      FollowerCamera.navigateHoverMode = false;
+      FollowerCamera.endNavigate();
     }
   }
 
@@ -918,6 +1121,19 @@ export class FollowerCamera {
       if(hoverMode) FollowerCamera.navigateHoverMode = true;
       return;
     }
+    const mode = GameState.clientCameraMode | 0;
+    if(mode !== ClientCameraMode.NAVIGATE){
+      FollowerCamera.preNavigateCameraMode =
+        mode === ClientCameraMode.FREELOOK
+          ? ClientCameraMode.ON_A_STICK
+          : mode;
+    }
+    FollowerCamera.saveChasePose();
+    // Seed fly orientation from chase pose (not live camera euler — FreeLook leaves π/2 pitch)
+    FollowerCamera.navigateYaw = FollowerCamera.facing + HALF_PI;
+    FollowerCamera.navigatePitch = FollowerCamera.pitch;
+    GameState.clientCameraMode = ClientCameraMode.NAVIGATE;
+    FollowerCamera.lastAppliedCameraMode = ClientCameraMode.NAVIGATE;
     FollowerCamera.navigateActive = true;
     FollowerCamera.navigateHoverMode = hoverMode;
     FollowerCamera.navigateTurn = 0;
@@ -931,9 +1147,22 @@ export class FollowerCamera {
 
   /** Enter Navigate with hsMode!=0 ship flight (freelook cheat path). */
   static beginNavigateHover(){
-    GameState.clientCameraMode = ClientCameraMode.NAVIGATE;
-    FollowerCamera.lastAppliedCameraMode = -1;
     FollowerCamera.beginNavigate(true);
+  }
+
+  /** Leave Navigate — restore prior chase mode and chase pitch/facing. */
+  static endNavigate(){
+    FollowerCamera.navigateActive = false;
+    FollowerCamera.navigateHoverMode = false;
+    FollowerCamera.clearNavigateAxes();
+    FollowerCamera.navigateRoll = 0;
+    FollowerCamera.navigateLastRoll = 0;
+    FollowerCamera.restoreChasePose(0);
+    if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){
+      GameState.clientCameraMode =
+        (FollowerCamera.preNavigateCameraMode | 0) || ClientCameraMode.ON_A_STICK;
+      FollowerCamera.lastAppliedCameraMode = -1;
+    }
   }
 
   /** Axis inputs for Navigate Message turn/tilt/speed/strafe/raise (held keys overwrite). */
@@ -947,7 +1176,8 @@ export class FollowerCamera {
 
   /**
    * Control.
-   * hsMode==0: simple yaw/pitch + move. hsMode!=0: scaled ship flight + roll blend.
+   * hsMode==0: yaw/pitch from camera orientation + orientation-relative move.
+   * hsMode!=0: scaled ship flight + roll blend.
    */
   static updateNavigate(delta: number){
     FollowerCamera.beginNavigate(FollowerCamera.navigateHoverMode);
@@ -957,31 +1187,36 @@ export class FollowerCamera {
       return;
     }
 
+    let yaw = FollowerCamera.navigateYaw;
+    let pitch = FollowerCamera.navigatePitch;
+
     const turn = FollowerCamera.navigateTurn * FollowerCamera.NAVIGATE_TURN_SPEED;
     const tilt = FollowerCamera.navigateTilt * FollowerCamera.NAVIGATE_TILT_SPEED;
-    FollowerCamera.facing = Utility.NormalizeRadian(FollowerCamera.facing + turn * delta);
-    FollowerCamera.pitch = Math.max(
-      0,
-      Math.min(HALF_PI, FollowerCamera.pitch + tilt * delta)
+    yaw = Utility.NormalizeRadian(yaw + turn * delta);
+    pitch = pitch + tilt * delta;
+    if(pitch < 0) pitch = 0;
+    if(pitch > HALF_PI) pitch = HALF_PI;
+
+    // Move in (strafe, speed) with pitch−90° basis (retail Control)
+    const moveBasisPitch = pitch - HALF_PI;
+    FollowerCamera.tmpEuler.set(moveBasisPitch, 0, yaw, 'YZX');
+    FollowerCamera.tmpHookQuat.setFromEuler(FollowerCamera.tmpEuler);
+    const moveScale = FollowerCamera.NAVIGATE_MOVE_SPEED;
+    const localMove = FollowerCamera.tmpForward.set(
+      FollowerCamera.navigateStrafe * moveScale,
+      FollowerCamera.navigateSpeed * moveScale,
+      0
     );
+    localMove.applyQuaternion(FollowerCamera.tmpHookQuat);
+    FollowerCamera.camera.position.x += localMove.x * delta;
+    FollowerCamera.camera.position.y += localMove.y * delta;
+    FollowerCamera.camera.position.z += localMove.z * delta;
+    FollowerCamera.camera.position.z += FollowerCamera.navigateRaise * moveScale * delta;
 
-    const move = FollowerCamera.NAVIGATE_MOVE_SPEED * delta;
-    const yaw = FollowerCamera.facing + HALF_PI;
-    const forwardX = Math.cos(yaw);
-    const forwardY = Math.sin(yaw);
-    const rightX = Math.cos(yaw - HALF_PI);
-    const rightY = Math.sin(yaw - HALF_PI);
-
-    FollowerCamera.camera.position.x +=
-      forwardX * FollowerCamera.navigateSpeed * move
-      + rightX * FollowerCamera.navigateStrafe * move;
-    FollowerCamera.camera.position.y +=
-      forwardY * FollowerCamera.navigateSpeed * move
-      + rightY * FollowerCamera.navigateStrafe * move;
-    FollowerCamera.camera.position.z += FollowerCamera.navigateRaise * move;
-
+    FollowerCamera.navigateYaw = yaw;
+    FollowerCamera.navigatePitch = pitch;
     FollowerCamera.camera.rotation.order = 'YZX';
-    FollowerCamera.camera.rotation.set(FollowerCamera.pitch, 0, FollowerCamera.facing + HALF_PI);
+    FollowerCamera.camera.rotation.set(pitch, 0, yaw);
     FollowerCamera.camera.updateProjectionMatrix();
 
     FollowerCamera.clearNavigateAxes();
@@ -997,27 +1232,25 @@ export class FollowerCamera {
     let strafe = FollowerCamera.navigateStrafe * 3.0;
     const raise = FollowerCamera.navigateRaise;
 
-    FollowerCamera.facing = Utility.NormalizeRadian(
-      FollowerCamera.facing + turn * FollowerCamera.NAVIGATE_TURN_SPEED * delta
+    FollowerCamera.navigateYaw = Utility.NormalizeRadian(
+      FollowerCamera.navigateYaw + turn * delta
     );
 
-    // Roll blend: (2Δ+0.033)*roll + (0.967−2Δ)*lastRoll — use strafe as roll input
+    // Roll blend: (2Δ+0.033)*roll + (0.967−2Δ)*lastRoll — strafe as roll input
     const rollIn = strafe * 0.35;
     const roll = (delta + delta + 0.033) * rollIn
       + (0.967 - (delta + delta)) * FollowerCamera.navigateLastRoll;
     FollowerCamera.navigateRoll = roll;
     FollowerCamera.navigateLastRoll = roll;
 
-    const pitchDelta = tilt * FollowerCamera.NAVIGATE_TILT_SPEED * delta;
-    let nextPitch = FollowerCamera.pitch - pitchDelta;
+    const pitchDelta = tilt * delta;
+    let nextPitch = FollowerCamera.navigatePitch - pitchDelta;
     if(nextPitch > -HALF_PI && nextPitch < HALF_PI){
-      FollowerCamera.pitch = nextPitch;
+      FollowerCamera.navigatePitch = nextPitch;
     }
 
-    const move = FollowerCamera.NAVIGATE_MOVE_SPEED * delta;
-    const yaw = FollowerCamera.facing + HALF_PI;
-    const pitch = FollowerCamera.pitch;
-    // Local forward includes pitch (look direction); −speed on local Y after −90° pitch trick
+    const yaw = FollowerCamera.navigateYaw;
+    const pitch = FollowerCamera.navigatePitch;
     const forwardX = Math.cos(yaw) * Math.cos(pitch);
     const forwardY = Math.sin(yaw) * Math.cos(pitch);
     const forwardZ = Math.sin(pitch);
@@ -1025,18 +1258,14 @@ export class FollowerCamera {
     const rightY = Math.sin(yaw - HALF_PI);
 
     FollowerCamera.camera.position.x +=
-      forwardX * (-speed) * move + rightX * strafe * move;
+      forwardX * (-speed) * FollowerCamera.NAVIGATE_MOVE_SPEED * delta + rightX * strafe * FollowerCamera.NAVIGATE_MOVE_SPEED * delta;
     FollowerCamera.camera.position.y +=
-      forwardY * (-speed) * move + rightY * strafe * move;
+      forwardY * (-speed) * FollowerCamera.NAVIGATE_MOVE_SPEED * delta + rightY * strafe * FollowerCamera.NAVIGATE_MOVE_SPEED * delta;
     FollowerCamera.camera.position.z +=
-      forwardZ * (-speed) * move + raise * move;
+      forwardZ * (-speed) * FollowerCamera.NAVIGATE_MOVE_SPEED * delta + raise * FollowerCamera.NAVIGATE_MOVE_SPEED * delta;
 
     FollowerCamera.camera.rotation.order = 'YZX';
-    FollowerCamera.camera.rotation.set(
-      FollowerCamera.pitch,
-      roll,
-      FollowerCamera.facing + HALF_PI
-    );
+    FollowerCamera.camera.rotation.set(pitch, roll, yaw);
     FollowerCamera.camera.updateProjectionMatrix();
 
     FollowerCamera.clearNavigateAxes();

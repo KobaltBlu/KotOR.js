@@ -207,6 +207,24 @@ export class IngameControls {
         GameState.GameOverManager.OnDeathSequenceInput();
       }
 
+      // F8 — toggle Navigate free-fly (debug); retail cheat path remains CapsLock
+      if(e.code === 'F8' && !e.repeat
+        && (GameState.Mode == EngineMode.INGAME || GameState.Mode == EngineMode.FREELOOK)
+        && GameState.State != EngineState.PAUSED){
+        if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){
+          FollowerCamera.endNavigate();
+          if(GameState.Mode == EngineMode.FREELOOK){
+            GameState.SetEngineMode(EngineMode.INGAME);
+          }
+        }else if((GameState.clientCameraMode | 0) !== ClientCameraMode.FREELOOK){
+          if(GameState.Mode == EngineMode.FREELOOK){
+            GameState.SetEngineMode(EngineMode.INGAME);
+          }
+          FollowerCamera.beginNavigate(false);
+        }
+        e.preventDefault();
+      }
+
       if(GameState.MenuManager.activeGUIElement){
         if(typeof GameState.MenuManager.activeGUIElement.onKeyDown === 'function'){
           GameState.MenuManager.activeGUIElement.onKeyDown(e);
@@ -834,10 +852,7 @@ export class IngameControls {
       }
       // Exiting navigate restores chase (RestoreCamera when leaving mode 5/7)
       if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){
-        GameState.clientCameraMode = ClientCameraMode.ON_A_STICK;
-        FollowerCamera.navigateActive = false;
-        FollowerCamera.navigateHoverMode = false;
-        FollowerCamera.lastAppliedCameraMode = -1;
+        FollowerCamera.endNavigate();
         if(GameState.Mode == EngineMode.FREELOOK){
           GameState.SetEngineMode(EngineMode.INGAME);
         }
@@ -1315,7 +1330,20 @@ export class IngameControls {
       const dx = Mouse.MouseX - Mouse.OldMouseX;
       const dy = Mouse.MouseY - Mouse.OldMouseY;
       if(dx || dy){
-        FollowerCamera.applyMouseLookDelta(dx, dy);
+        if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){
+          // Fly-cam look — feed Message turn/tilt from mouse
+          const sens = Mouse.getSensitivityDegrees();
+          const norm = FollowerCamera.MOUSE_DELTA_NORMALIZE_PX;
+          let nx = dx / norm;
+          let ny = dy / norm;
+          if(nx > 1) nx = 1;
+          else if(nx < -1) nx = -1;
+          if(ny > 1) ny = 1;
+          else if(ny < -1) ny = -1;
+          FollowerCamera.setNavigateAxes(-nx * (sens / 30), -ny * (sens / 30));
+        }else{
+          FollowerCamera.applyMouseLookDelta(dx, dy);
+        }
       }
       // Hide software cursor only for classic RMB-hold look (Mouse Look keeps
       // cursor for LMB picking while camera tracks movement).
