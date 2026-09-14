@@ -53,6 +53,8 @@ import { MiniGameAspectMaskPass } from "@/shaders/pass/MiniGameAspectMaskPass";
 import { resolveMiniGameAspectMaskPass } from "@/shaders/pass/MiniGameAspectMaskGates";
 import { OdysseyLensFlarePass } from "@/shaders/pass/OdysseyLensFlarePass";
 import { ResourceLoader, TextureLoader } from "@/loaders";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { CacheScope } from "@/enums/resource/CacheScope";
 import { warmRoomGpuResources, compileAreaRoomsVisible } from "@/three/odyssey/warmRoomGpuResources";
 import { GUIListBox } from "@/gui/GUIListBox";
 
@@ -89,6 +91,7 @@ import {
   snapshotObjectList,
   type SceneMapPin,
 } from "@/inspect/runtimeSnapshots";
+import { snapshotDialog } from "@/inspect/dialogSnapshot";
 import { snapshotAreaMapOverlay } from "@/inspect/areaMapOverlay";
 import { clearWorldMarkers, syncWorldMarkers } from "@/inspect/worldMarkers";
 import { AudioEmitterType } from "./enums/audio/AudioEmitterType";
@@ -506,6 +509,83 @@ export class GameState implements EngineContext {
     GameState.Debugger.send(msg);
   }
 
+  /**
+   * Reply to RequestScriptResource with NCS bytes from ResourceLoader / runtime cache.
+   * Does not call NWScript.Load (avoids inventing live instances).
+   */
+  static sendScriptResource(
+    resref: string,
+    ok: boolean,
+    source: 'override' | 'key' | 'module' | 'runtime' | 'missing',
+    bytecode?: Uint8Array | null,
+  ){
+    if(!GameState.debugMode) return;
+    const msg = new IPCMessage(IPCMessageType.ScriptResource);
+    msg.addParam(new IPCMessageParam(IPCDataType.STRING, resref || ''));
+    msg.addParam(new IPCMessageParam(IPCDataType.INTEGER, ok ? 1 : 0));
+    msg.addParam(new IPCMessageParam(IPCDataType.STRING, source));
+    msg.addParam(new IPCMessageParam(IPCDataType.VOID, ok && bytecode ? bytecode : new Uint8Array(0)));
+    GameState.Debugger.send(msg);
+  }
+
+  /** Resolve NCS buffer + source label without creating a live script instance. */
+  static async resolveScriptResourceBytes(resref: string): Promise<{
+    buffer: Uint8Array;
+    source: 'override' | 'key' | 'module' | 'runtime';
+  } | null> {
+    const key = (resref || '').toLowerCase();
+    if(!key){ return null; }
+    const resId = ResourceTypes.ncs;
+
+    const runtime =
+      GameState.NWScript?.scripts?.get(key)
+      || GameState.NWScript?.scripts?.get(resref);
+    if(runtime?.code?.length){
+      return { buffer: runtime.code, source: 'runtime' };
+    }
+
+    const overrideMap = ResourceLoader.CacheScopes[CacheScope.OVERRIDE]?.get(resId);
+    if(overrideMap?.has(key)){
+      return { buffer: overrideMap.get(key)!, source: 'override' };
+    }
+    const moduleMap = ResourceLoader.CacheScopes[CacheScope.MODULE]?.get(resId);
+    if(moduleMap?.has(key)){
+      return { buffer: moduleMap.get(key)!, source: 'module' };
+    }
+    const globalMap = ResourceLoader.CacheScopes[CacheScope.GLOBAL]?.get(resId);
+    if(globalMap?.has(key)){
+      return { buffer: globalMap.get(key)!, source: 'key' };
+    }
+
+    const cached = ResourceLoader.loadCachedResource(resId, key);
+    if(cached?.length){
+      return { buffer: cached, source: 'key' };
+    }
+
+    try{
+      const fromOverride = await ResourceLoader.searchOverride(resId, key);
+      if(fromOverride?.length){
+        return { buffer: fromOverride, source: 'override' };
+      }
+    }catch{ /* ignore */ }
+
+    try{
+      const fromModule = await ResourceLoader.searchModuleArchives(resId, key);
+      if(fromModule?.length){
+        return { buffer: fromModule, source: 'module' };
+      }
+    }catch{ /* ignore */ }
+
+    try{
+      const fromKey = await ResourceLoader.searchKeyTable(resId, key);
+      if(fromKey?.length){
+        return { buffer: fromKey, source: 'key' };
+      }
+    }catch{ /* ignore */ }
+
+    return null;
+  }
+
   /** Finish or clear a mid-halt script when the debugger window closes. */
   static finishPausedScriptOnDebuggerClose(){
     const script = GameState.Debugger.currentScript;
@@ -796,11 +876,13 @@ export class GameState implements EngineContext {
       GameState.debugMode = true;
       GameState.dumpLiveScriptsToDebugger();
       GameState.sendInspectorSnapshot(IPCMessageType.ModuleSnapshot, snapshotModuleAreaInfo());
+      GameState.sendInspectorSnapshot(IPCMessageType.DialogSnapshot, snapshotDialog());
     });
     GameState.Debugger.addEventListener('client-reconnected', () => {
       if(!GameState.debugMode){ return; }
       GameState.dumpLiveScriptsToDebugger();
       GameState.sendInspectorSnapshot(IPCMessageType.ModuleSnapshot, snapshotModuleAreaInfo());
+      GameState.sendInspectorSnapshot(IPCMessageType.DialogSnapshot, snapshotDialog());
       void (async () => {
         const overlay = await snapshotAreaMapOverlay();
         GameState.sendInspectorSnapshot(IPCMessageType.AreaMapOverlay, overlay);
@@ -886,6 +968,23 @@ export class GameState implements EngineContext {
           const overlay = await snapshotAreaMapOverlay();
           GameState.sendInspectorSnapshot(IPCMessageType.AreaMapOverlay, overlay);
         })();
+      }else if(msg.type == IPCMessageType.RequestScriptResource){
+        const resref = (msg.getParam(0)?.getString?.() || '').trim();
+        void (async () => {
+          try{
+            const found = await GameState.resolveScriptResourceBytes(resref);
+            if(found){
+              GameState.sendScriptResource(resref.toLowerCase(), true, found.source, found.buffer);
+            }else{
+              GameState.sendScriptResource(resref.toLowerCase() || resref, false, 'missing', null);
+            }
+          }catch(e){
+            console.error('RequestScriptResource failed', e);
+            GameState.sendScriptResource(resref.toLowerCase() || resref, false, 'missing', null);
+          }
+        })();
+      }else if(msg.type == IPCMessageType.RequestDialogSnapshot){
+        GameState.sendInspectorSnapshot(IPCMessageType.DialogSnapshot, snapshotDialog());
       }else if(msg.type == IPCMessageType.Debug && msg.subType == IPCMessageTypeDebug.ToggleDebugState){
         const type = msg.getParam(0).getString();
         GameState.ToggleDebugState(type as EngineDebugType);

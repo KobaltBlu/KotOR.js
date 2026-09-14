@@ -16,6 +16,7 @@ import { AudioLoader } from "@/audio/AudioLoader";
 import { AudioEngine } from "@/audio/AudioEngine";
 import { CutsceneMode } from "@/enums/dialog/CutsceneMode";
 import { SoundMode } from "@/enums/audio/SoundMode";
+import { pushDialogSnapshotToDebugger } from "@/inspect/dialogSnapshot";
 import * as THREE from "three";
 import { CameraMode } from "@/enums/dialog/CameraMode";
 import { ICameraState } from "@/interface/dialog/ICameraState";
@@ -104,6 +105,8 @@ export class CutsceneManager {
   static currentReplies: DLGNode[] = [];
 
   static lastSpokenString: string = '';
+  /** Last shown entry retained after showReplies clears currentEntry (debugger). */
+  static lastDialogEntry: DLGNode | undefined;
 
   static listener: ModuleObject;
   static owner: ModuleObject;
@@ -609,6 +612,7 @@ export class CutsceneManager {
     this.currentReplies = [];
     this.replySelectLocked = false;
     this.lastSpokenString = '';
+    this.lastDialogEntry = undefined;
     this.ended = false;
     
     if (!dialog) {
@@ -847,6 +851,7 @@ export class CutsceneManager {
     this.clearPendingDialog();
     this.dialogAnimParticipants = [];
     this.currentEntry = entry;
+    this.lastDialogEntry = entry;
     this.currentEntry.repliesShown = false;
     entry.initProperties();
 
@@ -958,6 +963,7 @@ export class CutsceneManager {
     }else{
       GameState.MenuManager.InGameDialog.setReplies(replies);
     }
+    pushDialogSnapshotToDebugger();
   }
 
   /**
@@ -1057,6 +1063,9 @@ export class CutsceneManager {
    */
   static showReplies(entry: DLGNode) {
     this.state = ConversationState.WAITING_FOR_PC_CHOICE;
+    if(entry){
+      this.lastDialogEntry = entry;
+    }
     this.currentEntry = undefined;
     this.isListening = false;
     if (GameState.Mode != EngineMode.DIALOG)
@@ -1138,6 +1147,7 @@ export class CutsceneManager {
       GameState.MenuManager.InGameDialog.setReplies(selectable);
       GameState.MenuManager.InGameDialog.setDialogMode(ConversationState.WAITING_FOR_PC_CHOICE);
     }
+    pushDialogSnapshotToDebugger();
   }
 
   /**
@@ -1170,6 +1180,8 @@ export class CutsceneManager {
     this.barkScreenY = -1;
     this.dialogNonDependantNames.clear();
     this.ended = true;
+    this.lastDialogEntry = undefined;
+    pushDialogSnapshotToDebugger();
     if(!wasBark){
       this.audioEmitter.stop();
       if(this.dialog?.getConversationType() == DLGConversationType.COMPUTER){

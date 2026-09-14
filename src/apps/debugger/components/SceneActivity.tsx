@@ -106,7 +106,7 @@ function pinsToMapSpace(
 }
 
 export const SceneActivity: React.FC = () => {
-  const { stateRef, objectList, selectedObjectDetail, setActivity } = useApp();
+  const { stateRef, objectList, selectedObjectDetail, navigateHelper } = useApp();
   const [list, setList] = useState<ObjectListEntry[]>(objectList);
   const [detail, setDetail] = useState<LiveObjectSnapshot | null>(selectedObjectDetail);
   const [filters, setFilters] = useState({ ...DEFAULT_KIND_FILTERS });
@@ -144,6 +144,29 @@ export const SceneActivity: React.FC = () => {
       state?.setSceneWorldMarkers({ enabled: false, entries: [], selectedId: null });
     };
   }, [stateRef]);
+
+  useEffect(() => {
+    const state = stateRef.current;
+    const onNavigate = (target: { objectId?: number; mapId?: string }) => {
+      if(target.mapId){
+        setSelectedMapId(target.mapId);
+        const entry = list.find((e) => e.mapId === target.mapId);
+        if(entry){
+          setSelectedObjectId(entry.id);
+        }
+        return;
+      }
+      if(typeof target.objectId === 'number' && target.objectId >= 0){
+        setSelectedObjectId(target.objectId);
+        const entry = list.find((e) => e.id === target.objectId);
+        if(entry?.mapId){
+          setSelectedMapId(entry.mapId);
+        }
+      }
+    };
+    state?.addEventListener('navigate', onNavigate);
+    return () => state?.removeEventListener('navigate', onNavigate);
+  }, [stateRef, list]);
 
   useEffect(() => {
     if(!overlay?.available || !overlay.textureDataUrl){
@@ -211,19 +234,26 @@ export const SceneActivity: React.FC = () => {
 
   const openScripts = () => {
     if(!detail){ return; }
-    stateRef.current?.setScriptOwnerFilter({
+    navigateHelper({
+      activity: 'scripts',
       objectId: detail.objectId,
-      tag: detail.tag || '',
-      label: detail.name || detail.tag || 'object',
-      kind: detail.kind,
+      ownerTag: detail.tag || '',
+      ownerLabel: detail.name || detail.tag || 'object',
+      ownerKind: detail.kind,
     });
-    setActivity('scripts');
   };
 
   const openScriptRow = (slot: string, resref: string) => {
     if(!detail){ return; }
-    stateRef.current?.openObjectScript(detail, slot, resref);
-    setActivity('scripts');
+    navigateHelper({
+      activity: 'scripts',
+      objectId: detail.objectId,
+      scriptKey: slot,
+      resref,
+      ownerTag: detail.tag || '',
+      ownerLabel: detail.name || detail.tag || 'object',
+      ownerKind: detail.kind,
+    });
   };
 
   const kinds = Object.keys(OVERVIEW_KIND_LABELS) as OverviewObjectKind[];

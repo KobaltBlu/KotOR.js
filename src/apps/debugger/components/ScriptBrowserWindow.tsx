@@ -215,6 +215,7 @@ const OwnerGroupItem: React.FC<{
   instanceMap: Map<string, KotOR.NWScriptInstance>;
   selectedInstance: KotOR.NWScriptInstance | undefined;
   onSelectInstance: (instance: KotOR.NWScriptInstance) => void;
+  onOpenOwner?: (owner: OwnerGroup) => void;
   expanded: boolean;
   onToggle: () => void;
   query: string;
@@ -226,6 +227,7 @@ const OwnerGroupItem: React.FC<{
   instanceMap,
   selectedInstance,
   onSelectInstance,
+  onOpenOwner,
   expanded,
   onToggle,
   query,
@@ -295,7 +297,18 @@ const OwnerGroupItem: React.FC<{
             <span className="script-browser-owner-tag">tag {owner.tag}</span>
           ) : null}
           {owner.key !== UNASSIGNED_KEY && owner.objectId >= 0 ? (
-            <span className="script-browser-owner-id">id {owner.objectId}</span>
+            <span
+              className={`script-browser-owner-id ${onOpenOwner ? 'script-browser-owner-link' : ''}`}
+              title={onOpenOwner ? 'Show in Scene' : undefined}
+              onClick={(e) => {
+                if(!onOpenOwner){ return; }
+                e.preventDefault();
+                e.stopPropagation();
+                onOpenOwner(owner);
+              }}
+            >
+              id {owner.objectId}
+            </span>
           ) : null}
         </span>
         <span className="script-browser-script-count">{owner.instances.length}</span>
@@ -329,12 +342,24 @@ export const ScriptBrowserWindow = (props: {
   const [parentMap] = appContext.parentMap;
   const [selectedInstance] = appContext.selectedInstance;
   const setSelectedInstanceHelper = appContext.setSelectedInstanceHelper;
+  const navigateHelper = appContext.navigateHelper;
   const [search, setSearch] = useState("");
   const [kindFilter, setKindFilter] = useState<OverviewObjectKind | 'all'>('all');
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
 
   const onSelectInstance = (instance: KotOR.NWScriptInstance) => {
     setSelectedInstanceHelper(instance);
+  };
+
+  const onOpenOwner = (owner: OwnerGroup) => {
+    if(owner.objectId < 0){ return; }
+    navigateHelper({
+      activity: 'scene',
+      objectId: owner.objectId,
+      ownerTag: owner.tag,
+      ownerLabel: owner.label,
+      ownerKind: owner.kind,
+    });
   };
 
   const query = search.trim().toLowerCase();
@@ -501,6 +526,7 @@ export const ScriptBrowserWindow = (props: {
                 instanceMap={instanceMap}
                 selectedInstance={selectedInstance}
                 onSelectInstance={onSelectInstance}
+                onOpenOwner={onOpenOwner}
                 expanded={expanded.has(owner.key)}
                 onToggle={() => toggleExpanded(owner.key)}
                 query={query}

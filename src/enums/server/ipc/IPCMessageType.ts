@@ -39,4 +39,12 @@ export enum IPCMessageType {
   SetSceneWorldMarkers = 0x28,
   RequestAreaMapOverlay = 0x29,
   AreaMapOverlay = 0x2A,
+  /** Debugger → game: load NCS bytes by resref (no live instance). */
+  RequestScriptResource = 0x2B,
+  /** Game → debugger: NCS bytecode reply for RequestScriptResource. */
+  ScriptResource = 0x2C,
+  /** Debugger → game: live CutsceneManager conversation snapshot. */
+  RequestDialogSnapshot = 0x2D,
+  /** Game → debugger: DialogSnapshot JSON. */
+  DialogSnapshot = 0x2E,
 }

@@ -14,6 +14,7 @@ const ACTIVITIES: { id: InspectorActivity; label: string }[] = [
   { id: 'objects', label: 'Objects' },
   { id: 'globals', label: 'Globals' },
   { id: 'scripts', label: 'Scripts' },
+  { id: 'dialog', label: 'Dialog' },
 ];
 
 export interface ActivityChromeProps {
@@ -27,7 +28,7 @@ export const ActivityChrome: React.FC<ActivityChromeProps> = ({
   statusLeft,
   statusRight,
 }) => {
-  const { activity, setActivity, sendMessageHelper, hostMode } = useApp();
+  const { activity, navigateHelper, sendMessageHelper, hostMode } = useApp();
 
   const toggleDebug = (type: EngineDebugType) => {
     const msg = new IPCMessage(IPCMessageType.Debug, IPCMessageTypeDebug.ToggleDebugState);
@@ -37,6 +38,10 @@ export const ActivityChrome: React.FC<ActivityChromeProps> = ({
 
   const requestHostAction = (action: 'close' | 'popout' | 'dock') => {
     sendMessageHelper(action);
+  };
+
+  const onActivityClick = (id: InspectorActivity) => {
+    navigateHelper({ activity: id });
   };
 
   return (
@@ -49,7 +54,7 @@ export const ActivityChrome: React.FC<ActivityChromeProps> = ({
               key={a.id}
               type="button"
               className={`module-inspector-tab ${activity === a.id ? 'active' : ''}`}
-              onClick={() => setActivity(a.id)}
+              onClick={() => onActivityClick(a.id)}
             >
               {a.label}
             </button>

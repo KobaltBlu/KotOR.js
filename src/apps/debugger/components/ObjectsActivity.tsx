@@ -68,7 +68,7 @@ const SectionView: React.FC<{
 };
 
 export const ObjectsActivity: React.FC = () => {
-  const { stateRef, objectList, selectedObjectDetail, setActivity } = useApp();
+  const { stateRef, objectList, selectedObjectDetail, navigateHelper } = useApp();
   const [list, setList] = useState<ObjectListEntry[]>(objectList);
   const [detail, setDetail] = useState<LiveObjectSnapshot | null>(selectedObjectDetail);
   const [kindFilter, setKindFilter] = useState<OverviewObjectKind | 'all'>('all');
@@ -85,12 +85,19 @@ export const ObjectsActivity: React.FC = () => {
     const id = window.setInterval(refresh, 1000);
     const onList = (next: ObjectListEntry[]) => setList(next || []);
     const onDetail = (next: LiveObjectSnapshot | null) => setDetail(next);
+    const onNavigate = (target: { objectId?: number; activity?: string }) => {
+      if(typeof target.objectId === 'number' && target.objectId >= 0){
+        setSelectedId(target.objectId);
+      }
+    };
     state?.addEventListener('object-list', onList);
     state?.addEventListener('object-detail', onDetail);
+    state?.addEventListener('navigate', onNavigate);
     return () => {
       window.clearInterval(id);
       state?.removeEventListener('object-list', onList);
       state?.removeEventListener('object-detail', onDetail);
+      state?.removeEventListener('navigate', onNavigate);
     };
   }, [stateRef, kindFilter]);
 
@@ -113,19 +120,26 @@ export const ObjectsActivity: React.FC = () => {
 
   const openScripts = () => {
     if(!detail){ return; }
-    stateRef.current?.setScriptOwnerFilter({
+    navigateHelper({
+      activity: 'scripts',
       objectId: detail.objectId,
-      tag: detail.tag || '',
-      label: detail.name || detail.tag || 'object',
-      kind: detail.kind,
+      ownerTag: detail.tag || '',
+      ownerLabel: detail.name || detail.tag || 'object',
+      ownerKind: detail.kind,
     });
-    setActivity('scripts');
   };
 
   const openScriptRow = (slot: string, resref: string) => {
     if(!detail){ return; }
-    stateRef.current?.openObjectScript(detail, slot, resref);
-    setActivity('scripts');
+    navigateHelper({
+      activity: 'scripts',
+      objectId: detail.objectId,
+      scriptKey: slot,
+      resref,
+      ownerTag: detail.tag || '',
+      ownerLabel: detail.name || detail.tag || 'object',
+      ownerKind: detail.kind,
+    });
   };
 
   return (

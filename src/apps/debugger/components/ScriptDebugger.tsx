@@ -5,6 +5,7 @@ import { ModuleActivity } from "@/apps/debugger/components/ModuleActivity";
 import { ObjectsActivity } from "@/apps/debugger/components/ObjectsActivity";
 import { GlobalsActivity } from "@/apps/debugger/components/GlobalsActivity";
 import { ScriptsActivity } from "@/apps/debugger/components/ScriptsActivity";
+import { DialogActivity } from "@/apps/debugger/components/DialogActivity";
 import { useApp } from "@/apps/debugger/context/AppContext";
 
 export const ScriptDebugger = () => {
@@ -40,6 +41,9 @@ export const ScriptDebugger = () => {
       break;
     case 'globals':
       body = <GlobalsActivity />;
+      break;
+    case 'dialog':
+      body = <DialogActivity />;
       break;
     case 'scripts':
     default:

@@ -6,6 +6,17 @@ import type { NWScriptStackVariable } from "@/nwscript/NWScriptStackVariable";
 import { nearestNssLineForCodeOffset } from "@/nwscript/inspect/nssCodeLineMap";
 import { decompileScriptWithLineMap } from "@/nwscript/inspect/decompileScriptWithLineMap";
 
+function stackObjectId(element: NWScriptStackVariable): number | null {
+  if(element.type !== NWScriptDataType.OBJECT){ return null; }
+  const raw = typeof element.value === 'object' && element.value
+    ? (element.value as { id?: number }).id
+    : element.value;
+  const id = Number(raw ?? -1);
+  if(!Number.isFinite(id) || id < 0){ return null; }
+  // OBJECT_INVALID commonly 0x7FFFFFFF — still navigable if present in list
+  return id | 0;
+}
+
 function formatStackValue(element: NWScriptStackVariable): string {
   switch(element.type){
     case NWScriptDataType.INTEGER:
@@ -15,9 +26,7 @@ function formatStackValue(element: NWScriptStackVariable): string {
     case NWScriptDataType.STRING:
       return JSON.stringify(element.value ?? '');
     case NWScriptDataType.OBJECT: {
-      const id = typeof element.value === 'object' && element.value
-        ? (element.value as { id?: number }).id
-        : element.value;
+      const id = stackObjectId(element);
       return `0x${Number(id ?? 0).toString(16).toUpperCase().padStart(8, '0')}`;
     }
     default:
@@ -42,6 +51,7 @@ function typeName(type: number): string {
 export const ScriptDebugSouthPane = () => {
   const appContext = useApp();
   const stateRef = appContext.stateRef;
+  const navigateHelper = appContext.navigateHelper;
   const [instance, setInstance] = useState<KotOR.NWScriptInstance>();
   const instanceRef = useRef<KotOR.NWScriptInstance | undefined>(undefined);
   const [, rerender] = useState(0);
@@ -81,6 +91,12 @@ export const ScriptDebugSouthPane = () => {
     instance.seek = address;
     instance.dispatchEvent('seek', address);
     stateRef.current.dispatchEvent('instance-updated', instance);
+  };
+
+  const onStackObjectClick = (element: NWScriptStackVariable) => {
+    const objectId = stackObjectId(element);
+    if(objectId == null){ return; }
+    navigateHelper({ activity: 'objects', objectId });
   };
 
   return (
@@ -132,13 +148,22 @@ export const ScriptDebugSouthPane = () => {
         </div>
         <ul className="script-debug-stack">
           {instance && stack.length ? (
-            stack.map((element, index) => (
-              <li key={`stack-${index}`} className="stack-element">
-                <span className="stack-index">[{index}]</span>
-                <span className="stack-type">{typeName(element.type)}</span>
-                <span className="stack-value">{formatStackValue(element)}</span>
-              </li>
-            ))
+            stack.map((element, index) => {
+              const objectId = stackObjectId(element);
+              const clickable = objectId != null;
+              return (
+                <li
+                  key={`stack-${index}`}
+                  className={`stack-element ${clickable ? 'stack-element-link' : ''}`}
+                  title={clickable ? `Open object ${objectId}` : undefined}
+                  onClick={clickable ? () => onStackObjectClick(element) : undefined}
+                >
+                  <span className="stack-index">[{index}]</span>
+                  <span className="stack-type">{typeName(element.type)}</span>
+                  <span className="stack-value">{formatStackValue(element)}</span>
+                </li>
+              );
+            })
           ) : (
             <li className="empty">Empty</li>
           )}
