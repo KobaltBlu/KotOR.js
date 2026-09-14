@@ -1,8 +1,9 @@
 import { GameMenu, LBL_3DView } from "@/gui";
 import type { GUILabel, GUIButton } from "@/gui";
-import { TextureLoader } from "@/loaders";
+import { MDLLoader, TextureLoader } from "@/loaders";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { OdysseyModel3D } from "@/three/odyssey";
+import type { OdysseyModel } from "@/odyssey";
 import { CharGenClasses } from "@/game/CharGenClasses";
 import {
   buildCharGenPortraitList,
@@ -46,12 +47,16 @@ export class CharGenPortCust extends GameMenu {
 
   _3dView: LBL_3DView;
   sceneModel3D: OdysseyModel3D;
+  /** gui3D_room spawned before cghead_light (retail PortCust ctor). */
+  _3dViewRoom: OdysseyModel3D;
 
   isCharLoading: boolean = false;
   /** GetPortraitsList parallel arrays (portrait id + appearance id). */
   portraitList: CharGenPortraitEntry[] = [];
   /** Index into portraitList. */
   portraitListIndex: number = 0;
+  /** Creature context before preview (restored on hide/close). */
+  private _previewContextRestore: any = undefined;
 
   constructor(){
     super();
@@ -85,6 +90,7 @@ export class CharGenPortCust extends GameMenu {
           this.portraitId
         );
         creature.appearanceHead = this.appearanceHead;
+        this.restoreCreatureContext();
         creature.loadModel().then( (model: OdysseyModel3D) => {
           if(model) model.rotation.z = -Math.PI/2;
           this.exiting = false;
@@ -115,6 +121,7 @@ export class CharGenPortCust extends GameMenu {
       this.manager.CharGenCustomPanel?.portraitCreationCompleted?.();
       this.manager.CharGenMain?.updateAttributes?.();
 
+      this.restoreCreatureContext();
       this.close();
     });
 
@@ -165,6 +172,23 @@ export class CharGenPortCust extends GameMenu {
     this.portraitListIndex = idx >= 0 ? idx : 0;
   }
 
+  /** Point selectedCreature at this view's LightManager while previewing. */
+  protected bindCreatureContext(){
+    const creature = GameState.CharGenManager.selectedCreature;
+    if(!creature) return;
+    if(this._previewContextRestore === undefined){
+      this._previewContextRestore = creature.context;
+    }
+    creature.setContext(this._3dView);
+  }
+
+  protected restoreCreatureContext(){
+    const creature = GameState.CharGenManager.selectedCreature;
+    if(!creature || this._previewContextRestore === undefined) return;
+    creature.setContext(this._previewContextRestore);
+    this._previewContextRestore = undefined;
+  }
+
   async cyclePortrait(direction: -1 | 1) {
     if(this.isCharLoading) return;
     if(!this.portraitList.length){
@@ -184,6 +208,7 @@ export class CharGenPortCust extends GameMenu {
         entry.portraitId
       );
 
+      this.bindCreatureContext();
       const model = await creature.loadModel();
       this.playPauseAnimation(creature);
       this.updateCamera();
@@ -214,23 +239,37 @@ export class CharGenPortCust extends GameMenu {
     if(creature.model){
       creature.model.removeFromParent();
     }
-    OdysseyModel3D.FromMDL(GameState.CharGenManager.cghead_light, {
-      context: this._3dView
-    }).then( (sceneModel3D: OdysseyModel3D) => {
-      try{
-        this.sceneModel3D = sceneModel3D;
-        this._3dView.addModel(this.sceneModel3D);
-        // PlayAnimation("default") on cghead_light
-        this.sceneModel3D.playAnimation('default', true);
-        this.sceneModel3D.update(1.0);
-        this.updateCamera();
-      }catch(e){
-        console.error(e);
-      }
-    });
+    void this.init3DScene();
     control.setFillTexture(this._3dView.texture.texture);
     control.setFillOpaque(true);
     control.setChromeBlending(1);
+  }
+
+  /**
+   * SpawnRoom("gui3D_room") then AddModel("cghead_light") + PlayAnimation("default").
+   */
+  private async init3DScene(){
+    try{
+      const roomMdl: OdysseyModel = await MDLLoader.loader.load('gui3D_room');
+      this._3dViewRoom = await OdysseyModel3D.FromMDL(roomMdl, { context: this._3dView });
+      this._3dView.addModel(this._3dViewRoom);
+    }catch(e){
+      console.warn('CharGenPortCust: failed to load gui3D_room', e);
+    }
+
+    try{
+      const lightMdl = GameState.CharGenManager.cghead_light
+        ?? await MDLLoader.loader.load('cghead_light');
+      this.sceneModel3D = await OdysseyModel3D.FromMDL(lightMdl, { context: this._3dView });
+      this._3dView.addModel(this.sceneModel3D);
+      this.sceneModel3D.playAnimation('default', true);
+      this.sceneModel3D.update(1.0);
+      this.updateCamera();
+    }catch(e){
+      console.error('CharGenPortCust: failed to load cghead_light', e);
+    }
+
+    await TextureLoader.LoadQueue().catch(() => {});
   }
 
   update(delta = 0) {
@@ -266,6 +305,7 @@ export class CharGenPortCust extends GameMenu {
     this.appearanceHead = creature.appearanceHead;
     this.rebuildPortraitList();
     this.syncPortraitListIndex();
+    this.bindCreatureContext();
     try {
       creature.model.removeFromParent();
     } catch (e: any) {
@@ -275,6 +315,11 @@ export class CharGenPortCust extends GameMenu {
     this.LBL_PORTRAIT.setChromeBlending(1);
     this.updateCamera();
     this.UpdatePortrait();
+  }
+
+  hide() {
+    this.restoreCreatureContext();
+    super.hide();
   }
 
   /**

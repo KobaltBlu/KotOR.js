@@ -191,6 +191,8 @@ export class LBL_3DView {
       this.camera.position.add(offset);
     }
     this.camera.updateProjectionMatrix();
+    // Score nearest lights around the camera/subject (face), not stuck origin.
+    this.lightFocus.copy(this.camera.position);
   }
 
   getCamera(){
@@ -199,6 +201,22 @@ export class LBL_3DView {
 
   getTexture(){
     return this.texture.texture;
+  }
+
+  /**
+   * Pack gob nearest lights onto a model immediately so the first paint after
+   * a swap is not unlit (materials start with zero odysseyLight* uniforms).
+   */
+  bindModelLights(model: OdysseyModel3D){
+    if(!this.currentCamera) return;
+    this.lightManager.update(0, { position: this.lightFocus });
+    OdysseyLightingBinder.bindSceneModel(
+      this.lightManager,
+      model,
+      this.currentCamera,
+      this.lightFocus,
+      'gob'
+    );
   }
 
   addModel(model: THREE.Object3D){
@@ -210,6 +228,7 @@ export class LBL_3DView {
         for(let i = 0; i < model.skins.length; i++){
           model.skins[i].frustumCulled = false;
         }
+        this.bindModelLights(model);
       }
     }
   }

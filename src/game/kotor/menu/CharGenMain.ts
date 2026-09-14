@@ -212,6 +212,7 @@ export class CharGenMain extends GameMenu {
     const clone = new GameState.Module.ModuleArea.ModuleCreature();
     clone.setAppearance(source.appearance);
     clone.goodEvil = source.goodEvil | 0;
+    clone.setContext(this._3dView);
     if(source.equipment?.ARMOR){
       clone.equipment.ARMOR = new GameState.Module.ModuleArea.ModuleItem(source.equipment.ARMOR.template);
     }
@@ -223,7 +224,7 @@ export class CharGenMain extends GameMenu {
       model.position.set(0, 0, 0);
       model.rotation.set(0, 0, -Math.PI / 2);
       this.portraitModel = model;
-      this._3dView.scene.add(model);
+      this._3dView.addModel(model);
       this.updateCamera();
       TextureLoader.LoadQueue();
     });
@@ -250,6 +251,9 @@ export class CharGenMain extends GameMenu {
   hide() {
     if(this.levelUpMode){
       this.clearLevelUpPortrait();
+    }else{
+      const creature = this.getDisplayCreature();
+      creature?.setContext?.(GameState);
     }
     super.hide();
   }
@@ -280,7 +284,8 @@ export class CharGenMain extends GameMenu {
       creature.model.removeFromParent();
     } catch (e: any) {
     }
-    this._3dView.scene.add(creature.model);
+    creature.setContext(this._3dView);
+    this._3dView.addModel(creature.model);
     creature.model.rotation.z = -Math.PI / 2;
     this.updateCamera();
     this.updateAttributes();

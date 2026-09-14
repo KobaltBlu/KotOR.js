@@ -69,6 +69,7 @@ export class CharGenPortCust extends K1_CharGenPortCust {
           this.portraitId
         );
         creature.appearanceHead = this.appearanceHead;
+        this.restoreCreatureContext();
         await creature.loadModel();
         this.close();
       }finally{
@@ -95,6 +96,7 @@ export class CharGenPortCust extends K1_CharGenPortCust {
       this.manager.CharGenQuickPanel?.portraitCreationCompleted?.();
       this.manager.CharGenCustomPanel?.portraitCreationCompleted?.();
       this.manager.CharGenMain?.updateAttributes?.();
+      this.restoreCreatureContext();
       this.close();
     });
 

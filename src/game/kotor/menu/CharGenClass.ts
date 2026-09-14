@@ -165,6 +165,7 @@ export class CharGenClass extends GameMenu {
           _3dView.attachCameraToHook(_3dViewModel.camerahook);
           _3dView.setViewAngle();
           creature.load();
+          creature.setContext(_3dView);
           creature.loadModel().then((creature_model: OdysseyModel3D) => {
             creature.model.position.set(0, 0, 0);
             creature.model.rotation.z = -Math.PI / 2;
@@ -398,6 +399,9 @@ export class CharGenClass extends GameMenu {
 
   hide() {
     this.resetClassPaneExtents();
+    for(const creature of GameState.CharGenManager.creatures.values()){
+      creature?.setContext?.(GameState);
+    }
     super.hide();
   }
 

@@ -368,6 +368,7 @@ export class MenuCharacter extends GameMenu {
     const objectCreature = new GameState.Module.ModuleArea.ModuleCreature();
     objectCreature.setAppearance(creature.appearance);
     objectCreature.goodEvil = goodEvil;
+    objectCreature.setContext(this._3dView);
     if (creature.equipment?.ARMOR) {
       objectCreature.equipment.ARMOR = new GameState.Module.ModuleArea.ModuleItem(creature.equipment.ARMOR.template);
     }
@@ -384,6 +385,7 @@ export class MenuCharacter extends GameMenu {
       this.char = model;
       const portraitAttachRoot = this._3dViewModel?.getRootOdysseyNode?.() || this._3dViewModel;
       portraitAttachRoot?.add(this.char);
+      this._3dView.bindModelLights(model);
       void TextureLoader.LoadQueue().then(() => {
         if(gen !== this.portraitGen || !this.char) return;
         this.char.playAnimation(this.getPortraitIdleAnim(goodEvil), true);
