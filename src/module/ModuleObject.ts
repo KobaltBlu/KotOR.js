@@ -1021,6 +1021,7 @@ export class ModuleObject {
    *
    * @param animationName - The name of the animation (e.g., "walking", "attack")
    * @returns The animation length in seconds, or 0 if not found
+   * @deprecated
    */
   getAnimationLengthByName(animationName: string): number {
     if (!this.model || !(this.model instanceof OdysseyModel3D)) {
@@ -1040,6 +1041,7 @@ export class ModuleObject {
    * Gets the current playing animation length in seconds
    *
    * @returns The current animation length in seconds, or 0 if no animation is playing
+   * @deprecated
    */
   getCurrentAnimationLength(): number {
     if (!this.model || !(this.model instanceof OdysseyModel3D)) {

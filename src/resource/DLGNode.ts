@@ -692,7 +692,7 @@ export class DLGNode {
 
     if(struct.hasField('RepliesList')){
       const structs = struct.getFieldByLabel('RepliesList').getChildStructs();
-      node.entries = [];
+      node.replies = [];
       for(let i = 0; i < structs.length; i++){
         let replyStruct = structs[i];
         let linkNode = new DLGNode(dialog);
@@ -788,7 +788,7 @@ export class DLGNode {
 
     if(struct.hasField('EntriesList')){
       const structs = struct.getFieldByLabel('EntriesList').getChildStructs();
-      node.replies = [];
+      node.entries = [];
       for(let i = 0; i < structs.length; i++){
         let entryStruct = structs[i];
         let linkNode = new DLGNode(dialog);
@@ -1071,7 +1071,7 @@ export class DLGNode {
     fadeTypePresent: boolean = true,
     defaultUnsetDelay?: number
   ){
-    const hasSound = !!(this.sound || this.vo_resref);
+    const hasSound = !!this.getVoiceResRef();
     const delayDefault = (
       typeof defaultUnsetDelay === 'number'
         ? defaultUnsetDelay

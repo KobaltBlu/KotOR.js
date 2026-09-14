@@ -48,6 +48,7 @@ import {
   auroraCameraLookOrientation,
 } from "@/utility/aurora-camera-orientation";
 import { ConfigClient } from "@/utility/ConfigClient";
+import { Mouse } from "@/controls/Mouse";
 
 import { isCreature } from "@/module/guards/isCreature";
 import { isObject } from "@/module/guards/isObject";
@@ -122,6 +123,12 @@ export class CutsceneManager {
    */
   static keepStealthInDialog: boolean = false;
   static isListening: boolean;
+  /**
+   * Ignore PC reply clicks until the mouse button is released.
+   * Prevents DialogSkip / entry-advance click-through from selecting the first
+   * reply the moment SendDialogReplies shows the list (k_hcar E9 etc.).
+   */
+  static replySelectLocked: boolean = false;
 
   static audioEmitter: AudioEmitter;
 
@@ -600,6 +607,7 @@ export class CutsceneManager {
     this.startingEntry = null;
     this.currentEntry = null;
     this.currentReplies = [];
+    this.replySelectLocked = false;
     this.lastSpokenString = '';
     this.ended = false;
     
@@ -999,6 +1007,9 @@ export class CutsceneManager {
    * @param index - The index of the reply to select
    */
   static selectReplyAtIndex(index: number) {
+    if(this.replySelectLocked){
+      return;
+    }
     const reply = this.currentReplies[index];
     if(!reply){
       console.warn('CutsceneManager.selectReplyAtIndex: No reply found');
@@ -1040,8 +1051,9 @@ export class CutsceneManager {
   }
 
   /**
-   * Show the replies for a dialog entry
-   * @param entry - The entry to show the replies for
+   * Show the replies for a dialog entry.
+   * SendDialogReplies — evaluate Active conditions now (not at entry start);
+   * 0 available → end; 1 continue/end → auto; else show PC choices.
    */
   static showReplies(entry: DLGNode) {
     this.state = ConversationState.WAITING_FOR_PC_CHOICE;
@@ -1049,32 +1061,33 @@ export class CutsceneManager {
     this.isListening = false;
     if (GameState.Mode != EngineMode.DIALOG)
       return;
-    
-    //Get First Reply
-    const reply = this.dialog.getReplyByIndex(entry.replies[0]?.index);
-    if(!reply){
-      console.warn('CutsceneManager.showReplies: No reply found');
+
+    // Re-evaluate Active scripts at reply time (CSWSDialog::SendDialogReplies).
+    const available = this.dialog.getAvailableReplies(entry);
+    this.currentReplies = available;
+
+    if(!available.length){
+      console.warn('CutsceneManager.showReplies: No available replies');
       this.endConversation();
       return;
     }
-    
-    const isContinueDialog = entry.replies.length == 1 && reply.isContinueDialog();
-    const isEndDialog = entry.replies.length == 1 && reply.isEndDialog();
+
+    const reply = available[0];
+    const isContinueDialog = available.length == 1 && reply.isContinueDialog();
+    const isEndDialog = available.length == 1 && reply.isEndDialog();
 
     //End Dialog
-    if (isEndDialog || !entry.replies.length) {
-      if(!entry.replies.length){
-        console.warn('CutsceneManager.showReplies: No replies found');
-      }
-
-      reply?.runScripts();
+    if (isEndDialog) {
+      reply.runScripts();
       this.endConversation();
       return;
     }
 
-    //Continue Dialog
-    if (isContinueDialog) {
-      reply?.runScripts();
+    // Continue Dialog — also auto-advance when every available reply is a continue
+    // (blank PC nodes); otherwise index filtering would show an empty list.
+    const selectable = available.filter((r) => !r.isContinueDialog());
+    if (isContinueDialog || (selectable.length == 0 && available.every((r) => r.isContinueDialog()))) {
+      reply.runScripts();
       const nextEntry = this.getNextEntry(reply.entries);
       if(nextEntry){
         this.showEntry(nextEntry);
@@ -1083,6 +1096,18 @@ export class CutsceneManager {
       }
       return;
     }
+
+    if(!selectable.length){
+      // Available replies were end-nodes only (empty text, no entries).
+      reply.runScripts();
+      this.endConversation();
+      return;
+    }
+
+    // Lock reply clicks until mouse-up so DialogSkip / entry click-through
+    // cannot select the first option the frame the list appears.
+    this.replySelectLocked = true;
+    this.currentReplies = selectable;
 
     //Update Speaker Animation State
     try {
@@ -1107,8 +1132,10 @@ export class CutsceneManager {
     this.setReplyCamera(entry, reply);
 
     if(this.dialog.getConversationType() == DLGConversationType.COMPUTER){
+      GameState.MenuManager.InGameComputer.setReplies(selectable);
       GameState.MenuManager.InGameComputer.setDialogMode(ConversationState.WAITING_FOR_PC_CHOICE);
     }else{
+      GameState.MenuManager.InGameDialog.setReplies(selectable);
       GameState.MenuManager.InGameDialog.setDialogMode(ConversationState.WAITING_FOR_PC_CHOICE);
     }
   }
@@ -1135,6 +1162,7 @@ export class CutsceneManager {
     this.pendingPartyDialogSwitch = undefined;
     this.active = false;
     this.paused = false;
+    this.replySelectLocked = false;
     this.clearPendingDialog();
     this.clearParticipantRetry();
     this.dialogAnimParticipants = [];
@@ -1920,6 +1948,11 @@ export class CutsceneManager {
   static update(delta: number = 0) {
     if (!this.dialog)
       return;
+
+    // Release click-through lock once the advancing click is fully released.
+    if(this.replySelectLocked && !Mouse.leftDown){
+      this.replySelectLocked = false;
+    }
 
     // SendDialogEntryNode retry — before current-entry WaitFlags tick.
     this.tickParticipantRetry(delta);

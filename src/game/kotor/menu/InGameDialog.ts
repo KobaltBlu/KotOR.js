@@ -75,9 +75,8 @@ export class InGameDialog extends GameMenu {
   }
 
   setReplies(replies: DLGNode[]) {
-    const texts = replies
-      .filter(r => !r.isContinueDialog())
-      .map((r, i) => (i + 1) + '. ' + r.getCompiledString());
+    // Indices must match CutsceneManager.currentReplies (continues already removed).
+    const texts = replies.map((r, i) => (i + 1) + '. ' + r.getCompiledString());
     this.LB_REPLIES.setItems(texts);
   }
 

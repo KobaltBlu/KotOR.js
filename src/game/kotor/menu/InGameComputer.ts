@@ -210,9 +210,8 @@ export class InGameComputer extends GameMenu {
   }
 
   setReplies(replies: DLGNode[]) {
-    const texts = replies
-      .filter(r => !r.isContinueDialog())
-      .map((r, i) => (i + 1) + '. ' + r.getCompiledString());
+    // Indices must match CutsceneManager.currentReplies (continues already removed).
+    const texts = replies.map((r, i) => (i + 1) + '. ' + r.getCompiledString());
     this.LB_REPLIES.setItems(texts);
     this.LB_REPLIES.show();
     // keeps the spoken entry listbox visible under replies.
