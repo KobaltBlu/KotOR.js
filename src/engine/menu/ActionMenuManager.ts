@@ -24,6 +24,7 @@ import {
   isUsableItemActive,
 } from "@/engine/menu/action-menu-usable";
 import { shouldShowCounterSpellAction } from "@/combat/spell-cast-gates";
+import { isCreature } from "@/module/guards/isCreature";
 
 /** Appearance racialtype 5 (droid) — global. */
 const APPEARANCE_RACIALTYPE_DROID = 5;
@@ -189,7 +190,7 @@ export class ActionMenuManager {
   }
 
   static #isCreatureLike(target: ModuleObject | undefined): target is ModuleCreature {
-    return !!(target && typeof (target as ModuleCreature).getAppearance === 'function');
+    return isCreature(target);
   }
 
   /** GetHostileForcePowers tmp14 — exclusion bits for the current target. */
@@ -800,8 +801,12 @@ export class ActionMenuManager {
           if(isTSL){
             ActionMenuManager.populateDoorOrPlaceableMines(placeable, 0xbc34);
           }
-        }else if(placeable.isHostile(ActionMenuManager.oPC as ModuleObject)){
-          // Unlocked hostile placeable: slot 1 Force; TSL slot 2 hostile items.
+        }else if(
+          !placeable.hasInventory &&
+          !!placeable.getAppearance()?.hostile &&
+          placeable.isHostile(ActionMenuManager.oPC as ModuleObject)
+        ){
+          // Unlocked hostile placeable (placeables.2da Hostile): slot 1 Force; TSL slot 2 hostile items.
           ActionMenuManager.populateHostileForcePowers();
           if(isTSL){
             ActionMenuManager.populateHostileItems();

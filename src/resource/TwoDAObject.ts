@@ -410,8 +410,10 @@ export class TwoDAObject {
       break;
       case 'boolean':
         if(typeof default_value === 'undefined') default_value = false;
-        if(value === '****') return default_value;
-        return !!value;
+        if(value === '****' || value === undefined || value === null) return default_value;
+        if(value === false || value === 0 || value === '0' || value === 'false') return false;
+        if(value === true || value === 1 || value === '1' || value === 'true') return true;
+        return default_value;
       break;
     }
     console.warn('normalizeValue', 'unhandled datatype', value);

@@ -25,4 +25,32 @@ describe('TwoDAObject', () => {
     expect(TwoDAObject.cellParser('****')).toBeNull();
     expect(TwoDAObject.cellParser('keep')).toBe('keep');
   });
+
+  describe('normalizeValue boolean', () => {
+    it('parses 2DA 0/1 strings correctly', () => {
+      expect(TwoDAObject.normalizeValue('0', 'boolean', false)).toBe(false);
+      expect(TwoDAObject.normalizeValue('1', 'boolean', false)).toBe(true);
+    });
+
+    it('parses numeric and boolean literals', () => {
+      expect(TwoDAObject.normalizeValue(0, 'boolean', true)).toBe(false);
+      expect(TwoDAObject.normalizeValue(1, 'boolean', false)).toBe(true);
+      expect(TwoDAObject.normalizeValue(false, 'boolean', true)).toBe(false);
+      expect(TwoDAObject.normalizeValue(true, 'boolean', false)).toBe(true);
+    });
+
+    it('parses true/false strings and **** / null / undefined as default', () => {
+      expect(TwoDAObject.normalizeValue('false', 'boolean', true)).toBe(false);
+      expect(TwoDAObject.normalizeValue('true', 'boolean', false)).toBe(true);
+      expect(TwoDAObject.normalizeValue('****', 'boolean', false)).toBe(false);
+      expect(TwoDAObject.normalizeValue('****', 'boolean', true)).toBe(true);
+      expect(TwoDAObject.normalizeValue(null, 'boolean', false)).toBe(false);
+      expect(TwoDAObject.normalizeValue(undefined, 'boolean', true)).toBe(true);
+    });
+
+    it('falls back to default for unrecognized values', () => {
+      expect(TwoDAObject.normalizeValue('maybe', 'boolean', false)).toBe(false);
+      expect(TwoDAObject.normalizeValue('maybe', 'boolean', true)).toBe(true);
+    });
+  });
 });
