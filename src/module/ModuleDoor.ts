@@ -1037,49 +1037,50 @@ export class ModuleDoor extends ModuleObject {
     this.transitionDistance = object.position.distanceTo(this.transitionClosestPoint);
   }
 
-  testTransitionLineCrosses(object: ModuleObject){
+  /**
+   * Retail GetDoorCrossed: plane through door origin with facing normal;
+   * sign flip of Dot(p - doorPos, n) along the move. Probe length is at
+   * least hitDistance so a capsule pinned short of the plane still warps
+   * when pushing into the doorway wall behind it.
+   */
+  testTransitionLineCrosses(
+    object: ModuleObject,
+    move: THREE.Vector3 = object.forceVector,
+    hitDistance: number = 0.4
+  ){
     if(object != GameState.getCurrentPlayer()) return;
-    if(!object.forceVector.length()) return;
+    const moveLen = Math.hypot(move.x, move.y);
+    if(moveLen <= 0) return;
 
-    // Prefer MDL `trans` plane when present (standard door models).
-    const transMesh = this?.model?.trans?.children?.[0];
-    if(transMesh){
-      const raycaster = GameState.raycaster;
-      const prevFar = raycaster.far;
-      const moveLen = object.forceVector.length();
-      raycaster.ray.origin.copy(object.position);
-      raycaster.ray.origin.z += 1;
-      raycaster.ray.direction.copy(object.forceVector).normalize();
-      // Collision subdivides movement; keep far tied to this step's travel.
-      raycaster.far = Math.max(moveLen * 1.05, 0.05);
-      const intersections: THREE.Intersection[] = [];
-      transMesh.raycast(raycaster, intersections);
-      raycaster.far = prevFar;
-      if(intersections.length){
-        this.transitNPC(object);
-      }
-      return;
-    }
-
-    // Forcefields / doors without a `trans` mesh (e.g. mydoor2): cross the
-    // generated transition line the same way room portal edges are detected.
     if(!this.transitionLine){
       this.generateTransitionLine();
     }
     if(!this.transitionLine) return;
 
-    this.transitionLineMin.z = object.position.z;
-    this.transitionLineMax.z = object.position.z;
-    if(Utility.LineLineIntersection(
-      object.position.x,
-      object.position.y,
-      object.position.x + object.forceVector.x,
-      object.position.y + object.forceVector.y,
-      this.transitionLine.start.x,
-      this.transitionLine.start.y,
-      this.transitionLine.end.x,
-      this.transitionLine.end.y
-    )){
+    // Plane normal = perpendicular to the transition line (doorway width).
+    const lx = this.transitionLine.end.x - this.transitionLine.start.x;
+    const ly = this.transitionLine.end.y - this.transitionLine.start.y;
+    const llen = Math.hypot(lx, ly);
+    if(llen <= 0) return;
+    const nx = -ly / llen;
+    const ny = lx / llen;
+
+    const probeLen = Math.max(moveLen, hitDistance);
+    const ux = move.x / moveLen;
+    const uy = move.y / moveLen;
+    const sx = object.position.x;
+    const sy = object.position.y;
+    const ex = sx + ux * probeLen;
+    const ey = sy + uy * probeLen;
+
+    const dx0 = sx - this.position.x;
+    const dy0 = sy - this.position.y;
+    const dx1 = ex - this.position.x;
+    const dy1 = ey - this.position.y;
+    const d0 = dx0 * nx + dy0 * ny;
+    const d1 = dx1 * nx + dy1 * ny;
+    // Retail: (0 < d0) != (0 < d1)
+    if((d0 > 0) !== (d1 > 0)){
       this.transitNPC(object);
     }
   }

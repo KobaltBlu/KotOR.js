@@ -342,13 +342,18 @@ export class OdysseyMaterialBuilder {
             material.defines.RINGTEXDISTORT = "";
             break;
           case TXIPROCEDURETYPE.WATER:
-            material.defines.WATER = "";
+            // Real water sets WATER via waterAlpha / bump-water path above.
+            // Diffuse proceduretype water alone (force-distort FX) must not.
             break;
         }
       }
     }
 
-    if(texture.txi.decal || texture.txi.procedureType == 2){
+    // Decals and non-additive water get DoubleSide. Additive proceduretype-water
+    // (plc_frcdist01 force cages) must stay FrontSide — DualSide coplanar shells
+    // depth-fight with the outer additive layer.
+    const additiveBlending = texture.txi.blending === TXIBlending.ADDITIVE;
+    if(texture.txi.decal || (texture.txi.procedureType == TXIPROCEDURETYPE.WATER && !additiveBlending)){
       material.side = THREE.DoubleSide;
       material.depthWrite = false;
       material.transparent = true;
@@ -358,11 +363,14 @@ export class OdysseyMaterialBuilder {
 
     switch(texture.txi.blending){
       case TXIBlending.ADDITIVE:
-        // Sabers and force-shield shells stay in the transparent list so they
-        // draw after opaque body / TXI decals. Other additive FX stay opaque.
+        // Sabers, force-shield shells, and alpha/transparencyHint FX stay in the
+        // transparent list so they draw after opaque body / TXI decals.
+        // Other additive FX stay opaque.
         {
           const defines = (material as any).defines;
-          material.transparent = !!(defines && ('SABER' in defines || 'FORCE_SHIELD' in defines));
+          const shieldOrSaber = !!(defines && ('SABER' in defines || 'FORCE_SHIELD' in defines));
+          const alphaFx = !!(material.userData && material.userData.odysseyAlphaFx);
+          material.transparent = shieldOrSaber || alphaFx;
         }
         material.blending = THREE.AdditiveBlending;
         material.depthWrite = false;

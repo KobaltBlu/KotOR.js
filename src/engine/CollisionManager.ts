@@ -362,8 +362,9 @@ export class CollisionManager {
       // Validate final position against placeables
       this.validatePlaceablePenetration();
 
-      // Handle room transitions and position finalization
-      this.processRoomTransitions();
+      // Room portals use post-resolve step force. Door warps use full-frame
+      // originalForce once (step 0) — retail GetDoorCrossed on intended move.
+      this.processRoomTransitions(step === 0 ? originalForce : undefined);
       this.finalizePositionUpdate();
 
       if (hadCollisions) {
@@ -1013,31 +1014,36 @@ export class CollisionManager {
   // ROOM TRANSITIONS & POSITION FINALIZATION
   // =============================================
 
-  private processRoomTransitions(): void {
-    if (this.object.forceVector.length() === 0) return;
+  private processRoomTransitions(doorIntent?: THREE.Vector3): void {
+    // Room portals use post-resolve force (actual motion this step).
+    if (this.object.forceVector.length() !== 0) {
+      for (const [index, edge] of this.object.room.collisionManager.walkmesh.edges) {
+        if (!edge || edge.transition === -1) continue;
 
-    // Check for room transition edges
-    for (const [index, edge] of this.object.room.collisionManager.walkmesh.edges) {
-      if (!edge || edge.transition === -1) continue;
-
-      if (Utility.LineLineIntersection(
-        this.object.position.x,
-        this.object.position.y,
-        this.object.position.x + this.object.forceVector.x,
-        this.object.position.y + this.object.forceVector.y,
-        edge.line.start.x,
-        edge.line.start.y,
-        edge.line.end.x,
-        edge.line.end.y
-      )) {
-        this.object.attachToRoom(this.object.area.rooms[edge.transition]);
-        break;
+        if (Utility.LineLineIntersection(
+          this.object.position.x,
+          this.object.position.y,
+          this.object.position.x + this.object.forceVector.x,
+          this.object.position.y + this.object.forceVector.y,
+          edge.line.start.x,
+          edge.line.start.y,
+          edge.line.end.x,
+          edge.line.end.y
+        )) {
+          this.object.attachToRoom(this.object.area.rooms[edge.transition]);
+          break;
+        }
       }
     }
 
-    // Handle door transition logic
-    if (this.object.lastDoorEntered) {
-      this.object.lastDoorEntered.testTransitionLineCrosses(this.object);
+    // Door area transitions: full-frame intent + capsule probe length so a
+    // non-transition wall that pins short of the trans plane still warps.
+    if (this.object.lastDoorEntered && doorIntent && doorIntent.length() !== 0) {
+      this.object.lastDoorEntered.testTransitionLineCrosses(
+        this.object,
+        doorIntent,
+        this.collisionState.hitDistance
+      );
     }
   }
 

@@ -267,8 +267,11 @@ export class ShaderOdysseyModel extends Shader {
       #include <encodings_fragment>
       #include <fog_fragment>
       #if defined( WATER )
-        gl_FragColor.rgb *= waterAlpha;
-        gl_FragColor.a = waterAlpha;
+        // Honor material opacity so AlphaController fades still work when WATER
+        // is set (waterAlpha alone left force-distort shells stuck at full add).
+        float waterOutAlpha = waterAlpha * opacity;
+        gl_FragColor.rgb *= waterOutAlpha;
+        gl_FragColor.a = waterOutAlpha;
       #endif
       #ifdef HOLOGRAM
         // map / vUv are only declared when USE_MAP / USE_UV are set.

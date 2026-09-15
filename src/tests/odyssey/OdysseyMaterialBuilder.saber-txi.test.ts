@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { OdysseyMaterialBuilder } from '@/three/odyssey/OdysseyMaterialBuilder';
 import { OdysseyTexture } from '@/three/odyssey/OdysseyTexture';
 import { TXI } from '@/resource/TXI';
+import { TXIPROCEDURETYPE } from '@/enums/graphics/txi/TXIPROCEDURETYPE';
 
 function makeShaderMaterial(defines: Record<string, string> = {}): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
@@ -10,6 +11,8 @@ function makeShaderMaterial(defines: Record<string, string> = {}): THREE.ShaderM
     uniforms: {
       map: { value: null },
       uvTransform: { value: new THREE.Matrix3() },
+      opacity: { value: 1 },
+      waterAlpha: { value: 1 },
     },
   });
 }
@@ -59,5 +62,58 @@ describe('OdysseyMaterialBuilder additive TXI vs SABER / FORCE_SHIELD', () => {
     expect(material.blending).toBe(THREE.AdditiveBlending);
     expect(material.transparent).toBe(false);
     expect(material.depthWrite).toBe(false);
+  });
+
+  test('additive + proceduretype water does not enable WATER define or DoubleSide', async () => {
+    const material = makeShaderMaterial();
+    material.side = THREE.FrontSide;
+
+    const texture = new OdysseyTexture();
+    texture.txi = new TXI('blending additive\r\nproceduretype water\r\n');
+    expect(texture.txi.procedureType).toBe(TXIPROCEDURETYPE.WATER);
+    expect(texture.txi.blending).toBe(1);
+
+    await OdysseyMaterialBuilder.applyTXIToMaterial(texture, material, { resolveTexture });
+
+    expect(material.blending).toBe(THREE.AdditiveBlending);
+    expect(material.depthWrite).toBe(false);
+    expect(material.side).toBe(THREE.FrontSide);
+    expect(material.defines).not.toHaveProperty('WATER');
+    expect(material.defines).not.toHaveProperty('IGNORE_LIGHTING');
+    expect(material.transparent).toBe(false);
+  });
+
+  test('additive + proceduretype water stays transparent when odysseyAlphaFx is set', async () => {
+    const material = makeShaderMaterial();
+    material.userData.odysseyAlphaFx = true;
+    material.transparent = true;
+
+    const texture = new OdysseyTexture();
+    texture.txi = new TXI('blending additive\r\nproceduretype water\r\n');
+
+    await OdysseyMaterialBuilder.applyTXIToMaterial(texture, material, { resolveTexture });
+
+    expect(material.blending).toBe(THREE.AdditiveBlending);
+    expect(material.transparent).toBe(true);
+    expect(material.depthWrite).toBe(false);
+    expect(material.side).toBe(THREE.FrontSide);
+    expect(material.defines).not.toHaveProperty('WATER');
+  });
+
+  test('non-additive proceduretype water still gets DoubleSide without WATER define', async () => {
+    const material = makeShaderMaterial();
+    material.side = THREE.FrontSide;
+
+    const texture = new OdysseyTexture();
+    texture.txi = new TXI('proceduretype water\r\n');
+
+    await OdysseyMaterialBuilder.applyTXIToMaterial(texture, material, { resolveTexture });
+
+    expect(material.side).toBe(THREE.DoubleSide);
+    expect(material.depthWrite).toBe(false);
+    expect(material.transparent).toBe(true);
+    expect(material.defines).toHaveProperty('IGNORE_LIGHTING');
+    // Bare proceduretype water no longer sets WATER; real water uses waterAlpha path.
+    expect(material.defines).not.toHaveProperty('WATER');
   });
 });

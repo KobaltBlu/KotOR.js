@@ -2293,6 +2293,17 @@ export class OdysseyModel3D extends OdysseyObject3D {
         }
       }
 
+      let hasAlphaController = false;
+      odysseyNode.controllers.forEach( (controller) => {
+        if(controller.type === OdysseyModelControllerType.Alpha){
+          hasAlphaController = true;
+        }
+      });
+      // Additive TXI re-affirms transparent via this flag (force-cage shells, etc.).
+      if(odysseyNode.transparencyHint || hasAlphaController){
+        material.userData.odysseyAlphaFx = true;
+      }
+
       if(odysseyNode.transparencyHint){
         material.transparent = true;
       }
@@ -2309,7 +2320,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
             if(controller.data[0].value < 1){
               material.transparent = true;
-            }else{
+            }else if(!odysseyNode.transparencyHint){
               material.transparent = false;
             }
           break;
@@ -2332,7 +2343,8 @@ export class OdysseyModel3D extends OdysseyObject3D {
       material.addEventListener('txi', (event: any) => {
         const mesh: THREE.Mesh<THREE.BufferGeometry, THREE.ShaderMaterial> = (parentNode as any).mesh;
         if(mesh && mesh.material.blending == THREE.AdditiveBlending){
-          mesh.renderOrder = 2;
+          // transparencyHint outer shells draw after inner (hint false → 2, true → 3).
+          mesh.renderOrder = odysseyNode.transparencyHint ? 3 : 2;
         }
       });
     }
