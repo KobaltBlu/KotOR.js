@@ -204,6 +204,10 @@ export function getPlaceableNearestActionPoint(
 
 /**
  * Nearest interact / bash approach point for doors & placeables; otherwise object origin.
+ *
+ * Retail combat approach has no surround / open-spot picker — creature attack
+ * destinations are the target origin (arrive via Desired/MaxAttackRange);
+ * doors/placeables use GetNearestActionPoint.
  */
 export function getNearestActionPoint(
   target: ModuleObject,
@@ -218,6 +222,17 @@ export function getNearestActionPoint(
     return getPlaceableNearestActionPoint(target as ModulePlaceable, from, perspace);
   }
   return target.position.clone();
+}
+
+/**
+ * Attack-approach destination for `attacker` toward `target`.
+ * Same as getNearestActionPoint — not a surround/best-slot search.
+ */
+export function getAttackApproachPoint(
+  target: ModuleObject,
+  attacker: ModuleObject
+): THREE.Vector3 {
+  return getNearestActionPoint(target, attacker.position, attacker);
 }
 
 /**

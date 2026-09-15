@@ -64,6 +64,12 @@ jest.mock("@/combat/attack-range", () => ({
   getPathPersonalSpace: () => 0.5,
 }));
 
+const mockFindSafeLocation = jest.fn();
+
+jest.mock("@/engine/pathfinding/find-safe-location", () => ({
+  findSafeLocation: (...args: unknown[]) => mockFindSafeLocation(...args),
+}));
+
 const mockIsInUseRange = jest.fn(() => false);
 
 jest.mock("@/actions/use-range", () => ({
@@ -82,6 +88,11 @@ describe("ActionMoveToPoint live-chase repath", () => {
     mockWalkUpdate.mockReset();
     mockIsInUseRange.mockReset();
     mockIsInUseRange.mockReturnValue(false);
+    mockFindSafeLocation.mockReset();
+    mockFindSafeLocation.mockImplementation((_area: unknown, center: THREE.Vector3, out: THREE.Vector3) => {
+      out.copy(center);
+      return true;
+    });
     mockWalkUpdate.mockReturnValue(1);
     mockPlotPath.mockReturnValue({
       code: PlotPathCode.Ready,
@@ -136,7 +147,57 @@ describe("ActionMoveToPoint live-chase repath", () => {
     expect(owner.walkSpeedFactor).toBe(0.85);
     expect(owner.clearLocomotionState).not.toHaveBeenCalled();
     expect(action.target_position.x).toBeCloseTo(8, 4);
+    expect(mockFindSafeLocation).toHaveBeenCalled();
+    expect(mockFindSafeLocation.mock.calls[0][3]).toMatchObject({
+      radius: 20,
+      requireLineOfSight: true,
+    });
     expect(mockPlotPath).toHaveBeenCalled();
+  });
+
+  it("repathToLiveTargetInPlace falls back to live target when ComputeSafeLocation fails", () => {
+    mockFindSafeLocation.mockImplementation((_area: unknown, center: THREE.Vector3, out: THREE.Vector3) => {
+      out.set(-1, -1, -1);
+      return false;
+    });
+    const owner = {
+      id: 1,
+      position: new THREE.Vector3(0, 0, 0),
+      area: {
+        id: 1,
+        getNearestWalkablePoint: (p: THREE.Vector3) => p.clone().set(99, 99, 0),
+        isPointWalkable: () => true,
+      },
+      walkSpeedFactor: 0.85,
+      setComputedPath: () => {},
+      getComputedPath: () => undefined,
+      clearLocomotionState: jest.fn(),
+    } as unknown as ModuleCreature;
+
+    const target = {
+      id: 2,
+      position: new THREE.Vector3(8, 0, 0),
+      area: { id: 1 },
+      isDead: () => false,
+    };
+
+    const action = new ActionMoveToPoint();
+    action.setOwner(owner);
+    action.setParameter(0, ActionParameterType.FLOAT, 3);
+    action.setParameter(1, ActionParameterType.FLOAT, 0);
+    action.setParameter(2, ActionParameterType.FLOAT, 0);
+    action.setParameter(3, ActionParameterType.DWORD, 1);
+    action.setParameter(4, ActionParameterType.DWORD, target.id);
+    action.setParameter(5, ActionParameterType.INT, 1);
+    action.setParameter(6, ActionParameterType.FLOAT, 2.0);
+    (action as { target: unknown }).target = target;
+    action.real_target_position.copy(target.position);
+    action.target_position.set(3, 0, 0);
+
+    action.repathToLiveTargetInPlace();
+
+    expect(action.target_position.x).toBeCloseTo(8, 4);
+    expect(action.target_position.y).toBeCloseTo(0, 4);
   });
 
   it("calculatePath plots in the owner area, not the module singleton area", () => {

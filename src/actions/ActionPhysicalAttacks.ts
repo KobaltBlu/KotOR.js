@@ -2,6 +2,7 @@ import { CombatRound } from "@/combat/CombatRound";
 import {
   desiredAttackRange,
   getAttackMoveArriveRange,
+  getCreaturePersonalSpace,
   getPathPersonalSpace,
   hasCombatLineOfSight,
   maxAttackRange,
@@ -43,6 +44,10 @@ export type MeleeBackoffResult = {
  * physical-attack action:
  * MaxAttackRange for "too far", DesiredAttackRange for melee arrive /
  * too-close. Move arrive = ranged ? max : desired.
+ * Approach (too far / no LOS): AddActionToFront PhysicalAttacks →
+ * CheckMoveToObjectRadius → ChangeFacingObject → MoveToPoint (target origin
+ * or door/placeable action point). No surround/openSpot picker.
+ * NPC melee too-close: radial backoff Move only (arrive 0).
  * Duel: ResolveChoreographedState / ResolveEngagedState / ResolveMasterState
  * + StartCombatRound pair sync.
  *
@@ -221,41 +226,54 @@ export class ActionPhysicalAttacks extends Action {
       this.meleeBackoffActive = latch.active;
     }
     const hasLos = hasCombatLineOfSight(this.owner, this.target, max);
+    // Retail: too far OR (NPC melee too close) OR no LOS → approach/backoff move
     const needCloseOrBack =
-      tooFar || (tooClose && !isPartyMember && !this.owner.isRangedEquipped());
+      tooFar ||
+      (tooClose && !isPartyMember && !this.owner.isRangedEquipped()) ||
+      !hasLos;
 
     if(needCloseOrBack){
+      // Stuck-LOS retarget only when standing still with blocked LOS (before move).
+      if(!hasLos && !tooFar && !(tooClose && !isPartyMember && !this.owner.isRangedEquipped())){
+        this.owner.force = 0;
+        this.owner.speed = 0;
+        const result = tryStuckLosRetarget(this.owner, this.target, this);
+        if(result === 'cancelled'){
+          return ActionStatus.COMPLETE;
+        }
+        if(result === 'retargeted'){
+          return ActionStatus.IN_PROGRESS;
+        }
+        // 'waiting' — first stuck sample; still path toward target (retail).
+      }
+
+      const isBackoff = tooClose && !tooFar && !isPartyMember && !this.owner.isRangedEquipped();
       let arriveRange = getAttackMoveArriveRange(this.owner, this.target, choreographed);
       let target_position = getNearestActionPoint(this.target, this.owner.position, this.owner);
 
-      // Too close: DesiredAttackRange back-off + TestDirectLine / CWalkHitInfo clip
-      if(tooClose && !tooFar){
+      if(isBackoff){
+        // Too close: DesiredAttackRange back-off + TestDirectLine / CWalkHitInfo clip
         const backoff = ActionPhysicalAttacks.resolveMeleeBackoff(this.owner, this.target, desired);
         target_position = backoff.position;
         arriveRange = 0;
-      }else if(this.owner.area?.getNearestWalkablePoint){
-        target_position = this.owner.area.getNearestWalkablePoint(
-          target_position,
-          getPathPersonalSpace(this.owner)
-        );
+        this.owner.pathFindApproachPersonalSpace = 0;
+        this.owner.pathFindIgnoreObjectId = 0;
+      }else{
+        // Approach: creature origin / door-placeable action point — no attacker
+        // perspace shove (retail uses pathfind field3 + Move arrive instead).
+        if(isCreature(this.target)){
+          this.owner.pathFindIgnoreObjectId = this.target.id;
+          this.owner.pathFindApproachPersonalSpace = Math.max(
+            0,
+            desired - getCreaturePersonalSpace(this.target)
+          );
+        }else{
+          this.owner.pathFindIgnoreObjectId = this.target.id;
+          this.owner.pathFindApproachPersonalSpace = 0;
+        }
       }
 
-      const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint(undefined, this.groupId);
-      actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, target_position.x);
-      actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, target_position.y);
-      actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, target_position.z);
-      actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, this.target.area.id);
-      actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, tooClose && !tooFar ? ModuleObjectConstant.OBJECT_INVALID : this.target.id);
-      actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
-      actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, arriveRange);
-      actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
-      actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
-
-      // AIActionPhysicalAttacks (too far / too close): AddActionToFront(self)
-      // then MoveToPoint, return COMPLETE (2). Keeps PhysicalAttacks behind Move so
-      // resetExcitedDuration / combat-state refresh run again between approach hops.
-      // Returning IN_PROGRESS left this action blocked behind a continuous live chase
-      // until the 8s SetCombatState timer wiped scheduledActionList.
+      // AddActionToFront order → execute: Move → Facing → Check → PhysicalAttacks
       const requeue = new GameState.ActionFactory.ActionPhysicalAttacks(undefined, this.groupId);
       for(let i = 0; i <= 9; i++){
         const p = this.parameters[i];
@@ -265,27 +283,43 @@ export class ActionPhysicalAttacks extends Action {
       }
       requeue.isUserAction = this.isUserAction;
       this.owner.actionQueue.addFront(requeue);
+
+      if(!isBackoff){
+        const ranged = this.owner.isRangedEquipped() ? 1 : 0;
+        const check = new GameState.ActionFactory.ActionCheckMoveToObjectRadius(undefined, this.groupId);
+        check.setParameter(0, ActionParameterType.DWORD, this.target.id);
+        check.setParameter(1, ActionParameterType.INT, 1);
+        check.setParameter(2, ActionParameterType.FLOAT, arriveRange);
+        check.setParameter(3, ActionParameterType.FLOAT, max);
+        check.setParameter(4, ActionParameterType.INT, 1);
+        check.setParameter(5, ActionParameterType.INT, 0);
+        check.setParameter(6, ActionParameterType.INT, ranged);
+        this.owner.actionQueue.addFront(check);
+
+        const face = new GameState.ActionFactory.ActionChangeFacingObject(undefined, this.groupId);
+        face.setParameter(0, ActionParameterType.DWORD, this.target.id);
+        this.owner.actionQueue.addFront(face);
+      }
+
+      const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint(undefined, this.groupId);
+      actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, target_position.x);
+      actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, target_position.y);
+      actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, target_position.z);
+      actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, this.target.area?.id ?? this.owner.area?.id ?? 0);
+      actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, isBackoff ? ModuleObjectConstant.OBJECT_INVALID : this.target.id);
+      actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
+      actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, arriveRange);
+      actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
+      actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
       this.owner.actionQueue.addFront(actionMoveToTarget);
 
       return ActionStatus.COMPLETE;
     }
 
-    // In range but ClearLineOfSight blocked — may retarget via GetNearestEnemy
-    // when the attacker has been standing still (stuck) at the same position.
-    if(!hasLos){
-      this.owner.force = 0;
-      this.owner.speed = 0;
-      const result = tryStuckLosRetarget(this.owner, this.target, this);
-      if(result === 'cancelled'){
-        return ActionStatus.COMPLETE;
-      }
-      // retargeted or waiting — keep PhysicalAttacks alive
-      return ActionStatus.IN_PROGRESS;
-    }
-
     if(this.owner.combatRound){
       this.owner.combatRound.losStuckPosition = undefined;
     }
+    this.owner.pathFindApproachPersonalSpace = 0;
 
     this.owner.force = 0;
     this.owner.speed = 0;

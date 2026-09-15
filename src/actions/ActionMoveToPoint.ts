@@ -20,6 +20,7 @@ import {
   PlotPathCode,
   type PathFindInfoLite,
 } from "@/engine/pathfinding/plot-path";
+import { findSafeLocation } from "@/engine/pathfinding/find-safe-location";
 import {
   QuickWalkLocoState,
   setQuickWalkLocoState,
@@ -29,6 +30,33 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 
 import { isCreature } from "@/module/guards/isCreature";
 import { isObject } from "@/module/guards/isObject";
+
+const _safeDest = new THREE.Vector3();
+
+/**
+ * Live-chase dest snap: ComputeSafeLocation(target, r=20, requireLOS).
+ * On failure leave dest at the live target position (retail).
+ */
+function snapLiveChaseDest(
+  owner: ModuleCreature,
+  live: THREE.Vector3
+): THREE.Vector3 {
+  const area = owner.area;
+  _safeDest.copy(live);
+  if(!area){
+    return _safeDest.clone();
+  }
+  const ok = findSafeLocation(area, live, _safeDest, {
+    radius: 20,
+    requireLineOfSight: true,
+    personalSpace: getPathPersonalSpace(owner),
+    owner,
+  });
+  if(!ok){
+    _safeDest.copy(live);
+  }
+  return _safeDest.clone();
+}
 
 /**
  * ActionMoveToPoint class.
@@ -400,10 +428,7 @@ export class ActionMoveToPoint extends Action {
   repathToLiveTargetInPlace(){
     if(!this.target || !isCreature(this.owner) || !this.owner.area) return;
 
-    let dest = this.real_target_position.clone();
-    if(typeof this.owner.area.getNearestWalkablePoint === 'function'){
-      dest = this.owner.area.getNearestWalkablePoint(dest, getPathPersonalSpace(this.owner));
-    }
+    const dest = snapLiveChaseDest(this.owner, this.real_target_position);
 
     this.target_position.copy(dest);
     this.setParameter(0, ActionParameterType.FLOAT, dest.x);
@@ -425,12 +450,9 @@ export class ActionMoveToPoint extends Action {
   }
 
   enqueueMoveToLiveTarget(range: number, moveFlags: number){
-    if(!this.target || !this.owner.area) return;
+    if(!this.target || !isCreature(this.owner) || !this.owner.area) return;
 
-    let dest = this.real_target_position.clone();
-    if(typeof this.owner.area.getNearestWalkablePoint === 'function'){
-      dest = this.owner.area.getNearestWalkablePoint(dest, getPathPersonalSpace(this.owner));
-    }
+    const dest = snapLiveChaseDest(this.owner, this.real_target_position);
 
     const timeout = this.getParameter<number>(8);
     const move = new GameState.ActionFactory.ActionMoveToPoint(undefined, this.groupId);
@@ -491,7 +513,11 @@ export class ActionMoveToPoint extends Action {
       return;
     }
 
-    path.fixWalkEdges(getPathPersonalSpace(this.owner));
+    path.fixWalkEdges(
+      this.owner.pathFindApproachPersonalSpace > 0
+        ? this.owner.pathFindApproachPersonalSpace
+        : getPathPersonalSpace(this.owner)
+    );
     path.setColor(this.owner.helperColor);
     this.setComputedPath(path);
     setQuickWalkLocoState(this.owner, QuickWalkLocoState.PathWalk);

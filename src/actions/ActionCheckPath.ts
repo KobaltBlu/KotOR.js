@@ -16,7 +16,7 @@ import {
 } from "@/engine/pathfinding/inter-area-path";
 import { findAwayVector } from "@/engine/pathfinding/find-away-vector";
 import { canPathToPoint } from "@/engine/pathfinding/can-path-to";
-import { isInUseRange } from "@/actions/use-range";
+import { isInUseRange, getUseRange } from "@/actions/use-range";
 import { isCreature } from "@/module/guards/isCreature";
 import { isObject } from "@/module/guards/isObject";
 
@@ -375,20 +375,62 @@ export class ActionCheckMoveToObjectRadius extends ActionCheckPath {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(ActionType.ActionCheckMoveToObjectRadius, actionId, groupId);
 
-    //PARAMS
+    //PARAMS (AIActionCheckMoveToObjectRadius / PhysicalAttacks approach)
     // 0 - dword: oTarget (target object id)
     // 1 - int: bRun (run vs walk)
-    // 2 - float: fRange (target arrival distance)
-    // 3 - float: fTolerance (arrival tolerance / range slack)
+    // 2 - float: fRange (arrival distance — Desired or Max for combat)
+    // 3 - float: fTolerance (MaxAttackRange / range slack)
     // 4 - int: bWalkStraight (straight line check flag)
     // 5 - int: bIgnoreOrientation (ignore orientation flag)
-    // 6 - int: nPersonalSpace (personal space padding)
+    // 6 - int: nRangedEquipped (RangeWeaponEquipped for combat approach)
   }
 
   update(delta: number = 0): ActionStatus {
+    if(!this.ownerIsValid()){
+      return ActionStatus.ERROR;
+    }
     const target = this.getParameter<ModuleObject>(0);
-    const range = this.getParameter<number>(1) || 1.0;
-    return this.queueMoveToObject(target, range);
+    if(!isObject(target)){
+      return ActionStatus.ERROR;
+    }
+    if(isCreature(target) && target.isDead()){
+      return ActionStatus.ERROR;
+    }
+
+    const bRun = this.getParameter<number>(1);
+    const run = typeof bRun === 'number' ? (bRun ? 1 : 0) : 1;
+    const arrive = this.getParameter<number>(2);
+    const range = typeof arrive === 'number' && arrive > 0 ? arrive : 1.0;
+    const use = getUseRange(this.owner, target, false);
+    const extra = Math.max(0, range - use.range);
+
+    if(isInUseRange(this.owner, target, extra)){
+      return ActionStatus.COMPLETE;
+    }
+
+    // Still out of range: requeue Check then Move (AddActionToFront → Move runs first).
+    // use.point is already PositionWalkable-gated — do not re-snap with owner perspace.
+    const recheck = new GameState.ActionFactory.ActionCheckMoveToObjectRadius(undefined, this.groupId);
+    for(let i = 0; i <= 6; i++){
+      const p = this.parameters[i];
+      if(p){
+        recheck.setParameter(i, p.type, p.value);
+      }
+    }
+    this.owner.actionQueue.addFront(recheck);
+
+    const action = new GameState.ActionFactory.ActionMoveToPoint(undefined, this.groupId);
+    action.setParameter(0, ActionParameterType.FLOAT, use.point.x);
+    action.setParameter(1, ActionParameterType.FLOAT, use.point.y);
+    action.setParameter(2, ActionParameterType.FLOAT, use.point.z);
+    action.setParameter(3, ActionParameterType.DWORD, target.area?.id ?? this.owner.area?.id ?? 0);
+    action.setParameter(4, ActionParameterType.DWORD, target.id);
+    action.setParameter(5, ActionParameterType.INT, run);
+    action.setParameter(6, ActionParameterType.FLOAT, range);
+    action.setParameter(7, ActionParameterType.INT, 0);
+    action.setParameter(8, ActionParameterType.FLOAT, 30.0);
+    this.owner.actionQueue.addFront(action);
+    return ActionStatus.COMPLETE;
   }
 }
 

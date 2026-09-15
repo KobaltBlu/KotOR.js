@@ -179,6 +179,7 @@ export class ModuleObject {
   v20: THREE.Vector2 = new THREE.Vector2();
   v21: THREE.Vector2 = new THREE.Vector2();
   tmpPos: THREE.Vector3 = new THREE.Vector3();
+  /** Unused — retail has no surround/openSpot attack slot picker. */
   openSpot: any;
 
   audioEmitter: AudioEmitter;

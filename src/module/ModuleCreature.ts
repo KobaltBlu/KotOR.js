@@ -60,6 +60,7 @@ import type { InterAreaWaypoint } from "@/engine/pathfinding/inter-area-path";
 import { plotPathAroundCreature } from "@/engine/pathfinding/plot-path-around-creature";
 import { bumpFriends } from "@/engine/pathfinding/bump-friends";
 import { getUseRange } from "@/actions/use-range";
+import { getAttackApproachPoint } from "@/combat/nearest-action-point";
 import { ModulePlaceable } from "@/module/ModulePlaceable";
 import type { ModuleEncounter } from "@/module/ModuleEncounter";
 import { BaseItemType } from "@/enums/combat/BaseItemType";
@@ -324,8 +325,14 @@ export class ModuleCreature extends ModuleObject {
   /**
    * path_find_info ignore-object id (DoDoorAction IGNORE).
    * Skipped as a door blocker in noNonWalkPolys / path cost checks.
+   * Also set to the live attack target during PhysicalAttacks approach.
    */
   pathFindIgnoreObjectId: number = 0;
+  /**
+   * path_find_info field3_0xc — combat approach pad
+   * (DesiredAttackRange − target cre_personal_space). 0 = use default perspace.
+   */
+  pathFindApproachPersonalSpace: number = 0;
   /**
    * Search / detect mode (detect_mode).
    * KotOR defaults ON (constructor + Load* force SetActivity(2,1)); no player UI toggle.
@@ -1930,12 +1937,8 @@ export class ModuleCreature extends ModuleObject {
       }else if(action.type == ActionType.ActionPhysicalAttacks){
         const target: ModuleObject = action.getParameter(1);
         if(target instanceof ModuleObject){
-          let distance = Infinity;
-            /*if(this.openSpot){
-              distance = this.position.distanceTo(this.openSpot.targetVector);
-            }else{*/
-              distance = this.position.distanceTo(target.position);
-            // }
+          // Retail: distance to target origin (no openSpot / surround slot).
+          const distance = this.position.distanceTo(target.position);
           return distance < ( (this.combatData.getEquippedWeaponType() == 1 || this.combatData.getEquippedWeaponType() == 3) ? 2.0 : 15.0 );
         }else{
           return true;
@@ -1949,9 +1952,13 @@ export class ModuleCreature extends ModuleObject {
     return true;
   }
 
-  //Return the best point surrounding this object for the attacker to move towards
+  /**
+   * Attack-approach destination for `targeter` toward this object.
+   * Retail has no surround picker — creature origin / door-placeable action point.
+   */
   getBestAttackPoint(targeter: ModuleObject){
-    return {x: 0, y: 0, z: 0};
+    const p = getAttackApproachPoint(this, targeter);
+    return { x: p.x, y: p.y, z: p.z };
   }
 
   /**
@@ -2240,7 +2247,6 @@ export class ModuleCreature extends ModuleObject {
       // attempted-move object id (GetAttemptedMovementTarget)
       this.attemptedMovementTarget = target;
 
-      // this.openSpot = undefined;
       let action = new GameState.ActionFactory.ActionMoveToPoint();
       action.setParameter(0, ActionParameterType.FLOAT, target.position.x);
       action.setParameter(1, ActionParameterType.FLOAT, target.position.y);
@@ -2328,8 +2334,6 @@ export class ModuleCreature extends ModuleObject {
         }
       }
 
-        
-      // this.openSpot = undefined;
       let action = new GameState.ActionFactory.ActionMoveToPoint();
       action.setParameter(0, ActionParameterType.FLOAT, target.position.x);
       action.setParameter(1, ActionParameterType.FLOAT, target.position.y);

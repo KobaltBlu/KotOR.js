@@ -422,7 +422,9 @@ export class ActionFactory {
 
     const check = new ActionCheckMoveToObjectRadius(-1, groupId);
     check.setParameter(0, ActionParameterType.DWORD, targetCaster.id);
-    check.setParameter(1, ActionParameterType.FLOAT, range);
+    check.setParameter(1, ActionParameterType.INT, 1);
+    check.setParameter(2, ActionParameterType.FLOAT, range);
+    check.setParameter(3, ActionParameterType.FLOAT, range);
 
     const move = new ActionMoveToPoint(-1, groupId);
     move.setParameter(0, ActionParameterType.FLOAT, targetCaster.position.x);

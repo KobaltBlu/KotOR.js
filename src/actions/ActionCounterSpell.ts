@@ -76,7 +76,9 @@ export class ActionCounterSpell extends Action {
 
       const check = new GameState.ActionFactory.ActionCheckMoveToObjectRadius(undefined, this.groupId);
       check.setParameter(0, ActionParameterType.DWORD, this.target.id);
-      check.setParameter(1, ActionParameterType.FLOAT, range);
+      check.setParameter(1, ActionParameterType.INT, 1);
+      check.setParameter(2, ActionParameterType.FLOAT, range);
+      check.setParameter(3, ActionParameterType.FLOAT, range);
 
       const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint(undefined, this.groupId);
       actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);

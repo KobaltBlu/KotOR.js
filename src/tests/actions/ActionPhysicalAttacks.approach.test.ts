@@ -1,0 +1,235 @@
+/**
+ * PhysicalAttacks approach queue: CheckMove + Facing + Move (retail).
+ * @jest-environment node
+ */
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import * as THREE from 'three';
+
+jest.mock('@/engine/pathfinding/test-direct-line', () => ({
+  TestDirectLineCode: { Fail: 0, Ok: 1, NonWalk: -1, DetailedBlock: -2, Creature: -3 },
+  testDirectLine: jest.fn(() => ({
+    ok: true,
+    code: 1,
+    clearPoint: new THREE.Vector3(),
+    clearT: 1,
+  })),
+}));
+
+jest.mock('@/combat/CombatRound', () => ({
+  CombatRound: { ROUND_LENGTH: 3000 },
+}));
+
+const queued: unknown[] = [];
+
+jest.mock('@/GameState', () => ({
+  GameState: {
+    PartyManager: { party: [] },
+    ActionFactory: {
+      ActionPhysicalAttacks: class {
+        parameters: { type: number; value: unknown }[] = [];
+        isUserAction = false;
+        setParameter(i: number, type: number, value: unknown){
+          this.parameters[i] = { type, value };
+        }
+      },
+      ActionMoveToPoint: class {
+        type = 0x01;
+        parameters: { type: number; value: unknown }[] = [];
+        setParameter(i: number, type: number, value: unknown){
+          this.parameters[i] = { type, value };
+        }
+      },
+      ActionCheckMoveToObjectRadius: class {
+        type = 0x11;
+        parameters: { type: number; value: unknown }[] = [];
+        setParameter(i: number, type: number, value: unknown){
+          this.parameters[i] = { type, value };
+        }
+      },
+      ActionChangeFacingObject: class {
+        type = 0x13;
+        parameters: { type: number; value: unknown }[] = [];
+        setParameter(i: number, type: number, value: unknown){
+          this.parameters[i] = { type, value };
+        }
+      },
+    },
+  },
+}));
+
+jest.mock('@/actions/Action', () => ({
+  Action: class {
+    parameters: { type: number; value: unknown }[] = [];
+    owner: unknown;
+    target: unknown;
+    groupId = -1;
+    isUserAction = false;
+    setParameter(i: number, type: number, value: unknown){
+      this.parameters[i] = { type, value };
+    }
+    getParameter<T>(i: number): T {
+      return this.parameters[i]?.value as T;
+    }
+  },
+}));
+
+jest.mock('@/combat/attack-range', () => ({
+  desiredAttackRange: () => 2.0,
+  maxAttackRange: () => 2.5,
+  getAttackMoveArriveRange: () => 2.0,
+  getCreaturePersonalSpace: () => 0.4,
+  getPathPersonalSpace: () => 0.35,
+  hasCombatLineOfSight: jest.fn(() => true),
+}));
+
+jest.mock('@/combat/combat-dueling', () => ({
+  resolveDuelRoundFlags: () => ({
+    choreographed: false,
+    engaged: false,
+    master: false,
+    useDuelingAnim: false,
+  }),
+}));
+
+jest.mock('@/combat/nearest-enemy', () => ({
+  hasTargetBeenDetected: () => true,
+}));
+
+jest.mock('@/combat/initialize-new-attack-target', () => ({
+  tryStuckLosRetarget: jest.fn(() => 'waiting'),
+}));
+
+jest.mock('@/combat/nearest-action-point', () => ({
+  getNearestActionPoint: (_t: { position: THREE.Vector3 }, _from: THREE.Vector3) =>
+    new THREE.Vector3(10, 0, 0),
+}));
+
+jest.mock('@/combat/combat-round-pause', () => ({
+  resolveAttackPauseMs: () => 1500,
+}));
+
+jest.mock('@/combat/duel-debug', () => ({
+  duelLog: () => {},
+  duelWho: () => 'x',
+}));
+
+jest.mock('@/module/guards/isCreature', () => ({
+  isCreature: (o: unknown) => !!(o as { __creature?: boolean })?.__creature,
+}));
+
+jest.mock('@/module/guards/isObject', () => ({
+  isObject: (o: unknown) => !!o,
+}));
+
+import { ActionPhysicalAttacks } from '@/actions/ActionPhysicalAttacks';
+import { ActionStatus } from '@/enums/actions/ActionStatus';
+import { ActionParameterType } from '@/enums/actions/ActionParameterType';
+import { hasCombatLineOfSight } from '@/combat/attack-range';
+import { ActionType } from '@/enums/actions/ActionType';
+
+describe('ActionPhysicalAttacks approach queue', () => {
+  beforeEach(() => {
+    queued.length = 0;
+    (hasCombatLineOfSight as jest.Mock).mockReturnValue(true);
+  });
+
+  function makeOwner(pos: THREE.Vector3){
+    return {
+      __creature: true,
+      id: 1,
+      position: pos,
+      area: { id: 1 },
+      pathFindIgnoreObjectId: 0,
+      pathFindApproachPersonalSpace: 0,
+      isRangedEquipped: () => false,
+      isDead: () => false,
+      resetExcitedDuration: () => {},
+      force: 0,
+      speed: 0,
+      combatRound: undefined,
+      actionQueue: {
+        addFront: (a: unknown) => { queued.unshift(a); },
+      },
+      getAppearance: () => ({ hitradius: 0.25, creperspace: 0.4, perspace: 0.35 }),
+    };
+  }
+
+  function makeTarget(pos: THREE.Vector3){
+    return {
+      __creature: true,
+      id: 2,
+      position: pos,
+      area: { id: 1 },
+      isDead: () => false,
+      getAppearance: () => ({ hitradius: 0.25, creperspace: 0.4, perspace: 0.35 }),
+    };
+  }
+
+  it('queues Move → Facing → CheckMove → PhysicalAttacks when too far', () => {
+    const owner = makeOwner(new THREE.Vector3(0, 0, 0));
+    const target = makeTarget(new THREE.Vector3(10, 0, 0));
+    const action = new ActionPhysicalAttacks();
+    (action as any).owner = owner;
+    action.setParameter(1, ActionParameterType.DWORD, target as any);
+    (action as any).target = target;
+
+    const status = action.update(0);
+
+    expect(status).toBe(ActionStatus.COMPLETE);
+    expect(queued.length).toBe(4);
+    expect((queued[0] as { type?: number }).type).toBe(ActionType.ActionMoveToPoint);
+    expect((queued[1] as { type?: number }).type).toBe(ActionType.ActionChangeFacingObject);
+    expect((queued[2] as { type?: number }).type).toBe(ActionType.ActionCheckMoveToObjectRadius);
+    // requeued PhysicalAttacks has no type set on mock — check param copy
+    expect((queued[3] as { parameters: unknown[] }).parameters[1]?.value).toBe(target);
+
+    const check = queued[2] as { parameters: { value: unknown }[] };
+    expect(check.parameters[0].value).toBe(2);
+    expect(check.parameters[1].value).toBe(1);
+    expect(check.parameters[2].value).toBe(2.0);
+    expect(check.parameters[3].value).toBe(2.5);
+
+    expect(owner.pathFindIgnoreObjectId).toBe(2);
+    expect(owner.pathFindApproachPersonalSpace).toBeCloseTo(1.6, 5);
+
+    const move = queued[0] as { parameters: { value: unknown }[] };
+    expect(move.parameters[0].value).toBe(10);
+    expect(move.parameters[4].value).toBe(2);
+    expect(move.parameters[6].value).toBe(2.0);
+  });
+
+  it('backoff queues only Move + PhysicalAttacks (no Check/Facing)', () => {
+    // dist 0.5 → deep inside desired²−0.2
+    const owner = makeOwner(new THREE.Vector3(0, 0, 0));
+    const target = makeTarget(new THREE.Vector3(0.5, 0, 0));
+    const action = new ActionPhysicalAttacks();
+    (action as any).owner = owner;
+    action.setParameter(1, ActionParameterType.DWORD, target as any);
+    (action as any).target = target;
+
+    const status = action.update(0);
+
+    expect(status).toBe(ActionStatus.COMPLETE);
+    expect(queued.length).toBe(2);
+    expect((queued[0] as { type?: number }).type).toBe(ActionType.ActionMoveToPoint);
+    const move = queued[0] as { parameters: { value: unknown }[] };
+    expect(move.parameters[4].value).toBe(0x7f000000);
+    expect(move.parameters[6].value).toBe(0);
+  });
+
+  it('queues approach when in range but no LOS', () => {
+    (hasCombatLineOfSight as jest.Mock).mockReturnValue(false);
+    const owner = makeOwner(new THREE.Vector3(0, 0, 0));
+    const target = makeTarget(new THREE.Vector3(2.0, 0, 0)); // within max 2.5
+    const action = new ActionPhysicalAttacks();
+    (action as any).owner = owner;
+    action.setParameter(1, ActionParameterType.DWORD, target as any);
+    (action as any).target = target;
+
+    const status = action.update(0);
+
+    expect(status).toBe(ActionStatus.COMPLETE);
+    expect(queued.length).toBe(4);
+    expect((queued[0] as { type?: number }).type).toBe(ActionType.ActionMoveToPoint);
+  });
+});
