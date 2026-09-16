@@ -248,7 +248,7 @@ export class OdysseyModelAnimationManager {
   // --- Play / stop ---
 
   /**
-   * Insert an AnimRun (Gob::PlayAnimation).
+   * Insert an AnimRun (PlayAnimation).
    * @returns the new or reused run
    */
   playAnimation(
@@ -263,7 +263,7 @@ export class OdysseyModelAnimationManager {
     const incomingQueued = !!(flags & AuroraAnimationFlag.QUEUE);
     const skipSameName = !!(flags & AuroraAnimationFlag.REUSE);
 
-    // Additive same-name: OR flags and refresh (retail 0x400 path)
+    // Additive same-name: OR flags and refresh (0x400 path)
     if(flags & AuroraAnimationFlag.ADDITIVE_GESTURE){
       for(let i = 0; i < this.runs.length; i++){
         const existing = this.runs[i];
@@ -295,7 +295,7 @@ export class OdysseyModelAnimationManager {
       !!(flags & AuroraAnimationFlag.OVERLAY_SLOT) ||
       !!(flags & AuroraAnimationFlag.ADDITIVE_GESTURE);
 
-    // Same-name base replace when REUSE (0x40) is clear — retail default.
+    // Same-name base replace when REUSE (0x40) is clear — default.
     // When REUSE is set, skip and allocate a new run.
     if(!incomingOverlay && !incomingQueued && !skipSameName){
       const want = anim.name?.toLowerCase();
@@ -357,7 +357,7 @@ export class OdysseyModelAnimationManager {
 
     // Non-overlay non-QUEUE at full weight: purge older bases.
     // REUSE (0x40) keeps the prior same-name on stack for crossfade until
-    // the new run reaches weight 1 (retail inserts without same-name remove).
+    // the new run reaches weight 1 (inserts without same-name remove).
     if(!incomingOverlay && !incomingQueued && !skipSameName && run.weight >= 1){
       this.purgeOlderNonOverlay(run);
     }
@@ -494,7 +494,7 @@ export class OdysseyModelAnimationManager {
   update(delta = 0){
     if(!this.model) return;
 
-    // Promote queued runs whose predecessors have finished (Gob::Animate 0x20).
+    // Promote queued runs whose predecessors have finished (QUEUE flag 0x20).
     this.promoteQueuedRuns();
 
     // Advance + weight ramp (skip still-queued)
@@ -564,7 +564,7 @@ export class OdysseyModelAnimationManager {
 
   /**
    * Clear QUEUE on the oldest queued run that has no active non-queued
-   * predecessor (retail Animate promotes when FAF ends / tip is queued).
+   * predecessor (Animate promotes when FAF ends / tip is queued).
    */
   private promoteQueuedRuns(){
     for(let i = 0; i < this.runs.length; i++){

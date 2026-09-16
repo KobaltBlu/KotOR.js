@@ -57,7 +57,7 @@ export class Action {
   /** Pathfinding data for movement-based actions */
   path: any;
 
-  /** Unused — retail has no surround/openSpot attack slot picker. */
+  /** Unused — no surround/openSpot attack slot picker. */
   openSpot: any;
 
   /** Whether this action can be cleared from the queue */

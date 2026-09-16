@@ -629,7 +629,7 @@ export class LightManager {
   /**
    * PrioritizeLights membership follows VIS / gameplay visibility, not room
    * mesh draw cull. `applyRoomRenderFrustumCull` toggles `model.visible` for
-   * draw only; `userData.visActive` stays true for VIS-linked rooms. Retail
+   * draw only; `userData.visActive` stays true for VIS-linked rooms.
    * PrioritizeLights scores render_lights without a camera frustum gate on
    * the parent mesh — tying eligibility to `visible` dropped elevated suns
    * (and soft shadow primaries) when looking away from their room AABB.

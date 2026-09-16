@@ -9,7 +9,7 @@ import { isCreature } from "@/module/guards/isCreature";
 const IMMUNITY_CURSE = 0x11;
 
 /**
- * EffectCurse — effect apply.
+ * EffectCurse — onApply.
  * int[0..5] = STR/DEX/CON/INT/WIS/CHA penalties; spawns AbilityDecrease children.
  *
  * @file EffectCurse.ts

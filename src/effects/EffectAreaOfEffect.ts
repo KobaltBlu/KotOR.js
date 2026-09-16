@@ -8,7 +8,7 @@ import type EngineLocation from "@/engine/EngineLocation";
 import { isCreature } from "@/module/guards/isCreature";
 
 /**
- * EffectAreaOfEffect — effect apply /
+ * EffectAreaOfEffect — onApply /
  * location path via ApplyEffect.
  *
  * int[0] = vfx_persistent row; string[0..2] = OnEnter / Heartbeat / OnExit overrides;

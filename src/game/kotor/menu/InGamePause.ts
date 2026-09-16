@@ -81,7 +81,7 @@ export class InGamePause extends GameMenu {
 
   /**
    * SetPauseReason — TLK → LBL_PAUSEREASON, show/hide LBL_PRESS,
-   * then resize reason / press / panel / unpause like retail.
+   * then resize reason / press / panel / unpause like the original game.
    */
   setPauseReason(reason: AutoPauseState | number){
     const strRef = this.getPauseStrRef(reason);
@@ -134,7 +134,7 @@ export class InGamePause extends GameMenu {
 
   show() {
     super.show();
-    // Reason text is applied by AutoPauseManager.syncPauseOverlay before show (CGuiInGame::SetPaused).
+    // Reason text is applied by AutoPauseManager.syncPauseOverlay before show.
     this.tGuiPanel.pulsing = true;
     this.LBL_PAUSEREASON.pulsing = true;
     if(this.shouldShowPressLabel(GameState.AutoPauseManager.CurrentReason)){

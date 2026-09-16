@@ -736,7 +736,7 @@ export class FollowerCamera {
     FollowerCamera.resolveFreeLookHook(followee);
     FollowerCamera.camera.position.copy(FollowerCamera.tmpHookPos);
 
-    // Hook yaw (YZX .z) + look yaw; pitch = lookPitch + 90° (retail YawPitchRoll)
+    // Hook yaw (YZX .z) + look yaw; pitch = lookPitch + 90° (YawPitchRoll)
     FollowerCamera.tmpEuler.setFromQuaternion(FollowerCamera.tmpHookQuat, 'YZX');
     const hookYaw = FollowerCamera.tmpEuler.z;
     const yaw = hookYaw + THREE.MathUtils.degToRad(FollowerCamera.freeLookYawDeg);
@@ -1236,7 +1236,7 @@ export class FollowerCamera {
     if(pitch < 0) pitch = 0;
     if(pitch > HALF_PI) pitch = HALF_PI;
 
-    // Move in (strafe, speed) with pitch−90° basis (retail Control)
+    // Move in (strafe, speed) with pitch−90° basis (camera control)
     const moveBasisPitch = pitch - HALF_PI;
     FollowerCamera.tmpEuler.set(moveBasisPitch, 0, yaw, 'YZX');
     FollowerCamera.tmpHookQuat.setFromEuler(FollowerCamera.tmpEuler);

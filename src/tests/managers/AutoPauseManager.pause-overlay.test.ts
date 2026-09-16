@@ -1,5 +1,5 @@
 /**
- * syncPauseOverlay mirrors CGuiInGame::SetPaused (SetPauseReason then show/hide).
+ * syncPauseOverlay applies pause reason then show/hide.
  * @jest-environment node
  */
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';

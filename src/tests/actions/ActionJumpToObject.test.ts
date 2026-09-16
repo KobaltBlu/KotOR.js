@@ -1,5 +1,5 @@
 /**
- * ActionJumpToObject — retail AIActionJumpToObject safe-location parity.
+ * ActionJumpToObject — safe-location jump parity.
  * @jest-environment node
  */
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
@@ -71,7 +71,7 @@ let mockTarget: {
   rotation: { z: number };
 };
 
-describe('ActionJumpToObject retail ComputeSafeLocation', () => {
+describe('ActionJumpToObject ComputeSafeLocation', () => {
   beforeEach(() => {
     findSafeLocation.mockReset();
     applyLocalJump.mockReset();
@@ -137,7 +137,7 @@ describe('ActionJumpToObject retail ComputeSafeLocation', () => {
     );
   });
 
-  it('defaults omitted bWalkStraight to requireLOS true (retail TRUE)', () => {
+  it('defaults omitted bWalkStraight to requireLOS true', () => {
     findSafeLocation.mockImplementation((_area, _center, out: THREE.Vector3) => {
       out.set(178.0, 63.0, 0);
       return true;

@@ -23,7 +23,7 @@ export class EffectAbilityIncrease extends GameEffect {
   onApply(){
     if(this.applied)
       return;
-    // effect apply: reject non-positive amount
+    // onApply: reject non-positive amount
     if((this.getInt(1) || 0) <= 0)
       return;
     super.onApply();

@@ -35,7 +35,7 @@ function makePlayer(x: number, y: number, z = 0): ModuleCreature {
   } as unknown as ModuleCreature;
 }
 
-describe("countVisibleToPlayers (Pass AF)", () => {
+describe("countVisibleToPlayers", () => {
   beforeEach(() => {
     clearLosMock.mockReset();
     clearLosMock.mockReturnValue(true);

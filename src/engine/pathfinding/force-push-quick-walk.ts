@@ -21,7 +21,7 @@ import {
 } from "@/engine/pathfinding/quick-walk-loco";
 
 /**
- * effect apply + force-push quick-walk.
+ * Force Push on-apply + force-push quick-walk.
  *
  * @file force-push-quick-walk.ts
  */
@@ -214,7 +214,7 @@ export function installForcePushPath(
     creature.forcePushArrived = true;
   }
 
-  // effect apply calls quick-walk locomotion(1) to seed timers.
+  // On apply, call quick-walk locomotion(1) to seed timers.
   forcePushQuickWalkUpdate(creature, 0);
 }
 
@@ -227,7 +227,7 @@ export function clearForcePushLoco(creature: ModuleCreature): void {
 }
 
 /**
- * effect apply with int −3 — AND activity with 0xFFFD.
+ * On apply with int −3 — AND activity with 0xFFFD.
  * Shared by ForcePush / Whirlwind / Crush / Choke / Horror / Knockdown
  * Held / Stun / MindTrick / DroidScramble / DroidStun SetState internals.
  */
@@ -237,7 +237,7 @@ export function applyForcePushAIActivityMask(creature: ModuleCreature): void {
 }
 
 /**
- * effect apply (state==9): stamp creator's current attack
+ * On apply (state==9): stamp creator's current attack
  * state=9 / state=1 for attack-summary feedback.
  */
 export function stampForcePushAttackSummary(

@@ -60,7 +60,7 @@ export class ActionItemCastSpell extends Action {
     this.type = ActionType.ActionItemCastSpell;
 
     //PARAMS
-    // Retail Odyssey Engine Layout (AddItemCastSpellActions / AIActionItemCastSpell):
+    // Parameter layout (AddItemCastSpellActions / ItemCastSpell):
     // 0 - dword: oItem (item object id)
     // 1 - int: nActivePropertyIndex (item property index)
     // 2 - int: nSubPropertyIndex (class/sub-property index)

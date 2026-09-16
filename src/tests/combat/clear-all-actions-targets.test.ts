@@ -1,5 +1,5 @@
 /**
- * Retail ClearAllActions must keep GetAttackTarget so GN_EquipAppropriateWeapon
+ * ClearAllActions must keep GetAttackTarget so GN_EquipAppropriateWeapon
  * (after ClearAllActions in GN_DetermineCombatRound) can switch ranged→melee.
  * @jest-environment node
  */
@@ -10,7 +10,7 @@ import { CombatData } from '@/combat/CombatData';
 import { ModuleObjectType } from '@/enums/module/ModuleObjectType';
 
 describe('ClearAllActions vs attack targets', () => {
-  it('does not call combatData.reset (retail CSWSObject::ClearAllActions keeps targets)', () => {
+  it('does not call combatData.reset (ClearAllActions keeps attack targets)', () => {
     const src = fs.readFileSync(srcPath('module', 'ModuleObject.ts'), 'utf8');
     const fn = src.match(
       /clearAllActions\(skipUnclearable = false\)\{[\s\S]*?\n  \}/

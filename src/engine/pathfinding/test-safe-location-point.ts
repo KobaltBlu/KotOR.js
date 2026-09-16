@@ -10,8 +10,8 @@ import { getRoomAtPoint } from "@/engine/pathfinding/test-direct-line";
  * Approximate TestSafeLocationPoint.
  *
  * : tiny ±0.01 XY / ±0.1 Z probe through room NoNonWalk + Detailed +
- * NoCreaturesOnLine (param skipBumpable=0). Retail does not skip party
- * creatures; default allowPartyCreatures=false matches that.
+ * NoCreaturesOnLine (skipBumpable=0). Party creatures are not skipped;
+ * default allowPartyCreatures=false matches that.
  *
  * @file test-safe-location-point.ts
  */
@@ -20,7 +20,7 @@ const _a = new THREE.Vector3();
 const _b = new THREE.Vector3();
 
 export type TestSafeLocationPointOptions = {
-  /** When true, party members do not block (follow/teleport paths). Retail Jump default false. */
+  /** When true, party members do not block (follow/teleport paths). Jump default false. */
   allowPartyCreatures?: boolean;
 };
 
@@ -55,7 +55,7 @@ export function testSafeLocationPoint(
   const creatures = noCreaturesOnLine(area, _a, _b, {
     owner,
     allowPartyCreatures: options.allowPartyCreatures === true,
-    // Retail TestSafeLocationPoint: occupied cells hard-block (no start soft-clear).
+    // Occupied cells hard-block (no start soft-clear).
     softClearStartOverlap: false,
   });
   return creatures.clear;

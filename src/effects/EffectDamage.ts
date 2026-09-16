@@ -15,7 +15,7 @@ import { BitWise } from "@/utility/BitWise";
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * effect apply
+ * onApply
  *
  * @file EffectDamage.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -128,7 +128,7 @@ export class EffectDamage extends GameEffect {
       }
     }
 
-    // effect apply schedules OnDamaged / door-placeable combat broadcast.
+    // onApply schedules OnDamaged / door-placeable combat broadcast.
     // Door/placeable onDamaged handlers BroadcastCombatStateToParty(attacker, INVALID).
     if(amount > 0 && typeof this.object.onDamaged === 'function'){
       this.object.onDamaged();

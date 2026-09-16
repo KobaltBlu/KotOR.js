@@ -814,8 +814,8 @@ export class ModuleEncounter extends ModuleObject {
   /**
    * RemoveFromActiveCreatureCount.
    * @param challengeRating creature CR
-   * @param fromDestroySelf 1 = AIActionEncounterCreatureDestroySelf (recover to);
-   * 0 = effect apply (may fire OnExhausted when count hits 0)
+   * @param fromDestroySelf 1 = DestroySelf encounter action (recover to);
+   * 0 = destroy-self effect unlink (may fire OnExhausted when count hits 0)
    */
   removeFromActiveCreatureCount(challengeRating: number, fromDestroySelf: number = 0){
     let spawned = this.numberSpawned || 0;

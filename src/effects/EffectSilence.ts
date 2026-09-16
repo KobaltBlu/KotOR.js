@@ -8,7 +8,7 @@ import { isCreature } from "@/module/guards/isCreature";
 const IMMUNITY_SILENCE = 0x0b;
 
 /**
- * EffectSilence — effect apply / effect remove.
+ * EffectSilence — onApply / onRemove.
  * Sets creature.silenced; blocks Force / spell casts.
  *
  * @file EffectSilence.ts

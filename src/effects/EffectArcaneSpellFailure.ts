@@ -4,7 +4,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import { isCreature } from "@/module/guards/isCreature";
 
 /**
- * EffectArcaneSpellFailure — effect apply.
+ * EffectArcaneSpellFailure — onApply.
  * int[0] = percent chance to fail Force/spell cast.
  *
  * @file EffectArcaneSpellFailure.ts

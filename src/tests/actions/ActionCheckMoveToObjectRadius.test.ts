@@ -1,5 +1,5 @@
 /**
- * ActionCheckMoveToObjectRadius retail param ABI.
+ * ActionCheckMoveToObjectRadius param ABI.
  * @jest-environment node
  */
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';

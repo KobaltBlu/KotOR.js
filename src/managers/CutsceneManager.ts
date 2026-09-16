@@ -232,8 +232,8 @@ export class CutsceneManager {
 
   /**
    * True when a controlled CNPC is the conversation listener and the real PC
-   * is not already party leader — AIActionDialogObject CNPC→PC swap gate.
-   * Retail only swaps when the dialog initiator is a controlled non-PC; our
+   * is not already party leader — CNPC→PC dialog leader swap gate.
+   * Only swaps when the dialog initiator is a controlled non-PC; our
    * click-talk path uses that CNPC as listener. Scripted StartConversation
    * with the PC as listener must not swap (e.g. Zelka ActionStartConversation).
    */
@@ -1071,7 +1071,7 @@ export class CutsceneManager {
     if (GameState.Mode != EngineMode.DIALOG)
       return;
 
-    // Re-evaluate Active scripts at reply time (CSWSDialog::SendDialogReplies).
+    // Re-evaluate Active scripts at reply time.
     const available = this.dialog.getAvailableReplies(entry);
     this.currentReplies = available;
 

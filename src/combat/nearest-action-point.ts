@@ -205,7 +205,7 @@ export function getPlaceableNearestActionPoint(
 /**
  * Nearest interact / bash approach point for doors & placeables; otherwise object origin.
  *
- * Retail combat approach has no surround / open-spot picker — creature attack
+ * Combat approach has no surround / open-spot picker — creature attack
  * destinations are the target origin (arrive via Desired/MaxAttackRange);
  * doors/placeables use GetNearestActionPoint.
  */

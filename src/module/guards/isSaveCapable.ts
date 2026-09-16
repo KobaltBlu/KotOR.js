@@ -6,7 +6,7 @@ import { isCreature } from "@/module/guards/isCreature";
 import { isDoor } from "@/module/guards/isDoor";
 import { isPlaceable } from "@/module/guards/isPlaceable";
 
-/** Creatures, doors, and placeables — the retail SaveCapable set. */
+/** Creatures, doors, and placeables — the SaveCapable set. */
 export type SaveCapableObject = ModuleCreature | ModuleDoor | ModulePlaceable;
 
 export const isSaveCapable: (o: ModuleObject | undefined) => o is SaveCapableObject = (

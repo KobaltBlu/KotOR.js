@@ -270,7 +270,7 @@ export function testStringAgainstPattern(
 
   /**
    * Pop path entries until a retriable (non-literal) node is found.
-   * Restores `pos` to that node's endPos (local_38 = node[2]).
+   * Restores `pos` to that node's endPos (node[2]).
    */
   const backtrack = (): ExprNode | null => {
     while(path.length > 1){

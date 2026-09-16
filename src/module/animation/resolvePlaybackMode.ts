@@ -16,7 +16,7 @@ export const ANIMATION_REVERSE_SERVER_ID = 10256;
 
 /**
  * Resolve SetAnimation playback mode for a creature server animation ID.
- * Prefer retail SetAnimationInternal switch sets; animations.2da `overlay`
+ * Prefer SetAnimationInternal switch sets; animations.2da `overlay`
  * column remains a fallback for IDs outside the switch.
  */
 export function resolvePlaybackMode(
@@ -37,15 +37,15 @@ export function resolvePlaybackMode(
 
 /**
  * Aurora flags when starting an overlay (SetOverlayAnimation arg3 != 0).
- * Retail: base 0x08; OR 0x001 fire-forget except looping overlay bands.
+ * Base 0x08; OR 0x001 fire-forget except looping overlay bands.
  * KotOR.js also ORs 0x400 for stop-additive IDs so AnimRun fade matches
- * additive gesture semantics (retail stop uses 0x400; start is 0x08 only).
+ * additive gesture semantics (stop uses 0x400; start is 0x08 only).
  */
 export function resolveOverlayStartFlags(serverId: number): number {
   let flags = 0x08; // OVERLAY_SLOT
   const id = serverId & 0xffff;
   if(OVERLAY_STOP_ADDITIVE_IDS.has(id) || SET_ANIMATION_OVERLAY_IDS.has(id)){
-    // Additive gesture fade-out on the Gob stack
+    // Additive gesture fade-out on the animation stack
     if(OVERLAY_STOP_ADDITIVE_IDS.has(id)){
       flags |= 0x400;
     }
@@ -53,7 +53,7 @@ export function resolveOverlayStartFlags(serverId: number): number {
   if(OVERLAY_START_NO_FIRE_FORGET_IDS.has(id)){
     return flags;
   }
-  // Retail: ids in 0x2736..0x273a already covered above; remaining get FAF
+  // Ids in 0x2736..0x273a already covered above; remaining get FAF
   return flags | 0x001;
 }
 

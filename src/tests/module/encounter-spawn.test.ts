@@ -59,7 +59,7 @@ function makeEncounter(partial: Partial<ModuleEncounter> = {}): ModuleEncounter 
   } as unknown as ModuleEncounter;
 }
 
-describe("spawnIfAppropriate pool gates (Pass AF)", () => {
+describe("spawnIfAppropriate pool gates", () => {
   it("does not build when spawnPoolRecovered is 0", () => {
     const enc = makeEncounter({ spawnPoolRecovered: 0 });
     spawnIfAppropriate(enc);
@@ -68,7 +68,7 @@ describe("spawnIfAppropriate pool gates (Pass AF)", () => {
   });
 });
 
-describe("pickSpawnPosition fail paths (Pass AF)", () => {
+describe("pickSpawnPosition fail paths", () => {
   beforeEach(() => {
     safeMock.mockReset();
     nonVisMock.mockReset();

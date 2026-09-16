@@ -215,7 +215,7 @@ export class ModuleObjectManager {
   }
 
   /**
-   * Char / player pool — retail next_char_id range (0x7F000001..0x7FFFFFFF).
+   * Char / player pool — next_char_id range (0x7F000001..0x7FFFFFFF).
    * Module pool is everything below OBJECT_INVALID (0x7F000000).
    */
   static isCharPoolId(id: number): boolean {
@@ -238,7 +238,7 @@ export class ModuleObjectManager {
   }
 
   /**
-   * True PC only — retail AddInternalObject(isPlayerCharacter=1).
+   * True PC only — char-pool assignment (isPlayerCharacter).
    * Companions (isPM) use the module pool.
    */
   static isPlayerCharacterObject(object: ModuleObject): boolean {
@@ -286,7 +286,7 @@ export class ModuleObjectManager {
     }else{
       const existing = this.ObjectList.get(object.id);
       if(existing && existing !== object){
-        // Collision — realloc in the pool of the requested id (retail AddObjectAtPos).
+        // Collision — realloc in the pool of the requested id.
         this.persistObjectId(
           object,
           this.allocateFreeObjectIdMatchingPool(object.id)
@@ -1321,7 +1321,7 @@ export class ModuleObjectManager {
     return this.#nearestHostileFlags.get(obj) === true;
   }
 
-  /** CSWCCreature::CanSee(pc, target) — PC→target, 30u, eye height 1.5. */
+  /** Line of sight from PC to target — 30u range, eye height 1.5. */
   static canSeeObject(player: ModuleObject, obj: ModuleObject): boolean {
     if(!player || !obj) return false;
     return player.hasLineOfSight(obj, NEAREST_OBJECT_RANGE, {
@@ -1525,7 +1525,7 @@ export class ModuleObjectManager {
         }
 
         // EnemySighted force-pick: creatures only (not placeables/doors).
-        // Rising edge always sets last_target (retail DoPassiveSelection);
+        // Rising edge always sets last_target (passive selection);
         // auto-pause only when not already in client combat mode.
         if(
           enemyRising &&

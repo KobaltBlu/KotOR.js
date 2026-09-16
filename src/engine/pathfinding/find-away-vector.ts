@@ -99,7 +99,7 @@ export function findAwayVector(
 
     let dest = _candidate.clone();
     if(area){
-      // Full line blocked → binary-scale toward origin (local_b8 *= 0.5)
+      // Full line blocked → binary-scale toward origin (scale *= 0.5)
       let scale = 1.0;
       let cleared = false;
       while(scale >= 0.005){

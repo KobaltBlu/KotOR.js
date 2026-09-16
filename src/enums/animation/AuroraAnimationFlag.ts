@@ -14,14 +14,14 @@ export enum AuroraAnimationFlag {
   /** Overlay slot — stack without clearing locomotion base. */
   OVERLAY_SLOT = 0x008,
   /**
-   * Queue — deferred start (Gob::PlayAnimation / Animate 0x20).
+   * Queue — deferred start (0x20).
    * Inserted under/behind the active base; time and pose stay frozen
    * until promoted (e.g. galaxy-map `rotate` after `zoomin`).
    */
   QUEUE = 0x020,
   /**
-   * When set, skip same-name replace (Gob::PlayAnimation 0x40).
-   * When clear, same-name base is removed and reinserted (retail default).
+   * When set, skip same-name replace (0x40).
+   * When clear, same-name base is removed and reinserted (default).
    */
   REUSE = 0x040,
   /** Overlay stop / remove semantics. */

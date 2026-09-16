@@ -277,7 +277,7 @@ export class GrassManager {
       fragmentShader: grassShader.getFragment(),
       side: THREE.DoubleSide,
       // Transparent so grass draws after opaque terrain (avoids z-disappear).
-      // depthWrite still on — retail DoBinBucket does not disable depth mask —
+      // depthWrite still on — bin draw keeps the depth mask —
       // so later additive sabers depth-test against blades.
       transparent: true,
       depthWrite: true,

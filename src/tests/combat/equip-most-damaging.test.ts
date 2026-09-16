@@ -8,7 +8,7 @@ import * as fs from 'fs';
 import { srcPath } from '@/tests/helpers/paths';
 
 describe('GetWeaponRanged (opcode 511)', () => {
-  it('uses isRangedWeapon like retail ranged_weapon, not WeaponType == 4', () => {
+  it('uses isRangedWeapon like ranged_weapon, not WeaponType == 4', () => {
     const src = fs.readFileSync(srcPath('nwscript', 'NWScriptDefK1.ts'), 'utf8');
     const block = src.match(
       /511:\{[\s\S]*?name: "GetWeaponRanged"[\s\S]*?\n  \},/

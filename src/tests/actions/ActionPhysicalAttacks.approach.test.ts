@@ -1,5 +1,5 @@
 /**
- * PhysicalAttacks approach queue: CheckMove + Facing + Move (retail).
+ * PhysicalAttacks approach queue: CheckMove + Facing + Move.
  * @jest-environment node
  */
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';

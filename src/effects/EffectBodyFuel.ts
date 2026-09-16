@@ -4,7 +4,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import { isCreature } from "@/module/guards/isCreature";
 
 /**
- * EffectBodyFuel — effect apply / OnRemove.
+ * EffectBodyFuel — onApply / onRemove.
  * Sets bodyFuel flag. While active:
  * - Force menu enable uses HP as resource (GetSelf/HostileForcePowers)
  * - end combat round refills temporaryForce to max FP

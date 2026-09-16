@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  *
- * Door reticle hostility: retail UpdateStickyTarget dual-flag
+ * Door reticle hostility: sticky-target dual-flag
  * (is_hostile + hasTrap), not Locked/Plot.
  */
 import { describe, expect, test, jest, beforeEach } from '@jest/globals';

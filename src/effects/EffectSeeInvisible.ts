@@ -8,7 +8,7 @@ import {
 } from "@/effects/EffectBlindness";
 
 /**
- * EffectSeeInvisible — effect apply sets detect flag 0x01.
+ * EffectSeeInvisible — onApply sets detect flag 0x01.
  *
  * @file EffectSeeInvisible.ts
  */

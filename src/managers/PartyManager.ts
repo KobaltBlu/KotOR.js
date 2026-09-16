@@ -2032,7 +2032,7 @@ export class PartyManager {
       return;
     }
     // Prefer saved ObjectId so CombatRound Target/MasterID refs still resolve after load.
-    // Companions use the module id pool (retail GetNPCObject isPlayerCharacter=0),
+    // Companions use the module id pool (not true PC),
     // not GetNextPlayerId / char pool.
     const MOM = GameState.ModuleObjectManager;
     const savedId = template.RootNode.hasField('ObjectId')

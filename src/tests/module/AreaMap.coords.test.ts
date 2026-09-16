@@ -32,11 +32,11 @@ interface LiveAreaMapFixture {
   mapPt2Y: number;
   /** Sample world point (live PC or world midpoint). */
   sample: { x: number; y: number };
-  /** Optional live note samples with expected retail pixels. */
+  /** Optional live note samples with expected map pixels. */
   notes?: { label: string; x: number; y: number; pixel: { x: number; y: number } }[];
 }
 
-/** K1 Endar Spire command deck — WEST. Sample = live PC → retail (206, 91). */
+/** K1 Endar Spire command deck — WEST. Sample = live PC → (206, 91). */
 const K1_END_M01AA_WEST: LiveAreaMapFixture = {
   id: "K1 end_m01aa/m01aa WEST",
   gameKey: GameEngineType.KOTOR,
@@ -92,7 +92,7 @@ const K1_DANM15_EAST: LiveAreaMapFixture = {
 
 /**
  * K1 Manaan docking bay — EAST (live MenuMap pin regression).
- * Note pixels captured vs retail GetMapPixelFromWorldCoord path.
+ * Note pixels captured vs expected world→map pixel path.
  */
 const K1_MANM26AD_EAST: LiveAreaMapFixture = {
   id: "K1 manm26ad/m26ad EAST",
@@ -251,7 +251,7 @@ function logicalSizeFor(gameKey: GameEngineType){
 }
 
 /**
- * Independent retail GetMapPixelFromWorldCoord + display Y-flip.
+ * Independent world→map pixel + display Y-flip.
  * Must stay in sync with AreaMap.toMapPixels / toMapCoordinates.
  */
 function expectedRetail(
@@ -304,7 +304,7 @@ describe("AreaMap engine coordinates", () => {
   });
 
   test.each(LIVE_AXIS_FIXTURES.map((f) => [f.id, f] as const))(
-    "%s: toMapPixels / toMapCoordinates match retail at sample + corners",
+    "%s: toMapPixels / toMapCoordinates match expected at sample + corners",
     (_id, fixture) => {
       ApplicationProfile.GameKey = fixture.gameKey;
       const logical = logicalSizeFor(fixture.gameKey);
@@ -356,7 +356,7 @@ describe("AreaMap engine coordinates", () => {
     }
   );
 
-  test("K1 end_m01aa WEST live PC → retail pixels (206, 91)", () => {
+  test("K1 end_m01aa WEST live PC → map pixels (206, 91)", () => {
     ApplicationProfile.GameKey = GameEngineType.KOTOR;
     const areaMap = new AreaMap();
     applyMapFields(areaMap, K1_END_M01AA_WEST);
@@ -366,7 +366,7 @@ describe("AreaMap engine coordinates", () => {
     expect(pix.valid).toBe(true);
   });
 
-  test("K1 manm26ad EAST live map notes match retail hangar pixels", () => {
+  test("K1 manm26ad EAST live map notes match hangar pixels", () => {
     ApplicationProfile.GameKey = GameEngineType.KOTOR;
     const areaMap = new AreaMap();
     applyMapFields(areaMap, K1_MANM26AD_EAST);
@@ -418,7 +418,7 @@ describe("AreaMap engine coordinates", () => {
     }
   });
 
-  test("NorthAxis transforms match retail GetMapPixelFromWorldCoord", () => {
+  test("NorthAxis transforms match world→map pixel axes", () => {
     expect(AreaMap.transformWorldByNorthAxis(10, 20, MapNorthAxis.NORTH)).toEqual({ x: 10, y: 20 });
     expect(AreaMap.transformWorldByNorthAxis(10, 20, MapNorthAxis.EAST)).toEqual({ x: -10, y: -20 });
     expect(AreaMap.transformWorldByNorthAxis(10, 20, MapNorthAxis.SOUTH)).toEqual({ x: 20, y: -10 });

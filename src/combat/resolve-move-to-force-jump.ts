@@ -1,5 +1,5 @@
 /**
- * ResolveMoveToForceJump — combat approach gate (retail CSWSCreature).
+ * ResolveMoveToForceJump — combat approach gate for Force Jump leap.
  *
  * @file resolve-move-to-force-jump.ts
  */
@@ -17,7 +17,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { isCreature } from "@/module/guards/isCreature";
 
-/** Retail distance² gate (≥ 10 units). */
+/** Minimum distance² gate (≥ 10 units). */
 export const FORCE_JUMP_MIN_DIST_SQ = 100.0;
 
 export type ResolveMoveToForceJumpOut = {

@@ -26,15 +26,15 @@ export enum QuickWalkLocoState {
   PathHold = 2,
   /** Party FollowLeader SM. */
   FollowLeader = 3,
-  /** Force Push slide (effect apply). */
+  /** Force Push slide (on apply). */
   ForcePushed = 4,
-  /** Force Jump jumper leap (OnApplyForceJumpDelayed). */
+  /** Force Jump jumper leap (delayed apply). */
   ForceJump = 5,
   /** Force Jump shoved target (unsafe landing). */
   ForceJumpTarget = 6,
 }
 
-/** effect apply sets loco mode 4. */
+/** Force Push on-apply sets loco mode 4. */
 export const FORCE_PUSH_LOCO_STATE = QuickWalkLocoState.ForcePushed;
 
 export function getQuickWalkLocoState(creature: ModuleCreature | undefined): number {

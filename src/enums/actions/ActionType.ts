@@ -142,14 +142,14 @@ export enum ActionType {
   ActionCheckMoveToFollowRadius = 0x40,
   /** Surrender to enemies */
   ActionSurrenderToEnemies = 0x41,
-  /** TSL cut locked door with lightsaber (AIActionDoorSaber) — RunActions case 0x43 */
+  /** TSL cut locked door with lightsaber — RunActions case 0x43 */
   ActionDoorSaber = 0x43,
-  /** TSL Total Defense combat stance (AIActionStanceTotalDefense) */
+  /** TSL Total Defense combat stance */
   ActionStanceTotalDefense = 0x44,
-  /** TSL Meditative combat stance (AIActionStanceMeditative) */
+  /** TSL Meditative combat stance */
   ActionStanceMeditative = 0x45,
-  /** TSL puppet follows AssignPUP owner (AIActionFollowOwner) */
+  /** TSL puppet follows AssignPUP owner */
   ActionFollowOwner = 0x46,
-  /** TSL swap weapon config 1 ↔ 2 (AIActionSwitchWeapons) — RunActions case 0x47 */
+  /** TSL swap weapon config 1 ↔ 2 — RunActions case 0x47 */
   ActionSwitchWeapons = 0x47,
 }

@@ -7,7 +7,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import { isCreature } from "@/module/guards/isCreature";
 
 /**
- * EffectTimeStop — effect apply / OnRemove.
+ * EffectTimeStop — onApply / onRemove.
  *
  * K1 has no NWScript EffectTimeStop (unused by stock scripts), but handlers
  * exist: pause bit + exclusion list so the host keeps updating while others freeze.

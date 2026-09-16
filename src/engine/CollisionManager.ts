@@ -363,7 +363,7 @@ export class CollisionManager {
       this.validatePlaceablePenetration();
 
       // Room portals use post-resolve step force. Door warps use full-frame
-      // originalForce once (step 0) — retail GetDoorCrossed on intended move.
+      // originalForce once (step 0) — door-cross check on intended move.
       this.processRoomTransitions(step === 0 ? originalForce : undefined);
       this.finalizePositionUpdate();
 

@@ -10,7 +10,7 @@ import { isCreature } from "@/module/guards/isCreature";
 const IMMUNITY_DEAF = 8;
 
 /**
- * EffectDeaf — effect apply.
+ * EffectDeaf — onApply.
  * Spawns ArcaneSpellFailure 20%; blocked by immunity type 8 / plot.
  *
  * @file EffectDeaf.ts

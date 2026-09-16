@@ -13,7 +13,7 @@ import { countVisibleToPlayers } from "@/engine/pathfinding/count-visible-to-pla
 
 /**
  * find safe location
- * find non-visible location (Pass AF).
+ * find non-visible location.
  *
  * Safe: expanding ring of TestSafeLocationPoint (center first).
  * NonVisible: prefers candidates with lower CountVisibleToPlayers; on total
@@ -29,13 +29,13 @@ export type FindSafeLocationOptions = {
   radius?: number;
   /** Step / personal_space; defaults to owner appearance.perspace. */
   personalSpace?: number;
-  /** When true, require TestDirectLine clear to center (ComputeSafeLocation param_4 / bWalkStraight). */
+  /** When true, require a clear direct line to the search center (walk-straight). */
   requireLineOfSight?: boolean;
   /** Creature for perspace / creature-blocking tests. */
   owner?: ModuleObject;
   /**
    * When true, party members do not block TestSafeLocationPoint.
-   * Retail JumpToObject / TestSafeLocationPoint: false (default).
+   * Jump / safe-point checks leave this false by default.
    */
   allowPartyCreatures?: boolean;
 };
@@ -146,7 +146,7 @@ export function findSafeLocation(
 }
 
 /**
- * find non-visible location (Pass AF).
+ * find non-visible location.
  * Prefers safe points with fewer player LOS hits via CountVisibleToPlayers
  * (30 m + eye Z); candidates within 30 of center need ClearLineOfSight from center.
  * On total failure sets out to (−1,−1,−1) and returns false.

@@ -12,14 +12,13 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import { isCreature } from "@/module/guards/isCreature";
 
 /**
- * effect apply / effect apply /
- * effect remove / RecomputeAmbientAnimationState.
+ * SetState onApply / onRemove helpers and ambient recompute.
  *
  * Outer EffectSetState handles immunities + priority; Internal does clear /
  * pause / child VFX / animation. Shared by K1 and K2 (same effect opcodes).
  */
 
-/** IMMUNITY_TYPE_* used by effect apply */
+/** IMMUNITY_TYPE_* used by SetState onApply */
 export const IMMUNITY_MIND = 1;
 export const IMMUNITY_FEAR = 4;
 export const IMMUNITY_PARALYZE = 6;
@@ -30,12 +29,12 @@ export const IMMUNITY_KNOCKDOWN = 0x1c;
 /** K2 — EffectDroidConfused (always checked; no cutscene int1 bypass) */
 export const IMMUNITY_DROID_CONFUSED = 0x21;
 
-/** VFX ids from effect apply */
+/** VFX ids from SetState onApply */
 export const VFX_DROID_STUN = 0x3ef;
 export const VFX_STUN = 0x7d2;
 
 /**
- * effect apply always applies SETAISTATE −0x101 before Internal —
+ * SetState onApply always applies SETAISTATE −0x101 before Internal —
  * activity &= 0xFEFF (clears bit 0x100).
  */
 export const SET_STATE_OUTER_AI_ACTIVITY_MASK = 0xfeff;
@@ -145,7 +144,7 @@ function removeInternals(creature: ModuleCreature){
 
 /**
  * Keep a single Internal matching the highest active outer SetState.
- * matches engine behavior priority + effect remove re-apply.
+ * matches engine behavior priority + onRemove re-apply.
  */
 export function rebalanceSetState(creature: ModuleCreature, trigger?: GameEffect){
   if(!isCreature(creature)){

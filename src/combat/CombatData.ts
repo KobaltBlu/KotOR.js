@@ -74,7 +74,7 @@ export class CombatData {
 
   /**
    * Explicit combat-target teardown (SetCombatState(0) / cancelCombat).
-   * Not used by ClearAllActions — retail keeps attack/spell targets so
+   * Not used by ClearAllActions — attack/spell targets are kept so
    * OnEndRound AI (GN_EquipAppropriateWeapon) can still read GetAttackTarget.
    */
   reset(){

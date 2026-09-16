@@ -136,7 +136,7 @@ export class CombatRound {
   }
 
   /**
-   * effect apply / SignalMeleeDamage floaty gate:
+   * Melee damage floaty gate:
    * AddFloatyText only when attacker/damager is GetPlayerCreatureId.
    * DEBUG_COMBAT_FLOATY_ALL_ATTACKERS restores pre-alignment (any attacker).
    */
@@ -1191,7 +1191,7 @@ export class CombatRound {
       CombatRound.resolveOnHitVisuals(attack, owner);
     }
 
-    // effect apply / SignalMeleeDamage — floaty only for player attacker
+    // Melee damage — floaty only for player attacker
     const showFloaty = CombatRound.shouldShowCombatFloaty(owner);
 
     const tlkFloaty = (strRef: number) =>

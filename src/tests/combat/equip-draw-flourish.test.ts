@@ -15,7 +15,7 @@ describe('equip draw flourish', () => {
     expect(src).toMatch(/instant/);
   });
 
-  it('ModuleCreature.playDrawAnimation uses FLOURISH / 1500ms like retail PlayDrawAnimation', () => {
+  it('ModuleCreature.playDrawAnimation uses FLOURISH / 1500ms', () => {
     const src = fs.readFileSync(srcPath('module', 'ModuleCreature.ts'), 'utf8');
     const fn = src.match(
       /playDrawAnimation\s*\(\)\s*\{[\s\S]*?\n  \}/

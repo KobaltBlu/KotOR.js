@@ -11,7 +11,7 @@ import {
 import { hashDialogResref } from '@/managers/cutscene/dialog-camera';
 
 describe('DIALOG_ALIEN_VO_TAKES', () => {
-  it('matches CSWSDialog ctor table (19 takes, values 1–3)', () => {
+  it('matches alien VO take table (19 takes, values 1–3)', () => {
     expect(DIALOG_ALIEN_VO_TAKES).toEqual([
       1, 1, 2, 3, 1, 2, 1, 2, 2, 3, 3, 3, 1, 3, 2, 1, 3, 2, 2,
     ]);

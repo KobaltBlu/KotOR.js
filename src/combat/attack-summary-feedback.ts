@@ -38,7 +38,7 @@ export const AttackSummaryStrRef = {
   DEFLECTED: 0xa5ab,
   /** "Returned!" — attack_result == 9 (DEFLECTED / return damage) */
   RETURNED: 0xa5b5,
-  /** "<CUSTOM0> Force Resisted!" — effect apply feedback */
+  /** "<CUSTOM0> Force Resisted!" — onApply feedback */
   FORCE_RESISTED: 0x96be,
 } as const;
 

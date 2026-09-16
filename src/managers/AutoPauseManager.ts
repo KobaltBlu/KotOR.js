@@ -11,7 +11,7 @@ import { SoundMode } from "@/enums/audio/SoundMode";
  * AutoPauseManager class.
  *
  * client auto-pause + manual combat-pause (SetPausedByCombat reason 4).
- * Pause banner text is applied by syncPauseOverlay → InGamePause.setPauseReason (CGuiInGame::SetPaused).
+ * Pause banner text is applied by syncPauseOverlay → InGamePause.setPauseReason.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -37,7 +37,7 @@ export class AutoPauseManager {
   static CurrentReason: AutoPauseState = AutoPauseState.Generic;
   static partyKilledCooldownUntil: number = 0;
   static enemySightedLatchUntil: number = 0;
-  /** Last reason passed to SetPauseReason (retail field213 sync). */
+  /** Last reason passed to SetPauseReason (pause-reason sync). */
   static #lastPauseReasonApplied: AutoPauseState | number = -1;
 
   static onPauseStateChange: Function;
@@ -59,7 +59,7 @@ export class AutoPauseManager {
   }
 
   /**
-   * CGuiInGame::SetPaused — SetPauseReason then show/hide pause panel.
+   * Sync pause overlay: set pause reason text then show/hide the pause panel.
    */
   static syncPauseOverlay(options?: { requireInGameOverlay?: boolean }){
     const pause = GameState.MenuManager?.InGamePause;

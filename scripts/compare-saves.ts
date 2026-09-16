@@ -1,5 +1,5 @@
 /**
- * Compare two KotOR savegame folders (retail vs KotOR.js).
+ * Compare two KotOR savegame folders (reference save vs KotOR.js).
  *
  * Recursively walks folders, expands nested ERF/SAV archives, and diffs GFF
  * resources field-by-field using the project's GFFObject / ERFObject parsers.
@@ -81,7 +81,7 @@ const GFF_EXTS = new Set([
 const BINARY_SKIP_EXTS = new Set(['.tga', '.tpc', '.dds', '.bmp', '.jpg', '.png', '.wav', '.mp3']);
 
 function printHelp(): void {
-  console.log(`Compare two KotOR savegame folders (retail vs KotOR.js).
+  console.log(`Compare two KotOR savegame folders (reference save vs KotOR.js).
 
 Recursively walks folders, expands nested ERF/SAV archives, and diffs GFF
 resources field-by-field using the project's GFFObject / ERFObject parsers.

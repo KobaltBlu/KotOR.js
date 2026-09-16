@@ -1,5 +1,5 @@
 /**
- * Force Push — effect apply / QuickWalk_ForcePushed helpers.
+ * Force Push — on-apply / QuickWalk_ForcePushed helpers.
  * @jest-environment node
  */
 import { describe, expect, it, jest } from '@jest/globals';

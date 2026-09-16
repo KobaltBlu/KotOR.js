@@ -13,7 +13,7 @@ import { isArea } from "@/module/guards/isArea";
 import { isCreature } from "@/module/guards/isCreature";
 
 /**
- * EffectSummonCreature — effect apply / OnRemove.
+ * EffectSummonCreature — onApply / onRemove.
  * string[0] = UTC resref; int[0] = appear VFX (−1 = none); float[0..2] = pos;
  * float[3] = delay seconds; object[0] = area; object[1] = summoned creature (set on apply).
  *

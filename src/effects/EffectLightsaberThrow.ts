@@ -23,7 +23,7 @@ const VFX_THROW_TRAVEL = 6000;
 const VFX_THROW_IMPACT = 0x1771;
 
 /**
- * EffectLightsaberThrow — effect apply / OnRemove.
+ * EffectLightsaberThrow — onApply / onRemove.
  * object[0..2] = up to 3 targets; int[0] selects spell speed row (0→spell 0x31, else 4).
  * Schedules travel VFX + ENERGY damage along the path, then return to thrower.
  * Client: hides hand saber and flies a weapon-model copy along the path.

@@ -1,5 +1,5 @@
 /**
- * Enemy Sighted / ValidNearest retail alignment (save-load rising edge).
+ * Enemy Sighted / ValidNearest alignment (save-load rising edge).
  * @jest-environment node
  */
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';

@@ -110,7 +110,7 @@ describe('ServerToClientAnimation row helpers', () => {
     expect(readyAnimationRow(9)).toBe(245);
   });
 
-  it('DAMAGED maps weapon digits to retail rows', () => {
+  it('DAMAGED maps weapon digits to animation rows', () => {
     expect(damagedAnimationRow(2)).toBe(124);
     expect(damagedAnimationRow(3)).toBe(206);
     expect(damagedAnimationRow(4)).toBe(165);
@@ -119,7 +119,7 @@ describe('ServerToClientAnimation row helpers', () => {
     expect(damagedAnimationRow(8)).toBe(280);
   });
 
-  it('BLASTER_DEFLECTION tables match retail', () => {
+  it('BLASTER_DEFLECTION tables match expected rows', () => {
     expect(blasterDeflection1HAnimationRow(2)).toBe(109);
     expect(blasterDeflection2HAnimationRow(2)).toBe(110);
     expect(blasterDeflection1HAnimationRow(3)).toBe(151);

@@ -3007,7 +3007,7 @@ NWScriptDefK1.Actions = {
           partyLeader.clearAllActions(true);
         }
         // pops bIgnoreStartRange then forces it to 1 before AddAction.
-        // (AIActionDialogObject also skips approach when action param3 stays 1.)
+        // (DialogObject also skips approach when action param3 stays 1.)
         const ignoreNames = [args[5], args[6], args[7], args[8], args[9], args[10]]
           .filter((s) => typeof s === 'string' && s.trim().length > 0);
         this.caller.actionDialogObject( args[0], args[1], true, args[2], args[3], false, ignoreNames );
@@ -5601,7 +5601,7 @@ NWScriptDefK1.Actions = {
       if(!(isCreature(this.caller))) return;
       if(!(isObject(args[0]))) return;
 
-      // args[1] = bWalkStraight → ComputeSafeLocation requireLOS; retail default TRUE
+      // args[1] = bWalkStraight → ComputeSafeLocation requireLOS; default TRUE
       const bWalkStraight = args[1] === undefined || args[1] === null ? 1 : (args[1] | 0);
       (this.caller as ModuleCreature).jumpToObject(args[0], bWalkStraight);
     }

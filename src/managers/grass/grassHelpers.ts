@@ -5,7 +5,7 @@ import type { OdysseyWalkMesh } from "@/odyssey/OdysseyWalkMesh";
 
 /**
  * Bin distance fade (squared).
- * Retail CAurTriangleBin used near²=225 (15u) / far²=900 (30u).
+ * Original engine bins used near²=225 (15u) / far²=900 (30u).
  * KotOR.js deliberately extends this — modern GPUs can keep grass in view longer.
  */
 export const GRASS_NEAR_RADIUS_SQ = 60 * 60; // full opacity inside 60 units
@@ -47,7 +47,7 @@ export function resolveGrassFaces(
   return { faces: [], source: "none" };
 }
 
-/** Retail: RoundToInt(area * density); zero skips the face. */
+/** Round(area * density); zero skips the face. */
 export function computeFaceGrassCount(area: number, density: number): number {
   if(!(area > 0) || !(density > 0)){
     return 0;
@@ -88,7 +88,7 @@ export function pickGrassTextureQuad(probability: THREE.Vector4, random: () => n
 }
 
 /**
- * Retail RenderGrassPolys distance fade from bin min-distance-squared.
+ * Distance fade from bin min-distance-squared.
  * Returns 0..1 (0 = culled).
  */
 export function computeBinFade(minDistanceSquared: number, nearSq = GRASS_NEAR_RADIUS_SQ, farSq = GRASS_FAR_RADIUS_SQ): number {

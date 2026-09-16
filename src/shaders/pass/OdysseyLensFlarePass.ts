@@ -42,7 +42,7 @@ const FLARE_FRAG = /* glsl */`
  * OdysseyLensFlarePass — (K1 00457ec0).
  *
  * After FB mods, before GUI. Additive ONE,ONE; depth off.
- * Retail: planelineintersection(n=(0,0,-1), d=2) → z=+2 hit; S=−hit;
+ * Plane intersect n=(0,0,-1), d=2 → z=+2 hit; S=−hit;
  * element at S×flarepositions[i] on z=−2 draw plane ≡ lightNDC×pos.
  *
  * @file OdysseyLensFlarePass.ts
@@ -255,7 +255,7 @@ export class OdysseyLensFlarePass extends Pass {
           continue;
         }
 
-        // Retail S×pos with z=+2 hit ⇒ lightNDC×pos (on light when pos=1).
+        // S×pos with z=+2 hit ⇒ lightNDC×pos (on light when pos=1).
         const { x: ndcX, y: ndcY } = flareElementNdc(
           this._lightNdc.x,
           this._lightNdc.y,

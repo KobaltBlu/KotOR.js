@@ -4,7 +4,7 @@ import { ODYSSEY_WIND_VERTEX_LIBRARY } from "@/shaders/odysseyWind";
 import { GRASS_ALPHA_TEST_DEFAULT } from "@/managers/grass/grassHelpers";
 
 /**
- * ShaderGrass — retail-shaped billboard grass with GPU wind tip sway.
+ * ShaderGrass — billboard grass with GPU wind tip sway.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -92,7 +92,7 @@ export class ShaderGrass extends Shader {
       vec4 midWorld4 = modelMatrix * midLocal;
       vec3 midWorld = midWorld4.xyz;
 
-      // Steady-state tip offset ≈ wind + gust (retail spring equilibrium, Z flattened)
+      // Steady-state tip offset ≈ wind + gust (spring equilibrium, Z flattened)
       vec3 wind = odyssey_get_global_wind_no_point(midWorld, 1.0);
       float windMag = length(wind);
       if (windMag > 5.0) {
@@ -104,7 +104,7 @@ export class ShaderGrass extends Shader {
 
       if (constraint > 0.0) {
         float dt = clamp(windGrassDt, 0.0, 0.1);
-        // Scale matches retail tip integration strength without per-blade CPU state.
+        // Scale matches tip integration strength without per-blade CPU state.
         vec3 tipOffset = tipForce * grassStiffness * quadSize * max(dt * 8.0, 0.35);
         transformed.xyz += tipOffset * constraint;
       }

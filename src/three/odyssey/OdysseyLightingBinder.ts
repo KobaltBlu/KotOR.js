@@ -711,7 +711,7 @@ export class OdysseyLightingBinder {
   ){
     const focusPos = focus ?? model.getWorldPosition(this._scratchWorldPos);
     const fp = this.areaFingerprint(lightManager, camera);
-    // Retail DoEnvMapTransform applies the current camera orientation every
+    // Env-map transform applies the current camera orientation every
     // render. Lighting cache keys intentionally exclude the camera now that
     // light arrays are world-space, so update env rotations outside the
     // potentially cached light-uniform path.

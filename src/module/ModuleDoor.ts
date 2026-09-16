@@ -1038,7 +1038,7 @@ export class ModuleDoor extends ModuleObject {
   }
 
   /**
-   * Retail GetDoorCrossed: plane through door origin with facing normal;
+   * GetDoorCrossed: plane through door origin with facing normal;
    * sign flip of Dot(p - doorPos, n) along the move. Probe length is at
    * least hitDistance so a capsule pinned short of the plane still warps
    * when pushing into the doorway wall behind it.
@@ -1079,7 +1079,7 @@ export class ModuleDoor extends ModuleObject {
     const dy1 = ey - this.position.y;
     const d0 = dx0 * nx + dy0 * ny;
     const d1 = dx1 * nx + dy1 * ny;
-    // Retail: (0 < d0) != (0 < d1)
+    // Crossing when (0 < d0) != (0 < d1)
     if((d0 > 0) !== (d1 > 0)){
       this.transitNPC(object);
     }

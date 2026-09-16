@@ -181,7 +181,7 @@ describe("BuildSortedPowerList / CreatePowerChart", () => {
     expect(pushGroup.length).toBeGreaterThanOrEqual(3);
   });
 
-  it("FP gate omits unaffordable mid/end (HasSpell param_3=1)", () => {
+  it("FP gate omits unaffordable mid/end (HasSpell affordability check)", () => {
     const creature: SkillFlowCreature = {
       getHasSpell: () => true,
       getFP: () => 15, // can afford ww(20)? no — 15 < 20; wave 30 no; shield 15 ok

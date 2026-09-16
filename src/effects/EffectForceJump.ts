@@ -6,9 +6,9 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import { isCreature } from "@/module/guards/isCreature";
 import { isObject } from "@/module/guards/isObject";
 
-/** Force Jump leap VFX (retail 0x3EA). */
+/** Force Jump leap VFX (0x3EA). */
 export const FORCE_JUMP_VFX = 0x3ea;
-/** Delay before EffectForceJumpDelayed apply (retail AddEventDeltaTime 300 ms). */
+/** Delay before EffectForceJumpDelayed apply (300 ms). */
 export const FORCE_JUMP_DELAY_SEC = 0.3;
 
 /**

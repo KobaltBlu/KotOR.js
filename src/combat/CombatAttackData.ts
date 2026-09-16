@@ -215,7 +215,7 @@ export class CombatAttackData {
   damageApplied: boolean = false;
 
   /**
-   * SetState type stamped by effect apply
+   * SetState type stamped on apply
    * (FORCEPUSH=9) for attack-summary feedback.
    */
   setStateType: number = 0;
@@ -465,7 +465,7 @@ export class CombatAttackData {
     const scripted = !!opts?.scriptedResults;
 
     // GetDamageRoll: Immunity → Resistance → Reduction before packaging.
-    // SignalMeleeDamage sets int[19]=1 so effect apply skips a second pass.
+    // SignalMeleeDamage sets int[19]=1 so onApply skips a second pass.
     // Scripted ResolveDamage stamps raw amount (no mitigate); EffectDamage still
     // zeroes plot on apply.
     if(!scripted){

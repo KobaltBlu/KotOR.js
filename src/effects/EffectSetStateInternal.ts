@@ -18,7 +18,7 @@ import {
 } from "@/engine/pathfinding/force-push-quick-walk";
 
 /**
- * EffectSetStateInternal — type 0x09 (effect apply).
+ * EffectSetStateInternal — type 0x09 (onApply).
  * Clears actions (except ForcePush), pauses combat, applies
  * child VFX/saves, sets ambient / anim.
  *
@@ -42,7 +42,7 @@ function usesSetStateAIMaskNeg3(state: number): boolean {
 }
 
 function firesOnUserDefined(state: number): boolean {
-  // effect remove: 1, 3–10, 0x0E–0x13
+  // onRemove: 1, 3–10, 0x0E–0x13
   return (
     state === GameEffectSetStateType.CONFUSED ||
     (state >= GameEffectSetStateType.DROID_STUN && state <= GameEffectSetStateType.WHIRLWIND) ||
@@ -175,12 +175,12 @@ export class EffectSetStateInternal extends GameEffect {
         creature.setAnimationState?.(animForSetState(state));
         break;
       case GameEffectSetStateType.HELD:
-        // case 0x11 RecomputeAmbient else → ambient 0
+        // case 0x11: recompute ambient else → ambient 0
         creature.ambientAnimState = ModuleCreatureAmbientState.IDLE;
         creature.setAnimationState?.(animForSetState(state));
         break;
       default:
-        // DROID_CONFUSED (0x10): no Internal Recompute — leave ambient alone
+        // DROID_CONFUSED (0x10): no Internal ambient recompute — leave ambient alone
         creature.setAnimationState?.(animForSetState(state));
         break;
     }

@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  *
- * Retail OnApplyResurrection (004e13c0): ambient PAUSE, never GET_UP_DEAD;
+ * OnApplyResurrection (004e13c0): ambient PAUSE, never GET_UP_DEAD;
  * instant apply returns 1 (not kept on EffectList). Scripts like k_ptar_ud_dur
  * apply EffectResurrection to living party before cutscenes.
  */
@@ -81,7 +81,7 @@ describe('EffectResurrection', () => {
     );
   });
 
-  it('addEffect frees Instant Resurrection and Heal (retail OnApply return 1)', () => {
+  it('addEffect frees Instant Resurrection and Heal (on-apply return 1)', () => {
     const src = fs.readFileSync(srcPath('module', 'ModuleObject.ts'), 'utf8');
     const fn = src.match(
       /addEffect\(effect: GameEffect, type = 0, duration = 0\)\{[\s\S]*?\n  \}/
@@ -92,7 +92,7 @@ describe('EffectResurrection', () => {
     expect(fn).toMatch(/GameEffectType\.EffectDamage/);
   });
 
-  it('EffectResurrection and EffectHeal type ids match retail free-on-apply set', () => {
+  it('EffectResurrection and EffectHeal type ids match free-on-apply set', () => {
     expect(new EffectResurrection().type).toBe(GameEffectType.EffectResurrection);
     expect(new EffectHeal().type).toBe(GameEffectType.EffectHeal);
     expect(GameEffectDurationType.INSTANT).toBe(0);

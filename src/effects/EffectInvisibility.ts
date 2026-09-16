@@ -7,7 +7,7 @@ import { isCreature } from "@/module/guards/isCreature";
 /**
  * EffectInvisibility class.
  *
- * effect apply queues perception refresh.
+ * onApply queues perception refresh.
  *
  * @file EffectInvisibility.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>

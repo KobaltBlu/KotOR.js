@@ -3,7 +3,7 @@ import type { GameEffect } from "@/effects/GameEffect";
 import type { ModuleObject } from "@/module/ModuleObject";
 
 /**
- * -shaped damage mitigation (effect apply / GetDamageRoll):
+ * -shaped damage mitigation (onApply / GetDamageRoll):
  * Immunity → Resistance → Reduction.
  * Resistance int[0]=flags, int[1]=amount, int[2]=limit (0=infinite).
  * Reduction int[0]=amount, int[1]=bypass power, int[2]=limit.

@@ -1,11 +1,10 @@
 /**
  * TSL alien / foreign-language VO take variation.
- * InitializePseudoRandomAlienVOVariation + GetStartEntryOneLiner
- * (CSWSDialog ctor table at +0x104).
+ * Pseudo-random take selection for one-liner / alien dialog VO.
  */
 import { hashDialogResref } from "@/managers/cutscene/dialog-camera";
 
-/** CSWSDialog constructor table (19 takes, values 1–3). */
+/** Alien VO take weights (19 entries, values 1–3). */
 export const DIALOG_ALIEN_VO_TAKES: readonly number[] = [
   1, 1, 2, 3, 1, 2, 1, 2, 2, 3, 3, 3, 1, 3, 2, 1, 3, 2, 2,
 ];
@@ -19,7 +18,7 @@ export interface DialogAlienVOPrngState {
   parity: number;
 }
 
-/** InitializePseudoRandomAlienVOVariation — same hash as camera PRNG. */
+/** Seed alien VO PRNG — same hash as camera PRNG. */
 export function createDialogAlienVOPrngState(resref: string): DialogAlienVOPrngState {
   const h = hashDialogResref(resref);
   return {
@@ -30,7 +29,7 @@ export function createDialogAlienVOPrngState(resref: string): DialogAlienVOPrngS
 }
 
 /**
- * GetStartEntryOneLiner — advance take table on every entry send.
+ * Advance take table on every entry send.
  * Returns the table value (1–3) at the previous index.
  */
 export function advanceAlienVOTake(state: DialogAlienVOPrngState): number {

@@ -5,7 +5,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import { isCreature } from "@/module/guards/isCreature";
 
 /**
- * EffectSanctuary — effect apply.
+ * EffectSanctuary — onApply.
  * int[4] = Will DC. Hostile observers must fail Will to see the target.
  * Full vis-node cache is approximated via ModuleCreature.isInvisibleToObserver.
  *

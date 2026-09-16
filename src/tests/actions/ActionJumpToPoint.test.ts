@@ -1,5 +1,5 @@
 /**
- * ActionJumpToPoint — retail AIActionJumpToPoint safe-location parity.
+ * ActionJumpToPoint — safe-location jump parity.
  * @jest-environment node
  */
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
@@ -68,7 +68,7 @@ import { ActionJumpToPoint } from '@/actions/ActionJumpToPoint';
 import { ActionParameterType } from '@/enums/actions/ActionParameterType';
 import { ActionStatus } from '@/enums/actions/ActionStatus';
 
-describe('ActionJumpToPoint retail ComputeSafeLocation', () => {
+describe('ActionJumpToPoint ComputeSafeLocation', () => {
   const area = { id: 1, creatures: [] as unknown[] };
 
   beforeEach(() => {

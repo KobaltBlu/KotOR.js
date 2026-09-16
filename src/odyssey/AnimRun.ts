@@ -5,9 +5,9 @@ import type { OdysseyModelAnimationManagerState } from "@/enums/odyssey/OdysseyM
 import type { BoundAnimation } from "@/odyssey/BoundAnimation";
 
 /**
- * Max concurrent AnimRuns per Gob.
- * Retail uses a dynamic CExoArrayList; 8 is the intentional JS bound
- * (matches prior MVP capacity; no hard retail max found).
+ * Max concurrent AnimRuns per model.
+ * 8 is the intentional JS bound
+ * (matches prior MVP capacity; no hard engine max found).
  */
 export const ANIM_RUN_STACK_CAP = 8;
 
@@ -15,8 +15,8 @@ export const ANIM_RUN_STACK_CAP = 8;
 export const ANIM_RUN_DEFAULT_TRANSITION = 0;
 
 /**
- * Aurora AnimRun (~0x24) — one clip instance on a Gob stack.
- * Retail layout: animation*, speed, flags, prevTime, curTime, weight,
+ * Aurora AnimRun (~0x24) — one clip instance on an animation stack.
+ * Layout: animation*, speed, flags, prevTime, curTime, weight,
  * transition, scale, deactivated.
  *
  * Frame cursors are playback state (per run), never stored on shared
@@ -38,7 +38,7 @@ export interface AnimRun {
   done: boolean;
   /**
    * Deferred start (flags & QUEUE). Frozen until promote clears QUEUE.
-   * Mirrors retail Animate skipping runs with 0x20 set.
+   * Mirrors Animate skipping runs with 0x20 set.
    */
   queued: boolean;
   /**
@@ -94,7 +94,7 @@ export function createAnimRun(
       ? animation.transition
       : ANIM_RUN_DEFAULT_TRANSITION;
   const queued = !!(flags & AuroraAnimationFlag.QUEUE);
-  // Queued runs stay at weight 0 until promoted (retail does not pose them).
+  // Queued runs stay at weight 0 until promoted (not posed while queued).
   const immediate = !queued && !(transition > 0);
   return {
     animation,

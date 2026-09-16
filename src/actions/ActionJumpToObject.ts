@@ -17,7 +17,7 @@ const _jumpCenter = new THREE.Vector3();
 const _jumpSafe = new THREE.Vector3();
 
 /**
- * ActionJumpToObject — retail AIActionJumpToObject.
+ * ActionJumpToObject — teleports the actor to an object.
  * Always ComputeSafeLocation(radius 20). Param 1 (bWalkStraight) is
  * require-LOS for offset candidates, not exact-vs-safe. Search failure → FAILED.
  *
@@ -71,7 +71,7 @@ export class ActionJumpToObject extends Action {
       applyAddToArea(this.owner, classified.area);
     }
 
-    // Retail default TRUE — require TestDirectLine to center for offset hits.
+    // Default TRUE — require TestDirectLine to center for offset hits.
     const requireLineOfSight = (this.getParameter<number>(1) ?? 1) !== 0;
     const area = this.owner.area || this.target.area;
     _jumpCenter.copy(this.target.position);

@@ -15,13 +15,13 @@ describe("resolvePlaybackMode", () => {
     expect(resolvePlaybackMode(ANIMATION_REVERSE_SERVER_ID)).toBe(AnimationPlaybackMode.REVERSE);
   });
 
-  it("returns REVERSE for all retail reverse switch IDs", () => {
+  it("returns REVERSE for all reverse switch IDs", () => {
     for(const id of SET_ANIMATION_REVERSE_IDS){
       expect(resolvePlaybackMode(id)).toBe(AnimationPlaybackMode.REVERSE);
     }
   });
 
-  it("returns OVERLAY for retail overlay switch IDs", () => {
+  it("returns OVERLAY for overlay switch IDs", () => {
     expect(resolvePlaybackMode(0x272e)).toBe(AnimationPlaybackMode.OVERLAY);
     expect(resolvePlaybackMode(0x2791)).toBe(AnimationPlaybackMode.OVERLAY);
     expect(resolvePlaybackMode(0x283e)).toBe(AnimationPlaybackMode.OVERLAY);

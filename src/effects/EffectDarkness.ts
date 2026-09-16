@@ -8,7 +8,7 @@ import { VISION_FLAG_DARKNESS_BLIND } from "@/effects/EffectBlindness";
 import { isCreature } from "@/module/guards/isCreature";
 
 /**
- * EffectDarkness — effect apply.
+ * EffectDarkness — onApply.
  * Spawns Invisibility(mode 2) + Blindness(int[0]=8). Typically AOE-applied.
  *
  * @file EffectDarkness.ts

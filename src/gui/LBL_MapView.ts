@@ -565,7 +565,7 @@ export class LBL_MapView {
    * GetMapRotateCCWFromWorldOrientation / SetPartyMemberWorldOrientation.
    * `angle` is model/map yaw in radians where 0 faces +Y (creature rotation.z /
    * EngineLocation bearing). HUD must pass FollowerCamera.facing − π/2 because
-   * chase facing uses 0 = +X. NorthAxis adds retail degree offsets as radians.
+   * chase facing uses 0 = +X. NorthAxis adds degree offsets as radians.
    */
   setRotation(angle: number = 0){
     if(!this.areaMap){

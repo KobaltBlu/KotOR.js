@@ -1,5 +1,5 @@
 /**
- * Offline checks for K1 save retail-alignment format fixes (source + GFF only).
+ * Offline checks for K1 save expected-format fixes (source + GFF only).
  * Run: npx tsx scripts/verify-k1-save-format.ts
  */
 import fs from 'fs';
@@ -74,7 +74,7 @@ assert(creatureSave.includes('RootNode.type = 4'), 'Creature RootNode.type = 4')
 assert(!creatureSave.includes("'BodyVariation'"), 'Creature save omits BodyVariation');
 assert(!creatureSave.includes("'TextureVar'"), 'Creature save omits TextureVar');
 assert(!creatureSave.includes("'PerceptionRange'"), 'Creature save omits PerceptionRange');
-assert(creatureSave.includes('slot <<= 1'), 'Equip_ItemList walks retail slot bits');
+assert(creatureSave.includes('slot <<= 1'), 'Equip_ItemList walks equip slot bits');
 
 const placeableSrc = read('src/module/ModulePlaceable.ts');
 const placeableSave = saveMethodBody(placeableSrc);
@@ -114,7 +114,7 @@ const itemSrc = read('src/module/ModuleItem.ts');
 assert(itemSrc.includes('UpgradeLevel') && itemSrc.includes('GameEngineType.TSL'), 'UpgradeLevel TSL-gated');
 
 const auditSrc = read('src/engine/SaveLoadAudit.ts');
-assert(auditSrc.includes('K1 creature export omits TSL/non-retail fields'), 'SaveLoadAudit has K1 creature check');
+assert(auditSrc.includes('K1 creature export omits TSL/non-engine fields'), 'SaveLoadAudit has K1 creature check');
 
 const enumSrc = read('src/enums/module/ModuleObjectScript.ts');
 assert(enumSrc.includes("PlaceableOnDialog = 'OnDialog'"), 'PlaceableOnDialog enum exists');
@@ -236,7 +236,7 @@ assert(itemSrc.includes('propStruct.setType(i)'), 'PropertiesList struct id = in
 assert(itemSrc.includes('getBodyVariationByte'), 'ModuleItem has getBodyVariationByte');
 assert(creatureSave.includes("DWORD, 'ObjectId'"), 'Creature equip/inventory writes ObjectId');
 assert(creatureSrc.includes("'FollowInfo'"), 'Creature save writes FollowInfo');
-assert(creatureSrc.includes('createDefaultPartyFollowInfo'), 'Creature FollowInfo uses retail defaults');
+assert(creatureSrc.includes('createDefaultPartyFollowInfo'), 'Creature FollowInfo uses default FollowInfo');
 assert(creatureSave.includes("'LvlStatList'"), 'Creature save writes LvlStatList');
 assert(creatureSave.includes('ControlledNPC === -1'), 'LvlStatList gated on ControlledNPC == -1');
 assert(creatureSave.includes('this.isPC ? 1 : 0'), 'IsPC serializes isPC not playerCreated');
@@ -245,7 +245,7 @@ assert(creatureSrc.includes('levelStatRecordFromDraft'), 'applyLevelUp records l
 assert(creatureSave.includes("'PerceptionList'"), 'Creature save writes PerceptionList');
 
 {
-  // Retail SaveCreature persists every visibility node; unresolved
+  // SaveCreature persists every visibility node; unresolved
   // objectIds (PLAYER_ID / stale) must not be spliced out of perceptionList.
   const moduleObjectSrc = read('src/module/ModuleObject.ts');
   const initIdx = moduleObjectSrc.indexOf('initPerceptionList()');
@@ -269,7 +269,7 @@ assert(invSrc.includes('.save()'), 'InventoryManager uses item.save()');
 assert(!invSrc.includes("'ObjectId'"), 'InventoryManager does not add ObjectId');
 
 {
-  // Retail DoPCAutosave: pifo.ifo only in 000001 - AUTOSAVE
+  // DoPCAutosave: pifo.ifo only in 000001 - AUTOSAVE
   const saveGameSrc = read('src/engine/SaveGame.ts');
   const writeIdx = saveGameSrc.indexOf('static async writeSaveFolder(');
   assert(writeIdx >= 0, 'SaveGame has writeSaveFolder');
@@ -281,7 +281,7 @@ assert(!invSrc.includes("'ObjectId'"), 'InventoryManager does not add ObjectId')
 }
 
 {
-  // Retail DoQuickSave / DoQuickLoad hotkey wiring
+  // QuickSave / QuickLoad hotkey wiring
   const saveGameSrc = read('src/engine/SaveGame.ts');
   assert(saveGameSrc.includes('static async QuickLoad()'), 'SaveGame has QuickLoad');
   assert(saveGameSrc.includes('getIsQuickSave()'), 'QuickLoad finds QUICKSAVE via getIsQuickSave');
@@ -398,7 +398,7 @@ assert(effectSave.includes('OBJECT_INVALID'), 'Effect ObjectList uses OBJECT_INV
   assert(nxtNum === 100, `DWORD64 Mod_Effect_NxtId setValue(100) survives roundtrip (got ${nxtVal})`);
 }
 
-// CreatureClass.save: retail IsJedi / KnownList gating
+// CreatureClass.save: IsJedi / KnownList gating
 {
   const classSrc = read('src/combat/CreatureClass.ts');
   const classSave = saveMethodBody(classSrc);

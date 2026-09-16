@@ -9,7 +9,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import { isObject } from "@/module/guards/isObject";
 
 /**
- * EffectDispelMagicAll — effect apply.
+ * EffectDispelMagicAll — onApply.
  * Eligible: MAGICAL + (TEMPORARY|PERMANENT). One roll per spellId group:
  * succeed if effectCreatorLevel + 11 < casterLevel + d20.
  *

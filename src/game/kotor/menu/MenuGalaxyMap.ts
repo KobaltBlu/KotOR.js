@@ -208,7 +208,7 @@ export class MenuGalaxyMap extends GameMenu {
         if(animate){
           // DisplayPlanet: PlayAnimation("zoomin", FIRE_FORGET) then
           // PlayAnimation("rotate", QUEUE|LOOPING) — manager promotes rotate
-          // when zoomin finishes (Gob::Animate 0x20).
+          // when zoomin finishes (QUEUE flag 0x20).
           const zoomin = model.odysseyAnimationMap.get('zoomin');
           const rotate = model.odysseyAnimationMap.get('rotate');
           if(zoomin){

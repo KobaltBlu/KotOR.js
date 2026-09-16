@@ -127,7 +127,7 @@ export class ActionCombat extends Action {
       }
 
       case CombatActionType.ITEM_CAST_SPELL: {
-        // AIActionCombat case 10 — FORCEHOSTILE < 1 clears non-self
+        // Combat item-cast case — FORCEHOSTILE < 1 clears non-self
         // object id but keeps the scheduled position (grenade location casts).
         // Compare by id so a stamped self-target cannot be treated as "other".
         const rawTarget = combatAction.target;

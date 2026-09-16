@@ -16,7 +16,7 @@ import {
 /**
  * creature drive update + GetDoorCrossed
  * + walk step distance test creature/BumpFriends gate
- * + AIActionDrive TestDirectLine binary/wall-slide.
+ * + drive-action TestDirectLine binary/wall-slide.
  *
  * Moves toward the path point by walk/run × delta, clips via TestDirectLine
  * (NoNonWalkPolysDetailed), NoCreaturesOnLine + BumpFriends, fires OnClicked
@@ -115,7 +115,7 @@ function lineOk(code: TestDirectLineCode): boolean {
 }
 
 /**
- * AIActionDrive — TestDirectLine to ideal; on fail binary-search
+ * Drive action — TestDirectLine to ideal; on fail binary-search
  * fraction then ±perpendicular wall-slide (up to 15 iters). Uses
  * NoNonWalkPolysDetailed via testDirectLine (hitinfo path).
  */
@@ -126,7 +126,7 @@ export function driveResolveMoveTarget(
   creature: ModuleCreature,
   stepLen?: number
 ): THREE.Vector3 {
-  // AIActionDrive: NoCreaturesOnLine → BumpFriends before TestDirectLine
+  // Drive action: NoCreaturesOnLine → BumpFriends before TestDirectLine
   const creatures = noCreaturesOnLine(area, origin, ideal, {
     owner: creature,
     allowPartyCreatures: false,
@@ -408,7 +408,7 @@ export function updateCreatureDrive(
   }
 
   // creature drive update: NoCreaturesOnLine only (no BumpFriends
-  // bump happens in AIActionDrive / WalkUpdate / driveResolveMoveTarget).
+  // bump happens in drive resolve / walk update / driveResolveMoveTarget).
   // Party members are soft-bumped earlier; do not hard-block the final step.
   const creatures = noCreaturesOnLine(area, creature.position, clipped, {
     owner: creature,

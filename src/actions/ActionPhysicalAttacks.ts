@@ -227,7 +227,7 @@ export class ActionPhysicalAttacks extends Action {
       this.meleeBackoffActive = latch.active;
     }
     const hasLos = hasCombatLineOfSight(this.owner, this.target, max);
-    // Retail: too far OR (NPC melee too close) OR no LOS → approach/backoff move
+    // Too far OR (NPC melee too close) OR no LOS → approach/backoff move
     const needCloseOrBack =
       tooFar ||
       (tooClose && !isPartyMember && !this.owner.isRangedEquipped()) ||
@@ -245,12 +245,12 @@ export class ActionPhysicalAttacks extends Action {
         if(result === 'retargeted'){
           return ActionStatus.IN_PROGRESS;
         }
-        // 'waiting' — first stuck sample; still path toward target (retail).
+        // 'waiting' — first stuck sample; still path toward target.
       }
 
       const isBackoff = tooClose && !tooFar && !isPartyMember && !this.owner.isRangedEquipped();
 
-      // Retail: ResolveMoveToForceJump when LOS clear — skip MoveTo on success.
+      // ResolveMoveToForceJump when LOS clear — skip MoveTo on success.
       let forceJumped = false;
       if(!isBackoff && hasLos){
         const featOut = { featId: this.getParameter<number>(6) | 0 };
@@ -276,7 +276,7 @@ export class ActionPhysicalAttacks extends Action {
           this.owner.pathFindIgnoreObjectId = 0;
         }else{
           // Approach: creature origin / door-placeable action point — no attacker
-          // perspace shove (retail uses pathfind field3 + Move arrive instead).
+          // perspace shove (pathfind field3 + Move arrive instead).
           if(isCreature(this.target)){
             this.owner.pathFindIgnoreObjectId = this.target.id;
             this.owner.pathFindApproachPersonalSpace = Math.max(

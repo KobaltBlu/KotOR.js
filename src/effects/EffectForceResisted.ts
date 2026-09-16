@@ -9,7 +9,7 @@ import { isCreature } from "@/module/guards/isCreature";
 import { isObject } from "@/module/guards/isObject";
 
 /**
- * EffectForceResisted — effect apply.
+ * EffectForceResisted — onApply.
  * Spawns temporary VFX 0xFC5 on the target and status-summary
  * "<CUSTOM0> Force Resisted!" (TLK 38598). Scripts also call
  * DisplayFeedBackText for the short Resisted/Immune/Saved floaty.

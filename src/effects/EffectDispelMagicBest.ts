@@ -8,7 +8,7 @@ import { isDispelEligible } from "@/effects/EffectDispelMagicAll";
 import { isObject } from "@/module/guards/isObject";
 
 /**
- * EffectDispelMagicBest — effect apply.
+ * EffectDispelMagicBest — onApply.
  * Tries effects until one succeeds: d20+casterLevel >= 12 removes that effect and stops.
  * Skips creator-level 0 effects when a creature creator exists.
  *

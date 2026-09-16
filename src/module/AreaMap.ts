@@ -7,9 +7,9 @@ import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { ApplicationProfile } from "@/utility/ApplicationProfile";
 import type { ModuleWaypoint } from "@/module/ModuleWaypoint";
 
-/** Retail K1 logical map size (GetMapPixelFromWorldCoord). */
+/** K1 logical map size (world→pixel conversion). */
 export const AREA_MAP_LOGICAL_SIZE_K1 = { width: 440, height: 256 } as const;
-/** Retail TSL Aspyr logical map size (0x24C x 0x126). */
+/** TSL logical map size (588 x 294). */
 export const AREA_MAP_LOGICAL_SIZE_TSL = { width: 588, height: 294 } as const;
 
 export interface AreaMapPixelResult {
@@ -23,8 +23,8 @@ export interface AreaMapPixelResult {
 *
 * Class representing the logic that powers mini and large game maps ingame.
 *
-* World→pixel matches retail CSWSAreaMap::GetMapPixelFromWorldCoord (NorthAxis
-* transform + MapPt affine). Display UV Y-flips for Three.js (AurGUI is Y-down).
+* World→pixel uses NorthAxis transform + MapPt affine. Display UV Y-flips for
+* Three.js (AurGUI is Y-down).
 *
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 *
@@ -84,7 +84,7 @@ export class AreaMap {
 
   }
 
-  /** Retail logical map pixel size for the active game. */
+  /** Logical map pixel size for the active game. */
   static getLogicalMapSize(): { width: number, height: number } {
     // Use ApplicationProfile (not GameState) to avoid circular init via @/module barrel.
     if(ApplicationProfile.GameKey == GameEngineType.TSL){
@@ -100,7 +100,7 @@ export class AreaMap {
   }
 
   /**
-   * Retail NorthAxis world transform (CSWSAreaMap::GetMapPixelFromWorldCoord).
+   * NorthAxis world transform for map pixel conversion.
    * NORTH identity, EAST negate both, SOUTH (y,-x), WEST (-y,x).
    */
   static transformWorldByNorthAxis(x: number, y: number, northAxis: number): { x: number, y: number } {
@@ -193,7 +193,7 @@ export class AreaMap {
   }
 
   /**
-   * Retail GetMapPixelFromWorldCoord — returns logical map pixels and in-bounds validity.
+   * World XY → logical map pixels and in-bounds validity.
    */
   toMapPixels(x: number = 0, y: number = 0): AreaMapPixelResult {
     const { width, height } = AreaMap.getLogicalMapSize();
@@ -230,7 +230,7 @@ export class AreaMap {
     const pixelX = Math.trunc((local.x - offsetX) / scaleX + 0.5);
     const pixelY = Math.trunc((local.y - offsetY) / scaleY + 0.5);
 
-    // Raw pixels kept for UV conversion even when OOB (retail returns -1,-1 to callers).
+    // Raw pixels kept for UV conversion even when OOB (callers may see -1,-1).
     this._mapPixels.x = pixelX;
     this._mapPixels.y = pixelY;
     this._mapPixels.valid = pixelX >= 0 && pixelX <= width && pixelY >= 0 && pixelY <= height;
@@ -239,8 +239,8 @@ export class AreaMap {
 
   /**
    * World XY → map UV for LBL_MapView.
-   * X matches retail GetMapPixelFromWorldCoord / logical width.
-   * Y is flipped: retail/AurGUI map pixels are top-origin (Y-down), while the
+   * X matches logical map-pixel width.
+   * Y is flipped: map pixels are top-origin (Y-down), while the
    * Three.js map scene is bottom-origin (Y-up).
    */
   toMapCoordinates(x: number = 0, y: number = 0): THREE.Vector2 {
@@ -252,7 +252,7 @@ export class AreaMap {
   }
 
   /**
-   * Retail GetGridPixelFromMapPixel — map pixels → fog grid cell.
+   * Map pixels → fog grid cell.
    */
   toGridPixels(mapPixelX: number, mapPixelY: number): { x: number, y: number, valid: boolean } {
     const { width, height } = AreaMap.getLogicalMapSize();
@@ -293,7 +293,7 @@ export class AreaMap {
   }
 
   /**
-   * Retail SetWorldPointExplored — default radius 1 (UpdateMapData).
+   * Mark world point explored — default radius 1 (UpdateMapData).
    * Radius uses a manhattan diamond of grid cells; -1 reveals the entire map.
    */
   revealPosition(x: number = 0, y: number = 0, radius: number = 1){

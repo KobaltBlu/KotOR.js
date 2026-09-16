@@ -11,7 +11,7 @@ import { clearLineOfSight } from "@/engine/pathfinding/clear-line-of-sight";
  * Counts player creatures with ClearLineOfSight to `point`, early-out at `maxCount`
  * (starts at 0x60 and shrinks to the best score found so far).
  *
- * Pass AF: dist² < 900 (30 m), eye Z +1.5 on both ends before LOS.
+ * Range gate: dist² < 900 (30 m), eye Z +1.5 on both ends before LOS.
  *
  * @file count-visible-to-players.ts
  */

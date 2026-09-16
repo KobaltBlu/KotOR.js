@@ -179,7 +179,7 @@ export class ModuleObject {
   v20: THREE.Vector2 = new THREE.Vector2();
   v21: THREE.Vector2 = new THREE.Vector2();
   tmpPos: THREE.Vector3 = new THREE.Vector3();
-  /** Unused — retail has no surround/openSpot attack slot picker. */
+  /** Unused — no surround/openSpot attack slot picker. */
   openSpot: any;
 
   audioEmitter: AudioEmitter;
@@ -716,7 +716,7 @@ export class ModuleObject {
     if(!this.model){ return; }
     this.model.wasOffscreen = !this.model.visible;
 
-    // Retail FreeLook: controlled PC is not drawn (camera on FreeLookHook).
+    // FreeLook: controlled PC is not drawn (camera on FreeLookHook).
     if(GameState.Mode == EngineMode.FREELOOK){
       const player = GameState.getCurrentPlayer();
       if(player && this.id === player.id){
@@ -819,7 +819,7 @@ export class ModuleObject {
     // CancelGuiTimingEvent clears actions; clearing actions must also StopGuiTimingBar.
     GameState.GuiTimingBarManager?.cancelFor?.(this);
 
-    // Retail CSWSObject::ClearAllActions does not clear GetAttackTarget /
+    // ClearAllActions does not clear GetAttackTarget /
     // GetAttemptedAttackTarget (or spell targets). GN_EquipAppropriateWeapon runs
     // after ClearAllActions and needs GetAttackTarget for the melee switch.
     // Those fields clear on SetCombatState(0) / cancelCombat instead.
@@ -1245,7 +1245,7 @@ export class ModuleObject {
 
   /**
    * Add the item
-   * Merges into existing stacks by tag up to baseitems.stacking (retail MergeItem).
+   * Merges into existing stacks by tag up to baseitems.stacking.
    * @param item
    * @returns
    */
@@ -2339,7 +2339,7 @@ export class ModuleObject {
     // ApplyEffect — effect apply returns 1 so the
     // effect is freed and never inserted into EffectList. Keeping it caused
     // re-apply (and OnDamaged) during initEffects on module load.
-    // Retail OnApplyResurrection / OnApplyHeal also return 1 (instant free).
+    // OnApplyResurrection / OnApplyHeal also return 1 (instant free).
     if(
       effect.type === GameEffectType.EffectDamage ||
       effect.type === GameEffectType.EffectResurrection ||
@@ -2475,7 +2475,7 @@ export class ModuleObject {
   }
 
   /**
-   * Jump to an EngineLocation — JumpToLocation / AIActionJumpToPoint.
+   * Jump to an EngineLocation — JumpToLocation / JumpToPoint action.
    * Cross-area: AddToArea. Cross-module (party leader): LoadModule + spawn XYZ.
    */
   JumpToLocation(lLocation: EngineLocation){

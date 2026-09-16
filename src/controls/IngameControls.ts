@@ -183,7 +183,7 @@ export class IngameControls {
   controllerHidesCursor: boolean = false;
 
   /**
-   * Aspyr DAT_009f2b8c equivalent — selected HUD action panel for d-pad / A.
+   * Aspyr HUD action-panel selection — selected panel for d-pad / A.
    * -1 = none (A → DefaultAction on selected object).
    */
   selectedActionPanelIndex: number = -1;
@@ -222,7 +222,7 @@ export class IngameControls {
         GameState.GameOverManager.OnDeathSequenceInput();
       }
 
-      // F8 — toggle Navigate free-fly (debug); retail cheat path remains CapsLock
+      // F8 — toggle Navigate free-fly (debug); original cheat path remains CapsLock
       if(e.code === 'F8' && !e.repeat
         && (GameState.Mode == EngineMode.INGAME || GameState.Mode == EngineMode.FREELOOK)
         && GameState.State != EngineState.PAUSED){

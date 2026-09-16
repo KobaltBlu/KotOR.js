@@ -35,7 +35,7 @@ const _safeDest = new THREE.Vector3();
 
 /**
  * Live-chase dest snap: ComputeSafeLocation(target, r=20, requireLOS).
- * On failure leave dest at the live target position (retail).
+ * On failure leave dest at the live target position.
  */
 function snapLiveChaseDest(
   owner: ModuleCreature,

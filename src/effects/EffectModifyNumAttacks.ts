@@ -5,7 +5,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import { isCreature } from "@/module/guards/isCreature";
 
 /**
- * EffectModifyNumAttacks — effect apply.
+ * EffectModifyNumAttacks — onApply.
  * Adds int[0] into combatRound.effectAttacks, clamp cumulative to [0, 2].
  *
  * @file EffectModifyNumAttacks.ts

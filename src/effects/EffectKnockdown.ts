@@ -12,7 +12,7 @@ import * as THREE from "three";
 import { isCreature } from "@/module/guards/isCreature";
 
 /**
- * EffectKnockdown — effect apply.
+ * EffectKnockdown — onApply.
  * Immunity 0x1C; pause combat; play fall anim; apply companion SetState 0x0E.
  *
  * @file EffectKnockdown.ts

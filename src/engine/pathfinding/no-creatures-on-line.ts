@@ -83,8 +83,7 @@ export function noCreaturesOnLine(
     /**
      * When true (default), EvaluateOverlappingTargets soft-clears creatures
      * already overlapping the segment start (walk/path splicing).
-     * Retail TestSafeLocationPoint passes param_7=0 — set false so occupied
-     * cells hard-block (JumpToObject / findSafeLocation).
+     * Jump / findSafeLocation set false so occupied cells hard-block.
      */
     softClearStartOverlap?: boolean;
     /** Optional CWalkHitInfo out-param. */

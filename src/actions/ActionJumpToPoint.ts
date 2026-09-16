@@ -18,7 +18,7 @@ const _jumpCenter = new THREE.Vector3();
 const _jumpSafe = new THREE.Vector3();
 
 /**
- * ActionJumpToPoint — retail AIActionJumpToPoint.
+ * ActionJumpToPoint — teleports the actor to a world point.
  * Always ComputeSafeLocation(fSearchRange). Param 4 (bWalkStraight) is
  * require-LOS for offset candidates. Search failure → FAILED.
  *
@@ -125,7 +125,7 @@ export class ActionJumpToPoint extends Action {
       destArea = classified.area;
     }
 
-    // Retail AIActionJumpToPoint: always ComputeSafeLocation.
+    // Always ComputeSafeLocation.
     // Param 4 default TRUE; ActionJumpToLocation often passes 0 (no LOS).
     const requireLineOfSight = (this.getParameter<number>(4) ?? 1) !== 0;
     const radius = this.getParameter<number>(5) ?? 20.0;

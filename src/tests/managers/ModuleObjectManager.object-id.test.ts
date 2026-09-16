@@ -1,6 +1,6 @@
 /**
- * Retail-aligned object id pools —
- * AddInternalObject (char vs module) / AddObjectAtPos (no overwrite).
+ * Object id pools —
+ * char vs module assignment / no overwrite on collision.
  * @jest-environment node
  */
 import { describe, expect, test, beforeEach, jest } from '@jest/globals';

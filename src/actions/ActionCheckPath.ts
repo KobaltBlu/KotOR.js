@@ -375,7 +375,7 @@ export class ActionCheckMoveToObjectRadius extends ActionCheckPath {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(ActionType.ActionCheckMoveToObjectRadius, actionId, groupId);
 
-    //PARAMS (AIActionCheckMoveToObjectRadius / PhysicalAttacks approach)
+    //PARAMS (CheckMoveToObjectRadius / PhysicalAttacks approach)
     // 0 - dword: oTarget (target object id)
     // 1 - int: bRun (run vs walk)
     // 2 - float: fRange (arrival distance — Desired or Max for combat)

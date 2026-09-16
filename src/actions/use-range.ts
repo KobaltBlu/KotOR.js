@@ -116,7 +116,7 @@ export function isInUseRange(
     return true;
   }
 
-  // ClearLineOfSight to use point (local_30), excluding source + target ids.
+  // ClearLineOfSight to use point, excluding source + target ids.
   // Skip room walkmesh face tests — those false-block door/placeable use.
   return owner.hasLineOfSight(target, Math.max(allow + 2.0, dist + 2.0), {
     ignorePerceptionRange: true,

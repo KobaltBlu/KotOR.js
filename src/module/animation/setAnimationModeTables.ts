@@ -1,12 +1,12 @@
 import { AnimationPlaybackMode } from "@/enums/animation/AnimationPlaybackMode";
 
 /**
- * Retail CSWCAnimBase::SetAnimationInternal playback classification
- * (k1_win_gog_swkotor.exe @ 0069e8d0). K1 uses an explicit switch rather
- * than separate ModeA/ModeB byte tables; these sets are that switch.
+ * Playback classification for SetAnimationInternal-style routing.
+ * K1 uses an explicit switch rather than separate ModeA/ModeB byte tables;
+ * these sets encode that switch.
  *
- * Band notes from research: ModeA base 10003 / ModeB 10258 describe the
- * Aspyr/port table layout; GOG K1 inlines the same decisions here.
+ * Band notes: ModeA base 10003 / ModeB 10258 describe the Aspyr/port table
+ * layout; K1 inlines the same decisions here.
  */
 
 /** Server IDs routed to SetOverlayAnimation(..., playing=1). */
@@ -31,7 +31,7 @@ export const SET_ANIMATION_REVERSE_IDS: ReadonlySet<number> = new Set([
 
 /**
  * Overlay stop uses 0x400 for these IDs; otherwise 0x80
- * (CSWCAnimBase::SetOverlayAnimation @ 0069e420, arg3==0).
+ * (overlay stop when not starting playback).
  */
 export const OVERLAY_STOP_ADDITIVE_IDS: ReadonlySet<number> = new Set([
   0x272d, 0x272e, 0x2732,
@@ -43,7 +43,7 @@ export const OVERLAY_STOP_ADDITIVE_IDS: ReadonlySet<number> = new Set([
 
 /**
  * Overlay start skips FIRE_FORGET (0x001) for these IDs.
- * Retail: start flags = 0x08, optionally | 0x001.
+ * Start flags = 0x08, optionally | 0x001.
  */
 export const OVERLAY_START_NO_FIRE_FORGET_IDS: ReadonlySet<number> = new Set([
   0x175,

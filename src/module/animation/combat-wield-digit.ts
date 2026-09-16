@@ -1,5 +1,5 @@
 /**
- * Retail UpdateWeaponClass / ServerToClientAnimation combat-wield helpers.
+ * Combat-wield digit helpers for animation name selection.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -24,7 +24,7 @@ export interface CombatWieldEquipment {
 
 /**
  * Combat animation weapon digit (g*r1 / m*a1 *).
- * CSWCCreature::UpdateWeaponClass @ 00613710.
+ * Derived from equipped weapon class / wield type.
  */
 export function combatAnimationWeaponDigit(
   equipment: CombatWieldEquipment,

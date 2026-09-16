@@ -9,7 +9,7 @@ import { isCreature } from "@/module/guards/isCreature";
 /**
  * EffectDeath class.
  *
- * effect apply:
+ * onApply:
  * plot → ignore; Min1HP → clamp to 1; else SetCurrentHitPoints(-11) + death pipeline.
  *
  * @file EffectDeath.ts
@@ -32,7 +32,7 @@ export class EffectDeath extends GameEffect {
 
     if(!this.object) return;
 
-    // effect apply plot / Min1HP early-outs
+    // onApply plot / Min1HP early-outs
     if((this.object as ModuleCreature).plot){
       return;
     }

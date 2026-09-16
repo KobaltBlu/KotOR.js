@@ -40,7 +40,7 @@ describe('GrassManager material depth', () => {
 });
 
 describe('grassHelpers', () => {
-  test('computeFaceGrassCount matches retail round(area * density)', () => {
+  test('computeFaceGrassCount matches round(area * density)', () => {
     expect(computeFaceGrassCount(2.4, 1)).toBe(2);
     expect(computeFaceGrassCount(2.6, 1)).toBe(3);
     expect(computeFaceGrassCount(10, 0)).toBe(0);
@@ -72,7 +72,7 @@ describe('grassHelpers', () => {
     const fade = computeBinFade(mid);
     expect(fade).toBeGreaterThan(0);
     expect(fade).toBeLessThan(1);
-    // Divergence from retail 15/30: full opacity still holds past old far radius.
+    // Extended vs original 15/30: full opacity still holds past old far radius.
     expect(computeBinFade(900)).toBe(1);
   });
 

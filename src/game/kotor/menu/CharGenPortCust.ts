@@ -47,7 +47,7 @@ export class CharGenPortCust extends GameMenu {
 
   _3dView: LBL_3DView;
   sceneModel3D: OdysseyModel3D;
-  /** gui3D_room spawned before cghead_light (retail PortCust ctor). */
+  /** gui3D_room spawned before cghead_light (portrait cust ctor). */
   _3dViewRoom: OdysseyModel3D;
 
   isCharLoading: boolean = false;

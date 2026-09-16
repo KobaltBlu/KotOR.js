@@ -8,7 +8,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import { isCreature } from "@/module/guards/isCreature";
 
 /**
- * effect apply / effect remove.
+ * Haste/Slow onApply / onRemove.
  * Net-balance HASTE(+1) vs SLOW(-1), then sync HASTEINTERNAL / SLOWINTERNAL children.
  */
 

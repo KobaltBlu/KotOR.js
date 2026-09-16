@@ -19,7 +19,7 @@ import { isPlaceable } from "@/module/guards/isPlaceable";
 /**
  * ActionUnlockObject class.
  *
- * Retail AIActionUnlockObject: move into range → PlayAnimation
+ * UnlockObject: move into range → PlayAnimation
  * (door 0x2790 / placeable 0x2793, 1.5s) + StartGuiTimingBar → EvaluateLock /
  * OpenDoor. Do not leave UNLOCK_* sticky after complete (dialog can start
  * from OnOpen while the clip would otherwise loop).
@@ -105,7 +105,7 @@ export class ActionUnlockObject extends Action {
       this.owner.setFacingObject(this.target);
     }
 
-    // Retail: PlayAnimation(0x2790/0x2793, 1.0, 1.5) then resume unlock.
+    // PlayAnimation(0x2790/0x2793, 1.0, 1.5) then resume unlock.
     if(!this.animQueued){
       this.animQueued = true;
       this.target.audioEmitter.playSound('gui_lockpick');

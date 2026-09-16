@@ -24,7 +24,7 @@ export class EffectSkillIncrease extends GameEffect {
   onApply(){
     if(this.applied)
       return;
-    // effect apply: reject negative amount (int[1])
+    // onApply: reject negative amount (int[1])
     if((this.getInt(1) || 0) < 0)
       return;
       

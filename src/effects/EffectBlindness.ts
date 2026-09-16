@@ -16,7 +16,7 @@ export const VISION_FLAG_DARKNESS_BLIND = 0x08;
 export const VISION_FLAG_BLIND = 0x10;
 
 /**
- * EffectBlindness — effect apply.
+ * EffectBlindness — onApply.
  * int[0] must be 0x10 (true blind) or 8 (darkness-blind).
  * Spawns MissChance 50%, Vision(4), VFX 0x138A; ORs visionFlags.
  *

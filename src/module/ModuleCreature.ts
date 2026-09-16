@@ -1941,7 +1941,7 @@ export class ModuleCreature extends ModuleObject {
       }else if(action.type == ActionType.ActionPhysicalAttacks){
         const target: ModuleObject = action.getParameter(1);
         if(target instanceof ModuleObject){
-          // Retail: distance to target origin (no openSpot / surround slot).
+          // Distance to target origin (no openSpot / surround slot).
           const distance = this.position.distanceTo(target.position);
           return distance < ( (this.combatData.getEquippedWeaponType() == 1 || this.combatData.getEquippedWeaponType() == 3) ? 2.0 : 15.0 );
         }else{
@@ -1958,7 +1958,7 @@ export class ModuleCreature extends ModuleObject {
 
   /**
    * Attack-approach destination for `targeter` toward this object.
-   * Retail has no surround picker — creature origin / door-placeable action point.
+   * No surround picker — creature origin / door-placeable action point.
    */
   getBestAttackPoint(targeter: ModuleObject){
     const p = getAttackApproachPoint(this, targeter);
@@ -1966,7 +1966,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Moving creatures inject short-lived point gusts so grass tips part (retail gob wind).
+   * Moving creatures inject short-lived point gusts so grass tips part.
    * Gated to outdoor areas with wind; capped by WindManager.MAX_POINT_SOURCES.
    */
   private pushGrassWindGust(): void {
@@ -2241,7 +2241,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Enqueue AIActionMoveToPoint. AddMoveToPointAction: timeout 0 = no
+   * Enqueue MoveToPoint. AddMoveToPointAction: timeout 0 = no
    * Jump fallback (ActionMoveTo*); timeout > 0 = ForceMove jump-on-expiry.
    * Arrive range: max(script fRange, GetUseRange) — ExecuteCommandMoveToObject.
    */
@@ -2304,7 +2304,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Enqueue AIActionMoveToPoint. : ActionMoveToLocation timeout 0;
+   * Enqueue MoveToPoint. ActionMoveToLocation timeout 0;
    * ActionForceMoveToLocation passes script timeout (default 30).
    */
   moveToLocation(target: ModuleObject|EngineLocation, bRun = true, timeout = 0){
@@ -2359,7 +2359,7 @@ export class ModuleCreature extends ModuleObject {
 
       let action = new GameState.ActionFactory.ActionJumpToObject();
       action.setParameter(0, ActionParameterType.DWORD, target.id );
-      // Retail: bWalkStraight → ComputeSafeLocation requireLOS (default TRUE)
+      // bWalkStraight → ComputeSafeLocation requireLOS (default TRUE)
       action.setParameter(1, ActionParameterType.INT, bWalkStraight | 0);
       this.actionQueue.add(action);
 
@@ -3465,7 +3465,7 @@ export class ModuleCreature extends ModuleObject {
 
   /**
    * Combat animation weapon digit (g*r1 / m*a1 *).
-   * CSWCCreature::UpdateWeaponClass @ 00613710.
+   * Derived from equipped weapon class / wield type.
    */
   getCombatAnimationWeaponType(){
     return combatAnimationWeaponDigit(this.equipment, this.isSimpleCreature());
@@ -3837,7 +3837,7 @@ export class ModuleCreature extends ModuleObject {
   /**
    * PlayDrawAnimation(FLOURISH / 0x2806) — UpdateVisibleWeapons on MainHand/OffHand
    * equip when not instant. Hides the model swap behind the new weapon's g*w1.
-   * Duration matches retail InsertFireForgetAnimation(..., 0x5dc).
+   * Duration matches InsertFireForgetAnimation(..., 0x5dc).
    */
   playDrawAnimation(){
     if(this.isSimpleCreature()){ return; }
@@ -4211,8 +4211,8 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * effect apply encounter unlink (arg2=0)
-   * AIActionEncounterCreatureDestroySelf (arg2=1).
+   * Encounter unlink on destroy-self effect (arg2=0);
+   * DestroySelf encounter action (arg2=1).
    */
   unlinkFromEncounter(fromDestroySelf: boolean = false){
     if(this.encounterUnlinked) return;
@@ -4912,7 +4912,7 @@ export class ModuleCreature extends ModuleObject {
     ) || this.isKnockdownHeld();
   }
 
-  /** EffectEntangle — aborts AIActionCastSpell mid-cast. */
+  /** EffectEntangle — aborts CastSpell mid-cast. */
   isEntangled(){
     return this.hasEffect(GameEffectType.EffectEntangle);
   }
@@ -5082,7 +5082,7 @@ export class ModuleCreature extends ModuleObject {
     return 5;
   }
 
-  /** PC prestige multiplier (local_2c = 1 + 0.2 * tier) + CHA*3 bonus. */
+  /** PC prestige multiplier (1 + 0.2 * tier) + CHA*3 bonus. */
   static #getPcPrestigeFactor(pc: ModuleCreature | undefined): { factor: number; bonus: number } {
     if(!pc){
       return { factor: 1.0, bonus: 0 };
@@ -6290,7 +6290,7 @@ export class ModuleCreature extends ModuleObject {
 
   /**
    * GetForceItemMask — bit flags from equipped baseitem types
-   * used by AIActionCastSpell forbid/require mask checks.
+   * used by CastSpell forbid/require mask checks.
    */
   getForceItemMask(): number {
     let mask = 0;
@@ -6959,7 +6959,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * AIActionCounterSpell combat-mode enter
+   * CounterSpell combat-mode enter
    * ActivityManager(4) then set mode 4 / activity 0x800 (or clear prior mode bit).
    */
   enterCounterSpellMode(){

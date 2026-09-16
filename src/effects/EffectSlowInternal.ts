@@ -7,7 +7,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import { isCreature } from "@/module/guards/isCreature";
 
 /**
- * EffectSlowInternal — effect apply.
+ * EffectSlowInternal — onApply.
  * Spawns MSD(50), AC−2, AB−2, Saves−2, LimitMovementSpeed.
  *
  * @file EffectSlowInternal.ts
