@@ -151,6 +151,9 @@ export class EffectSetStateInternal extends GameEffect {
           }
         }
         break;
+      case GameEffectSetStateType.FORCEJUMP:
+        creature.ambientAnimState = ModuleCreatureAmbientState.PRONE_FORCE_JUMP;
+        break;
       case GameEffectSetStateType.WHIRLWIND:
         creature.ambientAnimState = ModuleCreatureAmbientState.WHIRLWIND;
         creature.setAnimationState?.(animForSetState(state));
@@ -187,6 +190,10 @@ export class EffectSetStateInternal extends GameEffect {
     const ambient = creature.ambientAnimState | 0;
     if(state === GameEffectSetStateType.FORCEPUSH){
       if(ambient === ModuleCreatureAmbientState.PRONE_FORCE_PUSHED){
+        creature.ambientAnimState = ModuleCreatureAmbientState.IDLE;
+      }
+    }else if(state === GameEffectSetStateType.FORCEJUMP){
+      if(ambient === ModuleCreatureAmbientState.PRONE_FORCE_JUMP){
         creature.ambientAnimState = ModuleCreatureAmbientState.IDLE;
       }
     }else if(state === GameEffectSetStateType.WHIRLWIND){

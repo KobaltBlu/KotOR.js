@@ -31,6 +31,7 @@ import {
   testDirectLine,
   TestDirectLineCode,
 } from "@/engine/pathfinding/test-direct-line";
+import { resolveMoveToForceJump } from "@/combat/resolve-move-to-force-jump";
 
 export type MeleeBackoffResult = {
   position: THREE.Vector3;
@@ -248,72 +249,89 @@ export class ActionPhysicalAttacks extends Action {
       }
 
       const isBackoff = tooClose && !tooFar && !isPartyMember && !this.owner.isRangedEquipped();
-      let arriveRange = getAttackMoveArriveRange(this.owner, this.target, choreographed);
-      let target_position = getNearestActionPoint(this.target, this.owner.position, this.owner);
 
-      if(isBackoff){
-        // Too close: DesiredAttackRange back-off + TestDirectLine / CWalkHitInfo clip
-        const backoff = ActionPhysicalAttacks.resolveMeleeBackoff(this.owner, this.target, desired);
-        target_position = backoff.position;
-        arriveRange = 0;
-        this.owner.pathFindApproachPersonalSpace = 0;
-        this.owner.pathFindIgnoreObjectId = 0;
-      }else{
-        // Approach: creature origin / door-placeable action point — no attacker
-        // perspace shove (retail uses pathfind field3 + Move arrive instead).
-        if(isCreature(this.target)){
-          this.owner.pathFindIgnoreObjectId = this.target.id;
-          this.owner.pathFindApproachPersonalSpace = Math.max(
-            0,
-            desired - getCreaturePersonalSpace(this.target)
-          );
-        }else{
-          this.owner.pathFindIgnoreObjectId = this.target.id;
+      // Retail: ResolveMoveToForceJump when LOS clear — skip MoveTo on success.
+      let forceJumped = false;
+      if(!isBackoff && hasLos){
+        const featOut = { featId: this.getParameter<number>(6) | 0 };
+        if(resolveMoveToForceJump(this.owner, this.target, featOut)){
+          this.setParameter(6, ActionParameterType.INT, featOut.featId);
+          if(combatRound?.action){
+            combatRound.action.featId = featOut.featId;
+          }
+          forceJumped = true;
+        }
+      }
+
+      if(!forceJumped){
+        let arriveRange = getAttackMoveArriveRange(this.owner, this.target, choreographed);
+        let target_position = getNearestActionPoint(this.target, this.owner.position, this.owner);
+
+        if(isBackoff){
+          // Too close: DesiredAttackRange back-off + TestDirectLine / CWalkHitInfo clip
+          const backoff = ActionPhysicalAttacks.resolveMeleeBackoff(this.owner, this.target, desired);
+          target_position = backoff.position;
+          arriveRange = 0;
           this.owner.pathFindApproachPersonalSpace = 0;
+          this.owner.pathFindIgnoreObjectId = 0;
+        }else{
+          // Approach: creature origin / door-placeable action point — no attacker
+          // perspace shove (retail uses pathfind field3 + Move arrive instead).
+          if(isCreature(this.target)){
+            this.owner.pathFindIgnoreObjectId = this.target.id;
+            this.owner.pathFindApproachPersonalSpace = Math.max(
+              0,
+              desired - getCreaturePersonalSpace(this.target)
+            );
+          }else{
+            this.owner.pathFindIgnoreObjectId = this.target.id;
+            this.owner.pathFindApproachPersonalSpace = 0;
+          }
         }
-      }
 
-      // AddActionToFront order → execute: Move → Facing → Check → PhysicalAttacks
-      const requeue = new GameState.ActionFactory.ActionPhysicalAttacks(undefined, this.groupId);
-      for(let i = 0; i <= 9; i++){
-        const p = this.parameters[i];
-        if(p){
-          requeue.setParameter(i, p.type, p.value);
+        // AddActionToFront order → execute: Move → Facing → Check → PhysicalAttacks
+        const requeue = new GameState.ActionFactory.ActionPhysicalAttacks(undefined, this.groupId);
+        for(let i = 0; i <= 9; i++){
+          const p = this.parameters[i];
+          if(p){
+            requeue.setParameter(i, p.type, p.value);
+          }
         }
+        requeue.isUserAction = this.isUserAction;
+        this.owner.actionQueue.addFront(requeue);
+
+        if(!isBackoff){
+          const ranged = this.owner.isRangedEquipped() ? 1 : 0;
+          const check = new GameState.ActionFactory.ActionCheckMoveToObjectRadius(undefined, this.groupId);
+          check.setParameter(0, ActionParameterType.DWORD, this.target.id);
+          check.setParameter(1, ActionParameterType.INT, 1);
+          check.setParameter(2, ActionParameterType.FLOAT, arriveRange);
+          check.setParameter(3, ActionParameterType.FLOAT, max);
+          check.setParameter(4, ActionParameterType.INT, 1);
+          check.setParameter(5, ActionParameterType.INT, 0);
+          check.setParameter(6, ActionParameterType.INT, ranged);
+          this.owner.actionQueue.addFront(check);
+
+          const face = new GameState.ActionFactory.ActionChangeFacingObject(undefined, this.groupId);
+          face.setParameter(0, ActionParameterType.DWORD, this.target.id);
+          this.owner.actionQueue.addFront(face);
+        }
+
+        const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint(undefined, this.groupId);
+        actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, target_position.x);
+        actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, target_position.y);
+        actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, target_position.z);
+        actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, this.target.area?.id ?? this.owner.area?.id ?? 0);
+        actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, isBackoff ? ModuleObjectConstant.OBJECT_INVALID : this.target.id);
+        actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
+        actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, arriveRange);
+        actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
+        actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
+        this.owner.actionQueue.addFront(actionMoveToTarget);
+
+        return ActionStatus.COMPLETE;
       }
-      requeue.isUserAction = this.isUserAction;
-      this.owner.actionQueue.addFront(requeue);
-
-      if(!isBackoff){
-        const ranged = this.owner.isRangedEquipped() ? 1 : 0;
-        const check = new GameState.ActionFactory.ActionCheckMoveToObjectRadius(undefined, this.groupId);
-        check.setParameter(0, ActionParameterType.DWORD, this.target.id);
-        check.setParameter(1, ActionParameterType.INT, 1);
-        check.setParameter(2, ActionParameterType.FLOAT, arriveRange);
-        check.setParameter(3, ActionParameterType.FLOAT, max);
-        check.setParameter(4, ActionParameterType.INT, 1);
-        check.setParameter(5, ActionParameterType.INT, 0);
-        check.setParameter(6, ActionParameterType.INT, ranged);
-        this.owner.actionQueue.addFront(check);
-
-        const face = new GameState.ActionFactory.ActionChangeFacingObject(undefined, this.groupId);
-        face.setParameter(0, ActionParameterType.DWORD, this.target.id);
-        this.owner.actionQueue.addFront(face);
-      }
-
-      const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint(undefined, this.groupId);
-      actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, target_position.x);
-      actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, target_position.y);
-      actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, target_position.z);
-      actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, this.target.area?.id ?? this.owner.area?.id ?? 0);
-      actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, isBackoff ? ModuleObjectConstant.OBJECT_INVALID : this.target.id);
-      actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
-      actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, arriveRange);
-      actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
-      actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
-      this.owner.actionQueue.addFront(actionMoveToTarget);
-
-      return ActionStatus.COMPLETE;
+      // Force Jump applied — fall through to StartCombatRound with stamped feat.
     }
 
     if(this.owner.combatRound){

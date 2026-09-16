@@ -35,6 +35,7 @@ import { EffectEntangle } from "@/effects/EffectEntangle";
 import { EffectFeat } from "@/effects/EffectFeat";
 import { EffectForceFizzle } from "@/effects/EffectForceFizzle";
 import { EffectForceJump } from "@/effects/EffectForceJump";
+import { EffectForceJumpDelayed } from "@/effects/EffectForceJumpDelayed";
 import { EffectForcePushed } from "@/effects/EffectForcePushed";
 import { EffectForceResisted } from "@/effects/EffectForceResisted";
 import { EffectForceShield } from "@/effects/EffectForceShield";
@@ -194,6 +195,7 @@ export class GameEffectFactory {
   static EffectLightSaberThrow: typeof EffectLightsaberThrow = EffectLightsaberThrow;
   static EffectAssuredHit: typeof EffectAssuredHit = EffectAssuredHit;
   static EffectForceJump: typeof EffectForceJump = EffectForceJump;
+  static EffectForceJumpDelayed: typeof EffectForceJumpDelayed = EffectForceJumpDelayed;
   static EffectAssuredDeflection: typeof EffectAssuredDeflection = EffectAssuredDeflection;
   static EffectForceResisted: typeof EffectForceResisted = EffectForceResisted;
   static EffectForceFizzle: typeof EffectForceFizzle = EffectForceFizzle;
@@ -420,6 +422,12 @@ export class GameEffectFactory {
       break;
       case GameEffectType.EffectAssuredHit:
         effect = new EffectAssuredHit();
+      break;
+      case GameEffectType.EffectForceJump:
+        effect = new EffectForceJump();
+      break;
+      case GameEffectType.EffectForceJumpDelayed:
+        effect = new EffectForceJumpDelayed();
       break;
       case GameEffectType.EffectTemporaryForce:
         effect = new EffectTemporaryForce();

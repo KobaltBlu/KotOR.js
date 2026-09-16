@@ -1147,7 +1147,14 @@ NWScriptDefK2.Actions = {
     name: 'EffectForceJump',
     type: NWScriptDataType.EFFECT,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      let effect = new GameState.GameEffectFactory.EffectForceJump();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[1]);
+      effect.setObject(0, args[0]);
+      return effect.initialize();
+    }
   },
   154: {
     comment: '154: Create a Sleep effect',

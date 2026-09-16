@@ -19,6 +19,8 @@ export enum GameEffectSetStateType {
   CUT_SCENE_HORRIFIED = 8,
   FORCEPUSH = 9,
   WHIRLWIND = 10,
+  /** Force Jump shoved-target prone (retail SetState 0x0D). */
+  FORCEJUMP = 13,
   /** K2 — companion SetState from effect apply */
   KNOCKDOWN = 14,
   /** K2-only — EffectCrush */

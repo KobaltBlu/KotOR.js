@@ -3,7 +3,9 @@
  *
  * Routes on this field before ordinary path walk:
  * 3 → FollowLeader SM
- * 4..6 → ForcePushed
+ * 4 → ForcePushed
+ * 5 → ForceJump jumper
+ * 6 → ForceJump shoved target
  * 1 → paused / end-of-path (early return)
  * -1 → repath / reset path end
  *
@@ -26,10 +28,10 @@ export enum QuickWalkLocoState {
   FollowLeader = 3,
   /** Force Push slide (effect apply). */
   ForcePushed = 4,
-  /** Force Push alternate mode. */
-  ForcePushedAlt = 5,
-  /** Force Push alternate mode. */
-  ForcePushedEnd = 6,
+  /** Force Jump jumper leap (OnApplyForceJumpDelayed). */
+  ForceJump = 5,
+  /** Force Jump shoved target (unsafe landing). */
+  ForceJumpTarget = 6,
 }
 
 /** effect apply sets loco mode 4. */
@@ -48,13 +50,13 @@ export function setQuickWalkLocoState(
   creature.quickWalkLocoState = state | 0;
 }
 
-/** True when QuickWalk routes to ForcePushed (state ∈ {4,5,6}). */
+/** True when QuickWalk routes to Force Push / Force Jump (state ∈ {4,5,6}). */
 export function isForcePushLocoActive(creature: ModuleCreature | undefined): boolean {
   const s = getQuickWalkLocoState(creature);
   return (
     s === QuickWalkLocoState.ForcePushed ||
-    s === QuickWalkLocoState.ForcePushedAlt ||
-    s === QuickWalkLocoState.ForcePushedEnd
+    s === QuickWalkLocoState.ForceJump ||
+    s === QuickWalkLocoState.ForceJumpTarget
   );
 }
 

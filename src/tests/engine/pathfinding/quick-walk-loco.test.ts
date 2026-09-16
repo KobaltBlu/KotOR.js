@@ -76,10 +76,10 @@ describe("QuickWalkLocoState", () => {
     expect(isQuickWalkPaused(creature)).toBe(true);
   });
 
-  it("ForcePush alt modes 5/6 count as active", () => {
+  it("ForceJump loco modes 5/6 count as active", () => {
     const creature = makeCreature({ quickWalkLocoState: 5 });
     expect(isForcePushLocoActive(creature)).toBe(true);
-    setQuickWalkLocoState(creature, QuickWalkLocoState.ForcePushedEnd);
+    setQuickWalkLocoState(creature, QuickWalkLocoState.ForceJumpTarget);
     expect(isForcePushLocoActive(creature)).toBe(true);
   });
 });

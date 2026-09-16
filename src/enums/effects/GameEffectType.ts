@@ -96,6 +96,8 @@ export enum GameEffectType {
   EffectLightSaberThrow = 0x64,
   EffectAssuredHit = 0x65,
   EffectForceJump = 0x66,
+  /** Delayed leap apply scheduled by EffectForceJump (retail FORCEJUMPDELAYED). */
+  EffectForceJumpDelayed = 0x67,
   EffectAssuredDeflection = 0x68,
   EffectForceResisted = 0x69,
   EffectForceFizzle = 0x6A,

@@ -38,6 +38,7 @@ export * from "@/effects/EffectFeat";
 export * from "@/effects/EffectForceDrain";
 export * from "@/effects/EffectForceFizzle";
 export * from "@/effects/EffectForceJump";
+export * from "@/effects/EffectForceJumpDelayed";
 export * from "@/effects/EffectForcePushed";
 export * from "@/effects/EffectForceResisted";
 export * from "@/effects/EffectForceResistanceDecrease";

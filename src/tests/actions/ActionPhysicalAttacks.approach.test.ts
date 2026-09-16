@@ -108,6 +108,10 @@ jest.mock('@/combat/combat-round-pause', () => ({
   resolveAttackPauseMs: () => 1500,
 }));
 
+jest.mock('@/combat/resolve-move-to-force-jump', () => ({
+  resolveMoveToForceJump: jest.fn(() => false),
+}));
+
 jest.mock('@/combat/duel-debug', () => ({
   duelLog: () => {},
   duelWho: () => 'x',
@@ -126,11 +130,14 @@ import { ActionStatus } from '@/enums/actions/ActionStatus';
 import { ActionParameterType } from '@/enums/actions/ActionParameterType';
 import { hasCombatLineOfSight } from '@/combat/attack-range';
 import { ActionType } from '@/enums/actions/ActionType';
+import { resolveMoveToForceJump } from '@/combat/resolve-move-to-force-jump';
+import { CombatFeatType } from '@/enums/combat/CombatFeatType';
 
 describe('ActionPhysicalAttacks approach queue', () => {
   beforeEach(() => {
     queued.length = 0;
     (hasCombatLineOfSight as jest.Mock).mockReturnValue(true);
+    (resolveMoveToForceJump as jest.Mock).mockReturnValue(false);
   });
 
   function makeOwner(pos: THREE.Vector3){
@@ -231,5 +238,44 @@ describe('ActionPhysicalAttacks approach queue', () => {
     expect(status).toBe(ActionStatus.COMPLETE);
     expect(queued.length).toBe(4);
     expect((queued[0] as { type?: number }).type).toBe(ActionType.ActionMoveToPoint);
+  });
+
+  it('Force Jump success skips MoveTo and stamps feat into param 6', () => {
+    (resolveMoveToForceJump as jest.Mock).mockImplementation(
+      (_a: unknown, _t: unknown, out: { featId: number }) => {
+        out.featId = CombatFeatType.FORCE_JUMP_MASTERY;
+        return true;
+      }
+    );
+    const startCombatRound = jest.fn();
+    const calculateAttackDamage = jest.fn();
+    const pauseRound = jest.fn();
+    const owner = makeOwner(new THREE.Vector3(0, 0, 0));
+    (owner as any).combatRound = {
+      action: { featId: 0 },
+      roundPaused: false,
+      roundStarted: true,
+      startCombatRound,
+      calculateAttackDamage,
+      pauseRound,
+      newAttackTarget: undefined,
+      setAttackTarget: jest.fn(),
+    };
+    (owner as any).setFacing = jest.fn();
+    (owner as any).playSoundSet = jest.fn();
+    const target = makeTarget(new THREE.Vector3(15, 0, 0));
+    const action = new ActionPhysicalAttacks();
+    (action as any).owner = owner;
+    action.setParameter(1, ActionParameterType.DWORD, target as any);
+    action.setParameter(6, ActionParameterType.INT, 0);
+    (action as any).target = target;
+
+    const status = action.update(0);
+
+    expect(queued.length).toBe(0);
+    expect(action.getParameter<number>(6)).toBe(CombatFeatType.FORCE_JUMP_MASTERY);
+    expect((owner as any).combatRound.action.featId).toBe(CombatFeatType.FORCE_JUMP_MASTERY);
+    expect(startCombatRound).toHaveBeenCalled();
+    expect(status).toBe(ActionStatus.COMPLETE);
   });
 });
