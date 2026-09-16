@@ -167,9 +167,9 @@ export class CutsceneManager {
    */
   static postDialogRestoreNpcId: number | undefined = undefined;
   /**
-   * AIActionDialogObject — when a non-PC party leader
-   * starts a conversation, fade out, wait for IsGlobalFading to clear, swap the PC
-   * into the leader slot/position, then StartDialog. Fade-in is holdWorldFadeInForDialog.
+   * When a non-PC party leader starts a conversation: fade out, wait for
+   * global fade to clear, swap the PC into the leader slot/position, then
+   * StartDialog. Fade-in is holdWorldFadeInForDialog.
    */
   static pendingPartyDialogSwitch: {
     dialog: DLGObject;
@@ -305,7 +305,7 @@ export class CutsceneManager {
   }
 
   /**
-   * AIActionPauseDialog — set + dialog-stop activity bit.
+   * Pause conversation and set dialog-stop activity bit.
    */
   static pauseConversation() {
     if(!this.active || !this.dialog) return;
@@ -317,7 +317,7 @@ export class CutsceneManager {
   }
 
   /**
-   * AIActionResumeDialog — clear pause, ActivityManager(2),
+   * Resume conversation: clear pause, ActivityManager(2),
    * clear dialog-stop bit, clear stealth bit. Deferred advance is flushed by
    * update (UpdateDialog), not here.
    */
@@ -546,7 +546,7 @@ export class CutsceneManager {
     barkScreenX: number = -1,
     barkScreenY: number = -1,
   ) {
-    // AIActionDialogObject: StartGlobalFade(0, 0, 0.75) then wait while
+    // Party-leader dialog: StartGlobalFade(0, 0, 0.75) then wait while
     // IsGlobalFading before position-swap + ChangeCharacter + StartDialog.
     if(this.needsPartyDialogLeaderSwitch(owner, listener)){
       this.pendingPartyDialogSwitch = {

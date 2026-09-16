@@ -5,9 +5,7 @@ import type { OdysseyModelAnimationManagerState } from "@/enums/odyssey/OdysseyM
 import type { BoundAnimation } from "@/odyssey/BoundAnimation";
 
 /**
- * Max concurrent AnimRuns per model.
- * 8 is the intentional JS bound
- * (matches prior MVP capacity; no hard engine max found).
+ * Max concurrent AnimRuns per model (intentional JS stack cap).
  */
 export const ANIM_RUN_STACK_CAP = 8;
 
@@ -15,13 +13,12 @@ export const ANIM_RUN_STACK_CAP = 8;
 export const ANIM_RUN_DEFAULT_TRANSITION = 0;
 
 /**
- * Aurora AnimRun (~0x24) — one clip instance on an animation stack.
- * Layout: animation*, speed, flags, prevTime, curTime, weight,
- * transition, scale, deactivated.
+ * One clip instance on a model's animation stack: animation, speed, flags,
+ * timing, blend weight, transition, and fade/done state.
  *
- * Frame cursors are playback state (per run), never stored on shared
- * OdysseyController assets. Phase-1 uses Map; BoundAnimation migrates to
- * Int32Array indexed by BoundController.cursorIndex.
+ * Frame cursors are per-run playback state, never stored on shared
+ * OdysseyController assets. Prefer BoundAnimation Int32Array cursors when
+ * bound; otherwise a Map keyed by controller.
  */
 export interface AnimRun {
   animation: OdysseyModelAnimation;
@@ -38,7 +35,6 @@ export interface AnimRun {
   done: boolean;
   /**
    * Deferred start (flags & QUEUE). Frozen until promote clears QUEUE.
-   * Mirrors Animate skipping runs with 0x20 set.
    */
   queued: boolean;
   /**
@@ -47,8 +43,8 @@ export interface AnimRun {
    */
   frameCursors?: Map<OdysseyController, number>;
   /**
-   * BoundAnimation Int32Array cursors (Phase 2). Indexed by
-   * BoundController.cursorIndex. When set, preferred over frameCursors Map.
+   * BoundAnimation Int32Array cursors, indexed by BoundController.cursorIndex.
+   * When set, preferred over frameCursors Map.
    */
   frameCursorArray?: Int32Array;
   /** BoundAnimation used to size/index frameCursorArray. */

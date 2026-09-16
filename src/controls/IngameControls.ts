@@ -54,12 +54,10 @@ function resolveKeyboardForwardAxis(): number {
 }
 
 /**
- * ProcessInput LMB-forward inject:
- * When chase-cam look is active (`rightClickHeld`, inverted if Mouse Look) and
- * `leftMouseDown`, inject forward if the keyboard/stick up_down axis is 0.
- * writes raw up_down = -1.0 (stick-forward); our axisForward is +forward.
- * Mouse Look on: look is active while RMB is up → LMB alone walks/runs forward.
- * Classic: RMB look + LMB → forward while turning the camera.
+ * LMB-forward inject while chase-cam look is held:
+ * When look is active and LMB is down, inject forward if the keyboard/stick
+ * forward axis is 0. Mouse Look on: look is active while RMB is up → LMB alone
+ * walks/runs forward. Classic: RMB look + LMB → forward while turning the camera.
  */
 function resolvePlayerForwardAxis(): number {
   let forward = resolveKeyboardForwardAxis();
@@ -71,7 +69,7 @@ function resolvePlayerForwardAxis(): number {
 
 /**
  * Build swoop/turret lateral axis from A+D together (same race-avoidance as resolveKeyboardForwardAxis).
- * keys feed UpdateAxis as ±1.
+ * Keys contribute ±1 to the minigame lateral axis.
  */
 function resolveMinigameKeyAxisX(): number {
   const left = !!KeyMapper.Actions[KeyMapAction.MGActionLeft]?.keyboardInput?.down
@@ -85,7 +83,7 @@ function resolveMinigameKeyAxisX(): number {
 }
 
 /**
- * Turret pitch axis from W+S / d-pad up+down — PollInput Z pair → UpdateAxis z.
+ * Turret pitch axis from W+S / d-pad up+down.
  */
 function resolveMinigameKeyAxisZ(): number {
   const up = !!KeyMapper.Actions[KeyMapAction.MGActionUp]?.keyboardInput?.down
@@ -98,7 +96,7 @@ function resolveMinigameKeyAxisZ(): number {
   return z;
 }
 
-/** ProcessInput mouse Poll / 20.0 before UpdateMouse. */
+/** Mouse delta scale applied before minigame mouse update. */
 const MG_MOUSE_POLL_SCALE = 20;
 
 /**
@@ -121,8 +119,8 @@ export class IngameControls {
   static readonly DRIVE_YAW_RIGHT = 0x20;
 
   /**
-   * drive-control gate: camera mode 5 (FREELOOK/DRIVE) or creature.driveControlActive.
-   * Mode 5 is shared with FreeLook (SetFreeLookCamera). Not swoop MG.
+   * Drive-control gate: camera mode DRIVE or creature.driveControlActive.
+   * DRIVE is shared with FreeLook. Not swoop minigame.
    */
   static isDriveControlActive(creature: ModuleCreature | undefined): boolean {
     if(!creature) return false;
@@ -132,7 +130,7 @@ export class IngameControls {
   }
 
   /**
-   * Apply stick/keyboard bits via AddDriveAction (HandlePlayerToServerInputDriveControl).
+   * Apply stick/keyboard drive bits via AddDriveAction.
    */
   static applyDriveInput(creature: ModuleCreature, flags: number): void {
     if(!creature || !flags) return;
@@ -154,7 +152,7 @@ export class IngameControls {
   }
 
   /**
-   * Abort front Drive action retry (HandlePlayerToServerInputAbortDriveControl).
+   * Abort the front Drive action retry.
    */
   static abortDriveControl(creature: ModuleCreature | undefined): void {
     if(!creature?.actionQueue) return;
@@ -183,8 +181,8 @@ export class IngameControls {
   controllerHidesCursor: boolean = false;
 
   /**
-   * Aspyr HUD action-panel selection — selected panel for d-pad / A.
-   * -1 = none (A → DefaultAction on selected object).
+   * Gamepad HUD action-panel selection — selected panel for d-pad / A.
+   * -1 = none (A → default action on selected object).
    */
   selectedActionPanelIndex: number = -1;
 
@@ -217,7 +215,7 @@ export class IngameControls {
       this.notifyKeyboardOrMouseInput();
       this.keyboard.onKeyDown(e);
 
-      // HandleInputEvent: while game_over_state, hurry the death fade
+      // While game-over, hurry the death fade on any key
       if(GameState.GameOverManager?.GetGameOver?.()){
         GameState.GameOverManager.OnDeathSequenceInput();
       }
@@ -1011,8 +1009,8 @@ export class IngameControls {
       GameState.ModuleObjectManager.selectNearestObject(true);
     });
 
-    // Keys feed UpdateAxis via resolveMinigameKeyAxis* — do not rotate here.
-    // Swoop accelerate (MGActionUp) is polled in ProcessInput → onAccelerate.
+    // Keys feed the minigame axis via resolveMinigameKeyAxis* — do not rotate here.
+    // Swoop accelerate (MGActionUp) is polled in the minigame update → onAccelerate.
     KeyMapper.Actions[KeyMapAction.MGActionUp].setProcessor( (_keymap, _delta = 0) => {});
 
     KeyMapper.Actions[KeyMapAction.MGActionDown].setProcessor( (_keymap, _delta = 0) => {});
@@ -1023,7 +1021,7 @@ export class IngameControls {
 
     KeyMapper.Actions[KeyMapAction.PauseMinigame].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      // Same manual combat-pause reason 4 as TB_PAUSE (pause overlay path)
+      // Same manual combat-pause as the pause overlay button
       GameState.AutoPauseManager.ToggleManualPause();
     });
 
@@ -1066,7 +1064,7 @@ export class IngameControls {
 
       const currentMenu = GameState.MenuManager.GetCurrentMenu();
       if(currentMenu == GameState.MenuManager.InGameOverlay){
-        // pause key — same as TB_PAUSE / OnPauseButtonPressed (reason 4)
+        // Pause key — same as the pause overlay button
         GameState.AutoPauseManager.ToggleManualPause();
       }else if( currentMenu == GameState.MenuManager.InGameConfirm){
         GameState.MenuManager.InGameConfirm.close();
@@ -1078,8 +1076,8 @@ export class IngameControls {
       GameState.getCurrentPlayer().flourish();
     });
 
-    // CancleCombat (action240 / BTN_CLEARALL) — keyboard ClearAll;
-    // Aspyr B: deselect action panel, else RemoveLastAction (ClearOne).
+    // Clear-all (BTN_CLEARALL): keyboard clears all; gamepad B deselects the
+    // action panel when one is selected, otherwise ClearOne.
     KeyMapper.Actions[KeyMapAction.CancleCombat]?.setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
@@ -1095,7 +1093,7 @@ export class IngameControls {
       GameState.MenuManager.InGameOverlay.onClearAllButtonPressed();
     });
 
-    // ClearOneAction (action245 / BTN_CLEARONE) — keyboard Y / ClearOne
+    // ClearOneAction (BTN_CLEARONE) — keyboard ClearOne
     KeyMapper.Actions[KeyMapAction.ClearOneAction]?.setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
@@ -1103,7 +1101,7 @@ export class IngameControls {
       GameState.MenuManager.InGameOverlay.onClearOneButtonPressed();
     });
 
-    // Aspyr A — DefaultAction / activate selected HUD action panel
+    // Gamepad A — default action / activate selected HUD action panel
     KeyMapper.Actions[KeyMapAction.DefaultAction]?.setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
@@ -1115,13 +1113,13 @@ export class IngameControls {
       GameState.MenuManager.InGameOverlay.triggerControllerAPress();
     });
 
-    // Aspyr Y — GamepadQuickMenu stub (full UI in a later pass)
+    // Gamepad Y — quick-menu stub (full UI in a later pass)
     KeyMapper.Actions[KeyMapAction.GamepadQuickMenu]?.setProcessor( (keymap: { keyboardInput?: { pressed?: boolean }; gamepadInput?: { pressed?: boolean } }) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      // Pass 2: PopupGamepadMenu (map / party / solo / stealth / save / options / switch weaps / help)
+      // Later: map / party / solo / stealth / save / options / switch weapons / help
     });
 
-    // Aspyr d-pad L/R — cycle action-panel slot
+    // D-pad L/R — cycle HUD action-panel slot
     KeyMapper.Actions[KeyMapAction.ActionMenuLeft]?.setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       this.cycleActionPanelSlot(-1);
@@ -1130,7 +1128,7 @@ export class IngameControls {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       this.cycleActionPanelSlot(1);
     });
-    // Aspyr d-pad U/D — cycle action within selected slot
+    // D-pad U/D — cycle action within selected panel
     KeyMapper.Actions[KeyMapAction.ActionMenuUp]?.setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       this.cycleActionWithinSelectedPanel(-1);
@@ -1156,7 +1154,7 @@ export class IngameControls {
       }
     });
 
-    // Quick-menu helpers (unbound on face buttons; for Pass 2 / keyboard)
+    // Quick-menu helpers (unbound on face buttons; keyboard / later pad menu)
     KeyMapper.Actions[KeyMapAction.STEALTH]?.setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
@@ -1370,7 +1368,7 @@ export class IngameControls {
     this.gamePad.updateState(delta);
     this.pollGamepadHidesCursor();
 
-    // GUI menus only — INGAME overlay pad actions go through KeyMapper (Aspyr layout).
+    // GUI menus only — INGAME overlay pad actions go through KeyMapper (pad HUD layout).
     // Bumpers use PrevMenu/NextMenu processors (avoid double-fire).
     if(currentMenu && currentMenu !== GameState.MenuManager.InGameOverlay){
       if(this.gamePad.button_a.pressed){
@@ -1460,7 +1458,7 @@ export class IngameControls {
       Mouse.exitPointerLock();
     }
 
-    // UpdateCamera mouse look while rightClickHeld (or Mouse Look)
+    // Mouse look while camera hold is desired (RMB or Mouse Look)
     if(Mouse.isCameraHoldDesired() && GameState.Mode == EngineMode.INGAME){
       const dx = Mouse.MouseX - Mouse.OldMouseX;
       const dy = Mouse.MouseY - Mouse.OldMouseY;
@@ -1490,11 +1488,11 @@ export class IngameControls {
       !Mouse.cameraHoldActive &&
       currentMenu == GameState.MenuManager.InGameOverlay
     ){
-      // UpdateCamera edge turn — cursor near left/right screen frame
+      // Screen-edge turn — cursor near left/right screen frame
       this.updateScreenEdgeCameraTurn();
     }
 
-    // ProcessInput — UpdateAxis (always) then UpdateMouse (type2);
+    // Minigame: update axis every frame, then mouse for turret;
     // combat/Engine pause blocks Fire only, not axis damping.
     if(GameState.Mode == EngineMode.MINIGAME){
       const mg = GameState.module?.area?.miniGame;
@@ -1507,7 +1505,7 @@ export class IngameControls {
         const reverseY = GameState.isMinigameYAxisReversed();
 
         if(mg.type === MiniGameType.SWOOPRACE){
-          // ProcessInput: clamp(Poll(L)+Poll(R), -1, 1) — stick and keys sum.
+          // Stick and keys sum, then clamp to ±1
           const x = Math.max(-1, Math.min(1, stickX + keyX));
           mg.updateAxis(x, 0, 0, delta);
           // Swoop accelerate (W / MGActionUp / pad up) → OnAccelerate every frame while held.
@@ -1522,7 +1520,7 @@ export class IngameControls {
             mg.player.onAccelerate();
           }
         }else if(mg.type === MiniGameType.TURRET){
-          // : UpdateAxis(x,0,z); optional negate Z for Reverse Minigame YAxis.
+          // Axis X/Z; optional negate Z when minigame Y-axis is reversed.
           const x = Math.max(-1, Math.min(1, stickX + keyX));
           let z = Math.max(-1, Math.min(1, stickY + resolveMinigameKeyAxisZ()));
           if(reverseY){ z = -z; }
@@ -1552,7 +1550,7 @@ export class IngameControls {
       }
     }
 
-    // Chase / combat camera: right stick yaw+pitch (Aspyr RS look; not FreeLook-only).
+    // Chase / combat camera: right stick yaw+pitch (pad look; not FreeLook-only).
     // Use camerastyle FL_RotateSpeed / FL_TiltSpeed (~60°/s), not Keyboard Camera DPS (~200°/s).
     if(
       GameState.State == EngineState.RUNNING &&
@@ -1611,9 +1609,9 @@ export class IngameControls {
   }
 
   /**
-   * UpdateCamera — turn when cursor is within screenFramePercentage
-   * of the left/right viewport edge (min 2px). Skip while over GUI so floating
-   * target-menu clicks are not invalidated by camera motion.
+   * Turn when the cursor is within screenFramePercentage of the left/right
+   * viewport edge (min 2px). Skip while over GUI so floating target-menu
+   * clicks are not invalidated by camera motion.
    */
   updateScreenEdgeCameraTurn(){
     if(this.MenuGetActiveUIElements().length > 0){
@@ -1673,7 +1671,7 @@ export class IngameControls {
     }
   }
 
-  /** Self panels then target panels — Aspyr action-slot order for d-pad L/R. */
+  /** Self panels then target panels — pad action-slot order for d-pad L/R. */
   getActionPanelSlots(): { isTarget: boolean; index: number }[] {
     const slots: { isTarget: boolean; index: number }[] = [];
     const selfCount = GameState.ActionMenuManager.SELF_MENU_COUNT;
@@ -1697,7 +1695,7 @@ export class IngameControls {
     return { slot, panel: panels?.[slot.index] };
   }
 
-  /** Aspyr 0x2f / 0x30 — cycle which HUD action panel is selected. */
+  /** Cycle which HUD action panel is selected (gamepad HUD panel cycle). */
   cycleActionPanelSlot(direction: number){
     if(GameState.Mode != EngineMode.INGAME) return;
     if(GameState.MenuManager.GetCurrentMenu() != GameState.MenuManager.InGameOverlay) return;
@@ -1722,7 +1720,7 @@ export class IngameControls {
     }
   }
 
-  /** Aspyr 0x31 / 0x32 — cycle actions within the selected panel. */
+  /** Cycle actions within the selected HUD panel. */
   cycleActionWithinSelectedPanel(direction: number){
     if(GameState.Mode != EngineMode.INGAME) return;
     if(GameState.MenuManager.GetCurrentMenu() != GameState.MenuManager.InGameOverlay) return;
@@ -1754,7 +1752,7 @@ export class IngameControls {
     }
   }
 
-  /** Aspyr B with a panel selected — clear slot highlight / hover. */
+  /** Clear HUD panel highlight / hover when B is pressed with a panel selected. */
   clearSelectedActionPanel(){
     this.selectedActionPanelIndex = -1;
     const overlay = GameState.MenuManager.InGameOverlay;
@@ -1770,7 +1768,7 @@ export class IngameControls {
       overlay.UpdateSelfUIIcon?.(index);
       overlay.UpdateActionDescription?.();
     }
-    // Aspyr StartRotation + SetActiveControl — d-pad selection drives button hover.
+    // D-pad selection drives button hover / active control.
     const btnName = isTarget ? `BTN_TARGET${index}` : `BTN_ACTION${index}`;
     const btn = overlay.getControlByName?.(btnName);
     if(btn){

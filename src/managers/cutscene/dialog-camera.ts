@@ -8,16 +8,15 @@ import {
 } from "@/utility/aurora-camera-orientation";
 
 /**
- * GetCameraParameters.
+ * Dialog camera shot framing and TSL appearance / placeable overrides.
  * Shot types match DLG CameraAngle 1–3 (speaker / OTS / two-shot).
- * Pseudo-random: InitializePsuedoRandomCameraAngles +
- * SendDialogEntryNode / SendDialogReplyNode.
- * CUT names: GetCameraAnimationName.
+ * Pseudo-random angles advance per entry/reply; CUT names come from
+ * dialog animation id bands.
  */
 
 const DEG2RAD = Math.PI / 180;
 
-/** dialog constructor table (19 entries). */
+/** Dialog constructor angle table (19 entries). */
 export const DIALOG_PSEUDO_RANDOM_ANGLES: readonly number[] = [
   1, 3, 1, 3, 2, 2, 1, 3, 1, 2, 1, 2, 1, 3, 2, 3, 1, 1, 1,
 ];
@@ -28,19 +27,19 @@ export interface DialogCameraShotResult {
 }
 
 export interface DialogCameraShotOptions {
-  /** CamHeightOffset from SetShot */
+  /** Extra camera height bias */
   heightBias?: number;
-  /** TarHeightOffset from SetShot */
+  /** Extra look-at height bias */
   focusHeightBias?: number;
   /** Used by type-1 close-up pull */
   closeUpExtra?: number;
   /** Collision fallback forces type-1 framing */
   collided?: boolean;
-  /** Side flip (2 mirrors yaw); GetSideUnobstructed */
+  /** Side flip (2 mirrors yaw) */
   side?: number;
   /**
-   * TSL Aspyr vanilla camera hacks (UpdateShotCamera)
-   * only applied when !isDialogGameModded.
+   * TSL dialog camera appearance overrides (distance / height / yaw).
+   * Only applied when the conversation is not treated as modded.
    */
   aspyrDistanceOverride?: number;
   aspyrHeightOverride?: number;
@@ -61,8 +60,8 @@ export interface DialogPseudoRandomState {
 }
 
 /**
- * Map DLG angle to GetCameraParameters shot type (1/2/3).
- * ANGLE_FOCUS_PLAYER (5) does not call SetShot in UpdateShotCamera.
+ * Map DLG angle to shot type (1/2/3).
+ * ANGLE_FOCUS_PLAYER (5) does not build a speaker/listener shot.
  */
 export function dlgAngleToShotType(angle: DLGCameraAngle): number {
   switch(angle){
@@ -78,8 +77,7 @@ export function dlgAngleToShotType(angle: DLGCameraAngle): number {
 }
 
 /**
- * InitializePsuedoRandomCameraAngles
- * hash dialog resref → (parity, %19, %5+1).
+ * Hash dialog resref → (parity, %19, %5+1) for the pseudo-random angle table.
  * Hash: u += ((int)pow(10, i) + 1) * char
  */
 export function hashDialogResref(resref: string): {
@@ -90,11 +88,11 @@ export function hashDialogResref(resref: string): {
   const s = (resref || '').toLowerCase();
   let u = 0;
   for(let i = 0; i < s.length; i++){
-    // : __ftol2(pow(10,i)) + 1, then * char (signed MOVSX)
+    // trunc(pow(10,i)) + 1, then * signed char
     const place = (Math.pow(10, i) | 0) + 1;
     u = (u + place * (s.charCodeAt(i) << 24 >> 24)) | 0;
   }
-  // Match unsigned DIV remainders used in stores
+  // Unsigned remainder stores
   const uu = u >>> 0;
   return {
     parity: uu & 1,
@@ -103,7 +101,7 @@ export function hashDialogResref(resref: string): {
   };
 }
 
-/** Create PRNG state after loading a dialog (LoadDialog sets first* flags to 1). */
+/** Create PRNG state after loading a dialog (first-entry / first-reply flags start true). */
 export function createDialogPseudoRandomState(resref: string): DialogPseudoRandomState {
   const h = hashDialogResref(resref);
   return {
@@ -132,9 +130,9 @@ export function advancePseudoRandomIndex(state: DialogPseudoRandomState): number
 }
 
 /**
- * Resolve ANGLE_RANDOM for an entry — SendDialogEntryNode.
+ * Resolve ANGLE_RANDOM for an entry.
  * First random entry in a dialog is always shot 2; later use the table.
- * is cleared on every entry send.
+ * The first-entry flag clears on every entry send.
  */
 export function resolveEntryCameraAngle(
   angle: number,
@@ -152,8 +150,8 @@ export function resolveEntryCameraAngle(
 }
 
 /**
- * Resolve ANGLE_RANDOM for a reply — SendDialogReplyNode.
- * is cleared after the reply batch.
+ * Resolve ANGLE_RANDOM for a reply.
+ * The first-reply flag clears after the reply batch.
  */
 export function resolveReplyCameraAngle(
   angle: number,
@@ -171,7 +169,7 @@ export function resolveReplyCameraAngle(
 }
 
 /**
- * IsLoopingDialogStuntAnimation.
+ * Whether a dialog stunt animation id is looping.
  * CUT ids in the `l` / `wl` bands (1401..1727) loop; base / `w` cuts are one-shot.
  */
 export function isLoopingDialogStuntAnimation(animationId: number): boolean {
@@ -180,8 +178,8 @@ export function isLoopingDialogStuntAnimation(animationId: number): boolean {
 }
 
 /**
- * GetCameraAnimationName.
- * Ranges: 1000+ base, 1200+ w, 1400+ l, 1600+ wl; 0x2772 → none.
+ * Build a CUT camera animation name from a dialog animation id.
+ * Ranges: 1000+ base, 1200+ w, 1400+ l, 1600+ wl; 10100 → none.
  * Note: cut029 is missing — offs 28 and 38 map to cut039.
  */
 export function getCameraAnimationName(animationId: number): string {
@@ -207,7 +205,7 @@ export function getCameraAnimationName(animationId: number): string {
   }
 
   const off = id - base;
-  // : 0..27 → cut001..028; 28 → cut039; 29..37 → cut030..038; 38 → cut039; 39..127 → cut040..128
+  // 0..27 → cut001..028; 28 → cut039; 29..37 → cut030..038; 38 → cut039; 39..127 → cut040..128
   let num: number;
   if(off <= 27){
     num = off + 1;
@@ -249,7 +247,7 @@ export function computeDialogCameraShot(
     lp.z += 0.1;
   }
 
-  // Per-shot constants from GetCameraParameters
+  // Per-shot framing constants
   let lookFrac = 1.0;
   let pullDist = 0.5;
   let yawDeg = 30.0;
@@ -338,7 +336,7 @@ export function computeDialogCameraShot(
 
   outPos.z += dist * heightAddScale + heightBias;
 
-  // TSL Aspyr appearance overrides (gated by !IsGameModded)
+  // TSL dialog camera appearance overrides (gated when not modded)
   const distOvr = opts.aspyrDistanceOverride ?? 0;
   const heightOvr = opts.aspyrHeightOverride ?? 0;
   const angleOvr = opts.aspyrAngleOverrideDeg ?? 0;
@@ -373,17 +371,17 @@ function rotateYaw(v: THREE.Vector3, yawDeg: number): THREE.Vector3 {
   );
 }
 
-/** Default dialog FOV — SetShot SetViewAngle(55). */
+/** Default dialog FOV (55°). */
 export const DIALOG_CAMERA_FOV = 55;
 
-/** Animated camera clip — SetAnimatedCamera SetClipDist(0.1, 10000). */
+/** Animated camera clip near/far. */
 export const ANIMATED_CAMERA_NEAR = 0.1;
 export const ANIMATED_CAMERA_FAR = 10000;
 
 /**
- * UpdateShotCamera — for shot type 1, if the speaker's
- * AnimList id is a fire-forget or looping dialog animation, read
- * dialoganimations.2da `CU_PB_Range` at row (animId - 10000).
+ * Close-up pull distance for shot type 1: if the speaker's animation id is a
+ * fire-forget or looping dialog animation, read dialoganimations.2da
+ * `CU_PB_Range` at row (animId - 10000).
  */
 export function lookupDialogCloseUpExtra(
   animId: number,
@@ -398,13 +396,13 @@ export function lookupDialogCloseUpExtra(
   if(!fireForget && !looping) return 0;
   const range = Number(row.cu_pb_range);
   if(!Number.isFinite(range)) return 0;
-  // treats |x| < 0.001 as zero
+  // Treat |x| < 0.001 as zero
   if(range > -0.001 && range < 0.001) return 0;
   return range;
 }
 
 /**
- * TSL Aspyr `IsGameModded` — override/mod folder (or subscribed mods).
+ * Whether override / mod folders are active for dialog camera gating.
  * KotOR.js maps this to ini EnableOverride / look_in_override.
  */
 export function isDialogGameModded(enableOverride?: boolean, lookInOverride?: boolean): boolean {
@@ -412,11 +410,9 @@ export function isDialogGameModded(enableOverride?: boolean, lookInOverride?: bo
 }
 
 /**
- * TSL Aspyr `StartDialog` — the vanilla camera hacks
- * (placeable +110° pitch / offset and appearance-pair overrides) are gated on
- * ` constant`, which is set only when the conversation resref equals
- * `"carth"` (case-insensitive ResRef compare). Every other
- * dialog leaves the flag clear, so the hacks must not run.
+ * True when the conversation resref is `"carth"` (case-insensitive).
+ * TSL applies placeable + appearance dialog camera overrides only for that
+ * conversation; every other dialog leaves the vanilla-hack flag clear.
  */
 export function isAspyrCarthDialogCameraHack(resref?: string): boolean {
   return (resref || '').toLowerCase() === 'carth';
@@ -429,8 +425,8 @@ export interface AspyrDialogCameraOverrides {
 }
 
 /**
- * TSL Aspyr UpdateShotCamera appearance pair hacks — only when !IsGameModded
- * and Aspyr vanilla flag. Appearance ids: 0x121, 0x122, 0x16b.
+ * Dialog camera appearance-pair overrides — only when not modded and the
+ * vanilla-hack flag is set. Appearance ids: 289, 290, 363.
  */
 export function resolveAspyrAppearanceCameraOverrides(
   speakerAppearanceId: number,
@@ -444,7 +440,7 @@ export function resolveAspyrAppearanceCameraOverrides(
   const sp = speakerAppearanceId | 0;
   const lp = listenerAppearanceId | 0;
   const type = shotType | 0;
-  // 0x121=289, 0x122=290, 0x16b=363
+  // 289, 290, 363
   if(sp === 0x121 && lp === 0x122 && type === 3){
     return { distance: 0, height: 1, angleDeg: 70 };
   }
@@ -461,8 +457,8 @@ export function resolveAspyrAppearanceCameraOverrides(
 }
 
 /**
- * TSL Aspyr placeable (angle 6) vanilla offset when !IsGameModded
- * +2 X, −6 Y, +0.5 Z, +110° pitch on rebuilt quat.
+ * Placeable (angle 6) dialog camera offset when not modded and the
+ * vanilla-hack flag is set: +2 X, −6 Y, +0.5 Z, +110° pitch.
  */
 export function applyAspyrPlaceableCameraHack(
   position: THREE.Vector3,

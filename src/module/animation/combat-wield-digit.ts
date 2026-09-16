@@ -77,7 +77,7 @@ export function combatAnimationWeaponDigit(
 
 /**
  * Attack family letter for combat clip names (m/b/g).
- * Dual uses off-hand weapon_type (UpdateWeaponClass field45_0xc7).
+ * Dual wield uses the off-hand weapon type.
  */
 export function combatAnimationAttackKey(
   equipment: CombatWieldEquipment
@@ -113,7 +113,7 @@ export function combatReactionClipDigit(weaponDigit: number): number {
   return weaponDigit === 9 ? 7 : weaponDigit;
 }
 
-/** READY / READY_ALT → g*r1 rows (ServerToClientAnimation 0x2711). */
+/** READY / READY_ALT → g*r1 combatanimations rows. */
 export function readyAnimationRow(weaponType: number): number {
   switch(weaponType){
     case 1: return 92;

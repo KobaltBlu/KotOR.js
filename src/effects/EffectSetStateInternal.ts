@@ -18,14 +18,15 @@ import {
 } from "@/engine/pathfinding/force-push-quick-walk";
 
 /**
- * EffectSetStateInternal — type 0x09 (onApply).
- * Clears actions (except ForcePush), pauses combat, applies
- * child VFX/saves, sets ambient / anim.
+ * EffectSetStateInternal — type 0x09 (onApply / onRemove).
+ * Clears actions (except ForcePush), pauses combat, applies child VFX /
+ * saves, and sets ambient / animation for the winning SetState.
  *
  * @file EffectSetStateInternal.ts
  */
 
-function usesSetStateAIMaskNeg3(state: number): boolean {
+/** States that AND activity with FORCE_PUSH_AI_ACTIVITY_MASK (0xFFFD). */
+function usesRestrictedAIActivityMask(state: number): boolean {
   return (
     state === GameEffectSetStateType.CHOKE ||
     state === GameEffectSetStateType.CUT_SCENE_HORRIFIED ||
@@ -41,8 +42,8 @@ function usesSetStateAIMaskNeg3(state: number): boolean {
   );
 }
 
+/** States that fire CreatureOnUserDefined onRemove. */
 function firesOnUserDefined(state: number): boolean {
-  // onRemove: 1, 3–10, 0x0E–0x13
   return (
     state === GameEffectSetStateType.CONFUSED ||
     (state >= GameEffectSetStateType.DROID_STUN && state <= GameEffectSetStateType.WHIRLWIND) ||
@@ -71,7 +72,7 @@ export class EffectSetStateInternal extends GameEffect {
     const state = this.getInt(0) | 0;
     this.elapsed = 0;
 
-    // ClearAllActions + RemoveAllActions except ForcePush (state 9)
+    // ForcePush keeps its action queue / combat round running.
     if(state !== GameEffectSetStateType.FORCEPUSH){
       creature.clearAllActions?.(true);
       creature.combatRound?.clearActions?.();
@@ -85,7 +86,7 @@ export class EffectSetStateInternal extends GameEffect {
 
     this.applyChildEffects(creature, state);
 
-    if(usesSetStateAIMaskNeg3(state)){
+    if(usesRestrictedAIActivityMask(state)){
       applyForcePushAIActivityMask(creature);
     }
 
@@ -159,7 +160,6 @@ export class EffectSetStateInternal extends GameEffect {
         creature.setAnimationState?.(animForSetState(state));
         break;
       case GameEffectSetStateType.KNOCKDOWN:
-        // case 0x0E → ambient 0x0F
         creature.ambientAnimState = ModuleCreatureAmbientState.KNOCKDOWN;
         creature.setAnimationState?.(animForSetState(state));
         break;
@@ -170,17 +170,16 @@ export class EffectSetStateInternal extends GameEffect {
       case GameEffectSetStateType.CUT_SCENE_STUNNED:
       case GameEffectSetStateType.MIND_TRICK:
       case GameEffectSetStateType.DROID_SCRAMBLE:
-        // cases 4 / 0x12 / 0x13 → ambient 2
         creature.ambientAnimState = ModuleCreatureAmbientState.PAUSE_POISONED;
         creature.setAnimationState?.(animForSetState(state));
         break;
       case GameEffectSetStateType.HELD:
-        // case 0x11: recompute ambient else → ambient 0
+        // Held resets ambient to idle; animation still uses choke lock pose.
         creature.ambientAnimState = ModuleCreatureAmbientState.IDLE;
         creature.setAnimationState?.(animForSetState(state));
         break;
       default:
-        // DROID_CONFUSED (0x10): no Internal ambient recompute — leave ambient alone
+        // DROID_CONFUSED leaves ambient unchanged; other states set anim only.
         creature.setAnimationState?.(animForSetState(state));
         break;
     }
@@ -233,7 +232,6 @@ export class EffectSetStateInternal extends GameEffect {
       case GameEffectSetStateType.CUT_SCENE_STUNNED:
       case GameEffectSetStateType.MIND_TRICK:
       case GameEffectSetStateType.DROID_SCRAMBLE:
-        // cases 4 / 0x12 / 0x13 share VFX_STUN 0x7d2
         this.addVfx(creature, VFX_STUN);
         break;
       default:

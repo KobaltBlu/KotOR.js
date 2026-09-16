@@ -13,20 +13,18 @@ import {
 } from "@/engine/pathfinding/walk-hit-info";
 
 /**
- * Approximate NoCreaturesOnLine.
+ * Creature capsule intersection along a walk segment.
  *
- * : cre_personal_space(+0.01) capsule along the segment; returns 0 and
- * writes blocker object id when a living bumpable creature overlaps.
- * EvaluateOverlappingTargets soft-clears start-overlap / soft-pair stacks.
- * Optional CWalkHitInfo via SetHitInfoForCreature.
- *
- * @file no-creatures-on-line.ts
+ * Inflates each creature's personal space by +0.01 along the segment; returns
+ * blocked plus blocker id when a living bumpable creature overlaps.
+ * evaluateOverlappingTargets soft-clears start-overlap / soft-pair stacks.
+ * Optional WalkHitInfo via setHitInfoForCreature.
  */
 
 export type NoCreaturesOnLineResult = {
-  /** true = clear (return 1). */
+  /** True when the segment is creature-clear. */
   clear: boolean;
-  /** Blocker id when clear=false (*arg6). */
+  /** Blocker id when clear is false. */
   blockingCreatureId?: number;
 };
 
@@ -60,8 +58,8 @@ function isPartyCreature(creature: ModuleObject): boolean {
 }
 
 /**
- * Test whether any creature's creperspace capsule intersects the segment.
- * matches engine behavior return: clear=1 / blocked=0 + blocker id.
+ * Test whether any creature's personal-space capsule intersects the segment.
+ * Returns clear=true when open, or clear=false with blockingCreatureId.
  */
 export function noCreaturesOnLine(
   area: ModuleArea | undefined,
@@ -69,24 +67,24 @@ export function noCreaturesOnLine(
   to: THREE.Vector3,
   options: {
     owner?: ModuleObject;
-    /** Self cre_personal_space (arg3->cre_personal_space + 0.01). */
+    /** Self personal space before the +0.01 inflate. */
     crePersonalSpace?: number;
     ignoreCreatureIds?: number[];
     allowPartyCreatures?: boolean;
-    /** Soft-pair for EvaluateOverlappingTargets (pathfind state). */
+    /** Soft-pair creature for evaluateOverlappingTargets. */
     softCreature?: ModuleObject;
     /**
-     * When true, skip creatures where GetIsCreatureBumpable(owner, other)
-     * (NoCreatures arg5 gate — rarely set by callers).
+     * When true, skip creatures where getIsCreatureBumpable(owner, other)
+     * (rarely set by callers).
      */
     skipBumpable?: boolean;
     /**
-     * When true (default), EvaluateOverlappingTargets soft-clears creatures
+     * When true (default), evaluateOverlappingTargets soft-clears creatures
      * already overlapping the segment start (walk/path splicing).
      * Jump / findSafeLocation set false so occupied cells hard-block.
      */
     softClearStartOverlap?: boolean;
-    /** Optional CWalkHitInfo out-param. */
+    /** Optional walk-hit out-param. */
     hit?: WalkHitInfo;
   } = {}
 ): NoCreaturesOnLineResult {
@@ -116,7 +114,7 @@ export function noCreaturesOnLine(
     }
   }
 
-  // Expand AABB slightly (uses ±6 on X index range)
+  // Broad-phase AABB pad (±6 world units)
   const minX = Math.min(from.x, to.x) - 6;
   const maxX = Math.max(from.x, to.x) + 6;
   const minY = Math.min(from.y, to.y) - 6;

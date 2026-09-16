@@ -19,10 +19,10 @@ const _jumpSafe = new THREE.Vector3();
 
 /**
  * ActionJumpToPoint — teleports the actor to a world point.
- * Always ComputeSafeLocation(fSearchRange). Param 4 (bWalkStraight) is
- * require-LOS for offset candidates. Search failure → FAILED.
+ * Always searches for a safe landing within searchRange. Param 4
+ * (requireLineOfSight) gates offset candidates. Search failure → FAILED.
  *
- * Same area: SetPosition. Foreign loaded area: AddToArea (detach/attach).
+ * Same area: set position. Foreign loaded area: detach/attach.
  * Foreign module: LoadModuleWithJumpSpawn (party leader / controlled).
  *
  * @file ActionJumpToPoint.ts
@@ -47,9 +47,9 @@ export class ActionJumpToPoint extends Action {
     // 0 - float: target x
     // 1 - float: target y
     // 2 - float: target z
-    // 3 - dword: target area object id
-    // 4 - int: bWalkStraight — ComputeSafeLocation requireLOS (default 1)
-    // 5 - float: fSearchRange (radius for safe location search, default 20.0)
+    // 3 - dword: destination area object id
+    // 4 - int: requireLineOfSight for safe-location offsets (default 1)
+    // 5 - float: searchRange (safe location radius, default 20.0)
     // 6 - float: orientation vector x
     // 7 - float: orientation vector y
   }
@@ -67,7 +67,7 @@ export class ActionJumpToPoint extends Action {
       return ActionStatus.FAILED;
     }
 
-    // : leave limbo when jumping from area-less state
+    // Leave limbo when jumping from an area-less state.
     if(GameState.module?.isObjectInLimbo(this.owner) && !this.owner.area){
       GameState.module.removeObjectFromLimbo(this.owner);
     }
@@ -125,8 +125,7 @@ export class ActionJumpToPoint extends Action {
       destArea = classified.area;
     }
 
-    // Always ComputeSafeLocation.
-    // Param 4 default TRUE; ActionJumpToLocation often passes 0 (no LOS).
+    // Always find a safe landing. Param 4 defaults true; some callers pass 0 (no LOS).
     const requireLineOfSight = (this.getParameter<number>(4) ?? 1) !== 0;
     const radius = this.getParameter<number>(5) ?? 20.0;
     _jumpCenter.set(this.x, this.y, this.z);
@@ -158,7 +157,7 @@ export class ActionJumpToPoint extends Action {
   }
 }
 
-/** AddToArea when dest area ≠ current. */
+/** Attach creature to dest area when it differs from the current area. */
 export function applyAddToArea(creature: ModuleCreature, destArea: ModuleArea){
   if(!creature || !destArea) return;
   if(creature.area && creature.area !== destArea){
@@ -175,7 +174,7 @@ export function applyLocalJump(
   facing: number
 ){
   creature.setPosition(new THREE.Vector3(x, y, z));
-  // jump-to-point → SetOrientation (instant).
+  // Instant facing update after the teleport.
   creature.setFacing(facing, true);
   if(creature.collisionManager){
     creature.collisionManager.groundFace = undefined;

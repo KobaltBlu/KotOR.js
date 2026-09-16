@@ -169,7 +169,7 @@ describe('CutsceneManager pause/resume pending (UpdateDialog)', () => {
     CutsceneManager.currentEntry = null as any;
   });
 
-  test('resume clears pause without flushing pending (AIActionResumeDialog)', () => {
+  test('resume clears pause without flushing pending', () => {
     CutsceneManager.pauseConversation();
     CutsceneManager.pendingAdvance = true;
     CutsceneManager.resumeConversation();

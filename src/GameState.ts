@@ -2329,7 +2329,7 @@ export class GameState implements EngineContext {
     //Get Selectable Objects In Range (gated on fade inside TickSelectableObjects)
     GameState.ModuleObjectManager.TickSelectableObjects(delta);
 
-    // AIActionDialogObject waits on IsGlobalFading then swaps PC into the
+    // Party-leader dialog waits on IsGlobalFading then swaps PC into the
     // leader slot — still INGAME until startConversation resumes after fade-out.
     GameState.CutsceneManager.tickPendingPartyDialogSwitch();
 

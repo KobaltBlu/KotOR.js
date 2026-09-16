@@ -35,7 +35,7 @@ const LOG = (...args: unknown[]) => console.log('[ItemCast]', ...args);
 
 /**
  * ActionItemCastSpell class.
- * item-cast action — stays IN_PROGRESS until SpellCastAndImpact.
+ * Item-cast action — stays IN_PROGRESS until spell impact fires.
  *
  * @file ActionItemCastSpell.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -60,38 +60,24 @@ export class ActionItemCastSpell extends Action {
     this.type = ActionType.ActionItemCastSpell;
 
     //PARAMS
-    // Parameter layout (AddItemCastSpellActions / ItemCastSpell):
-    // 0 - dword: oItem (item object id)
-    // 1 - int: nActivePropertyIndex (item property index)
-    // 2 - int: nSubPropertyIndex (class/sub-property index)
-    // 3 - dword: oTarget (target object id or OBJECT_INVALID)
-    // 4 - float: vTargetLocation.x
-    // 5 - float: vTargetLocation.y
-    // 6 - float: vTargetLocation.z
-    // 7 - dword: timestampDays (runtime world timer days)
-    // 8 - dword: timestampMS (runtime world timer ms)
-    // 9 - int: bImpactTriggered (internal stage / impact flag)
-    // 10 - int: nAnimation (animation state id)
-    // 11 - int: nAnimationDurationMS (animation duration in ms)
-    //
-    // KotOR.js ActionCombat Legacy Layout:
-    // 0 - dword: oTarget
-    // 1 - dword: oArea
-    // 2 - float: x
-    // 3 - float: y
-    // 4 - float: z
-    // 5 - int: spellId
-    // 6 - int: casterLevel
-    // 7 - float: delay
-    // 8 - int: projectilePath
-    // 9 - int: projectileSpellId
-    // 10 - dword: oItem
-    // 11 - string: impactScript
-    // 12 - int: activePropertyIndex
+    // Current KotOR.js layout (ActionCombat / item-cast dispatch):
+    // 0 - dword: target object id (or invalid)
+    // 1 - dword: target area object id
+    // 2 - float: target x
+    // 3 - float: target y
+    // 4 - float: target z
+    // 5 - int: spell id
+    // 6 - int: caster level
+    // 7 - float: cast delay
+    // 8 - int: projectile path
+    // 9 - int: projectile spell id
+    // 10 - dword: item object id
+    // 11 - string: impact script
+    // 12 - int: active property index
   }
 
   dispose(){
-    // SpellCastAndImpact is fire-and-forget — after castStarted the
+    // Spell impact is fire-and-forget — after castStarted the
     // area.spellInstances flight must not be interrupted by action dispose.
     const wouldInterrupt =
       !this.castStarted &&
@@ -121,14 +107,13 @@ export class ActionItemCastSpell extends Action {
       propIndex,
       party: !!this.owner.isPartyMember?.(),
     });
-    // DecrementUses — cost_value stack / charges / uses-per-day
+    // Decrement item uses — stack / charges / uses-per-day.
     oItem.decrementUses(this.owner, propIndex);
   }
 
   private startSpellInstance(castTarget: ModuleObject | undefined, oItem?: ModuleItem){
-    // Location-only casts (grenades after FORCEHOSTILE clear) must not bind the
-    // caster as oTarget — that makes GetSpellTargetLocation / stampSpellTarget
-    // overwrite the throw point and hide the explosion at the wrong place.
+    // Location-only casts (grenades after non-hostile clear) must not bind the
+    // caster as target — that would overwrite the throw point and hide the explosion.
     const spellCastInstance = new SpellCastInstance(this.owner, castTarget as ModuleObject, this.spell);
     const x = this.getParameter<number>(2) || 0;
     const y = this.getParameter<number>(3) || 0;
@@ -137,24 +122,21 @@ export class ActionItemCastSpell extends Action {
       spellCastInstance.targetLocation.set(x, y, z);
       spellCastInstance.projectileTarget.set(x, y, z);
     }
-    // SpellCastAndImpact runs the spell's impact script; item casts are
-    // not force powers, so they can never be counterspelled.
+    // Apply spell data and run impact; item casts cannot be counterspelled.
     spellCastInstance.applySpellData();
     spellCastInstance.allowCounterSpell = false;
     spellCastInstance.castItem = oItem;
-    // ActionCombat param 8 — projectile path override (same as CastSpell param 9)
+    // Param 8 — projectile path override.
     const pathParam = this.getParameter<number>(8) | 0;
     if(pathParam > 0){
       spellCastInstance.projectilePathOverride = pathParam;
     }
-    // The action already held the wind-up through its conjure gate — 
-    // enters at the impact call, so only the projectile flight remains.
+    // Wind-up already held by the conjure gate — only projectile flight remains.
     spellCastInstance.conjureTime = 0;
-    // Grenade / throw: impact after CalculateLastSpellProjectileTime,
-    // not at cast-start like instant non-L spells.
+    // Grenade / throw: impact after projectile flight, not at cast-start.
     let flightMs = 0;
     if(this.timing?.grenade){
-      // CalculateLastSpellProjectileTime: proj==0 → delay 0, no mesh
+      // No projectile mesh when proj == 0 → delay 0.
       const origin = this.owner.position;
       const dest = spellCastInstance.targetLocation;
       const distance = origin.distanceTo(dest);
@@ -200,7 +182,7 @@ export class ActionItemCastSpell extends Action {
     }
     this.owner.spellTargetPosition.copy(spellCastInstance.targetLocation);
     const loc = spellCastInstance.targetLocation;
-    LOG('SpellCastAndImpact', {
+    LOG('itemSpellImpact', {
       spellId: this.spell?.id,
       impactscript: spellCastInstance.impactscript,
       proj: this.spell?.proj,
@@ -239,7 +221,7 @@ export class ActionItemCastSpell extends Action {
       distanceSq,
       ActionItemCastSpell.parseSpellCastTimeMs(this.spell)
     );
-    // case 0xc: gate = GetAnimationLength(0x2AF9) - 0x32
+    // Droid utility: gate = animation length minus a short lead-in.
     if(timing.postImpactAnim){
       const lenSec = this.owner.getAnimationLength?.(timing.animation) || 0;
       timing.gateMs = resolveDroidUtilityGateMs(lenSec);
@@ -284,7 +266,7 @@ export class ActionItemCastSpell extends Action {
     this.spell = this.cachedSpell;
     const oItem = this.cachedItem || oItemParam;
     // Personal item casts (medpac etc.): if the stamped caster id failed to
-    // resolve, fall back to this.owner — never leave GetSpellTargetObject invalid
+    // resolve, fall back to this.owner — never leave the spell target invalid
     // so a nearby party member wins via shape queries.
     if(
       !this.target &&
@@ -302,8 +284,8 @@ export class ActionItemCastSpell extends Action {
       }
     }
 
-    // Before SpellCastAndImpact the item must resolve; after cast, may
-    // DestroyItem while the action still holds until pause ends.
+    // Before impact the item must resolve; after cast, it may be destroyed
+    // while the action still holds until pause ends.
     if(!this.castStarted && (!this.spell || !oItem)){
       LOG('FAIL pre-cast missing spell/item', {
         spellId,
@@ -349,7 +331,7 @@ export class ActionItemCastSpell extends Action {
           this.getParameter<number>(4) || 0
         );
 
-    // still MoveTo vs spell range after FORCEHOSTILE clears oTarget
+    // Still move into spell range after a non-hostile clear drops the object target.
     const inRange = this.target
       ? this.spell.inRange(this.target, this.owner)
       : isWithinSpellCastRange(
@@ -401,8 +383,8 @@ export class ActionItemCastSpell extends Action {
     this.elapsedMs += delta * 1000;
 
     if(!combatRound.roundPaused && !this.castStarted){
-      // : hostilesetting==0 → ActivityManager(2); else ActivityManager(1)
-      // + SetCombatState(1,1). Grenades force StartCombatRound(engaged=1).
+      // Non-hostile → activity mode 2; hostile → mode 1 + combat state.
+      // Grenades force an engaged combat round start.
       const hostile = (this.spell.hostilesetting | 0) === 1;
       this.owner.activityManager(hostile ? 1 : 2);
       if(hostile){
@@ -414,7 +396,7 @@ export class ActionItemCastSpell extends Action {
       }else{
         combatRound.beginCombatRound();
       }
-      // SetSpellCastRound(0, 0) before pause
+      // Clear spell-cast round flags before pause.
       combatRound.setSpellCastRound(0, 0);
       combatRound.pauseRound(this.owner, timing.pauseMs);
       combatRound.decrementRoundLength(timing.pauseMs);
@@ -431,8 +413,8 @@ export class ActionItemCastSpell extends Action {
       combatRound.action.animationTime = timing.pauseMs;
     }
 
-    // holds the throw/cast pose until the conjure gate, then releases.
-    // Medical / OTHER (0x19, 0x2d, 0x2f) play the anim on the target when present.
+    // Hold the throw/cast pose until the conjure gate, then release.
+    // Medical / other types play the anim on the target when present.
     if(this.throwAnim !== timing.animation){
       this.throwAnim = timing.animation;
       const animTarget =
@@ -444,9 +426,8 @@ export class ActionItemCastSpell extends Action {
       animTarget.setAnimationState(timing.animation);
     }
 
-    // AddItemCastSpellActions queues ChangeFacingObject / FacingPoint
-    // before ItemCastSpell; combat-round dispatch skips that — animate turn
-    // (FacePoint is instant and snaps every tick).
+    // Scripted item casts often face first; combat-round dispatch skips that —
+    // animate the turn here (instant face would snap every tick).
     if(this.target){
       this.owner.setFacingObject(this.target);
     }else{
@@ -468,7 +449,7 @@ export class ActionItemCastSpell extends Action {
       const prop =
         oItem.getActiveCastSpellProperty?.(propIndex) ||
         oItem.properties?.[propIndex | 0];
-      // GetUsedActivePropertyUsesLeft — abort with feedback 0x17
+      // Abort when the active property has no uses left.
       if(
         shouldFailItemCastForNoUses(
           prop,
@@ -490,12 +471,11 @@ export class ActionItemCastSpell extends Action {
 
       // Object target only when present — never fall back to this.owner (location casts)
       this.startSpellInstance(this.target || undefined, oItem);
-      // DecrementUses fires with SpellCastAndImpact, not at round end
+      // Consume charges with the impact, not at round end.
       this.consumeItemCharges(oItem);
-      // item-cast action — after SpellCastAndImpact,
-      // RemoveSpellAction if GetSpellActionPending (clears combat-queue icon).
+      // After impact, clear the pending spell action from the combat queue.
       combatRound.removeSpellAction();
-      // droid utility (0x0c): post-impact hold uses anim 0x2AFA
+      // Droid utility: post-impact hold uses a follow-up anim.
       if(timing.postImpactAnim){
         this.owner.setAnimationState(timing.postImpactAnim);
         this.throwAnim = timing.postImpactAnim;
@@ -511,7 +491,7 @@ export class ActionItemCastSpell extends Action {
       ){
         this.target.setAnimationState(ModuleCreatureAnimState.READY);
       }
-      // SpellCastAndImpact is a fire-and-forget event — a grenade still
+      // Spell impact is fire-and-forget — a grenade still
       // in flight must finish on the area, not be interrupted by dispose.
       LOG('COMPLETE pause ended', {
         elapsedMs: this.elapsedMs,

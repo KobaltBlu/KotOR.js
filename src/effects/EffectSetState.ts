@@ -7,8 +7,9 @@ import { isSetStateImmune, rebalanceSetState, SET_STATE_OUTER_AI_ACTIVITY_MASK }
 import { isCreature } from "@/module/guards/isCreature";
 
 /**
- * EffectSetState — outer type 0x08 (onApply).
- * int[0] = GameEffectSetStateType; int[1] != 0 → cutscene (skip stun/paralyze/horror immunities).
+ * EffectSetState — outer type 0x08 (onApply / onRemove).
+ * int[0] = GameEffectSetStateType; int[1] != 0 → cutscene
+ * (skip stun / paralyze / horror immunities).
  *
  * @file EffectSetState.ts
  */
@@ -42,7 +43,6 @@ export class EffectSetState extends GameEffect {
     }
 
     super.onApply();
-    // onApply: SETAISTATE −0x101 → activity &= 0xFEFF
     creature.activity = (creature.activity | 0) & SET_STATE_OUTER_AI_ACTIVITY_MASK;
     rebalanceSetState(creature, this);
   }

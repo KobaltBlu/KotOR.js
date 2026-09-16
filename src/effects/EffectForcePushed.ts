@@ -17,11 +17,13 @@ import {
 
 /**
  * EffectForcePushed — onApply (K2).
+ * Resolves push origin / distance, installs a 2-point slide path, then
+ * applies a temporary FORCEPUSH SetState on the target.
  *
- * intList[0] : bIsForcePushedTargeted
- * intList[1] : bIgnoreTestDirectLine
- * floatList[0..2] : targeted origin XYZ
- * floatList[3] : push distance (0 → 5.0)
+ * int[0] : targeted origin (non-zero) vs creator-origin push
+ * int[1] : skip TestDirectLine clip when targeted
+ * float[0..2] : targeted origin XYZ
+ * float[3] : push distance (0 → default 5.0)
  *
  * @file EffectForcePushed.ts
  */
@@ -82,7 +84,6 @@ export class EffectForcePushed extends GameEffect {
     creature.fp_getup_played = false;
 
     const eSetState = new GameState.GameEffectFactory.EffectSetState();
-    // onApply: subtype = (copied & ~7) | TEMPORARY
     eSetState.setDurationType(GameEffectDurationType.TEMPORARY);
     eSetState.setDuration(this.getDuration());
     eSetState.setExpireDay(this.expireDay);

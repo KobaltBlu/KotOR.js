@@ -7,8 +7,8 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import { isCreature } from "@/module/guards/isCreature";
 
 /**
- * EffectHasteInternal — onApply.
- * Spawns MovementSpeedIncrease(150) + ACIncrease(+4).
+ * EffectHasteInternal — onApply / onRemove.
+ * Spawns MovementSpeedIncrease(150) + ACIncrease(+4); tears them down onRemove.
  *
  * @file EffectHasteInternal.ts
  */

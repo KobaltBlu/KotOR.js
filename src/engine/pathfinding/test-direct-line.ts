@@ -15,19 +15,14 @@ import {
 } from "@/engine/pathfinding/walk-hit-info";
 
 /**
- * Approximate TestDirectLine + NoCreaturesOnLine.
+ * Walkability / creature clearance along a straight segment.
  *
- * walks room→room via ClippedLineSegmentWalkable / NoNonWalkPolys,
- * height band (arg4), then NoCreaturesOnLine.
- *
- * JS: face-walk ClippedLine + NoNonWalkPolysDetailed (doors/static/mesh) +
- * adaptive samples + personal-space ring + height continuity +
- * creperspace NoCreaturesOnLine + walk-transition rooms + wall edges.
- *
- * @file test-direct-line.ts
+ * Face-walk clipped line, detailed non-walk (doors/static/mesh), adaptive
+ * samples, personal-space ring, height continuity, creature capsules,
+ * walk-transition rooms, and wall edges.
  */
 
-/** -ish TestDirectLine return codes used by ProcessPoint / callers. */
+/** Result codes used by party follow and other callers. */
 export enum TestDirectLineCode {
   Fail = 0,
   Ok = 1,
@@ -47,7 +42,7 @@ export type TestDirectLineHit = {
   blockingCreatureId?: number;
   /** Blocking door/placeable id when DetailedBlock. */
   blockingObjectId?: number;
-  /** Optional CWalkHitInfo payload. */
+  /** Optional walk-hit payload. */
   walkHit?: WalkHitInfo;
 };
 
@@ -81,8 +76,7 @@ export function getWalkHeightAt(
 }
 
 /**
- * True if segment crosses a non-transition walk edge (wall).
- * Same rule as PathPoint.hasLOS / ClippedLine exit when GetAdjacentRoom==-1.
+ * True when a point lies on a walkable face (candidate list or area walkmesh).
  */
 function isCandidatePointWalkable(
   area: ModuleArea,
@@ -100,6 +94,10 @@ function isCandidatePointWalkable(
   return typeof area.isPointWalkable === "function" ? area.isPointWalkable(point) : true;
 }
 
+/**
+ * True if segment crosses a non-transition walk edge (wall).
+ * Same rule as PathPoint.hasLOS / clipped-line exit when adjacent room is none.
+ */
 export function segmentCrossesBlockingWalkEdge(
   area: ModuleArea | undefined,
   a: THREE.Vector3,
@@ -125,7 +123,7 @@ export function segmentCrossesBlockingWalkEdge(
 /**
  * Room containing a point via walkable faces only.
  * No AABB fallback — overlapping room boxes caused false VIS/room fails.
- * GetRoom uses walkmesh; undefined → skip room connectivity.
+ * Undefined → skip room connectivity.
  */
 export function getRoomAtPoint(
   area: ModuleArea | undefined,
@@ -163,7 +161,7 @@ const _walkAdjCache = new WeakMap<ModuleArea, { roomCount: number; adj: Map<stri
 
 /**
  * Undirected room graph from WalkmeshEdge.transition → area.rooms[index].
- * TestDirectLine uses GetAdjacentRoom on clip exit, not.vis links.
+ * Direct-line uses walkmesh adjacency on clip exit, not VIS links.
  */
 function getWalkRoomAdjacency(area: ModuleArea): Map<string, Set<string>> {
   const cached = _walkAdjCache.get(area);
@@ -217,7 +215,7 @@ function roomsAreWalkConnected(
   // No transition data → cannot prove disconnect; allow (avoid false fails)
   if(!startLinks?.size && !destLinks?.size) return true;
 
-  // TestDirectLine walks GetAdjacentRoom along the clip (hop = transitions).
+  // Walkmesh-adjacent rooms along the clip (hop = transitions).
   // Cap BFS depth so distant graph paths are not treated as LOS-clear.
   type Node = { name: string; depth: number };
   const open: Node[] = [{ name: start.roomName, depth: 0 }];
@@ -259,7 +257,7 @@ function adaptiveSteps(origin: THREE.Vector3, dest: THREE.Vector3, requested?: n
 
 /**
  * Test whether origin→dest is walkable (and optionally creature-clear).
- * @param checkCreatures When true, treat creature spheres as blockers (NoCreaturesOnLine).
+ * @param checkCreatures When true, treat creature spheres as blockers.
  * @param maxHeightDelta Max |ΔZ| between consecutive walk samples (height cylinder).
  */
 export function testDirectLine(
@@ -270,17 +268,17 @@ export function testDirectLine(
     owner?: ModuleObject;
     personalSpace?: number;
     checkCreatures?: boolean;
-    /** Creature ids to skip in NoCreaturesOnLine (e.g. the hex blocker). */
+    /** Creature ids to skip in the creature capsule test. */
     ignoreCreatureIds?: number[];
-    /** Treat party members as non-blocking (ProcessPoint -3 + IsPartyMember). */
+    /** Treat party members as non-blocking (creature hit + party member). */
     allowPartyCreatures?: boolean;
     maxHeightDelta?: number;
     steps?: number;
     /** Skip room-adjacency / connectivity (grid neighbor micro-steps). */
     skipRoomCheck?: boolean;
-    /** Skip face-walk ClippedLineSegmentWalkable (micro-steps / grid). */
+    /** Skip face-walk clipped-line check (micro-steps / grid). */
     skipClippedLine?: boolean;
-    /** Collect CWalkHitInfo on creature / mesh blocks. */
+    /** Collect walk-hit info on creature / mesh blocks. */
     collectHitInfo?: boolean;
   } = {}
 ): TestDirectLineHit {
@@ -310,7 +308,7 @@ export function testDirectLine(
   const candidateFaces = candidates?.faces as any[] | undefined;
   const candidateEdges = candidates?.edges as WalkmeshEdge[] | undefined;
 
-  // : ClippedLineSegmentWalkable per room before NoNonWalk / creatures
+  // Clipped line per room before non-walk / creature tests
   if(checkClip && area.walkFaces?.length){
     const clip = clippedLineSegmentWalkable(area, origin, dest, { maxHeightDelta: maxDz });
     if(!clip.ok){
@@ -324,8 +322,8 @@ export function testDirectLine(
     }
   }
 
-  // NoNonWalkPolysDetailed + OnRoom after clip (−2 DetailedBlock).
-  // Full-segment block still reports farthest clear fraction (PlotPath partial).
+  // Detailed non-walk (doors/static/mesh) after clip → DetailedBlock.
+  // Full-segment block still reports farthest clear fraction for partial paths.
   if(checkClip){
     const polys = noNonWalkPolysDetailed(area, origin, dest, {
       personalSpace: perspace,
@@ -367,7 +365,7 @@ export function testDirectLine(
   let prevZ = getWalkHeightAt(area, origin, candidateFaces);
   if(isNaN(prevZ)) prevZ = origin.z;
   const prevSample = origin.clone();
-  // walks GetAdjacentRoom along the clip — track current room, 1-hop only
+  // Track current room along the clip — 1-hop adjacency only
   let walkRoom = startRoom;
 
   for(let i = 1; i <= steps; i++){
@@ -378,7 +376,7 @@ export function testDirectLine(
       origin.z + (dest.z - origin.z) * t
     );
 
-    // Non-transition walk edge = wall (GetAdjacentRoom -1)
+    // Non-transition walk edge = wall
     if(segmentCrossesBlockingWalkEdge(area, prevSample, _sample, candidateEdges)){
       refineClearPoint(area, origin, dest, clearT, t, clearPoint, perspace);
       return {
@@ -458,7 +456,7 @@ export function testDirectLine(
     prevSample.copy(_sample);
   }
 
-  // NoCreaturesOnLine on the (clipped) segment — creperspace capsule
+  // Creature personal-space capsules on the (clipped) segment
   if(checkCreatures){
     const creSpace = options.owner
       ? getCreaturePersonalSpace(options.owner as ModuleCreature)
@@ -492,9 +490,9 @@ export function testDirectLine(
 }
 
 /**
- * Binary-search farthest t where origin→lerp(t) clears NoNonWalkPolysDetailed.
- * PlotPathInArea partial recovery needs clearT > 0 when a static object
- * only blocks near the destination (e.g. console placeable beside a waypoint).
+ * Binary-search farthest t where origin→lerp(t) clears detailed non-walk.
+ * Partial-path recovery needs clearT > 0 when a static object only blocks
+ * near the destination (e.g. console placeable beside a waypoint).
  */
 function refineDetailedClearT(
   area: ModuleArea,
@@ -561,7 +559,7 @@ function refineClearPoint(
 
 /**
  * Binary expand toward dest from origin for farthest walkable point
- * (PlotPathInArea partial-path recovery when full line fails).
+ * (partial-path recovery when the full line fails).
  */
 export function farthestClearPoint(
   area: ModuleArea | undefined,
@@ -580,7 +578,7 @@ export function farthestClearPoint(
 }
 
 /**
- * PlotPathInArea first stage: full LOS → true.
+ * True when origin→dest has a fully clear direct line.
  */
 export function hasDirectLine(
   area: ModuleArea | undefined,

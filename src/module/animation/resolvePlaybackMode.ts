@@ -4,26 +4,26 @@ import { isAnimation2DAFlagSet } from "@/module/animation/animation2daFlag";
 import {
   OVERLAY_START_NO_FIRE_FORGET_IDS,
   OVERLAY_STOP_ADDITIVE_IDS,
-  resolveModeFromRetailSets,
+  resolveModeFromAnimationIdSets,
   SET_ANIMATION_OVERLAY_IDS,
 } from "@/module/animation/setAnimationModeTables";
 
 /**
- * reverse-mode special server ID (SetAnimation 0x2810).
+ * Reverse-mode special server ID (10256 / 0x2810).
  * Also covered by SET_ANIMATION_REVERSE_IDS; kept for callers/tests.
  */
 export const ANIMATION_REVERSE_SERVER_ID = 10256;
 
 /**
  * Resolve SetAnimation playback mode for a creature server animation ID.
- * Prefer SetAnimationInternal switch sets; animations.2da `overlay`
- * column remains a fallback for IDs outside the switch.
+ * Prefer the overlay/reverse ID sets; animations.2da `overlay` remains a
+ * fallback for IDs outside those sets.
  */
 export function resolvePlaybackMode(
   serverId: number,
   twoDA?: SWAnimation | null
 ): AnimationPlaybackMode {
-  const fromTables = resolveModeFromRetailSets(serverId);
+  const fromTables = resolveModeFromAnimationIdSets(serverId);
   if(fromTables !== AnimationPlaybackMode.NORMAL){
     return fromTables;
   }
@@ -36,10 +36,10 @@ export function resolvePlaybackMode(
 }
 
 /**
- * Aurora flags when starting an overlay (SetOverlayAnimation arg3 != 0).
- * Base 0x08; OR 0x001 fire-forget except looping overlay bands.
- * KotOR.js also ORs 0x400 for stop-additive IDs so AnimRun fade matches
- * additive gesture semantics (stop uses 0x400; start is 0x08 only).
+ * Flags when starting an overlay (playing = true).
+ * Base OVERLAY_SLOT (0x08); OR FIRE_FORGET (0x001) except looping overlay bands.
+ * Additive-stop IDs also OR ADDITIVE_GESTURE (0x400) so AnimRun fade-out
+ * matches gesture semantics (stop uses 0x400; start is 0x08 only).
  */
 export function resolveOverlayStartFlags(serverId: number): number {
   let flags = 0x08; // OVERLAY_SLOT
@@ -53,12 +53,12 @@ export function resolveOverlayStartFlags(serverId: number): number {
   if(OVERLAY_START_NO_FIRE_FORGET_IDS.has(id)){
     return flags;
   }
-  // Ids in 0x2736..0x273a already covered above; remaining get FAF
+  // Remaining overlay starts get fire-forget
   return flags | 0x001;
 }
 
 /**
- * Aurora stop flags when clearing an overlay (arg3 == 0).
+ * Flags when clearing an overlay (playing = false).
  * Additive gesture IDs → 0x400; otherwise 0x80.
  */
 export function resolveOverlayStopFlags(serverId: number): number {

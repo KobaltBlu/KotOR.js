@@ -93,7 +93,7 @@ export class TalentSkill extends TalentObject {
         ? oItemUsed as ModuleItem
         : undefined;
 
-      // Both medpac and repair-kit use AIActionHeal (skill always Treat Injury).
+      // Both medpac and repair-kit use the heal action (skill always Treat Injury).
       if(!kit && this.id == SkillType.TREAT_INJURY){
         kit = caster.getInventory().find((item) => item.baseItemId === BaseItemType.MEDICAL_EQUIPMENT);
       }

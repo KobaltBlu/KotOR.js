@@ -254,7 +254,7 @@ function logicalSizeFor(gameKey: GameEngineType){
  * Independent world→map pixel + display Y-flip.
  * Must stay in sync with AreaMap.toMapPixels / toMapCoordinates.
  */
-function expectedRetail(
+function expectedMapPixels(
   fields: {
     northAxis: number;
     worldPt1X: number;
@@ -318,7 +318,7 @@ describe("AreaMap engine coordinates", () => {
       ];
 
       for(const p of points){
-        const expected = expectedRetail(fixture, p.x, p.y, logical.width, logical.height);
+        const expected = expectedMapPixels(fixture, p.x, p.y, logical.width, logical.height);
         const pix = areaMap.toMapPixels(p.x, p.y);
         expect(pix.x).toBe(expected.pixel.x);
         expect(pix.y).toBe(expected.pixel.y);

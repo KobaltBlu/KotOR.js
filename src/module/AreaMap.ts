@@ -19,12 +19,11 @@ export interface AreaMapPixelResult {
 }
 
 /**
-* AreaMap class.
+* AreaMap — exploration fog and world↔map coordinate transforms for the
+* in-game mini-map and area map.
 *
-* Class representing the logic that powers mini and large game maps ingame.
-*
-* World→pixel uses NorthAxis transform + MapPt affine. Display UV Y-flips for
-* Three.js (AurGUI is Y-down).
+* World→pixel uses NorthAxis transform + MapPt affine. Display UV Y-flips
+* because map pixels are top-origin while the Three.js map scene is Y-up.
 *
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 *
@@ -293,7 +292,7 @@ export class AreaMap {
   }
 
   /**
-   * Mark world point explored — default radius 1 (UpdateMapData).
+   * Mark a world point explored (default radius 1).
    * Radius uses a manhattan diamond of grid cells; -1 reveals the entire map.
    */
   revealPosition(x: number = 0, y: number = 0, radius: number = 1){

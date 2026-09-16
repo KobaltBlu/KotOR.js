@@ -1,15 +1,12 @@
 import { AnimationPlaybackMode } from "@/enums/animation/AnimationPlaybackMode";
 
 /**
- * Playback classification for SetAnimationInternal-style routing.
- * K1 uses an explicit switch rather than separate ModeA/ModeB byte tables;
- * these sets encode that switch.
- *
- * Band notes: ModeA base 10003 / ModeB 10258 describe the Aspyr/port table
- * layout; K1 inlines the same decisions here.
+ * Playback classification for SetAnimation routing.
+ * K1 encodes overlay/reverse decisions as an explicit switch; these sets
+ * capture that switch so callers can resolve mode without duplicating the lists.
  */
 
-/** Server IDs routed to SetOverlayAnimation(..., playing=1). */
+/** Server IDs routed to overlay playback. */
 export const SET_ANIMATION_OVERLAY_IDS: ReadonlySet<number> = new Set([
   0x272d, 0x272e, 0x2732,
   0x2736, 0x2737, 0x2738, 0x2739, 0x273a,
@@ -30,8 +27,7 @@ export const SET_ANIMATION_REVERSE_IDS: ReadonlySet<number> = new Set([
 ]);
 
 /**
- * Overlay stop uses 0x400 for these IDs; otherwise 0x80
- * (overlay stop when not starting playback).
+ * Overlay stop uses additive-gesture fade (0x400) for these IDs; otherwise 0x80.
  */
 export const OVERLAY_STOP_ADDITIVE_IDS: ReadonlySet<number> = new Set([
   0x272d, 0x272e, 0x2732,
@@ -52,7 +48,7 @@ export const OVERLAY_START_NO_FIRE_FORGET_IDS: ReadonlySet<number> = new Set([
   0x27aa, 0x27ab,
 ]);
 
-export function resolveModeFromRetailSets(serverId: number): AnimationPlaybackMode {
+export function resolveModeFromAnimationIdSets(serverId: number): AnimationPlaybackMode {
   const id = serverId & 0xffff;
   if(SET_ANIMATION_REVERSE_IDS.has(id)){
     return AnimationPlaybackMode.REVERSE;

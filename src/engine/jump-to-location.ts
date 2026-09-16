@@ -1,5 +1,5 @@
 /**
- * Jump destination resolution — AIActionJumpToPoint
+ * Jump destination resolution — JumpToPoint / JumpToObject
  * (AddToArea when dest area ≠ current; same-area SetPosition).
  *
  * KotOR.js modules are typically one area; when dest area belongs to another

@@ -42,15 +42,14 @@ export type MeleeBackoffResult = {
 /**
  * ActionPhysicalAttacks class.
  *
- * physical-attack action:
- * MaxAttackRange for "too far", DesiredAttackRange for melee arrive /
- * too-close. Move arrive = ranged ? max : desired.
- * Approach (too far / no LOS): AddActionToFront PhysicalAttacks →
- * CheckMoveToObjectRadius → ChangeFacingObject → MoveToPoint (target origin
- * or door/placeable action point). No surround/openSpot picker.
- * NPC melee too-close: radial backoff Move only (arrive 0).
- * Duel: ResolveChoreographedState / ResolveEngagedState / ResolveMasterState
- * + StartCombatRound pair sync.
+ * Physical attack action:
+ * Max range for "too far", desired range for melee arrive / too-close.
+ * Move arrive = ranged ? max : desired.
+ * Approach (too far / no LOS): requeue this action, then radius check,
+ * face target, and move to point (target origin or door/placeable
+ * action point). No surround/openSpot picker.
+ * NPC melee too-close: radial backoff move only (arrive 0).
+ * Duel: choreographed / engaged / master resolution + paired round sync.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -68,16 +67,16 @@ export class ActionPhysicalAttacks extends Action {
     this.type = ActionType.ActionPhysicalAttacks;
 
     //PARAMS
-    // 0 - int: bResultsCalculated (cutscene precomputed attack flag)
-    // 1 - dword: oTarget (target object id)
-    // 2 - int: nActionType (CombatActionType)
-    // 3 - int: nAnimationIndex (animation state id)
-    // 4 - int: nAnimationLength (animation duration in milliseconds)
-    // 5 - int: nNumAttacks (number of attack swings)
-    // 6 - int: nFeatId (feat id used in attack, 0 if normal)
-    // 7 - int: nAttackAnimation (precomputed attack animation index)
-    // 8 - int: nAttackResult (precomputed attack result enum)
-    // 9 - int: nAttackDamage (precomputed attack damage amount)
+    // 0 - int: resultsCalculated (cutscene precomputed attack flag)
+    // 1 - dword: target object id
+    // 2 - int: combat action type
+    // 3 - int: animation state id
+    // 4 - int: animation duration in milliseconds
+    // 5 - int: number of attack swings
+    // 6 - int: feat id (0 if normal attack)
+    // 7 - int: precomputed attack animation index
+    // 8 - int: precomputed attack result
+    // 9 - int: precomputed attack damage
   }
 
   static resolveMeleeTooCloseHysteresis(
@@ -175,7 +174,7 @@ export class ActionPhysicalAttacks extends Action {
 
     this.owner.resetExcitedDuration();
 
-    // physical-attack action — load params 0/7/8/9 onto current action
+    // Load cutscene precomputed results onto the current combat action.
     const combatRound = this.owner.combatRound;
     if(combatRound?.action){
       const resultsCalculated = !!this.getParameter<number>(0);
@@ -188,21 +187,21 @@ export class ActionPhysicalAttacks extends Action {
     }
 
     if(this.target.isDead()){
-      // Always tear down / retarget — even when roundStarted is already false
-      // (remaining sched swings at a corpse must not block QueueAttackActions).
+      // Tear down / retarget even when roundStarted is already false
+      // (remaining scheduled swings at a corpse must not block queueing).
       if(this.owner.combatRound){
         this.owner.combatRound.endCombatRound();
       }
       return ActionStatus.FAILED;
     }
 
-    // HasTargetBeenDetected — doors/placeables always; creatures need SEEN
-    // (CutsceneAttack does NOT skip detection/range — only ResolveAttackRoll/Damage short-circuit)
+    // Detection: doors/placeables always; creatures need SEEN.
+    // Cutscene attacks still require detection/range — only roll/damage short-circuit.
     if(!hasTargetBeenDetected(this.owner, this.target)){
       return ActionStatus.FAILED;
     }
 
-    // ResolveChoreographedState — drives Desired/MaxAttackRange (not engaged)
+    // Duel flags drive desired/max attack range when not engaged.
     const duel = resolveDuelRoundFlags(this.owner, this.target);
     const choreographed = duel.choreographed;
     const desired = desiredAttackRange(this.owner, this.target, choreographed);
@@ -212,8 +211,8 @@ export class ActionPhysicalAttacks extends Action {
     const maxSq = max * max;
     const desiredSq = desired * desired;
 
-    // : too far OR (too close by desired²−0.2 when not party-ui) OR no LOS
-    // Hysteresis: enter at desired²−0.2, stay until dist² ≥ desired²
+    // Too far, NPC melee too close (hysteresis), or no LOS → approach/backoff.
+    // Hysteresis: enter at desired²−0.2, stay until dist² ≥ desired².
     const tooFar = distSq > maxSq;
     const isPartyMember = GameState.PartyManager.party.indexOf(this.owner) >= 0;
     let tooClose = false;
@@ -227,7 +226,6 @@ export class ActionPhysicalAttacks extends Action {
       this.meleeBackoffActive = latch.active;
     }
     const hasLos = hasCombatLineOfSight(this.owner, this.target, max);
-    // Too far OR (NPC melee too close) OR no LOS → approach/backoff move
     const needCloseOrBack =
       tooFar ||
       (tooClose && !isPartyMember && !this.owner.isRangedEquipped()) ||
@@ -245,12 +243,12 @@ export class ActionPhysicalAttacks extends Action {
         if(result === 'retargeted'){
           return ActionStatus.IN_PROGRESS;
         }
-        // 'waiting' — first stuck sample; still path toward target.
+        // First stuck sample — still path toward target.
       }
 
       const isBackoff = tooClose && !tooFar && !isPartyMember && !this.owner.isRangedEquipped();
 
-      // ResolveMoveToForceJump when LOS clear — skip MoveTo on success.
+      // Force-jump approach when LOS is clear — skip the move on success.
       let forceJumped = false;
       if(!isBackoff && hasLos){
         const featOut = { featId: this.getParameter<number>(6) | 0 };
@@ -268,7 +266,7 @@ export class ActionPhysicalAttacks extends Action {
         let target_position = getNearestActionPoint(this.target, this.owner.position, this.owner);
 
         if(isBackoff){
-          // Too close: DesiredAttackRange back-off + TestDirectLine / CWalkHitInfo clip
+          // Too close: back off to desired range, clipped by walk-line clearance.
           const backoff = ActionPhysicalAttacks.resolveMeleeBackoff(this.owner, this.target, desired);
           target_position = backoff.position;
           arriveRange = 0;
@@ -276,7 +274,7 @@ export class ActionPhysicalAttacks extends Action {
           this.owner.pathFindIgnoreObjectId = 0;
         }else{
           // Approach: creature origin / door-placeable action point — no attacker
-          // perspace shove (pathfind field3 + Move arrive instead).
+          // personal-space shove (pathfind padding + move arrive instead).
           if(isCreature(this.target)){
             this.owner.pathFindIgnoreObjectId = this.target.id;
             this.owner.pathFindApproachPersonalSpace = Math.max(
@@ -289,7 +287,7 @@ export class ActionPhysicalAttacks extends Action {
           }
         }
 
-        // AddActionToFront order → execute: Move → Facing → Check → PhysicalAttacks
+        // Front-queue order → execute: Move → Facing → Check → PhysicalAttacks
         const requeue = new GameState.ActionFactory.ActionPhysicalAttacks(undefined, this.groupId);
         for(let i = 0; i <= 9; i++){
           const p = this.parameters[i];
@@ -331,7 +329,7 @@ export class ActionPhysicalAttacks extends Action {
 
         return ActionStatus.COMPLETE;
       }
-      // Force Jump applied — fall through to StartCombatRound with stamped feat.
+      // Force jump applied — fall through to start combat round with stamped feat.
     }
 
     if(this.owner.combatRound){
@@ -346,9 +344,7 @@ export class ActionPhysicalAttacks extends Action {
       return ActionStatus.FAILED;
     }
 
-    // physical-attack action — round_paused early return
-    // before duel resolution. Infinite-paused duel slaves wait here and never
-    // resolve their own swing while the master drives the round.
+    // Wait while the round is paused (duel slaves stay here until the master drives).
     if(combatRound.roundPaused){
       duelLog(this.owner, 'wait:roundPaused', {
         infinite: combatRound.infinitePause,
@@ -376,10 +372,10 @@ export class ActionPhysicalAttacks extends Action {
       cutscene: !!combatRound.action?.resultsCalculated,
     });
 
-    // CutsceneAttack (resultsCalculated) uses the same engaged/master/slave
-    // path as normal attacks — never forces them non-engaged.
+    // Cutscene precomputed attacks use the same engaged/master/slave
+    // path as normal attacks — never force them non-engaged.
     if(!duel.engaged){
-      // Non-duel: StartCombatRound(target, engaged=0, master)
+      // Non-duel: start combat round (not engaged).
       duelLog(this.owner, 'branch:non-engaged-start', { target: duelWho(this.target) });
       combatRound.startCombatRound(this.target, false, duel.master, featId);
       if(combatRound.action){
@@ -387,7 +383,7 @@ export class ActionPhysicalAttacks extends Action {
       }
       combatRound.pauseRound(this.owner, pauseMs);
     }else if(duel.master){
-      // Engaged master: start both rounds; slave paused with infinitePause
+      // Engaged master: start both rounds; slave paused indefinitely.
       duelLog(this.owner, 'branch:master-start', { slave: duelWho(this.target) });
       combatRound.startCombatRound(this.target, true, true, featId);
       if(combatRound.action){
@@ -404,18 +400,18 @@ export class ActionPhysicalAttacks extends Action {
             ? ModuleCreatureAnimState.ATTACK_DUELING
             : ModuleCreatureAnimState.ATTACK;
         }
-        // SetPauseTimer(slave, …, infinitePause=1) while master drives
+        // Pause the slave with infinite pause while the master drives.
         this.target.combatRound.pauseRound(this.owner, pauseMs, true);
       }
     }else{
-      // Engaged slave: master already StartCombatRound'd us — just ensure anim
+      // Engaged slave: master already started our round — ensure anim only.
       if(combatRound.action){
         combatRound.action.animation = duel.useDuelingAnim
           ? ModuleCreatureAnimState.ATTACK_DUELING
           : ModuleCreatureAnimState.ATTACK;
       }
       if(!combatRound.roundStarted){
-        // Master hasn't synced yet — wait
+        // Master hasn't synced yet — wait.
         duelLog(this.owner, 'branch:slave-wait-master', { master: duelWho(this.target) });
         return ActionStatus.IN_PROGRESS;
       }

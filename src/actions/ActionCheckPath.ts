@@ -23,7 +23,7 @@ import { isObject } from "@/module/guards/isObject";
 /**
  * ActionCheckPath — path-validation ActionTypes.
  * Runtime movement pathfinds inside MoveToPoint; these enqueue the
- * corresponding move when params resolve so ActionList/scripts behave correctly.
+ * corresponding move when params resolve so action lists / scripts behave correctly.
  *
  * @file ActionCheckPath.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -138,8 +138,8 @@ export class ActionCheckMoveToObject extends ActionCheckPath {
     super(ActionType.ActionCheckMoveToObject, actionId, groupId);
 
     //PARAMS
-    // 0 - dword: oTarget (target object id)
-    // 1 - int: bRun (run vs walk)
+    // 0 - dword: target object id
+    // 1 - int: run vs walk
   }
 
   update(delta: number = 0): ActionStatus {
@@ -155,10 +155,10 @@ export class ActionCheckMoveAwayFromObject extends ActionCheckPath {
     super(ActionType.ActionCheckMoveAwayFromObject, actionId, groupId);
 
     //PARAMS
-    // 0 - dword: oTarget (object id to flee from)
-    // 1 - int: bRun (run vs walk)
-    // 2 - float: fRange (flee distance threshold)
-    // 3 - int: nRetries (remaining pathfinding retries)
+    // 0 - dword: object id to flee from
+    // 1 - int: run vs walk
+    // 2 - float: flee distance threshold
+    // 3 - int: remaining pathfinding retries
   }
 
   update(delta: number = 0): ActionStatus {
@@ -193,7 +193,7 @@ export class ActionCheckMoveAwayFromObject extends ActionCheckPath {
       return ActionStatus.ERROR;
     }
 
-    // AddActionToFront order → final queue: Wait, Move, Recheck
+    // Front-queue order → final queue: Wait, Move, Recheck
     const recheck = new GameState.ActionFactory.ActionCheckMoveAwayFromObject(undefined, this.groupId);
     recheck.setParameter(0, ActionParameterType.DWORD, fleeFrom.id);
     recheck.setParameter(1, ActionParameterType.FLOAT, range);
@@ -219,16 +219,16 @@ export class ActionCheckMoveAwayFromObject extends ActionCheckPath {
 }
 
 /**
- * : inter-area pathfinding check action
- * Advances inter-area waypoint list; SetIntraAreaGoal → MoveTo + Wait(0.75).
- * When in use-range of the portal: OpenDoor / LoadModule / JumpTo linked.
+ * Inter-area pathfinding check.
+ * Advances the inter-area waypoint list; queues move + wait(0.75).
+ * When in use-range of the portal: open door / load module / jump to linked.
  */
 export class ActionCheckInterAreaPathfinding extends ActionCheckPath {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(ActionType.ActionCheckInterAreaPathfinding, actionId, groupId);
 
     //PARAMS
-    // none (uses creature CPathfindInformation)
+    // none (uses creature pathfinding / inter-area waypoint state)
   }
 
   update(delta: number = 0): ActionStatus {
@@ -236,7 +236,7 @@ export class ActionCheckInterAreaPathfinding extends ActionCheckPath {
       return ActionStatus.ERROR;
     }
 
-    // Prefer explicit inter-area waypoints (PlotInterAreaPath seed)
+    // Prefer explicit inter-area waypoints seeded by the path planner.
     let wp = this.owner.interAreaWaypoints?.[0];
     if(!wp){
       if(!beginInterAreaPath(this.owner)){
@@ -283,7 +283,7 @@ export class ActionCheckInterAreaPathfinding extends ActionCheckPath {
       if(tryUseInterAreaTransition(this.owner, wp, this.groupId)){
         return ActionStatus.COMPLETE;
       }
-      // PlotInterAreaPath: exclude failed portal + recompute
+      // Exclude failed portal and recompute the inter-area path.
       if(excludeFailedInterAreaPortal(this.owner, wp.object.id)){
         const recheck = new GameState.ActionFactory.ActionCheckInterAreaPathfinding(undefined, this.groupId);
         this.owner.actionQueue.addFront(recheck);
@@ -293,7 +293,7 @@ export class ActionCheckInterAreaPathfinding extends ActionCheckPath {
       return ActionStatus.ERROR;
     }
 
-    // Add*ToFront order → final: Wait, Move, Recheck
+    // Front-queue order → final: Wait, Move, Recheck
     const recheck = new GameState.ActionFactory.ActionCheckInterAreaPathfinding(undefined, this.groupId);
     this.owner.actionQueue.addFront(recheck);
 
@@ -334,9 +334,9 @@ export class ActionCheckMoveToPoint extends ActionCheckPath {
     // 0 - float: target x
     // 1 - float: target y
     // 2 - float: target z
-    // 3 - dword: target area object id
-    // 4 - dword: target object id (or 0x7f000000)
-    // 5 - int: bRun (run vs walk)
+    // 3 - dword: destination area object id
+    // 4 - dword: target object id (or invalid)
+    // 5 - int: run vs walk
   }
 
   update(delta: number = 0): ActionStatus {
@@ -375,14 +375,14 @@ export class ActionCheckMoveToObjectRadius extends ActionCheckPath {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(ActionType.ActionCheckMoveToObjectRadius, actionId, groupId);
 
-    //PARAMS (CheckMoveToObjectRadius / PhysicalAttacks approach)
-    // 0 - dword: oTarget (target object id)
-    // 1 - int: bRun (run vs walk)
-    // 2 - float: fRange (arrival distance — Desired or Max for combat)
-    // 3 - float: fTolerance (MaxAttackRange / range slack)
-    // 4 - int: bWalkStraight (straight line check flag)
-    // 5 - int: bIgnoreOrientation (ignore orientation flag)
-    // 6 - int: nRangedEquipped (RangeWeaponEquipped for combat approach)
+    //PARAMS
+    // 0 - dword: target object id
+    // 1 - int: run vs walk
+    // 2 - float: arrival distance (desired or max for combat)
+    // 3 - float: range tolerance / slack
+    // 4 - int: require straight-line check
+    // 5 - int: ignore orientation
+    // 6 - int: ranged weapon equipped (combat approach)
   }
 
   update(delta: number = 0): ActionStatus {
@@ -408,8 +408,8 @@ export class ActionCheckMoveToObjectRadius extends ActionCheckPath {
       return ActionStatus.COMPLETE;
     }
 
-    // Still out of range: requeue Check then Move (AddActionToFront → Move runs first).
-    // use.point is already PositionWalkable-gated — do not re-snap with owner perspace.
+    // Still out of range: requeue check then move (front-queue → move runs first).
+    // use.point is already walkable-gated — do not re-snap with owner personal space.
     const recheck = new GameState.ActionFactory.ActionCheckMoveToObjectRadius(undefined, this.groupId);
     for(let i = 0; i <= 6; i++){
       const p = this.parameters[i];
@@ -442,11 +442,11 @@ export class ActionCheckMoveToPointRadius extends ActionCheckPath {
     // 0 - float: target x
     // 1 - float: target y
     // 2 - float: target z
-    // 3 - dword: target area object id
+    // 3 - dword: destination area object id
     // 4 - dword: target object id
-    // 5 - int: bRun (run vs walk)
-    // 6 - float: fRange (target arrival distance)
-    // 7 - int: nPersonalSpace (personal space padding)
+    // 5 - int: run vs walk
+    // 6 - float: arrival distance
+    // 7 - int: personal space padding
   }
 
   update(delta: number = 0): ActionStatus {
@@ -485,9 +485,9 @@ export class ActionCheckMoveAwayFromLocation extends ActionCheckPath {
     // 0 - float: threat location x
     // 1 - float: threat location y
     // 2 - float: threat location z
-    // 3 - int: bRun (run vs walk)
-    // 4 - float: fRange (flee distance threshold)
-    // 5 - int: nRetries (remaining pathfinding retries)
+    // 3 - int: run vs walk
+    // 4 - float: flee distance threshold
+    // 5 - int: remaining pathfinding retries
   }
 
   update(delta: number = 0): ActionStatus {
@@ -518,7 +518,7 @@ export class ActionCheckMoveAwayFromLocation extends ActionCheckPath {
       return ActionStatus.ERROR;
     }
 
-    // : re-queue Check, MoveTo, Wait → final Wait, Move, Recheck
+    // Re-queue check, move, wait → final Wait, Move, Recheck
     const recheck = new GameState.ActionFactory.ActionCheckMoveAwayFromLocation(undefined, this.groupId);
     recheck.setParameter(0, ActionParameterType.FLOAT, x);
     recheck.setParameter(1, ActionParameterType.FLOAT, y);
@@ -549,8 +549,8 @@ export class ActionCheckForceFollowObject extends ActionCheckPath {
     super(ActionType.ActionCheckForceFollowObject, actionId, groupId);
 
     //PARAMS
-    // 0 - dword: oTarget (target object id to follow)
-    // 1 - int: bRun (run vs walk)
+    // 0 - dword: target object id to follow
+    // 1 - int: run vs walk
     // 2 - float: offset x
     // 3 - float: offset y
   }
@@ -583,10 +583,10 @@ export class ActionCheckMoveToFollowRadius extends ActionCheckPath {
     // 0 - float: target x
     // 1 - float: target y
     // 2 - float: target z
-    // 3 - dword: target area object id
+    // 3 - dword: destination area object id
     // 4 - dword: target object id
-    // 5 - int: bRun (run vs walk)
-    // 6 - float: fRange (follow distance radius)
+    // 5 - int: run vs walk
+    // 6 - float: follow distance radius
   }
 
   update(delta: number = 0): ActionStatus {

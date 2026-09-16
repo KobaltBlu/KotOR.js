@@ -2,32 +2,32 @@ import type { IGUIControlExtent } from "@/interface/gui/IGUIControlExtent";
 import { GameEngineType } from "@/enums/engine/GameEngineType";
 
 /**
- * GUI design letterbox base (GUI panel HitCheckMouse / GetLocalMouseCoords).
- * K1 / TSL Aspyr — same 0x280 / 0x1e0 constants.
+ * GUI design letterbox base (640×480) for panel hit-testing and local mouse coords.
+ * Shared by K1 and TSL.
  */
 export const GUI_DESIGN_WIDTH = 640;
 export const GUI_DESIGN_HEIGHT = 480;
 
 /**
- * Semantic panel coord flags for GetLocalMouseCoords / GetExtentAccountingForPanelOffset.
+ * Semantic panel coord flags for local mouse / extent docking.
  *
- * K1 bit layout: CenterInViewport=bit3, DockDesignX=bit5, DockDesignY=bit6.
- * TSL Aspyr uses different raw bits for dock (bit4/bit5) and has no center path
- * callers still OR these semantic flags; the engine branch applies the correct gate.
+ * Callers OR these semantic flags; each engine branch applies its own gate:
+ * K1 uses CenterInViewport (bit3) plus DockDesignX/Y (bits 5/6).
+ * TSL docks with DockDesignX/Y when CenterInViewport is clear (no center path).
  * UseExtentOffset (bit0) is shared by both.
  */
 export enum GUIPanelCoordFlags {
   None = 0,
-  /** When set: use GetExtentAccountingForPanelOffset (no 640×480 mouse letterbox). Bit 0. */
+  /** When set: use extent-offset path (no 640×480 mouse letterbox). Bit 0. */
   UseExtentOffset = 0x1,
   /**
    * K1: center panel in viewport (bit 3).
-   * TSL Aspyr: when set, skip dock (bit 3 clear is required to dock).
+   * TSL: when set, skip dock (bit 3 clear is required to dock).
    */
   CenterInViewport = 0x8,
-  /** Dock X: left += (viewportWidth - 640) / 2. Semantic; K1 bit5 / TSL Aspyr bit4. */
+  /** Dock X: left += (viewportWidth - 640) / 2. K1 bit5 / TSL bit4 semantic. */
   DockDesignX = 0x20,
-  /** Dock Y: top += (viewportHeight - 480) / 2. Semantic; K1 bit6 / TSL Aspyr bit5. */
+  /** Dock Y: top += (viewportHeight - 480) / 2. K1 bit6 / TSL bit5 semantic. */
   DockDesignY = 0x40,
 }
 
@@ -36,7 +36,7 @@ export function truncDiv(a: number, b: number): number {
   return Math.trunc(a / b);
 }
 
-/** Coerce to a GUI extent field (ReadFieldINT / int store). */
+/** Coerce to a GUI extent field (integer store). */
 export function asExtentInt(n: number): number {
   return Math.trunc(n) | 0;
 }
@@ -149,9 +149,9 @@ export function copyExtentInt(src: IGUIControlExtent): IGUIControlExtent {
 }
 
 /**
- * GetExtentAccountingForPanelOffset.
- * K1 — center (bit3) returns early; else dock X/Y (bits 5/6).
- * TSL Aspyr — if bit3 set, copy only; else dock when dock flags set.
+ * Apply panel dock / center offsets for the active engine.
+ * K1 — center returns early; else dock X/Y.
+ * TSL — if CenterInViewport is set, copy only; else dock when dock flags set.
  */
 export function getExtentAccountingForPanelOffset(
   extent: IGUIControlExtent,
@@ -165,7 +165,7 @@ export function getExtentAccountingForPanelOffset(
   const vpH = asExtentInt(viewportHeight);
 
   if(engine === GameEngineType.TSL){
-    // Aspyr: CenterInViewport set → no dock; else apply DockDesignX/Y.
+    // TSL: CenterInViewport set → no dock; else apply DockDesignX/Y.
     if((flags & GUIPanelCoordFlags.CenterInViewport) !== 0){
       return out;
     }
@@ -238,9 +238,8 @@ export function applyPanelOffsetToLetterboxLocal(
 }
 
 /**
- * GetLocalMouseCoords K1 / TSL Aspyr.
- * Both use design letterbox 640×480 (0x280 / 0x1e0). Returns mouse in panel-local
- * top-left Y-down integer space.
+ * Convert screen mouse into panel-local top-left Y-down integers.
+ * Both engines use the 640×480 design letterbox when UseExtentOffset is clear.
  *
  * When UseExtentOffset|CenterInViewport: local = mouse - ((viewport - panelSize)/2 + panel.origin)
  * which matches KotOR.js centering the panel design rect in the ortho viewport.
@@ -274,8 +273,7 @@ export function getLocalMouseCoords(
 }
 
 /**
- * HitCheckMouse.
- * Inclusive AABB: left ≤ x ≤ left+width AND top ≤ y ≤ top+height.
+ * Inclusive AABB hit test: left ≤ x ≤ left+width AND top ≤ y ≤ top+height.
  */
 export function hitCheckMouseLocal(
   extent: IGUIControlExtent,
@@ -292,13 +290,12 @@ export function hitCheckMouseLocal(
 }
 
 /**
- * HitCheckMouse — children walked last→first;
- * first hit wins. Overlapping siblings do not both receive input.
- * `childHit[i]` is true when child i's HitCheckMouse succeeds.
+ * Child hit walk last→first; first hit wins. Overlapping siblings do not
+ * both receive input. `childHit[i]` is true when child i's hit test succeeds.
  *
  * When `childSelectable` is provided, prefer the topmost *selectable* hit
- * (HandleMouseMove / GetIsSelectable — decorative labels like LBLH_*
- * and equip LBL_INV_* must not steal hover from their buttons).
+ * (decorative labels like LBLH_* and equip LBL_INV_* must not steal hover
+ * from their buttons).
  */
 export function selectTopmostHitChildIndex(
   childHit: readonly boolean[],

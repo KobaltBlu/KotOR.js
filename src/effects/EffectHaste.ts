@@ -5,8 +5,9 @@ import { rebalanceHasteSlow } from "@/effects/haste-slow";
 import { isCreature } from "@/module/guards/isCreature";
 
 /**
- * EffectHaste — outer type 0x01; net-balance via onApply.
- * Does not grant extra attacks per round (CalculateOnHandAttacks ignores haste).
+ * EffectHaste — outer type 0x01 (onApply / onRemove).
+ * Net-balances against Slow; does not grant extra attacks per round
+ * (CalculateOnHandAttacks ignores haste).
  *
  * @file EffectHaste.ts
  */

@@ -14,11 +14,12 @@ import { isCreature } from "@/module/guards/isCreature";
 /**
  * SetState onApply / onRemove helpers and ambient recompute.
  *
- * Outer EffectSetState handles immunities + priority; Internal does clear /
- * pause / child VFX / animation. Shared by K1 and K2 (same effect opcodes).
+ * Outer EffectSetState handles immunities + priority; Internal clears
+ * actions, pauses combat, and applies child VFX / animation. Shared by
+ * K1 and K2 (same effect opcodes).
  */
 
-/** IMMUNITY_TYPE_* used by SetState onApply */
+/** IMMUNITY_TYPE_* checked during SetState onApply. */
 export const IMMUNITY_MIND = 1;
 export const IMMUNITY_FEAR = 4;
 export const IMMUNITY_PARALYZE = 6;
@@ -26,16 +27,16 @@ export const IMMUNITY_STUN = 0x0c;
 export const IMMUNITY_SLEEP = 0x0d;
 export const IMMUNITY_CONFUSED = 0x10;
 export const IMMUNITY_KNOCKDOWN = 0x1c;
-/** K2 — EffectDroidConfused (always checked; no cutscene int1 bypass) */
+/** K2 — EffectDroidConfused (always checked; no cutscene int1 bypass). */
 export const IMMUNITY_DROID_CONFUSED = 0x21;
 
-/** VFX ids from SetState onApply */
+/** Child VFX ids spawned by SetState Internal onApply. */
 export const VFX_DROID_STUN = 0x3ef;
 export const VFX_STUN = 0x7d2;
 
 /**
- * SetState onApply always applies SETAISTATE −0x101 before Internal —
- * activity &= 0xFEFF (clears bit 0x100).
+ * Outer SetState onApply clears activity bit 0x100
+ * (`activity &= 0xFEFF`) before Internal is rebalanced.
  */
 export const SET_STATE_OUTER_AI_ACTIVITY_MASK = 0xfeff;
 
@@ -80,7 +81,7 @@ export function isSetStateImmune(
       if(ignoreImmunity) return false;
       return hasImmunityType(creature, IMMUNITY_KNOCKDOWN, versus);
     case GameEffectSetStateType.DROID_CONFUSED:
-      // no int1 cutscene bypass
+      // No cutscene int[1] immunity bypass for droid confuse.
       return hasImmunityType(creature, IMMUNITY_DROID_CONFUSED, versus);
     case GameEffectSetStateType.MIND_TRICK:
       if(ignoreImmunity) return false;
@@ -143,8 +144,8 @@ function removeInternals(creature: ModuleCreature){
 }
 
 /**
- * Keep a single Internal matching the highest active outer SetState.
- * matches engine behavior priority + onRemove re-apply.
+ * Keep a single Internal matching the highest-priority active outer SetState.
+ * Called from outer onApply (with trigger) and onRemove (rebalance).
  */
 export function rebalanceSetState(creature: ModuleCreature, trigger?: GameEffect){
   if(!isCreature(creature)){
@@ -163,7 +164,7 @@ export function rebalanceSetState(creature: ModuleCreature, trigger?: GameEffect
       highestEffect = e;
     }
   }
-  // addEffect calls onApply before push — count the applying outer
+  // addEffect runs onApply before push — include the applying outer if needed.
   if(
     trigger?.applied &&
     trigger.type === GameEffectType.EffectSetState &&

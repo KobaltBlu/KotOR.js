@@ -499,7 +499,7 @@ export class ModuleObjectManager {
     return undefined;
   }
 
-  /** Insert candidate into ascending distSq list (CExoArrayList Insert). */
+  /** Insert candidate into ascending distSq list. */
   static insertByDistSq(candidates: NearestCandidate[], obj: ModuleObject, distSq: number): void {
     let i = 0;
     while(i < candidates.length && candidates[i].distSq <= distSq){
@@ -509,7 +509,7 @@ export class ModuleObjectManager {
   }
 
   /**
-   * ExecuteCommandGetNearestObject spiral walk:
+   * Nearest-object spiral walk:
    * start at GetFirstObjectIndiceByX, expand +1/-1/+2/-2…, insert by distSq,
    * abort a direction when |dx|² already exceeds the current nth-furthest distSq.
    */
@@ -1178,8 +1178,8 @@ export class ModuleObjectManager {
         }
         return { ok: true, hostile: false };
       }
-      // ValidNearest: SEEN in PerceptionList OR DoSpotDetection (no LOS for pool).
-      // CanSee / hasLineOfSight is enforced later in DoPassiveSelection.
+      // Pool membership: SEEN in perception list OR spot detection (no LOS yet).
+      // Line of sight is enforced later in passive selection.
       const viewer = player as ModuleCreature;
       const seen = typeof viewer.hasSeenObject === 'function'
         ? viewer.hasSeenObject(cre)
@@ -1331,10 +1331,10 @@ export class ModuleObjectManager {
   }
 
   /**
-   * ShowObject (presentation subset).
-   * @param doLookAt - arg2: creature LookAt
-   * @param doCameraFocus - arg3: SetLookAtTarget. Tab/SelectNearest and
-   * enemy/mine first-sight pass true. Continuous combat-mode auto-focus is
+   * Present a selected object (reticle / look-at / optional camera focus).
+   * @param doLookAt - creature LookAt toward the target
+   * @param doCameraFocus - Tab / select-nearest and enemy/mine first-sight
+   * may also set camera focus. Continuous combat-mode auto-focus is
    * intentionally omitted: FollowerCamera.focusObject yaw moves the floating
    * target menu and breaks BTN_TARGET clicks (security / attack).
    */
@@ -1356,7 +1356,7 @@ export class ModuleObjectManager {
     this.#currentVisibleObject = obj;
     this.#currentVisibleObjectIndex = this.playerSelectableObjects.indexOf(obj);
 
-    // only touches camera when arg2 (LookAt) is set.
+    // Camera focus only when LookAt is also requested.
     if(doLookAt && doCameraFocus){
       FollowerCamera.setFocusObject(obj);
     }else if(doLookAt && !doCameraFocus){
@@ -1366,8 +1366,8 @@ export class ModuleObjectManager {
   }
 
   /**
-   * Rebuild selectable / hoverable caches from GetNearestObjects.
-   * Does not mutate current selection (DoPassiveSelection owns that).
+   * Rebuild selectable / hoverable caches from nearby objects.
+   * Does not mutate current selection (passive selection owns that).
    */
   static GetSelectableObjectsInRange(player: ModuleObject): ModuleObject[] {
     if(!player){
@@ -1401,7 +1401,7 @@ export class ModuleObjectManager {
     return this.playerSelectableObjects;
   }
 
-  /** True when object is a trap trigger suitable for MineSighted force-pick. */
+  /** True when object is a trap trigger suitable for mine first-sight force-pick. */
   static #isMineTarget(obj: ModuleObject): boolean {
     return (
       isTrigger(obj) &&
@@ -1410,7 +1410,7 @@ export class ModuleObjectManager {
   }
 
   /**
-   * DoPassiveSelection.
+   * Passive target selection while exploring / in combat.
    */
   static doPassiveSelection(player: ModuleObject, delta: number = 0){
     if(!player){
@@ -1418,7 +1418,7 @@ export class ModuleObjectManager {
       return;
     }
 
-    // rebuilds GetNearestObjects every DoPassiveSelection call
+    // Rebuild nearest lists every tick
     this.GetSelectableObjectsInRange(player);
 
     const around = this.playerSelectableObjects;
@@ -1427,8 +1427,8 @@ export class ModuleObjectManager {
     const combat = !!GameState.CursorManager?.isClientCombatMode?.();
     const paused = GameState.State === EngineState.PAUSED;
 
-    // DoPassiveSelection first loop: creatures → hostile pool,
-    // trap triggers → mine pool. Placeables/doors never open either scan.
+    // First pass: creatures → hostile pool, trap triggers → mine pool.
+    // Placeables/doors never open either scan.
     let hasHostileInPool = false;
     let hasMineInPool = false;
     for(let i = 0; i < around.length; i++){
@@ -1473,7 +1473,7 @@ export class ModuleObjectManager {
       this.#targetChanging = 0;
     }
 
-    // Sticky: keep last_target while still in pool
+    // Sticky: keep current selection while it remains in the pool
     if(last && inAround(last)){
       if(this.canSeeObject(player, last)){
         this.#stickyLosGrace = 0;
@@ -1491,7 +1491,7 @@ export class ModuleObjectManager {
       this.#stickyLosGrace = 0;
     }
 
-    // Enemy / mine CanSee scan + first-sight force acquisition
+    // Enemy / mine line-of-sight scan + first-sight force acquisition
     let sawHostileCanSee = false;
     let sawMineCanSee = false;
     const enemyRising = !this.#enemySighted;
@@ -1524,9 +1524,9 @@ export class ModuleObjectManager {
           continue;
         }
 
-        // EnemySighted force-pick: creatures only (not placeables/doors).
-        // Rising edge always sets last_target (passive selection);
-        // auto-pause only when not already in client combat mode.
+        // Enemy first-sight force-pick: creatures only (not placeables/doors).
+        // Rising edge always updates selection; auto-pause only when not
+        // already in client combat mode.
         if(
           enemyRising &&
           !isMine &&
@@ -1567,7 +1567,7 @@ export class ModuleObjectManager {
     }
 
     if(keepSticky && last){
-      // sticky+CanSee: LookAt only when force-sight is set
+      // Sticky + visible: LookAt only when force-sight is set
       this.showObject(last, forceLookAt, forceCameraFocus);
       return;
     }
@@ -1600,14 +1600,14 @@ export class ModuleObjectManager {
       }
       this.showObject(pick, true, false);
     }else{
-      // clears whenever presentation flag stays 0
+      // Nothing visible — clear selection presentation
       this.showObject(undefined, false, false);
     }
   }
 
   /**
-   * SelectNearestObject.
-   * @param previous - true = SelectPrev (arg1 != 0)
+   * Cycle to the next / previous selectable object.
+   * @param previous - true = previous in the list
    */
   static selectNearestObject(previous: boolean = false): ModuleObject | undefined {
     const player = PartyManager.party[0] ?? GameState.getCurrentPlayer();
@@ -1622,7 +1622,7 @@ export class ModuleObjectManager {
     if(!list.length) return undefined;
 
     const combat = !!GameState.CursorManager?.isClientCombatMode?.();
-    // Out of combat: prefer hostile creatures when any exist (arg2 = 2)
+    // Out of combat: prefer hostile creatures when any exist
     let hostileOnly = false;
     if(!combat){
       for(let i = 0; i < list.length; i++){
@@ -1657,7 +1657,7 @@ export class ModuleObjectManager {
       idx = idx >= list.length - 1 ? 0 : idx + 1;
     }
 
-    // Walk until a matching CanSee object (cycle loop)
+    // Walk until a matching visible object (cycle loop)
     for(let n = 0; n < list.length; n++){
       const obj = list[idx];
       if(matches(obj)){
@@ -1689,9 +1689,8 @@ export class ModuleObjectManager {
   }
 
   /**
-   * Run DoPassiveSelection every tick (rebuilds nearest lists internally).
-   * MainLoop skips while IsGlobalFading / IsGlobalFadeObscuring
-   * (and while area_not_ready_to_display).
+   * Run passive selection every tick (rebuilds nearest lists internally).
+   * Skipped while a global fade is active or obscuring, and while a module is loading.
    */
   static TickSelectableObjects(delta: number = 0){
     const player = PartyManager.party[0];
@@ -1699,7 +1698,7 @@ export class ModuleObjectManager {
       return;
     }
 
-    // : DoPassiveSelection only after world fade is clear
+    // Passive selection only after world fade is clear
     const fade = GameState.FadeOverlayManager;
     if(fade?.isFading?.() || fade?.isObscuring?.()){
       return;

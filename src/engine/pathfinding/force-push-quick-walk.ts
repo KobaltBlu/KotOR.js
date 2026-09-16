@@ -21,9 +21,7 @@ import {
 } from "@/engine/pathfinding/quick-walk-loco";
 
 /**
- * Force Push on-apply + force-push quick-walk.
- *
- * @file force-push-quick-walk.ts
+ * Force Push onApply helpers and high-speed slide locomotion.
  */
 
 export {
@@ -31,7 +29,7 @@ export {
   isForcePushLocoActive,
 } from "@/engine/pathfinding/quick-walk-loco";
 
-/** QuickWalk_ForcePushed speed when loco state == 4. */
+/** World units/sec while force-push loco is active. */
 export const FORCE_PUSH_SPEED = 25.0;
 
 /** Default push distance when effect float[3] is 0. */
@@ -41,7 +39,7 @@ export const FORCE_PUSH_DEFAULT_DISTANCE = 5.0;
 export const FORCE_PUSH_ANIM_LAND = 1.0666699409484863;
 export const FORCE_PUSH_ANIM_GETUP = 1.466670036315918;
 
-/** SETAISTATE int −3 → ushort 0xFFFD (clears activity bit 1). */
+/** Clears AI activity bit 1 (mask applied on immobilizing force states). */
 export const FORCE_PUSH_AI_ACTIVITY_MASK = 0xfffd;
 
 const _origin = new THREE.Vector3();
@@ -60,8 +58,8 @@ export type ForcePushOrigin = {
 };
 
 /**
- * Resolve push origin — creator position (untargeted) or float[0..2] (targeted).
- * Returns undefined when untargeted and creator is missing (early-out).
+ * Resolve push origin: creator position (untargeted) or effect floats (targeted).
+ * Returns undefined when untargeted and creator is missing.
  */
 export function resolveForcePushOrigin(
   effect: ForcePushApplyIntsFloats,
@@ -137,10 +135,8 @@ export function facingFromDirection(dirX: number, dirY: number): number {
 }
 
 /**
- * TestDirectLine clip for Force Push:
- * 1 → keep dest
- * 0 → stay at current position
- * else → walk-hit clear point
+ * Clip force-push destination against walkmesh / creatures:
+ * clear → keep dest; hard fail → stay put; otherwise use farthest clear point.
  */
 export function clipForcePushDestination(
   creature: ModuleCreature,
@@ -155,7 +151,6 @@ export function clipForcePushDestination(
   const ignoreIds: number[] = [];
   if(creature.id != null) ignoreIds.push(creature.id);
 
-  // : TestDirectLine(..., personal_space, path_find_info->height,...)
   const height = creature.getAppearance?.()?.height ?? 0;
   const hit = testDirectLine(creature.area, creature.position, dest, {
     owner: creature,
@@ -170,7 +165,7 @@ export function clipForcePushDestination(
     return dest.clone();
   }
 
-  // Fail (0): stay put
+  // Hard fail: stay put
   if(hit.code === TestDirectLineCode.Fail){
     return creature.position.clone();
   }
@@ -184,8 +179,8 @@ export function clipForcePushDestination(
 }
 
 /**
- * Install 2-point XY path and loco state 4 (path_count_=4 float pairs).
- * Seeds one QuickWalk(1)-equivalent frame with delta 0.
+ * Install a two-point XY push path and force-push loco state.
+ * Seeds one locomotion frame with delta 0 to initialize timers.
  */
 export function installForcePushPath(
   creature: ModuleCreature,
@@ -214,7 +209,7 @@ export function installForcePushPath(
     creature.forcePushArrived = true;
   }
 
-  // On apply, call quick-walk locomotion(1) to seed timers.
+  // Seed timers with a zero-delta locomotion tick on apply.
   forcePushQuickWalkUpdate(creature, 0);
 }
 
@@ -227,9 +222,9 @@ export function clearForcePushLoco(creature: ModuleCreature): void {
 }
 
 /**
- * On apply with int −3 — AND activity with 0xFFFD.
- * Shared by ForcePush / Whirlwind / Crush / Choke / Horror / Knockdown
- * Held / Stun / MindTrick / DroidScramble / DroidStun SetState internals.
+ * Clear AI activity bit 1 during immobilizing SetState onApply
+ * (push, whirlwind, crush, choke, horror, knockdown, hold, stun, mind trick,
+ * droid scramble / stun).
  */
 export function applyForcePushAIActivityMask(creature: ModuleCreature): void {
   if(!creature) return;
@@ -237,8 +232,8 @@ export function applyForcePushAIActivityMask(creature: ModuleCreature): void {
 }
 
 /**
- * On apply (state==9): stamp creator's current attack
- * state=9 / state=1 for attack-summary feedback.
+ * Stamp the creator's current attack for attack-summary feedback
+ * (FORCEPUSH set-state on the active attack).
  */
 export function stampForcePushAttackSummary(
   creator: ModuleCreature | undefined,
@@ -263,8 +258,8 @@ export function stampForcePushAttackSummary(
 export type ForcePushQuickWalkResult = "moving" | "arrived" | "idle";
 
 /**
- * Per-frame Force Push locomotion @ 25 u/s (loco state 4).
- * Uses creature drive update walkmesh clip (walk frame distance approx).
+ * Per-frame Force Push locomotion at FORCE_PUSH_SPEED.
+ * Uses updateCreatureDrive for walkmesh clipping.
  */
 export function forcePushQuickWalkUpdate(
   creature: ModuleCreature,

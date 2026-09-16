@@ -19,10 +19,9 @@ import { isPlaceable } from "@/module/guards/isPlaceable";
 /**
  * ActionUnlockObject class.
  *
- * UnlockObject: move into range → PlayAnimation
- * (door 0x2790 / placeable 0x2793, 1.5s) + StartGuiTimingBar → EvaluateLock /
- * OpenDoor. Do not leave UNLOCK_* sticky after complete (dialog can start
- * from OnOpen while the clip would otherwise loop).
+ * Unlock flow: move into range → unlock animation (door / placeable, 1.5s)
+ * + GUI timing bar → attempt unlock / open. Clear UNLOCK_* anim state on
+ * finish so OnOpen dialogs are not stuck looping the pick clip.
  *
  * @file ActionUnlockObject.ts
  */
@@ -37,10 +36,9 @@ export class ActionUnlockObject extends Action {
     this.type = ActionType.ActionUnlockObject;
 
     //PARAMS
-    // 0 - dword: oTarget (door or placeable object id to unlock)
-    // 1 - dword: oItem (security spike / thieves tools item id, or OBJECT_INVALID)
-    // 2 - int: nActivePropertyIndex (item property index used for security bonus)
-    
+    // 0 - dword: target door or placeable object id
+    // 1 - dword: security tools item id (or invalid)
+    // 2 - int: active property index (security bonus from item)
   }
 
   private finishFailed(): ActionStatus {
@@ -105,7 +103,7 @@ export class ActionUnlockObject extends Action {
       this.owner.setFacingObject(this.target);
     }
 
-    // PlayAnimation(0x2790/0x2793, 1.0, 1.5) then resume unlock.
+    // Queue unlock animation, then resume for the lock check.
     if(!this.animQueued){
       this.animQueued = true;
       this.target.audioEmitter.playSound('gui_lockpick');
@@ -121,7 +119,7 @@ export class ActionUnlockObject extends Action {
         this.owner.actionQueue.addFront(playAnim);
       }
 
-      // StartGuiTimingBar(this, 0x5dc, 8) — 1500 ms, type 8
+      // Player timing bar: 1500 ms, unlock type.
       if(this.owner === GameState.getCurrentPlayer()){
         GameState.GuiTimingBarManager?.startMs?.(0x5dc, 'Unlock', this.owner, 8);
       }

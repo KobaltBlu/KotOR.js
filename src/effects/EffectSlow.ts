@@ -6,7 +6,8 @@ import { hasImmunityType, rebalanceHasteSlow } from "@/effects/haste-slow";
 import { isCreature } from "@/module/guards/isCreature";
 
 /**
- * EffectSlow — outer type 0x03; immunity type 9 rejects apply.
+ * EffectSlow — outer type 0x03 (onApply / onRemove).
+ * Immunity type 9 rejects onApply; otherwise net-balances against Haste.
  *
  * @file EffectSlow.ts
  */

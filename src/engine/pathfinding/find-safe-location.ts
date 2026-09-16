@@ -12,17 +12,18 @@ import { clearLineOfSight } from "@/engine/pathfinding/clear-line-of-sight";
 import { countVisibleToPlayers } from "@/engine/pathfinding/count-visible-to-players";
 
 /**
- * find safe location
- * find non-visible location.
+ * Find a walkable stand/spawn point near a center, or a point less visible
+ * to players for stealthy placement.
  *
- * Safe: expanding ring of TestSafeLocationPoint (center first).
- * NonVisible: prefers candidates with lower CountVisibleToPlayers; on total
+ * Safe search: expanding rings of testSafeLocationPoint (center first).
+ * Non-visible: prefers candidates with lower countVisibleToPlayers; on total
  * failure writes (−1,−1,−1) and returns false (spawn aborts / retries).
- *
- * @file find-safe-location.ts
  */
 
 const _probe = new THREE.Vector3();
+
+/** Sentinel before any candidate has scored for player visibility. */
+const NO_VISIBLE_CANDIDATE = 0x60;
 
 export type FindSafeLocationOptions = {
   /** Search radius (summon/encounter use 20). */
@@ -34,14 +35,14 @@ export type FindSafeLocationOptions = {
   /** Creature for perspace / creature-blocking tests. */
   owner?: ModuleObject;
   /**
-   * When true, party members do not block TestSafeLocationPoint.
+   * When true, party members do not block testSafeLocationPoint.
    * Jump / safe-point checks leave this false by default.
    */
   allowPartyCreatures?: boolean;
 };
 
 /**
- * Snap Z to walkmesh (walk height approx via getWalkHeightAt).
+ * Snap Z to walkmesh height at the point.
  */
 export function computeHeightAtPoint(
   area: ModuleArea | undefined,
@@ -80,7 +81,7 @@ function tryCandidate(
       owner: options.owner,
       checkCreatures: false,
     });
-    // accepts Ok (1) or Creature (−3)
+    // Accept clear line or creature-only block toward center
     if(line.code !== TestDirectLineCode.Ok && line.code !== TestDirectLineCode.Creature){
       return false;
     }
@@ -146,9 +147,8 @@ export function findSafeLocation(
 }
 
 /**
- * find non-visible location.
- * Prefers safe points with fewer player LOS hits via CountVisibleToPlayers
- * (30 m + eye Z); candidates within 30 of center need ClearLineOfSight from center.
+ * Prefer a safe point with fewer player LOS hits (30 m + eye Z).
+ * Candidates within 30 of center also need clearLineOfSight from center.
  * On total failure sets out to (−1,−1,−1) and returns false.
  */
 export function findNonVisibleLocation(
@@ -164,7 +164,7 @@ export function findNonVisibleLocation(
   const step = Math.max(0.25, options.personalSpace ?? getPathPersonalSpace(options.owner) ?? 0.35);
   const LOS_RANGE = 30.0;
 
-  let bestScore = 0x60;
+  let bestScore = NO_VISIBLE_CANDIDATE;
   const candidate = new THREE.Vector3();
 
   const consider = (x: number, y: number, requireCenterLos: boolean): boolean => {
@@ -190,13 +190,13 @@ export function findNonVisibleLocation(
     return visible === 0;
   };
 
-  // : try center first (no center→self LOS gate)
+  // Try center first (no center→self LOS gate)
   if(consider(center.x, center.y, false) && bestScore === 0){
     out.copy(candidate);
     return true;
   }
 
-  // Expanding rings — personal_space step, radius 20
+  // Expanding rings — personal-space step out to radius
   for(let r = step; r < radius; r += step){
     const minX = center.x - r;
     const maxX = center.x + r;
@@ -212,7 +212,7 @@ export function findNonVisibleLocation(
     }
   }
 
-  if(bestScore < 0x60){
+  if(bestScore < NO_VISIBLE_CANDIDATE){
     out.copy(candidate);
     return true;
   }

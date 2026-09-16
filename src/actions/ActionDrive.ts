@@ -31,10 +31,9 @@ const DEST_LOOKAHEAD_SEC = 0.4;
 
 /**
  * ActionDrive class.
- * Vehicle / stick drive — drive action
- * + creature drive update.
+ * Vehicle / stick drive — destination build + creature drive update.
  *
- * Params match AddDriveAction:
+ * Params:
  * 0 FLOAT x, 1 FLOAT y, 2 INT facing*10, 3 INT pathId,
  * 4 INT flags, 5 INT retry, 6 INT refresh
  *
@@ -59,15 +58,15 @@ export class ActionDrive extends Action {
     //PARAMS
     // 0 - float: target position x
     // 1 - float: target position y
-    // 2 - int: nFacing (packed facing orientation in degrees * 10)
-    // 3 - int: nPathId (client-side drive path id)
-    // 4 - int: nFlags (drive control flag bitmask)
-    // 5 - int: nRetry (retry counter, default 2)
-    // 6 - int: bRefresh (destination recompute flag: 1 = recompute on first tick)
+    // 2 - int: packed facing (degrees × 10)
+    // 3 - int: client-side drive path id
+    // 4 - int: drive control flag bitmask
+    // 5 - int: retry counter (default 2)
+    // 6 - int: refresh destination on first tick (1 = recompute)
   }
 
   /**
-   * Build a drive action node (AddDriveAction equivalent).
+   * Build a drive action with the standard parameter layout.
    */
   static create(
     x: number,
@@ -140,9 +139,9 @@ export class ActionDrive extends Action {
     if((flags & DRIVE_RUN) === DRIVE_RUN){
       this.owner.setAnimationState(ModuleCreatureAnimState.RUNNING);
     }else if((flags & DRIVE_STRAFE_LEFT) !== 0){
-      this.owner.setAnimationState(ModuleCreatureAnimState.WALKING); // 0x275e
+      this.owner.setAnimationState(ModuleCreatureAnimState.WALKING); // strafe left
     }else if((flags & DRIVE_STRAFE_RIGHT) !== 0){
-      this.owner.setAnimationState(ModuleCreatureAnimState.WALKING); // 0x275f
+      this.owner.setAnimationState(ModuleCreatureAnimState.WALKING); // strafe right
     }else if((flags & DRIVE_BACKWARD) === DRIVE_BACKWARD){
       this.owner.setAnimationState(ModuleCreatureAnimState.WALKING_BACK);
     }else{
@@ -170,7 +169,7 @@ export class ActionDrive extends Action {
       this.owner.speed = 0;
       this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
 
-      // : on return 2 with retry > 1, requeue AddDriveAction
+      // On arrive with retries left, requeue another drive step.
       if(retry > 1){
         const cont = ActionDrive.create(
           this.owner.position.x,
@@ -238,7 +237,7 @@ export class ActionDrive extends Action {
     this.running = (flags & DRIVE_RUN) === DRIVE_RUN;
     const walk = owner.getWalkSpeed() || 1.7;
     const run = owner.getRunSpeed() || 5.4;
-    // : destination offset = normalize(move) * (GetWalk/RunRate * 0.0004)
+    // Destination offset = move direction × walk/run lookahead.
     // JS rates are world units/sec → use DEST_LOOKAHEAD_SEC of travel.
     if(this.running){
       move.add(fwd);
@@ -286,7 +285,7 @@ export class ActionDrive extends Action {
       move.normalize().multiplyScalar(stepScale);
       dest.x += move.x;
       dest.y += move.y;
-      // drive action: TestDirectLine binary + wall-slide before creature drive update
+      // Clear line + wall-slide before committing the drive destination.
       if(owner.area){
         this.destination.copy(
           driveResolveMoveTarget(owner.area, owner.position, dest, owner, stepScale)

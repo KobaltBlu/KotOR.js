@@ -103,7 +103,7 @@ export class FeedbackMessageManager {
     0xe: 0x596,
     0xf: 0x597,
     0x10: 0x598,
-    // AIActionHeal — GUI-string mapped TLKs (fallback message if missing)
+    // Heal action — GUI-string mapped TLKs (fallback message if missing)
     0x37: 0x5c1,
     0x38: 0x5c2,
     // 0xd = already-locked etc. needs object context — callers use dedicated paths

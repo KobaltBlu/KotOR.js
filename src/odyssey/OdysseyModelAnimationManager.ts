@@ -31,10 +31,10 @@ import {
 } from "@/odyssey/resolveFrameCursor";
 
 /**
- * OdysseyModelAnimationManager — Gob AnimRun multi-clip stack.
+ * OdysseyModelAnimationManager — multi-clip AnimRun stack.
  *
- * Ordered `runs` (oldest first). Per-run blend weight + Aurora flags
- * including QUEUE (0x20) deferred start. Compatibility accessors map to
+ * Ordered `runs` (oldest first). Per-run blend weight and animation flags,
+ * including QUEUE deferred start. Compatibility accessors map to the
  * primary base and newest overlay runs.
  *
  * @file OdysseyModelAnimationManager.ts

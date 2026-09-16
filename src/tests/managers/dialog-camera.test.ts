@@ -1,5 +1,5 @@
 /**
- * TSL Aspyr dialog-camera vanilla hack gating.
+ * TSL dialog-camera appearance / placeable override gating.
  * @jest-environment node
  */
 import { describe, expect, it } from '@jest/globals';
@@ -11,7 +11,7 @@ import {
   isLoopingDialogStuntAnimation,
 } from '@/managers/cutscene/dialog-camera';
 
-describe('isLoopingDialogStuntAnimation (IsLoopingDialogStuntAnimation)', () => {
+describe('isLoopingDialogStuntAnimation', () => {
   it('is false for base and w CUT bands', () => {
     expect(isLoopingDialogStuntAnimation(1000)).toBe(false);
     expect(isLoopingDialogStuntAnimation(1200)).toBe(false);

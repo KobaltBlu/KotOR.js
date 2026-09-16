@@ -14,23 +14,16 @@ import {
 } from "@/engine/pathfinding/test-direct-line";
 
 /**
- * creature drive update + GetDoorCrossed
- * + walk step distance test creature/BumpFriends gate
- * + drive-action TestDirectLine binary/wall-slide.
- *
- * Moves toward the path point by walk/run × delta, clips via TestDirectLine
- * (NoNonWalkPolysDetailed), NoCreaturesOnLine + BumpFriends, fires OnClicked
- * (0x1e) when crossing open linked doors.
- *
- * @file update-creature-drive.ts
+ * Per-frame creature drive: step toward a path point, clip against walkmesh
+ * and creatures, slide along walls when blocked, and signal linked doors.
  */
 
 export enum DriveUpdateResult {
-  /** Moved (return 1) */
+  /** Step applied. */
   OK = 1,
-  /** Snapped to / reached path point (return 2) */
+  /** Snapped to / reached the path point. */
   ARRIVED = 2,
-  /** Blocked by walkmesh / creature / linked door (return 3) */
+  /** Blocked by walkmesh, creature, or linked door. */
   BLOCKED = 3,
 }
 
@@ -50,8 +43,8 @@ function isLinkedTransitionDoor(door: ModuleDoor): boolean {
 }
 
 /**
- * Approximate GetDoorCrossed: segment from→to crosses an open linked door box
- * with facing-side flip (orientation plane test).
+ * True when segment from→to crosses an open linked door box and the endpoints
+ * lie on opposite sides of the door facing plane.
  */
 export function getDoorCrossed(
   area: ModuleArea | undefined,
@@ -115,9 +108,9 @@ function lineOk(code: TestDirectLineCode): boolean {
 }
 
 /**
- * Drive action — TestDirectLine to ideal; on fail binary-search
- * fraction then ±perpendicular wall-slide (up to 15 iters). Uses
- * NoNonWalkPolysDetailed via testDirectLine (hitinfo path).
+ * Resolve a drive step toward `ideal`: creature gate + bump, then direct-line
+ * clip; on fail binary-search along the segment, then ±perpendicular wall-slide
+ * (up to 15 iterations).
  */
 export function driveResolveMoveTarget(
   area: ModuleArea,
@@ -126,7 +119,7 @@ export function driveResolveMoveTarget(
   creature: ModuleCreature,
   stepLen?: number
 ): THREE.Vector3 {
-  // Drive action: NoCreaturesOnLine → BumpFriends before TestDirectLine
+  // Creature capsule gate; bump friends before walkmesh clip
   const creatures = noCreaturesOnLine(area, origin, ideal, {
     owner: creature,
     allowPartyCreatures: false,
@@ -155,7 +148,7 @@ export function driveResolveMoveTarget(
     return ideal.clone();
   }
 
-  // Binary search along origin→ideal (fStack_134=0.5, fStack_130=0.25)
+  // Binary search along origin→ideal (start mid-segment, halve step each try)
   let t = 0.5;
   let step = 0.25;
   let found = false;
@@ -185,7 +178,7 @@ export function driveResolveMoveTarget(
     return _slideBest.clone();
   }
 
-  // Wall-slide: accumulate ±perpendicular of intended move (VStack_bc / perp)
+  // Wall-slide: accumulate ±perpendicular of the intended move
   _moveDir.set(ideal.x - origin.x, ideal.y - origin.y, 0);
   if(_moveDir.lengthSq() < 1e-10){
     return origin.clone();
@@ -256,7 +249,7 @@ export function driveResolveMoveTarget(
     }
   }
 
-  // : slide step length *= max(dot, 0.25) via state speed factor
+  // Scale locomotion by how aligned the slide is with the intended move
   if(best){
     const factor = Math.max(0.25, Math.min(1, bestDot > 0 ? bestDot : 0.25));
     if(creature){
@@ -268,8 +261,8 @@ export function driveResolveMoveTarget(
 }
 
 /**
- * Per-frame clip along origin→ideal via TestDirectLine clear fraction
- * (NoNonWalkPolysDetailed), with isPointWalkable fallback.
+ * Per-frame clip along origin→ideal via direct-line clear fraction,
+ * with isPointWalkable fallback when no clear fraction is reported.
  */
 function clipWalkable(
   area: ModuleArea,
@@ -296,7 +289,7 @@ function clipWalkable(
     return _lo.clone();
   }
 
-  // Fallback binary isPointWalkable when TestDirectLine gives no clearT
+  // Fallback binary isPointWalkable when direct-line gives no clearT
   _lo.copy(origin);
   const steps = 8;
   for(let i = 1; i <= steps; i++){
@@ -331,7 +324,7 @@ function clipWalkable(
   return _lo.clone();
 }
 
-/** Queue Door OnClicked (script event 0x1e) — creature drive update linked-door path. */
+/** Queue Door OnClicked when drive crosses an open linked transition. */
 function signalDoorClicked(creature: ModuleCreature, door: ModuleDoor){
   const tm = GameState.module?.timeManager;
   const event = new GameState.GameEventFactory.EventSignalEvent();
@@ -344,9 +337,9 @@ function signalDoorClicked(creature: ModuleCreature, door: ModuleDoor){
 }
 
 /**
- * creature drive update — one frame of drive motion toward dest.
- * @param running Use run rate (arg1).
- * @param rateOverride Optional world-units/sec (strafe 0x275e/0x275f → 1.6).
+ * One frame of drive motion toward `dest`.
+ * @param running Use run rate instead of walk.
+ * @param rateOverride Optional world-units/sec (e.g. strafe ≈ 1.6).
  */
 export function updateCreatureDrive(
   creature: ModuleCreature,
@@ -407,8 +400,7 @@ export function updateCreatureDrive(
     return DriveUpdateResult.BLOCKED;
   }
 
-  // creature drive update: NoCreaturesOnLine only (no BumpFriends
-  // bump happens in drive resolve / walk update / driveResolveMoveTarget).
+  // Creature capsule only here (friend bump is in driveResolve / walk update).
   // Party members are soft-bumped earlier; do not hard-block the final step.
   const creatures = noCreaturesOnLine(area, creature.position, clipped, {
     owner: creature,
@@ -427,7 +419,7 @@ export function updateCreatureDrive(
     creature.collisionManager.blockingObject = undefined;
   }
 
-  // Linked open door crossed → SignalEvent OnClicked (0x1e) then return 3
+  // Linked open door crossed → OnClicked, then blocked this frame
   const crossed = getDoorCrossed(area, creature.position, clipped);
   if(crossed && crossed.isOpen?.() && isLinkedTransitionDoor(crossed)){
     signalDoorClicked(creature, crossed);

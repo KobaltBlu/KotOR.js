@@ -8,8 +8,9 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import { isCreature } from "@/module/guards/isCreature";
 
 /**
- * Haste/Slow onApply / onRemove.
- * Net-balance HASTE(+1) vs SLOW(-1), then sync HASTEINTERNAL / SLOWINTERNAL children.
+ * Haste / Slow onApply / onRemove helpers.
+ * Net-balance HASTE (+1) vs SLOW (−1), then sync HasteInternal /
+ * SlowInternal children on the creature.
  */
 
 function copyMeta(from: GameEffect, to: GameEffect){
