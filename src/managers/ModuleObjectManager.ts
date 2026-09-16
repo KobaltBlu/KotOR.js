@@ -1178,12 +1178,19 @@ export class ModuleObjectManager {
         }
         return { ok: true, hostile: false };
       }
+      // ValidNearest: SEEN in PerceptionList OR DoSpotDetection (no LOS for pool).
+      // CanSee / hasLineOfSight is enforced later in DoPassiveSelection.
       const viewer = player as ModuleCreature;
       const seen = typeof viewer.hasSeenObject === 'function'
         ? viewer.hasSeenObject(cre)
-        : true;
-      if(!seen && !obj.hasLineOfSight(player, NEAREST_OBJECT_RANGE)){
-        return { ok: false, hostile: false };
+        : false;
+      if(!seen){
+        const spotOk = typeof viewer.doSpotDetection === 'function'
+          ? viewer.doSpotDetection(cre)
+          : false;
+        if(!spotOk){
+          return { ok: false, hostile: false };
+        }
       }
       const hostile = typeof cre.isHostile === 'function'
         ? cre.isHostile(player)
@@ -1314,10 +1321,13 @@ export class ModuleObjectManager {
     return this.#nearestHostileFlags.get(obj) === true;
   }
 
-  /** Approximate CanSee for selection. */
+  /** CSWCCreature::CanSee(pc, target) — PC→target, 30u, eye height 1.5. */
   static canSeeObject(player: ModuleObject, obj: ModuleObject): boolean {
     if(!player || !obj) return false;
-    return obj.hasLineOfSight(player, NEAREST_OBJECT_RANGE);
+    return player.hasLineOfSight(obj, NEAREST_OBJECT_RANGE, {
+      ignorePerceptionRange: true,
+      eyeHeight: 1.5,
+    });
   }
 
   /**
@@ -1515,8 +1525,8 @@ export class ModuleObjectManager {
         }
 
         // EnemySighted force-pick: creatures only (not placeables/doors).
-        // Do not steal UI focus from a live sticky selection while already in
-        // combat — queued attacks keep the current combat target.
+        // Rising edge always sets last_target (retail DoPassiveSelection);
+        // auto-pause only when not already in client combat mode.
         if(
           enemyRising &&
           !isMine &&
@@ -1525,12 +1535,10 @@ export class ModuleObjectManager {
           if(!combat){
             GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.EnemySighted);
           }
-          if(!combat || !keepSticky){
-            last = obj;
-            keepSticky = true;
-            forceLookAt = true;
-            forceCameraFocus = true;
-          }
+          last = obj;
+          keepSticky = true;
+          forceLookAt = true;
+          forceCameraFocus = true;
         }
       }
     }

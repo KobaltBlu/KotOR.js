@@ -5490,11 +5490,13 @@ export class ModuleCreature extends ModuleObject {
 
   /**
    * Whether this creature currently SEES `object` (perception bit 0x01).
-   * GetVisibleListElement bit_flags & 1.
+   * GetVisibleListElement bit_flags & 1 — match by object ref or saved ObjectId.
    */
   hasSeenObject(object: ModuleObject): boolean {
     if(!object || object === this) return true;
-    const entry = this.perceptionList?.find((o) => o.object === object);
+    const entry = this.perceptionList?.find(
+      (o) => o.object === object || o.objectId === object.id
+    );
     return !!(entry && (entry.data & PerceptionMask.SEEN));
   }
 

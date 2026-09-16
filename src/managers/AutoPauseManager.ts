@@ -1,4 +1,5 @@
 import { GameState } from "@/GameState";
+import { getClientCombatMode } from "@/combat/combat-engagement";
 import type { INIConfig } from "@/engine/INIConfig";
 import { AutoPauseState } from "@/enums/engine/AutoPauseState";
 import { EngineMode } from "@/enums/engine/EngineMode";
@@ -116,11 +117,11 @@ export class AutoPauseManager {
 
     const player = GameState.getCurrentPlayer?.();
     const inCombat = !!player?.combatData?.combatState;
-    if(
-      (type == AutoPauseState.EnemySighted || type == AutoPauseState.MineSighted) &&
-      inCombat
-    ){
-      return false;
+    // DoPassiveSelection: Enemy/Mine Sighted auto-pause only when client combat_mode == 0
+    if(type == AutoPauseState.EnemySighted || type == AutoPauseState.MineSighted){
+      if(getClientCombatMode()){
+        return false;
+      }
     }
     if(type == AutoPauseState.NewTargetSelected && !inCombat) return false;
 
