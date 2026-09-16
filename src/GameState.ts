@@ -2387,19 +2387,7 @@ export class GameState implements EngineContext {
     GameState.module.area.updateRoomWindUniforms();
     GameState.CameraShakeManager.update(delta, GameState.currentCamera);
     
-    //Handle the visibility of the PAUSE overlay (SetPaused reason set)
-    if(
-      GameState.State == EngineState.PAUSED &&
-      !GameState.timeStopActive &&
-      GameState.MenuManager.InGameOverlay.isVisible() &&
-      GameState.AutoPauseManager.ShowsPauseOverlay(GameState.AutoPauseManager.CurrentReason)
-    ){
-      if(!GameState.MenuManager.InGamePause.isVisible())
-        GameState.MenuManager.InGamePause.show();
-    }else{
-      if(GameState.MenuManager.InGamePause.isVisible())
-        GameState.MenuManager.InGamePause.hide();
-    }
+    AutoPauseManager.syncPauseOverlay({ requireInGameOverlay: true });
   }
 
   static UpdateDialog(delta: number = 0){
@@ -2432,19 +2420,7 @@ export class GameState implements EngineContext {
     GameState.module.area.updateRoomWindUniforms();
     GameState.CameraShakeManager.update(delta, GameState.currentCamera);
     
-    //Handle the visibility of the PAUSE overlay (SetPaused reason set)
-    if(
-      GameState.State == EngineState.PAUSED &&
-      !GameState.timeStopActive &&
-      GameState.MenuManager.InGameOverlay.isVisible() &&
-      GameState.AutoPauseManager.ShowsPauseOverlay(GameState.AutoPauseManager.CurrentReason)
-    ){
-      if(!GameState.MenuManager.InGamePause.isVisible())
-        GameState.MenuManager.InGamePause.show();
-    }else{
-      if(GameState.MenuManager.InGamePause.isVisible())
-        GameState.MenuManager.InGamePause.hide();
-    }
+    AutoPauseManager.syncPauseOverlay({ requireInGameOverlay: true });
   }
 
   static UpdateMinigame(delta: number = 0){
@@ -2471,18 +2447,7 @@ export class GameState implements EngineContext {
     GameState.module.area.updateRoomWindUniforms();
     GameState.CameraShakeManager.update(delta, GameState.currentCamera);
 
-    // Pause banner — MG has no InGameOverlay, so do not gate on it.
-    if(
-      GameState.State == EngineState.PAUSED &&
-      !GameState.timeStopActive &&
-      GameState.AutoPauseManager.ShowsPauseOverlay(GameState.AutoPauseManager.CurrentReason)
-    ){
-      if(!GameState.MenuManager.InGamePause.isVisible())
-        GameState.MenuManager.InGamePause.show();
-    }else{
-      if(GameState.MenuManager.InGamePause.isVisible())
-        GameState.MenuManager.InGamePause.hide();
-    }
+    AutoPauseManager.syncPauseOverlay({ requireInGameOverlay: false });
   }
 
   static UpdateFreeLook(delta: number = 0){

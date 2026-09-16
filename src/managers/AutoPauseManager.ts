@@ -11,7 +11,7 @@ import { SoundMode } from "@/enums/audio/SoundMode";
  * AutoPauseManager class.
  *
  * client auto-pause + manual combat-pause (SetPausedByCombat reason 4).
- * Pause banner text comes from InGamePause.setPauseReason (GUI).
+ * Pause banner text is applied by syncPauseOverlay → InGamePause.setPauseReason (CGuiInGame::SetPaused).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -37,6 +37,8 @@ export class AutoPauseManager {
   static CurrentReason: AutoPauseState = AutoPauseState.Generic;
   static partyKilledCooldownUntil: number = 0;
   static enemySightedLatchUntil: number = 0;
+  /** Last reason passed to SetPauseReason (retail field213 sync). */
+  static #lastPauseReasonApplied: AutoPauseState | number = -1;
 
   static onPauseStateChange: Function;
 
@@ -53,6 +55,47 @@ export class AutoPauseManager {
     this.CurrentReason = AutoPauseState.Generic;
     this.partyKilledCooldownUntil = 0;
     this.enemySightedLatchUntil = 0;
+    this.#lastPauseReasonApplied = -1;
+  }
+
+  /**
+   * CGuiInGame::SetPaused — SetPauseReason then show/hide pause panel.
+   */
+  static syncPauseOverlay(options?: { requireInGameOverlay?: boolean }){
+    const pause = GameState.MenuManager?.InGamePause;
+    if(!pause){
+      return;
+    }
+
+    const reason = this.CurrentReason;
+    let shouldShow =
+      GameState.State === EngineState.PAUSED &&
+      !GameState.timeStopActive &&
+      this.ShowsPauseOverlay(reason);
+
+    if(
+      shouldShow &&
+      options?.requireInGameOverlay &&
+      !GameState.MenuManager.InGameOverlay?.isVisible?.()
+    ){
+      shouldShow = false;
+    }
+
+    if(shouldShow){
+      const visible = pause.isVisible();
+      if(!visible || reason !== this.#lastPauseReasonApplied){
+        pause.setPauseReason(reason);
+        this.#lastPauseReasonApplied = reason;
+      }
+      if(!visible){
+        pause.show();
+      }
+    }else{
+      if(pause.isVisible()){
+        pause.hide();
+      }
+      this.#lastPauseReasonApplied = -1;
+    }
   }
 
   /**
@@ -101,7 +144,6 @@ export class AutoPauseManager {
       GameState.State = EngineState.PAUSED;
       // SetPausedByCombat(1) → SetSoundMode(2) — SFX pause, music stays.
       AudioEngine.SetSoundMode(SoundMode.PAUSE, 0);
-      GameState.MenuManager?.InGamePause?.setPauseReason(reason);
       if(typeof this.onPauseStateChange === 'function'){
         this.onPauseStateChange(reason);
       }
@@ -145,7 +187,6 @@ export class AutoPauseManager {
     GameState.State = EngineState.PAUSED;
     // SetPausedByCombat(1) → SetSoundMode(2) — SFX pause, music stays (GetPauseable).
     AudioEngine.SetSoundMode(SoundMode.PAUSE, 0);
-    GameState.MenuManager?.InGamePause?.setPauseReason(type);
 
     if(typeof this.onPauseStateChange === 'function'){
       this.onPauseStateChange(type);
@@ -164,6 +205,7 @@ export class AutoPauseManager {
   static Unpause(){
     this.AutoPaused = false;
     this.CurrentReason = AutoPauseState.Generic;
+    this.#lastPauseReasonApplied = -1;
     GameState.State = EngineState.RUNNING;
     // SetPausedByCombat(0) → SetSoundMode(0)
     if(AudioEngine.GetSoundMode() === SoundMode.PAUSE){

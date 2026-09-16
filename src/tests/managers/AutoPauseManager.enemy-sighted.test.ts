@@ -65,7 +65,7 @@ describe('AutoPauseManager EnemySighted combat gate', () => {
     const ok = AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.EnemySighted);
 
     expect(ok).toBe(true);
-    expect(mockSetPauseReason).toHaveBeenCalledWith(AutoPauseState.EnemySighted);
+    expect(mockSetPauseReason).not.toHaveBeenCalled();
     expect(gameState).toBe(EngineState.PAUSED);
   });
 

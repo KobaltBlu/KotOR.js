@@ -80,30 +80,66 @@ export class InGamePause extends GameMenu {
   }
 
   /**
-   * SetPauseReason — map reason byte → LBL_PAUSEREASON
-   * TLK and show/hide LBL_PRESS (enemy/mine hide press).
+   * SetPauseReason — TLK → LBL_PAUSEREASON, show/hide LBL_PRESS,
+   * then resize reason / press / panel / unpause like retail.
    */
   setPauseReason(reason: AutoPauseState | number){
     const strRef = this.getPauseStrRef(reason);
     const showPress = this.shouldShowPressLabel(reason);
+    const reasonLbl = this.LBL_PAUSEREASON;
+    const pressLbl = this.LBL_PRESS;
+    const panel = this.tGuiPanel;
+    if(!reasonLbl || !panel){
+      return;
+    }
 
     const reasonText = GameState.TLKManager.GetStringById(strRef)?.Value ?? '';
-    this.LBL_PAUSEREASON?.setText(reasonText);
+    reasonLbl.setText(reasonText);
 
-    if(showPress){
+    const reasonHeight = reasonLbl.getIdealHeight?.() || reasonLbl.extent.height;
+    reasonLbl.setExtentHeight(reasonHeight);
+
+    let contentTop = reasonLbl.extent.top;
+    let contentHeight = reasonHeight;
+
+    if(showPress && pressLbl){
       this.applyPressLabelText();
-      this.LBL_PRESS?.show();
-    }else{
-      this.LBL_PRESS?.hide();
+      pressLbl.show();
+      const pressHeight = pressLbl.getIdealHeight?.() || pressLbl.extent.height;
+      const pressTop = reasonLbl.extent.top + 2 + reasonHeight;
+      pressLbl.setExtentTop(pressTop);
+      pressLbl.setExtentHeight(pressHeight);
+      contentTop = pressTop;
+      contentHeight = pressHeight;
+    }else if(pressLbl){
+      pressLbl.hide();
     }
+
+    const panelHeight = contentTop + 5 + contentHeight;
+    panel.setExtentHeight?.(panelHeight);
+    if(panel.extent){
+      panel.extent.height = panelHeight;
+    }
+
+    if(this.BTN_UNPAUSE){
+      this.BTN_UNPAUSE.setExtentLeft?.(reasonLbl.extent.left);
+      this.BTN_UNPAUSE.setExtentTop?.(reasonLbl.extent.top);
+      this.BTN_UNPAUSE.setExtentWidth?.(reasonLbl.extent.width);
+      this.BTN_UNPAUSE.setExtentHeight?.(panelHeight);
+    }
+
+    panel.recalculate?.();
+    this.recalculatePosition();
   }
 
   show() {
     super.show();
-    this.setPauseReason(GameState.AutoPauseManager.CurrentReason);
+    // Reason text is applied by AutoPauseManager.syncPauseOverlay before show (CGuiInGame::SetPaused).
     this.tGuiPanel.pulsing = true;
     this.LBL_PAUSEREASON.pulsing = true;
-    this.LBL_PRESS.pulsing = true;
+    if(this.shouldShowPressLabel(GameState.AutoPauseManager.CurrentReason)){
+      this.LBL_PRESS.pulsing = true;
+    }
     this.recalculatePosition();
   }
 
