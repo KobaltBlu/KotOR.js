@@ -2,6 +2,7 @@ import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
 import type { OdysseyController } from "@/odyssey/controllers/OdysseyController";
 import { AuroraAnimationFlag } from "@/enums/animation/AuroraAnimationFlag";
 import type { OdysseyModelAnimationManagerState } from "@/enums/odyssey/OdysseyModelAnimationManagerState";
+import type { BoundAnimation } from "@/odyssey/BoundAnimation";
 
 /**
  * Max concurrent AnimRuns per Gob.
@@ -51,7 +52,7 @@ export interface AnimRun {
    */
   frameCursorArray?: Int32Array;
   /** BoundAnimation used to size/index frameCursorArray. */
-  boundAnimation?: import("@/odyssey/BoundAnimation").BoundAnimation;
+  boundAnimation?: BoundAnimation;
 }
 
 export function isOverlayRun(run: AnimRun): boolean {

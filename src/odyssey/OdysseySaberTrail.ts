@@ -8,13 +8,17 @@ import {
 } from "@/odyssey/OdysseySaberTrailGeometry";
 
 export const SABER_TRAIL_SAMPLE_INTERVAL = 0.012;
-export const SABER_TRAIL_LIFETIME =
-  (SABER_TRAIL_CAPACITY - 1) * SABER_TRAIL_SAMPLE_INTERVAL;
+/** Keep a few intervals of history so the ribbon is visible without a solid fan. */
+export const SABER_TRAIL_MAX_AGE = SABER_TRAIL_SAMPLE_INTERVAL * 4;
 
 const MAX_CATCH_UP_SAMPLES = 4;
 const MAX_TRAIL_DELTA = 0.1;
-const POSITION_EPSILON_SQ = 1e-10;
-const ROTATION_EPSILON = 1e-6;
+/** ~1 cm */
+const POSITION_EPSILON_SQ = 1e-4;
+/** ~1.3° of relative quaternion change (1 - |dot|). */
+const ROTATION_EPSILON = 2.5e-4;
+/** Need a real ribbon before replacing/competing with the blade visually. */
+const MIN_ACTIVE_SAMPLES = 3;
 
 const enum SaberTrailDirty {
   None = 0,
@@ -53,6 +57,7 @@ function readUV2(
 export class OdysseySaberTrail {
   readonly mesh: THREE.Mesh<THREE.BufferGeometry, THREE.Material>;
 
+  private readonly bladeMesh: THREE.Mesh;
   private readonly geometryHelper: OdysseySaberTrailGeometry;
   private readonly samplePositions = new Float32Array(SABER_TRAIL_CAPACITY * 3);
   private readonly sampleOrientations = new Float32Array(SABER_TRAIL_CAPACITY * 4);
@@ -74,7 +79,13 @@ export class OdysseySaberTrail {
   private readonly sampleOrientation = new THREE.Quaternion();
   private initialized = false;
 
-  constructor(bladeMesh: THREE.Mesh, node: OdysseyModelNodeSaber) {
+  constructor(
+    bladeMesh: THREE.Mesh,
+    node: OdysseyModelNodeSaber,
+    parentNode?: THREE.Object3D,
+  ) {
+    this.bladeMesh = bladeMesh;
+
     const profileVerts = new Float32Array(SABER_TRAIL_PROFILE_COUNT * 3);
     const profileUVs = new Float32Array(SABER_TRAIL_PROFILE_COUNT * 2);
     const verts = node.vertices;
@@ -101,10 +112,9 @@ export class OdysseySaberTrail {
     this.mesh.castShadow = false;
     this.mesh.receiveShadow = false;
 
-    const parent = bladeMesh.parent;
-    if (parent) {
-      parent.add(this.mesh);
-    }
+    // Child of the blade so trail-local space matches blade.matrixWorld.
+    bladeMesh.add(this.mesh);
+    void parentNode;
   }
 
   update(delta: number, matrixWorld: THREE.Matrix4): void {
@@ -120,23 +130,14 @@ export class OdysseySaberTrail {
 
     this.time += dt;
 
-    // Expire samples older than trail lifetime.
+    // Expire samples older than max age (always keep ≥ 1).
     while (this.sampleCount > 1) {
       const oldest = this.getOldestIndex();
-      if (this.time - this.sampleTimes[oldest] <= SABER_TRAIL_LIFETIME) {
+      if (this.time - this.sampleTimes[oldest] <= SABER_TRAIL_MAX_AGE) {
         break;
       }
       this.sampleCount--;
       this.dirty |= SaberTrailDirty.History;
-    }
-    // Drop last sample once it expires (fully idle).
-    if (this.sampleCount === 1) {
-      const oldest = this.getOldestIndex();
-      if (this.time - this.sampleTimes[oldest] > SABER_TRAIL_LIFETIME) {
-        this.sampleCount = 0;
-        this.writeIndex = 0;
-        this.dirty |= SaberTrailDirty.History | SaberTrailDirty.Visibility;
-      }
     }
 
     matrixWorld.decompose(
@@ -240,6 +241,7 @@ export class OdysseySaberTrail {
     } else {
       this.initialized = false;
       this.mesh.visible = false;
+      this.bladeMesh.visible = true;
       this.geometryHelper.geometry.setDrawRange(0, 0);
       this.dirty = SaberTrailDirty.None;
     }
@@ -248,6 +250,7 @@ export class OdysseySaberTrail {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
+    this.bladeMesh.visible = true;
     this.mesh.removeFromParent();
     this.geometryHelper.dispose();
     // Shared blade material — do not dispose.
@@ -289,7 +292,11 @@ export class OdysseySaberTrail {
       return;
     }
 
-    const active = this.sampleCount >= 2;
+    // Keep the ordinary blade always visible to avoid thin-ribbon pop-in.
+    // Trail is an additive overlay anchored to the live tip.
+    this.bladeMesh.visible = true;
+
+    const active = this.sampleCount >= MIN_ACTIVE_SAMPLES;
     if (active) {
       this.geometryHelper.fillPositions(
         this.samplePositions,
@@ -297,6 +304,8 @@ export class OdysseySaberTrail {
         this.writeIndex,
         this.sampleCount,
         matrixWorld,
+        this.currentPosition,
+        this.currentOrientation,
       );
       this.mesh.visible = true;
     } else {

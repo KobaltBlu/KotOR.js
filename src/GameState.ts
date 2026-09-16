@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { collapseAreaRoomLightmaps } from "@/three/odyssey/OdysseyLightmapAtlas";
 import {
   AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, LevelUpManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager,
   FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, OdysseyLightmapBaker, PlaceableLightmapBaker, OdysseyShadowManager, WindManager, GrassManager, MenuManager, ModuleObjectManager, PartyManager,
@@ -11,7 +12,7 @@ import type { SWRuleSet } from "@/engine/rules/SWRuleSet";
 import type { TalentObject, TalentFeat, TalentSkill, TalentSpell } from "@/talents";
 import type { ModuleObject, ModuleCreature, Module, ModuleDoor } from "@/module";
 import type { NWScript } from "@/nwscript/NWScript";
-import type { SaveGame } from "@/engine/SaveGame";
+import { SaveGame } from "@/engine/SaveGame";
 import type { GameEffectFactory } from "@/effects/GameEffectFactory";
 import type { GameEventFactory } from "@/events/GameEventFactory";
 
@@ -1696,7 +1697,6 @@ export class GameState implements EngineContext {
           try{
             await ModuleSaveTable.doModuleEnterSaveCleanup(name);
             if(ModuleSaveTable.shouldAutoSaveOnEnteringModule(name)){
-              const { SaveGame } = await import('@/engine/SaveGame');
               await SaveGame.AutoSaveOnModuleEnter(name);
             }
           }catch(e){
@@ -1734,7 +1734,6 @@ export class GameState implements EngineContext {
       });
 
       try {
-        const { collapseAreaRoomLightmaps } = await import("@/three/odyssey/OdysseyLightmapAtlas");
         collapseAreaRoomLightmaps(module.area?.rooms || []);
       }catch(e){
         console.warn('Lightmap atlas collapse failed', e);
@@ -1981,7 +1980,6 @@ export class GameState implements EngineContext {
       });
 
       try {
-        const { collapseAreaRoomLightmaps } = await import("@/three/odyssey/OdysseyLightmapAtlas");
         collapseAreaRoomLightmaps(module.area?.rooms || []);
       }catch(e){
         console.warn('Lightmap atlas collapse failed', e);

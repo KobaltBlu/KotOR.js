@@ -9,6 +9,7 @@ import {
   MDX_SENTINEL_SKIN,
 } from "@/odyssey/binary/OdysseyModelBinaryLayout";
 import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import type { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
 
 type MdxMeshEntry = {
   mesh: OdysseyModelNodeMesh;
@@ -61,7 +62,7 @@ export class OdysseyModelBinaryMdxWriter {
     const nonSkin: MdxMeshEntry[] = [];
     const skin: MdxMeshEntry[] = [];
 
-    const walk = (node: import("@/odyssey/OdysseyModelNode").OdysseyModelNode) => {
+    const walk = (node: OdysseyModelNode) => {
       if (node instanceof OdysseyModelNodeMesh) {
         const entry: MdxMeshEntry = {
           mesh: node,

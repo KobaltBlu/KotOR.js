@@ -30,6 +30,7 @@ import { AILevel } from "@/enums/module/AILevel";
 import { getPathPersonalSpace } from "@/combat/attack-range";
 import { partyFollowPath } from "@/engine/pathfinding/party-follow-path";
 import { findSafeLocation } from "@/engine/pathfinding/find-safe-location";
+import { SaveLoadAudit } from "@/engine/SaveLoadAudit";
 
 import { isCreature } from "@/module/guards/isCreature";
 
@@ -944,7 +945,6 @@ export class PartyManager {
       }
     }
 
-    const { SaveLoadAudit } = await import("@/engine/SaveLoadAudit");
     SaveLoadAudit.runRetailCompatChecklist('load');
   }
 

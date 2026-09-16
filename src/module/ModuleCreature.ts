@@ -1500,6 +1500,8 @@ export class ModuleCreature extends ModuleObject {
         }
 
         this.updateHeadTracking(delta);
+        // After body bones are posed so saber trails sample current matrixWorld.
+        this.updateWeaponModels(delta);
       }
 
       if(this.collisionManager.blockingObject != this.collisionManager.lastBlockingObject){
@@ -1580,12 +1582,13 @@ export class ModuleCreature extends ModuleObject {
         this.equipment.LEFTARMBAND.update(delta);
       }
 
+      // Hands: powered/item logic only — model tick is updateWeaponModels after body anim.
       if(this.equipment.RIGHTHAND){
-        this.equipment.RIGHTHAND.update(delta);
+        this.equipment.RIGHTHAND.updatePoweredAnimation?.();
       }
 
       if(this.equipment.LEFTHAND){
-        this.equipment.LEFTHAND.update(delta);
+        this.equipment.LEFTHAND.updatePoweredAnimation?.();
       }
 
       if(this.equipment.ARMOR){
@@ -1621,6 +1624,7 @@ export class ModuleCreature extends ModuleObject {
     }else{
       this.updateAnimationState();
       this.updateItems(delta);
+      this.updateWeaponModels(delta);
     }
 
     // Decay stuck timer only when not in contact (CollisionManager increments while colliding)
@@ -3592,17 +3596,13 @@ export class ModuleCreature extends ModuleObject {
 
   updateItems(delta = 0){
 
+    // Weapon meshes are updated via updateWeaponModels() after body animation so
+    // saber trails see fresh bone matrices and are not double-ticked per frame.
     if(this.equipment.RIGHTHAND){
-      if(this.equipment.RIGHTHAND.model instanceof OdysseyModel3D){
-        this.equipment.RIGHTHAND.model.update(delta)
-      }
       this.equipment.RIGHTHAND.updatePoweredAnimation?.();
     }
 
     if(this.equipment.LEFTHAND){
-      if(this.equipment.LEFTHAND.model instanceof OdysseyModel3D){
-        this.equipment.LEFTHAND.model.update(delta)
-      }
       this.equipment.LEFTHAND.updatePoweredAnimation?.();
     }
 
@@ -4343,6 +4343,17 @@ export class ModuleCreature extends ModuleObject {
     if(this.model instanceof OdysseyModel3D && this.model.bonesInitialized){
       this.model.animateFrame = true;
       this.model.update(delta);
+      this.updateWeaponModels(delta);
+    }
+  }
+
+  /** Tick wielded weapon models once per frame after the body pose is resolved. */
+  updateWeaponModels(delta = 0){
+    if(this.equipment.RIGHTHAND?.model instanceof OdysseyModel3D){
+      this.equipment.RIGHTHAND.model.update(delta);
+    }
+    if(this.equipment.LEFTHAND?.model instanceof OdysseyModel3D){
+      this.equipment.LEFTHAND.model.update(delta);
     }
   }
 

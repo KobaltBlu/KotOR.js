@@ -8,6 +8,7 @@ import { AILevel } from "@/enums/module/AILevel";
 import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
 import { GameState } from "@/GameState";
 import { ModuleObject } from "@/module/ModuleObject";
+import type { ModuleAreaOfEffect } from "@/module/ModuleAreaOfEffect";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
 import type { ModuleArea } from "@/module/ModuleArea";
@@ -1992,7 +1993,7 @@ NWScriptDefK2.Actions = {
     args: [ NWScriptDataType.OBJECT ],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(isAreaOfEffect(args[0])){
-        const aoe = args[0] as import("@/module/ModuleAreaOfEffect").ModuleAreaOfEffect;
+        const aoe = args[0] as ModuleAreaOfEffect;
         return aoe.creator || GameState.ModuleObjectManager.GetObjectById(aoe.creatorId);
       }
       return undefined;

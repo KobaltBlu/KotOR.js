@@ -11,6 +11,8 @@ import type { NWScriptGlobalInit } from "@/nwscript/decompiler/NWScriptGlobalVar
 import { OP_STORE_STATE, OP_STORE_STATEALL, OP_JMP, OP_RETN, OP_ACTION, OP_JZ, OP_JNZ, OP_CPDOWNSP, OP_RSADD, OP_MOVSP } from "@/nwscript/NWScriptOPCodes";
 import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
 import { toSignedInt32 } from "@/nwscript/decompiler/NWScriptOpcodeSemantics";
+import type { NWScriptLocalInit } from "@/nwscript/decompiler/NWScriptLocalVariableAnalyzer";
+import type { NWScriptFunctionParameter } from "@/nwscript/decompiler/NWScriptFunctionAnalyzer";
 
 /**
  * Represents a high-level statement in the decompiled code
@@ -57,7 +59,7 @@ export class NWScriptStatementBuilder {
   private stackSimulator: NWScriptStackSimulator;
   private expressionBuilder: NWScriptExpressionBuilder;
   private globalInits: NWScriptGlobalInit[] = [];
-  private localInits: import('./NWScriptLocalVariableAnalyzer').NWScriptLocalInit[] = [];
+  private localInits: NWScriptLocalInit[] = [];
   
   /**
    * Map from block to structure that contains it
@@ -72,7 +74,7 @@ export class NWScriptStatementBuilder {
   /**
    * Current function parameters (for condition extraction)
    */
-  private currentFunctionParameters: import('./NWScriptFunctionAnalyzer').NWScriptFunctionParameter[] = [];
+  private currentFunctionParameters: NWScriptFunctionParameter[] = [];
   
   /**
    * OR chain detector for simplifying OR expressions
@@ -88,7 +90,7 @@ export class NWScriptStatementBuilder {
     cfg: NWScriptControlFlowGraph, 
     structures: NWScriptControlStructure[] = [], 
     globalInits: NWScriptGlobalInit[] = [],
-    localInits: import('./NWScriptLocalVariableAnalyzer').NWScriptLocalInit[] = []
+    localInits: NWScriptLocalInit[] = []
   ) {
     this.cfg = cfg;
     this.structures = structures;
@@ -414,7 +416,7 @@ export class NWScriptStatementBuilder {
    * CRITICAL FIX: Process blocks in CFG execution order (topological/dominance order)
    * to ensure predecessors are processed before successors.
    */
-  processBlocksForFunction(functionBlocks: NWScriptBasicBlock[], parameters: import('./NWScriptFunctionAnalyzer').NWScriptFunctionParameter[] = []): void {
+  processBlocksForFunction(functionBlocks: NWScriptBasicBlock[], parameters: NWScriptFunctionParameter[] = []): void {
     // Clear stack for new function
     this.stackSimulator.clear();
     this.pendingNestedCalls.clear();

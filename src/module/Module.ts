@@ -36,6 +36,7 @@ import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { ScriptVarTable } from "@/engine/ScriptVarTable";
 import { ModuleSaveTable } from "@/engine/ModuleSaveTable";
 import { AIScheduler } from "@/engine/AIScheduler";
+import type { EffectAreaOfEffect } from "@/effects/EffectAreaOfEffect";
 
 export interface ModuleExpansionEntry {
   name: CExoLocString;
@@ -549,7 +550,7 @@ export class Module {
 
     // location AOE: spawn ModuleAreaOfEffect at lLocation
     if(effect.type === GameEffectType.EffectAreaOfEffect && lLocation){
-      const aoeEffect = effect as import("@/effects/EffectAreaOfEffect").EffectAreaOfEffect;
+      const aoeEffect = effect as EffectAreaOfEffect;
       aoeEffect.applyLocation = lLocation;
       effect.setCreator(this.area as any);
       effect.setAttachedObject(this as any);

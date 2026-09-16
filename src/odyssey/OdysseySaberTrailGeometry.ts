@@ -7,14 +7,17 @@ export const SABER_TRAIL_PROFILE_COUNT = 4;
 /** Draw trail profile base vert index. */
 export const SABER_TRAIL_PROFILE_VERT = 88;
 
-const MAX_VERTEX_COUNT = SABER_TRAIL_CAPACITY * SABER_TRAIL_PROFILE_COUNT;
-const MAX_INDEX_COUNT =
-  (SABER_TRAIL_CAPACITY - 1) * SABER_TRAIL_PROFILE_COUNT * 6;
+/** History slots + one live tip profile. */
+const MAX_VERTEX_COUNT = (SABER_TRAIL_CAPACITY + 1) * SABER_TRAIL_PROFILE_COUNT;
+const MAX_INDEX_COUNT = SABER_TRAIL_CAPACITY * SABER_TRAIL_PROFILE_COUNT * 6;
 
 const _tmpV = new THREE.Vector3();
 const _samplePos = new THREE.Vector3();
 const _sampleQuat = new THREE.Quaternion();
-const _invMatrix = new THREE.Matrix4();
+const _refPos = new THREE.Vector3();
+const _refQuat = new THREE.Quaternion();
+const _refScale = new THREE.Vector3();
+const _invRefQuat = new THREE.Quaternion();
 
 /**
  * Static ribbon topology + dynamic position fill for CPU saber trails.
@@ -35,7 +38,7 @@ export class OdysseySaberTrailGeometry {
     this.uvs = new Float32Array(MAX_VERTEX_COUNT * 2);
     this.indices = new Uint16Array(MAX_INDEX_COUNT);
 
-    for (let slot = 0; slot < SABER_TRAIL_CAPACITY; slot++) {
+    for (let slot = 0; slot < SABER_TRAIL_CAPACITY + 1; slot++) {
       const base = slot * SABER_TRAIL_PROFILE_COUNT;
       for (let i = 0; i < SABER_TRAIL_PROFILE_COUNT; i++) {
         const i2 = i * 2;
@@ -46,9 +49,8 @@ export class OdysseySaberTrailGeometry {
     }
 
     let ii = 0;
-    for (let slot = 0; slot < SABER_TRAIL_CAPACITY - 1; slot++) {
-      // Positions are filled oldest → newest; match prior emitProfilePair
-      // winding (curr = newer, prev = older).
+    // Capacity segments between history slots, plus one to the live tip.
+    for (let slot = 0; slot < SABER_TRAIL_CAPACITY; slot++) {
       const currBase = (slot + 1) * SABER_TRAIL_PROFILE_COUNT;
       const prevBase = slot * SABER_TRAIL_PROFILE_COUNT;
       for (let i = 0; i < SABER_TRAIL_PROFILE_COUNT; i++) {
@@ -80,10 +82,33 @@ export class OdysseySaberTrailGeometry {
     this.geometry.setDrawRange(0, 0);
   }
 
+  private writeProfile(
+    vertBase: number,
+    pos: THREE.Vector3,
+    quat: THREE.Quaternion,
+  ): void {
+    for (let i = 0; i < SABER_TRAIL_PROFILE_COUNT; i++) {
+      const i3 = i * 3;
+      _tmpV.set(
+        this.profileVerts[i3],
+        this.profileVerts[i3 + 1],
+        this.profileVerts[i3 + 2],
+      );
+      _tmpV.applyQuaternion(quat);
+      _tmpV.add(pos);
+      // Match pre-refactor local transform (ignore scale).
+      _tmpV.sub(_refPos);
+      _tmpV.applyQuaternion(_invRefQuat);
+      const dst = (vertBase + i) * 3;
+      this.positions[dst] = _tmpV.x;
+      this.positions[dst + 1] = _tmpV.y;
+      this.positions[dst + 2] = _tmpV.z;
+    }
+  }
+
   /**
-   * Write ribbon positions for `sampleCount` ring samples into the position buffer.
-   * Samples are read oldest → newest. Returns active index count for setDrawRange.
-   * Uses matrix invert (no decompose) so the caller can own the single per-update decompose.
+   * Write ribbon positions: history samples oldest → newest, then live tip.
+   * Live tip keeps the ribbon anchored to the current blade pose.
    */
   fillPositions(
     samplePositions: Float32Array,
@@ -91,13 +116,16 @@ export class OdysseySaberTrailGeometry {
     writeIndex: number,
     sampleCount: number,
     matrixWorld: THREE.Matrix4,
+    livePosition: THREE.Vector3,
+    liveOrientation: THREE.Quaternion,
   ): number {
-    if (sampleCount < 2) {
+    if (sampleCount < 1) {
       this.geometry.setDrawRange(0, 0);
       return 0;
     }
 
-    _invMatrix.copy(matrixWorld).invert();
+    matrixWorld.decompose(_refPos, _refQuat, _refScale);
+    _invRefQuat.copy(_refQuat).invert();
 
     const oldest =
       (writeIndex - sampleCount + SABER_TRAIL_CAPACITY) % SABER_TRAIL_CAPACITY;
@@ -117,27 +145,18 @@ export class OdysseySaberTrailGeometry {
         sampleOrientations[q + 2],
         sampleOrientations[q + 3],
       );
-
-      const vertBase = s * SABER_TRAIL_PROFILE_COUNT;
-      for (let i = 0; i < SABER_TRAIL_PROFILE_COUNT; i++) {
-        const i3 = i * 3;
-        _tmpV.set(
-          this.profileVerts[i3],
-          this.profileVerts[i3 + 1],
-          this.profileVerts[i3 + 2],
-        );
-        _tmpV.applyQuaternion(_sampleQuat);
-        _tmpV.add(_samplePos);
-        _tmpV.applyMatrix4(_invMatrix);
-        const dst = (vertBase + i) * 3;
-        this.positions[dst] = _tmpV.x;
-        this.positions[dst + 1] = _tmpV.y;
-        this.positions[dst + 2] = _tmpV.z;
-      }
+      this.writeProfile(s * SABER_TRAIL_PROFILE_COUNT, _samplePos, _sampleQuat);
     }
 
-    const activeIndexCount =
-      (sampleCount - 1) * SABER_TRAIL_PROFILE_COUNT * 6;
+    // Live tip = current blade pose (fixes hilt lag from interval sampling).
+    this.writeProfile(
+      sampleCount * SABER_TRAIL_PROFILE_COUNT,
+      livePosition,
+      liveOrientation,
+    );
+
+    // sampleCount history segments to live tip → sampleCount quads strips
+    const activeIndexCount = sampleCount * SABER_TRAIL_PROFILE_COUNT * 6;
     this.positionAttribute.needsUpdate = true;
     this.geometry.setDrawRange(0, activeIndexCount);
     return activeIndexCount;

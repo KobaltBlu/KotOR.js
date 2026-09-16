@@ -828,6 +828,8 @@ export class OdysseyModel3D extends OdysseyObject3D {
     for (let i = 0, len = this.saberMeshes.length; i < len; i++) {
       const mesh = this.saberMeshes[i];
       if (!mesh) continue;
+      // Resolve parent bone matrices after animation; trails must not call this themselves.
+      mesh.updateWorldMatrix(true, false);
       const node = mesh.parent as OdysseyObject3D | null;
       node?.saberTrail?.update(dt, mesh.matrixWorld);
     }
@@ -1983,6 +1985,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
               runtimeNode.saberTrail = new OdysseySaberTrail(
                 mesh,
                 odysseyNode as OdysseyModelNodeSaber,
+                parentNode,
               );
               odysseyModel.saberMeshes.push(mesh);
               // Late transparent sort after default-order TXI decals.
