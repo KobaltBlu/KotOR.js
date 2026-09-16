@@ -897,8 +897,10 @@ export class InGameOverlay extends GameMenu {
     // Do NOT call camera.getWorldDirection — it runs updateWorldMatrix and
     // desyncs matrixWorld from matrixWorldInverse mid-frame, which corrupts
     // GameState frustum / currentCameraPosition while the camera turns.
-    // FollowerCamera forward is local +Y (Z-up, YZX).
-    this.#camForward.set(0, 1, 0).applyQuaternion(camera.quaternion);
+    // Aurora / THREE PerspectiveCamera both look along local −Z (not +Y;
+    // +Y is up under Z-up YZX). Using +Y treated look-down targets as behind
+    // and forced PositionMenu edge-pin while they were still on-screen.
+    this.#camForward.set(0, 0, -1).applyQuaternion(camera.quaternion);
     const toPointX = world.x - camera.position.x;
     const toPointY = world.y - camera.position.y;
     const toPointZ = world.z - camera.position.z;
