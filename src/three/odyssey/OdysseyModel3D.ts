@@ -32,10 +32,7 @@ import {
   type DanglyGroupParams,
   updateModelDanglyWind,
 } from "@/odyssey/DanglyWindSimulator";
-import {
-  initSaberTrailMesh,
-  updateModelSaberTrails,
-} from "@/odyssey/SaberTrailSimulator";
+import { OdysseySaberTrail } from "@/odyssey/OdysseySaberTrail";
 import { type OdysseyModelNodeSkin } from "@/odyssey/OdysseyModelNodeSkin";
 import { type OdysseyModelNodeAABB } from "@/odyssey/OdysseyModelNodeAABB";
 import { type OdysseyModelNodeSaber } from "@/odyssey/OdysseyModelNodeSaber";
@@ -102,7 +99,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
   context: IGameContext = undefined;
   meshes: any[] = [];
   danglyMeshes: any[] = [];
-  /** light nodesaber meshes — updated by SaberTrailSimulator */
+  /** lightsaber blade meshes — trails live on parent OdysseyObject3D.saberTrail */
   saberMeshes: THREE.Mesh[] = [];
   odysseyAnimations: OdysseyModelAnimation[] = [];
   odysseyAnimationMap: Map<string, OdysseyModelAnimation> = new Map<string, OdysseyModelAnimation>();
@@ -455,6 +452,11 @@ export class OdysseyModel3D extends OdysseyObject3D {
     if(node == null)
       node = this;
 
+    if (node instanceof OdysseyObject3D && node.saberTrail) {
+      node.saberTrail.dispose();
+      node.saberTrail = undefined;
+    }
+
     while(this.childModels.length){
       const childModel3D = this.childModels.shift();
       if(childModel3D){
@@ -470,19 +472,26 @@ export class OdysseyModel3D extends OdysseyObject3D {
     // console.log('dispose', node)
     for (let i = node.children.length; i > 0; i--) {
       const object = node.children[i-1];
+      if (object instanceof OdysseyObject3D && object.saberTrail) {
+        object.saberTrail.dispose();
+        object.saberTrail = undefined;
+      }
       node.remove(object);
       if (object.type === 'Mesh' || object.type === 'SkinnedMesh' || object.type === 'Points') {
         if(object instanceof THREE.Mesh){
           OdysseyModel3D.unregisterMeshShadow(object);
-          if(Array.isArray(object.material)){
-            while(object.material.length){
-              let material = object.material.splice(0, 1)[0];
-              this.disposeMaterial(material);
-              material.dispose();
+          const isSaberTrailMesh = !!object.userData?.saberTrailMesh;
+          if (!isSaberTrailMesh) {
+            if(Array.isArray(object.material)){
+              while(object.material.length){
+                let material = object.material.splice(0, 1)[0];
+                this.disposeMaterial(material);
+                material.dispose();
+              }
+            }else if(object.material){
+              this.disposeMaterial(object.material);
+              object.material.dispose();
             }
-          }else{
-            this.disposeMaterial(object.material);
-            object.material.dispose();
           }
           object.geometry.dispose();
         }
@@ -643,8 +652,15 @@ export class OdysseyModel3D extends OdysseyObject3D {
     if (!runtimeNode || !runtimeNode.odysseyModelNode) return false;
     const sourceNode = runtimeNode.odysseyModelNode;
 
+    if (runtimeNode.saberTrail) {
+      runtimeNode.saberTrail.dispose();
+      runtimeNode.saberTrail = undefined;
+    }
+
     if (runtimeNode.mesh) {
       this.stripMeshFromModelTracking(runtimeNode.mesh);
+      const saberIdx = this.saberMeshes.indexOf(runtimeNode.mesh);
+      if (saberIdx >= 0) this.saberMeshes.splice(saberIdx, 1);
       runtimeNode.remove(runtimeNode.mesh);
       if (runtimeNode.mesh.material) {
         if (Array.isArray(runtimeNode.mesh.material)) {
@@ -809,7 +825,12 @@ export class OdysseyModel3D extends OdysseyObject3D {
     }
 
     updateModelDanglyWind(this, GameState.windManager, dt);
-    updateModelSaberTrails(this, dt);
+    for (let i = 0, len = this.saberMeshes.length; i < len; i++) {
+      const mesh = this.saberMeshes[i];
+      if (!mesh) continue;
+      const node = mesh.parent as OdysseyObject3D | null;
+      node?.saberTrail?.update(dt, mesh.matrixWorld);
+    }
 
     this.oddFrame = !this.oddFrame;
 
@@ -1957,10 +1978,16 @@ export class OdysseyModel3D extends OdysseyObject3D {
               odysseyModel.danglyMeshes.push(mesh);
             }
             if (isSaber) {
-              initSaberTrailMesh(mesh, odysseyNode as OdysseyModelNodeSaber);
+              const runtimeNode = parentNode as OdysseyObject3D;
+              runtimeNode.saberTrail?.dispose();
+              runtimeNode.saberTrail = new OdysseySaberTrail(
+                mesh,
+                odysseyNode as OdysseyModelNodeSaber,
+              );
               odysseyModel.saberMeshes.push(mesh);
               // Late transparent sort after default-order TXI decals.
               mesh.renderOrder = 2;
+              runtimeNode.saberTrail.mesh.renderOrder = 2;
             }
             const isAabb = (odysseyNode.nodeType & OdysseyModelNodeType.AABB) === OdysseyModelNodeType.AABB;
             if(!isAabb || options.attachMdlAabbMesh){
