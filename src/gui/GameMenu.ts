@@ -654,7 +654,18 @@ export class GameMenu {
     text = text.replace(/<FirstName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('FirstName')?.getValue());
     text = text.replace(/<LastName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('LastName')?.getValue());
 
-    KeyMapper.ACTIONS_ALL.forEach( (keymap) => {
+    // CTlkTable::ParseStr has one token per name. keymap.2da can share names
+    // (Pause = PauseKey non-remappable + Space remappable); remappable wins.
+    const tokenByName = new Map<string, (typeof KeyMapper.ACTIONS_ALL)[number]>();
+    for(let i = 0; i < KeyMapper.ACTIONS_ALL.length; i++){
+      const keymap = KeyMapper.ACTIONS_ALL[i];
+      if(!keymap?.name) continue;
+      const existing = tokenByName.get(keymap.name);
+      if(!existing || (!existing.remappable && keymap.remappable)){
+        tokenByName.set(keymap.name, keymap);
+      }
+    }
+    tokenByName.forEach((keymap) => {
       text = text.replace(keymap.tokenRegEx, keymap.character);
     });
 
