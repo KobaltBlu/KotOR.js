@@ -358,7 +358,7 @@ export class MenuCharacter extends GameMenu {
 
     // SetCurValue(sld_align, 100 - goodEvil)
     const goodEvil = creature.getGoodEvil?.() ?? creature.goodEvil | 0;
-    this.SLD_ALIGN?.setValue((100 - goodEvil) / 100);
+    this.SLD_ALIGN?.setValue(goodEvil / 100);
 
     this.clearPortraitChar();
     const gen = this.portraitGen;
