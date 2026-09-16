@@ -13,12 +13,19 @@ export const SABER_TRAIL_MAX_AGE = SABER_TRAIL_SAMPLE_INTERVAL * 4;
 
 const MAX_CATCH_UP_SAMPLES = 4;
 const MAX_TRAIL_DELTA = 0.1;
-/** ~1 cm */
-const POSITION_EPSILON_SQ = 1e-4;
-/** ~1.3° of relative quaternion change (1 - |dot|). */
-const ROTATION_EPSILON = 2.5e-4;
-/** Need a real ribbon before replacing/competing with the blade visually. */
-const MIN_ACTIVE_SAMPLES = 3;
+/** Hilt translation gate (~0.3 mm). */
+const POSITION_EPSILON_SQ = 1e-7;
+/** Relative quaternion change (1 - |dot|); catches small breathing twists. */
+const ROTATION_EPSILON = 1e-6;
+/**
+ * Blade-tip displacement gate (~0.5 mm). Tip motion is the best idle/breathing
+ * metric — hilt may barely move while the tip sways.
+ */
+const TIP_EPSILON_SQ = 2.5e-7;
+/** Local tip used for motion detection (near profile tip along blade Z). */
+const TIP_LOCAL = new THREE.Vector3(0, 0, 0.9);
+/** History samples before showing overlay (live tip always anchors the head). */
+const MIN_ACTIVE_SAMPLES = 2;
 
 const enum SaberTrailDirty {
   None = 0,
@@ -77,6 +84,8 @@ export class OdysseySaberTrail {
   private readonly currentScale = new THREE.Vector3();
   private readonly samplePosition = new THREE.Vector3();
   private readonly sampleOrientation = new THREE.Quaternion();
+  private readonly previousTip = new THREE.Vector3();
+  private readonly currentTip = new THREE.Vector3();
   private initialized = false;
 
   constructor(
@@ -145,11 +154,16 @@ export class OdysseySaberTrail {
       this.currentOrientation,
       this.currentScale,
     );
+    this.currentTip
+      .copy(TIP_LOCAL)
+      .applyQuaternion(this.currentOrientation)
+      .add(this.currentPosition);
 
     if (!this.initialized) {
       this.initialized = true;
       this.previousPosition.copy(this.currentPosition);
       this.previousOrientation.copy(this.currentOrientation);
+      this.previousTip.copy(this.currentTip);
       this.pushSample(
         this.currentPosition,
         this.currentOrientation,
@@ -160,6 +174,8 @@ export class OdysseySaberTrail {
       return;
     }
 
+    const tipChanged =
+      this.currentTip.distanceToSquared(this.previousTip) > TIP_EPSILON_SQ;
     const positionChanged =
       this.currentPosition.distanceToSquared(this.previousPosition) >
       POSITION_EPSILON_SQ;
@@ -170,14 +186,16 @@ export class OdysseySaberTrail {
         ) >
       ROTATION_EPSILON;
 
-    if (positionChanged || rotationChanged) {
+    const moved = tipChanged || positionChanged || rotationChanged;
+
+    if (moved) {
       this.dirty |= SaberTrailDirty.Transform;
     }
 
     const previousAccumulator = this.sampleAccumulator;
     this.sampleAccumulator += dt;
 
-    if (positionChanged || rotationChanged) {
+    if (moved) {
       let offset = SABER_TRAIL_SAMPLE_INTERVAL - previousAccumulator;
       let catchUp = 0;
 
@@ -211,6 +229,7 @@ export class OdysseySaberTrail {
 
     this.previousPosition.copy(this.currentPosition);
     this.previousOrientation.copy(this.currentOrientation);
+    this.previousTip.copy(this.currentTip);
 
     this.rebuildIfDirty(matrixWorld);
   }
@@ -231,6 +250,10 @@ export class OdysseySaberTrail {
       );
       this.previousPosition.copy(this.currentPosition);
       this.previousOrientation.copy(this.currentOrientation);
+      this.previousTip
+        .copy(TIP_LOCAL)
+        .applyQuaternion(this.currentOrientation)
+        .add(this.currentPosition);
       this.initialized = true;
       this.pushSample(
         this.currentPosition,
