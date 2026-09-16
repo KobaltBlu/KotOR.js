@@ -20,10 +20,10 @@ jest.mock('@/GameState', () => ({
   },
 }));
 
-jest.mock('@/engine/pathfinding/test-direct-line', () => ({
-  TestDirectLineCode: { Fail: 0, Ok: 1, NonWalk: -1, DetailedBlock: -2, Creature: -3 },
+jest.mock('@/engine/pathfinding/walk-line-clear', () => ({
+  WalkLineHitCode: { Fail: 0, Ok: 1, NonWalk: -1, DetailedBlock: -2, Creature: -3 },
   getWalkHeightAt: jest.fn(() => NaN),
-  testDirectLine: jest.fn(() => ({
+  hasWalkLineClear: jest.fn(() => ({
     ok: true,
     code: 1,
     clearPoint: new THREE.Vector3(),
@@ -48,9 +48,9 @@ jest.mock('@/engine/pathfinding/ComputedPath', () => ({
   },
 }));
 
-jest.mock('@/engine/pathfinding/update-creature-drive', () => ({
+jest.mock('@/engine/pathfinding/tick-creature-drive', () => ({
   DriveUpdateResult: { OK: 0, ARRIVED: 1, BLOCKED: 2 },
-  updateCreatureDrive: jest.fn(() => 1),
+  tickCreatureDrive: jest.fn(() => 1),
 }));
 
 jest.mock('@/utility/BitWise', () => ({
@@ -62,16 +62,16 @@ jest.mock('@/utility/BitWise', () => ({
 
 import {
   FORCE_JUMP_MIN_DIST_SQ,
-  resolveMoveToForceJump,
-} from '@/combat/resolve-move-to-force-jump';
+  tryForceJumpApproach,
+} from '@/combat/try-force-jump-approach';
 import {
   computeForceJumpDestination,
   computeForceJumpTargetShoveDestination,
   installForceJumpPath,
-} from '@/engine/pathfinding/force-jump-quick-walk';
-import { QuickWalkLocoState, getQuickWalkLocoState } from '@/engine/pathfinding/quick-walk-loco';
+} from '@/engine/pathfinding/force-jump-loco';
+import { CreatureLocoState, getCreatureLocoState } from '@/engine/pathfinding/creature-loco';
 import { CombatFeatType } from '@/enums/combat/CombatFeatType';
-import { testDirectLine } from '@/engine/pathfinding/test-direct-line';
+import { hasWalkLineClear } from '@/engine/pathfinding/walk-line-clear';
 
 function makeAttacker(overrides: Record<string, unknown> = {}) {
   return {
@@ -101,10 +101,10 @@ function makeTarget(pos = new THREE.Vector3(15, 0, 0)) {
   };
 }
 
-describe('resolveMoveToForceJump', () => {
+describe('tryForceJumpApproach', () => {
   beforeEach(() => {
     addEffect.mockClear();
-    (testDirectLine as jest.Mock).mockReturnValue({
+    (hasWalkLineClear as jest.Mock).mockReturnValue({
       ok: true,
       code: 1,
       clearPoint: new THREE.Vector3(),
@@ -118,7 +118,7 @@ describe('resolveMoveToForceJump', () => {
       getHasFeat: () => false,
     });
     const out = { featId: 0 };
-    expect(resolveMoveToForceJump(attacker as any, makeTarget() as any, out)).toBe(false);
+    expect(tryForceJumpApproach(attacker as any, makeTarget() as any, out)).toBe(false);
     expect(addEffect).not.toHaveBeenCalled();
   });
 
@@ -127,30 +127,30 @@ describe('resolveMoveToForceJump', () => {
       combatRound: { isLightsaberEquipped: () => false },
     });
     const out = { featId: 0 };
-    expect(resolveMoveToForceJump(attacker as any, makeTarget() as any, out)).toBe(false);
+    expect(tryForceJumpApproach(attacker as any, makeTarget() as any, out)).toBe(false);
   });
 
   it('fails when already has a feat id', () => {
     const out = { featId: CombatFeatType.FLURRY };
-    expect(resolveMoveToForceJump(makeAttacker() as any, makeTarget() as any, out)).toBe(false);
+    expect(tryForceJumpApproach(makeAttacker() as any, makeTarget() as any, out)).toBe(false);
   });
 
   it('fails when closer than 10 units', () => {
     const out = { featId: 0 };
     const target = makeTarget(new THREE.Vector3(5, 0, 0));
-    expect(resolveMoveToForceJump(makeAttacker() as any, target as any, out)).toBe(false);
+    expect(tryForceJumpApproach(makeAttacker() as any, target as any, out)).toBe(false);
     expect(FORCE_JUMP_MIN_DIST_SQ).toBe(100);
   });
 
-  it('fails when TestDirectLine blocked', () => {
-    (testDirectLine as jest.Mock).mockReturnValue({
+  it('fails when walk-line clear / hasWalkLineClear blocked', () => {
+    (hasWalkLineClear as jest.Mock).mockReturnValue({
       ok: false,
       code: 0,
       clearPoint: new THREE.Vector3(),
       clearT: 0,
     });
     const out = { featId: 0 };
-    expect(resolveMoveToForceJump(makeAttacker() as any, makeTarget() as any, out)).toBe(false);
+    expect(tryForceJumpApproach(makeAttacker() as any, makeTarget() as any, out)).toBe(false);
   });
 
   it('applies EffectForceJump and stamps Mastery when owned', () => {
@@ -162,7 +162,7 @@ describe('resolveMoveToForceJump', () => {
       ]),
     });
     const out = { featId: 0 };
-    expect(resolveMoveToForceJump(attacker as any, makeTarget() as any, out)).toBe(true);
+    expect(tryForceJumpApproach(attacker as any, makeTarget() as any, out)).toBe(true);
     expect(out.featId).toBe(CombatFeatType.FORCE_JUMP_MASTERY);
     expect(addEffect).toHaveBeenCalledTimes(1);
   });
@@ -175,13 +175,13 @@ describe('resolveMoveToForceJump', () => {
       ]),
     });
     const out = { featId: 0 };
-    expect(resolveMoveToForceJump(attacker as any, makeTarget() as any, out)).toBe(true);
+    expect(tryForceJumpApproach(attacker as any, makeTarget() as any, out)).toBe(true);
     expect(out.featId).toBe(CombatFeatType.FORCE_JUMP_ADVANCED);
   });
 
   it('stamps base Force Jump otherwise', () => {
     const out = { featId: 0 };
-    expect(resolveMoveToForceJump(makeAttacker() as any, makeTarget() as any, out)).toBe(true);
+    expect(tryForceJumpApproach(makeAttacker() as any, makeTarget() as any, out)).toBe(true);
     expect(out.featId).toBe(CombatFeatType.FORCE_JUMP);
   });
 });
@@ -212,7 +212,7 @@ describe('installForceJumpPath', () => {
     const creature: any = {
       position: new THREE.Vector3(0, 0, 0),
       area: undefined,
-      quickWalkLocoState: 0,
+      creatureLocoState: 0,
       forcePushDistanceTraveled: 0,
       forcePushArrived: false,
       forcePushArriveElapsed: 0,
@@ -223,9 +223,9 @@ describe('installForceJumpPath', () => {
       creature,
       new THREE.Vector3(0, 0, 0),
       new THREE.Vector3(10, 0, 0),
-      QuickWalkLocoState.ForceJump
+      CreatureLocoState.ForceJump
     );
-    expect(getQuickWalkLocoState(creature)).toBe(QuickWalkLocoState.ForceJump);
+    expect(getCreatureLocoState(creature)).toBe(CreatureLocoState.ForceJump);
     expect(creature.setComputedPath).toHaveBeenCalled();
   });
 
@@ -233,7 +233,7 @@ describe('installForceJumpPath', () => {
     const creature: any = {
       position: new THREE.Vector3(20, 0, 0),
       area: undefined,
-      quickWalkLocoState: 0,
+      creatureLocoState: 0,
       forcePushDistanceTraveled: 0,
       forcePushArrived: false,
       forcePushArriveElapsed: 0,
@@ -244,8 +244,8 @@ describe('installForceJumpPath', () => {
       creature,
       new THREE.Vector3(20, 0, 0),
       new THREE.Vector3(22, 0, 0),
-      QuickWalkLocoState.ForceJumpTarget
+      CreatureLocoState.ForceJumpTarget
     );
-    expect(getQuickWalkLocoState(creature)).toBe(QuickWalkLocoState.ForceJumpTarget);
+    expect(getCreatureLocoState(creature)).toBe(CreatureLocoState.ForceJumpTarget);
   });
 });

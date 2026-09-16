@@ -29,7 +29,7 @@ import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import { AILevel } from "@/enums/module/AILevel";
 import { getPathPersonalSpace } from "@/combat/attack-range";
 import { partyFollowPath } from "@/engine/pathfinding/party-follow-path";
-import { findSafeLocation } from "@/engine/pathfinding/find-safe-location";
+import { findOpenWalkLocation } from "@/engine/pathfinding/open-walk-location";
 import { SaveLoadAudit } from "@/engine/SaveLoadAudit";
 
 import { isCreature } from "@/module/guards/isCreature";
@@ -2281,7 +2281,7 @@ export class PartyManager {
     // MovePlayerToArea uses r=20 for the PC; PositionParty uses r=10 for NPCs.
     const radius = index === 0 ? 20 : 10;
     const area = GameState.module?.area;
-    if(findSafeLocation(area, PartyManager.#spawnPos, PartyManager.#spawnSafe, {
+    if(findOpenWalkLocation(area, PartyManager.#spawnPos, PartyManager.#spawnSafe, {
       radius,
       owner: creature,
     })){

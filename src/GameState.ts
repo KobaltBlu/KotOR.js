@@ -693,7 +693,7 @@ export class GameState implements EngineContext {
    *
    * Must run AFTER locomotion this frame. WASD calls cancelLocomotionActions
    * (zeros speed) in controls.Update before creature.update; pathfinding
-   * quickWalk sets speed before area.update. Syncing here (Render) sees the
+   * creature loco sets speed before area.update. Syncing here (Render) sees the
    * post-movement speed for both.
    *
    * Prefers playerControl.lastAnimMoveSpeed when live,

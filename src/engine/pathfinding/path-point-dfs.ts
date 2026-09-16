@@ -6,7 +6,7 @@ import { PathPointDfsTransTable } from "@/engine/pathfinding/path-point-dfs-tran
 /**
  * Approximate PathPointDFSearch + GenerateSuccessors.
  *
- * Goal-ordered DFS with iterative cost budget (PlotPathPointPath)
+ * Goal-ordered DFS with iterative cost budget (path-point DFS)
  * and TransTable pruning. Wall-clock time slice matches engine behavior return-1;
  * continuation reuses TransTable + cost budget (state/state) — 
  * does not save the mid-DFS call stack.
@@ -49,7 +49,7 @@ const DEFAULT_TIME_BUDGET_MS = 12;
 
 /**
  * Run PathPoint DFS from origin toward destination.
- * `evaluateEdge` should mirror GenerateSuccessors LOS / creature detour / NoNonWalk.
+ * `evaluateEdge` should mirror GenerateSuccessors LOS / creature detour / static walk blockers.
  */
 export function pathPointDfsSearch(options: {
   origin: PathPoint;
@@ -57,7 +57,7 @@ export function pathPointDfsSearch(options: {
   owner?: ModuleObject;
   evaluateEdge: (from: PathPoint, to: PathPoint) => PathPointDfsEdgeEval;
   /**
-   * Wall-clock ms budget (PlotPathPointPath high-res timer).
+   * Wall-clock ms budget (path-point DFS high-res timer).
    * 0 = unlimited; omit = DEFAULT_TIME_BUDGET_MS.
    */
   timeBudgetMs?: number;

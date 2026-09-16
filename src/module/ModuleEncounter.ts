@@ -19,7 +19,7 @@ import { EncounterSpawnPointEntry } from "@/module/EncounterSpawnPointEntry";
 import { EncounterSpawnEntry } from "@/module/EncounterSpawnEntry";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 import type { ModuleCreature } from "@/module/ModuleCreature";
-import { findNonVisibleLocation, findSafeLocation } from "@/engine/pathfinding/find-safe-location";
+import { findHiddenWalkLocation, findOpenWalkLocation } from "@/engine/pathfinding/open-walk-location";
 import type { OdysseyModel3D } from "@/three/odyssey";
 
 /**
@@ -456,7 +456,7 @@ function pickSpawnPosition(
   const scratch = new THREE.Vector3();
   if(area && usedSpawnPoint){
     // : find safe location(spawnPoint, 20) — on success use it; on fail fall through
-    if(findSafeLocation(area, result.pos, scratch, { radius: 20 })){
+    if(findOpenWalkLocation(area, result.pos, scratch, { radius: 20 })){
       result.pos.copy(scratch);
       return result;
     }
@@ -464,7 +464,7 @@ function pickSpawnPosition(
 
   if(area){
     // : find non-visible location(encounter.pos, …, 40)
-    if(findNonVisibleLocation(area, encounter.position, scratch, { radius: 40 })){
+    if(findHiddenWalkLocation(area, encounter.position, scratch, { radius: 40 })){
       result.pos.copy(scratch);
       return result;
     }

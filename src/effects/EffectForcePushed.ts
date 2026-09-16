@@ -13,7 +13,7 @@ import {
   installForcePushPath,
   resolveForcePushDistance,
   resolveForcePushOrigin,
-} from "@/engine/pathfinding/force-push-quick-walk";
+} from "@/engine/pathfinding/force-push-loco";
 
 /**
  * EffectForcePushed — onApply (K2).
@@ -21,7 +21,7 @@ import {
  * applies a temporary FORCEPUSH SetState on the target.
  *
  * int[0] : targeted origin (non-zero) vs creator-origin push
- * int[1] : skip TestDirectLine clip when targeted
+ * int[1] : skip walk-line clear / hasWalkLineClear clip when targeted
  * float[0..2] : targeted origin XYZ
  * float[3] : push distance (0 → default 5.0)
  *
@@ -74,7 +74,7 @@ export class EffectForcePushed extends GameEffect {
     const clipped = clipForcePushDestination(
       creature,
       computed.dest,
-      originInfo.ignoreTestDirectLine
+      originInfo.ignoreWalkLineClear
     );
 
     installForcePushPath(creature, creature.position, clipped);

@@ -1,13 +1,13 @@
 /**
- * Melee backoff / TestDirectLine clip (physical-attack action).
+ * Melee backoff / walk-line clear / hasWalkLineClear clip (physical-attack action).
  * @jest-environment node
  */
 import { describe, expect, it, jest } from '@jest/globals';
 import * as THREE from 'three';
 
-jest.mock('@/engine/pathfinding/test-direct-line', () => ({
-  TestDirectLineCode: { Fail: 0, Ok: 1, NonWalk: -1, DetailedBlock: -2, Creature: -3 },
-  testDirectLine: jest.fn(() => ({
+jest.mock('@/engine/pathfinding/walk-line-clear', () => ({
+  WalkLineHitCode: { Fail: 0, Ok: 1, NonWalk: -1, DetailedBlock: -2, Creature: -3 },
+  hasWalkLineClear: jest.fn(() => ({
     ok: true,
     code: 1,
     clearPoint: new THREE.Vector3(),
@@ -28,7 +28,7 @@ jest.mock('@/actions/Action', () => ({
 }));
 
 import { ActionPhysicalAttacks } from '@/actions/ActionPhysicalAttacks';
-import { testDirectLine } from '@/engine/pathfinding/test-direct-line';
+import { hasWalkLineClear } from '@/engine/pathfinding/walk-line-clear';
 
 describe('getMeleeBackoffIdeal', () => {
   it('places the ideal on the attacker side of the target at DesiredAttackRange', () => {
@@ -66,9 +66,9 @@ describe('resolveMeleeBackoff', () => {
     expect(r.clippedDesired).toBe(2);
   });
 
-  it('uses the walk-hit clear point when TestDirectLine is blocked', () => {
+  it('uses the walk-hit clear point when walk-line clear / hasWalkLineClear is blocked', () => {
     const clearPoint = new THREE.Vector3(6, 0, 0);
-    (testDirectLine as jest.Mock).mockReturnValueOnce({
+    (hasWalkLineClear as jest.Mock).mockReturnValueOnce({
       ok: false,
       code: -1,
       clearPoint,

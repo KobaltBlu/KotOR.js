@@ -5,21 +5,21 @@ import { EngineMode } from "@/enums/engine/EngineMode";
 import { GameState } from "@/GameState";
 import {
   createFollowRuntime,
-  FollowLeaderState,
+  PartyFollowState,
   FOLLOW_STUCK_ITERATIONS,
   FOLLOW_TELEPORT_DIST,
   isFollowWaitState,
-  type FollowLeaderRuntime,
-} from "@/engine/pathfinding/follow-leader";
+  type PartyFollowRuntime,
+} from "@/engine/pathfinding/party-follow";
 import {
   isActivelyApproaching,
-  stepFollowLeaderState,
-} from "@/engine/pathfinding/follow-leader-sm";
+  stepPartyFollowState,
+} from "@/engine/pathfinding/party-follow-sm";
 import { partySoftSeparate } from "@/engine/pathfinding/party-soft-separate";
 import {
-  QuickWalkLocoState,
-  setQuickWalkLocoState,
-} from "@/engine/pathfinding/quick-walk-loco";
+  CreatureLocoState,
+  setCreatureLocoState,
+} from "@/engine/pathfinding/creature-loco";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { Action } from "@/actions/Action";
 import * as THREE from "three";
@@ -31,7 +31,7 @@ const _followOffset = new THREE.Vector3();
 
 /**
  * ActionFollowLeader class.
- * Party companion follow — follow-leader quick-walk
+ * Party companion follow — follow-leader creature loco
  * 11-state SM + follow ring + creature walk update.
  *
  * @file ActionFollowLeader.ts
@@ -39,7 +39,7 @@ const _followOffset = new THREE.Vector3();
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ActionFollowLeader extends Action {
-  private followRuntime: FollowLeaderRuntime = createFollowRuntime();
+  private followRuntime: PartyFollowRuntime = createFollowRuntime();
 
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
@@ -55,7 +55,7 @@ export class ActionFollowLeader extends Action {
     }
 
     // party follow leader action — field438 = 3
-    setQuickWalkLocoState(this.owner, QuickWalkLocoState.FollowLeader);
+    setCreatureLocoState(this.owner, CreatureLocoState.PartyFollow);
 
     if(GameState.Mode == EngineMode.DIALOG){
       this.owner.force = 0;
@@ -97,7 +97,7 @@ export class ActionFollowLeader extends Action {
     let teleport = false;
     while(iterations < FOLLOW_STUCK_ITERATIONS){
       iterations++;
-      const step = stepFollowLeaderState(
+      const step = stepPartyFollowState(
         this.followRuntime,
         this.owner,
         leader,
@@ -111,7 +111,7 @@ export class ActionFollowLeader extends Action {
       if(!step.continueInner) break;
     }
 
-    if(teleport || this.followRuntime.state === FollowLeaderState.Teleport){
+    if(teleport || this.followRuntime.state === PartyFollowState.Teleport){
       this.softTeleportForward(this.owner, leader, offset);
       return ActionStatus.IN_PROGRESS;
     }
@@ -132,7 +132,7 @@ export class ActionFollowLeader extends Action {
     // Offset — continuous trail walk. Soft-park only after a short idle hold so
     // intermittent zero-step frames cannot restart AnimRun mid run↔pause blend
     // (frozen gait while SetPosition still advances = slide).
-    if(this.followRuntime.state === FollowLeaderState.Offset){
+    if(this.followRuntime.state === PartyFollowState.Offset){
       if(this.followRuntime.offsetStepped){
         this.followRuntime.offsetIdleTime = 0;
         return ActionStatus.IN_PROGRESS;
@@ -163,7 +163,7 @@ export class ActionFollowLeader extends Action {
     owner.moveDirOverride = undefined;
     owner.setComputedPath(undefined);
     owner.clearLocomotionAnimation?.();
-    // Party members are not BumpFriends targets — soft-separate when idle
+    // Party members are not nudgeFriendlyCreatures targets — soft-separate when idle
     partySoftSeparate(owner);
   }
 
@@ -219,7 +219,7 @@ export class ActionFollowLeader extends Action {
       this.followRuntime.lastSampleY = dest.y;
       this.followRuntime.lastSampleZ = dest.z;
       // TeleportForward → state MovingToPath (2)
-      this.followRuntime.state = FollowLeaderState.MovingToPath;
+      this.followRuntime.state = PartyFollowState.MovingToPath;
       return;
     }
 
@@ -229,12 +229,12 @@ export class ActionFollowLeader extends Action {
       owner.position.y - leader.position.y
     );
     if(distLeader < FOLLOW_TELEPORT_DIST){
-      this.followRuntime.state = FollowLeaderState.FindPath;
+      this.followRuntime.state = PartyFollowState.FindPath;
       return;
     }
 
     this.jumpToFollowOffset(owner, offset);
-    this.followRuntime.state = FollowLeaderState.WaitingForPath;
+    this.followRuntime.state = PartyFollowState.WaitingForPath;
   }
 
   /**

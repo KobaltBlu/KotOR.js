@@ -612,7 +612,7 @@ export class Module {
         this.effects[i].update(delta);
       }
 
-      // Budgeted AI + event drain + quick-walk
+      // Budgeted AI + event drain + creature loco
       this.aiScheduler.update(delta);
 
       // Alternate module / area heartbeat

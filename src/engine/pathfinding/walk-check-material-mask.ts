@@ -5,9 +5,9 @@ import type { SurfaceMaterial } from "@/engine/SurfaceMaterial";
 /**
  * Surface-material bitmasks for collision / LOS (surfacemat.2da).
  *
- * Walk-check: `walkcheck && !walk` — Nonwalk, Lava, Pit… (NoNonWalkPolys).
+ * Walk-check: `walkcheck && !walk` — Nonwalk, Lava, Pit… (static walk blockers).
  * Line-of-sight: `lineofsight` — Obscuring + most solid mats; Transparent/Door/Trigger do NOT
- * block visual LOS (ClearLineOfSight room AABB / walkmesh faces).
+ * block visual LOS (visual LOS / hasVisualLos room AABB / walkmesh faces).
  *
  * @file walk-check-material-mask.ts
  */
@@ -55,7 +55,7 @@ function ensureCaches(): void {
 }
 
 /**
- * Bitmask of surface material indices that block NoNonWalk corridor tests.
+ * Bitmask of surface material indices that block static walk blocker corridor tests.
  * Uses low 5 bits of material index (`1 << (mat & 0x1f)`).
  */
 export function getWalkCheckMaterialMask(): number {
@@ -64,7 +64,7 @@ export function getWalkCheckMaterialMask(): number {
 }
 
 /**
- * Bitmask of materials that block ClearLineOfSight / perception rays
+ * Bitmask of materials that block visual LOS / hasVisualLos / perception rays
  * (`surfacemat.lineofsight`).
  */
 export function getLineOfSightMaterialMask(): number {
@@ -96,7 +96,7 @@ export function isWalkCheckBlockingFace(face: OdysseyFace3 | undefined): boolean
 }
 
 /**
- * True if face blocks visual / combat ClearLineOfSight.
+ * True if face blocks visual / combat visual LOS / hasVisualLos.
  * Prefer `blocksLineOfSight` / surfacemat.lineOfSight over walk-check.
  */
 export function isLineOfSightBlockingFace(face: OdysseyFace3 | undefined): boolean {

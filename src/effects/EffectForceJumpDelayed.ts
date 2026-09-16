@@ -8,9 +8,9 @@ import {
   computeForceJumpDestination,
   computeForceJumpTargetShoveDestination,
   installForceJumpPath,
-} from "@/engine/pathfinding/force-jump-quick-walk";
-import { testSafeLocationPoint } from "@/engine/pathfinding/test-safe-location-point";
-import { QuickWalkLocoState } from "@/engine/pathfinding/quick-walk-loco";
+} from "@/engine/pathfinding/force-jump-loco";
+import { isSafeWalkPoint } from "@/engine/pathfinding/safe-walk-point";
+import { CreatureLocoState } from "@/engine/pathfinding/creature-loco";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { isCreature } from "@/module/guards/isCreature";
 
@@ -56,7 +56,7 @@ export class EffectForceJumpDelayed extends GameEffect {
 
     if(computed.ok){
       const area = jumper.area || target.area;
-      const safe = testSafeLocationPoint(area, jumperDest, target);
+      const safe = isSafeWalkPoint(area, jumperDest, target);
       if(!safe){
         const shoveDesired = desiredAttackRange(
           jumper,
@@ -73,7 +73,7 @@ export class EffectForceJumpDelayed extends GameEffect {
           target as ModuleCreature,
           target.position,
           shoveEnd,
-          QuickWalkLocoState.ForceJumpTarget
+          CreatureLocoState.ForceJumpTarget
         );
 
         const eSetState = new GameState.GameEffectFactory.EffectSetState();
@@ -91,7 +91,7 @@ export class EffectForceJumpDelayed extends GameEffect {
       jumper,
       jumper.position,
       jumperDest,
-      QuickWalkLocoState.ForceJump
+      CreatureLocoState.ForceJump
     );
   }
 }

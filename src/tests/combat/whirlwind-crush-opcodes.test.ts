@@ -90,7 +90,7 @@ describe('Whirlwind / Crush / Wave port wiring', () => {
 
   it('debilitated anim switch has case 15 Crush', () => {
     const src = fs.readFileSync(
-      srcPath('module', 'ModuleCreature.ts'),
+      srcPath('module', 'animation', 'resolveDebilitatedCreatureAnimation.ts'),
       'utf8'
     );
     expect(src).toMatch(/case 15:[\s\S]*?Crush/);

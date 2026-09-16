@@ -4,7 +4,7 @@ import { isDoor } from "@/module/guards/isDoor";
 import { isPlaceable } from "@/module/guards/isPlaceable";
 
 /**
- * PathPointDFSGenerateSuccessors — when NoNonWalkPolysDetailed
+ * PathPointDFSGenerateSuccessors — when static walk blockers (detailed)
  * blocks an edge, drop it only for placeables or static doors. Non-static
  * (openable) doors keep the PTH successor so scripted opens can plot through.
  *

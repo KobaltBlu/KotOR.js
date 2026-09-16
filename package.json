@@ -20,7 +20,8 @@
     "export-mdl-ascii": "tsx scripts/export-mdl-ascii.ts",
     "export-dlg-json": "tsx scripts/export-dlg-json.ts",
     "typedoc": "typedoc --out ./wiki ./src/KotOR.ts",
-    "test": "jest --verbose --coverage --no-cache ./src/tests",
+    "check:originality": "node scripts/check-originality-comments.mjs",
+    "test": "npm run check:originality && jest --verbose --coverage --no-cache ./src/tests",
     "test:pathing": "jest --config jest.pathing.config.js --coverage=false --no-cache",
     "test:audio": "jest --config jest.audio-priority.config.js --coverage=false --no-cache",
     "test:compiler": "jest --config jest.compiler.config.js --coverage=false --no-cache"

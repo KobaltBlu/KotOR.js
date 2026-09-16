@@ -14,10 +14,10 @@ import {
 } from "@/engine/pathfinding/party-follow-path";
 import {
   createFollowRuntime,
-  FollowLeaderState,
-  type FollowLeaderRuntime,
-} from "@/engine/pathfinding/follow-leader";
-import { stepFollowLeaderState } from "@/engine/pathfinding/follow-leader-sm";
+  PartyFollowState,
+  type PartyFollowRuntime,
+} from "@/engine/pathfinding/party-follow";
+import { stepPartyFollowState } from "@/engine/pathfinding/party-follow-sm";
 
 export const DT = 1 / 60;
 
@@ -38,7 +38,7 @@ export type PathingCreature = ModuleCreature & {
 
 export type FrameTrace = {
   frame: number;
-  state: FollowLeaderState;
+  state: PartyFollowState;
   x: number;
   y: number;
   distLeader: number;
@@ -151,7 +151,7 @@ export function seedRing(ring: PartyFollowPath, count: number, step = 0.6){
 export function simulateFollowFrames(options: {
   frames: number;
   delta?: number;
-  runtime: FollowLeaderRuntime;
+  runtime: PartyFollowRuntime;
   companion: PathingCreature;
   leader: PathingCreature;
   /** Live offset each frame (defaults to GetFollowPosition-like lateral). */
@@ -185,7 +185,7 @@ export function simulateFollowFrames(options: {
     let inner = 0;
     while(inner < maxInner){
       inner++;
-      const step = stepFollowLeaderState(
+      const step = stepPartyFollowState(
         options.runtime,
         options.companion,
         options.leader,
@@ -236,9 +236,9 @@ export function countStateTransitions(trace: FrameTrace[]): number {
   return n;
 }
 
-export function uniqueStates(trace: FrameTrace[]): FollowLeaderState[] {
-  const seen = new Set<FollowLeaderState>();
-  const out: FollowLeaderState[] = [];
+export function uniqueStates(trace: FrameTrace[]): PartyFollowState[] {
+  const seen = new Set<PartyFollowState>();
+  const out: PartyFollowState[] = [];
   for(const t of trace){
     if(!seen.has(t.state)){
       seen.add(t.state);

@@ -18,7 +18,7 @@ import { isTrigger } from "@/module/guards/isTrigger";
  * Creature targets: cre_personal_space(self) + cre_personal_space(target) + 0.3
  * Door / placeable: personal_space + 0.75 (+5 for corpse placeables) at nearest action point
  * Trigger: personal_space + 0.5
- * GetIsInUseRange adds +0.1 slack, ClearLineOfSight to the use point (not object origin),
+ * GetIsInUseRange adds +0.1 slack, visual LOS / hasVisualLos to the use point (not object origin),
  * then compares 2D distance² to that point.
  */
 
@@ -84,7 +84,7 @@ export function getUseRange(
 
 /**
  * GetIsInUseRange:
- * GetUseRange → ClearLineOfSight(eye→usePoint) → dist² ≤ (useRange + extra + 0.1)².
+ * GetUseRange → visual LOS / hasVisualLos(eye→usePoint) → dist² ≤ (useRange + extra + 0.1)².
  * Doors/placeables use the nearest action point, not object origin.
  */
 export function isInUseRange(
@@ -111,12 +111,12 @@ export function isInUseRange(
   }
 
   // Already on / at the use point — no meaningful LOS segment (still calls
-  // ClearLineOfSight, but a zero-length ray is undefined in three.js).
+  // visual LOS / hasVisualLos, but a zero-length ray is undefined in three.js).
   if(dist < 0.05){
     return true;
   }
 
-  // ClearLineOfSight to use point, excluding source + target ids.
+  // visual LOS / hasVisualLos to use point, excluding source + target ids.
   // Skip room walkmesh face tests — those false-block door/placeable use.
   return owner.hasLineOfSight(target, Math.max(allow + 2.0, dist + 2.0), {
     ignorePerceptionRange: true,

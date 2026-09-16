@@ -1,5 +1,5 @@
 /**
- * canPathTo via plotPath Ready|Incomplete (G7).
+ * canPathTo via buildWalkPath Ready|Incomplete (G7).
  * @jest-environment node
  */
 import { describe, expect, it, jest } from "@jest/globals";
@@ -10,12 +10,12 @@ jest.mock("@/combat/attack-range", () => ({
 }));
 
 /** Avoid pulling GameState → three/examples ESM via plot-path. */
-const PlotPathCode = { Incomplete: 1, Ready: 2, Fail: 3 } as const;
-const plotPathMock = jest.fn();
+const WalkPathCode = { Incomplete: 1, Ready: 2, Fail: 3 } as const;
+const buildWalkPathMock = jest.fn();
 
-jest.mock("@/engine/pathfinding/plot-path", () => ({
-  PlotPathCode: { Incomplete: 1, Ready: 2, Fail: 3 },
-  plotPath: (...args: unknown[]) => plotPathMock(...args),
+jest.mock("@/engine/pathfinding/build-walk-path", () => ({
+  WalkPathCode: { Incomplete: 1, Ready: 2, Fail: 3 },
+  buildWalkPath: (...args: unknown[]) => buildWalkPathMock(...args),
 }));
 
 import { canPathToPoint } from "@/engine/pathfinding/can-path-to";
@@ -33,21 +33,21 @@ function makeCreature(): ModuleCreature {
 }
 
 describe("canPathToPoint (G7)", () => {
-  it("returns true on PlotPath Incomplete (resume)", () => {
-    plotPathMock.mockReturnValue({ code: PlotPathCode.Incomplete, points: [] });
+  it("returns true on buildWalkPath Incomplete (resume)", () => {
+    buildWalkPathMock.mockReturnValue({ code: WalkPathCode.Incomplete, points: [] });
     expect(canPathToPoint(makeCreature(), new THREE.Vector3(5, 0, 0))).toBe(true);
   });
 
-  it("returns true on PlotPath Ready", () => {
-    plotPathMock.mockReturnValue({
-      code: PlotPathCode.Ready,
+  it("returns true on buildWalkPath Ready", () => {
+    buildWalkPathMock.mockReturnValue({
+      code: WalkPathCode.Ready,
       points: [new THREE.Vector3(0, 0, 0), new THREE.Vector3(5, 0, 0)],
     });
     expect(canPathToPoint(makeCreature(), new THREE.Vector3(5, 0, 0))).toBe(true);
   });
 
-  it("returns false on PlotPath Fail", () => {
-    plotPathMock.mockReturnValue({ code: PlotPathCode.Fail, points: [] });
+  it("returns false on buildWalkPath Fail", () => {
+    buildWalkPathMock.mockReturnValue({ code: WalkPathCode.Fail, points: [] });
     expect(canPathToPoint(makeCreature(), new THREE.Vector3(5, 0, 0))).toBe(false);
   });
 });

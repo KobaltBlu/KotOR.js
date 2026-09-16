@@ -1,5 +1,5 @@
 /**
- * find away vector TestDirectLine clip (G8).
+ * find away vector walk-line clear / hasWalkLineClear clip (G8).
  * @jest-environment node
  */
 import { describe, expect, it, jest } from "@jest/globals";
@@ -9,12 +9,12 @@ jest.mock("@/combat/attack-range", () => ({
   getPathPersonalSpace: () => 0.5,
 }));
 
-const testDirectLineMock = jest.fn();
+const hasWalkLineClearMock = jest.fn();
 const farthestClearPointMock = jest.fn();
 
-jest.mock("@/engine/pathfinding/test-direct-line", () => ({
-  TestDirectLineCode: { Ok: 1, NonWalk: 2, Creature: -3 },
-  testDirectLine: (...args: unknown[]) => testDirectLineMock(...args),
+jest.mock("@/engine/pathfinding/walk-line-clear", () => ({
+  WalkLineHitCode: { Ok: 1, NonWalk: 2, Creature: -3 },
+  hasWalkLineClear: (...args: unknown[]) => hasWalkLineClearMock(...args),
   farthestClearPoint: (...args: unknown[]) => farthestClearPointMock(...args),
 }));
 
@@ -22,8 +22,8 @@ import { findAwayVector } from "@/engine/pathfinding/find-away-vector";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
 describe("findAwayVector (G8)", () => {
-  it("clips candidates via TestDirectLine / farthestClearPoint", () => {
-    testDirectLineMock.mockReturnValue({
+  it("clips candidates via walk-line clear / hasWalkLineClear / farthestClearPoint", () => {
+    hasWalkLineClearMock.mockReturnValue({
       ok: false,
       code: 2,
       clearT: 0.4,
@@ -49,7 +49,7 @@ describe("findAwayVector (G8)", () => {
     } as unknown as ModuleCreature;
 
     const dest = findAwayVector(creature, new THREE.Vector3(5, 0, 0), 4);
-    expect(testDirectLineMock).toHaveBeenCalled();
+    expect(hasWalkLineClearMock).toHaveBeenCalled();
     expect(farthestClearPointMock).toHaveBeenCalled();
     // Clipped length should be shorter than unclipped ideal (~4)
     const len = Math.hypot(dest.x, dest.y);

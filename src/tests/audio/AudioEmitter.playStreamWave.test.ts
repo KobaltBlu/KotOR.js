@@ -49,10 +49,10 @@ jest.mock('@/audio/AudioLoader', () => ({
   },
 }));
 
-jest.mock('@/engine/pathfinding/get-obstruction-factor', () => ({
+jest.mock('@/engine/pathfinding/path-blockage-weight', () => ({
   OBSTRUCTION_REUSE_AGE_MS: 250,
   OBSTRUCTION_REUSE_DIST: 0.5,
-  getObstructionFactor: () => 0,
+  getPathBlockageWeight: () => 0,
   obstructionVolumeScale: (f: number) => 1 - f,
 }));
 

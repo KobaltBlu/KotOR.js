@@ -94,8 +94,8 @@ jest.mock('@/combat/combat-projectile', () => ({
   spawnCombatProjectile: jest.fn(),
 }));
 
-jest.mock('@/engine/pathfinding/clear-line-of-sight', () => ({
-  clearLineOfSight: () => true,
+jest.mock('@/engine/pathfinding/visual-los', () => ({
+  hasVisualLos: () => true,
 }));
 
 jest.mock('@/combat/ranged-impact-vfx', () => ({

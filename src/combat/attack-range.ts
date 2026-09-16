@@ -133,7 +133,7 @@ export function maxCleaveRange(
 }
 
 /**
- * ClearLineOfSight from physical-attack action / GetIsInUseRange:
+ * visual LOS / hasVisualLos from physical-attack action / GetIsInUseRange:
  * eye height +1.5, no perception clamp; maxDistance typically MaxAttackRange.
  */
 export function hasCombatLineOfSight(

@@ -11,7 +11,7 @@ import {
   isAreaLike,
   jumpFacingFromOrientation,
 } from "@/engine/jump-to-location";
-import { findSafeLocation } from "@/engine/pathfinding/find-safe-location";
+import { findOpenWalkLocation } from "@/engine/pathfinding/open-walk-location";
 import { getPathPersonalSpace } from "@/combat/attack-range";
 
 const _jumpCenter = new THREE.Vector3();
@@ -130,7 +130,7 @@ export class ActionJumpToPoint extends Action {
     const radius = this.getParameter<number>(5) ?? 20.0;
     _jumpCenter.set(this.x, this.y, this.z);
 
-    if(!findSafeLocation(destArea, _jumpCenter, _jumpSafe, {
+    if(!findOpenWalkLocation(destArea, _jumpCenter, _jumpSafe, {
       radius,
       personalSpace: getPathPersonalSpace(this.owner),
       owner: this.owner,

@@ -57,8 +57,8 @@ import {
 } from "@/engine/rules/level-up";
 import { SkillType } from "@/enums/nwscript/SkillType";
 import type { InterAreaWaypoint } from "@/engine/pathfinding/inter-area-path";
-import { plotPathAroundCreature } from "@/engine/pathfinding/plot-path-around-creature";
-import { bumpFriends } from "@/engine/pathfinding/bump-friends";
+import { buildPathAroundCreature } from "@/engine/pathfinding/build-path-around-creature";
+import { nudgeFriendlyCreatures } from "@/engine/pathfinding/nudge-friendlies";
 import { getUseRange } from "@/actions/use-range";
 import { getAttackApproachPoint } from "@/combat/nearest-action-point";
 import { ModulePlaceable } from "@/module/ModulePlaceable";
@@ -156,18 +156,18 @@ import {
   coalesceDriveAnimWalk,
   coalesceDriveMaxSpeed,
 } from "@/engine/pathfinding/movement-rate";
-import { resetWalkSpeedFactor } from "@/engine/pathfinding/update-creature-walk";
+import { resetWalkSpeedFactor } from "@/engine/pathfinding/tick-creature-walk";
 import {
-  forcePushQuickWalkUpdate,
+  tickForcePushLoco,
   isForcePushLocoActive,
   updateForcePushAnimFlags,
-} from "@/engine/pathfinding/force-push-quick-walk";
+} from "@/engine/pathfinding/force-push-loco";
 import {
-  QuickWalkLocoState,
-  isFollowLeaderLocoActive,
-  isQuickWalkPaused,
-  setQuickWalkLocoState,
-} from "@/engine/pathfinding/quick-walk-loco";
+  CreatureLocoState,
+  isPartyFollowLocoActive,
+  isCreatureLocoPaused,
+  setCreatureLocoState,
+} from "@/engine/pathfinding/creature-loco";
 import {
   cameraRelativeDesired,
   createPlayerCamRelativeState,
@@ -324,7 +324,7 @@ export class ModuleCreature extends ModuleObject {
   attemptedMovementTarget: ModuleObject = undefined;
   /**
    * path_find_info ignore-object id (DoDoorAction IGNORE).
-   * Skipped as a door blocker in noNonWalkPolys / path cost checks.
+   * Skipped as a door blocker in static walk blockers / path cost checks.
    * Also set to the live attack target during PhysicalAttacks approach.
    */
   pathFindIgnoreObjectId: number = 0;
@@ -360,7 +360,7 @@ export class ModuleCreature extends ModuleObject {
   interAreaWaypoints: InterAreaWaypoint[] = [];
   /**
    * CPathfindInformation
-   * transition object ids excluded after PlotPathInArea failure (failed portals).
+   * transition object ids excluded after buildWalkPath (in-area) failure (failed portals).
    */
   interAreaExcludedIds: number[] = [];
   /** Remembered dest for recompute after portal exclusion. */
@@ -502,13 +502,13 @@ export class ModuleCreature extends ModuleObject {
   walkRate: number;
   blockingTimer: number;
   /**
-   * quick-walk locomotion loco mode (internal field).
+   * Creature locomotion mode (internal field).
    * 3 = FollowLeader, 4..6 = ForcePushed, 1 = paused, -1 = repath.
    */
-  quickWalkLocoState: number;
+  creatureLocoState: number;
   /** distance traveled during Force Push slide. */
   forcePushDistanceTraveled: number;
-  /** True once QuickWalk_ForcePushed reaches path end (land/getup phase). */
+  /** True once force-push loco reaches path end (land/getup phase). */
   forcePushArrived: boolean;
   /** Seconds since force-push arrival (drives fp_land / fp_getup). */
   forcePushArriveElapsed: number;
@@ -857,7 +857,7 @@ export class ModuleCreature extends ModuleObject {
     this.fp_push_played = false;
     this.fp_land_played = false;
     this.fp_getup_played = false;
-    this.quickWalkLocoState = QuickWalkLocoState.PathWalk;
+    this.creatureLocoState = CreatureLocoState.PathWalk;
     this.forcePushDistanceTraveled = 0;
     this.forcePushArrived = false;
     this.forcePushArriveElapsed = 0;
@@ -947,27 +947,27 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * quick-walk locomotion — every-frame locomotion for movers.
+   * Creature locomotion — every-frame locomotion for movers.
    * Advances the head MoveTo/Follow/Drive action so motion never skips frames
-   * when aiUpdate is budget-deferred. Sets _quickWalkedThisFrame so aiUpdate
+   * when aiUpdate is budget-deferred. Sets _creatureLocoThisFrame so aiUpdate
    * does not re-process the same action.
-   * Routes on quickWalkLocoState (field438): ForcePush → FollowLeader → path walk.
+   * Routes on creatureLocoState (field438): ForcePush → FollowLeader → path walk.
    * Force Push (∈ {4,5,6}) runs even while debilitated.
    */
-  quickWalkUpdate(delta: number = 0){
+  creatureLocoUpdate(delta: number = 0){
     if(this.destroyed || this.willDestroy || this.isRetainedCorpse) return;
     if(this.isDead()) return;
     if(!GameState.module?.readyToProcessEvents) return;
 
     // : field438 == 1 → early return (paused / end-of-path)
-    if(isQuickWalkPaused(this) && !isForcePushLocoActive(this)){
+    if(isCreatureLocoPaused(this) && !isForcePushLocoActive(this)){
       return;
     }
 
     if(isForcePushLocoActive(this)){
-      forcePushQuickWalkUpdate(this, delta);
+      tickForcePushLoco(this, delta);
       updateForcePushAnimFlags(this, delta);
-      this._quickWalkedThisFrame = true;
+      this._creatureLocoThisFrame = true;
       return;
     }
 
@@ -979,16 +979,16 @@ export class ModuleCreature extends ModuleObject {
 
     // field438 == 3 → FollowLeader; party follow leader action stamps 3.
     if(type === ActionType.ActionFollowLeader){
-      setQuickWalkLocoState(this, QuickWalkLocoState.FollowLeader);
+      setCreatureLocoState(this, CreatureLocoState.PartyFollow);
       this.actionQueue.process(delta);
       this.action = this.actionQueue[0];
-      this._quickWalkedThisFrame = true;
+      this._creatureLocoThisFrame = true;
       return;
     }
 
     // Stale FollowLeader mode without the action — pause like end-of-path.
-    if(isFollowLeaderLocoActive(this)){
-      setQuickWalkLocoState(this, QuickWalkLocoState.Paused);
+    if(isPartyFollowLocoActive(this)){
+      setCreatureLocoState(this, CreatureLocoState.Paused);
     }
 
     if(
@@ -1001,7 +1001,7 @@ export class ModuleCreature extends ModuleObject {
 
     this.actionQueue.process(delta);
     this.action = this.actionQueue[0];
-    this._quickWalkedThisFrame = true;
+    this._creatureLocoThisFrame = true;
   }
 
   /**
@@ -1018,7 +1018,7 @@ export class ModuleCreature extends ModuleObject {
     if(!this.isReady) return;
 
     if(GameState.Mode != EngineMode.INGAME && GameState.Mode != EngineMode.MINIGAME && GameState.Mode != EngineMode.DIALOG){
-      this._quickWalkedThisFrame = false;
+      this._creatureLocoThisFrame = false;
       return;
     }
 
@@ -1053,7 +1053,7 @@ export class ModuleCreature extends ModuleObject {
       const corpseActionLock =
         this.isDead() && this.animationState.index == ModuleCreatureAnimState.DEAD;
       if(!corpseActionLock){
-        if(!this._quickWalkedThisFrame){
+        if(!this._creatureLocoThisFrame){
           this.updateActionQueue(delta);
         }else{
           this.action = this.actionQueue[0];
@@ -1083,7 +1083,7 @@ export class ModuleCreature extends ModuleObject {
     this.updateRegen(delta);
     this.adjustAILevel();
 
-    this._quickWalkedThisFrame = false;
+    this._creatureLocoThisFrame = false;
   }
 
   /**
@@ -1219,7 +1219,7 @@ export class ModuleCreature extends ModuleObject {
       }
 
       if(!this.isDead()){
-        // Damage list + action queue moved to aiUpdate / quickWalkUpdate
+        // Damage list + action queue moved to aiUpdate / quicktickCreatureWalk / walk tick
 
         if(this.dialogAnimation && (GameState.Mode == EngineMode.DIALOG) && (!this.action || this.action.type != ActionType.ActionPlayAnimation)){
           if(this.model){
@@ -1329,7 +1329,7 @@ export class ModuleCreature extends ModuleObject {
       // Direct WASD/stick overrides path actions while axes are held. Keep
       // running the controller after release so drag can decelerate.
       // Dialog mode still ticks creatures; sticky axes must not keep coasting.
-      // Force Push: QuickWalk_ForcePushed only SetPosition — no cam turn.
+      // Force Push: force-push loco only SetPosition — no cam turn.
       const forcePushLocked =
         this.isForcePushed() ||
         isForcePushLocoActive(this);
@@ -1342,7 +1342,7 @@ export class ModuleCreature extends ModuleObject {
       if(usePlayerControl){
         this.applyPlayerCamRelativeControl(delta);
       }else if(forcePushLocked){
-        // Hold still for player RK4; QuickWalk owns the slide.
+        // Hold still for player RK4; creature loco owns the slide.
         this.forceVector.set(0, 0, 0);
         this.force = 0;
         this.speed = 0;
@@ -1657,7 +1657,7 @@ export class ModuleCreature extends ModuleObject {
 
   updateActionQueue(delta = 0){
     // AIUpdate always calls RunActions — there is
-    // no debilitated early-out. Locomotion is gated in quickWalkUpdate / move
+    // no debilitated early-out. Locomotion is gated in quicktickCreatureWalk / walk tick / move
     // actions; conversation Wait/Resume (k_ptar_calofade after EffectHorrified)
     // must still tick or Pause hangs forever.
     if(!GameState.module.readyToProcessEvents)
@@ -2359,7 +2359,7 @@ export class ModuleCreature extends ModuleObject {
 
       let action = new GameState.ActionFactory.ActionJumpToObject();
       action.setParameter(0, ActionParameterType.DWORD, target.id );
-      // bWalkStraight → ComputeSafeLocation requireLOS (default TRUE)
+      // bWalkStraight → open/safe walk location requireLOS (default TRUE)
       action.setParameter(1, ActionParameterType.INT, bWalkStraight | 0);
       this.actionQueue.add(action);
 
@@ -4718,7 +4718,7 @@ export class ModuleCreature extends ModuleObject {
       return;
 
     const blocker = this.collisionManager?.blockingObject;
-    // PlotPathAroundCreature:
+    // buildPathAroundCreature:
     // GetReputation(blocker, mover) < 11 → pathfail with foundEnemy=blocker;
     // if mover commandable → return without hex;
     // both arcs fail → pathfail with foundEnemy=INVALID;
@@ -4728,7 +4728,7 @@ export class ModuleCreature extends ModuleObject {
         GameState.NWScript.Run('k_def_pathfail01', this);
       };
 
-      // walk step distance test → BumpFriends before hex/pathfail
+      // walk step distance test → nudgeFriendlyCreatures before hex/pathfail
       const bumpTo = this.position.clone();
       if(this.forceVector?.lengthSq?.() > 1e-8){
         bumpTo.addScaledVector(this.forceVector.clone().normalize(), 1);
@@ -4737,7 +4737,7 @@ export class ModuleCreature extends ModuleObject {
         bumpTo.x += Math.cos(facing);
         bumpTo.y += Math.sin(facing);
       }
-      if(bumpFriends(this, blocker, bumpTo, this.position)){
+      if(nudgeFriendlyCreatures(this, blocker, bumpTo, this.position)){
         this.collisionManager.blockingObject = undefined;
         this.collisionTimer = 0;
         return;
@@ -4756,7 +4756,7 @@ export class ModuleCreature extends ModuleObject {
         this.collisionManager.foundEnemyCreature = undefined;
       }
 
-      const result = plotPathAroundCreature(this, blocker);
+      const result = buildPathAroundCreature(this, blocker);
       if(result.spliced){
         if(result.foundEnemyOnPath && (result.foundEnemyOnPath.getReputation?.(this) ?? 100) < 11){
           this.collisionManager.foundEnemyCreature = result.foundEnemyOnPath;
@@ -6007,7 +6007,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Clear locomotion sticky state (walk / scale / override / WalkUpdate ramp).
+   * Clear locomotion sticky state (walk / scale / override / tickCreatureWalk ramp).
    * Called from Action.dispose and clearAllActions.
    * @param resetPlayerControl When true (action dispose), also zero cam-relative axes/velocity.
    */

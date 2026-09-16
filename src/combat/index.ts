@@ -29,4 +29,4 @@ export * from "@/combat/item-cast-grenade";
 export * from "@/combat/item-cast-timing";
 export * from "@/combat/item-property-uses";
 export * from "@/combat/spell-cast-anims";
-export * from "@/combat/resolve-move-to-force-jump";
+export * from "@/combat/try-force-jump-approach";

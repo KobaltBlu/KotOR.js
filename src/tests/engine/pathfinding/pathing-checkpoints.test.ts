@@ -1,8 +1,8 @@
 /**
  * Pathing checkpoint + over-time validation suite.
  *
- * Covers the major pipeline gates (TestDirectLine → Plot/Grid →
- * WalkUpdate → FollowLeader SM / ring) and multi-frame regressions that
+ * Covers the major pipeline gates (hasWalkLineClear → buildWalkPath / grid →
+ * tickCreatureWalk → party-follow SM / ring) and multi-frame regressions that
  * caused Carth stuck-walk / WaitDest thrash in playtests.
  *
  * Run: `npm run test:pathing`
@@ -45,16 +45,16 @@ const mockTestDirectLine = jest.fn(() => ({
   clearT: 1,
 }));
 
-jest.mock("@/engine/pathfinding/test-direct-line", () => ({
-  testDirectLine: (...args: unknown[]) => mockTestDirectLine(...args),
-  TestDirectLineCode: {
+jest.mock("@/engine/pathfinding/walk-line-clear", () => ({
+  hasWalkLineClear: (...args: unknown[]) => mockTestDirectLine(...args),
+  WalkLineHitCode: {
     Ok: 1,
     Fail: 0,
     NonWalk: -1,
     DetailedBlock: -2,
     Creature: -3,
   },
-  hasDirectLine: (
+  hasClearWalkLine: (
     area: { isPointWalkable?: (p: THREE.Vector3) => boolean },
     a: THREE.Vector3,
     b: THREE.Vector3
@@ -73,11 +73,11 @@ jest.mock("@/engine/pathfinding/test-direct-line", () => ({
   },
 }));
 
-jest.mock("@/engine/pathfinding/test-safe-location-point", () => ({
-  testSafeLocationPoint: () => true,
+jest.mock("@/engine/pathfinding/safe-walk-point", () => ({
+  isSafeWalkPoint: () => true,
 }));
 
-/** WalkUpdate mock that advances toward dest (Moving* over-time tests). */
+/** tickCreatureWalk / walk tick mock that advances toward dest (Moving* over-time tests). */
 const mockWalkUpdate = jest.fn((
   creature: { position: THREE.Vector3; walkSpeedFactor: number; force: number; speed: number },
   dest: THREE.Vector3,
@@ -99,8 +99,8 @@ const mockWalkUpdate = jest.fn((
   return 1; // OK
 });
 
-jest.mock("@/engine/pathfinding/update-creature-walk", () => ({
-  updateCreatureWalk: (...args: unknown[]) => (mockWalkUpdate as Function)(...args),
+jest.mock("@/engine/pathfinding/tick-creature-walk", () => ({
+  tickCreatureWalk: (...args: unknown[]) => (mockWalkUpdate as Function)(...args),
   CreatureWalkResult: { OK: 1, ARRIVED: 2, BLOCKED: 3 },
 }));
 
@@ -124,15 +124,15 @@ jest.mock("@/actions/use-range", () => ({
 import { partyFollowPath } from "@/engine/pathfinding/party-follow-path";
 import {
   createFollowRuntime,
-  FollowLeaderState,
+  PartyFollowState,
   FOLLOW_COMFORT,
   FOLLOW_REPATH,
   FOLLOW_TELEPORT_DIST,
-} from "@/engine/pathfinding/follow-leader";
-import { stepFollowLeaderState } from "@/engine/pathfinding/follow-leader-sm";
-import { plotGridPath } from "@/engine/pathfinding/plot-grid-path";
+} from "@/engine/pathfinding/party-follow";
+import { stepPartyFollowState } from "@/engine/pathfinding/party-follow-sm";
+import { buildGridPath } from "@/engine/pathfinding/build-grid-path";
 import { canPathToPoint } from "@/engine/pathfinding/can-path-to";
-import { PlotPathCode } from "@/engine/pathfinding/plot-path";
+import { WalkPathCode } from "@/engine/pathfinding/build-walk-path";
 import {
   countStateTransitions,
   createFollowParty,
@@ -144,10 +144,10 @@ import {
   uniqueStates,
 } from "@/tests/engine/pathfinding/pathing-harness";
 
-const plotPathMock = jest.fn();
-jest.mock("@/engine/pathfinding/plot-path", () => ({
-  PlotPathCode: { Incomplete: 1, Ready: 2, Fail: 3 },
-  plotPath: (...args: unknown[]) => plotPathMock(...args),
+const buildWalkPathMock = jest.fn();
+jest.mock("@/engine/pathfinding/build-walk-path", () => ({
+  WalkPathCode: { Incomplete: 1, Ready: 2, Fail: 3 },
+  buildWalkPath: (...args: unknown[]) => buildWalkPathMock(...args),
 }));
 
 describe("Pathing checkpoints — Plot / Grid / Check", () => {
@@ -162,14 +162,14 @@ describe("Pathing checkpoints — Plot / Grid / Check", () => {
       clearT: 1,
     }));
     mockWalkUpdate.mockClear();
-    plotPathMock.mockReset();
+    buildWalkPathMock.mockReset();
   });
 
   it("CP-GRID: empty-PTH L-corridor finds a detouring path", () => {
     const area = makeOpenArea({
       wall: { minX: 1.5, maxX: 3.5, minY: -0.75, maxY: 0.75 },
     });
-    const path = plotGridPath(
+    const path = buildGridPath(
       area,
       new THREE.Vector3(0, 0, 0),
       new THREE.Vector3(5, 0, 0),
@@ -185,7 +185,7 @@ describe("Pathing checkpoints — Plot / Grid / Check", () => {
     const area = makeOpenArea();
     (area as { isPointWalkable: (p: THREE.Vector3) => boolean }).isPointWalkable =
       (p) => Math.hypot(p.x, p.y) < 0.2;
-    const path = plotGridPath(
+    const path = buildGridPath(
       area,
       new THREE.Vector3(0, 0, 0),
       new THREE.Vector3(10, 0, 0),
@@ -196,11 +196,11 @@ describe("Pathing checkpoints — Plot / Grid / Check", () => {
 
   it("CP-CHECK: canPathTo treats Incomplete and Ready as traversable", () => {
     const creature = makeCreature(0, 0, 0, { area: makeOpenArea() });
-    plotPathMock.mockReturnValue({ code: PlotPathCode.Incomplete });
+    buildWalkPathMock.mockReturnValue({ code: WalkPathCode.Incomplete });
     expect(canPathToPoint(creature, new THREE.Vector3(5, 0, 0))).toBe(true);
-    plotPathMock.mockReturnValue({ code: PlotPathCode.Ready });
+    buildWalkPathMock.mockReturnValue({ code: WalkPathCode.Ready });
     expect(canPathToPoint(creature, new THREE.Vector3(5, 0, 0))).toBe(true);
-    plotPathMock.mockReturnValue({ code: PlotPathCode.Fail });
+    buildWalkPathMock.mockReturnValue({ code: WalkPathCode.Fail });
     expect(canPathToPoint(creature, new THREE.Vector3(5, 0, 0))).toBe(false);
   });
 });
@@ -227,14 +227,14 @@ describe("Pathing checkpoints — FollowLeader SM gates", () => {
     });
     mockParty.push(leader, companion);
     partyFollowPath.reset(leader.position, 0);
-    runtime.state = FollowLeaderState.WaitingForPath;
+    runtime.state = PartyFollowState.WaitingForPath;
     runtime.lastSampleX = companion.position.x;
     runtime.lastSampleY = companion.position.y;
     runtime.lastSampleZ = companion.position.z;
 
     const offset = new THREE.Vector3(1.5, 0, 0);
-    stepFollowLeaderState(runtime, companion, leader, offset, DT);
-    expect(runtime.state).toBe(FollowLeaderState.WaitingForPath);
+    stepPartyFollowState(runtime, companion, leader, offset, DT);
+    expect(runtime.state).toBe(PartyFollowState.WaitingForPath);
   });
 
   it("CP-WAITDEST-FAR: OffsetWaitDest → MovingToPath when outside comfort", () => {
@@ -246,7 +246,7 @@ describe("Pathing checkpoints — FollowLeader SM gates", () => {
     mockParty.push(leader, companion);
     partyFollowPath.memberCursor[1] = 5;
     partyFollowPath.memberGoalIndex[1] = 5;
-    runtime.state = FollowLeaderState.OffsetWaitDest;
+    runtime.state = PartyFollowState.OffsetWaitDest;
     runtime.goalX = leader.position.x - 1.5;
     runtime.goalY = 0;
     runtime.goalZ = 0;
@@ -260,10 +260,10 @@ describe("Pathing checkpoints — FollowLeader SM gates", () => {
       runtime.goalY = p.y;
     }
 
-    stepFollowLeaderState(
+    stepPartyFollowState(
       runtime, companion, leader, new THREE.Vector3(runtime.goalX, 0, 0), DT
     );
-    expect(runtime.state).toBe(FollowLeaderState.MovingToPath);
+    expect(runtime.state).toBe(PartyFollowState.MovingToPath);
   });
 
   it("CP-STALE-LOS: recovers Offset when feet LOS clear but sample blocked", () => {
@@ -284,7 +284,7 @@ describe("Pathing checkpoints — FollowLeader SM gates", () => {
       };
     });
 
-    runtime.state = FollowLeaderState.Offset;
+    runtime.state = PartyFollowState.Offset;
     runtime.lastSampleX = -5;
     runtime.lastSampleY = 0;
     runtime.lastSampleZ = 0;
@@ -294,9 +294,9 @@ describe("Pathing checkpoints — FollowLeader SM gates", () => {
 
     const offset = companion.position.clone();
     offset.x -= 1.5;
-    stepFollowLeaderState(runtime, companion, leader, offset, DT);
+    stepPartyFollowState(runtime, companion, leader, offset, DT);
 
-    expect(runtime.state).toBe(FollowLeaderState.Offset);
+    expect(runtime.state).toBe(PartyFollowState.Offset);
     expect(runtime.lastSampleX).not.toBe(-5);
   });
 
@@ -307,17 +307,17 @@ describe("Pathing checkpoints — FollowLeader SM gates", () => {
       ringCount: 10,
     });
     mockParty.push(leader, companion);
-    runtime.state = FollowLeaderState.Offset;
+    runtime.state = PartyFollowState.Offset;
     const far = new THREE.Vector3(5, 0, 0);
-    stepFollowLeaderState(runtime, companion, leader, far, DT);
-    expect(runtime.state).not.toBe(FollowLeaderState.Offset);
+    stepPartyFollowState(runtime, companion, leader, far, DT);
+    expect(runtime.state).not.toBe(PartyFollowState.Offset);
     expect([
-      FollowLeaderState.MovingToPath,
-      FollowLeaderState.FindPath,
-      FollowLeaderState.FollowingPath,
-      FollowLeaderState.MovingToOffset,
-      FollowLeaderState.OffsetWaitDest,
-      FollowLeaderState.PathWaitDest,
+      PartyFollowState.MovingToPath,
+      PartyFollowState.FindPath,
+      PartyFollowState.FollowingPath,
+      PartyFollowState.MovingToOffset,
+      PartyFollowState.OffsetWaitDest,
+      PartyFollowState.PathWaitDest,
     ]).toContain(runtime.state);
   });
 
@@ -337,12 +337,12 @@ describe("Pathing checkpoints — FollowLeader SM gates", () => {
       blockingCreatureId: blocker.id,
     }));
 
-    runtime.state = FollowLeaderState.MovingToPath;
+    runtime.state = PartyFollowState.MovingToPath;
     const beforeBlocker = blocker.position.clone();
     const beforeCompanion = companion.position.clone();
-    stepFollowLeaderState(runtime, companion, leader, new THREE.Vector3(0, 0, 0), DT);
+    stepPartyFollowState(runtime, companion, leader, new THREE.Vector3(0, 0, 0), DT);
 
-    expect(runtime.state).toBe(FollowLeaderState.Teleport);
+    expect(runtime.state).toBe(PartyFollowState.Teleport);
     expect(blocker.position).toEqual(beforeBlocker);
     expect(companion.position).toEqual(beforeCompanion);
   });
@@ -370,7 +370,7 @@ describe("Pathing over time — multi-frame regressions", () => {
       ringCount: 30,
     });
     mockParty.push(leader, companion);
-    runtime.state = FollowLeaderState.Offset;
+    runtime.state = PartyFollowState.Offset;
     runtime.lastSampleX = companion.position.x;
     runtime.lastSampleY = companion.position.y;
     runtime.lastSampleZ = companion.position.z;
@@ -403,7 +403,7 @@ describe("Pathing over time — multi-frame regressions", () => {
     // Should not oscillate wildly between Offset and Moving*
     expect(countStateTransitions(trace)).toBeLessThan(20);
     // Must spend meaningful time in Offset (or arrive and park)
-    const offsetFrames = trace.filter((t) => t.state === FollowLeaderState.Offset).length;
+    const offsetFrames = trace.filter((t) => t.state === PartyFollowState.Offset).length;
     expect(offsetFrames).toBeGreaterThan(10);
   });
 
@@ -426,7 +426,7 @@ describe("Pathing over time — multi-frame regressions", () => {
       };
     });
 
-    runtime.state = FollowLeaderState.Offset;
+    runtime.state = PartyFollowState.Offset;
     runtime.lastSampleX = -5;
     runtime.lastSampleY = 0;
     runtime.lastSampleZ = 0;
@@ -461,7 +461,7 @@ describe("Pathing over time — multi-frame regressions", () => {
       ringCount: 20,
     });
     mockParty.push(leader, companion);
-    runtime.state = FollowLeaderState.MovingToPath;
+    runtime.state = PartyFollowState.MovingToPath;
     runtime.lastSampleX = companion.position.x;
     runtime.lastSampleY = companion.position.y;
     runtime.lastSampleZ = companion.position.z;
@@ -494,7 +494,7 @@ describe("Pathing over time — multi-frame regressions", () => {
       ringCount: 20,
     });
     mockParty.push(leader, companion);
-    runtime.state = FollowLeaderState.Offset;
+    runtime.state = PartyFollowState.Offset;
     runtime.lastSampleX = companion.position.x;
     runtime.lastSampleY = companion.position.y;
     runtime.lastSampleZ = companion.position.z;
@@ -536,7 +536,7 @@ describe("Pathing over time — multi-frame regressions", () => {
     // Goal index already reachable on ring
     partyFollowPath.memberCursor[1] = 2;
     partyFollowPath.memberGoalIndex[1] = 2;
-    runtime.state = FollowLeaderState.OffsetWaitDest;
+    runtime.state = PartyFollowState.OffsetWaitDest;
     runtime.goalX = -1.5;
     runtime.goalY = 0;
     runtime.goalZ = 0;
@@ -556,16 +556,16 @@ describe("Pathing over time — multi-frame regressions", () => {
     // Should leave WaitDest and spend time Moving* (not ping-pong WaitDest/Offset)
     const waitFrames = trace.filter(
       (t) =>
-        t.state === FollowLeaderState.OffsetWaitDest ||
-        t.state === FollowLeaderState.PathWaitDest
+        t.state === PartyFollowState.OffsetWaitDest ||
+        t.state === PartyFollowState.PathWaitDest
     ).length;
     expect(waitFrames).toBeLessThan(10);
     const movingish = trace.filter((t) =>
       [
-        FollowLeaderState.MovingToPath,
-        FollowLeaderState.FollowingPath,
-        FollowLeaderState.MovingToOffset,
-        FollowLeaderState.FindPath,
+        PartyFollowState.MovingToPath,
+        PartyFollowState.FollowingPath,
+        PartyFollowState.MovingToOffset,
+        PartyFollowState.FindPath,
       ].includes(t.state)
     ).length;
     expect(movingish).toBeGreaterThan(5);
@@ -578,7 +578,7 @@ describe("Pathing over time — multi-frame regressions", () => {
       ringCount: 25,
     });
     mockParty.push(leader, companion);
-    runtime.state = FollowLeaderState.Offset;
+    runtime.state = PartyFollowState.Offset;
     runtime.lastSampleX = companion.position.x;
     runtime.lastSampleY = companion.position.y;
     runtime.lastSampleZ = companion.position.z;
@@ -602,7 +602,7 @@ describe("Pathing over time — multi-frame regressions", () => {
     });
 
     const offsetRatio =
-      trace.filter((t) => t.state === FollowLeaderState.Offset).length / trace.length;
+      trace.filter((t) => t.state === PartyFollowState.Offset).length / trace.length;
     expect(offsetRatio).toBeGreaterThan(0.7);
     expect(countStateTransitions(trace)).toBeLessThan(8);
     // Stay within comfort/repath band
@@ -620,7 +620,7 @@ describe("Pathing invariants — constants & harness sanity", () => {
 
   it("createFollowRuntime starts in WaitingForPath", () => {
     const rt = createFollowRuntime();
-    expect(rt.state).toBe(FollowLeaderState.WaitingForPath);
+    expect(rt.state).toBe(PartyFollowState.WaitingForPath);
     expect(rt.stuckTimer).toBe(0);
   });
 });

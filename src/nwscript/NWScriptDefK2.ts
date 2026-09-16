@@ -20,7 +20,7 @@ import { NWScriptDef } from "@/nwscript/NWScriptDef";
 import { NWScriptDefK1 } from "@/nwscript/NWScriptDefK1";
 import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import EngineLocation from "@/engine/EngineLocation";
-import { clearLineOfSight } from "@/engine/pathfinding/clear-line-of-sight";
+import { hasVisualLos } from "@/engine/pathfinding/visual-los";
 import { playVisualAreaEffect } from "@/effects/play-visual-area-effect";
 import { SaveGame } from "@/engine/SaveGame";
 import * as THREE from "three";
@@ -6420,7 +6420,7 @@ NWScriptDefK2.Actions = {
       const toV = to instanceof THREE.Vector3
         ? to
         : new THREE.Vector3((to as any).x, (to as any).y, (to as any).z);
-      const clear = clearLineOfSight(area, fromV, toV, {
+      const clear = hasVisualLos(area, fromV, toV, {
         ignoreSource: isObject(args[2]) ? args[2] : undefined,
         ignoreObject: isObject(args[3]) ? args[3] : undefined,
         eyeHeight: 1.5,

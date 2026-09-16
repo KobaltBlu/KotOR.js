@@ -15,7 +15,7 @@ import {
   clearForcePushLoco,
   stampForcePushAttackSummary,
   updateForcePushAnimFlags,
-} from "@/engine/pathfinding/force-push-quick-walk";
+} from "@/engine/pathfinding/force-push-loco";
 
 /**
  * EffectSetStateInternal — type 0x09 (onApply / onRemove).
@@ -98,7 +98,7 @@ export class EffectSetStateInternal extends GameEffect {
     if(this.getInt(0) === GameEffectSetStateType.FORCEPUSH){
       if(isCreature(this.object)){
         const creature = this.object as ModuleCreature;
-        if(!creature._quickWalkedThisFrame){
+        if(!creature._creatureLocoThisFrame){
           updateForcePushAnimFlags(creature, delta);
         }
       }

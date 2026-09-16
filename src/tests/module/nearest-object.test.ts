@@ -12,7 +12,7 @@ jest.mock("@/GameState", () => ({
 }));
 jest.mock("@/engine/FollowerCamera", () => ({ FollowerCamera: {} }));
 jest.mock("@/managers/ResolutionManager", () => ({ ResolutionManager: { addResolution: () => {} } }));
-jest.mock("@/engine/pathfinding/clear-line-of-sight", () => ({ clearLineOfSight: () => true }));
+jest.mock("@/engine/pathfinding/visual-los", () => ({ hasVisualLos: () => true }));
 
 
 import * as THREE from "three";

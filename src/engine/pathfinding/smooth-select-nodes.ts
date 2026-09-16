@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import type { ModuleArea } from "@/module/ModuleArea";
 import type { ModuleObject } from "@/module/ModuleObject";
-import { hasDirectLine } from "@/engine/pathfinding/test-direct-line";
+import { hasClearWalkLine } from "@/engine/pathfinding/walk-line-clear";
 
 /**
  * Approximate SmoothSelectNodes
@@ -233,7 +233,7 @@ export function smoothSelectNodes(
     let farthest = i + 1;
 
     for(let j = points.length - 1; j > i + 1; j--){
-      if(hasDirectLine(area, points[i], points[j], owner)){
+      if(hasClearWalkLine(area, points[i], points[j], owner)){
         farthest = j;
         break;
       }
@@ -245,7 +245,7 @@ export function smoothSelectNodes(
       while(span >= 5){
         const mid = i + (span >> 1);
         if(mid <= i + 1) break;
-        if(hasDirectLine(area, points[i], points[mid], owner)){
+        if(hasClearWalkLine(area, points[i], points[mid], owner)){
           farthest = mid;
           break;
         }

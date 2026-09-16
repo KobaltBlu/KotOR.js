@@ -5,9 +5,9 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import * as THREE from 'three';
 
-jest.mock('@/engine/pathfinding/test-direct-line', () => ({
-  TestDirectLineCode: { Fail: 0, Ok: 1, NonWalk: -1, DetailedBlock: -2, Creature: -3 },
-  testDirectLine: jest.fn(() => ({
+jest.mock('@/engine/pathfinding/walk-line-clear', () => ({
+  WalkLineHitCode: { Fail: 0, Ok: 1, NonWalk: -1, DetailedBlock: -2, Creature: -3 },
+  hasWalkLineClear: jest.fn(() => ({
     ok: true,
     code: 1,
     clearPoint: new THREE.Vector3(),
@@ -108,8 +108,8 @@ jest.mock('@/combat/combat-round-pause', () => ({
   resolveAttackPauseMs: () => 1500,
 }));
 
-jest.mock('@/combat/resolve-move-to-force-jump', () => ({
-  resolveMoveToForceJump: jest.fn(() => false),
+jest.mock('@/combat/try-force-jump-approach', () => ({
+  tryForceJumpApproach: jest.fn(() => false),
 }));
 
 jest.mock('@/combat/duel-debug', () => ({
@@ -130,14 +130,14 @@ import { ActionStatus } from '@/enums/actions/ActionStatus';
 import { ActionParameterType } from '@/enums/actions/ActionParameterType';
 import { hasCombatLineOfSight } from '@/combat/attack-range';
 import { ActionType } from '@/enums/actions/ActionType';
-import { resolveMoveToForceJump } from '@/combat/resolve-move-to-force-jump';
+import { tryForceJumpApproach } from '@/combat/try-force-jump-approach';
 import { CombatFeatType } from '@/enums/combat/CombatFeatType';
 
 describe('ActionPhysicalAttacks approach queue', () => {
   beforeEach(() => {
     queued.length = 0;
     (hasCombatLineOfSight as jest.Mock).mockReturnValue(true);
-    (resolveMoveToForceJump as jest.Mock).mockReturnValue(false);
+    (tryForceJumpApproach as jest.Mock).mockReturnValue(false);
   });
 
   function makeOwner(pos: THREE.Vector3){
@@ -241,7 +241,7 @@ describe('ActionPhysicalAttacks approach queue', () => {
   });
 
   it('Force Jump success skips MoveTo and stamps feat into param 6', () => {
-    (resolveMoveToForceJump as jest.Mock).mockImplementation(
+    (tryForceJumpApproach as jest.Mock).mockImplementation(
       (_a: unknown, _t: unknown, out: { featId: number }) => {
         out.featId = CombatFeatType.FORCE_JUMP_MASTERY;
         return true;

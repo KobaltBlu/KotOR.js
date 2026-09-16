@@ -48,18 +48,18 @@ jest.mock("@/three/odyssey/OdysseyModel3D", () => ({
   OdysseyModel3D: class {},
 }));
 
-jest.mock("@/engine/pathfinding/test-direct-line", () => ({
-  testDirectLine: () => ({
+jest.mock("@/engine/pathfinding/walk-line-clear", () => ({
+  hasWalkLineClear: () => ({
     ok: true,
     code: 1,
     clearPoint: new THREE.Vector3(),
     clearT: 1,
   }),
-  TestDirectLineCode: { Ok: 1, Fail: 0, NonWalk: -1, DetailedBlock: -2, Creature: -3 },
+  WalkLineHitCode: { Ok: 1, Fail: 0, NonWalk: -1, DetailedBlock: -2, Creature: -3 },
 }));
 
-jest.mock("@/engine/pathfinding/test-safe-location-point", () => ({
-  testSafeLocationPoint: () => true,
+jest.mock("@/engine/pathfinding/safe-walk-point", () => ({
+  isSafeWalkPoint: () => true,
 }));
 
 jest.mock("@/engine/pathfinding/party-soft-separate", () => ({
@@ -75,7 +75,7 @@ import { ActionFollowLeader } from "@/actions/ActionFollowLeader";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { FollowLeaderState } from "@/engine/pathfinding/follow-leader";
+import { PartyFollowState } from "@/engine/pathfinding/party-follow";
 import { partyFollowPath } from "@/engine/pathfinding/party-follow-path";
 
 function angleDelta(a: number, b: number): number {
@@ -147,7 +147,7 @@ describe("ActionFollowLeader locomotion facing", () => {
     const action = new ActionFollowLeader();
     action.setOwner(follower as any);
     const runtime = (action as any).followRuntime;
-    runtime.state = FollowLeaderState.Offset;
+    runtime.state = PartyFollowState.Offset;
     runtime.lastSampleX = follower.position.x;
     runtime.lastSampleY = follower.position.y;
     runtime.lastSampleZ = follower.position.z;
@@ -187,7 +187,7 @@ describe("ActionFollowLeader locomotion facing", () => {
     const action = new ActionFollowLeader();
     action.setOwner(follower as any);
     const runtime = (action as any).followRuntime;
-    runtime.state = FollowLeaderState.Teleport;
+    runtime.state = PartyFollowState.Teleport;
 
     const status = action.update(1 / 60);
 
@@ -196,7 +196,7 @@ describe("ActionFollowLeader locomotion facing", () => {
     expect(getFollowPosition).toHaveBeenCalledTimes(1);
     expect(follower.position).toEqual(ringDest);
     expect(follower.actionQueue.addFront).not.toHaveBeenCalled();
-    expect(runtime.state).toBe(FollowLeaderState.MovingToPath);
+    expect(runtime.state).toBe(PartyFollowState.MovingToPath);
   });
 
   it("does not clear Offset locomotion on brief zero-step frames (slide thrash)", () => {
@@ -220,7 +220,7 @@ describe("ActionFollowLeader locomotion facing", () => {
     const action = new ActionFollowLeader();
     action.setOwner(follower as any);
     const runtime = (action as any).followRuntime;
-    runtime.state = FollowLeaderState.Offset;
+    runtime.state = PartyFollowState.Offset;
     runtime.lastSampleX = follower.position.x;
     runtime.lastSampleY = follower.position.y;
     runtime.lastSampleZ = follower.position.z;
@@ -236,7 +236,7 @@ describe("ActionFollowLeader locomotion facing", () => {
     try {
       // Brief zero-step frames must not demote run/walk (AnimRun transtime thrash).
       action.update(1 / 60);
-      expect(runtime.state).toBe(FollowLeaderState.Offset);
+      expect(runtime.state).toBe(PartyFollowState.Offset);
       expect(runtime.offsetStepped).toBe(false);
       expect(runtime.offsetIdleTime).toBeGreaterThan(0);
       expect(runtime.offsetIdleTime).toBeLessThan(0.25);

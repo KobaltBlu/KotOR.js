@@ -8,8 +8,8 @@ import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
 import {
   DriveUpdateResult,
   driveResolveMoveTarget,
-  updateCreatureDrive,
-} from "@/engine/pathfinding/update-creature-drive";
+  tickCreatureDrive,
+} from "@/engine/pathfinding/tick-creature-drive";
 import { DRIVE_STRAFE_RATE } from "@/engine/pathfinding/locomotion";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { isCreature } from "@/module/guards/isCreature";
@@ -150,7 +150,7 @@ export class ActionDrive extends Action {
 
     const strafing =
       (flags & DRIVE_STRAFE_LEFT) !== 0 || (flags & DRIVE_STRAFE_RIGHT) !== 0;
-    const result = updateCreatureDrive(
+    const result = tickCreatureDrive(
       this.owner,
       this.destination,
       this.running,

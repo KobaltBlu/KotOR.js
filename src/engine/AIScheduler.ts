@@ -11,8 +11,8 @@ import { isPlaceable } from "@/module/guards/isPlaceable";
 import { isTrigger } from "@/module/guards/isTrigger";
 import {
   isForcePushLocoActive,
-  isFollowLeaderLocoActive,
-} from "@/engine/pathfinding/quick-walk-loco";
+  isPartyFollowLocoActive,
+} from "@/engine/pathfinding/creature-loco";
 
 /** Per-frame AI budget (microseconds). */
 const AI_BUDGET_US = 10000;
@@ -140,7 +140,7 @@ export class AIScheduler {
   }
 
   /**
-   * Iterates AI levels 4→0 with a 10ms budget; per list runs quick-walk, drains
+   * Iterates AI levels 4→0 with a 10ms budget; per list runs creature loco, drains
    * due events, then round-robins aiUpdate until budget or wrap.
    */
   update(delta: number = 0){
@@ -167,8 +167,8 @@ export class AIScheduler {
 
       const levelStart = performance.now();
 
-      // (a) Quick-walk pass — every moving creature, every frame (not budgeted).
-      this.quickWalkPass(list, delta);
+      // (a) Creature loco pass — every moving creature, every frame (not budgeted).
+      this.creatureLocoPass(list, delta);
 
       // (b) Round-robin AIUpdate with event drain + budget.
       let firstObject: ModuleObject | undefined;
@@ -309,28 +309,28 @@ export class AIScheduler {
    * Head action MoveToPoint / FollowLeader / ForceFollow / Drive,
    * or creature currently in a locomotion animation.
    */
-  private quickWalkPass(list: ModuleObject[], delta: number){
+  private creatureLocoPass(list: ModuleObject[], delta: number){
     for(let i = 0; i < list.length; i++){
       const obj = list[i];
       if(!obj || !isCreature(obj)) continue;
       const creature = obj as ModuleCreature;
       if(creature.destroyed || creature.willDestroy) continue;
-      if(!this.creatureNeedsQuickWalk(creature)) continue;
+      if(!this.creatureNeedsLoco(creature)) continue;
       try{
-        creature.quickWalkUpdate(delta);
+        creature.creatureLocoUpdate(delta);
       }catch(e){
-        console.error('AIScheduler.quickWalk', creature, e);
+        console.error('AIScheduler.creatureLoco', creature, e);
       }
     }
   }
 
-  private creatureNeedsQuickWalk(creature: ModuleCreature): boolean {
-    // Force Push QuickWalk even while debilitated.
+  private creatureNeedsLoco(creature: ModuleCreature): boolean {
+    // Force Push creature loco even while debilitated.
     if(isForcePushLocoActive(creature)){
       return true;
     }
     // FollowLeader loco mode (field438 == 3)
-    if(isFollowLeaderLocoActive(creature)){
+    if(isPartyFollowLocoActive(creature)){
       return true;
     }
     const action = creature.actionQueue?.[0] ?? creature.action;
@@ -343,7 +343,7 @@ export class AIScheduler {
     ){
       return true;
     }
-    // Animation-only quick-walk can skip idle movers.
+    // Animation-only creature loco can skip idle movers.
     if(!creature.forceVector || creature.forceVector.lengthSq() <= 0.000001){
       return false;
     }

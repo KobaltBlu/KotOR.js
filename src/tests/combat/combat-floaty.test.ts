@@ -22,8 +22,8 @@ jest.mock('@/combat/CombatAttackData', () => ({
   CombatAttackData: class {},
 }));
 
-jest.mock('@/engine/pathfinding/clear-line-of-sight', () => ({
-  clearLineOfSight: () => true,
+jest.mock('@/engine/pathfinding/visual-los', () => ({
+  hasVisualLos: () => true,
 }));
 
 jest.mock('@/combat/combat-projectile', () => ({

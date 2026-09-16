@@ -1,8 +1,8 @@
 import * as THREE from "three";
 import type { ModuleArea } from "@/module/ModuleArea";
 import type { ModuleCreature } from "@/module/ModuleCreature";
-import { testDirectLine, TestDirectLineCode } from "@/engine/pathfinding/test-direct-line";
-import { testSafeLocationPoint } from "@/engine/pathfinding/test-safe-location-point";
+import { hasWalkLineClear, WalkLineHitCode } from "@/engine/pathfinding/walk-line-clear";
+import { isSafeWalkPoint } from "@/engine/pathfinding/safe-walk-point";
 import { GameState } from "@/GameState";
 
 /**
@@ -191,22 +191,22 @@ export class PartyFollowPath {
     this._tmp.set(last.x, last.y, last.z);
     // Clear LOS, or creature block only if the blocker is a party member
     const hit = area
-      ? testDirectLine(area, this._tmp, point, {
+      ? hasWalkLineClear(area, this._tmp, point, {
           owner: leader,
           allowPartyCreatures: true,
           collectHitInfo: true,
         })
       : {
           ok: true,
-          code: TestDirectLineCode.Ok,
+          code: WalkLineHitCode.Ok,
           clearPoint: point.clone(),
           clearT: 1,
           blockingCreatureId: undefined as number | undefined,
         };
     const los =
       hit.ok ||
-      hit.code === TestDirectLineCode.Ok ||
-      (hit.code === TestDirectLineCode.Creature &&
+      hit.code === WalkLineHitCode.Ok ||
+      (hit.code === WalkLineHitCode.Creature &&
         hit.blockingCreatureId != null &&
         isPartyId(hit.blockingCreatureId));
 
@@ -538,14 +538,14 @@ export class PartyFollowPath {
       this._tmp2.set(to.x, to.y, to.z);
       let los = true;
       if(area && leader){
-        const hit = testDirectLine(area, this._tmp, this._tmp2, {
+        const hit = hasWalkLineClear(area, this._tmp, this._tmp2, {
           owner: leader,
           allowPartyCreatures: true,
         });
         los =
           hit.ok ||
-          hit.code === TestDirectLineCode.Ok ||
-          (hit.code === TestDirectLineCode.Creature &&
+          hit.code === WalkLineHitCode.Ok ||
+          (hit.code === WalkLineHitCode.Creature &&
             hit.blockingCreatureId != null &&
             isPartyId(hit.blockingCreatureId));
       }
@@ -655,7 +655,7 @@ export class PartyFollowPath {
       this._tmp.set(p.x, p.y, p.z);
 
       // Party trail probes allow overlapping party members
-      if(!testSafeLocationPoint(area, this._tmp, undefined, {
+      if(!isSafeWalkPoint(area, this._tmp, undefined, {
         allowPartyCreatures: true,
       })){
         continue;

@@ -25,7 +25,7 @@ jest.mock('@/engine/CurrentGame', () => ({ CurrentGame: {} }));
 jest.mock('@/engine/pathfinding/party-follow-path', () => ({
   partyFollowPath: Object.assign(() => {}, { reset: jest.fn() }),
 }));
-jest.mock('@/engine/pathfinding/find-safe-location', () => ({ findSafeLocation: () => null }));
+jest.mock('@/engine/pathfinding/open-walk-location', () => ({ findOpenWalkLocation: () => null }));
 jest.mock('@/combat/attack-range', () => ({ getPathPersonalSpace: () => 0.5 }));
 
 import { PartyManager } from '@/managers/PartyManager';

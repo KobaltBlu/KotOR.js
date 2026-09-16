@@ -33,7 +33,7 @@ import {
   spawnWorldImpactVfx,
   VFX_COM_BLASTER_IMPACT_GROUND,
 } from "@/combat/ranged-impact-vfx";
-import { clearLineOfSight } from "@/engine/pathfinding/clear-line-of-sight";
+import { hasVisualLos } from "@/engine/pathfinding/visual-los";
 import { GameState } from "@/GameState";
 import { getAttackEffectBonus } from "@/effects/effect-bonuses";
 import { AutoPauseState } from "@/enums/engine/AutoPauseState";
@@ -427,7 +427,7 @@ export class CombatRound {
   /**
    * ResolveProjectileMissLocation
    * lateral miss beside target (perspace * 2/3), optional wide scatter when
-   * attack_result == 10, then eye→far ray with ClearLineOfSight.
+   * attack_result == 10, then eye→far ray with visual LOS / hasVisualLos.
    */
   static getProjectileMissLocation(
     attacker: ModuleObject,
@@ -495,8 +495,8 @@ export class CombatRound {
 
     const hitPoint = new THREE.Vector3();
     const area = attacker.area;
-    if(area && typeof clearLineOfSight === 'function'){
-      const clear = clearLineOfSight(area, eye, far, {
+    if(area && typeof hasVisualLos === 'function'){
+      const clear = hasVisualLos(area, eye, far, {
         ignoreSource: attacker,
         ignoreObject: target,
         eyeHeight: 0,

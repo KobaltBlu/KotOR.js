@@ -2,7 +2,7 @@ import * as THREE from "three";
 import type { ModuleArea } from "@/module/ModuleArea";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { PathPoint } from "@/engine/pathfinding/PathPoint";
-import { hasDirectLine } from "@/engine/pathfinding/test-direct-line";
+import { hasClearWalkLine } from "@/engine/pathfinding/walk-line-clear";
 import { SMOOTH_SELECTION_BUDGET_MS } from "@/engine/pathfinding/smooth-select-nodes";
 
 /**
@@ -184,7 +184,7 @@ export function findBestCornerChord(
       b.z
     );
 
-    if(hasDirectLine(area, p0, p1, owner)){
+    if(hasClearWalkLine(area, p0, p1, owner)){
       t = t + step;
       best0.copy(p0);
       best1.copy(p1);

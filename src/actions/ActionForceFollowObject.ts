@@ -24,7 +24,7 @@ const FORCE_FOLLOW_WAIT_PARTY = 0.1;
  *
  * force-follow:
  * when outside range: front-load MoveTo + Wait + CheckForceFollow;
- * when in range: hold (IN_PROGRESS). Not a continuous WalkUpdate SM.
+ * when in range: hold (IN_PROGRESS). Not a continuous tickCreatureWalk / walk tick SM.
  *
  * @file ActionForceFollowObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>

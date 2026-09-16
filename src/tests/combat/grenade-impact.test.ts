@@ -13,7 +13,7 @@ jest.mock('@/GameState', () => ({
 }));
 jest.mock('@/engine/FollowerCamera', () => ({ FollowerCamera: {} }));
 jest.mock('@/managers/ResolutionManager', () => ({ ResolutionManager: { addResolution: () => {} } }));
-jest.mock('@/engine/pathfinding/clear-line-of-sight', () => ({ clearLineOfSight: () => true }));
+jest.mock('@/engine/pathfinding/visual-los', () => ({ hasVisualLos: () => true }));
 
 import { SWGrenadeSound } from '@/engine/rules/SWGrenadeSound';
 import {

@@ -14,9 +14,9 @@ import { ActionParameter } from "@/actions/ActionParameter";
 import { ActionQueue } from "@/actions/ActionQueue";
 import { ComputedPath } from "@/engine/pathfinding/ComputedPath";
 import {
-  QuickWalkLocoState,
-  setQuickWalkLocoState,
-} from "@/engine/pathfinding/quick-walk-loco";
+  CreatureLocoState,
+  setCreatureLocoState,
+} from "@/engine/pathfinding/creature-loco";
 import { isCreature } from "@/module/guards/isCreature";
 import { isObject } from "@/module/guards/isObject";
 
@@ -119,7 +119,7 @@ export class Action {
       if(isCreature(this.owner)) {
         this.owner.clearLocomotionState(false);
         // ResetAtEndOfPath → field438 = 1 (paused)
-        setQuickWalkLocoState(this.owner, QuickWalkLocoState.Paused);
+        setCreatureLocoState(this.owner, CreatureLocoState.Paused);
         const computedPath = this.owner.getComputedPath();
         if(!!computedPath && computedPath === this.computedPath){
           this.owner.setComputedPath(undefined);

@@ -5,7 +5,7 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import * as THREE from 'three';
 
-const findSafeLocation = jest.fn();
+const findOpenWalkLocation = jest.fn();
 const applyLocalJump = jest.fn();
 const applyAddToArea = jest.fn();
 const classifyJumpDestination = jest.fn(() => ({ kind: 'same' }));
@@ -41,8 +41,8 @@ jest.mock('@/actions/ActionJumpToPoint', () => ({
   applyAddToArea: (...args: unknown[]) => applyAddToArea(...args),
 }));
 
-jest.mock('@/engine/pathfinding/find-safe-location', () => ({
-  findSafeLocation: (...args: unknown[]) => findSafeLocation(...args),
+jest.mock('@/engine/pathfinding/open-walk-location', () => ({
+  findOpenWalkLocation: (...args: unknown[]) => findOpenWalkLocation(...args),
 }));
 
 jest.mock('@/combat/attack-range', () => ({
@@ -71,9 +71,9 @@ let mockTarget: {
   rotation: { z: number };
 };
 
-describe('ActionJumpToObject ComputeSafeLocation', () => {
+describe('ActionJumpToObject open/safe walk location', () => {
   beforeEach(() => {
-    findSafeLocation.mockReset();
+    findOpenWalkLocation.mockReset();
     applyLocalJump.mockReset();
     applyAddToArea.mockReset();
     classifyJumpDestination.mockReset();
@@ -107,13 +107,13 @@ describe('ActionJumpToObject ComputeSafeLocation', () => {
   }
 
   function expectSafeOpts(partial: Record<string, unknown>) {
-    expect(findSafeLocation).toHaveBeenCalled();
-    const opts = findSafeLocation.mock.calls[0][3] as Record<string, unknown>;
+    expect(findOpenWalkLocation).toHaveBeenCalled();
+    const opts = findOpenWalkLocation.mock.calls[0][3] as Record<string, unknown>;
     expect(opts).toMatchObject(partial);
   }
 
-  it('always uses findSafeLocation with radius 20 and allowPartyCreatures false', () => {
-    findSafeLocation.mockImplementation((_area, _center, out: THREE.Vector3) => {
+  it('always uses findOpenWalkLocation with radius 20 and allowPartyCreatures false', () => {
+    findOpenWalkLocation.mockImplementation((_area, _center, out: THREE.Vector3) => {
       out.set(178.5, 64.0, 0.1);
       return true;
     });
@@ -138,7 +138,7 @@ describe('ActionJumpToObject ComputeSafeLocation', () => {
   });
 
   it('defaults omitted bWalkStraight to requireLOS true', () => {
-    findSafeLocation.mockImplementation((_area, _center, out: THREE.Vector3) => {
+    findOpenWalkLocation.mockImplementation((_area, _center, out: THREE.Vector3) => {
       out.set(178.0, 63.0, 0);
       return true;
     });
@@ -156,7 +156,7 @@ describe('ActionJumpToObject ComputeSafeLocation', () => {
   });
 
   it('still searches safe location when bWalkStraight is FALSE (no LOS)', () => {
-    findSafeLocation.mockImplementation((_area, _center, out: THREE.Vector3) => {
+    findOpenWalkLocation.mockImplementation((_area, _center, out: THREE.Vector3) => {
       out.set(177.0, 62.0, 0);
       return true;
     });
@@ -174,8 +174,8 @@ describe('ActionJumpToObject ComputeSafeLocation', () => {
     expect(applyLocalJump).toHaveBeenCalledWith(owner, 177.0, 62.0, 0, 1.5);
   });
 
-  it('returns FAILED when findSafeLocation fails (no applyLocalJump)', () => {
-    findSafeLocation.mockReturnValue(false);
+  it('returns FAILED when findOpenWalkLocation fails (no applyLocalJump)', () => {
+    findOpenWalkLocation.mockReturnValue(false);
 
     const owner = makeOwner();
     const action = makeAction(1);

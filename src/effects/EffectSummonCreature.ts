@@ -7,7 +7,7 @@ import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleArea } from "@/module/ModuleArea";
 import * as THREE from "three";
-import { findSafeLocation } from "@/engine/pathfinding/find-safe-location";
+import { findOpenWalkLocation } from "@/engine/pathfinding/open-walk-location";
 
 import { isArea } from "@/module/guards/isArea";
 import { isCreature } from "@/module/guards/isCreature";
@@ -67,7 +67,7 @@ export class EffectSummonCreature extends GameEffect {
     // find safe location(area, requested, 20.0, pathfind, 0, out)
     const requested = new THREE.Vector3(x, y, z);
     const safe = new THREE.Vector3();
-    if(findSafeLocation(area, requested, safe, { radius: 20, owner })){
+    if(findOpenWalkLocation(area, requested, safe, { radius: 20, owner })){
       x = safe.x;
       y = safe.y;
       z = safe.z;

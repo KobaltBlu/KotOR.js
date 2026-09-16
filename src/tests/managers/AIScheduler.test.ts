@@ -38,7 +38,7 @@ function makeObj(id: number): ModuleObject {
     aiLevel: AILevel.INVALID,
     tag: `obj${id}`,
     _lastAIUpdateWorldMs: 0,
-    _quickWalkedThisFrame: false,
+    _creatureLocoThisFrame: false,
     _aiHeartbeatElapsedMs: 0,
     aiUpdate: jest.fn(),
     actionQueue: [],

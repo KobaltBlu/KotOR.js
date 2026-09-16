@@ -7,7 +7,7 @@ import {
   classifyJumpDestination,
 } from "@/engine/jump-to-location";
 import { applyAddToArea, applyLocalJump } from "@/actions/ActionJumpToPoint";
-import { findSafeLocation } from "@/engine/pathfinding/find-safe-location";
+import { findOpenWalkLocation } from "@/engine/pathfinding/open-walk-location";
 import { getPathPersonalSpace } from "@/combat/attack-range";
 
 import { isCreature } from "@/module/guards/isCreature";
@@ -76,7 +76,7 @@ export class ActionJumpToObject extends Action {
     const area = this.owner.area || this.target.area;
     _jumpCenter.copy(this.target.position);
 
-    if(!findSafeLocation(area, _jumpCenter, _jumpSafe, {
+    if(!findOpenWalkLocation(area, _jumpCenter, _jumpSafe, {
       radius: 20,
       personalSpace: getPathPersonalSpace(this.owner),
       owner: this.owner,

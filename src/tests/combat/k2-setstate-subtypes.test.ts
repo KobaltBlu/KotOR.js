@@ -92,7 +92,7 @@ describe('K2 SetState subtypes 0x0E / 0x10–0x13', () => {
 
   it('debilitated anim switch covers cases 14–19', () => {
     const src = fs.readFileSync(
-      srcPath('module', 'ModuleCreature.ts'),
+      srcPath('module', 'animation', 'resolveDebilitatedCreatureAnimation.ts'),
       'utf8'
     );
     expect(src).toMatch(/case 14:/);

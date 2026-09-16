@@ -341,9 +341,9 @@ export class ModuleDoor extends ModuleObject {
   }
 
   /**
-   * NoNonWalkPolysInDoor indexes surface_mesh[open_state].
+   * Door open-state walkmesh for static walk blockers.
    * Missing open1/open2 BWM must NOT fall back to closed — LoadMesh leaves
-   * an empty mesh for that slot, and NoNonWalkPolys with no faces returns clear.
+   * an empty mesh for that slot, and static walk blockers with no faces returns clear.
    */
   getWalkmeshForOpenState(openState: ModuleDoorOpenState = this.openState): OdysseyWalkMesh | undefined {
     switch(openState){
@@ -390,7 +390,7 @@ export class ModuleDoor extends ModuleObject {
     }
   }
 
-  /** Copy model transform onto door wok for NoNonWalkPolysInDoor / WorldToLocal. */
+  /** Copy model transform onto door wok for static walk blockers (door) / WorldToLocal. */
   syncWalkmeshMatrix(): void {
     if(this.collisionManager?.walkmesh && this.model){
       this.model.updateMatrix?.();

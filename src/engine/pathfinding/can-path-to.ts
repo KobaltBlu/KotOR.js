@@ -2,20 +2,20 @@ import * as THREE from "three";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { getPathPersonalSpace } from "@/combat/attack-range";
 import {
-  plotPath,
-  PlotPathCode,
+  buildWalkPath,
+  WalkPathCode,
   type PathFindInfoLite,
-} from "@/engine/pathfinding/plot-path";
+} from "@/engine/pathfinding/build-walk-path";
 
 /**
  * Pre-validate that a Check* Move destination is traversable (N6).
- * Routes through PlotPath façade (codes 1/2/3): Ready|Incomplete = ok, Fail = false.
+ * Routes through buildWalkPath façade (codes 1/2/3): Ready|Incomplete = ok, Fail = false.
  *
  * @file can-path-to.ts
  */
 
 /**
- * True if creature can path to dest (PlotPath Ready or Incomplete).
+ * True if creature can path to dest (buildWalkPath Ready or Incomplete).
  */
 export function canPathToPoint(
   creature: ModuleCreature,
@@ -40,7 +40,7 @@ export function canPathToPoint(
     origin: creature.position.clone(),
     dest: target.clone(),
   };
-  const result = plotPath(area, creature, info, { smooth: false });
+  const result = buildWalkPath(area, creature, info, { smooth: false });
   // Check continues on Incomplete; only Fail → ERROR
-  return result.code === PlotPathCode.Ready || result.code === PlotPathCode.Incomplete;
+  return result.code === WalkPathCode.Ready || result.code === WalkPathCode.Incomplete;
 }

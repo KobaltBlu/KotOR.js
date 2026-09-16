@@ -3,14 +3,14 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import { getPathPersonalSpace } from "@/combat/attack-range";
 import {
   farthestClearPoint,
-  testDirectLine,
-  TestDirectLineCode,
-} from "@/engine/pathfinding/test-direct-line";
+  hasWalkLineClear,
+  WalkLineHitCode,
+} from "@/engine/pathfinding/walk-line-clear";
 
 /**
  * find away vector
  * Try 8 directions at 45° around the creature→threat axis, prefer 180°
- * (away), clip with TestDirectLine / farthestClearPoint, pick best by
+ * (away), clip with walk-line clear / hasWalkLineClear / farthestClearPoint, pick best by
  * distance-from-threat × angle weight.
  *
  * @file find-away-vector.ts
@@ -24,7 +24,7 @@ const _toward = new THREE.Vector3();
 const _candidate = new THREE.Vector3();
 
 /**
- * Clip destination along origin→ideal via TestDirectLine.
+ * Clip destination along origin→ideal via walk-line clear / hasWalkLineClear.
  */
 function clipDirectLine(
   area: NonNullable<ModuleCreature["area"]>,
@@ -33,12 +33,12 @@ function clipDirectLine(
   ideal: THREE.Vector3
 ): THREE.Vector3 {
   const perspace = getPathPersonalSpace(owner);
-  const hit = testDirectLine(area, origin, ideal, {
+  const hit = hasWalkLineClear(area, origin, ideal, {
     owner,
     personalSpace: perspace,
     allowPartyCreatures: false,
   });
-  if(hit.ok || hit.code === TestDirectLineCode.Ok){
+  if(hit.ok || hit.code === WalkLineHitCode.Ok){
     return ideal.clone();
   }
   return farthestClearPoint(area, origin, ideal, {

@@ -18,19 +18,19 @@ jest.mock("@/GameState", () => ({
   },
 }));
 
-jest.mock("@/engine/pathfinding/test-direct-line", () => ({
-  testDirectLine: () => ({
+jest.mock("@/engine/pathfinding/walk-line-clear", () => ({
+  hasWalkLineClear: () => ({
     ok: true,
     code: 1,
     clearPoint: new THREE.Vector3(),
     clearT: 1,
   }),
-  TestDirectLineCode: { Ok: 1, NonWalk: 2, Creature: -3 },
-  hasDirectLine: () => true,
+  WalkLineHitCode: { Ok: 1, NonWalk: 2, Creature: -3 },
+  hasClearWalkLine: () => true,
 }));
 
-jest.mock("@/engine/pathfinding/test-safe-location-point", () => ({
-  testSafeLocationPoint: () => true,
+jest.mock("@/engine/pathfinding/safe-walk-point", () => ({
+  isSafeWalkPoint: () => true,
 }));
 
 import { PartyFollowPath } from "@/engine/pathfinding/party-follow-path";

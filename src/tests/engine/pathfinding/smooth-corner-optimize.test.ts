@@ -11,8 +11,8 @@ jest.mock("@/GameState", () => ({
   },
 }));
 
-jest.mock("@/engine/pathfinding/test-direct-line", () => ({
-  hasDirectLine: () => true,
+jest.mock("@/engine/pathfinding/walk-line-clear", () => ({
+  hasClearWalkLine: () => true,
 }));
 
 import { PathPoint } from "@/engine/pathfinding/PathPoint";

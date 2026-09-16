@@ -9,7 +9,7 @@ import { NWScript } from "@/nwscript/NWScript";
 import { SaveGame } from "@/engine/SaveGame";
 import { FactionManager } from "@/managers/FactionManager";
 import { FollowerCamera } from "@/engine/FollowerCamera";
-import { findSafeLocation } from "@/engine/pathfinding/find-safe-location";
+import { findOpenWalkLocation } from "@/engine/pathfinding/open-walk-location";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
@@ -215,7 +215,7 @@ export class GameOverManager {
         const preferred = member.position.clone();
         preferred.x += 0.75 + i * 0.35;
         const safe = new THREE.Vector3();
-        if(area && findSafeLocation(area, preferred, safe, { radius: 5, owner: member })){
+        if(area && findOpenWalkLocation(area, preferred, safe, { radius: 5, owner: member })){
           member.position.copy(safe);
         }else{
           member.position.copy(preferred);
@@ -245,7 +245,7 @@ export class GameOverManager {
           leaderPos.z
         );
         const safe = new THREE.Vector3();
-        if(area && findSafeLocation(area, preferred, safe, { radius: 10, owner: member as ModuleCreature })){
+        if(area && findOpenWalkLocation(area, preferred, safe, { radius: 10, owner: member as ModuleCreature })){
           member.position.copy(safe);
         }else{
           member.position.copy(preferred);

@@ -81,7 +81,7 @@ export class ActionUseObject extends Action {
     }
 
     // Match ActionOpenDoor: once GetIsInUseRange (queueMove returned false), use.
-    // Do not FAILED-out — WalkUpdate can leave us in the +0.1 slack band where a
+    // Do not FAILED-out — tickCreatureWalk / walk tick can leave us in the +0.1 slack band where a
     // second isInUseRange flake would drop the interaction (re-click required).
     this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
     this.owner.force = 0;

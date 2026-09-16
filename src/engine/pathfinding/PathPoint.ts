@@ -2,8 +2,8 @@ import type { ModuleArea } from "@/module/ModuleArea";
 import type { ModuleObject } from "@/module/ModuleObject";
 import type { GFFStruct } from "@/resource/GFFStruct";
 import type { WalkmeshEdge } from "@/odyssey/WalkmeshEdge";
-import { noCreaturesOnLine } from "@/engine/pathfinding/no-creatures-on-line";
-import { segmentCrossesBlockingWalkEdge } from "@/engine/pathfinding/test-direct-line";
+import { isCreatureCapsuleClear } from "@/engine/pathfinding/creature-capsule-clear";
+import { segmentCrossesBlockingWalkEdge } from "@/engine/pathfinding/walk-line-clear";
 import * as THREE from 'three';
 import { IPathPointOptions } from "@/interface/engine/pathfinding/IPathPointOptions";
 
@@ -84,7 +84,7 @@ export class PathPoint {
       return false;
     }
 
-    const creatures = noCreaturesOnLine(this.area, this.vector, point_b.vector, {
+    const creatures = isCreatureCapsuleClear(this.area, this.vector, point_b.vector, {
       owner,
       allowPartyCreatures: true,
     });

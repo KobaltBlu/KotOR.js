@@ -19,7 +19,7 @@ import type { ModuleTrigger } from "@/module/ModuleTrigger";
 import { PerceptionMask } from "@/enums/engine/PerceptionMask";
 import { GameState } from "@/GameState";
 import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
-import { clearLineOfSight } from "@/engine/pathfinding/clear-line-of-sight";
+import { hasVisualLos } from "@/engine/pathfinding/visual-los";
 import { FollowerCamera } from "@/engine/FollowerCamera";
 import { AutoPauseState } from "@/enums/engine/AutoPauseState";
 import { EngineState } from "@/enums/engine/EngineState";
@@ -1105,7 +1105,7 @@ export class ModuleObjectManager {
         }
         if(lineOfSight){
           const from = originPos;
-          if(!clearLineOfSight(this.module?.area, from, object_pool[i].position, {
+          if(!hasVisualLos(this.module?.area, from, object_pool[i].position, {
             ignoreObject: object_pool[i],
             eyeHeight: 1.5,
           })){

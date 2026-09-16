@@ -15,8 +15,8 @@ import { Utility } from "@/utility/Utility";
 import type { WalkmeshEdge } from "@/odyssey/WalkmeshEdge";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { EngineDebugType } from "@/enums";
-import { hasDirectLine, farthestClearPoint } from "@/engine/pathfinding/test-direct-line";
-import { plotGridPath } from "@/engine/pathfinding/plot-grid-path";
+import { hasClearWalkLine, farthestClearPoint } from "@/engine/pathfinding/walk-line-clear";
+import { buildGridPath } from "@/engine/pathfinding/build-grid-path";
 import { getPathPersonalSpace } from "@/combat/attack-range";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
@@ -56,7 +56,7 @@ export class ModulePath {
   connectionCount: number = 0;
 
   /**
-   * Per-owner DFS TransTable resume (PlotPathPointPath).
+   * Per-owner DFS TransTable resume (path-point DFS).
    * Survives ComputedPath teardown when MoveTo clears realtime paths.
    */
   private dfsResumeByOwner = new Map<number, PathPointDfsResume>();
@@ -410,10 +410,10 @@ export class ModulePath {
   }
 
   /**
-   * PlotPathInArea:
-   * 1. TestDirectLine → 2-point path when clear
-   * 2. Else PathPointDFS (PlotPathPointPath)
-   * 3. Else PlotGridPath / GridDFS when no PTH / DFS fail
+   * buildWalkPath (in-area):
+   * 1. walk-line clear / hasWalkLineClear → 2-point path when clear
+   * 2. Else PathPointDFS (path-point DFS)
+   * 3. Else buildGridPath / GridDFS when no PTH / DFS fail
    * 4. Else farthestClearPoint partial (no blind through-wall fallback)
    * Empty path = unreachable (caller should ERROR).
    */
@@ -428,14 +428,14 @@ export class ModulePath {
 
     const ownerId = owner?.id;
 
-    // Smooth-only resume — same endpoints, skip DFS (PlotPath return-1 mid-smooth)
+    // Smooth-only resume — same endpoints, skip DFS (buildWalkPath return-1 mid-smooth)
     const smoothOnly = this.tryResumeSmoothOnly(owner, origin, dest, smooth);
     if(smoothOnly){
       return smoothOnly;
     }
 
-    // Stage 1: TestDirectLine first
-    if(hasDirectLine(this.area, origin, dest, owner)){
+    // Stage 1: walk-line clear / hasWalkLineClear first
+    if(hasClearWalkLine(this.area, origin, dest, owner)){
       this.clearSmoothSession(ownerId);
       return ComputedPath.FromPointsList([originPoint, destPoint]);
     }
@@ -496,7 +496,7 @@ export class ModulePath {
       return this.partialClearPath(owner, origin, dest, originPoint);
     }
 
-    // Stage 3: no PTH — PlotGridPath
+    // Stage 3: no PTH — buildGridPath
     this.clearSmoothSession(ownerId);
     const gridPath = this.gridPathToComputed(owner, origin, dest, originPoint);
     if(gridPath){
@@ -651,7 +651,7 @@ export class ModulePath {
   }
 
   /**
-   * Convert plotGridPath world points into a ComputedPath, or undefined.
+   * Convert buildGridPath world points into a ComputedPath, or undefined.
    */
   private gridPathToComputed(
     owner: ModuleObject,
@@ -660,7 +660,7 @@ export class ModulePath {
     originPoint: PathPoint
   ): ComputedPath | undefined {
     const perspace = getPathPersonalSpace(owner as ModuleCreature);
-    const world = plotGridPath(this.area, origin, dest, {
+    const world = buildGridPath(this.area, origin, dest, {
       owner,
       personalSpace: perspace,
       checkCreatures: true,
@@ -686,7 +686,7 @@ export class ModulePath {
 
   /**
    * When full path fails: return 2-point path to farthest clear sample, or empty.
-   * Mirrors PlotPathInArea return-2 partial when binary expand finds a clear point.
+   * Mirrors buildWalkPath (in-area) return-2 partial when binary expand finds a clear point.
    */
   private partialClearPath(
     owner: ModuleObject,

@@ -13,18 +13,18 @@ import { beginInterAreaPath } from "@/engine/pathfinding/inter-area-path";
 import { WALK_BACK_DOT } from "@/engine/pathfinding/locomotion";
 import {
   CreatureWalkResult,
-  updateCreatureWalk,
-} from "@/engine/pathfinding/update-creature-walk";
+  tickCreatureWalk,
+} from "@/engine/pathfinding/tick-creature-walk";
 import {
-  plotPath,
-  PlotPathCode,
+  buildWalkPath,
+  WalkPathCode,
   type PathFindInfoLite,
-} from "@/engine/pathfinding/plot-path";
-import { findSafeLocation } from "@/engine/pathfinding/find-safe-location";
+} from "@/engine/pathfinding/build-walk-path";
+import { findOpenWalkLocation } from "@/engine/pathfinding/open-walk-location";
 import {
-  QuickWalkLocoState,
-  setQuickWalkLocoState,
-} from "@/engine/pathfinding/quick-walk-loco";
+  CreatureLocoState,
+  setCreatureLocoState,
+} from "@/engine/pathfinding/creature-loco";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
@@ -46,7 +46,7 @@ function snapLiveChaseDest(
   if(!area){
     return _safeDest.clone();
   }
-  const ok = findSafeLocation(area, live, _safeDest, {
+  const ok = findOpenWalkLocation(area, live, _safeDest, {
     radius: 20,
     requireLineOfSight: true,
     personalSpace: getPathPersonalSpace(owner),
@@ -193,7 +193,7 @@ export class ActionMoveToPoint extends Action {
     }
 
     // Incomplete path continues; fail stops — no replot grace.
-    if(this.pathFindInfo?.lastCode === PlotPathCode.Incomplete && !this.computedPath?.points?.length){
+    if(this.pathFindInfo?.lastCode === WalkPathCode.Incomplete && !this.computedPath?.points?.length){
       return ActionStatus.IN_PROGRESS;
     }
 
@@ -228,7 +228,7 @@ export class ActionMoveToPoint extends Action {
         this.syncBlockedComputedPath(this.owner);
       }
 
-      // WalkUpdate may clear the this.owner path on hard block (6 fails) — sync leaves
+      // tickCreatureWalk / walk tick may clear the this.owner path on hard block (6 fails) — sync leaves
       // computedPath undefined; skip timer until next frame replot.
       if(this.computedPath){
         if(this.computedPath.timer < 0){
@@ -336,7 +336,7 @@ export class ActionMoveToPoint extends Action {
       owner.setAnimationState(run ? ModuleCreatureAnimState.RUNNING : ModuleCreatureAnimState.WALKING);
     }
 
-    return updateCreatureWalk(owner, goal, run, delta, {
+    return tickCreatureWalk(owner, goal, run, delta, {
       remainingDistance: remaining,
       allowWalkBack,
       useRangeTargetId: this.pathFindInfo?.targetObjectId,
@@ -373,7 +373,7 @@ export class ActionMoveToPoint extends Action {
     // Clear physics + walk/run anim.
     owner.clearLocomotionState(false);
     // Mark locomotion paused at end of path.
-    setQuickWalkLocoState(owner, QuickWalkLocoState.Paused);
+    setCreatureLocoState(owner, CreatureLocoState.Paused);
   }
 
   shouldRepathToMovingTarget(distanceToLive: number): boolean {
@@ -435,7 +435,7 @@ export class ActionMoveToPoint extends Action {
     this.setParameter(1, ActionParameterType.FLOAT, dest.y);
     this.setParameter(2, ActionParameterType.FLOAT, dest.z);
     // Creature-target drift past threshold → mark for repath.
-    setQuickWalkLocoState(this.owner, QuickWalkLocoState.Repath);
+    setCreatureLocoState(this.owner, CreatureLocoState.Repath);
     // Clear path only — do not stopMoving / clearLocomotionState
     this.setComputedPath(undefined);
     if(this.pathFindInfo){
@@ -445,7 +445,7 @@ export class ActionMoveToPoint extends Action {
     this.calculatePath();
     // After replot, resume ordinary path walk
     if(this.computedPath?.points?.length){
-      setQuickWalkLocoState(this.owner, QuickWalkLocoState.PathWalk);
+      setCreatureLocoState(this.owner, CreatureLocoState.PathWalk);
     }
   }
 
@@ -495,15 +495,15 @@ export class ActionMoveToPoint extends Action {
       this.pathFindInfo.targetObjectId = this.target.id;
     }
 
-    const result = plotPath(area, this.owner, this.pathFindInfo);
+    const result = buildWalkPath(area, this.owner, this.pathFindInfo);
 
-    if(result.code === PlotPathCode.Fail){
+    if(result.code === WalkPathCode.Fail){
       this.setComputedPath(undefined);
       return;
     }
 
     // Ready without path — early-out; keep existing computedPath
-    if(result.code === PlotPathCode.Ready && !result.path){
+    if(result.code === WalkPathCode.Ready && !result.path){
       return;
     }
 
@@ -520,7 +520,7 @@ export class ActionMoveToPoint extends Action {
     );
     path.setColor(this.owner.helperColor);
     this.setComputedPath(path);
-    setQuickWalkLocoState(this.owner, QuickWalkLocoState.PathWalk);
+    setCreatureLocoState(this.owner, CreatureLocoState.PathWalk);
   }
 
   private getRawNumberParameter(index: number): number | undefined {

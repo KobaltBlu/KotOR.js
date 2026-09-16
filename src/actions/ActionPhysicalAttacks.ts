@@ -28,10 +28,10 @@ import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
 import { isCreature } from "@/module/guards/isCreature";
 import { isObject } from "@/module/guards/isObject";
 import {
-  testDirectLine,
-  TestDirectLineCode,
-} from "@/engine/pathfinding/test-direct-line";
-import { resolveMoveToForceJump } from "@/combat/resolve-move-to-force-jump";
+  hasWalkLineClear,
+  WalkLineHitCode,
+} from "@/engine/pathfinding/walk-line-clear";
+import { tryForceJumpApproach } from "@/combat/try-force-jump-approach";
 
 export type MeleeBackoffResult = {
   position: THREE.Vector3;
@@ -133,14 +133,14 @@ export class ActionPhysicalAttacks extends Action {
     if(attacker.id != null) ignoreIds.push(attacker.id);
     if(target.id != null) ignoreIds.push(target.id);
 
-    const hit = testDirectLine(area, attacker.position, ideal, {
+    const hit = hasWalkLineClear(area, attacker.position, ideal, {
       owner: attacker,
       personalSpace: perspace,
       checkCreatures: true,
       ignoreCreatureIds: ignoreIds,
       collectHitInfo: true,
     });
-    if(hit.ok || hit.code === TestDirectLineCode.Ok){
+    if(hit.ok || hit.code === WalkLineHitCode.Ok){
       return { position: ideal, clippedDesired: desired, clear: true };
     }
 
@@ -252,7 +252,7 @@ export class ActionPhysicalAttacks extends Action {
       let forceJumped = false;
       if(!isBackoff && hasLos){
         const featOut = { featId: this.getParameter<number>(6) | 0 };
-        if(resolveMoveToForceJump(this.owner, this.target, featOut)){
+        if(tryForceJumpApproach(this.owner, this.target, featOut)){
           this.setParameter(6, ActionParameterType.INT, featOut.featId);
           if(combatRound?.action){
             combatRound.action.featId = featOut.featId;

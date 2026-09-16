@@ -39,14 +39,14 @@ jest.mock("@/GameState", () => ({
   },
 }));
 
-jest.mock("@/engine/pathfinding/plot-path", () => ({
-  PlotPathCode: { Ready: 0, Incomplete: 1, Fail: 3 },
-  plotPath: (...args: unknown[]) => mockPlotPath(...args),
+jest.mock("@/engine/pathfinding/build-walk-path", () => ({
+  WalkPathCode: { Ready: 0, Incomplete: 1, Fail: 3 },
+  buildWalkPath: (...args: unknown[]) => mockPlotPath(...args),
 }));
 
-jest.mock("@/engine/pathfinding/update-creature-walk", () => ({
+jest.mock("@/engine/pathfinding/tick-creature-walk", () => ({
   CreatureWalkResult: { OK: 1, ARRIVED: 2, BLOCKED: 3 },
-  updateCreatureWalk: (...args: unknown[]) => mockWalkUpdate(...args),
+  tickCreatureWalk: (...args: unknown[]) => mockWalkUpdate(...args),
 }));
 
 jest.mock("@/engine/pathfinding/inter-area-path", () => ({
@@ -66,8 +66,8 @@ jest.mock("@/combat/attack-range", () => ({
 
 const mockFindSafeLocation = jest.fn();
 
-jest.mock("@/engine/pathfinding/find-safe-location", () => ({
-  findSafeLocation: (...args: unknown[]) => mockFindSafeLocation(...args),
+jest.mock("@/engine/pathfinding/open-walk-location", () => ({
+  findOpenWalkLocation: (...args: unknown[]) => mockFindSafeLocation(...args),
 }));
 
 const mockIsInUseRange = jest.fn(() => false);
@@ -79,7 +79,7 @@ jest.mock("@/actions/use-range", () => ({
 import { ActionMoveToPoint } from "@/actions/ActionMoveToPoint";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
-import { PlotPathCode } from "@/engine/pathfinding/plot-path";
+import { WalkPathCode } from "@/engine/pathfinding/build-walk-path";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
 describe("ActionMoveToPoint live-chase repath", () => {
@@ -95,7 +95,7 @@ describe("ActionMoveToPoint live-chase repath", () => {
     });
     mockWalkUpdate.mockReturnValue(1);
     mockPlotPath.mockReturnValue({
-      code: PlotPathCode.Ready,
+      code: WalkPathCode.Ready,
       path: {
         points: [{ vector: new THREE.Vector3(5, 0, 0) }],
         fixWalkEdges: () => {},
@@ -155,7 +155,7 @@ describe("ActionMoveToPoint live-chase repath", () => {
     expect(mockPlotPath).toHaveBeenCalled();
   });
 
-  it("repathToLiveTargetInPlace falls back to live target when ComputeSafeLocation fails", () => {
+  it("repathToLiveTargetInPlace falls back to live target when open/safe walk location fails", () => {
     mockFindSafeLocation.mockImplementation((_area: unknown, center: THREE.Vector3, out: THREE.Vector3) => {
       out.set(-1, -1, -1);
       return false;
@@ -244,7 +244,7 @@ describe("ActionMoveToPoint live-chase repath", () => {
     expect(mockPlotPath.mock.calls[0][0]).toBe(ownerArea);
   });
 
-  it("syncs cleared owner path after WalkUpdate blocks", () => {
+  it("syncs cleared owner path after tickCreatureWalk / walk tick blocks", () => {
     let ownerPath: any;
     const path = {
       points: [{ vector: new THREE.Vector3(5, 0, 0) }],
@@ -280,7 +280,7 @@ describe("ActionMoveToPoint live-chase repath", () => {
       collisionTimer: 0,
       blockingTimer: 0,
     } as unknown as ModuleCreature;
-    mockPlotPath.mockReturnValue({ code: PlotPathCode.Ready, path });
+    mockPlotPath.mockReturnValue({ code: WalkPathCode.Ready, path });
     mockWalkUpdate.mockImplementation(() => {
       owner.setComputedPath(undefined);
       return 3;
@@ -299,7 +299,7 @@ describe("ActionMoveToPoint live-chase repath", () => {
 
     action.calculatePath();
     // Full update path: BLOCKED clears owner path, syncs undefined onto the
-    // action — must not throw on computedPath.timer (quickWalk crash).
+    // action — must not throw on computedPath.timer (creatureLoco crash).
     const status = action.update(1 / 60);
 
     expect(mockWalkUpdate).toHaveBeenCalled();
@@ -308,7 +308,7 @@ describe("ActionMoveToPoint live-chase repath", () => {
   });
 
   it("completes live chase when isInUseRange even if dist > param range", () => {
-    // end_m01aa k_pend_traskdl40: WalkUpdate early-outs at use.range+0.1 while
+    // end_m01aa k_pend_traskdl40: tickCreatureWalk / walk tick early-outs at use.range+0.1 while
     // MoveToPoint used only param-6 — hung PauseConversation forever.
     const owner = {
       id: 1,
@@ -355,7 +355,7 @@ describe("ActionMoveToPoint live-chase repath", () => {
   });
 
   it("completes door/placeable use-range move when isInUseRange even if dist > param range", () => {
-    // Same WalkUpdate UseRange early-out as live chase — without this, OpenDoor /
+    // Same tickCreatureWalk / walk tick UseRange early-out as live chase — without this, OpenDoor /
     // UseObject never run after walking into range (must re-click).
     const owner = {
       id: 1,

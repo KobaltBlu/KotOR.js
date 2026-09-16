@@ -1,7 +1,7 @@
 import * as THREE from "three";
 
 /**
- * engine-aligned CWalkHitInfo helpers (NoCreaturesOnLine / NoNonWalkPolys).
+ * engine-aligned CWalkHitInfo helpers (creature capsule clear / static walk blockers).
  *
  * @file walk-hit-info.ts
  */

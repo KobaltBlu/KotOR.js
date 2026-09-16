@@ -13,7 +13,7 @@ import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
 import {
   OBSTRUCTION_REUSE_AGE_MS,
   OBSTRUCTION_REUSE_DIST,
-} from "@/engine/pathfinding/get-obstruction-factor";
+} from "@/engine/pathfinding/path-blockage-weight";
 import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { GameState } from "@/GameState";
 

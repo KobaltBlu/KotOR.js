@@ -7,7 +7,7 @@ import * as THREE from 'three';
 
 /**
  * Pure core of ResolveProjectileMissLocation
- * (without ClearLineOfSight) for unit testing.
+ * (without visual LOS / hasVisualLos) for unit testing.
  */
 function missBesideTarget(opts: {
   attacker: THREE.Vector3;

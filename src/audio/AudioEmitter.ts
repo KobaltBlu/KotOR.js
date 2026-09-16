@@ -5,11 +5,11 @@ import { AudioEngine } from "@/audio/AudioEngine";
 import { AudioLoader } from "@/audio/AudioLoader";
 import { GameState } from "@/GameState";
 import {
-  getObstructionFactor,
+  getPathBlockageWeight,
   obstructionVolumeScale,
   OBSTRUCTION_REUSE_AGE_MS,
   OBSTRUCTION_REUSE_DIST,
-} from "@/engine/pathfinding/get-obstruction-factor";
+} from "@/engine/pathfinding/path-blockage-weight";
 
 const GAIN_RAMP_TIME = 0.25;
 const PRIORITY_GROUP_DEFAULT = 23;
@@ -314,7 +314,7 @@ export class AudioEmitter {
       factor = reused;
     }else{
       const area = GameState.module?.area;
-      factor = getObstructionFactor(
+      factor = getPathBlockageWeight(
         area,
         { x: this.position.x, y: this.position.y, z: this.position.z + this.elevation },
         { x: lx, y: ly, z: lz }

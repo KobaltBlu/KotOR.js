@@ -12,13 +12,13 @@ import {
 import { computeCreatureEdgeDetour } from "@/engine/pathfinding/path-point-creature-detour";
 import { pathPointDfsSearch } from "@/engine/pathfinding/path-point-dfs";
 import type { PathPointDfsTransTable } from "@/engine/pathfinding/path-point-dfs-trans-table";
-import { noNonWalkPolysDetailed } from "@/engine/pathfinding/no-non-walk-polys";
-import { noCreaturesOnLine } from "@/engine/pathfinding/no-creatures-on-line";
+import { isStaticWalkClearDetailed } from "@/engine/pathfinding/static-walk-blockers";
+import { isCreatureCapsuleClear } from "@/engine/pathfinding/creature-capsule-clear";
 import { isPthEdgeBlockedByObject } from "@/engine/pathfinding/pth-edge-block";
 
 import { isCreature } from "@/module/guards/isCreature";
 
-/** Resume state for PlotPathPointPath state / state across timed-out searches. */
+/** Resume state for path-point DFS state / state across timed-out searches. */
 export type PathPointDfsResume = {
   transTable: PathPointDfsTransTable;
   costBudget: number;
@@ -86,7 +86,7 @@ export class ComputedPath {
 
   /**
    * PTH graph search — PathPointDFS  with TransTable + iterative
-   * cost budget (PlotPathPointPath). Creature detours from GenerateSuccessors.
+   * cost budget (path-point DFS). Creature detours from GenerateSuccessors.
    * Optional wall-clock slice (~ high-res timer continuation).
    * Pass `resume` to reuse TransTable when start/end unchanged (state).
    */
@@ -176,8 +176,8 @@ export class ComputedPath {
     const area = from.area ?? this.owner?.area;
     if(!area) return { cost: dist };
 
-    // order: NoCreaturesOnLine, then NoNonWalkPolysDetailed
-    const creatures = noCreaturesOnLine(area, from.vector, to.vector, {
+    // order: creature capsule clear, then static walk blockers (detailed)
+    const creatures = isCreatureCapsuleClear(area, from.vector, to.vector, {
       owner: this.owner,
       allowPartyCreatures: true,
     });
@@ -192,7 +192,7 @@ export class ComputedPath {
       return { cost: dist + Math.max(1.0, dist * 0.5) };
     }
 
-    const polys = noNonWalkPolysDetailed(area, from.vector, to.vector, {
+    const polys = isStaticWalkClearDetailed(area, from.vector, to.vector, {
       ignoreObjectIds: isCreature(this.owner)
         ? (() => {
             const id = (this.owner as ModuleCreature).pathFindIgnoreObjectId | 0;
@@ -477,7 +477,7 @@ export class ComputedPath {
   }
 
   /**
-   * SmoothPointsOnPath second stage — corner chords via TestDirectLine.
+   * SmoothPointsOnPath second stage — corner chords via walk-line clear / hasWalkLineClear.
    * Optional budget/resume for JS hitch hardening after SmoothSelection.
    */
   smoothCorners(options: {

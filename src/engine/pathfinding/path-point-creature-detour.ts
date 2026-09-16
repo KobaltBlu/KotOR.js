@@ -3,11 +3,11 @@ import type { ModuleArea } from "@/module/ModuleArea";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { getCreaturePersonalSpace, getPathPersonalSpace } from "@/combat/attack-range";
-import { hasDirectLine } from "@/engine/pathfinding/test-direct-line";
+import { hasClearWalkLine } from "@/engine/pathfinding/walk-line-clear";
 
 /**
  * PathPointDFSGenerateSuccessors creature detour:
- * When NoCreaturesOnLine fails, cost = |A→offset| + |offset→B| where
+ * When creature capsule clear fails, cost = |A→offset| + |offset→B| where
  * offset = blocker.pos + normalize(⊥(B−A)) * (blocker.perspace + self.perspace).
  *
  * JS also evaluates the opposite perpendicular and prefers the clearer/shorter side.
@@ -75,8 +75,8 @@ export function computeCreatureEdgeDetour(
       Math.hypot(to.x - detour.x, to.y - detour.y);
 
     const clear = !area || (
-      hasDirectLine(area, from, detour, owner) &&
-      hasDirectLine(area, detour, to, owner)
+      hasClearWalkLine(area, from, detour, owner) &&
+      hasClearWalkLine(area, detour, to, owner)
     );
     const score = cost + (clear ? 0 : 1000);
     if(score < bestScore){

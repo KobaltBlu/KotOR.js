@@ -25,8 +25,8 @@ import { LIPObject } from "@/resource/LIPObject";
 import { OdysseyModel3D, OdysseyObject3D } from "@/three/odyssey";
 import { Utility } from "@/utility/Utility";
 import { ComputedPath } from "@/engine/pathfinding";
-import { clearLineOfSight } from "@/engine/pathfinding/clear-line-of-sight";
-import { noNonWalkPolysDetailed } from "@/engine/pathfinding/no-non-walk-polys";
+import { hasVisualLos } from "@/engine/pathfinding/visual-los";
+import { isStaticWalkClearDetailed } from "@/engine/pathfinding/static-walk-blockers";
 import type { ModuleArea } from "@/module/ModuleArea";
 import type { ModuleDoor } from "@/module/ModuleDoor";
 import type { ModuleItem } from "@/module/ModuleItem";
@@ -272,8 +272,8 @@ export class ModuleObject {
   _aiHeartbeatElapsedMs: number = 0;
   /** World time (ms) of the last aiUpdate — used to accumulate skipped-frame delta. */
   _lastAIUpdateWorldMs: number = 0;
-  /** Set by AIScheduler quick-walk pass so aiUpdate skips re-processing move actions. */
-  _quickWalkedThisFrame: boolean = false;
+  /** Set by AIScheduler creature loco pass so aiUpdate skips re-processing move actions. */
+  _creatureLocoThisFrame: boolean = false;
 
   //Perception
   heardStrings: IHeardString[] = [];
@@ -488,7 +488,7 @@ export class ModuleObject {
     this._aiHeartbeatElapsedMs = this._heartbeatTimerOffset;
     this.aiLevel = AILevel.INVALID;
     this._lastAIUpdateWorldMs = 0;
-    this._quickWalkedThisFrame = false;
+    this._creatureLocoThisFrame = false;
 
     //Combat Info
     this.combatData.initialize();
@@ -3124,7 +3124,7 @@ export class ModuleObject {
 
   /**
    * Check if the object has line of sight to another object.
-   * ClearLineOfSight (combat / GetIsInUseRange) uses eye
+   * visual LOS / hasVisualLos (combat / GetIsInUseRange) uses eye
    * height ~1.5 and does not clamp to perception range — pass
    * ignorePerceptionRange for those. GetIsInUseRange rays to the GetUseRange
    * point (doors/placeables), not object origin.
@@ -3135,13 +3135,13 @@ export class ModuleObject {
     opts?: {
       ignorePerceptionRange?: boolean;
       eyeHeight?: number;
-      /** ClearLineOfSight excludes source + target object ids from hits. */
+      /** visual LOS / hasVisualLos excludes source + target object ids from hits. */
       ignoreObject?: ModuleObject;
       /** End point override (GetIsInUseRange → nearest action point). */
       toPosition?: THREE.Vector3;
       /**
-       * Skip room walkmesh face tests. Use-range ClearLineOfSight is
-       * NoNonWalkPolysDetailed, not a full walkable-face raycast — room meshes
+       * Skip room walkmesh face tests. Use-range visual LOS / hasVisualLos is
+       * static walk blockers (detailed), not a full walkable-face raycast — room meshes
        * false-block short door/placeable interactions.
        */
       skipRoomWalkmesh?: boolean;
@@ -3199,14 +3199,14 @@ export class ModuleObject {
       const b = this.#tmpPositionB.clone();
       a.z += eyeHeight;
       b.z += eyeHeight;
-      return noNonWalkPolysDetailed(this.area, a, b, {
+      return isStaticWalkClearDetailed(this.area, a, b, {
         personalSpace: 0.001,
         ignoreObjectIds: ignoreIds,
         skipMesh: true,
       }).clear;
     }
 
-    return clearLineOfSight(this.area, this.#tmpPositionA, this.#tmpPositionB, {
+    return hasVisualLos(this.area, this.#tmpPositionA, this.#tmpPositionB, {
       eyeHeight,
       ignoreSource: this,
       ignoreObject,
