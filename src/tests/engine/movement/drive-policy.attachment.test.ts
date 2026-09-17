@@ -95,4 +95,30 @@ describe("resolveDriveStep room attachment", () => {
     expect(result.groundFace).toBe(face);
     expect(result.finalPosition.z).toBeCloseTo(0.005);
   });
+
+  it("blocks and sets blockAfterDoorSignal when crossing a linked open door", () => {
+    const door = { id: 7 };
+    queryDoorCrossingMock.mockReturnValue({ door, linkedOpen: true });
+
+    const area = {} as ModuleArea;
+    const creature = {
+      position: new THREE.Vector3(0, 0, 0),
+      area,
+      getWalkSpeed: () => 1.7,
+      getRunSpeed: () => 5.4,
+      movementSpeed: 1,
+      locomotionScale: 1,
+    } as unknown as ModuleCreature;
+
+    const result = resolveDriveStep(
+      creature,
+      new THREE.Vector3(1, 0, 0),
+      false,
+      0.1
+    );
+    expect(result.status).toBe(MovementStatus.Blocked);
+    expect(result.blockAfterDoorSignal).toBe(true);
+    expect(result.crossedTransition).toBe(door);
+    expect(result.actualDistance).toBe(0);
+  });
 });

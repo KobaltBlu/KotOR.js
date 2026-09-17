@@ -18,6 +18,7 @@ import {
   type MovementResult,
 } from "@/engine/movement/types";
 import { isCreature } from "@/module/guards/isCreature";
+import { isDoor } from "@/module/guards/isDoor";
 
 /**
  * Single normal creature movement committer.
@@ -46,9 +47,14 @@ export function commitMovement(
     authority: state.authority,
   });
 
-  // Door OnClicked without applying XY (retail DriveUpdateLocation reject).
+  // Linked open door cross: warp without applying XY (retail reject-through-door).
+  // Also queue OnClicked so DoorOnClick scripts still run.
   if(result.blockAfterDoorSignal && result.crossedTransition){
-    signalDoorClicked(creature, result.crossedTransition);
+    const door = result.crossedTransition;
+    if(isDoor(door) && door.getLinkedToModule?.() && door.isOpen?.()){
+      door.transitNPC(creature);
+    }
+    signalDoorClicked(creature, door);
     applyContact(creature, result, context);
     creature.speed = 0;
     creature.force = 0;

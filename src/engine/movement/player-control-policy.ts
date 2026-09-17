@@ -4,6 +4,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import {
   findGround,
   findWalkableAttachmentAt,
+  queryDoorCrossing,
   testCreatureMovement,
   testStaticMovement,
   WalkLineHitCode,
@@ -728,6 +729,24 @@ function finishPlayerResult(
   dest: THREE.Vector3,
   hit: MovementResult["hit"]
 ): MovementResult {
+  const empty = new THREE.Vector3();
+  // Linked open door plane cross — reject XY and let committer warp (same as Drive).
+  const crossed = queryDoorCrossing(creature.area, origin, dest);
+  if(crossed?.linkedOpen){
+    return {
+      source: MovementSource.PlayerControl,
+      status: MovementStatus.Blocked,
+      origin,
+      finalPosition: origin.clone(),
+      acceptedDisplacement: empty,
+      actualDistance: 0,
+      crossedTransition: crossed.door,
+      blockAfterDoorSignal: true,
+      hit: { kind: MovementHitKind.Door, object: crossed.door },
+      incrementBlockingTimer: true,
+    };
+  }
+
   const attach = findWalkableAttachmentAt(creature.area, dest, creature.room);
   const finalPos = dest.clone();
   if(attach){

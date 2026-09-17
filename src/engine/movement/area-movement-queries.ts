@@ -137,7 +137,9 @@ export type DoorCrossingHit = {
 
 /**
  * Descriptive door-crossing probe. Does not signal OnClicked.
- * Mirrors tick-creature-drive getDoorCrossed geometry.
+ * Plane = perpendicular to door.transitionLine (same as GetDoorCrossed /
+ * testTransitionLineCrosses) — not door.facing, which often points along
+ * the wall rather than through the doorway.
  */
 export function queryDoorCrossing(
   area: ModuleArea | undefined,
@@ -159,15 +161,17 @@ export function queryDoorCrossing(
     if(maxY < door.box.min.y || minY > door.box.max.y) continue;
     if(!segmentHitsBox(fromLift, toLift, door.box)) continue;
 
-    const fx = Math.cos(door.facing || 0);
-    const fy = Math.sin(door.facing || 0);
-    const dStart =
-      (fromLift.x - door.position.x) * fx +
-      (fromLift.y - door.position.y) * fy;
-    const dEnd =
-      (toLift.x - door.position.x) * fx +
-      (toLift.y - door.position.y) * fy;
-    if((dStart > 0) === (dEnd > 0)) continue;
+    if(
+      typeof door.segmentCrossesTransitionPlane === "function" &&
+      !door.segmentCrossesTransitionPlane(
+        fromLift.x,
+        fromLift.y,
+        toLift.x,
+        toLift.y
+      )
+    ){
+      continue;
+    }
 
     const flags = (door.linkedToFlags | 0);
     const linkedModule = (door.getLinkedToModule?.() || "").trim();

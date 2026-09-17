@@ -1055,7 +1055,38 @@ export class ModuleDoor extends ModuleObject {
   }
 
   /**
-   * GetDoorCrossed: plane through door origin with facing normal;
+   * True when the XY segment flips sides of the doorway plane.
+   * Plane normal is perpendicular to `transitionLine` (doorway width), not
+   * door facing — Endar Spire-style doors face along the wall while the
+   * walkthrough axis is across the threshold.
+   */
+  segmentCrossesTransitionPlane(
+    fromX: number,
+    fromY: number,
+    toX: number,
+    toY: number
+  ): boolean {
+    if(!this.transitionLine){
+      this.generateTransitionLine();
+    }
+    if(!this.transitionLine) return false;
+
+    const lx = this.transitionLine.end.x - this.transitionLine.start.x;
+    const ly = this.transitionLine.end.y - this.transitionLine.start.y;
+    const llen = Math.hypot(lx, ly);
+    if(llen <= 0) return false;
+    const nx = -ly / llen;
+    const ny = lx / llen;
+
+    const d0 =
+      (fromX - this.position.x) * nx + (fromY - this.position.y) * ny;
+    const d1 =
+      (toX - this.position.x) * nx + (toY - this.position.y) * ny;
+    return (d0 > 0) !== (d1 > 0);
+  }
+
+  /**
+   * GetDoorCrossed: plane through door origin with transition-line normal;
    * sign flip of Dot(p - doorPos, n) along the move. Probe length is at
    * least hitDistance so a capsule pinned short of the plane still warps
    * when pushing into the doorway wall behind it.
@@ -1069,19 +1100,6 @@ export class ModuleDoor extends ModuleObject {
     const moveLen = Math.hypot(move.x, move.y);
     if(moveLen <= 0) return;
 
-    if(!this.transitionLine){
-      this.generateTransitionLine();
-    }
-    if(!this.transitionLine) return;
-
-    // Plane normal = perpendicular to the transition line (doorway width).
-    const lx = this.transitionLine.end.x - this.transitionLine.start.x;
-    const ly = this.transitionLine.end.y - this.transitionLine.start.y;
-    const llen = Math.hypot(lx, ly);
-    if(llen <= 0) return;
-    const nx = -ly / llen;
-    const ny = lx / llen;
-
     const probeLen = Math.max(moveLen, hitDistance);
     const ux = move.x / moveLen;
     const uy = move.y / moveLen;
@@ -1090,14 +1108,7 @@ export class ModuleDoor extends ModuleObject {
     const ex = sx + ux * probeLen;
     const ey = sy + uy * probeLen;
 
-    const dx0 = sx - this.position.x;
-    const dy0 = sy - this.position.y;
-    const dx1 = ex - this.position.x;
-    const dy1 = ey - this.position.y;
-    const d0 = dx0 * nx + dy0 * ny;
-    const d1 = dx1 * nx + dy1 * ny;
-    // Crossing when (0 < d0) != (0 < d1)
-    if((d0 > 0) !== (d1 > 0)){
+    if(this.segmentCrossesTransitionPlane(sx, sy, ex, ey)){
       this.transitNPC(object);
     }
   }

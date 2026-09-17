@@ -9,6 +9,7 @@ const testCreatureMovementMock = jest.fn();
 const testStaticMovementMock = jest.fn();
 const findGroundMock = jest.fn();
 const findWalkableAttachmentAtMock = jest.fn();
+const queryDoorCrossingMock = jest.fn();
 const nudgeFriendlyCreaturesMock = jest.fn();
 
 jest.mock("@/GameState", () => ({
@@ -48,6 +49,7 @@ jest.mock("@/engine/movement/area-movement-queries", () => ({
   findGround: (...args: unknown[]) => findGroundMock(...args),
   findWalkableAttachmentAt: (...args: unknown[]) =>
     findWalkableAttachmentAtMock(...args),
+  queryDoorCrossing: (...args: unknown[]) => queryDoorCrossingMock(...args),
 }));
 
 import {
@@ -100,9 +102,11 @@ describe("resolvePlayerControlStep", () => {
     testStaticMovementMock.mockReset();
     findGroundMock.mockReset();
     findWalkableAttachmentAtMock.mockReset();
+    queryDoorCrossingMock.mockReset();
     nudgeFriendlyCreaturesMock.mockReset();
     findGroundMock.mockReturnValue(undefined);
     findWalkableAttachmentAtMock.mockReturnValue(undefined);
+    queryDoorCrossingMock.mockReturnValue(undefined);
     nudgeFriendlyCreaturesMock.mockReturnValue(false);
 
     npc = mockCreature(9, 1, 0);
@@ -526,5 +530,30 @@ describe("resolvePlayerControlStep", () => {
     expect(result.status).toBe(MovementStatus.Moving);
     expect(result.finalPosition.x).toBeGreaterThan(player.position.x + 0.2);
     expect(result.finalPosition.y).toBeCloseTo(player.position.y, 2);
+  });
+
+  it("blocks XY and sets blockAfterDoorSignal when crossing a linked open door", () => {
+    const door = { id: 42, tag: "transdoor" };
+    testCreatureMovementMock.mockReturnValue({ clear: true, raw: { clear: true } });
+    testStaticMovementMock.mockReturnValue({
+      clear: true,
+      walkHit: {
+        code: 1,
+        ok: true,
+        clearT: 1,
+        clearPoint: new THREE.Vector3(1, 0, 0),
+      },
+    });
+    queryDoorCrossingMock.mockReturnValue({ door, linkedOpen: true });
+
+    const result = resolvePlayerControlStep(
+      player,
+      new THREE.Vector3(1, 0, 0)
+    );
+    expect(result.status).toBe(MovementStatus.Blocked);
+    expect(result.blockAfterDoorSignal).toBe(true);
+    expect(result.crossedTransition).toBe(door);
+    expect(result.actualDistance).toBe(0);
+    expect(result.finalPosition.x).toBeCloseTo(player.position.x);
   });
 });

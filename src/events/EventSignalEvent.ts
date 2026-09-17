@@ -205,6 +205,19 @@ export class EventSignalEvent extends GameEvent {
           }
         }
       break;
+      case SignalEventType.OnClicked:
+        if(isDoor(obj)){
+          const instance = obj.getScriptInstance(ModuleObjectScript.DoorOnClick);
+          if(instance){
+            instance.run(obj);
+          }
+        }else if(isTrigger(obj)){
+          const instance = obj.getScriptInstance(ModuleObjectScript.TriggerOnClick);
+          if(instance){
+            instance.run(obj);
+          }
+        }
+      break;
       case SignalEventType.OnObjectEnter:
         if(isTrigger(obj)){
           const onEnter = obj.getScriptInstance(ModuleObjectScript.TriggerOnEnter);
