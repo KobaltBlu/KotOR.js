@@ -79,4 +79,37 @@ describe("hasWalkLineClear DetailedBlock clearT", () => {
     expect(clear.x).toBeGreaterThan(8.5);
     expect(clear.distanceToSquared(origin)).toBeGreaterThan(1);
   });
+
+  it("empty candidate faces fall through to isPointWalkable (drive strip)", () => {
+    noNonWalkMock.mockReturnValue({ clear: true });
+
+    const area = {
+      walkFaces: [{ pointInFace2d: () => true }],
+      rooms: [],
+      walkEdges: [],
+      isPointWalkable: () => true,
+      // Simulates VIS cull miss: box query returns no faces
+      getWalkCandidatesForBox: (
+        _box: unknown,
+        out: { faces: unknown[]; edges: unknown[]; rooms: unknown[] }
+      ) => {
+        out.faces.length = 0;
+        out.edges.length = 0;
+        out.rooms.length = 0;
+        return out;
+      },
+    } as unknown as ModuleArea;
+
+    const origin = new THREE.Vector3(92, 78.24, 0);
+    const dest = new THREE.Vector3(92, 77.9, 0);
+    const hit = hasWalkLineClear(area, origin, dest, {
+      personalSpace: 0.4,
+      checkCreatures: false,
+      skipRoomCheck: true,
+      skipClippedLine: true,
+    });
+
+    expect(hit.ok).toBe(true);
+    expect(hit.code).toBe(WalkLineHitCode.Ok);
+  });
 });

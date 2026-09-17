@@ -59,6 +59,13 @@ import { SkillType } from "@/enums/nwscript/SkillType";
 import type { InterAreaWaypoint } from "@/engine/pathfinding/inter-area-path";
 import { buildPathAroundCreature } from "@/engine/pathfinding/build-path-around-creature";
 import { nudgeFriendlyCreatures } from "@/engine/pathfinding/nudge-friendlies";
+import { resolvePlayerControlStep } from "@/engine/movement/player-control-policy";
+import { commitMovement } from "@/engine/movement/movement-committer";
+import {
+  setMovementAuthority,
+  ensureMovementState,
+} from "@/engine/movement/creature-movement-state";
+import { MovementAuthority } from "@/engine/movement/types";
 import { getUseRange } from "@/actions/use-range";
 import { getAttackApproachPoint } from "@/combat/nearest-action-point";
 import { ModulePlaceable } from "@/module/ModulePlaceable";
@@ -1339,8 +1346,16 @@ export class ModuleCreature extends ModuleObject {
         (!!this.playerControl?.active || playerControlMoving) &&
         (this.controlled || this === GameState.getCurrentPlayer());
 
+      let playerControlCommitted = false;
       if(usePlayerControl){
         this.applyPlayerCamRelativeControl(delta);
+        if(this.forceVector.lengthSq() > 1e-12){
+          setMovementAuthority(this, MovementAuthority.PlayerControl);
+          const result = resolvePlayerControlStep(this, this.forceVector);
+          commitMovement(this, result, { delta });
+          this.forceVector.set(0, 0, 0);
+          playerControlCommitted = true;
+        }
       }else if(forcePushLocked){
         // Hold still for player RK4; creature loco owns the slide.
         this.forceVector.set(0, 0, 0);
@@ -1504,20 +1519,21 @@ export class ModuleCreature extends ModuleObject {
         this.updateWeaponModels(delta);
       }
 
-      if(this.collisionManager.blockingObject != this.collisionManager.lastBlockingObject){
-        const enteredBlock =
-          !!this.collisionManager.blockingObject &&
-          this.collisionManager.blockingObject !== this.collisionManager.lastBlockingObject;
-        this.collisionManager.lastBlockingObject = this.collisionManager.blockingObject;
-        // OnBlocked fires on enter; clearing contact is not a new block event
-        if(enteredBlock){
-          this.onBlocked();
-        }
-      }
-
-      // Predicted RK4 sweep; creature drive update already calls updateCollision for path/drive.
-      if(this.forceVector.length()){
+      // Contact OnBlocked for PlayerControl / Drive / Walk is owned by MovementCommitter.
+      // Legacy force-coast still uses CollisionManager enter detection after updateCollision.
+      if(this.forceVector.length() && !playerControlCommitted){
         this.updateCollision(delta);
+        if(this.collisionManager.blockingObject != this.collisionManager.lastBlockingObject){
+          const enteredBlock =
+            !!this.collisionManager.blockingObject &&
+            this.collisionManager.blockingObject !== this.collisionManager.lastBlockingObject;
+          this.collisionManager.lastBlockingObject = this.collisionManager.blockingObject;
+          ensureMovementState(this).lastBlockingObject =
+            this.collisionManager.blockingObject;
+          if(enteredBlock){
+            this.onBlocked();
+          }
+        }
       }
 
       // Perception / listening moved to aiUpdate
@@ -2236,8 +2252,9 @@ export class ModuleCreature extends ModuleObject {
   }
 
   JumpToLocation(lLocation: EngineLocation): void {
+    // Creatures: ModuleObject.JumpToLocation runs ActionJumpToPoint → applyLocalTeleport.
+    // Do not settle via CollisionManager.updateCollision (locomotion solver).
     super.JumpToLocation(lLocation);
-    this.updateCollision();
   }
 
   /**
@@ -4130,6 +4147,8 @@ export class ModuleCreature extends ModuleObject {
    */
   onPositionChanged(){
     this.positionChanged = false;
+    // Keep cull / trigger AABB current when position changes outside setPosition.
+    this.computeBoundingBox?.();
     //check if the creature is inside a trigger
     const triggers = this.area?.triggers;
     if(triggers){

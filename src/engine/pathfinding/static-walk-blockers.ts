@@ -2,6 +2,7 @@ import * as THREE from "three";
 import type { ModuleArea } from "@/module/ModuleArea";
 import type { ModuleDoor } from "@/module/ModuleDoor";
 import { isStaticWalkClearOnAreaMesh, isStaticWalkClearOnWalkMesh } from "@/engine/pathfinding/static-walk-blockers-mesh";
+import { composeDoorWalkmeshLocalToWorld } from "@/engine/pathfinding/door-walkmesh-matrix";
 import {
   setHitInfoForAabb,
   type WalkHitInfo,
@@ -47,7 +48,8 @@ function closedDoorBlocksLine(
   from: THREE.Vector3,
   to: THREE.Vector3,
   expand: number,
-  hit?: WalkHitInfo
+  hit?: WalkHitInfo,
+  softClearStartOverlap = false
 ): boolean {
   if(!door) return false;
 
@@ -60,6 +62,16 @@ function closedDoorBlocksLine(
   if(!wok?.faces?.length){
     if(typeof door.isOpen === 'function' && door.isOpen()) return false;
   }else{
+    // Refresh LocalToWorld on the mesh under test (door pose + BWM header.position)
+    composeDoorWalkmeshLocalToWorld(
+      wok.matrixWorld ?? (wok.matrixWorld = new THREE.Matrix4()),
+      door.position,
+      door.rotation ?? new THREE.Euler(0, 0, door.facing || 0),
+      wok.header?.position,
+    );
+    if(wok.mat4){
+      wok.mat4.copy(wok.matrixWorld);
+    }
     // AABB pre-cull when box available
     if(door.box){
       const minX = Math.min(from.x, to.x) - expand;
@@ -69,10 +81,13 @@ function closedDoorBlocksLine(
       if(maxX < door.box.min.x || minX > door.box.max.x) return false;
       if(maxY < door.box.min.y || minY > door.box.max.y) return false;
     }
+    // Walk-check materials only (door DWK faces are Nonwalk mat 7).
+    // Face range starts after walkable/adjacency count.
     const mesh = isStaticWalkClearOnWalkMesh(wok, from, to, {
       personalSpace: expand,
       hit,
-      blockAllFaces: true,
+      faceStartIndex: wok.walkableFaces?.length ?? 0,
+      softClearStartOverlap,
     });
     if(!mesh.clear){
       if(hit) hit.objectId = door.id;
@@ -126,12 +141,19 @@ export function isStaticWalkClearDetailed(
     skipMesh?: boolean;
     /** Object ids to skip (visual LOS / hasVisualLos exclude list). */
     ignoreObjectIds?: number[];
+    /**
+     * When true, door/placeable mesh tests soft-clear an already-overlapping
+     * start so the actor can step out (PlayerControl escape). Pathfinding
+     * leaves this false.
+     */
+    softClearStartOverlap?: boolean;
   } = {}
 ): NoNonWalkPolysResult {
   if(!area) return { clear: true };
   if(from.distanceToSquared(to) < 1e-10) return { clear: true };
 
   const expand = options.personalSpace ?? 0.5;
+  const softStart = !!options.softClearStartOverlap;
   const ignore = options.ignoreObjectIds;
   const isIgnored = (id: number | undefined) =>
     id != null && !!ignore && ignore.indexOf(id) >= 0;
@@ -144,7 +166,7 @@ export function isStaticWalkClearDetailed(
     for(let i = 0; i < doors.length; i++){
       const door = doors[i];
       if(!door || isIgnored(door.id)) continue;
-      if(closedDoorBlocksLine(door, _from, _to, expand, options.hit)){
+      if(closedDoorBlocksLine(door, _from, _to, expand, options.hit, softStart)){
         return { clear: false, blockingObjectId: door.id };
       }
     }
@@ -160,6 +182,10 @@ export function isStaticWalkClearDetailed(
       if(!plc || isIgnored(plc.id)) continue;
       const wok = plc.collisionManager?.walkmesh;
       if(!wok?.faces?.length) continue;
+      // Refresh LocalToWorld (pose + BWM header.position) before mesh test.
+      if(typeof (plc as { syncWalkmeshMatrix?: () => void }).syncWalkmeshMatrix === 'function'){
+        (plc as { syncWalkmeshMatrix: () => void }).syncWalkmeshMatrix();
+      }
       if(plc.box){
         const minX = Math.min(_from.x, _to.x) - expand;
         const maxX = Math.max(_from.x, _to.x) + expand;
@@ -172,6 +198,7 @@ export function isStaticWalkClearDetailed(
       const mesh = isStaticWalkClearOnWalkMesh(wok, _from, _to, {
         personalSpace: expand,
         hit: options.hit,
+        softClearStartOverlap: softStart,
       });
       if(!mesh.clear){
         return { clear: false, blockingObjectId: plc.id };

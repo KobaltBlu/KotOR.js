@@ -183,12 +183,104 @@ function faceVerts(face: OdysseyFace3): [THREE.Vector3, THREE.Vector3, THREE.Vec
  * static walk blockers stadium vs triangle :
  * IntersectLineSegments2d × stadium edges, IntersectCircle2d ends, interior samples.
  */
+/**
+ * True when the start point lies on the face footprint (stuck inside), not when
+ * personal-space only grazes an edge. Edge grazing must keep full corridor so
+ * PlayerControl can collide-and-slide.
+ */
+function startInteriorOnFace(
+  face: OdysseyFace3,
+  ax: number, ay: number, az: number
+): boolean {
+  _sample.set(ax, ay, az);
+  return !!face.pointInFace2d?.(_sample);
+}
+
+/**
+ * XY contact normal for Edge hits. Flat PWK faces (plc_desk1) often have
+ * zero/Z-up face normals — PlayerControl slide needs an outward XY normal or
+ * projectOntoTangent cancels all motion against −desired fallback.
+ */
+function fillEdgeHitNormal(
+  hit: WalkHitInfo,
+  face: OdysseyFace3,
+  va: THREE.Vector3,
+  vb: THREE.Vector3,
+  refX: number,
+  refY: number
+): void {
+  const fn = face.normal;
+  if(fn && (Math.abs(fn.x) > 1e-6 || Math.abs(fn.y) > 1e-6)){
+    hit.normal.copy(fn);
+    return;
+  }
+  let ex = vb.x - va.x;
+  let ey = vb.y - va.y;
+  const el = Math.hypot(ex, ey);
+  if(el < 1e-8){
+    hit.normal.set(0, 0, 1);
+    return;
+  }
+  ex /= el;
+  ey /= el;
+  let nx = -ey;
+  let ny = ex;
+  const mx = (va.x + vb.x) * 0.5;
+  const my = (va.y + vb.y) * 0.5;
+  if((refX - mx) * nx + (refY - my) * ny < 0){
+    nx = -nx;
+    ny = -ny;
+  }
+  hit.normal.set(nx, ny, 0);
+}
+
+/** Dest-only face hit (escape when start already sits on a mesh footprint). */
+function destOnlyHitsFace(
+  face: OdysseyFace3,
+  bx: number, by: number, bz: number,
+  radius: number,
+  hit?: WalkHitInfo
+): boolean {
+  const verts = faceVerts(face);
+  if(!verts) return false;
+  const edges: [THREE.Vector3, THREE.Vector3][] = [
+    [verts[0], verts[1]], [verts[1], verts[2]], [verts[2], verts[0]],
+  ];
+  const destR = radius + 0.001;
+  for(let e = 0; e < 3; e++){
+    const va = edges[e][0];
+    const vb = edges[e][1];
+    if(intersectCircle2d(bx, by, destR, va.x, va.y, vb.x, vb.y) > 0){
+      if(hit){
+        hit.kind = WalkHitKind.Edge;
+        hit.hitPoint.set(bx, by, bz);
+        hit.edgeA = va.clone();
+        hit.edgeB = vb.clone();
+        fillEdgeHitNormal(hit, face, va, vb, bx, by);
+      }
+      return true;
+    }
+  }
+  _sample.set(bx, by, bz);
+  if(face.pointInFace2d?.(_sample)){
+    if(hit){
+      hit.kind = WalkHitKind.Interior;
+      face.triangle?.closestPointToPoint?.(_sample, hit.hitPoint);
+      if(face.normal) hit.normal.copy(face.normal);
+      else hit.normal.set(0, 0, 1);
+    }
+    return true;
+  }
+  return false;
+}
+
 function corridorHitsFace(
   face: OdysseyFace3,
   ax: number, ay: number, bx: number, by: number,
   az: number, bz: number,
   radius: number,
-  hit?: WalkHitInfo
+  hit?: WalkHitInfo,
+  softClearStartOverlap = false
 ): boolean {
   const verts = faceVerts(face);
   if(!verts) return false;
@@ -196,23 +288,27 @@ function corridorHitsFace(
   const edges: [THREE.Vector3, THREE.Vector3][] = [
     [v0, v1], [v1, v2], [v2, v0],
   ];
-  const stadium = buildStadiumEdges(ax, ay, bx, by, radius);
 
   const startR = radius;
   const destR = radius + 0.001;
+  const stadium = buildStadiumEdges(ax, ay, bx, by, radius);
+
   for(let e = 0; e < 3; e++){
     const va = edges[e][0];
     const vb = edges[e][1];
-    if(intersectCircle2d(ax, ay, startR, va.x, va.y, vb.x, vb.y) > 0){
-      if(hit){
-        hit.kind = WalkHitKind.Edge;
-        hit.hitPoint.set(ax, ay, az);
-        hit.edgeA = va.clone();
-        hit.edgeB = vb.clone();
-        if(face.normal) hit.normal.copy(face.normal);
-        else hit.normal.set(0, 0, 1);
+    // Soft start-circle: already in contact can still probe slide/leave steps.
+    // Dest + stadium still hard-block so placeables remain solid.
+    if(!softClearStartOverlap){
+      if(intersectCircle2d(ax, ay, startR, va.x, va.y, vb.x, vb.y) > 0){
+        if(hit){
+          hit.kind = WalkHitKind.Edge;
+          hit.hitPoint.set(ax, ay, az);
+          hit.edgeA = va.clone();
+          hit.edgeB = vb.clone();
+          fillEdgeHitNormal(hit, face, va, vb, ax, ay);
+        }
+        return true;
       }
-      return true;
     }
     if(intersectCircle2d(bx, by, destR, va.x, va.y, vb.x, vb.y) > 0){
       if(hit){
@@ -220,8 +316,7 @@ function corridorHitsFace(
         hit.hitPoint.set(bx, by, bz);
         hit.edgeA = va.clone();
         hit.edgeB = vb.clone();
-        if(face.normal) hit.normal.copy(face.normal);
-        else hit.normal.set(0, 0, 1);
+        fillEdgeHitNormal(hit, face, va, vb, ax, ay);
       }
       return true;
     }
@@ -238,8 +333,7 @@ function corridorHitsFace(
           hit.edgeA = va.clone();
           hit.edgeB = vb.clone();
           hit.hitPoint.set((va.x + vb.x) * 0.5, (va.y + vb.y) * 0.5, (az + bz) * 0.5);
-          if(face.normal) hit.normal.copy(face.normal);
-          else hit.normal.set(0, 0, 1);
+          fillEdgeHitNormal(hit, face, va, vb, ax, ay);
         }
         return true;
       }
@@ -250,15 +344,14 @@ function corridorHitsFace(
         hit.edgeA = va.clone();
         hit.edgeB = vb.clone();
         hit.hitPoint.set((ax + bx) * 0.5, (ay + by) * 0.5, (az + bz) * 0.5);
-        if(face.normal) hit.normal.copy(face.normal);
-        else hit.normal.set(0, 0, 1);
+        fillEdgeHitNormal(hit, face, va, vb, ax, ay);
       }
       return true;
     }
   }
 
   const steps = 4;
-  for(let i = 0; i <= steps; i++){
+  for(let i = softClearStartOverlap ? 1 : 0; i <= steps; i++){
     const t = i / steps;
     _sample.set(ax + (bx - ax) * t, ay + (by - ay) * t, az + (bz - az) * t);
     if(face.pointInFace2d(_sample)){
@@ -299,11 +392,13 @@ const _invMatrix = new THREE.Matrix4();
 
 /**
  * Test a single walkmesh (door / placeable surface) against the stadium corridor.
- * Applies WorldToLocal  when `matrixWorld` is set — door mesh
- * stores verts in object space after obj_position_/orientation.
+ * Applies WorldToLocal when `matrixWorld` is set — door DWK verts stay in
+ * BWM local space; matrix is T(obj) * R * T(header.position).
  *
- * `blockAllFaces`: door meshes often lack walkcheck bits — treat every face as blocking
- * (door surface mesh is dedicated collision geo).
+ * `faceStartIndex`: skip faces below walkable/adjacency count (collision mesh
+ * non-walk face range). Doors with adjacency 0 still test all Nonwalk faces.
+ *
+ * `blockAllFaces`: optional override to ignore walk-check bits (legacy).
  */
 export function isStaticWalkClearOnWalkMesh(
   wok: OdysseyWalkMesh | undefined,
@@ -313,6 +408,9 @@ export function isStaticWalkClearOnWalkMesh(
     personalSpace?: number;
     hit?: WalkHitInfo;
     blockAllFaces?: boolean;
+    faceStartIndex?: number;
+    /** Skip start-circle / enable interior escape (PlayerControl collide-and-slide). */
+    softClearStartOverlap?: boolean;
   } = {}
 ): StaticWalkBlockersMeshResult {
   const faces = meshFaces(wok);
@@ -341,15 +439,37 @@ export function isStaticWalkClearOnWalkMesh(
   const minY = Math.min(ay, by) - expand;
   const maxY = Math.max(ay, by) + expand;
   const blockAll = !!options.blockAllFaces;
+  const start = Math.max(0, options.faceStartIndex ?? 0);
+  const softStart = !!options.softClearStartOverlap;
 
-  for(let i = 0, len = faces.length; i < len; i++){
+  // Mesh-level interior escape: if start sits on any blocking face, only
+  // require dest clear. Per-face escape would still trap on sibling tris.
+  let startInterior = false;
+  if(softStart){
+    for(let i = start, len = faces.length; i < len; i++){
+      const face = faces[i];
+      if(!blockAll && !isBlockingFace(face)) continue;
+      if(startInteriorOnFace(face, ax, ay, az)){
+        startInterior = true;
+        break;
+      }
+    }
+  }
+
+  for(let i = start, len = faces.length; i < len; i++){
     const face = faces[i];
     if(!blockAll && !isBlockingFace(face)) continue;
     if(!faceOverlapsCorridorAabb(face, minX, maxX, minY, maxY)) continue;
-    if(corridorHitsFace(face, ax, ay, bx, by, az, bz, radius, hit)){
-      // Hit point is in local space — map back to world for callers
-      if(hit?.hitPoint && mw){
-        hit.hitPoint.applyMatrix4(mw);
+    const blocked = startInterior
+      ? destOnlyHitsFace(face, bx, by, bz, radius, hit)
+      : corridorHitsFace(face, ax, ay, bx, by, az, bz, radius, hit, softStart);
+    if(blocked){
+      // Hit point / normal are in local space — map back to world for callers
+      if(hit && mw){
+        if(hit.hitPoint) hit.hitPoint.applyMatrix4(mw);
+        hit.normal.transformDirection(mw);
+        if(hit.edgeA) hit.edgeA.applyMatrix4(mw);
+        if(hit.edgeB) hit.edgeB.applyMatrix4(mw);
       }
       return { clear: false };
     }

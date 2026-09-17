@@ -3057,17 +3057,8 @@ export class ModuleArea extends ModuleObject {
       plc.computeBoundingBox();
 
       if(pwk.mesh instanceof THREE.Object3D){
-        pwk.mat4.makeRotationFromEuler(plc.rotation);
-        pwk.mat4.setPosition( plc.position.x, plc.position.y, plc.position.z + .01 );
-        pwk.mesh.geometry.applyMatrix4(pwk.mat4);
-        pwk.updateMatrix();
-        if(plc.isStatic() && pwk.mesh){
-          pwk.mesh.matrixAutoUpdate = false;
-          pwk.mesh.updateMatrix();
-          pwk.mesh.updateMatrixWorld(true);
-        }
-        // Edge normal helpers are debug-only; built lazily when walkmesh debug is on.
-        //pwk.mesh.position.copy(plc.position);
+        // Verts stay local; LocalToWorld is matrixWorld (pose + BWM header.position).
+        plc.syncWalkmeshMatrix();
         GameState.group.room_walkmeshes.add( pwk.mesh );
       }
 
@@ -3444,9 +3435,10 @@ export class ModuleArea extends ModuleObject {
       const wok = room?.collisionManager?.walkmesh;
       if(!wok?.faces?.length) continue;
 
-      // Cull rooms whose AABB cannot overlap the query box.
-      const cullBox = (room.box && !room.box.isEmpty()) ? room.box
-        : (wok.box && !wok.box.isEmpty()) ? wok.box
+      // Cull by walkmesh AABB (not VIS room.box — model boxes are often
+      // tighter than walkable mesh, e.g. m02ac_02b strip y=75..78.75).
+      const cullBox = (wok.box && !wok.box.isEmpty()) ? wok.box
+        : (room.box && !room.box.isEmpty()) ? room.box
         : undefined;
       if(cullBox && !cullBox.intersectsBox(box) && !cullBox.containsBox(box)){
         continue;

@@ -39,6 +39,7 @@ import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
 import { CombatActionType, ModulePlaceableObjectSound, SkillType } from "@/enums";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
+import { composeDoorWalkmeshLocalToWorld } from "@/engine/pathfinding/door-walkmesh-matrix";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
 import { isCreature } from "@/module/guards/isCreature";
@@ -390,11 +391,27 @@ export class ModuleDoor extends ModuleObject {
     }
   }
 
-  /** Copy model transform onto door wok for static walk blockers (door) / WorldToLocal. */
+  /**
+   * Door DWK LocalToWorld for static walk blockers:
+   * T(door.pos) * R(door) * T(BWM header.position). Verts stay file-local.
+   */
   syncWalkmeshMatrix(): void {
-    if(this.collisionManager?.walkmesh && this.model){
-      this.model.updateMatrix?.();
-      this.collisionManager.walkmesh.matrixWorld.copy(this.model.matrix);
+    const wok = this.collisionManager?.walkmesh;
+    if(!wok){ return; }
+    this.model?.updateMatrix?.();
+    composeDoorWalkmeshLocalToWorld(
+      wok.matrixWorld,
+      this.position,
+      this.rotation,
+      wok.header?.position,
+    );
+    // Use-position LocalToWorld shares the same matrix; keep mat4 in sync but
+    // do not bake into vertices (updateMatrix would destroy local space).
+    wok.mat4.copy(wok.matrixWorld);
+    if(wok.mesh){
+      wok.mesh.matrixAutoUpdate = false;
+      wok.mesh.matrix.copy(wok.matrixWorld);
+      wok.mesh.matrixWorld.copy(wok.matrixWorld);
     }
   }
 
@@ -1244,7 +1261,8 @@ export class ModuleDoor extends ModuleObject {
         const walkmesh = new OdysseyWalkMesh(new BinaryReader(buffer));
         walkmesh.mesh.name = walkmesh.name = resRef + suffix;
         walkmesh.mesh.userData.moduleObject = walkmesh.moduleObject = this;
-        this.bakeWalkmeshTransform(walkmesh);
+        // Keep verts in BWM local space; syncWalkmeshMatrix applies door pose +
+        // header.position (open jamb offset) at test / open-state switch time.
         return walkmesh;
       }catch(e){
         if(suffix === '0'){
@@ -1273,13 +1291,19 @@ export class ModuleDoor extends ModuleObject {
     return this.collisionManager.walkmesh || this.walkmeshClosed;
   }
 
-  /** Bake door position/rotation into DWK geometry (once at load). */
+  /**
+   * @deprecated World-bake dropped — open DWKs need BWM header.position in
+   * LocalToWorld. Use syncWalkmeshMatrix instead.
+   */
   bakeWalkmeshTransform(dwk: OdysseyWalkMesh): void {
-    if(!(dwk?.mesh instanceof THREE.Object3D)){ return; }
-    dwk.mat4.makeRotationFromEuler(this.rotation);
-    dwk.mat4.setPosition(this.position.x, this.position.y, this.position.z);
-    dwk.mesh.geometry.applyMatrix4(dwk.mat4);
-    dwk.updateMatrix();
+    if(!dwk){ return; }
+    composeDoorWalkmeshLocalToWorld(
+      dwk.matrixWorld,
+      this.position,
+      this.rotation,
+      dwk.header?.position,
+    );
+    dwk.mat4.copy(dwk.matrixWorld);
   }
 
   initProperties(){

@@ -10,6 +10,7 @@ import {
   DriveUpdateResult,
   tickCreatureDrive,
 } from "@/engine/pathfinding/tick-creature-drive";
+import { MovementSource } from "@/engine/movement/types";
 import { getPathPersonalSpace } from "@/combat/attack-range";
 import { isCreature } from "@/module/guards/isCreature";
 import {
@@ -293,7 +294,20 @@ export function tickForcePushLoco(
 
   const beforeX = creature.position.x;
   const beforeY = creature.position.y;
-  const result = tickCreatureDrive(creature, end, false, delta, speed);
+  const loco = getCreatureLocoState(creature);
+  const source =
+    loco === CreatureLocoState.ForceJump ||
+    loco === CreatureLocoState.ForceJumpTarget
+      ? MovementSource.Jump
+      : MovementSource.ForcePush;
+  const result = tickCreatureDrive(
+    creature,
+    end,
+    false,
+    delta,
+    speed,
+    source
+  );
 
   const moved = Math.hypot(
     creature.position.x - beforeX,

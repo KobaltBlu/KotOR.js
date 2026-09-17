@@ -2,6 +2,9 @@ import * as THREE from "three";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { getCreaturePersonalSpace } from "@/combat/attack-range";
 import { isCreatureNudgeable } from "@/engine/pathfinding/is-creature-nudgeable";
+import { teleportObject } from "@/engine/movement/teleport";
+import { setMovementAuthority } from "@/engine/movement/creature-movement-state";
+import { MovementAuthority } from "@/engine/movement/types";
 
 /**
  * Approximate nudgeFriendlyCreatures.
@@ -94,6 +97,10 @@ export function nudgeFriendlyCreatures(
     return false;
   }
 
-  other.setPosition(_dest);
+  setMovementAuthority(other, MovementAuthority.FriendNudge);
+  teleportObject(other, _dest, 0, 0, {
+    findGround: true,
+    caller: "nudgeFriendlyCreatures",
+  });
   return true;
 }

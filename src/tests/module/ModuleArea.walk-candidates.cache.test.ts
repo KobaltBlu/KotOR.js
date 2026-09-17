@@ -129,4 +129,47 @@ describe("ModuleArea.getWalkCandidatesForBox spatial filtering and memo", () => 
     expect(getFacesInBox).toHaveBeenCalledTimes(2);
     expect(getEdgesInBox).toHaveBeenCalledTimes(2);
   });
+
+  it("culls with wok.box when VIS room.box misses the walkable strip", () => {
+    // Live m02ac_02b: room.box.min.y=78.75 but wok.box.min.y=75 — player at y=78.24.
+    const face = { walk: true } as OdysseyFace3;
+    const getFacesInBox = jest.fn((_box: THREE.Box3, out: OdysseyFace3[] = []) => {
+      out.length = 0;
+      out.push(face);
+      return out;
+    });
+    const getEdgesInBox = jest.fn((_box: THREE.Box3, out: WalkmeshEdge[] = []) => {
+      out.length = 0;
+      return out;
+    });
+
+    const room = {
+      box: new THREE.Box3(
+        new THREE.Vector3(50, 78.75, -1),
+        new THREE.Vector3(110, 129, 9)
+      ),
+      collisionManager: {
+        walkmesh: {
+          faces: [face],
+          box: new THREE.Box3(
+            new THREE.Vector3(50, 75, 0),
+            new THREE.Vector3(110, 129.5, 3)
+          ),
+          getFacesInBox,
+          getEdgesInBox,
+        },
+      },
+    };
+    const area = makeArea([room]);
+    // Query around feet in the strip outside room.box but inside wok.box
+    const query = new THREE.Box3(
+      new THREE.Vector3(91.5, 77.4, -0.5),
+      new THREE.Vector3(92.6, 78.7, 0.5)
+    );
+
+    const result = area.getWalkCandidatesForBox(query);
+    expect(getFacesInBox).toHaveBeenCalledTimes(1);
+    expect(result.faces).toEqual([face]);
+    expect(result.rooms).toEqual([room]);
+  });
 });

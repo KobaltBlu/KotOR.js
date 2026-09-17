@@ -10,6 +10,8 @@ import { EngineDebugType } from "@/enums/engine/EngineDebugType";
 import { ModuleDoorOpenState } from "@/enums/module/ModuleDoorOpenState";
 
 import { isCreature } from "@/module/guards/isCreature";
+import { recordMovementWrite } from "@/engine/movement/instrumentation";
+import { MovementSource } from "@/engine/movement/types";
 // =============================================
 // TYPE DEFINITIONS
 // =============================================
@@ -156,6 +158,14 @@ class CollisionState {
  * @file CollisionManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
+/**
+ * Per-object collision helper.
+ *
+ * Geometry caches, ground faces, and room/door/placeable probes live here.
+ * Creature locomotion for Drive / Walk / PlayerControl / ForcePush / Follow
+ * commits via `@/engine/movement` (MovementCommitter). `updateCollision` is
+ * residual LegacyForce coast only — not a second path solver.
  */
 export class CollisionManager {
   // Core object references
@@ -308,6 +318,13 @@ export class CollisionManager {
     if (!this.validatePrerequisites()) {
       return;
     }
+
+    // Legacy force-coast / residual physics only — path/PlayerControl/Drive
+    // must not call this after committing via MovementCommitter.
+    recordMovementWrite(this.object, "updateCollision", {
+      source: MovementSource.LegacyForce,
+      caller: "CollisionManager.updateCollision",
+    });
 
     // Clear each frame so onBlocked / stuck timers reflect live contact only
     this.blockingObject = undefined;

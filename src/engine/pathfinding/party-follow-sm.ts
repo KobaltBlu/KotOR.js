@@ -22,6 +22,13 @@ import { CombatFeatType } from "@/enums/combat/CombatFeatType";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
 import { Utility } from "@/utility/Utility";
+import { commitMovement } from "@/engine/movement/movement-committer";
+import { setMovementAuthority } from "@/engine/movement/creature-movement-state";
+import {
+  MovementAuthority,
+  MovementSource,
+  MovementStatus,
+} from "@/engine/movement/types";
 
 /**
  * Follow-leader state machine: one-frame steps for party companions
@@ -36,6 +43,34 @@ export const FOLLOW_PATH_REPATH_DRIFT = 1.25;
  * cannot leave companions moonwalking in run after the leader stops.
  */
 export const FOLLOW_STEP_ANIM_EPS = 0.02;
+
+/** Commit one FollowLeader XY step via MovementCommitter (never setPosition). */
+function commitFollowStep(
+  owner: ModuleCreature,
+  beforeX: number,
+  beforeY: number,
+  next: THREE.Vector3,
+  delta: number
+): void {
+  setMovementAuthority(owner, MovementAuthority.FollowLeader);
+  const origin = new THREE.Vector3(beforeX, beforeY, owner.position.z);
+  const finalPosition = next.clone();
+  const dx = finalPosition.x - origin.x;
+  const dy = finalPosition.y - origin.y;
+  const dist = Math.hypot(dx, dy);
+  commitMovement(
+    owner,
+    {
+      source: MovementSource.FollowLeader,
+      status: MovementStatus.Moving,
+      origin,
+      finalPosition,
+      acceptedDisplacement: new THREE.Vector3(dx, dy, finalPosition.z - origin.z),
+      actualDistance: dist,
+    },
+    { delta }
+  );
+}
 
 export type FollowStepResult = {
   /** Spend remaining inner-loop budget this frame. */
@@ -660,14 +695,14 @@ function applyFollowSetPosition(
     owner.clearLocomotionAnimation?.();
     // Still snap residual so we don't micro-chase forever
     if(moved > 1e-8){
-      owner.setPosition(_tmp);
+      commitFollowStep(owner, beforeX, beforeY, _tmp, delta);
     }
     return moved;
   }
 
   owner.walk = !run;
   owner.setAnimationState(run ? ModuleCreatureAnimState.RUNNING : ModuleCreatureAnimState.WALKING);
-  owner.setPosition(_tmp);
+  commitFollowStep(owner, beforeX, beforeY, _tmp, delta);
   return moved;
 }
 
@@ -755,7 +790,7 @@ function applyFollowDirectMove(
     owner.walk = false;
     owner.clearLocomotionAnimation?.();
     if(moved > 1e-8){
-      owner.setPosition(_tmp);
+      commitFollowStep(owner, beforeX, beforeY, _tmp, delta);
     }
     return dist - moved <= FOLLOW_STEP_ANIM_EPS
       ? FollowMoveResult.Arrived
@@ -764,7 +799,7 @@ function applyFollowDirectMove(
 
   owner.walk = !run;
   owner.setAnimationState(run ? ModuleCreatureAnimState.RUNNING : ModuleCreatureAnimState.WALKING);
-  owner.setPosition(_tmp);
+  commitFollowStep(owner, beforeX, beforeY, _tmp, delta);
   return step >= dist ? FollowMoveResult.Arrived : FollowMoveResult.OK;
 }
 

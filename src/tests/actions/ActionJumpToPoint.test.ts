@@ -86,10 +86,13 @@ describe('ActionJumpToPoint open/safe walk location', () => {
       controlled: false,
       setPosition: jest.fn(),
       setFacing: jest.fn(),
+      markCollisionMatrixDirty: jest.fn(),
+      computeBoundingBox: jest.fn(),
       collisionManager: {
-        groundFace: undefined,
-        lastGroundFace: undefined,
+        groundFace: undefined as unknown,
+        lastGroundFace: undefined as unknown,
         findWalkableFace: jest.fn(),
+        blockingObject: undefined as unknown,
       },
     };
   }
@@ -149,11 +152,11 @@ describe('ActionJumpToPoint open/safe walk location', () => {
       requireLineOfSight: true,
       allowPartyCreatures: false,
     });
-    expect(owner.setPosition).toHaveBeenCalled();
-    const pos = (owner.setPosition as jest.Mock).mock.calls[0][0] as THREE.Vector3;
-    expect(pos.x).toBeCloseTo(40.5);
-    expect(pos.y).toBeCloseTo(137.2);
-    expect(pos.z).toBeCloseTo(0.1);
+    // Placement goes through applyLocalTeleport (not setPosition locomotion settle).
+    expect(owner.position.x).toBeCloseTo(40.5);
+    expect(owner.position.y).toBeCloseTo(137.2);
+    expect(owner.position.z).toBeCloseTo(0.1);
+    expect(owner.setFacing).toHaveBeenCalled();
   });
 
   it('defaults omitted params to requireLOS true and radius 20', () => {

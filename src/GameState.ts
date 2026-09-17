@@ -259,6 +259,7 @@ export class GameState implements EngineContext {
     LIGHT_HELPERS: false,
     LIGHT_HELPERS_BOUND_ONLY: false,
     SHADOW_LIGHTS: false,
+    MOVEMENT_OWNERSHIP: false,
   };
   
   static IsPaused = false;

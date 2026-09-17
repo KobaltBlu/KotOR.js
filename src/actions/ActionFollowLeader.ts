@@ -26,6 +26,9 @@ import * as THREE from "three";
 import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
 
 import { isCreature } from "@/module/guards/isCreature";
+import { teleportObject } from "@/engine/movement/teleport";
+import { setMovementAuthority } from "@/engine/movement/creature-movement-state";
+import { MovementAuthority } from "@/engine/movement/types";
 
 const _followOffset = new THREE.Vector3();
 
@@ -210,11 +213,11 @@ export class ActionFollowLeader extends Action {
       owner.locomotionScale = 1;
       owner.moveDirOverride = undefined;
       owner.setComputedPath(undefined);
-      if(typeof owner.setPosition === 'function'){
-        owner.setPosition(dest);
-      }else{
-        owner.position.copy(dest);
-      }
+      setMovementAuthority(owner, MovementAuthority.FollowLeader);
+      teleportObject(owner, dest, 0, 0, {
+        findGround: true,
+        caller: "ActionFollowLeader.softTeleportForward",
+      });
       this.followRuntime.lastSampleX = dest.x;
       this.followRuntime.lastSampleY = dest.y;
       this.followRuntime.lastSampleZ = dest.z;

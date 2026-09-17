@@ -3,6 +3,11 @@ import type { Action } from "@/actions/Action";
 import { ActionQueue } from "@/actions/ActionQueue";
 import { AudioEmitter } from "@/audio/AudioEmitter";
 import { CollisionManager } from "@/engine/CollisionManager";
+import {
+  createCreatureMovementState,
+  type CreatureMovementState,
+} from "@/engine/movement/creature-movement-state";
+import { teleportObject } from "@/engine/movement/teleport";
 import { CombatData } from "@/combat/CombatData";
 import type { EffectLink } from "@/effects";
 import type { GameEffect } from "@/effects/GameEffect";
@@ -186,6 +191,8 @@ export class ModuleObject {
   footstepEmitter: AudioEmitter;
 
   collisionManager: CollisionManager = new CollisionManager(this);
+  /** Contact / authority / frame ownership — not owned by CollisionManager geometry. */
+  movementState: CreatureMovementState = createCreatureMovementState();
   invalidateCollision: boolean = false;
   combatData: CombatData = new CombatData(this);
   combatRound = new CombatRound(this);
@@ -2076,18 +2083,22 @@ export class ModuleObject {
    * @param y
    * @param z
    */
+  /**
+   * Authoritative placement / teleport.
+   * Does not slide, set blockers, or fire OnBlocked.
+   * Prefer this for Jump / spawn / scripted relocation.
+   */
   setPosition(x: THREE.Vector3|number = 0, y = 0, z = 0){
     if(x instanceof THREE.Vector3){
       z = x.z;
       y = x.y;
       x = x.x;
     }
-
     try{
-      this.position.set(x, y, z);
-      this.markCollisionMatrixDirty("position");
-      this.computeBoundingBox();
-      this.updateCollision();
+      teleportObject(this, x, y, z, {
+        findGround: false,
+        caller: "ModuleObject.setPosition",
+      });
     }catch(e){
       console.error('ModuleObject.setPosition failed ');
     }
@@ -2798,6 +2809,12 @@ export class ModuleObject {
       if(this.distanceToCamera >= this.area.fog.far){
         return false;
       }
+    }
+
+    // Keep world AABB in sync with position (committers mark dirty; must refresh
+    // before sphere test or spawn-box cull hides moved creatures).
+    if(this.collisionMatrixDirty || this.collisionBoundsDirty){
+      this.computeBoundingBox();
     }
 
     this.box.getBoundingSphere(this.sphere);

@@ -245,9 +245,12 @@ export function playerIntegrateRk4(
     return { dx: 0, dy: 0, speed: 0 };
   }
 
-  // : desired_rk4 = 0.5 * (current + previous)
-  const avgX = (desiredX + state.prevDesiredX) * 0.5;
-  const avgY = (desiredY + state.prevDesiredY) * 0.5;
+  // Retail SetPrecalculatedPosition staging:
+  // k1 = previous desired, k2/k3 = midpoint(previous, current), k4 = current.
+  const prevX = state.prevDesiredX;
+  const prevY = state.prevDesiredY;
+  const midX = (desiredX + prevX) * 0.5;
+  const midY = (desiredY + prevY) * 0.5;
 
   const accelAt = (vx: number, vy: number, dx: number, dy: number) =>
     playerGetAcceleration(vx, vy, dx, dy, driveAccl, maxSpeed);
@@ -256,10 +259,10 @@ export function playerIntegrateRk4(
   const v0x = state.velX;
   const v0y = state.velY;
 
-  const k1 = accelAt(v0x, v0y, avgX, avgY);
-  const k2 = accelAt(v0x + k1.ax * dt * 0.5, v0y + k1.ay * dt * 0.5, avgX, avgY);
-  const k3 = accelAt(v0x + k2.ax * dt * 0.5, v0y + k2.ay * dt * 0.5, avgX, avgY);
-  const k4 = accelAt(v0x + k3.ax * dt, v0y + k3.ay * dt, avgX, avgY);
+  const k1 = accelAt(v0x, v0y, prevX, prevY);
+  const k2 = accelAt(v0x + k1.ax * dt * 0.5, v0y + k1.ay * dt * 0.5, midX, midY);
+  const k3 = accelAt(v0x + k2.ax * dt * 0.5, v0y + k2.ay * dt * 0.5, midX, midY);
+  const k4 = accelAt(v0x + k3.ax * dt, v0y + k3.ay * dt, desiredX, desiredY);
 
   const ax = (k1.ax + 2 * k2.ax + 2 * k3.ax + k4.ax) / 6;
   const ay = (k1.ay + 2 * k2.ay + 2 * k3.ay + k4.ay) / 6;

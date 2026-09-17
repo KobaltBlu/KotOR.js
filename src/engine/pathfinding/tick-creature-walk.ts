@@ -4,6 +4,7 @@ import {
   DriveUpdateResult,
   tickCreatureDrive,
 } from "@/engine/pathfinding/tick-creature-drive";
+import { MovementSource } from "@/engine/movement/types";
 import {
   pathApproachScale,
   walkSpeedFactorRamp,
@@ -198,7 +199,14 @@ export function tickCreatureWalk(
   }
 
   _dest.copy(dest);
-  const result = tickCreatureDrive(creature, _dest, running, delta);
+  const result = tickCreatureDrive(
+    creature,
+    _dest,
+    running,
+    delta,
+    undefined,
+    MovementSource.Walk
+  );
 
   creature.locomotionScale = savedScale;
   if(result === DriveUpdateResult.BLOCKED){

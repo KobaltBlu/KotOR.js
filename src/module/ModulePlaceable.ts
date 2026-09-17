@@ -24,6 +24,7 @@ import { MDLLoader, ResourceLoader } from "@/loaders";
 import { ResourceTypes } from "@/resource/ResourceTypes";
 import { OdysseyModel3D } from "@/three/odyssey";
 import { SWPlaceableAppearance } from "@/engine/rules/SWPlaceableAppearance";
+import { composeObjectWalkmeshLocalToWorld } from "@/engine/pathfinding/door-walkmesh-matrix";
 // import { TwoDAManager, InventoryManager, AppearanceManager, MenuManager, ModuleObjectManager, FactionManager } from "@/managers";
 import { AudioEngine } from "@/audio/AudioEngine";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
@@ -334,11 +335,11 @@ export class ModulePlaceable extends ModuleObject {
 
     super.update(delta);
 
-    if(this.collisionManager.walkmesh && this.container){
+    if(this.collisionManager.walkmesh){
       if(!this.isStatic() || this.collisionMatrixDirty){
-        this.container.updateMatrix();
-        this.container.updateMatrixWorld(!this.isStatic());
-        this.collisionManager.walkmesh.matrixWorld.copy(this.container.matrixWorld);
+        this.container?.updateMatrix();
+        this.container?.updateMatrixWorld(!this.isStatic());
+        this.syncWalkmeshMatrix();
         this.collisionMatrixDirty = false;
       }
     }
@@ -904,6 +905,26 @@ export class ModulePlaceable extends ModuleObject {
     }
   }
 
+  /**
+   * PWK LocalToWorld: T(pos) * R * T(header.position). Verts stay file-local.
+   */
+  syncWalkmeshMatrix(): void {
+    const wok = this.collisionManager?.walkmesh;
+    if(!wok){ return; }
+    composeObjectWalkmeshLocalToWorld(
+      wok.matrixWorld,
+      this.position,
+      this.rotation,
+      wok.header?.position,
+    );
+    wok.mat4.copy(wok.matrixWorld);
+    if(wok.mesh){
+      wok.mesh.matrixAutoUpdate = false;
+      wok.mesh.matrix.copy(wok.matrixWorld);
+      wok.mesh.matrixWorld.copy(wok.matrixWorld);
+    }
+  }
+
   async loadWalkmesh(resRef = ''): Promise<OdysseyWalkMesh> {
     try{
       const buffer = await ResourceLoader.loadResource(ResourceTypes['pwk'], resRef);
@@ -911,12 +932,11 @@ export class ModulePlaceable extends ModuleObject {
       walkmesh.name = resRef;
       walkmesh.moduleObject = this;
       this.collisionManager.setWalkmesh(walkmesh);
-      this.model.add(walkmesh.mesh);
-      if(this.isStatic() && walkmesh.mesh){
-        walkmesh.mesh.matrixAutoUpdate = false;
-        walkmesh.mesh.updateMatrix();
-        walkmesh.mesh.updateMatrixWorld(true);
+      // Keep verts in BWM local space; syncWalkmeshMatrix applies pose + header.position.
+      if(this.model){
+        this.model.add(walkmesh.mesh);
       }
+      this.syncWalkmeshMatrix();
       this.markCollisionBoundsDirty('walkmesh');
 
       return walkmesh;

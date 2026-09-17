@@ -13,6 +13,7 @@ import {
   isForcePushLocoActive,
   isPartyFollowLocoActive,
 } from "@/engine/pathfinding/creature-loco";
+import { advanceMovementFrame } from "@/engine/movement/creature-movement-state";
 
 /** Per-frame AI budget (microseconds). */
 const AI_BUDGET_US = 10000;
@@ -145,6 +146,7 @@ export class AIScheduler {
    */
   update(delta: number = 0){
     this.frameDelta = delta;
+    advanceMovementFrame();
     const module = GameState.module;
     if(!module?.readyToProcessEvents) return;
     module.area?.frameLosCache?.clear();

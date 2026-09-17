@@ -18,4 +18,9 @@ export enum EngineDebugType {
   /** When on with LIGHT_HELPERS, hide gizmos for lights not in the bound/fade set. */
   LIGHT_HELPERS_BOUND_ONLY = 'LIGHT_HELPERS_BOUND_ONLY',
   SHADOW_LIGHTS = 'SHADOW_LIGHTS',
+  /**
+   * Log / assert dual movement commits and unauthorized position writes.
+   * Part of the Retail Movement Harmony ownership pipeline.
+   */
+  MOVEMENT_OWNERSHIP = 'MOVEMENT_OWNERSHIP',
 }

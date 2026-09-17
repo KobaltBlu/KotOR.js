@@ -2,6 +2,11 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import { GameState } from "@/GameState";
 import { getCreaturePersonalSpace } from "@/combat/attack-range";
 import * as THREE from "three";
+import { teleportObject } from "@/engine/movement/teleport";
+import {
+  setMovementAuthority,
+} from "@/engine/movement/creature-movement-state";
+import { MovementAuthority } from "@/engine/movement/types";
 
 /**
  * Soft party-member separation when isCreatureNudgeable cannot push
@@ -56,12 +61,11 @@ export function partySoftSeparate(creature: ModuleCreature | undefined): boolean
       const walk = area.getNearestWalkablePoint(_tmp, 0.5);
       _tmp.copy(walk);
     }
-    if(typeof creature.setPosition === 'function'){
-      creature.setPosition(_tmp);
-    }else{
-      creature.position.x = _tmp.x;
-      creature.position.y = _tmp.y;
-    }
+    setMovementAuthority(creature, MovementAuthority.SoftSeparate);
+    teleportObject(creature, _tmp, 0, 0, {
+      findGround: true,
+      caller: "partySoftSeparate",
+    });
     nudged = true;
   }
 

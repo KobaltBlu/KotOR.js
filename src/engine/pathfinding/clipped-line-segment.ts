@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import type { ModuleArea } from "@/module/ModuleArea";
-import { WalkmeshEdge } from "@/odyssey/WalkmeshEdge";
-import { OdysseyFace3 } from "@/three/odyssey";
+import type { WalkmeshEdge } from "@/odyssey/WalkmeshEdge";
+import type { OdysseyFace3 } from "@/three/odyssey";
 
 /**
  * Approximate ClippedLineSegmentWalkable
@@ -26,6 +26,9 @@ export type ClippedLineSegmentResult = {
 const _hit = new THREE.Vector3();
 const _nudge = new THREE.Vector3();
 
+/** Portal hop distances past the seam (live 07j↔02b needs >5cm). */
+const TRANSITION_NUDGE_DISTANCES = [0.05, 0.15, 0.35];
+
 function findWalkFaceAt(
   area: ModuleArea,
   point: THREE.Vector3
@@ -37,6 +40,47 @@ function findWalkFaceAt(
     if(f?.pointInFace2d(point)) return f;
   }
   return undefined;
+}
+
+/**
+ * After crossing a transition edge, prefer a walkable face on a different
+ * walkmesh than the source. First-match findWalkFaceAt often returns the
+ * source room's triangle at the shared seam.
+ */
+function findWalkFaceBeyondTransition(
+  area: ModuleArea,
+  point: THREE.Vector3,
+  sourceFace: OdysseyFace3
+): OdysseyFace3 | undefined {
+  const faces = area.walkFaces;
+  if(!faces?.length) return undefined;
+  const sourceWok = sourceFace.walkmesh;
+  let sameWokFallback: OdysseyFace3 | undefined;
+  for(let i = 0, len = faces.length; i < len; i++){
+    const f = faces[i];
+    if(!f?.pointInFace2d(point)) continue;
+    if(f === sourceFace) continue;
+    if(f.walkmesh && sourceWok && f.walkmesh !== sourceWok){
+      return f;
+    }
+    if(!sameWokFallback) sameWokFallback = f;
+  }
+  return sameWokFallback;
+}
+
+/** Duck-type WalkmeshEdge (instanceof can fail across bundle copies). */
+function isWalkmeshEdgeAdj(
+  adj: unknown
+): adj is WalkmeshEdge {
+  if(!adj || typeof adj !== "object") return false;
+  const e = adj as { transition?: unknown; line?: unknown };
+  return typeof e.transition === "number" && !!e.line;
+}
+
+function isWalkableFaceAdj(adj: unknown): adj is OdysseyFace3 {
+  if(!adj || typeof adj !== "object") return false;
+  const f = adj as { pointInFace2d?: unknown; a?: unknown; walkmesh?: unknown };
+  return typeof f.pointInFace2d === "function" && f.walkmesh != null && typeof f.a === "number";
 }
 
 /**
@@ -172,7 +216,7 @@ export function clippedLineSegmentWalkable(
       }
 
       const adj = adjacentForSide(face, s as 0 | 1 | 2);
-      if(adj instanceof OdysseyFace3){
+      if(isWalkableFaceAdj(adj)){
         curX = _hit.x;
         curY = _hit.y;
         curZ = _hit.z;
@@ -195,7 +239,7 @@ export function clippedLineSegmentWalkable(
         break;
       }
 
-      if(adj instanceof WalkmeshEdge){
+      if(isWalkmeshEdgeAdj(adj)){
         curX = _hit.x;
         curY = _hit.y;
         curZ = _hit.z;
@@ -207,13 +251,18 @@ export function clippedLineSegmentWalkable(
           return { ok: false, clearPoint, clearT: t, minZ, maxZ };
         }
 
-        // Transition: nudge into next room face and continue
+        // Transition: nudge into next room face (prefer other walkmesh).
         const dx = dest.x - origin.x;
         const dy = dest.y - origin.y;
         const inv = 1 / fullDist;
-        _nudge.set(curX + dx * inv * 0.05, curY + dy * inv * 0.05, curZ);
-        const hopped = findWalkFaceAt(area, _nudge);
-        if(!hopped || hopped === face){
+        let hopped: OdysseyFace3 | undefined;
+        for(let n = 0; n < TRANSITION_NUDGE_DISTANCES.length; n++){
+          const dist = TRANSITION_NUDGE_DISTANCES[n];
+          _nudge.set(curX + dx * inv * dist, curY + dy * inv * dist, curZ);
+          hopped = findWalkFaceBeyondTransition(area, _nudge, face);
+          if(hopped) break;
+        }
+        if(!hopped){
           // Portal with no walkable face beyond — treat as clear exit of mesh
           // only if dest is near the hit (room-local clip success)
           if(Math.hypot(dest.x - curX, dest.y - curY) < 0.15){

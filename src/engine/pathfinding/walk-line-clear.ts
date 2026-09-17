@@ -83,7 +83,9 @@ function isCandidatePointWalkable(
   point: THREE.Vector3,
   candidateFaces?: Array<{ pointInFace2d?: (point: THREE.Vector3) => boolean }>
 ): boolean {
-  if(candidateFaces){
+  // Empty array must fall through — getWalkCandidatesForBox can return [] when
+  // VIS cull missed a walkable strip; treating [] as filtered yields NonWalk.
+  if(candidateFaces?.length){
     for(let i = 0, len = candidateFaces.length; i < len; i++){
       if(candidateFaces[i]?.pointInFace2d?.(point)){
         return true;
@@ -280,6 +282,11 @@ export function hasWalkLineClear(
     skipClippedLine?: boolean;
     /** Collect walk-hit info on creature / mesh blocks. */
     collectHitInfo?: boolean;
+    /**
+     * Soft-clear door/placeable start overlap (PlayerControl escape).
+     * Pathfinding / AI leave this false.
+     */
+    softClearStartOverlap?: boolean;
   } = {}
 ): WalkLineHit {
   const clearPoint = origin.clone();
@@ -329,6 +336,7 @@ export function hasWalkLineClear(
       personalSpace: perspace,
       hit: walkHit,
       skipMesh: options.skipClippedLine === true,
+      softClearStartOverlap: options.softClearStartOverlap === true,
     });
     if(!polys.clear){
       const clearT = refineDetailedClearT(
@@ -337,7 +345,8 @@ export function hasWalkLineClear(
         dest,
         perspace,
         options.skipClippedLine === true,
-        clearPoint
+        clearPoint,
+        options.softClearStartOverlap === true
       );
       return {
         ok: false,
@@ -500,7 +509,8 @@ function refineDetailedClearT(
   dest: THREE.Vector3,
   perspace: number,
   skipMesh: boolean,
-  out: THREE.Vector3
+  out: THREE.Vector3,
+  softClearStartOverlap = false
 ): number {
   let lo = 0;
   let hi = 1;
@@ -515,6 +525,7 @@ function refineDetailedClearT(
     const midPolys = isStaticWalkClearDetailed(area, origin, _sample, {
       personalSpace: perspace,
       skipMesh,
+      softClearStartOverlap,
     });
     if(midPolys.clear){
       lo = mid;

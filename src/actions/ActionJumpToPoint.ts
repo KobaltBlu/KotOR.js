@@ -13,6 +13,7 @@ import {
 } from "@/engine/jump-to-location";
 import { findOpenWalkLocation } from "@/engine/pathfinding/open-walk-location";
 import { getPathPersonalSpace } from "@/combat/attack-range";
+import { applyLocalTeleport } from "@/engine/movement/teleport";
 
 const _jumpCenter = new THREE.Vector3();
 const _jumpSafe = new THREE.Vector3();
@@ -173,12 +174,5 @@ export function applyLocalJump(
   z: number,
   facing: number
 ){
-  creature.setPosition(new THREE.Vector3(x, y, z));
-  // Instant facing update after the teleport.
-  creature.setFacing(facing, true);
-  if(creature.collisionManager){
-    creature.collisionManager.groundFace = undefined;
-    creature.collisionManager.lastGroundFace = undefined;
-    creature.collisionManager.findWalkableFace?.();
-  }
+  applyLocalTeleport(creature, x, y, z, facing);
 }
