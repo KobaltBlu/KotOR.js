@@ -5,6 +5,8 @@ import { recordMovementWrite } from "@/engine/movement/instrumentation";
 import { ensureMovementState } from "@/engine/movement/creature-movement-state";
 import { MovementSource } from "@/engine/movement/types";
 import { isCreature } from "@/module/guards/isCreature";
+import { findWalkableAttachmentAt } from "@/engine/movement/area-movement-queries";
+import { applyWalkableAttachment } from "@/engine/movement/apply-walkable-attachment";
 
 /**
  * Authoritative placement / teleport.
@@ -51,15 +53,16 @@ export function teleportObject(
   // Clear contact — teleport is not a collision event.
   const state = ensureMovementState(object);
   state.blockingObject = undefined;
-  if(object.collisionManager){
-    object.collisionManager.blockingObject = undefined as any;
-  }
+  state.lastBlockingObject = undefined;
 
   const findGround = options.findGround ?? isCreature(object);
-  if(findGround && object.collisionManager){
-    object.collisionManager.groundFace = undefined;
-    object.collisionManager.lastGroundFace = undefined;
-    object.collisionManager.findWalkableFace?.(object);
+  if(findGround){
+    if(object.collisionManager){
+      object.collisionManager.groundFace = undefined;
+      object.collisionManager.lastGroundFace = undefined;
+    }
+    const hit = findWalkableAttachmentAt(object.area, object.position, object.room);
+    applyWalkableAttachment(object, hit);
   }
 
   if(typeof options.facing === "number" && isCreature(object)){

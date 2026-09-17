@@ -1,11 +1,16 @@
 import * as THREE from "three";
 import type { ModuleArea } from "@/module/ModuleArea";
+import type { ModulePlaceable } from "@/module/ModulePlaceable";
 import type { WalkmeshEdge } from "@/odyssey/WalkmeshEdge";
+import type { OdysseyFace3 } from "@/three/odyssey";
+import { isWalkCheckBlockingFace } from "@/engine/pathfinding/walk-check-material-mask";
 
 /**
  * CM-style wall slide helpers: collect nearby blocking walkmesh edge normals
  * and multi-project desired motion (Gauss-Seidel). Used by PlayerControl so
  * perimeter vertices do not inherit bad mesh corner normals.
+ *
+ * Also collects placeable PWK face-edge XY normals (many PWKs have no walkEdges).
  */
 
 const _candBox = new THREE.Box3();
@@ -14,6 +19,9 @@ const _candEdges: WalkmeshEdge[] = [];
 const _candFaces: unknown[] = [];
 const _candRooms: unknown[] = [];
 const _scratchNormals: THREE.Vector3[] = [];
+const _worldA = new THREE.Vector3();
+const _worldB = new THREE.Vector3();
+const _worldC = new THREE.Vector3();
 
 /** 2D distance from point to clamped segment. */
 export function distancePointToSegment2d(
@@ -37,9 +45,142 @@ export function distancePointToSegment2d(
   return Math.hypot(px - cx, py - cy);
 }
 
+/** Outward XY normal for a mesh edge, oriented away from `ref`. */
+function outwardEdgeNormal2d(
+  ax: number,
+  ay: number,
+  bx: number,
+  by: number,
+  refX: number,
+  refY: number,
+  out: THREE.Vector3
+): boolean {
+  let ex = bx - ax;
+  let ey = by - ay;
+  const el = Math.hypot(ex, ey);
+  if(el < 1e-8) return false;
+  ex /= el;
+  ey /= el;
+  let nx = -ey;
+  let ny = ex;
+  const mx = (ax + bx) * 0.5;
+  const my = (ay + by) * 0.5;
+  if((refX - mx) * nx + (refY - my) * ny < 0){
+    nx = -nx;
+    ny = -ny;
+  }
+  out.set(nx, ny, 0);
+  return true;
+}
+
+function pushUniqueNormal(
+  out: THREE.Vector3[],
+  ux: number,
+  uy: number
+): void {
+  const nLen = Math.hypot(ux, uy);
+  if(nLen < 1e-8) return;
+  const nx = ux / nLen;
+  const ny = uy / nLen;
+  for(let j = 0; j < out.length; j++){
+    if(out[j].x * nx + out[j].y * ny > 0.98){
+      return;
+    }
+  }
+  out.push(new THREE.Vector3(nx, ny, 0));
+}
+
+function collectPlaceableFaceEdgeNormals(
+  area: ModuleArea,
+  point: THREE.Vector3,
+  collectR: number,
+  out: THREE.Vector3[]
+): void {
+  const placeables = area.placeables as ModulePlaceable[] | undefined;
+  if(!placeables?.length) return;
+
+  const _n = new THREE.Vector3();
+  for(let i = 0; i < placeables.length; i++){
+    const plc = placeables[i];
+    if(!plc) continue;
+    if(plc.box){
+      const minX = plc.box.min.x - collectR;
+      const maxX = plc.box.max.x + collectR;
+      const minY = plc.box.min.y - collectR;
+      const maxY = plc.box.max.y + collectR;
+      if(
+        point.x < minX || point.x > maxX ||
+        point.y < minY || point.y > maxY
+      ){
+        continue;
+      }
+    }
+    const sync = (plc as { syncWalkmeshMatrix?: () => void }).syncWalkmeshMatrix;
+    if(typeof sync === "function") sync.call(plc);
+
+    const wok = plc.collisionManager?.walkmesh;
+    const faces = wok?.faces;
+    if(!faces?.length) continue;
+    const mw = wok.matrixWorld ?? wok.mesh?.matrixWorld;
+
+    for(let f = 0; f < faces.length; f++){
+      const face = faces[f] as OdysseyFace3;
+      if(!isWalkCheckBlockingFace(face)) continue;
+      const verts = wok.vertices;
+      if(!verts) continue;
+      const ia = face.a;
+      const ib = face.b;
+      const ic = face.c;
+      const va = verts[ia];
+      const vb = verts[ib];
+      const vc = verts[ic];
+      if(!va || !vb || !vc) continue;
+
+      if(mw){
+        _worldA.copy(va).applyMatrix4(mw);
+        _worldB.copy(vb).applyMatrix4(mw);
+        _worldC.copy(vc).applyMatrix4(mw);
+      }else{
+        _worldA.copy(va);
+        _worldB.copy(vb);
+        _worldC.copy(vc);
+      }
+
+      const edges: [THREE.Vector3, THREE.Vector3][] = [
+        [_worldA, _worldB],
+        [_worldB, _worldC],
+        [_worldC, _worldA],
+      ];
+      for(let e = 0; e < 3; e++){
+        const a = edges[e][0];
+        const b = edges[e][1];
+        const dist = distancePointToSegment2d(
+          point.x, point.y, a.x, a.y, b.x, b.y
+        );
+        if(dist > collectR) continue;
+        // Prefer face XY normal when present; else edge-derived outward.
+        const fn = face.normal;
+        if(fn && (Math.abs(fn.x) > 1e-6 || Math.abs(fn.y) > 1e-6)){
+          if(mw){
+            _n.set(fn.x, fn.y, 0).transformDirection(mw);
+            pushUniqueNormal(out, _n.x, _n.y);
+          }else{
+            pushUniqueNormal(out, fn.x, fn.y);
+          }
+        }else if(
+          outwardEdgeNormal2d(a.x, a.y, b.x, b.y, point.x, point.y, _n)
+        ){
+          pushUniqueNormal(out, _n.x, _n.y);
+        }
+      }
+    }
+  }
+}
+
 /**
  * Nearby non-transition walk edge normals within `radius` of `point`.
  * Dedupes near-parallel duplicates (dot > 0.98).
+ * Includes placeable PWK blocking-face edge normals.
  */
 export function collectBlockingWalkEdgeNormals(
   area: ModuleArea | undefined,
@@ -74,40 +215,28 @@ export function collectBlockingWalkEdgeNormals(
   if(!edges?.length){
     edges = area.walkEdges as WalkmeshEdge[] | undefined;
   }
-  if(!edges?.length) return out;
-
-  for(let i = 0, n = edges.length; i < n; i++){
-    const edge = edges[i];
-    if(!edge || edge.transition !== -1) continue;
-    const line = edge.line;
-    if(!line?.start || !line?.end) continue;
-    const dist = distancePointToSegment2d(
-      point.x,
-      point.y,
-      line.start.x,
-      line.start.y,
-      line.end.x,
-      line.end.y
-    );
-    if(dist > collectR) continue;
-    const normal = edge.normal;
-    if(!normal) continue;
-    const nx = normal.x;
-    const ny = normal.y;
-    const nLen = Math.hypot(nx, ny);
-    if(nLen < 1e-8) continue;
-    const ux = nx / nLen;
-    const uy = ny / nLen;
-    let dup = false;
-    for(let j = 0; j < out.length; j++){
-      if(out[j].x * ux + out[j].y * uy > 0.98){
-        dup = true;
-        break;
-      }
+  if(edges?.length){
+    for(let i = 0, n = edges.length; i < n; i++){
+      const edge = edges[i];
+      if(!edge || edge.transition !== -1) continue;
+      const line = edge.line;
+      if(!line?.start || !line?.end) continue;
+      const dist = distancePointToSegment2d(
+        point.x,
+        point.y,
+        line.start.x,
+        line.start.y,
+        line.end.x,
+        line.end.y
+      );
+      if(dist > collectR) continue;
+      const normal = edge.normal;
+      if(!normal) continue;
+      pushUniqueNormal(out, normal.x, normal.y);
     }
-    if(dup) continue;
-    out.push(new THREE.Vector3(ux, uy, 0));
   }
+
+  collectPlaceableFaceEdgeNormals(area, point, collectR, out);
   return out;
 }
 

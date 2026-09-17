@@ -82,6 +82,7 @@ export function drivePrepareDestination(
   const full = testWalkSegment(area, origin, ideal, {
     owner: creature,
     personalSpace: perspace,
+    softClearStartOverlap: true,
   });
   if(lineOk(full.code)){
     return ideal.clone();
@@ -100,6 +101,7 @@ export function drivePrepareDestination(
     const mid = testWalkSegment(area, origin, _sample, {
       owner: creature,
       personalSpace: perspace,
+      softClearStartOverlap: true,
     });
     if(lineOk(mid.code)){
       _slideBest.copy(_sample);
@@ -143,6 +145,7 @@ export function drivePrepareDestination(
       const hit = testWalkSegment(area, origin, _slideProbe, {
         owner: creature,
         personalSpace: perspace,
+        softClearStartOverlap: true,
       });
       if(lineOk(hit.code)){
         const dot = leftDir.x * _moveDir.x + leftDir.y * _moveDir.y;
@@ -164,6 +167,7 @@ export function drivePrepareDestination(
       const hit = testWalkSegment(area, origin, _slideProbe, {
         owner: creature,
         personalSpace: perspace,
+        softClearStartOverlap: true,
       });
       if(lineOk(hit.code)){
         const dot = rightDir.x * _moveDir.x + rightDir.y * _moveDir.y;
@@ -202,6 +206,7 @@ function clipWalkablePoint(
     owner: creature,
     personalSpace: perspace,
     collectHitInfo: true,
+    softClearStartOverlap: true,
   });
   if(hit.clear){
     return ideal.clone();

@@ -10,6 +10,7 @@ import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
 import { NWModuleObjectType } from "@/enums/nwscript/NWModuleObjectType";
 import { GameState } from "@/GameState";
+import { ensureMovementState } from "@/engine/movement/creature-movement-state";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 import type { ModuleArea } from "@/module/ModuleArea";
@@ -4878,8 +4879,9 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      if(isDoor(this.caller.collisionManager.blockingObject)){
-        return this.caller.collisionManager.blockingObject;
+      const blocker = ensureMovementState(this.caller).blockingObject;
+      if(isDoor(blocker)){
+        return blocker;
       }
       return undefined;
     }
@@ -7041,7 +7043,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleCreature]){
       if(isCreature(args[0])){
-        return args[0].collisionManager.blockingObject;
+        return ensureMovementState(args[0]).blockingObject;
       }
       return undefined;
     }
@@ -7098,10 +7100,11 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      // ExecuteCommandGetFoundEnemyCreature â€”
-      // (set by PlotPathAroundCreature).
+      // Pathfail / PlotPathAroundCreature — creature.foundEnemyCreature (AI),
+      // not physical CollisionContext contact.
       if(isCreature(args[0])){
-        return (args[0] as ModuleCreature).collisionManager?.foundEnemyCreature;
+        const c = args[0] as ModuleCreature;
+        return c.foundEnemyCreature;
       }
       return undefined;
     }

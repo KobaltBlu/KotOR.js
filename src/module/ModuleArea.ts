@@ -3212,7 +3212,7 @@ export class ModuleArea extends ModuleObject {
         GameState.group.creatures.add( creature.container );
 
         creature.getCurrentRoom();
-        creature.updateCollision(0.0000000000000000000001);
+        creature.settleWalkableAttachment();
         creature.update(0.0000000000000000000001);
         creature.computeBoundingBox();
       }catch(e){

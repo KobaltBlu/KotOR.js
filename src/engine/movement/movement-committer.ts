@@ -82,7 +82,6 @@ export function commitMovement(
   creature.position.z = final.z;
   creature.markCollisionMatrixDirty?.("movement");
   // Frustum cull (isOnScreen) uses this.box — must refresh after XY commit.
-  // Previously updateCollision refreshed every frame; path/PlayerControl skip CM.
   creature.computeBoundingBox?.();
 
   if(result.room && creature.attachToRoom){
@@ -146,10 +145,6 @@ function applyContact(
     blocker = result.hit.object;
   }
 
-  // Keep CollisionManager.blockingObject in sync during migration facade period.
-  if(creature.collisionManager){
-    creature.collisionManager.blockingObject = blocker as any;
-  }
   state.blockingObject = blocker;
 
   const entered =

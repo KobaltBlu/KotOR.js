@@ -162,6 +162,27 @@ describe("placeable desk footprint start-overlap escape", () => {
     expect(soft.clear).toBe(false);
   });
 
+  it("softClearStartOverlap allows leaving when start-circle already touches an edge", () => {
+    const wok = makeDesk1Wok(headerPos);
+    composeObjectWalkmeshLocalToWorld(
+      wok.matrixWorld, plcPos, new THREE.Euler(0, 0, 0), headerPos
+    );
+    const edgeY = plcPos.y + 0.04 - 0.421907;
+    // Start grazes −Y edge; dest steps further away (clear of inflated footprint)
+    const from = new THREE.Vector3(plcPos.x, edgeY - 0.35, 0.5);
+    const to = new THREE.Vector3(plcPos.x, edgeY - 1.2, 0.5);
+    const hard = isStaticWalkClearOnWalkMesh(wok, from, to, {
+      personalSpace: 0.4,
+      softClearStartOverlap: false,
+    });
+    expect(hard.clear).toBe(false);
+    const soft = isStaticWalkClearOnWalkMesh(wok, from, to, {
+      personalSpace: 0.4,
+      softClearStartOverlap: true,
+    });
+    expect(soft.clear).toBe(true);
+  });
+
   it("softClearStartOverlap still blocks a dest that stays on the desk", () => {
     const wok = makeDesk1Wok(headerPos);
     composeObjectWalkmeshLocalToWorld(

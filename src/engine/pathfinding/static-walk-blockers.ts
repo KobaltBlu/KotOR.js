@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import type { ModuleArea } from "@/module/ModuleArea";
 import type { ModuleDoor } from "@/module/ModuleDoor";
-import { isStaticWalkClearOnAreaMesh, isStaticWalkClearOnWalkMesh } from "@/engine/pathfinding/static-walk-blockers-mesh";
+import { isStaticWalkClearOnAreaMesh, isStaticWalkClearOnWalkMesh, walkMeshHasStartOverlap } from "@/engine/pathfinding/static-walk-blockers-mesh";
 import { composeDoorWalkmeshLocalToWorld } from "@/engine/pathfinding/door-walkmesh-matrix";
 import {
   setHitInfoForAabb,
@@ -49,7 +49,8 @@ function closedDoorBlocksLine(
   to: THREE.Vector3,
   expand: number,
   hit?: WalkHitInfo,
-  softClearStartOverlap = false
+  softClearStartOverlap = false,
+  forceDestOnly = false
 ): boolean {
   if(!door) return false;
 
@@ -88,6 +89,7 @@ function closedDoorBlocksLine(
       hit,
       faceStartIndex: wok.walkableFaces?.length ?? 0,
       softClearStartOverlap,
+      forceDestOnly,
     });
     if(!mesh.clear){
       if(hit) hit.objectId = door.id;
@@ -161,12 +163,52 @@ export function isStaticWalkClearDetailed(
   _from.set(from.x, from.y, from.z + 0.5);
   _to.set(to.x, to.y, to.z + 0.5);
 
+  // If the capsule already overlaps any door/placeable, force dest-only on all
+  // static mesh tests so a neighbor prop cannot stadium-block the escape path.
+  let forceDestOnly = false;
+  if(softStart){
+    const doorsScan = area.doors;
+    if(doorsScan?.length){
+      for(let i = 0; i < doorsScan.length; i++){
+        const door = doorsScan[i];
+        if(!door || isIgnored(door.id)) continue;
+        const wok = door.collisionManager?.walkmesh;
+        if(!wok?.faces?.length) continue;
+        if(typeof (door as { syncWalkmeshMatrix?: () => void }).syncWalkmeshMatrix === "function"){
+          (door as { syncWalkmeshMatrix: () => void }).syncWalkmeshMatrix();
+        }
+        if(walkMeshHasStartOverlap(wok, _from, { personalSpace: expand })){
+          forceDestOnly = true;
+          break;
+        }
+      }
+    }
+    if(!forceDestOnly){
+      const placeablesScan = area.placeables;
+      if(placeablesScan?.length){
+        for(let i = 0; i < placeablesScan.length; i++){
+          const plc = placeablesScan[i];
+          if(!plc || isIgnored(plc.id)) continue;
+          const wok = plc.collisionManager?.walkmesh;
+          if(!wok?.faces?.length) continue;
+          if(typeof (plc as { syncWalkmeshMatrix?: () => void }).syncWalkmeshMatrix === "function"){
+            (plc as { syncWalkmeshMatrix: () => void }).syncWalkmeshMatrix();
+          }
+          if(walkMeshHasStartOverlap(wok, _from, { personalSpace: expand })){
+            forceDestOnly = true;
+            break;
+          }
+        }
+      }
+    }
+  }
+
   const doors = area.doors;
   if(doors?.length){
     for(let i = 0; i < doors.length; i++){
       const door = doors[i];
       if(!door || isIgnored(door.id)) continue;
-      if(closedDoorBlocksLine(door, _from, _to, expand, options.hit, softStart)){
+      if(closedDoorBlocksLine(door, _from, _to, expand, options.hit, softStart, forceDestOnly)){
         return { clear: false, blockingObjectId: door.id };
       }
     }
@@ -199,6 +241,7 @@ export function isStaticWalkClearDetailed(
         personalSpace: expand,
         hit: options.hit,
         softClearStartOverlap: softStart,
+        forceDestOnly,
       });
       if(!mesh.clear){
         return { clear: false, blockingObjectId: plc.id };

@@ -22,7 +22,8 @@ export const MOVEMENT_OWNERSHIP_INVENTORY = [
   { path: "nudge-friendlies", dest: "FriendNudge teleportObject" },
   { path: "ActionJumpToPoint.applyLocalJump", dest: "applyLocalTeleport" },
   { path: "ModuleObject.setPosition", dest: "teleportObject (no slide/OnBlocked)" },
-  { path: "CollisionManager.updateCollision", dest: "LegacyForce residual only" },
+  { path: "tickExternalForceStep", dest: "ExternalForcePolicy → MovementCommitter" },
+  { path: "settleWalkableAttachment / spawn settle", dest: "findWalkableAttachmentAt + applyWalkableAttachment" },
 ] as const;
 
 describe("movement ownership inventory", () => {

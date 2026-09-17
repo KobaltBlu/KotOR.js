@@ -19,7 +19,7 @@ import { BitWise } from "@/utility/BitWise";
 import { VISObject } from "@/resource/VISObject";
 import { IVISRoom } from "@/interface";
 import type { GrassBin } from "@/managers/GrassManager";
-import { CollisionManager } from "@/engine/CollisionManager";
+import { CollisionContext } from "@/engine/CollisionContext";
 
 type CollisionPlaceableBVHEntry = {
   placeable: ModulePlaceable;
@@ -115,7 +115,7 @@ export class ModuleRoom {
   objectType: number = ModuleObjectType.ModuleRoom;
   container: OdysseyObject3D;
   context: any;
-  collisionManager: CollisionManager;
+  collisionContext: CollisionContext;
 
   doors: ModuleDoor[] = [];
   placeables: ModulePlaceable[] = [];
@@ -149,7 +149,15 @@ export class ModuleRoom {
     this.box = new THREE.Box3();
     this.model = null;
     // Walkmesh ownership only — creature collision paths are unused on rooms.
-    this.collisionManager = new CollisionManager(this as unknown as ModuleObject);
+    this.collisionContext = new CollisionContext(this as unknown as ModuleObject);
+  }
+
+  /** @deprecated Use collisionContext — alias during rename window. */
+  get collisionManager(): CollisionContext {
+    return this.collisionContext;
+  }
+  set collisionManager(value: CollisionContext){
+    this.collisionContext = value;
   }
 
   setAmbientScale(scale: number){
@@ -558,6 +566,10 @@ export class ModuleRoom {
       point.z < this.model.box.min.z || point.z > this.model.box.max.z ? false : true;
   }
 
+  /**
+   * @deprecated Room-local attach shim — prefer findWalkableAttachmentAt + applyWalkableAttachment.
+   * No new callers.
+   */
   findWalkableFace( object?: ModuleObject ) : OdysseyFace3 | undefined {
     if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleObject) && this.collisionManager.walkmesh){
       for(let j = 0, jl = this.collisionManager.walkmesh.walkableFaces.length; j < jl; j++){

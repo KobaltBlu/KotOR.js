@@ -191,7 +191,7 @@ export function resolvePlayerControlStep(
   const desiredLen = Math.hypot(_desired.x, _desired.y);
   const creperspace = getCreaturePersonalSpace(creature);
 
-  // Prefer nearby walkmesh wall normals over mesh corner normals (vertex stuck).
+  // Prefer nearby walkmesh + placeable edge normals over mesh corner normals.
   collectBlockingWalkEdgeNormals(area, origin, creperspace, _edgeNormals);
   if(_edgeNormals.length){
     projectDesiredOntoNormals(
@@ -209,6 +209,23 @@ export function resolvePlayerControlStep(
       staticHit.hit
     );
     if(edgeSlide) return edgeSlide;
+  }
+
+  // Capsule already overlapping a placeable/door (Static DetailedBlock): push out
+  // before single-normal slide — frame steps often cannot reach clear space.
+  if(
+    usedLen < 1e-8 &&
+    staticHit.hit?.kind === MovementHitKind.Static
+  ){
+    const depen = tryPlaceableDepenetrate(
+      area,
+      creature,
+      origin,
+      _desired,
+      walkHit.walkHit?.normal,
+      staticHit.hit
+    );
+    if(depen) return depen;
   }
 
   const wallNormal = resolveWallNormal(
@@ -361,6 +378,104 @@ function tryProjectedProbes(
         return finishPlayerResult(creature, origin, _probe, hit);
       }
     }
+  }
+  return undefined;
+}
+
+/**
+ * Push out of an overlapping placeable/door capsule (wedge between props).
+ * Soft static tests allow a clear dest even when start still touches edges.
+ * Separation length is up to creperspace so one frame can exit a sub-radius gap.
+ */
+function tryPlaceableDepenetrate(
+  area: ModuleArea,
+  creature: ModuleCreature,
+  origin: THREE.Vector3,
+  desired: THREE.Vector3,
+  hitNormal: THREE.Vector3 | undefined,
+  hit: MovementResult["hit"]
+): MovementResult | undefined {
+  const creperspace = getCreaturePersonalSpace(creature);
+  if(creperspace < 1e-8) return undefined;
+
+  if(!_edgeNormals.length){
+    collectBlockingWalkEdgeNormals(area, origin, creperspace, _edgeNormals);
+  }
+
+  const dirs: Array<{ x: number; y: number }> = [];
+  for(let i = 0; i < _edgeNormals.length; i++){
+    dirs.push({ x: _edgeNormals[i].x, y: _edgeNormals[i].y });
+  }
+  if(hitNormal && (Math.abs(hitNormal.x) > 1e-6 || Math.abs(hitNormal.y) > 1e-6)){
+    const nLen = Math.hypot(hitNormal.x, hitNormal.y);
+    dirs.push({ x: hitNormal.x / nLen, y: hitNormal.y / nLen });
+  }
+
+  // Channel tangent after multi-normal projection (opposing pile normals → ±X).
+  projectDesiredOntoNormals(
+    desired.x,
+    desired.y,
+    _edgeNormals,
+    _slide
+  );
+  let slideLen = Math.hypot(_slide.x, _slide.y);
+  if(slideLen < 1e-8 && Math.hypot(desired.x, desired.y) > 1e-8){
+    _slide.set(desired.x, desired.y, 0);
+    slideLen = Math.hypot(_slide.x, _slide.y);
+  }
+  if(slideLen > 1e-8){
+    dirs.push({ x: _slide.x / slideLen, y: _slide.y / slideLen });
+    dirs.push({ x: -_slide.y / slideLen, y: _slide.x / slideLen });
+    dirs.push({ x: _slide.y / slideLen, y: -_slide.x / slideLen });
+  }
+
+  if(!dirs.length){
+    const aLen = Math.hypot(desired.x, desired.y);
+    if(aLen < 1e-8) return undefined;
+    dirs.push({ x: desired.x / aLen, y: desired.y / aLen });
+    dirs.push({ x: -desired.y / aLen, y: desired.x / aLen });
+    dirs.push({ x: desired.y / aLen, y: -desired.x / aLen });
+  }
+
+  const lengths = [
+    creperspace,
+    creperspace * 0.75,
+    creperspace * 0.5,
+    creperspace * 0.35,
+    Math.max(Math.hypot(desired.x, desired.y), creperspace * 0.25),
+  ];
+
+  let best: THREE.Vector3 | undefined;
+  let bestDist = 0;
+  const dxn = desired.x;
+  const dyn = desired.y;
+  const dLen = Math.hypot(dxn, dyn);
+
+  for(let d = 0; d < dirs.length; d++){
+    const dir = dirs[d];
+    const nLen = Math.hypot(dir.x, dir.y);
+    if(nLen < 1e-8) continue;
+    const ux = dir.x / nLen;
+    const uy = dir.y / nLen;
+    for(let li = 0; li < lengths.length; li++){
+      const sep = lengths[li];
+      if(!(sep > 1e-8)) continue;
+      _probe.set(origin.x + ux * sep, origin.y + uy * sep, origin.z);
+      if(!segmentClear(area, creature, origin, _probe)) continue;
+      const moved = sep;
+      // Prefer motion aligned with desired when present; else farthest escape.
+      const align =
+        dLen > 1e-8 ? (ux * dxn + uy * dyn) / dLen : moved;
+      const score = moved + Math.max(0, align) * creperspace;
+      if(!best || score > bestDist){
+        bestDist = score;
+        best = _probe.clone();
+      }
+    }
+  }
+
+  if(best){
+    return finishPlayerResult(creature, origin, best, hit);
   }
   return undefined;
 }

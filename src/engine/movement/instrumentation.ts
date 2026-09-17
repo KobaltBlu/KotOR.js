@@ -13,7 +13,6 @@ export type MovementWriteKind =
   | "commit"
   | "teleport"
   | "unauthorized"
-  | "updateCollision"
   | "directPosition";
 
 let _assertEnabled = false;

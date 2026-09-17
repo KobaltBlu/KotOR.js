@@ -21,7 +21,7 @@ export enum MovementSource {
   SoftSeparate = "SoftSeparate",
   FriendNudge = "FriendNudge",
   Cutscene = "Cutscene",
-  LegacyForce = "LegacyForce",
+  ExternalForce = "ExternalForce",
   Teleport = "Teleport",
 }
 
@@ -40,7 +40,7 @@ export enum MovementAuthority {
   SoftSeparate = "SoftSeparate",
   FriendNudge = "FriendNudge",
   Cutscene = "Cutscene",
-  LegacyForce = "LegacyForce",
+  ExternalForce = "ExternalForce",
 }
 
 /**
@@ -56,6 +56,7 @@ export enum MovementPolicy {
   FollowLeader = "FollowLeader",
   SoftSeparate = "SoftSeparate",
   FriendNudge = "FriendNudge",
+  ExternalForce = "ExternalForce",
 }
 
 export enum MovementStatus {
@@ -153,7 +154,6 @@ export interface CreatureMovementState {
   authority: MovementAuthority;
   blockingObject?: ModuleObject;
   lastBlockingObject?: ModuleObject;
-  foundEnemyCreature?: ModuleObject;
   /** Seconds of continuous contact — formerly collisionTimer increments from CM. */
   collisionTime: number;
   lastCommitFrame: number;

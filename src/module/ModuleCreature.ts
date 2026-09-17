@@ -60,12 +60,15 @@ import type { InterAreaWaypoint } from "@/engine/pathfinding/inter-area-path";
 import { buildPathAroundCreature } from "@/engine/pathfinding/build-path-around-creature";
 import { nudgeFriendlyCreatures } from "@/engine/pathfinding/nudge-friendlies";
 import { resolvePlayerControlStep } from "@/engine/movement/player-control-policy";
+import { tickExternalForceStep } from "@/engine/movement/external-force-policy";
 import { commitMovement } from "@/engine/movement/movement-committer";
 import {
   setMovementAuthority,
   ensureMovementState,
 } from "@/engine/movement/creature-movement-state";
 import { MovementAuthority } from "@/engine/movement/types";
+import { findWalkableAttachmentAt } from "@/engine/movement/area-movement-queries";
+import { applyWalkableAttachment } from "@/engine/movement/apply-walkable-attachment";
 import { getUseRange } from "@/actions/use-range";
 import { getAttackApproachPoint } from "@/combat/nearest-action-point";
 import { ModulePlaceable } from "@/module/ModulePlaceable";
@@ -508,6 +511,11 @@ export class ModuleCreature extends ModuleObject {
   textureVar: number;
   walkRate: number;
   blockingTimer: number;
+  /**
+   * Pathfail / GetFoundEnemyCreature — AI/pathing side effect of OnBlocked hex,
+   * not physical movement contact. Owned by the creature, not CollisionContext.
+   */
+  foundEnemyCreature: ModuleObject | undefined;
   /**
    * Creature locomotion mode (internal field).
    * 3 = FollowLeader, 4..6 = ForcePushed, 1 = paused, -1 = repath.
@@ -1519,17 +1527,18 @@ export class ModuleCreature extends ModuleObject {
         this.updateWeaponModels(delta);
       }
 
-      // Contact OnBlocked for PlayerControl / Drive / Walk is owned by MovementCommitter.
-      // Legacy force-coast still uses CollisionManager enter detection after updateCollision.
+      // Contact OnBlocked for PlayerControl / Drive / Walk / ExternalForce is
+      // owned by MovementCommitter. Residual impulse coasts use ExternalForcePolicy.
       if(this.forceVector.length() && !playerControlCommitted){
-        this.updateCollision(delta);
-        if(this.collisionManager.blockingObject != this.collisionManager.lastBlockingObject){
+        const disp = this.forceVector.clone();
+        tickExternalForceStep(this, disp, delta);
+        this.forceVector.set(0, 0, 0);
+        const state = ensureMovementState(this);
+        if(state.blockingObject != state.lastBlockingObject){
           const enteredBlock =
-            !!this.collisionManager.blockingObject &&
-            this.collisionManager.blockingObject !== this.collisionManager.lastBlockingObject;
-          this.collisionManager.lastBlockingObject = this.collisionManager.blockingObject;
-          ensureMovementState(this).lastBlockingObject =
-            this.collisionManager.blockingObject;
+            !!state.blockingObject &&
+            state.blockingObject !== state.lastBlockingObject;
+          state.lastBlockingObject = state.blockingObject;
           if(enteredBlock){
             this.onBlocked();
           }
@@ -1643,8 +1652,8 @@ export class ModuleCreature extends ModuleObject {
       this.updateWeaponModels(delta);
     }
 
-    // Decay stuck timer only when not in contact (CollisionManager increments while colliding)
-    if(!this.collisionManager?.blockingObject){
+    // Decay stuck timer only when not in contact (MovementCommitter increments while colliding)
+    if(!ensureMovementState(this).blockingObject){
       this.collisionTimer -= delta;
       if(this.collisionTimer < 0)
         this.collisionTimer = 0;
@@ -2253,7 +2262,7 @@ export class ModuleCreature extends ModuleObject {
 
   JumpToLocation(lLocation: EngineLocation): void {
     // Creatures: ModuleObject.JumpToLocation runs ActionJumpToPoint → applyLocalTeleport.
-    // Do not settle via CollisionManager.updateCollision (locomotion solver).
+    // Placement via teleport / settleWalkableAttachment — not a locomotion solver.
     super.JumpToLocation(lLocation);
   }
 
@@ -4736,7 +4745,8 @@ export class ModuleCreature extends ModuleObject {
     if(this == GameState.getCurrentPlayer())
       return;
 
-    const blocker = this.collisionManager?.blockingObject;
+    const state = ensureMovementState(this);
+    const blocker = state.blockingObject;
     // buildPathAroundCreature:
     // GetReputation(blocker, mover) < 11 → pathfail with foundEnemy=blocker;
     // if mover commandable → return without hex;
@@ -4749,7 +4759,10 @@ export class ModuleCreature extends ModuleObject {
 
       // walk step distance test → nudgeFriendlyCreatures before hex/pathfail
       const bumpTo = this.position.clone();
-      if(this.forceVector?.lengthSq?.() > 1e-8){
+      const lastVel = state.actualVelocity;
+      if(lastVel?.lengthSq?.() > 1e-8){
+        bumpTo.addScaledVector(lastVel.clone().normalize(), 1);
+      }else if(this.forceVector?.lengthSq?.() > 1e-8){
         bumpTo.addScaledVector(this.forceVector.clone().normalize(), 1);
       }else{
         const facing = this.facing ?? this.rotation?.z ?? 0;
@@ -4757,7 +4770,7 @@ export class ModuleCreature extends ModuleObject {
         bumpTo.y += Math.sin(facing);
       }
       if(nudgeFriendlyCreatures(this, blocker, bumpTo, this.position)){
-        this.collisionManager.blockingObject = undefined;
+        state.blockingObject = undefined;
         this.collisionTimer = 0;
         return;
       }
@@ -4765,32 +4778,32 @@ export class ModuleCreature extends ModuleObject {
       // : reputation of blocker toward this mover (GetReputation < 11)
       const hostileBlocker = (blocker.getReputation?.(this) ?? 100) < 11;
       if(hostileBlocker){
-        this.collisionManager.foundEnemyCreature = blocker;
+        this.foundEnemyCreature = blocker;
         runPathfail();
         // : commandable mover skips hex after hostile pathfail
         if(this.getCommadable?.()){
           return;
         }
       }else{
-        this.collisionManager.foundEnemyCreature = undefined;
+        this.foundEnemyCreature = undefined;
       }
 
       const result = buildPathAroundCreature(this, blocker);
       if(result.spliced){
         if(result.foundEnemyOnPath && (result.foundEnemyOnPath.getReputation?.(this) ?? 100) < 11){
-          this.collisionManager.foundEnemyCreature = result.foundEnemyOnPath;
+          this.foundEnemyCreature = result.foundEnemyOnPath;
           runPathfail();
         }
         return;
       }
 
       // Both CW/CCW failed — clears foundEnemy then pathfail
-      this.collisionManager.foundEnemyCreature = undefined;
+      this.foundEnemyCreature = undefined;
       runPathfail();
       return;
     }
 
-    this.collisionManager.foundEnemyCreature = undefined;
+    this.foundEnemyCreature = undefined;
     const nwscript = this.scripts[ModuleObjectScript.CreatureOnBlocked];
     if(!nwscript){ return; }
     const script_num = (GameState.PartyManager.party.indexOf(this) > -1) ? 2009 : 1009;
@@ -6068,9 +6081,18 @@ export class ModuleCreature extends ModuleObject {
     }
   }
 
-  /** Path/Drive movers call this from creature drive update; RK4 uses forceVector sweep. */
-  updateCollision(delta: number = 0){
-    this.collisionManager?.updateCollision(delta);
+  /**
+   * Explicit ground/room attachment refresh (spawn / model-load settle).
+   * Not a locomotion solver — uses findWalkableAttachmentAt + apply.
+   */
+  settleWalkableAttachment(): void {
+    const hit = findWalkableAttachmentAt(this.area, this.position, this.room);
+    applyWalkableAttachment(this, hit);
+  }
+
+  /** @deprecated No locomotion solver — use settleWalkableAttachment / teleport. */
+  updateCollision(_delta: number = 0){
+    this.settleWalkableAttachment();
   }
 
   /**
@@ -7176,7 +7198,7 @@ export class ModuleCreature extends ModuleObject {
     this.addEffect(eRacialType);
     
     this.initPerceptionList();
-    this.updateCollision();
+    this.settleWalkableAttachment();
     
     super.initEffects();
   }
@@ -7275,7 +7297,7 @@ export class ModuleCreature extends ModuleObject {
       return this.model;
     }
     this.isReady = true;
-    this.updateCollision(0.0000000000000000000001);
+    this.settleWalkableAttachment();
     this.primeAnimationPose();
     this.update(0.0000000000000000000001);
     // updateModelVisibility is Mode-gated (INGAME); force visible after prime so a

@@ -2,7 +2,7 @@ import * as THREE from "three";
 import type { Action } from "@/actions/Action";
 import { ActionQueue } from "@/actions/ActionQueue";
 import { AudioEmitter } from "@/audio/AudioEmitter";
-import { CollisionManager } from "@/engine/CollisionManager";
+import { CollisionContext } from "@/engine/CollisionContext";
 import {
   createCreatureMovementState,
   type CreatureMovementState,
@@ -172,6 +172,11 @@ export class ModuleObject {
   effectIconList: IEffectIconListItem[] = [];
 
   container: OdysseyObject3D;
+  /**
+   * Scratch XY displacement for the current frame (PlayerControl RK4 output,
+   * residual ExternalForce impulse). Not a second locomotion solver — policies
+   * resolve then MovementCommitter commits. Prefer policy-local vectors when adding paths.
+   */
   forceVector: THREE.Vector3 = new THREE.Vector3();
   position: THREE.Vector3 = new THREE.Vector3();
   lastPosition: THREE.Vector3 = new THREE.Vector3();
@@ -190,8 +195,15 @@ export class ModuleObject {
   audioEmitter: AudioEmitter;
   footstepEmitter: AudioEmitter;
 
-  collisionManager: CollisionManager = new CollisionManager(this);
-  /** Contact / authority / frame ownership — not owned by CollisionManager geometry. */
+  collisionContext: CollisionContext = new CollisionContext(this);
+  /** @deprecated Use collisionContext — alias during rename window. */
+  get collisionManager(): CollisionContext {
+    return this.collisionContext;
+  }
+  set collisionManager(value: CollisionContext){
+    this.collisionContext = value;
+  }
+  /** Contact / authority / frame ownership — not owned by CollisionContext geometry. */
   movementState: CreatureMovementState = createCreatureMovementState();
   invalidateCollision: boolean = false;
   combatData: CombatData = new CombatData(this);
@@ -830,8 +842,8 @@ export class ModuleObject {
     // GetAttemptedAttackTarget (or spell targets). GN_EquipAppropriateWeapon runs
     // after ClearAllActions and needs GetAttackTarget for the melee switch.
     // Those fields clear on SetCombatState(0) / cancelCombat instead.
-    if(this.collisionManager){
-      this.collisionManager.foundEnemyCreature = undefined;
+    if((this as { foundEnemyCreature?: unknown }).foundEnemyCreature !== undefined){
+      (this as { foundEnemyCreature?: unknown }).foundEnemyCreature = undefined;
     }
     // Drop sticky walk / approach / player-control axes after cancel
     (this as any).clearLocomotionState?.(true);
@@ -1819,11 +1831,11 @@ export class ModuleObject {
   }
 
   /**
-   * Get the current room
-   * @returns
+   * Get the current room via deprecated findWalkableFace shim.
+   * Prefer findWalkableAttachmentAt for queries without mutation.
    */
   getCurrentRoom(){
-    this.collisionManager.findWalkableFace();
+    this.collisionContext.findWalkableFace();
   }
 
   /**

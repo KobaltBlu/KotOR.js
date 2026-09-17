@@ -180,13 +180,7 @@ function faceVerts(face: OdysseyFace3): [THREE.Vector3, THREE.Vector3, THREE.Vec
 }
 
 /**
- * static walk blockers stadium vs triangle :
- * IntersectLineSegments2d × stadium edges, IntersectCircle2d ends, interior samples.
- */
-/**
- * True when the start point lies on the face footprint (stuck inside), not when
- * personal-space only grazes an edge. Edge grazing must keep full corridor so
- * PlayerControl can collide-and-slide.
+ * True when the start point lies on the face footprint (stuck inside).
  */
 function startInteriorOnFace(
   face: OdysseyFace3,
@@ -194,6 +188,34 @@ function startInteriorOnFace(
 ): boolean {
   _sample.set(ax, ay, az);
   return !!face.pointInFace2d?.(_sample);
+}
+
+/**
+ * True when the start personal-space circle intersects any face edge.
+ * Used with softClearStartOverlap so a capsule already wedged against a PWK
+ * can leave via dest-only tests (corridor distSegSeg would otherwise clearT=0).
+ * Uses a small graze pad so near-contacts (gap ≈ 2*r) still soft-clear.
+ */
+function startCircleTouchesFace(
+  face: OdysseyFace3,
+  ax: number,
+  ay: number,
+  radius: number
+): boolean {
+  const verts = faceVerts(face);
+  if(!verts) return false;
+  const edges: [THREE.Vector3, THREE.Vector3][] = [
+    [verts[0], verts[1]], [verts[1], verts[2]], [verts[2], verts[0]],
+  ];
+  const touchR = radius + 0.05;
+  for(let e = 0; e < 3; e++){
+    const va = edges[e][0];
+    const vb = edges[e][1];
+    if(intersectCircle2d(ax, ay, touchR, va.x, va.y, vb.x, vb.y) > 0){
+      return true;
+    }
+  }
+  return false;
 }
 
 /**
@@ -391,6 +413,47 @@ const _localTo = new THREE.Vector3();
 const _invMatrix = new THREE.Matrix4();
 
 /**
+ * True when `from` is interior to or within personal-space of any blocking face
+ * on this walkmesh (WorldToLocal aware). Used to force dest-only across all
+ * placeables when wedged between multiple props.
+ */
+export function walkMeshHasStartOverlap(
+  wok: OdysseyWalkMesh | undefined,
+  from: THREE.Vector3,
+  options: {
+    personalSpace?: number;
+    blockAllFaces?: boolean;
+    faceStartIndex?: number;
+  } = {}
+): boolean {
+  const faces = meshFaces(wok);
+  if(!faces?.length) return false;
+
+  let ax = from.x, ay = from.y, az = from.z;
+  const mw = wok!.matrixWorld ?? wok!.mesh?.matrixWorld;
+  if(mw){
+    _invMatrix.copy(mw).invert();
+    _localFrom.copy(from).applyMatrix4(_invMatrix);
+    ax = _localFrom.x; ay = _localFrom.y; az = _localFrom.z;
+  }
+
+  const radius = Math.max(0.05, options.personalSpace ?? 0.5);
+  const blockAll = !!options.blockAllFaces;
+  const start = Math.max(0, options.faceStartIndex ?? 0);
+  for(let i = start, len = faces.length; i < len; i++){
+    const face = faces[i];
+    if(!blockAll && !isBlockingFace(face)) continue;
+    if(
+      startInteriorOnFace(face, ax, ay, az) ||
+      startCircleTouchesFace(face, ax, ay, radius)
+    ){
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Test a single walkmesh (door / placeable surface) against the stadium corridor.
  * Applies WorldToLocal when `matrixWorld` is set — door DWK verts stay in
  * BWM local space; matrix is T(obj) * R * T(header.position).
@@ -411,6 +474,12 @@ export function isStaticWalkClearOnWalkMesh(
     faceStartIndex?: number;
     /** Skip start-circle / enable interior escape (PlayerControl collide-and-slide). */
     softClearStartOverlap?: boolean;
+    /**
+     * Force dest-only tests even when this mesh does not touch the start
+     * capsule. Used by area queries when any sibling placeable already overlaps
+     * so corridor tests against neighbors cannot clearT=0 the escape.
+     */
+    forceDestOnly?: boolean;
   } = {}
 ): StaticWalkBlockersMeshResult {
   const faces = meshFaces(wok);
@@ -442,15 +511,20 @@ export function isStaticWalkClearOnWalkMesh(
   const start = Math.max(0, options.faceStartIndex ?? 0);
   const softStart = !!options.softClearStartOverlap;
 
-  // Mesh-level interior escape: if start sits on any blocking face, only
-  // require dest clear. Per-face escape would still trap on sibling tris.
-  let startInterior = false;
-  if(softStart){
+  // Soft-start escape: if start is interior OR the capsule already touches a
+  // blocking edge, only require dest clear. Otherwise distSegSeg / stadium keep
+  // clearT=0 forever when wedged between placeables (gap < 2*radius).
+  // forceDestOnly: sibling placeable already overlaps — treat this mesh the same.
+  let startOverlapping = !!options.forceDestOnly;
+  if(softStart && !startOverlapping){
     for(let i = start, len = faces.length; i < len; i++){
       const face = faces[i];
       if(!blockAll && !isBlockingFace(face)) continue;
-      if(startInteriorOnFace(face, ax, ay, az)){
-        startInterior = true;
+      if(
+        startInteriorOnFace(face, ax, ay, az) ||
+        startCircleTouchesFace(face, ax, ay, radius)
+      ){
+        startOverlapping = true;
         break;
       }
     }
@@ -460,7 +534,7 @@ export function isStaticWalkClearOnWalkMesh(
     const face = faces[i];
     if(!blockAll && !isBlockingFace(face)) continue;
     if(!faceOverlapsCorridorAabb(face, minX, maxX, minY, maxY)) continue;
-    const blocked = startInterior
+    const blocked = startOverlapping
       ? destOnlyHitsFace(face, bx, by, bz, radius, hit)
       : corridorHitsFace(face, ax, ay, bx, by, az, bz, radius, hit, softStart);
     if(blocked){

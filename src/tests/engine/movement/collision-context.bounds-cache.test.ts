@@ -1,12 +1,13 @@
 /**
+ * CollisionContext cached object bounds (collision / path-query AABB).
  * @jest-environment node
  */
-import { describe, expect, test, jest, afterEach } from '@jest/globals';
-import * as THREE from 'three';
-import { CollisionManager } from '@/engine/CollisionManager';
+import { describe, expect, test, jest, afterEach } from "@jest/globals";
+import * as THREE from "three";
+import { CollisionContext } from "@/engine/CollisionContext";
 
-jest.mock('@/GameState', () => {
-  const THREE = require('three');
+jest.mock("@/GameState", () => {
+  const THREE = require("three");
   return {
     GameState: {
       raycaster: new THREE.Raycaster(),
@@ -16,12 +17,20 @@ jest.mock('@/GameState', () => {
   };
 });
 
-jest.mock('@/odyssey', () => ({
+jest.mock("@/odyssey", () => ({
   OdysseyWalkMesh: class {},
 }));
 
-jest.mock('@/three/odyssey', () => ({
+jest.mock("@/three/odyssey", () => ({
   OdysseyFace3: class {},
+}));
+
+jest.mock("@/engine/movement/area-movement-queries", () => ({
+  findWalkableAttachmentAt: () => undefined,
+}));
+
+jest.mock("@/engine/movement/apply-walkable-attachment", () => ({
+  applyWalkableAttachment: () => undefined,
 }));
 
 afterEach(() => {
@@ -30,7 +39,10 @@ afterEach(() => {
 
 function makeCollisionObject(){
   const container = new THREE.Object3D();
-  const model = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), new THREE.MeshBasicMaterial());
+  const model = new THREE.Mesh(
+    new THREE.BoxGeometry(2, 2, 2),
+    new THREE.MeshBasicMaterial()
+  );
   container.add(model);
   container.position.set(1, 2, 3);
   container.updateMatrix();
@@ -42,19 +54,19 @@ function makeCollisionObject(){
     position: container.position,
     box: new THREE.Box3(),
     sphere: new THREE.Sphere(),
-    forceVector: new THREE.Vector3(),
     collisionBoundsDirty: true,
     collisionMatrixDirty: true,
   };
-  object.collisionManager = new CollisionManager(object);
+  object.collisionContext = new CollisionContext(object);
+  object.collisionManager = object.collisionContext;
   return object;
 }
 
-describe('CollisionManager cached object bounds', () => {
-  test('recomputes local bounds once and reuses them for matrix-only movement', () => {
+describe("CollisionContext cached object bounds", () => {
+  test("recomputes local bounds once and reuses them for matrix-only movement", () => {
     const object = makeCollisionObject();
-    const manager = object.collisionManager as CollisionManager;
-    const setFromObjectSpy = jest.spyOn(THREE.Box3.prototype, 'setFromObject');
+    const manager = object.collisionContext as CollisionContext;
+    const setFromObjectSpy = jest.spyOn(THREE.Box3.prototype, "setFromObject");
 
     manager.refreshObjectBounds(false);
     expect(setFromObjectSpy).toHaveBeenCalledTimes(1);

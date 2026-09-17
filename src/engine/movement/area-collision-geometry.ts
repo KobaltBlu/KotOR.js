@@ -11,8 +11,8 @@ import type { ModuleRoom } from "@/module/ModuleRoom";
  * Geometry answers “what exists where?” — walkmeshes, door/placeable meshes,
  * room portals. It does not move creatures, set blockers, fire OnBlocked, or
  * increment collision timers. Dynamic solving belongs to movement policies +
- * AreaMovementQueries; legacy CollisionManager.updateCollision remains only for
- * residual force-coast until fully retired.
+ * AreaMovementQueries. ModuleCreature locomotion commits only via
+ * MovementCommitter; discontinuous placement via teleportObject.
  */
 
 export type AreaCollisionGeometry = {

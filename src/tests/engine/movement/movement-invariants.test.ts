@@ -128,6 +128,7 @@ describe("movement contract types", () => {
     expect(Object.keys(MovementPolicy).sort()).toEqual(
       [
         "Drive",
+        "ExternalForce",
         "FollowLeader",
         "ForcePush",
         "FriendNudge",
@@ -240,7 +241,7 @@ describe("AreaMovementQueries purity", () => {
   });
 });
 
-describe("drive / walk facade does not settle via updateCollision", () => {
+describe("drive / walk facade does not settle via CollisionContext solver", () => {
   it("tickCreatureDrive facade re-exports resolve+commit from drive-policy", () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const facade = require("@/engine/pathfinding/tick-creature-drive");
@@ -249,5 +250,11 @@ describe("drive / walk facade does not settle via updateCollision", () => {
     expect(facade.tickCreatureDrive).toBe(policy.tickCreatureDrive);
     expect(facade.drivePrepareDestination).toBe(policy.drivePrepareDestination);
     expect(facade.driveResolveMoveTarget).toBe(policy.drivePrepareDestination);
+  });
+
+  it("CollisionContext has no updateCollision locomotion solver", () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { CollisionContext } = require("@/engine/CollisionContext");
+    expect(CollisionContext.prototype.updateCollision).toBeUndefined();
   });
 });

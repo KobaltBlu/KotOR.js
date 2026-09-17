@@ -31,7 +31,6 @@ export function createCreatureMovementState(): CreatureMovementState {
     authority: MovementAuthority.None,
     blockingObject: undefined,
     lastBlockingObject: undefined,
-    foundEnemyCreature: undefined,
     collisionTime: 0,
     lastCommitFrame: 0,
     actualVelocity: new THREE.Vector3(),
@@ -74,7 +73,7 @@ export function authorityToSource(authority: MovementAuthority): MovementSource 
     case MovementAuthority.SoftSeparate: return MovementSource.SoftSeparate;
     case MovementAuthority.FriendNudge: return MovementSource.FriendNudge;
     case MovementAuthority.Cutscene: return MovementSource.Cutscene;
-    case MovementAuthority.LegacyForce: return MovementSource.LegacyForce;
+    case MovementAuthority.ExternalForce: return MovementSource.ExternalForce;
     default: return MovementSource.Walk;
   }
 }
