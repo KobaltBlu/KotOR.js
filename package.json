@@ -19,6 +19,7 @@
     "compare-saves": "tsx scripts/compare-saves.ts",
     "export-mdl-ascii": "tsx scripts/export-mdl-ascii.ts",
     "export-dlg-json": "tsx scripts/export-dlg-json.ts",
+    "export-wok-ascii": "tsx scripts/export-wok-ascii.ts",
     "typedoc": "typedoc --out ./wiki ./src/KotOR.ts",
     "check:originality": "node scripts/check-originality-comments.mjs",
     "test": "npm run check:originality && jest --verbose --coverage --no-cache ./src/tests",
