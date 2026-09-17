@@ -2817,6 +2817,12 @@ export class ModuleObject {
    * @returns
    */
   isOnScreen(frustum = GameState.viewportFrustum){
+    // Match fog cull to the live camera pose used for the frustum (object
+    // update may have run before FollowerCamera / updateViewportFrustum).
+    if(GameState.currentCamera){
+      this.distanceToCamera = this.position.distanceTo(GameState.currentCameraPosition);
+    }
+
     if(this.area && this.area.fog){
       if(this.distanceToCamera >= this.area.fog.far){
         return false;

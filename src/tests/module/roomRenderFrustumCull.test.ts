@@ -147,4 +147,44 @@ describe('room render frustum cull', () => {
     expect(emptyBoxWalkmeshOffScreen.grass.visible).toBe(false);
     expect(emptyNoWalkmesh.model.visible).toBe(true);
   });
+
+  test('cull after chase snap reveals VIS neighbors that a stale camera pose hid', () => {
+    // Pre-load / pre-update camera at origin misses a room that is on-screen from chase.
+    const cam = new THREE.PerspectiveCamera(50, 1, 0.1, 200);
+    cam.position.set(0, 0, 0);
+    cam.lookAt(0, 1, 0);
+    cam.updateMatrixWorld(true);
+
+    const player = {
+      model: Object.assign(new THREE.Object3D(), { userData: { visActive: true } }),
+      grass: { visible: true },
+      box: new THREE.Box3(new THREE.Vector3(48, -2, -2), new THREE.Vector3(52, 2, 2)),
+    };
+    const linkedNearPlayer = {
+      model: Object.assign(new THREE.Object3D(), { userData: { visActive: true } }),
+      grass: { visible: true },
+      box: new THREE.Box3(new THREE.Vector3(40, -2, -2), new THREE.Vector3(46, 2, 2)),
+    };
+
+    applyRoomRenderFrustumCull({
+      rooms: [player, linkedNearPlayer],
+      playerRoomIndex: 0,
+      camera: cam,
+    });
+    expect(player.model.visible).toBe(true);
+    expect(linkedNearPlayer.model.visible).toBe(false);
+
+    // After snapToChasePosition-style pose behind the player looking toward origin.
+    cam.position.set(55, 0, 5);
+    cam.lookAt(50, 0, 0);
+    cam.updateMatrixWorld(true);
+
+    applyRoomRenderFrustumCull({
+      rooms: [player, linkedNearPlayer],
+      playerRoomIndex: 0,
+      camera: cam,
+    });
+    expect(player.model.visible).toBe(true);
+    expect(linkedNearPlayer.model.visible).toBe(true);
+  });
 });

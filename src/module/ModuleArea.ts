@@ -713,11 +713,15 @@ export class ModuleArea extends ModuleObject {
       }
     }
 
+    // Camera before room VIS/frustum so cull uses this frame's chase pose
+    // (avoids one-frame neighbor pop-in after load / turns).
+    FollowerCamera.update(delta, this);
+    // Rebuild viewportFrustum before object isOnScreen (same pose as room cull).
+    GameState.updateViewportFrustum();
     this.updateRoomVisibility(delta);
     this.applyRoomRenderFrustumCull();
     // Same-frame object cull after room VIS (avoids one-frame blank props/doors)
     this.syncObjectModelVisibility();
-    FollowerCamera.update(delta, this);
 
     this.weather.update(delta);
 
@@ -781,10 +785,11 @@ export class ModuleArea extends ModuleObject {
       this.miniGame.tickPaused(delta);
     }
 
+    FollowerCamera.update(delta, this);
+    GameState.updateViewportFrustum();
     this.updateRoomVisibility(delta);
     this.applyRoomRenderFrustumCull();
     this.syncObjectModelVisibility();
-    FollowerCamera.update(delta, this);
 
     this.updateDayNightCycle();
     this.updateMusic(delta);
@@ -1703,6 +1708,23 @@ export class ModuleArea extends ModuleObject {
   private static readonly _viewFrustum = new THREE.Frustum();
   private static readonly _frustumProj = new THREE.Matrix4();
   private static readonly _frustumBox = new THREE.Box3();
+
+  /**
+   * Snap chase camera + apply room VIS/frustum before the load UI hides so the
+   * first renderable world frame matches the settled chase pose (no neighbor pop-in).
+   */
+  primePostLoadReveal(): void {
+    const player = GameState.getCurrentPlayer();
+    if(player && !player.room){
+      player.getCurrentRoom();
+    }
+    this.lastRoom = undefined;
+    FollowerCamera.snapToChasePosition();
+    GameState.updateViewportFrustum();
+    this.updateRoomVisibility(0);
+    this.applyRoomRenderFrustumCull();
+    this.syncObjectModelVisibility();
+  }
 
   /**
    * Re-sync object model visibility to current room VIS (visActive).

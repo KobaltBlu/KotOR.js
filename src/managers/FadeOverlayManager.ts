@@ -7,6 +7,8 @@ import { FadeOverlayState } from "@/enums/engine/FadeOverlayState";
  *
  * Timing mirrors SetFade and Draw:
  * wait then linear alpha; hitch clamp 5s; elapsed seed 0.1.
+ * Elapsed is measured from the fade-start wall-clock snapshot so a load hitch
+ * before StartGlobalFade cannot skip the post-load world fade-in.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -27,6 +29,20 @@ export class FadeOverlayManager {
   /** Pre-fade wait (seconds) —. */
   static wait = 0;
   static state: FadeOverlayState = FadeOverlayState.NONE;
+
+  /**
+   * Wall-clock ms when the active fade began (SetFade snapshot).
+   * Elapsed = seed + (now − start) / 1000, excluding hitch gaps.
+   */
+  static fadeStartMs = 0;
+  /** Last fade Draw tick (ms); used for hitch detection. */
+  static lastFadeTickMs = 0;
+
+  /**
+   * Test hook: when set, nowMs() returns this value instead of the wall clock.
+   * @internal
+   */
+  static _testNowMs: number | undefined = undefined;
 
   /**
    * K2 SetFadeUntilScript (GUI): StartGlobalFade / StopGlobalFade
@@ -77,6 +93,16 @@ export class FadeOverlayManager {
   /** IsGlobalFadeObscuring threshold (alpha > 0.001). */
   static readonly OBSCURING_ALPHA = 0.001;
 
+  static nowMs(): number {
+    if(FadeOverlayManager._testNowMs !== undefined){
+      return FadeOverlayManager._testNowMs;
+    }
+    if(typeof performance !== 'undefined' && typeof performance.now === 'function'){
+      return performance.now();
+    }
+    return Date.now();
+  }
+
   static Initialize(){
     FadeOverlayManager.plane.position.z = 499;
     FadeOverlayManager.plane.renderOrder = FadeOverlayManager.FADE_RENDER_ORDER;
@@ -93,6 +119,8 @@ export class FadeOverlayManager {
     FadeOverlayManager.duration = 0;
     FadeOverlayManager.elapsed = 0;
     FadeOverlayManager.wait = 0;
+    FadeOverlayManager.fadeStartMs = 0;
+    FadeOverlayManager.lastFadeTickMs = 0;
     FadeOverlayManager.state = FadeOverlayState.NONE;
     FadeOverlayManager.material.opacity = 0;
     FadeOverlayManager.material.visible = false;
@@ -103,6 +131,8 @@ export class FadeOverlayManager {
     FadeOverlayManager.duration = 0;
     FadeOverlayManager.elapsed = 0;
     FadeOverlayManager.wait = 0;
+    FadeOverlayManager.fadeStartMs = 0;
+    FadeOverlayManager.lastFadeTickMs = 0;
     FadeOverlayManager.state = FadeOverlayState.NONE;
     FadeOverlayManager.material.opacity = 0;
     FadeOverlayManager.material.visible = false;
@@ -175,11 +205,14 @@ export class FadeOverlayManager {
   ){
     const length = Math.max(0, duration);
     const wait = Math.max(0, nWait);
+    const now = FadeOverlayManager.nowMs();
     FadeOverlayManager.material.visible = true;
     FadeOverlayManager.material.color.setRGB(r, g, b);
     FadeOverlayManager.duration = length;
     FadeOverlayManager.wait = wait;
     FadeOverlayManager.elapsed = FadeOverlayManager.ELAPSED_SEED;
+    FadeOverlayManager.fadeStartMs = now;
+    FadeOverlayManager.lastFadeTickMs = now;
     FadeOverlayManager.state = state;
 
     // SetFade: out starts α=0, in starts α=1.
@@ -200,19 +233,29 @@ export class FadeOverlayManager {
   }
 
   /**
-   * Draw — wait then linear ramp; hitch clamp 5s.
+   * Draw — wait then linear ramp.
+   * Advances from the fade-start wall-clock snapshot (plus seed). Hitches ≥5s
+   * do not advance; the start snapshot is pushed forward so elapsed stays put.
+   * The delta argument is unused for advancement (kept for call-site compatibility).
    */
-  static Update(delta = 0){
+  static Update(_delta = 0){
     if(FadeOverlayManager.state === FadeOverlayState.NONE ||
        FadeOverlayManager.state === FadeOverlayState.FADED_IN ||
        FadeOverlayManager.state === FadeOverlayState.FADED_OUT){
       return;
     }
 
-    const dt = Math.max(0, delta);
-    if(dt < FadeOverlayManager.HITCH_CLAMP_SEC){
-      FadeOverlayManager.elapsed += dt;
+    const now = FadeOverlayManager.nowMs();
+    const gapSec = Math.max(0, (now - FadeOverlayManager.lastFadeTickMs) / 1000);
+    if(gapSec >= FadeOverlayManager.HITCH_CLAMP_SEC){
+      // Exclude hitch gap from elapsed (resync start snapshot).
+      FadeOverlayManager.fadeStartMs += (now - FadeOverlayManager.lastFadeTickMs);
     }
+    FadeOverlayManager.lastFadeTickMs = now;
+
+    FadeOverlayManager.elapsed =
+      FadeOverlayManager.ELAPSED_SEED +
+      Math.max(0, (now - FadeOverlayManager.fadeStartMs) / 1000);
 
     const wait = FadeOverlayManager.wait;
     const length = FadeOverlayManager.duration;

@@ -1783,9 +1783,8 @@ export class GameState implements EngineContext {
         await GameState.module.area.initAreaObjects(runSpawnScripts);
         console.log('ModuleArea: ready to play');
         GameState.module.readyToProcessEvents = true;
-        // Prime PC room VIS before any TickSelectableObjects (UpdateRoom)
-        GameState.module.area.updateRoomVisibility(0);
-        GameState.module.area.syncObjectModelVisibility();
+        // Snap camera + VIS/frustum before load UI hides (first world frame ready)
+        GameState.module.area.primePostLoadReveal();
 
         if(GameState.Mode == EngineMode.INGAME){
           const anyCanLevel = GameState.PartyManager.party.some((p) => p.canLevelUp());
@@ -1930,6 +1929,8 @@ export class GameState implements EngineContext {
       GameState.MenuManager.ClearMenus();
 
       GameState.UnloadModule();
+      // Re-assert black cover after unload (UnloadModule clears fade state).
+      GameState.FadeOverlayManager.FadeOut(0, 0, 0, 0);
 
       try{
         GameState.MenuManager.LoadScreen.setProgress(0);
@@ -2014,10 +2015,15 @@ export class GameState implements EngineContext {
       GameState.SetEngineMode(GameState.module.area.miniGame ? EngineMode.MINIGAME : EngineMode.INGAME);
       await GameState.module.area.initAreaObjects(runSpawnScripts);
       GameState.module.readyToProcessEvents = true;
+      GameState.module.area.primePostLoadReveal();
 
       try{ GameState.MenuManager.LoadScreen.close(); }catch(e){}
       if(!GameState.holdWorldFadeInForDialog){
-        GameState.FadeOverlayManager.FadeIn(1.0, 0, 0, 0, 1);
+        GameState.FadeOverlayManager.FadeIn(
+          GameState.FadeOverlayManager.WORLD_FADE_IN_LENGTH,
+          0, 0, 0,
+          GameState.FadeOverlayManager.WORLD_FADE_IN_WAIT
+        );
       }
       GameState.module.area.musicBackgroundPlay();
       GameState.loadingModule = false;
