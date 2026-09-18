@@ -111,6 +111,126 @@ export class ActionItemCastSpell extends Action {
     oItem.decrementUses(this.owner, propIndex);
   }
 
+  /**
+   * Spawn the grenade mesh on the thrower's hand at throw-pose start.
+   * Flight / impact wait until {@link releaseGrenadeIntoFlight} at the gate.
+   */
+  private beginGrenadeHandHold(
+    castTarget: ModuleObject | undefined,
+    oItem: ModuleItem
+  ){
+    if(this.spellCastInstance || this.castStarted || !isCreature(this.owner)){
+      return;
+    }
+    if(!this.owner.area?.attachSpellInstance){
+      return;
+    }
+
+    const spellCastInstance = new SpellCastInstance(
+      this.owner,
+      castTarget as ModuleObject,
+      this.spell
+    );
+    const x = this.getParameter<number>(2) || 0;
+    const y = this.getParameter<number>(3) || 0;
+    const z = this.getParameter<number>(4) || 0;
+    if(!castTarget){
+      spellCastInstance.targetLocation.set(x, y, z);
+      spellCastInstance.projectileTarget.set(x, y, z);
+    }else{
+      spellCastInstance.targetLocation.copy(castTarget.position);
+    }
+
+    spellCastInstance.applySpellData();
+    spellCastInstance.allowCounterSpell = false;
+    spellCastInstance.castItem = oItem;
+    spellCastInstance.holdOnHand = true;
+    spellCastInstance.conjureTime = 0;
+    spellCastInstance.castTime = 0;
+    spellCastInstance.impactAtProjectileLanding = false;
+
+    const pathParam = this.getParameter<number>(8) | 0;
+    if(pathParam > 0){
+      spellCastInstance.projectilePathOverride = pathParam;
+    }
+
+    if(oItem){
+      this.owner.spellCastItem = oItem;
+    }
+    this.owner.spellTargetPosition.copy(spellCastInstance.targetLocation);
+
+    LOG('grenadeHandHold', {
+      spellId: this.spell?.id,
+      itemId: oItem?.id,
+      itemModel: oItem?.baseItem?.defaultModel,
+      targetLoc: {
+        x: spellCastInstance.targetLocation.x,
+        y: spellCastInstance.targetLocation.y,
+        z: spellCastInstance.targetLocation.z,
+      },
+    });
+
+    this.owner.area.attachSpellInstance(spellCastInstance);
+    spellCastInstance.init();
+    this.spellCastInstance = spellCastInstance;
+  }
+
+  /**
+   * Release a hand-held grenade into path-6 flight and burn charges.
+   * @returns true when an existing hand-hold instance was released
+   */
+  private releaseGrenadeIntoFlight(
+    castTarget: ModuleObject | undefined,
+    oItem: ModuleItem
+  ): boolean {
+    const instance = this.spellCastInstance;
+    if(!instance?.holdOnHand){
+      return false;
+    }
+
+    const pathParam = this.getParameter<number>(8) | 0;
+    const origin = this.owner.position;
+    const dest = instance.targetLocation;
+    const distance = origin.distanceTo(dest);
+    const pathOverride = pathParam > 0 ? pathParam : -1;
+    const flightMs = calculateSpellProjectileImpactDelayMs(
+      this.spell,
+      distance,
+      pathOverride
+    );
+
+    if(this.spell){
+      this.spell.oTarget = castTarget;
+    }
+    if(oItem){
+      this.owner.spellCastItem = oItem;
+    }
+    const lastClass = this.owner.classes?.[this.owner.classes.length - 1];
+    this.owner.baseClassLevel = (lastClass?.level | 0);
+    this.owner.itemSpellCastActive = true;
+    if(this.spell?.setCasterLevel){
+      this.spell.setCasterLevel(this.owner.baseClassLevel);
+    }
+    if(this.owner.combatData){
+      this.owner.combatData.lastSpellTarget = castTarget;
+    }
+    if(castTarget?.combatData){
+      castTarget.combatData.lastSpellAttacker = this.owner;
+    }
+
+    instance.releaseFromHandHold(flightMs);
+    LOG('grenadeRelease', {
+      flightMs,
+      impactAtLanding: instance.impactAtProjectileLanding,
+      castTime: instance.castTime,
+    });
+
+    // Area owns the instance for the rest of the flight.
+    this.spellCastInstance = undefined;
+    this.castStarted = true;
+    return true;
+  }
+
   private startSpellInstance(castTarget: ModuleObject | undefined, oItem?: ModuleItem){
     // Location-only casts (grenades after non-hostile clear) must not bind the
     // caster as target — that would overwrite the throw point and hide the explosion.
@@ -424,6 +544,10 @@ export class ActionItemCastSpell extends Action {
           ? this.target
           : this.owner;
       animTarget.setAnimationState(timing.animation);
+      // Grenade: spawn mesh on hand as soon as the throw pose starts.
+      if(timing.grenade && oItem && !this.castStarted){
+        this.beginGrenadeHandHold(this.target || undefined, oItem);
+      }
     }
 
     // Scripted item casts often face first; combat-round dispatch skips that —
@@ -464,13 +588,26 @@ export class ActionItemCastSpell extends Action {
         });
         this.owner.setAnimationState(ModuleCreatureAnimState.READY);
         GameState.FeedbackMessageManager?.SendFeedbackMessage?.(FEEDBACK_ITEM_NO_USES);
+        if(this.spellCastInstance && !this.spellCastInstance.completed){
+          this.spellCastInstance.interrupt();
+        }
+        this.spellCastInstance = undefined;
         combatRound.removeSpellActionFromRound?.();
         combatRound.processPendingCombatActions?.();
         return ActionStatus.FAILED;
       }
 
       // Object target only when present — never fall back to this.owner (location casts)
-      this.startSpellInstance(this.target || undefined, oItem);
+      const castTarget = this.target || undefined;
+      if(
+        timing.grenade &&
+        !this.releaseGrenadeIntoFlight(castTarget, oItem)
+      ){
+        // No hand-hold (mesh failed / non-grenade path) — full impact start.
+        this.startSpellInstance(castTarget, oItem);
+      }else if(!timing.grenade){
+        this.startSpellInstance(castTarget, oItem);
+      }
       // Consume charges with the impact, not at round end.
       this.consumeItemCharges(oItem);
       // After impact, clear the pending spell action from the combat queue.

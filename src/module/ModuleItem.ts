@@ -27,6 +27,7 @@ import { CombatRoundAction, SpellCastInstance } from "@/combat";
 import { castAmmunitionProjectile } from "@/combat/combat-projectile";
 import { isGrenadeItemType } from "@/combat/item-cast-grenade";
 import { resolveItemCastTiming } from "@/combat/item-cast-timing";
+import { setClientCombatMode } from "@/combat/combat-engagement";
 import {
   calculateLastSpellProjectileTimeMs,
   resolveSpellProjectilePathType,
@@ -1262,10 +1263,16 @@ export class ModuleItem extends ModuleObject {
     // GetSpellCastItem — stamp caster for spell scripts
     oCaster.spellCastItem = this;
 
+    // Hostile grenade use enables client combat mode so the action-queue UI
+    // (ShowActionQueue) paints scheduled ITEM_CAST_SPELL entries.
+    if(isGrenadeItemType(this.baseItem?.itemType)){
+      setClientCombatMode(oCaster, true);
+    }
+
     // AddItemCastSpellActions (arg9==0): player with pending combat
-    // action → ClearAllActions on the action queue (combat round list kept).
+    // action → ClearAllActions(1) — queue cleared, combat-round schedule kept.
     if(hadPending && oCaster === GameState.getCurrentPlayer?.()){
-      oCaster.actionQueue.clear();
+      oCaster.clearAllActions(true);
     }
 
     if(!oCaster.actionQueue.actionTypeExists(ActionType.ActionCombat)){

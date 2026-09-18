@@ -82,6 +82,11 @@ export class SpellCastInstance {
    * matching SpellCastAndImpact delayed impact — not at cast-start.
    */
   impactAtProjectileLanding: boolean = false;
+  /**
+   * Keep the thrown mesh on the caster hand hook (no flight) until
+   * {@link releaseFromHandHold} — used for grenade throw wind-up.
+   */
+  holdOnHand: boolean = false;
   /** Initial flight duration when impactAtProjectileLanding (for progress 1→0). */
   private flightDurationMs = 0;
   /** Optional path override from ActionCastSpell param 9. */
@@ -125,6 +130,37 @@ export class SpellCastInstance {
     this.castheadvisual = this.spell?.castheadvisual || '';
     this.castgrndvisual = this.spell?.castgrndvisual || '';
     this.castsound = this.spell?.castsound || '';
+  }
+
+  /**
+   * End hand-hold wind-up and start projectile flight (grenade release).
+   * Samples the current hand world position as the flight origin.
+   */
+  releaseFromHandHold(flightMs: number){
+    this.holdOnHand = false;
+    this.conjureTime = 0;
+    if(this.projectile && this.projectileHook){
+      this.projectileHook.getWorldPosition(this.projectile.position);
+      this.projectileOrigin.copy(this.projectile.position);
+      this.projectileCurve.v0.copy(this.projectileOrigin);
+    }else if(this.projectile){
+      this.projectileOrigin.copy(this.projectile.position);
+      this.projectileCurve.v0.copy(this.projectileOrigin);
+    }else{
+      this.projectileOrigin.copy(this.owner.position);
+      this.projectileCurve.v0.copy(this.projectileOrigin);
+    }
+    // Clear so the next update begins flight from the sampled origin.
+    this.projectileDistance = undefined as any;
+    if(flightMs > 0){
+      this.castTime = Math.max(this.castTime || 0, flightMs);
+      this.flightDurationMs = flightMs;
+      this.impactAtProjectileLanding = true;
+    }else{
+      this.castTime = 0;
+      this.flightDurationMs = 0;
+      this.impactAtProjectileLanding = false;
+    }
   }
 
   private static parseTimeMs(value: unknown, fallback: number): number {
@@ -360,8 +396,13 @@ export class SpellCastInstance {
     this.stampSpellTarget();
 
     // CalculateLastSpellProjectileTime for delayed-impact throws / L / W.
+    // Hand-hold wind-up defers flight timing until releaseFromHandHold.
     // proj==0 only means no projectile delay — keep spells.2da casttime for VFX.
-    if(shouldDelaySpellImpactToLanding(this.spell, this.impactAtProjectileLanding)){
+    if(this.holdOnHand){
+      this.impactAtProjectileLanding = false;
+      this.castTime = 0;
+      this.conjureTime = 0;
+    }else if(shouldDelaySpellImpactToLanding(this.spell, this.impactAtProjectileLanding)){
       this.impactAtProjectileLanding = true;
       const origin = this.owner.position;
       const dest = this.projectileTarget || this.targetLocation;
@@ -722,6 +763,28 @@ export class SpellCastInstance {
 
   update(delta: number = 0){
     if(this.completed || this.interrupted){
+      return;
+    }
+
+    // Grenade throw wind-up: mesh stays on handconjure/rhand until release.
+    if(this.holdOnHand){
+      if(this.projectile && this.projectileHook){
+        this.projectileHook.getWorldPosition(this.projectile.position);
+        this.projectileOrigin.copy(this.projectile.position);
+        this.projectileCurve.v0.copy(this.projectileOrigin);
+      }
+      if(this.projectile){
+        this.projectile.update(delta);
+      }
+      if(this.casthandmodel){
+        this.casthandmodel.update(delta);
+      }
+      if(this.castheadmodel){
+        this.castheadmodel.update(delta);
+      }
+      if(this.castgrndmodel){
+        this.castgrndmodel.update(delta);
+      }
       return;
     }
 

@@ -1,3 +1,4 @@
+import { isGrenadeItemType } from "@/combat/item-cast-grenade";
 import type { ModuleItem } from "@/module/ModuleItem";
 import type { TalentSpell } from "@/talents/TalentSpell";
 
@@ -46,13 +47,21 @@ export function resolveSpellProjectileModelResRef(
 /**
  * Ordered unique resrefs to try when spawning a spell projectile mesh.
  * Snapshot at cast start so async load survives item destroy after DecrementUses.
+ *
+ * spells.2da proj == 0 normally means no projectile; grenades (ItemType 6)
+ * still throw the inventory mesh when projmodel is empty / proj is 0.
  */
 export function resolveSpellProjectileModelCandidates(
   spell: Pick<TalentSpell, 'projmodel' | 'proj'> | undefined,
   item?: ModuleItem
 ): string[] {
-  // client skips projectile when spells.2da proj == 0
-  if(spell && typeof spell.proj === 'number' && (spell.proj | 0) === 0){
+  const projZero =
+    !!spell && typeof spell.proj === 'number' && (spell.proj | 0) === 0;
+  if(projZero){
+    if(isGrenadeItemType(item?.baseItem?.itemType)){
+      const itemOnly = resolveItemModelResRef(item);
+      return itemOnly ? [itemOnly] : [];
+    }
     return [];
   }
   const primary = resolveSpellProjectileModelResRef(spell, item);

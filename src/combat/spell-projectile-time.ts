@@ -98,11 +98,12 @@ export function shouldDelaySpellImpactToLanding(
   spell: { range?: string; proj?: number; projtype?: unknown } | undefined,
   impactAtProjectileLanding: boolean = false
 ): boolean {
+  // Explicit caller request (grenade hand-release / throw) wins over proj==0.
+  if(impactAtProjectileLanding) return true;
   // Explicit spells.2da proj==0 → no projectile / immediate impact
   if(spellHasProjectileFlag(spell) && (spell!.proj | 0) === 0){
     return false;
   }
-  if(impactAtProjectileLanding) return true;
   const range = String(spell?.range ?? '').toUpperCase();
   if(range === 'L' || range === 'W') return true;
   const path = resolveSpellProjectilePathType(spell?.projtype);
