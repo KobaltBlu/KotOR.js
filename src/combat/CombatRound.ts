@@ -1099,6 +1099,18 @@ export class CombatRound {
     this.processPendingDamage(deltaMs);
 
     if(this.roundPaused){
+      // Engaged slave whose master object is gone: end the round
+      // (pause tick still runs under infinitePause; missing master expires it).
+      if(
+        this.engaged &&
+        !this.master &&
+        this.isDuelMasterMissing()
+      ){
+        this.flushPendingDamage();
+        this.endCombatRound();
+        return;
+      }
+
       const pauseTimerBefore = this.pauseTimer;
       this.pauseTimer -= deltaMs;
       if(this.pauseTimer < 0) this.pauseTimer = 0;
@@ -1135,6 +1147,20 @@ export class CombatRound {
         this.endCombatRound();
       }
     }
+  }
+
+  /**
+   * Engaged slave with no resolvable master object (destroyed / invalid id).
+   */
+  isDuelMasterMissing(): boolean {
+    if(!this.masterID){
+      return true;
+    }
+    const id = this.masterID.id;
+    if(!id || id === ModuleObjectConstant.OBJECT_INVALID){
+      return true;
+    }
+    return !lookupCombatObjectById(id);
   }
 
   /**

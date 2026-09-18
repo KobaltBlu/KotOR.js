@@ -65,6 +65,19 @@ export function isOdysseyDuelCreature(creature: ModuleCreature | undefined): boo
 }
 
 /**
+ * Party-leader focus gate: last-spell and attempted-attack must be empty or us.
+ */
+function partyLeaderFocusAllowsEngaged(
+  attacker: ModuleCreature,
+  lastSpell: ModuleObject | undefined,
+  attempted: ModuleObject | undefined
+): boolean {
+  const spellOk = !lastSpell || lastSpell === attacker;
+  const attemptedOk = !attempted || attempted === attacker;
+  return spellOk && attemptedOk;
+}
+
+/**
  * ResolveEngagedState
  * whether this attack should sync as an engaged duel round with target.
  */
@@ -74,9 +87,6 @@ export function resolveEngagedState(
 ): boolean {
   const targetCreature = asCreature(target);
   if(!targetCreature) return false;
-  if(typeof targetCreature.isDebilitated === 'function' && targetCreature.isDebilitated()){
-    return false;
-  }
 
   const targetRound = targetCreature.combatRound;
   const targetLastAttack = targetCreature.combatData?.lastAttackTarget;
@@ -96,27 +106,29 @@ export function resolveEngagedState(
     engaged = true;
   }
 
-  // Party leader as target — GetCharacter(0) special case
+  // Party leader as target — GetCharacter(0) special case:
+  // third-party last-attack clears; otherwise keep only when last-spell and
+  // attempted-attack are empty or point at this attacker.
   const partyLeader = GameState.PartyManager?.party?.[0];
   if(partyLeader && targetCreature === partyLeader){
     if(noAttackTarget){
       if(!targetLastSpell){
         engaged = false;
       }
-    }else if(targetLastAttack !== attacker){
-      engaged = false;
-    }else if(
-      (targetLastSpell && targetLastSpell !== attacker) ||
-      (targetAttempted && targetAttempted !== attacker)
-    ){
-      // Keep engaged only when both last-spell and attempted targets are us or empty
-      if(
-        (targetLastSpell && targetLastSpell !== attacker) &&
-        (targetAttempted && targetAttempted !== attacker)
-      ){
+      if(!partyLeaderFocusAllowsEngaged(attacker, targetLastSpell, targetAttempted)){
         engaged = false;
       }
+    }else if(targetLastAttack === attacker){
+      if(!partyLeaderFocusAllowsEngaged(attacker, targetLastSpell, targetAttempted)){
+        engaged = false;
+      }
+    }else{
+      engaged = false;
     }
+  }
+
+  if(typeof targetCreature.isDebilitated === 'function' && targetCreature.isDebilitated()){
+    return false;
   }
 
   return engaged;
@@ -136,14 +148,16 @@ export function resolveMasterState(
   const targetCreature = asCreature(target);
   if(!targetCreature) return false;
 
-  // Party / player-UI creatures are always duel masters
+  // Party members always drive the duel.
+  if(typeof attacker.isPartyMember === 'function' && attacker.isPartyMember()){
+    return true;
+  }
   if(GameState.PartyManager?.party?.indexOf(attacker) >= 0){
     return true;
   }
 
-  // Mutual-master guard: if the target is already driving this exact pair as
-  // master, yield so only one fighter drives the duel. Prevents both rounds
-  // infinitePausing each other (wait-for-each-other deadlock).
+  // Deadlock guard (not in retail ResolveMaster): if the target is already
+  // driving this exact pair as master, yield so both sides do not infinitePause.
   const targetRound = targetCreature.combatRound;
   if(targetRound?.engaged && targetRound?.master && targetRound?.duelPartner === attacker){
     return false;
