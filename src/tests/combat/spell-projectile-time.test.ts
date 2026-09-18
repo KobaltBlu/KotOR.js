@@ -70,7 +70,20 @@ describe('resolveSpellProjectilePathType', () => {
   });
 
   it('maps named projtype strings used by spells.2da', () => {
-    expect(resolveSpellProjectilePathType('grenade')).toBe(6);
+    expect(resolveSpellProjectilePathType('grenade')).toBe(11);
+    expect(resolveSpellProjectilePathType('spiral')).toBe(6);
+    expect(resolveSpellProjectilePathType('bounce')).toBe(8);
     expect(resolveSpellProjectilePathType('homing')).toBe(1);
+    expect(resolveSpellProjectilePathType('linked')).toBe(7);
+  });
+
+  it('does not treat throw spawn-point as a projtype', () => {
+    expect(resolveSpellProjectilePathType('throw')).toBe(0);
+  });
+
+  it('does not add spiral hang time for grenade path 11', () => {
+    const distance = 12;
+    const base = calculateLastSpellProjectileTimeMs(distance, 2);
+    expect(calculateLastSpellProjectileTimeMs(distance, 11)).toBe(base);
   });
 });

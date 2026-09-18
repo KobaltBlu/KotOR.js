@@ -68,11 +68,14 @@ describe('shouldShowCounterSpellAction', () => {
 });
 
 describe('resolveSpellProjectilePathType names', () => {
-  it('maps grenade/throw/linked/homing strings', () => {
+  it('maps grenade/spiral/linked/homing strings', () => {
     expect(resolveSpellProjectilePathType('grenade')).toBe(ProjectilePath.GRENADE);
-    expect(resolveSpellProjectilePathType('throw')).toBe(ProjectilePath.GRENADE);
+    expect(resolveSpellProjectilePathType('grenade')).toBe(11);
+    expect(resolveSpellProjectilePathType('spiral')).toBe(ProjectilePath.SPIRAL);
+    expect(resolveSpellProjectilePathType('spiral')).toBe(6);
+    expect(resolveSpellProjectilePathType('bounce')).toBe(ProjectilePath.BOUNCE);
     expect(resolveSpellProjectilePathType('homing')).toBe(ProjectilePath.HOMING);
-    expect(resolveSpellProjectilePathType('linked')).toBe(ProjectilePath.HOMING);
+    expect(resolveSpellProjectilePathType('linked')).toBe(ProjectilePath.LINKED);
     expect(resolveSpellProjectilePathType('****')).toBe(ProjectilePath.DEFAULT);
   });
 });
@@ -89,6 +92,9 @@ describe('shouldDelaySpellImpactToLanding', () => {
   it('does not delay when spells.2da proj is explicitly 0', () => {
     expect(shouldDelaySpellImpactToLanding({ range: 'L', proj: 0 })).toBe(false);
     expect(shouldDelaySpellImpactToLanding({ range: 'M', projtype: 'grenade', proj: 0 })).toBe(false);
-    expect(shouldDelaySpellImpactToLanding({ proj: 0 }, true)).toBe(false);
+  });
+
+  it('honors explicit impact-at-landing even when proj is 0', () => {
+    expect(shouldDelaySpellImpactToLanding({ proj: 0 }, true)).toBe(true);
   });
 });

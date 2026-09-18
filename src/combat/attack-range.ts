@@ -80,7 +80,8 @@ export function desiredAttackRange(
 
 /**
  * MaxAttackRange(targetId, engaged, findNearestEnemyOverride).
- * Melee: Desired + 0.5. Ranged: baseitems.MaxAttackRange, else 30 (or 20 when override).
+ * Melee: Desired + 0.5. Ranged: baseitems.MaxAttackRange, else 30.
+ * FindNearestEnemy override: 20 for both melee and ranged (MaxCleaveRange = 22).
  */
 export function maxAttackRange(
   attacker: ModuleCreature,
@@ -88,15 +89,15 @@ export function maxAttackRange(
   engaged: boolean = false,
   findNearestEnemyOverride: boolean = false
 ): number {
+  if(findNearestEnemyOverride){
+    return 20.0;
+  }
+
   const weapon = attacker.equipment?.RIGHTHAND;
   const ranged = !!weapon?.isRangedWeapon?.();
 
   if(!weapon || !ranged){
     return desiredAttackRange(attacker, target, engaged) + 0.5;
-  }
-
-  if(findNearestEnemyOverride){
-    return 20.0;
   }
 
   const max = weapon.getBaseItem?.()?.maxAttackRange ?? 0;

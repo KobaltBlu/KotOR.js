@@ -339,7 +339,7 @@ export class SpellCastInstance {
     if(fromType !== ProjectilePath.DEFAULT){
       return fromType;
     }
-    // SpellCastAndImpact item/throw path defaults to 6 when spawning
+    // Delayed throws / item casts default to grenade ground-ballistic path
     if(shouldDelaySpellImpactToLanding(this.spell, this.impactAtProjectileLanding)){
       return ProjectilePath.GRENADE;
     }

@@ -66,10 +66,11 @@ const PROJTYPE_NAME_TO_PATH: Record<string, number> = {
   highballistic: ProjectilePath.HIGH_BALLISTIC,
   high_ballistic: ProjectilePath.HIGH_BALLISTIC,
   accelerating: ProjectilePath.ACCELERATING,
-  linked: ProjectilePath.HOMING,
+  spiral: ProjectilePath.SPIRAL,
+  linked: ProjectilePath.LINKED,
+  bounce: ProjectilePath.BOUNCE,
   path: ProjectilePath.DEFAULT,
   grenade: ProjectilePath.GRENADE,
-  throw: ProjectilePath.GRENADE,
 };
 
 /** Parse TalentSpell.projtype / 2DA path id (number or named string). */

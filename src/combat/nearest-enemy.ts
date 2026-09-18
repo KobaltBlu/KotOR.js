@@ -76,6 +76,24 @@ export function getEnemyGapDistance(
   return magnitude - getCreaturePersonalSpace(from) - getCreaturePersonalSpace(target);
 }
 
+/**
+ * LOS distance cap for GetNearestEnemy: gap uses personal-space-adjusted range,
+ * but hasCombatLineOfSight / hasLineOfSight clamps on raw center distance.
+ * Pass maxRange + both creperspaces so a candidate that passes the gap gate
+ * is not rejected solely by the raw-distance LOS clamp.
+ */
+export function getNearestEnemyLosMaxDistance(
+  attacker: ModuleCreature,
+  candidate: ModuleCreature,
+  maxRange: number
+): number {
+  return (
+    maxRange +
+    getCreaturePersonalSpace(attacker) +
+    getCreaturePersonalSpace(candidate)
+  );
+}
+
 function collectAreaCreatures(attacker: ModuleCreature): ModuleCreature[] {
   const out: ModuleCreature[] = [];
   const seen = new Set<number>();
@@ -143,7 +161,8 @@ export function getNearestEnemy(
 
     const gap = getEnemyGapDistance(attacker, candidate);
     if(!(gap < bestGap)) continue;
-    if(!hasCombatLineOfSight(attacker, candidate, range)) continue;
+    const losMax = getNearestEnemyLosMaxDistance(attacker, candidate, range);
+    if(!hasCombatLineOfSight(attacker, candidate, losMax)) continue;
 
     bestGap = gap;
     best = candidate;
@@ -198,7 +217,8 @@ export function explainNearestEnemyMiss(
     const gap = getEnemyGapDistance(attacker, candidate);
     if(!(gap < range)) continue;
     inRange++;
-    if(!hasCombatLineOfSight(attacker, candidate, range)) continue;
+    const losMax = getNearestEnemyLosMaxDistance(attacker, candidate, range);
+    if(!hasCombatLineOfSight(attacker, candidate, losMax)) continue;
     los++;
   }
 

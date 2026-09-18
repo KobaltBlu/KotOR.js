@@ -29,7 +29,7 @@ describe('sampleSpellProjectilePosition', () => {
     const totalMs = 1000 + SPELL_PROJECTILE_PATH6_EXTRA_MS;
     const hangStart = 1000 / totalMs;
     const inHang = sampleSpellProjectilePosition(
-      ProjectilePath.GRENADE, origin, dest, hangStart + 0.001, new THREE.Vector3(),
+      ProjectilePath.SPIRAL, origin, dest, hangStart + 0.001, new THREE.Vector3(),
       { totalMs, spiralSign: 1 }
     );
     // Just into hang — near dest with lateral spiral offset (~2)
@@ -37,10 +37,25 @@ describe('sampleSpellProjectilePosition', () => {
     expect(inHang.distanceTo(dest)).toBeLessThan(3);
 
     const atEnd = sampleSpellProjectilePosition(
-      ProjectilePath.GRENADE, origin, dest, 1, new THREE.Vector3(),
+      ProjectilePath.SPIRAL, origin, dest, 1, new THREE.Vector3(),
       { totalMs, spiralSign: 1 }
     );
     expect(atEnd.distanceTo(dest)).toBeLessThan(0.2);
+  });
+
+  it('path 11 grenade stays on the chord late-flight (no lateral orbit)', () => {
+    const late = sampleSpellProjectilePosition(
+      ProjectilePath.GRENADE, origin, dest, 0.85, new THREE.Vector3()
+    );
+    // Chord is along +X; lateral |y| must stay tiny (no spiral)
+    expect(Math.abs(late.y)).toBeLessThan(0.05);
+    expect(late.x).toBeGreaterThan(8);
+    expect(late.x).toBeLessThan(10.1);
+
+    const atEnd = sampleSpellProjectilePosition(
+      ProjectilePath.GRENADE, origin, dest, 1, new THREE.Vector3()
+    );
+    expect(atEnd.distanceTo(dest)).toBeLessThan(0.05);
   });
 
   it('high ballistic peaks near +30 mid-flight', () => {
