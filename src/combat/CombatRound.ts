@@ -716,6 +716,27 @@ export class CombatRound {
   }
 
   /**
+   * Master releases duel slave — clears infinitePause / engaged link.
+   * Shared by endCombatRound and startCombatRound role changes so a stolen
+   * master cannot leave a prior slave paused forever.
+   */
+  releaseDuelSlave(){
+    if(!this.master || !this.duelPartner?.combatRound){
+      return;
+    }
+    duelLog(this.owner, 'round:release-slave', { slave: duelWho(this.duelPartner) });
+    const slave = this.duelPartner.combatRound;
+    slave.roundPaused = false;
+    slave.roundPausedBy = undefined;
+    slave.infinitePause = false;
+    slave.pauseTimer = 0;
+    slave.engaged = false;
+    slave.masterID = undefined;
+    slave.duelPartner = undefined;
+    slave.master = false;
+  }
+
+  /**
    * StartCombatRound.
    * @param target - Attack target (also dodge_target / lock orientation)
    * @param engaged - ResolveEngagedState result
@@ -731,6 +752,16 @@ export class CombatRound {
     if(!isCreature(this.owner)) return;
 
     const owner: ModuleCreature = this.owner as any;
+
+    // Release any prior duel slave before overwriting master/engaged.
+    // Otherwise becoming someone else's slave clears master first and
+    // endCombatRound skips release — orphaning infinitePause on the old slave.
+    // Skip when duelPartner already is the new target: either the same duel
+    // restart, or a new master already linked us (and released our old slave).
+    if(this.master && this.duelPartner?.combatRound && this.duelPartner !== target){
+      this.releaseDuelSlave();
+      this.duelPartner = undefined;
+    }
 
     this.engaged = !!engaged;
     this.master = !!master;
@@ -756,14 +787,28 @@ export class CombatRound {
 
     if(!this.master){
       this.masterID = target;
+      // Slave re-entry endCombatRound clears duelPartner; re-link to master.
+      this.duelPartner = this.engaged && target ? target : undefined;
     }else{
       this.masterID = owner;
       if(this.engaged && target){
-        this.duelPartner = target;
         const partnerRound = target.combatRound;
+        // Master start runs before the target's slave startCombatRound.
+        // If the target is still master of someone else, release that slave
+        // before we overwrite target.duelPartner (otherwise they stay infinitePaused).
+        if(
+          partnerRound?.master &&
+          partnerRound.duelPartner &&
+          partnerRound.duelPartner !== owner
+        ){
+          partnerRound.releaseDuelSlave();
+          partnerRound.duelPartner = undefined;
+        }
+        this.duelPartner = target;
         if(partnerRound){
           partnerRound.masterID = this.masterID;
-          partnerRound.duelPartner = this.duelPartner;
+          // Slave's partner is the master (owner), not the slave themselves.
+          partnerRound.duelPartner = owner;
           partnerRound.timer = 0;
         }
       }
@@ -957,18 +1002,7 @@ export class CombatRound {
     }
 
     // Master ends → release duel slave
-    if(this.master && this.duelPartner?.combatRound){
-      duelLog(this.owner, 'round:release-slave', { slave: duelWho(this.duelPartner) });
-      const slave = this.duelPartner.combatRound;
-      slave.roundPaused = false;
-      slave.roundPausedBy = undefined;
-      slave.infinitePause = false;
-      slave.pauseTimer = 0;
-      slave.engaged = false;
-      slave.masterID = undefined;
-      slave.duelPartner = undefined;
-      slave.master = false;
-    }
+    this.releaseDuelSlave();
 
     this.roundPaused = false;
     this.roundPausedBy = undefined;
