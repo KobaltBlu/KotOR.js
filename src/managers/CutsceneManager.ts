@@ -72,6 +72,16 @@ export class CutsceneManager {
 
   static active: boolean = false;
   /**
+   * Client allow-dialog-send gate. Cleared for the whole module load so
+   * ActionStartConversation can mark dialog active while queuing the first
+   * entry until post-load reveal re-enables send (hold release then runs).
+   */
+  static dialogSendAllowed: boolean = true;
+  /**
+   * Bark deferred while dialogSendAllowed is false (same load gate as entries).
+   */
+  static pendingBarkWhileSendBlocked: boolean = false;
+  /**
    * SendDialogEntryNode — ms remaining while required
    * AnimList participants are missing before HandleDialogEntry proceeds.
    */
@@ -347,6 +357,65 @@ export class CutsceneManager {
   }
 
   /**
+   * Drop leftover conversation flags on module unload without running end scripts.
+   * Prevents a prior dialog's active flag from poisoning the next load reveal.
+   * Also disables dialog send until post-load reveal re-enables it.
+   */
+  static clearOnModuleUnload() {
+    this.active = false;
+    this.paused = false;
+    this.replySelectLocked = false;
+    this.pendingPartyDialogSwitch = undefined;
+    this.pendingBarkWhileSendBlocked = false;
+    this.dialogSendAllowed = false;
+    this.clearPendingDialog();
+    this.clearParticipantRetry();
+    this.dialogAnimParticipants = [];
+    this.dialogNonDependantNames.clear();
+    this.dialog = undefined as any;
+    this.owner = undefined as any;
+    this.listener = undefined as any;
+    this.startingEntry = undefined as any;
+    this.currentEntry = undefined as any;
+    this.currentReplies = [];
+    this.lastDialogEntry = undefined;
+    this.ended = true;
+    this.state = ConversationState.INVALID;
+    this.conversation_name = undefined as any;
+  }
+
+  /**
+   * Re-enable dialog entry send after post-load hold/fade decision, then flush
+   * any entry (or bark) queued while the load gate was closed.
+   */
+  static enableDialogSendAndFlush() {
+    this.dialogSendAllowed = true;
+    if(this.pendingBarkWhileSendBlocked){
+      const entry = this.pendingEntry ?? this.startingEntry;
+      this.pendingBarkWhileSendBlocked = false;
+      this.clearPendingDialog();
+      if(entry){
+        this.playBarkEntry(entry);
+      }
+      return;
+    }
+    this.flushPendingDialog();
+  }
+
+  /** One-line bark display + end (used by startConversation and deferred load flush). */
+  static playBarkEntry(entry: DLGNode) {
+    this.cutsceneMode = CutsceneMode.BARK;
+    entry.initProperties();
+    GameState.MenuManager.InGameBark.bark(entry, this.barkScreenX, this.barkScreenY);
+    entry.runScripts();
+    const reply = this.dialog?.getReplyByIndex(entry.replies[0]?.index);
+    if(reply){
+      reply.runScripts();
+    }
+    this.endConversation();
+  }
+
+  /**
    * Resolve AnimList / StuntList participant for readiness checks.
    * PLAYER / OWNER mirror SendDialogEntryNode name compares.
    */
@@ -490,9 +559,10 @@ export class CutsceneManager {
   /**
    * UpdateDialog pending flush: when !paused and set,
    * == 0xFFFFFFFF → SendDialogReplies, else SendDialogEntry.
+   * Also blocked while dialogSendAllowed is false (module-load gate).
    */
   static flushPendingDialog() {
-    if(this.paused || !this.pendingAdvance) return;
+    if(this.paused || !this.dialogSendAllowed || !this.pendingAdvance) return;
     const stashedEntry = this.pendingEntry;
     this.clearPendingDialog();
     if(stashedEntry){
@@ -661,15 +731,14 @@ export class CutsceneManager {
     //bark entry — no AmbientTrack load (async race with immediate endConversation).
     const isBarkDialog = this.startingEntry.isBarkDialog();
     if (isBarkDialog) {
-      this.cutsceneMode = CutsceneMode.BARK;
-      this.startingEntry.initProperties();
-      GameState.MenuManager.InGameBark.bark(this.startingEntry, this.barkScreenX, this.barkScreenY);
-      this.startingEntry.runScripts();
-      const reply = this.dialog.getReplyByIndex(this.startingEntry.replies[0]?.index);
-      if (reply) {
-        reply.runScripts();
+      // Module-load gate: keep dialog active and defer bark until reveal.
+      if(!this.dialogSendAllowed){
+        this.pendingAdvance = true;
+        this.pendingEntry = this.startingEntry;
+        this.pendingBarkWhileSendBlocked = true;
+        return;
       }
-      this.endConversation();
+      this.playBarkEntry(this.startingEntry);
       return;
     }
 
@@ -838,8 +907,8 @@ export class CutsceneManager {
    * @param forceParticipantReady - retry timeout elapsed; play even if missing
    */
   static showEntry(entry: DLGNode, forceParticipantReady = false) {
-    if(this.paused){
-      // SendDialogEntry — stash entry index, =1.
+    if(this.paused || !this.dialogSendAllowed){
+      // SendDialogEntry — stash while paused or module-load send gate is closed.
       this.pendingAdvance = true;
       this.pendingEntry = entry;
       return;

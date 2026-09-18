@@ -25,6 +25,7 @@ import { IngameControls } from "@/controls/IngameControls";
 import { INIConfig } from "@/engine/INIConfig";
 import { consumeAreaTransitionLoadBackground } from "@/engine/area-transition-bmp";
 import { ModuleSaveTable } from "@/engine/ModuleSaveTable";
+import { planPostLoadRevealFade } from "@/engine/post-load-reveal-fade";
 
 // import { OdysseyObject3D } from "@/three/odyssey";
 import { AudioEngine, AudioEmitter } from "@/audio";
@@ -1794,20 +1795,11 @@ export class GameState implements EngineContext {
         }
 
         //Reveal the area — MainLoop StartGlobalFade(1, wait=0.5, length=1.0)
-        GameState.MenuManager.LoadScreen.close();
-        // MainLoop after StartSounds: SetSoundMode(0) again (clears BusyWait mute under load).
+        // FadeIn before LoadScreen.close so the fade plane is already opaque FADING_IN.
         AudioEngine.clearSoundModeStack();
-        // also defers when dialog already active and forces holdWorld.
-        if(GameState.Mode == EngineMode.DIALOG || GameState.CutsceneManager?.active){
-          GameState.holdWorldFadeInForDialog = true;
-        }
-        if(!GameState.holdWorldFadeInForDialog){
-          GameState.FadeOverlayManager.FadeIn(
-            GameState.FadeOverlayManager.WORLD_FADE_IN_LENGTH,
-            0, 0, 0,
-            GameState.FadeOverlayManager.WORLD_FADE_IN_WAIT
-          );
-        }
+        GameState.applyPostLoadRevealFade();
+        // MainLoop after StartSounds: SetSoundMode(0) again (clears BusyWait mute under load).
+        GameState.MenuManager.LoadScreen.close();
         GameState.module.area.updateDayNightCycle();
         GameState.module.area.musicBackgroundPlay();
         GameState.module.area.ambientSoundPlay();
@@ -2016,15 +2008,8 @@ export class GameState implements EngineContext {
       await GameState.module.area.initAreaObjects(runSpawnScripts);
       GameState.module.readyToProcessEvents = true;
       GameState.module.area.primePostLoadReveal();
-
+      GameState.applyPostLoadRevealFade();
       try{ GameState.MenuManager.LoadScreen.close(); }catch(e){}
-      if(!GameState.holdWorldFadeInForDialog){
-        GameState.FadeOverlayManager.FadeIn(
-          GameState.FadeOverlayManager.WORLD_FADE_IN_LENGTH,
-          0, 0, 0,
-          GameState.FadeOverlayManager.WORLD_FADE_IN_WAIT
-        );
-      }
       GameState.module.area.musicBackgroundPlay();
       GameState.loadingModule = false;
       GameState.canvas?.focus();
@@ -2164,9 +2149,37 @@ export class GameState implements EngineContext {
     GameState.CursorManager.hoveredObject = undefined;
 
     GameState.staticCameras = [];
-    GameState.CutsceneManager.paused = false;
+    GameState.CutsceneManager.clearOnModuleUnload();
 
     AudioEngine.Mute();
+  }
+
+  /**
+   * After primePostLoadReveal: world FadeIn unless hold or dialog already active.
+   * Forces hold when dialog is active so the deferred first entry releases with
+   * HOLD_WORLD_FADE_IN_*. Re-enables dialog send and flushes any queued entry.
+   */
+  static applyPostLoadRevealFade(): void {
+    const plan = planPostLoadRevealFade({
+      holdWorldFadeInForDialog: GameState.holdWorldFadeInForDialog,
+      cutsceneActive: !!GameState.CutsceneManager?.active,
+      mode: GameState.Mode,
+    });
+    if(plan.forceHold){
+      GameState.holdWorldFadeInForDialog = true;
+    }
+    if(plan.assertDialogMode){
+      GameState.SetEngineMode(EngineMode.DIALOG);
+    }
+    if(plan.startWorldFadeIn){
+      GameState.FadeOverlayManager.FadeIn(
+        GameState.FadeOverlayManager.WORLD_FADE_IN_LENGTH,
+        0, 0, 0,
+        GameState.FadeOverlayManager.WORLD_FADE_IN_WAIT
+      );
+    }
+    // After hold/fade decision: allow entry send and flush queued first entry.
+    GameState.CutsceneManager?.enableDialogSendAndFlush?.();
   }
 
   static ReloadTextureCache(){
@@ -2266,6 +2279,15 @@ export class GameState implements EngineContext {
       case EngineMode.FREELOOK:
         GameState.UpdateFreeLook(delta);
         break;
+    }
+
+    // Advance fade on the common path when covering the world — avoids stall if
+    // Mode is wrong while the overlay still obscures (single Update, no double-step).
+    if(
+      GameState.FadeOverlayManager.isFading() ||
+      GameState.FadeOverlayManager.isObscuring()
+    ){
+      GameState.FadeOverlayManager.Update(delta);
     }
 
     // MainLoop: UpdateAreaTransitionGUI after world/object updates.
@@ -2384,7 +2406,6 @@ export class GameState implements EngineContext {
       ModuleSaveTable.updateAutoSaveTimer(delta);
     }
 
-    GameState.FadeOverlayManager.Update(delta);
     GameState.updateViewportFrustum();
     GameState.lightManager.update(delta, GameState.getCurrentPlayer());
     GameState.updateShadowSystems(delta, GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition);
@@ -2417,7 +2438,6 @@ export class GameState implements EngineContext {
     if(GameState.MenuManager.InGameBark?.bVisible){
       GameState.MenuManager.InGameBark.update(delta);
     }
-    GameState.FadeOverlayManager.Update(delta);
     GameState.updateViewportFrustum();
     GameState.lightManager.update(delta, GameState.currentCamera);
     GameState.updateShadowSystems(delta, GameState.currentCamera?.position ?? GameState.currentCameraPosition);
@@ -2444,7 +2464,6 @@ export class GameState implements EngineContext {
       }
     }
 
-    GameState.FadeOverlayManager.Update(delta);
     GameState.updateViewportFrustum();
     GameState.lightManager.update(delta, GameState.getCurrentPlayer());
     GameState.updateShadowSystems(delta, GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition);
@@ -2487,7 +2506,6 @@ export class GameState implements EngineContext {
       }
     }
 
-    GameState.FadeOverlayManager.Update(delta);
     GameState.updateViewportFrustum();
     GameState.lightManager.update(delta, GameState.getCurrentPlayer());
     GameState.updateShadowSystems(delta, GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition);

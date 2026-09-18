@@ -1,5 +1,5 @@
 /**
- * FadeOverlayManager holdForScript / fade gate parity + wall-clock timing.
+ * FadeOverlayManager holdForScript / fade gate parity + Draw timing.
  * @jest-environment node
  */
 import { describe, expect, test, beforeEach, afterEach, jest } from '@jest/globals';
@@ -53,7 +53,7 @@ describe('FadeOverlayManager.holdForScript', () => {
   });
 });
 
-describe('FadeOverlayManager wall-clock timing', () => {
+describe('FadeOverlayManager Draw timing', () => {
   beforeEach(() => {
     FadeOverlayManager.Reset();
     FadeOverlayManager._testNowMs = 1000;
@@ -68,35 +68,44 @@ describe('FadeOverlayManager wall-clock timing', () => {
     expect(FadeOverlayManager.WORLD_FADE_IN_LENGTH).toBe(1.0);
   });
 
-  test('huge Update delta cannot skip fade when wall clock has not advanced', () => {
+  test('first Update arms clock and ignores async gap before first frame', () => {
     FadeOverlayManager.FadeIn(1.0, 0, 0, 0, 0.5);
     expect(FadeOverlayManager.state).toBe(FadeOverlayState.FADING_IN);
     expect(FadeOverlayManager.material.opacity).toBe(1);
+    expect(FadeOverlayManager.lastFadeTickMs).toBe(0);
 
-    // Load hitch previously inflated THREE.Clock getDelta; wall clock is unchanged.
-    FadeOverlayManager.Update(2.0);
+    // Async LoadModule → first INGAME Update gap (must not skip wait+ramp).
+    FadeOverlayManager._testNowMs = 1000 + 2000;
+    FadeOverlayManager.Update(0);
     expect(FadeOverlayManager.state).toBe(FadeOverlayState.FADING_IN);
     expect(FadeOverlayManager.material.opacity).toBe(1);
     expect(FadeOverlayManager.elapsed).toBeCloseTo(FadeOverlayManager.ELAPSED_SEED, 5);
+    expect(FadeOverlayManager.lastFadeTickMs).toBe(3000);
   });
 
-  test('fade-in holds opaque through wait then ramps to clear', () => {
+  test('fade-in accumulates ticks through wait then ramps to clear', () => {
     FadeOverlayManager.FadeIn(1.0, 0, 0, 0, 0.5);
 
-    // Still in wait (seed 0.1 + 0.3s = 0.4 < 0.5)
+    // Arm
+    FadeOverlayManager._testNowMs = 1000;
+    FadeOverlayManager.Update(0);
+    expect(FadeOverlayManager.elapsed).toBeCloseTo(0.1, 5);
+
+    // Still in wait: 0.1 + 0.3 = 0.4 < 0.5
     FadeOverlayManager._testNowMs = 1000 + 300;
     FadeOverlayManager.Update(0);
     expect(FadeOverlayManager.state).toBe(FadeOverlayState.FADING_IN);
     expect(FadeOverlayManager.material.opacity).toBe(1);
+    expect(FadeOverlayManager.elapsed).toBeCloseTo(0.4, 5);
 
-    // Mid ramp: elapsed ≈ 0.1 + 1.0 = 1.1 → t = (1.1 - 0.5) / 1.0 = 0.6 → α = 0.4
-    FadeOverlayManager._testNowMs = 1000 + 1000;
+    // Mid ramp: 0.4 + 0.7 = 1.1 → t = (1.1 - 0.5) / 1.0 = 0.6 → α = 0.4
+    FadeOverlayManager._testNowMs = 1000 + 300 + 700;
     FadeOverlayManager.Update(0);
     expect(FadeOverlayManager.state).toBe(FadeOverlayState.FADING_IN);
     expect(FadeOverlayManager.material.opacity).toBeCloseTo(0.4, 5);
 
-    // Past wait + length → FADED_IN
-    FadeOverlayManager._testNowMs = 1000 + 2000;
+    // Past wait + length
+    FadeOverlayManager._testNowMs = 1000 + 300 + 700 + 1000;
     FadeOverlayManager.Update(0);
     expect(FadeOverlayManager.state).toBe(FadeOverlayState.FADED_IN);
     expect(FadeOverlayManager.material.opacity).toBe(0);
@@ -105,18 +114,19 @@ describe('FadeOverlayManager wall-clock timing', () => {
 
   test('hitch gap ≥5s does not advance elapsed', () => {
     FadeOverlayManager.FadeIn(1.0, 0, 0, 0, 0.5);
-    const elapsedAtStart = FadeOverlayManager.elapsed;
+    FadeOverlayManager._testNowMs = 1000;
+    FadeOverlayManager.Update(0);
+    const elapsedArmed = FadeOverlayManager.elapsed;
 
     FadeOverlayManager._testNowMs = 1000 + 6000;
     FadeOverlayManager.Update(0);
-    expect(FadeOverlayManager.elapsed).toBeCloseTo(elapsedAtStart, 5);
+    expect(FadeOverlayManager.elapsed).toBeCloseTo(elapsedArmed, 5);
     expect(FadeOverlayManager.state).toBe(FadeOverlayState.FADING_IN);
     expect(FadeOverlayManager.material.opacity).toBe(1);
 
-    // After hitch, normal advance resumes from frozen elapsed
     FadeOverlayManager._testNowMs = 1000 + 6000 + 400;
     FadeOverlayManager.Update(0);
-    expect(FadeOverlayManager.elapsed).toBeCloseTo(elapsedAtStart + 0.4, 5);
+    expect(FadeOverlayManager.elapsed).toBeCloseTo(elapsedArmed + 0.4, 5);
     expect(FadeOverlayManager.material.opacity).toBe(1);
   });
 });

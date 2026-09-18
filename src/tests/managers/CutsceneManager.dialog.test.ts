@@ -11,7 +11,12 @@ jest.mock('@/GameState', () => ({
     PartyManager: { party: [] },
     MenuManager: {},
     VideoEffectManager: { SetVideoEffect: jest.fn() },
-    FadeOverlayManager: {},
+    FadeOverlayManager: {
+      FadeIn: jest.fn(),
+      FadeOut: jest.fn(),
+      HOLD_WORLD_FADE_IN_LENGTH: 1.0,
+      HOLD_WORLD_FADE_IN_WAIT: 0,
+    },
     SetEngineMode: jest.fn(),
     Mode: 0,
     holdWorldFadeInForDialog: false,
@@ -31,6 +36,10 @@ jest.mock('@/audio/AudioEngine', () => ({
   },
 }));
 jest.mock('@/utility/ConfigClient', () => ({ ConfigClient: { get: jest.fn() } }));
+jest.mock('@/controls/Mouse', () => ({ Mouse: {} }));
+jest.mock('@/managers/ResolutionManager', () => ({
+  ResolutionManager: { addResolution: () => {} },
+}));
 jest.mock('@/managers/cutscene/dialog-camera', () => ({
   computeDialogCameraShot: jest.fn(),
   dlgAngleToShotType: jest.fn(),
@@ -86,6 +95,7 @@ jest.mock('@/resource/DLGNode', () => {
 });
 
 import { CutsceneManager } from '@/managers/CutsceneManager';
+import { GameState } from '@/GameState';
 import { DLGNode } from '@/resource/DLGNode';
 import { CutsceneMode } from '@/enums/dialog/CutsceneMode';
 import { ModuleCreatureAnimState } from '@/enums/module/ModuleCreatureAnimState';
@@ -156,6 +166,8 @@ describe('CutsceneManager pause/resume pending (UpdateDialog)', () => {
     CutsceneManager.active = true;
     CutsceneManager.dialog = { stuntActors: new Map() } as any;
     CutsceneManager.paused = false;
+    CutsceneManager.dialogSendAllowed = true;
+    CutsceneManager.pendingBarkWhileSendBlocked = false;
     CutsceneManager.clearPendingDialog();
     CutsceneManager.currentEntry = null as any;
     CutsceneManager.owner = undefined as any;
@@ -164,6 +176,8 @@ describe('CutsceneManager pause/resume pending (UpdateDialog)', () => {
   afterEach(() => {
     CutsceneManager.clearPendingDialog();
     CutsceneManager.paused = false;
+    CutsceneManager.dialogSendAllowed = true;
+    CutsceneManager.pendingBarkWhileSendBlocked = false;
     CutsceneManager.active = false;
     CutsceneManager.dialog = undefined as any;
     CutsceneManager.currentEntry = null as any;
@@ -184,6 +198,40 @@ describe('CutsceneManager pause/resume pending (UpdateDialog)', () => {
     expect(CutsceneManager.pendingAdvance).toBe(true);
     expect(CutsceneManager.pendingEntry).toBe(entry);
     expect(CutsceneManager.currentEntry).toBeFalsy();
+  });
+
+  test('showEntry while dialogSendAllowed is false stashes entry (module-load gate)', () => {
+    CutsceneManager.dialogSendAllowed = false;
+    const entry = { repliesShown: false } as any;
+    CutsceneManager.showEntry(entry);
+    expect(CutsceneManager.pendingAdvance).toBe(true);
+    expect(CutsceneManager.pendingEntry).toBe(entry);
+    expect(CutsceneManager.currentEntry).toBeFalsy();
+  });
+
+  test('flushPendingDialog is a no-op while dialogSendAllowed is false', () => {
+    CutsceneManager.dialogSendAllowed = false;
+    CutsceneManager.pendingAdvance = true;
+    const entry = { repliesShown: false } as any;
+    CutsceneManager.pendingEntry = entry;
+    const showEntrySpy = jest.spyOn(CutsceneManager, 'showEntry').mockImplementation(() => {});
+    CutsceneManager.flushPendingDialog();
+    expect(showEntrySpy).not.toHaveBeenCalled();
+    expect(CutsceneManager.pendingAdvance).toBe(true);
+    showEntrySpy.mockRestore();
+  });
+
+  test('enableDialogSendAndFlush re-enables send and shows stashed entry', () => {
+    CutsceneManager.dialogSendAllowed = false;
+    const entry = { repliesShown: false } as any;
+    CutsceneManager.pendingAdvance = true;
+    CutsceneManager.pendingEntry = entry;
+    const spy = jest.spyOn(CutsceneManager, 'showEntry').mockImplementation(() => {});
+    CutsceneManager.enableDialogSendAndFlush();
+    expect(CutsceneManager.dialogSendAllowed).toBe(true);
+    expect(spy).toHaveBeenCalledWith(entry);
+    expect(CutsceneManager.pendingAdvance).toBe(false);
+    spy.mockRestore();
   });
 
   test('flushPendingDialog shows stashed entry when unpaused', () => {
@@ -253,5 +301,86 @@ describe('CutsceneManager pause/resume pending (UpdateDialog)', () => {
     showRepliesSpy.mockRestore();
     (CutsceneManager.updateCamera as any).mockRestore?.();
     (CutsceneManager.pollParticipantAnimationWait as any).mockRestore?.();
+  });
+});
+
+describe('CutsceneManager module-load dialog send gate + hold release', () => {
+  beforeEach(() => {
+    CutsceneManager.active = true;
+    CutsceneManager.dialogSendAllowed = false;
+    CutsceneManager.pendingBarkWhileSendBlocked = false;
+    CutsceneManager.paused = false;
+    CutsceneManager.clearPendingDialog();
+    CutsceneManager.dialog = {
+      getConversationType: () => 0,
+      stuntActors: new Map(),
+    } as any;
+    CutsceneManager.cutsceneMode = CutsceneMode.DIALOG;
+    CutsceneManager.audioEmitter = { stop: jest.fn() } as any;
+    GameState.holdWorldFadeInForDialog = true;
+    // Non-DIALOG: showEntry releases hold then returns before camera/VO setup.
+    GameState.Mode = 1; // INGAME
+    (GameState.FadeOverlayManager.FadeIn as jest.Mock).mockClear();
+    GameState.MenuManager.InGameDialog = {
+      setDialogMode: jest.fn(),
+      setEntry: jest.fn(),
+    };
+    GameState.VideoEffectManager = { SetVideoEffect: jest.fn() };
+  });
+
+  afterEach(() => {
+    CutsceneManager.dialogSendAllowed = true;
+    CutsceneManager.pendingBarkWhileSendBlocked = false;
+    CutsceneManager.clearPendingDialog();
+    CutsceneManager.active = false;
+    GameState.holdWorldFadeInForDialog = false;
+    jest.restoreAllMocks();
+  });
+
+  test('showEntry while send blocked does not release hold; flush then releases HOLD fade (0/1.0)', () => {
+    const entry = {
+      repliesShown: false,
+      initProperties: jest.fn(),
+      getVideoEffect: () => -1,
+      getCompiledString: () => '',
+      getVoiceResRef: () => '',
+      updateJournal: jest.fn(),
+      speaker: undefined,
+      listener: undefined,
+      cameraAngle: 0,
+      cameraID: -1,
+      cameraAnimation: -1,
+      camVidEffect: -1,
+      fades: [],
+      scripts: {},
+      animList: [],
+      waitFlags: 0,
+      delay: 0xffffffff,
+      checkList: {},
+      sound: '',
+      vo_resref: '',
+      text: '',
+      soundExists: 0,
+    } as any;
+
+    jest.spyOn(CutsceneManager, 'tryBeginEntryParticipants').mockReturnValue(true);
+
+    CutsceneManager.showEntry(entry);
+    expect(CutsceneManager.pendingEntry).toBe(entry);
+    expect(GameState.holdWorldFadeInForDialog).toBe(true);
+    expect(GameState.FadeOverlayManager.FadeIn).not.toHaveBeenCalled();
+
+    CutsceneManager.enableDialogSendAndFlush();
+
+    expect(CutsceneManager.dialogSendAllowed).toBe(true);
+    expect(GameState.holdWorldFadeInForDialog).toBe(false);
+    expect(GameState.FadeOverlayManager.FadeIn).toHaveBeenCalledWith(1.0, 0, 0, 0, 0);
+  });
+
+  test('clearOnModuleUnload disables dialog send', () => {
+    CutsceneManager.dialogSendAllowed = true;
+    CutsceneManager.clearOnModuleUnload();
+    expect(CutsceneManager.dialogSendAllowed).toBe(false);
+    expect(CutsceneManager.active).toBe(false);
   });
 });

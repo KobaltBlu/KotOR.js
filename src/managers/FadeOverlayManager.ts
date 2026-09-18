@@ -7,8 +7,9 @@ import { FadeOverlayState } from "@/enums/engine/FadeOverlayState";
  *
  * Timing mirrors SetFade and Draw:
  * wait then linear alpha; hitch clamp 5s; elapsed seed 0.1.
- * Elapsed is measured from the fade-start wall-clock snapshot so a load hitch
- * before StartGlobalFade cannot skip the post-load world fade-in.
+ * Draw accumulates inter-tick snapshot dt (not absolute time since SetFade).
+ * First Update after SetFade only arms the clock (same-tick Draw ≈ dt 0) so an
+ * async gap before the first gameplay frame cannot skip the post-load fade-in.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -31,11 +32,9 @@ export class FadeOverlayManager {
   static state: FadeOverlayState = FadeOverlayState.NONE;
 
   /**
-   * Wall-clock ms when the active fade began (SetFade snapshot).
-   * Elapsed = seed + (now − start) / 1000, excluding hitch gaps.
+   * Last fade Draw tick (ms). 0 = not armed; first Update after SetFade arms
+   * without accumulating the pre-Draw gap.
    */
-  static fadeStartMs = 0;
-  /** Last fade Draw tick (ms); used for hitch detection. */
   static lastFadeTickMs = 0;
 
   /**
@@ -119,7 +118,6 @@ export class FadeOverlayManager {
     FadeOverlayManager.duration = 0;
     FadeOverlayManager.elapsed = 0;
     FadeOverlayManager.wait = 0;
-    FadeOverlayManager.fadeStartMs = 0;
     FadeOverlayManager.lastFadeTickMs = 0;
     FadeOverlayManager.state = FadeOverlayState.NONE;
     FadeOverlayManager.material.opacity = 0;
@@ -131,7 +129,6 @@ export class FadeOverlayManager {
     FadeOverlayManager.duration = 0;
     FadeOverlayManager.elapsed = 0;
     FadeOverlayManager.wait = 0;
-    FadeOverlayManager.fadeStartMs = 0;
     FadeOverlayManager.lastFadeTickMs = 0;
     FadeOverlayManager.state = FadeOverlayState.NONE;
     FadeOverlayManager.material.opacity = 0;
@@ -205,14 +202,13 @@ export class FadeOverlayManager {
   ){
     const length = Math.max(0, duration);
     const wait = Math.max(0, nWait);
-    const now = FadeOverlayManager.nowMs();
     FadeOverlayManager.material.visible = true;
     FadeOverlayManager.material.color.setRGB(r, g, b);
     FadeOverlayManager.duration = length;
     FadeOverlayManager.wait = wait;
     FadeOverlayManager.elapsed = FadeOverlayManager.ELAPSED_SEED;
-    FadeOverlayManager.fadeStartMs = now;
-    FadeOverlayManager.lastFadeTickMs = now;
+    // Unarmed until first Update — ignores async gap before first gameplay Draw.
+    FadeOverlayManager.lastFadeTickMs = 0;
     FadeOverlayManager.state = state;
 
     // SetFade: out starts α=0, in starts α=1.
@@ -232,31 +228,7 @@ export class FadeOverlayManager {
     FadeOverlayManager.material.opacity = state === FadeOverlayState.FADING_OUT ? 0 : 1;
   }
 
-  /**
-   * Draw — wait then linear ramp.
-   * Advances from the fade-start wall-clock snapshot (plus seed). Hitches ≥5s
-   * do not advance; the start snapshot is pushed forward so elapsed stays put.
-   * The delta argument is unused for advancement (kept for call-site compatibility).
-   */
-  static Update(_delta = 0){
-    if(FadeOverlayManager.state === FadeOverlayState.NONE ||
-       FadeOverlayManager.state === FadeOverlayState.FADED_IN ||
-       FadeOverlayManager.state === FadeOverlayState.FADED_OUT){
-      return;
-    }
-
-    const now = FadeOverlayManager.nowMs();
-    const gapSec = Math.max(0, (now - FadeOverlayManager.lastFadeTickMs) / 1000);
-    if(gapSec >= FadeOverlayManager.HITCH_CLAMP_SEC){
-      // Exclude hitch gap from elapsed (resync start snapshot).
-      FadeOverlayManager.fadeStartMs += (now - FadeOverlayManager.lastFadeTickMs);
-    }
-    FadeOverlayManager.lastFadeTickMs = now;
-
-    FadeOverlayManager.elapsed =
-      FadeOverlayManager.ELAPSED_SEED +
-      Math.max(0, (now - FadeOverlayManager.fadeStartMs) / 1000);
-
+  private static applyFadeAlpha(): void {
     const wait = FadeOverlayManager.wait;
     const length = FadeOverlayManager.duration;
     const elapsed = FadeOverlayManager.elapsed;
@@ -298,6 +270,36 @@ export class FadeOverlayManager {
           break;
       }
     }
+  }
+
+  /**
+   * Draw — wait then linear ramp.
+   * Accumulates inter-tick snapshot dt when dt < 5s. First Update after SetFade
+   * only arms the clock (no advance). Delta arg unused (call-site compatibility).
+   */
+  static Update(_delta = 0){
+    if(FadeOverlayManager.state === FadeOverlayState.NONE ||
+       FadeOverlayManager.state === FadeOverlayState.FADED_IN ||
+       FadeOverlayManager.state === FadeOverlayState.FADED_OUT){
+      return;
+    }
+
+    const now = FadeOverlayManager.nowMs();
+
+    // First Draw after SetFade: arm clock only (same-tick Draw ≈ dt 0).
+    if(FadeOverlayManager.lastFadeTickMs === 0){
+      FadeOverlayManager.lastFadeTickMs = now;
+      FadeOverlayManager.applyFadeAlpha();
+      return;
+    }
+
+    const dt = Math.max(0, (now - FadeOverlayManager.lastFadeTickMs) / 1000);
+    FadeOverlayManager.lastFadeTickMs = now;
+    if(dt < FadeOverlayManager.HITCH_CLAMP_SEC){
+      FadeOverlayManager.elapsed += dt;
+    }
+
+    FadeOverlayManager.applyFadeAlpha();
   }
 
 }
