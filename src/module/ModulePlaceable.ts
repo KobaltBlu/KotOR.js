@@ -806,7 +806,7 @@ export class ModulePlaceable extends ModuleObject {
       const plc = await OdysseyModel3D.FromMDL(mdl, {
         context: this.context,
         castShadow: true,
-        //receiveShadow: true,
+        receiveShadow: false,
         // Keep lit until runtime lightmap bake applies USE_LIGHTMAP — options.static
         // alone would stamp IGNORE_LIGHTING (flat albedo) on unusable placeables.
         lighting: true,
