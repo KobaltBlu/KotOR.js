@@ -67,6 +67,10 @@ jest.mock('@/audio/AudioEmitter', () => ({
   },
 }));
 jest.mock('@/utility/ConfigClient', () => ({ ConfigClient: { get: jest.fn() } }));
+jest.mock('@/controls/Mouse', () => ({ Mouse: {} }));
+jest.mock('@/managers/ResolutionManager', () => ({
+  ResolutionManager: { addResolution: () => {} },
+}));
 jest.mock('@/managers/cutscene/dialog-camera', () => ({
   computeDialogCameraShot: jest.fn(),
   dlgAngleToShotType: jest.fn(),
@@ -302,6 +306,7 @@ describe('CutsceneManager setReplyCamera uses living party PC', () => {
       camFieldOfView: undefined,
       dialogCamSide: undefined,
     } as any;
+    (GameState.VideoEffectManager.SetVideoEffect as jest.Mock).mockClear();
     jest.spyOn(CutsceneManager, 'setDialogCamera').mockImplementation(() => {});
     jest.spyOn(CutsceneManager, 'trySetAnimatedCamera').mockReturnValue(false);
     jest.spyOn(CutsceneManager, 'resolveCloseUpExtra').mockReturnValue(0);
@@ -309,12 +314,45 @@ describe('CutsceneManager setReplyCamera uses living party PC', () => {
 
   test('frames party[0] PC when listener is orphaned dead Player', () => {
     const entry = { speaker: zelka } as any;
-    const reply = { cameraAngle: 1, camHeightOffset: 0, tarHeightOffset: 0 } as any;
+    const reply = {
+      cameraAngle: 1,
+      camHeightOffset: 0,
+      tarHeightOffset: 0,
+      getVideoEffect: () => -1,
+    } as any;
     CutsceneManager.setReplyCamera(entry, reply);
     // Swapped pair: speaker = player, listener = previous speaker
     expect(CutsceneManager.cameraState.speaker.participant).toBe(livingPc);
     expect(CutsceneManager.cameraState.listener.participant).toBe(zelka);
     expect(CutsceneManager.cameraState.speaker.participant).not.toBe(stalePlayer);
+  });
+
+  test('non-placeable reply clears leftover placeable CamVidEffect', () => {
+    const entry = { speaker: zelka, cameraAngle: 6, camVidEffect: 0 } as any;
+    const reply = {
+      cameraAngle: 1,
+      camHeightOffset: 0,
+      tarHeightOffset: 0,
+      camVidEffect: -1,
+      getVideoEffect: () => -1,
+    } as any;
+    CutsceneManager.setReplyCamera(entry, reply);
+    expect(GameState.VideoEffectManager.SetVideoEffect).toHaveBeenCalledWith(-1);
+  });
+
+  test('placeable reply enables CamVidEffect', () => {
+    const entry = { speaker: zelka } as any;
+    const reply = {
+      cameraAngle: 6,
+      cameraID: 2,
+      camHeightOffset: 0,
+      tarHeightOffset: 0,
+      camVidEffect: 0,
+      getVideoEffect: () => 0,
+    } as any;
+    jest.spyOn(CutsceneManager, 'setPlaceableCamera').mockImplementation(() => {});
+    CutsceneManager.setReplyCamera(entry, reply);
+    expect(GameState.VideoEffectManager.SetVideoEffect).toHaveBeenCalledWith(0);
   });
 
   test('rebindStaleDialogListener swaps orphaned dead listener to living PC', () => {

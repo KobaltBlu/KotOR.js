@@ -1715,6 +1715,8 @@ export class CutsceneManager {
   /**
    * ShowDialogReplies — swap so player is speaker, then
    * UpdateShotCamera with the first reply's camera angle / heights / id.
+   * Non-placeable reply shots clear the fullscreen video look; placeable
+   * reply shots enable CamVidEffect when set (same rules as showEntry).
    */
   static setReplyCamera(entry: DLGNode, reply: DLGNode){
     const prevSpeaker =
@@ -1728,6 +1730,15 @@ export class CutsceneManager {
       || (this.listener && this.listener.isPM ? this.listener : undefined)
       || GameState.PartyManager.party[0]
       || this.listener;
+
+    const isComputerCameraReply =
+      this.dialog?.getConversationType() == DLGConversationType.COMPUTER
+      && reply.cameraAngle == DLGCameraAngle.ANGLE_PLACEABLE_CAMERA;
+    GameState.VideoEffectManager.SetVideoEffect(
+      isComputerCameraReply
+        ? this.resolveComputerCamVidEffect(reply)
+        : reply.getVideoEffect()
+    );
 
     let angle = reply.cameraAngle;
     if(this.dialogCameraPrng){
