@@ -79,6 +79,18 @@ describe('Force Push port wiring', () => {
     expect(setState).toMatch(/SET_STATE_OUTER_AI_ACTIVITY_MASK/);
   });
 
+  it('setFacingVector writes xOrientation/yOrientation, not props', () => {
+    const src = fs.readFileSync(
+      srcPath('module', 'ModuleCreature.ts'),
+      'utf8'
+    );
+    expect(src).toMatch(
+      /setFacingVector\([\s\S]*?this\.xOrientation\s*=\s*facing\.x[\s\S]*?this\.yOrientation\s*=\s*facing\.y/
+    );
+    expect(src).not.toMatch(/this\.props\['XOrientation'\]/);
+    expect(src).not.toMatch(/this\.props\['YOrientation'\]/);
+  });
+
   it('player cam control is gated while force-pushed', () => {
     const src = fs.readFileSync(
       srcPath('module', 'ModuleCreature.ts'),

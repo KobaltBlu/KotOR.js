@@ -549,7 +549,6 @@ export class ModuleCreature extends ModuleObject {
   targetPositions: any[];
   declare audioEmitter: AudioEmitter;
   declare footstepEmitter: AudioEmitter;
-  props: any;
   maxForcePoints: any;
   /** TSL bonus force points pool (Set/Add/GetBonusForcePoints). */
   bonusForcePoints: number = 0;
@@ -3988,13 +3987,11 @@ export class ModuleCreature extends ModuleObject {
   }
 
   setFacingVector( facing = new THREE.Vector3() ){
-
-    this.props['XOrientation'] = facing.x;
-    this.props['YOrientation'] = facing.y;
+    this.xOrientation = facing.x;
+    this.yOrientation = facing.y;
 
     if(this.model instanceof OdysseyModel3D)
-      this.model.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(this.props['XOrientation'], this.props['YOrientation']));
-
+      this.model.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(this.xOrientation, this.yOrientation));
   }
 
   getFacingVector(){
