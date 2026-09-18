@@ -4,6 +4,7 @@ import {
   getNearestEnemy,
 } from "@/combat/nearest-enemy";
 import { duelLog, duelWho } from "@/combat/duel-debug";
+import { ensureCombatDispatcher } from "@/combat/ensure-combat-dispatcher";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
@@ -138,6 +139,8 @@ export function queueAttackActions(
       sticky: duelWho(sticky),
       queued: round.scheduledActionList.length,
     });
+    // Keep-queue leaves schedule intact — still need ActionCombat to drain it.
+    ensureCombatDispatcher(creature);
     return false;
   }
 

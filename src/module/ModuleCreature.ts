@@ -134,6 +134,7 @@ import {
   updateClientCombatMode,
 } from "@/combat/combat-engagement";
 import { queueAttackActions } from "@/combat/queue-attack-actions";
+import { ensureCombatDispatcher } from "@/combat/ensure-combat-dispatcher";
 import { getNearestEnemy } from "@/combat/nearest-enemy";
 import {
   isChoreographedMeleeWeapon,
@@ -1891,6 +1892,10 @@ export class ModuleCreature extends ModuleObject {
   updateCombat(delta = 0){
     // this.combatData.update(delta);
     this.combatRound.update(delta);
+
+    // Schedule with pending work but no ActionCombat (WAITING-splice /
+    // ClearAllActions keep-schedule) — restore the dispatcher so drain can resume.
+    ensureCombatDispatcher(this);
 
     if(this.combatData.lastAttackTarget instanceof ModuleObject && this.combatData.lastAttackTarget.isDead()){
       this.combatData.clearTarget(this.combatData.lastAttackTarget);
