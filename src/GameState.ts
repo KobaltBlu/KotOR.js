@@ -2619,6 +2619,12 @@ export class GameState implements EngineContext {
         GameState.miniGameAspectMaskPass.setMiniGameType(miniGame?.type);
       }
     }
+    // Skip composer pass entirely when flares are off or no flare lights exist.
+    if(GameState.lensFlarePass){
+      const flareLights = GameState.lightManager?.getLensFlareLights?.() ?? [];
+      GameState.lensFlarePass.enabled =
+        !!GameState.lensFlarePass.renderLensFlares && flareLights.length > 0;
+    }
     if(cam){
       // World pass: exclude MG camera HUD (drawn after AccumulationBlurPass).
       cam.layers.enable(RenderLayer.DEFAULT);

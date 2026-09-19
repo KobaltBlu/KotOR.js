@@ -334,10 +334,16 @@ export class ModuleRoom {
   getVisisbleNeighbors(){  }
 
   update(delta: number = 0){
-    if(this.model instanceof OdysseyModel3D){
-      this.model.animateFrame = true;
-      this.model.update(delta);
+    if(!(this.model instanceof OdysseyModel3D)){
+      return;
     }
+    // Last-frame VIS/frustum flags (same-frame cull runs after object ticks).
+    const visActive = !!this.model.userData.visActive;
+    if(!visActive && !this.model.visible){
+      return;
+    }
+    this.model.animateFrame = true;
+    this.model.update(delta);
   }
 
   show(showLinkedRooms = false){
@@ -483,8 +489,14 @@ export class ModuleRoom {
       console.error(e);
     }
 
-    //Disable matrix update for static objects
-    //room.disableMatrixUpdate;
+    // Nested OdysseyModel3D roots stay frozen; room root still auto-updates for placement.
+    this.model.disableMatrixUpdate();
+    if(this.model.mergedMesh){
+      this.model.mergedMesh.matrixAutoUpdate = false;
+    }
+    if(this.model.mergedDanglyMesh){
+      this.model.mergedDanglyMesh.matrixAutoUpdate = false;
+    }
 
     try{
       await GameState.grassManager?.buildForRoom(this);
@@ -521,20 +533,11 @@ export class ModuleRoom {
   }
 
   computeBoundingBox(force: boolean = false){
+    // Single root walk — Three.js updateMatrixWorld already propagates to descendants.
     if(this.container){
       this.container.updateMatrixWorld(force);
-      this.container.updateMatrix();
-      if(force){
-        this.container.traverse( n => {
-          n.updateMatrixWorld(true);
-          n.updateMatrix();
-        });
-      }
-    }
-
-    if(this.model){
+    }else if(this.model){
       this.model.updateMatrixWorld(force);
-      this.model.updateMatrix();
     }
 
     if(this.model instanceof THREE.Object3D){

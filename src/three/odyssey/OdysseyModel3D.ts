@@ -790,7 +790,10 @@ export class OdysseyModel3D extends OdysseyObject3D {
     }
 
     this.animationManager.update(delta);
-    updateAnimDummyInstances(this);
+    // Instance matrices follow pose — skip when animateFrame gated this model off.
+    if(this.animateFrame){
+      updateAnimDummyInstances(this);
+    }
 
     const dt =
       delta > 0 ? delta : (this.context?.deltaTime ?? 0);
@@ -814,24 +817,30 @@ export class OdysseyModel3D extends OdysseyObject3D {
       }
     }
 
-    //Update emitters
-    for(let i = 0; i < this.emitters.length; i++){
-      this.emitters[i].tick(delta);
+    if(this.animateFrame){
+      //Update emitters
+      for(let i = 0; i < this.emitters.length; i++){
+        this.emitters[i].tick(delta);
+      }
     }
     
-    //Update childModels
+    //Update childModels (propagate pose gate so equipment emitters stay quiet too)
     for(let i = 0; i < this.childModels.length; i++){
-      this.childModels[i].update(delta);
+      const child = this.childModels[i];
+      child.animateFrame = this.animateFrame;
+      child.update(delta);
     }
 
-    updateModelDanglyWind(this, GameState.windManager, dt);
-    for (let i = 0, len = this.saberMeshes.length; i < len; i++) {
-      const mesh = this.saberMeshes[i];
-      if (!mesh) continue;
-      // Resolve parent bone matrices after animation; trails must not call this themselves.
-      mesh.updateWorldMatrix(true, false);
-      const node = mesh.parent as OdysseyObject3D | null;
-      node?.saberTrail?.update(dt, mesh.matrixWorld);
+    if(this.animateFrame){
+      updateModelDanglyWind(this, GameState.windManager, dt);
+      for (let i = 0, len = this.saberMeshes.length; i < len; i++) {
+        const mesh = this.saberMeshes[i];
+        if (!mesh) continue;
+        // Resolve parent bone matrices after animation; trails must not call this themselves.
+        mesh.updateWorldMatrix(true, false);
+        const node = mesh.parent as OdysseyObject3D | null;
+        node?.saberTrail?.update(dt, mesh.matrixWorld);
+      }
     }
 
     this.oddFrame = !this.oddFrame;

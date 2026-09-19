@@ -256,6 +256,8 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   private _sortViewFp = 0;
   /** Invalidate sort when particle buffers change without a camera move. */
   private _particleSortGen = 0;
+  /** Reused [depth, index] pairs for sortParticles — avoids per-frame alloc. */
+  private _sortPairs: [number, number][] = [];
   /** Skip chunk instanceMatrix upload when composed content is unchanged. */
   private _chunkContentFp = 0;
   /** Highest particle slot ever written — caps updateRange for large pools. */
@@ -3852,6 +3854,9 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     let index = this.geometry.getIndex();
     let positions = (this.geometry.getAttribute( 'position' ) as THREE.BufferAttribute).array;
     let length = positions.length / 3;
+    if(length === 0){
+      return;
+    }
     if ( index === null ) {
       let array = new Uint16Array( length );
       for ( let i = 0; i < length; i ++ ) {
@@ -3861,12 +3866,15 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       this.geometry.setIndex( index );
     }
 
-    let sortArray: [number, number][] = [];
+    const sortArray = this._sortPairs;
     for ( let i = 0; i < length; i ++ ) {
       vector.fromArray( positions as Float32Array, i * 3 );
       vector.applyMatrix4( matrix );
-      sortArray.push( [ vector.z, i ] );
+      const pair = sortArray[i] || (sortArray[i] = [0, 0]);
+      pair[0] = vector.z;
+      pair[1] = i;
     }
+    sortArray.length = length;
 
     sortArray.sort( (a, b) => b[ 0 ] - a[ 0 ] );
     let indices = index.array;

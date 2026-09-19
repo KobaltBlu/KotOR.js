@@ -1474,14 +1474,25 @@ export class ModuleCreature extends ModuleObject {
 
         //BEGIN: Animation Optimization
         this.model.animateFrame = true;
+        const inParty = GameState.PartyManager.party.indexOf(this) != -1;
+        // Last-frame cull (visibility sync runs after creature ticks). Party,
+        // dialog, and cutscene keep posing so re-entry / talk cams stay correct.
+        if(
+          !this.model.visible &&
+          !inParty &&
+          !this.cutsceneMode &&
+          GameState.Mode != EngineMode.DIALOG
+        ){
+          this.model.animateFrame = false;
+        }
         //If the object is further than 50 meters, animate every other frame
-        if(this.distanceToCamera > 50){
+        if(this.model.animateFrame && this.distanceToCamera > 50){
           this.model.animateFrame = this.model.oddFrame;
         }
         
         if(this.model.animateFrame){
           //If we can animate and there is fog, make sure the distance isn't greater than the far point of the fog effect
-          if(GameState.PartyManager.party.indexOf(this) == -1 && this.context.scene.fog){
+          if(!inParty && this.context.scene.fog){
             if(this.distanceToCamera >= this.context.scene.fog.far){
               this.model.animateFrame = false;
               //If the object is past the near point, and the near point is greater than zero, animate every other frame

@@ -253,6 +253,9 @@ export class ModuleArea extends ModuleObject {
   walkmesh_rooms: ModuleRoom[] = [];
   /** Reused list for updateRoomAnimatedLights (creatures/placeables/doors/…). */
   private _lightingDynamicsScratch: Array<{ model?: unknown; position?: THREE.Vector3 }> = [];
+  /** Accrue delta; bindArea runs at ~30Hz. Seeded so the first call binds immediately. */
+  private _lightingBindAccum = 1 / 30;
+  private static readonly LIGHTING_BIND_INTERVAL = 1 / 30;
   private _walkCandidateFaceScratch: OdysseyFace3[] = [];
   private _walkCandidateEdgeScratch: WalkmeshEdge[] = [];
 
@@ -1274,10 +1277,21 @@ export class ModuleArea extends ModuleObject {
 
   /**
    * Push packed Odyssey light + area ambient/sun uniforms to room and dynamic materials.
+   * Lightmap baker runs every frame; material bindArea is throttled to ~30Hz.
    */
   updateRoomAnimatedLights(delta: number = 0){
     PlaceableLightmapBaker.tickIdle(delta, GameState.lightManager);
     PlaceableLightmapBaker.flushDirty(GameState.lightManager);
+
+    this._lightingBindAccum += delta > 0 ? delta : 0;
+    if(this._lightingBindAccum < ModuleArea.LIGHTING_BIND_INTERVAL){
+      return;
+    }
+    this._lightingBindAccum -= ModuleArea.LIGHTING_BIND_INTERVAL;
+    // After a hitch, do not catch up with a bind storm.
+    if(this._lightingBindAccum > ModuleArea.LIGHTING_BIND_INTERVAL){
+      this._lightingBindAccum = 0;
+    }
 
     const lm = GameState.lightManager;
     const camera = GameState.currentCamera;
@@ -1652,7 +1666,8 @@ export class ModuleArea extends ModuleObject {
     const cam = GameState.currentCamera;
     if(!cam){ return; }
 
-    cam.updateMatrixWorld(true);
+    // Caller (ModuleArea.update / prime) runs GameState.updateViewportFrustum()
+    // immediately before this — camera matrixWorld is already current.
     const persp = cam as THREE.PerspectiveCamera;
     if(typeof persp.updateProjectionMatrix === 'function'){
       persp.updateProjectionMatrix();

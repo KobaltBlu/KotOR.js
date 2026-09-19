@@ -184,7 +184,8 @@ export function updateDanglyWindMesh(mesh: THREE.Mesh, wm: WindManager, _delta: 
 
   // Clamp dt to [0.0125, 0.035]; use WindManager elapsed (set before model updates).
   const dt = Math.max(0.0125, Math.min(wm.uniformValues.windDanglyElapsed.value || 0.025, 0.035));
-  mesh.updateWorldMatrix(true, true);
+  // Ancestors only — world pose for this mesh; children not needed for pos/quat.
+  mesh.updateWorldMatrix(true, false);
   mesh.getWorldPosition(_worldPos);
   mesh.getWorldQuaternion(_worldQuat);
 

@@ -2782,20 +2782,11 @@ export class ModuleObject {
       return this.box;
     }
 
+    // Single root walk — Three.js updateMatrixWorld already propagates to descendants.
     if(this.container){
       this.container.updateMatrixWorld(force);
-      this.container.updateMatrix();
-      if(force){
-        this.container.traverse( n => {
-          n.updateMatrixWorld(true);
-          n.updateMatrix();
-        })
-      }
-    }
-
-    if(this.model){
+    }else if(this.model){
       this.model.updateMatrixWorld(force);
-      this.model.updateMatrix();
     }
 
     if(this.model instanceof THREE.Object3D)
