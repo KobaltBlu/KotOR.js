@@ -89,3 +89,52 @@ describe("OdysseyModel3D.update animateFrame gate", () => {
     expect(updateSaber).toHaveBeenCalled();
   });
 });
+
+describe("animLoops animateFrame gate", () => {
+  function shouldUpdateAnimLoops(bonesInitialized: boolean, animateFrame: boolean, animLoopsLen: number){
+    return bonesInitialized && animateFrame && animLoopsLen > 0;
+  }
+
+  function creatureAnimateFrame(opts: {
+    visible: boolean;
+    inParty: boolean;
+    cutsceneMode: boolean;
+    dialog: boolean;
+    forceAlwaysUpdate: boolean;
+  }){
+    let animateFrame = true;
+    if(
+      !opts.forceAlwaysUpdate &&
+      !opts.visible &&
+      !opts.inParty &&
+      !opts.cutsceneMode &&
+      !opts.dialog
+    ){
+      animateFrame = false;
+    }
+    return animateFrame;
+  }
+
+  test("animLoops require animateFrame", () => {
+    expect(shouldUpdateAnimLoops(true, false, 2)).toBe(false);
+    expect(shouldUpdateAnimLoops(true, true, 2)).toBe(true);
+    expect(shouldUpdateAnimLoops(true, true, 0)).toBe(false);
+  });
+
+  test("forceAlwaysUpdate keeps animateFrame when invisible", () => {
+    expect(creatureAnimateFrame({
+      visible: false,
+      inParty: false,
+      cutsceneMode: false,
+      dialog: false,
+      forceAlwaysUpdate: true,
+    })).toBe(true);
+    expect(creatureAnimateFrame({
+      visible: false,
+      inParty: false,
+      cutsceneMode: false,
+      dialog: false,
+      forceAlwaysUpdate: false,
+    })).toBe(false);
+  });
+});

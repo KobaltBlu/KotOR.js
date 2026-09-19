@@ -239,7 +239,13 @@ export class OdysseyLightingBinder {
     if(!material.uniforms){ return; }
 
     this.writeEnvMapRotation(material, camera);
-    this.bindScreenSpaceShadowUniforms(material, undefined, camera);
+    const shadowManager = GameState.odysseyShadowManager;
+    if(!this.shadowUniformsAreCurrent(material, shadowManager)){
+      this.bindScreenSpaceShadowUniforms(material, undefined, camera);
+    }else if(Object.prototype.hasOwnProperty.call(material.defines || {}, 'USE_ODYSSEY_SHADOW')){
+      // Keep per-draw hook installed without paying a full bind.
+      this.ensureShadowMapBeforeRenderHook(material);
+    }
 
     const defines = material.defines || {};
     const usesLightmap = Object.prototype.hasOwnProperty.call(defines, 'USE_LIGHTMAP');
@@ -379,6 +385,36 @@ export class OdysseyLightingBinder {
   }
 
   /**
+   * True when material shadow uniforms already match the live manager epoch,
+   * gating alphas, soft-shadow flag, debug revision, and texture identity.
+   */
+  static shadowUniformsAreCurrent(
+    material: THREE.ShaderMaterial,
+    shadowManager?: OdysseyShadowManager | null
+  ): boolean {
+    if(!material.uniforms){ return false; }
+    const manager = shadowManager ?? GameState.odysseyShadowManager;
+    const epoch = manager?.frameEpoch ?? 0;
+    const softBound = manager?.softShadowMaps ? 1 : 0;
+    const lightingRev = OdysseyLightingDebug.revision;
+    const activeCount = manager?.activeLightCount ?? 0;
+    const shadowTexLive = manager?.getShadowMapTextureAt?.(0) ?? manager?.getShadowMapTexture() ?? null;
+    const shadowsActive = activeCount > 0;
+    const boundTex = material.uniforms.odysseyShadowMap0?.value
+      ?? material.uniforms.odysseyShadowMap?.value
+      ?? null;
+    const needsTextureRefresh = shadowsActive && !!shadowTexLive && boundTex !== shadowTexLive;
+    if(needsTextureRefresh){ return false; }
+    return (
+      material.userData.odysseyShadowBoundEpoch === epoch &&
+      material.userData.odysseyShadowGatingBound === GameState.shadowAlpha &&
+      material.userData.odysseyBeamingBound === GameState.beamingProjectionAlpha &&
+      material.userData.odysseyShadowSoftBound === softBound &&
+      material.userData.odysseyLightingDebugRevision === lightingRev
+    );
+  }
+
+  /**
    * Bind multi-light shadow-map uniforms — independent of IGNORE_LIGHTING /
    * light-array skip path so lightmapped static receivers still darken.
    * matches engine behavior shadow light selection(mode=0) / gob shadows (up to maxShadowLights).
@@ -394,27 +430,17 @@ export class OdysseyLightingBinder {
       return;
     }
 
-    OdysseyLightingBinder.ensureShadowMapBeforeRenderHook(material);
-
     const manager = shadowManager ?? GameState.odysseyShadowManager;
+    // Install hook once; skip full rebind when epoch/gating already match.
+    this.ensureShadowMapBeforeRenderHook(material);
+    if(this.shadowUniformsAreCurrent(material, manager)){
+      return;
+    }
+
     const epoch = manager?.frameEpoch ?? 0;
     const activeCount = manager?.activeLightCount ?? 0;
     const softBound = manager?.softShadowMaps ? 1 : 0;
     const lightingRev = OdysseyLightingDebug.revision;
-    const shadowTexLive = manager?.getShadowMapTextureAt?.(0) ?? manager?.getShadowMapTexture() ?? null;
-    const shadowsActive = activeCount > 0;
-    const boundTex = material.uniforms.odysseyShadowMap0?.value
-      ?? material.uniforms.odysseyShadowMap?.value
-      ?? null;
-    const needsTextureRefresh = shadowsActive && !!shadowTexLive && boundTex !== shadowTexLive;
-    if(!needsTextureRefresh &&
-      material.userData.odysseyShadowBoundEpoch === epoch &&
-      material.userData.odysseyShadowGatingBound === GameState.shadowAlpha &&
-      material.userData.odysseyBeamingBound === GameState.beamingProjectionAlpha &&
-      material.userData.odysseyShadowSoftBound === softBound &&
-      material.userData.odysseyLightingDebugRevision === lightingRev){
-      return;
-    }
 
     if(!material.uniforms.odysseyShadowMap0 || !material.uniforms.odysseyShadowSoft){
       Object.assign(material.uniforms, createOdysseyShadowUniforms());
@@ -554,8 +580,8 @@ export class OdysseyLightingBinder {
       if(typeof previous === 'function'){
         previous.call(this, renderer, scene, camera);
       }
-      // Epoch early-out inside bindShadowMapUniforms; only force when the live
-      // shadow texture identity differs from the bound sampler (map just created).
+      // Skip bindShadowMapUniforms entirely when epoch/gating already match.
+      // Only force when the live shadow texture identity differs from the bound sampler.
       const mat = this as THREE.ShaderMaterial;
       const manager = GameState.odysseyShadowManager;
       const liveTex = manager?.getShadowMapTextureAt?.(0) ?? manager?.getShadowMapTexture() ?? null;
@@ -564,6 +590,8 @@ export class OdysseyLightingBinder {
         ?? null;
       if(liveTex && boundTex !== liveTex){
         delete mat.userData.odysseyShadowBoundEpoch;
+      }else if(OdysseyLightingBinder.shadowUniformsAreCurrent(mat, manager)){
+        return;
       }
       OdysseyLightingBinder.bindShadowMapUniforms(mat, manager, camera);
     };

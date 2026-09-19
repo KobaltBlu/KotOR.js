@@ -114,8 +114,11 @@ export function buildAnimDummyInstanceBatches(
     for(let i = 0; i < list.length; i++){
       const { mesh } = list[i];
       // Keep mesh in graph (hidden) so matrixWorld tracks animated parents.
+      // Freeze leaf auto-update — parents still dirty via animation batch +
+      // root.updateWorldMatrix before instance fingerprints are sampled.
       sources.push(mesh);
       mesh.visible = false;
+      mesh.matrixAutoUpdate = false;
       mesh.userData.skipAnimDummyInstance = true;
       mesh.castShadow = false;
     }

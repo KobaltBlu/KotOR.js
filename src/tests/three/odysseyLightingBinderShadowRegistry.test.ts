@@ -122,4 +122,79 @@ describe('OdysseyLightingBinder shadow registry', () => {
     bindSpy.mockRestore();
     material.dispose();
   });
+
+  test('onBeforeRender skips bindShadowMapUniforms when shadowUniformsAreCurrent', () => {
+    const material = makeShadowMaterial();
+    OdysseyLightingBinder.ensureShadowMapBeforeRenderHook(material);
+    OdysseyLightingBinder.bindShadowMapUniforms(material);
+    expect(material.userData.odysseyShadowBoundEpoch).toBe(1);
+
+    const bindSpy = jest.spyOn(OdysseyLightingBinder, 'bindShadowMapUniforms');
+    material.onBeforeRender(
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any
+    );
+    expect(bindSpy).not.toHaveBeenCalled();
+
+    (GameState as any).odysseyShadowManager.frameEpoch = 2;
+    material.onBeforeRender(
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any
+    );
+    expect(bindSpy).toHaveBeenCalledTimes(1);
+    expect(material.userData.odysseyShadowBoundEpoch).toBe(2);
+
+    bindSpy.mockRestore();
+    material.dispose();
+  });
+
+  test('onBeforeRender rebinds when live texture identity changes', () => {
+    const material = makeShadowMaterial();
+    const liveTex = { uuid: 'live' } as any;
+    (GameState as any).odysseyShadowManager = {
+      ...makeMockShadowManager(1),
+      activeLightCount: 1,
+      getShadowMapTextureAt: () => liveTex,
+      getShadowMapTexture: () => liveTex,
+    };
+    OdysseyLightingBinder.ensureShadowMapBeforeRenderHook(material);
+    material.userData.odysseyShadowBoundEpoch = 1;
+    material.userData.odysseyShadowGatingBound = 1;
+    material.userData.odysseyBeamingBound = 0;
+    material.userData.odysseyShadowSoftBound = 0;
+    material.userData.odysseyLightingDebugRevision = 0;
+    // Bound sampler differs from live texture.
+    material.uniforms.odysseyShadowMap0.value = null;
+
+    const bindSpy = jest.spyOn(OdysseyLightingBinder, 'bindShadowMapUniforms');
+    material.onBeforeRender(
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any
+    );
+    expect(bindSpy).toHaveBeenCalledTimes(1);
+
+    bindSpy.mockRestore();
+    material.dispose();
+  });
+
+  test('shadowUniformsAreCurrent is false when shadowAlpha changes', () => {
+    const material = makeShadowMaterial();
+    OdysseyLightingBinder.bindShadowMapUniforms(material);
+    expect(OdysseyLightingBinder.shadowUniformsAreCurrent(material)).toBe(true);
+    (GameState as any).shadowAlpha = 0.25;
+    expect(OdysseyLightingBinder.shadowUniformsAreCurrent(material)).toBe(false);
+    material.dispose();
+  });
 });

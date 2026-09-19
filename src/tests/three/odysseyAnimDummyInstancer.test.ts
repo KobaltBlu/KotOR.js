@@ -41,6 +41,7 @@ describe('OdysseyAnimDummyInstancer', () => {
 
     for(const src of batches[0].sources){
       expect(src.visible).toBe(false);
+      expect(src.matrixAutoUpdate).toBe(false);
     }
   });
 

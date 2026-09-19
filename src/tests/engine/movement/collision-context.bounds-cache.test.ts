@@ -86,4 +86,25 @@ describe("CollisionContext cached object bounds", () => {
     manager.refreshObjectBounds(false);
     expect(setFromObjectSpy).toHaveBeenCalledTimes(2);
   });
+
+  test("matrix-only refresh updates root once without recomputing local bounds", () => {
+    const object = makeCollisionObject();
+    const manager = object.collisionContext as CollisionContext;
+    const setFromObjectSpy = jest.spyOn(THREE.Box3.prototype, "setFromObject");
+    const rootSpy = jest.spyOn(object.container, "updateMatrixWorld");
+
+    manager.refreshObjectBounds(false);
+    expect(setFromObjectSpy).toHaveBeenCalledTimes(1);
+    setFromObjectSpy.mockClear();
+    rootSpy.mockClear();
+
+    object.container.position.set(4, 2, 3);
+    object.collisionMatrixDirty = true;
+    manager.refreshObjectBounds(false);
+
+    expect(rootSpy).toHaveBeenCalledTimes(1);
+    expect(setFromObjectSpy).not.toHaveBeenCalled();
+    expect(object.box.min.x).toBeCloseTo(3);
+    expect(object.box.max.x).toBeCloseTo(5);
+  });
 });

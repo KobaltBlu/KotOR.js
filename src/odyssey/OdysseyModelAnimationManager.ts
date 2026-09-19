@@ -537,8 +537,9 @@ export class OdysseyModelAnimationManager {
         }
       }
 
-      // World Model Animation Loops (legacy scan path; contiguous state array)
-      if(this.model.bonesInitialized && this.model.animLoops.length){
+      // World Model Animation Loops (legacy scan path; contiguous state array).
+      // Same animateFrame gate as applyRunPose — off-screen rooms/creatures skip.
+      if(this.model.bonesInitialized && this.model.animateFrame && this.model.animLoops.length){
         for(let i = 0, len = this.model.animLoops.length; i < len; i++){
           if(!this.animLoopStates[i]){
             this.animLoopStates[i] = {

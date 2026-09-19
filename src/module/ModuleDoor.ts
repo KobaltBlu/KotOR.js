@@ -842,16 +842,41 @@ export class ModuleDoor extends ModuleObject {
    */
   protected updateRoomAttachment(_delta: number = 0){}
 
+  /** Open/close/damage transitions that still need model + DWK matrix work. */
+  private isTransitioningAnimState(): boolean {
+    switch(this.animStateInfo?.currentAnimState){
+      case ModuleDoorAnimState.OPENING1:
+      case ModuleDoorAnimState.OPENING2:
+      case ModuleDoorAnimState.CLOSING1:
+      case ModuleDoorAnimState.CLOSING2:
+      case ModuleDoorAnimState.DAMAGE:
+      case ModuleDoorAnimState.BUSTED:
+      case ModuleDoorAnimState.TRANS:
+        return true;
+      default:
+        return false;
+    }
+  }
+
   update(delta = 0){
     
     super.update(delta);
-    if(this.model instanceof OdysseyModel3D){
+    const transitioning = this.isTransitioningAnimState();
+    const needsModelUpdate =
+      transitioning ||
+      this.forceAlwaysUpdate ||
+      this.isDead() ||
+      !!(this.model?.visible);
+    if(this.model instanceof OdysseyModel3D && needsModelUpdate){
       this.model.update(delta);
       //this.box.setFromObject(this.model);
     }
 
-    // Placeables refresh wok each tick; doors need the same for animated DWK.
-    this.syncWalkmeshMatrix();
+    // Idle doors keep DWK until open-state swap or matrix dirty (placeable pattern).
+    if(this.collisionMatrixDirty || transitioning){
+      this.syncWalkmeshMatrix();
+      this.collisionMatrixDirty = false;
+    }
 
     if(this.isDead()){
       if(!this.destroyAnimationPlayed){

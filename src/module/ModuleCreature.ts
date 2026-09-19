@@ -1476,8 +1476,9 @@ export class ModuleCreature extends ModuleObject {
         this.model.animateFrame = true;
         const inParty = GameState.PartyManager.party.indexOf(this) != -1;
         // Last-frame cull (visibility sync runs after creature ticks). Party,
-        // dialog, and cutscene keep posing so re-entry / talk cams stay correct.
+        // dialog, cutscene, and TSL forceAlwaysUpdate keep posing.
         if(
+          !this.forceAlwaysUpdate &&
           !this.model.visible &&
           !inParty &&
           !this.cutsceneMode &&

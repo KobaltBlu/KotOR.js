@@ -75,7 +75,19 @@ export class CollisionContext {
       forceLocal ||
       this.object.collisionBoundsDirty
     ){
-      source.updateMatrixWorld(forceLocal);
+      // transformRoot.updateMatrixWorld already walked descendants; only refresh
+      // source when it is an independent graph (not the root or under it).
+      if(source !== transformRoot && source.parent !== transformRoot){
+        let underRoot = false;
+        let p = source.parent;
+        while(p){
+          if(p === transformRoot){ underRoot = true; break; }
+          p = p.parent;
+        }
+        if(!underRoot){
+          source.updateMatrixWorld(forceLocal);
+        }
+      }
       this.cachedLocalBounds.setFromObject(source);
       this.cachedBoundsInverse.copy(transformRoot.matrixWorld).invert();
       this.cachedLocalBounds.applyMatrix4(this.cachedBoundsInverse);
