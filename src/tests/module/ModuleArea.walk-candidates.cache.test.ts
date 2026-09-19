@@ -172,4 +172,55 @@ describe("ModuleArea.getWalkCandidatesForBox spatial filtering and memo", () => 
     expect(result.faces).toEqual([face]);
     expect(result.rooms).toEqual([room]);
   });
+
+  it("edges:false skips edge queries and does not share cache with full queries", () => {
+    const walkFace = { walk: true } as OdysseyFace3;
+    const blockFace = { walk: false } as OdysseyFace3;
+    const edge = { index: 1 } as WalkmeshEdge;
+    const getFacesInBox = jest.fn((_box: THREE.Box3, out: OdysseyFace3[] = []) => {
+      out.length = 0;
+      out.push(walkFace, blockFace);
+      return out;
+    });
+    const getEdgesInBox = jest.fn((_box: THREE.Box3, out: WalkmeshEdge[] = []) => {
+      out.length = 0;
+      out.push(edge);
+      return out;
+    });
+
+    const room = {
+      box: new THREE.Box3(new THREE.Vector3(-1, -1, -1), new THREE.Vector3(1, 1, 1)),
+      collisionManager: {
+        walkmesh: {
+          faces: [walkFace, blockFace],
+          box: new THREE.Box3(new THREE.Vector3(-1, -1, -1), new THREE.Vector3(1, 1, 1)),
+          getFacesInBox,
+          getEdgesInBox,
+        },
+      },
+    };
+    const area = makeArea([room]);
+    const query = new THREE.Box3(
+      new THREE.Vector3(-0.5, -0.5, -0.5),
+      new THREE.Vector3(0.5, 0.5, 0.5)
+    );
+
+    const faceOnly = area.getWalkCandidatesForBox(query, {}, { edges: false, walkFacesOnly: false });
+    expect(faceOnly.faces).toEqual([walkFace, blockFace]);
+    expect(faceOnly.edges).toEqual([]);
+    expect(getFacesInBox).toHaveBeenCalledTimes(1);
+    expect(getEdgesInBox).not.toHaveBeenCalled();
+
+    // Same box, different opts — separate cache entry; must query edges.
+    const full = area.getWalkCandidatesForBox(query);
+    expect(full.faces).toEqual([walkFace]);
+    expect(full.edges).toEqual([edge]);
+    expect(getFacesInBox).toHaveBeenCalledTimes(2);
+    expect(getEdgesInBox).toHaveBeenCalledTimes(1);
+
+    // Face-only warm hit — no extra wok descent.
+    area.getWalkCandidatesForBox(query, {}, { edges: false, walkFacesOnly: false });
+    expect(getFacesInBox).toHaveBeenCalledTimes(2);
+    expect(getEdgesInBox).toHaveBeenCalledTimes(1);
+  });
 });

@@ -2201,6 +2201,7 @@ export class GameState implements EngineContext {
   static Update(){
     
     requestAnimationFrame( GameState.Update );
+    GameState.stats.begin();
 
     GameState.forwardVector.set(0, 0, -1);
     GameState.shadowSystemsUpdatedThisFrame = false;
@@ -2225,6 +2226,7 @@ export class GameState implements EngineContext {
       GameState.MenuManager.Update(delta);
       AudioEngine.GetAudioEngine().update(delta, GameState.currentCamera.position, GameState.currentCamera.rotation, GameState.forwardVector);
       GameState.Render(delta);
+      GameState.stats.end();
       GameState.processEventListener('afterRender', [delta]);
       return;
     }
@@ -2308,13 +2310,14 @@ export class GameState implements EngineContext {
       }
     }
 
-    GameState.stats.update();
+    GameState.stats.end();
     GameState.processEventListener('afterRender', [delta]);
   }
 
   static UpdateMovie(delta: number = 0){
     GameState.VideoManager.update(delta);
     GameState.renderer.render(GameState.scene_movie, GameState.camera_gui);
+    GameState.stats.end();
     GameState.processEventListener('afterRender', [delta]);
   }
 
@@ -2521,6 +2524,7 @@ export class GameState implements EngineContext {
   static UpdateLegal(delta: number = 0){
     GameState.LegalScreenManager.Update(delta);
     GameState.renderer.render(GameState.LegalScreenManager.scene, GameState.camera_gui);
+    GameState.stats.end();
     GameState.processEventListener('afterRender', [delta]);
   }
 

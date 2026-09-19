@@ -28,6 +28,8 @@ const _queryBox = new THREE.Box3();
 const _queryMin = new THREE.Vector3();
 const _queryMax = new THREE.Vector3();
 const _faceScratch: OdysseyFace3[] = [];
+/** Placeable getFacesInBox output — separate from room candidate scratch. */
+const _placeableFaceScratch: OdysseyFace3[] = [];
 
 function isBlockingFace(face: OdysseyFace3 | undefined): boolean {
   return isWalkCheckBlockingFace(face);
@@ -36,6 +38,18 @@ function isBlockingFace(face: OdysseyFace3 | undefined): boolean {
 function meshFaces(wok: OdysseyWalkMesh | undefined): OdysseyFace3[] | undefined {
   if(!wok) return undefined;
   return wok.faces?.length ? wok.faces : undefined;
+}
+
+function facesInQueryBox(
+  wok: OdysseyWalkMesh | undefined,
+  queryBox: THREE.Box3,
+  scratch: OdysseyFace3[]
+): OdysseyFace3[] | undefined {
+  if(!wok) return undefined;
+  if(typeof wok.getFacesInBox === 'function'){
+    return wok.getFacesInBox(queryBox, scratch);
+  }
+  return meshFaces(wok);
 }
 
 /**
@@ -583,24 +597,22 @@ export function isStaticWalkClearOnAreaMesh(
     _queryMax.set(maxX, maxY, Math.max(from.z, to.z) + expand)
   );
 
-  const rooms = area.rooms;
-  if(rooms?.length){
-    for(let r = 0; r < rooms.length; r++){
-      const room = rooms[r];
-      const wok =
-        room.collisionManager?.walkmesh ??
-        (room as { model?: { wok?: OdysseyWalkMesh } }).model?.wok;
-      const faces = wok?.getFacesInBox ? wok.getFacesInBox(queryBox, _faceScratch) : meshFaces(wok);
-      if(!faces?.length) continue;
-      for(let i = 0, len = faces.length; i < len; i++){
-        const face = faces[i];
-        if(!isBlockingFace(face)) continue;
-        if(!faceOverlapsCorridorAabb(face, minX, maxX, minY, maxY)) continue;
-        if(corridorHitsFace(
-          face, from.x, from.y, to.x, to.y, from.z, to.z, radius, hit
-        )){
-          return { clear: false };
-        }
+  // Room walk-check faces via area frame cache + per-wok AABB (not a full room loop).
+  // walkFacesOnly:false — blockers are walkCheck && !walk; edges unused here.
+  if(typeof area.getWalkCandidatesForBox === 'function' && area.rooms?.length){
+    const { faces } = area.getWalkCandidatesForBox(
+      queryBox,
+      { faces: _faceScratch },
+      { edges: false, walkFacesOnly: false }
+    );
+    for(let i = 0, len = faces.length; i < len; i++){
+      const face = faces[i];
+      if(!isBlockingFace(face)) continue;
+      if(!faceOverlapsCorridorAabb(face, minX, maxX, minY, maxY)) continue;
+      if(corridorHitsFace(
+        face, from.x, from.y, to.x, to.y, from.z, to.z, radius, hit
+      )){
+        return { clear: false };
       }
     }
   }
@@ -610,8 +622,6 @@ export function isStaticWalkClearOnAreaMesh(
     for(let p = 0; p < placeables.length; p++){
       const plc = placeables[p];
       if(!plc?.isStatic?.() && !plc?.collisionManager?.walkmesh) continue;
-      const faces = meshFaces(plc.collisionManager?.walkmesh);
-      if(!faces?.length) continue;
       if(plc.box){
         if(
           maxX < plc.box.min.x - expand ||
@@ -622,6 +632,12 @@ export function isStaticWalkClearOnAreaMesh(
           continue;
         }
       }
+      const faces = facesInQueryBox(
+        plc.collisionManager?.walkmesh,
+        queryBox,
+        _placeableFaceScratch
+      );
+      if(!faces?.length) continue;
       for(let i = 0, len = faces.length; i < len; i++){
         const face = faces[i];
         if(!isBlockingFace(face)) continue;

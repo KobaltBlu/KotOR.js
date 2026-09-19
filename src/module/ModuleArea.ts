@@ -3444,8 +3444,11 @@ export class ModuleArea extends ModuleObject {
   /** Collect room walkmesh faces and edges whose local AABBs overlap `box`. */
   getWalkCandidatesForBox(
     box: THREE.Box3,
-    out: { faces?: OdysseyFace3[]; edges?: WalkmeshEdge[]; rooms?: ModuleRoom[] } = {}
+    out: { faces?: OdysseyFace3[]; edges?: WalkmeshEdge[]; rooms?: ModuleRoom[] } = {},
+    opts: { edges?: boolean; walkFacesOnly?: boolean } = {}
   ): { faces: OdysseyFace3[]; edges: WalkmeshEdge[]; rooms: ModuleRoom[] } {
+    const includeEdges = opts.edges !== false;
+    const walkFacesOnly = opts.walkFacesOnly !== false;
     const faces = out.faces || [];
     const edges = out.edges || [];
     const rooms = out.rooms || [];
@@ -3453,10 +3456,13 @@ export class ModuleArea extends ModuleObject {
     edges.length = 0;
     rooms.length = 0;
 
+    // Include flags in the key so face-only / all-face queries do not collide.
     const cacheKey = [
       box.min.x, box.min.y, box.min.z,
       box.max.x, box.max.y, box.max.z,
-    ].map((v) => v.toFixed(3)).join('|');
+      includeEdges ? 'e1' : 'e0',
+      walkFacesOnly ? 'w1' : 'w0',
+    ].map((v) => (typeof v === 'number' ? v.toFixed(3) : v)).join('|');
     const cached = this.frameWalkCandidateCache.get(cacheKey);
     if(cached){
       for(let i = 0, len = cached.faces.length; i < len; i++) faces.push(cached.faces[i]);
@@ -3485,15 +3491,21 @@ export class ModuleArea extends ModuleObject {
       if(faceScratch.length){
         rooms.push(room);
         for(let f = 0, fl = faceScratch.length; f < fl; f++){
-          if(faceScratch[f]?.walk){
-            faces.push(faceScratch[f]);
+          const face = faceScratch[f];
+          if(!face) continue;
+          // walkFacesOnly: locomotion height/walkable path. All faces: walk-check
+          // blockers (Nonwalk/Lava/Pit — walkCheck && !walk).
+          if(walkFacesOnly ? face.walk : true){
+            faces.push(face);
           }
         }
       }
-      wok.getEdgesInBox(box, edgeScratch);
-      if(edgeScratch.length){
-        for(let e = 0, el = edgeScratch.length; e < el; e++){
-          edges.push(edgeScratch[e]);
+      if(includeEdges){
+        wok.getEdgesInBox(box, edgeScratch);
+        if(edgeScratch.length){
+          for(let e = 0, el = edgeScratch.length; e < el; e++){
+            edges.push(edgeScratch[e]);
+          }
         }
       }
     }
