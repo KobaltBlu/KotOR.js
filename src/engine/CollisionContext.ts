@@ -88,6 +88,8 @@ export class CollisionContext {
           source.updateMatrixWorld(forceLocal);
         }
       }
+      // Mesh-derived local AABB only — MDL header OdysseyModel3D.box is often
+      // the Aurora default (±5 / 10m) and inflates mouse-pick / collision boxes.
       this.cachedLocalBounds.setFromObject(source);
       this.cachedBoundsInverse.copy(transformRoot.matrixWorld).invert();
       this.cachedLocalBounds.applyMatrix4(this.cachedBoundsInverse);

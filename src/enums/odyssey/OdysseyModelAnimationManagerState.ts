@@ -19,4 +19,9 @@ export interface OdysseyModelAnimationManagerState {
   animation?: any;
   /** Playback rate; negative = reverse (mode 0). */
   speed?: number;
+  /**
+   * Per-controller frame cursors for the legacy animLoops sampling path.
+   * Cleared on loop wrap / seek / animation identity change.
+   */
+  frameCursors?: Map<unknown, number>;
 }

@@ -2052,7 +2052,10 @@ export class CutsceneManager {
     this.dialog.stuntActors.forEach( async (actor) => {
       const moduleObject = actor.moduleObject;
       if(moduleObject){
-        moduleObject.box.setFromObject(moduleObject.container);
+        // Dirty-aware world AABB — matrix-only when animation leaves local
+        // bounds unchanged; CollisionContext prefers MDL header proxy.
+        moduleObject.markCollisionMatrixDirty("cutscene");
+        moduleObject.computeBoundingBox();
       }
     });
 

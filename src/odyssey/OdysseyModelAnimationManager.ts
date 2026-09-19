@@ -139,6 +139,7 @@ export class OdysseyModelAnimationManager {
       delta: 0,
       lastEvent: -1,
       events: [],
+      frameCursors: new Map(),
     };
   }
 
@@ -551,6 +552,7 @@ export class OdysseyModelAnimationManager {
               delta: 0,
               lastEvent: -1,
               events: [],
+              frameCursors: new Map(),
             };
           }
           this.updateAnimation(this.model.animLoops[i], this.animLoopStates[i], delta);
@@ -803,8 +805,10 @@ export class OdysseyModelAnimationManager {
         state.elapsedCount++;
         state.events.length = 0;
         state.lastEvent = -1;
+        state.frameCursors?.clear();
       }else{
         state.elapsed = 0;
+        state.frameCursors?.clear();
       }
     }
 
@@ -817,6 +821,7 @@ export class OdysseyModelAnimationManager {
       state.elapsedCount++;
       state.events.length = 0;
       state.lastEvent = -1;
+      state.frameCursors?.clear();
       return false;
     }
     return true;
@@ -925,7 +930,7 @@ export class OdysseyModelAnimationManager {
   }
 
   /**
-   * Legacy animLoops path — scan-from-zero (no AnimRun cursors).
+   * Legacy animLoops path — per-state frame cursors (same fast path as AnimRun).
    */
   updateAnimationNodeLegacy(
     anim: OdysseyModelAnimation,
@@ -952,6 +957,9 @@ export class OdysseyModelAnimationManager {
 
     const w = Math.max(0, Math.min(1, blendWeight));
     const canBlend = w < 1 - 1e-6;
+    const rate = typeof state.speed === "number" ? state.speed : 1;
+    const discontinuity = isPlaybackDiscontinuity(state.elapsed, state.lastTime, rate);
+    if(!state.frameCursors) state.frameCursors = new Map();
     let transformDirty = false;
 
     for(let c of node.controllers){
@@ -966,20 +974,19 @@ export class OdysseyModelAnimationManager {
         continue;
       }
 
-      let lastFrame = 0;
-      for(let f = 0, fc = controller.frameCount; f < fc; f++){
-        if(controller.data[f].time <= state.elapsed){
-          lastFrame = f;
-          continue;
-        }
-        break;
+      let cursor = state.frameCursors.get(controller) ?? 0;
+      if(discontinuity){
+        cursor = binarySearchFrameCursor(controller.data, state.elapsed);
+      }else{
+        cursor = resolveFrameCursor(controller.data, state.elapsed, cursor);
       }
+      state.frameCursors.set(controller, cursor);
 
       const applied = this.applyControllerSample(
         anim,
         state,
         controller,
-        lastFrame,
+        cursor,
         w,
         canBlend
       );

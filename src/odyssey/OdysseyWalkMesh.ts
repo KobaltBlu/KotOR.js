@@ -21,6 +21,19 @@ const _raycastLocalRay = new THREE.Ray();
 const _raycastLocalHit = new THREE.Vector3();
 const _raycastWorldHit = new THREE.Vector3();
 const _faceBoxScratch = new THREE.Box3();
+const _sectorBoxScratch = new THREE.Box3();
+const _sectorMinScratch = new THREE.Vector3();
+const _sectorMaxScratch = new THREE.Vector3();
+
+/** Conservative sector size (meters) for walkmesh box-query LRU caches. */
+const WOK_SECTOR_SIZE = 1.0;
+const WOK_SECTOR_CACHE_LIMIT = 32;
+
+type WokSectorCacheEntry<T> = {
+  sectorKey: string;
+  sectorBox: THREE.Box3;
+  items: T[];
+};
 
 /**
  * OdysseyWalkMesh class.
@@ -83,6 +96,55 @@ export class OdysseyWalkMesh {
   aabbGroup: THREE.Object3D;
   aabbRoot: IOdysseyModelAABBNode;
   uuid: string = crypto.randomUUID();
+  /** Bounded LRU of sector-snapped face AABB queries. */
+  private _faceSectorCache: WokSectorCacheEntry<OdysseyFace3>[] = [];
+  /** Bounded LRU of sector-snapped edge AABB queries. */
+  private _edgeSectorCache: WokSectorCacheEntry<WalkmeshEdge>[] = [];
+
+  /** Invalidate sector caches after geometry/transform changes. */
+  invalidateSpatialCaches(): void {
+    this._faceSectorCache.length = 0;
+    this._edgeSectorCache.length = 0;
+  }
+
+  private static snapBoxToSector(box: THREE.Box3, out: THREE.Box3): string {
+    const s = WOK_SECTOR_SIZE;
+    _sectorMinScratch.set(
+      Math.floor(box.min.x / s) * s,
+      Math.floor(box.min.y / s) * s,
+      Math.floor(box.min.z / s) * s,
+    );
+    _sectorMaxScratch.set(
+      Math.ceil(box.max.x / s) * s,
+      Math.ceil(box.max.y / s) * s,
+      Math.ceil(box.max.z / s) * s,
+    );
+    // Degenerate / zero-volume guard — always at least one sector cell.
+    if(_sectorMaxScratch.x <= _sectorMinScratch.x) _sectorMaxScratch.x = _sectorMinScratch.x + s;
+    if(_sectorMaxScratch.y <= _sectorMinScratch.y) _sectorMaxScratch.y = _sectorMinScratch.y + s;
+    if(_sectorMaxScratch.z <= _sectorMinScratch.z) _sectorMaxScratch.z = _sectorMinScratch.z + s;
+    out.set(_sectorMinScratch, _sectorMaxScratch);
+    return [
+      _sectorMinScratch.x, _sectorMinScratch.y, _sectorMinScratch.z,
+      _sectorMaxScratch.x, _sectorMaxScratch.y, _sectorMaxScratch.z,
+    ].join('|');
+  }
+
+  private touchFaceSector(entry: WokSectorCacheEntry<OdysseyFace3>): void {
+    const idx = this._faceSectorCache.indexOf(entry);
+    if(idx > 0){
+      this._faceSectorCache.splice(idx, 1);
+      this._faceSectorCache.unshift(entry);
+    }
+  }
+
+  private touchEdgeSector(entry: WokSectorCacheEntry<WalkmeshEdge>): void {
+    const idx = this._edgeSectorCache.indexOf(entry);
+    if(idx > 0){
+      this._edgeSectorCache.splice(idx, 1);
+      this._edgeSectorCache.unshift(entry);
+    }
+  }
 
   constructor( wokReader?: BinaryReader ){
 
@@ -305,6 +367,7 @@ export class OdysseyWalkMesh {
       edge.update();
     });
     this.buildEdgeAABBTree();
+    this.invalidateSpatialCaches();
   }
 
   /**
@@ -715,12 +778,38 @@ export class OdysseyWalkMesh {
   getFacesInBox(box: THREE.Box3, out: OdysseyFace3[] = []): OdysseyFace3[] {
     out.length = 0;
     if(!this.faces?.length) return out;
-    if(this.aabbRoot){
-      return this.collectAABBFaces(box, this.aabbRoot, out);
+
+    const sectorKey = OdysseyWalkMesh.snapBoxToSector(box, _sectorBoxScratch);
+    let entry = this._faceSectorCache.find((e) => e.sectorKey === sectorKey);
+    if(!entry){
+      const sectorItems: OdysseyFace3[] = [];
+      if(this.aabbRoot){
+        this.collectAABBFaces(_sectorBoxScratch, this.aabbRoot, sectorItems);
+      }else{
+        for(let i = 0, len = this.faces.length; i < len; i++){
+          if(this.faceOverlapsBox(this.faces[i], _sectorBoxScratch)){
+            sectorItems.push(this.faces[i]);
+          }
+        }
+      }
+      entry = {
+        sectorKey,
+        sectorBox: _sectorBoxScratch.clone(),
+        items: sectorItems,
+      };
+      this._faceSectorCache.unshift(entry);
+      if(this._faceSectorCache.length > WOK_SECTOR_CACHE_LIMIT){
+        this._faceSectorCache.length = WOK_SECTOR_CACHE_LIMIT;
+      }
+    }else{
+      this.touchFaceSector(entry);
     }
-    for(let i = 0, len = this.faces.length; i < len; i++){
-      if(this.faceOverlapsBox(this.faces[i], box)){
-        out.push(this.faces[i]);
+
+    // Exact filter — sector is a conservative superset.
+    for(let i = 0, len = entry.items.length; i < len; i++){
+      const face = entry.items[i];
+      if(this.faceOverlapsBox(face, box)){
+        out.push(face);
       }
     }
     return out;
@@ -729,10 +818,35 @@ export class OdysseyWalkMesh {
   getEdgesInBox(box: THREE.Box3, out: WalkmeshEdge[] = []): WalkmeshEdge[] {
     out.length = 0;
     if(!this.edges?.size) return out;
-    if(this.edgeAABBRoot){
-      return this.collectAABBEdges(box, this.edgeAABBRoot, out);
+
+    const sectorKey = OdysseyWalkMesh.snapBoxToSector(box, _sectorBoxScratch);
+    let entry = this._edgeSectorCache.find((e) => e.sectorKey === sectorKey);
+    if(!entry){
+      const sectorItems: WalkmeshEdge[] = [];
+      if(this.edgeAABBRoot){
+        this.collectAABBEdges(_sectorBoxScratch, this.edgeAABBRoot, sectorItems);
+      }else{
+        for(const edge of this.edges.values()){
+          if(this.edgeOverlapsBox(edge, _sectorBoxScratch)){
+            sectorItems.push(edge);
+          }
+        }
+      }
+      entry = {
+        sectorKey,
+        sectorBox: _sectorBoxScratch.clone(),
+        items: sectorItems,
+      };
+      this._edgeSectorCache.unshift(entry);
+      if(this._edgeSectorCache.length > WOK_SECTOR_CACHE_LIMIT){
+        this._edgeSectorCache.length = WOK_SECTOR_CACHE_LIMIT;
+      }
+    }else{
+      this.touchEdgeSector(entry);
     }
-    for(const edge of this.edges.values()){
+
+    for(let i = 0, len = entry.items.length; i < len; i++){
+      const edge = entry.items[i];
       if(this.edgeOverlapsBox(edge, box)){
         out.push(edge);
       }
@@ -1274,6 +1388,7 @@ export class OdysseyWalkMesh {
     }
 
     this.aabbRoot = this.aabbNodes[0];
+    this.invalidateSpatialCaches();
   }
 
   /**
@@ -1295,6 +1410,7 @@ export class OdysseyWalkMesh {
     if(!edgeList.length){
       this.edgeAABBNodes = [];
       this.edgeAABBRoot = undefined;
+      this.invalidateSpatialCaches();
       return;
     }
 
@@ -1374,6 +1490,7 @@ export class OdysseyWalkMesh {
     this.edgeAABBNodes = new Array(countNodes(root));
     flatten(root, 0);
     this.edgeAABBRoot = this.edgeAABBNodes[0];
+    this.invalidateSpatialCaches();
   }
 
   buildPerimeters(){

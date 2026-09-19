@@ -107,4 +107,52 @@ describe("CollisionContext cached object bounds", () => {
     expect(object.box.min.x).toBeCloseTo(3);
     expect(object.box.max.x).toBeCloseTo(5);
   });
+
+  test("ignores inflated MDL header box and uses mesh AABB for picking", () => {
+    const object = makeCollisionObject();
+    // Aurora default header extents (~10×10×11) — must not become obj.box.
+    (object.model as any).box = new THREE.Box3(
+      new THREE.Vector3(-5, -5, -1),
+      new THREE.Vector3(5, 5, 10)
+    );
+    object.model.position.set(0, 0, 0);
+    object.model.updateMatrix();
+    object.container.updateMatrixWorld(true);
+
+    const manager = object.collisionContext as CollisionContext;
+    const setFromObjectSpy = jest.spyOn(THREE.Box3.prototype, "setFromObject");
+
+    manager.refreshObjectBounds(true);
+    expect(setFromObjectSpy).toHaveBeenCalled();
+    // Mesh is BoxGeometry(2,2,2) under container at (1,2,3)
+    expect(object.box.min.x).toBeCloseTo(0);
+    expect(object.box.max.x).toBeCloseTo(2);
+    expect(object.box.max.x - object.box.min.x).toBeCloseTo(2);
+    expect(object.box.max.y - object.box.min.y).toBeCloseTo(2);
+    expect(object.box.max.z - object.box.min.z).toBeCloseTo(2);
+  });
+
+  test("repeated matrix-dirty updates avoid setFromObject (cutscene path)", () => {
+    const object = makeCollisionObject();
+    const manager = object.collisionContext as CollisionContext;
+    const setFromObjectSpy = jest.spyOn(THREE.Box3.prototype, "setFromObject");
+
+    object.collisionBoundsDirty = true;
+    object.collisionMatrixDirty = true;
+    manager.refreshObjectBounds(false);
+    expect(setFromObjectSpy).toHaveBeenCalledTimes(1);
+    setFromObjectSpy.mockClear();
+
+    for(let i = 0; i < 5; i++){
+      object.container.position.x = 1 + i;
+      object.collisionMatrixDirty = true;
+      // Mimic ModuleObject.computeBoundingBox dirty gate
+      if(object.collisionBoundsDirty || object.collisionMatrixDirty){
+        manager.refreshObjectBounds(false);
+      }
+    }
+    expect(setFromObjectSpy).not.toHaveBeenCalled();
+    expect(object.box.min.x).toBeCloseTo(4);
+    expect(object.box.max.x).toBeCloseTo(6);
+  });
 });

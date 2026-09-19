@@ -182,8 +182,14 @@ export class ModuleArea extends ModuleObject {
   _areaHeartbeatElapsedMs: number = 0;
   _areaHeartbeatInitialized: boolean = false;
   frameLosCache: Map<string, boolean> = new Map();
-  /** Frame-local memo for getWalkCandidatesForBox (cleared each AIScheduler tick). */
-  frameWalkCandidateCache: Map<string, { faces: OdysseyFace3[]; edges: WalkmeshEdge[]; rooms: ModuleRoom[] }> = new Map();
+  /** Frame-local memo for getWalkCandidatesForBox (cleared each AIScheduler tick).
+   * Raw faces (all overlapping) + optional edges; filters applied on copy-out. */
+  frameWalkCandidateCache: Map<string, {
+    faces: OdysseyFace3[];
+    edges: WalkmeshEdge[];
+    rooms: ModuleRoom[];
+    edgesPopulated: boolean;
+  }> = new Map();
   /** Players currently in this area — drives Increase/DecreaseAILevelPriority. */
   playersInArea: number = 0;
   /** ARE template `ID` header (LoadAreaHeader header_info[0]) — not the game ObjectId */
@@ -3456,65 +3462,87 @@ export class ModuleArea extends ModuleObject {
     edges.length = 0;
     rooms.length = 0;
 
-    // Include flags in the key so face-only / all-face queries do not collide.
+    // Geometric key only — walk/edge filters applied when copying out so
+    // face-only then full queries share one face-tree descent.
     const cacheKey = [
       box.min.x, box.min.y, box.min.z,
       box.max.x, box.max.y, box.max.z,
-      includeEdges ? 'e1' : 'e0',
-      walkFacesOnly ? 'w1' : 'w0',
-    ].map((v) => (typeof v === 'number' ? v.toFixed(3) : v)).join('|');
-    const cached = this.frameWalkCandidateCache.get(cacheKey);
-    if(cached){
-      for(let i = 0, len = cached.faces.length; i < len; i++) faces.push(cached.faces[i]);
-      for(let i = 0, len = cached.edges.length; i < len; i++) edges.push(cached.edges[i]);
-      for(let i = 0, len = cached.rooms.length; i < len; i++) rooms.push(cached.rooms[i]);
-      return { faces, edges, rooms };
-    }
+    ].map((v) => v.toFixed(3)).join('|');
+    let cached = this.frameWalkCandidateCache.get(cacheKey);
 
-    const faceScratch = this._walkCandidateFaceScratch;
-    const edgeScratch = this._walkCandidateEdgeScratch;
-    for(let i = 0, len = this.rooms.length; i < len; i++){
-      const room = this.rooms[i];
-      const wok = room?.collisionManager?.walkmesh;
-      if(!wok?.faces?.length) continue;
+    if(!cached){
+      const rawFaces: OdysseyFace3[] = [];
+      const rawRooms: ModuleRoom[] = [];
+      const faceScratch = this._walkCandidateFaceScratch;
+      for(let i = 0, len = this.rooms.length; i < len; i++){
+        const room = this.rooms[i];
+        const wok = room?.collisionManager?.walkmesh;
+        if(!wok?.faces?.length) continue;
 
-      // Cull by walkmesh AABB (not VIS room.box — model boxes are often
-      // tighter than walkable mesh, e.g. m02ac_02b strip y=75..78.75).
-      const cullBox = (wok.box && !wok.box.isEmpty()) ? wok.box
-        : (room.box && !room.box.isEmpty()) ? room.box
-        : undefined;
-      if(cullBox && !cullBox.intersectsBox(box) && !cullBox.containsBox(box)){
-        continue;
-      }
+        // Cull by walkmesh AABB (not VIS room.box — model boxes are often
+        // tighter than walkable mesh, e.g. m02ac_02b strip y=75..78.75).
+        const cullBox = (wok.box && !wok.box.isEmpty()) ? wok.box
+          : (room.box && !room.box.isEmpty()) ? room.box
+          : undefined;
+        if(cullBox && !cullBox.intersectsBox(box) && !cullBox.containsBox(box)){
+          continue;
+        }
 
-      wok.getFacesInBox(box, faceScratch);
-      if(faceScratch.length){
-        rooms.push(room);
-        for(let f = 0, fl = faceScratch.length; f < fl; f++){
-          const face = faceScratch[f];
-          if(!face) continue;
-          // walkFacesOnly: locomotion height/walkable path. All faces: walk-check
-          // blockers (Nonwalk/Lava/Pit — walkCheck && !walk).
-          if(walkFacesOnly ? face.walk : true){
-            faces.push(face);
+        wok.getFacesInBox(box, faceScratch);
+        if(faceScratch.length){
+          rawRooms.push(room);
+          for(let f = 0, fl = faceScratch.length; f < fl; f++){
+            const face = faceScratch[f];
+            if(face) rawFaces.push(face);
           }
         }
       }
-      if(includeEdges){
+      cached = {
+        faces: rawFaces,
+        edges: [],
+        rooms: rawRooms,
+        edgesPopulated: false,
+      };
+      this.frameWalkCandidateCache.set(cacheKey, cached);
+    }
+
+    if(includeEdges && !cached.edgesPopulated){
+      const rawEdges: WalkmeshEdge[] = [];
+      const edgeScratch = this._walkCandidateEdgeScratch;
+      for(let i = 0, len = this.rooms.length; i < len; i++){
+        const room = this.rooms[i];
+        const wok = room?.collisionManager?.walkmesh;
+        if(!wok?.getEdgesInBox) continue;
+        const cullBox = (wok.box && !wok.box.isEmpty()) ? wok.box
+          : (room.box && !room.box.isEmpty()) ? room.box
+          : undefined;
+        if(cullBox && !cullBox.intersectsBox(box) && !cullBox.containsBox(box)){
+          continue;
+        }
         wok.getEdgesInBox(box, edgeScratch);
-        if(edgeScratch.length){
-          for(let e = 0, el = edgeScratch.length; e < el; e++){
-            edges.push(edgeScratch[e]);
-          }
+        for(let e = 0, el = edgeScratch.length; e < el; e++){
+          rawEdges.push(edgeScratch[e]);
         }
       }
+      cached.edges = rawEdges;
+      cached.edgesPopulated = true;
     }
 
-    this.frameWalkCandidateCache.set(cacheKey, {
-      faces: faces.slice(),
-      edges: edges.slice(),
-      rooms: rooms.slice(),
-    });
+    for(let i = 0, len = cached.faces.length; i < len; i++){
+      const face = cached.faces[i];
+      if(!face) continue;
+      if(walkFacesOnly ? face.walk : true){
+        faces.push(face);
+      }
+    }
+    if(includeEdges){
+      for(let i = 0, len = cached.edges.length; i < len; i++){
+        edges.push(cached.edges[i]);
+      }
+    }
+    for(let i = 0, len = cached.rooms.length; i < len; i++){
+      rooms.push(cached.rooms[i]);
+    }
 
     return { faces, edges, rooms };
   }

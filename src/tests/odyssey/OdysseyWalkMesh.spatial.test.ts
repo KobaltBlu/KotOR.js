@@ -86,9 +86,10 @@ describe("OdysseyWalkMesh spatial helpers", () => {
     expect(hits).toContain(near);
     expect(hits).not.toContain(far);
 
-    // Brute-force reference with tree disabled
+    // Brute-force reference with tree disabled (invalidate sector cache)
     const root = wok.edgeAABBRoot;
     wok.edgeAABBRoot = undefined;
+    wok.invalidateSpatialCaches();
     const brute = wok.getEdgesInBox(query);
     wok.edgeAABBRoot = root;
     expect(hits.map((e) => e.index).sort()).toEqual(brute.map((e) => e.index).sort());

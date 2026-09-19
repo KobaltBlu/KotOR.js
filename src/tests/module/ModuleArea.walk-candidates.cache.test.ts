@@ -173,7 +173,7 @@ describe("ModuleArea.getWalkCandidatesForBox spatial filtering and memo", () => 
     expect(result.rooms).toEqual([room]);
   });
 
-  it("edges:false skips edge queries and does not share cache with full queries", () => {
+  it("face-only then full query shares face descent and lazily fills edges", () => {
     const walkFace = { walk: true } as OdysseyFace3;
     const blockFace = { walk: false } as OdysseyFace3;
     const edge = { index: 1 } as WalkmeshEdge;
@@ -211,16 +211,17 @@ describe("ModuleArea.getWalkCandidatesForBox spatial filtering and memo", () => 
     expect(getFacesInBox).toHaveBeenCalledTimes(1);
     expect(getEdgesInBox).not.toHaveBeenCalled();
 
-    // Same box, different opts — separate cache entry; must query edges.
+    // Same geometric box — reuse raw faces; fetch edges once.
     const full = area.getWalkCandidatesForBox(query);
     expect(full.faces).toEqual([walkFace]);
     expect(full.edges).toEqual([edge]);
-    expect(getFacesInBox).toHaveBeenCalledTimes(2);
+    expect(getFacesInBox).toHaveBeenCalledTimes(1);
     expect(getEdgesInBox).toHaveBeenCalledTimes(1);
 
-    // Face-only warm hit — no extra wok descent.
+    // Warm hits — no extra wok descent.
     area.getWalkCandidatesForBox(query, {}, { edges: false, walkFacesOnly: false });
-    expect(getFacesInBox).toHaveBeenCalledTimes(2);
+    area.getWalkCandidatesForBox(query);
+    expect(getFacesInBox).toHaveBeenCalledTimes(1);
     expect(getEdgesInBox).toHaveBeenCalledTimes(1);
   });
 });
