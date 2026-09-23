@@ -312,7 +312,7 @@ export class GameState implements EngineContext {
   static timeScale: number = 1;
 
   static canvas: HTMLCanvasElement;
-  static context: WebGLRenderingContext;
+  static context: WebGLRenderingContext | WebGL2RenderingContext;
   static rendererUpscaleFactor: number;
   static renderer: THREE.WebGLRenderer;
   static depthTarget: THREE.WebGLRenderTarget;
@@ -1028,15 +1028,19 @@ export class GameState implements EngineContext {
     GameState.canvas.style.setProperty('height', '0');
 
     GameState.rendererUpscaleFactor = 1;
-    // Request stencil up front for -equivalent shadow disks. Attributes
-    // must be set on the first getContext call for the canvas.
-    GameState.context = GameState.canvas.getContext('webgl', {
+    // Prefer WebGL2; fall back to WebGL1. Stencil must be requested on the
+    // first getContext call (shadow disks / force-distortion masks).
+    const glAttrs: WebGLContextAttributes = {
       antialias: false,
       alpha: true,
       depth: true,
       stencil: true,
       preserveDrawingBuffer: false,
-    }) as WebGLRenderingContext;
+    };
+    GameState.context = (
+      GameState.canvas.getContext('webgl2', glAttrs) ??
+      GameState.canvas.getContext('webgl', glAttrs)
+    ) as WebGLRenderingContext | WebGL2RenderingContext;
     GameState.renderer = new THREE.WebGLRenderer({
       antialias: false,
       canvas: GameState.canvas,
@@ -1047,7 +1051,6 @@ export class GameState implements EngineContext {
       stencil: true,
     }) as THREE.WebGLRenderer;
 
-    
     GameState.renderer.autoClear = false;
     GameState.renderer.shadowMap.enabled = true;
     GameState.renderer.shadowMap.autoUpdate = false;

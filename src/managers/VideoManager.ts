@@ -33,7 +33,7 @@ export class VideoManager {
   private static videoPlane: THREE.Mesh | null = null;
   private static backPlane: THREE.Mesh | null = null;
   private static geometry: THREE.PlaneGeometry | null = null;
-  private static material: THREE.RawShaderMaterial | null = null;
+  private static material: THREE.ShaderMaterial | null = null;
   private static backPlaneMaterial: THREE.MeshBasicMaterial | null = null;
   private static yTex: THREE.DataTexture | null = null;
   private static uTex: THREE.DataTexture | null = null;
@@ -51,28 +51,16 @@ export class VideoManager {
     if (VideoManager.videoPlane) return;
 
     VideoManager.geometry = new THREE.PlaneGeometry(1, 1, 1, 1);
-    VideoManager.material = new THREE.RawShaderMaterial({
+    // ShaderMaterial (not Raw) so Three remaps GLSL1→3 under WebGL2.
+    VideoManager.material = new THREE.ShaderMaterial({
       vertexShader: `
-        precision highp float;
-        uniform mat4 modelViewMatrix;
-        uniform mat4 projectionMatrix;
-        attribute vec3 position;
-        attribute vec4 color;
-        attribute vec2 uv;
         varying vec2 v_texCoord;
-        varying mat3 trans;
         void main() {
           v_texCoord = vec2(uv.x, 1.0 - uv.y);
-          trans = mat3(
-            1.0, 1.0, 1.0,
-            0.0, -0.34414, 1.772,
-            1.402, -0.71414, 0.0
-          );
           gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
         }
       `,
       fragmentShader: `
-        precision highp float;
         varying vec2 v_texCoord;
         uniform sampler2D yTex;
         uniform sampler2D uTex;
@@ -153,9 +141,13 @@ export class VideoManager {
     if (VideoManager.uTex) VideoManager.uTex.dispose();
     if (VideoManager.vTex) VideoManager.vTex.dispose();
 
-    VideoManager.yTex = new THREE.DataTexture(yBuffer, yStride, yBh, THREE.LuminanceFormat, THREE.UnsignedByteType, THREE.UVMapping, THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping, THREE.LinearFilter, THREE.LinearFilter);
-    VideoManager.uTex = new THREE.DataTexture(uBuffer, cStride, cBh, THREE.LuminanceFormat, THREE.UnsignedByteType, THREE.UVMapping, THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping, THREE.LinearFilter, THREE.LinearFilter);
-    VideoManager.vTex = new THREE.DataTexture(vBuffer, cStride, cBh, THREE.LuminanceFormat, THREE.UnsignedByteType, THREE.UVMapping, THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping, THREE.LinearFilter, THREE.LinearFilter);
+    // RedFormat (R8) on WebGL2; LuminanceFormat on WebGL1 fallback.
+    const planeFormat = GameState.renderer?.capabilities?.isWebGL2
+      ? THREE.RedFormat
+      : THREE.LuminanceFormat;
+    VideoManager.yTex = new THREE.DataTexture(yBuffer, yStride, yBh, planeFormat, THREE.UnsignedByteType, THREE.UVMapping, THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping, THREE.LinearFilter, THREE.LinearFilter);
+    VideoManager.uTex = new THREE.DataTexture(uBuffer, cStride, cBh, planeFormat, THREE.UnsignedByteType, THREE.UVMapping, THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping, THREE.LinearFilter, THREE.LinearFilter);
+    VideoManager.vTex = new THREE.DataTexture(vBuffer, cStride, cBh, planeFormat, THREE.UnsignedByteType, THREE.UVMapping, THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping, THREE.LinearFilter, THREE.LinearFilter);
 
     if (VideoManager.material?.uniforms) {
       VideoManager.material.uniforms.yTex.value = VideoManager.yTex;
