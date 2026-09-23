@@ -23,6 +23,8 @@ import { Utility } from "@/utility/Utility";
 import EngineLocation from "@/engine/EngineLocation";
 import { OdysseyWalkMesh } from "@/odyssey/OdysseyWalkMesh";
 import type { WalkmeshEdge } from "@/odyssey/WalkmeshEdge";
+import type { StaticBlockerGrid } from "@/engine/pathfinding/static-blocker-grid";
+import { invalidateStaticBlockerGrid } from "@/engine/pathfinding/static-blocker-grid";
 import { AudioLoader } from "@/audio/AudioLoader";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { CExoLocString } from "@/resource/CExoLocString";
@@ -190,6 +192,9 @@ export class ModuleArea extends ModuleObject {
     rooms: ModuleRoom[];
     edgesPopulated: boolean;
   }> = new Map();
+  /** XY cell hash for door/placeable static-blocker queries (see static-blocker-grid). */
+  staticBlockerGrid?: StaticBlockerGrid;
+  staticBlockerGridDirty: boolean = true;
   /** Players currently in this area — drives Increase/DecreaseAILevelPriority. */
   playersInArea: number = 0;
   /** ARE template `ID` header (LoadAreaHeader header_info[0]) — not the game ObjectId */
@@ -2625,11 +2630,13 @@ export class ModuleArea extends ModuleObject {
     if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModulePlaceable)){
       if(this.placeables.indexOf(object as ModulePlaceable) >= 0) return;
       this.placeables.push(object as ModulePlaceable);
+      invalidateStaticBlockerGrid(this);
     }
 
     if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleDoor)){
       if(this.doors.indexOf(object as ModuleDoor) >= 0) return;
       this.doors.push(object as ModuleDoor);
+      invalidateStaticBlockerGrid(this);
     }
 
     if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleTrigger)){
@@ -2686,11 +2693,13 @@ export class ModuleArea extends ModuleObject {
       const idx = this.placeables.indexOf(object as ModulePlaceable);
       if(idx >= 0){
         this.placeables.splice(idx, 1);
+        invalidateStaticBlockerGrid(this);
       }
     }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleDoor)){
       const idx = this.doors.indexOf(object as ModuleDoor);
       if(idx >= 0){
         this.doors.splice(idx, 1);
+        invalidateStaticBlockerGrid(this);
       }
     }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleTrigger)){
       const idx = this.triggers.indexOf(object as ModuleTrigger);
@@ -3464,10 +3473,11 @@ export class ModuleArea extends ModuleObject {
 
     // Geometric key only — walk/edge filters applied when copying out so
     // face-only then full queries share one face-tree descent.
-    const cacheKey = [
-      box.min.x, box.min.y, box.min.z,
-      box.max.x, box.max.y, box.max.z,
-    ].map((v) => v.toFixed(3)).join('|');
+    // Quantize to mm as integers (cheaper than toFixed string formatting).
+    const q = (v: number) => (v * 1000 + (v >= 0 ? 0.5 : -0.5)) | 0;
+    const cacheKey =
+      q(box.min.x) + "|" + q(box.min.y) + "|" + q(box.min.z) + "|" +
+      q(box.max.x) + "|" + q(box.max.y) + "|" + q(box.max.z);
     let cached = this.frameWalkCandidateCache.get(cacheKey);
 
     if(!cached){

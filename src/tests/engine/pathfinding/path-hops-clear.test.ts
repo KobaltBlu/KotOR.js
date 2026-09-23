@@ -221,7 +221,7 @@ describe("path-hops-clear", () => {
     expect(detour!.x).not.toBe(0);
   });
 
-  it("findWalkClearDetour picks the clear-to-dest candidate closest to dest", () => {
+  it("findWalkClearDetour picks the clear-to-dest candidate closest to dest within the first successful ring", () => {
     const from = new THREE.Vector3(0, 0, 0);
     const dest = new THREE.Vector3(10, 0, 0);
     mockHasWalkLineClear.mockImplementation((
@@ -245,9 +245,40 @@ describe("path-hops-clear", () => {
     } as any;
     const detour = findWalkClearDetour(area, from, dest);
     expect(detour).toBeDefined();
-    // Best remaining distance among clear-to-dest ring points is max radius on +X.
-    expect(detour!.x).toBeCloseTo(3.0, 3);
+    // First ring (r=0.5) already yields clear-to-dest; prefer closest-to-dest on that ring (+X).
+    expect(detour!.x).toBeCloseTo(0.5, 3);
     expect(Math.abs(detour!.y)).toBeLessThan(0.05);
+  });
+
+  it("findWalkClearDetour does not search outer rings once an inner clear-to-dest exists", () => {
+    const from = new THREE.Vector3(0, 0, 0);
+    const dest = new THREE.Vector3(10, 0, 0);
+    let maxProbeRadius = 0;
+    mockHasWalkLineClear.mockImplementation((
+      _area: unknown,
+      a: THREE.Vector3,
+      b: THREE.Vector3
+    ) => {
+      const fromOrigin = Math.hypot(a.x, a.y) < 1e-6;
+      if(fromOrigin){
+        const r = Math.hypot(b.x, b.y);
+        if(r > maxProbeRadius) maxProbeRadius = r;
+        if(b.x > 0.1 && Math.abs(b.y) < 0.6){
+          return { ok: true, code: WalkLineHitCode.Ok, clearT: 1, clearPoint: b.clone() };
+        }
+        return { ok: false, code: WalkLineHitCode.NonWalk, clearT: 0, clearPoint: a.clone() };
+      }
+      const r = Math.hypot(a.x, a.y);
+      if(r > maxProbeRadius) maxProbeRadius = r;
+      return { ok: true, code: WalkLineHitCode.Ok, clearT: 1, clearPoint: b.clone() };
+    });
+    const area = {
+      isPointWalkable: () => true,
+    } as any;
+    const detour = findWalkClearDetour(area, from, dest);
+    expect(detour).toBeDefined();
+    // Outer radii (1.0+) must not be probed once r=0.5 finds clear-to-dest.
+    expect(maxProbeRadius).toBeLessThan(0.75);
   });
 
   it("findWalkClearDetour rebases off-walkmesh origins to nearest walkable", () => {

@@ -1312,18 +1312,17 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
   disableMatrixUpdate(){
     this.traverse( (node) => {
-      if(node instanceof OdysseyModel3D){
-        node.matrixAutoUpdate = false;
-      }
+      // Freeze the full graph (bones + meshes). Animation marks dirty locals
+      // via markNodeTransformDirty; renderer skips auto updateMatrix on frozen nodes.
+      node.matrixAutoUpdate = false;
     });
+    // Model root still participates in parent container moves.
     this.matrixAutoUpdate = true;
   }
 
   enableMatrixUpdate(){
     this.traverse( (node) => {
-      if(node instanceof OdysseyModel3D){
-        node.matrixAutoUpdate = true;
-      }
+      node.matrixAutoUpdate = true;
     });
     this.matrixAutoUpdate = true;
   }

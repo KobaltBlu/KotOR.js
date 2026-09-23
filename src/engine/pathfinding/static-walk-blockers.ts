@@ -1,8 +1,13 @@
 import * as THREE from "three";
 import type { ModuleArea } from "@/module/ModuleArea";
 import type { ModuleDoor } from "@/module/ModuleDoor";
+import type { ModulePlaceable } from "@/module/ModulePlaceable";
 import { isStaticWalkClearOnAreaMesh, isStaticWalkClearOnWalkMesh, walkMeshHasStartOverlap } from "@/engine/pathfinding/static-walk-blockers-mesh";
 import { composeDoorWalkmeshLocalToWorld } from "@/engine/pathfinding/door-walkmesh-matrix";
+import {
+  ensureWalkmeshMatrixSynced,
+  queryStaticBlockersInAabb,
+} from "@/engine/pathfinding/static-blocker-grid";
 import {
   setHitInfoForAabb,
   type WalkHitInfo,
@@ -128,6 +133,53 @@ function closedDoorBlocksLine(
   return true;
 }
 
+function findDoorById(area: ModuleArea, id: number): ModuleDoor | undefined {
+  const doors = area.doors;
+  if(!doors?.length) return undefined;
+  for(let i = 0; i < doors.length; i++){
+    if(doors[i]?.id === id) return doors[i];
+  }
+  return undefined;
+}
+
+function findPlaceableById(area: ModuleArea, id: number): ModulePlaceable | undefined {
+  const placeables = area.placeables;
+  if(!placeables?.length) return undefined;
+  for(let i = 0; i < placeables.length; i++){
+    if(placeables[i]?.id === id) return placeables[i];
+  }
+  return undefined;
+}
+
+function testPlaceableBlocks(
+  plc: ModulePlaceable,
+  from: THREE.Vector3,
+  to: THREE.Vector3,
+  expand: number,
+  hit: WalkHitInfo | undefined,
+  softStart: boolean,
+  forceDestOnly: boolean
+): boolean {
+  const wok = plc.collisionManager?.walkmesh;
+  if(!wok?.faces?.length) return false;
+  ensureWalkmeshMatrixSynced(plc);
+  if(plc.box){
+    const minX = Math.min(from.x, to.x) - expand;
+    const maxX = Math.max(from.x, to.x) + expand;
+    const minY = Math.min(from.y, to.y) - expand;
+    const maxY = Math.max(from.y, to.y) + expand;
+    if(maxX < plc.box.min.x || minX > plc.box.max.x) return false;
+    if(maxY < plc.box.min.y || minY > plc.box.max.y) return false;
+  }
+  const mesh = isStaticWalkClearOnWalkMesh(wok, from, to, {
+    personalSpace: expand,
+    hit,
+    softClearStartOverlap: softStart,
+    forceDestOnly,
+  });
+  return !mesh.clear;
+}
+
 /**
  * Test static non-walk blockers on the segment (doors + placeables + mesh).
  * Returns clear=false → walk-line clear / hasWalkLineClear −2 (DetailedBlock).
@@ -149,6 +201,14 @@ export function isStaticWalkClearDetailed(
      * leaves this false.
      */
     softClearStartOverlap?: boolean;
+    /**
+     * Binary-search refine: test only this door/placeable id (skips mesh).
+     */
+    onlyObjectId?: number;
+    /**
+     * Binary-search refine for room-mesh blocks: skip doors/placeables.
+     */
+    meshOnly?: boolean;
   } = {}
 ): NoNonWalkPolysResult {
   if(!area) return { clear: true };
@@ -159,55 +219,95 @@ export function isStaticWalkClearDetailed(
   const ignore = options.ignoreObjectIds;
   const isIgnored = (id: number | undefined) =>
     id != null && !!ignore && ignore.indexOf(id) >= 0;
+  const onlyId = options.onlyObjectId;
+  const meshOnly = options.meshOnly === true;
 
   _from.set(from.x, from.y, from.z + 0.5);
   _to.set(to.x, to.y, to.z + 0.5);
+
+  // Scoped refine against a single known door/placeable.
+  if(onlyId != null && !meshOnly){
+    if(isIgnored(onlyId)) return { clear: true };
+    const door = findDoorById(area, onlyId);
+    if(door){
+      ensureWalkmeshMatrixSynced(door);
+      if(closedDoorBlocksLine(door, _from, _to, expand, options.hit, softStart, false)){
+        return { clear: false, blockingObjectId: door.id };
+      }
+      return { clear: true };
+    }
+    const plc = findPlaceableById(area, onlyId);
+    if(plc){
+      if(testPlaceableBlocks(plc, _from, _to, expand, options.hit, softStart, false)){
+        return { clear: false, blockingObjectId: plc.id };
+      }
+      return { clear: true };
+    }
+    // Unknown id — treat as clear for scoped path; caller may full-rescan.
+    return { clear: true };
+  }
+
+  // Room-mesh-only refine (no door/placeable id on the original block).
+  if(meshOnly){
+    if(options.skipMesh === true) return { clear: true };
+    const mesh = isStaticWalkClearOnAreaMesh(area, from, to, {
+      personalSpace: expand,
+      hit: options.hit,
+    });
+    if(!mesh.clear){
+      return {
+        clear: false,
+        blockingObjectId: options.hit?.objectId,
+      };
+    }
+    return { clear: true };
+  }
+
+  const segMinX = Math.min(_from.x, _to.x) - expand;
+  const segMaxX = Math.max(_from.x, _to.x) + expand;
+  const segMinY = Math.min(_from.y, _to.y) - expand;
+  const segMaxY = Math.max(_from.y, _to.y) + expand;
+  const nearby = queryStaticBlockersInAabb(area, segMinX, segMaxX, segMinY, segMaxY);
+  const doorsScan = nearby.doors;
+  const placeablesScan = nearby.placeables;
 
   // If the capsule already overlaps any door/placeable, force dest-only on all
   // static mesh tests so a neighbor prop cannot stadium-block the escape path.
   let forceDestOnly = false;
   if(softStart){
-    const doorsScan = area.doors;
     if(doorsScan?.length){
       for(let i = 0; i < doorsScan.length; i++){
         const door = doorsScan[i];
         if(!door || isIgnored(door.id)) continue;
         const wok = door.collisionManager?.walkmesh;
         if(!wok?.faces?.length) continue;
-        if(typeof (door as { syncWalkmeshMatrix?: () => void }).syncWalkmeshMatrix === "function"){
-          (door as { syncWalkmeshMatrix: () => void }).syncWalkmeshMatrix();
-        }
+        ensureWalkmeshMatrixSynced(door);
         if(walkMeshHasStartOverlap(wok, _from, { personalSpace: expand })){
           forceDestOnly = true;
           break;
         }
       }
     }
-    if(!forceDestOnly){
-      const placeablesScan = area.placeables;
-      if(placeablesScan?.length){
-        for(let i = 0; i < placeablesScan.length; i++){
-          const plc = placeablesScan[i];
-          if(!plc || isIgnored(plc.id)) continue;
-          const wok = plc.collisionManager?.walkmesh;
-          if(!wok?.faces?.length) continue;
-          if(typeof (plc as { syncWalkmeshMatrix?: () => void }).syncWalkmeshMatrix === "function"){
-            (plc as { syncWalkmeshMatrix: () => void }).syncWalkmeshMatrix();
-          }
-          if(walkMeshHasStartOverlap(wok, _from, { personalSpace: expand })){
-            forceDestOnly = true;
-            break;
-          }
+    if(!forceDestOnly && placeablesScan?.length){
+      for(let i = 0; i < placeablesScan.length; i++){
+        const plc = placeablesScan[i];
+        if(!plc || isIgnored(plc.id)) continue;
+        const wok = plc.collisionManager?.walkmesh;
+        if(!wok?.faces?.length) continue;
+        ensureWalkmeshMatrixSynced(plc);
+        if(walkMeshHasStartOverlap(wok, _from, { personalSpace: expand })){
+          forceDestOnly = true;
+          break;
         }
       }
     }
   }
 
-  const doors = area.doors;
-  if(doors?.length){
-    for(let i = 0; i < doors.length; i++){
-      const door = doors[i];
+  if(doorsScan?.length){
+    for(let i = 0; i < doorsScan.length; i++){
+      const door = doorsScan[i];
       if(!door || isIgnored(door.id)) continue;
+      ensureWalkmeshMatrixSynced(door);
       if(closedDoorBlocksLine(door, _from, _to, expand, options.hit, softStart, forceDestOnly)){
         return { clear: false, blockingObjectId: door.id };
       }
@@ -217,33 +317,11 @@ export function isStaticWalkClearDetailed(
   // Static placeables: collision mesh only (no bare AABB).
   // Placeables with no surface wok (InfoTerm / invisible cameras / speak
   // placeholders) must not AABB-block.
-  const placeables = area.placeables;
-  if(placeables?.length){
-    for(let i = 0; i < placeables.length; i++){
-      const plc = placeables[i];
+  if(placeablesScan?.length){
+    for(let i = 0; i < placeablesScan.length; i++){
+      const plc = placeablesScan[i];
       if(!plc || isIgnored(plc.id)) continue;
-      const wok = plc.collisionManager?.walkmesh;
-      if(!wok?.faces?.length) continue;
-      // Refresh LocalToWorld (pose + BWM header.position) before mesh test.
-      if(typeof (plc as { syncWalkmeshMatrix?: () => void }).syncWalkmeshMatrix === 'function'){
-        (plc as { syncWalkmeshMatrix: () => void }).syncWalkmeshMatrix();
-      }
-      if(plc.box){
-        const minX = Math.min(_from.x, _to.x) - expand;
-        const maxX = Math.max(_from.x, _to.x) + expand;
-        const minY = Math.min(_from.y, _to.y) - expand;
-        const maxY = Math.max(_from.y, _to.y) + expand;
-        if(maxX < plc.box.min.x || minX > plc.box.max.x) continue;
-        if(maxY < plc.box.min.y || minY > plc.box.max.y) continue;
-      }
-      // Placeable surface meshes use walkcheck material bits (unlike door geo).
-      const mesh = isStaticWalkClearOnWalkMesh(wok, _from, _to, {
-        personalSpace: expand,
-        hit: options.hit,
-        softClearStartOverlap: softStart,
-        forceDestOnly,
-      });
-      if(!mesh.clear){
+      if(testPlaceableBlocks(plc, _from, _to, expand, options.hit, softStart, forceDestOnly)){
         return { clear: false, blockingObjectId: plc.id };
       }
     }

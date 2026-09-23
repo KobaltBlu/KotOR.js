@@ -112,4 +112,52 @@ describe("hasWalkLineClear DetailedBlock clearT", () => {
     expect(hit.ok).toBe(true);
     expect(hit.code).toBe(WalkLineHitCode.Ok);
   });
+
+  it("passes onlyObjectId into refine mid-samples when blockingObjectId is known", () => {
+    const blockerId = 42;
+    noNonWalkMock.mockImplementation(
+      (
+        _area: unknown,
+        _from: THREE.Vector3,
+        to: THREE.Vector3,
+        opts?: { onlyObjectId?: number; meshOnly?: boolean }
+      ) => {
+        // Initial full scan blocks with an id.
+        if(opts?.onlyObjectId == null && opts?.meshOnly !== true && to.x >= 9.9){
+          return { clear: false, blockingObjectId: blockerId };
+        }
+        // Scoped refine: only respond to the known blocker.
+        if(opts?.onlyObjectId === blockerId){
+          return { clear: to.x < 9 };
+        }
+        // Verify / other: clear when endpoint short of block.
+        return { clear: to.x < 9 };
+      }
+    );
+
+    const area = {
+      walkFaces: [],
+      rooms: [],
+      isPointWalkable: () => true,
+    } as unknown as ModuleArea;
+    const origin = new THREE.Vector3(0, 0, 0);
+    const dest = new THREE.Vector3(10, 0, 0);
+
+    const hit = hasWalkLineClear(area, origin, dest, {
+      personalSpace: 0.5,
+      checkCreatures: false,
+      skipRoomCheck: true,
+      skipClippedLine: false,
+    });
+
+    expect(hit.ok).toBe(false);
+    expect(hit.code).toBe(WalkLineHitCode.DetailedBlock);
+    expect(hit.blockingObjectId).toBe(blockerId);
+    expect(hit.clearT).toBeGreaterThan(0.85);
+
+    const scopedCalls = noNonWalkMock.mock.calls.filter(
+      (c) => (c[3] as { onlyObjectId?: number } | undefined)?.onlyObjectId === blockerId
+    );
+    expect(scopedCalls.length).toBe(10);
+  });
 });

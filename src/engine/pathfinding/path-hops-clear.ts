@@ -215,6 +215,7 @@ export function findWalkClearDetour(
 
   for(let ri = 0; ri < DETOUR_RADII.length; ri++){
     const radius = DETOUR_RADII[ri];
+    let ringFoundClearToDest = false;
     for(let a = 0; a < DETOUR_ANGLES; a++){
       const ang = (a * Math.PI * 2) / DETOUR_ANGLES;
       _detour.set(
@@ -228,15 +229,23 @@ export function findWalkClearDetour(
       }
 
       const d = Math.hypot(dest.x - _detour.x, dest.y - _detour.y);
+      // Already have a clearer-to-dest candidate closer to dest — skip dest probe.
+      if(d + 1e-4 >= bestClearToDestDist){
+        if(d + 0.05 < bestCloserDist){
+          bestCloserDist = d;
+          bestCloser = _detour.clone();
+        }
+        continue;
+      }
+
       const toHit = hasWalkLineClear(area, _detour, dest, {
         owner,
         checkCreatures: false,
       });
       if(toHit.ok || toHit.code === WalkLineHitCode.Creature){
-        if(d + 1e-4 < bestClearToDestDist){
-          bestClearToDestDist = d;
-          bestClearToDest = _detour.clone();
-        }
+        bestClearToDestDist = d;
+        bestClearToDest = _detour.clone();
+        ringFoundClearToDest = true;
         continue;
       }
 
@@ -244,6 +253,11 @@ export function findWalkClearDetour(
         bestCloserDist = d;
         bestCloser = _detour.clone();
       }
+    }
+    // Inner rings are closer to the actor; once a ring yields a clear-to-dest
+    // step, skip outer rings (avoids up to ~80 extra hasWalkLineClear probes).
+    if(ringFoundClearToDest && bestClearToDest){
+      return bestClearToDest;
     }
   }
 

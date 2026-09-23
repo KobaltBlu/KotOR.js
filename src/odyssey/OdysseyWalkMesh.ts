@@ -20,7 +20,6 @@ const _raycastInverseMatrix = new THREE.Matrix4();
 const _raycastLocalRay = new THREE.Ray();
 const _raycastLocalHit = new THREE.Vector3();
 const _raycastWorldHit = new THREE.Vector3();
-const _faceBoxScratch = new THREE.Box3();
 const _sectorBoxScratch = new THREE.Box3();
 const _sectorMinScratch = new THREE.Vector3();
 const _sectorMaxScratch = new THREE.Vector3();
@@ -724,15 +723,19 @@ export class OdysseyWalkMesh {
 
   private faceOverlapsBox(face: OdysseyFace3 | undefined, box: THREE.Box3): boolean {
     if(!face) return false;
-    const a = this.vertices[face.a];
-    const b = this.vertices[face.b];
-    const c = this.vertices[face.c];
-    if(!a || !b || !c) return false;
-    _faceBoxScratch.makeEmpty();
-    _faceBoxScratch.expandByPoint(a);
-    _faceBoxScratch.expandByPoint(b);
-    _faceBoxScratch.expandByPoint(c);
-    return _faceBoxScratch.intersectsBox(box) || _faceBoxScratch.containsBox(box);
+    let faceBox = face.aabb;
+    if(!faceBox){
+      const a = this.vertices[face.a];
+      const b = this.vertices[face.b];
+      const c = this.vertices[face.c];
+      if(!a || !b || !c) return false;
+      faceBox = new THREE.Box3().makeEmpty();
+      faceBox.expandByPoint(a);
+      faceBox.expandByPoint(b);
+      faceBox.expandByPoint(c);
+      face.aabb = faceBox;
+    }
+    return faceBox.intersectsBox(box) || faceBox.containsBox(box);
   }
 
   private collectAABBFaces(

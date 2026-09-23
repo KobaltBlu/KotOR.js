@@ -93,6 +93,9 @@ export class OdysseyFace3 {
 		a: false, b: false, c: false
 	};
 
+	/** Cached local-space AABB of the three verts (filled on first overlap query). */
+	aabb?: THREE.Box3;
+
 	/**
 	 * @param a Vertex A index.
 	 * @param b Vertex B index.

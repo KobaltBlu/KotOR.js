@@ -346,7 +346,8 @@ export function hasWalkLineClear(
         perspace,
         options.skipClippedLine === true,
         clearPoint,
-        options.softClearStartOverlap === true
+        options.softClearStartOverlap === true,
+        polys.blockingObjectId
       );
       return {
         ok: false,
@@ -502,6 +503,9 @@ export function hasWalkLineClear(
  * Binary-search farthest t where origin→lerp(t) clears detailed non-walk.
  * Partial-path recovery needs clearT > 0 when a static object only blocks
  * near the destination (e.g. console placeable beside a waypoint).
+ *
+ * When `blockingObjectId` is known, each mid sample tests only that object
+ * (or room mesh when id is missing) instead of a full area scan.
  */
 function refineDetailedClearT(
   area: ModuleArea,
@@ -510,8 +514,12 @@ function refineDetailedClearT(
   perspace: number,
   skipMesh: boolean,
   out: THREE.Vector3,
-  softClearStartOverlap = false
+  softClearStartOverlap = false,
+  blockingObjectId?: number,
+  forceFull = false
 ): number {
+  const scoped = !forceFull && blockingObjectId != null;
+  const meshOnly = !forceFull && !scoped && !skipMesh;
   let lo = 0;
   let hi = 1;
   out.copy(origin);
@@ -524,8 +532,10 @@ function refineDetailedClearT(
     );
     const midPolys = isStaticWalkClearDetailed(area, origin, _sample, {
       personalSpace: perspace,
-      skipMesh,
+      skipMesh: scoped ? true : skipMesh,
       softClearStartOverlap,
+      onlyObjectId: scoped ? blockingObjectId : undefined,
+      meshOnly: meshOnly,
     });
     if(midPolys.clear){
       lo = mid;
@@ -534,6 +544,29 @@ function refineDetailedClearT(
       if(!isNaN(z)) out.z = z;
     }else{
       hi = mid;
+    }
+  }
+
+  // Scoped refine can miss a second blocker closer to origin — verify and
+  // fall back to a full (unscoped) binary search when needed.
+  if(!forceFull && (scoped || meshOnly)){
+    const verify = isStaticWalkClearDetailed(area, origin, out, {
+      personalSpace: perspace,
+      skipMesh,
+      softClearStartOverlap,
+    });
+    if(!verify.clear){
+      return refineDetailedClearT(
+        area,
+        origin,
+        dest,
+        perspace,
+        skipMesh,
+        out,
+        softClearStartOverlap,
+        undefined,
+        true
+      );
     }
   }
   return lo;
