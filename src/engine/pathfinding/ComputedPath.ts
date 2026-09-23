@@ -15,6 +15,7 @@ import type { PathPointDfsTransTable } from "@/engine/pathfinding/path-point-dfs
 import { isStaticWalkClearDetailed } from "@/engine/pathfinding/static-walk-blockers";
 import { isCreatureCapsuleClear } from "@/engine/pathfinding/creature-capsule-clear";
 import { isPthEdgeBlockedByObject } from "@/engine/pathfinding/pth-edge-block";
+import { isWalkmeshEdgeWalkClear } from "@/engine/pathfinding/path-hops-clear";
 
 import { isCreature } from "@/module/guards/isCreature";
 
@@ -167,7 +168,7 @@ export class ComputedPath {
 
   /**
    * Edge cost for PTH expansion (GenerateSuccessors).
-   * cost < 0 = blocked (static door / placeable).
+   * cost < 0 = blocked (static door / placeable / NonWalk void chord).
    * Non-static doors do not prune edges — plot through while scripted open finishes.
    * Creature on line → detour length + splice waypoint.
    */
@@ -176,7 +177,7 @@ export class ComputedPath {
     const area = from.area ?? this.owner?.area;
     if(!area) return { cost: dist };
 
-    // order: creature capsule clear, then static walk blockers (detailed)
+    // order: creature capsule clear, then walkmesh void, then static walk blockers
     const creatures = isCreatureCapsuleClear(area, from.vector, to.vector, {
       owner: this.owner,
       allowPartyCreatures: true,
@@ -190,6 +191,11 @@ export class ComputedPath {
         if(d) return { cost: d.cost, detour: d.detour };
       }
       return { cost: dist + Math.max(1.0, dist * 0.5) };
+    }
+
+    // Walkable endpoints with a NonWalk / hard-block chord must not enter the path.
+    if(!isWalkmeshEdgeWalkClear(area, from.vector, to.vector, this.owner)){
+      return { cost: -1 };
     }
 
     const polys = isStaticWalkClearDetailed(area, from.vector, to.vector, {

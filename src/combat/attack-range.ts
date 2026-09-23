@@ -43,6 +43,13 @@ export function getCreaturePersonalSpace(obj: ModuleObject | undefined): number 
 export function getPathPersonalSpace(obj: ModuleObject | undefined): number {
   const creature = asCreature(obj);
   if(creature){
+    // Narrow-corridor escape override (doorway jam recovery).
+    if(
+      typeof creature.pathFindDrivePersonalSpace === "number" &&
+      creature.pathFindDrivePersonalSpace >= 0
+    ){
+      return creature.pathFindDrivePersonalSpace;
+    }
     return creature.getAppearance()?.perspace ?? 0.35;
   }
   return 0.35;

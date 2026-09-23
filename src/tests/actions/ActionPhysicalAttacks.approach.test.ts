@@ -132,6 +132,12 @@ import { hasCombatLineOfSight } from '@/combat/attack-range';
 import { ActionType } from '@/enums/actions/ActionType';
 import { tryForceJumpApproach } from '@/combat/try-force-jump-approach';
 import { CombatFeatType } from '@/enums/combat/CombatFeatType';
+import {
+  CreatureLocoState,
+  getCreatureLocoState,
+  tryWakePausedCreatureLoco,
+} from '@/engine/pathfinding/creature-loco';
+import type { ModuleCreature } from '@/module/ModuleCreature';
 
 describe('ActionPhysicalAttacks approach queue', () => {
   beforeEach(() => {
@@ -203,6 +209,33 @@ describe('ActionPhysicalAttacks approach queue', () => {
     expect(move.parameters[0].value).toBe(10);
     expect(move.parameters[4].value).toBe(2);
     expect(move.parameters[6].value).toBe(2.0);
+  });
+
+  it('front-queued MoveToPoint wakes a paused creature and carries plot dest params', () => {
+    const owner = makeOwner(new THREE.Vector3(76.74, 83.28, 0));
+    const target = makeTarget(new THREE.Vector3(80.324, 73.008, 0));
+    const action = new ActionPhysicalAttacks();
+    (action as any).owner = owner;
+    action.setParameter(1, ActionParameterType.DWORD, target as any);
+    (action as any).target = target;
+
+    expect(action.update(0)).toBe(ActionStatus.COMPLETE);
+    const move = queued[0] as {
+      type?: number;
+      parameters: { type: number; value: unknown }[];
+    };
+    expect(move.type).toBe(ActionType.ActionMoveToPoint);
+    // Dest comes from getNearestActionPoint mock (10,0,0); live target id in param 4.
+    expect(move.parameters[0].value).toBe(10);
+    expect(move.parameters[1].value).toBe(0);
+    expect(move.parameters[4].value).toBe(2);
+
+    // Prior completed move leaves Paused; head MoveToPoint must wake PathWalk.
+    const creature = {
+      creatureLocoState: CreatureLocoState.Paused,
+    } as unknown as ModuleCreature;
+    expect(tryWakePausedCreatureLoco(creature, move.type)).toBe(true);
+    expect(getCreatureLocoState(creature)).toBe(CreatureLocoState.PathWalk);
   });
 
   it('backoff queues only Move + PhysicalAttacks (no Check/Facing)', () => {

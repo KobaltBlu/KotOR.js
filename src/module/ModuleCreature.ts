@@ -176,8 +176,8 @@ import {
 import {
   CreatureLocoState,
   isPartyFollowLocoActive,
-  isCreatureLocoPaused,
   setCreatureLocoState,
+  tryWakePausedCreatureLoco,
 } from "@/engine/pathfinding/creature-loco";
 import {
   cameraRelativeDesired,
@@ -344,6 +344,11 @@ export class ModuleCreature extends ModuleObject {
    * (DesiredAttackRange − target cre_personal_space). 0 = use default perspace.
    */
   pathFindApproachPersonalSpace: number = 0;
+  /**
+   * Temporary drive / walk-line personal space override for narrow corridor
+   * escape (e.g. doorway jam recovery). < 0 = unset (use appearance perspace).
+   */
+  pathFindDrivePersonalSpace: number = -1;
   /**
    * Search / detect mode (detect_mode).
    * KotOR defaults ON (constructor + Load* force SetActivity(2,1)); no player UI toggle.
@@ -974,15 +979,17 @@ export class ModuleCreature extends ModuleObject {
     if(this.isDead()) return;
     if(!GameState.module?.readyToProcessEvents) return;
 
-    // : field438 == 1 → early return (paused / end-of-path)
-    if(isCreatureLocoPaused(this) && !isForcePushLocoActive(this)){
-      return;
-    }
-
+    // Force Push / Force Jump run even while paused or debilitated.
     if(isForcePushLocoActive(this)){
       tickForcePushLoco(this, delta);
       updateForcePushAnimFlags(this, delta);
       this._creatureLocoThisFrame = true;
+      return;
+    }
+
+    // Paused / end-of-path: wake when a new locomotion action is at queue head
+    // (e.g. PhysicalAttacks front-queues MoveToPoint without changing loco state).
+    if(!tryWakePausedCreatureLoco(this, this.actionQueue?.[0]?.type)){
       return;
     }
 

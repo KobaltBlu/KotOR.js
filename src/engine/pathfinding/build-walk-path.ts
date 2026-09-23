@@ -4,6 +4,7 @@ import type { ModuleObject } from "@/module/ModuleObject";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ComputedPath } from "@/engine/pathfinding/ComputedPath";
 import { beginInterAreaPath } from "@/engine/pathfinding/inter-area-path";
+import { pathHopsAreWalkClear } from "@/engine/pathfinding/path-hops-clear";
 
 import { isCreature } from "@/module/guards/isCreature";
 
@@ -95,11 +96,12 @@ export function buildWalkPath(
     return { code: WalkPathCode.Ready };
   }
 
-  const path = area.path.traverseToPoint(
+  const wantSmooth = opts.smooth !== false;
+  let path = area.path.traverseToPoint(
     owner,
     info.origin,
     info.dest,
-    opts.smooth !== false
+    wantSmooth
   );
 
   if(!path?.points?.length){
@@ -126,6 +128,37 @@ export function buildWalkPath(
   ){
     info.lastCode = WalkPathCode.Incomplete;
     return { code: WalkPathCode.Incomplete, path };
+  }
+
+  // Smooth chords can cross blocking edges — rebuild unsmoothed once if hops fail.
+  if(
+    wantSmooth &&
+    !pathHopsAreWalkClear(area, info.origin, path, owner)
+  ){
+    const unsmooth = area.path.traverseToPoint(
+      owner,
+      info.origin,
+      info.dest,
+      false
+    );
+    if(unsmooth?.points?.length){
+      if(
+        unsmooth.incomplete ||
+        unsmooth.smoothResume ||
+        unsmooth.smoothCornerResume
+      ){
+        info.lastCode = WalkPathCode.Incomplete;
+        return { code: WalkPathCode.Incomplete, path: unsmooth };
+      }
+      path = unsmooth;
+    }
+  }
+
+  // Both smooth and unsmooth can still chord through NonWalk (doorway voids).
+  // Do not ship a Ready poison polyline — callers must detour or fail the move.
+  if(!pathHopsAreWalkClear(area, info.origin, path, owner)){
+    info.lastCode = WalkPathCode.Fail;
+    return { code: WalkPathCode.Fail, path };
   }
 
   info.lastCode = WalkPathCode.Ready;

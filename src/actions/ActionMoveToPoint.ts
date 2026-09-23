@@ -20,6 +20,14 @@ import {
   WalkPathCode,
   type PathFindInfoLite,
 } from "@/engine/pathfinding/build-walk-path";
+import {
+  dropWalkmeshBlockedPathPrefix,
+  findWalkClearDetour,
+  isWalkmeshEdgeWalkClear,
+  isWalkmeshHopBlocked,
+  pathHopsAreWalkClear,
+} from "@/engine/pathfinding/path-hops-clear";
+import { ComputedPath } from "@/engine/pathfinding/ComputedPath";
 import { findOpenWalkLocation } from "@/engine/pathfinding/open-walk-location";
 import {
   CreatureLocoState,
@@ -198,9 +206,14 @@ export class ActionMoveToPoint extends Action {
     }
 
     if(!this.computedPath?.points?.length){
-      this.stopMoving(this.owner);
-      this.setComputedPath(undefined);
-      return ActionStatus.FAILED;
+      // Poison / unreachable plot — try walk-clear ring detour before failing.
+      if(this.tryWalkClearDetour(this.owner) && this.computedPath?.points?.length){
+        // Fall through to walk the detour path this frame.
+      }else{
+        this.stopMoving(this.owner);
+        this.setComputedPath(undefined);
+        return ActionStatus.FAILED;
+      }
     }
 
     const distance = Utility.Distance2D(this.owner.position, this.target_position);
@@ -225,7 +238,15 @@ export class ActionMoveToPoint extends Action {
       if(walkResult === CreatureWalkResult.ARRIVED){
         this.consumeArrivedPathPoint(this.owner, range);
       }else if(walkResult === CreatureWalkResult.BLOCKED){
-        this.syncBlockedComputedPath(this.owner);
+        // null = keep walking; COMPLETE / FAILED (undefined) = terminal
+        const blockedStatus = this.handleWalkmeshBlocked(
+          this.owner,
+          range,
+          useRangeTarget
+        );
+        if(blockedStatus !== null){
+          return blockedStatus;
+        }
       }
 
       // tickCreatureWalk / walk tick may clear the this.owner path on hard block (6 fails) — sync leaves
@@ -359,6 +380,260 @@ export class ActionMoveToPoint extends Action {
     }
   }
 
+  /**
+   * Walkmesh / stale-hop recovery after drive BLOCKED.
+   * Creature blocks are handled inside tickCreatureWalk (hex / fail count);
+   * this recovers when the next path hop is not walk-line clear.
+   *
+   * @returns `null` to keep walking; `COMPLETE` / `FAILED` to stop the action.
+   * (`FAILED` is `undefined` in ActionStatus — do not use undefined as continue.)
+   */
+  private handleWalkmeshBlocked(
+    owner: ModuleCreature,
+    range: number,
+    useRangeTarget: boolean
+  ): ActionStatus | null {
+    this.syncBlockedComputedPath(owner);
+
+    // Already in arrive / use range — complete even if path is poisoned.
+    if(useRangeTarget && this.target && isObject(this.target)){
+      if(
+        isInUseRange(owner, this.target) ||
+        Utility.Distance2D(owner.position, this.real_target_position) <= range
+      ){
+        this.stopMoving(owner);
+        this.setComputedPath(undefined);
+        return ActionStatus.COMPLETE;
+      }
+    }else if(Utility.Distance2D(owner.position, this.target_position) <= range){
+      this.stopMoving(owner);
+      this.setComputedPath(undefined);
+      return ActionStatus.COMPLETE;
+    }
+
+    // tickCreatureWalk may have cleared the path (creature hex / 6 fails).
+    if(!this.computedPath?.points?.length){
+      return this.escapeWalkmeshJam(owner);
+    }
+
+    const area = owner.area;
+    const next = this.computedPath.points[0]?.vector;
+    if(!area || !next){
+      return this.escapeWalkmeshJam(owner);
+    }
+
+    const blockingTimer = owner.blockingTimer | 0;
+    if(!isWalkmeshHopBlocked(area, owner.position, next, owner, blockingTimer)){
+      return null;
+    }
+
+    dropWalkmeshBlockedPathPrefix(
+      area,
+      owner.position,
+      this.computedPath,
+      owner,
+      blockingTimer
+    );
+
+    const still = this.computedPath?.points?.[0]?.vector;
+    if(
+      !still ||
+      isWalkmeshHopBlocked(area, owner.position, still, owner, blockingTimer)
+    ){
+      return this.escapeWalkmeshJam(owner);
+    }
+    return null;
+  }
+
+  /**
+   * Repath from current position; if the first hop is still walkmesh-blocked
+   * (or plot fails), ring-search a walk-clear detour. No escape → FAILED.
+   *
+   * @returns `null` if a usable path was installed; otherwise `FAILED`.
+   */
+  private escapeWalkmeshJam(owner: ModuleCreature): ActionStatus | null {
+    this.repathFromCurrentPosition();
+
+    const area = owner.area;
+    const next = this.computedPath?.points?.[0]?.vector;
+    const blockingTimer = owner.blockingTimer | 0;
+    if(
+      next &&
+      area &&
+      !isWalkmeshHopBlocked(area, owner.position, next, owner, blockingTimer)
+    ){
+      return null;
+    }
+
+    if(this.tryWalkClearDetour(owner)){
+      return null;
+    }
+
+    this.stopMoving(owner);
+    this.setComputedPath(undefined);
+    return ActionStatus.FAILED;
+  }
+
+  /**
+   * Ring-search a walk-clear intermediate and install a validated two-leg path
+   * owner → detour → real destination. Does not mutate action destination params.
+   * Off-walkmesh origins get a synthetic escape hop onto the detour.
+   */
+  private tryWalkClearDetour(owner: ModuleCreature): boolean {
+    const area = owner.area;
+    if(!area) return false;
+
+    const realDest = this.target_position.clone();
+    const detour = findWalkClearDetour(
+      area,
+      owner.position,
+      realDest,
+      owner
+    );
+    if(!detour) return false;
+
+    const originOffMesh =
+      typeof area.isPointWalkable === "function" &&
+      !area.isPointWalkable(owner.position);
+
+    let leg1Path: ComputedPath | undefined;
+    if(originOffMesh){
+      // Drive soft-start can leave the mesh; force the first waypoint onto the
+      // rebased walkable / ring detour so buildWalkPath hop-clear does not kill recovery.
+      leg1Path = ComputedPath.FromVector3List([detour.clone()]);
+    }else{
+      const leg1Info: PathFindInfoLite = {
+        ownerId: owner.id,
+        origin: owner.position.clone(),
+        dest: detour.clone(),
+        replot: true,
+      };
+      const leg1 = buildWalkPath(area, owner, leg1Info);
+      if(leg1.code !== WalkPathCode.Ready || !leg1.path?.points?.length){
+        return false;
+      }
+      leg1Path = leg1.path;
+    }
+
+    const leg2Info: PathFindInfoLite = {
+      ownerId: owner.id,
+      origin: detour.clone(),
+      dest: realDest.clone(),
+      replot: true,
+    };
+    const leg2 = buildWalkPath(area, owner, leg2Info);
+    let leg2Path: ComputedPath | undefined =
+      leg2.code === WalkPathCode.Ready && leg2.path?.points?.length
+        ? leg2.path
+        : undefined;
+    if(!leg2Path){
+      // Graph plot can Fail with NonWalk chords even when the straight
+      // detour → dest chord is face-walkable — prefer the direct hop.
+      if(
+        Utility.Distance2D(detour, realDest) > 0.5 &&
+        isWalkmeshEdgeWalkClear(area, detour, realDest, owner)
+      ){
+        leg2Path = ComputedPath.FromVector3List([realDest.clone()]);
+      }else if(Utility.Distance2D(detour, realDest) > 0.5){
+        // Detour may itself be the destination (nearest walkable clear to dest).
+        return false;
+      }
+    }
+
+    const merged = typeof leg1Path.clone === "function"
+      ? leg1Path.clone()
+      : leg1Path;
+    if(leg2Path?.points?.length){
+      if(typeof merged.merge === "function"){
+        merged.merge(leg2Path);
+      }else{
+        return false;
+      }
+    }
+
+    // Drop leading origin duplicates so the first hop is the detour.
+    while(merged.points.length > 1){
+      const first = merged.points[0]?.vector;
+      if(!first) break;
+      if(Utility.Distance2D(owner.position, first) > 0.05) break;
+      merged.pop();
+    }
+
+    if(!merged.points?.length){
+      return false;
+    }
+
+    // Narrow-corridor escape: validate and drive with personalSpace 0 so
+    // doorway chords that are face-walkable are not rejected by appearance pad.
+    owner.pathFindDrivePersonalSpace = 0;
+
+    // Full hop-clear from an off-mesh start always fails; leg2 already validated
+    // the on-mesh remainder when present.
+    if(
+      !originOffMesh &&
+      !pathHopsAreWalkClear(area, owner.position, merged, owner)
+    ){
+      owner.pathFindDrivePersonalSpace = -1;
+      return false;
+    }
+
+    // Keep pathFindInfo aimed at the real attack / move destination.
+    if(!this.pathFindInfo){
+      this.pathFindInfo = {
+        ownerId: owner.id,
+        origin: owner.position.clone(),
+        dest: realDest.clone(),
+      };
+    }else{
+      this.pathFindInfo.ownerId = owner.id;
+      this.pathFindInfo.origin.copy(owner.position);
+      this.pathFindInfo.dest.copy(realDest);
+      this.pathFindInfo.replot = false;
+      this.pathFindInfo.lastCode = WalkPathCode.Ready;
+      this.pathFindInfo.lastOrigin = owner.position.clone();
+      this.pathFindInfo.lastDest = realDest.clone();
+    }
+
+    const perspace = owner.pathFindApproachPersonalSpace > 0
+      ? owner.pathFindApproachPersonalSpace
+      : getPathPersonalSpace(owner);
+    merged.fixWalkEdges?.(perspace);
+    merged.setColor?.(owner.helperColor);
+    this.setComputedPath(merged);
+    setCreatureLocoState(owner, CreatureLocoState.PathWalk);
+    if(originOffMesh){
+      return true;
+    }
+    return !isWalkmeshHopBlocked(
+      area,
+      owner.position,
+      merged.points[0].vector,
+      owner,
+      owner.blockingTimer | 0
+    );
+  }
+
+  /**
+   * Clear poisoned path and replot from the creature's current position.
+   */
+  private repathFromCurrentPosition(): void {
+    if(!isCreature(this.owner)) return;
+    setCreatureLocoState(this.owner, CreatureLocoState.Repath);
+    this.setComputedPath(undefined);
+    if(this.pathFindInfo){
+      this.pathFindInfo.replot = true;
+      this.pathFindInfo.origin.copy(this.owner.position);
+      this.pathFindInfo.dest.copy(this.target_position);
+      this.pathFindInfo.lastCode = undefined;
+      this.pathFindInfo.lastOrigin = undefined;
+      this.pathFindInfo.lastDest = undefined;
+    }
+    this.calculatePath();
+    if(this.computedPath?.points?.length){
+      setCreatureLocoState(this.owner, CreatureLocoState.PathWalk);
+    }
+  }
+
   private pathRemaining(owner: ModuleCreature): number {
     const pts = this.computedPath?.points;
     if(!pts?.length) return 0;
@@ -372,6 +647,8 @@ export class ActionMoveToPoint extends Action {
   private stopMoving(owner: ModuleCreature){
     // Clear physics + walk/run anim.
     owner.clearLocomotionState(false);
+    // Drop narrow-corridor escape override.
+    owner.pathFindDrivePersonalSpace = -1;
     // Mark locomotion paused at end of path.
     setCreatureLocoState(owner, CreatureLocoState.Paused);
   }
@@ -513,6 +790,15 @@ export class ActionMoveToPoint extends Action {
       return;
     }
 
+    // Incomplete mid-smooth paths can still carry NonWalk chords — do not drive them.
+    if(
+      result.code === WalkPathCode.Incomplete &&
+      !pathHopsAreWalkClear(area, this.owner.position, path, this.owner)
+    ){
+      this.setComputedPath(undefined);
+      return;
+    }
+
     path.fixWalkEdges(
       this.owner.pathFindApproachPersonalSpace > 0
         ? this.owner.pathFindApproachPersonalSpace
@@ -521,6 +807,16 @@ export class ActionMoveToPoint extends Action {
     path.setColor(this.owner.helperColor);
     this.setComputedPath(path);
     setCreatureLocoState(this.owner, CreatureLocoState.PathWalk);
+
+    // Face-clear plot hops can still fail appearance personal-space in narrow
+    // corridors (doorways) — allow drive to match the plot face-clear bar.
+    const first = path.points[0]?.vector;
+    if(
+      first &&
+      isWalkmeshHopBlocked(area, this.owner.position, first, this.owner, 0)
+    ){
+      this.owner.pathFindDrivePersonalSpace = 0;
+    }
   }
 
   private getRawNumberParameter(index: number): number | undefined {

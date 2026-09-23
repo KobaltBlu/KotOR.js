@@ -34,13 +34,16 @@ import {
   isForcePushLocoActive,
   isPartyFollowLocoActive,
   isCreatureLocoPaused,
+  locoStateToWakePaused,
   setCreatureLocoState,
+  tryWakePausedCreatureLoco,
 } from "@/engine/pathfinding/creature-loco";
 import {
   computeFollowStepBudget,
   getEffectiveFollowRate,
 } from "@/engine/pathfinding/party-follow-sm";
 import { CombatFeatType } from "@/enums/combat/CombatFeatType";
+import { ActionType } from "@/enums/actions/ActionType";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
 function makeCreature(partial: Record<string, unknown> = {}): ModuleCreature {
@@ -81,6 +84,76 @@ describe("CreatureLocoState", () => {
     expect(isForcePushLocoActive(creature)).toBe(true);
     setCreatureLocoState(creature, CreatureLocoState.ForceJumpTarget);
     expect(isForcePushLocoActive(creature)).toBe(true);
+  });
+});
+
+describe("tryWakePausedCreatureLoco", () => {
+  it("wakes PathWalk for head ActionMoveToPoint", () => {
+    const creature = makeCreature();
+    setCreatureLocoState(creature, CreatureLocoState.Paused);
+    expect(
+      tryWakePausedCreatureLoco(creature, ActionType.ActionMoveToPoint)
+    ).toBe(true);
+    expect(getCreatureLocoState(creature)).toBe(CreatureLocoState.PathWalk);
+  });
+
+  it("wakes PathWalk for Drive and ForceFollowObject", () => {
+    const drive = makeCreature();
+    setCreatureLocoState(drive, CreatureLocoState.Paused);
+    expect(tryWakePausedCreatureLoco(drive, ActionType.ActionDrive)).toBe(true);
+    expect(getCreatureLocoState(drive)).toBe(CreatureLocoState.PathWalk);
+
+    const follow = makeCreature();
+    setCreatureLocoState(follow, CreatureLocoState.Paused);
+    expect(
+      tryWakePausedCreatureLoco(follow, ActionType.ActionForceFollowObject)
+    ).toBe(true);
+    expect(getCreatureLocoState(follow)).toBe(CreatureLocoState.PathWalk);
+  });
+
+  it("wakes PartyFollow for head ActionFollowLeader", () => {
+    const creature = makeCreature();
+    setCreatureLocoState(creature, CreatureLocoState.Paused);
+    expect(
+      tryWakePausedCreatureLoco(creature, ActionType.ActionFollowLeader)
+    ).toBe(true);
+    expect(getCreatureLocoState(creature)).toBe(CreatureLocoState.PartyFollow);
+  });
+
+  it("stays paused without a locomotion head action", () => {
+    const creature = makeCreature();
+    setCreatureLocoState(creature, CreatureLocoState.Paused);
+    expect(
+      tryWakePausedCreatureLoco(creature, ActionType.ActionPhysicalAttacks)
+    ).toBe(false);
+    expect(isCreatureLocoPaused(creature)).toBe(true);
+    expect(tryWakePausedCreatureLoco(creature, undefined)).toBe(false);
+    expect(isCreatureLocoPaused(creature)).toBe(true);
+  });
+
+  it("is a no-op when not paused", () => {
+    const creature = makeCreature();
+    setCreatureLocoState(creature, CreatureLocoState.PathWalk);
+    expect(
+      tryWakePausedCreatureLoco(creature, ActionType.ActionMoveToPoint)
+    ).toBe(true);
+    expect(getCreatureLocoState(creature)).toBe(CreatureLocoState.PathWalk);
+  });
+
+  it("locoStateToWakePaused leaves ForcePush routing unchanged", () => {
+    expect(locoStateToWakePaused(ActionType.ActionMoveToPoint)).toBe(
+      CreatureLocoState.PathWalk
+    );
+    expect(locoStateToWakePaused(ActionType.ActionFollowLeader)).toBe(
+      CreatureLocoState.PartyFollow
+    );
+    // Force-push modes are selected before wake; helper only maps head actions.
+    const creature = makeCreature();
+    setCreatureLocoState(creature, FORCE_PUSH_LOCO_STATE);
+    expect(isForcePushLocoActive(creature)).toBe(true);
+    expect(locoStateToWakePaused(ActionType.ActionMoveToPoint)).toBe(
+      CreatureLocoState.PathWalk
+    );
   });
 });
 

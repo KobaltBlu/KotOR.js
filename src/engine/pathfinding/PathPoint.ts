@@ -3,7 +3,7 @@ import type { ModuleObject } from "@/module/ModuleObject";
 import type { GFFStruct } from "@/resource/GFFStruct";
 import type { WalkmeshEdge } from "@/odyssey/WalkmeshEdge";
 import { isCreatureCapsuleClear } from "@/engine/pathfinding/creature-capsule-clear";
-import { segmentCrossesBlockingWalkEdge } from "@/engine/pathfinding/walk-line-clear";
+import { isWalkmeshEdgeWalkClear } from "@/engine/pathfinding/path-hops-clear";
 import * as THREE from 'three';
 import { IPathPointOptions } from "@/interface/engine/pathfinding/IPathPointOptions";
 
@@ -80,7 +80,8 @@ export class PathPoint {
     if(!this.area)
       return true;
 
-    if(segmentCrossesBlockingWalkEdge(this.area, this.vector, point_b.vector)){
+    // Require walkmesh-clear chord — wall-edge LOS alone allows NonWalk face voids.
+    if(!isWalkmeshEdgeWalkClear(this.area, this.vector, point_b.vector, owner)){
       return false;
     }
 

@@ -13,6 +13,7 @@
  */
 
 import type { ModuleCreature } from "@/module/ModuleCreature";
+import { ActionType } from "@/enums/actions/ActionType";
 
 /** Creature locomotion modes (internal field). */
 export enum CreatureLocoState {
@@ -68,4 +69,43 @@ export function isPartyFollowLocoActive(creature: ModuleCreature | undefined): b
 /** True when creature loco early-outs as paused (state === 1). */
 export function isCreatureLocoPaused(creature: ModuleCreature | undefined): boolean {
   return getCreatureLocoState(creature) === CreatureLocoState.Paused;
+}
+
+/**
+ * Loco state to wake into when paused and a locomotion action is at queue head.
+ * Undefined → stay paused (no locomotion head).
+ */
+export function locoStateToWakePaused(
+  headActionType: number | undefined
+): CreatureLocoState | undefined {
+  if(headActionType === ActionType.ActionFollowLeader){
+    return CreatureLocoState.PartyFollow;
+  }
+  if(
+    headActionType === ActionType.ActionMoveToPoint ||
+    headActionType === ActionType.ActionForceFollowObject ||
+    headActionType === ActionType.ActionDrive
+  ){
+    return CreatureLocoState.PathWalk;
+  }
+  return undefined;
+}
+
+/**
+ * If the creature is paused and the head action is locomotion, wake into the
+ * matching loco mode. Returns true when locomotion should continue this frame.
+ */
+export function tryWakePausedCreatureLoco(
+  creature: ModuleCreature | undefined,
+  headActionType: number | undefined
+): boolean {
+  if(!creature || !isCreatureLocoPaused(creature)){
+    return true;
+  }
+  const wake = locoStateToWakePaused(headActionType);
+  if(wake === undefined){
+    return false;
+  }
+  setCreatureLocoState(creature, wake);
+  return true;
 }

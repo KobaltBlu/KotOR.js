@@ -104,4 +104,34 @@ describe("buildGridPath GridDFS (G3)", () => {
     );
     expect(path).toBeUndefined();
   });
+
+  it("does not accept partial clearT across a NonWalk strip", () => {
+    // Thin non-walk band; endpoints walkable — old canStep used clearT>=0.85
+    const area = {
+      isPointWalkable: (p: THREE.Vector3) =>
+        !(p.x > 2.2 && p.x < 2.8 && Math.abs(p.y) < 0.5),
+      getNearestWalkablePoint: (p: THREE.Vector3) => p.clone(),
+    } as unknown as ModuleArea;
+    const path = buildGridPath(
+      area,
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(5, 0, 0),
+      { personalSpace: 0.5, maxLateral: 16 }
+    );
+    expect(path).toBeDefined();
+    // Every consecutive hop must stay on walkable samples (no chord through the strip)
+    for(let i = 0; i < path!.length - 1; i++){
+      const a = path![i];
+      const b = path![i + 1];
+      for(let s = 1; s <= 8; s++){
+        const t = s / 8;
+        const p = new THREE.Vector3(
+          a.x + (b.x - a.x) * t,
+          a.y + (b.y - a.y) * t,
+          0
+        );
+        expect(area.isPointWalkable(p)).toBe(true);
+      }
+    }
+  });
 });

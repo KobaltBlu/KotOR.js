@@ -1,8 +1,10 @@
 /**
  * @jest-environment node
  */
-import { describe, expect, it, jest } from "@jest/globals";
+import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import * as THREE from "three";
+
+const mockPathHopsAreWalkClear = jest.fn(() => true);
 
 jest.mock("@/GameState", () => ({
   GameState: {
@@ -13,6 +15,10 @@ jest.mock("@/GameState", () => ({
 
 jest.mock("@/engine/pathfinding/inter-area-path", () => ({
   beginInterAreaPath: () => false,
+}));
+
+jest.mock("@/engine/pathfinding/path-hops-clear", () => ({
+  pathHopsAreWalkClear: (...args: unknown[]) => mockPathHopsAreWalkClear(...args),
 }));
 
 import {
@@ -41,6 +47,11 @@ function makePath(points: THREE.Vector3[], opts: {
 }
 
 describe("buildWalkPath return codes", () => {
+  beforeEach(() => {
+    mockPathHopsAreWalkClear.mockReset();
+    mockPathHopsAreWalkClear.mockReturnValue(true);
+  });
+
   it("returns Ready for a finished polyline", () => {
     const origin = new THREE.Vector3(0, 0, 0);
     const dest = new THREE.Vector3(5, 0, 0);
@@ -137,5 +148,65 @@ describe("buildWalkPath return codes", () => {
     };
     const r = buildWalkPath(area, owner, info);
     expect(r.code).toBe(WalkPathCode.Fail);
+  });
+
+  it("rebuilds unsmoothed when smooth hops fail walk-line clear", () => {
+    const origin = new THREE.Vector3(0, 0, 0);
+    const dest = new THREE.Vector3(5, 0, 0);
+    const owner = { id: 7, position: origin.clone() } as any;
+    const smoothPath = makePath([origin, dest]);
+    const unsmoothPath = makePath([
+      origin,
+      new THREE.Vector3(2, 1, 0),
+      dest,
+    ]);
+    const calls: boolean[] = [];
+    const area = {
+      id: 1,
+      path: {
+        traverseToPoint: (_o: unknown, _a: unknown, _b: unknown, smooth: boolean) => {
+          calls.push(smooth);
+          return smooth ? smoothPath : unsmoothPath;
+        },
+        hasPendingSmoothSession: () => false,
+      },
+    } as any;
+
+    mockPathHopsAreWalkClear.mockReturnValueOnce(false);
+
+    const info: PathFindInfoLite = {
+      ownerId: 7,
+      origin: origin.clone(),
+      dest: dest.clone(),
+    };
+    const r = buildWalkPath(area, owner, info);
+    expect(calls).toEqual([true, false]);
+    expect(r.code).toBe(WalkPathCode.Ready);
+    expect(r.path).toBe(unsmoothPath);
+  });
+
+  it("returns Fail when smooth and unsmooth hops both fail walk-line clear", () => {
+    const origin = new THREE.Vector3(0, 0, 0);
+    const dest = new THREE.Vector3(5, 0, 0);
+    const owner = { id: 7, position: origin.clone() } as any;
+    const poison = makePath([origin, dest]);
+    const area = {
+      id: 1,
+      path: {
+        traverseToPoint: () => poison,
+        hasPendingSmoothSession: () => false,
+      },
+    } as any;
+
+    mockPathHopsAreWalkClear.mockReturnValue(false);
+
+    const info: PathFindInfoLite = {
+      ownerId: 7,
+      origin: origin.clone(),
+      dest: dest.clone(),
+    };
+    const r = buildWalkPath(area, owner, info);
+    expect(r.code).toBe(WalkPathCode.Fail);
+    expect(info.lastCode).toBe(WalkPathCode.Fail);
   });
 });

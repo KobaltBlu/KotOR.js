@@ -142,10 +142,10 @@ export function buildGridPath(
       personalSpace: perspace,
       checkCreatures: false,
       skipRoomCheck: true,
-      skipClippedLine: true,
       steps: 6,
     });
-    return hit.ok || hit.clearT >= 0.85;
+    // Require a fully clear micro-step — partial clearT must not chord NonWalk voids.
+    return hit.ok;
   };
 
   // widens: along+2 … along+36
