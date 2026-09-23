@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { ODYSSEY_AREA_WIND_DIRECTION } from "@/three/odyssey/windPowerContext";
 import type { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
+import { OdysseyUniformBuffers } from "@/three/odyssey/OdysseyUniformBuffers";
 
 const WIND_GRID_SIZE = 16;
 const WIND_GRID_CELLS = WIND_GRID_SIZE * WIND_GRID_SIZE;
@@ -186,6 +187,21 @@ export class WindManager {
     this.updateTimer(delta);
     this.packPointSources();
     this.uploadNoiseTexture();
+    this.packWindUbo();
+  }
+
+  private packWindUbo(): void {
+    const renderer = (this.context as { renderer?: THREE.WebGLRenderer } | null)?.renderer;
+    if(!OdysseyUniformBuffers.isEnabled(renderer ?? null)) return;
+    OdysseyUniformBuffers.packWind({
+      global: this.globalWind,
+      delta: this.windDelta,
+      maxDeviation: this.windMaxDeviation,
+      noiseAlpha: this.noiseAlpha,
+      pointCount: this.uniformValues.windPointSourceCount.value,
+      sources: this.windPointSources,
+      strengths: this.windPointStrengths,
+    });
   }
 
   private updateTimer(elapsed: number): void {
@@ -352,18 +368,32 @@ export class WindManager {
   }
 
   /** Bind shared wind uniform value objects onto a dangly or grass material. */
-  static bindWindUniforms(uniforms: Record<string, THREE.IUniform>): void {
+  static bindWindUniforms(uniforms: Record<string, THREE.IUniform>, material?: THREE.ShaderMaterial): void {
     const wm = WindManager._instance;
     if (!wm || !uniforms) return;
 
+    const renderer = (wm.context as { renderer?: THREE.WebGLRenderer } | null)?.renderer;
+    const useUbo = OdysseyUniformBuffers.isEnabled(renderer ?? null);
+    if (useUbo && material) {
+      OdysseyUniformBuffers.applyWebGL2Defines(material, { wind: true });
+      OdysseyUniformBuffers.ensureMaterialHooks(material);
+    }
+
     uniforms.windNoiseMap = { value: wm.windNoiseMap };
+    // Time / level knobs stay as shared uniform refs (declared outside wind UBO).
+    uniforms.windGrassDt = wm.uniformValues.windGrassDt;
+    uniforms.windDanglyElapsed = wm.uniformValues.windDanglyElapsed;
+    uniforms.danglyWindLevel = wm.uniformValues.danglyWindLevel;
+
+    if (useUbo) {
+      // Block members are not registered on the material — GPU reads the UBO.
+      return;
+    }
+
     uniforms.windNoiseAlpha = wm.uniformValues.windNoiseAlpha;
     uniforms.windGlobal = { value: wm.globalWind };
     uniforms.windMaxDeviation = { value: wm.windMaxDeviation };
     uniforms.windDelta = { value: wm.windDelta };
-    uniforms.windGrassDt = wm.uniformValues.windGrassDt;
-    uniforms.windDanglyElapsed = wm.uniformValues.windDanglyElapsed;
-    uniforms.danglyWindLevel = wm.uniformValues.danglyWindLevel;
     uniforms.windPointSourceCount = wm.uniformValues.windPointSourceCount;
     uniforms.windPointSources = { value: wm.windPointSources };
     uniforms.windPointStrengths = { value: wm.windPointStrengths };
@@ -376,7 +406,7 @@ export class WindManager {
       if (!(material instanceof THREE.ShaderMaterial)) continue;
       if (!material.defines?.DANGLY) continue;
       if (material.userData.windCacheID === cacheID) continue;
-      WindManager.bindWindUniforms(material.uniforms);
+      WindManager.bindWindUniforms(material.uniforms, material);
       material.userData.windCacheID = cacheID;
       material.uniformsNeedUpdate = true;
     }
@@ -388,7 +418,7 @@ export class WindManager {
         const material = materials[m];
         if (!(material instanceof THREE.ShaderMaterial)) continue;
         if (material.userData.windCacheID === cacheID) continue;
-        WindManager.bindWindUniforms(material.uniforms);
+        WindManager.bindWindUniforms(material.uniforms, material);
         material.userData.windCacheID = cacheID;
         material.uniformsNeedUpdate = true;
         if (!material.defines?.DANGLY) {

@@ -115,7 +115,7 @@ export class GrassManager {
     }
 
     const material = this.createMaterial(area, quadSize);
-    WindManager.bindWindUniforms(material.uniforms);
+    WindManager.bindWindUniforms(material.uniforms, material);
 
     const lmName = resolved.source === "aabb" ? aabb?.textureMap2 : undefined;
     await this.loadTextures(material, textureName, lmName);

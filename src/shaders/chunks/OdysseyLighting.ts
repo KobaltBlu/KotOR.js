@@ -24,6 +24,20 @@ export const ODYSSEY_LIGHTING_PARS_FRAGMENT = `
   #define MAX_ODYSSEY_LIGHTS_LOOP 3
 #endif
 
+#ifdef USE_ODYSSEY_LIGHT_UBO
+layout(std140) uniform OdysseyLighting {
+  vec3 odysseyAmbientColor;
+  vec3 odysseySunAmbientColor;
+  vec3 odysseySunColor;
+  vec3 odysseySunDirection;
+  int numOdysseyLights;
+  int odysseyHeadLightEnabled;
+  vec3 odysseyHeadLightAmbient;
+  vec3 odysseyHeadLightDiffuse;
+  vec4 odysseyLightPos[ MAX_ODYSSEY_LIGHTS ];
+  vec4 odysseyLightColor[ MAX_ODYSSEY_LIGHTS ];
+};
+#else
 uniform vec3 odysseyAmbientColor;
 uniform vec3 odysseySunAmbientColor;
 uniform vec3 odysseySunColor;
@@ -39,6 +53,7 @@ uniform vec4 odysseyLightPos[ MAX_ODYSSEY_LIGHTS ];
 // VP SetUpVertexProgramLightShaderConstants; no light node.multiplier),
 // w = ambientOnly
 uniform vec4 odysseyLightColor[ MAX_ODYSSEY_LIGHTS ];
+#endif
 
 float odysseyAttenuation( const in float lightDistance, const in float quadratic ) {
   if ( quadratic <= 0.0 ) return 0.0;

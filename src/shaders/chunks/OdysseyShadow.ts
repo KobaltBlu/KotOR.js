@@ -76,18 +76,12 @@ export function odysseyShadowAdaptiveStrength(
   return Math.max(0, Math.min(1, baseStrength * scale));
 }
 
-/**
- * Unrolled per-slot body — WebGL1/GLSL ES 1.00 cannot pass sampler2D into functions.
- * SLOT = 0|1|2|3, MAP = odysseyShadowMap0|1|2|3
- *
- * Softness / fade / bias knobs are uniforms (cheat-console live tuning).
- */
 const ODYSSEY_SHADOW_SLOT_BODY = (slot: number, map: string) => `
-  if ( odysseyShadowActive[ ${slot} ] > 0.0 && odysseyShadowStrength[ ${slot} ] > 0.0 ) {
-    vec3 toLight${slot} = odysseyShadowLightWorld[ ${slot} ] - samplePos;
+  if ( ODYSSEY_SHADOW_ACTIVE( ${slot} ) > 0.0 && ODYSSEY_SHADOW_STRENGTH( ${slot} ) > 0.0 ) {
+    vec3 toLight${slot} = odysseyShadowLightWorld[ ${slot} ].xyz - samplePos;
     float dist${slot} = length( toLight${slot}.xy );
-    float influence${slot} = max( odysseyShadowInfluenceRadius[ ${slot} ], 1e-4 );
-    float distant${slot} = clamp( odysseyShadowDistantFactor[ ${slot} ], 0.0, 1.0 );
+    float influence${slot} = max( ODYSSEY_SHADOW_INFLUENCE( ${slot} ), 1e-4 );
+    float distant${slot} = clamp( ODYSSEY_SHADOW_DISTANT( ${slot} ), 0.0, 1.0 );
     float fadeStart${slot} = mix(
       odysseyShadowInfluenceFadeStart,
       odysseyShadowInfluenceFadeStartSoft,
@@ -175,7 +169,7 @@ const ODYSSEY_SHADOW_SLOT_BODY = (slot: number, map: string) => `
           shadow${slot} /= max( weightSum${slot}, 1.0 );
           // ProjectDynamicShadow floor — never pure black (ShadowOpacity can exceed 100).
           float darkened${slot} = 1.0
-            - odysseyShadowStrength[ ${slot} ] * ( 1.0 - odysseyShadowMinVertexColor );
+            - ODYSSEY_SHADOW_STRENGTH( ${slot} ) * ( 1.0 - odysseyShadowMinVertexColor );
           float lit${slot} = mix( darkened${slot}, 1.0, shadow${slot} );
           slotFactor *= mix( 1.0, lit${slot}, fade${slot} );
         }
@@ -193,11 +187,46 @@ export const ODYSSEY_SHADOW_PARS_FRAGMENT = `
   #define ODYSSEY_SHADOW_PCF_RADIUS ${ODYSSEY_SHADOW_PCF_RADIUS}
 #endif
 
-uniform float odysseyBeamingProjectionAlpha;
 uniform sampler2D odysseyShadowMap0;
 uniform sampler2D odysseyShadowMap1;
 uniform sampler2D odysseyShadowMap2;
 uniform sampler2D odysseyShadowMap3;
+
+#ifdef USE_ODYSSEY_SHADOW_UBO
+layout(std140) uniform OdysseyShadow {
+  mat4 odysseyShadowMatrix[ MAX_ODYSSEY_SHADOW_MAPS ];
+  vec4 odysseyShadowLightWorld[ MAX_ODYSSEY_SHADOW_MAPS ];
+  vec4 odysseyShadowStrength4;
+  vec4 odysseyShadowInfluence4;
+  vec4 odysseyShadowActive4;
+  vec4 odysseyShadowDistant4;
+  float odysseyShadowMapSizeX;
+  float odysseyShadowMapSizeY;
+  float odysseyBeamingProjectionAlpha;
+  float odysseyShadowMapActive;
+  float odysseyShadowLightCount;
+  float odysseyShadowSoft;
+  float odysseyShadowConstantBias;
+  float odysseyShadowSlopeBias;
+  float odysseyShadowSoftTexelSpreadLocal;
+  float odysseyShadowSoftTexelSpreadDistant;
+  float odysseyShadowSoftDepthWidthLocal;
+  float odysseyShadowSoftDepthWidthDistant;
+  float odysseyShadowInfluenceFadeStart;
+  float odysseyShadowInfluenceFadeStartSoft;
+  float odysseyShadowMapEdgeFade;
+  float odysseyShadowMapEdgeFadeSoft;
+  float odysseyShadowFloorBiasScale;
+  float odysseyShadowContactNormalZ;
+  float odysseyShadowMinVertexColor;
+  float odysseyShadowPad0;
+};
+#define ODYSSEY_SHADOW_STRENGTH(i) odysseyShadowStrength4[i]
+#define ODYSSEY_SHADOW_INFLUENCE(i) odysseyShadowInfluence4[i]
+#define ODYSSEY_SHADOW_ACTIVE(i) odysseyShadowActive4[i]
+#define ODYSSEY_SHADOW_DISTANT(i) odysseyShadowDistant4[i]
+#else
+uniform float odysseyBeamingProjectionAlpha;
 uniform mat4 odysseyShadowMatrix[ MAX_ODYSSEY_SHADOW_MAPS ];
 uniform vec2 odysseyShadowMapSize;
 uniform float odysseyShadowStrength[ MAX_ODYSSEY_SHADOW_MAPS ];
@@ -221,10 +250,19 @@ uniform float odysseyShadowMapEdgeFadeSoft;
 uniform float odysseyShadowFloorBiasScale;
 uniform float odysseyShadowContactNormalZ;
 uniform float odysseyShadowMinVertexColor;
+#define ODYSSEY_SHADOW_STRENGTH(i) odysseyShadowStrength[i]
+#define ODYSSEY_SHADOW_INFLUENCE(i) odysseyShadowInfluenceRadius[i]
+#define ODYSSEY_SHADOW_ACTIVE(i) odysseyShadowActive[i]
+#define ODYSSEY_SHADOW_DISTANT(i) odysseyShadowDistantFactor[i]
+#endif
 
 float odysseyShadowMapsAt( const in vec3 samplePos, const in vec3 worldNormal ) {
   vec3 n = normalize( worldNormal );
-  vec2 texelSize = vec2( 1.0 ) / odysseyShadowMapSize;
+  #ifdef USE_ODYSSEY_SHADOW_UBO
+    vec2 texelSize = vec2( 1.0 / max( odysseyShadowMapSizeX, 1.0 ), 1.0 / max( odysseyShadowMapSizeY, 1.0 ) );
+  #else
+    vec2 texelSize = vec2( 1.0 ) / odysseyShadowMapSize;
+  #endif
   float slotFactor = 1.0;
   ${ODYSSEY_SHADOW_SLOT_BODY(0, 'odysseyShadowMap0')}
   if ( odysseyShadowLightCount > 1.0 ) {

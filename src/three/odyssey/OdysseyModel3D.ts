@@ -2316,7 +2316,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
           material.uniforms.danglyDisplacement.value = node.danglyDisplacement;
           material.uniforms.danglyTightness.value = node.danglyTightness;
           material.uniforms.danglyPeriod.value = node.danglyPeriod;
-          WindManager.bindWindUniforms(material.uniforms);
+          WindManager.bindWindUniforms(material.uniforms, material);
           material.defines.DANGLY = '';
           material.needsUpdate = true;
         }

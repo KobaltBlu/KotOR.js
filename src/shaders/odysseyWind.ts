@@ -1,5 +1,5 @@
 /**
- * Shared Odyssey wind sampling GLSL (ES 1.00 / WebGL1).
+ * Shared Odyssey wind sampling GLSL (ES 1.00 / WebGL1, or std140 UBO on WebGL2).
  * 16×16 noise grid, quaternion deviation, Chebyshev point gusts.
  */
 export const ODYSSEY_WIND_VERTEX_LIBRARY = `
@@ -9,12 +9,28 @@ export const ODYSSEY_WIND_VERTEX_LIBRARY = `
 const int ODYSSEY_WIND_MAX_POINT_SOURCES = 16;
 
 uniform sampler2D windNoiseMap;
+
+#ifdef USE_ODYSSEY_WIND_UBO
+layout(std140) uniform OdysseyWind {
+  vec3 windGlobal;
+  vec3 windDelta;
+  vec2 windMaxDeviation;
+  float windNoiseAlpha;
+  int windPointSourceCount;
+  vec4 windPointSources[ODYSSEY_WIND_MAX_POINT_SOURCES];
+  vec4 windPointStrengths4[ODYSSEY_WIND_MAX_POINT_SOURCES];
+};
+#define windPointStrengths_xy(i) (windPointStrengths4[i].xy)
+#else
 uniform float windNoiseAlpha;
 uniform vec3 windGlobal;
+uniform vec3 windDelta;
 uniform vec2 windMaxDeviation;
 uniform int windPointSourceCount;
 uniform vec4 windPointSources[ODYSSEY_WIND_MAX_POINT_SOURCES];
 uniform vec2 windPointStrengths[ODYSSEY_WIND_MAX_POINT_SOURCES];
+#define windPointStrengths_xy(i) windPointStrengths[i]
+#endif
 
 float odyssey_wind_noise_index(float coord) {
   float i = floor(coord);
@@ -87,7 +103,7 @@ vec3 odyssey_point_source_wind(vec3 worldPos) {
     if (i >= windPointSourceCount) break;
 
     vec4 src = windPointSources[i];
-    vec2 strengthData = windPointStrengths[i];
+    vec2 strengthData = windPointStrengths_xy(i);
     vec3 delta = worldPos - src.xyz;
     float d = max(max(abs(delta.x), abs(delta.y)), abs(delta.z));
 

@@ -39,7 +39,7 @@ import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
 import { EngineState, EngineMode, GameEngineType, GameEngineEnv, EngineDebugType, RenderLayer } from "@/enums/engine";
 import { TextureType } from "@/enums/loaders/TextureType";
 
-import { runOdysseyDepthPrepass } from "@/utility/odysseyDepthPrepass";
+import { runOdysseyDepthPrepass, runOdysseySoftDepthSplit } from "@/utility/odysseyDepthPrepass";
 import { RenderPerfStats } from "@/utility/RenderPerfStats";
 import { odysseyOpaqueRenderSort } from "@/utility/odysseyOpaqueRenderSort";
 import { ConfigClient } from "@/utility/ConfigClient";
@@ -86,6 +86,7 @@ import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
 import { IPCMessageTypeDebug } from "@/enums/server/ipc/IPCMessageTypeDebug";
 import { PerformanceMonitor } from "@/utility/PerformanceMonitor";
 import { OdysseyLightingBinder } from "@/three/odyssey/OdysseyLightingBinder";
+import { OdysseyUniformBuffers } from "@/three/odyssey/OdysseyUniformBuffers";
 import {
   snapshotGlobals,
   snapshotLiveObject,
@@ -1209,6 +1210,7 @@ export class GameState implements EngineContext {
     //BEGIN: PostProcessing
     GameState.composer = new EffectComposer(GameState.renderer);
     // Enable stencil on composer targets for -equivalent shadow disks.
+    // DepthTexture lets soft particles sample after an opaque split (WebGL2 blit path).
     const composerRT = {
       minFilter: THREE.LinearFilter,
       magFilter: THREE.LinearFilter,
@@ -1219,7 +1221,13 @@ export class GameState implements EngineContext {
     const w = GameState.ResolutionManager.getViewportWidth();
     const h = GameState.ResolutionManager.getViewportHeight();
     GameState.composer.renderTarget1 = new THREE.WebGLRenderTarget(w, h, composerRT);
+    GameState.composer.renderTarget1.depthTexture = new THREE.DepthTexture(w, h);
+    GameState.composer.renderTarget1.depthTexture.type = THREE.UnsignedShortType;
     GameState.composer.renderTarget2 = GameState.composer.renderTarget1.clone();
+    if(!GameState.composer.renderTarget2.depthTexture){
+      GameState.composer.renderTarget2.depthTexture = new THREE.DepthTexture(w, h);
+      GameState.composer.renderTarget2.depthTexture.type = THREE.UnsignedShortType;
+    }
     GameState.composer.writeBuffer = GameState.composer.renderTarget1;
     GameState.composer.readBuffer = GameState.composer.renderTarget2;
     GameState.renderPass = new RenderPass(GameState.scene, GameState.currentCamera);
@@ -2562,6 +2570,10 @@ export class GameState implements EngineContext {
       }
     }
 
+    // WebGL2: bind shared lighting / shadow / wind UBOs once before world draws.
+    OdysseyUniformBuffers.beginFrame(GameState.renderer);
+    OdysseyLightingBinder.packShadowUbo(GameState.odysseyShadowManager);
+
     if(RenderPerfStats.enabled){
       RenderPerfStats.beginPhase('depthPre');
     }
@@ -2642,6 +2654,10 @@ export class GameState implements EngineContext {
       GameState.renderComposerWithPerfPhases(composer, delta);
     }else{
       composer.render(delta);
+    }
+    // Soft-depth split may disable the world RenderPass for one frame.
+    if(GameState.renderPass){
+      GameState.renderPass.enabled = true;
     }
     if(cam && prevCamLayers !== undefined){
       cam.layers.mask = prevCamLayers;
@@ -2779,11 +2795,30 @@ export class GameState implements EngineContext {
   }
 
   /**
-   * Fill depthTarget.depthTexture with scene depth (no emitters) for soft particles.
+   * Soft-particle depth: prefer opaque→blit→soft split into the composer
+   * readBuffer (skips MeshDepthMaterial full-scene prepass). Falls back to
+   * the legacy depth override prepass when blit is unavailable.
    */
   static renderDepthPrepass(): void {
     if(!GameState.softDepthNeeded || !GameState.depthTarget || !GameState.renderer || !GameState.currentCamera) return;
     GameState.softDepthNeeded = false;
+
+    const composer = GameState.composer;
+    const colorTarget = composer?.readBuffer;
+    if(composer && colorTarget && GameState.renderPass){
+      const splitOk = runOdysseySoftDepthSplit({
+        scene: GameState.scene,
+        renderer: GameState.renderer,
+        camera: GameState.currentCamera,
+        colorTarget,
+        depthSampleTarget: GameState.depthTarget,
+      });
+      if(splitOk){
+        // World already in readBuffer — skip the composer RenderPass this frame.
+        GameState.renderPass.enabled = false;
+        return;
+      }
+    }
 
     runOdysseyDepthPrepass({
       scene: GameState.scene,
