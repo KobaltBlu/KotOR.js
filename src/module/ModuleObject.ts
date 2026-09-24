@@ -1924,6 +1924,7 @@ export class ModuleObject {
     this.cutsceneMode = state;
     if(this.model && this.model.skins){
       for(let i = 0, len = this.model.skins.length; i < len; i++){
+        // Cutscenes disable cull (camera cuts / close-ups); gameplay keeps it on.
         this.model.skins[i].frustumCulled = !state;
       }
     }

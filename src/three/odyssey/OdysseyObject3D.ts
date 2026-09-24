@@ -67,7 +67,7 @@ export class OdysseyObject3D extends THREE.Object3D {
   }
 
   dispose() {
-    throw new Error("Method not implemented.");
+    super.dispose();
   }
 
   update(delta: number) {

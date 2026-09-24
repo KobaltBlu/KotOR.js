@@ -177,7 +177,7 @@ export class LBL_3DView {
    */
   attachCameraToHook(
     hook: THREE.Object3D | undefined,
-    translate?: THREE.Vector3Like,
+    translate?: { x: number; y: number; z: number },
     worldSpace: boolean = true,
   ){
     if(!hook) return;

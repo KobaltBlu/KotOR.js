@@ -8,6 +8,7 @@ import { TPCLoader } from "@/loaders/TPCLoader";
 import { TGALoader } from "@/loaders/TGALoader";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { OdysseyMaterialBuilder } from "@/three/odyssey/OdysseyMaterialBuilder";
+import { syncOdysseyMapTransforms, enableOdysseyLightmapDefines } from "@/shaders/chunks/OdysseyLighting";
 import { GameFileSystem } from "@/utility/GameFileSystem";
 import { GameEngineType } from "@/enums/engine";
 
@@ -204,9 +205,15 @@ export class TextureLoader {
         material.uniforms[slot].value = texture;
       }
       if(slot === 'map'){
-        (material as any).map = texture;
-      }else{
-        (material as any)[slot] = texture;
+        material.defines = material.defines || {};
+        if(texture instanceof THREE.Texture){
+          material.defines.USE_MAP = '';
+          syncOdysseyMapTransforms(material.uniforms, 'map', texture);
+        }else{
+          delete material.defines.USE_MAP;
+        }
+      }else if(texture instanceof THREE.Texture){
+        syncOdysseyMapTransforms(material.uniforms, slot, texture);
       }
       const hasKey = 'has' + slot.charAt(0).toUpperCase() + slot.slice(1);
       if(material.uniforms?.[hasKey]){
@@ -214,9 +221,15 @@ export class TextureLoader {
       }
       material.uniformsNeedUpdate = true;
       material.needsUpdate = true;
-    }else{
-      (material as any).map = texture;
-      (material as any).needsUpdate = true;
+    }else if(
+      material instanceof THREE.MeshBasicMaterial ||
+      material instanceof THREE.MeshStandardMaterial ||
+      material instanceof THREE.MeshPhongMaterial ||
+      material instanceof THREE.MeshLambertMaterial ||
+      material instanceof THREE.SpriteMaterial
+    ){
+      material.map = texture;
+      material.needsUpdate = true;
     }
   }
 
@@ -355,23 +368,23 @@ export class TextureLoader {
         if(!!lightmap){
           if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
             tex.material.uniforms.lightMap.value = lightmap;
-            (tex.material as any).lightMap = lightmap;
-            lightmap.updateMatrix();
+            syncOdysseyMapTransforms(tex.material.uniforms, 'lightMap', lightmap);
             if(tex.material.uniforms.map.value){
-              tex.material.uniforms.map.value.updateMatrix();
+              syncOdysseyMapTransforms(tex.material.uniforms, 'map', tex.material.uniforms.map.value);
             }
-            tex.material.defines.USE_LIGHTMAP = '';
+            enableOdysseyLightmapDefines(tex.material, true);
             // Do not enable USE_ENVMAP here — lightmaps are independent of cubemaps,
             // and a null envMap with reflectivity=1 can corrupt shading.
             delete tex.material.defines.IGNORE_LIGHTING;
             tex.material.defines.AURORA = "";
             tex.material.uniformsNeedUpdate = true;
-          }else{
-            (tex.material as any).lightMap = lightmap;
-            (tex.material as any).defines = (tex.material as any).defines || {};
-            if((tex.material as any).defines.hasOwnProperty('IGNORE_LIGHTING')){
-              delete (tex.material as any).defines.IGNORE_LIGHTING;
-            }
+          }else if(
+            tex.material instanceof THREE.MeshBasicMaterial ||
+            tex.material instanceof THREE.MeshStandardMaterial ||
+            tex.material instanceof THREE.MeshPhongMaterial ||
+            tex.material instanceof THREE.MeshLambertMaterial
+          ){
+            tex.material.lightMap = lightmap;
           }
           
           tex.material.needsUpdate = true;
@@ -390,7 +403,8 @@ export class TextureLoader {
         if(!!particle_texture){
           if(tex.partGroup?.type == 'OdysseyEmitter'){
             tex.partGroup.material.uniforms.map.value = particle_texture;
-            (tex.partGroup.material as any).map = particle_texture;
+            tex.partGroup.material.defines = tex.partGroup.material.defines || {};
+            tex.partGroup.material.defines.USE_MAP = '';
             tex.partGroup.material.depthWrite = false;
             tex.partGroup.material.needsUpdate = true;
           }else{

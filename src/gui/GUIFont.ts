@@ -14,6 +14,44 @@ interface Line {
   y: number;
 }
 
+/**
+ * Axis-aligned bbox for GUI / TextSprite geometries that store positions as vec2.
+ * Three r152+ `Box3.setFromBufferAttribute` reads `getZ()`, which is out-of-range
+ * (NaN) when `itemSize === 2`, spamming computeBoundingBox errors.
+ */
+export function computeBoundingBoxXY(
+  geometry: THREE.BufferGeometry,
+  positions?: ArrayLike<number>,
+): void {
+  if(geometry.boundingBox === null){
+    geometry.boundingBox = new THREE.Box3();
+  }
+  const bbox = geometry.boundingBox;
+  const arr = positions ?? geometry.attributes?.position?.array;
+  if(!arr || arr.length < 2){
+    bbox.makeEmpty();
+    return;
+  }
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for(let i = 0; i < arr.length; i += 2){
+    const x = arr[i];
+    const y = arr[i + 1];
+    if(x < minX) minX = x;
+    if(y < minY) minY = y;
+    if(x > maxX) maxX = x;
+    if(y > maxY) maxY = y;
+  }
+  if(!Number.isFinite(minX) || !Number.isFinite(minY)){
+    bbox.makeEmpty();
+    return;
+  }
+  bbox.min.set(minX, minY, 0);
+  bbox.max.set(maxX, maxY, 0);
+}
+
 export class GUIFont {
 
   texture: OdysseyTexture;
@@ -227,6 +265,7 @@ export class GUIFont {
         geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(0), 2));
         geometry.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(0), 2));
         geometry.setIndex(new THREE.BufferAttribute(new Uint16Array(0), 1));
+        computeBoundingBoxXY(geometry, []);
       }
       return;
     }
@@ -324,7 +363,7 @@ export class GUIFont {
       geometry.index.needsUpdate = true;
       geometry.attributes.position.needsUpdate = true;
       geometry.attributes.uv.needsUpdate = true;
-      geometry.computeBoundingBox();
+      computeBoundingBoxXY(geometry, positions);
     }
   }
 

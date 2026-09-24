@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
+import { enableOdysseyLightmapDefines, syncOdysseyMapTransforms } from "@/shaders/chunks/OdysseyLighting";
 
 interface AtlasRect {
   u: number;
@@ -40,9 +41,7 @@ function diffuseFingerprint(mat: THREE.Material): string {
 
 function getLightmapTexture(mat: THREE.Material): THREE.Texture | null {
   const sm = mat as THREE.ShaderMaterial;
-  return (sm.uniforms?.lightMap?.value as THREE.Texture)
-    || (mat as any).lightMap
-    || null;
+  return (sm.uniforms?.lightMap?.value as THREE.Texture) || null;
 }
 
 function nextPow2(n: number): number {
@@ -162,7 +161,7 @@ export function packLightmapAtlas(textures: THREE.Texture[]): { atlas: THREE.Can
 
   const atlas = new THREE.CanvasTexture(canvas);
   atlas.name = "odysseyLightmapAtlas";
-  // Must match OdysseyTexture lightmaps or remapped uv2 samples upside-down.
+  // Must match OdysseyTexture lightmaps or remapped uv1 samples upside-down.
   atlas.flipY = true;
   atlas.needsUpdate = true;
   atlas.magFilter = THREE.LinearFilter;
@@ -229,7 +228,7 @@ export function collapseMergedMeshLightmaps(model: OdysseyModel3D): number {
   const geo = mesh.geometry as THREE.BufferGeometry;
   if(!geo?.groups?.length || mats.length < 2){ return 0; }
 
-  const uv2 = geo.getAttribute("uv2") as THREE.BufferAttribute | undefined;
+  const uv2 = geo.getAttribute("uv1") as THREE.BufferAttribute | undefined;
   if(!uv2){ return 0; }
 
   // One material may own several groups after mergeStatic (shared ShaderMaterial).
@@ -286,11 +285,9 @@ export function collapseMergedMeshLightmaps(model: OdysseyModel3D): number {
     const keepMat = newMats[keep] as THREE.ShaderMaterial;
     if(keepMat.uniforms?.lightMap){
       keepMat.uniforms.lightMap.value = packed.atlas;
+      syncOdysseyMapTransforms(keepMat.uniforms, 'lightMap', packed.atlas);
     }
-    (keepMat as any).lightMap = packed.atlas;
-    keepMat.defines = keepMat.defines || {};
-    keepMat.defines.USE_LIGHTMAP = "";
-    keepMat.needsUpdate = true;
+    enableOdysseyLightmapDefines(keepMat, true);
     keepMat.uniformsNeedUpdate = true;
     keepMat.userData.odysseyLightmapAtlas = true;
 

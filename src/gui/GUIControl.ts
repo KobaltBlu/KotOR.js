@@ -21,7 +21,7 @@ import { GUIControlEventFactory } from "@/gui/GUIControlEventFactory";
 import type { GameMenu } from "@/gui/GameMenu";
 import { BitWise } from "@/utility/BitWise";
 import { GUIListBox } from "@/gui/GUIListBox";
-import { GUIFont } from "@/gui/GUIFont";
+import { GUIFont, computeBoundingBoxXY } from "@/gui/GUIFont";
 import { GUIControlEvent } from "@/gui/GUIControlEvent";
 import { GUIControlType } from "@/enums/gui/GUIControlType";
 import { KeyMapAction } from "@/enums/controls/KeyMapAction";
@@ -389,6 +389,9 @@ export class GUIControl {
     this.text.geometry.index.needsUpdate = true;
     this.text.geometry.attributes.position.needsUpdate = true;
     this.text.geometry.attributes.uv.needsUpdate = true;
+
+    // itemSize-2 positions: install before any setText/buildGeometry (Three r186 getZ NaN).
+    this.installTextGeometryBoundsOverrides();
 
     this.text.material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
@@ -1446,10 +1449,6 @@ export class GUIControl {
     if(texture instanceof THREE.Texture){
       material.visible = true;
       material.uniforms.opacity.value = 1;
-      if(material.uniforms.uvTransform && material.uniforms.map?.value?.matrix){
-        material.uniforms.uvTransform.value = material.uniforms.map.value.matrix;
-        material.uniforms.map.value.updateMatrix();
-      }
       material.defines.USE_UV = '';
       material.defines.USE_MAP = '';
     }else{
@@ -2056,8 +2055,6 @@ export class GUIControl {
   }
 
   buildText(){
-    let self = this;
-
     if(!this.text.texture)
       return;
 
@@ -2081,7 +2078,18 @@ export class GUIControl {
     }
     this.syncTextMeshVisibility();
     
-    this.text.geometry.computeBoundingSphere = function () {
+    // Bounds overrides already installed at geometry creation; keep sphere override refresh here
+    // in case an older control path replaced the geometry instance.
+    this.installTextGeometryBoundsOverrides();
+
+  }
+
+  /** Safe AABB/sphere for vec2 GUI text positions (Three r186 getZ is OOB on itemSize 2). */
+  private installTextGeometryBoundsOverrides(): void {
+    if(!this.text?.geometry) return;
+    const geometry = this.text.geometry;
+
+    geometry.computeBoundingSphere = function () {
       if (this.boundingSphere === null) {
         this.boundingSphere = new THREE.Sphere()
       }
@@ -2093,7 +2101,6 @@ export class GUIControl {
         this.boundingSphere.center.set(0, 0, 0)
         return
       }
-      // this.computeSphere(positions, this.boundingSphere)
       if (isNaN(this.boundingSphere.radius)) {
         console.error('THREE.BufferGeometry.computeBoundingSphere(): ' +
           'Computed radius is NaN. The ' +
@@ -2101,21 +2108,9 @@ export class GUIControl {
       }
     }
     
-    this.text.geometry.computeBoundingBox = function () {
-      if (this.boundingBox === null) {
-        this.boundingBox = new THREE.Box3()
-      }
-    
-      let bbox = this.boundingBox
-      let positions = this.attributes.position.array
-      let itemSize = this.attributes.position.itemSize
-      if (!positions || !itemSize || positions.length < 2) {
-        bbox.makeEmpty()
-        return
-      }
-      self.computeBox(positions, bbox)
+    geometry.computeBoundingBox = function () {
+      computeBoundingBoxXY(this);
     }
-
   }
 
   getCharPositions(char: number){

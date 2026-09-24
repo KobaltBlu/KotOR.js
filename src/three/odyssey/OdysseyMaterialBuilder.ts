@@ -3,6 +3,7 @@ import { TXIBlending } from "@/enums/graphics/txi/TXIBlending";
 import { TXIPROCEDURETYPE } from "@/enums/graphics/txi/TXIPROCEDURETYPE";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { TextureAnimationManager } from "@/managers/TextureAnimationManager";
+import { syncOdysseyMapTransforms } from "@/shaders/chunks/OdysseyLighting";
 
 function applyWrapToCycleFrames(texture: OdysseyTexture): void {
   const frames = texture?.cycleFrames;
@@ -48,8 +49,7 @@ export class OdysseyMaterialBuilder {
     const uniforms = THREE.UniformsUtils.clone((THREE.ShaderLib as any).odyssey.uniforms);
     uniforms.map.value = map ?? null;
     if(map){
-      map.updateMatrix();
-      uniforms.uvTransform.value = map.matrix;
+      syncOdysseyMapTransforms(uniforms, 'map', map);
     }
     uniforms.time.value = 0;
     uniforms.opacity.value = 1.0;
@@ -69,7 +69,9 @@ export class OdysseyMaterialBuilder {
     material.defines = material.defines || {};
     material.defines.AURORA = "";
     material.defines.USE_UV = "";
-    material.defines.USE_MAP = "";
+    if(map){
+      material.defines.USE_MAP = "";
+    }
     material.defines.MAX_ODYSSEY_LIGHTS = "8";
     return material;
   }
@@ -144,10 +146,11 @@ export class OdysseyMaterialBuilder {
         }
 
         if(material instanceof THREE.RawShaderMaterial || material instanceof THREE.ShaderMaterial){
-          material.uniforms.envMap.value = envmap;
-          (material as any).envMap = envmap;
+          if(material.uniforms.envMap){
+            material.uniforms.envMap.value = envmap;
+          }
           envmap.updateMatrix();
-          if(material.uniforms.map.value){
+          if(material.uniforms.map?.value){
             material.uniforms.map.value.updateMatrix();
           }
           material.defines.USE_ENVMAP = "";
@@ -178,14 +181,14 @@ export class OdysseyMaterialBuilder {
             material.uniforms.reflectivity.value = 1;
           }
           material.uniformsNeedUpdate = true;
-        }else{
-          (material as any).envMap = envmap;
         }
 
         material.side = THREE.FrontSide;
         if(texture.txi.waterAlpha == null){
-          (material as any).combine = THREE.AddOperation;
-          (material as any).reflectivity = 1;
+          if(material instanceof THREE.MeshBasicMaterial || material instanceof THREE.MeshPhongMaterial){
+            material.combine = THREE.AddOperation;
+            material.reflectivity = 1;
+          }
         }
         const shaderMaterial = material instanceof THREE.RawShaderMaterial || material instanceof THREE.ShaderMaterial
           ? material
@@ -198,7 +201,6 @@ export class OdysseyMaterialBuilder {
 
         if(shaderMaterial){
           if(shaderMaterial.defines.hasOwnProperty("HOLOGRAM")){
-            (material as any).combine = THREE.AddOperation;
             material.blending = THREE.NormalBlending;
             material.transparent = true;
             shaderMaterial.uniformsNeedUpdate = true;
@@ -240,25 +242,27 @@ export class OdysseyMaterialBuilder {
         if(bumpMap.bumpMapType === "NORMAL"){
           if(material instanceof THREE.RawShaderMaterial || material instanceof THREE.ShaderMaterial){
             material.uniforms.normalMap.value = bumpMap;
+            syncOdysseyMapTransforms(material.uniforms, 'normalMap', bumpMap);
             material.defines.USE_NORMALMAP = "";
             material.uniformsNeedUpdate = true;
-            (material as any).vertexTangents = true;
-            (material as any).normalMapType = THREE.TangentSpaceNormalMap;
             material.defines.TANGENTSPACE_NORMALMAP = "";
             delete material.defines.USE_BUMPMAP;
             delete material.defines.OBJECTSPACE_NORMALMAP;
             if(bumpMap.txi.procedureType === TXIPROCEDURETYPE.CYCLE){
               TextureAnimationManager.register(bumpMap, material, 'normalMap');
             }
-          }else{
-            (material as any).normalMap = bumpMap;
-            (material as any).normalMapType = THREE.ObjectSpaceNormalMap;
-            (material as any).defines.OBJECTSPACE_NORMALMAP = "";
+          }else if(
+            material instanceof THREE.MeshStandardMaterial ||
+            material instanceof THREE.MeshPhongMaterial
+          ){
+            material.normalMap = bumpMap;
+            material.normalMapType = THREE.ObjectSpaceNormalMap;
           }
           material.transparent = false;
         }else{
           if(material instanceof THREE.RawShaderMaterial || material instanceof THREE.ShaderMaterial){
             material.uniforms.bumpMap.value = bumpMap;
+            syncOdysseyMapTransforms(material.uniforms, 'bumpMap', bumpMap);
             material.defines.USE_BUMPMAP = "";
             // Height bumps must not leave TANGENTSPACE_NORMALMAP — Three's
             // normal_fragment_maps samples normalMap under that define alone.
@@ -269,11 +273,11 @@ export class OdysseyMaterialBuilder {
             if(bumpMap.txi.procedureType === TXIPROCEDURETYPE.CYCLE){
               TextureAnimationManager.register(bumpMap, material, 'bumpMap');
             }
-          }else{
-            (material as any).bumpMap = bumpMap;
-          }
-          if((material as any).uniforms?.bumpScale){
-            (material as any).uniforms.bumpScale.value = bumpMap.txi.bumpMapScaling;
+            if(material.uniforms?.bumpScale){
+              material.uniforms.bumpScale.value = bumpMap.txi.bumpMapScaling;
+            }
+          }else if(material instanceof THREE.MeshPhongMaterial){
+            material.bumpMap = bumpMap;
           }
         }
 
@@ -291,7 +295,6 @@ export class OdysseyMaterialBuilder {
           delete material.defines.OBJECTSPACE_NORMALMAP;
           delete material.defines.ENVMAP_BLENDING_ADD;
           delete material.defines.ENVMAP_BLENDING_LERP;
-          (material as any).combine = THREE.MixOperation;
 
           if(material.uniforms.bumpMap?.value){
             material.uniforms.bumpMap.value.minFilter = THREE.LinearFilter;
@@ -318,11 +321,10 @@ export class OdysseyMaterialBuilder {
     }
 
     if(material instanceof THREE.RawShaderMaterial || material instanceof THREE.ShaderMaterial){
-      if(material.uniforms.map.value){
+      if(material.uniforms.map?.value){
         material.name = material.uniforms.map.value.name;
         material.defines.USE_MAP = "";
-        material.uniforms.uvTransform.value = material.uniforms.map.value.matrix;
-        material.uniforms.map.value.updateMatrix();
+        syncOdysseyMapTransforms(material.uniforms, 'map', material.uniforms.map.value);
         material.uniformsNeedUpdate = true;
         // Recompile so HOLOGRAM / map_pars pick up USE_MAP (needsUpdate may have
         // already been set earlier in TextureLoader before this define existed).

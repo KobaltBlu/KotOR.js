@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { Shader } from "@/shaders/Shader";
 import { ODYSSEY_WIND_VERTEX_LIBRARY } from "@/shaders/odysseyWind";
 import { GRASS_ALPHA_TEST_DEFAULT } from "@/managers/grass/grassHelpers";
+import { ODYSSEY_UV_CHANNEL_DEFINES } from "@/shaders/chunks/OdysseyUvChannels";
 
 /**
  * ShaderGrass — billboard grass with GPU wind tip sway.
@@ -67,6 +68,7 @@ export class ShaderGrass extends Shader {
       vLightmapUV = lightmapUV;
       vBinFade = binFade;
 
+      ${ODYSSEY_UV_CHANNEL_DEFINES}
       #include <uv_vertex>
 
       float uvFrameIndex = grassQuad;
@@ -128,7 +130,7 @@ export class ShaderGrass extends Shader {
     varying float vInstanceID;
     varying vec4 vSpriteSheet;
     varying float vBinFade;
-    #ifdef USE_LIGHTMAP
+    #ifdef ODYSSEY_GRASS_LIGHTMAP
       uniform sampler2D lightMap;
       varying vec2 vLightmapUV;
     #endif
@@ -140,7 +142,7 @@ export class ShaderGrass extends Shader {
       vec4 texelColor = texture2D(map, uvTransform);
       vec3 lightmapColor = vec3(1.0);
 
-      #ifdef USE_LIGHTMAP
+      #ifdef ODYSSEY_GRASS_LIGHTMAP
         lightmapColor = texture2D(lightMap, vLightmapUV).rgb;
       #endif
 

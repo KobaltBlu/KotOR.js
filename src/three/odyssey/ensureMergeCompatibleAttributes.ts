@@ -1,9 +1,11 @@
 import * as THREE from "three";
 
 /**
- * Three's mergeBufferGeometries requires identical attribute sets. If the first
+ * Three's mergeGeometries requires identical attribute sets. If the first
  * geometry has an attribute later ones lack, the merge may fail or produce
  * incomplete vertex data. Pad missing attrs so every input matches the union.
+ *
+ * Lightmap UVs use attribute name `uv1` (Three r151+; formerly `uv2`).
  */
 export function ensureMergeCompatibleAttributes(
   geometries: THREE.BufferGeometry[]
@@ -36,7 +38,7 @@ export function ensureMergeCompatibleAttributes(
       const fill = defaultFill(name, itemSize);
       const data = new Float32Array(vCount * itemSize);
 
-      if(name === "uv2"){
+      if(name === "uv1"){
         const uv = geo.getAttribute("uv") as THREE.BufferAttribute | undefined;
         if(uv && uv.count === vCount){
           data.set(uv.array as ArrayLike<number>);

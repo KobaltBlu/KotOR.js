@@ -11,6 +11,7 @@ import {
   ODYSSEY_SHADOW_PARS_FRAGMENT,
   createOdysseyShadowUniforms,
 } from "@/shaders/chunks/OdysseyShadow";
+import { ODYSSEY_UV_CHANNEL_DEFINES } from "@/shaders/chunks/OdysseyUvChannels";
 
 /**
  * ShaderOdysseyModel — Odyssey model materials with fully custom lighting.
@@ -32,8 +33,9 @@ export class ShaderOdysseyModel extends Shader {
     uniform float shininess;
     uniform float opacity;
     uniform float envMapAlpha;
-    // DoEnvMapTransform — camera world rotation (no translation).
-    uniform mat3 envMapRotation;
+    // TPC cubemap faces are GL order; Three CubeTextureLoader defaults to -1.
+    // envMapRotation comes from envmap_common_pars_fragment under USE_ENVMAP.
+    uniform float flipEnvMap;
     uniform float time;
 
     float randF(vec2 co) {
@@ -54,7 +56,6 @@ export class ShaderOdysseyModel extends Shader {
     #include <dithering_pars_fragment>
     #include <color_pars_fragment>
     #include <uv_pars_fragment>
-    #include <uv2_pars_fragment>
     #include <map_pars_fragment>
     #include <alphamap_pars_fragment>
     #include <alphatest_pars_fragment>
@@ -125,7 +126,7 @@ export class ShaderOdysseyModel extends Shader {
       // the texture alpha, so alpha controllers/opacity must not affect the env mask.
       float odysseyDiffuseAlpha = 1.0;
       #ifdef USE_MAP
-        vec4 sampledDiffuseColor = texture2D( map, vUv );
+        vec4 sampledDiffuseColor = texture2D( map, vMapUv );
         odysseyDiffuseAlpha = sampledDiffuseColor.a;
         diffuseColor *= sampledDiffuseColor;
       #endif
@@ -179,7 +180,7 @@ export class ShaderOdysseyModel extends Shader {
 
       #ifdef USE_LIGHTMAP
         // Bake supplies static irradiance; type-1 lights overlay (dynamic-only lights).
-        indirectDiffuse += texture2D( lightMap, vUv2 ).xyz * lightMapIntensity;
+        indirectDiffuse += texture2D( lightMap, vLightMapUv ).xyz * lightMapIntensity;
         odysseyAccumulatePointLights(
           geometryPosition, normal, geometryViewDir,
           materialSpecularColor, materialShininess, specularStrength,
@@ -196,7 +197,7 @@ export class ShaderOdysseyModel extends Shader {
       #endif
 
       #ifdef USE_AOMAP
-        float ambientOcclusion = ( texture2D( aoMap, vUv2 ).r - 1.0 ) * aoMapIntensity + 1.0;
+        float ambientOcclusion = ( texture2D( aoMap, vAoMapUv ).r - 1.0 ) * aoMapIntensity + 1.0;
         indirectDiffuse *= ambientOcclusion;
       #endif
 
@@ -249,7 +250,7 @@ export class ShaderOdysseyModel extends Shader {
       #endif
 
       #ifdef SABER
-        sampledDiffuseColor = texture2D( map, vUv );
+        sampledDiffuseColor = texture2D( map, vMapUv );
         gl_FragColor = sampledDiffuseColor;
       #elif defined( USE_ENVMAP )
         // Diffuse tex alpha is the reflection mask (already applied to RGB above), NOT
@@ -264,7 +265,7 @@ export class ShaderOdysseyModel extends Shader {
       #endif
 
       #include <tonemapping_fragment>
-      #include <encodings_fragment>
+      #include <colorspace_fragment>
       #include <fog_fragment>
       #if defined( WATER )
         // Honor material opacity so AlphaController fades still work when WATER
@@ -274,17 +275,17 @@ export class ShaderOdysseyModel extends Shader {
         gl_FragColor.a = waterOutAlpha;
       #endif
       #ifdef HOLOGRAM
-        // map / vUv are only declared when USE_MAP / USE_UV are set.
+        // map / UV varyings are only declared when USE_MAP / USE_UV are set.
         // Hologram materials enable HOLOGRAM at mesh build time; USE_MAP arrives
         // later (or never, for untextured parts) — sample only when available.
-        #ifdef USE_UV
+        #ifdef USE_MAP
+          vec2 uv = vMapUv;
+          vec3 col = texture2D( map, uv ).rgb;
+        #elif defined( USE_UV )
           vec2 uv = vUv;
+          vec3 col = diffuseColor.rgb;
         #else
           vec2 uv = vec2( 0.5 );
-        #endif
-        #ifdef USE_MAP
-          vec3 col = texture2D( map, uv ).rgb;
-        #else
           vec3 col = diffuseColor.rgb;
         #endif
         float gray = dot(col, vec3(0.299, 0.587, 0.114));
@@ -359,7 +360,6 @@ export class ShaderOdysseyModel extends Shader {
     #endif
 
     #include <uv_pars_vertex>
-    #include <uv2_pars_vertex>
     #include <displacementmap_pars_vertex>
     #include <envmap_pars_vertex>
     #include <color_pars_vertex>
@@ -374,15 +374,39 @@ export class ShaderOdysseyModel extends Shader {
     #endif
 
     void main() {
+      ${ODYSSEY_UV_CHANNEL_DEFINES}
       #include <uv_vertex>
 
       #ifdef ANIMATED_UV
-        #if defined( USE_UV ) || defined( USE_BUMPMAP ) || defined( USE_NORMALMAP ) || defined( USE_SPECULARMAP ) || defined( USE_ALPHAMAP ) || defined( USE_EMISSIVEMAP ) || defined( USE_ROUGHNESSMAP ) || defined( USE_METALNESSMAP )
-          vUv = ( uvTransform * vec3( odysseyAnimateUV( uv ), 1 ) ).xy;
+        // Drive every active map UV with the same animated coordinate so stock
+        // map/bump/normal chunks (v*MapUv) stay in sync with custom vUv paths.
+        vec2 odysseyAnimatedUv = ( uvTransform * vec3( odysseyAnimateUV( uv ), 1 ) ).xy;
+        #if defined( USE_UV ) || defined( USE_ANISOTROPY )
+          vUv = odysseyAnimatedUv;
+        #endif
+        #ifdef USE_MAP
+          vMapUv = odysseyAnimatedUv;
+        #endif
+        #ifdef USE_ALPHAMAP
+          vAlphaMapUv = odysseyAnimatedUv;
+        #endif
+        #ifdef USE_BUMPMAP
+          vBumpMapUv = odysseyAnimatedUv;
+        #endif
+        #ifdef USE_NORMALMAP
+          vNormalMapUv = odysseyAnimatedUv;
+        #endif
+        #ifdef USE_DISPLACEMENTMAP
+          vDisplacementMapUv = odysseyAnimatedUv;
+        #endif
+        #ifdef USE_EMISSIVEMAP
+          vEmissiveMapUv = odysseyAnimatedUv;
+        #endif
+        #ifdef USE_SPECULARMAP
+          vSpecularMapUv = odysseyAnimatedUv;
         #endif
       #endif
 
-      #include <uv2_vertex>
       #include <color_vertex>
       #include <beginnormal_vertex>
       #include <morphnormal_vertex>
@@ -399,7 +423,7 @@ export class ShaderOdysseyModel extends Shader {
       #include <skinning_vertex>
 
       #ifdef USE_DISPLACEMENTMAP
-        transformed += normalize( objectNormal ) * ( texture2D( displacementMap, vUv ).x * displacementScale + displacementBias );
+        transformed += normalize( objectNormal ) * ( texture2D( displacementMap, vDisplacementMapUv ).x * displacementScale + displacementBias );
       #endif
 
       #ifdef DANGLY

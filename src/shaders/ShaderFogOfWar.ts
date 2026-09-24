@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import {Shader} from "@/shaders/Shader";
+import { ODYSSEY_UV_CHANNEL_DEFINES } from "@/shaders/chunks/OdysseyUvChannels";
 
 /**
  * ShaderFogOfWar class.
@@ -33,11 +34,25 @@ export class ShaderFogOfWar extends Shader {
       float resX = (1.0/mapRes.x) * 2.0;
       float resY = (1.0/mapRes.y) * 2.0;
 
-      uvGrid = vec2(vUv);
-      uvGrid.x = (vUv.x / resX);
-      uvGrid.y = (vUv.y / resY);
+      #ifdef USE_MAP
+        vec2 mapUv = vMapUv;
+      #elif defined( USE_UV )
+        vec2 mapUv = vUv;
+      #else
+        vec2 mapUv = vec2( 0.0 );
+      #endif
 
-      float alpha = texture2D( alphaMap, vUv ).a;
+      uvGrid = mapUv;
+      uvGrid.x = (mapUv.x / resX);
+      uvGrid.y = (mapUv.y / resY);
+
+      #ifdef USE_ALPHAMAP
+        float alpha = texture2D( alphaMap, vAlphaMapUv ).a;
+      #elif defined( USE_UV )
+        float alpha = texture2D( alphaMap, vUv ).a;
+      #else
+        float alpha = 1.0;
+      #endif
 
       #ifdef USE_MAP
         vec4 color1 = texture2D( map, uvGrid );
@@ -58,6 +73,7 @@ export class ShaderFogOfWar extends Shader {
     #include <color_pars_vertex>
 
     void main() {
+      ${ODYSSEY_UV_CHANNEL_DEFINES}
       #include <uv_vertex>
       #include <color_vertex>
 

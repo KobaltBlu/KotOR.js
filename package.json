@@ -42,7 +42,7 @@
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@types/signals": "^1.0.4",
-    "@types/three": "^0.149.0",
+    "@types/three": "0.186.0",
     "@types/wicg-file-system-access": "^2023.10.7",
     "browserify-fs": "^1.0.0",
     "circular-dependency-plugin": "^5.2.2",
@@ -105,7 +105,7 @@
     "lip-sync-engine": "^1.0.3",
     "monaco-editor": "^0.52.0",
     "p-limit": "^7.3.0",
-    "three": "^0.149.0",
+    "three": "0.186.0",
     "ts-jest": "^29.4.6"
   }
 }

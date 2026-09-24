@@ -18,7 +18,6 @@ export function applyProtoTemplateSkin(row: GUIControl, template: GUIControl): v
   if (mat.uniforms?.map) {
     mat.uniforms.map.value = texture;
   }
-  (mat as any).map = texture;
   mat.defines = mat.defines || {};
   mat.defines.USE_UV = '';
   mat.defines.USE_MAP = '';

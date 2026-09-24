@@ -497,7 +497,7 @@ export class ShaderOdysseyEmitter extends Shader {
        * (gl_FragDepth = log2(1+w) * logDepthBufFC * 0.5), then viewZ = -w.
        */
       float softParticleViewZ( const in float depth ) {
-        #if defined( USE_LOGDEPTHBUF ) && defined( USE_LOGDEPTHBUF_EXT )
+        #if defined( USE_LOGARITHMIC_DEPTH_BUFFER )
           float w = exp2( depth / ( logDepthBufFC * 0.5 ) ) - 1.0;
           return -w;
         #else
@@ -527,7 +527,7 @@ export class ShaderOdysseyEmitter extends Shader {
       #ifdef DEPTH_TEXTURE
         float sceneDepth = texture2D(tDepth, gl_FragCoord.xy / resolution).r;
         float particleDepth = gl_FragCoord.z;
-        #if defined( USE_LOGDEPTHBUF ) && defined( USE_LOGDEPTHBUF_EXT )
+        #if defined( USE_LOGARITHMIC_DEPTH_BUFFER )
           // Same encoding Three writes into DepthTexture / gl_FragDepth
           particleDepth = vIsPerspective == 0.0 ? gl_FragCoord.z : log2( vFragDepth ) * logDepthBufFC * 0.5;
         #endif

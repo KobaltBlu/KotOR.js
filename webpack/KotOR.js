@@ -1,7 +1,9 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyPlugin = require("copy-webpack-plugin");
-const { ROOT, isProd, isDevServe, commonStats, commonResolve, makeDefinePlugin, makeWebpackBar, makeDevServer, makeHmrPlugins, makeDevOutput } = require('./common');
+const { ROOT, isProd, isDevServe, commonStats, commonResolve, makeDefinePlugin, makeWebpackBar, makeDevServer, makeHmrPlugins, makeDevOutput, ensureThreeGlobalBundle } = require('./common');
+
+const threeGlobalPath = ensureThreeGlobalBundle();
 
 module.exports = (name, color) => ({
   mode: isProd ? 'production' : 'development',
@@ -62,7 +64,7 @@ module.exports = (name, color) => ({
       patterns: [
         { from: "src/assets/icons", to: "assets/icons" },
         { from: "src/assets/icons/icon.ico", to: "favicon.ico" },
-        { from: 'node_modules/three/build/three.min.js', to: 'three.min.js' },
+        { from: threeGlobalPath, to: 'three.min.js' },
         { from: 'node_modules/three/build/three.module.js', to: 'three.module.js' },
         { from: 'node_modules/@fortawesome/fontawesome-free/webfonts', to: 'webfonts' },
       ]

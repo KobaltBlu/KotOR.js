@@ -260,7 +260,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   private _sortPairs: [number, number][] = [];
   /** Skip chunk instanceMatrix upload when composed content is unchanged. */
   private _chunkContentFp = 0;
-  /** Highest particle slot ever written — caps updateRange for large pools. */
+  /** Highest particle slot ever written — caps updateRanges for large pools. */
   private _particleHighWater = 0;
   private _chunkColor: THREE.Color = new THREE.Color(1, 1, 1);
   private _chunkColors: THREE.InstancedBufferAttribute = null;
@@ -3887,7 +3887,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   }
 
   /**
-   * Gate particle InstancedBufferAttribute uploads and prefer updateRange when the
+   * Gate particle InstancedBufferAttribute uploads and prefer updateRanges when the
    * pool is large (avoids full-buffer bufferSubData storms for mostly-empty pools).
    */
   private flushParticleAttrUploads(
@@ -3914,17 +3914,15 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     if(!attr || !dirty || !('needsUpdate' in attr)) return;
     const ba = attr as THREE.BufferAttribute;
     ba.needsUpdate = true;
-    if(typeof ba.count !== 'number' || !ba.updateRange) return;
+    if(typeof ba.count !== 'number' || typeof ba.clearUpdateRanges !== 'function') return;
+    ba.clearUpdateRanges();
     const itemSize = ba.itemSize || 1;
     const hw = Math.min(ba.count - 1, Math.max(this._particleHighWater, 0));
     // Large pools: upload only through the high-water slot (spawn fills from low indices).
     if(ba.count > 64 && hw + 1 < ba.count){
-      ba.updateRange.offset = 0;
-      ba.updateRange.count = (hw + 1) * itemSize;
-    }else{
-      ba.updateRange.offset = 0;
-      ba.updateRange.count = -1;
+      ba.addUpdateRange(0, (hw + 1) * itemSize);
     }
+    // else: empty updateRanges + needsUpdate ⇒ full buffer upload
   }
 
   /** Clears trail distance state (spawntype 1) so the next effect does not get one huge first segment. */
@@ -4206,6 +4204,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     if(this._chunkMaterial){
       this._chunkMaterial.dispose();
     }
+    super.dispose();
   }
 
   attributeChanged(attr: string){

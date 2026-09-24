@@ -90,7 +90,7 @@ export class OdysseyLightHelper extends THREE.Object3D {
     super();
     this.light = light;
     this.name = `OdysseyLightHelper:${light.name || light.uuid}`;
-    this.type = 'OdysseyLightHelper';
+    (this as any).type = 'OdysseyLightHelper';
     this.frustumCulled = false;
 
     this.centerMat = makeFillMat(0xffffff, 0.9);
@@ -190,6 +190,7 @@ export class OdysseyLightHelper extends THREE.Object3D {
     this.halfMat.dispose();
     this.quarterMat.dispose();
     this.shadowMat.dispose();
+    super.dispose();
   }
 
 }

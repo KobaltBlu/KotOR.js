@@ -4,8 +4,16 @@ module.exports = {
   testEnvironment: 'node',
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    // three@0.186 three.cjs re-exports ESM; load the ESM entry and transform it.
+    '^three$': '<rootDir>/node_modules/three/build/three.module.js',
   },
+  transformIgnorePatterns: [
+    '/node_modules/(?!three/)',
+    '\\\\node_modules\\\\(?!three\\\\)',
+  ],
   transform: {
+    // Match three build files on Windows and POSIX paths.
+    'three[/\\\\]build[/\\\\].+\\.js$': '<rootDir>/jest-three-transform.js',
     '^.+\\.tsx?$': [
       'ts-jest',
       {

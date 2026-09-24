@@ -26,6 +26,9 @@ import { PickService } from "@/apps/forge/module-editor/kernel/PickService";
 import { isHighlightableGameObject } from "@/apps/forge/module-editor/kernel/SelectionHighlightService";
 import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
 
+// Preserve r149-like color appearance until a dedicated color-management pass.
+THREE.ColorManagement.enabled = false;
+
 export enum CameraView {
   Top = 'top',
   Bottom = 'bottom',
@@ -154,7 +157,7 @@ export class UI3DRenderer extends EventListenerModel {
   module: ForgeModule;
 
   guiMode: boolean = false;
-  clock: THREE.Clock;
+  clock: THREE.Timer;
   renderer?: THREE.WebGLRenderer;
   clearColor: THREE.Color = new THREE.Color(0x333333);
   scene: THREE.Scene = new THREE.Scene();
@@ -309,7 +312,7 @@ export class UI3DRenderer extends EventListenerModel {
     this.time = 0;
     this.deltaTime = 0;
 
-    this.clock = new THREE.Clock();
+    this.clock = new THREE.Timer();
     this.selectionBox.visible = false;
 
     this.group = {
@@ -365,8 +368,9 @@ export class UI3DRenderer extends EventListenerModel {
 
   buildTransformControls() {
     if(this.transformControls){
+      const prevHelper = this.transformControls.getHelper();
+      prevHelper.removeFromParent();
       this.transformControls.dispose();
-      this.transformControls.removeFromParent();
     }
     if(this.canvas){
       if(this.orbitControls){
@@ -381,10 +385,12 @@ export class UI3DRenderer extends EventListenerModel {
       this.applyOrbitMouseButtons();
       this.syncOrbitEnabled();
       this.transformControls = new TransformControls(this.currentCamera, this.canvas);
-      this.transformControls.visible = false;
-      this.unselectable.add(this.transformControls);
+      const helper = this.transformControls.getHelper();
+      helper.visible = false;
+      this.unselectable.add(helper);
+      this.transformControls.userData = this.transformControls.userData || {};
       this.transformControls.userData.uuids = [];
-      this.transformControls.traverse( (obj) => {
+      helper.traverse( (obj) => {
         this.transformControls.userData.uuids.push(obj.uuid);
       });
 
@@ -1391,9 +1397,10 @@ export class UI3DRenderer extends EventListenerModel {
     if(this.renderer){
       this.renderer.setClearColor(this.clearColor)
       this.renderer.autoClear = false;
+      this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
       this.renderer.shadowMap.enabled = true;
       this.renderer.shadowMap.autoUpdate = false;
-      this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      this.renderer.shadowMap.type = THREE.PCFShadowMap;
       this.renderer.setSize( this.width, this.height );
     }
 
@@ -1592,6 +1599,7 @@ export class UI3DRenderer extends EventListenerModel {
       this.render();
     });
 
+    this.clock.update();
     const rawDelta = this.clock.getDelta();
     const idle = shouldIdleRender(this.lastInteractionAt);
     if (idle) {
@@ -1711,8 +1719,9 @@ export class UI3DRenderer extends EventListenerModel {
             hiddenHelpers.push(camera.cameraHelper);
           }
         }
-        const wasTransformControlsVisible = this.transformControls.visible;
-        this.transformControls.visible = false;
+        const transformHelper = this.transformControls?.getHelper();
+        const wasTransformControlsVisible = transformHelper?.visible ?? false;
+        if(transformHelper) transformHelper.visible = false;
         // Update preview camera aspect ratio (square preview)
         this.previewCamera.aspect = 1.0;
         this.previewCamera.updateProjectionMatrix();
@@ -1735,7 +1744,7 @@ export class UI3DRenderer extends EventListenerModel {
         for(const helper of hiddenHelpers){
           helper.visible = true;
         }
-        this.transformControls.visible = wasTransformControlsVisible;
+        if(transformHelper) transformHelper.visible = wasTransformControlsVisible;
         // Restore viewport and scissor
         this.renderer.setViewport(currentViewport);
         this.renderer.setScissor(currentScissor);

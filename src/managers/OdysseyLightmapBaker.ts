@@ -4,6 +4,7 @@ import type { OdysseyLight3D } from '@/three/odyssey/OdysseyLight3D';
 import type { OdysseyModel3D } from '@/three/odyssey/OdysseyModel3D';
 import { OdysseyModelControllerType } from '@/enums/odyssey/OdysseyModelControllerType';
 import { odysseyPointAttenuation } from '@/utility/odysseyLighting';
+import { syncOdysseyMapTransforms, enableOdysseyLightmapDefines } from '@/shaders/chunks/OdysseyLighting';
 
 /** Mesh entry tracked for dispose / rebake. */
 export interface IOdysseyBakedLightmap {
@@ -227,17 +228,12 @@ export class OdysseyLightmapBaker {
       material.uniforms.lightMap = { value: null };
     }
     material.uniforms.lightMap.value = lightmap;
-    (material as any).lightMap = lightmap;
-    if(typeof (lightmap as any).updateMatrix === 'function'){
-      (lightmap as any).updateMatrix();
-    }
-    material.defines = material.defines || {};
-    material.defines.USE_LIGHTMAP = '';
+    syncOdysseyMapTransforms(material.uniforms, 'lightMap', lightmap);
+    enableOdysseyLightmapDefines(material, true);
     delete material.defines.IGNORE_LIGHTING;
     material.defines.AURORA = '';
     material.userData.odysseyRuntimeLightmap = true;
     material.uniformsNeedUpdate = true;
-    material.needsUpdate = true;
   }
 
   /**
@@ -348,13 +344,9 @@ export class OdysseyLightmapBaker {
     if(material.uniforms.lightMap){
       material.uniforms.lightMap.value = null;
     }
-    delete (material as any).lightMap;
-    if(material.defines){
-      delete material.defines.USE_LIGHTMAP;
-    }
+    enableOdysseyLightmapDefines(material, false);
     delete material.userData.odysseyRuntimeLightmap;
     material.uniformsNeedUpdate = true;
-    material.needsUpdate = true;
   }
 
   private static disposeBakeTextures(model: THREE.Object3D): void {
@@ -419,7 +411,7 @@ export class OdysseyLightmapBaker {
     const prevRes = geometry.userData.odysseyLightmapChartResolution | 0;
     if(
       geometry.userData.odysseyLightmapChartsReady === true &&
-      geometry.attributes.uv2 &&
+      geometry.attributes.uv1 &&
       prevRes === resolution
     ){
       return true;
@@ -431,7 +423,7 @@ export class OdysseyLightmapBaker {
     const vCount = pos.count;
     const triCount = (vCount / 3) | 0;
     if(triCount <= 0){
-      geometry.setAttribute('uv2', new THREE.Float32BufferAttribute(new Float32Array(Math.max(vCount, 1) * 2), 2));
+      geometry.setAttribute('uv1', new THREE.Float32BufferAttribute(new Float32Array(Math.max(vCount, 1) * 2), 2));
       geometry.userData.odysseyLightmapChartsReady = true;
       geometry.userData.odysseyLightmapChartResolution = resolution;
       return true;
@@ -457,8 +449,8 @@ export class OdysseyLightmapBaker {
       uv2[i2 * 2] = u0;     uv2[i2 * 2 + 1] = v1;
     }
 
-    geometry.setAttribute('uv2', new THREE.Float32BufferAttribute(uv2, 2));
-    geometry.attributes.uv2.needsUpdate = true;
+    geometry.setAttribute('uv1', new THREE.Float32BufferAttribute(uv2, 2));
+    geometry.attributes.uv1.needsUpdate = true;
     geometry.userData.odysseyLightmapChartsReady = true;
     geometry.userData.odysseyLightmapChartResolution = resolution;
     return true;
@@ -517,7 +509,7 @@ export class OdysseyLightmapBaker {
     this._matrixNormal.getNormalMatrix(matrixWorld);
     const pos = geometry.attributes.position as THREE.BufferAttribute;
     const nrmAttr = geometry.attributes.normal as THREE.BufferAttribute | undefined;
-    const uv2 = geometry.attributes.uv2 as THREE.BufferAttribute;
+    const uv2 = geometry.attributes.uv1 as THREE.BufferAttribute;
     const triCount = (pos.count / 3) | 0;
     const sunCol = lm.sunColor;
     const sunDir = lm.sunDirection;

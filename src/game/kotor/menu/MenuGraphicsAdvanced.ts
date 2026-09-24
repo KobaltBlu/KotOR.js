@@ -268,6 +268,8 @@ export class MenuGraphicsAdvanced extends GameMenu {
       GameState.iniConfig.setProperty(INI_SHADOWS, 1);
     }
 
+    GameState.applyVSyncOption();
+
     if(this.draftAnisotropy != prevAnisotropy){
       TextureLoader.Anisotropy = this.draftAnisotropy;
       TextureLoader.onAnisotropyChanged();

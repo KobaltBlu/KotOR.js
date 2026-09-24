@@ -193,6 +193,26 @@ function makeReactEsbuildOptions(baseOptions) {
   };
 }
 
+/**
+ * three@0.186+ no longer ships three.min.js. Apps load THREE as a global
+ * (webpack externals: three → THREE). Build a browser IIFE into the cache dir.
+ */
+function ensureThreeGlobalBundle() {
+  const esbuild = require('esbuild');
+  const outDir = path.resolve(ROOT, 'node_modules/.cache/three-global');
+  const outfile = path.join(outDir, 'three.min.js');
+  esbuild.buildSync({
+    entryPoints: [path.resolve(ROOT, 'node_modules/three/build/three.module.js')],
+    bundle: true,
+    format: 'iife',
+    globalName: 'THREE',
+    outfile,
+    minify: isProd,
+    logLevel: 'silent',
+  });
+  return outfile;
+}
+
 module.exports = {
   ROOT,
   version,
@@ -211,4 +231,5 @@ module.exports = {
   makeHmrPlugins,
   makeDevOutput,
   makeReactEsbuildOptions,
+  ensureThreeGlobalBundle,
 };

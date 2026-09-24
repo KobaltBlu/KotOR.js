@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { TXIPROCEDURETYPE } from "@/enums/graphics/txi/TXIPROCEDURETYPE";
+import { syncOdysseyMapTransforms } from "@/shaders/chunks/OdysseyLighting";
 
 export type TextureAnimUniformName = 'map' | 'normalMap' | 'bumpMap' | 'displacementMap';
 
@@ -129,22 +130,9 @@ export class TextureAnimationManager {
       const uniform = sub.material.uniforms?.[sub.uniformName];
       if(uniform){
         uniform.value = frame;
-        // Keep uvTransform bound to the active frame's matrix (offset/repeat/wrap)
-        if(sub.uniformName === 'map' && sub.material.uniforms.uvTransform){
-          frame.updateMatrix();
-          sub.material.uniforms.uvTransform.value = frame.matrix;
-        }
+        // Keep uv / map transforms bound to the active frame's matrix
+        syncOdysseyMapTransforms(sub.material.uniforms, sub.uniformName, frame);
         sub.material.uniformsNeedUpdate = true;
-      }
-      // Keep material.map / etc. in sync for THREE bookkeeping
-      if(sub.uniformName === 'map'){
-        (sub.material as any).map = frame;
-      }else if(sub.uniformName === 'normalMap'){
-        (sub.material as any).normalMap = frame;
-      }else if(sub.uniformName === 'bumpMap'){
-        (sub.material as any).bumpMap = frame;
-      }else if(sub.uniformName === 'displacementMap'){
-        (sub.material as any).displacementMap = frame;
       }
     }
   }

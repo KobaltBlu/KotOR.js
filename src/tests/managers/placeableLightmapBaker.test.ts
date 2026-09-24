@@ -91,7 +91,7 @@ function makeHingeModel(){
 }
 
 describe('OdysseyLightmapBaker', () => {
-  test('applyLightmap sets USE_LIGHTMAP and clears IGNORE_LIGHTING', () => {
+  test('applyLightmap sets USE_LIGHTMAP + USE_UV1 and clears IGNORE_LIGHTING', () => {
     const material = new THREE.ShaderMaterial({
       uniforms: { lightMap: { value: null } },
       defines: { IGNORE_LIGHTING: '' },
@@ -101,6 +101,7 @@ describe('OdysseyLightmapBaker', () => {
     const tex = new THREE.DataTexture(data, 1, 1, THREE.RGBAFormat, THREE.FloatType);
     OdysseyLightmapBaker.applyLightmap(material, tex);
     expect(Object.prototype.hasOwnProperty.call(material.defines, 'USE_LIGHTMAP')).toBe(true);
+    expect(Object.prototype.hasOwnProperty.call(material.defines, 'USE_UV1')).toBe(true);
     expect(Object.prototype.hasOwnProperty.call(material.defines, 'IGNORE_LIGHTING')).toBe(false);
     tex.dispose();
     material.dispose();
@@ -143,7 +144,7 @@ describe('OdysseyLightmapBaker', () => {
       0, 0, 1, 0, 0, 1, 0, 0, 1,
     ], 3));
     const uv2 = new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6]);
-    geometry.setAttribute('uv2', new THREE.Float32BufferAttribute(uv2.slice(0), 2));
+    geometry.setAttribute('uv1', new THREE.Float32BufferAttribute(uv2.slice(0), 2));
     const material = new THREE.ShaderMaterial({
       uniforms: { lightMap: { value: null } },
       defines: {},
@@ -155,7 +156,7 @@ describe('OdysseyLightmapBaker', () => {
 
     expect(OdysseyLightmapBaker.isBaked(model)).toBe(false);
     expect(Object.prototype.hasOwnProperty.call(material.defines, 'USE_LIGHTMAP')).toBe(false);
-    expect(Array.from((mesh.geometry as THREE.BufferGeometry).attributes.uv2.array)).toEqual(
+    expect(Array.from((mesh.geometry as THREE.BufferGeometry).attributes.uv1.array)).toEqual(
       Array.from(uv2)
     );
 

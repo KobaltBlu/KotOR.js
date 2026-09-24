@@ -190,6 +190,7 @@ export class OdysseyShadowLightHelper extends THREE.Object3D {
     this.radiusMat.dispose();
     this.aimMat.dispose();
     this.aimLine.geometry.dispose();
+    super.dispose();
   }
 
 }

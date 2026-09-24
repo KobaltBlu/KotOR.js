@@ -7,7 +7,6 @@ export function getOdysseyDepthPrepassMaterial(): THREE.MeshDepthMaterial {
   if(!_sharedDepthMaterial){
     _sharedDepthMaterial = new THREE.MeshDepthMaterial({
       depthPacking: THREE.BasicDepthPacking,
-      skinning: true,
       alphaTest: 0.5,
     });
     _sharedDepthMaterial.name = 'OdysseyDepthPrepass';

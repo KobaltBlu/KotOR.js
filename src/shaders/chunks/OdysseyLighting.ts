@@ -234,7 +234,74 @@ export function createOdysseyMaterialBaseUniforms(): Record<string, { value: unk
     fogFar: { value: 2000 },
     fogColor: { value: new THREE.Color(0xffffff) },
     uvTransform: { value: new THREE.Matrix3() },
-    // Required by Three uv2_vertex when USE_LIGHTMAP / USE_AOMAP is set
-    uv2Transform: { value: new THREE.Matrix3() },
+    // Required by Three uv_vertex when USE_*MAP is set (r151+)
+    mapTransform: { value: new THREE.Matrix3() },
+    alphaMapTransform: { value: new THREE.Matrix3() },
+    lightMapTransform: { value: new THREE.Matrix3() },
+    aoMapTransform: { value: new THREE.Matrix3() },
+    bumpMapTransform: { value: new THREE.Matrix3() },
+    normalMapTransform: { value: new THREE.Matrix3() },
+    displacementMapTransform: { value: new THREE.Matrix3() },
+    emissiveMapTransform: { value: new THREE.Matrix3() },
+    specularMapTransform: { value: new THREE.Matrix3() },
   };
+}
+
+/** Sampler slots that have a matching `<slot>Transform` mat3 for r151+ uv_vertex. */
+const ODYSSEY_MAP_TRANSFORM_SLOTS = [
+  'map',
+  'alphaMap',
+  'lightMap',
+  'aoMap',
+  'bumpMap',
+  'normalMap',
+  'displacementMap',
+  'emissiveMap',
+  'specularMap',
+] as const;
+
+export type OdysseyMapTransformSlot = (typeof ODYSSEY_MAP_TRANSFORM_SLOTS)[number];
+
+/**
+ * Sync Three uv_vertex transform uniforms from a bound texture matrix.
+ * Always refreshes `uvTransform` for legacy ANIMATED_UV / GUI paths that still read it.
+ */
+export function syncOdysseyMapTransforms(
+  uniforms: Record<string, { value: unknown }> | undefined,
+  slot: string,
+  texture: THREE.Texture | null | undefined,
+): void {
+  if(!uniforms || !(texture instanceof THREE.Texture)) return;
+  texture.updateMatrix();
+  if(uniforms.uvTransform){
+    uniforms.uvTransform.value = texture.matrix;
+  }
+  if((ODYSSEY_MAP_TRANSFORM_SLOTS as readonly string[]).includes(slot)){
+    const transformKey = `${slot}Transform`;
+    if(uniforms[transformKey]){
+      uniforms[transformKey].value = texture.matrix;
+    }
+  }
+}
+
+/**
+ * Toggle USE_LIGHTMAP and USE_UV1 together.
+ * WebGLProgram only emits `attribute vec2 uv1` under USE_UV1, which stock
+ * materials get via material.lightMap.channel — Odyssey ShaderMaterials bind
+ * lightmaps as uniforms and pin LIGHTMAP_UV→uv1 in OdysseyUvChannels, so the
+ * attribute define must be set explicitly.
+ */
+export function enableOdysseyLightmapDefines(
+  material: { defines?: Record<string, unknown>; needsUpdate?: boolean },
+  enabled: boolean,
+): void {
+  material.defines = material.defines || {};
+  if(enabled){
+    material.defines.USE_LIGHTMAP = '';
+    material.defines.USE_UV1 = '';
+  }else{
+    delete material.defines.USE_LIGHTMAP;
+    delete material.defines.USE_UV1;
+  }
+  material.needsUpdate = true;
 }

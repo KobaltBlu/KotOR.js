@@ -9,7 +9,7 @@ import { TLKManager } from "@/managers/TLKManager";
 import { TextureLoader } from "@/loaders/TextureLoader";
 import { TextureType } from "@/enums/loaders/TextureType";
 import { TextSprite3DType } from "@/enums/engine/TextSprite3DType";
-import { GUIFont } from "@/gui/GUIFont";
+import { GUIFont, computeBoundingBoxXY } from "@/gui/GUIFont";
 import { GUIControlAlignment } from "@/enums";
 
 const itemSize = 2
@@ -166,8 +166,6 @@ export class TextSprite3D {
   }
 
   buildText(){
-    let self = this;
-
     if(!this.text.texture)
       return;
 
@@ -208,18 +206,7 @@ export class TextSprite3D {
     }
     
     this.text.geometry.computeBoundingBox = function () {
-      if (this.boundingBox === null) {
-        this.boundingBox = new THREE.Box3()
-      }
-    
-      let bbox = this.boundingBox
-      let positions = this.attributes.position.array
-      let itemSize = this.attributes.position.itemSize
-      if (!positions || !itemSize || positions.length < 2) {
-        bbox.makeEmpty()
-        return
-      }
-      self.computeBox(positions, bbox)
+      computeBoundingBoxXY(this);
     }
 
     // this.text.geometry.computeBoundingBox;

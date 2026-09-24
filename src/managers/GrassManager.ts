@@ -311,7 +311,7 @@ export class GrassManager {
     lightMap.minFilter = THREE.LinearFilter;
     lightMap.magFilter = THREE.LinearFilter;
     material.uniforms.lightMap.value = lightMap;
-    material.defines.USE_LIGHTMAP = "";
+    material.defines.ODYSSEY_GRASS_LIGHTMAP = "";
     material.needsUpdate = true;
   }
 

@@ -3,7 +3,11 @@ import type { ModuleArea } from "@/module/ModuleArea";
 import type { ModuleDoor } from "@/module/ModuleDoor";
 import type { ModulePlaceable } from "@/module/ModulePlaceable";
 import { isStaticWalkClearOnAreaMesh, isStaticWalkClearOnWalkMesh, walkMeshHasStartOverlap } from "@/engine/pathfinding/static-walk-blockers-mesh";
-import { composeDoorWalkmeshLocalToWorld } from "@/engine/pathfinding/door-walkmesh-matrix";
+import {
+  composeDoorWalkmeshLocalToWorld,
+  walkmeshWorldAabbXY,
+  type WalkmeshWorldAabbXY,
+} from "@/engine/pathfinding/door-walkmesh-matrix";
 import {
   ensureWalkmeshMatrixSynced,
   queryStaticBlockersInAabb,
@@ -26,9 +30,14 @@ export type NoNonWalkPolysResult = {
   blockingObjectId?: number;
 };
 
+/** Half-extent used when facing-plane falls back to door.position (no model box). */
+const FACING_PLANE_HALF = 1.5;
+
 const _from = new THREE.Vector3();
 const _to = new THREE.Vector3();
 const _mid = new THREE.Vector3();
+const _meshAabb: WalkmeshWorldAabbXY = { minX: 0, maxX: 0, minY: 0, maxY: 0 };
+const _facingBox = new THREE.Box3();
 
 function segmentHitsBox(a: THREE.Vector3, b: THREE.Vector3, box: THREE.Box3): boolean {
   for(let i = 0; i <= 10; i++){
@@ -41,6 +50,46 @@ function segmentHitsBox(a: THREE.Vector3, b: THREE.Vector3, box: THREE.Box3): bo
     if(box.containsPoint(_mid)) return true;
   }
   return false;
+}
+
+function segmentOverlapsAabbXY(
+  from: THREE.Vector3,
+  to: THREE.Vector3,
+  expand: number,
+  aabb: WalkmeshWorldAabbXY
+): boolean {
+  const minX = Math.min(from.x, to.x) - expand;
+  const maxX = Math.max(from.x, to.x) + expand;
+  const minY = Math.min(from.y, to.y) - expand;
+  const maxY = Math.max(from.y, to.y) + expand;
+  if(maxX < aabb.minX || minX > aabb.maxX) return false;
+  if(maxY < aabb.minY || minY > aabb.maxY) return false;
+  return true;
+}
+
+/**
+ * Facing-plane cull volume: union of door.position slab and model box when
+ * present so a stale open-pose model AABB cannot false-clear a closed door.
+ */
+function facingPlaneCullBox(door: ModuleDoor): THREE.Box3 | undefined {
+  const pos = door.position;
+  if(!pos || !Number.isFinite(pos.x) || !Number.isFinite(pos.y)){
+    return door.box ?? undefined;
+  }
+  _facingBox.min.set(
+    pos.x - FACING_PLANE_HALF,
+    pos.y - FACING_PLANE_HALF,
+    (pos.z ?? 0) - 0.5
+  );
+  _facingBox.max.set(
+    pos.x + FACING_PLANE_HALF,
+    pos.y + FACING_PLANE_HALF,
+    (pos.z ?? 0) + 3.5
+  );
+  if(door.box && Number.isFinite(door.box.min.x) && Number.isFinite(door.box.max.x)){
+    _facingBox.union(door.box);
+  }
+  return _facingBox;
 }
 
 /**
@@ -78,14 +127,10 @@ function closedDoorBlocksLine(
     if(wok.mat4){
       wok.mat4.copy(wok.matrixWorld);
     }
-    // AABB pre-cull when box available
-    if(door.box){
-      const minX = Math.min(from.x, to.x) - expand;
-      const maxX = Math.max(from.x, to.x) + expand;
-      const minY = Math.min(from.y, to.y) - expand;
-      const maxY = Math.max(from.y, to.y) + expand;
-      if(maxX < door.box.min.x || minX > door.box.max.x) return false;
-      if(maxY < door.box.min.y || minY > door.box.max.y) return false;
+    // Cull against DWK world AABB — never visual model door.box (open-pose drift).
+    const meshAabb = walkmeshWorldAabbXY(wok.vertices, wok.matrixWorld, _meshAabb);
+    if(meshAabb && !segmentOverlapsAabbXY(from, to, expand, meshAabb)){
+      return false;
     }
     // Walk-check materials only (door DWK faces are Nonwalk mat 7).
     // Face range starts after walkable/adjacency count.
@@ -105,15 +150,16 @@ function closedDoorBlocksLine(
   }
 
   // Fallback facing-plane when closed and no door wok
-  if(!door.box) return false;
+  const cullBox = facingPlaneCullBox(door);
+  if(!cullBox) return false;
 
   const minX = Math.min(from.x, to.x) - expand;
   const maxX = Math.max(from.x, to.x) + expand;
   const minY = Math.min(from.y, to.y) - expand;
   const maxY = Math.max(from.y, to.y) + expand;
-  if(maxX < door.box.min.x || minX > door.box.max.x) return false;
-  if(maxY < door.box.min.y || minY > door.box.max.y) return false;
-  if(!segmentHitsBox(from, to, door.box)) return false;
+  if(maxX < cullBox.min.x || minX > cullBox.max.x) return false;
+  if(maxY < cullBox.min.y || minY > cullBox.max.y) return false;
+  if(!segmentHitsBox(from, to, cullBox)) return false;
 
   const fx = Math.cos(door.facing || 0);
   const fy = Math.sin(door.facing || 0);
@@ -126,9 +172,7 @@ function closedDoorBlocksLine(
   if((dStart > 0) === (dEnd > 0)) return false;
   if(hit){
     hit.objectId = door.id;
-    if(door.box){
-      setHitInfoForAabb(door.box, from, to, hit, door.id);
-    }
+    setHitInfoForAabb(cullBox, from, to, hit, door.id);
   }
   return true;
 }

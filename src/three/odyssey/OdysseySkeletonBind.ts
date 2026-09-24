@@ -13,11 +13,60 @@ const ODYSSEY_SKIN_MW_FP = 'odysseySkinMatrixWorldFp';
 export const ODYSSEY_BONE_MATRICES_FP = 'odysseyBoneMatricesFp';
 /** Bone DataTexture identity last pushed to the GPU (computeBoneTexture replaces it). */
 const ODYSSEY_BONE_TEX_SYNCED = 'odysseyBoneTexSynced';
+/**
+ * SkinnedMeshes that share this skeleton and need frustum boundingSphere refresh
+ * when boneMatrices content changes (body skins + force-shield shells).
+ */
+const ODYSSEY_BOUND_SKINS = 'odysseyBoundSkins';
 
 /** Mark a skeleton so the next {@link THREE.Skeleton.update} fills boneMatrices and uploads. */
 export function markOdysseySkeletonDirty(skeleton: THREE.Skeleton | undefined | null): void {
   if(!skeleton){ return; }
   (skeleton as any)[ODYSSEY_SKELETON_DIRTY] = true;
+}
+
+/**
+ * Register a SkinnedMesh for dirty-gated boundingSphere refresh after bone updates.
+ * Safe to call more than once for the same pair.
+ */
+export function registerOdysseySkinBounds(
+  skeleton: THREE.Skeleton | undefined | null,
+  skin: THREE.SkinnedMesh | undefined | null,
+): void {
+  if(!skeleton || !skin){ return; }
+  let list = (skeleton as any)[ODYSSEY_BOUND_SKINS] as THREE.SkinnedMesh[] | undefined;
+  if(!list){
+    list = [];
+    (skeleton as any)[ODYSSEY_BOUND_SKINS] = list;
+  }
+  if(list.indexOf(skin) < 0){
+    list.push(skin);
+  }
+}
+
+/** Drop a skin from the skeleton's bounds-refresh list (force-shield dispose). */
+export function unregisterOdysseySkinBounds(
+  skeleton: THREE.Skeleton | undefined | null,
+  skin: THREE.SkinnedMesh | undefined | null,
+): void {
+  if(!skeleton || !skin){ return; }
+  const list = (skeleton as any)[ODYSSEY_BOUND_SKINS] as THREE.SkinnedMesh[] | undefined;
+  if(!list){ return; }
+  const idx = list.indexOf(skin);
+  if(idx >= 0){
+    list.splice(idx, 1);
+  }
+}
+
+function refreshOdysseySkinBoundingSpheres(skeleton: THREE.Skeleton): void {
+  const list = (skeleton as any)[ODYSSEY_BOUND_SKINS] as THREE.SkinnedMesh[] | undefined;
+  if(!list || !list.length){ return; }
+  for(let i = 0; i < list.length; i++){
+    const skin = list[i];
+    if(!skin || !skin.geometry){ continue; }
+    // Mesh-local sphere; Frustum.intersectsObject applies matrixWorld.
+    skin.computeBoundingSphere();
+  }
 }
 
 /** Read the last boneMatrices content fingerprint (0 if never computed). */
@@ -107,6 +156,7 @@ export function installOdysseySkeletonUpdate(
 
   // First bind / LOD / attach must upload once.
   markOdysseySkeletonDirty(skeleton);
+  registerOdysseySkinBounds(skeleton, skinNode);
 
   skeleton.update = function odysseySkeletonUpdate(this: THREE.Skeleton){
     const dirtyFlag = !!(this as any)[ODYSSEY_SKELETON_DIRTY];
@@ -142,6 +192,7 @@ export function installOdysseySkeletonUpdate(
 
     const boneFp = fingerprintBoneMatrices(boneMatrices);
     const lastBoneFp = (this as any)[ODYSSEY_BONE_MATRICES_FP] as number | undefined;
+    const boneFpChanged = lastBoneFp === undefined || lastBoneFp !== boneFp;
     (this as any)[ODYSSEY_BONE_MATRICES_FP] = boneFp;
 
     // Held / single-keyframe poses refill CPU matrices but need no GPU upload —
@@ -149,30 +200,70 @@ export function installOdysseySkeletonUpdate(
     // and has never been synced from this update path.
     if(this.boneTexture !== null){
       const texChanged = synced !== this.boneTexture;
-      if(texChanged || lastBoneFp !== boneFp){
+      if(texChanged || boneFpChanged){
         this.boneTexture.needsUpdate = true;
         (this as any)[ODYSSEY_BONE_TEX_SYNCED] = this.boneTexture;
         RenderPerfStats.noteBoneTextureUpload();
       }
     }
+
+    // r186 frustum tests SkinnedMesh.boundingSphere before skeleton.update.
+    // Refresh mesh-local spheres only when the skinned shape changed so the
+    // next frame's cull matches the pose (one-frame lag is expected).
+    if(boneFpChanged){
+      refreshOdysseySkinBoundingSpheres(this);
+    }
   };
 
-  // CPU path must match GPU (boneMatrices), not r149's world*inverse shortcut.
-  skinNode.boneTransform = function odysseyBoneTransform(index: number, target: THREE.Vector3){
+  // CPU path must match GPU (boneMatrices). r186 getVertexPosition /
+  // computeBoundingSphere call applyBoneTransform (not boneTransform); the
+  // default multiplies bone.matrixWorld*boneInverse → world space, then
+  // Frustum applies matrixWorld again and double-transforms the cull sphere.
+  skinNode.applyBoneTransform = function odysseyApplyBoneTransform(
+    index: number,
+    target: THREE.Vector3 | THREE.Vector4,
+  ){
     const skel = this.skeleton;
     const geometry = this.geometry;
     _skinIndex.fromBufferAttribute(geometry.attributes.skinIndex, index);
     _skinWeight.fromBufferAttribute(geometry.attributes.skinWeight, index);
-    _basePosition.copy(target).applyMatrix4(this.bindMatrix);
-    target.set(0, 0, 0);
+
+    const isVec4 = (target as THREE.Vector4).isVector4 === true;
+    if(isVec4){
+      _basePosition.set((target as THREE.Vector4).x, (target as THREE.Vector4).y, (target as THREE.Vector4).z);
+      (target as THREE.Vector4).set(0, 0, 0, 0);
+    }else{
+      _basePosition.copy(target as THREE.Vector3);
+      (target as THREE.Vector3).set(0, 0, 0);
+    }
+    _basePosition.applyMatrix4(this.bindMatrix);
+
     for(let i = 0; i < 4; i++){
       const weight = _skinWeight.getComponent(i);
       if(weight === 0) continue;
       const boneIndex = Math.round(_skinIndex.getComponent(i));
       _matrix.fromArray(skel.boneMatrices, boneIndex * 16);
-      target.addScaledVector(_vector.copy(_basePosition).applyMatrix4(_matrix), weight);
+      _vector.copy(_basePosition).applyMatrix4(_matrix);
+      if(isVec4){
+        (target as THREE.Vector4).x += _vector.x * weight;
+        (target as THREE.Vector4).y += _vector.y * weight;
+        (target as THREE.Vector4).z += _vector.z * weight;
+      }else{
+        (target as THREE.Vector3).addScaledVector(_vector, weight);
+      }
     }
-    return target.applyMatrix4(this.bindMatrixInverse);
+
+    if(isVec4){
+      (target as THREE.Vector4).w = 1;
+      (target as THREE.Vector4).applyMatrix4(this.bindMatrixInverse);
+      return target;
+    }
+    return (target as THREE.Vector3).applyMatrix4(this.bindMatrixInverse);
+  };
+
+  // Keep boneTransform as an alias for older call sites / tests.
+  skinNode.boneTransform = function odysseyBoneTransform(index: number, target: THREE.Vector3){
+    return this.applyBoneTransform(index, target) as THREE.Vector3;
   };
 }
 

@@ -620,7 +620,8 @@ export class TabWOKEditorState extends TabState {
 
     this.vertexHelpersGroup.visible = false;
     this.edgeHelpersGroup.visible = false;
-    this.ui3DRenderer.transformControls.visible = false;
+    const tcHelper = this.ui3DRenderer.transformControls?.getHelper();
+    if(tcHelper) tcHelper.visible = false;
     this.faceHelperMesh.visible = false;
 
     switch(this.controlMode){
@@ -633,10 +634,9 @@ export class TabWOKEditorState extends TabState {
         this.selectFace(undefined);
         this.vertexHelpersGroup.visible = true;
 
-        if(!this.ui3DRenderer.transformControls.object)
-          this.ui3DRenderer.transformControls.visible = false;
-        else
-          this.ui3DRenderer.transformControls.visible = true;
+        if(tcHelper){
+          tcHelper.visible = !!this.ui3DRenderer.transformControls.object;
+        }
 
         const selectedVertex = this.wok.vertices[this.selectedVertexIndex];
         if(selectedVertex){

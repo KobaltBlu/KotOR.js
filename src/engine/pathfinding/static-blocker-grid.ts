@@ -2,16 +2,25 @@ import type { ModuleArea } from "@/module/ModuleArea";
 import type { ModuleDoor } from "@/module/ModuleDoor";
 import type { ModulePlaceable } from "@/module/ModulePlaceable";
 import type { ModuleObject } from "@/module/ModuleObject";
+import * as THREE from "three";
+import {
+  composeDoorWalkmeshLocalToWorld,
+  walkmeshWorldAabbXY,
+} from "@/engine/pathfinding/door-walkmesh-matrix";
 
 /**
  * Uniform XY hash for door / placeable static-blocker pruning.
- * Rebuild when area door/placeable membership changes.
+ * Rebuild when area door/placeable membership or door open-state changes.
  *
  * @file static-blocker-grid.ts
  */
 
 const CELL_SIZE = 5;
 const CELL_INV = 1 / CELL_SIZE;
+const _doorAabbBox = {
+  min: { x: 0, y: 0 },
+  max: { x: 0, y: 0 },
+};
 
 type StaticBlockerCell = {
   doors: ModuleDoor[];
@@ -82,6 +91,42 @@ function insertBox(
   return true;
 }
 
+/**
+ * Prefer active DWK world AABB for door grid cells; visual model boxes drift
+ * to the open jamb and omit the closed leaf from doorway cells.
+ */
+function doorCollisionAabbXY(
+  door: ModuleDoor
+): { min: { x: number; y: number }; max: { x: number; y: number } } | undefined {
+  const wok =
+    (typeof door.getWalkmeshForOpenState === "function"
+      ? door.getWalkmeshForOpenState()
+      : undefined) ?? door.collisionManager?.walkmesh;
+  if(wok?.vertices?.length){
+    if(!wok.matrixWorld){
+      wok.matrixWorld = new THREE.Matrix4();
+    }
+    composeDoorWalkmeshLocalToWorld(
+      wok.matrixWorld,
+      door.position,
+      door.rotation ?? new THREE.Euler(0, 0, door.facing || 0),
+      wok.header?.position,
+    );
+    const aabb = walkmeshWorldAabbXY(wok.vertices, wok.matrixWorld);
+    if(aabb){
+      _doorAabbBox.min.x = aabb.minX;
+      _doorAabbBox.min.y = aabb.minY;
+      _doorAabbBox.max.x = aabb.maxX;
+      _doorAabbBox.max.y = aabb.maxY;
+      return _doorAabbBox;
+    }
+  }
+  if(door.box && Number.isFinite(door.box.min.x) && Number.isFinite(door.box.max.x)){
+    return door.box;
+  }
+  return undefined;
+}
+
 /** Build a fresh XY cell map from area doors / placeables. */
 export function buildStaticBlockerGrid(area: ModuleArea): StaticBlockerGrid {
   const grid: StaticBlockerGrid = {
@@ -94,7 +139,7 @@ export function buildStaticBlockerGrid(area: ModuleArea): StaticBlockerGrid {
     for(let i = 0; i < doors.length; i++){
       const door = doors[i];
       if(!door) continue;
-      if(!insertBox(grid, door.box, door.position, door, undefined)){
+      if(!insertBox(grid, doorCollisionAabbXY(door), door.position, door, undefined)){
         grid.alwaysDoors.push(door);
       }
     }

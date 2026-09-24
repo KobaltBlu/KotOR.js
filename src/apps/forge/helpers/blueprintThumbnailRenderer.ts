@@ -96,6 +96,7 @@ function ensurePreserveDrawingBuffer(ui: UI3DRenderer): void {
     depth: true,
     preserveDrawingBuffer: true,
   });
+  ui.renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
   ui.renderer.setClearColor(ui.clearColor);
   ui.renderer.setSize(ui.width, ui.height);
 }

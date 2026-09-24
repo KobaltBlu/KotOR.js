@@ -40,6 +40,7 @@ import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
 import { CombatActionType, ModulePlaceableObjectSound, SkillType } from "@/enums";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 import { composeDoorWalkmeshLocalToWorld } from "@/engine/pathfinding/door-walkmesh-matrix";
+import { invalidateStaticBlockerGrid } from "@/engine/pathfinding/static-blocker-grid";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
 import { isCreature } from "@/module/guards/isCreature";
@@ -389,6 +390,9 @@ export class ModuleDoor extends ModuleObject {
       this.collisionManager.setWalkmesh(undefined);
       this.markCollisionBoundsDirty('walkmesh');
     }
+
+    // DWK volume moves with open-state; refresh spatial prune cells.
+    invalidateStaticBlockerGrid(this.area);
   }
 
   /**

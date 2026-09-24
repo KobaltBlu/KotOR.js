@@ -60,7 +60,9 @@ import {
   installOdysseySkeletonUpdate,
   ODYSSEY_IDENTITY_BIND_MATRIX,
   preferHeadBonesForNameCollisions,
+  registerOdysseySkinBounds,
   resolveSkinBoneSlot,
+  unregisterOdysseySkinBounds,
 } from "@/three/odyssey/OdysseySkeletonBind";
 import {
   buildAnimDummyInstanceBatches,
@@ -560,6 +562,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
       this.disposeForceShieldGeometry();
 
+      super.dispose();
     }
 
   }
@@ -1352,12 +1355,12 @@ export class OdysseyModel3D extends OdysseyObject3D {
         lights: false,
         fog: true,
         skinning: true
-      } as any);
+      } as THREE.ShaderMaterialParameters);
       skinMaterial.defines.FORCE_SHIELD = '';
       skinMaterial.defines.IGNORE_LIGHTING = '';
       skinMaterial.defines.AURORA = '';
       skinMaterial.defines.USE_UV = '';
-      skinMaterial.defines.USE_MAP = '';
+      // USE_MAP is set by TextureLoader.assignMaterialTexture once the shield map binds.
       skinMaterial.defines.USE_SKINNING = '';
       skinMaterial.defines.MAX_ODYSSEY_LIGHTS = '8';
       skinMaterial.uniforms.diffuse.value.setRGB(1, 1, 1);
@@ -1386,6 +1389,8 @@ export class OdysseyModel3D extends OdysseyObject3D {
       skinMesh.castShadow = false;
       skinMesh.receiveShadow = false;
       skinMesh.name = (originalSkinMesh.name || 'skin') + '_forceshield';
+      // Share boneMatrices; register so pose changes refresh this shell's sphere too.
+      registerOdysseySkinBounds(originalSkinMesh.skeleton, skinMesh);
 
       originalSkinMesh.matrixAutoUpdate = true;
       originalSkinMesh.parent.add(skinMesh);
@@ -1398,6 +1403,9 @@ export class OdysseyModel3D extends OdysseyObject3D {
     while(this.forceShieldGeometry.length){
       let object = this.forceShieldGeometry.splice(0, 1)[0];
       object.removeFromParent();
+      if(object.isSkinnedMesh && object.skeleton){
+        unregisterOdysseySkinBounds(object.skeleton, object);
+      }
 
       if(Array.isArray(object.material)){
         while(object.material.length){
@@ -1564,9 +1572,9 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
               // Pre-merge geometries that use the same material
               ensureMergeCompatibleAttributes(geometries);
-              const mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(geometries, true);
+              const mergedGeometry = BufferGeometryUtils.mergeGeometries(geometries, true);
               if(!mergedGeometry){
-                console.warn('OdysseyModel3D', 'mergeBufferGeometries failed for material group', material);
+                console.warn('OdysseyModel3D', 'mergeGeometries failed for material group', material);
                 continue;
               }
               finalGeometries.push(mergedGeometry);
@@ -1581,9 +1589,9 @@ export class OdysseyModel3D extends OdysseyObject3D {
             // Final merge of all pre-merged geometries
             if(finalGeometries.length > 0){
               ensureMergeCompatibleAttributes(finalGeometries);
-              odysseyModel.mergedBufferGeometry = BufferGeometryUtils.mergeBufferGeometries(finalGeometries, true);
+              odysseyModel.mergedBufferGeometry = BufferGeometryUtils.mergeGeometries(finalGeometries, true);
               if(!odysseyModel.mergedBufferGeometry){
-                console.warn('OdysseyModel3D', 'final mergeBufferGeometries failed', odysseyModel.name);
+                console.warn('OdysseyModel3D', 'final mergeGeometries failed', odysseyModel.name);
               }else{
                 odysseyModel.mergedMesh = new THREE.Mesh(odysseyModel.mergedBufferGeometry, finalMaterials);
                 odysseyModel.mergedMesh.receiveShadow = true;
@@ -1608,7 +1616,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
           if(odysseyModel.mergedDanglyGeometries.length){
 
             ensureMergeCompatibleAttributes(odysseyModel.mergedDanglyGeometries);
-            odysseyModel.mergedBufferDanglyGeometry = BufferGeometryUtils.mergeBufferGeometries(odysseyModel.mergedDanglyGeometries, true);
+            odysseyModel.mergedBufferDanglyGeometry = BufferGeometryUtils.mergeGeometries(odysseyModel.mergedDanglyGeometries, true);
             odysseyModel.mergedDanglyMesh = new THREE.Mesh(odysseyModel.mergedBufferDanglyGeometry, odysseyModel.mergedDanglyMaterials);
             //odysseyModel.mergedDanglyMesh.receiveShadow = true;
             odysseyModel.add(odysseyModel.mergedDanglyMesh);
@@ -1796,7 +1804,8 @@ export class OdysseyModel3D extends OdysseyObject3D {
             }
             geometry.setAttribute( 'uv', new THREE.Float32BufferAttribute( uv1, 2 ) );
             
-            //UV2 — must match vertex count for mergeBufferGeometries compatibility
+            // Lightmap UVs (attribute uv1 — Three r151+; formerly uv2) — must match
+            // vertex count for mergeGeometries compatibility
             let uv2 = odysseyNode.tvectors[1];
             if(!uv2?.length && uv1.length){
               uv2 = uv1.slice ? uv1.slice(0) : Array.from(uv1 as number[]);
@@ -1806,7 +1815,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
             }else if(!uv2?.length && vertCount > 0){
               uv2 = new Array(vertCount * 2).fill(0);
             }
-            geometry.setAttribute( 'uv2', new THREE.Float32BufferAttribute( uv2, 2 ) );
+            geometry.setAttribute( 'uv1', new THREE.Float32BufferAttribute( uv2, 2 ) );
 
             // Vertex colors — MDX baked colors or white for shadow projection receivers.
             if(odysseyNode.colors.length >= odysseyNode.vertices.length){

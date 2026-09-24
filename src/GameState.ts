@@ -100,6 +100,9 @@ import { clearWorldMarkers, syncWorldMarkers } from "@/inspect/worldMarkers";
 import { AudioEmitterType } from "./enums/audio/AudioEmitterType";
 import { EngineContext } from "./engine/EngineContext";
 
+// Preserve r149-like color appearance until a dedicated color-management pass.
+THREE.ColorManagement.enabled = false;
+
 export interface GameStateInitializeOptions {
   Game: GameEngineType,
   GameDirectory: string, //path to the local game install directory
@@ -187,6 +190,13 @@ export class GameState implements EngineContext {
 
   static GameKey: GameEngineType = GameEngineType.KOTOR;
   static iniConfig: INIConfig;
+
+  /** Pending requestAnimationFrame handle when V-Sync is on. */
+  private static updateRafId = 0;
+  /** Pending setTimeout handle when V-Sync is off (uncapped, yielding). */
+  private static updateTimeoutId = 0;
+  /** Generation bumped when V-Sync mode changes so stale scheduled ticks are ignored. */
+  private static updateLoopGeneration = 0;
   
   static Ready = false;
   /** When true, Init skips MainMenu/legal and stays ready for Forge module preview. */
@@ -313,7 +323,7 @@ export class GameState implements EngineContext {
   static timeScale: number = 1;
 
   static canvas: HTMLCanvasElement;
-  static context: WebGLRenderingContext | WebGL2RenderingContext;
+  static context: WebGL2RenderingContext;
   static rendererUpscaleFactor: number;
   static renderer: THREE.WebGLRenderer;
   static depthTarget: THREE.WebGLRenderTarget;
@@ -330,7 +340,7 @@ export class GameState implements EngineContext {
   static forceDistortionNeeded: boolean = false;
   /** Global "distortiontex" from Scene ctor — heat-warp lookup. */
   static forceDistortionTexture: THREE.Texture | null = null;
-  static clock: THREE.Clock;
+  static clock: THREE.Timer;
   static stats: Stats;
 
   static lightManager: LightManager;
@@ -1029,7 +1039,7 @@ export class GameState implements EngineContext {
     GameState.canvas.style.setProperty('height', '0');
 
     GameState.rendererUpscaleFactor = 1;
-    // Prefer WebGL2; fall back to WebGL1. Stencil must be requested on the
+    // WebGL2 required (Three r163+). Stencil must be requested on the
     // first getContext call (shadow disks / force-distortion masks).
     const glAttrs: WebGLContextAttributes = {
       antialias: false,
@@ -1038,10 +1048,10 @@ export class GameState implements EngineContext {
       stencil: true,
       preserveDrawingBuffer: false,
     };
-    GameState.context = (
-      GameState.canvas.getContext('webgl2', glAttrs) ??
-      GameState.canvas.getContext('webgl', glAttrs)
-    ) as WebGLRenderingContext | WebGL2RenderingContext;
+    GameState.context = GameState.canvas.getContext('webgl2', glAttrs) as WebGL2RenderingContext | null;
+    if(!GameState.context){
+      throw new Error('KotOR.js requires WebGL 2. This browser or GPU does not provide a WebGL2 context.');
+    }
     GameState.renderer = new THREE.WebGLRenderer({
       antialias: false,
       canvas: GameState.canvas,
@@ -1053,9 +1063,10 @@ export class GameState implements EngineContext {
     }) as THREE.WebGLRenderer;
 
     GameState.renderer.autoClear = false;
+    GameState.renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
     GameState.renderer.shadowMap.enabled = true;
     GameState.renderer.shadowMap.autoUpdate = false;
-    GameState.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    GameState.renderer.shadowMap.type = THREE.PCFShadowMap;
     GameState.renderer.setOpaqueSort(odysseyOpaqueRenderSort);
     GameState.renderer.setSize( GameState.ResolutionManager.getViewportWidth(), GameState.ResolutionManager.getViewportHeight() );
     GameState.renderer.setClearColor(0x000000);
@@ -1069,8 +1080,8 @@ export class GameState implements EngineContext {
     GameState.depthTarget.depthTexture.type = THREE.UnsignedShortType;
     GameState.syncDepthTargetTextureSize();
 
-    GameState.clock = new THREE.Clock();
-    GameState.stats = Stats();
+    GameState.clock = new THREE.Timer();
+    GameState.stats = new Stats();
     GameState.stats.showPanel(undefined);
 
     GameState.visible = true;
@@ -2209,19 +2220,76 @@ export class GameState implements EngineContext {
 
   static forwardVector = new THREE.Vector3(0, 0, );
 
+  /**
+   * Graphics Options.V-Sync — defaults to off to match swkotor*-config.
+   */
+  static isVSyncEnabled(): boolean {
+    if(!GameState.iniConfig) return false;
+    const raw = GameState.iniConfig.getProperty('Graphics Options.V-Sync');
+    if(raw === undefined || raw === null || raw === '') return false;
+    return String(raw) !== '0';
+  }
+
+  private static clearScheduledUpdate(): void {
+    if(GameState.updateRafId){
+      cancelAnimationFrame(GameState.updateRafId);
+      GameState.updateRafId = 0;
+    }
+    if(GameState.updateTimeoutId){
+      clearTimeout(GameState.updateTimeoutId);
+      GameState.updateTimeoutId = 0;
+    }
+  }
+
+  /**
+   * Schedule the next game tick: RAF when V-Sync is on; setTimeout(0) when off
+   * for uncapped rate while still yielding so input and paint are not starved.
+   * (MessageChannel is intentionally avoided — it can push 400+ FPS and starve the event loop.)
+   */
+  static scheduleNextUpdate(): void {
+    const generation = GameState.updateLoopGeneration;
+    GameState.clearScheduledUpdate();
+    if(GameState.isVSyncEnabled()){
+      GameState.updateRafId = requestAnimationFrame(() => {
+        GameState.updateRafId = 0;
+        if(generation !== GameState.updateLoopGeneration) return;
+        GameState.Update();
+      });
+    }else{
+      GameState.updateTimeoutId = setTimeout(() => {
+        GameState.updateTimeoutId = 0;
+        if(generation !== GameState.updateLoopGeneration) return;
+        GameState.Update();
+      }, 0) as unknown as number;
+    }
+  }
+
+  /**
+   * Called after Graphics Options.V-Sync is written so a pending RAF/timeout
+   * tick does not double-fire under the old mode.
+   */
+  static applyVSyncOption(): void {
+    GameState.updateLoopGeneration++;
+    GameState.clearScheduledUpdate();
+    // Re-arm immediately so toggling mid-session does not stall until the next tick.
+    GameState.scheduleNextUpdate();
+  }
+
   static Update(){
     
-    requestAnimationFrame( GameState.Update );
+    GameState.scheduleNextUpdate();
     GameState.stats.begin();
 
     GameState.forwardVector.set(0, 0, -1);
     GameState.shadowSystemsUpdatedThisFrame = false;
 
+    GameState.clock.update();
     const delta = GameState.clock.getDelta();
     GameState.processEventListener('beforeRender', [delta]);
     GameState.delta = delta;
     GameState.deltaTime += delta;
-    GameState.deltaTimeFixed += (1/60);
+    // Wall-clock advance so menu/void shaders stay real-time at any FPS.
+    GameState.deltaTimeFixed += delta;
 
     /**
      * Soft debugger freeze: still process controls, menus, audio, and render,

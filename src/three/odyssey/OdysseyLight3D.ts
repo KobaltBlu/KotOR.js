@@ -103,7 +103,7 @@ export class OdysseyLight3D extends OdysseyObject3D {
 
   constructor(node: OdysseyModelNodeLight){
     super(node);
-    this.type = 'OdysseyLight';
+    (this as any).type = 'OdysseyLight';
   }
 
   /** Authored light multiplier (light node). */
