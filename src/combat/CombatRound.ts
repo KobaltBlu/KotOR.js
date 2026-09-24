@@ -49,6 +49,7 @@ import {
 import * as THREE from 'three';
 
 import { isCreature } from "@/module/guards/isCreature";
+import { isAttackAnimation, isParryAnimation } from "@/module/animation/animation2daFlag";
 import { isItem } from "@/module/guards/isItem";
 
 /** reaxn_delay ≈ distance * (1000/42) ms. */
@@ -2757,6 +2758,11 @@ export class CombatRound {
       });
       creature.playTwoDAAnimation( combatAction.swAnimation || this.action.swAnimation );
       creature.animationState.index = attackAnim;
+      // Attack-flagged clips keep the round action as hit-timing payload.
+      const attackClip = combatAction.swAnimation || this.action.swAnimation;
+      if(attackClip && isAttackAnimation(attackClip) && creature.combatData){
+        creature.combatData.combatAction = creature.combatData.combatAction || (combatAction as any);
+      }
     }
 
     const target = isCreature(combatAction.target)
@@ -2842,6 +2848,26 @@ export class CombatRound {
           target.animationState.index = reaction;
         }else{
           target.setAnimationState(reaction);
+        }
+        // Parry-classified defender clip: parry hit-sound path + optional abort of attacker FF.
+        if(
+          reaction === ModuleCreatureAnimState.PARRY &&
+          (
+            isParryAnimation(mapped) ||
+            isParryAnimation(target.animationState?.animation)
+          )
+        ){
+          const swingSounds =
+            creature.equipment?.RIGHTHAND?.weaponSound ||
+            creature.equipment?.LEFTHAND?.weaponSound;
+          const parryResRef = swingSounds?.getHitParryResRef?.() || '';
+          if(parryResRef && creature.audioEmitter){
+            creature.audioEmitter.playSoundFireAndForget(parryResRef);
+          }
+          if(creature.getAppearance?.()?.abortonparry){
+            creature.model?.animationManager?.stopOverlayAnimation?.(0x80);
+            creature.setAnimationState(ModuleCreatureAnimState.READY);
+          }
         }
         // always decrements defender round length when reaction plays
         if(target.combatRound){

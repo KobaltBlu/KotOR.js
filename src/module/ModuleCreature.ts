@@ -85,7 +85,17 @@ import {
   resolveOverlayStopFlags,
   resolveOverlayStartFlags,
 } from "@/module/animation/resolvePlaybackMode";
-import { isAnimation2DAFlagSet } from "@/module/animation/animation2daFlag";
+import {
+  isAnimation2DAFlagSet,
+  isStationaryAnimation,
+  isPauseAnimation,
+  isWalkingAnimation,
+  isRunningAnimation,
+  isHideEquippedItemsAnimation,
+  isParryAnimation,
+  isDialogAnimation,
+  isPlayOutOfPlaceServerId,
+} from "@/module/animation/animation2daFlag";
 import {
   combatAnimationAttackKey,
   combatAnimationWeaponDigit,
@@ -614,6 +624,11 @@ export class ModuleCreature extends ModuleObject {
     RIGHTHAND?: ModuleItem;
     LEFTHAND?: ModuleItem;
   } | undefined;
+  /**
+   * animations.2da hideequippeditems — hand weapon meshes hidden for the
+   * duration of the flagged clip (distinct from dialog unequip).
+   */
+  animationHideEquippedItemsActive: boolean = false;
   regenTimer: number;
   regenTimerMax: number;
   /** Battle-music timer (ms). / ExcitedDuration.2da. */
@@ -1462,15 +1477,30 @@ export class ModuleCreature extends ModuleObject {
       this.pushGrassWindGust();
 
       // IDLE == PAUSE (10000); promote out-of-combat idle to combat ready while engaged.
+      // Also honor animations.2da pause flag on the current clip.
       if(this.combatMode === CombatMode.COUNTERSPELL){
         if(
           this.animationState.index == ModuleCreatureAnimState.PAUSE ||
-          this.animationState.index == ModuleCreatureAnimState.READY
+          this.animationState.index == ModuleCreatureAnimState.READY ||
+          isPauseAnimation(this.animationState.animation)
         ){
           this.setAnimationState(ModuleCreatureAnimState.CASTOUT1_LP);
         }
-      }else if(this.combatData.combatState && this.animationState.index == ModuleCreatureAnimState.PAUSE){
+      }else if(
+        this.combatData.combatState &&
+        (
+          this.animationState.index == ModuleCreatureAnimState.PAUSE ||
+          isPauseAnimation(this.animationState.animation)
+        )
+      ){
         this.setAnimationState(ModuleCreatureAnimState.READY);
+      }else if(
+        !this.combatData.combatState &&
+        isPauseAnimation(this.animationState.animation) &&
+        this.isInjured() &&
+        this.animationState.index != ModuleCreatureAnimState.PAUSE_INJ
+      ){
+        this.setAnimationState(ModuleCreatureAnimState.PAUSE_INJ);
       }
 
       // Combat / casting / perception / regen moved to aiUpdate
@@ -1591,7 +1621,8 @@ export class ModuleCreature extends ModuleObject {
         this.markCollisionMatrixDirty("facing");
       }
 
-      // Stationary turn animations (body turn when idle/pause/ready; not head look)
+      // Stationary turn animations (body turn when idle/pause/ready; not head look).
+      // Only while the current clip is stationary-classified.
       const stationaryTurnStates = [
         ModuleCreatureAnimState.IDLE,
         ModuleCreatureAnimState.PAUSE,
@@ -1599,7 +1630,12 @@ export class ModuleCreature extends ModuleObject {
         ModuleCreatureAnimState.TURN_LEFT,
         ModuleCreatureAnimState.TURN_RIGHT
       ];
-      if(this.turning !== 0 && stationaryTurnStates.includes(this.animationState.index)){
+      const currentStationary = isStationaryAnimation(this.animationState.animation);
+      if(
+        this.turning !== 0 &&
+        currentStationary &&
+        stationaryTurnStates.includes(this.animationState.index)
+      ){
         const wantTurnLeft = this.turning < 0;
         if(wantTurnLeft && this.animationState.index !== ModuleCreatureAnimState.TURN_LEFT){
           this.setAnimationState(ModuleCreatureAnimState.TURN_LEFT);
@@ -2088,8 +2124,16 @@ export class ModuleCreature extends ModuleObject {
     }
 
     // Dialog listen/talk owns the pose while stationary (AnimationDialog drive block).
-    if((GameState.Mode == EngineMode.DIALOG) && this.dialogAnimation && !this.speed && !this.isDead())
+    if(
+      !this.isDead() &&
+      !this.speed &&
+      (
+        ((GameState.Mode == EngineMode.DIALOG) && this.dialogAnimation) ||
+        isDialogAnimation(this.animationState.animation)
+      )
+    ){
       return;
+    }
 
     if(this.animationState.animation){
       const desiredName = this.animationState.animation.name?.toLowerCase();
@@ -2130,6 +2174,7 @@ export class ModuleCreature extends ModuleObject {
             this.model.animationManager.currentAnimationState.speed =
               this.animationState.speed < 0 ? this.animationState.speed : (this.animationState.speed || 1);
           }
+          this.syncAnimationFlagSideEffects(this.animationState.animation, this.animationState.index);
         }else if(
           this.animationState.index == ModuleCreatureAnimState.DIE ||
           this.animationState.index == ModuleCreatureAnimState.DIE1
@@ -2173,6 +2218,21 @@ export class ModuleCreature extends ModuleObject {
           )
         ){
           // Still driving locomotion — re-play clip; never demote to PAUSE (freeze/slide).
+          this.animationState.started = false;
+        }else if(!isStationaryAnimation(this.animationState.animation)){
+          // Non-stationary clip finished while standing — re-assert pause/ready.
+          this.setAnimationState(
+            this.combatData.combatState ? ModuleCreatureAnimState.READY : ModuleCreatureAnimState.PAUSE
+          );
+        }else if(
+          isPauseAnimation(this.animationState.animation) &&
+          (
+            this.animationState.index == ModuleCreatureAnimState.PAUSE ||
+            this.animationState.index == ModuleCreatureAnimState.PAUSE_INJ ||
+            this.animationState.index == ModuleCreatureAnimState.READY
+          )
+        ){
+          // Already on a pause-class pose — re-loop instead of redundant set.
           this.animationState.started = false;
         }else{
           this.setAnimationState(ModuleCreatureAnimState.PAUSE);
@@ -2985,12 +3045,14 @@ export class ModuleCreature extends ModuleObject {
     // SetAnimation — insert DIE/DIE1 before looping DEAD.
     animState = ModuleCreature.resolveEnterDeadTransition(animState, this.animationState?.index);
 
+    const previousAnim = this.animationState?.animation;
     this.animationState.index = animState;
     this.animationState.animation = this.animationConstantToAnimation(animState);
     this.animationState.started = false;
     if(this.animationState.animation){
       this.animationMissingLogged = false;
     }
+    this.syncAnimationFlagSideEffects(this.animationState.animation, animState, previousAnim);
   }
   
   resetAnimationState(){
@@ -3007,6 +3069,7 @@ export class ModuleCreature extends ModuleObject {
       // combat/cutscene swings use SetAnimation — clear dialog slot so
       // updateAnimationState is not blocked by a lingering dialog READY pose.
       this.dialogAnimation = null;
+      const previousAnim = this.animationState?.animation;
       this.resetAnimationState();
       this.animationState = {
         index: ModuleCreatureAnimState.PAUSE,
@@ -3014,6 +3077,7 @@ export class ModuleCreature extends ModuleObject {
         started: false,
         speed: 1,
       }
+      this.syncAnimationFlagSideEffects(animation, ModuleCreatureAnimState.PAUSE, previousAnim);
     }
   }
 
@@ -3108,6 +3172,7 @@ export class ModuleCreature extends ModuleObject {
     }
     this.setAnimationState(serverId as ModuleCreatureAnimState);
     this.animationState.speed = speed || 1;
+    this.setPlayOutOfPlaceActive(isPlayOutOfPlaceServerId(serverId));
   }
   
   resetOverlayAnimationState(){
@@ -6103,6 +6168,84 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
+   * Drive stick / approach loco is blocked only while a dialog-classified clip
+   * owns the pose. Combat/move actions on the queue must still allow walk/run.
+   */
+  isDriveAnimationBlocked(): boolean {
+    if(this.dialogAnimation){
+      return true;
+    }
+    return isDialogAnimation(this.animationState?.animation);
+  }
+
+  /**
+   * Apply side effects from animations.2da flags when the current clip changes:
+   * hideequippeditems, play-out-of-place (via server ID), attack payload retain.
+   */
+  syncAnimationFlagSideEffects(
+    next: SWAnimation | undefined,
+    serverId: number = 0,
+    previous?: SWAnimation | undefined
+  ){
+    const hideNext = isHideEquippedItemsAnimation(next);
+    if(hideNext){
+      this.hideEquippedItemsForAnimation();
+    }else if(this.animationHideEquippedItemsActive && !this.dialogEquipmentStash){
+      this.showEquippedItemsAfterAnimation();
+    }
+
+    this.setPlayOutOfPlaceActive(
+      isPlayOutOfPlaceServerId(serverId) || isPlayOutOfPlaceServerId(next?.animationId ?? 0)
+    );
+
+    void previous;
+  }
+
+  setPlayOutOfPlaceActive(active: boolean){
+    if(this.model instanceof OdysseyModel3D){
+      this.model.playOutOfPlaceActive = !!active;
+    }
+  }
+
+  /**
+   * Hide hand weapon meshes while an animations.2da hideequippeditems clip plays.
+   * Distinct from dialog UnequipItems.
+   */
+  hideEquippedItemsForAnimation(){
+    if(this.animationHideEquippedItemsActive) return;
+    this.animationHideEquippedItemsActive = true;
+    const hide = (item: ModuleItem | undefined) => {
+      if(item?.model instanceof OdysseyModel3D){
+        item.model.visible = false;
+      }
+    };
+    hide(this.equipment.RIGHTHAND);
+    hide(this.equipment.LEFTHAND);
+  }
+
+  /**
+   * Restore hand weapon meshes after a hideequippeditems clip ends.
+   */
+  showEquippedItemsAfterAnimation(){
+    if(!this.animationHideEquippedItemsActive) return;
+    this.animationHideEquippedItemsActive = false;
+    const show = (item: ModuleItem | undefined) => {
+      if(item?.model instanceof OdysseyModel3D){
+        item.model.visible = true;
+      }
+    };
+    show(this.equipment.RIGHTHAND);
+    show(this.equipment.LEFTHAND);
+  }
+
+  /**
+   * True when the defender's current clip is parry-classified (animations.2da).
+   */
+  isCurrentAnimationParry(): boolean {
+    return isParryAnimation(this.animationState?.animation);
+  }
+
+  /**
    * Explicit ground/room attachment refresh (spawn / model-load settle).
    * Not a locomotion solver — uses findWalkableAttachmentAt + apply.
    */
@@ -6236,7 +6379,10 @@ export class ModuleCreature extends ModuleObject {
       if(this.animationState.index !== nextAnim){
         this.setAnimationState(nextAnim);
       }
-      const animDist = nextAnim === ModuleCreatureAnimState.RUNNING
+      const clip = this.animationState.animation;
+      const useRunDist = isRunningAnimation(clip) ||
+        (!isWalkingAnimation(clip) && nextAnim === ModuleCreatureAnimState.RUNNING);
+      const animDist = useRunDist
         ? coalesceDriveAnimRun(appearance.driveanimrun)
         : coalesceDriveAnimWalk(appearance.driveanimwalk);
       this.animSpeed = Math.max(
@@ -6278,13 +6424,16 @@ export class ModuleCreature extends ModuleObject {
   /**
    * Path/Drive animation pacing uses appearance walkdist/rundist and the
    * actual world speed produced by creature walk update/creature drive update.
+   * Prefer animations.2da walking/running flags on the current clip when set.
    */
   private updateServerLocomotionAnimationRate(){
     if(!(this.speed > 0)){
       this.animSpeed = 1;
       return;
     }
-    const running = this.animationState.index == ModuleCreatureAnimState.RUNNING;
+    const anim = this.animationState.animation;
+    const running = isRunningAnimation(anim)
+      || (!isWalkingAnimation(anim) && this.animationState.index == ModuleCreatureAnimState.RUNNING);
     const animState = running
       ? ModuleCreatureAnimState.RUNNING
       : this.animationState.index == ModuleCreatureAnimState.WALKING_BACK

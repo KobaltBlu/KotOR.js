@@ -131,6 +131,11 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
   wasOffscreen = false;
   animateFrame = true;
+  /**
+   * Play-out-of-place: skip root position/orientation controllers so the clip
+   * poses in place (server ID bands 0x4B0–0x52F / 0x640–0x6BF).
+   */
+  playOutOfPlaceActive = false;
 
   nodes: Map<string, OdysseyObject3D> = new Map<string, OdysseyObject3D>();
   /**

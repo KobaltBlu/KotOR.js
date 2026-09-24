@@ -885,6 +885,17 @@ export class OdysseyModelAnimationManager {
       const controller = bc.controller;
       if(!controller || !bc.valid) continue;
 
+      if(
+        this.model?.playOutOfPlaceActive &&
+        this.isPlayOutOfPlaceRootNode(this.modelNode) &&
+        (
+          controller.type == OdysseyModelControllerType.Position ||
+          controller.type == OdysseyModelControllerType.Orientation
+        )
+      ){
+        continue;
+      }
+
       if(controller.frameCount == 1 && !canBlend){
         controller.setFrame(this, anim, controller.data[0]);
         continue;
@@ -1003,6 +1014,11 @@ export class OdysseyModelAnimationManager {
    * Orientation mutated the node (caller marks dirty once per node).
    * Preserves wasOffscreen setFrame-then-animate.
    */
+  private isPlayOutOfPlaceRootNode(node: OdysseyObject3D | undefined): boolean {
+    if(!node || !this.model) return false;
+    return node === this.model || node === this.model.rootdummy;
+  }
+
   private applyControllerSample(
     anim: OdysseyModelAnimation,
     state: OdysseyModelAnimationManagerState,
@@ -1011,6 +1027,17 @@ export class OdysseyModelAnimationManager {
     w: number,
     canBlend: boolean
   ): boolean {
+    if(
+      this.model?.playOutOfPlaceActive &&
+      this.isPlayOutOfPlaceRootNode(this.modelNode) &&
+      (
+        controller.type == OdysseyModelControllerType.Position ||
+        controller.type == OdysseyModelControllerType.Orientation
+      )
+    ){
+      return false;
+    }
+
     let last: IOdysseyControllerFrameGeneric = controller.data[lastFrame];
     if(!last) return false;
 

@@ -28,4 +28,9 @@ export enum AuroraAnimationFlag {
   OVERLAY_STOP = 0x080,
   /** Additive gesture — weight fade; common for combat/dialog gestures. */
   ADDITIVE_GESTURE = 0x400,
+  /**
+   * Play out of place — skip root position/orientation controllers so the
+   * clip poses in place (server ID bands 0x4B0–0x52F / 0x640–0x6BF).
+   */
+  PLAY_OUT_OF_PLACE = 0x800,
 }

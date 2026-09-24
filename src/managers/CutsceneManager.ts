@@ -53,6 +53,10 @@ import { Mouse } from "@/controls/Mouse";
 
 import { isCreature } from "@/module/guards/isCreature";
 import { isObject } from "@/module/guards/isObject";
+import {
+  isAnimation2DAFlagSet,
+  isDialogAnimation,
+} from "@/module/animation/animation2daFlag";
 
 /** SendDialogEntryNode AnimList retry window (0x5dc = 1500ms). */
 export const DIALOG_PARTICIPANT_RETRY_MS = 0x5dc;
@@ -2117,8 +2121,8 @@ export class CutsceneManager {
     const creature = obj as ModuleCreature;
     const da = creature.dialogAnimation;
     if(da){
-      const looping = !!parseInt(String(da.data?.looping ?? 0));
-      const fireforget = !!parseInt(String(da.data?.fireforget ?? 0));
+      const looping = isAnimation2DAFlagSet(da.data?.looping);
+      const fireforget = isAnimation2DAFlagSet(da.data?.fireforget);
       if(fireforget){
         if(!da.started) return true;
         if(creature.model?.animationManager?.currentAnimation === da.animation) return true;
@@ -2136,17 +2140,12 @@ export class CutsceneManager {
     }
     // Constants routed through setAnimationState (playDialogCreatureAnimation)
     const anim = creature.animationState?.animation;
-    if(anim){
-      const fireforget = !!parseInt(String(anim.fireforget ?? 0));
-      const looping = !!parseInt(String(anim.looping ?? 0));
-      const dialog = !!parseInt(String((anim as any).dialog ?? 0));
-      if(dialog && (fireforget || looping)){
-        if(fireforget && creature.model?.animationManager?.currentAnimation){
-          return true;
-        }
-        if(looping){
-          return false;
-        }
+    if(anim && isDialogAnimation(anim)){
+      if(isAnimation2DAFlagSet(anim.fireforget) && creature.model?.animationManager?.currentAnimation){
+        return true;
+      }
+      if(isAnimation2DAFlagSet(anim.looping)){
+        return false;
       }
     }
     return false;
