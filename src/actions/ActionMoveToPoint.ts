@@ -29,6 +29,8 @@ import {
 } from "@/engine/pathfinding/path-hops-clear";
 import { ComputedPath } from "@/engine/pathfinding/ComputedPath";
 import { findOpenWalkLocation } from "@/engine/pathfinding/open-walk-location";
+import { isSafeWalkPoint } from "@/engine/pathfinding/safe-walk-point";
+import { ensureSafeStandingPosition } from "@/engine/pathfinding/ensure-safe-standing";
 import {
   CreatureLocoState,
   setCreatureLocoState,
@@ -64,6 +66,29 @@ function snapLiveChaseDest(
     _safeDest.copy(live);
   }
   return _safeDest.clone();
+}
+
+/**
+ * PreferWalkable / tiny 0.05 snaps can leave a dest on a walk face whose
+ * capsule overlaps NonWalk. Ring-search a capsule-safe dest nearby.
+ */
+function snapCapsuleSafeDest(
+  owner: ModuleCreature,
+  dest: THREE.Vector3
+): void {
+  const area = owner.area;
+  if(!area) return;
+  if(isSafeWalkPoint(area, dest, owner)) return;
+  const perspace = getPathPersonalSpace(owner) || 0.5;
+  if(
+    findOpenWalkLocation(area, dest, _safeDest, {
+      radius: Math.max(2, perspace * 2),
+      personalSpace: perspace,
+      owner,
+    })
+  ){
+    dest.copy(_safeDest);
+  }
 }
 
 /**
@@ -197,6 +222,7 @@ export class ActionMoveToPoint extends Action {
       }else if(area && typeof area.getNearestWalkablePoint === 'function' && typeof area.isPointWalkable !== 'function'){
         this.target_position.copy(area.getNearestWalkablePoint(this.target_position, 0.05));
       }
+      snapCapsuleSafeDest(this.owner, this.target_position);
       this.calculatePath();
     }
 
@@ -651,6 +677,9 @@ export class ActionMoveToPoint extends Action {
     owner.pathFindDrivePersonalSpace = -1;
     // Mark locomotion paused at end of path.
     setCreatureLocoState(owner, CreatureLocoState.Paused);
+    // PreferWalkable path ends can leave feet on a walk face inside the
+    // wall buffer — recover so WASD can leave the stand.
+    ensureSafeStandingPosition(owner);
   }
 
   shouldRepathToMovingTarget(distanceToLive: number): boolean {

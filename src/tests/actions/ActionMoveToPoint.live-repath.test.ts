@@ -86,6 +86,16 @@ jest.mock("@/engine/pathfinding/open-walk-location", () => ({
   findOpenWalkLocation: (...args: unknown[]) => mockFindSafeLocation(...args),
 }));
 
+const mockEnsureSafeStanding = jest.fn(() => false);
+
+jest.mock("@/engine/pathfinding/ensure-safe-standing", () => ({
+  ensureSafeStandingPosition: (...args: unknown[]) => mockEnsureSafeStanding(...args),
+}));
+
+jest.mock("@/engine/pathfinding/safe-walk-point", () => ({
+  isSafeWalkPoint: () => true,
+}));
+
 const mockIsInUseRange = jest.fn(() => false);
 
 jest.mock("@/actions/use-range", () => ({
@@ -145,6 +155,8 @@ describe("ActionMoveToPoint live-chase repath", () => {
     mockPathHopsAreWalkClear.mockReturnValue(true);
     mockIsWalkmeshEdgeWalkClear.mockReset();
     mockIsWalkmeshEdgeWalkClear.mockReturnValue(true);
+    mockEnsureSafeStanding.mockReset();
+    mockEnsureSafeStanding.mockReturnValue(false);
     mockFindSafeLocation.mockReset();
     mockFindSafeLocation.mockImplementation((_area: unknown, center: THREE.Vector3, out: THREE.Vector3) => {
       out.copy(center);
@@ -919,6 +931,50 @@ describe("ActionMoveToPoint live-chase repath", () => {
 
     expect(action.update(1 / 60)).toBe(ActionStatus.COMPLETE);
     expect(mockWalkUpdate).toHaveBeenCalled();
+    expect(owner.clearLocomotionState).toHaveBeenCalled();
+  });
+
+  it("stopMoving on COMPLETE recovers via ensureSafeStandingPosition", () => {
+    const owner = {
+      id: 1,
+      position: new THREE.Vector3(1.0, 0, 0),
+      area: {
+        id: 1,
+        getNearestWalkablePoint: (p: THREE.Vector3) => p.clone(),
+        isPointWalkable: () => true,
+      },
+      rotation: { z: 0 },
+      actionQueue: { addFront: jest.fn() },
+      helperColor: 0,
+      setComputedPath: jest.fn(),
+      getComputedPath: () => undefined,
+      clearLocomotionState: jest.fn(),
+      setFacing: jest.fn(),
+      setAnimationState: jest.fn(),
+      getWalkSpeed: () => 1.7,
+      getRunSpeed: () => 5.4,
+      walk: false,
+      force: 0,
+      speed: 0,
+      pathFindDrivePersonalSpace: 0,
+    } as unknown as ModuleCreature;
+
+    const action = new ActionMoveToPoint();
+    action.setOwner(owner);
+    action.setParameter(0, ActionParameterType.FLOAT, 1.0);
+    action.setParameter(1, ActionParameterType.FLOAT, 0);
+    action.setParameter(2, ActionParameterType.FLOAT, 0);
+    action.setParameter(3, ActionParameterType.DWORD, 1);
+    action.setParameter(4, ActionParameterType.DWORD, 0x7f000000);
+    action.setParameter(5, ActionParameterType.INT, 1);
+    action.setParameter(6, ActionParameterType.FLOAT, 0.5);
+    action.target_position.set(1.0, 0, 0);
+    (action as { computedPath?: unknown }).computedPath = makeMockPath([
+      new THREE.Vector3(1.0, 0, 0),
+    ]);
+
+    expect(action.update(1 / 60)).toBe(ActionStatus.COMPLETE);
+    expect(mockEnsureSafeStanding).toHaveBeenCalledWith(owner);
     expect(owner.clearLocomotionState).toHaveBeenCalled();
   });
 });
