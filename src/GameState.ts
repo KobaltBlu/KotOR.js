@@ -26,6 +26,7 @@ import { INIConfig } from "@/engine/INIConfig";
 import { consumeAreaTransitionLoadBackground } from "@/engine/area-transition-bmp";
 import { ModuleSaveTable } from "@/engine/ModuleSaveTable";
 import { planPostLoadRevealFade } from "@/engine/post-load-reveal-fade";
+import { isVSyncEnabledRaw, UpdateLoopArm, runUpdateTick } from "@/engine/updateLoopSchedule";
 
 // import { OdysseyObject3D } from "@/three/odyssey";
 import { AudioEngine, AudioEmitter } from "@/audio";
@@ -191,12 +192,8 @@ export class GameState implements EngineContext {
   static GameKey: GameEngineType = GameEngineType.KOTOR;
   static iniConfig: INIConfig;
 
-  /** Pending requestAnimationFrame handle when V-Sync is on. */
-  private static updateRafId = 0;
-  /** Pending setTimeout handle when V-Sync is off (uncapped, yielding). */
-  private static updateTimeoutId = 0;
-  /** Generation bumped when V-Sync mode changes so stale scheduled ticks are ignored. */
-  private static updateLoopGeneration = 0;
+  /** Pending Update callback arm (at most one RAF or timeout). */
+  private static updateLoop = new UpdateLoopArm();
   
   static Ready = false;
   /** When true, Init skips MainMenu/legal and stays ready for Forge module preview. */
@@ -2221,63 +2218,43 @@ export class GameState implements EngineContext {
   static forwardVector = new THREE.Vector3(0, 0, );
 
   /**
-   * Graphics Options.V-Sync — defaults to off to match swkotor*-config.
+   * Graphics Options.V-Sync — defaults on (RAF-paced). Missing/empty INI → enabled;
+   * existing V-Sync=0 stays uncapped until the user changes it.
    */
   static isVSyncEnabled(): boolean {
-    if(!GameState.iniConfig) return false;
+    if(!GameState.iniConfig) return isVSyncEnabledRaw(undefined, false);
     const raw = GameState.iniConfig.getProperty('Graphics Options.V-Sync');
-    if(raw === undefined || raw === null || raw === '') return false;
-    return String(raw) !== '0';
-  }
-
-  private static clearScheduledUpdate(): void {
-    if(GameState.updateRafId){
-      cancelAnimationFrame(GameState.updateRafId);
-      GameState.updateRafId = 0;
-    }
-    if(GameState.updateTimeoutId){
-      clearTimeout(GameState.updateTimeoutId);
-      GameState.updateTimeoutId = 0;
-    }
+    return isVSyncEnabledRaw(raw, true);
   }
 
   /**
-   * Schedule the next game tick: RAF when V-Sync is on; setTimeout(0) when off
-   * for uncapped rate while still yielding so input and paint are not starved.
-   * (MessageChannel is intentionally avoided — it can push 400+ FPS and starve the event loop.)
+   * Arm exactly one future Update callback (clears any prior handle first).
+   * RAF when V-Sync is on; adaptive setTimeout(1–8ms) when off so post-work
+   * yields are not already-due timers. MessageChannel is avoided — it starves
+   * the event loop. Stale generation callbacks are ignored.
    */
-  static scheduleNextUpdate(): void {
-    const generation = GameState.updateLoopGeneration;
-    GameState.clearScheduledUpdate();
-    if(GameState.isVSyncEnabled()){
-      GameState.updateRafId = requestAnimationFrame(() => {
-        GameState.updateRafId = 0;
-        if(generation !== GameState.updateLoopGeneration) return;
-        GameState.Update();
-      });
-    }else{
-      GameState.updateTimeoutId = setTimeout(() => {
-        GameState.updateTimeoutId = 0;
-        if(generation !== GameState.updateLoopGeneration) return;
-        GameState.Update();
-      }, 0) as unknown as number;
-    }
+  static scheduleNextUpdate(workMs = 0): void {
+    GameState.updateLoop.schedule(
+      GameState.isVSyncEnabled(),
+      workMs,
+      () => GameState.Update(),
+    );
   }
 
   /**
-   * Called after Graphics Options.V-Sync is written so a pending RAF/timeout
-   * tick does not double-fire under the old mode.
+   * Invalidate any pending tick and re-arm under the new V-Sync mode.
+   * Safe mid-Update: schedule always clears first, so the enclosing finally's
+   * re-arm replaces this one — at most one live callback remains.
    */
   static applyVSyncOption(): void {
-    GameState.updateLoopGeneration++;
-    GameState.clearScheduledUpdate();
-    // Re-arm immediately so toggling mid-session does not stall until the next tick.
-    GameState.scheduleNextUpdate();
+    GameState.updateLoop.applyOption(
+      GameState.isVSyncEnabled(),
+      () => GameState.Update(),
+    );
   }
 
   static Update(){
-    
-    GameState.scheduleNextUpdate();
+    runUpdateTick(() => {
     GameState.stats.begin();
 
     GameState.forwardVector.set(0, 0, -1);
@@ -2391,6 +2368,7 @@ export class GameState implements EngineContext {
 
     GameState.stats.end();
     GameState.processEventListener('afterRender', [delta]);
+    }, (workMs) => GameState.scheduleNextUpdate(workMs));
   }
 
   static UpdateMovie(delta: number = 0){

@@ -1454,6 +1454,7 @@ export class ModulePlaceable extends ModuleObject {
       poisoned: this.isPoisoned(),
       diseased: this.isDiseased(),
       weaponType: this.getCombatAnimationWeaponType(),
+      gameKey: GameState.GameKey,
     };
   }
 

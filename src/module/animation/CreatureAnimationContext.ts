@@ -7,10 +7,14 @@
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
+import type { GameEngineType } from '@/enums/engine/GameEngineType';
+
 export interface CreatureAnimationContext {
   simple: boolean;
   injured: boolean;
   poisoned: boolean;
   diseased: boolean;
   weaponType: number;
+  /** K1 vs TSL row selection (e.g. droid utility). */
+  gameKey: GameEngineType;
 }

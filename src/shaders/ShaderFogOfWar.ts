@@ -47,9 +47,9 @@ export class ShaderFogOfWar extends Shader {
       uvGrid.y = (mapUv.y / resY);
 
       #ifdef USE_ALPHAMAP
-        float alpha = texture2D( alphaMap, vAlphaMapUv ).a;
+        float alpha = texture2D( alphaMap, vAlphaMapUv ).r;
       #elif defined( USE_UV )
-        float alpha = texture2D( alphaMap, vUv ).a;
+        float alpha = texture2D( alphaMap, vUv ).r;
       #else
         float alpha = 1.0;
       #endif

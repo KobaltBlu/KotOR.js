@@ -1,5 +1,10 @@
 import * as THREE from "three";
-import { OdysseyUniformBuffers } from "@/three/odyssey/OdysseyUniformBuffers";
+import {
+  OdysseyUniformBuffers,
+  ODYSSEY_UBO_BINDING_LIGHTING,
+  ODYSSEY_UBO_BINDING_SHADOW,
+  ODYSSEY_UBO_BINDING_WIND,
+} from "@/three/odyssey/OdysseyUniformBuffers";
 import { MAX_ODYSSEY_LIGHTS } from "@/shaders/chunks/OdysseyLighting";
 import { MAX_ODYSSEY_SHADOW_MAPS } from "@/shaders/chunks/OdysseyShadow";
 
@@ -14,6 +19,12 @@ describe("OdysseyUniformBuffers std140 packs", () => {
         5 * 4
     );
     expect(counts.wind).toBe(2 * 4 + 4 + 16 * 4 + 16 * 4);
+  });
+
+  test("UBO binding points stay above Three UniformsGroups range", () => {
+    expect(ODYSSEY_UBO_BINDING_LIGHTING).toBe(8);
+    expect(ODYSSEY_UBO_BINDING_SHADOW).toBe(9);
+    expect(ODYSSEY_UBO_BINDING_WIND).toBe(10);
   });
 
   test("packLighting writes ambient and light slots", () => {

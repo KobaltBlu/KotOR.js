@@ -9,6 +9,7 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 import { ModuleCreatureAnimState } from '@/enums/module/ModuleCreatureAnimState';
+import { GameEngineType } from '@/enums/engine/GameEngineType';
 import type { SWAnimation } from '@/engine/rules/SWAnimation';
 import type { CreatureAnimationContext } from '@/module/animation/CreatureAnimationContext';
 import {
@@ -47,12 +48,21 @@ const DIRECT_ANIMATION_ROWS: Partial<Record<ModuleCreatureAnimState, number>> = 
   [ModuleCreatureAnimState.TALK_LAUGHING]: 29,
   [ModuleCreatureAnimState.TALK_SAD]: 28,
   [ModuleCreatureAnimState.TALK_INJURED]: 370,
+  [ModuleCreatureAnimState.MEDITATE]: 24,
+  [ModuleCreatureAnimState.WORSHIP]: 24,
   [ModuleCreatureAnimState.SALUTE]: 16,
   [ModuleCreatureAnimState.BOW]: 19,
   [ModuleCreatureAnimState.GET_LOW]: 40,
   [ModuleCreatureAnimState.GET_MID]: 41,
   [ModuleCreatureAnimState.INJECT]: 37,
   [ModuleCreatureAnimState.DAMAGE]: 303,
+  [ModuleCreatureAnimState.DAMAGE2]: 303,
+  [ModuleCreatureAnimState.CASTOUT1]: 62,
+  [ModuleCreatureAnimState.CASTOUT2]: 64,
+  [ModuleCreatureAnimState.CASTOUT1_LP]: 63,
+  [ModuleCreatureAnimState.CASTOUT2_LP]: 65,
+  [ModuleCreatureAnimState.CASTOUT3_LP]: 67,
+  [ModuleCreatureAnimState.CASTOUT3]: 66,
   [ModuleCreatureAnimState.USE_COMPUTER_LP]: 44,
   [ModuleCreatureAnimState.WHIRLWIND]: 75,
   [ModuleCreatureAnimState.DEACTIVATE]: 270,
@@ -88,11 +98,17 @@ const DIRECT_ANIMATION_ROWS: Partial<Record<ModuleCreatureAnimState, number>> = 
   [ModuleCreatureAnimState.THROW_SABER]: 69,
   [ModuleCreatureAnimState.KNEEL_TALK_ANGRY]: 384,
   [ModuleCreatureAnimState.KNEEL_TALK_SAD]: 385,
+  [ModuleCreatureAnimState.KID_TALK_ANGRY]: 384,
+  [ModuleCreatureAnimState.KID_TALK_SAD]: 385,
   [ModuleCreatureAnimState.KNOCKED_DOWN]: 85,
   [ModuleCreatureAnimState.KNOCKED_DOWN2]: 85,
+  [ModuleCreatureAnimState.KNOCKED_DOWN_LP]: 84,
+  [ModuleCreatureAnimState.KNOCKED_DOWN2_LP]: 84,
+  [ModuleCreatureAnimState.POWER_ATTACK_SS]: 115,
   [ModuleCreatureAnimState.DEAD_PRONE]: 375,
   [ModuleCreatureAnimState.KNEEL]: 23,
   [ModuleCreatureAnimState.KNEEL1]: 23,
+  [ModuleCreatureAnimState.KNEELING]: 383,
   // BEGIN TSL ANIMATIONS
   [ModuleCreatureAnimState.TOUCH_HEART]: 462,
   [ModuleCreatureAnimState.ROLL_EYES]: 463,
@@ -284,6 +300,13 @@ export function resolveCreatureAnimation(
 
     case ModuleCreatureAnimState.FLOURISH:
       return animations[flourishAnimationRow(context.weaponType)];
+
+    // Droid utility conjure/cast — K1 rows 392/393, TSL 537/538.
+    case ModuleCreatureAnimState.DROID_UTILITY_USE:
+      return animations[context.gameKey == GameEngineType.TSL ? 537 : 392];
+
+    case ModuleCreatureAnimState.DROID_UTILITY_USE_LP:
+      return animations[context.gameKey == GameEngineType.TSL ? 538 : 393];
   }
 
   console.warn(`resolveCreatureAnimation: Unhandled animation constant ${animationConstant}`);

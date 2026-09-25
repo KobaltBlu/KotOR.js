@@ -2,9 +2,7 @@ import { Shader } from "@/shaders/Shader";
 import * as THREE from "three";
 
 import {
-  GUI_FOG_VOLUME,
-  GUI_FOG_ATLAS_WIDTH,
-  GUI_FOG_ATLAS_HEIGHT
+  GUI_FOG_VOLUME
 } from "@/shaders/datatextures/fog.datatexture";
 
 export class ShaderGUIVoid extends Shader {
@@ -16,8 +14,11 @@ export class ShaderGUIVoid extends Shader {
       'void-gui';
 
     this.fragment = `
-    uniform vec2 u_resolution;
-    uniform float u_time;
+    precision highp float;
+    precision highp sampler3D;
+
+    uniform float u_fogTime;
+    uniform float u_heightOverWidth;
 
     uniform vec3 u_color;
     uniform float u_colorIntensity;
@@ -26,9 +27,10 @@ export class ShaderGUIVoid extends Shader {
     uniform sampler2D u_godRayMap;
     uniform vec2 u_godRayRotation;
 
-    uniform sampler2D u_fogVolumeMap;
+    uniform sampler3D u_fogVolume;
 
-    #include <shadertoy_perlin>
+    varying vec2 vUv;
+    out vec4 fragColor;
 
     const vec3 METAL =
       vec3(
@@ -44,224 +46,57 @@ export class ShaderGUIVoid extends Shader {
         0.78
       );
 
-    const vec2 FOG_SLICE_SIZE =
+    const vec2 FOG_INV_P_EXTENT =
       vec2(
-        ${GUI_FOG_VOLUME.sliceWidth.toFixed(1)},
-        ${GUI_FOG_VOLUME.sliceHeight.toFixed(1)}
-      );
-
-    const vec2 FOG_P_EXTENT =
-      vec2(
-        ${GUI_FOG_VOLUME.pExtentX.toFixed(8)},
-        ${GUI_FOG_VOLUME.pExtentY.toFixed(8)}
-      );
-
-    const float FOG_FRAME_COUNT =
-      ${GUI_FOG_VOLUME.frameCount.toFixed(1)};
-
-    const float FOG_GRID_COLUMNS =
-      ${GUI_FOG_VOLUME.gridColumns.toFixed(1)};
-
-    const float FOG_PERIOD =
-      ${GUI_FOG_VOLUME.periodSeconds.toFixed(8)};
-
-    const vec2 FOG_ATLAS_SIZE =
-      vec2(
-        ${GUI_FOG_ATLAS_WIDTH.toFixed(1)},
-        ${GUI_FOG_ATLAS_HEIGHT.toFixed(1)}
+        ${(1 / GUI_FOG_VOLUME.pExtentX).toFixed(8)},
+        ${(1 / GUI_FOG_VOLUME.pExtentY).toFixed(8)}
       );
 
     /**
-     * Sample the PRECOMPUTED original simplex3d_fractal mid fog.
+     * Sample baked far / mid / near from the fog volume.
      *
-     * One texture fetch returns:
-     *
-     * R = current temporal state
-     * G = next temporal state
+     * R = far, G = mid, B = near (already normalized 0..1).
+     * Temporal position is u_fogTime (CPU-wrapped 0..1).
      */
-    float sampleMidFog(
-      vec2 p,
-      float t
+    vec3 sampleFogVolume(
+      vec2 p
     ){
-      /**
-       * p itself does not include temporal drift here.
-       *
-       * That drift was evaluated during baking using the original
-       * expression.
-       */
       vec2 localUv =
         clamp(
-          p /
-          FOG_P_EXTENT,
+          p *
+          FOG_INV_P_EXTENT,
           vec2(0.0),
           vec2(1.0)
         );
 
-      float wrappedTime =
-        mod(
-          t,
-          FOG_PERIOD
-        );
-
-      float framePosition =
-        wrappedTime /
-        FOG_PERIOD *
-        FOG_FRAME_COUNT;
-
-      float frame =
-        floor(
-          framePosition
-        );
-
-      float blend =
-        fract(
-          framePosition
-        );
-
-      /**
-       * Smooth interpolation between the two baked temporal states.
-       */
-      blend =
-        blend *
-        blend *
-        (
-          3.0 -
-          2.0 *
-          blend
-        );
-
-      float tileX =
-        mod(
-          frame,
-          FOG_GRID_COLUMNS
-        );
-
-      float tileY =
-        floor(
-          frame /
-          FOG_GRID_COLUMNS
-        );
-
-      /**
-       * Stay on texel centers at the tile boundaries.
-       *
-       * This prevents LinearFilter from bleeding into neighboring
-       * animation tiles without needing gutters.
-       */
-      vec2 pixel =
-        vec2(
-          tileX,
-          tileY
-        ) *
-        FOG_SLICE_SIZE;
-
-      pixel +=
-        vec2(0.5);
-
-      pixel +=
-        localUv *
-        (
-          FOG_SLICE_SIZE -
-          vec2(1.0)
-        );
-
-      vec2 packedTex =
-        texture2D(
-          u_fogVolumeMap,
-          pixel /
-          FOG_ATLAS_SIZE
-        ).rg;
-
-      float value =
-        mix(
-          packedTex.r,
-          packedTex.g,
-          blend
-        );
-
-      /**
-       * Texture already stores the original normalized mid:
-       *
-       * fractal * 0.5 + 0.5
-       */
-      return value;
+      return texture(
+        u_fogVolume,
+        vec3(
+          localUv,
+          u_fogTime
+        )
+      ).rgb;
     }
 
     vec3 metalFog(
       vec2 p,
-      float t,
       out float density,
       out float farNoise,
       out float midNoise
     ){
-      /**
-       * Keep far procedural for now.
-       *
-       * One simplex call instead of the original four-octave fractal.
-       */
-      vec3 pFar =
-        vec3(
-          p *
-          vec2(
-            0.85,
-            1.25
-          ) +
-          vec2(
-            t * 0.006,
-            -t * 0.004
-          ),
-          t * 0.018
+      vec3 fogNoise =
+        sampleFogVolume(
+          p
         );
 
       float far =
-        simplex3d(
-          pFar *
-          2.0 +
-          2.0
-        );
+        fogNoise.r;
 
-      /**
-       * The actual original multi-octave mid fog.
-       */
       float mid =
-        sampleMidFog(
-          p,
-          t
-        );
-
-      /**
-       * Near remains one simplex.
-       */
-      vec3 pNear =
-        vec3(
-          p *
-          vec2(
-            2.8,
-            3.6
-          ) +
-          vec2(
-            t * 0.02,
-            t * 0.012
-          ),
-          t * 0.04
-        );
+        fogNoise.g;
 
       float near =
-        simplex3d(
-          pNear *
-          rot1 +
-          10.0
-        );
-
-      far =
-        far *
-        0.5 +
-        0.5;
-
-      near =
-        near *
-        0.5 +
-        0.5;
+        fogNoise.b;
 
       farNoise =
         far;
@@ -414,7 +249,7 @@ export class ShaderGUIVoid extends Shader {
         0.5;
 
       float shaftsA =
-        texture2D(
+        texture(
           u_godRayMap,
           rayUvA
         ).r;
@@ -438,7 +273,7 @@ export class ShaderGUIVoid extends Shader {
         0.5;
 
       float shaftsB =
-        texture2D(
+        texture(
           u_godRayMap,
           rayUvB
         ).r;
@@ -465,31 +300,24 @@ export class ShaderGUIVoid extends Shader {
     void main(){
 
       /**
-       * Radial coordinate.
+       * Radial coordinate from fullscreen UV.
        */
       vec2 uv =
-        2.0 *
-        gl_FragCoord.xy /
-        max(
-          u_resolution.xy,
-          vec2(1.0)
-        ) -
+        vUv *
+        2.0 -
         1.0;
 
       /**
        * ORIGINAL 1:1 fog coordinate system.
        *
-       * Both axes divide by WIDTH.
+       * Both axes are relative to width: p.y spans height/width.
        */
       vec2 p =
-        gl_FragCoord.xy /
-        max(
-          u_resolution.x,
-          1.0
+        vec2(
+          vUv.x,
+          vUv.y *
+          u_heightOverWidth
         );
-
-      float t =
-        u_time;
 
       float radial =
         length(uv);
@@ -544,7 +372,6 @@ export class ShaderGUIVoid extends Shader {
       vec3 fog =
         metalFog(
           p,
-          t,
           fogDensity,
           farNoise,
           midNoise
@@ -633,7 +460,7 @@ export class ShaderGUIVoid extends Shader {
       rgb *=
         depthVignette;
 
-      gl_FragColor =
+      fragColor =
         vec4(
           rgb *
           u_intensity,
@@ -643,12 +470,18 @@ export class ShaderGUIVoid extends Shader {
     `;
 
     this.vertex = `
+      varying vec2 vUv;
+
       void main(){
+        vUv = uv;
+
+        /**
+         * Clip-space fullscreen quad (PlaneGeometry 2x2).
+         */
         gl_Position =
-          projectionMatrix *
-          modelViewMatrix *
           vec4(
-            position,
+            position.xy,
+            0.0,
             1.0
           );
       }
@@ -657,17 +490,14 @@ export class ShaderGUIVoid extends Shader {
     this.uniforms =
       THREE.UniformsUtils.merge([
         {
-          u_resolution: {
-            value:
-              new THREE.Vector2(
-                1600,
-                1200
-              )
-          },
-
-          u_time: {
+          u_fogTime: {
             value:
               0.0
+          },
+
+          u_heightOverWidth: {
+            value:
+              0.75
           },
 
           u_color: {
@@ -702,11 +532,11 @@ export class ShaderGUIVoid extends Shader {
               )
           },
 
-          u_fogVolumeMap: {
+          u_fogVolume: {
             value:
               null
           }
         }
-      ]);
+      ]) as any;
   }
 }

@@ -142,7 +142,10 @@ export class AreaMap {
     const resX = this.mapResX+1;
     const resY = this.mapResY+1;
     this.fogAlphaPixelData = new Uint8Array(resX * resY);
-    this.fogAlphaTexture = new THREE.DataTexture(this.fogAlphaPixelData as any, resX, resY, THREE.AlphaFormat);
+    // WebGL2 texStorage2D rejects unsized AlphaFormat; R8 matches fog mask (1 bpp).
+    this.fogAlphaTexture = new THREE.DataTexture(
+      this.fogAlphaPixelData as any, resX, resY, THREE.RedFormat, THREE.UnsignedByteType
+    );
     this.fogAlphaTexture.minFilter = THREE.LinearFilter;
     this.fogAlphaTexture.magFilter = THREE.LinearFilter;
     this.fogAlphaTexture.flipY = true;

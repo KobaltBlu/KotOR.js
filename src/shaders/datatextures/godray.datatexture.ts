@@ -13,7 +13,7 @@ export const getGodRayTexture = (size: number = 256): THREE.DataTexture => {
     return textureCache.get(size);
   }
 
-  const data = new Uint8Array(size * size * 4);
+  const data = new Uint8Array(size * size);
 
   // Must match the shader.
   const extent = 1.4;
@@ -226,19 +226,9 @@ export const getGodRayTexture = (size: number = 256): THREE.DataTexture => {
         Math.min(1, value)
       );
 
-      const byte = Math.round(
+      data[y * size + x] = Math.round(
         value * 255
       );
-
-      const offset = (
-        (y * size + x) *
-        4
-      );
-
-      data[offset] = byte;
-      data[offset + 1] = byte;
-      data[offset + 2] = byte;
-      data[offset + 3] = 255;
     }
   }
 
@@ -246,7 +236,7 @@ export const getGodRayTexture = (size: number = 256): THREE.DataTexture => {
     data,
     size,
     size,
-    THREE.RGBAFormat,
+    THREE.RedFormat,
     THREE.UnsignedByteType
   );
 
@@ -257,6 +247,7 @@ export const getGodRayTexture = (size: number = 256): THREE.DataTexture => {
   texture.magFilter = THREE.LinearFilter;
 
   texture.generateMipmaps = false;
+  texture.unpackAlignment = 1;
   texture.needsUpdate = true;
 
   textureCache.set(size, texture);

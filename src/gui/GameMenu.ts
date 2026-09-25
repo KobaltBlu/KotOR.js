@@ -16,9 +16,157 @@ import { KeyMapper } from "@/controls";
 import { shouldSuppressGameMenuHoverForListRow } from "@/gui/listrow/listRowHover";
 import { GUIPanelCoordFlags } from "@/gui/GUICoord";
 import { getGodRayTexture } from "@/shaders/datatextures/godray.datatexture";
-import { createGUIFogVolumeTexture } from "@/shaders/datatextures/fog.datatexture";
+import {
+  createGUIFogVolumeTexture,
+  GUI_FOG_VOLUME
+} from "@/shaders/datatextures/fog.datatexture";
 
-let fogVolumeTexture: THREE.DataTexture = undefined;
+/**
+ * Render the heavy void-gui shader at this fraction of the viewport,
+ * then upscale with LinearFilter.
+ */
+const VOID_GUI_RENDER_SCALE = 0.5;
+
+let fogVolumeTexture: THREE.Data3DTexture = undefined;
+
+let voidOffscreenTarget: THREE.WebGLRenderTarget = undefined;
+let voidOffscreenScene: THREE.Scene = undefined;
+let voidOffscreenCamera: THREE.Camera = undefined;
+let voidOffscreenMesh: THREE.Mesh = undefined;
+
+function ensureVoidOffscreenTarget(
+  viewportWidth: number,
+  viewportHeight: number
+): THREE.WebGLRenderTarget {
+
+  const width =
+    Math.max(
+      1,
+      Math.ceil(
+        viewportWidth *
+        VOID_GUI_RENDER_SCALE
+      )
+    );
+
+  const height =
+    Math.max(
+      1,
+      Math.ceil(
+        viewportHeight *
+        VOID_GUI_RENDER_SCALE
+      )
+    );
+
+  if(!voidOffscreenTarget){
+    voidOffscreenTarget =
+      new THREE.WebGLRenderTarget(
+        width,
+        height,
+        {
+          minFilter:
+            THREE.LinearFilter,
+
+          magFilter:
+            THREE.LinearFilter,
+
+          format:
+            THREE.RGBAFormat,
+
+          type:
+            THREE.UnsignedByteType,
+
+          depthBuffer:
+            false,
+
+          stencilBuffer:
+            false,
+
+          generateMipmaps:
+            false
+        }
+      );
+
+    voidOffscreenTarget.texture.generateMipmaps =
+      false;
+  }else if(
+    voidOffscreenTarget.width !== width ||
+    voidOffscreenTarget.height !== height
+  ){
+    voidOffscreenTarget.setSize(
+      width,
+      height
+    );
+  }
+
+  return voidOffscreenTarget;
+}
+
+function renderVoidOffscreen(
+  renderer: THREE.WebGLRenderer,
+  material: THREE.ShaderMaterial
+){
+  if(!voidOffscreenTarget){
+    return;
+  }
+
+  if(!voidOffscreenScene){
+    voidOffscreenCamera =
+      new THREE.Camera();
+
+    voidOffscreenScene =
+      new THREE.Scene();
+
+    voidOffscreenMesh =
+      new THREE.Mesh(
+        new THREE.PlaneGeometry(
+          2,
+          2
+        ),
+        material
+      );
+
+    voidOffscreenMesh.frustumCulled =
+      false;
+
+    voidOffscreenScene.add(
+      voidOffscreenMesh
+    );
+  }else{
+    voidOffscreenMesh.material =
+      material;
+  }
+
+  const oldRenderTarget =
+    renderer.getRenderTarget();
+
+  const oldAutoClear =
+    renderer.autoClear;
+
+  renderer.autoClear =
+    true;
+
+  renderer.setRenderTarget(
+    voidOffscreenTarget
+  );
+
+  renderer.clear(
+    true,
+    false,
+    false
+  );
+
+  renderer.render(
+    voidOffscreenScene,
+    voidOffscreenCamera
+  );
+
+  renderer.setRenderTarget(
+    oldRenderTarget
+  );
+
+  renderer.autoClear =
+    oldAutoClear;
+}
 
 /**
  * GameMenu class.
@@ -75,7 +223,10 @@ export class GameMenu {
 
   voidFill: boolean = false;
   backgroundVoidSprite: THREE.Mesh;
+  /** Heavy void-gui shader — rendered into the shared half-res target. */
   backgroundVoidMaterial: THREE.ShaderMaterial;
+  /** Upscale blit of the half-res void target into scene_gui. */
+  backgroundVoidBlitMaterial: THREE.MeshBasicMaterial;
 
   engineMode: EngineMode = EngineMode.GUI;
 
@@ -244,40 +395,60 @@ export class GameMenu {
         fogVolumeTexture = createGUIFogVolumeTexture(bakeRenderer);
       }
 
-      const geometry = new THREE.PlaneGeometry( 1, 1, 1 );
-      // this.backgroundVoidMaterial = new THREE.MeshBasicMaterial({color: new THREE.Color(0x000000), side: THREE.DoubleSide});
+      const viewportWidth =
+        ResolutionManager.getViewportWidth();
+
+      const viewportHeight =
+        ResolutionManager.getViewportHeight();
+
+      const offscreen =
+        ensureVoidOffscreenTarget(
+          viewportWidth,
+          viewportHeight
+        );
+
       this.backgroundVoidMaterial = new THREE.ShaderMaterial({
         uniforms: THREE.UniformsUtils.merge([
           ShaderManager.Shaders.get('void-gui').getUniforms(),
           {
-            u_aspect: {
-              value: ResolutionManager.getViewportWidth() / ResolutionManager.getViewportHeight()
+            u_heightOverWidth: {
+              value: viewportHeight / Math.max(viewportWidth, 1)
             },
             u_godRayMap: {
               value: getGodRayTexture(1024)
             },
-            u_fogVolumeMap: {
+            u_fogVolume: {
               value: fogVolumeTexture || null
             }
           }
         ]),
         vertexShader: ShaderManager.Shaders.get('void-gui').getVertex(),
         fragmentShader: ShaderManager.Shaders.get('void-gui').getFragment(),
+        glslVersion: THREE.GLSL3,
         defines: {
           GUI_SORT: ''
-        }
+        },
+        depthTest: false,
+        depthWrite: false,
+        transparent: false,
+        toneMapped: false
       });
-      this.backgroundVoidSprite = new THREE.Mesh( geometry, this.backgroundVoidMaterial );
-      this.backgroundVoidSprite.position.z = -6;
-      this.backgroundVoidSprite.renderOrder = this.renderOrderBias - 6;
 
-      // this.backgroundVoidMaterial.uniforms.u_color.value.setRGB(0.0, 0.658824, 0.980392);
       // Cool steel grey with a blue-metal hint (matches KotOR GUI panel metal).
       this.backgroundVoidMaterial.uniforms.u_color.value.setRGB(0.42, 0.50, 0.60);
-      this.backgroundVoidMaterial.depthTest = false;
-      this.backgroundVoidMaterial.depthWrite = false;
-      this.backgroundVoidMaterial.transparent = true;
-      // this.backgroundVoidMaterial.uniforms.u_color.value.setRGB(1.0, 1.0, 1.0);
+
+      this.backgroundVoidBlitMaterial = new THREE.MeshBasicMaterial({
+        map: offscreen.texture,
+        transparent: true,
+        depthTest: false,
+        depthWrite: false,
+        toneMapped: false
+      });
+
+      const geometry = new THREE.PlaneGeometry( 1, 1, 1 );
+      this.backgroundVoidSprite = new THREE.Mesh( geometry, this.backgroundVoidBlitMaterial );
+      this.backgroundVoidSprite.position.z = -6;
+      this.backgroundVoidSprite.renderOrder = this.renderOrderBias - 6;
     }
 
     /**
@@ -407,7 +578,7 @@ export class GameMenu {
       fogVolumeTexture = createGUIFogVolumeTexture(bakeRenderer);
     }
     if(fogVolumeTexture){
-      this.backgroundVoidMaterial.uniforms.u_fogVolumeMap.value = fogVolumeTexture;
+      this.backgroundVoidMaterial.uniforms.u_fogVolume.value = fogVolumeTexture;
     }
   }
 
@@ -417,9 +588,58 @@ export class GameMenu {
       return;
 
     if(this.voidFill && this.backgroundVoidMaterial && this.backgroundVoidSprite){
-      this.backgroundVoidMaterial.uniforms.u_time.value = this.context.deltaTimeFixed;
-      this.backgroundVoidSprite.scale.set(ResolutionManager.getViewportWidth(), ResolutionManager.getViewportHeight(), 1);
-      this.backgroundVoidMaterial.uniforms.u_resolution.value.set(ResolutionManager.getViewportWidth(), ResolutionManager.getViewportHeight());
+      const viewportWidth =
+        ResolutionManager.getViewportWidth();
+
+      const viewportHeight =
+        ResolutionManager.getViewportHeight();
+
+      const offscreen =
+        ensureVoidOffscreenTarget(
+          viewportWidth,
+          viewportHeight
+        );
+
+      if(
+        this.backgroundVoidBlitMaterial &&
+        this.backgroundVoidBlitMaterial.map !== offscreen.texture
+      ){
+        this.backgroundVoidBlitMaterial.map =
+          offscreen.texture;
+
+        this.backgroundVoidBlitMaterial.needsUpdate =
+          true;
+      }
+
+      const t =
+        this.context.deltaTimeFixed;
+
+      const period =
+        GUI_FOG_VOLUME.periodSeconds;
+
+      /**
+       * Temporal volume coordinate — once per frame, not per fragment.
+       */
+      this.backgroundVoidMaterial.uniforms.u_fogTime.value =
+        (
+          (
+            (
+              t %
+              period
+            ) +
+            period
+          ) %
+          period
+        ) /
+        period;
+
+      this.backgroundVoidMaterial.uniforms.u_heightOverWidth.value =
+        viewportHeight /
+        Math.max(
+          viewportWidth,
+          1
+        );
+
       /*
        * The shader receives precomputed cos/sin.
        *
@@ -430,11 +650,28 @@ export class GameMenu {
        *
        * per fragment.
       */
-      const rayAngle = this.context.deltaTimeFixed * 0.025;
+      const rayAngle = t * 0.025;
 
       this.backgroundVoidMaterial.uniforms.u_godRayRotation.value.set(
         Math.cos(rayAngle),
         Math.sin(rayAngle)
+      );
+
+      const renderer =
+        this.context.renderer ??
+        GameState.renderer;
+
+      if(renderer){
+        renderVoidOffscreen(
+          renderer,
+          this.backgroundVoidMaterial
+        );
+      }
+
+      this.backgroundVoidSprite.scale.set(
+        viewportWidth,
+        viewportHeight,
+        1
       );
     }
 

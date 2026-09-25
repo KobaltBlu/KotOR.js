@@ -3,6 +3,7 @@
  */
 import { describe, expect, it, jest } from '@jest/globals';
 import { ModuleCreatureAnimState } from '@/enums/module/ModuleCreatureAnimState';
+import { GameEngineType } from '@/enums/engine/GameEngineType';
 import type { SWAnimation } from '@/engine/rules/SWAnimation';
 import { resolveCreatureAnimation } from '@/module/animation/resolveCreatureAnimation';
 import type { CreatureAnimationContext } from '@/module/animation/CreatureAnimationContext';
@@ -26,6 +27,7 @@ const healthy: CreatureAnimationContext = {
   poisoned: false,
   diseased: false,
   weaponType: 0,
+  gameKey: GameEngineType.KOTOR,
 };
 
 describe('resolveCreatureAnimation', () => {
@@ -132,6 +134,59 @@ describe('resolveCreatureAnimation', () => {
     expect(resolveCreatureAnimation(ModuleCreatureAnimState.DODGE, healthy, animations)).toBe(animations[302]);
     expect(resolveCreatureAnimation(ModuleCreatureAnimState.PARRY, healthy, animations)).toBe(animations[301]);
     expect(resolveCreatureAnimation(ModuleCreatureAnimState.DIVE_ROLL, healthy, animations)).toBe(animations[567]);
+  });
+
+  it('maps meditate/worship, castout, kid talk, kneeling, knockdown-lp, damage2', () => {
+    const animations = makeTable([24, 62, 63, 64, 65, 66, 67, 84, 115, 303, 383, 384, 385]);
+    expect(resolveCreatureAnimation(ModuleCreatureAnimState.MEDITATE, healthy, animations)).toBe(animations[24]);
+    expect(resolveCreatureAnimation(ModuleCreatureAnimState.WORSHIP, healthy, animations)).toBe(animations[24]);
+    expect(resolveCreatureAnimation(ModuleCreatureAnimState.CASTOUT1, healthy, animations)).toBe(animations[62]);
+    expect(resolveCreatureAnimation(ModuleCreatureAnimState.CASTOUT1_LP, healthy, animations)).toBe(animations[63]);
+    expect(resolveCreatureAnimation(ModuleCreatureAnimState.CASTOUT2, healthy, animations)).toBe(animations[64]);
+    expect(resolveCreatureAnimation(ModuleCreatureAnimState.CASTOUT2_LP, healthy, animations)).toBe(animations[65]);
+    expect(resolveCreatureAnimation(ModuleCreatureAnimState.CASTOUT3, healthy, animations)).toBe(animations[66]);
+    expect(resolveCreatureAnimation(ModuleCreatureAnimState.CASTOUT3_LP, healthy, animations)).toBe(animations[67]);
+    expect(resolveCreatureAnimation(ModuleCreatureAnimState.DAMAGE2, healthy, animations)).toBe(animations[303]);
+    expect(resolveCreatureAnimation(ModuleCreatureAnimState.KID_TALK_ANGRY, healthy, animations)).toBe(animations[384]);
+    expect(resolveCreatureAnimation(ModuleCreatureAnimState.KID_TALK_SAD, healthy, animations)).toBe(animations[385]);
+    expect(resolveCreatureAnimation(ModuleCreatureAnimState.KNEELING, healthy, animations)).toBe(animations[383]);
+    expect(resolveCreatureAnimation(ModuleCreatureAnimState.KNOCKED_DOWN_LP, healthy, animations)).toBe(animations[84]);
+    expect(resolveCreatureAnimation(ModuleCreatureAnimState.KNOCKED_DOWN2_LP, healthy, animations)).toBe(animations[84]);
+    expect(resolveCreatureAnimation(ModuleCreatureAnimState.POWER_ATTACK_SS, healthy, animations)).toBe(animations[115]);
+  });
+
+  it('maps droid utility rows by game key', () => {
+    const animations = makeTable([392, 393, 537, 538]);
+
+    expect(
+      resolveCreatureAnimation(
+        ModuleCreatureAnimState.DROID_UTILITY_USE,
+        { ...healthy, gameKey: GameEngineType.KOTOR },
+        animations,
+      )
+    ).toBe(animations[392]);
+    expect(
+      resolveCreatureAnimation(
+        ModuleCreatureAnimState.DROID_UTILITY_USE_LP,
+        { ...healthy, gameKey: GameEngineType.KOTOR },
+        animations,
+      )
+    ).toBe(animations[393]);
+
+    expect(
+      resolveCreatureAnimation(
+        ModuleCreatureAnimState.DROID_UTILITY_USE,
+        { ...healthy, gameKey: GameEngineType.TSL },
+        animations,
+      )
+    ).toBe(animations[537]);
+    expect(
+      resolveCreatureAnimation(
+        ModuleCreatureAnimState.DROID_UTILITY_USE_LP,
+        { ...healthy, gameKey: GameEngineType.TSL },
+        animations,
+      )
+    ).toBe(animations[538]);
   });
 
   it('returns undefined for unknown constants', () => {

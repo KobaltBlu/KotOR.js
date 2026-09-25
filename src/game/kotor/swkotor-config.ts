@@ -13,7 +13,7 @@ export default {
     "Disable Sound": "0"
   },
   "Graphics Options": {
-    "V-Sync": "0",
+    "V-Sync": "1",
     "Anisotropy": "1",
     "Frame Buffer": "1",
     "Anti Aliasing": "0",

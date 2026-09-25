@@ -32,7 +32,10 @@ jest.mock('@/gui/GUIControlFactory', () => ({ GUIControlFactory: {} }));
 jest.mock('@/gui/listrow/listRowHover', () => ({ shouldSuppressGameMenuHoverForListRow: () => false }));
 jest.mock('@/gui/GUICoord', () => ({ GUIPanelCoordFlags: {} }));
 jest.mock('@/shaders/datatextures/godray.datatexture', () => ({ getGodRayTexture: () => null }));
-jest.mock('@/shaders/datatextures/fog.datatexture', () => ({ createGUIFogVolumeTexture: () => null }));
+jest.mock('@/shaders/datatextures/fog.datatexture', () => ({
+  createGUIFogVolumeTexture: () => null,
+  GUI_FOG_VOLUME: { periodSeconds: 64 },
+}));
 jest.mock('@/resource/GFFObject', () => ({ GFFObject: class {} }));
 jest.mock('@/three/odyssey/OdysseyTexture', () => ({ OdysseyTexture: class {} }));
 jest.mock('@/resource/ResourceTypes', () => ({ ResourceTypes: {} }));

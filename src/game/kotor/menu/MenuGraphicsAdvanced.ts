@@ -41,7 +41,7 @@ const INI_SHADOWS = 'Graphics Options.Shadows';
 const DEFAULT_FRAME_BUFFER = 1;
 const DEFAULT_ANISOTROPY = 1;
 const DEFAULT_TEXTURE_QUALITY = 0;
-const DEFAULT_VSYNC = 0;
+const DEFAULT_VSYNC = 1;
 const DEFAULT_ANTI_ALIAS = 0;
 const DEFAULT_SOFT_SHADOWS = 1;
 

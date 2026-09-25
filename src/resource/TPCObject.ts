@@ -250,27 +250,28 @@ export class TPCObject {
       // Uncompressed
       switch(this.header.encoding){
         case ENCODING.GRAY:
-          // 8bpp grayscale
+          // 8bpp grayscale (expanded to RGBA in pixel decode)
+          dds.format = THREE.RGBAFormat;
         break;
         case ENCODING.RGB:
-    			dds.format = 1023;//THREE.RGBAFormat
+    			dds.format = THREE.RGBAFormat;
         break;
         case ENCODING.RGBA:
-          dds.format = 1023;//THREE.RGBAFormat;
+          dds.format = THREE.RGBAFormat;
         break;
         case ENCODING.BGRA:
-          dds.format = 1023;//THREE.RGBAFormat;
+          dds.format = THREE.RGBAFormat;
         break;
       }
     }else{
       switch(this.header.encoding){
         case ENCODING.RGB:
           // S3TC DXT1
-          dds.format = 33776;//THREE.RGB_S3TC_DXT1_Format;
+          dds.format = THREE.RGB_S3TC_DXT1_Format;
         break;
         case ENCODING.RGBA:
           // S3TC DXT5
-          dds.format = 33779;//THREE.RGBA_S3TC_DXT5_Format;
+          dds.format = THREE.RGBA_S3TC_DXT5_Format;
         break;
       }
     }

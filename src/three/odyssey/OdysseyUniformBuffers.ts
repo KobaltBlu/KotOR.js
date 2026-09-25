@@ -1,22 +1,25 @@
 /**
  * WebGL2 uniform buffer objects for shared Odyssey frame state.
  *
- * Binding points (fixed):
- *   0 — OdysseyLighting (active light-set buffer)
- *   1 — OdysseyShadow
- *   2 — OdysseyWind
+ * Binding points (fixed, high indices to avoid Three UniformsGroups):
+ *   8 — OdysseyLighting (active light-set buffer)
+ *   9 — OdysseyShadow
+ *  10 — OdysseyWind
  *
  * std140 packing is explicit (vec3 → 16-byte stride, mat4 → 64).
  * No-ops on WebGL1; callers keep the classic uniform path.
+ *
+ * Block → binding mapping runs from a gl.useProgram wrap so it happens
+ * after Three activates the live program (onBeforeRender is too early).
  */
 
 import * as THREE from "three";
 import { MAX_ODYSSEY_LIGHTS } from "@/shaders/chunks/OdysseyLighting";
 import { MAX_ODYSSEY_SHADOW_MAPS } from "@/shaders/chunks/OdysseyShadow";
 
-export const ODYSSEY_UBO_BINDING_LIGHTING = 0;
-export const ODYSSEY_UBO_BINDING_SHADOW = 1;
-export const ODYSSEY_UBO_BINDING_WIND = 2;
+export const ODYSSEY_UBO_BINDING_LIGHTING = 8;
+export const ODYSSEY_UBO_BINDING_SHADOW = 9;
+export const ODYSSEY_UBO_BINDING_WIND = 10;
 
 export type OdysseyLightUboSetId = "global" | "bump" | "lightmap";
 
@@ -144,6 +147,19 @@ export class OdysseyUniformBuffers {
   private static gl: WebGL2RenderingContext | null = null;
   /** Programs that already had uniformBlockBinding applied. */
   private static boundPrograms = new WeakSet<WebGLProgram>();
+  /** GL contexts that already have the useProgram wrap installed. */
+  private static useProgramHooked = new WeakSet<WebGL2RenderingContext>();
+
+  /** Wrap gl.useProgram so block bindings run on the live program before draw. */
+  private static installUseProgramHook(gl: WebGL2RenderingContext): void {
+    if (this.useProgramHooked.has(gl)) return;
+    this.useProgramHooked.add(gl);
+    const original = gl.useProgram.bind(gl);
+    gl.useProgram = (program: WebGLProgram | null) => {
+      original(program);
+      if (program) OdysseyUniformBuffers.bindProgramBlocks(program);
+    };
+  }
 
   static isEnabled(renderer?: THREE.WebGLRenderer | null): boolean {
     if (!renderer) return this.enabled;
@@ -334,6 +350,7 @@ export class OdysseyUniformBuffers {
 
     const gl = renderer.getContext() as WebGL2RenderingContext;
     this.gl = gl;
+    this.installUseProgramHook(gl);
 
     this.lightingGlobal.ensure(gl);
     this.lightingBump.ensure(gl);
@@ -442,7 +459,7 @@ export class OdysseyUniformBuffers {
     this.boundPrograms.add(program);
   }
 
-  /** Hook material onBeforeRender to keep lighting set + program block binds fresh. */
+  /** Hook material onBeforeRender to keep the active lighting set bound. */
   static ensureMaterialHooks(material: THREE.ShaderMaterial, lightSetId?: OdysseyLightUboSetId): void {
     if (lightSetId) {
       material.userData.odysseyLightUboSet = lightSetId;
@@ -458,9 +475,7 @@ export class OdysseyUniformBuffers {
       const mat = this as THREE.ShaderMaterial;
       const setId = (mat.userData.odysseyLightUboSet as OdysseyLightUboSetId) || "global";
       OdysseyUniformBuffers.bindLightingSet(setId);
-      const props = (renderer as any).properties?.get?.(mat);
-      const program = OdysseyUniformBuffers.resolveMaterialProgram(props);
-      OdysseyUniformBuffers.bindProgramBlocks(program);
+      // Block bindings run from the gl.useProgram wrap (after setProgram).
     };
   }
 
