@@ -272,8 +272,19 @@ export class TalentFeat extends TalentObject {
 
   }
 
+  /**
+   * The feat.2da column prefix for a class: classes.2da featstable
+   * (uppercase in the 2DA, e.g. 'SOL') lowercased; falls back to skillstable
+   * (identical in vanilla data) when featstable is blank.
+   */
+  static getClassFeatCode(classData: CreatureClass): string {
+    if(!classData){ return ''; }
+    const code = classData.featstable || classData.skillstable || '';
+    return code.toLowerCase();
+  }
+
   getGranted(classData: CreatureClass): number {
-    switch(classData.skillstable){
+    switch(TalentFeat.getClassFeatCode(classData)){
       case 'scd':
         return this.scdGranted;
       case 'sol':
@@ -310,7 +321,7 @@ export class TalentFeat extends TalentObject {
   }
 
   getRecom(classData: CreatureClass): number {
-    switch(classData.skillstable){
+    switch(TalentFeat.getClassFeatCode(classData)){
       case 'scd':
         return this.scdRecom;
       case 'sol':
@@ -347,7 +358,7 @@ export class TalentFeat extends TalentObject {
   }
 
   getList(classData: CreatureClass): number {
-    switch(classData.skillstable){
+    switch(TalentFeat.getClassFeatCode(classData)){
       case 'scd':
         return this.scdList;
       case 'sol':
@@ -520,8 +531,11 @@ export class TalentFeat extends TalentObject {
     if (row.hasOwnProperty('jcn_granted'))
       this.jcnGranted = TwoDAObject.normalizeValue(row.jcn_granted, 'number', -1);
 
+    //TSL PC-only granted level; the column spelling was not verified against a TSL feat.2da so accept both
     if (row.hasOwnProperty('jcn_pc_granted'))
       this.jcnPcGranted = TwoDAObject.normalizeValue(row.jcn_pc_granted, 'number', -1);
+    else if (row.hasOwnProperty('jcn_pcgranted'))
+      this.jcnPcGranted = TwoDAObject.normalizeValue(row.jcn_pcgranted, 'number', -1);
 
     if (row.hasOwnProperty('jcn_recom'))
       this.jcnRecom = TwoDAObject.normalizeValue(row.jcn_recom, 'number', -1);
@@ -534,6 +548,8 @@ export class TalentFeat extends TalentObject {
 
     if (row.hasOwnProperty('jgd_pc_granted'))
       this.jgdPcGranted = TwoDAObject.normalizeValue(row.jgd_pc_granted, 'number', -1);
+    else if (row.hasOwnProperty('jgd_pcgranted'))
+      this.jgdPcGranted = TwoDAObject.normalizeValue(row.jgd_pcgranted, 'number', -1);
 
     if (row.hasOwnProperty('jgd_recom'))
       this.jgdRecom = TwoDAObject.normalizeValue(row.jgd_recom, 'number', -1);
@@ -546,6 +562,8 @@ export class TalentFeat extends TalentObject {
 
     if (row.hasOwnProperty('jsn_pc_granted'))
       this.jsnPcGranted = TwoDAObject.normalizeValue(row.jsn_pc_granted, 'number', -1);
+    else if (row.hasOwnProperty('jsn_pcgranted'))
+      this.jsnPcGranted = TwoDAObject.normalizeValue(row.jsn_pcgranted, 'number', -1);
 
     if (row.hasOwnProperty('jsn_recom'))
       this.jsnRecom = TwoDAObject.normalizeValue(row.jsn_recom, 'number', -1);

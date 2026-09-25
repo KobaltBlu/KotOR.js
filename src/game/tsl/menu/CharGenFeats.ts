@@ -1,11 +1,12 @@
-import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton, GUIProtoItem } from "@/gui";
 import { CharGenFeats as K1_CharGenFeats } from "@/game/kotor/KOTOR";
+import { GUIFeatItem } from "@/game/tsl/gui/GUIFeatItem";
 
 /**
  * CharGenFeats class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenFeats.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -37,18 +38,14 @@ export class CharGenFeats extends K1_CharGenFeats {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      this.BTN_BACK.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.close();
-      });
-
-      this.BTN_ACCEPT.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.close();
-      });
-
+      //The K1 initializer was skipped, so wire the shared listeners here
+      this.wireControls();
       resolve();
     });
   }
-  
+
+  protected getFeatItemClass(): typeof GUIProtoItem {
+    return GUIFeatItem;
+  }
+
 }
