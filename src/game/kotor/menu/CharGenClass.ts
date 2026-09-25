@@ -4,7 +4,7 @@ import { TextureLoader } from "@/loaders";
 import type { ModulePlayer } from "@/module";
 import { OdysseyModel3D } from "@/three/odyssey";
 import * as THREE from "three";
-import { CharGenClasses } from "@/game/CharGenClasses";
+import { getCharGenClass } from "@/game/CharGenClasses";
 import { GameState } from "@/GameState";
 
 /**
@@ -60,129 +60,96 @@ export class CharGenClass extends GameMenu {
     await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      this.BTN_BACK.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.manager.MainMenu.Start();
-      });
-
-      this.BTN_SEL1.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(this.selecting) return;
-        this.selecting = true;
-        GameState.CharGenManager.selectedClass = 0;
-        let template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
-        GameState.CharGenManager.selectedCreature = new GameState.Module.ModuleArea.ModulePlayer(template);
-        GameState.CharGenManager.selectedCreature.load();
-        GameState.CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
-          TextureLoader.LoadQueue().then(() => {
-            this.selecting = false;
-            this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
-            this.manager.CharGenMain.open();
-          });
-        });
-      });
-
-      this.BTN_SEL2.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(this.selecting) return;
-        this.selecting = true;
-        GameState.CharGenManager.selectedClass = 1;
-        let template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
-        GameState.CharGenManager.selectedCreature = new GameState.Module.ModuleArea.ModulePlayer(template);
-        GameState.CharGenManager.selectedCreature.load();
-        GameState.CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
-          TextureLoader.LoadQueue().then(() => {
-            this.selecting = false;
-            this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
-            this.manager.CharGenMain.open();
-          });
-        });
-      });
-
-      this.BTN_SEL3.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(this.selecting) return;
-        this.selecting = true;
-        GameState.CharGenManager.selectedClass = 2;
-        let template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
-        GameState.CharGenManager.selectedCreature = new GameState.Module.ModuleArea.ModulePlayer(template);
-        GameState.CharGenManager.selectedCreature.load();
-        GameState.CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
-          TextureLoader.LoadQueue().then(() => {
-            this.selecting = false;
-            this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
-            this.manager.CharGenMain.open();
-          });
-        });
-      });
-
-      this.BTN_SEL4.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(this.selecting) return;
-        this.selecting = true;
-        GameState.CharGenManager.selectedClass = 3;
-        let template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
-        GameState.CharGenManager.selectedCreature = new GameState.Module.ModuleArea.ModulePlayer(template);
-        GameState.CharGenManager.selectedCreature.load();
-        GameState.CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
-          TextureLoader.LoadQueue().then(() => {
-            this.selecting = false;
-            this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
-            this.manager.CharGenMain.open();
-          });
-        });
-      });
-
-      this.BTN_SEL5.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(this.selecting) return;
-        this.selecting = true;
-        GameState.CharGenManager.selectedClass = 4;
-        let template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
-        GameState.CharGenManager.selectedCreature = new GameState.Module.ModuleArea.ModulePlayer(template);
-        GameState.CharGenManager.selectedCreature.load();
-        GameState.CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
-          TextureLoader.LoadQueue().then(() => {
-            this.selecting = false;
-            this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
-            this.manager.CharGenMain.open();
-          });
-        });
-      });
-
-      this.BTN_SEL6.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(this.selecting) return;
-        this.selecting = true;
-        GameState.CharGenManager.selectedClass = 5;
-        let template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
-        GameState.CharGenManager.selectedCreature = new GameState.Module.ModuleArea.ModulePlayer(template);
-        GameState.CharGenManager.selectedCreature.load();
-        GameState.CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
-          TextureLoader.LoadQueue().then(() => {
-            this.selecting = false;
-            this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
-            this.manager.CharGenMain.open();
-          });
-        });
-      });
+      this.wireControls();
 
       this.tGuiPanel.getFill().position.z = -0.5;
 
-      for(let i = 0; i < 6; i++){
-        let control = this.getControlByName('_3D_MODEL'+(i+1));
-        let _3dView = GameState.CharGenManager.lbl_3d_views.get(i);
-        _3dView.visible = true;
-        _3dView.camera.aspect = control.extent.width / control.extent.height;
-        _3dView.camera.updateProjectionMatrix();
-        control.setFillTexture(_3dView.texture.texture);
-        (control.getFill().material as THREE.ShaderMaterial).transparent = true;
-        (control.getFill().material as THREE.ShaderMaterial).blending = 1;
-      }
+      this.initModelViews();
 
       this.captureBaseExtents();
 
       resolve();
+    });
+  }
+
+  /**
+   * Wires the listeners shared by the K1 and TSL versions of this screen.
+   * The TSL subclass skips the K1 initializer (skipInit) and calls this itself.
+   */
+  protected wireControls(){
+    if(this.BTN_BACK){
+      this.BTN_BACK.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.manager.MainMenu.Start();
+      });
+    }
+
+    for(let slot = 0; slot < 6; slot++){
+      const button = this.getControlByName('BTN_SEL' + (slot + 1));
+      if(!button) continue;
+      button.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.selectClass(slot);
+      });
+    }
+  }
+
+  /**
+   * Binds the six slot render targets to their _3D_MODEL labels.
+   */
+  protected initModelViews(){
+    for(let i = 0; i < 6; i++){
+      const control = this.getControlByName('_3D_MODEL'+(i+1));
+      const _3dView = GameState.CharGenManager.lbl_3d_views.get(i);
+      if(!control) continue;
+      if(_3dView){
+        _3dView.visible = true;
+        _3dView.camera.aspect = control.extent.width / control.extent.height;
+        _3dView.camera.updateProjectionMatrix();
+        control.setFillTexture(_3dView.texture.texture);
+      }
+      (control.getFill().material as THREE.ShaderMaterial).transparent = true;
+      (control.getFill().material as THREE.ShaderMaterial).blending = 1;
+    }
+  }
+
+  /**
+   * Picks a class-select slot (0-5): a fresh creature from the slot's
+   * template, clean working copies / step flags, and the quick-or-custom
+   * choice inside CharGenMain.
+   */
+  selectClass(slot: number){
+    if(this.selecting) return;
+    this.selecting = true;
+
+    GameState.CharGenManager.selectedClass = slot;
+    //A class change starts the attribute/skill working copies and the step progress over
+    GameState.CharGenManager.resetWorkingCopies();
+    GameState.CharGenManager.resetStepFlags();
+
+    const template = GameState.CharGenManager.templates.get(slot);
+    const creature: ModulePlayer = new GameState.Module.ModuleArea.ModulePlayer(template);
+    GameState.CharGenManager.selectedCreature = creature;
+    creature.load();
+    creature.loadModel().then((model: OdysseyModel3D) => {
+      TextureLoader.LoadQueue().then(() => {
+        this.selecting = false;
+
+        //Point the step screens at the new creature
+        this.manager.CharGenAbilities?.setCreature(creature);
+        this.manager.CharGenFeats?.setCreature(creature);
+        this.manager.CharGenFeats?.reset();
+        if(this.manager.CharGenQuickPanel){
+          this.manager.CharGenQuickPanel.step1 = false;
+          this.manager.CharGenQuickPanel.step2 = false;
+        }
+
+        this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
+        this.manager.CharGenMain.open();
+      });
+    }).catch((e) => {
+      console.error(e);
+      this.selecting = false;
     });
   }
 
@@ -303,13 +270,19 @@ export class CharGenClass extends GameMenu {
         modelControl.resizeControl();
       }
       if (this.textNeedsUpdate) {
-        this.LBL_DESC.setText(GameState.TLKManager.TLKStrings[CharGenClasses[GameState.CharGenManager.hoveredClass].strings.description].Value);
-        this.LBL_CLASS.setText(GameState.TLKManager.TLKStrings[CharGenClasses[GameState.CharGenManager.hoveredClass].strings.gender].Value + ' ' + GameState.TLKManager.TLKStrings[CharGenClasses[GameState.CharGenManager.hoveredClass].strings.name].Value);
+        const slot = getCharGenClass(GameState.CharGenManager.hoveredClass);
+        this.LBL_DESC.setText(this.getTLKString(slot.strings.description));
+        this.LBL_CLASS.setText(this.getTLKString(slot.strings.gender) + ' ' + this.getTLKString(slot.strings.name));
         this.textNeedsUpdate = false;
       }
     } catch (e: any) {
       console.error(e);
     }
+  }
+
+  getTLKString(strRef: number): string {
+    const tlkString = GameState.TLKManager?.TLKStrings?.[strRef];
+    return tlkString ? tlkString.Value : '';
   }
 
   show() {

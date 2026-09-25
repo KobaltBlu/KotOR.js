@@ -14,6 +14,7 @@ import { GameState } from "@/GameState";
 import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
+import { CExoLocString } from "@/resource/CExoLocString";
 import { MDLLoader, ResourceLoader } from "@/loaders";
 import { ResourceTypes } from "@/resource/ResourceTypes";
 import { SSFObject } from "@/resource/SSFObject";
@@ -49,7 +50,7 @@ import { PerceptionType } from "@/enums/engine/PerceptionType";
 import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
 import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
 import { CombatActionType } from "@/enums/combat/CombatActionType";
-import { CombatRoundAction } from "@/combat";
+import { CombatRound, CombatRoundAction } from "@/combat";
 import { GameEffectFactory } from "@/effects/GameEffectFactory";
 import type { Action } from "@/actions/Action";
 import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
@@ -2612,6 +2613,66 @@ export class ModuleCreature extends ModuleObject {
     }
   }
 
+  /**
+   * Class base saving throw: the per-class cls_st_* row for each class's
+   * level (row 0 = level 1), summed over the creature's classes.
+   */
+  getClassSavingThrowBase(type: 'fortsave'|'refsave'|'willsave'){
+    let base = 0;
+    for(let i = 0, len = this.classes.length; i < len; i++){
+      const cls = this.classes[i];
+      const table = cls.savingThrows;
+      if(!table || !table.length){ continue; }
+      const level = Math.max(1, cls.level || 1);
+      let row = table.find((entry) => entry.level == level);
+      if(!row){
+        row = table[Math.min(level - 1, table.length - 1)];
+      }
+      base += row ? (row[type] || 0) : 0;
+    }
+    return base;
+  }
+
+  /**
+   * Fortitude save bonus WITHOUT the ability modifier (ModuleObject's
+   * fortitudeSave() roll adds the CON modifier itself): class base +
+   * miscellaneous bonus (UTC fortbonus, 0 on every vanilla party member) +
+   * any stored FortSaveThrow value (kept so templates that carry the field
+   * round-trip unchanged). Use getTotalFortitudeSave() for the displayed value.
+   */
+  getFortitudeSave(){
+    return this.getClassSavingThrowBase('fortsave')
+      + (this.fortbonus || 0)
+      + (this.fortitudeSaveThrow || 0);
+  }
+
+  getReflexSave(){
+    return this.getClassSavingThrowBase('refsave')
+      + (this.refbonus || 0)
+      + (this.reflexSaveThrow || 0);
+  }
+
+  getWillSave(){
+    return this.getClassSavingThrowBase('willsave')
+      + (this.willbonus || 0)
+      + (this.willSaveThrow || 0);
+  }
+
+  /** Fortitude save as shown on the character sheet: bonus + CON modifier */
+  getTotalFortitudeSave(){
+    return this.getFortitudeSave() + CombatRound.GetMod(this.getCON());
+  }
+
+  /** Reflex save as shown on the character sheet: bonus + DEX modifier */
+  getTotalReflexSave(){
+    return this.getReflexSave() + CombatRound.GetMod(this.getDEX());
+  }
+
+  /** Will save as shown on the character sheet: bonus + WIS modifier */
+  getTotalWillSave(){
+    return this.getWillSave() + CombatRound.GetMod(this.getWIS());
+  }
+
   getAC(){
     let baseac = 10;
     let classBonus = 0;
@@ -2913,7 +2974,7 @@ export class ModuleCreature extends ModuleObject {
         }
       }
 
-      this.maxHitPoints += mainClass.hitdie + ( (this.getCON() - 10) /2 );
+      this.maxHitPoints += mainClass.hitdie + Math.floor( (this.getCON() - 10) / 2 );
       this.currentHitPoints = 0;
 
     }
@@ -3807,6 +3868,16 @@ export class ModuleCreature extends ModuleObject {
       if(this.template.RootNode.hasField('Int'))
         this.int = this.template.getFieldByLabel('Int').getValue();
 
+      //Miscellaneous saving throw bonuses (the class base and ability modifiers are derived at runtime)
+      if(this.template.RootNode.hasField('fortbonus'))
+        this.fortbonus = this.template.getFieldByLabel('fortbonus').getValue() || 0;
+
+      if(this.template.RootNode.hasField('refbonus'))
+        this.refbonus = this.template.getFieldByLabel('refbonus').getValue() || 0;
+
+      if(this.template.RootNode.hasField('willbonus'))
+        this.willbonus = this.template.getFieldByLabel('willbonus').getValue() || 0;
+
       if(this.template.RootNode.hasField('XPosition'))
         this.position.x = this.template.RootNode.getFieldByLabel('XPosition').getValue();
 
@@ -4246,7 +4317,7 @@ export class ModuleCreature extends ModuleObject {
     //TODO: CombatRoundData
 
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue(this.getCommadable() ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Con') ).setValue(this.str);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Con') ).setValue(this.con);
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Conversation') ).setValue(this.conversation ? this.conversation.resref : '');
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'CreatnScrptFird') ).setValue( this.spawned ? 1 : 0 );
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'CreatureSize') ).setValue(3);
@@ -4369,7 +4440,13 @@ export class ModuleCreature extends ModuleObject {
       featList.addChildStruct( this.feats[i].save() );
     }
 
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName') ).setValue( this.template.RootNode.getFieldByLabel('FirstName')?.getCExoLocString() );
+    //Keep the template's localized name (a TLK strref for NPCs) unless the name was changed on the creature (e.g. character generation)
+    let firstNameLoc = this.template.RootNode.getFieldByLabel('FirstName')?.getCExoLocString();
+    if(!firstNameLoc || firstNameLoc.getValue() != this.firstName){
+      firstNameLoc = new CExoLocString();
+      firstNameLoc.addSubString(this.firstName || '', 0);
+    }
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName') ).setValue( firstNameLoc );
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'ForcePoints') ).setValue(this.forcePoints);
     gff.RootNode.addField( new GFFField(GFFDataType.CHAR, 'FortSaveThrow') ).setValue(this.fortitudeSaveThrow);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Gender') ).setValue(this.gender);
@@ -4482,7 +4559,7 @@ export class ModuleCreature extends ModuleObject {
 
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'fortbonus') ).setValue(this.fortbonus);
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'refbonus') ).setValue(this.refbonus);
-    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'refbonus') ).setValue(this.refbonus);
+    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'willbonus') ).setValue(this.willbonus);
 
     this.template = gff;
 

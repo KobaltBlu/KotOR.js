@@ -1,13 +1,12 @@
 import { GameState } from "@/GameState";
 import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
-import { TalentFeat } from "@/talents";
 
 /**
  * CharGenQuickOrCustom class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenQuickOrCustom.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -28,105 +27,11 @@ export class CharGenQuickOrCustom extends GameMenu {
     this.voidFill = false;
   }
 
-  prepareCustomCreature(){
-    try{
-      const creature = GameState.CharGenManager.selectedCreature;
-      const class_data = GameState.SWRuleSet.classes[GameState.CharGenManager.selectedClass];
-      const saving_throw_label = class_data['savingthrowtable'].toLowerCase();
-      const saving_throw_data = GameState.TwoDAManager.datatables.get(saving_throw_label).rows[0];
-      const feats_table = GameState.SWRuleSet.feats;
-
-      creature.fortbonus = parseInt(saving_throw_data.fortsave);
-      creature.willbonus = parseInt(saving_throw_data.willsave);
-      creature.refbonus = parseInt(saving_throw_data.refsave);
-
-      for(let i = 0, len = feats_table.length; i < len; i++){
-        if(feats_table[i].getGranted(class_data) == 1 && !creature.getHasFeat(i)){
-          creature.feats.push(new TalentFeat(i));
-        }
-      }
-
-      this.manager.CharGenAbilities.setCreature(creature);
-      this.manager.CharGenFeats.setCreature(creature);
-    }catch(e){
-      console.log(e);
-    }
-  }
-
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      this.QUICK_CHAR_BTN.addEventListener('click', (e) => {
-        e.stopPropagation();
-        try{
-          const class_data = GameState.SWRuleSet.classes[GameState.CharGenManager.selectedClass];
-          const saving_throw_label = class_data['savingthrowtable'].toLowerCase();
-          const saving_throw_data = GameState.TwoDAManager.datatables.get(saving_throw_label).rows[0];
-          const feats_table = GameState.SWRuleSet.feats;
-
-          GameState.CharGenManager.selectedCreature.str = class_data.str;
-          GameState.CharGenManager.selectedCreature.dex = class_data.dex;
-          GameState.CharGenManager.selectedCreature.con = class_data.con;
-          GameState.CharGenManager.selectedCreature.wis = class_data.wis;
-          GameState.CharGenManager.selectedCreature.int = class_data.int;
-          GameState.CharGenManager.selectedCreature.cha = class_data.cha;
-          GameState.CharGenManager.selectedCreature.str = class_data.str;
-
-          GameState.CharGenManager.selectedCreature.fortbonus = parseInt(saving_throw_data.fortsave);
-          GameState.CharGenManager.selectedCreature.willbonus = parseInt(saving_throw_data.willsave);
-          GameState.CharGenManager.selectedCreature.refbonus = parseInt(saving_throw_data.refsave);
-
-          for(let i = 0, len = feats_table.length; i < len; i++){
-            const feat_data = feats_table[i];
-            if(feat_data.getGranted(class_data) == 1){
-              GameState.CharGenManager.selectedCreature.feats.push(new TalentFeat(i));
-            }
-          }
-          
-          this.manager.CharGenMain.close();
-          this.manager.CharGenMain.childMenu = this.manager.CharGenQuickPanel;
-          this.manager.CharGenQuickPanel.tGuiPanel.widget.position.x = 142.5;
-          this.manager.CharGenQuickPanel.tGuiPanel.widget.position.y = 0;
-          this.manager.CharGenMain.open();
-        }catch(e){
-          console.log(e);
-        }
-      });
-
-      this.CUST_CHAR_BTN.addEventListener('click', (e) => {
-        e.stopPropagation();
-        //Game.CharGenMain.state = CharGenMain.STATES.CUSTOM;
-        //Game.CharGenCustomPanel.Show();
-        this.manager.CharGenMain.close();
-        this.manager.CharGenMain.childMenu = this.manager.CharGenCustomPanel;
-        this.manager.CharGenCustomPanel.tGuiPanel.widget.position.x = 142.5;
-        this.manager.CharGenCustomPanel.tGuiPanel.widget.position.y = 0;
-        this.manager.CharGenMain.open();
-
-        //Point the custom-chargen steps at the creature being built and apply class saves/feats
-        this.prepareCustomCreature();
-
-        //Reset the Attributes window
-        this.manager.CharGenAbilities.reset();
-
-        //Reset the Skills window
-        this.manager.CharGenSkills.reset();
-      });
-
-      this.BTN_BACK.addEventListener('click', (e) => {
-        e.stopPropagation();
-        //Game.CharGenMain.Hide();
-
-        try{
-          GameState.CharGenManager.selectedCreature.model.removeFromParent();
-        }catch(e){}
-
-        // this.manager.CharGenClass.getControlByName('_3D_MODEL'+(GameState.CharGenManager.selectedClass+1))
-        //  .userData._3dView.scene.add(GameState.CharGenManager.selectedCreature.model);
-        this.manager.CharGenMain.close();
-      });
-
+      this.wireControls();
 
       this.tGuiPanel.offset.x = -180;
       this.tGuiPanel.offset.y = 100;
@@ -134,5 +39,111 @@ export class CharGenQuickOrCustom extends GameMenu {
       resolve();
     });
   }
-  
+
+  /**
+   * Wires the listeners shared by the K1 and TSL versions of this screen.
+   * The TSL subclass skips the K1 initializer (skipInit) and calls this itself.
+   */
+  protected wireControls(){
+    if(this.QUICK_CHAR_BTN){
+      this.QUICK_CHAR_BTN.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.selectQuick();
+      });
+    }
+
+    if(this.CUST_CHAR_BTN){
+      this.CUST_CHAR_BTN.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.selectCustom();
+      });
+    }
+
+    if(this.BTN_BACK){
+      this.BTN_BACK.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.goBack();
+      });
+    }
+  }
+
+  /**
+   * Game-specific placement of the quick/custom step panel inside CharGenMain
+   * (the K1 layouts need an offset; the TSL layouts do not).
+   */
+  protected positionChildPanel(panel: GameMenu){
+    panel.tGuiPanel.widget.position.x = 142.5;
+    panel.tGuiPanel.widget.position.y = 0;
+  }
+
+  protected showChildPanel(panel: GameMenu){
+    this.manager.CharGenMain.close();
+    this.manager.CharGenMain.childMenu = panel;
+    this.positionChildPanel(panel);
+    this.manager.CharGenMain.open();
+  }
+
+  /**
+   * Quick character: class recommended attributes / skills / feats, then the
+   * three-step quick panel.
+   */
+  selectQuick(){
+    try{
+      GameState.CharGenManager.applyQuickCharacter();
+      GameState.CharGenManager.resetStepFlags();
+      //Any picks committed on the custom Feats screen are gone
+      this.manager.CharGenFeats.reset();
+      this.showChildPanel(this.manager.CharGenQuickPanel);
+    }catch(e){
+      console.error(e);
+    }
+  }
+
+  /**
+   * Custom character: a clean creature (attributes at 8, no skill ranks, only
+   * the class-granted feats) and the six-step custom panel.
+   */
+  selectCustom(){
+    try{
+      GameState.CharGenManager.resetStepFlags();
+
+      //Point the custom-chargen steps at the creature being built and apply the class-granted feats
+      this.prepareCustomCreature();
+
+      //Reset the Attributes window
+      this.manager.CharGenAbilities.reset();
+
+      //Reset the Skills window
+      this.manager.CharGenSkills.reset();
+
+      //Reset the Feats window (keeps the creature's feats)
+      this.manager.CharGenFeats.reset();
+
+      this.showChildPanel(this.manager.CharGenCustomPanel);
+    }catch(e){
+      console.error(e);
+    }
+  }
+
+  prepareCustomCreature(){
+    try{
+      const creature = GameState.CharGenManager.selectedCreature;
+      GameState.CharGenManager.prepareCustomCharacter(creature);
+      this.manager.CharGenAbilities.setCreature(creature);
+      this.manager.CharGenFeats.setCreature(creature);
+    }catch(e){
+      console.error(e);
+    }
+  }
+
+  /**
+   * Back to the class selection screen (still on the menu stack under CharGenMain).
+   */
+  goBack(){
+    try{
+      GameState.CharGenManager.selectedCreature.model.removeFromParent();
+    }catch(e){}
+    this.manager.CharGenMain.close();
+  }
+
 }

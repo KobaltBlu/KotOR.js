@@ -3,9 +3,9 @@ import { CharGenCustomPanel as K1_CharGenCustomPanel } from "@/game/kotor/KOTOR"
 
 /**
  * CharGenCustomPanel class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenCustomPanel.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -39,13 +39,15 @@ export class CharGenCustomPanel extends K1_CharGenCustomPanel {
     this.background = '';
     this.voidFill = false;
   }
-  
+
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
+      //The K1 initializer was skipped: wire the shared step/back/cancel listeners here
+      this.wireControls();
       resolve();
     });
   }
-  
+
 }
