@@ -28,6 +28,31 @@ export class CharGenQuickOrCustom extends GameMenu {
     this.voidFill = false;
   }
 
+  prepareCustomCreature(){
+    try{
+      const creature = GameState.CharGenManager.selectedCreature;
+      const class_data = GameState.SWRuleSet.classes[GameState.CharGenManager.selectedClass];
+      const saving_throw_label = class_data['savingthrowtable'].toLowerCase();
+      const saving_throw_data = GameState.TwoDAManager.datatables.get(saving_throw_label).rows[0];
+      const feats_table = GameState.SWRuleSet.feats;
+
+      creature.fortbonus = parseInt(saving_throw_data.fortsave);
+      creature.willbonus = parseInt(saving_throw_data.willsave);
+      creature.refbonus = parseInt(saving_throw_data.refsave);
+
+      for(let i = 0, len = feats_table.length; i < len; i++){
+        if(feats_table[i].getGranted(class_data) == 1 && !creature.getHasFeat(i)){
+          creature.feats.push(new TalentFeat(i));
+        }
+      }
+
+      this.manager.CharGenAbilities.setCreature(creature);
+      this.manager.CharGenFeats.setCreature(creature);
+    }catch(e){
+      console.log(e);
+    }
+  }
+
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
@@ -79,6 +104,9 @@ export class CharGenQuickOrCustom extends GameMenu {
         this.manager.CharGenCustomPanel.tGuiPanel.widget.position.y = 0;
         this.manager.CharGenMain.open();
 
+        //Point the custom-chargen steps at the creature being built and apply class saves/feats
+        this.prepareCustomCreature();
+
         //Reset the Attributes window
         this.manager.CharGenAbilities.reset();
 
@@ -99,9 +127,6 @@ export class CharGenQuickOrCustom extends GameMenu {
         this.manager.CharGenMain.close();
       });
 
-      //Hide because this submenu is very incomplete.
-      //Comment out this line to work on the custom chargen screen
-      this.CUST_CHAR_BTN.hide();
 
       this.tGuiPanel.offset.x = -180;
       this.tGuiPanel.offset.y = 100;

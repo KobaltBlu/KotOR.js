@@ -37,6 +37,16 @@ export class CharGenFeats extends K1_CharGenFeats {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
+      this.BTN_BACK.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.close();
+      });
+
+      this.BTN_ACCEPT.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.close();
+      });
+
       resolve();
     });
   }

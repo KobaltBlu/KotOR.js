@@ -61,7 +61,7 @@ export class CharGenCustomPanel extends GameMenu {
 
       this.BTN_STEPNAME2.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.manager.CharGenAbilities.setCreature(GameState.getCurrentPlayer());
+        this.manager.CharGenAbilities.setCreature(GameState.CharGenManager.selectedCreature);
         this.manager.CharGenAbilities.open();
       });
 
@@ -72,6 +72,7 @@ export class CharGenCustomPanel extends GameMenu {
 
       this.BTN_STEPNAME4.addEventListener('click', (e) => {
         e.stopPropagation();
+        this.manager.CharGenFeats.setCreature(GameState.CharGenManager.selectedCreature);
         this.manager.CharGenFeats.open();
       });
 

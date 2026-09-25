@@ -72,6 +72,9 @@ export class CharGenQuickOrCustom extends K1_CharGenQuickOrCustom {
         this.manager.CharGenMain.childMenu = this.manager.CharGenCustomPanel;
         this.manager.CharGenMain.open();
 
+        //Point the custom-chargen steps at the creature being built and apply class saves/feats
+        this.prepareCustomCreature();
+
         //Reset the Attributes window
         this.manager.CharGenAbilities.reset();
 
@@ -92,9 +95,6 @@ export class CharGenQuickOrCustom extends K1_CharGenQuickOrCustom {
         this.manager.CharGenMain.close();
       });
 
-      //Hide because this submenu is very incomplete.
-      //Comment out this line to work on the custom chargen screen
-      this.CUST_CHAR_BTN.hide();
 
       // this.tGuiPanel.offset.x = -180;
       // this.tGuiPanel.offset.y = 100;

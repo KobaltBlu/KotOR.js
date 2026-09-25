@@ -334,6 +334,12 @@ export class CharGenAbilities extends GameMenu {
 
   reset(){
     GameState.CharGenManager.availPoints = 30;
+    GameState.CharGenManager.str = 8;
+    GameState.CharGenManager.dex = 8;
+    GameState.CharGenManager.con = 8;
+    GameState.CharGenManager.wis = 8;
+    GameState.CharGenManager.int = 8;
+    GameState.CharGenManager.cha = 8;
     if(this.creature){
       this.creature.str = 8;
       this.creature.dex = 8;
