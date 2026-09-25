@@ -3,7 +3,7 @@ import type { GUILabel } from "@/gui";
 import { TextureLoader } from "@/loaders";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { OdysseyModel3D } from "@/three/odyssey";
-import { CharGenClasses } from "@/game/CharGenClasses";
+import { getCharGenClass } from "@/game/CharGenClasses";
 import { GameState } from "@/GameState";
 
 /**
@@ -142,14 +142,64 @@ export class CharGenMain extends GameMenu {
         this.PORTRAIT_LBL.setFillTexture(texture);
       });
     }
-    this.LBL_NAME.setText(GameState.CharGenManager.selectedCreature.firstName);
-    this.LBL_CLASS.setText(
-      GameState.TLKManager.TLKStrings[CharGenClasses[GameState.CharGenManager.selectedClass].strings.name].Value
-    )
+    const slot = getCharGenClass(GameState.CharGenManager.selectedClass);
+    this.LBL_CLASS?.setText(this.getTLKString(slot.strings.name));
+    this.updateAttributes();
   }
 
-  updateAttributes() {
+  getTLKString(strRef: number): string {
+    const tlkString = GameState.TLKManager?.TLKStrings?.[strRef];
+    return tlkString ? tlkString.Value : '';
+  }
 
+  /**
+   * Summary panel: name, attributes, vitality, defense and saves of the
+   * character being built. Called on every show() and by the Attributes
+   * screen's Accept. The OLD/NEW/arrow labels only matter on level-up and
+   * stay hidden; the values go to LBL_VIT / LBL_DEF and the NEW_* save labels.
+   */
+  updateAttributes() {
+    const creature = GameState.CharGenManager.selectedCreature;
+    if(!creature) return;
+
+    //Keep the creature's stored HP/FP in step with the class + attributes
+    GameState.CharGenManager.applyDerivedStats(creature);
+
+    this.LBL_NAME?.setText(creature.firstName);
+
+    this.STR_AB_LBL?.setText(creature.str);
+    this.DEX_AB_LBL?.setText(creature.dex);
+    this.CON_AB_LBL?.setText(creature.con);
+    this.INT_AB_LBL?.setText(creature.int);
+    this.WIS_AB_LBL?.setText(creature.wis);
+    this.CHA_AB_LBL?.setText(creature.cha);
+
+    this.LBL_VIT?.setText(creature.getMaxHP());
+    this.LBL_DEF?.setText(creature.getAC());
+
+    //Level-up only: previous value, arrow, column headers
+    this.OLD_VIT_LBL?.hide();
+    this.NEW_VIT_LBL?.hide();
+    this.VIT_ARROW_LBL?.hide();
+    this.OLD_DEF_LBL?.hide();
+    this.NEW_DEF_LBL?.hide();
+    this.DEF_ARROW_LBL?.hide();
+    this.OLD_FORT_LBL?.hide();
+    this.OLD_REFL_LBL?.hide();
+    this.OLD_WILL_LBL?.hide();
+    this.FORT_ARROW_LBL?.hide();
+    this.REFL_ARROW_LBL?.hide();
+    this.WILL_ARROW_LBL?.hide();
+    this.OLD_LBL?.hide();
+    this.NEW_LBL?.hide();
+
+    //Saves: class base (level-1 row) + ability modifier
+    this.NEW_FORT_LBL?.setText(creature.getTotalFortitudeSave());
+    this.NEW_REFL_LBL?.setText(creature.getTotalReflexSave());
+    this.NEW_WILL_LBL?.setText(creature.getTotalWillSave());
+    this.NEW_FORT_LBL?.show();
+    this.NEW_REFL_LBL?.show();
+    this.NEW_WILL_LBL?.show();
   }
   
 }
