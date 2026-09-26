@@ -104,6 +104,10 @@ export class ModuleWaypoint extends ModuleObject {
     swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
 
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
+
+    // Blueprint reference; dropped by every save path until now - see ModulePlaceable.save.
+
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'TemplateResRef') ).setValue(this.templateResRef || '');
     gff.RootNode.addField( new GFFField(GFFDataType.LIST,  'VarTable') );
     
     if(this.template.RootNode.hasField('XOrientation')){

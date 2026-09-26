@@ -995,6 +995,7 @@ export class ModulePlaceable extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Open') ).setValue(this.isOpen() ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'OpenLockDC') ).setValue(this.openLockDC);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PartyInteract') ).setValue(this.partyInteract);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'NotBlastable') ).setValue(this.notBlastable ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Plot') ).setValue(this.plot);
     gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') ).setValue(this.portraitId);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Ref') ).setValue(this.ref);
@@ -1005,6 +1006,11 @@ export class ModulePlaceable extends ModuleObject {
 
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Static') ).setValue(this.static);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
+    // Saving dropped the blueprint reference on every object of every type
+    // (all eight save paths), so a module round-tripped through a save came
+    // back with templateResRef empty - measured across all 57 objects in
+    // TSL's 001EBO.
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'TemplateResRef') ).setValue(this.templateResRef || '');
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDetectDC') ).setValue(this.trapDetectDC);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDetectable') ).setValue(this.trapDetectable);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDisarmable') ).setValue(this.trapDisarmable);
@@ -1114,6 +1120,7 @@ export class ModulePlaceable extends ModuleObject {
     template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'OpenLockDC') );
     template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PaletteId') );
     template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PartyInteract') );
+    template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'NotBlastable') );
     template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Plot') );
     template.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraidId') );
     template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Ref') );

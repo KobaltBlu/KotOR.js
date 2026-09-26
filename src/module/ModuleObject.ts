@@ -52,6 +52,7 @@ import type { SWPortrait } from "@/engine/rules/SWPortrait";
 import type { IHeardString } from "@/interface/dialog/IHeardString";
 import type { SWRange } from "@/engine/rules/SWRange";
 import { TURN_SPEED_SLOW } from "@/engine/TurnSpeeds";
+import { actionParameterToStruct } from "@/actions/actionParameterStructs";
 
 
 /**
@@ -3652,7 +3653,8 @@ export class ModuleObject {
 
       const params = struct.addField(new GFFField(GFFDataType.LIST, 'Paramaters'));
       for(let j = 0, len2 = action.parameters.length; j < len2; j++){
-        params.addChildStruct(action.parameters[j].toStruct());
+        // Holes are legitimate on a loaded action; see actionParameterToStruct.
+        params.addChildStruct(actionParameterToStruct(action.parameters[j]));
       }
 
       actionList.addChildStruct(struct);

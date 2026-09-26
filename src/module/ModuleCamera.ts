@@ -204,12 +204,21 @@ export class ModuleCamera {
     let gff = new GFFObject();
     gff.RootNode.type = 14;
 
+    // FieldOfView, Height and Pitch are floats. They were written as DWORD,
+    // BYTE and BYTE, none of which can hold what a camera actually carries: a
+    // fractional FOV, a negative height, or a negative pitch. GFFField.setValue
+    // reports the violation and stores the value anyway, so the bad value
+    // reached serialization and wrapped. Loading every TSL module logged it
+    // as "Field.setValue BYTE OutOfBounds label='Height' value=-1.5" in 503OND.
+    //
+    // ForgeCamera reads and writes all three as FLOAT in both directions, which
+    // is what settles the authored types.
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'CameraID') ).setValue(this.cameraID);
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'FieldOfView') ).setValue(this.fov);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Height') ).setValue(this.height);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'FieldOfView') ).setValue(this.fov);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Height') ).setValue(this.height);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'MicRange') ).setValue(this.micRange);
     gff.RootNode.addField( new GFFField(GFFDataType.ORIENTATION, 'Orientation') ).setValue({x: this.orientation.x, y: this.orientation.y, z: this.orientation.z, w: this.orientation.w});
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Pitch') ).setValue(this.pitch);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Pitch') ).setValue(this.pitch);
     gff.RootNode.addField( new GFFField(GFFDataType.VECTOR, 'Position') ).setValue({x: this.position.x, y: this.position.y, z: this.position.z});
 
     this.template = gff;
