@@ -76,7 +76,7 @@ describe("OdysseyWalkMesh spatial helpers", () => {
       new THREE.Vector3(22, 0, 0)
     );
     wok.buildEdgeAABBTree();
-    expect(wok.edgeAABBRoot).toBeDefined();
+    expect(wok.hasEdgeBvh).toBe(true);
 
     const query = new THREE.Box3(
       new THREE.Vector3(-2, -1, -1),
@@ -87,11 +87,66 @@ describe("OdysseyWalkMesh spatial helpers", () => {
     expect(hits).not.toContain(far);
 
     // Brute-force reference with tree disabled (invalidate sector cache)
-    const root = wok.edgeAABBRoot;
-    wok.edgeAABBRoot = undefined;
+    const root = wok.edgeBvhRoot;
+    wok.edgeBvhRoot = -1;
     wok.invalidateSpatialCaches();
     const brute = wok.getEdgesInBox(query);
-    wok.edgeAABBRoot = root;
+    wok.edgeBvhRoot = root;
     expect(hits.map((e) => e.index).sort()).toEqual(brute.map((e) => e.index).sort());
+  });
+
+  it("getEdgesInBox BVH matches brute force over randomized edges and boxes", () => {
+    const wok = new OdysseyWalkMesh();
+    const rng = (seed: number) => {
+      let s = seed >>> 0;
+      return () => {
+        s = (s * 1664525 + 1013904223) >>> 0;
+        return s / 0x100000000;
+      };
+    };
+    const rand = rng(0xC0FFEE);
+    const edgeCount = 256;
+    for(let i = 0; i < edgeCount; i++){
+      const x = rand() * 40 - 5;
+      const y = rand() * 40 - 5;
+      const z = rand() * 2 - 1;
+      const dx = rand() * 2 - 0.5;
+      const dy = rand() * 2 - 0.5;
+      makeEdge(
+        wok,
+        i,
+        new THREE.Vector3(x, y, z),
+        new THREE.Vector3(x + dx, y + dy, z)
+      );
+    }
+    wok.buildEdgeAABBTree();
+    expect(wok.hasEdgeBvh).toBe(true);
+
+    const query = new THREE.Box3();
+    const bvhOut: WalkmeshEdge[] = [];
+    const bruteOut: WalkmeshEdge[] = [];
+    for(let q = 0; q < 500; q++){
+      const cx = rand() * 40 - 5;
+      const cy = rand() * 40 - 5;
+      const cz = rand() * 2 - 1;
+      const hx = 0.2 + rand() * 2;
+      const hy = 0.2 + rand() * 2;
+      const hz = 0.2 + rand() * 1;
+      query.min.set(cx - hx, cy - hy, cz - hz);
+      query.max.set(cx + hx, cy + hy, cz + hz);
+
+      wok.invalidateSpatialCaches();
+      wok.getEdgesInBox(query, bvhOut);
+
+      const root = wok.edgeBvhRoot;
+      wok.edgeBvhRoot = -1;
+      wok.invalidateSpatialCaches();
+      wok.getEdgesInBox(query, bruteOut);
+      wok.edgeBvhRoot = root;
+
+      expect(bvhOut.map((e) => e.index).sort((a, b) => a - b)).toEqual(
+        bruteOut.map((e) => e.index).sort((a, b) => a - b)
+      );
+    }
   });
 });

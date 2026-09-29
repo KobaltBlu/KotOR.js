@@ -159,11 +159,11 @@ describe("OdysseyWalkMesh sector cache", () => {
     );
     expect(wok.getFacesInBox(query)).toContain(face);
 
-    const cache = (wok as any)._faceSectorCache as unknown[];
-    expect(cache.length).toBeGreaterThan(0);
+    const cache = (wok as any)._faceSectorCache as Map<number, unknown>;
+    expect(cache.size).toBeGreaterThan(0);
 
     wok.updateMatrix();
-    expect((wok as any)._faceSectorCache.length).toBe(0);
+    expect((wok as any)._faceSectorCache.size).toBe(0);
   });
 
   it("edge sector cache reuses nested queries", () => {
@@ -183,11 +183,11 @@ describe("OdysseyWalkMesh sector cache", () => {
 
     const first = wok.getEdgesInBox(outer);
     expect(first.map((e) => e.index)).toEqual([0]);
-    const cacheLen = (wok as any)._edgeSectorCache.length;
-    expect(cacheLen).toBe(1);
+    const cache = (wok as any)._edgeSectorCache as Map<number, unknown>;
+    expect(cache.size).toBe(1);
 
     const second = wok.getEdgesInBox(inner);
     expect(second.map((e) => e.index)).toEqual([0]);
-    expect((wok as any)._edgeSectorCache.length).toBe(1);
+    expect(cache.size).toBe(1);
   });
 });

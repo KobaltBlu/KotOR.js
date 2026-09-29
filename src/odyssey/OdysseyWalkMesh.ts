@@ -3,7 +3,6 @@ import { WalkmeshEdge } from "@/odyssey/WalkmeshEdge";
 import { BinaryReader } from "@/utility/binary/BinaryReader";
 import { OdysseyWalkMeshType } from "@/enums/odyssey/OdysseyWalkMeshType";
 import { IOdysseyModelAABBNode } from "@/interface/odyssey/IOdysseyModelAABBNode";
-import { IWalkmeshEdgeAABBNode } from "@/interface/odyssey/IWalkmeshEdgeAABBNode";
 import { TwoDAManager } from "@/managers/TwoDAManager";
 import type { ModuleObject } from "@/module/ModuleObject";
 import type { ModuleRoom } from "@/module/ModuleRoom";
@@ -21,15 +20,27 @@ const _raycastLocalRay = new THREE.Ray();
 const _raycastLocalHit = new THREE.Vector3();
 const _raycastWorldHit = new THREE.Vector3();
 const _sectorBoxScratch = new THREE.Box3();
-const _sectorMinScratch = new THREE.Vector3();
-const _sectorMaxScratch = new THREE.Vector3();
 
 /** Conservative sector size (meters) for walkmesh box-query LRU caches. */
 const WOK_SECTOR_SIZE = 1.0;
 const WOK_SECTOR_CACHE_LIMIT = 32;
+/** Max edges packed into one BVH leaf (reduces tree depth vs 1-per-leaf). */
+const EDGE_BVH_LEAF_SIZE = 4;
+/** Module-scope iterative BVH traversal stack (avoids per-query alloc). */
+const _edgeBvhStack = new Int32Array(64);
+/** Scratch ints for sector snap (minIx,minIy,minIz,maxIx,maxIy,maxIz). */
+const _sectorCoords = new Int32Array(6);
 
 type WokSectorCacheEntry<T> = {
-  sectorKey: string;
+  /** Packed numeric sector key (see snapBoxToSector). */
+  sectorKey: number;
+  /** Exact sector cell ints for collision-safe Map lookup. */
+  minIx: number;
+  minIy: number;
+  minIz: number;
+  maxIx: number;
+  maxIy: number;
+  maxIz: number;
   sectorBox: THREE.Box3;
   items: T[];
 };
@@ -81,9 +92,17 @@ export class OdysseyWalkMesh {
   aabbNodes: IOdysseyModelAABBNode[] = [];
   walkableFacesEdgesAdjacencyMatrix: number[][] = [];
   edges: Map<number, WalkmeshEdge>;
-  /** Runtime AABB tree over walkmesh edges (not the WOK on-disk face AABB). */
-  edgeAABBNodes: IWalkmeshEdgeAABBNode[] = [];
-  edgeAABBRoot: IWalkmeshEdgeAABBNode | undefined;
+  /**
+   * Flat edge BVH (not the WOK on-disk face AABB).
+   * Bounds: 6 floats/node (minXYZ,maxXYZ). Child: left index, or -(itemStart+1) for leaf.
+   * Right sibling is always left+1. Count: leaf item count (0 for internals).
+   */
+  edgeBvhBounds: Float32Array = new Float32Array(0);
+  edgeBvhChild: Int32Array = new Int32Array(0);
+  edgeBvhCount: Uint8Array = new Uint8Array(0);
+  edgeBvhItems: WalkmeshEdge[] = [];
+  /** Root node index; -1 when empty. */
+  edgeBvhRoot = -1;
   perimeters: IPerimeter[] = [];
   edgeLines: any[] = [];
   edgeNormalHelpers: THREE.Group;
@@ -96,52 +115,82 @@ export class OdysseyWalkMesh {
   aabbRoot: IOdysseyModelAABBNode;
   uuid: string = crypto.randomUUID();
   /** Bounded LRU of sector-snapped face AABB queries. */
-  private _faceSectorCache: WokSectorCacheEntry<OdysseyFace3>[] = [];
+  private _faceSectorCache = new Map<number, WokSectorCacheEntry<OdysseyFace3>>();
   /** Bounded LRU of sector-snapped edge AABB queries. */
-  private _edgeSectorCache: WokSectorCacheEntry<WalkmeshEdge>[] = [];
+  private _edgeSectorCache = new Map<number, WokSectorCacheEntry<WalkmeshEdge>>();
+
+  /** True when a flat edge BVH has been built. */
+  get hasEdgeBvh(): boolean {
+    return this.edgeBvhRoot >= 0;
+  }
 
   /** Invalidate sector caches after geometry/transform changes. */
   invalidateSpatialCaches(): void {
-    this._faceSectorCache.length = 0;
-    this._edgeSectorCache.length = 0;
+    this._faceSectorCache.clear();
+    this._edgeSectorCache.clear();
   }
 
-  private static snapBoxToSector(box: THREE.Box3, out: THREE.Box3): string {
+  /**
+   * Snap `box` to 1m sector cells. Writes snapped AABB into `out` and integer
+   * cell coords into `_sectorCoords`. Returns a packed numeric key (hash of the
+   * six ints); callers must also match stored ints to rule out collisions.
+   */
+  private static snapBoxToSector(box: THREE.Box3, out: THREE.Box3): number {
     const s = WOK_SECTOR_SIZE;
-    _sectorMinScratch.set(
-      Math.floor(box.min.x / s) * s,
-      Math.floor(box.min.y / s) * s,
-      Math.floor(box.min.z / s) * s,
-    );
-    _sectorMaxScratch.set(
-      Math.ceil(box.max.x / s) * s,
-      Math.ceil(box.max.y / s) * s,
-      Math.ceil(box.max.z / s) * s,
-    );
+    let minIx = Math.floor(box.min.x / s);
+    let minIy = Math.floor(box.min.y / s);
+    let minIz = Math.floor(box.min.z / s);
+    let maxIx = Math.ceil(box.max.x / s);
+    let maxIy = Math.ceil(box.max.y / s);
+    let maxIz = Math.ceil(box.max.z / s);
     // Degenerate / zero-volume guard — always at least one sector cell.
-    if(_sectorMaxScratch.x <= _sectorMinScratch.x) _sectorMaxScratch.x = _sectorMinScratch.x + s;
-    if(_sectorMaxScratch.y <= _sectorMinScratch.y) _sectorMaxScratch.y = _sectorMinScratch.y + s;
-    if(_sectorMaxScratch.z <= _sectorMinScratch.z) _sectorMaxScratch.z = _sectorMinScratch.z + s;
-    out.set(_sectorMinScratch, _sectorMaxScratch);
-    return [
-      _sectorMinScratch.x, _sectorMinScratch.y, _sectorMinScratch.z,
-      _sectorMaxScratch.x, _sectorMaxScratch.y, _sectorMaxScratch.z,
-    ].join('|');
+    if(maxIx <= minIx) maxIx = minIx + 1;
+    if(maxIy <= minIy) maxIy = minIy + 1;
+    if(maxIz <= minIz) maxIz = minIz + 1;
+    _sectorCoords[0] = minIx;
+    _sectorCoords[1] = minIy;
+    _sectorCoords[2] = minIz;
+    _sectorCoords[3] = maxIx;
+    _sectorCoords[4] = maxIy;
+    _sectorCoords[5] = maxIz;
+    out.min.set(minIx * s, minIy * s, minIz * s);
+    out.max.set(maxIx * s, maxIy * s, maxIz * s);
+    // 53-bit-safe mix of the six ints (collisions resolved via stored coords).
+    let h = (minIx * 73856093) ^ (minIy * 19349663) ^ (minIz * 83492791);
+    h = (h ^ (maxIx * 50331653) ^ (maxIy * 12582917) ^ (maxIz * 8508397)) | 0;
+    return h;
   }
 
-  private touchFaceSector(entry: WokSectorCacheEntry<OdysseyFace3>): void {
-    const idx = this._faceSectorCache.indexOf(entry);
-    if(idx > 0){
-      this._faceSectorCache.splice(idx, 1);
-      this._faceSectorCache.unshift(entry);
-    }
+  private static sectorCoordsMatch(entry: WokSectorCacheEntry<unknown>): boolean {
+    return (
+      entry.minIx === _sectorCoords[0] &&
+      entry.minIy === _sectorCoords[1] &&
+      entry.minIz === _sectorCoords[2] &&
+      entry.maxIx === _sectorCoords[3] &&
+      entry.maxIy === _sectorCoords[4] &&
+      entry.maxIz === _sectorCoords[5]
+    );
   }
 
-  private touchEdgeSector(entry: WokSectorCacheEntry<WalkmeshEdge>): void {
-    const idx = this._edgeSectorCache.indexOf(entry);
-    if(idx > 0){
-      this._edgeSectorCache.splice(idx, 1);
-      this._edgeSectorCache.unshift(entry);
+  private touchSectorEntry<T>(
+    cache: Map<number, WokSectorCacheEntry<T>>,
+    key: number,
+    entry: WokSectorCacheEntry<T>
+  ): void {
+    // Map insertion order = LRU: delete+re-set moves to newest.
+    cache.delete(key);
+    cache.set(key, entry);
+  }
+
+  private putSectorEntry<T>(
+    cache: Map<number, WokSectorCacheEntry<T>>,
+    entry: WokSectorCacheEntry<T>
+  ): void {
+    cache.set(entry.sectorKey, entry);
+    while(cache.size > WOK_SECTOR_CACHE_LIMIT){
+      const oldest = cache.keys().next().value;
+      if(oldest === undefined) break;
+      cache.delete(oldest);
     }
   }
 
@@ -735,7 +784,7 @@ export class OdysseyWalkMesh {
       faceBox.expandByPoint(c);
       face.aabb = faceBox;
     }
-    return faceBox.intersectsBox(box) || faceBox.containsBox(box);
+    return faceBox.intersectsBox(box);
   }
 
   private collectAABBFaces(
@@ -743,7 +792,7 @@ export class OdysseyWalkMesh {
     node: IOdysseyModelAABBNode | undefined,
     out: OdysseyFace3[]
   ): OdysseyFace3[] {
-    if(!node || !this.containsPointOrBox(node.box, box)) return out;
+    if(!node || !node.box.intersectsBox(box)) return out;
     if(node.faceIdx > -1){
       const face = this.faces[node.faceIdx];
       if(face && this.faceOverlapsBox(face, box)){
@@ -758,24 +807,71 @@ export class OdysseyWalkMesh {
 
   private edgeOverlapsBox(edge: WalkmeshEdge | undefined, box: THREE.Box3): boolean {
     if(!edge?.line) return false;
-    return edge.box.intersectsBox(box) || edge.box.containsBox(box);
+    return edge.box.intersectsBox(box);
   }
 
-  private collectAABBEdges(
-    box: THREE.Box3,
-    node: IWalkmeshEdgeAABBNode | undefined,
+  private edgeOverlapsBounds(
+    edge: WalkmeshEdge,
+    minX: number, minY: number, minZ: number,
+    maxX: number, maxY: number, maxZ: number
+  ): boolean {
+    const b = edge.box;
+    return (
+      b.min.x <= maxX && b.max.x >= minX &&
+      b.min.y <= maxY && b.max.y >= minY &&
+      b.min.z <= maxZ && b.max.z >= minZ
+    );
+  }
+
+  /**
+   * Iterative flat-BVH query. Writes overlapping edges into `out` (does not clear).
+   */
+  private collectEdgesInBox(
+    minX: number, minY: number, minZ: number,
+    maxX: number, maxY: number, maxZ: number,
     out: WalkmeshEdge[]
-  ): WalkmeshEdge[] {
-    if(!node || !this.containsPointOrBox(node.box, box)) return out;
-    if(node.edge){
-      if(this.edgeOverlapsBox(node.edge, box)){
-        out.push(node.edge);
+  ): void {
+    const root = this.edgeBvhRoot;
+    if(root < 0) return;
+    const bounds = this.edgeBvhBounds;
+    const child = this.edgeBvhChild;
+    const count = this.edgeBvhCount;
+    const items = this.edgeBvhItems;
+    const stack = _edgeBvhStack;
+    let sp = 0;
+    stack[sp++] = root;
+
+    while(sp > 0){
+      const ni = stack[--sp];
+      const bo = ni * 6;
+      if(
+        bounds[bo] > maxX || bounds[bo + 3] < minX ||
+        bounds[bo + 1] > maxY || bounds[bo + 4] < minY ||
+        bounds[bo + 2] > maxZ || bounds[bo + 5] < minZ
+      ){
+        continue;
       }
-      return out;
+      const c = child[ni];
+      if(c < 0){
+        // Leaf: c = -(itemStart + 1)
+        const start = -c - 1;
+        const n = count[ni];
+        for(let i = 0; i < n; i++){
+          const edge = items[start + i];
+          if(edge && this.edgeOverlapsBounds(edge, minX, minY, minZ, maxX, maxY, maxZ)){
+            out.push(edge);
+          }
+        }
+      }else{
+        // Internal: right sibling is left+1
+        if(sp + 2 > stack.length){
+          // Extremely deep tree — skip rather than overflow.
+          continue;
+        }
+        stack[sp++] = c;
+        stack[sp++] = c + 1;
+      }
     }
-    this.collectAABBEdges(box, node.leftNode, out);
-    this.collectAABBEdges(box, node.rightNode, out);
-    return out;
   }
 
   getFacesInBox(box: THREE.Box3, out: OdysseyFace3[] = []): OdysseyFace3[] {
@@ -783,7 +879,10 @@ export class OdysseyWalkMesh {
     if(!this.faces?.length) return out;
 
     const sectorKey = OdysseyWalkMesh.snapBoxToSector(box, _sectorBoxScratch);
-    let entry = this._faceSectorCache.find((e) => e.sectorKey === sectorKey);
+    let entry = this._faceSectorCache.get(sectorKey);
+    if(entry && !OdysseyWalkMesh.sectorCoordsMatch(entry)){
+      entry = undefined;
+    }
     if(!entry){
       const sectorItems: OdysseyFace3[] = [];
       if(this.aabbRoot){
@@ -797,15 +896,18 @@ export class OdysseyWalkMesh {
       }
       entry = {
         sectorKey,
+        minIx: _sectorCoords[0],
+        minIy: _sectorCoords[1],
+        minIz: _sectorCoords[2],
+        maxIx: _sectorCoords[3],
+        maxIy: _sectorCoords[4],
+        maxIz: _sectorCoords[5],
         sectorBox: _sectorBoxScratch.clone(),
         items: sectorItems,
       };
-      this._faceSectorCache.unshift(entry);
-      if(this._faceSectorCache.length > WOK_SECTOR_CACHE_LIMIT){
-        this._faceSectorCache.length = WOK_SECTOR_CACHE_LIMIT;
-      }
+      this.putSectorEntry(this._faceSectorCache, entry);
     }else{
-      this.touchFaceSector(entry);
+      this.touchSectorEntry(this._faceSectorCache, sectorKey, entry);
     }
 
     // Exact filter — sector is a conservative superset.
@@ -823,11 +925,18 @@ export class OdysseyWalkMesh {
     if(!this.edges?.size) return out;
 
     const sectorKey = OdysseyWalkMesh.snapBoxToSector(box, _sectorBoxScratch);
-    let entry = this._edgeSectorCache.find((e) => e.sectorKey === sectorKey);
+    let entry = this._edgeSectorCache.get(sectorKey);
+    if(entry && !OdysseyWalkMesh.sectorCoordsMatch(entry)){
+      entry = undefined;
+    }
     if(!entry){
       const sectorItems: WalkmeshEdge[] = [];
-      if(this.edgeAABBRoot){
-        this.collectAABBEdges(_sectorBoxScratch, this.edgeAABBRoot, sectorItems);
+      if(this.edgeBvhRoot >= 0){
+        this.collectEdgesInBox(
+          _sectorBoxScratch.min.x, _sectorBoxScratch.min.y, _sectorBoxScratch.min.z,
+          _sectorBoxScratch.max.x, _sectorBoxScratch.max.y, _sectorBoxScratch.max.z,
+          sectorItems
+        );
       }else{
         for(const edge of this.edges.values()){
           if(this.edgeOverlapsBox(edge, _sectorBoxScratch)){
@@ -837,15 +946,18 @@ export class OdysseyWalkMesh {
       }
       entry = {
         sectorKey,
+        minIx: _sectorCoords[0],
+        minIy: _sectorCoords[1],
+        minIz: _sectorCoords[2],
+        maxIx: _sectorCoords[3],
+        maxIy: _sectorCoords[4],
+        maxIz: _sectorCoords[5],
         sectorBox: _sectorBoxScratch.clone(),
         items: sectorItems,
       };
-      this._edgeSectorCache.unshift(entry);
-      if(this._edgeSectorCache.length > WOK_SECTOR_CACHE_LIMIT){
-        this._edgeSectorCache.length = WOK_SECTOR_CACHE_LIMIT;
-      }
+      this.putSectorEntry(this._edgeSectorCache, entry);
     }else{
-      this.touchEdgeSector(entry);
+      this.touchSectorEntry(this._edgeSectorCache, sectorKey, entry);
     }
 
     for(let i = 0, len = entry.items.length; i < len; i++){
@@ -1395,8 +1507,10 @@ export class OdysseyWalkMesh {
   }
 
   /**
-   * Build AABB tree over walkmesh edges for getEdgesInBox.
-   * Top-down median split along longest axis (±0.01 expansion), same style as face AABB.
+   * Build flat AABB tree over walkmesh edges for getEdgesInBox.
+   * Top-down median (nth-element) split along longest axis, ±0.01 expansion,
+   * up to EDGE_BVH_LEAF_SIZE edges per leaf. Stored as contiguous typed arrays.
+   * Internal nodes store left-child index; right sibling is always left+1.
    */
   buildEdgeAABBTree(): void {
     const edgeList: WalkmeshEdge[] = [];
@@ -1411,88 +1525,132 @@ export class OdysseyWalkMesh {
     }
 
     if(!edgeList.length){
-      this.edgeAABBNodes = [];
-      this.edgeAABBRoot = undefined;
+      this.edgeBvhBounds = new Float32Array(0);
+      this.edgeBvhChild = new Int32Array(0);
+      this.edgeBvhCount = new Uint8Array(0);
+      this.edgeBvhItems = [];
+      this.edgeBvhRoot = -1;
       this.invalidateSpatialCaches();
       return;
     }
 
-    type EdgeAABBNodeData = {
-      box: THREE.Box3;
-      edge?: WalkmeshEdge;
-      left?: EdgeAABBNodeData;
-      right?: EdgeAABBNodeData;
+    // Worst case: ~2n nodes for n edges with leaf size 1; over-allocate then trim.
+    const maxNodes = edgeList.length * 2;
+    const bounds = new Float32Array(maxNodes * 6);
+    const child = new Int32Array(maxNodes);
+    const countArr = new Uint8Array(maxNodes);
+    const items: WalkmeshEdge[] = new Array(edgeList.length);
+    let nodeCount = 0;
+    let itemWrite = 0;
+    const expand = 0.01;
+
+    const writeBounds = (ni: number, edges: WalkmeshEdge[], lo: number, hi: number): void => {
+      let minX = Infinity, minY = Infinity, minZ = Infinity;
+      let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+      for(let i = lo; i < hi; i++){
+        const b = edges[i].box;
+        if(b.min.x < minX) minX = b.min.x;
+        if(b.min.y < minY) minY = b.min.y;
+        if(b.min.z < minZ) minZ = b.min.z;
+        if(b.max.x > maxX) maxX = b.max.x;
+        if(b.max.y > maxY) maxY = b.max.y;
+        if(b.max.z > maxZ) maxZ = b.max.z;
+      }
+      const bo = ni * 6;
+      bounds[bo]     = minX - expand;
+      bounds[bo + 1] = minY - expand;
+      bounds[bo + 2] = minZ - expand;
+      bounds[bo + 3] = maxX + expand;
+      bounds[bo + 4] = maxY + expand;
+      bounds[bo + 5] = maxZ + expand;
     };
 
-    const buildNode = (edges: WalkmeshEdge[]): EdgeAABBNodeData => {
-      const box = new THREE.Box3();
-      for(let i = 0; i < edges.length; i++){
-        box.union(edges[i].box);
-      }
-      box.min.subScalar(0.01);
-      box.max.addScalar(0.01);
+    const midAxis = (e: WalkmeshEdge, axis: number): number => {
+      const s = e.line.start;
+      const t = e.line.end;
+      if(axis === 0) return (s.x + t.x) * 0.5;
+      if(axis === 1) return (s.y + t.y) * 0.5;
+      return (s.z + t.z) * 0.5;
+    };
 
-      if(edges.length === 1){
-        return { box, edge: edges[0] };
+    /** Partition edges[lo..hi) so the k-th (0-based within range) is in place. */
+    const nthElement = (edges: WalkmeshEdge[], lo: number, hi: number, k: number, axis: number): void => {
+      let left = lo;
+      let right = hi - 1;
+      const target = lo + k;
+      while(left < right){
+        const pivot = midAxis(edges[(left + right) >> 1], axis);
+        let i = left;
+        let j = right;
+        while(i <= j){
+          while(midAxis(edges[i], axis) < pivot) i++;
+          while(midAxis(edges[j], axis) > pivot) j--;
+          if(i <= j){
+            const tmp = edges[i];
+            edges[i] = edges[j];
+            edges[j] = tmp;
+            i++;
+            j--;
+          }
+        }
+        if(target <= j){
+          right = j;
+        }else if(target >= i){
+          left = i;
+        }else{
+          return;
+        }
+      }
+    };
+
+    /**
+     * Fill node `ni`. Descendants of an internal node's children are allocated
+     * after the reserved sibling pair so right is always left+1.
+     */
+    const fillNode = (ni: number, edges: WalkmeshEdge[], lo: number, hi: number): void => {
+      writeBounds(ni, edges, lo, hi);
+      const n = hi - lo;
+      if(n <= EDGE_BVH_LEAF_SIZE){
+        const start = itemWrite;
+        for(let i = lo; i < hi; i++){
+          items[itemWrite++] = edges[i];
+        }
+        child[ni] = -(start + 1);
+        countArr[ni] = n;
+        return;
       }
 
-      const size = box.getSize(new THREE.Vector3());
-      const axis = size.x >= size.y && size.x >= size.z ? 0 : size.y >= size.z ? 1 : 2;
-      const getMid = (e: WalkmeshEdge) => {
-        const mx = (e.line.start.x + e.line.end.x) * 0.5;
-        const my = (e.line.start.y + e.line.end.y) * 0.5;
-        const mz = (e.line.start.z + e.line.end.z) * 0.5;
-        return axis === 0 ? mx : axis === 1 ? my : mz;
-      };
-      edges.sort((a, b) => getMid(a) - getMid(b));
-      const mid = Math.max(0, Math.floor(edges.length / 2) - 1);
-      let leftEdges = edges.slice(0, mid + 1);
-      let rightEdges = edges.slice(mid + 1);
+      const bo = ni * 6;
+      const sx = bounds[bo + 3] - bounds[bo];
+      const sy = bounds[bo + 4] - bounds[bo + 1];
+      const sz = bounds[bo + 5] - bounds[bo + 2];
+      const axis = sx >= sy && sx >= sz ? 0 : sy >= sz ? 1 : 2;
+      // Median split (same bias as prior: floor(n/2)-1 → left gets mid+1 elems).
+      let midRel = Math.max(0, Math.floor(n / 2) - 1);
+      nthElement(edges, lo, hi, midRel, axis);
+      let mid = lo + midRel + 1;
       // Degenerate split guard (all midpoints equal): force a balanced split.
-      if(!leftEdges.length || !rightEdges.length){
-        const half = Math.max(1, Math.floor(edges.length / 2));
-        leftEdges = edges.slice(0, half);
-        rightEdges = edges.slice(half);
+      if(mid <= lo || mid >= hi){
+        mid = lo + Math.max(1, Math.floor(n / 2));
       }
 
-      return {
-        box,
-        left: buildNode(leftEdges),
-        right: buildNode(rightEdges),
-      };
+      const leftIndex = nodeCount;
+      nodeCount += 2; // reserve left + right sibling pair
+      child[ni] = leftIndex;
+      countArr[ni] = 0;
+      fillNode(leftIndex, edges, lo, mid);
+      fillNode(leftIndex + 1, edges, mid, hi);
     };
 
-    const root = buildNode(edgeList);
+    this.edgeBvhRoot = 0;
+    nodeCount = 1; // root claimed
+    fillNode(0, edgeList, 0, edgeList.length);
 
-    const countNodes = (n: EdgeAABBNodeData): number =>
-      1 + (n.left ? countNodes(n.left) : 0) + (n.right ? countNodes(n.right) : 0);
-
-    const flatten = (n: EdgeAABBNodeData, offset: number): number => {
-      const leftCount = n.left ? countNodes(n.left) : 0;
-      const node: IWalkmeshEdgeAABBNode = {
-        box: n.box.clone(),
-        edge: n.edge,
-      };
-      this.edgeAABBNodes[offset] = node;
-
-      let nextOffset = offset + 1;
-      if(n.left){
-        const leftOffset = nextOffset;
-        nextOffset = flatten(n.left, nextOffset);
-        node.leftNode = this.edgeAABBNodes[leftOffset];
-      }
-      if(n.right){
-        const rightOffset = nextOffset;
-        nextOffset = flatten(n.right, nextOffset);
-        node.rightNode = this.edgeAABBNodes[rightOffset];
-      }
-
-      return nextOffset;
-    };
-
-    this.edgeAABBNodes = new Array(countNodes(root));
-    flatten(root, 0);
-    this.edgeAABBRoot = this.edgeAABBNodes[0];
+    // Trim arrays to used size (copy — subarray shares buffer and can be large).
+    this.edgeBvhBounds = bounds.slice(0, nodeCount * 6);
+    this.edgeBvhChild = child.slice(0, nodeCount);
+    this.edgeBvhCount = countArr.slice(0, nodeCount);
+    this.edgeBvhItems = items;
     this.invalidateSpatialCaches();
   }
 

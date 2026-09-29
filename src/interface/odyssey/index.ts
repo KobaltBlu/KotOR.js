@@ -11,4 +11,3 @@ export * from "@/interface/odyssey/IOdysseyModelFlare";
 export * from "@/interface/odyssey/IOdysseyModelHeader";
 export * from "@/interface/odyssey/IPerimeter";
 export * from "@/interface/odyssey/IOdysseyAnimationEvent";
-export * from "@/interface/odyssey/IWalkmeshEdgeAABBNode";
