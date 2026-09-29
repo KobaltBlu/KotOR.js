@@ -295,26 +295,12 @@ export class IngameControls {
         GameState.composer.render(0);
         GameState.scene_cursor_holder.visible = oldCursorState;
 
-        /**
-         * Build DOM Image Element
-         */
-        const screenshot = new Image();
-        screenshot.src = GameState.canvas.toDataURL('image/png');
-        screenshot.onload = async function() {
-          /**
-           * Draw the contents of the Image onto an OffscreenCanvas
-           */
-          const width = GameState.ResolutionManager.getViewportWidth();
-          const height = GameState.ResolutionManager.getViewportHeight();
-          const ssCanvas = new OffscreenCanvas(width, height);
-          const ctx = ssCanvas.getContext('2d');
-          ctx.drawImage(screenshot, 0, 0, width, height);
+        const width = GameState.ResolutionManager.getViewportWidth();
+        const height = GameState.ResolutionManager.getViewportHeight();
+        const ssCanvas = GameState.captureFramebufferToOffscreenCanvas(width, height);
+        const tga = TGAObject.FromCanvas(ssCanvas);
 
-          /**
-           * Build a TGAObject from the canvas element
-           */
-          const tga = TGAObject.FromCanvas(ssCanvas);
-
+        void (async () => {
           /**
            * Generate the export filename
            */
@@ -330,8 +316,8 @@ export class IngameControls {
           /**
            * Export the generated TGAObject as a TGA Image
            */
-          GameFileSystem.writeFile(ssFilename, await tga.toExportBuffer());
-        };
+          await GameFileSystem.writeFile(ssFilename, await tga.toExportBuffer());
+        })();
       }
 
       this.keyboard.onKeyUp(e);

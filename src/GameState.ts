@@ -31,6 +31,7 @@ import { isVSyncEnabledRaw, UpdateLoopArm, runUpdateTick } from "@/engine/update
 // import { OdysseyObject3D } from "@/three/odyssey";
 import { AudioEngine, AudioEmitter } from "@/audio";
 import { TGAObject } from "@/resource/TGAObject";
+import { flipYForceOpaque, pixelsToOffscreenCanvas } from "@/utility/framebufferCapture";
 
 import { IGameStateGroups } from "@/interface/engine/IGameStateGroups";
 import { ITextureLoaderQueuedRef } from "@/interface/loaders/ITextureLoaderQueuedRef";
@@ -113,6 +114,10 @@ export interface GameStateInitializeOptions {
 const namedGroup = (name: string = 'na'): THREE.Group => {
   const group = new THREE.Group();
   group.name = name;
+  // Groups are never translated; freeze so scene.updateMatrixWorld does not
+  // force-recompute every child when the group root recomposes each frame.
+  group.matrixAutoUpdate = false;
+  group.updateMatrix();
   return group;
 }
 
@@ -319,7 +324,13 @@ export class GameState implements EngineContext {
   /** SetGameSpeed / world timer snapshot scale (death sequence slows this). */
   static timeScale: number = 1;
 
+  /** DOM placeholder — events, focus, CSS scale/contrast, Forge reparent. */
   static canvas: HTMLCanvasElement;
+  /**
+   * GPU surface when `transferControlToOffscreen` succeeded; null keeps
+   * WebGL on the HTML canvas (fallback).
+   */
+  static offscreenCanvas: OffscreenCanvas | null = null;
   static context: WebGL2RenderingContext;
   static rendererUpscaleFactor: number;
   static renderer: THREE.WebGLRenderer;
@@ -1028,9 +1039,22 @@ export class GameState implements EngineContext {
     if(GameState.domElement){
       GameState.domElement.appendChild(GameState.canvas);
     }
-    
-    //transferToOffscreen causes issues with savegame screenshots
-    //GameState.canvas = GameState.canvas.transferControlToOffscreen;
+
+    // Transfer before any getContext. HTML canvas stays the DOM/input
+    // placeholder; OffscreenCanvas owns WebGL. Falls back to HTML GL when
+    // transfer is unavailable.
+    GameState.offscreenCanvas = null;
+    if(typeof GameState.canvas.transferControlToOffscreen === 'function'){
+      try{
+        GameState.offscreenCanvas = GameState.canvas.transferControlToOffscreen();
+        console.log('GameState: WebGL on OffscreenCanvas (transferControlToOffscreen)');
+      }catch(e){
+        GameState.offscreenCanvas = null;
+        console.warn('GameState: transferControlToOffscreen failed; using HTML canvas', e);
+      }
+    }else{
+      console.log('GameState: WebGL on HTMLCanvasElement (no transferControlToOffscreen)');
+    }
 
     GameState.canvas.style.setProperty('width', '0');
     GameState.canvas.style.setProperty('height', '0');
@@ -1045,13 +1069,15 @@ export class GameState implements EngineContext {
       stencil: true,
       preserveDrawingBuffer: false,
     };
-    GameState.context = GameState.canvas.getContext('webgl2', glAttrs) as WebGL2RenderingContext | null;
+    const glTarget: HTMLCanvasElement | OffscreenCanvas =
+      GameState.offscreenCanvas ?? GameState.canvas;
+    GameState.context = glTarget.getContext('webgl2', glAttrs) as WebGL2RenderingContext | null;
     if(!GameState.context){
       throw new Error('KotOR.js requires WebGL 2. This browser or GPU does not provide a WebGL2 context.');
     }
     GameState.renderer = new THREE.WebGLRenderer({
       antialias: false,
-      canvas: GameState.canvas,
+      canvas: glTarget,
       context: GameState.context,
       logarithmicDepthBuffer: true,
       alpha: true,
@@ -1065,7 +1091,10 @@ export class GameState implements EngineContext {
     GameState.renderer.shadowMap.autoUpdate = false;
     GameState.renderer.shadowMap.type = THREE.PCFShadowMap;
     GameState.renderer.setOpaqueSort(odysseyOpaqueRenderSort);
-    GameState.renderer.setSize( GameState.ResolutionManager.getViewportWidth(), GameState.ResolutionManager.getViewportHeight() );
+    GameState.setRendererSize(
+      GameState.ResolutionManager.getViewportWidth(),
+      GameState.ResolutionManager.getViewportHeight(),
+    );
     GameState.renderer.setClearColor(0x000000);
 
     let pars = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat };
@@ -1090,6 +1119,14 @@ export class GameState implements EngineContext {
     GameState.scene = new THREE.Scene();
     GameState.scene_gui = new THREE.Scene();
     GameState.scene_movie = new THREE.Scene();
+    // Scene roots never move; freezing avoids a force-flagged walk of every
+    // object when Object3D.updateMatrix unconditionally dirties matrixWorld.
+    GameState.scene.matrixAutoUpdate = false;
+    GameState.scene.updateMatrix();
+    GameState.scene_gui.matrixAutoUpdate = false;
+    GameState.scene_gui.updateMatrix();
+    GameState.scene_movie.matrixAutoUpdate = false;
+    GameState.scene_movie.updateMatrix();
     GameState.frustumMat4 = new THREE.Matrix4();
     GameState.camera = FollowerCamera.camera;
 
@@ -1547,7 +1584,7 @@ export class GameState implements EngineContext {
     GameState.camera.aspect = width / height;
     GameState.camera.updateProjectionMatrix();
 
-    GameState.renderer.setSize(width, height);  
+    GameState.setRendererSize(width, height);
     
     GameState.camera_dialog.aspect = GameState.camera.aspect;
     GameState.camera_dialog.updateProjectionMatrix();
@@ -2874,6 +2911,39 @@ export class GameState implements EngineContext {
     });
   }
 
+  /**
+   * Resize the WebGL drawing buffer. When rendering to an OffscreenCanvas,
+   * Three must not touch `.style` (Offscreen has none); CSS size stays on
+   * the HTML placeholder instead.
+   */
+  static setRendererSize(width: number, height: number): void {
+    const updateStyle = !GameState.offscreenCanvas;
+    GameState.renderer.setSize(width, height, updateStyle);
+    if(GameState.offscreenCanvas){
+      GameState.canvas.style.width = `${width}px`;
+      GameState.canvas.style.height = `${height}px`;
+    }
+  }
+
+  /**
+   * Read the current default framebuffer into an OffscreenCanvas.
+   * Caller must have already rendered (e.g. composer.render) — drawing
+   * buffer is not preserved across frames.
+   */
+  static captureFramebufferToOffscreenCanvas(width: number, height: number): OffscreenCanvas {
+    const gl = GameState.renderer.getContext() as WebGL2RenderingContext;
+    const prevRT = GameState.renderer.getRenderTarget();
+    GameState.renderer.setRenderTarget(null);
+
+    const pixels = new Uint8Array(width * height * 4);
+    gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+
+    GameState.renderer.setRenderTarget(prevRT);
+
+    const flipped = flipYForceOpaque(pixels, width, height);
+    return pixelsToOffscreenCanvas(flipped, width, height);
+  }
+
   /** Keep DepthTexture.image size in sync after WebGLRenderTarget.setSize. */
   static syncDepthTargetTextureSize(): void {
     const rt = GameState.depthTarget;
@@ -2935,30 +3005,14 @@ export class GameState implements EngineContext {
     const pixels = new Uint8Array(width * height * 4);
     GameState.renderer.readRenderTargetPixels(GameState.lastGameplayThumbRT, 0, 0, width, height, pixels);
 
-    // Flip Y + force alpha
-    const flipped = new Uint8ClampedArray(pixels.length);
-    const rowBytes = width * 4;
-    for (let y = 0; y < height; y++) {
-      const src = (width - 1 - y) * rowBytes;
-      const dst = y * rowBytes;
-      flipped.set(pixels.subarray(src, src + rowBytes), dst);
-    }
-    for (let i = 3; i < flipped.length; i += 4) flipped[i] = 255;
+    const flipped = flipYForceOpaque(pixels, width, height);
+    GameState.lastGameplayThumbCtx!.putImageData(
+      new ImageData(flipped as unknown as ImageDataArray, width, height),
+      0,
+      0,
+    );
 
-    // Store into the cached canvas
-    GameState.lastGameplayThumbCtx!.putImageData(new ImageData(flipped, width, height), 0, 0);
-
-    // Prefer the last clean gameplay frame (pre-menu)
-    if (GameState.lastGameplayThumb) {
-      return TGAObject.FromCanvas(GameState.lastGameplayThumb);
-    }
-
-    // Fallback: if no cached frame exists yet, grab current frame
-    const bmp = await createImageBitmap(GameState.canvas);
-    const ssCanvas = new OffscreenCanvas(width, height);
-    const ctx = ssCanvas.getContext('2d')!;
-    ctx.drawImage(bmp, 0, 0, width, height);
-    return TGAObject.FromCanvas(ssCanvas);
+    return TGAObject.FromCanvas(GameState.lastGameplayThumb);
   }
 
 }
