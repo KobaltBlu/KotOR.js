@@ -1,5 +1,5 @@
 import { GameState } from "@/GameState";
-import { GameMenu } from "@/gui";
+import { GameMenu, commitGuiTransform } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 
 /**
@@ -41,6 +41,7 @@ export class CharGenQuickOrCustom extends GameMenu {
           this.manager.CharGenMain.childMenu = this.manager.CharGenQuickPanel;
           this.manager.CharGenQuickPanel.tGuiPanel.widget.position.x = 142.5;
           this.manager.CharGenQuickPanel.tGuiPanel.widget.position.y = 0;
+          commitGuiTransform(this.manager.CharGenQuickPanel.tGuiPanel.widget);
           this.manager.CharGenQuickPanel.setState(0);
           this.manager.CharGenMain.open();
         }catch(e){
@@ -59,6 +60,7 @@ export class CharGenQuickOrCustom extends GameMenu {
         this.manager.CharGenMain.childMenu = this.manager.CharGenCustomPanel;
         this.manager.CharGenCustomPanel.tGuiPanel.widget.position.x = 142.5;
         this.manager.CharGenCustomPanel.tGuiPanel.widget.position.y = 0;
+        commitGuiTransform(this.manager.CharGenCustomPanel.tGuiPanel.widget);
         this.manager.CharGenCustomPanel.setState(0);
         this.manager.CharGenMain.open();
       });

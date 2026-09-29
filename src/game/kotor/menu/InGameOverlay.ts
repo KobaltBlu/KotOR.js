@@ -2,7 +2,7 @@ import { GameState } from "@/GameState";
 import { FollowerCamera } from "@/engine/FollowerCamera";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { FeedbackOption } from "@/enums/engine/FeedbackOption";
-import { GameMenu, LBL_MapView, GUIPanelCoordFlags, asExtentInt, truncDiv } from "@/gui";
+import { GameMenu, LBL_MapView, GUIPanelCoordFlags, asExtentInt, truncDiv, commitGuiTransform } from "@/gui";
 import type { GUILabel, GUIButton, GUICheckBox, GUIProgressBar } from "@/gui";
 import { TextureLoader } from "@/loaders";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
@@ -548,6 +548,7 @@ export class InGameOverlay extends GameMenu {
       this.namePlateArrow = new THREE.Mesh( arrowGeometry, arrowMaterial );
       this.namePlateArrow.scale.x = 32;
       this.namePlateArrow.scale.y = 32;
+      commitGuiTransform(this.namePlateArrow);
       this.namePlateArrow.renderOrder = 5;
       this.namePlateArrow.visible = false;
       this.tGuiPanel.widget.add(this.namePlateArrow);
@@ -1102,6 +1103,7 @@ export class InGameOverlay extends GameMenu {
     this.namePlateArrow.position.y = truncDiv(vpH, 2) - arrowTop - truncDiv(size, 2);
     this.namePlateArrow.rotation.z = rotation;
     this.namePlateArrow.scale.set(size, size, 1);
+    commitGuiTransform(this.namePlateArrow);
     this.namePlateArrow.renderOrder = 5;
   }
 

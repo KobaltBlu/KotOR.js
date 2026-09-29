@@ -7,6 +7,7 @@ import { MapMode } from "@/enums/engine/MapMode";
 import * as THREE from "three";
 import { TextureLoader } from "@/loaders";
 import { asExtentInt, truncDiv } from "@/gui/GUICoord";
+import { commitGuiTransform, flushGuiMatrices, freezeGuiObject } from "@/gui/guiMatrix";
 import { RenderPerfStats } from "@/utility/RenderPerfStats";
 import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { ApplicationProfile } from "@/utility/ApplicationProfile";
@@ -100,6 +101,8 @@ export class LBL_MapView {
     this.viewportFrustum = new THREE.Frustum();
 
     this.scene = new THREE.Scene();
+    freezeGuiObject(this.scene);
+    this.scene.matrixWorldAutoUpdate = false;
     const halfW = truncDiv(asExtentInt(this.width), 2);
     const halfH = truncDiv(asExtentInt(this.height), 2);
     this.camera = new THREE.OrthographicCamera( 
@@ -131,6 +134,7 @@ export class LBL_MapView {
 
     this.mapPlane = new THREE.Mesh(planeGeometry, mapPlaneMaterial);
     this.mapPlane.position.set(0, 0, 0);
+    commitGuiTransform(this.mapPlane);
     this.mapGroup.add(this.mapPlane);
 
     //FOG
@@ -148,6 +152,7 @@ export class LBL_MapView {
 
     this.fogPlane = new THREE.Mesh(planeGeometry, fogPlaneMaterial);
     this.fogPlane.position.set(0, 0, 0);
+    commitGuiTransform(this.fogPlane);
     this.scene.add(this.fogPlane);
 
     //ARROW
@@ -159,6 +164,7 @@ export class LBL_MapView {
     this.arrowPlane = new THREE.Mesh(planeGeometry, arrowPlaneMaterial);
     this.arrowPlane.position.set(0, 0, 0);
     this.arrowPlane.scale.set(this.arrowSize, this.arrowSize, 0);
+    commitGuiTransform(this.arrowPlane);
     this.scene.add(this.arrowPlane);
 
     const pmCircleMaterial = new THREE.MeshBasicMaterial({
@@ -169,6 +175,7 @@ export class LBL_MapView {
     for(let i = 0; i < 2; i++){
       const pmCircle = new THREE.Mesh(planeGeometry, pmCircleMaterial);
       pmCircle.scale.set(16, 16, 1);
+      commitGuiTransform(pmCircle);
       this.partyGroup.add(pmCircle);
     }
     this.scene.add(this.partyGroup);
@@ -290,6 +297,8 @@ export class LBL_MapView {
     );
     this.mapGroup.position.x = truncDiv(asExtentInt(textureSize.width / zoom), 2);
     this.mapGroup.position.y = truncDiv(asExtentInt(textureSize.height / zoom), 2);
+    commitGuiTransform(this.mapPlane);
+    commitGuiTransform(this.mapGroup);
 
     this.fogPlane.scale.set(
       Math.max(1, asExtentInt(scaleSize.width)),
@@ -299,6 +308,7 @@ export class LBL_MapView {
     this.fogPlane.position.z = 5;
     this.fogPlane.position.x = truncDiv(asExtentInt(scaleSize.width), 2);
     this.fogPlane.position.y = truncDiv(asExtentInt(scaleSize.height), 2);
+    commitGuiTransform(this.fogPlane);
   }
 
   setAreaMap(areaMap: AreaMap){
@@ -332,6 +342,7 @@ export class LBL_MapView {
         );
         const noteScale = Math.max(1, asExtentInt(this.mapNoteSize * this.mapNoteDefaultScale));
         noteMesh.scale.set(noteScale, noteScale, 1);
+        commitGuiTransform(noteMesh);
         if(!this.mapNoteSelected) this.mapNoteSelected = note;
       });
 
@@ -453,6 +464,7 @@ export class LBL_MapView {
         10
       );
       this.arrowPlane.rotation.set(0, 0, this.arrowAngle);
+      commitGuiTransform(this.arrowPlane);
       if(this.mode == MapMode.FULLMAP){
         (this.arrowPlane.material as THREE.MeshBasicMaterial).opacity = GameState.MenuManager.pulseOpacity;
       }
@@ -471,6 +483,7 @@ export class LBL_MapView {
           asExtentInt(scaleSize.height * pos.y),
           9
         );
+        commitGuiTransform(mesh);
       }else{
         mesh.visible = false;
       }
@@ -492,6 +505,7 @@ export class LBL_MapView {
           if(this.mapNoteSelected == note){
             material.color.copy(this.LBL_MAPVIEW.defaultHighlightColor);
             mesh.scale.set(this.mapNoteSize*this.mapNodeHoverScale, this.mapNoteSize*this.mapNodeHoverScale, 1);
+            commitGuiTransform(mesh);
           }else if(
             asExtentInt(this.mousePosition.x) >= this.bounds.min.x &&
             asExtentInt(this.mousePosition.x) <= this.bounds.max.x &&
@@ -500,9 +514,11 @@ export class LBL_MapView {
           ){
             material.color.copy(this.LBL_MAPVIEW.defaultHighlightColor);
             mesh.scale.set(this.mapNoteSize*this.mapNoteDefaultScale, this.mapNoteSize*this.mapNoteDefaultScale, 1);
+            commitGuiTransform(mesh);
           }else{
             material.color.copy(this.LBL_MAPVIEW.defaultColor);
             mesh.scale.set(this.mapNoteSize*this.mapNoteDefaultScale, this.mapNoteSize*this.mapNoteDefaultScale, 1);
+            commitGuiTransform(mesh);
           }
         }else{
           mesh.visible = false;
@@ -515,6 +531,7 @@ export class LBL_MapView {
     GameState.renderer.setClearColor(this.clearColor, 1);
     GameState.renderer.setRenderTarget(this.texture);
     GameState.renderer.clear();
+    flushGuiMatrices();
     GameState.renderer.render(this.scene, this.currentCamera);
     (this.texture as any).needsUpdate = true;
     GameState.renderer.setRenderTarget(null);

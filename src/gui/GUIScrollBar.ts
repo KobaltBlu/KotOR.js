@@ -11,6 +11,7 @@ import type { GUIListBox } from "@/gui/GUIListBox";
 import type { GameMenu } from "@/gui/GameMenu";
 import { GUIControlType } from "@/enums/gui/GUIControlType";
 import { asExtentInt, hitCheckMouseLocal, truncDiv } from "@/gui/GUICoord";
+import { commitGuiTransform } from "@/gui/guiMatrix";
 import {
   scrollBarDragValue,
   scrollBarThumbCenterY,
@@ -128,6 +129,7 @@ export class GUIScrollBar extends GUIControl{
 
           this.upArrow.position.y = truncDiv(asExtentInt(this.extent.height), 2) + truncDiv(asExtentInt(this.arrowSize), 2);
           this.upArrow.userData.worldPosition = new THREE.Vector3();
+          commitGuiTransform(this.upArrow);
 
           this.upArrowMaterial.depthTest = false;
           this.upArrowMaterial.depthWrite = false;
@@ -159,6 +161,7 @@ export class GUIScrollBar extends GUIControl{
           this.downArrow.position.y = -(truncDiv(asExtentInt(this.extent.height), 2) + truncDiv(asExtentInt(this.arrowSize), 2));
           this.downArrow.rotation.z = Math.PI;
           this.downArrow.userData.worldPosition = new THREE.Vector3();
+          commitGuiTransform(this.downArrow);
 
           this.downArrowMaterial.depthTest = false;
           this.downArrowMaterial.depthWrite = false;
@@ -197,6 +200,7 @@ export class GUIScrollBar extends GUIControl{
       this.thumb.scale.y = Math.max(1, asExtentInt(this.extent.height));
       this.thumb.position.z = 5;
       this.thumb.renderOrder = this.getRenderOrder(5);
+      commitGuiTransform(this.thumb);
 
       let parentPos = this.worldPosition;
       const halfW = truncDiv(asExtentInt(this.extent.width), 2);
@@ -304,10 +308,12 @@ export class GUIScrollBar extends GUIControl{
 
     if (this.upArrow) {
       this.upArrow.position.y = truncDiv(asExtentInt(this.extent.height), 2) + truncDiv(asExtentInt(this.arrowSize), 2);
+      commitGuiTransform(this.upArrow);
       this.upArrow.userData.updateBox?.();
     }
     if (this.downArrow) {
       this.downArrow.position.y = -(truncDiv(asExtentInt(this.extent.height), 2) + truncDiv(asExtentInt(this.arrowSize), 2));
+      commitGuiTransform(this.downArrow);
       this.downArrow.userData.updateBox?.();
     }
   }
@@ -384,6 +390,7 @@ export class GUIScrollBar extends GUIControl{
     if (isNaN(this.thumb.position.y)) {
       this.thumb.position.y = 0;
     }
+    commitGuiTransform(this.thumb);
 
     this.syncArrowVisibility();
   }
@@ -671,6 +678,7 @@ export class GUIScrollBar extends GUIControl{
 
     this.widget.position.x = asExtentInt(this.anchorOffset.x);
     this.widget.position.y = asExtentInt(this.anchorOffset.y);
+    commitGuiTransform(this.widget);
 
     let worldPosition = new THREE.Vector3();
     try{

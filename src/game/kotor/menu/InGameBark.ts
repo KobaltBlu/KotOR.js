@@ -1,5 +1,5 @@
 import { EngineMode } from "@/enums/engine/EngineMode";
-import { GameMenu } from "@/gui";
+import { GameMenu, commitGuiTransform } from "@/gui";
 import type { GUILabel } from "@/gui";
 import * as THREE from "three";
 import { GameState } from "@/GameState";
@@ -89,6 +89,7 @@ export class InGameBark extends GameMenu {
       this.tGuiPanel.widget.position.x = -GameState.ResolutionManager.getViewportWidth() / 2 + this.tGuiPanel.extent.width / 2 + 10;
       this.tGuiPanel.widget.position.y = GameState.ResolutionManager.getViewportHeight() / 2 - this.tGuiPanel.extent.height / 2 - 134;
     }
+    commitGuiTransform(this.tGuiPanel.widget);
     this.LBL_BARKTEXT.setText(entry.text);
 
     const baseVo = entry.getVoiceResRef();

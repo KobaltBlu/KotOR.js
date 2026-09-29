@@ -2,6 +2,7 @@
 export * from "@/gui/guiControlSchema";
 export * from "@/gui/GUIControlEvent";
 export * from "@/gui/GUICoord";
+export * from "@/gui/guiMatrix";
 export * from "@/gui/GUIControl";
 export * from "@/gui/GUIButton";
 export * from "@/gui/GUICheckBox";

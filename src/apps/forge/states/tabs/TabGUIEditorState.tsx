@@ -13,6 +13,7 @@ import * as KotOR from "@/apps/forge/KotOR";
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import { TabGUIEditor } from "@/apps/forge/components/tabs/tab-gui-editor/TabGUIEditor";
 import { UI3DRenderer, UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
+import { flushGuiMatrices, commitGuiTransform } from "@/gui/guiMatrix";
 import { GUIControlType } from "@/enums/gui/GUIControlType";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { snapshotGff, gffFromSnapshot } from "@/apps/forge/helpers/gffUndoSnapshot";
@@ -131,6 +132,7 @@ export class TabGUIEditorState extends TabState {
   animate(delta: number = 0) {
     this.menu?.update(delta);
     this.updateSelectionRect();
+    flushGuiMatrices();
     this.processEventListener("onAnimate", [delta]);
   }
 
@@ -355,6 +357,7 @@ export class TabGUIEditorState extends TabState {
     const rect = this.ensureSelectionRect();
     rect.position.set((box.min.x + box.max.x) * 0.5, (box.min.y + box.max.y) * 0.5, 50);
     rect.scale.set(width, height, 1);
+    commitGuiTransform(rect);
     rect.visible = true;
   }
 

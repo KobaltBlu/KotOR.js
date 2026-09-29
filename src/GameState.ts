@@ -47,6 +47,7 @@ import { odysseyOpaqueRenderSort } from "@/utility/odysseyOpaqueRenderSort";
 import { ConfigClient } from "@/utility/ConfigClient";
 import { FollowerCamera } from "@/engine/FollowerCamera";
 import { asExtentInt, orthoFrustumInt } from "@/gui/GUICoord";
+import { commitGuiTransform, flushGuiMatrices, freezeGuiObject } from "@/gui/guiMatrix";
 import { OdysseyShaderPass } from "@/shaders/pass/OdysseyShaderPass";
 import { ForceDistortionPass } from "@/shaders/pass/ForceDistortionPass";
 import { OverbrightenPass } from "@/shaders/pass/OverbrightenPass";
@@ -1123,10 +1124,12 @@ export class GameState implements EngineContext {
     // object when Object3D.updateMatrix unconditionally dirties matrixWorld.
     GameState.scene.matrixAutoUpdate = false;
     GameState.scene.updateMatrix();
-    GameState.scene_gui.matrixAutoUpdate = false;
-    GameState.scene_gui.updateMatrix();
-    GameState.scene_movie.matrixAutoUpdate = false;
-    GameState.scene_movie.updateMatrix();
+    // GUI scenes: freeze locals and disable the renderer's per-frame world walk.
+    // Children are frozen via childadded; world matrices flush explicitly.
+    freezeGuiObject(GameState.scene_gui);
+    GameState.scene_gui.matrixWorldAutoUpdate = false;
+    freezeGuiObject(GameState.scene_movie);
+    GameState.scene_movie.matrixWorldAutoUpdate = false;
     GameState.frustumMat4 = new THREE.Matrix4();
     GameState.camera = FollowerCamera.camera;
 
@@ -1250,6 +1253,7 @@ export class GameState implements EngineContext {
     ];
 
     GameState.scene_cursor_holder = new THREE.Group();
+    freezeGuiObject(GameState.scene_cursor_holder);
     GameState.scene_gui.add(GameState.scene_cursor_holder);
 
     //BEGIN: PostProcessing
@@ -1570,6 +1574,7 @@ export class GameState implements EngineContext {
     GameState.composer.setSize(width * GameState.rendererUpscaleFactor, height * GameState.rendererUpscaleFactor);
 
     GameState.FadeOverlayManager.plane.scale.set(width, height, 1);
+    commitGuiTransform(GameState.FadeOverlayManager.plane);
 
     GameState.VideoManager.resize(width, height);
 
@@ -2410,6 +2415,7 @@ export class GameState implements EngineContext {
 
   static UpdateMovie(delta: number = 0){
     GameState.VideoManager.update(delta);
+    flushGuiMatrices();
     GameState.renderer.render(GameState.scene_movie, GameState.camera_gui);
     GameState.stats.end();
     GameState.processEventListener('afterRender', [delta]);

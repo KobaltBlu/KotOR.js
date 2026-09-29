@@ -20,6 +20,12 @@ jest.mock("@/GameState", () => ({
 jest.mock("@/three/odyssey/OdysseyObject3D", () => ({
   OdysseyObject3D: class {},
 }));
+jest.mock("@/combat/combat-engagement", () => ({
+  getClientCombatMode: () => false,
+}));
+jest.mock("@/gui/guiMatrix", () => ({
+  commitGuiTransform: () => {},
+}));
 
 import {
   CursorManager,

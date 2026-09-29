@@ -1,4 +1,4 @@
-import { GUIProtoItem, GUIButton } from "@/gui";
+import { GUIProtoItem, GUIButton, commitGuiTransform } from "@/gui";
 import type { GUIControl, GameMenu } from "@/gui";
 import type { GUIListBox } from "@/gui/GUIListBox";
 import type { ProtoRowExtent } from "@/gui/GUIProtoItem";
@@ -95,6 +95,7 @@ export class GUISpellItem extends GUIProtoItem {
         _buttonIconWidget.position.x = skillFlowCenteredXFromExtentLeft(slotLeft, iconW, protoWidth);
         _buttonIconWidget.position.y = 0;
         _buttonIconWidget.position.z = this.zIndex + 1;
+        commitGuiTransform(_buttonIconWidget);
         this.widget.add(_buttonIconWidget);
 
         enqueueProtoTexture(this as any, backTex, this.chrome.material, (texture) => {
@@ -115,6 +116,7 @@ export class GUISpellItem extends GUIProtoItem {
         iconSprite.scale.x = 32;
         iconSprite.scale.y = 32;
         iconSprite.position.z = 5;
+        commitGuiTransform(iconSprite);
         iconSprite.renderOrder = this.getRenderOrder(5);
 
         const iconName = (isUnknown && !hasSpell)
@@ -125,6 +127,7 @@ export class GUISpellItem extends GUIProtoItem {
             if(!texture) return;
             if(texture.image?.width) iconSprite.scale.x = texture.image.width;
             if(texture.image?.height) iconSprite.scale.y = texture.image.height;
+            commitGuiTransform(iconSprite);
             if(locked && !isUnknown){
               iconMaterial.opacity = ABILITY_LOCKED_ICON_ALPHA;
             }
@@ -156,6 +159,7 @@ export class GUISpellItem extends GUIProtoItem {
           _arrowIconWidget.position.x = skillFlowCenteredXFromExtentLeft(arrowLeft, arrowHeight, protoWidth);
           _arrowIconWidget.position.y = 0;
           _arrowIconWidget.position.z = this.zIndex + 1;
+          commitGuiTransform(_arrowIconWidget);
           this.widget.add(_arrowIconWidget);
 
           enqueueProtoTexture(this as any, arrowTex, this.chrome.material, (texture) => {

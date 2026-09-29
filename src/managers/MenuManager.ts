@@ -3,6 +3,7 @@ import * as TSL from "@/game/tsl/TSL";
 import { GameState } from "@/GameState";
 import { EngineMode, GameEngineType } from "@/enums/engine";
 import type { GUIControl, GameMenu } from "@/gui";
+import { auditGuiMatrices, flushGuiMatrices } from "@/gui/guiMatrix";
 import { ActionMenuManager } from "@/engine/menu/ActionMenuManager";
 import { EngineState } from "@/enums/engine/EngineState";
 import { PerformanceMonitor } from "@/utility/PerformanceMonitor";
@@ -303,6 +304,11 @@ export class MenuManager {
     if(GameState.scene_gui.children.indexOf(GameState.scene_cursor_holder) != GameState.scene_gui.children.length){
       GameState.scene_cursor_holder.remove(GameState.scene_gui);
       GameState.scene_gui.add(GameState.scene_cursor_holder);
+    }
+
+    flushGuiMatrices();
+    if(GameState.debugMode && GameState.scene_gui){
+      auditGuiMatrices(GameState.scene_gui);
     }
 
   }

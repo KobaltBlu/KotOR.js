@@ -12,6 +12,7 @@ import { GameState } from "@/GameState";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { BitWise } from "@/utility/BitWise";
 import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import { commitGuiTransform } from "@/gui/guiMatrix";
 import { OdysseyObject3D } from "@/three/odyssey/OdysseyObject3D";
 import { getClientCombatMode } from "@/combat/combat-engagement";
 import { isCreature } from "@/module/guards/isCreature";
@@ -318,6 +319,7 @@ export class CursorManager {
 		CursorManager.cursor = new THREE.Sprite( CursorManager.cursorMaterials.get('default') );
 		CursorManager.cursor.scale.set( 32, 32, 1.0 );
 		CursorManager.cursor.position.z = 1;
+		commitGuiTransform(CursorManager.cursor);
 
 		TextureLoader.enQueue('gui_mp_defaultU', CursorManager.cursorMaterials.get('default'));
 		TextureLoader.enQueue('gui_mp_defaultD', CursorManager.cursorMaterials.get('defaultD'));
@@ -353,6 +355,7 @@ export class CursorManager {
 		CursorManager.reticle2.renderOrder = 1;
 		CursorManager.arrow.scale.set( 32.0, 32.0, 1.0 );
 		CursorManager.arrow.name = 'arrow';
+		commitGuiTransform(CursorManager.arrow);
 		TextureLoader.enQueue('friendlyreticle', CursorManager.cursorMaterials.get('reticleF'));
 		TextureLoader.enQueue('friendlyreticle2', CursorManager.cursorMaterials.get('reticleF2'));
 		TextureLoader.enQueue('hostilereticle', CursorManager.cursorMaterials.get('reticleH'));
@@ -554,8 +557,14 @@ export class CursorManager {
 		}
 
 		CursorManager.setCursor('default');
-		GameState.scene_cursor_holder.position.x = Mouse.positionViewport.x - (GameState.ResolutionManager.getViewportWidth()/2) + (32/2);
-		GameState.scene_cursor_holder.position.y = (Mouse.positionViewport.y*-1) + (GameState.ResolutionManager.getViewportHeight()/2) - (32/2);
+		const cursorHolder = GameState.scene_cursor_holder;
+		const nextX = Mouse.positionViewport.x - (GameState.ResolutionManager.getViewportWidth()/2) + (32/2);
+		const nextY = (Mouse.positionViewport.y*-1) + (GameState.ResolutionManager.getViewportHeight()/2) - (32/2);
+		if(cursorHolder.position.x !== nextX || cursorHolder.position.y !== nextY){
+			cursorHolder.position.x = nextX;
+			cursorHolder.position.y = nextY;
+			commitGuiTransform(cursorHolder);
+		}
 
 		CursorManager.MenuManager.hoveredGUIElement = undefined;
 

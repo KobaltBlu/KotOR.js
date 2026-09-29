@@ -6,6 +6,7 @@ import { AudioEngine } from "@/audio/AudioEngine";
 import { YUVFrame, computeBinkFrameLayout, binkChromaVisibleWidth } from "@/video/binkvideo";
 import { MainMovies } from "@/game/kotor/menu/MainMovies";
 import { SoundMode } from "@/enums/audio/SoundMode";
+import { commitGuiTransform } from "@/gui/guiMatrix";
 
 /**
  * VideoManager class.
@@ -111,6 +112,7 @@ export class VideoManager {
     VideoManager.videoPlane = new THREE.Mesh(VideoManager.geometry, VideoManager.material);
     VideoManager.videoPlane.position.z = 498;
     VideoManager.videoPlane.visible = false;
+    commitGuiTransform(VideoManager.videoPlane);
 
     VideoManager.backPlaneMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
     VideoManager.backPlane = new THREE.Mesh(
@@ -119,6 +121,7 @@ export class VideoManager {
     );
     VideoManager.backPlane.position.z = 497;
     VideoManager.backPlane.visible = false;
+    commitGuiTransform(VideoManager.backPlane);
   }
 
   /**
@@ -201,6 +204,8 @@ export class VideoManager {
     }
     VideoManager.backPlane.scale.x = viewportWidth;
     VideoManager.backPlane.scale.y = viewportHeight;
+    commitGuiTransform(VideoManager.videoPlane);
+    commitGuiTransform(VideoManager.backPlane);
   }
 
   /**

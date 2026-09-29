@@ -4,6 +4,7 @@ import type { ProtoRowExtent } from "@/gui/GUIProtoItem";
 import { GameState } from "@/GameState";
 import { GameEngineType } from "@/enums/engine";
 import { asExtentInt, truncDiv } from "@/gui/GUICoord";
+import { commitGuiTransform } from "@/gui/guiMatrix";
 import { GFFStruct } from "@/resource/GFFStruct";
 import * as THREE from "three";
 import { GUIControlAlignment } from "@/enums/gui/GUIControlAlignment";
@@ -87,6 +88,7 @@ export class GUIInventoryItem extends GUIProtoItem {
       _buttonWidget.position.x = truncDiv(protoWidth - asExtentInt(this.buttonLabel.extent.width), 2);
       _buttonWidget.position.y = 0;
       _buttonWidget.position.z = this.zIndex + 1;
+      commitGuiTransform(_buttonWidget);
       this.widget.add(_buttonWidget);
 
       this.buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
@@ -108,6 +110,7 @@ export class GUIInventoryItem extends GUIProtoItem {
       _buttonIconWidget.position.x = -truncDiv(protoWidth - asExtentInt(this.buttonIcon.extent.width), 2);
       _buttonIconWidget.position.y = 0;
       _buttonIconWidget.position.z = this.zIndex + 1;
+      commitGuiTransform(_buttonIconWidget);
       this.widget.add(_buttonIconWidget);
 
       this.iconMaterial = new THREE.SpriteMaterial({ map: null, color: 0xffffff });
@@ -119,6 +122,7 @@ export class GUIInventoryItem extends GUIProtoItem {
       this.iconSprite.scale.x = asExtentInt(iconWidth * 0.9);
       this.iconSprite.scale.y = asExtentInt(iconHeight * 0.9);
       this.iconSprite.position.z = 2;
+      commitGuiTransform(this.iconSprite);
 
       this.hexMaterial = new THREE.SpriteMaterial({ map: null, color: 0xffffff });
       this.hexMaterial.transparent = true;
@@ -126,6 +130,7 @@ export class GUIInventoryItem extends GUIProtoItem {
       this.hexSprite.scale.x = iconWidth;
       this.hexSprite.scale.y = iconWidth;
       this.hexSprite.position.z = 1;
+      commitGuiTransform(this.hexSprite);
 
       this.spriteGroup.add(this.hexSprite);
       this.spriteGroup.add(this.iconSprite);

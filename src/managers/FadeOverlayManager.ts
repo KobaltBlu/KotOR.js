@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { GameState } from "@/GameState";
 import { FadeOverlayState } from "@/enums/engine/FadeOverlayState";
+import { commitGuiTransform } from "@/gui/guiMatrix";
 
 /**
  * FadeOverlayManager — / StartGlobalFade.
@@ -105,6 +106,7 @@ export class FadeOverlayManager {
   static Initialize(){
     FadeOverlayManager.plane.position.z = 499;
     FadeOverlayManager.plane.renderOrder = FadeOverlayManager.FADE_RENDER_ORDER;
+    commitGuiTransform(FadeOverlayManager.plane);
     FadeOverlayManager.material.visible = false;
     GameState.scene_gui.add( FadeOverlayManager.plane );
   }

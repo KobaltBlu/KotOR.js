@@ -40,6 +40,12 @@ jest.mock('@/resource/GFFObject', () => ({ GFFObject: class {} }));
 jest.mock('@/three/odyssey/OdysseyTexture', () => ({ OdysseyTexture: class {} }));
 jest.mock('@/resource/ResourceTypes', () => ({ ResourceTypes: {} }));
 jest.mock('@/utility/BitWise', () => ({ BitWise: { MaskMatch: () => false } }));
+jest.mock('@/gui/guiMatrix', () => ({
+  freezeGuiTree: () => {},
+  commitGuiTransform: () => {},
+  flushGuiMatrices: () => {},
+  freezeGuiObject: () => {},
+}));
 jest.mock('three', () => ({}));
 
 import { GameMenu } from '@/gui/GameMenu';

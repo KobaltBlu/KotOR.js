@@ -29,6 +29,7 @@ import {
   orthoFrustumInt,
   truncDiv,
 } from "@/gui/GUICoord";
+import { commitGuiTransform, flushGuiMatrices, freezeGuiObject } from "@/gui/guiMatrix";
 import { ScrollBarHit } from "@/gui/GUIScrollBar";
 import {
   listBoxLeftoverStretch,
@@ -146,6 +147,8 @@ export class GUIListBox extends GUIControl {
     this.listItems = [];
     this.offset = new THREE.Vector2(0, 0);
     this.scene = new THREE.Scene();
+    freezeGuiObject(this.scene);
+    this.scene.matrixWorldAutoUpdate = false;
     this.bitFlags = createDefaultListBoxBitFlags();
 
     // Load — LEFTSCROLLBAR default 1
@@ -190,6 +193,7 @@ export class GUIListBox extends GUIControl {
     this.itemGroup = new THREE.Group();
     this.itemGroup.name = 'ListItems';
     this.itemGroup.position.set(0, 0, 0);
+    commitGuiTransform(this.itemGroup);
 
     // RTT covers content viewport only (border-inner / fill), matching AurGUISetupViewport
     this.syncRttSizeFromViewport();
@@ -256,6 +260,7 @@ export class GUIListBox extends GUIControl {
     // Content is centered with -truncDiv(shrink, 2) offset (see getBorderExtent); match that.
     this.targetMesh.position.x = this.isScrollBarLeft() ? truncDiv(shrink, 2) : -truncDiv(shrink, 2);
     this.targetMesh.position.y = 0;
+    commitGuiTransform(this.targetMesh);
   }
 
   /**
@@ -467,6 +472,7 @@ export class GUIListBox extends GUIControl {
     this.menu.context.renderer.setClearColor(this.clearColor, 0);
     this.menu.context.renderer.setRenderTarget(this.texture);
     this.menu.context.renderer.clear(true, true, true);
+    flushGuiMatrices();
     this.menu.context.renderer.render(this.scene, this.camera);
     (this.texture as any).needsUpdate = true;
     this.menu.context.renderer.setRenderTarget(null);
@@ -857,6 +863,7 @@ export class GUIListBox extends GUIControl {
     }
     ctrl.widget.position.x = 0;
     ctrl.widget.position.y = asExtentInt(visibleTop - topI - truncDiv(heightI, 2));
+    commitGuiTransform(ctrl.widget);
     ctrl.updateBounds();
   }
 

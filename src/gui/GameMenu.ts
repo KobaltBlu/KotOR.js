@@ -10,6 +10,7 @@ import { ShaderManager } from "@/managers/ShaderManager"
 import { ResourceLoader, TextureLoader } from "@/loaders";
 import { GUIControl } from "@/gui/GUIControl";
 import { GUIControlFactory } from "@/gui/GUIControlFactory";
+import { commitGuiTransform, freezeGuiTree } from "@/gui/guiMatrix";
 import { BitWise } from "@/utility/BitWise";
 import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import { KeyMapper } from "@/controls";
@@ -240,6 +241,7 @@ export class GameMenu {
     this._button_b = undefined;
     this._button_x = undefined;
     this._button_y = undefined;
+    freezeGuiTree(this.menuGroup);
   }
 
   async load(): Promise<GameMenu> {
@@ -287,6 +289,7 @@ export class GameMenu {
     
     panelControl.position.x = 0;
     panelControl.position.y = 0;
+    commitGuiTransform(panelControl);
 
     //This auto assigns references for the controls to the menu object.
     //It is no longer required to use this.getControlByName('CONTROL_NAME') when initializing a menu
@@ -449,6 +452,7 @@ export class GameMenu {
       this.backgroundVoidSprite = new THREE.Mesh( geometry, this.backgroundVoidBlitMaterial );
       this.backgroundVoidSprite.position.z = -6;
       this.backgroundVoidSprite.renderOrder = this.renderOrderBias - 6;
+      commitGuiTransform(this.backgroundVoidSprite);
     }
 
     /**
@@ -478,6 +482,7 @@ export class GameMenu {
       this.backgroundSprite = new THREE.Mesh( geometry, this.backgroundMaterial );
       this.backgroundSprite.position.z = -5;
       this.backgroundSprite.renderOrder = this.renderOrderBias - 5;
+      commitGuiTransform(this.backgroundSprite);
       this.backgroundMaterial.uniforms.map.value = texture;
     }
   }
@@ -668,11 +673,16 @@ export class GameMenu {
         );
       }
 
-      this.backgroundVoidSprite.scale.set(
-        viewportWidth,
-        viewportHeight,
-        1
-      );
+      const voidScaleX = this.backgroundVoidSprite.scale.x;
+      const voidScaleY = this.backgroundVoidSprite.scale.y;
+      if(voidScaleX !== viewportWidth || voidScaleY !== viewportHeight){
+        this.backgroundVoidSprite.scale.set(
+          viewportWidth,
+          viewportHeight,
+          1
+        );
+        commitGuiTransform(this.backgroundVoidSprite);
+      }
     }
 
     if(this.background && this.backgroundMaterial){
@@ -761,6 +771,7 @@ export class GameMenu {
 
     this.scale = scale;
     this.tGuiPanel.widget.scale.set(this.scale, this.scale, 1.0);
+    commitGuiTransform(this.tGuiPanel.widget);
 
     for(let i = 0; i < this.tGuiPanel.children.length; i++){
       if(this.tGuiPanel.children[i])

@@ -7,6 +7,7 @@ import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import { ResolutionManager } from "@/managers/ResolutionManager";
 import type { GUIListBox } from "@/gui/GUIListBox";
 import { asExtentInt, truncDiv } from "@/gui/GUICoord";
+import { commitGuiTransform } from "@/gui/guiMatrix";
 import { resolveProtoItemHeight } from "@/gui/listrow/protoItemHeight";
 import { applyProtoTemplateSkin } from "@/gui/listrow/applyProtoTemplateSkin";
 
@@ -107,6 +108,7 @@ export class GUIProtoItem extends GUIControl{
     GUIProtoItem.debugExtentLine = new THREE.Line(GUIProtoItem.debugGeom, GUIProtoItem.debugMaterial);
     GUIProtoItem.debugExtentLine.scale.set(this.extent.width, this.extent.height, 1);
     GUIProtoItem.debugExtentLine.position.z = 50; // above all UI layers
+    commitGuiTransform(GUIProtoItem.debugExtentLine);
     GUIProtoItem.debugExtentLine.visible = true;//GameState.debug[EngineDebugType.GUI_PROTO_EXTENTS];
     // this.widget.add(GUIProtoItem.debugExtentLine);
     return widget;

@@ -15,6 +15,7 @@ import {
   createGuiChrome,
 } from "@/gui/guiChrome";
 import { asExtentInt, truncDiv } from "@/gui/GUICoord";
+import { commitGuiTransform } from "@/gui/guiMatrix";
 
 /**
  * GUIProgressBar class.
@@ -64,6 +65,7 @@ export class GUIProgressBar extends GUIControl {
     this.progressChrome.mesh.name = 'GUIProgressChrome';
     this.progressChrome.mesh.position.z = this.zOffset + 1;
     this.progressChrome.mesh.renderOrder = this.getRenderOrder(this.id + 1);
+    commitGuiTransform(this.progressChrome.mesh);
     this.widget.add(this.progressChrome.mesh);
 
     if(this.control){
@@ -150,6 +152,7 @@ export class GUIProgressBar extends GUIControl {
     this.progressChrome.geometry = buildFillChromeGeometry(fillExtent.width, fillExtent.height);
     this.progressChrome.mesh.geometry = this.progressChrome.geometry;
     this.progressChrome.mesh.position.z = this.zOffset + 1;
+    commitGuiTransform(this.progressChrome.mesh);
     this.progressChrome.material.uniforms.enableFrame.value = 0;
     this.progressChrome.material.uniforms.enableFill.value = 1;
   }
@@ -186,6 +189,7 @@ export class GUIProgressBar extends GUIControl {
         mesh.position.y = -offsetY;
       mesh.position.x = 0;
     }
+    commitGuiTransform(mesh);
 
     // Match prior UV crop on the growing axis
     const uv = this.progressChrome.geometry.getAttribute('uv') as THREE.BufferAttribute | undefined;

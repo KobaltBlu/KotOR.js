@@ -10,6 +10,7 @@ import { GUIControl } from "@/gui/GUIControl";
 import type { GameMenu } from "@/gui/GameMenu";
 import { GUIControlType } from "@/enums/gui/GUIControlType";
 import { asExtentInt, hitCheckMouseLocal, truncDiv } from "@/gui/GUICoord";
+import { commitGuiTransform } from "@/gui/guiMatrix";
 
 /** HitCheckSlider result codes. */
 export enum SliderHit {
@@ -76,6 +77,7 @@ export class GUISlider extends GUIControl{
       this.thumb.mesh.scale.x = asExtentInt(this.thumb.width);
       this.thumb.mesh.scale.y = asExtentInt(this.thumb.height);
       this.thumb.mesh.renderOrder = this.getRenderOrder(5);
+      commitGuiTransform(this.thumb.mesh);
 
       let parentPos = this.widget.getWorldPosition(new THREE.Vector3());
       const halfW = truncDiv(asExtentInt(this.extent.width), 2);
@@ -103,6 +105,7 @@ export class GUISlider extends GUIControl{
             this.thumb.width = asExtentInt(texture.header.width);
             this.thumb.height = asExtentInt(texture.header.height);
             this.thumb.mesh.scale.set(this.thumb.width, this.thumb.height, 1);
+            commitGuiTransform(this.thumb.mesh);
             this.setValue(this.value);
           }
         });
@@ -212,6 +215,7 @@ export class GUISlider extends GUIControl{
       const scrollX = maxWidth > 0 ? lx / maxWidth : 0;
       this.thumb.mesh.position.x = asExtentInt(maxWidth * (scrollX - 0.5));
       this.thumb.mesh.position.y = 0;
+      commitGuiTransform(this.thumb.mesh);
       valueChanged = (scrollX != this.value);
       value = scrollX;
     }else{
@@ -224,6 +228,7 @@ export class GUISlider extends GUIControl{
       const scrollY = maxHeight > 0 ? 1 - (ly / maxHeight) : 0;
       this.thumb.mesh.position.x = 0;
       this.thumb.mesh.position.y = asExtentInt(maxHeight * (scrollY - 0.5));
+      commitGuiTransform(this.thumb.mesh);
       valueChanged = (scrollY != this.value);
       value = scrollY;
     }
@@ -257,6 +262,9 @@ export class GUISlider extends GUIControl{
 
       this.thumb.mesh.position.y = thumbY;
       this.thumb.mesh.position.x = 0;
+    }
+    if(this.thumb?.mesh){
+      commitGuiTransform(this.thumb.mesh);
     }
 
     if(this.iniProperty){

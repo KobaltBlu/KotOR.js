@@ -1,4 +1,4 @@
-import { GameMenu, GUIButton, GUIControl, GUIProtoItem } from "@/gui";
+import { GameMenu, GUIButton, GUIControl, GUIProtoItem, commitGuiTransform } from "@/gui";
 import type { GUIListBox } from "@/gui/GUIListBox";
 import type { ProtoRowExtent } from "@/gui/GUIProtoItem";
 import { asExtentInt, truncDiv } from "@/gui/GUICoord";
@@ -98,6 +98,7 @@ export class GUICreatureSkill extends GUIProtoItem {
       _buttonWidget.position.x = truncDiv(protoWidth - asExtentInt(this.buttonLabel.extent.width), 2);
       _buttonWidget.position.y = 0;
       _buttonWidget.position.z = this.zIndex + 1;
+      commitGuiTransform(_buttonWidget);
       this.widget.add(_buttonWidget);
 
       this.buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
@@ -117,6 +118,7 @@ export class GUICreatureSkill extends GUIProtoItem {
       _buttonIconWidget.position.x = -truncDiv(protoWidth - asExtentInt(this.buttonIcon.extent.width), 2);
       _buttonIconWidget.position.y = 0;
       _buttonIconWidget.position.z = this.zIndex + 1;
+      commitGuiTransform(_buttonIconWidget);
       this.widget.add(_buttonIconWidget);
 
       this.iconMaterial = new THREE.SpriteMaterial({ map: null, color: 0xffffff });
@@ -125,6 +127,7 @@ export class GUICreatureSkill extends GUIProtoItem {
       iconSprite.scale.x = asExtentInt(iconWidth * 0.5);
       iconSprite.scale.y = asExtentInt(iconHeight * 0.5);
       iconSprite.position.z = 2;
+      commitGuiTransform(iconSprite);
 
       this.hexMaterial = new THREE.SpriteMaterial({ map: null, color: 0xffffff });
       this.hexMaterial.transparent = true;
@@ -132,6 +135,7 @@ export class GUICreatureSkill extends GUIProtoItem {
       hexSprite.scale.x = iconWidth;
       hexSprite.scale.y = iconWidth;
       hexSprite.position.z = 1;
+      commitGuiTransform(hexSprite);
 
       applyProtoItemHexMap(this.hexMaterial, 1);
 

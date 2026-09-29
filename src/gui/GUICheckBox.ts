@@ -12,6 +12,7 @@ import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import { GUIControlType } from "@/enums/gui/GUIControlType";
 import { GUIControlAlignment } from "@/enums/gui/GUIControlAlignment";
 import { asExtentInt, truncDiv } from "@/gui/GUICoord";
+import { commitGuiTransform } from "@/gui/guiMatrix";
 import {
   bindChromeTexture,
   buildFillChromeGeometry,
@@ -230,6 +231,7 @@ export class GUICheckBox extends GUIControl{
       if(this.chrome.mesh){
         this.chrome.mesh.geometry = this.chrome.geometry;
         this.chrome.mesh.position.z = this.zOffset;
+        commitGuiTransform(this.chrome.mesh);
       }
       return;
     }
@@ -275,6 +277,7 @@ export class GUICheckBox extends GUIControl{
           -truncDiv(asExtentInt(innerSize.height), 2) + asExtentInt(this.textSize.y);
         break;
     }
+    commitGuiTransform(this.text.mesh);
   }
 
   hideHighlight(){

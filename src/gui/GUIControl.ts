@@ -21,6 +21,7 @@ import { GUIControlEventFactory } from "@/gui/GUIControlEventFactory";
 import type { GameMenu } from "@/gui/GameMenu";
 import { BitWise } from "@/utility/BitWise";
 import { GUIListBox } from "@/gui/GUIListBox";
+import { commitGuiTransform, freezeGuiObject } from "@/gui/guiMatrix";
 import { GUIFont, computeBoundingBoxXY } from "@/gui/GUIFont";
 import { GUIControlEvent } from "@/gui/GUIControlEvent";
 import { GUIControlType } from "@/enums/gui/GUIControlType";
@@ -267,6 +268,7 @@ export class GUIControl {
 
     this.widget = new THREE.Group();
     this.widget.userData.control = this;
+    freezeGuiObject(this.widget);
 
     this.worldPosition = new THREE.Vector3();
     this.box = new THREE.Box2(
@@ -453,6 +455,7 @@ export class GUIControl {
       this.chrome.mesh.name = 'GUIChrome';
       this.chrome.mesh.position.z = this.zOffset;
       this.chrome.mesh.renderOrder = this.getRenderOrder(this.id);
+      commitGuiTransform(this.chrome.mesh);
       this.attachEventListenters( this.chrome.mesh );
     }
 
@@ -460,6 +463,7 @@ export class GUIControl {
       this.text.mesh.name = 'GUIText';
       this.text.mesh.position.z = this.zOffset;
       this.text.mesh.renderOrder = this.getRenderOrder(5);
+      commitGuiTransform(this.text.mesh);
       this.attachEventListenters( this.text.mesh );
     }
     
@@ -1092,6 +1096,7 @@ export class GUIControl {
 
           let _cWidget = control.createControl();
           _cWidget.position.z = control.zIndex;
+          commitGuiTransform(_cWidget);
           
           //this.widget.add(_cWidget);
           this.menu.tGuiPanel.widget.add(_cWidget);
@@ -1629,6 +1634,7 @@ export class GUIControl {
 
       this.widget.position.x = asExtentInt(this.offset.x + posX);
       this.widget.position.y = asExtentInt(-posY + this.offset.y);
+      commitGuiTransform(this.widget);
 
       this.updateBounds();
       return;
@@ -1713,6 +1719,7 @@ export class GUIControl {
 
     this.widget.position.x = asExtentInt(this.anchorOffset.x + this.offset.x);
     this.widget.position.y = asExtentInt(this.anchorOffset.y + this.offset.y);
+    commitGuiTransform(this.widget);
 
     this.updateBounds();
   }
@@ -2051,6 +2058,7 @@ export class GUIControl {
       this.chrome.mesh.geometry = this.chrome.geometry;
       this.chrome.mesh.position.z = this.zOffset;
       this.chrome.mesh.position.x = this.flipLeft() ? shrink : 0;
+      commitGuiTransform(this.chrome.mesh);
     }
   }
 
@@ -2174,6 +2182,7 @@ export class GUIControl {
         this.text.mesh.position.y = -truncDiv(innerH, 2) + textH;
       break;
     }
+    commitGuiTransform(this.text.mesh);
 
     // ProtoItem rows (e.g. Messages dialog list) wrap text like Labels; without this, extent.height stays at
     // the single-line template height and list rows overlap after buildGeometry.

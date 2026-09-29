@@ -1,5 +1,5 @@
 import { GameState } from "@/GameState";
-import { GameMenu } from "@/gui";
+import { GameMenu, commitGuiTransform } from "@/gui";
 import type { GUIListBox, GUILabel } from "@/gui";
 import * as THREE from "three";
 import { CutsceneMode } from "@/enums/dialog/CutsceneMode";
@@ -106,6 +106,8 @@ export class InGameDialog extends GameMenu {
     if (GameState.CutsceneManager.cutsceneMode == CutsceneMode.ANIMATED) {
       this.bottomBar.position.y = -(GameState.ResolutionManager.getViewportHeight() / 2) + LETTERBOX_HEIGHT / 2;
       this.topBar.position.y = GameState.ResolutionManager.getViewportHeight() / 2 - LETTERBOX_HEIGHT / 2;
+      commitGuiTransform(this.bottomBar);
+      commitGuiTransform(this.topBar);
       this.letterBoxed = true;
       this.LBL_MESSAGE.show();
       return;
@@ -114,10 +116,14 @@ export class InGameDialog extends GameMenu {
     if (this.bottomBar.position.y < -(GameState.ResolutionManager.getViewportHeight() / 2) + LETTERBOX_HEIGHT / 2) {
       this.bottomBar.position.y += 5;
       this.topBar.position.y -= 5;
+      commitGuiTransform(this.bottomBar);
+      commitGuiTransform(this.topBar);
       this.LBL_MESSAGE.hide();
     } else {
       this.bottomBar.position.y = -(GameState.ResolutionManager.getViewportHeight() / 2) + LETTERBOX_HEIGHT / 2;
       this.topBar.position.y = GameState.ResolutionManager.getViewportHeight() / 2 - LETTERBOX_HEIGHT / 2;
+      commitGuiTransform(this.bottomBar);
+      commitGuiTransform(this.topBar);
       this.letterBoxed = true;
       this.LBL_MESSAGE.show();
     }
@@ -134,6 +140,7 @@ export class InGameDialog extends GameMenu {
       } else {
         this.LBL_MESSAGE.widget.position.y = GameState.ResolutionManager.getViewportHeight() / 2 - 50;
       }
+      commitGuiTransform(this.LBL_MESSAGE.widget);
       this.LBL_MESSAGE.box = new THREE.Box2(new THREE.Vector2(this.LBL_MESSAGE.widget.position.x - width / 2, this.LBL_MESSAGE.widget.position.y - height / 2), new THREE.Vector2(this.LBL_MESSAGE.widget.position.x + width / 2, this.LBL_MESSAGE.widget.position.y + height / 2));
     }
   }
@@ -163,6 +170,8 @@ export class InGameDialog extends GameMenu {
       this.bottomBar.position.y = -(GameState.ResolutionManager.getViewportHeight() / 2) + LETTERBOX_HEIGHT / 2;
       this.topBar.position.y = GameState.ResolutionManager.getViewportHeight() / 2 - LETTERBOX_HEIGHT / 2;
     }
+    commitGuiTransform(this.topBar);
+    commitGuiTransform(this.bottomBar);
   }
 
   triggerControllerAPress() {
