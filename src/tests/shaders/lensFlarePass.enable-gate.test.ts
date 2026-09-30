@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  *
- * GameState.Render gates lensFlarePass.enabled when no flare lights.
+ * OdysseyRenderPipeline.renderFrame gates lensFlarePass.enabled when no flare lights.
  */
 import { describe, expect, test } from "@jest/globals";
 

@@ -5,7 +5,7 @@ import * as THREE from 'three';
  * Minimal stand-in for ModuleArea.applyRoomRenderFrustumCull:
  * VIS-active rooms outside the view frustum are render-hidden; player room stays.
  * Cull AABB: non-empty room.box, else walkmesh.box, else keep drawn (never local model.box).
- * Camera matrixWorld must already be current (GameState.updateViewportFrustum).
+ * Camera matrixWorld must already be current (GameLoop.updateViewportFrustum).
  */
 function applyRoomRenderFrustumCull(opts: {
   rooms: Array<{

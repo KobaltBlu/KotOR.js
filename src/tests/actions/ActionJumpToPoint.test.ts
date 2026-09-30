@@ -38,6 +38,16 @@ jest.mock('@/GameState', () => ({
   },
 }));
 
+jest.mock('@/engine/OdysseyRenderPipeline', () => ({
+  OdysseyRenderPipeline: {},
+}));
+
+jest.mock('@/engine/ModuleLoadCoordinator', () => ({
+  ModuleLoadCoordinator: {
+    LoadModuleWithJumpSpawn: jest.fn(),
+  },
+}));
+
 jest.mock('@/engine/jump-to-location', () => ({
   classifyJumpDestination: (...args: unknown[]) => classifyJumpDestination(...args),
   isAreaLike: (...args: unknown[]) => isAreaLike(...args),

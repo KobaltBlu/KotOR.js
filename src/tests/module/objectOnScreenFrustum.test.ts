@@ -6,7 +6,7 @@
 import { describe, expect, test } from '@jest/globals';
 import * as THREE from 'three';
 
-/** Mirrors GameState.updateViewportFrustum frustum rebuild. */
+/** Mirrors GameLoop.updateViewportFrustum frustum rebuild. */
 function rebuildViewportFrustum(camera: THREE.Camera, out: THREE.Frustum, mat = new THREE.Matrix4()): THREE.Frustum {
   camera.updateMatrixWorld(true);
   const persp = camera as THREE.PerspectiveCamera;
