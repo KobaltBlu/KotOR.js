@@ -23,7 +23,7 @@ jest.mock('@/GameState', () => ({
     MenuManager: {},
     VideoEffectManager: { SetVideoEffect: jest.fn() },
     FadeOverlayManager: {},
-    CutsceneManager: {},
+    CutsceneManager: {},
     Mode: 0,
     Flags: { EnableOverride: false },
     GameKey: 0,
@@ -46,6 +46,20 @@ jest.mock('@/engine/EngineModeController', () => ({
   },
 }));
 
+jest.mock('@/engine/GameDebuggerBridge', () => ({
+  GameDebuggerBridge: {
+    sendInspectorSnapshot: jest.fn(),
+    attach: jest.fn(),
+  },
+}));
+
+jest.mock('@/engine/OdysseyRenderPipeline', () => ({
+  OdysseyRenderPipeline: {
+    renderFrame: jest.fn(),
+  },
+}));
+
+
 
 jest.mock('@/audio/AudioLoader', () => ({ AudioLoader: {} }));
 jest.mock('@/audio/AudioEngine', () => ({
@@ -63,6 +77,10 @@ jest.mock('@/audio/AudioEmitter', () => ({
   },
 }));
 jest.mock('@/utility/ConfigClient', () => ({ ConfigClient: { get: jest.fn() } }));
+jest.mock('@/controls/Mouse', () => ({ Mouse: {} }));
+jest.mock('@/managers/ResolutionManager', () => ({
+  ResolutionManager: { addResolution: () => {} },
+}));
 jest.mock('@/utility/aurora-camera-orientation', () => ({
   auroraCameraLookOrientation: jest.fn(),
 }));

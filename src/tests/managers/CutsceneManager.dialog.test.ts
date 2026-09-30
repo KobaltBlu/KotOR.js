@@ -29,6 +29,20 @@ jest.mock('@/engine/EngineModeController', () => ({
   },
 }));
 
+jest.mock('@/engine/GameDebuggerBridge', () => ({
+  GameDebuggerBridge: {
+    sendInspectorSnapshot: jest.fn(),
+    attach: jest.fn(),
+  },
+}));
+
+jest.mock('@/engine/OdysseyRenderPipeline', () => ({
+  OdysseyRenderPipeline: {
+    renderFrame: jest.fn(),
+  },
+}));
+
+
 
 jest.mock('@/audio/AudioLoader', () => ({ AudioLoader: {} }));
 jest.mock('@/audio/AudioEngine', () => ({

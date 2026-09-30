@@ -24,6 +24,7 @@ import {
 import { OdysseyUniformBuffers } from "@/three/odyssey/OdysseyUniformBuffers";
 import { OdysseyLightingBinder } from "@/three/odyssey/OdysseyLightingBinder";
 import { GameLoop } from '@/engine/GameLoop';
+import { OdysseyRenderPipeline } from '@/engine/OdysseyRenderPipeline';
 
 /**
  * Module load/unload, area-transition fades, and post-load GPU warm-up.
@@ -348,7 +349,7 @@ export class ModuleLoadCoordinator {
       camera,
       textureTargets: collectModuleGpuTextureTargets(area, GameState.PartyManager.party),
       skipRoots,
-      colorTargetTemplate: GameState.composer?.readBuffer ?? null,
+      colorTargetTemplate: OdysseyRenderPipeline.composer?.readBuffer ?? null,
       beforeRender: () => {
         OdysseyUniformBuffers.beginFrame(renderer);
         OdysseyLightingBinder.packShadowUbo(GameState.odysseyShadowManager);

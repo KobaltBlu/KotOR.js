@@ -34,6 +34,7 @@ import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { EngineModeController } from '@/engine/EngineModeController';
 import { GameplayCapture } from '@/engine/GameplayCapture';
+import { OdysseyRenderPipeline } from '@/engine/OdysseyRenderPipeline';
 
 function ensurePlayerControl(creature: { playerControl?: ReturnType<typeof createPlayerCamRelativeState> }){
   if(!creature.playerControl){
@@ -306,7 +307,7 @@ export class IngameControls {
         const oldCursorState = GameState.scene_cursor_holder.visible;
         GameState.scene_cursor_holder.visible = false;
         GameState.renderer.clear();
-        GameState.composer.render(0);
+        OdysseyRenderPipeline.composer.render(0);
         GameState.scene_cursor_holder.visible = oldCursorState;
 
         const width = GameState.ResolutionManager.getViewportWidth();

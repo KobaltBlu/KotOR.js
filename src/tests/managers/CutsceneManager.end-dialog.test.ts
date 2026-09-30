@@ -33,7 +33,7 @@ jest.mock('@/GameState', () => ({
       HOLD_WORLD_FADE_IN_LENGTH: 1.0,
       HOLD_WORLD_FADE_IN_WAIT: 0,
     },
-    CutsceneManager: {},
+    CutsceneManager: {},
     Mode: 0,
     holdWorldFadeInForDialog: false,
     Flags: { EnableOverride: false },
@@ -60,6 +60,20 @@ jest.mock('@/engine/EngineModeController', () => ({
   },
 }));
 
+jest.mock('@/engine/GameDebuggerBridge', () => ({
+  GameDebuggerBridge: {
+    sendInspectorSnapshot: jest.fn(),
+    attach: jest.fn(),
+  },
+}));
+
+jest.mock('@/engine/OdysseyRenderPipeline', () => ({
+  OdysseyRenderPipeline: {
+    renderFrame: jest.fn(),
+  },
+}));
+
+
 
 jest.mock('@/audio/AudioLoader', () => ({ AudioLoader: {} }));
 jest.mock('@/audio/AudioEngine', () => ({
@@ -84,6 +98,10 @@ jest.mock('@/audio/AudioEmitter', () => ({
   },
 }));
 jest.mock('@/utility/ConfigClient', () => ({ ConfigClient: { get: jest.fn() } }));
+jest.mock('@/controls/Mouse', () => ({ Mouse: {} }));
+jest.mock('@/managers/ResolutionManager', () => ({
+  ResolutionManager: { addResolution: () => {} },
+}));
 jest.mock('@/managers/cutscene/dialog-camera', () => ({
   computeDialogCameraShot: jest.fn(),
   dlgAngleToShotType: jest.fn(),

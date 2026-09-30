@@ -17,21 +17,6 @@ import type { ActionMenuManager } from "@/engine/menu/ActionMenuManager";
 import type { ActionFactory } from "@/actions/ActionFactory";
 import type { IngameControls } from "@/controls/IngameControls";
 import type { AudioEmitter } from "@/audio";
-import type { OdysseyShaderPass } from "@/shaders/pass/OdysseyShaderPass";
-import type { ForceDistortionPass } from "@/shaders/pass/ForceDistortionPass";
-import type { OverbrightenPass } from "@/shaders/pass/OverbrightenPass";
-import type { ConvolutionBloomPass } from "@/shaders/pass/ConvolutionBloomPass";
-import type { DreamDistortionPass } from "@/shaders/pass/DreamDistortionPass";
-import type { FuryPass } from "@/shaders/pass/FuryPass";
-import type { MiniGameAspectMaskPass } from "@/shaders/pass/MiniGameAspectMaskPass";
-import type { OdysseyLensFlarePass } from "@/shaders/pass/OdysseyLensFlarePass";
-import type { AccumulationBlurPass } from "@/shaders/pass/AccumulationBlurPass";
-import type { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
-import type { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
-import type { SSAARenderPass } from "three/examples/jsm/postprocessing/SSAARenderPass";
-import type { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
-import type { BloomPass } from "three/examples/jsm/postprocessing/BloomPass";
-import type { BokehPass } from "three/examples/jsm/postprocessing/BokehPass";
 import type Stats from 'three/examples/jsm/libs/stats.module';
 
 import { INIConfig } from "@/engine/INIConfig";
@@ -96,9 +81,6 @@ export class GameState implements EngineContext {
   static GameOverManager: typeof GameOverManager;
   static CutsceneManager: typeof CutsceneManager;
   static LegalScreenManager: typeof LegalScreenManager;
-  static lastGameplayThumb?: OffscreenCanvas;
-  static lastGameplayThumbCtx?: OffscreenCanvasRenderingContext2D;
-  static lastGameplayThumbRT?: THREE.WebGLRenderTarget;
 
   static FollowerCamera: typeof FollowerCamera = FollowerCamera;
 
@@ -368,54 +350,6 @@ export class GameState implements EngineContext {
 
   static scene_cursor_holder: THREE.Group;
   static controls: IngameControls;
-
-  //Render pass properties
-  static composer: EffectComposer;
-  static renderPass: RenderPass;
-  static renderPassAA: SSAARenderPass;
-  static odysseyShaderPass: OdysseyShaderPass;
-  static forceDistortionPass: ForceDistortionPass;
-  /**
-   * FrameBufferModifications bit 0x01 + visualizePass1.
-   * Shipping visualizePass1 = 0 → stays disabled unless debug override.
-   */
-  static overbrightenPass: OverbrightenPass;
-  /**
-   * FrameBufferModifications bit 0x02 + visualizePass2 (= 1).
-   * Always-on for roomed scenes when Frame Buffer INI is enabled.
-   */
-  static convolutionBloomPass: ConvolutionBloomPass;
-  /** K2 clairvoyance / dream distortion. */
-  static dreamDistortionPass: DreamDistortionPass;
-  /** K2 force fury overlay (fx_Fury01/02/03). */
-  static furyPass: FuryPass;
-  /**
-   * — after primary FB mods, before GUI.
-   */
-  static lensFlarePass: OdysseyLensFlarePass;
-  /**
-   * Widescreen soft 4:3 cockpit mask for swoop / turret.
-   * After FB FX + MG HUD, before GUI (menus stay full-bleed).
-   */
-  static miniGameAspectMaskPass: MiniGameAspectMaskPass;
-  static copyPass: ShaderPass;
-  static renderPassGUI: RenderPass;
-  /** MG camera HUD after AccumulationBlurPass — screen-stable gauges stay sharp. */
-  static renderPassMGHud: RenderPass;
-  static bloomPass: BloomPass;
-  static bokehPass: BokehPass;
-  /**
-   * AurEnable/DisableSpeedBlur + AurSetSpeedBlurRatio
-   * (SWMG_SetSpeedBlurEffect / Force Speed ApplyMotionBlur).
-   */
-  static speedBlurPass: AccumulationBlurPass;
-  static speedBlurEnabled: boolean = false;
-  static speedBlurRatio: number = 0.75;
-  /**
-   * motionBlurVFXCount — Force Speed progFX 0x641/0x642 refcount
-   * (ApplyMotionBlur / RemoveMotionBlur).
-   */
-  static motionBlurVFXCount: number = 0;
   
   static module: Module;
   static loadingModule: boolean = false;

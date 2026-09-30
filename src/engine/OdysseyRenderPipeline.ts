@@ -32,8 +32,26 @@ import { OdysseyUniformBuffers } from "@/three/odyssey/OdysseyUniformBuffers";
  * EffectComposer setup, per-frame world/GUI compose, and depth prepass.
  */
 export class OdysseyRenderPipeline {
+  static composer: EffectComposer;
+  static renderPass: RenderPass;
+  static renderPassAA: SSAARenderPass;
+  static odysseyShaderPass: OdysseyShaderPass;
+  static forceDistortionPass: ForceDistortionPass;
+  static overbrightenPass: OverbrightenPass;
+  static convolutionBloomPass: ConvolutionBloomPass;
+  static dreamDistortionPass: DreamDistortionPass;
+  static furyPass: FuryPass;
+  static lensFlarePass: OdysseyLensFlarePass;
+  static miniGameAspectMaskPass: MiniGameAspectMaskPass;
+  static copyPass: ShaderPass;
+  static renderPassGUI: RenderPass;
+  static renderPassMGHud: RenderPass;
+  static bloomPass: BloomPass;
+  static bokehPass: BokehPass;
+  static speedBlurPass: AccumulationBlurPass;
+
   static initComposer(): void {
-    GameState.composer = new EffectComposer(GameState.renderer);
+    OdysseyRenderPipeline.composer = new EffectComposer(GameState.renderer);
     // Enable stencil on composer targets for -equivalent shadow disks.
     // DepthTexture lets soft particles sample after an opaque split (WebGL2 blit path).
     const composerRT = {
@@ -45,50 +63,50 @@ export class OdysseyRenderPipeline {
     };
     const w = GameState.ResolutionManager.getViewportWidth();
     const h = GameState.ResolutionManager.getViewportHeight();
-    GameState.composer.renderTarget1 = new THREE.WebGLRenderTarget(w, h, composerRT);
-    GameState.composer.renderTarget1.depthTexture = new THREE.DepthTexture(w, h);
-    GameState.composer.renderTarget1.depthTexture.type = THREE.UnsignedShortType;
-    GameState.composer.renderTarget2 = GameState.composer.renderTarget1.clone();
-    if(!GameState.composer.renderTarget2.depthTexture){
-      GameState.composer.renderTarget2.depthTexture = new THREE.DepthTexture(w, h);
-      GameState.composer.renderTarget2.depthTexture.type = THREE.UnsignedShortType;
+    OdysseyRenderPipeline.composer.renderTarget1 = new THREE.WebGLRenderTarget(w, h, composerRT);
+    OdysseyRenderPipeline.composer.renderTarget1.depthTexture = new THREE.DepthTexture(w, h);
+    OdysseyRenderPipeline.composer.renderTarget1.depthTexture.type = THREE.UnsignedShortType;
+    OdysseyRenderPipeline.composer.renderTarget2 = OdysseyRenderPipeline.composer.renderTarget1.clone();
+    if(!OdysseyRenderPipeline.composer.renderTarget2.depthTexture){
+      OdysseyRenderPipeline.composer.renderTarget2.depthTexture = new THREE.DepthTexture(w, h);
+      OdysseyRenderPipeline.composer.renderTarget2.depthTexture.type = THREE.UnsignedShortType;
     }
-    GameState.composer.writeBuffer = GameState.composer.renderTarget1;
-    GameState.composer.readBuffer = GameState.composer.renderTarget2;
-    GameState.renderPass = new RenderPass(GameState.scene, GameState.currentCamera);
-    GameState.renderPassAA = new SSAARenderPass (GameState.scene, GameState.currentCamera);
-    GameState.odysseyShaderPass = new OdysseyShaderPass();
-    GameState.odysseyShaderPass.enabled = false;
-    GameState.forceDistortionPass = new ForceDistortionPass();
-    GameState.forceDistortionPass.enabled = false;
-    GameState.overbrightenPass = new OverbrightenPass();
-    GameState.overbrightenPass.enabled = false;
-    GameState.convolutionBloomPass = new ConvolutionBloomPass();
-    GameState.convolutionBloomPass.enabled = false;
-    GameState.dreamDistortionPass = new DreamDistortionPass();
-    GameState.dreamDistortionPass.enabled = false;
-    GameState.furyPass = new FuryPass();
-    GameState.furyPass.enabled = false;
-    GameState.lensFlarePass = new OdysseyLensFlarePass();
-    GameState.lensFlarePass.setLightsProvider(() => GameState.lightManager.getLensFlareLights());
-    GameState.lensFlarePass.setCameraProvider(() => GameState.currentCamera);
-    GameState.lensFlarePass.setAreaProvider(() => GameState.module?.area);
-    GameState.lensFlarePass.setDeltaProvider(() => GameState.deltaTime || 0);
-    GameState.miniGameAspectMaskPass = new MiniGameAspectMaskPass();
-    GameState.miniGameAspectMaskPass.enabled = false;
-    GameState.copyPass = new ShaderPass(CopyShader);
-    GameState.renderPassGUI = new RenderPass(GameState.scene_gui, GameState.camera_gui);
-    GameState.renderPassMGHud = new RenderPass(GameState.scene, GameState.currentCamera);
+    OdysseyRenderPipeline.composer.writeBuffer = OdysseyRenderPipeline.composer.renderTarget1;
+    OdysseyRenderPipeline.composer.readBuffer = OdysseyRenderPipeline.composer.renderTarget2;
+    OdysseyRenderPipeline.renderPass = new RenderPass(GameState.scene, GameState.currentCamera);
+    OdysseyRenderPipeline.renderPassAA = new SSAARenderPass (GameState.scene, GameState.currentCamera);
+    OdysseyRenderPipeline.odysseyShaderPass = new OdysseyShaderPass();
+    OdysseyRenderPipeline.odysseyShaderPass.enabled = false;
+    OdysseyRenderPipeline.forceDistortionPass = new ForceDistortionPass();
+    OdysseyRenderPipeline.forceDistortionPass.enabled = false;
+    OdysseyRenderPipeline.overbrightenPass = new OverbrightenPass();
+    OdysseyRenderPipeline.overbrightenPass.enabled = false;
+    OdysseyRenderPipeline.convolutionBloomPass = new ConvolutionBloomPass();
+    OdysseyRenderPipeline.convolutionBloomPass.enabled = false;
+    OdysseyRenderPipeline.dreamDistortionPass = new DreamDistortionPass();
+    OdysseyRenderPipeline.dreamDistortionPass.enabled = false;
+    OdysseyRenderPipeline.furyPass = new FuryPass();
+    OdysseyRenderPipeline.furyPass.enabled = false;
+    OdysseyRenderPipeline.lensFlarePass = new OdysseyLensFlarePass();
+    OdysseyRenderPipeline.lensFlarePass.setLightsProvider(() => GameState.lightManager.getLensFlareLights());
+    OdysseyRenderPipeline.lensFlarePass.setCameraProvider(() => GameState.currentCamera);
+    OdysseyRenderPipeline.lensFlarePass.setAreaProvider(() => GameState.module?.area);
+    OdysseyRenderPipeline.lensFlarePass.setDeltaProvider(() => GameState.deltaTime || 0);
+    OdysseyRenderPipeline.miniGameAspectMaskPass = new MiniGameAspectMaskPass();
+    OdysseyRenderPipeline.miniGameAspectMaskPass.enabled = false;
+    OdysseyRenderPipeline.copyPass = new ShaderPass(CopyShader);
+    OdysseyRenderPipeline.renderPassGUI = new RenderPass(GameState.scene_gui, GameState.camera_gui);
+    OdysseyRenderPipeline.renderPassMGHud = new RenderPass(GameState.scene, GameState.currentCamera);
     // Swap camera layer mask for HUD-only draw after AccumulationBlurPass.
-    const mgHudRender = GameState.renderPassMGHud.render.bind(GameState.renderPassMGHud);
-    GameState.renderPassMGHud.render = (
+    const mgHudRender = OdysseyRenderPipeline.renderPassMGHud.render.bind(OdysseyRenderPipeline.renderPassMGHud);
+    OdysseyRenderPipeline.renderPassMGHud.render = (
       renderer: THREE.WebGLRenderer,
       writeBuffer: THREE.WebGLRenderTarget,
       readBuffer: THREE.WebGLRenderTarget,
       deltaTime: number,
       maskActive: boolean
     ) => {
-      const cam = GameState.renderPassMGHud.camera as THREE.Camera | undefined;
+      const cam = OdysseyRenderPipeline.renderPassMGHud.camera as THREE.Camera | undefined;
       const prevMask = cam?.layers?.mask;
       if(cam){
         cam.layers.set(RenderLayer.MG_CAMERA_HUD);
@@ -99,70 +117,71 @@ export class OdysseyRenderPipeline {
       }
     };
 
-    GameState.bloomPass = new BloomPass(0.5);
-    GameState.bokehPass = new BokehPass(GameState.scene, GameState.currentCamera, {
+    OdysseyRenderPipeline.bloomPass = new BloomPass(0.5);
+    OdysseyRenderPipeline.bokehPass = new BokehPass(GameState.scene, GameState.currentCamera, {
       focus: 1.0,
       aperture:	0.0001,
       maxblur:	1.0,
     });
 
-    GameState.speedBlurPass = new AccumulationBlurPass(GameState.speedBlurRatio);
-    GameState.speedBlurPass.enabled = false;
+    OdysseyRenderPipeline.speedBlurPass = new AccumulationBlurPass(MotionBlurController.speedBlurRatio);
+    OdysseyRenderPipeline.speedBlurPass.enabled = false;
+    MotionBlurController.boundSpeedBlurPass = OdysseyRenderPipeline.speedBlurPass;
 
-    GameState.renderPassAA.sampleLevel = 1;
+    OdysseyRenderPipeline.renderPassAA.sampleLevel = 1;
 
-    GameState.renderPass.renderToScreen = false;
-    GameState.copyPass.renderToScreen = false;
-    GameState.renderPassGUI.renderToScreen = false;
-    GameState.renderPassMGHud.renderToScreen = false;
+    OdysseyRenderPipeline.renderPass.renderToScreen = false;
+    OdysseyRenderPipeline.copyPass.renderToScreen = false;
+    OdysseyRenderPipeline.renderPassGUI.renderToScreen = false;
+    OdysseyRenderPipeline.renderPassMGHud.renderToScreen = false;
 
-    GameState.renderPass.clear = true;
-    GameState.bloomPass.clear = false;
-    GameState.odysseyShaderPass.clear = false;
-    GameState.renderPassAA.clear = false;
-    GameState.copyPass.clear = false;
-    GameState.renderPassGUI.clear = false;
-    GameState.renderPassGUI.clearDepth = true;
-    GameState.renderPassMGHud.clear = false;
-    GameState.renderPassMGHud.clearDepth = true;
-    GameState.renderPassMGHud.enabled = false;
+    OdysseyRenderPipeline.renderPass.clear = true;
+    OdysseyRenderPipeline.bloomPass.clear = false;
+    OdysseyRenderPipeline.odysseyShaderPass.clear = false;
+    OdysseyRenderPipeline.renderPassAA.clear = false;
+    OdysseyRenderPipeline.copyPass.clear = false;
+    OdysseyRenderPipeline.renderPassGUI.clear = false;
+    OdysseyRenderPipeline.renderPassGUI.clearDepth = true;
+    OdysseyRenderPipeline.renderPassMGHud.clear = false;
+    OdysseyRenderPipeline.renderPassMGHud.clearDepth = true;
+    OdysseyRenderPipeline.renderPassMGHud.enabled = false;
 
-    GameState.bokehPass.needsSwap = true;
-    GameState.bokehPass.enabled = false;
+    OdysseyRenderPipeline.bokehPass.needsSwap = true;
+    OdysseyRenderPipeline.bokehPass.enabled = false;
 
-    GameState.composer.addPass(GameState.renderPass);
-    GameState.composer.addPass(GameState.speedBlurPass);
+    OdysseyRenderPipeline.composer.addPass(OdysseyRenderPipeline.renderPass);
+    OdysseyRenderPipeline.composer.addPass(OdysseyRenderPipeline.speedBlurPass);
     // MG camera HUD after accumulation blur (screen-stable gauges).
-    GameState.composer.addPass(GameState.renderPassMGHud);
+    OdysseyRenderPipeline.composer.addPass(OdysseyRenderPipeline.renderPassMGHud);
     // FrameBufferModifications order before GUI:
     // 0x01 overbrighten (visualizePass1 off in shipping) →
     // 0x02 convolution (visualizePass2 on) → 0x20 force distortion →
     // film/sat (VideoEffects) → K2 dream → K2 fury
-    GameState.composer.addPass(GameState.overbrightenPass);
-    GameState.composer.addPass(GameState.convolutionBloomPass);
-    GameState.composer.addPass(GameState.forceDistortionPass);
-    GameState.composer.addPass(GameState.odysseyShaderPass);
-    GameState.composer.addPass(GameState.dreamDistortionPass);
-    GameState.composer.addPass(GameState.furyPass);
+    OdysseyRenderPipeline.composer.addPass(OdysseyRenderPipeline.overbrightenPass);
+    OdysseyRenderPipeline.composer.addPass(OdysseyRenderPipeline.convolutionBloomPass);
+    OdysseyRenderPipeline.composer.addPass(OdysseyRenderPipeline.forceDistortionPass);
+    OdysseyRenderPipeline.composer.addPass(OdysseyRenderPipeline.odysseyShaderPass);
+    OdysseyRenderPipeline.composer.addPass(OdysseyRenderPipeline.dreamDistortionPass);
+    OdysseyRenderPipeline.composer.addPass(OdysseyRenderPipeline.furyPass);
     // lens flare render after FrameBufferModifications, before GUI.
-    GameState.composer.addPass(GameState.lensFlarePass);
+    OdysseyRenderPipeline.composer.addPass(OdysseyRenderPipeline.lensFlarePass);
     // Soft 4:3 cockpit mask for swoop/turret — after world FX, before GUI.
-    GameState.composer.addPass(GameState.miniGameAspectMaskPass);
+    OdysseyRenderPipeline.composer.addPass(OdysseyRenderPipeline.miniGameAspectMaskPass);
 
-    GameState.composer.addPass(GameState.renderPassGUI);
-    GameState.composer.addPass(GameState.copyPass);
+    OdysseyRenderPipeline.composer.addPass(OdysseyRenderPipeline.renderPassGUI);
+    OdysseyRenderPipeline.composer.addPass(OdysseyRenderPipeline.copyPass);
 
-    GameState.renderPass.clearDepth = true;
-    GameState.renderPassGUI.clearDepth = true;
-    GameState.renderPass.clear = true;
-    GameState.renderPassGUI.clear = false;
-    GameState.renderPass.needsSwap = false;
-    GameState.renderPassGUI.needsSwap = false;
-    GameState.renderPassMGHud.needsSwap = false;
+    OdysseyRenderPipeline.renderPass.clearDepth = true;
+    OdysseyRenderPipeline.renderPassGUI.clearDepth = true;
+    OdysseyRenderPipeline.renderPass.clear = true;
+    OdysseyRenderPipeline.renderPassGUI.clear = false;
+    OdysseyRenderPipeline.renderPass.needsSwap = false;
+    OdysseyRenderPipeline.renderPassGUI.needsSwap = false;
+    OdysseyRenderPipeline.renderPassMGHud.needsSwap = false;
   }
 
   static resizeComposerTargets(width: number, height: number): void {
-    GameState.composer.setSize(width * GameState.rendererUpscaleFactor, height * GameState.rendererUpscaleFactor);
+    OdysseyRenderPipeline.composer.setSize(width * GameState.rendererUpscaleFactor, height * GameState.rendererUpscaleFactor);
     GameState.depthTarget.setSize(
       GameState.ResolutionManager.getViewportWidth() * GameState.rendererUpscaleFactor,
       GameState.ResolutionManager.getViewportHeight() * GameState.rendererUpscaleFactor
@@ -184,11 +203,11 @@ export class OdysseyRenderPipeline {
     RenderPerfStats.beginFrame(GameState.renderer);
     ModuleGpuWarmLog.tickFrame(GameState.renderer);
 
-    GameState.renderPass.camera = GameState.currentCamera;
-    GameState.renderPassAA.camera = GameState.currentCamera;
-    GameState.bokehPass.camera = GameState.currentCamera;
-    if(GameState.renderPassMGHud){
-      GameState.renderPassMGHud.camera = GameState.currentCamera;
+    OdysseyRenderPipeline.renderPass.camera = GameState.currentCamera;
+    OdysseyRenderPipeline.renderPassAA.camera = GameState.currentCamera;
+    OdysseyRenderPipeline.bokehPass.camera = GameState.currentCamera;
+    if(OdysseyRenderPipeline.renderPassMGHud){
+      OdysseyRenderPipeline.renderPassMGHud.camera = GameState.currentCamera;
     }
 
     // Shadow selection runs in Update* via updateShadowSystems. Only re-select here
@@ -224,58 +243,58 @@ export class OdysseyRenderPipeline {
 
     MotionBlurController.syncMotionBlurRatio();
 
-    if(GameState.speedBlurPass){
-      GameState.speedBlurPass.ratio = GameState.speedBlurRatio;
-      GameState.speedBlurPass.enabled = resolveSpeedBlurPass({
+    if(OdysseyRenderPipeline.speedBlurPass){
+      OdysseyRenderPipeline.speedBlurPass.ratio = MotionBlurController.speedBlurRatio;
+      OdysseyRenderPipeline.speedBlurPass.enabled = resolveSpeedBlurPass({
         frameBufferIniEnabled: OdysseyRenderPipeline.isFrameBufferEffectsEnabled(),
-        enableSpeedBlur: GameState.speedBlurEnabled,
+        enableSpeedBlur: MotionBlurController.speedBlurEnabled,
       });
     }
 
-    if(GameState.forceDistortionPass){
+    if(OdysseyRenderPipeline.forceDistortionPass){
       const needed = GameState.forceDistortionNeeded;
       GameState.forceDistortionNeeded = false;
       if(needed && !GameState.forceDistortionTexture){
         GameState.forceDistortionTexture = OdysseyRenderPipeline.createFallbackDistortionTexture();
-        GameState.forceDistortionPass.setDistortionTexture(GameState.forceDistortionTexture);
+        OdysseyRenderPipeline.forceDistortionPass.setDistortionTexture(GameState.forceDistortionTexture);
         void OdysseyRenderPipeline.ensureForceDistortionTexture();
       }
       const rooms = GameState.module?.area?.rooms;
       const roomedOk = !GameState.module?.area || !!(rooms && rooms.length > 0);
-      GameState.forceDistortionPass.enabled =
+      OdysseyRenderPipeline.forceDistortionPass.enabled =
         needed &&
         roomedOk &&
         OdysseyRenderPipeline.isFrameBufferEffectsEnabled() &&
         !!GameState.forceDistortionTexture;
-      if(GameState.forceDistortionPass.enabled){
-        GameState.forceDistortionPass.setDistortionTexture(GameState.forceDistortionTexture);
+      if(OdysseyRenderPipeline.forceDistortionPass.enabled){
+        OdysseyRenderPipeline.forceDistortionPass.setDistortionTexture(GameState.forceDistortionTexture);
       }
     }
 
-    const composer = GameState.composer;
+    const composer = OdysseyRenderPipeline.composer;
     const cam = GameState.currentCamera;
     const prevCamLayers = cam?.layers?.mask;
     const miniGame = GameState.module?.area?.miniGame;
     const mgCamera = miniGame?.player?.camera;
-    const hudPass = GameState.renderPassMGHud;
+    const hudPass = OdysseyRenderPipeline.renderPassMGHud;
     if(hudPass){
       hudPass.enabled = !!mgCamera;
     }
-    if(GameState.miniGameAspectMaskPass){
+    if(OdysseyRenderPipeline.miniGameAspectMaskPass){
       const maskOn = resolveMiniGameAspectMaskPass({
         engineMode: GameState.Mode,
         hasMiniGame: !!miniGame,
         miniGameType: miniGame?.type,
       });
-      GameState.miniGameAspectMaskPass.enabled = maskOn;
+      OdysseyRenderPipeline.miniGameAspectMaskPass.enabled = maskOn;
       if(maskOn){
-        GameState.miniGameAspectMaskPass.setMiniGameType(miniGame?.type);
+        OdysseyRenderPipeline.miniGameAspectMaskPass.setMiniGameType(miniGame?.type);
       }
     }
-    if(GameState.lensFlarePass){
+    if(OdysseyRenderPipeline.lensFlarePass){
       const flareLights = GameState.lightManager?.getLensFlareLights?.() ?? [];
-      GameState.lensFlarePass.enabled =
-        !!GameState.lensFlarePass.renderLensFlares && flareLights.length > 0;
+      OdysseyRenderPipeline.lensFlarePass.enabled =
+        !!OdysseyRenderPipeline.lensFlarePass.renderLensFlares && flareLights.length > 0;
     }
     if(cam){
       cam.layers.enable(RenderLayer.DEFAULT);
@@ -287,8 +306,8 @@ export class OdysseyRenderPipeline {
     }else{
       composer.render(delta);
     }
-    if(GameState.renderPass){
-      GameState.renderPass.enabled = true;
+    if(OdysseyRenderPipeline.renderPass){
+      OdysseyRenderPipeline.renderPass.enabled = true;
     }
     if(cam && prevCamLayers !== undefined){
       cam.layers.mask = prevCamLayers;
@@ -317,9 +336,9 @@ export class OdysseyRenderPipeline {
       wraps.push({ pass, orig });
       const name = pass.constructor?.name || '';
       pass.render = (...args: any[]) => {
-        if(pass === GameState.renderPassGUI || pass === GameState.renderPassMGHud){
+        if(pass === OdysseyRenderPipeline.renderPassGUI || pass === OdysseyRenderPipeline.renderPassMGHud){
           RenderPerfStats.beginPhase('gui');
-        }else if(pass === GameState.renderPass){
+        }else if(pass === OdysseyRenderPipeline.renderPass){
           RenderPerfStats.beginPhase('world');
         }else{
           RenderPerfStats.beginPhase('post');
@@ -359,8 +378,8 @@ export class OdysseyRenderPipeline {
     }
     if(!GameState.forceDistortionTexture){
       GameState.forceDistortionTexture = OdysseyRenderPipeline.createFallbackDistortionTexture();
-      if(GameState.forceDistortionPass){
-        GameState.forceDistortionPass.setDistortionTexture(GameState.forceDistortionTexture);
+      if(OdysseyRenderPipeline.forceDistortionPass){
+        OdysseyRenderPipeline.forceDistortionPass.setDistortionTexture(GameState.forceDistortionTexture);
       }
     }
     try {
@@ -371,14 +390,14 @@ export class OdysseyRenderPipeline {
         tex.minFilter = THREE.LinearFilter;
         tex.magFilter = THREE.LinearFilter;
         GameState.forceDistortionTexture = tex;
-        if(GameState.forceDistortionPass){
-          GameState.forceDistortionPass.setDistortionTexture(tex);
+        if(OdysseyRenderPipeline.forceDistortionPass){
+          OdysseyRenderPipeline.forceDistortionPass.setDistortionTexture(tex);
         }
-        if(GameState.dreamDistortionPass){
-          GameState.dreamDistortionPass.setDistortionTexture(tex);
+        if(OdysseyRenderPipeline.dreamDistortionPass){
+          OdysseyRenderPipeline.dreamDistortionPass.setDistortionTexture(tex);
         }
-        if(GameState.furyPass){
-          GameState.furyPass.setDistortionTexture(tex);
+        if(OdysseyRenderPipeline.furyPass){
+          OdysseyRenderPipeline.furyPass.setDistortionTexture(tex);
         }
       }
     }catch(e){
@@ -417,9 +436,9 @@ export class OdysseyRenderPipeline {
     if(!GameState.softDepthNeeded || !GameState.depthTarget || !GameState.renderer || !GameState.currentCamera) return;
     GameState.softDepthNeeded = false;
 
-    const composer = GameState.composer;
+    const composer = OdysseyRenderPipeline.composer;
     const colorTarget = composer?.readBuffer;
-    if(composer && colorTarget && GameState.renderPass){
+    if(composer && colorTarget && OdysseyRenderPipeline.renderPass){
       const splitOk = runOdysseySoftDepthSplit({
         scene: GameState.scene,
         renderer: GameState.renderer,
@@ -428,7 +447,7 @@ export class OdysseyRenderPipeline {
         depthSampleTarget: GameState.depthTarget,
       });
       if(splitOk){
-        GameState.renderPass.enabled = false;
+        OdysseyRenderPipeline.renderPass.enabled = false;
         return;
       }
     }

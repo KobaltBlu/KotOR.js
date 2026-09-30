@@ -84,8 +84,8 @@ export class VideoEffectManager {
         tex.minFilter = THREE.LinearFilter;
         tex.magFilter = THREE.LinearFilter;
         VideoEffectManager.filmNoiseTexture = tex;
-        if(GameState.odysseyShaderPass){
-          GameState.odysseyShaderPass.uniforms.tFilmNoise.value = tex;
+        if(OdysseyRenderPipeline.odysseyShaderPass){
+          OdysseyRenderPipeline.odysseyShaderPass.uniforms.tFilmNoise.value = tex;
         }
       }
     }catch(e){
@@ -98,9 +98,9 @@ export class VideoEffectManager {
     if(clamped <= 0){
       VideoEffectManager.furyLevel = 0;
       VideoEffectManager.furyTexture = null;
-      if(GameState.furyPass){
-        GameState.furyPass.setFuryTexture(null);
-        GameState.furyPass.enabled = false;
+      if(OdysseyRenderPipeline.furyPass){
+        OdysseyRenderPipeline.furyPass.setFuryTexture(null);
+        OdysseyRenderPipeline.furyPass.enabled = false;
       }
       return;
     }
@@ -115,8 +115,8 @@ export class VideoEffectManager {
         tex.wrapT = THREE.ClampToEdgeWrapping;
         VideoEffectManager.furyTexture = tex;
         VideoEffectManager.furyLevel = clamped;
-        if(GameState.furyPass){
-          GameState.furyPass.setFuryTexture(tex);
+        if(OdysseyRenderPipeline.furyPass){
+          OdysseyRenderPipeline.furyPass.setFuryTexture(tex);
         }
       }
     }catch(e){
@@ -142,65 +142,65 @@ export class VideoEffectManager {
     const effect = VideoEffectManager.videoEffect;
 
     // --- OdysseyShaderPass: saturation + film noise (VideoEffects only) ---
-    if(GameState.odysseyShaderPass){
+    if(OdysseyRenderPipeline.odysseyShaderPass){
       const wantSat = !!(effect?.enableSaturation);
       const wantNoise = !!(effect?.enableScanNoise);
 
       if(wantSat){
-        GameState.odysseyShaderPass.uniforms.saturation.value = effect.saturation;
-        GameState.odysseyShaderPass.uniforms.modulation.value.set(
+        OdysseyRenderPipeline.odysseyShaderPass.uniforms.saturation.value = effect.saturation;
+        OdysseyRenderPipeline.odysseyShaderPass.uniforms.modulation.value.set(
           effect.modulation.red, effect.modulation.green, effect.modulation.blue
         );
-        GameState.odysseyShaderPass.uniforms.bmodulate.value = true;
+        OdysseyRenderPipeline.odysseyShaderPass.uniforms.bmodulate.value = true;
       }else{
-        GameState.odysseyShaderPass.uniforms.bmodulate.value = false;
-        GameState.odysseyShaderPass.uniforms.saturation.value = 1;
-        GameState.odysseyShaderPass.uniforms.modulation.value.set(1, 1, 1);
+        OdysseyRenderPipeline.odysseyShaderPass.uniforms.bmodulate.value = false;
+        OdysseyRenderPipeline.odysseyShaderPass.uniforms.saturation.value = 1;
+        OdysseyRenderPipeline.odysseyShaderPass.uniforms.modulation.value.set(1, 1, 1);
       }
 
       if(wantNoise){
-        GameState.odysseyShaderPass.uniforms.bFilmNoise.value = true;
+        OdysseyRenderPipeline.odysseyShaderPass.uniforms.bFilmNoise.value = true;
         if(VideoEffectManager.filmNoiseTexture){
-          GameState.odysseyShaderPass.uniforms.tFilmNoise.value = VideoEffectManager.filmNoiseTexture;
+          OdysseyRenderPipeline.odysseyShaderPass.uniforms.tFilmNoise.value = VideoEffectManager.filmNoiseTexture;
         }else{
           void VideoEffectManager.ensureFilmNoiseTexture();
         }
       }else{
-        GameState.odysseyShaderPass.uniforms.bFilmNoise.value = false;
+        OdysseyRenderPipeline.odysseyShaderPass.uniforms.bFilmNoise.value = false;
       }
 
       // Force Sight is a scene/cubemap flag in — do not enable this pass for it.
-      GameState.odysseyShaderPass.enabled = fbOn && (wantSat || wantNoise);
+      OdysseyRenderPipeline.odysseyShaderPass.enabled = fbOn && (wantSat || wantNoise);
     }
 
     // --- Dream distortion (clairvoyance) ---
-    if(GameState.dreamDistortionPass){
+    if(OdysseyRenderPipeline.dreamDistortionPass){
       const wantDream = !!(effect?.enableClairVoyance || effect?.enableClairVoyanceFull);
       if(wantDream){
         if(!GameState.forceDistortionTexture){
           GameState.forceDistortionTexture = OdysseyRenderPipeline.createFallbackDistortionTexture();
           void OdysseyRenderPipeline.ensureForceDistortionTexture();
         }
-        GameState.dreamDistortionPass.setDistortionTexture(GameState.forceDistortionTexture);
+        OdysseyRenderPipeline.dreamDistortionPass.setDistortionTexture(GameState.forceDistortionTexture);
         // EnableClairvoyance(1) vs EnableClairvoyanceFull(0): full = larger warp
-        GameState.dreamDistortionPass.setFullMode(!!effect.enableClairVoyanceFull);
+        OdysseyRenderPipeline.dreamDistortionPass.setFullMode(!!effect.enableClairVoyanceFull);
       }
-      GameState.dreamDistortionPass.enabled =
+      OdysseyRenderPipeline.dreamDistortionPass.enabled =
         fbOn && wantDream && !!GameState.forceDistortionTexture;
     }
 
     // --- Fury ---
-    if(GameState.furyPass){
+    if(OdysseyRenderPipeline.furyPass){
       const wantFury = !!(effect?.enableFury) && !!VideoEffectManager.furyTexture;
       if(wantFury){
         if(!GameState.forceDistortionTexture){
           GameState.forceDistortionTexture = OdysseyRenderPipeline.createFallbackDistortionTexture();
           void OdysseyRenderPipeline.ensureForceDistortionTexture();
         }
-        GameState.furyPass.setFuryTexture(VideoEffectManager.furyTexture);
-        GameState.furyPass.setDistortionTexture(GameState.forceDistortionTexture);
+        OdysseyRenderPipeline.furyPass.setFuryTexture(VideoEffectManager.furyTexture);
+        OdysseyRenderPipeline.furyPass.setDistortionTexture(GameState.forceDistortionTexture);
       }
-      GameState.furyPass.enabled = fbOn && wantFury;
+      OdysseyRenderPipeline.furyPass.enabled = fbOn && wantFury;
     }
 
     // Always-on stages: mask 0x1F in a room, but visualizePass1 (overbrighten)
@@ -212,11 +212,11 @@ export class VideoEffectManager {
       roomedArea: roomedOk,
       visualizeOverbrighten: VideoEffectManager.debugVisualizeOverbrighten,
     });
-    if(GameState.overbrightenPass){
-      GameState.overbrightenPass.enabled = alwaysOn.overbrighten;
+    if(OdysseyRenderPipeline.overbrightenPass){
+      OdysseyRenderPipeline.overbrightenPass.enabled = alwaysOn.overbrighten;
     }
-    if(GameState.convolutionBloomPass){
-      GameState.convolutionBloomPass.enabled = alwaysOn.convolution;
+    if(OdysseyRenderPipeline.convolutionBloomPass){
+      OdysseyRenderPipeline.convolutionBloomPass.enabled = alwaysOn.convolution;
     }
 
     void delta;
@@ -229,19 +229,19 @@ export class VideoEffectManager {
     VideoEffectManager.furyLevel = 0;
     VideoEffectManager.furyTexture = null;
 
-    if(GameState.odysseyShaderPass){
-      GameState.odysseyShaderPass.uniforms.bmodulate.value = false;
-      GameState.odysseyShaderPass.uniforms.saturation.value = 1;
-      GameState.odysseyShaderPass.uniforms.modulation.value.set(1, 1, 1);
-      GameState.odysseyShaderPass.uniforms.bFilmNoise.value = false;
-      GameState.odysseyShaderPass.enabled = false;
+    if(OdysseyRenderPipeline.odysseyShaderPass){
+      OdysseyRenderPipeline.odysseyShaderPass.uniforms.bmodulate.value = false;
+      OdysseyRenderPipeline.odysseyShaderPass.uniforms.saturation.value = 1;
+      OdysseyRenderPipeline.odysseyShaderPass.uniforms.modulation.value.set(1, 1, 1);
+      OdysseyRenderPipeline.odysseyShaderPass.uniforms.bFilmNoise.value = false;
+      OdysseyRenderPipeline.odysseyShaderPass.enabled = false;
     }
-    if(GameState.dreamDistortionPass){
-      GameState.dreamDistortionPass.enabled = false;
+    if(OdysseyRenderPipeline.dreamDistortionPass){
+      OdysseyRenderPipeline.dreamDistortionPass.enabled = false;
     }
-    if(GameState.furyPass){
-      GameState.furyPass.setFuryTexture(null);
-      GameState.furyPass.enabled = false;
+    if(OdysseyRenderPipeline.furyPass){
+      OdysseyRenderPipeline.furyPass.setFuryTexture(null);
+      OdysseyRenderPipeline.furyPass.enabled = false;
     }
   }
 
