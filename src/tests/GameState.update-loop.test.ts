@@ -4,6 +4,8 @@
  */
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import {
+  IDLE_WORK_MS,
+  INPUT_BREATH_INTERVAL_MS,
   MESSAGE_CHANNEL_YIELD_MS,
   UpdateLoopArm,
   isVSyncEnabledRaw,
@@ -78,20 +80,52 @@ describe('updateLoopSchedule', () => {
       expect(arm.armedCount).toBe(1);
     });
 
-    it('arms MessageChannel for short uncapped yields (avoids 4ms timer clamp)', () => {
+    it('arms MessageChannel for busy short uncapped yields (avoids 4ms timer clamp)', () => {
       const setTimeoutSpy = jest.spyOn(global, 'setTimeout');
+      // workMs=17 → yield 3, and workMs >= IDLE_WORK_MS → MessageChannel.
       arm.schedule(false, 17, onTick);
       expect(arm.channelPending).toBe(true);
       expect(arm.timeoutId).toBe(0);
       expect(arm.rafId).toBe(0);
       expect(arm.armedCount).toBe(1);
       expect(uncappedYieldMs(17)).toBeLessThanOrEqual(MESSAGE_CHANNEL_YIELD_MS);
-      // Short yields must not arm setTimeout (browser clamps nested timers to ~4ms).
+      expect(17).toBeGreaterThanOrEqual(IDLE_WORK_MS);
       const yieldCalls = setTimeoutSpy.mock.calls.filter(
         (c) => typeof c[1] === 'number' && (c[1] as number) <= MESSAGE_CHANNEL_YIELD_MS
       );
       expect(yieldCalls).toHaveLength(0);
       setTimeoutSpy.mockRestore();
+    });
+
+    it('arms setTimeout(0) on every idle short uncapped yield (input breath)', () => {
+      const setTimeoutSpy = jest.spyOn(global, 'setTimeout');
+      arm.schedule(false, 0, onTick);
+      expect(arm.timeoutId).toBeTruthy();
+      expect(arm.channelPending).toBe(false);
+      expect(arm.rafId).toBe(0);
+      expect(arm.armedCount).toBe(1);
+      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 0);
+
+      arm.schedule(false, IDLE_WORK_MS - 0.1, onTick);
+      expect(arm.timeoutId).toBeTruthy();
+      expect(arm.channelPending).toBe(false);
+      setTimeoutSpy.mockRestore();
+    });
+
+    it('forces a setTimeout breath on busy short yields after the input interval', () => {
+      const nowSpy = jest.spyOn(performance, 'now');
+      let t = 1000;
+      nowSpy.mockImplementation(() => t);
+
+      arm.schedule(false, 17, onTick);
+      expect(arm.channelPending).toBe(true);
+
+      t = 1000 + INPUT_BREATH_INTERVAL_MS;
+      arm.schedule(false, 17, onTick);
+      expect(arm.timeoutId).toBeTruthy();
+      expect(arm.channelPending).toBe(false);
+
+      nowSpy.mockRestore();
     });
 
     it('arms adaptive timeout when uncapped yield exceeds MessageChannel threshold', () => {
@@ -119,11 +153,12 @@ describe('updateLoopSchedule', () => {
 
       arm.applyOption(false, onTick);
       expect(arm.armedCount).toBe(1);
-      expect(arm.channelPending).toBe(true);
-      expect(arm.timeoutId).toBe(0);
+      // workMs=0 → idle → setTimeout(0)
+      expect(arm.timeoutId).toBeTruthy();
+      expect(arm.channelPending).toBe(false);
       expect(arm.rafId).toBe(0);
 
-      // Mid-Update pattern: apply then finally schedule (short yield → channel).
+      // Mid-Update pattern: apply then finally schedule (busy short → channel).
       arm.schedule(false, 9, onTick);
       expect(arm.armedCount).toBe(1);
       expect(arm.channelPending).toBe(true);
@@ -140,7 +175,7 @@ describe('updateLoopSchedule', () => {
     });
 
     it('clear invalidates a pending MessageChannel tick', async () => {
-      arm.schedule(false, 1, onTick);
+      arm.schedule(false, 17, onTick);
       expect(arm.channelPending).toBe(true);
       arm.clear();
       expect(arm.channelPending).toBe(false);
