@@ -215,12 +215,25 @@ export class GameRuntimeBootstrap {
     );
     GameState.renderer.setClearColor(0x000000);
 
-    let pars = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat };
-		GameState.depthTarget = new THREE.WebGLRenderTarget( GameState.ResolutionManager.getViewportWidth(), GameState.ResolutionManager.getViewportHeight(), pars );
+    // Soft particles sample depthTexture only; color exists for MeshDepthMaterial
+    // fallback prepass. No stencil — depth sample target is never stencil-tested.
+    const depthPars = {
+      minFilter: THREE.NearestFilter,
+      magFilter: THREE.NearestFilter,
+      format: THREE.RGBAFormat,
+      depthBuffer: true,
+      stencilBuffer: false,
+    };
+    GameState.depthTarget = new THREE.WebGLRenderTarget(
+      GameState.ResolutionManager.getViewportWidth(),
+      GameState.ResolutionManager.getViewportHeight(),
+      depthPars
+    );
     GameState.depthTarget.texture.generateMipmaps = false;
-    GameState.depthTarget.stencilBuffer = false;
-    GameState.depthTarget.depthBuffer = true;
-    GameState.depthTarget.depthTexture = new THREE.DepthTexture(GameState.ResolutionManager.getViewportWidth(), GameState.ResolutionManager.getViewportHeight());
+    GameState.depthTarget.depthTexture = new THREE.DepthTexture(
+      GameState.ResolutionManager.getViewportWidth(),
+      GameState.ResolutionManager.getViewportHeight()
+    );
     GameState.depthTarget.depthTexture.type = THREE.UnsignedShortType;
     ViewportController.syncDepthTargetTextureSize();
 

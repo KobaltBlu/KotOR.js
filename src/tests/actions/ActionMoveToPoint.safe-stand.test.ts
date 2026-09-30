@@ -23,6 +23,10 @@ jest.mock("@/three/odyssey/OdysseyModel3D", () => ({
   OdysseyModel3D: class {},
 }));
 
+jest.mock("@/engine/OdysseyRenderPipeline", () => ({
+  OdysseyRenderPipeline: {},
+}));
+
 jest.mock("@/GameState", () => ({
   GameState: {
     module: { area: { id: 1 } },

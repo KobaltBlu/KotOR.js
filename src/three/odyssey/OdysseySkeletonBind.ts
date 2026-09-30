@@ -18,6 +18,19 @@ const ODYSSEY_BONE_TEX_SYNCED = 'odysseyBoneTexSynced';
  * when boneMatrices content changes (body skins + force-shield shells).
  */
 const ODYSSEY_BOUND_SKINS = 'odysseyBoundSkins';
+/**
+ * Per-bone bind-space spheres (after bindMatrix) cached on the SkinnedMesh.
+ * Refresh merges boneMatrices-transformed spheres instead of per-vertex CPU skin.
+ */
+const ODYSSEY_BONE_BIND_SPHERES = 'odysseyBoneBindSpheres';
+
+type BoneBindSphere = {
+  boneIndex: number;
+  cx: number;
+  cy: number;
+  cz: number;
+  radius: number;
+};
 
 /** Mark a skeleton so the next {@link THREE.Skeleton.update} fills boneMatrices and uploads. */
 export function markOdysseySkeletonDirty(skeleton: THREE.Skeleton | undefined | null): void {
@@ -58,14 +71,171 @@ export function unregisterOdysseySkinBounds(
   }
 }
 
+function buildBoneBindSpheres(skin: THREE.SkinnedMesh): BoneBindSphere[] | null {
+  const geometry = skin.geometry;
+  const posAttr = geometry?.attributes?.position as THREE.BufferAttribute | undefined;
+  const indexAttr = geometry?.attributes?.skinIndex as THREE.BufferAttribute | undefined;
+  const weightAttr = geometry?.attributes?.skinWeight as THREE.BufferAttribute | undefined;
+  if(!posAttr || !indexAttr || !weightAttr){
+    return null;
+  }
+
+  const boneCount = skin.skeleton?.bones?.length ?? 0;
+  if(boneCount <= 0){
+    return null;
+  }
+
+  // Accumulators: sum of bind-space positions + count per bone (center of mass),
+  // then a second pass for radius.
+  const sums = new Float64Array(boneCount * 3);
+  const counts = new Uint32Array(boneCount);
+  const bindMatrix = skin.bindMatrix;
+  const n = posAttr.count;
+
+  for(let i = 0; i < n; i++){
+    _basePosition.fromBufferAttribute(posAttr, i);
+    _basePosition.applyMatrix4(bindMatrix);
+    _skinIndex.fromBufferAttribute(indexAttr, i);
+    _skinWeight.fromBufferAttribute(weightAttr, i);
+    for(let k = 0; k < 4; k++){
+      const w = _skinWeight.getComponent(k);
+      if(w <= 0) continue;
+      const bi = Math.round(_skinIndex.getComponent(k));
+      if(bi < 0 || bi >= boneCount) continue;
+      const o = bi * 3;
+      sums[o] += _basePosition.x;
+      sums[o + 1] += _basePosition.y;
+      sums[o + 2] += _basePosition.z;
+      counts[bi]++;
+    }
+  }
+
+  const centers = new Float64Array(boneCount * 3);
+  for(let bi = 0; bi < boneCount; bi++){
+    if(!counts[bi]) continue;
+    const o = bi * 3;
+    const inv = 1 / counts[bi];
+    centers[o] = sums[o] * inv;
+    centers[o + 1] = sums[o + 1] * inv;
+    centers[o + 2] = sums[o + 2] * inv;
+  }
+
+  const radii = new Float64Array(boneCount);
+  for(let i = 0; i < n; i++){
+    _basePosition.fromBufferAttribute(posAttr, i);
+    _basePosition.applyMatrix4(bindMatrix);
+    _skinIndex.fromBufferAttribute(indexAttr, i);
+    _skinWeight.fromBufferAttribute(weightAttr, i);
+    for(let k = 0; k < 4; k++){
+      const w = _skinWeight.getComponent(k);
+      if(w <= 0) continue;
+      const bi = Math.round(_skinIndex.getComponent(k));
+      if(bi < 0 || bi >= boneCount || !counts[bi]) continue;
+      const o = bi * 3;
+      const dx = _basePosition.x - centers[o];
+      const dy = _basePosition.y - centers[o + 1];
+      const dz = _basePosition.z - centers[o + 2];
+      const d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      if(d > radii[bi]){
+        radii[bi] = d;
+      }
+    }
+  }
+
+  const out: BoneBindSphere[] = [];
+  for(let bi = 0; bi < boneCount; bi++){
+    if(!counts[bi]) continue;
+    const o = bi * 3;
+    out.push({
+      boneIndex: bi,
+      cx: centers[o],
+      cy: centers[o + 1],
+      cz: centers[o + 2],
+      radius: radii[bi],
+    });
+  }
+  return out.length ? out : null;
+}
+
+function ensureBoneBindSpheres(skin: THREE.SkinnedMesh): BoneBindSphere[] | null {
+  let cached = (skin as any)[ODYSSEY_BONE_BIND_SPHERES] as BoneBindSphere[] | null | undefined;
+  if(cached !== undefined){
+    return cached;
+  }
+  cached = buildBoneBindSpheres(skin);
+  (skin as any)[ODYSSEY_BONE_BIND_SPHERES] = cached;
+  return cached;
+}
+
+/** Max axis scale of a mat4 (column lengths) — used to inflate bone sphere radii. */
+function maxAxisScaleFromMat4Array(m: Float32Array | number[], offset: number): number {
+  const sx = Math.hypot(m[offset] as number, m[offset + 1] as number, m[offset + 2] as number);
+  const sy = Math.hypot(m[offset + 4] as number, m[offset + 5] as number, m[offset + 6] as number);
+  const sz = Math.hypot(m[offset + 8] as number, m[offset + 9] as number, m[offset + 10] as number);
+  return Math.max(sx, sy, sz, 1e-8);
+}
+
+/**
+ * Refresh mesh-local boundingSphere from cached per-bone bind spheres + boneMatrices.
+ * Falls back to three.js per-vertex computeBoundingSphere when attributes are missing.
+ */
 function refreshOdysseySkinBoundingSpheres(skeleton: THREE.Skeleton): void {
   const list = (skeleton as any)[ODYSSEY_BOUND_SKINS] as THREE.SkinnedMesh[] | undefined;
   if(!list || !list.length){ return; }
+  const boneMatrices = skeleton.boneMatrices;
   for(let i = 0; i < list.length; i++){
     const skin = list[i];
     if(!skin || !skin.geometry){ continue; }
-    // Mesh-local sphere; Frustum.intersectsObject applies matrixWorld.
-    skin.computeBoundingSphere();
+
+    const boneSpheres = ensureBoneBindSpheres(skin);
+    if(!boneSpheres){
+      skin.computeBoundingSphere();
+      continue;
+    }
+
+    let minX = Infinity, minY = Infinity, minZ = Infinity;
+    let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+    let any = false;
+
+    for(let b = 0; b < boneSpheres.length; b++){
+      const bs = boneSpheres[b];
+      const o = bs.boneIndex * 16;
+      if(o + 15 >= boneMatrices.length) continue;
+      _matrix.fromArray(boneMatrices, o);
+      _vector.set(bs.cx, bs.cy, bs.cz).applyMatrix4(_matrix);
+      const scale = maxAxisScaleFromMat4Array(boneMatrices, o);
+      const r = bs.radius * scale;
+      any = true;
+      if(_vector.x - r < minX) minX = _vector.x - r;
+      if(_vector.y - r < minY) minY = _vector.y - r;
+      if(_vector.z - r < minZ) minZ = _vector.z - r;
+      if(_vector.x + r > maxX) maxX = _vector.x + r;
+      if(_vector.y + r > maxY) maxY = _vector.y + r;
+      if(_vector.z + r > maxZ) maxZ = _vector.z + r;
+    }
+
+    if(!any){
+      skin.computeBoundingSphere();
+      continue;
+    }
+
+    // Merged AABB center/radius in post-bindMatrix / pre-bindMatrixInverse space,
+    // then map into mesh-local (same as applyBoneTransform output).
+    const cx = (minX + maxX) * 0.5;
+    const cy = (minY + maxY) * 0.5;
+    const cz = (minZ + maxZ) * 0.5;
+    const hx = (maxX - minX) * 0.5;
+    const hy = (maxY - minY) * 0.5;
+    const hz = (maxZ - minZ) * 0.5;
+    _vector.set(cx, cy, cz).applyMatrix4(skin.bindMatrixInverse);
+    const invScale = maxAxisScaleFromMat4Array(skin.bindMatrixInverse.elements, 0);
+    const radius = Math.sqrt(hx * hx + hy * hy + hz * hz) * invScale;
+
+    if(!skin.boundingSphere){
+      skin.boundingSphere = new THREE.Sphere();
+    }
+    skin.boundingSphere.center.copy(_vector);
+    skin.boundingSphere.radius = radius;
   }
 }
 

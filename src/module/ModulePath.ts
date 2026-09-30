@@ -20,6 +20,12 @@ import { hasClearWalkLine, farthestClearPoint } from "@/engine/pathfinding/walk-
 import { buildGridPath } from "@/engine/pathfinding/build-grid-path";
 import { getPathPersonalSpace } from "@/combat/attack-range";
 import type { ModuleCreature } from "@/module/ModuleCreature";
+import {
+  takePathPlanSearchBudgetMs,
+} from "@/engine/pathfinding/path-plan-budget";
+
+/** Max PTH nodes tested for origin fan-out LOS (plus closest origin always kept). */
+const ORIGIN_LOS_FANOUT = 8;
 
 type SmoothSessionStage = "selection" | "corner";
 
@@ -455,14 +461,48 @@ export class ModulePath {
       closest_destination_point.addConnection(destPoint);
       destPoint.addConnection(closest_destination_point);
 
-      originPoint.connections = this.points.slice(0).filter( (p) => {
-        return p.hasLOS(originPoint, owner);
+      // Cap origin fan-out: full-graph hasLOS against every PTH node is the
+      // spike hotspot. Prefer the nearest N plus the already-linked closest.
+      const ox = origin.x;
+      const oy = origin.y;
+      const byDist = this.points.slice(0).sort((a, b) => {
+        const da = (a.vector.x - ox) * (a.vector.x - ox) + (a.vector.y - oy) * (a.vector.y - oy);
+        const db = (b.vector.x - ox) * (b.vector.x - ox) + (b.vector.y - oy) * (b.vector.y - oy);
+        return da - db;
       });
+      const fanout: PathPoint[] = [];
+      const seen = new Set<PathPoint>();
+      const tryAdd = (p: PathPoint | undefined) => {
+        if(!p || seen.has(p)) return;
+        if(!p.hasLOS(originPoint, owner)) return;
+        seen.add(p);
+        fanout.push(p);
+      };
+      tryAdd(closest_origin_point);
+      for(let i = 0; i < byDist.length && fanout.length < ORIGIN_LOS_FANOUT; i++){
+        tryAdd(byDist[i]);
+      }
+      originPoint.connections = fanout;
 
       const path = new ComputedPath(owner, originPoint, destPoint);
       path.setOwner(owner);
       const resume = ownerId != null ? this.dfsResumeByOwner.get(ownerId) : undefined;
-      path.search({ resume });
+      // Shared tick budget; 0 means unlimited in pathPointDfsSearch — never pass 0.
+      const searchBudget = takePathPlanSearchBudgetMs();
+      if(searchBudget <= 0){
+        this.clearSmoothSession(ownerId);
+        const stub = ComputedPath.FromPointsList([originPoint]);
+        stub.incomplete = true;
+        if(resume){
+          stub.dfsResume = resume;
+          this.dfsResumeByOwner.set(ownerId!, resume);
+        }
+        return stub;
+      }
+      path.search({
+        resume,
+        timeBudgetMs: searchBudget,
+      });
 
       for(let i = 0, len = this.points.length; i < len; i++){
         const p = this.points[i];

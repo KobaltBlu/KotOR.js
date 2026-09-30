@@ -109,6 +109,18 @@ export function buildWalkPath(
     return { code: WalkPathCode.Fail };
   }
 
+  // Budget / smooth resume Incomplete before stay-put classification —
+  // a single-point stub from a spent tick budget must not become Fail.
+  if(
+    path.incomplete ||
+    path.smoothResume ||
+    path.smoothCornerResume ||
+    (path.realtime && area.path.hasPendingSmoothSession(owner.id))
+  ){
+    info.lastCode = WalkPathCode.Incomplete;
+    return { code: WalkPathCode.Incomplete, path };
+  }
+
   // Stay-put / no progress toward dest → Fail
   if(path.points.length <= 2){
     const last = path.points[path.points.length - 1].vector;
@@ -118,16 +130,6 @@ export function buildWalkPath(
       info.lastCode = WalkPathCode.Fail;
       return { code: WalkPathCode.Fail, path };
     }
-  }
-
-  if(
-    path.incomplete ||
-    path.smoothResume ||
-    path.smoothCornerResume ||
-    (path.realtime && area.path.hasPendingSmoothSession(owner.id))
-  ){
-    info.lastCode = WalkPathCode.Incomplete;
-    return { code: WalkPathCode.Incomplete, path };
   }
 
   // Smooth chords can cross blocking edges — rebuild unsmoothed once if hops fail.

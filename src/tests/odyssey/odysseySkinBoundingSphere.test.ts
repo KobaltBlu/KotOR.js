@@ -128,4 +128,25 @@ describe('Odyssey skinned boundingSphere refresh', () => {
       !skinB.boundingSphere!.center.equals(bBefore)
     ).toBe(true);
   });
+
+  test('per-bone sphere contains exact CPU-skinned sphere for a posed rig', () => {
+    const { skeleton, skin, bone } = makeSkinnedWithBone(2);
+    installOdysseySkeletonUpdate(skeleton, skin);
+
+    bone.position.set(0, 2, 1);
+    bone.rotation.z = 0.4;
+    bone.updateMatrixWorld(true);
+    markOdysseySkeletonDirty(skeleton);
+    skeleton.update();
+
+    const approx = skin.boundingSphere!.clone();
+    // Exact reference via three.js per-vertex path (uses patched applyBoneTransform).
+    skin.computeBoundingSphere();
+    const exact = skin.boundingSphere!;
+
+    expect(approx.radius).toBeGreaterThanOrEqual(exact.radius - 1e-4);
+    // exact sphere ⊆ approx when |c_a - c_e| + r_e <= r_a (+eps).
+    const centerDist = approx.center.distanceTo(exact.center);
+    expect(centerDist + exact.radius).toBeLessThanOrEqual(approx.radius + 0.05);
+  });
 });

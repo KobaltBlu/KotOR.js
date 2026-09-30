@@ -7,6 +7,7 @@ import {
   composeDoorWalkmeshLocalToWorld,
   walkmeshWorldAabbXY,
 } from "@/engine/pathfinding/door-walkmesh-matrix";
+import { invalidateWalkmeshEdgeClearCache } from "@/engine/pathfinding/walkmesh-edge-clear-cache";
 
 /**
  * Uniform XY hash for door / placeable static-blocker pruning.
@@ -175,6 +176,7 @@ export function ensureStaticBlockerGrid(area: ModuleArea): StaticBlockerGrid {
 export function invalidateStaticBlockerGrid(area: ModuleArea | undefined): void {
   if(!area) return;
   (area as ModuleArea & { staticBlockerGridDirty?: boolean }).staticBlockerGridDirty = true;
+  invalidateWalkmeshEdgeClearCache(area);
 }
 
 /**

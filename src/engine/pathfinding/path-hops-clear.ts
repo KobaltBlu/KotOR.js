@@ -6,6 +6,13 @@ import {
   hasWalkLineClear,
   WalkLineHitCode,
 } from "@/engine/pathfinding/walk-line-clear";
+import {
+  edgeCacheKey,
+  getWalkmeshEdgeClearCached,
+  setWalkmeshEdgeClearCached,
+} from "@/engine/pathfinding/walkmesh-edge-clear-cache";
+
+export { invalidateWalkmeshEdgeClearCache } from "@/engine/pathfinding/walkmesh-edge-clear-cache";
 
 /**
  * Walk-line validation for computed path hops (smooth chords vs blocking edges).
@@ -40,24 +47,34 @@ export function isWalkmeshEdgeWalkClear(
   if(dx * dx + dy * dy < HOP_EPS_SQ){
     return true;
   }
+
+  const key = edgeCacheKey(from, to);
+  const cached = getWalkmeshEdgeClearCached(area, key);
+  if(cached !== undefined){
+    return cached;
+  }
+
   const hit = hasWalkLineClear(area, from, to, {
     owner,
     checkCreatures: false,
     personalSpace: 0,
   });
+  let clear: boolean;
   if(hit.ok || hit.code === WalkLineHitCode.Creature){
-    return true;
+    clear = true;
+  }else if(hit.code === WalkLineHitCode.NonWalk){
+    clear = false;
+  }else if(hit.clearT < 0.05){
+    // Hard clip at the start — cannot use this graph edge.
+    clear = false;
+  }else{
+    // Partial detailed block along an otherwise usable corridor — allow the edge;
+    // drive / hop validation handle sustained blocks.
+    clear = hit.code !== WalkLineHitCode.Fail;
   }
-  if(hit.code === WalkLineHitCode.NonWalk){
-    return false;
-  }
-  // Hard clip at the start — cannot use this graph edge.
-  if(hit.clearT < 0.05){
-    return false;
-  }
-  // Partial detailed block along an otherwise usable corridor — allow the edge;
-  // drive / hop validation handle sustained blocks.
-  return hit.code !== WalkLineHitCode.Fail;
+
+  setWalkmeshEdgeClearCached(area, key, clear);
+  return clear;
 }
 
 /**

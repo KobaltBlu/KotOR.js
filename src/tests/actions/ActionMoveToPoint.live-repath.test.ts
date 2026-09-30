@@ -19,6 +19,10 @@ jest.mock("@/three/odyssey/OdysseyModel3D", () => ({
   OdysseyModel3D: class {},
 }));
 
+jest.mock("@/engine/OdysseyRenderPipeline", () => ({
+  OdysseyRenderPipeline: {},
+}));
+
 jest.mock("@/GameState", () => ({
   GameState: {
     module: { area: { id: 1 } },
@@ -570,6 +574,116 @@ describe("ActionMoveToPoint live-chase repath", () => {
     expect(mockDropWalkmeshBlockedPathPrefix).toHaveBeenCalled();
     // repathFromCurrentPosition → calculatePath → buildWalkPath
     expect(mockPlotPath).toHaveBeenCalled();
+  });
+
+  it("throttles jam repath+detour to at most once per 500ms", () => {
+    const makePath = () => {
+      const pathPoints = [{ vector: new THREE.Vector3(79.16, 74.6, 0) }];
+      return {
+        points: pathPoints,
+        fixWalkEdges: () => {},
+        setColor: () => {},
+        realtime: false,
+        timer: 10,
+        pop: jest.fn(() => { pathPoints.shift(); }),
+      };
+    };
+    let ownerPath: unknown = makePath();
+    const owner = {
+      id: 1,
+      position: new THREE.Vector3(79.62, 72.31, 0),
+      rotation: { z: 0 },
+      area: {
+        id: 1,
+        getNearestWalkablePoint: (p: THREE.Vector3) => p.clone(),
+        isPointWalkable: () => true,
+      },
+      walkSpeedFactor: 1,
+      locomotionScale: 1,
+      movementSpeed: 1,
+      helperColor: 0,
+      setComputedPath: jest.fn((p: unknown) => { ownerPath = p; }),
+      getComputedPath: jest.fn(() => ownerPath),
+      clearLocomotionState: jest.fn(),
+      setFacing: jest.fn(),
+      setAnimationState: jest.fn(),
+      getWalkSpeed: () => 1.7,
+      getRunSpeed: () => 5.4,
+      walk: false,
+      force: 0,
+      speed: 0,
+      collisionTimer: 0,
+      blockingTimer: 6,
+      pathFindApproachPersonalSpace: 0,
+    } as unknown as ModuleCreature;
+
+    mockWalkUpdate.mockReturnValue(3); // BLOCKED
+    mockIsWalkmeshHopBlocked
+      .mockReturnValueOnce(true)  // first hop blocked
+      .mockReturnValueOnce(true)  // still blocked after drop → escape
+      .mockReturnValueOnce(false); // clear after jam replot
+    mockDropWalkmeshBlockedPathPrefix.mockImplementation((
+      _area: unknown,
+      _pos: unknown,
+      path: { points: unknown[] }
+    ) => {
+      path.points.length = 0;
+      return 1;
+    });
+    mockFindWalkClearDetour.mockReturnValue(undefined);
+    mockPlotPath.mockReturnValue({
+      code: WalkPathCode.Ready,
+      path: {
+        points: [{ vector: new THREE.Vector3(80.32, 73.0, 0) }],
+        fixWalkEdges: () => {},
+        setColor: () => {},
+        realtime: false,
+        timer: 20,
+        pop: () => {},
+      },
+    });
+
+    const action = new ActionMoveToPoint();
+    action.setOwner(owner);
+    action.setParameter(0, ActionParameterType.FLOAT, 80.32);
+    action.setParameter(1, ActionParameterType.FLOAT, 73.0);
+    action.setParameter(2, ActionParameterType.FLOAT, 0);
+    action.setParameter(3, ActionParameterType.DWORD, 1);
+    action.setParameter(4, ActionParameterType.DWORD, 0x7f000000);
+    action.setParameter(5, ActionParameterType.INT, 1);
+    action.setParameter(6, ActionParameterType.FLOAT, 0.1);
+    action.target_position.set(80.32, 73.0, 0);
+    (action as { computedPath?: unknown }).computedPath = ownerPath;
+    mockPlotPath.mockClear();
+
+    expect(action.update(1 / 60)).toBe(ActionStatus.IN_PROGRESS);
+    expect(mockPlotPath).toHaveBeenCalledTimes(1);
+
+    // Re-seed a blocked path; cooldown still active (~0.48s left).
+    ownerPath = makePath();
+    (action as { computedPath?: unknown }).computedPath = ownerPath;
+    mockPlotPath.mockClear();
+    mockFindWalkClearDetour.mockClear();
+    mockIsWalkmeshHopBlocked.mockReset();
+    mockIsWalkmeshHopBlocked.mockReturnValue(true);
+
+    expect(action.update(1 / 60)).toBe(ActionStatus.IN_PROGRESS);
+    expect(mockPlotPath).not.toHaveBeenCalled();
+    expect(mockFindWalkClearDetour).not.toHaveBeenCalled();
+
+    // After cooldown elapses, jam escape may replot again.
+    (action as { jamRepathCooldown: number }).jamRepathCooldown = 0;
+    ownerPath = makePath();
+    (action as { computedPath?: unknown }).computedPath = ownerPath;
+    mockPlotPath.mockClear();
+    mockIsWalkmeshHopBlocked.mockReset();
+    mockIsWalkmeshHopBlocked
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(false);
+
+    expect(action.update(1 / 60)).toBe(ActionStatus.IN_PROGRESS);
+    expect(mockPlotPath).toHaveBeenCalledTimes(1);
   });
 
   it("on walkmesh BLOCKED when replot stays blocked, uses walk-clear detour", () => {

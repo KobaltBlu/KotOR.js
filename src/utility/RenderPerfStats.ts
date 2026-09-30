@@ -23,6 +23,8 @@ export class RenderPerfStats {
   static drawsDepthPre = 0;
   static programChanges = 0;
   static casterDrawCount = 0;
+  /** Soft-depth blitFramebuffer failures this frame (MeshDepthMaterial fallback). */
+  static softDepthBlitFails = 0;
 
   private static _frame = 0;
   private static _lastProgramId = -1;
@@ -99,6 +101,7 @@ export class RenderPerfStats {
     this.drawsDepthPre = 0;
     this.programChanges = 0;
     this.casterDrawCount = 0;
+    this.softDepthBlitFails = 0;
     this._lastProgramId = -1;
     this._phase = 'none';
     this._callsAtPhaseStart = this.currentCalls();
@@ -177,6 +180,11 @@ export class RenderPerfStats {
     this.casterDrawCount = count;
   }
 
+  static noteSoftDepthBlitFail(): void {
+    if(!this.enabled){ return; }
+    this.softDepthBlitFails++;
+  }
+
   static snapshot(): string {
     return [
       `frame=${this._frame}`,
@@ -192,6 +200,7 @@ export class RenderPerfStats {
       `programs=${this.programChanges}`,
       `casters=${this.casterDrawCount}`,
       `guiSkip=${this.guiEmptyDrawsSkipped}`,
+      `softBlitFail=${this.softDepthBlitFails}`,
     ].join(' ');
   }
 

@@ -43,6 +43,9 @@ import { isObject } from "@/module/guards/isObject";
 
 const _safeDest = new THREE.Vector3();
 
+/** Min seconds between jam repath+detour attempts on one ActionMoveToPoint. */
+const JAM_REPATH_COOLDOWN_S = 0.5;
+
 /**
  * Live-chase dest snap: safe location around target (r=20, require LOS).
  * On failure leave dest at the live target position.
@@ -107,6 +110,12 @@ export class ActionMoveToPoint extends Action {
   /** Lite pathfind info — lastCode / endpoints for early-out. */
   pathFindInfo: PathFindInfoLite | undefined;
 
+  /**
+   * Seconds remaining before the next jam repath+detour is allowed.
+   * Throttles escapeWalkmeshJam so blocked creatures do not replot every tick.
+   */
+  jamRepathCooldown = 0;
+
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
     this.type = ActionType.ActionMoveToPoint;
@@ -130,6 +139,10 @@ export class ActionMoveToPoint extends Action {
   update(delta: number = 0): ActionStatus {
     if(!isCreature(this.owner))
       return ActionStatus.FAILED;
+
+    if(this.jamRepathCooldown > 0){
+      this.jamRepathCooldown = Math.max(0, this.jamRepathCooldown - delta);
+    }
 
 
     const destAreaId = this.getRawNumberParameter(3);
@@ -474,10 +487,19 @@ export class ActionMoveToPoint extends Action {
   /**
    * Repath from current position; if the first hop is still walkmesh-blocked
    * (or plot fails), ring-search a walk-clear detour. No escape → FAILED.
+   * Throttled to at most once per {@link JAM_REPATH_COOLDOWN_S} so a stuck
+   * creature does not spend a full path plan every tick.
    *
-   * @returns `null` if a usable path was installed; otherwise `FAILED`.
+   * @returns `null` if a usable path was installed (or cooldown holds);
+   *          otherwise `FAILED`.
    */
   private escapeWalkmeshJam(owner: ModuleCreature): ActionStatus | null {
+    if(this.jamRepathCooldown > 0){
+      // Keep blocked state; try again after cooldown.
+      return null;
+    }
+    this.jamRepathCooldown = JAM_REPATH_COOLDOWN_S;
+
     this.repathFromCurrentPosition();
 
     const area = owner.area;

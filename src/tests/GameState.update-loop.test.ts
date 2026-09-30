@@ -4,6 +4,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import {
+  MESSAGE_CHANNEL_YIELD_MS,
   UpdateLoopArm,
   isVSyncEnabledRaw,
   runUpdateTick,
@@ -77,13 +78,31 @@ describe('updateLoopSchedule', () => {
       expect(arm.armedCount).toBe(1);
     });
 
-    it('arms exactly one adaptive timeout when V-Sync is off', () => {
+    it('arms MessageChannel for short uncapped yields (avoids 4ms timer clamp)', () => {
       const setTimeoutSpy = jest.spyOn(global, 'setTimeout');
       arm.schedule(false, 17, onTick);
-      expect(arm.timeoutId).toBeTruthy();
+      expect(arm.channelPending).toBe(true);
+      expect(arm.timeoutId).toBe(0);
       expect(arm.rafId).toBe(0);
       expect(arm.armedCount).toBe(1);
-      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 3);
+      expect(uncappedYieldMs(17)).toBeLessThanOrEqual(MESSAGE_CHANNEL_YIELD_MS);
+      // Short yields must not arm setTimeout (browser clamps nested timers to ~4ms).
+      const yieldCalls = setTimeoutSpy.mock.calls.filter(
+        (c) => typeof c[1] === 'number' && (c[1] as number) <= MESSAGE_CHANNEL_YIELD_MS
+      );
+      expect(yieldCalls).toHaveLength(0);
+      setTimeoutSpy.mockRestore();
+    });
+
+    it('arms adaptive timeout when uncapped yield exceeds MessageChannel threshold', () => {
+      const setTimeoutSpy = jest.spyOn(global, 'setTimeout');
+      // ceil(40/8)=5 > MESSAGE_CHANNEL_YIELD_MS
+      arm.schedule(false, 40, onTick);
+      expect(arm.timeoutId).toBeTruthy();
+      expect(arm.channelPending).toBe(false);
+      expect(arm.rafId).toBe(0);
+      expect(arm.armedCount).toBe(1);
+      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 5);
       setTimeoutSpy.mockRestore();
     });
 
@@ -100,13 +119,15 @@ describe('updateLoopSchedule', () => {
 
       arm.applyOption(false, onTick);
       expect(arm.armedCount).toBe(1);
-      expect(arm.timeoutId).toBeTruthy();
+      expect(arm.channelPending).toBe(true);
+      expect(arm.timeoutId).toBe(0);
       expect(arm.rafId).toBe(0);
 
-      // Mid-Update pattern: apply then finally schedule.
+      // Mid-Update pattern: apply then finally schedule (short yield → channel).
       arm.schedule(false, 9, onTick);
       expect(arm.armedCount).toBe(1);
-      expect(arm.timeoutId).toBeTruthy();
+      expect(arm.channelPending).toBe(true);
+      expect(arm.timeoutId).toBe(0);
     });
 
     it('does not let a pre-toggle callback invoke onTick', () => {
@@ -116,6 +137,21 @@ describe('updateLoopSchedule', () => {
       expect(arm.generation).toBe(genBefore + 1);
       jest.runOnlyPendingTimers();
       expect(onTick).toHaveBeenCalledTimes(1);
+    });
+
+    it('clear invalidates a pending MessageChannel tick', async () => {
+      arm.schedule(false, 1, onTick);
+      expect(arm.channelPending).toBe(true);
+      arm.clear();
+      expect(arm.channelPending).toBe(false);
+      expect(arm.armedCount).toBe(0);
+      // Flush any posted message; token bump must prevent onTick.
+      await new Promise<void>((resolve) => {
+        const ch = new MessageChannel();
+        ch.port1.onmessage = () => resolve();
+        ch.port2.postMessage(null);
+      });
+      expect(onTick).not.toHaveBeenCalled();
     });
   });
 

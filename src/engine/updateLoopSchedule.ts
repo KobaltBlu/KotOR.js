@@ -1,6 +1,6 @@
 /**
  * Update-loop arming helpers for GameState.
- * Keeps at most one live RAF/timeout and derives uncapped yield from JS-thread work.
+ * Keeps at most one live RAF/timeout/MessageChannel and derives uncapped yield from JS-thread work.
  */
 
 /**
@@ -11,6 +11,12 @@
 export function uncappedYieldMs(workMs: number): number {
   return Math.min(8, Math.max(1, Math.ceil(workMs / 8)));
 }
+
+/**
+ * Nested setTimeout is clamped to ~4ms in browsers. Yields at or below that
+ * threshold use MessageChannel instead so uncapped mode is not paced by the clamp.
+ */
+export const MESSAGE_CHANNEL_YIELD_MS = 4;
 
 /**
  * Graphics Options.V-Sync — defaults on (RAF-paced). Missing/empty → enabled;
@@ -29,6 +35,18 @@ export class UpdateLoopArm {
   rafId = 0;
   timeoutId = 0;
   generation = 0;
+  /** True while a MessageChannel port message is outstanding (cannot cancel). */
+  channelPending = false;
+
+  private channel: MessageChannel | undefined;
+  private channelToken = 0;
+
+  private ensureChannel(): MessageChannel {
+    if(!this.channel){
+      this.channel = new MessageChannel();
+    }
+    return this.channel;
+  }
 
   clear(): void {
     if(this.rafId){
@@ -39,14 +57,20 @@ export class UpdateLoopArm {
       clearTimeout(this.timeoutId);
       this.timeoutId = 0;
     }
+    // Posted messages cannot be cancelled — bump token so stale handlers no-op.
+    if(this.channelPending){
+      this.channelToken++;
+      this.channelPending = false;
+    }
   }
 
   get armedCount(): number {
-    return (this.rafId ? 1 : 0) + (this.timeoutId ? 1 : 0);
+    return (this.rafId ? 1 : 0) + (this.timeoutId ? 1 : 0) + (this.channelPending ? 1 : 0);
   }
 
   /**
-   * Clear any prior handle, then arm exactly one RAF (vsync) or adaptive timeout.
+   * Clear any prior handle, then arm exactly one RAF (vsync), MessageChannel
+   * (short uncapped yield), or adaptive timeout (longer uncapped yield).
    */
   schedule(vsync: boolean, workMs: number, onTick: () => void): void {
     const generation = this.generation;
@@ -59,11 +83,24 @@ export class UpdateLoopArm {
       });
     }else{
       const yieldMs = uncappedYieldMs(workMs);
-      this.timeoutId = setTimeout(() => {
-        this.timeoutId = 0;
-        if(generation !== this.generation) return;
-        onTick();
-      }, yieldMs) as unknown as number;
+      if(yieldMs <= MESSAGE_CHANNEL_YIELD_MS){
+        const token = this.channelToken;
+        const channel = this.ensureChannel();
+        this.channelPending = true;
+        channel.port1.onmessage = () => {
+          if(token !== this.channelToken) return;
+          this.channelPending = false;
+          if(generation !== this.generation) return;
+          onTick();
+        };
+        channel.port2.postMessage(null);
+      }else{
+        this.timeoutId = setTimeout(() => {
+          this.timeoutId = 0;
+          if(generation !== this.generation) return;
+          onTick();
+        }, yieldMs) as unknown as number;
+      }
     }
   }
 

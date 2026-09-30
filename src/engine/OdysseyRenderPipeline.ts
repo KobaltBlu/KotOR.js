@@ -1,10 +1,7 @@
 import * as THREE from "three";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
-import { SSAARenderPass } from "three/examples/jsm/postprocessing/SSAARenderPass";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
-import { BloomPass } from "three/examples/jsm/postprocessing/BloomPass";
-import { BokehPass } from "three/examples/jsm/postprocessing/BokehPass";
 import { CopyShader } from "three/examples/jsm/shaders/CopyShader";
 
 import { GameState } from "@/GameState";
@@ -34,7 +31,6 @@ import { OdysseyUniformBuffers } from "@/three/odyssey/OdysseyUniformBuffers";
 export class OdysseyRenderPipeline {
   static composer: EffectComposer;
   static renderPass: RenderPass;
-  static renderPassAA: SSAARenderPass;
   static odysseyShaderPass: OdysseyShaderPass;
   static forceDistortionPass: ForceDistortionPass;
   static overbrightenPass: OverbrightenPass;
@@ -46,35 +42,40 @@ export class OdysseyRenderPipeline {
   static copyPass: ShaderPass;
   static renderPassGUI: RenderPass;
   static renderPassMGHud: RenderPass;
-  static bloomPass: BloomPass;
-  static bokehPass: BokehPass;
   static speedBlurPass: AccumulationBlurPass;
 
   static initComposer(): void {
     OdysseyRenderPipeline.composer = new EffectComposer(GameState.renderer);
-    // Enable stencil on composer targets for -equivalent shadow disks.
-    // DepthTexture lets soft particles sample after an opaque split (WebGL2 blit path).
-    const composerRT = {
+    // Dispose EffectComposer ctor HalfFloat RTs before replacing with Odyssey targets.
+    OdysseyRenderPipeline.composer.renderTarget1?.dispose();
+    OdysseyRenderPipeline.composer.renderTarget2?.dispose();
+
+    const w = GameState.ResolutionManager.getViewportWidth();
+    const h = GameState.ResolutionManager.getViewportHeight();
+    // writeBuffer (RT1): color + depth + stencil (no DepthTexture) — post swaps /
+    // ForceDistortion color snapshot. Stencil kept so mid-chain needsSwap still
+    // allows force warp. readBuffer (RT2): world + soft blit DepthTexture.
+    const postRT = {
       minFilter: THREE.LinearFilter,
       magFilter: THREE.LinearFilter,
       format: THREE.RGBAFormat,
       depthBuffer: true,
       stencilBuffer: true,
     };
-    const w = GameState.ResolutionManager.getViewportWidth();
-    const h = GameState.ResolutionManager.getViewportHeight();
-    OdysseyRenderPipeline.composer.renderTarget1 = new THREE.WebGLRenderTarget(w, h, composerRT);
-    OdysseyRenderPipeline.composer.renderTarget1.depthTexture = new THREE.DepthTexture(w, h);
-    OdysseyRenderPipeline.composer.renderTarget1.depthTexture.type = THREE.UnsignedShortType;
-    OdysseyRenderPipeline.composer.renderTarget2 = OdysseyRenderPipeline.composer.renderTarget1.clone();
-    if(!OdysseyRenderPipeline.composer.renderTarget2.depthTexture){
-      OdysseyRenderPipeline.composer.renderTarget2.depthTexture = new THREE.DepthTexture(w, h);
-      OdysseyRenderPipeline.composer.renderTarget2.depthTexture.type = THREE.UnsignedShortType;
-    }
+    const worldRT = {
+      minFilter: THREE.LinearFilter,
+      magFilter: THREE.LinearFilter,
+      format: THREE.RGBAFormat,
+      depthBuffer: true,
+      stencilBuffer: true,
+    };
+    OdysseyRenderPipeline.composer.renderTarget1 = new THREE.WebGLRenderTarget(w, h, postRT);
+    OdysseyRenderPipeline.composer.renderTarget2 = new THREE.WebGLRenderTarget(w, h, worldRT);
+    OdysseyRenderPipeline.composer.renderTarget2.depthTexture = new THREE.DepthTexture(w, h);
+    OdysseyRenderPipeline.composer.renderTarget2.depthTexture.type = THREE.UnsignedShortType;
     OdysseyRenderPipeline.composer.writeBuffer = OdysseyRenderPipeline.composer.renderTarget1;
     OdysseyRenderPipeline.composer.readBuffer = OdysseyRenderPipeline.composer.renderTarget2;
     OdysseyRenderPipeline.renderPass = new RenderPass(GameState.scene, GameState.currentCamera);
-    OdysseyRenderPipeline.renderPassAA = new SSAARenderPass (GameState.scene, GameState.currentCamera);
     OdysseyRenderPipeline.odysseyShaderPass = new OdysseyShaderPass();
     OdysseyRenderPipeline.odysseyShaderPass.enabled = false;
     OdysseyRenderPipeline.forceDistortionPass = new ForceDistortionPass();
@@ -117,18 +118,9 @@ export class OdysseyRenderPipeline {
       }
     };
 
-    OdysseyRenderPipeline.bloomPass = new BloomPass(0.5);
-    OdysseyRenderPipeline.bokehPass = new BokehPass(GameState.scene, GameState.currentCamera, {
-      focus: 1.0,
-      aperture:	0.0001,
-      maxblur:	1.0,
-    });
-
     OdysseyRenderPipeline.speedBlurPass = new AccumulationBlurPass(MotionBlurController.speedBlurRatio);
     OdysseyRenderPipeline.speedBlurPass.enabled = false;
     MotionBlurController.boundSpeedBlurPass = OdysseyRenderPipeline.speedBlurPass;
-
-    OdysseyRenderPipeline.renderPassAA.sampleLevel = 1;
 
     OdysseyRenderPipeline.renderPass.renderToScreen = false;
     OdysseyRenderPipeline.copyPass.renderToScreen = false;
@@ -136,18 +128,13 @@ export class OdysseyRenderPipeline {
     OdysseyRenderPipeline.renderPassMGHud.renderToScreen = false;
 
     OdysseyRenderPipeline.renderPass.clear = true;
-    OdysseyRenderPipeline.bloomPass.clear = false;
     OdysseyRenderPipeline.odysseyShaderPass.clear = false;
-    OdysseyRenderPipeline.renderPassAA.clear = false;
     OdysseyRenderPipeline.copyPass.clear = false;
     OdysseyRenderPipeline.renderPassGUI.clear = false;
     OdysseyRenderPipeline.renderPassGUI.clearDepth = true;
     OdysseyRenderPipeline.renderPassMGHud.clear = false;
     OdysseyRenderPipeline.renderPassMGHud.clearDepth = true;
     OdysseyRenderPipeline.renderPassMGHud.enabled = false;
-
-    OdysseyRenderPipeline.bokehPass.needsSwap = true;
-    OdysseyRenderPipeline.bokehPass.enabled = false;
 
     OdysseyRenderPipeline.composer.addPass(OdysseyRenderPipeline.renderPass);
     OdysseyRenderPipeline.composer.addPass(OdysseyRenderPipeline.speedBlurPass);
@@ -186,26 +173,43 @@ export class OdysseyRenderPipeline {
       GameState.ResolutionManager.getViewportWidth() * GameState.rendererUpscaleFactor,
       GameState.ResolutionManager.getViewportHeight() * GameState.rendererUpscaleFactor
     );
-    const rt = GameState.depthTarget;
+    OdysseyRenderPipeline.syncDepthTextureSize(GameState.depthTarget);
+    OdysseyRenderPipeline.syncDepthTextureSize(OdysseyRenderPipeline.composer.renderTarget2);
+    // Keep world role on the stencil/DepthTexture target after setSize.
+    OdysseyRenderPipeline.resetComposerBufferRoles();
+  }
+
+  /** Soft-particle / blit DepthTexture image size must match the RT. */
+  static syncDepthTextureSize(rt: THREE.WebGLRenderTarget | undefined | null): void {
     const dt = rt?.depthTexture;
-    if(rt && dt){
-      if(!dt.image){
-        dt.image = { width: rt.width, height: rt.height } as any;
-      }else{
-        dt.image.width = rt.width;
-        dt.image.height = rt.height;
-      }
-      dt.needsUpdate = true;
+    if(!rt || !dt) return;
+    if(!dt.image){
+      dt.image = { width: rt.width, height: rt.height } as any;
+    }else{
+      dt.image.width = rt.width;
+      dt.image.height = rt.height;
     }
+    dt.needsUpdate = true;
+  }
+
+  /**
+   * readBuffer must stay on renderTarget2 (stencil + DepthTexture) for world /
+   * soft-split / force distortion. EffectComposer may leave buffers swapped
+   * after a prior frame's CopyShader needsSwap.
+   */
+  static resetComposerBufferRoles(): void {
+    const c = OdysseyRenderPipeline.composer;
+    if(!c) return;
+    c.readBuffer = c.renderTarget2;
+    c.writeBuffer = c.renderTarget1;
   }
 
   static renderFrame(delta: number = 0): void {
     RenderPerfStats.beginFrame(GameState.renderer);
     ModuleGpuWarmLog.tickFrame(GameState.renderer);
 
+    OdysseyRenderPipeline.resetComposerBufferRoles();
     OdysseyRenderPipeline.renderPass.camera = GameState.currentCamera;
-    OdysseyRenderPipeline.renderPassAA.camera = GameState.currentCamera;
-    OdysseyRenderPipeline.bokehPass.camera = GameState.currentCamera;
     if(OdysseyRenderPipeline.renderPassMGHud){
       OdysseyRenderPipeline.renderPassMGHud.camera = GameState.currentCamera;
     }
@@ -269,6 +273,13 @@ export class OdysseyRenderPipeline {
       if(OdysseyRenderPipeline.forceDistortionPass.enabled){
         OdysseyRenderPipeline.forceDistortionPass.setDistortionTexture(GameState.forceDistortionTexture);
       }
+    }
+
+    // Bloom: swap into DepthTexture-free writeBuffer unless force warp needs stencil.
+    if(OdysseyRenderPipeline.convolutionBloomPass){
+      OdysseyRenderPipeline.convolutionBloomPass.setPreserveStencil(
+        !!OdysseyRenderPipeline.forceDistortionPass?.enabled
+      );
     }
 
     const composer = OdysseyRenderPipeline.composer;

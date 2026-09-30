@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {
   getOdysseyDepthPrepassMaterial,
 } from '@/three/odyssey/OdysseyDepthPrepassMaterial';
+import { RenderPerfStats } from '@/utility/RenderPerfStats';
 
 function shouldHideFromDepthPrepass(obj: THREE.Object3D): boolean {
   if((obj as any).type === 'OdysseyEmitter'){
@@ -50,6 +51,40 @@ function isSoftDepthEmitter(obj: THREE.Object3D): boolean {
   return false;
 }
 
+function isDrawableMesh(obj: THREE.Object3D): boolean {
+  const mesh = obj as THREE.Mesh;
+  return (
+    (obj as any).type === 'OdysseyEmitter' ||
+    mesh.isMesh ||
+    (mesh as THREE.SkinnedMesh).isSkinnedMesh
+  );
+}
+
+/** Soft emitters + other visible drawables collected in one scene walk. */
+export interface SoftDepthSplitLists {
+  softEmitters: THREE.Object3D[];
+  otherDrawables: THREE.Object3D[];
+}
+
+/**
+ * Single traverse for the soft-depth split: collect soft DEPTH_TEXTURE emitters
+ * and every other visible drawable (to hide during the soft-only overlay).
+ */
+export function collectSoftDepthSplitLists(root: THREE.Object3D): SoftDepthSplitLists {
+  const softEmitters: THREE.Object3D[] = [];
+  const otherDrawables: THREE.Object3D[] = [];
+  root.traverse((obj) => {
+    if(!obj.visible) return;
+    if(!isDrawableMesh(obj)) return;
+    if(isSoftDepthEmitter(obj)){
+      softEmitters.push(obj);
+    }else{
+      otherDrawables.push(obj);
+    }
+  });
+  return { softEmitters, otherDrawables };
+}
+
 /**
  * Hide emitters, beaming, sabers, and additive meshes during depth prepass.
  * Returns objects whose visibility was toggled (restore after pass).
@@ -84,12 +119,7 @@ export function isolateSoftDepthEmitters(root: THREE.Object3D): THREE.Object3D[]
   const hidden: THREE.Object3D[] = [];
   root.traverse((obj) => {
     if(!obj.visible) return;
-    const mesh = obj as THREE.Mesh;
-    const isDrawable =
-      (obj as any).type === 'OdysseyEmitter' ||
-      mesh.isMesh ||
-      (mesh as THREE.SkinnedMesh).isSkinnedMesh;
-    if(!isDrawable) return;
+    if(!isDrawableMesh(obj)) return;
     if(isSoftDepthEmitter(obj)) return;
     obj.visible = false;
     hidden.push(obj);
@@ -103,22 +133,35 @@ export function restoreDepthPrepassHidden(hidden: THREE.Object3D[]): void {
   }
 }
 
+function setVisibleFalse(objects: THREE.Object3D[]): void {
+  for(let i = 0; i < objects.length; i++){
+    objects[i].visible = false;
+  }
+}
+
 /** Point soft emitters at a depth texture for tDepth sampling. */
 export function bindSoftEmitterDepthTexture(
   root: THREE.Object3D,
-  depthTex: THREE.DepthTexture | null
+  depthTex: THREE.DepthTexture | null,
+  softEmitters?: THREE.Object3D[]
 ): void {
   if(!depthTex) return;
-  root.traverse((obj) => {
-    if(!isSoftDepthEmitter(obj)) return;
-    const mesh = obj as THREE.Mesh;
+  const list = softEmitters ?? (() => {
+    const found: THREE.Object3D[] = [];
+    root.traverse((obj) => {
+      if(isSoftDepthEmitter(obj)) found.push(obj);
+    });
+    return found;
+  })();
+  for(let i = 0; i < list.length; i++){
+    const mesh = list[i] as THREE.Mesh;
     const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-    for(let i = 0; i < mats.length; i++){
-      const mat = mats[i];
+    for(let j = 0; j < mats.length; j++){
+      const mat = mats[j];
       if(!(mat instanceof THREE.ShaderMaterial) || !mat.uniforms?.tDepth) continue;
       mat.uniforms.tDepth.value = depthTex;
     }
-  });
+  }
 }
 
 export interface IOdysseyDepthPrepassOptions {
@@ -164,8 +207,30 @@ export interface IOdysseySoftDepthSplitOptions {
 }
 
 /**
+ * Draw soft DEPTH_TEXTURE emitters only into colorTarget (opaque already present).
+ */
+function drawSoftEmittersOverlay(
+  scene: THREE.Scene,
+  renderer: THREE.WebGLRenderer,
+  camera: THREE.Camera,
+  colorTarget: THREE.WebGLRenderTarget,
+  depthSampleTarget: THREE.WebGLRenderTarget,
+  lists: SoftDepthSplitLists
+): void {
+  bindSoftEmitterDepthTexture(scene, depthSampleTarget.depthTexture, lists.softEmitters);
+  setVisibleFalse(lists.otherDrawables);
+  renderer.setRenderTarget(colorTarget);
+  renderer.clear(false, false, false);
+  renderer.render(scene, camera);
+  restoreDepthPrepassHidden(lists.otherDrawables);
+}
+
+/**
  * One opaque color+depth draw into colorTarget, blit depth to depthSampleTarget,
- * then soft DEPTH_TEXTURE emitters only. Returns true on success.
+ * then soft DEPTH_TEXTURE emitters only. Returns true when colorTarget already
+ * holds the world (caller should disable RenderPass). On blit failure the opaque
+ * color is kept, depth is filled via MeshDepthMaterial prepass, and soft emitters
+ * are still overlaid — still returns true to avoid a second full world draw.
  */
 export function runOdysseySoftDepthSplit(options: IOdysseySoftDepthSplitOptions): boolean {
   const { scene, renderer, camera, colorTarget, depthSampleTarget } = options;
@@ -174,10 +239,17 @@ export function runOdysseySoftDepthSplit(options: IOdysseySoftDepthSplitOptions)
     typeof WebGL2RenderingContext !== 'undefined' &&
     gl instanceof WebGL2RenderingContext;
 
+  // One traverse for hide / isolate / bind instead of three full walks.
+  const lists = collectSoftDepthSplitLists(scene);
+  if(lists.softEmitters.length === 0){
+    // Flag was stale — let RenderPass draw the frame normally.
+    return false;
+  }
+
   ensureDepthTexture(colorTarget, renderer);
   ensureDepthTexture(depthSampleTarget, renderer);
 
-  const hiddenSoft = hideSoftDepthEmitters(scene);
+  setVisibleFalse(lists.softEmitters);
   const prevTarget = renderer.getRenderTarget();
   const prevAutoClear = renderer.autoClear;
 
@@ -191,27 +263,24 @@ export function runOdysseySoftDepthSplit(options: IOdysseySoftDepthSplitOptions)
     blitOk = blitFramebufferDepth(renderer, colorTarget, depthSampleTarget);
   }
 
-  restoreDepthPrepassHidden(hiddenSoft);
+  restoreDepthPrepassHidden(lists.softEmitters);
 
   if(!blitOk){
-    // Fall back: MeshDepthMaterial prepass into depthSampleTarget.
+    RenderPerfStats.noteSoftDepthBlitFail();
+    // Opaque color already in colorTarget — only refill depth, then soft overlay.
     runOdysseyDepthPrepass({
       scene,
       renderer,
       camera,
       depthTarget: depthSampleTarget,
     });
+    drawSoftEmittersOverlay(scene, renderer, camera, colorTarget, depthSampleTarget, lists);
     renderer.setRenderTarget(prevTarget);
     renderer.autoClear = prevAutoClear;
-    return false;
+    return true;
   }
 
-  bindSoftEmitterDepthTexture(scene, depthSampleTarget.depthTexture);
-  const hiddenOpaque = isolateSoftDepthEmitters(scene);
-  renderer.setRenderTarget(colorTarget);
-  renderer.clear(false, false, false);
-  renderer.render(scene, camera);
-  restoreDepthPrepassHidden(hiddenOpaque);
+  drawSoftEmittersOverlay(scene, renderer, camera, colorTarget, depthSampleTarget, lists);
 
   renderer.setRenderTarget(prevTarget);
   renderer.autoClear = prevAutoClear;

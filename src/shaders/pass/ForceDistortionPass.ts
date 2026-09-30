@@ -15,8 +15,10 @@ export const FORCE_DISTORTION_STENCIL_BIT = 0x80;
  * ForceDistortionPass — RenderForceDistortion fullscreen warp.
  *
  * Emitters write stencil during the scene (colorWrite off). This pass copies
- * scene color then warps in-place with glStencilFunc(NOTEQUAL, 0, bit)
- * (needsSwap = false so stencil stays on readBuffer).
+ * scene color into a color-only scratch RT, then warps back into readBuffer
+ * with glStencilFunc(NOTEQUAL, 0, bit) (needsSwap = false so stencil stays
+ * on readBuffer). Scratch avoids writing into the composer's depth+stencil
+ * ping-pong target.
  *
  * @file ForceDistortionPass.ts
  */
@@ -106,7 +108,7 @@ export class ForceDistortionPass extends Pass {
 
     this.ensureColorCopy(readBuffer);
 
-    // Copy scene color (glCopyTexSubImage2D) — leave stencil intact
+    // Copy scene color — leave stencil intact on readBuffer
     this.copyMaterial.uniforms.tDiffuse.value = readBuffer.texture;
     renderer.setRenderTarget(this.colorCopy);
     this.copyQuad.render(renderer);
