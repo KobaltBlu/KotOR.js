@@ -20,6 +20,10 @@ import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
 import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
 import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
 import { ConfigClient } from "@/utility/ConfigClient";
+import { PerformanceMonitor } from "@/utility/PerformanceMonitor";
+import { TextureLoader } from "@/loaders";
+import { TextureType } from "@/enums/loaders/TextureType";
+import { GameEngineType } from "@/enums/engine";
 
 const namedGroup = (name: string = 'na'): THREE.Group => {
   const group = new THREE.Group();
@@ -85,6 +89,56 @@ export class GameRuntimeBootstrap {
     GameState.windManager.init(GameState);
     GameState.grassManager?.init(GameState);
     GameState.lightManager.setLightHelpersVisible(ConfigClient.get('GameState.debug.light_helpers') ? true : false);
+  }
+
+  static async initCursor(): Promise<void> {
+    GameState.CursorManager.MenuManager = GameState.MenuManager;
+    GameState.CursorManager.selected = undefined;
+    GameState.CursorManager.hovered = undefined;
+    await GameState.CursorManager.init();
+
+    GameState.scene_cursor_holder.add( GameState.CursorManager.cursor );
+    GameState.scene.add( GameState.CursorManager.reticle );
+    GameState.scene.add( GameState.CursorManager.reticle2 );
+    GameState.scene_gui.add( GameState.CursorManager.arrow );
+    console.log('CursorManager: Complete');
+  }
+
+  static async initMenus(): Promise<void> {
+    PerformanceMonitor.start('PartyManager.Initialize');
+    GameState.PartyManager.Initialize();
+    PerformanceMonitor.stop('PartyManager.Initialize');
+
+    PerformanceMonitor.start('MenuManager.Init');
+    GameState.MenuManager.Init();
+    PerformanceMonitor.stop('MenuManager.Init');
+
+    PerformanceMonitor.start('MenuManager.LoadMainGameMenus');
+    await GameState.MenuManager.LoadMainGameMenus();
+    PerformanceMonitor.stop('MenuManager.LoadMainGameMenus');
+
+    if(GameState.GameKey == GameEngineType.TSL){
+      await GameState.LegalScreenManager.Initialize();
+    }
+  }
+
+  static queueIntro(): void {
+    TextureLoader.enQueue(GameState.preloadTextures,
+      undefined,
+      TextureType.TEXTURE
+    );
+    void OdysseyRenderPipeline.ensureForceDistortionTexture();
+
+    // BeginIntro: K1 queues leclogo/biologo/legal BIKs; TSL queues
+    // leclogo/obsidianent then legal screen texture, not a Legal movie.
+    if(GameState.GameKey == GameEngineType.KOTOR){
+      GameState.VideoManager.queueMovie('leclogo', true);
+      GameState.VideoManager.queueMovie('biologo', true);
+      GameState.VideoManager.queueMovie('legal', true);
+    }else if(GameState.GameKey == GameEngineType.TSL){
+      GameState.VideoManager.queueMovie('leclogo', true);
+      GameState.VideoManager.queueMovie('obsidianent', true);
+    }
   }
 
   static createRuntime(): void {

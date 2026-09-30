@@ -21,7 +21,6 @@ import type Stats from 'three/examples/jsm/libs/stats.module';
 
 import { INIConfig } from "@/engine/INIConfig";
 import { UpdateLoopArm } from "@/engine/updateLoopSchedule";
-import { OdysseyRenderPipeline } from "@/engine/OdysseyRenderPipeline";
 import { GameLoop } from "@/engine/GameLoop";
 import { GameRuntimeBootstrap } from "@/engine/GameRuntimeBootstrap";
 import { GameStateEvents } from "@/engine/GameStateEvents";
@@ -30,10 +29,8 @@ import { EngineModeController } from "@/engine/EngineModeController";
 import { FollowerCamera } from "@/engine/FollowerCamera";
 import { Planetary } from "@/engine/Planetary";
 import { Debugger } from "@/engine/Debugger";
-import { TextureLoader } from "@/loaders";
 import { IGameStateGroups } from "@/interface/engine/IGameStateGroups";
 import { EngineState, EngineMode, GameEngineType, GameEngineEnv, EngineDebugType } from "@/enums/engine";
-import { TextureType } from "@/enums/loaders/TextureType";
 import { PerformanceMonitor } from "@/utility/PerformanceMonitor";
 import { EngineContext } from "./engine/EngineContext";
 
@@ -386,7 +383,6 @@ export class GameState implements EngineContext {
     GameRuntimeBootstrap.createRuntime();
 
     try{
-      //init shaders
       PerformanceMonitor.start('ShaderManager.Init');
       GameState.ShaderManager.Init();
       PerformanceMonitor.stop('ShaderManager.Init');
@@ -396,66 +392,13 @@ export class GameState implements EngineContext {
       GameRuntimeBootstrap.initAudioEmitters();
       GameRuntimeBootstrap.initWorldManagers();
 
-      //AudioEngine.Unmute
       EngineModeController.SetEngineMode(EngineMode.GUI);
       GameState.State = EngineState.RUNNING;
       GameState.inMenu = false;
 
-      /**
-       * Initialize the CursorManager
-       */
-      GameState.CursorManager.MenuManager = GameState.MenuManager;
-      GameState.CursorManager.selected = undefined;
-      GameState.CursorManager.hovered = undefined;
-      await GameState.CursorManager.init();
-
-      GameState.scene_cursor_holder.add( GameState.CursorManager.cursor );
-      GameState.scene.add( GameState.CursorManager.reticle );
-      GameState.scene.add( GameState.CursorManager.reticle2 );
-      GameState.scene_gui.add( GameState.CursorManager.arrow );
-      console.log('CursorManager: Complete');
-
-      PerformanceMonitor.start('PartyManager.Initialize');
-      GameState.PartyManager.Initialize();
-      PerformanceMonitor.stop('PartyManager.Initialize');
-
-      /**
-       * Initialize the MenuManager
-       */
-      PerformanceMonitor.start('MenuManager.Init');
-      GameState.MenuManager.Init();
-      PerformanceMonitor.stop('MenuManager.Init');
-
-      PerformanceMonitor.start('MenuManager.LoadMainGameMenus');
-      await GameState.MenuManager.LoadMainGameMenus();
-      PerformanceMonitor.stop('MenuManager.LoadMainGameMenus');
-
-      /**
-       * Preload the legal screen texture
-       */
-      if(GameState.GameKey == GameEngineType.TSL){
-        await GameState.LegalScreenManager.Initialize();
-      }
-
-      /**
-       * Preload fx textures
-       */
-      TextureLoader.enQueue(GameState.preloadTextures,
-        undefined,
-        TextureType.TEXTURE
-      );
-      void OdysseyRenderPipeline.ensureForceDistortionTexture();
-
-      // BeginIntro: K1 queues leclogo/biologo/legal BIKs; TSL queues
-      // leclogo/obsidianent then legal screen texture, not a Legal movie.
-      if(GameState.GameKey == GameEngineType.KOTOR){
-        GameState.VideoManager.queueMovie('leclogo', true);
-        GameState.VideoManager.queueMovie('biologo', true);
-        GameState.VideoManager.queueMovie('legal', true);
-      }else if(GameState.GameKey == GameEngineType.TSL){
-        GameState.VideoManager.queueMovie('leclogo', true);
-        GameState.VideoManager.queueMovie('obsidianent', true);
-      }
+      await GameRuntimeBootstrap.initCursor();
+      await GameRuntimeBootstrap.initMenus();
+      GameRuntimeBootstrap.queueIntro();
 
       GameState.Ready = true;
       GameLoop.Start();
