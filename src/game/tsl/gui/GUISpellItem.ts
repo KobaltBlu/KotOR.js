@@ -60,7 +60,7 @@ export class GUISpellItem extends GUIProtoItem {
       const iconHeight = Math.max(1, asExtentInt(this.extent.height));
       const arrowHeight = 32;
       const spellList = Array.isArray(this.node) ? this.node : [];
-      const creature = GameState.PartyManager.party[0] || GameState.getCurrentPlayer();
+      const creature = GameState.PartyManager.party[0] || GameState.PartyManager.getCurrentPlayer();
       const backTex = getAbilityBackTextureName();
       const arrowTex = getAbilityArrowTextureName();
       const protoWidth = asExtentInt(this.extent.width);

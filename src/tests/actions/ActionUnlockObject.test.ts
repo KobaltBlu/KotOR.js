@@ -16,9 +16,15 @@ jest.mock('@/three/odyssey', () => ({
   OdysseyLight3D: class {},
 }));
 
+jest.mock('@/engine/OdysseyRenderPipeline', () => ({
+  OdysseyRenderPipeline: {},
+}));
+
 jest.mock('@/GameState', () => ({
   GameState: {
-    getCurrentPlayer: () => mockOwner,
+    PartyManager: {
+      getCurrentPlayer: () => mockOwner,
+    },
     GuiTimingBarManager: { startMs: (...a: unknown[]) => startMs(...a), stopFor: (...a: unknown[]) => stopFor(...a) },
     ActionFactory: {
       ActionPlayAnimation: class {

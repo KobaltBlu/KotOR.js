@@ -95,7 +95,7 @@ export class ActionSetMine extends Action {
       action.setParameter(2, ActionParameterType.FLOAT, 2.0);
       this.owner.actionQueue.addFront(action);
       // SetMine uses a shorter bar (~2s) vs Flag/Disarm 4500 ms
-      if(this.owner === GameState.getCurrentPlayer()){
+      if(this.owner === GameState.PartyManager.getCurrentPlayer()){
         GameState.GuiTimingBarManager?.start?.(2.0, 'Set Mine', this.owner, 1);
       }
       return ActionStatus.IN_PROGRESS;

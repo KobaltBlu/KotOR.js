@@ -309,22 +309,22 @@ export class InGameOverlay extends K1_InGameOverlay {
 
       this.LBL_QUEUE0.addEventListener('click', (e) => {
         e.stopPropagation();
-        GameState.getCurrentPlayer().clearCombatAction();
+        GameState.PartyManager.getCurrentPlayer().clearCombatAction();
       });
 
       this.LBL_QUEUE1.addEventListener('click', (e) => {
         e.stopPropagation();
-        GameState.getCurrentPlayer().clearCombatActionAtIndex(0);
+        GameState.PartyManager.getCurrentPlayer().clearCombatActionAtIndex(0);
       });
 
       this.LBL_QUEUE2.addEventListener('click', (e) => {
         e.stopPropagation();
-        GameState.getCurrentPlayer().clearCombatActionAtIndex(1);
+        GameState.PartyManager.getCurrentPlayer().clearCombatActionAtIndex(1);
       });
 
       this.LBL_QUEUE3.addEventListener('click', (e) => {
         e.stopPropagation();
-        GameState.getCurrentPlayer().clearCombatActionAtIndex(2);
+        GameState.PartyManager.getCurrentPlayer().clearCombatActionAtIndex(2);
       });
 
       for(let i = 0; i < ActionMenuManager.TARGET_MENU_COUNT; i++){

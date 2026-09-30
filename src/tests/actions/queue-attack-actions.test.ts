@@ -24,7 +24,9 @@ jest.mock('@/combat/duel-debug', () => ({
 
 jest.mock('@/GameState', () => ({
   GameState: {
-    getCurrentPlayer: () => mockPlayer,
+    PartyManager: {
+      getCurrentPlayer: () => mockPlayer,
+    },
     ModuleObjectManager: {
       showObject: (...args: unknown[]) => mockShowObject(...args),
     },

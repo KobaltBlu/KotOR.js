@@ -241,7 +241,7 @@ export class ModulePath {
     if(!this.area || !this.helperMesh?.visible)
       return;
 
-    const player = this.area.context.getCurrentPlayer();
+    const player = this.area.context.PartyManager.getCurrentPlayer();
     const numPoints = this.points.length;
     let connectionIndexStart = (numPoints * 2);
     for(let i = 0; i < this.points.length; i++){

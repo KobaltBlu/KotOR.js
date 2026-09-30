@@ -224,7 +224,7 @@ export class CursorManager {
 	 */
 	static isReticleHostile(object: ModuleObject | undefined, observer?: ModuleObject): boolean {
 		if(!object) return false;
-		const viewer = observer ?? GameState.getCurrentPlayer();
+		const viewer = observer ?? GameState.PartyManager.getCurrentPlayer();
 		if(!viewer) return false;
 
 		if(isCreature(object)){
@@ -430,7 +430,7 @@ export class CursorManager {
 	}
 
 	static applyReticleScale(sprite: THREE.Sprite, object: ModuleObject | undefined, pulseExtraPx = 0){
-		const player = GameState.getCurrentPlayer();
+		const player = GameState.PartyManager.getCurrentPlayer();
 		if(!object || !player || !sprite){
 			return;
 		}
@@ -449,7 +449,7 @@ export class CursorManager {
 		options?: { lookAt?: boolean },
 	){
 		const doLookAt = options?.lookAt !== false;
-		const player = GameState.getCurrentPlayer();
+		const player = GameState.PartyManager.getCurrentPlayer();
 		if(!object){
 			// ShowObject(null) → LookAt(OBJECT_INVALID)
 			if(player && typeof player.lookAt === 'function'){
@@ -518,7 +518,7 @@ export class CursorManager {
 			CursorManager.setCursor(canChangeCursor ? 'trap' : 'select');
 			CursorManager.setReticle(CursorManager.getHoverReticleStyle(object).material);
 		}else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
-			const player = GameState.getCurrentPlayer();
+			const player = GameState.PartyManager.getCurrentPlayer();
 			const creature = object as ModuleCreature;
 			const style = CursorManager.getHoverReticleStyle(creature);
 
@@ -609,7 +609,7 @@ export class CursorManager {
 		const maxSelectableDistanceSquared = GameState.maxSelectableDistance * GameState.maxSelectableDistance;
 
 		if(CursorManager.hoveredObject){
-			if(CursorManager.hoveredObject.position.distanceToSquared(GameState.getCurrentPlayer().position) > maxSelectableDistanceSquared){
+			if(CursorManager.hoveredObject.position.distanceToSquared(GameState.PartyManager.getCurrentPlayer().position) > maxSelectableDistanceSquared){
 				CursorManager.hoveredObject = undefined;
 				CursorManager.hovered = undefined;
 			}
@@ -778,7 +778,7 @@ export class CursorManager {
 	 * GetStickyMouseThreshhold `(w/10)²+(h/10)²`
 	 */
 	public static onMouseHitInteractive(): ModuleObject | undefined {
-		const player = GameState.getCurrentPlayer();
+		const player = GameState.PartyManager.getCurrentPlayer();
 		const camera = GameState.currentCamera;
 		if(!player || !camera){
 			return undefined;

@@ -470,7 +470,7 @@ export class ModuleTrigger extends ModuleObject {
         GameState.module.addEvent(event);
       }
     }else if(this.linkedToModule && (GameState.Mode != EngineMode.DIALOG)){
-      if(object == GameState.getCurrentPlayer()){
+      if(object == GameState.PartyManager.getCurrentPlayer()){
         ModuleLoadCoordinator.LoadModuleWithAreaTransitionFade(this.linkedToModule.toLowerCase(), this.linkedTo.toLowerCase());
       }
       return;

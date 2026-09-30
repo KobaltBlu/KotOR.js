@@ -592,11 +592,11 @@ export class IngameControls {
         if(GameState.Mode == EngineMode.INGAME && GameState.MenuManager.GetCurrentMenu() == GameState.MenuManager.InGameOverlay){
           const moduleObject = GameState.CursorManager.onMouseHitInteractive();
           if(BitWise.InstanceOf(moduleObject?.objectType, ModuleObjectType.ModuleObject)){
-            if(moduleObject.isUseable() && moduleObject != GameState.getCurrentPlayer()){
+            if(moduleObject.isUseable() && moduleObject != GameState.PartyManager.getCurrentPlayer()){
 
               selectedObject = true;
 
-              const distance = GameState.getCurrentPlayer().position.distanceTo(moduleObject.position);
+              const distance = GameState.PartyManager.getCurrentPlayer().position.distanceTo(moduleObject.position);
               const distanceThreshold = 20;
 
               if(GameState.CursorManager.selectedObject == moduleObject && distance <= distanceThreshold){
@@ -604,17 +604,17 @@ export class IngameControls {
                   // case-2 attack → AddAttackActions(clear=0) appends with no
                   // ClearAllActions. Only clear the action queue when not already
                   // fighting (exploration → combat), matching ActionManager(1).
-                  const pc = GameState.getCurrentPlayer();
+                  const pc = GameState.PartyManager.getCurrentPlayer();
                   if(!pc.combatData?.combatState){
                     pc.clearAllActions(true);
                   }
                   moduleObject.onClick(pc);
                 }else{
-                  let distance = GameState.getCurrentPlayer().position.distanceTo(moduleObject.position);
+                  let distance = GameState.PartyManager.getCurrentPlayer().position.distanceTo(moduleObject.position);
                   if(distance > 1.5){
-                    GameState.getCurrentPlayer().clearAllActions();
+                    GameState.PartyManager.getCurrentPlayer().clearAllActions();
                     moduleObject.clearAllActions();
-                    GameState.getCurrentPlayer().actionDialogObject(moduleObject);
+                    GameState.PartyManager.getCurrentPlayer().actionDialogObject(moduleObject);
                   }
                 }
               }
@@ -915,7 +915,7 @@ export class IngameControls {
 
     KeyMapper.Actions[KeyMapAction.WALKMODIFY].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      const pc = GameState.getCurrentPlayer() as ModuleCreature | undefined;
+      const pc = GameState.PartyManager.getCurrentPlayer() as ModuleCreature | undefined;
       if(pc){
         pc.walk = !pc.walk;
         if(pc.playerControl){
@@ -1074,7 +1074,7 @@ export class IngameControls {
 
     KeyMapper.Actions[KeyMapAction.Flourish].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      GameState.getCurrentPlayer().flourish();
+      GameState.PartyManager.getCurrentPlayer().flourish();
     });
 
     // Clear-all (BTN_CLEARALL): keyboard clears all; gamepad B deselects the
@@ -1169,7 +1169,7 @@ export class IngameControls {
     KeyMapper.Actions[KeyMapAction.SwitchWeaps]?.setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
-      const pc = GameState.getCurrentPlayer() as ModuleCreature | undefined;
+      const pc = GameState.PartyManager.getCurrentPlayer() as ModuleCreature | undefined;
       if(!pc || GameState.GameKey !== GameEngineType.TSL) return;
       GameState.ActionFactory.AddSwitchWeaponsAction(pc);
     });

@@ -36,8 +36,10 @@ jest.mock('@/GameState', () => ({
     NWScript: { Load: jest.fn() },
     JournalManager: { AddJournalQuestEntry: jest.fn() },
     DialogMessageManager: { AddEntry: jest.fn() },
-    PartyManager: { GiveXP: jest.fn() },
-    getCurrentPlayer: jest.fn(),
+    PartyManager: {
+      getCurrentPlayer: jest.fn(),
+      GiveXP: jest.fn(),
+    },
   },
 }));
 

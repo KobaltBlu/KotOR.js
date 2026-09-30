@@ -595,7 +595,7 @@ export function tryUseInterAreaTransition(
       creature.interAreaWaypoints = [];
       resetInterAreaSearch(creature);
       const entry = (door.getLinkedTo?.() || '').toLowerCase();
-      const pc = GameState.getCurrentPlayer?.() || GameState.PartyManager?.party?.[0];
+      const pc = GameState.PartyManager.getCurrentPlayer?.() || GameState.PartyManager?.party?.[0];
       if(creature === pc || creature.controlled){
         ModuleLoadCoordinator.LoadModuleWithAreaTransitionFade(linkedModule.toLowerCase(), entry);
       }else{
@@ -617,7 +617,7 @@ export function tryUseInterAreaTransition(
           jump.setParameter(1, ActionParameterType.INT, 1);
           creature.actionQueue.addFront(jump);
           // Party follow through same-module linked door
-          const pc = GameState.getCurrentPlayer?.() || GameState.PartyManager?.party?.[0];
+          const pc = GameState.PartyManager.getCurrentPlayer?.() || GameState.PartyManager?.party?.[0];
           if(creature === pc || creature.controlled){
             queuePartyFollowJump(creature, linked.id, groupId);
           }
@@ -639,7 +639,7 @@ export function tryUseInterAreaTransition(
       creature.interAreaWaypoints = [];
       resetInterAreaSearch(creature);
       const entry = (trigger.linkedTo || '').toLowerCase();
-      const pc = GameState.getCurrentPlayer?.() || GameState.PartyManager?.party?.[0];
+      const pc = GameState.PartyManager.getCurrentPlayer?.() || GameState.PartyManager?.party?.[0];
       if(creature === pc || creature.controlled){
         ModuleLoadCoordinator.LoadModuleWithAreaTransitionFade(linkedModule.toLowerCase(), entry);
       }else{
@@ -660,7 +660,7 @@ export function tryUseInterAreaTransition(
         jump.setParameter(0, ActionParameterType.DWORD, linked.id);
         jump.setParameter(1, ActionParameterType.INT, 1);
         creature.actionQueue.addFront(jump);
-        const pc = GameState.getCurrentPlayer?.() || GameState.PartyManager?.party?.[0];
+        const pc = GameState.PartyManager.getCurrentPlayer?.() || GameState.PartyManager?.party?.[0];
         if(creature === pc || creature.controlled){
           queuePartyFollowJump(creature, linked.id, groupId);
         }

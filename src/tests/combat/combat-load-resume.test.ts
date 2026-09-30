@@ -8,10 +8,12 @@ const objectMap = new Map<number, any>();
 
 jest.mock('@/GameState', () => ({
   GameState: {
+    PartyManager: {
+      getCurrentPlayer: () => undefined,
+    },
     ModuleObjectManager: {
       GetObjectById: (id: number) => objectMap.get(id),
     },
-    getCurrentPlayer: () => undefined,
     TwoDAManager: { datatables: new Map() },
     FeedbackMessageManager: { AddMessage: jest.fn() },
     TLKManager: { GetStringById: () => ({ Value: '' }) },

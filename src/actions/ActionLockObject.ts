@@ -91,7 +91,7 @@ export class ActionLockObject extends Action {
       this.owner.actionQueue.addFront(playAnim);
 
       // StartGuiTimingBar(this, 0x5dc, 8) — 1500 ms, type 8
-      if(this.owner === GameState.getCurrentPlayer()){
+      if(this.owner === GameState.PartyManager.getCurrentPlayer()){
         GameState.GuiTimingBarManager?.startMs?.(0x5dc, 'Lock', this.owner, 8);
       }
       return ActionStatus.IN_PROGRESS;

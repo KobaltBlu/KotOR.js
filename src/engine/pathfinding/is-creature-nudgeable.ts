@@ -26,7 +26,7 @@ const BUSY_ACTIONS: number[] = [
 ];
 
 function getPlayerCreature(): ModuleCreature | undefined {
-  const pc = GameState.getCurrentPlayer?.() as ModuleCreature | undefined;
+  const pc = GameState.PartyManager.getCurrentPlayer?.() as ModuleCreature | undefined;
   if(pc) return pc;
   return GameState.PartyManager?.party?.[0];
 }

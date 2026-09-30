@@ -214,8 +214,8 @@ export class OdysseyRenderPipeline {
     // when that pass did not run (GUI/LOADING/debugger). Maps + uniforms are gated.
     if(GameState.areShadowsEnabled()){
       if(!GameState.shadowSystemsUpdatedThisFrame){
-        const focus = GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition;
-        const shadowTarget = GameState.getCurrentPlayer() ?? GameState.currentCamera;
+        const focus = GameState.PartyManager.getCurrentPlayer()?.position ?? GameState.currentCameraPosition;
+        const shadowTarget = GameState.PartyManager.getCurrentPlayer() ?? GameState.currentCamera;
         if(GameState.lightManager && shadowTarget){
           GameState.lightManager.update(0, shadowTarget);
         }

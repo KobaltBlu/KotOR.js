@@ -175,7 +175,7 @@ export function collectOverviewEntries(): OverviewEntry[] {
   pushEntries(area.encounters, 'encounter', out, partySet);
   pushEntries(area.items, 'item', out, partySet);
 
-  const player = GameState.getCurrentPlayer?.();
+  const player = GameState.PartyManager.getCurrentPlayer?.();
   if(player){
     for(const e of out){
       if(e.object === player){
@@ -750,7 +750,7 @@ function collectItemSection(obj: ModuleObject): InspectorSection {
 
 export function snapshotLiveObject(obj: ModuleObject): LiveObjectSnapshot {
   const kind = getObjectKind(obj);
-  const player = GameState.getCurrentPlayer?.();
+  const player = GameState.PartyManager.getCurrentPlayer?.();
   let distanceToPlayer: number | null = null;
   if(player?.position && obj.position){
     distanceToPlayer = player.position.distanceTo(obj.position);

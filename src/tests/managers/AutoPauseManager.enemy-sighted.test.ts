@@ -27,10 +27,12 @@ jest.mock('@/GameState', () => ({
     set State(v: number){ gameState = v; },
     get Mode(){ return engineMode; },
     set Mode(v: number){ engineMode = v; },
-    getCurrentPlayer: () => ({
-      combatData: { combatState },
-      clientCombatMode,
-    }),
+    PartyManager: {
+      getCurrentPlayer: () => ({
+        combatData: { combatState },
+        clientCombatMode,
+      }),
+    },
     MenuManager: {
       InGamePause: {
         setPauseReason: (...args: unknown[]) => mockSetPauseReason(...args),

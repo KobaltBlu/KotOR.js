@@ -10,7 +10,9 @@ jest.mock('@/engine/FollowerCamera', () => ({
 
 jest.mock('@/GameState', () => ({
   GameState: {
-    getCurrentPlayer: jest.fn(),
+    PartyManager: {
+      getCurrentPlayer: jest.fn(),
+    },
     TwoDAManager: { datatables: new Map() },
     ModuleObjectManager: { GetObjectById: (id: number) => ({ id }) },
     ActionFactory: {},

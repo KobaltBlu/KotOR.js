@@ -14,9 +14,9 @@ jest.mock('@/GameState', () => ({
       GetClientObjectById: (id: number) => objectMap.get(id),
     },
     PartyManager: {
+      getCurrentPlayer: () => party[0],
       get party(){ return party; },
     },
-    getCurrentPlayer: () => party[0],
     TwoDAManager: { datatables: new Map() },
     FeedbackMessageManager: { AddMessage: jest.fn() },
     TLKManager: { GetStringById: () => ({ Value: '' }) },

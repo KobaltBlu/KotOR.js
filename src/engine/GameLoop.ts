@@ -225,8 +225,8 @@ export class GameLoop {
 
     GameState.currentCamera = GameState.camera;
     GameState.VideoEffectManager.SetVideoEffect(-1);
-    if(GameState.getCurrentPlayer()){
-      GameState.forwardVector.copy(GameState.getCurrentPlayer().forceVector).multiplyScalar(100);
+    if(GameState.PartyManager.getCurrentPlayer()){
+      GameState.forwardVector.copy(GameState.PartyManager.getCurrentPlayer().forceVector).multiplyScalar(100);
       GameState.forwardVector.z = -1;
     }
 
@@ -260,8 +260,8 @@ export class GameLoop {
     }
 
     GameLoop.updateViewportFrustum();
-    GameState.lightManager.update(delta, GameState.getCurrentPlayer());
-    GameLoop.updateShadowSystems(delta, GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition);
+    GameState.lightManager.update(delta, GameState.PartyManager.getCurrentPlayer());
+    GameLoop.updateShadowSystems(delta, GameState.PartyManager.getCurrentPlayer()?.position ?? GameState.currentCameraPosition);
     GameState.windManager.update(delta);
     GameState.grassManager?.update(delta);
     GameState.module.area.updateRoomAnimatedLights(delta);
@@ -314,8 +314,8 @@ export class GameLoop {
     }
 
     GameLoop.updateViewportFrustum();
-    GameState.lightManager.update(delta, GameState.getCurrentPlayer());
-    GameLoop.updateShadowSystems(delta, GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition);
+    GameState.lightManager.update(delta, GameState.PartyManager.getCurrentPlayer());
+    GameLoop.updateShadowSystems(delta, GameState.PartyManager.getCurrentPlayer()?.position ?? GameState.currentCameraPosition);
     GameState.windManager.update(delta);
     GameState.grassManager?.update(delta);
     GameState.module.area.updateRoomAnimatedLights(delta);
@@ -327,7 +327,7 @@ export class GameLoop {
 
   static UpdateFreeLook(delta: number = 0): void {
     GameState.VideoEffectManager.SetVideoEffect(-1);
-    const player = GameState.getCurrentPlayer();
+    const player = GameState.PartyManager.getCurrentPlayer();
     if(player){
       const appearance = player.getAppearance();
       if(appearance){
@@ -354,8 +354,8 @@ export class GameLoop {
     }
 
     GameLoop.updateViewportFrustum();
-    GameState.lightManager.update(delta, GameState.getCurrentPlayer());
-    GameLoop.updateShadowSystems(delta, GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition);
+    GameState.lightManager.update(delta, GameState.PartyManager.getCurrentPlayer());
+    GameLoop.updateShadowSystems(delta, GameState.PartyManager.getCurrentPlayer()?.position ?? GameState.currentCameraPosition);
     GameState.windManager.update(delta);
     GameState.grassManager?.update(delta);
     if(GameState.module?.area){

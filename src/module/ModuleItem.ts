@@ -1271,7 +1271,7 @@ export class ModuleItem extends ModuleObject {
 
     // AddItemCastSpellActions (arg9==0): player with pending combat
     // action → ClearAllActions(1) — queue cleared, combat-round schedule kept.
-    if(hadPending && oCaster === GameState.getCurrentPlayer?.()){
+    if(hadPending && oCaster === GameState.PartyManager.getCurrentPlayer?.()){
       oCaster.clearAllActions(true);
     }
 

@@ -90,7 +90,7 @@ function applyNearestTarget(creature: ModuleCreature, next: ModuleObject): void 
   }
   // QueueAttackActions → SetLastTarget (client UI focus)
   if(
-    creature === GameState.getCurrentPlayer?.() &&
+    creature === GameState.PartyManager.getCurrentPlayer?.() &&
     GameState.ModuleObjectManager?.showObject
   ){
     GameState.ModuleObjectManager.showObject(next, true, false);

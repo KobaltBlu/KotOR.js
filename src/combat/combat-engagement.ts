@@ -93,7 +93,7 @@ export function setClientCombatMode(
   const next = !!on;
   creature.clientCombatMode = next;
   // : only the controlled PC updates + camera.
-  if(creature === GameState.getCurrentPlayer?.()){
+  if(creature === GameState.PartyManager.getCurrentPlayer?.()){
     FollowerCamera.setCombatCameraActive(next);
   }
 }
@@ -121,6 +121,6 @@ export function updateClientCombatMode(
  * — controlled PC client combat-mode bit.
  */
 export function getClientCombatMode(): boolean {
-  const pc = GameState.getCurrentPlayer?.();
+  const pc = GameState.PartyManager.getCurrentPlayer?.();
   return !!(pc as ClientCombatModeCreature | undefined)?.clientCombatMode;
 }

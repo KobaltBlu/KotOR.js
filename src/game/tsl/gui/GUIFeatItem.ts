@@ -248,7 +248,7 @@ export class GUIFeatItem extends GUIProtoItem {
 
     const creature = GameState.PartyManager?.party?.[0]
       || GameState.CharGenManager?.selectedCreature
-      || GameState.getCurrentPlayer();
+      || GameState.PartyManager.getCurrentPlayer();
     if(!creature) return SkillFlowStatus.InGame;
 
     const prereq1 = feat.prereqFeat1 ?? feat.prereqfeat1;

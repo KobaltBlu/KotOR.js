@@ -203,8 +203,8 @@ export class SaveLoadAudit {
 
     // K1 must not emit TSL-only / non- fields on export samples
     if(!isTSL){
-      const pc = pm?.Player || (typeof (GameState as any).getCurrentPlayer === 'function'
-        ? (GameState as any).getCurrentPlayer()
+      const pc = pm?.Player || (typeof (GameState as any).PartyManager?.getCurrentPlayer === 'function'
+        ? (GameState as any).PartyManager?.getCurrentPlayer()
         : undefined);
       let sampleCreatureOk = true;
       let sampleDetail = 'no creature sample';

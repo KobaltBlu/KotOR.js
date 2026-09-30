@@ -115,16 +115,16 @@ export class MenuCharacter extends GameMenu {
 
       this.BTN_AUTO.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(GameState.getCurrentPlayer().canLevelUp()){
-          GameState.LevelUpManager.autoLevelUp(GameState.getCurrentPlayer());
-          this.updateCharacterStats(GameState.getCurrentPlayer());
+        if(GameState.PartyManager.getCurrentPlayer().canLevelUp()){
+          GameState.LevelUpManager.autoLevelUp(GameState.PartyManager.getCurrentPlayer());
+          this.updateCharacterStats(GameState.PartyManager.getCurrentPlayer());
         }
       });
       this._button_y = this.BTN_AUTO;
 
       this.BTN_LEVELUP?.addEventListener('click', (e) => {
         e.stopPropagation();
-        GameState.LevelUpManager?.showLevelUpGUI?.(GameState.getCurrentPlayer());
+        GameState.LevelUpManager?.showLevelUpGUI?.(GameState.PartyManager.getCurrentPlayer());
       });
       this._button_x = this.BTN_LEVELUP;
 

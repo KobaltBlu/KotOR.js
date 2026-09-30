@@ -120,7 +120,7 @@ export class ActionUnlockObject extends Action {
       }
 
       // Player timing bar: 1500 ms, unlock type.
-      if(this.owner === GameState.getCurrentPlayer()){
+      if(this.owner === GameState.PartyManager.getCurrentPlayer()){
         GameState.GuiTimingBarManager?.startMs?.(0x5dc, 'Unlock', this.owner, 8);
       }
       return ActionStatus.IN_PROGRESS;

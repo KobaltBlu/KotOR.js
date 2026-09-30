@@ -1135,7 +1135,7 @@ export class SaveGame {
       new DataView(timestampBuf.buffer).setBigUint64(0, fileTime, true);
       nfo.RootNode.addField(new GFFField(GFFDataType.DWORD64, 'TIMESTAMP')).setData(timestampBuf);
 
-      const pc = GameState.PartyManager.Player || GameState.getCurrentPlayer();
+      const pc = GameState.PartyManager.Player || GameState.PartyManager.getCurrentPlayer();
       const pcName = (pc && typeof pc.getName === 'function') ? (pc.getName() || '') : '';
       nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'PCNAME')).setValue(pcName);
       nfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'PCAUTOSAVE')).setValue(isPCAutoSave ? 1 : 0);

@@ -12,7 +12,7 @@ import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
 import { ResourceLoader } from "@/loaders";
-import { GameEngineType, UIIconTimerType } from "@/enums/engine";
+import { EngineMode, GameEngineType, UIIconTimerType } from "@/enums/engine";
 import { CombatFeatType } from "@/enums/combat/CombatFeatType";
 import { PartyManagerEvent } from "@/types/PartyManagerEvent";
 import { ModulePlayer } from "@/module/ModulePlayer";
@@ -305,6 +305,18 @@ export class PartyManager {
     if(creature.isPlayer){ return true; }
     if(typeof creature.npcId === 'number' && creature.npcId < 0){ return true; }
     return false;
+  }
+
+  /**
+   * Controlled playable creature: minigame player while in MINIGAME mode,
+   * otherwise party[0] or Player.
+   */
+  static getCurrentPlayer(): ModuleCreature {
+    if(GameState.Mode == EngineMode.MINIGAME){
+      return GameState.module.area.miniGame.player as any;
+    }
+    const p = PartyManager.party[0];
+    return p ? p : PartyManager.Player;
   }
 
   /**
@@ -982,9 +994,9 @@ export class PartyManager {
 
       // SaveTableInfo WriteFieldBYTE PT_CHEAT_USED
       partytable.RootNode.addField(new GFFField(GFFDataType.BYTE, 'PT_CHEAT_USED')).setValue(GameState.PartyManager.CheatUsed ? 1 : 0);
-      const controlledIdx = GameState.getCurrentPlayer() == GameState.PartyManager.Player
+      const controlledIdx = PartyManager.getCurrentPlayer() == GameState.PartyManager.Player
         ? -1
-        : GameState.PartyManager.party.indexOf(GameState.getCurrentPlayer());
+        : GameState.PartyManager.party.indexOf(PartyManager.getCurrentPlayer());
       GameState.PartyManager.ControlledNPC = controlledIdx;
       partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_CONTROLLED_NPC')).setValue(controlledIdx);
 
@@ -1038,7 +1050,7 @@ export class PartyManager {
         // GetNPCObject: unavailable CNPCs are not active party members
         if(member != GameState.PartyManager.Player && PartyManager.IsAvailable(member.npcId)){
           let memberStruct = new GFFStruct();
-          memberStruct.addField( new GFFField(GFFDataType.BYTE, 'PT_IS_LEADER') ).setValue( GameState.getCurrentPlayer() == member ? 1 : 0 );
+          memberStruct.addField( new GFFField(GFFDataType.BYTE, 'PT_IS_LEADER') ).setValue( PartyManager.getCurrentPlayer() == member ? 1 : 0 );
           memberStruct.addField( new GFFField(GFFDataType.INT, 'PT_MEMBER_ID') ).setValue( member.npcId );
           ptMembersList.addChildStruct( memberStruct );
           numMembers++;
@@ -1049,7 +1061,7 @@ export class PartyManager {
 
       // TSL SaveTableInfo — puppets + components/chemicals + influence + swoops
       if(GameState.GameKey == GameEngineType.TSL){
-        const pc = GameState.PartyManager.Player || GameState.getCurrentPlayer();
+        const pc = GameState.PartyManager.Player || PartyManager.getCurrentPlayer();
         const pcName = (pc && typeof pc.getName === 'function') ? (pc.getName() || '') : '';
         partytable.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'PT_PCNAME')).setValue(pcName);
         // SaveTableInfo — PT_SWOOP1..3 only.

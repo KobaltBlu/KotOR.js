@@ -1950,6 +1950,14 @@ export class CutsceneManager {
     this.bindCameraParticipantsFromActiveNode();
   }
 
+  static getCameraById(id: number): THREE.PerspectiveCamera | undefined {
+    for(let i = 0; i < GameState.staticCameras.length; i++){
+      if(GameState.staticCameras[i].userData.ingameID == id)
+        return GameState.staticCameras[i];
+    }
+    return undefined;
+  }
+
   /**
    * Set the placeable camera — SetShotFromScript
    * UpdateShotCamera (arg1 == 6).
@@ -1958,7 +1966,7 @@ export class CutsceneManager {
    * separate render camera, so clip/FOV/shake stay on one dialog cam.
    */
   static setPlaceableCamera(nCamera: number) {
-    const src = GameState.getCameraById(nCamera);
+    const src = this.getCameraById(nCamera);
     if (!src) {
       console.warn(`No placeable camera found for camera [${nCamera}] falling back to dialog camera`);
       this.setDialogCamera(DLGCameraAngle.ANGLE_RANDOM);

@@ -10,10 +10,12 @@ const mockCompanion = { id: 2 };
 
 jest.mock('@/GameState', () => ({
   GameState: {
+    PartyManager: {
+      getCurrentPlayer: () => mockPlayer,
+    },
     FeedbackMessageManager: {
       GetFeedbackTypeEnabled: (...args: unknown[]) => mockGetFeedback(...args),
     },
-    getCurrentPlayer: () => mockPlayer,
     DEBUG_COMBAT_FLOATY_ALL_ATTACKERS: false,
   },
 }));

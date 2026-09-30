@@ -14,8 +14,10 @@ const nudgeFriendlyCreaturesMock = jest.fn();
 
 jest.mock("@/GameState", () => ({
   GameState: {
-    PartyManager: { party: [] as unknown[] },
-    getCurrentPlayer: () => undefined,
+    PartyManager: {
+      getCurrentPlayer: () => undefined,
+      party: [] as unknown[],
+    },
     module: undefined,
     debug: {},
   },

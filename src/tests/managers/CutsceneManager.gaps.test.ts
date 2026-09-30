@@ -8,6 +8,7 @@ jest.mock('@/GameState', () => ({
   GameState: {
     TwoDAManager: { datatables: new Map() },
     PartyManager: {
+      getCurrentPlayer: jest.fn(() => null),
       party: [{ id: 1, isPlayer: true, npcId: -1, isPM: true }],
       Player: { id: 1, isPlayer: true, npcId: -1, isPM: true },
       ControlledNPC: -1,
@@ -17,7 +18,6 @@ jest.mock('@/GameState', () => ({
       getInventory: () => [],
     },
     InventoryManager: { getInventory: () => [] },
-    getCurrentPlayer: jest.fn(() => null),
     MenuManager: {},
     VideoEffectManager: { SetVideoEffect: jest.fn() },
     FadeOverlayManager: {

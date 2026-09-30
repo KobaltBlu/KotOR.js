@@ -53,7 +53,7 @@ export class ActionJumpToObject extends Action {
     );
 
     if(classified.kind === 'loadModule' && classified.moduleName){
-      const pc = GameState.getCurrentPlayer?.() || GameState.PartyManager?.party?.[0];
+      const pc = GameState.PartyManager.getCurrentPlayer?.() || GameState.PartyManager?.party?.[0];
       if(this.owner === pc || this.owner.controlled){
         const rot = this.target.getRotationFromBearing?.() || this.target.rotation;
         ModuleLoadCoordinator.LoadModuleWithJumpSpawn(classified.moduleName.toLowerCase(), {

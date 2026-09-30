@@ -13,8 +13,10 @@ jest.mock("@/utility/ApplicationProfile", () => ({
 }));
 jest.mock("@/GameState", () => ({
   GameState: {
-    PartyManager: { party: [] },
-    getCurrentPlayer: () => undefined,
+    PartyManager: {
+      getCurrentPlayer: () => undefined,
+      party: [],
+    },
   },
 }));
 jest.mock("@/three/odyssey/OdysseyObject3D", () => ({

@@ -7,6 +7,10 @@ import * as THREE from 'three';
 
 jest.mock('@/utility/polyfills', () => ({}));
 
+jest.mock('@/engine/OdysseyRenderPipeline', () => ({
+  OdysseyRenderPipeline: {},
+}));
+
 jest.mock('@/engine/FollowerCamera', () => ({
   FollowerCamera: {
     setCombatCameraActive: jest.fn(),
@@ -15,8 +19,10 @@ jest.mock('@/engine/FollowerCamera', () => ({
 
 jest.mock('@/GameState', () => ({
   GameState: {
+    PartyManager: {
+      getCurrentPlayer: jest.fn(() => undefined),
+    },
     ModuleObjectManager: { GetObjectById: () => undefined },
-    getCurrentPlayer: jest.fn(() => undefined),
     TwoDAManager: { datatables: new Map() },
     FeedbackMessageManager: { AddMessage: jest.fn() },
     TLKManager: { GetStringById: () => ({ Value: '' }) },
@@ -124,7 +130,7 @@ function scheduleGrenadeLike(opts: {
   if(isGrenadeItemType(itemType)){
     setClientCombatMode(caster, true);
   }
-  if(hadPending && caster === GameState.getCurrentPlayer?.()){
+  if(hadPending && caster === GameState.PartyManager.getCurrentPlayer?.()){
     caster.clearAllActions(true);
   }
   if(!caster.actionQueue.actionTypeExists(ActionType.ActionCombat)){
@@ -160,12 +166,12 @@ function makeCaster(id: number){
 describe('grenade schedule → client combat mode', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (GameState.getCurrentPlayer as jest.Mock).mockReturnValue(undefined);
+    (GameState.PartyManager.getCurrentPlayer as jest.Mock).mockReturnValue(undefined);
   });
 
   it('setClientCombatMode(true) when scheduling a grenade throw', () => {
     const caster = makeCaster(100);
-    (GameState.getCurrentPlayer as jest.Mock).mockReturnValue(caster);
+    (GameState.PartyManager.getCurrentPlayer as jest.Mock).mockReturnValue(caster);
     const foe = makeCaster(200);
 
     scheduleGrenadeLike({ caster, target: foe, itemType: 6 });
@@ -180,7 +186,7 @@ describe('grenade schedule → client combat mode', () => {
 
   it('does not force combat mode for non-grenade item casts', () => {
     const caster = makeCaster(102);
-    (GameState.getCurrentPlayer as jest.Mock).mockReturnValue(caster);
+    (GameState.PartyManager.getCurrentPlayer as jest.Mock).mockReturnValue(caster);
     scheduleGrenadeLike({ caster, target: caster, itemType: 0x2d });
     expect(caster.clientCombatMode).toBe(false);
     expect(FollowerCamera.setCombatCameraActive).not.toHaveBeenCalled();
@@ -188,7 +194,7 @@ describe('grenade schedule → client combat mode', () => {
 
   it('uses clearAllActions(true) when the player already has a pending schedule', () => {
     const caster = makeCaster(101);
-    (GameState.getCurrentPlayer as jest.Mock).mockReturnValue(caster);
+    (GameState.PartyManager.getCurrentPlayer as jest.Mock).mockReturnValue(caster);
     const foe = makeCaster(201);
     caster.combatRound.scheduledActionList.push({
       actionTimer: 0,

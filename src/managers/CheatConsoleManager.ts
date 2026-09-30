@@ -147,7 +147,7 @@ export class CheatConsoleManager {
     let n = -Math.trunc(points);
     if(n > 100) n = 100;
     if(n < -100) n = -100;
-    const player = GameState.getCurrentPlayer();
+    const player = GameState.PartyManager.getCurrentPlayer();
     if(player){
       player.addGoodEvil(n);
     }
@@ -159,7 +159,7 @@ export class CheatConsoleManager {
     let n = Math.trunc(points);
     if(n > 100) n = 100;
     if(n < -100) n = -100;
-    const player = GameState.getCurrentPlayer();
+    const player = GameState.PartyManager.getCurrentPlayer();
     if(player){
       player.addGoodEvil(n);
     }
@@ -169,7 +169,7 @@ export class CheatConsoleManager {
   static addEXP(points: number = 0){
     const n = Math.trunc(points);
     if(n <= 0){ return; }
-    const player = GameState.getCurrentPlayer();
+    const player = GameState.PartyManager.getCurrentPlayer();
     if(player){
       player.addXP(n, ExperienceType.PLOT);
     }
@@ -179,7 +179,7 @@ export class CheatConsoleManager {
    * addlevel — XP needed for next level; L15 cap unless Jedi; L20 hard cap.
    */
   static addLevel(){
-    const player = GameState.getCurrentPlayer();
+    const player = GameState.PartyManager.getCurrentPlayer();
     if(!player){ return; }
 
     const level = player.getTotalClassLevel();
@@ -266,7 +266,7 @@ export class CheatConsoleManager {
 
   /** heal — full vitals on controlled PC. */
   static heal(){
-    const player = GameState.getCurrentPlayer();
+    const player = GameState.PartyManager.getCurrentPlayer();
     if(player){
       player.setHP(player.getMaxHP());
       player.setFP(player.getMaxFP());
@@ -334,7 +334,7 @@ export class CheatConsoleManager {
 
   /** whereami — Module + Position via AurPostString (feedback + console). */
   static whereami(){
-    const player = GameState.getCurrentPlayer();
+    const player = GameState.PartyManager.getCurrentPlayer();
     if(!player){ return; }
     const mod = GameState.module?.filename || '';
     const line1 = `Module: ${mod}`;
@@ -361,7 +361,7 @@ export class CheatConsoleManager {
    * index: 0 STR, 1 DEX, 2 CON, 3 INT, 4 WIS, 5 CHA
    */
   static setAbility(index: number, raw: string | undefined){
-    const player = GameState.getCurrentPlayer();
+    const player = GameState.PartyManager.getCurrentPlayer();
     if(!player){ return; }
     let n = CheatConsoleManager.parseIntParam(raw, 0);
     if(n < 0) n = 0;
@@ -380,7 +380,7 @@ export class CheatConsoleManager {
    * CheatSetSkill — clamp 0–99; skillIndex matches SkillType.
    */
   static setSkill(skillIndex: number, raw: string | undefined){
-    const player = GameState.getCurrentPlayer();
+    const player = GameState.PartyManager.getCurrentPlayer();
     if(!player?.skills?.[skillIndex]){ return; }
     let n = CheatConsoleManager.parseIntParam(raw, 0);
     if(n < 0) n = 0;

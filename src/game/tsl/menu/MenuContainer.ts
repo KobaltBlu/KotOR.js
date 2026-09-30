@@ -34,7 +34,7 @@ export class MenuContainer extends K1_MenuContainer {
     super.close();
     if(this.container instanceof ModulePlaceable){
       try {
-        this.container.close(GameState.getCurrentPlayer() as any);
+        this.container.close(GameState.PartyManager.getCurrentPlayer() as any);
       } catch (e: any) {
       }
     }

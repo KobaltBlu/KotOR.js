@@ -107,7 +107,7 @@ export class MenuGameOver extends GameMenu {
   show(){
     super.show();
     // Keep follower camera view behind the modal during death
-    if(GameState.getCurrentPlayer()){
+    if(GameState.PartyManager.getCurrentPlayer()){
       GameState.currentCamera = GameState.camera;
     }
   }

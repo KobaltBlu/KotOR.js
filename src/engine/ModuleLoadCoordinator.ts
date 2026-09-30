@@ -341,7 +341,7 @@ export class ModuleLoadCoordinator {
     }
 
     GameLoop.updateViewportFrustum();
-    GameLoop.updateShadowSystems(0, GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition);
+    GameLoop.updateShadowSystems(0, GameState.PartyManager.getCurrentPlayer()?.position ?? GameState.currentCameraPosition);
 
     await warmModuleGpu({
       renderer,

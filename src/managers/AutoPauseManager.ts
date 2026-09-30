@@ -157,7 +157,7 @@ export class AutoPauseManager {
     if(GameState.State == EngineState.PAUSED) return false;
     if(type != AutoPauseState.Generic && GameState.Mode != EngineMode.INGAME) return false;
 
-    const player = GameState.getCurrentPlayer?.();
+    const player = GameState.PartyManager.getCurrentPlayer?.();
     const inCombat = !!player?.combatData?.combatState;
     // DoPassiveSelection: Enemy/Mine Sighted auto-pause only when client combat_mode == 0
     if(type == AutoPauseState.EnemySighted || type == AutoPauseState.MineSighted){

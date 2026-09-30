@@ -20,9 +20,11 @@ jest.mock('@/GameState', () => ({
         }],
       ]),
     },
-    PartyManager: { party: [] },
+    PartyManager: {
+      getCurrentPlayer: jest.fn(() => null),
+      party: [],
+    },
     InventoryManager: { getInventory: () => [] },
-    getCurrentPlayer: jest.fn(() => null),
     MenuManager: {},
     VideoEffectManager: { SetVideoEffect: jest.fn() },
     FadeOverlayManager: {},

@@ -82,7 +82,7 @@ export class ActionFlagMine extends Action {
       playAnim.setParameter(2, ActionParameterType.FLOAT, 4.5);
       this.owner.actionQueue.addFront(playAnim);
       // StartGuiTimingBar(this, 0x1194, 1) — 4500 ms, type 1
-      if(this.owner === GameState.getCurrentPlayer()){
+      if(this.owner === GameState.PartyManager.getCurrentPlayer()){
         GameState.GuiTimingBarManager?.startMs?.(0x1194, 'Flag Mine', this.owner, 1);
       }
       return ActionStatus.IN_PROGRESS;

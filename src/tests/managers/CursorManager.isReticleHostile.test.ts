@@ -10,7 +10,9 @@ const getReputation = jest.fn<(a: unknown, b: unknown) => number>();
 
 jest.mock('@/GameState', () => ({
   GameState: {
-    getCurrentPlayer: jest.fn(),
+    PartyManager: {
+      getCurrentPlayer: jest.fn(),
+    },
     FactionManager: {
       GetReputation: (...args: unknown[]) => getReputation(...args),
     },
@@ -106,7 +108,7 @@ function makeDoor(opts: {
 describe('CursorManager.isReticleHostile doors', () => {
   beforeEach(() => {
     getReputation.mockReset();
-    (GameState.getCurrentPlayer as jest.Mock).mockReturnValue(makeViewer(1));
+    (GameState.PartyManager.getCurrentPlayer as jest.Mock).mockReturnValue(makeViewer(1));
   });
 
   test('locked closed non-trap door is not hostile', () => {

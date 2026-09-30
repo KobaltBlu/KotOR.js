@@ -501,7 +501,7 @@ export class ModuleDoor extends ModuleObject {
   }
 
   onClick(callee: ModuleObject){
-    GameState.getCurrentPlayer().actionOpenDoor( this );
+    GameState.PartyManager.getCurrentPlayer().actionOpenDoor( this );
   }
 
   /**
@@ -1126,7 +1126,7 @@ export class ModuleDoor extends ModuleObject {
     move: THREE.Vector3 = object.forceVector,
     hitDistance: number = 0.4
   ){
-    if(object != GameState.getCurrentPlayer()) return;
+    if(object != GameState.PartyManager.getCurrentPlayer()) return;
     const moveLen = Math.hypot(move.x, move.y);
     if(moveLen <= 0) return;
 
@@ -1145,7 +1145,7 @@ export class ModuleDoor extends ModuleObject {
 
   transitNPC(object: ModuleObject){
     if(!(object instanceof ModuleObject)) return;
-    if(object != GameState.getCurrentPlayer()) return;
+    if(object != GameState.PartyManager.getCurrentPlayer()) return;
     if(this.getLinkedToModule() && !(GameState.Mode == EngineMode.DIALOG) && this.isOpen()){
       // Align with ModuleTrigger / tryUseInterAreaTransition: party leader loads
       // even when click-to-move left `controlled` unset for the frame.

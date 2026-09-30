@@ -42,7 +42,7 @@ export class MotionBlurController {
       return;
     }
     MotionBlurController.motionBlurVFXCount++;
-    const player = GameState.PartyManager?.Player || GameState.getCurrentPlayer();
+    const player = GameState.PartyManager?.Player || GameState.PartyManager.getCurrentPlayer();
     const isPlayerTarget = !player || !!(target && player === target);
     const inMiniGame = !!GameState.module?.area?.miniGame;
     if(isPlayerTarget && MotionBlurController.motionBlurVFXCount === 1 && !inMiniGame){
@@ -87,7 +87,7 @@ export class MotionBlurController {
       return;
     }
     const creature =
-      GameState.PartyManager?.Player || GameState.getCurrentPlayer();
+      GameState.PartyManager?.Player || GameState.PartyManager.getCurrentPlayer();
     if(!creature){
       return;
     }

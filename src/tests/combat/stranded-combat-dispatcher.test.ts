@@ -9,11 +9,13 @@ const queueAdd = jest.fn();
 
 jest.mock('@/GameState', () => ({
   GameState: {
+    PartyManager: {
+      getCurrentPlayer: () => undefined,
+    },
     ModuleObjectManager: {
       GetObjectById: (id: number) => objectMap.get(id),
       showObject: jest.fn(),
     },
-    getCurrentPlayer: () => undefined,
     TwoDAManager: { datatables: new Map() },
     FeedbackMessageManager: { AddMessage: jest.fn() },
     TLKManager: { GetStringById: () => ({ Value: '' }) },

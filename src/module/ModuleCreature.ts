@@ -1231,7 +1231,7 @@ export class ModuleCreature extends ModuleObject {
       //Get the first action in the queue
       this.action = this.actionQueue[0];
 
-      /*if(this == GameState.getCurrentPlayer && this.room instanceof ModuleRoom){
+      /*if(this == GameState.PartyManager.getCurrentPlayer && this.room instanceof ModuleRoom){
         //this.room.show(true);
       }else if(this.room instanceof ModuleRoom){
         if(this.room.model instanceof OdysseyModel3D){
@@ -1375,7 +1375,7 @@ export class ModuleCreature extends ModuleObject {
         !forcePushLocked &&
         GameState.Mode != EngineMode.DIALOG &&
         (!!this.playerControl?.active || playerControlMoving) &&
-        (this.controlled || this === GameState.getCurrentPlayer());
+        (this.controlled || this === GameState.PartyManager.getCurrentPlayer());
 
       let playerControlCommitted = false;
       if(usePlayerControl){
@@ -1601,7 +1601,7 @@ export class ModuleCreature extends ModuleObject {
       // Party companion stuck timer — FollowLeader TeleportForward is owned by
       // the FollowLeader SM (ActionFollowLeader.softTeleportForward). Do not also
       // advance the ring from collisionTimer while following (dual TeleportForward).
-      if(this.npcId != undefined && this != (GameState.getCurrentPlayer() as any) && this.collisionTimer >= 2){
+      if(this.npcId != undefined && this != (GameState.PartyManager.getCurrentPlayer() as any) && this.collisionTimer >= 2){
         this.collisionTimer = 0;
       }
 
@@ -1748,7 +1748,7 @@ export class ModuleCreature extends ModuleObject {
     this.actionQueue.process( delta );
     this.action = this.actionQueue[0];
     if(!(this.action)){
-      const currentPlayer = GameState.getCurrentPlayer();
+      const currentPlayer = GameState.PartyManager.getCurrentPlayer();
       if(
         this.isPartyMember() &&
         this != currentPlayer &&
@@ -1855,7 +1855,7 @@ export class ModuleCreature extends ModuleObject {
           }
         }
         if(
-          this == GameState.getCurrentPlayer() &&
+          this == GameState.PartyManager.getCurrentPlayer() &&
           this.isHostile(creature)
         ){
           if(!wasSeen){
@@ -1934,7 +1934,7 @@ export class ModuleCreature extends ModuleObject {
       if(check.result === MineSkillResult.SUCCESS || check.result === MineSkillResult.OWNED){
         trig.detectTrap(this);
         if(
-          this == GameState.getCurrentPlayer() &&
+          this == GameState.PartyManager.getCurrentPlayer() &&
           check.result === MineSkillResult.SUCCESS
         ){
           GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.MineSighted);
@@ -1983,7 +1983,7 @@ export class ModuleCreature extends ModuleObject {
     // QueueAttackActions prefers combat-round sticky / keeps queued
     // actions; never retarget to lastAttacker (who just hit the PC).
     if(this.isHostileCombatEngaged()){
-      if(GameState.getCurrentPlayer() == this){
+      if(GameState.PartyManager.getCurrentPlayer() == this){
         if(!this.combatRound.scheduledActionList.length && !this.combatRound.action){
           queueAttackActions(this);
         }
@@ -2649,7 +2649,7 @@ export class ModuleCreature extends ModuleObject {
     }
     this.excitedDuration = duration;
     // : GetClientObjectByObjectId must succeed (controlled PC)
-    if(this !== GameState.getCurrentPlayer()){
+    if(this !== GameState.PartyManager.getCurrentPlayer()){
       return;
     }
     const area = this.area;
@@ -2685,7 +2685,7 @@ export class ModuleCreature extends ModuleObject {
   cancelExcitedDuration(){
     const hadExcited = this.excitedDuration > 0;
     this.excitedDuration = 0;
-    if(hadExcited && this === GameState.getCurrentPlayer() && this.area){
+    if(hadExcited && this === GameState.PartyManager.getCurrentPlayer() && this.area){
       this.area.playBattleMusic(false);
     }
   }
@@ -2767,7 +2767,7 @@ export class ModuleCreature extends ModuleObject {
     if(this.isDead()){
       if(this.excitedDuration > 0){
         this.excitedDuration = 0;
-        if(this === GameState.getCurrentPlayer() && this.area){
+        if(this === GameState.PartyManager.getCurrentPlayer() && this.area){
           this.area.playBattleMusic(false);
         }
       }
@@ -2777,7 +2777,7 @@ export class ModuleCreature extends ModuleObject {
       this.excitedDuration -= (1000 * delta);
       if(this.excitedDuration <= 0){
         this.excitedDuration = 0;
-        if(this === GameState.getCurrentPlayer() && this.area){
+        if(this === GameState.PartyManager.getCurrentPlayer() && this.area){
           this.area.playBattleMusic(false);
         }
       }
@@ -3753,7 +3753,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   private getFootstepPriorityGroup(): AudioPriorityGroup {
-    if(this === GameState.getCurrentPlayer()){
+    if(this === GameState.PartyManager.getCurrentPlayer()){
       return AudioPriorityGroup.PLAYER_FOOTSTEPS;
     }
 
@@ -3766,7 +3766,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   private getSoundSetPriorityGroup(): AudioPriorityGroup {
-    if(this === GameState.getCurrentPlayer()){
+    if(this === GameState.PartyManager.getCurrentPlayer()){
       return AudioPriorityGroup.PLAYER_CHAT;
     }
 
@@ -4219,19 +4219,19 @@ export class ModuleCreature extends ModuleObject {
   onClick(callee: ModuleObject){
 
     //You can't interact with yourself
-    if(this === GameState.PartyManager.Player && GameState.getCurrentPlayer() === this){
+    if(this === GameState.PartyManager.Player && GameState.PartyManager.getCurrentPlayer() === this){
       return;
     }
 
     if(this.isHostile(callee) && !this.isDead()){
-      GameState.getCurrentPlayer().attackCreature(this, undefined);
+      GameState.PartyManager.getCurrentPlayer().attackCreature(this, undefined);
     }else if(this.isDead() && this.canLootAsCorpse(callee)){
       this.clearAllActions();
-      GameState.getCurrentPlayer().actionUseObject(this.getLootUseTarget() as ModuleObject);
+      GameState.PartyManager.getCurrentPlayer().actionUseObject(this.getLootUseTarget() as ModuleObject);
     }else if(!this.isDead()){
       this.clearAllActions();
       if(this.getConversation() && this.getConversation().resref){
-        GameState.getCurrentPlayer().actionDialogObject(this, this.getConversation().resref, false, undefined, undefined, true);
+        GameState.PartyManager.getCurrentPlayer().actionDialogObject(this, this.getConversation().resref, false, undefined, undefined, true);
       }
     }
     
@@ -4830,7 +4830,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   override onBlocked(){
-    if(this == GameState.getCurrentPlayer())
+    if(this == GameState.PartyManager.getCurrentPlayer())
       return;
 
     const state = ensureMovementState(this);
@@ -5291,7 +5291,7 @@ export class ModuleCreature extends ModuleObject {
     const pcAlign = GameState.GlobalVariableManager?.GetGlobalNumber?.('G_PC_Align_Val') ?? 50;
     const pc =
       GameState.PartyManager.Player ||
-      GameState.getCurrentPlayer?.() ||
+      GameState.PartyManager.getCurrentPlayer?.() ||
       GameState.PartyManager.party?.[0];
     const { factor, bonus } = ModuleCreature.#getPcPrestigeFactor(pc);
 

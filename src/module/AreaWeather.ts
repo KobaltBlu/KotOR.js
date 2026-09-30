@@ -120,7 +120,7 @@ export class AreaWeather {
 
   /** GetRoomDisableWeather — player's current room. */
   isWeatherDisabledInCurrentRoom(): boolean {
-    const player = GameState.getCurrentPlayer?.();
+    const player = GameState.PartyManager.getCurrentPlayer?.();
     return !!player?.room?.disableWeather;
   }
 
@@ -416,7 +416,7 @@ export class AreaWeather {
   private updateWeatherPositions(delta: number = 0){
     if(!this.models.length) return;
 
-    const player = GameState.getCurrentPlayer?.();
+    const player = GameState.PartyManager.getCurrentPlayer?.();
     if(!player) return;
 
     const camera = GameState.currentCamera || GameState.camera;
@@ -474,7 +474,7 @@ export class AreaWeather {
     if(this.appliedWeather !== WeatherCondition.RAIN &&
        this.appliedWeather !== WeatherCondition.SNOW) return;
 
-    const player = GameState.getCurrentPlayer?.();
+    const player = GameState.PartyManager.getCurrentPlayer?.();
     if(!player) return;
 
     this.lightningModel.update(delta);

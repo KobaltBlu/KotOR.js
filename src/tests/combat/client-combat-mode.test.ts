@@ -12,7 +12,9 @@ jest.mock('@/engine/FollowerCamera', () => ({
 
 jest.mock('@/GameState', () => ({
   GameState: {
-    getCurrentPlayer: jest.fn(),
+    PartyManager: {
+      getCurrentPlayer: jest.fn(),
+    },
     TwoDAManager: { datatables: new Map() },
   },
 }));
@@ -43,7 +45,7 @@ function makeCreature(id: number, opts: { dead?: boolean } = {}){
 describe('client combat mode', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (GameState.getCurrentPlayer as jest.Mock).mockReturnValue(undefined);
+    (GameState.PartyManager.getCurrentPlayer as jest.Mock).mockReturnValue(undefined);
   });
 
   it('hasLivingCombatTarget is true for a living attack target', () => {
@@ -66,7 +68,7 @@ describe('client combat mode', () => {
   it('updateClientCombatMode turns on for living target and off after KO', () => {
     const pc = makeCreature(1);
     const foe = makeCreature(2);
-    (GameState.getCurrentPlayer as jest.Mock).mockReturnValue(pc);
+    (GameState.PartyManager.getCurrentPlayer as jest.Mock).mockReturnValue(pc);
     pc.combatData.lastAttemptedAttackTarget = foe;
     pc.excitedDuration = 10000;
     pc.combatData.combatState = true;
@@ -85,7 +87,7 @@ describe('client combat mode', () => {
 
   it('excitedDuration alone does not keep client combat mode on', () => {
     const pc = makeCreature(1);
-    (GameState.getCurrentPlayer as jest.Mock).mockReturnValue(pc);
+    (GameState.PartyManager.getCurrentPlayer as jest.Mock).mockReturnValue(pc);
     pc.excitedDuration = 10000;
     pc.combatData.combatState = true;
     pc.clientCombatMode = true;
@@ -97,7 +99,7 @@ describe('client combat mode', () => {
 
   it('setClientCombatMode(false) clears mode for clear-all / cancelCombat', () => {
     const pc = makeCreature(1);
-    (GameState.getCurrentPlayer as jest.Mock).mockReturnValue(pc);
+    (GameState.PartyManager.getCurrentPlayer as jest.Mock).mockReturnValue(pc);
     pc.clientCombatMode = true;
     setClientCombatMode(pc, false);
     expect(pc.clientCombatMode).toBe(false);
@@ -108,7 +110,7 @@ describe('client combat mode', () => {
     const pc = makeCreature(1);
     const companion = makeCreature(3);
     const foe = makeCreature(2);
-    (GameState.getCurrentPlayer as jest.Mock).mockReturnValue(pc);
+    (GameState.PartyManager.getCurrentPlayer as jest.Mock).mockReturnValue(pc);
     companion.combatData.lastAttackTarget = foe;
     setClientCombatMode(companion, true);
     expect(companion.clientCombatMode).toBe(true);

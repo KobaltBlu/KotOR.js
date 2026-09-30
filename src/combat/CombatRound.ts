@@ -149,7 +149,7 @@ export class CombatRound {
     if(GameState.DEBUG_COMBAT_FLOATY_ALL_ATTACKERS){
       return true;
     }
-    const player = GameState.getCurrentPlayer();
+    const player = GameState.PartyManager.getCurrentPlayer();
     return !!player && attacker === player;
   }
 
@@ -969,7 +969,7 @@ export class CombatRound {
     const shouldAutoPause = (
       !options?.skipQueueAttackActions &&
       !!this.action &&
-      this.owner === GameState.getCurrentPlayer() &&
+      this.owner === GameState.PartyManager.getCurrentPlayer() &&
       !this.owner.isDead()
     );
     this.roundStarted = false;
@@ -1065,7 +1065,7 @@ export class CombatRound {
     ){
       const creature = this.owner as ModuleCreature;
       if(
-        GameState.getCurrentPlayer() === creature &&
+        GameState.PartyManager.getCurrentPlayer() === creature &&
         !creature.isDead()
       ){
         queueAttackActions(creature, { forceNearest });

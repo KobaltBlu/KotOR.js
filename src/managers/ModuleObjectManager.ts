@@ -1610,7 +1610,7 @@ export class ModuleObjectManager {
    * @param previous - true = previous in the list
    */
   static selectNearestObject(previous: boolean = false): ModuleObject | undefined {
-    const player = PartyManager.party[0] ?? GameState.getCurrentPlayer();
+    const player = PartyManager.party[0] ?? GameState.PartyManager.getCurrentPlayer();
     if(!player) return undefined;
 
     // Refresh pool if empty

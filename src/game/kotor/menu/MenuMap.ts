@@ -102,7 +102,7 @@ export class MenuMap extends GameMenu {
       return;
 
     if (!GameState.module.area.miniGame) {
-      const oPC = GameState.getCurrentPlayer();
+      const oPC = GameState.PartyManager.getCurrentPlayer();
 
       // update minimap — full map uses creature yaw (SetPartyMemberWorldOrientation)
       this.miniMap.setPosition(oPC.position.x, oPC.position.y);

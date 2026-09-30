@@ -21,6 +21,7 @@ jest.mock('@/GameState', () => ({
   GameState: {
     module: { filename: 'tar_m02ac', area: { id: 1 } },
     PartyManager: {
+      getCurrentPlayer: () => undefined,
       party: [],
       resetFollowPath: jest.fn(),
     },
@@ -28,7 +29,6 @@ jest.mock('@/GameState', () => ({
       GetObjectById: (id: number) => (id === 99 ? mockTarget : undefined),
       GetClientObjectById: (id: number) => (id === 99 ? mockTarget : undefined),
     },
-    getCurrentPlayer: () => undefined,
   },
 }));
 

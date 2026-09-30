@@ -395,7 +395,7 @@ export class LightManager {
     if(asModule?.room){
       return { room: asModule.room };
     }
-    const player = this.context?.getCurrentPlayer?.()
+    const player = this.context?.PartyManager?.getCurrentPlayer?.()
       ?? this.context?.PartyManager?.party?.[0]
       ?? this.context?.PartyManager?.Player;
     if(player?.room){

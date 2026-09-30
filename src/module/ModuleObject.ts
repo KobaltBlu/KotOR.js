@@ -737,7 +737,7 @@ export class ModuleObject {
 
     // FreeLook: controlled PC is not drawn (camera on FreeLookHook).
     if(GameState.Mode == EngineMode.FREELOOK){
-      const player = GameState.getCurrentPlayer();
+      const player = GameState.PartyManager.getCurrentPlayer();
       if(player && this.id === player.id){
         this.model.visible = false;
         return;
@@ -2005,7 +2005,7 @@ export class ModuleObject {
   updateShadowBlobVisibility(){
     if(!this.shadowBlobModel){ return; }
     if(GameState.Mode == EngineMode.FREELOOK){
-      const player = GameState.getCurrentPlayer();
+      const player = GameState.PartyManager.getCurrentPlayer();
       if(player && this.id === player.id){
         this.shadowBlobModel.visible = false;
         return;

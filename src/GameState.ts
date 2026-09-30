@@ -410,22 +410,6 @@ export class GameState implements EngineContext {
     }
   }
 
-  public static getCurrentPlayer(): ModuleCreature {
-    if(GameState.Mode == EngineMode.MINIGAME){
-      return GameState.module.area.miniGame.player as any;
-    }
-    let p = GameState.PartyManager.party[0];
-    return p ? p : GameState.PartyManager.Player;
-  }
-
-  static getCameraById(id = 0): THREE.PerspectiveCamera | undefined {
-    for(let i = 0; i < GameState.staticCameras.length; i++){
-      if(GameState.staticCameras[i].userData.ingameID == id)
-        return GameState.staticCameras[i];
-    }
-    return undefined;
-  }
-
   static forwardVector = new THREE.Vector3(0, 0, );
 
 }

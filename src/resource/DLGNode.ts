@@ -294,7 +294,7 @@ export class DLGNode {
   }
 
   updateJournal(){
-    const speaker = this.speaker || (this.nodeType == DLGNodeType.REPLY ? GameState.getCurrentPlayer() : this.speaker);
+    const speaker = this.speaker || (this.nodeType == DLGNodeType.REPLY ? GameState.PartyManager.getCurrentPlayer() : this.speaker);
     if(this.quest){
       const allowOverrideHigher = false;
       GameState.JournalManager.AddJournalQuestEntry(this.quest, this.questEntry, allowOverrideHigher);

@@ -68,7 +68,7 @@ export class ActionDisarmMine extends Action {
       playAnim.setParameter(1, ActionParameterType.FLOAT, 1.0);
       playAnim.setParameter(2, ActionParameterType.FLOAT, 4.5);
       this.owner.actionQueue.addFront(playAnim);
-      if(this.owner === GameState.getCurrentPlayer()){
+      if(this.owner === GameState.PartyManager.getCurrentPlayer()){
         GameState.GuiTimingBarManager?.startMs?.(0x1194, 'Disarm Mine', this.owner, 1);
       }
       return ActionStatus.IN_PROGRESS;

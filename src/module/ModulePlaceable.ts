@@ -208,7 +208,7 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   onClick(callee: ModuleObject){
-    GameState.getCurrentPlayer().actionUseObject( this );
+    GameState.PartyManager.getCurrentPlayer().actionUseObject( this );
   }
 
   //---------------//

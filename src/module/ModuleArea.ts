@@ -1628,7 +1628,7 @@ export class ModuleArea extends ModuleObject {
       case EngineMode.INGAME:
       case EngineMode.FREELOOK:
       default:
-        const player = GameState.getCurrentPlayer();
+        const player = GameState.PartyManager.getCurrentPlayer();
         if(!player){ return; }
 
         // UpdateRoom(pos) → GetRoomIndex: resolve room from position when unset
@@ -1688,7 +1688,7 @@ export class ModuleArea extends ModuleObject {
     ModuleArea._frustumProj.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
     ModuleArea._viewFrustum.setFromProjectionMatrix(ModuleArea._frustumProj);
 
-    const playerRoom = GameState.getCurrentPlayer()?.room;
+    const playerRoom = GameState.PartyManager.getCurrentPlayer()?.room;
     const pad = 4;
 
     for(let i = 0, len = this.rooms.length; i < len; i++){
@@ -1741,7 +1741,7 @@ export class ModuleArea extends ModuleObject {
    * first renderable world frame matches the settled chase pose (no neighbor pop-in).
    */
   primePostLoadReveal(): void {
-    const player = GameState.getCurrentPlayer();
+    const player = GameState.PartyManager.getCurrentPlayer();
     if(player && !player.room){
       player.getCurrentRoom();
     }

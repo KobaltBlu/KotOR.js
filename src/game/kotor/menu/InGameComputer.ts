@@ -145,7 +145,7 @@ export class InGameComputer extends GameMenu {
   updateSkills() {
     const leader =
       GameState.PartyManager?.party?.[0] ||
-      GameState.getCurrentPlayer?.();
+      GameState.PartyManager.getCurrentPlayer?.();
     const computerRank = leader?.getSkillRank?.(SkillType.COMPUTER_USE) ?? 0;
     const repairRank = leader?.getSkillRank?.(SkillType.REPAIR) ?? 0;
 

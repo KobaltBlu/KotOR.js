@@ -10,8 +10,10 @@ const mockParty: unknown[] = [];
 
 jest.mock("@/GameState", () => ({
   GameState: {
-    PartyManager: { party: mockParty },
-    getCurrentPlayer: () => mockParty[0],
+    PartyManager: {
+      getCurrentPlayer: () => mockParty[0],
+      party: mockParty,
+    },
   },
 }));
 

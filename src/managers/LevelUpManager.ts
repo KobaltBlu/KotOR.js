@@ -101,7 +101,7 @@ export class LevelUpManager {
    * creates GUI (MAINCG / CharGenMain) hosting LEVELUPPNL.
    */
   static async showLevelUpGUIAsync(creature?: ModuleCreature): Promise<boolean> {
-    const target = creature || GameState.getCurrentPlayer?.() || GameState.PartyManager?.party?.[0];
+    const target = creature || GameState.PartyManager.getCurrentPlayer?.() || GameState.PartyManager?.party?.[0];
     if(!target || !target.canLevelUp()) return false;
     await GameState.MenuManager.EnsureLevelUpMenus();
     if(!LevelUpManager.begin(target)) return false;
@@ -117,7 +117,7 @@ export class LevelUpManager {
   }
 
   static showLevelUpGUI(creature?: ModuleCreature): boolean {
-    const target = creature || GameState.getCurrentPlayer?.() || GameState.PartyManager?.party?.[0];
+    const target = creature || GameState.PartyManager.getCurrentPlayer?.() || GameState.PartyManager?.party?.[0];
     if(!target || !target.canLevelUp()) return false;
     // Fire-and-forget ensure + open; NWScript gets optimistic TRUE if canLevelUp
     void LevelUpManager.showLevelUpGUIAsync(target);

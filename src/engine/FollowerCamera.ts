@@ -413,7 +413,7 @@ export class FollowerCamera {
    * Used when leaving FreeLook / Navigate so the next frame is not stuck mid-air.
    */
   static snapToChasePosition(){
-    const followee = GameState.getCurrentPlayer();
+    const followee = GameState.PartyManager.getCurrentPlayer();
     FollowerCamera.camera.rotation.order = 'YZX';
     FollowerCamera.camera.rotation.set(
       FollowerCamera.pitch,
@@ -477,7 +477,7 @@ export class FollowerCamera {
     FollowerCamera.refreshFreeLookStyle();
 
     // Face creature along normalize(pc − cam) so freelook matches chase forward.
-    const followee = GameState.getCurrentPlayer();
+    const followee = GameState.PartyManager.getCurrentPlayer();
     if(followee){
       const dx = followee.position.x - FollowerCamera.camera.position.x;
       const dy = followee.position.y - FollowerCamera.camera.position.y;
@@ -528,7 +528,7 @@ export class FollowerCamera {
     }
 
     // Mode is already non-FREELOOK when called from SetEngineMode — restore VIS.
-    const followee = GameState.getCurrentPlayer();
+    const followee = GameState.PartyManager.getCurrentPlayer();
     followee?.updateModelVisibility?.();
     followee?.updateShadowBlobVisibility?.();
   }
@@ -685,7 +685,7 @@ export class FollowerCamera {
    * Orientation: YawPitchRoll(hookYaw + yawOff, pitch + 90°, 0).
    */
   static updateFreeLook(delta: number = 0){
-    const followee = GameState.getCurrentPlayer();
+    const followee = GameState.PartyManager.getCurrentPlayer();
     if(!followee) return;
 
     const dt = Math.max(0, delta);
@@ -1694,7 +1694,7 @@ export class FollowerCamera {
 
     FollowerCamera.turning = false;
 
-    const followee = GameState.getCurrentPlayer();
+    const followee = GameState.PartyManager.getCurrentPlayer();
     if(!followee) return;
 
     FollowerCamera.updateCameraModeYaw(followee, delta);

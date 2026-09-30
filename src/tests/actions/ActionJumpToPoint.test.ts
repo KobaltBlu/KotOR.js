@@ -28,13 +28,13 @@ jest.mock('@/GameState', () => ({
       removeObjectFromLimbo: jest.fn(),
     },
     PartyManager: {
+      getCurrentPlayer: () => undefined,
       party: [],
       resetFollowPath: jest.fn(),
     },
     ModuleObjectManager: {
       GetObjectById: () => undefined,
     },
-    getCurrentPlayer: () => undefined,
   },
 }));
 

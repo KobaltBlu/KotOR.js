@@ -450,22 +450,22 @@ export class InGameOverlay extends GameMenu {
 
       this.LBL_QUEUE0.addEventListener('click', (e) => {
         e.stopPropagation();
-        GameState.getCurrentPlayer()?.clearCombatAction();
+        GameState.PartyManager.getCurrentPlayer()?.clearCombatAction();
       });
 
       this.LBL_QUEUE1.addEventListener('click', (e) => {
         e.stopPropagation();
-        GameState.getCurrentPlayer().clearCombatActionAtIndex(0);
+        GameState.PartyManager.getCurrentPlayer().clearCombatActionAtIndex(0);
       });
 
       this.LBL_QUEUE2.addEventListener('click', (e) => {
         e.stopPropagation();
-        GameState.getCurrentPlayer().clearCombatActionAtIndex(1);
+        GameState.PartyManager.getCurrentPlayer().clearCombatActionAtIndex(1);
       });
 
       this.LBL_QUEUE3.addEventListener('click', (e) => {
         e.stopPropagation();
-        GameState.getCurrentPlayer().clearCombatActionAtIndex(2);
+        GameState.PartyManager.getCurrentPlayer().clearCombatActionAtIndex(2);
       });
 
       for(let i = 0; i < GameState.ActionMenuManager.TARGET_MENU_COUNT; i++){
@@ -608,7 +608,7 @@ export class InGameOverlay extends GameMenu {
    * SetCombatState(0).
    */
   onClearAllButtonPressed() {
-    const oPC = GameState.getCurrentPlayer();
+    const oPC = GameState.PartyManager.getCurrentPlayer();
     if(!oPC) return;
     // ClearAllActions → SetCombatMode(0) then ClearAllActions (not CancelCombat).
     setClientCombatMode(oPC, false);
@@ -622,7 +622,7 @@ export class InGameOverlay extends GameMenu {
    * RemoveLastAction from the combat round; if the schedule was empty, ClearAllActions(1).
    */
   onClearOneButtonPressed() {
-    const oPC = GameState.getCurrentPlayer();
+    const oPC = GameState.PartyManager.getCurrentPlayer();
     if(!oPC?.combatRound) return;
     if(!oPC.combatRound.removeLastAction()){
       oPC.clearAllActions(true);
@@ -781,7 +781,7 @@ export class InGameOverlay extends GameMenu {
    * OnStealthButtonPressed → PartyMenuStealth (solo-mode query when party > 1).
    */
   onStealthToggle(){
-    const pc = GameState.getCurrentPlayer();
+    const pc = GameState.PartyManager.getCurrentPlayer();
     if(!pc?.isStealthCapable?.()) return;
 
     const partyCount = GameState.PartyManager?.party?.length || 1;
@@ -1398,7 +1398,7 @@ export class InGameOverlay extends GameMenu {
     this.updateMiniMapVisibility();
     if (GameState.module.area.miniGame) { return; }
 
-    const oPC = GameState.getCurrentPlayer();
+    const oPC = GameState.PartyManager.getCurrentPlayer();
     GameState.ActionMenuManager.SetPC(oPC);
     GameState.ActionMenuManager.SetTarget(GameState.CursorManager.selectedObject);
     GameState.ActionMenuManager.UpdateMenuActions();
@@ -1516,18 +1516,18 @@ export class InGameOverlay extends GameMenu {
   triggerControllerAPress() {
     if (GameState.CursorManager.selectedObject) {
       if (typeof GameState.CursorManager.selectedObject.onClick === 'function') {
-        const pc = GameState.getCurrentPlayer();
+        const pc = GameState.PartyManager.getCurrentPlayer();
         // AddAttackActions(clear=0) while fighting — do not ClearAllActions.
         if (!pc.combatData?.combatState) {
           pc.clearAllActions(true);
         }
         GameState.CursorManager.selectedObject.onClick(pc);
       } else {
-        let distance = GameState.getCurrentPlayer().position.distanceTo(GameState.CursorManager.selectedObject.position);
+        let distance = GameState.PartyManager.getCurrentPlayer().position.distanceTo(GameState.CursorManager.selectedObject.position);
         if (distance > 1.5) {
-          GameState.getCurrentPlayer().clearAllActions();
+          GameState.PartyManager.getCurrentPlayer().clearAllActions();
           GameState.CursorManager.selectedObject.clearAllActions();
-          GameState.getCurrentPlayer().actionDialogObject(GameState.CursorManager.selectedObject);
+          GameState.PartyManager.getCurrentPlayer().actionDialogObject(GameState.CursorManager.selectedObject);
         }
       }
     }
