@@ -75,6 +75,15 @@ export * from "@/engine/INIConfig";
 export * from "@/engine/CurrentGame";
 export * from "@/engine/AIScheduler";
 export * from "@/engine/EngineDebugController";
+export * from "@/apps/forge/ForgePreviewHost";
+export * from "@/engine/GameStateEvents";
+export * from "@/engine/ViewportController";
+export * from "@/engine/GameLoop";
+export * from "@/engine/GameplayCapture";
+export * from "@/engine/MotionBlurController";
+export * from "@/engine/OdysseyRenderPipeline";
+export * from "@/engine/ModuleLoadCoordinator";
+export * from "@/engine/EngineModeController";
 export * from "@/engine/rules";
 export * from "@/engine/pathfinding";
 

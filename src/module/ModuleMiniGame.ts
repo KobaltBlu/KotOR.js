@@ -15,6 +15,7 @@ import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
 import { MiniGameObjectArray } from "@/module/minigame/MiniGameObjectArray";
 import type { OdysseyModel3D } from "@/three/odyssey";
 import * as THREE from "three";
+import { MotionBlurController } from '@/engine/MotionBlurController';
 
 /** MiniGame physics state (24 bytes: accel + vel). */
 export interface MGMPhysicsState {
@@ -770,7 +771,7 @@ export class ModuleMiniGame {
   dispose(){
     // SWMG_SetSpeedBlurEffect may leave AurEnableSpeedBlur on; clear so
     // AccumulationBlurPass does not carry into the next module / restart.
-    GameState.SetSpeedBlurEffect(false);
+    MotionBlurController.SetSpeedBlurEffect(false);
 
     this.stopMusic();
     if(this.musicEmitter){

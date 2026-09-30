@@ -1449,7 +1449,7 @@ export class UI3DRenderer extends EventListenerModel {
       return;
     }
     if(!this.forceDistortionTexture){
-      this.forceDistortionTexture = KotOR.GameState.createFallbackDistortionTexture();
+      this.forceDistortionTexture = KotOR.OdysseyRenderPipeline.createFallbackDistortionTexture();
       this.forceDistortionPass?.setDistortionTexture(this.forceDistortionTexture);
     }
     try {
@@ -1671,7 +1671,7 @@ export class UI3DRenderer extends EventListenerModel {
       // Force distortion (TILE / Gob.distortion): scene→stencil RT, warp, blit
       if(forceNeeded && this.forceDistortionPass && this.sceneTarget && cam){
         if(!this.forceDistortionTexture){
-          this.forceDistortionTexture = KotOR.GameState.createFallbackDistortionTexture();
+          this.forceDistortionTexture = KotOR.OdysseyRenderPipeline.createFallbackDistortionTexture();
           this.forceDistortionPass.setDistortionTexture(this.forceDistortionTexture);
           void this.ensureForceDistortionTexture();
         }

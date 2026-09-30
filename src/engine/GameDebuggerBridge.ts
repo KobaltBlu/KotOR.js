@@ -22,6 +22,7 @@ import { snapshotDialog } from "@/inspect/dialogSnapshot";
 import { snapshotAreaMapOverlay } from "@/inspect/areaMapOverlay";
 import { clearWorldMarkers, syncWorldMarkers } from "@/inspect/worldMarkers";
 import { GameStateEvents } from "@/engine/GameStateEvents";
+import { OdysseyRenderPipeline } from '@/engine/OdysseyRenderPipeline';
 
 /**
  * Script debugger IPC bridge: snapshots, breakpoints, resume-on-tick, live script dump.
@@ -188,7 +189,7 @@ export class GameDebuggerBridge {
       GameState.currentCamera.rotation,
       GameState.forwardVector
     );
-    GameState.Render(delta);
+    OdysseyRenderPipeline.renderFrame(delta);
     GameState.stats.end();
     GameStateEvents.processEventListener('afterRender', [delta]);
     return true;

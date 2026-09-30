@@ -23,6 +23,7 @@ import {
 } from "@/three/odyssey/warmRoomGpuResources";
 import { OdysseyUniformBuffers } from "@/three/odyssey/OdysseyUniformBuffers";
 import { OdysseyLightingBinder } from "@/three/odyssey/OdysseyLightingBinder";
+import { GameLoop } from '@/engine/GameLoop';
 
 /**
  * Module load/unload, area-transition fades, and post-load GPU warm-up.
@@ -338,8 +339,8 @@ export class ModuleLoadCoordinator {
       skipRoots.add(GameState.group.debug);
     }
 
-    GameState.updateViewportFrustum();
-    GameState.updateShadowSystems(0, GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition);
+    GameLoop.updateViewportFrustum();
+    GameLoop.updateShadowSystems(0, GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition);
 
     await warmModuleGpu({
       renderer,

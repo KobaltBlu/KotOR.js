@@ -7,34 +7,16 @@ import {
 } from "@/managers";
 
 import type { SWRuleSet } from "@/engine/rules/SWRuleSet";
-
 import type { TalentObject, TalentFeat, TalentSkill, TalentSpell } from "@/talents";
 import type { ModuleCreature, Module } from "@/module";
 import type { NWScript } from "@/nwscript/NWScript";
 import type { SaveGame } from "@/engine/SaveGame";
 import type { GameEffectFactory } from "@/effects/GameEffectFactory";
 import type { GameEventFactory } from "@/events/GameEventFactory";
-
 import type { ActionMenuManager } from "@/engine/menu/ActionMenuManager";
 import type { ActionFactory } from "@/actions/ActionFactory";
-
 import type { IngameControls } from "@/controls/IngameControls";
-
-import { INIConfig } from "@/engine/INIConfig";
-import { UpdateLoopArm } from "@/engine/updateLoopSchedule";
-import { OdysseyRenderPipeline } from "@/engine/OdysseyRenderPipeline";
-import { GameLoop } from "@/engine/GameLoop";
-import { GameRuntimeBootstrap } from "@/engine/GameRuntimeBootstrap";
-import { GameStateEvents } from "@/engine/GameStateEvents";
-
 import type { AudioEmitter } from "@/audio";
-import type { TGAObject } from "@/resource/TGAObject";
-
-import { IGameStateGroups } from "@/interface/engine/IGameStateGroups";
-import { EngineState, EngineMode, GameEngineType, GameEngineEnv, EngineDebugType } from "@/enums/engine";
-import { TextureType } from "@/enums/loaders/TextureType";
-
-import { FollowerCamera } from "@/engine/FollowerCamera";
 import type { OdysseyShaderPass } from "@/shaders/pass/OdysseyShaderPass";
 import type { ForceDistortionPass } from "@/shaders/pass/ForceDistortionPass";
 import type { OverbrightenPass } from "@/shaders/pass/OverbrightenPass";
@@ -43,26 +25,30 @@ import type { DreamDistortionPass } from "@/shaders/pass/DreamDistortionPass";
 import type { FuryPass } from "@/shaders/pass/FuryPass";
 import type { MiniGameAspectMaskPass } from "@/shaders/pass/MiniGameAspectMaskPass";
 import type { OdysseyLensFlarePass } from "@/shaders/pass/OdysseyLensFlarePass";
-import { TextureLoader } from "@/loaders";
-import { MotionBlurController } from "@/engine/MotionBlurController";
-import { GameDebuggerBridge } from "@/engine/GameDebuggerBridge";
-import { GameplayCapture } from "@/engine/GameplayCapture";
-import { EngineModeController } from "@/engine/EngineModeController";
-import { ForgePreviewHost } from "@/apps/forge/ForgePreviewHost";
-
-//THREE.js imports
+import type { AccumulationBlurPass } from "@/shaders/pass/AccumulationBlurPass";
 import type { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
 import type { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import type { SSAARenderPass } from "three/examples/jsm/postprocessing/SSAARenderPass";
 import type { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
 import type { BloomPass } from "three/examples/jsm/postprocessing/BloomPass";
 import type { BokehPass } from "three/examples/jsm/postprocessing/BokehPass";
-import type { AccumulationBlurPass } from "@/shaders/pass/AccumulationBlurPass";
-import type Stats from 'three/examples/jsm/libs/stats.module'
+import type Stats from 'three/examples/jsm/libs/stats.module';
 
+import { INIConfig } from "@/engine/INIConfig";
+import { UpdateLoopArm } from "@/engine/updateLoopSchedule";
+import { OdysseyRenderPipeline } from "@/engine/OdysseyRenderPipeline";
+import { GameLoop } from "@/engine/GameLoop";
+import { GameRuntimeBootstrap } from "@/engine/GameRuntimeBootstrap";
+import { GameStateEvents } from "@/engine/GameStateEvents";
+import { GameDebuggerBridge } from "@/engine/GameDebuggerBridge";
+import { EngineModeController } from "@/engine/EngineModeController";
+import { FollowerCamera } from "@/engine/FollowerCamera";
 import { Planetary } from "@/engine/Planetary";
 import { Debugger } from "@/engine/Debugger";
-import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
+import { TextureLoader } from "@/loaders";
+import { IGameStateGroups } from "@/interface/engine/IGameStateGroups";
+import { EngineState, EngineMode, GameEngineType, GameEngineEnv, EngineDebugType } from "@/enums/engine";
+import { TextureType } from "@/enums/loaders/TextureType";
 import { PerformanceMonitor } from "@/utility/PerformanceMonitor";
 import { EngineContext } from "./engine/EngineContext";
 
@@ -450,26 +436,6 @@ export class GameState implements EngineContext {
 
   static domElement: HTMLElement;
 
-  /** @see GameDebuggerBridge.sendInspectorSnapshot */
-  static sendInspectorSnapshot(type: IPCMessageType, payload: unknown){
-    GameDebuggerBridge.sendInspectorSnapshot(type, payload);
-  }
-
-  /** @see MotionBlurController.SetSpeedBlurEffect */
-  static SetSpeedBlurEffect(enabled: boolean, ratio: number = 0.75){
-    MotionBlurController.SetSpeedBlurEffect(enabled, ratio);
-  }
-
-  /** @see MotionBlurController.applyMotionBlurVFX */
-  static applyMotionBlurVFX(target: ModuleCreature | undefined, progFX: number){
-    MotionBlurController.applyMotionBlurVFX(target, progFX);
-  }
-
-  /** @see MotionBlurController.removeMotionBlurVFX */
-  static removeMotionBlurVFX(){
-    MotionBlurController.removeMotionBlurVFX();
-  }
-
   static setDOMElement(element: HTMLElement){
     GameState.domElement = element;
   }
@@ -544,7 +510,7 @@ export class GameState implements EngineContext {
         undefined,
         TextureType.TEXTURE
       );
-      void GameState.ensureForceDistortionTexture();
+      void OdysseyRenderPipeline.ensureForceDistortionTexture();
 
       // BeginIntro: K1 queues leclogo/biologo/legal BIKs; TSL queues
       // leclogo/obsidianent then legal screen texture, not a Legal movie.
@@ -575,26 +541,6 @@ export class GameState implements EngineContext {
     return p ? p : GameState.PartyManager.Player;
   }
 
-  /** @see ForgePreviewHost.InitForForgePreview */
-  static async InitForForgePreview(host: HTMLElement): Promise<void> {
-    return ForgePreviewHost.InitForForgePreview(host);
-  }
-
-  /** @see ForgePreviewHost.applyForgePreviewCanvasLayout */
-  static applyForgePreviewCanvasLayout(): void {
-    ForgePreviewHost.applyForgePreviewCanvasLayout();
-  }
-
-  /** @see ForgePreviewHost.clearForgePreviewViewport */
-  static clearForgePreviewViewport(): void {
-    ForgePreviewHost.clearForgePreviewViewport();
-  }
-
-  /** @see ForgePreviewHost.LoadModuleFromArchives */
-  static async LoadModuleFromArchives(archives: any[], waypoint: string = null, modName = 'preview'){
-    return ForgePreviewHost.LoadModuleFromArchives(archives, waypoint, modName);
-  }
-
   static getCameraById(id = 0): THREE.PerspectiveCamera | undefined {
     for(let i = 0; i < GameState.staticCameras.length; i++){
       if(GameState.staticCameras[i].userData.ingameID == id)
@@ -604,50 +550,5 @@ export class GameState implements EngineContext {
   }
 
   static forwardVector = new THREE.Vector3(0, 0, );
-
-  /** @see GameLoop.applyVSyncOption */
-  static applyVSyncOption(): void {
-    GameLoop.applyVSyncOption();
-  }
-
-  /** @see GameLoop.updateViewportFrustum */
-  static updateViewportFrustum(): void {
-    GameLoop.updateViewportFrustum();
-  }
-
-  /** @see GameLoop.updateShadowSystems */
-  static updateShadowSystems(_delta: number, focus?: THREE.Vector3): void {
-    GameLoop.updateShadowSystems(_delta, focus);
-  }
-
-  /** @see OdysseyRenderPipeline.renderFrame */
-  static Render(delta: number = 0): void {
-    OdysseyRenderPipeline.renderFrame(delta);
-  }
-
-  /** @see OdysseyRenderPipeline.isFrameBufferEffectsEnabled */
-  static isFrameBufferEffectsEnabled(): boolean {
-    return OdysseyRenderPipeline.isFrameBufferEffectsEnabled();
-  }
-
-  /** @see OdysseyRenderPipeline.ensureForceDistortionTexture */
-  static async ensureForceDistortionTexture(): Promise<void> {
-    return OdysseyRenderPipeline.ensureForceDistortionTexture();
-  }
-
-  /** @see OdysseyRenderPipeline.createFallbackDistortionTexture */
-  static createFallbackDistortionTexture(): THREE.DataTexture {
-    return OdysseyRenderPipeline.createFallbackDistortionTexture();
-  }
-
-  /** @see GameplayCapture.captureFramebufferToOffscreenCanvas */
-  static captureFramebufferToOffscreenCanvas(width: number, height: number): OffscreenCanvas {
-    return GameplayCapture.captureFramebufferToOffscreenCanvas(width, height);
-  }
-
-  /** @see GameplayCapture.GetScreenShot */
-  static async GetScreenShot(width = 256, height = 256): Promise<TGAObject> {
-    return GameplayCapture.GetScreenShot(width, height);
-  }
 
 }

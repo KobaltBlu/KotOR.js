@@ -38,6 +38,7 @@ import { isPlayer } from "@/module/guards/isPlayer";
 import { isTrigger } from "@/module/guards/isTrigger";
 import { isWaypoint } from "@/module/guards/isWaypoint";
 import { EngineModeController } from '@/engine/EngineModeController';
+import { MotionBlurController } from '@/engine/MotionBlurController';
 
 /**
  * NWScriptDefK2 class.
@@ -4257,7 +4258,7 @@ NWScriptDefK2.Actions = {
     action: function(this: NWScriptInstance, args: [number, number]){
       // Same gate as K1 AurEnableSpeedBlur; AccumulationBlurPass (RenderAccumulationBlur).
       const ratio = typeof args[1] === 'number' ? args[1] : 0.75;
-      GameState.SetSpeedBlurEffect(!!args[0], ratio);
+      MotionBlurController.SetSpeedBlurEffect(!!args[0], ratio);
     }
   },
   564: {

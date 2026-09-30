@@ -4,6 +4,7 @@ import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "@/gui";
 import { TextureLoader } from "@/loaders/TextureLoader";
 import { TextureLoaderState } from "@/loaders/TextureLoaderState";
 import { ModuleLoadCoordinator } from '@/engine/ModuleLoadCoordinator';
+import { GameLoop } from '@/engine/GameLoop';
 
 /** graphics advanced options description TLKs (K1). */
 const TLK_SOFT_SHADOWS = 0xbb51;
@@ -269,7 +270,7 @@ export class MenuGraphicsAdvanced extends GameMenu {
       GameState.iniConfig.setProperty(INI_SHADOWS, 1);
     }
 
-    GameState.applyVSyncOption();
+    GameLoop.applyVSyncOption();
 
     if(this.draftAnisotropy != prevAnisotropy){
       TextureLoader.Anisotropy = this.draftAnisotropy;

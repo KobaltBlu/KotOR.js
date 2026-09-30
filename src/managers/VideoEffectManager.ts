@@ -4,6 +4,7 @@ import { GameState } from "@/GameState";
 import { TextureLoader } from "@/loaders";
 import type { TwoDAObject } from "@/resource/TwoDAObject";
 import { resolveAlwaysOnFrameBufferPasses } from "@/shaders/pass/FrameBufferEffectGates";
+import { OdysseyRenderPipeline } from '@/engine/OdysseyRenderPipeline';
 
 /**
  * VideoEffectManager class.
@@ -137,7 +138,7 @@ export class VideoEffectManager {
   }
 
   static Update(delta: number = 0){
-    const fbOn = GameState.isFrameBufferEffectsEnabled();
+    const fbOn = OdysseyRenderPipeline.isFrameBufferEffectsEnabled();
     const effect = VideoEffectManager.videoEffect;
 
     // --- OdysseyShaderPass: saturation + film noise (VideoEffects only) ---
@@ -177,8 +178,8 @@ export class VideoEffectManager {
       const wantDream = !!(effect?.enableClairVoyance || effect?.enableClairVoyanceFull);
       if(wantDream){
         if(!GameState.forceDistortionTexture){
-          GameState.forceDistortionTexture = GameState.createFallbackDistortionTexture();
-          void GameState.ensureForceDistortionTexture();
+          GameState.forceDistortionTexture = OdysseyRenderPipeline.createFallbackDistortionTexture();
+          void OdysseyRenderPipeline.ensureForceDistortionTexture();
         }
         GameState.dreamDistortionPass.setDistortionTexture(GameState.forceDistortionTexture);
         // EnableClairvoyance(1) vs EnableClairvoyanceFull(0): full = larger warp
@@ -193,8 +194,8 @@ export class VideoEffectManager {
       const wantFury = !!(effect?.enableFury) && !!VideoEffectManager.furyTexture;
       if(wantFury){
         if(!GameState.forceDistortionTexture){
-          GameState.forceDistortionTexture = GameState.createFallbackDistortionTexture();
-          void GameState.ensureForceDistortionTexture();
+          GameState.forceDistortionTexture = OdysseyRenderPipeline.createFallbackDistortionTexture();
+          void OdysseyRenderPipeline.ensureForceDistortionTexture();
         }
         GameState.furyPass.setFuryTexture(VideoEffectManager.furyTexture);
         GameState.furyPass.setDistortionTexture(GameState.forceDistortionTexture);

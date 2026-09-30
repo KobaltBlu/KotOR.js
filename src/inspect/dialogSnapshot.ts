@@ -5,6 +5,7 @@ import { GameState } from "@/GameState";
 import { getObjectKind, type OverviewObjectKind } from "@/inspect/runtimeSnapshots";
 import type { ModuleObject } from "@/module/ModuleObject";
 import type { DLGNode } from "@/resource/DLGNode";
+import { GameDebuggerBridge } from '@/engine/GameDebuggerBridge';
 
 export interface DialogParticipantRef {
   objectId: number;
@@ -215,7 +216,7 @@ export function snapshotDialog(): DialogSnapshot {
 export function pushDialogSnapshotToDebugger(){
   if(!GameState.debugMode){ return; }
   try{
-    GameState.sendInspectorSnapshot(IPCMessageType.DialogSnapshot, snapshotDialog());
+    GameDebuggerBridge.sendInspectorSnapshot(IPCMessageType.DialogSnapshot, snapshotDialog());
   }catch(e){
     console.error('pushDialogSnapshotToDebugger failed', e);
   }

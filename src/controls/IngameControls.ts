@@ -33,6 +33,7 @@ import { ActionType } from "@/enums/actions/ActionType";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { EngineModeController } from '@/engine/EngineModeController';
+import { GameplayCapture } from '@/engine/GameplayCapture';
 
 function ensurePlayerControl(creature: { playerControl?: ReturnType<typeof createPlayerCamRelativeState> }){
   if(!creature.playerControl){
@@ -310,7 +311,7 @@ export class IngameControls {
 
         const width = GameState.ResolutionManager.getViewportWidth();
         const height = GameState.ResolutionManager.getViewportHeight();
-        const ssCanvas = GameState.captureFramebufferToOffscreenCanvas(width, height);
+        const ssCanvas = GameplayCapture.captureFramebufferToOffscreenCanvas(width, height);
         const tga = TGAObject.FromCanvas(ssCanvas);
 
         void (async () => {

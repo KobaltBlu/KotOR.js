@@ -20,6 +20,7 @@ import { SaveLoadAudit } from "@/engine/SaveLoadAudit";
 import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { ModuleSaveTable } from "@/engine/ModuleSaveTable";
 import { ModuleLoadCoordinator } from '@/engine/ModuleLoadCoordinator';
+import { GameplayCapture } from '@/engine/GameplayCapture';
 
 const winEpoch = new Date("01-01-1601 UTC").getTime();
 
@@ -930,7 +931,7 @@ export class SaveGame {
     }
 
     try{
-      const tga = await GameState.GetScreenShot();
+      const tga = await GameplayCapture.GetScreenShot();
       await tga.export( path.join( save_dir, 'Screen.tga'));
     }catch(e){
       console.warn('SaveGame.writeSaveFolder: screenshot failed', e);

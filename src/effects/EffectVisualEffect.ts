@@ -15,6 +15,7 @@ import {
   MOTION_BLUR_PROGFX_ENABLE,
   isMotionBlurProgFX,
 } from "@/shaders/pass/FrameBufferEffectGates";
+import { MotionBlurController } from '@/engine/MotionBlurController';
 
 /**
  * EffectVisualEffect class.
@@ -479,7 +480,7 @@ export class EffectVisualEffect extends GameEffect {
       return;
     if(!BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleCreature))
       return;
-    GameState.applyMotionBlurVFX(this.object as ModuleCreature, id);
+    MotionBlurController.applyMotionBlurVFX(this.object as ModuleCreature, id);
     this.motionBlurActive = true;
   }
 
@@ -487,7 +488,7 @@ export class EffectVisualEffect extends GameEffect {
   private removeMotionBlurProgFX(){
     if(!this.motionBlurActive) return;
     this.motionBlurActive = false;
-    GameState.removeMotionBlurVFX();
+    MotionBlurController.removeMotionBlurVFX();
   }
 
   onRemove(){

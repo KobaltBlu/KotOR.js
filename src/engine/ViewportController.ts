@@ -56,8 +56,26 @@ export class ViewportController {
     }
 
     if(GameState.forgePreviewHost){
-      GameState.applyForgePreviewCanvasLayout();
+      ViewportController.applyForgePreviewCanvasLayout();
     }
+  }
+
+  /**
+   * Size/position the play canvas to the preview host without CSS stretch.
+   */
+  static applyForgePreviewCanvasLayout(): void {
+    if(!GameState.canvas || !GameState.domElement){
+      return;
+    }
+    const w = Math.max(1, GameState.domElement.clientWidth);
+    const h = Math.max(1, GameState.domElement.clientHeight);
+    GameState.canvas.style.setProperty('width', `${w}px`);
+    GameState.canvas.style.setProperty('height', `${h}px`);
+    GameState.canvas.style.setProperty('display', 'block');
+    GameState.canvas.style.setProperty('position', 'absolute');
+    GameState.canvas.style.setProperty('left', '0');
+    GameState.canvas.style.setProperty('top', '0');
+    GameState.canvas.style.removeProperty('transform');
   }
 
   /**

@@ -99,6 +99,7 @@ import { isTrigger } from "@/module/guards/isTrigger";
 import { isWaypoint } from "@/module/guards/isWaypoint";
 import { EngineModeController } from '@/engine/EngineModeController';
 import { ModuleLoadCoordinator } from '@/engine/ModuleLoadCoordinator';
+import { MotionBlurController } from '@/engine/MotionBlurController';
 
 /**
  * Resolve a gun bank on a MG player/enemy by index (SWMG gun-bank ops).
@@ -8049,7 +8050,7 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [number, number]){
       // ExecuteCommandSWMG_SetSpeedBlurEffect — AurEnableSpeedBlur; AccumulationBlurPass
       const ratio = typeof args[1] === 'number' ? args[1] : 0.75;
-      GameState.SetSpeedBlurEffect(!!args[0], ratio);
+      MotionBlurController.SetSpeedBlurEffect(!!args[0], ratio);
     }
   },
   564:{

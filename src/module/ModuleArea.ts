@@ -74,6 +74,7 @@ import { ModuleDayPhase } from "@/enums/module/ModuleDayPhase";
 import { ModuleCalendar } from "@/module/ModuleCalendar";
 import { ModuleTimeManager } from "@/module/ModuleTimeManager";
 import { CorpseCache } from "@/module/CorpseCache";
+import { GameLoop } from '@/engine/GameLoop';
 
 type AreaScriptKeys = 'OnEnter'|'OnExit'|'OnHeartbeat'|'OnUserDefined';
 
@@ -731,7 +732,7 @@ export class ModuleArea extends ModuleObject {
     // (avoids one-frame neighbor pop-in after load / turns).
     FollowerCamera.update(delta, this);
     // Rebuild viewportFrustum before object isOnScreen (same pose as room cull).
-    GameState.updateViewportFrustum();
+    GameLoop.updateViewportFrustum();
     this.updateRoomVisibility(delta);
     this.applyRoomRenderFrustumCull();
     // Same-frame object cull after room VIS (avoids one-frame blank props/doors)
@@ -800,7 +801,7 @@ export class ModuleArea extends ModuleObject {
     }
 
     FollowerCamera.update(delta, this);
-    GameState.updateViewportFrustum();
+    GameLoop.updateViewportFrustum();
     this.updateRoomVisibility(delta);
     this.applyRoomRenderFrustumCull();
     this.syncObjectModelVisibility();
@@ -1677,7 +1678,7 @@ export class ModuleArea extends ModuleObject {
     const cam = GameState.currentCamera;
     if(!cam){ return; }
 
-    // Caller (ModuleArea.update / prime) runs GameState.updateViewportFrustum()
+    // Caller (ModuleArea.update / prime) runs GameLoop.updateViewportFrustum()
     // immediately before this — camera matrixWorld is already current.
     const persp = cam as THREE.PerspectiveCamera;
     if(typeof persp.updateProjectionMatrix === 'function'){
@@ -1746,7 +1747,7 @@ export class ModuleArea extends ModuleObject {
     }
     this.lastRoom = undefined;
     FollowerCamera.snapToChasePosition();
-    GameState.updateViewportFrustum();
+    GameLoop.updateViewportFrustum();
     this.updateRoomVisibility(0);
     this.applyRoomRenderFrustumCull();
     this.syncObjectModelVisibility();
