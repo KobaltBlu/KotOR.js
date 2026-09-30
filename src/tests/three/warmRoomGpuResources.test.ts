@@ -1,9 +1,15 @@
-import { describe, expect, test, jest } from '@jest/globals';
+import { describe, expect, test, jest, beforeEach } from '@jest/globals';
 import * as THREE from 'three';
 import {
   warmRoomGpuResources,
   compileAreaRoomsVisible,
+  warmSceneGeometryDraw,
+  collectModuleGpuTextureTargets,
 } from '@/three/odyssey/warmRoomGpuResources';
+
+jest.mock('@/utility/odysseyDepthPrepass', () => ({
+  runOdysseyDepthPrepass: jest.fn(),
+}));
 
 describe('warmRoomGpuResources', () => {
   test('inits map, lightMap, envMap, bumpMap, and grass uniforms', () => {
@@ -54,6 +60,22 @@ describe('warmRoomGpuResources', () => {
   });
 });
 
+describe('collectModuleGpuTextureTargets', () => {
+  test('includes rooms and objects with models', () => {
+    const roomModel = new THREE.Group() as any;
+    const creatureModel = new THREE.Group() as any;
+    const targets = collectModuleGpuTextureTargets(
+      {
+        rooms: [{ model: roomModel }],
+        creatures: [{ model: creatureModel }, {}],
+        doors: [],
+      },
+      [{ model: creatureModel }]
+    );
+    expect(targets.length).toBe(3);
+  });
+});
+
 describe('compileAreaRoomsVisible', () => {
   test('forces rooms visible for compile then restores', () => {
     const model = new THREE.Group();
@@ -89,5 +111,80 @@ describe('compileAreaRoomsVisible', () => {
       )
     ).toThrow('compile fail');
     expect(model.visible).toBe(false);
+  });
+});
+
+describe('warmSceneGeometryDraw', () => {
+  let disposeSpy: ReturnType<typeof jest.spyOn>;
+
+  beforeEach(() => {
+    disposeSpy = jest.spyOn(THREE.WebGLRenderTarget.prototype, 'dispose');
+  });
+
+  function mockRenderer(): THREE.WebGLRenderer {
+    let target: THREE.WebGLRenderTarget | null = null;
+    return {
+      getRenderTarget: () => target,
+      setRenderTarget: (rt: THREE.WebGLRenderTarget | null) => { target = rt; },
+      autoClear: true,
+      clear: jest.fn(),
+      render: jest.fn(),
+    } as unknown as THREE.WebGLRenderer;
+  }
+
+  test('forces frustumCulled off and hidden visible for render then restores', () => {
+    const renderer = mockRenderer();
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera();
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial());
+    mesh.visible = false;
+    mesh.frustumCulled = true;
+    scene.add(mesh);
+
+    warmSceneGeometryDraw({ renderer, scene, camera });
+
+    expect(renderer.render).toHaveBeenCalledWith(scene, camera);
+    expect(mesh.visible).toBe(false);
+    expect(mesh.frustumCulled).toBe(true);
+    expect(disposeSpy).toHaveBeenCalled();
+  });
+
+  test('does not modify meshes under skipRoots', () => {
+    const renderer = mockRenderer();
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera();
+    const debug = new THREE.Group();
+    debug.visible = true;
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial());
+    mesh.visible = false;
+    mesh.frustumCulled = true;
+    debug.add(mesh);
+    scene.add(debug);
+
+    warmSceneGeometryDraw({
+      renderer,
+      scene,
+      camera,
+      skipRoots: new Set([debug]),
+    });
+
+    expect(mesh.visible).toBe(false);
+    expect(mesh.frustumCulled).toBe(true);
+  });
+
+  test('restores state if render throws', () => {
+    const renderer = mockRenderer();
+    (renderer.render as jest.Mock).mockImplementation(() => {
+      throw new Error('render fail');
+    });
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera();
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial());
+    mesh.frustumCulled = true;
+    scene.add(mesh);
+
+    expect(() => warmSceneGeometryDraw({ renderer, scene, camera })).toThrow('render fail');
+    expect(mesh.frustumCulled).toBe(true);
+    expect(disposeSpy).toHaveBeenCalled();
   });
 });
