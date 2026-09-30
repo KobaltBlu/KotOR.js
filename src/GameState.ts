@@ -451,42 +451,9 @@ export class GameState implements EngineContext {
 
   static domElement: HTMLElement;
 
-  /** @see GameDebuggerBridge.dumpLiveScriptsToDebugger */
-  static dumpLiveScriptsToDebugger(){
-    GameDebuggerBridge.dumpLiveScriptsToDebugger();
-  }
-
   /** @see GameDebuggerBridge.sendInspectorSnapshot */
   static sendInspectorSnapshot(type: IPCMessageType, payload: unknown){
     GameDebuggerBridge.sendInspectorSnapshot(type, payload);
-  }
-
-  /** @see GameDebuggerBridge.sendScriptResource */
-  static sendScriptResource(
-    resref: string,
-    ok: boolean,
-    source: 'override' | 'key' | 'module' | 'runtime' | 'missing',
-    bytecode?: Uint8Array | null,
-  ){
-    GameDebuggerBridge.sendScriptResource(resref, ok, source, bytecode);
-  }
-
-  /** @see GameDebuggerBridge.resolveScriptResourceBytes */
-  static async resolveScriptResourceBytes(resref: string): Promise<{
-    buffer: Uint8Array;
-    source: 'override' | 'key' | 'module' | 'runtime';
-  } | null> {
-    return GameDebuggerBridge.resolveScriptResourceBytes(resref);
-  }
-
-  /** @see GameDebuggerBridge.finishPausedScriptOnDebuggerClose */
-  static finishPausedScriptOnDebuggerClose(){
-    GameDebuggerBridge.finishPausedScriptOnDebuggerClose();
-  }
-
-  /** @see GameDebuggerBridge.processPendingDebuggerResume */
-  static processPendingDebuggerResume(){
-    GameDebuggerBridge.processPendingDebuggerResume();
   }
 
   /** @see MotionBlurController.SetSpeedBlurEffect */
@@ -502,11 +469,6 @@ export class GameState implements EngineContext {
   /** @see MotionBlurController.removeMotionBlurVFX */
   static removeMotionBlurVFX(){
     MotionBlurController.removeMotionBlurVFX();
-  }
-
-  /** @see MotionBlurController.syncMotionBlurRatio */
-  static syncMotionBlurRatio(){
-    MotionBlurController.syncMotionBlurRatio();
   }
 
   static setDOMElement(element: HTMLElement){
@@ -606,22 +568,12 @@ export class GameState implements EngineContext {
     }
   }
 
-  /** @see GameLoop.Start */
-  static Start(): void {
-    GameLoop.Start();
-  }
-
   public static getCurrentPlayer(): ModuleCreature {
     if(GameState.Mode == EngineMode.MINIGAME){
       return GameState.module.area.miniGame.player as any;
     }
     let p = GameState.PartyManager.party[0];
     return p ? p : GameState.PartyManager.Player;
-  }
-
-  /** @see ModuleLoadCoordinator.ResetModuleAudio */
-  static ResetModuleAudio(){
-    ModuleLoadCoordinator.ResetModuleAudio();
   }
 
   /** @see ModuleLoadCoordinator.LoadModuleWithAreaTransitionFade */
@@ -658,24 +610,9 @@ export class GameState implements EngineContext {
     return ForgePreviewHost.InitForForgePreview(host);
   }
 
-  /** @see ForgePreviewHost.ensureGuiListHexTextures */
-  static ensureGuiListHexTextures(): void {
-    ForgePreviewHost.ensureGuiListHexTextures();
-  }
-
   /** @see ForgePreviewHost.applyForgePreviewCanvasLayout */
   static applyForgePreviewCanvasLayout(): void {
     ForgePreviewHost.applyForgePreviewCanvasLayout();
-  }
-
-  /** @see ForgePreviewHost.attachForgePreviewResizeObserver */
-  static attachForgePreviewResizeObserver(host: HTMLElement): void {
-    ForgePreviewHost.attachForgePreviewResizeObserver(host);
-  }
-
-  /** @see ForgePreviewHost.detachForgePreviewResizeObserver */
-  static detachForgePreviewResizeObserver(): void {
-    ForgePreviewHost.detachForgePreviewResizeObserver();
   }
 
   /** @see ForgePreviewHost.clearForgePreviewViewport */
@@ -703,11 +640,6 @@ export class GameState implements EngineContext {
     ModuleLoadCoordinator.UnloadModule();
   }
 
-  /** @see ModuleLoadCoordinator.applyPostLoadRevealFade */
-  static applyPostLoadRevealFade(): void {
-    ModuleLoadCoordinator.applyPostLoadRevealFade();
-  }
-
   /** @see ModuleLoadCoordinator.ReloadTextureCache */
   static ReloadTextureCache(){
     ModuleLoadCoordinator.ReloadTextureCache();
@@ -723,34 +655,9 @@ export class GameState implements EngineContext {
 
   static forwardVector = new THREE.Vector3(0, 0, );
 
-  /** @see GameLoop.isVSyncEnabled */
-  static isVSyncEnabled(): boolean {
-    return GameLoop.isVSyncEnabled();
-  }
-
-  /** @see GameLoop.scheduleNextUpdate */
-  static scheduleNextUpdate(workMs = 0): void {
-    GameLoop.scheduleNextUpdate(workMs);
-  }
-
   /** @see GameLoop.applyVSyncOption */
   static applyVSyncOption(): void {
     GameLoop.applyVSyncOption();
-  }
-
-  /** @see GameLoop.Update */
-  static Update(): void {
-    GameLoop.Update();
-  }
-
-  /** @see GameLoop.UpdateMovie */
-  static UpdateMovie(delta: number = 0): void {
-    GameLoop.UpdateMovie(delta);
-  }
-
-  /** @see GameLoop.UpdateGUI */
-  static UpdateGUI(delta: number = 0): void {
-    GameLoop.UpdateGUI(delta);
   }
 
   /** @see GameLoop.updateViewportFrustum */
@@ -763,39 +670,9 @@ export class GameState implements EngineContext {
     GameLoop.updateShadowSystems(_delta, focus);
   }
 
-  /** @see GameLoop.UpdateIngame */
-  static UpdateIngame(delta: number = 0): void {
-    GameLoop.UpdateIngame(delta);
-  }
-
-  /** @see GameLoop.UpdateDialog */
-  static UpdateDialog(delta: number = 0): void {
-    GameLoop.UpdateDialog(delta);
-  }
-
-  /** @see GameLoop.UpdateMinigame */
-  static UpdateMinigame(delta: number = 0): void {
-    GameLoop.UpdateMinigame(delta);
-  }
-
-  /** @see GameLoop.UpdateFreeLook */
-  static UpdateFreeLook(delta: number = 0): void {
-    GameLoop.UpdateFreeLook(delta);
-  }
-
-  /** @see GameLoop.UpdateLegal */
-  static UpdateLegal(delta: number = 0): void {
-    GameLoop.UpdateLegal(delta);
-  }
-
   /** @see OdysseyRenderPipeline.renderFrame */
   static Render(delta: number = 0): void {
     OdysseyRenderPipeline.renderFrame(delta);
-  }
-
-  /** @see OdysseyRenderPipeline.renderComposerWithPerfPhases */
-  static renderComposerWithPerfPhases(composer: { passes: any[]; render: (delta?: number) => void }, delta: number): void {
-    OdysseyRenderPipeline.renderComposerWithPerfPhases(composer, delta);
   }
 
   /** @see OdysseyRenderPipeline.isFrameBufferEffectsEnabled */
@@ -811,16 +688,6 @@ export class GameState implements EngineContext {
   /** @see OdysseyRenderPipeline.createFallbackDistortionTexture */
   static createFallbackDistortionTexture(): THREE.DataTexture {
     return OdysseyRenderPipeline.createFallbackDistortionTexture();
-  }
-
-  /** @see ModuleLoadCoordinator.warmModuleGpuForArea */
-  static async warmModuleGpuForArea(): Promise<void> {
-    return ModuleLoadCoordinator.warmModuleGpuForArea();
-  }
-
-  /** @see OdysseyRenderPipeline.renderDepthPrepass */
-  static renderDepthPrepass(): void {
-    OdysseyRenderPipeline.renderDepthPrepass();
   }
 
   /** @see GameplayCapture.captureFramebufferToOffscreenCanvas */
