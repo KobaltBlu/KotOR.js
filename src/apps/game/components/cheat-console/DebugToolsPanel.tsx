@@ -278,18 +278,22 @@ export const DebugToolsPanel: React.FC = () => {
             {!modulesLoading && filteredModules.length === 0 && (
               <div className="console-warp-empty">No modules found</div>
             )}
-            {!modulesLoading && filteredModules.map((name) => (
-              <button
-                key={name}
-                type="button"
-                className={`console-btn console-btn-small console-warp-item console-choice ${currentModule === name ? 'on' : 'off'}`}
-                onClick={() => onWarpModule(name)}
-                title={`warp ${name}`}
-                aria-pressed={currentModule === name}
-              >
-                {name}
-              </button>
-            ))}
+            {!modulesLoading && filteredModules.map((name) => {
+              const isCurrent = currentModule === name;
+              return (
+                <button
+                  key={name}
+                  type="button"
+                  className={`console-warp-item${isCurrent ? ' current' : ''}`}
+                  onClick={() => onWarpModule(name)}
+                  title={`warp ${name}`}
+                  aria-current={isCurrent ? 'location' : undefined}
+                >
+                  <span className="console-warp-item-name">{name}</span>
+                  {isCurrent && <span className="console-warp-item-badge">Current</span>}
+                </button>
+              );
+            })}
           </div>
           <div className="console-warp-count">
             {modulesLoading ? '…' : `${filteredModules.length} / ${modules.length}`}
