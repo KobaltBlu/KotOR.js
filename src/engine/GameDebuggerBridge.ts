@@ -2,6 +2,7 @@ import { GameState } from "@/GameState";
 import { AudioEngine } from "@/audio";
 import { DebuggerState } from "@/enums/server/DebuggerState";
 import { EngineDebugType } from "@/enums/engine/EngineDebugType";
+import { EngineDebugController } from "@/engine/EngineDebugController";
 import { IPCMessage } from "@/server/ipc/IPCMessage";
 import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
 import { IPCMessageTypeDebug } from "@/enums/server/ipc/IPCMessageTypeDebug";
@@ -20,6 +21,7 @@ import {
 import { snapshotDialog } from "@/inspect/dialogSnapshot";
 import { snapshotAreaMapOverlay } from "@/inspect/areaMapOverlay";
 import { clearWorldMarkers, syncWorldMarkers } from "@/inspect/worldMarkers";
+import { GameStateEvents } from "@/engine/GameStateEvents";
 
 /**
  * Script debugger IPC bridge: snapshots, breakpoints, resume-on-tick, live script dump.
@@ -188,7 +190,7 @@ export class GameDebuggerBridge {
     );
     GameState.Render(delta);
     GameState.stats.end();
-    GameState.processEventListener('afterRender', [delta]);
+    GameStateEvents.processEventListener('afterRender', [delta]);
     return true;
   }
 
@@ -309,7 +311,7 @@ export class GameDebuggerBridge {
         GameDebuggerBridge.sendInspectorSnapshot(IPCMessageType.DialogSnapshot, snapshotDialog());
       }else if(msg.type == IPCMessageType.Debug && msg.subType == IPCMessageTypeDebug.ToggleDebugState){
         const type = msg.getParam(0).getString();
-        GameState.ToggleDebugState(type as EngineDebugType);
+        EngineDebugController.ToggleDebugState(type as EngineDebugType);
       }
     });
   }

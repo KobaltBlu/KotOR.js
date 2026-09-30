@@ -74,6 +74,7 @@ export * from "@/engine/TextSprite3D";
 export * from "@/engine/INIConfig";
 export * from "@/engine/CurrentGame";
 export * from "@/engine/AIScheduler";
+export * from "@/engine/EngineDebugController";
 export * from "@/engine/rules";
 export * from "@/engine/pathfinding";
 

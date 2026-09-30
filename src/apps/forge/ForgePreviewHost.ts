@@ -6,6 +6,7 @@ import { EventManager } from "@/managers";
 import { TextureLoader } from "@/loaders";
 import { EngineModeController } from "@/engine/EngineModeController";
 import { ModuleLoadCoordinator } from "@/engine/ModuleLoadCoordinator";
+import { ViewportController } from "@/engine/ViewportController";
 import { ITextureLoaderQueuedRef } from "@/interface/loaders/ITextureLoaderQueuedRef";
 import { collapseAreaRoomLightmaps } from "@/three/odyssey/OdysseyLightmapAtlas";
 import { warmRoomGpuResources } from "@/three/odyssey/warmRoomGpuResources";
@@ -33,7 +34,7 @@ export class ForgePreviewHost {
         host.appendChild(GameState.canvas);
       }
       ForgePreviewHost.applyForgePreviewCanvasLayout();
-      GameState.EventOnResize();
+      ViewportController.EventOnResize();
       ForgePreviewHost.ensureGuiListHexTextures();
       return;
     }
@@ -44,7 +45,7 @@ export class ForgePreviewHost {
         host.appendChild(GameState.canvas);
       }
       ForgePreviewHost.applyForgePreviewCanvasLayout();
-      GameState.EventOnResize();
+      ViewportController.EventOnResize();
     }
   }
 
@@ -82,7 +83,7 @@ export class ForgePreviewHost {
       GameState.ResolutionManager.syncWindowResolutionFromHost();
       GameState.ResolutionManager.recalculate();
       ForgePreviewHost.applyForgePreviewCanvasLayout();
-      GameState.EventOnResize();
+      ViewportController.EventOnResize();
     });
     ForgePreviewHost.forgePreviewResizeObserver.observe(host);
   }

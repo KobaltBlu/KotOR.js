@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import {
   AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, LevelUpManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager,
-  FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, OdysseyLightmapBaker, PlaceableLightmapBaker, OdysseyShadowManager, WindManager, GrassManager, MenuManager, ModuleObjectManager, PartyManager,
+  FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, OdysseyShadowManager, WindManager, GrassManager, MenuManager, ModuleObjectManager, PartyManager,
   ResolutionManager, ShaderManager, TwoDAManager, FactionManager,
   VideoEffectManager, VideoManager, PazaakManager, UINotificationManager, GuiTimingBarManager, GameOverManager, CutsceneManager, LegalScreenManager, TutorialManager
 } from "@/managers";
@@ -9,7 +9,7 @@ import {
 import type { SWRuleSet } from "@/engine/rules/SWRuleSet";
 
 import type { TalentObject, TalentFeat, TalentSkill, TalentSpell } from "@/talents";
-import type { ModuleObject, ModuleCreature, Module, ModuleDoor } from "@/module";
+import type { ModuleCreature, Module } from "@/module";
 import type { NWScript } from "@/nwscript/NWScript";
 import type { SaveGame } from "@/engine/SaveGame";
 import type { GameEffectFactory } from "@/effects/GameEffectFactory";
@@ -19,28 +19,22 @@ import type { ActionMenuManager } from "@/engine/menu/ActionMenuManager";
 import type { ActionFactory } from "@/actions/ActionFactory";
 
 import type { IngameControls } from "@/controls/IngameControls";
-// import { Mouse } from "@/controls/Mouse";
 
 import { INIConfig } from "@/engine/INIConfig";
 import { UpdateLoopArm } from "@/engine/updateLoopSchedule";
 import { OdysseyRenderPipeline } from "@/engine/OdysseyRenderPipeline";
 import { GameLoop } from "@/engine/GameLoop";
 import { GameRuntimeBootstrap } from "@/engine/GameRuntimeBootstrap";
+import { GameStateEvents } from "@/engine/GameStateEvents";
 
-// import { OdysseyObject3D } from "@/three/odyssey";
-import { AudioEngine, AudioEmitter } from "@/audio";
+import type { AudioEmitter } from "@/audio";
 import type { TGAObject } from "@/resource/TGAObject";
 
 import { IGameStateGroups } from "@/interface/engine/IGameStateGroups";
-import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
-import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
 import { EngineState, EngineMode, GameEngineType, GameEngineEnv, EngineDebugType } from "@/enums/engine";
 import { TextureType } from "@/enums/loaders/TextureType";
 
-import { ConfigClient } from "@/utility/ConfigClient";
 import { FollowerCamera } from "@/engine/FollowerCamera";
-import { asExtentInt, orthoFrustumInt } from "@/gui/GUICoord";
-import { commitGuiTransform } from "@/gui/guiMatrix";
 import type { OdysseyShaderPass } from "@/shaders/pass/OdysseyShaderPass";
 import type { ForceDistortionPass } from "@/shaders/pass/ForceDistortionPass";
 import type { OverbrightenPass } from "@/shaders/pass/OverbrightenPass";
@@ -71,8 +65,6 @@ import { Planetary } from "@/engine/Planetary";
 import { Debugger } from "@/engine/Debugger";
 import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
 import { PerformanceMonitor } from "@/utility/PerformanceMonitor";
-import { OdysseyLightingBinder } from "@/three/odyssey/OdysseyLightingBinder";
-import { AudioEmitterType } from "./enums/audio/AudioEmitterType";
 import { EngineContext } from "./engine/EngineContext";
 
 // Preserve r149-like color appearance until a dedicated color-management pass.
@@ -85,16 +77,6 @@ export interface GameStateInitializeOptions {
 };
 
 export class GameState implements EngineContext {
-
-  static eventListeners: any = {
-    "init": [],
-    "start": [],
-    "ready": [],
-
-    "beforeRender": [],
-    "afterRender": [],
-    // "mgPazaakStart": 
-  };
 
   static PerformanceMonitor: typeof PerformanceMonitor;
   static AppearanceManager: typeof AppearanceManager;
@@ -469,14 +451,6 @@ export class GameState implements EngineContext {
 
   static domElement: HTMLElement;
 
-  static GetDebugState(type: EngineDebugType){
-    return !!this.debug[type];
-  }
-
-  static ToggleDebugState(type: EngineDebugType){
-    GameState.SetDebugState(type, !this.debug[type]);
-  }
-
   /** @see GameDebuggerBridge.dumpLiveScriptsToDebugger */
   static dumpLiveScriptsToDebugger(){
     GameDebuggerBridge.dumpLiveScriptsToDebugger();
@@ -535,142 +509,6 @@ export class GameState implements EngineContext {
     MotionBlurController.syncMotionBlurRatio();
   }
 
-  static SetDebugState(type: EngineDebugType, enabled: boolean){
-    this.debug[type] = enabled;
-    console.log('SetDebugState', type, enabled);
-    switch(type){
-      case EngineDebugType.PATH_FINDING:
-        if(!GameState?.module?.area?.path)
-          return;
-
-        GameState.module.area.path.setPathHelpersVisibility(enabled);
-
-        for(let i = 0; i < GameState.module.area.creatures.length; i++){
-          const creature = GameState.module.area.creatures[i]
-          if(!creature.getComputedPath()?.helperMesh){
-            continue;
-          }
-          creature.getComputedPath().helperMesh.visible = enabled;
-        }
-
-        for(let i = 0; i < GameState.PartyManager.party.length; i++){
-          const creature = GameState.PartyManager.party[i]
-          if(!creature.getComputedPath()?.helperMesh){
-            continue;
-          }
-          creature.getComputedPath().helperMesh.visible = enabled;
-        }
-      break;
-      case EngineDebugType.OBJECT_LABELS:
-        if(!GameState?.module?.area)
-          return;
-
-        for(let i = 0; i < GameState.module.area.creatures.length; i++){
-          const creature = GameState.module.area.creatures[i]
-          if(!creature.debugLabel){
-            continue;
-          }
-          creature.debugLabel.container.visible = enabled;
-        }
-
-        for(let i = 0; i < GameState.PartyManager.party.length; i++){
-          const creature = GameState.PartyManager.party[i]
-          if(!creature.debugLabel){
-            continue;
-          }
-          creature.debugLabel.container.visible = enabled;
-        }
-
-        // for(let i = 0; i < GameState.module.area.doors.length; i++){
-        // const creature = GameState.module.area.doors[i]
-        // if(!creature.debugLabel){
-        // continue;
-        // }
-        // creature.debugLabel.container.visible = enabled;
-        // }
-
-        // for(let i = 0; i < GameState.module.area.placeables.length; i++){
-        // const creature = GameState.module.area.placeables[i]
-        // if(!creature.debugLabel){
-        // continue;
-        // }
-        // creature.debugLabel.container.visible = enabled;
-        // }
-
-        // for(let i = 0; i < GameState.module.area.triggers.length; i++){
-        // const creature = GameState.module.area.triggers[i]
-        // if(!creature.debugLabel){
-        // continue;
-        // }
-        // creature.debugLabel.container.visible = enabled;
-        // }
-      break;
-      case EngineDebugType.ROOM_WALKMESH:
-      case EngineDebugType.DOOR_WALKMESH:
-      case EngineDebugType.PLACEABLE_WALKMESH:
-        {
-          const areWalkmeshesVisible = GameState.debug[EngineDebugType.ROOM_WALKMESH] || GameState.debug[EngineDebugType.DOOR_WALKMESH] || GameState.debug[EngineDebugType.PLACEABLE_WALKMESH];
-          GameState.group.room_walkmeshes.visible = areWalkmeshesVisible;
-          for(let i = 0; i < GameState.module.area.rooms.length; i++){
-            const room = GameState.module.area.rooms[i];
-            if(room.collisionManager.walkmesh){
-              room.collisionManager.walkmesh.mesh.visible = GameState.debug[EngineDebugType.ROOM_WALKMESH];
-              if(GameState.debug[EngineDebugType.ROOM_WALKMESH]){
-                room.collisionManager.walkmesh.buildEdgeNormalHelpers();
-              }
-            }
-          }
-          for(let i = 0; i < GameState.module.area.doors.length; i++){
-            const door = GameState.module.area.doors[i];
-            if(door.collisionManager.walkmesh){
-              door.collisionManager.walkmesh.mesh.visible = GameState.debug[EngineDebugType.DOOR_WALKMESH];
-            }
-          }
-          for(let i = 0; i < GameState.module.area.placeables.length; i++){
-            const placeable = GameState.module.area.placeables[i];
-            if(placeable.collisionManager.walkmesh){
-              placeable.collisionManager.walkmesh.mesh.visible = GameState.debug[EngineDebugType.PLACEABLE_WALKMESH];
-              if(GameState.debug[EngineDebugType.PLACEABLE_WALKMESH]){
-                placeable.collisionManager.walkmesh.buildEdgeNormalHelpers();
-              }
-            }
-          }
-        }
-      break;
-      case EngineDebugType.COLLISION_HELPERS:
-        GameState.group.collision_helpers.visible = enabled;
-      break;
-      case EngineDebugType.LIGHT_HELPERS:
-        GameState.group.light_helpers.visible = enabled;
-      break;
-      case EngineDebugType.SHADOW_LIGHTS:
-        GameState.group.shadow_lights.visible = enabled;
-      break;
-    }
-  }
-
-  static addEventListener(event: string, callback: Function){
-    if(GameState.eventListeners.hasOwnProperty(event)){
-      const callbacks: any[] = GameState.eventListeners[event];
-      if(callbacks){
-        callbacks.push(callback);
-      }
-    }
-  }
-
-  static processEventListener(event: string, args: any[] = []){
-    if(GameState.eventListeners.hasOwnProperty(event)){
-      const callbacks = GameState.eventListeners[event];
-      if(callbacks && callbacks.length){
-        for(let i = 0, len = callbacks.length; i < len; i++){
-          const cb = callbacks[i];
-          if(typeof cb === 'function')
-            cb(...args);
-        }
-      }
-    }
-  }
-
   static setDOMElement(element: HTMLElement){
     GameState.domElement = element;
   }
@@ -681,16 +519,8 @@ export class GameState implements EngineContext {
   static async Init(){
     GameDebuggerBridge.attach();
 
-    GameState.lightManager = new GameState.LightManager();
-    OdysseyLightingBinder.setActiveManager(GameState.lightManager);
-    PlaceableLightmapBaker.setLightManagerProvider(() => GameState.lightManager);
-    OdysseyLightmapBaker.setLightManagerProvider(() => GameState.lightManager);
-    GameState.odysseyShadowManager = new OdysseyShadowManager();
-    GameState.windManager = new GameState.WindManager();
-    WindManager.setInstance(GameState.windManager);
-    GameState.grassManager = new GameState.GrassManager();
-    GrassManager.setInstance(GameState.grassManager);
-    GameState.processEventListener('init');
+    GameRuntimeBootstrap.createWorldManagers();
+    GameStateEvents.processEventListener('init');
 
     GameRuntimeBootstrap.createRuntime();
 
@@ -702,42 +532,8 @@ export class GameState implements EngineContext {
 
       GameState.TutorialWindowTracker = [];
 
-      /**
-       * Initialize Audio for the GUI
-       * INI Sound Options volumes are 0–100; GainNode expects 0–1 (same as GUI sliders).
-       */
-      const audioEngine = AudioEngine.GetAudioEngine();
-      const iniVolumeToGain = (key: string) => {
-        const raw = parseInt(GameState.iniConfig.getProperty(key)) || 0;
-        return Math.max(0, Math.min(1, raw / 100));
-      };
-      AudioEngine.GAIN_MUSIC = iniVolumeToGain('Sound Options.Music Volume');
-      AudioEngine.GAIN_VO = iniVolumeToGain('Sound Options.Voiceover Volume');
-      AudioEngine.GAIN_SFX = iniVolumeToGain('Sound Options.Sound Effects Volume');
-      AudioEngine.GAIN_GUI = iniVolumeToGain('Sound Options.Sound Effects Volume');
-      AudioEngine.GAIN_MOVIE = iniVolumeToGain('Sound Options.Movie Volume');
-
-      GameState.guiAudioEmitter = new AudioEmitter(audioEngine, AudioEngineChannel.GUI);
-      GameState.guiAudioEmitter.maxDistance = 100;
-      GameState.guiAudioEmitter.volume = 127;
-      GameState.guiAudioEmitter.setPriorityGroupId(AudioPriorityGroup.GUI);
-      GameState.guiAudioEmitter.load();
-    
-      GameState.audioEmitter = new AudioEmitter(audioEngine);
-      GameState.audioEmitter.maxDistance = 50;
-      GameState.audioEmitter.type = AudioEmitterType.GLOBAL;
-      GameState.audioEmitter.setPriorityGroupId(AudioPriorityGroup.SCRIPTED_PLAYSOUND);
-      GameState.audioEmitter.load();
-
-      /**
-       * Initialize the LightManager
-       */
-      GameState.lightManager.init(GameState);
-      GameState.odysseyShadowManager.init(GameState.lightManager, GameState.scene);
-      GameState.odysseyShadowManager.syncQualityFromLightManager();
-      GameState.windManager.init(GameState);
-      GameState.grassManager?.init(GameState);
-      GameState.lightManager.setLightHelpersVisible(ConfigClient.get('GameState.debug.light_helpers') ? true : false);
+      GameRuntimeBootstrap.initAudioEmitters();
+      GameRuntimeBootstrap.initWorldManagers();
 
       //AudioEngine.Unmute
       GameState.SetEngineMode(EngineMode.GUI);
@@ -803,7 +599,7 @@ export class GameState implements EngineContext {
       GameState.Ready = true;
       GameLoop.Start();
       // Shake is cached in CameraShakeManager.update; restore after render so it doesn't accumulate
-      GameState.addEventListener('afterRender', () => GameState.CameraShakeManager.afterRender());
+      GameStateEvents.addEventListener('afterRender', () => GameState.CameraShakeManager.afterRender());
       console.log(PerformanceMonitor.toString());
     }catch(e){
       console.error(e);
@@ -813,65 +609,6 @@ export class GameState implements EngineContext {
   /** @see GameLoop.Start */
   static Start(): void {
     GameLoop.Start();
-  }
-
-  static EventOnResize(){
-    GameState.ResolutionManager.recalculate();
-    let width = asExtentInt(GameState.ResolutionManager.getViewportWidth());
-    let height = asExtentInt(GameState.ResolutionManager.getViewportHeight());
-
-    OdysseyRenderPipeline.resizeComposerTargets(width, height);
-
-    GameState.FadeOverlayManager.plane.scale.set(width, height, 1);
-    commitGuiTransform(GameState.FadeOverlayManager.plane);
-
-    GameState.VideoManager.resize(width, height);
-
-    const guiFrustum = orthoFrustumInt(width, height);
-    GameState.camera_gui.left = guiFrustum.left;
-    GameState.camera_gui.right = guiFrustum.right;
-    GameState.camera_gui.top = guiFrustum.top;
-    GameState.camera_gui.bottom = guiFrustum.bottom;
-
-    GameState.camera_gui.updateProjectionMatrix();
-
-    GameState.camera.aspect = width / height;
-    GameState.camera.updateProjectionMatrix();
-
-    GameState.setRendererSize(width, height);
-    
-    GameState.camera_dialog.aspect = GameState.camera.aspect;
-    GameState.camera_dialog.updateProjectionMatrix();
-
-    GameState.camera_animated.aspect = GameState.camera.aspect;
-    GameState.camera_animated.updateProjectionMatrix();
-
-    for(let i = 0; i < GameState.staticCameras.length; i++){
-      GameState.staticCameras[i].aspect = GameState.camera.aspect;
-      GameState.staticCameras[i].updateProjectionMatrix();
-    }
-
-    //GameState.bokehPass.renderTargetColor.setSize(width * GameState.rendererUpscaleFactor, height * GameState.rendererUpscaleFactor);
-
-    GameState.screenCenter.x = ( (GameState.ResolutionManager.getViewportWidth()/2) / GameState.ResolutionManager.getViewportWidth() ) * 2 - 1;
-    GameState.screenCenter.y = - ( (GameState.ResolutionManager.getViewportHeight()/2) / GameState.ResolutionManager.getViewportHeight() ) * 2 + 1; 
-
-    GameState.MenuManager.Resize();
-
-    if(GameState.ResolutionManager.vpScaleFactor && !GameState.forgePreviewHost){
-      GameState.canvas.style.transform = 'scale('+GameState.ResolutionManager.vpScaleFactor+')';
-    }else{
-      GameState.canvas.style.transform = '';
-    }
-
-    if(GameState.forgePreviewHost){
-      GameState.applyForgePreviewCanvasLayout();
-    }
-
-  }
-
-  static updateRendererUpscaleFactor(){
-    this.EventOnResize();
   }
 
   public static getCurrentPlayer(): ModuleCreature {
@@ -1066,17 +803,6 @@ export class GameState implements EngineContext {
     return OdysseyRenderPipeline.isFrameBufferEffectsEnabled();
   }
 
-  /**
-   * ClientOptions minigame_yaxis — INI
-   * "Game Options"."Reverse Minigame YAxis" (turret Z / mouse Y invert).
-   */
-  static isMinigameYAxisReversed(): boolean {
-    if(!GameState.iniConfig) return false;
-    const raw = GameState.iniConfig.getProperty('Game Options.Reverse Minigame YAxis');
-    if(raw === undefined || raw === null || raw === '') return false;
-    return String(raw) !== '0';
-  }
-
   /** @see OdysseyRenderPipeline.ensureForceDistortionTexture */
   static async ensureForceDistortionTexture(): Promise<void> {
     return OdysseyRenderPipeline.ensureForceDistortionTexture();
@@ -1097,44 +823,9 @@ export class GameState implements EngineContext {
     OdysseyRenderPipeline.renderDepthPrepass();
   }
 
-  /**
-   * Resize the WebGL drawing buffer. When rendering to an OffscreenCanvas,
-   * Three must not touch `.style` (Offscreen has none); CSS size stays on
-   * the HTML placeholder instead.
-   */
-  static setRendererSize(width: number, height: number): void {
-    const updateStyle = !GameState.offscreenCanvas;
-    GameState.renderer.setSize(width, height, updateStyle);
-    if(GameState.offscreenCanvas){
-      GameState.canvas.style.width = `${width}px`;
-      GameState.canvas.style.height = `${height}px`;
-    }
-  }
-
   /** @see GameplayCapture.captureFramebufferToOffscreenCanvas */
   static captureFramebufferToOffscreenCanvas(width: number, height: number): OffscreenCanvas {
     return GameplayCapture.captureFramebufferToOffscreenCanvas(width, height);
-  }
-
-  /** Keep DepthTexture.image size in sync after WebGLRenderTarget.setSize. */
-  static syncDepthTargetTextureSize(): void {
-    const rt = GameState.depthTarget;
-    const dt = rt?.depthTexture;
-    if(!rt || !dt) return;
-    if(!dt.image){
-      dt.image = { width: rt.width, height: rt.height } as any;
-    }else{
-      dt.image.width = rt.width;
-      dt.image.height = rt.height;
-    }
-    dt.needsUpdate = true;
-  }
-
-  static updateTime(delta: number = 0){
-    GameState.time += delta;
-
-    if(GameState.deltaTime > 1000)
-      GameState.deltaTime = GameState.deltaTime % 1;
   }
 
   /** @see GameplayCapture.GetScreenShot */

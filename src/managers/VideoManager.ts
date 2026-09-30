@@ -352,7 +352,7 @@ export class VideoManager {
   }
 
   /**
-   * Call when window/viewport is resized (e.g. from GameState.EventOnResize).
+   * Call when window/viewport is resized (e.g. from ViewportController.EventOnResize).
    * Resizes video planes if a movie is playing.
    */
   static resize(viewportWidth: number, viewportHeight: number): void {

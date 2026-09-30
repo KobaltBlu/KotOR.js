@@ -9,6 +9,7 @@ import { ModuleSaveTable } from "@/engine/ModuleSaveTable";
 import { isVSyncEnabledRaw, runUpdateTick } from "@/engine/updateLoopSchedule";
 import { GameDebuggerBridge } from "@/engine/GameDebuggerBridge";
 import { OdysseyRenderPipeline } from "@/engine/OdysseyRenderPipeline";
+import { GameStateEvents } from "@/engine/GameStateEvents";
 import { AutoPauseManager, TextureAnimationManager } from "@/managers";
 import { flushGuiMatrices } from "@/gui/guiMatrix";
 
@@ -16,10 +17,18 @@ import { flushGuiMatrices } from "@/gui/guiMatrix";
  * Main update loop, mode ticks, and viewport/shadow prep before render.
  */
 export class GameLoop {
+
+  static updateTime(delta: number = 0){
+    GameState.time += delta;
+
+    if(GameState.deltaTime > 1000)
+      GameState.deltaTime = GameState.deltaTime % 1;
+  }
+
   static Start(): void {
     if(GameState.Ready && !GameState.OnReadyCalled){
       GameState.OnReadyCalled = true;
-      GameState.processEventListener('ready');
+      GameStateEvents.processEventListener('ready');
       window.dispatchEvent(new Event('resize'));
 
       if(GameState.forgePreviewHost){
@@ -82,7 +91,7 @@ export class GameLoop {
 
     GameState.clock.update();
     const delta = GameState.clock.getDelta();
-    GameState.processEventListener('beforeRender', [delta]);
+    GameStateEvents.processEventListener('beforeRender', [delta]);
     GameState.delta = delta;
     GameState.deltaTime += delta;
     GameState.deltaTimeFixed += delta;
@@ -166,7 +175,7 @@ export class GameLoop {
     }
 
     GameState.stats.end();
-    GameState.processEventListener('afterRender', [delta]);
+    GameStateEvents.processEventListener('afterRender', [delta]);
     }, (workMs) => GameLoop.scheduleNextUpdate(workMs));
   }
 
@@ -175,7 +184,7 @@ export class GameLoop {
     flushGuiMatrices();
     GameState.renderer.render(GameState.scene_movie, GameState.camera_gui);
     GameState.stats.end();
-    GameState.processEventListener('afterRender', [delta]);
+    GameStateEvents.processEventListener('afterRender', [delta]);
   }
 
   static UpdateGUI(_delta: number = 0): void {
@@ -228,7 +237,7 @@ export class GameLoop {
     );
 
     if(GameState.State != EngineState.PAUSED){
-      GameState.updateTime(simDelta);
+      GameLoop.updateTime(simDelta);
     }
 
     if(
@@ -263,7 +272,7 @@ export class GameLoop {
 
   static UpdateDialog(delta: number = 0): void {
     if(GameState.State != EngineState.PAUSED){
-      GameState.updateTime(delta);
+      GameLoop.updateTime(delta);
     }
     const isEntryMode = GameState.MenuManager.InGameDialog.isVisible() && !GameState.MenuManager.InGameDialog.LB_REPLIES.isVisible() && GameState.scene_cursor_holder.visible;
     if(isEntryMode){
@@ -292,7 +301,7 @@ export class GameLoop {
 
   static UpdateMinigame(delta: number = 0): void {
     if(GameState.State != EngineState.PAUSED){
-      GameState.updateTime(delta);
+      GameLoop.updateTime(delta);
     }
 
     if(GameState.module){
@@ -332,7 +341,7 @@ export class GameLoop {
     GameState.scene_cursor_holder.visible = false;
 
     if(GameState.State != EngineState.PAUSED){
-      GameState.updateTime(delta);
+      GameLoop.updateTime(delta);
     }
 
     if(GameState.module){
@@ -359,6 +368,6 @@ export class GameLoop {
     GameState.LegalScreenManager.Update(delta);
     GameState.renderer.render(GameState.LegalScreenManager.scene, GameState.camera_gui);
     GameState.stats.end();
-    GameState.processEventListener('afterRender', [delta]);
+    GameStateEvents.processEventListener('afterRender', [delta]);
   }
 }

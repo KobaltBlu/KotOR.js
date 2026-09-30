@@ -129,6 +129,7 @@ import { GameEffectFactory } from "@/effects/GameEffectFactory";
 import type { Action } from "@/actions/Action";
 import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
 import { EngineDebugType } from "@/enums/engine/EngineDebugType";
+import { EngineDebugController } from "@/engine/EngineDebugController";
 import { TextSprite3D } from "@/engine/TextSprite3D";
 import { UIIconTimerType } from "@/enums/engine/UIIconTimerType";
 import { ExperienceType } from "@/enums/engine/ExperienceType";
@@ -7401,7 +7402,7 @@ export class ModuleCreature extends ModuleObject {
     if(!this.debugLabel){
       this.debugLabel = new TextSprite3D(`${this.getName()} | ${this.getTag()}`);
       this.debugLabel.setColor(this.helperColor);
-      this.debugLabel.container.visible = !!this.context?.GetDebugState(EngineDebugType.OBJECT_LABELS);
+      this.debugLabel.container.visible = EngineDebugController.GetDebugState(EngineDebugType.OBJECT_LABELS);
       this.container.add(this.debugLabel.container);
     }
   }

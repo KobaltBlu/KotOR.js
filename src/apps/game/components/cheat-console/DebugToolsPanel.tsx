@@ -185,7 +185,7 @@ export const DebugToolsPanel: React.FC = () => {
   };
 
   const onToggleDebugState = (type: EngineDebugType) => {
-    KotOR.GameState.ToggleDebugState(type);
+    KotOR.EngineDebugController.ToggleDebugState(type);
     bumpDebug();
   };
 
@@ -312,7 +312,7 @@ export const DebugToolsPanel: React.FC = () => {
               {group.types.map((type) => (
                 <ConsoleToggle
                   key={type}
-                  active={KotOR.GameState.GetDebugState(type)}
+                  active={KotOR.EngineDebugController.GetDebugState(type)}
                   onClick={() => onToggleDebugState(type)}
                 >
                   {debugToggleLabel(type)}
@@ -386,7 +386,7 @@ export const DebugToolsPanel: React.FC = () => {
             {LIGHTING_DEBUG_TYPES.map((type) => (
               <ConsoleToggle
                 key={type}
-                active={KotOR.GameState.GetDebugState(type)}
+                active={KotOR.EngineDebugController.GetDebugState(type)}
                 onClick={() => onToggleDebugState(type)}
               >
                 {debugToggleLabel(type)}

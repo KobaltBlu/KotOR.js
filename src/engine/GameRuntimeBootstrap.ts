@@ -4,12 +4,22 @@ import Stats from 'three/examples/jsm/libs/stats.module';
 import { GameState } from "@/GameState";
 import { IngameControls } from "@/controls/IngameControls";
 import { OdysseyRenderPipeline } from "@/engine/OdysseyRenderPipeline";
+import { ViewportController } from "@/engine/ViewportController";
 import { FollowerCamera } from "@/engine/FollowerCamera";
 import { EngineDebugType } from "@/enums/engine";
 import { freezeGuiObject } from "@/gui/guiMatrix";
 import { orthoFrustumInt } from "@/gui/GUICoord";
 import { odysseyOpaqueRenderSort } from "@/utility/odysseyOpaqueRenderSort";
 import { OdysseyLightingBinder } from "@/three/odyssey/OdysseyLightingBinder";
+import {
+  OdysseyLightmapBaker, PlaceableLightmapBaker, OdysseyShadowManager,
+  WindManager, GrassManager,
+} from "@/managers";
+import { AudioEngine, AudioEmitter } from "@/audio";
+import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
+import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
+import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
+import { ConfigClient } from "@/utility/ConfigClient";
 
 const namedGroup = (name: string = 'na'): THREE.Group => {
   const group = new THREE.Group();
@@ -25,6 +35,58 @@ const namedGroup = (name: string = 'na'): THREE.Group => {
  * THREE.js renderer, scenes, cameras, scene groups, composer hookup, and input/fade wiring.
  */
 export class GameRuntimeBootstrap {
+
+  /** Construct light/shadow/wind/grass managers and bind their providers. */
+  static createWorldManagers(): void {
+    GameState.lightManager = new GameState.LightManager();
+    OdysseyLightingBinder.setActiveManager(GameState.lightManager);
+    PlaceableLightmapBaker.setLightManagerProvider(() => GameState.lightManager);
+    OdysseyLightmapBaker.setLightManagerProvider(() => GameState.lightManager);
+    GameState.odysseyShadowManager = new OdysseyShadowManager();
+    GameState.windManager = new GameState.WindManager();
+    WindManager.setInstance(GameState.windManager);
+    GameState.grassManager = new GameState.GrassManager();
+    GrassManager.setInstance(GameState.grassManager);
+  }
+
+  /**
+   * INI Sound Options volumes are 0–100; GainNode expects 0–1 (same as GUI sliders).
+   */
+  static initAudioEmitters(): void {
+    const audioEngine = AudioEngine.GetAudioEngine();
+    const iniVolumeToGain = (key: string) => {
+      const raw = parseInt(GameState.iniConfig.getProperty(key)) || 0;
+      return Math.max(0, Math.min(1, raw / 100));
+    };
+    AudioEngine.GAIN_MUSIC = iniVolumeToGain('Sound Options.Music Volume');
+    AudioEngine.GAIN_VO = iniVolumeToGain('Sound Options.Voiceover Volume');
+    AudioEngine.GAIN_SFX = iniVolumeToGain('Sound Options.Sound Effects Volume');
+    AudioEngine.GAIN_GUI = iniVolumeToGain('Sound Options.Sound Effects Volume');
+    AudioEngine.GAIN_MOVIE = iniVolumeToGain('Sound Options.Movie Volume');
+
+    GameState.guiAudioEmitter = new AudioEmitter(audioEngine, AudioEngineChannel.GUI);
+    GameState.guiAudioEmitter.maxDistance = 100;
+    GameState.guiAudioEmitter.volume = 127;
+    GameState.guiAudioEmitter.setPriorityGroupId(AudioPriorityGroup.GUI);
+    GameState.guiAudioEmitter.load();
+
+    GameState.audioEmitter = new AudioEmitter(audioEngine);
+    GameState.audioEmitter.maxDistance = 50;
+    GameState.audioEmitter.type = AudioEmitterType.GLOBAL;
+    GameState.audioEmitter.setPriorityGroupId(AudioPriorityGroup.SCRIPTED_PLAYSOUND);
+    GameState.audioEmitter.load();
+  }
+
+  /** Call init on world managers after the scene graph exists. */
+  static initWorldManagers(): void {
+    GameState.lightManager.init(GameState);
+    GameState.odysseyShadowManager.init(GameState.lightManager, GameState.scene);
+    GameState.odysseyShadowManager.syncQualityFromLightManager();
+    GameState.windManager.init(GameState);
+    GameState.grassManager?.init(GameState);
+    GameState.lightManager.setLightHelpersVisible(ConfigClient.get('GameState.debug.light_helpers') ? true : false);
+  }
+
   static createRuntime(): void {
     GameState.VideoEffectManager.SetVideoEffect(-1);
     GameState.onScreenShot = undefined;
@@ -93,7 +155,7 @@ export class GameRuntimeBootstrap {
     GameState.renderer.shadowMap.autoUpdate = false;
     GameState.renderer.shadowMap.type = THREE.PCFShadowMap;
     GameState.renderer.setOpaqueSort(odysseyOpaqueRenderSort);
-    GameState.setRendererSize(
+    ViewportController.setRendererSize(
       GameState.ResolutionManager.getViewportWidth(),
       GameState.ResolutionManager.getViewportHeight(),
     );
@@ -106,7 +168,7 @@ export class GameRuntimeBootstrap {
     GameState.depthTarget.depthBuffer = true;
     GameState.depthTarget.depthTexture = new THREE.DepthTexture(GameState.ResolutionManager.getViewportWidth(), GameState.ResolutionManager.getViewportHeight());
     GameState.depthTarget.depthTexture.type = THREE.UnsignedShortType;
-    GameState.syncDepthTargetTextureSize();
+    ViewportController.syncDepthTargetTextureSize();
 
     GameState.clock = new THREE.Timer();
     GameState.stats = new Stats();
@@ -270,7 +332,7 @@ export class GameRuntimeBootstrap {
     GameState.FadeOverlayManager.Initialize();
 
     window.addEventListener('resize', () => {
-      GameState.EventOnResize();
+      ViewportController.EventOnResize();
     });
   }
 }

@@ -167,7 +167,17 @@ export class OdysseyRenderPipeline {
       GameState.ResolutionManager.getViewportWidth() * GameState.rendererUpscaleFactor,
       GameState.ResolutionManager.getViewportHeight() * GameState.rendererUpscaleFactor
     );
-    GameState.syncDepthTargetTextureSize();
+    const rt = GameState.depthTarget;
+    const dt = rt?.depthTexture;
+    if(rt && dt){
+      if(!dt.image){
+        dt.image = { width: rt.width, height: rt.height } as any;
+      }else{
+        dt.image.width = rt.width;
+        dt.image.height = rt.height;
+      }
+      dt.needsUpdate = true;
+    }
   }
 
   static renderFrame(delta: number = 0): void {

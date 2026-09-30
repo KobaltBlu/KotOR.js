@@ -15,6 +15,7 @@ import { Utility } from "@/utility/Utility";
 import type { WalkmeshEdge } from "@/odyssey/WalkmeshEdge";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { EngineDebugType } from "@/enums";
+import { EngineDebugController } from "@/engine/EngineDebugController";
 import { hasClearWalkLine, farthestClearPoint } from "@/engine/pathfinding/walk-line-clear";
 import { buildGridPath } from "@/engine/pathfinding/build-grid-path";
 import { getPathPersonalSpace } from "@/combat/attack-range";
@@ -147,7 +148,7 @@ export class ModulePath {
       console.error(e);
     }
 
-    this.setPathHelpersVisibility(GameState.GetDebugState(EngineDebugType.PATH_FINDING));
+    this.setPathHelpersVisibility(EngineDebugController.GetDebugState(EngineDebugType.PATH_FINDING));
   }
 
   /**

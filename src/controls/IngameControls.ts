@@ -8,6 +8,7 @@ import { AutoPauseState } from "@/enums/engine/AutoPauseState";
 import { KeyMapAction } from "@/enums/controls/KeyMapAction";
 import { MiniGameType } from "@/enums/engine/MiniGameType";
 import { FollowerCamera } from "@/engine/FollowerCamera";
+import { ViewportController } from "@/engine/ViewportController";
 import { BitWise } from "@/utility/BitWise";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { ClientCameraMode } from "@/enums/engine/ClientCameraMode";
@@ -94,6 +95,17 @@ function resolveMinigameKeyAxisZ(): number {
   if(up) z += 1;
   if(down) z -= 1;
   return z;
+}
+
+/**
+ * ClientOptions minigame_yaxis — INI
+ * "Game Options"."Reverse Minigame YAxis" (turret Z / mouse Y invert).
+ */
+function isMinigameYAxisReversed(): boolean {
+  if(!GameState.iniConfig) return false;
+  const raw = GameState.iniConfig.getProperty('Game Options.Reverse Minigame YAxis');
+  if(raw === undefined || raw === null || raw === '') return false;
+  return String(raw) !== '0';
 }
 
 /** Mouse delta scale applied before minigame mouse update. */
@@ -1221,20 +1233,20 @@ export class IngameControls {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
        GameState.rendererUpscaleFactor += 0.25;
       if(GameState.rendererUpscaleFactor >= 4) GameState.rendererUpscaleFactor = 4;
-      GameState.updateRendererUpscaleFactor();
+      ViewportController.EventOnResize();
     });
 
     KeyMapper.Actions[KeyMapAction.ResolutionScaleDown].setProcessor( (keymap, delta = 0) => {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
       GameState.rendererUpscaleFactor -= 0.25;
       if(GameState.rendererUpscaleFactor <= 0.25) GameState.rendererUpscaleFactor = 0.25;
-      GameState.updateRendererUpscaleFactor();
+      ViewportController.EventOnResize();
     });
 
     KeyMapper.Actions[KeyMapAction.ResolutionScaleReset].setProcessor( (keymap, delta = 0) => {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
       GameState.rendererUpscaleFactor = 1.0;
-      GameState.updateRendererUpscaleFactor();
+      ViewportController.EventOnResize();
     });
 
     KeyMapper.Actions[KeyMapAction.Equip].setProcessor( (keymap) => {
@@ -1488,7 +1500,7 @@ export class IngameControls {
         const stickX = Math.abs(lxRaw) > 0.15 ? lxRaw : 0;
         const stickY = Math.abs(lyRaw) > 0.15 ? lyRaw : 0;
         const keyX = resolveMinigameKeyAxisX();
-        const reverseY = GameState.isMinigameYAxisReversed();
+        const reverseY = isMinigameYAxisReversed();
 
         if(mg.type === MiniGameType.SWOOPRACE){
           // Stick and keys sum, then clamp to ±1
