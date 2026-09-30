@@ -197,76 +197,103 @@
     margin: 0;
   }
 
-  // Boolean toggles: pip + ON/OFF badge so off is unmistakable
-  .console-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding-left: 0.55rem;
-    padding-right: 0.45rem;
+  // Boolean toggles: full-width setting rows with a sliding switch
+  .console-toggle-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 4px;
+  }
 
-    .console-toggle-pip {
-      width: 0.55rem;
-      height: 0.55rem;
-      border-radius: 50%;
-      flex-shrink: 0;
-      border: 1.5px solid currentColor;
-      background: transparent;
-      box-sizing: border-box;
+  .console-toggle {
+    --toggle-accent: #d4a03d;
+    --toggle-accent-rgb: 212, 160, 61;
+    --toggle-text: #e6b35c;
+    --toggle-dim: #a89060;
+    --toggle-track-border: rgba(212, 160, 61, 0.4);
+    --toggle-knob-size: 0.8rem;
+    --toggle-track-width: 2.1rem;
+
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 6px 8px 6px 10px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-left: 3px solid transparent;
+    border-radius: 4px;
+    color: var(--toggle-dim);
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: bold;
+    text-align: left;
+    cursor: pointer;
+    transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+
+    &:hover {
+      background: rgba(var(--toggle-accent-rgb), 0.08);
+      color: var(--toggle-text);
+    }
+
+    &:focus-visible {
+      outline: none;
+      border-color: rgba(var(--toggle-accent-rgb), 0.6);
     }
 
     .console-toggle-label {
       flex: 1;
       min-width: 0;
-      text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    .console-toggle-state {
+    .console-toggle-switch {
+      position: relative;
       flex-shrink: 0;
-      font-size: 0.65rem;
-      font-weight: bold;
-      letter-spacing: 0.04em;
-      padding: 0.1rem 0.35rem;
-      border-radius: 3px;
-      border: 1px solid currentColor;
-      line-height: 1.2;
-      opacity: 0.9;
+      width: var(--toggle-track-width);
+      height: 1.1rem;
+      box-sizing: border-box;
+      border-radius: 999px;
+      border: 1px solid var(--toggle-track-border);
+      background: rgba(0, 0, 0, 0.6);
+      box-shadow: inset 0 1px 3px #000;
+      transition: background 140ms ease, border-color 140ms ease;
+    }
+
+    .console-toggle-knob {
+      position: absolute;
+      top: 50%;
+      left: 2px;
+      width: var(--toggle-knob-size);
+      height: var(--toggle-knob-size);
+      border-radius: 50%;
+      background: var(--toggle-dim);
+      transform: translateY(-50%);
+      transition: left 140ms ease, background 140ms ease, box-shadow 140ms ease;
     }
 
     &.on {
-      background: rgba(212, 160, 61, 0.22);
-      border-style: solid;
-      opacity: 1;
-
-      .console-toggle-pip {
-        background: currentColor;
-        box-shadow: 0 0 6px currentColor;
-      }
-
-      .console-toggle-state {
-        background: rgba(212, 160, 61, 0.35);
-      }
-    }
-
-    &.off {
-      background: transparent;
-      border-style: dashed;
-      opacity: 0.55;
-      color: #a89060;
+      color: var(--toggle-text);
+      border-left-color: var(--toggle-accent);
+      background: rgba(var(--toggle-accent-rgb), 0.12);
 
       &:hover {
-        opacity: 0.8;
-        background: rgba(212, 160, 61, 0.06);
+        background: rgba(var(--toggle-accent-rgb), 0.18);
       }
 
-      .console-toggle-pip {
-        background: transparent;
-        box-shadow: none;
+      .console-toggle-switch {
+        background: rgba(var(--toggle-accent-rgb), 0.35);
+        border-color: var(--toggle-accent);
       }
 
-      .console-toggle-state {
-        background: transparent;
-        opacity: 0.75;
+      .console-toggle-knob {
+        left: calc(100% - var(--toggle-knob-size) - 2px);
+        background: var(--toggle-text);
+        box-shadow: 0 0 6px var(--toggle-accent);
       }
     }
   }
@@ -323,6 +350,12 @@
 
   .console-number-input-wide {
     width: 5.5rem;
+  }
+
+  .console-lighting-toggles {
+    margin: 0 0 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #d4a03d33;
   }
 
   .console-lighting-tunables {
@@ -431,22 +464,11 @@
     }
 
     .console-toggle {
-      &.on {
-        background: rgba(0, 255, 204, 0.18);
-
-        .console-toggle-state {
-          background: rgba(0, 255, 204, 0.28);
-        }
-      }
-
-      &.off {
-        color: #5a9a8a;
-        border-color: #1a5f4e;
-
-        &:hover {
-          background: rgba(0, 255, 204, 0.06);
-        }
-      }
+      --toggle-accent: #00ffcc;
+      --toggle-accent-rgb: 0, 255, 204;
+      --toggle-text: #00ffcc;
+      --toggle-dim: #5a9a8a;
+      --toggle-track-border: #1a5f4e;
     }
 
     .console-choice {
@@ -466,6 +488,10 @@
 
     .console-submenu-label {
       color: #00ffcc;
+    }
+
+    .console-lighting-toggles {
+      border-bottom-color: #1a5f4e66;
     }
 
     .console-number-input,

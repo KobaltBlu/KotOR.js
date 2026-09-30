@@ -3,7 +3,7 @@ import { useApp } from "@/apps/game/context/AppContext";
 import { EngineDebugType } from "@/enums/engine/EngineDebugType";
 import * as KotOR from "@/apps/game/KotOR";
 
-type SectionId = 'tools' | 'warp' | 'general' | 'walkmesh' | 'lightingViz' | 'combat' | 'lighting';
+type SectionId = 'tools' | 'warp' | 'general' | 'walkmesh' | 'combat' | 'lighting';
 
 const DEBUG_GROUPS: { id: SectionId; label: string; types: EngineDebugType[] }[] = [
   {
@@ -24,15 +24,12 @@ const DEBUG_GROUPS: { id: SectionId; label: string; types: EngineDebugType[] }[]
       EngineDebugType.COLLISION_HELPERS,
     ],
   },
-  {
-    id: 'lightingViz',
-    label: 'Lighting Viz',
-    types: [
-      EngineDebugType.LIGHT_HELPERS,
-      EngineDebugType.LIGHT_HELPERS_BOUND_ONLY,
-      EngineDebugType.SHADOW_LIGHTS,
-    ],
-  },
+];
+
+const LIGHTING_DEBUG_TYPES: EngineDebugType[] = [
+  EngineDebugType.LIGHT_HELPERS,
+  EngineDebugType.LIGHT_HELPERS_BOUND_ONLY,
+  EngineDebugType.SHADOW_LIGHTS,
 ];
 
 const DEBUG_LABEL_OVERRIDES: Partial<Record<EngineDebugType, string>> = {
@@ -46,7 +43,6 @@ const DEFAULT_OPEN: Record<SectionId, boolean> = {
   warp: false,
   general: true,
   walkmesh: false,
-  lightingViz: false,
   combat: false,
   lighting: false,
 };
@@ -67,7 +63,7 @@ interface ConsoleToggleProps {
   children: React.ReactNode;
 }
 
-/** Boolean toggle with an explicit ON/OFF badge (distinct from action buttons). */
+/** Boolean setting row with a sliding switch (distinct from action buttons). */
 const ConsoleToggle: React.FC<ConsoleToggleProps> = ({
   active,
   onClick,
@@ -77,14 +73,16 @@ const ConsoleToggle: React.FC<ConsoleToggleProps> = ({
 }) => (
   <button
     type="button"
-    className={`console-btn console-btn-small console-toggle ${active ? 'on' : 'off'}${className ? ` ${className}` : ''}`}
+    role="switch"
+    className={`console-toggle ${active ? 'on' : 'off'}${className ? ` ${className}` : ''}`}
     onClick={onClick}
     title={title}
-    aria-pressed={active}
+    aria-checked={active}
   >
-    <span className="console-toggle-pip" aria-hidden="true" />
     <span className="console-toggle-label">{children}</span>
-    <span className="console-toggle-state">{active ? 'ON' : 'OFF'}</span>
+    <span className="console-toggle-switch" aria-hidden="true">
+      <span className="console-toggle-knob" />
+    </span>
   </button>
 );
 
@@ -306,7 +304,7 @@ export const DebugToolsPanel: React.FC = () => {
             open={openSections[group.id]}
             onToggle={onToggleSection}
           >
-            <div className="debug-tools-btn-row">
+            <div className="console-toggle-list">
               {group.types.map((type) => (
                 <ConsoleToggle
                   key={type}
@@ -316,19 +314,16 @@ export const DebugToolsPanel: React.FC = () => {
                   {debugToggleLabel(type)}
                 </ConsoleToggle>
               ))}
-            </div>
-            {group.id === 'general' && (
-              <div className="debug-tools-btn-row">
+              {group.id === 'general' && (
                 <ConsoleToggle
                   active={shipBuild}
                   onClick={onToggleShipBuild}
-                  className="flex-1"
                   title="When on (default), NWScript ShipBuild() returns TRUE (shipping build). Off = debug-capable build."
                 >
                   Ship Build
                 </ConsoleToggle>
-              </div>
-            )}
+              )}
+            </div>
           </CollapsibleSection>
         ))}
 
@@ -366,11 +361,10 @@ export const DebugToolsPanel: React.FC = () => {
               </button>
             ))}
           </div>
-          <div className="debug-tools-btn-row">
+          <div className="console-toggle-list">
             <ConsoleToggle
               active={floatyAllAttackers}
               onClick={onToggleFloatyAllAttackers}
-              className="flex-1"
               title="When on, combat floaties show for any attacker (legacy). Off = player attacker only."
             >
               Floaty All Attackers
@@ -380,10 +374,21 @@ export const DebugToolsPanel: React.FC = () => {
 
         <CollapsibleSection
           id="lighting"
-          title="Lighting Tunables"
+          title="Lighting"
           open={openSections.lighting}
           onToggle={onToggleSection}
         >
+          <div className="console-toggle-list console-lighting-toggles">
+            {LIGHTING_DEBUG_TYPES.map((type) => (
+              <ConsoleToggle
+                key={type}
+                active={KotOR.GameState.GetDebugState(type)}
+                onClick={() => onToggleDebugState(type)}
+              >
+                {debugToggleLabel(type)}
+              </ConsoleToggle>
+            ))}
+          </div>
           <div className="console-lighting-tunables">
             {KotOR.ODYSSEY_LIGHTING_DEBUG_KEYS.map((key) => (
               <div key={key} className="console-submenu-row">
