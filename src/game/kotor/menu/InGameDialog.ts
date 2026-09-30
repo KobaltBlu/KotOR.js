@@ -7,6 +7,7 @@ import { DLGNode } from "@/resource/DLGNode";
 import { ConversationState } from "@/enums/dialog/ConversationState";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { FeedbackOption } from "@/enums/engine/FeedbackOption";
+import { EngineModeController } from '@/engine/EngineModeController';
 
 const LETTERBOX_HEIGHT = 100;
 
@@ -71,7 +72,7 @@ export class InGameDialog extends GameMenu {
 
   show(){
     super.show();
-    GameState.SetEngineMode(EngineMode.DIALOG);
+    EngineModeController.SetEngineMode(EngineMode.DIALOG);
   }
 
   setReplies(replies: DLGNode[]) {

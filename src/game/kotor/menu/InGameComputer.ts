@@ -12,6 +12,7 @@ import { AudioEngine } from "@/audio/AudioEngine";
 import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
 import { TextureLoader } from "@/loaders";
 import type { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { EngineModeController } from '@/engine/EngineModeController';
 
 /**
  * InGameComputer class.
@@ -196,7 +197,7 @@ export class InGameComputer extends GameMenu {
 
   show(){
     super.show();
-    GameState.SetEngineMode(EngineMode.DIALOG);
+    EngineModeController.SetEngineMode(EngineMode.DIALOG);
     this.startAmbient();
   }
 

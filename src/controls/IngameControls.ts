@@ -32,6 +32,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import { ActionType } from "@/enums/actions/ActionType";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { GameEngineType } from "@/enums/engine/GameEngineType";
+import { EngineModeController } from '@/engine/EngineModeController';
 
 function ensurePlayerControl(creature: { playerControl?: ReturnType<typeof createPlayerCamRelativeState> }){
   if(!creature.playerControl){
@@ -239,11 +240,11 @@ export class IngameControls {
         if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){
           FollowerCamera.endNavigate();
           if(GameState.Mode == EngineMode.FREELOOK){
-            GameState.SetEngineMode(EngineMode.INGAME);
+            EngineModeController.SetEngineMode(EngineMode.INGAME);
           }
         }else if((GameState.clientCameraMode | 0) !== ClientCameraMode.FREELOOK){
           if(GameState.Mode == EngineMode.FREELOOK){
-            GameState.SetEngineMode(EngineMode.INGAME);
+            EngineModeController.SetEngineMode(EngineMode.INGAME);
           }
           FollowerCamera.beginNavigate(false);
         }
@@ -903,11 +904,11 @@ export class IngameControls {
       if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){
         FollowerCamera.endNavigate();
         if(GameState.Mode == EngineMode.FREELOOK){
-          GameState.SetEngineMode(EngineMode.INGAME);
+          EngineModeController.SetEngineMode(EngineMode.INGAME);
         }
         return;
       }
-      GameState.SetEngineMode(GameState.Mode == EngineMode.FREELOOK ? EngineMode.INGAME : EngineMode.FREELOOK);
+      EngineModeController.SetEngineMode(GameState.Mode == EngineMode.FREELOOK ? EngineMode.INGAME : EngineMode.FREELOOK);
     });
 
     KeyMapper.Actions[KeyMapAction.WALKMODIFY].setProcessor( (keymap) => {

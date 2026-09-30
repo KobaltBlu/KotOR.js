@@ -17,11 +17,18 @@ jest.mock('@/GameState', () => ({
       HOLD_WORLD_FADE_IN_LENGTH: 1.0,
       HOLD_WORLD_FADE_IN_WAIT: 0,
     },
-    SetEngineMode: jest.fn(),
     Mode: 0,
     holdWorldFadeInForDialog: false,
   },
 }));
+
+jest.mock('@/engine/EngineModeController', () => ({
+  EngineModeController: {
+    SetEngineMode: jest.fn(),
+    RestoreEnginePlayMode: jest.fn(),
+  },
+}));
+
 
 jest.mock('@/audio/AudioLoader', () => ({ AudioLoader: {} }));
 jest.mock('@/audio/AudioEngine', () => ({

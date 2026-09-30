@@ -97,6 +97,8 @@ import { isSound } from "@/module/guards/isSound";
 import { isStore } from "@/module/guards/isStore";
 import { isTrigger } from "@/module/guards/isTrigger";
 import { isWaypoint } from "@/module/guards/isWaypoint";
+import { EngineModeController } from '@/engine/EngineModeController';
+import { ModuleLoadCoordinator } from '@/engine/ModuleLoadCoordinator';
 
 /**
  * Resolve a gun bank on a MG player/enemy by index (SWMG gun-bank ops).
@@ -7323,7 +7325,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING],
     action: function(this: NWScriptInstance, args: [string, string, string, string, string, string, string, string]){
-      GameState.LoadModule(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7]);
+      ModuleLoadCoordinator.LoadModule(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7]);
     }
   },
   510:{
@@ -10054,7 +10056,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.STRING],
     action: async function(this: NWScriptInstance, args: [string]){
       console.log('PlayMovie', args[0]);
-      GameState.SetEngineMode(EngineMode.MOVIE);
+      EngineModeController.SetEngineMode(EngineMode.MOVIE);
       GameState.VideoManager.playMovie(args[0], true);
     }
   },

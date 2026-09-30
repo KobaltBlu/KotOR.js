@@ -5,6 +5,7 @@ import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 import { Module } from "@/module/Module";
 import { NWScript } from "@/nwscript/NWScript";
+import { ModuleLoadCoordinator } from '@/engine/ModuleLoadCoordinator';
 
 /**
  * description TLKs (K1).
@@ -124,7 +125,7 @@ export class MenuOptions extends GameMenu {
 
       this.BTN_QUIT.addEventListener('click', () => {
         GameState.MenuManager.InGameConfirm.showConfirmDialog(42348, () => {
-          GameState.UnloadModule();
+          ModuleLoadCoordinator.UnloadModule();
           GameState.State = EngineState.RUNNING;
                 
           if(GameState.module instanceof Module){

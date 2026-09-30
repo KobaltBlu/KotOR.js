@@ -14,6 +14,7 @@ import {
 import { findOpenWalkLocation } from "@/engine/pathfinding/open-walk-location";
 import { getPathPersonalSpace } from "@/combat/attack-range";
 import { applyLocalTeleport } from "@/engine/movement/teleport";
+import { ModuleLoadCoordinator } from '@/engine/ModuleLoadCoordinator';
 
 const _jumpCenter = new THREE.Vector3();
 const _jumpSafe = new THREE.Vector3();
@@ -108,7 +109,7 @@ export class ActionJumpToPoint extends Action {
     if(classified.kind === 'loadModule' && classified.moduleName){
       const pc = GameState.getCurrentPlayer?.() || GameState.PartyManager?.party?.[0];
       if(this.owner === pc || this.owner.controlled){
-        GameState.LoadModuleWithJumpSpawn(classified.moduleName.toLowerCase(), {
+        ModuleLoadCoordinator.LoadModuleWithJumpSpawn(classified.moduleName.toLowerCase(), {
           x: this.x,
           y: this.y,
           z: this.z,

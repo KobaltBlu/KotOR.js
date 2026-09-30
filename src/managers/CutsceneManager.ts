@@ -57,6 +57,7 @@ import {
   isAnimation2DAFlagSet,
   isDialogAnimation,
 } from "@/module/animation/animation2daFlag";
+import { EngineModeController } from '@/engine/EngineModeController';
 
 /** SendDialogEntryNode AnimList retry window (0x5dc = 1500ms). */
 export const DIALOG_PARTICIPANT_RETRY_MS = 0x5dc;
@@ -750,7 +751,7 @@ export class CutsceneManager {
     // sticky after key-map switch, and module still ticks during dialog.
     this.stopPartyLocomotionForDialog();
     
-    GameState.SetEngineMode(EngineMode.DIALOG);
+    EngineModeController.SetEngineMode(EngineMode.DIALOG);
     
     //normal dialog entry
     this.cutsceneMode = (this.dialog.isAnimatedCutscene) ? CutsceneMode.ANIMATED : CutsceneMode.DIALOG;
@@ -1344,7 +1345,7 @@ export class CutsceneManager {
     audioEngine.stopDuckingMusicAndAmbientSounds();
 
     if(wasBark){
-      GameState.RestoreEnginePlayMode();
+      EngineModeController.RestoreEnginePlayMode();
     }
   }
 

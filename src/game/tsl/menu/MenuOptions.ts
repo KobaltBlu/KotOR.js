@@ -5,6 +5,7 @@ import type { GUIButton, GUILabel, GUIListBox } from "@/gui";
 import { Module } from "@/module/Module";
 import { NWScript } from "@/nwscript/NWScript";
 import { MenuOptions as K1_MenuOptions } from "@/game/kotor/KOTOR";
+import { ModuleLoadCoordinator } from '@/engine/ModuleLoadCoordinator';
 
 /**
  * description TLKs (TSL).
@@ -102,7 +103,7 @@ export class MenuOptions extends K1_MenuOptions {
 
       this.BTN_QUIT.addEventListener('click', () => {
         GameState.MenuManager.InGameConfirm.showConfirmDialog(42348, () => {
-          GameState.UnloadModule();
+          ModuleLoadCoordinator.UnloadModule();
           GameState.State = EngineState.RUNNING;
                 
           if(GameState.module instanceof Module){

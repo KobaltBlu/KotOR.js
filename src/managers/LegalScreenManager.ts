@@ -6,6 +6,7 @@ import { EngineMode } from "@/enums/engine/EngineMode";
 import { EngineState } from "@/enums/engine/EngineState";
 import { AudioEngine } from "@/audio/AudioEngine";
 import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
+import { EngineModeController } from '@/engine/EngineModeController';
 
 /**
  * LegalScreenManager — TSL legal screen.
@@ -72,7 +73,7 @@ export class LegalScreenManager {
     this.material.opacity = 0;
     this.plane.visible = true;
     this.backPlane.visible = true;
-    GameState.SetEngineMode(EngineMode.LEGAL);
+    EngineModeController.SetEngineMode(EngineMode.LEGAL);
     GameState.State = EngineState.RUNNING;
   }
 
@@ -122,7 +123,7 @@ export class LegalScreenManager {
     this.backPlane.visible = false;
     window.dispatchEvent(new Event('resize'));
     GameState.MenuManager.MainMenu.Start();
-    GameState.SetEngineMode(EngineMode.GUI);
+    EngineModeController.SetEngineMode(EngineMode.GUI);
     GameState.State = EngineState.RUNNING;
     AudioEngine.Unmute(AudioEngineChannel.ALL);
     AudioEngine.Mute(AudioEngineChannel.MOVIE);

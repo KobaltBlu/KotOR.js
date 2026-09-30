@@ -10,6 +10,7 @@ import { AutoPauseState } from "@/enums/engine/AutoPauseState";
 import type { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { TextureLoader } from "@/loaders/TextureLoader";
 import * as THREE from "three";
+import { EngineModeController } from '@/engine/EngineModeController';
 
 const preloadTextures = ['enemy_bar', 'hostilearrow', 'friend_bar', 'friendlyarrow'];
 const preloadTexturesMap = new Map<string, OdysseyTexture>();
@@ -401,7 +402,7 @@ export class InGameOverlay extends K1_InGameOverlay {
 
   show() {
     super.show();
-    GameState.SetEngineMode(EngineMode.INGAME);
+    EngineModeController.SetEngineMode(EngineMode.INGAME);
     this.BTN_ACTIONDOWN0.flipY();
     this.BTN_ACTIONDOWN1.flipY();
     this.BTN_ACTIONDOWN2.flipY();

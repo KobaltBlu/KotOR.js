@@ -19,6 +19,7 @@ import { SoundMode } from "@/enums/audio/SoundMode";
 import { SaveLoadAudit } from "@/engine/SaveLoadAudit";
 import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { ModuleSaveTable } from "@/engine/ModuleSaveTable";
+import { ModuleLoadCoordinator } from '@/engine/ModuleLoadCoordinator';
 
 const winEpoch = new Date("01-01-1601 UTC").getTime();
 
@@ -412,7 +413,7 @@ export class SaveGame {
     // LoadGame / DoQuickLoad: SetSoundMode(0) then BusyWaitMuteSound before ShowLoadScreen.
     AudioEngine.SetSoundMode(SoundMode.POP, 0);
     await AudioEngine.BusyWaitMuteSound();
-    GameState.LoadModule(this.getLastModule(), null);
+    ModuleLoadCoordinator.LoadModule(this.getLastModule(), null);
     console.log('SaveGame', 'Load Complete!');
   }
 

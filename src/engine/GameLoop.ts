@@ -12,6 +12,7 @@ import { OdysseyRenderPipeline } from "@/engine/OdysseyRenderPipeline";
 import { GameStateEvents } from "@/engine/GameStateEvents";
 import { AutoPauseManager, TextureAnimationManager } from "@/managers";
 import { flushGuiMatrices } from "@/gui/guiMatrix";
+import { EngineModeController } from '@/engine/EngineModeController';
 
 /**
  * Main update loop, mode ticks, and viewport/shadow prep before render.
@@ -32,7 +33,7 @@ export class GameLoop {
       window.dispatchEvent(new Event('resize'));
 
       if(GameState.forgePreviewHost){
-        GameState.SetEngineMode(EngineMode.LOADING);
+        EngineModeController.SetEngineMode(EngineMode.LOADING);
         GameState.State = EngineState.RUNNING;
         AudioEngine.Unmute(AudioEngineChannel.ALL);
         AudioEngine.Mute(AudioEngineChannel.MOVIE);
@@ -47,7 +48,7 @@ export class GameLoop {
           return;
         }
         GameState.MenuManager.MainMenu.Start();
-        GameState.SetEngineMode(EngineMode.GUI);
+        EngineModeController.SetEngineMode(EngineMode.GUI);
         GameState.State = EngineState.RUNNING;
         AudioEngine.Unmute(AudioEngineChannel.ALL);
         AudioEngine.Mute(AudioEngineChannel.MOVIE);

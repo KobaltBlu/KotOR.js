@@ -21,6 +21,7 @@ import {
   createGUIFogVolumeTexture,
   GUI_FOG_VOLUME
 } from "@/shaders/datatextures/fog.datatexture";
+import { EngineModeController } from '@/engine/EngineModeController';
 
 /**
  * Render the heavy void-gui shader at this fraction of the viewport,
@@ -536,7 +537,7 @@ export class GameMenu {
   show(){
     // this.Hide;
     if(!this.isOverlayGUI && GameState.Mode !== EngineMode.MOVIE)
-      GameState.SetEngineMode(this.engineMode);
+      EngineModeController.SetEngineMode(this.engineMode);
       
     this.bVisible = true;
     GameState.scene_gui.add(this.menuGroup);
@@ -553,7 +554,7 @@ export class GameMenu {
     this.hide();
     this.manager.Remove(this);
     // if(!this.isOverlayGUI){
-    // GameState.RestoreEnginePlayMode;
+    // EngineModeController.RestoreEnginePlayMode;
     // }
   }
 

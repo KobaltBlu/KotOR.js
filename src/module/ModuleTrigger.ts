@@ -16,6 +16,7 @@ import { ModuleDoorAnimState, SignalEventType } from "@/enums";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 import { NWScriptEvent } from "@/nwscript/events";
 import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { ModuleLoadCoordinator } from '@/engine/ModuleLoadCoordinator';
 
 
 const OBJECTS_INSIDE_UPDATE_THRESHOLD = 15; // 15 frame ticks
@@ -470,7 +471,7 @@ export class ModuleTrigger extends ModuleObject {
       }
     }else if(this.linkedToModule && (GameState.Mode != EngineMode.DIALOG)){
       if(object == GameState.getCurrentPlayer()){
-        GameState.LoadModuleWithAreaTransitionFade(this.linkedToModule.toLowerCase(), this.linkedTo.toLowerCase());
+        ModuleLoadCoordinator.LoadModuleWithAreaTransitionFade(this.linkedToModule.toLowerCase(), this.linkedTo.toLowerCase());
       }
       return;
     }

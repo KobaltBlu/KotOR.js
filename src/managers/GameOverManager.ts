@@ -14,6 +14,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
 import * as THREE from "three";
+import { ModuleLoadCoordinator } from '@/engine/ModuleLoadCoordinator';
 
 /**
  * GameOverManager — party wipe / death sequence.
@@ -492,7 +493,7 @@ export class GameOverManager {
     this.Reset();
     GameState.FadeOverlayManager.Stop();
     GameState.MenuManager.ClearMenus();
-    GameState.UnloadModule();
+    ModuleLoadCoordinator.UnloadModule();
     GameState.State = EngineState.RUNNING;
 
     if(GameState.module){

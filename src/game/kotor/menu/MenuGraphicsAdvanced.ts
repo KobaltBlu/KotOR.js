@@ -3,6 +3,7 @@ import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "@/gui";
 import { TextureLoader } from "@/loaders/TextureLoader";
 import { TextureLoaderState } from "@/loaders/TextureLoaderState";
+import { ModuleLoadCoordinator } from '@/engine/ModuleLoadCoordinator';
 
 /** graphics advanced options description TLKs (K1). */
 const TLK_SOFT_SHADOWS = 0xbb51;
@@ -277,7 +278,7 @@ export class MenuGraphicsAdvanced extends GameMenu {
 
     if(this.draftTextureQuality != prevQuality){
       TextureLoaderState.TextureQuality = this.draftTextureQuality;
-      GameState.ReloadTextureCache();
+      ModuleLoadCoordinator.ReloadTextureCache();
     }
 
     GameState.lightManager?.applyVideoQualityLimits?.();

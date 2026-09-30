@@ -12,6 +12,7 @@ import { getPathPersonalSpace } from "@/combat/attack-range";
 
 import { isCreature } from "@/module/guards/isCreature";
 import * as THREE from "three";
+import { ModuleLoadCoordinator } from '@/engine/ModuleLoadCoordinator';
 
 const _jumpCenter = new THREE.Vector3();
 const _jumpSafe = new THREE.Vector3();
@@ -55,7 +56,7 @@ export class ActionJumpToObject extends Action {
       const pc = GameState.getCurrentPlayer?.() || GameState.PartyManager?.party?.[0];
       if(this.owner === pc || this.owner.controlled){
         const rot = this.target.getRotationFromBearing?.() || this.target.rotation;
-        GameState.LoadModuleWithJumpSpawn(classified.moduleName.toLowerCase(), {
+        ModuleLoadCoordinator.LoadModuleWithJumpSpawn(classified.moduleName.toLowerCase(), {
           x: this.target.position.x,
           y: this.target.position.y,
           z: this.target.position.z,

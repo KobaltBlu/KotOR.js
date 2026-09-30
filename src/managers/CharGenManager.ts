@@ -37,6 +37,7 @@ import {
   resolveCharGenAppearanceHead,
 } from "@/engine/rules/chargen-appearance";
 import { createDefaultPartyFollowInfo } from "@/module/ModuleCreature";
+import { ModuleLoadCoordinator } from '@/engine/ModuleLoadCoordinator';
 
 /** step indices. */
 export enum CharGenQuickStep {
@@ -189,7 +190,7 @@ export class CharGenManager {
     GameState.PartyManager.ActualPlayerTemplate = GameState.PartyManager.PlayerTemplate;
     GameState.PartyManager.AddPortraitToOrder(creature.getPortraitResRef());
     CurrentGame.InitGameInProgressFolder(true).then( () => {
-      GameState.LoadModule(CharGenManager.getStartModuleResRef());
+      ModuleLoadCoordinator.LoadModule(CharGenManager.getStartModuleResRef());
     });
   }
 

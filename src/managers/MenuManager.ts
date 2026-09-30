@@ -10,6 +10,7 @@ import { PerformanceMonitor } from "@/utility/PerformanceMonitor";
 import { EventManager } from "@/managers/EventManager";
 import { AudioEngine } from "@/audio/AudioEngine";
 import { SoundMode } from "@/enums/audio/SoundMode";
+import { EngineModeController } from '@/engine/EngineModeController';
 
 /**
  * MenuManager class.
@@ -188,7 +189,7 @@ export class MenuManager {
       }
 
       if((!MenuManager.activeMenus.length || MenuManager.activeMenus[MenuManager.activeMenus.length-1].engineMode != EngineMode.GUI) && GameState.Mode !== EngineMode.MOVIE){
-        GameState.RestoreEnginePlayMode();
+        EngineModeController.RestoreEnginePlayMode();
       }
     }else{
       const mIdx = MenuManager.activeModals.indexOf(menu);

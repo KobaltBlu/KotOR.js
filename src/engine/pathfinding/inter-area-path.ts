@@ -13,6 +13,7 @@ import { getPathPersonalSpace } from "@/combat/attack-range";
 
 import { isDoor } from "@/module/guards/isDoor";
 import { isTrigger } from "@/module/guards/isTrigger";
+import { ModuleLoadCoordinator } from '@/engine/ModuleLoadCoordinator';
 
 /**
  * Inter-area pathfinding (PlotInterAreaPath / build inter-area path
@@ -596,7 +597,7 @@ export function tryUseInterAreaTransition(
       const entry = (door.getLinkedTo?.() || '').toLowerCase();
       const pc = GameState.getCurrentPlayer?.() || GameState.PartyManager?.party?.[0];
       if(creature === pc || creature.controlled){
-        GameState.LoadModuleWithAreaTransitionFade(linkedModule.toLowerCase(), entry);
+        ModuleLoadCoordinator.LoadModuleWithAreaTransitionFade(linkedModule.toLowerCase(), entry);
       }else{
         creature.lastDoorEntered = door;
         // Nudge into transit so door onEnter can fire for party members
@@ -640,7 +641,7 @@ export function tryUseInterAreaTransition(
       const entry = (trigger.linkedTo || '').toLowerCase();
       const pc = GameState.getCurrentPlayer?.() || GameState.PartyManager?.party?.[0];
       if(creature === pc || creature.controlled){
-        GameState.LoadModuleWithAreaTransitionFade(linkedModule.toLowerCase(), entry);
+        ModuleLoadCoordinator.LoadModuleWithAreaTransitionFade(linkedModule.toLowerCase(), entry);
       }else{
         trigger.onEnter?.(creature);
       }

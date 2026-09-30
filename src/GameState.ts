@@ -48,7 +48,6 @@ import { MotionBlurController } from "@/engine/MotionBlurController";
 import { GameDebuggerBridge } from "@/engine/GameDebuggerBridge";
 import { GameplayCapture } from "@/engine/GameplayCapture";
 import { EngineModeController } from "@/engine/EngineModeController";
-import { ModuleLoadCoordinator } from "@/engine/ModuleLoadCoordinator";
 import { ForgePreviewHost } from "@/apps/forge/ForgePreviewHost";
 
 //THREE.js imports
@@ -498,7 +497,7 @@ export class GameState implements EngineContext {
       GameRuntimeBootstrap.initWorldManagers();
 
       //AudioEngine.Unmute
-      GameState.SetEngineMode(EngineMode.GUI);
+      EngineModeController.SetEngineMode(EngineMode.GUI);
       GameState.State = EngineState.RUNNING;
       GameState.inMenu = false;
 
@@ -576,35 +575,6 @@ export class GameState implements EngineContext {
     return p ? p : GameState.PartyManager.Player;
   }
 
-  /** @see ModuleLoadCoordinator.LoadModuleWithAreaTransitionFade */
-  static LoadModuleWithAreaTransitionFade(name = '', waypoint: string = null){
-    ModuleLoadCoordinator.LoadModuleWithAreaTransitionFade(name, waypoint);
-  }
-
-  /** @see ModuleLoadCoordinator.LoadModuleWithJumpSpawn */
-  static LoadModuleWithJumpSpawn(
-    name: string,
-    spawn: { x: number; y: number; z: number; ox: number; oy: number }
-  ){
-    ModuleLoadCoordinator.LoadModuleWithJumpSpawn(name, spawn);
-  }
-
-  /**
-   * Load a module
-   * @param name 
-   * @param waypoint - The waypoint to spawn the player at (if null, the player will spawn at the entry waypoint)
-   * @param sMovie1 - The first movie to play
-   * @param sMovie2 - The second movie to play
-   * @param sMovie3 - The third movie to play
-   * @param sMovie4 - The fourth movie to play
-   * @param sMovie5 - The fifth movie to play
-   * @param sMovie6 - The sixth movie to play
-   * @see ModuleLoadCoordinator.LoadModule
-   */
-  static async LoadModule(name = '', waypoint: string = null, sMovie1 = '', sMovie2 = '', sMovie3 = '', sMovie4 = '', sMovie5 = '', sMovie6 = ''){
-    return ModuleLoadCoordinator.LoadModule(name, waypoint, sMovie1, sMovie2, sMovie3, sMovie4, sMovie5, sMovie6);
-  }
-
   /** @see ForgePreviewHost.InitForForgePreview */
   static async InitForForgePreview(host: HTMLElement): Promise<void> {
     return ForgePreviewHost.InitForForgePreview(host);
@@ -623,26 +593,6 @@ export class GameState implements EngineContext {
   /** @see ForgePreviewHost.LoadModuleFromArchives */
   static async LoadModuleFromArchives(archives: any[], waypoint: string = null, modName = 'preview'){
     return ForgePreviewHost.LoadModuleFromArchives(archives, waypoint, modName);
-  }
-
-  /** @see EngineModeController.RestoreEnginePlayMode */
-  static RestoreEnginePlayMode(): void {
-    EngineModeController.RestoreEnginePlayMode();
-  }
-
-  /** @see EngineModeController.SetEngineMode */
-  static SetEngineMode(mode: EngineMode){
-    EngineModeController.SetEngineMode(mode);
-  }
-
-  /** @see ModuleLoadCoordinator.UnloadModule */
-  static UnloadModule(){
-    ModuleLoadCoordinator.UnloadModule();
-  }
-
-  /** @see ModuleLoadCoordinator.ReloadTextureCache */
-  static ReloadTextureCache(){
-    ModuleLoadCoordinator.ReloadTextureCache();
   }
 
   static getCameraById(id = 0): THREE.PerspectiveCamera | undefined {

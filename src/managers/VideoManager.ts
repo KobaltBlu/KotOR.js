@@ -7,6 +7,7 @@ import { YUVFrame, computeBinkFrameLayout, binkChromaVisibleWidth } from "@/vide
 import { MainMovies } from "@/game/kotor/menu/MainMovies";
 import { SoundMode } from "@/enums/audio/SoundMode";
 import { commitGuiTransform } from "@/gui/guiMatrix";
+import { EngineModeController } from '@/engine/EngineModeController';
 
 /**
  * VideoManager class.
@@ -237,7 +238,7 @@ export class VideoManager {
 
       if (GameState.Mode != EngineMode.MOVIE) {
         this.lastEngineMode = GameState.Mode;
-        GameState.SetEngineMode(EngineMode.MOVIE);
+        EngineModeController.SetEngineMode(EngineMode.MOVIE);
       }
 
 
@@ -386,7 +387,7 @@ export class VideoManager {
     AudioEngine.SetSoundMode(SoundMode.POP, 0);
 
     if (GameState.Mode === EngineMode.MOVIE) {
-      GameState.RestoreEnginePlayMode();
+      EngineModeController.RestoreEnginePlayMode();
     }
   }
 

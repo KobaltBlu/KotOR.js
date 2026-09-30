@@ -13,6 +13,7 @@ import {
   OdysseyLightingDebug,
   ODYSSEY_LIGHTING_DEBUG_KEYS,
 } from "@/utility/odysseyLightingDebug";
+import { ModuleLoadCoordinator } from '@/engine/ModuleLoadCoordinator';
 
 /**
  * CheatConsoleManager class.
@@ -304,7 +305,7 @@ export class CheatConsoleManager {
   //Teleports your characters to a specific location
   static warp(name: string = ''){
     if(name){
-      GameState.LoadModule(name);
+      ModuleLoadCoordinator.LoadModule(name);
     }
   }
 

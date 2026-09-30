@@ -55,6 +55,7 @@ import {
   logAlertzelkOnOpen,
   shouldLogAlertzelkOnOpen,
 } from "@/module/door-onopen-diagnostics";
+import { ModuleLoadCoordinator } from '@/engine/ModuleLoadCoordinator';
 
 interface AnimStateInfo {
   lastAnimState: ModuleDoorAnimState;
@@ -1148,7 +1149,7 @@ export class ModuleDoor extends ModuleObject {
     if(this.getLinkedToModule() && !(GameState.Mode == EngineMode.DIALOG) && this.isOpen()){
       // Align with ModuleTrigger / tryUseInterAreaTransition: party leader loads
       // even when click-to-move left `controlled` unset for the frame.
-      GameState.LoadModuleWithAreaTransitionFade(this.getLinkedToModule().toLowerCase(), this.getLinkedTo().toLowerCase());
+      ModuleLoadCoordinator.LoadModuleWithAreaTransitionFade(this.getLinkedToModule().toLowerCase(), this.getLinkedTo().toLowerCase());
     }
   }
 

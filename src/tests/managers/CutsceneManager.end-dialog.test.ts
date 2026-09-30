@@ -33,9 +33,7 @@ jest.mock('@/GameState', () => ({
       HOLD_WORLD_FADE_IN_LENGTH: 1.0,
       HOLD_WORLD_FADE_IN_WAIT: 0,
     },
-    CutsceneManager: {},
-    SetEngineMode: jest.fn(),
-    RestoreEnginePlayMode: jest.fn(),
+    CutsceneManager: {},
     Mode: 0,
     holdWorldFadeInForDialog: false,
     Flags: { EnableOverride: false },
@@ -54,6 +52,14 @@ jest.mock('@/GameState', () => ({
     raycaster: { set() {}, far: 0 },
   },
 }));
+
+jest.mock('@/engine/EngineModeController', () => ({
+  EngineModeController: {
+    SetEngineMode: jest.fn(),
+    RestoreEnginePlayMode: jest.fn(),
+  },
+}));
+
 
 jest.mock('@/audio/AudioLoader', () => ({ AudioLoader: {} }));
 jest.mock('@/audio/AudioEngine', () => ({

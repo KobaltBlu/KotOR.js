@@ -37,6 +37,7 @@ import { isPlaceable } from "@/module/guards/isPlaceable";
 import { isPlayer } from "@/module/guards/isPlayer";
 import { isTrigger } from "@/module/guards/isTrigger";
 import { isWaypoint } from "@/module/guards/isWaypoint";
+import { EngineModeController } from '@/engine/EngineModeController';
 
 /**
  * NWScriptDefK2 class.
@@ -5471,7 +5472,7 @@ NWScriptDefK2.Actions = {
     args: [ NWScriptDataType.STRING, NWScriptDataType.INTEGER ],
     action: async function(this: NWScriptInstance, args: [string, number]){
       console.log('PlayMovie', args[0], args[1]);
-      GameState.SetEngineMode(EngineMode.MOVIE);
+      EngineModeController.SetEngineMode(EngineMode.MOVIE);
       // K2 skippable arg — honor instead of always-skippable
       await GameState.VideoManager.playMovie(args[0], !!args[1]);
     }
