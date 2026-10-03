@@ -128,6 +128,30 @@ describe("buildWalkPath return codes", () => {
     expect(r.code).toBe(WalkPathCode.Incomplete);
   });
 
+  it("returns Incomplete for empty budget-exhausted stub (not Fail stay-put)", () => {
+    const origin = new THREE.Vector3(0, 0, 0);
+    const dest = new THREE.Vector3(10, 0, 0);
+    const owner = { id: 7, position: origin.clone() } as any;
+    const path = makePath([], { incomplete: true });
+    const area = {
+      id: 1,
+      path: {
+        traverseToPoint: () => path,
+        hasPendingSmoothSession: () => false,
+      },
+    } as any;
+
+    const info: PathFindInfoLite = {
+      ownerId: 7,
+      origin: origin.clone(),
+      dest: dest.clone(),
+    };
+    const r = buildWalkPath(area, owner, info);
+    expect(r.code).toBe(WalkPathCode.Incomplete);
+    expect(r.path?.points?.length ?? 0).toBe(0);
+    expect(info.lastCode).toBe(WalkPathCode.Incomplete);
+  });
+
   it("returns Fail for stay-put when dest is far", () => {
     const origin = new THREE.Vector3(0, 0, 0);
     const dest = new THREE.Vector3(10, 0, 0);

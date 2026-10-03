@@ -104,21 +104,24 @@ export function buildWalkPath(
     wantSmooth
   );
 
-  if(!path?.points?.length){
-    info.lastCode = WalkPathCode.Fail;
-    return { code: WalkPathCode.Fail };
-  }
-
-  // Budget / smooth resume Incomplete before stay-put classification —
-  // a single-point stub from a spent tick budget must not become Fail.
+  // Budget / smooth resume Incomplete before empty→Fail — empty Incomplete stubs
+  // from a spent tick budget must resume, not Fail as stay-put.
   if(
-    path.incomplete ||
-    path.smoothResume ||
-    path.smoothCornerResume ||
-    (path.realtime && area.path.hasPendingSmoothSession(owner.id))
+    path &&
+    (
+      path.incomplete ||
+      path.smoothResume ||
+      path.smoothCornerResume ||
+      (path.realtime && area.path.hasPendingSmoothSession(owner.id))
+    )
   ){
     info.lastCode = WalkPathCode.Incomplete;
     return { code: WalkPathCode.Incomplete, path };
+  }
+
+  if(!path?.points?.length){
+    info.lastCode = WalkPathCode.Fail;
+    return { code: WalkPathCode.Fail };
   }
 
   // Stay-put / no progress toward dest → Fail

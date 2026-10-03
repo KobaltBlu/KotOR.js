@@ -491,8 +491,10 @@ export class ModulePath {
       const searchBudget = takePathPlanSearchBudgetMs();
       if(searchBudget <= 0){
         this.clearSmoothSession(ownerId);
-        const stub = ComputedPath.FromPointsList([originPoint]);
+        // Empty Incomplete — callers must resume next tick, not drive a stay-put hop.
+        const stub = new ComputedPath(owner);
         stub.incomplete = true;
+        stub.points = [];
         if(resume){
           stub.dfsResume = resume;
           this.dfsResumeByOwner.set(ownerId!, resume);

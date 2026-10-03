@@ -228,7 +228,7 @@ export class ActionMoveToPoint extends Action {
       }
     }
 
-    if(!this.computedPath){
+    if(!this.computedPath?.points?.length){
       const area = this.owner.area;
       if(area && typeof area.isPointWalkable === 'function' && !area.isPointWalkable(this.target_position)){
         this.target_position.copy(area.getNearestWalkablePoint(this.target_position, 0.05));
@@ -239,8 +239,10 @@ export class ActionMoveToPoint extends Action {
       this.calculatePath();
     }
 
-    // Incomplete path continues; fail stops — no replot grace.
+    // Incomplete mid-plot (budget / smooth resume): keep trying next tick.
+    // Empty-but-truthy computedPath must not skip replot (walk-in-place bug).
     if(this.pathFindInfo?.lastCode === WalkPathCode.Incomplete && !this.computedPath?.points?.length){
+      this.pauseWalkInPlace(this.owner);
       return ActionStatus.IN_PROGRESS;
     }
 
@@ -401,6 +403,18 @@ export class ActionMoveToPoint extends Action {
       allowWalkBack,
       useRangeTargetId: this.pathFindInfo?.targetObjectId,
     });
+  }
+
+  /**
+   * Hold still while pathfinding resumes — clear walk cycle / speed without
+   * failing the action or running full stopMoving recovery.
+   */
+  private pauseWalkInPlace(owner: ModuleCreature): void {
+    owner.force = 0;
+    owner.speed = 0;
+    owner.walkSpeedFactor = 0;
+    owner.moveDirOverride = undefined;
+    owner.setAnimationState?.(ModuleCreatureAnimState.PAUSE);
   }
 
   private consumeArrivedPathPoint(owner: ModuleCreature, range: number): void {
@@ -837,6 +851,12 @@ export class ActionMoveToPoint extends Action {
 
     const path = result.path;
     if(!path){
+      this.setComputedPath(undefined);
+      return;
+    }
+
+    // Empty Incomplete (budget stub) — do not install a driveable-looking path.
+    if(result.code === WalkPathCode.Incomplete && !path.points?.length){
       this.setComputedPath(undefined);
       return;
     }

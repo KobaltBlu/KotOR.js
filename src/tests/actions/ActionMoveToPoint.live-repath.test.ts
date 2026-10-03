@@ -1091,4 +1091,92 @@ describe("ActionMoveToPoint live-chase repath", () => {
     expect(mockEnsureSafeStanding).toHaveBeenCalledWith(owner);
     expect(owner.clearLocomotionState).toHaveBeenCalled();
   });
+
+  it("Incomplete empty computedPath replots and pauses walk-in-place", () => {
+    const owner = {
+      id: 1,
+      position: new THREE.Vector3(112.1, 91.5, 0),
+      rotation: { z: 0 },
+      area: {
+        id: 1,
+        getNearestWalkablePoint: (p: THREE.Vector3) => p.clone(),
+        isPointWalkable: () => true,
+      },
+      walkSpeedFactor: 1,
+      force: 1,
+      speed: 1.5,
+      locomotionScale: 1,
+      movementSpeed: 1,
+      helperColor: 0,
+      setComputedPath: jest.fn(),
+      getComputedPath: jest.fn(() => undefined),
+      clearLocomotionState: jest.fn(),
+      setFacing: jest.fn(),
+      setAnimationState: jest.fn(),
+      getWalkSpeed: () => 1.7,
+      getRunSpeed: () => 5.4,
+      walk: false,
+      collisionTimer: 0,
+      blockingTimer: 0,
+      pathFindApproachPersonalSpace: 0,
+    } as unknown as ModuleCreature;
+
+    // First update: still Incomplete / empty → pause + IN_PROGRESS, must call plot.
+    mockPlotPath.mockReturnValue({
+      code: WalkPathCode.Incomplete,
+      path: { points: [], incomplete: true, fixWalkEdges: () => {}, setColor: () => {} },
+    });
+
+    const action = new ActionMoveToPoint();
+    action.setOwner(owner);
+    action.setParameter(0, ActionParameterType.FLOAT, 178.8);
+    action.setParameter(1, ActionParameterType.FLOAT, 92.7);
+    action.setParameter(2, ActionParameterType.FLOAT, 0);
+    action.setParameter(3, ActionParameterType.DWORD, 1);
+    action.setParameter(4, ActionParameterType.DWORD, 0x7f000000);
+    action.setParameter(5, ActionParameterType.INT, 0);
+    action.setParameter(6, ActionParameterType.FLOAT, 0.1);
+    action.target_position.set(178.8, 92.7, 0);
+    // Simulate post-pop empty Incomplete path (truthy object, zero points).
+    (action as { computedPath?: unknown }).computedPath = {
+      points: [],
+      incomplete: true,
+      timer: -1,
+      pop: () => {},
+    };
+    (action as { pathFindInfo?: { lastCode: number; ownerId: number; origin: THREE.Vector3; dest: THREE.Vector3 } }).pathFindInfo = {
+      lastCode: WalkPathCode.Incomplete,
+      ownerId: 1,
+      origin: owner.position.clone(),
+      dest: new THREE.Vector3(178.8, 92.7, 0),
+    };
+    mockPlotPath.mockClear();
+
+    expect(action.update(1 / 60)).toBe(ActionStatus.IN_PROGRESS);
+    expect(mockPlotPath).toHaveBeenCalled();
+    expect(owner.setAnimationState).toHaveBeenCalledWith(10000); // PAUSE
+    expect(owner.force).toBe(0);
+    expect(owner.speed).toBe(0);
+    expect(owner.walkSpeedFactor).toBe(0);
+
+    // Second update: Ready path resumes walking.
+    mockPlotPath.mockReturnValue({
+      code: WalkPathCode.Ready,
+      path: {
+        points: [{ vector: new THREE.Vector3(120, 91.5, 0) }],
+        fixWalkEdges: () => {},
+        setColor: () => {},
+        realtime: false,
+        timer: 20,
+        pop: () => {},
+      },
+    });
+    mockWalkUpdate.mockReturnValue(1);
+    mockPlotPath.mockClear();
+    (owner.setAnimationState as jest.Mock).mockClear();
+
+    expect(action.update(1 / 60)).toBe(ActionStatus.IN_PROGRESS);
+    expect(mockPlotPath).toHaveBeenCalled();
+    expect(mockWalkUpdate).toHaveBeenCalled();
+  });
 });
