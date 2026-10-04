@@ -262,33 +262,24 @@ export class ModuleTrigger extends ModuleObject {
   //They will be added to the objectsInside array without triggering the onEnter script
   //If they leave the trigger and then return it will then fire normally
   initObjectsInside(){
-    //Check to see if this trigger is linked to another module
-    if(this.linkedToModule && this.type == 1){
-      //Check Party Members
-      const partyLen = GameState.PartyManager.party.length;
-      for(let i = 0; i < partyLen; i++){
-        const partymember = GameState.PartyManager.party[i];
-        const pos = partymember.position;
-        if(!this.box.containsPoint(pos)){ continue; }
-        const added = this.addObjectInside(partymember);
-        if(!added){ continue; }
-        
-        partymember.lastTriggerEntered = this;
-        this.lastObjectEntered = partymember;
-      }
-    }else{
-      //Check Creatures
-      const creatureLen = GameState.module.area.creatures.length;
-      for(let i = 0; i < creatureLen; i++){
-        const creature = GameState.module.area.creatures[i];
-        const pos = creature.position;
-        if(!this.box.containsPoint(pos)){ continue; }
+    //Only suppress the initial enter event for area-transition triggers.
+    //Generic/scripted triggers should still be able to fire after the player
+    //starts moving, even if they spawned inside the trigger volume.
+    if(!(this.linkedToModule && this.type == ModuleTriggerType.TRANSITION)){
+      return;
+    }
 
-        const added = this.addObjectInside(creature);
-        if(!added){ continue; }
-        creature.lastTriggerEntered = this;
-        this.lastObjectEntered = creature;
-      }
+    //Check Party Members
+    const partyLen = GameState.PartyManager.party.length;
+    for(let i = 0; i < partyLen; i++){
+      const partymember = GameState.PartyManager.party[i];
+      const pos = partymember.position;
+      if(!this.box.containsPoint(pos)){ continue; }
+      const added = this.addObjectInside(partymember);
+      if(!added){ continue; }
+      
+      partymember.lastTriggerEntered = this;
+      this.lastObjectEntered = partymember;
     }
   }
 
@@ -394,24 +385,34 @@ export class ModuleTrigger extends ModuleObject {
       //If the creature is inside the bounding box, attempt to add it to the objectsInside array
       const added = this.addObjectInside(object);
       if(!added){ return; }
-      if(!this.triggered && this.isHostile(object)){
-        object.lastTriggerEntered = this;
-        this.lastObjectEntered = object;
+      object.lastTriggerEntered = this;
+      this.lastObjectEntered = object;
 
+      if(this.type == ModuleTriggerType.TRAP){
+        if(!this.canTrigger(object)){ return; }
         this.onEnter(object);
         this.triggered = true;
+        return;
       }
+
+      this.onEnter(object);
       return;
     }
 
     //If the creature is not inside the bounding box, attempt to remove it from the objectsInside array
     const removed = this.removeObjectInside(object);
     if(!removed){ return; }
-    if(!this.triggered && this.isHostile(object)){
-      object.lastTriggerExited = this;
-      this.lastObjectExited = object;
-      this.onExit(object);
+    object.lastTriggerExited = this;
+    this.lastObjectExited = object;
+
+    if(this.type == ModuleTriggerType.TRAP){
+      if(this.isHostile(object)){
+        this.onExit(object);
+      }
+      return;
     }
+
+    this.onExit(object);
   }
 
   /**
@@ -444,11 +445,9 @@ export class ModuleTrigger extends ModuleObject {
 
   onEnter(object?: ModuleObject){
     if(!object){ return; }
-    console.log('ModuleTrigger.onEnter', this.type,  this.getTag());
     if(this.type == ModuleTriggerType.TRAP && !this.trapTriggered){
       if(object.isHostile(this)){
         this.trapTriggered = true;
-        console.log('ModuleTrigger.onEnter', 'Trap Triggered')
         const event = new GameState.GameEventFactory.EventSignalEvent();
         event.setCaller(object);
         event.setObject(this);
@@ -464,7 +463,6 @@ export class ModuleTrigger extends ModuleObject {
       return;
     }
 
-    console.log('ModuleTrigger', this.getTag(), 'enter 1')
     const event = new GameState.GameEventFactory.EventSignalEvent();
     event.setCaller(object);
     event.setObject(this);
@@ -476,7 +474,6 @@ export class ModuleTrigger extends ModuleObject {
 
   onExit(object?: ModuleObject){
     if(!object){ return; }
-    console.log('ModuleTrigger', this.getTag(), 'exit')
     const event = new GameState.GameEventFactory.EventSignalEvent();
     event.setCaller(object);
     event.setObject(this);
@@ -576,7 +573,10 @@ export class ModuleTrigger extends ModuleObject {
     if(this.template.RootNode.hasField('LocalizedName'))
       this.localizedName = this.template.getFieldByLabel('LocalizedName').getCExoLocString();
 
-    if(this.template.RootNode.hasField('PortraidId')){
+    if(this.template.RootNode.hasField('PortraitId')){
+      this.portraitId = this.template.getFieldByLabel('PortraitId').getValue();
+      this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
+    }else if(this.template.RootNode.hasField('PortraidId')){
       this.portraitId = this.template.getFieldByLabel('PortraidId').getValue();
       this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
     }
@@ -637,14 +637,40 @@ export class ModuleTrigger extends ModuleObject {
       this.zOrientation = this.template.RootNode.getFieldByLabel('ZOrientation').getValue();
 
     if(this.template.RootNode.hasField('SWVarTable')){
-      let localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
-      //console.log(localBools);
-      for(let i = 0; i < localBools.length; i++){
-        let data = localBools[i].getFieldByLabel('Variable').getValue();
-        for(let bit = 0; bit < 32; bit++){
-          this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+      const swVarTableStruct = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0];
+      if(swVarTableStruct){
+        if(swVarTableStruct.hasField('BitArray')){
+          const localBools = swVarTableStruct.getFieldByLabel('BitArray').getChildStructs();
+          for(let i = 0; i < localBools.length; i++){
+            const data = localBools[i].getFieldByLabel('Variable').getValue();
+            for(let bit = 0; bit < 32; bit++){
+              this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+            }
+          }
+        }
+
+        if(swVarTableStruct.hasField('ByteArray')){
+          const localNumbers = swVarTableStruct.getFieldByLabel('ByteArray').getChildStructs();
+          for(let i = 0; i < localNumbers.length; i++){
+            const data = localNumbers[i].getFieldByLabel('Variable').getValue();
+            this.setLocalNumber(i, data);
+          }
         }
       }
+    }
+
+    try{
+      if(this.template.RootNode.hasField('ActionList') && !this.actionQueue.length){
+        const actionStructs = this.template.RootNode.getFieldByLabel('ActionList').getChildStructs();
+        for(let i = 0, len = actionStructs.length; i < len; i++){
+          const action = GameState.ActionFactory.FromStruct(actionStructs[i]);
+          if(action){
+            this.actionQueue.add(action);
+          }
+        }
+      }
+    }catch(e: any){
+      console.error(e);
     }
     
     this.initialized = true;
@@ -662,6 +688,9 @@ export class ModuleTrigger extends ModuleObject {
   }
 
   destroy(): void {
+    if(this.destroyed || this.destroying){
+      return;
+    }
     super.destroy();
 
     if(this.trapModel){
@@ -697,8 +726,8 @@ export class ModuleTrigger extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'LinkedTo') ).setValue(this.linkedTo);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'LinkedToFlags') ).setValue(this.linkedToFlags);
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'LinkedToModule') ).setValue(this.linkedToModule);
-    gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'LoadscreenID') ).setValue(this.loadScreenID);
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LocName') ).setValue(this.locName);
+    gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'LoadScreenID') ).setValue(this.loadScreenID);
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LocalizedName') ).setValue(this.localizedName);
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
 
     //Scripts
@@ -718,8 +747,9 @@ export class ModuleTrigger extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.TriggerOnExit) ).setValue(this.scripts[ModuleObjectScript.TriggerOnExit]?.name || '');
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.TriggerOnUserDefined) ).setValue(this.scripts[ModuleObjectScript.TriggerOnUserDefined]?.name || '');
 
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'SetByPartyPlayer') ).setValue(this.setByPlayerParty);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'SetByPlayerParty') ).setValue(this.setByPlayerParty);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'TemplateResRef') ).setValue(this.templateResRef || '');
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'TransitionDestin') ).setValue(this.transitionDestin);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDetectDC') ).setValue(this.trapDetectDC);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDetectable') ).setValue(this.trapDetectable);
@@ -729,11 +759,11 @@ export class ModuleTrigger extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapType') ).setValue(this.trapType);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Type') ).setValue(this.type);
     gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'VarTable') );
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).setValue(this.template.RootNode.getFieldByLabel('XOrientation').getValue());
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).setValue(this.xOrientation);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).setValue(this.position.x);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).setValue(this.template.RootNode.getFieldByLabel('YOrientation').getValue());
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).setValue(this.yOrientation);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).setValue(this.position.y);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZOrientation') ).setValue(this.template.RootNode.getFieldByLabel('ZOrientation').getValue());
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZOrientation') ).setValue(this.zOrientation);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).setValue(this.position.z);
 
     this.template = gff;

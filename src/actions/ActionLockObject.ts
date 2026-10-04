@@ -8,6 +8,7 @@ import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
 import { Utility } from "@/utility/Utility";
 import { Action } from "@/actions/Action";
+import { enqueueMoveToPoint } from "@/actions/helpers/enqueueMoveToPoint";
 
 /**
  * ActionLockObject class.
@@ -30,10 +31,9 @@ export class ActionLockObject extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
+    this.target = this.getParameter<ModuleObject>(0);
     if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor) && !BitWise.InstanceOfObject(this.target, ModuleObjectType.ModulePlaceable))
       return ActionStatus.FAILED;
-
-    this.target = this.getParameter<ModuleObject>(0);
 
     if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
       let distance = Utility.Distance2D(this.owner.position, this.target.position);
@@ -41,17 +41,17 @@ export class ActionLockObject extends Action {
       if(distance > 2 && !this.target.box.intersectsBox(this.owner.box)){
         
         // (this.owner as any).openSpot = undefined;
-        let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
-        actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
-        actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
-        actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);
-        actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
-        actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, this.target.id);
-        actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
-        actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, 2 );
-        actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
-        actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
-        this.owner.actionQueue.addFront(actionMoveToTarget);
+        enqueueMoveToPoint(this.owner, {
+          x: this.target.position.x,
+          y: this.target.position.y,
+          z: this.target.position.z,
+          area: GameState.module.area.id,
+          target: this.target.id,
+          run: true,
+          range: 2,
+          timeout: 30.0,
+          groupId: this.groupId,
+        });
   
         return ActionStatus.IN_PROGRESS;
       }else{

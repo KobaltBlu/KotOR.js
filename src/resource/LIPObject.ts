@@ -344,6 +344,11 @@ export class LIPObject {
       ResourceLoader.loadResource(ResourceTypes['lip'], resref).then((buffer: Uint8Array) => {
         resolve(new LIPObject(buffer));
       }).catch( (e) => {
+        const message = e instanceof Error ? e.message : `${e}`;
+        if(message.includes('Resource not found')){
+          resolve(undefined);
+          return;
+        }
         console.error(e);
         resolve(undefined);
       });

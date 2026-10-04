@@ -7,6 +7,7 @@ import { ActionType } from "@/enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import { GameState } from "@/GameState";
+import { enqueueMoveToPoint } from "@/actions/helpers/enqueueMoveToPoint";
 // import { TalentSpell } from "@/talents/TalentSpell";
 import { BitWise } from "@/utility/BitWise";
 import type { ModuleObject } from "@/module/ModuleObject";
@@ -53,17 +54,17 @@ export class ActionCastSpell extends Action {
       if(!this.spell.inRange(this.target, this.owner)){
 
         // (this.owner as any).openSpot = undefined;
-        let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint(this.groupId);
-        actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
-        actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
-        actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);
-        actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
-        actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, this.target ? this.target.id : ModuleObjectConstant.OBJECT_INVALID);
-        actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
-        actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, this.spell.getCastRange() );
-        actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
-        actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
-        this.owner.actionQueue.addFront(actionMoveToTarget);
+        enqueueMoveToPoint(this.owner, {
+          x: this.target.position.x,
+          y: this.target.position.y,
+          z: this.target.position.z,
+          area: GameState.module.area.id,
+          target: this.target ? this.target.id : ModuleObjectConstant.OBJECT_INVALID,
+          run: true,
+          range: this.spell.getCastRange(),
+          timeout: 30.0,
+          groupId: this.groupId,
+        });
 
         return ActionStatus.IN_PROGRESS;
 

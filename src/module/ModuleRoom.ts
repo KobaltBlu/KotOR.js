@@ -933,6 +933,9 @@ export class ModuleRoom extends ModuleObject {
   }
 
   destroy(): void {
+    if(this.destroyed || this.destroying){
+      return;
+    }
     super.destroy();
       
     if(this.collisionManager.walkmesh)

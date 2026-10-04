@@ -32,6 +32,18 @@ const App = function() {
 
   const [selectedTab, setSelectedTab] = useState('apps');
 
+  const currentTheme = useMemo(() => {
+    switch (selectedProfileValue?.key) {
+      case 'tsl':
+        return 'theme-tsl';
+      case 'forge':
+        return 'theme-forge';
+      case 'kotor':
+      default:
+        return 'theme-kotor';
+    }
+  }, [selectedProfileValue]);
+
   let tabRefs: React.RefObject<any>[] = Array(Object.values(profileCategoriesValue).reduce((acc, cat: any) => {
     return acc + cat.profiles.length;
   }, 0)).fill(0).map(i=> React.createRef());
@@ -168,7 +180,7 @@ const App = function() {
 
   return (
     <>
-      <div id="container" className={`${appReady ? 'ready': ''} ${discordWidgetOpen ? 'discord_widget_open' : ''} ${profilesDrawerOpen ? 'profiles_drawer_open' : ''}`} style={{'backgroundImage': `url("${backgroundImageValue}")`}}>
+      <div id="container" className={`${appReady ? 'ready': ''} ${discordWidgetOpen ? 'discord_widget_open' : ''} ${profilesDrawerOpen ? 'profiles_drawer_open' : ''} ${currentTheme} tab-${selectedTab}`} style={{'backgroundImage': `url("${backgroundImageValue}")`}}>
         <div className="launcher-menu">
           <h1 className="sr-only">KotOR.js Web Launcher</h1>
           <div className="launcher-menu-background"></div>
@@ -187,9 +199,9 @@ const App = function() {
               </li>
             )}
             <li className="tab-btn nav-logo"><img src="images/kotor-js-logo.png" alt="KotOR.js" /></li>
-            <li className="tab-btn"><a href="#apps" onClick={onTabClicked}>Apps</a></li>
-            <li className="tab-btn"><a href="#community" onClick={onTabClicked}>Community</a></li>
-            <li className="tab-btn"><a href="#buy" onClick={onTabClicked}>Need KotOR?</a></li>
+            <li className={`tab-btn ${selectedTab == 'apps' ? 'selected' : ''}`}><a href="#apps" onClick={onTabClicked}>Apps</a></li>
+            <li className={`tab-btn ${selectedTab == 'community' ? 'selected' : ''}`}><a href="#community" onClick={onTabClicked}>Community</a></li>
+            <li className={`tab-btn ${selectedTab == 'buy' ? 'selected' : ''}`}><a href="#buy" onClick={onTabClicked}>Need KotOR?</a></li>
             <li
               className="tab-btn discord-toggle"
               role="button"
@@ -209,7 +221,7 @@ const App = function() {
           )}
         </div>
         <div className="tab-host">
-          {(selectedTab == 'apps' && <div className="tab selected">
+          {(selectedTab == 'apps' && <div className="tab selected tab-apps">
             <h2 className="sr-only">Apps</h2>
             <div
               className="profiles-drawer-backdrop"
@@ -235,13 +247,13 @@ const App = function() {
               })}
             </div>
           </div>)}
-          {(selectedTab == 'community' && <div className="tab selected">
+          {(selectedTab == 'community' && <div className="tab selected tab-community">
             <h2 className="sr-only">Community</h2>
             <div className="launcher-contents full-width">
               <CommunityTabContent />
             </div>
           </div>)}
-          {(selectedTab == 'buy' && <div className="tab selected">
+          {(selectedTab == 'buy' && <div className="tab selected tab-buy">
             <h2 className="sr-only">Need KotOR?</h2>
             <div className="launcher-contents full-width">
               <div className="panel scroll-y need-kotor-buy-panel">

@@ -11,7 +11,8 @@ import { CombatFeatType } from "@/enums/combat/CombatFeatType";
 import { WeaponWield } from "@/enums/combat/WeaponWield";
 import { Dice } from "@/utility/Dice";
 import { DiceType } from "@/enums/combat/DiceType";
-import { WeaponType } from "@/enums/combat/WeaponType";
+import { BitWise } from "@/utility/BitWise";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 
 /**
  * CombatAttackData class.
@@ -170,6 +171,7 @@ export class CombatAttackData {
    * @param feat - The feat that is being used for the attack
    */
   calculateDamage(creature: ModuleCreature, isCritial: boolean = false, feat?: TalentFeat){
+    const strengthModifier = Math.max(creature.getSTRModifier(), 0);
     /**
      * Unarmed Strike
      */
@@ -177,7 +179,9 @@ export class CombatAttackData {
       const damageMultiplier = isCritial ? 2.0 : 1.0;
       const nDamage = Dice.roll(1, DiceType.d4);
       this.damageList[DamageType.BLUDGEONING].addDamage(nDamage * damageMultiplier);
+      this.damageList[DamageType.PHYSICAL].addDamage(strengthModifier * damageMultiplier);
 
+      this.killingBlow = !!this.reactObject && this.getTotalDamage() >= this.reactObject.getHP();
       return;
     };
 
@@ -185,29 +189,28 @@ export class CombatAttackData {
 
     if(!creature.isSimpleCreature()){
       this.damageList[this.attackWeapon.getBaseDamageType()].addDamage(this.attackWeapon.getBaseDamage() * damageMultiplier);
+      const enhancementBonus = this.attackWeapon.getEnhancementBonus();
+      if(enhancementBonus > 0){
+        this.damageList[DamageType.BASE].addDamage(enhancementBonus * damageMultiplier);
+      }
       if(this.attackWeapon.hasDamageBonus()){
         this.damageList[this.attackWeapon.getDamageBonusType()].addDamage(this.attackWeapon.getDamageBonus() * damageMultiplier);
       }
 
-      if( 
-        creature.getHasFeat(CombatFeatType.POWER_ATTACK) || 
-        creature.getHasFeat(CombatFeatType.POWER_BLAST)
-      ){
-        this.damageList[DamageType.BASE].addDamage(5 * damageMultiplier);
-      }
-
-      if( 
-        creature.getHasFeat(CombatFeatType.IMPROVED_POWER_ATTACK) || 
-        creature.getHasFeat(CombatFeatType.IMPROVED_POWER_BLAST)
-      ){
-        this.damageList[DamageType.BASE].addDamage(8 * damageMultiplier);
-      }
-
-      if( 
-        creature.getHasFeat(CombatFeatType.MASTER_POWER_ATTACK) || 
-        creature.getHasFeat(CombatFeatType.MASTER_POWER_BLAST) 
-      ){
-        this.damageList[DamageType.BASE].addDamage(10 * damageMultiplier);
+      // Power attacks are active abilities, not cumulative passive bonuses.
+      switch(feat?.id){
+        case CombatFeatType.POWER_ATTACK:
+        case CombatFeatType.POWER_BLAST:
+          this.damageList[DamageType.BASE].addDamage(5 * damageMultiplier);
+          break;
+        case CombatFeatType.IMPROVED_POWER_ATTACK:
+        case CombatFeatType.IMPROVED_POWER_BLAST:
+          this.damageList[DamageType.BASE].addDamage(8 * damageMultiplier);
+          break;
+        case CombatFeatType.MASTER_POWER_ATTACK:
+        case CombatFeatType.MASTER_POWER_BLAST:
+          this.damageList[DamageType.BASE].addDamage(10 * damageMultiplier);
+          break;
       }
 
       let specBonus = this.calculateWeaponSpecBonus(creature, this.attackWeapon);
@@ -222,12 +225,12 @@ export class CombatAttackData {
       }
     }
 
-    //Add strength MOD to melee damage
-    if(this.attackWeapon.getWeaponType() == WeaponType.PIERCING){
-      this.damageList[DamageType.PHYSICAL].addDamage( Math.floor(( creature.getSTR() - 10) / 2) );
+    // Add strength modifier to melee damage
+    if(!this.attackWeapon.isRangedWeapon()){
+      this.damageList[DamageType.PHYSICAL].addDamage(strengthModifier * damageMultiplier);
     }
 
-    if(this.getTotalDamage() >= this.reactObject.getHP()){
+    if(this.reactObject && this.getTotalDamage() >= this.reactObject.getHP()){
       this.killingBlow = true;
     }
 
@@ -241,7 +244,7 @@ export class CombatAttackData {
    */
   calculateWeaponSpecBonus(creature: ModuleCreature, weapon: ModuleItem): number {
     let bonus = 0;
-    if(!creature){ return; }
+    if(!creature){ return 0; }
     
     switch(weapon.getWeaponWield()){
       case WeaponWield.BLASTER_PISTOL:
@@ -279,7 +282,7 @@ export class CombatAttackData {
    * @param owner - The owner of the damage effect
    * @param target - The target creature to apply the damage effect to
    */
-  applyDamageEffectToCreature(owner: ModuleCreature, target: ModuleCreature){
+  applyDamageEffectToCreature(owner: ModuleCreature, target: ModuleObject, delayTime: number = 0){
     if(!target) return;
     const damageEffect = new EffectDamage();
     damageEffect.setCreator(owner);
@@ -287,6 +290,16 @@ export class CombatAttackData {
     for(let i = 0; i < 15; i++){
       const damage = this.damageList[i];
       damageEffect.setInt(i, damage.damageValue);
+    }
+
+    // Only creatures drain this queue. Doors/placeables must receive the effect
+    // immediately rather than retain it forever after a weapon impact.
+    if(delayTime > 0 && BitWise.InstanceOfObject(target, ModuleObjectType.ModuleCreature)){
+      target.damageList.push({
+        effect: damageEffect,
+        delay: delayTime,
+      });
+      return;
     }
 
     target.addEffect(damageEffect, GameEffectDurationType.INSTANT);

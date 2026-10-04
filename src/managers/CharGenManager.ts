@@ -1,5 +1,4 @@
 import { TwoDAManager } from "@/managers/TwoDAManager";
-import { AudioLoader } from "@/audio/AudioLoader";
 import { GameEngineType } from "@/enums/engine";
 import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
@@ -12,7 +11,6 @@ import { GFFField } from "@/resource/GFFField";
 import { GFFObject } from "@/resource/GFFObject";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { OdysseyModel3D } from "@/three/odyssey";
-import { AudioEngine } from "@/audio/AudioEngine";
 import { LTRObject } from "@/resource/LTRObject";
 import { MDLLoader, ResourceLoader } from "@/loaders";
 import { ResourceTypes } from "@/resource/ResourceTypes";
@@ -88,9 +86,7 @@ export class CharGenManager {
 
   static async StartBackgroundMusic(): Promise<void> {
     const audioResRef = GameState.GameKey == GameEngineType.KOTOR ? 'mus_theme_rep' : 'mus_a_main';
-    const data = await AudioLoader.LoadMusic(audioResRef);
-    AudioEngine.GetAudioEngine().setAudioBuffer('BACKGROUND_MUSIC_DAY', data.buffer as ArrayBuffer, audioResRef);
-    AudioEngine.GetAudioEngine().areaMusicDayAudioEmitter.play();
+    await GameState.MusicManager.playMenuMusicTrack(audioResRef, false, true, 1);
   }
 
   static async Init(){
@@ -260,6 +256,57 @@ export class CharGenManager {
     template.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'YOrientation')).setValue(0);
     template.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'ZOrientation')).setValue(0);
     return template;
+  }
+
+  static getAbilityModifier(value = 10) {
+    return Math.floor((value - 10) / 2);
+  }
+
+  static syncDerivedStats(creature: ModulePlayer = CharGenManager.selectedCreature) {
+    if (!creature || !creature.classes?.length) {
+      return;
+    }
+
+    const totalBaseHitPoints = creature.classes.reduce((sum, creatureClass) => {
+      return sum + (creatureClass.hitdie * Math.max(creatureClass.level || 1, 1));
+    }, 0);
+
+    const totalClassLevels = creature.classes.reduce((sum, creatureClass) => {
+      return sum + Math.max(creatureClass.level || 1, 1);
+    }, 0);
+
+    const conModifier = CharGenManager.getAbilityModifier(creature.getCON());
+    const mainClass = creature.getMainClass() || creature.classes[0];
+    const savingThrowRow = mainClass?.savingThrows.find((row) => row.level === mainClass.level)
+      || mainClass?.savingThrows[Math.max(0, (mainClass?.level || 1) - 1)];
+
+    const fortitudeBase = savingThrowRow?.fortsave || 0;
+    const reflexBase = savingThrowRow?.refsave || 0;
+    const willBase = savingThrowRow?.willsave || 0;
+    const maxHitPoints = Math.max(1, totalBaseHitPoints + (conModifier * Math.max(1, totalClassLevels)));
+
+    creature.hitPoints = totalBaseHitPoints;
+    creature.maxHitPoints = maxHitPoints;
+    creature.currentHitPoints = totalBaseHitPoints;
+
+    creature.fortbonus = fortitudeBase;
+    creature.refbonus = reflexBase;
+    creature.willbonus = willBase;
+    creature.fortitudeSaveThrow = fortitudeBase;
+    creature.reflexSaveThrow = reflexBase;
+    creature.willSaveThrow = willBase;
+
+    if (creature.template?.RootNode) {
+      creature.template.RootNode.getFieldByLabel('HitPoints')?.setValue(totalBaseHitPoints);
+      creature.template.RootNode.getFieldByLabel('CurrentHitPoints')?.setValue(totalBaseHitPoints);
+      creature.template.RootNode.getFieldByLabel('MaxHitPoints')?.setValue(maxHitPoints);
+      creature.template.RootNode.getFieldByLabel('fortbonus')?.setValue(fortitudeBase);
+      creature.template.RootNode.getFieldByLabel('refbonus')?.setValue(reflexBase);
+      creature.template.RootNode.getFieldByLabel('willbonus')?.setValue(willBase);
+      creature.template.RootNode.getFieldByLabel('FortSaveThrow')?.setValue(fortitudeBase);
+      creature.template.RootNode.getFieldByLabel('RefSaveThrow')?.setValue(reflexBase);
+      creature.template.RootNode.getFieldByLabel('WillSaveThrow')?.setValue(willBase);
+    }
   }
 
   

@@ -1,6 +1,7 @@
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import type { ModuleObject } from "@/module";
+import { RuntimeFaultManager } from "@/utility/RuntimeFaultManager";
 import type { Action } from "@/actions/Action";
 
 /**
@@ -48,6 +49,24 @@ export class ActionQueue extends Array {
     this.owner = owner;
   }
 
+  private getActionFaultKey(action: Action): string {
+    const ownerId = this.owner?.id ?? 'unknown-owner';
+    const actionType = action?.type ?? 'unknown-action';
+    const groupId = action?.groupId ?? 'unknown-group';
+    return `ActionQueue.process:${ownerId}:${actionType}:${groupId}`;
+  }
+
+  private getActionFaultContext(action: Action){
+    return {
+      ownerId: this.owner?.id,
+      ownerTag: this.owner?.getTag?.(),
+      ownerType: this.owner?.constructor?.name,
+      actionType: action?.type,
+      actionGroupId: action?.groupId,
+      queueLength: this.length,
+    };
+  }
+
   /**
    * add action to the back of the queue
    *
@@ -58,6 +77,8 @@ export class ActionQueue extends Array {
   add( actionNode: Action ){
     if(!actionNode){ return; }
     actionNode.owner = this.owner;
+    actionNode.queue = this;
+    this.#processGroupId(actionNode);
     super.push( actionNode );
   }
 
@@ -71,6 +92,8 @@ export class ActionQueue extends Array {
   addFront( actionNode: Action ){
     if(!actionNode){ return; }
     actionNode.owner = this.owner;
+    actionNode.queue = this;
+    this.#processGroupId(actionNode);
     super.unshift( actionNode );
   }
 
@@ -113,12 +136,11 @@ export class ActionQueue extends Array {
    * @returns void
    *
    */
-  //@ts-expect-error
-  push( actionNode: Action ){
-    actionNode.owner = this.owner;
-    actionNode.queue = this;
-    this.#processGroupId(actionNode);
-    this.add( actionNode );
+  push(...actions: Action[]): number {
+    for(const action of actions){
+      this.add(action);
+    }
+    return this.length;
   }
 
   /**
@@ -128,12 +150,11 @@ export class ActionQueue extends Array {
    * @returns void
    *
    */
-  //@ts-expect-error
-  unshift( actionNode: Action ){
-    actionNode.owner = this.owner;
-    actionNode.queue = undefined;
-    this.#processGroupId(actionNode);
-    this.addFront( actionNode );
+  unshift(...actions: Action[]): number {
+    for(let i = actions.length - 1; i >= 0; i--){
+      this.addFront(actions[i]);
+    }
+    return this.length;
   }
 
   /**
@@ -147,9 +168,32 @@ export class ActionQueue extends Array {
     let action = this[0];
     if(!action){ return; }
     action.owner = this.owner;
-    let status = action.update( delta );
+    let status = RuntimeFaultManager.run<ActionStatus>(
+      this.getActionFaultKey(action),
+      () => action.update( delta ),
+      {
+        fallback: ActionStatus.FAILED,
+        suppressAfterFailures: 1,
+        cooldownMs: 0,
+        logThrottleMs: 2000,
+        context: () => this.getActionFaultContext(action)
+      }
+    );
     if(status != ActionStatus.IN_PROGRESS){
-      this.shift();
+      // An update may prepend a follow-up or clear itself. Remove only the action
+      // that actually ran, never a newly inserted movement/jump action.
+      const index = this.indexOf(action);
+      if(index >= 0){
+        this.splice(index, 1);
+        try{
+          action.dispose?.();
+        }catch(error){
+          console.error('ActionQueue.process: failed to dispose completed action', {
+            context: this.getActionFaultContext(action),
+            error,
+          });
+        }
+      }
     }
   }
 
@@ -188,7 +232,7 @@ export class ActionQueue extends Array {
    *
    */
   clearActionsByGroupId(groupId: number = -1){
-    if(groupId > 0) return;
+    if(groupId < 0) return;
     let index = this.length;
     while(index--){
       const action = this[index];

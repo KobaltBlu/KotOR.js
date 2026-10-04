@@ -104,8 +104,10 @@ export class ActionMenuManager {
               icon: item.getIcon()
             }));
           }
+
+          const canBlastTarget = !this.oTarget?.notBlastable && !this.oTarget?.plot;
           
-          if(!this.oTarget?.notBlastable){
+          if(canBlastTarget){
             ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
               action: {
                 type: ActionType.ActionPhysicalAttacks,
@@ -116,7 +118,7 @@ export class ActionMenuManager {
             }));
           }
 
-          if(!ActionMenuManager.oTarget?.notBlastable){
+          if(canBlastTarget){
             const mineList = ActionMenuManager.oPC.getInventory().filter((item) => {
               return item.baseItemId == 58
             });
@@ -167,8 +169,10 @@ export class ActionMenuManager {
               icon: item.getIcon()
             }));
           }
+
+          const canBlastTarget = !this.oTarget?.notBlastable && !this.oTarget?.plot;
           
-          if(!this.oTarget?.notBlastable){
+          if(canBlastTarget){
             ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
               action: {
                 type: ActionType.ActionPhysicalAttacks,
@@ -183,7 +187,7 @@ export class ActionMenuManager {
             return item.baseItemId == 58
           });
 
-          if(!this.oTarget?.notBlastable){
+          if(canBlastTarget){
             for(let i = 0, len = mineList.length; i < len; i++){
               const item = mineList[i];
               const setMine = new GameState.ActionFactory.ActionSetMine();

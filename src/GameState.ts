@@ -2,6 +2,7 @@ import * as THREE from "three";
 import {
   AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager,
   FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, WindManager, MenuManager, ModuleObjectManager, PartyManager,
+  MusicManager,
   ResolutionManager, ShaderManager, TwoDAManager, FactionManager,
   VideoEffectManager, VideoManager, PazaakManager, UINotificationManager, CutsceneManager, LegalScreenManager, EventManager
 } from "@/managers";
@@ -40,6 +41,7 @@ import { EngineContext } from "@/engine/EngineContext";
 import { ConfigClient } from "@/utility/ConfigClient";
 import { FollowerCamera } from "@/engine/FollowerCamera";
 import { OdysseyShaderPass } from "@/shaders/pass/OdysseyShaderPass";
+import { LightsaberGlowPass } from "@/shaders/pass/LightsaberGlowPass";
 import { ResourceLoader, TextureLoader } from "@/loaders";
 
 //THREE.js imports
@@ -65,6 +67,7 @@ import type { IPCMessage } from "@/server/ipc/IPCMessage";
 import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
 import { IPCMessageTypeDebug } from "@/enums/server/ipc/IPCMessageTypeDebug";
 import { PerformanceMonitor } from "@/utility/PerformanceMonitor";
+import { RuntimeFaultManager } from "@/utility/RuntimeFaultManager";
 
 export interface GameStateInitializeOptions {
   Game: GameEngineType,
@@ -108,6 +111,7 @@ export class GameState implements EngineContext {
   static LightManager: typeof LightManager;
   static WindManager: typeof WindManager;
   static MenuManager: typeof MenuManager;
+  static MusicManager: typeof MusicManager;
   static ModuleObjectManager: typeof ModuleObjectManager;
   static PartyManager: typeof PartyManager;
   static ResolutionManager: typeof ResolutionManager;
@@ -163,6 +167,13 @@ export class GameState implements EngineContext {
   
   static SOLOMODE = false;
   static isLoadingSave = false;
+  /** Compatibility name for the playable branch; both loaders share one lock. */
+  static get isModuleLoading(): boolean {
+    return GameState.loadingModule;
+  }
+  static set isModuleLoading(loading: boolean) {
+    GameState.loadingModule = loading;
+  }
   
   static Flags = {
     EnableAreaVIS: false,
@@ -194,10 +205,16 @@ export class GameState implements EngineContext {
   static autoRun = false;
   static AlphaTest = 0.5;
   static noClickTimer = 0;
+  static disableHealthRegen = false;
   static maxSelectableDistance = 20;
   static maxSelectableDistanceSquared = GameState.maxSelectableDistance * GameState.maxSelectableDistance;
 
   static delta: number = 0;
+
+  /** Bounded frame delta for diagnostics; simulation retains upstream timing. */
+  static get clampedDelta(): number {
+    return Math.max(0, Math.min(GameState.delta, 5 / 60));
+  }
 
   static SaveGame: SaveGame;
   
@@ -281,6 +298,7 @@ export class GameState implements EngineContext {
   static renderPass: RenderPass;
   static renderPassAA: SSAARenderPass;
   static odysseyShaderPass: OdysseyShaderPass;
+  static lightsaberGlowPass: LightsaberGlowPass;
   static copyPass: ShaderPass;
   static renderPassGUI: RenderPass;
   static bloomPass: BloomPass;
@@ -450,6 +468,9 @@ export class GameState implements EngineContext {
    * Initialize the GameState
    */
   static async Init(){
+    // Forge can initialize GameState without the game application's initializer.
+    // Resolve this lazily rather than reading a cyclic manager import at class load.
+    GameState.MusicManager ??= MusicManager;
     GameState.Debugger.addEventListener('open', () => {
       console.log('Debugger: Open');
       GameState.debugMode = true;
@@ -684,6 +705,7 @@ export class GameState implements EngineContext {
     GameState.renderPass = new RenderPass(GameState.scene, GameState.currentCamera);
     GameState.renderPassAA = new SSAARenderPass (GameState.scene, GameState.currentCamera);
     GameState.odysseyShaderPass = new OdysseyShaderPass();
+    GameState.lightsaberGlowPass = new LightsaberGlowPass(GameState.scene, () => GameState.currentCamera);
     GameState.copyPass = new ShaderPass(CopyShader);
     GameState.renderPassGUI = new RenderPass(GameState.scene_gui, GameState.camera_gui);
     
@@ -705,6 +727,7 @@ export class GameState implements EngineContext {
     GameState.renderPass.clear = true;
     GameState.bloomPass.clear = false;
     GameState.odysseyShaderPass.clear = false;
+    GameState.lightsaberGlowPass.clear = false;
     GameState.renderPassAA.clear = false;
     GameState.copyPass.clear = false;
     GameState.renderPassGUI.clear = false;
@@ -716,8 +739,10 @@ export class GameState implements EngineContext {
     GameState.composer.addPass(GameState.renderPass);
     // GameState.composer.addPass(GameState.bokehPass);
     // GameState.composer.addPass(GameState.renderPassAA);
-    // GameState.composer.addPass(GameState.odysseyShaderPass);
+    // Required by dialogue/vision effects and the optional time-dilation visuals.
+    GameState.composer.addPass(GameState.odysseyShaderPass);
     // GameState.composer.addPass(GameState.bloomPass);
+    GameState.composer.addPass(GameState.lightsaberGlowPass);
 
     GameState.composer.addPass(GameState.renderPassGUI);
     GameState.composer.addPass(GameState.copyPass);
@@ -756,11 +781,12 @@ export class GameState implements EngineContext {
        * Initialize Audio for the GUI
        */
       const audioEngine = AudioEngine.GetAudioEngine();
-      AudioEngine.GAIN_MUSIC = parseInt(GameState.iniConfig.getProperty('Sound Options.Music Volume')) || 0
-      AudioEngine.GAIN_VO = parseInt(GameState.iniConfig.getProperty('Sound Options.Voiceover Volume')) || 0
-      AudioEngine.GAIN_SFX = parseInt(GameState.iniConfig.getProperty('Sound Options.Sound Effects Volume')) || 0
-      AudioEngine.GAIN_GUI = parseInt(GameState.iniConfig.getProperty('Sound Options.Sound Effects Volume')) || 0
-      AudioEngine.GAIN_MOVIE = parseInt(GameState.iniConfig.getProperty('Sound Options.Movie Volume')) || 0
+      AudioEngine.GAIN_MUSIC = AudioEngine.percentageToNormalizedGain(Number(GameState.iniConfig.getProperty('Sound Options.Music Volume')));
+      AudioEngine.GAIN_VO = AudioEngine.percentageToNormalizedGain(Number(GameState.iniConfig.getProperty('Sound Options.Voiceover Volume')));
+      AudioEngine.GAIN_SFX = AudioEngine.percentageToNormalizedGain(Number(GameState.iniConfig.getProperty('Sound Options.Sound Effects Volume')));
+      AudioEngine.GAIN_GUI = AudioEngine.percentageToNormalizedGain(Number(GameState.iniConfig.getProperty('Sound Options.Sound Effects Volume')));
+      AudioEngine.GAIN_MOVIE = AudioEngine.percentageToNormalizedGain(Number(GameState.iniConfig.getProperty('Sound Options.Movie Volume')));
+      GameState.MusicManager.Initialize();
 
       GameState.guiAudioEmitter = new AudioEmitter(audioEngine, AudioEngineChannel.GUI);
       GameState.guiAudioEmitter.maxDistance = 100;
@@ -981,10 +1007,12 @@ export class GameState implements EngineContext {
    * @param sMovie6 - The sixth movie to play
    */
   static async LoadModule(name = '', waypoint: string = null, sMovie1 = '', sMovie2 = '', sMovie3 = '', sMovie4 = '', sMovie5 = '', sMovie6 = ''){
+    if(GameState.loadingModule){
+      console.warn('GameState.LoadModule: module load already in progress', { name, waypoint });
+      return;
+    }
+    GameState.loadingModule = true;
     try{
-      if(GameState.loadingModule){
-        return;
-      }
       EventManager.FireEvent('module.load', {
         name: name,
         waypoint: waypoint?.toString(),
@@ -995,7 +1023,6 @@ export class GameState implements EngineContext {
         sMovie5: sMovie5,
         sMovie6: sMovie6
       });
-      GameState.loadingModule = true;
       await GameState.MenuManager.LoadScreen.setLoadBackground('load_'+name);
       GameState.FadeOverlayManager.FadeOut(0, 0, 0, 0);
       /**
@@ -1062,42 +1089,51 @@ export class GameState implements EngineContext {
       GameState.scene.visible = true;
       
       AudioEngine.Unmute();
-      VideoManager.playMovieQueue( async () => {
-        const runSpawnScripts = !GameState.isLoadingSave;
-        GameState.isLoadingSave = false;
+      // playMovieQueue resolves when playback starts, not when the queue ends.
+      // Keep the load lock until the completion callback (including spawn scripts)
+      // has settled, and propagate callback failures to this method's caller.
+      await new Promise<void>((resolve, reject) => {
+        const finishLoading = async () => {
+          const runSpawnScripts = !GameState.isLoadingSave;
+          GameState.isLoadingSave = false;
 
-        GameState.ResetModuleAudio();
+          GameState.ResetModuleAudio();
 
-        GameState.MenuManager.InGameOverlay.recalculatePosition();
-        GameState.MenuManager.InGameOverlay.open();
+          GameState.MenuManager.InGameOverlay.recalculatePosition();
+          GameState.MenuManager.InGameOverlay.open();
 
-        GameState.renderer.compile(GameState.scene, GameState.currentCamera);
-        GameState.renderer.setClearColor( new THREE.Color(GameState.module.area.sun.fogColor) );
-        
-        console.log('ModuleArea.initAreaObjects');
-        GameState.SetEngineMode(GameState.module.area.miniGame ? EngineMode.MINIGAME : EngineMode.INGAME);
-        await GameState.module.area.initAreaObjects(runSpawnScripts);
-        console.log('ModuleArea: ready to play');
-        GameState.module.readyToProcessEvents = true;
+          GameState.renderer.compile(GameState.scene, GameState.currentCamera);
+          GameState.renderer.setClearColor( new THREE.Color(GameState.module.area.sun.fogColor) );
+          
+          console.log('ModuleArea.initAreaObjects');
+          GameState.SetEngineMode(GameState.module.area.miniGame ? EngineMode.MINIGAME : EngineMode.INGAME);
+          await GameState.module.area.initAreaObjects(runSpawnScripts);
+          console.log('ModuleArea: ready to play');
+          GameState.module.readyToProcessEvents = true;
 
-        if(GameState.Mode == EngineMode.INGAME){
-          const anyCanLevel = GameState.PartyManager.party.some((p) => p.canLevelUp());
-          if(anyCanLevel){
-            GameState.audioEmitter.playSound('gui_level');
+          if(GameState.Mode == EngineMode.INGAME){
+            const anyCanLevel = GameState.PartyManager.party.some((p) => p.canLevelUp());
+            if(anyCanLevel){
+              GameState.guiAudioEmitter.playSoundFireAndForget('gui_level');
+            }
           }
-        }
 
-        //Reveal the area
-        GameState.MenuManager.LoadScreen.close();
-        if(!GameState.holdWorldFadeInForDialog){
-          GameState.FadeOverlayManager.FadeIn(2.5, 0, 0, 0, 1);
-        }
-        GameState.module.area.musicBackgroundPlay();
-        GameState.loadingModule = false;
+          //Reveal the area
+          GameState.MenuManager.LoadScreen.close();
+          if(!GameState.holdWorldFadeInForDialog){
+            GameState.FadeOverlayManager.FadeIn(2.5, 0, 0, 0, 1);
+          }
+          GameState.module.area.musicBackgroundPlay();
+        };
+        void GameState.VideoManager.playMovieQueue(() => {
+          void finishLoading().then(resolve, reject);
+        }).catch(reject);
       });
     }catch(e){
       console.error(e);
       throw e;
+    }finally{
+      GameState.loadingModule = false;
     }
   }
 
@@ -1182,16 +1218,16 @@ export class GameState implements EngineContext {
    * Skips intro movies and does not write a save on dispose of prior module.
    */
   static async LoadModuleFromArchives(archives: any[], waypoint: string = null, modName = 'preview'){
+    if(GameState.loadingModule){
+      return;
+    }
+    GameState.loadingModule = true;
     try{
-      if(GameState.loadingModule){
-        return;
-      }
       EventManager.FireEvent('module.load', {
         name: modName,
         waypoint: waypoint?.toString(),
         preview: true,
       });
-      GameState.loadingModule = true;
       try{
         await GameState.MenuManager.LoadScreen.setLoadBackground('load_'+modName);
       }catch(e){
@@ -1281,12 +1317,12 @@ export class GameState implements EngineContext {
         GameState.FadeOverlayManager.FadeIn(1.0, 0, 0, 0, 1);
       }
       GameState.module.area.musicBackgroundPlay();
-      GameState.loadingModule = false;
       GameState.canvas?.focus();
     }catch(e){
-      GameState.loadingModule = false;
       console.error(e);
       throw e;
+    }finally{
+      GameState.loadingModule = false;
     }
   }
 
@@ -1358,6 +1394,7 @@ export class GameState implements EngineContext {
     GameState.holdWorldFadeInForDialog = false;
     const audioEngine = AudioEngine.GetAudioEngine();
     audioEngine.reset();
+    GameState.MusicManager.Reset();
 
     GameState.lightManager.clearLights();
     GameState.windManager.clear();
@@ -1385,7 +1422,7 @@ export class GameState implements EngineContext {
         return GameState.staticCameras[i];
     }
 
-    return GameState.currentCamera;
+    return undefined;
   }
 
   static forwardVector = new THREE.Vector3(0, 0, );
@@ -1394,6 +1431,7 @@ export class GameState implements EngineContext {
     
     requestAnimationFrame( GameState.Update );
 
+    try{
     GameState.forwardVector.set(0, 0, -1);
 
     const delta = GameState.clock.getDelta();
@@ -1407,6 +1445,10 @@ export class GameState implements EngineContext {
      */
     if(GameState.debugMode && !!GameState.Debugger.state){
       return;
+    }
+
+    if(GameState.CheatConsoleManager){
+      GameState.CheatConsoleManager.Update(delta);
     }
 
     GameState.controls.Update(delta);
@@ -1458,6 +1500,7 @@ export class GameState implements EngineContext {
         break;
     }
 
+    GameState.MusicManager.Update(delta);
     AudioEngine.GetAudioEngine().update(delta, GameState.currentCamera.position, GameState.currentCamera.rotation, GameState.forwardVector);
 
     GameState.Render(delta);
@@ -1474,6 +1517,19 @@ export class GameState implements EngineContext {
 
     GameState.stats.update();
     GameState.processEventListener('afterRender', [delta]);
+    }catch(error){
+      RuntimeFaultManager.report('GameState.Update', error, {
+        logThrottleMs: 2000,
+        context: () => ({
+          mode: GameState.Mode,
+          state: GameState.State,
+          module: GameState.module?.filename,
+          area: GameState.module?.area?.name,
+          selectedObjectId: GameState.CursorManager?.selectedObject?.id,
+          hoveredObjectId: GameState.CursorManager?.hoveredObject?.id,
+        })
+      });
+    }
   }
 
   static UpdateMovie(delta: number = 0){
@@ -1488,7 +1544,24 @@ export class GameState implements EngineContext {
 
   static UpdateIngame(delta: number = 0){
     //Get Selectable Objects In Range
-    GameState.ModuleObjectManager.TickSelectableObjects(delta);
+    RuntimeFaultManager.run<void>(
+      `GameState.TickSelectableObjects:${GameState.getCurrentPlayer()?.id ?? 'no-player'}`,
+      () => {
+        GameState.ModuleObjectManager.TickSelectableObjects(delta);
+      },
+      {
+        fallback: undefined,
+        suppressAfterFailures: 3,
+        cooldownMs: 5000,
+        logThrottleMs: 2000,
+        context: () => ({
+          mode: GameState.Mode,
+          playerId: GameState.getCurrentPlayer()?.id,
+          module: GameState.module?.filename,
+          area: GameState.module?.area?.name,
+        })
+      }
+    );
 
     //Update Mode Camera
     //Make sure we are using the follower camera while ingame
@@ -1638,7 +1711,48 @@ export class GameState implements EngineContext {
     GameState.renderPassAA.camera = GameState.currentCamera;
     GameState.bokehPass.camera = GameState.currentCamera;
 
-    GameState.composer.render(delta);
+    let renderFailed = false;
+    const renderFaultKey = 'GameState.render.composer';
+    RuntimeFaultManager.run<void>(
+      renderFaultKey,
+      () => {
+        GameState.composer.render(delta);
+      },
+      {
+        fallback: undefined,
+        suppressAfterFailures: 3,
+        cooldownMs: 5000,
+        logThrottleMs: 2000,
+        context: () => ({
+          mode: GameState.Mode,
+          module: GameState.module?.filename,
+          area: GameState.module?.area?.name,
+          currentCamera: GameState.currentCamera?.constructor?.name,
+        }),
+        onError: () => {
+          renderFailed = true;
+        }
+      }
+    );
+
+    if(renderFailed || RuntimeFaultManager.isSuppressed(renderFaultKey)){
+      try{
+        GameState.renderer.setRenderTarget(null);
+        GameState.renderer.clear(true, true, true);
+        GameState.renderer.render(GameState.scene, GameState.currentCamera);
+        GameState.renderer.clearDepth();
+        GameState.renderer.render(GameState.scene_gui, GameState.camera_gui);
+      }catch(fallbackError){
+        RuntimeFaultManager.report('GameState.render.fallback', fallbackError, {
+          logThrottleMs: 2000,
+          context: () => ({
+            mode: GameState.Mode,
+            module: GameState.module?.filename,
+            area: GameState.module?.area?.name,
+          })
+        });
+      }
+    }
   }
 
   static updateTime(delta: number = 0){

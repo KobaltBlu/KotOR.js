@@ -12,6 +12,7 @@ import { Utility } from "@/utility/Utility";
 import { Action } from "@/actions/Action";
 import * as THREE from 'three';
 import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
+import { enqueueMoveToPoint } from "@/actions/helpers/enqueueMoveToPoint";
 
 /**
  * ActionPhysicalAttacks class.
@@ -76,17 +77,17 @@ export class ActionPhysicalAttacks extends Action {
           }
         }*/
 
-        let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint(this.groupId);
-        actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, target_position.x);
-        actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, target_position.y);
-        actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, target_position.z);
-        actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, target.area.id);
-        actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, target.id);
-        actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
-        actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, range );
-        actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
-        actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
-        owner.actionQueue.addFront(actionMoveToTarget);
+        enqueueMoveToPoint(owner, {
+          x: target_position.x,
+          y: target_position.y,
+          z: target_position.z,
+          area: target.area.id,
+          target: target.id,
+          run: true,
+          range,
+          timeout: 30.0,
+          groupId: this.groupId,
+        });
 
         return ActionStatus.IN_PROGRESS;
       }else{

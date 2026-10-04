@@ -36,28 +36,25 @@ export class CharGenQuickOrCustom extends GameMenu {
         e.stopPropagation();
         try{
           const class_data = GameState.SWRuleSet.classes[GameState.CharGenManager.selectedClass];
-          const saving_throw_label = class_data['savingthrowtable'].toLowerCase();
-          const saving_throw_data = GameState.TwoDAManager.datatables.get(saving_throw_label).rows[0];
           const feats_table = GameState.SWRuleSet.feats;
+          const creature = GameState.CharGenManager.selectedCreature;
 
-          GameState.CharGenManager.selectedCreature.str = class_data.str;
-          GameState.CharGenManager.selectedCreature.dex = class_data.dex;
-          GameState.CharGenManager.selectedCreature.con = class_data.con;
-          GameState.CharGenManager.selectedCreature.wis = class_data.wis;
-          GameState.CharGenManager.selectedCreature.int = class_data.int;
-          GameState.CharGenManager.selectedCreature.cha = class_data.cha;
-          GameState.CharGenManager.selectedCreature.str = class_data.str;
-
-          GameState.CharGenManager.selectedCreature.fortbonus = parseInt(saving_throw_data.fortsave);
-          GameState.CharGenManager.selectedCreature.willbonus = parseInt(saving_throw_data.willsave);
-          GameState.CharGenManager.selectedCreature.refbonus = parseInt(saving_throw_data.refsave);
+          creature.str = class_data.str;
+          creature.dex = class_data.dex;
+          creature.con = class_data.con;
+          creature.wis = class_data.wis;
+          creature.int = class_data.int;
+          creature.cha = class_data.cha;
+          creature.feats = [];
 
           for(let i = 0, len = feats_table.length; i < len; i++){
             const feat_data = feats_table[i];
             if(feat_data.getGranted(class_data) == 1){
-              GameState.CharGenManager.selectedCreature.feats.push(new TalentFeat(i));
+              creature.feats.push(new TalentFeat(i));
             }
           }
+
+          GameState.CharGenManager.syncDerivedStats(creature);
           
           this.manager.CharGenMain.close();
           this.manager.CharGenMain.childMenu = this.manager.CharGenQuickPanel;

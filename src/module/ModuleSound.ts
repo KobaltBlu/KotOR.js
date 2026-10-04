@@ -15,6 +15,7 @@ import { GameState } from "@/GameState";
 import { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
 import { AudioGeneratedType } from "@/enums/audio/AudioGeneratedType";
 import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
+import { CExoLocString } from "@/resource/CExoLocString";
 
 /**
 * ModuleSound class.
@@ -274,11 +275,16 @@ export class ModuleSound extends ModuleObject {
       GameState.ModuleObjectManager.AddObjectById(this);
     }
 
-    if(this.template.RootNode.hasField('LocName'))
-      this.name = this.template.getFieldByLabel('LocName').getCExoLocString().getValue();
+    if(this.template.RootNode.hasField('LocName')){
+      this.locName = this.template.getFieldByLabel('LocName').getCExoLocString();
+      this.name = this.locName.getValue();
+    }
 
     if(this.template.RootNode.hasField('Active'))
       this.active = !!this.template.getFieldByLabel('Active').getValue()
+
+    if(this.template.RootNode.hasField('Continuous'))
+      this.continuous = !!this.template.getFieldByLabel('Continuous').getValue()
 
     if(this.template.RootNode.hasField('Priority'))
       this.priority = this.template.getFieldByLabel('Priority').getValue()
@@ -329,6 +335,7 @@ export class ModuleSound extends ModuleObject {
       this.randomRangeY = this.template.getFieldByLabel('RandomRangeY').getValue();
 
     if(this.template.RootNode.hasField('Sounds')){
+      this.soundResRefs = [];
       const sounds = this.template.getFieldByLabel('Sounds').getChildStructs();
       for(let i = 0; i < sounds.length; i++){
         this.soundResRefs.push(sounds[i].getFieldByLabel('Sound').getValue());
@@ -363,13 +370,40 @@ export class ModuleSound extends ModuleObject {
       this.elevation = this.template.RootNode.getFieldByLabel('Elevation').getValue();
 
     if(this.template.RootNode.hasField('SWVarTable')){
-      let localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
-      for(let i = 0; i < localBools.length; i++){
-        let data = localBools[i].getFieldByLabel('Variable').getValue();
-        for(let bit = 0; bit < 32; bit++){
-          this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+      const swVarTableStruct = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0];
+      if(swVarTableStruct){
+        if(swVarTableStruct.hasField('BitArray')){
+          const localBools = swVarTableStruct.getFieldByLabel('BitArray').getChildStructs();
+          for(let i = 0; i < localBools.length; i++){
+            const data = localBools[i].getFieldByLabel('Variable').getValue();
+            for(let bit = 0; bit < 32; bit++){
+              this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+            }
+          }
+        }
+
+        if(swVarTableStruct.hasField('ByteArray')){
+          const localNumbers = swVarTableStruct.getFieldByLabel('ByteArray').getChildStructs();
+          for(let i = 0; i < localNumbers.length; i++){
+            const data = localNumbers[i].getFieldByLabel('Variable').getValue();
+            this.setLocalNumber(i, data);
+          }
         }
       }
+    }
+
+    try{
+      if(this.template.RootNode.hasField('ActionList') && !this.actionQueue.length){
+        const actionStructs = this.template.RootNode.getFieldByLabel('ActionList').getChildStructs();
+        for(let i = 0, len = actionStructs.length; i < len; i++){
+          const action = GameState.ActionFactory.FromStruct(actionStructs[i]);
+          if(action){
+            this.actionQueue.add(action);
+          }
+        }
+      }
+    }catch(e: any){
+      console.error(e);
     }
 
     this.soundType = AudioEmitterType.GLOBAL;
@@ -396,6 +430,7 @@ export class ModuleSound extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Interval') ).setValue(this.interval);
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'IntervalVrtn') ).setValue(this.intervalVariation);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Looping') ).setValue(this.looping ? 1 : 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LocName') ).setValue(this.locName || new CExoLocString().addSubString(this.name || ''));
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'MaxDistance') ).setValue(this.maxDistance);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'MinDistance') ).setValue(this.minDistance);
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
@@ -419,6 +454,7 @@ export class ModuleSound extends ModuleObject {
     }
 
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'TemplateResRef') ).setValue(this.templateResRef || '');
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Times') ).setValue(this.times);
     gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'VarTable') );
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Volume') ).setValue(Math.max(0, Math.min(127, this.volume)));
@@ -433,6 +469,9 @@ export class ModuleSound extends ModuleObject {
   }
 
   destroy(): void {
+    if(this.destroyed || this.destroying){
+      return;
+    }
     super.destroy();
   }
 

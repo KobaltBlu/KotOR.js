@@ -1,4 +1,3 @@
-import { AudioLoader } from "@/audio/AudioLoader";
 import { CurrentGame } from "@/engine/CurrentGame";
 import { MenuSaveLoadMode } from "@/enums/gui/MenuSaveLoadMode";
 import { GameState } from "@/GameState";
@@ -7,7 +6,6 @@ import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 import { MDLLoader, TextureLoader } from "@/loaders";
 import { OdysseyModel } from "@/odyssey";
 import { OdysseyModel3D } from "@/three/odyssey";
-import { AudioEngine } from "@/audio/AudioEngine";
 import { ApplicationProfile } from "@/utility/ApplicationProfile";
 import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
 
@@ -130,20 +128,14 @@ export class MainMenu extends GameMenu {
     });
   }
 
-  Start(){
-    return new Promise<void>( (resolve, reject) => {
-      this.manager.ClearMenus(); 
-      AudioLoader.LoadMusic(this.bgMusicResRef).then((data: Uint8Array) => {
-        AudioEngine.GetAudioEngine().setAudioBuffer('BACKGROUND_MUSIC_DAY', data.buffer as ArrayBuffer, this.bgMusicResRef);
-        AudioEngine.GetAudioEngine().areaMusicDayAudioEmitter.play();
-        this.open();
-        resolve();
-      }, () => {
-        this.open();
-        console.error('Background Music not found', this.bgMusicResRef);
-        resolve();
-      });
-    });
+  async Start(): Promise<void> {
+    this.manager.ClearMenus();
+    try {
+      await GameState.MusicManager.playMenuMusicTrack(this.bgMusicResRef, false, true, 1);
+    } catch (e) {
+      console.error('Background Music not found', this.bgMusicResRef, e);
+    }
+    this.open();
   }
 
   update(delta = 0) {
@@ -157,10 +149,10 @@ export class MainMenu extends GameMenu {
 
   show() {
     super.show();
-    if(this.bgMusicBuffer){
-      AudioEngine.GetAudioEngine().setAudioBuffer('BACKGROUND_MUSIC_DAY', this.bgMusicBuffer, this.bgMusicResRef);
-      AudioEngine.GetAudioEngine().areaMusicDayAudioEmitter.play();
-    }
+    GameState.MusicManager.playMenuMusicTrack(this.bgMusicResRef, false, true, 1).catch((e: any) => {
+      console.error('Background Music not found', this.bgMusicResRef);
+      console.error(e);
+    });
     GameState.AlphaTest = 0.5;
     CurrentGame.InitGameInProgressFolder(false).then( () => {
 

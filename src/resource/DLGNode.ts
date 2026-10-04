@@ -87,6 +87,7 @@ export class DLGNode {
   recordNoVOOverride: number = 0;
   recordVO: number = 0;
   voTextChanged: boolean = true;
+  voiceOverToken: number = 0;
 
   constructor(dialog?: DLGObject){
     this.nodeEngineType = DLGNodeEngineType.K1;
@@ -179,7 +180,7 @@ export class DLGNode {
       this.script.setScriptParam(4, this.scriptParams.Param4);
       this.script.setScriptParam(5, this.scriptParams.Param5);
       this.script.setScriptStringParam(this.scriptParams.String);
-      this.script.run(this.speaker || this.dialog?.owner || this.dialog?.owner, 0);
+      this.script.run(this.speaker || this.dialog?.owner, 0);
     }
   }
 
@@ -191,7 +192,7 @@ export class DLGNode {
       this.script2.setScriptParam(4, this.script2Params.Param4);
       this.script2.setScriptParam(5, this.script2Params.Param5);
       this.script2.setScriptStringParam(this.script2Params.String);
-      this.script2.run(this.speaker || this.dialog?.owner || this.dialog?.owner, 0);
+      this.script2.run(this.speaker || this.dialog?.owner, 0);
     }
   }
 
@@ -208,7 +209,7 @@ export class DLGNode {
       this.isActive.setScriptParam(4, this.isActiveParams.Param4);
       this.isActive.setScriptParam(5, this.isActiveParams.Param5);
       this.isActive.setScriptStringParam(this.isActiveParams.String);
-      const bSuccess = this.isActive.run(this.speaker || this.dialog?.owner || this.dialog?.owner, 0);
+      const bSuccess = this.isActive.run(this.speaker || this.dialog?.owner, 0);
       if(this.isActiveParams.Not){
         return bSuccess ? false : true;
       }else{
@@ -227,7 +228,7 @@ export class DLGNode {
       this.isActive2.setScriptParam(4, this.isActive2Params.Param4);
       this.isActive2.setScriptParam(5, this.isActive2Params.Param5);
       this.isActive2.setScriptStringParam(this.isActive2Params.String);
-      const bSuccess = this.isActive2.run(this.speaker || this.dialog?.owner || this.dialog?.owner, 0);
+      const bSuccess = this.isActive2.run(this.speaker || this.dialog?.owner, 0);
       if(this.isActive2Params.Not){
         return (bSuccess ? false : true);
       }else{
@@ -255,27 +256,23 @@ export class DLGNode {
   }
 
   updateJournal(){
-    const speaker = this.speaker || (this.nodeType == DLGNodeType.REPLY ? GameState.getCurrentPlayer() : this.speaker);
+    const speaker = this.speaker || (this.nodeType == DLGNodeType.REPLY ? GameState.getCurrentPlayer() : undefined);
     if(this.quest){
-      const allowOverrideHigher = false;
-      GameState.JournalManager.AddJournalQuestEntry(this.quest, this.questEntry, allowOverrideHigher);
+      GameState.JournalManager.AddJournalQuestEntry(this.quest, this.questEntry, false);
     }
-    if(!this.text || this.text.length == 0 || this.isContinueDialog()){
-      console.warn(`No text found for ${this.text} on ${this.speaker?.getName()}. not saving to journal`, this.isContinueDialog());
+    // Plot rewards are independent of whether this is a text-bearing node.
+    if(this.plotIndex >= 0 && this.plotXPPercentage > 0){
+      GameState.JournalManager.AwardPlotXPByIndex(this.plotIndex, this.plotXPPercentage);
+    }
+    // Preserve upstream's filtering and its recording of player replies.
+    if(!this.text || this.isContinueDialog()){
       return;
     }
     try{
       if(!speaker){
-        console.error(`No speaker found for ${this.text}`);
-        console.log(this);
         return;
       }
-      console.log('saving', speaker.getName(), this.text);
-      GameState.DialogMessageManager.AddEntry(
-        new DialogMessageEntry(
-          speaker.getName(), this.text
-        )
-      )
+      GameState.DialogMessageManager.AddEntry(new DialogMessageEntry(speaker.getName(), this.text));
     }catch(e){
       console.error(e);
     }
@@ -330,44 +327,79 @@ export class DLGNode {
     });
   }
 
-  async loadLIP(): Promise<boolean> {
+  async loadLIP(token: number = this.voiceOverToken): Promise<boolean> {
     const resref = this.getVoiceResRef();
     if(resref){
       const lip = await LIPObject.Load(resref);
-      if (BitWise.InstanceOfObject(this.speaker, ModuleObjectType.ModuleCreature)) {
-        (this.speaker as ModuleCreature).setLIP(lip);
+      if (token !== this.voiceOverToken) {
+        return false;
       }
-      return true;
+      if (lip && BitWise.InstanceOfObject(this.speaker, ModuleObjectType.ModuleCreature)) {
+        (this.speaker as ModuleCreature).setLIP(lip);
+        return true;
+      }
+      return false;
     }else{
       return false;
     }
   }
 
-  resetLIP(){
+  clearLIP(){
     if (BitWise.InstanceOfObject(this.speaker, ModuleObjectType.ModuleCreature)) {
       (this.speaker as ModuleCreature).setLIP(undefined);
     }
   }
 
+  resetLIP(){
+    this.voiceOverToken++;
+    this.clearLIP();
+  }
+
+  cancelVoiceOver(audioEmitter?: AudioEmitter){
+    this.resetLIP();
+    audioEmitter?.stop();
+  }
+
   async playVoiceOver(audioEmitter: AudioEmitter): Promise<boolean> {
+    const token = ++this.voiceOverToken;
+    this.clearLIP();
     const resref = this.getVoiceResRef();
     if(resref){
-      await this.loadLIP();
       try{
+        await this.loadLIP(token);
+        if(token !== this.voiceOverToken){
+          return false;
+        }
         const audioNode = await audioEmitter.playStreamWave(resref);
+        if(token !== this.voiceOverToken){
+          return false;
+        }
+        if(!audioNode){
+          this.checkList.voiceOverError = true;
+          this.clearLIP();
+          return false;
+        }
         if(audioNode){
           audioNode.onended = () => {
+            if(token !== this.voiceOverToken){
+              return;
+            }
             this.checkList.voiceOverComplete = true;
+            this.clearLIP();
           }
           return true;
         }
         return false;
       }catch(e){
-        this.checkList.voiceOverError = true;
+        if(token === this.voiceOverToken){
+          this.checkList.voiceOverError = true;
+          this.clearLIP();
+        }
         return false;
       }
     }else{
       this.checkList.voiceOverError = true;
+      this.clearLIP();
       return false;
     }
   }

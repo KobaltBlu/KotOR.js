@@ -106,12 +106,19 @@ export class MenuSaveLoad extends GameMenu {
         }
 
         // SAVEGAME mode
+        if (!SaveGame.CanSaveCurrentGame()) {
+          window.alert("Saving is unavailable during minigames.");
+          return;
+        }
+
         if (savegame instanceof NewSaveItem) {
           // New save slot -> ask for a name
           this.manager.MenuSaveName.open();
           this.manager.MenuSaveName.onSave = async (name = "") => {
-            await SaveGame.SaveCurrentGame(name.trim());
-            this.reloadSaves();
+            const saved = await SaveGame.SaveCurrentGame(name.trim());
+            if (saved) {
+              this.reloadSaves();
+            }
           };
           return;
         }
@@ -120,6 +127,11 @@ export class MenuSaveLoad extends GameMenu {
         this.manager.InGameConfirm.showConfirmDialog(
           MenuSaveLoad.STRREF_CONFIRM_OVERWRITE,
           async () => {
+            if (!SaveGame.CanSaveCurrentGame()) {
+              window.alert("Saving is unavailable during minigames.");
+              return;
+            }
+
             await SaveGame.OverwriteSave(savegame);
             this.reloadSaves();
           },
@@ -241,7 +253,7 @@ export class NewSaveItem extends SaveGame {
   }
 
   async load(): Promise<void> {}
-  async loadNFO(): Promise<void> {}
+  async loadNFO(force = false): Promise<void> {}
   async loadPIFO(): Promise<void> {}
   async loadGlobalVARS(): Promise<void> {}
   async loadInventory(): Promise<void> {}

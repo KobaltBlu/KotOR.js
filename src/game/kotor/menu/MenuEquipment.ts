@@ -74,6 +74,22 @@ export class MenuEquipment extends GameMenu {
     this.voidFill = true;
   }
 
+  formatSignedValue(value: number){
+    return value >= 0 ? `+${value}` : `${value}`;
+  }
+
+  getDisplayedAttackModifier(creature: ModuleCreature, weapon: ModuleItem | undefined, slot: ModuleCreatureArmorSlot){
+    let modifier = creature.getAttackModifier(weapon);
+    const isDualWielding = creature.combatRound.isDualWielding(creature);
+    if(isDualWielding && (slot == ModuleCreatureArmorSlot.RIGHTHAND || slot == ModuleCreatureArmorSlot.LEFTHAND)){
+      modifier -= creature.combatRound.calculateTwoWeaponPenalty(
+        creature,
+        slot as ModuleCreatureArmorSlot.RIGHTHAND|ModuleCreatureArmorSlot.LEFTHAND
+      );
+    }
+    return modifier;
+  }
+
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
@@ -216,6 +232,7 @@ export class MenuEquipment extends GameMenu {
           this.updateSelected(null);
           this.updateSlotIcons();
           this.updateList();
+          this.updateCharacterStats();
         }
       });
 
@@ -470,6 +487,12 @@ export class MenuEquipment extends GameMenu {
     this.LB_ITEMS.setItems([]);
     this.LBL_VITALITY?.setText(currentPC.getHP() + '/' + currentPC.getMaxHP());
     this.LBL_DEF?.setText(currentPC.getAC());
+    const rightWeapon = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.RIGHTHAND);
+    const leftWeapon = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.LEFTHAND);
+    const rightToHit = this.getDisplayedAttackModifier(currentPC, rightWeapon, ModuleCreatureArmorSlot.RIGHTHAND);
+    const leftToHit = this.getDisplayedAttackModifier(currentPC, leftWeapon, ModuleCreatureArmorSlot.LEFTHAND);
+    this.LBL_TOHITR?.setText(rightWeapon || !leftWeapon ? this.formatSignedValue(rightToHit) : '--');
+    this.LBL_TOHITL?.setText(leftWeapon ? this.formatSignedValue(leftToHit) : '--');
     if(this.LBL_PORTRAIT.getFillTextureName() != currentPC.getPortraitResRef()){
       this.LBL_PORTRAIT.setFillTextureName(currentPC.getPortraitResRef());
     }

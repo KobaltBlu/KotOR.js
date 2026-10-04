@@ -63,6 +63,7 @@ export class MenuManager {
   static MenuGraphicsAdvanced: KOTOR.MenuGraphicsAdvanced;
   static MenuInventory: KOTOR.MenuInventory;
   static MenuJournal: KOTOR.MenuJournal;
+  static MenuQuestItem: KOTOR.MenuQuestItem;
   static MenuLevelUp: KOTOR.MenuLevelUp;
   static MenuMap: KOTOR.MenuMap;
   static MenuMessages: KOTOR.MenuMessages;
@@ -494,6 +495,7 @@ export class MenuManager {
           KOTOR.MenuStore, KOTOR.MenuTop, KOTOR.MenuUpgrade, KOTOR.MenuUpgradeItems,
           KOTOR.MenuUpgradeSelect, KOTOR.MenuPazaakWager, KOTOR.MenuPazaakGame, KOTOR.MenuPazaakSetup,
         ];
+        MenuManager.MenuQuestItem = await MenuManager.GameMenuLoader(KOTOR.MenuQuestItem) as KOTOR.MenuQuestItem;
       }else if(GameState.GameKey == GameEngineType.TSL){
         [
           MenuManager.InGameAreaTransition,
@@ -565,9 +567,14 @@ export class MenuManager {
           KOTOR.MenuUpgradeItems, KOTOR.MenuUpgradeSelect, KOTOR.MenuPazaakWager,
           KOTOR.MenuPazaakGame, KOTOR.MenuPazaakSetup,
         ];
+        [MenuManager.MenuQuestItem, MenuManager.MenuSwoopUp] = await Promise.all([
+          MenuManager.GameMenuLoader(TSL.MenuQuestItem),
+          MenuManager.GameMenuLoader(TSL.MenuSwoopUp),
+        ]) as [KOTOR.MenuQuestItem, TSL.MenuSwoopUp];
       }
 
       MenuManager.MenuJournal.childMenu = GameState.MenuManager.MenuTop;
+      MenuManager.MenuQuestItem.childMenu = GameState.MenuManager.MenuTop;
       MenuManager.MenuInventory.childMenu = GameState.MenuManager.MenuTop;
       MenuManager.MenuEquipment.childMenu = GameState.MenuManager.MenuTop;
       MenuManager.MenuCharacter.childMenu = GameState.MenuManager.MenuTop;

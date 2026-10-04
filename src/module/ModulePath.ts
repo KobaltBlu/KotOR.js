@@ -391,20 +391,16 @@ export class ModulePath {
 
     if(originPoint.hasLOS(destPoint, owner)) return fallbackPath;
 
-    const closest_origin_point = this.getClosestPathPoint(origin);
-    const closest_destination_point = this.getClosestPathPoint(dest);
+    const originConnections = this.points.filter((p) => p.hasLOS(originPoint, owner));
+    const destinationConnections = this.points.filter((p) => p.hasLOS(destPoint, owner));
 
-    //origin
-    originPoint.addConnection(closest_origin_point);
-    closest_origin_point.addConnection(originPoint);
+    for(let i = 0; i < originConnections.length; i++){
+      originPoint.addConnection(originConnections[i]);
+    }
 
-    //dest
-    closest_destination_point.addConnection(destPoint);
-    destPoint.addConnection(closest_destination_point);
-
-    originPoint.connections = this.points.slice(0).filter( (p) => {
-      return p.hasLOS(originPoint, owner);
-    });
+    for(let i = 0; i < destinationConnections.length; i++){
+      destinationConnections[i].addConnection(destPoint);
+    }
 
     const path = new ComputedPath(owner, originPoint, destPoint);
     path.setOwner(owner);
@@ -422,8 +418,8 @@ export class ModulePath {
         path.smooth();
       return path;
     }
-    
-    return fallbackPath;
+
+    return path;
 
   }
 

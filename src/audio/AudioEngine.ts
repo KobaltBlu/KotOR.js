@@ -22,6 +22,8 @@ class AudioChannel {
 
   #gainNode: GainNode;
 
+  #routeHandler: ((gainNode: GainNode) => void) | undefined;
+
   muted: boolean = false;
 
   constructor(channel: AudioEngineChannel, audioCtx: AudioContext){
@@ -37,32 +39,51 @@ class AudioChannel {
   }
 
   setGain(value: number){
-    this.#gain = value;
+    this.#gain = AudioEngine.clampNormalizedGain(value);
     this.#gainCached = this.#gain;
     if(this.muted){ return; }
-    this.#gainNode.gain.value = value;
+    this.#gainNode.gain.value = this.#gain;
   }
 
   getGainNode(){
     return this.#gainNode;
   }
 
+  setRoute(routeHandler: (gainNode: GainNode) => void){
+    this.#routeHandler = routeHandler;
+    this.reconnect();
+  }
+
+  disconnect(){
+    try{
+      this.#gainNode.disconnect();
+    }catch(e){}
+  }
+
+  reconnect(){
+    this.disconnect();
+    if(this.muted || !AudioEngine.focused || typeof this.#routeHandler !== 'function'){
+      return;
+    }
+    this.#routeHandler(this.#gainNode);
+  }
+
   mute(){
     if(this.muted){ return; }
     this.muted = true;
     this.#gainNode.gain.value = 0;
-    this.getGainNode().disconnect();
+    this.disconnect();
   }
 
   unmute(){
     if(!this.muted){ return; }
     this.muted = false;
     this.#gainNode.gain.value = this.#gainCached;
-    this.getGainNode().connect( this.audioCtx.destination );
+    this.reconnect();
   }
 }
 
-type BackgroundAudioType = 'BACKGROUND_MUSIC_DAY' | 'BACKGROUND_MUSIC_NIGHT' | 'BATTLE' | 'BATTLE_STINGER' | 'DIALOG' | 'AMBIENT_DAY' | 'AMBIENT_NIGHT'
+type BackgroundAudioType = 'BACKGROUND_MUSIC_DAY' | 'BACKGROUND_MUSIC_NIGHT' | 'BATTLE' | 'BATTLE_STINGER' | 'DIALOG' | 'MENU' | 'AMBIENT_DAY' | 'AMBIENT_NIGHT'
 
 /**
  * AudioEngine class.
@@ -110,11 +131,13 @@ export class AudioEngine {
   battleMusicAudioEmitter: AmbientAudioEmitter;
   battleStingerAudioEmitter: AmbientAudioEmitter;
   dialogMusicAudioEmitter: AmbientAudioEmitter;
+  menuMusicAudioEmitter: AmbientAudioEmitter;
 
   battleMusicLoaded: boolean = false;
   battleStingerLoaded: boolean = false;
   areaMusicLoaded: boolean = false;
   dialogMusicLoaded: boolean = false;
+  menuMusicLoaded: boolean = false;
   ambientLoaded: boolean = false;
 
   bgmTimer: number = 0;
@@ -129,6 +152,34 @@ export class AudioEngine {
 
   reverbEngine: ReverbEngine;
   reverbEnabled: boolean = false;
+
+  static clampNormalizedGain(value: number){
+    value = Number(value);
+    if(!Number.isFinite(value)){
+      return 0;
+    }
+    return Math.max(0, Math.min(1, value));
+  }
+
+  static percentageToNormalizedGain(value: number){
+    value = Number(value);
+    if(!Number.isFinite(value)){
+      return 0;
+    }
+    return AudioEngine.clampNormalizedGain(value / 100);
+  }
+
+  static clampEmitterVolume(value: number){
+    value = Number(value);
+    if(!Number.isFinite(value)){
+      return 0;
+    }
+    return Math.max(0, Math.min(127, value));
+  }
+
+  static emitterVolumeToNormalizedGain(value: number){
+    return AudioEngine.clampEmitterVolume(value) / 127;
+  }
 
   static get GAIN_MUSIC(){
     return AudioEngine.musicChannel.getGain();
@@ -190,13 +241,29 @@ export class AudioEngine {
     AudioEngine.movieChannel.setGain(AudioEngine.GAIN_MOVIE);
     AudioEngine.guiChannel.setGain(AudioEngine.GAIN_GUI);
 
-    // AudioEngine.sfxChannel.getGainNode().connect(this.audioCtx.destination);
-    this.reverbEngine.connectSource(AudioEngine.sfxChannel.getGainNode());
-    AudioEngine.musicChannel.getGainNode().connect(this.audioCtx.destination);
-    // AudioEngine.voChannel.getGainNode().connect(this.audioCtx.destination);
-    this.reverbEngine.connectSource(AudioEngine.voChannel.getGainNode());
-    AudioEngine.movieChannel.getGainNode().connect(this.audioCtx.destination);
-    AudioEngine.guiChannel.getGainNode().connect(this.audioCtx.destination);
+    AudioEngine.sfxChannel.setRoute((gainNode) => {
+      if(this.reverbEnabled){
+        this.reverbEngine.connectSource(gainNode);
+      }else{
+        gainNode.connect(this.audioCtx.destination);
+      }
+    });
+    AudioEngine.musicChannel.setRoute((gainNode) => {
+      gainNode.connect(this.audioCtx.destination);
+    });
+    AudioEngine.voChannel.setRoute((gainNode) => {
+      if(this.reverbEnabled){
+        this.reverbEngine.connectSource(gainNode);
+      }else{
+        gainNode.connect(this.audioCtx.destination);
+      }
+    });
+    AudioEngine.movieChannel.setRoute((gainNode) => {
+      gainNode.connect(this.audioCtx.destination);
+    });
+    AudioEngine.guiChannel.setRoute((gainNode) => {
+      gainNode.connect(this.audioCtx.destination);
+    });
 
     this.emitters = [];
     this.bgmTimer = 0;
@@ -207,6 +274,7 @@ export class AudioEngine {
     this.battleMusicAudioEmitter = new AmbientAudioEmitter(this);
     this.battleStingerAudioEmitter = new AmbientAudioEmitter(this);
     this.dialogMusicAudioEmitter = new AmbientAudioEmitter(this);
+    this.menuMusicAudioEmitter = new AmbientAudioEmitter(this);
 
     this.ambientAudioDayEmitter.setDestination(AudioEngine.sfxChannel.getGainNode());
     this.ambientAudioNightEmitter.setDestination(AudioEngine.sfxChannel.getGainNode());
@@ -215,51 +283,7 @@ export class AudioEngine {
     this.battleMusicAudioEmitter.setDestination(AudioEngine.musicChannel.getGainNode());
     this.battleStingerAudioEmitter.setDestination(AudioEngine.musicChannel.getGainNode());
     this.dialogMusicAudioEmitter.setDestination(AudioEngine.musicChannel.getGainNode());
-
-    this.areaMusicDayAudioEmitter.addEventListener('play', () => {
-      this.bgmMode = BackgroundMusicMode.AREA;
-    });
-
-    this.battleMusicAudioEmitter.addEventListener('play', () => {
-      this.bgmMode = BackgroundMusicMode.BATTLE;
-    });
-
-    this.battleStingerAudioEmitter.addEventListener('play', () => {
-      this.bgmMode = BackgroundMusicMode.BATTLE_STINGER;
-    });
-
-    this.dialogMusicAudioEmitter.addEventListener('play', () => {
-      this.bgmMode = BackgroundMusicMode.DIALOG;
-      this.areaMusicDayAudioEmitter.stop();
-    });
-
-    this.areaMusicDayAudioEmitter.addEventListener('ended', () => {
-      this.bgmState = BackgroundMusicState.ENDED;
-      if(AudioEngine.loopBGM){
-        this.bgmTimer = this.bgmLoopTime;
-      }
-    });
-
-    this.battleMusicAudioEmitter.addEventListener('stop', () => {
-      if(this.battleStingerLoaded){
-        this.battleStingerAudioEmitter.play();
-      }else{
-        this.areaMusicDayAudioEmitter.play();
-      }
-    });
-
-    this.battleStingerAudioEmitter.addEventListener('ended', () => {
-      this.bgmState = BackgroundMusicState.PLAYING;
-      this.areaMusicDayAudioEmitter.play();
-    });
-
-    this.dialogMusicAudioEmitter.addEventListener('ended', () => {
-      this.bgmState = BackgroundMusicState.ENDED;
-      this.bgmMode = BackgroundMusicMode.AREA;
-      if(AudioEngine.loopBGM){
-        this.bgmTimer = this.bgmLoopTime;
-      }
-    });
+    this.menuMusicAudioEmitter.setDestination(AudioEngine.musicChannel.getGainNode());
 
     AudioEngine.engines.push(this);
 
@@ -268,17 +292,12 @@ export class AudioEngine {
   setReverbState(eaxEnabled = false){
     if(eaxEnabled == this.reverbEnabled) return;
     this.reverbEnabled = eaxEnabled;
-    //reset the sfx and vo channels destinations
-    AudioEngine.sfxChannel.getGainNode().disconnect();
-    AudioEngine.voChannel.getGainNode().disconnect();
-    if(eaxEnabled){
-      //connect the sfx and vo channels to the reverb engine
-      this.reverbEngine.connectSource(AudioEngine.sfxChannel.getGainNode());
-      this.reverbEngine.connectSource(AudioEngine.voChannel.getGainNode());
+    if(AudioEngine.focused){
+      AudioEngine.sfxChannel.reconnect();
+      AudioEngine.voChannel.reconnect();
     }else{
-      //disconnect the sfx and vo channels from the reverb engine
-      AudioEngine.sfxChannel.getGainNode().connect(this.audioCtx.destination);
-      AudioEngine.voChannel.getGainNode().connect(this.audioCtx.destination);
+      AudioEngine.sfxChannel.disconnect();
+      AudioEngine.voChannel.disconnect();
     }
   }
 
@@ -335,18 +354,6 @@ export class AudioEngine {
       [rotation.x, rotation.y, rotation.z]
     );
 
-    //Handle the background music loop
-    if(this.areaMusicLoaded && this.bgmState == BackgroundMusicState.ENDED && this.bgmMode == BackgroundMusicMode.AREA){
-      if(this.bgmTimer > 0 && AudioEngine.loopBGM){
-        this.bgmTimer -= delta * 1000;
-        if(this.bgmTimer <= 0){
-          this.bgmTimer = 0;
-          this.areaMusicDayAudioEmitter.play();
-          this.bgmState = BackgroundMusicState.PLAYING;
-        }
-      }
-    }
-
   }
 
   addEmitter(emitter: AudioEmitter){
@@ -386,6 +393,11 @@ export class AudioEngine {
         this.dialogMusicAudioEmitter.name = name;
         this.dialogMusicLoaded = true;
         break;
+      case 'MENU':
+        this.menuMusicAudioEmitter.setData(data);
+        this.menuMusicAudioEmitter.name = name;
+        this.menuMusicLoaded = true;
+        break;
       case 'AMBIENT_DAY':
         this.ambientAudioDayEmitter.setData(data);
         this.ambientAudioDayEmitter.name = name;
@@ -406,6 +418,7 @@ export class AudioEngine {
     this.battleMusicLoaded = false;
     this.battleStingerLoaded = false;
     this.dialogMusicLoaded = false;
+    this.menuMusicLoaded = false;
     this.ambientLoaded = false;
   }
 
@@ -423,16 +436,35 @@ export class AudioEngine {
    */
   reset(){
     //Clean up the emitters
-    for(let i = 0; i < this.emitters.length; i++)
-      this.emitters[i].destroy();
+    // destroy() removes its emitter from this list; iterate a snapshot.
+    for(const emitter of [...this.emitters]){
+      emitter.destroy();
+    }
 
     this.emitters = [];
 
+    this.ambientAudioDayEmitter.dispose();
+    this.ambientAudioNightEmitter.dispose();
+
     //Clean up the background music emitters
     this.areaMusicDayAudioEmitter.dispose();
+    this.areaMusicNightAudioEmitter.dispose();
     this.battleMusicAudioEmitter.dispose();
     this.battleStingerAudioEmitter.dispose();
     this.dialogMusicAudioEmitter.dispose();
+    this.menuMusicAudioEmitter.dispose();
+
+    this.areaMusicLoaded = false;
+    this.areaMusicNightLoaded = false;
+    this.battleMusicLoaded = false;
+    this.battleStingerLoaded = false;
+    this.dialogMusicLoaded = false;
+    this.menuMusicLoaded = false;
+    this.ambientLoaded = false;
+    this.ambientNightLoaded = false;
+    this.bgmTimer = 0;
+    this.bgmMode = BackgroundMusicMode.NONE;
+    this.bgmState = BackgroundMusicState.UNLOADED;
   }
 
   static GetAudioEngine(){
@@ -491,19 +523,26 @@ export class AudioEngine {
   static OnWindowFocusChange(focused: boolean){
     if(focused == AudioEngine.focused) return;
     AudioEngine.focused = focused;
+    if(!AudioEngine.engines.length){
+      return;
+    }
+
+    const channels = [
+      AudioEngine.sfxChannel,
+      AudioEngine.musicChannel,
+      AudioEngine.voChannel,
+      AudioEngine.movieChannel,
+      AudioEngine.guiChannel,
+    ];
+
     if(!focused){
-      // Disconnect all channels
-      AudioEngine.sfxChannel.getGainNode().disconnect();
-      AudioEngine.musicChannel.getGainNode().disconnect();
-      AudioEngine.voChannel.getGainNode().disconnect();
-      AudioEngine.movieChannel.getGainNode().disconnect();
-      AudioEngine.guiChannel.getGainNode().disconnect();
+      for(let i = 0; i < channels.length; i++){
+        channels[i].disconnect();
+      }
     }else{
-      AudioEngine.engines[0].reverbEngine.connectSource(AudioEngine.sfxChannel.getGainNode());
-      AudioEngine.engines[0].reverbEngine.connectSource(AudioEngine.voChannel.getGainNode());
-      AudioEngine.musicChannel.getGainNode().connect(AudioEngine.engines[0].audioCtx.destination);
-      AudioEngine.movieChannel.getGainNode().connect(AudioEngine.engines[0].audioCtx.destination);
-      AudioEngine.guiChannel.getGainNode().connect(AudioEngine.engines[0].audioCtx.destination);
+      for(let i = 0; i < channels.length; i++){
+        channels[i].reconnect();
+      }
     }
   }
 

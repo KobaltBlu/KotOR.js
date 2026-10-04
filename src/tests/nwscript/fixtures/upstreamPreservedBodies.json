@@ -1,0 +1,1438 @@
+{
+  "revision": "002dfe03b9a59ad2adda6404d9632fc78d5bedff",
+  "preserved": [
+    {
+      "id": 1,
+      "name": "PrintString",
+      "domain": "core",
+      "changed": false,
+      "localStub": true,
+      "reason": "upstream-body-replaces-local-stub",
+      "file": "src/nwscript/builtins/upstream/feedback.ts",
+      "hash": "55f313bbc1d4619981b55cb78944da40b56311cfd99ee78b634a42dd60ccd024"
+    },
+    {
+      "id": 4,
+      "name": "PrintInteger",
+      "domain": "core",
+      "changed": false,
+      "localStub": true,
+      "reason": "upstream-body-replaces-local-stub",
+      "file": "src/nwscript/builtins/upstream/feedback.ts",
+      "hash": "0357f675a71a20489a6a76f56cb703141d793e3162921bfb7d7422bc53cb9b45"
+    },
+    {
+      "id": 5,
+      "name": "PrintObject",
+      "domain": "core",
+      "changed": false,
+      "localStub": true,
+      "reason": "upstream-body-replaces-local-stub",
+      "file": "src/nwscript/builtins/upstream/feedback.ts",
+      "hash": "34755bbf5e70243185c0923467e4cc0a2c20241adc66f5ef11067d229cef6f87"
+    },
+    {
+      "id": 23,
+      "name": "ActionMoveAwayFromObject",
+      "domain": "missing",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/movement.ts",
+      "hash": "354e914778594ddceb95b3c4f4ce7b510376986e7c8acb39c32a742f938c319b"
+    },
+    {
+      "id": 29,
+      "name": "GetItemPossessor",
+      "domain": "missing",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/inventory.ts",
+      "hash": "5c0a31c5b02b7959f33e9569b2be83e4c0e28e623799800422078381203d1389"
+    },
+    {
+      "id": 45,
+      "name": "SetCameraFacing",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/camera.ts",
+      "hash": "55366a0646d7ce806dc4f7d5647f3be6e82a19a9b9fabc5681da67bfc83729f1"
+    },
+    {
+      "id": 84,
+      "name": "GetCasterLevel",
+      "domain": "missing",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/creatures.ts",
+      "hash": "79f15b24d28e121aff2b603763f884837e91dd1e5ba314900e179f7297b17d28"
+    },
+    {
+      "id": 104,
+      "name": "VectorMagnitude",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/math.ts",
+      "hash": "c3bf28df84de12fd775b2dcdb9f754a8e44ac5ee4e43b8a0b5f0d129727d2f8a"
+    },
+    {
+      "id": 112,
+      "name": "MagicalEffect",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/effects.ts",
+      "hash": "cb028bc53e0c259294b30a3bf6761548273333d26b15c0ec6d48f39b456c92e7"
+    },
+    {
+      "id": 113,
+      "name": "SupernaturalEffect",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/effects.ts",
+      "hash": "76c39f9f6ecb29a5e11617db2365bdcc3b0250deae069ea64f4b7862829b2a2a"
+    },
+    {
+      "id": 114,
+      "name": "ExtraordinaryEffect",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/effects.ts",
+      "hash": "6f6ec378d880b50933136e80b53552264ce7cae52251fed0ea6a2e0d97494804"
+    },
+    {
+      "id": 130,
+      "name": "EffectEntangle",
+      "domain": "missing",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/effects.ts",
+      "hash": "afe86e8863e6632a34233c4d3fbce5b97a04361f17b1d1b21c94fd59e9e94807"
+    },
+    {
+      "id": 141,
+      "name": "PrintVector",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/math.ts",
+      "hash": "dee11cfccb0d59fb7b243bcbf1533b7bc87edfc29e8474ec4ddd7176e774ef4d"
+    },
+    {
+      "id": 144,
+      "name": "AngleToVector",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/math.ts",
+      "hash": "c80dc87233705d276cf4eb595a730bc40fc1b0168891c95a7e5a6e35b47439b1"
+    },
+    {
+      "id": 145,
+      "name": "VectorToAngle",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/math.ts",
+      "hash": "9c90aa6f0a077e5b06812076c108ef17de1eccd6613510437c867532b3ddb4fc"
+    },
+    {
+      "id": 198,
+      "name": "GetTransitionTarget",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/perception.ts",
+      "hash": "86f5094720a621c3504e22d7cf633ebdd8fc0835d46f7e0b171a4b2bea75233a"
+    },
+    {
+      "id": 211,
+      "name": "GetGoingToBeAttackedBy",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/creatures.ts",
+      "hash": "773dab3bb1b2a0b0ed103215dd3ee066df741cc1f266b11ec97f42d135cd49b3"
+    },
+    {
+      "id": 226,
+      "name": "GetNearestCreatureToLocation",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/perception.ts",
+      "hash": "426a8e2130260f009c23391c78c3345751f589c242bfed734be3684bd0ce19f6"
+    },
+    {
+      "id": 228,
+      "name": "GetNearestObjectToLocation",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/perception.ts",
+      "hash": "3cfccfc656da71f68196d26538e5ef757d06f3bab2dba2336f13608395dc7f64"
+    },
+    {
+      "id": 265,
+      "name": "ShowLevelUpGUI",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/feedback.ts",
+      "hash": "c986519f3889765adb3bc9d829241eda1f24cd6871ec2544b98a509d514b529e"
+    },
+    {
+      "id": 266,
+      "name": "SetItemNonEquippable",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/inventory.ts",
+      "hash": "d4cd83a7b3114c5614c59cd7cbbf3a7e19e8e4b6eeaab7e222cc5b4328305c0b"
+    },
+    {
+      "id": 271,
+      "name": "GiveItem",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/inventory.ts",
+      "hash": "ec662ceba5458e24fd0c91856939c5e4cd78e5ee85a22cfae99ecb7cb5228925"
+    },
+    {
+      "id": 282,
+      "name": "GetModuleItemAcquired",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/inventory.ts",
+      "hash": "e12f71f615a6ac0452c5a5bbd51c3a547c5aa24752ea0668b0bc8925151cb498"
+    },
+    {
+      "id": 326,
+      "name": "GetClickingObject",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/perception.ts",
+      "hash": "9aa7b41c3fe3c5d9283dd627c664ce7b4cd2a828987e24ca242aedbaa05a388b"
+    },
+    {
+      "id": 332,
+      "name": "GetIdentified",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/inventory.ts",
+      "hash": "013409a1e61051792e4bab73ea222791dae1bb306a3698f996c02dee71c19144"
+    },
+    {
+      "id": 333,
+      "name": "SetIdentified",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/inventory.ts",
+      "hash": "e6bdc03b74b3afe2edefa883ec8c67184c059c3cf8f1438694e8cc2f83558def"
+    },
+    {
+      "id": 352,
+      "name": "GetInventoryDisturbType",
+      "domain": "missing",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/inventory.ts",
+      "hash": "3267dc4397da52275ed149d1a4af64ab22837e61c34751048e7131181a512e54"
+    },
+    {
+      "id": 353,
+      "name": "GetInventoryDisturbItem",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/inventory.ts",
+      "hash": "02e1a7a16b2f73f4213e47f7609d5f9ca4e4f0f0647ce0926f6c7a2472b7c92a"
+    },
+    {
+      "id": 360,
+      "name": "ActionMoveAwayFromLocation",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/movement.ts",
+      "hash": "c7295f6d2e553fb28ec316c8c3199dbe223a1e361102efd001199ae5bb1bb030"
+    },
+    {
+      "id": 374,
+      "name": "SendMessageToPC",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/feedback.ts",
+      "hash": "a2f9b643c9ce11d3794d2c48f5db6fe817177c935276e361b71d6ef1b2a1185b"
+    },
+    {
+      "id": 388,
+      "name": "PopUpGUIPanel",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/feedback.ts",
+      "hash": "0f07e194e3aee04e5f83af2fe7073ad9d8cd6cdb5a32ac10fdf8ea6b1c935668"
+    },
+    {
+      "id": 389,
+      "name": "AddMultiClass",
+      "domain": "missing",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/creatures.ts",
+      "hash": "9b1af0f64b7549ddb80a146f73a1b62fcb5bd6e31e2faddfa800322ff190245a"
+    },
+    {
+      "id": 398,
+      "name": "GetItemHasItemProperty",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/inventory.ts",
+      "hash": "e08499b058849a18aea8aede31b8f5de1451c9506909e8b1f7226c3d445d383c"
+    },
+    {
+      "id": 401,
+      "name": "GetItemACValue",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/inventory.ts",
+      "hash": "92b8bb8539387a19b52d4da88d8b9b0e09251d9ee547cf8489ba994a55826f31"
+    },
+    {
+      "id": 405,
+      "name": "GetIsDay",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/time.ts",
+      "hash": "79a461c4724d0447f073749a70079734738dd9d0d9ccd135d490356b63e3eb7a"
+    },
+    {
+      "id": 406,
+      "name": "GetIsNight",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/time.ts",
+      "hash": "648ac3fd3c7eca47a9b15e848c514b2e71f8eb5ebfe44aa918a9c136ca3a2b15"
+    },
+    {
+      "id": 407,
+      "name": "GetIsDawn",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/time.ts",
+      "hash": "75457ecb946defc893c065f120fc11cda031ff27fe54a6300a0be85764c8b542"
+    },
+    {
+      "id": 408,
+      "name": "GetIsDusk",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/time.ts",
+      "hash": "79fb71358840e1f1c5d3d50919c39586c2992026af1eb528729262edafcd9ce2"
+    },
+    {
+      "id": 411,
+      "name": "GetStartingLocation",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/perception.ts",
+      "hash": "bf4d28559dc10ef20317a00bcb07bec75eb3749baefc41077125d5cd677ba9fc"
+    },
+    {
+      "id": 465,
+      "name": "EffectTrueSeeing",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/effects.ts",
+      "hash": "ca11cd7cedf86f70d84418830184dc09ba06de72ecc3a1170de17d11b28f64d7"
+    },
+    {
+      "id": 476,
+      "name": "SurrenderToEnemies",
+      "domain": "missing",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/creatures.ts",
+      "hash": "153f6dbfe0331c5fd7cd15c4de26f3ff9a1b70c852f03e6daa4f191ce1df66aa"
+    },
+    {
+      "id": 488,
+      "name": "GetNearestTrapToObject",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/perception.ts",
+      "hash": "dbf854ddb16a551f02110c7c7db2422e96ce2dea27444f88233790d8098b2f76"
+    },
+    {
+      "id": 491,
+      "name": "GetFortitudeSavingThrow",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/creatures.ts",
+      "hash": "fbdc26f4f8785edd796e4f32b4e66df2400070b58220be98413b298fcd2e61c9"
+    },
+    {
+      "id": 492,
+      "name": "GetWillSavingThrow",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/creatures.ts",
+      "hash": "1f6ef8ccb62d5dd56ee7503ad865ab54cea214d857cb643c9fe0acf25ac7844b"
+    },
+    {
+      "id": 493,
+      "name": "GetReflexSavingThrow",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/creatures.ts",
+      "hash": "5f429049fefd01a078e767509560fd4792740caeae04ebc908861131909b5338"
+    },
+    {
+      "id": 494,
+      "name": "GetChallengeRating",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/creatures.ts",
+      "hash": "29435317c2dc16a3fe704d11d9f5b974d488cea0cf6c6f236614c279c152e836"
+    },
+    {
+      "id": 496,
+      "name": "GetMovementRate",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/creatures.ts",
+      "hash": "3b55b01d25ee755751fbd4feaf1cdffa1cf76f7cfd6283cc204392f36a61f8e6"
+    },
+    {
+      "id": 500,
+      "name": "DuplicateHeadAppearance",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/creatures.ts",
+      "hash": "9f69549f5b614926e3bd13217dd85abe3b037c4f6419605214c701cf4b2c3b79"
+    },
+    {
+      "id": 501,
+      "name": "ActionCastFakeSpellAtObject",
+      "domain": "missing",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/creatures.ts",
+      "hash": "fdb63da91f37a85e7670d43bbb3d5a06db648c31c3a046e90de3113e3d7f0bfc"
+    },
+    {
+      "id": 506,
+      "name": "SetLockHeadFollowInDialog",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/camera.ts",
+      "hash": "50eee96a028cf6655aa037407a1f3ac097e2940a6fac1d47b254680007ff8e31"
+    },
+    {
+      "id": 521,
+      "name": "SWMG_GetLateralAccelerationPerSecond",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/minigame.ts",
+      "hash": "6f1e28610c303009e73ec528f9d1ff49a9ce9e415680775f0fb2e4fe7f84dd39"
+    },
+    {
+      "id": 525,
+      "name": "FloatingTextStrRefOnCreature",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/feedback.ts",
+      "hash": "4339629d1a5c286a8645cbd3967a7b5c4fd9bc346ce7db98bb283032a7edf656"
+    },
+    {
+      "id": 526,
+      "name": "FloatingTextStringOnCreature",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/feedback.ts",
+      "hash": "920c44ad92bcc4cfc597546697079c2610342173b0989708f8e8c73dfd624603"
+    },
+    {
+      "id": 537,
+      "name": "GetLockKeyRequired",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/world.ts",
+      "hash": "c4618f76c1e7cce4a395588f9ebfb65ed4bfa106f0ecb822d48346273ba9ed9c"
+    },
+    {
+      "id": 538,
+      "name": "GetLockKeyTag",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/world.ts",
+      "hash": "1fd8747fe77724866e3d58489db7a08536f0dc963a83d0d7777111be779f02b8"
+    },
+    {
+      "id": 539,
+      "name": "GetLockLockable",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/world.ts",
+      "hash": "588154e968c276550d28a11255e97ffe47c7041b1d9a91fabadb45adc230ba75"
+    },
+    {
+      "id": 540,
+      "name": "GetLockUnlockDC",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/world.ts",
+      "hash": "4342753a485670d7e06343771bbf9657304bf437ff69ccc1cfc763d914411f69"
+    },
+    {
+      "id": 541,
+      "name": "GetLockLockDC",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/world.ts",
+      "hash": "f410103427b6ded0884ec21131392ff66f667d4ac985aef0784e66c2c390c40d"
+    },
+    {
+      "id": 542,
+      "name": "GetPCLevellingUp",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/creatures.ts",
+      "hash": "434eb2b1a7ffeba9e40699b88f7fd9458a159dc3d0645a40aac68f1b982e9213"
+    },
+    {
+      "id": 543,
+      "name": "GetHasFeatEffect",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/effects.ts",
+      "hash": "d6db063c153665b19d197d25d05fe7bb6a4cbaf106d8ebc6209f62511a72e165"
+    },
+    {
+      "id": 544,
+      "name": "SetPlaceableIllumination",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/world.ts",
+      "hash": "8b3e95673406c8760710a81f224b31ce53790b605b7f0f85799d11bf0ba71476"
+    },
+    {
+      "id": 545,
+      "name": "GetPlaceableIllumination",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/world.ts",
+      "hash": "ae78fe4aa01343cc64fa6260f5d4c94e819ab5f2df4112f3cea061358a224fed"
+    },
+    {
+      "id": 553,
+      "name": "FaceObjectAwayFromObject",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/movement.ts",
+      "hash": "e7e0c6e34df6c474287bfb8cb93becc12e9ce7ece1b199638c12f86d1017a69a"
+    },
+    {
+      "id": 555,
+      "name": "SetTrapDisabled",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/world.ts",
+      "hash": "62e9ddba37602b566e2c0976afc4e527b4957fef5b5a424f9fad44b83b95ba23"
+    },
+    {
+      "id": 560,
+      "name": "WriteTimestampedLogEntry",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/feedback.ts",
+      "hash": "3e0cd22431ee19a2e0cbf4541214c37450085935bfd7405da734560fdb1fa376"
+    },
+    {
+      "id": 563,
+      "name": "SWMG_SetSpeedBlurEffect",
+      "domain": "minigame",
+      "changed": false,
+      "localStub": true,
+      "reason": "upstream-body-replaces-local-stub",
+      "file": "src/nwscript/builtins/upstream/minigame.ts",
+      "hash": "a9fbdf4baacdca3c0c70ce4cf43d46094f899901a45ac3d095c268df95fd8d44"
+    },
+    {
+      "id": 570,
+      "name": "GetHasInventory",
+      "domain": "missing",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/inventory.ts",
+      "hash": "c0b57d4baa658c3437d11f048cd4d0f3692699fb431d5b3df8c31bc9e3cd8306"
+    },
+    {
+      "id": 572,
+      "name": "AddToParty",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/party.ts",
+      "hash": "5f6c1f1416edbafb8d5dc59617c9f612d83435325d20084301b4cbde91c5f61d"
+    },
+    {
+      "id": 573,
+      "name": "RemoveFromParty",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/party.ts",
+      "hash": "f12dd9b50dc641d14617b9b1284973d03f11dd4b446968c3bef55216aca23c64"
+    },
+    {
+      "id": 591,
+      "name": "SWMG_OnBulletHit",
+      "domain": "minigame",
+      "changed": false,
+      "localStub": true,
+      "reason": "upstream-body-replaces-local-stub",
+      "file": "src/nwscript/builtins/upstream/minigame.ts",
+      "hash": "60a9cb0bc54897db6ac51ed82ab6609c216d590f1108c7fc16514c19b18fce37"
+    },
+    {
+      "id": 592,
+      "name": "SWMG_OnObstacleHit",
+      "domain": "minigame",
+      "changed": false,
+      "localStub": true,
+      "reason": "upstream-body-replaces-local-stub",
+      "file": "src/nwscript/builtins/upstream/minigame.ts",
+      "hash": "1c347063da847d6bf85f36998f1e6cb894ca83b9346973084ad0a1e983628a80"
+    },
+    {
+      "id": 598,
+      "name": "SWMG_OnDeath",
+      "domain": "minigame",
+      "changed": false,
+      "localStub": true,
+      "reason": "upstream-body-replaces-local-stub",
+      "file": "src/nwscript/builtins/upstream/minigame.ts",
+      "hash": "60a9cb0bc54897db6ac51ed82ab6609c216d590f1108c7fc16514c19b18fce37"
+    },
+    {
+      "id": 604,
+      "name": "SWMG_SetFollowerHitPoints",
+      "domain": "minigame",
+      "changed": false,
+      "localStub": true,
+      "reason": "upstream-body-replaces-local-stub",
+      "file": "src/nwscript/builtins/upstream/minigame.ts",
+      "hash": "0c038fe86af867477a02d6e8eba8c9fa37f58ba27f1e9cb3dcf5931ce9396851"
+    },
+    {
+      "id": 605,
+      "name": "SWMG_OnDamage",
+      "domain": "minigame",
+      "changed": false,
+      "localStub": true,
+      "reason": "upstream-body-replaces-local-stub",
+      "file": "src/nwscript/builtins/upstream/minigame.ts",
+      "hash": "60a9cb0bc54897db6ac51ed82ab6609c216d590f1108c7fc16514c19b18fce37"
+    },
+    {
+      "id": 624,
+      "name": "SWMG_GetGunBankCount",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/minigame.ts",
+      "hash": "e7a4842b122b5519e0dab560dc86cfacb322952510b9fc1bde0df533a91287f1"
+    },
+    {
+      "id": 625,
+      "name": "SWMG_GetGunBankBulletModel",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/minigame.ts",
+      "hash": "e71027b0456d95a0030f078dda6d12726ee77d12b9275721870daf23b2ec2da1"
+    },
+    {
+      "id": 626,
+      "name": "SWMG_GetGunBankGunModel",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/minigame.ts",
+      "hash": "d13fa67d58620c3636f1f2143681f10f39a49a46745c5f10148555794f0526eb"
+    },
+    {
+      "id": 632,
+      "name": "SWMG_SetGunBankBulletModel",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/minigame.ts",
+      "hash": "f270388b8f58e6ff657fa960c3678bb8d16d358660d2694126e5c9b286b44153"
+    },
+    {
+      "id": 633,
+      "name": "SWMG_SetGunBankGunModel",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/minigame.ts",
+      "hash": "d65e2d6ae6fe94eed787c270705fd036f20f605b110a1ddc7129f43458232851"
+    },
+    {
+      "id": 657,
+      "name": "SWMG_GetGunBankHorizontalSpread",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/minigame.ts",
+      "hash": "85f605ddf865a8aedcd01e77b91dddfe81191ae82f7307fc977065cae8147046"
+    },
+    {
+      "id": 658,
+      "name": "SWMG_GetGunBankVerticalSpread",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/minigame.ts",
+      "hash": "29ab025b3c480047131d72a8e71ca7cce133aa214a0fad75bce70443d111415b"
+    },
+    {
+      "id": 659,
+      "name": "SWMG_GetGunBankSensingRadius",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/minigame.ts",
+      "hash": "cde680fabe9db7da9219f61c74be277bf4223f35d1e01898bba314ca0bfcad4f"
+    },
+    {
+      "id": 660,
+      "name": "SWMG_GetGunBankInaccuracy",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/minigame.ts",
+      "hash": "bbd41d140d832460407260b61a22547419e6650166c054b37e6875e2da78b459"
+    },
+    {
+      "id": 661,
+      "name": "SWMG_SetGunBankHorizontalSpread",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/minigame.ts",
+      "hash": "665313985caac1553cb0578aed845a68d12b2328ccd7db83329dcf5240aa501c"
+    },
+    {
+      "id": 662,
+      "name": "SWMG_SetGunBankVerticalSpread",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/minigame.ts",
+      "hash": "b3770972c61a09dba578927337bd7a937dc985050badd7e971c6a883851d058d"
+    },
+    {
+      "id": 663,
+      "name": "SWMG_SetGunBankSensingRadius",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/minigame.ts",
+      "hash": "f0f6c7b839de0dea0293d3ff51db910510cba6c1ed717fc52f90919631dd4525"
+    },
+    {
+      "id": 664,
+      "name": "SWMG_SetGunBankInaccuracy",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/minigame.ts",
+      "hash": "4d5d4e1f3cce91b624576a1f5b36580c918d73c7582ca8ef370243e576ce64c4"
+    },
+    {
+      "id": 736,
+      "name": "SurrenderByFaction",
+      "domain": "objects/relations",
+      "changed": false,
+      "localStub": true,
+      "reason": "upstream-body-replaces-local-stub",
+      "file": "src/nwscript/builtins/upstream/creatures.ts",
+      "hash": "a9fbdf4baacdca3c0c70ce4cf43d46094f899901a45ac3d095c268df95fd8d44"
+    },
+    {
+      "id": 737,
+      "name": "ChangeFactionByFaction",
+      "domain": "objects/relations",
+      "changed": false,
+      "localStub": true,
+      "reason": "upstream-body-replaces-local-stub",
+      "file": "src/nwscript/builtins/upstream/creatures.ts",
+      "hash": "a9fbdf4baacdca3c0c70ce4cf43d46094f899901a45ac3d095c268df95fd8d44"
+    },
+    {
+      "id": 747,
+      "name": "ChangeItemCost",
+      "domain": "missing",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/inventory.ts",
+      "hash": "5e6812fedbce6254e67161e79b7681c16c2c84c8fa306941c15dec12ad93a4bc"
+    },
+    {
+      "id": 762,
+      "name": "SurrenderRetainBuffs",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/creatures.ts",
+      "hash": "4fde5f3ace239c9fef441159f87a2bf8ef6dde42ac32c39793cfacae108d00a7"
+    },
+    {
+      "id": 767,
+      "name": "SetAvailableNPCId",
+      "domain": "unclassified",
+      "changed": true,
+      "localStub": true,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/party.ts",
+      "hash": "97df2f40e6a487c43c9cf46764405c2380942a6ef0c7528a7cf0d17edc0d3f2a"
+    },
+    {
+      "id": 768,
+      "name": "IsMoviePlaying",
+      "domain": "unclassified",
+      "changed": false,
+      "localStub": false,
+      "reason": "K2-name-matched-inheritance",
+      "file": "src/nwscript/builtins/upstream/video.ts",
+      "hash": "b2c59092e1f80124465a315e9d61384636164f0b4b3ff93d1e6be6f317d58faa"
+    },
+    {
+      "id": 769,
+      "name": "QueueMovie",
+      "domain": "unclassified",
+      "changed": false,
+      "localStub": false,
+      "reason": "K2-name-matched-inheritance",
+      "file": "src/nwscript/builtins/upstream/video.ts",
+      "hash": "d7c0dcfc4fc9767a118b051f4a36d8dd4b8d91843ac667c631b147be069578ce"
+    },
+    {
+      "id": 770,
+      "name": "PlayMovieQueue",
+      "domain": "k2special",
+      "changed": true,
+      "localStub": false,
+      "reason": "upstream-body-changed",
+      "file": "src/nwscript/builtins/upstream/video.ts",
+      "hash": "8808510346902434339aceece2835b4c5e7bb1ad3e762c003ee7206145ecca37"
+    }
+  ],
+  "k2Overrides": [
+    {
+      "id": 1,
+      "sourceId": 1,
+      "name": "PrintString"
+    },
+    {
+      "id": 4,
+      "sourceId": 4,
+      "name": "PrintInteger"
+    },
+    {
+      "id": 5,
+      "sourceId": 5,
+      "name": "PrintObject"
+    },
+    {
+      "id": 23,
+      "sourceId": 23,
+      "name": "ActionMoveAwayFromObject"
+    },
+    {
+      "id": 29,
+      "sourceId": 29,
+      "name": "GetItemPossessor"
+    },
+    {
+      "id": 45,
+      "sourceId": 45,
+      "name": "SetCameraFacing"
+    },
+    {
+      "id": 84,
+      "sourceId": 84,
+      "name": "GetCasterLevel"
+    },
+    {
+      "id": 104,
+      "sourceId": 104,
+      "name": "VectorMagnitude"
+    },
+    {
+      "id": 112,
+      "sourceId": 112,
+      "name": "MagicalEffect"
+    },
+    {
+      "id": 113,
+      "sourceId": 113,
+      "name": "SupernaturalEffect"
+    },
+    {
+      "id": 114,
+      "sourceId": 114,
+      "name": "ExtraordinaryEffect"
+    },
+    {
+      "id": 130,
+      "sourceId": 130,
+      "name": "EffectEntangle"
+    },
+    {
+      "id": 141,
+      "sourceId": 141,
+      "name": "PrintVector"
+    },
+    {
+      "id": 144,
+      "sourceId": 144,
+      "name": "AngleToVector"
+    },
+    {
+      "id": 145,
+      "sourceId": 145,
+      "name": "VectorToAngle"
+    },
+    {
+      "id": 198,
+      "sourceId": 198,
+      "name": "GetTransitionTarget"
+    },
+    {
+      "id": 211,
+      "sourceId": 211,
+      "name": "GetGoingToBeAttackedBy"
+    },
+    {
+      "id": 226,
+      "sourceId": 226,
+      "name": "GetNearestCreatureToLocation"
+    },
+    {
+      "id": 228,
+      "sourceId": 228,
+      "name": "GetNearestObjectToLocation"
+    },
+    {
+      "id": 265,
+      "sourceId": 265,
+      "name": "ShowLevelUpGUI"
+    },
+    {
+      "id": 266,
+      "sourceId": 266,
+      "name": "SetItemNonEquippable"
+    },
+    {
+      "id": 271,
+      "sourceId": 271,
+      "name": "GiveItem"
+    },
+    {
+      "id": 282,
+      "sourceId": 282,
+      "name": "GetModuleItemAcquired"
+    },
+    {
+      "id": 326,
+      "sourceId": 326,
+      "name": "GetClickingObject"
+    },
+    {
+      "id": 332,
+      "sourceId": 332,
+      "name": "GetIdentified"
+    },
+    {
+      "id": 333,
+      "sourceId": 333,
+      "name": "SetIdentified"
+    },
+    {
+      "id": 352,
+      "sourceId": 352,
+      "name": "GetInventoryDisturbType"
+    },
+    {
+      "id": 353,
+      "sourceId": 353,
+      "name": "GetInventoryDisturbItem"
+    },
+    {
+      "id": 360,
+      "sourceId": 360,
+      "name": "ActionMoveAwayFromLocation"
+    },
+    {
+      "id": 374,
+      "sourceId": 374,
+      "name": "SendMessageToPC"
+    },
+    {
+      "id": 388,
+      "sourceId": 388,
+      "name": "PopUpGUIPanel"
+    },
+    {
+      "id": 389,
+      "sourceId": 389,
+      "name": "AddMultiClass"
+    },
+    {
+      "id": 398,
+      "sourceId": 398,
+      "name": "GetItemHasItemProperty"
+    },
+    {
+      "id": 401,
+      "sourceId": 401,
+      "name": "GetItemACValue"
+    },
+    {
+      "id": 405,
+      "sourceId": 405,
+      "name": "GetIsDay"
+    },
+    {
+      "id": 406,
+      "sourceId": 406,
+      "name": "GetIsNight"
+    },
+    {
+      "id": 407,
+      "sourceId": 407,
+      "name": "GetIsDawn"
+    },
+    {
+      "id": 408,
+      "sourceId": 408,
+      "name": "GetIsDusk"
+    },
+    {
+      "id": 411,
+      "sourceId": 411,
+      "name": "GetStartingLocation"
+    },
+    {
+      "id": 465,
+      "sourceId": 465,
+      "name": "EffectTrueSeeing"
+    },
+    {
+      "id": 476,
+      "sourceId": 476,
+      "name": "SurrenderToEnemies"
+    },
+    {
+      "id": 488,
+      "sourceId": 488,
+      "name": "GetNearestTrapToObject"
+    },
+    {
+      "id": 491,
+      "sourceId": 491,
+      "name": "GetFortitudeSavingThrow"
+    },
+    {
+      "id": 492,
+      "sourceId": 492,
+      "name": "GetWillSavingThrow"
+    },
+    {
+      "id": 493,
+      "sourceId": 493,
+      "name": "GetReflexSavingThrow"
+    },
+    {
+      "id": 494,
+      "sourceId": 494,
+      "name": "GetChallengeRating"
+    },
+    {
+      "id": 496,
+      "sourceId": 496,
+      "name": "GetMovementRate"
+    },
+    {
+      "id": 500,
+      "sourceId": 500,
+      "name": "DuplicateHeadAppearance"
+    },
+    {
+      "id": 501,
+      "sourceId": 501,
+      "name": "ActionCastFakeSpellAtObject"
+    },
+    {
+      "id": 506,
+      "sourceId": 506,
+      "name": "SetLockHeadFollowInDialog"
+    },
+    {
+      "id": 521,
+      "sourceId": 521,
+      "name": "SWMG_GetLateralAccelerationPerSecond"
+    },
+    {
+      "id": 525,
+      "sourceId": 525,
+      "name": "FloatingTextStrRefOnCreature"
+    },
+    {
+      "id": 526,
+      "sourceId": 526,
+      "name": "FloatingTextStringOnCreature"
+    },
+    {
+      "id": 537,
+      "sourceId": 537,
+      "name": "GetLockKeyRequired"
+    },
+    {
+      "id": 538,
+      "sourceId": 538,
+      "name": "GetLockKeyTag"
+    },
+    {
+      "id": 539,
+      "sourceId": 539,
+      "name": "GetLockLockable"
+    },
+    {
+      "id": 540,
+      "sourceId": 540,
+      "name": "GetLockUnlockDC"
+    },
+    {
+      "id": 541,
+      "sourceId": 541,
+      "name": "GetLockLockDC"
+    },
+    {
+      "id": 542,
+      "sourceId": 542,
+      "name": "GetPCLevellingUp"
+    },
+    {
+      "id": 543,
+      "sourceId": 543,
+      "name": "GetHasFeatEffect"
+    },
+    {
+      "id": 544,
+      "sourceId": 544,
+      "name": "SetPlaceableIllumination"
+    },
+    {
+      "id": 545,
+      "sourceId": 545,
+      "name": "GetPlaceableIllumination"
+    },
+    {
+      "id": 553,
+      "sourceId": 553,
+      "name": "FaceObjectAwayFromObject"
+    },
+    {
+      "id": 555,
+      "sourceId": 555,
+      "name": "SetTrapDisabled"
+    },
+    {
+      "id": 560,
+      "sourceId": 560,
+      "name": "WriteTimestampedLogEntry"
+    },
+    {
+      "id": 563,
+      "sourceId": 563,
+      "name": "SWMG_SetSpeedBlurEffect"
+    },
+    {
+      "id": 570,
+      "sourceId": 570,
+      "name": "GetHasInventory"
+    },
+    {
+      "id": 572,
+      "sourceId": 572,
+      "name": "AddToParty"
+    },
+    {
+      "id": 573,
+      "sourceId": 573,
+      "name": "RemoveFromParty"
+    },
+    {
+      "id": 591,
+      "sourceId": 591,
+      "name": "SWMG_OnBulletHit"
+    },
+    {
+      "id": 592,
+      "sourceId": 592,
+      "name": "SWMG_OnObstacleHit"
+    },
+    {
+      "id": 598,
+      "sourceId": 598,
+      "name": "SWMG_OnDeath"
+    },
+    {
+      "id": 604,
+      "sourceId": 604,
+      "name": "SWMG_SetFollowerHitPoints"
+    },
+    {
+      "id": 605,
+      "sourceId": 605,
+      "name": "SWMG_OnDamage"
+    },
+    {
+      "id": 624,
+      "sourceId": 624,
+      "name": "SWMG_GetGunBankCount"
+    },
+    {
+      "id": 625,
+      "sourceId": 625,
+      "name": "SWMG_GetGunBankBulletModel"
+    },
+    {
+      "id": 626,
+      "sourceId": 626,
+      "name": "SWMG_GetGunBankGunModel"
+    },
+    {
+      "id": 632,
+      "sourceId": 632,
+      "name": "SWMG_SetGunBankBulletModel"
+    },
+    {
+      "id": 633,
+      "sourceId": 633,
+      "name": "SWMG_SetGunBankGunModel"
+    },
+    {
+      "id": 657,
+      "sourceId": 657,
+      "name": "SWMG_GetGunBankHorizontalSpread"
+    },
+    {
+      "id": 658,
+      "sourceId": 658,
+      "name": "SWMG_GetGunBankVerticalSpread"
+    },
+    {
+      "id": 659,
+      "sourceId": 659,
+      "name": "SWMG_GetGunBankSensingRadius"
+    },
+    {
+      "id": 660,
+      "sourceId": 660,
+      "name": "SWMG_GetGunBankInaccuracy"
+    },
+    {
+      "id": 661,
+      "sourceId": 661,
+      "name": "SWMG_SetGunBankHorizontalSpread"
+    },
+    {
+      "id": 662,
+      "sourceId": 662,
+      "name": "SWMG_SetGunBankVerticalSpread"
+    },
+    {
+      "id": 663,
+      "sourceId": 663,
+      "name": "SWMG_SetGunBankSensingRadius"
+    },
+    {
+      "id": 664,
+      "sourceId": 664,
+      "name": "SWMG_SetGunBankInaccuracy"
+    },
+    {
+      "id": 736,
+      "sourceId": 736,
+      "name": "SurrenderByFaction"
+    },
+    {
+      "id": 737,
+      "sourceId": 737,
+      "name": "ChangeFactionByFaction"
+    },
+    {
+      "id": 747,
+      "sourceId": 747,
+      "name": "ChangeItemCost"
+    },
+    {
+      "id": 762,
+      "sourceId": 762,
+      "name": "SurrenderRetainBuffs"
+    },
+    {
+      "id": 767,
+      "sourceId": 767,
+      "name": "SetAvailableNPCId"
+    },
+    {
+      "id": 805,
+      "sourceId": 768,
+      "name": "IsMoviePlaying"
+    },
+    {
+      "id": 806,
+      "sourceId": 769,
+      "name": "QueueMovie"
+    },
+    {
+      "id": 807,
+      "sourceId": 770,
+      "name": "PlayMovieQueue"
+    }
+  ],
+  "reconciled": [
+    106,
+    139,
+    204,
+    241
+  ]
+}

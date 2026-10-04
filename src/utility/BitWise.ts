@@ -29,6 +29,10 @@ export class BitWise {
   /**
    * Checks if a value is an instance of a mask.
    * 
+   * Destroyed module objects are treated as invalid so delayed scripts and
+   * queued events don't continue to interact with object shells that have had
+   * their spatial/runtime state torn down.
+   * 
    * @example
    * ```ts
    * BitWise.InstanceOfObject(obj, ModuleObjectTypes.CREATURE); // obj
@@ -37,10 +41,11 @@ export class BitWise {
    * 
    * @param value - The value to check.
    * @param mask - The mask to check against.
-   * @returns True if the value is an instance of the mask, false otherwise.
+   * @returns The original object if it matches the mask and is still valid, otherwise undefined.
    */
   static InstanceOfObject(value: any, mask: number): any {
-    if(typeof value !== 'object') return false;
+    if(!value || typeof value !== 'object') return undefined;
+    if(value?.destroyed === true) return undefined;
     return (value?.objectType & mask) == mask ? value : undefined;
   }
 }

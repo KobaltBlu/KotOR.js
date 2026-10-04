@@ -413,7 +413,7 @@ export class GUICheckBox extends GUIControl{
     this.highlight.fill.mesh.scale.set(cbSize, cbSize, 1);
     this.highlightSelected.fill.mesh.scale.set(cbSize, cbSize, 1);
 
-    if(this.hover){
+    if(this.hover || this.selected){
       if(this.value){
         this.highlightSelected.fill.mesh.visible = true;
       }else{
@@ -431,7 +431,7 @@ export class GUICheckBox extends GUIControl{
 
   onHoverOut(){
     this.hover = false;
-    this.pulsing = false;
+    this.pulsing = this.selected;
 
     this.text.material.uniforms.diffuse.value.set(this.defaultColor);
 

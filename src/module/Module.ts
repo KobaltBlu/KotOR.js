@@ -296,12 +296,13 @@ export class Module {
       const playerList = ifo.getFieldByLabel('Mod_PlayerList').getChildStructs();
       if(playerList.length){
         GameState.PartyManager.PlayerTemplate = GFFObject.FromStruct(playerList[0]);
-        GameState.PartyManager.ActualPlayerTemplate = GameState.SaveGame.pc || GameState.PartyManager.PlayerTemplate;
-        // if(GameState.PartyManager.PlayerTemplate.getFieldByLabel('IsPC').getValue()){
-        //   GameState.PartyManager.ActualPlayerTemplate = GameState.PartyManager.PlayerTemplate;
-        // }else{
-        //   GameState.PartyManager.ActualPlayerTemplate = GameState.SaveGame.pc;
-        // }
+
+        const currentPlayerIsPC = !!GameState.PartyManager.PlayerTemplate?.RootNode?.getFieldByLabel('IsPC')?.getValue();
+        if(currentPlayerIsPC || !(GameState.SaveGame?.pc instanceof GFFObject)){
+          GameState.PartyManager.ActualPlayerTemplate = GameState.PartyManager.PlayerTemplate;
+        }else{
+          GameState.PartyManager.ActualPlayerTemplate = GameState.SaveGame.pc;
+        }
       }
     }
 
@@ -350,39 +351,81 @@ export class Module {
   }
 
   addEffect(effect?: GameEffect, lLocation?: EngineLocation){
-    if(!(effect instanceof GameEffect)){ return; }
+    if(!(effect instanceof GameEffect) || !(lLocation instanceof EngineLocation)){ return; }
 
-    effect.loadModel();
-    const object: any = {
+    const module = this;
+    const attachedObject: any = {
+      area: GameState.module?.area,
+      context: GameState,
       model: new THREE.Object3D(),
-      position: lLocation.position,
-      dispose: function(){
-        this.onRemove();
-        this.removeEffect(this);
-      },
-      removeEffect: function(effect: GameEffect){
-        let index = this.effects.indexOf(effect);
-        if(index >= 0){
-          this.effects.splice(index, 1);
+      audioEmitter: new AudioEmitter(AudioEngine.GetAudioEngine()),
+      removeEffect(effectToRemove: GameEffect){
+        if(!effectToRemove){ return; }
+
+        const effectIndex = module.effects.indexOf(effectToRemove);
+        if(effectIndex >= 0){
+          module.effects.splice(effectIndex, 1);
         }
+
+        try{
+          effectToRemove.onRemove();
+        }catch(error){
+          console.error('Module.addEffect: Failed to remove location effect', error);
+        }
+
+        try{
+          this.model?.removeFromParent?.();
+        }catch(error){
+          console.error('Module.addEffect: Failed to detach location effect model', error);
+        }
+
+        try{
+          this.audioEmitter?.destroy?.();
+          this.audioEmitter = undefined;
+        }catch(error){
+          console.error('Module.addEffect: Failed to destroy location effect audio emitter', error);
+        }
+      },
+      dispose(){
+        this.removeEffect(effect);
       }
     };
 
-    object.audioEmitter = new AudioEmitter(AudioEngine.GetAudioEngine());
-    object.audioEmitter.maxDistance = 50;
-    object.audioEmitter.type = AudioEmitterType.POSITIONAL;
-    object.audioEmitter.setPriorityGroupId(AudioPriorityGroup.NORMAL_SPELL_EFFECTS);
-    object.audioEmitter.load();
-    object.audioEmitter.setPosition(lLocation.position.x, lLocation.position.y, lLocation.position.z);
+    attachedObject.audioEmitter.maxDistance = 50;
+    attachedObject.audioEmitter.type = AudioEmitterType.POSITIONAL;
+    attachedObject.audioEmitter.setPriorityGroupId(AudioPriorityGroup.NORMAL_SPELL_EFFECTS);
+    attachedObject.audioEmitter.load();
 
-    object.model.position.copy(lLocation.position);
+    attachedObject.position = attachedObject.model.position;
+    attachedObject.rotation = attachedObject.model.rotation;
+    attachedObject.quaternion = attachedObject.model.quaternion;
 
-    effect.setCreator(object);
-    effect.setAttachedObject(this);
-    effect.onApply(object);
+    attachedObject.position.copy(lLocation.position);
+    attachedObject.audioEmitter.setPosition(lLocation.position.x, lLocation.position.y, lLocation.position.z);
+
+    effect.setAttachedObject(attachedObject);
     this.effects.push(effect);
 
-    GameState.group.effects.add(object.model);
+    GameState.group.effects.add(attachedObject.model);
+
+    const applyEffect = () => {
+      if(this.effects.indexOf(effect) === -1){ return; }
+      effect.onApply(attachedObject);
+    };
+
+    const maybePromise: unknown = effect.loadModel();
+    if(maybePromise && typeof (maybePromise as Promise<void>).then === 'function'){
+      (maybePromise as Promise<void>)
+        .then(() => {
+          applyEffect();
+        })
+        .catch((error) => {
+          console.error('Module.addEffect: Failed to load effect model', error);
+          applyEffect();
+        });
+    }else{
+      applyEffect();
+    }
   }
 
   addEvent(event: GameEvent){
@@ -400,15 +443,27 @@ export class Module {
         let event = this.eventQueue[i];
         
         if( this.timeManager.pauseDay >= event.day && this.timeManager.pauseTime >= event.time ){
-          event.execute();
           this.eventQueue.splice(i, 1);
+          try{
+            event.execute();
+          }catch(error){
+            console.error('Module.tick: event execution failed', {
+              eventType: event.type,
+              callerId: event.callerId,
+              objectId: event.objectId,
+              script: event.script?.name,
+              offset: (event as any)?.offset,
+              error
+            });
+          }
         }
       }
 
       //Process EffectList
       let elLen = this.effects.length - 1;
       for(let i = elLen; i >= 0; i--){
-        this.effects[i].update(delta);
+        const effect = this.effects[i];
+        effect?.update(delta);
       }
 
       if(this.area){
@@ -526,9 +581,13 @@ export class Module {
     
     //Remove all effects
     if(this){
-      while(this.effects.length){
-        this.effects[0].dispose();
-        this.effects.shift();
+      const effects = this.effects.splice(0, this.effects.length);
+      for(let i = 0; i < effects.length; i++){
+        try{
+          effects[i]?.dispose();
+        }catch(error){
+          console.error(`Module.dispose: Failed to dispose effects[${i}]`, error);
+        }
       }
     }
 
@@ -539,20 +598,27 @@ export class Module {
     });
 
     //Clear walkmesh list
-    while (GameState.walkmeshList.length){
-      let wlkmesh = GameState.walkmeshList.shift();
-      //wlkmesh.dispose();
+    const walkmeshes = GameState.walkmeshList.splice(0, GameState.walkmeshList.length);
+    for(let i = 0; i < walkmeshes.length; i++){
+      const wlkmesh = walkmeshes[i];
+      if(!wlkmesh){ continue; }
       GameState.group.room_walkmeshes.remove(wlkmesh);
     }
 
     if(GameState.PartyManager.Player){
-      GameState.PartyManager.Player.destroy();
+      const player = GameState.PartyManager.Player;
       GameState.PartyManager.Player = undefined;
+      try{
+        player.destroy();
+      }catch(error){
+        console.error('Module.dispose: Failed to destroy player', error);
+      }
     }
 
     //Clear emitters
-    while (GameState.group.emitters.children.length){
-      GameState.group.emitters.remove(GameState.group.emitters.children[0]);
+    const emitters = [...GameState.group.emitters.children];
+    for(let i = 0; i < emitters.length; i++){
+      GameState.group.emitters.remove(emitters[i]);
     }
     
     if(this.area){
@@ -900,14 +966,14 @@ export class Module {
       module.area.setTransitionWaypoint(module.transWP);
       await module.area.load();
 
-      if(module.nextObjId0)
-        GameState.ModuleObjectManager.COUNT = module.nextObjId0;
+      GameState.ModuleObjectManager.SyncCount(module.nextObjId0 || 1);
 
       GameState.ModuleObjectManager.module = module;
 
       if(GameState.isLoadingSave){
         console.log('Module', 'SaveGame.loadInventory');
         await GameState.SaveGame.loadInventory();
+        GameState.ModuleObjectManager.SyncCount(module.nextObjId0 || 1);
       }
 
       return module;

@@ -25,11 +25,7 @@ export class MenuSaveName extends K1_MenuSaveName {
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
-    await super.menuControlInitializer(true);
-    if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
-      resolve();
-    });
+    return await super.menuControlInitializer(skipInit);
   }
   
 }

@@ -166,14 +166,20 @@ export class ComputedPath {
     let parent: PathPoint;
     for(let i = 0; i < this.points.length; i++){
       const p = this.points[i];
-      p.parent = p;
+      p.parent = parent;
       parent = p;
     }
   }
 
   buildHelperLine(){
     const pointCount = this.points.length;
-    const connectionCount = pointCount - 1;
+    if(pointCount <= 0){
+      this.helperMesh.visible = false;
+      this.helperMesh.removeFromParent();
+      return;
+    }
+
+    const connectionCount = Math.max(0, pointCount - 1);
     const pointDataSize = 6;
     const connDataSize = 6;
     const bufferSize = (pointCount * pointDataSize) + (connectionCount * connDataSize);
@@ -327,12 +333,20 @@ export class ComputedPath {
   }
 
   merge(path2: ComputedPath){
+    if(!(path2 instanceof ComputedPath) || !Array.isArray(path2.points) || !path2.points.length){
+      return;
+    }
+
+    if(!Array.isArray(this.points) || !this.points.length){
+      this.points = path2.points.slice(0);
+      this.destination = this.points[this.points.length-1];
+      return;
+    }
+
     const endP1 = this.points[this.points.length - 1];
     const startP2 = path2.points[0];
-    if(endP1.vector.equals(startP2.vector)){
-      path2.points.shift();
-    }
-    this.points = [...this.points, ...path2.points];
+    const skipDuplicate = endP1 && startP2 && endP1.vector.equals(startP2.vector) ? 1 : 0;
+    this.points = [...this.points, ...path2.points.slice(skipDuplicate)];
     this.destination = this.points[this.points.length-1];
   }
 
@@ -349,17 +363,44 @@ export class ComputedPath {
     if(this.points.length < 2)
       return;
 
-    if(divisions == -1)
-      divisions = this.points.length * 5;
+    if(!this.owner?.area){
+      return;
+    }
 
-    const preSmooth = this.points.map( (p) => p.vector );
-    const curve = new THREE.CatmullRomCurve3(preSmooth);
+    const safeDistance = this.owner.getHitDistance();
+    const simplified: PathPoint[] = [];
+    const anchorPoint = PathPoint.FromVector3(new THREE.Vector3());
+    anchorPoint.setArea(this.owner.area);
 
-    const safeDistance = this.owner?.getHitDistance();
+    let anchorVector = this.origin?.vector?.clone() || this.owner.position.clone();
+    let index = 0;
 
-    this.points = curve.getPoints( divisions ).map( (v) => {
-      return PathPoint.FromVector3(this.owner ? this.owner.area.getNearestWalkablePoint(v, safeDistance) : v);
-    });
+    while(index < this.points.length){
+      anchorPoint.vector.copy(anchorVector);
+      anchorPoint.setArea(this.owner.area);
+
+      let furthestVisibleIndex = index;
+      for(let i = index; i < this.points.length; i++){
+        if(!anchorPoint.hasLOS(this.points[i], this.owner)){
+          break;
+        }
+        furthestVisibleIndex = i;
+      }
+
+      const chosenPoint = this.points[furthestVisibleIndex];
+      const simplifiedPoint = PathPoint.FromVector3(
+        this.owner.area.getNearestWalkablePoint(chosenPoint.vector, safeDistance)
+      );
+      simplifiedPoint.setArea(this.owner.area);
+      simplified.push(simplifiedPoint);
+
+      anchorVector = chosenPoint.vector.clone();
+      index = furthestVisibleIndex + 1;
+    }
+
+    this.points = simplified;
+    this.destination = this.points[this.points.length - 1];
+    this.reIndex();
   }
 
   static FromPointsList(points: PathPoint[] = []): ComputedPath {
@@ -370,7 +411,7 @@ export class ComputedPath {
 
   static FromVector3List(points: THREE.Vector3[] = []): ComputedPath {
     return this.FromPointsList(
-      points.map((p) => PathPoint.FromVector3(p))
+      points.map((p) => PathPoint.FromVector3(p.clone()))
     );
   }
 

@@ -62,6 +62,11 @@ export class MenuInventory extends GameMenu {
       this.LB_ITEMS.padding = 5;
       this.LB_ITEMS.offset.x = 0;
 
+      this.BTN_QUESTITEMS?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.manager.MenuQuestItem.open();
+      });
+
       this.BTN_CHANGE1.addEventListener('click', (e) => {
         e.stopPropagation();
         if(GameState.PartyManager.party.length > 0){
@@ -84,9 +89,7 @@ export class MenuInventory extends GameMenu {
   }
 
   UpdateSelected(){
-    if(this.selected instanceof ModuleItem){
-      this.LB_DESCRIPTION?.setItem(this.selected.getDescription());
-    }
+    this.LB_DESCRIPTION?.setItem(this.selected instanceof ModuleItem ? this.selected.getDescription() : null);
   }
 
   filterInventory(){
