@@ -91,6 +91,13 @@ export class AppState {
     if(AppState.env !== ApplicationEnvironment.BROWSER){
       return false;
     }
+    // Once the engine exists, its context is authoritative. A newly created
+    // probe may be suspended even after the user has unlocked the game context,
+    // causing on-preload to reopen Begin over an already initialized game.
+    const engineContext = KotOR.AudioEngine.engines[0]?.audioCtx;
+    if(engineContext){
+      return engineContext.state === 'suspended';
+    }
     try {
       const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext;
       if(!AudioContextCtor){
