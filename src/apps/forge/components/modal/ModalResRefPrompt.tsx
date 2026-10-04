@@ -7,10 +7,10 @@
  */
 
 import React, { FormEvent, useId, useState } from "react";
-import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
-import { ForgeButton, ForgeDialog, ForgeInput } from "@/apps/forge/components/ui";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { ModalResRefPromptState } from "@/apps/forge/states/modal/ModalResRefPromptState";
+import { BaseModalProps } from "@apps/forge/interfaces/modal/BaseModalProps";
+import { ForgeButton, ForgeDialog, ForgeInput } from "@apps/forge/components/ui";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { ModalResRefPromptState } from "@apps/forge/states/modal/ModalResRefPromptState";
 import "@/apps/forge/components/modal/ModalResRefPrompt.scss";
 
 export const ModalResRefPrompt = (props: BaseModalProps) => {

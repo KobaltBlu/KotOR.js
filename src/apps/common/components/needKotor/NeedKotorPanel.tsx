@@ -2,8 +2,8 @@ import React from "react";
 import {
   KOTOR_STORE_PRODUCTS,
   KotORStoreProduct,
-} from "@/apps/common/data/kotorStoreProducts";
-import { GamePurchaseCard } from "@/apps/common/components/needKotor/GamePurchaseCard";
+} from "@apps/common/data/kotorStoreProducts";
+import { GamePurchaseCard } from "@apps/common/components/needKotor/GamePurchaseCard";
 import "@/apps/common/components/needKotor/needKotorPanel.scss";
 
 export interface NeedKotorPanelProps {

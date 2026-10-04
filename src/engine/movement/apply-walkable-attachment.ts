@@ -1,5 +1,5 @@
-import type { ModuleObject } from "@/module/ModuleObject";
-import type { WalkableAttachment } from "@/engine/movement/area-movement-queries";
+import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { WalkableAttachment } from "@engine/movement/area-movement-queries";
 
 /**
  * Apply a pure walkable attachment probe to an object (room + ground + Z).

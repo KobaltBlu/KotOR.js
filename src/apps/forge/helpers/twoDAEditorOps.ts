@@ -6,7 +6,7 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import type { TwoDAObject } from "@/resource/TwoDAObject";
+import type { TwoDAObject } from "@core/resource/TwoDAObject";
 
 export interface TwoDACellRef {
   row: number;

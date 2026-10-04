@@ -1,9 +1,11 @@
-import { BaseItemType, CombatFeatType, ModuleItemProperty } from "@/enums";
-import { SkillType } from "@/enums/nwscript/SkillType";
-import { GameState } from "@/GameState";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import type { ModuleItem } from "@/module/ModuleItem";
-import type { UseLimitationProp } from "@/engine/menu/action-menu-usable-pure";
+import { ModuleItemProperty } from "@core/enums";
+import { BaseItemType } from "@core/enums/combat/BaseItemType";
+import { CombatFeatType } from "@core/enums/combat/CombatFeatType";
+import { SkillType } from "@core/enums/nwscript/SkillType";
+import { GameState } from "@engine/runtime/GameState";
+import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { ModuleItem } from "@engine/module/ModuleItem";
+import type { UseLimitationProp } from "@engine/menu/action-menu-usable-pure";
 import {
   ItemTypeCategory,
   RACE_DROID,
@@ -20,7 +22,7 @@ import {
   isSquadMedicalItemType,
   passesDenySubraceMask,
   passesDroidOrHumanRestriction,
-} from "@/engine/menu/action-menu-usable-pure";
+} from "@engine/menu/action-menu-usable-pure";
 
 export {
   ItemTypeCategory,
@@ -39,7 +41,7 @@ export {
   isSquadMedicalItemType,
   passesDenySubraceMask,
   passesDroidOrHumanRestriction,
-} from "@/engine/menu/action-menu-usable-pure";
+} from "@engine/menu/action-menu-usable-pure";
 
 /** GetUsableItems mask bits (GetPersonalActions). */
 export const UsableItemMask = {

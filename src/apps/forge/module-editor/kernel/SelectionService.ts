@@ -6,8 +6,8 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { EventListenerModel } from "@/apps/forge/EventListenerModel";
-import type { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { EventListenerModel } from "@apps/forge/EventListenerModel";
+import type { ForgeGameObject } from "@apps/forge/module-editor/ForgeGameObject";
 
 export interface SelectionFilter {
   /** Object type names allowed when non-empty (e.g. "creature"). */

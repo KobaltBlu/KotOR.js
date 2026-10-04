@@ -7,7 +7,7 @@
  */
 
 import React, { useMemo, useState } from "react";
-import * as KotORNs from "@/apps/forge/KotOR";
+import * as KotORNs from "@apps/forge/KotOR";
 import { ForgeInput } from "./ForgeInput";
 import { ForgeSelect } from "./ForgeSelect";
 import {
@@ -16,7 +16,7 @@ import {
   twoDATableHasRows,
   type TwoDAIndexSentinel,
   type TwoDALike,
-} from "@/apps/forge/helpers/twoDAIndexOptions";
+} from "@apps/forge/helpers/twoDAIndexOptions";
 import "@/apps/forge/components/ui/ForgeTwoDAIndexField.scss";
 
 export interface ForgeTwoDAIndexFieldProps {

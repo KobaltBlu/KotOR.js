@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useApp } from "@/apps/debugger/context/AppContext";
-import type { ScriptOwnerFilter } from "@/apps/debugger/states/DebuggerState";
-import * as KotOR from "@/apps/debugger/KotOR";
+import { useApp } from "@apps/debugger/context/AppContext";
+import type { ScriptOwnerFilter } from "@apps/debugger/states/DebuggerState";
+import * as KotOR from "@apps/debugger/KotOR";
 import {
   OVERVIEW_KIND_COLORS,
   OVERVIEW_KIND_LABELS,
   type OverviewObjectKind,
-} from "@/inspect/runtimeSnapshots";
+} from "@apps/debugger/KotOR";
 
 const KIND_ORDER: OverviewObjectKind[] = [
   'party', 'creature', 'door', 'placeable', 'trigger', 'waypoint',

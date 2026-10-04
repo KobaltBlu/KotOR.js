@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import path from "path";
 import * as fs from "fs";
-import { ForgeButton, ForgeDropdown } from "@/apps/forge/components/ui";
-import { FileTypeManager } from "@/apps/forge/FileTypeManager";
-import { ForgeFileSystem } from "@/apps/forge/ForgeFileSystem";
-import type { EditorFile } from "@/apps/forge/EditorFile";
-import { nssEditorApi } from "@/apps/forge/nwscript-language/nssEditorApi";
-import { compareNcsInspections, type NcsCompareRow } from "@/nwscript/inspect/ncsCompare";
+import { ForgeButton, ForgeDropdown } from "@apps/forge/components/ui";
+import { FileTypeManager } from "@apps/forge/FileTypeManager";
+import { ForgeFileSystem } from "@apps/forge/ForgeFileSystem";
+import type { EditorFile } from "@apps/forge/EditorFile";
+import { nssEditorApi } from "@apps/forge/nwscript-language/nssEditorApi";
+import { compareNcsInspections, type NcsCompareRow } from "@core/nwscript/inspect/ncsCompare";
 import {
   formatNcsDisassembly,
   inspectNcs,
@@ -16,13 +16,13 @@ import {
   type NcsInspectedInstruction,
   type NcsInspection,
   type NcsInstructionPart,
-} from "@/nwscript/inspect/ncsInspection";
+} from "@core/nwscript/inspect/ncsInspection";
 import {
   nearestNssLineForCodeOffset,
   type NssCodeLineMap,
-} from "@/nwscript/inspect/nssCodeLineMap";
-import type { NWScript } from "@/nwscript/NWScript";
-import { OP_JSR } from "@/nwscript/NWScriptOPCodes";
+} from "@core/nwscript/inspect/nssCodeLineMap";
+import type { NWScript } from "@engine/nwscript/NWScript";
+import { OP_JSR } from "@core/nwscript/NWScriptOPCodes";
 import {
   getNcsInspectorLayoutMode,
   getNcsInspectorShowDetails,

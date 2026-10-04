@@ -10,9 +10,9 @@ export {
   drivePrepareDestination,
   resolveDriveStep,
   tickCreatureDrive,
-} from "@/engine/movement/drive-policy";
+} from "@engine/movement/drive-policy";
 
-export { queryDoorCrossing as getDoorCrossed } from "@/engine/movement/area-movement-queries";
+export { queryDoorCrossing as getDoorCrossed } from "@engine/movement/area-movement-queries";
 
 /** Retail DriveUpdateLocation result codes (action compatibility). */
 export enum DriveUpdateResult {

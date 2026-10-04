@@ -1,24 +1,24 @@
 import * as THREE from "three";
-import type { ModuleCreature } from "@/module/ModuleCreature";
+import type { ModuleCreature } from "@engine/module/ModuleCreature";
 import {
   DriveUpdateResult,
   tickCreatureDrive,
-} from "@/engine/pathfinding/tick-creature-drive";
-import { MovementSource } from "@/engine/movement/types";
+} from "@engine/pathfinding/tick-creature-drive";
+import { MovementSource } from "@engine/movement/types";
 import {
   pathApproachScale,
   walkSpeedFactorRamp,
   walkTrapezoidStep,
   WALK_BACK_DOT,
-} from "@/engine/pathfinding/locomotion";
-import { isCreatureCapsuleClear } from "@/engine/pathfinding/creature-capsule-clear";
-import { nudgeFriendlyCreatures } from "@/engine/pathfinding/nudge-friendlies";
-import { buildPathAroundCreature } from "@/engine/pathfinding/build-path-around-creature";
-import { isInUseRange } from "@/actions/use-range";
-import { GameState } from "@/GameState";
-import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+} from "@engine/pathfinding/locomotion";
+import { isCreatureCapsuleClear } from "@engine/pathfinding/creature-capsule-clear";
+import { nudgeFriendlyCreatures } from "@engine/pathfinding/nudge-friendlies";
+import { buildPathAroundCreature } from "@engine/pathfinding/build-path-around-creature";
+import { isInUseRange } from "@engine/actions/use-range";
+import { GameState } from "@engine/runtime/GameState";
+import { ModuleCreatureAnimState } from "@core/enums/module/ModuleCreatureAnimState";
 
-import { isCreature } from "@/module/guards/isCreature";
+import { isCreature } from "@engine/module/guards/isCreature";
 
 /**
  * creature walk update.

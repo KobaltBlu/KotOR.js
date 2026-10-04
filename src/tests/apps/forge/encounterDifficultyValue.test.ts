@@ -1,5 +1,5 @@
 import { describe, expect, test } from "@jest/globals";
-import { encounterDifficultyValueAt } from "@/apps/forge/helpers/encounterDifficultyValue";
+import { encounterDifficultyValueAt } from "@apps/forge/helpers/encounterDifficultyValue";
 
 describe("encounterDifficultyValueAt", () => {
   test("uses the 2DA VALUE column when the row exists", () => {

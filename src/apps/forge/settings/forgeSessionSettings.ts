@@ -10,7 +10,7 @@ import {
   asSettingsRecord,
   createForgeSettingsBag,
   sanitizeBoolean,
-} from "@/apps/forge/settings/forgeSettingsStore";
+} from "@apps/forge/settings/forgeSettingsStore";
 
 export const FORGE_SESSION_SETTINGS_KEY = "Forge.session";
 

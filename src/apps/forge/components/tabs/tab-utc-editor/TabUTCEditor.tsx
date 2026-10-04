@@ -1,22 +1,22 @@
 import React, { useCallback, useEffect, useState } from "react"
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
-import { TabUTCEditorState } from "@/apps/forge/states/tabs";
-import type{ CreatureClassEntry, ForgeCreature, KnownSpellEntry, SpecialAbilityEntry } from "@/apps/forge/module-editor/ForgeCreature";
-import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
-import { SubTabHost, SubTab } from "@/apps/forge/components/SubTabHost";
-import * as KotOR from "@/apps/forge/KotOR";
-import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor";
-import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
-import { TextureCanvas } from "@/apps/forge/components/TextureCanvas/TextureCanvas";
-import { InfoBubble } from "@/apps/forge/components/info-bubble/info-bubble";
+import { BaseTabProps } from "@apps/forge/interfaces/BaseTabProps"
+import { TabUTCEditorState } from "@apps/forge/states/tabs";
+import type{ CreatureClassEntry, ForgeCreature, KnownSpellEntry, SpecialAbilityEntry } from "@apps/forge/module-editor/ForgeCreature";
+import { UI3DRendererView } from "@apps/forge/components/UI3DRendererView";
+import { SubTabHost, SubTab } from "@apps/forge/components/SubTabHost";
+import * as KotOR from "@apps/forge/KotOR";
+import { CExoLocStringEditor } from "@apps/forge/components/CExoLocStringEditor";
+import { ForgeCheckbox } from "@apps/forge/components/forge-checkbox/forge-checkbox";
+import { TextureCanvas } from "@apps/forge/components/TextureCanvas/TextureCanvas";
+import { InfoBubble } from "@apps/forge/components/info-bubble/info-bubble";
 import { faArrowRight } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { UtcEquipmentTab } from "@/apps/forge/components/tabs/tab-utc-editor/UtcEquipmentTab";
-import { ScriptResRefInput } from "@/apps/forge/components/script-resref-input/ScriptResRefInput";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { useForgeHasGameData } from "@/apps/forge/helpers/useForgeHasGameData";
-import { UtcGffStructList } from "@/apps/forge/components/tabs/tab-utc-editor/UtcGffStructList";
-import { UtcRuleIndexField } from "@/apps/forge/components/tabs/tab-utc-editor/UtcRuleIndexField";
+import { UtcEquipmentTab } from "@apps/forge/components/tabs/tab-utc-editor/UtcEquipmentTab";
+import { ScriptResRefInput } from "@apps/forge/components/script-resref-input/ScriptResRefInput";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { useForgeHasGameData } from "@apps/forge/helpers/useForgeHasGameData";
+import { UtcGffStructList } from "@apps/forge/components/tabs/tab-utc-editor/UtcGffStructList";
+import { UtcRuleIndexField } from "@apps/forge/components/tabs/tab-utc-editor/UtcRuleIndexField";
 import {
   UTC_CLASS_GFF_COLUMNS,
   UTC_FEAT_GFF_COLUMNS,
@@ -31,7 +31,7 @@ import {
   utcRuleSetHasFeatGrid,
   utcRuleSetHasSkillGrid,
   utcRuleSetHasSpellGrid,
-} from "@/apps/forge/components/tabs/tab-utc-editor/utcGffList";
+} from "@apps/forge/components/tabs/tab-utc-editor/utcGffList";
 import "@/apps/forge/components/tabs/tab-utc-editor/TabUTCEditor.scss";
 
 export const TabUTCEditor = function(props: BaseTabProps){

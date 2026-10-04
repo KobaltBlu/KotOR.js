@@ -1,11 +1,11 @@
 import * as THREE from "three";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import { getPathPersonalSpace } from "@/combat/attack-range";
+import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import { getPathPersonalSpace } from "@engine/combat/attack-range";
 import {
   farthestClearPoint,
   hasWalkLineClear,
   WalkLineHitCode,
-} from "@/engine/pathfinding/walk-line-clear";
+} from "@engine/pathfinding/walk-line-clear";
 
 /**
  * find away vector

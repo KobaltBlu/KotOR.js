@@ -1,6 +1,6 @@
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import type { ModuleObject } from "@/module/ModuleObject";
-import { getCreaturePersonalSpace } from "@/combat/attack-range";
+import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { ModuleObject } from "@engine/module/ModuleObject";
+import { getCreaturePersonalSpace } from "@engine/combat/attack-range";
 
 /**
  * Approximate resolveStartOverlapCreatures.

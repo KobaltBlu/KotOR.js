@@ -8,14 +8,14 @@
 
 import React, { useCallback, useEffect, useRef } from "react";
 import * as THREE from "three";
-import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
-import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
-import { OdysseyMaterialBuilder } from "@/three/odyssey/OdysseyMaterialBuilder";
-import { TXI } from "@/resource/TXI";
-import * as KotOR from "@/apps/forge/KotOR";
-import type { TabImageViewerState } from "@/apps/forge/states/tabs/TabImageViewerState";
-import { useForgeSettings } from "@/apps/forge/settings/useForgeSettings";
-import { forgeImageSettings } from "@/apps/forge/settings/forgeEditorsSettings";
+import { UI3DRendererView } from "@apps/forge/components/UI3DRendererView";
+import { UI3DRenderer } from "@apps/forge/UI3DRenderer";
+import { TXI } from "@core/resource/TXI";
+import { OdysseyMaterialBuilder } from "@apps/forge/KotOR";
+import * as KotOR from "@apps/forge/KotOR";
+import type { TabImageViewerState } from "@apps/forge/states/tabs/TabImageViewerState";
+import { useForgeSettings } from "@apps/forge/settings/useForgeSettings";
+import { forgeImageSettings } from "@apps/forge/settings/forgeEditorsSettings";
 
 function clampScale(value: number): number {
   if (value < 0.1) return 0.1;

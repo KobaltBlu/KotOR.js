@@ -6,10 +6,10 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import * as KotOR from "@/apps/forge/KotOR";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
-import { sanitizeResRef } from "@/apps/forge/helpers/UTxEditorHelpers";
-import type { BlueprintItem, BlueprintType } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
+import * as KotOR from "@apps/forge/KotOR";
+import { ProjectFileSystem } from "@apps/forge/ProjectFileSystem";
+import { sanitizeResRef } from "@apps/forge/helpers/UTxEditorHelpers";
+import type { BlueprintItem, BlueprintType } from "@apps/forge/states/modal/ModalBlueprintBrowserState";
 
 export async function resolveBlueprintBuffer(
   item: BlueprintItem,

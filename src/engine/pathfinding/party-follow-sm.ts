@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import { GameState } from "@/GameState";
-import { getPathPersonalSpace } from "@/combat/attack-range";
+import { GameState } from "@engine/runtime/GameState";
+import { getPathPersonalSpace } from "@engine/combat/attack-range";
 import {
   FOLLOW_COMFORT,
   FOLLOW_REPATH,
@@ -12,23 +12,23 @@ import {
   resolveFollowEntryState,
   shouldFollowRun,
   type PartyFollowRuntime,
-} from "@/engine/pathfinding/party-follow";
-import { getFollowRateScale, pathApproachScale, walkSpeedFactorRamp } from "@/engine/pathfinding/locomotion";
-import { partyFollowPath, FOLLOW_RING_SIZE } from "@/engine/pathfinding/party-follow-path";
-import { hasWalkLineClear, WalkLineHitCode } from "@/engine/pathfinding/walk-line-clear";
-import { isSafeWalkPoint } from "@/engine/pathfinding/safe-walk-point";
-import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
-import { CombatFeatType } from "@/enums/combat/CombatFeatType";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
-import { Utility } from "@/utility/Utility";
-import { commitMovement } from "@/engine/movement/movement-committer";
-import { setMovementAuthority } from "@/engine/movement/creature-movement-state";
+} from "@engine/pathfinding/party-follow";
+import { getFollowRateScale, pathApproachScale, walkSpeedFactorRamp } from "@engine/pathfinding/locomotion";
+import { partyFollowPath, FOLLOW_RING_SIZE } from "@engine/pathfinding/party-follow-path";
+import { hasWalkLineClear, WalkLineHitCode } from "@engine/pathfinding/walk-line-clear";
+import { isSafeWalkPoint } from "@engine/pathfinding/safe-walk-point";
+import { ModuleCreatureAnimState } from "@core/enums/module/ModuleCreatureAnimState";
+import { CombatFeatType } from "@core/enums/combat/CombatFeatType";
+import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import { TURN_SPEED_FAST } from "@engine/movement/TurnSpeeds";
+import { Utility } from "@core/utility/Utility";
+import { commitMovement } from "@engine/movement/movement-committer";
+import { setMovementAuthority } from "@engine/movement/creature-movement-state";
 import {
   MovementAuthority,
   MovementSource,
   MovementStatus,
-} from "@/engine/movement/types";
+} from "@engine/movement/types";
 
 /**
  * Follow-leader state machine: one-frame steps for party companions

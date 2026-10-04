@@ -6,8 +6,8 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import type { ForgeArea } from "@/apps/forge/module-editor/ForgeArea";
-import type { ForgeRoom } from "@/apps/forge/module-editor/ForgeRoom";
+import type { ForgeArea } from "@apps/forge/module-editor/ForgeArea";
+import type { ForgeRoom } from "@apps/forge/module-editor/ForgeRoom";
 
 export interface RoomVisLink {
   from: string;

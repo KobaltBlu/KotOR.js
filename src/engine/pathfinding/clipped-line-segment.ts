@@ -1,7 +1,7 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@/module/ModuleArea";
-import type { WalkmeshEdge } from "@/odyssey/WalkmeshEdge";
-import type { OdysseyFace3 } from "@/three/odyssey";
+import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { WalkmeshEdge } from "@engine/odyssey/WalkmeshEdge";
+import type { OdysseyFace3 } from "@engine/render/three/odyssey";
 
 /**
  * Approximate ClippedLineSegmentWalkable

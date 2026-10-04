@@ -6,7 +6,7 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import type { ImageBlendMode, ImageDocument } from "@/apps/forge/image/imageTypes";
+import type { ImageBlendMode, ImageDocument } from "@apps/forge/image/imageTypes";
 
 function blendChannel(dst: number, src: number, mode: ImageBlendMode): number {
   switch (mode) {

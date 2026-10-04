@@ -1,12 +1,12 @@
 import * as fs from "fs";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { FileLocationType } from "@/apps/forge/enum/FileLocationType";
-import { EditorFileOptions } from "@/apps/forge/interfaces/EditorFileOptions";
-import { pathParse } from "@/apps/forge/helpers/PathParse";
-import { EventListenerModel } from "@/apps/forge/EventListenerModel";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { FileLocationType } from "@apps/forge/enum/FileLocationType";
+import { EditorFileOptions } from "@apps/forge/interfaces/EditorFileOptions";
+import { pathParse } from "@apps/forge/helpers/PathParse";
+import { EventListenerModel } from "@apps/forge/EventListenerModel";
 import * as KotOR from "@/KotOR";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
-import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
+import { ProjectFileSystem } from "@apps/forge/ProjectFileSystem";
+import { EditorFileProtocol } from "@apps/forge/enum/EditorFileProtocol";
 
 export type EditorFileEventListenerTypes =
   'onNameChanged'|'onSaveStateChanged'|'onSaved'

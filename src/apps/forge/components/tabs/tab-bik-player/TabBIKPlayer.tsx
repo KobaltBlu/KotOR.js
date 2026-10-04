@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import { TabBIKPlayerState } from "@/apps/forge/states/tabs/TabBIKPlayerState";
-import { ensureYUVWebGL, drawYUVFrame, type YUVWebGLState } from "@/apps/forge/components/tabs/tab-bik-player/yuvWebGL";
-import { ForgeButton } from "@/apps/forge/components/ui";
+import { BaseTabProps } from "@apps/forge/interfaces/BaseTabProps";
+import { TabBIKPlayerState } from "@apps/forge/states/tabs/TabBIKPlayerState";
+import { ensureYUVWebGL, drawYUVFrame, type YUVWebGLState } from "@apps/forge/components/tabs/tab-bik-player/yuvWebGL";
+import { ForgeButton } from "@apps/forge/components/ui";
 
 /** Format seconds as M:SS or H:MM:SS. */
 function formatTime(seconds: number): string {

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useApp } from "@/apps/debugger/context/AppContext";
-import type { GlobalsSnapshotEntry } from "@/inspect/runtimeSnapshots";
+import { useApp } from "@apps/debugger/context/AppContext";
+import type { GlobalsSnapshotEntry } from "@engine/debug/inspect/runtimeSnapshots";
 
 function formatValue(entry: GlobalsSnapshotEntry): string {
   if(entry.type === 'Location' && entry.value && typeof entry.value === 'object'){

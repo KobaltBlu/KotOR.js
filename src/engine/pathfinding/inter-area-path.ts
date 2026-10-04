@@ -1,19 +1,19 @@
 import * as THREE from "three";
-import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
-import { NWModuleObjectType } from "@/enums/nwscript/NWModuleObjectType";
-import { ActionParameterType } from "@/enums/actions/ActionParameterType";
-import type { ModuleArea } from "@/module/ModuleArea";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import type { ModuleDoor } from "@/module/ModuleDoor";
-import type { ModuleObject } from "@/module/ModuleObject";
-import type { ModuleTrigger } from "@/module/ModuleTrigger";
-import { GameState } from "@/GameState";
-import { getNearestActionPoint } from "@/combat/nearest-action-point";
-import { getPathPersonalSpace } from "@/combat/attack-range";
+import { ModuleTriggerType } from "@core/enums/module/ModuleTriggerType";
+import { NWModuleObjectType } from "@core/enums/nwscript/NWModuleObjectType";
+import { ActionParameterType } from "@core/enums/actions/ActionParameterType";
+import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { ModuleDoor } from "@engine/module/ModuleDoor";
+import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { ModuleTrigger } from "@engine/module/ModuleTrigger";
+import { GameState } from "@engine/runtime/GameState";
+import { getNearestActionPoint } from "@engine/combat/nearest-action-point";
+import { getPathPersonalSpace } from "@engine/combat/attack-range";
 
-import { isDoor } from "@/module/guards/isDoor";
-import { isTrigger } from "@/module/guards/isTrigger";
-import { ModuleLoadCoordinator } from '@/engine/ModuleLoadCoordinator';
+import { isDoor } from "@engine/module/guards/isDoor";
+import { isTrigger } from "@engine/module/guards/isTrigger";
+import { ModuleLoadCoordinator } from '@engine/runtime/ModuleLoadCoordinator';
 
 /**
  * Inter-area pathfinding (PlotInterAreaPath / build inter-area path

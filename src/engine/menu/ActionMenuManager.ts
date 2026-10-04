@@ -1,17 +1,17 @@
-import { GameState } from "@/GameState";
-import { ActionMenuPanel } from "@/engine/menu/ActionMenuPanel";
-import { ActionMenuItem } from "@/engine/menu/ActionMenuItem";
-import type { ModuleObject } from "@/module/ModuleObject";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import type { ModuleItem } from "@/module/ModuleItem";
-import { IActionPanelLists } from "@/interface/gui/IActionPanelLists";
-import { GameEngineType } from "@/enums/engine/GameEngineType";
-import { ActionType } from "@/enums/actions/ActionType";
-import { SkillType } from "@/enums/nwscript/SkillType";
-import { ActionParameterType, ModuleObjectConstant, ModuleTriggerType } from "@/enums";
-import { TalentFeat } from "@/talents/TalentFeat";
-import { TalentObject } from "@/talents/TalentObject";
-import { TalentSpell } from "@/talents/TalentSpell";
+import { GameState } from "@engine/runtime/GameState";
+import { ActionMenuPanel } from "@engine/menu/ActionMenuPanel";
+import { ActionMenuItem } from "@engine/menu/ActionMenuItem";
+import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { ModuleItem } from "@engine/module/ModuleItem";
+import { IActionPanelLists } from "@engine/interface/gui/IActionPanelLists";
+import { GameEngineType } from "@core/enums/engine/GameEngineType";
+import { ActionType } from "@core/enums/actions/ActionType";
+import { SkillType } from "@core/enums/nwscript/SkillType";
+import { ActionParameterType, ModuleObjectConstant, ModuleTriggerType } from "@core/enums";
+import { TalentFeat } from "@engine/talents/TalentFeat";
+import { TalentObject } from "@engine/talents/TalentObject";
+import { TalentSpell } from "@engine/talents/TalentSpell";
 import {
   UsableItemMask,
   getMineStrengthLevel,
@@ -22,9 +22,9 @@ import {
   isPlaceableTargetUseItem,
   isSecuritySpikeItem,
   isUsableItemActive,
-} from "@/engine/menu/action-menu-usable";
-import { shouldShowCounterSpellAction } from "@/combat/spell-cast-gates";
-import { isCreature } from "@/module/guards/isCreature";
+} from "@engine/menu/action-menu-usable";
+import { shouldShowCounterSpellAction } from "@engine/combat/spell-cast-gates";
+import { isCreature } from "@engine/module/guards/isCreature";
 
 /** Appearance racialtype 5 (droid) — global. */
 const APPEARANCE_RACIALTYPE_DROID = 5;

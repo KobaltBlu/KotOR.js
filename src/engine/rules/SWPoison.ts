@@ -1,4 +1,4 @@
-import { TwoDAObject } from "@/resource/TwoDAObject";
+import { TwoDAObject } from "@core/resource/TwoDAObject";
 
 /** poison.2da row. Columns vary between game versions and may be accessed dynamically. */
 export class SWPoison {

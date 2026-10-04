@@ -6,7 +6,7 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { ConfigClient } from "@/utility/ConfigClient";
+import { ConfigClient } from "@core/filesystem/ConfigClient";
 import {
   asSettingsRecord,
   createForgeSettingsBag,
@@ -14,14 +14,14 @@ import {
   sanitizeEnum,
   sanitizeInteger,
   sanitizeNumber,
-} from "@/apps/forge/settings/forgeSettingsStore";
-import type { TabAudioVisualId } from "@/apps/forge/components/tabs/tab-audio-player/tabAudioVisualizations";
-import { TAB_AUDIO_VISUAL_IDS } from "@/apps/forge/components/tabs/tab-audio-player/tabAudioVisualizations";
+} from "@apps/forge/settings/forgeSettingsStore";
+import type { TabAudioVisualId } from "@apps/forge/components/tabs/tab-audio-player/tabAudioVisualizations";
+import { TAB_AUDIO_VISUAL_IDS } from "@apps/forge/components/tabs/tab-audio-player/tabAudioVisualizations";
 import {
   DEFAULT_MODULE_WORKSPACE,
   sanitizeModuleWorkspace,
   type ModuleWorkspaceState,
-} from "@/apps/forge/module-editor/workspace/ModuleWorkspaceState";
+} from "@apps/forge/module-editor/workspace/ModuleWorkspaceState";
 
 export type ViewportLayerKey =
   | "lights"

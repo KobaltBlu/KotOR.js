@@ -1,7 +1,7 @@
 import * as THREE from "three";
-import type { ModuleObject } from "@/module/ModuleObject";
-import { PathPoint } from "@/engine/pathfinding/PathPoint";
-import { PathPointDfsTransTable } from "@/engine/pathfinding/path-point-dfs-trans-table";
+import type { ModuleObject } from "@engine/module/ModuleObject";
+import { PathPoint } from "@engine/pathfinding/PathPoint";
+import { PathPointDfsTransTable } from "@engine/pathfinding/path-point-dfs-trans-table";
 
 /**
  * Approximate PathPointDFSearch + GenerateSuccessors.

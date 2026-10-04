@@ -1,6 +1,6 @@
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
-import { facingFromYaw, yawFromFacing } from "@/apps/forge/helpers/gitFacing";
-import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeGameObject } from "@apps/forge/module-editor/ForgeGameObject";
+import { facingFromYaw, yawFromFacing } from "@apps/forge/helpers/gitFacing";
+import * as KotOR from "@apps/forge/KotOR";
 import * as THREE from "three";
 
 export interface ItemPropertyEntry {

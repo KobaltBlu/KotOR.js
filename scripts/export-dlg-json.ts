@@ -33,15 +33,15 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import pLimit from 'p-limit';
-import { ApplicationEnvironment } from '../src/enums/ApplicationEnvironment';
-import { ApplicationProfile } from '../src/utility/ApplicationProfile';
-import { KEYManager } from '../src/managers/KEYManager';
-import { BIFManager } from '../src/managers/BIFManager';
-import { ResourceTypes } from '../src/resource/ResourceTypes';
-import { GFFObject } from '../src/resource/GFFObject';
-import { RIMObject } from '../src/resource/RIMObject';
-import { ERFObject } from '../src/resource/ERFObject';
-import type { IKEYEntry } from '../src/interface/resource/IKEYEntry';
+import { ApplicationEnvironment } from '@core/enums/ApplicationEnvironment';
+import { ApplicationProfile } from '@core/utility/ApplicationProfile';
+import { KEYManager } from '@engine/managers/KEYManager';
+import { BIFManager } from '@engine/managers/BIFManager';
+import { ResourceTypes } from '@core/resource/ResourceTypes';
+import { GFFObject } from '@core/resource/GFFObject';
+import { RIMObject } from '@core/resource/RIMObject';
+import { ERFObject } from '@core/resource/ERFObject';
+import type { IKEYEntry } from '@core/interface/resource/IKEYEntry';
 import { ncsBufferToAssembly } from './lib/ncs-to-assembly';
 
 type GameId = 'k1' | 'k2';

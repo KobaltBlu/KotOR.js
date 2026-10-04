@@ -1,11 +1,11 @@
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { EventListenerModel } from "@/apps/forge/EventListenerModel";
-import { TabStoreState } from "@/apps/forge/interfaces/TabStoreState";
+import { EditorFile } from "@apps/forge/EditorFile";
+import { EventListenerModel } from "@apps/forge/EventListenerModel";
+import { TabStoreState } from "@apps/forge/interfaces/TabStoreState";
 import { 
   TabBIKPlayerState, TabGFFEditorState, TabHexEditorState, TabImageViewerState, TabModelViewerState, 
   TabModuleEditorState, TabQuickStartState, TabSSFEditorState, TabTLKEditorState, TabTwoDAEditorState, 
   TabDLGEditorState, TabUTCEditorState, TabUTDEditorState, TabUTPEditorState, TabSaveGameEditorState, TabState
-} from "@/apps/forge/states/tabs";
+} from "@apps/forge/states/tabs";
 
 export type TabManagerEventListenerTypes =
   'onTabAdded'|'onTabRemoved'|'onTabShow'|'onTabHide'|'onTabsReordered';

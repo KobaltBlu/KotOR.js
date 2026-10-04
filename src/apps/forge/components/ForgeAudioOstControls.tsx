@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import { ForgeDropdown } from "@/apps/forge/components/ui";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { ForgeDropdown } from "@apps/forge/components/ui";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
 import {
   AmbientMusicOstEntry,
   AudioPlayerOstStatePayload,
   AudioPlayerState,
-} from "@/apps/forge/states/AudioPlayerState";
+} from "@apps/forge/states/AudioPlayerState";
 
 export type ForgeAudioOstControlsProps = {
   /**

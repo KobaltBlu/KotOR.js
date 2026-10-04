@@ -7,10 +7,10 @@
  */
 
 import { clear, createStore, del, get, set } from "idb-keyval";
-import { buildBlueprintThumbnailCacheKey } from "@/apps/forge/helpers/blueprintThumbnailFingerprint";
-import type { BlueprintCatalogSource } from "@/apps/forge/helpers/blueprintCatalog";
-import type { BlueprintType } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { buildBlueprintThumbnailCacheKey } from "@apps/forge/helpers/blueprintThumbnailFingerprint";
+import type { BlueprintCatalogSource } from "@apps/forge/helpers/blueprintCatalog";
+import type { BlueprintType } from "@apps/forge/states/modal/ModalBlueprintBrowserState";
+import { ForgeState } from "@apps/forge/states/ForgeState";
 
 export interface BlueprintThumbnailRecord {
   blob: Blob;

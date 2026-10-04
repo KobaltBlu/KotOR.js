@@ -6,18 +6,18 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { EventListenerModel } from "@/apps/forge/EventListenerModel";
-import type { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
-import type { ForgeArea } from "@/apps/forge/module-editor/ForgeArea";
-import type { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
-import { PerformanceBaseline } from "@/apps/forge/module-editor/kernel/PerformanceBaseline";
+import { EventListenerModel } from "@apps/forge/EventListenerModel";
+import type { ForgeModule } from "@apps/forge/module-editor/ForgeModule";
+import type { ForgeArea } from "@apps/forge/module-editor/ForgeArea";
+import type { ForgeGameObject } from "@apps/forge/module-editor/ForgeGameObject";
+import { PerformanceBaseline } from "@apps/forge/module-editor/kernel/PerformanceBaseline";
 import {
   emptyValidationReport,
   summarizeIssues,
   ValidationIssue,
   ValidationReport,
-} from "@/apps/forge/module-editor/validation/ModuleValidationTypes";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
+} from "@apps/forge/module-editor/validation/ModuleValidationTypes";
+import { ProjectFileSystem } from "@apps/forge/ProjectFileSystem";
 
 let issueSeq = 1;
 

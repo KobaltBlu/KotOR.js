@@ -1,10 +1,10 @@
 import React from "react";
-import { TabTwoDAEditor } from "@/apps/forge/components/tabs/tab-twoda-editor/TabTwoDAEditor";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { forgeTwoDASettings } from "@/apps/forge/settings/forgeEditorsSettings";
-import * as KotOR from "@/apps/forge/KotOR";
+import { TabTwoDAEditor } from "@apps/forge/components/tabs/tab-twoda-editor/TabTwoDAEditor";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import { TabState } from "@apps/forge/states/tabs/TabState";
+import { EditorFile } from "@apps/forge/EditorFile";
+import { forgeTwoDASettings } from "@apps/forge/settings/forgeEditorsSettings";
+import * as KotOR from "@apps/forge/KotOR";
 
 interface TwoDASnapshot {
   columns: string[];

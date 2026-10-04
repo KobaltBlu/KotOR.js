@@ -1,14 +1,14 @@
 import React from "react";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { TabResourceExplorer } from "@/apps/forge/components/tabs/tab-resource-explorer/TabResourceExplorer";
+import { TabState } from "@apps/forge/states/tabs/TabState";
+import { TabResourceExplorer } from "@apps/forge/components/tabs/tab-resource-explorer/TabResourceExplorer";
 import * as path from "path";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { AsyncLoop } from "@/utility/AsyncLoop";
-import * as KotOR from "@/apps/forge/KotOR";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
-import { groupGameSaveFolderFiles, isSaveGameSavFileName } from "@/apps/forge/savegame/saveGamePaths";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import { AsyncLoop } from "@core/utility/AsyncLoop";
+import * as KotOR from "@apps/forge/KotOR";
+import { EditorFile } from "@apps/forge/EditorFile";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { FileBrowserNode } from "@apps/forge/FileBrowserNode";
+import { groupGameSaveFolderFiles, isSaveGameSavFileName } from "@apps/forge/savegame/saveGamePaths";
 
 export class TabResourceExplorerState extends TabState {
 

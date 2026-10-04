@@ -1,25 +1,25 @@
 import * as THREE from "three";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import { getCreaturePersonalSpace } from "@/combat/attack-range";
+import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import { getCreaturePersonalSpace } from "@engine/combat/attack-range";
 import {
   findWalkableAttachmentAt,
   testCreatureMovement,
   testStaticMovement,
   WalkLineHitCode,
-} from "@/engine/movement/area-movement-queries";
+} from "@engine/movement/area-movement-queries";
 import {
   collectBlockingWalkEdgeNormals,
   projectDesiredOntoNormals,
-} from "@/engine/movement/wall-slide";
+} from "@engine/movement/wall-slide";
 import {
   MovementHitKind,
   MovementSource,
   MovementStatus,
   type MovementResult,
-} from "@/engine/movement/types";
-import { commitMovement } from "@/engine/movement/movement-committer";
-import { setMovementAuthority } from "@/engine/movement/creature-movement-state";
-import { MovementAuthority } from "@/engine/movement/types";
+} from "@engine/movement/types";
+import { commitMovement } from "@engine/movement/movement-committer";
+import { setMovementAuthority } from "@engine/movement/creature-movement-state";
+import { MovementAuthority } from "@engine/movement/types";
 
 /**
  * ExternalForce policy — shove / knockback / scripted impulse.

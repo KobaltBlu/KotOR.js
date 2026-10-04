@@ -1,11 +1,11 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@/module/ModuleArea";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import type { ModuleObject } from "@/module/ModuleObject";
-import { getPathPersonalSpace } from "@/combat/attack-range";
-import { hasClearWalkLine, hasWalkLineClear } from "@/engine/pathfinding/walk-line-clear";
-import { smoothSelection } from "@/engine/pathfinding/smooth-select-nodes";
-import { getPathStepTolerance } from "@/engine/pathfinding/path-point-creature-detour";
+import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { ModuleObject } from "@engine/module/ModuleObject";
+import { getPathPersonalSpace } from "@engine/combat/attack-range";
+import { hasClearWalkLine, hasWalkLineClear } from "@engine/pathfinding/walk-line-clear";
+import { smoothSelection } from "@engine/pathfinding/smooth-select-nodes";
+import { getPathStepTolerance } from "@engine/pathfinding/path-point-creature-detour";
 
 /**
  * buildGridPath + grid DFS search.

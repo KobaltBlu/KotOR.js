@@ -1,9 +1,9 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@/module/ModuleArea";
-import type { ModuleObject } from "@/module/ModuleObject";
-import { PathPoint } from "@/engine/pathfinding/PathPoint";
-import { hasClearWalkLine } from "@/engine/pathfinding/walk-line-clear";
-import { SMOOTH_SELECTION_BUDGET_MS } from "@/engine/pathfinding/smooth-select-nodes";
+import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { ModuleObject } from "@engine/module/ModuleObject";
+import { PathPoint } from "@engine/pathfinding/PathPoint";
+import { hasClearWalkLine } from "@engine/pathfinding/walk-line-clear";
+import { SMOOTH_SELECTION_BUDGET_MS } from "@engine/pathfinding/smooth-select-nodes";
 
 /**
  * SmoothCornerOptimize + find best corner chord.

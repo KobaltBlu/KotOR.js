@@ -88,6 +88,10 @@ const commonStats = {
 
 const commonResolve = {
   alias: {
+    '@core': path.resolve(srcPath, 'core'),
+    '@engine': path.resolve(srcPath, 'engine'),
+    '@apps': path.resolve(srcPath, 'apps'),
+    '@assets': path.resolve(srcPath, 'assets'),
     '@': srcPath,
     three: path.resolve(ROOT, 'node_modules/three')
   },

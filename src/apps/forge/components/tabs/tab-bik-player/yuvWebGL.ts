@@ -5,7 +5,7 @@
  * Prefers WebGL2 (GLSL ES 3.00 + R8) with WebGL1 (GLSL ES 1.00 + LUMINANCE) fallback.
  */
 
-import type { YUVFrame } from "@/video/binkvideo";
+import type { YUVFrame } from "@engine/video/binkvideo";
 
 type GL = WebGLRenderingContext | WebGL2RenderingContext;
 

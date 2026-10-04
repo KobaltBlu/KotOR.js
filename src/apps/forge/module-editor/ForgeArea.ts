@@ -1,22 +1,22 @@
-import * as KotOR from "@/apps/forge/KotOR";
-import type { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
-import { AreaMap } from "@/module/AreaMap";
-import { GroupType, type UI3DRenderer } from "@/apps/forge/UI3DRenderer";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { ForgeMiniGame } from "@/apps/forge/module-editor/ForgeMiniGame";
-import { ForgeCreature } from "@/apps/forge/module-editor/ForgeCreature";
-import { ForgeRoom } from "@/apps/forge/module-editor/ForgeRoom";
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
-import { ForgeCamera } from "@/apps/forge/module-editor/ForgeCamera";
-import { ForgeDoor } from "@/apps/forge/module-editor/ForgeDoor";
-import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
-import { ForgePlaceable } from "@/apps/forge/module-editor/ForgePlaceable";
-import { ForgeItem } from "@/apps/forge/module-editor/ForgeItem";
-import { ForgeSound } from "@/apps/forge/module-editor/ForgeSound";
-import { ForgeStore } from "@/apps/forge/module-editor/ForgeStore";
-import { ForgeTrigger } from "@/apps/forge/module-editor/ForgeTrigger";
-import { ForgeWaypoint } from "@/apps/forge/module-editor/ForgeWaypoint";
+import { AreaMap } from "@apps/forge/KotOR";
+import * as KotOR from "@apps/forge/KotOR";
+import type { ForgeModule } from "@apps/forge/module-editor/ForgeModule";
+import { GroupType, type UI3DRenderer } from "@apps/forge/UI3DRenderer";
+import { ProjectFileSystem } from "@apps/forge/ProjectFileSystem";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { ForgeMiniGame } from "@apps/forge/module-editor/ForgeMiniGame";
+import { ForgeCreature } from "@apps/forge/module-editor/ForgeCreature";
+import { ForgeRoom } from "@apps/forge/module-editor/ForgeRoom";
+import { ForgeGameObject } from "@apps/forge/module-editor/ForgeGameObject";
+import { ForgeCamera } from "@apps/forge/module-editor/ForgeCamera";
+import { ForgeDoor } from "@apps/forge/module-editor/ForgeDoor";
+import { ForgeEncounter } from "@apps/forge/module-editor/ForgeEncounter";
+import { ForgePlaceable } from "@apps/forge/module-editor/ForgePlaceable";
+import { ForgeItem } from "@apps/forge/module-editor/ForgeItem";
+import { ForgeSound } from "@apps/forge/module-editor/ForgeSound";
+import { ForgeStore } from "@apps/forge/module-editor/ForgeStore";
+import { ForgeTrigger } from "@apps/forge/module-editor/ForgeTrigger";
+import { ForgeWaypoint } from "@apps/forge/module-editor/ForgeWaypoint";
 import * as THREE from 'three';
 
 export class ForgeArea extends ForgeGameObject{
@@ -721,7 +721,11 @@ export class ForgeArea extends ForgeGameObject{
     }
     this.layout.rooms = this.rooms.map((room) => ({
       name: room.roomName,
-      position: room.position.clone(),
+      position: {
+        x: room.position.x,
+        y: room.position.y,
+        z: room.position.z,
+      },
     }));
 
     const vis = this.buildVisText();

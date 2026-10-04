@@ -1,19 +1,19 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import { TabUTEEditorState } from "@/apps/forge/states/tabs/TabUTEEditorState";
-import { EncounterDifficulty } from "@/apps/forge/interfaces/EncounterDifficulty";
-import { CreatureListEntry } from "@/apps/forge/interfaces/CreatureListEntry";
-import * as KotOR from "@/apps/forge/KotOR";
-import { FormField } from "@/apps/forge/components/form-field/FormField";
-import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
-import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
+import { BaseTabProps } from "@apps/forge/interfaces/BaseTabProps";
+import { TabUTEEditorState } from "@apps/forge/states/tabs/TabUTEEditorState";
+import { EncounterDifficulty } from "@apps/forge/interfaces/EncounterDifficulty";
+import { CreatureListEntry } from "@apps/forge/interfaces/CreatureListEntry";
+import * as KotOR from "@apps/forge/KotOR";
+import { FormField } from "@apps/forge/components/form-field/FormField";
+import { CExoLocStringEditor } from "@apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
+import { ForgeCheckbox } from "@apps/forge/components/forge-checkbox/forge-checkbox";
 import "@/apps/forge/components/tabs/tab-ute-editor/TabUTEEditor.scss";
-import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost/SubTabHost";
-import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
-import { ScriptResRefInput } from "@/apps/forge/components/script-resref-input/ScriptResRefInput";
-import { ForgeTwoDAIndexField } from "@/apps/forge/components/ui";
-import { encounterDifficultyValueAt } from "@/apps/forge/helpers/encounterDifficultyValue";
-import { useForgeHasGameData } from "@/apps/forge/helpers/useForgeHasGameData";
+import { SubTab, SubTabHost } from "@apps/forge/components/SubTabHost/SubTabHost";
+import { ForgeEncounter } from "@apps/forge/module-editor/ForgeEncounter";
+import { ScriptResRefInput } from "@apps/forge/components/script-resref-input/ScriptResRefInput";
+import { ForgeTwoDAIndexField } from "@apps/forge/components/ui";
+import { encounterDifficultyValueAt } from "@apps/forge/helpers/encounterDifficultyValue";
+import { useForgeHasGameData } from "@apps/forge/helpers/useForgeHasGameData";
 
 export const TabUTEEditor = function(props: BaseTabProps){
   const tab: TabUTEEditorState = props.tab as TabUTEEditorState;

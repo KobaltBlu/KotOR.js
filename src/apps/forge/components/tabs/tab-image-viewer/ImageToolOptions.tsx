@@ -7,8 +7,8 @@
  */
 
 import React from "react";
-import type { ImageRgba } from "@/apps/forge/image";
-import type { TabImageViewerState } from "@/apps/forge/states/tabs/TabImageViewerState";
+import type { ImageRgba } from "@apps/forge/image";
+import type { TabImageViewerState } from "@apps/forge/states/tabs/TabImageViewerState";
 
 function toHex(color: ImageRgba): string {
   const h = (n: number) => n.toString(16).padStart(2, "0");

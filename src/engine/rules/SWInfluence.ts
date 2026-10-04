@@ -1,4 +1,4 @@
-import { TwoDAObject } from "@/resource/TwoDAObject";
+import { TwoDAObject } from "@core/resource/TwoDAObject";
 
 /**
  * SWInfluence — TSL influence.2da row (Tag / BaseInfluence).

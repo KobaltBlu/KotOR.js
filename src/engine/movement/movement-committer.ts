@@ -1,24 +1,24 @@
 import * as THREE from "three";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import type { ModuleObject } from "@/module/ModuleObject";
-import { GameState } from "@/GameState";
-import { SignalEventType } from "@/enums/events/SignalEventType";
+import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { ModuleObject } from "@engine/module/ModuleObject";
+import { GameState } from "@engine/runtime/GameState";
+import { SignalEventType } from "@core/enums/events/SignalEventType";
 import {
   assertSingleCommit,
   recordMovementWrite,
-} from "@/engine/movement/instrumentation";
+} from "@engine/movement/instrumentation";
 import {
   ensureMovementState,
   getMovementFrameId,
-} from "@/engine/movement/creature-movement-state";
+} from "@engine/movement/creature-movement-state";
 import {
   MovementHitKind,
   MovementSource,
   MovementStatus,
   type MovementResult,
-} from "@/engine/movement/types";
-import { isCreature } from "@/module/guards/isCreature";
-import { isDoor } from "@/module/guards/isDoor";
+} from "@engine/movement/types";
+import { isCreature } from "@engine/module/guards/isCreature";
+import { isDoor } from "@engine/module/guards/isDoor";
 
 /**
  * Single normal creature movement committer.

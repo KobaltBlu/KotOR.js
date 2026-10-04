@@ -1,1 +1,0 @@
-export * from "@/interface/module/minigame/IModelListItem";

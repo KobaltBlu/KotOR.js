@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import { TabJRLEditorState, JournalCategory } from "@/apps/forge/states/tabs/TabJRLEditorState";
-import { ForgeButton, ForgeInput } from "@/apps/forge/components/ui";
+import { BaseTabProps } from "@apps/forge/interfaces/BaseTabProps";
+import { TabJRLEditorState, JournalCategory } from "@apps/forge/states/tabs/TabJRLEditorState";
+import { ForgeButton, ForgeInput } from "@apps/forge/components/ui";
 import "@/apps/forge/components/tabs/tab-jrl-editor/TabJRLEditor.scss";
 
 export const TabJRLEditor = function (props: BaseTabProps) {

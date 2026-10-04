@@ -1,12 +1,12 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@/module/ModuleArea";
-import { GameState } from "@/GameState";
-import { isLineOfSightBlockingFace } from "@/engine/pathfinding/walk-check-material-mask";
-import { isStaticWalkClearDetailed } from "@/engine/pathfinding/static-walk-blockers";
-import { createWalkHitInfo } from "@/engine/pathfinding/walk-hit-info";
+import type { ModuleArea } from "@engine/module/ModuleArea";
+import { GameState } from "@engine/runtime/GameState";
+import { isLineOfSightBlockingFace } from "@engine/pathfinding/walk-check-material-mask";
+import { isStaticWalkClearDetailed } from "@engine/pathfinding/static-walk-blockers";
+import { createWalkHitInfo } from "@engine/pathfinding/walk-hit-info";
 
-import { isDoor } from "@/module/guards/isDoor";
-import { isPlaceable } from "@/module/guards/isPlaceable";
+import { isDoor } from "@engine/module/guards/isDoor";
+import { isPlaceable } from "@engine/module/guards/isPlaceable";
 
 /**
  * sound internal / GetObstructionFactor.

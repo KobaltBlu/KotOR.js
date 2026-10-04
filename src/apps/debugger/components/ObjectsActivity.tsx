@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useApp } from "@/apps/debugger/context/AppContext";
+import { useApp } from "@apps/debugger/context/AppContext";
 import {
   INSPECTOR_DEFAULT_OPEN,
   OVERVIEW_KIND_COLORS,
@@ -8,7 +8,7 @@ import {
   type LiveObjectSnapshot,
   type ObjectListEntry,
   type OverviewObjectKind,
-} from "@/inspect/runtimeSnapshots";
+} from "@apps/debugger/KotOR";
 
 const KIND_ORDER: OverviewObjectKind[] = [
   'party', 'creature', 'door', 'placeable', 'trigger', 'waypoint',

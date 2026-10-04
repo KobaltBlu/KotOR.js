@@ -1,4 +1,4 @@
-import { TwoDAObject } from "@/resource/TwoDAObject";
+import { TwoDAObject } from "@core/resource/TwoDAObject";
 
 /** formations.2da row. Positions are indexed 1..10. */
 export class SWFormation {

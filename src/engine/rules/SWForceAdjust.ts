@@ -1,4 +1,4 @@
-import { TwoDAObject } from "@/resource/TwoDAObject";
+import { TwoDAObject } from "@core/resource/TwoDAObject";
 
 /** forceadjust.2da alignment-band row. */
 export class SWForceAdjust {

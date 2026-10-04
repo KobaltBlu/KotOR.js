@@ -7,7 +7,7 @@
  */
 
 import * as THREE from "three";
-import type { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import type { ForgeGameObject } from "@apps/forge/module-editor/ForgeGameObject";
 
 export interface ScreenRect {
   left: number;

@@ -1,16 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
-import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
+import { LayoutContainerProvider } from "@apps/forge/context/LayoutContainerContext";
+import { LayoutContainer } from "@apps/forge/components/LayoutContainer/LayoutContainer";
 import {
   TabModelViewerControlMode,
   TabModelViewerState,
   type ModelViewerLayerKey,
-} from "@/apps/forge/states/tabs";
-import { KeyFrameTimelineComponent } from "@/apps/forge/components/KeyFrameTimelineComponent";
-import { ModelViewerSidebarComponent } from "@/apps/forge/components/ModelViewerSidebarComponent";
-import { UI3DOverlayComponent } from "@/apps/forge/components/UI3DOverlayComponent";
-import { UI3DRendererView, MenuItem } from "@/apps/forge/components/UI3DRendererView";
-import { CameraView } from "@/apps/forge/UI3DRenderer";
+} from "@apps/forge/states/tabs";
+import { KeyFrameTimelineComponent } from "@apps/forge/components/KeyFrameTimelineComponent";
+import { ModelViewerSidebarComponent } from "@apps/forge/components/ModelViewerSidebarComponent";
+import { UI3DOverlayComponent } from "@apps/forge/components/UI3DOverlayComponent";
+import { UI3DRendererView, MenuItem } from "@apps/forge/components/UI3DRendererView";
+import { CameraView } from "@apps/forge/UI3DRenderer";
 
 const MODEL_VIEWER_LAYER_LABELS: Record<ModelViewerLayerKey, string> = {
   lights: 'Lights',

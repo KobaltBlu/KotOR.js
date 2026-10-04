@@ -6,7 +6,7 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { sanitizeResRef } from "@/apps/forge/helpers/UTxEditorHelpers";
+import { sanitizeResRef } from "@apps/forge/helpers/UTxEditorHelpers";
 
 export type ScriptCatalogSource = "project" | "override" | "game";
 

@@ -1,24 +1,24 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@/module/ModuleArea";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import type { ModuleDoor } from "@/module/ModuleDoor";
-import type { ModuleObject } from "@/module/ModuleObject";
-import type { ModuleRoom } from "@/module/ModuleRoom";
-import type { OdysseyFace3 } from "@/three/odyssey";
-import { getPathPersonalSpace, getCreaturePersonalSpace } from "@/combat/attack-range";
+import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { ModuleDoor } from "@engine/module/ModuleDoor";
+import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { ModuleRoom } from "@engine/module/ModuleRoom";
+import type { OdysseyFace3 } from "@engine/render/three/odyssey";
+import { getPathPersonalSpace, getCreaturePersonalSpace } from "@engine/combat/attack-range";
 import {
   hasWalkLineClear,
   WalkLineHitCode,
   type WalkLineHit,
-} from "@/engine/pathfinding/walk-line-clear";
+} from "@engine/pathfinding/walk-line-clear";
 import {
   isCreatureCapsuleClear,
   type CreatureCapsuleClearResult,
-} from "@/engine/pathfinding/creature-capsule-clear";
+} from "@engine/pathfinding/creature-capsule-clear";
 import {
   MovementHitKind,
   type MovementHit,
-} from "@/engine/movement/types";
+} from "@engine/movement/types";
 
 /**
  * Passive area movement queries.

@@ -7,8 +7,8 @@
  */
 
 import React, { ChangeEvent, useEffect, useRef } from "react";
-import { ForgeButton, ForgeDialog, ForgeInput } from "@/apps/forge/components/ui";
-import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
+import { ForgeButton, ForgeDialog, ForgeInput } from "@apps/forge/components/ui";
+import { ForgeCheckbox } from "@apps/forge/components/forge-checkbox/forge-checkbox";
 import "@/apps/forge/components/ui/ForgeFindDialog.scss";
 
 export type ForgeFindMode = "find" | "replace";

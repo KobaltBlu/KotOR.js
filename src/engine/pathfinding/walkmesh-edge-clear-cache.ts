@@ -1,4 +1,4 @@
-import type { ModuleArea } from "@/module/ModuleArea";
+import type { ModuleArea } from "@engine/module/ModuleArea";
 import type { Vector3 } from "three";
 
 /**

@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
 import {
   ForgeStatusBarItem,
   ForgeStatusBarState,
-} from "@/apps/forge/states/ForgeStatusBarState";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
+} from "@apps/forge/states/ForgeStatusBarState";
+import { TabState } from "@apps/forge/states/tabs/TabState";
 
 export type UseForgeStatusBarItemsOptions = {
   /**

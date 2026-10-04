@@ -6,10 +6,10 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { CExoLocString } from "@/resource/CExoLocString";
-import { CExoLocSubString } from "@/resource/CExoLocSubString";
-import type { ForgeDLG } from "@/apps/forge/dlg/ForgeDLG";
-import { getLocalizationSettings, pickLocStringOverride } from "@/apps/forge/settings/forgeLocalizationSettings";
+import { CExoLocString } from "@core/resource/CExoLocString";
+import { CExoLocSubString } from "@core/resource/CExoLocSubString";
+import type { ForgeDLG } from "@apps/forge/dlg/ForgeDLG";
+import { getLocalizationSettings, pickLocStringOverride } from "@apps/forge/settings/forgeLocalizationSettings";
 
 export type DlgTlkLookup = (strRef: number) => string | undefined;
 

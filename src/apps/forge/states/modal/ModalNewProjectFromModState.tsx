@@ -7,8 +7,8 @@
  */
 
 import React from "react";
-import { ModalNewProjectFromMod } from "@/apps/forge/components/modal/ModalNewProjectFromMod";
-import { ModalState } from "@/apps/forge/states/modal/ModalState";
+import { ModalNewProjectFromMod } from "@apps/forge/components/modal/ModalNewProjectFromMod";
+import { ModalState } from "@apps/forge/states/modal/ModalState";
 
 export class ModalNewProjectFromModState extends ModalState {
 

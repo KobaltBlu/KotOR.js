@@ -6,7 +6,7 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { executeCommand, getCommands, isCommandEnabled } from "@/apps/forge/commands/forgeCommands";
+import { executeCommand, getCommands, isCommandEnabled } from "@apps/forge/commands/forgeCommands";
 
 export interface ParsedKeybinding {
   mod: boolean;

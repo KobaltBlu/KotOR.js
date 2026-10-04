@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { TabUTCEditorState } from "@/apps/forge/states/tabs";
-import * as KotOR from "@/apps/forge/KotOR";
-import { TextureCanvas } from "@/apps/forge/components/TextureCanvas/TextureCanvas";
-import { ModalItemBrowserState, UTIItem } from "@/apps/forge/states/modal/ModalItemBrowserState";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { openItemBrowser } from "@/apps/forge/helpers/openGameResRefPicker";
-import { ForgeButton, ForgeInput } from "@/apps/forge/components/ui";
+import { TabUTCEditorState } from "@apps/forge/states/tabs";
+import * as KotOR from "@apps/forge/KotOR";
+import { TextureCanvas } from "@apps/forge/components/TextureCanvas/TextureCanvas";
+import { ModalItemBrowserState, UTIItem } from "@apps/forge/states/modal/ModalItemBrowserState";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { openItemBrowser } from "@apps/forge/helpers/openGameResRefPicker";
+import { ForgeButton, ForgeInput } from "@apps/forge/components/ui";
 import {
   CreatureEquipProperty,
   EquipSlotDef,
@@ -13,7 +13,7 @@ import {
   PAPERDOLL_SLOTS,
   TSL_WEAPON2_SLOTS,
   emptySlotTexture,
-} from "@/apps/forge/components/tabs/tab-utc-editor/utcEquipmentSlots";
+} from "@apps/forge/components/tabs/tab-utc-editor/utcEquipmentSlots";
 import "@/apps/forge/components/tabs/tab-utc-editor/UtcEquipmentTab.scss";
 
 export interface UtcEquipmentTabProps {

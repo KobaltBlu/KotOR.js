@@ -1,12 +1,12 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@/module/ModuleArea";
-import type { ModuleObject } from "@/module/ModuleObject";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import type { ComputedPath } from "@/engine/pathfinding/ComputedPath";
-import { beginInterAreaPath } from "@/engine/pathfinding/inter-area-path";
-import { pathHopsAreWalkClear } from "@/engine/pathfinding/path-hops-clear";
+import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { ComputedPath } from "@engine/pathfinding/ComputedPath";
+import { beginInterAreaPath } from "@engine/pathfinding/inter-area-path";
+import { pathHopsAreWalkClear } from "@engine/pathfinding/path-hops-clear";
 
-import { isCreature } from "@/module/guards/isCreature";
+import { isCreature } from "@engine/module/guards/isCreature";
 
 /**
  * buildWalkPath / in-area return codes.

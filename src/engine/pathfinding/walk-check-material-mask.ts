@@ -1,6 +1,6 @@
-import { OdysseyModelUtility } from "@/odyssey/OdysseyModelUtility";
-import type { OdysseyFace3 } from "@/three/odyssey";
-import type { SurfaceMaterial } from "@/engine/SurfaceMaterial";
+import { OdysseyModelUtility } from "@engine/odyssey/OdysseyModelUtility";
+import type { OdysseyFace3 } from "@engine/render/three/odyssey";
+import type { SurfaceMaterial } from "@engine/movement/SurfaceMaterial";
 
 /**
  * Surface-material bitmasks for collision / LOS (surfacemat.2da).

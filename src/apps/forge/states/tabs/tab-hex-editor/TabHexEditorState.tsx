@@ -1,8 +1,8 @@
 import React from "react";
-import { TabHexEditor } from "@/apps/forge/components/tabs/tab-hex-editor/TabHexEditor";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { EditorFile } from "@/apps/forge/EditorFile";
+import { TabHexEditor } from "@apps/forge/components/tabs/tab-hex-editor/TabHexEditor";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import { TabState } from "@apps/forge/states/tabs/TabState";
+import { EditorFile } from "@apps/forge/EditorFile";
 
 export class TabHexEditorState extends TabState {
   tabName: string = "Hex";

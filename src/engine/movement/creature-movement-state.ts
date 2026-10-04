@@ -1,13 +1,13 @@
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import type { ModuleObject } from "@/module/ModuleObject";
+import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { ModuleObject } from "@engine/module/ModuleObject";
 import * as THREE from "three";
 import {
   MovementAuthority,
   MovementSource,
   type CreatureMovementState,
-} from "@/engine/movement/types";
+} from "@engine/movement/types";
 
-export type { CreatureMovementState } from "@/engine/movement/types";
+export type { CreatureMovementState } from "@engine/movement/types";
 
 /**
  * Per-creature movement/contact state + frame ownership helpers.

@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react"
-import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+import { UI3DRenderer } from "@apps/forge/UI3DRenderer";
 import * as THREE from 'three';
-import type { TabModuleEditorState } from "@/apps/forge/states/tabs/TabModuleEditorState";
-import { TabModuleEditorControlMode } from "@/apps/forge/states/tabs/TabModuleEditorTypes";
-import { ModuleEditorTabMode } from "@/apps/forge/enum/ModuleEditorTabMode";
-import { ForgeWaypoint } from "@/apps/forge/module-editor/ForgeWaypoint";
+import type { TabModuleEditorState } from "@apps/forge/states/tabs/TabModuleEditorState";
+import { TabModuleEditorControlMode } from "@apps/forge/states/tabs/TabModuleEditorTypes";
+import { ModuleEditorTabMode } from "@apps/forge/enum/ModuleEditorTabMode";
+import { ForgeWaypoint } from "@apps/forge/module-editor/ForgeWaypoint";
 
 export const UI3DOverlayComponent = function(props: { context: UI3DRenderer; tab?: TabModuleEditorState }){
   const ui3DRenderer = props.context;

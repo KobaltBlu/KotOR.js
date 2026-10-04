@@ -1,19 +1,19 @@
 import React from "react";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { TabERFEditor } from "@/apps/forge/components/tabs/tab-erf-editor/TabERFEditor";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
+import { TabState } from "@apps/forge/states/tabs/TabState";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import { TabERFEditor } from "@apps/forge/components/tabs/tab-erf-editor/TabERFEditor";
+import { EditorFile } from "@apps/forge/EditorFile";
+import { FileBrowserNode } from "@apps/forge/FileBrowserNode";
 import {
   compareERFBrowserNodes,
   filterERFBrowserNodes,
   type ErfBrowserSortDir,
   type ErfBrowserSortKey,
   type ErfBrowserViewMode,
-} from "@/apps/forge/components/tabs/tab-erf-editor/ERFBrowserTypes";
-import { forgeArchivesSettings } from "@/apps/forge/settings/forgeEditorsSettings";
+} from "@apps/forge/components/tabs/tab-erf-editor/ERFBrowserTypes";
+import { forgeArchivesSettings } from "@apps/forge/settings/forgeEditorsSettings";
 
-import * as KotOR from "@/apps/forge/KotOR";
+import * as KotOR from "@apps/forge/KotOR";
 
 const arfArchiveTypes = [
   KotOR.ResourceTypes["erf"],

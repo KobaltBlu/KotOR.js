@@ -6,7 +6,7 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import type { ForgeDLGNode } from "@/apps/forge/dlg/ForgeDLGTypes";
+import type { ForgeDLGNode } from "@apps/forge/dlg/ForgeDLGTypes";
 
 export const DLG_SOUND_EXISTS_DEFAULT = 0x80;
 export const DLG_SOUND_EXISTS_ALIEN = 0x03;

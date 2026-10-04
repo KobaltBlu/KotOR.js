@@ -1,8 +1,8 @@
 import React from "react";
-import { ModalItemBrowser } from "@/apps/forge/components/modal/ModalItemBrowser";
-import { ModalState } from "@/apps/forge/states/modal/ModalState";
-import * as KotOR from "@/apps/forge/KotOR";
-import { itemIconResRef, itemMatchesRace, itemMatchesSlot } from "@/apps/forge/components/tabs/tab-utc-editor/utcEquipmentSlots";
+import { ModalItemBrowser } from "@apps/forge/components/modal/ModalItemBrowser";
+import { ModalState } from "@apps/forge/states/modal/ModalState";
+import * as KotOR from "@apps/forge/KotOR";
+import { itemIconResRef, itemMatchesRace, itemMatchesSlot } from "@apps/forge/components/tabs/tab-utc-editor/utcEquipmentSlots";
 
 export interface UTIItem {
   resref: string;

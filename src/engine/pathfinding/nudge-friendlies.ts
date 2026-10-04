@@ -1,10 +1,10 @@
 import * as THREE from "three";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import { getCreaturePersonalSpace } from "@/combat/attack-range";
-import { isCreatureNudgeable } from "@/engine/pathfinding/is-creature-nudgeable";
-import { teleportObject } from "@/engine/movement/teleport";
-import { setMovementAuthority } from "@/engine/movement/creature-movement-state";
-import { MovementAuthority } from "@/engine/movement/types";
+import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import { getCreaturePersonalSpace } from "@engine/combat/attack-range";
+import { isCreatureNudgeable } from "@engine/pathfinding/is-creature-nudgeable";
+import { teleportObject } from "@engine/movement/teleport";
+import { setMovementAuthority } from "@engine/movement/creature-movement-state";
+import { MovementAuthority } from "@engine/movement/types";
 
 /**
  * Approximate nudgeFriendlyCreatures.

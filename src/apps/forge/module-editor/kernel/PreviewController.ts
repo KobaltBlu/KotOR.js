@@ -6,8 +6,8 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { EventListenerModel } from "@/apps/forge/EventListenerModel";
-import { EditorMode } from "@/apps/forge/module-editor/kernel/EditorMode";
+import { EventListenerModel } from "@apps/forge/EventListenerModel";
+import { EditorMode } from "@apps/forge/module-editor/kernel/EditorMode";
 
 export type PreviewStage =
   | "idle"

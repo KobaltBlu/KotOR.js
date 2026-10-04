@@ -1,7 +1,7 @@
-import { PazaakCards } from '@/enums/minigames/PazaakCards';
-import { PazaakTableSlots } from '@/enums/minigames/PazaakTableSlots';
-import type { IPazaakCard } from '@/interface/minigames/IPazaakCard';
-import type { IPazaakTable } from '@/interface/minigames/IPazaakTable';
+import { PazaakCards } from '@core/enums/minigames/PazaakCards';
+import { PazaakTableSlots } from '@core/enums/minigames/PazaakTableSlots';
+import type { IPazaakCard } from '@core/interface/minigames/IPazaakCard';
+import type { IPazaakTable } from '@core/interface/minigames/IPazaakTable';
 
 /**
  * Side-card point delta for play / AI.

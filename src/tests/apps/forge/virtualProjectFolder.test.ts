@@ -1,5 +1,5 @@
 import { describe, expect, test } from "@jest/globals";
-import { RecentProject } from "@/apps/forge/RecentProject";
+import { RecentProject } from "@apps/forge/RecentProject";
 import {
   DEFAULT_VIRTUAL_PROJECT_NAME,
   OPFS_VIRTUAL_PROJECTS_DIR,
@@ -7,8 +7,8 @@ import {
   createOrOpenVirtualProjectFolder,
   hasProjectRoot,
   sanitizeVirtualProjectName,
-} from "@/apps/forge/virtual/VirtualProjectFolder";
-import { mapRecentProjectsToMenuItems } from "@/apps/forge/commands/recentMenuItems";
+} from "@apps/forge/virtual/VirtualProjectFolder";
+import { mapRecentProjectsToMenuItems } from "@apps/forge/commands/recentMenuItems";
 
 describe("virtual project folder names", () => {
   test("sanitizes path characters and falls back to untitled-project", () => {

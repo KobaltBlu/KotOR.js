@@ -1,9 +1,9 @@
 import * as THREE from "three";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import { PathPoint } from "@/engine/pathfinding/PathPoint";
-import { hasWalkLineClear } from "@/engine/pathfinding/walk-line-clear";
-import { computeHeightAtPoint } from "@/engine/pathfinding/open-walk-location";
-import { getCreaturePersonalSpace } from "@/combat/attack-range";
+import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import { PathPoint } from "@engine/pathfinding/PathPoint";
+import { hasWalkLineClear } from "@engine/pathfinding/walk-line-clear";
+import { computeHeightAtPoint } from "@engine/pathfinding/open-walk-location";
+import { getCreaturePersonalSpace } from "@engine/combat/attack-range";
 
 /**
  * Approximate buildPathAroundCreature.

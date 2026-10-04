@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useApp } from "@/apps/debugger/context/AppContext";
-import * as KotOR from "@/apps/debugger/KotOR";
-import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
-import type { NWScriptStackVariable } from "@/nwscript/NWScriptStackVariable";
-import { nearestNssLineForCodeOffset } from "@/nwscript/inspect/nssCodeLineMap";
-import { decompileScriptWithLineMap } from "@/nwscript/inspect/decompileScriptWithLineMap";
+import { useApp } from "@apps/debugger/context/AppContext";
+import * as KotOR from "@apps/debugger/KotOR";
+import { NWScriptDataType } from "@core/enums/nwscript/NWScriptDataType";
+import type { NWScriptStackVariable } from "@engine/nwscript/NWScriptStackVariable";
+import { nearestNssLineForCodeOffset } from "@core/nwscript/inspect/nssCodeLineMap";
+import { decompileScriptWithLineMap } from "@core/nwscript/inspect/decompileScriptWithLineMap";
 
 function stackObjectId(element: NWScriptStackVariable): number | null {
   if(element.type !== NWScriptDataType.OBJECT){ return null; }

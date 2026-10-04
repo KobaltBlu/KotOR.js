@@ -1,4 +1,4 @@
-import { CExoLocString } from "@/resource/CExoLocString";
+import { CExoLocString } from "@core/resource/CExoLocString";
 
 /**
  * Editable DLG document types for the Forge conversation editor.

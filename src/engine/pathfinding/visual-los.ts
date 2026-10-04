@@ -1,10 +1,10 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@/module/ModuleArea";
-import type { ModuleObject } from "@/module/ModuleObject";
-import { GameState } from "@/GameState";
-import { isLineOfSightBlockingFace } from "@/engine/pathfinding/walk-check-material-mask";
-import { isStaticWalkClearDetailed } from "@/engine/pathfinding/static-walk-blockers";
-import { createWalkHitInfo } from "@/engine/pathfinding/walk-hit-info";
+import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { ModuleObject } from "@engine/module/ModuleObject";
+import { GameState } from "@engine/runtime/GameState";
+import { isLineOfSightBlockingFace } from "@engine/pathfinding/walk-check-material-mask";
+import { isStaticWalkClearDetailed } from "@engine/pathfinding/static-walk-blockers";
+import { createWalkHitInfo } from "@engine/pathfinding/walk-hit-info";
 
 /**
  * Approximate hasVisualLos (visual line of sight).

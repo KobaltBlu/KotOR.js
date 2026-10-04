@@ -6,14 +6,14 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
+import { ProjectFileSystem } from "@apps/forge/ProjectFileSystem";
 import {
   BlueprintCatalogEntry,
   blueprintResRefFromPath,
   mergeBlueprintCatalog,
-} from "@/apps/forge/helpers/blueprintCatalog";
-import type { BlueprintType } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
-import * as KotOR from "@/apps/forge/KotOR";
+} from "@apps/forge/helpers/blueprintCatalog";
+import type { BlueprintType } from "@apps/forge/states/modal/ModalBlueprintBrowserState";
+import * as KotOR from "@apps/forge/KotOR";
 
 const cache = new Map<BlueprintType, BlueprintCatalogEntry[]>();
 const CACHE_TTL_MS = 15000;

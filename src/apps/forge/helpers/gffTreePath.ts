@@ -9,9 +9,9 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GFFField } from "@/resource/GFFField";
-import { GFFStruct } from "@/resource/GFFStruct";
+import { GFFDataType } from "@core/enums/resource/GFFDataType";
+import { GFFField } from "@core/resource/GFFField";
+import { GFFStruct } from "@core/resource/GFFStruct";
 
 export const GFF_ROOT_PATH = "";
 

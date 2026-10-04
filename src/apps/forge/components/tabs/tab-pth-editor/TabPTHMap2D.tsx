@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { TabPTHEditorControlMode, TabPTHEditorState } from "@/apps/forge/states/tabs/TabPTHEditorState";
+import { TabPTHEditorControlMode, TabPTHEditorState } from "@apps/forge/states/tabs/TabPTHEditorState";
 import {
   boundsFromPoints,
   fitViewportToBounds,
@@ -12,7 +12,7 @@ import {
   screenToWorld,
   worldToScreen,
   zoomViewportAtScreen,
-} from "@/apps/forge/helpers/pthMap2D";
+} from "@apps/forge/helpers/pthMap2D";
 import "@/apps/forge/components/tabs/tab-pth-editor/TabPTHMap2D.scss";
 
 const POINT_HIT_PX = 10;

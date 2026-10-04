@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { getSteamStoreUrl, getSteamWidgetEmbedUrl } from "@/apps/common/data/kotorStoreProducts";
+import { getSteamStoreUrl, getSteamWidgetEmbedUrl } from "@apps/common/data/kotorStoreProducts";
 
 export interface SteamStoreEmbedProps {
   appId: number;

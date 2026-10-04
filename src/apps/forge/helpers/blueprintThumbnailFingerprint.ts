@@ -6,7 +6,7 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import type { BlueprintType } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
+import type { BlueprintType } from "@apps/forge/states/modal/ModalBlueprintBrowserState";
 
 export const THUMBNAIL_MODEL_TYPES: BlueprintType[] = ["utc", "utd", "utp"];
 
@@ -68,7 +68,7 @@ export function computeBlueprintThumbnailFingerprint(type: BlueprintType, buffer
   let appearanceKey = "";
   try {
     // Lazy import keeps unit tests free of the full KotOR bundle.
-    const KotOR = require("@/apps/forge/KotOR") as typeof import("@/apps/forge/KotOR");
+    const KotOR = require("@apps/forge/KotOR") as typeof import("@apps/forge/KotOR");
     const gff = new KotOR.GFFObject(buffer);
     gff.parse(buffer);
     const root = gff.RootNode;

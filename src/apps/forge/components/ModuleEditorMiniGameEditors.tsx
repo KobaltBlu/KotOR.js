@@ -5,12 +5,12 @@
  */
 
 import React from "react";
-import { ForgeMiniGame } from "@/apps/forge/module-editor/ForgeMiniGame";
-import { ForgeMGPlayer } from "@/apps/forge/module-editor/ForgeMGPlayer";
-import { ForgeMGEnemy } from "@/apps/forge/module-editor/ForgeMGEnemy";
-import { ForgeMGGunBank } from "@/apps/forge/module-editor/ForgeMGGunBank";
-import { ForgeMGObstacle } from "@/apps/forge/module-editor/ForgeMGObstacle";
-import { IModelListItem } from "@/interface/module/minigame/IModelListItem";
+import { ForgeMiniGame } from "@apps/forge/module-editor/ForgeMiniGame";
+import { ForgeMGPlayer } from "@apps/forge/module-editor/ForgeMGPlayer";
+import { ForgeMGEnemy } from "@apps/forge/module-editor/ForgeMGEnemy";
+import { ForgeMGGunBank } from "@apps/forge/module-editor/ForgeMGGunBank";
+import { ForgeMGObstacle } from "@apps/forge/module-editor/ForgeMGObstacle";
+import { IModelListItem } from "@core/interface/module/minigame/IModelListItem";
 
 type MarkFn = (coalesceKey?: string) => void;
 

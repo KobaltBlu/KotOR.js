@@ -7,16 +7,22 @@
  */
 
 import React from "react";
-import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "@/apps/forge/states/tabs";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import * as KotOR from "@/apps/forge/KotOR";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { TabGUIEditor } from "@/apps/forge/components/tabs/tab-gui-editor/TabGUIEditor";
-import { UI3DRenderer, UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
-import { flushGuiMatrices, commitGuiTransform } from "@/gui/guiMatrix";
-import { GUIControlType } from "@/enums/gui/GUIControlType";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { snapshotGff, gffFromSnapshot } from "@/apps/forge/helpers/gffUndoSnapshot";
+import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "@apps/forge/states/tabs";
+import { EditorFile } from "@apps/forge/EditorFile";
+import * as KotOR from "@apps/forge/KotOR";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import { TabGUIEditor } from "@apps/forge/components/tabs/tab-gui-editor/TabGUIEditor";
+import { UI3DRenderer, UI3DRendererEventListenerTypes } from "@apps/forge/UI3DRenderer";
+import {
+  commitGuiTransform,
+  ensureGuiTypeNests,
+  flushGuiMatrices,
+  GameState,
+  isTslGuiGame,
+} from "@apps/forge/KotOR";
+import { GUIControlType } from "@core/enums/gui/GUIControlType";
+import { GFFDataType } from "@core/enums/resource/GFFDataType";
+import { snapshotGff, gffFromSnapshot } from "@apps/forge/helpers/gffUndoSnapshot";
 import {
   GUI_ROOT_PATH,
   buildGuiOutline,
@@ -39,9 +45,7 @@ import {
   setScalarField,
   setVectorFieldRgb,
   type GuiOutlineNode,
-} from "@/apps/forge/gui/guiOutline";
-import { ensureGuiTypeNests, isTslGuiGame } from "@/gui/guiControlSchema";
-import { GameState } from "@/GameState";
+} from "@apps/forge/gui/guiOutline";
 import * as THREE from "three";
 
 export type TabGUIEditorStateEventListenerTypes =

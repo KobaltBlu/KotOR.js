@@ -6,8 +6,8 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
-import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
+import { FileBrowserNode } from "@apps/forge/FileBrowserNode";
+import { EditorFileProtocol } from "@apps/forge/enum/EditorFileProtocol";
 
 const INVALID_ENTRY_CHARS = /[\\/:*?"<>|]/;
 

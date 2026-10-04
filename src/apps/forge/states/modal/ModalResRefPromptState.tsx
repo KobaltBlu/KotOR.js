@@ -7,10 +7,10 @@
  */
 
 import React from "react";
-import { ModalResRefPrompt } from "@/apps/forge/components/modal/ModalResRefPrompt";
-import { ModalState } from "@/apps/forge/states/modal/ModalState";
-import { sanitizeResRef } from "@/apps/forge/helpers/UTxEditorHelpers";
-import { confirmTypedResRef, NO_GAME_RESREF_HINT } from "@/apps/forge/helpers/gameResRefPrompt";
+import { ModalResRefPrompt } from "@apps/forge/components/modal/ModalResRefPrompt";
+import { ModalState } from "@apps/forge/states/modal/ModalState";
+import { sanitizeResRef } from "@apps/forge/helpers/UTxEditorHelpers";
+import { confirmTypedResRef, NO_GAME_RESREF_HINT } from "@apps/forge/helpers/gameResRefPrompt";
 
 export interface ModalResRefPromptOptions {
   title: string;

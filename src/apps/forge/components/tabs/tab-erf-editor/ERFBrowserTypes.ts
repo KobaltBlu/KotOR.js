@@ -6,12 +6,12 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
+import { FileBrowserNode } from "@apps/forge/FileBrowserNode";
 import type {
   ErfBrowserSortDir,
   ErfBrowserSortKey,
   ErfBrowserViewMode,
-} from "@/apps/forge/settings/forgeEditorsSettings";
+} from "@apps/forge/settings/forgeEditorsSettings";
 
 export type { ErfBrowserSortDir, ErfBrowserSortKey, ErfBrowserViewMode };
 

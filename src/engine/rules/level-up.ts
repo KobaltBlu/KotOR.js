@@ -1,12 +1,12 @@
-import { GameEngineType } from "@/enums/engine";
-import { SkillType } from "@/enums/nwscript/SkillType";
-import type { CreatureClass } from "@/combat/CreatureClass";
+import { GameEngineType } from "@core/enums/engine";
+import { SkillType } from "@core/enums/nwscript/SkillType";
+import type { CreatureClass } from "@engine/combat/CreatureClass";
 import {
   computeSkillPointsGained,
   getCreatureIntelligence,
   getSkillPointCost,
   isSkillBlockedForCreature,
-} from "@/engine/rules/skill-points";
+} from "@engine/rules/skill-points";
 
 /**
  * ability index for attribute_index / LevelUp.

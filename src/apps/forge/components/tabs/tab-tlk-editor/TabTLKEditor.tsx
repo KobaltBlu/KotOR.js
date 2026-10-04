@@ -1,14 +1,14 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { TabTLKEditorState } from "@/apps/forge/states/tabs/TabTLKEditorState";
-import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
-import { ForgeButton, ForgeDialog, ForgeInput, ForgeSpinner, ForgeTextArea } from "@/apps/forge/components/ui";
-import * as KotOR from "@/apps/forge/KotOR";
-import { TLKSearchResult } from "@/managers/TLKManager";
-import { TLKStringUpdate } from "@/resource/TLKObject";
-import { normalizeSoundResRef } from "@/apps/forge/states/tabs/ssfEditorTlkHelpers";
-import { forgeTlkSettings } from "@/apps/forge/settings/forgeEditorsSettings";
+import { BaseTabProps } from "@apps/forge/interfaces/BaseTabProps";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { TabTLKEditorState } from "@apps/forge/states/tabs/TabTLKEditorState";
+import { MenuBar, MenuItem } from "@apps/forge/components/common/MenuBar";
+import { ForgeButton, ForgeDialog, ForgeInput, ForgeSpinner, ForgeTextArea } from "@apps/forge/components/ui";
+import * as KotOR from "@apps/forge/KotOR";
+import { TLKSearchResult } from "@core/managers/TLKManager";
+import { TLKStringUpdate } from "@core/resource/TLKObject";
+import { normalizeSoundResRef } from "@apps/forge/states/tabs/ssfEditorTlkHelpers";
+import { forgeTlkSettings } from "@apps/forge/settings/forgeEditorsSettings";
 import { TLKEditorResultRow } from "./TLKEditorResultRow";
 
 import "./TabTLKEditor.scss";

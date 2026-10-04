@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { ForgeState } from "@apps/forge/states/ForgeState";
 
 export interface LayoutContainerProviderValues {
   westOpen?: boolean;

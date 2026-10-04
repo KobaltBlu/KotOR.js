@@ -1,4 +1,4 @@
-import { TwoDAObject } from "@/resource/TwoDAObject";
+import { TwoDAObject } from "@core/resource/TwoDAObject";
 
 /**
  * GrenadeSND.2da row — surface material index → bounce/impact sound.

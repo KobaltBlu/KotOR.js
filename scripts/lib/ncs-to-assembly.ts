@@ -3,10 +3,10 @@
  * {@link NWScriptInstruction.toAssemblyString} without pulling GameState.
  */
 
-import { BinaryReader } from '../../src/utility/binary/BinaryReader';
-import { Endians } from '../../src/enums/resource/Endians';
-import { NWScriptDataType } from '../../src/enums/nwscript/NWScriptDataType';
-import { NWScriptInstructionInfo } from '../../src/nwscript/NWScriptInstructionInfo';
+import { BinaryReader } from '@core/binary/BinaryReader';
+import { Endians } from '@core/enums/resource/Endians';
+import { NWScriptDataType } from '@core/enums/nwscript/NWScriptDataType';
+import { NWScriptInstructionInfo } from '@engine/nwscript/NWScriptInstructionInfo';
 import {
   OP_ACTION,
   OP_CONST,
@@ -29,7 +29,7 @@ import {
   OP_RSADD,
   OP_STORE_STATE,
   OP_T,
-} from '../../src/nwscript/NWScriptOPCodes';
+} from '@engine/nwscript/NWScriptOPCodes';
 
 interface AsmInstr {
   address: number;

@@ -7,13 +7,13 @@
  */
 
 import React from "react";
-import * as KotOR from "@/apps/forge/KotOR";
-import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
+import * as KotOR from "@apps/forge/KotOR";
+import { FileBrowserNode } from "@apps/forge/FileBrowserNode";
 import {
   formatERFOffset,
   getERFFileIconClass,
   isERFFolderNode,
-} from "@/apps/forge/components/tabs/tab-erf-editor/ERFBrowserTypes";
+} from "@apps/forge/components/tabs/tab-erf-editor/ERFBrowserTypes";
 
 export interface ERFBrowserPreviewProps {
   node: FileBrowserNode | undefined;

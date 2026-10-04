@@ -4,11 +4,11 @@
  */
 import fs from 'fs';
 import path from 'path';
-import { GFFDataType } from '../src/enums/resource/GFFDataType';
-import { GFFField } from '../src/resource/GFFField';
-import { GFFStruct } from '../src/resource/GFFStruct';
-import { GFFObject } from '../src/resource/GFFObject';
-import { CExoLocString } from '../src/resource/CExoLocString';
+import { GFFDataType } from '@core/enums/resource/GFFDataType';
+import { GFFField } from '@core/resource/GFFField';
+import { GFFStruct } from '@core/resource/GFFStruct';
+import { GFFObject } from '@core/resource/GFFObject';
+import { CExoLocString } from '@core/resource/CExoLocString';
 
 let failed = 0;
 function assert(cond: boolean, msg: string){

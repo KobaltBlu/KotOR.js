@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { useApp } from "@/apps/game/context/AppContext";
-import { ModalEULA } from "@/apps/game/components/modal-eula/modalEULA";
-import { ModalGrantAccess } from "@/apps/game/components/modal-grant-access/modalGrantAccess";
-import { ModalClickToBegin } from "@/apps/game/components/modal-click-to-begin/modalClickToBegin";
-import { CheatConsole } from "@/apps/game/components/cheat-console/cheatConsole";
-import { ModuleInspectorHost } from "@/apps/game/components/module-inspector/ModuleInspectorHost";
-import { LoadingScreen } from "@/apps/common/components/loadingScreen/LoadingScreen";
-import * as KotOR from "@/apps/game/KotOR";
+import { useApp } from "@apps/game/context/AppContext";
+import { ModalEULA } from "@apps/game/components/modal-eula/modalEULA";
+import { ModalGrantAccess } from "@apps/game/components/modal-grant-access/modalGrantAccess";
+import { ModalClickToBegin } from "@apps/game/components/modal-click-to-begin/modalClickToBegin";
+import { CheatConsole } from "@apps/game/components/cheat-console/cheatConsole";
+import { ModuleInspectorHost } from "@apps/game/components/module-inspector/ModuleInspectorHost";
+import { LoadingScreen } from "@apps/common/components/loadingScreen/LoadingScreen";
+import * as KotOR from "@apps/game/KotOR";
 
 export const GameApp = () => {
   const appContext = useApp();

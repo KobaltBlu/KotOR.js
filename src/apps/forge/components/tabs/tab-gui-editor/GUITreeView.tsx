@@ -7,18 +7,18 @@
  */
 
 import React, { useMemo, useState } from "react";
-import { ForgeTreeView } from "@/apps/forge/components/treeview/ForgeTreeView";
-import { ListItemNode } from "@/apps/forge/components/treeview/ListItemNode";
-import { ForgeButton, ForgeInput, ForgeSelect } from "@/apps/forge/components/ui";
-import { TabGUIEditorState } from "@/apps/forge/states/tabs/TabGUIEditorState";
+import { ForgeTreeView } from "@apps/forge/components/treeview/ForgeTreeView";
+import { ListItemNode } from "@apps/forge/components/treeview/ListItemNode";
+import { ForgeButton, ForgeInput, ForgeSelect } from "@apps/forge/components/ui";
+import { TabGUIEditorState } from "@apps/forge/states/tabs/TabGUIEditorState";
 import {
   GUI_ROOT_PATH,
   collectExpandedGuiPaths,
   guiAddableControlTypes,
   guiControlTypeLabel,
   type GuiOutlineNode,
-} from "@/apps/forge/gui/guiOutline";
-import { GUIControlType } from "@/enums/gui/GUIControlType";
+} from "@apps/forge/gui/guiOutline";
+import { GUIControlType } from "@core/enums/gui/GUIControlType";
 
 export interface GUITreeViewProps {
   tab: TabGUIEditorState;

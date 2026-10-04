@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import { GameEngineType } from "@/enums/engine/GameEngineType";
+import { GameEngineType } from "@core/enums/engine/GameEngineType";
 import {
   getKotorStoreProductByGameKey,
   KotORStoreProduct,
-} from "@/apps/common/data/kotorStoreProducts";
-import { NeedKotorPanel } from "@/apps/common/components/needKotor/NeedKotorPanel";
+} from "@apps/common/data/kotorStoreProducts";
+import { NeedKotorPanel } from "@apps/common/components/needKotor/NeedKotorPanel";
 
 export interface NeedKotorCollapsibleSectionProps {
   gameKey?: GameEngineType;

@@ -1,0 +1,113 @@
+import * as THREE from "three";
+import type { OdysseyModelNode } from "@engine/odyssey/OdysseyModelNode";
+import type { OdysseyController } from "@engine/odyssey/controllers/OdysseyController";
+import type { OdysseySaberTrail } from "@engine/odyssey/OdysseySaberTrail";
+import type { OdysseyEmitter3D } from "@engine/render/three/odyssey/OdysseyEmitter3D";
+import type { OdysseyLight3D } from "@engine/render/three/odyssey/OdysseyLight3D";
+import type { OdysseyModel3D } from "@engine/render/three/odyssey/OdysseyModel3D";
+
+/**
+ * OdysseyObject3D class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file OdysseyObject3D.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
+export class OdysseyObject3D extends THREE.Object3D {
+  odysseyModel: OdysseyModel3D;
+  odysseyModelNode: OdysseyModelNode;
+  sourceNodeUUID: string;
+  NodeType: number;
+  isWalkmesh: boolean;
+  controllers: Map<number, OdysseyController>;
+  controllerCache: any;
+  controllerHelpers: any = {
+    hasOrientation: false,
+    hasPosition: false,
+    hasScale: false,
+  };
+  matrixInverse: THREE.Matrix4;
+  wasOffscreen: boolean = false;
+  box: THREE.Box3;
+  transitionState: {
+    position: THREE.Vector3,
+    quaternion: THREE.Quaternion,
+  };
+  
+  head: any;
+  lipping: boolean = false;
+  
+  emitter: OdysseyEmitter3D;
+  light: OdysseyLight3D;
+  mesh: THREE.Mesh | THREE.SkinnedMesh;
+  /** CPU saber trail component (saber nodes only). */
+  saberTrail?: OdysseySaberTrail;
+
+  constructor( node: OdysseyModelNode = undefined ){
+    super();
+    this.odysseyModelNode = node;
+    if(node){
+      this.controllers = node?.controllers;
+    }
+    this.controllerCache = {};
+    this.transitionState = {
+      position: new THREE.Vector3,
+      quaternion: new THREE.Quaternion,
+    };
+  }
+  
+  getControllerByType(type = -1){
+    return this.controllers.get(type);
+  }
+
+  disableMatrixUpdate() {
+    throw new Error("Method not implemented.");
+  }
+
+  dispose() {
+    super.dispose();
+  }
+
+  update(delta: number) {
+    throw new Error("Method not implemented.");
+  }
+
+  playAnimation(arg0: any, aLooping: boolean, arg2?: Function) {
+    throw new Error("Method not implemented.");
+  }
+
+  traverseIgnore( ignoreName: string = '', callback?: Function ){
+
+    if(this.name == ignoreName)
+      return;
+  
+    if(typeof callback == 'function')
+      callback( this );
+  
+    var children = this.children;
+  
+    for ( var i = 0, l = children.length; i < l; i ++ ) {
+      if(typeof (children[ i ] as any).traverseIgnore === 'function'){
+        (children[ i ] as any).traverseIgnore( ignoreName, callback );
+      }
+    }
+  
+  }
+
+  static getUUIDs(object: THREE.Object3D): string[] {
+    const uuids: string[] = [];
+
+    if(!object){ return uuids; }
+
+    uuids.push(object.uuid);
+
+    for(let i = 0, len = object.children.length; i < len; i++){
+      uuids.push(...OdysseyObject3D.getUUIDs(object.children[i]));
+    }
+
+    return uuids;
+  }
+  
+}

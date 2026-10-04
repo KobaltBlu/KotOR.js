@@ -1,9 +1,9 @@
 import React from 'react';
-import { ContextMenuItem } from "@/apps/forge/components/common/ContextMenu";
-import * as KotOR from "@/apps/forge/KotOR";
-import { FileTypeManager } from "@/apps/forge/FileTypeManager";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { forgeArchivesSettings } from "@/apps/forge/settings/forgeEditorsSettings";
+import { ContextMenuItem } from "@apps/forge/components/common/ContextMenu";
+import * as KotOR from "@apps/forge/KotOR";
+import { FileTypeManager } from "@apps/forge/FileTypeManager";
+import { EditorFile } from "@apps/forge/EditorFile";
+import { forgeArchivesSettings } from "@apps/forge/settings/forgeEditorsSettings";
 import * as fs from "fs";
 
 declare const dialog: any;

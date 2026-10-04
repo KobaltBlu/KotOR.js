@@ -6,7 +6,7 @@ import {
   formatTwoDAOptionLabel,
   listTwoDAIndexOptions,
   twoDATableHasRows,
-} from "@/apps/forge/helpers/twoDAIndexOptions";
+} from "@apps/forge/helpers/twoDAIndexOptions";
 
 describe("twoDATableHasRows", () => {
   test("is false when the table is missing or empty", () => {

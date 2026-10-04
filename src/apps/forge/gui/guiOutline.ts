@@ -6,12 +6,12 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GUIControlType } from "@/enums/gui/GUIControlType";
-import { createGuiControlStruct } from "@/gui/guiControlSchema";
-import { GFFField } from "@/resource/GFFField";
-import { GFFObject } from "@/resource/GFFObject";
-import { GFFStruct } from "@/resource/GFFStruct";
+import { GFFDataType } from "@core/enums/resource/GFFDataType";
+import { GUIControlType } from "@core/enums/gui/GUIControlType";
+import { createGuiControlStruct } from "@apps/forge/KotOR";
+import { GFFField } from "@core/resource/GFFField";
+import { GFFObject } from "@core/resource/GFFObject";
+import { GFFStruct } from "@core/resource/GFFStruct";
 
 /** Stable path for the root panel (GFF RootNode). */
 export const GUI_ROOT_PATH = "root";

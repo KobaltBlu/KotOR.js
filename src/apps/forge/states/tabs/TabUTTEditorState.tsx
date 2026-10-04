@@ -1,12 +1,12 @@
-import { TabState, UpdateFileOptions } from "@/apps/forge/states/tabs/TabState";
-import * as KotOR from "@/apps/forge/KotOR";
+import { TabState, UpdateFileOptions } from "@apps/forge/states/tabs/TabState";
+import * as KotOR from "@apps/forge/KotOR";
 import React from "react";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { snapshotGff } from "@/apps/forge/helpers/gffUndoSnapshot";
-import { beginUtxFileUpdate, finishUtxUndoApply } from "@/apps/forge/helpers/UTxEditorHelpers";
-import { TabUTTEditor } from "@/apps/forge/components/tabs/tab-utt-editor/TabUTTEditor";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { ForgeTrigger } from "@/apps/forge/module-editor/ForgeTrigger";
+import { EditorFile } from "@apps/forge/EditorFile";
+import { snapshotGff } from "@apps/forge/helpers/gffUndoSnapshot";
+import { beginUtxFileUpdate, finishUtxUndoApply } from "@apps/forge/helpers/UTxEditorHelpers";
+import { TabUTTEditor } from "@apps/forge/components/tabs/tab-utt-editor/TabUTTEditor";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import { ForgeTrigger } from "@apps/forge/module-editor/ForgeTrigger";
 
 export class TabUTTEditorState extends TabState {
   tabName: string = `UTT`;

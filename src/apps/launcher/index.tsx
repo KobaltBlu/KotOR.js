@@ -1,17 +1,17 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ReactDOM from "react-dom/client";
 import "@/apps/launcher/app.scss";
-import { AppProvider, useApp } from "@/apps/launcher/context/AppContext";
+import { AppProvider, useApp } from "@apps/launcher/context/AppContext";
 
-import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
-import { ConfigClient } from "@/utility/ConfigClient";
-import { CategoryMenuItem } from "@/apps/launcher/components/CategoryMenuItem";
-import { ProfileTabContent } from "@/apps/launcher/components/ProfileTabContent";
-import { ApplicationProfile } from "@/utility/ApplicationProfile";
-import { Launcher } from "@/apps/launcher/context/Launcher";
-import { CommunityTabContent } from "@/apps/launcher/components/CommunityTabContent";
-import DiscordWidget from "@/apps/launcher/components/DiscordWidget";
-import { NeedKotorPanel } from "@/apps/common/components/needKotor/NeedKotorPanel";
+import { ApplicationEnvironment } from "@core/enums/ApplicationEnvironment";
+import { ConfigClient } from "@core/filesystem/ConfigClient";
+import { CategoryMenuItem } from "@apps/launcher/components/CategoryMenuItem";
+import { ProfileTabContent } from "@apps/launcher/components/ProfileTabContent";
+import { ApplicationProfile } from "@core/utility/ApplicationProfile";
+import { Launcher } from "@apps/launcher/context/Launcher";
+import { CommunityTabContent } from "@apps/launcher/components/CommunityTabContent";
+import DiscordWidget from "@apps/launcher/components/DiscordWidget";
+import { NeedKotorPanel } from "@apps/common/components/needKotor/NeedKotorPanel";
 
 (window as any).Launcher = Launcher;
 

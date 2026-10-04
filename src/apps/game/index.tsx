@@ -1,8 +1,8 @@
 import ReactDOM from "react-dom/client";
 import React from "react";
-import * as KotOR from "@/apps/game/KotOR";
-import { AppProvider } from "@/apps/game/context/AppContext";
-import { GameApp } from "@/apps/game/app";
+import * as KotOR from "@apps/game/KotOR";
+import { AppProvider } from "@apps/game/context/AppContext";
+import { GameApp } from "@apps/game/app";
 import "@/apps/game/app.scss";
 
 window.addEventListener('beforeunload', (e) => {

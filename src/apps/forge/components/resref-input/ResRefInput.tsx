@@ -7,9 +7,9 @@
  */
 
 import React, { ChangeEvent } from "react";
-import { ForgeButton, ForgeInput, ForgeInputGroup } from "@/apps/forge/components/ui";
-import { ResRefKind } from "@/apps/forge/states/modal/ModalResRefBrowserState";
-import { openResRefBrowser } from "@/apps/forge/helpers/openGameResRefPicker";
+import { ForgeButton, ForgeInput, ForgeInputGroup } from "@apps/forge/components/ui";
+import { ResRefKind } from "@apps/forge/states/modal/ModalResRefBrowserState";
+import { openResRefBrowser } from "@apps/forge/helpers/openGameResRefPicker";
 import "@/apps/forge/components/script-resref-input/ScriptResRefInput.scss";
 
 export interface ResRefChangeEvent {

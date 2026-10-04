@@ -10,7 +10,7 @@ module.exports = (name, color) => ({
   entry: {
     forge: [
       './src/apps/forge/index.tsx',
-      './src/worker/worker-tex.ts'
+      './src/engine/workers/worker-tex.ts'
     ]
   },
   stats: commonStats,
@@ -67,6 +67,7 @@ module.exports = (name, color) => ({
   externals: {
     fs: 'window.fs',
     three: 'THREE',
+    '@apps/forge/KotOR': 'KotOR',
     '@/apps/forge/KotOR': 'KotOR',
     '@/KotOR': 'KotOR',
   },

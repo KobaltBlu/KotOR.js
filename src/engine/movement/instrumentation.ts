@@ -1,8 +1,8 @@
-import { GameState } from "@/GameState";
-import { EngineDebugType } from "@/enums/engine/EngineDebugType";
-import type { ModuleObject } from "@/module/ModuleObject";
-import { getMovementFrameId } from "@/engine/movement/creature-movement-state";
-import type { MovementAuthority, MovementSource } from "@/engine/movement/types";
+import { GameState } from "@engine/runtime/GameState";
+import { EngineDebugType } from "@engine/enums/engine/EngineDebugType";
+import type { ModuleObject } from "@engine/module/ModuleObject";
+import { getMovementFrameId } from "@engine/movement/creature-movement-state";
+import type { MovementAuthority, MovementSource } from "@engine/movement/types";
 
 /**
  * Dev instrumentation for unauthorized creature position / collision mutations.

@@ -7,24 +7,24 @@
  */
 
 import React, { useEffect, useState } from "react";
-import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
-import { ForgeButton, ForgeDialog, ForgeInput, ForgeInputGroup, ForgeProgress } from "@/apps/forge/components/ui";
-import { ProjectType } from "@/apps/forge/enum/ProjectType";
-import { ForgeFileSystem } from "@/apps/forge/ForgeFileSystem";
+import { BaseModalProps } from "@apps/forge/interfaces/modal/BaseModalProps";
+import { ForgeButton, ForgeDialog, ForgeInput, ForgeInputGroup, ForgeProgress } from "@apps/forge/components/ui";
+import { ProjectType } from "@apps/forge/enum/ProjectType";
+import { ForgeFileSystem } from "@apps/forge/ForgeFileSystem";
 import {
   companionRimFilename,
   importModuleArchive,
   inspectModuleArchive,
   tryReadCompanionRim,
   type ModuleArchivePreview,
-} from "@/apps/forge/helpers/importModuleArchive";
+} from "@apps/forge/helpers/importModuleArchive";
 import {
   MODULE_ARCHIVE_EXTS,
   readPickedModuleArchive,
-} from "@/apps/forge/helpers/moduleArchivePicker";
-import { Project } from "@/apps/forge/Project";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
+} from "@apps/forge/helpers/moduleArchivePicker";
+import { Project } from "@apps/forge/Project";
+import { ProjectFileSystem } from "@apps/forge/ProjectFileSystem";
+import { ForgeState } from "@apps/forge/states/ForgeState";
 
 export const ModalImportModule = (props: BaseModalProps) => {
   const modal = props.modal;

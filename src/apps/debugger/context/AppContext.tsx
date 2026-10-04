@@ -1,14 +1,14 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
-import * as KotOR from "@/apps/debugger/KotOR";
-import { DebuggerState, type ScriptOwnerFilter } from "@/apps/debugger/states/DebuggerState";
-import type { DebugTarget } from "@/apps/debugger/DebugTarget";
+import * as KotOR from "@apps/debugger/KotOR";
+import { DebuggerState, type ScriptOwnerFilter } from "@apps/debugger/states/DebuggerState";
+import type { DebugTarget } from "@apps/debugger/DebugTarget";
 import type {
   GlobalsSnapshotEntry,
   LiveObjectSnapshot,
   ModuleAreaSnapshot,
   ObjectListEntry,
-} from "@/inspect/runtimeSnapshots";
-import type { DialogSnapshot } from "@/inspect/dialogSnapshot";
+} from "@engine/debug/inspect/runtimeSnapshots";
+import type { DialogSnapshot } from "@engine/debug/inspect/dialogSnapshot";
 
 export type InspectorActivity = 'scene' | 'module' | 'objects' | 'globals' | 'scripts' | 'dialog';
 export type InspectorHostMode = 'iframe' | 'window';

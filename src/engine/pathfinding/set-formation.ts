@@ -1,11 +1,11 @@
 import * as THREE from "three";
-import { ActionParameterType } from "@/enums/actions/ActionParameterType";
-import { GameState } from "@/GameState";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import type { ModuleObject } from "@/module/ModuleObject";
+import { ActionParameterType } from "@core/enums/actions/ActionParameterType";
+import { GameState } from "@engine/runtime/GameState";
+import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { ModuleObject } from "@engine/module/ModuleObject";
 
-import { isCreature } from "@/module/guards/isCreature";
-import { isObject } from "@/module/guards/isObject";
+import { isCreature } from "@engine/module/guards/isCreature";
+import { isObject } from "@engine/module/guards/isObject";
 
 const DEG2RAD = Math.PI / 180;
 

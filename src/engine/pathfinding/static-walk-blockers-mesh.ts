@@ -1,12 +1,12 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@/module/ModuleArea";
-import type { OdysseyFace3 } from "@/three/odyssey";
-import type { OdysseyWalkMesh } from "@/odyssey/OdysseyWalkMesh";
+import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { OdysseyFace3 } from "@engine/render/three/odyssey";
+import type { OdysseyWalkMesh } from "@engine/odyssey/OdysseyWalkMesh";
 import {
   WalkHitKind,
   type WalkHitInfo,
-} from "@/engine/pathfinding/walk-hit-info";
-import { isWalkCheckBlockingFace } from "@/engine/pathfinding/walk-check-material-mask";
+} from "@engine/pathfinding/walk-hit-info";
+import { isWalkCheckBlockingFace } from "@engine/pathfinding/walk-check-material-mask";
 
 /**
  * Approximate static walk blockers

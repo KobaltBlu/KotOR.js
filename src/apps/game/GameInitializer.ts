@@ -1,5 +1,5 @@
 import * as path from "path";
-import * as KotOR from "@/apps/game/KotOR";
+import * as KotOR from "@apps/game/KotOR";
 import pLimit from "p-limit";
 
 const fsLimit = pLimit(16);
@@ -162,7 +162,7 @@ export class GameInitializer {
     GameInitializer.currentGame = game;
 
     KotOR.PerformanceMonitor.start('configclient');
-    await KotOR.ConfigClient.Init();
+    await KotOR.ConfigClient.Init(KotOR.configClientDefaults);
     KotOR.PerformanceMonitor.stop('configclient');
     
     GameInitializer.SetLoadingMessage("Loading Keys");

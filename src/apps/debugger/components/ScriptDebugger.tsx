@@ -1,12 +1,12 @@
 import React, { useMemo } from "react";
-import { ActivityChrome } from "@/apps/debugger/components/ActivityChrome";
-import { SceneActivity } from "@/apps/debugger/components/SceneActivity";
-import { ModuleActivity } from "@/apps/debugger/components/ModuleActivity";
-import { ObjectsActivity } from "@/apps/debugger/components/ObjectsActivity";
-import { GlobalsActivity } from "@/apps/debugger/components/GlobalsActivity";
-import { ScriptsActivity } from "@/apps/debugger/components/ScriptsActivity";
-import { DialogActivity } from "@/apps/debugger/components/DialogActivity";
-import { useApp } from "@/apps/debugger/context/AppContext";
+import { ActivityChrome } from "@apps/debugger/components/ActivityChrome";
+import { SceneActivity } from "@apps/debugger/components/SceneActivity";
+import { ModuleActivity } from "@apps/debugger/components/ModuleActivity";
+import { ObjectsActivity } from "@apps/debugger/components/ObjectsActivity";
+import { GlobalsActivity } from "@apps/debugger/components/GlobalsActivity";
+import { ScriptsActivity } from "@apps/debugger/components/ScriptsActivity";
+import { DialogActivity } from "@apps/debugger/components/DialogActivity";
+import { useApp } from "@apps/debugger/context/AppContext";
 
 export const ScriptDebugger = () => {
   const { activity, moduleSnapshot, selectedInstance: selectedInstanceTuple } = useApp();

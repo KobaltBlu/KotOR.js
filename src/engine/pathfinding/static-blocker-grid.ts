@@ -1,13 +1,13 @@
-import type { ModuleArea } from "@/module/ModuleArea";
-import type { ModuleDoor } from "@/module/ModuleDoor";
-import type { ModulePlaceable } from "@/module/ModulePlaceable";
-import type { ModuleObject } from "@/module/ModuleObject";
+import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { ModuleDoor } from "@engine/module/ModuleDoor";
+import type { ModulePlaceable } from "@engine/module/ModulePlaceable";
+import type { ModuleObject } from "@engine/module/ModuleObject";
 import * as THREE from "three";
 import {
   composeDoorWalkmeshLocalToWorld,
   walkmeshWorldAabbXY,
-} from "@/engine/pathfinding/door-walkmesh-matrix";
-import { invalidateWalkmeshEdgeClearCache } from "@/engine/pathfinding/walkmesh-edge-clear-cache";
+} from "@engine/pathfinding/door-walkmesh-matrix";
+import { invalidateWalkmeshEdgeClearCache } from "@engine/pathfinding/walkmesh-edge-clear-cache";
 
 /**
  * Uniform XY hash for door / placeable static-blocker pruning.

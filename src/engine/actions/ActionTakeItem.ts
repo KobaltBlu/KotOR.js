@@ -1,0 +1,89 @@
+import { ActionStatus } from "@core/enums/actions/ActionStatus";
+import { ActionType } from "@core/enums/actions/ActionType";
+import { Action } from "@engine/actions/Action";
+import {
+  acquireItem,
+  isPartyCreature,
+  releaseItemFromOwner,
+  showGiveTakeStatus,
+  UPDATE_STATUS_ITEM_TAKEN,
+} from "@engine/actions/item-transfer";
+import type { ModuleItem } from "@engine/module/ModuleItem";
+import type { ModuleObject } from "@engine/module/ModuleObject";
+
+import { isCreature } from "@engine/module/guards/isCreature";
+import { isItem } from "@engine/module/guards/isItem";
+import { isPlaceable } from "@engine/module/guards/isPlaceable";
+import { isStore } from "@engine/module/guards/isStore";
+
+/**
+ * ActionTakeItem — take-item action.
+ *
+ * Params:
+ * 0 - dword: oItem (item object id)
+ * 1 - dword: oTakeFrom (source object id)
+ * 2 - int: bDisplayStatus (1 = display party GUI feedback status; UpdateStatus 8 when source is PC)
+ *
+ * No range / pathfind. Actor must be creature or placeable.
+ *
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ *
+ * @file ActionTakeItem.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
+export class ActionTakeItem extends Action {
+
+  constructor( actionId: number = -1, groupId: number = -1 ){
+    super(actionId, groupId);
+    this.type = ActionType.ActionTakeItem;
+
+    //PARAMS
+    // 0 - dword: oItem (item object id)
+    // 1 - dword: oTakeFrom (source object id)
+    // 2 - int: bDisplayStatus (1 = display party GUI feedback status)
+  }
+
+  update(_delta?: number): ActionStatus {
+    if (
+      !isCreature(this.owner) &&
+      !isPlaceable(this.owner)
+    ) {
+      return ActionStatus.ERROR;
+    }
+
+    const oItem = this.getParameter<ModuleItem>(0);
+    const oTakeFrom = this.getParameter<ModuleObject>(1);
+    const bDisplayStatus = (this.getParameter<number>(2) | 0) !== 0;
+
+    if (!isItem(oItem)) {
+      return ActionStatus.ERROR;
+    }
+    if (
+      !isCreature(oTakeFrom) &&
+      !isPlaceable(oTakeFrom) &&
+      !isStore(oTakeFrom)
+    ) {
+      return ActionStatus.ERROR;
+    }
+
+    const sourceWasParty = isPartyCreature(oTakeFrom);
+    const transfer = releaseItemFromOwner(oTakeFrom, oItem, -1);
+    if (!transfer) {
+      return ActionStatus.ERROR;
+    }
+
+    const ok = acquireItem(this.owner, transfer, {
+      addAsItem: true,
+      displayStatus: false,
+      from: oTakeFrom,
+    });
+
+    if (ok && bDisplayStatus && sourceWasParty) {
+      showGiveTakeStatus(UPDATE_STATUS_ITEM_TAKEN);
+    }
+
+    return ok ? ActionStatus.COMPLETE : ActionStatus.ERROR;
+  }
+
+}

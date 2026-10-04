@@ -7,12 +7,12 @@
  * @file exportTypedGffJson.ts
  */
 
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { CExoLocString } from "@/resource/CExoLocString";
-import { CExoLocSubString } from "@/resource/CExoLocSubString";
-import { GFFField } from "@/resource/GFFField";
-import { GFFObject } from "@/resource/GFFObject";
-import { GFFStruct } from "@/resource/GFFStruct";
+import { GFFDataType } from "@core/enums/resource/GFFDataType";
+import { CExoLocString } from "@core/resource/CExoLocString";
+import { CExoLocSubString } from "@core/resource/CExoLocSubString";
+import { GFFField } from "@core/resource/GFFField";
+import { GFFObject } from "@core/resource/GFFObject";
+import { GFFStruct } from "@core/resource/GFFStruct";
 
 type TypedNode = { type: string; value: unknown };
 

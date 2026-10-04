@@ -1,9 +1,9 @@
 import * as THREE from "three";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import { getPathPersonalSpace } from "@/combat/attack-range";
-import { isSafeWalkPoint } from "@/engine/pathfinding/safe-walk-point";
-import { findOpenWalkLocation } from "@/engine/pathfinding/open-walk-location";
-import { teleportObject } from "@/engine/movement/teleport";
+import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import { getPathPersonalSpace } from "@engine/combat/attack-range";
+import { isSafeWalkPoint } from "@engine/pathfinding/safe-walk-point";
+import { findOpenWalkLocation } from "@engine/pathfinding/open-walk-location";
+import { teleportObject } from "@engine/movement/teleport";
 
 /**
  * Recover a creature that is on a walk face but inside the personal-space

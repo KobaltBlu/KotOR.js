@@ -6,13 +6,13 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { EventListenerModel } from "@/apps/forge/EventListenerModel";
+import { EventListenerModel } from "@apps/forge/EventListenerModel";
 import {
   ForgeModuleHelperVisibility,
   forgeModuleSettings,
   MODULE_HELPER_TYPES,
   ModuleHelperType,
-} from "@/apps/forge/settings/forgeEditorsSettings";
+} from "@apps/forge/settings/forgeEditorsSettings";
 
 export type SceneLayerId =
   | ModuleHelperType

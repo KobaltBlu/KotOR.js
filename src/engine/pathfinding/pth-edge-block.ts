@@ -1,7 +1,7 @@
-import type { ModuleObject } from "@/module/ModuleObject";
-import type { ModuleDoor } from "@/module/ModuleDoor";
-import { isDoor } from "@/module/guards/isDoor";
-import { isPlaceable } from "@/module/guards/isPlaceable";
+import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { ModuleDoor } from "@engine/module/ModuleDoor";
+import { isDoor } from "@engine/module/guards/isDoor";
+import { isPlaceable } from "@engine/module/guards/isPlaceable";
 
 /**
  * PathPointDFSGenerateSuccessors — when static walk blockers (detailed)

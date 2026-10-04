@@ -7,11 +7,11 @@
  */
 
 import React from "react";
-import { InfoBubble } from "@/apps/forge/components/info-bubble/info-bubble";
-import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
-import { ForgeColorField, ForgeInput } from "@/apps/forge/components/ui";
-import { TabGUIEditorState } from "@/apps/forge/states/tabs/TabGUIEditorState";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { InfoBubble } from "@apps/forge/components/info-bubble/info-bubble";
+import { ForgeCheckbox } from "@apps/forge/components/forge-checkbox/forge-checkbox";
+import { ForgeColorField, ForgeInput } from "@apps/forge/components/ui";
+import { TabGUIEditorState } from "@apps/forge/states/tabs/TabGUIEditorState";
+import { GFFDataType } from "@core/enums/resource/GFFDataType";
 
 function FieldRow(props: { label: string; info?: string; children: React.ReactNode }) {
   const label = props.info ? (

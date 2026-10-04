@@ -1,4 +1,4 @@
-import { GFFObject } from "@/resource/GFFObject";
+import { GFFObject } from "@core/resource/GFFObject";
 import {
   createEmptyDocument,
   createLink,
@@ -11,10 +11,10 @@ import {
   type ForgeDLGNode,
   type ForgeDLGScriptParams,
   type ForgeDLGStunt,
-} from "@/apps/forge/dlg/ForgeDLGTypes";
-import { cloneLocString } from "@/apps/forge/dlg/dlgLocString";
-import { exportDlgGff, parseDlgGff } from "@/apps/forge/dlg/dlgGffIO";
-import { isTslForgeGame } from "@/apps/forge/dlg/dlgGame";
+} from "@apps/forge/dlg/ForgeDLGTypes";
+import { cloneLocString } from "@apps/forge/dlg/dlgLocString";
+import { exportDlgGff, parseDlgGff } from "@apps/forge/dlg/dlgGffIO";
+import { isTslForgeGame } from "@apps/forge/dlg/dlgGame";
 
 /**
  * Editable conversation document. Stable node ids; GFF indexes remapped on export.

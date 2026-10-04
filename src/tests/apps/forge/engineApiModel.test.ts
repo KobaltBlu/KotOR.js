@@ -3,7 +3,7 @@ import {
   parseEngineApi,
   parseScriptSymbols,
   renderSymbolDocumentation,
-} from "@/apps/forge/nwscript-language/engineApiModel";
+} from "@apps/forge/nwscript-language/engineApiModel";
 
 const ENGINE = `
 /* Delay a command.

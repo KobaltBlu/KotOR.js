@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { useApp } from "@/apps/debugger/context/AppContext";
+import { useApp } from "@apps/debugger/context/AppContext";
 import type {
   DialogParticipantRef,
   DialogScriptRef,
   DialogSnapshot,
-} from "@/inspect/dialogSnapshot";
+} from "@engine/debug/inspect/dialogSnapshot";
 
 const ScriptChip: React.FC<{
   script: DialogScriptRef;

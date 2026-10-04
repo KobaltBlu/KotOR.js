@@ -9,7 +9,7 @@ import {
   floodFill,
   getActiveLayer,
   setSelectionRect,
-} from "@/apps/forge/image";
+} from "@apps/forge/image";
 
 function putPixel(doc: ReturnType<typeof createUntitledDocument>, x: number, y: number, r: number, g: number, b: number, a: number): void {
   const layer = getActiveLayer(doc);

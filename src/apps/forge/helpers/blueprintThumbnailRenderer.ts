@@ -7,25 +7,25 @@
  */
 
 import * as THREE from "three";
-import * as KotOR from "@/apps/forge/KotOR";
-import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { ForgeCreature } from "@/apps/forge/module-editor/ForgeCreature";
-import { ForgeDoor } from "@/apps/forge/module-editor/ForgeDoor";
-import { ForgePlaceable } from "@/apps/forge/module-editor/ForgePlaceable";
-import type { UtxPreviewObject } from "@/apps/forge/helpers/utxPreview3D";
+import * as KotOR from "@apps/forge/KotOR";
+import { UI3DRenderer } from "@apps/forge/UI3DRenderer";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { ForgeCreature } from "@apps/forge/module-editor/ForgeCreature";
+import { ForgeDoor } from "@apps/forge/module-editor/ForgeDoor";
+import { ForgePlaceable } from "@apps/forge/module-editor/ForgePlaceable";
+import type { UtxPreviewObject } from "@apps/forge/helpers/utxPreview3D";
 import {
   computeBlueprintThumbnailFingerprint,
   isBlueprintThumbnailType,
-} from "@/apps/forge/helpers/blueprintThumbnailFingerprint";
+} from "@apps/forge/helpers/blueprintThumbnailFingerprint";
 import {
   blueprintThumbnailCacheKey,
   getBlueprintThumbnailFromCache,
   installBlueprintThumbnailGameDataHook,
   putBlueprintThumbnailInCache,
-} from "@/apps/forge/helpers/blueprintThumbnailCache";
-import { resolveBlueprintBuffer } from "@/apps/forge/helpers/blueprintThumbnailResolve";
-import type { BlueprintItem, BlueprintType } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
+} from "@apps/forge/helpers/blueprintThumbnailCache";
+import { resolveBlueprintBuffer } from "@apps/forge/helpers/blueprintThumbnailResolve";
+import type { BlueprintItem, BlueprintType } from "@apps/forge/states/modal/ModalBlueprintBrowserState";
 
 const THUMB_SIZE = 256;
 

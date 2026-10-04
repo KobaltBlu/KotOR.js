@@ -7,15 +7,15 @@
  */
 
 import React, { useMemo, useState } from "react";
-import { ForgeSelect } from "@/apps/forge/components/ui";
-import { FILE_TYPE_EDITOR_GROUPS } from "@/apps/forge/settings/fileTypeEditorCatalog";
+import { ForgeSelect } from "@apps/forge/components/ui";
+import { FILE_TYPE_EDITOR_GROUPS } from "@apps/forge/settings/fileTypeEditorCatalog";
 import {
   DEFAULT_EDITOR_LABELS,
   DefaultEditorKind,
   getDefaultEditor,
   setDefaultEditor,
-} from "@/apps/forge/settings/forgeSettings";
-import { registerSettingsPage, settingMatchesQuery, useSettingsSearch } from "@/apps/forge/settings/settingsRegistry";
+} from "@apps/forge/settings/forgeSettings";
+import { registerSettingsPage, settingMatchesQuery, useSettingsSearch } from "@apps/forge/settings/settingsRegistry";
 
 export function FileTypesSettingsPage() {
   const query = useSettingsSearch();

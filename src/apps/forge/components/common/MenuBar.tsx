@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
-import { ForgeMenuItem } from "@/apps/forge/components/common/forgeMenuItem";
+import { ForgeMenuItem } from "@apps/forge/components/common/forgeMenuItem";
 
-export type { ForgeMenuItem } from "@/apps/forge/components/common/forgeMenuItem";
+export type { ForgeMenuItem } from "@apps/forge/components/common/forgeMenuItem";
 
 /** @deprecated Use ForgeMenuItem */
 export type MenuItem = ForgeMenuItem;

@@ -1,4 +1,4 @@
-import { GameEngineType } from "@/enums/engine/GameEngineType";
+import { GameEngineType } from "@core/enums/engine/GameEngineType";
 
 export type KotORStoreProductKey = "kotor" | "tsl";
 

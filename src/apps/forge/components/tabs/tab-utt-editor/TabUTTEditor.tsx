@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useCallback } from "react"
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
-import { TabUTTEditorState } from "@/apps/forge/states/tabs";
-import * as KotOR from "@/apps/forge/KotOR";
-import { FormField } from "@/apps/forge/components/form-field/FormField";
-import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
-import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
-import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost";
-import { ForgeTrigger } from "@/apps/forge/module-editor/ForgeTrigger";
-import { ScriptResRefInput } from "@/apps/forge/components/script-resref-input/ScriptResRefInput";
-import { ForgeTwoDAIndexField } from "@/apps/forge/components/ui";
-import { useForgeHasGameData } from "@/apps/forge/helpers/useForgeHasGameData";
-import { clampByte } from "@/apps/forge/helpers/UTxEditorHelpers";
+import { BaseTabProps } from "@apps/forge/interfaces/BaseTabProps"
+import { TabUTTEditorState } from "@apps/forge/states/tabs";
+import * as KotOR from "@apps/forge/KotOR";
+import { FormField } from "@apps/forge/components/form-field/FormField";
+import { CExoLocStringEditor } from "@apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
+import { ForgeCheckbox } from "@apps/forge/components/forge-checkbox/forge-checkbox";
+import { SubTab, SubTabHost } from "@apps/forge/components/SubTabHost";
+import { ForgeTrigger } from "@apps/forge/module-editor/ForgeTrigger";
+import { ScriptResRefInput } from "@apps/forge/components/script-resref-input/ScriptResRefInput";
+import { ForgeTwoDAIndexField } from "@apps/forge/components/ui";
+import { useForgeHasGameData } from "@apps/forge/helpers/useForgeHasGameData";
+import { clampByte } from "@apps/forge/helpers/UTxEditorHelpers";
 
 export const TabUTTEditor = function(props: BaseTabProps){
 

@@ -1,5 +1,5 @@
-import { NWScriptLexer } from "@/nwscript/compiler/NWScriptLexer";
-import type { SourceSpan, Token, TokenType } from "@/nwscript/compiler/NWScriptToken";
+import { NWScriptLexer } from "@core/nwscript/compiler/NWScriptLexer";
+import type { SourceSpan, Token, TokenType } from "@core/nwscript/compiler/NWScriptToken";
 
 export type NssTokenSpan = {
   className: string;

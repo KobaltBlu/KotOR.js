@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
-import { ForgeButton, ForgeDialog } from "@/apps/forge/components/ui";
-import { ModalExtractionResultsState } from "@/apps/forge/states/modal/ModalExtractionResultsState";
+import { BaseModalProps } from "@apps/forge/interfaces/modal/BaseModalProps";
+import { ForgeButton, ForgeDialog } from "@apps/forge/components/ui";
+import { ModalExtractionResultsState } from "@apps/forge/states/modal/ModalExtractionResultsState";
 
 export const ModalExtractionResults = (props: BaseModalProps) => {
   const modal = props.modal as ModalExtractionResultsState;

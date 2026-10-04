@@ -1,11 +1,11 @@
-import { createForgeNssLanguageHost } from "@/apps/forge/nwscript-language/nssForgeHost";
-import { registerNssLanguageFeatures } from "@/apps/forge/nwscript-language/nssLanguageFeatures";
-import { nssEditorApi } from "@/apps/forge/nwscript-language/nssEditorApi";
-import { NWScriptParser } from "@/nwscript/compiler/NWScriptParser";
-import { NWScriptASTCodeGen } from "@/nwscript/compiler/NWScriptASTCodeGen";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { createForgeNssLanguageHost } from "@apps/forge/nwscript-language/nssForgeHost";
+import { registerNssLanguageFeatures } from "@apps/forge/nwscript-language/nssLanguageFeatures";
+import { nssEditorApi } from "@apps/forge/nwscript-language/nssEditorApi";
+import { NWScriptParser } from "@core/nwscript/compiler/NWScriptParser";
+import { NWScriptASTCodeGen } from "@core/nwscript/compiler/NWScriptASTCodeGen";
+import { ForgeState } from "@apps/forge/states/ForgeState";
 import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
-import { FunctionNode, StructNode, VariableListNode, VariableNode } from "@/nwscript/compiler/ASTTypes";
+import { FunctionNode, StructNode, VariableListNode, VariableNode } from "@core/nwscript/compiler/ASTTypes";
 
 // Format NWScript code using AST
 function formatNWScript(code: string, options: monacoEditor.languages.FormattingOptions = { tabSize: 2, insertSpaces: true }): string {

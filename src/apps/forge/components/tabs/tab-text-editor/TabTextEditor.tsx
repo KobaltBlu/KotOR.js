@@ -1,28 +1,28 @@
 import React, { useState, useRef, useEffect } from "react";
 import MonacoEditor from "react-monaco-editor";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { TabTextEditorState } from "@/apps/forge/states/tabs";
-import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
-import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
-import { TabManagerProvider } from "@/apps/forge/context/TabManagerContext";
-import TabManager from "@/apps/forge/components/tabs/TabManager";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { TabTextEditorState } from "@apps/forge/states/tabs";
+import { LayoutContainer } from "@apps/forge/components/LayoutContainer/LayoutContainer";
+import { LayoutContainerProvider } from "@apps/forge/context/LayoutContainerContext";
+import { TabManagerProvider } from "@apps/forge/context/TabManagerContext";
+import TabManager from "@apps/forge/components/tabs/TabManager";
 import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
-import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
-import { ForgeButton } from "@/apps/forge/components/ui";
-import { NcsInspector } from "@/apps/forge/components/tabs/tab-ncs-inspector/NcsInspector";
+import { MenuBar, MenuItem } from "@apps/forge/components/common/MenuBar";
+import { ForgeButton } from "@apps/forge/components/ui";
+import { NcsInspector } from "@apps/forge/components/tabs/tab-ncs-inspector/NcsInspector";
 import {
   getNcsInspectorDrawerOpen,
   getNcsInspectorDrawerWidth,
   setNcsInspectorDrawerOpen,
   setNcsInspectorDrawerWidth,
-} from "@/apps/forge/components/tabs/tab-ncs-inspector/ncsInspectorConfig";
-import { addForgeThemeChangeListener, removeForgeThemeChangeListener } from "@/apps/forge/settings/forgeTheme";
+} from "@apps/forge/components/tabs/tab-ncs-inspector/ncsInspectorConfig";
+import { addForgeThemeChangeListener, removeForgeThemeChangeListener } from "@apps/forge/settings/forgeTheme";
 import {
   addForgeEditorSettingsListener,
   removeForgeEditorSettingsListener,
   toMonacoEditorOptions,
-} from "@/apps/forge/settings/forgeEditorSettings";
-import { formatKeybinding } from "@/apps/forge/commands/forgeKeybindings";
+} from "@apps/forge/settings/forgeEditorSettings";
+import { formatKeybinding } from "@apps/forge/commands/forgeKeybindings";
 
 export const TabTextEditor = function(props: any){
   const tab: TabTextEditorState = props.tab;

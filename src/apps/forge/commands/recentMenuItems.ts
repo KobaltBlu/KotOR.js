@@ -6,7 +6,7 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import type { ForgeMenuItem } from "@/apps/forge/components/common/forgeMenuItem";
+import type { ForgeMenuItem } from "@apps/forge/components/common/forgeMenuItem";
 
 export function truncatePath(path: string, max = 48): string {
   const value = path || "";

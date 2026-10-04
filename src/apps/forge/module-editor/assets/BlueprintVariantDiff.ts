@@ -6,7 +6,7 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import * as KotOR from "@/apps/forge/KotOR";
+import * as KotOR from "@apps/forge/KotOR";
 
 export interface BlueprintFieldDiff {
   label: string;

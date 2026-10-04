@@ -1,18 +1,18 @@
 import React, { useState, useEffect, useCallback } from "react"
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
-import { TabUTDEditorState } from "@/apps/forge/states/tabs";
-import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
-import { SubTabHost, SubTab } from "@/apps/forge/components/SubTabHost";
-import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor";
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
-import { InfoBubble } from "@/apps/forge/components/info-bubble/info-bubble";
-import { FormField } from "@/apps/forge/components/form-field/FormField";
-import { ScriptResRefInput } from "@/apps/forge/components/script-resref-input/ScriptResRefInput";
-import { ForgeDoor } from "@/apps/forge/module-editor/ForgeDoor";
-import { useForgeHasGameData } from "@/apps/forge/helpers/useForgeHasGameData";
-import { ForgeTwoDAIndexField } from "@/apps/forge/components/ui";
-import { clampByte } from "@/apps/forge/helpers/UTxEditorHelpers";
+import { BaseTabProps } from "@apps/forge/interfaces/BaseTabProps"
+import { TabUTDEditorState } from "@apps/forge/states/tabs";
+import { UI3DRendererView } from "@apps/forge/components/UI3DRendererView";
+import { SubTabHost, SubTab } from "@apps/forge/components/SubTabHost";
+import { CExoLocStringEditor } from "@apps/forge/components/CExoLocStringEditor";
+import * as KotOR from "@apps/forge/KotOR";
+import { ForgeCheckbox } from "@apps/forge/components/forge-checkbox/forge-checkbox";
+import { InfoBubble } from "@apps/forge/components/info-bubble/info-bubble";
+import { FormField } from "@apps/forge/components/form-field/FormField";
+import { ScriptResRefInput } from "@apps/forge/components/script-resref-input/ScriptResRefInput";
+import { ForgeDoor } from "@apps/forge/module-editor/ForgeDoor";
+import { useForgeHasGameData } from "@apps/forge/helpers/useForgeHasGameData";
+import { ForgeTwoDAIndexField } from "@apps/forge/components/ui";
+import { clampByte } from "@apps/forge/helpers/UTxEditorHelpers";
 
 export const TabUTDEditor = function(props: BaseTabProps){
 

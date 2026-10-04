@@ -9,12 +9,12 @@
 import {
   getSessionSettings,
   setSessionSettings,
-} from "@/apps/forge/settings/forgeSessionSettings";
+} from "@apps/forge/settings/forgeSessionSettings";
 import {
   getTraskTourStep,
   getTraskTourStepCount,
   type TraskTourStep,
-} from "@/apps/forge/tutorial/traskTourSteps";
+} from "@apps/forge/tutorial/traskTourSteps";
 
 export type TraskTourEventType = "onChange";
 

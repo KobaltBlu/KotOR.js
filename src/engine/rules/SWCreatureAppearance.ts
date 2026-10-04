@@ -1,5 +1,5 @@
-import { TwoDAObject } from "@/resource/TwoDAObject";
-import { Utility } from "@/utility/Utility";
+import { TwoDAObject } from "@core/resource/TwoDAObject";
+import { Utility } from "@core/utility/Utility";
 
 /** GetBTypeModelAndTextureResRef clamp: K1 A–J (10), K2 A–N (14). */
 export const APPEARANCE_BODY_MAX_K1 = 0xa;

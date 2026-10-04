@@ -1,5 +1,5 @@
-import { HOSTED_ORIGIN, SEO_DISCLAIMER, SEO_GAME_FILES_NOTICE } from '@/apps/common/seo/constants';
-import { LauncherConfig as forgeConfig } from '@/apps/launcher/profiles/forge';
+import { HOSTED_ORIGIN, SEO_DISCLAIMER, SEO_GAME_FILES_NOTICE } from '@apps/common/seo/constants';
+import { LauncherConfig as forgeConfig } from '@apps/launcher/profiles/forge';
 
 export type HostedAppPath = '/game/' | '/forge/';
 

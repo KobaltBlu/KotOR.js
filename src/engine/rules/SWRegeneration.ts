@@ -1,4 +1,4 @@
-import { TwoDAObject } from "@/resource/TwoDAObject";
+import { TwoDAObject } from "@core/resource/TwoDAObject";
 
 /** regeneration.2da row (0 combat, 1 out of combat). */
 export class SWRegeneration {

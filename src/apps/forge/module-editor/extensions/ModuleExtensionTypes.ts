@@ -6,8 +6,8 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import type { ValidationIssue } from "@/apps/forge/module-editor/validation/ModuleValidationTypes";
-import type { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
+import type { ValidationIssue } from "@apps/forge/module-editor/validation/ModuleValidationTypes";
+import type { ForgeModule } from "@apps/forge/module-editor/ForgeModule";
 
 export interface ModuleValidatorContribution {
   id: string;

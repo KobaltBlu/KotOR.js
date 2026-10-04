@@ -1,6 +1,6 @@
-import * as KotOR from "@/apps/forge/KotOR";
-import { IModelListItem } from "@/interface/module/minigame/IModelListItem";
-import { ForgeMGGunBank } from "@/apps/forge/module-editor/ForgeMGGunBank";
+import * as KotOR from "@apps/forge/KotOR";
+import { IModelListItem } from "@core/interface/module/minigame/IModelListItem";
+import { ForgeMGGunBank } from "@apps/forge/module-editor/ForgeMGGunBank";
 
 export class ForgeMGEnemy {
   // Basic properties

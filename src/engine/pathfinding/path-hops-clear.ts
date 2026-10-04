@@ -1,18 +1,18 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@/module/ModuleArea";
-import type { ModuleObject } from "@/module/ModuleObject";
-import type { ComputedPath } from "@/engine/pathfinding/ComputedPath";
+import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { ComputedPath } from "@engine/pathfinding/ComputedPath";
 import {
   hasWalkLineClear,
   WalkLineHitCode,
-} from "@/engine/pathfinding/walk-line-clear";
+} from "@engine/pathfinding/walk-line-clear";
 import {
   edgeCacheKey,
   getWalkmeshEdgeClearCached,
   setWalkmeshEdgeClearCached,
-} from "@/engine/pathfinding/walkmesh-edge-clear-cache";
+} from "@engine/pathfinding/walkmesh-edge-clear-cache";
 
-export { invalidateWalkmeshEdgeClearCache } from "@/engine/pathfinding/walkmesh-edge-clear-cache";
+export { invalidateWalkmeshEdgeClearCache } from "@engine/pathfinding/walkmesh-edge-clear-cache";
 
 /**
  * Walk-line validation for computed path hops (smooth chords vs blocking edges).

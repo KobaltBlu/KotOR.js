@@ -1,4 +1,4 @@
-import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
+import { ModuleCreatureArmorSlot } from "@core/enums/module/ModuleCreatureArmorSlot";
 
 /** `racialtypes`: 5 = droid, 6 = human. */
 export const RACIALTYPE_DROID = 5;

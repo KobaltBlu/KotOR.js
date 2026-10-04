@@ -1,5 +1,5 @@
 import React from "react";
-import { InfoBubble } from "@/apps/forge/components/info-bubble/info-bubble";
+import { InfoBubble } from "@apps/forge/components/info-bubble/info-bubble";
 
 export const FormField = ({ label, info, children, className = '' }: {
   label: string;

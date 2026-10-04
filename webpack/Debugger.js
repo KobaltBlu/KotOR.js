@@ -51,6 +51,7 @@ module.exports = (name, color) => ({
   externals: {
     fs: 'window.fs',
     three: 'THREE',
+    '@apps/debugger/KotOR': 'KotOR',
     '@/apps/debugger/KotOR': 'KotOR',
   },
   output: {

@@ -23,9 +23,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { createHash } from 'crypto';
-import { ERFObject } from '../src/resource/ERFObject';
-import { GFFObject } from '../src/resource/GFFObject';
-import { ResourceTypes } from '../src/resource/ResourceTypes';
+import { ERFObject } from '@core/resource/ERFObject';
+import { GFFObject } from '@core/resource/GFFObject';
+import { ResourceTypes } from '@core/resource/ResourceTypes';
 
 type DiffKind =
   | 'missing-left'

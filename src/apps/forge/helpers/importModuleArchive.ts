@@ -6,11 +6,11 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { ERFObject } from "@/resource/ERFObject";
-import { GFFObject } from "@/resource/GFFObject";
-import { ResourceTypes } from "@/resource/ResourceTypes";
-import { RIMObject } from "@/resource/RIMObject";
-import { KEYManager } from "@/managers/KEYManager";
+import { ERFObject } from "@core/resource/ERFObject";
+import { GFFObject } from "@core/resource/GFFObject";
+import { ResourceTypes } from "@core/resource/ResourceTypes";
+import { RIMObject } from "@core/resource/RIMObject";
+import { KEYManager } from "@core/managers/KEYManager";
 
 export type ModuleArchiveKind = "rim" | "erf" | "mod";
 
@@ -306,12 +306,12 @@ export async function tryReadCompanionRim(
 }
 
 async function defaultExists(path: string): Promise<boolean> {
-  const { ProjectFileSystem } = await import("@/apps/forge/ProjectFileSystem");
+  const { ProjectFileSystem } = await import("@apps/forge/ProjectFileSystem");
   return ProjectFileSystem.exists(path);
 }
 
 async function defaultWriteFile(path: string, data: Uint8Array): Promise<boolean> {
-  const { ProjectFileSystem } = await import("@/apps/forge/ProjectFileSystem");
+  const { ProjectFileSystem } = await import("@apps/forge/ProjectFileSystem");
   return ProjectFileSystem.writeFile(path, data);
 }
 

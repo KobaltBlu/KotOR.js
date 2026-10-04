@@ -1,7 +1,7 @@
 import React from "react";
-import { KotORStoreProduct } from "@/apps/common/data/kotorStoreProducts";
-import { GOGWidget } from "@/apps/common/components/store/GOGWidget";
-import { SteamStoreEmbed } from "@/apps/common/components/needKotor/SteamStoreEmbed";
+import { KotORStoreProduct } from "@apps/common/data/kotorStoreProducts";
+import { GOGWidget } from "@apps/common/components/store/GOGWidget";
+import { SteamStoreEmbed } from "@apps/common/components/needKotor/SteamStoreEmbed";
 
 export interface GamePurchaseCardProps {
   product: KotORStoreProduct;

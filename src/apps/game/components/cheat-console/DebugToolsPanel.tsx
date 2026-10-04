@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useApp } from "@/apps/game/context/AppContext";
-import { EngineDebugType } from "@/enums/engine/EngineDebugType";
-import * as KotOR from "@/apps/game/KotOR";
+import { useApp } from "@apps/game/context/AppContext";
+import * as KotOR from "@apps/game/KotOR";
+
+const EngineDebugType = KotOR.EngineDebugType;
+type EngineDebugType = KotOR.EngineDebugType;
 
 type SectionId = 'tools' | 'warp' | 'general' | 'walkmesh' | 'combat' | 'lighting';
 

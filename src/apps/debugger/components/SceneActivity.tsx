@@ -1,24 +1,22 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useApp } from "@/apps/debugger/context/AppContext";
-import { TopDownMap } from "@/inspect/TopDownMap";
+import { useApp } from "@apps/debugger/context/AppContext";
 import {
+  TopDownMap,
   DEFAULT_KIND_FILTERS,
   INSPECTOR_DEFAULT_OPEN,
   OVERVIEW_KIND_COLORS,
   OVERVIEW_KIND_LABELS,
   computeOverviewBounds,
   objectListToMapPins,
+  worldToOverlayMapPoint,
   type InspectorSection,
   type LiveObjectSnapshot,
   type ObjectListEntry,
   type OverviewBounds,
   type OverviewObjectKind,
   type SceneMapPin,
-} from "@/inspect/runtimeSnapshots";
-import {
   type AreaMapOverlaySnapshot,
-  worldToOverlayMapPoint,
-} from "@/inspect/areaMapOverlay";
+} from "@apps/debugger/KotOR";
 
 const KvRow: React.FC<{
   label: string;

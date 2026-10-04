@@ -1,17 +1,17 @@
 import React, { useEffect, useRef, useState } from "react"
-import { useApp } from "@/apps/debugger/context/AppContext";
-import * as KotOR from "@/apps/debugger/KotOR";
-import { OP_CONST, OP_CPDOWNBP, OP_CPDOWNSP, OP_CPTOPBP, OP_CPTOPSP, OP_JMP, OP_JNZ, OP_JSR, OP_JZ, OP_MOVSP, OP_RSADD } from "@/nwscript/NWScriptOPCodes";
-import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
+import { useApp } from "@apps/debugger/context/AppContext";
+import * as KotOR from "@apps/debugger/KotOR";
+import { OP_CONST, OP_CPDOWNBP, OP_CPDOWNSP, OP_CPTOPBP, OP_CPTOPSP, OP_JMP, OP_JNZ, OP_JSR, OP_JZ, OP_MOVSP, OP_RSADD } from "@core/nwscript/NWScriptOPCodes";
+import { IPCMessageType } from "@apps/debugger/KotOR";
 import {
   nearestNssLineForCodeOffset,
   type NssCodeLineMap,
-} from "@/nwscript/inspect/nssCodeLineMap";
-import { decompileScriptWithLineMap } from "@/nwscript/inspect/decompileScriptWithLineMap";
+} from "@core/nwscript/inspect/nssCodeLineMap";
+import { decompileScriptWithLineMap } from "@core/nwscript/inspect/decompileScriptWithLineMap";
 import {
   highlightNssDocument,
   type NssTokenSpan,
-} from "@/apps/debugger/nss/highlightNssDocument";
+} from "@apps/debugger/nss/highlightNssDocument";
 
 /**
  * Script Instance Window

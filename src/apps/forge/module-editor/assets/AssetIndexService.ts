@@ -6,14 +6,14 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { EventListenerModel } from "@/apps/forge/EventListenerModel";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
-import * as KotOR from "@/apps/forge/KotOR";
-import { PerformanceBaseline } from "@/apps/forge/module-editor/kernel/PerformanceBaseline";
+import { EventListenerModel } from "@apps/forge/EventListenerModel";
+import { ProjectFileSystem } from "@apps/forge/ProjectFileSystem";
+import * as KotOR from "@apps/forge/KotOR";
+import { PerformanceBaseline } from "@apps/forge/module-editor/kernel/PerformanceBaseline";
 import {
   AssetIndexEntry,
   AssetIndexSnapshot,
-} from "@/apps/forge/module-editor/assets/AssetIndexTypes";
+} from "@apps/forge/module-editor/assets/AssetIndexTypes";
 
 const BLUEPRINT_EXTS = new Set(["utc", "utd", "ute", "uti", "utm", "utp", "uts", "utt", "utw", "dlg", "nss", "ncs", "jrl"]);
 

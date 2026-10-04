@@ -21,14 +21,14 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import pLimit from 'p-limit';
-import { ApplicationEnvironment } from '../src/enums/ApplicationEnvironment';
-import { ApplicationProfile } from '../src/utility/ApplicationProfile';
-import { KEYManager } from '../src/managers/KEYManager';
-import { BIFManager } from '../src/managers/BIFManager';
-import { ResourceTypes } from '../src/resource/ResourceTypes';
-import { OdysseyModel } from '../src/odyssey/OdysseyModel';
-import { exportOdysseyModelAscii } from '../src/odyssey/export/odysseyModelAscii';
-import type { IKEYEntry } from '../src/interface/resource/IKEYEntry';
+import { ApplicationEnvironment } from '@core/enums/ApplicationEnvironment';
+import { ApplicationProfile } from '@core/utility/ApplicationProfile';
+import { KEYManager } from '@engine/managers/KEYManager';
+import { BIFManager } from '@engine/managers/BIFManager';
+import { ResourceTypes } from '@core/resource/ResourceTypes';
+import { OdysseyModel } from '@engine/odyssey/OdysseyModel';
+import { exportOdysseyModelAscii } from '@engine/odyssey/export/odysseyModelAscii';
+import type { IKEYEntry } from '@core/interface/resource/IKEYEntry';
 
 type GameId = 'k1' | 'k2';
 

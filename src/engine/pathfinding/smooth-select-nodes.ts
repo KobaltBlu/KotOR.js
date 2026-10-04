@@ -1,7 +1,7 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@/module/ModuleArea";
-import type { ModuleObject } from "@/module/ModuleObject";
-import { hasClearWalkLine } from "@/engine/pathfinding/walk-line-clear";
+import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { ModuleObject } from "@engine/module/ModuleObject";
+import { hasClearWalkLine } from "@engine/pathfinding/walk-line-clear";
 
 /**
  * Approximate SmoothSelectNodes

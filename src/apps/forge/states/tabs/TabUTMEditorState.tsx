@@ -1,12 +1,12 @@
 import React from "react";
-import { TabState, UpdateFileOptions } from "@/apps/forge/states/tabs/TabState";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import * as KotOR from "@/apps/forge/KotOR";
-import { snapshotGff } from "@/apps/forge/helpers/gffUndoSnapshot";
-import { beginUtxFileUpdate, finishUtxUndoApply } from "@/apps/forge/helpers/UTxEditorHelpers";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { TabUTMEditor } from "@/apps/forge/components/tabs/tab-utm-editor/TabUTMEditor";
-import { ForgeStore, StoreItemEntry } from "@/apps/forge/module-editor/ForgeStore";
+import { TabState, UpdateFileOptions } from "@apps/forge/states/tabs/TabState";
+import { EditorFile } from "@apps/forge/EditorFile";
+import * as KotOR from "@apps/forge/KotOR";
+import { snapshotGff } from "@apps/forge/helpers/gffUndoSnapshot";
+import { beginUtxFileUpdate, finishUtxUndoApply } from "@apps/forge/helpers/UTxEditorHelpers";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import { TabUTMEditor } from "@apps/forge/components/tabs/tab-utm-editor/TabUTMEditor";
+import { ForgeStore, StoreItemEntry } from "@apps/forge/module-editor/ForgeStore";
 
 export class TabUTMEditorState extends TabState {
   tabName: string = `UTM`;

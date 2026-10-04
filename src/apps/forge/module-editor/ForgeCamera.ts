@@ -1,11 +1,11 @@
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
-import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeGameObject } from "@apps/forge/module-editor/ForgeGameObject";
+import * as KotOR from "@apps/forge/KotOR";
 import * as THREE from "three";
 import {
   cameraOrientationFromYaw,
   setCameraOrientationFromYaw,
   yawFromCameraOrientation,
-} from "@/apps/forge/helpers/cameraOrientation";
+} from "@apps/forge/helpers/cameraOrientation";
 
 export class ForgeCamera extends ForgeGameObject {
   aspectRatio: number = 1;

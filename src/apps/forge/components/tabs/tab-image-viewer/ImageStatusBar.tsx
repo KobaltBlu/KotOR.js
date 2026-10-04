@@ -7,7 +7,7 @@
  */
 
 import React from "react";
-import type { TabImageViewerState } from "@/apps/forge/states/tabs/TabImageViewerState";
+import type { TabImageViewerState } from "@apps/forge/states/tabs/TabImageViewerState";
 
 export function ImageStatusBar(props: { tab: TabImageViewerState }) {
   const tab = props.tab;

@@ -1,15 +1,15 @@
 import * as fs from "fs";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "@/apps/forge/states/tabs";
-import * as KotOR from "@/apps/forge/KotOR";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "@apps/forge/states/tabs";
+import * as KotOR from "@apps/forge/KotOR";
 import * as THREE from 'three';
 import React from "react";
-import { TabModelViewer } from "@/apps/forge/components/tabs/tab-model-viewer/TabModelViewer";
-import { UI3DRenderer, UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { BinaryReader } from "@/utility/binary/BinaryReader";
-import { SceneGraphNode } from "@/apps/forge/SceneGraphNode";
-import { UI3DOverlayComponent } from "@/apps/forge/components/UI3DOverlayComponent";
+import { TabModelViewer } from "@apps/forge/components/tabs/tab-model-viewer/TabModelViewer";
+import { UI3DRenderer, UI3DRendererEventListenerTypes } from "@apps/forge/UI3DRenderer";
+import { EditorFile } from "@apps/forge/EditorFile";
+import { BinaryReader } from "@core/binary/BinaryReader";
+import { SceneGraphNode } from "@apps/forge/SceneGraphNode";
+import { UI3DOverlayComponent } from "@apps/forge/components/UI3DOverlayComponent";
 import {
   promptForDirectory,
   collectModelAssets,
@@ -18,10 +18,10 @@ import {
   fetchModelBuffers,
   showExtractionResults,
   createProgressModal,
-} from "@/apps/forge/helpers/AssetExtraction";
-import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
-import { isNonEmptyEditorBuffer } from "@/apps/forge/helpers/editorFileBuffer";
-import { DEFAULT_VIEWPORT_LAYERS, forgeViewportSettings } from "@/apps/forge/settings/forgeEditorsSettings";
+} from "@apps/forge/helpers/AssetExtraction";
+import { OdysseyModelNodeType } from "@core/enums/odyssey/OdysseyModelNodeType";
+import { isNonEmptyEditorBuffer } from "@apps/forge/helpers/editorFileBuffer";
+import { DEFAULT_VIEWPORT_LAYERS, forgeViewportSettings } from "@apps/forge/settings/forgeEditorsSettings";
 
 declare const dialog: any;
 

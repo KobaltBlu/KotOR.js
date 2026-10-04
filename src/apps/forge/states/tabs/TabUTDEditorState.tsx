@@ -1,20 +1,20 @@
 import React from "react";
-import { TabState, UpdateFileOptions } from "@/apps/forge/states/tabs/TabState";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import * as KotOR from "@/apps/forge/KotOR";
-import { snapshotGff } from "@/apps/forge/helpers/gffUndoSnapshot";
-import { beginUtxFileUpdate, finishUtxUndoApply } from "@/apps/forge/helpers/UTxEditorHelpers";
+import { TabState, UpdateFileOptions } from "@apps/forge/states/tabs/TabState";
+import { EditorFile } from "@apps/forge/EditorFile";
+import * as KotOR from "@apps/forge/KotOR";
+import { snapshotGff } from "@apps/forge/helpers/gffUndoSnapshot";
+import { beginUtxFileUpdate, finishUtxUndoApply } from "@apps/forge/helpers/UTxEditorHelpers";
 import * as THREE from 'three';
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { TabUTDEditor } from "@/apps/forge/components/tabs/tab-utd-editor/TabUTDEditor";
-import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
-import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
-import { ForgeDoor } from "@/apps/forge/module-editor/ForgeDoor";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import { TabUTDEditor } from "@apps/forge/components/tabs/tab-utd-editor/TabUTDEditor";
+import { UI3DRenderer } from "@apps/forge/UI3DRenderer";
+import { UI3DRendererView } from "@apps/forge/components/UI3DRendererView";
+import { ForgeDoor } from "@apps/forge/module-editor/ForgeDoor";
 import {
   attachUtxModelPreview,
   bindUtxPreviewOnGameData,
   utxShouldShow3DPreview,
-} from "@/apps/forge/helpers/utxPreview3D";
+} from "@apps/forge/helpers/utxPreview3D";
 
 export class TabUTDEditorState extends TabState {
   tabName: string = `UTD`;

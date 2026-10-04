@@ -6,7 +6,7 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { ProjectVFS } from "@/apps/forge/module-editor/vfs/ProjectVFS";
+import { ProjectVFS } from "@apps/forge/module-editor/vfs/ProjectVFS";
 
 export interface ModuleRecoveryManifest {
   savedAt: number;

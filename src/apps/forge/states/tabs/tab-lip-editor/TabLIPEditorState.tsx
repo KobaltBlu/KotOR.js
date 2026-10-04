@@ -1,23 +1,23 @@
 import React from "react";
-import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "@/apps/forge/states/tabs/TabState";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { TabLIPEditor } from "@/apps/forge/components/tabs/tab-lip-editor/TabLIPEditor";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { EditorTabManager } from "@/apps/forge/managers/EditorTabManager";
-import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
-import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
-import { ILIPKeyFrame } from "@/interface/resource/ILIPKeyFrame";
-import { TabLIPEditorOptionsState } from "@/apps/forge/states/tabs/tab-lip-editor/TabLIPEditorOptionsState";
-import { SceneGraphNode } from "@/apps/forge/SceneGraphNode";
-import { LIPShapeLabels } from "@/apps/forge/data/LIPShapeLabels";
-import { ForgeFileSystem, ForgeFileSystemResponse } from "@/apps/forge/ForgeFileSystem";
-import { FileLocationType } from "@/apps/forge/enum/FileLocationType";
-import { RhubarbPhonemeService, PhonemeGenerationProgress } from "@/apps/forge/states/tabs/tab-lip-editor/AudioPhonemeService";
-import { convertTimedPhonemesToKeyframes, mapPhonemeToShape, PHN_INVALID, TimedPhonemeResult } from "@/apps/forge/states/tabs/tab-lip-editor/PhonemeToLIPShape";
-import * as KotOR from "@/apps/forge/KotOR";
+import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "@apps/forge/states/tabs/TabState";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import { TabLIPEditor } from "@apps/forge/components/tabs/tab-lip-editor/TabLIPEditor";
+import { EditorFile } from "@apps/forge/EditorFile";
+import { EditorTabManager } from "@apps/forge/managers/EditorTabManager";
+import { UI3DRendererView } from "@apps/forge/components/UI3DRendererView";
+import { UI3DRenderer } from "@apps/forge/UI3DRenderer";
+import { ILIPKeyFrame } from "@core/interface/resource/ILIPKeyFrame";
+import { TabLIPEditorOptionsState } from "@apps/forge/states/tabs/tab-lip-editor/TabLIPEditorOptionsState";
+import { SceneGraphNode } from "@apps/forge/SceneGraphNode";
+import { LIPShapeLabels } from "@apps/forge/data/LIPShapeLabels";
+import { ForgeFileSystem, ForgeFileSystemResponse } from "@apps/forge/ForgeFileSystem";
+import { FileLocationType } from "@apps/forge/enum/FileLocationType";
+import { RhubarbPhonemeService, PhonemeGenerationProgress } from "@apps/forge/states/tabs/tab-lip-editor/AudioPhonemeService";
+import { convertTimedPhonemesToKeyframes, mapPhonemeToShape, PHN_INVALID, TimedPhonemeResult } from "@apps/forge/states/tabs/tab-lip-editor/PhonemeToLIPShape";
+import * as KotOR from "@apps/forge/KotOR";
 import * as THREE from 'three';
-import { utxShouldShow3DPreview } from "@/apps/forge/helpers/utxPreview3D";
-import { forgeLipSettings, resolvePersistedLipHead, ForgeLipSettings } from "@/apps/forge/settings/forgeEditorsSettings";
+import { utxShouldShow3DPreview } from "@apps/forge/helpers/utxPreview3D";
+import { forgeLipSettings, resolvePersistedLipHead, ForgeLipSettings } from "@apps/forge/settings/forgeEditorsSettings";
 
 /** Default LIP preview head resref; persisted under Forge.editors.lip. */
 export const LIP_EDITOR_DEFAULT_HEAD = 'p_bastilah';
@@ -615,7 +615,7 @@ export class TabLIPEditorState extends TabState {
 
   updateLip(delta = 0){
     if(this.lip instanceof KotOR.LIPObject && this.head instanceof KotOR.OdysseyModel3D){
-      this.lip.update(delta, this.head);
+      KotOR.LipSyncPlayer.update(this.lip, delta, this.head);
     }
   }
 

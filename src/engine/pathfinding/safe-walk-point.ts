@@ -1,10 +1,10 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@/module/ModuleArea";
-import type { ModuleObject } from "@/module/ModuleObject";
-import { getPathPersonalSpace } from "@/combat/attack-range";
-import { isStaticWalkClearDetailed } from "@/engine/pathfinding/static-walk-blockers";
-import { isCreatureCapsuleClear } from "@/engine/pathfinding/creature-capsule-clear";
-import { getRoomAtPoint } from "@/engine/pathfinding/walk-line-clear";
+import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { ModuleObject } from "@engine/module/ModuleObject";
+import { getPathPersonalSpace } from "@engine/combat/attack-range";
+import { isStaticWalkClearDetailed } from "@engine/pathfinding/static-walk-blockers";
+import { isCreatureCapsuleClear } from "@engine/pathfinding/creature-capsule-clear";
+import { getRoomAtPoint } from "@engine/pathfinding/walk-line-clear";
 
 /**
  * Approximate isSafeWalkPoint (safe walk location helper).

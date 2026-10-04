@@ -1,15 +1,15 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@/module/ModuleArea";
-import type { ModuleObject } from "@/module/ModuleObject";
-import { getPathPersonalSpace } from "@/combat/attack-range";
-import { isSafeWalkPoint } from "@/engine/pathfinding/safe-walk-point";
+import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { ModuleObject } from "@engine/module/ModuleObject";
+import { getPathPersonalSpace } from "@engine/combat/attack-range";
+import { isSafeWalkPoint } from "@engine/pathfinding/safe-walk-point";
 import {
   getWalkHeightAt,
   hasWalkLineClear,
   WalkLineHitCode,
-} from "@/engine/pathfinding/walk-line-clear";
-import { hasVisualLos } from "@/engine/pathfinding/visual-los";
-import { countPlayerVisibility } from "@/engine/pathfinding/count-player-visibility";
+} from "@engine/pathfinding/walk-line-clear";
+import { hasVisualLos } from "@engine/pathfinding/visual-los";
+import { countPlayerVisibility } from "@engine/pathfinding/count-player-visibility";
 
 /**
  * Find a walkable stand/spawn point near a center, or a point less visible

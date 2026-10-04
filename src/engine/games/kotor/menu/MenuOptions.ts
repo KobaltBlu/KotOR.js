@@ -1,0 +1,248 @@
+import { EngineState } from "@engine/enums/engine/EngineState";
+import { MenuSaveLoadMode } from "@core/enums/gui/MenuSaveLoadMode";
+import { GameState } from "@engine/runtime/GameState";
+import { GameMenu } from "@engine/gui";
+import type { GUIListBox, GUILabel, GUIButton } from "@engine/gui";
+import { Module } from "@engine/module/Module";
+import { NWScript } from "@engine/nwscript/NWScript";
+import { ModuleLoadCoordinator } from '@engine/runtime/ModuleLoadCoordinator';
+
+/**
+ * description TLKs (K1).
+ */
+const TLK_DESC_LOADGAME = 0xa53c;
+const TLK_DESC_SAVEGAME = 0xa53d;
+const TLK_DESC_GAMEPLAY = 0xbb86;
+const TLK_DESC_FEEDBACK = 0xbd99;
+const TLK_DESC_AUTOPAUSE = 0xbdbc;
+const TLK_DESC_GRAPHICS = 0xbb8a;
+const TLK_DESC_SOUND = 0xbb8c;
+const TLK_DESC_QUIT = 0xa53e;
+
+/**
+ * MenuOptions class.
+ *
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ *
+ * @file MenuOptions.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
+export class MenuOptions extends GameMenu {
+
+  BTN_LOADGAME: GUIButton;
+  BTN_SAVEGAME: GUIButton;
+  BTN_GAMEPLAY: GUIButton;
+  BTN_QUIT: GUIButton;
+  LBL_TITLE: GUILabel;
+  BTN_FEEDBACK: GUIButton;
+  BTN_AUTOPAUSE: GUIButton;
+  BTN_GRAPHICS: GUIButton;
+  BTN_SOUND: GUIButton;
+  LB_DESC: GUIListBox;
+  BTN_EXIT: GUIButton;
+
+  constructor(){
+    super();
+    this.gui_resref = 'optionsingame';
+    this.background = '1600x1200back';
+    this.voidFill = true;
+  }
+
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
+    if(skipInit) return;
+    this.childMenu = this.manager.MenuTop;
+    return new Promise<void>((resolve, reject) => {
+      
+      this.BTN_EXIT.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.close();
+      });
+      this._button_b = this.BTN_EXIT;
+
+      this.BTN_LOADGAME.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.manager.MenuSaveLoad.mode = MenuSaveLoadMode.LOADGAME;
+        this.manager.MenuSaveLoad.open();
+      });
+
+      this.BTN_SAVEGAME.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.manager.MenuSaveLoad.mode = MenuSaveLoadMode.SAVEGAME;
+        this.manager.MenuSaveLoad.open();
+      });
+
+      this.BTN_AUTOPAUSE.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.manager.MenuAutoPause.open();
+      });
+
+      this.BTN_GAMEPLAY.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.manager.MenuGameplay.open();
+      });
+
+      this.BTN_FEEDBACK.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.manager.MenuFeedback.open();
+      });
+
+      this.BTN_GRAPHICS.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.manager.MenuGraphics.open();
+      });
+
+      this.BTN_SOUND.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.manager.MenuSound.open();
+      });
+
+      this.BTN_LOADGAME.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_LOADGAME);
+      });
+      this.BTN_SAVEGAME.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_SAVEGAME);
+      });
+      this.BTN_GAMEPLAY.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_GAMEPLAY);
+      });
+      this.BTN_FEEDBACK.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_FEEDBACK);
+      });
+      this.BTN_AUTOPAUSE.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_AUTOPAUSE);
+      });
+      this.BTN_GRAPHICS.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_GRAPHICS);
+      });
+      this.BTN_SOUND.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_SOUND);
+      });
+      this.BTN_QUIT.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_QUIT);
+      });
+
+      this.BTN_QUIT.addEventListener('click', () => {
+        GameState.MenuManager.InGameConfirm.showConfirmDialog(42348, () => {
+          ModuleLoadCoordinator.UnloadModule();
+          GameState.State = EngineState.RUNNING;
+                
+          if(GameState.module instanceof Module){
+            GameState.module.dispose();
+            GameState.module = undefined;
+          }
+  
+          //Remove all cached scripts and kill all running instances
+          NWScript.Reload();
+  
+          //Resets all keys to their default state
+          GameState.controls.initKeys();
+          this.manager.MainMenu.Start();
+        });
+      });
+
+      this.selectedControl = this.BTN_LOADGAME;
+      resolve();
+    });
+  }
+
+  protected setDescription(strRef: number) {
+    this.LB_DESC?.setItem(
+      GameState.TLKManager.GetStringById(strRef)?.Value
+        || GameState.TLKManager.TLKStrings?.[strRef]?.Value
+        || ''
+    );
+  }
+
+  show() {
+    super.show();
+    this.manager.MenuTop.LBLH_OPT.onHoverIn();
+    this.setDescription(TLK_DESC_LOADGAME);
+  }
+
+  triggerControllerDUpPress() {
+    if (!this.selectedControl) {
+      this.selectedControl = this.BTN_LOADGAME;
+    }
+    this.BTN_LOADGAME.onHoverOut();
+    this.BTN_SAVEGAME.onHoverOut();
+    this.BTN_FEEDBACK.onHoverOut();
+    this.BTN_GRAPHICS.onHoverOut();
+    this.BTN_GAMEPLAY.onHoverOut();
+    this.BTN_SOUND.onHoverOut();
+    this.BTN_AUTOPAUSE.onHoverOut();
+    if (this.selectedControl == this.BTN_QUIT) {
+      this.selectedControl = this.BTN_SOUND;
+    } else if (this.selectedControl == this.BTN_SOUND) {
+      this.selectedControl = this.BTN_GRAPHICS;
+    } else if (this.selectedControl == this.BTN_GRAPHICS) {
+      this.selectedControl = this.BTN_AUTOPAUSE;
+    } else if (this.selectedControl == this.BTN_AUTOPAUSE) {
+      this.selectedControl = this.BTN_FEEDBACK;
+    } else if (this.selectedControl == this.BTN_FEEDBACK) {
+      this.selectedControl = this.BTN_GAMEPLAY;
+    } else if (this.selectedControl == this.BTN_GAMEPLAY) {
+      this.selectedControl = this.BTN_SAVEGAME;
+    } else if (this.selectedControl == this.BTN_SAVEGAME) {
+      this.selectedControl = this.BTN_LOADGAME;
+    } else if (this.selectedControl == this.BTN_LOADGAME) {
+      this.selectedControl = this.BTN_QUIT;
+    }
+    this.selectedControl.onHoverIn();
+  }
+
+  triggerControllerDDownPress() {
+    if (!this.selectedControl) {
+      this.selectedControl = this.BTN_LOADGAME;
+    }
+    this.BTN_LOADGAME.onHoverOut();
+    this.BTN_SAVEGAME.onHoverOut();
+    this.BTN_FEEDBACK.onHoverOut();
+    this.BTN_GRAPHICS.onHoverOut();
+    this.BTN_GAMEPLAY.onHoverOut();
+    this.BTN_SOUND.onHoverOut();
+    this.BTN_AUTOPAUSE.onHoverOut();
+    if (this.selectedControl == this.BTN_LOADGAME) {
+      this.selectedControl = this.BTN_SAVEGAME;
+    } else if (this.selectedControl == this.BTN_SAVEGAME) {
+      this.selectedControl = this.BTN_GAMEPLAY;
+    } else if (this.selectedControl == this.BTN_GAMEPLAY) {
+      this.selectedControl = this.BTN_FEEDBACK;
+    } else if (this.selectedControl == this.BTN_FEEDBACK) {
+      this.selectedControl = this.BTN_AUTOPAUSE;
+    } else if (this.selectedControl == this.BTN_AUTOPAUSE) {
+      this.selectedControl = this.BTN_GRAPHICS;
+    } else if (this.selectedControl == this.BTN_GRAPHICS) {
+      this.selectedControl = this.BTN_SOUND;
+    } else if (this.selectedControl == this.BTN_SOUND) {
+      this.selectedControl = this.BTN_QUIT;
+    } else if (this.selectedControl == this.BTN_QUIT) {
+      this.selectedControl = this.BTN_LOADGAME;
+    }
+    this.selectedControl.onHoverIn();
+  }
+
+  triggerControllerAPress() {
+    if (this.selectedControl) {
+      this.selectedControl.click();
+    }
+  }
+
+  triggerControllerRStickYPress(positive = false) {
+    if (positive) {
+      this.LB_DESC.scrollUp();
+    } else {
+      this.LB_DESC.scrollDown();
+    }
+  }
+
+  triggerControllerBumperLPress() {
+    this.manager.MenuTop.BTN_MAP.click();
+  }
+
+  triggerControllerBumperRPress() {
+    this.manager.MenuTop.BTN_EQU.click();
+  }
+  
+}

@@ -1,25 +1,25 @@
 import * as THREE from "three";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import { ComputedPath } from "@/engine/pathfinding/ComputedPath";
+import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import { ComputedPath } from "@engine/pathfinding/ComputedPath";
 import {
   getWalkHeightAt,
   hasWalkLineClear,
   WalkLineHitCode,
-} from "@/engine/pathfinding/walk-line-clear";
+} from "@engine/pathfinding/walk-line-clear";
 import {
   DriveUpdateResult,
   tickCreatureDrive,
-} from "@/engine/pathfinding/tick-creature-drive";
-import { MovementSource } from "@/engine/movement/types";
-import { getPathPersonalSpace } from "@/combat/attack-range";
-import { isCreature } from "@/module/guards/isCreature";
+} from "@engine/pathfinding/tick-creature-drive";
+import { MovementSource } from "@engine/movement/types";
+import { getPathPersonalSpace } from "@engine/combat/attack-range";
+import { isCreature } from "@engine/module/guards/isCreature";
 import {
   FORCE_PUSH_LOCO_STATE,
   CreatureLocoState,
   getCreatureLocoState,
   isForcePushLocoActive,
   setCreatureLocoState,
-} from "@/engine/pathfinding/creature-loco";
+} from "@engine/pathfinding/creature-loco";
 
 /**
  * Force Push onApply helpers and high-speed slide locomotion.
@@ -28,7 +28,7 @@ import {
 export {
   FORCE_PUSH_LOCO_STATE,
   isForcePushLocoActive,
-} from "@/engine/pathfinding/creature-loco";
+} from "@engine/pathfinding/creature-loco";
 
 /** World units/sec while force-push loco is active. */
 export const FORCE_PUSH_SPEED = 25.0;

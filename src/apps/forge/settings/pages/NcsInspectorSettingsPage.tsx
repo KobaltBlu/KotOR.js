@@ -7,11 +7,11 @@
  */
 
 import React, { useState } from "react";
-import { ForgeSelect } from "@/apps/forge/components/ui";
-import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
-import { SettingRow } from "@/apps/forge/settings/SettingRow";
-import { registerSettingsPage } from "@/apps/forge/settings/settingsRegistry";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { ForgeSelect } from "@apps/forge/components/ui";
+import { ForgeCheckbox } from "@apps/forge/components/forge-checkbox/forge-checkbox";
+import { SettingRow } from "@apps/forge/settings/SettingRow";
+import { registerSettingsPage } from "@apps/forge/settings/settingsRegistry";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
 import {
   getNcsInspectorLayoutMode,
   getNcsInspectorShowDetails,
@@ -20,7 +20,7 @@ import {
   setNcsInspectorShowDetails,
   setNcsInspectorShowFunctions,
   type NcsInspectorLayoutMode,
-} from "@/apps/forge/components/tabs/tab-ncs-inspector/ncsInspectorConfig";
+} from "@apps/forge/components/tabs/tab-ncs-inspector/ncsInspectorConfig";
 
 export function NcsInspectorSettingsPage() {
   const [, setRevision] = useState(0);

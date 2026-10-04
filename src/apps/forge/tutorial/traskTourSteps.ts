@@ -6,7 +6,7 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import type { TraskFrameId } from "@/apps/forge/tutorial/traskFrames";
+import type { TraskFrameId } from "@apps/forge/tutorial/traskFrames";
 
 export type TraskTourTargetId =
   | "quick-start-actions"

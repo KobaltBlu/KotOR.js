@@ -1,7 +1,7 @@
 import type * as THREE from "three";
-import type { ModuleObject } from "@/module/ModuleObject";
-import type { ModuleRoom } from "@/module/ModuleRoom";
-import type { OdysseyFace3 } from "@/three/odyssey";
+import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { ModuleRoom } from "@engine/module/ModuleRoom";
+import type { OdysseyFace3 } from "@engine/render/three/odyssey";
 
 /**
  * Movement lifecycle types.

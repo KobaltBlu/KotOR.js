@@ -7,16 +7,16 @@
  */
 
 import React from "react";
-import { ModalResRefBrowser } from "@/apps/forge/components/modal/ModalResRefBrowser";
-import { ModalState } from "@/apps/forge/states/modal/ModalState";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
+import { ModalResRefBrowser } from "@apps/forge/components/modal/ModalResRefBrowser";
+import { ModalState } from "@apps/forge/states/modal/ModalState";
+import { ProjectFileSystem } from "@apps/forge/ProjectFileSystem";
 import {
   ResRefCatalogEntry,
   mergeResRefCatalog,
   resRefFromPath,
-} from "@/apps/forge/helpers/resRefCatalog";
-import { sanitizeResRef } from "@/apps/forge/helpers/UTxEditorHelpers";
-import * as KotORNs from "@/apps/forge/KotOR";
+} from "@apps/forge/helpers/resRefCatalog";
+import { sanitizeResRef } from "@apps/forge/helpers/UTxEditorHelpers";
+import * as KotORNs from "@apps/forge/KotOR";
 
 export type ResRefKind = "wav" | "mdl" | "audio";
 

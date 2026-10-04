@@ -1,16 +1,16 @@
-import { EditorFile } from "@/apps/forge/EditorFile";
+import { EditorFile } from "@apps/forge/EditorFile";
 import * as fs from "fs";
 import * as path from "path";
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { TabAudioPlayerState } from "@/apps/forge/states/tabs/TabAudioPlayerState";
-import { pathParse } from "@/apps/forge/helpers/PathParse";
-import { getSessionSettings } from "@/apps/forge/settings/forgeSessionSettings";
-import { ForgeFileSystem, ForgeFileSystemResponseType } from "@/apps/forge/ForgeFileSystem";
-import { forgeAudioSettings } from "@/apps/forge/settings/forgeEditorsSettings";
-import { ForgeStatusBarState } from "@/apps/forge/states/ForgeStatusBarState";
-import { AudioFileAudioType } from "@/enums/audio/AudioFileAudioType";
-import { AudioFileWaveEncoding } from "@/enums/audio/AudioFileWaveEncoding";
+import * as KotOR from "@apps/forge/KotOR";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { TabAudioPlayerState } from "@apps/forge/states/tabs/TabAudioPlayerState";
+import { pathParse } from "@apps/forge/helpers/PathParse";
+import { getSessionSettings } from "@apps/forge/settings/forgeSessionSettings";
+import { ForgeFileSystem, ForgeFileSystemResponseType } from "@apps/forge/ForgeFileSystem";
+import { forgeAudioSettings } from "@apps/forge/settings/forgeEditorsSettings";
+import { ForgeStatusBarState } from "@apps/forge/states/ForgeStatusBarState";
+import { AudioFileAudioType } from "@core/enums/audio/AudioFileAudioType";
+import { AudioFileWaveEncoding } from "@core/enums/audio/AudioFileWaveEncoding";
 
 declare const dialog: any;
 

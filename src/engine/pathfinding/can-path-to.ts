@@ -1,11 +1,11 @@
 import * as THREE from "three";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import { getPathPersonalSpace } from "@/combat/attack-range";
+import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import { getPathPersonalSpace } from "@engine/combat/attack-range";
 import {
   buildWalkPath,
   WalkPathCode,
   type PathFindInfoLite,
-} from "@/engine/pathfinding/build-walk-path";
+} from "@engine/pathfinding/build-walk-path";
 
 /**
  * Pre-validate that a Check* Move destination is traversable (N6).

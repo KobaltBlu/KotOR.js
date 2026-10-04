@@ -15,7 +15,7 @@ import {
   rgb01ToHex,
   rgb01ToHsv,
   type ForgeRgb01,
-} from "@/apps/forge/helpers/forgeColor";
+} from "@apps/forge/helpers/forgeColor";
 import "@/apps/forge/components/ui/ForgeColorField.scss";
 
 const SIZE = 148;

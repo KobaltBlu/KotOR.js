@@ -1,7 +1,7 @@
-import { EventListenerModel } from "@/apps/forge/EventListenerModel";
-import * as KotOR from "@/apps/forge/KotOR";
+import { EventListenerModel } from "@apps/forge/EventListenerModel";
+import * as KotOR from "@apps/forge/KotOR";
 import * as THREE from 'three';
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
+import { ProjectFileSystem } from "@apps/forge/ProjectFileSystem";
 
 /** TabState.tsx is not type-checkable under Jest (`JSX` types). */
 interface BlueprintEditorTab {

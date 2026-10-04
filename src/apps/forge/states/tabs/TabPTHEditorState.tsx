@@ -1,20 +1,20 @@
 import React from "react";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { TabPTHEditor } from "@/apps/forge/components/tabs/tab-pth-editor/TabPTHEditor";
-import { CameraFocusMode, GroupType, ObjectType, UI3DRenderer, UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import * as KotOR from "@/apps/forge/KotOR";
+import { TabState } from "@apps/forge/states/tabs/TabState";
+import { EditorFile } from "@apps/forge/EditorFile";
+import { TabPTHEditor } from "@apps/forge/components/tabs/tab-pth-editor/TabPTHEditor";
+import { CameraFocusMode, GroupType, ObjectType, UI3DRenderer, UI3DRendererEventListenerTypes } from "@apps/forge/UI3DRenderer";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import * as KotOR from "@apps/forge/KotOR";
 import * as THREE from 'three';
-import { gffFromSnapshot, snapshotGff } from "@/apps/forge/helpers/gffUndoSnapshot";
-import { pthCanLoadRoomModels } from "@/apps/forge/helpers/pthMap2D";
-import { utxShouldShow3DPreview } from "@/apps/forge/helpers/utxPreview3D";
-import { forgeViewportSettings } from "@/apps/forge/settings/forgeEditorsSettings";
+import { gffFromSnapshot, snapshotGff } from "@apps/forge/helpers/gffUndoSnapshot";
+import { pthCanLoadRoomModels } from "@apps/forge/helpers/pthMap2D";
+import { utxShouldShow3DPreview } from "@apps/forge/helpers/utxPreview3D";
+import { forgeViewportSettings } from "@apps/forge/settings/forgeEditorsSettings";
 import {
   ModelViewerLayerKey,
   ModelViewerLayerVisibility,
   TabModelViewerState,
-} from "@/apps/forge/states/tabs/TabModelViewerState";
+} from "@apps/forge/states/tabs/TabModelViewerState";
 
 const POINT_OFFSET_HEIGHT = 1;
 

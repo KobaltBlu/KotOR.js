@@ -1,1 +1,1 @@
-export { clearWorldMarkers, syncWorldMarkers } from "@/inspect/worldMarkers";
+export { clearWorldMarkers, syncWorldMarkers } from "@apps/game/KotOR";

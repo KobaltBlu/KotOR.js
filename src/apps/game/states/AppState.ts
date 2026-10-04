@@ -1,10 +1,10 @@
-import * as KotOR from "@/apps/game/KotOR";
-import { Launcher } from "@/apps/launcher/context/Launcher";
-import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
-import { GameInitializer } from "@/apps/game/GameInitializer";
-import { applyProfileSeo } from "@/apps/common/seo/applyProfileSeo";
-import { buildProfileSeo } from "@/apps/common/seo/profileSeo";
-import { persistGameDirectoryHandle, restoreGameDirectoryHandlesToProfiles } from "@/utility/gameDirectoryAccess";
+import * as KotOR from "@apps/game/KotOR";
+import { Launcher } from "@apps/launcher/context/Launcher";
+import { ApplicationEnvironment } from "@core/enums/ApplicationEnvironment";
+import { GameInitializer } from "@apps/game/GameInitializer";
+import { applyProfileSeo } from "@apps/common/seo/applyProfileSeo";
+import { buildProfileSeo } from "@apps/common/seo/profileSeo";
+import { persistGameDirectoryHandle, restoreGameDirectoryHandlesToProfiles } from "@core/filesystem/gameDirectoryAccess";
 
 const STATS_MODE_KEY = 'kotor.statsMode';
 
@@ -23,7 +23,7 @@ export class AppState {
    */
   static async getProfile(){
     const query = new URLSearchParams(window.location.search);
-    await KotOR.ConfigClient.Init();
+    await KotOR.ConfigClient.Init(KotOR.configClientDefaults);
     await Launcher.InitProfiles();
     // Dedicated IDB keys survive profile merges; Forge already restores these.
     await restoreGameDirectoryHandlesToProfiles();

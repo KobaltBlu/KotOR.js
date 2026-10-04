@@ -1,18 +1,16 @@
-import { IPCDataType } from "@/enums/server/ipc/IPCDataType";
-import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
-import { IPCMessage } from "@/server/ipc/IPCMessage";
-import { IPCMessageParam } from "@/server/ipc/IPCMessageParam";
-import * as KotOR from "@/apps/debugger/KotOR";
-import type { DebugTarget } from "@/apps/debugger/DebugTarget";
+import { IPCDataType, IPCMessageType, IPCMessage, IPCMessageParam } from "@apps/debugger/KotOR";
+import * as KotOR from "@apps/debugger/KotOR";
+import type { DebugTarget } from "@apps/debugger/DebugTarget";
 import type {
   GlobalsSnapshotEntry,
   LiveObjectSnapshot,
   ModuleAreaSnapshot,
   ObjectListEntry,
   OverviewObjectKind,
-} from "@/inspect/runtimeSnapshots";
-import type { AreaMapOverlaySnapshot } from "@/inspect/areaMapOverlay";
-import type { DialogSnapshot } from "@/inspect/dialogSnapshot";
+  SceneMapPin,
+} from "@engine/debug/inspect/runtimeSnapshots";
+import type { AreaMapOverlaySnapshot } from "@engine/debug/inspect/areaMapOverlay";
+import type { DialogSnapshot } from "@engine/debug/inspect/dialogSnapshot";
 
 export interface ScriptOwnerFilter {
   objectId: number;
@@ -396,7 +394,7 @@ export class DebuggerState {
   setSceneWorldMarkers(payload: {
     enabled: boolean;
     selectedId?: string | null;
-    entries?: import("@/inspect/runtimeSnapshots").SceneMapPin[];
+    entries?: SceneMapPin[];
   }){
     const msg = new IPCMessage(IPCMessageType.SetSceneWorldMarkers);
     msg.addParam(new IPCMessageParam(IPCDataType.STRING, JSON.stringify(payload)));

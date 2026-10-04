@@ -2,13 +2,13 @@ import { describe, expect, test } from "@jest/globals";
 import {
   listTwoDAIndexOptions,
   twoDATableHasRows,
-} from "@/apps/forge/helpers/twoDAIndexOptions";
-import { NWScriptParser } from "@/nwscript/compiler/NWScriptParser";
-import { KEYObject } from "@/resource/KEYObject";
-import { TPCLoader } from "@/loaders/TPCLoader";
-import { shouldBuildFromMdl } from "@/apps/forge/helpers/keyModelLoad";
-import { listDirectoryOrEmpty } from "@/apps/forge/helpers/listDirectoryOrEmpty";
-import { isNonEmptyEditorBuffer } from "@/apps/forge/helpers/editorFileBuffer";
+} from "@apps/forge/helpers/twoDAIndexOptions";
+import { NWScriptParser } from "@core/nwscript/compiler/NWScriptParser";
+import { KEYObject } from "@core/resource/KEYObject";
+import { TPCLoader } from "@engine/loaders/TPCLoader";
+import { shouldBuildFromMdl } from "@apps/forge/helpers/keyModelLoad";
+import { listDirectoryOrEmpty } from "@apps/forge/helpers/listDirectoryOrEmpty";
+import { isNonEmptyEditorBuffer } from "@apps/forge/helpers/editorFileBuffer";
 
 describe("Forge without game data", () => {
   test("empty 2DA tables report no rows and keep a numeric fallback value", () => {

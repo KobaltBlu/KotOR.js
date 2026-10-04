@@ -1,5 +1,5 @@
 import { describe, expect, test } from "@jest/globals";
-import { findCallContext, scanCallSites, skipTrivia } from "@/apps/forge/nwscript-language/callSites";
+import { findCallContext, scanCallSites, skipTrivia } from "@apps/forge/nwscript-language/callSites";
 
 describe("findCallContext", () => {
   test("finds argument index inside nested calls", () => {

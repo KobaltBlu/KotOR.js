@@ -12,10 +12,10 @@ module.exports = (name, color) => ({
       './src/KotOR.ts'
     ],
     server: [
-      './src/worker/server.ts'
+      './src/engine/workers/server.ts'
     ],
     'bink-worker': [
-      './src/worker/bink-worker.ts'
+      './src/engine/workers/bink-worker.ts'
     ]
   },
   stats: commonStats,

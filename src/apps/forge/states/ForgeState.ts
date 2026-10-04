@@ -1,42 +1,42 @@
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { Project } from "@/apps/forge/Project";
-import { EditorTabManager } from "@/apps/forge/managers/EditorTabManager";
-import { TabProjectExplorerState } from "@/apps/forge/states/tabs/TabProjectExplorerState";
-import { TabQuickStartState } from "@/apps/forge/states/tabs/TabQuickStartState";
-import { TabResourceExplorerState } from "@/apps/forge/states/tabs/TabResourceExplorerState";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
-import { ForgeFileSystem, ForgeFileSystemResponse } from "@/apps/forge/ForgeFileSystem";
-import { pathParse } from "@/apps/forge/helpers/PathParse";
-import { FileTypeManager } from "@/apps/forge/FileTypeManager";
-import { TabStoreState } from "@/apps/forge/interfaces/TabStoreState";
-import { NWScriptParser } from "@/nwscript/compiler/NWScriptParser";
-import { ModalManagerState } from "@/apps/forge/states/modal/ModalManagerState";
-import { MenuTopState } from "@/apps/forge/states/MenuTopState";
-import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
-import { ModalItemBrowserState } from "@/apps/forge/states/modal/ModalItemBrowserState";
-import { ModalBlueprintBrowserState } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
-import { ModalResRefBrowserState } from "@/apps/forge/states/modal/ModalResRefBrowserState";
-import { ModalScriptBrowserState } from "@/apps/forge/states/modal/ModalScriptBrowserState";
+import { EditorFile } from "@apps/forge/EditorFile";
+import { Project } from "@apps/forge/Project";
+import { EditorTabManager } from "@apps/forge/managers/EditorTabManager";
+import { TabProjectExplorerState } from "@apps/forge/states/tabs/TabProjectExplorerState";
+import { TabQuickStartState } from "@apps/forge/states/tabs/TabQuickStartState";
+import { TabResourceExplorerState } from "@apps/forge/states/tabs/TabResourceExplorerState";
+import { ProjectFileSystem } from "@apps/forge/ProjectFileSystem";
+import { ForgeFileSystem, ForgeFileSystemResponse } from "@apps/forge/ForgeFileSystem";
+import { pathParse } from "@apps/forge/helpers/PathParse";
+import { FileTypeManager } from "@apps/forge/FileTypeManager";
+import { TabStoreState } from "@apps/forge/interfaces/TabStoreState";
+import { NWScriptParser } from "@core/nwscript/compiler/NWScriptParser";
+import { ModalManagerState } from "@apps/forge/states/modal/ModalManagerState";
+import { MenuTopState } from "@apps/forge/states/MenuTopState";
+import { AudioPlayerState } from "@apps/forge/states/AudioPlayerState";
+import { ModalItemBrowserState } from "@apps/forge/states/modal/ModalItemBrowserState";
+import { ModalBlueprintBrowserState } from "@apps/forge/states/modal/ModalBlueprintBrowserState";
+import { ModalResRefBrowserState } from "@apps/forge/states/modal/ModalResRefBrowserState";
+import { ModalScriptBrowserState } from "@apps/forge/states/modal/ModalScriptBrowserState";
 
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeInitializer } from "@/apps/forge/ForgeInitializer";
-import { NWScriptLanguageService } from "@/apps/forge/states/NWScriptLanguageService";
-import { LYTLanguageService } from "@/apps/forge/states/LYTLanguageService";
-import { TXILanguageService } from "@/apps/forge/states/TXILanguageService";
-import { RecentProject } from "@/apps/forge/RecentProject";
+import * as KotOR from "@apps/forge/KotOR";
+import { ForgeInitializer } from "@apps/forge/ForgeInitializer";
+import { NWScriptLanguageService } from "@apps/forge/states/NWScriptLanguageService";
+import { LYTLanguageService } from "@apps/forge/states/LYTLanguageService";
+import { TXILanguageService } from "@apps/forge/states/TXILanguageService";
+import { RecentProject } from "@apps/forge/RecentProject";
 import {
   isPersistableDirectoryHandle,
   isProjectDirectoryHandle,
-} from "@/apps/forge/virtual/VirtualProjectFolder";
+} from "@apps/forge/virtual/VirtualProjectFolder";
 import {
   boundGameDirectoryLabel,
   clearGameDirectoryBinding,
   isUsableDirectoryHandle,
   persistGameDirectoryHandle,
   persistGameDirectoryPath,
-} from "@/utility/gameDirectoryAccess";
-import { getSessionSettings, shouldRestoreOpenTabs } from "@/apps/forge/settings/forgeSessionSettings";
-import { forgeAudioSettings } from "@/apps/forge/settings/forgeEditorsSettings";
+} from "@core/filesystem/gameDirectoryAccess";
+import { getSessionSettings, shouldRestoreOpenTabs } from "@apps/forge/settings/forgeSessionSettings";
+import { forgeAudioSettings } from "@apps/forge/settings/forgeEditorsSettings";
 
 export class ForgeState {
   // static MenuTop: MenuTop = new MenuTop

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useApp } from "@/apps/game/context/AppContext";
-import * as KotOR from "@/apps/game/KotOR";
+import { useApp } from "@apps/game/context/AppContext";
+import * as KotOR from "@apps/game/KotOR";
 import "./module-inspector-host.scss";
 
 /**

@@ -1,14 +1,14 @@
 import React, { memo } from "react";
-import type { ContextMenuItem } from "@/apps/forge/components/common/ContextMenu";
-import { ForgeTreeView } from "@/apps/forge/components/treeview/ForgeTreeView";
-import { ListItemNode } from "@/apps/forge/components/treeview/ListItemNode";
-import { ForgeButton } from "@/apps/forge/components/ui";
-import type { ForgeDLG } from "@/apps/forge/dlg/ForgeDLG";
+import type { ContextMenuItem } from "@apps/forge/components/common/ContextMenu";
+import { ForgeTreeView } from "@apps/forge/components/treeview/ForgeTreeView";
+import { ListItemNode } from "@apps/forge/components/treeview/ListItemNode";
+import { ForgeButton } from "@apps/forge/components/ui";
+import type { ForgeDLG } from "@apps/forge/dlg/ForgeDLG";
 import {
   dlgNodeTreeLabel,
   dlgTreeRowId,
-} from "@/apps/forge/dlg/dlgOutline";
-import type { ForgeDLGLink } from "@/apps/forge/dlg/ForgeDLGTypes";
+} from "@apps/forge/dlg/dlgOutline";
+import type { ForgeDLGLink } from "@apps/forge/dlg/ForgeDLGTypes";
 
 /**
  * Traditional conversation tree (StartingList → entries/replies).

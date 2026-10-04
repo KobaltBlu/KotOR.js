@@ -1,37 +1,37 @@
-import { EditorFile } from "@/apps/forge/EditorFile";
+import { EditorFile } from "@apps/forge/EditorFile";
 import {
   editorFileProjectRelativePath,
   remapProjectRelativeAfterRename,
-} from "@/apps/forge/helpers/editorFileProjectPath";
-import { DeepObject } from "@/utility/DeepObject";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { TabModuleEditorState, TabProjectExplorerState, TabQuickStartState } from "@/apps/forge/states/tabs";
-import { RecentProject } from "@/apps/forge/RecentProject";
+} from "@apps/forge/helpers/editorFileProjectPath";
+import { DeepObject } from "@core/utility/DeepObject";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { TabModuleEditorState, TabProjectExplorerState, TabQuickStartState } from "@apps/forge/states/tabs";
+import { RecentProject } from "@apps/forge/RecentProject";
 
-import * as KotOR from "@/apps/forge/KotOR";
-import { FileTypeManager } from "@/apps/forge/FileTypeManager";
-import { openImportModuleWizard } from "@/apps/forge/helpers/openImportModuleWizard";
-import { packProjectModule, type PackProjectModuleResult } from "@/apps/forge/helpers/exportProjectModule";
+import * as KotOR from "@apps/forge/KotOR";
+import { FileTypeManager } from "@apps/forge/FileTypeManager";
+import { openImportModuleWizard } from "@apps/forge/helpers/openImportModuleWizard";
+import { packProjectModule, type PackProjectModuleResult } from "@apps/forge/helpers/exportProjectModule";
 import {
   compileAllNssBeforeModulePack,
   formatBulkNssCompileFailure,
-} from "@/apps/forge/helpers/ForgeNWScriptCompile";
-import { packProjectZip } from "@/apps/forge/helpers/projectZip";
-import { ModalBulkNssCompileResultsState } from "@/apps/forge/states/modal/ModalBulkNssCompileResultsState";
+} from "@apps/forge/helpers/ForgeNWScriptCompile";
+import { packProjectZip } from "@apps/forge/helpers/projectZip";
+import { ModalBulkNssCompileResultsState } from "@apps/forge/states/modal/ModalBulkNssCompileResultsState";
 import * as fs from "fs";
 declare const dialog: any;
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
-import { ForgeFileSystem } from "@/apps/forge/ForgeFileSystem";
-import { ProjectSettings } from "@/apps/forge/interfaces/ProjectSettings";
-import { ForgeArea } from "@/apps/forge/module-editor/ForgeArea";
-import { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
-import { ForgeRoom } from "@/apps/forge/module-editor/ForgeRoom";
-import { ForgeInitializer } from "@/apps/forge/ForgeInitializer";
+import { ProjectFileSystem } from "@apps/forge/ProjectFileSystem";
+import { ForgeFileSystem } from "@apps/forge/ForgeFileSystem";
+import { ProjectSettings } from "@apps/forge/interfaces/ProjectSettings";
+import { ForgeArea } from "@apps/forge/module-editor/ForgeArea";
+import { ForgeModule } from "@apps/forge/module-editor/ForgeModule";
+import { ForgeRoom } from "@apps/forge/module-editor/ForgeRoom";
+import { ForgeInitializer } from "@apps/forge/ForgeInitializer";
 import {
   createOrOpenVirtualProjectFolder,
   isOriginPrivateFileSystemAvailable,
   isProjectDirectoryHandle,
-} from "@/apps/forge/virtual/VirtualProjectFolder";
+} from "@apps/forge/virtual/VirtualProjectFolder";
 
 const DIR_FORGE = '.forge';
 

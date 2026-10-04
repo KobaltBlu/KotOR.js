@@ -1,6 +1,6 @@
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import { ActionType } from "@/enums/actions/ActionType";
-import { GameState } from "@/GameState";
+import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import { ActionType } from "@core/enums/actions/ActionType";
+import { GameState } from "@engine/runtime/GameState";
 
 /**
  * Approximate isCreatureNudgeable.

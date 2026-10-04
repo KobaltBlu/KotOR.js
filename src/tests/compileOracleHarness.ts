@@ -7,8 +7,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { execFileSync } from 'child_process';
-import { NWScriptParser } from '@/nwscript/compiler/NWScriptParser';
-import { NWScriptCompiler } from '@/nwscript/compiler/NWScriptCompiler';
+import { NWScriptParser } from '@core/nwscript/compiler/NWScriptParser';
+import { NWScriptCompiler } from '@core/nwscript/compiler/NWScriptCompiler';
 
 import { REPO_ROOT } from '@/tests/helpers/paths';
 

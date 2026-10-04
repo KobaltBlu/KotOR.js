@@ -7,12 +7,12 @@
  */
 
 import React from "react";
-import { ForgeInput } from "@/apps/forge/components/ui";
-import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
-import { SettingRow } from "@/apps/forge/settings/SettingRow";
-import { registerSettingsPage } from "@/apps/forge/settings/settingsRegistry";
-import { useForgeSettings } from "@/apps/forge/settings/useForgeSettings";
-import { forgeGffSettings } from "@/apps/forge/settings/forgeEditorsSettings";
+import { ForgeInput } from "@apps/forge/components/ui";
+import { ForgeCheckbox } from "@apps/forge/components/forge-checkbox/forge-checkbox";
+import { SettingRow } from "@apps/forge/settings/SettingRow";
+import { registerSettingsPage } from "@apps/forge/settings/settingsRegistry";
+import { useForgeSettings } from "@apps/forge/settings/useForgeSettings";
+import { forgeGffSettings } from "@apps/forge/settings/forgeEditorsSettings";
 
 export function GffSettingsPage() {
   const [settings, setSettings] = useForgeSettings(forgeGffSettings);

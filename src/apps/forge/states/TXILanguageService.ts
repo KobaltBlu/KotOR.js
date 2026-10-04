@@ -5,7 +5,7 @@ import {
   monarchDirectiveRegex,
   monarchEnumRegex,
   validateTxi,
-} from "@/apps/forge/txi/txiSchema";
+} from "@apps/forge/txi/txiSchema";
 
 /**
  * Monaco language registration for KotOR `.txi` (texture extra info) files.

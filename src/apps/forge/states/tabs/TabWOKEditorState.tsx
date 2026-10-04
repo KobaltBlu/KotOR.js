@@ -1,12 +1,12 @@
 import React from "react";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import * as KotOR from "@/apps/forge/KotOR";
+import { TabState } from "@apps/forge/states/tabs/TabState";
+import { EditorFile } from "@apps/forge/EditorFile";
+import * as KotOR from "@apps/forge/KotOR";
 import * as THREE from 'three';
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { CameraFocusMode, UI3DRenderer, UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
-import { TabWOKEditor } from "@/apps/forge/components/tabs/tab-wok-editor/TabWOKEditor";
-import { forgeViewportSettings } from "@/apps/forge/settings/forgeEditorsSettings";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import { CameraFocusMode, UI3DRenderer, UI3DRendererEventListenerTypes } from "@apps/forge/UI3DRenderer";
+import { TabWOKEditor } from "@apps/forge/components/tabs/tab-wok-editor/TabWOKEditor";
+import { forgeViewportSettings } from "@apps/forge/settings/forgeEditorsSettings";
 
 export enum TabWOKEditorControlMode {
   FACE = 0,

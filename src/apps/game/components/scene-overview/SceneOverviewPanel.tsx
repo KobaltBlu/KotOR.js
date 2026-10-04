@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useApp } from "@/apps/game/context/AppContext";
+import { useApp } from "@apps/game/context/AppContext";
 import { TopDownMap } from "./TopDownMap";
 import { ObjectInspector } from "./ObjectInspector";
 import {

@@ -1,9 +1,9 @@
-import type { ModuleArea } from "@/module/ModuleArea";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import type { ModuleDoor } from "@/module/ModuleDoor";
-import type { ModuleObject } from "@/module/ModuleObject";
-import type { ModulePlaceable } from "@/module/ModulePlaceable";
-import type { ModuleRoom } from "@/module/ModuleRoom";
+import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { ModuleDoor } from "@engine/module/ModuleDoor";
+import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { ModulePlaceable } from "@engine/module/ModulePlaceable";
+import type { ModuleRoom } from "@engine/module/ModuleRoom";
 
 /**
  * Area collision geometry accessors.

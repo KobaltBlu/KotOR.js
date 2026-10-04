@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import { ModelViewerLayerKey, TabPTHEditorState } from "@/apps/forge/states/tabs";
-import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
-import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
-import { UI3DRendererView, MenuItem } from "@/apps/forge/components/UI3DRendererView";
-import { UI3DOverlayComponent } from "@/apps/forge/components/UI3DOverlayComponent";
-import { MenuBar } from "@/apps/forge/components/common/MenuBar";
+import { BaseTabProps } from "@apps/forge/interfaces/BaseTabProps";
+import { ModelViewerLayerKey, TabPTHEditorState } from "@apps/forge/states/tabs";
+import { LayoutContainerProvider } from "@apps/forge/context/LayoutContainerContext";
+import { LayoutContainer } from "@apps/forge/components/LayoutContainer/LayoutContainer";
+import { UI3DRendererView, MenuItem } from "@apps/forge/components/UI3DRendererView";
+import { UI3DOverlayComponent } from "@apps/forge/components/UI3DOverlayComponent";
+import { MenuBar } from "@apps/forge/components/common/MenuBar";
 import {
   faArrowPointer,
   faCircle,
@@ -14,13 +14,13 @@ import {
   faHand,
   faTrash,
 } from "@fortawesome/free-solid-svg-icons";
-import { SceneGraphTreeView } from "@/apps/forge/components/SceneGraphTreeView";
-import { formatKeybinding } from "@/apps/forge/commands/forgeKeybindings";
-import { CameraView } from "@/apps/forge/UI3DRenderer";
-import { useForgeHasGameData } from "@/apps/forge/helpers/useForgeHasGameData";
-import { TabPTHMap2D } from "@/apps/forge/components/tabs/tab-pth-editor/TabPTHMap2D";
-import { UI3DToolPalette, Tool } from "@/apps/forge/components/UI3DToolPalette";
-import { TabPTHEditorControlMode } from "@/apps/forge/states/tabs/TabPTHEditorState";
+import { SceneGraphTreeView } from "@apps/forge/components/SceneGraphTreeView";
+import { formatKeybinding } from "@apps/forge/commands/forgeKeybindings";
+import { CameraView } from "@apps/forge/UI3DRenderer";
+import { useForgeHasGameData } from "@apps/forge/helpers/useForgeHasGameData";
+import { TabPTHMap2D } from "@apps/forge/components/tabs/tab-pth-editor/TabPTHMap2D";
+import { UI3DToolPalette, Tool } from "@apps/forge/components/UI3DToolPalette";
+import { TabPTHEditorControlMode } from "@apps/forge/states/tabs/TabPTHEditorState";
 
 const MODEL_VIEWER_LAYER_LABELS: Record<ModelViewerLayerKey, string> = {
   lights: 'Lights',

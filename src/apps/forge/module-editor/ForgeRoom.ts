@@ -1,8 +1,8 @@
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
-import { shouldBuildFromMdl } from "@/apps/forge/helpers/keyModelLoad";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import * as KotOR from "@/apps/forge/KotOR";
-import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
+import { ForgeGameObject } from "@apps/forge/module-editor/ForgeGameObject";
+import { shouldBuildFromMdl } from "@apps/forge/helpers/keyModelLoad";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import * as KotOR from "@apps/forge/KotOR";
+import { OdysseyModelNodeType } from "@core/enums/odyssey/OdysseyModelNodeType";
 
 export class ForgeRoom extends ForgeGameObject {
 

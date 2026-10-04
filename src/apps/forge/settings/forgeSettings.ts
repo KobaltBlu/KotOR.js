@@ -6,7 +6,7 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { ConfigClient } from "@/utility/ConfigClient";
+import { ConfigClient } from "@core/filesystem/ConfigClient";
 
 export type DefaultEditorKind = "native" | "gff" | "hex" | "text";
 

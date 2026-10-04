@@ -1,5 +1,5 @@
-import type { SWPortrait } from "@/engine/rules/SWPortrait";
-import type { SWCreatureAppearance } from "@/engine/rules/SWCreatureAppearance";
+import type { SWPortrait } from "@engine/rules/SWPortrait";
+import type { SWCreatureAppearance } from "@engine/rules/SWCreatureAppearance";
 
 /** classSelection soundset (CHAR_TYPE). */
 export const CHARGEN_SLOT_SOUNDSET: readonly number[] = [85, 85, 85, 83, 83, 83];

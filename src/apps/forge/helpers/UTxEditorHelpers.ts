@@ -1,6 +1,6 @@
 import React from "react";
-import * as KotOR from "@/apps/forge/KotOR";
-import { TabState, UpdateFileOptions } from "@/apps/forge/states/tabs/TabState";
+import * as KotOR from "@apps/forge/KotOR";
+import { TabState, UpdateFileOptions } from "@apps/forge/states/tabs/TabState";
 
 /**
  * Sanitizes a string to be a valid ResRef (max 16 chars, lowercase, alphanumeric + underscore only)

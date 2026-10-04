@@ -1,8 +1,8 @@
 import React from "react";
-import { ScriptBrowserWindow } from "@/apps/debugger/components/ScriptBrowserWindow";
-import { ScriptInstanceWindow } from "@/apps/debugger/components/ScriptInstanceWindow";
-import { ScriptDebugSouthPane } from "@/apps/debugger/components/ScriptDebugSouthPane";
-import { useApp } from "@/apps/debugger/context/AppContext";
+import { ScriptBrowserWindow } from "@apps/debugger/components/ScriptBrowserWindow";
+import { ScriptInstanceWindow } from "@apps/debugger/components/ScriptInstanceWindow";
+import { ScriptDebugSouthPane } from "@apps/debugger/components/ScriptDebugSouthPane";
+import { useApp } from "@apps/debugger/context/AppContext";
 
 export const ScriptsActivity: React.FC = () => {
   const { scriptOwnerFilter, stateRef, navigateHelper } = useApp();

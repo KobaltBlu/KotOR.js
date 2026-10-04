@@ -5,14 +5,14 @@
  */
 
 import * as THREE from "three";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import { ComputedPath } from "@/engine/pathfinding/ComputedPath";
-import { getWalkHeightAt } from "@/engine/pathfinding/walk-line-clear";
+import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import { ComputedPath } from "@engine/pathfinding/ComputedPath";
+import { getWalkHeightAt } from "@engine/pathfinding/walk-line-clear";
 import {
   CreatureLocoState,
   setCreatureLocoState,
-} from "@/engine/pathfinding/creature-loco";
-import { tickForcePushLoco } from "@/engine/pathfinding/force-push-loco";
+} from "@engine/pathfinding/creature-loco";
+import { tickForcePushLoco } from "@engine/pathfinding/force-push-loco";
 
 const _dir = new THREE.Vector3();
 const _dest = new THREE.Vector3();

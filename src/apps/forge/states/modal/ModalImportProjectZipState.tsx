@@ -7,8 +7,8 @@
  */
 
 import React from "react";
-import { ModalImportProjectZip } from "@/apps/forge/components/modal/ModalImportProjectZip";
-import { ModalState } from "@/apps/forge/states/modal/ModalState";
+import { ModalImportProjectZip } from "@apps/forge/components/modal/ModalImportProjectZip";
+import { ModalState } from "@apps/forge/states/modal/ModalState";
 
 export class ModalImportProjectZipState extends ModalState {
   title: string = "Import Project from ZIP";

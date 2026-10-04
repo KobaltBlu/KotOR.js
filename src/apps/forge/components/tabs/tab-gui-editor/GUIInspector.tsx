@@ -8,10 +8,10 @@
  */
 
 import React, { useEffect, useState } from "react";
-import { InfoBubble } from "@/apps/forge/components/info-bubble/info-bubble";
-import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
-import { ForgeButton, ForgeInput, ForgeSelect } from "@/apps/forge/components/ui";
-import { TabGUIEditorState } from "@/apps/forge/states/tabs/TabGUIEditorState";
+import { InfoBubble } from "@apps/forge/components/info-bubble/info-bubble";
+import { ForgeCheckbox } from "@apps/forge/components/forge-checkbox/forge-checkbox";
+import { ForgeButton, ForgeInput, ForgeSelect } from "@apps/forge/components/ui";
+import { TabGUIEditorState } from "@apps/forge/states/tabs/TabGUIEditorState";
 import {
   GUI_ROOT_PATH,
   guiControlTypeLabel,
@@ -20,13 +20,12 @@ import {
   GUI_MOVETO_NONE,
   GUI_MOVETO_DIRS,
   getNestedStruct,
-} from "@/apps/forge/gui/guiOutline";
-import { GUIBorderFields } from "@/apps/forge/components/tabs/tab-gui-editor/GUIBorderFields";
-import { GUITextFields } from "@/apps/forge/components/tabs/tab-gui-editor/GUITextFields";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GUIControlType } from "@/enums/gui/GUIControlType";
-import { isTslGuiGame } from "@/gui/guiControlSchema";
-import { GameState } from "@/GameState";
+} from "@apps/forge/gui/guiOutline";
+import { GUIBorderFields } from "@apps/forge/components/tabs/tab-gui-editor/GUIBorderFields";
+import { GUITextFields } from "@apps/forge/components/tabs/tab-gui-editor/GUITextFields";
+import { GFFDataType } from "@core/enums/resource/GFFDataType";
+import { GUIControlType } from "@core/enums/gui/GUIControlType";
+import { GameState, isTslGuiGame } from "@apps/forge/KotOR";
 
 export interface GUIInspectorProps {
   tab: TabGUIEditorState;

@@ -1,12 +1,12 @@
 import React, { useState, useCallback, memo, useMemo, useEffect, CSSProperties } from "react";
-import { SceneGraphNode, SceneGraphNodeEventListenerTypes } from "@/apps/forge/SceneGraphNode";
-import { SceneGraphTreeViewManager } from "@/apps/forge/managers/SceneGraphTreeViewManager";
-import { ForgeTreeView } from "@/apps/forge/components/treeview/ForgeTreeView";
-import { ListItemNode } from "@/apps/forge/components/treeview/ListItemNode";
-import type { TabModuleEditorState } from "@/apps/forge/states/tabs/TabModuleEditorState";
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
-import { GroupType } from "@/apps/forge/UI3DRenderer";
-import * as KotOR from "@/apps/forge/KotOR";
+import { SceneGraphNode, SceneGraphNodeEventListenerTypes } from "@apps/forge/SceneGraphNode";
+import { SceneGraphTreeViewManager } from "@apps/forge/managers/SceneGraphTreeViewManager";
+import { ForgeTreeView } from "@apps/forge/components/treeview/ForgeTreeView";
+import { ListItemNode } from "@apps/forge/components/treeview/ListItemNode";
+import type { TabModuleEditorState } from "@apps/forge/states/tabs/TabModuleEditorState";
+import { ForgeGameObject } from "@apps/forge/module-editor/ForgeGameObject";
+import { GroupType } from "@apps/forge/UI3DRenderer";
+import * as KotOR from "@apps/forge/KotOR";
 
 export interface SceneGraphTreeViewProps {
   manager: SceneGraphTreeViewManager;

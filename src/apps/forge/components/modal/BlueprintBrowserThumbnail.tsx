@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
-import type { BlueprintItem, BlueprintType } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
-import { isBlueprintThumbnailType } from "@/apps/forge/helpers/blueprintThumbnailFingerprint";
+import type { BlueprintItem, BlueprintType } from "@apps/forge/states/modal/ModalBlueprintBrowserState";
+import { isBlueprintThumbnailType } from "@apps/forge/helpers/blueprintThumbnailFingerprint";
 import {
   prefetchBlueprintThumbnailCacheHit,
   requestBlueprintThumbnail,
-} from "@/apps/forge/helpers/blueprintThumbnailRenderer";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
+} from "@apps/forge/helpers/blueprintThumbnailRenderer";
+import { ForgeState } from "@apps/forge/states/ForgeState";
 
 export interface BlueprintBrowserThumbnailProps {
   type: BlueprintType;

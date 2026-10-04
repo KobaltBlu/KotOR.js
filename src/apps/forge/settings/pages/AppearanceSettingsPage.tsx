@@ -7,9 +7,9 @@
  */
 
 import React, { useEffect, useMemo, useState } from "react";
-import { ForgeButton, ForgeInput, ForgeSelect } from "@/apps/forge/components/ui";
-import { SettingRow } from "@/apps/forge/settings/SettingRow";
-import { registerSettingsPage, settingMatchesQuery } from "@/apps/forge/settings/settingsRegistry";
+import { ForgeButton, ForgeInput, ForgeSelect } from "@apps/forge/components/ui";
+import { SettingRow } from "@apps/forge/settings/SettingRow";
+import { registerSettingsPage, settingMatchesQuery } from "@apps/forge/settings/settingsRegistry";
 import {
   FORGE_THEME_TOKENS,
   ForgeGameThemeKey,
@@ -36,8 +36,8 @@ import {
   setThemeColor,
   setThemeForGame,
   uninstallForgeTheme,
-} from "@/apps/forge/settings/forgeTheme";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+} from "@apps/forge/settings/forgeTheme";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
 
 const GROUPS: ForgeThemeColorGroup[] = ["Background", "Text", "Borders", "Accent", "Status"];
 

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "@jest/globals";
-import { mergeResRefCatalog, resRefFromPath } from "@/apps/forge/helpers/resRefCatalog";
+import { mergeResRefCatalog, resRefFromPath } from "@apps/forge/helpers/resRefCatalog";
 
 describe("resRefFromPath", () => {
   test("strips matching extensions", () => {

@@ -7,18 +7,18 @@
  */
 
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ForgeButton } from "@/apps/forge/components/ui";
+import { ForgeButton } from "@apps/forge/components/ui";
 import {
   TRASK_SPRITESHEET_URL,
   getTraskFrameBackgroundPosition,
   getTraskSpritesheetBackgroundSize,
-} from "@/apps/forge/tutorial/traskFrames";
-import { TraskTourState } from "@/apps/forge/tutorial/TraskTourState";
+} from "@apps/forge/tutorial/traskFrames";
+import { TraskTourState } from "@apps/forge/tutorial/TraskTourState";
 import {
   traskTourTargetSelector,
   type TraskTourTargetId,
-} from "@/apps/forge/tutorial/traskTourSteps";
-import { useTraskTour } from "@/apps/forge/tutorial/useTraskTour";
+} from "@apps/forge/tutorial/traskTourSteps";
+import { useTraskTour } from "@apps/forge/tutorial/useTraskTour";
 import "@/apps/forge/tutorial/TraskTour.scss";
 
 interface HighlightRect {

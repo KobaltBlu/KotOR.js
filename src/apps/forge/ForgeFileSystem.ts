@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import * as KotOR from "@/apps/forge/KotOR";
+import * as KotOR from "@apps/forge/KotOR";
 declare const dialog: any;
 
 export enum ForgeFileSystemResponseType {

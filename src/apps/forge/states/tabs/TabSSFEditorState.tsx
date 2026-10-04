@@ -1,13 +1,13 @@
 import React from "react";
-import { TabSSFEditor } from "@/apps/forge/components/tabs/tab-ssf-editor/TabSSFEditor";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import * as KotOR from "@/apps/forge/KotOR";
-import { SSFType } from "@/enums/resource/SSFType";
-import { normalizeSoundResRef } from "@/apps/forge/states/tabs/ssfEditorTlkHelpers";
+import { TabSSFEditor } from "@apps/forge/components/tabs/tab-ssf-editor/TabSSFEditor";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import { TabState } from "@apps/forge/states/tabs/TabState";
+import { EditorFile } from "@apps/forge/EditorFile";
+import * as KotOR from "@apps/forge/KotOR";
+import { SSFType } from "@core/enums/resource/SSFType";
+import { normalizeSoundResRef } from "@apps/forge/states/tabs/ssfEditorTlkHelpers";
 
-export { normalizeSoundResRef } from "@/apps/forge/states/tabs/ssfEditorTlkHelpers";
+export { normalizeSoundResRef } from "@apps/forge/states/tabs/ssfEditorTlkHelpers";
 
 interface SSFUndoSnapshot {
   sound_refs: number[];

@@ -1,6 +1,6 @@
-import { SceneGraphTreeViewManager } from "@/apps/forge/managers/SceneGraphTreeViewManager";
-import { EventListenerModel } from "@/apps/forge/EventListenerModel";
-import * as KotOR from "@/apps/forge/KotOR";
+import { SceneGraphTreeViewManager } from "@apps/forge/managers/SceneGraphTreeViewManager";
+import { EventListenerModel } from "@apps/forge/EventListenerModel";
+import * as KotOR from "@apps/forge/KotOR";
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { FirstPersonControls } from 'three/examples/jsm/controls/FirstPersonControls.js';
@@ -8,23 +8,23 @@ import { TransformControls } from 'three/examples/jsm/controls/TransformControls
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper.js';
 import { FullScreenQuad } from 'three/examples/jsm/postprocessing/Pass';
 import { CopyShader } from 'three/examples/jsm/shaders/CopyShader';
-import { ForceDistortionPass } from '@/shaders/pass/ForceDistortionPass';
-import { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
-import { resolveVertexHandleRoot } from "@/apps/forge/module-editor/vertexHandleVisuals";
+import { ForceDistortionPass } from "@apps/forge/KotOR";
+import { ForgeModule } from "@apps/forge/module-editor/ForgeModule";
+import { ForgeGameObject } from "@apps/forge/module-editor/ForgeGameObject";
+import { resolveVertexHandleRoot } from "@apps/forge/module-editor/vertexHandleVisuals";
 import {
   defaultViewportPerfPolicy,
   shouldIdleRender,
-} from "@/apps/forge/module-editor/kernel/ViewportPerfPolicy";
+} from "@apps/forge/module-editor/kernel/ViewportPerfPolicy";
 import {
   computeFocusDistance,
   expandFocusBounds,
   FOCUS_FALLBACK_RADIUS,
   focusNearFar,
-} from "@/apps/forge/module-editor/kernel/CameraFocusPolicy";
-import { PickService } from "@/apps/forge/module-editor/kernel/PickService";
-import { isHighlightableGameObject } from "@/apps/forge/module-editor/kernel/SelectionHighlightService";
-import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
+} from "@apps/forge/module-editor/kernel/CameraFocusPolicy";
+import { PickService } from "@apps/forge/module-editor/kernel/PickService";
+import { isHighlightableGameObject } from "@apps/forge/module-editor/kernel/SelectionHighlightService";
+import { OdysseyModelNodeType } from "@core/enums/odyssey/OdysseyModelNodeType";
 
 // Preserve r149-like color appearance until a dedicated color-management pass.
 THREE.ColorManagement.enabled = false;
@@ -388,11 +388,6 @@ export class UI3DRenderer extends EventListenerModel {
       const helper = this.transformControls.getHelper();
       helper.visible = false;
       this.unselectable.add(helper);
-      this.transformControls.userData = this.transformControls.userData || {};
-      this.transformControls.userData.uuids = [];
-      helper.traverse( (obj) => {
-        this.transformControls.userData.uuids.push(obj.uuid);
-      });
 
       this.transformControls.addEventListener('dragging-changed', (event: any) => {
         this.transformControlsDragging = event.value === true;

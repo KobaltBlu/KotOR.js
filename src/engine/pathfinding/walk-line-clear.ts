@@ -1,18 +1,18 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@/module/ModuleArea";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import type { ModuleObject } from "@/module/ModuleObject";
-import type { ModuleRoom } from "@/module/ModuleRoom";
-import { getCreaturePersonalSpace, getPathPersonalSpace } from "@/combat/attack-range";
-import { Utility } from "@/utility/Utility";
-import { isCreatureCapsuleClear } from "@/engine/pathfinding/creature-capsule-clear";
-import { clippedLineSegmentWalkable } from "@/engine/pathfinding/clipped-line-segment";
-import { isStaticWalkClearDetailed } from "@/engine/pathfinding/static-walk-blockers";
-import type { WalkmeshEdge } from "@/odyssey/WalkmeshEdge";
+import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { ModuleRoom } from "@engine/module/ModuleRoom";
+import { getCreaturePersonalSpace, getPathPersonalSpace } from "@engine/combat/attack-range";
+import { Utility } from "@core/utility/Utility";
+import { isCreatureCapsuleClear } from "@engine/pathfinding/creature-capsule-clear";
+import { clippedLineSegmentWalkable } from "@engine/pathfinding/clipped-line-segment";
+import { isStaticWalkClearDetailed } from "@engine/pathfinding/static-walk-blockers";
+import type { WalkmeshEdge } from "@engine/odyssey/WalkmeshEdge";
 import {
   createWalkHitInfo,
   type WalkHitInfo,
-} from "@/engine/pathfinding/walk-hit-info";
+} from "@engine/pathfinding/walk-hit-info";
 
 /**
  * Walkability / creature clearance along a straight segment.

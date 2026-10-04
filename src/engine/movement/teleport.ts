@@ -1,12 +1,12 @@
 import * as THREE from "three";
-import type { ModuleObject } from "@/module/ModuleObject";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import { recordMovementWrite } from "@/engine/movement/instrumentation";
-import { ensureMovementState } from "@/engine/movement/creature-movement-state";
-import { MovementSource } from "@/engine/movement/types";
-import { isCreature } from "@/module/guards/isCreature";
-import { findWalkableAttachmentAt } from "@/engine/movement/area-movement-queries";
-import { applyWalkableAttachment } from "@/engine/movement/apply-walkable-attachment";
+import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import { recordMovementWrite } from "@engine/movement/instrumentation";
+import { ensureMovementState } from "@engine/movement/creature-movement-state";
+import { MovementSource } from "@engine/movement/types";
+import { isCreature } from "@engine/module/guards/isCreature";
+import { findWalkableAttachmentAt } from "@engine/movement/area-movement-queries";
+import { applyWalkableAttachment } from "@engine/movement/apply-walkable-attachment";
 
 /**
  * Authoritative placement / teleport.

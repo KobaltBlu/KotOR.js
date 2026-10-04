@@ -1,4 +1,4 @@
-import { EventListenerModel } from "@/apps/forge/EventListenerModel";
+import { EventListenerModel } from "@apps/forge/EventListenerModel";
 
 export type ForgeStatusBarAlign = "start" | "end";
 

@@ -1,4 +1,4 @@
-import type { ProfileSeoPayload } from '@/apps/common/seo/profileSeo';
+import type { ProfileSeoPayload } from '@apps/common/seo/profileSeo';
 
 const JSON_LD_ID = 'kotor-js-profile-seo-jsonld';
 

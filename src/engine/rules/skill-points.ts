@@ -1,5 +1,5 @@
-import { GameEngineType } from "@/enums/engine";
-import { SkillType } from "@/enums/nwscript/SkillType";
+import { GameEngineType } from "@core/enums/engine";
+import { SkillType } from "@core/enums/nwscript/SkillType";
 
 /** Race id for droids (GetIcon race == 5). */
 const RACE_DROID = 5;

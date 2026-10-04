@@ -6,15 +6,15 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { ProjectType } from "@/apps/forge/enum/ProjectType";
-import { createForgeProject } from "@/apps/forge/helpers/createForgeProject";
-import type { CreateForgeProjectOptions } from "@/apps/forge/helpers/projectCreateOptions";
+import { ProjectType } from "@apps/forge/enum/ProjectType";
+import { createForgeProject } from "@apps/forge/helpers/createForgeProject";
+import type { CreateForgeProjectOptions } from "@apps/forge/helpers/projectCreateOptions";
 import {
   importModuleArchive,
   type ImportModuleArchiveResult,
-} from "@/apps/forge/helpers/importModuleArchive";
-import { Project } from "@/apps/forge/Project";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
+} from "@apps/forge/helpers/importModuleArchive";
+import { Project } from "@apps/forge/Project";
+import { ProjectFileSystem } from "@apps/forge/ProjectFileSystem";
 
 export interface CreateForgeProjectFromModuleOptions extends CreateForgeProjectOptions {
   buffer: Uint8Array;

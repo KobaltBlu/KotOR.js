@@ -7,21 +7,21 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import * as KotOR from "@/apps/forge/KotOR";
+import * as KotOR from "@apps/forge/KotOR";
 import * as THREE from "three";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
-import { buildProjectModuleErf } from "@/apps/forge/helpers/exportProjectModule";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { ProjectFileSystem } from "@apps/forge/ProjectFileSystem";
+import { buildProjectModuleErf } from "@apps/forge/helpers/exportProjectModule";
 import {
   compileAllNssBeforeModulePack,
   formatBulkNssCompileFailure,
   type BulkProjectNssCompileOutcome,
-} from "@/apps/forge/helpers/ForgeNWScriptCompile";
-import { ModalBulkNssCompileResultsState } from "@/apps/forge/states/modal/ModalBulkNssCompileResultsState";
-import type { TabModuleEditorState } from "@/apps/forge/states/tabs/TabModuleEditorState";
-import { ModuleEditorTabMode } from "@/apps/forge/enum/ModuleEditorTabMode";
-import { CacheScope } from "@/enums/resource/CacheScope";
-import { EngineMode } from "@/enums/engine/EngineMode";
+} from "@apps/forge/helpers/ForgeNWScriptCompile";
+import { ModalBulkNssCompileResultsState } from "@apps/forge/states/modal/ModalBulkNssCompileResultsState";
+import type { TabModuleEditorState } from "@apps/forge/states/tabs/TabModuleEditorState";
+import { ModuleEditorTabMode } from "@apps/forge/enum/ModuleEditorTabMode";
+import { CacheScope } from "@core/enums/resource/CacheScope";
+const EngineMode = KotOR.EngineMode;
 
 export interface ModulePreviewSessionResult {
   ok: boolean;

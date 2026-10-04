@@ -6,9 +6,9 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { ProjectType } from "@/apps/forge/enum/ProjectType";
-import { ProjectSettings } from "@/apps/forge/interfaces/ProjectSettings";
-import { GameEngineType } from "@/enums/engine/GameEngineType";
+import { ProjectType } from "@apps/forge/enum/ProjectType";
+import { ProjectSettings } from "@apps/forge/interfaces/ProjectSettings";
+import { GameEngineType } from "@core/enums/engine/GameEngineType";
 
 export type ProjectStorageMode = "virtual" | "local";
 

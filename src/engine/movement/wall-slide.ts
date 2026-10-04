@@ -1,9 +1,9 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@/module/ModuleArea";
-import type { ModulePlaceable } from "@/module/ModulePlaceable";
-import type { WalkmeshEdge } from "@/odyssey/WalkmeshEdge";
-import type { OdysseyFace3 } from "@/three/odyssey";
-import { isWalkCheckBlockingFace } from "@/engine/pathfinding/walk-check-material-mask";
+import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { ModulePlaceable } from "@engine/module/ModulePlaceable";
+import type { WalkmeshEdge } from "@engine/odyssey/WalkmeshEdge";
+import type { OdysseyFace3 } from "@engine/render/three/odyssey";
+import { isWalkCheckBlockingFace } from "@engine/pathfinding/walk-check-material-mask";
 
 /**
  * CM-style wall slide helpers: collect nearby blocking walkmesh edge normals

@@ -7,19 +7,19 @@
  */
 
 import React, { useCallback, useState } from "react";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { TabGUIEditorState, TabGUIEditorStateEventListenerTypes } from "@/apps/forge/states/tabs";
-import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
-import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
-import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
-import { UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
-import { MenuBar, type MenuItem } from "@/apps/forge/components/common/MenuBar";
-import { forgeGuiSettings } from "@/apps/forge/settings/forgeEditorsSettings";
-import { GUITreeView } from "@/apps/forge/components/tabs/tab-gui-editor/GUITreeView";
-import { GUIInspector } from "@/apps/forge/components/tabs/tab-gui-editor/GUIInspector";
-import { guiAddableControlTypes, guiControlTypeLabel } from "@/apps/forge/gui/guiOutline";
-import { formatKeybinding } from "@/apps/forge/commands/forgeKeybindings";
+import { BaseTabProps } from "@apps/forge/interfaces/BaseTabProps";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { TabGUIEditorState, TabGUIEditorStateEventListenerTypes } from "@apps/forge/states/tabs";
+import { LayoutContainer } from "@apps/forge/components/LayoutContainer/LayoutContainer";
+import { LayoutContainerProvider } from "@apps/forge/context/LayoutContainerContext";
+import { UI3DRendererView } from "@apps/forge/components/UI3DRendererView";
+import { UI3DRendererEventListenerTypes } from "@apps/forge/UI3DRenderer";
+import { MenuBar, type MenuItem } from "@apps/forge/components/common/MenuBar";
+import { forgeGuiSettings } from "@apps/forge/settings/forgeEditorsSettings";
+import { GUITreeView } from "@apps/forge/components/tabs/tab-gui-editor/GUITreeView";
+import { GUIInspector } from "@apps/forge/components/tabs/tab-gui-editor/GUIInspector";
+import { guiAddableControlTypes, guiControlTypeLabel } from "@apps/forge/gui/guiOutline";
+import { formatKeybinding } from "@apps/forge/commands/forgeKeybindings";
 
 import "@/apps/forge/components/tabs/tab-gui-editor/TabGUIEditor.scss";
 

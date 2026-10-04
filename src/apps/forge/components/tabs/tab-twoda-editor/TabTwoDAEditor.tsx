@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
+import { BaseTabProps } from "@apps/forge/interfaces/BaseTabProps";
 
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { TabTwoDAEditorState } from "@/apps/forge/states/tabs";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { TabTwoDAEditorState } from "@apps/forge/states/tabs";
 import {
   ForgeButton,
   ForgeDialog,
@@ -10,13 +10,13 @@ import {
   ForgeFindMode,
   ForgeInput,
   ForgeProgress,
-} from "@/apps/forge/components/ui";
-import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
-import { TwoDAEditorRow } from "@/apps/forge/components/TwoDAEditorRow";
-import { TwoDAEditorColumnHeader } from "@/apps/forge/components/TwoDAEditorColumnHeader";
-import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
-import { useContextMenu, ContextMenuItem } from "@/apps/forge/components/common/ContextMenu";
-import { forgeTwoDASettings } from "@/apps/forge/settings/forgeEditorsSettings";
+} from "@apps/forge/components/ui";
+import { ForgeCheckbox } from "@apps/forge/components/forge-checkbox/forge-checkbox";
+import { TwoDAEditorRow } from "@apps/forge/components/TwoDAEditorRow";
+import { TwoDAEditorColumnHeader } from "@apps/forge/components/TwoDAEditorColumnHeader";
+import { MenuBar, MenuItem } from "@apps/forge/components/common/MenuBar";
+import { useContextMenu, ContextMenuItem } from "@apps/forge/components/common/ContextMenu";
+import { forgeTwoDASettings } from "@apps/forge/settings/forgeEditorsSettings";
 import {
   addColumn,
   clearCellsInRanges,
@@ -43,10 +43,10 @@ import {
   TwoDASelRange,
   TwoDASortDir,
   writeClipboardText,
-} from "@/apps/forge/helpers/twoDAEditorOps";
+} from "@apps/forge/helpers/twoDAEditorOps";
 
 import "@/apps/forge/components/tabs/tab-twoda-editor/TabTwoDAEditor.scss";
-import * as KotOR from "@/apps/forge/KotOR";
+import * as KotOR from "@apps/forge/KotOR";
 
 type ColumnDialogMode = "add" | "rename" | null;
 

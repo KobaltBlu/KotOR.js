@@ -10,7 +10,7 @@
 
 export {
   getFollowRateScale,
-} from "@/engine/pathfinding/locomotion";
+} from "@engine/pathfinding/locomotion";
 
 /** Idle / comfort when within this of the follow offset (world units). */
 export const FOLLOW_COMFORT = 2.0;

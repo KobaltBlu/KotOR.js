@@ -1,9 +1,9 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@/module/ModuleArea";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import type { ModuleObject } from "@/module/ModuleObject";
-import { getCreaturePersonalSpace, getPathPersonalSpace } from "@/combat/attack-range";
-import { hasClearWalkLine } from "@/engine/pathfinding/walk-line-clear";
+import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { ModuleObject } from "@engine/module/ModuleObject";
+import { getCreaturePersonalSpace, getPathPersonalSpace } from "@engine/combat/attack-range";
+import { hasClearWalkLine } from "@engine/pathfinding/walk-line-clear";
 
 /**
  * PathPointDFSGenerateSuccessors creature detour:

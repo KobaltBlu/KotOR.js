@@ -1,5 +1,5 @@
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
-import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeGameObject } from "@apps/forge/module-editor/ForgeGameObject";
+import * as KotOR from "@apps/forge/KotOR";
 
 /**
  * Lightweight path placeholder for module scene / future GIT path markers.

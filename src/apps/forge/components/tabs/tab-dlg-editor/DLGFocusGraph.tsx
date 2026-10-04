@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { formatDlgNodeLine, locStringIsEmpty } from "@/apps/forge/dlg/dlgLocString";
-import { buildFocusNeighborhood, type DLGNeighborhoodEdge } from "@/apps/forge/dlg/dlgNeighborhood";
-import type { ForgeDLG } from "@/apps/forge/dlg/ForgeDLG";
-import { DLG_NEIGHBOR_CAP, type ForgeDLGLink, type ForgeDLGNode } from "@/apps/forge/dlg/ForgeDLGTypes";
+import { formatDlgNodeLine, locStringIsEmpty } from "@apps/forge/dlg/dlgLocString";
+import { buildFocusNeighborhood, type DLGNeighborhoodEdge } from "@apps/forge/dlg/dlgNeighborhood";
+import type { ForgeDLG } from "@apps/forge/dlg/ForgeDLG";
+import { DLG_NEIGHBOR_CAP, type ForgeDLGLink, type ForgeDLGNode } from "@apps/forge/dlg/ForgeDLGTypes";
 
 /**
  * Focus-graph: selected node plus inbound/outbound neighbors only.

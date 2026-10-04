@@ -1,12 +1,14 @@
 ﻿import React from "react";
-import { EngineDebugType } from "@/enums/engine/EngineDebugType";
-import { IPCDataType } from "@/enums/server/ipc/IPCDataType";
-import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
-import { IPCMessageTypeDebug } from "@/enums/server/ipc/IPCMessageTypeDebug";
-import { IPCMessage } from "@/server/ipc/IPCMessage";
-import { IPCMessageParam } from "@/server/ipc/IPCMessageParam";
-import { useApp } from "@/apps/debugger/context/AppContext";
-import type { InspectorActivity } from "@/apps/debugger/context/AppContext";
+import {
+  EngineDebugType,
+  IPCDataType,
+  IPCMessageType,
+  IPCMessageTypeDebug,
+  IPCMessage,
+  IPCMessageParam,
+} from "@apps/debugger/KotOR";
+import { useApp } from "@apps/debugger/context/AppContext";
+import type { InspectorActivity } from "@apps/debugger/context/AppContext";
 
 const ACTIVITIES: { id: InspectorActivity; label: string }[] = [
   { id: 'scene', label: 'Scene' },

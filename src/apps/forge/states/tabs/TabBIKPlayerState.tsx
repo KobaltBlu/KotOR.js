@@ -1,9 +1,9 @@
 import React from "react";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { TabBIKPlayer } from "@/apps/forge/components/tabs/tab-bik-player/TabBIKPlayer";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import * as KotOR from "@/apps/forge/KotOR";
+import { TabState } from "@apps/forge/states/tabs/TabState";
+import { TabBIKPlayer } from "@apps/forge/components/tabs/tab-bik-player/TabBIKPlayer";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import { EditorFile } from "@apps/forge/EditorFile";
+import * as KotOR from "@apps/forge/KotOR";
 
 /**
  * Tab state for the BIK video player. Loads the opened EditorFile into a BIKObject

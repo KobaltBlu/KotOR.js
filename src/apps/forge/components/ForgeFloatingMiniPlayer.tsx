@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
-import { TabAudioPlayerState } from "@/apps/forge/states/tabs/TabAudioPlayerState";
-import { getSessionSettings } from "@/apps/forge/settings/forgeSessionSettings";
-import { AudioPlayer } from "@/apps/forge/components/AudioPlayer";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { AudioPlayerState } from "@apps/forge/states/AudioPlayerState";
+import { TabAudioPlayerState } from "@apps/forge/states/tabs/TabAudioPlayerState";
+import { getSessionSettings } from "@apps/forge/settings/forgeSessionSettings";
+import { AudioPlayer } from "@apps/forge/components/AudioPlayer";
 
 import "@/apps/forge/components/ForgeFloatingMiniPlayer.scss";
 

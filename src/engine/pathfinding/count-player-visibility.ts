@@ -1,8 +1,8 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@/module/ModuleArea";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import { GameState } from "@/GameState";
-import { hasVisualLos } from "@/engine/pathfinding/visual-los";
+import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import { GameState } from "@engine/runtime/GameState";
+import { hasVisualLos } from "@engine/pathfinding/visual-los";
 
 /**
  * CountVisibleToPlayers

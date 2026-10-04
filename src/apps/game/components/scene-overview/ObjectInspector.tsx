@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import type { ModuleObject } from "@/module/ModuleObject";
+import type { ModuleObject } from "@engine/module/ModuleObject";
 import {
   dumpLiveGff,
   flattenGffTemplate,

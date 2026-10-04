@@ -1,12 +1,12 @@
 import { describe, expect, test } from "@jest/globals";
-import { sanitizeResRef } from "@/apps/forge/helpers/UTxEditorHelpers";
+import { sanitizeResRef } from "@apps/forge/helpers/UTxEditorHelpers";
 import {
   blueprintFromTypedResRef,
   blueprintResRefTitle,
   catalogNeedsResRefPrompt,
   confirmTypedResRef,
   utiFromTypedResRef,
-} from "@/apps/forge/helpers/gameResRefPrompt";
+} from "@apps/forge/helpers/gameResRefPrompt";
 
 describe("gameResRefPrompt", () => {
   test("catalog pickers ask for a ResRef when game data is missing", () => {

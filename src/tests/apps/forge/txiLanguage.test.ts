@@ -5,7 +5,7 @@ import {
   getTxiDirective,
   hoverTxi,
   validateTxi,
-} from "@/apps/forge/txi/txiSchema";
+} from "@apps/forge/txi/txiSchema";
 
 describe("TXI schema", () => {
   test("includes bump, channel, and procedure keys", () => {

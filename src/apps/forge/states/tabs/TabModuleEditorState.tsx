@@ -1,37 +1,37 @@
 import React from "react";
-import { CameraFocusMode, UI3DRenderer, UI3DRendererEventListenerTypes, GroupType, ObjectType } from "@/apps/forge/UI3DRenderer";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { TabState, UpdateFileOptions } from "@/apps/forge/states/tabs";
-import { EditorFile } from "@/apps/forge/EditorFile";
+import { CameraFocusMode, UI3DRenderer, UI3DRendererEventListenerTypes, GroupType, ObjectType } from "@apps/forge/UI3DRenderer";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import { TabState, UpdateFileOptions } from "@apps/forge/states/tabs";
+import { EditorFile } from "@apps/forge/EditorFile";
 import * as THREE from 'three';
-import * as KotOR from "@/apps/forge/KotOR";
-import { Project } from "@/apps/forge/Project";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { ForgeArea } from "@/apps/forge/module-editor/ForgeArea";
-import { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
-import { TabModuleEditor } from "@/apps/forge/components/tabs/tab-module-editor/TabModuleEditor";
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
-import { ForgeCreature } from "@/apps/forge/module-editor/ForgeCreature";
-import { ForgeCamera } from "@/apps/forge/module-editor/ForgeCamera";
-import { ForgeDoor } from "@/apps/forge/module-editor/ForgeDoor";
-import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
-import { ForgeItem } from "@/apps/forge/module-editor/ForgeItem";
-import { ForgePlaceable } from "@/apps/forge/module-editor/ForgePlaceable";
-import { ForgeSound } from "@/apps/forge/module-editor/ForgeSound";
-import { ForgeStore } from "@/apps/forge/module-editor/ForgeStore";
-import { ForgeTrigger } from "@/apps/forge/module-editor/ForgeTrigger";
-import { ForgeWaypoint } from "@/apps/forge/module-editor/ForgeWaypoint";
-import { resolveVertexHandleRoot } from "@/apps/forge/module-editor/vertexHandleVisuals";
-import { BlueprintType } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
-import { openBlueprintBrowser, openResRefBrowser } from "@/apps/forge/helpers/openGameResRefPicker";
-import { ForgeRoom } from "@/apps/forge/module-editor/ForgeRoom";
+import * as KotOR from "@apps/forge/KotOR";
+import { Project } from "@apps/forge/Project";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { ForgeArea } from "@apps/forge/module-editor/ForgeArea";
+import { ForgeModule } from "@apps/forge/module-editor/ForgeModule";
+import { TabModuleEditor } from "@apps/forge/components/tabs/tab-module-editor/TabModuleEditor";
+import { ForgeGameObject } from "@apps/forge/module-editor/ForgeGameObject";
+import { ForgeCreature } from "@apps/forge/module-editor/ForgeCreature";
+import { ForgeCamera } from "@apps/forge/module-editor/ForgeCamera";
+import { ForgeDoor } from "@apps/forge/module-editor/ForgeDoor";
+import { ForgeEncounter } from "@apps/forge/module-editor/ForgeEncounter";
+import { ForgeItem } from "@apps/forge/module-editor/ForgeItem";
+import { ForgePlaceable } from "@apps/forge/module-editor/ForgePlaceable";
+import { ForgeSound } from "@apps/forge/module-editor/ForgeSound";
+import { ForgeStore } from "@apps/forge/module-editor/ForgeStore";
+import { ForgeTrigger } from "@apps/forge/module-editor/ForgeTrigger";
+import { ForgeWaypoint } from "@apps/forge/module-editor/ForgeWaypoint";
+import { resolveVertexHandleRoot } from "@apps/forge/module-editor/vertexHandleVisuals";
+import { BlueprintType } from "@apps/forge/states/modal/ModalBlueprintBrowserState";
+import { openBlueprintBrowser, openResRefBrowser } from "@apps/forge/helpers/openGameResRefPicker";
+import { ForgeRoom } from "@apps/forge/module-editor/ForgeRoom";
 import {
   forgeModuleSettings,
   MODULE_HELPER_TYPES,
   setModuleSettings,
   type ModuleHelperType,
-} from "@/apps/forge/settings/forgeEditorsSettings";
-import { ModuleEditorTabMode } from "@/apps/forge/enum/ModuleEditorTabMode";
+} from "@apps/forge/settings/forgeEditorsSettings";
+import { ModuleEditorTabMode } from "@apps/forge/enum/ModuleEditorTabMode";
 import {
   CommandHistory,
   EditorTool,
@@ -44,20 +44,20 @@ import {
   SelectionService,
   SpatialPickIndex,
   ToolService,
-} from "@/apps/forge/module-editor/kernel";
-import { AssetIndexService } from "@/apps/forge/module-editor/assets/AssetIndexService";
-import { ModuleValidationService } from "@/apps/forge/module-editor/validation/ModuleValidationService";
-import { ModuleRecovery } from "@/apps/forge/module-editor/recovery/ModuleRecovery";
-import { ModuleExtensionRegistry } from "@/apps/forge/module-editor/extensions/ModuleExtensionTypes";
-import type { ValidationReport } from "@/apps/forge/module-editor/validation/ModuleValidationTypes";
-import type { ScreenRect } from "@/apps/forge/module-editor/kernel/PickService";
-import { EditorMode } from "@/apps/forge/module-editor/kernel/EditorMode";
-import type { EditorCommandDescriptor } from "@/apps/forge/module-editor/kernel/EditorCommand";
-import { ProjectVFS } from "@/apps/forge/module-editor/vfs/ProjectVFS";
-import { DEFAULT_MODULE_WORKSPACE, type ModuleWorkspaceState } from "@/apps/forge/module-editor/workspace/ModuleWorkspaceState";
-import { TabModuleEditorControlMode, GameObjectType } from "@/apps/forge/states/tabs/TabModuleEditorTypes";
+} from "@apps/forge/module-editor/kernel";
+import { AssetIndexService } from "@apps/forge/module-editor/assets/AssetIndexService";
+import { ModuleValidationService } from "@apps/forge/module-editor/validation/ModuleValidationService";
+import { ModuleRecovery } from "@apps/forge/module-editor/recovery/ModuleRecovery";
+import { ModuleExtensionRegistry } from "@apps/forge/module-editor/extensions/ModuleExtensionTypes";
+import type { ValidationReport } from "@apps/forge/module-editor/validation/ModuleValidationTypes";
+import type { ScreenRect } from "@apps/forge/module-editor/kernel/PickService";
+import { EditorMode } from "@apps/forge/module-editor/kernel/EditorMode";
+import type { EditorCommandDescriptor } from "@apps/forge/module-editor/kernel/EditorCommand";
+import { ProjectVFS } from "@apps/forge/module-editor/vfs/ProjectVFS";
+import { DEFAULT_MODULE_WORKSPACE, type ModuleWorkspaceState } from "@apps/forge/module-editor/workspace/ModuleWorkspaceState";
+import { TabModuleEditorControlMode, GameObjectType } from "@apps/forge/states/tabs/TabModuleEditorTypes";
 
-export { TabModuleEditorControlMode, GameObjectType } from "@/apps/forge/states/tabs/TabModuleEditorTypes";
+export { TabModuleEditorControlMode, GameObjectType } from "@apps/forge/states/tabs/TabModuleEditorTypes";
 
 const MODULE_OBJECT_TYPE_TO_HELPER: Partial<Record<ObjectType, ModuleHelperType>> = {
   [ObjectType.CREATURE]: "creature",
@@ -758,7 +758,7 @@ export class TabModuleEditorState extends TabState {
       }
       return;
     }
-    void import("@/apps/forge/helpers/ghostBlueprintBounds").then(({ estimateBlueprintGhostSize }) => {
+    void import("@apps/forge/helpers/ghostBlueprintBounds").then(({ estimateBlueprintGhostSize }) => {
       estimateBlueprintGhostSize(type, resref).then((size) => {
         if(token !== this.ghostBoundsToken || !this.ghostPreviewMesh){
           return;
@@ -1540,7 +1540,7 @@ export class TabModuleEditorState extends TabState {
     const resref = area.getLayoutResRef();
     const filename = `${resref}.pth`;
     try{
-      const { ProjectFileSystem } = await import("@/apps/forge/ProjectFileSystem");
+      const { ProjectFileSystem } = await import("@apps/forge/ProjectFileSystem");
       if(!(await ProjectFileSystem.exists(filename))){
         return;
       }
@@ -1761,11 +1761,11 @@ export class TabModuleEditorState extends TabState {
     }
     const resref = area.getLayoutResRef();
     const filename = `${resref}.pth`;
-    const { ProjectFileSystem } = await import("@/apps/forge/ProjectFileSystem");
-    const { TabPTHEditorState } = await import("@/apps/forge/states/tabs/TabPTHEditorState");
-    const { ForgeState } = await import("@/apps/forge/states/ForgeState");
-    const { EditorFile } = await import("@/apps/forge/EditorFile");
-    const { ResourceTypes } = await import("@/resource/ResourceTypes");
+    const { ProjectFileSystem } = await import("@apps/forge/ProjectFileSystem");
+    const { TabPTHEditorState } = await import("@apps/forge/states/tabs/TabPTHEditorState");
+    const { ForgeState } = await import("@apps/forge/states/ForgeState");
+    const { EditorFile } = await import("@apps/forge/EditorFile");
+    const { ResourceTypes } = await import("@core/resource/ResourceTypes");
 
     if(await ProjectFileSystem.exists(filename)){
       const editorFile = await ProjectFileSystem.openEditorFile(filename);
@@ -1792,11 +1792,11 @@ export class TabModuleEditorState extends TabState {
       return;
     }
     const filename = `${resref}.wok`;
-    const { ProjectFileSystem } = await import("@/apps/forge/ProjectFileSystem");
-    const { TabWOKEditorState } = await import("@/apps/forge/states/tabs/TabWOKEditorState");
-    const { ForgeState } = await import("@/apps/forge/states/ForgeState");
-    const { EditorFile } = await import("@/apps/forge/EditorFile");
-    const { ResourceTypes } = await import("@/resource/ResourceTypes");
+    const { ProjectFileSystem } = await import("@apps/forge/ProjectFileSystem");
+    const { TabWOKEditorState } = await import("@apps/forge/states/tabs/TabWOKEditorState");
+    const { ForgeState } = await import("@apps/forge/states/ForgeState");
+    const { EditorFile } = await import("@apps/forge/EditorFile");
+    const { ResourceTypes } = await import("@core/resource/ResourceTypes");
 
     if (await ProjectFileSystem.exists(filename)) {
       const editorFile = await ProjectFileSystem.openEditorFile(filename);
@@ -1991,7 +1991,7 @@ export class TabModuleEditorState extends TabState {
       window.alert("Preview host is not ready. Open the Module Editor viewport and try again.");
       return false;
     }
-    const { ModulePreviewSession } = await import("@/apps/forge/module-editor/ModulePreviewSession");
+    const { ModulePreviewSession } = await import("@apps/forge/module-editor/ModulePreviewSession");
     const result = await ModulePreviewSession.start(this, host);
     if(!result.ok){
       window.alert(result.reason || "Failed to start playable preview.");
@@ -2009,7 +2009,7 @@ export class TabModuleEditorState extends TabState {
   }
 
   async warmReloadPlayablePreview(): Promise<boolean> {
-    const { ModulePreviewSession } = await import("@/apps/forge/module-editor/ModulePreviewSession");
+    const { ModulePreviewSession } = await import("@apps/forge/module-editor/ModulePreviewSession");
     const result = await ModulePreviewSession.warmReload(this);
     if(!result.ok){
       window.alert(result.reason || "Failed to reload preview.");
@@ -2022,7 +2022,7 @@ export class TabModuleEditorState extends TabState {
   }
 
   async stopPlayablePreview(): Promise<void> {
-    const { ModulePreviewSession } = await import("@/apps/forge/module-editor/ModulePreviewSession");
+    const { ModulePreviewSession } = await import("@apps/forge/module-editor/ModulePreviewSession");
     await ModulePreviewSession.stop(this);
   }
 

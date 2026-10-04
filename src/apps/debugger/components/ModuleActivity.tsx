@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { useApp } from "@/apps/debugger/context/AppContext";
-import type { ModuleAreaSnapshot } from "@/inspect/runtimeSnapshots";
+import { useApp } from "@apps/debugger/context/AppContext";
+import type { ModuleAreaSnapshot } from "@engine/debug/inspect/runtimeSnapshots";
 
 function Card({ label, value }: { label: string; value: React.ReactNode }) {
   return (

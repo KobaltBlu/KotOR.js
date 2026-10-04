@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from "react";
-import * as KotOR from "@/apps/forge/KotOR";
-import { TLKSearchModal } from "@/apps/forge/components/TLKSearchModal";
-import { forgeTlkLookup, resolveDlgLineText } from "@/apps/forge/dlg/dlgLocString";
+import * as KotOR from "@apps/forge/KotOR";
+import { TLKSearchModal } from "@apps/forge/components/TLKSearchModal";
+import { forgeTlkLookup, resolveDlgLineText } from "@apps/forge/dlg/dlgLocString";
 import {
   FORGE_LOC_GENDERS,
   FORGE_LOC_LANGUAGES,
   getLocalizationSettings,
   locStringId,
-} from "@/apps/forge/settings/forgeLocalizationSettings";
-import { forgeBlueprintsSettings } from "@/apps/forge/settings/forgeEditorsSettings";
+} from "@apps/forge/settings/forgeLocalizationSettings";
+import { forgeBlueprintsSettings } from "@apps/forge/settings/forgeEditorsSettings";
 import "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor.scss";
 
 export interface CExoLocStringEditorProps {

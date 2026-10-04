@@ -1,5 +1,5 @@
 import * as path from "path";
-import * as KotOR from "@/apps/forge/KotOR";
+import * as KotOR from "@apps/forge/KotOR";
 
 /**
  * ForgeInitializer class.
@@ -152,7 +152,7 @@ export class ForgeInitializer {
     ForgeInitializer.currentGame = game;
 
     KotOR.PerformanceMonitor.start('configclient');
-    await KotOR.ConfigClient.Init();
+    await KotOR.ConfigClient.Init(KotOR.configClientDefaults);
     KotOR.PerformanceMonitor.stop('configclient');
 
     if(options?.loadGameData === false){

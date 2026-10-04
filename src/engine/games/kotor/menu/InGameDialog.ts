@@ -1,0 +1,194 @@
+import { GameState } from "@engine/runtime/GameState";
+import { GameMenu, commitGuiTransform } from "@engine/gui";
+import type { GUIListBox, GUILabel } from "@engine/gui";
+import * as THREE from "three";
+import { CutsceneMode } from "@core/enums/dialog/CutsceneMode";
+import { DLGNode } from "@engine/dialog/DLGNode";
+import { ConversationState } from "@core/enums/dialog/ConversationState";
+import { EngineMode } from "@engine/enums/engine/EngineMode";
+import { FeedbackOption } from "@engine/enums/engine/FeedbackOption";
+import { EngineModeController } from '@engine/runtime/EngineModeController';
+
+const LETTERBOX_HEIGHT = 100;
+
+/**
+ * InGameDialog class.
+ *
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ *
+ * @file InGameDialog.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
+export class InGameDialog extends GameMenu {
+
+  LBL_MESSAGE: GUILabel;
+  LB_REPLIES: GUIListBox;
+
+  //letterbox
+  canLetterbox: boolean;
+  letterBoxed: boolean;
+  topBar: THREE.Mesh;
+  bottomBar: THREE.Mesh;
+
+  // GameMenu.show applies this.engineMode — must be DIALOG, not GUI default
+  engineMode: EngineMode = EngineMode.DIALOG;
+
+  constructor(){
+    super();
+    this.gui_resref = 'dialog';
+    this.background = '';
+    this.voidFill = false;
+  }
+
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
+    if(skipInit) return;
+    return new Promise<void>((resolve, reject) => {
+      this.LBL_MESSAGE.setText('');
+      this.LBL_MESSAGE.setTextColor(this.LBL_MESSAGE.defaultColor.r, this.LBL_MESSAGE.defaultColor.g, this.LBL_MESSAGE.defaultColor.b);
+
+      this.LB_REPLIES.extent.left = -(GameState.ResolutionManager.getViewportWidth()/2) + this.LB_REPLIES.extent.width/2 + 16;
+      this.LB_REPLIES.extent.top = (GameState.ResolutionManager.getViewportHeight()/2) - this.LB_REPLIES.extent.height/2;
+      this.LB_REPLIES.calculatePosition();
+      this.LB_REPLIES.calculateBox();
+      this.LB_REPLIES.onClicked = (_entry: DLGNode, _control: any, index: number) => {
+        if (index < 0) return;
+        GameState.CutsceneManager.selectReplyAtIndex(index);
+      }
+
+      const geometry = new THREE.PlaneGeometry( 1, 1, 1 );
+      const material = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.FrontSide });
+      this.topBar = new THREE.Mesh( geometry, material );
+      this.bottomBar = new THREE.Mesh( geometry, material );
+
+      this.resetLetterBox();
+
+      this.tGuiPanel.widget.add(this.topBar);
+      this.tGuiPanel.widget.add(this.bottomBar);
+      resolve();
+    });
+  }
+
+  show(){
+    super.show();
+    EngineModeController.SetEngineMode(EngineMode.DIALOG);
+  }
+
+  setReplies(replies: DLGNode[]) {
+    // Indices must match CutsceneManager.currentReplies (continues already removed).
+    const texts = replies.map((r, i) => (i + 1) + '. ' + r.getCompiledString());
+    this.LB_REPLIES.setItems(texts);
+  }
+
+  setDialogMode(state: ConversationState) {
+    if(state == ConversationState.LISTENING_TO_SPEAKER){
+      // feedback Subtitles option gates speaker line; replies stay visible
+      const showSubtitles = GameState.FeedbackMessageManager.GetFeedbackTypeEnabled(FeedbackOption.Subtitles);
+      this.LBL_MESSAGE.setText(showSubtitles ? GameState.CutsceneManager.lastSpokenString : '');
+      this.LB_REPLIES.hide();
+      this.LB_REPLIES.setItems([]);
+      this.updateTextPosition(true);
+    }else{
+      this.updateTextPosition(false);
+      this.LB_REPLIES.show();
+      this.LB_REPLIES.updateList();
+    }
+  }
+
+  update(delta: number = 0) {
+    super.update(delta);
+    this.updateLetterBox(delta);
+  }
+
+  updateLetterBox(delta: number = 0){
+    if(!this.canLetterbox || this.letterBoxed) return;
+
+    if (GameState.CutsceneManager.cutsceneMode == CutsceneMode.ANIMATED) {
+      this.bottomBar.position.y = -(GameState.ResolutionManager.getViewportHeight() / 2) + LETTERBOX_HEIGHT / 2;
+      this.topBar.position.y = GameState.ResolutionManager.getViewportHeight() / 2 - LETTERBOX_HEIGHT / 2;
+      commitGuiTransform(this.bottomBar);
+      commitGuiTransform(this.topBar);
+      this.letterBoxed = true;
+      this.LBL_MESSAGE.show();
+      return;
+    }
+    
+    if (this.bottomBar.position.y < -(GameState.ResolutionManager.getViewportHeight() / 2) + LETTERBOX_HEIGHT / 2) {
+      this.bottomBar.position.y += 5;
+      this.topBar.position.y -= 5;
+      commitGuiTransform(this.bottomBar);
+      commitGuiTransform(this.topBar);
+      this.LBL_MESSAGE.hide();
+    } else {
+      this.bottomBar.position.y = -(GameState.ResolutionManager.getViewportHeight() / 2) + LETTERBOX_HEIGHT / 2;
+      this.topBar.position.y = GameState.ResolutionManager.getViewportHeight() / 2 - LETTERBOX_HEIGHT / 2;
+      commitGuiTransform(this.bottomBar);
+      commitGuiTransform(this.topBar);
+      this.letterBoxed = true;
+      this.LBL_MESSAGE.show();
+    }
+  }
+
+  updateTextPosition(isListening: boolean = false) {
+    if (typeof this.LBL_MESSAGE.text.geometry !== 'undefined') {
+      this.LBL_MESSAGE.text.geometry.computeBoundingBox();
+      let bb = this.LBL_MESSAGE.text.geometry.boundingBox;
+      let height = Math.abs(bb.min.y) + Math.abs(bb.max.y);
+      let width = Math.abs(bb.min.x) + Math.abs(bb.max.x);
+      if (isListening) {
+        this.LBL_MESSAGE.widget.position.y = -GameState.ResolutionManager.getViewportHeight() / 2 + 50;
+      } else {
+        this.LBL_MESSAGE.widget.position.y = GameState.ResolutionManager.getViewportHeight() / 2 - 50;
+      }
+      commitGuiTransform(this.LBL_MESSAGE.widget);
+      this.LBL_MESSAGE.box = new THREE.Box2(new THREE.Vector2(this.LBL_MESSAGE.widget.position.x - width / 2, this.LBL_MESSAGE.widget.position.y - height / 2), new THREE.Vector2(this.LBL_MESSAGE.widget.position.x + width / 2, this.LBL_MESSAGE.widget.position.y + height / 2));
+    }
+  }
+
+  resize() {
+    this.resetLetterBox();
+    this.recalculatePosition();
+    this.updateTextPosition();
+  }
+
+  recalculatePosition() {
+    this.LB_REPLIES.extent.left = -(GameState.ResolutionManager.getViewportWidth() / 2) + this.LB_REPLIES.extent.width / 2 + 16;
+    this.LB_REPLIES.extent.top = GameState.ResolutionManager.getViewportHeight() / 2 - this.LB_REPLIES.extent.height / 2;
+    this.LB_REPLIES.calculatePosition();
+    this.LB_REPLIES.calculateBox();
+    this.resetLetterBox();
+  }
+
+  resetLetterBox() {
+    this.letterBoxed = false;
+    this.topBar.scale.x = this.bottomBar.scale.x = GameState.ResolutionManager.getViewportWidth();
+    this.topBar.scale.y = this.bottomBar.scale.y = LETTERBOX_HEIGHT;
+    if (!this.letterBoxed) {
+      this.topBar.position.y = GameState.ResolutionManager.getViewportHeight() / 2 + LETTERBOX_HEIGHT / 2;
+      this.bottomBar.position.y = -this.topBar.position.y;
+    } else {
+      this.bottomBar.position.y = -(GameState.ResolutionManager.getViewportHeight() / 2) + LETTERBOX_HEIGHT / 2;
+      this.topBar.position.y = GameState.ResolutionManager.getViewportHeight() / 2 - LETTERBOX_HEIGHT / 2;
+    }
+    commitGuiTransform(this.topBar);
+    commitGuiTransform(this.bottomBar);
+  }
+
+  triggerControllerAPress() {
+    if(!this.LB_REPLIES.isVisible()) return;
+    if (!this.LB_REPLIES.selectedItem) return;
+    this.LB_REPLIES.selectedItem.click();
+  }
+
+  triggerControllerDUpPress() {
+    if(!this.LB_REPLIES.isVisible()) return;
+    this.LB_REPLIES.directionalNavigate('up');
+  }
+
+  triggerControllerDDownPress() {
+    if(!this.LB_REPLIES.isVisible()) return;
+    this.LB_REPLIES.directionalNavigate('down');
+  }
+  
+}

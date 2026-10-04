@@ -1,16 +1,16 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@/module/ModuleArea";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import type { ModuleObject } from "@/module/ModuleObject";
-import { getCreaturePersonalSpace } from "@/combat/attack-range";
-import { GameState } from "@/GameState";
-import { resolveStartOverlapCreatures } from "@/engine/pathfinding/start-overlap-creatures";
-import { isCreatureNudgeable } from "@/engine/pathfinding/is-creature-nudgeable";
-import { isCreature } from "@/module/guards/isCreature";
+import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { ModuleObject } from "@engine/module/ModuleObject";
+import { getCreaturePersonalSpace } from "@engine/combat/attack-range";
+import { GameState } from "@engine/runtime/GameState";
+import { resolveStartOverlapCreatures } from "@engine/pathfinding/start-overlap-creatures";
+import { isCreatureNudgeable } from "@engine/pathfinding/is-creature-nudgeable";
+import { isCreature } from "@engine/module/guards/isCreature";
 import {
   setHitInfoForCreature,
   type WalkHitInfo,
-} from "@/engine/pathfinding/walk-hit-info";
+} from "@engine/pathfinding/walk-hit-info";
 
 /**
  * Creature capsule intersection along a walk segment.

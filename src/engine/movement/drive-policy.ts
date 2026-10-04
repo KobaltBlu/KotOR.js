@@ -1,10 +1,10 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@/module/ModuleArea";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import { getPathPersonalSpace } from "@/combat/attack-range";
-import { GameState } from "@/GameState";
-import { nudgeFriendlyCreatures } from "@/engine/pathfinding/nudge-friendlies";
-import { isCreature } from "@/module/guards/isCreature";
+import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import { getPathPersonalSpace } from "@engine/combat/attack-range";
+import { GameState } from "@engine/runtime/GameState";
+import { nudgeFriendlyCreatures } from "@engine/pathfinding/nudge-friendlies";
+import { isCreature } from "@engine/module/guards/isCreature";
 import {
   findGround,
   findWalkableAttachmentAt,
@@ -13,18 +13,18 @@ import {
   testStaticMovement,
   testWalkSegment,
   WalkLineHitCode,
-} from "@/engine/movement/area-movement-queries";
+} from "@engine/movement/area-movement-queries";
 import {
   MovementHitKind,
   MovementSource,
   MovementStatus,
   type MovementResult,
-} from "@/engine/movement/types";
-import { commitMovement } from "@/engine/movement/movement-committer";
+} from "@engine/movement/types";
+import { commitMovement } from "@engine/movement/movement-committer";
 import {
   setMovementAuthority,
-} from "@/engine/movement/creature-movement-state";
-import { MovementAuthority } from "@/engine/movement/types";
+} from "@engine/movement/creature-movement-state";
+import { MovementAuthority } from "@engine/movement/types";
 
 /**
  * Drive destination preparation (AIActionDrive) + per-frame DriveUpdateLocation.
@@ -440,4 +440,4 @@ export function tickCreatureDrive(
 }
 
 // Re-export door helper for tests that imported getDoorCrossed from tick-creature-drive
-export { queryDoorCrossing as getDoorCrossingQuery } from "@/engine/movement/area-movement-queries";
+export { queryDoorCrossing as getDoorCrossingQuery } from "@engine/movement/area-movement-queries";

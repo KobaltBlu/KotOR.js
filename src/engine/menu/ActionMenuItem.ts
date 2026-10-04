@@ -1,4 +1,4 @@
-import type { ModuleItem } from "@/module/ModuleItem";
+import type { ModuleItem } from "@engine/module/ModuleItem";
 
 /**
  * ActionMenuItem class.

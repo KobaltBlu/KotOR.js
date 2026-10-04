@@ -1,12 +1,12 @@
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import { GameState } from "@/GameState";
-import { getCreaturePersonalSpace } from "@/combat/attack-range";
+import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import { GameState } from "@engine/runtime/GameState";
+import { getCreaturePersonalSpace } from "@engine/combat/attack-range";
 import * as THREE from "three";
-import { teleportObject } from "@/engine/movement/teleport";
+import { teleportObject } from "@engine/movement/teleport";
 import {
   setMovementAuthority,
-} from "@/engine/movement/creature-movement-state";
-import { MovementAuthority } from "@/engine/movement/types";
+} from "@engine/movement/creature-movement-state";
+import { MovementAuthority } from "@engine/movement/types";
 
 /**
  * Soft party-member separation when isCreatureNudgeable cannot push

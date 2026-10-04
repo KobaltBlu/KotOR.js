@@ -1,23 +1,23 @@
 import * as THREE from "three";
-import { PathPoint } from "@/engine/pathfinding/PathPoint";
-import type { ModuleObject } from "@/module/ModuleObject";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import { GameState } from "@/GameState";
-import { smoothCornerOptimizeRestartable, type SmoothCornerResume } from "@/engine/pathfinding/smooth-corner-optimize";
+import { PathPoint } from "@engine/pathfinding/PathPoint";
+import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import { GameState } from "@engine/runtime/GameState";
+import { smoothCornerOptimizeRestartable, type SmoothCornerResume } from "@engine/pathfinding/smooth-corner-optimize";
 import {
   smoothSelectionRestartable,
   SMOOTH_SELECTION_BUDGET_MS,
   type SmoothSelectionResume,
-} from "@/engine/pathfinding/smooth-select-nodes";
-import { computeCreatureEdgeDetour } from "@/engine/pathfinding/path-point-creature-detour";
-import { pathPointDfsSearch } from "@/engine/pathfinding/path-point-dfs";
-import type { PathPointDfsTransTable } from "@/engine/pathfinding/path-point-dfs-trans-table";
-import { isStaticWalkClearDetailed } from "@/engine/pathfinding/static-walk-blockers";
-import { isCreatureCapsuleClear } from "@/engine/pathfinding/creature-capsule-clear";
-import { isPthEdgeBlockedByObject } from "@/engine/pathfinding/pth-edge-block";
-import { isWalkmeshEdgeWalkClear } from "@/engine/pathfinding/path-hops-clear";
+} from "@engine/pathfinding/smooth-select-nodes";
+import { computeCreatureEdgeDetour } from "@engine/pathfinding/path-point-creature-detour";
+import { pathPointDfsSearch } from "@engine/pathfinding/path-point-dfs";
+import type { PathPointDfsTransTable } from "@engine/pathfinding/path-point-dfs-trans-table";
+import { isStaticWalkClearDetailed } from "@engine/pathfinding/static-walk-blockers";
+import { isCreatureCapsuleClear } from "@engine/pathfinding/creature-capsule-clear";
+import { isPthEdgeBlockedByObject } from "@engine/pathfinding/pth-edge-block";
+import { isWalkmeshEdgeWalkClear } from "@engine/pathfinding/path-hops-clear";
 
-import { isCreature } from "@/module/guards/isCreature";
+import { isCreature } from "@engine/module/guards/isCreature";
 
 /** Resume state for path-point DFS state / state across timed-out searches. */
 export type PathPointDfsResume = {

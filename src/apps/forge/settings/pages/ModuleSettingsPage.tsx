@@ -7,16 +7,16 @@
  */
 
 import React from "react";
-import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
-import { SettingRow } from "@/apps/forge/settings/SettingRow";
-import { registerSettingsPage } from "@/apps/forge/settings/settingsRegistry";
-import { useForgeSettings } from "@/apps/forge/settings/useForgeSettings";
+import { ForgeCheckbox } from "@apps/forge/components/forge-checkbox/forge-checkbox";
+import { SettingRow } from "@apps/forge/settings/SettingRow";
+import { registerSettingsPage } from "@apps/forge/settings/settingsRegistry";
+import { useForgeSettings } from "@apps/forge/settings/useForgeSettings";
 import {
   MODULE_HELPER_TYPES,
   forgeModuleSettings,
   setModuleSettings,
   type ModuleHelperType,
-} from "@/apps/forge/settings/forgeEditorsSettings";
+} from "@apps/forge/settings/forgeEditorsSettings";
 
 const HELPER_LABELS: Record<ModuleHelperType, string> = {
   creature: "Creatures",

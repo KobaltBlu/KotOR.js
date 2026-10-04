@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { TabTextEditorState } from "@/apps/forge/states/tabs";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { NcsInspector } from "@/apps/forge/components/tabs/tab-ncs-inspector/NcsInspector";
+import { TabTextEditorState } from "@apps/forge/states/tabs";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { NcsInspector } from "@apps/forge/components/tabs/tab-ncs-inspector/NcsInspector";
 
 export const TabScriptInspector = function(props: any){
   const parentTab: TabTextEditorState = props.parentTab;

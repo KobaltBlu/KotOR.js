@@ -1,20 +1,20 @@
 import React, { useState, useCallback, memo } from "react";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import { Project } from "@/apps/forge/Project";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { RecentProject } from "@/apps/forge/RecentProject";
-import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { BaseTabProps } from "@apps/forge/interfaces/BaseTabProps";
+import { Project } from "@apps/forge/Project";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { ForgeState } from "@apps/forge/states/ForgeState";
+import { EditorFile } from "@apps/forge/EditorFile";
+import { RecentProject } from "@apps/forge/RecentProject";
+import { FileTypeManager } from "@apps/forge/FileTypeManager";
 import "@/apps/forge/components/tabs/tab-quick-start/TabQuickStart.scss";
-import { ModalNewProjectState } from "@/apps/forge/states/modal/ModalNewProjectState";
-import { openNewProjectFromModWizard } from "@/apps/forge/helpers/openNewProjectFromModWizard";
+import { ModalNewProjectState } from "@apps/forge/states/modal/ModalNewProjectState";
+import { openNewProjectFromModWizard } from "@apps/forge/helpers/openNewProjectFromModWizard";
 import {
   ListedVirtualProjectFolder,
   deleteStoredVirtualProjectFolder,
   isOriginPrivateFileSystemAvailable,
   loadVirtualProjectFoldersForRestore,
-} from "@/apps/forge/virtual/VirtualProjectFolder";
+} from "@apps/forge/virtual/VirtualProjectFolder";
 
 export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
   const [files, setFiles] = useState<EditorFile[]>(ForgeState.recentFiles);

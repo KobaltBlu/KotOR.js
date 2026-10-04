@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import { TabWOKEditorControlMode, TabWOKEditorState } from "@/apps/forge/states/tabs";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
-import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
-import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
-import { MenuItem } from "@/apps/forge/components/common/MenuBar";
-import { CameraView } from "@/apps/forge/UI3DRenderer";
+import { BaseTabProps } from "@apps/forge/interfaces/BaseTabProps";
+import { TabWOKEditorControlMode, TabWOKEditorState } from "@apps/forge/states/tabs";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { UI3DRendererView } from "@apps/forge/components/UI3DRendererView";
+import { LayoutContainerProvider } from "@apps/forge/context/LayoutContainerContext";
+import { LayoutContainer } from "@apps/forge/components/LayoutContainer/LayoutContainer";
+import { MenuItem } from "@apps/forge/components/common/MenuBar";
+import { CameraView } from "@apps/forge/UI3DRenderer";
 
-import * as KotOR from "@/apps/forge/KotOR";
-import { SectionContainer } from "@/apps/forge/components/SectionContainer";
-import { ForgeButton, ForgeButtonGroup, ForgeSelect, ForgeInput } from "@/apps/forge/components/ui";
+import * as KotOR from "@apps/forge/KotOR";
+import { SectionContainer } from "@apps/forge/components/SectionContainer";
+import { ForgeButton, ForgeButtonGroup, ForgeSelect, ForgeInput } from "@apps/forge/components/ui";
 
 import "@/apps/forge/components/tabs/tab-wok-editor/TabWOKEditor.scss";
 

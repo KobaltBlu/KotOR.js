@@ -1,28 +1,28 @@
 import React, { useEffect, useState } from "react";
-import { TabModuleEditorState } from "@/apps/forge/states/tabs";
-import { SceneGraphTreeView } from "@/apps/forge/components/SceneGraphTreeView";
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { TabModuleEditorState } from "@apps/forge/states/tabs";
+import { SceneGraphTreeView } from "@apps/forge/components/SceneGraphTreeView";
+import { ForgeGameObject } from "@apps/forge/module-editor/ForgeGameObject";
 import * as THREE from 'three';
-import { BlueprintType } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
-import { openBlueprintBrowser, openScriptBrowser } from "@/apps/forge/helpers/openGameResRefPicker";
-import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
-import { ForgeColorField, ForgeTwoDAIndexField } from "@/apps/forge/components/ui";
-import { ForgeCreature } from "@/apps/forge/module-editor/ForgeCreature";
-import { ForgeCamera } from "@/apps/forge/module-editor/ForgeCamera";
-import { ForgeDoor } from "@/apps/forge/module-editor/ForgeDoor";
-import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
-import { ForgeItem } from "@/apps/forge/module-editor/ForgeItem";
-import { ForgePlaceable } from "@/apps/forge/module-editor/ForgePlaceable";
-import { ForgeSound } from "@/apps/forge/module-editor/ForgeSound";
-import { ForgeStore } from "@/apps/forge/module-editor/ForgeStore";
-import { ForgeTrigger } from "@/apps/forge/module-editor/ForgeTrigger";
-import { ForgeWaypoint } from "@/apps/forge/module-editor/ForgeWaypoint";
-import { ForgeMiniGame } from "@/apps/forge/module-editor/ForgeMiniGame";
-import { MiniGameNestedEditors } from "@/apps/forge/components/ModuleEditorMiniGameEditors";
-import { dwordToRgb01, rgb01ToDword } from "@/apps/forge/helpers/forgeColor";
-import { facingFromYaw } from "@/apps/forge/helpers/gitFacing";
-import * as KotOR from "@/apps/forge/KotOR";
-import { GroupType } from "@/apps/forge/UI3DRenderer";
+import { BlueprintType } from "@apps/forge/states/modal/ModalBlueprintBrowserState";
+import { openBlueprintBrowser, openScriptBrowser } from "@apps/forge/helpers/openGameResRefPicker";
+import { CExoLocStringEditor } from "@apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
+import { ForgeColorField, ForgeTwoDAIndexField } from "@apps/forge/components/ui";
+import { ForgeCreature } from "@apps/forge/module-editor/ForgeCreature";
+import { ForgeCamera } from "@apps/forge/module-editor/ForgeCamera";
+import { ForgeDoor } from "@apps/forge/module-editor/ForgeDoor";
+import { ForgeEncounter } from "@apps/forge/module-editor/ForgeEncounter";
+import { ForgeItem } from "@apps/forge/module-editor/ForgeItem";
+import { ForgePlaceable } from "@apps/forge/module-editor/ForgePlaceable";
+import { ForgeSound } from "@apps/forge/module-editor/ForgeSound";
+import { ForgeStore } from "@apps/forge/module-editor/ForgeStore";
+import { ForgeTrigger } from "@apps/forge/module-editor/ForgeTrigger";
+import { ForgeWaypoint } from "@apps/forge/module-editor/ForgeWaypoint";
+import { ForgeMiniGame } from "@apps/forge/module-editor/ForgeMiniGame";
+import { MiniGameNestedEditors } from "@apps/forge/components/ModuleEditorMiniGameEditors";
+import { dwordToRgb01, rgb01ToDword } from "@apps/forge/helpers/forgeColor";
+import { facingFromYaw } from "@apps/forge/helpers/gitFacing";
+import * as KotOR from "@apps/forge/KotOR";
+import { GroupType } from "@apps/forge/UI3DRenderer";
 import "@/apps/forge/components/ModuleEditorSidebarComponent.scss";
 
 const SCENE_TYPE_CHIPS: Array<{ key: GroupType; label: string; icon: string }> = [
@@ -518,7 +518,7 @@ const StringPropertyEditor = function(props: {
       return;
     }
     let cancelled = false;
-    void import("@/apps/forge/helpers/blueprintResRefSuggest").then(({ suggestBlueprintResRefs }) => {
+    void import("@apps/forge/helpers/blueprintResRefSuggest").then(({ suggestBlueprintResRefs }) => {
       suggestBlueprintResRefs(blueprintType, draft, 50).then((items) => {
         if(!cancelled){
           setSuggestions(items);

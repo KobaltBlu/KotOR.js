@@ -8,15 +8,15 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ForgeInput } from "@/apps/forge/components/ui";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { ForgeInput } from "@apps/forge/components/ui";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
 import {
   commandsMatchingQuery,
   executeCommand,
   isCommandEnabled,
-} from "@/apps/forge/commands/forgeCommands";
-import { formatKeybinding } from "@/apps/forge/commands/forgeKeybindings";
-import { CommandPaletteState } from "@/apps/forge/commands/CommandPaletteState";
+} from "@apps/forge/commands/forgeCommands";
+import { formatKeybinding } from "@apps/forge/commands/forgeKeybindings";
+import { CommandPaletteState } from "@apps/forge/commands/CommandPaletteState";
 
 export function CommandPalette() {
   const [show, setShow] = useState(false);

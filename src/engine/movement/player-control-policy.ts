@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@/module/ModuleArea";
-import type { ModuleCreature } from "@/module/ModuleCreature";
+import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { ModuleCreature } from "@engine/module/ModuleCreature";
 import {
   findGround,
   findWalkableAttachmentAt,
@@ -8,22 +8,22 @@ import {
   testCreatureMovement,
   testStaticMovement,
   WalkLineHitCode,
-} from "@/engine/movement/area-movement-queries";
+} from "@engine/movement/area-movement-queries";
 import {
   MovementHitKind,
   MovementSource,
   MovementStatus,
   type MovementHit,
   type MovementResult,
-} from "@/engine/movement/types";
+} from "@engine/movement/types";
 import {
   collectBlockingWalkEdgeNormals,
   projectDesiredOntoNormals,
-} from "@/engine/movement/wall-slide";
-import { getCreaturePersonalSpace } from "@/combat/attack-range";
-import { nudgeFriendlyCreatures } from "@/engine/pathfinding/nudge-friendlies";
-import { isCreature } from "@/module/guards/isCreature";
-import { GameState } from "@/GameState";
+} from "@engine/movement/wall-slide";
+import { getCreaturePersonalSpace } from "@engine/combat/attack-range";
+import { nudgeFriendlyCreatures } from "@engine/pathfinding/nudge-friendlies";
+import { isCreature } from "@engine/module/guards/isCreature";
+import { GameState } from "@engine/runtime/GameState";
 
 /**
  * PlayerControl predicted-position resolve (SetPrecalculatedPosition-style).

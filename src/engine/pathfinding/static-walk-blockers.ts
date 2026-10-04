@@ -1,21 +1,21 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@/module/ModuleArea";
-import type { ModuleDoor } from "@/module/ModuleDoor";
-import type { ModulePlaceable } from "@/module/ModulePlaceable";
-import { isStaticWalkClearOnAreaMesh, isStaticWalkClearOnWalkMesh, walkMeshHasStartOverlap } from "@/engine/pathfinding/static-walk-blockers-mesh";
+import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { ModuleDoor } from "@engine/module/ModuleDoor";
+import type { ModulePlaceable } from "@engine/module/ModulePlaceable";
+import { isStaticWalkClearOnAreaMesh, isStaticWalkClearOnWalkMesh, walkMeshHasStartOverlap } from "@engine/pathfinding/static-walk-blockers-mesh";
 import {
   composeDoorWalkmeshLocalToWorld,
   walkmeshWorldAabbXY,
   type WalkmeshWorldAabbXY,
-} from "@/engine/pathfinding/door-walkmesh-matrix";
+} from "@engine/pathfinding/door-walkmesh-matrix";
 import {
   ensureWalkmeshMatrixSynced,
   queryStaticBlockersInAabb,
-} from "@/engine/pathfinding/static-blocker-grid";
+} from "@engine/pathfinding/static-blocker-grid";
 import {
   setHitInfoForAabb,
   type WalkHitInfo,
-} from "@/engine/pathfinding/walk-hit-info";
+} from "@engine/pathfinding/walk-hit-info";
 
 /**
  * Static walk blockers: detailed corridor checks for doors / placeables / mesh,

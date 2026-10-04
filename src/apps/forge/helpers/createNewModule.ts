@@ -11,11 +11,11 @@ import {
   createUntitledGitGff,
   createUntitledIfoGff,
   normalizeResRef,
-} from "@/apps/forge/helpers/createUntitledModuleGff";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { CExoLocString } from "@/resource/CExoLocString";
-import { GFFField } from "@/resource/GFFField";
-import { GFFStruct } from "@/resource/GFFStruct";
+} from "@apps/forge/helpers/createUntitledModuleGff";
+import { GFFDataType } from "@core/enums/resource/GFFDataType";
+import { CExoLocString } from "@core/resource/CExoLocString";
+import { GFFField } from "@core/resource/GFFField";
+import { GFFStruct } from "@core/resource/GFFStruct";
 
 export interface NewModuleRoomSpec {
   roomName: string;

@@ -7,7 +7,7 @@
  */
 
 import React from "react";
-import type { TabERFEditorState } from "@/apps/forge/states/tabs/TabERFEditorState";
+import type { TabERFEditorState } from "@apps/forge/states/tabs/TabERFEditorState";
 
 export interface ERFBrowserBreadcrumbsProps {
   tab: TabERFEditorState;

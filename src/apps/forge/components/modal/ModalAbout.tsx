@@ -7,11 +7,11 @@
  */
 
 import React, { useState } from "react";
-import { ForgeButton, ForgeDialog } from "@/apps/forge/components/ui";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { ModalAboutState } from "@/apps/forge/components/modal/ModalAboutState";
-import forgeIcon from "@/assets/icons/icon.png";
-import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeButton, ForgeDialog } from "@apps/forge/components/ui";
+import { useEffectOnce } from "@apps/forge/helpers/UseEffectOnce";
+import { ModalAboutState } from "@apps/forge/components/modal/ModalAboutState";
+import forgeIcon from "@assets/icons/icon.png";
+import * as KotOR from "@apps/forge/KotOR";
 import "@/apps/forge/components/modal/ModalAbout.scss";
 
 const AUTHOR_NAME = "KobaltBlu";

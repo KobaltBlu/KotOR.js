@@ -7,7 +7,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { ForgeState } from "@apps/forge/states/ForgeState";
 
 export function useForgeHasGameData(): boolean {
   const [hasGameData, setHasGameData] = useState(ForgeState.hasGameData);

@@ -7,7 +7,7 @@
  */
 
 import React, { useEffect, useState } from "react";
-import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
+import { BaseModalProps } from "@apps/forge/interfaces/modal/BaseModalProps";
 import {
   ForgeButton,
   ForgeDialog,
@@ -15,18 +15,18 @@ import {
   ForgeInputGroup,
   ForgeProgress,
   ForgeSelect,
-} from "@/apps/forge/components/ui";
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeFileSystem, ForgeFileSystemResponseType } from "@/apps/forge/ForgeFileSystem";
+} from "@apps/forge/components/ui";
+import * as KotOR from "@apps/forge/KotOR";
+import { ForgeFileSystem, ForgeFileSystemResponseType } from "@apps/forge/ForgeFileSystem";
 import {
   canCreateForgeProject,
   resolveProjectGame,
   type ProjectStorageMode,
-} from "@/apps/forge/helpers/projectCreateOptions";
-import { createForgeProjectFromZip } from "@/apps/forge/helpers/createForgeProjectFromZip";
-import { inspectProjectZip, type InspectProjectZipResult } from "@/apps/forge/helpers/projectZip";
-import { readPickedModuleArchive } from "@/apps/forge/helpers/moduleArchivePicker";
-import { GameEngineType } from "@/enums/engine/GameEngineType";
+} from "@apps/forge/helpers/projectCreateOptions";
+import { createForgeProjectFromZip } from "@apps/forge/helpers/createForgeProjectFromZip";
+import { inspectProjectZip, type InspectProjectZipResult } from "@apps/forge/helpers/projectZip";
+import { readPickedModuleArchive } from "@apps/forge/helpers/moduleArchivePicker";
+import { GameEngineType } from "@core/enums/engine/GameEngineType";
 
 interface ProjectDirectory {
   path?: string;

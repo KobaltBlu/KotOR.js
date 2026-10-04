@@ -1,20 +1,20 @@
 import React from "react";
-import { EditorFile, EditorFileEventListenerTypes } from "@/apps/forge/EditorFile";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { EditorTabManager } from "@/apps/forge/managers/EditorTabManager";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { EditorFile, EditorFileEventListenerTypes } from "@apps/forge/EditorFile";
+import BaseTabStateOptions from "@apps/forge/interfaces/BaseTabStateOptions";
+import { EditorTabManager } from "@apps/forge/managers/EditorTabManager";
+import { ForgeState } from "@apps/forge/states/ForgeState";
 import * as fs from "fs";
-import { EventListenerModel } from "@/apps/forge/EventListenerModel";
-import { supportedFileDialogTypes, supportedFilePickerTypes } from "@/apps/forge/ForgeFileSystem";
+import { EventListenerModel } from "@apps/forge/EventListenerModel";
+import { supportedFileDialogTypes, supportedFilePickerTypes } from "@apps/forge/ForgeFileSystem";
 
-import * as KotOR from "@/apps/forge/KotOR";
-import { TabStoreState } from "@/apps/forge/interfaces/TabStoreState";
-import { pathParse } from "@/apps/forge/helpers/PathParse";
-import { getSessionSettings } from "@/apps/forge/settings/forgeSessionSettings";
+import * as KotOR from "@apps/forge/KotOR";
+import { TabStoreState } from "@apps/forge/interfaces/TabStoreState";
+import { pathParse } from "@apps/forge/helpers/PathParse";
+import { getSessionSettings } from "@apps/forge/settings/forgeSessionSettings";
 import {
   ForgeStatusBarItem,
   ForgeStatusBarState,
-} from "@/apps/forge/states/ForgeStatusBarState";
+} from "@apps/forge/states/ForgeStatusBarState";
 declare const dialog: any;
 
 export type TabStateEventListenerTypes =
