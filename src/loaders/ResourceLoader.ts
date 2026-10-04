@@ -175,6 +175,9 @@ export class ResourceLoader {
   }
 
   static loadCachedResource(resId: number, resRef: string): Uint8Array {
+    if(typeof resRef !== 'string' || !resRef){
+      return null;
+    }
     return ResourceLoader.getCache(resId, resRef.toLocaleLowerCase());
   }
 

@@ -18,6 +18,7 @@ export * from "@/managers/KEYManager";
 export * from "@/managers/LightManager";
 export * from "@/managers/WindManager";
 export * from "@/managers/MenuManager";
+export * from "@/managers/MusicManager";
 export * from "@/managers/ModuleObjectManager";
 export * from "@/managers/PartyManager";
 export * from "@/managers/RIMManager";

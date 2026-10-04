@@ -13,9 +13,33 @@ import { Utility } from "@/utility/Utility";
 import EngineLocation from "@/engine/EngineLocation";
 import { GameFileSystem } from "@/utility/GameFileSystem";
 import { ResourceTypes } from "@/KotOR";
-import { exists } from "fs";
+import { EngineMode } from "@/enums/engine";
 
 const winEpoch = new Date("01-01-1601 UTC").getTime();
+
+const toWindowsFileTimeBuffer = (date: Date) => {
+  const buffer = new Uint8Array(8);
+  const fileTime = BigInt(date.getTime() - winEpoch) * 10000n;
+  new DataView(buffer.buffer).setBigUint64(0, fileTime, true);
+  return buffer;
+}
+
+const getTemplateFirstName = (template?: GFFObject) => {
+  if(!(template instanceof GFFObject)){
+    return '';
+  }
+
+  const firstName = template.RootNode.getFieldByLabel('FirstName');
+  if(!firstName){
+    return '';
+  }
+
+  try{
+    return firstName.getValue() || '';
+  }catch(e){
+    return '';
+  }
+}
 
 /**
  * SaveGame class.
@@ -85,12 +109,14 @@ export class SaveGame {
   PCNAME: string;
   /** Whether this is a new save game being created */
   isNewSave = false;
+  /** Tracks in-flight metadata hydration so UI can await stable values */
+  metadataLoadPromise: Promise<void> = Promise.resolve();
   
 
   /** Array of all loaded save games */
   static saves: SaveGame[] = [];
   /** Base directory where save games are stored */
-  static base_directory: string = 'Saves';
+  static base_directory: string = 'saves';
 
   /** Regular expression to validate save game folder names */
   static FolderRegexValidator: RegExp = /^(\d+) - (Game\d+)$|^(000000) - (QUICKSAVE)$|^(000001) - (AUTOSAVE)$/;
@@ -118,7 +144,7 @@ export class SaveGame {
    * const saveGame = new SaveGame('Saves/000001 - AUTOSAVE');
    */
   constructor(name = ''){
-    this.folderName = name.split('/').pop();
+    this.folderName = (name || '').split(/[/\\]/).pop() || '';
     this.directory = path.join(SaveGame.base_directory, this.folderName);
     this.isLoaded = false;
 
@@ -129,9 +155,16 @@ export class SaveGame {
     this.GAMEPLAYHINT = 0;
     this.STORYHINT = 0;
     this.TIMESTAMP = new Date();
+    this.PCNAME = '';
 
-    this.loadNFO();
+    if(this.folderName){
+      this.metadataLoadPromise = this.loadNFO(true);
+    }
     this.thumbnail = null;
+  }
+
+  async ensureMetadataLoaded(){
+    await this.metadataLoadPromise;
   }
 
   /**
@@ -151,7 +184,15 @@ export class SaveGame {
    * await saveGame.loadNFO();
    * console.log(saveGame.getAreaName()); // "Endar Spire"
    */
-  async loadNFO(){
+  async loadNFO(force = false){
+    if(!this.folderName){
+      return;
+    }
+
+    if(this.savenfo && !force){
+      return;
+    }
+
     try{
       const buffer = await GameFileSystem.readFile(path.join(this.directory, 'savenfo.res'));
       this.savenfo = new GFFObject(buffer);
@@ -254,19 +295,7 @@ export class SaveGame {
    * // Player template is now available in GameState.PartyManager.PlayerTemplate
    */
   async loadPIFO(){
-    try{
-      const buffer = await GameFileSystem.readFile(path.join(this.directory, 'pifo.ifo'));
-      this.pifo = new GFFObject(buffer);
-      if(!this.pifo.RootNode.hasField('Mod_PlayerList')){ return; }
-
-      const playerList = this.pifo.getFieldByLabel('Mod_PlayerList').getChildStructs();
-      if(!playerList.length){ return; }
-
-      GameState.PartyManager.PlayerTemplate = GFFObject.FromStruct(playerList[0]);
-      GameState.PartyManager.ActualPlayerTemplate = GameState.PartyManager.PlayerTemplate;
-    }catch(e){
-      console.error(e);
-    }
+    this.pifo = undefined;
   }
 
   /**
@@ -322,7 +351,10 @@ export class SaveGame {
    * // Game state is now restored and ready to play
    */
   async load(){
+    await this.ensureMetadataLoaded();
+
     localStorage.setItem(`${GameState.GameKey}_last_save_id`, SaveGame.saves.indexOf(this).toString());
+    localStorage.setItem(`${GameState.GameKey}_last_save_folder`, this.folderName);
     GameState.isLoadingSave = true;
     GameState.TutorialWindowTracker = [];
 
@@ -331,6 +363,8 @@ export class SaveGame {
     }catch(e){}
 
     GameState.SaveGame = this;
+    GameState.PartyManager.PlayerTemplate = undefined;
+    GameState.PartyManager.ActualPlayerTemplate = undefined;
 
     GameState.PartyManager.PortraitOrder = [];
 
@@ -353,13 +387,11 @@ export class SaveGame {
     // await this.loadInventory();
     //Load PartyTable
     await this.loadPartyTable();
-    //Load PIFO if it exists
-    await this.loadPIFO();
     //Load pc if it exists
     await this.loadPC();
     //Load The Last Module
     console.log('SaveGame', this.getLastModule(), 'Loading Module...');
-    GameState.LoadModule(this.getLastModule(), null);
+    await GameState.LoadModule(this.getLastModule(), null);
     console.log('SaveGame', 'Load Complete!');
   }
 
@@ -476,22 +508,20 @@ export class SaveGame {
 
     let boolBytes = this.globalVars.RootNode.getFieldByLabel('ValBoolean').getVoid();
     let catBooleans = this.globalVars.getFieldByLabel('CatBoolean').getChildStructs();
-    let maxBits = boolBytes.length * 8;
-    for(let i = 0; i < maxBits; i++){
-      for(let j = 0; j < 8; j++){
-        let index = (i * 8) + j;
-        let bit = (boolBytes[i] >> 7-j) & 1; //reverse the bit index because of ENDIANS -_-
+    for(let i = 0; i < catBooleans.length; i++){
+      const byteOffset = Math.floor(i / 8);
+      const bitIndex = i % 8;
+      const bit = byteOffset < boolBytes.length ? ((boolBytes[byteOffset] >> bitIndex) & 1) : 0;
 
-        let boolCat = catBooleans[index];
-        if(boolCat){
-          let boolLabel = boolCat.getFieldByLabel('Name').getValue();
-          let value = !!bit;
-          if(GameState.GlobalVariableManager.Globals.Boolean.has(boolLabel.toLowerCase())){
-            GameState.GlobalVariableManager.Globals.Boolean.get(boolLabel.toLowerCase()).value = value;
-          }else{
-            GameState.GlobalVariableManager.Globals.Boolean.set(boolLabel.toLowerCase(), {name: boolLabel.toLowerCase(), value: value});
-            console.warn('Global Boolean: missing', boolLabel.toLowerCase(), value);
-          }
+      let boolCat = catBooleans[i];
+      if(boolCat){
+        let boolLabel = boolCat.getFieldByLabel('Name').getValue();
+        let value = !!bit;
+        if(GameState.GlobalVariableManager.Globals.Boolean.has(boolLabel.toLowerCase())){
+          GameState.GlobalVariableManager.Globals.Boolean.get(boolLabel.toLowerCase()).value = value;
+        }else{
+          GameState.GlobalVariableManager.Globals.Boolean.set(boolLabel.toLowerCase(), {name: boolLabel.toLowerCase(), value: value});
+          console.warn('Global Boolean: missing', boolLabel.toLowerCase(), value);
         }
       }
     }
@@ -812,7 +842,7 @@ export class SaveGame {
    */
   async Save(){
     //TODO
-    if(!GameState.module){ return; }
+    if(!GameState.module || !SaveGame.CanSaveCurrentGame()){ return false; }
     try{
       //Go ahead and run mkdir. It will silently fail if it already exists
       await GameFileSystem.mkdir(this.directory, { recursive: false });
@@ -820,8 +850,10 @@ export class SaveGame {
       await SaveGame.ExportSaveNFO(this.directory, this.SAVEGAMENAME);
       await GameState.PartyManager.Export( this.directory );
       await SaveGame.ExportGlobalVars( this.directory );
+      return true;
     }catch(e){
       console.error(e);
+      return false;
     }
   }
 
@@ -853,7 +885,11 @@ export class SaveGame {
    * await SaveGame.SaveCurrentGame('', 1);
    */
   static async SaveCurrentGame( name = '', replace_id = 0 ){
-    if(!GameState.module){ return; }
+    if(!GameState.module || !SaveGame.CanSaveCurrentGame()){
+      return false;
+    }
+
+    SaveGame.base_directory = await SaveGame.ResolveBaseDirectory();
 
     GameState.MenuManager.LoadScreen.open();
     GameState.MenuManager.LoadScreen.showSavingMessage();
@@ -893,14 +929,15 @@ export class SaveGame {
 
     if (existingIndex >= 0) {
       SaveGame.saves[existingIndex] = newEntry;  // overwrite case
-  } else {
+    } else {
       SaveGame.AddSaveGame(newEntry);            // new save case
-            }
-    await newEntry.loadNFO();
+    }
+    await newEntry.ensureMetadataLoaded();
     
     //Save Complete
     GameState.MenuManager.LoadScreen.setProgress(100);
     GameState.MenuManager.LoadScreen.close();
+    return true;
   }
 
   /**
@@ -927,6 +964,8 @@ export class SaveGame {
     console.log('ExportSaveNFO', directory, savename);
     const nfo = new GFFObject();
     nfo.FileType = 'NFO ';
+    const now = new Date();
+    const playerName = getTemplateFirstName(GameState.PartyManager.ActualPlayerTemplate || GameState.PartyManager.PlayerTemplate);
 
     nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'AREANAME')).value = GameState.module.area.areaName.getValue();
     nfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'CHEATUSED')).value = 0;
@@ -948,6 +987,8 @@ export class SaveGame {
     nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'SAVEGAMENAME')).value = savename;
     nfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'STORYHINT')).value = 0;
     nfo.RootNode.addField(new GFFField(GFFDataType.DWORD, 'TIMEPLAYED')).value = GameState.time | 0;
+    nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'PCNAME')).value = playerName;
+    nfo.RootNode.addField(new GFFField(GFFDataType.DWORD64, 'TIMESTAMP')).setData(toWindowsFileTimeBuffer(now));
 
     await nfo.export(path.join(directory, 'savenfo.res'));
   }
@@ -981,7 +1022,7 @@ export class SaveGame {
 
     //Global Booleans
     const catBooleanList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatBoolean'));
-    const boolBuffer =  new Uint8Array( ( GameState.GlobalVariableManager.Globals.Boolean.size / 8 ) );
+    const boolBuffer =  new Uint8Array(Math.ceil(GameState.GlobalVariableManager.Globals.Boolean.size / 8));
     let i = 0;
     GameState.GlobalVariableManager.Globals.Boolean.forEach( (globBool, key: string) => {
       let boolean = globBool;
@@ -1000,7 +1041,7 @@ export class SaveGame {
 
     //Global Locations
     const catLocationList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatLocation'));
-    const locationBuffer = new Uint8Array(24 * 100);
+    const locationBuffer = new Uint8Array(24 * GameState.GlobalVariableManager.Globals.Location.size);
     const locationDataView = new DataView(locationBuffer.buffer);
 
     i = 0;
@@ -1077,13 +1118,16 @@ export class SaveGame {
    */
   static async GetSaveGames(){
     try{
-      const savegamesRAW = await GameFileSystem.readdir('Saves', {list_dirs: false, recursive: true});
-      const savegames = savegamesRAW.filter((path) => path.includes('SAVEGAME.sav'));
+      SaveGame.base_directory = await SaveGame.ResolveBaseDirectory();
+      SaveGame.saves = [];
+      SaveGame.NEXT_SAVE_ID = 1;
 
-      for(let i = 0; i < savegames.length; i++){
-        const saveFolder = savegames[i].replace(path.sep+'SAVEGAME.sav', '');
-        SaveGame.AddSaveGame( new SaveGame(saveFolder) );
-      }
+      const savegamesRAW = await GameFileSystem.readdir(SaveGame.base_directory, {list_dirs: false, recursive: true});
+      const savegames = savegamesRAW.filter((entry) => path.basename(entry).toLowerCase() == 'savegame.sav');
+      const discovered = savegames.map((entry) => new SaveGame(path.dirname(entry)));
+
+      await Promise.all(discovered.map((save) => save.ensureMetadataLoaded()));
+      discovered.forEach((save) => SaveGame.AddSaveGame(save));
     }catch(e){
       try{
         //Make the default savegame directory
@@ -1138,12 +1182,37 @@ export class SaveGame {
   static AddSaveGame( savegame: SaveGame ){
     if(!(savegame instanceof SaveGame)){ return; }
 
-    const len = SaveGame.saves.push( savegame );
-    const lastSave = SaveGame.saves[len - 1];
-    const saveNumber = lastSave.getSaveNumber();
+    const existingIndex = SaveGame.saves.findIndex((existing) => {
+      return existing.folderName == savegame.folderName || existing.getSaveNumber() == savegame.getSaveNumber();
+    });
+
+    if(existingIndex >= 0){
+      SaveGame.saves[existingIndex] = savegame;
+    }else{
+      SaveGame.saves.push(savegame);
+    }
+
+    SaveGame.saves.sort((a, b) => a.getSaveNumber() - b.getSaveNumber());
+
+    const saveNumber = savegame.getSaveNumber();
     if(saveNumber >= SaveGame.NEXT_SAVE_ID){
       SaveGame.NEXT_SAVE_ID = saveNumber + 1;
     }
+  }
+
+  static CanSaveCurrentGame(){
+    return !!GameState.module && GameState.Mode !== EngineMode.MINIGAME && !GameState.module?.area?.miniGame;
+  }
+
+  static async ResolveBaseDirectory(){
+    const candidates = [SaveGame.base_directory, 'saves', 'Saves'];
+    for(let i = 0; i < candidates.length; i++){
+      const candidate = candidates[i];
+      if(await GameFileSystem.exists(candidate)){
+        return candidate;
+      }
+    }
+    return SaveGame.base_directory;
   }
 
 }

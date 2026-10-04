@@ -20,23 +20,47 @@ import { GameState } from "@/GameState";
 * @memberof KotOR
 */
 export class ModuleMGObstacle extends ModuleObject {
+  readonly supportsRuntimeStatePersistence: boolean = false;
+
   invince: number;
   hit_points: number;
   max_hps: number = 0;
   invince_period: number;
   layout: ILayoutObstacle;
 
-  constructor(template: GFFObject, layout: ILayoutObstacle){
-    super(template);
+  constructor(template: GFFObject | undefined, layout: ILayoutObstacle){
+    super();
     this.objectType |= ModuleObjectType.ModuleMGObstacle;
     this.name = '';
     this.invince = 0;
     this.layout = layout;
+    this.position.copy(layout.position);
+
+    if(template){
+      this.template = template;
+      this.initProperties();
+      this.loadScripts();
+    }
   }
 
   setTemplate(template: GFFObject){
     this.template = template;
     this.initProperties();
+    this.loadScripts();
+  }
+
+  async load(): Promise<void> {
+    if(this.layout?.position){
+      this.position.copy(this.layout.position);
+    }
+
+    if(this.template){
+      this.initProperties();
+      this.loadScripts();
+    }else{
+      this.name = this.layout?.name?.replace(/\0[\s\S]*$/g,'').toLowerCase() || '';
+      this.initialized = true;
+    }
   }
 
   update(delta: number = 0){
@@ -95,11 +119,16 @@ export class ModuleMGObstacle extends ModuleObject {
       ModuleObjectScript.MGObstacleOnHitFollower,
     ];
 
+    const scriptsNode = this.template?.getFieldByLabel('Scripts')?.getFieldStruct();
+    if(!scriptsNode){ return; }
+
     for(const scriptKey of scriptKeys){
-      if(!scriptKey){ continue; }
-      const nwscript = GameState.NWScript.Load(scriptKey);
+      if(!scriptsNode.hasField(scriptKey)){ continue; }
+      const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
+      if(!resRef){ continue; }
+      const nwscript = GameState.NWScript.Load(resRef);
       if(!nwscript){ 
-        console.warn(`ModuleMGObstacle.loadScripts: Failed to load script [${scriptKey}] for object ${this.name}`);
+        console.warn(`ModuleMGObstacle.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
         continue; 
       }
       nwscript.caller = this;
@@ -109,8 +138,11 @@ export class ModuleMGObstacle extends ModuleObject {
   }
 
   initProperties(){
-    if(this.template.RootNode.hasField('Name'))
-      this.name = this.template.getFieldByLabel('Name').getValue().toLowerCase();
+    this.position.copy(this.layout.position);
+    this.name = this.layout?.name?.replace(/\0[\s\S]*$/g,'').toLowerCase() || '';
+
+    if(this.template?.RootNode?.hasField('Name'))
+      this.name = this.template.getFieldByLabel('Name').getValue().replace(/\0[\s\S]*$/g,'').toLowerCase();
 
     this.initialized = true;
   }

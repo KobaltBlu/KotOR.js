@@ -11,6 +11,7 @@ import { DLGObject } from "@/resource/DLGObject";
 import { BitWise } from "@/utility/BitWise";
 import { Utility } from "@/utility/Utility";
 import { Action } from "@/actions/Action";
+import { enqueueMoveToPoint } from "@/actions/helpers/enqueueMoveToPoint";
 
 /**
  * ActionDialogObject class.
@@ -52,6 +53,8 @@ export class ActionDialogObject extends Action {
       }
     }
 
+    const resolvedConversation = this.conversation ?? this.owner?.conversation;
+
     if(GameState.Mode == EngineMode.DIALOG){
       console.log('ActionDialogObject: Already in dialog', this.owner.getName(), this.owner.getTag());
       return ActionStatus.FAILED;
@@ -59,24 +62,24 @@ export class ActionDialogObject extends Action {
 
     if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature))
     {
-      GameState.CutsceneManager.startConversation(this.conversation ? this.conversation : this.owner.conversation, this.owner, this.target);
+      GameState.CutsceneManager.startConversation(resolvedConversation, this.owner, this.target);
       return ActionStatus.COMPLETE;
     }
 
     let distance = Utility.Distance2D(this.owner.position, this.target.position);
     if(distance > 4.5 && !ignoreStartRange){
       // this.owner.openSpot = undefined;
-      let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
-      actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
-      actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
-      actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);
-      actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
-      actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, this.target.id);
-      actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
-      actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, 4.5 );
-      actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
-      actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
-      this.owner.actionQueue.addFront(actionMoveToTarget);
+      enqueueMoveToPoint(this.owner, {
+        x: this.target.position.x,
+        y: this.target.position.y,
+        z: this.target.position.z,
+        area: GameState.module.area.id,
+        target: this.target.id,
+        run: true,
+        range: 4.5,
+        timeout: 30.0,
+        groupId: this.groupId,
+      });
 
       return ActionStatus.IN_PROGRESS;
     }else{
@@ -84,13 +87,21 @@ export class ActionDialogObject extends Action {
       this.owner.force = 0;
       this.owner.speed = 0;
 
+      if (BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature) && !(this.owner as any).keepStealthInDialog) {
+        (this.owner as any).stealthMode = false;
+      }
+
+      if (BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature) && (this.target as any).orientOnClick !== false) {
+        this.target.FacePoint(this.owner.position);
+      }
+
       this.owner.heardStrings = [];
       this.target.heardStrings = [];
       const onDialog = BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature) ? this.target.scripts[ModuleObjectScript.CreatureOnDialog] : undefined;
       if(onDialog){
-        this.target.onDialog(this.owner, -1, this.conversation);
+        this.target.onDialog(this.owner, -1, resolvedConversation);
       }else{
-        GameState.CutsceneManager.startConversation(this.conversation ? this.conversation : this.owner.conversation, this.target, this.owner);
+        GameState.CutsceneManager.startConversation(resolvedConversation, this.target, this.owner);
       }
       return ActionStatus.COMPLETE;
     }

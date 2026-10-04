@@ -5,8 +5,6 @@ import { OdysseyModel3D } from "@/three/odyssey";
 import { ResourceTypes } from "@/resource/ResourceTypes";
 import { GFFField } from "@/resource/GFFField";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { CExoLocString } from "@/resource/CExoLocString";
 import { ResourceLoader } from "@/loaders";
 import { GameState } from "@/GameState";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
@@ -88,15 +86,46 @@ export class ModuleWaypoint extends ModuleObject {
     }
   }
 
+  initProperties(){
+    super.initProperties();
+
+    this.actionQueue.clear();
+
+    try{
+      if(this.template.RootNode.hasField('ActionList')){
+        const actionStructs = this.template.RootNode.getFieldByLabel('ActionList').getChildStructs();
+        for(let i = 0, len = actionStructs.length; i < len; i++){
+          const action = GameState.ActionFactory.FromStruct(actionStructs[i]);
+          if(action){
+            this.actionQueue.add(action);
+          }
+        }
+      }
+    }catch(e: any){
+      console.error(e);
+    }
+  }
+
   save(){
     let gff = new GFFObject();
     gff.FileType = 'UTW ';
     gff.RootNode.type = 5;
 
+    const facing = this.getFacingVector();
+    const hasFacingVector = facing.lengthSq() > 0;
+    const xOrientation = hasFacingVector ? facing.x : this.xOrientation;
+    const yOrientation = hasFacingVector ? facing.y : this.yOrientation;
+    const zOrientation = hasFacingVector ? facing.z : this.zOrientation;
+
     gff.RootNode.addField( this.actionQueueToActionList() );
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE,  'Commandable') ).setValue(1);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE,  'HasMapNote') ).setValue(1);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'LocalizedName') ).setValue(this.locName);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Appearance') ).setValue(this.appearance);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue(this.commandable ? 1 : 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') ).setValue(this.description);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'HasMapNote') ).setValue(this.hasMapNote ? 1 : 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'LinkedTo') ).setValue(this.linkedTo);
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LocalizedName') ).setValue(this.localizedName);
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'MapNote') ).setValue(this.mapNote);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'MapNoteEnabled') ).setValue(this.mapNoteEnabled ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
 
     //SWVarTable
@@ -104,27 +133,13 @@ export class ModuleWaypoint extends ModuleObject {
     swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
 
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
-    gff.RootNode.addField( new GFFField(GFFDataType.LIST,  'VarTable') );
-    
-    if(this.template.RootNode.hasField('XOrientation')){
-      gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).setValue(this.template.RootNode.getFieldByLabel('XOrientation').getValue());
-    }else{
-      gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).setValue(0);
-    }
-
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'TemplateResRef') ).setValue(this.templateResRef || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'VarTable') );
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).setValue(xOrientation || 0);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).setValue(this.position.x);
-    
-    if(this.template.RootNode.hasField('YOrientation')){
-      gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).setValue(this.template.RootNode.getFieldByLabel('YOrientation').getValue());
-    }else{
-      gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).setValue(0);
-    }
-    
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).setValue(yOrientation || 0);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).setValue(this.position.y);
-    
-    if(this.template.RootNode.hasField('ZOrientation'))
-      gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZOrientation') ).setValue(this.template.RootNode.getFieldByLabel('ZOrientation').getValue());
-    
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZOrientation') ).setValue(zOrientation || 0);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).setValue(this.position.z);
 
     this.template = gff;
@@ -132,6 +147,9 @@ export class ModuleWaypoint extends ModuleObject {
   }
 
   destroy(): void {
+    if(this.destroyed || this.destroying){
+      return;
+    }
     super.destroy();
     if(this.area) this.area.detachObject(this);
 

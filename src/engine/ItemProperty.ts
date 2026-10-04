@@ -74,7 +74,7 @@ export class ItemProperty {
     this.costTableLookupDefinition = GameState.SWRuleSet.costTables[this.costTable];
     if(!this.costTableLookupDefinition && this.costTable > -1){
       console.error(`Invalid Item Property Cost Table: ${this.costTable}`);
-    }else{
+    }else if(this.costTableLookupDefinition){
       const costTable = GameState.TwoDAManager.datatables.get(this.costTableLookupDefinition.name.toLowerCase());
       this.costTableDefinition = costTable;
     }
@@ -109,6 +109,31 @@ export class ItemProperty {
 
   getCostTableRow(){
     return this.costTableDefinition?.rows[this.costValue];
+  }
+
+  getTemplateFieldValue(labels: string[] = []){
+    for(let i = 0; i < labels.length; i++){
+      if(this.template.RootNode.hasField(labels[i])){
+        return this.template.RootNode.getFieldByLabel(labels[i]).getValue();
+      }
+    }
+    return undefined;
+  }
+
+  normalizeSerializedValue(value: any){
+    const numericValue = Number(value);
+    if(Number.isFinite(numericValue) && numericValue == 255){
+      return -1;
+    }
+    return value;
+  }
+
+  getSaveValue(value: any){
+    const numericValue = Number(value);
+    if(!Number.isFinite(numericValue) || numericValue == -1){
+      return 255;
+    }
+    return numericValue;
   }
 
   //Determine if the property requires an upgrade to use, or if it is always useable
@@ -171,7 +196,7 @@ export class ItemProperty {
 
           if(costTableRow.numdice != '****'){
 
-            return Dice.roll(parseInt(costTableRow.numdice), Dice.intToDiceType(costTableRow.die) );
+            return Dice.roll(parseInt(costTableRow.numdice), Dice.intToDiceType(parseInt(costTableRow.die)) );
           }else{
             return parseInt(costTableRow.label);
           }
@@ -204,7 +229,7 @@ export class ItemProperty {
           costTableRow = this.costTableRandomCheck();
 
           if(costTableRow.numdice != '****'){
-            return Dice.roll(parseInt(costTableRow.numdice), Dice.intToDiceType(costTableRow.die) );
+            return Dice.roll(parseInt(costTableRow.numdice), Dice.intToDiceType(parseInt(costTableRow.die)) );
           }
         break;
 
@@ -215,50 +240,60 @@ export class ItemProperty {
   }
 
   initProperties(){
-    if(this.template.RootNode.hasField('PropertyName'))
-      this.propertyName = this.template.RootNode.getFieldByLabel('PropertyName').getValue();
+    const propertyName = this.getTemplateFieldValue(['PropertyName']);
+    if(typeof propertyName !== 'undefined')
+      this.propertyName = this.normalizeSerializedValue(propertyName);
     
-    if(this.template.RootNode.hasField('Subtype'))
-      this.subType = this.template.RootNode.getFieldByLabel('Subtype').getValue();
+    const subType = this.getTemplateFieldValue(['Subtype', 'SubType']);
+    if(typeof subType !== 'undefined')
+      this.subType = this.normalizeSerializedValue(subType);
 
-    if(this.template.RootNode.hasField('CostTable'))
-      this.costTable = this.template.RootNode.getFieldByLabel('CostTable').getValue();
+    const costTable = this.getTemplateFieldValue(['CostTable']);
+    if(typeof costTable !== 'undefined')
+      this.costTable = this.normalizeSerializedValue(costTable);
 
-    if(this.template.RootNode.hasField('CostValue'))
-      this.costValue = this.template.RootNode.getFieldByLabel('CostValue').getValue();
+    const costValue = this.getTemplateFieldValue(['CostValue']);
+    if(typeof costValue !== 'undefined')
+      this.costValue = this.normalizeSerializedValue(costValue);
 
-    if(this.template.RootNode.hasField('Param1'))
-      this.param1 = this.template.RootNode.getFieldByLabel('Param1').getValue();
+    const param1 = this.getTemplateFieldValue(['Param1']);
+    if(typeof param1 !== 'undefined')
+      this.param1 = this.normalizeSerializedValue(param1);
 
-    if(this.template.RootNode.hasField('Param1Value'))
-      this.param1Value = this.template.RootNode.getFieldByLabel('Param1Value').getValue();
+    const param1Value = this.getTemplateFieldValue(['Param1Value']);
+    if(typeof param1Value !== 'undefined')
+      this.param1Value = this.normalizeSerializedValue(param1Value);
 
-    if(this.template.RootNode.hasField('ChanceAppear'))
-      this.chanceAppear = this.template.RootNode.getFieldByLabel('ChanceAppear').getValue();
+    const chanceAppear = this.getTemplateFieldValue(['ChanceAppear']);
+    if(typeof chanceAppear !== 'undefined')
+      this.chanceAppear = this.normalizeSerializedValue(chanceAppear);
 
-    if(this.template.RootNode.hasField('UsesPerDay'))
-      this.usesPerDay = this.template.RootNode.getFieldByLabel('UsesPerDay').getValue();
+    const usesPerDay = this.getTemplateFieldValue(['UsesPerDay']);
+    if(typeof usesPerDay !== 'undefined')
+      this.usesPerDay = this.normalizeSerializedValue(usesPerDay);
 
-    if(this.template.RootNode.hasField('Useable'))
-      this.useable = this.template.RootNode.getFieldByLabel('Useable').getValue();
+    const useable = this.getTemplateFieldValue(['Useable', 'Usable']);
+    if(typeof useable !== 'undefined')
+      this.useable = this.normalizeSerializedValue(useable);
 
-    if(this.template.RootNode.hasField('UpgradeType'))
-      this.upgradeType = this.template.RootNode.getFieldByLabel('UpgradeType').getValue();
+    const upgradeType = this.getTemplateFieldValue(['UpgradeType']);
+    if(typeof upgradeType !== 'undefined')
+      this.upgradeType = this.normalizeSerializedValue(upgradeType);
   }
 
   save(){
     let propStruct = new GFFStruct(0);
 
-    propStruct.addField( new GFFField(GFFDataType.WORD, 'PropertyName') )?.setValue( this.propertyName == -1 ? 255 : this.propertyName);
-    propStruct.addField( new GFFField(GFFDataType.WORD, 'SubType') )?.setValue( this.subType == -1 ? 255 : this.subType);
-    propStruct.addField( new GFFField(GFFDataType.BYTE, 'CostTable') )?.setValue( this.costTable == -1 ? 255 : this.costTable);
-    propStruct.addField( new GFFField(GFFDataType.WORD, 'CostValue') )?.setValue( this.costValue == -1 ? 255 : this.costValue);
-    propStruct.addField( new GFFField(GFFDataType.BYTE, 'Param1') )?.setValue( this.param1 == -1 ? 255 : this.param1);
-    propStruct.addField( new GFFField(GFFDataType.BYTE, 'Param1Value') )?.setValue( this.param1Value == -1 ? 255 : this.param1Value);
-    propStruct.addField( new GFFField(GFFDataType.BYTE, 'ChanceAppear') )?.setValue( this.chanceAppear == -1 ? 255 : this.chanceAppear);
-    propStruct.addField( new GFFField(GFFDataType.BYTE, 'UsesPerDay') )?.setValue( this.usesPerDay == -1 ? 255 : this.usesPerDay);
-    propStruct.addField( new GFFField(GFFDataType.BYTE, 'Usable') )?.setValue( this.useable == -1 ? 255 : this.useable);
-    propStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeType') )?.setValue( this.upgradeType == -1 ? 255 : this.upgradeType);
+    propStruct.addField( new GFFField(GFFDataType.WORD, 'PropertyName') )?.setValue( this.getSaveValue(this.propertyName));
+    propStruct.addField( new GFFField(GFFDataType.WORD, 'Subtype') )?.setValue( this.getSaveValue(this.subType));
+    propStruct.addField( new GFFField(GFFDataType.BYTE, 'CostTable') )?.setValue( this.getSaveValue(this.costTable));
+    propStruct.addField( new GFFField(GFFDataType.WORD, 'CostValue') )?.setValue( this.getSaveValue(this.costValue));
+    propStruct.addField( new GFFField(GFFDataType.BYTE, 'Param1') )?.setValue( this.getSaveValue(this.param1));
+    propStruct.addField( new GFFField(GFFDataType.BYTE, 'Param1Value') )?.setValue( this.getSaveValue(this.param1Value));
+    propStruct.addField( new GFFField(GFFDataType.BYTE, 'ChanceAppear') )?.setValue( this.getSaveValue(this.chanceAppear));
+    propStruct.addField( new GFFField(GFFDataType.BYTE, 'UsesPerDay') )?.setValue( this.getSaveValue(this.usesPerDay));
+    propStruct.addField( new GFFField(GFFDataType.BYTE, 'Useable') )?.setValue( this.getSaveValue(this.useable));
+    propStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeType') )?.setValue( this.getSaveValue(this.upgradeType));
 
     return propStruct;
   }

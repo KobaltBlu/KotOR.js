@@ -558,13 +558,14 @@ export class InGameOverlay extends GameMenu {
   }
 
   _canShowTargetUI() {
-    if (BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleCreature) && GameState.CursorManager.selectedObject.isDead())
+    const targetObject = GameState.CursorManager.getInteractionTargetObject();
+    if (BitWise.InstanceOfObject(targetObject, ModuleObjectType.ModuleCreature) && targetObject.isDead())
       return false;
     return (
       !this.manager.MenuContainer.bVisible && 
       GameState.CursorManager.reticle2.visible && 
-      BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleObject) &&
-      !BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleRoom)
+      BitWise.InstanceOfObject(targetObject, ModuleObjectType.ModuleObject) &&
+      !BitWise.InstanceOfObject(targetObject, ModuleObjectType.ModuleRoom)
     );
   }
 
@@ -682,38 +683,47 @@ export class InGameOverlay extends GameMenu {
       return;
     }
 
-    if (BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleCreature)) {
-      if (GameState.CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer()) && this.PB_HEALTH.getFillTextureName() == 'friend_bar') {
+    const targetObject = GameState.CursorManager.getInteractionTargetObject();
+
+    if (BitWise.InstanceOfObject(targetObject, ModuleObjectType.ModuleCreature)) {
+      if (targetObject.isHostile(GameState.getCurrentPlayer()) && this.PB_HEALTH.getFillTextureName() == 'friend_bar') {
         this.PB_HEALTH.setFillTextureName('enemy_bar');
         this.PB_HEALTH.setFillTexture(preloadTexturesMap.get('enemy_bar'));
-        this.namePlateArrowMaterial.map = preloadTexturesMap.get('hostilearrow');
-      } else if (!GameState.CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer()) && this.PB_HEALTH.getFillTextureName() == 'enemy_bar') {
+        if(this.namePlateArrowMaterial){
+          this.namePlateArrowMaterial.map = preloadTexturesMap.get('hostilearrow');
+        }
+      } else if (!targetObject.isHostile(GameState.getCurrentPlayer()) && this.PB_HEALTH.getFillTextureName() == 'enemy_bar') {
         this.PB_HEALTH.setFillTextureName('friend_bar');
         this.PB_HEALTH.setFillTexture(preloadTexturesMap.get('friend_bar'));
-        this.namePlateArrowMaterial.map = preloadTexturesMap.get('friendlyarrow');
+        if(this.namePlateArrowMaterial){
+          this.namePlateArrowMaterial.map = preloadTexturesMap.get('friendlyarrow');
+        }
       }
     } else {
       if (this.PB_HEALTH.getFillTextureName() != 'friend_bar') {
         this.PB_HEALTH.setFillTextureName('friend_bar');
         this.PB_HEALTH.setFillTexture(preloadTexturesMap.get('friend_bar'));
-        this.namePlateArrowMaterial.map = preloadTexturesMap.get('friendlyarrow');
+        if(this.namePlateArrowMaterial){
+          this.namePlateArrowMaterial.map = preloadTexturesMap.get('friendlyarrow');
+        }
       }
     }
-    if (this.manager.InGameOverlay.LBL_NAME.text.text != GameState.CursorManager.selectedObject.getName()) {
-      this.LBL_NAME.setText(GameState.CursorManager.selectedObject.getName(), 25);
+    if (this.manager.InGameOverlay.LBL_NAME.text.text != targetObject.getName()) {
+      this.LBL_NAME.setText(targetObject.getName(), 25);
     }
-    let health = 100 * Math.min(Math.max(GameState.CursorManager.selectedObject.getHP() / GameState.CursorManager.selectedObject.getMaxHP(), 0), 1);
+    let health = 100 * Math.min(Math.max(targetObject.getHP() / targetObject.getMaxHP(), 0), 1);
     if (health > 100)
       health = 100;
     this.PB_HEALTH.setProgress(health);
     const maxBoundsX = GameState.ResolutionManager.getViewportWidth() / 2 + 640 / 2 - 125;
     const maxBoundsX2 = GameState.ResolutionManager.getViewportWidth() / 2 - 640 / 2 - 125;
     this.targetScreenPosition.set(640 / 2, 480 / 2, 0);
-    if (BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleCreature)) {
-      this.reticlePosition.copy(GameState.CursorManager.selectedObject.position);
-      this.reticlePosition.z += 2;
+    const reticleNode = targetObject.getReticleNode();
+    if (reticleNode instanceof THREE.Object3D) {
+      reticleNode.getWorldPosition(this.reticlePosition);
     } else {
-      this.reticlePosition.setFromMatrixPosition(GameState.CursorManager.reticle2.matrixWorld);
+      this.reticlePosition.copy(targetObject.position);
+      this.reticlePosition.z += 1;
     }
     this.reticleScreenPosition.copy(this.reticlePosition);
     this.reticleScreenPosition.project(GameState.currentCamera);
@@ -723,7 +733,7 @@ export class InGameOverlay extends GameMenu {
     this.reticleScreenPosition.x = this.reticleScreenPosition.x * widthHalf;
     this.reticleScreenPosition.y = -(this.reticleScreenPosition.y * heightHalf);
     this.reticleScreenPosition.z = 0;
-    this.updateArrow(GameState.CursorManager.selectedObject);
+    this.updateArrow(targetObject);
     
     this.targetScreenPosition.add(this.reticleScreenPosition);
     if (this.targetScreenPosition.x > maxBoundsX) {
@@ -936,8 +946,9 @@ export class InGameOverlay extends GameMenu {
     if (GameState.module.area.miniGame) { return; }
 
     const oPC = GameState.getCurrentPlayer();
+    const interactionTarget = GameState.CursorManager.getInteractionTargetObject();
     GameState.ActionMenuManager.SetPC(oPC);
-    GameState.ActionMenuManager.SetTarget(GameState.CursorManager.selectedObject);
+    GameState.ActionMenuManager.SetTarget(interactionTarget);
     GameState.ActionMenuManager.UpdateMenuActions();
     this.UpdateTargetUIPanels();
     this.UpdateSelfUIPanels();

@@ -311,12 +311,24 @@ export class ModuleEncounter extends ModuleObject {
       }
 
       if(this.template.RootNode.hasField('SWVarTable')){
-        let localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
-        //console.log(localBools);
-        for(let i = 0; i < localBools.length; i++){
-          let data = localBools[i].getFieldByLabel('Variable').getValue();
-          for(let bit = 0; bit < 32; bit++){
-            this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+        const swVarTableStruct = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0];
+        if(swVarTableStruct){
+          if(swVarTableStruct.hasField('BitArray')){
+            const localBools = swVarTableStruct.getFieldByLabel('BitArray').getChildStructs();
+            for(let i = 0; i < localBools.length; i++){
+              const data = localBools[i].getFieldByLabel('Variable').getValue();
+              for(let bit = 0; bit < 32; bit++){
+                this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+              }
+            }
+          }
+
+          if(swVarTableStruct.hasField('ByteArray')){
+            const localNumbers = swVarTableStruct.getFieldByLabel('ByteArray').getChildStructs();
+            for(let i = 0; i < localNumbers.length; i++){
+              const data = localNumbers[i].getFieldByLabel('Variable').getValue();
+              this.setLocalNumber(i, data);
+            }
           }
         }
       }
@@ -375,7 +387,7 @@ export class ModuleEncounter extends ModuleObject {
       this.faction = GameState.FactionManager.factions.get(this.factionId);
 
       if(this.template.RootNode.hasField('LocalizedName'))
-        this.localizedName = this.template.getFieldByLabel('LocalizedName').getValue();
+        this.localizedName = this.template.getFieldByLabel('LocalizedName').getCExoLocString();
 
       if(this.template.RootNode.hasField('MaxCreatures'))
         this.maxCreatures = this.template.getFieldByLabel('MaxCreatures').getValue();
@@ -458,12 +470,29 @@ export class ModuleEncounter extends ModuleObject {
       if(this.template.RootNode.hasField('SpawnPoolActive'))
         this.spawnPoolActive = this.template.getFieldByLabel('SpawnPoolActive').getValue();
 
+      try {
+        if(this.template.RootNode.hasField('ActionList') && !this.actionQueue.length){
+          const actionStructs = this.template.RootNode.getFieldByLabel('ActionList').getChildStructs();
+          for(let i = 0, len = actionStructs.length; i < len; i++){
+            const action = GameState.ActionFactory.FromStruct(actionStructs[i]);
+            if(action){
+              this.actionQueue.add(action);
+            }
+          }
+        }
+      } catch (e: any) {
+        console.error(e);
+      }
+
       this.initialized = true;
     }
 
   }
 
   destroy(): void {
+    if(this.destroyed || this.destroying){
+      return;
+    }
     super.destroy();
   }
 
@@ -485,7 +514,9 @@ export class ModuleEncounter extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'DifficultyIndex') ).setValue( this.difficultyIndex );
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'Difficulty') ).setValue( this.difficulty );
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LocalizedName') ).setValue(this.localizedName);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PaletteID') ).setValue(this.paletteId);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'TemplateResRef') ).setValue(this.templateResRef || '');
 
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'NumberSpawned') ).setValue(this.numberSpawned);
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'HeartbeatDay') ).setValue(this.heartbeatDay);

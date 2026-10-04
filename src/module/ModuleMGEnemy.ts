@@ -25,6 +25,8 @@ import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 * @memberof KotOR
 */
 export class ModuleMGEnemy extends ModuleObject {
+  readonly supportsRuntimeStatePersistence: boolean = false;
+
   gunBanks: ModuleMGGunBank[] = [];
   models: OdysseyModel3D[] = [];
   track: THREE.Object3D;
@@ -147,7 +149,9 @@ export class ModuleMGEnemy extends ModuleObject {
       }
     }
 
-    this.box.setFromObject(this.models[0]);
+    if(this.models[0]){
+      this.box.setFromObject(this.models[0]);
+    }
 
     if(this.track instanceof OdysseyModel3D){
       if(!this.track.animationManager.currentAnimation && this.alive){
@@ -249,6 +253,7 @@ export class ModuleMGEnemy extends ModuleObject {
 
   async load(){
     this.initProperties();
+    this.loadScripts();
     GameState.scene.add(this.sphere_geom);
     return this.template;
   }
@@ -379,6 +384,23 @@ export class ModuleMGEnemy extends ModuleObject {
   }
 
   initProperties(){
+    this.accel_secs = 0;
+    this.bump_damage = 0;
+    this.cameraName = '';
+    this.cameraRotate = 0;
+    this.hit_points = 0;
+    this.invince_period = 0;
+    this.max_hps = 0;
+    this.maximum_speed = 0;
+    this.minimum_speed = 0;
+    this.num_loops = 0;
+    this.sphere_radius = 0;
+    this.trackName = '';
+    this.modelProps = [];
+    this.gunBanks = [];
+    this.collided = false;
+    this.died = false;
+
     if(this.template.RootNode.hasField('Accel_Secs'))
       this.accel_secs = this.template.getFieldByLabel('Accel_Secs').getValue();
 
@@ -413,7 +435,7 @@ export class ModuleMGEnemy extends ModuleObject {
       this.sphere_radius = this.template.getFieldByLabel('Sphere_Radius').getValue();
 
     if(this.template.RootNode.hasField('Track'))
-      this.trackName = this.template.getFieldByLabel('Track').getValue();
+      this.trackName = this.template.getFieldByLabel('Track').getValue().replace(/\0[\s\S]*$/g,'').toLowerCase();
 
 
     if(this.template.RootNode.hasField('Models')){

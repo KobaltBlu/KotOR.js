@@ -222,17 +222,19 @@ export class NWScriptStack {
   saveForEventSituation(){
     let struct = new GFFStruct();
 
-    struct.addField( new GFFField(GFFDataType.INT, 'BasePointer') ).setValue(this.basePointer);
+    struct.addField( new GFFField(GFFDataType.INT, 'BasePointer') ).setValue(this.basePointer / 4);
 
     let stack = struct.addField( new GFFField(GFFDataType.LIST, 'Stack') ).setValue(this.pointer);
     for(let i = 0; i < this.stack.length; i++){
       let element = this.stack[i];
       let elementStruct = new GFFStruct(i);
 
-      elementStruct.addField( new GFFField(GFFDataType.CHAR, 'Type') ).setValue( element.type );
+      // Type is a numeric VM discriminator. CHAR is handled as text by GFFField
+      // and would serialize INTEGER (3) as the ASCII character '3' (51).
+      elementStruct.addField( new GFFField(GFFDataType.BYTE, 'Type') ).setValue( element.type );
       switch(element.type){
         case NWScriptDataType.OBJECT:
-          elementStruct.addField( new GFFField(GFFDataType.DWORD, 'Value') ).setValue( typeof element.value === 'object' ? element.value.id : 2130706432 );
+          elementStruct.addField( new GFFField(GFFDataType.DWORD, 'Value') ).setValue( element.value && typeof element.value === 'object' ? element.value.id : 2130706432 );
         break;
         case NWScriptDataType.INTEGER:
           elementStruct.addField( new GFFField(GFFDataType.INT, 'Value') ).setValue( element.value );
@@ -250,8 +252,8 @@ export class NWScriptStack {
       stack.addChildStruct(elementStruct);
     }
 
-    struct.addField( new GFFField(GFFDataType.INT, 'StackPointer') ).setValue(this.pointer);
-    struct.addField( new GFFField(GFFDataType.INT, 'StackPointer') ).setValue(this.stackSize);
+    struct.addField( new GFFField(GFFDataType.INT, 'StackPointer') ).setValue(this.pointer / 4);
+    struct.addField( new GFFField(GFFDataType.INT, 'TotalSize') ).setValue(this.stack.length);
   
     return struct;
   }
@@ -385,7 +387,9 @@ export class NWScriptStack {
         for(let i = 0, len = stackStructs.length; i < len; i++){
   
           let stackElement = stackStructs[i];
-          let type = stackElement.getFieldByLabel('Type').getValue();
+          // Older/imported GFF structures may expose CHAR fields as decimal
+          // strings; the VM switch always needs the numeric discriminator.
+          let type = Number(stackElement.getFieldByLabel('Type').getValue());
           let value = stackElement.getFieldByLabel('Value').getValue();
           switch(type){
             case NWScriptDataType.OBJECT: //Object

@@ -31,7 +31,7 @@ import { BitWise } from "@/utility/BitWise";
 import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
 import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
 import { GameEffectFactory } from "@/effects/GameEffectFactory";
-import { CombatActionType, ModulePlaceableObjectSound, SkillType } from "@/enums";.3
+import { CombatActionType, ModulePlaceableObjectSound, SkillType } from "@/enums";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 
 interface AnimStateInfo {
@@ -303,7 +303,7 @@ export class ModuleDoor extends ModuleObject {
   }
 
   updateCollisionState(): void {
-    // if(!this.collisionManager?.walkmesh?.mesh){ return; }
+    if(!this.area || !this.collisionManager.walkmesh || !this.collisionManager.walkmesh.mesh){ return; }
 
     let idx = -1;
     switch(this.openState){
@@ -386,9 +386,11 @@ export class ModuleDoor extends ModuleObject {
 
     // If the door is locked and a key is required, try to unlock it
     if(this.isLocked() && this.keyRequired){
+      let unlockedWithKey = false;
       if(this.keyName.length){
         const keyItem = GameState.InventoryManager.getItemByTag(this.keyName);
         if(keyItem && BitWise.InstanceOf(keyItem?.objectType, ModuleObjectType.ModuleItem)){
+          unlockedWithKey = true;
           this.unlock(object);
           if(this.autoRemoveKey){
             object.removeItem(keyItem);
@@ -397,7 +399,9 @@ export class ModuleDoor extends ModuleObject {
         }
       }
 
-      object.playSoundSet(SSFType.UNLOCK_FAIL);
+      if(!unlockedWithKey){
+        object.playSoundSet(SSFType.UNLOCK_FAIL);
+      }
     }
 
     // If the door is still locked, run the on fail to open script
@@ -1013,6 +1017,11 @@ export class ModuleDoor extends ModuleObject {
       return this.collisionManager.walkmesh;
     }catch(e){
       console.error(e);
+      const walkmesh = new OdysseyWalkMesh();
+      walkmesh.name = resRef;
+      walkmesh.moduleObject = this;
+      this.collisionManager.setWalkmesh(walkmesh);
+      return this.collisionManager.walkmesh;
     }
   }
 
@@ -1046,6 +1055,9 @@ export class ModuleDoor extends ModuleObject {
 
     if(this.template.RootNode.hasField('CurrentHP'))
       this.currentHP = this.template.getFieldByLabel('CurrentHP').getValue();
+
+    if(this.template.RootNode.hasField('Description'))
+      this.description = this.template.getFieldByLabel('Description').getCExoLocString();
 
     if(this.template.RootNode.hasField('DisarmDC'))
       this.disarmDC = this.template.getFieldByLabel('DisarmDC').getValue();
@@ -1105,7 +1117,10 @@ export class ModuleDoor extends ModuleObject {
     if(this.template.RootNode.hasField('Plot'))
       this.plot = this.template.getFieldByLabel('Plot').getValue();
 
-    if(this.template.RootNode.hasField('PortraidId')){
+    if(this.template.RootNode.hasField('PortraitId')){
+      this.portraitId = this.template.getFieldByLabel('PortraitId').getValue();
+      this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
+    }else if(this.template.RootNode.hasField('PortraidId')){
       this.portraitId = this.template.getFieldByLabel('PortraidId').getValue();
       this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
     }
@@ -1160,14 +1175,40 @@ export class ModuleDoor extends ModuleObject {
       this.bearing = this.rotation.z = this.template.RootNode.getFieldByLabel('Bearing').getValue();
 
     if(this.template.RootNode.hasField('SWVarTable')){
-      let localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
-      //console.log(localBools);
-      for(let i = 0; i < localBools.length; i++){
-        let data = localBools[i].getFieldByLabel('Variable').getValue();
-        for(let bit = 0; bit < 32; bit++){
-          this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+      const swVarTableStruct = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0];
+      if(swVarTableStruct){
+        if(swVarTableStruct.hasField('BitArray')){
+          const localBools = swVarTableStruct.getFieldByLabel('BitArray').getChildStructs();
+          for(let i = 0; i < localBools.length; i++){
+            const data = localBools[i].getFieldByLabel('Variable').getValue();
+            for(let bit = 0; bit < 32; bit++){
+              this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+            }
+          }
+        }
+
+        if(swVarTableStruct.hasField('ByteArray')){
+          const localNumbers = swVarTableStruct.getFieldByLabel('ByteArray').getChildStructs();
+          for(let i = 0; i < localNumbers.length; i++){
+            const data = localNumbers[i].getFieldByLabel('Variable').getValue();
+            this.setLocalNumber(i, data);
+          }
         }
       }
+    }
+
+    try{
+      if(this.template.RootNode.hasField('ActionList') && !this.actionQueue.length){
+        const actionStructs = this.template.RootNode.getFieldByLabel('ActionList').getChildStructs();
+        for(let i = 0, len = actionStructs.length; i < len; i++){
+          const action = GameState.ActionFactory.FromStruct(actionStructs[i]);
+          if(action){
+            this.actionQueue.add(action);
+          }
+        }
+      }
+    }catch(e: any){
+      console.error(e);
     }
 
     if(this.template.RootNode.hasField('EffectList')){
@@ -1211,6 +1252,9 @@ export class ModuleDoor extends ModuleObject {
   }
 
   destroy(): void {
+    if(this.destroyed || this.destroying){
+      return;
+    }
     super.destroy();
     GameState.MenuManager.InGameAreaTransition.unsetTransitionObject(this);
     try{
@@ -1232,7 +1276,7 @@ export class ModuleDoor extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue(1);
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Conversation') ).setValue(this.conversation ? this.conversation.resref : '');
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'CurrentHP') ).setValue(this.currentHP);
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') ).setValue('');
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') ).setValue(this.description);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DisarmDC') ).setValue(this.disarmDC);
 
     //Effects
@@ -1246,6 +1290,7 @@ export class ModuleDoor extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'GenericType') ).setValue(this.genericType);
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'HP') ).setValue(this.hp);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Hardness') ).setValue(this.hardness);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Interruptable') ).setValue(this.interruptable);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'KeyName') ).setValue(this.keyName);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'KeyRequired') ).setValue(this.keyRequired);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'LinkedTo') ).setValue(this.linkedTo);
@@ -1276,6 +1321,7 @@ export class ModuleDoor extends ModuleObject {
     
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'OpenLockDC') ).setValue(this.openLockDC);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'OpenState') ).setValue(this.openState);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PaletteID') ).setValue(this.paletteID);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Plot') ).setValue(this.plot);
     gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') ).setValue(this.portraitId);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Ref') ).setValue(this.ref);
@@ -1287,11 +1333,14 @@ export class ModuleDoor extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'SecretDoorDC') ).setValue(0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Static') ).setValue(this.static);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'TemplateResRef') ).setValue(this.templateResRef || '');
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'TransitionDestin') ).setValue(this.transitionDestin);
+    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'TweakColor') ).setValue(this.tweakColor);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDetectDC') ).setValue(this.trapDetectDC);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDetectable') ).setValue(this.trapDetectable);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDisarmable') ).setValue(this.trapDisarmable);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapFlag') ).setValue(this.trapFlag);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'UseTweakColor') ).setValue(this.useTweakColor ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapOneShot') ).setValue(this.trapOneShot);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapType') ).setValue(this.trapType);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Useable') ).setValue(this.useable);
@@ -1300,6 +1349,7 @@ export class ModuleDoor extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'X') ).setValue(this.position.x);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Y') ).setValue(this.position.y);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Z') ).setValue(this.position.z);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'NotBlastable') ).setValue(this.notBlastable ? 1 : 0);
 
     this.template = gff;
     return gff;

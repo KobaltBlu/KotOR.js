@@ -52,11 +52,14 @@ export class ActionTakeItem extends Action {
     }
 
     const removed = oTarget.removeItem(oItem, 1);
+    if(!removed){
+      return ActionStatus.FAILED;
+    }
 
     if(GameState.PartyManager.party.indexOf(this.owner as any) >= 0){
-      GameState.InventoryManager.addItem( oItem );
-    }{
-      this.owner.addItem( oItem );
+      GameState.InventoryManager.addItem(removed);
+    }else{
+      this.owner.addItem(removed);
     }
 
     return ActionStatus.COMPLETE;

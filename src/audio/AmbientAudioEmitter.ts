@@ -17,6 +17,7 @@ export class AmbientAudioEmitter extends EventListener {
 
   data: ArrayBuffer;
   name: string;
+  playingName: string;
 
   node: AudioBufferSourceNode;
   gainNode: GainNode;
@@ -36,7 +37,8 @@ export class AmbientAudioEmitter extends EventListener {
   }
 
   setVolume(volume: number){
-    this.volume = volume;
+    volume = Number(volume);
+    this.volume = Number.isFinite(volume) ? Math.max(0, Math.min(1, volume)) : 0;
     if(this.gainNode){
       this.gainNode.gain.value = this.volume;
     }
@@ -79,7 +81,9 @@ export class AmbientAudioEmitter extends EventListener {
     }
 
     if(this.node || this.playing){
-      this.node.onended = undefined;
+      if(this.node){
+        this.node.onended = undefined;
+      }
       this.stop();
     }
 
@@ -91,20 +95,45 @@ export class AmbientAudioEmitter extends EventListener {
 
     this.onendedFired = false;
     this.loaded = false;
-    this.node = this.engine.audioCtx.createBufferSource();
-    this.node.buffer = await this.engine.audioCtx.decodeAudioData(this.data.slice(0));
-    this.node.loop = loop;
-    this.node.start(0, 0);
-    this.node.connect(this.gainNode);
+    const node = this.engine.audioCtx.createBufferSource();
+    this.node = node;
+
+    let buffer: AudioBuffer;
+    try{
+      buffer = await this.engine.audioCtx.decodeAudioData(this.data.slice(0));
+    }catch(error){
+      if(this.node === node){ this.stop(); }
+      throw error;
+    }
+
+    // The emitter may have been stopped or superseded while decodeAudioData was in flight.
+    if(this.node !== node){
+      return this;
+    }
+
+    if(!this.gainNode){
+      this.gainNode = this.engine.audioCtx.createGain();
+    }
+
+    node.buffer = buffer;
+    node.loop = loop;
+    node.start(0, 0);
+    node.connect(this.gainNode);
     this.gainNode.connect(this.destination);
     this.gainNode.gain.value = this.volume;
     this.playing = true;
+    this.playingName = this.name;
     this.loaded = true;
-    this.node.onended = () => {
+    node.onended = () => {
+      if(this.node !== node){ return; }
+      node.disconnect();
       this.onendedFired = true;
       this.playing = false;
       this.loaded = false;
-      this.node = null;
+      this.playingName = null;
+      if(this.node === node){
+        this.node = null;
+      }
       this.processEventListener('ended');
     };
     this.processEventListener('play');
@@ -117,10 +146,15 @@ export class AmbientAudioEmitter extends EventListener {
   stop(){
     const wasPlaying = this.playing;
     this.playing = false;
-    if(this.node){
-      this.node.disconnect();
-      try{ this.node.stop(0); }catch(e){}
-      this.node = null;
+    this.loaded = false;
+    this.playingName = null;
+    this.onendedFired = true;
+    const node = this.node;
+    this.node = null;
+    if(node){
+      node.onended = undefined;
+      node.disconnect();
+      try{ node.stop(0); }catch(e){}
     }
     if(this.gainNode){
       this.gainNode.disconnect();
@@ -128,10 +162,6 @@ export class AmbientAudioEmitter extends EventListener {
     }
     if(wasPlaying){
       this.processEventListener('stop');
-    }
-    if(!this.onendedFired){
-      this.onendedFired = true;
-      this.processEventListener('ended');
     }
     return this;
   }
@@ -177,6 +207,7 @@ export class AmbientAudioEmitter extends EventListener {
    */
   dispose(){
     this.playing = false;
+    this.playingName = null;
     this.loaded = false;
     this.data = null;
     if(this.node){

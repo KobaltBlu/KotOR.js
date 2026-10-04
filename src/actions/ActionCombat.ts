@@ -90,7 +90,7 @@ export class ActionCombat extends Action {
         spellAction.setParameter(9, ActionParameterType.INT, combatAction.projectilePath); //ProjectilePath
         spellAction.setParameter(10, ActionParameterType.INT, -1);
         spellAction.setParameter(11, ActionParameterType.INT, combatAction.overrideSpell ? combatAction.overrideSpell.id : -1);
-        attackAction.isUserAction = combatAction.isUserAction;
+        spellAction.isUserAction = combatAction.isUserAction;
         this.owner.actionQueue.unshift(spellAction);
       break;
       case CombatActionType.ITEM_CAST_SPELL:
@@ -101,7 +101,7 @@ export class ActionCombat extends Action {
         equipAction.setParameter(0, ActionParameterType.DWORD, combatAction.item?.id || ModuleObjectConstant.OBJECT_INVALID);
         equipAction.setParameter(1, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
         equipAction.setParameter(2, ActionParameterType.INT, combatAction.equipInstant ? 1 : 0);
-        attackAction.isUserAction = combatAction.isUserAction;
+        equipAction.isUserAction = combatAction.isUserAction;
         this.owner.actionQueue.unshift(equipAction);
       break;
       case CombatActionType.ITEM_UNEQUIP:
@@ -109,7 +109,7 @@ export class ActionCombat extends Action {
         unequipAction.setParameter(0, ActionParameterType.DWORD, combatAction.item?.id || ModuleObjectConstant.OBJECT_INVALID);
         unequipAction.setParameter(1, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
         unequipAction.setParameter(2, ActionParameterType.INT, combatAction.equipInstant ? 1 : 0);
-        attackAction.isUserAction = combatAction.isUserAction;
+        unequipAction.isUserAction = combatAction.isUserAction;
         this.owner.actionQueue.unshift(unequipAction);
       break;
     }

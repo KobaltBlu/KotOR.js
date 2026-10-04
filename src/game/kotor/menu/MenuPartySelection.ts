@@ -91,68 +91,19 @@ export class MenuPartySelection extends GameMenu {
     await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      this.BTN_NPC0.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(GameState.PartyManager.IsAvailable(0)){
-          this.selectNPC(0)
+      for (let i = 0; i < GameState.PartyManager.MaxPartyCount; i++) {
+        const button = this.getControlByName(`BTN_NPC${i}`) as GUICheckBox;
+        if (!button) {
+          continue;
         }
-      });
 
-      this.BTN_NPC1.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(GameState.PartyManager.IsAvailable(1)){
-          this.selectNPC(1);
-        }
-      });
-
-      this.BTN_NPC2.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(GameState.PartyManager.IsAvailable(2)){
-          this.selectNPC(2);
-        }
-      });
-
-      this.BTN_NPC3.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(GameState.PartyManager.IsAvailable(3)){
-          this.selectNPC(3);
-        }
-      });
-
-      this.BTN_NPC4.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(GameState.PartyManager.IsAvailable(4)){
-          this.selectNPC(4);
-        }
-      });
-
-      this.BTN_NPC5.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(GameState.PartyManager.IsAvailable(5)){
-          this.selectNPC(5);
-        }
-      });
-
-      this.BTN_NPC6.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(GameState.PartyManager.IsAvailable(6)){
-          this.selectNPC(6);
-        }
-      });
-
-      this.BTN_NPC7.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(GameState.PartyManager.IsAvailable(7)){
-          this.selectNPC(7);
-        }
-      });
-
-      this.BTN_NPC8.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(GameState.PartyManager.IsAvailable(8)){
-          this.selectNPC(8);
-        }
-      });
+        button.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if(GameState.PartyManager.IsAvailable(i)){
+            this.selectNPC(i);
+          }
+        });
+      }
 
       this.BTN_DONE.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -178,8 +129,14 @@ export class MenuPartySelection extends GameMenu {
       this.BTN_ACCEPT.addEventListener('click', (e) => {
         e.stopPropagation();
 
-        if(this.canRemove(this.selectedNPC)){
+        if(this.selectedNPC < 0 || !this.isAvailable(this.selectedNPC)){
+          this.updateSelection();
+          return false;
+        }
+
+        if(GameState.PartyManager.IsNPCInParty(this.selectedNPC) && !this.canRemove(this.selectedNPC)){
           console.warn(`MenuPartySelection:RemoveNPC`, `Cannot remove a required party member ${this.selectedNPC}`);
+          this.updateSelection();
           return false;
         }
 
@@ -188,10 +145,12 @@ export class MenuPartySelection extends GameMenu {
           if(GameState.PartyManager.IsNPCInParty(this.selectedNPC)){
             GameState.PartyManager.RemoveNPCById(this.selectedNPC);
             this.updateSelection();
-          }else if(this.isSelectable(this.selectedNPC) && GameState.PartyManager.CurrentMembers.length < GameState.PartyManager.MaxNPCCount){
-            this.addToParty(this.selectedNPC);
+            this.updateCount();
+          }else if(this.canAdd(this.selectedNPC)){
+            void this.addToParty(this.selectedNPC);
+          }else{
+            this.updateSelection();
           }
-          this.updateCount();
         }
 
       });
@@ -205,6 +164,7 @@ export class MenuPartySelection extends GameMenu {
   hide() {
     super.hide();
     this.ignoreUnescapable = false;
+    this.userCanClose = true;
   }
 
   /**
@@ -232,20 +192,20 @@ export class MenuPartySelection extends GameMenu {
 
     const selectionRequired = this.forceNPC1 > -1 || this.forceNPC2 > -1;
 
-    this.selectedNPC = this.forceNPC1 > -1 ? this.forceNPC1 : this.forceNPC2 > -1 ? this.forceNPC2 : -1;
-    this.updateSelection();
+    this.selectedNPC = this.getDefaultSelectedNPC();
     this.updateCount();
 
     await this.initPortraits();
     this.updateSelection();
-    if(selectionRequired){
-      this.BTN_BACK.hide();
-    }else{
+
+    this.userCanClose = !selectionRequired;
+    if(this.userCanClose){
       this.BTN_BACK.show();
+    }else{
+      this.BTN_BACK.hide();
     }
     TextureLoader.LoadQueue();
-    this.onCloseScript = (this.scriptName != '' || this.scriptName != null) ? 
-      NWScript.Load(this.scriptName) : undefined;
+    this.onCloseScript = this.scriptName ? NWScript.Load(this.scriptName) : undefined;
   }
 
   /**
@@ -253,8 +213,9 @@ export class MenuPartySelection extends GameMenu {
    * @param npcId - The ID of the NPC.
    */
   selectNPC(npcId: number = -1){
-    if(npcId < 0 || npcId >= GameState.PartyManager.MaxNPCCount) return;
-    // if(PartyManager.CurrentMembers.length >= 2) return;
+    if(npcId < 0 || npcId >= GameState.PartyManager.MaxPartyCount) return;
+    if(!GameState.PartyManager.IsAvailable(npcId)) return;
+
     this.selectedNPC = npcId;
     this.updateSelection();
   }
@@ -265,7 +226,7 @@ export class MenuPartySelection extends GameMenu {
    * @returns boolean
    */
   isNPCRequired(npcId: number = -1){
-    if(npcId < 0 || npcId >= GameState.PartyManager.MaxNPCCount) return false;
+    if(npcId < 0 || npcId >= GameState.PartyManager.MaxPartyCount) return false;
     return (this.forceNPC1 == npcId || this.forceNPC2 == npcId);
   }
 
@@ -279,10 +240,74 @@ export class MenuPartySelection extends GameMenu {
     this.updateSelection();
   }
 
+  getDefaultSelectedNPC() {
+    if (this.selectedNPC > -1 && this.isAvailable(this.selectedNPC)) {
+      return this.selectedNPC;
+    }
+
+    if (this.forceNPC1 > -1 && this.isAvailable(this.forceNPC1)) {
+      return this.forceNPC1;
+    }
+
+    if (this.forceNPC2 > -1 && this.isAvailable(this.forceNPC2)) {
+      return this.forceNPC2;
+    }
+
+    for (let i = 0; i < GameState.PartyManager.CurrentMembers.length; i++) {
+      const memberID = GameState.PartyManager.CurrentMembers[i]?.memberID ?? -1;
+      if (this.isAvailable(memberID)) {
+        return memberID;
+      }
+    }
+
+    for (let i = 0; i < GameState.PartyManager.MaxPartyCount; i++) {
+      if (this.isAvailable(i)) {
+        return i;
+      }
+    }
+
+    return -1;
+  }
+
+  getNPCTemplate(npcId: number = -1) {
+    if (npcId < 0 || npcId >= GameState.PartyManager.MaxPartyCount) {
+      return undefined;
+    }
+
+    return GameState.PartyManager.NPCS[npcId]?.moduleObject?.template || GameState.PartyManager.NPCS[npcId]?.template;
+  }
+
+  getNPCName(npcId: number = -1) {
+    const template = this.getNPCTemplate(npcId);
+    if (!template?.RootNode?.hasField('FirstName')) {
+      return '';
+    }
+
+    try {
+      return template.RootNode.getFieldByLabel('FirstName')?.getValue() || '';
+    } catch (e: any) {
+      return '';
+    }
+  }
+
+  getNPCLevel(npcId: number = -1) {
+    const template = this.getNPCTemplate(npcId);
+    if (!template?.RootNode?.hasField('ClassList')) {
+      return 0;
+    }
+
+    const classList = template.RootNode.getFieldByLabel('ClassList')?.getChildStructs() || [];
+    let totalLevel = 0;
+    for (let i = 0; i < classList.length; i++) {
+      totalLevel += classList[i]?.getFieldByLabel('ClassLevel')?.getValue() || 0;
+    }
+    return totalLevel;
+  }
+
   /**
    * Gets the index of the selected NPC.
    * @param npcId - The ID of the NPC.
-   * @returns number
+   * @returns numberumber
    */
   indexOfSelectedNPC(npcId: number) {
     for (let i = 0; i < GameState.PartyManager.CurrentMembers.length; i++) {
@@ -299,21 +324,45 @@ export class MenuPartySelection extends GameMenu {
    */
   updateSelection() {
     for (let i = 0; i < GameState.PartyManager.MaxPartyCount; i++) {
-      const btn = this.getControlByName('BTN_NPC' + i);
-      if (GameState.PartyManager.IsNPCInParty(i)) {
+      const btn = this.getControlByName('BTN_NPC' + i) as GUICheckBox;
+      if (!btn) {
+        continue;
+      }
+
+      const isAvailable = GameState.PartyManager.IsAvailable(i);
+      const isInParty = GameState.PartyManager.IsNPCInParty(i);
+      const isSelected = i == this.selectedNPC;
+
+      if (isInParty) {
         btn.setHighlightColor(0, 1, 0);
       } else {
         btn.setHighlightColor(1, 1, 0);
       }
+
+      btn.disableSelection = !isAvailable;
       btn.disableBorder();
       btn.disableHighlight();
-      btn.pulsing = false;
+      btn.selected = isSelected;
+      btn.pulsing = isSelected;
+
+      if (btn.value != (isInParty ? 1 : 0)) {
+        btn.setValue(isInParty);
+      } else {
+        btn.updateCBVisualState();
+      }
+
+      if (isSelected) {
+        btn.enableHighlight();
+      }
     }
-    const btn = this.getControlByName('BTN_NPC' + this.selectedNPC);
-    if (btn instanceof GUIControl) {
-      btn.enableHighlight();
-      btn.pulsing = true;
+
+    this.updateSelectedNPCInfo();
+
+    if (this.selectedNPC < 0 || !this.isAvailable(this.selectedNPC)) {
+      this.BTN_ACCEPT.hide();
+      return;
     }
+
     if (GameState.PartyManager.IsNPCInParty(this.selectedNPC)) {
       this.BTN_ACCEPT.setText(GameState.TLKManager.GetStringById(TLK_REMOVE).Value);
       if(!this.canRemove(this.selectedNPC)){
@@ -362,7 +411,7 @@ export class MenuPartySelection extends GameMenu {
       }
       LBL_NA.hide();
       let portrait = GameState.PartyManager.GetPortraitByIndex(i);
-      if (LBL_NA.getFillTextureName() != portrait && !!portrait) {
+      if (LBL_CHAR.getFillTextureName() != portrait && !!portrait) {
         LBL_CHAR.setFillTextureName(portrait);
         const texture = await TextureLoader.Load(portrait);
         if(texture)LBL_CHAR.setFillTexture(texture);
@@ -377,6 +426,10 @@ export class MenuPartySelection extends GameMenu {
    * @returns boolean
    */
   canRemove(npcId: number = -1): boolean {
+    if (npcId < 0 || npcId >= GameState.PartyManager.MaxPartyCount) {
+      return false;
+    }
+
     return GameState.PartyManager.IsNPCInParty(npcId) && !this.isNPCRequired(npcId);
   }
 
@@ -385,7 +438,27 @@ export class MenuPartySelection extends GameMenu {
    * @returns boolean
    */
   canAdd(npcId: number = -1): boolean {
-    return !GameState.PartyManager.IsNPCInParty(npcId) && !this.isNPCRequired(npcId) && this.isSelectable(npcId);
+    if (npcId < 0 || npcId >= GameState.PartyManager.MaxPartyCount) {
+      return false;
+    }
+
+    return !GameState.PartyManager.IsNPCInParty(npcId) &&
+      !this.isNPCRequired(npcId) &&
+      this.isSelectable(npcId) &&
+      GameState.PartyManager.CurrentMembers.length < GameState.PartyManager.MaxNPCCount;
+  }
+
+  updateSelectedNPCInfo() {
+    if (this.selectedNPC < 0 || !this.isAvailable(this.selectedNPC)) {
+      this.LBL_NPC_NAME.setText('');
+      this.LBL_NPC_LEVEL.setText('');
+      return;
+    }
+
+    this.LBL_NPC_NAME.setText(this.getNPCName(this.selectedNPC));
+
+    const level = this.getNPCLevel(this.selectedNPC);
+    this.LBL_NPC_LEVEL.setText(level > 0 ? level.toString() : '');
   }
 
   /**

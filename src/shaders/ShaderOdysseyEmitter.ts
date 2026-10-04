@@ -21,7 +21,7 @@ export class ShaderOdysseyEmitter extends Shader {
       { map: { value: null } },
       { tDepth: { value: null } },
       { textureAnimation: { value: new THREE.Vector4(1, 1, 1, 1) } },
-      { frameRange: { value: new THREE.Vector2(0, 0) } },
+      { frameRange: { value: new THREE.Vector2(0, -1) } },
       { colorStart: { value: new THREE.Color(1, 1, 1) } },
       { colorMid: { value: new THREE.Color(1, 1, 1) } },
       { colorEnd: { value: new THREE.Color(1, 1, 1) } },
@@ -191,31 +191,28 @@ export class ShaderOdysseyEmitter extends Shader {
       force += accel * (age*5.0);
 
       //SpriteSheet Calculations
-      float framesX = textureAnimation.x;
-      float framesY = textureAnimation.y;
+      float framesX = max(textureAnimation.x, 1.0);
+      float framesY = max(textureAnimation.y, 1.0);
       float loopCount = textureAnimation.w;
-      float totalFrames = textureAnimation.z;
-
+      float totalFrames = max(textureAnimation.z, 1.0);
+      float startFrame = clamp(floor(frameRange.x), 0.0, totalFrames - 1.0);
+      float endFrame = frameRange.y < 0.0 ? totalFrames - 1.0 : clamp(floor(frameRange.y), startFrame, totalFrames - 1.0);
+      float frameCount = max(endFrame - startFrame + 1.0, 1.0);
       #ifdef FPS
-        float deltaMax = (1.0 / fps) * totalFrames;
-        float fTime = mod(time, deltaMax) / deltaMax;
-        float frameNumber = mod( fTime * totalFrames, totalFrames );
+        float frameOffset = max(time, 0.0) * max(fps, 0.0);
       #else
-        float frameNumber = mod( positionInTime * totalFrames, totalFrames );
+        float frameOffset = max(positionInTime, 0.0) * frameCount;
       #endif
-      
       #ifdef Aligned_to_Particle_Dir
-       frameNumber = mod( ids * totalFrames, totalFrames );
+        frameOffset = ids;
       #endif
-
       #ifdef RANDOM_PLAYBACK
-        frameNumber = mod( frameNumber + ids * 7.31, totalFrames );
+        frameOffset += ids * 7.31;
       #endif
-
-      // Clamp frame when loop is disabled (Single update emitters)
-      if(loopCount < 1.0 && frameNumber > totalFrames - 1.0) {
-        frameNumber = totalFrames - 1.0;
-      }
+      frameOffset = loopCount < 1.0
+        ? clamp(frameOffset, 0.0, frameCount - 1.0)
+        : mod(frameOffset, frameCount);
+      float frameNumber = startFrame + frameOffset;
 
       float column = floor(mod( frameNumber, framesX ));
       float row = floor( (frameNumber - column) / framesX );
@@ -283,8 +280,8 @@ export class ShaderOdysseyEmitter extends Shader {
         #else
           //Render particles as plane geometry so we can control it's rotation
           #ifdef Aligned_to_Particle_Dir
-            vec4 vertex = vec4( position, 1.0 ) * matrix;
-            vec3 newPos = offset + (vertex.xyz * scaleF);
+            vec4 vertex = matrix * vec4(position.x * scaleF, position.y * scaleFY, position.z, 1.0);
+            vec3 newPos = offset + vertex.xyz;
             gl_Position = projectionMatrix * modelViewMatrix * ( vec4(newPos, 1.0));
           #else
             // Apply non-square scaling to quad vertices

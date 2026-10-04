@@ -1,22 +1,16 @@
-import { GameState } from "@/GameState";
 import type { GUILabel, GUIListBox, GUIButton } from "@/gui";
 import { MenuSaveLoad as K1_MenuSaveLoad, NewSaveItem } from "@/game/kotor/KOTOR";
 import { MenuSaveLoadMode } from "@/enums/gui/MenuSaveLoadMode";
 import { GUISaveGameItem } from "@/game/tsl/gui/GUISaveGameItem";
 import { SaveGame } from "@/engine/SaveGame";
-import { TextureLoader } from "@/loaders";
 
 /**
  * MenuSaveLoad class.
- * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
- * @file MenuSaveLoad.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuSaveLoad extends K1_MenuSaveLoad {
-
   declare LBL_BAR4: GUILabel;
   declare LBL_PANELNAME: GUILabel;
   declare LBL_SCREENSHOT: GUILabel;
@@ -47,112 +41,67 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
-    await super.menuControlInitializer(true);
+    // Reuse the current save/overwrite/delete confirmation workflow and handlers.
+    await super.menuControlInitializer(skipInit);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
-      this.BTN_SAVELOAD.setText('Load');
-      this.BTN_SAVELOAD.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const savegame = this.selected;
-        if(this.mode == MenuSaveLoadMode.LOADGAME){
-          if(savegame){
-            this.manager.ClearMenus();
-            if(GameState.module){
-              GameState.module.dispose();
-              GameState.module = undefined;
-            }
-            savegame.load()
-          }
-        }else{
-          if(savegame instanceof NewSaveItem){
-            this.manager.MenuSaveName.show();
-            this.manager.MenuSaveName.onSave = ( name = '' ) => {
-              console.log('SaveGame', name);
-            };
-          }else{
-
-          }
-        }
-      });
-      this._button_a = this.BTN_SAVELOAD;
-
-      this.BTN_BACK.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.close();
-      });
-      this._button_b = this.BTN_BACK;
-
-      this.BTN_FILTER.addEventListener('click', (e) => {
-        if(this.filters.length){
-          this.cFilterIndex++;
-          if(this.cFilterIndex >= this.filters.length){
-            this.cFilterIndex = 0;
-          }
-        }
-        this.reloadSaves();
-        this.UpdateSelected();
-      });
-
-      this.LBL_PCNAME.setText('');
-      this.LBL_TIMEPLAYED.setText('');
-      // this.LB_GAMES.border.inneroffsety = 7;
-      this.LB_GAMES.setProtoBuilder(GUISaveGameItem);
-      this.LB_GAMES.onSelected = (save: any) => {
-        this.selected = save;
-        this.UpdateSelected();
-        this.LBL_PCNAME.setText('');
-        this.LBL_TIMEPLAYED.setText('');
-        if (this.selected instanceof SaveGame) {
-          if (this.selected instanceof NewSaveItem) {
-    
-          }else{
-            this.LBL_PCNAME.setText(this.selected.PCNAME);
-            this.LBL_TIMEPLAYED.setText(`Time: ${this.selected.getHoursPlayed()}H ${this.selected.getMinutesPlayed()}M`);
-          }
-        }
+    this.LBL_PCNAME.setText('');
+    this.LBL_TIMEPLAYED.setText('');
+    this.LB_GAMES.setProtoBuilder(GUISaveGameItem);
+    this.BTN_FILTER.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if(this.filters.length){
+        this.cFilterIndex = (this.cFilterIndex + 1) % this.filters.length;
       }
-
-      this.tGuiPanel.getFill().position.z = -1;
-      resolve();
+      this.reloadSaves();
     });
+    this.updateFilterButton();
+  }
+
+  private updateFilterButton(){
+    if(!this.BTN_FILTER) return;
+    if(this.filters.length){
+      this.BTN_FILTER.show();
+      this.BTN_FILTER.setText(this.filters[this.cFilterIndex] || this.filters[0]);
+    }else{
+      this.BTN_FILTER.hide();
+    }
+  }
+
+  show() {
+    super.show();
+    this.updateFilterButton();
   }
 
   getSaveGames(): SaveGame[] {
-    let saves: SaveGame[] = [];
+    const manualSaves = SaveGame.saves.filter(save => !save.getIsQuickSave() && !save.getIsAutoSave()).reverse();
+    const specialSaves = SaveGame.saves.filter(save => save.getIsQuickSave() || save.getIsAutoSave());
+    let saves: SaveGame[] = this.mode == MenuSaveLoadMode.SAVEGAME
+      ? [new NewSaveItem(), ...manualSaves]
+      : [...specialSaves, ...manualSaves];
 
-    if (this.mode == MenuSaveLoadMode.SAVEGAME) {
-      saves = SaveGame.saves.slice().filter(save => {
-        return !save.getIsQuickSave() && !save.getIsAutoSave();
-      });
-      saves = saves.reverse();
-      saves.unshift(new NewSaveItem());
-    }else{
-      saves = SaveGame.saves.slice();
-      let special = saves.filter(save => {
-        return save.getIsQuickSave() || save.getIsAutoSave();
-      });
-      
-      saves = saves.filter(save => {
-        return !save.getIsQuickSave() && !save.getIsAutoSave();
-      }).reverse();
-      saves.unshift(...special);
+    this.filters = manualSaves.map(save => save.PCNAME).filter(Boolean).filter((pcname, index, array) => array.indexOf(pcname) === index);
+    if(this.cFilterIndex < 0 || this.cFilterIndex >= this.filters.length){
+      this.cFilterIndex = 0;
     }
-
-    this.filters = saves.filter( (save) => {
-      return !save.getIsQuickSave() && !save.getIsAutoSave() && !save.isNewSave;
-    }).map( (save) => {
-      return save.PCNAME;
-    }).filter( (pcname, index, array) => {
-      return array.indexOf(pcname) === index;
-    });
-
     if(this.filters.length){
-      saves = saves.filter((save) => {
-        return save.PCNAME == this.filters[this.cFilterIndex];
-      });
+      const activeFilter = this.filters[this.cFilterIndex];
+      saves = saves.filter(save => save.isNewSave || save.getIsQuickSave() || save.getIsAutoSave() || save.PCNAME == activeFilter);
     }
-
     return saves;
   }
-  
+
+  reloadSaves(){
+    super.reloadSaves();
+    this.updateFilterButton();
+  }
+
+  UpdateSelected() {
+    super.UpdateSelected();
+    this.LBL_PCNAME.setText('');
+    this.LBL_TIMEPLAYED.setText('');
+    if(this.selected instanceof SaveGame && !(this.selected instanceof NewSaveItem)){
+      this.LBL_PCNAME.setText(this.selected.PCNAME || '');
+      this.LBL_TIMEPLAYED.setText(`Time: ${this.selected.getHoursPlayed()}H ${this.selected.getMinutesPlayed()}M`);
+    }
+  }
 }

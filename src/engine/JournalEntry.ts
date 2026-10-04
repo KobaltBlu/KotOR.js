@@ -29,14 +29,35 @@ export class JournalEntry {
   }
 
   getName(): string {
-    return this.category.name.getTLKValue();
+    return this.category?.name?.getTLKValue?.() || this.plot_id || '';
   }
 
   getEntryText(): string {
-    return this.entry.text.getTLKValue();
+    return this.entry?.text?.getTLKValue?.() || this.getName();
+  }
+
+  getPriority(): number {
+    return Number(this.category?.priority) || 0;
+  }
+
+  getPlanetId(): number {
+    return Number(this.category?.planet_id) || 0;
+  }
+
+  getReceivedSortValue(): number {
+    return Number(this.date) || Number(this.time) || 0;
+  }
+
+  isCompleted(): boolean {
+    return !!this.entry?.end;
   }
 
   load(): void {
+    this.plot_id = GameState.JournalManager.NormalizePlotID(this.plot_id);
+    this.category = undefined;
+    this.entry = undefined;
+    this.plot = undefined;
+
     this.category = GameState.JournalManager.GetCategoryByTag(this.plot_id);
     if(this.category){
       this.entry = this.category.getEntryById(this.state);
@@ -46,12 +67,12 @@ export class JournalEntry {
     }else{
       console.warn(`JournalEntry.load: Invalid Category "${this.plot_id}"`);
     }
-    const plotTable = GameState.TwoDAManager.datatables.get('plot');
-    if(!plotTable){ return; }
 
-    const plot = plotTable.getRowByColumnAndValue('label', this.plot_id.toLocaleLowerCase());
-    if(!plot){ return; }
-    
+    const plot = GameState.JournalManager.GetPlotRowByTag(this.plot_id);
+    if(!plot){
+      return;
+    }
+
     this.plot = plot;
   }
 
@@ -66,8 +87,8 @@ export class JournalEntry {
     const struct = new GFFStruct(id);
     struct.addField(new GFFField(GFFDataType.DWORD, 'JNL_Date', this.date));
     struct.addField(new GFFField(GFFDataType.DWORD, 'JNL_Time', this.time));
-    struct.addField(new GFFField(GFFDataType.CEXOSTRING, 'JNL_PlotID', this.category.tag));
-    struct.addField(new GFFField(GFFDataType.INT, 'JNL_State', this.entry.id));
+    struct.addField(new GFFField(GFFDataType.CEXOSTRING, 'JNL_PlotID', this.category?.tag || this.plot_id));
+    struct.addField(new GFFField(GFFDataType.INT, 'JNL_State', this.entry?.id ?? this.state));
     return struct;
   }
 
@@ -80,7 +101,6 @@ export class JournalEntry {
       if(struct.hasField('JNL_Time'))   entry.time    = struct.getFieldByLabel('JNL_Time')?.getValue();
 
       entry.load();
-
     }
     return entry;
   }

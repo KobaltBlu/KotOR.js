@@ -117,6 +117,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   opacity: [number, number, number] = [1, 1, 1];
   angle: number = 0;
   _detonate: number = 0;
+  private _lastDetonate: number = 0;
   fps: number = 0;
   blurLength: number = 0;
   bounceCo: number = 0;
@@ -426,7 +427,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
       this.material.defines[this.node.renderMode] = '';
 
-      this._birthTimer = this.birthRate > 0 ? 1/this.birthRate : 1;
+      this._birthTimer = this.getBirthTimer();
 
       switch(this.node.blendMode){
         case 'Normal':
@@ -527,7 +528,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       }else{
         // Each logical sample = 2 verts (L/R). `le`/`br` use ceil so fractional MDL values size conservatively.
         const le = Math.max(1, Math.ceil(this.lifeExp >= 0 ? this.lifeExp : 1));
-        const br = Math.max(1, Math.ceil(this.birthRate || 0));
+        const br = Math.max(1, Math.ceil(this.getEffectiveBirthRate()));
         const samples = Math.min(
           OdysseyEmitter3D.LINKED_MAX_SAMPLES,
           Math.max(OdysseyEmitter3D.LINKED_MIN_SAMPLES, le * br * 2)
@@ -535,7 +536,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         return samples * 2;
       }
     }else{
-      return (Math.ceil( (this.lifeExp >= 0 ? this.lifeExp : 1) ) * Math.ceil(this.birthRate));
+      return (Math.ceil( (this.lifeExp >= 0 ? this.lifeExp : 1) ) * Math.ceil(this.getEffectiveBirthRate()));
     }
   }
 
@@ -667,8 +668,30 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     }
   }
 
+  /** Refresh controller-driven caches without restarting births or rebuilding shaders. */
+  refreshDerivedState(){
+    this.speed_min = this.velocity;
+    this.speed_max = this.randVelocity;
+    this.xangle = this.spread;
+    this.zangle = this.spread;
+    this.vx = Math.sin(this.xangle);
+    this.vy = Math.sin(this.zangle);
+    this.vz = Math.cos(this.xangle) + Math.cos(this.zangle);
+    const sum = Math.abs(this.vx) + Math.abs(this.vy) + Math.abs(this.vz);
+    this.d = sum > 0 ? this.speed_min / sum : 0;
+    this.d2 = sum > 0 ? this.speed_max / sum : 0;
+    if(this.material){
+      this.material.uniforms.maxAge.value = this.lifeExp >= 0 ? this.lifeExp : -1;
+      this.material.uniforms.drag.value = this.drag;
+      this.material.uniforms.velocity.value = this.velocity;
+      this.material.uniforms.randVelocity.value = this.randVelocity;
+      this.material.uniformsNeedUpdate = true;
+    }
+  }
+
   //Update the emitter
   tick(delta: number = 0){
+    this.refreshDerivedState();
 
     if(!delta){
       delta = 1/30;
@@ -775,6 +798,9 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       });
     }
 
+    if(this._detonate > 0 && this._lastDetonate <= 0){ this.detonate(); }
+    this._lastDetonate = this._detonate;
+
     if(this.updateType == 'Lightning'){
       this.emitterLog('tick:earlyReturn', { reason: 'Lightning', delta });
       this.tickLightning(delta);
@@ -805,7 +831,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         const dist = currentWorldPos.distanceTo(this._lastTrailPos);
         trailDistThisFrame = dist;
         this._trailAccum += dist;
-        const rate = this.birthRate * OdysseyEmitter3D.TRAIL_BIRTH_SCALE;
+        const rate = this.getEffectiveBirthRate() * OdysseyEmitter3D.TRAIL_BIRTH_SCALE;
         trailBirthCount = rate > 0
           ? Math.floor(this._trailAccum * rate)
           : 0;
@@ -856,7 +882,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       let toSpawn = 0;
       if(this.node.spaceType === 1 && trailBirthCount > 0){
         toSpawn = Math.min(trailBirthCount, spawnableParticleCount);
-      }else if(this.birthRate > 0 && !this._birthTimer){
+      }else if(this.getEffectiveBirthRate() > 0 && !this._birthTimer){
         toSpawn = 1;
       }
 
@@ -952,7 +978,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
               if(this.node.updateMode == 'Explosion'){
                 canSpawn = this.isDetonated;
-                maxSpawn = this.birthRate;
+                maxSpawn = this.getEffectiveBirthRate();
               }
 
               // Trail mode overrides the normal birth logic
@@ -1048,7 +1074,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       this.props.needsUpdate = true;
 
     if(!this._birthTimer){
-      this._birthTimer = this.birthRate > 0 ? 1/this.birthRate : 1;
+      this._birthTimer = this.getBirthTimer();
     }
 
     if(this.geometry.boundingSphere)
@@ -1284,7 +1310,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         let maxSpawn = 1;
         if(this.node.updateMode == 'Explosion'){
           canSpawn = this.isDetonated;
-          maxSpawn = this.birthRate;
+          maxSpawn = this.getEffectiveBirthRate();
         }
         if(canSpawn && birthCount < maxSpawn){
           this.spawnParticle(i, delta);
@@ -1303,7 +1329,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     if(updateProperties) this.props.needsUpdate = true;
 
     if(!this._birthTimer){
-      this._birthTimer = this.birthRate > 0 ? 1/this.birthRate : 1;
+      this._birthTimer = this.getBirthTimer();
     }
 
     this.isDetonated = false;
@@ -1367,7 +1393,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         let maxSpawn = 1;
         if(this.node.updateMode == 'Explosion'){
           canSpawn = this.isDetonated;
-          maxSpawn = this.birthRate;
+          maxSpawn = this.getEffectiveBirthRate();
         }
         if(canSpawn && birthCount < maxSpawn){
           this.spawnParticle(i, delta);
@@ -1384,7 +1410,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     if(updateProperties) this.props.needsUpdate = true;
 
     if(!this._birthTimer){
-      this._birthTimer = this.birthRate > 0 ? 1/this.birthRate : 1;
+      this._birthTimer = this.getBirthTimer();
     }
 
     this.isDetonated = false;
@@ -1782,12 +1808,19 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     }
   }
 
+  getEffectiveBirthRate(){
+    // Preserve the playable branch's mean contribution from RandomBirthRate.
+    return Math.max(0, this.birthRate + Math.max(0, this.birthRateRandom) * 0.5);
+  }
+
   getBirthTimer(){
-    return this.birthRate > 0 ? 1/this.birthRate : 1;
+    const rate = this.getEffectiveBirthRate();
+    return rate > 0 ? 1 / rate : 1;
   }
 
   disable(){
     this.birthRate = 0;
+    this.birthRateRandom = 0;
     this.resetTrailSpawnState();
     if(this.node.renderMode === 'Linked'){
       this.resetRibbonTangentState();

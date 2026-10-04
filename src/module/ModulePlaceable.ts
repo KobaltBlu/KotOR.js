@@ -483,9 +483,11 @@ export class ModulePlaceable extends ModuleObject {
 
   attemptUnlockWithKey(object: ModuleObject){
     if(this.keyRequired){
+      let unlockedWithKey = false;
       if(this.keyName.length){
         const keyItem = GameState.InventoryManager.getItemByTag(this.keyName);
         if(keyItem && BitWise.InstanceOf(keyItem?.objectType, ModuleObjectType.ModuleItem)){
+          unlockedWithKey = true;
           this.unlock(object);
           if(this.autoRemoveKey){
             object.removeItem(keyItem);
@@ -494,12 +496,14 @@ export class ModulePlaceable extends ModuleObject {
         }
       }
 
-      object.playSoundSet(SSFType.UNLOCK_FAIL);
+      if(!unlockedWithKey){
+        object.playSoundSet(SSFType.UNLOCK_FAIL);
+      }
     }
   }
 
   lock(object: ModuleObject){
-    if(!this.locked){ return; }
+    if(this.locked){ return; }
     this.locked = true;
     
     const instance = this.scripts[ModuleObjectScript.PlaceableOnLock];
@@ -658,9 +662,11 @@ export class ModulePlaceable extends ModuleObject {
     let item = new GameState.Module.ModuleArea.ModuleItem(template);
     item.initProperties();
     item.load();
+    const stackSize = item.getStackSize();
+    item.setStackSize(stackSize);
     let hasItem = this.getItemByTag(item.getTag());
     if(hasItem){
-      hasItem.setStackSize(hasItem.getStackSize() + 1);
+      hasItem.setStackSize(hasItem.getStackSize() + stackSize);
       return hasItem;
     }else{
       this.inventory.push(item);
@@ -732,6 +738,11 @@ export class ModulePlaceable extends ModuleObject {
       }
     }
 
+    if(this.template.RootNode.hasField('Open')){
+      const isOpen = !!this.template.getFieldByLabel('Open').getValue();
+      this.setOpenState(isOpen ? ModulePlaceableState.OPEN : ModulePlaceableState.CLOSED);
+    }
+
     if(this.template.RootNode.hasField('Appearance')){
       this.appearance = this.template.getFieldByLabel('Appearance').getValue();
       try{
@@ -757,6 +768,9 @@ export class ModulePlaceable extends ModuleObject {
     if(this.template.RootNode.hasField('CurrentHP'))
       this.currentHP = this.template.getFieldByLabel('CurrentHP').getValue();
 
+    if(this.template.RootNode.hasField('Description'))
+      this.description = this.template.getFieldByLabel('Description').getCExoLocString();
+
     if(this.template.RootNode.hasField('DisarmDC'))
       this.disarmDC = this.template.getFieldByLabel('DisarmDC').getValue();
 
@@ -779,6 +793,12 @@ export class ModulePlaceable extends ModuleObject {
     
     if(this.template.RootNode.hasField('HasInventory'))
       this.hasInventory = this.template.RootNode.getFieldByLabel('HasInventory').getValue();
+
+    if(this.template.RootNode.hasField('IsBodyBag'))
+      this.isBodyBag = !!this.template.RootNode.getFieldByLabel('IsBodyBag').getValue();
+
+    if(this.template.RootNode.hasField('DieWhenEmpty'))
+      this.isBodyBag = !!this.template.RootNode.getFieldByLabel('DieWhenEmpty').getValue() || this.isBodyBag;
 
     if(this.template.RootNode.hasField('Interruptable'))
       this.interruptable = this.template.RootNode.getFieldByLabel('Interruptable').getValue();
@@ -813,7 +833,10 @@ export class ModulePlaceable extends ModuleObject {
     if(this.template.RootNode.hasField('Plot'))
       this.plot = this.template.getFieldByLabel('Plot').getValue();
 
-    if(this.template.RootNode.hasField('PortraidId')){
+    if(this.template.RootNode.hasField('PortraitId')){
+      this.portraitId = this.template.getFieldByLabel('PortraitId').getValue();
+      this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
+    }else if(this.template.RootNode.hasField('PortraidId')){
       this.portraitId = this.template.getFieldByLabel('PortraidId').getValue();
       this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
     }
@@ -851,6 +874,9 @@ export class ModulePlaceable extends ModuleObject {
     if(this.template.RootNode.hasField('TrapType'))
       this.trapType = this.template.getFieldByLabel('TrapType').getValue();
 
+    if(this.template.RootNode.hasField('LightState'))
+      this.lightState = !!this.template.getFieldByLabel('LightState').getValue();
+
     if(this.template.RootNode.hasField('Useable'))
       this.useable = this.template.getFieldByLabel('Useable').getValue();
 
@@ -879,14 +905,40 @@ export class ModulePlaceable extends ModuleObject {
       this.notBlastable = !!this.template.getFieldByLabel('NotBlastable').getValue();
 
     if(this.template.RootNode.hasField('SWVarTable')){
-      let localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
-      //console.log(localBools);
-      for(let i = 0; i < localBools.length; i++){
-        let data = localBools[i].getFieldByLabel('Variable').getValue();
-        for(let bit = 0; bit < 32; bit++){
-          this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+      const swVarTableStruct = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0];
+      if(swVarTableStruct){
+        if(swVarTableStruct.hasField('BitArray')){
+          const localBools = swVarTableStruct.getFieldByLabel('BitArray').getChildStructs();
+          for(let i = 0; i < localBools.length; i++){
+            const data = localBools[i].getFieldByLabel('Variable').getValue();
+            for(let bit = 0; bit < 32; bit++){
+              this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+            }
+          }
+        }
+
+        if(swVarTableStruct.hasField('ByteArray')){
+          const localNumbers = swVarTableStruct.getFieldByLabel('ByteArray').getChildStructs();
+          for(let i = 0; i < localNumbers.length; i++){
+            const data = localNumbers[i].getFieldByLabel('Variable').getValue();
+            this.setLocalNumber(i, data);
+          }
         }
       }
+    }
+
+    try{
+      if(this.template.RootNode.hasField('ActionList') && !this.actionQueue.length){
+        const actionStructs = this.template.RootNode.getFieldByLabel('ActionList').getChildStructs();
+        for(let i = 0, len = actionStructs.length; i < len; i++){
+          const action = GameState.ActionFactory.FromStruct(actionStructs[i]);
+          if(action){
+            this.actionQueue.add(action);
+          }
+        }
+      }
+    }catch(e: any){
+      console.error(e);
     }
 
     if(this.template.RootNode.hasField('EffectList')){
@@ -906,15 +958,14 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   destroy(): void {
+    if(this.destroyed || this.destroying){
+      return;
+    }
     super.destroy();
-    if(this.area) this.area.detachObject(this);
 
-    while(this.inventory.length){
-      const item = this.inventory[0];
-      if(item){
-        item.destroy();
-      }
-      this.inventory.splice(0, 1);
+    const inventory = this.inventory.splice(0, this.inventory.length);
+    for(let i = 0; i < inventory.length; i++){
+      inventory[i]?.destroy();
     }
     
     try{
@@ -937,7 +988,7 @@ export class ModulePlaceable extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue(0);
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Conversation') ).setValue(this.conversation ? this.conversation.resref : '');
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'CurrentHP') ).setValue(this.currentHP);
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') ).setValue('');
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') ).setValue(this.description);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DieWhenEmpty') ).setValue( this.isBodyBag ? 1 : 0 );
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DisarmDC') ).setValue(this.disarmDC);
 
@@ -953,6 +1004,7 @@ export class ModulePlaceable extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'HP') ).setValue(this.hp);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Hardness') ).setValue(this.hardness);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'HasInventory') ).setValue(this.hasInventory ? 1 : 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Interruptable') ).setValue(this.interruptable ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsBodyBag') ).setValue(this.isBodyBag ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsBodyBagVisible') ).setValue(1);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsCorpse') ).setValue(0);
@@ -994,6 +1046,7 @@ export class ModulePlaceable extends ModuleObject {
     
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Open') ).setValue(this.isOpen() ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'OpenLockDC') ).setValue(this.openLockDC);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PaletteID') ).setValue(this.paletteID);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PartyInteract') ).setValue(this.partyInteract);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Plot') ).setValue(this.plot);
     gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') ).setValue(this.portraitId);
@@ -1005,6 +1058,8 @@ export class ModulePlaceable extends ModuleObject {
 
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Static') ).setValue(this.static);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'TemplateResRef') ).setValue(this.templateResRef || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'TweakColor') ).setValue(this.tweakColor);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDetectDC') ).setValue(this.trapDetectDC);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDetectable') ).setValue(this.trapDetectable);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDisarmable') ).setValue(this.trapDisarmable);
@@ -1012,11 +1067,13 @@ export class ModulePlaceable extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapOneShot') ).setValue(this.trapOneShot);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapType') ).setValue(this.trapType);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Useable') ).setValue(this.useable);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'UseTweakColor') ).setValue(this.useTweakColor ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'VarTable') );
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Will') ).setValue(this.will);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'X') ).setValue(this.position.x);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Y') ).setValue(this.position.y);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Z') ).setValue(this.position.z);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'NotBlastable') ).setValue(this.notBlastable ? 1 : 0);
 
     this.template = gff;
     return gff;

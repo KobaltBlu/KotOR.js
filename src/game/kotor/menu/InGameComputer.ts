@@ -79,6 +79,12 @@ export class InGameComputer extends GameMenu {
   show(){
     super.show();
     GameState.SetEngineMode(EngineMode.DIALOG);
+
+    const computerSpikes = GameState.InventoryManager.getItemByTag('K_COMPUTER_SPIKE');
+    const repairParts = GameState.InventoryManager.getItemByTag('K_REPAIR_PART');
+
+    this.LBL_COMP_SPIKES_VAL.setText((computerSpikes ? computerSpikes.getStackSize() : 0).toString());
+    this.LBL_REP_UNITS_VAL.setText((repairParts ? repairParts.getStackSize() : 0).toString());
   }
 
   setReplies(replies: DLGNode[]) {

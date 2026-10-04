@@ -1,5 +1,4 @@
 import { GameState } from "@/GameState";
-import { AudioLoader } from "@/audio/AudioLoader";
 import { GameMenu } from "@/gui/GameMenu";
 import type { GUILabel, GUIButton, GUIListBox, GUISlider } from "@/gui";
 import { GUIMusicItem } from "@/game/tsl/gui/GUIMusicItem";
@@ -33,12 +32,8 @@ export class MainMusic extends GameMenu {
   selected: any;
   selectedIndex = 0;
   musicVolume = 0.5;
-
-  audioCtx: AudioContext;
-  musicGain: GainNode;
-  bgmBuffer: AudioBuffer;
-  bgm: AudioBufferSourceNode;
   loop: boolean = false;
+  didOverrideMenuMusic = false;
 
   musicList: any[] = [];
 
@@ -55,11 +50,6 @@ export class MainMusic extends GameMenu {
     return new Promise<void>((resolve, reject) => {
       this.LB_MUSIC.setProtoBuilder(GUIMusicItem);
       
-      this.audioCtx = new (global.AudioContext || (global as any).webkitAudioContext)();
-      this.musicGain = this.audioCtx.createGain();
-      this.musicGain.gain.value = this.musicVolume;
-      this.musicGain.connect(this.audioCtx.destination);
-
       const table = GameState.TwoDAManager.datatables.get('musictable');
       for(let i = 0; i < table.RowCount; i++){
         this.musicList.push(table.getRowByIndex(i));
@@ -76,18 +66,15 @@ export class MainMusic extends GameMenu {
         this.selectedIndex = this.musicList.indexOf(node);
       }
 
-      this.BTN_PLAY.addEventListener('click', (e) => {
+      this.BTN_PLAY.addEventListener('click', async (e) => {
         e.stopPropagation();
-        AudioLoader.LoadMusic(this.selected.filename).then((data: Uint8Array) => {
-          this.setBackgroundMusic(data.buffer as ArrayBuffer);
-        }, () => {
-          console.error('Background Music not found', this.selected.filename);
-        });
+        await this.playSelectedTrack();
       });
 
       this.BTN_STOP.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.stopBackgroundMusic();
+        this.didOverrideMenuMusic = true;
+        GameState.MusicManager.stopMenuMusic();
       });
 
       this.BTN_NEXT.addEventListener('click', (e) => {
@@ -102,7 +89,6 @@ export class MainMusic extends GameMenu {
 
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.stopBackgroundMusic();
         this.close();
       });
       this._button_b = this.BTN_BACK;
@@ -115,51 +101,46 @@ export class MainMusic extends GameMenu {
       this.SLI_VOLUME.onValueChanged = (value: number) => {
         value = Math.min(1, Math.max(0, value));
         this.musicVolume = value;
-        this.musicGain.gain.value = value;
+        this.didOverrideMenuMusic = true;
+        GameState.MusicManager.setMenuMusicVolume(value);
       }
 
       resolve();
     });
   }
 
-  setBackgroundMusic ( data: ArrayBuffer ) {
-    this.audioCtx.decodeAudioData( data, ( buffer ) => {
-      this.bgmBuffer = buffer;
-      this.startBackgroundMusic();
-    });
-  }
+  async playSelectedTrack(){
+    if(!this.selected?.filename){
+      return;
+    }
 
-  startBackgroundMusic(buffer?: AudioBuffer){
+    this.didOverrideMenuMusic = true;
 
-    if(buffer == undefined)
-      buffer = this.bgmBuffer;
-
-    this.stopBackgroundMusic();
-
-    //Create the new audio buffer and callbacks
-    this.bgm = this.audioCtx.createBufferSource();
-
-    this.bgm.buffer = buffer;
-    this.bgm.loop = false;
-    this.bgm.start( 0, 0 );
-    this.bgm.connect( this.musicGain );
-
-    this.bgm.onended = () => {
-      if(this.loop){
-        this.startBackgroundMusic()
-      }
-    };
-  }
-
-  stopBackgroundMusic(){
     try{
-      if (this.bgm != null) {
-        this.bgm.onended = undefined;
-        this.bgm.disconnect();
-        this.bgm.stop(0);
-        this.bgm = null;
-      }
-    }catch(e){}
+      await GameState.MusicManager.playMenuMusicTrack(this.selected.filename, true, this.loop, this.musicVolume);
+    }catch(e){
+      console.error('Background Music not found', this.selected.filename);
+      console.error(e);
+    }
+  }
+
+  close(){
+    super.close();
+
+    if(!this.didOverrideMenuMusic){
+      return;
+    }
+
+    const track = this.manager?.MainMenu?.bgMusicResRef;
+    if(!track){
+      GameState.MusicManager.stopMenuMusic();
+      return;
+    }
+
+    GameState.MusicManager.playMenuMusicTrack(track, true, true, 1).catch((e: any) => {
+      console.error('Background Music not found', track);
+      console.error(e);
+    });
   }
   
 }

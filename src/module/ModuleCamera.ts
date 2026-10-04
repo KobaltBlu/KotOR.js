@@ -3,7 +3,6 @@ import { GFFDataType } from "@/enums/resource/GFFDataType";
 // import { ResolutionManager } from "@/managers";
 import { GFFField } from "@/resource/GFFField";
 import { GFFObject } from "@/resource/GFFObject";
-import { GFFStruct } from "@/resource/GFFStruct";
 import * as THREE from "three";
 
 /**
@@ -103,6 +102,18 @@ export class ModuleCamera {
     this.buildCamera();
   }
 
+  getCameraEuler(){
+    const orientation = this.orientation.clone().normalize();
+    const cameraEuler = new THREE.Euler(0, 0, 0, 'YZX');
+    cameraEuler.setFromQuaternion(orientation, 'YZX');
+
+    if(typeof this.pitch === 'number' && !Number.isNaN(this.pitch)){
+      cameraEuler.x = THREE.MathUtils.degToRad(this.pitch);
+    }
+
+    return cameraEuler;
+  }
+
   /**
    * Builds the Three.js PerspectiveCamera instance from the camera properties.
    * 
@@ -124,15 +135,19 @@ export class ModuleCamera {
       this.perspectiveCamera = undefined;
     }
     this.perspectiveCamera = new THREE.PerspectiveCamera(this.fov, GameState.ResolutionManager.getViewportWidth() / GameState.ResolutionManager.getViewportHeight(), 0.1, 1500);
-    this.perspectiveCamera.up = new THREE.Vector3( 0, 1, 0 );
-    this.perspectiveCamera.position.set(0, 0, this.height);
-    this.perspectiveCamera.position.add(this.position);
+    this.perspectiveCamera.up.set(0, 0, 1);
+    this.perspectiveCamera.position.copy(this.position);
+    this.perspectiveCamera.position.z += this.height;
     this.perspectiveCamera.rotation.reorder('YZX');
-    this.perspectiveCamera.rotation.x = THREE.MathUtils.degToRad(this.pitch);
-    this.perspectiveCamera.rotation.z = -Math.atan2(this.orientation.w, -this.orientation.x)*2;
+
+    const cameraEuler = this.getCameraEuler();
+    this.perspectiveCamera.rotation.copy(cameraEuler);
 
     //Clipping hack
-    this.perspectiveCamera.position.add(new THREE.Vector3(0, 0, 0.5).applyEuler(this.perspectiveCamera.rotation));
+    this.perspectiveCamera.position.add(new THREE.Vector3(0, 0, 0.5).applyQuaternion(this.perspectiveCamera.quaternion));
+
+    this.orientation.copy(this.perspectiveCamera.quaternion);
+    this.pitch = THREE.MathUtils.radToDeg(cameraEuler.x);
 
     this.perspectiveCamera.userData.moduleObject = this;
     this.perspectiveCamera.userData.ingameID = this.cameraID;
@@ -205,12 +220,12 @@ export class ModuleCamera {
     gff.RootNode.type = 14;
 
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'CameraID') ).setValue(this.cameraID);
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'FieldOfView') ).setValue(this.fov);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Height') ).setValue(this.height);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'FieldOfView') ).setValue(this.fov);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Height') ).setValue(this.height);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'MicRange') ).setValue(this.micRange);
-    gff.RootNode.addField( new GFFField(GFFDataType.ORIENTATION, 'Orientation') ).setValue({x: this.orientation.x, y: this.orientation.y, z: this.orientation.z, w: this.orientation.w});
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Pitch') ).setValue(this.pitch);
-    gff.RootNode.addField( new GFFField(GFFDataType.VECTOR, 'Position') ).setValue({x: this.position.x, y: this.position.y, z: this.position.z});
+    gff.RootNode.addField( new GFFField(GFFDataType.ORIENTATION, 'Orientation') ).setOrientation({x: this.orientation.x, y: this.orientation.y, z: this.orientation.z, w: this.orientation.w});
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Pitch') ).setValue(this.pitch);
+    gff.RootNode.addField( new GFFField(GFFDataType.VECTOR, 'Position') ).setVector({x: this.position.x, y: this.position.y, z: this.position.z});
 
     this.template = gff;
     return gff;

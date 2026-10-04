@@ -145,11 +145,58 @@ export class CharGenMain extends GameMenu {
     this.LBL_NAME.setText(GameState.CharGenManager.selectedCreature.firstName);
     this.LBL_CLASS.setText(
       GameState.TLKManager.TLKStrings[CharGenClasses[GameState.CharGenManager.selectedClass].strings.name].Value
-    )
+    );
+
+    GameState.CharGenManager.syncDerivedStats(GameState.CharGenManager.selectedCreature);
+    this.updateAttributes();
+  }
+
+  private setComparedStat(oldLabel: GUILabel, newLabel: GUILabel, arrowLabel: GUILabel, value: string) {
+    oldLabel?.setText(value);
+    newLabel?.setText(value);
+    oldLabel?.show();
+    newLabel?.show();
+    arrowLabel?.hide();
   }
 
   updateAttributes() {
+    const creature = GameState.CharGenManager.selectedCreature;
+    if (!creature) {
+      return;
+    }
 
+    GameState.CharGenManager.syncDerivedStats(creature);
+
+    const strength = creature.getSTR();
+    const dexterity = creature.getDEX();
+    const constitution = creature.getCON();
+    const intelligence = creature.getINT();
+    const wisdom = creature.getWIS();
+    const charisma = creature.getCHA();
+
+    const fortitude = creature.getFortitudeSave() + GameState.CharGenManager.getAbilityModifier(constitution);
+    const reflex = creature.getReflexSave() + GameState.CharGenManager.getAbilityModifier(dexterity);
+    const will = creature.getWillSave() + GameState.CharGenManager.getAbilityModifier(wisdom);
+
+    this.STR_LBL?.setText(strength);
+    this.DEX_LBL?.setText(dexterity);
+    this.CON_LBL?.setText(constitution);
+    this.INT_LBL?.setText(intelligence);
+    this.WIS_LBL?.setText(wisdom);
+    this.CHA_LBL?.setText(charisma);
+
+    this.STR_AB_LBL?.setText(GameState.CharGenManager.getAbilityModifier(strength));
+    this.DEX_AB_LBL?.setText(GameState.CharGenManager.getAbilityModifier(dexterity));
+    this.CON_AB_LBL?.setText(GameState.CharGenManager.getAbilityModifier(constitution));
+    this.INT_AB_LBL?.setText(GameState.CharGenManager.getAbilityModifier(intelligence));
+    this.WIS_AB_LBL?.setText(GameState.CharGenManager.getAbilityModifier(wisdom));
+    this.CHA_AB_LBL?.setText(GameState.CharGenManager.getAbilityModifier(charisma));
+
+    this.setComparedStat(this.OLD_VIT_LBL, this.NEW_VIT_LBL, this.VIT_ARROW_LBL, creature.getHP().toString());
+    this.setComparedStat(this.OLD_DEF_LBL, this.NEW_DEF_LBL, this.DEF_ARROW_LBL, creature.getAC().toString());
+    this.setComparedStat(this.OLD_FORT_LBL, this.NEW_FORT_LBL, this.FORT_ARROW_LBL, fortitude.toString());
+    this.setComparedStat(this.OLD_REFL_LBL, this.NEW_REFL_LBL, this.REFL_ARROW_LBL, reflex.toString());
+    this.setComparedStat(this.OLD_WILL_LBL, this.NEW_WILL_LBL, this.WILL_ARROW_LBL, will.toString());
   }
   
 }

@@ -19,6 +19,8 @@ import { MDLLoader } from "@/loaders";
 * @memberof KotOR
 */
 export class ModuleMGTrack extends ModuleObject {
+  readonly supportsRuntimeStatePersistence: boolean = false;
+
   index: number;
   track: string;
   layout: ILayoutTrack;
@@ -43,7 +45,8 @@ export class ModuleMGTrack extends ModuleObject {
   }
 
   async load(){
-    //stub
+    this.position.copy(this.layout.position);
+    this.initialized = true;
   }
 
   async loadModel (){

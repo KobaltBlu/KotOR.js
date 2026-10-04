@@ -119,6 +119,7 @@ export class GameInitializer {
     KotOR.GameState.LightManager = KotOR.LightManager;
     KotOR.GameState.WindManager = KotOR.WindManager;
     KotOR.GameState.MenuManager = KotOR.MenuManager;
+    KotOR.GameState.MusicManager = KotOR.MusicManager;
     KotOR.GameState.ModuleObjectManager = KotOR.ModuleObjectManager;
     KotOR.GameState.PartyManager = KotOR.PartyManager;
     KotOR.GameState.ResolutionManager = KotOR.ResolutionManager;

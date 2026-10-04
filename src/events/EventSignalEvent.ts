@@ -46,7 +46,6 @@ export class EventSignalEvent extends GameEvent {
 
   execute(){
     const obj = this.getObject() as ModuleObject;
-    console.log('EventSignalEvent', this.eventType, obj, this.getCaller());
     if(!BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleObject)){
       return;
     }

@@ -36,12 +36,25 @@ export class InventoryManager {
     }
   }
 
+  static isQuestItem(item?: ModuleItem){
+    if(!item){
+      return false;
+    }
+
+    const itemClass = item.baseItem?.itemClass?.toLocaleLowerCase?.() || '';
+    return !!item.plot || itemClass == 'p_pltuseitm';
+  }
+
+  static isNonQuestItem(item?: ModuleItem){
+    return !!item && !InventoryManager.isQuestItem(item);
+  }
+
   static getNonQuestInventory( slot = 0, creature?: ModuleCreature ){
     if(!slot){
       let equippable = [];
       for(let i = 0; i < InventoryManager.inventory.length; i++){
         let item = InventoryManager.inventory[i];
-        if(!item.plot){
+        if(InventoryManager.isNonQuestItem(item)){
           equippable.push(item);
         }
       }
@@ -50,7 +63,7 @@ export class InventoryManager {
       let equippable = [];
       for(let i = 0; i < InventoryManager.inventory.length; i++){
         let item = InventoryManager.inventory[i];
-        if(InventoryManager.isItemUsableInSlot(item, slot) && InventoryManager.isItemUsableBy(item, creature)){
+        if(InventoryManager.isNonQuestItem(item) && InventoryManager.isItemUsableInSlot(item, slot) && InventoryManager.isItemUsableBy(item, creature)){
           equippable.push(item);
         }
       }
@@ -63,7 +76,7 @@ export class InventoryManager {
       let equippable = [];
       for(let i = 0; i < InventoryManager.inventory.length; i++){
         let item = InventoryManager.inventory[i];
-        if(item.plot){
+        if(InventoryManager.isQuestItem(item)){
           equippable.push(item);
         }
       }
@@ -72,7 +85,7 @@ export class InventoryManager {
       let equippable = [];
       for(let i = 0; i < InventoryManager.inventory.length; i++){
         let item = InventoryManager.inventory[i];
-        if(InventoryManager.isItemUsableInSlot(item, slot) && InventoryManager.isItemUsableBy(item, creature)){
+        if(InventoryManager.isQuestItem(item) && InventoryManager.isItemUsableInSlot(item, slot) && InventoryManager.isItemUsableBy(item, creature)){
           equippable.push(item);
         }
       }
@@ -102,6 +115,21 @@ export class InventoryManager {
     return (baseItem.equipableSlots & slot || baseItem.equipableSlots === slot) ? true : false;
   }
 
+  static getItemMergeTarget(item?: ModuleItem): ModuleItem|false {
+    if(!(item instanceof GameState.Module.ModuleArea.ModuleItem)){
+      return false;
+    }
+
+    for(let i = 0; i < InventoryManager.inventory.length; i++){
+      const existingItem = InventoryManager.inventory[i];
+      if(existingItem?.canStackWith(item)){
+        return existingItem;
+      }
+    }
+
+    return false;
+  }
+
   static addItem(template: GFFObject|ModuleItem = new GFFObject(), limitOne = false): ModuleItem {
 
     let item: ModuleItem;
@@ -116,20 +144,22 @@ export class InventoryManager {
     }
 
     item.initProperties();
+    const itemStackSize = item.getStackSize();
+    item.setStackSize(itemStackSize);
     if(item.getBaseItemId() == BaseItemType.CREDITS){
-      GameState.PartyManager.AddGold(item.getStackSize());
+      GameState.PartyManager.AddGold(itemStackSize);
       GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.CREDITS_RECEIVED);
     }else if(item.getBaseItemId() == BaseItemType.PAZAAK_CARD){
-      GameState.PazaakManager.AddCard(item.getModelVariation(), item.getStackSize());
+      GameState.PazaakManager.AddCard(item.getModelVariation(), itemStackSize);
       GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.ITEM_RECEIVED);
     }else{
       GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.ITEM_RECEIVED);
       item.load();
-      let hasItem = InventoryManager.getItemByTag(item.getTag());
+      const hasItem = InventoryManager.getItemMergeTarget(item);
       if(hasItem){
 
         if(!limitOne){
-          hasItem.setStackSize(hasItem.getStackSize() + item.getStackSize());
+          hasItem.setStackSize(hasItem.getStackSize() + itemStackSize);
         }else{
           hasItem.setStackSize(hasItem.getStackSize() + 1);
         }

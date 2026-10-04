@@ -7,13 +7,15 @@ npm-debug.log
 backup/
 
 .ds_store
+.DS_Store
 projects/
 Saves/
 /tests/
 # src/**/*.js
 dist/
 debug.log
-docs/
+docs/*
+!docs/port/
 coverage/
 scratch/
 research/
@@ -23,3 +25,11 @@ research/
 .vscode/mcp.json
 .vscode/chrome-debug-profile/
 exports/
+snapshots/
+tmp/
+swkotor/
+swkotor-data/
+logs/
+venv/
+xoreos/
+.assistant-port/
