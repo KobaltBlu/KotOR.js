@@ -33,3 +33,4 @@ logs/
 venv/
 xoreos/
 .assistant-port/
+.env
