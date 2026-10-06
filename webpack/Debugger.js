@@ -12,7 +12,7 @@ module.exports = (name, color) => ({
     ]
   },
   stats: commonStats,
-  devtool: !isProd ? 'eval-source-map' : 'source-map',
+  devtool: !isProd ? 'eval-source-map' : false,
   module: {
     rules: [
       {
