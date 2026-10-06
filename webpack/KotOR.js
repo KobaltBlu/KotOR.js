@@ -1,12 +1,30 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyPlugin = require("copy-webpack-plugin");
-const { ROOT, isProd, isDevServe, commonStats, commonResolve, makeDefinePlugin, makeWebpackBar, makeDevServer, makeHmrPlugins, makeDevOutput, ensureThreeGlobalBundle } = require('./common');
+const {
+  ROOT,
+  isProd,
+  isDevServe,
+  commonStats,
+  commonResolve,
+  makeCache,
+  makeProdOptimization,
+  makeDevtool,
+  makeDefinePlugin,
+  makeWebpackBar,
+  makeDevServer,
+  makeHmrPlugins,
+  makeDevOutput,
+  ensureThreeGlobalBundle,
+} = require('./common');
 
 const threeGlobalPath = ensureThreeGlobalBundle();
 
-module.exports = (name, color) => ({
+module.exports = (barName, color) => ({
+  name: 'kotor',
   mode: isProd ? 'production' : 'development',
+  cache: makeCache('kotor', __filename),
+  ...makeProdOptimization(),
   entry: {
     KotOR: [
       './src/KotOR.ts'
@@ -16,10 +34,13 @@ module.exports = (name, color) => ({
     ],
     'bink-worker': [
       './src/engine/workers/bink-worker.ts'
-    ]
+    ],
+    'worker-tex': [
+      './src/engine/workers/worker-tex.ts'
+    ],
   },
   stats: commonStats,
-  devtool: !isProd ? 'eval-source-map' : false,
+  devtool: makeDevtool('library'),
   module: {
     rules: [
       {
@@ -39,7 +60,7 @@ module.exports = (name, color) => ({
     ],
   },
   plugins: [
-    makeWebpackBar(name, color),
+    makeWebpackBar(barName, color),
     makeDefinePlugin(),
     ...makeHmrPlugins(false),
     new HtmlWebpackPlugin({
@@ -65,7 +86,6 @@ module.exports = (name, color) => ({
         { from: "src/assets/icons", to: "assets/icons" },
         { from: "src/assets/icons/icon.ico", to: "favicon.ico" },
         { from: threeGlobalPath, to: 'three.min.js' },
-        { from: 'node_modules/three/build/three.module.js', to: 'three.module.js' },
         { from: 'node_modules/@fortawesome/fontawesome-free/webfonts', to: 'webfonts' },
       ]
     }),

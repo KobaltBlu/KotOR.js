@@ -3,18 +3,36 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyPlugin = require("copy-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
-const { ROOT, isProd, cssRule, scssRule, assetRules, commonStats, commonResolve, makeDefinePlugin, makeWebpackBar, makeHmrPlugins, makeDevOutput, makeReactEsbuildOptions } = require('./common');
+const {
+  ROOT,
+  isProd,
+  cssRule,
+  scssRule,
+  assetRules,
+  commonStats,
+  commonResolve,
+  makeCache,
+  makeProdOptimization,
+  makeDevtool,
+  makeDefinePlugin,
+  makeWebpackBar,
+  makeHmrPlugins,
+  makeDevOutput,
+  makeReactEsbuildOptions,
+} = require('./common');
 
-module.exports = (name, color) => ({
+module.exports = (barName, color) => ({
+  name: 'forge',
   mode: isProd ? 'production' : 'development',
+  cache: makeCache('forge', __filename),
+  ...makeProdOptimization(),
   entry: {
     forge: [
       './src/apps/forge/index.tsx',
-      './src/engine/workers/worker-tex.ts'
     ]
   },
   stats: commonStats,
-  devtool: !isProd ? 'eval-source-map' : false,
+  devtool: makeDevtool('app'),
   module: {
     rules: [
       {
@@ -33,7 +51,7 @@ module.exports = (name, color) => ({
     ],
   },
   plugins: [
-    makeWebpackBar(name, color),
+    makeWebpackBar(barName, color),
     makeDefinePlugin(),
     ...makeHmrPlugins(true),
     new HtmlWebpackPlugin({
