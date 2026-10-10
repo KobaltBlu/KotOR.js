@@ -1,7 +1,7 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleObject } from "@engine/module/ModuleObject";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Area } from "@engine/module/Area";
+import type { GameObject } from "@engine/module/GameObject";
+import type { Creature } from "@engine/module/Creature";
 import type { ComputedPath } from "@engine/pathfinding/ComputedPath";
 import { beginInterAreaPath } from "@engine/pathfinding/inter-area-path";
 import { pathHopsAreWalkClear } from "@engine/pathfinding/path-hops-clear";
@@ -10,7 +10,7 @@ import { isCreature } from "@engine/module/guards/isCreature";
 
 /**
  * buildWalkPath / in-area return codes.
- * Thin façade over ModulePath.traverseToPoint + resume maps (Pass AD).
+ * Thin façade over AreaPath.traverseToPoint + resume maps (Pass AD).
  *
  * @file build-walk-path.ts
  */
@@ -53,11 +53,11 @@ function endpointsMatch(a: THREE.Vector3 | undefined, b: THREE.Vector3): boolean
 
 /**
  * Minimal buildWalkPath — classify traverseToPoint / inter-area into 1/2/3.
- * Resume state stays in ModulePath dfs/smooth maps.
+ * Resume state stays in AreaPath dfs/smooth maps.
  */
 export function buildWalkPath(
-  area: ModuleArea | undefined,
-  owner: ModuleObject,
+  area: Area | undefined,
+  owner: GameObject,
   info: PathFindInfoLite,
   opts: { smooth?: boolean } = {}
 ): PlotPathResult {
@@ -75,7 +75,7 @@ export function buildWalkPath(
     if(!isCreature(owner)){
       return { code: WalkPathCode.Fail };
     }
-    const creature = owner as ModuleCreature;
+    const creature = owner as Creature;
     const ok = beginInterAreaPath(creature, undefined, destAreaId);
     if(!ok && !(creature.interAreaWaypoints?.length)){
       info.lastCode = WalkPathCode.Fail;

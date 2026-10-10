@@ -3,7 +3,7 @@ import { ModuleTriggerType } from "@core/enums";
 import { ActionParameterType } from "@core/enums/actions/ActionParameterType";
 import { ActionStatus } from "@core/enums/actions/ActionStatus";
 import { ActionType } from "@core/enums/actions/ActionType";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import { Action } from "@engine/actions/Action";
 import { queueMoveIntoUseRange } from "@engine/actions/use-range";
 import { isCreature } from "@engine/module/guards/isCreature";
@@ -43,7 +43,7 @@ export class ActionDisarmMine extends Action {
 
   update(delta?: number): ActionStatus {
 
-    this.target = this.getParameter<ModuleObject>(0);
+    this.target = this.getParameter<GameObject>(0);
     if(!this.target){
       GameState.GuiTimingBarManager?.stopFor?.(this.owner);
       return ActionStatus.FAILED;

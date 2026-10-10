@@ -1,6 +1,6 @@
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 
 /**
  * DiffSettings.2da + GetWeightedDamageAmount
@@ -101,14 +101,14 @@ export function getWeightedDamageAmount(
   return rolled;
 }
 
-function isPcAttacker(attacker: ModuleCreature): boolean {
+function isPcAttacker(attacker: Creature): boolean {
   return !!(attacker.isPC || attacker.isPlayer);
 }
 
-function isPartyTarget(target: ModuleObject | undefined): boolean {
+function isPartyTarget(target: GameObject | undefined): boolean {
   if(!target) return false;
-  if(typeof (target as ModuleCreature).isPartyMember === 'function'){
-    if((target as ModuleCreature).isPartyMember()) return true;
+  if(typeof (target as Creature).isPartyMember === 'function'){
+    if((target as Creature).isPartyMember()) return true;
   }
   const party = GameState.PartyManager?.party;
   return Array.isArray(party) && party.indexOf(target as any) >= 0;
@@ -120,8 +120,8 @@ function isPartyTarget(target: ModuleObject | undefined): boolean {
 export function weightWeaponDiceRoll(
   roll: number,
   maxDice: number,
-  attacker: ModuleCreature,
-  target: ModuleObject | undefined
+  attacker: Creature,
+  target: GameObject | undefined
 ): number {
   if(maxDice <= 0) return roll;
 
@@ -141,7 +141,7 @@ export function weightWeaponDiceRoll(
  * MULTIPLIER, then DiffSettings MinHP1 floor.
  */
 export function applyPartyDifficultyDamage(
-  target: ModuleCreature,
+  target: Creature,
   amount: number
 ): number {
   let dmg = Math.max(0, amount | 0);

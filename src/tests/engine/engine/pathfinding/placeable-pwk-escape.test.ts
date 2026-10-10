@@ -8,8 +8,8 @@ import { composeObjectWalkmeshLocalToWorld } from "@engine/pathfinding/door-walk
 import { isStaticWalkClearOnWalkMesh } from "@engine/pathfinding/static-walk-blockers-mesh";
 import { isStaticWalkClearDetailed } from "@engine/pathfinding/static-walk-blockers";
 import { createWalkHitInfo, WalkHitKind } from "@engine/pathfinding/walk-hit-info";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModulePlaceable } from "@engine/module/ModulePlaceable";
+import type { Area } from "@engine/module/Area";
+import type { Placeable } from "@engine/module/Placeable";
 import type { OdysseyWalkMesh } from "@engine/odyssey/OdysseyWalkMesh";
 import type { OdysseyFace3 } from "@engine/render/three/odyssey";
 
@@ -213,9 +213,9 @@ describe("placeable desk footprint start-overlap escape", () => {
         );
       },
       collisionManager: { walkmesh: wok },
-    } as unknown as ModulePlaceable;
+    } as unknown as Placeable;
 
-    const area = { doors: [], placeables: [plc] } as unknown as ModuleArea;
+    const area = { doors: [], placeables: [plc] } as unknown as Area;
     const from = new THREE.Vector3(plcPos.x, plcPos.y + 0.04, 0);
     const to = new THREE.Vector3(plcPos.x, plcPos.y - 1.2, 0);
 

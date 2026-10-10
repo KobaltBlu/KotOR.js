@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModulePlaceable } from "@engine/module/ModulePlaceable";
+import type { Area } from "@engine/module/Area";
+import type { Placeable } from "@engine/module/Placeable";
 import type { WalkmeshEdge } from "@engine/odyssey/WalkmeshEdge";
 import type { OdysseyFace3 } from "@engine/render/three/odyssey";
 import { isWalkCheckBlockingFace } from "@engine/pathfinding/walk-check-material-mask";
@@ -91,12 +91,12 @@ function pushUniqueNormal(
 }
 
 function collectPlaceableFaceEdgeNormals(
-  area: ModuleArea,
+  area: Area,
   point: THREE.Vector3,
   collectR: number,
   out: THREE.Vector3[]
 ): void {
-  const placeables = area.placeables as ModulePlaceable[] | undefined;
+  const placeables = area.placeables as Placeable[] | undefined;
   if(!placeables?.length) return;
 
   const _n = new THREE.Vector3();
@@ -183,7 +183,7 @@ function collectPlaceableFaceEdgeNormals(
  * Includes placeable PWK blocking-face edge normals.
  */
 export function collectBlockingWalkEdgeNormals(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   point: THREE.Vector3,
   radius: number,
   out: THREE.Vector3[] = _scratchNormals

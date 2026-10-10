@@ -14,7 +14,7 @@ jest.mock('@engine/runtime/GameState', () => {
   return {
     GameState: {
       GameKey: 'KOTOR',
-      ModuleObjectManager: { GetNextPlayerId: () => 0x7fffffff },
+      GameObjectManager: { GetNextPlayerId: () => 0x7fffffff },
       SWRuleSet: {
         creatureAppearances: appearances,
         spells: [
@@ -30,11 +30,11 @@ jest.mock('@engine/runtime/GameState', () => {
   };
 });
 
-jest.mock('@engine/module/ModuleCreature', () => ({
-  ModuleCreature: class {},
+jest.mock('@engine/module/Creature', () => ({
+  Creature: class {},
   createDefaultPartyFollowInfo: () => ({}),
 }));
-jest.mock('@engine/module/ModulePlayer', () => ({ ModulePlayer: class {} }));
+jest.mock('@engine/module/PlayerCharacter', () => ({ PlayerCharacter: class {} }));
 jest.mock('@engine/module/guards/isCreature', () => ({ isCreature: () => false }));
 jest.mock('@engine/loaders', () => ({ ResourceLoader: {} }));
 jest.mock('@core/filesystem/GameFileSystem', () => ({ GameFileSystem: {} }));

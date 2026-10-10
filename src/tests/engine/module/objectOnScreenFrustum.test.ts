@@ -1,6 +1,6 @@
 /**
  * Object isOnScreen must use a frustum rebuilt from the current camera pose
- * (same timing as ModuleArea: FollowerCamera → updateViewportFrustum → sync).
+ * (same timing as Area: FollowerCamera → updateViewportFrustum → sync).
  * @jest-environment node
  */
 import { describe, expect, test } from '@jest/globals';

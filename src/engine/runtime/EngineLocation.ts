@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { Area } from "@engine/module/Area";
 
 /**
  * EngineLocation class.
@@ -13,10 +13,10 @@ import type { ModuleArea } from "@engine/module/ModuleArea";
 export default class EngineLocation {
   position: THREE.Vector3;
   rotation: THREE.Vector3;
-  area?: ModuleArea;
+  area?: Area;
   facing: number;
 
-  constructor(x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, area?: ModuleArea){
+  constructor(x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, area?: Area){
     this.position = new THREE.Vector3(x, y, z);
     this.rotation = new THREE.Vector3(rx, ry, rz);
     this.area = area;
@@ -66,7 +66,7 @@ export default class EngineLocation {
   }
 
   //Use the rotation values to update the facing value
-  // Yaw: atan2(-x, y) — matches ModuleCreature loadPlayer facing.
+  // Yaw: atan2(-x, y) — matches Creature loadPlayer facing.
   updateFacing(){
     this.facing = -Math.atan2(this.rotation.x, this.rotation.y);
   }
@@ -75,7 +75,7 @@ export default class EngineLocation {
     return this.area;
   }
 
-  setArea(area: ModuleArea){
+  setArea(area: Area){
     this.area = area;
   }
 

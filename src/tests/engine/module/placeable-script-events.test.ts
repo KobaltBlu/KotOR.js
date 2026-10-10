@@ -2,17 +2,17 @@
  * @jest-environment node
  *
  * Placeable OnDamaged / OnAttacked contract after polymorphism move out of
- * ModuleObject. Does not import ModulePlaceable (window-dependent import graph);
+ * GameObject. Does not import Placeable (window-dependent import graph);
  * mirrors the override bodies and asserts peer broadcast + script slot selection.
  */
 import { describe, expect, it, jest } from "@jest/globals";
 import { CombatActionType } from "@core/enums/combat/CombatActionType";
-import { ModuleObjectScript } from "@core/enums/module/ModuleObjectScript";
-import { ModuleObjectType } from "@core/enums/module/ModuleObjectType";
+import { ScriptHook } from "@core/enums/module/ScriptHook";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
 import { isCreature } from "@engine/module/guards/isCreature";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 
-/** Mirrors ModulePlaceable.onDamaged after the ModuleObject branch move. */
+/** Mirrors Placeable.onDamaged after the GameObject branch move. */
 function placeableOnDamaged(self: {
   isDead: () => boolean;
   combatData: { lastDamager?: unknown; lastAttacker?: unknown };
@@ -23,16 +23,16 @@ function placeableOnDamaged(self: {
 
   const damager = self.combatData.lastDamager ?? self.combatData.lastAttacker;
   if(isCreature(damager as any)){
-    (damager as ModuleCreature).broadcastCombatStateToParty();
+    (damager as Creature).broadcastCombatStateToParty();
   }
 
-  const onDamaged = self.scripts[ModuleObjectScript.PlaceableOnDamaged];
+  const onDamaged = self.scripts[ScriptHook.PlaceableOnDamaged];
   if(onDamaged){
     onDamaged.run(self);
   }
 }
 
-/** Mirrors ModulePlaceable.onAttacked after the ModuleObject branch move. */
+/** Mirrors Placeable.onAttacked after the GameObject branch move. */
 function placeableOnAttacked(
   self: {
     combatData: { lastAttacker?: unknown };
@@ -42,13 +42,13 @@ function placeableOnAttacked(
 ){
   const attacker = self.combatData.lastAttacker;
   if(isCreature(attacker as any)){
-    const atk = attacker as ModuleCreature;
+    const atk = attacker as Creature;
     atk.broadcastCombatStateToParty();
     atk.removeCombatInvisibilityEffects();
   }
   const isSpell = attackType == CombatActionType.CAST_SPELL || attackType == CombatActionType.ITEM_CAST_SPELL;
   const onAttacked = self.scripts[
-    isSpell ? ModuleObjectScript.PlaceableOnSpellCastAt : ModuleObjectScript.PlaceableOnMeleeAttacked
+    isSpell ? ScriptHook.PlaceableOnSpellCastAt : ScriptHook.PlaceableOnMeleeAttacked
   ];
   if(onAttacked){
     onAttacked.run(self);
@@ -57,7 +57,7 @@ function placeableOnAttacked(
 
 function makeCreaturePeer(){
   return {
-    objectType: ModuleObjectType.ModuleObject | ModuleObjectType.ModuleCreature,
+    objectType: GameObjectType.GameObject | GameObjectType.Creature,
     broadcastCombatStateToParty: jest.fn(),
     removeCombatInvisibilityEffects: jest.fn(),
   };
@@ -71,7 +71,7 @@ describe("placeable script events (polymorphic contract)", () => {
       isDead: () => false,
       combatData: { lastDamager: damager },
       scripts: {
-        [ModuleObjectScript.PlaceableOnDamaged]: { run },
+        [ScriptHook.PlaceableOnDamaged]: { run },
       },
     };
 
@@ -88,7 +88,7 @@ describe("placeable script events (polymorphic contract)", () => {
       isDead: () => true,
       combatData: { lastDamager: damager },
       scripts: {
-        [ModuleObjectScript.PlaceableOnDamaged]: { run },
+        [ScriptHook.PlaceableOnDamaged]: { run },
       },
     };
 
@@ -104,8 +104,8 @@ describe("placeable script events (polymorphic contract)", () => {
     const placeable = {
       combatData: { lastAttacker: attacker },
       scripts: {
-        [ModuleObjectScript.PlaceableOnMeleeAttacked]: { run: meleeRun },
-        [ModuleObjectScript.PlaceableOnSpellCastAt]: { run: spellRun },
+        [ScriptHook.PlaceableOnMeleeAttacked]: { run: meleeRun },
+        [ScriptHook.PlaceableOnSpellCastAt]: { run: spellRun },
       },
     };
 
@@ -124,8 +124,8 @@ describe("placeable script events (polymorphic contract)", () => {
     const placeable = {
       combatData: { lastAttacker: attacker },
       scripts: {
-        [ModuleObjectScript.PlaceableOnMeleeAttacked]: { run: meleeRun },
-        [ModuleObjectScript.PlaceableOnSpellCastAt]: { run: spellRun },
+        [ScriptHook.PlaceableOnMeleeAttacked]: { run: meleeRun },
+        [ScriptHook.PlaceableOnSpellCastAt]: { run: spellRun },
       },
     };
 

@@ -14,7 +14,7 @@ jest.mock("@engine/runtime/GameState", () => ({
   GameState: {
     module: undefined,
     PartyManager: { party: [] },
-    ModuleObjectManager: { GetObjectById: () => undefined },
+    GameObjectManager: { GetObjectById: () => undefined },
   },
 }));
 
@@ -55,10 +55,10 @@ jest.mock("@engine/pathfinding/tick-creature-drive", () => ({
 }));
 
 import { tickCreatureWalk } from "@engine/pathfinding/tick-creature-walk";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 
 describe("tickCreatureWalk mid-step hex (G2)", () => {
-  let owner: ModuleCreature & {
+  let owner: Creature & {
     pathBlockFailCount: number;
     setComputedPath: jest.Mock;
     setAnimationState: jest.Mock;
@@ -86,7 +86,7 @@ describe("tickCreatureWalk mid-step hex (G2)", () => {
       walk: false,
       force: 1,
       speed: 1,
-    } as unknown as ModuleCreature & {
+    } as unknown as Creature & {
       pathBlockFailCount: number;
       setComputedPath: jest.Mock;
       setAnimationState: jest.Mock;

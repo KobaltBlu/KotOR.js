@@ -5,13 +5,13 @@
  */
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import * as THREE from "three";
-import { ModuleObjectType } from "@core/enums/module/ModuleObjectType";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
 
 jest.mock("@engine/runtime/GameState", () => ({
   GameState: {
     module: undefined,
     PartyManager: { party: [] },
-    ModuleObjectManager: { GetObjectById: () => undefined },
+    GameObjectManager: { GetObjectById: () => undefined },
   },
 }));
 
@@ -44,17 +44,17 @@ jest.mock("@engine/pathfinding/tick-creature-drive", () => ({
 
 import { tickCreatureWalk } from "@engine/pathfinding/tick-creature-walk";
 import { DriveUpdateResult } from "@engine/pathfinding/tick-creature-drive";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 
 function makeCreature(
   id: number,
   x: number,
   y: number,
   extras: Record<string, unknown> = {}
-): ModuleCreature {
+): Creature {
   return {
     id,
-    objectType: ModuleObjectType.ModuleCreature,
+    objectType: GameObjectType.Creature,
     position: new THREE.Vector3(x, y, 0),
     rotation: { z: 0 },
     isDead: () => false,
@@ -70,7 +70,7 @@ function makeCreature(
     force: 1,
     speed: 1,
     ...extras,
-  } as unknown as ModuleCreature;
+  } as unknown as Creature;
 }
 
 describe("tickCreatureWalk start-overlap (real capsule)", () => {
@@ -88,12 +88,12 @@ describe("tickCreatureWalk start-overlap (real capsule)", () => {
     const blocker = makeCreature(9, 1.0, 0);
     const owner = makeCreature(1, 0.7, 0, {
       area: {
-        creatures: [] as ModuleCreature[],
+        creatures: [] as Creature[],
         isPointWalkable: () => true,
         getNearestWalkablePoint: (p: THREE.Vector3) => p.clone(),
       },
     });
-    (owner.area as { creatures: ModuleCreature[] }).creatures = [owner, blocker];
+    (owner.area as { creatures: Creature[] }).creatures = [owner, blocker];
 
     const before = owner.position.clone();
     const result = tickCreatureWalk(
@@ -119,12 +119,12 @@ describe("tickCreatureWalk start-overlap (real capsule)", () => {
       pathBlockFailCount: 3,
       walkSpeedFactor: 0.75,
       area: {
-        creatures: [] as ModuleCreature[],
+        creatures: [] as Creature[],
         isPointWalkable: () => true,
         getNearestWalkablePoint: (p: THREE.Vector3) => p.clone(),
       },
     });
-    (owner.area as { creatures: ModuleCreature[] }).creatures = [owner, blocker];
+    (owner.area as { creatures: Creature[] }).creatures = [owner, blocker];
 
     const result = tickCreatureWalk(
       owner,

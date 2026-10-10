@@ -3,7 +3,7 @@ import { GameEffectType } from "@core/enums/effects/GameEffectType";
 import { GameEffectDurationType } from "@core/enums/effects/GameEffectDurationType";
 import { GameState } from "@engine/runtime/GameState";
 import { hasImmunityType } from "@engine/effects/haste-slow";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 
 import { isCreature } from "@engine/module/guards/isCreature";
 
@@ -47,11 +47,11 @@ export class EffectNegativeLevel extends GameEffect {
     if(!isCreature(this.object)){
       return;
     }
-    const creature = this.object as ModuleCreature;
+    const creature = this.object as Creature;
 
     const creatorObj = this.getCreator();
     const versus = isCreature(creatorObj)
-      ? creatorObj as ModuleCreature
+      ? creatorObj as Creature
       : undefined;
     if(hasImmunityType(creature, IMMUNITY_NEGATIVE_LEVEL, versus)){
       return;
@@ -129,7 +129,7 @@ export class EffectNegativeLevel extends GameEffect {
   onRemove(){
     super.onRemove();
     if(!isCreature(this.object)) return;
-    const creature = this.object as ModuleCreature;
+    const creature = this.object as Creature;
     const classIdx = this.getInt(1) || 0;
     const levels = this.getInt(0) || 0;
     if(classIdx >= 0 && classIdx < creature.classes.length && levels > 0){

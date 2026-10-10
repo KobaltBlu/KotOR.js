@@ -5,8 +5,8 @@ import {
 } from "@engine/combat/attack-range";
 import { PerceptionMask } from "@engine/enums/engine/PerceptionMask";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 
 import { isCreature } from "@engine/module/guards/isCreature";
 import { isDoor } from "@engine/module/guards/isDoor";
@@ -24,8 +24,8 @@ import { isPlaceable } from "@engine/module/guards/isPlaceable";
 
 /** True when viewer has a perceptionList entry with SEEN bit for target. */
 export function hasPerceptionSeen(
-  viewer: ModuleObject,
-  target: ModuleObject
+  viewer: GameObject,
+  target: GameObject
 ): boolean {
   if(!viewer?.perceptionList || !target){
     return false;
@@ -47,8 +47,8 @@ export function hasPerceptionSeen(
  * party-UI path skips the visibility gate — mirrored for party members.
  */
 export function hasTargetBeenDetected(
-  attacker: ModuleCreature,
-  target: ModuleObject
+  attacker: Creature,
+  target: GameObject
 ): boolean {
   if(!attacker || !target){
     return false;
@@ -69,8 +69,8 @@ export function hasTargetBeenDetected(
 
 /** Gap distance used by GetNearestEnemy: |Δpos| − creperspace − target.creperspace. */
 export function getEnemyGapDistance(
-  from: ModuleCreature,
-  target: ModuleCreature
+  from: Creature,
+  target: Creature
 ): number {
   const magnitude = from.position.distanceTo(target.position);
   return magnitude - getCreaturePersonalSpace(from) - getCreaturePersonalSpace(target);
@@ -83,8 +83,8 @@ export function getEnemyGapDistance(
  * is not rejected solely by the raw-distance LOS clamp.
  */
 export function getNearestEnemyLosMaxDistance(
-  attacker: ModuleCreature,
-  candidate: ModuleCreature,
+  attacker: Creature,
+  candidate: Creature,
   maxRange: number
 ): number {
   return (
@@ -94,10 +94,10 @@ export function getNearestEnemyLosMaxDistance(
   );
 }
 
-function collectAreaCreatures(attacker: ModuleCreature): ModuleCreature[] {
-  const out: ModuleCreature[] = [];
+function collectAreaCreatures(attacker: Creature): Creature[] {
+  const out: Creature[] = [];
   const seen = new Set<number>();
-  const push = (c: ModuleCreature | undefined) => {
+  const push = (c: Creature | undefined) => {
     if(!c || seen.has(c.id)) return;
     seen.add(c.id);
     out.push(c);
@@ -122,7 +122,7 @@ function collectAreaCreatures(attacker: ModuleCreature): ModuleCreature[] {
 
 export type GetNearestEnemyOptions = {
   /** Exclude this object id from the search. Defaults to attacker. */
-  exclude?: ModuleObject;
+  exclude?: GameObject;
   /** Cap; default MaxCleaveRange(attacker). */
   maxRange?: number;
 };
@@ -132,10 +132,10 @@ export type GetNearestEnemyOptions = {
  * Hostile + alive + SEEN + combat LOS + creperspace gap within maxRange.
  */
 export function getNearestEnemy(
-  attacker: ModuleCreature,
+  attacker: Creature,
   maxRange?: number,
   options?: GetNearestEnemyOptions
-): ModuleCreature | undefined {
+): Creature | undefined {
   if(!attacker?.area){
     return undefined;
   }
@@ -146,7 +146,7 @@ export function getNearestEnemy(
   const exclude = options?.exclude ?? attacker;
   const excludeId = exclude?.id;
 
-  let best: ModuleCreature | undefined;
+  let best: Creature | undefined;
   let bestGap = range;
 
   const candidates = collectAreaCreatures(attacker);
@@ -175,7 +175,7 @@ export function getNearestEnemy(
  * Diagnostic counts for why GetNearestEnemy returned nothing (duelLog / tests).
  */
 export function explainNearestEnemyMiss(
-  attacker: ModuleCreature,
+  attacker: Creature,
   maxRange?: number,
   options?: GetNearestEnemyOptions
 ): {

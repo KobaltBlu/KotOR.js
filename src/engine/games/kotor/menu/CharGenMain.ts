@@ -5,7 +5,7 @@ import { OdysseyTexture } from "@engine/render/three/odyssey/OdysseyTexture";
 import { OdysseyModel3D } from "@engine/render/three/odyssey";
 import { CharGenClasses } from "@engine/games/CharGenClasses";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { LevelUpManager } from "@engine/managers/LevelUpManager";
 import * as THREE from "three";
 
@@ -161,7 +161,7 @@ export class CharGenMain extends GameMenu {
     );
   }
 
-  getDisplayCreature(): ModuleCreature | undefined {
+  getDisplayCreature(): Creature | undefined {
     if(this.levelUpMode){
       return LevelUpManager.creature ?? undefined;
     }
@@ -172,7 +172,7 @@ export class CharGenMain extends GameMenu {
    * ShowLevelUpGUI
    * opens MAINCG with LEVELUPPNL attached (our childMenu).
    */
-  openForLevelUp(creature: ModuleCreature) {
+  openForLevelUp(creature: Creature) {
     if(!creature) return;
     this.levelUpMode = true;
     this.childMenu = this.manager.MenuLevelUp;
@@ -204,17 +204,17 @@ export class CharGenMain extends GameMenu {
    * Build a disposable appearance clone for level-up 3D (SetAppearance on
    * a dedicated — never reparent the live party model).
    */
-  attachLevelUpPortrait(source: ModuleCreature) {
+  attachLevelUpPortrait(source: Creature) {
     if(!source || !this._3dView) return;
     this.clearLevelUpPortrait();
     const gen = this.portraitGen;
 
-    const clone = new GameState.Module.ModuleArea.ModuleCreature();
+    const clone = new GameState.Module.Area.Creature();
     clone.setAppearance(source.appearance);
     clone.goodEvil = source.goodEvil | 0;
     clone.setContext(this._3dView);
     if(source.equipment?.ARMOR){
-      clone.equipment.ARMOR = new GameState.Module.ModuleArea.ModuleItem(source.equipment.ARMOR.template);
+      clone.equipment.ARMOR = new GameState.Module.Area.Item(source.equipment.ARMOR.template);
     }
     void clone.loadModel().then((model: OdysseyModel3D) => {
       if(gen !== this.portraitGen || !this.levelUpMode){

@@ -3,8 +3,8 @@ import { EngineMode } from "@engine/enums/engine/EngineMode";
 import { GameEngineType } from "@core/enums/engine/GameEngineType";
 import { DLGObject } from "@engine/dialog/DLGObject";
 import { DLGNode } from "@engine/dialog/DLGNode";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 import { ConversationState } from "@core/enums/dialog/ConversationState";
 import { GameState } from "@engine/runtime/GameState";
 import { DLGConversationType } from "@core/enums/dialog/DLGConversationType";
@@ -52,7 +52,7 @@ import { ConfigClient } from "@core/filesystem/ConfigClient";
 import { Mouse } from "@engine/controls/Mouse";
 
 import { isCreature } from "@engine/module/guards/isCreature";
-import { isObject } from "@engine/module/guards/isObject";
+import { isGameObject } from "@engine/module/guards/isGameObject";
 import {
   isAnimation2DAFlagSet,
   isDialogAnimation,
@@ -64,7 +64,7 @@ export const DIALOG_PARTICIPANT_RETRY_MS = 0x5dc;
 
 export interface DialogParticipantReadyActor {
   participant: string;
-  moduleObject?: { model?: unknown } | undefined;
+  gameObject?: { model?: unknown } | undefined;
   animations?: unknown[] | undefined;
 }
 
@@ -123,8 +123,8 @@ export class CutsceneManager {
   /** Last shown entry retained after showReplies clears currentEntry (debugger). */
   static lastDialogEntry: DLGNode | undefined;
 
-  static listener: ModuleObject;
-  static owner: ModuleObject;
+  static listener: GameObject;
+  static owner: GameObject;
 
   static ended: boolean;
   static state: ConversationState;
@@ -134,7 +134,7 @@ export class CutsceneManager {
    * Creatures that had dialog UnequipItems/UnequipHItem applied — restored via
    * ShowEquippedItems-equivalent at conversation end (SetDialogDelay).
    */
-  static dialogUnequippedCreatures: ModuleCreature[] = [];
+  static dialogUnequippedCreatures: Creature[] = [];
   /**
    * K2 SetKeepStealthInDialog — when true, skip UnstealthParty on dialog start
    * (GuiInGame check in LoadDialog).
@@ -171,7 +171,7 @@ export class CutsceneManager {
    * Actors that received dialog AnimList / default talk/listen this entry
    * polled for WAIT_ANIM (IsAnimationPlayingInDialog).
    */
-  static dialogAnimParticipants: ModuleObject[] = [];
+  static dialogAnimParticipants: GameObject[] = [];
   /** TSL ActionStartConversation nBarkX/nBarkY (−1 = default layout). */
   static barkScreenX: number = -1;
   static barkScreenY: number = -1;
@@ -188,8 +188,8 @@ export class CutsceneManager {
    */
   static pendingPartyDialogSwitch: {
     dialog: DLGObject;
-    owner: ModuleObject;
-    listener: ModuleObject;
+    owner: GameObject;
+    listener: GameObject;
     privateConversation: boolean;
     ignoreObjectNames: string[];
     barkScreenX: number;
@@ -209,14 +209,14 @@ export class CutsceneManager {
     speaker: {} as ICameraParticipant,
   }
 
-  static getCurrentListener(): ModuleObject {
+  static getCurrentListener(): GameObject {
     if (this.currentEntry) {
       return this.currentEntry.listener;
     }
     return this.listener;
   }
 
-  static getCurrentOwner(): ModuleObject {
+  static getCurrentOwner(): GameObject {
     if (this.currentEntry) {
       return this.currentEntry.owner;
     }
@@ -253,8 +253,8 @@ export class CutsceneManager {
    * with the PC as listener must not swap (e.g. Zelka ActionStartConversation).
    */
   static needsPartyDialogLeaderSwitch(
-    owner: ModuleObject | undefined,
-    listener: ModuleObject | undefined,
+    owner: GameObject | undefined,
+    listener: GameObject | undefined,
   ): boolean {
     let resolvedOwner = owner;
     let resolvedListener = listener ?? GameState.PartyManager?.party?.[0];
@@ -310,7 +310,7 @@ export class CutsceneManager {
    * Speaker / listener (or current entry pair) for private-conversation gating.
    * Non-participants keep AI locomotion and are not forced into dialog facing.
    */
-  static isDialogParticipant(obj: ModuleObject | undefined): boolean {
+  static isDialogParticipant(obj: GameObject | undefined): boolean {
     if(!obj) return false;
     if(obj === this.owner || obj === this.listener) return true;
     if(this.currentEntry){
@@ -327,7 +327,7 @@ export class CutsceneManager {
     this.paused = true;
     const owner = this.getCurrentOwner();
     if(isCreature(owner)){
-      (owner as ModuleCreature).setActivity(4, true, 0);
+      (owner as Creature).setActivity(4, true, 0);
     }
   }
 
@@ -341,7 +341,7 @@ export class CutsceneManager {
     this.paused = false;
     const owner = this.getCurrentOwner();
     if(isCreature(owner)){
-      const creature = owner as ModuleCreature;
+      const creature = owner as Creature;
       creature.activityManager(2);
       creature.setActivity(4, false, 0);
       creature.setActivity(1, false, 0);
@@ -424,7 +424,7 @@ export class CutsceneManager {
    * Resolve AnimList / StuntList participant for readiness checks.
    * PLAYER / OWNER mirror SendDialogEntryNode name compares.
    */
-  static resolveDialogParticipantObject(participant: string): ModuleObject | undefined {
+  static resolveDialogParticipantObject(participant: string): GameObject | undefined {
     const key = (participant || '').toLocaleLowerCase();
     if(!key){ return undefined; }
     if(key === 'player'){
@@ -439,7 +439,7 @@ export class CutsceneManager {
     if(key === 'npc2'){
       return GameState.PartyManager.party[2];
     }
-    return GameState.ModuleObjectManager.GetObjectByTag(participant);
+    return GameState.GameObjectManager.GetObjectByTag(participant);
   }
 
   /**
@@ -460,7 +460,7 @@ export class CutsceneManager {
     if(options.isNonDependant(name)){ return true; }
 
     if(options.stuntActor){
-      const obj = options.stuntActor.moduleObject;
+      const obj = options.stuntActor.gameObject;
       if(!obj){ return false; }
       // CUT stunt anims need both the creature mesh and stunt animation list.
       if(!obj.model){ return false; }
@@ -499,7 +499,7 @@ export class CutsceneManager {
 
   /**
    * SendDialogEntryNode required-participant gate.
-   * StuntList actors need moduleObject + model + CUT animations.
+   * StuntList actors need gameObject + model + CUT animations.
    */
   static areRequiredEntryParticipantsReady(entry: DLGNode): boolean {
     if(!entry?.animations?.length){ return true; }
@@ -595,7 +595,7 @@ export class CutsceneManager {
       if(privateConvo && !this.isDialogParticipant(member)){
         continue;
       }
-      const creature = member as ModuleCreature;
+      const creature = member as Creature;
       creature.cancelLocomotionActions();
       creature.clearLocomotionState(true);
       // Clear sticky use clips (e.g. unlockdr) left by ActionUnlockObject —
@@ -614,8 +614,8 @@ export class CutsceneManager {
 
   static startConversation(
     dialog: DLGObject,
-    owner: ModuleObject,
-    listener: ModuleObject = GameState.PartyManager.party[0],
+    owner: GameObject,
+    listener: GameObject = GameState.PartyManager.party[0],
     privateConversation: boolean = false,
     ignoreObjectNames: string[] = [],
     barkScreenX: number = -1,
@@ -811,7 +811,7 @@ export class CutsceneManager {
     for(let i = 0; i < party.length; i++){
       const member = party[i];
       if(isCreature(member) && member.stealthMode){
-        (member as ModuleCreature).setStealthMode(false);
+        (member as Creature).setStealthMode(false);
       }
     }
   }
@@ -824,10 +824,10 @@ export class CutsceneManager {
     if(!this.dialog || (!this.unequipItems && !this.unequipHeadItem)){
       return;
     }
-    const seen = new Set<ModuleCreature>();
-    const tryUnequip = (obj: ModuleObject | undefined) => {
+    const seen = new Set<Creature>();
+    const tryUnequip = (obj: GameObject | undefined) => {
       if(!isCreature(obj)) return;
-      const creature = obj as ModuleCreature;
+      const creature = obj as Creature;
       if(seen.has(creature)) return;
       seen.add(creature);
       this.hideEquippedItemsForDialog(creature);
@@ -837,7 +837,7 @@ export class CutsceneManager {
     tryUnequip(this.listener);
     if(this.dialog.stuntActors){
       for(const actor of this.dialog.stuntActors.values()){
-        tryUnequip(actor.moduleObject);
+        tryUnequip(actor.gameObject);
       }
     }
   }
@@ -846,7 +846,7 @@ export class CutsceneManager {
    * Stash + unequip for dialog (HideEquippedItems). Tracks creatures for
    * restore at endConversation.
    */
-  static hideEquippedItemsForDialog(creature: ModuleCreature){
+  static hideEquippedItemsForDialog(creature: Creature){
     if(!creature || (!this.unequipItems && !this.unequipHeadItem)) return;
     if(typeof creature.hideEquippedItemsForDialog === 'function'){
       creature.hideEquippedItemsForDialog(this.unequipItems, this.unequipHeadItem);
@@ -962,14 +962,14 @@ export class CutsceneManager {
     if(this.dialog.getConversationType() != DLGConversationType.COMPUTER){
       // N16: only force look-at on dialog participants (speaker/listener).
       if(isCreature(this.currentEntry.speaker)){
-        const creature = this.currentEntry.speaker as ModuleCreature;
+        const creature = this.currentEntry.speaker as Creature;
         if(this.isDialogParticipant(creature)){
           creature.lookAt(this.currentEntry.listener);
         }
       }
 
       if(isCreature(this.currentEntry.listener)){
-        const creature = this.currentEntry.listener as ModuleCreature;
+        const creature = this.currentEntry.listener as Creature;
         if(this.isDialogParticipant(creature)){
           creature.lookAt(this.currentEntry.speaker);
         }
@@ -987,9 +987,9 @@ export class CutsceneManager {
 
     //participant facing — skip for computer (no head-look framing)
     if (this.cutsceneMode == CutsceneMode.DIALOG && this.dialog.getConversationType() != DLGConversationType.COMPUTER) {
-      if (isObject(this.currentEntry.listener) && isObject(this.currentEntry.speaker)) {
-        const listenerCre = this.currentEntry.listener as ModuleCreature;
-        const speakerCre = this.currentEntry.speaker as ModuleCreature;
+      if (isGameObject(this.currentEntry.listener) && isGameObject(this.currentEntry.speaker)) {
+        const listenerCre = this.currentEntry.listener as Creature;
+        const speakerCre = this.currentEntry.speaker as Creature;
         if (
           !this.currentEntry.listener.lockDialogOrientation &&
           isCreature(this.currentEntry.listener) &&
@@ -1234,8 +1234,8 @@ export class CutsceneManager {
     const wasBark = this.cutsceneMode == CutsceneMode.BARK;
     const hadPendingPartySwitch = !!this.pendingPartyDialogSwitch;
     // Capture before teardown — ScriptEndDialogu / k_def_endconv (master 1011)
-    const endDialogTargets: ModuleObject[] = [];
-    const pushEndDialog = (obj: ModuleObject | undefined) => {
+    const endDialogTargets: GameObject[] = [];
+    const pushEndDialog = (obj: GameObject | undefined) => {
       if(!obj || endDialogTargets.indexOf(obj) >= 0) return;
       endDialogTargets.push(obj);
     };
@@ -1327,9 +1327,9 @@ export class CutsceneManager {
     }
 
     // overlay stop when leaving dialog (SetOverlayAnimation arg3=0).
-    const stopOverlayOn = (obj: ModuleObject | undefined) => {
+    const stopOverlayOn = (obj: GameObject | undefined) => {
       if(isCreature(obj)){
-        const c = obj as ModuleCreature;
+        const c = obj as Creature;
         if(typeof c.stopOverlayAnimation === 'function'){
           c.stopOverlayAnimation();
         }
@@ -1365,10 +1365,10 @@ export class CutsceneManager {
           if(!actor){ continue; }
           // Unbound after SpawnAvailableNPC race — try live tag; retry window
           // reloads stunt CUT anims via rebindMissingStuntActors.
-          if(!isCreature(actor.moduleObject)){
+          if(!isCreature(actor.gameObject)){
             const live = this.resolveDialogParticipantObject(participant.participant);
             if(isCreature(live)){
-              actor.moduleObject = live;
+              actor.gameObject = live;
               live.setCutsceneMode(true);
             }else{
               if(!this.isDialogNonDependant(participant.participant)){
@@ -1377,7 +1377,7 @@ export class CutsceneManager {
               continue;
             }
           }
-          const creature = actor.moduleObject as ModuleCreature;
+          const creature = actor.gameObject as Creature;
           if(!creature.model || !actor.animations?.length){
             if(!this.isDialogNonDependant(participant.participant)){
               console.warn('CutsceneManager: stunt participant not ready', participant.participant);
@@ -1429,7 +1429,7 @@ export class CutsceneManager {
    * parallel dialog-only slot. Combat READY/attack stances must go through
    * animationState or CutsceneAttack playTwoDAAnimation is blocked.
    */
-  static playDialogCreatureAnimation(actor: ModuleObject, animationConstant: number) {
+  static playDialogCreatureAnimation(actor: GameObject, animationConstant: number) {
     this.registerDialogAnimParticipant(actor);
     if(!isCreature(actor)){
       const anim = actor.animationConstantToAnimation(animationConstant);
@@ -1438,7 +1438,7 @@ export class CutsceneManager {
       }
       return;
     }
-    const creature = actor as ModuleCreature;
+    const creature = actor as Creature;
     creature.dialogAnimation = null;
     creature.setAnimationState(animationConstant);
   }
@@ -1447,7 +1447,7 @@ export class CutsceneManager {
    * SetDialogAnimations — speaker default 0x2736 / 0x27aa when
    * IsInjured (current/max HP < 0.2).
    */
-  static getDialogTalkAnimation(actor: ModuleObject | undefined): ModuleCreatureAnimState {
+  static getDialogTalkAnimation(actor: GameObject | undefined): ModuleCreatureAnimState {
     return actor?.isInjured?.() ? ModuleCreatureAnimState.TALK_INJURED : ModuleCreatureAnimState.TALK_NORMAL;
   }
 
@@ -1455,14 +1455,14 @@ export class CutsceneManager {
    * SetDialogAnimations — listener default 0x272e / 0x27ab when
    * IsInjured (current/max HP < 0.2).
    */
-  static getDialogListenAnimation(actor: ModuleObject | undefined): ModuleCreatureAnimState {
+  static getDialogListenAnimation(actor: GameObject | undefined): ModuleCreatureAnimState {
     return actor?.isInjured?.() ? ModuleCreatureAnimState.LISTEN_INJURED : ModuleCreatureAnimState.LISTEN;
   }
 
   /**
    * CanPlayDialogAnimations — skip when dead or debilitated.
    */
-  static canPlayDialogAnimations(actor: ModuleObject | undefined): boolean {
+  static canPlayDialogAnimations(actor: GameObject | undefined): boolean {
     if(!actor){ return false; }
     if(actor.isDead?.()){ return false; }
     if(actor.isDebilitated?.()){ return false; }
@@ -1499,7 +1499,7 @@ export class CutsceneManager {
     for (let i = 0; i < entry.animations.length; i++) {
       const participant = entry.animations[i];
       if(!participant.participant){ continue; }
-      const actor = GameState.ModuleObjectManager.GetObjectByTag(participant.participant);
+      const actor = GameState.GameObjectManager.GetObjectByTag(participant.participant);
       if(!actor){
         if(!this.isDialogNonDependant(participant.participant)){
           console.warn('CutsceneManager: dialog missing participant', participant.participant);
@@ -1703,9 +1703,9 @@ export class CutsceneManager {
     if(!isPmOrPc){ return; }
 
     const destroyed = !!(listener as { destroyed?: boolean }).destroyed;
-    const dead = typeof (listener as ModuleCreature).isDead === 'function'
-      && (listener as ModuleCreature).isDead();
-    const notInParty = GameState.PartyManager.party.indexOf(listener as ModuleCreature) < 0;
+    const dead = typeof (listener as Creature).isDead === 'function'
+      && (listener as Creature).isDead();
+    const notInParty = GameState.PartyManager.party.indexOf(listener as Creature) < 0;
     if(!destroyed && !dead && !notInParty){ return; }
 
     GameState.PartyManager.syncPlayerToActivePartyPC?.();
@@ -1803,7 +1803,7 @@ export class CutsceneManager {
   /**
    * UpdateShotCamera CU_PB_Range path — speaker AnimList id → dialoganimations row.
    */
-  static resolveCloseUpExtra(node: DLGNode, speaker: ModuleObject | undefined): number {
+  static resolveCloseUpExtra(node: DLGNode, speaker: GameObject | undefined): number {
     if(!node || !speaker) return 0;
     const table = GameState.TwoDAManager.datatables.get('dialoganimations');
     if(!table) return 0;
@@ -1831,7 +1831,7 @@ export class CutsceneManager {
     // quarter-unit close-up pull after CU_PB_Range lookup.
     if(
       GameState.GameKey == GameEngineType.TSL
-      && (speaker as ModuleCreature).appearance == 0x235
+      && (speaker as Creature).appearance == 0x235
     ){
       range += 0.25;
     }
@@ -1911,7 +1911,7 @@ export class CutsceneManager {
    * @param listener - The listener
    * @param speaker - The speaker
    */
-  static setCameraParticipants(listener: ModuleObject, speaker: ModuleObject){
+  static setCameraParticipants(listener: GameObject, speaker: GameObject){
     this.cameraState.listener.participant = listener;
     this.cameraState.listener.position = undefined;
     this.cameraState.listener.rotation = undefined;
@@ -2000,7 +2000,7 @@ export class CutsceneManager {
   }
 
   /**
-   * Copy a ModuleCamera PerspectiveCamera pose onto camera_dialog.
+   * Copy a AreaCamera PerspectiveCamera pose onto camera_dialog.
    * Mirrors SetShot(6, pos, quat, fov).
    */
   static applyPlaceableShotToDialogCamera(src: THREE.PerspectiveCamera) {
@@ -2065,12 +2065,12 @@ export class CutsceneManager {
     this.tickParticipantRetry(delta);
 
     this.dialog.stuntActors.forEach( async (actor) => {
-      const moduleObject = actor.moduleObject;
-      if(moduleObject){
+      const gameObject = actor.gameObject;
+      if(gameObject){
         // Dirty-aware world AABB — matrix-only when animation leaves local
         // bounds unchanged; CollisionContext prefers MDL header proxy.
-        moduleObject.markCollisionMatrixDirty("cutscene");
-        moduleObject.computeBoundingBox();
+        gameObject.markCollisionMatrixDirty("cutscene");
+        gameObject.computeBoundingBox();
       }
     });
 
@@ -2127,9 +2127,9 @@ export class CutsceneManager {
    * (FF) or is replaced. Looping holds only until the clip has started — a
    * forever-loop must not block entry advance (Delay still applies).
    */
-  static isDialogAnimationPlaying(obj: ModuleObject): boolean {
+  static isDialogAnimationPlaying(obj: GameObject): boolean {
     if(!isCreature(obj)) return false;
-    const creature = obj as ModuleCreature;
+    const creature = obj as Creature;
     const da = creature.dialogAnimation;
     if(da){
       const looping = isAnimation2DAFlagSet(da.data?.looping);
@@ -2162,7 +2162,7 @@ export class CutsceneManager {
     return false;
   }
 
-  static registerDialogAnimParticipant(actor: ModuleObject | undefined) {
+  static registerDialogAnimParticipant(actor: GameObject | undefined) {
     if(!actor) return;
     if(this.dialogAnimParticipants.indexOf(actor) >= 0) return;
     this.dialogAnimParticipants.push(actor);
@@ -2365,10 +2365,10 @@ export class CutsceneManager {
       ? this.cameraState.speaker.participant
       : this.cameraState.listener.participant;
     const spApp = isCreature(speakerObj)
-      ? (speakerObj as ModuleCreature).getAppearance()?.id ?? -1
+      ? (speakerObj as Creature).getAppearance()?.id ?? -1
       : -1;
     const lpApp = isCreature(listenerObj)
-      ? (listenerObj as ModuleCreature).getAppearance()?.id ?? -1
+      ? (listenerObj as Creature).getAppearance()?.id ?? -1
       : -1;
     const modded = isDialogGameModded(
       GameState.Flags.EnableOverride,
@@ -2441,7 +2441,7 @@ export class CutsceneManager {
    * OldHitCheck uses object position + object camera height; otherwise
    * CAMERAHOOK (with height fallback).
    */
-  static getDialogFramingPosition(obj: ModuleObject): THREE.Vector3 {
+  static getDialogFramingPosition(obj: GameObject): THREE.Vector3 {
     if(this.dialog?.oldHitCheck){
       const position = obj.position.clone();
       position.z += obj.getCameraHeight();

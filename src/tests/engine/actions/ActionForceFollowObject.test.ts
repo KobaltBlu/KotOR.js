@@ -25,7 +25,7 @@ jest.mock("@engine/runtime/GameState", () => ({
       party: [],
       GetFollowPosition: (o: { position: THREE.Vector3 }) => o.position.clone(),
     },
-    ModuleObjectManager: {
+    GameObjectManager: {
       GetObjectById: (id: number) => (id === 2 ? mockTarget : undefined),
     },
     ActionFactory: {

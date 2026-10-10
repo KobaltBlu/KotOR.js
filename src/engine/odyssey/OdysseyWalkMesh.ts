@@ -4,8 +4,8 @@ import { BinaryReader } from "@core/binary/BinaryReader";
 import { OdysseyWalkMeshType } from "@core/enums/odyssey/OdysseyWalkMeshType";
 import { IOdysseyModelAABBNode } from "@engine/interface/odyssey/IOdysseyModelAABBNode";
 import { TwoDAManager } from "@core/managers/TwoDAManager";
-import type { ModuleObject } from "@engine/module/ModuleObject";
-import type { ModuleRoom } from "@engine/module/ModuleRoom";
+import type { GameObject } from "@engine/module/GameObject";
+import type { AreaRoom } from "@engine/module/AreaRoom";
 import { OdysseyFace3 } from "@engine/render/three/odyssey/OdysseyFace3";
 import { SurfaceMaterial } from "@engine/movement/SurfaceMaterial";
 import { TileColor } from "@engine/movement/TileColor";
@@ -58,7 +58,7 @@ export class OdysseyWalkMesh {
   // static SURFACEMATERIALS: SurfaceMaterial =;
   static TILECOLORS: TileColor[] = [];
   name: string;
-  moduleObject: ModuleObject | ModuleRoom;
+  gameObject: GameObject | AreaRoom;
   header: any = { };
   /**
    * relative_use_positions[0] —
@@ -420,7 +420,7 @@ export class OdysseyWalkMesh {
 
   /**
    * Debug-only edge normal ArrowHelpers. Idempotent unless `force` — do not
-   * call from ModuleRoom.show (rebuild stalls on every VIS activation).
+   * call from AreaRoom.show (rebuild stalls on every VIS activation).
    */
   buildEdgeNormalHelpers(color: number = 0xff0000, maxLength: number = 0.5, force: boolean = false){
     if(this.edgeNormalHelpers && !force){

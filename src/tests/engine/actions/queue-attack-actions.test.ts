@@ -27,7 +27,7 @@ jest.mock('@engine/runtime/GameState', () => ({
     PartyManager: {
       getCurrentPlayer: () => mockPlayer,
     },
-    ModuleObjectManager: {
+    GameObjectManager: {
       showObject: (...args: unknown[]) => mockShowObject(...args),
     },
   },

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import {
   dumpLiveGff,
   flattenGffTemplate,
@@ -13,7 +13,7 @@ import {
 } from "./object-overview-utils";
 
 export interface ObjectInspectorProps {
-  object: ModuleObject | null;
+  object: GameObject | null;
 }
 
 const GffNodeView: React.FC<{ node: GffTreeNode; depth?: number }> = ({ node, depth = 0 }) => {

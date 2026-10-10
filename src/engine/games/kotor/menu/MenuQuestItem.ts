@@ -2,7 +2,7 @@ import { GameState } from "@engine/runtime/GameState";
 import { GameMenu } from "@engine/gui";
 import type { GUIListBox, GUILabel, GUIButton } from "@engine/gui";
 import { GUIInventoryItem } from "@engine/gui/protoitem/GUIInventoryItem";
-import { ModuleItem } from "@engine/module/ModuleItem";
+import { Item } from "@engine/module/Item";
 import {
   InventoryFilter,
   checkInventoryFilter,
@@ -66,7 +66,7 @@ export class MenuQuestItem extends GameMenu {
   populateItemListBox(){
     const pc = GameState.PartyManager?.party?.[0];
     const bag = GameState.InventoryManager?.getInventory?.() || [];
-    const nodes: ModuleItem[] = [];
+    const nodes: Item[] = [];
     for(let i = 0; i < bag.length; i++){
       const item = bag[i];
       if(!item) continue;
@@ -90,7 +90,7 @@ export class MenuQuestItem extends GameMenu {
   /** OnControlEntered — item property description. */
   UpdateSelected(){
     const item = unwrapInventoryListNode(this.selected);
-    if(item instanceof ModuleItem){
+    if(item instanceof Item){
       this.LB_ITEM_DESCRIPTION?.setItem(item.getPropertyDescription());
     }else{
       this.LB_ITEM_DESCRIPTION?.setItem('');

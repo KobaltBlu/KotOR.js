@@ -3,8 +3,8 @@ import { GameEffectDurationType } from "@core/enums/effects/GameEffectDurationTy
 import { AttackResult } from "@core/enums/combat/AttackResult";
 import { GameState } from "@engine/runtime/GameState";
 import { MDLLoader, TextureLoader } from "@engine/loaders";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 import { OdysseyModel } from "@engine/odyssey";
 import { OdysseyModel3D } from "@engine/render/three/odyssey";
 import type { CombatAttackData } from "@engine/combat/CombatAttackData";
@@ -29,7 +29,7 @@ export const VFX_COM_BLASTER_IMPACT = 4024;
 /** VFX_COM_BLASTER_IMPACT_GROUND — ResolveProjectileMissImpact int 0xFC0. */
 export const VFX_COM_BLASTER_IMPACT_GROUND = 0xfc0; // 4032
 
-function getRangedImpactVfxId(weapon: ModuleObject | undefined): number {
+function getRangedImpactVfxId(weapon: GameObject | undefined): number {
   const table = GameState.TwoDAManager?.datatables?.get('damagehitvisual');
   // Blaster row is 12; prefer weapon damage-flags mapping later
   const row = table?.getByID?.(12) || table?.rows?.[12];
@@ -75,7 +75,7 @@ export function spawnWorldImpactVfx(
 /**
  * Apply hit impact VFX on the react target (creature model impact node).
  */
-export function applyHitImpactVfx(target: ModuleObject, weapon?: ModuleObject): void {
+export function applyHitImpactVfx(target: GameObject, weapon?: GameObject): void {
   if(!target || !GameState.GameEffectFactory?.EffectVisualEffect) return;
   const vfx = new GameState.GameEffectFactory.EffectVisualEffect();
   vfx.setDurationType(GameEffectDurationType.INSTANT);
@@ -89,7 +89,7 @@ export function applyHitImpactVfx(target: ModuleObject, weapon?: ModuleObject): 
  */
 export function signalRangedImpactVfx(
   attack: CombatAttackData,
-  owner: ModuleCreature
+  owner: Creature
 ): void {
   if(!attack?.rangedAttack) return;
 

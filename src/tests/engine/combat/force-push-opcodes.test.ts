@@ -9,7 +9,7 @@ import { srcPath } from '@/tests/helpers/paths';
 describe('Force Push port wiring', () => {
   it('GameEffectFactory FromType constructs EffectForcePushed', () => {
     const src = fs.readFileSync(
-      srcPath('effects', 'GameEffectFactory.ts'),
+      srcPath('engine', 'effects', 'GameEffectFactory.ts'),
       'utf8'
     );
     expect(src).toMatch(
@@ -19,7 +19,7 @@ describe('Force Push port wiring', () => {
 
   it('K2 opcodes 269 and 392 have action functions', () => {
     const src = fs.readFileSync(
-      srcPath('nwscript', 'NWScriptDefK2.ts'),
+      srcPath('engine', 'nwscript', 'NWScriptDefK2.ts'),
       'utf8'
     );
     expect(src).toMatch(
@@ -35,7 +35,7 @@ describe('Force Push port wiring', () => {
 
   it('K1 opcodes remain wired', () => {
     const src = fs.readFileSync(
-      srcPath('nwscript', 'NWScriptDefK1.ts'),
+      srcPath('engine', 'nwscript', 'NWScriptDefK1.ts'),
       'utf8'
     );
     expect(src).toMatch(
@@ -48,7 +48,7 @@ describe('Force Push port wiring', () => {
 
   it('SetStateInternal FORCEPUSH sets ambient PRONE_FORCE_PUSHED', () => {
     const src = fs.readFileSync(
-      srcPath('effects', 'EffectSetStateInternal.ts'),
+      srcPath('engine', 'effects', 'EffectSetStateInternal.ts'),
       'utf8'
     );
     expect(src).toMatch(/PRONE_FORCE_PUSHED/);
@@ -58,7 +58,7 @@ describe('Force Push port wiring', () => {
 
   it('EffectForcePushed forces TEMPORARY SetState duration type', () => {
     const src = fs.readFileSync(
-      srcPath('effects', 'EffectForcePushed.ts'),
+      srcPath('engine', 'effects', 'EffectForcePushed.ts'),
       'utf8'
     );
     expect(src).toMatch(
@@ -68,11 +68,11 @@ describe('Force Push port wiring', () => {
 
   it('outer EffectSetState applies SETAISTATE -0x101 activity mask', () => {
     const setState = fs.readFileSync(
-      srcPath('effects', 'EffectSetState.ts'),
+      srcPath('engine', 'effects', 'EffectSetState.ts'),
       'utf8'
     );
     const helpers = fs.readFileSync(
-      srcPath('effects', 'set-state.ts'),
+      srcPath('engine', 'effects', 'set-state.ts'),
       'utf8'
     );
     expect(helpers).toMatch(/SET_STATE_OUTER_AI_ACTIVITY_MASK = 0xfeff/);
@@ -81,7 +81,7 @@ describe('Force Push port wiring', () => {
 
   it('setFacingVector writes xOrientation/yOrientation, not props', () => {
     const src = fs.readFileSync(
-      srcPath('module', 'ModuleCreature.ts'),
+      srcPath('engine', 'module', 'Creature.ts'),
       'utf8'
     );
     expect(src).toMatch(
@@ -93,7 +93,7 @@ describe('Force Push port wiring', () => {
 
   it('player cam control is gated while force-pushed', () => {
     const src = fs.readFileSync(
-      srcPath('module', 'ModuleCreature.ts'),
+      srcPath('engine', 'module', 'Creature.ts'),
       'utf8'
     );
     expect(src).toMatch(/forcePushLocked/);
@@ -102,7 +102,7 @@ describe('Force Push port wiring', () => {
 
   it('anim selection uses getActiveSetStateType / ambient PRONE_FORCE_PUSHED', () => {
     const src = fs.readFileSync(
-      srcPath('module', 'ModuleCreature.ts'),
+      srcPath('engine', 'module', 'Creature.ts'),
       'utf8'
     );
     expect(src).toMatch(/getActiveSetStateType/);

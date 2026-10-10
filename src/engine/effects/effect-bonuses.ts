@@ -1,6 +1,6 @@
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
 import type { GameEffect } from "@engine/effects/GameEffect";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import { GameState } from "@engine/runtime/GameState";
 import {
   damageTypeFlagToChannel,
@@ -13,7 +13,7 @@ import {
  */
 
 export function getEffectBonusSum(
-  object: ModuleObject,
+  object: GameObject,
   incType: GameEffectType,
   decType: GameEffectType,
   amountIndex: number,
@@ -36,7 +36,7 @@ export function getEffectBonusSum(
 }
 
 /** Ability: int[0]=ABILITY_*, int[1]=amount */
-export function getAbilityEffectBonus(object: ModuleObject, abilityId: number): number {
+export function getAbilityEffectBonus(object: GameObject, abilityId: number): number {
   return getEffectBonusSum(
     object,
     GameEffectType.EffectAbilityIncrease,
@@ -53,10 +53,10 @@ export function getAbilityEffectBonus(object: ModuleObject, abilityId: number): 
  * Cap at 20 is applied by SavingThrowRoll.
  */
 export function getSavingThrowEffectBonus(
-  object: ModuleObject,
+  object: GameObject,
   saveKind: number,
   saveType: number = 0,
-  versus?: ModuleObject
+  versus?: GameObject
 ): number {
   const effects = object?.effects;
   if(!effects?.length) return 0;
@@ -99,7 +99,7 @@ export function getSavingThrowEffectBonus(
 }
 
 /** Attack: int[0]=bonus */
-export function getAttackEffectBonus(object: ModuleObject): number {
+export function getAttackEffectBonus(object: GameObject): number {
   return getEffectBonusSum(
     object,
     GameEffectType.EffectAttackIncrease,
@@ -109,7 +109,7 @@ export function getAttackEffectBonus(object: ModuleObject): number {
 }
 
 /** Force resistance amount: int[0]=amount */
-export function getForceResistanceBonus(object: ModuleObject): number {
+export function getForceResistanceBonus(object: GameObject): number {
   return getEffectBonusSum(
     object,
     GameEffectType.EffectForceResistanceIncrease,
@@ -123,7 +123,7 @@ export function getForceResistanceBonus(object: ModuleObject): number {
  * int[0] = DAMAGE_BONUS_* (iprp_damagecost row); int[1] = DAMAGE_TYPE_* flags.
  * Returns total flat-equivalent for BASE packaging (legacy callers).
  */
-export function getDamageIncreaseBonus(object: ModuleObject): number {
+export function getDamageIncreaseBonus(object: GameObject): number {
   return getDamageIncreaseBonusesByChannel(object).reduce((a, b) => a + b, 0);
 }
 
@@ -132,7 +132,7 @@ export function getDamageIncreaseBonus(object: ModuleObject): number {
  * Rolls dice codes from iprp_damagecost; physical/elemental go to flag bit indices.
  */
 export function getDamageIncreaseBonusesByChannel(
-  object: ModuleObject,
+  object: GameObject,
   options: { maximize?: boolean; critMultiplier?: number } = {}
 ): number[] {
   const channels = new Array(16).fill(0);
@@ -166,7 +166,7 @@ export const DETECT_FLAG_SEE_INVISIBLE = 0x01;
 export const DETECT_FLAG_ULTRA_VISION = 0x02;
 export const DETECT_FLAG_TRUE_SEEING = 0x04;
 
-export function getDetectFlags(observer: ModuleObject): number {
+export function getDetectFlags(observer: GameObject): number {
   let flags = 0;
   const creatureFlags = (observer as any)?.visionFlags;
   if(typeof creatureFlags === 'number'){

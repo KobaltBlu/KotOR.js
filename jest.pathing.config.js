@@ -15,7 +15,7 @@ module.exports = {
   testMatch: [
     "<rootDir>/src/tests/engine/engine/pathfinding/**/*.test.ts",
     "<rootDir>/src/tests/engine/engine/movement/**/*.test.ts",
-    "<rootDir>/src/tests/engine/module/ModuleArea.walk-candidates.cache.test.ts",
+    "<rootDir>/src/tests/engine/module/Area.walk-candidates.cache.test.ts",
     "<rootDir>/src/tests/engine/actions/ActionFollowLeader.test.ts",
     "<rootDir>/src/tests/engine/actions/ActionForceFollowObject.test.ts",
     "<rootDir>/src/tests/engine/actions/ActionMoveToPoint*.test.ts",

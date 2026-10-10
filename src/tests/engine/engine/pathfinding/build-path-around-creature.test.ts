@@ -7,12 +7,12 @@ import * as THREE from "three";
 import { ComputedPath } from "@engine/pathfinding/ComputedPath";
 import { PathPoint } from "@engine/pathfinding/PathPoint";
 import { buildPathAroundCreature } from "@engine/pathfinding/build-path-around-creature";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 
 jest.mock("@engine/runtime/GameState", () => ({
   GameState: {
     PartyManager: { party: [] },
-    ModuleObjectManager: { GetObjectById: () => undefined },
+    GameObjectManager: { GetObjectById: () => undefined },
   },
 }));
 
@@ -32,7 +32,7 @@ function makeCreature(
   pos: THREE.Vector3,
   pathPoints: THREE.Vector3[],
   id = 1
-): ModuleCreature {
+): Creature {
   const path = ComputedPath.FromVector3List(pathPoints);
   return {
     id,
@@ -45,7 +45,7 @@ function makeCreature(
     },
     getFacing: () => 0,
     getComputedPath: () => path,
-  } as unknown as ModuleCreature;
+  } as unknown as Creature;
 }
 
 describe("buildPathAroundCreature", () => {
@@ -58,7 +58,7 @@ describe("buildPathAroundCreature", () => {
     const blocker = {
       id: 9,
       position: new THREE.Vector3(100, 100, 0),
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
 
     const before = creature.getComputedPath()!.points.map((p) => p.vector.clone());
     const result = buildPathAroundCreature(creature, blocker);
@@ -77,7 +77,7 @@ describe("buildPathAroundCreature", () => {
     const blocker = {
       id: 9,
       position: new THREE.Vector3(0.5, 0.7, 0),
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
     creature.area.creatures = [blocker];
 
     const result = buildPathAroundCreature(creature, blocker);
@@ -100,7 +100,7 @@ describe("buildPathAroundCreature", () => {
     const blocker = {
       id: 9,
       position: new THREE.Vector3(50, 50, 0),
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
 
     for(let i = 0; i < 20; i++){
       buildPathAroundCreature(creature, blocker);

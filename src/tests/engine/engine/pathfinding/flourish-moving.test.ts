@@ -56,7 +56,7 @@ describe("flourish moving overlay routing", () => {
     91: { name: "g1w1", overlay: false },
   };
 
-  /** Mirrors ModuleCreature.isFlourishMoving (PC axes path). */
+  /** Mirrors Creature.isFlourishMoving (PC axes path). */
   function isFlourishMoving(host: {
     isPlayer?: boolean;
     isPM?: boolean;

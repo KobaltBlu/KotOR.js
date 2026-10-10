@@ -27,7 +27,7 @@ jest.mock("@engine/runtime/GameState", () => ({
   GameState: {
     module: { area: { id: 1 } },
     ActionFactory: {},
-    ModuleObjectManager: {
+    GameObjectManager: {
       GetObjectById: (id: number) => {
         if(id === 2){
           return {
@@ -110,7 +110,7 @@ import { ActionMoveToPoint } from "@engine/actions/ActionMoveToPoint";
 import { ActionParameterType } from "@core/enums/actions/ActionParameterType";
 import { ActionStatus } from "@core/enums/actions/ActionStatus";
 import { WalkPathCode } from "@engine/pathfinding/build-walk-path";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 
 function makeMockPath(points: THREE.Vector3[]) {
   const path: any = {
@@ -193,7 +193,7 @@ describe("ActionMoveToPoint live-chase repath", () => {
       setComputedPath: () => {},
       getComputedPath: () => undefined,
       clearLocomotionState: jest.fn(),
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
 
     const target = {
       id: 2,
@@ -245,7 +245,7 @@ describe("ActionMoveToPoint live-chase repath", () => {
       setComputedPath: () => {},
       getComputedPath: () => undefined,
       clearLocomotionState: jest.fn(),
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
 
     const target = {
       id: 2,
@@ -298,7 +298,7 @@ describe("ActionMoveToPoint live-chase repath", () => {
       walk: false,
       force: 0,
       speed: 0,
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
 
     const action = new ActionMoveToPoint();
     action.setOwner(owner);
@@ -352,7 +352,7 @@ describe("ActionMoveToPoint live-chase repath", () => {
       speed: 0,
       collisionTimer: 0,
       blockingTimer: 0,
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
     mockPlotPath.mockReturnValue({ code: WalkPathCode.Ready, path });
     mockWalkUpdate.mockImplementation(() => {
       owner.setComputedPath(undefined);
@@ -412,7 +412,7 @@ describe("ActionMoveToPoint live-chase repath", () => {
       animState: 0,
       collisionTimer: 0,
       blockingTimer: 0,
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
 
     mockIsInUseRange.mockReturnValue(true);
 
@@ -459,7 +459,7 @@ describe("ActionMoveToPoint live-chase repath", () => {
       animState: 0,
       collisionTimer: 0,
       blockingTimer: 0,
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
 
     mockIsInUseRange.mockReturnValue(true);
 
@@ -520,7 +520,7 @@ describe("ActionMoveToPoint live-chase repath", () => {
       collisionTimer: 0,
       blockingTimer: 6,
       pathFindApproachPersonalSpace: 0,
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
 
     mockWalkUpdate.mockReturnValue(3); // BLOCKED
     mockIsWalkmeshHopBlocked
@@ -615,7 +615,7 @@ describe("ActionMoveToPoint live-chase repath", () => {
       collisionTimer: 0,
       blockingTimer: 6,
       pathFindApproachPersonalSpace: 0,
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
 
     mockWalkUpdate.mockReturnValue(3); // BLOCKED
     mockIsWalkmeshHopBlocked
@@ -722,7 +722,7 @@ describe("ActionMoveToPoint live-chase repath", () => {
       collisionTimer: 0,
       blockingTimer: 6,
       pathFindApproachPersonalSpace: 0,
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
 
     const detour = new THREE.Vector3(79.5, 76.02, 0);
     const realDest = new THREE.Vector3(80.32, 73.0, 0);
@@ -806,7 +806,7 @@ describe("ActionMoveToPoint live-chase repath", () => {
       collisionTimer: 0,
       blockingTimer: 6,
       pathFindApproachPersonalSpace: 0,
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
 
     const detour = new THREE.Vector3(79.4, 76.02, 0);
     const realDest = new THREE.Vector3(80.32, 73.0, 0);
@@ -876,7 +876,7 @@ describe("ActionMoveToPoint live-chase repath", () => {
       blockingTimer: 0,
       pathFindApproachPersonalSpace: 0,
       pathFindDrivePersonalSpace: -1,
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
 
     const detour = new THREE.Vector3(77.89, 80.51, 0);
     const realDest = new THREE.Vector3(80.32, 73.0, 0);
@@ -961,7 +961,7 @@ describe("ActionMoveToPoint live-chase repath", () => {
       collisionTimer: 0,
       blockingTimer: 6,
       pathFindApproachPersonalSpace: 0,
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
 
     mockWalkUpdate.mockReturnValue(3);
     mockIsWalkmeshHopBlocked.mockReturnValue(true);
@@ -1026,7 +1026,7 @@ describe("ActionMoveToPoint live-chase repath", () => {
       speed: 0,
       collisionTimer: 0,
       blockingTimer: 6,
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
 
     mockWalkUpdate.mockReturnValue(3); // BLOCKED
     mockIsWalkmeshHopBlocked.mockReturnValue(true);
@@ -1071,7 +1071,7 @@ describe("ActionMoveToPoint live-chase repath", () => {
       force: 0,
       speed: 0,
       pathFindDrivePersonalSpace: 0,
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
 
     const action = new ActionMoveToPoint();
     action.setOwner(owner);
@@ -1119,7 +1119,7 @@ describe("ActionMoveToPoint live-chase repath", () => {
       collisionTimer: 0,
       blockingTimer: 0,
       pathFindApproachPersonalSpace: 0,
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
 
     // First update: still Incomplete / empty → pause + IN_PROGRESS, must call plot.
     mockPlotPath.mockReturnValue({

@@ -11,7 +11,7 @@ jest.mock('@engine/runtime/GameState', () => ({
     PartyManager: {
       getCurrentPlayer: () => undefined,
     },
-    ModuleObjectManager: {
+    GameObjectManager: {
       GetObjectById: (id: number) => objectMap.get(id),
     },
     TwoDAManager: { datatables: new Map() },
@@ -97,8 +97,8 @@ import {
 import { CombatRound } from '@engine/combat/CombatRound';
 import { CombatRoundAction } from '@engine/combat/CombatRoundAction';
 import { CombatActionType } from '@core/enums/combat/CombatActionType';
-import { ModuleObjectConstant } from '@core/enums/module/ModuleObjectConstant';
-import { ModuleObjectType } from '@core/enums/module/ModuleObjectType';
+import { GameObjectConstant } from '@core/enums/module/GameObjectConstant';
+import { GameObjectType } from '@core/enums/module/GameObjectType';
 import { queueAttackActions } from '@engine/combat/queue-attack-actions';
 
 function makeCreature(id: number){
@@ -108,7 +108,7 @@ function makeCreature(id: number){
   };
   const creature: any = {
     id,
-    objectType: ModuleObjectType.ModuleCreature,
+    objectType: GameObjectType.Creature,
     combatData,
     combatRound: undefined as CombatRound | undefined,
     actionQueue: { actionTypeExists: () => false, add: jest.fn() },
@@ -128,14 +128,14 @@ describe('resolve-combat-object-id', () => {
 
   it('normalizes INVALID/0 to 0', () => {
     expect(normalizeCombatObjectId(0)).toBe(0);
-    expect(normalizeCombatObjectId(ModuleObjectConstant.OBJECT_INVALID)).toBe(0);
+    expect(normalizeCombatObjectId(GameObjectConstant.OBJECT_INVALID)).toBe(0);
     expect(normalizeCombatObjectId(42)).toBe(42);
   });
 
   it('looks up registered objects', () => {
     const a = makeCreature(1001);
     expect(lookupCombatObjectById(1001)).toBe(a);
-    expect(lookupCombatObjectById(ModuleObjectConstant.OBJECT_INVALID)).toBeUndefined();
+    expect(lookupCombatObjectById(GameObjectConstant.OBJECT_INVALID)).toBeUndefined();
   });
 });
 

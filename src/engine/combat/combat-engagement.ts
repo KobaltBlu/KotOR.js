@@ -37,7 +37,7 @@ export function getExcitedDurationMs(row: number): number {
   return EXCITED_DURATION_FALLBACK_MS[row] ?? 0;
 }
 
-/** Minimal shape for client combat-mode helpers (avoids ModuleCreature import cycle). */
+/** Minimal shape for client combat-mode helpers (avoids Creature import cycle). */
 export type ClientCombatModeCreature = {
   clientCombatMode?: boolean;
   combatData?: {

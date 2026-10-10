@@ -31,7 +31,7 @@ jest.mock("@engine/runtime/GameState", () => ({
   GameState: {
     module: { area: { id: 1 } },
     ActionFactory: {},
-    ModuleObjectManager: { GetObjectById: () => undefined },
+    GameObjectManager: { GetObjectById: () => undefined },
     PartyManager: { party: [] },
   },
 }));
@@ -89,7 +89,7 @@ jest.mock("@engine/actions/use-range", () => ({
 import { ActionMoveToPoint } from "@engine/actions/ActionMoveToPoint";
 import { ActionParameterType } from "@core/enums/actions/ActionParameterType";
 import { WalkPathCode } from "@engine/pathfinding/build-walk-path";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 
 describe("ActionMoveToPoint capsule-safe dest snap", () => {
   beforeEach(() => {
@@ -143,7 +143,7 @@ describe("ActionMoveToPoint capsule-safe dest snap", () => {
       walk: false,
       force: 0,
       speed: 0,
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
 
     const action = new ActionMoveToPoint();
     action.setOwner(owner);

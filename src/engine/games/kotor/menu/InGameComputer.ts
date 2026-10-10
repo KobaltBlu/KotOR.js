@@ -2,7 +2,7 @@ import { GameState } from "@engine/runtime/GameState";
 import { EngineMode } from "@engine/enums/engine/EngineMode";
 import { GameMenu } from "@engine/gui";
 import type { GUIListBox, GUILabel } from "@engine/gui";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import { DLGObject } from "@engine/dialog/DLGObject";
 import { DLGNode } from "@engine/dialog/DLGNode";
 import { ConversationState } from "@core/enums/dialog/ConversationState";
@@ -51,8 +51,8 @@ export class InGameComputer extends GameMenu {
   LB_MESSAGE: GUIListBox;
   LBL_OBSCURE: GUILabel;
 
-  owner: ModuleObject;
-  listener: ModuleObject;
+  owner: GameObject;
+  listener: GameObject;
 
   ended: boolean = false;
 

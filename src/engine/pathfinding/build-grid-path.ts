@@ -1,7 +1,7 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Area } from "@engine/module/Area";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 import { getPathPersonalSpace } from "@engine/combat/attack-range";
 import { hasClearWalkLine, hasWalkLineClear } from "@engine/pathfinding/walk-line-clear";
 import { smoothSelection } from "@engine/pathfinding/smooth-select-nodes";
@@ -77,11 +77,11 @@ function cellPosition(
  * Returns world waypoints including origin and dest, or undefined if unreachable.
  */
 export function buildGridPath(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   origin: THREE.Vector3,
   dest: THREE.Vector3,
   options: {
-    owner?: ModuleObject;
+    owner?: GameObject;
     personalSpace?: number;
     checkCreatures?: boolean;
     maxLateral?: number;
@@ -103,7 +103,7 @@ export function buildGridPath(
   const perspace = Math.max(
     0.1,
     options.personalSpace
-      ?? (options.owner ? getPathPersonalSpace(options.owner as ModuleCreature) : 0.5)
+      ?? (options.owner ? getPathPersonalSpace(options.owner as Creature) : 0.5)
   );
   const cell = perspace;
   const alongCount = Math.min(MAX_ALONG, Math.max(1, Math.round(dist / cell)));
@@ -189,8 +189,8 @@ function searchGridDfs(
   maxLateral: number,
   isWalkableCell: (along: number, lateral: number) => boolean,
   canStep: (a0: number, l0: number, a1: number, l1: number) => boolean,
-  area: ModuleArea,
-  owner: ModuleObject | undefined,
+  area: Area,
+  owner: GameObject | undefined,
   perspace: number,
   tmpA: THREE.Vector3
 ): THREE.Vector3[] | undefined {

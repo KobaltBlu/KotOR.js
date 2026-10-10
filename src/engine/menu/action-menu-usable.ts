@@ -3,8 +3,8 @@ import { BaseItemType } from "@core/enums/combat/BaseItemType";
 import { CombatFeatType } from "@core/enums/combat/CombatFeatType";
 import { SkillType } from "@core/enums/nwscript/SkillType";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleItem } from "@engine/module/ModuleItem";
+import type { Creature } from "@engine/module/Creature";
+import type { Item } from "@engine/module/Item";
 import type { UseLimitationProp } from "@engine/menu/action-menu-usable-pure";
 import {
   ItemTypeCategory,
@@ -50,7 +50,7 @@ export const UsableItemMask = {
   OTHER: 4,
 } as const;
 
-function getItemType(item: ModuleItem): number {
+function getItemType(item: Item): number {
   const t = item.baseItem?.itemType;
   return typeof t === 'number' ? t : -1;
 }
@@ -60,7 +60,7 @@ function getItemType(item: ModuleItem): number {
  * CastSpell property present and useable. Item powers use UserType 4
  * (not 1); do not filter on usertype here.
  */
-function hasUseableCastSpellProperty(item: ModuleItem): boolean {
+function hasUseableCastSpellProperty(item: Item): boolean {
   for(let i = 0; i < item.properties.length; i++){
     const prop = item.properties[i];
     if(
@@ -78,7 +78,7 @@ function hasUseableCastSpellProperty(item: ModuleItem): boolean {
  * IsLeaderUsableItem fallthrough for forearm/droid devices:
  * CastSpell + spells.ItemTargeting == 1.
  */
-function hasItemTargetingCastSpellProperty(item: ModuleItem): boolean {
+function hasItemTargetingCastSpellProperty(item: Item): boolean {
   for(let i = 0; i < item.properties.length; i++){
     const prop = item.properties[i];
     if(
@@ -96,7 +96,7 @@ function hasItemTargetingCastSpellProperty(item: ModuleItem): boolean {
   return false;
 }
 
-function hasTrapProperty(item: ModuleItem): boolean {
+function hasTrapProperty(item: Item): boolean {
   for(let i = 0; i < item.properties.length; i++){
     const prop = item.properties[i];
     if(prop.isUseable() && prop.is(ModuleItemProperty.Trap)){
@@ -106,14 +106,14 @@ function hasTrapProperty(item: ModuleItem): boolean {
   return false;
 }
 
-export function passesItemDenySubrace(creature: ModuleCreature, item: ModuleItem): boolean {
+export function passesItemDenySubrace(creature: Creature, item: Item): boolean {
   return passesDenySubraceMask(
     creature.getSubraceIndex?.() ?? creature.subraceIndex ?? 0,
     item.baseItem?.denySubrace | 0
   );
 }
 
-function collectUseLimitationProps(item: ModuleItem): UseLimitationProp[] {
+function collectUseLimitationProps(item: Item): UseLimitationProp[] {
   const out: UseLimitationProp[] = [];
   for(let i = 0; i < item.properties.length; i++){
     const prop = item.properties[i];
@@ -129,7 +129,7 @@ function collectUseLimitationProps(item: ModuleItem): UseLimitationProp[] {
 /**
  * CheckItemRaceRestrictions (menu subset via CanUseItem).
  */
-export function passesItemRaceRestriction(creature: ModuleCreature, item: ModuleItem): boolean {
+export function passesItemRaceRestriction(creature: Creature, item: Item): boolean {
   return checkItemRaceRestrictionsPure(
     creature.getRace?.() ?? creature.race ?? -1,
     creature.getSubraceIndex?.() ?? creature.subraceIndex ?? 0,
@@ -144,7 +144,7 @@ export function passesItemRaceRestriction(creature: ModuleCreature, item: Module
  * (alignment / class / race / feat). Weapon size + CheckProficiencies omitted
  * for personal-use HUD items (weapon_type typically 0).
  */
-export function canUseItemForMenu(creature: ModuleCreature, item: ModuleItem): boolean {
+export function canUseItemForMenu(creature: Creature, item: Item): boolean {
   if(!creature || !item) return false;
   const props = collectUseLimitationProps(item);
   const hasProficiencyAll = !!creature.getHasFeat?.(CombatFeatType.PROFICIENCY_ALL);
@@ -181,8 +181,8 @@ export function canUseItemForMenu(creature: ModuleCreature, item: ModuleItem): b
  * Category gates first; every success path ends in CanUseItem.
  */
 export function isLeaderUsableItem(
-  creature: ModuleCreature,
-  item: ModuleItem,
+  creature: Creature,
+  item: Item,
   _fromEquipment: boolean,
   mask: number
 ): boolean {
@@ -236,8 +236,8 @@ export function isLeaderUsableItem(
  * Also dims while InstantUseItem combat lockout is active.
  */
 export function isUsableItemActive(
-  creature: ModuleCreature,
-  item: ModuleItem,
+  creature: Creature,
+  item: Item,
   fromEquipment: boolean = false
 ): boolean {
   if(
@@ -298,7 +298,7 @@ export function isUsableItemActive(
 }
 
 /** CreateUsableItemEntry name: "%s (%s)" with TLK 0x9475 "(Self)". */
-export function getUsableItemMenuName(item: ModuleItem): string {
+export function getUsableItemMenuName(item: Item): string {
   const base = item?.getName?.() || '';
   const selfLabel = GameState.TLKManager?.GetStringById?.(0x9475)?.Value;
   if(selfLabel){
@@ -307,7 +307,7 @@ export function getUsableItemMenuName(item: ModuleItem): string {
   return base;
 }
 
-export function isStealthDeviceItem(item: ModuleItem): boolean {
+export function isStealthDeviceItem(item: Item): boolean {
   if(!item) return false;
   return (
     getItemType(item) === ItemTypeCategory.STEALTH_DEVICE ||
@@ -315,7 +315,7 @@ export function isStealthDeviceItem(item: ModuleItem): boolean {
   );
 }
 
-export function isGrenadeHostileItem(item: ModuleItem): boolean {
+export function isGrenadeHostileItem(item: Item): boolean {
   if(!item || item.plot) return false;
   // CreateHostileItemEntry: item_type == 6 only.
   return getItemType(item) === ItemTypeCategory.GRENADE;
@@ -332,7 +332,7 @@ const DOOR_PLACEABLE_MINE_SUBTYPES = new Set([
   0x19, 0x1a,
 ]);
 
-function getUseableTrapSubtype(item: ModuleItem): number {
+function getUseableTrapSubtype(item: Item): number {
   if(!item) return -1;
   for(let i = 0; i < item.properties.length; i++){
     const prop = item.properties[i];
@@ -344,7 +344,7 @@ function getUseableTrapSubtype(item: ModuleItem): number {
 }
 
 /** GetSpikeDetails(param=1): ItemType 0x1b + ThievesTools. */
-export function isSecuritySpikeItem(item: ModuleItem): boolean {
+export function isSecuritySpikeItem(item: Item): boolean {
   if(!item) return false;
   if(getItemType(item) !== ItemTypeCategory.SECURITY_SPIKES) return false;
   for(let i = 0; i < item.properties.length; i++){
@@ -360,7 +360,7 @@ export function isSecuritySpikeItem(item: ModuleItem): boolean {
  * GetDoorInterfaceMines / GetPlaceableInterfaceMines mine row:
  * non-plot, ItemType 0x1c, Trap subtype in the door/placeable whitelist.
  */
-export function isDoorOrPlaceableMineItem(item: ModuleItem): boolean {
+export function isDoorOrPlaceableMineItem(item: Item): boolean {
   if(!item || item.plot) return false;
   if(getItemType(item) !== ItemTypeCategory.MINE) return false;
   return DOOR_PLACEABLE_MINE_SUBTYPES.has(getUseableTrapSubtype(item));
@@ -369,7 +369,7 @@ export function isDoorOrPlaceableMineItem(item: ModuleItem): boolean {
 /**
  * placeable GetUseItems: CastSpell with spells.ItemTargeting == 2.
  */
-export function isPlaceableTargetUseItem(item: ModuleItem): boolean {
+export function isPlaceableTargetUseItem(item: Item): boolean {
   if(!item) return false;
   for(let i = 0; i < item.properties.length; i++){
     const prop = item.properties[i];

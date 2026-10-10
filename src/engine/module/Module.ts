@@ -24,12 +24,12 @@ import { AudioPriorityGroup } from "@core/enums/audio/AudioPriorityGroup";
 import { IModuleScripts } from "@engine/interface/module/IModuleScripts";
 import { IAreaListItem } from "@core/interface/area/IAreaListItem";
 import type { GameEvent } from "@engine/events/GameEvent";
-import { ModuleArea } from "@engine/module/ModuleArea";
-import { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleItem } from "@engine/module/ModuleItem";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import { Area } from "@engine/module/Area";
+import { Creature } from "@engine/module/Creature";
+import type { Item } from "@engine/module/Item";
+import type { GameObject } from "@engine/module/GameObject";
 import { ModuleTimeManager } from "@engine/module/ModuleTimeManager";
-import { ModuleObjectScript } from "@core/enums/module/ModuleObjectScript";
+import { ScriptHook } from "@core/enums/module/ScriptHook";
 import { IPCMessageType } from "@engine/enums/server/ipc/IPCMessageType";
 import type { NWScriptInstance } from "@engine/nwscript/NWScriptInstance";
 import { GameEngineType } from "@core/enums/engine/GameEngineType";
@@ -63,13 +63,13 @@ type ModuleScriptKeys = 'Mod_OnAcquirItem'|'Mod_OnActvtItem'|'Mod_OnClientEntr'|
  */
 export class Module {
 
-  static ModuleArea: typeof ModuleArea = ModuleArea;
+  static Area: typeof Area = Area;
 
   ifo: GFFObject;
 
   areaName: string;
-  area: ModuleArea;
-  areas: ModuleArea[] = [];
+  area: Area;
+  areas: Area[] = [];
   entryArea: string;
   entryDirectionX: number;
   entryDirectionY: number;
@@ -91,21 +91,21 @@ export class Module {
   transWP: string;
   lastItemAcquired: any = undefined;
   /** Previous possessor for OnItemAcquired (GetModuleItemAcquiredFrom). */
-  lastItemAcquiredFrom: ModuleObject = undefined;
+  lastItemAcquiredFrom: GameObject = undefined;
   /** OnItemLost context (GetModuleItemLost / GetModuleItemLostBy). */
-  lastItemLost: ModuleItem = undefined;
-  lastItemLostBy: ModuleCreature = undefined;
+  lastItemLost: Item = undefined;
+  lastItemLostBy: Creature = undefined;
   /** Last item equipped on a creature (GetLastItemEquipped). */
-  lastItemEquipped: ModuleItem = undefined;
+  lastItemEquipped: Item = undefined;
   /** Pass AG — OnItemActivated context for GetItemActivated* */
-  itemActivated: ModuleItem = undefined;
-  itemActivator: ModuleCreature = undefined;
+  itemActivated: Item = undefined;
+  itemActivator: Creature = undefined;
   itemActivatedTarget: any = undefined;
   itemActivatedTargetLocation: EngineLocation = undefined;
   /** Pass AL — ModuleAccess last-player slots (0x16c / 0x170 / 0x174) */
-  lastPlayerDied: ModuleCreature = undefined;
-  lastPlayerDying: ModuleCreature = undefined;
-  lastRespawnButtonPresser: ModuleCreature = undefined;
+  lastPlayerDied: Creature = undefined;
+  lastPlayerDying: Creature = undefined;
+  lastRespawnButtonPresser: Creature = undefined;
   /** Credit sequence (StartCreditSequence / IsCreditSequenceInProgress). */
   creditSequenceInProgress: boolean = false;
   /** ExportAllCharacters pending flag (SetExportAllCharactersPending). */
@@ -221,7 +221,7 @@ export class Module {
   /**
    * limbo creature list (IFO "Creature List", struct type 4).
    */
-  limboCreatures: ModuleCreature[] = [];
+  limboCreatures: Creature[] = [];
 
   /** Module-level SW locals (IFO SWVarTable) */
   _locals: { Booleans: boolean[]; Numbers: Record<number, number> } = { Booleans: [], Numbers: {} };
@@ -246,11 +246,11 @@ export class Module {
   _moduleHeartbeatInitialized: boolean = false;
 
   constructor(){
-    this.scripts = {} as { [key in ModuleObjectScript]?: NWScriptInstance };
+    this.scripts = {} as { [key in ScriptHook]?: NWScriptInstance };
     this.archives = [];
     this.effects = [];
     this.eventQueue = [];
-    this.area = new ModuleArea();
+    this.area = new Area();
     this.timeManager = new ModuleTimeManager();
     this.aiScheduler = new AIScheduler();
     this.customTokens = new Map();
@@ -367,20 +367,20 @@ export class Module {
     }
 
     //Scripts
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerAcquireItem,  ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerAcquireItem).getValue());
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerActivateItem,   ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerActivateItem).getValue());
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerClientEnter,  ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerClientEnter).getValue());
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerClientLeave,  ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerClientLeave).getValue());
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnHeartbeat,   ifo.getFieldByLabel(ModuleObjectScript.ModuleOnHeartbeat).getValue());
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnLoad,     ifo.getFieldByLabel(ModuleObjectScript.ModuleOnLoad).getValue());
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnStart,    ifo.getFieldByLabel(ModuleObjectScript.ModuleOnStart).getValue());
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerDeath,    ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerDeath).getValue());
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerDying,    ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerDying).getValue());
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerLevelUp,    ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerLevelUp).getValue());
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerRest,     ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerRest).getValue());
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnSpawnButtonDown,  ifo.getFieldByLabel(ModuleObjectScript.ModuleOnSpawnButtonDown).getValue());
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnUnAcquireItem,  ifo.getFieldByLabel(ModuleObjectScript.ModuleOnUnAcquireItem).getValue());
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnUserDefined,  ifo.getFieldByLabel(ModuleObjectScript.ModuleOnUserDefined).getValue());
+    this.scriptResRefs.set(ScriptHook.ModuleOnPlayerAcquireItem,  ifo.getFieldByLabel(ScriptHook.ModuleOnPlayerAcquireItem).getValue());
+    this.scriptResRefs.set(ScriptHook.ModuleOnPlayerActivateItem,   ifo.getFieldByLabel(ScriptHook.ModuleOnPlayerActivateItem).getValue());
+    this.scriptResRefs.set(ScriptHook.ModuleOnPlayerClientEnter,  ifo.getFieldByLabel(ScriptHook.ModuleOnPlayerClientEnter).getValue());
+    this.scriptResRefs.set(ScriptHook.ModuleOnPlayerClientLeave,  ifo.getFieldByLabel(ScriptHook.ModuleOnPlayerClientLeave).getValue());
+    this.scriptResRefs.set(ScriptHook.ModuleOnHeartbeat,   ifo.getFieldByLabel(ScriptHook.ModuleOnHeartbeat).getValue());
+    this.scriptResRefs.set(ScriptHook.ModuleOnLoad,     ifo.getFieldByLabel(ScriptHook.ModuleOnLoad).getValue());
+    this.scriptResRefs.set(ScriptHook.ModuleOnStart,    ifo.getFieldByLabel(ScriptHook.ModuleOnStart).getValue());
+    this.scriptResRefs.set(ScriptHook.ModuleOnPlayerDeath,    ifo.getFieldByLabel(ScriptHook.ModuleOnPlayerDeath).getValue());
+    this.scriptResRefs.set(ScriptHook.ModuleOnPlayerDying,    ifo.getFieldByLabel(ScriptHook.ModuleOnPlayerDying).getValue());
+    this.scriptResRefs.set(ScriptHook.ModuleOnPlayerLevelUp,    ifo.getFieldByLabel(ScriptHook.ModuleOnPlayerLevelUp).getValue());
+    this.scriptResRefs.set(ScriptHook.ModuleOnPlayerRest,     ifo.getFieldByLabel(ScriptHook.ModuleOnPlayerRest).getValue());
+    this.scriptResRefs.set(ScriptHook.ModuleOnSpawnButtonDown,  ifo.getFieldByLabel(ScriptHook.ModuleOnSpawnButtonDown).getValue());
+    this.scriptResRefs.set(ScriptHook.ModuleOnUnAcquireItem,  ifo.getFieldByLabel(ScriptHook.ModuleOnUnAcquireItem).getValue());
+    this.scriptResRefs.set(ScriptHook.ModuleOnUserDefined,  ifo.getFieldByLabel(ScriptHook.ModuleOnUserDefined).getValue());
 
     if(ifo.RootNode.hasField('Mod_StartMovie')){
       this.startMovie = ifo.getFieldByLabel('Mod_StartMovie').getValue();
@@ -426,7 +426,7 @@ export class Module {
           // only loads element type 4; accept missing type from older writers
         }
         try{
-          const creature = new ModuleCreature(GFFObject.FromStruct(strt));
+          const creature = new Creature(GFFObject.FromStruct(strt));
           creature.load();
           this.limboCreatures.push(creature);
         }catch(e){
@@ -487,7 +487,7 @@ export class Module {
     }
   }
 
-  addObjectToLimbo(creature: ModuleCreature){
+  addObjectToLimbo(creature: Creature){
     if(!creature) return;
     creature.area?.detachObject(creature);
     if(this.limboCreatures.indexOf(creature) < 0){
@@ -495,12 +495,12 @@ export class Module {
     }
   }
 
-  removeObjectFromLimbo(creature: ModuleCreature){
+  removeObjectFromLimbo(creature: Creature){
     const idx = this.limboCreatures.indexOf(creature);
     if(idx >= 0) this.limboCreatures.splice(idx, 1);
   }
 
-  isObjectInLimbo(creature: ModuleCreature){
+  isObjectInLimbo(creature: Creature){
     return this.limboCreatures.indexOf(creature) >= 0;
   }
 
@@ -548,7 +548,7 @@ export class Module {
   addEffect(effect?: GameEffect, lLocation?: EngineLocation){
     if(!(effect instanceof GameEffect)){ return; }
 
-    // location AOE: spawn ModuleAreaOfEffect at lLocation
+    // location AOE: spawn AreaEffect at lLocation
     if(effect.type === GameEffectType.EffectAreaOfEffect && lLocation){
       const aoeEffect = effect as EffectAreaOfEffect;
       aoeEffect.applyLocation = lLocation;
@@ -656,7 +656,7 @@ export class Module {
     this._moduleHeartbeatElapsedMs += 1000 * delta;
     if(this._moduleHeartbeatElapsedMs > 5999){
       this._moduleHeartbeatElapsedMs = 0;
-      const onHeartbeat = this.scripts[ModuleObjectScript.ModuleOnHeartbeat];
+      const onHeartbeat = this.scripts[ScriptHook.ModuleOnHeartbeat];
       if(onHeartbeat){
         try{
           // Module scripts run against the area object (see initScripts)
@@ -686,7 +686,7 @@ export class Module {
     try{
       GameState.PartyManager.party = [];
       
-      GameState.ModuleObjectManager.ResetPlayerId();
+      GameState.GameObjectManager.ResetPlayerId();
 
       // Scene ambient = ARE DynAmbientColor (SetAmbient). Sun/moon ambient
       // is the directional light ambient channel via applyLightingColors.
@@ -735,13 +735,13 @@ export class Module {
       }
     }
 
-    const onLoad = this.scripts[ModuleObjectScript.ModuleOnLoad];
+    const onLoad = this.scripts[ScriptHook.ModuleOnLoad];
     if(onLoad){
       onLoad.enteringObject = GameState.PartyManager.party[0];
       onLoad.run(this.area, 0);
     }
 
-    const onPlayerClientEnter = this.scripts[ModuleObjectScript.ModuleOnPlayerClientEnter];
+    const onPlayerClientEnter = this.scripts[ScriptHook.ModuleOnPlayerClientEnter];
     if(onPlayerClientEnter){
       onPlayerClientEnter.enteringObject = GameState.PartyManager.party[0];
       onPlayerClientEnter.run(this.area, 0);
@@ -749,30 +749,30 @@ export class Module {
   }
 
   /** Pass AL — set lastPlayerDied + Mod_OnPlrDeath (ModuleAccess 0x16c). */
-  notifyPlayerDied(creature: ModuleCreature){
+  notifyPlayerDied(creature: Creature){
     if(!creature) return;
     this.lastPlayerDied = creature;
-    const script = this.scripts[ModuleObjectScript.ModuleOnPlayerDeath];
+    const script = this.scripts[ScriptHook.ModuleOnPlayerDeath];
     if(script){
       script.run(this.area ?? this, 0);
     }
   }
 
   /** Pass AL — set lastPlayerDying + Mod_OnPlrDying (ModuleAccess 0x170). */
-  notifyPlayerDying(creature: ModuleCreature){
+  notifyPlayerDying(creature: Creature){
     if(!creature) return;
     this.lastPlayerDying = creature;
-    const script = this.scripts[ModuleObjectScript.ModuleOnPlayerDying];
+    const script = this.scripts[ScriptHook.ModuleOnPlayerDying];
     if(script){
       script.run(this.area ?? this, 0);
     }
   }
 
   /** Pass AL — set lastRespawnButtonPresser + Mod_OnSpawnBtnDn (ModuleAccess 0x174). */
-  notifyRespawnButtonPresser(creature: ModuleCreature){
+  notifyRespawnButtonPresser(creature: Creature){
     if(!creature) return;
     this.lastRespawnButtonPresser = creature;
-    const script = this.scripts[ModuleObjectScript.ModuleOnSpawnButtonDown];
+    const script = this.scripts[ScriptHook.ModuleOnSpawnButtonDown];
     if(script){
       script.run(this.area ?? this, 0);
     }
@@ -787,7 +787,7 @@ export class Module {
   }
 
   initEventQueue(){
-    //Load module EventQueue after the area is intialized so that ModuleObject ID's are set
+    //Load module EventQueue after the area is intialized so that GameObject ID's are set
     if(this.ifo.RootNode.hasField('EventQueue')){
       let eventQueue = this.ifo.getFieldByLabel('EventQueue').getChildStructs();
       for(let i = 0; i < eventQueue.length; i++){
@@ -909,20 +909,20 @@ export class Module {
     ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_NextCharId1') ).setValue(this.nextCharId1);
     ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_NextObjId0') ).setValue(this.nextObjId0);
     ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_NextObjId1') ).setValue(this.nextObjId1);
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnAcquirItem') ).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerAcquireItem]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnActvtItem') ).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerActivateItem]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnClientEntr') ).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerClientEnter]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnClientLeav') ).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerClientLeave]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnHeartbeat') ).setValue(this.scripts[ModuleObjectScript.ModuleOnHeartbeat]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnModLoad') ).setValue(this.scripts[ModuleObjectScript.ModuleOnLoad]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnModStart') ).setValue(this.scripts[ModuleObjectScript.ModuleOnStart]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrDeath') ).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerDeath]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrDying') ).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerDying]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrLvlUp') ).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerLevelUp]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrRest') ).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerRest]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnSpawnBtnDn') ).setValue(this.scripts[ModuleObjectScript.ModuleOnSpawnButtonDown]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnUnAqreItem') ).setValue(this.scripts[ModuleObjectScript.ModuleOnUnAcquireItem]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnUsrDefined') ).setValue(this.scripts[ModuleObjectScript.ModuleOnUserDefined]?.name || '');
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnAcquirItem') ).setValue(this.scripts[ScriptHook.ModuleOnPlayerAcquireItem]?.name || '');
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnActvtItem') ).setValue(this.scripts[ScriptHook.ModuleOnPlayerActivateItem]?.name || '');
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnClientEntr') ).setValue(this.scripts[ScriptHook.ModuleOnPlayerClientEnter]?.name || '');
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnClientLeav') ).setValue(this.scripts[ScriptHook.ModuleOnPlayerClientLeave]?.name || '');
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnHeartbeat') ).setValue(this.scripts[ScriptHook.ModuleOnHeartbeat]?.name || '');
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnModLoad') ).setValue(this.scripts[ScriptHook.ModuleOnLoad]?.name || '');
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnModStart') ).setValue(this.scripts[ScriptHook.ModuleOnStart]?.name || '');
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrDeath') ).setValue(this.scripts[ScriptHook.ModuleOnPlayerDeath]?.name || '');
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrDying') ).setValue(this.scripts[ScriptHook.ModuleOnPlayerDying]?.name || '');
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrLvlUp') ).setValue(this.scripts[ScriptHook.ModuleOnPlayerLevelUp]?.name || '');
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrRest') ).setValue(this.scripts[ScriptHook.ModuleOnPlayerRest]?.name || '');
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnSpawnBtnDn') ).setValue(this.scripts[ScriptHook.ModuleOnSpawnButtonDown]?.name || '');
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnUnAqreItem') ).setValue(this.scripts[ScriptHook.ModuleOnUnAcquireItem]?.name || '');
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnUsrDefined') ).setValue(this.scripts[ScriptHook.ModuleOnUserDefined]?.name || '');
     ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_PauseDay') ).setValue(this.timeManager.pauseDay);
     ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_PauseTime') ).setValue(this.timeManager.pauseTime);
 
@@ -1215,7 +1215,7 @@ export class Module {
       return module;
     }
     try{
-      GameState.ModuleObjectManager.Reset();
+      GameState.GameObjectManager.Reset();
       await ResourceLoader.InitModuleCache(archives);
       const ifo_data = await ResourceLoader.loadResource(ResourceTypes['ifo'], 'module');
       const ifo = new GFFObject(ifo_data);
@@ -1232,7 +1232,7 @@ export class Module {
 
       const areBuffer = await ResourceLoader.loadResource(ResourceTypes['are'], module.entryArea);
       const are = new GFFObject(areBuffer)
-      module.area = new ModuleArea(module.entryArea, are, git);
+      module.area = new Area(module.entryArea, are, git);
       module.areas = [module.area];
       module.area.module = module;
       module.area.setTransitionWaypoint(module.transWP);
@@ -1243,12 +1243,12 @@ export class Module {
       if(module.areaList[0]?.objectId){
         module.area.id = module.areaList[0].objectId >>> 0;
       }
-      GameState.ModuleObjectManager.RegisterObject(module.area);
+      GameState.GameObjectManager.RegisterObject(module.area);
 
       if(module.nextObjId0)
-        GameState.ModuleObjectManager.COUNT = module.nextObjId0;
+        GameState.GameObjectManager.COUNT = module.nextObjId0;
 
-      GameState.ModuleObjectManager.module = module;
+      GameState.GameObjectManager.module = module;
 
       if(GameState.isLoadingSave){
         console.log('Module', 'SaveGame.loadInventory');

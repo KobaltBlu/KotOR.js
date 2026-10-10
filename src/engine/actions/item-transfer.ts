@@ -1,9 +1,9 @@
 import { BaseItemType } from "@core/enums/combat/BaseItemType";
 import { UIIconTimerType } from "@engine/enums/engine/UIIconTimerType";
-import { ModuleObjectScript } from "@core/enums/module/ModuleObjectScript";
+import { ScriptHook } from "@core/enums/module/ScriptHook";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleItem } from "@engine/module/ModuleItem";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Item } from "@engine/module/Item";
+import type { GameObject } from "@engine/module/GameObject";
 
 import { isCreature } from "@engine/module/guards/isCreature";
 import { isItem } from "@engine/module/guards/isItem";
@@ -21,7 +21,7 @@ export const ITEM_TYPE_PAZAAK_CARD = 0x2a;
 export const UPDATE_STATUS_ITEM_GIVEN = 7;
 export const UPDATE_STATUS_ITEM_TAKEN = 8;
 
-export function getItemTypeCategory(item: ModuleItem): number {
+export function getItemTypeCategory(item: Item): number {
   const from2da = item?.baseItem?.itemType;
   if (typeof from2da === "number" && from2da >= 0) {
     return from2da | 0;
@@ -35,17 +35,17 @@ export function getItemTypeCategory(item: ModuleItem): number {
   return -1;
 }
 
-export function isCreditsItem(item: ModuleItem): boolean {
+export function isCreditsItem(item: Item): boolean {
   return getItemTypeCategory(item) === ITEM_TYPE_CREDITS
     || item?.baseItemId === BaseItemType.CREDITS;
 }
 
-export function isPazaakCardItem(item: ModuleItem): boolean {
+export function isPazaakCardItem(item: Item): boolean {
   return getItemTypeCategory(item) === ITEM_TYPE_PAZAAK_CARD
     || item?.baseItemId === BaseItemType.PAZAAK_CARD;
 }
 
-export function isPartyCreature(obj: ModuleObject | undefined): boolean {
+export function isPartyCreature(obj: GameObject | undefined): boolean {
   if (!isCreature(obj)) {
     return false;
   }
@@ -56,7 +56,7 @@ export function isPartyCreature(obj: ModuleObject | undefined): boolean {
  * SplitItem — detach nCount from a stack.
  * nCount ≤ 0 or ≥ stack → returns the original item (no split).
  */
-export function splitItemStack(item: ModuleItem, nCount: number): ModuleItem {
+export function splitItemStack(item: Item, nCount: number): Item {
   if (!item) {
     return item;
   }
@@ -71,7 +71,7 @@ export function splitItemStack(item: ModuleItem, nCount: number): ModuleItem {
   return clone;
 }
 
-function removeGoldFromOwner(owner: ModuleObject, amount: number): void {
+function removeGoldFromOwner(owner: GameObject, amount: number): void {
   const n = Math.max(0, amount | 0);
   if (!n) {
     return;
@@ -81,7 +81,7 @@ function removeGoldFromOwner(owner: ModuleObject, amount: number): void {
   }
 }
 
-function addGoldToOwner(owner: ModuleObject, amount: number): void {
+function addGoldToOwner(owner: GameObject, amount: number): void {
   const n = Math.max(0, amount | 0);
   if (!n) {
     return;
@@ -125,14 +125,14 @@ export function showGiveTakeStatus(updateStatusId: number): void {
  * Mirrors AcquireItem success path used by Give/Take.
  */
 export function acquireItem(
-  target: ModuleObject,
-  item: ModuleItem,
+  target: GameObject,
+  item: Item,
   options: {
     addAsItem?: boolean;
     displayStatus?: boolean;
     statusId?: number;
     /** Previous possessor (GetModuleItemAcquiredFrom). */
-    from?: ModuleObject;
+    from?: GameObject;
   } = {},
 ): boolean {
   if (!target || !item) {
@@ -179,26 +179,26 @@ export function acquireItem(
   return true;
 }
 
-function notifyModuleItemAcquired(item: ModuleItem, from?: ModuleObject){
+function notifyModuleItemAcquired(item: Item, from?: GameObject){
   const mod = GameState.module;
   if(!mod) return;
   mod.lastItemAcquired = item;
   mod.lastItemAcquiredFrom = from;
-  const script = mod.scripts?.[ModuleObjectScript.ModuleOnPlayerAcquireItem];
+  const script = mod.scripts?.[ScriptHook.ModuleOnPlayerAcquireItem];
   if(script){
     const instance = script.newInstance?.() ?? script;
     instance.run(mod.area ?? mod, 0);
   }
 }
 
-function notifyModuleItemLost(item: ModuleItem, owner: ModuleObject){
+function notifyModuleItemLost(item: Item, owner: GameObject){
   const mod = GameState.module;
   if(!mod) return;
   mod.lastItemLost = item;
   mod.lastItemLostBy = isCreature(owner)
     ? owner
     : undefined;
-  const script = mod.scripts?.[ModuleObjectScript.ModuleOnUnAcquireItem];
+  const script = mod.scripts?.[ScriptHook.ModuleOnUnAcquireItem];
   if(script){
     const instance = script.newInstance?.() ?? script;
     instance.run(mod.area ?? mod, 0);
@@ -210,10 +210,10 @@ function notifyModuleItemLost(item: ModuleItem, owner: ModuleObject){
  * Credits: RemoveGold. Pazaak: RemovePazaakCard. Else removeItem / InventoryManager.
  */
 export function releaseItemFromOwner(
-  owner: ModuleObject,
-  item: ModuleItem,
+  owner: GameObject,
+  item: Item,
   nCount: number = -1,
-): ModuleItem | undefined {
+): Item | undefined {
   if (!owner || !item) {
     return undefined;
   }

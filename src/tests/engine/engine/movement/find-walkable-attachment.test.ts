@@ -8,8 +8,8 @@ import * as THREE from "three";
 jest.mock("@engine/runtime/GameState", () => ({ GameState: {} }));
 
 import { findWalkableAttachmentAt } from "@engine/movement/area-movement-queries";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleRoom } from "@engine/module/ModuleRoom";
+import type { Area } from "@engine/module/Area";
+import type { AreaRoom } from "@engine/module/AreaRoom";
 import type { OdysseyFace3 } from "@engine/render/three/odyssey";
 
 function pointInTri(
@@ -31,7 +31,7 @@ function pointInTri(
 function makeRoom(
   name: string,
   verts: [THREE.Vector3, THREE.Vector3, THREE.Vector3]
-): ModuleRoom {
+): AreaRoom {
   const face = {
     walkIndex: 1,
     triangle: new THREE.Triangle(verts[0], verts[1], verts[2]),
@@ -47,7 +47,7 @@ function makeRoom(
         walkableFaces: [face],
       },
     },
-  } as unknown as ModuleRoom;
+  } as unknown as AreaRoom;
 }
 
 describe("findWalkableAttachmentAt", () => {
@@ -61,7 +61,7 @@ describe("findWalkableAttachmentAt", () => {
     new THREE.Vector3(12, 10, 2),
     new THREE.Vector3(11, 12, 2),
   ]);
-  const area = { rooms: [roomA, roomB] } as unknown as ModuleArea;
+  const area = { rooms: [roomA, roomB] } as unknown as Area;
 
   it("prefers the current room when the point still lies on its face", () => {
     const pt = new THREE.Vector3(1, 0.5, 0);

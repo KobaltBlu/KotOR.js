@@ -2,7 +2,7 @@ import { Action } from "@engine/actions/Action";
 import { ActionParameterType, ActionStatus, ActionType } from "@core/enums";
 import { ModuleCreatureAnimState } from "@core/enums/module/ModuleCreatureAnimState";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleItem } from "@engine/module/ModuleItem";
+import type { Item } from "@engine/module/Item";
 import { queueMoveIntoUseRange } from "@engine/actions/use-range";
 
 import { isCreature } from "@engine/module/guards/isCreature";
@@ -34,7 +34,7 @@ export class ActionPickUpItem extends Action {
       return ActionStatus.FAILED;
     }
 
-    const oItem = this.getParameter<ModuleItem>(0);
+    const oItem = this.getParameter<Item>(0);
 
     if(!isItem(oItem)){
       return ActionStatus.FAILED;

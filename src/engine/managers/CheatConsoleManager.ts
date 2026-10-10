@@ -1,6 +1,6 @@
 import { GameState } from "@engine/runtime/GameState";
 import { InventoryManager } from "@engine/managers/InventoryManager";
-import { ModuleItem } from "@engine/module/ModuleItem";
+import { Item } from "@engine/module/Item";
 import { GFFObject } from "@core/resource/GFFObject";
 import { ResourceLoader } from "@engine/loaders";
 import { ResourceTypes } from "@core/resource/ResourceTypes";
@@ -251,7 +251,7 @@ export class CheatConsoleManager {
     if(!resref || amount <= 0){ return undefined; }
     const buffer = ResourceLoader.loadCachedResource(ResourceTypes['uti'], resref);
     if(buffer){
-      const item = new ModuleItem(new GFFObject(buffer));
+      const item = new Item(new GFFObject(buffer));
       item.initProperties();
       item.setStackSize(amount);
       InventoryManager.addItem(item);

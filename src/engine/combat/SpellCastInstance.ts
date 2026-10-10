@@ -1,5 +1,5 @@
-import type { ModuleObject } from "@engine/module/ModuleObject";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { GameObject } from "@engine/module/GameObject";
+import type { Creature } from "@engine/module/Creature";
 import type { TalentSpell } from "@engine/talents";
 import * as THREE from "three";
 import { OdysseyModel3D } from "@engine/render/three/odyssey";
@@ -17,7 +17,7 @@ import { resolveSpellProjectileModelCandidates } from "@engine/combat/spell-proj
 import { sampleSpellProjectilePosition } from "@engine/combat/spell-projectile-motion";
 import { playSpellProjectileTravelAnimation } from "@engine/combat/combat-projectile";
 import { isGrenadeItemType } from "@engine/combat/item-cast-grenade";
-import type { ModuleItem } from "@engine/module/ModuleItem";
+import type { Item } from "@engine/module/Item";
 import { EventBroadcastSafeProjectile } from "@engine/events/EventBroadcastSafeProjectile";
 import { ProjectilePath } from "@core/enums/combat/ProjectilePath";
 import { AudioPriorityGroup } from "@core/enums/audio/AudioPriorityGroup";
@@ -43,8 +43,8 @@ export class SpellCastInstance {
 
   context: GameState;
   spell: TalentSpell;
-  owner: ModuleObject;
-  target: ModuleObject;
+  owner: GameObject;
+  target: GameObject;
   targetLocation: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
   container: THREE.Object3D = new THREE.Object3D();
 
@@ -92,7 +92,7 @@ export class SpellCastInstance {
   /** Optional path override from ActionCastSpell param 9. */
   projectilePathOverride: number = -1;
   /** Item used for cast (grenade model fallback when projmodel empty). */
-  castItem: ModuleItem | undefined;
+  castItem: Item | undefined;
   /** Snapshot of MDL resrefs at cast start — survives item destroy. */
   projectileModelCandidates: string[] = [];
   /** LoadCastVisual + castsound fired once at cast-phase start. */
@@ -103,7 +103,7 @@ export class SpellCastInstance {
   conjuring: boolean = false;
   castTime: number = 0;
 
-  constructor(caster: ModuleObject, target: ModuleObject, spell: TalentSpell){
+  constructor(caster: GameObject, target: GameObject, spell: TalentSpell){
     this.context = caster.context;
     this.owner = caster;
     this.target = target;
@@ -249,7 +249,7 @@ export class SpellCastInstance {
   static playGrenadeBounceSoundAt(
     surfaceId: number,
     position: THREE.Vector3,
-    emitterOwner?: ModuleObject
+    emitterOwner?: GameObject
   ): void {
     const resref = SpellCastInstance.getGrenadeSoundBySurfaceId(surfaceId)?.getSoundResRef();
     if(!resref) return;
@@ -270,7 +270,7 @@ export class SpellCastInstance {
 
   static playGrenadeBounceAtPosition(
     position: THREE.Vector3,
-    emitterOwner?: ModuleObject
+    emitterOwner?: GameObject
   ): void {
     const surfaceId = SpellCastInstance.resolveSurfaceIdAtPosition(position);
     if(surfaceId < 0) return;
@@ -286,7 +286,7 @@ export class SpellCastInstance {
       // Keep undefined / invalid for location casts — do not stamp the caster
       this.spell.oTarget = this.target;
     }
-    const owner = this.owner as ModuleCreature;
+    const owner = this.owner as Creature;
     if(owner?.combatData){
       owner.combatData.lastSpellTarget = this.target;
     }
@@ -317,7 +317,7 @@ export class SpellCastInstance {
     evt.projectilePath = pathType;
     evt.itemId =
       this.castItem?.id ??
-      (this.owner as ModuleCreature)?.spellCastItem?.id ??
+      (this.owner as Creature)?.spellCastItem?.id ??
       0;
     const hookPos = new THREE.Vector3();
     if(this.projectileHook?.getWorldPosition){
@@ -420,9 +420,9 @@ export class SpellCastInstance {
 
     const castItem =
       this.castItem ||
-      (this.owner as ModuleCreature)?.spellCastItem as ModuleItem | undefined;
+      (this.owner as Creature)?.spellCastItem as Item | undefined;
     if(castItem && isCreature(this.owner)){
-      (this.owner as ModuleCreature).spellCastItem = castItem;
+      (this.owner as Creature).spellCastItem = castItem;
     }
 
     // Snapshot resrefs before DecrementUses may destroy the item object
@@ -564,7 +564,7 @@ export class SpellCastInstance {
   private playProjectileLaunchSound(){
     const resRef = String(this.spell?.projsound ?? '').trim().toLowerCase();
     if(!resRef || resRef === '****') return;
-    const emitter = (this.owner as ModuleCreature).audioEmitter;
+    const emitter = (this.owner as Creature).audioEmitter;
     if(!emitter?.playSoundFireAndForget) return;
     const pos = this.projectileOrigin || this.owner.position;
     emitter.setPosition?.(pos.x, pos.y, pos.z);
@@ -599,7 +599,7 @@ export class SpellCastInstance {
   private playCastSound(){
     const resRef = String(this.castsound ?? '').trim().toLowerCase();
     if(SpellCastInstance.isEmptyVisualResRef(resRef)) return;
-    const emitter = (this.owner as ModuleCreature).audioEmitter;
+    const emitter = (this.owner as Creature).audioEmitter;
     if(!emitter?.playSoundFireAndForget) return;
     const pos = this.owner.position;
     emitter.setPosition?.(pos.x, pos.y, pos.z);
@@ -701,7 +701,7 @@ export class SpellCastInstance {
   private clearOwnerSpellRound(options: { unpause?: boolean } = {}){
     const round = (this.owner as any)?.combatRound;
     if(isCreature(this.owner)){
-      (this.owner as ModuleCreature).itemSpellCastActive = false;
+      (this.owner as Creature).itemSpellCastActive = false;
     }
     if(!round){
       return;
@@ -720,7 +720,7 @@ export class SpellCastInstance {
   /**
    * True if a living counterspeller is holding stance on this caster.
    */
-  findCounterSpeller(): ModuleCreature | undefined {
+  findCounterSpeller(): Creature | undefined {
     if(!this.allowCounterSpell || !this.owner?.area){
       return undefined;
     }
@@ -734,7 +734,7 @@ export class SpellCastInstance {
     }
 
     for(let i = 0; i < candidates.length; i++){
-      const creature = candidates[i] as ModuleCreature;
+      const creature = candidates[i] as Creature;
       if(!isCreature(creature)){
         continue;
       }
@@ -749,7 +749,7 @@ export class SpellCastInstance {
         continue;
       }
       const focus = action.getParameter?.(0);
-      const focusId = typeof focus === 'number' ? focus : (focus as ModuleObject)?.id;
+      const focusId = typeof focus === 'number' ? focus : (focus as GameObject)?.id;
       if(focus !== this.owner && focusId !== this.owner.id){
         continue;
       }
@@ -932,7 +932,7 @@ export class SpellCastInstance {
     // GrenadeSND bounce at impact point for grenade item casts
     const castItem =
       this.castItem ||
-      (this.owner as ModuleCreature)?.spellCastItem as ModuleItem | undefined;
+      (this.owner as Creature)?.spellCastItem as Item | undefined;
     if(isGrenadeItemType(castItem?.baseItem?.itemType)){
       SpellCastInstance.playGrenadeBounceAtPosition(
         this.projectileTarget || this.targetLocation,
@@ -943,7 +943,7 @@ export class SpellCastInstance {
     // EventSpellImpact (0x08) runs the impactscript after flight.
     // SpellCastInstance.castTime is that delay in-process — run it here.
     if(isCreature(this.owner)){
-      const cd = (this.owner as ModuleCreature).combatData;
+      const cd = (this.owner as Creature).combatData;
       if(cd){
         cd.lastForcePowerSuccess = true;
       }

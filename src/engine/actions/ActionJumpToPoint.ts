@@ -1,7 +1,7 @@
 import { ActionStatus } from "@core/enums/actions/ActionStatus";
 import { ActionType } from "@core/enums/actions/ActionType";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Area } from "@engine/module/Area";
+import type { Creature } from "@engine/module/Creature";
 import { Action } from "@engine/actions/Action";
 import * as THREE from "three";
 import { GameState } from "@engine/runtime/GameState";
@@ -74,11 +74,11 @@ export class ActionJumpToPoint extends Action {
       GameState.module.removeObjectFromLimbo(this.owner);
     }
 
-    let destArea: ModuleArea | undefined;
+    let destArea: Area | undefined;
     if(isAreaLike(areaParam)){
       destArea = areaParam;
     }else if(typeof areaParam === 'number'){
-      const obj = GameState.ModuleObjectManager?.GetObjectById?.(areaParam);
+      const obj = GameState.GameObjectManager?.GetObjectById?.(areaParam);
       if(isAreaLike(obj)){
         destArea = obj;
       }else{
@@ -160,7 +160,7 @@ export class ActionJumpToPoint extends Action {
 }
 
 /** Attach creature to dest area when it differs from the current area. */
-export function applyAddToArea(creature: ModuleCreature, destArea: ModuleArea){
+export function applyAddToArea(creature: Creature, destArea: Area){
   if(!creature || !destArea) return;
   if(creature.area && creature.area !== destArea){
     creature.area.detachObject?.(creature);
@@ -169,7 +169,7 @@ export function applyAddToArea(creature: ModuleCreature, destArea: ModuleArea){
 }
 
 export function applyLocalJump(
-  creature: ModuleCreature,
+  creature: Creature,
   x: number,
   y: number,
   z: number,

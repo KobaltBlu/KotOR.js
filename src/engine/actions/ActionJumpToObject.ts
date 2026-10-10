@@ -1,6 +1,6 @@
 import { ActionStatus } from "@core/enums/actions/ActionStatus";
 import { ActionType } from "@core/enums/actions/ActionType";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import { Action } from "@engine/actions/Action";
 import { GameState } from "@engine/runtime/GameState";
 import {
@@ -36,7 +36,7 @@ export class ActionJumpToObject extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
-    this.target = this.getParameter<ModuleObject>(0);
+    this.target = this.getParameter<GameObject>(0);
 
     if(!this.target)
       return ActionStatus.FAILED;

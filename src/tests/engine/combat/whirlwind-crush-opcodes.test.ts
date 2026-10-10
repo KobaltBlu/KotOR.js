@@ -9,7 +9,7 @@ import { srcPath } from '@/tests/helpers/paths';
 describe('Whirlwind / Crush / Wave port wiring', () => {
   it('K2 opcode 703 EffectWhirlWind builds SetState int 10', () => {
     const src = fs.readFileSync(
-      srcPath('nwscript', 'NWScriptDefK2.ts'),
+      srcPath('engine', 'nwscript', 'NWScriptDefK2.ts'),
       'utf8'
     );
     expect(src).toMatch(
@@ -22,7 +22,7 @@ describe('Whirlwind / Crush / Wave port wiring', () => {
 
   it('K2 opcode 781 EffectCrush builds SetState int 15', () => {
     const src = fs.readFileSync(
-      srcPath('nwscript', 'NWScriptDefK2.ts'),
+      srcPath('engine', 'nwscript', 'NWScriptDefK2.ts'),
       'utf8'
     );
     expect(src).toMatch(
@@ -32,7 +32,7 @@ describe('Whirlwind / Crush / Wave port wiring', () => {
 
   it('K1 EffectWhirlWind remains wired', () => {
     const src = fs.readFileSync(
-      srcPath('nwscript', 'NWScriptDefK1.ts'),
+      srcPath('engine', 'nwscript', 'NWScriptDefK1.ts'),
       'utf8'
     );
     expect(src).toMatch(
@@ -42,11 +42,11 @@ describe('Whirlwind / Crush / Wave port wiring', () => {
 
   it('SetState enums include CRUSH=15 and ambient CRUSH=16', () => {
     const setState = fs.readFileSync(
-      srcPath('enums', 'effects', 'GameEffectSetStateType.ts'),
+      srcPath('core', 'enums', 'effects', 'GameEffectSetStateType.ts'),
       'utf8'
     );
     const ambient = fs.readFileSync(
-      srcPath('enums', 'module', 'ModuleCreatureAmbientState.ts'),
+      srcPath('core', 'enums', 'module', 'ModuleCreatureAmbientState.ts'),
       'utf8'
     );
     expect(setState).toMatch(/CRUSH\s*=\s*15/);
@@ -55,7 +55,7 @@ describe('Whirlwind / Crush / Wave port wiring', () => {
 
   it('SetStateInternal sets WW/Crush ambient and applies -3 AI mask', () => {
     const src = fs.readFileSync(
-      srcPath('effects', 'EffectSetStateInternal.ts'),
+      srcPath('engine', 'effects', 'EffectSetStateInternal.ts'),
       'utf8'
     );
     expect(src).toMatch(/ModuleCreatureAmbientState\.WHIRLWIND/);
@@ -70,7 +70,7 @@ describe('Whirlwind / Crush / Wave port wiring', () => {
 
   it('OnRemove OnUserDefined includes CRUSH', () => {
     const src = fs.readFileSync(
-      srcPath('effects', 'EffectSetStateInternal.ts'),
+      srcPath('engine', 'effects', 'EffectSetStateInternal.ts'),
       'utf8'
     );
     expect(src).toMatch(
@@ -80,7 +80,7 @@ describe('Whirlwind / Crush / Wave port wiring', () => {
 
   it('animForSetState maps CRUSH to CHOKE', () => {
     const src = fs.readFileSync(
-      srcPath('effects', 'set-state.ts'),
+      srcPath('engine', 'effects', 'set-state.ts'),
       'utf8'
     );
     expect(src).toMatch(
@@ -90,15 +90,15 @@ describe('Whirlwind / Crush / Wave port wiring', () => {
 
   it('debilitated anim switch has case 15 Crush', () => {
     const src = fs.readFileSync(
-      srcPath('module', 'animation', 'resolveDebilitatedCreatureAnimation.ts'),
+      srcPath('engine', 'module', 'animation', 'resolveDebilitatedCreatureAnimation.ts'),
       'utf8'
     );
     expect(src).toMatch(/case 15:[\s\S]*?Crush/);
   });
 
-  it('ModuleCreature isCrushed and isDebilitated include Crush', () => {
+  it('Creature isCrushed and isDebilitated include Crush', () => {
     const src = fs.readFileSync(
-      srcPath('module', 'ModuleCreature.ts'),
+      srcPath('engine', 'module', 'Creature.ts'),
       'utf8'
     );
     expect(src).toMatch(/isCrushed\(\)[\s\S]*?hasSetState\(15\)/);
@@ -107,7 +107,7 @@ describe('Whirlwind / Crush / Wave port wiring', () => {
 
   it('Force Wave has no dedicated effect; K2 Force Push opcodes remain wired', () => {
     const k2 = fs.readFileSync(
-      srcPath('nwscript', 'NWScriptDefK2.ts'),
+      srcPath('engine', 'nwscript', 'NWScriptDefK2.ts'),
       'utf8'
     );
     expect(k2).not.toMatch(/EffectForceWave/);

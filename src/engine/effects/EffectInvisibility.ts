@@ -1,6 +1,6 @@
 import { GameEffect } from "@engine/effects/GameEffect";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 
 import { isCreature } from "@engine/module/guards/isCreature";
 
@@ -27,7 +27,7 @@ export class EffectInvisibility extends GameEffect {
 
     // Force an immediate perception re-eval for nearby creatures
     if(isCreature(this.object)){
-      const self = this.object as ModuleCreature;
+      const self = this.object as Creature;
       self.perceptionTimer = 3;
       const area = self.area;
       if(area?.creatures){

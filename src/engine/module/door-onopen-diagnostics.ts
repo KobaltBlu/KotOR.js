@@ -1,5 +1,5 @@
 import { GameState } from '@engine/runtime/GameState';
-import type { ModuleObject } from '@engine/module/ModuleObject';
+import type { GameObject } from '@engine/module/GameObject';
 
 export type AlertzelkOnOpenDiagnostic = {
   doorTag: string;
@@ -28,7 +28,7 @@ export type AlertzelkOnOpenDiagnostic = {
  */
 export function logAlertzelkOnOpen(
   door: { getTag?: () => string; tag?: string },
-  opener: ModuleObject | undefined,
+  opener: GameObject | undefined,
 ): AlertzelkOnOpenDiagnostic {
   const party = GameState.PartyManager?.party || [];
   const party0 = party[0];

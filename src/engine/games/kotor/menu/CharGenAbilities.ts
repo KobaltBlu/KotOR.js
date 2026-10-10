@@ -1,5 +1,5 @@
 import type { GUIListBox, GUILabel, GUIButton } from "@engine/gui";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { CharGenAttribute } from "@core/enums/chargen/CharGenAttribute";
 import { costToDecreaseAbility, costToIncreaseAbility } from "@engine/rules/ability-points";
 import { GameMenu } from "@engine/gui";
@@ -54,7 +54,7 @@ export class CharGenAbilities extends GameMenu {
   BTN_ACCEPT: GUIButton;
   BTN_BACK: GUIButton;
 
-  creature: ModuleCreature;
+  creature: Creature;
   /** Focused ability for cost/desc labels (chargen UX). */
   selectedAttribute: CharGenAttribute = CharGenAttribute.STR;
   /** When true, Accept only picks +1 attribute for LevelUpManager draft. */
@@ -248,7 +248,7 @@ export class CharGenAbilities extends GameMenu {
     this.updateButtonStates();
   }
 
-  setCreature(creature: ModuleCreature){
+  setCreature(creature: Creature){
     this.creature = creature;
   }
 

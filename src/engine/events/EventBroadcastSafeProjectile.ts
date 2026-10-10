@@ -13,8 +13,8 @@ import { resolveSpellProjectileModelResRef } from "@engine/combat/spell-projecti
 import { sampleSpellProjectilePosition } from "@engine/combat/spell-projectile-motion";
 import { resolveSpellProjectilePathType } from "@engine/combat/spell-projectile-time";
 import { ProjectilePath } from "@core/enums/combat/ProjectilePath";
-import type { ModuleItem } from "@engine/module/ModuleItem";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Item } from "@engine/module/Item";
+import type { GameObject } from "@engine/module/GameObject";
 
 /**
  * EventBroadcastSafeProjectile — SpellCastAndImpact →
@@ -69,11 +69,11 @@ export class EventBroadcastSafeProjectile extends GameEvent {
     const spell = this.spellId >= 0 ? new TalentSpell(this.spellId) : undefined;
     const target =
       this.targetId !== 0x7F000000
-        ? GameState.ModuleObjectManager.GetObjectById(this.targetId)
+        ? GameState.GameObjectManager.GetObjectById(this.targetId)
         : undefined;
     const item =
       this.itemId
-        ? GameState.ModuleObjectManager.GetObjectById(this.itemId)
+        ? GameState.GameObjectManager.GetObjectById(this.itemId)
         : undefined;
     void this.broadcastSafeProjectileSpell({
       caster,
@@ -89,12 +89,12 @@ export class EventBroadcastSafeProjectile extends GameEvent {
   }
 
   private async broadcastSafeProjectileSpell(opts: {
-    caster: ModuleObject;
-    target?: ModuleObject;
+    caster: GameObject;
+    target?: GameObject;
     origin: THREE.Vector3;
     destination: THREE.Vector3;
     spell: TalentSpell | undefined;
-    item?: ModuleItem;
+    item?: Item;
     flightMs: number;
     projectilePath?: number;
     alreadySpawned?: boolean;

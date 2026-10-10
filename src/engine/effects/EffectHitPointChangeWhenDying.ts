@@ -2,7 +2,7 @@ import { GameEffect } from "@engine/effects/GameEffect";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
 import { GameEffectDurationType } from "@core/enums/effects/GameEffectDurationType";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 
 import { isCreature } from "@engine/module/guards/isCreature";
 
@@ -30,7 +30,7 @@ export class EffectHitPointChangeWhenDying extends GameEffect {
     if(!isCreature(this.object)){
       return;
     }
-    const creature = this.object as ModuleCreature;
+    const creature = this.object as Creature;
     // PC only (creature_stats->is_pc)
     if(!creature.isPC){
       return;
@@ -65,7 +65,7 @@ export class EffectHitPointChangeWhenDying extends GameEffect {
     if(!isCreature(this.object)){
       return;
     }
-    const creature = this.object as ModuleCreature;
+    const creature = this.object as Creature;
     if(!creature.isPC){
       return;
     }
@@ -88,7 +88,7 @@ export class EffectHitPointChangeWhenDying extends GameEffect {
     }
   }
 
-  private applyBloodVfx(creature: ModuleCreature){
+  private applyBloodVfx(creature: Creature){
     const color = String(creature.getAppearance()?.bloodcolr || '').toUpperCase();
     let vfxId = 0;
     if(color === 'R') vfxId = 0x9e;

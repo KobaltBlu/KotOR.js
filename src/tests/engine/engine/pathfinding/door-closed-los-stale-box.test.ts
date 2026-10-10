@@ -11,7 +11,7 @@ import * as THREE from "three";
 jest.mock("@engine/runtime/GameState", () => ({
   GameState: {
     raycaster: new THREE.Raycaster(),
-    ModuleObjectManager: { GetObjectById: () => undefined },
+    GameObjectManager: { GetObjectById: () => undefined },
     module: undefined,
   },
 }));
@@ -20,8 +20,8 @@ import { composeDoorWalkmeshLocalToWorld } from "@engine/pathfinding/door-walkme
 import { isStaticWalkClearDetailed } from "@engine/pathfinding/static-walk-blockers";
 import { isStaticWalkClearOnWalkMesh } from "@engine/pathfinding/static-walk-blockers-mesh";
 import { hasVisualLos } from "@engine/pathfinding/visual-los";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleDoor } from "@engine/module/ModuleDoor";
+import type { Area } from "@engine/module/Area";
+import type { Door } from "@engine/module/Door";
 import type { OdysseyWalkMesh } from "@engine/odyssey/OdysseyWalkMesh";
 import type { OdysseyFace3 } from "@engine/render/three/odyssey";
 
@@ -74,7 +74,7 @@ describe("closed door LOS with stale open-pose model box", () => {
   const doorPos = new THREE.Vector3(21.12, 20.713, -1.32);
   const doorRot = new THREE.Euler(0, 0, Math.PI / 2);
 
-  function makeClosedDoor(): ModuleDoor {
+  function makeClosedDoor(): Door {
     const wok = makeClosedPiercingWok();
     composeDoorWalkmeshLocalToWorld(
       wok.matrixWorld,
@@ -92,7 +92,7 @@ describe("closed door LOS with stale open-pose model box", () => {
       isOpen: () => false,
       getWalkmeshForOpenState: () => wok,
       collisionManager: { walkmesh: wok },
-    } as unknown as ModuleDoor;
+    } as unknown as Door;
   }
 
   it("isStaticWalkClearDetailed blocks corridor despite stale door.box", () => {
@@ -101,7 +101,7 @@ describe("closed door LOS with stale open-pose model box", () => {
       doors: [door],
       placeables: [],
       staticBlockerGridDirty: true,
-    } as unknown as ModuleArea;
+    } as unknown as Area;
     // World Y crossing → local X crossing through wall at local x=0 (R_z π/2)
     const from = new THREE.Vector3(doorPos.x, doorPos.y + 1.0, doorPos.z);
     const to = new THREE.Vector3(doorPos.x, doorPos.y - 1.0, doorPos.z);
@@ -129,7 +129,7 @@ describe("closed door LOS with stale open-pose model box", () => {
       placeables: [],
       rooms: [],
       staticBlockerGridDirty: true,
-    } as unknown as ModuleArea;
+    } as unknown as Area;
     const from = new THREE.Vector3(doorPos.x, doorPos.y + 1.0, doorPos.z);
     const to = new THREE.Vector3(doorPos.x, doorPos.y - 1.0, doorPos.z);
     expect(hasVisualLos(area, from, to, { eyeHeight: 1.5 })).toBe(false);
@@ -188,13 +188,13 @@ describe("open door jamb still clears doorway", () => {
       isOpen: () => true,
       getWalkmeshForOpenState: () => wok,
       collisionManager: { walkmesh: wok },
-    } as unknown as ModuleDoor;
+    } as unknown as Door;
 
     const area = {
       doors: [door],
       placeables: [],
       staticBlockerGridDirty: true,
-    } as unknown as ModuleArea;
+    } as unknown as Area;
     const from = new THREE.Vector3(doorPos.x - 0.25, doorPos.y + 0.4, doorPos.z);
     const to = new THREE.Vector3(doorPos.x - 0.25, doorPos.y - 0.4, doorPos.z);
     const result = isStaticWalkClearDetailed(area, from, to, {

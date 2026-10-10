@@ -1,7 +1,7 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleDoor } from "@engine/module/ModuleDoor";
-import type { ModulePlaceable } from "@engine/module/ModulePlaceable";
+import type { Area } from "@engine/module/Area";
+import type { Door } from "@engine/module/Door";
+import type { Placeable } from "@engine/module/Placeable";
 import { isStaticWalkClearOnAreaMesh, isStaticWalkClearOnWalkMesh, walkMeshHasStartOverlap } from "@engine/pathfinding/static-walk-blockers-mesh";
 import {
   composeDoorWalkmeshLocalToWorld,
@@ -71,7 +71,7 @@ function segmentOverlapsAabbXY(
  * Facing-plane cull volume: union of door.position slab and model box when
  * present so a stale open-pose model AABB cannot false-clear a closed door.
  */
-function facingPlaneCullBox(door: ModuleDoor): THREE.Box3 | undefined {
+function facingPlaneCullBox(door: Door): THREE.Box3 | undefined {
   const pos = door.position;
   if(!pos || !Number.isFinite(pos.x) || !Number.isFinite(pos.y)){
     return door.box ?? undefined;
@@ -98,7 +98,7 @@ function facingPlaneCullBox(door: ModuleDoor): THREE.Box3 | undefined {
  * Facing-plane fallback is closed-only (GetDoorCrossed).
  */
 function closedDoorBlocksLine(
-  door: ModuleDoor,
+  door: Door,
   from: THREE.Vector3,
   to: THREE.Vector3,
   expand: number,
@@ -177,7 +177,7 @@ function closedDoorBlocksLine(
   return true;
 }
 
-function findDoorById(area: ModuleArea, id: number): ModuleDoor | undefined {
+function findDoorById(area: Area, id: number): Door | undefined {
   const doors = area.doors;
   if(!doors?.length) return undefined;
   for(let i = 0; i < doors.length; i++){
@@ -186,7 +186,7 @@ function findDoorById(area: ModuleArea, id: number): ModuleDoor | undefined {
   return undefined;
 }
 
-function findPlaceableById(area: ModuleArea, id: number): ModulePlaceable | undefined {
+function findPlaceableById(area: Area, id: number): Placeable | undefined {
   const placeables = area.placeables;
   if(!placeables?.length) return undefined;
   for(let i = 0; i < placeables.length; i++){
@@ -196,7 +196,7 @@ function findPlaceableById(area: ModuleArea, id: number): ModulePlaceable | unde
 }
 
 function testPlaceableBlocks(
-  plc: ModulePlaceable,
+  plc: Placeable,
   from: THREE.Vector3,
   to: THREE.Vector3,
   expand: number,
@@ -229,7 +229,7 @@ function testPlaceableBlocks(
  * Returns clear=false → walk-line clear / hasWalkLineClear −2 (DetailedBlock).
  */
 export function isStaticWalkClearDetailed(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   from: THREE.Vector3,
   to: THREE.Vector3,
   options: {

@@ -32,7 +32,7 @@ jest.mock('@engine/runtime/GameState', () => ({
       party: [],
       resetFollowPath: jest.fn(),
     },
-    ModuleObjectManager: {
+    GameObjectManager: {
       GetObjectById: () => undefined,
     },
   },

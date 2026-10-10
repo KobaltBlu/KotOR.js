@@ -15,7 +15,7 @@ jest.mock("@engine/pathfinding/visual-los", () => ({ hasVisualLos: () => true })
 
 
 import * as THREE from "three";
-import { ModuleObjectManager, type NearestCandidate } from "@engine/managers/ModuleObjectManager";
+import { GameObjectManager, type NearestCandidate } from "@engine/managers/GameObjectManager";
 
 /** Mirror of nearest insert by squared world distance. */
 function nearestObjectToLocation(
@@ -28,7 +28,7 @@ function nearestObjectToLocation(
     const dx = obj.position.x - origin.x;
     const dy = obj.position.y - origin.y;
     const dz = obj.position.z - origin.z;
-    ModuleObjectManager.insertByDistSq(candidates, obj as NearestCandidate["obj"], dx * dx + dy * dy + dz * dz);
+    GameObjectManager.insertByDistSq(candidates, obj as NearestCandidate["obj"], dx * dx + dy * dy + dz * dz);
   }
   return candidates[iNum]?.obj;
 }
@@ -55,7 +55,7 @@ describe("Pass AL GetNearestCreatureToLocation IS_ALIVE sort", () => {
       const dx = c.position.x - origin.x;
       const dy = c.position.y - origin.y;
       const dz = c.position.z - origin.z;
-      ModuleObjectManager.insertByDistSq(candidates, c as NearestCandidate["obj"], dx * dx + dy * dy + dz * dz);
+      GameObjectManager.insertByDistSq(candidates, c as NearestCandidate["obj"], dx * dx + dy * dy + dz * dz);
     }
     expect(candidates[0].obj).toBe(near);
   });

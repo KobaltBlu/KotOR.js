@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { PathPoint } from "@engine/pathfinding/PathPoint";
-import type { ModuleObject } from "@engine/module/ModuleObject";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { GameObject } from "@engine/module/GameObject";
+import type { Creature } from "@engine/module/Creature";
 import { GameState } from "@engine/runtime/GameState";
 import { smoothCornerOptimizeRestartable, type SmoothCornerResume } from "@engine/pathfinding/smooth-corner-optimize";
 import {
@@ -32,7 +32,7 @@ export type PathPointDfsResume = {
 export type { SmoothSelectionResume };
 
 export class ComputedPath {
-  owner: ModuleObject;
+  owner: GameObject;
   points: PathPoint[] = [];
   origin: PathPoint = undefined;
   destination: PathPoint = undefined;
@@ -61,14 +61,14 @@ export class ComputedPath {
   /** Detour waypoint when parent→child went around a creature (cost geometry). */
   private edgeDetours = new WeakMap<PathPoint, THREE.Vector3>();
 
-  constructor(owner: ModuleObject, origin: PathPoint = undefined, destination: PathPoint = undefined){
+  constructor(owner: GameObject, origin: PathPoint = undefined, destination: PathPoint = undefined){
     this.owner = owner;
     this.origin = origin;
     this.destination = destination;
     this.points = [];
   }
 
-  setOwner(owner: ModuleObject){
+  setOwner(owner: GameObject){
     this.owner = owner;
   }
 
@@ -132,7 +132,7 @@ export class ComputedPath {
     this.incomplete = !!result.timedOut;
     if(result.end && (result.ok || result.timedOut)){
       this.reconstructPath(result.end);
-      // SmoothSelection runs in ModulePath.traverseToPoint / callers via prunePathPoints
+      // SmoothSelection runs in AreaPath.traverseToPoint / callers via prunePathPoints
       // (avoids double-prune and allows SmoothSelectionRestartable resume).
     }
     if(result.timedOut && result.transTable && result.costBudget != null){
@@ -201,13 +201,13 @@ export class ComputedPath {
     const polys = isStaticWalkClearDetailed(area, from.vector, to.vector, {
       ignoreObjectIds: isCreature(this.owner)
         ? (() => {
-            const id = (this.owner as ModuleCreature).pathFindIgnoreObjectId | 0;
+            const id = (this.owner as Creature).pathFindIgnoreObjectId | 0;
             return id ? [id] : undefined;
           })()
         : undefined,
     });
     if(!polys.clear){
-      const obj = GameState.ModuleObjectManager?.GetObjectById?.(polys.blockingObjectId);
+      const obj = GameState.GameObjectManager?.GetObjectById?.(polys.blockingObjectId);
       // Placeable or static door → drop edge; non-static door → keep successor
       if(isPthEdgeBlockedByObject(obj)){
         return { cost: -1 };
@@ -220,7 +220,7 @@ export class ComputedPath {
   /**
    * Prune — SmoothSelection three-pass (densify + string-pull).
    * Optional time budget + resume (~SmoothSelectionRestartable).
-   * On timeout sets `smoothResume` for ModulePath cross-frame session.
+   * On timeout sets `smoothResume` for AreaPath cross-frame session.
    */
   prunePathPoints(options: {
     timeBudgetMs?: number;

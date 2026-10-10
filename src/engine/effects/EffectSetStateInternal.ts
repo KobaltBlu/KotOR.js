@@ -5,9 +5,9 @@ import { GameEffectSubType } from "@core/enums/effects/GameEffectSubType";
 import { GameEffectSetStateType } from "@core/enums/effects/GameEffectSetStateType";
 import { ModuleCreatureAnimState } from "@core/enums/module/ModuleCreatureAnimState";
 import { ModuleCreatureAmbientState } from "@core/enums/module/ModuleCreatureAmbientState";
-import { ModuleObjectScript } from "@core/enums/module/ModuleObjectScript";
+import { ScriptHook } from "@core/enums/module/ScriptHook";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { animForSetState, VFX_DROID_STUN, VFX_STUN } from "@engine/effects/set-state";
 import { isCreature } from "@engine/module/guards/isCreature";
 import {
@@ -68,7 +68,7 @@ export class EffectSetStateInternal extends GameEffect {
     }
     super.onApply();
 
-    const creature = this.object as ModuleCreature;
+    const creature = this.object as Creature;
     const state = this.getInt(0) | 0;
     this.elapsed = 0;
 
@@ -97,7 +97,7 @@ export class EffectSetStateInternal extends GameEffect {
     super.update(delta);
     if(this.getInt(0) === GameEffectSetStateType.FORCEPUSH){
       if(isCreature(this.object)){
-        const creature = this.object as ModuleCreature;
+        const creature = this.object as Creature;
         if(!creature._creatureLocoThisFrame){
           updateForcePushAnimFlags(creature, delta);
         }
@@ -109,7 +109,7 @@ export class EffectSetStateInternal extends GameEffect {
   onRemove(){
     super.onRemove();
     if(isCreature(this.object)){
-      const creature = this.object as ModuleCreature;
+      const creature = this.object as Creature;
       const state = this.getInt(0) | 0;
       this.clearAmbient(creature, state);
       if(state === GameEffectSetStateType.FORCEPUSH){
@@ -130,7 +130,7 @@ export class EffectSetStateInternal extends GameEffect {
       }
 
       if(firesOnUserDefined(state)){
-        const onUserDefined = creature.scripts?.[ModuleObjectScript.CreatureOnUserDefined];
+        const onUserDefined = creature.scripts?.[ScriptHook.CreatureOnUserDefined];
         onUserDefined?.run?.(creature, 0);
       }
       creature.clearVisibleList?.();
@@ -141,14 +141,14 @@ export class EffectSetStateInternal extends GameEffect {
     this.children.length = 0;
   }
 
-  private applyAmbientAndAnim(creature: ModuleCreature, state: number){
+  private applyAmbientAndAnim(creature: Creature, state: number){
     switch(state){
       case GameEffectSetStateType.FORCEPUSH:
         creature.ambientAnimState = ModuleCreatureAmbientState.PRONE_FORCE_PUSHED;
         {
           const creator = this.getCreator();
           if(isCreature(creator)){
-            stampForcePushAttackSummary(creator as ModuleCreature, creature);
+            stampForcePushAttackSummary(creator as Creature, creature);
           }
         }
         break;
@@ -185,7 +185,7 @@ export class EffectSetStateInternal extends GameEffect {
     }
   }
 
-  private clearAmbient(creature: ModuleCreature, state: number){
+  private clearAmbient(creature: Creature, state: number){
     const ambient = creature.ambientAnimState | 0;
     if(state === GameEffectSetStateType.FORCEPUSH){
       if(ambient === ModuleCreatureAmbientState.PRONE_FORCE_PUSHED){
@@ -218,7 +218,7 @@ export class EffectSetStateInternal extends GameEffect {
     }
   }
 
-  private applyChildEffects(creature: ModuleCreature, state: number){
+  private applyChildEffects(creature: Creature, state: number){
     const raceCount = GameState.SWRuleSet?.racialTypeCount ?? 0;
 
     switch(state){
@@ -240,7 +240,7 @@ export class EffectSetStateInternal extends GameEffect {
   }
 
   private addSaveDecrease(
-    creature: ModuleCreature,
+    creature: Creature,
     amount: number,
     saveType: number,
     raceCount: number
@@ -254,7 +254,7 @@ export class EffectSetStateInternal extends GameEffect {
     this.children.push(save);
   }
 
-  private addVfx(creature: ModuleCreature, vfxId: number){
+  private addVfx(creature: Creature, vfxId: number){
     try{
       const vfx = new GameState.GameEffectFactory.EffectVisualEffect();
       this.stampChild(vfx);

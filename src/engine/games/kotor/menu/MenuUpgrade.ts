@@ -4,7 +4,7 @@ import { GameMenu, LBL_3DView } from "@engine/gui";
 import type { GUIListBox, GUILabel, GUIButton } from "@engine/gui";
 import { GUIInventoryItem } from "@engine/gui/protoitem/GUIInventoryItem";
 import { MDLLoader, TextureLoader } from "@engine/loaders";
-import type { ModuleItem } from "@engine/module/ModuleItem";
+import type { Item } from "@engine/module/Item";
 import { OdysseyModel } from "@engine/odyssey";
 import { OdysseyModel3D } from "@engine/render/three/odyssey";
 import {
@@ -69,12 +69,12 @@ export class MenuUpgrade extends GameMenu {
   category: UpgradeCategory = UpgradeCategory.NONE;
   source: UpgradeItemSource;
   /** Working copy of the item being upgraded. */
-  workingItem: ModuleItem;
+  workingItem: Item;
   slots: UpgradeSessionSlot[] = [];
   /** Components taken from inventory during this session (returned on cancel). */
-  reservedComponents: ModuleItem[] = [];
+  reservedComponents: Item[] = [];
   /** Components that were installed at open and removed during editing. */
-  returnedToInventory: ModuleItem[] = [];
+  returnedToInventory: Item[] = [];
   selectedSlotIndex: number = -1;
   showingComponentList: boolean = false;
   componentChoices: UpgradeComponentChoice[] = [];
@@ -545,7 +545,7 @@ export class MenuUpgrade extends GameMenu {
       this.slots
     );
 
-    // Build list nodes: ModuleItem instances or GUIInventoryItem-compatible stubs.
+    // Build list nodes: Item instances or GUIInventoryItem-compatible stubs.
     const nodes: any[] = this.componentChoices.map((choice, idx) => {
       if(choice.item){
         (choice.item as any).__upgradeChoiceIndex = idx;
@@ -584,7 +584,7 @@ export class MenuUpgrade extends GameMenu {
     const inv = slot.templateTag
       ? GameState.InventoryManager.getItemByTag(slot.templateTag)
       : false;
-    const count = inv && inv !== false ? (inv as ModuleItem).getStackSize?.() || 0 : 0;
+    const count = inv && inv !== false ? (inv as Item).getStackSize?.() || 0 : 0;
     this.LBL_UPGRADE_COUNT?.setText(String(count));
     this.LBL_PROPERTY?.setText(slot.component?.getName?.() || '');
   }
@@ -686,7 +686,7 @@ export class MenuUpgrade extends GameMenu {
 
     // Crystal replacement: load new template while preserving upgrade bits/slots.
     if(this.pendingCrystalTemplate && this.pendingCrystalTemplate !== this.originalTag){
-      const ModuleItemClass = GameState.Module?.ModuleArea?.ModuleItem;
+      const ModuleItemClass = GameState.Module?.Area?.Item;
       const replacement = ModuleItemClass?.FromResRef?.(this.pendingCrystalTemplate);
       if(replacement){
         replacement.copyUpgradeStateFrom(this.workingItem);

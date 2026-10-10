@@ -1,8 +1,8 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
-import type { ModuleRoom } from "@engine/module/ModuleRoom";
+import type { Area } from "@engine/module/Area";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
+import type { AreaRoom } from "@engine/module/AreaRoom";
 import { getCreaturePersonalSpace, getPathPersonalSpace } from "@engine/combat/attack-range";
 import { Utility } from "@core/utility/Utility";
 import { isCreatureCapsuleClear } from "@engine/pathfinding/creature-capsule-clear";
@@ -52,14 +52,14 @@ const _heightProbe = new THREE.Vector3();
 const _lineBox = new THREE.Box3();
 const _candidateFaces: any[] = [];
 const _candidateEdges: WalkmeshEdge[] = [];
-const _candidateRooms: ModuleRoom[] = [];
+const _candidateRooms: AreaRoom[] = [];
 
 /**
  * Sample walkmesh Z at a 2D point (first matching walk face).
  * Returns NaN if no face.
  */
 export function getWalkHeightAt(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   point: THREE.Vector3,
   candidateFaces?: Array<{ pointInFace2d?: (point: THREE.Vector3) => boolean; triangle?: THREE.Triangle }>
 ): number {
@@ -79,7 +79,7 @@ export function getWalkHeightAt(
  * True when a point lies on a walkable face (candidate list or area walkmesh).
  */
 function isCandidatePointWalkable(
-  area: ModuleArea,
+  area: Area,
   point: THREE.Vector3,
   candidateFaces?: Array<{ pointInFace2d?: (point: THREE.Vector3) => boolean }>
 ): boolean {
@@ -101,7 +101,7 @@ function isCandidatePointWalkable(
  * Same rule as PathPoint.hasLOS / clipped-line exit when adjacent room is none.
  */
 export function segmentCrossesBlockingWalkEdge(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   a: THREE.Vector3,
   b: THREE.Vector3,
   candidateEdges?: WalkmeshEdge[]
@@ -128,15 +128,15 @@ export function segmentCrossesBlockingWalkEdge(
  * Undefined → skip room connectivity.
  */
 export function getRoomAtPoint(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   point: THREE.Vector3,
   candidateFaces?: any[]
-): ModuleRoom | undefined {
+): AreaRoom | undefined {
   if(candidateFaces?.length){
     for(let i = 0, len = candidateFaces.length; i < len; i++){
       const face = candidateFaces[i];
       if(face?.pointInFace2d?.(point)){
-        const room = face.walkmesh?.moduleObject as ModuleRoom | undefined;
+        const room = face.walkmesh?.gameObject as AreaRoom | undefined;
         if(room) return room;
       }
     }
@@ -159,13 +159,13 @@ export function getRoomAtPoint(
 }
 
 /** Cache: walkmesh transition adjacency (not VIS visibility links). */
-const _walkAdjCache = new WeakMap<ModuleArea, { roomCount: number; adj: Map<string, Set<string>> }>();
+const _walkAdjCache = new WeakMap<Area, { roomCount: number; adj: Map<string, Set<string>> }>();
 
 /**
  * Undirected room graph from WalkmeshEdge.transition → area.rooms[index].
  * Direct-line uses walkmesh adjacency on clip exit, not VIS links.
  */
-function getWalkRoomAdjacency(area: ModuleArea): Map<string, Set<string>> {
+function getWalkRoomAdjacency(area: Area): Map<string, Set<string>> {
   const cached = _walkAdjCache.get(area);
   if(cached && cached.roomCount === area.rooms.length){
     return cached.adj;
@@ -206,9 +206,9 @@ function getWalkRoomAdjacency(area: ModuleArea): Map<string, Set<string>> {
 const ROOM_BFS_MAX_DEPTH = 16;
 
 function roomsAreWalkConnected(
-  area: ModuleArea,
-  start: ModuleRoom,
-  dest: ModuleRoom
+  area: Area,
+  start: AreaRoom,
+  dest: AreaRoom
 ): boolean {
   if(start === dest || start.roomName === dest.roomName) return true;
   const adj = getWalkRoomAdjacency(area);
@@ -239,9 +239,9 @@ function roomsAreWalkConnected(
 
 /** True if `next` is the same room or a 1-hop walkmesh neighbor of `cur`. */
 function roomsAreAdjacentOrSame(
-  area: ModuleArea,
-  cur: ModuleRoom,
-  next: ModuleRoom
+  area: Area,
+  cur: AreaRoom,
+  next: AreaRoom
 ): boolean {
   if(cur === next || cur.roomName === next.roomName) return true;
   const adj = getWalkRoomAdjacency(area);
@@ -263,11 +263,11 @@ function adaptiveSteps(origin: THREE.Vector3, dest: THREE.Vector3, requested?: n
  * @param maxHeightDelta Max |ΔZ| between consecutive walk samples (height cylinder).
  */
 export function hasWalkLineClear(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   origin: THREE.Vector3,
   dest: THREE.Vector3,
   options: {
-    owner?: ModuleObject;
+    owner?: GameObject;
     personalSpace?: number;
     checkCreatures?: boolean;
     /** Creature ids to skip in the creature capsule test. */
@@ -296,7 +296,7 @@ export function hasWalkLineClear(
 
   const steps = adaptiveSteps(origin, dest, options.steps);
   const perspace = options.personalSpace
-    ?? (options.owner ? getPathPersonalSpace(options.owner as ModuleCreature) : 0.5);
+    ?? (options.owner ? getPathPersonalSpace(options.owner as Creature) : 0.5);
   const checkCreatures = options.checkCreatures !== false;
   const ignore = options.ignoreCreatureIds;
   const allowParty = options.allowPartyCreatures === true;
@@ -360,7 +360,7 @@ export function hasWalkLineClear(
     }
   }
 
-  let startRoom: ModuleRoom | undefined;
+  let startRoom: AreaRoom | undefined;
   if(checkRooms){
     startRoom = getRoomAtPoint(area, origin, candidateFaces);
     const endRoom = getRoomAtPoint(area, dest, candidateFaces);
@@ -469,7 +469,7 @@ export function hasWalkLineClear(
   // Creature personal-space capsules on the (clipped) segment
   if(checkCreatures){
     const creSpace = options.owner
-      ? getCreaturePersonalSpace(options.owner as ModuleCreature)
+      ? getCreaturePersonalSpace(options.owner as Creature)
       : perspace;
     const creatures = isCreatureCapsuleClear(area, origin, dest, {
       owner: options.owner,
@@ -508,7 +508,7 @@ export function hasWalkLineClear(
  * (or room mesh when id is missing) instead of a full area scan.
  */
 function refineDetailedClearT(
-  area: ModuleArea,
+  area: Area,
   origin: THREE.Vector3,
   dest: THREE.Vector3,
   perspace: number,
@@ -574,7 +574,7 @@ function refineDetailedClearT(
 
 /** Binary search last walkable t in (lo, hi). */
 function refineClearPoint(
-  area: ModuleArea,
+  area: Area,
   origin: THREE.Vector3,
   dest: THREE.Vector3,
   lo: number,
@@ -606,11 +606,11 @@ function refineClearPoint(
  * (partial-path recovery when the full line fails).
  */
 export function farthestClearPoint(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   origin: THREE.Vector3,
   dest: THREE.Vector3,
   options: {
-    owner?: ModuleObject;
+    owner?: GameObject;
     personalSpace?: number;
     checkCreatures?: boolean;
   } = {}
@@ -625,10 +625,10 @@ export function farthestClearPoint(
  * True when origin→dest has a fully clear direct line.
  */
 export function hasClearWalkLine(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   origin: THREE.Vector3,
   dest: THREE.Vector3,
-  owner?: ModuleObject
+  owner?: GameObject
 ): boolean {
   return hasWalkLineClear(area, origin, dest, {
     owner,

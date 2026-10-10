@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import type { ModuleObject } from "@engine/module/ModuleObject";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { GameObject } from "@engine/module/GameObject";
+import type { Creature } from "@engine/module/Creature";
 import { recordMovementWrite } from "@engine/movement/instrumentation";
 import { ensureMovementState } from "@engine/movement/creature-movement-state";
 import { MovementSource } from "@engine/movement/types";
@@ -26,10 +26,10 @@ export type TeleportOptions = {
 
 /**
  * Relocate an object without locomotion response.
- * Replaces the physics-settling behavior of ModuleObject.setPosition for teleports.
+ * Replaces the physics-settling behavior of GameObject.setPosition for teleports.
  */
 export function teleportObject(
-  object: ModuleObject,
+  object: GameObject,
   x: number | THREE.Vector3,
   y = 0,
   z = 0,
@@ -66,7 +66,7 @@ export function teleportObject(
   }
 
   if(typeof options.facing === "number" && isCreature(object)){
-    (object as ModuleCreature).setFacing(
+    (object as Creature).setFacing(
       options.facing,
       options.facingInstant !== false
     );
@@ -77,7 +77,7 @@ export function teleportObject(
  * Placement helper used by Jump / spawn paths.
  */
 export function applyLocalTeleport(
-  creature: ModuleCreature,
+  creature: Creature,
   x: number,
   y: number,
   z: number,

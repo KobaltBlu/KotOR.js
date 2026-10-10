@@ -1,5 +1,5 @@
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Area } from "@engine/module/Area";
+import type { GameObject } from "@engine/module/GameObject";
 import type { GFFStruct } from "@core/resource/GFFStruct";
 import type { WalkmeshEdge } from "@engine/odyssey/WalkmeshEdge";
 import { isCreatureCapsuleClear } from "@engine/pathfinding/creature-capsule-clear";
@@ -24,7 +24,7 @@ export class PathPoint {
   vector: THREE.Vector3;
   nearestWalkableVector: THREE.Vector3;
   isTemp: boolean = false;
-  area: ModuleArea
+  area: Area
 
   //search state
   h: number = 0;
@@ -55,7 +55,7 @@ export class PathPoint {
     this.setArea(options.area);
   }
 
-  setArea(area: ModuleArea){
+  setArea(area: Area){
     this.area = area;
     if(this.area){
       this.nearestWalkableVector = this.area.getNearestWalkablePoint(this.vector);
@@ -76,7 +76,7 @@ export class PathPoint {
     return false;
   }
 
-  hasLOS(point_b: PathPoint, owner?: ModuleObject): boolean {
+  hasLOS(point_b: PathPoint, owner?: GameObject): boolean {
     if(!this.area)
       return true;
 

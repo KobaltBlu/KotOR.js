@@ -121,8 +121,8 @@ jest.mock('@engine/module/guards/isCreature', () => ({
   isCreature: (o: unknown) => !!(o as { __creature?: boolean })?.__creature,
 }));
 
-jest.mock('@engine/module/guards/isObject', () => ({
-  isObject: (o: unknown) => !!o,
+jest.mock('@engine/module/guards/isGameObject', () => ({
+  isGameObject: (o: unknown) => !!o,
 }));
 
 import { ActionPhysicalAttacks } from '@engine/actions/ActionPhysicalAttacks';
@@ -137,7 +137,7 @@ import {
   getCreatureLocoState,
   tryWakePausedCreatureLoco,
 } from '@engine/pathfinding/creature-loco';
-import type { ModuleCreature } from '@engine/module/ModuleCreature';
+import type { Creature } from '@engine/module/Creature';
 
 describe('ActionPhysicalAttacks approach queue', () => {
   beforeEach(() => {
@@ -233,7 +233,7 @@ describe('ActionPhysicalAttacks approach queue', () => {
     // Prior completed move leaves Paused; head MoveToPoint must wake PathWalk.
     const creature = {
       creatureLocoState: CreatureLocoState.Paused,
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
     expect(tryWakePausedCreatureLoco(creature, move.type)).toBe(true);
     expect(getCreatureLocoState(creature)).toBe(CreatureLocoState.PathWalk);
   });

@@ -2,8 +2,8 @@ import { GameState } from "@engine/runtime/GameState";
 import { GameMenu } from "@engine/gui";
 import type { GUIListBox, GUILabel, GUIButton } from "@engine/gui";
 import { GUIInventoryItem } from "@engine/gui/protoitem/GUIInventoryItem";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleItem } from "@engine/module/ModuleItem";
+import type { Creature } from "@engine/module/Creature";
+import type { Item } from "@engine/module/Item";
 import {
   UpgradeCategory,
   collectUpgradableItems,
@@ -30,9 +30,9 @@ export class MenuUpgradeItems extends GameMenu {
   BTN_BACK: GUIButton;
 
   itemType: UpgradeCategoryKey = 'NONE';
-  selected: ModuleItem;
+  selected: Item;
   selectedSource: UpgradeItemSource;
-  forcedItem: ModuleItem;
+  forcedItem: Item;
   sources: UpgradeItemSource[] = [];
 
   constructor(){
@@ -47,7 +47,7 @@ export class MenuUpgradeItems extends GameMenu {
     if(skipInit) return;
     return new Promise<void>((resolve) => {
       this.LB_ITEMS.setProtoBuilder(GUIInventoryItem);
-      this.LB_ITEMS.onSelected = (item: ModuleItem) => {
+      this.LB_ITEMS.onSelected = (item: Item) => {
         this.setSelected(item);
       }
       this.BTN_UPGRADEITEM.addEventListener('click', (e) => {
@@ -63,7 +63,7 @@ export class MenuUpgradeItems extends GameMenu {
     });
   }
 
-  setSelected(item: ModuleItem) {
+  setSelected(item: Item) {
     this.selected = item;
     this.selectedSource = this.sources.find(s => s.item === item);
     this.LB_DESCRIPTION.setItem(item ? item.getPropertyDescription() : null);
@@ -105,11 +105,11 @@ export class MenuUpgradeItems extends GameMenu {
     }
   }
 
-  isItemEquipped(item: ModuleItem): boolean {
+  isItemEquipped(item: Item): boolean {
     return !!this.findEquippedCreature(item);
   }
 
-  findEquippedCreature(item: ModuleItem): { creature: ModuleCreature; equipSlot: number } | undefined {
+  findEquippedCreature(item: Item): { creature: Creature; equipSlot: number } | undefined {
     const party = GameState.PartyManager?.party || [];
     for(let p = 0; p < party.length; p++){
       const creature = party[p];

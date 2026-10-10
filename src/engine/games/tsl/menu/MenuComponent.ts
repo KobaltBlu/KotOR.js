@@ -3,8 +3,8 @@ import type { GUILabel, GUIListBox, GUIButton } from "@engine/gui";
 import { GUIInventoryItem } from "@engine/gui/protoitem/GUIInventoryItem";
 import { GameState } from "@engine/runtime/GameState";
 import { InventoryManager } from "@engine/managers/InventoryManager";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleItem } from "@engine/module/ModuleItem";
+import type { Creature } from "@engine/module/Creature";
+import type { Item } from "@engine/module/Item";
 import { TwoDAObject } from "@core/resource/TwoDAObject";
 import {
   COMPONENT_CREATE_GROUPS,
@@ -17,7 +17,7 @@ import {
 
 interface ComponentShopChoice {
   recipe: CraftRecipeRow;
-  item: ModuleItem;
+  item: Item;
   cost: number;
   getName: () => string;
   getIcon: () => string;
@@ -66,13 +66,13 @@ export class MenuComponent extends GameMenu {
   declare BTN_Cancel: GUIButton;
   declare LBL_BAR3: GUILabel;
 
-  skillCharacter: ModuleCreature | undefined;
+  skillCharacter: Creature | undefined;
   createGroup: number = COMPONENT_CREATE_GROUPS.RANGED;
   breakFilter: BreakFilter = 'ALL';
   createMode: boolean = true;
   shopChoices: ComponentShopChoice[] = [];
   selectedShop: ComponentShopChoice | undefined;
-  selectedInv: ModuleItem | undefined;
+  selectedInv: Item | undefined;
   createItemString: string = '';
 
   constructor(){
@@ -98,7 +98,7 @@ export class MenuComponent extends GameMenu {
       if(this.LB_INVITEMS){
         this.LB_INVITEMS.onSelected = (node: any) => {
           this.createMode = false;
-          this.onInvSelected(node as ModuleItem);
+          this.onInvSelected(node as Item);
         };
       }
 
@@ -144,7 +144,7 @@ export class MenuComponent extends GameMenu {
   }
 
   open(args?: {
-    character?: ModuleCreature;
+    character?: Creature;
     createItemString?: string;
   }) {
     this.skillCharacter = args?.character
@@ -220,7 +220,7 @@ export class MenuComponent extends GameMenu {
     this.shopChoices = [];
     this.selectedShop = undefined;
     const table = this.getItemCreateTable();
-    const ModuleItemClass = GameState.Module?.ModuleArea?.ModuleItem;
+    const ModuleItemClass = GameState.Module?.Area?.Item;
     if(!table || !ModuleItemClass){
       this.LB_SHOPITEMS?.setItems?.([]);
       this.refreshCostLabels(0);
@@ -243,7 +243,7 @@ export class MenuComponent extends GameMenu {
       if(!recipe) continue;
       if(!itemCreateRecipeVisible(recipe, this.createGroup, getSkillRank, level, alignBucket)) continue;
 
-      let item: ModuleItem | undefined;
+      let item: Item | undefined;
       try{
         item = ModuleItemClass.FromResRef?.(recipe.label);
       }catch(_e){
@@ -273,7 +273,7 @@ export class MenuComponent extends GameMenu {
     }
   }
 
-  matchesBreakFilter(item: ModuleItem): boolean {
+  matchesBreakFilter(item: Item): boolean {
     if(this.breakFilter === 'ALL') return true;
     const base = item.baseItem;
     const isWeapon = (base?.weaponWield | 0) > 0 || (base?.weaponType | 0) > 0;
@@ -291,7 +291,7 @@ export class MenuComponent extends GameMenu {
 
   populateInventory() {
     const inv = (InventoryManager.getNonQuestInventory?.() || InventoryManager.getInventory?.() || [])
-      .filter((item: ModuleItem) => this.matchesBreakFilter(item));
+      .filter((item: Item) => this.matchesBreakFilter(item));
     this.LB_INVITEMS?.setItems?.(inv);
     this.selectedInv = undefined;
     this.updateBreakFilterButtons();
@@ -307,7 +307,7 @@ export class MenuComponent extends GameMenu {
     this.BTN_Accept.disableSelection = !choice || stock < (choice.cost | 0);
   }
 
-  onInvSelected(item: ModuleItem) {
+  onInvSelected(item: Item) {
     this.selectedInv = item;
     this.selectedShop = undefined;
     this.createMode = false;
@@ -343,8 +343,8 @@ export class MenuComponent extends GameMenu {
     if(stock < choice.cost) return;
 
     GameState.PartyManager.ComponentCount = stock - choice.cost;
-    const ModuleItemClass = GameState.Module?.ModuleArea?.ModuleItem;
-    let grant: ModuleItem | undefined;
+    const ModuleItemClass = GameState.Module?.Area?.Item;
+    let grant: Item | undefined;
     try{
       grant = ModuleItemClass?.FromResRef?.(choice.recipe.label);
     }catch(_e){

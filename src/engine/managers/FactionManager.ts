@@ -1,7 +1,7 @@
 import { CurrentGame } from "@engine/save/CurrentGame";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Area } from "@engine/module/Area";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 import { GFFObject } from "@core/resource/GFFObject";
 import { GFFStruct } from "@core/resource/GFFStruct";
 
@@ -13,7 +13,7 @@ import { Faction } from "@engine/world/Faction";
 import { Reputation } from "@engine/world/Reputation";
 import { ReputationConstant } from "@engine/enums/engine/ReputationConstant";
 import { BitWise } from "@core/utility/BitWise";
-import { ModuleObjectType } from "@core/enums/module/ModuleObjectType";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
 import { GameState } from "@engine/runtime/GameState";
 import { TwoDAManager } from "@core/managers/TwoDAManager";
 
@@ -46,26 +46,26 @@ export class FactionManager {
     FactionManager.factions.clear();
   }
 
-  static AddCreatureToFaction( creature: ModuleObject ){
-    if(BitWise.InstanceOf(creature?.objectType, ModuleObjectType.ModuleCreature)){
+  static AddCreatureToFaction( creature: GameObject ){
+    if(BitWise.InstanceOf(creature?.objectType, GameObjectType.Creature)){
       FactionManager.RemoveCreatureFromFaction(creature);
       if(creature.faction){
-        creature.faction.addMember(creature as ModuleCreature);
+        creature.faction.addMember(creature as Creature);
       }
     }
   }
 
-  static RemoveCreatureFromFaction( creature: ModuleObject){
-    if(BitWise.InstanceOf(creature?.objectType, ModuleObjectType.ModuleCreature)){
+  static RemoveCreatureFromFaction( creature: GameObject){
+    if(BitWise.InstanceOf(creature?.objectType, GameObjectType.Creature)){
       let faction = creature.faction;
       if(faction){
-        faction.removeMember(creature as ModuleCreature);
+        faction.removeMember(creature as Creature);
       }
     }
   }
 
-  static GetFactionLeader( creature: ModuleObject ){
-    if(BitWise.InstanceOf(creature?.objectType, ModuleObjectType.ModuleCreature)){
+  static GetFactionLeader( creature: GameObject ){
+    if(BitWise.InstanceOf(creature?.objectType, GameObjectType.Creature)){
       if(creature.faction.id == 0){
         return GameState.PartyManager.party[0];
       }else{
@@ -78,8 +78,8 @@ export class FactionManager {
     return undefined;
   }
 
-  static GetCreatureFaction(oSource: ModuleObject){
-    if(BitWise.InstanceOf(oSource?.objectType, ModuleObjectType.ModuleCreature)){
+  static GetCreatureFaction(oSource: GameObject){
+    if(BitWise.InstanceOf(oSource?.objectType, GameObjectType.Creature)){
       return oSource.faction;
     }
 
@@ -98,9 +98,9 @@ export class FactionManager {
     return undefined;
   }
 
-  static SetFactionReputation(oSource: ModuleObject, oTarget: ModuleObject, value = 50){
+  static SetFactionReputation(oSource: GameObject, oTarget: GameObject, value = 50){
 
-    if(!(BitWise.InstanceOf(oSource?.objectType, ModuleObjectType.ModuleObject)) || !(BitWise.InstanceOf(oTarget?.objectType, ModuleObjectType.ModuleObject)))
+    if(!(BitWise.InstanceOf(oSource?.objectType, GameObjectType.GameObject)) || !(BitWise.InstanceOf(oTarget?.objectType, GameObjectType.GameObject)))
       return false;
 
     if(oSource.faction == oTarget.faction)
@@ -114,9 +114,9 @@ export class FactionManager {
     return false;
   }
 
-  static AdjustFactionReputation(oSource: ModuleObject, oTarget: ModuleObject, value = 50){
+  static AdjustFactionReputation(oSource: GameObject, oTarget: GameObject, value = 50){
 
-    if(!(BitWise.InstanceOf(oSource?.objectType, ModuleObjectType.ModuleObject)) || !(BitWise.InstanceOf(oTarget?.objectType, ModuleObjectType.ModuleObject)))
+    if(!(BitWise.InstanceOf(oSource?.objectType, GameObjectType.GameObject)) || !(BitWise.InstanceOf(oTarget?.objectType, GameObjectType.GameObject)))
       return false;
 
     if(oSource.faction == oTarget.faction)
@@ -132,25 +132,25 @@ export class FactionManager {
     return false;
   }
 
-  static IsHostile(oSource: ModuleObject, oTarget: ModuleObject): boolean {
+  static IsHostile(oSource: GameObject, oTarget: GameObject): boolean {
     return FactionManager.GetReputation(oSource, oTarget) <= 10;
   }
 
-  static IsNeutral(oSource: ModuleObject, oTarget: ModuleObject): boolean {
+  static IsNeutral(oSource: GameObject, oTarget: GameObject): boolean {
     let rep = FactionManager.GetReputation(oSource, oTarget);
     return (rep >= 11) && (rep <= 89);
   }
 
-  static IsFriendly(oSource: ModuleObject, oTarget: ModuleObject): boolean {
+  static IsFriendly(oSource: GameObject, oTarget: GameObject): boolean {
     return FactionManager.GetReputation(oSource, oTarget) >= 90;
   }
 
-  static GetReputation(oSource: ModuleObject, oTarget: ModuleObject): number {
+  static GetReputation(oSource: GameObject, oTarget: GameObject): number {
     // -> 0-10 means oSource is hostile to oTarget
     // -> 11-89 means oSource is neutral to oTarget
     // -> 90-100 means oSource is friendly to oTarget
     // GetReputation — missing faction → 0x32 (50)
-    if(!(BitWise.InstanceOf(oSource?.objectType, ModuleObjectType.ModuleObject)) || !(BitWise.InstanceOf(oTarget?.objectType, ModuleObjectType.ModuleObject)))
+    if(!(BitWise.InstanceOf(oSource?.objectType, GameObjectType.GameObject)) || !(BitWise.InstanceOf(oTarget?.objectType, GameObjectType.GameObject)))
       return 0;
 
     if(oSource.faction && oTarget.faction){
@@ -371,10 +371,10 @@ export class FactionManager {
    * Resolve the area used by ExecuteCommandChangeByFaction.
    * Caller may be a creature/object (→ GetArea) or the area itself.
    */
-  static resolveCallerArea(caller: ModuleObject | undefined): ModuleArea | undefined {
+  static resolveCallerArea(caller: GameObject | undefined): Area | undefined {
     if(!caller) return undefined;
     if(isArea(caller)){
-      return caller as ModuleArea;
+      return caller as Area;
     }
     return caller.area;
   }
@@ -387,7 +387,7 @@ export class FactionManager {
    * join `toFactionId`. Surrender also clears combat/actions and pacifies.
    */
   static changeFactionByFaction(
-    caller: ModuleObject | undefined,
+    caller: GameObject | undefined,
     fromFactionId: number,
     toFactionId: number,
     surrender: boolean = false,
@@ -399,7 +399,7 @@ export class FactionManager {
     if(!toFaction) return;
 
     for(let i = 0; i < area.creatures.length; i++){
-      const creature = area.creatures[i] as ModuleCreature;
+      const creature = area.creatures[i] as Creature;
       if(!creature) continue;
 
       const factionId = creature.faction?.id ?? creature.factionId;

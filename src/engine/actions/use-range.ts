@@ -3,8 +3,8 @@ import { getCreaturePersonalSpace, getPathPersonalSpace } from "@engine/combat/a
 import { getNearestActionPoint } from "@engine/combat/nearest-action-point";
 import { ActionParameterType } from "@core/enums/actions/ActionParameterType";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 import { Utility } from "@core/utility/Utility";
 
 import { isCreature } from "@engine/module/guards/isCreature";
@@ -29,8 +29,8 @@ export type UseRangeResult = {
 };
 
 export function getUseRange(
-  owner: ModuleCreature,
-  target: ModuleObject,
+  owner: Creature,
+  target: GameObject,
   _attackDoorMode: boolean = false
 ): UseRangeResult {
   let range = getPathPersonalSpace(owner);
@@ -88,8 +88,8 @@ export function getUseRange(
  * Doors/placeables use the nearest action point, not object origin.
  */
 export function isInUseRange(
-  owner: ModuleCreature,
-  target: ModuleObject,
+  owner: Creature,
+  target: GameObject,
   extraRange: number = 0.0
 ): boolean {
   if(!owner || !target){
@@ -131,8 +131,8 @@ export function isInUseRange(
  * Front-queue MoveToPoint into use range. Returns true if a move was queued.
  */
 export function queueMoveIntoUseRange(
-  owner: ModuleCreature,
-  target: ModuleObject,
+  owner: Creature,
+  target: GameObject,
   groupId: number = -1,
   options: {
     extraRange?: number;

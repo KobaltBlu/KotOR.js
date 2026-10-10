@@ -1,8 +1,8 @@
-import type { ModuleObject } from "@engine/module/ModuleObject";
-import type { ModuleTrigger } from "@engine/module/ModuleTrigger";
+import type { GameObject } from "@engine/module/GameObject";
+import type { Trigger } from "@engine/module/Trigger";
 import { BitWise } from "@core/utility/BitWise";
-import { ModuleObjectType } from "@core/enums/module/ModuleObjectType";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
 
-export const isTrigger: (o: ModuleObject | undefined) => o is ModuleTrigger = (o): o is ModuleTrigger => {
-    return !!BitWise.InstanceOfObject(o, ModuleObjectType.ModuleTrigger);
+export const isTrigger: (o: GameObject | undefined) => o is Trigger = (o): o is Trigger => {
+    return !!BitWise.InstanceOfObject(o, GameObjectType.Trigger);
 }

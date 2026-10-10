@@ -4,7 +4,7 @@ import { GameEffectSetStateType } from "@core/enums/effects/GameEffectSetStateTy
 import { GameEffectSubType } from "@core/enums/effects/GameEffectSubType";
 import { ModuleCreatureAnimState } from "@core/enums/module/ModuleCreatureAnimState";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { hasImmunityType } from "@engine/effects/haste-slow";
 import { IMMUNITY_KNOCKDOWN } from "@engine/effects/set-state";
 import * as THREE from "three";
@@ -30,7 +30,7 @@ export class EffectKnockdown extends GameEffect {
     if(!isCreature(this.object)){
       return;
     }
-    const creature = this.object as ModuleCreature;
+    const creature = this.object as Creature;
 
     if(creature.plot || creature.isDead?.()){
       return;
@@ -55,7 +55,7 @@ export class EffectKnockdown extends GameEffect {
     let fromBehind = false;
     const creator = this.getCreator();
     if(isCreature(creator)){
-      const toSelf = creature.position.clone().sub((creator as ModuleCreature).position);
+      const toSelf = creature.position.clone().sub((creator as Creature).position);
       toSelf.z = 0;
       if(toSelf.lengthSq() > 0.0001){
         toSelf.normalize();
@@ -95,7 +95,7 @@ export class EffectKnockdown extends GameEffect {
     if(!isCreature(this.object)){
       return;
     }
-    const creature = this.object as ModuleCreature;
+    const creature = this.object as Creature;
     const round = creature.combatRound;
     if(round){
       round.infinitePause = false;

@@ -1,8 +1,8 @@
-import type { ModuleObject } from "@engine/module/ModuleObject";
-import type { ModuleMGTrack } from "@engine/module/ModuleMGTrack";
+import type { GameObject } from "@engine/module/GameObject";
+import type { MiniGameTrack } from "@engine/module/MiniGameTrack";
 import { BitWise } from "@core/utility/BitWise";
-import { ModuleObjectType } from "@core/enums/module/ModuleObjectType";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
 
-export const isMGTrack: (o: ModuleObject | undefined) => o is ModuleMGTrack = (o): o is ModuleMGTrack => {
-    return !!BitWise.InstanceOfObject(o, ModuleObjectType.ModuleMGTrack);
+export const isMGTrack: (o: GameObject | undefined) => o is MiniGameTrack = (o): o is MiniGameTrack => {
+    return !!BitWise.InstanceOfObject(o, GameObjectType.MiniGameTrack);
 }

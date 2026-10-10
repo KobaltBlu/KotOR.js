@@ -63,7 +63,7 @@ import { resolveAttackPauseMs, shouldEndRoundOnPauseExpiry, shouldSnapCombatRead
 import { CombatActionType } from '@core/enums/combat/CombatActionType';
 import { AttackResult } from '@core/enums/combat/AttackResult';
 import { ModuleCreatureAnimState } from '@core/enums/module/ModuleCreatureAnimState';
-import { ModuleObjectType } from '@core/enums/module/ModuleObjectType';
+import { GameObjectType } from '@core/enums/module/GameObjectType';
 
 describe('resolveAnimations2DARow', () => {
   it('resolves CutsceneAttack nAnimation as animations.2da row', () => {
@@ -101,7 +101,7 @@ describe('queue cutscene attack field contract', () => {
 
   it('calculateAttackAnimation uses attackAnimation row when resultsCalculated', () => {
     const owner = {
-      objectType: 1 << 3, // ModuleObjectType.ModuleCreature
+      objectType: 1 << 3, // GameObjectType.Creature
       getCombatAnimationAttackType: () => 'm',
       getCombatAnimationWeaponType: () => 1,
       isDuelingObject: () => false,
@@ -159,9 +159,9 @@ describe('CutsceneAttack duel timing', () => {
   });
 
   it('resolveMasterState yields when partner already masters this pair', () => {
-    const attacker: any = { objectType: ModuleObjectType.ModuleCreature };
+    const attacker: any = { objectType: GameObjectType.Creature };
     const target: any = {
-      objectType: ModuleObjectType.ModuleCreature,
+      objectType: GameObjectType.Creature,
       combatRound: { engaged: true, master: true, duelPartner: attacker },
       combatData: { lastAttackTarget: attacker },
     };
@@ -170,9 +170,9 @@ describe('CutsceneAttack duel timing', () => {
   });
 
   it('resolveMasterState still masters when partner is not driving the pair', () => {
-    const attacker: any = { objectType: ModuleObjectType.ModuleCreature };
+    const attacker: any = { objectType: GameObjectType.Creature };
     const target: any = {
-      objectType: ModuleObjectType.ModuleCreature,
+      objectType: GameObjectType.Creature,
       combatRound: { engaged: false, master: false, duelPartner: undefined },
       combatData: { lastAttackTarget: attacker },
     };
@@ -180,8 +180,8 @@ describe('CutsceneAttack duel timing', () => {
   });
 
   it('resolveMasterState returns false when not engaged', () => {
-    const attacker: any = { objectType: ModuleObjectType.ModuleCreature };
-    const target: any = { objectType: ModuleObjectType.ModuleCreature };
+    const attacker: any = { objectType: GameObjectType.Creature };
+    const target: any = { objectType: GameObjectType.Creature };
     expect(resolveMasterState(attacker, target, false)).toBe(false);
   });
 });

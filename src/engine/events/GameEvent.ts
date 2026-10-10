@@ -1,10 +1,10 @@
 
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import type { NWScriptInstance } from "@engine/nwscript/NWScriptInstance";
 import { GFFStruct } from "@core/resource/GFFStruct";
 
-import { isObject } from "@engine/module/guards/isObject";
+import { isGameObject } from "@engine/module/guards/isGameObject";
 
 /**
  * GameEvent class.
@@ -20,8 +20,8 @@ export class GameEvent {
   id: number = 0;
   initialized: boolean = false;
   type = 0;
-  caller: ModuleObject;
-  object: ModuleObject;
+  caller: GameObject;
+  object: GameObject;
   day: number;
   time: number;
   callerId: number;
@@ -40,28 +40,28 @@ export class GameEvent {
     this.callerId = nCallerId;
   }
 
-  setCaller(caller: ModuleObject){
+  setCaller(caller: GameObject){
     this.caller = caller;
-    this.callerId = isObject(this.caller) ? this.caller.id : 0;
+    this.callerId = isGameObject(this.caller) ? this.caller.id : 0;
     return this.caller;
   }
 
   getCaller(){
-    return isObject(this.caller) ? this.caller : this.setCaller(GameState.ModuleObjectManager.GetObjectById(this.callerId));
+    return isGameObject(this.caller) ? this.caller : this.setCaller(GameState.GameObjectManager.GetObjectById(this.callerId));
   }
 
   setObjectId(nObjectId: number){
     this.objectId = nObjectId;
   }
 
-  setObject(obj: ModuleObject){
+  setObject(obj: GameObject){
     this.object = obj;
-    this.objectId = isObject(this.object) ? this.object.id : 0;
+    this.objectId = isGameObject(this.object) ? this.object.id : 0;
     return this.object;
   }
 
   getObject(){
-    return isObject(this.object) ? this.object : this.setObject(GameState.ModuleObjectManager.GetObjectById(this.objectId));
+    return isGameObject(this.object) ? this.object : this.setObject(GameState.GameObjectManager.GetObjectById(this.objectId));
   }
 
   /** OBJECT_INVALID / sentinel used in event-queue GFF. */
@@ -69,10 +69,10 @@ export class GameEvent {
 
   /** Persist CallerId for event-queue save (script caller, else event caller). */
   exportCallerId(): number {
-    if(isObject(this.script?.caller)){
+    if(isGameObject(this.script?.caller)){
       return this.script.caller.id;
     }
-    if(isObject(this.caller)){
+    if(isGameObject(this.caller)){
       return this.caller.id;
     }
     if((this.callerId | 0) !== 0){
@@ -83,10 +83,10 @@ export class GameEvent {
 
   /** Persist ObjectId for event-queue save (script object, else event object). */
   exportObjectId(): number {
-    if(isObject(this.script?.object)){
+    if(isGameObject(this.script?.object)){
       return this.script.object.id;
     }
-    if(isObject(this.object)){
+    if(isGameObject(this.object)){
       return this.object.id;
     }
     if((this.objectId | 0) !== 0){

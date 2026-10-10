@@ -13,7 +13,7 @@ import { GFFDataType } from "@core/enums/resource/GFFDataType";
 import { CharGenClasses, type CharGenClassInterface } from "@engine/games/CharGenClasses";
 import { GameState } from "@engine/runtime/GameState";
 import { LBL_3DView } from "@engine/gui";
-import type { ModulePlayer } from "@engine/module/ModulePlayer";
+import type { PlayerCharacter } from "@engine/module/PlayerCharacter";
 import { OdysseyModel } from "@engine/odyssey";
 import { GFFField } from "@core/resource/GFFField";
 import { GFFObject } from "@core/resource/GFFObject";
@@ -36,7 +36,7 @@ import {
   getCharGenSlotSoundSet,
   resolveCharGenAppearanceHead,
 } from "@engine/rules/chargen-appearance";
-import { createDefaultPartyFollowInfo } from "@engine/module/ModuleCreature";
+import { createDefaultPartyFollowInfo } from "@engine/module/Creature";
 import { ModuleLoadCoordinator } from '@engine/runtime/ModuleLoadCoordinator';
 
 /** step indices. */
@@ -89,10 +89,10 @@ export class CharGenManager {
   static selectedClass: number = 0;
   static hoveredClass: number = 0;
   static selectedTemplate: GFFObject;
-  static selectedCreature: ModulePlayer;
+  static selectedCreature: PlayerCharacter;
   static models: Map<number, OdysseyModel3D> = new Map();
   static templates: Map<number, GFFObject> = new Map();
-  static creatures: Map<number, ModulePlayer> = new Map();
+  static creatures: Map<number, PlayerCharacter> = new Map();
   static lbl_3d_views: Map<number, LBL_3DView> = new Map();
 
   static cgmain_light: OdysseyModel;
@@ -197,7 +197,7 @@ export class CharGenManager {
   /**
    * Seed LvlStatList[0] for a newly created PC (CharGen / first level).
    */
-  static seedInitialLevelStat(creature: ModulePlayer) {
+  static seedInitialLevelStat(creature: PlayerCharacter) {
     if(!creature) return;
     const cls = creature.classes?.[0];
     if(!cls) return;
@@ -260,7 +260,7 @@ export class CharGenManager {
   }
 
   /** Apply class savingthrowtable row 0 (shared by quick + custom paths). */
-  static applyClassSavingThrows(creature: ModulePlayer, classData?: CreatureClass) {
+  static applyClassSavingThrows(creature: PlayerCharacter, classData?: CreatureClass) {
     const cls = classData || CharGenManager.getSelectedClassData();
     if(!creature || !cls) return;
     const savingTable = GameState.TwoDAManager.datatables.get(cls.savingthrowtable?.toLowerCase());
@@ -272,7 +272,7 @@ export class CharGenManager {
     }
   }
 
-  static applyGrantedFeats(creature: ModulePlayer, classData: CreatureClass) {
+  static applyGrantedFeats(creature: PlayerCharacter, classData: CreatureClass) {
     const feats = GameState.SWRuleSet.feats;
     if(!feats) return;
     for(let i = 0; i < feats.length; i++){
@@ -291,7 +291,7 @@ export class CharGenManager {
   }
 
   /** AddDefaultPackageFeats for first-level picks. */
-  static applyDefaultPackageFeats(creature: ModulePlayer, classData: CreatureClass, picks: number = 1) {
+  static applyDefaultPackageFeats(creature: PlayerCharacter, classData: CreatureClass, picks: number = 1) {
     const feats = GameState.SWRuleSet.feats;
     if(!feats || picks <= 0) return;
 
@@ -310,7 +310,7 @@ export class CharGenManager {
   }
 
   /** AddDefaultPackageSkills for first-level CharGen. */
-  static applyDefaultPackageSkills(creature: ModulePlayer) {
+  static applyDefaultPackageSkills(creature: PlayerCharacter) {
     CharGenManager.resetSkillPoints();
     CharGenManager.skillRankBaseline = [0, 0, 0, 0, 0, 0, 0, 0];
     CharGenManager.availSkillPoints = CharGenManager.getMaxSkillPoints();
@@ -401,10 +401,10 @@ export class CharGenManager {
       CharGenManager.lbl_3d_views.set(i, new LBL_3DView());
       let template = CharGenManager.GetPlayerTemplate(i);
       CharGenManager.templates.set(i, template);
-      CharGenManager.creatures.set(i, new GameState.Module.ModuleArea.ModulePlayer(template));
+      CharGenManager.creatures.set(i, new GameState.Module.Area.PlayerCharacter(template));
     }
     let template = CharGenManager.templates.get(CharGenManager.selectedClass);
-    CharGenManager.selectedCreature = new GameState.Module.ModuleArea.ModulePlayer(template);
+    CharGenManager.selectedCreature = new GameState.Module.Area.PlayerCharacter(template);
   }
 
   static GetPlayerTemplate(nth = 0) {
@@ -512,7 +512,7 @@ export class CharGenManager {
    * Apply portrait/appearance choice (UpdatePortraitButton / OnSelectDisplayButton).
    * Soundset stays on the class slot (does not retarget it on cycle).
    */
-  static applyPortraitAppearance(creature: ModulePlayer, appearanceId: number, portraitId: number) {
+  static applyPortraitAppearance(creature: PlayerCharacter, appearanceId: number, portraitId: number) {
     if(!creature) return;
     creature.appearance = appearanceId | 0;
     creature.portraitId = portraitId | 0;

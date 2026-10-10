@@ -3,7 +3,7 @@ import { GameEffectDurationType } from "@core/enums/effects/GameEffectDurationTy
 import { GameEffectSubType } from "@core/enums/effects/GameEffectSubType";
 import { GameState } from "@engine/runtime/GameState";
 import type { GameEffect } from "@engine/effects/GameEffect";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 
 import { isCreature } from "@engine/module/guards/isCreature";
 
@@ -24,7 +24,7 @@ function copyMeta(from: GameEffect, to: GameEffect){
   to.setSkipOnLoad(true);
 }
 
-function removeInternals(creature: ModuleCreature){
+function removeInternals(creature: Creature){
   const effects = creature.effects ? creature.effects.slice() : [];
   for(let i = 0; i < effects.length; i++){
     const e = effects[i];
@@ -41,9 +41,9 @@ function removeInternals(creature: ModuleCreature){
 }
 
 export function hasImmunityType(
-  creature: ModuleCreature,
+  creature: Creature,
   immunityType: number,
-  versus?: ModuleCreature
+  versus?: Creature
 ): boolean {
   if(!creature || immunityType <= 0 || immunityType >= 0x21) return false;
   // Prefer CombatRound GetEffectImmunity (race/align filters) when available
@@ -64,7 +64,7 @@ export function hasImmunityType(
   return false;
 }
 
-export function rebalanceHasteSlow(creature: ModuleCreature, trigger?: GameEffect){
+export function rebalanceHasteSlow(creature: Creature, trigger?: GameEffect){
   if(!isCreature(creature)){
     return;
   }

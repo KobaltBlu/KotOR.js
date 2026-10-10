@@ -3,11 +3,11 @@ import { GameState } from "@engine/runtime/GameState";
 import { EngineMode } from "@engine/enums/engine/EngineMode";
 import { ClientCameraMode } from "@engine/enums/engine/ClientCameraMode";
 import { Utility } from "@core/utility/Utility";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleMGPlayer } from "@engine/module/ModuleMGPlayer";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Area } from "@engine/module/Area";
+import type { MiniGamePlayer } from "@engine/module/MiniGamePlayer";
+import type { GameObject } from "@engine/module/GameObject";
 import { BitWise } from "@core/utility/BitWise";
-import { ModuleObjectType } from "@core/enums/module/ModuleObjectType";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
 import { ResolutionManager } from "@engine/managers/ResolutionManager";
 import { Mouse } from "@engine/controls/Mouse";
 
@@ -158,7 +158,7 @@ export class FollowerCamera {
 
   static cameraStyle: any = {};
 
-  static focusObject: ModuleObject | undefined = undefined;
+  static focusObject: GameObject | undefined = undefined;
   static focusTurnSpeed: number = 6.0;
 
   /**
@@ -619,7 +619,7 @@ export class FollowerCamera {
   /**
    * Resolve FreeLookHook → CameraHook → root+2 (Control GetPartPosition).
    */
-  static resolveFreeLookHook(followee: ModuleObject): boolean {
+  static resolveFreeLookHook(followee: GameObject): boolean {
     const model = (followee as any).model;
     if(model?.freelookhook){
       model.freelookhook.getWorldPosition(FollowerCamera.tmpHookPos);
@@ -750,7 +750,7 @@ export class FollowerCamera {
   }
 
   /** Begin death camera aimed at the fallen party member. */
-  static beginDeathCamera(target?: ModuleObject){
+  static beginDeathCamera(target?: GameObject){
     FollowerCamera.deathCamActive = true;
     FollowerCamera.focusObject = target;
     FollowerCamera.deathYaw = THREE.MathUtils.radToDeg(FollowerCamera.facing);
@@ -936,7 +936,7 @@ export class FollowerCamera {
   }
 
   /** GetTargetHeadPosition — model camerahook / 1.5 fallback + appearance offset. */
-  static getFolloweeHeadHeight(followee: ModuleObject): number {
+  static getFolloweeHeadHeight(followee: GameObject): number {
     let head = 1.5 + FollowerCamera.DEBUG_OFFSET;
     if(typeof (followee as any).getCameraHeight === 'function'){
       head = (followee as any).getCameraHeight() + FollowerCamera.DEBUG_OFFSET;
@@ -953,7 +953,7 @@ export class FollowerCamera {
     return head;
   }
 
-  static getCameraPersonalSpace(followee: ModuleObject): number {
+  static getCameraPersonalSpace(followee: GameObject): number {
     const appearance = (followee as any).creatureAppearance;
     if(appearance && typeof appearance.cameraspace === 'number' && appearance.cameraspace > 0){
       return appearance.cameraspace;
@@ -961,8 +961,8 @@ export class FollowerCamera {
     return FollowerCamera.DEFAULT_CAMERA_PERSONAL_SPACE;
   }
 
-  /** Camera yaw that places the chase cam behind the creature (ModuleArea spawn). */
-  static behindFacing(followee: ModuleObject): number {
+  /** Camera yaw that places the chase cam behind the creature (Area spawn). */
+  static behindFacing(followee: GameObject): number {
     const facing = typeof (followee as any).getFacing === 'function'
       ? (followee as any).getFacing()
       : (followee as any).rotation?.z ?? 0;
@@ -1069,7 +1069,7 @@ export class FollowerCamera {
    * Combat look target — Control uses GetLastTarget only.
    * Cursor hover must not steal the lock (that blocked free orbit).
    */
-  static getCombatLookTarget(followee: ModuleObject): ModuleObject | undefined {
+  static getCombatLookTarget(followee: GameObject): GameObject | undefined {
     if(FollowerCamera.focusObject && !FollowerCamera.focusObject.destroyed){
       return FollowerCamera.focusObject;
     }
@@ -1091,7 +1091,7 @@ export class FollowerCamera {
    * snaps position every tick. Soft-approach yaw with AccelerateInterp
    * rate (ChaseCam-style) for follow→combat / retarget; keep position snapped.
    */
-  static updateCombatCameraYaw(followee: ModuleObject, delta: number){
+  static updateCombatCameraYaw(followee: GameObject, delta: number){
     const target = FollowerCamera.getCombatLookTarget(followee);
     if(!target || target === followee){
       // No GetLastTarget — leave facing to player input (Control falls back to PC
@@ -1147,8 +1147,8 @@ export class FollowerCamera {
    * DetermineSafePosition ≈ hitCheckDistance from head+height origin.
    */
   static getCombatDesiredDistance(
-    area: ModuleArea,
-    followee: ModuleObject,
+    area: Area,
+    followee: GameObject,
     origin: THREE.Vector3
   ): number {
     let distance = FollowerCamera.maxDistance * GameState.CameraDebugZoom;
@@ -1322,7 +1322,7 @@ export class FollowerCamera {
    * Mode 0/2 yaw follow (ChaseCam soft / EQ stiff).
    * Modes 1/3 leave yaw to player; mode 6 uses updateCombatCameraYaw.
    */
-  static updateCameraModeYaw(followee: ModuleObject, delta: number){
+  static updateCameraModeYaw(followee: GameObject, delta: number){
     const mode = GameState.clientCameraMode | 0;
     FollowerCamera.applyCameraModeStyle(mode);
 
@@ -1356,7 +1356,7 @@ export class FollowerCamera {
    * Creature forward in XY for HitCheckCamera post-hit nudge.
    * Model yaw uses rotation.z; behindFacing is yaw−π/2, so forward is yaw+π/2.
    */
-  static getCreatureForwardXY(followee: ModuleObject, out: THREE.Vector3): THREE.Vector3 {
+  static getCreatureForwardXY(followee: GameObject, out: THREE.Vector3): THREE.Vector3 {
     const yaw = typeof (followee as any).getFacing === 'function'
       ? (followee as any).getFacing()
       : (followee as any).rotation?.z ?? 0;
@@ -1407,8 +1407,8 @@ export class FollowerCamera {
    * inside another creature's personal-space circle (2D).
    */
   static shrinkDistanceByCreatures(
-    area: ModuleArea,
-    followee: ModuleObject,
+    area: Area,
+    followee: GameObject,
     origin: THREE.Vector3,
     maxDist: number
   ): number {
@@ -1486,8 +1486,8 @@ export class FollowerCamera {
    * Writes safe camera position into `out`.
    */
   static hitCheckCamera(
-    area: ModuleArea,
-    followee: ModuleObject,
+    area: Area,
+    followee: GameObject,
     origin: THREE.Vector3,
     desired: THREE.Vector3,
     out: THREE.Vector3
@@ -1614,8 +1614,8 @@ export class FollowerCamera {
    * last hitCheckCamera out when used via update).
    */
   static hitCheckDistance(
-    area: ModuleArea,
-    followee: ModuleObject,
+    area: Area,
+    followee: GameObject,
     origin: THREE.Vector3,
     maxDist: number
   ): number {
@@ -1635,7 +1635,7 @@ export class FollowerCamera {
     );
   }
 
-  static update(delta: number = 0, area: ModuleArea){
+  static update(delta: number = 0, area: Area){
     if(FollowerCamera.deathCamActive){
       FollowerCamera.updateDeathCamera(delta);
       return;
@@ -1765,8 +1765,8 @@ export class FollowerCamera {
     );
 
     if(GameState.Mode == EngineMode.MINIGAME){
-      if(BitWise.InstanceOf(followee?.objectType, ModuleObjectType.ModuleMGPlayer)){
-        ( (mgPlayer: ModuleMGPlayer) => {
+      if(BitWise.InstanceOf(followee?.objectType, GameObjectType.MiniGamePlayer)){
+        ( (mgPlayer: MiniGamePlayer) => {
           const hook = mgPlayer.camera?.camerahook;
           if(hook){
             // SetCamera — attach to camerahook (no world-pose copy).
@@ -1817,7 +1817,7 @@ export class FollowerCamera {
     FollowerCamera.camera.updateProjectionMatrix();
   }
 
-  static setFocusObject(object: ModuleObject | undefined){
+  static setFocusObject(object: GameObject | undefined){
     FollowerCamera.focusObject = object;
   }
 

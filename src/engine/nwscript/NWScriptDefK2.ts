@@ -1,4 +1,4 @@
-import { ModuleObjectScript } from "@core/enums";
+import { ScriptHook } from "@core/enums";
 import { ActionParameterType } from "@core/enums/actions/ActionParameterType";
 import { ActionType } from "@core/enums/actions/ActionType";
 import { EngineMode } from "@engine/enums/engine/EngineMode";
@@ -7,13 +7,13 @@ import { ModuleDoorOpenState } from "@core/enums/module/ModuleDoorOpenState";
 import { AILevel } from "@core/enums/module/AILevel";
 import { NWScriptDataType } from "@core/enums/nwscript/NWScriptDataType";
 import { GameState } from "@engine/runtime/GameState";
-import { ModuleObject } from "@engine/module/ModuleObject";
-import type { ModuleAreaOfEffect } from "@engine/module/ModuleAreaOfEffect";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleItem } from "@engine/module/ModuleItem";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleWaypoint } from "@engine/module/ModuleWaypoint";
-import type { ModuleDoor } from "@engine/module/ModuleDoor";
+import { GameObject } from "@engine/module/GameObject";
+import type { AreaEffect } from "@engine/module/AreaEffect";
+import type { Creature } from "@engine/module/Creature";
+import type { Item } from "@engine/module/Item";
+import type { Area } from "@engine/module/Area";
+import type { Waypoint } from "@engine/module/Waypoint";
+import type { Door } from "@engine/module/Door";
 import type { GameEffect } from "@engine/effects/GameEffect";
 import { NW_FALSE, NW_TRUE } from "@core/nwscript/NWScriptConstants";
 import { NWScriptDef } from "@core/nwscript/NWScriptDef";
@@ -32,7 +32,7 @@ import { isAreaOfEffect } from "@engine/module/guards/isAreaOfEffect";
 import { isCreature } from "@engine/module/guards/isCreature";
 import { isDoor } from "@engine/module/guards/isDoor";
 import { isItem } from "@engine/module/guards/isItem";
-import { isObject } from "@engine/module/guards/isObject";
+import { isGameObject } from "@engine/module/guards/isGameObject";
 import { isPlaceable } from "@engine/module/guards/isPlaceable";
 import { isPlayer } from "@engine/module/guards/isPlayer";
 import { isTrigger } from "@engine/module/guards/isTrigger";
@@ -435,14 +435,14 @@ NWScriptDefK2.Actions = {
     name: 'CancelCombat',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
+    action: function(this: NWScriptInstance, args: [GameObject]){
       if(isCreature(args[0])){
-        if(GameState.PartyManager.party.indexOf(args[0] as ModuleCreature) >= 0){
+        if(GameState.PartyManager.party.indexOf(args[0] as Creature) >= 0){
           for(let i = 0, len = GameState.PartyManager.party.length; i < len; i++){
             GameState.PartyManager.party[i].cancelCombat();
           }
         }else{
-          (args[0] as ModuleCreature).cancelCombat();
+          (args[0] as Creature).cancelCombat();
         }
       }
     }
@@ -1149,7 +1149,7 @@ NWScriptDefK2.Actions = {
     name: 'EffectForceJump',
     type: NWScriptDataType.EFFECT,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+    action: function(this: NWScriptInstance, args: [GameObject, number]){
       let effect = new GameState.GameEffectFactory.EffectForceJump();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
@@ -1532,10 +1532,10 @@ NWScriptDefK2.Actions = {
      * nBarkX, and nBarkY override the left, top corner position for the bark string if the conversation starting is a bark string.
      * They only happen on a conversation by conversation basis and don't stay in effect in subsequent conversations.
      * @param this NWScriptInstance
-     * @param args [oObjectToConverse: ModuleObject, sDialogResRef: string = "", bPrivateConversation: boolean = FALSE, nConversationType: number = CONVERSATION_TYPE_CINEMATIC, bIgnoreStartRange: boolean = FALSE, sNameObjectToIgnore1: string = "", sNameObjectToIgnore2: string = "", sNameObjectToIgnore3: string = "", sNameObjectToIgnore4: string = "", sNameObjectToIgnore5: string = "", sNameObjectToIgnore6: string = "", bUseLeader: boolean = FALSE, nBarkX: number = -1, nBarkY: number = -1, bDontClearAllActions: boolean = 0]
+     * @param args [oObjectToConverse: GameObject, sDialogResRef: string = "", bPrivateConversation: boolean = FALSE, nConversationType: number = CONVERSATION_TYPE_CINEMATIC, bIgnoreStartRange: boolean = FALSE, sNameObjectToIgnore1: string = "", sNameObjectToIgnore2: string = "", sNameObjectToIgnore3: string = "", sNameObjectToIgnore4: string = "", sNameObjectToIgnore5: string = "", sNameObjectToIgnore6: string = "", bUseLeader: boolean = FALSE, nBarkX: number = -1, nBarkY: number = -1, bDontClearAllActions: boolean = 0]
      */
-    action: function(this: NWScriptInstance, args: [ModuleObject, string, number, number, number, string, string, string, string, string, string, number, number, number, number]){
-      if(isObject(this.caller)){
+    action: function(this: NWScriptInstance, args: [GameObject, string, number, number, number, string, string, string, string, string, string, number, number, number, number]){
+      if(isGameObject(this.caller)){
         // clears party[0] before dialog unless TSL bDontClearAllActions
         const bDontClearAllActions = !!args[14];
         if(!bDontClearAllActions){
@@ -1551,7 +1551,7 @@ NWScriptDefK2.Actions = {
         const bUseLeader = !!args[11];
         this.caller.actionDialogObject( args[0], args[1], true, args[2], args[3], false, ignoreNames, args[12] ?? -1, args[13] ?? -1, bUseLeader );
       }else{
-        console.error('ActionStartConversation', 'Caller is not an instance of ModuleObject');
+        console.error('ActionStartConversation', 'Caller is not an instance of GameObject');
       }
     }
   },
@@ -1572,7 +1572,7 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.VOID,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      if(isObject(this.caller)){
+      if(isGameObject(this.caller)){
         this.caller.actionQueue.add( new GameState.ActionFactory.ActionResumeDialog() );
       }
     }
@@ -1967,7 +1967,7 @@ NWScriptDefK2.Actions = {
     name: 'GetFirstInPersistentObject',
     type: NWScriptDataType.OBJECT,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
-    action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+    action: function(this: NWScriptInstance, args: [GameObject, number, number]){
       if(
         isTrigger(args[0]) ||
         isAreaOfEffect(args[0])
@@ -1983,7 +1983,7 @@ NWScriptDefK2.Actions = {
     name: 'GetNextInPersistentObject',
     type: NWScriptDataType.OBJECT,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
-    action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+    action: function(this: NWScriptInstance, args: [GameObject, number, number]){
       if(
         isTrigger(args[0]) ||
         isAreaOfEffect(args[0])
@@ -2000,10 +2000,10 @@ NWScriptDefK2.Actions = {
     name: 'GetAreaOfEffectCreator',
     type: NWScriptDataType.OBJECT,
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
+    action: function(this: NWScriptInstance, args: [GameObject]){
       if(isAreaOfEffect(args[0])){
-        const aoe = args[0] as ModuleAreaOfEffect;
-        return aoe.creator || GameState.ModuleObjectManager.GetObjectById(aoe.creatorId);
+        const aoe = args[0] as AreaEffect;
+        return aoe.creator || GameState.GameObjectManager.GetObjectById(aoe.creatorId);
       }
       return undefined;
     }
@@ -2655,12 +2655,12 @@ NWScriptDefK2.Actions = {
     name: 'ShowUpgradeScreen',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.STRING ],
-    action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject, number, number, string]){
+    action: function(this: NWScriptInstance, args: [GameObject, GameObject, number, number, string]){
       const forcedItem = isItem(args[0])
-        ? (args[0] as ModuleItem)
+        ? (args[0] as Item)
         : undefined;
       const skillCharacter = isCreature(args[1])
-        ? (args[1] as ModuleCreature)
+        ? (args[1] as Creature)
         : undefined;
       const disableItemCreation = !!args[2];
       const disableUpgrade = !!args[3];
@@ -2747,14 +2747,14 @@ NWScriptDefK2.Actions = {
     name: 'PlayPazaak',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.STRING, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [number, string, number, number, ModuleObject]){
+    action: function(this: NWScriptInstance, args: [number, string, number, number, GameObject]){
       GameState.PazaakManager.SetOpponentDeck(args[0] || 0);
       GameState.PazaakManager.SetEndScript(args[1] || '');
       const maxWager = args[2] || 0;
       GameState.PazaakManager.MaxWager = maxWager;
       GameState.PazaakManager.Wager = maxWager > 0 ? maxWager : 0;
       GameState.PazaakManager.ShowTutorial = !!args[3];
-      GameState.PazaakManager.SetOpponent(args[4] as ModuleCreature || this.caller as ModuleCreature);
+      GameState.PazaakManager.SetOpponent(args[4] as Creature || this.caller as Creature);
       GameState.PazaakManager.Won = false;
       GameState.PazaakManager.StartGame();
     }
@@ -2915,9 +2915,9 @@ NWScriptDefK2.Actions = {
     name: 'SetMapPinEnabled',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+    action: function(this: NWScriptInstance, args: [GameObject, number]){
       if(!isWaypoint(args[0])) return;
-      const waypoint = args[0] as ModuleWaypoint;
+      const waypoint = args[0] as Waypoint;
       if(!waypoint.hasMapNote) return;
       waypoint.mapNoteEnabled = !!args[1];
     }
@@ -3053,9 +3053,9 @@ NWScriptDefK2.Actions = {
     name: 'ExploreAreaForPlayer',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
+    action: function(this: NWScriptInstance, args: [GameObject, GameObject]){
       if(isArea(args[0])){
-        (args[0] as ModuleArea).areaMap.revealEntireMap();
+        (args[0] as Area).areaMap.revealEntireMap();
       }
     }
   },
@@ -3232,9 +3232,9 @@ NWScriptDefK2.Actions = {
     name: 'MusicBackgroundChangeDay',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
-    action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+    action: function(this: NWScriptInstance, args: [GameObject, number, number]){
       if(isArea(args[0])){
-        (args[0] as ModuleArea).musicBackgroundDaySet(args[1], args[2] || 0);
+        (args[0] as Area).musicBackgroundDaySet(args[1], args[2] || 0);
       }
     }
   },
@@ -3243,9 +3243,9 @@ NWScriptDefK2.Actions = {
     name: 'MusicBackgroundChangeNight',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
-    action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+    action: function(this: NWScriptInstance, args: [GameObject, number, number]){
       if(isArea(args[0])){
-        (args[0] as ModuleArea).musicBackgroundNightSet(args[1], args[2] || 0);
+        (args[0] as Area).musicBackgroundNightSet(args[1], args[2] || 0);
       }
     }
   },
@@ -4200,9 +4200,9 @@ NWScriptDefK2.Actions = {
     name: 'GetLastHostileActor',
     type: NWScriptDataType.OBJECT,
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
+    action: function(this: NWScriptInstance, args: [GameObject]){
       const target = (typeof args[0] != 'undefined') ? args[0] : this.caller;
-      if(!isObject(target)){
+      if(!isGameObject(target)){
         return undefined;
       }
       return target.getLastHostileActor();
@@ -5752,7 +5752,7 @@ NWScriptDefK2.Actions = {
     // nss/object pop (ExecuteCommandGetChemical pattern). Aspyr command table
     // aliases 771→GetGold — KotOR.js returns party PT_ITEM_COMPONENT (intended).
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, _args: [ModuleObject]){
+    action: function(this: NWScriptInstance, _args: [GameObject]){
       return GameState.PartyManager.ComponentCount | 0;
     }
   },
@@ -5762,9 +5762,9 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.INTEGER,
     // : GetCost / 0x14 (same as GetChemicalPieceValue).
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
+    action: function(this: NWScriptInstance, args: [GameObject]){
       if(isItem(args[0])){
-        const cost = (args[0] as ModuleItem).getGoldPieceValue?.() ?? 0;
+        const cost = (args[0] as Item).getGoldPieceValue?.() ?? 0;
         return Math.floor((cost | 0) / 20);
       }
       return 0;
@@ -5775,10 +5775,10 @@ NWScriptDefK2.Actions = {
     name: 'ShowChemicalUpgradeScreen',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
+    action: function(this: NWScriptInstance, args: [GameObject]){
       // ShowChemicalUpgradeScreen → (chemical_p).
       const character = isCreature(args[0])
-        ? (args[0] as ModuleCreature)
+        ? (args[0] as Creature)
         : undefined;
       GameState.MenuManager.MenuChemicals?.open({ character });
     }
@@ -5790,7 +5790,7 @@ NWScriptDefK2.Actions = {
     // ExecuteCommandGetChemical — creature GetChemical / placeable chem stack.
     // KotOR.js stockpile is PartyManager.ChemicalCount (PT_ITEM_CHEMICAL).
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, _args: [ModuleObject]){
+    action: function(this: NWScriptInstance, _args: [GameObject]){
       return GameState.PartyManager.ChemicalCount | 0;
     }
   },
@@ -5800,9 +5800,9 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.INTEGER,
     // ExecuteCommandGetChemicalPieceValue — GetCost / 0x14.
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
+    action: function(this: NWScriptInstance, args: [GameObject]){
       if(isItem(args[0])){
-        const cost = (args[0] as ModuleItem).getGoldPieceValue?.() ?? 0;
+        const cost = (args[0] as Item).getGoldPieceValue?.() ?? 0;
         return Math.floor((cost | 0) / 20);
       }
       return 0;
@@ -5822,7 +5822,7 @@ NWScriptDefK2.Actions = {
         return 0;
       }
       if(isCreature(this.caller)){
-        return (this.caller as ModuleCreature).getAdjustedForcePointCost(spell);
+        return (this.caller as Creature).getAdjustedForcePointCost(spell);
       }
       return (spell.forcepoints | 0) > 0 ? (spell.forcepoints | 0) : 0;
     }
@@ -5920,9 +5920,9 @@ NWScriptDefK2.Actions = {
     name: 'GetFeatAcquired',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
+    action: function(this: NWScriptInstance, args: [number, GameObject]){
       if(isCreature(args[1])){
-        return (args[1] as ModuleCreature).getHasFeat(args[0] | 0) ? NW_TRUE : NW_FALSE;
+        return (args[1] as Creature).getHasFeat(args[0] | 0) ? NW_TRUE : NW_FALSE;
       }
       return NW_FALSE;
     }
@@ -5932,9 +5932,9 @@ NWScriptDefK2.Actions = {
     name: 'GetSpellAcquired',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
+    action: function(this: NWScriptInstance, args: [number, GameObject]){
       if(isCreature(args[1])){
-        return (args[1] as ModuleCreature).getHasSpell(args[0] | 0) ? NW_TRUE : NW_FALSE;
+        return (args[1] as Creature).getHasSpell(args[0] | 0) ? NW_TRUE : NW_FALSE;
       }
       return NW_FALSE;
     }
@@ -5954,9 +5954,9 @@ NWScriptDefK2.Actions = {
     name: 'GrantFeat',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
+    action: function(this: NWScriptInstance, args: [number, GameObject]){
       if(isCreature(args[1])){
-        (args[1] as ModuleCreature).addFeat(args[0] | 0);
+        (args[1] as Creature).addFeat(args[0] | 0);
       }
     }
   },
@@ -5965,9 +5965,9 @@ NWScriptDefK2.Actions = {
     name: 'GrantSpell',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
+    action: function(this: NWScriptInstance, args: [number, GameObject]){
       if(isCreature(args[1])){
-        const creature = args[1] as ModuleCreature;
+        const creature = args[1] as Creature;
         const cls = creature.getMainClass?.();
         if(cls && !creature.getHasSpell(args[0] | 0)){
           cls.addSpell(new TalentSpell(args[0] | 0));
@@ -5980,17 +5980,17 @@ NWScriptDefK2.Actions = {
     name: 'SpawnMine',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.LOCATION, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [number, EngineLocation, number, number, ModuleObject]){
+    action: function(this: NWScriptInstance, args: [number, EngineLocation, number, number, GameObject]){
       const area = args[1]?.area ?? GameState.module?.area;
       if(!area || !args[1]?.position){
         return;
       }
-      const hasOwner = isObject(args[4]);
-      const owner = hasOwner ? args[4] : (this.caller as ModuleObject);
-      if(!isObject(owner)){
+      const hasOwner = isGameObject(args[4]);
+      const owner = hasOwner ? args[4] : (this.caller as GameObject);
+      if(!isGameObject(owner)){
         return;
       }
-      const trigger = ModuleObject.plantGroundTrap(area, args[0] | 0, args[1].position, owner);
+      const trigger = GameObject.plantGroundTrap(area, args[0] | 0, args[1].position, owner);
       if(!trigger){
         return;
       }
@@ -6012,7 +6012,7 @@ NWScriptDefK2.Actions = {
     name: 'SWMG_GetTrackPosition',
     type: NWScriptDataType.VECTOR,
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
+    action: function(this: NWScriptInstance, args: [GameObject]){
       const obj = args[0] as any;
       const track = obj?.track;
       if(track?.position){
@@ -6047,9 +6047,9 @@ NWScriptDefK2.Actions = {
     name: 'SetFakeCombatState',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+    action: function(this: NWScriptInstance, args: [GameObject, number]){
       if(isCreature(args[0])){
-        const creature = args[0] as ModuleCreature;
+        const creature = args[0] as Creature;
         creature.fakeCombatState = !!args[1];
         if(creature.combatData){
           creature.combatData.combatState = !!args[1];
@@ -6062,7 +6062,7 @@ NWScriptDefK2.Actions = {
     name: 'SWMG_DestroyMiniGameObject',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
+    action: function(this: NWScriptInstance, args: [GameObject]){
       GameState.module?.area?.miniGame?.destroyMiniGameObject?.(args[0]);
     }
   },
@@ -6071,11 +6071,11 @@ NWScriptDefK2.Actions = {
     name: 'GetOwnerDemolitionsSkill',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if(!isObject(args[0])){
+    action: function(this: NWScriptInstance, args: [GameObject]){
+      if(!isGameObject(args[0])){
         return 0;
       }
-      const skill = (args[0] as ModuleObject).ownerDemolitions;
+      const skill = (args[0] as GameObject).ownerDemolitions;
       return (typeof skill === 'number' && skill >= 0) ? (skill | 0) : 0;
     }
   },
@@ -6084,9 +6084,9 @@ NWScriptDefK2.Actions = {
     name: 'SetOrientOnClick',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+    action: function(this: NWScriptInstance, args: [GameObject, number]){
       if(isCreature(args[0])){
-        (args[0] as ModuleCreature).orientOnClick = !!args[1];
+        (args[0] as Creature).orientOnClick = !!args[1];
       }
     }
   },
@@ -6122,9 +6122,9 @@ NWScriptDefK2.Actions = {
     name: 'GetRacialSubType',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
+    action: function(this: NWScriptInstance, args: [GameObject]){
       if(isCreature(args[0])){
-        return (args[0] as ModuleCreature).getSubRace() | 0;
+        return (args[0] as Creature).getSubRace() | 0;
       }
       return 0;
     }
@@ -6155,9 +6155,9 @@ NWScriptDefK2.Actions = {
     name: 'SetBonusForcePoints',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+    action: function(this: NWScriptInstance, args: [GameObject, number]){
       if(isCreature(args[0])){
-        (args[0] as ModuleCreature).bonusForcePoints = args[1] | 0;
+        (args[0] as Creature).bonusForcePoints = args[1] | 0;
       }
     }
   },
@@ -6166,10 +6166,10 @@ NWScriptDefK2.Actions = {
     name: 'AddBonusForcePoints',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+    action: function(this: NWScriptInstance, args: [GameObject, number]){
       if(isCreature(args[0])){
-        (args[0] as ModuleCreature).bonusForcePoints =
-          ((args[0] as ModuleCreature).bonusForcePoints | 0) + (args[1] | 0);
+        (args[0] as Creature).bonusForcePoints =
+          ((args[0] as Creature).bonusForcePoints | 0) + (args[1] | 0);
       }
     }
   },
@@ -6178,9 +6178,9 @@ NWScriptDefK2.Actions = {
     name: 'GetBonusForcePoints',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
+    action: function(this: NWScriptInstance, args: [GameObject]){
       if(isCreature(args[0])){
-        return (args[0] as ModuleCreature).bonusForcePoints | 0;
+        return (args[0] as Creature).bonusForcePoints | 0;
       }
       return 0;
     }
@@ -6231,10 +6231,10 @@ NWScriptDefK2.Actions = {
     name: 'YavinHackDoorClose',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
+    action: function(this: NWScriptInstance, args: [GameObject]){
       // Same as K1 YavinHackCloseDoor → SetOpenState(CLOSED, false)
       if(isDoor(args[0])){
-        (args[0] as ModuleDoor).setOpenState(ModuleDoorOpenState.CLOSED, false);
+        (args[0] as Door).setOpenState(ModuleDoorOpenState.CLOSED, false);
       }
     }
   },
@@ -6257,9 +6257,9 @@ NWScriptDefK2.Actions = {
     name: 'IsStealthed',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
+    action: function(this: NWScriptInstance, args: [GameObject]){
       if(isCreature(args[0])){
-        return (args[0] as ModuleCreature).stealthMode ? NW_TRUE : NW_FALSE;
+        return (args[0] as Creature).stealthMode ? NW_TRUE : NW_FALSE;
       }
       return NW_FALSE;
     }
@@ -6269,7 +6269,7 @@ NWScriptDefK2.Actions = {
     name: 'IsMeditating',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
+    action: function(this: NWScriptInstance, args: [GameObject]){
       return 0;
     }	
   },
@@ -6278,11 +6278,11 @@ NWScriptDefK2.Actions = {
     name: 'IsInTotalDefense',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
+    action: function(this: NWScriptInstance, args: [GameObject]){
       if(!isCreature(args[0])){
         return NW_FALSE;
       }
-      const creature = args[0] as ModuleCreature;
+      const creature = args[0] as Creature;
       if(creature.actionQueue?.actionTypeExists?.(ActionType.ActionStanceTotalDefense)){
         return NW_TRUE;
       }
@@ -6296,8 +6296,8 @@ NWScriptDefK2.Actions = {
     name: 'SetHealTarget',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
-      if(isObject(args[0])){
+    action: function(this: NWScriptInstance, args: [GameObject, GameObject]){
+      if(isGameObject(args[0])){
         this.healTarget = args[1];
       }
     }	
@@ -6307,7 +6307,7 @@ NWScriptDefK2.Actions = {
     name: 'GetHealTarget',
     type: NWScriptDataType.OBJECT,
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleCreature]){
+    action: function(this: NWScriptInstance, args: [Creature]){
       return this.healTarget;
     }	
   },
@@ -6316,11 +6316,11 @@ NWScriptDefK2.Actions = {
     name: 'GetRandomDestination',
     type: NWScriptDataType.VECTOR,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+    action: function(this: NWScriptInstance, args: [GameObject, number]){
       if(!isCreature(args[0])){
         return new THREE.Vector3();
       }
-      const creature = args[0] as ModuleCreature;
+      const creature = args[0] as Creature;
       const range = Math.max(0, args[1] | 0);
       const faces = creature.room?.collisionManager?.walkmesh?.walkableFaces;
       if(faces?.length){
@@ -6356,12 +6356,12 @@ NWScriptDefK2.Actions = {
     name: 'IsFormActive',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+    action: function(this: NWScriptInstance, args: [GameObject, number]){
       const creature = args[0];
       if(!isCreature(creature)){
         return 0;
       }
-      return (creature as ModuleCreature).isFormActive(args[1]) ? 1 : 0;
+      return (creature as Creature).isFormActive(args[1]) ? 1 : 0;
     }
   },
   817: {
@@ -6405,7 +6405,7 @@ NWScriptDefK2.Actions = {
     name: 'HasLineOfSight',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.VECTOR, NWScriptDataType.VECTOR, NWScriptDataType.OBJECT, NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [THREE.Vector3, THREE.Vector3, ModuleObject, ModuleObject]){
+    action: function(this: NWScriptInstance, args: [THREE.Vector3, THREE.Vector3, GameObject, GameObject]){
       const from = args[0];
       const to = args[1];
       if(!from || !to){
@@ -6423,8 +6423,8 @@ NWScriptDefK2.Actions = {
         ? to
         : new THREE.Vector3((to as any).x, (to as any).y, (to as any).z);
       const clear = hasVisualLos(area, fromV, toV, {
-        ignoreSource: isObject(args[2]) ? args[2] : undefined,
-        ignoreObject: isObject(args[3]) ? args[3] : undefined,
+        ignoreSource: isGameObject(args[2]) ? args[2] : undefined,
+        ignoreObject: isGameObject(args[3]) ? args[3] : undefined,
         eyeHeight: 1.5,
       });
       return clear ? NW_TRUE : NW_FALSE;
@@ -6446,8 +6446,8 @@ NWScriptDefK2.Actions = {
     name: 'ForceHeartbeat',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if(isObject(args[0])){
+    action: function(this: NWScriptInstance, args: [GameObject]){
+      if(isGameObject(args[0])){
         args[0].triggerHeartbeat();
       }
     }
@@ -6470,7 +6470,7 @@ NWScriptDefK2.Actions = {
     name: 'IsRunning',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
+    action: function(this: NWScriptInstance, args: [GameObject]){
       if(isCreature(args[0])){
         return args[0].animState == ModuleCreatureAnimState.RUNNING;
       }
@@ -6518,10 +6518,10 @@ NWScriptDefK2.Actions = {
     name: 'ModifyReflexSavingThrowBase',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+    action: function(this: NWScriptInstance, args: [GameObject, number]){
       if(isCreature(args[0])){
-        (args[0] as ModuleCreature).refbonus =
-          ((args[0] as ModuleCreature).refbonus | 0) + (args[1] | 0);
+        (args[0] as Creature).refbonus =
+          ((args[0] as Creature).refbonus | 0) + (args[1] | 0);
       }
     }
   },
@@ -6530,10 +6530,10 @@ NWScriptDefK2.Actions = {
     name: 'ModifyFortitudeSavingThrowBase',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+    action: function(this: NWScriptInstance, args: [GameObject, number]){
       if(isCreature(args[0])){
-        (args[0] as ModuleCreature).fortbonus =
-          ((args[0] as ModuleCreature).fortbonus | 0) + (args[1] | 0);
+        (args[0] as Creature).fortbonus =
+          ((args[0] as Creature).fortbonus | 0) + (args[1] | 0);
       }
     }
   },
@@ -6542,10 +6542,10 @@ NWScriptDefK2.Actions = {
     name: 'ModifyWillSavingThrowBase',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+    action: function(this: NWScriptInstance, args: [GameObject, number]){
       if(isCreature(args[0])){
-        (args[0] as ModuleCreature).willbonus =
-          ((args[0] as ModuleCreature).willbonus | 0) + (args[1] | 0);
+        (args[0] as Creature).willbonus =
+          ((args[0] as Creature).willbonus | 0) + (args[1] | 0);
       }
     }
   },
@@ -6563,9 +6563,9 @@ NWScriptDefK2.Actions = {
     name: 'GetObjectPersonalSpace',
     type: NWScriptDataType.FLOAT,
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
+    action: function(this: NWScriptInstance, args: [GameObject]){
       if(isCreature(args[0])){
-        return (args[0] as ModuleCreature).getPersonalSpace()
+        return (args[0] as Creature).getPersonalSpace()
       }else{
         return 0.0;
       }
@@ -6576,11 +6576,11 @@ NWScriptDefK2.Actions = {
     name: 'AdjustCreatureAttributes',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
-    action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+    action: function(this: NWScriptInstance, args: [GameObject, number, number]){
       if(!isCreature(args[0])){
         return;
       }
-      const creature = args[0] as ModuleCreature;
+      const creature = args[0] as Creature;
       const amount = args[2] | 0;
       switch(args[1] | 0){
         case 0: creature.str = (creature.str | 0) + amount; break;
@@ -6597,8 +6597,8 @@ NWScriptDefK2.Actions = {
     name: 'SetCreatureAILevel',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
-      if(!isObject(args[0])){
+    action: function(this: NWScriptInstance, args: [GameObject, number]){
+      if(!isGameObject(args[0])){
         return;
       }
       GameState.module?.aiScheduler?.setAILevel(args[0], args[1] as AILevel);
@@ -6609,9 +6609,9 @@ NWScriptDefK2.Actions = {
     name: 'ResetCreatureAILevel',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
+    action: function(this: NWScriptInstance, args: [GameObject]){
       if(isCreature(args[0])){
-        (args[0] as ModuleCreature).adjustAILevel();
+        (args[0] as Creature).adjustAILevel();
       }
     }
   },
@@ -6629,8 +6629,8 @@ NWScriptDefK2.Actions = {
     name: 'AddAvailablePUPByObject',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
-      return GameState.PartyManager.AddAvailablePUPByObject(args[0], args[1] as ModuleCreature) ? NW_TRUE : NW_FALSE;
+    action: function(this: NWScriptInstance, args: [number, GameObject]){
+      return GameState.PartyManager.AddAvailablePUPByObject(args[0], args[1] as Creature) ? NW_TRUE : NW_FALSE;
     }
   },
   838: {
@@ -6656,8 +6656,8 @@ NWScriptDefK2.Actions = {
     name: 'AddPartyPuppet',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
-      return GameState.PartyManager.AddPartyPuppet(args[0], args[1] as ModuleCreature) ? NW_TRUE : NW_FALSE;
+    action: function(this: NWScriptInstance, args: [number, GameObject]){
+      return GameState.PartyManager.AddPartyPuppet(args[0], args[1] as Creature) ? NW_TRUE : NW_FALSE;
     }
   },
   841: {
@@ -6665,8 +6665,8 @@ NWScriptDefK2.Actions = {
     name: 'GetPUPOwner',
     type: NWScriptDataType.OBJECT,
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
-      return GameState.PartyManager.GetPUPOwner(args[0] as ModuleCreature);
+    action: function(this: NWScriptInstance, args: [GameObject]){
+      return GameState.PartyManager.GetPUPOwner(args[0] as Creature);
     }
   },
   842: {
@@ -6674,8 +6674,8 @@ NWScriptDefK2.Actions = {
     name: 'GetIsPuppet',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
-      return GameState.PartyManager.GetIsPartyPuppet(args[0] as ModuleCreature) ? NW_TRUE : NW_FALSE;
+    action: function(this: NWScriptInstance, args: [GameObject]){
+      return GameState.PartyManager.GetIsPartyPuppet(args[0] as Creature) ? NW_TRUE : NW_FALSE;
     }
   },
   843: {
@@ -6697,8 +6697,8 @@ NWScriptDefK2.Actions = {
     name: 'GetIsPartyLeader',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if(isObject(args[0])){
+    action: function(this: NWScriptInstance, args: [GameObject]){
+      if(isGameObject(args[0])){
         if(args[0] == GameState.PartyManager.party[0]){
           return 1;
         }else{
@@ -6733,9 +6733,9 @@ NWScriptDefK2.Actions = {
     name: 'CreatureFlourishWeapon',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
+    action: function(this: NWScriptInstance, args: [GameObject]){
       if(isCreature(args[0])){
-        (args[0] as ModuleCreature).flourish();
+        (args[0] as Creature).flourish();
       }
     }	
   },
@@ -6771,9 +6771,9 @@ NWScriptDefK2.Actions = {
     name: 'ChangeObjectAppearance',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+    action: function(this: NWScriptInstance, args: [GameObject, number]){
       if(isCreature(args[0])){
-        (args[0] as ModuleCreature).setAppearance(args[1] | 0);
+        (args[0] as Creature).setAppearance(args[1] | 0);
       }
     }
   },
@@ -6810,7 +6810,7 @@ NWScriptDefK2.Actions = {
       if(!isCreature(this.caller)){
         return;
       }
-      GameState.ActionFactory.AddSwitchWeaponsAction(this.caller as ModuleCreature);
+      GameState.ActionFactory.AddSwitchWeaponsAction(this.caller as Creature);
     }
   },
   854: {
@@ -6818,9 +6818,9 @@ NWScriptDefK2.Actions = {
     name: 'PlayOverlayAnimation',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+    action: function(this: NWScriptInstance, args: [GameObject, number]){
       if(isCreature(args[0])){
-        (args[0] as ModuleCreature).playOverlayAnimation(args[1]);
+        (args[0] as Creature).playOverlayAnimation(args[1]);
       }
     }	
   },
@@ -6848,8 +6848,8 @@ NWScriptDefK2.Actions = {
     name: 'DetonateMine',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if(!isObject(args[0])){
+    action: function(this: NWScriptInstance, args: [GameObject]){
+      if(!isGameObject(args[0])){
         return;
       }
       // Immediate destroy (detonation VFX is visual-only; damage is via script)
@@ -6870,12 +6870,12 @@ NWScriptDefK2.Actions = {
     name: 'SetCurrentForm',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+    action: function(this: NWScriptInstance, args: [GameObject, number]){
       const creature = args[0];
       if(!isCreature(creature)){
         return;
       }
-      (creature as ModuleCreature).setCurrentForm(args[1]);
+      (creature as Creature).setCurrentForm(args[1]);
     }
   },
   860: {
@@ -6901,8 +6901,8 @@ NWScriptDefK2.Actions = {
     name: 'SetForceAlwaysUpdate',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
-      if(isObject(args[0])){
+    action: function(this: NWScriptInstance, args: [GameObject, number]){
+      if(isGameObject(args[0])){
         args[0].forceAlwaysUpdate = !!args[1];
       }
     }
@@ -6939,7 +6939,7 @@ NWScriptDefK2.Actions = {
     name: 'DisplayDatapad',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
+    action: function(this: NWScriptInstance, args: [GameObject]){
       // ExecuteCommandDisplayDatapad — SetLocalBoolean(0x5E), DescIdentified → datapad_p
       if(!isItem(args[0])){
         return;
@@ -6948,7 +6948,7 @@ NWScriptDefK2.Actions = {
       if(!menu){
         return;
       }
-      menu.openDatapad(args[0] as ModuleItem);
+      menu.openDatapad(args[0] as Item);
     }
   },
   866: {
@@ -6956,9 +6956,9 @@ NWScriptDefK2.Actions = {
     name: 'RemoveHeartbeat',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
+    action: function(this: NWScriptInstance, args: [GameObject]){
       if(isPlaceable(args[0])){
-        args[0].scripts[ModuleObjectScript.PlaceableOnHeartbeat] = undefined;
+        args[0].scripts[ScriptHook.PlaceableOnHeartbeat] = undefined;
       }
     }	
   },
@@ -6967,8 +6967,8 @@ NWScriptDefK2.Actions = {
     name: 'RemoveEffectByID',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
-      if(!isObject(args[0])){
+    action: function(this: NWScriptInstance, args: [GameObject, number]){
+      if(!isGameObject(args[0])){
         return;
       }
       const id = args[1] | 0;
@@ -6985,8 +6985,8 @@ NWScriptDefK2.Actions = {
     name: 'RemoveEffectByExactMatch',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.EFFECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject, GameEffect]){
-      if(!isObject(args[0]) || !args[1]){
+    action: function(this: NWScriptInstance, args: [GameObject, GameEffect]){
+      if(!isGameObject(args[0]) || !args[1]){
         return;
       }
       const match = args[1];
@@ -7009,12 +7009,12 @@ NWScriptDefK2.Actions = {
     name: 'AdjustCreatureSkills',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
-    action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+    action: function(this: NWScriptInstance, args: [GameObject, number, number]){
       if(!isCreature(args[0])){
         return;
       }
       const skill = args[1] | 0;
-      const creature = args[0] as ModuleCreature;
+      const creature = args[0] as Creature;
       if(creature.skills?.[skill]){
         creature.skills[skill].rank = (creature.skills[skill].rank | 0) + (args[2] | 0);
       }
@@ -7025,9 +7025,9 @@ NWScriptDefK2.Actions = {
     name: 'GetSkillRankBase',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
+    action: function(this: NWScriptInstance, args: [number, GameObject]){
       if(isCreature(args[1])){
-        return (args[1] as ModuleCreature).getSkillRank(args[0] | 0, true);
+        return (args[1] as Creature).getSkillRank(args[0] | 0, true);
       }
       return 0;
     }
@@ -7037,8 +7037,8 @@ NWScriptDefK2.Actions = {
     name: 'EnableRendering',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
-      if(!isObject(args[0])){
+    action: function(this: NWScriptInstance, args: [GameObject, number]){
+      if(!isGameObject(args[0])){
         return;
       }
       const enable = !!args[1];
@@ -7053,9 +7053,9 @@ NWScriptDefK2.Actions = {
     name: 'GetCombatActionsPending',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
+    action: function(this: NWScriptInstance, args: [GameObject]){
       if(isCreature(args[0])){
-        return (args[0] as ModuleCreature).combatData?.combatQueue?.length
+        return (args[0] as Creature).combatData?.combatQueue?.length
           ? NW_TRUE
           : NW_FALSE;
       }
@@ -7067,8 +7067,8 @@ NWScriptDefK2.Actions = {
     name: 'SaveNPCByObject',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
-      GameState.PartyManager.SaveNPCByObject(args[0], args[1] as ModuleCreature);
+    action: function(this: NWScriptInstance, args: [number, GameObject]){
+      GameState.PartyManager.SaveNPCByObject(args[0], args[1] as Creature);
     }
   },
   874: {
@@ -7076,8 +7076,8 @@ NWScriptDefK2.Actions = {
     name: 'SavePUPByObject',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
-      GameState.PartyManager.SavePUPByObject(args[0], args[1] as ModuleCreature);
+    action: function(this: NWScriptInstance, args: [number, GameObject]){
+      GameState.PartyManager.SavePUPByObject(args[0], args[1] as Creature);
     }
   },
   875: {
@@ -7085,7 +7085,7 @@ NWScriptDefK2.Actions = {
     name: 'GetIsPlayerMadeCharacter',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
+    action: function(this: NWScriptInstance, args: [GameObject]){
       return isPlayer(args[0]) ? NW_TRUE : NW_FALSE;
     }
   },

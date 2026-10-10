@@ -10,8 +10,8 @@ import { GameEngineType } from "@core/enums/engine/GameEngineType";
 import { GFFDataType } from "@core/enums/resource/GFFDataType";
 import { GameState } from "@engine/runtime/GameState";
 import { TwoDAManager } from "@core/managers/TwoDAManager";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 import { GFFField } from "@core/resource/GFFField";
 import { GFFStruct } from "@core/resource/GFFStruct";
 import { TwoDAObject } from "@core/resource/TwoDAObject";
@@ -166,7 +166,7 @@ export class TalentFeat extends TalentObject {
     }
   }
 
-  useTalentOnObject(oTarget: ModuleObject, oCaster: ModuleObject){
+  useTalentOnObject(oTarget: GameObject, oCaster: GameObject){
     super.useTalentOnObject(oTarget, oCaster);
 
     //MELEE
@@ -183,7 +183,7 @@ export class TalentFeat extends TalentObject {
 
   }
 
-  inRange(oTarget: ModuleObject, oCaster: ModuleObject){
+  inRange(oTarget: GameObject, oCaster: GameObject){
     if(oTarget == oCaster){
       return true;
     }
@@ -278,7 +278,7 @@ export class TalentFeat extends TalentObject {
     return 0;
   }
   
-  impactCaster(object: ModuleObject){
+  impactCaster(object: GameObject){
     if(!isCreature(object)) return;
 
     // AC penalties (Flurry / Crit Strike / Sniper / Rapid Shot) — 
@@ -305,7 +305,7 @@ export class TalentFeat extends TalentObject {
    * Fort save DC = total level + ability mod; duration 6s; state = CUT_SCENE_STUNNED.
    * Caller queues the returned effect onto the first swing's CombatAttackData.
    */
-  impactTarget(caster: ModuleObject, target: ModuleObject): GameEffect | undefined {
+  impactTarget(caster: GameObject, target: GameObject): GameEffect | undefined {
     if(!isCreature(caster)) return undefined;
     if(!isCreature(target)) return undefined;
 
@@ -319,8 +319,8 @@ export class TalentFeat extends TalentObject {
       this.id === CombatFeatType.MASTER_SNIPER_SHOT;
     if(!meleeStun && !rangedStun) return undefined;
 
-    const attacker = caster as ModuleCreature;
-    const defender = target as ModuleCreature;
+    const attacker = caster as Creature;
+    const defender = target as Creature;
     const abilityMod = meleeStun
       ? CombatRound.GetMod(attacker.getSTR())
       : CombatRound.GetMod(attacker.getINT());

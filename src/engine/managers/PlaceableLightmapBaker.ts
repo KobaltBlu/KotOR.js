@@ -1,5 +1,5 @@
-import type { ModulePlaceable } from '@engine/module/ModulePlaceable';
-import type { ModuleArea } from '@engine/module/ModuleArea';
+import type { Placeable } from '@engine/module/Placeable';
+import type { Area } from '@engine/module/Area';
 import type { LightManager } from '@engine/managers/LightManager';
 import type { OdysseyModel3D } from '@engine/render/three/odyssey/OdysseyModel3D';
 import { OdysseyLightmapBaker, type IOdysseyLightmapBakeOptions } from '@engine/managers/OdysseyLightmapBaker';
@@ -20,17 +20,17 @@ export class PlaceableLightmapBaker {
   /** Seconds of rest before freezing hinged/animated meshes into the lightmap. */
   static readonly IDLE_REBAKE_SECONDS = 0.5;
 
-  private static idleStates = new Map<ModulePlaceable, IPlaceableIdleState>();
+  private static idleStates = new Map<Placeable, IPlaceableIdleState>();
 
   static setLightManagerProvider(provider: () => LightManager | undefined): void {
     OdysseyLightmapBaker.setLightManagerProvider(provider);
   }
 
-  static isBaked(plc: ModulePlaceable): boolean {
+  static isBaked(plc: Placeable): boolean {
     return OdysseyLightmapBaker.isBaked(plc?.model as OdysseyModel3D);
   }
 
-  static isPoseFrozen(plc: ModulePlaceable): boolean {
+  static isPoseFrozen(plc: Placeable): boolean {
     return !!this.idleStates.get(plc)?.poseFrozen;
   }
 
@@ -38,7 +38,7 @@ export class PlaceableLightmapBaker {
    * Mark motion / open-close activity. Resets the idle clock and unfreezes
    * a prior pose-freeze bake so lids return to nearest light selection.
    */
-  static noteActivity(plc: ModulePlaceable): void {
+  static noteActivity(plc: Placeable): void {
     if(!plc || plc.destroyed){ return; }
     const state = this.ensureIdleState(plc);
     state.idleAccum = 0;
@@ -78,7 +78,7 @@ export class PlaceableLightmapBaker {
     }
   }
 
-  static invalidate(plc: ModulePlaceable): void {
+  static invalidate(plc: Placeable): void {
     if(!plc || !(plc.model as OdysseyModel3D)?.materials){ return; }
     const state = this.ensureIdleState(plc);
     state.idleAccum = 0;
@@ -91,14 +91,14 @@ export class PlaceableLightmapBaker {
     });
   }
 
-  static invalidateArea(area: ModuleArea): void {
+  static invalidateArea(area: Area): void {
     if(!area?.placeables){ return; }
     for(let i = 0; i < area.placeables.length; i++){
       this.invalidate(area.placeables[i]);
     }
   }
 
-  static bakeArea(area: ModuleArea, lightManager?: LightManager): void {
+  static bakeArea(area: Area, lightManager?: LightManager): void {
     if(!area?.placeables){ return; }
     for(let i = 0; i < area.placeables.length; i++){
       this.bakePlaceable(area.placeables[i], lightManager);
@@ -109,13 +109,13 @@ export class PlaceableLightmapBaker {
     OdysseyLightmapBaker.flushDirty(lightManager);
   }
 
-  static dispose(plc: ModulePlaceable): void {
+  static dispose(plc: Placeable): void {
     this.idleStates.delete(plc);
     OdysseyLightmapBaker.dispose(plc?.model as OdysseyModel3D);
   }
 
   static bakePlaceable(
-    plc: ModulePlaceable,
+    plc: Placeable,
     lightManager?: LightManager,
     options: Pick<IOdysseyLightmapBakeOptions, 'includeAnimatedTransforms'> = {}
   ): void {
@@ -139,7 +139,7 @@ export class PlaceableLightmapBaker {
     }
   }
 
-  private static ensureIdleState(plc: ModulePlaceable): IPlaceableIdleState {
+  private static ensureIdleState(plc: Placeable): IPlaceableIdleState {
     let state = this.idleStates.get(plc);
     if(!state){
       state = { idleAccum: 0, poseFrozen: false, tracking: false };
@@ -148,7 +148,7 @@ export class PlaceableLightmapBaker {
     return state;
   }
 
-  private static isTransitioning(plc: ModulePlaceable): boolean {
+  private static isTransitioning(plc: Placeable): boolean {
     const anim = plc.animStateInfo?.currentAnimState ?? plc.animState;
     return anim === ModulePlaceableAnimState.OPEN_CLOSE
       || anim === ModulePlaceableAnimState.CLOSE_OPEN;

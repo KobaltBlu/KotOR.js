@@ -1,6 +1,6 @@
 import { GameEffect } from "@engine/effects/GameEffect";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 
 import { isCreature } from "@engine/module/guards/isCreature";
 
@@ -24,7 +24,7 @@ export class EffectModifyNumAttacks extends GameEffect {
     if(!isCreature(this.object)){
       return;
     }
-    const creature = this.object as ModuleCreature;
+    const creature = this.object as Creature;
     const round = creature.combatRound;
     if(!round) return;
 
@@ -42,7 +42,7 @@ export class EffectModifyNumAttacks extends GameEffect {
     if(!isCreature(this.object)){
       return;
     }
-    const creature = this.object as ModuleCreature;
+    const creature = this.object as Creature;
     const round = creature.combatRound;
     if(!round) return;
     const amount = this.getInt(0) || 0;

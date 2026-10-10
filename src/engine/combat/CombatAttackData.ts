@@ -1,12 +1,12 @@
 import { CombatAttackDamage } from "@engine/combat/CombatAttackDamage";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleItem } from "@engine/module/ModuleItem";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { Item } from "@engine/module/Item";
+import type { GameObject } from "@engine/module/GameObject";
 import { CExoLocString } from "@core/resource/CExoLocString";
 import { GFFStruct } from "@core/resource/GFFStruct";
 import { GFFField } from "@core/resource/GFFField";
 import { GFFDataType } from "@core/enums/resource/GFFDataType";
-import { ModuleObjectConstant } from "@core/enums/module/ModuleObjectConstant";
+import { GameObjectConstant } from "@core/enums/module/GameObjectConstant";
 import { DamageType } from "@core/enums/combat/DamageType";
 import { EffectDamage } from "@engine/effects/EffectDamage";
 import type { GameEffect } from "@engine/effects/GameEffect";
@@ -64,7 +64,7 @@ export class CombatAttackData {
   /**
    * The missed by object for the attack
    */
-  missedBy: ModuleObject = undefined;
+  missedBy: GameObject = undefined;
   /** Saved MissedBy DWORD for deferred resolve. */
   missedByObjectId: number = 0;
 
@@ -76,7 +76,7 @@ export class CombatAttackData {
   /**
    * The reaction object for the attack
    */
-  reactObject: ModuleObject = undefined;
+  reactObject: GameObject = undefined;
   /** Saved ReactObject DWORD for deferred resolve. */
   reactObjectId: number = 0;
 
@@ -185,7 +185,7 @@ export class CombatAttackData {
   /**
    * The ammo item that is being used for the attack
    */
-  ammoItem: ModuleObject = undefined;
+  ammoItem: GameObject = undefined;
   /** Saved AmmoItem DWORD for deferred resolve. */
   ammoItemObjectId: number = 0;
 
@@ -202,7 +202,7 @@ export class CombatAttackData {
   /**
    * The weapon that is being used for the attack
    */
-  attackWeapon: ModuleItem;
+  attackWeapon: Item;
 
   /**
    * Milliseconds remaining before damage/feedback should apply.
@@ -246,7 +246,7 @@ export class CombatAttackData {
    * @param isCritial - Whether the attack is a critical hit
    * @param feat - The feat that is being used for the attack
    */
-  calculateDamage(creature: ModuleCreature, isCritial: boolean = false, feat?: TalentFeat){
+  calculateDamage(creature: Creature, isCritial: boolean = false, feat?: TalentFeat){
     const critMultiplier = isCritial
       ? creature.combatRound.getCriticalHitMultiplier(this.attackWeapon, feat, creature)
       : 1;
@@ -391,7 +391,7 @@ export class CombatAttackData {
    * @param weapon - The weapon to calculate the weapon specialization bonus for
    * @returns The weapon specialization bonus
    */
-  calculateWeaponSpecBonus(creature: ModuleCreature, weapon: ModuleItem): number {
+  calculateWeaponSpecBonus(creature: Creature, weapon: Item): number {
     let bonus = 0;
     if(!creature){ return 0; }
     
@@ -431,7 +431,7 @@ export class CombatAttackData {
    * SetBaseDamage writes damage_list[0xE] (PHYSICAL); SetDamage writes the
    * weapon GetDamageFlags channel (flags 1 when unarmed).
    */
-  setScriptedCutsceneDamage(amount: number, weapon?: ModuleItem){
+  setScriptedCutsceneDamage(amount: number, weapon?: Item){
     const scripted = amount | 0;
     if(scripted < 0) return;
 
@@ -456,8 +456,8 @@ export class CombatAttackData {
    * @param opts.scriptedResults - CutsceneAttack: skip mitigate / on-hit effects
    */
   applyDamageEffectToCreature(
-    owner: ModuleCreature,
-    target: ModuleCreature,
+    owner: Creature,
+    target: Creature,
     opts?: { scriptedResults?: boolean }
   ){
     if(!target) return;
@@ -557,11 +557,11 @@ export class CombatAttackData {
     struct.addField(new GFFField(GFFDataType.BYTE, 'AttackGroup')).setValue(this.attackGroup || 0);
     struct.addField(new GFFField(GFFDataType.WORD, 'AnimationLength')).setValue(this.animationLength || 0);
     struct.addField(new GFFField(GFFDataType.DWORD, 'MissedBy')).setValue(
-      this.missedBy?.id ?? ModuleObjectConstant.OBJECT_INVALID
+      this.missedBy?.id ?? GameObjectConstant.OBJECT_INVALID
     );
     struct.addField(new GFFField(GFFDataType.BYTE, 'AttackResult')).setValue(this.attackResult || 0);
     struct.addField(new GFFField(GFFDataType.DWORD, 'ReactObject')).setValue(
-      this.reactObject?.id ?? ModuleObjectConstant.OBJECT_INVALID
+      this.reactObject?.id ?? GameObjectConstant.OBJECT_INVALID
     );
     struct.addField(new GFFField(GFFDataType.WORD, 'ReaxnDelay')).setValue(this.reaxnDelay || 0);
     struct.addField(new GFFField(GFFDataType.WORD, 'ReaxnAnimation')).setValue(this.reaxnAnimation || 0);
@@ -589,7 +589,7 @@ export class CombatAttackData {
     struct.addField(new GFFField(GFFDataType.BYTE, 'CriticalThreat')).setValue(this.criticalThreat || 0);
     struct.addField(new GFFField(GFFDataType.BYTE, 'AttackDeflected')).setValue(this.attackDeflected || 0);
     struct.addField(new GFFField(GFFDataType.DWORD, 'AmmoItem')).setValue(
-      this.ammoItem?.id ?? ModuleObjectConstant.OBJECT_INVALID
+      this.ammoItem?.id ?? GameObjectConstant.OBJECT_INVALID
     );
     struct.addField(new GFFField(GFFDataType.CEXOSTRING, 'AttackDebugText')).setValue('');
     struct.addField(new GFFField(GFFDataType.CEXOSTRING, 'DamageDebugText')).setValue('');
@@ -624,9 +624,9 @@ export class CombatAttackData {
     this.criticalThreat = get('CriticalThreat');
     this.attackDeflected = get('AttackDeflected');
 
-    const missedById = get('MissedBy', ModuleObjectConstant.OBJECT_INVALID);
-    const reactId = get('ReactObject', ModuleObjectConstant.OBJECT_INVALID);
-    const ammoId = get('AmmoItem', ModuleObjectConstant.OBJECT_INVALID);
+    const missedById = get('MissedBy', GameObjectConstant.OBJECT_INVALID);
+    const reactId = get('ReactObject', GameObjectConstant.OBJECT_INVALID);
+    const ammoId = get('AmmoItem', GameObjectConstant.OBJECT_INVALID);
     this.missedByObjectId = normalizeCombatObjectId(missedById);
     this.reactObjectId = normalizeCombatObjectId(reactId);
     this.ammoItemObjectId = normalizeCombatObjectId(ammoId);
@@ -667,14 +667,14 @@ export class CombatAttackData {
   }
 
   /** GetDamageBonus combat-mode branch — modes 2/3. */
-  static getCombatModeDamageBonus(creature: ModuleCreature): number {
+  static getCombatModeDamageBonus(creature: Creature): number {
     if(creature.combatMode === CombatMode.MODE_2) return 5;
     if(creature.combatMode === CombatMode.MODE_3) return 10;
     return 0;
   }
 
   /** Massive Criticals item property (0x31) via iprp_damagecost. */
-  static getMassiveCriticalBonus(weapon: ModuleItem | undefined): number {
+  static getMassiveCriticalBonus(weapon: Item | undefined): number {
     if(!weapon?.properties) return 0;
     for(let i = 0; i < weapon.properties.length; i++){
       const property = weapon.properties[i];
@@ -687,7 +687,7 @@ export class CombatAttackData {
   }
 
   /** ResolveDamageShields after mitigated combat damage lands. */
-  static resolveDamageShields(defender: ModuleCreature, attacker: ModuleCreature){
+  static resolveDamageShields(defender: Creature, attacker: Creature){
     if(!defender || !attacker || defender === attacker || attacker.plot) return;
 
     const effects = defender.effects || [];

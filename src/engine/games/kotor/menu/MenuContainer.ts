@@ -2,8 +2,8 @@ import { GameState } from "@engine/runtime/GameState";
 import { EngineMode } from "@engine/enums/engine/EngineMode";
 import { GameEngineType } from "@core/enums/engine/GameEngineType";
 import { GameMenu, GUILabel, GUIListBox, GUIButton } from "@engine/gui";
-import type { ModuleItem } from "@engine/module/ModuleItem";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Item } from "@engine/module/Item";
+import type { GameObject } from "@engine/module/GameObject";
 import { MenuContainerMode } from "@core/enums/gui/MenuContainerMode";
 import { GUIInventoryItem } from "@engine/gui/protoitem/GUIInventoryItem";
 import { Mouse } from "@engine/controls/Mouse";
@@ -45,9 +45,9 @@ export class MenuContainer extends GameMenu {
   BTN_OK: GUIButton;
   BTN_GIVEITEMS: GUIButton;
   BTN_CANCEL: GUIButton;
-  container: ModuleObject;
+  container: GameObject;
   mode: MenuContainerMode = MenuContainerMode.TAKE_ITEMS;
-  selectedItem: ModuleItem;
+  selectedItem: Item;
 
   constructor(){
     super();
@@ -91,12 +91,12 @@ export class MenuContainer extends GameMenu {
       });
       this._button_x = this.BTN_GIVEITEMS;
 
-      this.LB_ITEMS.onSelected = (item: ModuleItem) => {
+      this.LB_ITEMS.onSelected = (item: Item) => {
         this.selectedItem = item;
       };
 
       // : list-item activate (0x27/0x2d) calls GiveItem
-      this.LB_ITEMS.onClicked = (item: ModuleItem) => {
+      this.LB_ITEMS.onClicked = (item: Item) => {
         this.selectedItem = item;
         if(this.mode == MenuContainerMode.GIVE_ITEMS){
           this.giveItem(item);
@@ -118,7 +118,7 @@ export class MenuContainer extends GameMenu {
     super.hide();
   }
 
-  AttachContainer(object: ModuleObject){
+  AttachContainer(object: GameObject){
     this.container = object;
   }
 
@@ -141,7 +141,7 @@ export class MenuContainer extends GameMenu {
   }
 
   /** Inventory list for the active mode (give mode excludes plot items). */
-  getModeInventory(): ModuleItem[] {
+  getModeInventory(): Item[] {
     if(this.mode == MenuContainerMode.TAKE_ITEMS){
       const inv = this.container?.inventory;
       return Array.isArray(inv) ? inv : [];
@@ -180,7 +180,7 @@ export class MenuContainer extends GameMenu {
     if(empty){
       if(
         GameState.GameKey == GameEngineType.TSL &&
-        this.container instanceof GameState.Module.ModuleArea.ModuleCreature
+        this.container instanceof GameState.Module.Area.Creature
       ){
         return GameState.TLKManager.GetStringById(STR_TARGET_INVENTORY_EMPTY).Value;
       }
@@ -221,8 +221,8 @@ export class MenuContainer extends GameMenu {
   takeAllItems(){
     this.LB_ITEMS.setItems([]);
     if(
-      this.container instanceof GameState.Module.ModuleArea.ModulePlaceable ||
-      this.container instanceof GameState.Module.ModuleArea.ModuleCreature
+      this.container instanceof GameState.Module.Area.Placeable ||
+      this.container instanceof GameState.Module.Area.Creature
     ){
       this.container.retrieveInventory();
     }
@@ -234,7 +234,7 @@ export class MenuContainer extends GameMenu {
    * GiveItem — move count from party inventory into
    * the container. Shift holds the full stack (g_bShiftActionState).
    */
-  giveItem(item: ModuleItem){
+  giveItem(item: Item){
     if(this.mode != MenuContainerMode.GIVE_ITEMS || !item || !this.container){
       return;
     }
@@ -253,7 +253,7 @@ export class MenuContainer extends GameMenu {
 
   closeContainerObject(){
     this.LB_ITEMS.setItems([]);
-    if(this.container instanceof GameState.Module.ModuleArea.ModulePlaceable){
+    if(this.container instanceof GameState.Module.Area.Placeable){
       this.container.close(GameState.PartyManager.party[0]);
     }
   }

@@ -3,11 +3,11 @@ import { ActionType } from "@core/enums/actions/ActionType";
 import { ActionParameterType } from "@core/enums/actions/ActionParameterType";
 import { ModuleCreatureAnimState } from "@core/enums/module/ModuleCreatureAnimState";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import { Action } from "@engine/actions/Action";
 import { queueMoveIntoUseRange } from "@engine/actions/use-range";
 import { isCreature } from "@engine/module/guards/isCreature";
-import { isObject } from "@engine/module/guards/isObject";
+import { isGameObject } from "@engine/module/guards/isGameObject";
 
 /**
  * ActionUseObject class.
@@ -32,16 +32,16 @@ export class ActionUseObject extends Action {
    * Resolve DWORD target for client use (KeepCorpse shells survive event 0xb).
    * Retarget dead creatures to their body bag when one exists.
    */
-  resolveUseTarget(): ModuleObject | undefined {
+  resolveUseTarget(): GameObject | undefined {
     const param = this.parameters[0];
-    let target: ModuleObject | undefined;
+    let target: GameObject | undefined;
     if(param?.type === ActionParameterType.DWORD){
-      target = GameState.ModuleObjectManager.GetClientObjectById(param.value as number);
+      target = GameState.GameObjectManager.GetClientObjectById(param.value as number);
     }else{
-      target = this.getParameter<ModuleObject>(0);
+      target = this.getParameter<GameObject>(0);
     }
 
-    if(!isObject(target)){
+    if(!isGameObject(target)){
       return undefined;
     }
 
@@ -52,7 +52,7 @@ export class ActionUseObject extends Action {
         || target.isRetainedCorpse
       ){
         const lootTarget = target.getLootUseTarget?.();
-        if(isObject(lootTarget)){
+        if(isGameObject(lootTarget)){
           if(lootTarget.id !== target.id){
             this.setParameter(0, ActionParameterType.DWORD, lootTarget.id);
           }
@@ -68,7 +68,7 @@ export class ActionUseObject extends Action {
 
     this.target = this.resolveUseTarget();
 
-    if(!isObject(this.target)){
+    if(!isGameObject(this.target)){
       return ActionStatus.FAILED;
     }
 

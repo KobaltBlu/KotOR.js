@@ -11,7 +11,7 @@ import {
 } from "@engine/pathfinding/force-jump-loco";
 import { isSafeWalkPoint } from "@engine/pathfinding/safe-walk-point";
 import { CreatureLocoState } from "@engine/pathfinding/creature-loco";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { isCreature } from "@engine/module/guards/isCreature";
 
 /**
@@ -34,7 +34,7 @@ export class EffectForceJumpDelayed extends GameEffect {
       return;
     }
 
-    const jumper = this.object as ModuleCreature;
+    const jumper = this.object as Creature;
     const target = this.getObject(0);
     if(!isCreature(target)){
       return;
@@ -70,7 +70,7 @@ export class EffectForceJumpDelayed extends GameEffect {
         );
         jumperDest = target.position.clone();
         installForceJumpPath(
-          target as ModuleCreature,
+          target as Creature,
           target.position,
           shoveEnd,
           CreatureLocoState.ForceJumpTarget
@@ -83,7 +83,7 @@ export class EffectForceJumpDelayed extends GameEffect {
         eSetState.setSkipOnLoad(true);
         eSetState.setInt(0, GameEffectSetStateType.FORCEJUMP);
         eSetState.initialize();
-        (target as ModuleCreature).addEffect(eSetState);
+        (target as Creature).addEffect(eSetState);
       }
     }
 

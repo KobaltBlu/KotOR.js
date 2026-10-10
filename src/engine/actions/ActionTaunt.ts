@@ -6,7 +6,7 @@ import { ActionType } from "@core/enums/actions/ActionType";
 import { GameEffectDurationType } from "@core/enums/effects/GameEffectDurationType";
 import { SkillType } from "@core/enums/nwscript/SkillType";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import { Dice } from "@core/utility/Dice";
 import { Utility } from "@core/utility/Utility";
 
@@ -32,7 +32,7 @@ export class ActionTaunt extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
-    this.target = this.getParameter<ModuleObject>(0);
+    this.target = this.getParameter<GameObject>(0);
     if(!isCreature(this.target)){
       return ActionStatus.FAILED;
     }

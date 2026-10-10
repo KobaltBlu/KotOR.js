@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { PathPoint } from "@engine/pathfinding/PathPoint";
 import { hasWalkLineClear } from "@engine/pathfinding/walk-line-clear";
 import { computeHeightAtPoint } from "@engine/pathfinding/open-walk-location";
@@ -31,7 +31,7 @@ export type PathAroundCreatureResult = {
    * Creature that blocked the chosen arc (IsPathClear hit), if any.
    * Caller may run pathfail with foundEnemy set when hostile.
    */
-  foundEnemyOnPath?: ModuleCreature;
+  foundEnemyOnPath?: Creature;
 };
 
 type EntryExit = {
@@ -212,7 +212,7 @@ export function findEntryAndExit(
 }
 
 function snapWalkable(
-  creature: ModuleCreature,
+  creature: Creature,
   p: THREE.Vector3
 ): THREE.Vector3 {
   const area = creature.area;
@@ -226,7 +226,7 @@ function snapWalkable(
  * Score an arc like IsPathClear: 2 = fully clear, 1 = blocked by creature, 0 = fail.
  */
 function scoreArc(
-  creature: ModuleCreature,
+  creature: Creature,
   from: THREE.Vector3,
   arc: THREE.Vector3[],
   to: THREE.Vector3,
@@ -282,8 +282,8 @@ function scoreArc(
  * entry/exit cannot be resolved (no distance fallback; that grew paths unboundedly).
  */
 export function buildPathAroundCreature(
-  creature: ModuleCreature,
-  blocker: ModuleCreature
+  creature: Creature,
+  blocker: Creature
 ): PathAroundCreatureResult {
   if(!creature?.area || !blocker || creature === blocker){
     return { spliced: false };
@@ -430,7 +430,7 @@ export function buildPathAroundCreature(
   path.points = next;
   path.points[path.points.length - 1].end = true;
 
-  let foundEnemyOnPath: ModuleCreature | undefined;
+  let foundEnemyOnPath: Creature | undefined;
   if(foundEnemyId != null && creature.area?.creatures){
     foundEnemyOnPath = creature.area.creatures.find((c) => c?.id === foundEnemyId);
   }

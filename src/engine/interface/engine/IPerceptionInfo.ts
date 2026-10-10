@@ -1,4 +1,4 @@
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import type { PerceptionType } from "@engine/enums/engine/PerceptionType";
 
 /**
@@ -14,7 +14,7 @@ import type { PerceptionType } from "@engine/enums/engine/PerceptionType";
  */
 export interface IPerceptionInfo {
   /** Resolved live object, or undefined for stale / unresolved save nodes. */
-  object: ModuleObject | undefined;
+  object: GameObject | undefined;
   objectId: number;
   data: number;
 };

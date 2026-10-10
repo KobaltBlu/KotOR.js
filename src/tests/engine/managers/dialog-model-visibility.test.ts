@@ -12,11 +12,11 @@ jest.mock("three/examples/jsm/utils/BufferGeometryUtils", () => ({}));
 jest.mock("@engine/nwscript/NWScript", () => ({ NWScript: {} }));
 jest.mock("@engine/nwscript/NWScriptInstance", () => ({ NWScriptInstance: class {} }));
 
-import { ModuleObject } from "@engine/module/ModuleObject";
+import { GameObject } from "@engine/module/GameObject";
 
 describe('resolveDialogModelVisibility', () => {
   test('DIALOG follows room visibility', () => {
-    expect(ModuleObject.resolveDialogModelVisibility({
+    expect(GameObject.resolveDialogModelVisibility({
       mode: EngineMode.DIALOG,
       cutsceneMode: CutsceneMode.DIALOG,
       isPartyMember: true,
@@ -27,7 +27,7 @@ describe('resolveDialogModelVisibility', () => {
   });
 
   test('ANIMATED cut hides party non-stunt participants', () => {
-    expect(ModuleObject.resolveDialogModelVisibility({
+    expect(GameObject.resolveDialogModelVisibility({
       mode: EngineMode.DIALOG,
       cutsceneMode: CutsceneMode.ANIMATED,
       isPartyMember: true,
@@ -38,7 +38,7 @@ describe('resolveDialogModelVisibility', () => {
   });
 
   test('ANIMATED cut keeps StuntList participants', () => {
-    expect(ModuleObject.resolveDialogModelVisibility({
+    expect(GameObject.resolveDialogModelVisibility({
       mode: EngineMode.DIALOG,
       cutsceneMode: CutsceneMode.ANIMATED,
       isPartyMember: true,
@@ -49,7 +49,7 @@ describe('resolveDialogModelVisibility', () => {
   });
 
   test('MINIGAME forces visible', () => {
-    expect(ModuleObject.resolveDialogModelVisibility({
+    expect(GameObject.resolveDialogModelVisibility({
       mode: EngineMode.MINIGAME,
       cutsceneMode: CutsceneMode.DIALOG,
       isPartyMember: true,

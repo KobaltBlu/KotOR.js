@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Area } from "@engine/module/Area";
+import type { GameObject } from "@engine/module/GameObject";
 import type { ComputedPath } from "@engine/pathfinding/ComputedPath";
 import {
   hasWalkLineClear,
@@ -36,10 +36,10 @@ const _detour = new THREE.Vector3();
  * Does not skip clipped-line checks — doorway voids must prune edges.
  */
 export function isWalkmeshEdgeWalkClear(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   from: THREE.Vector3,
   to: THREE.Vector3,
-  owner?: ModuleObject
+  owner?: GameObject
 ): boolean {
   if(!area || !from || !to) return true;
   const dx = to.x - from.x;
@@ -82,10 +82,10 @@ export function isWalkmeshEdgeWalkClear(
  * (not creatures — those use hex detour / pathBlockFailCount).
  */
 export function isWalkmeshHopBlocked(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   from: THREE.Vector3,
   to: THREE.Vector3,
-  owner?: ModuleObject,
+  owner?: GameObject,
   blockingTimer: number = 0
 ): boolean {
   if(!area || !from || !to) return false;
@@ -114,10 +114,10 @@ export function isWalkmeshHopBlocked(
  * Uses the same face-clear bar as plot-graph edges (personalSpace 0).
  */
 export function pathHopsAreWalkClear(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   origin: THREE.Vector3,
   path: ComputedPath | undefined,
-  owner?: ModuleObject
+  owner?: GameObject
 ): boolean {
   if(!area || !path?.points?.length) return false;
   if(!area.walkFaces?.length) return true;
@@ -145,10 +145,10 @@ export function pathHopsAreWalkClear(
  * Leaves the final point even if blocked so callers can full-replot.
  */
 export function dropWalkmeshBlockedPathPrefix(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   from: THREE.Vector3,
   path: ComputedPath | undefined,
-  owner?: ModuleObject,
+  owner?: GameObject,
   blockingTimer: number = 0
 ): number {
   if(!area || !path?.points?.length) return 0;
@@ -169,10 +169,10 @@ const DETOUR_RADII = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0];
 const DETOUR_ANGLES = 16;
 
 function isReachableEscapeStep(
-  area: ModuleArea,
+  area: Area,
   from: THREE.Vector3,
   to: THREE.Vector3,
-  owner?: ModuleObject
+  owner?: GameObject
 ): boolean {
   // Escape ring steps ignore creature personal-space inflation — jammed doorway
   // pockets otherwise report DetailedBlock at clearT≈0 for every micro-step.
@@ -201,10 +201,10 @@ function isReachableEscapeStep(
  * Returns a cloned point, or undefined if none found.
  */
 export function findWalkClearDetour(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   from: THREE.Vector3,
   dest: THREE.Vector3,
-  owner?: ModuleObject
+  owner?: GameObject
 ): THREE.Vector3 | undefined {
   if(!area || !from || !dest) return undefined;
   if(typeof area.isPointWalkable !== "function") return undefined;

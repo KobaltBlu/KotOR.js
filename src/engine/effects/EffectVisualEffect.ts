@@ -1,11 +1,11 @@
 import { AudioEmitter } from "@engine/audio/AudioEmitter";
 import { GameEffectDurationType } from "@core/enums/effects/GameEffectDurationType";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
-import { ModuleObjectType } from "@core/enums/module/ModuleObjectType";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
 import { GameState } from "@engine/runtime/GameState";
 import { MDLLoader, TextureLoader } from "@engine/loaders";
 // import { TwoDAManager } from "@engine/managers";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { OdysseyModel } from "@engine/odyssey";
 import { OdysseyModel3D } from "@engine/render/three/odyssey";
 import { BitWise } from "@core/utility/BitWise";
@@ -215,7 +215,7 @@ export class EffectVisualEffect extends GameEffect {
       return;
     }
 
-    if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleCreature)){
+    if(BitWise.InstanceOf(this.object?.objectType, GameObjectType.Creature)){
 
       //FireAndForget
       if(this.visualEffect.type_fd == 'F'){
@@ -246,8 +246,8 @@ export class EffectVisualEffect extends GameEffect {
   }
 
   getImpactRootModel(){
-    if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleCreature)){
-      const creature = this.object as ModuleCreature;
+    if(BitWise.InstanceOf(this.object?.objectType, GameObjectType.Creature)){
+      const creature = this.object as Creature;
       switch(creature.getAppearance().sizecategory){
         case 1: //TINY
           return this.visualEffect.imp_root_s_node;
@@ -316,7 +316,7 @@ export class EffectVisualEffect extends GameEffect {
     this.impactHead();
 
     if(this.visualEffect.soundimpact != '***'){
-      if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleCreature) || this.object?.audioEmitter instanceof AudioEmitter){
+      if(BitWise.InstanceOf(this.object?.objectType, GameObjectType.Creature) || this.object?.audioEmitter instanceof AudioEmitter){
         this.object.audioEmitter.playSound(this.visualEffect.soundimpact);
       }
     }
@@ -411,10 +411,10 @@ export class EffectVisualEffect extends GameEffect {
     const id = Number(progFX);
     if(!(id > 1400 && id < 1500))
       return;
-    if(!BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleCreature))
+    if(!BitWise.InstanceOf(this.object?.objectType, GameObjectType.Creature))
       return;
 
-    const creature = this.object as ModuleCreature;
+    const creature = this.object as Creature;
     if(!(creature.model instanceof OdysseyModel3D))
       return;
 
@@ -433,9 +433,9 @@ export class EffectVisualEffect extends GameEffect {
   private removeBumpedOutShell(){
     if(!this.bumpedOutShell) return;
     this.bumpedOutShell = false;
-    if(!BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleCreature))
+    if(!BitWise.InstanceOf(this.object?.objectType, GameObjectType.Creature))
       return;
-    const creature = this.object as ModuleCreature;
+    const creature = this.object as Creature;
     if(creature.model instanceof OdysseyModel3D){
       creature.model.disposeForceShieldGeometry();
     }
@@ -478,9 +478,9 @@ export class EffectVisualEffect extends GameEffect {
       return;
     if(this.motionBlurActive)
       return;
-    if(!BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleCreature))
+    if(!BitWise.InstanceOf(this.object?.objectType, GameObjectType.Creature))
       return;
-    MotionBlurController.applyMotionBlurVFX(this.object as ModuleCreature, id);
+    MotionBlurController.applyMotionBlurVFX(this.object as Creature, id);
     this.motionBlurActive = true;
   }
 

@@ -1,7 +1,7 @@
 import { GameState } from "@engine/runtime/GameState";
 import { GameMenu } from "@engine/gui";
 import type { GUIListBox, GUILabel, GUIButton } from "@engine/gui";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { GUIFeatItem } from "@engine/games/kotor/gui/GUIFeatItem";
 import { GUISpellItem } from "@engine/gui/protoitem/GUISpellItem";
 import { GUICreatureSkill } from "@engine/gui/protoitem/GUICreatureSkill";
@@ -212,7 +212,7 @@ export class MenuAbilities extends GameMenu {
   /**
    * CreateFeatChart (in-game SetCharacter).
    */
-  buildFeatList(creature: ModuleCreature): any[][] {
+  buildFeatList(creature: Creature): any[][] {
     const feats = GameState.SWRuleSet?.feats ?? SWRuleSet.feats ?? [];
     return createInGameFeatChart(creature, feats);
   }
@@ -220,7 +220,7 @@ export class MenuAbilities extends GameMenu {
   /**
    * CreatePowerChart (CreatePowerList arg2=0).
    */
-  buildSpellsList(creature: ModuleCreature): any[][] {
+  buildSpellsList(creature: Creature): any[][] {
     const spells = GameState.SWRuleSet?.spells ?? SWRuleSet.spells ?? [];
     return createInGamePowerChart(creature, spells);
   }

@@ -10,7 +10,7 @@ import { MiniGameType } from "@engine/enums/engine/MiniGameType";
 import { FollowerCamera } from "@engine/render/FollowerCamera";
 import { ViewportController } from "@engine/runtime/ViewportController";
 import { BitWise } from "@core/utility/BitWise";
-import { ModuleObjectType } from "@core/enums/module/ModuleObjectType";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
 import { ClientCameraMode } from "@engine/enums/engine/ClientCameraMode";
 import { GUIControlTypeMask } from "@core/enums/gui/GUIControlTypeMask";
 import { GUIControlEventFactory } from "@engine/gui/GUIControlEventFactory";
@@ -28,7 +28,7 @@ import {
   setPlayerAxes,
 } from "@engine/controls/player-cam-relative-control";
 import { EventManager } from "@engine/managers/EventManager";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { ActionType } from "@core/enums/actions/ActionType";
 import { ActionParameterType } from "@core/enums/actions/ActionParameterType";
 import { GameEngineType } from "@core/enums/engine/GameEngineType";
@@ -137,7 +137,7 @@ export class IngameControls {
    * Drive-control gate: camera mode DRIVE or creature.driveControlActive.
    * DRIVE is shared with FreeLook. Not swoop minigame.
    */
-  static isDriveControlActive(creature: ModuleCreature | undefined): boolean {
+  static isDriveControlActive(creature: Creature | undefined): boolean {
     if(!creature) return false;
     if(!creature.isCommandable) return false;
     if(creature.driveControlActive) return true;
@@ -147,7 +147,7 @@ export class IngameControls {
   /**
    * Apply stick/keyboard drive bits via AddDriveAction.
    */
-  static applyDriveInput(creature: ModuleCreature, flags: number): void {
+  static applyDriveInput(creature: Creature, flags: number): void {
     if(!creature || !flags) return;
     if(!creature.canMove?.()) return;
     if(!creature.isCommandable) return;
@@ -169,7 +169,7 @@ export class IngameControls {
   /**
    * Abort the front Drive action retry.
    */
-  static abortDriveControl(creature: ModuleCreature | undefined): void {
+  static abortDriveControl(creature: Creature | undefined): void {
     if(!creature?.actionQueue) return;
     const front = creature.actionQueue[0] as any;
     if(front?.type === ActionType.ActionDrive){
@@ -590,17 +590,17 @@ export class IngameControls {
 
       if(!clickCaptured && (GameState.Mode != EngineMode.DIALOG)){
         if(GameState.Mode == EngineMode.INGAME && GameState.MenuManager.GetCurrentMenu() == GameState.MenuManager.InGameOverlay){
-          const moduleObject = GameState.CursorManager.onMouseHitInteractive();
-          if(BitWise.InstanceOf(moduleObject?.objectType, ModuleObjectType.ModuleObject)){
-            if(moduleObject.isUseable() && moduleObject != GameState.PartyManager.getCurrentPlayer()){
+          const gameObject = GameState.CursorManager.onMouseHitInteractive();
+          if(BitWise.InstanceOf(gameObject?.objectType, GameObjectType.GameObject)){
+            if(gameObject.isUseable() && gameObject != GameState.PartyManager.getCurrentPlayer()){
 
               selectedObject = true;
 
-              const distance = GameState.PartyManager.getCurrentPlayer().position.distanceTo(moduleObject.position);
+              const distance = GameState.PartyManager.getCurrentPlayer().position.distanceTo(gameObject.position);
               const distanceThreshold = 20;
 
-              if(GameState.CursorManager.selectedObject == moduleObject && distance <= distanceThreshold){
-                if(typeof moduleObject.onClick === 'function'){
+              if(GameState.CursorManager.selectedObject == gameObject && distance <= distanceThreshold){
+                if(typeof gameObject.onClick === 'function'){
                   // case-2 attack → AddAttackActions(clear=0) appends with no
                   // ClearAllActions. Only clear the action queue when not already
                   // fighting (exploration → combat), matching ActionManager(1).
@@ -608,24 +608,24 @@ export class IngameControls {
                   if(!pc.combatData?.combatState){
                     pc.clearAllActions(true);
                   }
-                  moduleObject.onClick(pc);
+                  gameObject.onClick(pc);
                 }else{
-                  let distance = GameState.PartyManager.getCurrentPlayer().position.distanceTo(moduleObject.position);
+                  let distance = GameState.PartyManager.getCurrentPlayer().position.distanceTo(gameObject.position);
                   if(distance > 1.5){
                     GameState.PartyManager.getCurrentPlayer().clearAllActions();
-                    moduleObject.clearAllActions();
-                    GameState.PartyManager.getCurrentPlayer().actionDialogObject(moduleObject);
+                    gameObject.clearAllActions();
+                    GameState.PartyManager.getCurrentPlayer().actionDialogObject(gameObject);
                   }
                 }
               }
-              GameState.CursorManager.setReticleSelectedObject(moduleObject);
+              GameState.CursorManager.setReticleSelectedObject(gameObject);
               FollowerCamera.clearFocusObject();
             }
             if(GameState.debug.SELECTED_OBJECT)
-              console.log('Ingame Object', moduleObject);
+              console.log('Ingame Object', gameObject);
           }else{
             if(GameState.debug.SELECTED_OBJECT)
-              console.log('Object', moduleObject);
+              console.log('Object', gameObject);
           }
 
           if(!selectedObject){
@@ -716,7 +716,7 @@ export class IngameControls {
     //W / S / dual-mouse — resolve forward together (see resolvePlayerForwardAxis)
     const applyWasdMove = () => {
       if(this.gamePadMovement) return;
-      const followee = GameState.PartyManager.party[0] as ModuleCreature | undefined;
+      const followee = GameState.PartyManager.party[0] as Creature | undefined;
       if(!followee?.canMove?.()) return;
 
       const forward = resolvePlayerForwardAxis();
@@ -915,7 +915,7 @@ export class IngameControls {
 
     KeyMapper.Actions[KeyMapAction.WALKMODIFY].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      const pc = GameState.PartyManager.getCurrentPlayer() as ModuleCreature | undefined;
+      const pc = GameState.PartyManager.getCurrentPlayer() as Creature | undefined;
       if(pc){
         pc.walk = !pc.walk;
         if(pc.playerControl){
@@ -1002,12 +1002,12 @@ export class IngameControls {
 
     KeyMapper.Actions[KeyMapAction.SelectNext].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      GameState.ModuleObjectManager.selectNearestObject(false);
+      GameState.GameObjectManager.selectNearestObject(false);
     });
 
     KeyMapper.Actions[KeyMapAction.SelectPrev].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      GameState.ModuleObjectManager.selectNearestObject(true);
+      GameState.GameObjectManager.selectNearestObject(true);
     });
 
     // Keys feed the minigame axis via resolveMinigameKeyAxis* — do not rotate here.
@@ -1169,7 +1169,7 @@ export class IngameControls {
     KeyMapper.Actions[KeyMapAction.SwitchWeaps]?.setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
-      const pc = GameState.PartyManager.getCurrentPlayer() as ModuleCreature | undefined;
+      const pc = GameState.PartyManager.getCurrentPlayer() as Creature | undefined;
       if(!pc || GameState.GameKey !== GameEngineType.TSL) return;
       GameState.ActionFactory.AddSwitchWeaponsAction(pc);
     });

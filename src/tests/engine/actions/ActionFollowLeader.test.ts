@@ -26,7 +26,7 @@ const mockGameState = {
       15: { primaryRange: 8.0 },
     },
   },
-  ModuleObjectManager: { GetObjectById: () => undefined },
+  GameObjectManager: { GetObjectById: () => undefined },
   module: undefined as undefined,
   ActionFactory: {
     ActionJumpToPoint: class {
@@ -74,7 +74,7 @@ jest.mock("@engine/combat/attack-range", () => ({
 import { ActionFollowLeader } from "@engine/actions/ActionFollowLeader";
 import { ActionStatus } from "@core/enums/actions/ActionStatus";
 import { ModuleCreatureAnimState } from "@core/enums/module/ModuleCreatureAnimState";
-import { ModuleObjectType } from "@core/enums/module/ModuleObjectType";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
 import { PartyFollowState } from "@engine/pathfinding/party-follow";
 import { partyFollowPath } from "@engine/pathfinding/party-follow-path";
 
@@ -95,7 +95,7 @@ describe("ActionFollowLeader locomotion facing", () => {
   function makeCreature(id: number, x: number, y: number){
     const creature = {
       id,
-      objectType: ModuleObjectType.ModuleCreature,
+      objectType: GameObjectType.Creature,
       position: new THREE.Vector3(x, y, 0),
       rotation: { z: 0 },
       area: {

@@ -1,6 +1,6 @@
 import { GameMenu } from "@engine/gui";
 import type { GUIListBox, GUILabel, GUIButton } from "@engine/gui";
-import { ModuleItem } from "@engine/module/ModuleItem";
+import { Item } from "@engine/module/Item";
 import { GUIInventoryItem } from "@engine/gui/protoitem/GUIInventoryItem";
 import { GameState } from "@engine/runtime/GameState";
 import {
@@ -45,7 +45,7 @@ export class MenuInventory extends GameMenu {
 
   selected: InventoryListNode | undefined;
   /** activating_item_id — refresh selection after InstantUseItem. */
-  protected activatingItem: ModuleItem | undefined;
+  protected activatingItem: Item | undefined;
   protected activatedScroll: number = 0;
   protected activatedIndex: number = -1;
   /** True for TSL inventory_p (no portrait / party-change chrome). */
@@ -222,7 +222,7 @@ export class MenuInventory extends GameMenu {
 
   UpdateSelected(){
     const item = unwrapInventoryListNode(this.selected);
-    if(item instanceof ModuleItem){
+    if(item instanceof Item){
       this.LB_DESCRIPTION?.setItem(item.getPropertyDescription());
       clearInventoryItemNewFlag(item);
     }else{

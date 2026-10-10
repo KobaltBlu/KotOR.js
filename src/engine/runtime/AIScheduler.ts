@@ -2,8 +2,8 @@ import { AILevel } from "@core/enums/module/AILevel";
 import { ActionType } from "@core/enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "@core/enums/module/ModuleCreatureAnimState";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleObject } from "@engine/module/ModuleObject";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { GameObject } from "@engine/module/GameObject";
+import type { Creature } from "@engine/module/Creature";
 import { isAreaOfEffect } from "@engine/module/guards/isAreaOfEffect";
 import { isCreature } from "@engine/module/guards/isCreature";
 import { isDoor } from "@engine/module/guards/isDoor";
@@ -36,7 +36,7 @@ const AI_OVERFLOW_US = 75000;
 export class AIScheduler {
 
   /** Object lists per AILevel 0..4 (append order via addObject). */
-  lists: ModuleObject[][] = [[], [], [], [], []];
+  lists: GameObject[][] = [[], [], [], [], []];
   /** Persistent round-robin cursor per list. */
   listIndex: number[] = [0, 0, 0, 0, 0];
   /** Frame delta passed into update (seconds). */
@@ -52,7 +52,7 @@ export class AIScheduler {
    * Register at a level (default VERY_LOW).
    * Removes from the previous list if already registered.
    */
-  addObject(object: ModuleObject, level: AILevel = AILevel.VERY_LOW): boolean {
+  addObject(object: GameObject, level: AILevel = AILevel.VERY_LOW): boolean {
     if(!object) return false;
     if(level < AILevel.VERY_LOW || level > AILevel.VERY_HIGH) return false;
 
@@ -68,7 +68,7 @@ export class AIScheduler {
     return true;
   }
 
-  removeObject(object: ModuleObject): boolean {
+  removeObject(object: GameObject): boolean {
     if(!object || object.aiLevel === AILevel.INVALID) return false;
     const level = object.aiLevel;
     if(level < AILevel.VERY_LOW || level > AILevel.VERY_HIGH){
@@ -92,7 +92,7 @@ export class AIScheduler {
   }
 
   /** No-op if already at that level. */
-  setAILevel(object: ModuleObject, level: AILevel): boolean {
+  setAILevel(object: GameObject, level: AILevel): boolean {
     if(!object) return false;
     if(object.aiLevel === level) return true;
     if(level < AILevel.VERY_LOW || level > AILevel.VERY_HIGH) return false;
@@ -102,7 +102,7 @@ export class AIScheduler {
   /**
    * Promote eligible area objects from VERY_LOW → LOW when players occupy the area.
    */
-  increaseAILevelPriority(objects: ModuleObject[]){
+  increaseAILevelPriority(objects: GameObject[]){
     for(let i = 0; i < objects.length; i++){
       const obj = objects[i];
       if(!obj || obj.aiLevel !== AILevel.VERY_LOW) continue;
@@ -113,7 +113,7 @@ export class AIScheduler {
   }
 
   /** Demote level-1 creatures to VERY_LOW when area empties. */
-  decreaseAILevelPriority(objects: ModuleObject[]){
+  decreaseAILevelPriority(objects: GameObject[]){
     for(let i = 0; i < objects.length; i++){
       const obj = objects[i];
       if(!obj) continue;
@@ -127,7 +127,7 @@ export class AIScheduler {
   }
 
   /** Creatures, AoEs, triggers, transition doors, non-static placeables. */
-  shouldPromoteOnAreaEntry(obj: ModuleObject): boolean {
+  shouldPromoteOnAreaEntry(obj: GameObject): boolean {
     if(isCreature(obj)) return true;
     if(isAreaOfEffect(obj)) return true;
     if(isTrigger(obj)) return true;
@@ -175,7 +175,7 @@ export class AIScheduler {
       this.creatureLocoPass(list, delta);
 
       // (b) Round-robin AIUpdate with event drain + budget.
-      let firstObject: ModuleObject | undefined;
+      let firstObject: GameObject | undefined;
       let wrapped = false;
       let budgetExhausted = false;
 
@@ -248,7 +248,7 @@ export class AIScheduler {
   }
 
   /** Advance round-robin cursor and return the next object (or undefined if empty). */
-  private nextObject(level: AILevel): ModuleObject | undefined {
+  private nextObject(level: AILevel): GameObject | undefined {
     const list = this.lists[level];
     if(!list.length) return undefined;
     let idx = this.listIndex[level] + 1;
@@ -261,7 +261,7 @@ export class AIScheduler {
    * Accumulated world delta for an object that may have skipped frames.
    * Falls back to frame delta on first update.
    */
-  private computeObjectAIDelta(obj: ModuleObject, frameDelta: number): number {
+  private computeObjectAIDelta(obj: GameObject, frameDelta: number): number {
     const nowMs = this.getWorldTimeMs();
     let delta = frameDelta;
     if(obj._lastAIUpdateWorldMs > 0 && nowMs >= obj._lastAIUpdateWorldMs){
@@ -313,11 +313,11 @@ export class AIScheduler {
    * Head action MoveToPoint / FollowLeader / ForceFollow / Drive,
    * or creature currently in a locomotion animation.
    */
-  private creatureLocoPass(list: ModuleObject[], delta: number){
+  private creatureLocoPass(list: GameObject[], delta: number){
     for(let i = 0; i < list.length; i++){
       const obj = list[i];
       if(!obj || !isCreature(obj)) continue;
-      const creature = obj as ModuleCreature;
+      const creature = obj as Creature;
       if(creature.destroyed || creature.willDestroy) continue;
       if(!this.creatureNeedsLoco(creature)) continue;
       try{
@@ -328,7 +328,7 @@ export class AIScheduler {
     }
   }
 
-  private creatureNeedsLoco(creature: ModuleCreature): boolean {
+  private creatureNeedsLoco(creature: Creature): boolean {
     // Force Push creature loco even while debilitated.
     if(isForcePushLocoActive(creature)){
       return true;

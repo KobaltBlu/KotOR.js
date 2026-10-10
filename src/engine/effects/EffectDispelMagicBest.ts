@@ -2,10 +2,10 @@ import { GameEffect } from "@engine/effects/GameEffect";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
 import { Dice } from "@core/utility/Dice";
 import { DiceType } from "@core/enums/combat/DiceType";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { isDispelEligible } from "@engine/effects/EffectDispelMagicAll";
 
-import { isObject } from "@engine/module/guards/isObject";
+import { isGameObject } from "@engine/module/guards/isGameObject";
 
 /**
  * EffectDispelMagicBest — onApply.
@@ -26,7 +26,7 @@ export class EffectDispelMagicBest extends GameEffect {
       return;
     super.onApply();
 
-    if(!isObject(this.object)){
+    if(!isGameObject(this.object)){
       return;
     }
 
@@ -43,7 +43,7 @@ export class EffectDispelMagicBest extends GameEffect {
       for(let i = 0; i < effects.length; i++){
         const e = effects[i];
         if(!isDispelEligible(e) || tried.has(e)) continue;
-        const creator = e.creator as ModuleCreature | undefined;
+        const creator = e.creator as Creature | undefined;
         if(creator && typeof creator.getTotalClassLevel === 'function'){
           if((creator.getTotalClassLevel() & 0xff) === 0) continue;
         }
@@ -68,7 +68,7 @@ export class EffectDispelMagicBest extends GameEffect {
   private resolveCasterLevel(): number {
     const override = this.getInt(0) || 0;
     if(override > 0) return override & 0xff;
-    const creator = this.creator as ModuleCreature;
+    const creator = this.creator as Creature;
     if(creator && typeof creator.getTotalClassLevel === 'function'){
       return creator.getTotalClassLevel() & 0xff;
     }

@@ -1,6 +1,6 @@
 import { GameEffect } from "@engine/effects/GameEffect";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { isCreature } from "@engine/module/guards/isCreature";
 
 /**
@@ -21,7 +21,7 @@ export class EffectArcaneSpellFailure extends GameEffect {
       return;
     }
     super.onApply();
-    const creature = this.object as ModuleCreature;
+    const creature = this.object as Creature;
     creature.arcaneSpellFailure = Math.max(
       creature.arcaneSpellFailure || 0,
       this.getInt(0) || 0
@@ -31,7 +31,7 @@ export class EffectArcaneSpellFailure extends GameEffect {
   onRemove(){
     super.onRemove();
     if(!isCreature(this.object)) return;
-    const creature = this.object as ModuleCreature;
+    const creature = this.object as Creature;
     let max = 0;
     for(let i = 0; i < (creature.effects || []).length; i++){
       const e = creature.effects[i];

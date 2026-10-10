@@ -1,5 +1,5 @@
 import { TalentObjectType } from "@engine/enums/engine/TalentObjectType";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 
 /**
  * TalentObject class.
@@ -15,12 +15,12 @@ export class TalentObject {
   objectType: number = TalentObjectType.TalentObject;
   category: number = -1;
   maxCR: number = 0;
-  item: ModuleObject;
+  item: GameObject;
   itemPropertyIndex: number;
   casterLevel: number;
   metaMagic: number;
-  oCaster: ModuleObject;
-  oTarget: ModuleObject;
+  oCaster: GameObject;
+  oTarget: GameObject;
 
   constructor( id = -1 ){
     this.id = id;
@@ -34,20 +34,20 @@ export class TalentObject {
     return this.id;
   }
 
-  useTalentOnObject(oTarget: ModuleObject, oCaster: ModuleObject){
+  useTalentOnObject(oTarget: GameObject, oCaster: GameObject){
     this.oCaster = oCaster;
     this.oTarget = oTarget;
   }
 
-  talentCombatRoundEnd(oTarget: ModuleObject, oCaster: ModuleObject){
+  talentCombatRoundEnd(oTarget: GameObject, oCaster: GameObject){
     //console.log('talentCombatRoundEnd', oCaster, this, oTarget);
   }
 
-  update(oTarget: ModuleObject, oCaster: ModuleObject, combatAction: any, delta: number = 0){
+  update(oTarget: GameObject, oCaster: GameObject, combatAction: any, delta: number = 0){
 
   }
 
-  inRange(oTarget: ModuleObject, oCaster: ModuleObject){
+  inRange(oTarget: GameObject, oCaster: GameObject){
     return true;
   }
 
@@ -55,7 +55,7 @@ export class TalentObject {
     return 1;
   }
 
-  setItem( item: ModuleObject ){
+  setItem( item: GameObject ){
     this.item = item;
   }
 

@@ -9,7 +9,7 @@ import { MiniGameType } from '@engine/enums/engine/MiniGameType';
  */
 export interface MiniGameAspectMaskEnableInput {
   engineMode: EngineMode;
-  /** Area has a loaded ModuleMiniGame. */
+  /** Area has a loaded MiniGame. */
   hasMiniGame: boolean;
   /** Optional type gate — undefined means any MG type. */
   miniGameType?: MiniGameType;

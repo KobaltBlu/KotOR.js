@@ -1,5 +1,5 @@
 import { isGrenadeItemType } from "@engine/combat/item-cast-grenade";
-import type { ModuleItem } from "@engine/module/ModuleItem";
+import type { Item } from "@engine/module/Item";
 import type { TalentSpell } from "@engine/talents/TalentSpell";
 
 /**
@@ -15,8 +15,8 @@ function isEmptyResRef(value: unknown): boolean {
   return !s || s === '****';
 }
 
-/** Mirror ModuleItem.loadModel resref resolution without mutating the item. */
-export function resolveItemModelResRef(item: ModuleItem | undefined): string {
+/** Mirror Item.loadModel resref resolution without mutating the item. */
+export function resolveItemModelResRef(item: Item | undefined): string {
   if(!item?.baseItem) return '';
   let itemclass = String(item.baseItem.itemClass || '').replace(/\0[\s\S]*$/g, '').trim().toLowerCase();
   let defaultModel = String(item.baseItem.defaultModel || '').replace(/\0[\s\S]*$/g, '').trim().toLowerCase();
@@ -35,7 +35,7 @@ export function resolveItemModelResRef(item: ModuleItem | undefined): string {
  */
 export function resolveSpellProjectileModelResRef(
   spell: Pick<TalentSpell, 'projmodel' | 'proj'> | undefined,
-  item?: ModuleItem
+  item?: Item
 ): string {
   const fromSpell = String(spell?.projmodel ?? '').trim().toLowerCase();
   if(!isEmptyResRef(fromSpell)){
@@ -53,7 +53,7 @@ export function resolveSpellProjectileModelResRef(
  */
 export function resolveSpellProjectileModelCandidates(
   spell: Pick<TalentSpell, 'projmodel' | 'proj'> | undefined,
-  item?: ModuleItem
+  item?: Item
 ): string[] {
   const projZero =
     !!spell && typeof spell.proj === 'number' && (spell.proj | 0) === 0;

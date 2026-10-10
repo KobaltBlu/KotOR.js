@@ -1,8 +1,8 @@
 import * as THREE from "three";
 import { getPathPersonalSpace } from "@engine/combat/attack-range";
-import type { ModuleDoor } from "@engine/module/ModuleDoor";
-import type { ModuleObject } from "@engine/module/ModuleObject";
-import type { ModulePlaceable } from "@engine/module/ModulePlaceable";
+import type { Door } from "@engine/module/Door";
+import type { GameObject } from "@engine/module/GameObject";
+import type { Placeable } from "@engine/module/Placeable";
 import type { OdysseyWalkMesh } from "@engine/odyssey/OdysseyWalkMesh";
 
 import { isDoor } from "@engine/module/guards/isDoor";
@@ -49,11 +49,11 @@ function preferWalkable(
   return point.clone();
 }
 
-function getWalkmesh(obj: ModuleObject): OdysseyWalkMesh | undefined {
+function getWalkmesh(obj: GameObject): OdysseyWalkMesh | undefined {
   return (obj as any)?.collisionManager?.walkmesh as OdysseyWalkMesh | undefined;
 }
 
-function pushMeshUsePositions(obj: ModuleObject, out: THREE.Vector3[]): void {
+function pushMeshUsePositions(obj: GameObject, out: THREE.Vector3[]): void {
   const walkmesh = getWalkmesh(obj);
   if(!walkmesh?.getRelativeUsePositionWorld) return;
 
@@ -106,7 +106,7 @@ function pickNearestWalkable(
 
 /** Door: mesh hooks + transition line; nearer walkable wins. */
 export function getDoorNearestActionPoint(
-  door: ModuleDoor,
+  door: Door,
   from: THREE.Vector3,
   _ownerPerspace: number = 0.35
 ): THREE.Vector3 {
@@ -148,7 +148,7 @@ export function getDoorNearestActionPoint(
  * Placeable: mesh relative_use_position first; else ±facing offsets.
  */
 export function getPlaceableNearestActionPoint(
-  placeable: ModulePlaceable,
+  placeable: Placeable,
   from: THREE.Vector3,
   ownerPerspace: number = 0.35
 ): THREE.Vector3 {
@@ -210,16 +210,16 @@ export function getPlaceableNearestActionPoint(
  * doors/placeables use GetNearestActionPoint.
  */
 export function getNearestActionPoint(
-  target: ModuleObject,
+  target: GameObject,
   from: THREE.Vector3,
-  owner?: ModuleObject
+  owner?: GameObject
 ): THREE.Vector3 {
   const perspace = getPathPersonalSpace(owner as any);
   if(isDoor(target)){
-    return getDoorNearestActionPoint(target as ModuleDoor, from, perspace);
+    return getDoorNearestActionPoint(target as Door, from, perspace);
   }
   if(isPlaceable(target)){
-    return getPlaceableNearestActionPoint(target as ModulePlaceable, from, perspace);
+    return getPlaceableNearestActionPoint(target as Placeable, from, perspace);
   }
   return target.position.clone();
 }
@@ -229,8 +229,8 @@ export function getNearestActionPoint(
  * Same as getNearestActionPoint — not a surround/best-slot search.
  */
 export function getAttackApproachPoint(
-  target: ModuleObject,
-  attacker: ModuleObject
+  target: GameObject,
+  attacker: GameObject
 ): THREE.Vector3 {
   return getNearestActionPoint(target, attacker.position, attacker);
 }
@@ -240,7 +240,7 @@ export function getAttackApproachPoint(
  * Kept for callers that imported the mesh-only helper.
  */
 export function getMeshNearestActionPoint(
-  obj: ModuleObject,
+  obj: GameObject,
   from: THREE.Vector3
 ): THREE.Vector3 | undefined {
   const candidates: THREE.Vector3[] = [];

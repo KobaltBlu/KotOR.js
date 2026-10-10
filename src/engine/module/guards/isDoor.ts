@@ -1,8 +1,8 @@
-import type { ModuleObject } from "@engine/module/ModuleObject";
-import type { ModuleDoor } from "@engine/module/ModuleDoor";
+import type { GameObject } from "@engine/module/GameObject";
+import type { Door } from "@engine/module/Door";
 import { BitWise } from "@core/utility/BitWise";
-import { ModuleObjectType } from "@core/enums/module/ModuleObjectType";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
 
-export const isDoor: (o: ModuleObject | undefined) => o is ModuleDoor = (o): o is ModuleDoor => {
-    return !!BitWise.InstanceOfObject(o, ModuleObjectType.ModuleDoor);
+export const isDoor: (o: GameObject | undefined) => o is Door = (o): o is Door => {
+    return !!BitWise.InstanceOfObject(o, GameObjectType.Door);
 }

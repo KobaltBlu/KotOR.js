@@ -1,4 +1,4 @@
-import type { ModuleObject } from '@engine/module/ModuleObject';
+import type { GameObject } from '@engine/module/GameObject';
 
 /**
  * Parse spells.2da FORCEHOSTILE / FORCEFRIENDLY cell.
@@ -46,10 +46,10 @@ export function resolveSpellCastTarget(
     forcehostile?: number | string;
     forcefriendly?: number | string;
   } | undefined | null,
-  oTarget: ModuleObject | undefined,
-  oCaster: ModuleObject,
+  oTarget: GameObject | undefined,
+  oCaster: GameObject,
   opts?: { isUserAction?: boolean }
-): ModuleObject {
+): GameObject {
   if(shouldBindSpellCastToCaster(spell, opts)){
     return oCaster;
   }

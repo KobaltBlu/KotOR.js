@@ -3,7 +3,7 @@ import { GameMenu, GUIControl } from "@engine/gui";
 import type { GUILabel, GUIButton, GUICheckBox } from "@engine/gui";
 import { KEYManager } from "@core/managers/KEYManager";
 import { TextureLoader } from "@engine/loaders";
-import { ModuleCreature } from "@engine/module/ModuleCreature";
+import { Creature } from "@engine/module/Creature";
 import { NWScript } from "@engine/nwscript/NWScript";
 import { NWScriptInstance } from "@engine/nwscript/NWScriptInstance";
 import { ResourceTypes } from "@core/resource/ResourceTypes";
@@ -334,7 +334,7 @@ export class MenuPartySelection extends GameMenu {
     await this.updatePreview(npcId, creature);
 
     // Temp template creatures (not live party members) must be disposed after use.
-    if(!(inParty instanceof ModuleCreature)){
+    if(!(inParty instanceof Creature)){
       try { creature.destroy(); }catch(e){}
     }
 
@@ -355,7 +355,7 @@ export class MenuPartySelection extends GameMenu {
    * K1: fill LBL_3D with large alignment portrait (baseresref + "3" [+ "e"]).
    * TSL overrides with 3D scene.
    */
-  protected async updatePreview(npcId: number, creature: ModuleCreature){
+  protected async updatePreview(npcId: number, creature: Creature){
     const base = creature.getPortraitResRef() || GameState.PartyManager.GetPortraitByIndex(npcId);
     if(!base){
       this.LBL_3D.hide();
@@ -391,14 +391,14 @@ export class MenuPartySelection extends GameMenu {
     }
   }
 
-  protected getNPCCreatureForInfo(npcId: number): ModuleCreature | null {
+  protected getNPCCreatureForInfo(npcId: number): Creature | null {
     const inParty = GameState.PartyManager.GetPartyMemberByNPCId(npcId);
-    if(inParty instanceof ModuleCreature) return inParty;
+    if(inParty instanceof Creature) return inParty;
 
     const npc = GameState.PartyManager.NPCS[npcId];
     if(!npc?.template) return null;
     try {
-      const creature = new ModuleCreature(npc.template);
+      const creature = new Creature(npc.template);
       creature.npcId = npcId;
       creature.initProperties();
       return creature;

@@ -15,13 +15,13 @@ jest.mock("@engine/runtime/GameState", () => ({
 }));
 
 import { isCreatureNudgeable } from "@engine/pathfinding/is-creature-nudgeable";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 
 function creature(options: {
   id: number;
   party?: boolean;
   queueLength?: number;
-}): ModuleCreature {
+}): Creature {
   return {
     id: options.id,
     isDead: () => false,
@@ -29,7 +29,7 @@ function creature(options: {
     getReputation: () => 50,
     actionQueue: Array.from({ length: options.queueLength ?? 0 }),
     combatRound: { roundPaused: false },
-  } as unknown as ModuleCreature;
+  } as unknown as Creature;
 }
 
 describe("isCreatureNudgeable", () => {

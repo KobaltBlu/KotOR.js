@@ -19,7 +19,7 @@ import { hasWalkLineClear, WalkLineHitCode } from "@engine/pathfinding/walk-line
 import { isSafeWalkPoint } from "@engine/pathfinding/safe-walk-point";
 import { ModuleCreatureAnimState } from "@core/enums/module/ModuleCreatureAnimState";
 import { CombatFeatType } from "@core/enums/combat/CombatFeatType";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { TURN_SPEED_FAST } from "@engine/movement/TurnSpeeds";
 import { Utility } from "@core/utility/Utility";
 import { commitMovement } from "@engine/movement/movement-committer";
@@ -46,7 +46,7 @@ export const FOLLOW_STEP_ANIM_EPS = 0.02;
 
 /** Commit one FollowLeader XY step via MovementCommitter (never setPosition). */
 function commitFollowStep(
-  owner: ModuleCreature,
+  owner: Creature,
   beforeX: number,
   beforeY: number,
   next: THREE.Vector3,
@@ -90,7 +90,7 @@ const _moveGoal = new THREE.Vector3();
  * Effective follow walk/run rate × movementSpeed.
  * Stealth forces walk unless STEALTH_RUN feat is present.
  */
-export function getEffectiveFollowRate(owner: ModuleCreature, run: boolean): number {
+export function getEffectiveFollowRate(owner: Creature, run: boolean): number {
   const stealth = !!owner.stealthMode;
   const hasStealthRun =
     typeof owner.getHasFeat === "function" &&
@@ -111,7 +111,7 @@ export function getEffectiveFollowRate(owner: ModuleCreature, run: boolean): num
  * walkSpeedFactor is still ramped for MoveTo handoff continuity.
  */
 export function computeFollowStepBudget(
-  owner: ModuleCreature,
+  owner: Creature,
   run: boolean,
   distForBands: number,
   remainingToGoal: number,
@@ -132,8 +132,8 @@ export function computeFollowStepBudget(
  */
 export function stepPartyFollowState(
   runtime: PartyFollowRuntime,
-  owner: ModuleCreature,
-  leader: ModuleCreature,
+  owner: Creature,
+  leader: Creature,
   offset: THREE.Vector3,
   delta: number
 ): FollowStepResult {
@@ -214,7 +214,7 @@ export function stepPartyFollowState(
 
 function handleFindPath(
   runtime: PartyFollowRuntime,
-  owner: ModuleCreature,
+  owner: Creature,
   offset: THREE.Vector3
 ): FollowStepResult {
   const ok = ensurePathToOffset(owner, offset);
@@ -236,8 +236,8 @@ function handleFindPath(
  */
 function handleWaitingForPath(
   runtime: PartyFollowRuntime,
-  owner: ModuleCreature,
-  leader: ModuleCreature,
+  owner: Creature,
+  leader: Creature,
   offset: THREE.Vector3
 ): FollowStepResult {
   void offset;
@@ -300,8 +300,8 @@ function handleWaitingForPath(
 }
 
 function hasFollowLos(
-  area: NonNullable<ModuleCreature["area"]>,
-  owner: ModuleCreature,
+  area: NonNullable<Creature["area"]>,
+  owner: Creature,
   from: THREE.Vector3,
   to: THREE.Vector3
 ): boolean {
@@ -319,7 +319,7 @@ function hasFollowLos(
  */
 function handleWaitDest(
   runtime: PartyFollowRuntime,
-  owner: ModuleCreature,
+  owner: Creature,
   delta: number = 0
 ): FollowStepResult {
   // Do not clear stuckCounter here — WaitDest hold/thrash must still
@@ -400,8 +400,8 @@ function handleWaitDest(
  */
 function handleOffset(
   runtime: PartyFollowRuntime,
-  owner: ModuleCreature,
-  leader: ModuleCreature,
+  owner: Creature,
+  leader: Creature,
   offset: THREE.Vector3,
   delta: number,
   distLeader: number,
@@ -560,8 +560,8 @@ function handleOffset(
 
 function handleMoving(
   runtime: PartyFollowRuntime,
-  owner: ModuleCreature,
-  leader: ModuleCreature,
+  owner: Creature,
+  leader: Creature,
   offset: THREE.Vector3,
   delta: number,
   distLeader: number,
@@ -630,7 +630,7 @@ function handleMoving(
  * @returns world units actually displaced this call
  */
 function applyFollowSetPosition(
-  owner: ModuleCreature,
+  owner: Creature,
   goal: THREE.Vector3,
   budget: number,
   delta: number,
@@ -726,7 +726,7 @@ function isPartyCreatureId(id: number | undefined): boolean {
  * so followers cannot shove ambient creatures out of the way.
  */
 function applyFollowDirectMove(
-  owner: ModuleCreature,
+  owner: Creature,
   goal: THREE.Vector3,
   budget: number,
   delta: number,
@@ -807,7 +807,7 @@ function applyFollowDirectMove(
  * direct-line motion toward follow offset / path sample (Moving* states).
  */
 export function driveTowardOffset(
-  owner: ModuleCreature,
+  owner: Creature,
   offset: THREE.Vector3,
   delta: number,
   run: boolean
@@ -841,7 +841,7 @@ export function driveTowardOffset(
   return applyFollowDirectMove(owner, _moveGoal, budget, delta, run);
 }
 
-export function ensurePathToOffset(owner: ModuleCreature, offset: THREE.Vector3): boolean {
+export function ensurePathToOffset(owner: Creature, offset: THREE.Vector3): boolean {
   const area = owner.area;
   if(!area?.path?.traverseToPoint) return false;
 
@@ -874,7 +874,7 @@ export function ensurePathToOffset(owner: ModuleCreature, offset: THREE.Vector3)
   return true;
 }
 
-export function faceToward(owner: ModuleCreature, goal: THREE.Vector3){
+export function faceToward(owner: Creature, goal: THREE.Vector3){
   const dx = goal.x - owner.position.x;
   const dy = goal.y - owner.position.y;
   if(dx * dx + dy * dy < 1e-8) return;
@@ -886,7 +886,7 @@ export function copyOffsetGoal(offset: THREE.Vector3): THREE.Vector3 {
   return _goal.copy(offset);
 }
 
-export function samplePosition(owner: ModuleCreature, runtime: PartyFollowRuntime){
+export function samplePosition(owner: Creature, runtime: PartyFollowRuntime){
   runtime.lastSampleX = owner.position.x;
   runtime.lastSampleY = owner.position.y;
   runtime.lastSampleZ = owner.position.z;

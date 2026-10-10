@@ -17,9 +17,9 @@ jest.mock('@engine/pathfinding/visual-los', () => ({ hasVisualLos: () => true })
 
 import { SWGrenadeSound } from '@engine/rules/SWGrenadeSound';
 import {
-  ModuleObjectManager,
+  GameObjectManager,
   ShapeType,
-} from '@engine/managers/ModuleObjectManager';
+} from '@engine/managers/GameObjectManager';
 import { isGrenadeItemType } from '@engine/combat/item-cast-grenade';
 
 describe('SWGrenadeSound', () => {
@@ -100,39 +100,39 @@ describe('objects-in-shape geometry', () => {
   const ahead = new THREE.Vector3(10, 0, 0);
 
   it('sphere includes points within radius', () => {
-    expect(ModuleObjectManager.isInSphere(new THREE.Vector3(3, 0, 0), origin, 5)).toBe(true);
-    expect(ModuleObjectManager.isInSphere(new THREE.Vector3(6, 0, 0), origin, 5)).toBe(false);
+    expect(GameObjectManager.isInSphere(new THREE.Vector3(3, 0, 0), origin, 5)).toBe(true);
+    expect(GameObjectManager.isInSphere(new THREE.Vector3(6, 0, 0), origin, 5)).toBe(false);
   });
 
   it('cube uses AABB half-extent', () => {
-    expect(ModuleObjectManager.isInCube(new THREE.Vector3(1, 1, 1), origin, 2)).toBe(true);
-    expect(ModuleObjectManager.isInCube(new THREE.Vector3(3, 0, 0), origin, 2)).toBe(false);
+    expect(GameObjectManager.isInCube(new THREE.Vector3(1, 1, 1), origin, 2)).toBe(true);
+    expect(GameObjectManager.isInCube(new THREE.Vector3(3, 0, 0), origin, 2)).toBe(false);
   });
 
   it('spell cylinder keeps a 1.5m corridor along the axis', () => {
-    expect(ModuleObjectManager.isInSpellCylinder(new THREE.Vector3(5, 0, 0), origin, ahead, 10)).toBe(true);
-    expect(ModuleObjectManager.isInSpellCylinder(new THREE.Vector3(5, 2, 0), origin, ahead, 10)).toBe(false);
-    expect(ModuleObjectManager.isInSpellCylinder(new THREE.Vector3(-1, 0, 0), origin, ahead, 10)).toBe(false);
+    expect(GameObjectManager.isInSpellCylinder(new THREE.Vector3(5, 0, 0), origin, ahead, 10)).toBe(true);
+    expect(GameObjectManager.isInSpellCylinder(new THREE.Vector3(5, 2, 0), origin, ahead, 10)).toBe(false);
+    expect(GameObjectManager.isInSpellCylinder(new THREE.Vector3(-1, 0, 0), origin, ahead, 10)).toBe(false);
   });
 
   it('cone widens toward the end', () => {
-    expect(ModuleObjectManager.isInCone(new THREE.Vector3(9, 0.5, 0), origin, ahead, 4)).toBe(true);
-    expect(ModuleObjectManager.isInCone(new THREE.Vector3(2, 3, 0), origin, ahead, 4)).toBe(false);
+    expect(GameObjectManager.isInCone(new THREE.Vector3(9, 0.5, 0), origin, ahead, 4)).toBe(true);
+    expect(GameObjectManager.isInCone(new THREE.Vector3(2, 3, 0), origin, ahead, 4)).toBe(false);
   });
 
   it('spell cone requires forward alignment', () => {
-    expect(ModuleObjectManager.isInSpellCone(new THREE.Vector3(5, 0, 0), origin, ahead, 10)).toBe(true);
-    expect(ModuleObjectManager.isInSpellCone(new THREE.Vector3(0, 5, 0), origin, ahead, 10)).toBe(false);
+    expect(GameObjectManager.isInSpellCone(new THREE.Vector3(5, 0, 0), origin, ahead, 10)).toBe(true);
+    expect(GameObjectManager.isInSpellCone(new THREE.Vector3(0, 5, 0), origin, ahead, 10)).toBe(false);
   });
 
   it('isPointInShape dispatches engine shape ids', () => {
-    expect(ModuleObjectManager.isPointInShape(
+    expect(GameObjectManager.isPointInShape(
       ShapeType.SPHERE,
       new THREE.Vector3(1, 0, 0),
       origin,
       2
     )).toBe(true);
-    expect(ModuleObjectManager.isPointInShape(
+    expect(GameObjectManager.isPointInShape(
       ShapeType.CUBE,
       new THREE.Vector3(0.5, 0.5, 0.5),
       origin,
@@ -147,7 +147,7 @@ describe('grenade is not a ranged weapon', () => {
   });
 
   it('classification helper excludes grenades even when rangedWeapon=1', () => {
-    // Mirrors ModuleItem.isRangedWeapon after the ItemType 6 guard
+    // Mirrors Item.isRangedWeapon after the ItemType 6 guard
     const classify = (itemType: number, rangedWeapon: boolean) => {
       if(isGrenadeItemType(itemType)) return false;
       return !!rangedWeapon;

@@ -1,5 +1,5 @@
-import type { ModuleObject } from "@engine/module/ModuleObject";
-import type { ModuleDoor } from "@engine/module/ModuleDoor";
+import type { GameObject } from "@engine/module/GameObject";
+import type { Door } from "@engine/module/Door";
 import { isDoor } from "@engine/module/guards/isDoor";
 import { isPlaceable } from "@engine/module/guards/isPlaceable";
 
@@ -10,13 +10,13 @@ import { isPlaceable } from "@engine/module/guards/isPlaceable";
  *
  * door.static is GFF "Static" at struct.
  */
-export function isPthEdgeBlockedByObject(obj: ModuleObject | undefined | null): boolean {
+export function isPthEdgeBlockedByObject(obj: GameObject | undefined | null): boolean {
   if(!obj) return false;
   if(isPlaceable(obj)){
     return true;
   }
   if(isDoor(obj)){
-    return !!(obj as ModuleDoor).static;
+    return !!(obj as Door).static;
   }
   return false;
 }

@@ -9,7 +9,7 @@ import { srcPath } from '@/tests/helpers/paths';
 
 describe('GetWeaponRanged (opcode 511)', () => {
   it('uses isRangedWeapon like ranged_weapon, not WeaponType == 4', () => {
-    const src = fs.readFileSync(srcPath('nwscript', 'NWScriptDefK1.ts'), 'utf8');
+    const src = fs.readFileSync(srcPath('engine', 'nwscript', 'NWScriptDefK1.ts'), 'utf8');
     const block = src.match(
       /511:\{[\s\S]*?name: "GetWeaponRanged"[\s\S]*?\n  \},/
     )?.[0] ?? '';
@@ -20,7 +20,7 @@ describe('GetWeaponRanged (opcode 511)', () => {
 
 describe('ActionEquipMostDamagingMelee/Ranged (opcodes 399/400)', () => {
   it('defers to combatRound.addEquipAction while combatState is set', () => {
-    const src = fs.readFileSync(srcPath('nwscript', 'NWScriptDefK1.ts'), 'utf8');
+    const src = fs.readFileSync(srcPath('engine', 'nwscript', 'NWScriptDefK1.ts'), 'utf8');
     const melee = src.match(
       /399:\{[\s\S]*?name: "ActionEquipMostDamagingMelee"[\s\S]*?\n  \},/
     )?.[0] ?? '';
@@ -39,7 +39,7 @@ describe('ActionEquipMostDamagingMelee/Ranged (opcodes 399/400)', () => {
   });
 
   it('K2 stubs inherit K1 actions when action is undefined', () => {
-    const src = fs.readFileSync(srcPath('nwscript', 'NWScriptDefK2.ts'), 'utf8');
+    const src = fs.readFileSync(srcPath('engine', 'nwscript', 'NWScriptDefK2.ts'), 'utf8');
     expect(src).toMatch(
       /if\(NWScriptDefK2\.Actions\[property\]\.action === undefined\)[\s\S]*?NWScriptDefK1\.Actions\[property\]\.action/
     );
@@ -50,7 +50,7 @@ describe('ActionEquipMostDamagingMelee/Ranged (opcodes 399/400)', () => {
 
 describe('equipItem hand-slot sync', () => {
   it('stamps RIGHTHAND/LEFTHAND before await loadModel', () => {
-    const src = fs.readFileSync(srcPath('module', 'ModuleCreature.ts'), 'utf8');
+    const src = fs.readFileSync(srcPath('engine', 'module', 'Creature.ts'), 'utf8');
     // Early hand branch: assign equipment, then await loadModel (return before body switch)
     expect(src).toMatch(
       /Stamp hand slots before await[\s\S]*?case ModuleCreatureArmorSlot\.RIGHTHAND:[\s\S]*?this\.equipment\.RIGHTHAND = item;[\s\S]*?await item\.loadModel\(\)/

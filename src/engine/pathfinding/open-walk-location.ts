@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Area } from "@engine/module/Area";
+import type { GameObject } from "@engine/module/GameObject";
 import { getPathPersonalSpace } from "@engine/combat/attack-range";
 import { isSafeWalkPoint } from "@engine/pathfinding/safe-walk-point";
 import {
@@ -33,7 +33,7 @@ export type OpenWalkLocationOptions = {
   /** When true, require a clear direct line to the search center (walk-straight). */
   requireLineOfSight?: boolean;
   /** Creature for perspace / creature-blocking tests. */
-  owner?: ModuleObject;
+  owner?: GameObject;
   /**
    * When true, party members do not block isSafeWalkPoint.
    * Jump / safe-point checks leave this false by default.
@@ -45,7 +45,7 @@ export type OpenWalkLocationOptions = {
  * Snap Z to walkmesh height at the point.
  */
 export function computeHeightAtPoint(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   point: THREE.Vector3
 ): number {
   if(!area || !point) return point?.z ?? 0;
@@ -59,7 +59,7 @@ export function computeHeightAtPoint(
 }
 
 function tryCandidate(
-  area: ModuleArea,
+  area: Area,
   center: THREE.Vector3,
   x: number,
   y: number,
@@ -92,7 +92,7 @@ function tryCandidate(
 }
 
 function searchRing(
-  area: ModuleArea,
+  area: Area,
   center: THREE.Vector3,
   r: number,
   step: number,
@@ -120,7 +120,7 @@ function searchRing(
  * @returns true and writes `out` on success; false leaves `out` as center (+height).
  */
 export function findOpenWalkLocation(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   center: THREE.Vector3,
   out: THREE.Vector3,
   options: OpenWalkLocationOptions = {}
@@ -152,7 +152,7 @@ export function findOpenWalkLocation(
  * On total failure sets out to (−1,−1,−1) and returns false.
  */
 export function findHiddenWalkLocation(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   center: THREE.Vector3,
   out: THREE.Vector3,
   options: OpenWalkLocationOptions = {}

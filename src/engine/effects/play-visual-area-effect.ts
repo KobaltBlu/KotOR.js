@@ -1,7 +1,7 @@
 import type EngineLocation from "@engine/runtime/EngineLocation";
 import { GameEffectDurationType } from "@core/enums/effects/GameEffectDurationType";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 
 /**
  * PlayVisualEffect (NWScript PlayVisualAreaEffect) — fire a
@@ -15,7 +15,7 @@ import type { ModuleObject } from "@engine/module/ModuleObject";
 export function playVisualAreaEffect(
   visualEffectId: number,
   location: EngineLocation,
-  creator?: ModuleObject
+  creator?: GameObject
 ): void {
   console.log('[ItemCast]', 'PlayVisualAreaEffect', {
     visualEffectId,

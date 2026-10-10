@@ -5,8 +5,8 @@ import { ActionType } from "@core/enums/actions/ActionType";
 import { CombatMode } from "@core/enums/combat/CombatMode";
 import { ModuleCreatureAnimState } from "@core/enums/module/ModuleCreatureAnimState";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 import { getCounterSpellRange } from "@engine/combat/spell-range";
 import { Utility } from "@core/utility/Utility";
 import { isCreature } from "@engine/module/guards/isCreature";
@@ -31,7 +31,7 @@ export class ActionCounterSpell extends Action {
     // 0 - dword: oTarget (target spell caster object id)
   }
 
-  private leaveStance(owner: ModuleCreature){
+  private leaveStance(owner: Creature){
     if(owner.combatMode === CombatMode.COUNTERSPELL){
       owner.clearCombatMode();
     }
@@ -47,7 +47,7 @@ export class ActionCounterSpell extends Action {
       return ActionStatus.ERROR;
     }
 
-    this.target = this.getParameter<ModuleObject>(0);
+    this.target = this.getParameter<GameObject>(0);
     if(!isCreature(this.target)){
       this.leaveStance(this.owner);
       return ActionStatus.ERROR;

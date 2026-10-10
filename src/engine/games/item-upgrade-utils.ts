@@ -1,8 +1,8 @@
 import { BaseItemType } from "@core/enums/combat/BaseItemType";
 import { GameEngineType } from "@core/enums/engine/GameEngineType";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleItem } from "@engine/module/ModuleItem";
+import type { Creature } from "@engine/module/Creature";
+import type { Item } from "@engine/module/Item";
 import { TwoDAObject } from "@core/resource/TwoDAObject";
 
 /** / GUI category ids. */
@@ -25,15 +25,15 @@ export interface UpgradeSlotInfo {
 }
 
 export interface UpgradeItemSource {
-  item: ModuleItem;
+  item: Item;
   equipped: boolean;
-  creature?: ModuleCreature;
+  creature?: Creature;
   equipSlot?: number;
 }
 
 export interface UpgradeComponentChoice {
   /** Inventory item to install, or undefined for the empty/remove row. */
-  item?: ModuleItem;
+  item?: Item;
   /** upgrade.2da / upcrystals.2da row index, or -1 for remove. */
   rowIndex: number;
   isRemove: boolean;
@@ -43,7 +43,7 @@ export interface UpgradeComponentChoice {
 export interface UpgradeSessionSlot {
   info: UpgradeSlotInfo;
   /** Installed component item (live or reserved), if any. */
-  component?: ModuleItem;
+  component?: Item;
   /** upgrade.2da row currently assigned to this slot, or -1. */
   upgradeRow: number;
   /** Template tag expected by this slot when empty (lowercase). */
@@ -155,7 +155,7 @@ export function getSlotCount(category: UpgradeCategory): number {
  * K1 maps item-property UpgradeType rows through upgrade.2da.
  * K2 uses baseitems.itemtype plus UpgradeLevel > 0.
  */
-export function getUpgradableType(item: ModuleItem, upgradeTable?: TwoDAObject): UpgradeCategory {
+export function getUpgradableType(item: Item, upgradeTable?: TwoDAObject): UpgradeCategory {
   if(!item) return UpgradeCategory.NONE;
 
   if(GameState.GameKey === GameEngineType.TSL){
@@ -199,7 +199,7 @@ export function getUpgradableType(item: ModuleItem, upgradeTable?: TwoDAObject):
   return category;
 }
 
-export function isItemUpgradable(item: ModuleItem): boolean {
+export function isItemUpgradable(item: Item): boolean {
   return getUpgradableType(item) !== UpgradeCategory.NONE;
 }
 
@@ -207,9 +207,9 @@ export function isItemUpgradable(item: ModuleItem): boolean {
 export function collectUpgradableItems(filterCategory: UpgradeCategory = UpgradeCategory.NONE): UpgradeItemSource[] {
   const table = getUpgradeTable();
   const results: UpgradeItemSource[] = [];
-  const seen = new Set<ModuleItem>();
+  const seen = new Set<Item>();
 
-  const consider = (item: ModuleItem, equipped: boolean, creature?: ModuleCreature, equipSlot?: number) => {
+  const consider = (item: Item, equipped: boolean, creature?: Creature, equipSlot?: number) => {
     if(!item || seen.has(item)) return;
     const category = getUpgradableType(item, table);
     if(category === UpgradeCategory.NONE) return;
@@ -267,7 +267,7 @@ export function getFirstAvailableCategory(availability?: Record<UpgradeCategory,
   return UpgradeCategory.NONE;
 }
 
-function saberModelColumn(item: ModuleItem): string {
+function saberModelColumn(item: Item): string {
   switch(item.baseItemId){
     case BaseItemType.DOUBLE_BLADED_LIGHTSABER:
       return 'doublemdlvar';
@@ -279,7 +279,7 @@ function saberModelColumn(item: ModuleItem): string {
 }
 
 /** Find upcrystals row whose model variation matches the current saber template. */
-export function findCrystalRowForItem(item: ModuleItem): number {
+export function findCrystalRowForItem(item: Item): number {
   const table = getUpcrystalsTable();
   if(!table || !item) return -1;
   const column = saberModelColumn(item);
@@ -295,7 +295,7 @@ export function findCrystalRowForItem(item: ModuleItem): number {
   return -1;
 }
 
-export function getCrystalTemplate(rowIndex: number, item: ModuleItem): string {
+export function getCrystalTemplate(rowIndex: number, item: Item): string {
   const table = getUpcrystalsTable();
   if(!table) return '';
   const row = table.getRowByIndex(rowIndex) || table.rows[rowIndex];
@@ -320,7 +320,7 @@ export function getUpgradeRowType(rowIndex: number): number {
   return TwoDAObject.normalizeValue(row.upgradetype ?? row.UpgradeType, 'number', -1) as number;
 }
 
-export function findInventoryItemByTag(tag: string): ModuleItem | undefined {
+export function findInventoryItemByTag(tag: string): Item | undefined {
   if(!tag) return undefined;
   const lower = tag.toLowerCase();
   const inventory = GameState.InventoryManager?.getInventory?.() || [];
@@ -336,7 +336,7 @@ export function findInventoryItemByTag(tag: string): ModuleItem | undefined {
  * Split one unit from a stacked inventory item (SplitItem).
  * Returns the reserved unit; mutates/removes the source stack.
  */
-export function reserveInventoryUnit(item: ModuleItem): ModuleItem | undefined {
+export function reserveInventoryUnit(item: Item): Item | undefined {
   if(!item) return undefined;
   const stack = item.getStackSize?.() ?? 1;
   if(stack > 1){
@@ -348,11 +348,11 @@ export function reserveInventoryUnit(item: ModuleItem): ModuleItem | undefined {
   return item;
 }
 
-export function returnInventoryUnit(item: ModuleItem): void {
+export function returnInventoryUnit(item: Item): void {
   if(!item) return;
   // Avoid merge of differently upgraded items.
   const existing = GameState.InventoryManager.getItemByTag(item.getTag?.() || '');
-  if(existing && existing !== false && !canStackUpgradeItems(existing as ModuleItem, item)){
+  if(existing && existing !== false && !canStackUpgradeItems(existing as Item, item)){
     item.setStackSize(item.getStackSize?.() || 1);
     GameState.InventoryManager.inventory.push(item);
     item.setPossessor(GameState.PartyManager.Player);
@@ -361,7 +361,7 @@ export function returnInventoryUnit(item: ModuleItem): void {
   GameState.InventoryManager.addItem(item);
 }
 
-export function canStackUpgradeItems(a: ModuleItem, b: ModuleItem): boolean {
+export function canStackUpgradeItems(a: Item, b: Item): boolean {
   if(!a || !b) return false;
   if((a.getTag?.() || '').toLowerCase() !== (b.getTag?.() || '').toLowerCase()) return false;
   if((a.upgrades || 0) !== (b.upgrades || 0)) return false;
@@ -372,7 +372,7 @@ export function canStackUpgradeItems(a: ModuleItem, b: ModuleItem): boolean {
   return true;
 }
 
-export function buildSessionSlots(item: ModuleItem, category: UpgradeCategory): UpgradeSessionSlot[] {
+export function buildSessionSlots(item: Item, category: UpgradeCategory): UpgradeSessionSlot[] {
   const infos = getSlotInfos(category);
   const slots: UpgradeSessionSlot[] = [];
   const table = getUpgradeTable();
@@ -381,7 +381,7 @@ export function buildSessionSlots(item: ModuleItem, category: UpgradeCategory): 
     const info = infos[i];
     let upgradeRow = -1;
     let templateTag = '';
-    let component: ModuleItem | undefined;
+    let component: Item | undefined;
 
     if(info.isCrystal){
       upgradeRow = findCrystalRowForItem(item);
@@ -446,10 +446,10 @@ function findTemplateForSlotType(upgradeType: number): string {
   return '';
 }
 
-function ModuleItemFromTemplate(tag: string): ModuleItem | undefined {
+function ModuleItemFromTemplate(tag: string): Item | undefined {
   if(!tag) return undefined;
   try{
-    const ModuleItemClass = GameState.Module?.ModuleArea?.ModuleItem;
+    const ModuleItemClass = GameState.Module?.Area?.Item;
     if(ModuleItemClass?.FromResRef){
       return ModuleItemClass.FromResRef(tag);
     }
@@ -460,7 +460,7 @@ function ModuleItemFromTemplate(tag: string): ModuleItem | undefined {
 }
 
 export function listCompatibleComponents(
-  item: ModuleItem,
+  item: Item,
   category: UpgradeCategory,
   slotIndex: number,
   sessionSlots: UpgradeSessionSlot[]
@@ -547,7 +547,7 @@ export function listCompatibleComponents(
   return choices;
 }
 
-export function applyUpgradeBit(item: ModuleItem, rowIndex: number, enabled: boolean): void {
+export function applyUpgradeBit(item: Item, rowIndex: number, enabled: boolean): void {
   if(!item || rowIndex < 0 || rowIndex > 31) return;
   const flag = 1 << rowIndex;
   if(enabled){

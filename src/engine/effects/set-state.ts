@@ -7,7 +7,7 @@ import { CombatFeatType } from "@core/enums/combat/CombatFeatType";
 import { GameState } from "@engine/runtime/GameState";
 import { hasImmunityType } from "@engine/effects/haste-slow";
 import type { GameEffect } from "@engine/effects/GameEffect";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 
 import { isCreature } from "@engine/module/guards/isCreature";
 
@@ -40,7 +40,7 @@ export const VFX_STUN = 0x7d2;
  */
 export const SET_STATE_OUTER_AI_ACTIVITY_MASK = 0xfeff;
 
-export function getActiveSetStateType(creature: ModuleCreature): number {
+export function getActiveSetStateType(creature: Creature): number {
   let highest = 0;
   const effects = creature.effects || [];
   for(let i = 0; i < effects.length; i++){
@@ -53,10 +53,10 @@ export function getActiveSetStateType(creature: ModuleCreature): number {
 }
 
 export function isSetStateImmune(
-  creature: ModuleCreature,
+  creature: Creature,
   state: number,
   ignoreImmunity: boolean,
-  versus?: ModuleCreature
+  versus?: Creature
 ): boolean {
   switch(state){
     case GameEffectSetStateType.CONFUSED:
@@ -133,7 +133,7 @@ function copyMeta(from: GameEffect, to: GameEffect){
   to.setSkipOnLoad(true);
 }
 
-function removeInternals(creature: ModuleCreature){
+function removeInternals(creature: Creature){
   const effects = creature.effects ? creature.effects.slice() : [];
   for(let i = 0; i < effects.length; i++){
     const e = effects[i];
@@ -147,7 +147,7 @@ function removeInternals(creature: ModuleCreature){
  * Keep a single Internal matching the highest-priority active outer SetState.
  * Called from outer onApply (with trigger) and onRemove (rebalance).
  */
-export function rebalanceSetState(creature: ModuleCreature, trigger?: GameEffect){
+export function rebalanceSetState(creature: Creature, trigger?: GameEffect){
   if(!isCreature(creature)){
     return;
   }

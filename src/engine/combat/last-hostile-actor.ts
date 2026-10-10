@@ -2,8 +2,8 @@
  * / get hostile actor helpers.
  * @file last-hostile-actor.ts
  */
-import type { ModuleObject } from "@engine/module/ModuleObject";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { GameObject } from "@engine/module/GameObject";
+import type { Creature } from "@engine/module/Creature";
 
 import { isAreaOfEffect } from "@engine/module/guards/isAreaOfEffect";
 import { isCreature } from "@engine/module/guards/isCreature";
@@ -15,8 +15,8 @@ import { isCreature } from "@engine/module/guards/isCreature";
  * @param force - when true, write without plot/faction/alive checks (CancelCombat clear)
  */
 export function assignHostileActor(
-  self: ModuleObject,
-  hostileActor: ModuleObject | undefined,
+  self: GameObject,
+  hostileActor: GameObject | undefined,
   force: boolean = false
 ): void {
   if(force){
@@ -32,7 +32,7 @@ export function assignHostileActor(
     return;
   }
 
-  let actor: ModuleObject | undefined = hostileActor;
+  let actor: GameObject | undefined = hostileActor;
   if(isAreaOfEffect(hostileActor)){
     actor = (hostileActor as any).creator;
   }
@@ -40,7 +40,7 @@ export function assignHostileActor(
     self.combatData.lastHostileActor = undefined;
     return;
   }
-  const creature = actor as ModuleCreature;
+  const creature = actor as Creature;
   if(creature.isDead() || (typeof creature.getDeadTemp === 'function' && creature.getDeadTemp())){
     self.combatData.lastHostileActor = undefined;
     return;
@@ -48,7 +48,7 @@ export function assignHostileActor(
   // Same faction → do not overwrite (faction_id compare)
   if(
     isCreature(self) &&
-    (self as ModuleCreature).factionId === creature.factionId
+    (self as Creature).factionId === creature.factionId
   ){
     return;
   }
@@ -59,7 +59,7 @@ export function assignHostileActor(
  * ExecuteCommandget hostile actor — returns last_hostile_actor_id
  * when still a living creature (AOE resolves to creator); clears stale refs.
  */
-export function getLastHostileActor(self: ModuleObject): ModuleObject | undefined {
+export function getLastHostileActor(self: GameObject): GameObject | undefined {
   if(self.plot){
     if(self.combatData.lastHostileActor){
       assignHostileActor(self, undefined, true);
@@ -78,7 +78,7 @@ export function getLastHostileActor(self: ModuleObject): ModuleObject | undefine
     assignHostileActor(self, undefined, true);
     return undefined;
   }
-  const creature = actor as ModuleCreature;
+  const creature = actor as Creature;
   if(creature.isDead() || (typeof creature.getDeadTemp === 'function' && creature.getDeadTemp())){
     assignHostileActor(self, undefined, true);
     return undefined;

@@ -1,14 +1,14 @@
 import * as THREE from "three";
 import {
   AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, LevelUpManager, CheatConsoleManager, CameraShakeManager, CursorManager, DialogMessageManager,
-  FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, OdysseyShadowManager, WindManager, GrassManager, MenuManager, ModuleObjectManager, PartyManager,
+  FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, OdysseyShadowManager, WindManager, GrassManager, MenuManager, GameObjectManager, PartyManager,
   ResolutionManager, ShaderManager, TwoDAManager, FactionManager,
   VideoEffectManager, VideoManager, PazaakManager, UINotificationManager, GuiTimingBarManager, GameOverManager, CutsceneManager, LegalScreenManager, TutorialManager
 } from "@engine/managers";
 
 import type { SWRuleSet } from "@engine/rules/SWRuleSet";
 import type { TalentObject, TalentFeat, TalentSkill, TalentSpell } from "@engine/talents";
-import type { ModuleCreature, Module } from "@engine/module";
+import type { Creature, Module } from "@engine/module";
 import type { NWScript } from "@engine/nwscript/NWScript";
 import type { SaveGame } from "@engine/save/SaveGame";
 import type { GameEffectFactory } from "@engine/effects/GameEffectFactory";
@@ -67,7 +67,7 @@ export class GameState implements EngineContext {
   static WindManager: typeof WindManager;
   static GrassManager: typeof GrassManager;
   static MenuManager: typeof MenuManager;
-  static ModuleObjectManager: typeof ModuleObjectManager;
+  static GameObjectManager: typeof GameObjectManager;
   static PartyManager: typeof PartyManager;
   static ResolutionManager: typeof ResolutionManager;
   static ShaderManager: typeof ShaderManager;
@@ -206,7 +206,7 @@ export class GameState implements EngineContext {
   static areaTransitionPending = false;
   /**
    * Pass AI — JumpToPoint / JumpToLocation cross-module spawn override.
-   * Consumed by ModuleArea.getSpawnLocation after LoadModule.
+   * Consumed by Area.getSpawnLocation after LoadModule.
    */
   static pendingJumpSpawn: {
     x: number;
@@ -316,7 +316,7 @@ export class GameState implements EngineContext {
   }
   /** Set by updateShadowSystems; Render skips a second selection pass when true. */
   static shadowSystemsUpdatedThisFrame = false;
-  static currentLeader: ModuleCreature;
+  static currentLeader: Creature;
   static playerFeetOffset: THREE.Vector3;
   static collisionList: any[];
   static walkmeshList: any[];

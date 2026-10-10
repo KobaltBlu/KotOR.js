@@ -3,12 +3,12 @@ import { ActionType } from "@core/enums/actions/ActionType";
 import { Action } from "@engine/actions/Action";
 import { CombatActionType } from "@core/enums/combat/CombatActionType";
 import { ActionParameterType } from "@core/enums/actions/ActionParameterType";
-import { ModuleObjectConstant } from "@core/enums";
+import { GameObjectConstant } from "@core/enums";
 import { GameState } from "@engine/runtime/GameState";
 import { CombatRound } from "@engine/combat/CombatRound";
 import { resolveSpellCastTarget, parseForceMenuIndex } from "@engine/combat/spell-self-target";
 import { isCreature } from "@engine/module/guards/isCreature";
-import { isObject } from "@engine/module/guards/isObject";
+import { isGameObject } from "@engine/module/guards/isGameObject";
 
 /**
  * ActionCombat class.
@@ -71,7 +71,7 @@ export class ActionCombat extends Action {
       case CombatActionType.ATTACK:
       case CombatActionType.ATTACK_USE_FEAT: {
         const targetId = combatAction.target?.id;
-        if(!targetId || targetId === ModuleObjectConstant.OBJECT_INVALID){
+        if(!targetId || targetId === GameObjectConstant.OBJECT_INVALID){
           // Unresolved scheduled target after mid-combat load — skip, do not throw.
           return scheduledActionList.length
             ? ActionStatus.IN_PROGRESS
@@ -114,7 +114,7 @@ export class ActionCombat extends Action {
         spellAction.setParameter(2, ActionParameterType.INT, combatAction.domainLevel);
         spellAction.setParameter(3, ActionParameterType.INT, 0);
         spellAction.setParameter(4, ActionParameterType.INT, 0);
-        spellAction.setParameter(5, ActionParameterType.DWORD, castTarget?.id || ModuleObjectConstant.OBJECT_INVALID);
+        spellAction.setParameter(5, ActionParameterType.DWORD, castTarget?.id || GameObjectConstant.OBJECT_INVALID);
         spellAction.setParameter(6, ActionParameterType.FLOAT, castTarget?.position?.x || 0);
         spellAction.setParameter(7, ActionParameterType.FLOAT, castTarget?.position?.y || 0);
         spellAction.setParameter(8, ActionParameterType.FLOAT, castTarget?.position?.z || 0);
@@ -136,22 +136,22 @@ export class ActionCombat extends Action {
         const isSelfTarget =
           !!rawTarget &&
           (rawTarget === this.owner || (!!ownerId && rawTarget.id === ownerId));
-        let itemTargetId = rawTarget?.id || ModuleObjectConstant.OBJECT_INVALID;
+        let itemTargetId = rawTarget?.id || GameObjectConstant.OBJECT_INVALID;
         let posSource = rawTarget;
         if(forceHostile < 1 && rawTarget && !isSelfTarget){
-          itemTargetId = ModuleObjectConstant.OBJECT_INVALID;
+          itemTargetId = GameObjectConstant.OBJECT_INVALID;
           combatAction.target = undefined;
           // Keep rawTarget position for approach / grenade impact location.
         }else if(isSelfTarget){
           // Personal menu stamp — always resolve to the caster object id.
-          itemTargetId = ownerId || ModuleObjectConstant.OBJECT_INVALID;
+          itemTargetId = ownerId || GameObjectConstant.OBJECT_INVALID;
           combatAction.target = this.owner;
           posSource = this.owner;
         }
 
         const itemSpellAction = new GameState.ActionFactory.ActionItemCastSpell();
         itemSpellAction.setParameter(0, ActionParameterType.DWORD, itemTargetId);
-        itemSpellAction.setParameter(1, ActionParameterType.DWORD, posSource?.area?.id || this.owner?.area?.id || ModuleObjectConstant.OBJECT_INVALID);
+        itemSpellAction.setParameter(1, ActionParameterType.DWORD, posSource?.area?.id || this.owner?.area?.id || GameObjectConstant.OBJECT_INVALID);
         itemSpellAction.setParameter(2, ActionParameterType.FLOAT, posSource?.position?.x || 0);
         itemSpellAction.setParameter(3, ActionParameterType.FLOAT, posSource?.position?.y || 0);
         itemSpellAction.setParameter(4, ActionParameterType.FLOAT, posSource?.position?.z || 0);
@@ -160,7 +160,7 @@ export class ActionCombat extends Action {
         itemSpellAction.setParameter(7, ActionParameterType.FLOAT, 1.0);
         itemSpellAction.setParameter(8, ActionParameterType.INT, combatAction.projectilePath);
         itemSpellAction.setParameter(9, ActionParameterType.INT, -1);
-        itemSpellAction.setParameter(10, ActionParameterType.DWORD, combatAction.item?.id || ModuleObjectConstant.OBJECT_INVALID);
+        itemSpellAction.setParameter(10, ActionParameterType.DWORD, combatAction.item?.id || GameObjectConstant.OBJECT_INVALID);
         itemSpellAction.setParameter(11, ActionParameterType.STRING, '');
         itemSpellAction.setParameter(12, ActionParameterType.INT, combatAction.activePropertyIndex ?? 0);
         itemSpellAction.isUserAction = combatAction.isUserAction;
@@ -185,7 +185,7 @@ export class ActionCombat extends Action {
         combatRound.pauseRound(this.owner, pauseMs);
         const unequipAction = new GameState.ActionFactory.ActionUnequipItem();
         unequipAction.setParameter(0, ActionParameterType.DWORD, combatAction.item);
-        unequipAction.setParameter(1, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
+        unequipAction.setParameter(1, ActionParameterType.DWORD, GameObjectConstant.OBJECT_INVALID);
         unequipAction.setParameter(2, ActionParameterType.INT, combatAction.equipInstant ? 1 : 0);
         unequipAction.isUserAction = combatAction.isUserAction;
         this.owner.actionQueue.unshift(unequipAction);
@@ -197,9 +197,9 @@ export class ActionCombat extends Action {
         const moveTarget = combatAction.target;
         const pos = combatAction.moveToPosition;
         const run = combatAction.shouldRun ? 1 : 0;
-        const areaId = this.owner.area?.id ?? ModuleObjectConstant.OBJECT_INVALID;
+        const areaId = this.owner.area?.id ?? GameObjectConstant.OBJECT_INVALID;
 
-        if(moveTarget && isObject(moveTarget)){
+        if(moveTarget && isGameObject(moveTarget)){
           const actionMove = new GameState.ActionFactory.ActionMoveToPoint(undefined, this.groupId);
           actionMove.setParameter(0, ActionParameterType.FLOAT, moveTarget.position.x);
           actionMove.setParameter(1, ActionParameterType.FLOAT, moveTarget.position.y);
@@ -217,7 +217,7 @@ export class ActionCombat extends Action {
           actionMove.setParameter(1, ActionParameterType.FLOAT, pos.y);
           actionMove.setParameter(2, ActionParameterType.FLOAT, pos.z);
           actionMove.setParameter(3, ActionParameterType.DWORD, areaId);
-          actionMove.setParameter(4, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
+          actionMove.setParameter(4, ActionParameterType.DWORD, GameObjectConstant.OBJECT_INVALID);
           actionMove.setParameter(5, ActionParameterType.INT, run);
           actionMove.setParameter(6, ActionParameterType.FLOAT, 0.2);
           actionMove.setParameter(7, ActionParameterType.INT, 0);

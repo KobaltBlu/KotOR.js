@@ -1,6 +1,6 @@
 import { GameMenu } from "@engine/gui";
 import type { GUIListBox, GUIButton } from "@engine/gui";
-import type { ModuleItem } from "@engine/module/ModuleItem";
+import type { Item } from "@engine/module/Item";
 
 /** SetLocalBoolean index on DisplayDatapad (ExecuteCommandDisplayDatapad). */
 export const DATAPAD_SHOWN_LOCAL_BOOL = 0x5e;
@@ -20,7 +20,7 @@ export class MenuDatapad extends GameMenu {
   declare BTN_OK: GUIButton;
   declare BTN_CANCEL: GUIButton;
 
-  currentItem: ModuleItem | undefined;
+  currentItem: Item | undefined;
 
   constructor(){
     super();
@@ -54,7 +54,7 @@ export class MenuDatapad extends GameMenu {
   /**
    * Open datapad for an item. Sets local bool 0x5E and shows DescIdentified.
    */
-  openDatapad(item: ModuleItem){
+  openDatapad(item: Item){
     if(!item) return;
     this.currentItem = item;
     item.setLocalBoolean(DATAPAD_SHOWN_LOCAL_BOOL, true);
@@ -74,7 +74,7 @@ export class MenuDatapad extends GameMenu {
     this.open();
   }
 
-  resolveDatapadText(item: ModuleItem): string {
+  resolveDatapadText(item: Item): string {
     const desc = item.getDescription?.();
     if(typeof desc === 'string') return desc;
     if(desc && typeof (desc as any).getValue === 'function'){

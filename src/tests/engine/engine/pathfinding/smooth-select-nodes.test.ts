@@ -6,7 +6,7 @@ import * as THREE from "three";
 
 jest.mock("@engine/runtime/GameState", () => ({
   GameState: {
-    ModuleObjectManager: { GetObjectById: () => undefined },
+    GameObjectManager: { GetObjectById: () => undefined },
     module: undefined,
   },
 }));

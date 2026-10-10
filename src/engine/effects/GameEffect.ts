@@ -2,11 +2,11 @@ import { GameState } from "@engine/runtime/GameState";
 import { GameEffectDurationType } from "@core/enums/effects/GameEffectDurationType";
 import { GameEffectSubType } from "@core/enums/effects/GameEffectSubType";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
-import { ModuleObjectConstant } from "@core/enums/module/ModuleObjectConstant";
+import { GameObjectConstant } from "@core/enums/module/GameObjectConstant";
 import { GFFDataType } from "@core/enums/resource/GFFDataType";
-// import { ModuleObjectManager } from "@engine/managers/ModuleObjectManager";
+// import { GameObjectManager } from "@engine/managers/GameObjectManager";
 import type { Module } from "@engine/module/Module";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import { GFFField } from "@core/resource/GFFField";
 import { GFFStruct } from "@core/resource/GFFStruct";
 
@@ -37,10 +37,10 @@ export class GameEffect {
   intList: number[] = [];
   floatList: number[] = [];
   stringList: string[] = [];
-  objectList: ModuleObject[] = [];
+  objectList: GameObject[] = [];
   /** Saved ObjectList DWORDs for deferred resolve. */
   objectListIds: number[] = [];
-  object: ModuleObject;
+  object: GameObject;
   type: GameEffectType;
   /** id — DWORD64 allocated from Module.effectNextId */
   id: number = 0;
@@ -89,9 +89,9 @@ export class GameEffect {
   resolveObjectReferences(){
     if(typeof this.creator === 'number' || (!this.creator && this.creatorObjectId)){
       const id = typeof this.creator === 'number' ? this.creator : this.creatorObjectId;
-      if(id && id !== ModuleObjectConstant.OBJECT_INVALID){
+      if(id && id !== GameObjectConstant.OBJECT_INVALID){
         this.creatorObjectId = id;
-        this.creator = GameState.ModuleObjectManager.GetObjectById(id) ?? this.creator;
+        this.creator = GameState.GameObjectManager.GetObjectById(id) ?? this.creator;
       }
     }else if(this.creator && typeof this.creator === 'object' && this.creator.id){
       this.creatorObjectId = this.creator.id;
@@ -101,16 +101,16 @@ export class GameEffect {
     for(let i = 0; i < idCount; i++){
       const existing = this.objectList[i];
       if(existing && typeof existing === 'object'){
-        if((existing as ModuleObject).id){
-          this.objectListIds[i] = (existing as ModuleObject).id;
+        if((existing as GameObject).id){
+          this.objectListIds[i] = (existing as GameObject).id;
         }
         continue;
       }
       const rawId = this.objectListIds[i]
         ?? (typeof existing === 'number' ? existing : 0);
-      if(rawId && rawId !== ModuleObjectConstant.OBJECT_INVALID){
+      if(rawId && rawId !== GameObjectConstant.OBJECT_INVALID){
         this.objectListIds[i] = rawId;
-        const resolved = GameState.ModuleObjectManager.GetObjectById(rawId);
+        const resolved = GameState.GameObjectManager.GetObjectById(rawId);
         if(resolved){
           this.objectList[i] = resolved;
         }else{
@@ -124,18 +124,18 @@ export class GameEffect {
     return;
   }
 
-  setCreator(oCreator: ModuleObject | number){
+  setCreator(oCreator: GameObject | number){
     if(typeof oCreator === 'number'){
-      this.creatorObjectId = oCreator && oCreator !== ModuleObjectConstant.OBJECT_INVALID
+      this.creatorObjectId = oCreator && oCreator !== GameObjectConstant.OBJECT_INVALID
         ? oCreator
         : 0;
       this.creator = this.creatorObjectId
-        ? (GameState.ModuleObjectManager.GetObjectById(this.creatorObjectId) ?? oCreator)
+        ? (GameState.GameObjectManager.GetObjectById(this.creatorObjectId) ?? oCreator)
         : undefined;
       return;
     }
     this.creator = oCreator;
-    this.creatorObjectId = oCreator?.id && oCreator.id !== ModuleObjectConstant.OBJECT_INVALID
+    this.creatorObjectId = oCreator?.id && oCreator.id !== GameObjectConstant.OBJECT_INVALID
       ? oCreator.id
       : 0;
   }
@@ -223,7 +223,7 @@ export class GameEffect {
     this.stringList[nOffset] = nValue;
   }
 
-  setObjectList(objectList: Array<ModuleObject | number> = []){
+  setObjectList(objectList: Array<GameObject | number> = []){
     if(!Array.isArray(objectList)){
       return;
     }
@@ -234,23 +234,23 @@ export class GameEffect {
     }
   }
 
-  setObject(nOffset = 0, nValue: ModuleObject | number){
+  setObject(nOffset = 0, nValue: GameObject | number){
     if(typeof nValue === 'number'){
-      this.objectListIds[nOffset] = nValue && nValue !== ModuleObjectConstant.OBJECT_INVALID
+      this.objectListIds[nOffset] = nValue && nValue !== GameObjectConstant.OBJECT_INVALID
         ? nValue
         : 0;
       this.objectList[nOffset] = this.objectListIds[nOffset]
-        ? (GameState.ModuleObjectManager.GetObjectById(this.objectListIds[nOffset]) as any ?? nValue as any)
+        ? (GameState.GameObjectManager.GetObjectById(this.objectListIds[nOffset]) as any ?? nValue as any)
         : undefined as any;
       return;
     }
     this.objectList[nOffset] = nValue;
-    this.objectListIds[nOffset] = nValue?.id && nValue.id !== ModuleObjectConstant.OBJECT_INVALID
+    this.objectListIds[nOffset] = nValue?.id && nValue.id !== GameObjectConstant.OBJECT_INVALID
       ? nValue.id
       : 0;
   }
 
-  setAttachedObject( oObject: ModuleObject|Module ){
+  setAttachedObject( oObject: GameObject|Module ){
     this.object = oObject as any;
   }
 
@@ -301,8 +301,8 @@ export class GameEffect {
     }
     const id = this.objectListIds[nOffset]
       ?? (typeof entry === 'number' ? entry : 0);
-    if(id && id !== ModuleObjectConstant.OBJECT_INVALID){
-      const resolved = GameState.ModuleObjectManager.GetObjectById(id);
+    if(id && id !== GameObjectConstant.OBJECT_INVALID){
+      const resolved = GameState.GameObjectManager.GetObjectById(id);
       if(resolved){
         this.objectList[nOffset] = resolved;
         return resolved;
@@ -330,7 +330,7 @@ export class GameEffect {
   ///////////////
 
   //Called when the effect is applied ingame
-  onApply(object?: ModuleObject){
+  onApply(object?: GameObject){
     if(this.applied)
       return;
 
@@ -402,7 +402,7 @@ export class GameEffect {
       const obj = this.getObject(i);
       const oid = (obj && typeof obj === 'object') ? (obj.id | 0) : 0;
       objectStruct.addField( new GFFField(GFFDataType.DWORD, "Value").setValue(
-        oid ? oid : ModuleObjectConstant.OBJECT_INVALID
+        oid ? oid : GameObjectConstant.OBJECT_INVALID
       ));
       objectList.addChildStruct(objectStruct);
     }

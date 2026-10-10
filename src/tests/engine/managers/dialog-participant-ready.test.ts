@@ -39,7 +39,7 @@ describe('dialog-participant-ready', () => {
         isNonDependant: () => false,
         stuntActor: {
           participant: 'bastila',
-          moduleObject: { model: {} },
+          gameObject: { model: {} },
           animations: [{ name: 'cut001w' }],
         },
         liveObject: undefined,
@@ -51,12 +51,12 @@ describe('dialog-participant-ready', () => {
     const stunts = new Map([
       ['player', {
         participant: 'PLAYER',
-        moduleObject: { model: {} },
+        gameObject: { model: {} },
         animations: [{ name: 'cut001w' }],
       }],
       ['bastila', {
         participant: 'Bastila',
-        moduleObject: undefined,
+        gameObject: undefined,
         animations: undefined,
       }],
     ]);

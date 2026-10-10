@@ -1,6 +1,6 @@
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
 import type { GameEffect } from "@engine/effects/GameEffect";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 
 /**
  * -shaped damage mitigation (onApply / GetDamageRoll):
@@ -32,7 +32,7 @@ export function sumDamageChannels(channels: number[]): number {
   return total;
 }
 
-function collectEffects(object: ModuleObject, type: GameEffectType): GameEffect[] {
+function collectEffects(object: GameObject, type: GameEffectType): GameEffect[] {
   const effects = object?.effects;
   if(!effects?.length) return [];
   return effects.filter(e => e?.type === type);
@@ -42,7 +42,7 @@ function collectEffects(object: ModuleObject, type: GameEffectType): GameEffect[
  * Apply percent immunity for matching damage flags. Returns remaining damage.
  */
 export function applyDamageImmunity(
-  target: ModuleObject,
+  target: GameObject,
   damage: number,
   damageFlags: number
 ): number {
@@ -71,7 +71,7 @@ export function applyDamageImmunity(
  * Best matching DAMAGERESISTANCE; consume limit pool. Returns remaining damage.
  */
 export function applyDamageResistance(
-  target: ModuleObject,
+  target: GameObject,
   damage: number,
   damageFlags: number
 ): number {
@@ -122,7 +122,7 @@ export function applyDamageResistance(
  * Best DAMAGEREDUCTION; only applies when attackPower < effect bypass power (int[1]).
  */
 export function applyDamageReduction(
-  target: ModuleObject,
+  target: GameObject,
   damage: number,
   attackPower: number
 ): number {
@@ -165,7 +165,7 @@ export function applyDamageReduction(
  * Full mitigation chain. Returns remaining damage (>= 0).
  */
 export function mitigateDamageAmount(
-  target: ModuleObject,
+  target: GameObject,
   damage: number,
   damageFlags: number,
   attackPower: number = 0

@@ -5,7 +5,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 /**
- * Mirrors ModuleItem.removeFromCasterInventory routing.
+ * Mirrors Item.removeFromCasterInventory routing.
  */
 function resolveDecrementInventoryTarget(caster: {
   isPartyMember?: () => boolean;

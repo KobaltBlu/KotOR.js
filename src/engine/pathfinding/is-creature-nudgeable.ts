@@ -1,4 +1,4 @@
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { ActionType } from "@core/enums/actions/ActionType";
 import { GameState } from "@engine/runtime/GameState";
 
@@ -25,14 +25,14 @@ const BUSY_ACTIONS: number[] = [
   ActionType.ActionCombat,          // 0x3F
 ];
 
-function getPlayerCreature(): ModuleCreature | undefined {
-  const pc = GameState.PartyManager.getCurrentPlayer?.() as ModuleCreature | undefined;
+function getPlayerCreature(): Creature | undefined {
+  const pc = GameState.PartyManager.getCurrentPlayer?.() as Creature | undefined;
   if(pc) return pc;
   return GameState.PartyManager?.party?.[0];
 }
 
 /** Party / player-UI creatures are never bump targets. */
-function isPartyUiCreature(creature: ModuleCreature): boolean {
+function isPartyUiCreature(creature: Creature): boolean {
   if(creature.isPartyMember?.()) return true;
   const party = GameState.PartyManager?.party;
   return !!(party && party.indexOf(creature) >= 0);
@@ -43,8 +43,8 @@ function isPartyUiCreature(creature: ModuleCreature): boolean {
  * @param other Candidate blocker
  */
 export function isCreatureNudgeable(
-  self: ModuleCreature | undefined,
-  other: ModuleCreature | undefined
+  self: Creature | undefined,
+  other: Creature | undefined
 ): boolean {
   if(!self || !other || self === other) return false;
   if(other.isDead?.()) return false;

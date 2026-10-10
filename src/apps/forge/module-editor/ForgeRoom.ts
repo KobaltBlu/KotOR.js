@@ -134,7 +134,7 @@ export class ForgeRoom extends ForgeGameObject {
       });
 
       this.model = room;
-      this.model.userData.moduleObject = this;
+      this.model.userData.gameObject = this;
       this.container.add(this.model);
       this.box.setFromObject(this.container);
 

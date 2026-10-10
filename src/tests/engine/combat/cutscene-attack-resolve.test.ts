@@ -149,7 +149,7 @@ import { CombatAttackData } from '@engine/combat/CombatAttackData';
 import { AttackResult } from '@core/enums/combat/AttackResult';
 import { DamageType } from '@core/enums/combat/DamageType';
 import { ModuleCreatureArmorSlot } from '@core/enums/module/ModuleCreatureArmorSlot';
-import { ModuleObjectType } from '@core/enums/module/ModuleObjectType';
+import { GameObjectType } from '@core/enums/module/GameObjectType';
 import { mitigateDamageAmount } from '@engine/combat/damage-mitigation';
 import * as THREE from 'three';
 
@@ -159,7 +159,7 @@ function makeCreature(opts: { ranged?: boolean; damageFlags?: number } = {}) {
     getDamageFlags: () => opts.damageFlags ?? 0x1000, // ENERGY bit (1<<12)
   };
   return {
-    objectType: ModuleObjectType.ModuleCreature,
+    objectType: GameObjectType.Creature,
     equipment: { RIGHTHAND: weapon, LEFTHAND: undefined },
     position: new THREE.Vector3(0, 0, 0),
     effects: [],
@@ -182,7 +182,7 @@ function makeCreature(opts: { ranged?: boolean; damageFlags?: number } = {}) {
 
 function makeTarget() {
   return {
-    objectType: ModuleObjectType.ModuleCreature,
+    objectType: GameObjectType.Creature,
     position: new THREE.Vector3(5, 0, 0),
     combatData: { lastAttacker: undefined },
     onAttacked: jest.fn(),

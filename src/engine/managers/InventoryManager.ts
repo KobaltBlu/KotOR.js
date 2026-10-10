@@ -3,8 +3,8 @@ import { GFFField } from "@core/resource/GFFField";
 import { GFFObject } from "@core/resource/GFFObject";
 import * as path from "path";
 import { CurrentGame } from "@engine/save/CurrentGame";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleItem } from "@engine/module/ModuleItem";
+import type { Creature } from "@engine/module/Creature";
+import type { Item } from "@engine/module/Item";
 import { GameState } from "@engine/runtime/GameState";
 import { BaseItemType } from "@core/enums/combat/BaseItemType";
 import { UIIconTimerType } from "@engine/enums/engine/UIIconTimerType";
@@ -20,9 +20,9 @@ import { UIIconTimerType } from "@engine/enums/engine/UIIconTimerType";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class InventoryManager {
-  static inventory: ModuleItem[] = [];
+  static inventory: Item[] = [];
 
-  static getInventory( slot = 0, creature?: ModuleCreature ){
+  static getInventory( slot = 0, creature?: Creature ){
     if(!slot){
       return InventoryManager.inventory;
     }else{
@@ -37,7 +37,7 @@ export class InventoryManager {
     }
   }
 
-  static getNonQuestInventory( slot = 0, creature?: ModuleCreature ){
+  static getNonQuestInventory( slot = 0, creature?: Creature ){
     if(!slot){
       let equippable = [];
       for(let i = 0; i < InventoryManager.inventory.length; i++){
@@ -59,7 +59,7 @@ export class InventoryManager {
     }
   }
 
-  static getQuestInventory(slot = 0, creature?: ModuleCreature){
+  static getQuestInventory(slot = 0, creature?: Creature){
     if(!slot){
       let equippable = [];
       for(let i = 0; i < InventoryManager.inventory.length; i++){
@@ -81,12 +81,12 @@ export class InventoryManager {
     }
   }
 
-  static getSellableInventory(slot = 0, creature?: ModuleCreature){
+  static getSellableInventory(slot = 0, creature?: Creature){
     return InventoryManager.getNonQuestInventory(slot, creature);
   }
 
-  static isItemUsableBy( item?: ModuleItem, creature?: ModuleCreature): boolean {
-    // if(!(item instanceof ModuleItem) || !(creature instanceof ModuleCreature))
+  static isItemUsableBy( item?: Item, creature?: Creature): boolean {
+    // if(!(item instanceof Item) || !(creature instanceof Creature))
       // return false;
 
     let droidorhuman = item.baseItem.droidOrHuman;
@@ -98,22 +98,22 @@ export class InventoryManager {
     
   }
 
-  static isItemUsableInSlot( item: ModuleItem, slot: any ): boolean {
+  static isItemUsableInSlot( item: Item, slot: any ): boolean {
     let baseItem = item.baseItem;
     return (baseItem.equipableSlots & slot || baseItem.equipableSlots === slot) ? true : false;
   }
 
-  static addItem(template: GFFObject|ModuleItem = new GFFObject(), limitOne = false): ModuleItem {
+  static addItem(template: GFFObject|Item = new GFFObject(), limitOne = false): Item {
 
-    let item: ModuleItem;
+    let item: Item;
     if(template instanceof GFFObject){
-      item = new GameState.Module.ModuleArea.ModuleItem(template);
-    }else if(template instanceof GameState.Module.ModuleArea.ModuleItem){
+      item = new GameState.Module.Area.Item(template);
+    }else if(template instanceof GameState.Module.Area.Item){
       item = template;
     }
 
-    if(!(item instanceof GameState.Module.ModuleArea.ModuleItem)){
-      throw 'You can only add an item of type ModuleItem to an inventory';
+    if(!(item instanceof GameState.Module.Area.Item)){
+      throw 'You can only add an item of type Item to an inventory';
     }
 
     item.initProperties();
@@ -131,19 +131,19 @@ export class InventoryManager {
       item.load();
       let hasItem = InventoryManager.getItemByTag(item.getTag());
       // stacks only identical items; differently upgraded variants must not merge.
-      const canStack = hasItem && InventoryManager.canStackItems(hasItem as ModuleItem, item);
+      const canStack = hasItem && InventoryManager.canStackItems(hasItem as Item, item);
       if(hasItem && canStack){
 
         // Sanitize legacy Infinite flags left on party stacks from store buys.
-        (hasItem as ModuleItem).setInfinite(0);
+        (hasItem as Item).setInfinite(0);
 
         if(!limitOne){
-          (hasItem as ModuleItem).setStackSize((hasItem as ModuleItem).getStackSize() + item.getStackSize());
+          (hasItem as Item).setStackSize((hasItem as Item).getStackSize() + item.getStackSize());
         }else{
-          (hasItem as ModuleItem).setStackSize((hasItem as ModuleItem).getStackSize() + 1);
+          (hasItem as Item).setStackSize((hasItem as Item).getStackSize() + 1);
         }
 
-        return hasItem as ModuleItem;
+        return hasItem as Item;
       }else{
 
         if(limitOne)
@@ -170,10 +170,10 @@ export class InventoryManager {
     }
   }
 
-  static removeItem(item?: string|ModuleItem, nCount = 1){
+  static removeItem(item?: string|Item, nCount = 1){
     if(typeof item === 'string'){
       InventoryManager.removeItemByResRef(item, nCount);
-    }else if(item instanceof GameState.Module.ModuleArea.ModuleItem){
+    }else if(item instanceof GameState.Module.Area.Item){
       let idx = InventoryManager.inventory.indexOf(item);
       if(idx >= 0){
         GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.ITEM_LOST);
@@ -200,7 +200,7 @@ export class InventoryManager {
   }
 
   /** Items with different upgrade state must not stack together. */
-  static canStackItems(a: ModuleItem, b: ModuleItem): boolean {
+  static canStackItems(a: Item, b: Item): boolean {
     if(!a || !b) return false;
     if((a.getTag?.() || '').toLowerCase() !== (b.getTag?.() || '').toLowerCase()) return false;
     if((a.upgrades || 0) !== (b.upgrades || 0)) return false;

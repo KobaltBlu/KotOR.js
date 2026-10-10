@@ -66,14 +66,14 @@ import {
   type MovementIntent,
   type MovementResult,
 } from "@engine/movement/types";
-import { ModuleObjectType } from "@core/enums/module/ModuleObjectType";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleArea } from "@engine/module/ModuleArea";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
+import type { Creature } from "@engine/module/Creature";
+import type { Area } from "@engine/module/Area";
 
-function mockCreature(id = 1): ModuleCreature {
+function mockCreature(id = 1): Creature {
   const c = {
     id,
-    objectType: ModuleObjectType.ModuleCreature,
+    objectType: GameObjectType.Creature,
     position: new THREE.Vector3(0, 0, 0),
     force: 0,
     speed: 0,
@@ -89,15 +89,15 @@ function mockCreature(id = 1): ModuleCreature {
     area: {
       creatures: [],
       getNearestWalkablePoint: (p: THREE.Vector3) => p.clone(),
-    } as unknown as ModuleArea,
+    } as unknown as Area,
     markCollisionMatrixDirty: jest.fn(),
     onBlocked: jest.fn(),
   };
-  return c as unknown as ModuleCreature;
+  return c as unknown as Creature;
 }
 
 function movingResult(
-  creature: ModuleCreature,
+  creature: Creature,
   dx: number,
   dy: number,
   source = MovementSource.Drive
@@ -218,7 +218,7 @@ describe("AreaMovementQueries purity", () => {
       rooms: [],
       doors: [],
       placeables: [],
-    } as unknown as ModuleArea;
+    } as unknown as Area;
 
     testStaticMovement(
       area,

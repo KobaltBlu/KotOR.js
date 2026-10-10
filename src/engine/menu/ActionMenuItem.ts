@@ -1,4 +1,4 @@
-import type { ModuleItem } from "@engine/module/ModuleItem";
+import type { Item } from "@engine/module/Item";
 
 /**
  * ActionMenuItem class.
@@ -15,7 +15,7 @@ export class ActionMenuItem {
   action: any = undefined;
   talent: any = undefined;
   icon = '';
-  item: ModuleItem;
+  item: Item;
   /** bit0: false → dimmed / inactive icon. */
   enabled: boolean = true;
   name: string = '';

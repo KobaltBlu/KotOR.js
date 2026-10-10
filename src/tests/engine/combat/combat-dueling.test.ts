@@ -9,7 +9,7 @@ const party: any[] = [];
 
 jest.mock('@engine/runtime/GameState', () => ({
   GameState: {
-    ModuleObjectManager: {
+    GameObjectManager: {
       GetObjectById: (id: number) => objectMap.get(id),
       GetClientObjectById: (id: number) => objectMap.get(id),
     },
@@ -97,7 +97,7 @@ import {
   resolveMasterState,
 } from '@engine/combat/combat-dueling';
 import { CombatRound } from '@engine/combat/CombatRound';
-import { ModuleObjectType } from '@core/enums/module/ModuleObjectType';
+import { GameObjectType } from '@core/enums/module/GameObjectType';
 
 function makeCreature(id: number, opts: {
   partyMember?: boolean;
@@ -114,7 +114,7 @@ function makeCreature(id: number, opts: {
   };
   const creature: any = {
     id,
-    objectType: ModuleObjectType.ModuleCreature,
+    objectType: GameObjectType.Creature,
     combatData,
     combatRound: undefined as CombatRound | undefined,
     actionQueue: { actionTypeExists: () => false, add: jest.fn() },

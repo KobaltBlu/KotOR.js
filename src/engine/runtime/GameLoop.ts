@@ -220,7 +220,7 @@ export class GameLoop {
       GameState.module.area.updateRoomVisibility(0);
     }
 
-    GameState.ModuleObjectManager.TickSelectableObjects(delta);
+    GameState.GameObjectManager.TickSelectableObjects(delta);
 
     GameState.CutsceneManager.tickPendingPartyDialogSwitch();
 

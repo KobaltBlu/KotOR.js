@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 
 const mockGameState = {
   PartyManager: { party: [], FollowState: 0 },
-  ModuleObjectManager: { GetObjectById: () => undefined },
+  GameObjectManager: { GetObjectById: () => undefined },
   module: undefined as undefined,
   GameKey: "KOTOR",
 };
@@ -44,9 +44,9 @@ import {
 } from "@engine/pathfinding/party-follow-sm";
 import { CombatFeatType } from "@core/enums/combat/CombatFeatType";
 import { ActionType } from "@core/enums/actions/ActionType";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 
-function makeCreature(partial: Record<string, unknown> = {}): ModuleCreature {
+function makeCreature(partial: Record<string, unknown> = {}): Creature {
   return {
     creatureLocoState: CreatureLocoState.PathWalk,
     stealthMode: false,
@@ -56,7 +56,7 @@ function makeCreature(partial: Record<string, unknown> = {}): ModuleCreature {
     getRunSpeed: () => 5.4,
     getHasFeat: () => false,
     ...partial,
-  } as unknown as ModuleCreature;
+  } as unknown as Creature;
 }
 
 describe("CreatureLocoState", () => {

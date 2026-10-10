@@ -1,6 +1,6 @@
 import type * as THREE from "three";
-import type { ModuleObject } from "@engine/module/ModuleObject";
-import type { ModuleRoom } from "@engine/module/ModuleRoom";
+import type { GameObject } from "@engine/module/GameObject";
+import type { AreaRoom } from "@engine/module/AreaRoom";
 import type { OdysseyFace3 } from "@engine/render/three/odyssey";
 
 /**
@@ -101,7 +101,7 @@ export enum MovementHitKind {
 
 export interface MovementHit {
   kind: MovementHitKind;
-  object?: ModuleObject;
+  object?: GameObject;
   position?: THREE.Vector3;
   normal?: THREE.Vector3;
   distance?: number;
@@ -141,9 +141,9 @@ export interface MovementResult {
   acceptedDisplacement: THREE.Vector3;
   actualDistance: number;
   hit?: MovementHit;
-  room?: ModuleRoom;
+  room?: AreaRoom;
   groundFace?: OdysseyFace3;
-  crossedTransition?: ModuleObject;
+  crossedTransition?: GameObject;
   /** When true, committer should fire linked-door OnClicked and not apply XY. */
   blockAfterDoorSignal?: boolean;
   /** Discrete path-block increment for Walk/Drive stuck bookkeeping. */
@@ -152,8 +152,8 @@ export interface MovementResult {
 
 export interface CreatureMovementState {
   authority: MovementAuthority;
-  blockingObject?: ModuleObject;
-  lastBlockingObject?: ModuleObject;
+  blockingObject?: GameObject;
+  lastBlockingObject?: GameObject;
   /** Seconds of continuous contact — formerly collisionTimer increments from CM. */
   collisionTime: number;
   lastCommitFrame: number;

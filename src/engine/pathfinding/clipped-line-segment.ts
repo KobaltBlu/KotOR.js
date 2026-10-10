@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { Area } from "@engine/module/Area";
 import type { WalkmeshEdge } from "@engine/odyssey/WalkmeshEdge";
 import type { OdysseyFace3 } from "@engine/render/three/odyssey";
 
@@ -30,7 +30,7 @@ const _nudge = new THREE.Vector3();
 const TRANSITION_NUDGE_DISTANCES = [0.05, 0.15, 0.35];
 
 function findWalkFaceAt(
-  area: ModuleArea,
+  area: Area,
   point: THREE.Vector3
 ): OdysseyFace3 | undefined {
   const faces = area.walkFaces;
@@ -48,7 +48,7 @@ function findWalkFaceAt(
  * source room's triangle at the shared seam.
  */
 function findWalkFaceBeyondTransition(
-  area: ModuleArea,
+  area: Area,
   point: THREE.Vector3,
   sourceFace: OdysseyFace3
 ): OdysseyFace3 | undefined {
@@ -133,7 +133,7 @@ function adjacentForSide(
  * When walkmesh is empty, ok=true (caller falls back to samples).
  */
 export function clippedLineSegmentWalkable(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   origin: THREE.Vector3,
   dest: THREE.Vector3,
   options: { maxHeightDelta?: number } = {}

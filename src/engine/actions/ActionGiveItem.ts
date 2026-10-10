@@ -11,12 +11,12 @@ import {
 } from "@engine/actions/item-transfer";
 import { getUseRange, isInUseRange, queueMoveIntoUseRange } from "@engine/actions/use-range";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleItem } from "@engine/module/ModuleItem";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Item } from "@engine/module/Item";
+import type { GameObject } from "@engine/module/GameObject";
 
 import { isCreature } from "@engine/module/guards/isCreature";
 import { isItem } from "@engine/module/guards/isItem";
-import { isObject } from "@engine/module/guards/isObject";
+import { isGameObject } from "@engine/module/guards/isGameObject";
 
 /**
  * ActionGiveItem — give-item action.
@@ -47,8 +47,8 @@ export class ActionGiveItem extends Action {
   }
 
   update(_delta: number = 0): ActionStatus {
-    const oItem = this.getParameter<ModuleItem>(0);
-    const oGiveTo = this.getParameter<ModuleObject>(1);
+    const oItem = this.getParameter<Item>(0);
+    const oGiveTo = this.getParameter<GameObject>(1);
     const nCountRaw = this.getParameter<number>(2);
     const nCount = typeof nCountRaw === "number" ? nCountRaw | 0 : -1;
     const bDisplayStatus = (this.getParameter<number>(3) | 0) !== 0;
@@ -56,7 +56,7 @@ export class ActionGiveItem extends Action {
     if (!isItem(oItem)) {
       return ActionStatus.ERROR;
     }
-    if (!isObject(oGiveTo)) {
+    if (!isGameObject(oGiveTo)) {
       return ActionStatus.ERROR;
     }
 

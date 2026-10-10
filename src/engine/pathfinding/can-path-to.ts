@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { getPathPersonalSpace } from "@engine/combat/attack-range";
 import {
   buildWalkPath,
@@ -18,7 +18,7 @@ import {
  * True if creature can path to dest (buildWalkPath Ready or Incomplete).
  */
 export function canPathToPoint(
-  creature: ModuleCreature,
+  creature: Creature,
   dest: THREE.Vector3
 ): boolean {
   const area = creature.area;

@@ -1,5 +1,5 @@
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModulePlaceable } from "@engine/module/ModulePlaceable";
+import type { Creature } from "@engine/module/Creature";
+import type { Placeable } from "@engine/module/Placeable";
 
 import { isPlaceable } from "@engine/module/guards/isPlaceable";
 
@@ -14,18 +14,18 @@ export class CorpseCache {
   /** SetDesiredFadeState eviction fade length (seconds). */
   static readonly EVICT_FADE_SEC = 1.0;
 
-  private shells: ModuleCreature[] = [];
+  private shells: Creature[] = [];
 
   get size(): number {
     return this.shells.length;
   }
 
   /** Live KeepCorpse shells for selection / raycast (not saved). */
-  get retainedShells(): readonly ModuleCreature[] {
+  get retainedShells(): readonly Creature[] {
     return this.shells;
   }
 
-  has(creature: ModuleCreature): boolean {
+  has(creature: Creature): boolean {
     return this.shells.indexOf(creature) >= 0;
   }
 
@@ -38,7 +38,7 @@ export class CorpseCache {
     return false;
   }
 
-  add(creature: ModuleCreature){
+  add(creature: Creature){
     if(!creature || this.has(creature)) return;
     while(this.shells.length >= CorpseCache.CAPACITY){
       const oldest = this.shells.shift();
@@ -47,20 +47,20 @@ export class CorpseCache {
     this.shells.push(creature);
   }
 
-  remove(creature: ModuleCreature){
+  remove(creature: Creature){
     const idx = this.shells.indexOf(creature);
     if(idx >= 0) this.shells.splice(idx, 1);
   }
 
   /** Reveal linked bag and fade/delete the retained shell (cache overflow). */
-  evict(creature: ModuleCreature){
+  evict(creature: Creature){
     this.remove(creature);
     const bag = creature.getBodyBagPlaceable?.();
     if(
       bag &&
       isPlaceable(bag)
     ){
-      (bag as ModulePlaceable).setBodyBagVisible(true);
+      (bag as Placeable).setBodyBagVisible(true);
     }
     creature.beginRetainedCorpseFadeOut?.(CorpseCache.EVICT_FADE_SEC);
   }

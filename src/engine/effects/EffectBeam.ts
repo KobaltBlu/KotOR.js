@@ -5,7 +5,7 @@ import { GameEffectType } from "@core/enums/effects/GameEffectType";
 import { MDLLoader } from "@engine/loaders";
 import { OdysseyModel } from "@engine/odyssey";
 import { OdysseyModel3D, OdysseyObject3D } from "@engine/render/three/odyssey";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import type * as THREE from "three";
 
 /**
@@ -141,14 +141,14 @@ export class EffectBeam extends GameEffect {
    * BODY_NODE_HAND (0) → handconjure per Bioware note on the constant.
    */
   private resolveBodyNode(
-    obj: ModuleObject,
+    obj: GameObject,
     bodyNode: number
   ): OdysseyObject3D | THREE.Object3D | undefined {
     const model = obj?.model;
     if(!(model instanceof OdysseyModel3D)) return undefined;
 
     const byName = (name: string) =>
-      (obj as ModuleObject).getModelNodeByName?.(name) ||
+      (obj as GameObject).getModelNodeByName?.(name) ||
       (model as any)[name] ||
       model.nodes?.get(name);
 

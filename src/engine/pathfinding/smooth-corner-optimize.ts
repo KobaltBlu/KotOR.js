@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Area } from "@engine/module/Area";
+import type { GameObject } from "@engine/module/GameObject";
 import { PathPoint } from "@engine/pathfinding/PathPoint";
 import { hasClearWalkLine } from "@engine/pathfinding/walk-line-clear";
 import { SMOOTH_SELECTION_BUDGET_MS } from "@engine/pathfinding/smooth-select-nodes";
@@ -44,9 +44,9 @@ export type SmoothCornerOptions = {
  * Corner-cut a path point list (2D xy). Sync convenience wrapper.
  */
 export function smoothCornerOptimize(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   points: PathPoint[],
-  owner?: ModuleObject
+  owner?: GameObject
 ): PathPoint[] {
   return smoothCornerOptimizeRestartable(area, points, owner).points;
 }
@@ -55,9 +55,9 @@ export function smoothCornerOptimize(
  * Budgeted SmoothCornerOptimize — may return mid-loop with resume.
  */
 export function smoothCornerOptimizeRestartable(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   points: PathPoint[],
-  owner?: ModuleObject,
+  owner?: GameObject,
   options: SmoothCornerOptions = {}
 ): SmoothCornerResult {
   if(!area || points.length < 3){
@@ -145,11 +145,11 @@ type CornerChord = { p0: THREE.Vector3; p1: THREE.Vector3 };
  * find best corner chord: chord across corner B of polyline A-B-C.
  */
 export function findBestCornerChord(
-  area: ModuleArea,
+  area: Area,
   a: THREE.Vector3,
   b: THREE.Vector3,
   c: THREE.Vector3,
-  owner?: ModuleObject
+  owner?: GameObject
 ): CornerChord | undefined {
   const lenAB = Math.hypot(b.x - a.x, b.y - a.y);
   const lenBC = Math.hypot(c.x - b.x, c.y - b.y);

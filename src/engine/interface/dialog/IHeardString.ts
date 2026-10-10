@@ -1,5 +1,5 @@
 import type { TalkVolume } from "@engine/enums/engine/TalkVolume";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 
 /**
  * IHeardString interface.
@@ -11,7 +11,7 @@ import type { ModuleObject } from "@engine/module/ModuleObject";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export interface IHeardString {
-  speaker: ModuleObject;
+  speaker: GameObject;
   string: string;
   volume: TalkVolume;
 }

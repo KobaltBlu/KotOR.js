@@ -13,7 +13,7 @@ export const MOVEMENT_OWNERSHIP_INVENTORY = [
   { path: "ActionDrive / drivePrepareDestination", dest: "DriveMovementPolicy.prepare" },
   { path: "tickCreatureDrive", dest: "DriveMovementPolicy.resolve → MovementCommitter" },
   { path: "tickCreatureWalk", dest: "Walk policy → tickCreatureDrive(Walk) → commit" },
-  { path: "ModuleCreature player RK4", dest: "PlayerControlPolicy → commit" },
+  { path: "Creature player RK4", dest: "PlayerControlPolicy → commit" },
   { path: "party-follow-sm direct step", dest: "FollowLeader → MovementCommitter" },
   { path: "ActionFollowLeader.softTeleportForward", dest: "teleportObject placement" },
   { path: "tickForcePushLoco", dest: "ForcePush/Jump source → tickCreatureDrive → commit" },
@@ -21,7 +21,7 @@ export const MOVEMENT_OWNERSHIP_INVENTORY = [
   { path: "party-soft-separate", dest: "SoftSeparate teleportObject" },
   { path: "nudge-friendlies", dest: "FriendNudge teleportObject" },
   { path: "ActionJumpToPoint.applyLocalJump", dest: "applyLocalTeleport" },
-  { path: "ModuleObject.setPosition", dest: "teleportObject (no slide/OnBlocked)" },
+  { path: "GameObject.setPosition", dest: "teleportObject (no slide/OnBlocked)" },
   { path: "tickExternalForceStep", dest: "ExternalForcePolicy → MovementCommitter" },
   { path: "settleWalkableAttachment / spawn settle", dest: "findWalkableAttachmentAt + applyWalkableAttachment" },
 ] as const;

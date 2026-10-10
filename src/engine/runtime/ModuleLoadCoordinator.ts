@@ -118,7 +118,7 @@ export class ModuleLoadCoordinator {
       await GameState.MenuManager.LoadInGameMenus();
       
       GameState.VideoEffectManager.SetVideoEffect(-1);
-      GameState.ModuleObjectManager.playerSelectableObjects = [];
+      GameState.GameObjectManager.playerSelectableObjects = [];
       GameState.VideoManager.queueMovie(sMovie1, true);
       GameState.VideoManager.queueMovie(sMovie2, true);
       GameState.VideoManager.queueMovie(sMovie3, true);
@@ -201,7 +201,7 @@ export class ModuleLoadCoordinator {
 
         GameState.renderer.setClearColor( new THREE.Color(GameState.module.area.sun.fogColor) );
         
-        console.log('ModuleArea.initAreaObjects');
+        console.log('Area.initAreaObjects');
         // minigame areas: no party InGame HUD (swoop/turret).
         if(GameState.module.area.miniGame){
           EngineModeController.SetEngineMode(EngineMode.MINIGAME);
@@ -217,7 +217,7 @@ export class ModuleLoadCoordinator {
           }
         }
         await GameState.module.area.initAreaObjects(runSpawnScripts);
-        console.log('ModuleArea: ready to play');
+        console.log('Area: ready to play');
         GameState.module.readyToProcessEvents = true;
         // Snap camera + VIS/frustum before load UI hides (first world frame ready)
         GameState.module.area.primePostLoadReveal();
@@ -261,7 +261,7 @@ export class ModuleLoadCoordinator {
 
     GameState.scene.visible = false;
     EngineModeController.SetEngineMode(EngineMode.LOADING);
-    GameState.ModuleObjectManager.Reset();
+    GameState.GameObjectManager.Reset();
     GameState.renderer.setClearColor(new THREE.Color(0, 0, 0));
     GameState.AlphaTest = 0;
     GameState.holdWorldFadeInForDialog = false;

@@ -7,7 +7,7 @@ import { NWScriptInstance } from "@engine/nwscript/NWScriptInstance";
 import { OdysseyTexture } from "@engine/render/three/odyssey/OdysseyTexture";
 import { MapMode } from "@core/enums/engine/MapMode";
 import { Mouse } from "@engine/controls";
-import type { ModuleWaypoint } from "@engine/module/ModuleWaypoint";
+import type { Waypoint } from "@engine/module/Waypoint";
 import { CExoLocString } from "@core/resource/CExoLocString";
 
 /**
@@ -53,7 +53,7 @@ export class MenuMap extends GameMenu {
       this.LBL_MapNote.setText('');
       this.LBL_Map.addEventListener('click', (e) => {
         e.stopPropagation();
-        const mapNote: ModuleWaypoint = this.miniMap.onClick();
+        const mapNote: Waypoint = this.miniMap.onClick();
         if(mapNote && mapNote.mapNote instanceof CExoLocString){
           this.LBL_MapNote.setText(mapNote.mapNote.getValue())
         }

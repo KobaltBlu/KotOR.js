@@ -1,6 +1,6 @@
 import { GameEffect } from "@engine/effects/GameEffect";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { rebalanceHasteSlow } from "@engine/effects/haste-slow";
 import { isCreature } from "@engine/module/guards/isCreature";
 
@@ -22,14 +22,14 @@ export class EffectHaste extends GameEffect {
       return;
     super.onApply();
     if(isCreature(this.object)){
-      rebalanceHasteSlow(this.object as ModuleCreature, this);
+      rebalanceHasteSlow(this.object as Creature, this);
     }
   }
 
   onRemove(){
     super.onRemove();
     if(isCreature(this.object)){
-      rebalanceHasteSlow(this.object as ModuleCreature, this);
+      rebalanceHasteSlow(this.object as Creature, this);
     }
   }
 }

@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Area } from "@engine/module/Area";
+import type { Creature } from "@engine/module/Creature";
 import { getPathPersonalSpace } from "@engine/combat/attack-range";
 import { GameState } from "@engine/runtime/GameState";
 import { nudgeFriendlyCreatures } from "@engine/pathfinding/nudge-friendlies";
@@ -55,10 +55,10 @@ function lineOk(code: WalkLineHitCode): boolean {
  * Returns a cloned target point (does not move the owner).
  */
 export function drivePrepareDestination(
-  area: ModuleArea,
+  area: Area,
   origin: THREE.Vector3,
   ideal: THREE.Vector3,
-  creature: ModuleCreature,
+  creature: Creature,
   stepLen?: number
 ): THREE.Vector3 {
   const creatures = testCreatureMovement(area, origin, ideal, {
@@ -70,7 +70,7 @@ export function drivePrepareDestination(
       area.creatures?.find((c) => c.id === creatures.hit!.creatureId) ??
       GameState.PartyManager?.party?.find((c) => c.id === creatures.hit!.creatureId);
     if(isCreature(blocker)){
-      if(!nudgeFriendlyCreatures(creature, blocker as ModuleCreature, ideal, origin)){
+      if(!nudgeFriendlyCreatures(creature, blocker as Creature, ideal, origin)){
         return origin.clone();
       }
     }else{
@@ -196,10 +196,10 @@ export function drivePrepareDestination(
 export const driveResolveMoveTarget = drivePrepareDestination;
 
 function clipWalkablePoint(
-  area: ModuleArea,
+  area: Area,
   origin: THREE.Vector3,
   ideal: THREE.Vector3,
-  creature: ModuleCreature
+  creature: Creature
 ): THREE.Vector3 {
   const perspace = getPathPersonalSpace(creature);
   const hit = testStaticMovement(area, origin, ideal, {
@@ -259,7 +259,7 @@ function clipWalkablePoint(
  * Does not mutate creature position — returns MovementResult for committer.
  */
 export function resolveDriveStep(
-  creature: ModuleCreature,
+  creature: Creature,
   dest: THREE.Vector3,
   running: boolean,
   delta: number,
@@ -414,7 +414,7 @@ export function resolveDriveStep(
  * @param sourceOverride When Walk/ForcePush call this helper, stamp their source.
  */
 export function tickCreatureDrive(
-  creature: ModuleCreature,
+  creature: Creature,
   dest: THREE.Vector3,
   running: boolean,
   delta: number,

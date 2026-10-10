@@ -4,7 +4,7 @@ import { ActionStatus } from "@core/enums/actions/ActionStatus";
 import { ActionType } from "@core/enums/actions/ActionType";
 import { ModuleTriggerType } from "@core/enums/module/ModuleTriggerType";
 import { ResourceLoader } from "@core/loaders/ResourceLoader";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import { GFFObject } from "@core/resource/GFFObject";
 import { ResourceTypes } from "@core/resource/ResourceTypes";
 import { Action } from "@engine/actions/Action";
@@ -46,7 +46,7 @@ export class ActionRecoverMine extends Action {
 
   update(delta?: number): ActionStatus {
 
-    this.target = this.getParameter<ModuleObject>(0);
+    this.target = this.getParameter<GameObject>(0);
     if(!this.target){
       GameState.GuiTimingBarManager?.stopFor?.(this.owner);
       return ActionStatus.FAILED;
@@ -110,7 +110,7 @@ export class ActionRecoverMine extends Action {
     if(resRef){
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utp'], resRef);
       if(buffer){
-        const item = new GameState.Module.ModuleArea.ModuleItem(new GFFObject(buffer));
+        const item = new GameState.Module.Area.Item(new GFFObject(buffer));
         this.owner.addItem(item);
       }
     }

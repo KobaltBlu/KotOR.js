@@ -1,5 +1,5 @@
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleItem } from "@engine/module/ModuleItem";
+import type { Item } from "@engine/module/Item";
 
 const STR_EQUIPPED = 32346;
 
@@ -13,11 +13,11 @@ const STR_EQUIPPED = 32346;
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class GUIItemEquipped {
-  node: ModuleItem;
+  node: Item;
   equipped: boolean = true;
   /** in-game item entry canUse: 1 = currently equipped. */
   equipCanUse: number = 1;
-  constructor(node: ModuleItem){
+  constructor(node: Item){
     this.node = node;
   }
 

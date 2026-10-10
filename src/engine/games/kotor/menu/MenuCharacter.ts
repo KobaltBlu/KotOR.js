@@ -2,7 +2,7 @@ import { GameState } from "@engine/runtime/GameState";
 import { GameMenu, LBL_3DView } from "@engine/gui";
 import type { GUILabel, GUIButton, GUISlider, GUIControl } from "@engine/gui";
 import { MDLLoader, TextureLoader } from "@engine/loaders";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { OdysseyModel3D } from "@engine/render/three/odyssey";
 import * as THREE from "three";
 import { OdysseyModel } from "@engine/odyssey";
@@ -220,7 +220,7 @@ export class MenuCharacter extends GameMenu {
   /**
    * AttachModel — camerahook + world Z = getCameraHeight.
    */
-  attachPortraitCamera(creature?: ModuleCreature) {
+  attachPortraitCamera(creature?: Creature) {
     if(!this._3dView || !this._3dViewModel?.camerahook) return;
     const headHeight = creature?.getCameraHeight?.() ?? 1.5;
     this._3dView.attachCameraToHook(
@@ -258,7 +258,7 @@ export class MenuCharacter extends GameMenu {
     }
   }
 
-  updateCharacterStats(character: ModuleCreature) {
+  updateCharacterStats(character: Creature) {
     if(!character) return;
     this.LBL_CLASS1?.hide();
     this.LBL_LEVEL1?.hide();
@@ -353,7 +353,7 @@ export class MenuCharacter extends GameMenu {
    * SetStats 3D path — copy appearance onto a dedicated
    * client creature, identity pose + Setup3DScene (never the live party model).
    */
-  updateCharacterPortrait( creature: ModuleCreature ){
+  updateCharacterPortrait( creature: Creature ){
     if(!creature || !this._3dView) return;
 
     // SetCurValue(sld_align, 100 - goodEvil)
@@ -365,12 +365,12 @@ export class MenuCharacter extends GameMenu {
     this.attachPortraitCamera(creature);
     this.playCharRecAlignmentAnim(goodEvil);
 
-    const objectCreature = new GameState.Module.ModuleArea.ModuleCreature();
+    const objectCreature = new GameState.Module.Area.Creature();
     objectCreature.setAppearance(creature.appearance);
     objectCreature.goodEvil = goodEvil;
     objectCreature.setContext(this._3dView);
     if (creature.equipment?.ARMOR) {
-      objectCreature.equipment.ARMOR = new GameState.Module.ModuleArea.ModuleItem(creature.equipment.ARMOR.template);
+      objectCreature.equipment.ARMOR = new GameState.Module.Area.Item(creature.equipment.ARMOR.template);
     }
 
     void objectCreature.loadModel().then( (model: OdysseyModel3D) => {

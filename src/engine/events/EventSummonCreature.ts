@@ -2,8 +2,8 @@ import { GameEventType } from "@core/enums/events/GameEventType";
 import { GFFDataType } from "@core/enums/resource/GFFDataType";
 import { GameState } from "@engine/runtime/GameState";
 import { GameEvent } from "@engine/events/GameEvent";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { Creature } from "@engine/module/Creature";
+import type { Area } from "@engine/module/Area";
 import { GFFField } from "@core/resource/GFFField";
 import { GFFStruct } from "@core/resource/GFFStruct";
 import type { OdysseyModel3D } from "@engine/render/three/odyssey";
@@ -37,13 +37,13 @@ export class EventSummonCreature extends GameEvent {
   }
 
   execute(){
-    const creature = GameState.ModuleObjectManager.GetObjectById(this.summonId) as ModuleCreature;
+    const creature = GameState.GameObjectManager.GetObjectById(this.summonId) as Creature;
     if(!isCreature(creature)){
       return;
     }
 
     creature.position.copy(this.position);
-    const area = (this.getObject() as ModuleArea)
+    const area = (this.getObject() as Area)
       || creature.area
       || GameState.module?.area;
     if(!area) return;
@@ -51,7 +51,7 @@ export class EventSummonCreature extends GameEvent {
     area.attachObject(creature);
     void creature.loadModel?.().then((model: OdysseyModel3D) => {
       if(!model) return;
-      model.userData.moduleObject = creature;
+      model.userData.gameObject = creature;
       model.hasCollision = true;
       model.name = creature.getTag?.() || model.name;
       GameState.group?.creatures?.add(creature.container);

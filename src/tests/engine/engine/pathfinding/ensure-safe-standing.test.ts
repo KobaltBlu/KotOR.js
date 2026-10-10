@@ -26,7 +26,7 @@ jest.mock("@engine/combat/attack-range", () => ({
 }));
 
 import { ensureSafeStandingPosition } from "@engine/pathfinding/ensure-safe-standing";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 
 describe("ensureSafeStandingPosition", () => {
   beforeEach(() => {
@@ -40,7 +40,7 @@ describe("ensureSafeStandingPosition", () => {
     const creature = {
       position: new THREE.Vector3(10, 10, 0),
       area: {},
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
 
     expect(ensureSafeStandingPosition(creature)).toBe(false);
     expect(mockFindOpenWalkLocation).not.toHaveBeenCalled();
@@ -58,7 +58,7 @@ describe("ensureSafeStandingPosition", () => {
     const creature = {
       position: new THREE.Vector3(10, 10.75, 0),
       area: {},
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
 
     expect(ensureSafeStandingPosition(creature)).toBe(true);
     expect(mockFindOpenWalkLocation).toHaveBeenCalledWith(
@@ -86,7 +86,7 @@ describe("ensureSafeStandingPosition", () => {
     const creature = {
       position: new THREE.Vector3(10, 10, 0),
       area: {},
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
 
     expect(ensureSafeStandingPosition(creature)).toBe(false);
     expect(mockTeleportObject).not.toHaveBeenCalled();

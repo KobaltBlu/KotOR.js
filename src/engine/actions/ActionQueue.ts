@@ -1,6 +1,6 @@
 import { ActionStatus } from "@core/enums/actions/ActionStatus";
 import { ActionType } from "@core/enums/actions/ActionType";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import type { Action } from "@engine/actions/Action";
 
 /**
@@ -40,11 +40,11 @@ export class ActionQueue extends Array {
   /**
    * set the owner object of the queue
    *
-   * @param owner - the owner ModuleObject
+   * @param owner - the owner GameObject
    * @returns void
    *
    */
-  setOwner( owner: ModuleObject ){
+  setOwner( owner: GameObject ){
     this.owner = owner;
   }
 

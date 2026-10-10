@@ -1,4 +1,4 @@
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import { OdysseyModelAnimation } from "@engine/odyssey";
 import { OdysseyModel3D } from "@engine/render/three/odyssey";
 
@@ -16,6 +16,6 @@ export interface IDLGStuntActor {
   participant: string;
   resref: string;
   model?: OdysseyModel3D;
-  moduleObject?: ModuleObject;
+  gameObject?: GameObject;
   animations?: OdysseyModelAnimation[];
 }

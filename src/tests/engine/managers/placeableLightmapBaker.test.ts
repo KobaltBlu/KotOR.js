@@ -4,7 +4,7 @@ import { OdysseyLightmapBaker } from '@engine/managers/OdysseyLightmapBaker';
 import { PlaceableLightmapBaker } from '@engine/managers/PlaceableLightmapBaker';
 import type { LightManager } from '@engine/managers/LightManager';
 import type { OdysseyLight3D } from '@engine/render/three/odyssey/OdysseyLight3D';
-import type { ModulePlaceable } from '@engine/module/ModulePlaceable';
+import type { Placeable } from '@engine/module/Placeable';
 import type { OdysseyModel3D } from '@engine/render/three/odyssey/OdysseyModel3D';
 import { OdysseyModelControllerType } from '@core/enums/odyssey/OdysseyModelControllerType';
 import { ModulePlaceableAnimState } from '@core/enums/module/ModulePlaceableAnimState';
@@ -225,7 +225,7 @@ describe('OdysseyLightmapBaker', () => {
       destroyed: false,
       animState: ModulePlaceableAnimState.DEFAULT,
       animStateInfo: { currentAnimState: ModulePlaceableAnimState.DEFAULT },
-    } as unknown as ModulePlaceable;
+    } as unknown as Placeable;
 
     PlaceableLightmapBaker.bakePlaceable(plc, mockLightManager({
       ambientColor: new THREE.Color(0.2, 0.2, 0.2),
@@ -247,7 +247,7 @@ describe('OdysseyLightmapBaker', () => {
       destroyed: false,
       animState: ModulePlaceableAnimState.DEFAULT,
       animStateInfo: { currentAnimState: ModulePlaceableAnimState.DEFAULT },
-    } as unknown as ModulePlaceable;
+    } as unknown as Placeable;
 
     PlaceableLightmapBaker.bakePlaceable(plc, lm);
     expect(Object.prototype.hasOwnProperty.call(lidMat.defines, 'USE_LIGHTMAP')).toBe(false);

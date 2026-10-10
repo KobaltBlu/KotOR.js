@@ -1,9 +1,9 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleDoor } from "@engine/module/ModuleDoor";
+import type { Area } from "@engine/module/Area";
+import type { Door } from "@engine/module/Door";
 import type { OdysseyFace3 } from "@engine/render/three/odyssey/OdysseyFace3";
 import { BitWise } from "@core/utility/BitWise";
-import { ModuleObjectType } from "@core/enums/module/ModuleObjectType";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
 import { GameState } from "@engine/runtime/GameState";
 
 const _dir = new THREE.Vector3();
@@ -39,7 +39,7 @@ function collectLosBlockingFaces(faces: OdysseyFace3[] | undefined): OdysseyFace
  * @returns true when the segment is occluded
  */
 export function sceneHitCheckSegment(
-  area: ModuleArea | undefined | null,
+  area: Area | undefined | null,
   from: THREE.Vector3,
   to: THREE.Vector3,
   raycaster: THREE.Raycaster = GameState.raycaster,
@@ -81,11 +81,11 @@ export function sceneHitCheckSegment(
       if(!wok?.faces?.length){
         continue;
       }
-      const door = wok.moduleObject;
+      const door = wok.gameObject;
       if(
         door &&
-        BitWise.InstanceOf(door.objectType, ModuleObjectType.ModuleDoor) &&
-        (door as ModuleDoor).isOpen()
+        BitWise.InstanceOf(door.objectType, GameObjectType.Door) &&
+        (door as Door).isOpen()
       ){
         continue;
       }

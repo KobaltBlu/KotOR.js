@@ -19,9 +19,9 @@ jest.mock("@engine/pathfinding/build-walk-path", () => ({
 }));
 
 import { canPathToPoint } from "@engine/pathfinding/can-path-to";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 
-function makeCreature(): ModuleCreature {
+function makeCreature(): Creature {
   return {
     id: 1,
     position: new THREE.Vector3(0, 0, 0),
@@ -29,7 +29,7 @@ function makeCreature(): ModuleCreature {
       isPointWalkable: () => true,
       getNearestWalkablePoint: (p: THREE.Vector3) => p.clone(),
     },
-  } as unknown as ModuleCreature;
+  } as unknown as Creature;
 }
 
 describe("canPathToPoint (G7)", () => {

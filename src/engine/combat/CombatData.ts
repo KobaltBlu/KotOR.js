@@ -1,5 +1,5 @@
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 import type { TalentFeat, TalentSpell } from "@engine/talents";
 import { ICombatAction } from "@engine/interface/combat/ICombatAction";
 import { AttackResult } from "@core/enums/combat/AttackResult";
@@ -18,13 +18,13 @@ import { isCreature } from "@engine/module/guards/isCreature";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class CombatData {
-  object: ModuleObject;
+  object: GameObject;
   
-  lastAttemptedAttackTarget: ModuleObject;
-  lastAttackTarget: ModuleObject;
-  lastSpellTarget: ModuleObject;
-  lastAttemptedSpellTarget: ModuleObject;
-  lastSpellAttacker: ModuleObject;
+  lastAttemptedAttackTarget: GameObject;
+  lastAttackTarget: GameObject;
+  lastSpellTarget: GameObject;
+  lastAttemptedSpellTarget: GameObject;
+  lastSpellAttacker: GameObject;
   lastAttackAction: ActionType;
 
   lastCombatFeatUsed: TalentFeat;
@@ -32,19 +32,19 @@ export class CombatData {
   lastAttackResult: AttackResult;
   combatQueue: ICombatAction[] = [];
   combatAction: ICombatAction;
-  lastAttackObject: ModuleObject;
+  lastAttackObject: GameObject;
   lastForcePowerSuccess: boolean;
   initiative: number;
-  lastDamager: ModuleObject;
-  lastAttacker: ModuleObject;
+  lastDamager: GameObject;
+  lastAttacker: GameObject;
   /**
    * module object.last_hostile_actor_id — set by assign hostile actor on
    * attacked / damage / harmful spell-at. Used by get hostile actor (not
    * lastAttackTarget).
    */
-  lastHostileActor: ModuleObject;
+  lastHostileActor: GameObject;
   /** Last weapon used in an attack (GetLastWeaponUsed). */
-  lastWeaponUsed: ModuleObject;
+  lastWeaponUsed: GameObject;
   /** Raw combat-feat id from last attack; GetLastAttackType maps Flurry/Rapid Shot. */
   lastAttackType: number = 0;
   /** Raw CombatMode from last attack; GetLastAttackMode maps to COMBAT_MODE_*. */
@@ -61,7 +61,7 @@ export class CombatData {
   combatActionTimer: number;
   combatState: boolean;
 
-  constructor(object: ModuleObject){
+  constructor(object: GameObject){
     this.object = object;
   }
 
@@ -85,7 +85,7 @@ export class CombatData {
     this.lastAttemptedSpellTarget = undefined;
   }
 
-  clearTarget(target: ModuleObject){
+  clearTarget(target: GameObject){
     this.lastAttackTarget = undefined;
     this.object.combatRound.clearActionsByTarget(target);
   }
@@ -94,7 +94,7 @@ export class CombatData {
    * AddAttackActions / AddAttackAction / queue cutscene attack —
    * sticky attempted target: set only when currently INVALID (unset).
    */
-  setAttemptedAttackTargetIfInvalid(target: ModuleObject): void {
+  setAttemptedAttackTargetIfInvalid(target: GameObject): void {
     if(!target) return;
     if(!this.lastAttemptedAttackTarget){
       this.lastAttemptedAttackTarget = target;
@@ -103,7 +103,7 @@ export class CombatData {
 
   getEquippedWeaponType(){
     if(isCreature(this.object)){
-      const owner: ModuleCreature = this.object as any;
+      const owner: Creature = this.object as any;
       let lWeapon = owner.equipment.LEFTHAND;
       let rWeapon = owner.equipment.RIGHTHAND;
       let claw1 = owner.equipment.CLAW1;

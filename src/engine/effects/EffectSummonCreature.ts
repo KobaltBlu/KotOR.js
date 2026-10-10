@@ -4,8 +4,8 @@ import { ResourceLoader } from "@engine/loaders";
 import { GFFObject } from "@core/resource/GFFObject";
 import { ResourceTypes } from "@core/resource/ResourceTypes";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { Creature } from "@engine/module/Creature";
+import type { Area } from "@engine/module/Area";
 import * as THREE from "three";
 import { findOpenWalkLocation } from "@engine/pathfinding/open-walk-location";
 
@@ -35,10 +35,10 @@ export class EffectSummonCreature extends GameEffect {
       return;
     }
 
-    const owner = this.object as ModuleCreature;
-    let area = this.getObject(0) as ModuleArea | undefined;
+    const owner = this.object as Creature;
+    let area = this.getObject(0) as Area | undefined;
     if(!isArea(area)){
-      area = (owner.area || GameState.module.area) as ModuleArea;
+      area = (owner.area || GameState.module.area) as Area;
       if(area) this.setObject(0, area as any);
     }
     if(!area) return;
@@ -78,14 +78,14 @@ export class EffectSummonCreature extends GameEffect {
 
     super.onApply();
 
-    const creature = new GameState.Module.ModuleArea.ModuleCreature(new GFFObject(buffer));
+    const creature = new GameState.Module.Area.Creature(new GFFObject(buffer));
     creature.load();
     creature.clearAllActions?.();
     creature.position.set(x, y, z);
     if(isCreature(owner)){
       creature.setFacing?.(owner.getFacing?.() ?? 0, true);
     }
-    GameState.ModuleObjectManager.RegisterObject(creature);
+    GameState.GameObjectManager.RegisterObject(creature);
     this.setObject(1, creature);
 
     const vfxId = this.getInt(0);
@@ -111,7 +111,7 @@ export class EffectSummonCreature extends GameEffect {
 
   onRemove(){
     super.onRemove();
-    const summoned = this.getObject(1) as ModuleCreature | undefined;
+    const summoned = this.getObject(1) as Creature | undefined;
     if(!isCreature(summoned)) return;
     // UnsummonMyself — destroy summoned creature
     try{

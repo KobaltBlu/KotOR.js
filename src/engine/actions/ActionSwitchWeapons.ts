@@ -4,8 +4,8 @@ import { ActionType } from "@core/enums/actions/ActionType";
 import { EngineMode } from "@engine/enums/engine/EngineMode";
 import { ModuleCreatureArmorSlot } from "@core/enums/module/ModuleCreatureArmorSlot";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 
 import { isCreature } from "@engine/module/guards/isCreature";
 
@@ -27,7 +27,7 @@ export class ActionSwitchWeapons extends Action {
   }
 
   /** Clear trailing queue actions; current head stays until process shifts it. */
-  private clearTrailingActions(owner: ModuleCreature){
+  private clearTrailingActions(owner: Creature){
     const queue = owner.actionQueue;
     while(queue.length > 1){
       const removed = queue.pop() as Action | undefined;
@@ -80,7 +80,7 @@ export class ActionSwitchWeapons extends Action {
     }
 
     // : if party PC in combat with attack target, re-queue attack
-    const attackTarget = this.owner.combatData?.lastAttemptedAttackTarget as ModuleObject | undefined;
+    const attackTarget = this.owner.combatData?.lastAttemptedAttackTarget as GameObject | undefined;
     if(
       this.owner.combatData?.combatState &&
       isCreature(attackTarget)

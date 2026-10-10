@@ -1,5 +1,5 @@
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import {
   beginLevelUpDraft,
   validateLevelUpDraft,
@@ -13,13 +13,13 @@ import {
 import { CharGenAttribute } from "@core/enums/chargen/CharGenAttribute";
 import { TalentFeat } from "@engine/talents/TalentFeat";
 import { TalentSpell } from "@engine/talents/TalentSpell";
-import { ModuleObjectScript } from "@core/enums/module/ModuleObjectScript";
+import { ScriptHook } from "@core/enums/module/ScriptHook";
 
 /**
  * Session state for the in-game level-up wizard (GUI).
  */
 export class LevelUpManager {
-  static creature: ModuleCreature | null = null;
+  static creature: Creature | null = null;
   static draft: LevelUpDraft | null = null;
   static active = false;
   static abilityStepDone = false;
@@ -37,7 +37,7 @@ export class LevelUpManager {
     LevelUpManager.powersStepDone = false;
   }
 
-  static begin(creature: ModuleCreature): boolean {
+  static begin(creature: Creature): boolean {
     if(!creature?.canLevelUp?.()) return false;
     const draft = beginLevelUpDraft(creature, GameState.GameKey);
     if(!draft) return false;
@@ -100,7 +100,7 @@ export class LevelUpManager {
    * ShowLevelUpGUI → ShowLevelUpGUI
    * creates GUI (MAINCG / CharGenMain) hosting LEVELUPPNL.
    */
-  static async showLevelUpGUIAsync(creature?: ModuleCreature): Promise<boolean> {
+  static async showLevelUpGUIAsync(creature?: Creature): Promise<boolean> {
     const target = creature || GameState.PartyManager.getCurrentPlayer?.() || GameState.PartyManager?.party?.[0];
     if(!target || !target.canLevelUp()) return false;
     await GameState.MenuManager.EnsureLevelUpMenus();
@@ -116,7 +116,7 @@ export class LevelUpManager {
     return true;
   }
 
-  static showLevelUpGUI(creature?: ModuleCreature): boolean {
+  static showLevelUpGUI(creature?: Creature): boolean {
     const target = creature || GameState.PartyManager.getCurrentPlayer?.() || GameState.PartyManager?.party?.[0];
     if(!target || !target.canLevelUp()) return false;
     // Fire-and-forget ensure + open; NWScript gets optimistic TRUE if canLevelUp
@@ -127,7 +127,7 @@ export class LevelUpManager {
   /**
    * Apply a pending level draft (LevelUp).
    */
-  public static applyLevelUp(creature: ModuleCreature, draft: LevelUpDraft): boolean {
+  public static applyLevelUp(creature: Creature, draft: LevelUpDraft): boolean {
     if(!draft || !validateLevelUpDraft(draft)){
       return false;
     }
@@ -219,10 +219,10 @@ export class LevelUpManager {
   }
 
   /** Mod_OnPlrLvlUp after successful LevelUp. */
-  public static fireOnPlayerLevelUp(creature: ModuleCreature){
+  public static fireOnPlayerLevelUp(creature: Creature){
     const mod = GameState.module;
     if(!mod) return;
-    const nwscript = mod.scripts?.[ModuleObjectScript.ModuleOnPlayerLevelUp];
+    const nwscript = mod.scripts?.[ScriptHook.ModuleOnPlayerLevelUp];
     if(nwscript){
       nwscript.run(creature);
     }
@@ -232,7 +232,7 @@ export class LevelUpManager {
    * AutoLevelup — build recommended draft and apply.
    * Loops while XP remains sufficient for another level.
    */
-  public static autoLevelUp(creature: ModuleCreature){
+  public static autoLevelUp(creature: Creature){
     let leveled = false;
     while(creature.canLevelUp()){
       const draft = LevelUpManager.buildAutoLevelUpDraft(creature);
@@ -246,7 +246,7 @@ export class LevelUpManager {
   /**
    * Build one auto-level draft for the last class (AutoLevelup).
    */
-  public static buildAutoLevelUpDraft(creature: ModuleCreature): LevelUpDraft | null {
+  public static buildAutoLevelUpDraft(creature: Creature): LevelUpDraft | null {
     const draft = beginLevelUpDraft(creature, GameState.GameKey);
     if(!draft) return null;
     const cls = creature.getMainClass();

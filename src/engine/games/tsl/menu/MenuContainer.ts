@@ -1,6 +1,6 @@
 import { GameState } from "@engine/runtime/GameState";
 import { GUILabel, GUIListBox, GUIButton } from "@engine/gui";
-import { ModulePlaceable } from "@engine/module/ModulePlaceable";
+import { Placeable } from "@engine/module/Placeable";
 import { MenuContainer as K1_MenuContainer } from "@engine/games/kotor/menu/MenuContainer";
 
 /**
@@ -32,7 +32,7 @@ export class MenuContainer extends K1_MenuContainer {
 
   close() {
     super.close();
-    if(this.container instanceof ModulePlaceable){
+    if(this.container instanceof Placeable){
       try {
         this.container.close(GameState.PartyManager.getCurrentPlayer() as any);
       } catch (e: any) {

@@ -1,7 +1,7 @@
 import { WeaponWield } from "@core/enums/combat/WeaponWield";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 
 import { isCreature } from "@engine/module/guards/isCreature";
 
@@ -16,18 +16,18 @@ import { isCreature } from "@engine/module/guards/isCreature";
  * @file combat-dueling.ts
  */
 
-function asCreature(obj: ModuleObject | undefined): ModuleCreature | undefined {
+function asCreature(obj: GameObject | undefined): Creature | undefined {
   if(!obj || !isCreature(obj)){
     return undefined;
   }
-  return obj as ModuleCreature;
+  return obj as Creature;
 }
 
 /**
  * MainHand weapon eligible for choreographed melee:
  * present, not ranged, not stun baton, not wield 8 (unused in K1 baseitems).
  */
-export function isChoreographedMeleeWeapon(creature: ModuleCreature | undefined): boolean {
+export function isChoreographedMeleeWeapon(creature: Creature | undefined): boolean {
   if(!creature) return false;
   const weapon = creature.equipment?.RIGHTHAND;
   if(!weapon) return false;
@@ -44,8 +44,8 @@ export function isChoreographedMeleeWeapon(creature: ModuleCreature | undefined)
  * Used for Desired/MaxAttackRange and ATTACK_DUELING anim preview.
  */
 export function resolveChoreographedState(
-  attacker: ModuleCreature,
-  target: ModuleObject
+  attacker: Creature,
+  target: GameObject
 ): boolean {
   if(!isChoreographedMeleeWeapon(attacker)) return false;
   const targetCreature = asCreature(target);
@@ -57,7 +57,7 @@ export function resolveChoreographedState(
  * appearance MODELTYPE S/L check (IsCreature).
  * Used when selecting ATTACK_DUELING while already engaged.
  */
-export function isOdysseyDuelCreature(creature: ModuleCreature | undefined): boolean {
+export function isOdysseyDuelCreature(creature: Creature | undefined): boolean {
   if(!creature) return false;
   const mt = String(creature.getAppearance?.()?.modeltype ?? creature.creatureAppearance?.modeltype ?? '');
   const c = mt.charAt(0);
@@ -68,9 +68,9 @@ export function isOdysseyDuelCreature(creature: ModuleCreature | undefined): boo
  * Party-leader focus gate: last-spell and attempted-attack must be empty or us.
  */
 function partyLeaderFocusAllowsEngaged(
-  attacker: ModuleCreature,
-  lastSpell: ModuleObject | undefined,
-  attempted: ModuleObject | undefined
+  attacker: Creature,
+  lastSpell: GameObject | undefined,
+  attempted: GameObject | undefined
 ): boolean {
   const spellOk = !lastSpell || lastSpell === attacker;
   const attemptedOk = !attempted || attempted === attacker;
@@ -82,8 +82,8 @@ function partyLeaderFocusAllowsEngaged(
  * whether this attack should sync as an engaged duel round with target.
  */
 export function resolveEngagedState(
-  attacker: ModuleCreature,
-  target: ModuleObject
+  attacker: Creature,
+  target: GameObject
 ): boolean {
   const targetCreature = asCreature(target);
   if(!targetCreature) return false;
@@ -139,8 +139,8 @@ export function resolveEngagedState(
  * who drives the engaged duel (party members always master).
  */
 export function resolveMasterState(
-  attacker: ModuleCreature,
-  target: ModuleObject,
+  attacker: Creature,
+  target: GameObject,
   engaged: boolean
 ): boolean {
   if(!engaged) return false;
@@ -182,8 +182,8 @@ export type DuelRoundFlags = {
  * Resolve all duel flags for one PhysicalAttacks tick (order).
  */
 export function resolveDuelRoundFlags(
-  attacker: ModuleCreature,
-  target: ModuleObject
+  attacker: Creature,
+  target: GameObject
 ): DuelRoundFlags {
   const choreographed = resolveChoreographedState(attacker, target);
   const engaged = resolveEngagedState(attacker, target);

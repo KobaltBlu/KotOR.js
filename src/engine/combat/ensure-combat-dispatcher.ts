@@ -1,6 +1,6 @@
 import { ActionType } from "@core/enums/actions/ActionType";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 
 /**
  * Ensure ActionCombat is on the action queue while the combat-round schedule
@@ -10,7 +10,7 @@ import type { ModuleCreature } from "@engine/module/ModuleCreature";
  *
  * @returns true if a dispatcher was added
  */
-export function ensureCombatDispatcher(creature: ModuleCreature): boolean {
+export function ensureCombatDispatcher(creature: Creature): boolean {
   if(!creature?.combatRound || !creature.actionQueue){
     return false;
   }

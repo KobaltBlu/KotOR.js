@@ -4,10 +4,10 @@ import { ActionParameterType } from "@core/enums/actions/ActionParameterType";
 import { ActionStatus } from "@core/enums/actions/ActionStatus";
 import { ActionType } from "@core/enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "@core/enums/module/ModuleCreatureAnimState";
-import { ModuleObjectConstant } from "@core/enums/module/ModuleObjectConstant";
+import { GameObjectConstant } from "@core/enums/module/GameObjectConstant";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleItem } from "@engine/module/ModuleItem";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Item } from "@engine/module/Item";
+import type { GameObject } from "@engine/module/GameObject";
 import {
   resolveItemCastTiming,
   resolveDroidUtilityGateMs,
@@ -52,7 +52,7 @@ export class ActionItemCastSpell extends Action {
   private throwAnim: ModuleCreatureAnimState | undefined;
   private timing: ItemCastTiming | undefined;
   /** Cached after first resolve — item may leave ObjectList after DecrementUses. */
-  private cachedItem: ModuleItem | undefined;
+  private cachedItem: Item | undefined;
   private cachedSpell: any = undefined;
 
   constructor( actionId: number = -1, groupId: number = -1 ){
@@ -95,7 +95,7 @@ export class ActionItemCastSpell extends Action {
     super.dispose();
   }
 
-  private consumeItemCharges(oItem: ModuleItem){
+  private consumeItemCharges(oItem: Item){
     if(this.chargesConsumed || !oItem) return;
     if(!isCreature(this.owner)) return;
     this.chargesConsumed = true;
@@ -116,8 +116,8 @@ export class ActionItemCastSpell extends Action {
    * Flight / impact wait until {@link releaseGrenadeIntoFlight} at the gate.
    */
   private beginGrenadeHandHold(
-    castTarget: ModuleObject | undefined,
-    oItem: ModuleItem
+    castTarget: GameObject | undefined,
+    oItem: Item
   ){
     if(this.spellCastInstance || this.castStarted || !isCreature(this.owner)){
       return;
@@ -128,7 +128,7 @@ export class ActionItemCastSpell extends Action {
 
     const spellCastInstance = new SpellCastInstance(
       this.owner,
-      castTarget as ModuleObject,
+      castTarget as GameObject,
       this.spell
     );
     const x = this.getParameter<number>(2) || 0;
@@ -180,8 +180,8 @@ export class ActionItemCastSpell extends Action {
    * @returns true when an existing hand-hold instance was released
    */
   private releaseGrenadeIntoFlight(
-    castTarget: ModuleObject | undefined,
-    oItem: ModuleItem
+    castTarget: GameObject | undefined,
+    oItem: Item
   ): boolean {
     const instance = this.spellCastInstance;
     if(!instance?.holdOnHand){
@@ -231,10 +231,10 @@ export class ActionItemCastSpell extends Action {
     return true;
   }
 
-  private startSpellInstance(castTarget: ModuleObject | undefined, oItem?: ModuleItem){
+  private startSpellInstance(castTarget: GameObject | undefined, oItem?: Item){
     // Location-only casts (grenades after non-hostile clear) must not bind the
     // caster as target — that would overwrite the throw point and hide the explosion.
-    const spellCastInstance = new SpellCastInstance(this.owner, castTarget as ModuleObject, this.spell);
+    const spellCastInstance = new SpellCastInstance(this.owner, castTarget as GameObject, this.spell);
     const x = this.getParameter<number>(2) || 0;
     const y = this.getParameter<number>(3) || 0;
     const z = this.getParameter<number>(4) || 0;
@@ -330,7 +330,7 @@ export class ActionItemCastSpell extends Action {
   /**
    * item-cast action switch on baseitems ItemType.
    */
-  private resolveItemCastTiming(oItem: ModuleItem, targetPosition: THREE.Vector3): ItemCastTiming {
+  private resolveItemCastTiming(oItem: Item, targetPosition: THREE.Vector3): ItemCastTiming {
     const modeltype = isCreature(this.owner)
       ? (this.owner.creatureAppearance?.modeltype ?? this.owner.getAppearance?.()?.modeltype)
       : undefined;
@@ -373,10 +373,10 @@ export class ActionItemCastSpell extends Action {
     ){
       this.target = this.owner;
     }else{
-      this.target = this.getParameter<ModuleObject>(0);
+      this.target = this.getParameter<GameObject>(0);
     }
     const spellId = this.getParameter<number>(5);
-    const oItemParam = this.getParameter<ModuleItem>(10);
+    const oItemParam = this.getParameter<Item>(10);
     if(oItemParam){
       this.cachedItem = oItemParam;
     }
@@ -465,7 +465,7 @@ export class ActionItemCastSpell extends Action {
       actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, targetPosition.y);
       actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, targetPosition.z);
       actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, this.owner.area?.id ?? this.target?.area?.id ?? 0);
-      actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, this.target ? this.target.id : ModuleObjectConstant.OBJECT_INVALID);
+      actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, this.target ? this.target.id : GameObjectConstant.OBJECT_INVALID);
       actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
       actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, this.spell.getCastRange());
       actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);

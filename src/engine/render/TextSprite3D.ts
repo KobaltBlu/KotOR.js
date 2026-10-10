@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Area } from "@engine/module/Area";
+import type { GameObject } from "@engine/module/GameObject";
 import { OdysseyTexture } from "@engine/render/three/odyssey/OdysseyTexture";
 import { IGUIControlText } from "@engine/interface/gui/IGUIControlText";
 import { ShaderManager } from "@engine/managers/ShaderManager";
@@ -29,9 +29,9 @@ export class TextSprite3D {
   static HEIGHT: number = 0.1;
 
   container: THREE.Object3D = new THREE.Object3D();
-  area: ModuleArea;
-  owner: ModuleObject;
-  target: ModuleObject;
+  area: Area;
+  owner: GameObject;
+  target: GameObject;
 
   guiFont: GUIFont;
 
@@ -159,7 +159,7 @@ export class TextSprite3D {
     }
   }
 
-  addToArea(area: ModuleArea){
+  addToArea(area: Area){
     if(!area)
       return;
     area.attachTextSprite3D(this);
@@ -260,7 +260,7 @@ export class TextSprite3D {
     this.container.removeFromParent();
   }
 
-  static CreateOnObject(object: ModuleObject, text: string = '', type: TextSprite3DType = TextSprite3DType.NEUTRAL, timer: number = 3000){
+  static CreateOnObject(object: GameObject, text: string = '', type: TextSprite3DType = TextSprite3DType.NEUTRAL, timer: number = 3000){
     if(!object) return;
 
     if(object.area){

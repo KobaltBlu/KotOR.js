@@ -1,11 +1,11 @@
 import { ActionParameterType } from "@core/enums/actions/ActionParameterType";
 import { ActionStatus } from "@core/enums/actions/ActionStatus";
 import { ActionType } from "@core/enums/actions/ActionType";
-import { ModuleObjectConstant } from "@core/enums/module/ModuleObjectConstant";
+import { GameObjectConstant } from "@core/enums/module/GameObjectConstant";
 import { GameState } from "@engine/runtime/GameState";
 import { ICombatAction } from "@engine/interface/combat/ICombatAction";
-// import { ModuleObjectManager, PartyManager } from "@engine/managers";
-import { type ModuleObject } from "@engine/module/ModuleObject";
+// import { GameObjectManager, PartyManager } from "@engine/managers";
+import { type GameObject } from "@engine/module/GameObject";
 // import type { NWScriptInstance } from "@engine/nwscript/NWScriptInstance";
 import { GFFDataType } from "@core/enums/resource/GFFDataType";
 import { GFFField } from "@core/resource/GFFField";
@@ -18,7 +18,7 @@ import {
   setCreatureLocoState,
 } from "@engine/pathfinding/creature-loco";
 import { isCreature } from "@engine/module/guards/isCreature";
-import { isObject } from "@engine/module/guards/isObject";
+import { isGameObject } from "@engine/module/guards/isGameObject";
 
 /**
  * Base class for all game actions in the engine.
@@ -46,10 +46,10 @@ export class Action {
   groupId: number = ActionQueue.AUTO_INCREMENT_GROUP_ID;
 
   /** The object performing the action */
-  owner: ModuleObject;
+  owner: GameObject;
 
   /** The target of the action, if any */
-  target: ModuleObject;
+  target: GameObject;
 
   /** Array of parameters controlling the action's behavior */
   parameters: ActionParameter[];
@@ -133,7 +133,7 @@ export class Action {
    * 
    * @param owner - The object that will perform this action
    */
-  setOwner(owner: ModuleObject) {
+  setOwner(owner: GameObject) {
     this.owner = owner;
   }
 
@@ -151,7 +151,7 @@ export class Action {
    * 
    * @param target - The object this action is targeting
    */
-  setTarget(target: ModuleObject) {
+  setTarget(target: GameObject) {
     this.target = target;
   }
 
@@ -218,8 +218,8 @@ export class Action {
       case ActionParameterType.DWORD:
         // Client/action resolve — include party (removed from area.creatures).
         return (
-          GameState.ModuleObjectManager.GetClientObjectById?.(param.value as number) ||
-          GameState.ModuleObjectManager.GetObjectById(param.value as number)
+          GameState.GameObjectManager.GetClientObjectById?.(param.value as number) ||
+          GameState.GameObjectManager.GetObjectById(param.value as number)
         ) as T;
       case ActionParameterType.SCRIPT_SITUATION:
         return param.scriptInstance as T;
@@ -252,8 +252,8 @@ export class Action {
         param.value = !isNaN(parseFloat(value)) ? parseFloat(value) : 0;
         break;
       case ActionParameterType.DWORD:
-        if (isObject(value)) {
-          param.value = value.id ? value.id : ModuleObjectConstant.OBJECT_INVALID;
+        if (isGameObject(value)) {
+          param.value = value.id ? value.id : GameObjectConstant.OBJECT_INVALID;
         } else {
           param.value = !isNaN(parseInt(value)) ? parseInt(value) : 0;
         }

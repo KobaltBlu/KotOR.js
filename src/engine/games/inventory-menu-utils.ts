@@ -10,8 +10,8 @@ import {
   isSquadMedicalItemType,
 } from "@engine/menu/action-menu-usable";
 import { GUIItemEquipped } from "@engine/gui/protoitem/GUIItemEquipped";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleItem } from "@engine/module/ModuleItem";
+import type { Creature } from "@engine/module/Creature";
+import type { Item } from "@engine/module/Item";
 
 /**
  * CheckFilter / SetNextFilter filter indices.
@@ -98,7 +98,7 @@ const CREATURE_SLOTS_SKIP =
   ModuleCreatureArmorSlot.CLAW3 |
   ModuleCreatureArmorSlot.HIDE;
 
-export type InventoryListNode = (ModuleItem | GUIItemEquipped) & {
+export type InventoryListNode = (Item | GUIItemEquipped) & {
   inventoryCanUse?: number;
   inventoryDenyStrRef?: number;
 };
@@ -152,23 +152,23 @@ export function formatQuestItemsButtonText(filter: InventoryFilter = currentInve
   return `${prefix} ${nextName}`.trim();
 }
 
-function getItemType(item: ModuleItem): number {
+function getItemType(item: Item): number {
   const t = item.baseItem?.itemType;
   return typeof t === 'number' ? t : -1;
 }
 
-function getEquipableSlots(item: ModuleItem): number {
+function getEquipableSlots(item: Item): number {
   return item.baseItem?.equipableSlots | 0;
 }
 
-function isWristWeaponItem(item: ModuleItem): boolean {
+function isWristWeaponItem(item: Item): boolean {
   const slots = getEquipableSlots(item);
   if((slots & INV_ARMBAND_SLOTS) === 0) return false;
   // CheckFilter: baseitem field @ == 2 (weaponWield ONE_HANDED_SWORD).
   return (item.baseItem?.weaponWield | 0) === WeaponWield.ONE_HANDED_SWORD;
 }
 
-function isK2UseableBaseItem(item: ModuleItem): boolean {
+function isK2UseableBaseItem(item: Item): boolean {
   const id = item.getBaseItemId?.() ?? item.baseItemId;
   return id >= INV_K2_USEABLE_BASEITEM_MIN && id <= INV_K2_USEABLE_BASEITEM_MAX;
 }
@@ -178,8 +178,8 @@ function isK2UseableBaseItem(item: ModuleItem): boolean {
  * @param fromEquipmentSlot armband/belt equipped-item usable-mask path
  */
 export function checkInventoryFilter(
-  item: ModuleItem,
-  creature: ModuleCreature,
+  item: Item,
+  creature: Creature,
   filter: InventoryFilter,
   fromEquipmentSlot: boolean = false
 ): boolean {
@@ -232,8 +232,8 @@ export function checkInventoryFilter(
  * Returns canUse 1 when Accept/Use Item should InstantUseItem.
  */
 export function getInventoryItemCanUse(
-  creature: ModuleCreature,
-  item: ModuleItem,
+  creature: Creature,
+  item: Item,
   fromEquipmentSlot: boolean,
   isK2: boolean = false
 ): { canUse: number; denyStrRef: number } {
@@ -304,12 +304,12 @@ function shouldSkipEquipSlot(slot: number, isK2: boolean): boolean {
  * PopulateItemListBox item order: equipped slots first, then bag.
  */
 export function collectInventoryListNodes(
-  creature: ModuleCreature,
+  creature: Creature,
   filter: InventoryFilter,
   isK2: boolean = false
 ): InventoryListNode[] {
   const nodes: InventoryListNode[] = [];
-  const seen = new Set<ModuleItem>();
+  const seen = new Set<Item>();
   const slotCount = isK2 ? INV_K2_EQUIP_SLOT_BITS : INV_K1_EQUIP_SLOT_BITS;
 
   for(let i = 0; i < slotCount; i++){
@@ -346,13 +346,13 @@ export function collectInventoryListNodes(
   return nodes;
 }
 
-export function unwrapInventoryListNode(node: InventoryListNode | undefined): ModuleItem | undefined {
+export function unwrapInventoryListNode(node: InventoryListNode | undefined): Item | undefined {
   if(!node) return undefined;
   if(node instanceof GUIItemEquipped) return node.node;
-  return node as ModuleItem;
+  return node as Item;
 }
 
-export function clearInventoryItemNewFlag(item: ModuleItem | undefined): void {
+export function clearInventoryItemNewFlag(item: Item | undefined): void {
   if(!item) return;
   if(item.newItem){
     item.newItem = 0;

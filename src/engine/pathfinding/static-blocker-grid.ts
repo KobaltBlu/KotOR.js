@@ -1,7 +1,7 @@
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleDoor } from "@engine/module/ModuleDoor";
-import type { ModulePlaceable } from "@engine/module/ModulePlaceable";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Area } from "@engine/module/Area";
+import type { Door } from "@engine/module/Door";
+import type { Placeable } from "@engine/module/Placeable";
+import type { GameObject } from "@engine/module/GameObject";
 import * as THREE from "three";
 import {
   composeDoorWalkmeshLocalToWorld,
@@ -24,15 +24,15 @@ const _doorAabbBox = {
 };
 
 type StaticBlockerCell = {
-  doors: ModuleDoor[];
-  placeables: ModulePlaceable[];
+  doors: Door[];
+  placeables: Placeable[];
 };
 
 export type StaticBlockerGrid = {
   cells: Map<number, StaticBlockerCell>;
   /** Objects with no usable AABB — always considered for detailed tests. */
-  alwaysDoors: ModuleDoor[];
-  alwaysPlaceables: ModulePlaceable[];
+  alwaysDoors: Door[];
+  alwaysPlaceables: Placeable[];
 };
 
 function cellKey(cx: number, cy: number): number {
@@ -57,8 +57,8 @@ function insertBox(
   grid: StaticBlockerGrid,
   box: { min: { x: number; y: number }; max: { x: number; y: number } } | undefined,
   position: { x: number; y: number } | undefined,
-  door?: ModuleDoor,
-  placeable?: ModulePlaceable
+  door?: Door,
+  placeable?: Placeable
 ): boolean {
   let minX: number;
   let maxX: number;
@@ -97,7 +97,7 @@ function insertBox(
  * to the open jamb and omit the closed leaf from doorway cells.
  */
 function doorCollisionAabbXY(
-  door: ModuleDoor
+  door: Door
 ): { min: { x: number; y: number }; max: { x: number; y: number } } | undefined {
   const wok =
     (typeof door.getWalkmeshForOpenState === "function"
@@ -129,7 +129,7 @@ function doorCollisionAabbXY(
 }
 
 /** Build a fresh XY cell map from area doors / placeables. */
-export function buildStaticBlockerGrid(area: ModuleArea): StaticBlockerGrid {
+export function buildStaticBlockerGrid(area: Area): StaticBlockerGrid {
   const grid: StaticBlockerGrid = {
     cells: new Map(),
     alwaysDoors: [],
@@ -161,8 +161,8 @@ export function buildStaticBlockerGrid(area: ModuleArea): StaticBlockerGrid {
 /**
  * Ensure area.staticBlockerGrid is current (rebuild when dirty / missing).
  */
-export function ensureStaticBlockerGrid(area: ModuleArea): StaticBlockerGrid {
-  const areaAny = area as ModuleArea & {
+export function ensureStaticBlockerGrid(area: Area): StaticBlockerGrid {
+  const areaAny = area as Area & {
     staticBlockerGrid?: StaticBlockerGrid;
     staticBlockerGridDirty?: boolean;
   };
@@ -173,9 +173,9 @@ export function ensureStaticBlockerGrid(area: ModuleArea): StaticBlockerGrid {
   return areaAny.staticBlockerGrid;
 }
 
-export function invalidateStaticBlockerGrid(area: ModuleArea | undefined): void {
+export function invalidateStaticBlockerGrid(area: Area | undefined): void {
   if(!area) return;
-  (area as ModuleArea & { staticBlockerGridDirty?: boolean }).staticBlockerGridDirty = true;
+  (area as Area & { staticBlockerGridDirty?: boolean }).staticBlockerGridDirty = true;
   invalidateWalkmeshEdgeClearCache(area);
 }
 
@@ -183,12 +183,12 @@ export function invalidateStaticBlockerGrid(area: ModuleArea | undefined): void 
  * Collect unique doors / placeables whose cells overlap the segment AABB.
  */
 export function queryStaticBlockersInAabb(
-  area: ModuleArea,
+  area: Area,
   minX: number,
   maxX: number,
   minY: number,
   maxY: number
-): { doors: ModuleDoor[]; placeables: ModulePlaceable[] } {
+): { doors: Door[]; placeables: Placeable[] } {
   const grid = ensureStaticBlockerGrid(area);
   if(!grid.cells.size && !grid.alwaysDoors.length && !grid.alwaysPlaceables.length){
     return {
@@ -197,8 +197,8 @@ export function queryStaticBlockersInAabb(
     };
   }
 
-  const doorSet = new Set<ModuleDoor>();
-  const placeableSet = new Set<ModulePlaceable>();
+  const doorSet = new Set<Door>();
+  const placeableSet = new Set<Placeable>();
   for(let i = 0; i < grid.alwaysDoors.length; i++){
     doorSet.add(grid.alwaysDoors[i]);
   }
@@ -231,10 +231,10 @@ export function queryStaticBlockersInAabb(
 
 /** Sync walkmesh LocalToWorld only when pose/collision matrix is dirty. */
 export function ensureWalkmeshMatrixSynced(
-  obj: ModuleObject | undefined
+  obj: GameObject | undefined
 ): void {
   if(!obj) return;
-  const anyObj = obj as ModuleObject & {
+  const anyObj = obj as GameObject & {
     collisionMatrixDirty?: boolean;
     syncWalkmeshMatrix?: () => void;
   };

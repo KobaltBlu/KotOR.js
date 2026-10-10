@@ -1,6 +1,6 @@
 import { GameEffect } from "@engine/effects/GameEffect";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { isCreature } from "@engine/module/guards/isCreature";
 import {
   VISION_FLAG_SEE_INVISIBLE,
@@ -23,7 +23,7 @@ export class EffectSeeInvisible extends GameEffect {
       return;
     super.onApply();
     if(isCreature(this.object)){
-      const creature = this.object as ModuleCreature;
+      const creature = this.object as Creature;
       creature.visionFlags = (creature.visionFlags || 0) | VISION_FLAG_SEE_INVISIBLE;
     }
   }
@@ -31,7 +31,7 @@ export class EffectSeeInvisible extends GameEffect {
   onRemove(){
     super.onRemove();
     if(isCreature(this.object)){
-      recomputeVisionFlags(this.object as ModuleCreature);
+      recomputeVisionFlags(this.object as Creature);
     }
   }
 }

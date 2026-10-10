@@ -85,8 +85,8 @@ jest.mock("@engine/movement/wall-slide", () => ({
 
 import { resolveExternalForceStep, tickExternalForceStep } from "@engine/movement/external-force-policy";
 import { MovementStatus } from "@engine/movement/types";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { Creature } from "@engine/module/Creature";
+import type { Area } from "@engine/module/Area";
 
 describe("ExternalForce wall tunnel guard", () => {
   beforeEach(() => {
@@ -112,9 +112,9 @@ describe("ExternalForce wall tunnel guard", () => {
 
     const creature = {
       position: new THREE.Vector3(0, 1.5, 0),
-      area: {} as ModuleArea,
+      area: {} as Area,
       room: undefined,
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
 
     // Desired into wall (−Y); wall normal +Y → projected slide ≈ 0
     const result = resolveExternalForceStep(
@@ -149,11 +149,11 @@ describe("ExternalForce wall tunnel guard", () => {
 
     const creature = {
       position: new THREE.Vector3(0, 1.0, 0),
-      area: {} as ModuleArea,
+      area: {} as Area,
       room: undefined,
       attachToRoom: jest.fn(),
       collisionManager: {},
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
 
     const result = tickExternalForceStep(
       creature,

@@ -5,7 +5,7 @@
  */
 
 import * as THREE from "three";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { ComputedPath } from "@engine/pathfinding/ComputedPath";
 import { getWalkHeightAt } from "@engine/pathfinding/walk-line-clear";
 import {
@@ -80,7 +80,7 @@ export function computeForceJumpTargetShoveDestination(
  * Seeds one creature loco frame with delta 0 (same as Force Push).
  */
 export function installForceJumpPath(
-  creature: ModuleCreature,
+  creature: Creature,
   start: THREE.Vector3,
   end: THREE.Vector3,
   loco: CreatureLocoState.ForceJump | CreatureLocoState.ForceJumpTarget

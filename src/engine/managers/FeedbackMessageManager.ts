@@ -5,7 +5,7 @@ import { FeebackMessageColor } from "@engine/enums/engine/FeedbackMessageColor";
 import { TextSprite3DType } from "@engine/enums/engine/TextSprite3DType";
 import { TextSprite3D } from "@engine/render/TextSprite3D";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import { formatTlkWithCustoms } from "@engine/world/tlk-tokens";
 
 /**
@@ -156,7 +156,7 @@ export class FeedbackMessageManager {
    * DisplayFeedBackText — FeedBackText.2da row → floaty + status summary.
    * Rows: 0 Resisted, 1 Immune, 2 Saved.
    */
-  static DisplayFeedBackText(target: ModuleObject | undefined, textConstant: number){
+  static DisplayFeedBackText(target: GameObject | undefined, textConstant: number){
     if(!target) return;
 
     const table =
@@ -192,7 +192,7 @@ export class FeedbackMessageManager {
    */
   static FloatingTextOnCreature(
     text: string,
-    creature: ModuleObject | undefined,
+    creature: GameObject | undefined,
     _broadcastToFaction: boolean = false,
     color: FeebackMessageColor = FeebackMessageColor.INFO,
   ){
@@ -206,7 +206,7 @@ export class FeedbackMessageManager {
 
   static FloatingTextStrRefOnCreature(
     strRef: number,
-    creature: ModuleObject | undefined,
+    creature: GameObject | undefined,
     broadcastToFaction: boolean = false,
     customs: string[] = [],
   ){

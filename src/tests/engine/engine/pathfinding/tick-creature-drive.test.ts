@@ -41,19 +41,19 @@ jest.mock("@engine/pathfinding/walk-line-clear", () => ({
 }));
 
 import { driveResolveMoveTarget } from "@engine/pathfinding/tick-creature-drive";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Area } from "@engine/module/Area";
+import type { Creature } from "@engine/module/Creature";
 
 describe("driveResolveMoveTarget creature bump gate", () => {
   const blocker = { id: 9, position: new THREE.Vector3(1, 0, 0) };
   const area = {
     creatures: [blocker],
-  } as unknown as ModuleArea;
+  } as unknown as Area;
   const owner = {
     id: 1,
     position: new THREE.Vector3(0, 0, 0),
     area,
-  } as unknown as ModuleCreature;
+  } as unknown as Creature;
 
   beforeEach(() => {
     noCreaturesMock.mockReset();

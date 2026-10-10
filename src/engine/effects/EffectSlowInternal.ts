@@ -3,7 +3,7 @@ import { GameEffectType } from "@core/enums/effects/GameEffectType";
 import { GameEffectDurationType } from "@core/enums/effects/GameEffectDurationType";
 import { GameEffectSubType } from "@core/enums/effects/GameEffectSubType";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { isCreature } from "@engine/module/guards/isCreature";
 
 /**
@@ -29,7 +29,7 @@ export class EffectSlowInternal extends GameEffect {
     if(!isCreature(this.object)){
       return;
     }
-    const creature = this.object as ModuleCreature;
+    const creature = this.object as Creature;
     creature.isHasted = false;
     creature.isSlowed = true;
 
@@ -77,7 +77,7 @@ export class EffectSlowInternal extends GameEffect {
   onRemove(){
     super.onRemove();
     if(isCreature(this.object)){
-      (this.object as ModuleCreature).isSlowed = false;
+      (this.object as Creature).isSlowed = false;
     }
     for(let i = 0; i < this.children.length; i++){
       this.object?.removeEffect?.(this.children[i]);

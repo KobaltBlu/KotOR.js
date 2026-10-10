@@ -4,7 +4,7 @@
  */
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import * as THREE from "three";
-import { ModuleObjectType } from "@core/enums/module/ModuleObjectType";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
 
 const mockParty: unknown[] = [];
 
@@ -18,17 +18,17 @@ jest.mock("@engine/runtime/GameState", () => ({
 }));
 
 import { nudgeFriendlyCreatures } from "@engine/pathfinding/nudge-friendlies";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Area } from "@engine/module/Area";
+import type { Creature } from "@engine/module/Creature";
 
-function creature(id: number, x: number, y: number): ModuleCreature {
+function creature(id: number, x: number, y: number): Creature {
   const c = {
     id,
-    objectType: ModuleObjectType.ModuleCreature,
+    objectType: GameObjectType.Creature,
     position: new THREE.Vector3(x, y, 0),
     actionQueue: [],
     combatRound: { roundPaused: false },
-    area: undefined as ModuleArea | undefined,
+    area: undefined as Area | undefined,
     getReputation: () => 50,
     getAppearance: () => ({ creperspace: 0.4 }),
     isDead: () => false,
@@ -37,7 +37,7 @@ function creature(id: number, x: number, y: number): ModuleCreature {
       c.position.copy(v);
     },
   };
-  return c as unknown as ModuleCreature;
+  return c as unknown as Creature;
 }
 
 describe("nudgeFriendlyCreatures", () => {
@@ -51,7 +51,7 @@ describe("nudgeFriendlyCreatures", () => {
     const area = {
       getNearestWalkablePoint: (p: THREE.Vector3) => p.clone(),
       isPointWalkable: () => true,
-    } as unknown as ModuleArea;
+    } as unknown as Area;
     mover.area = area;
     other.area = area;
 
@@ -73,7 +73,7 @@ describe("nudgeFriendlyCreatures", () => {
     const area = {
       getNearestWalkablePoint: (p: THREE.Vector3) => p.clone(),
       isPointWalkable: () => false,
-    } as unknown as ModuleArea;
+    } as unknown as Area;
     mover.area = area;
     other.area = area;
 

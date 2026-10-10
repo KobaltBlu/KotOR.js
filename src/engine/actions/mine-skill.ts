@@ -1,10 +1,10 @@
 import { DiceType } from "@core/enums/combat/DiceType";
 import { SignalEventType } from "@core/enums";
-import { ModuleObjectScript } from "@core/enums/module/ModuleObjectScript";
+import { ScriptHook } from "@core/enums/module/ScriptHook";
 import { SkillType } from "@core/enums/nwscript/SkillType";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 import { Dice } from "@core/utility/Dice";
 
 import { isTrigger } from "@engine/module/guards/isTrigger";
@@ -22,8 +22,8 @@ export enum MineSkillResult {
  * Examine: DisarmDC - 7 (examine-mine action)
  */
 export function resolveMineSkillCheck(
-  owner: ModuleCreature,
-  target: ModuleObject,
+  owner: Creature,
+  target: GameObject,
   options: { examine?: boolean; flag?: boolean } = {}
 ): { result: MineSkillResult; roll: number; skill: number; dc: number } {
   const skill = owner.getSkillLevel(SkillType.DEMOLITIONS) | 0;
@@ -66,8 +66,8 @@ export function resolveMineSkillCheck(
  * Passive trap detection (UpdateMineCheck): Awareness + d10 vs DetectDC.
  */
 export function resolvePassiveMineDetect(
-  owner: ModuleCreature,
-  target: ModuleObject,
+  owner: Creature,
+  target: GameObject,
   options: { detectMode?: boolean } = {}
 ): { result: MineSkillResult; roll: number; skill: number; dc: number } {
   const skill = owner.getSkillLevel(SkillType.AWARENESS) | 0;
@@ -103,7 +103,7 @@ export function resolvePassiveMineDetect(
  * Fail-by-10+ still plants but triggers the trap.
  */
 export function resolveMineSetCheck(
-  owner: ModuleCreature,
+  owner: Creature,
   trapSubType: number = 0
 ): { result: MineSkillResult; roll: number; skill: number; dc: number } {
   const trap = GameState.SWRuleSet.traps[trapSubType];
@@ -131,7 +131,7 @@ export function resolveMineSetCheck(
   return { result: MineSkillResult.FAIL, roll, skill, dc: setDC };
 }
 
-export function signalTrapDisarm(target: ModuleObject, disarmer: ModuleObject){
+export function signalTrapDisarm(target: GameObject, disarmer: GameObject){
   if(target){
     target.lastDisarmedBy = disarmer;
   }
@@ -144,7 +144,7 @@ export function signalTrapDisarm(target: ModuleObject, disarmer: ModuleObject){
   GameState.module.addEvent(event);
 }
 
-export function signalTrapTriggered(target: ModuleObject, triggerer: ModuleObject){
+export function signalTrapTriggered(target: GameObject, triggerer: GameObject){
   if(isTrigger(target)){
     (target as any).trapTriggered = true;
   }
@@ -158,22 +158,22 @@ export function signalTrapTriggered(target: ModuleObject, triggerer: ModuleObjec
 }
 
 /** Schedule trap destruction (SetFadeOutTime ~2). */
-export function fadeDestroyTrap(target: ModuleObject){
+export function fadeDestroyTrap(target: GameObject){
   target.setDelayUntilDestroy(2);
   target.setWillDestroy(true);
 }
 
-export function runTriggerOnDisarmScript(target: ModuleObject){
+export function runTriggerOnDisarmScript(target: GameObject){
   if(!isTrigger(target)){
     return;
   }
-  const instance = target.getScriptInstance?.(ModuleObjectScript.TriggerOnDisarm);
+  const instance = target.getScriptInstance?.(ScriptHook.TriggerOnDisarm);
   if(instance){
     instance.run(target);
   }
 }
 
-export function markTrapDetected(target: ModuleObject, detector?: ModuleObject){
+export function markTrapDetected(target: GameObject, detector?: GameObject){
   if(isTrigger(target)){
     (target as any).detectTrap?.(detector);
     return;

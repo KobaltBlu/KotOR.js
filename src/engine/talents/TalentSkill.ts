@@ -3,13 +3,13 @@ import { ActionUnlockObject } from "@engine/actions/ActionUnlockObject";
 import { ActionParameterType } from "@core/enums/actions/ActionParameterType";
 import { BaseItemType } from "@core/enums/combat/BaseItemType";
 import { TalentObjectType } from "@engine/enums/engine/TalentObjectType";
-import { ModuleObjectConstant } from "@core/enums/module/ModuleObjectConstant";
+import { GameObjectConstant } from "@core/enums/module/GameObjectConstant";
 import { SkillType } from "@core/enums/nwscript/SkillType";
 import { SubSkillType } from "@core/enums/nwscript/SubSkillType";
 import { GFFDataType } from "@core/enums/resource/GFFDataType";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleItem } from "@engine/module/ModuleItem";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { Item } from "@engine/module/Item";
+import type { GameObject } from "@engine/module/GameObject";
 import { GFFField } from "@core/resource/GFFField";
 import { GFFStruct } from "@core/resource/GFFStruct";
 import { TwoDAObject } from "@core/resource/TwoDAObject";
@@ -57,13 +57,13 @@ export class TalentSkill extends TalentObject {
     this.rank = rank;
   }
   
-  useTalentOnObject(oTarget: ModuleObject, oCaster: ModuleObject, nSubSkill: number = 0, oItemUsed?: ModuleObject){
+  useTalentOnObject(oTarget: GameObject, oCaster: GameObject, nSubSkill: number = 0, oItemUsed?: GameObject){
     this.oCaster = oCaster;
     this.oTarget = oTarget;
     if(this.id == SkillType.SECURITY){
       const action = new ActionUnlockObject();
-      action.setParameter(0, ActionParameterType.DWORD, this.oTarget.id || ModuleObjectConstant.OBJECT_INVALID);
-      action.setParameter(1, ActionParameterType.DWORD, oItemUsed || ModuleObjectConstant.OBJECT_INVALID);
+      action.setParameter(0, ActionParameterType.DWORD, this.oTarget.id || GameObjectConstant.OBJECT_INVALID);
+      action.setParameter(1, ActionParameterType.DWORD, oItemUsed || GameObjectConstant.OBJECT_INVALID);
       this.oCaster.actionQueue.add(action);
       return;
     }
@@ -79,7 +79,7 @@ export class TalentSkill extends TalentObject {
       }else{
         action = new GameState.ActionFactory.ActionDisarmMine();
       }
-      action.setParameter(0, ActionParameterType.DWORD, this.oTarget.id || ModuleObjectConstant.OBJECT_INVALID);
+      action.setParameter(0, ActionParameterType.DWORD, this.oTarget.id || GameObjectConstant.OBJECT_INVALID);
       this.oCaster.actionQueue.add(action);
       return;
     }
@@ -88,9 +88,9 @@ export class TalentSkill extends TalentObject {
       if(!isCreature(oCaster)){
         return;
       }
-      const caster = oCaster as ModuleCreature;
+      const caster = oCaster as Creature;
       let kit = isItem(oItemUsed)
-        ? oItemUsed as ModuleItem
+        ? oItemUsed as Item
         : undefined;
 
       // Both medpac and repair-kit use the heal action (skill always Treat Injury).
@@ -106,7 +106,7 @@ export class TalentSkill extends TalentObject {
       }
 
       const action = new GameState.ActionFactory.ActionHeal();
-      action.setParameter(0, ActionParameterType.DWORD, oTarget.id || ModuleObjectConstant.OBJECT_INVALID);
+      action.setParameter(0, ActionParameterType.DWORD, oTarget.id || GameObjectConstant.OBJECT_INVALID);
       action.setParameter(1, ActionParameterType.DWORD, kit);
       action.setParameter(2, ActionParameterType.INT, 0); // requeue scratch — not skill
       action.setParameter(3, ActionParameterType.INT, 1); // bAllowMove

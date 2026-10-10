@@ -1,7 +1,7 @@
 import { ModuleCreatureArmorSlot } from "@core/enums/module/ModuleCreatureArmorSlot";
 import type { GUILabel, GUIButton, GUIListBox } from "@engine/gui";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleItem } from "@engine/module/ModuleItem";
+import type { Creature } from "@engine/module/Creature";
+import type { Item } from "@engine/module/Item";
 import { MenuEquipment as K1_MenuEquipment } from "@engine/games/kotor/menu/MenuEquipment";
 import { GameState } from "@engine/runtime/GameState";
 import { GUIInventoryItem } from "@engine/gui/protoitem/GUIInventoryItem";
@@ -87,7 +87,7 @@ export class MenuEquipment extends K1_MenuEquipment {
     this.voidFill = true;
   }
 
-  protected getActiveCreature(): ModuleCreature {
+  protected getActiveCreature(): Creature {
     return GameState.PartyManager.party[this.currentNPCIndex];
   }
 
@@ -144,7 +144,7 @@ export class MenuEquipment extends K1_MenuEquipment {
 
       this.LB_ITEMS.setProtoBuilder(GUIInventoryItem);
       // leaves GFF PADDING (equip_p.gui LB_ITEMS); do not force 2.
-      this.LB_ITEMS.onSelected = (item: ModuleItem | any) => {
+      this.LB_ITEMS.onSelected = (item: Item | any) => {
         this.updateSelected(item);
       };
 
@@ -352,7 +352,7 @@ export class MenuEquipment extends K1_MenuEquipment {
     }
   }
 
-  protected updateWeaponStatLabels(currentPC: ModuleCreature) {
+  protected updateWeaponStatLabels(currentPC: Creature) {
     const rWeap = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.RIGHTHAND);
     const lWeap = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.LEFTHAND);
     const bab = currentPC.getBaseAttackBonus();

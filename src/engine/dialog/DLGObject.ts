@@ -1,6 +1,6 @@
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 import { OdysseyModel3D } from "@engine/render/three/odyssey";
 import { DLGNode } from "@engine/dialog/DLGNode";
 import { GFFObject } from "@core/resource/GFFObject";
@@ -42,8 +42,8 @@ export class DLGObject {
   replyList: DLGNode[] = [];
   startingList: DLGNode[] = [];
   stuntActors: Map<string, IDLGStuntActor> = new Map();
-  owner: ModuleObject;
-  listener: ModuleObject;
+  owner: GameObject;
+  listener: GameObject;
 
   vo_id: string; //folder where the vo files reside
 
@@ -381,14 +381,14 @@ export class DLGObject {
   async loadStuntActor(actor: IDLGStuntActor): Promise<boolean> {
     try{
       const key = (actor.participant || '').toLocaleLowerCase();
-      let creature: ModuleObject | undefined;
+      let creature: GameObject | undefined;
 
       if(key === 'player'){
         creature = GameState.PartyManager.party[0];
       }else if(key === 'owner'){
         creature = this.owner;
       }else{
-        creature = GameState.ModuleObjectManager.GetObjectByTag(actor.participant);
+        creature = GameState.GameObjectManager.GetObjectByTag(actor.participant);
       }
 
       if(!creature){
@@ -398,7 +398,7 @@ export class DLGObject {
       // SpawnAvailableNPC returns before loadModel finishes. Poll first so we
       // don't bump modelLoadGeneration and discard the in-flight spawn load.
       if(isCreature(creature)){
-        const c = creature as ModuleCreature;
+        const c = creature as Creature;
         if(!c.model){
           await DLGObject.waitForCreatureModel(c, 1500);
         }
@@ -428,10 +428,10 @@ export class DLGObject {
         (this.unequipItems || this.unequipHeadItem) &&
         isCreature(creature)
       ){
-        GameState.CutsceneManager.hideEquippedItemsForDialog(creature as ModuleCreature);
+        GameState.CutsceneManager.hideEquippedItemsForDialog(creature as Creature);
       }
 
-      actor.moduleObject = creature;
+      actor.gameObject = creature;
       creature.setCutsceneMode?.(true);
 
       if(creature.model){
@@ -447,8 +447,8 @@ export class DLGObject {
     }
   }
 
-  /** Wait for an in-flight ModuleCreature.loadModel without starting another. */
-  static async waitForCreatureModel(creature: ModuleCreature, timeoutMs: number): Promise<void> {
+  /** Wait for an in-flight Creature.loadModel without starting another. */
+  static async waitForCreatureModel(creature: Creature, timeoutMs: number): Promise<void> {
     const deadline = Date.now() + Math.max(0, timeoutMs);
     while(!creature.model && Date.now() < deadline){
       await new Promise<void>((resolve) => setTimeout(resolve, 16));
@@ -465,9 +465,9 @@ export class DLGObject {
   async reloadMissingStuntActors(){
     for(const actor of this.stuntActors.values()){
       const needsReload =
-        !actor.moduleObject ||
-        (isCreature(actor.moduleObject) &&
-          !(actor.moduleObject as ModuleCreature).model) ||
+        !actor.gameObject ||
+        (isCreature(actor.gameObject) &&
+          !(actor.gameObject as Creature).model) ||
         (actor.resref && !actor.animations?.length);
       if(needsReload){
         await this.loadStuntActor(actor);
@@ -480,10 +480,10 @@ export class DLGObject {
       GameState.group.stunt.remove(GameState.group.stunt.children[0]);
     }
     this.stuntActors.forEach( async (actor) => {
-      const moduleObject = actor.moduleObject;
-      if(moduleObject){
-        moduleObject.clearAllActions();
-        moduleObject.setCutsceneMode(false);
+      const gameObject = actor.gameObject;
+      if(gameObject){
+        gameObject.clearAllActions();
+        gameObject.setCutsceneMode(false);
       }
     });
     this.stuntActors.clear()

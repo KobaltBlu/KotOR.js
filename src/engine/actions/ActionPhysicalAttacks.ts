@@ -13,20 +13,20 @@ import { duelLog, duelWho } from "@engine/combat/duel-debug";
 import { hasTargetBeenDetected } from "@engine/combat/nearest-enemy";
 import { tryStuckLosRetarget } from "@engine/combat/initialize-new-attack-target";
 import { getNearestActionPoint } from "@engine/combat/nearest-action-point";
-import { ModuleObjectConstant, SSFType } from "@core/enums";
+import { GameObjectConstant, SSFType } from "@core/enums";
 import { ActionParameterType } from "@core/enums/actions/ActionParameterType";
 import { ActionStatus } from "@core/enums/actions/ActionStatus";
 import { ActionType } from "@core/enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "@core/enums/module/ModuleCreatureAnimState";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 import { Utility } from "@core/utility/Utility";
 import { Action } from "@engine/actions/Action";
 import * as THREE from 'three';
 import { TURN_SPEED_FAST } from "@engine/movement/TurnSpeeds";
 import { isCreature } from "@engine/module/guards/isCreature";
-import { isObject } from "@engine/module/guards/isObject";
+import { isGameObject } from "@engine/module/guards/isGameObject";
 import {
   hasWalkLineClear,
   WalkLineHitCode,
@@ -95,8 +95,8 @@ export class ActionPhysicalAttacks extends Action {
   }
 
   static getMeleeBackoffIdeal(
-    attacker: ModuleCreature,
-    target: ModuleObject,
+    attacker: Creature,
+    target: GameObject,
     desired: number
   ): THREE.Vector3 {
     const dx = attacker.position.x - target.position.x;
@@ -110,16 +110,16 @@ export class ActionPhysicalAttacks extends Action {
   }
 
   static getMeleeBackoffPosition(
-    attacker: ModuleCreature,
-    target: ModuleObject,
+    attacker: Creature,
+    target: GameObject,
     desired: number
   ): THREE.Vector3 {
     return ActionPhysicalAttacks.resolveMeleeBackoff(attacker, target, desired).position;
   }
 
   static resolveMeleeBackoff(
-    attacker: ModuleCreature,
-    target: ModuleObject,
+    attacker: Creature,
+    target: GameObject,
     desired: number
   ): MeleeBackoffResult {
     const ideal = ActionPhysicalAttacks.getMeleeBackoffIdeal(attacker, target, desired);
@@ -161,9 +161,9 @@ export class ActionPhysicalAttacks extends Action {
 
   update(delta: number = 0): ActionStatus {
     
-    this.target = this.getParameter<ModuleObject>(1);
+    this.target = this.getParameter<GameObject>(1);
 
-    if(!isObject(this.target)){
+    if(!isGameObject(this.target)){
       return ActionStatus.FAILED;
     }
 
@@ -320,7 +320,7 @@ export class ActionPhysicalAttacks extends Action {
         actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, target_position.y);
         actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, target_position.z);
         actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, this.target.area?.id ?? this.owner.area?.id ?? 0);
-        actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, isBackoff ? ModuleObjectConstant.OBJECT_INVALID : this.target.id);
+        actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, isBackoff ? GameObjectConstant.OBJECT_INVALID : this.target.id);
         actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
         actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, arriveRange);
         actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
@@ -421,7 +421,7 @@ export class ActionPhysicalAttacks extends Action {
 
     if(combatRound.roundStarted){
 
-      if(isObject(combatRound.newAttackTarget)){
+      if(isGameObject(combatRound.newAttackTarget)){
         combatRound.setAttackTarget(combatRound.newAttackTarget);
         this.setParameter(1, ActionParameterType.DWORD, combatRound.newAttackTarget.id);
         this.target = combatRound.newAttackTarget;

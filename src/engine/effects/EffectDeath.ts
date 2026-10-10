@@ -2,7 +2,7 @@ import { GameEffect } from "@engine/effects/GameEffect";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
 import { ModuleCreatureAnimState } from "@core/enums/module/ModuleCreatureAnimState";
 import { SSFType } from "@core/enums/resource/SSFType";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 
 import { isCreature } from "@engine/module/guards/isCreature";
 
@@ -33,7 +33,7 @@ export class EffectDeath extends GameEffect {
     if(!this.object) return;
 
     // onApply plot / Min1HP early-outs
-    if((this.object as ModuleCreature).plot){
+    if((this.object as Creature).plot){
       return;
     }
     if(this.object.min1HP){
@@ -41,18 +41,18 @@ export class EffectDeath extends GameEffect {
       return;
     }
 
-    // Absolute HP — ModuleCreature.setHP must invert the same formula as getHP
+    // Absolute HP — Creature.setHP must invert the same formula as getHP
     // (beast/wookiee subrace uses hitPoints+currentHitPoints).
     this.object.setHP(-11);
 
     if(
       isCreature(this.object) &&
       this.object.isDead() &&
-      !(this.object as ModuleCreature).deathStarted
+      !(this.object as Creature).deathStarted
     ){
-      // Kick the same deathStarted path ModuleCreature.update uses so OnDeath /
+      // Kick the same deathStarted path Creature.update uses so OnDeath /
       // corpse schedule run even if the next update is skipped (dialog, etc.).
-      const creature = this.object as ModuleCreature;
+      const creature = this.object as Creature;
       creature.deathAnimationPlayed = false;
       creature.deathStarted = true;
       creature.clearAllActions();

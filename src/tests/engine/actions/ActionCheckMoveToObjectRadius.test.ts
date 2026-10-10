@@ -88,8 +88,8 @@ jest.mock('@engine/module/guards/isCreature', () => ({
   isCreature: (o: unknown) => !!(o as { __creature?: boolean })?.__creature,
 }));
 
-jest.mock('@engine/module/guards/isObject', () => ({
-  isObject: (o: unknown) => !!o,
+jest.mock('@engine/module/guards/isGameObject', () => ({
+  isGameObject: (o: unknown) => !!o,
 }));
 
 import { ActionCheckMoveToObjectRadius } from '@engine/actions/ActionCheckPath';

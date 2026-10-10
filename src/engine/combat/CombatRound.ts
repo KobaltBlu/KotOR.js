@@ -1,6 +1,6 @@
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleItem } from "@engine/module/ModuleItem";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { Item } from "@engine/module/Item";
+import type { GameObject } from "@engine/module/GameObject";
 import { GFFStruct } from "@core/resource/GFFStruct";
 import { Dice } from "@core/utility/Dice";
 import { OdysseyModelAnimation } from "@engine/odyssey";
@@ -39,7 +39,7 @@ import { getAttackEffectBonus } from "@engine/effects/effect-bonuses";
 import { AutoPauseState } from "@engine/enums/engine/AutoPauseState";
 import { GFFField } from "@core/resource/GFFField";
 import { GFFDataType } from "@core/enums/resource/GFFDataType";
-import { ModuleObjectConstant } from "@core/enums/module/ModuleObjectConstant";
+import { GameObjectConstant } from "@core/enums/module/GameObjectConstant";
 import type { TalentFeat } from "@engine/talents";
 import { formatAttackSummaryFeedback, AttackSummaryStrRef } from "@engine/combat/attack-summary-feedback";
 import {
@@ -86,11 +86,11 @@ export type PendingDischargeVisual = {
   /** Projectile flight duration after muzzle. */
   travelMs: number;
   weaponAttackType: number;
-  attackWeapon?: ModuleItem;
+  attackWeapon?: Item;
   rangedTargetX: number;
   rangedTargetY: number;
   rangedTargetZ: number;
-  reactObject?: ModuleObject;
+  reactObject?: GameObject;
 };
 
 const SPELL_FORCE_DEFLECTION = 162;
@@ -100,7 +100,7 @@ const CLASS_JEDI_WEAPONMASTER = 11;
 /**
  * CombatRound class.
  *
- * The CombatRound class manages a single combat round for a ModuleObject (typically a ModuleCreature)
+ * The CombatRound class manages a single combat round for a GameObject (typically a Creature)
  * It handles the timing and execution of combat actions, including attack rolls, damage calculations, and animations.
  * It also manages the dueling/engagement state between creatures, as well as the pause/resume mechanics.
  *
@@ -141,7 +141,7 @@ export class CombatRound {
    * AddFloatyText only when attacker/damager is GetPlayerCreatureId.
    * DEBUG_COMBAT_FLOATY_ALL_ATTACKERS restores pre-alignment (any attacker).
    */
-  static shouldShowCombatFloaty(attacker: ModuleObject | undefined): boolean {
+  static shouldShowCombatFloaty(attacker: GameObject | undefined): boolean {
     if(!attacker) return false;
     if(!GameState.FeedbackMessageManager.GetFeedbackTypeEnabled(FeedbackOption.FloatingNumbers)){
       return false;
@@ -280,7 +280,7 @@ export class CombatRound {
    * GetWeaponDischargeRow.
    */
   static getWeaponDischargeRowLabel(
-    creature: ModuleCreature,
+    creature: Creature,
     animName: string
   ): string | undefined {
     if(!animName) return undefined;
@@ -369,7 +369,7 @@ export class CombatRound {
   }
 
   static getWeaponDischargeInfo(
-    creature: ModuleCreature,
+    creature: Creature,
     animName: string
   ): WeaponDischargeInfo | undefined {
     const rowLabel = CombatRound.getWeaponDischargeRowLabel(creature, animName);
@@ -431,8 +431,8 @@ export class CombatRound {
    * attack_result == 10, then eye→far ray with visual LOS / hasVisualLos.
    */
   static getProjectileMissLocation(
-    attacker: ModuleObject,
-    target: ModuleObject,
+    attacker: GameObject,
+    target: GameObject,
     attackResult?: number
   ): THREE.Vector3 {
     if(!target){
@@ -541,9 +541,9 @@ export class CombatRound {
   }
 
   private static applyInstantVisualEffect(
-    target: ModuleObject,
+    target: GameObject,
     vfxId: number,
-    creator?: ModuleObject
+    creator?: GameObject
   ): void {
     if(!target || !vfxId || !GameState.GameEffectFactory?.EffectVisualEffect) return;
     const vfx = new GameState.GameEffectFactory.EffectVisualEffect();
@@ -560,7 +560,7 @@ export class CombatRound {
    */
   static resolveOnHitVisuals(
     attack: CombatAttackData,
-    owner: ModuleCreature
+    owner: Creature
   ): void {
     if(!attack) return;
 
@@ -598,7 +598,7 @@ export class CombatRound {
     }
   }
 
-  owner: ModuleObject;
+  owner: GameObject;
 
   roundStarted: boolean = false;
   attackID: number = 0;
@@ -606,24 +606,24 @@ export class CombatRound {
   spellCastRound: boolean = false;
   deflectArrow: boolean = true;
   weaponSucks: boolean = false;
-  dodgeTarget: ModuleObject;
+  dodgeTarget: GameObject;
   /** Saved DodgeTarget DWORD for deferred resolve. */
   dodgeTargetObjectId: number = 0;
-  newAttackTarget: ModuleObject; //the new target to switch to after this combat round has ended
+  newAttackTarget: GameObject; //the new target to switch to after this combat round has ended
   /** Saved NewAttackTarget DWORD for deferred resolve. */
   newAttackTargetObjectId: number = 0;
   engaged: boolean = false; // ResolveEngagedState / StartCombatRound
   master: boolean = false; // ResolveMasterState — drives duel pair
-  masterID: ModuleObject; // creature that owns this duel group
+  masterID: GameObject; // creature that owns this duel group
   /** Saved MasterID DWORD for deferred resolve. */
   masterIDObjectId: number = 0;
   /** Duel slave when this round is master. */
-  duelPartner: ModuleObject;
+  duelPartner: GameObject;
   /** Saved DuelPartner DWORD (TSL) for deferred resolve. */
   duelPartnerObjectId: number = 0;
 
   roundPaused: boolean = false;
-  roundPausedBy: ModuleObject;
+  roundPausedBy: GameObject;
   /** Saved RoundPausedBy DWORD for deferred resolve. */
   roundPausedByObjectId: number = 0;
   infinitePause: boolean = false;
@@ -663,7 +663,7 @@ export class CombatRound {
   /** Last position while PhysicalAttacks held on blocked LOS. */
   losStuckPosition: THREE.Vector3 | undefined;
 
-  constructor(owner: ModuleObject){
+  constructor(owner: GameObject){
     this.owner = owner;
     this.initialize();
   }
@@ -745,14 +745,14 @@ export class CombatRound {
    * @param featId - combat feat id for CalculateOnHandAttacks
    */
   startCombatRound(
-    target: ModuleObject | undefined,
+    target: GameObject | undefined,
     engaged: boolean = false,
     master: boolean = false,
     featId: number = 0
   ){
     if(!isCreature(this.owner)) return;
 
-    const owner: ModuleCreature = this.owner as any;
+    const owner: Creature = this.owner as any;
 
     // Release any prior duel slave before overwriting master/engaged.
     // Otherwise becoming someone else's slave clears master first and
@@ -906,7 +906,7 @@ export class CombatRound {
    * Dual-wield when MH weapon size ≤ creature size and OH is a real weapon;
    * else oversized MELEE_TWO_HAND gets one bonus main-hand-style slot.
    */
-  calculateOffHandAttacks(creature: ModuleCreature): number {
+  calculateOffHandAttacks(creature: Creature): number {
     this.offHandAttacks = 0;
     if(!creature || creature.isSimpleCreature()){
       return 0;
@@ -946,7 +946,7 @@ export class CombatRound {
   }
 
   /** Appearance sizecategory (defaults to MEDIUM=3). */
-  getCreatureSize(creature: ModuleCreature): number {
+  getCreatureSize(creature: Creature): number {
     return creature.getAppearance()?.sizecategory || 3;
   }
 
@@ -1043,8 +1043,8 @@ export class CombatRound {
     let forceNearest = false;
     const sticky = this.newAttackTarget;
     if(sticky){
-      const stickyDead = typeof (sticky as ModuleCreature).isDead === 'function'
-        ? !!(sticky as ModuleCreature).isDead()
+      const stickyDead = typeof (sticky as Creature).isDead === 'function'
+        ? !!(sticky as Creature).isDead()
         : false;
       if(stickyDead){
         this.newAttackTarget = undefined;
@@ -1063,7 +1063,7 @@ export class CombatRound {
       !options?.skipQueueAttackActions &&
       isCreature(this.owner)
     ){
-      const creature = this.owner as ModuleCreature;
+      const creature = this.owner as Creature;
       if(
         GameState.PartyManager.getCurrentPlayer() === creature &&
         !creature.isDead()
@@ -1158,7 +1158,7 @@ export class CombatRound {
       return true;
     }
     const id = this.masterID.id;
-    if(!id || id === ModuleObjectConstant.OBJECT_INVALID){
+    if(!id || id === GameObjectConstant.OBJECT_INVALID){
       return true;
     }
     return !lookupCombatObjectById(id);
@@ -1179,7 +1179,7 @@ export class CombatRound {
         !attack.projectileSpawned &&
         after <= (attack.reaxnDelay || 0)
       ){
-        spawnCombatProjectile(this.owner as ModuleCreature, attack);
+        spawnCombatProjectile(this.owner as Creature, attack);
         attack.projectileSpawned = true;
       }
 
@@ -1216,7 +1216,7 @@ export class CombatRound {
     fake.rangedTargetY = shot.rangedTargetY;
     fake.rangedTargetZ = shot.rangedTargetZ;
     fake.reactObject = shot.reactObject;
-    spawnCombatProjectile(this.owner as ModuleCreature, fake);
+    spawnCombatProjectile(this.owner as Creature, fake);
   }
 
   /**
@@ -1227,7 +1227,7 @@ export class CombatRound {
       const attack = this.attackList[i];
       if(!attack || attack.damageApplied || attack.damageApplyDelay < 0) continue;
       if(attack.rangedAttack && !attack.projectileSpawned){
-        spawnCombatProjectile(this.owner as ModuleCreature, attack);
+        spawnCombatProjectile(this.owner as Creature, attack);
         attack.projectileSpawned = true;
       }
       this.signalAttackResult(attack);
@@ -1245,7 +1245,7 @@ export class CombatRound {
     if(!attack || attack.damageApplied) return;
     attack.damageApplyDelay = -1;
 
-    const owner = this.owner as ModuleCreature;
+    const owner = this.owner as Creature;
     const scripted = !!this.resultsCalculated;
     // ResolveOnHitVisuals — skipped on resultsCalculated (ResolveDamage scripted)
     if(!scripted){
@@ -1267,7 +1267,7 @@ export class CombatRound {
     ){
       attack.applyDamageEffectToCreature(
         owner,
-        attack.reactObject as ModuleCreature,
+        attack.reactObject as Creature,
         { scriptedResults: scripted }
       );
       if(attack.reactObject && showFloaty){
@@ -1354,7 +1354,7 @@ export class CombatRound {
    * whether the target's round can absorb a reaction of `actionLengthMs`.
    */
   checkActionLengthAtTime(
-    pausedBy: ModuleObject | undefined,
+    pausedBy: GameObject | undefined,
     actionLengthMs: number,
     delayMs: number = 0
   ): boolean {
@@ -1398,7 +1398,7 @@ export class CombatRound {
    * Pause the round for the given pause owner and pause timer.
    * SetRoundPaused + SetPauseTimer — infinitePause holds slave until master ends.
    */
-  pauseRound(pauseOwner: ModuleObject, pauseTimer: number = 0, infinitePause: boolean = false){
+  pauseRound(pauseOwner: GameObject, pauseTimer: number = 0, infinitePause: boolean = false){
     duelLog(this.owner, 'round:pause', {
       by: duelWho(pauseOwner),
       timer: pauseTimer,
@@ -1422,7 +1422,7 @@ export class CombatRound {
    * Unpause the round for the given pause owner
    * @param pauseOwner - The pause owner to unpause the round for
    */
-  unpauseRound(pauseOwner: ModuleObject){
+  unpauseRound(pauseOwner: GameObject){
     if(this.roundPausedBy == pauseOwner){
       this.roundPaused = false;
       this.pauseTimer = 0;
@@ -1442,7 +1442,7 @@ export class CombatRound {
     this.pauseTimer = 0;
     this.timer += Math.max(0, overshootMs);
 
-    const owner = this.owner as ModuleCreature;
+    const owner = this.owner as Creature;
     const animIndex = owner?.animationState?.index;
     const scriptedDead = !owner?.isDead?.() && (
       animIndex === ModuleCreatureAnimState.DEAD ||
@@ -1484,7 +1484,7 @@ export class CombatRound {
    * AddEquipAction
    * queue ITEM_EQUIP at list head (deferred while casting / combat busy).
    */
-  addEquipAction(item: ModuleItem, slot: number, instant: boolean = false){
+  addEquipAction(item: Item, slot: number, instant: boolean = false){
     if(!item) return;
     this.decrementRoundLength(1500);
     const action = new CombatRoundActionClass(this.owner);
@@ -1500,7 +1500,7 @@ export class CombatRound {
   /**
    * AddUnequipAction.
    */
-  addUnequipAction(item: ModuleItem, instant: boolean = false){
+  addUnequipAction(item: Item, instant: boolean = false){
     if(!item) return;
     this.decrementRoundLength(1500);
     const action = new CombatRoundActionClass(this.owner);
@@ -1530,7 +1530,7 @@ export class CombatRound {
    */
   processPendingCombatActions(){
     if(!this.getActionPending()) return;
-    const owner = this.owner as ModuleCreature;
+    const owner = this.owner as Creature;
     if(!owner?.actionQueue) return;
 
     for(let i = this.scheduledActionList.length - 1; i >= 0; i--){
@@ -1540,7 +1540,7 @@ export class CombatRound {
       if(ca.actionType === CombatActionType.ITEM_EQUIP){
         const item = ca.item || (
           isItem(ca.target)
-            ? ca.target as ModuleItem
+            ? ca.target as Item
             : undefined
         );
         if(item){
@@ -1554,13 +1554,13 @@ export class CombatRound {
       }else if(ca.actionType === CombatActionType.ITEM_UNEQUIP){
         const item = ca.item || (
           isItem(ca.target)
-            ? ca.target as ModuleItem
+            ? ca.target as Item
             : undefined
         );
         if(item){
           const unequipAction = new GameState.ActionFactory.ActionUnequipItem();
           unequipAction.setParameter(0, ActionParameterType.DWORD, item);
-          unequipAction.setParameter(1, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
+          unequipAction.setParameter(1, ActionParameterType.DWORD, GameObjectConstant.OBJECT_INVALID);
           unequipAction.setParameter(2, ActionParameterType.INT, ca.equipInstant ? 1 : 0);
           owner.actionQueue.addFront(unequipAction);
         }
@@ -1619,7 +1619,7 @@ export class CombatRound {
    * Clear the actions by target
    * @param target - The target to clear the actions for
    */
-  clearActionsByTarget(target: ModuleObject){
+  clearActionsByTarget(target: GameObject){
     let index = this.scheduledActionList.length;
     while(index--){
       const action = this.scheduledActionList[index];
@@ -1639,7 +1639,7 @@ export class CombatRound {
    * InitializeNewAttackTarget / QueueAttackActions must not rewrite
    * CAST_SPELL / ITEM_CAST_SPELL targets (personal menu stamps the caster).
    */
-  setAttackTarget(target: ModuleObject): boolean {
+  setAttackTarget(target: GameObject): boolean {
     if(!target) return false;
     const attackTypes = [
       CombatActionType.ATTACK,
@@ -1662,14 +1662,14 @@ export class CombatRound {
    * @param creature - The creature to calculate the attack damage for
    * @param combatAction - The combat action to calculate the attack damage for
    */
-  calculateAttackDamage(creature: ModuleCreature, combatAction: CombatRoundAction){
+  calculateAttackDamage(creature: Creature, combatAction: CombatRoundAction){
     this.resolveAttack(creature, combatAction);
   }
 
   /**
    * ResolveAttack 
    */
-  resolveAttack(creature: ModuleCreature, combatAction: CombatRoundAction){
+  resolveAttack(creature: Creature, combatAction: CombatRoundAction){
     if(!combatAction || combatAction.resolved)
       return;
 
@@ -1744,7 +1744,7 @@ export class CombatRound {
   /**
    * ResolveMeleeAttack — loop GetTotalAttacks, SetOffHandAttack by index.
    */
-  resolveMeleeAttack(creature: ModuleCreature, combatAction: CombatRoundAction){
+  resolveMeleeAttack(creature: Creature, combatAction: CombatRoundAction){
     const maxSlots = this.attackList.length;
     const onHand = Math.max(0, this.onHandAttacks || 0);
     const offHand = Math.max(0, this.offHandAttacks || 0);
@@ -1783,7 +1783,7 @@ export class CombatRound {
    * weapondischarge.2da Shots/Hits + random attack-shot assignment + travel delay.
    * Every discharge shot fires a bolt; only randomly assigned shots get AttackList rolls.
    */
-  resolveRangedAttack(creature: ModuleCreature, combatAction: CombatRoundAction){
+  resolveRangedAttack(creature: Creature, combatAction: CombatRoundAction){
     const maxSlots = this.attackList.length;
     const onHand = Math.max(0, this.onHandAttacks || 0);
     const offHand = Math.max(0, this.offHandAttacks || 0);
@@ -1914,7 +1914,7 @@ export class CombatRound {
     }
   }
 
-  resolveSimpleCreatureAttacks(creature: ModuleCreature, combatAction: CombatRoundAction){
+  resolveSimpleCreatureAttacks(creature: Creature, combatAction: CombatRoundAction){
     if(creature.equipment.CLAW1){
       this.calculateWeaponAttack(creature, creature.equipment.CLAW1, ModuleCreatureArmorSlot.CLAW1, combatAction);
     }
@@ -1930,7 +1930,7 @@ export class CombatRound {
    * ResolveMeleeAttack coup_de_grace gate:
    * target creature debilitated/dying, total level < 5, not party-UI path → Automatic Hit.
    */
-  shouldCoupDeGrace(target: ModuleCreature): boolean {
+  shouldCoupDeGrace(target: Creature): boolean {
     if(!target) return false;
     if(GameState.PartyManager?.party?.indexOf(target) >= 0) return false;
     if(target.getTotalClassLevel() >= 5) return false;
@@ -1948,7 +1948,7 @@ export class CombatRound {
    * Ability modifier for attack rolls. Ranged uses DEX; melee uses STR unless
    * TSL Finesse feats allow the better of STR/DEX.
    */
-  getAttackAbilityModifier(creature: ModuleCreature, weapon: ModuleItem | undefined): number {
+  getAttackAbilityModifier(creature: Creature, weapon: Item | undefined): number {
     const strMod = CombatRound.GetMod(creature.getSTR());
     const dexMod = CombatRound.GetMod(creature.getDEX());
     if(weapon?.isRangedWeapon()){
@@ -1971,8 +1971,8 @@ export class CombatRound {
    * Full to-hit modifier vs target.
    */
   getAttackModifierVersus(
-    creature: ModuleCreature,
-    weapon: ModuleItem | undefined,
+    creature: Creature,
+    weapon: Item | undefined,
     weaponSlot: ModuleCreatureArmorSlot,
     combatAction: CombatRoundAction
   ): number {
@@ -2016,7 +2016,7 @@ export class CombatRound {
       weapon && !weapon.isRangedWeapon() &&
       isCreature(combatAction.target)
     ){
-      const target = combatAction.target as ModuleCreature;
+      const target = combatAction.target as Creature;
       const targetWeapon = target.equipment?.RIGHTHAND;
       if(targetWeapon?.isRangedWeapon()){
         modifier += 10;
@@ -2035,9 +2035,9 @@ export class CombatRound {
    * TSL: Soresu raises the threshold; Ataru lowers it while a saber is equipped.
    */
   getCriticalThreatRoll(
-    weapon: ModuleItem | undefined = undefined,
+    weapon: Item | undefined = undefined,
     feat?: TalentFeat,
-    attacker?: ModuleCreature
+    attacker?: Creature
   ): number {
     const baseThreat = weapon?.baseItem?.criticalThreat || 1;
     let width = weapon ? baseThreat : 0;
@@ -2086,9 +2086,9 @@ export class CombatRound {
    */
   isCriticalThreat(
     naturalRoll: number,
-    weapon: ModuleItem | undefined = undefined,
+    weapon: Item | undefined = undefined,
     feat?: TalentFeat,
-    attacker?: ModuleCreature
+    attacker?: Creature
   ): boolean {
     if(naturalRoll >= 20) return true;
     if(!weapon) return false;
@@ -2100,9 +2100,9 @@ export class CombatRound {
    * TSL: Power Attack family +1; Shien form +1 while lightsaber equipped.
    */
   getCriticalHitMultiplier(
-    weapon: ModuleItem | undefined,
+    weapon: Item | undefined,
     feat?: TalentFeat,
-    attacker?: ModuleCreature
+    attacker?: Creature
   ): number {
     let mult = weapon?.baseItem?.criticalHitMultiplier || 2;
 
@@ -2131,14 +2131,14 @@ export class CombatRound {
   }
 
   /** @deprecated Prefer isCriticalThreat(naturalRoll, weapon, feat). */
-  isCritical(attackRoll: number, weapon: ModuleItem | undefined = undefined): boolean {
+  isCritical(attackRoll: number, weapon: Item | undefined = undefined): boolean {
     return this.isCriticalThreat(attackRoll, weapon);
   }
 
   /**
    * Check if the creature is dual-wielding (CalculateOffHandAttacks dual path).
    */
-  isDualWielding(creature: ModuleCreature): boolean {
+  isDualWielding(creature: Creature): boolean {
     const rightHand = creature.equipment.RIGHTHAND;
     const leftHand = creature.equipment.LEFTHAND;
     if(!rightHand || !leftHand) return false;
@@ -2154,7 +2154,7 @@ export class CombatRound {
    * Two-weapon fighting to-hit modifier.
    * TSL Superior Two-Weapon Fighting I/II/III replace Master penalties when present.
    */
-  calculateTwoWeaponModifier(creature: ModuleCreature, slot: ModuleCreatureArmorSlot.RIGHTHAND|ModuleCreatureArmorSlot.LEFTHAND): number {
+  calculateTwoWeaponModifier(creature: Creature, slot: ModuleCreatureArmorSlot.RIGHTHAND|ModuleCreatureArmorSlot.LEFTHAND): number {
     if(!creature || creature.isSimpleCreature()) return 0;
     if(!this.isDualWielding(creature)) return 0;
 
@@ -2205,11 +2205,11 @@ export class CombatRound {
   /**
    * @deprecated Use calculateTwoWeaponModifier
    */
-  calculateTwoWeaponPenalty(creature: ModuleCreature, slot: ModuleCreatureArmorSlot.RIGHTHAND|ModuleCreatureArmorSlot.LEFTHAND){
+  calculateTwoWeaponPenalty(creature: Creature, slot: ModuleCreatureArmorSlot.RIGHTHAND|ModuleCreatureArmorSlot.LEFTHAND){
     return Math.max(0, -this.calculateTwoWeaponModifier(creature, slot));
   }
 
-  isLightsaberEquipped(creature: ModuleCreature): boolean {
+  isLightsaberEquipped(creature: Creature): boolean {
     const right = creature.equipment?.RIGHTHAND;
     const left = creature.equipment?.LEFTHAND;
     return !!(right?.isLightsaber() || left?.isLightsaber());
@@ -2218,7 +2218,7 @@ export class CombatRound {
   /**
    * Whether two creatures are oriented toward each other (facing-dot ≤ 0).
    */
-  areFacingEachOther(attacker: ModuleCreature, target: ModuleCreature): boolean {
+  areFacingEachOther(attacker: Creature, target: Creature): boolean {
     const aFace = attacker.getFacingVector?.() || new THREE.Vector3(0, 1, 0);
     const tFace = target.getFacingVector?.() || new THREE.Vector3(0, 1, 0);
     return aFace.dot(tFace) <= 0;
@@ -2231,8 +2231,8 @@ export class CombatRound {
    * deflects from parry-only results.
    */
   isProjectileParryable(
-    attacker: ModuleCreature,
-    target: ModuleCreature,
+    attacker: Creature,
+    target: Creature,
     rangedAttack: boolean,
     outCanDeflect?: { value: boolean }
   ): boolean {
@@ -2275,7 +2275,7 @@ export class CombatRound {
   /**
    * TSL lightsaber form deflection modifiers for the defender.
    */
-  getLightsaberFormDeflectionBonus(creature: ModuleCreature): number {
+  getLightsaberFormDeflectionBonus(creature: Creature): number {
     if(!this.isLightsaberEquipped(creature)) return 0;
     switch(creature.getCurrentForm()){
       case LightsaberForm.MAKASHI: return -5;
@@ -2290,7 +2290,7 @@ export class CombatRound {
   /**
    * TSL Precise Shot I–V on the attacker reduce the defender's opposed roll.
    */
-  getPreciseShotDeflectionPenalty(attacker: ModuleCreature): number {
+  getPreciseShotDeflectionPenalty(attacker: Creature): number {
     if(attacker.getHasFeat(CombatFeatType.PRECISE_SHOT_V)) return 10;
     if(attacker.getHasFeat(CombatFeatType.PRECISE_SHOT_IV)) return 8;
     if(attacker.getHasFeat(CombatFeatType.PRECISE_SHOT_III)) return 6;
@@ -2302,7 +2302,7 @@ export class CombatRound {
   /**
    * TSL DEFLECT feat (Weapon Master): +(classLevel+1)/2 while lightsaber equipped.
    */
-  getWeaponMasterDeflectBonus(creature: ModuleCreature): number {
+  getWeaponMasterDeflectBonus(creature: Creature): number {
     if(!creature.getHasFeat(CombatFeatType.DEFLECT)) return 0;
     if(!this.isLightsaberEquipped(creature)) return 0;
     const level = creature.getClassLevel(CLASS_JEDI_WEAPONMASTER);
@@ -2310,7 +2310,7 @@ export class CombatRound {
     return Math.floor((level + 1) / 2);
   }
 
-  getBlasterDeflectionBonus(creature: ModuleCreature): number {
+  getBlasterDeflectionBonus(creature: Creature): number {
     let bonus = 0;
     for(let i = 0; i < creature.effects.length; i++){
       const effect = creature.effects[i];
@@ -2334,8 +2334,8 @@ export class CombatRound {
    * Returns true if the attack was stopped (result written to attack/combatAction).
    */
   resolveDefensiveEffects(
-    attacker: ModuleCreature,
-    target: ModuleCreature,
+    attacker: Creature,
+    target: Creature,
     attack: CombatAttackData,
     combatAction: CombatRoundAction,
     attackTotal: number,
@@ -2401,9 +2401,9 @@ export class CombatRound {
    * @param versus - optional attacker for race / alignment filters on the effect
    */
   hasEffectImmunity(
-    creature: ModuleCreature,
+    creature: Creature,
     immunityType: number,
-    versus?: ModuleCreature
+    versus?: Creature
   ): boolean {
     if(!creature || immunityType <= 0 || immunityType >= 0x21) return false;
     const raceCount = GameState.SWRuleSet?.racialTypeCount ?? 0;
@@ -2432,7 +2432,7 @@ export class CombatRound {
   /**
    * Resolve sneak-attack eligibility (flank / rear / ranged proximity).
    */
-  resolveSneakAttack(attacker: ModuleCreature, target: ModuleCreature, attack: CombatAttackData): boolean {
+  resolveSneakAttack(attacker: Creature, target: Creature, attack: CombatAttackData): boolean {
     if(!target || !isCreature(target)) return false;
 
     let dice = 0;
@@ -2472,7 +2472,7 @@ export class CombatRound {
     return true;
   }
 
-  getMissChancePercent(creature: ModuleCreature): number {
+  getMissChancePercent(creature: Creature): number {
     let percent = 0;
     for(let i = 0; i < creature.effects.length; i++){
       const effect = creature.effects[i];
@@ -2483,7 +2483,7 @@ export class CombatRound {
     return Math.min(100, Math.max(0, percent));
   }
 
-  getConcealmentPercent(creature: ModuleCreature): number {
+  getConcealmentPercent(creature: Creature): number {
     let percent = 0;
     for(let i = 0; i < creature.effects.length; i++){
       const effect = creature.effects[i];
@@ -2499,8 +2499,8 @@ export class CombatRound {
    * @param swingIndex - ResolveMeleeAttack loop index (for impact timing / OH gate)
    */
   calculateWeaponAttack(
-    creature: ModuleCreature,
-    weapon: ModuleItem | undefined = undefined,
+    creature: Creature,
+    weapon: Item | undefined = undefined,
     weaponSlot: ModuleCreatureArmorSlot,
     combatAction: CombatRoundAction
   ) {
@@ -2547,7 +2547,7 @@ export class CombatRound {
     const hasAssuredHit = creature.hasEffect(GameEffectType.EffectAssuredHit);
 
     const targetCreature = isCreature(combatAction.target)
-      ? combatAction.target as ModuleCreature
+      ? combatAction.target as Creature
       : undefined;
     // ResolveAttackRoll — AC only via GetArmorClassVersus on creatures; else 0
     const targetAC = targetCreature
@@ -2662,7 +2662,7 @@ export class CombatRound {
    * (AC penalties are applied earlier via TalentFeat.impactCaster.)
    */
   queueFeatSpecialAttackOnHit(
-    creature: ModuleCreature,
+    creature: Creature,
     combatAction: CombatRoundAction,
     attack: CombatAttackData,
     swingIndex: number
@@ -2689,7 +2689,7 @@ export class CombatRound {
    * Ranged dodge requires the *target* round engaged (not merely the shooter),
    * so a melee PC closing distance does not dodge-slide mid-sprint.
    */
-  calculateRoundAnimations(creature: ModuleCreature, combatAction: CombatRoundAction){
+  calculateRoundAnimations(creature: Creature, combatAction: CombatRoundAction){
     if(!combatAction) return;
 
     let attackKey = creature.getCombatAnimationAttackType();
@@ -2766,7 +2766,7 @@ export class CombatRound {
     }
 
     const target = isCreature(combatAction.target)
-      ? combatAction.target as ModuleCreature
+      ? combatAction.target as Creature
       : undefined;
 
     // ResolveMelee/RangedAnimations gates only on the target being actually
@@ -2828,7 +2828,7 @@ export class CombatRound {
       if(shouldReact && reaction !== ModuleCreatureAnimState.READY){
         // Prefer combatanimations-mapped clip; if missing, SetAnimation(reaction)
         // so hits never leave a stale ATTACK clip (playTwoDAAnimation no-ops on undefined).
-        let mapped: ReturnType<ModuleCreature['getDamageAnimation']> | undefined;
+        let mapped: ReturnType<Creature['getDamageAnimation']> | undefined;
         if(reaction === ModuleCreatureAnimState.DAMAGE){
           mapped = target.getDamageAnimation( this.action.animationName );
         }else if(reaction === ModuleCreatureAnimState.PARRY){
@@ -2916,8 +2916,8 @@ export class CombatRound {
    */
   toStruct(structIdx: number = 0xCADA){
     const struct = new GFFStruct(structIdx);
-    const objId = (o: ModuleObject | undefined) =>
-      o?.id ?? ModuleObjectConstant.OBJECT_INVALID;
+    const objId = (o: GameObject | undefined) =>
+      o?.id ?? GameObjectConstant.OBJECT_INVALID;
 
     struct.addField(new GFFField(GFFDataType.BYTE, 'RoundStarted')).setValue(this.roundStarted ? 1 : 0);
     struct.addField(new GFFField(GFFDataType.BYTE, 'SpellCastRound')).setValue(this.spellCastRound ? 1 : 0);
@@ -3012,16 +3012,16 @@ export class CombatRound {
     this.deflectArrow = !!get('DeflectArrow', 1);
     this.weaponSucks = !!get('WeaponSucks');
     this.dodgeTargetObjectId = normalizeCombatObjectId(
-      get('DodgeTarget', ModuleObjectConstant.OBJECT_INVALID)
+      get('DodgeTarget', GameObjectConstant.OBJECT_INVALID)
     );
     this.newAttackTargetObjectId = normalizeCombatObjectId(
-      get('NewAttackTarget', ModuleObjectConstant.OBJECT_INVALID)
+      get('NewAttackTarget', GameObjectConstant.OBJECT_INVALID)
     );
     this.dodgeTarget = lookupCombatObjectById(this.dodgeTargetObjectId);
     this.newAttackTarget = lookupCombatObjectById(this.newAttackTargetObjectId);
     this.roundPaused = !!get('RoundPaused');
     this.roundPausedByObjectId = normalizeCombatObjectId(
-      get('RoundPausedBy', ModuleObjectConstant.OBJECT_INVALID)
+      get('RoundPausedBy', GameObjectConstant.OBJECT_INVALID)
     );
     this.roundPausedBy = lookupCombatObjectById(this.roundPausedByObjectId);
     this.infinitePause = false; // clears after load
@@ -3029,11 +3029,11 @@ export class CombatRound {
     this.engaged = !!get('Engaged');
     this.master = !!get('Master');
     this.masterIDObjectId = normalizeCombatObjectId(
-      get('MasterID', ModuleObjectConstant.OBJECT_INVALID)
+      get('MasterID', GameObjectConstant.OBJECT_INVALID)
     );
     this.masterID = lookupCombatObjectById(this.masterIDObjectId);
     this.duelPartnerObjectId = normalizeCombatObjectId(
-      get('DuelPartner', ModuleObjectConstant.OBJECT_INVALID)
+      get('DuelPartner', GameObjectConstant.OBJECT_INVALID)
     );
     this.duelPartner = lookupCombatObjectById(this.duelPartnerObjectId);
     this.timer = get('Timer');
@@ -3196,7 +3196,7 @@ export class CombatRound {
     }
 
     const hasValidAttackTarget = attackActions.some(
-      (a) => !!(a.target?.id && a.target.id !== ModuleObjectConstant.OBJECT_INVALID)
+      (a) => !!(a.target?.id && a.target.id !== GameObjectConstant.OBJECT_INVALID)
     );
     if(hasValidAttackTarget){
       return;
@@ -3206,22 +3206,22 @@ export class CombatRound {
     const fallback =
       this.newAttackTarget ||
       this.dodgeTarget ||
-      (this.owner as ModuleCreature)?.combatData?.lastAttackTarget ||
+      (this.owner as Creature)?.combatData?.lastAttackTarget ||
       this.duelPartner ||
       (!this.master ? this.masterID : undefined);
 
-    if(fallback && fallback.id && fallback.id !== ModuleObjectConstant.OBJECT_INVALID){
+    if(fallback && fallback.id && fallback.id !== GameObjectConstant.OBJECT_INVALID){
       for(let i = sched.length - 1; i >= 0; i--){
         const a = sched[i];
         if(
           attackTypes.indexOf(a.actionType) >= 0 &&
-          !(a.target?.id && a.target.id !== ModuleObjectConstant.OBJECT_INVALID)
+          !(a.target?.id && a.target.id !== GameObjectConstant.OBJECT_INVALID)
         ){
           sched.splice(i, 1);
         }
       }
       if(!sched.length && isCreature(this.owner)){
-        const creature = this.owner as ModuleCreature;
+        const creature = this.owner as Creature;
         creature.combatData.lastAttackTarget = fallback;
         creature.combatData.lastAttemptedAttackTarget = fallback;
         this.newAttackTarget = fallback;
@@ -3242,7 +3242,7 @@ export class CombatRound {
     if(!this.roundStarted || !this.owner){
       return;
     }
-    const cd = (this.owner as ModuleCreature).combatData;
+    const cd = (this.owner as Creature).combatData;
     if(!cd){
       return;
     }
@@ -3300,7 +3300,7 @@ export class CombatRound {
    * Log the attack result to the Messages feedback buffer.
    * matches engine behavior SendAttackSummaryFeedback → CC 0x12 TLK assembly.
    */
-  logAttackResult(creature: ModuleCreature, _weapon: ModuleItem | undefined, combatAction: CombatRoundAction, isCritical: boolean, hasAssuredHit: boolean) {
+  logAttackResult(creature: Creature, _weapon: Item | undefined, combatAction: CombatRoundAction, isCritical: boolean, hasAssuredHit: boolean) {
     const { FeedbackMessageManager } = GameState;
 
     const attack = this.currentAttack < this.attackList.length

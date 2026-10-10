@@ -14,7 +14,7 @@ jest.mock('@engine/runtime/GameState', () => ({
       getCurrentPlayer: jest.fn(),
     },
     TwoDAManager: { datatables: new Map() },
-    ModuleObjectManager: { GetObjectById: (id: number) => ({ id }) },
+    GameObjectManager: { GetObjectById: (id: number) => ({ id }) },
     ActionFactory: {},
   },
 }));

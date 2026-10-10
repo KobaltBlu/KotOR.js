@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Area } from "@engine/module/Area";
+import type { GameObject } from "@engine/module/GameObject";
 import { hasClearWalkLine } from "@engine/pathfinding/walk-line-clear";
 
 /**
@@ -219,9 +219,9 @@ export function densifyPathPointsRestartable(
  * Reduce a polyline by LOS string-pull. Returns a new array (may share Vector3 refs).
  */
 export function smoothSelectNodes(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   points: THREE.Vector3[],
-  owner?: ModuleObject,
+  owner?: GameObject,
   shouldAbort?: () => boolean
 ): THREE.Vector3[] {
   if(!area || points.length <= 2) return points;
@@ -291,9 +291,9 @@ function makeDensifyResume(
  * May return early with `timedOut` + `resume` when wall budget exhausted.
  */
 export function smoothSelectionRestartable(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   points: THREE.Vector3[],
-  owner?: ModuleObject,
+  owner?: GameObject,
   options: SmoothSelectionOptions = {}
 ): SmoothSelectionResult {
   if(!area || points.length <= 2){
@@ -389,9 +389,9 @@ export function smoothSelectionRestartable(
  * Sync convenience wrapper — completes all stages unless budget is set.
  */
 export function smoothSelection(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   points: THREE.Vector3[],
-  owner?: ModuleObject,
+  owner?: GameObject,
   options?: SmoothSelectionOptions
 ): THREE.Vector3[] {
   return smoothSelectionRestartable(area, points, owner, options).points;

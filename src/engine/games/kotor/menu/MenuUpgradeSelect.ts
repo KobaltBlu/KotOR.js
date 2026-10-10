@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { GameState } from "@engine/runtime/GameState";
 import { GameMenu } from "@engine/gui";
 import type { GUIButton, GUILabel } from "@engine/gui";
-import type { ModuleItem } from "@engine/module/ModuleItem";
+import type { Item } from "@engine/module/Item";
 import {
   UpgradeCategory,
   categoryToKey,
@@ -38,7 +38,7 @@ export class MenuUpgradeSelect extends GameMenu {
   selected: UpgradeCategoryKey = 'NONE';
   btnNormalColor: THREE.Color;
   btnSelectedColor: THREE.Color;
-  forcedItem: ModuleItem;
+  forcedItem: Item;
   disableItemCreation: boolean = false;
   disableUpgrade: boolean = false;
   createItemString: string = '';
@@ -120,7 +120,7 @@ export class MenuUpgradeSelect extends GameMenu {
     }
   }
 
-  openForcedItem(item: ModuleItem) {
+  openForcedItem(item: Item) {
     this.forcedItem = item;
     const category = getUpgradableType(item);
     if(category === UpgradeCategory.NONE){
@@ -135,7 +135,7 @@ export class MenuUpgradeSelect extends GameMenu {
   }
 
   open(args?: {
-    forcedItem?: ModuleItem;
+    forcedItem?: Item;
     skillCharacter?: any;
     disableItemCreation?: boolean;
     disableUpgrade?: boolean;

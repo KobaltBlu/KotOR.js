@@ -8,8 +8,8 @@ import { composeObjectWalkmeshLocalToWorld } from "@engine/pathfinding/door-walk
 import { isStaticWalkClearOnWalkMesh } from "@engine/pathfinding/static-walk-blockers-mesh";
 import { isStaticWalkClearDetailed } from "@engine/pathfinding/static-walk-blockers";
 import { collectBlockingWalkEdgeNormals } from "@engine/movement/wall-slide";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModulePlaceable } from "@engine/module/ModulePlaceable";
+import type { Area } from "@engine/module/Area";
+import type { Placeable } from "@engine/module/Placeable";
 import type { OdysseyWalkMesh } from "@engine/odyssey/OdysseyWalkMesh";
 import type { OdysseyFace3 } from "@engine/render/three/odyssey";
 
@@ -75,7 +75,7 @@ function makePlaceable(
   pos: THREE.Vector3,
   wok: OdysseyWalkMesh,
   headerPos: THREE.Vector3
-): ModulePlaceable {
+): Placeable {
   composeObjectWalkmeshLocalToWorld(
     wok.matrixWorld, pos, new THREE.Euler(0, 0, 0), headerPos
   );
@@ -97,7 +97,7 @@ function makePlaceable(
       );
     },
     collisionManager: { walkmesh: wok },
-  } as unknown as ModulePlaceable;
+  } as unknown as Placeable;
 }
 
 describe("placeable partpile wedge escape", () => {
@@ -130,7 +130,7 @@ describe("placeable partpile wedge escape", () => {
     const area = {
       doors: [],
       placeables: [south, north],
-    } as unknown as ModuleArea;
+    } as unknown as Area;
 
     const dest = new THREE.Vector3(57.5, origin.y, origin.z);
 
@@ -157,7 +157,7 @@ describe("placeable partpile wedge escape", () => {
     const area = {
       doors: [],
       placeables: [south, north],
-    } as unknown as ModuleArea;
+    } as unknown as Area;
 
     // Step into the north pile footprint — dest-only must still reject
     const dest = origin.clone();
@@ -178,7 +178,7 @@ describe("placeable partpile wedge escape", () => {
     const area = {
       walkEdges: [],
       placeables: [south, north],
-    } as unknown as ModuleArea;
+    } as unknown as Area;
 
     const normals = collectBlockingWalkEdgeNormals(area, origin, radius);
     expect(normals.length).toBeGreaterThanOrEqual(1);

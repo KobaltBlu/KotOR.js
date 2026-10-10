@@ -59,10 +59,10 @@ jest.mock("@engine/pathfinding/path-point-creature-detour", () => ({
 }));
 
 import { buildGridPath } from "@engine/pathfinding/build-grid-path";
-import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { Area } from "@engine/module/Area";
 
 /** L-corridor: blocked strip at y≈0 for x in (1.5, 3.5); go around via y=2. */
-function makeLCorridorArea(): ModuleArea {
+function makeLCorridorArea(): Area {
   return {
     isPointWalkable: (p: THREE.Vector3) => {
       if(p.x > 1.5 && p.x < 3.5 && Math.abs(p.y) < 0.75){
@@ -71,7 +71,7 @@ function makeLCorridorArea(): ModuleArea {
       return true;
     },
     getNearestWalkablePoint: (p: THREE.Vector3) => p.clone(),
-  } as unknown as ModuleArea;
+  } as unknown as Area;
 }
 
 describe("buildGridPath GridDFS (G3)", () => {
@@ -94,7 +94,7 @@ describe("buildGridPath GridDFS (G3)", () => {
       isPointWalkable: (p: THREE.Vector3) =>
         Math.hypot(p.x, p.y) < 0.2,
       getNearestWalkablePoint: (p: THREE.Vector3) => p.clone(),
-    } as unknown as ModuleArea;
+    } as unknown as Area;
     // Override hasClearWalkLine mock: origin→dest must not snap
     const path = buildGridPath(
       area,
@@ -111,7 +111,7 @@ describe("buildGridPath GridDFS (G3)", () => {
       isPointWalkable: (p: THREE.Vector3) =>
         !(p.x > 2.2 && p.x < 2.8 && Math.abs(p.y) < 0.5),
       getNearestWalkablePoint: (p: THREE.Vector3) => p.clone(),
-    } as unknown as ModuleArea;
+    } as unknown as Area;
     const path = buildGridPath(
       area,
       new THREE.Vector3(0, 0, 0),

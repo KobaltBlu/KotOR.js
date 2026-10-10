@@ -5,7 +5,7 @@ import {
   OdysseyShadowHelperRole,
   OdysseyShadowLightHelper,
 } from "@engine/render/three/odyssey/OdysseyShadowLightHelper";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import { TwoDAManager } from "@core/managers/TwoDAManager";
 import { MAX_ODYSSEY_LIGHTS } from "@engine/render/shaders/chunks/OdysseyLighting";
 import { EngineDebugType } from "@engine/enums/engine/EngineDebugType";
@@ -350,9 +350,9 @@ export class LightManager {
   /**
    * Score lights relative to a focus position (Scene.focus_position), then
    * run illumination prioritize / light fade pass / shadow selection.
-   * Accepts a Camera, ModuleObject, or any object with a world `position`.
+   * Accepts a Camera, GameObject, or any object with a world `position`.
    */
-  update(delta = 0, target: THREE.Camera|ModuleObject|{ position: THREE.Vector3 }){
+  update(delta = 0, target: THREE.Camera|GameObject|{ position: THREE.Vector3 }){
     if(!target?.position) return;
 
     this.focusPosition.copy(target.position);
@@ -386,12 +386,12 @@ export class LightManager {
 
   /**
    * Resolve the room used for CollectLightsForGivenRoom scoping.
-   * Prefer a ModuleObject target's room, else the controlled player's room.
+   * Prefer a GameObject target's room, else the controlled player's room.
    */
   private resolveCollectLightsRoom(
-    target: THREE.Camera|ModuleObject|{ position: THREE.Vector3 }
+    target: THREE.Camera|GameObject|{ position: THREE.Vector3 }
   ): { room?: any; areaRooms?: any[] } {
-    const asModule = target as ModuleObject;
+    const asModule = target as GameObject;
     if(asModule?.room){
       return { room: asModule.room };
     }
@@ -445,17 +445,17 @@ export class LightManager {
 
   private lightBelongsToRoomSet(light: OdysseyLight3D, roomSet: Set<any>): boolean {
     const model = light.odysseyModel as any;
-    const moduleObject = model?.userData?.moduleObject ?? model?.moduleObject;
-    if(moduleObject && roomSet.has(moduleObject)){
+    const gameObject = model?.userData?.gameObject ?? model?.gameObject;
+    if(gameObject && roomSet.has(gameObject)){
       return true;
     }
-    if(moduleObject?.room && roomSet.has(moduleObject.room)){
+    if(gameObject?.room && roomSet.has(gameObject.room)){
       return true;
     }
-    // Walk parents for a room moduleObject (light under room model hierarchy).
+    // Walk parents for a room gameObject (light under room model hierarchy).
     let obj: THREE.Object3D | null = light;
     while(obj){
-      const mo = (obj as any).userData?.moduleObject;
+      const mo = (obj as any).userData?.gameObject;
       if(mo && roomSet.has(mo)){
         return true;
       }

@@ -5,9 +5,9 @@
  * Avoids importing heavy Module* classes (window-dependent import graph).
  */
 import { describe, expect, it, jest } from "@jest/globals";
-import { ModuleObjectScript } from "@core/enums/module/ModuleObjectScript";
+import { ScriptHook } from "@core/enums/module/ScriptHook";
 
-/** Mirrors ModuleObject.canProcessHeartbeat. */
+/** Mirrors GameObject.canProcessHeartbeat. */
 function canProcessHeartbeat(self: {
   spawned: boolean;
   moduleReady: boolean;
@@ -30,9 +30,9 @@ function runHeartbeat(
   onHeartbeat.run(self);
 }
 
-/** Mirrors ModuleObject.addTrap bind path via bindTrapTriggeredScript. */
+/** Mirrors GameObject.addTrap bind path via bindTrapTriggeredScript. */
 function bindTrapFromAddTrap(
-  bindTrapTriggeredScript: (nwscript: { bindOwner: jest.Mock }) => ModuleObjectScript | undefined,
+  bindTrapTriggeredScript: (nwscript: { bindOwner: jest.Mock }) => ScriptHook | undefined,
   nwscript: { bindOwner: jest.Mock },
   scripts: Record<string, unknown>,
 ){
@@ -50,14 +50,14 @@ describe("script dispatch polymorphism contract", () => {
     const self = {
       spawned: false,
       moduleReady: true,
-      scripts: { [ModuleObjectScript.TriggerOnHeartbeat]: { run } },
+      scripts: { [ScriptHook.TriggerOnHeartbeat]: { run } },
     };
-    runHeartbeat(self, ModuleObjectScript.TriggerOnHeartbeat);
+    runHeartbeat(self, ScriptHook.TriggerOnHeartbeat);
     expect(run).not.toHaveBeenCalled();
 
     self.spawned = true;
     self.moduleReady = false;
-    runHeartbeat(self, ModuleObjectScript.TriggerOnHeartbeat);
+    runHeartbeat(self, ScriptHook.TriggerOnHeartbeat);
     expect(run).not.toHaveBeenCalled();
   });
 
@@ -66,9 +66,9 @@ describe("script dispatch polymorphism contract", () => {
     const self = {
       spawned: true,
       moduleReady: true,
-      scripts: { [ModuleObjectScript.TriggerOnHeartbeat]: { run } },
+      scripts: { [ScriptHook.TriggerOnHeartbeat]: { run } },
     };
-    runHeartbeat(self, ModuleObjectScript.TriggerOnHeartbeat);
+    runHeartbeat(self, ScriptHook.TriggerOnHeartbeat);
     expect(run).toHaveBeenCalledWith(self);
   });
 
@@ -78,15 +78,15 @@ describe("script dispatch polymorphism contract", () => {
     const scripts: Record<string, unknown> = {};
     const trapKey = bindTrapFromAddTrap(
       () => {
-        scripts[ModuleObjectScript.TriggerOnTrapTriggered] = nwscript;
-        return ModuleObjectScript.TriggerOnTrapTriggered;
+        scripts[ScriptHook.TriggerOnTrapTriggered] = nwscript;
+        return ScriptHook.TriggerOnTrapTriggered;
       },
       nwscript,
       scripts,
     );
-    expect(trapKey).toBe(ModuleObjectScript.TriggerOnTrapTriggered);
-    expect(scripts[ModuleObjectScript.TriggerOnTrapTriggered]).toBe(nwscript);
-    expect(bindOwner).toHaveBeenCalledWith(scripts, ModuleObjectScript.TriggerOnTrapTriggered);
+    expect(trapKey).toBe(ScriptHook.TriggerOnTrapTriggered);
+    expect(scripts[ScriptHook.TriggerOnTrapTriggered]).toBe(nwscript);
+    expect(bindOwner).toHaveBeenCalledWith(scripts, ScriptHook.TriggerOnTrapTriggered);
   });
 
   it("addTrap bind no-ops when bindTrapTriggeredScript returns undefined", () => {

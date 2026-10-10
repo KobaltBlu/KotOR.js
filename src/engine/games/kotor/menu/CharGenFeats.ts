@@ -1,7 +1,7 @@
 import { GameMenu } from "@engine/gui";
 import type { GUIListBox, GUILabel, GUIButton } from "@engine/gui";
 import { GUIFeatItem } from "@engine/games/kotor/gui/GUIFeatItem";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { TalentFeat } from "@engine/talents";
 import { GameState } from "@engine/runtime/GameState";
 import { getFeatPicksForLevel } from "@engine/rules/level-up";
@@ -39,7 +39,7 @@ export class CharGenFeats extends GameMenu {
   BTN_ACCEPT: GUIButton;
   BTN_BACK: GUIButton;
 
-  creature: ModuleCreature;
+  creature: Creature;
   selectedFeat: any = null;
   chosenFeats: number[] = [];
   selectionsRemaining: number = 1;
@@ -193,7 +193,7 @@ export class CharGenFeats extends GameMenu {
     return GUIFeatItem;
   }
 
-  setCreature(creature: ModuleCreature){
+  setCreature(creature: Creature){
     this.creature = creature;
   }
 

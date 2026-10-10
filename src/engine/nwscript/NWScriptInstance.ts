@@ -1,6 +1,6 @@
 import type EngineLocation from "@engine/runtime/EngineLocation";
 import { NWScriptDataType } from "@core/enums/nwscript/NWScriptDataType";
-import { ModuleObjectType } from "@core/enums/module/ModuleObjectType";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
 import { GFFDataType } from "@core/enums/resource/GFFDataType";
 import { DebuggerState } from "@engine/enums/server/DebuggerState";
 import { IPCDataType } from "@engine/enums/server/ipc/IPCDataType";
@@ -9,7 +9,7 @@ import type { EventTimedEvent } from "@engine/events";
 import { GameState } from "@engine/runtime/GameState";
 import type { IPerceptionInfo } from "@engine/interface/engine/IPerceptionInfo";
 import type { INWScriptStoreState } from "@engine/interface/nwscript/INWScriptStoreState";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import type { DLGObject } from "@engine/dialog/DLGObject";
 import { GFFField } from "@core/resource/GFFField";
 import { GFFStruct } from "@core/resource/GFFStruct";
@@ -40,7 +40,7 @@ export class NWScriptInstance {
   _disposed: boolean = false;
   isStoreState: boolean = false;
   nwscript: NWScript;
-  caller: ModuleObject;
+  caller: GameObject;
   /** Debugger: engine object id of owner / OBJECT_SELF (-1 if unassigned). */
   ownerObjectId: number = -1;
   ownerTag: string = '';
@@ -68,37 +68,37 @@ export class NWScriptInstance {
   
   lastPerceived: IPerceptionInfo;
 
-  lastSpeaker: ModuleObject;
-  object: ModuleObject;
+  lastSpeaker: GameObject;
+  object: GameObject;
 
   running: boolean = false;
   currentInstruction: NWScriptInstruction;
   prevByteCode: number;
   seek: number;
 
-  enteringObject: ModuleObject;
-  exitingObject: ModuleObject;
+  enteringObject: GameObject;
+  exitingObject: GameObject;
 
   //ListenPattern
   listenPatternNumber: number = -1;
-  listenPatternSpeaker: ModuleObject = undefined;
+  listenPatternSpeaker: GameObject = undefined;
   conversation: DLGObject;
 
   talent: TalentObject;
 
   //Spell
-  lastSpellCaster: ModuleObject;
-  lastSpellAttacker: ModuleObject;
+  lastSpellCaster: GameObject;
+  lastSpellAttacker: GameObject;
   lastSpell: TalentSpell;
   lastSpellHarmful: boolean;
-  healTarget: ModuleObject;
+  healTarget: GameObject;
 
-  lastDisturbed: ModuleObject;
+  lastDisturbed: GameObject;
 
   //MiniGame
-  mgFollower: ModuleObject;
-  mgObstacle: ModuleObject;
-  mgBullet: ModuleObject;
+  mgFollower: GameObject;
+  mgObstacle: GameObject;
+  mgBullet: GameObject;
 
   //ITERATE POINTERS
   persistentObjectIndex: Map<number, number> = new Map<number, number>();
@@ -107,7 +107,7 @@ export class NWScriptInstance {
   creatureAttackerIndex: Map<number, number> = new Map<number, number>();
   factionMemberIndex: Map<number, number> = new Map<number, number>();
   objectInSphapeIndex: Map<number, number> = new Map<number, number>();
-  objectInShapeResults: ModuleObject[] = [];
+  objectInShapeResults: GameObject[] = [];
 
   breakPoints: Map<number, boolean> = new Map<number, boolean>();
   /** True while halted at a debugger breakpoint / step; Cleared when run completes. */
@@ -280,7 +280,7 @@ export class NWScriptInstance {
   }
 
   /**
-   * Bind this instance to an owning ModuleObject (and optional GFF script slot),
+   * Bind this instance to an owning GameObject (and optional GFF script slot),
    * then push UpdateScriptOwner to the debugger.
    */
   bindOwner(obj: any, scriptKey?: string){
@@ -327,21 +327,21 @@ export class NWScriptInstance {
     if(!obj){ return ''; }
     const ot = obj.objectType;
     if(ot == null){ return 'other'; }
-    if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleCreature) || BitWise.InstanceOf(ot, ModuleObjectType.ModulePlayer)){
+    if(BitWise.InstanceOf(ot, GameObjectType.Creature) || BitWise.InstanceOf(ot, GameObjectType.PlayerCharacter)){
       const party = GameState.PartyManager?.party || [];
       if(party.includes(obj)){ return 'party'; }
       return 'creature';
     }
-    if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleDoor)) return 'door';
-    if(BitWise.InstanceOf(ot, ModuleObjectType.ModulePlaceable)) return 'placeable';
-    if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleTrigger)) return 'trigger';
-    if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleWaypoint)) return 'waypoint';
-    if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleSound)) return 'sound';
-    if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleStore)) return 'store';
-    if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleEncounter)) return 'encounter';
-    if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleItem)) return 'item';
-    if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleArea)) return 'area';
-    if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleAreaOfEffect)) return 'other';
+    if(BitWise.InstanceOf(ot, GameObjectType.Door)) return 'door';
+    if(BitWise.InstanceOf(ot, GameObjectType.Placeable)) return 'placeable';
+    if(BitWise.InstanceOf(ot, GameObjectType.Trigger)) return 'trigger';
+    if(BitWise.InstanceOf(ot, GameObjectType.Waypoint)) return 'waypoint';
+    if(BitWise.InstanceOf(ot, GameObjectType.Sound)) return 'sound';
+    if(BitWise.InstanceOf(ot, GameObjectType.Store)) return 'store';
+    if(BitWise.InstanceOf(ot, GameObjectType.Encounter)) return 'encounter';
+    if(BitWise.InstanceOf(ot, GameObjectType.Item)) return 'item';
+    if(BitWise.InstanceOf(ot, GameObjectType.Area)) return 'area';
+    if(BitWise.InstanceOf(ot, GameObjectType.AreaEffect)) return 'other';
     return 'other';
   }
 
@@ -527,7 +527,7 @@ export class NWScriptInstance {
   setCaller(obj: any, scriptKey?: string, notifyDebugger = true){
     this.caller = obj;
     if(typeof this.caller == 'number'){
-      this.caller = GameState.ModuleObjectManager.GetObjectById(this.caller);
+      this.caller = GameState.GameObjectManager.GetObjectById(this.caller);
     }
     this.applyOwnerSnapshot(this.caller, scriptKey);
     if(notifyDebugger){

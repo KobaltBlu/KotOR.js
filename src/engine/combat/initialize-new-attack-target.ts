@@ -2,8 +2,8 @@ import { getNearestEnemy } from "@engine/combat/nearest-enemy";
 import { maxAttackRange } from "@engine/combat/attack-range";
 import { ActionParameterType } from "@core/enums/actions/ActionParameterType";
 import type { Action } from "@engine/actions/Action";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 
 import { isCreature } from "@engine/module/guards/isCreature";
 
@@ -19,8 +19,8 @@ import { isCreature } from "@engine/module/guards/isCreature";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export function initializeNewAttackTarget(
-  attacker: ModuleCreature,
-  newTarget: ModuleObject,
+  attacker: Creature,
+  newTarget: GameObject,
   physicalAttackAction?: Action
 ): void {
   if(!attacker || !newTarget){
@@ -51,8 +51,8 @@ export function initializeNewAttackTarget(
  * @returns true if caller should return early (retargeted or cancelled)
  */
 export function tryStuckLosRetarget(
-  attacker: ModuleCreature,
-  currentTarget: ModuleObject,
+  attacker: Creature,
+  currentTarget: GameObject,
   physicalAttackAction?: Action
 ): 'retargeted' | 'cancelled' | 'waiting' {
   const round = attacker.combatRound;

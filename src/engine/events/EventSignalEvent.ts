@@ -4,20 +4,20 @@ import { GFFDataType } from "@core/enums/resource/GFFDataType";
 import type { NWScriptEvent } from "@engine/nwscript/events/NWScriptEvent";
 import { GFFField } from "@core/resource/GFFField";
 import { GFFStruct } from "@core/resource/GFFStruct";
-import type { ModuleObject } from "@engine/module/ModuleObject";
-import { ModuleObjectScript, SignalEventType } from "@core/enums";
+import type { GameObject } from "@engine/module/GameObject";
+import { ScriptHook, SignalEventType } from "@core/enums";
 import { NWScriptEventType } from "@core/enums/nwscript/NWScriptEventType";
 import EngineLocation from "@engine/runtime/EngineLocation";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleItem } from "@engine/module/ModuleItem";
+import type { Creature } from "@engine/module/Creature";
+import type { Item } from "@engine/module/Item";
 
 import { isCreature } from "@engine/module/guards/isCreature";
 import { isDoor } from "@engine/module/guards/isDoor";
 import { isMGEnemy } from "@engine/module/guards/isMGEnemy";
 import { isMGObstacle } from "@engine/module/guards/isMGObstacle";
 import { isMGPlayer } from "@engine/module/guards/isMGPlayer";
-import { isObject } from "@engine/module/guards/isObject";
+import { isGameObject } from "@engine/module/guards/isGameObject";
 import { isPlaceable } from "@engine/module/guards/isPlaceable";
 import { isTrigger } from "@engine/module/guards/isTrigger";
 
@@ -56,21 +56,21 @@ export class EventSignalEvent extends GameEvent {
   }
 
   execute(){
-    const obj = this.getObject() as ModuleObject;
+    const obj = this.getObject() as GameObject;
     // NWScript SignalEvent path — queued EventSignalEvent carries an NWScriptEvent
     if(this.event){
       const mod = GameState.module;
       if((this as any)._signalModule && mod){
         if(this.event.type === NWScriptEventType.EventUserDefined){
-          const onUserDefined = mod.scripts[ModuleObjectScript.ModuleOnUserDefined];
+          const onUserDefined = mod.scripts[ScriptHook.ModuleOnUserDefined];
           if(onUserDefined){
             onUserDefined.run(mod.area ?? obj, parseInt(this.event.getInt(0)));
           }
           return;
         }
         if(this.event.type === NWScriptEventType.EventActivateItem){
-          mod.itemActivated = this.event.getObject(0) as ModuleItem;
-          mod.itemActivator = (this.event.getObject(1) as ModuleCreature) ?? (this.getCaller() as ModuleCreature);
+          mod.itemActivated = this.event.getObject(0) as Item;
+          mod.itemActivator = (this.event.getObject(1) as Creature) ?? (this.getCaller() as Creature);
           mod.itemActivatedTarget = this.event.getObject(3);
           mod.itemActivatedTargetLocation = new EngineLocation(
             this.event.getFloat(0) || 0,
@@ -79,32 +79,32 @@ export class EventSignalEvent extends GameEvent {
             0, 0, 0,
             mod.area ?? mod.itemActivator?.area
           );
-          const onActivate = mod.scripts[ModuleObjectScript.ModuleOnPlayerActivateItem];
+          const onActivate = mod.scripts[ScriptHook.ModuleOnPlayerActivateItem];
           if(onActivate){
             onActivate.run(mod.area ?? obj, 0);
           }
           return;
         }
       }
-      if(isObject(obj)){
+      if(isGameObject(obj)){
         obj.scriptEventHandler(this.event);
       }
       return;
     }
 
-    if(!isObject(obj)){
+    if(!isGameObject(obj)){
       return;
     }
 
     switch(this.eventType){
       case SignalEventType.OnClose:
         if(isPlaceable(obj)){
-          const instance = obj.getScriptInstance(ModuleObjectScript.PlaceableOnClosed);
+          const instance = obj.getScriptInstance(ScriptHook.PlaceableOnClosed);
           if(instance){
             instance.run(obj);
           }
         }else if(isDoor(obj)){
-          const instance = obj.getScriptInstance(ModuleObjectScript.DoorOnClosed);
+          const instance = obj.getScriptInstance(ScriptHook.DoorOnClosed);
           if(instance){
             instance.run(obj);
           }
@@ -112,12 +112,12 @@ export class EventSignalEvent extends GameEvent {
       break;
       case SignalEventType.OnOpen:
         if(isPlaceable(obj)){
-          const instance = obj.getScriptInstance(ModuleObjectScript.PlaceableOnOpen);
+          const instance = obj.getScriptInstance(ScriptHook.PlaceableOnOpen);
           if(instance){
             instance.run(obj);
           }
         }else if(isDoor(obj)){
-          const instance = obj.getScriptInstance(ModuleObjectScript.DoorOnOpen);
+          const instance = obj.getScriptInstance(ScriptHook.DoorOnOpen);
           if(instance){
             instance.run(obj);
           }
@@ -125,27 +125,27 @@ export class EventSignalEvent extends GameEvent {
       break;
       case SignalEventType.OnDamaged:
         if(isPlaceable(obj)){
-          const instance = obj.getScriptInstance(ModuleObjectScript.PlaceableOnDamaged);
+          const instance = obj.getScriptInstance(ScriptHook.PlaceableOnDamaged);
           if(instance){
             instance.run(obj);
           }
         }else if(isDoor(obj)){
-          const instance = obj.getScriptInstance(ModuleObjectScript.DoorOnDamaged);
+          const instance = obj.getScriptInstance(ScriptHook.DoorOnDamaged);
           if(instance){
             instance.run(obj);
           }
         }else if(isMGObstacle(obj)){
-          const instance = obj.getScriptInstance(ModuleObjectScript.MGEnemyOnDamage);
+          const instance = obj.getScriptInstance(ScriptHook.MGEnemyOnDamage);
           if(instance){
             instance.run(obj);
           }
         }else if(isMGEnemy(obj)){
-          const instance = obj.getScriptInstance(ModuleObjectScript.MGEnemyOnDamage);
+          const instance = obj.getScriptInstance(ScriptHook.MGEnemyOnDamage);
           if(instance){
             instance.run(obj);
           }
         }else if(isMGPlayer(obj)){
-          const instance = obj.getScriptInstance(ModuleObjectScript.MGPlayerOnDamage);
+          const instance = obj.getScriptInstance(ScriptHook.MGPlayerOnDamage);
           if(instance){
             instance.run(obj);
           }
@@ -153,32 +153,32 @@ export class EventSignalEvent extends GameEvent {
       break;
       case SignalEventType.OnDeath:
         if(isCreature(obj)){
-          const instance = obj.getScriptInstance(ModuleObjectScript.CreatureOnDeath);
+          const instance = obj.getScriptInstance(ScriptHook.CreatureOnDeath);
           if(instance){
             instance.run(obj);
           }
         }else if(isPlaceable(obj)){
-          const instance = obj.getScriptInstance(ModuleObjectScript.PlaceableOnDeath);
+          const instance = obj.getScriptInstance(ScriptHook.PlaceableOnDeath);
           if(instance){
             instance.run(obj);
           }
         }else if(isDoor(obj)){
-          const instance = obj.getScriptInstance(ModuleObjectScript.DoorOnDeath);
+          const instance = obj.getScriptInstance(ScriptHook.DoorOnDeath);
           if(instance){
             instance.run(obj);
           }
         }else if(isMGObstacle(obj)){
-          const instance = obj.getScriptInstance(ModuleObjectScript.MGEnemyOnDeath);
+          const instance = obj.getScriptInstance(ScriptHook.MGEnemyOnDeath);
           if(instance){
             instance.run(obj);
           }
         }else if(isMGEnemy(obj)){
-          const instance = obj.getScriptInstance(ModuleObjectScript.MGEnemyOnDeath);
+          const instance = obj.getScriptInstance(ScriptHook.MGEnemyOnDeath);
           if(instance){
             instance.run(obj);
           }
         }else if(isMGPlayer(obj)){
-          const instance = obj.getScriptInstance(ModuleObjectScript.MGPlayerOnDeath);
+          const instance = obj.getScriptInstance(ScriptHook.MGPlayerOnDeath);
           if(instance){
             instance.run(obj);
           }
@@ -186,12 +186,12 @@ export class EventSignalEvent extends GameEvent {
       break;
       case SignalEventType.OnDisarm:
         if(isPlaceable(obj)){
-          const instance = obj.getScriptInstance(ModuleObjectScript.PlaceableOnDisarm);
+          const instance = obj.getScriptInstance(ScriptHook.PlaceableOnDisarm);
           if(instance){
             instance.run(obj);
           }
         }else if(isDoor(obj)){
-          const instance = obj.getScriptInstance(ModuleObjectScript.DoorOnDisarm);
+          const instance = obj.getScriptInstance(ScriptHook.DoorOnDisarm);
           if(instance){
             instance.run(obj);
           }
@@ -199,7 +199,7 @@ export class EventSignalEvent extends GameEvent {
       break;
       case SignalEventType.OnFailToOpen:
         if(isDoor(obj)){
-          const instance = obj.getScriptInstance(ModuleObjectScript.DoorOnFailToOpen);
+          const instance = obj.getScriptInstance(ScriptHook.DoorOnFailToOpen);
           if(instance){
             instance.run(obj);
           }
@@ -207,12 +207,12 @@ export class EventSignalEvent extends GameEvent {
       break;
       case SignalEventType.OnClicked:
         if(isDoor(obj)){
-          const instance = obj.getScriptInstance(ModuleObjectScript.DoorOnClick);
+          const instance = obj.getScriptInstance(ScriptHook.DoorOnClick);
           if(instance){
             instance.run(obj);
           }
         }else if(isTrigger(obj)){
-          const instance = obj.getScriptInstance(ModuleObjectScript.TriggerOnClick);
+          const instance = obj.getScriptInstance(ScriptHook.TriggerOnClick);
           if(instance){
             instance.run(obj);
           }
@@ -220,7 +220,7 @@ export class EventSignalEvent extends GameEvent {
       break;
       case SignalEventType.OnObjectEnter:
         if(isTrigger(obj)){
-          const onEnter = obj.getScriptInstance(ModuleObjectScript.TriggerOnEnter);
+          const onEnter = obj.getScriptInstance(ScriptHook.TriggerOnEnter);
           if(onEnter){
             onEnter.enteringObject = this.getCaller();
             onEnter.run(obj);
@@ -229,7 +229,7 @@ export class EventSignalEvent extends GameEvent {
       break;
       case SignalEventType.OnObjectExit:
         if(isTrigger(obj)){
-          const onExit = obj.getScriptInstance(ModuleObjectScript.TriggerOnExit);
+          const onExit = obj.getScriptInstance(ScriptHook.TriggerOnExit);
           if(onExit){
             onExit.exitingObject = this.getCaller();
             onExit.run(obj);
@@ -238,17 +238,17 @@ export class EventSignalEvent extends GameEvent {
       break;
       case SignalEventType.OnTrapTriggered:
         if(isPlaceable(obj)){
-          const instance = obj.getScriptInstance(ModuleObjectScript.PlaceableOnTrapTriggered);
+          const instance = obj.getScriptInstance(ScriptHook.PlaceableOnTrapTriggered);
           if(instance){
             instance.run(obj);
           }
         }else if(isDoor(obj)){
-          const instance = obj.getScriptInstance(ModuleObjectScript.DoorOnTrapTriggered);
+          const instance = obj.getScriptInstance(ScriptHook.DoorOnTrapTriggered);
           if(instance){
             instance.run(obj);
           }
         }else if(isTrigger(obj)){
-          const instance = obj.getScriptInstance(ModuleObjectScript.TriggerOnTrapTriggered);
+          const instance = obj.getScriptInstance(ScriptHook.TriggerOnTrapTriggered);
           if(instance){
             instance.run(obj);
           }

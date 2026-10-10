@@ -1,7 +1,7 @@
 /**
  * Shared locomotion helpers — engine-aligned numbers for KotOR.js force movers.
  *
- * Foot motion stays force/walk (ModuleCreature); these tune rate/ease/follow
+ * Foot motion stays force/walk (Creature); these tune rate/ease/follow
  * to match GetWalkRate clamp, FollowLeader bands, and creature walk update ease.
  *
  * @file locomotion.ts

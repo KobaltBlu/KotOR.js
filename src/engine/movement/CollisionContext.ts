@@ -1,5 +1,5 @@
-import type { ModuleObject } from "@engine/module/ModuleObject";
-import type { ModuleRoom } from "@engine/module/ModuleRoom";
+import type { GameObject } from "@engine/module/GameObject";
+import type { AreaRoom } from "@engine/module/AreaRoom";
 import { OdysseyWalkMesh, WalkmeshEdge } from "@engine/odyssey";
 import * as THREE from "three";
 import { OdysseyFace3 } from "@engine/render/three/odyssey";
@@ -9,10 +9,10 @@ import {
 import { applyWalkableAttachment } from "@engine/movement/apply-walkable-attachment";
 
 /**
- * Collision / walkmesh geometry context for a ModuleObject or ModuleRoom.
+ * Collision / walkmesh geometry context for a GameObject or AreaRoom.
  *
  * Owns walkmesh refs, ground-face caches, and collision/path-query AABB cache.
- * Does not own locomotion solvers — ModuleCreature movement commits only via
+ * Does not own locomotion solvers — Creature movement commits only via
  * MovementCommitter; discontinuous placement via teleportObject.
  *
  * Transitional shims (no new callers): findWalkableFace, roomCheck.
@@ -20,14 +20,14 @@ import { applyWalkableAttachment } from "@engine/movement/apply-walkable-attachm
  * roomCheck still toggles model visibility — that will move off this type.
  */
 export class CollisionContext {
-  object: ModuleObject;
+  object: GameObject;
 
   walkmesh: OdysseyWalkMesh | undefined;
   surfaceId: number;
   groundFace: OdysseyFace3;
   lastGroundFace: OdysseyFace3;
   wm_c_point: THREE.Vector3 = new THREE.Vector3();
-  lastRoom: ModuleRoom;
+  lastRoom: AreaRoom;
 
   box = new THREE.Box3();
   edges: WalkmeshEdge[] = [];
@@ -40,7 +40,7 @@ export class CollisionContext {
   /** @deprecated Transitional — throttles unroomed attachment recovery. */
   roomCheckTimer: number = 0;
 
-  constructor(object: ModuleObject){
+  constructor(object: GameObject){
     this.object = object;
   }
 
@@ -111,14 +111,14 @@ export class CollisionContext {
    * Prefer findWalkableAttachmentAt + applyWalkableAttachment.
    * No new callers.
    */
-  findWalkableFace(object: ModuleObject = this.object): OdysseyFace3 | undefined {
+  findWalkableFace(object: GameObject = this.object): OdysseyFace3 | undefined {
     const objectPos = object.position;
     if(!object.area){
       return undefined;
     }
     const prefer =
       object.room ??
-      (this.object === object ? (this.lastRoom as ModuleRoom | undefined) : undefined);
+      (this.object === object ? (this.lastRoom as AreaRoom | undefined) : undefined);
     const hit = findWalkableAttachmentAt(object.area, objectPos, prefer);
     if(!hit){
       return undefined;

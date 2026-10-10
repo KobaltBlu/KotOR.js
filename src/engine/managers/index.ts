@@ -24,7 +24,7 @@ export * from "@engine/managers/OdysseyShadowManager";
 export * from "@engine/managers/WindManager";
 export * from "@engine/managers/GrassManager";
 export * from "@engine/managers/MenuManager";
-export * from "@engine/managers/ModuleObjectManager";
+export * from "@engine/managers/GameObjectManager";
 export * from "@engine/managers/PartyManager";
 export * from "@core/managers/RIMManager";
 export * from "@engine/managers/ShaderManager";

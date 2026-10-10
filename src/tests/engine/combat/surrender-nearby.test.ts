@@ -12,24 +12,24 @@ jest.mock("@engine/nwscript/NWScript", () => ({ NWScript: {} }));
 jest.mock("@engine/nwscript/NWScriptInstance", () => ({ NWScriptInstance: class {} }));
 jest.mock("@engine/render/FollowerCamera", () => ({ FollowerCamera: {} }));
 
-import { ModuleCreature } from "@engine/module/ModuleCreature";
+import { Creature } from "@engine/module/Creature";
 
 describe('collectSurrenderNearbyCreatures', () => {
   it('includes party members that are not in area.creatures', () => {
     const areaNpc = { id: 'npc' };
     const partyPc = { id: 'pc' };
-    const nearby = ModuleCreature.collectSurrenderNearbyCreatures([areaNpc], [partyPc]);
+    const nearby = Creature.collectSurrenderNearbyCreatures([areaNpc], [partyPc]);
     expect(nearby).toEqual([areaNpc, partyPc]);
   });
 
   it('does not duplicate a creature already in area.creatures', () => {
     const shared = { id: 'shared' };
-    const nearby = ModuleCreature.collectSurrenderNearbyCreatures([shared], [shared]);
+    const nearby = Creature.collectSurrenderNearbyCreatures([shared], [shared]);
     expect(nearby).toEqual([shared]);
   });
 
   it('skips null entries and empty sources', () => {
-    expect(ModuleCreature.collectSurrenderNearbyCreatures(undefined, undefined)).toEqual([]);
-    expect(ModuleCreature.collectSurrenderNearbyCreatures([null, undefined], [null])).toEqual([]);
+    expect(Creature.collectSurrenderNearbyCreatures(undefined, undefined)).toEqual([]);
+    expect(Creature.collectSurrenderNearbyCreatures([null, undefined], [null])).toEqual([]);
   });
 });

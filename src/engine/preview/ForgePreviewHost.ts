@@ -134,7 +134,7 @@ export class ForgePreviewHost {
       }
 
       GameState.VideoEffectManager.SetVideoEffect(-1);
-      GameState.ModuleObjectManager.playerSelectableObjects = [];
+      GameState.GameObjectManager.playerSelectableObjects = [];
       EngineModeController.SetEngineMode(EngineMode.LOADING);
 
       if(GameState.module){

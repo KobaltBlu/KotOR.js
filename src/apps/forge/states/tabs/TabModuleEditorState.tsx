@@ -2039,7 +2039,7 @@ export class TabModuleEditorState extends TabState {
     }
     const module = new ForgeModule(new KotOR.GFFObject());
     module.transWP = '';
-    // KotOR.ModuleObjectManager.module = module;
+    // KotOR.GameObjectManager.module = module;
 
     /**
      * Load the IFO file

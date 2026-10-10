@@ -21,7 +21,7 @@ const mockGameState = {
       15: { primaryRange: 8.0 },
     },
   },
-  ModuleObjectManager: { GetObjectById: () => undefined },
+  GameObjectManager: { GetObjectById: () => undefined },
   module: undefined as undefined,
 };
 
@@ -66,9 +66,9 @@ import {
   stepPartyFollowState,
 } from "@engine/pathfinding/party-follow-sm";
 import { ModuleCreatureAnimState } from "@core/enums/module/ModuleCreatureAnimState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 
-function makeCreature(x: number, y: number, z = 0): ModuleCreature {
+function makeCreature(x: number, y: number, z = 0): Creature {
   const creature = {
     position: new THREE.Vector3(x, y, z),
     rotation: { z: 0 },
@@ -97,7 +97,7 @@ function makeCreature(x: number, y: number, z = 0): ModuleCreature {
     helperColor: 0,
     clearLocomotionAnimation: jest.fn(),
   };
-  return creature as unknown as ModuleCreature;
+  return creature as unknown as Creature;
 }
 
 function seedRing(ring: PartyFollowPath, count: number){
@@ -348,7 +348,7 @@ describe("Offset direct trail stepping", () => {
       mockParty.length = 0;
       partyFollowPath.reset();
       const leader = makeCreature(0, 0, 0);
-      const companion = makeCreature(2.5, -0.5, 0) as ModuleCreature & { movementSpeed: number };
+      const companion = makeCreature(2.5, -0.5, 0) as Creature & { movementSpeed: number };
       companion.movementSpeed = movementSpeed;
       mockParty.push(leader, companion);
       seedRing(partyFollowPath, 30);
@@ -422,7 +422,7 @@ describe("Offset direct trail stepping", () => {
 describe("Moving direct follow rate scaling", () => {
   it("scales Moving* direct step budget by movementSpeed", () => {
     const runMove = (movementSpeed: number) => {
-      const companion = makeCreature(0, 0, 0) as ModuleCreature & { movementSpeed: number };
+      const companion = makeCreature(0, 0, 0) as Creature & { movementSpeed: number };
       companion.movementSpeed = movementSpeed;
       (companion as { getWalkSpeed: () => number }).getWalkSpeed = () => 2.0;
       driveTowardOffset(companion, new THREE.Vector3(10, 0, 0), 1.0, false);

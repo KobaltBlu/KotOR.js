@@ -122,7 +122,7 @@ export class CharGenClass extends GameMenu {
     this.selecting = true;
     GameState.CharGenManager.selectedClass = slot;
     const template = GameState.CharGenManager.templates.get(slot);
-    GameState.CharGenManager.selectedCreature = new GameState.Module.ModuleArea.ModulePlayer(template);
+    GameState.CharGenManager.selectedCreature = new GameState.Module.Area.PlayerCharacter(template);
     GameState.CharGenManager.selectedCreature.load();
     GameState.CharGenManager.selectedCreature.loadModel().then(() => {
       TextureLoader.LoadQueue().then(() => {

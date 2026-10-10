@@ -1,7 +1,7 @@
 import { ActionStatus } from "@core/enums/actions/ActionStatus";
 import { ActionType } from "@core/enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "@core/enums/module/ModuleCreatureAnimState";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import { Action } from "@engine/actions/Action";
 import { queueMoveIntoUseRange } from "@engine/actions/use-range";
 import { isDoor } from "@engine/module/guards/isDoor";
@@ -29,7 +29,7 @@ export class ActionCloseDoor extends Action {
 
   update(delta: number = 0): ActionStatus {
 
-    this.target = this.getParameter<ModuleObject>(0);
+    this.target = this.getParameter<GameObject>(0);
 
     if(!isDoor(this.target))
       return ActionStatus.FAILED;

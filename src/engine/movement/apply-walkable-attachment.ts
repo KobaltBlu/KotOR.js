@@ -1,4 +1,4 @@
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import type { WalkableAttachment } from "@engine/movement/area-movement-queries";
 
 /**
@@ -7,7 +7,7 @@ import type { WalkableAttachment } from "@engine/movement/area-movement-queries"
  * or as part of teleport/placement.
  */
 export function applyWalkableAttachment(
-  object: ModuleObject,
+  object: GameObject,
   attachment: WalkableAttachment | undefined
 ): void {
   if(!object || !attachment) return;

@@ -4,9 +4,9 @@ import { ActionStatus } from "@core/enums/actions/ActionStatus";
 import { ActionType } from "@core/enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "@core/enums/module/ModuleCreatureAnimState";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleDoor } from "@engine/module/ModuleDoor";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { Door } from "@engine/module/Door";
+import type { GameObject } from "@engine/module/GameObject";
 import { queueMoveIntoUseRange } from "@engine/actions/use-range";
 import { isCreature } from "@engine/module/guards/isCreature";
 import { isDoor } from "@engine/module/guards/isDoor";
@@ -41,11 +41,11 @@ export class ActionDoorSaber extends Action {
     // 2 - int: bTimingStarted (timing bar / cut animation started flag: 1 = in progress)
   }
 
-  private stopBar(owner: ModuleCreature){
+  private stopBar(owner: Creature){
     GameState.GuiTimingBarManager?.stopFor?.(owner);
   }
 
-  private powerSabers(owner: ModuleCreature){
+  private powerSabers(owner: Creature){
     const rh = owner.equipment?.RIGHTHAND;
     const lh = owner.equipment?.LEFTHAND;
     if(rh?.isLightsaber?.()){
@@ -56,7 +56,7 @@ export class ActionDoorSaber extends Action {
     }
   }
 
-  private requeueSelf(owner: ModuleCreature, door: ModuleDoor, faced: number, timingStarted: number){
+  private requeueSelf(owner: Creature, door: Door, faced: number, timingStarted: number){
     const again = new GameState.ActionFactory.ActionDoorSaber(undefined, this.groupId);
     again.setParameter(0, ActionParameterType.DWORD, door.id);
     again.setParameter(1, ActionParameterType.INT, faced);
@@ -74,7 +74,7 @@ export class ActionDoorSaber extends Action {
       return ActionStatus.ERROR;
     }
 
-    this.target = this.getParameter<ModuleObject>(0);
+    this.target = this.getParameter<GameObject>(0);
     if(!isDoor(this.target)){
       this.stopBar(this.owner);
       return ActionStatus.ERROR;

@@ -2,14 +2,14 @@
  * @jest-environment node
  */
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
-import { ModuleObjectType } from "@core/enums/module/ModuleObjectType";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
 import {
   resolveBeginConversationDialog,
   resolveDialogStartOwner,
 } from "@engine/actions/dialog-start";
 
-const CREATURE = ModuleObjectType.ModuleObject | ModuleObjectType.ModuleCreature;
-const DOOR = ModuleObjectType.ModuleObject | ModuleObjectType.ModuleDoor;
+const CREATURE = GameObjectType.GameObject | GameObjectType.Creature;
+const DOOR = GameObjectType.GameObject | GameObjectType.Door;
 
 jest.mock("@engine/runtime/GameState", () => ({
   GameState: {

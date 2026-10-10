@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { ComputedPath } from "@engine/pathfinding/ComputedPath";
 import {
   getWalkHeightAt,
@@ -140,7 +140,7 @@ export function facingFromDirection(dirX: number, dirY: number): number {
  * clear → keep dest; hard fail → stay put; otherwise use farthest clear point.
  */
 export function clipForcePushDestination(
-  creature: ModuleCreature,
+  creature: Creature,
   dest: THREE.Vector3,
   ignoreWalkLineClear: boolean
 ): THREE.Vector3 {
@@ -184,7 +184,7 @@ export function clipForcePushDestination(
  * Seeds one locomotion frame with delta 0 to initialize timers.
  */
 export function installForcePushPath(
-  creature: ModuleCreature,
+  creature: Creature,
   start: THREE.Vector3,
   end: THREE.Vector3
 ): void {
@@ -214,7 +214,7 @@ export function installForcePushPath(
   tickForcePushLoco(creature, 0);
 }
 
-export function clearForcePushLoco(creature: ModuleCreature): void {
+export function clearForcePushLoco(creature: Creature): void {
   if(!creature) return;
   setCreatureLocoState(creature, CreatureLocoState.PathWalk);
   creature.forcePushDistanceTraveled = 0;
@@ -227,7 +227,7 @@ export function clearForcePushLoco(creature: ModuleCreature): void {
  * (push, whirlwind, crush, choke, horror, knockdown, hold, stun, mind trick,
  * droid scramble / stun).
  */
-export function applyForcePushAIActivityMask(creature: ModuleCreature): void {
+export function applyForcePushAIActivityMask(creature: Creature): void {
   if(!creature) return;
   creature.activity = (creature.activity | 0) & FORCE_PUSH_AI_ACTIVITY_MASK;
 }
@@ -237,8 +237,8 @@ export function applyForcePushAIActivityMask(creature: ModuleCreature): void {
  * (FORCEPUSH set-state on the active attack).
  */
 export function stampForcePushAttackSummary(
-  creator: ModuleCreature | undefined,
-  target: ModuleCreature
+  creator: Creature | undefined,
+  target: Creature
 ): void {
   if(!isCreature(creator)){
     return;
@@ -263,7 +263,7 @@ export type ForcePushLocoResult = "moving" | "arrived" | "idle";
  * Uses tickCreatureDrive for walkmesh clipping.
  */
 export function tickForcePushLoco(
-  creature: ModuleCreature,
+  creature: Creature,
   delta: number
 ): ForcePushLocoResult {
   if(!isForcePushLocoActive(creature)){
@@ -341,7 +341,7 @@ export function tickForcePushLoco(
  * Drive fp_push / fp_land / fp_getup after slide completes.
  */
 export function updateForcePushAnimFlags(
-  creature: ModuleCreature,
+  creature: Creature,
   delta: number
 ): void {
   if(!creature) return;

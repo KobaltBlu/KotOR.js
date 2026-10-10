@@ -5,7 +5,7 @@ import { GFFStruct } from "@core/resource/GFFStruct";
 import { MapNorthAxis } from "@core/enums/engine/MapNorthAxis";
 import { GameEngineType } from "@core/enums/engine/GameEngineType";
 import { ApplicationProfile } from "@core/utility/ApplicationProfile";
-import type { ModuleWaypoint } from "@engine/module/ModuleWaypoint";
+import type { Waypoint } from "@engine/module/Waypoint";
 
 /** K1 logical map size (world→pixel conversion). */
 export const AREA_MAP_LOGICAL_SIZE_K1 = { width: 440, height: 256 } as const;
@@ -55,7 +55,7 @@ export class AreaMap {
   _mapCoordinates: THREE.Vector2 = new THREE.Vector2(0, 0);
   _mapPixels: AreaMapPixelResult = { x: -1, y: -1, valid: false };
 
-  mapNotes: ModuleWaypoint[] = [];
+  mapNotes: Waypoint[] = [];
 
   eventListeners: {
     mapNoteAdded: Function[],
@@ -176,7 +176,7 @@ export class AreaMap {
     }
   }
 
-  addMapNote(note: ModuleWaypoint){
+  addMapNote(note: Waypoint){
     if(!note) return;
     if(this.mapNotes.indexOf(note) >= 0) return;
     if(!note.hasMapNote) return;
@@ -185,7 +185,7 @@ export class AreaMap {
     this.processEventListener('mapNoteAdded', [note]);
   }
 
-  removeMapNote(note: ModuleWaypoint){
+  removeMapNote(note: Waypoint){
     if(!note) return;
     const index = this.mapNotes.indexOf(note);
     if(index >= 0){

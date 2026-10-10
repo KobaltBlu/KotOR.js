@@ -1,4 +1,4 @@
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { GameState } from "@engine/runtime/GameState";
 import { getCreaturePersonalSpace } from "@engine/combat/attack-range";
 import * as THREE from "three";
@@ -23,9 +23,9 @@ const _tmp = new THREE.Vector3();
  * Separate `creature` from other party members if personal spaces overlap.
  * @returns true if a nudge was applied
  */
-export function partySoftSeparate(creature: ModuleCreature | undefined): boolean {
+export function partySoftSeparate(creature: Creature | undefined): boolean {
   if(!creature || !creature.isPartyMember?.()) return false;
-  const party = GameState.PartyManager?.party as ModuleCreature[] | undefined;
+  const party = GameState.PartyManager?.party as Creature[] | undefined;
   if(!party || party.length < 2) return false;
 
   const selfSpace = getCreaturePersonalSpace(creature);

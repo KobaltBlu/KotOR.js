@@ -1,4 +1,4 @@
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import type * as THREE from "three";
 
 /**
@@ -12,7 +12,7 @@ import type * as THREE from "three";
  * @interface
  */
 export interface ICameraParticipant {
-  participant: ModuleObject;
+  participant: GameObject;
   position: THREE.Vector3;
   rotation: THREE.Vector3;
 }

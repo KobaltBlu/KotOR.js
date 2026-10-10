@@ -5,7 +5,7 @@ import { TextureLoader } from "@engine/loaders";
 import { OdysseyTexture } from "@engine/render/three/odyssey/OdysseyTexture";
 import { OdysseyModelNodeAABB } from "@engine/odyssey/OdysseyModelNodeAABB";
 import type { OdysseyFace3 } from "@engine/render/three/odyssey";
-import type { ModuleRoom } from "@engine/module/ModuleRoom";
+import type { AreaRoom } from "@engine/module/AreaRoom";
 import {
   GRASS_ALPHA_TEST_DEFAULT,
   GRASS_BIN_CELL_SIZE,
@@ -58,7 +58,7 @@ export class GrassManager {
     this.rooms.clear();
   }
 
-  async buildForRoom(room: ModuleRoom): Promise<void> {
+  async buildForRoom(room: AreaRoom): Promise<void> {
     this.destroyForRoom(room);
 
     const area = room.area;
@@ -140,7 +140,7 @@ export class GrassManager {
     this.rooms.set(room, bins);
   }
 
-  destroyForRoom(room: ModuleRoom): void {
+  destroyForRoom(room: AreaRoom): void {
     const bins = this.rooms.get(room) || (room as any).grassBins;
     if(bins?.length){
       this.disposeBins(bins);
@@ -178,7 +178,7 @@ export class GrassManager {
     }
   }
 
-  setRoomVisible(room: ModuleRoom, visible: boolean): void {
+  setRoomVisible(room: AreaRoom, visible: boolean): void {
     const bins = (room as any).grassBins as GrassBin[] | undefined;
     const group = (room as any).grass as THREE.Object3D | undefined;
     if(group){
@@ -316,7 +316,7 @@ export class GrassManager {
   }
 
   private placeBlades(
-    room: ModuleRoom,
+    room: AreaRoom,
     faces: OdysseyFace3[],
     source: GrassFaceSource,
     aabbVertices: number[] | undefined,
@@ -471,7 +471,7 @@ export class GrassManager {
   }
 
   private buildBins(
-    room: ModuleRoom,
+    room: AreaRoom,
     bladeGeom: THREE.BufferGeometry,
     material: THREE.ShaderMaterial,
     placements: BladePlacement[],

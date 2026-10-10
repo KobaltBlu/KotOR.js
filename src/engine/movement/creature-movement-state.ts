@@ -1,5 +1,5 @@
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 import * as THREE from "three";
 import {
   MovementAuthority,
@@ -38,8 +38,8 @@ export function createCreatureMovementState(): CreatureMovementState {
   };
 }
 
-export function ensureMovementState(object: ModuleObject): CreatureMovementState {
-  const anyObj = object as ModuleObject & { movementState?: CreatureMovementState };
+export function ensureMovementState(object: GameObject): CreatureMovementState {
+  const anyObj = object as GameObject & { movementState?: CreatureMovementState };
   if(!anyObj.movementState){
     anyObj.movementState = createCreatureMovementState();
   }
@@ -47,14 +47,14 @@ export function ensureMovementState(object: ModuleObject): CreatureMovementState
 }
 
 export function setMovementAuthority(
-  creature: ModuleCreature,
+  creature: Creature,
   authority: MovementAuthority
 ): void {
   const state = ensureMovementState(creature);
   state.authority = authority;
 }
 
-export function clearMovementAuthority(creature: ModuleCreature): void {
+export function clearMovementAuthority(creature: Creature): void {
   const state = ensureMovementState(creature);
   state.authority = MovementAuthority.None;
 }

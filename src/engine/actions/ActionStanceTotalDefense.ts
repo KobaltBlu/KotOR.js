@@ -2,10 +2,10 @@ import { Action } from "@engine/actions/Action";
 import { ActionStatus } from "@core/enums/actions/ActionStatus";
 import { ActionType } from "@core/enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "@core/enums/module/ModuleCreatureAnimState";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 
 import { isCreature } from "@engine/module/guards/isCreature";
-import { isObject } from "@engine/module/guards/isObject";
+import { isGameObject } from "@engine/module/guards/isGameObject";
 
 /**
  * ActionStanceTotalDefense class.
@@ -41,8 +41,8 @@ export class ActionStanceTotalDefense extends Action {
       return ActionStatus.ERROR;
     }
 
-    this.target = this.getParameter<ModuleObject>(0);
-    if(!isObject(this.target)){
+    this.target = this.getParameter<GameObject>(0);
+    if(!isGameObject(this.target)){
       this.owner.clearCombatMode?.();
       return ActionStatus.ERROR;
     }

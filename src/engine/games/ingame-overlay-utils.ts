@@ -1,10 +1,10 @@
 import * as THREE from "three";
 import { asExtentInt, truncDiv } from "@engine/gui";
 import type { GUIButton } from "@engine/gui";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import { isCreature } from "@engine/module/guards/isCreature";
 import { setClientCombatMode } from "@engine/combat/combat-engagement";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 
 /** PositionMenu / UpdateIndicator edge inset (0x20). */
 export const TARGET_MENU_EDGE = 0x20;
@@ -87,7 +87,7 @@ export function projectWorldToMenuPoint(
 
 /** Resolve GetMenuPoint world position for a selected object into scratch.world. */
 export function resolveTargetMenuWorld(
-  selectedObject: ModuleObject,
+  selectedObject: GameObject,
   scratch: MenuPointScratch,
 ): void {
   if (isCreature(selectedObject)) {
@@ -106,7 +106,7 @@ export function resolveTargetMenuWorld(
 
 /** Resolve GetReticlePoint world position into scratch.world. */
 export function resolveReticleWorld(
-  selectedObject: ModuleObject,
+  selectedObject: GameObject,
   scratch: MenuPointScratch,
 ): void {
   const node = selectedObject.getReticleNode?.();
@@ -123,7 +123,7 @@ export function resolveReticleWorld(
  * Returns top-left screen pixels and visibility status (1 front, 2 behind).
  */
 export function getTargetMenuPoint(
-  selectedObject: ModuleObject | undefined,
+  selectedObject: GameObject | undefined,
   camera: THREE.Camera | undefined,
   vpW: number,
   vpH: number,
@@ -140,7 +140,7 @@ export function getTargetMenuPoint(
  * GetReticlePoint screen projection for UpdateIndicator edge arrow.
  */
 export function getReticleScreenPoint(
-  selectedObject: ModuleObject | undefined,
+  selectedObject: GameObject | undefined,
   camera: THREE.Camera | undefined,
   vpW: number,
   vpH: number,
@@ -230,7 +230,7 @@ export function positionTargetMenu(
 /**
  * ClearAllActions path: SetCombatMode(0) → ClearAllActions(1) + round clear.
  */
-export function clearAllCombatActions(oPC: ModuleCreature | undefined): void {
+export function clearAllCombatActions(oPC: Creature | undefined): void {
   if (!oPC) return;
   setClientCombatMode(oPC, false);
   oPC.clearAllActions(true);
@@ -240,7 +240,7 @@ export function clearAllCombatActions(oPC: ModuleCreature | undefined): void {
 /**
  * ClearOneAction path: remove last scheduled action, else ClearAllActions(1).
  */
-export function clearOneCombatAction(oPC: ModuleCreature | undefined): void {
+export function clearOneCombatAction(oPC: Creature | undefined): void {
   if (!oPC?.combatRound) return;
   if (!oPC.combatRound.removeLastAction()) {
     oPC.clearAllActions(true);

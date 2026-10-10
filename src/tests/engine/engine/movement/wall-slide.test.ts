@@ -12,7 +12,7 @@ import {
   distancePointToSegment2d,
   projectDesiredOntoNormals,
 } from "@engine/movement/wall-slide";
-import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { Area } from "@engine/module/Area";
 import type { WalkmeshEdge } from "@engine/odyssey/WalkmeshEdge";
 
 function makeWallEdge(
@@ -90,7 +90,7 @@ describe("collectBlockingWalkEdgeNormals", () => {
     const portal = makeWallEdge(111.7, 99.75, 111.7, 95, 1, 0, 3); // transition — skip
     const area = {
       walkEdges: [west, east, portal],
-    } as unknown as ModuleArea;
+    } as unknown as Area;
 
     const pt = new THREE.Vector3(111.7, 100.16, 0);
     const normals = collectBlockingWalkEdgeNormals(area, pt, 0.4);
@@ -101,7 +101,7 @@ describe("collectBlockingWalkEdgeNormals", () => {
 
   it("ignores edges farther than radius", () => {
     const far = makeWallEdge(0, 0, 10, 0, 0, 1);
-    const area = { walkEdges: [far] } as unknown as ModuleArea;
+    const area = { walkEdges: [far] } as unknown as Area;
     const normals = collectBlockingWalkEdgeNormals(
       area,
       new THREE.Vector3(50, 50, 0),

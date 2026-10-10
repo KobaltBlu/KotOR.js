@@ -22,7 +22,7 @@ jest.mock('@engine/runtime/GameState', () => ({
     PartyManager: {
       getCurrentPlayer: jest.fn(() => undefined),
     },
-    ModuleObjectManager: { GetObjectById: () => undefined },
+    GameObjectManager: { GetObjectById: () => undefined },
     TwoDAManager: { datatables: new Map() },
     FeedbackMessageManager: { AddMessage: jest.fn() },
     TLKManager: { GetStringById: () => ({ Value: '' }) },
@@ -83,8 +83,8 @@ jest.mock('@engine/loaders', () => ({
 jest.mock('@engine/render/three/odyssey', () => ({
   OdysseyModel3D: { FromMDL: async () => undefined },
 }));
-jest.mock('@engine/module/ModuleObject', () => ({
-  ModuleObject: class ModuleObject {
+jest.mock('@engine/module/GameObject', () => ({
+  GameObject: class GameObject {
     id = 0;
     position = { x: 0, y: 0, z: 0, distanceToSquared: () => 0, copy: () => {} };
   },
@@ -100,7 +100,7 @@ import { CombatRound } from '@engine/combat/CombatRound';
 import { CombatRoundAction } from '@engine/combat/CombatRoundAction';
 import { CombatActionType } from '@core/enums/combat/CombatActionType';
 import { ActionType } from '@core/enums/actions/ActionType';
-import { ModuleObjectType } from '@core/enums/module/ModuleObjectType';
+import { GameObjectType } from '@core/enums/module/GameObjectType';
 import { GameState } from '@engine/runtime/GameState';
 import { FollowerCamera } from '@engine/render/FollowerCamera';
 import { setClientCombatMode } from '@engine/combat/combat-engagement';
@@ -109,8 +109,8 @@ import { SpellCastInstance } from '@engine/combat/SpellCastInstance';
 import { TalentSpell } from '@engine/talents/TalentSpell';
 
 /**
- * Mirrors ModuleItem.scheduleItemCastSpell grenade / clear / ensure branches
- * without importing the full ModuleItem graph.
+ * Mirrors Item.scheduleItemCastSpell grenade / clear / ensure branches
+ * without importing the full Item graph.
  */
 function scheduleGrenadeLike(opts: {
   caster: any;
@@ -146,7 +146,7 @@ function makeCaster(id: number){
 
   const creature: any = {
     id,
-    objectType: ModuleObjectType.ModuleCreature,
+    objectType: GameObjectType.Creature,
     clientCombatMode: false,
     position: new THREE.Vector3(0, 0, 0),
     combatData: {},

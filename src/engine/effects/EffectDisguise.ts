@@ -1,8 +1,8 @@
 import { GameEffect } from "@engine/effects/GameEffect";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
-import { ModuleObjectType } from "@core/enums/module/ModuleObjectType";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
 import { AppearanceManager } from "@engine/managers/AppearanceManager";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { BitWise } from "@core/utility/BitWise";
 
 /**
@@ -41,8 +41,8 @@ export class EffectDisguise extends GameEffect {
 
     const disguise_appearance = AppearanceManager.GetCreatureAppearanceById(this.getInt(0));
     if(disguise_appearance){
-      if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleCreature)){
-        const creature = this.object as ModuleCreature;
+      if(BitWise.InstanceOf(this.object?.objectType, GameObjectType.Creature)){
+        const creature = this.object as Creature;
         creature.pm_Appearance = creature.appearance;
         creature.pm_IsDisguised = true;
         creature.setAppearance(this.getInt(0));
@@ -55,8 +55,8 @@ export class EffectDisguise extends GameEffect {
   }
 
   onRemove(){
-    if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleCreature)){
-      const creature = this.object as ModuleCreature;
+    if(BitWise.InstanceOf(this.object?.objectType, GameObjectType.Creature)){
+      const creature = this.object as Creature;
       if(creature.pm_IsDisguised){
         creature.appearance = creature.pm_Appearance;
         creature.pm_IsDisguised = false;

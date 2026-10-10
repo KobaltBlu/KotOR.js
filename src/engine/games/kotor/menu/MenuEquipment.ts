@@ -5,8 +5,8 @@ import { GUIItemEquipped } from "@engine/gui/protoitem/GUIItemEquipped";
 import { GUIInventoryItem } from "@engine/gui/protoitem/GUIInventoryItem";
 import { GUIItemNone } from "@engine/gui/protoitem/GUIItemNone";
 import { ModuleCreatureArmorSlot } from "@core/enums/module/ModuleCreatureArmorSlot";
-import { ModuleItem } from "@engine/module/ModuleItem";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import { Item } from "@engine/module/Item";
+import type { Creature } from "@engine/module/Creature";
 import {
   EQUIP_COLOR_BLUE,
   EQUIP_COLOR_GREEN,
@@ -34,7 +34,7 @@ import {
   isTwoHandedWeapon,
 } from "@engine/games/equipment-menu-utils";
 
-type EquipListNode = ModuleItem | GUIItemEquipped | GUIItemNone;
+type EquipListNode = Item | GUIItemEquipped | GUIItemNone;
 
 type EquipCanUseNode = EquipListNode & { equipCanUse?: number };
 
@@ -97,9 +97,9 @@ export class MenuEquipment extends GameMenu {
   selectedItem: EquipListNode = undefined;
 
   /** Snapshot of the item in `slot` when selection mode began (previously_equipped). */
-  previouslyEquipped: ModuleItem = undefined;
+  previouslyEquipped: Item = undefined;
   /** Off-hand item removed when previewing a LARGE main-hand weapon. */
-  previouslyEquippedOffHand: ModuleItem = undefined;
+  previouslyEquippedOffHand: Item = undefined;
   /** Slot for previouslyEquippedOffHand (LEFTHAND / LEFTHAND2). */
   previouslyEquippedOffHandSlot: ModuleCreatureArmorSlot = null;
   /** True while a preview change is outstanding (revert on Back). */
@@ -114,7 +114,7 @@ export class MenuEquipment extends GameMenu {
     this.voidFill = true;
   }
 
-  protected getActiveCreature(): ModuleCreature {
+  protected getActiveCreature(): Creature {
     return GameState.PartyManager.party[0];
   }
 
@@ -340,10 +340,10 @@ export class MenuEquipment extends GameMenu {
       return;
     }
 
-    let targetItem: ModuleItem;
+    let targetItem: Item;
     if(item instanceof GUIItemEquipped){
       targetItem = item.node;
-    }else if(item instanceof ModuleItem){
+    }else if(item instanceof Item){
       targetItem = item;
     }else{
       return;
@@ -529,7 +529,7 @@ export class MenuEquipment extends GameMenu {
         tx.add(new GUIItemEquipped(equipped));
       }
       for (let i = 0; i < inv.length; i++) {
-        const item = inv[i] as ModuleItem & { equipCanUse?: number };
+        const item = inv[i] as Item & { equipCanUse?: number };
         item.equipCanUse = getItemEquipCanUse(item, slot, mainWeapon, offWeapon);
         tx.add(item);
       }
@@ -551,7 +551,7 @@ export class MenuEquipment extends GameMenu {
   updateSelected(item: EquipListNode) {
     this.selectedItem = item;
     let description = '';
-    if (item instanceof ModuleItem) {
+    if (item instanceof Item) {
       description = item.getPropertyDescription();
     } else if(item instanceof GUIItemEquipped) {
       description = item.node.getPropertyDescription();
@@ -576,7 +576,7 @@ export class MenuEquipment extends GameMenu {
     this.LBL_VITALITY?.setText(currentPC.getHP() + '/' + currentPC.getMaxHP());
   }
 
-  protected updateWeaponStatLabels(currentPC: ModuleCreature) {
+  protected updateWeaponStatLabels(currentPC: Creature) {
     const rWeap = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.RIGHTHAND);
     const lWeap = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.LEFTHAND);
     const bab = currentPC.getBaseAttackBonus();

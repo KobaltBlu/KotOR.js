@@ -13,7 +13,7 @@ jest.mock("@engine/runtime/GameState", () => ({
         { x: -1.5, y: 0.8 },
       ],
     },
-    ModuleObjectManager: { GetObjectById: () => undefined },
+    GameObjectManager: { GetObjectById: () => undefined },
     module: undefined,
   },
 }));
@@ -34,7 +34,7 @@ jest.mock("@engine/pathfinding/safe-walk-point", () => ({
 }));
 
 import { PartyFollowPath } from "@engine/pathfinding/party-follow-path";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 
 describe("ProcessPoint formation laterals", () => {
   it("stamps offset1/2 on writeHead−2 after count≥3 via formation locals", () => {
@@ -42,7 +42,7 @@ describe("ProcessPoint formation laterals", () => {
     const leader = {
       position: new THREE.Vector3(0, 0, 0),
       rotation: { z: 0 },
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
 
     ring.processPoint(leader, undefined);
     leader.position.set(1, 0, 0);
@@ -68,7 +68,7 @@ describe("ProcessPoint formation laterals", () => {
     const leader = {
       position: new THREE.Vector3(0, 0, 0),
       rotation: { z: Math.PI / 2 },
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
 
     ring.processPoint(leader, undefined);
     leader.position.set(0, 1, 0);
@@ -94,7 +94,7 @@ describe("advancePointOnPath", () => {
     const leader = {
       position: new THREE.Vector3(0, 0, 0),
       rotation: { z: 0 },
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
 
     for(let i = 0; i < 25; i++){
       leader.position.set(i * 0.6, 0, 0);

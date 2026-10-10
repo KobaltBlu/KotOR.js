@@ -4,12 +4,12 @@
  * Ctor claims findNextEmptyIndex; dtor clears the slot.
  * GetMiniGameObjectByName scans objects[0..0xfe] by name.
  *
- * Distinct from ModuleMiniGame.obstacleTemplates (ARE Obstacles Name→Scripts structs).
+ * Distinct from MiniGame.obstacleTemplates (ARE Obstacles Name→Scripts structs).
  *
  * @file MiniGameObjectArray.ts
  */
 
-import type { ModuleObject } from '@engine/module/ModuleObject';
+import type { GameObject } from '@engine/module/GameObject';
 
 export class MiniGameObjectArray {
   /** loop bound — 0xff slots (indices 0..254). */
@@ -17,7 +17,7 @@ export class MiniGameObjectArray {
   /** empty / invalid mgo_index. */
   static readonly INVALID_INDEX = 0xff;
 
-  static objects: (ModuleObject | undefined)[] = new Array(MiniGameObjectArray.CAPACITY);
+  static objects: (GameObject | undefined)[] = new Array(MiniGameObjectArray.CAPACITY);
   /** findNextEmptyIndex cursor (wraps at 0xff). */
   static index = 0;
 
@@ -60,7 +60,7 @@ export class MiniGameObjectArray {
    * Stores slot on `object.mgoIndex` and syncs `object.id` for NWScript
    * StackPushObject / StoreState (pushes mgo_index).
    */
-  static register(object: ModuleObject | undefined): number {
+  static register(object: GameObject | undefined): number {
     if(!object){ return MiniGameObjectArray.INVALID_INDEX; }
     const existing = object.mgoIndex;
     if(typeof existing === 'number' && existing >= 0 && existing < MiniGameObjectArray.CAPACITY){
@@ -87,7 +87,7 @@ export class MiniGameObjectArray {
   }
 
   /** ~ — clear objects[mgo_index]. */
-  static unregister(object: ModuleObject | undefined): void {
+  static unregister(object: GameObject | undefined): void {
     if(!object){ return; }
     const slot = object.mgoIndex;
     if(typeof slot !== 'number' || slot < 0 || slot >= MiniGameObjectArray.CAPACITY){
@@ -100,7 +100,7 @@ export class MiniGameObjectArray {
   }
 
   /** GetMiniGameObject — by index. */
-  static get(index: number): ModuleObject | undefined {
+  static get(index: number): GameObject | undefined {
     if(index < 0 || index >= MiniGameObjectArray.CAPACITY){ return undefined; }
     return MiniGameObjectArray.objects[index];
   }
@@ -109,7 +109,7 @@ export class MiniGameObjectArray {
    * GetMiniGameObjectByName
    * linear scan of live slots; name compare is case-insensitive.
    */
-  static getByName(name: string | undefined | null): ModuleObject | undefined {
+  static getByName(name: string | undefined | null): GameObject | undefined {
     const n = MiniGameObjectArray.normalizeName(name);
     if(!n){ return undefined; }
     for(let i = 0; i < MiniGameObjectArray.CAPACITY; i++){

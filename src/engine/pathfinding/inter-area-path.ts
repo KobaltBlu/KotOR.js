@@ -2,11 +2,11 @@ import * as THREE from "three";
 import { ModuleTriggerType } from "@core/enums/module/ModuleTriggerType";
 import { NWModuleObjectType } from "@core/enums/nwscript/NWModuleObjectType";
 import { ActionParameterType } from "@core/enums/actions/ActionParameterType";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleDoor } from "@engine/module/ModuleDoor";
-import type { ModuleObject } from "@engine/module/ModuleObject";
-import type { ModuleTrigger } from "@engine/module/ModuleTrigger";
+import type { Area } from "@engine/module/Area";
+import type { Creature } from "@engine/module/Creature";
+import type { Door } from "@engine/module/Door";
+import type { GameObject } from "@engine/module/GameObject";
+import type { Trigger } from "@engine/module/Trigger";
 import { GameState } from "@engine/runtime/GameState";
 import { getNearestActionPoint } from "@engine/combat/nearest-action-point";
 import { getPathPersonalSpace } from "@engine/combat/attack-range";
@@ -29,7 +29,7 @@ import { ModuleLoadCoordinator } from '@engine/runtime/ModuleLoadCoordinator';
 
 export type InterAreaWaypoint = {
   /** Door or transition trigger to approach. */
-  object: ModuleObject;
+  object: GameObject;
   /** Goal position (nearest action point / trigger center). */
   goal: THREE.Vector3;
   /** Personal-space-adjusted range for MoveTo. */
@@ -44,7 +44,7 @@ export type InterAreaWaypoint = {
 type AreaKey = string;
 
 type TransitionEdge = {
-  object: ModuleObject;
+  object: GameObject;
   fromKey: AreaKey;
   toKey: AreaKey;
   destAreaId?: number;
@@ -61,12 +61,12 @@ function moduleKey(resref: string): AreaKey {
   return `m:${(resref || '').toLowerCase()}`;
 }
 
-function isDoorLinked(door: ModuleDoor): boolean {
+function isDoorLinked(door: Door): boolean {
   const flags = door.linkedToFlags | 0;
   return flags === 1 || flags === 2;
 }
 
-function getLoadedAreas(): ModuleArea[] {
+function getLoadedAreas(): Area[] {
   const module = GameState.module;
   if(module?.areas?.length) return module.areas;
   if(module?.area) return [module.area];
@@ -86,8 +86,8 @@ export function clearInterAreaVisitMarks(){
  * Same-module doors/triggers → linked object's area; LinkedToModule → module key.
  */
 export function resolveTransitionDest(
-  transition: ModuleObject
-): { destAreaId?: number; destModule?: string; toKey?: AreaKey; destArea?: ModuleArea } | undefined {
+  transition: GameObject
+): { destAreaId?: number; destModule?: string; toKey?: AreaKey; destArea?: Area } | undefined {
   if(!transition) return undefined;
 
   const linkedModule = (transition.getLinkedToModule?.() || '').trim();
@@ -99,11 +99,11 @@ export function resolveTransitionDest(
   }
 
   if(isDoor(transition)){
-    const door = transition as ModuleDoor;
+    const door = transition as Door;
     if(!isDoorLinked(door)) return undefined;
     const tag = (door.getLinkedTo?.() || '').trim();
     if(!tag) return undefined;
-    const linked = GameState.ModuleObjectManager?.GetObjectByTag?.(tag, 0);
+    const linked = GameState.GameObjectManager?.GetObjectByTag?.(tag, 0);
     if(!linked?.area) return undefined;
     return {
       destAreaId: linked.area.id,
@@ -114,13 +114,13 @@ export function resolveTransitionDest(
 
   // GetTargetArea — TRANSITION trigger LinkedTo → waypoint → area
   if(isTrigger(transition)){
-    const trigger = transition as ModuleTrigger;
+    const trigger = transition as Trigger;
     if((trigger.type | 0) !== ModuleTriggerType.TRANSITION) return undefined;
     const tag = (trigger.linkedTo || trigger.getLinkedTo?.() || '').trim();
     if(!tag) return undefined;
     const linked =
-      GameState.ModuleObjectManager?.GetObjectByTag?.(tag, 0, NWModuleObjectType.WAYPOINT) ||
-      GameState.ModuleObjectManager?.GetObjectByTag?.(tag, 0);
+      GameState.GameObjectManager?.GetObjectByTag?.(tag, 0, NWModuleObjectType.WAYPOINT) ||
+      GameState.GameObjectManager?.GetObjectByTag?.(tag, 0);
     if(!linked?.area) return undefined;
     return {
       destAreaId: linked.area.id,
@@ -139,17 +139,17 @@ export function resolveTransitionDest(
  * When `out` is provided, fills it and sets dest area interAreaVisitMark (one portal per dest).
  */
 export function countAreaTransitionTriggers(
-  area: ModuleArea | undefined,
-  out?: ModuleObject[],
+  area: Area | undefined,
+  out?: GameObject[],
   excludedIds?: ReadonlyArray<number>
 ): number {
   if(!area) return 0;
   const excluded = excludedIds?.length ? new Set(excludedIds) : undefined;
-  // Module-key visit set for cross-module (no ModuleArea to mark)
+  // Module-key visit set for cross-module (no Area to mark)
   const seenModuleKeys = new Set<string>();
   let count = 0;
 
-  const consider = (obj: ModuleObject) => {
+  const consider = (obj: GameObject) => {
     if(!obj || excluded?.has(obj.id)) return;
     const dest = resolveTransitionDest(obj);
     if(!dest?.toKey) return;
@@ -185,7 +185,7 @@ export function countAreaTransitionTriggers(
 
   const triggers = area.triggers || [];
   for(let i = 0; i < triggers.length; i++){
-    const t = triggers[i] as ModuleTrigger;
+    const t = triggers[i] as Trigger;
     if(!t) continue;
     if((t.type | 0) !== ModuleTriggerType.TRANSITION) continue;
     // Cross-module or same-module LinkedTo waypoint
@@ -203,19 +203,19 @@ export function countAreaTransitionTriggers(
  * Uses visit marks: one portal per destination (CountAreaTransitionTriggers).
  */
 export function listAreaTransitions(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   excludedIds?: ReadonlyArray<number>
-): ModuleObject[] {
+): GameObject[] {
   if(!area) return [];
   // Per-source CountArea: fresh dest marks for this listing
   clearInterAreaVisitMarks();
-  const out: ModuleObject[] = [];
+  const out: GameObject[] = [];
   countAreaTransitionTriggers(area, out, excludedIds);
   return out;
 }
 
 function listEdgesFromArea(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   excludedIds?: ReadonlyArray<number>
 ): TransitionEdge[] {
   if(!area) return [];
@@ -342,16 +342,16 @@ export function buildInterAreaPath(
  * Prefer transitions targeting a module resref; else any transition.
  */
 export function findBestTransition(
-  creature: ModuleCreature,
+  creature: Creature,
   preferredModule?: string,
   excludedIds?: ReadonlyArray<number>
-): ModuleObject | undefined {
+): GameObject | undefined {
   const area = creature.area;
   const candidates = listAreaTransitions(area, excludedIds ?? creature.interAreaExcludedIds);
   if(!candidates.length) return undefined;
 
   const prefer = (preferredModule || '').toLowerCase();
-  let best: ModuleObject | undefined;
+  let best: GameObject | undefined;
   let bestDist = Infinity;
   for(let i = 0; i < candidates.length; i++){
     const obj = candidates[i];
@@ -381,8 +381,8 @@ export function findBestTransition(
  * or trigger closest point.
  */
 export function setIntraAreaGoal(
-  creature: ModuleCreature,
-  transition: ModuleObject
+  creature: Creature,
+  transition: GameObject
 ): InterAreaWaypoint | undefined {
   if(!transition) return undefined;
   const perspace = getPathPersonalSpace(creature);
@@ -390,10 +390,10 @@ export function setIntraAreaGoal(
   let range = perspace + 0.5;
 
   if(isDoor(transition)){
-    goal = getNearestActionPoint(transition as ModuleDoor, creature.position, creature);
+    goal = getNearestActionPoint(transition as Door, creature.position, creature);
     range = perspace + 0.5;
   }else if(isTrigger(transition)){
-    const t = transition as ModuleTrigger;
+    const t = transition as Trigger;
     if(t.box){
       t.box.getCenter(goal);
     }
@@ -416,7 +416,7 @@ export function setIntraAreaGoal(
  * Honors creature.interAreaExcludedIds.
  */
 export function beginInterAreaPath(
-  creature: ModuleCreature,
+  creature: Creature,
   preferredModule?: string,
   destAreaId?: number
 ): boolean {
@@ -490,7 +490,7 @@ export function beginInterAreaPath(
  * Returns true if a new path was found.
  */
 export function excludeFailedInterAreaPortal(
-  creature: ModuleCreature,
+  creature: Creature,
   portalId: number
 ): boolean {
   if(!creature || !(portalId >= 0)) return false;
@@ -508,7 +508,7 @@ export function excludeFailedInterAreaPortal(
 /**
  * Clear inter-area search state (ResetInterAreaSearchData).
  */
-export function resetInterAreaSearch(creature: ModuleCreature){
+export function resetInterAreaSearch(creature: Creature){
   if(!creature) return;
   creature.interAreaWaypoints = [];
   creature.interAreaExcludedIds = [];
@@ -522,7 +522,7 @@ export function resetInterAreaSearch(creature: ModuleCreature){
  * Returns the waypoint to move toward, or undefined if list exhausted.
  */
 export function advanceInterAreaWaypoint(
-  creature: ModuleCreature
+  creature: Creature
 ): InterAreaWaypoint | undefined {
   const list = creature.interAreaWaypoints;
   if(!list?.length) return undefined;
@@ -546,7 +546,7 @@ export function advanceInterAreaWaypoint(
 /**
  * Queue same-module JumpTo for other party members (follow through linked door).
  */
-function queuePartyFollowJump(leader: ModuleCreature, linkedId: number, groupId: number){
+function queuePartyFollowJump(leader: Creature, linkedId: number, groupId: number){
   const party = GameState.PartyManager?.party;
   if(!party?.length) return;
   for(let i = 0; i < party.length; i++){
@@ -570,7 +570,7 @@ function queuePartyFollowJump(leader: ModuleCreature, linkedId: number, groupId:
  * Transition trigger: LoadModule / JumpTo waypoint.
  */
 export function tryUseInterAreaTransition(
-  creature: ModuleCreature,
+  creature: Creature,
   wp: InterAreaWaypoint,
   groupId: number = -1
 ): boolean {
@@ -578,7 +578,7 @@ export function tryUseInterAreaTransition(
   if(!creature || !obj) return false;
 
   if(isDoor(obj)){
-    const door = obj as ModuleDoor;
+    const door = obj as Door;
 
     if(!door.isOpen()){
       const open = new GameState.ActionFactory.ActionOpenDoor(undefined, groupId);
@@ -610,7 +610,7 @@ export function tryUseInterAreaTransition(
       const tag = (door.getLinkedTo?.() || '').trim();
       creature.interAreaWaypoints = [];
       if(tag){
-        const linked = GameState.ModuleObjectManager?.GetObjectByTag?.(tag, 0);
+        const linked = GameState.GameObjectManager?.GetObjectByTag?.(tag, 0);
         if(linked){
           const jump = new GameState.ActionFactory.ActionJumpToObject(undefined, groupId);
           jump.setParameter(0, ActionParameterType.DWORD, linked.id);
@@ -633,7 +633,7 @@ export function tryUseInterAreaTransition(
   }
 
   if(isTrigger(obj)){
-    const trigger = obj as ModuleTrigger;
+    const trigger = obj as Trigger;
     const linkedModule = (trigger.linkedToModule || '').trim();
     if(linkedModule){
       creature.interAreaWaypoints = [];
@@ -652,8 +652,8 @@ export function tryUseInterAreaTransition(
     const tag = (trigger.linkedTo || '').trim();
     if(tag){
       const linked =
-        GameState.ModuleObjectManager?.GetObjectByTag?.(tag, 0, NWModuleObjectType.WAYPOINT) ||
-        GameState.ModuleObjectManager?.GetObjectByTag?.(tag, 0);
+        GameState.GameObjectManager?.GetObjectByTag?.(tag, 0, NWModuleObjectType.WAYPOINT) ||
+        GameState.GameObjectManager?.GetObjectByTag?.(tag, 0);
       if(linked){
         creature.interAreaWaypoints = [];
         const jump = new GameState.ActionFactory.ActionJumpToObject(undefined, groupId);

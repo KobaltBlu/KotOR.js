@@ -2,11 +2,11 @@ import { GameState } from "@engine/runtime/GameState";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
 import { ModuleCreatureArmorSlot } from "@core/enums/module/ModuleCreatureArmorSlot";
 import { ModuleDayPhase } from "@core/enums/module/ModuleDayPhase";
-import { ModuleObjectType } from "@core/enums/module/ModuleObjectType";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
 import { WeatherCondition } from "@core/enums/module/WeatherCondition";
 import { GFFDataType } from "@core/enums/resource/GFFDataType";
 import { ModuleCalendar } from "@engine/module/ModuleCalendar";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import type { GFFField } from "@core/resource/GFFField";
 import type { GFFStruct } from "@core/resource/GFFStruct";
 import { BitWise } from "@core/utility/BitWise";
@@ -29,7 +29,7 @@ export type OverviewObjectKind =
 
 export interface OverviewEntry {
   id: string;
-  object: ModuleObject;
+  object: GameObject;
   kind: OverviewObjectKind;
   x: number;
   y: number;
@@ -109,13 +109,13 @@ export const DEFAULT_KIND_FILTERS: Record<OverviewObjectKind, boolean> = {
   other: true,
 };
 
-function safeId(obj: ModuleObject, kind: OverviewObjectKind, index: number): string {
+function safeId(obj: GameObject, kind: OverviewObjectKind, index: number): string {
   const tag = (obj as any).getTag?.() || '';
   const id = (obj as any).id ?? (obj as any).uuid ?? index;
   return `${kind}:${tag}:${id}:${index}`;
 }
 
-function entryLabel(obj: ModuleObject): string {
+function entryLabel(obj: GameObject): string {
   const name = (obj as any).getName?.();
   const tag = (obj as any).getTag?.() || '';
   if(typeof name === 'string' && name.trim()){ return name; }
@@ -124,10 +124,10 @@ function entryLabel(obj: ModuleObject): string {
 }
 
 function pushEntries(
-  list: ModuleObject[] | undefined,
+  list: GameObject[] | undefined,
   kind: OverviewObjectKind,
   out: OverviewEntry[],
-  partySet: Set<ModuleObject>
+  partySet: Set<GameObject>
 ){
   if(!list){ return; }
   for(let i = 0; i < list.length; i++){
@@ -155,7 +155,7 @@ export function collectOverviewEntries(): OverviewEntry[] {
   if(!area){ return []; }
 
   const party = GameState.PartyManager?.party || [];
-  const partySet = new Set<ModuleObject>(party);
+  const partySet = new Set<GameObject>(party);
   const out: OverviewEntry[] = [];
 
   pushEntries(party, 'party', out, partySet);
@@ -190,7 +190,7 @@ export function collectOverviewEntries(): OverviewEntry[] {
   return out;
 }
 
-/** JSON-safe pin for top-down Scene map / world markers (no ModuleObject refs). */
+/** JSON-safe pin for top-down Scene map / world markers (no GameObject refs). */
 export interface SceneMapPin {
   id: string;
   kind: OverviewObjectKind;
@@ -318,7 +318,7 @@ function flattenStruct(struct: GFFStruct, path: string, depth: number, maxDepth:
   return nodes;
 }
 
-export function flattenGffTemplate(obj: ModuleObject, maxDepth: number = 4): GffTreeNode[] {
+export function flattenGffTemplate(obj: GameObject, maxDepth: number = 4): GffTreeNode[] {
   const template = (obj as any).template;
   if(!template?.RootNode){ return []; }
   return flattenStruct(template.RootNode, 'root', 0, maxDepth);
@@ -332,9 +332,9 @@ export function flattenGffFromRoot(root: GFFStruct | undefined | null, maxDepth:
 
 /**
  * Call obj.save once and flatten the returned GFF.
- * Side effect: most ModuleObject.save implementations also assign this.template.
+ * Side effect: most GameObject.save implementations also assign this.template.
  */
-export function dumpLiveGff(obj: ModuleObject, maxDepth: number = 4): GffTreeNode[] {
+export function dumpLiveGff(obj: GameObject, maxDepth: number = 4): GffTreeNode[] {
   const save = (obj as any).save;
   if(typeof save !== 'function'){ return []; }
   try{
@@ -345,22 +345,22 @@ export function dumpLiveGff(obj: ModuleObject, maxDepth: number = 4): GffTreeNod
   }
 }
 
-export function getObjectKind(obj: ModuleObject): OverviewObjectKind {
+export function getObjectKind(obj: GameObject): OverviewObjectKind {
   const ot = obj.objectType;
-  if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleCreature) || BitWise.InstanceOf(ot, ModuleObjectType.ModulePlayer)){
+  if(BitWise.InstanceOf(ot, GameObjectType.Creature) || BitWise.InstanceOf(ot, GameObjectType.PlayerCharacter)){
     const party = GameState.PartyManager?.party || [];
     if(party.includes(obj as any)){ return 'party'; }
     return 'creature';
   }
-  if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleDoor)) return 'door';
-  if(BitWise.InstanceOf(ot, ModuleObjectType.ModulePlaceable)) return 'placeable';
-  if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleTrigger)) return 'trigger';
-  if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleWaypoint)) return 'waypoint';
-  if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleSound)) return 'sound';
-  if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleStore)) return 'store';
-  if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleEncounter)) return 'encounter';
-  if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleItem)) return 'item';
-  if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleArea)) return 'area';
+  if(BitWise.InstanceOf(ot, GameObjectType.Door)) return 'door';
+  if(BitWise.InstanceOf(ot, GameObjectType.Placeable)) return 'placeable';
+  if(BitWise.InstanceOf(ot, GameObjectType.Trigger)) return 'trigger';
+  if(BitWise.InstanceOf(ot, GameObjectType.Waypoint)) return 'waypoint';
+  if(BitWise.InstanceOf(ot, GameObjectType.Sound)) return 'sound';
+  if(BitWise.InstanceOf(ot, GameObjectType.Store)) return 'store';
+  if(BitWise.InstanceOf(ot, GameObjectType.Encounter)) return 'encounter';
+  if(BitWise.InstanceOf(ot, GameObjectType.Item)) return 'item';
+  if(BitWise.InstanceOf(ot, GameObjectType.Area)) return 'area';
   return 'other';
 }
 
@@ -455,7 +455,7 @@ function itemShortLabel(item: any): string {
   return tag ? `${base} [${tag}]` : base;
 }
 
-function collectScripts(obj: ModuleObject): InspectorSection {
+function collectScripts(obj: GameObject): InspectorSection {
   const section = makeSection('scripts', 'Scripts');
   const scripts = (obj as any).scripts;
   if(scripts && typeof scripts === 'object'){
@@ -481,7 +481,7 @@ function collectScripts(obj: ModuleObject): InspectorSection {
   return section;
 }
 
-function collectEffects(obj: ModuleObject): InspectorSection {
+function collectEffects(obj: GameObject): InspectorSection {
   const section = makeSection('effects', 'Effects');
   const effects = (obj as any).effects || [];
   if(!effects.length){
@@ -507,11 +507,11 @@ function collectEffects(obj: ModuleObject): InspectorSection {
   return section;
 }
 
-function collectInventory(obj: ModuleObject): InspectorSection | null {
-  const isCreature = BitWise.InstanceOf(obj.objectType, ModuleObjectType.ModuleCreature)
-    || BitWise.InstanceOf(obj.objectType, ModuleObjectType.ModulePlayer);
-  const isPlaceable = BitWise.InstanceOf(obj.objectType, ModuleObjectType.ModulePlaceable);
-  const isStore = BitWise.InstanceOf(obj.objectType, ModuleObjectType.ModuleStore);
+function collectInventory(obj: GameObject): InspectorSection | null {
+  const isCreature = BitWise.InstanceOf(obj.objectType, GameObjectType.Creature)
+    || BitWise.InstanceOf(obj.objectType, GameObjectType.PlayerCharacter);
+  const isPlaceable = BitWise.InstanceOf(obj.objectType, GameObjectType.Placeable);
+  const isStore = BitWise.InstanceOf(obj.objectType, GameObjectType.Store);
   if(!isCreature && !isPlaceable && !isStore){ return null; }
 
   const section = makeSection('inventory', 'Inventory');
@@ -546,7 +546,7 @@ function collectInventory(obj: ModuleObject): InspectorSection | null {
   return section;
 }
 
-function collectCreatureSections(obj: ModuleObject): InspectorSection[] {
+function collectCreatureSections(obj: GameObject): InspectorSection[] {
   const c = obj as any;
   const vitals = makeSection('vitals', 'Vitals');
   pushRow(vitals, 'HP', `${c.getHP?.() ?? '?'}/${c.getMaxHP?.() ?? '?'}`);
@@ -587,7 +587,7 @@ function collectCreatureSections(obj: ModuleObject): InspectorSection[] {
   return [vitals, abilities, modes];
 }
 
-function collectDoorSection(obj: ModuleObject): InspectorSection {
+function collectDoorSection(obj: GameObject): InspectorSection {
   const d = obj as any;
   const section = makeSection('door', 'Door');
   pushRow(section, 'Open', d.isOpen?.());
@@ -615,7 +615,7 @@ function collectDoorSection(obj: ModuleObject): InspectorSection {
   return section;
 }
 
-function collectPlaceableSection(obj: ModuleObject): InspectorSection {
+function collectPlaceableSection(obj: GameObject): InspectorSection {
   const p = obj as any;
   const section = makeSection('placeable', 'Placeable');
   pushRow(section, 'Open', p.isOpen?.());
@@ -644,7 +644,7 @@ function collectPlaceableSection(obj: ModuleObject): InspectorSection {
   return section;
 }
 
-function collectTriggerSection(obj: ModuleObject): InspectorSection {
+function collectTriggerSection(obj: GameObject): InspectorSection {
   const t = obj as any;
   const section = makeSection('trigger', 'Trigger');
   pushRow(section, 'Type', t.getType?.() ?? t.type);
@@ -665,7 +665,7 @@ function collectTriggerSection(obj: ModuleObject): InspectorSection {
   return section;
 }
 
-function collectWaypointSection(obj: ModuleObject): InspectorSection {
+function collectWaypointSection(obj: GameObject): InspectorSection {
   const w = obj as any;
   const section = makeSection('waypoint', 'Waypoint');
   pushRow(section, 'HasMapNote', w.hasMapNote);
@@ -678,7 +678,7 @@ function collectWaypointSection(obj: ModuleObject): InspectorSection {
   return section;
 }
 
-function collectSoundSection(obj: ModuleObject): InspectorSection {
+function collectSoundSection(obj: GameObject): InspectorSection {
   const s = obj as any;
   const section = makeSection('sound', 'Sound');
   pushRow(section, 'Active', s.active);
@@ -699,7 +699,7 @@ function collectSoundSection(obj: ModuleObject): InspectorSection {
   return section;
 }
 
-function collectStoreSection(obj: ModuleObject): InspectorSection {
+function collectStoreSection(obj: GameObject): InspectorSection {
   const s = obj as any;
   const section = makeSection('store', 'Store');
   const inv = s.getInventory?.() || s.inventory || [];
@@ -712,7 +712,7 @@ function collectStoreSection(obj: ModuleObject): InspectorSection {
   return section;
 }
 
-function collectEncounterSection(obj: ModuleObject): InspectorSection {
+function collectEncounterSection(obj: GameObject): InspectorSection {
   const e = obj as any;
   const section = makeSection('encounter', 'Encounter');
   pushRow(section, 'Active', e.active);
@@ -732,7 +732,7 @@ function collectEncounterSection(obj: ModuleObject): InspectorSection {
   return section;
 }
 
-function collectItemSection(obj: ModuleObject): InspectorSection {
+function collectItemSection(obj: GameObject): InspectorSection {
   const it = obj as any;
   const section = makeSection('item', 'Item');
   pushRow(section, 'BaseItem', it.getBaseItemId?.() ?? it.baseItem);
@@ -748,7 +748,7 @@ function collectItemSection(obj: ModuleObject): InspectorSection {
   return section;
 }
 
-export function snapshotLiveObject(obj: ModuleObject): LiveObjectSnapshot {
+export function snapshotLiveObject(obj: GameObject): LiveObjectSnapshot {
   const kind = getObjectKind(obj);
   const player = GameState.PartyManager.getCurrentPlayer?.();
   let distanceToPlayer: number | null = null;
@@ -780,8 +780,8 @@ export function snapshotLiveObject(obj: ModuleObject): LiveObjectSnapshot {
     ? conversation
     : (conversation?.resref || conversation?.name || '');
   pushRow(identity, 'Conversation', convName);
-  if(BitWise.InstanceOf(obj.objectType, ModuleObjectType.ModuleCreature)
-    || BitWise.InstanceOf(obj.objectType, ModuleObjectType.ModulePlayer)){
+  if(BitWise.InstanceOf(obj.objectType, GameObjectType.Creature)
+    || BitWise.InstanceOf(obj.objectType, GameObjectType.PlayerCharacter)){
     pushRow(identity, 'PartyMember', (obj as any).isPartyMember?.());
     pushRow(identity, 'IsPC', (obj as any).getIsPC?.() ?? (obj as any).isPlayer);
   }
@@ -804,23 +804,23 @@ export function snapshotLiveObject(obj: ModuleObject): LiveObjectSnapshot {
   if(faction.rows.length){ sections.push(faction); }
 
   const ot = obj.objectType;
-  if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleCreature) || BitWise.InstanceOf(ot, ModuleObjectType.ModulePlayer)){
+  if(BitWise.InstanceOf(ot, GameObjectType.Creature) || BitWise.InstanceOf(ot, GameObjectType.PlayerCharacter)){
     sections.push(...collectCreatureSections(obj));
-  }else if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleDoor)){
+  }else if(BitWise.InstanceOf(ot, GameObjectType.Door)){
     sections.push(collectDoorSection(obj));
-  }else if(BitWise.InstanceOf(ot, ModuleObjectType.ModulePlaceable)){
+  }else if(BitWise.InstanceOf(ot, GameObjectType.Placeable)){
     sections.push(collectPlaceableSection(obj));
-  }else if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleTrigger)){
+  }else if(BitWise.InstanceOf(ot, GameObjectType.Trigger)){
     sections.push(collectTriggerSection(obj));
-  }else if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleWaypoint)){
+  }else if(BitWise.InstanceOf(ot, GameObjectType.Waypoint)){
     sections.push(collectWaypointSection(obj));
-  }else if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleSound)){
+  }else if(BitWise.InstanceOf(ot, GameObjectType.Sound)){
     sections.push(collectSoundSection(obj));
-  }else if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleStore)){
+  }else if(BitWise.InstanceOf(ot, GameObjectType.Store)){
     sections.push(collectStoreSection(obj));
-  }else if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleEncounter)){
+  }else if(BitWise.InstanceOf(ot, GameObjectType.Encounter)){
     sections.push(collectEncounterSection(obj));
-  }else if(BitWise.InstanceOf(ot, ModuleObjectType.ModuleItem)){
+  }else if(BitWise.InstanceOf(ot, GameObjectType.Item)){
     sections.push(collectItemSection(obj));
   }
 
@@ -985,7 +985,7 @@ export function snapshotModuleAreaInfo(): ModuleAreaSnapshot {
   };
 }
 
-/** JSON-safe object list entry for Dev Tools IPC (no live ModuleObject refs). */
+/** JSON-safe object list entry for Dev Tools IPC (no live GameObject refs). */
 export interface ObjectListEntry {
   id: number;
   mapId: string;

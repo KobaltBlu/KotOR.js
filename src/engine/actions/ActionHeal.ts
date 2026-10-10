@@ -7,8 +7,8 @@ import { DiceType } from "@core/enums/combat/DiceType";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
 import { SkillType } from "@core/enums/nwscript/SkillType";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleItem } from "@engine/module/ModuleItem";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Item } from "@engine/module/Item";
+import type { GameObject } from "@engine/module/GameObject";
 import { Dice } from "@core/utility/Dice";
 
 import { isCreature } from "@engine/module/guards/isCreature";
@@ -64,8 +64,8 @@ export class ActionHeal extends Action {
       return ActionStatus.ERROR;
     }
 
-    this.target = this.getParameter<ModuleObject>(0);
-    const item = this.getParameter<ModuleItem>(1);
+    this.target = this.getParameter<GameObject>(0);
+    const item = this.getParameter<Item>(1);
     const allowMove = this.getParameter<number>(3) !== 0;
 
     if (!isCreature(this.target)) {

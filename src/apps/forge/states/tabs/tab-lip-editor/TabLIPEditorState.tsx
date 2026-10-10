@@ -341,7 +341,7 @@ export class TabLIPEditorState extends TabState {
           this.head.animations.sort((a: any, b: any) => (a.name.toLowerCase() > b.name.toLowerCase()) ? 1 : ((b.name.toLowerCase() > a.name.toLowerCase()) ? -1 : 0))
           this.head.playAnimation('tlknorm', true);
 
-          this.head.userData.moduleObject = {
+          this.head.userData.gameObject = {
             lipObject: this.lip
           };
 

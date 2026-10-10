@@ -3,9 +3,9 @@ import { DLGNodeType } from "@core/enums/dialog/DLGNodeType";
 import { DLGNodeEngineType } from "@core/enums/dialog/DLGNodeEngineType";
 import { GameState } from "@engine/runtime/GameState";
 import { IDLGNodeScriptParams } from "@engine/interface/dialog/IDLGNodeScriptParams";
-// import { DialogMessageEntry, DialogMessageManager, FadeOverlayManager, JournalManager, ModuleObjectManager } from "@engine/managers";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+// import { DialogMessageEntry, DialogMessageManager, FadeOverlayManager, JournalManager, GameObjectManager } from "@engine/managers";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 // import { NWScript } from "@engine/nwscript/NWScript";
 import { NWScriptInstance } from "@engine/nwscript/NWScriptInstance";
 import { LIPObject } from "@core/resource/LIPObject";
@@ -77,7 +77,7 @@ export class DLGNode {
   nodeDelayMs: number = 0;
   elapsed: number = 0;
   fade: { type: number; length: number; delay: number; color: { r: number; g: number; b: number; };  started: boolean };
-  speaker: ModuleObject;
+  speaker: GameObject;
   dialog: DLGObject;
 
   /** WaitFlags bits (IsDialogDelay). */
@@ -89,8 +89,8 @@ export class DLGNode {
   /** Delay DWORD 0xFFFFFFFF — use unsigned (>>> 0); JS `& 0xFFFFFFFF` yields signed -1. */
   static readonly DELAY_UNSET = 0xFFFFFFFF >>> 0;
 
-  listener: ModuleObject;
-  owner: ModuleObject;
+  listener: GameObject;
+  owner: GameObject;
 
   checkList: any = {};
   timeout: any;
@@ -164,7 +164,7 @@ export class DLGNode {
 
   initProperties(){
     if(this.speakerTag != ''){
-      this.speaker = GameState.ModuleObjectManager.GetObjectByTag(this.speakerTag);
+      this.speaker = GameState.GameObjectManager.GetObjectByTag(this.speakerTag);
     }else{
       this.speaker = this.dialog.owner;
     }
@@ -177,7 +177,7 @@ export class DLGNode {
       if(this.listenerTag == 'PLAYER'){
         this.listener = GameState.PartyManager.party[0];
       }else{
-        this.listener = GameState.ModuleObjectManager.GetObjectByTag(this.listenerTag);
+        this.listener = GameState.GameObjectManager.GetObjectByTag(this.listenerTag);
       }
     }else{
       this.listener = GameState.PartyManager.party[0];
@@ -410,7 +410,7 @@ export class DLGNode {
     if(resref){
       const lip = await LIPObject.Load(resref);
       if (isCreature(this.speaker)) {
-        (this.speaker as ModuleCreature).setLIP(lip);
+        (this.speaker as Creature).setLIP(lip);
       }
       return true;
     }else{
@@ -420,7 +420,7 @@ export class DLGNode {
 
   resetLIP(){
     if (isCreature(this.speaker)) {
-      (this.speaker as ModuleCreature).setLIP(undefined);
+      (this.speaker as Creature).setLIP(undefined);
     }
   }
 
@@ -1126,7 +1126,7 @@ export class DLGNode {
   getCompiledString(): string {
     let text = this.text;
     text = text.split('##')[0].replaceAll(/\{.*?\}/ig, '').trim();
-    //if(this.speaker instanceof ModuleCreature){
+    //if(this.speaker instanceof Creature){
       text = text.replace(/<FullName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('FirstName')?.getValue());
       text = text.replace(/<FirstName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('FirstName')?.getValue());
       text = text.replace(/<LastName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('LastName')?.getValue());

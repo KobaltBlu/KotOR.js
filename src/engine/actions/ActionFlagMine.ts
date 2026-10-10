@@ -3,7 +3,7 @@ import { ActionParameterType } from "@core/enums/actions/ActionParameterType";
 import { ActionStatus } from "@core/enums/actions/ActionStatus";
 import { ActionType } from "@core/enums/actions/ActionType";
 import { ModuleTriggerType } from "@core/enums/module/ModuleTriggerType";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import { Action } from "@engine/actions/Action";
 import { markTrapDetected, MineSkillResult, resolveMineSkillCheck } from "@engine/actions/mine-skill";
 import { queueMoveIntoUseRange } from "@engine/actions/use-range";
@@ -37,7 +37,7 @@ export class ActionFlagMine extends Action {
 
   update(delta?: number): ActionStatus {
 
-    this.target = this.getParameter<ModuleObject>(0);
+    this.target = this.getParameter<GameObject>(0);
     if(!this.target){
       GameState.GuiTimingBarManager?.stopFor?.(this.owner);
       return ActionStatus.FAILED;

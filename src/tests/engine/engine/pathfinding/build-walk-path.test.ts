@@ -8,7 +8,7 @@ const mockPathHopsAreWalkClear = jest.fn(() => true);
 
 jest.mock("@engine/runtime/GameState", () => ({
   GameState: {
-    ModuleObjectManager: { GetObjectById: () => undefined },
+    GameObjectManager: { GetObjectById: () => undefined },
     module: undefined,
   },
 }));

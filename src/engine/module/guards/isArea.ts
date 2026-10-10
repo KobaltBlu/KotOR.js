@@ -1,8 +1,8 @@
-import type { ModuleObject } from "@engine/module/ModuleObject";
-import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { GameObject } from "@engine/module/GameObject";
+import type { Area } from "@engine/module/Area";
 import { BitWise } from "@core/utility/BitWise";
-import { ModuleObjectType } from "@core/enums/module/ModuleObjectType";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
 
-export const isArea: (o: ModuleObject | undefined) => o is ModuleArea = (o): o is ModuleArea => {
-    return !!BitWise.InstanceOfObject(o, ModuleObjectType.ModuleArea);
+export const isArea: (o: GameObject | undefined) => o is Area = (o): o is Area => {
+    return !!BitWise.InstanceOfObject(o, GameObjectType.Area);
 }

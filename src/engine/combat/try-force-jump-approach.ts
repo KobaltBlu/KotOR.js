@@ -13,8 +13,8 @@ import {
   hasWalkLineClear,
   WalkLineHitCode,
 } from "@engine/pathfinding/walk-line-clear";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 import { isCreature } from "@engine/module/guards/isCreature";
 
 /** Minimum distance² gate (≥ 10 units). */
@@ -31,8 +31,8 @@ export type TryForceJumpApproachOut = {
  * feat id. Returns true to skip normal MoveTo approach.
  */
 export function tryForceJumpApproach(
-  attacker: ModuleCreature,
-  target: ModuleObject,
+  attacker: Creature,
+  target: GameObject,
   out: TryForceJumpApproachOut
 ): boolean {
   if(!isCreature(attacker) || !isCreature(target)){

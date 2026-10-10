@@ -2,7 +2,7 @@ import { GameMenu } from "@engine/gui";
 import type { GUIButton, GUILabel, GUIListBox } from "@engine/gui";
 import { GUIInventoryItem } from "@engine/gui/protoitem/GUIInventoryItem";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleItem } from "@engine/module/ModuleItem";
+import type { Item } from "@engine/module/Item";
 import { MenuUpgradeSelect as K1_MenuUpgradeSelect } from "@engine/games/kotor/menu/MenuUpgradeSelect";
 import {
   UpgradeCategory,
@@ -42,7 +42,7 @@ export class MenuUpgradeSelect extends K1_MenuUpgradeSelect {
 
   filterCategory: UpgradeCategoryKey | 'ALL' = 'ALL';
   sources: UpgradeItemSource[] = [];
-  selectedItem: ModuleItem;
+  selectedItem: Item;
 
   constructor(){
     super();
@@ -57,7 +57,7 @@ export class MenuUpgradeSelect extends K1_MenuUpgradeSelect {
     return new Promise<void>((resolve) => {
       this.LB_UPGRADELIST?.setProtoBuilder?.(GUIInventoryItem);
       if(this.LB_UPGRADELIST){
-        this.LB_UPGRADELIST.onSelected = (item: ModuleItem) => {
+        this.LB_UPGRADELIST.onSelected = (item: Item) => {
           this.onItemSelected(item);
         };
       }
@@ -148,7 +148,7 @@ export class MenuUpgradeSelect extends K1_MenuUpgradeSelect {
     }
   }
 
-  onItemSelected(item: ModuleItem) {
+  onItemSelected(item: Item) {
     this.selectedItem = item;
     this.LB_DESCRIPTION?.setItem?.(item ? item.getPropertyDescription() : null);
     this.BTN_UPGRADEITEMS.disableSelection = !item;
@@ -165,7 +165,7 @@ export class MenuUpgradeSelect extends K1_MenuUpgradeSelect {
   }
 
   open(args?: {
-    forcedItem?: ModuleItem;
+    forcedItem?: Item;
     skillCharacter?: any;
     disableItemCreation?: boolean;
     disableUpgrade?: boolean;

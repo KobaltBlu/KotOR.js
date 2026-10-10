@@ -3,7 +3,7 @@ import { GameEffectType } from "@core/enums/effects/GameEffectType";
 import { GameEffectDurationType } from "@core/enums/effects/GameEffectDurationType";
 import { GameEffectSubType } from "@core/enums/effects/GameEffectSubType";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { hasImmunityType } from "@engine/effects/haste-slow";
 
 import { isCreature } from "@engine/module/guards/isCreature";
@@ -37,7 +37,7 @@ export class EffectBlindness extends GameEffect {
     if(!isCreature(this.object)){
       return;
     }
-    const creature = this.object as ModuleCreature;
+    const creature = this.object as Creature;
     const mode = this.getInt(0);
 
     // : only 0x10 or 8 are valid apply modes
@@ -87,7 +87,7 @@ export class EffectBlindness extends GameEffect {
   onRemove(){
     super.onRemove();
     if(isCreature(this.object)){
-      recomputeVisionFlags(this.object as ModuleCreature);
+      recomputeVisionFlags(this.object as Creature);
     }
     for(let i = 0; i < this.children.length; i++){
       this.object?.removeEffect?.(this.children[i]);
@@ -107,7 +107,7 @@ export class EffectBlindness extends GameEffect {
   }
 }
 
-export function recomputeVisionFlags(creature: ModuleCreature){
+export function recomputeVisionFlags(creature: Creature){
   let flags = 0;
   const effects = creature.effects || [];
   for(let i = 0; i < effects.length; i++){
@@ -127,7 +127,7 @@ export function recomputeVisionFlags(creature: ModuleCreature){
 }
 
 /** GetBlind */
-export function isCreatureBlind(creature: ModuleCreature): boolean {
+export function isCreatureBlind(creature: Creature): boolean {
   const flags = creature.visionFlags || 0;
   if(flags & VISION_FLAG_BLIND) return true;
   if((flags & VISION_FLAG_DARKNESS_BLIND) && !(flags & VISION_FLAG_ULTRA_VISION)){

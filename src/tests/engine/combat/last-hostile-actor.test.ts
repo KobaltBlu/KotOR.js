@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from '@jest/globals';
 import { CombatData } from '@engine/combat/CombatData';
-import { ModuleObjectType } from '@core/enums/module/ModuleObjectType';
+import { GameObjectType } from '@core/enums/module/GameObjectType';
 import { PerceptionMask } from '@engine/enums/engine/PerceptionMask';
 import {
   getLastHostileActor,
@@ -18,7 +18,7 @@ import {
 function makeCreature(id: number, opts: { plot?: boolean; factionId?: number; dead?: boolean } = {}){
   const c: any = {
     id,
-    objectType: ModuleObjectType.ModuleObject | ModuleObjectType.ModuleCreature,
+    objectType: GameObjectType.GameObject | GameObjectType.Creature,
     plot: !!opts.plot,
     factionId: opts.factionId ?? 1,
     isDead: () => !!opts.dead,

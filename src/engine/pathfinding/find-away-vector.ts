@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { getPathPersonalSpace } from "@engine/combat/attack-range";
 import {
   farthestClearPoint,
@@ -27,8 +27,8 @@ const _candidate = new THREE.Vector3();
  * Clip destination along origin→ideal via walk-line clear / hasWalkLineClear.
  */
 function clipDirectLine(
-  area: NonNullable<ModuleCreature["area"]>,
-  owner: ModuleCreature,
+  area: NonNullable<Creature["area"]>,
+  owner: Creature,
   origin: THREE.Vector3,
   ideal: THREE.Vector3
 ): THREE.Vector3 {
@@ -51,7 +51,7 @@ function clipDirectLine(
  * Compute flee destination at least ~`range` from `threat`.
  */
 export function findAwayVector(
-  creature: ModuleCreature,
+  creature: Creature,
   threat: THREE.Vector3,
   range: number
 ): THREE.Vector3 {

@@ -9,7 +9,7 @@ export interface LipSyncModelHost {
   nodes: Map<string, any>;
   odysseyAnimationMap: Map<string, any>;
   animNodeCache?: Record<string, any>;
-  userData?: { moduleObject?: { lipObject?: LIPObject | undefined } };
+  userData?: { gameObject?: { lipObject?: LIPObject | undefined } };
 }
 
 /**
@@ -24,8 +24,8 @@ export class LipSyncPlayer {
 
     if (!lip.keyframes.length) {
       if (lip.elapsed >= lip.duration) {
-        if (model.userData?.moduleObject)
-          model.userData.moduleObject.lipObject = undefined;
+        if (model.userData?.gameObject)
+          model.userData.gameObject.lipObject = undefined;
         if (lip.anim) {
           for (let i = 0; i < lip.anim.nodes.length; i++) {
             let modelNode: any = model.animNodeCache?.[lip.anim.nodes[i].name];
@@ -122,8 +122,8 @@ export class LipSyncPlayer {
     }
 
     if (lip.elapsed >= lip.duration) {
-      if (model.userData?.moduleObject)
-        model.userData.moduleObject.lipObject = undefined;
+      if (model.userData?.gameObject)
+        model.userData.gameObject.lipObject = undefined;
 
       if (lip.anim) {
         for (let i = 0; i < lip.anim.nodes.length; i++) {

@@ -1,7 +1,7 @@
 import { ActionStatus } from "@core/enums/actions/ActionStatus";
 import { ActionType } from "@core/enums/actions/ActionType";
 import { ModuleCreatureArmorSlot } from "@core/enums/module/ModuleCreatureArmorSlot";
-import type { ModuleItem } from "@engine/module/ModuleItem";
+import type { Item } from "@engine/module/Item";
 import { Action } from "@engine/actions/Action";
 
 import { isCreature } from "@engine/module/guards/isCreature";
@@ -30,10 +30,10 @@ export class ActionEquipItem extends Action {
 
   update(delta?: number): ActionStatus {
     if(
-      isItem(this.getParameter<ModuleItem>(0)) && 
+      isItem(this.getParameter<Item>(0)) && 
       isCreature(this.owner)
     ){
-      const item = this.getParameter<ModuleItem>(0);
+      const item = this.getParameter<Item>(0);
       const slot = this.getParameter<ModuleCreatureArmorSlot>(1);
       const instant = !!this.getParameter<number>(2);
       // Stamp hand slots sync inside equipItem; model load continues async.

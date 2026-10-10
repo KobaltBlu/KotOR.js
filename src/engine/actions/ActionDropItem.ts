@@ -2,7 +2,7 @@ import { Action } from "@engine/actions/Action";
 import { ActionStatus, ActionType } from "@core/enums";
 import { ModuleCreatureAnimState } from "@core/enums/module/ModuleCreatureAnimState";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleItem } from "@engine/module/ModuleItem";
+import type { Item } from "@engine/module/Item";
 
 import { isCreature } from "@engine/module/guards/isCreature";
 import { isItem } from "@engine/module/guards/isItem";
@@ -35,7 +35,7 @@ export class ActionDropItem extends Action {
       return ActionStatus.FAILED;
     }
 
-    const oItem = this.getParameter<ModuleItem>(0);
+    const oItem = this.getParameter<Item>(0);
 
     if(!isItem(oItem)){
       return ActionStatus.FAILED;
@@ -45,9 +45,9 @@ export class ActionDropItem extends Action {
     this.owner.force = 0;
     this.owner.speed = 0;
 
-    let dropped: ModuleItem;
+    let dropped: Item;
     if(GameState.PartyManager.party.indexOf(this.owner) >= 0){
-      dropped = GameState.InventoryManager.removeItem(oItem, 1) as ModuleItem;
+      dropped = GameState.InventoryManager.removeItem(oItem, 1) as Item;
     }else{
       dropped = this.owner.removeItem(oItem, 1);
     }
@@ -63,7 +63,7 @@ export class ActionDropItem extends Action {
     dropped.load();
     dropped.loadModel().then( (model: any) => {
       if(!model){ return; }
-      model.userData.moduleObject = dropped;
+      model.userData.gameObject = dropped;
       model.name = dropped.getTag();
       GameState.group.placeables.add(model);
       const area = this.owner.area;

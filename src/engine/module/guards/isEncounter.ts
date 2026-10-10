@@ -1,8 +1,8 @@
-import type { ModuleObject } from "@engine/module/ModuleObject";
-import type { ModuleEncounter } from "@engine/module/ModuleEncounter";
+import type { GameObject } from "@engine/module/GameObject";
+import type { Encounter } from "@engine/module/Encounter";
 import { BitWise } from "@core/utility/BitWise";
-import { ModuleObjectType } from "@core/enums/module/ModuleObjectType";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
 
-export const isEncounter: (o: ModuleObject | undefined) => o is ModuleEncounter = (o): o is ModuleEncounter => {
-    return !!BitWise.InstanceOfObject(o, ModuleObjectType.ModuleEncounter);
+export const isEncounter: (o: GameObject | undefined) => o is Encounter = (o): o is Encounter => {
+    return !!BitWise.InstanceOfObject(o, GameObjectType.Encounter);
 }

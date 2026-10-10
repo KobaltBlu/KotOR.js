@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import { PathPoint } from "@engine/pathfinding/PathPoint";
 import { PathPointDfsTransTable } from "@engine/pathfinding/path-point-dfs-trans-table";
 
@@ -54,7 +54,7 @@ const DEFAULT_TIME_BUDGET_MS = 12;
 export function pathPointDfsSearch(options: {
   origin: PathPoint;
   destination: PathPoint;
-  owner?: ModuleObject;
+  owner?: GameObject;
   evaluateEdge: (from: PathPoint, to: PathPoint) => PathPointDfsEdgeEval;
   /**
    * Wall-clock ms budget (path-point DFS high-res timer).

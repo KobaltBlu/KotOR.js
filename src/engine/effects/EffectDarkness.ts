@@ -3,7 +3,7 @@ import { GameEffectType } from "@core/enums/effects/GameEffectType";
 import { GameEffectDurationType } from "@core/enums/effects/GameEffectDurationType";
 import { GameEffectSubType } from "@core/enums/effects/GameEffectSubType";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { VISION_FLAG_DARKNESS_BLIND } from "@engine/effects/EffectBlindness";
 import { isCreature } from "@engine/module/guards/isCreature";
 
@@ -28,7 +28,7 @@ export class EffectDarkness extends GameEffect {
     if(!isCreature(this.object)){
       return;
     }
-    const creature = this.object as ModuleCreature;
+    const creature = this.object as Creature;
     super.onApply();
 
     const raceCount = GameState.SWRuleSet?.racialTypeCount || 0;

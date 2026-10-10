@@ -1,7 +1,7 @@
 import { MapMode } from "@core/enums/engine/MapMode";
 import { LBL_MapView } from "@engine/gui";
 import type { GUILabel, GUIButton } from "@engine/gui";
-import type { ModuleWaypoint } from "@engine/module/ModuleWaypoint";
+import type { Waypoint } from "@engine/module/Waypoint";
 import { CExoLocString } from "@core/resource/CExoLocString";
 import { MenuMap as K1_MenuMap } from "@engine/games/kotor/menu/MenuMap";
 
@@ -44,7 +44,7 @@ export class MenuMap extends K1_MenuMap {
       this.LBL_MapNote.setText('');
       this.LBL_Map.addEventListener('click', (e) => {
         e.stopPropagation();
-        const mapNote: ModuleWaypoint = this.miniMap.onClick();
+        const mapNote: Waypoint = this.miniMap.onClick();
         if(mapNote && mapNote.mapNote instanceof CExoLocString){
           this.LBL_MapNote.setText(mapNote.mapNote.getValue())
         }

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { getCreaturePersonalSpace } from "@engine/combat/attack-range";
 import {
   findWalkableAttachmentAt,
@@ -34,7 +34,7 @@ const _probe = new THREE.Vector3();
 const _edgeNormals: THREE.Vector3[] = [];
 
 function segmentClear(
-  creature: ModuleCreature,
+  creature: Creature,
   from: THREE.Vector3,
   to: THREE.Vector3
 ): boolean {
@@ -58,7 +58,7 @@ function segmentClear(
  * Resolve an impulse displacement without mutating the creature.
  */
 export function resolveExternalForceStep(
-  creature: ModuleCreature,
+  creature: Creature,
   desiredDisplacement: THREE.Vector3
 ): MovementResult {
   const origin = creature.position.clone();
@@ -166,7 +166,7 @@ export function resolveExternalForceStep(
 }
 
 function finishExternal(
-  creature: ModuleCreature,
+  creature: Creature,
   origin: THREE.Vector3,
   dest: THREE.Vector3,
   hit: MovementResult["hit"]
@@ -196,7 +196,7 @@ function finishExternal(
  * Resolve + commit one external-force impulse frame.
  */
 export function tickExternalForceStep(
-  creature: ModuleCreature,
+  creature: Creature,
   desiredDisplacement: THREE.Vector3,
   delta = 0
 ): MovementResult {

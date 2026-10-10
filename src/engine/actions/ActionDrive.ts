@@ -11,7 +11,7 @@ import {
   tickCreatureDrive,
 } from "@engine/pathfinding/tick-creature-drive";
 import { DRIVE_STRAFE_RATE } from "@engine/pathfinding/locomotion";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { isCreature } from "@engine/module/guards/isCreature";
 
 /** Control flag bits from drive action */
@@ -208,7 +208,7 @@ export class ActionDrive extends Action {
   }
 
   private buildDestination(
-    owner: ModuleCreature,
+    owner: Creature,
     flags: number,
     packedFacing: number,
     clientX: number | undefined,

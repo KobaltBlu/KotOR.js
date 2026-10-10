@@ -1,6 +1,6 @@
 import { GameEffect } from "@engine/effects/GameEffect";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { hasImmunityType, rebalanceHasteSlow } from "@engine/effects/haste-slow";
 
 import { isCreature } from "@engine/module/guards/isCreature";
@@ -23,21 +23,21 @@ export class EffectSlow extends GameEffect {
 
     if(isCreature(this.object)){
       // IMMUNITY_TYPE_SLOW = 9
-      if(hasImmunityType(this.object as ModuleCreature, 9)){
+      if(hasImmunityType(this.object as Creature, 9)){
         return;
       }
     }
 
     super.onApply();
     if(isCreature(this.object)){
-      rebalanceHasteSlow(this.object as ModuleCreature, this);
+      rebalanceHasteSlow(this.object as Creature, this);
     }
   }
 
   onRemove(){
     super.onRemove();
     if(isCreature(this.object)){
-      rebalanceHasteSlow(this.object as ModuleCreature, this);
+      rebalanceHasteSlow(this.object as Creature, this);
     }
   }
 }

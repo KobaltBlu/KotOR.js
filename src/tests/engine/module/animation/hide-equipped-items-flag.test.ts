@@ -4,7 +4,7 @@ import {
 import { SWAnimation } from "@engine/rules/SWAnimation";
 
 /**
- * Mirrors ModuleCreature hide/show for animations.2da hideequippeditems
+ * Mirrors Creature hide/show for animations.2da hideequippeditems
  * without pulling the full creature graph into the test env.
  */
 function applyHideEquippedSideEffect(

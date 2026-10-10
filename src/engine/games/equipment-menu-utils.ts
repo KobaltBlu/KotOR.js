@@ -2,8 +2,8 @@ import { ModuleCreatureArmorSlot } from "@core/enums/module/ModuleCreatureArmorS
 import { WeaponSize } from "@core/enums/combat/WeaponSize";
 import { WeaponWield } from "@core/enums/combat/WeaponWield";
 import { getAttackEffectBonus } from "@engine/effects/effect-bonuses";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleItem } from "@engine/module/ModuleItem";
+import type { Creature } from "@engine/module/Creature";
+import type { Item } from "@engine/module/Item";
 
 /** GuiInGameEquipSlotInfo — empty icon stem + TLK slot names (human/droid). */
 export interface EquipSlotInfo {
@@ -80,21 +80,21 @@ export const EQUIP_COLOR_BLUE = { r: 0, g: 0.658824, b: 0.980392 };
 /** colorGreen when a stat beats baseline. */
 export const EQUIP_COLOR_GREEN = { r: 0, g: 1, b: 0 };
 
-export function isTwoHandedWeapon(item?: ModuleItem): boolean {
+export function isTwoHandedWeapon(item?: Item): boolean {
   if(!item?.baseItem) return false;
   return item.getWeaponWield() === WeaponWield.TWO_HANDED_SWORD;
 }
 
-export function isLargeWeapon(item?: ModuleItem): boolean {
+export function isLargeWeapon(item?: Item): boolean {
   if(!item?.baseItem) return false;
   return item.baseItem.weaponSize === WeaponSize.LARGE;
 }
 
 /**
  * Equip-screen attack bonus for a hand (BAB + ability mod + weapon AB + effects).
- * Mirrors the combat touch-attack formula in ModuleCreature.
+ * Mirrors the combat touch-attack formula in Creature.
  */
-export function getEquipScreenAttackBonus(creature: ModuleCreature, weapon: ModuleItem | undefined, offHand: boolean): number {
+export function getEquipScreenAttackBonus(creature: Creature, weapon: Item | undefined, offHand: boolean): number {
   const ranged = !!weapon?.isRangedWeapon?.();
   const ability = Math.floor(((ranged ? creature.getDEX() : creature.getSTR()) - 10) / 2);
   // Off-hand does not get full STR contribution in dual wield; GetMeleeAttackBonus
@@ -106,7 +106,7 @@ export function getEquipScreenAttackBonus(creature: ModuleCreature, weapon: Modu
 /**
  * Min/max damage for equip-screen labels (base dice + static damage bonus).
  */
-export function getEquipScreenDamageRange(weapon: ModuleItem | undefined): { min: number; max: number } {
+export function getEquipScreenDamageRange(weapon: Item | undefined): { min: number; max: number } {
   if(!weapon?.baseItem?.numDice){
     return { min: 0, max: 0 };
   }
@@ -138,10 +138,10 @@ export function isOffHandSlot(slot: ModuleCreatureArmorSlot): boolean {
  * 1 = ok, 3 = weapon style conflict (dual-wield mismatch).
  */
 export function getItemEquipCanUse(
-  item: ModuleItem,
+  item: Item,
   slot: ModuleCreatureArmorSlot,
-  mainWeapon: ModuleItem | undefined,
-  offWeapon: ModuleItem | undefined,
+  mainWeapon: Item | undefined,
+  offWeapon: Item | undefined,
 ): number {
   if (isMainHandSlot(slot) && offWeapon) {
     const a = item.getWeaponWield();
@@ -171,8 +171,8 @@ export function getItemEquipCanUse(
 /** Paired main-hand for an off-hand slot (or undefined when not off-hand). */
 export function getMainWeaponForOffHandSlot(
   slot: ModuleCreatureArmorSlot,
-  getItemInSlot: (slot: ModuleCreatureArmorSlot) => ModuleItem | undefined,
-): ModuleItem | undefined {
+  getItemInSlot: (slot: ModuleCreatureArmorSlot) => Item | undefined,
+): Item | undefined {
   if (!isOffHandSlot(slot)) return undefined;
   return getItemInSlot(
     slot === ModuleCreatureArmorSlot.LEFTHAND2
@@ -184,8 +184,8 @@ export function getMainWeaponForOffHandSlot(
 /** Paired off-hand for a main-hand slot (or undefined when not main-hand). */
 export function getOffWeaponForMainHandSlot(
   slot: ModuleCreatureArmorSlot,
-  getItemInSlot: (slot: ModuleCreatureArmorSlot) => ModuleItem | undefined,
-): ModuleItem | undefined {
+  getItemInSlot: (slot: ModuleCreatureArmorSlot) => Item | undefined,
+): Item | undefined {
   if (!isMainHandSlot(slot)) return undefined;
   const off = getOffHandSlotForMain(slot);
   return off ? getItemInSlot(off) : undefined;

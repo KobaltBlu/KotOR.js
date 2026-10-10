@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { getPathPersonalSpace } from "@engine/combat/attack-range";
 import { isSafeWalkPoint } from "@engine/pathfinding/safe-walk-point";
 import { findOpenWalkLocation } from "@engine/pathfinding/open-walk-location";
@@ -15,7 +15,7 @@ import { teleportObject } from "@engine/movement/teleport";
 
 const _safeStand = new THREE.Vector3();
 
-export function ensureSafeStandingPosition(creature: ModuleCreature): boolean {
+export function ensureSafeStandingPosition(creature: Creature): boolean {
   const area = creature?.area;
   if(!area || !creature.position){
     return false;

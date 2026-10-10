@@ -4,14 +4,14 @@ import { GameEventType } from "@core/enums/events/GameEventType";
 import { GFFDataType } from "@core/enums/resource/GFFDataType";
 import { GFFField } from "@core/resource/GFFField";
 import { GFFStruct } from "@core/resource/GFFStruct";
-import { ModuleObjectConstant } from "@core/enums/module/ModuleObjectConstant";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import { GameObjectConstant } from "@core/enums/module/GameObjectConstant";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 import type { TalentSpell } from "@engine/talents/TalentSpell";
 import * as THREE from "three";
 
 import { isCreature } from "@engine/module/guards/isCreature";
-import { isObject } from "@engine/module/guards/isObject";
+import { isGameObject } from "@engine/module/guards/isGameObject";
 
 /**
  * EventSpellImpact — SpellCastAndImpact AddEventDeltaTime type 0x08.
@@ -23,8 +23,8 @@ export class EventSpellImpact extends GameEvent {
 
   spellId: number = -1;
   impactScript: string = '';
-  targetId: number = ModuleObjectConstant.OBJECT_INVALID;
-  itemId: number = ModuleObjectConstant.OBJECT_INVALID;
+  targetId: number = GameObjectConstant.OBJECT_INVALID;
+  itemId: number = GameObjectConstant.OBJECT_INVALID;
   impactPosition: THREE.Vector3 = new THREE.Vector3();
 
   constructor(){
@@ -44,8 +44,8 @@ export class EventSpellImpact extends GameEvent {
     };
     this.spellId = num('SpellId', -1);
     this.impactScript = str('ImpactScript');
-    this.targetId = num('TargetId', ModuleObjectConstant.OBJECT_INVALID);
-    this.itemId = num('ItemId', ModuleObjectConstant.OBJECT_INVALID);
+    this.targetId = num('TargetId', GameObjectConstant.OBJECT_INVALID);
+    this.itemId = num('ItemId', GameObjectConstant.OBJECT_INVALID);
     this.impactPosition.set(num('PosX'), num('PosY'), num('PosZ'));
   }
 
@@ -59,9 +59,9 @@ export class EventSpellImpact extends GameEvent {
     // Stamp spell-target fields before the impactscript runs
     caster.spellTargetPosition.copy(this.impactPosition);
     if(isCreature(caster)){
-      const cre = caster as ModuleCreature;
-      if(this.itemId !== ModuleObjectConstant.OBJECT_INVALID){
-        const item = GameState.ModuleObjectManager.GetObjectById(this.itemId);
+      const cre = caster as Creature;
+      if(this.itemId !== GameObjectConstant.OBJECT_INVALID){
+        const item = GameState.GameObjectManager.GetObjectById(this.itemId);
         if(item) cre.spellCastItem = item as any;
       }
     }
@@ -69,10 +69,10 @@ export class EventSpellImpact extends GameEvent {
     let spell: TalentSpell | undefined;
     if(this.spellId >= 0){
       spell = new GameState.TalentSpell(this.spellId);
-      if(this.targetId !== ModuleObjectConstant.OBJECT_INVALID){
-        const target = GameState.ModuleObjectManager.GetObjectById(this.targetId);
-        if(isObject(target)){
-          spell.oTarget = target as ModuleObject;
+      if(this.targetId !== GameObjectConstant.OBJECT_INVALID){
+        const target = GameState.GameObjectManager.GetObjectById(this.targetId);
+        if(isGameObject(target)){
+          spell.oTarget = target as GameObject;
         }
       }else{
         spell.oTarget = undefined;
@@ -110,9 +110,9 @@ export class EventSpellImpact extends GameEvent {
  * Schedule SpellCastAndImpact delayed impactscript (event type 0x08).
  */
 export function scheduleSpellImpactEvent(opts: {
-  caster: ModuleObject;
+  caster: GameObject;
   spell: TalentSpell | undefined;
-  target?: ModuleObject;
+  target?: GameObject;
   itemId?: number;
   impactPosition: THREE.Vector3;
   delayMs: number;
@@ -130,8 +130,8 @@ export function scheduleSpellImpactEvent(opts: {
   evt.setTime(future.pauseTime);
   evt.spellId = opts.spell?.id ?? -1;
   evt.impactScript = script;
-  evt.targetId = opts.target?.id ?? ModuleObjectConstant.OBJECT_INVALID;
-  evt.itemId = opts.itemId ?? ModuleObjectConstant.OBJECT_INVALID;
+  evt.targetId = opts.target?.id ?? GameObjectConstant.OBJECT_INVALID;
+  evt.itemId = opts.itemId ?? GameObjectConstant.OBJECT_INVALID;
   evt.impactPosition.copy(opts.impactPosition);
   GameState.module.addEvent(evt);
 }

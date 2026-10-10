@@ -7,20 +7,20 @@ import { describe, expect, it } from "@jest/globals";
 describe("CutsceneManager stunt actor bounds contract", () => {
   it("marks matrix dirty and uses computeBoundingBox instead of setFromObject", () => {
     // Mirrors CutsceneManager.update stunt-actor block.
-    function updateStuntActorBox(moduleObject: {
+    function updateStuntActorBox(gameObject: {
       markCollisionMatrixDirty: (reason: string) => void;
       computeBoundingBox: () => unknown;
       box: { setFromObject?: (o: unknown) => void };
       container: unknown;
     }) {
-      moduleObject.markCollisionMatrixDirty("cutscene");
-      moduleObject.computeBoundingBox();
+      gameObject.markCollisionMatrixDirty("cutscene");
+      gameObject.computeBoundingBox();
     }
 
     let matrixMarks = 0;
     let computeCalls = 0;
     let setFromObjectCalls = 0;
-    const moduleObject = {
+    const gameObject = {
       markCollisionMatrixDirty: (_reason: string) => { matrixMarks++; },
       computeBoundingBox: () => { computeCalls++; return null; },
       box: {
@@ -29,8 +29,8 @@ describe("CutsceneManager stunt actor bounds contract", () => {
       container: {},
     };
 
-    updateStuntActorBox(moduleObject);
-    updateStuntActorBox(moduleObject);
+    updateStuntActorBox(gameObject);
+    updateStuntActorBox(gameObject);
 
     expect(matrixMarks).toBe(2);
     expect(computeCalls).toBe(2);

@@ -22,17 +22,17 @@ import {
   countPlayerVisibility,
 } from "@engine/pathfinding/count-player-visibility";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Area } from "@engine/module/Area";
+import type { Creature } from "@engine/module/Creature";
 
-function makePlayer(x: number, y: number, z = 0): ModuleCreature {
+function makePlayer(x: number, y: number, z = 0): Creature {
   return {
     position: new THREE.Vector3(x, y, z),
     isDead: () => false,
     isPC: 1,
     isPartyMember: () => true,
     id: Math.random(),
-  } as unknown as ModuleCreature;
+  } as unknown as Creature;
 }
 
 describe("countPlayerVisibility", () => {
@@ -45,7 +45,7 @@ describe("countPlayerVisibility", () => {
   it("gates at dist² < 900 (30 m) before LOS", () => {
     const near = makePlayer(0, 0, 0);
     const far = makePlayer(40, 0, 0); // 40² = 1600 > 900
-    const area = { creatures: [near, far] } as unknown as ModuleArea;
+    const area = { creatures: [near, far] } as unknown as Area;
     const point = new THREE.Vector3(0, 0, 0);
 
     const n = countPlayerVisibility(area, point, 0x60);
@@ -56,7 +56,7 @@ describe("countPlayerVisibility", () => {
 
   it("raises both endpoints by eye Z +1.5 for visual LOS / hasVisualLos", () => {
     const player = makePlayer(1, 2, 3);
-    const area = { creatures: [player] } as unknown as ModuleArea;
+    const area = { creatures: [player] } as unknown as Area;
     const point = new THREE.Vector3(4, 5, 6);
 
     countPlayerVisibility(area, point, 0x60);
@@ -69,7 +69,7 @@ describe("countPlayerVisibility", () => {
 
   it("counts area PCs even when not in party list", () => {
     const pc = makePlayer(0, 0, 0);
-    const area = { creatures: [pc] } as unknown as ModuleArea;
+    const area = { creatures: [pc] } as unknown as Area;
     expect(countPlayerVisibility(area, new THREE.Vector3(0, 0, 0))).toBe(1);
   });
 });

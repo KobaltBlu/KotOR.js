@@ -5,14 +5,14 @@ import { GameEffectDurationType } from "@core/enums/effects/GameEffectDurationTy
 import { FadeOverlayState } from "@engine/enums/engine/FadeOverlayState";
 import { MenuSaveLoadMode } from "@core/enums/gui/MenuSaveLoadMode";
 import { PerceptionMask } from "@engine/enums/engine/PerceptionMask";
-import { ModuleObjectType } from "@core/enums/module/ModuleObjectType";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
 import { NWScript } from "@engine/nwscript/NWScript";
 import { SaveGame } from "@engine/save/SaveGame";
 import { FactionManager } from "@engine/managers/FactionManager";
 import { FollowerCamera } from "@engine/render/FollowerCamera";
 import { findOpenWalkLocation } from "@engine/pathfinding/open-walk-location";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 import { BitWise } from "@core/utility/BitWise";
 import * as THREE from "three";
 import { ModuleLoadCoordinator } from '@engine/runtime/ModuleLoadCoordinator';
@@ -55,7 +55,7 @@ export class GameOverManager {
   static combatClearMs = 0;
 
   /** last_party_member_temp_killed — focus target for. */
-  static lastPartyMemberKilled: ModuleObject | undefined;
+  static lastPartyMemberKilled: GameObject | undefined;
 
   /** Auto-resurrect dead party after this many ms of combat clear (5000). */
   static readonly COMBAT_CLEAR_RESURRECT_MS = 5000;
@@ -84,9 +84,9 @@ export class GameOverManager {
   }
 
   /** Record which party member just died (for death-camera target). */
-  static NotifyPartyMemberDeath(creature: ModuleObject){
+  static NotifyPartyMemberDeath(creature: GameObject){
     if(!creature) return;
-    if(GameState.PartyManager.party.indexOf(creature as ModuleCreature) < 0) return;
+    if(GameState.PartyManager.party.indexOf(creature as Creature) < 0) return;
     this.lastPartyMemberKilled = creature;
   }
 
@@ -177,7 +177,7 @@ export class GameOverManager {
   }
 
   /** IsPartyVisible — SEEN perception entry against a party member. */
-  static isPartyVisibleTo(creature: ModuleCreature): boolean {
+  static isPartyVisibleTo(creature: Creature): boolean {
     const list = creature.perceptionList;
     if(!list?.length){
       // Fallback when perception isn't populated: distance gate (~ combat range)
@@ -190,7 +190,7 @@ export class GameOverManager {
       const entry = list[i];
       if(!entry || !(entry.data & PerceptionMask.SEEN)) continue;
       const obj = entry.object;
-      if(obj && GameState.PartyManager.party.indexOf(obj as ModuleCreature) >= 0){
+      if(obj && GameState.PartyManager.party.indexOf(obj as Creature) >= 0){
         return true;
       }
     }
@@ -204,7 +204,7 @@ export class GameOverManager {
     const leaderPos = leader?.position;
 
     for(let i = 0; i < party.length; i++){
-      const member = party[i] as ModuleCreature;
+      const member = party[i] as Creature;
       if(!member?.isDead()) continue;
 
       const effect = new GameState.GameEffectFactory.EffectResurrection();
@@ -247,7 +247,7 @@ export class GameOverManager {
           leaderPos.z
         );
         const safe = new THREE.Vector3();
-        if(area && findOpenWalkLocation(area, preferred, safe, { radius: 10, owner: member as ModuleCreature })){
+        if(area && findOpenWalkLocation(area, preferred, safe, { radius: 10, owner: member as Creature })){
           member.position.copy(safe);
         }else{
           member.position.copy(preferred);
@@ -395,7 +395,7 @@ export class GameOverManager {
    * PopUpGUIPanel — only GUI_PANEL_PLAYER_DEATH (0) is meaningful in KotOR
    * (SendServerToPlayerPopUpGUIPanel).
    */
-  static PopUpGUIPanel(oPC: ModuleObject | undefined, guiPanel: number){
+  static PopUpGUIPanel(oPC: GameObject | undefined, guiPanel: number){
     GameState.PartyManager.LastGuiPanel = guiPanel | 0;
     if(guiPanel !== 0) return;
     this.PopUpDeathGUIPanel(oPC, true, true, 0, '');
@@ -407,7 +407,7 @@ export class GameOverManager {
    * K1 uses the death confirm modal (optional help text overrides TLK).
    */
   static PopUpDeathGUIPanel(
-    oPC: ModuleObject | undefined,
+    oPC: GameObject | undefined,
     respawnButtonEnabled: boolean = true,
     waitForHelpButtonEnabled: boolean = true,
     helpStringRef: number = 0,
@@ -415,8 +415,8 @@ export class GameOverManager {
   ){
     void waitForHelpButtonEnabled; // NWN MP-only; KotOR SP has no Wait For Help
     if(!oPC) return;
-    if(BitWise.InstanceOf(oPC.objectType, ModuleObjectType.ModuleCreature)){
-      if(!(oPC as ModuleCreature).getIsPC() && GameState.PartyManager.party.indexOf(oPC as ModuleCreature) < 0){
+    if(BitWise.InstanceOf(oPC.objectType, GameObjectType.Creature)){
+      if(!(oPC as Creature).getIsPC() && GameState.PartyManager.party.indexOf(oPC as Creature) < 0){
         return;
       }
     }else{

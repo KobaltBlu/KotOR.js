@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { Area } from "@engine/module/Area";
 import { GameState } from "@engine/runtime/GameState";
 import { isLineOfSightBlockingFace } from "@engine/pathfinding/walk-check-material-mask";
 import { isStaticWalkClearDetailed } from "@engine/pathfinding/static-walk-blockers";
@@ -48,7 +48,7 @@ function obstructionForObjectId(objectId: number | undefined): number {
   if(objectId == null || objectId === 0x7f000000){
     return OBSTRUCTION_WALL;
   }
-  const obj = GameState.ModuleObjectManager?.GetObjectById?.(objectId);
+  const obj = GameState.GameObjectManager?.GetObjectById?.(objectId);
   if(!obj){
     return OBSTRUCTION_WALL;
   }
@@ -66,7 +66,7 @@ function obstructionForObjectId(objectId: number | undefined): number {
  * Fills hitPoint and optional blockingObjectId when blocked.
  */
 function probeObstructionHit(
-  area: ModuleArea,
+  area: Area,
   from: THREE.Vector3,
   to: THREE.Vector3,
   ignoreObjectIds: number[] | undefined,
@@ -135,7 +135,7 @@ function probeObstructionHit(
  * 0 = clear path; 1 = fully obstructed.
  */
 export function getPathBlockageWeight(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   source: { x: number; y: number; z: number },
   listener: { x: number; y: number; z: number }
 ): number {

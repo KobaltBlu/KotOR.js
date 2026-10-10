@@ -1,6 +1,6 @@
 import { GameEffect } from "@engine/effects/GameEffect";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { isCreature } from "@engine/module/guards/isCreature";
 import {
   VISION_FLAG_TRUE_SEEING,
@@ -25,7 +25,7 @@ export class EffectTrueSeeing extends GameEffect {
     super.onApply();
 
     if(isCreature(this.object)){
-      const creature = this.object as ModuleCreature;
+      const creature = this.object as Creature;
       creature.visionFlags = (creature.visionFlags || 0) | VISION_FLAG_TRUE_SEEING;
       const effects = creature.effects ? creature.effects.slice() : [];
       for(let i = 0; i < effects.length; i++){
@@ -40,7 +40,7 @@ export class EffectTrueSeeing extends GameEffect {
   onRemove(){
     super.onRemove();
     if(isCreature(this.object)){
-      recomputeVisionFlags(this.object as ModuleCreature);
+      recomputeVisionFlags(this.object as Creature);
     }
   }
 }

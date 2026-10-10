@@ -6,15 +6,15 @@
  * module filename, LoadModule + pending spawn coords (door/trigger pattern).
  */
 
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Area } from "@engine/module/Area";
+import type { Creature } from "@engine/module/Creature";
 
 export type JumpDestinationKind = 'same' | 'reattach' | 'loadModule' | 'fail';
 
 export interface JumpDestination {
   kind: JumpDestinationKind;
   /** Target area when kind is same/reattach (or resolved before load). */
-  area?: ModuleArea;
+  area?: Area;
   /** Module resref when kind is loadModule. */
   moduleName?: string;
 }
@@ -31,12 +31,12 @@ export interface JumpSpawnCoords {
 /**
  * Classify jump dest vs owner area.
  * @param ownerArea current creature area (may be undefined in limbo)
- * @param destArea resolved ModuleArea for action param 3 / location.area
+ * @param destArea resolved Area for action param 3 / location.area
  * @param currentModuleFilename GameState.module.filename
  */
 export function classifyJumpDestination(
-  ownerArea: ModuleArea | undefined | null,
-  destArea: ModuleArea | undefined | null,
+  ownerArea: Area | undefined | null,
+  destArea: Area | undefined | null,
   currentModuleFilename: string = ''
 ): JumpDestination {
   if(!destArea){
@@ -62,9 +62,9 @@ export function classifyJumpDestination(
  * Resolve area id / object from jump param 3.
  * Returns undefined if OBJECT_INVALID / missing / not an area.
  */
-export function isAreaLike(obj: any): obj is ModuleArea {
+export function isAreaLike(obj: any): obj is Area {
   if(!obj) return false;
-  // ModuleArea has attachObject + creatures list; avoid importing enums here for tests.
+  // Area has attachObject + creatures list; avoid importing enums here for tests.
   return typeof obj.attachObject === 'function' && Array.isArray(obj.creatures);
 }
 

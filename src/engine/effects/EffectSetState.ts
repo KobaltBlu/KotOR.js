@@ -1,7 +1,7 @@
 import { GameEffect } from "@engine/effects/GameEffect";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
 import { GameEffectSetStateType } from "@core/enums/effects/GameEffectSetStateType";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { isSetStateImmune, rebalanceSetState, SET_STATE_OUTER_AI_ACTIVITY_MASK } from "@engine/effects/set-state";
 
 import { isCreature } from "@engine/module/guards/isCreature";
@@ -26,14 +26,14 @@ export class EffectSetState extends GameEffect {
     if(!isCreature(this.object)){
       return;
     }
-    const creature = this.object as ModuleCreature;
+    const creature = this.object as Creature;
     if(creature.plot || creature.isDead?.()){
       return;
     }
 
     const state = this.getInt(0) | 0;
     const ignoreImmunity = (this.getInt(1) | 0) !== 0;
-    const versus = this.getCreator() as ModuleCreature | undefined;
+    const versus = this.getCreator() as Creature | undefined;
     const versusCreature = isCreature(versus)
       ? versus
       : undefined;
@@ -50,7 +50,7 @@ export class EffectSetState extends GameEffect {
   onRemove(){
     super.onRemove();
     if(isCreature(this.object)){
-      rebalanceSetState(this.object as ModuleCreature);
+      rebalanceSetState(this.object as Creature);
     }
   }
 }

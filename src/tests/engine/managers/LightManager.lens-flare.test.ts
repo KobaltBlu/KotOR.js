@@ -16,7 +16,7 @@ function makeFlareLight(opts: {
   }
   if(opts.room){
     const model = new THREE.Object3D() as any;
-    model.userData = { moduleObject: opts.room };
+    model.userData = { gameObject: opts.room };
     light.odysseyModel = model;
   }
   return light;

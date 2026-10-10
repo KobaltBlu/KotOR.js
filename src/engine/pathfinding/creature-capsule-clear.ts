@@ -1,7 +1,7 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Area } from "@engine/module/Area";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 import { getCreaturePersonalSpace } from "@engine/combat/attack-range";
 import { GameState } from "@engine/runtime/GameState";
 import { resolveStartOverlapCreatures } from "@engine/pathfinding/start-overlap-creatures";
@@ -51,10 +51,10 @@ function distPointToSegment2D(
   return Math.hypot(px - cx, py - cy);
 }
 
-function isPartyCreature(creature: ModuleObject): boolean {
+function isPartyCreature(creature: GameObject): boolean {
   const party = GameState.PartyManager?.party;
   if(!party?.length) return false;
-  return party.indexOf(creature as ModuleCreature) >= 0;
+  return party.indexOf(creature as Creature) >= 0;
 }
 
 /**
@@ -62,17 +62,17 @@ function isPartyCreature(creature: ModuleObject): boolean {
  * Returns clear=true when open, or clear=false with blockingCreatureId.
  */
 export function isCreatureCapsuleClear(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   from: THREE.Vector3,
   to: THREE.Vector3,
   options: {
-    owner?: ModuleObject;
+    owner?: GameObject;
     /** Self personal space before the +0.01 inflate. */
     crePersonalSpace?: number;
     ignoreCreatureIds?: number[];
     allowPartyCreatures?: boolean;
     /** Soft-pair creature for resolveStartOverlapCreatures. */
-    softCreature?: ModuleObject;
+    softCreature?: GameObject;
     /**
      * When true, skip creatures where isCreatureNudgeable(owner, other)
      * (rarely set by callers).
@@ -93,13 +93,13 @@ export function isCreatureCapsuleClear(
 
   const ownerId = options.owner?.id;
   const selfSpace = (options.crePersonalSpace
-    ?? getCreaturePersonalSpace(options.owner as ModuleCreature)) + 0.01;
+    ?? getCreaturePersonalSpace(options.owner as Creature)) + 0.01;
   const ignore = options.ignoreCreatureIds;
   const allowParty = options.allowPartyCreatures === true;
   const skipBumpable = options.skipBumpable === true;
   const softClearStart = options.softClearStartOverlap !== false;
 
-  const candidates: ModuleCreature[] = [];
+  const candidates: Creature[] = [];
   if(area.creatures?.length){
     for(let i = 0; i < area.creatures.length; i++){
       const c = area.creatures[i];
@@ -130,7 +130,7 @@ export function isCreatureCapsuleClear(
     if(
       skipBumpable &&
       options.owner &&
-      isCreatureNudgeable(options.owner as ModuleCreature, creature)
+      isCreatureNudgeable(options.owner as Creature, creature)
     ){
       continue;
     }

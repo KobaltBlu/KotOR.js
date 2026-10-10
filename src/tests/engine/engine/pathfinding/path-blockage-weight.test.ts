@@ -7,7 +7,7 @@ import { describe, expect, test, jest } from '@jest/globals';
 
 jest.mock('@engine/runtime/GameState', () => ({
   GameState: {
-    ModuleObjectManager: { GetObjectById: () => undefined },
+    GameObjectManager: { GetObjectById: () => undefined },
     raycaster: { ray: { origin: { copy() {} }, direction: { copy() {} } }, far: 0 },
     module: undefined,
   },

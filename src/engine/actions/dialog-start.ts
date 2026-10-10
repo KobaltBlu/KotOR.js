@@ -1,8 +1,8 @@
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import { DLGObject } from "@engine/dialog/DLGObject";
 import { isCreature } from "@engine/module/guards/isCreature";
-import { isObject } from "@engine/module/guards/isObject";
+import { isGameObject } from "@engine/module/guards/isGameObject";
 
 /**
  * ExecuteCommandBeginConversation → StartDialog ownership.
@@ -19,13 +19,13 @@ import { isObject } from "@engine/module/guards/isObject";
  * the door's Conversation, not the companion's personal dialog.
  */
 export function resolveDialogStartOwner(
-  caller: ModuleObject,
-  listener: ModuleObject
-): ModuleObject {
-  if(!isObject(caller)){
+  caller: GameObject,
+  listener: GameObject
+): GameObject {
+  if(!isGameObject(caller)){
     return listener;
   }
-  if(!isObject(listener)){
+  if(!isGameObject(listener)){
     return caller;
   }
 
@@ -55,7 +55,7 @@ export function resolveDialogStartOwner(
 export function resolveBeginConversationDialog(
   sResRef: string,
   instanceConversation: DLGObject | undefined,
-  dialogOwner: ModuleObject
+  dialogOwner: GameObject
 ): DLGObject | undefined {
   if(typeof sResRef === 'string' && sResRef.length > 0){
     return DLGObject.FromResRef(sResRef);
@@ -64,7 +64,7 @@ export function resolveBeginConversationDialog(
   if(instanceConversation){
     return instanceConversation;
   }
-  if(isObject(dialogOwner)){
+  if(isGameObject(dialogOwner)){
     return dialogOwner.getConversation?.();
   }
   return undefined;

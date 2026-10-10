@@ -146,7 +146,7 @@ describe("CollisionContext cached object bounds", () => {
     for(let i = 0; i < 5; i++){
       object.container.position.x = 1 + i;
       object.collisionMatrixDirty = true;
-      // Mimic ModuleObject.computeBoundingBox dirty gate
+      // Mimic GameObject.computeBoundingBox dirty gate
       if(object.collisionBoundsDirty || object.collisionMatrixDirty){
         manager.refreshObjectBounds(false);
       }

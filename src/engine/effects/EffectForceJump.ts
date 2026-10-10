@@ -2,9 +2,9 @@ import { GameEffect } from "@engine/effects/GameEffect";
 import { GameEffectDurationType } from "@core/enums/effects/GameEffectDurationType";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { isCreature } from "@engine/module/guards/isCreature";
-import { isObject } from "@engine/module/guards/isObject";
+import { isGameObject } from "@engine/module/guards/isGameObject";
 
 /** Force Jump leap VFX (0x3EA). */
 export const FORCE_JUMP_VFX = 0x3ea;
@@ -31,7 +31,7 @@ export class EffectForceJump extends GameEffect {
       return;
     }
 
-    const jumper = this.object as ModuleCreature;
+    const jumper = this.object as Creature;
     const target = this.getObject(0);
     if(!isCreature(target)){
       return;
@@ -63,11 +63,11 @@ export class EffectForceJump extends GameEffect {
   }
 
   private scheduleDelayedApply(
-    jumper: ModuleCreature,
+    jumper: Creature,
     effect: GameEffect,
     delaySec: number
   ){
-    if(!GameState.module || !isObject(jumper)) return;
+    if(!GameState.module || !isGameObject(jumper)) return;
     const future = GameState.module.timeManager.getFutureTimeFromSeconds(
       Math.max(0, delaySec)
     );

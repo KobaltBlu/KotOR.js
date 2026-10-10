@@ -1,5 +1,5 @@
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import type { AccumulationBlurPass } from "@engine/render/shaders/pass/AccumulationBlurPass";
 
 /**
@@ -37,7 +37,7 @@ export class MotionBlurController {
   /**
    * ApplyMotionBlur — progFX 0x641/0x642 on the player (not during MG).
    */
-  static applyMotionBlurVFX(target: ModuleCreature | undefined, progFX: number){
+  static applyMotionBlurVFX(target: Creature | undefined, progFX: number){
     if(progFX !== 0x641 && progFX !== 0x642){
       return;
     }

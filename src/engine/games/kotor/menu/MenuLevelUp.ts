@@ -2,7 +2,7 @@ import { GameMenu } from "@engine/gui";
 import type { GUILabel, GUIButton, GUIControl } from "@engine/gui";
 import { GameState } from "@engine/runtime/GameState";
 import { LevelUpManager } from "@engine/managers/LevelUpManager";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { LevelUpAbilityIndex } from "@engine/rules/level-up";
 
 /**
@@ -83,7 +83,7 @@ export class MenuLevelUp extends GameMenu {
    * Prepare LEVELUPPNL as CharGenMain.childMenu.
    * Do not Add this menu to the stack — the MAINCG host owns visibility.
    */
-  prepareFor(creature: ModuleCreature) {
+  prepareFor(creature: Creature) {
     if(!LevelUpManager.active || LevelUpManager.creature !== creature){
       if(!LevelUpManager.begin(creature)) return;
     }
@@ -91,7 +91,7 @@ export class MenuLevelUp extends GameMenu {
   }
 
   /** @deprecated Prefer CharGenMain.openForLevelUp → prepareFor as childMenu. */
-  openFor(creature: ModuleCreature) {
+  openFor(creature: Creature) {
     this.prepareFor(creature);
     this.manager.CharGenMain?.openForLevelUp?.(creature);
   }

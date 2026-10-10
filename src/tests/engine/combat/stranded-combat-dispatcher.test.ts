@@ -12,7 +12,7 @@ jest.mock('@engine/runtime/GameState', () => ({
     PartyManager: {
       getCurrentPlayer: () => undefined,
     },
-    ModuleObjectManager: {
+    GameObjectManager: {
       GetObjectById: (id: number) => objectMap.get(id),
       showObject: jest.fn(),
     },
@@ -106,7 +106,7 @@ import { CombatRound } from '@engine/combat/CombatRound';
 import { CombatRoundAction } from '@engine/combat/CombatRoundAction';
 import { CombatActionType } from '@core/enums/combat/CombatActionType';
 import { ActionType } from '@core/enums/actions/ActionType';
-import { ModuleObjectType } from '@core/enums/module/ModuleObjectType';
+import { GameObjectType } from '@core/enums/module/GameObjectType';
 import { ensureCombatDispatcher } from '@engine/combat/ensure-combat-dispatcher';
 import { queueAttackActions } from '@engine/combat/queue-attack-actions';
 
@@ -131,7 +131,7 @@ function makeCreature(id: number, opts?: { hasCombatDispatcher?: boolean }){
 
   const creature: any = {
     id,
-    objectType: ModuleObjectType.ModuleCreature,
+    objectType: GameObjectType.Creature,
     combatData,
     combatRound: undefined as CombatRound | undefined,
     actionQueue,

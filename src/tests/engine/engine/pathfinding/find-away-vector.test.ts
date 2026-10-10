@@ -19,7 +19,7 @@ jest.mock("@engine/pathfinding/walk-line-clear", () => ({
 }));
 
 import { findAwayVector } from "@engine/pathfinding/find-away-vector";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 
 describe("findAwayVector (G8)", () => {
   it("clips candidates via walk-line clear / hasWalkLineClear / farthestClearPoint", () => {
@@ -46,7 +46,7 @@ describe("findAwayVector (G8)", () => {
         isPointWalkable: () => true,
         getNearestWalkablePoint: (p: THREE.Vector3) => p.clone(),
       },
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
 
     const dest = findAwayVector(creature, new THREE.Vector3(5, 0, 0), 4);
     expect(hasWalkLineClearMock).toHaveBeenCalled();

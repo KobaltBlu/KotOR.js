@@ -2,7 +2,7 @@ import { GameEventType } from "@core/enums/events/GameEventType";
 import { GFFDataType } from "@core/enums/resource/GFFDataType";
 import { GameState } from "@engine/runtime/GameState";
 import { GameEvent } from "@engine/events/GameEvent";
-import type { ModulePlaceable } from "@engine/module/ModulePlaceable";
+import type { Placeable } from "@engine/module/Placeable";
 import { GFFField } from "@core/resource/GFFField";
 import { GFFStruct } from "@core/resource/GFFStruct";
 import * as THREE from "three";
@@ -41,7 +41,7 @@ export class EventSpawnBodyBag extends GameEvent {
   }
 
   execute(){
-    const placeable = GameState.ModuleObjectManager.GetObjectById(this.bodyBagId) as ModulePlaceable;
+    const placeable = GameState.GameObjectManager.GetObjectById(this.bodyBagId) as Placeable;
     if(!isPlaceable(placeable)){
       return;
     }

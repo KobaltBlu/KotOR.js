@@ -1,6 +1,6 @@
 // import { FactionManager } from "@engine/managers";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 import { Reputation } from "@engine/world/Reputation";
 import { GFFStruct } from "@core/resource/GFFStruct";
 import { GFFField } from "@core/resource/GFFField";
@@ -25,11 +25,11 @@ export class Faction {
   label = '';
   global = 0;
   parentId = 4294967295;
-  creatures: ModuleCreature[] = [];
+  creatures: Creature[] = [];
 
   reputations: Reputation[] = [];
 
-  addMember( creature: ModuleCreature ){
+  addMember( creature: Creature ){
     if(isCreature(creature)){
       if(this.creatures.indexOf(creature) == -1){
         this.creatures.push(creature);
@@ -37,7 +37,7 @@ export class Faction {
     }
   }
 
-  removeMember( creature: ModuleCreature ){
+  removeMember( creature: Creature ){
     if(isCreature(creature)){
       let index = this.creatures.indexOf(creature);
       if(index >= 0){
@@ -76,7 +76,7 @@ export class Faction {
     return ReputationConstant.NEUTRAL;
   }
 
-  getCreatureReputation(oTarget: ModuleObject){
+  getCreatureReputation(oTarget: GameObject){
     if(isCreature(oTarget) && oTarget.faction){
       let reputation = this.reputations[oTarget.faction.id];
       if(reputation instanceof Reputation){
@@ -87,7 +87,7 @@ export class Faction {
   }
 
   getWeakestMember(bMustBeVisible = false){
-    // if(oTarget instanceof ModuleCreature){
+    // if(oTarget instanceof Creature){
       let lowerCR = Infinity;
       let cLowestCR = 0;
       let currentCreature = undefined;
@@ -107,7 +107,7 @@ export class Faction {
   }
 
   getStrongestMember(bMustBeVisible = false){
-    // if(oTarget instanceof ModuleCreature){
+    // if(oTarget instanceof Creature){
       let highestCR = -Infinity;
       let cHighestCR = 0;
       let currentCreature = undefined;
@@ -127,10 +127,10 @@ export class Faction {
   }
 
   getMostDamagedMember(bMustBeVisible = false){
-    // if(oTarget instanceof ModuleCreature){
+    // if(oTarget instanceof Creature){
       let lowestHP = Infinity;
       let cLowestHP = 0;
-      let currentCreature: ModuleObject = undefined;
+      let currentCreature: GameObject = undefined;
       for(let i = 0, len = this.creatures.length; i < len; i++){
         let creature = this.creatures[i];
         if(creature.faction == this){
@@ -147,7 +147,7 @@ export class Faction {
   }
 
   getLeastDamagedMember(bMustBeVisible = false){
-    // if(oTarget instanceof ModuleCreature){
+    // if(oTarget instanceof Creature){
       let highestHP = -Infinity;
       let cHighestHP = 0;
       let currentCreature = undefined;
@@ -167,7 +167,7 @@ export class Faction {
   }
 
   getWorstACMember(bMustBeVisible = false){
-    // if(oTarget instanceof ModuleCreature){
+    // if(oTarget instanceof Creature){
       let ac = Infinity;
       let cAC = 0;
       let currentCreature = undefined;
@@ -187,7 +187,7 @@ export class Faction {
   }
 
   getBestACMember(bMustBeVisible = false){
-    // if(oTarget instanceof ModuleCreature){
+    // if(oTarget instanceof Creature){
       let ac = -Infinity;
       let cAC = 0;
       let currentCreature = undefined;
@@ -218,7 +218,7 @@ export class Faction {
     return gold;
   }
 
-  getAverageReputation(oTarget: ModuleObject){
+  getAverageReputation(oTarget: GameObject){
     if(isCreature(oTarget)){
       let totalRep = 0;
       let totalCreatures = 0;
@@ -235,7 +235,7 @@ export class Faction {
   }
 
   getAverageGoodEvilAlignment(){
-    // if(oTarget instanceof ModuleCreature){
+    // if(oTarget instanceof Creature){
       let totalGoodEvil = 0;
       let totalCreatures = 0;
       for(let i = 0, len = this.creatures.length; i < len; i++){
@@ -251,7 +251,7 @@ export class Faction {
   }
 
   getAverageLevel(){
-    // if(oTarget instanceof ModuleCreature){
+    // if(oTarget instanceof Creature){
       let totalLevel = 0;
       let totalCreatures = 0;
       for(let i = 0, len = this.creatures.length; i < len; i++){
@@ -267,7 +267,7 @@ export class Faction {
   }
 
   getAverageExperience(){
-    // if(oTarget instanceof ModuleCreature){
+    // if(oTarget instanceof Creature){
       let totalExp = 0;
       let totalCreatures = 0;
       for(let i = 0, len = this.creatures.length; i < len; i++){
@@ -283,7 +283,7 @@ export class Faction {
   }
 
   getMostFrequestClass(){
-    // if(oTarget instanceof ModuleCreature){
+    // if(oTarget instanceof Creature){
       let classCount = new Map();
       for(let i = 0, len = this.creatures.length; i < len; i++){
         let creature = this.creatures[i];

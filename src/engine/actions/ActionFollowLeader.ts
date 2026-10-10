@@ -20,7 +20,7 @@ import {
   CreatureLocoState,
   setCreatureLocoState,
 } from "@engine/pathfinding/creature-loco";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { Action } from "@engine/actions/Action";
 import * as THREE from "three";
 import { TURN_SPEED_FAST } from "@engine/movement/TurnSpeeds";
@@ -158,7 +158,7 @@ export class ActionFollowLeader extends Action {
   }
 
   /** Hard stop — solo / leave party / no leader. */
-  private parkIdle(owner: ModuleCreature){
+  private parkIdle(owner: Creature){
     owner.force = 0;
     owner.speed = 0;
     owner.walk = false;
@@ -175,7 +175,7 @@ export class ActionFollowLeader extends Action {
    * so the next Offset/Moving frame does not ramp from zero. Clear sticky run/walk
    * anim so companions do not moonwalk in place once truly parked on the follow sample.
    */
-  private parkIdleSoft(owner: ModuleCreature){
+  private parkIdleSoft(owner: Creature){
     owner.force = 0;
     owner.speed = 0;
     owner.walk = false;
@@ -185,7 +185,7 @@ export class ActionFollowLeader extends Action {
     partySoftSeparate(owner);
   }
 
-  private lookAtLeader(owner: ModuleCreature, leader: ModuleCreature){
+  private lookAtLeader(owner: Creature, leader: Creature){
     const dx = leader.position.x - owner.position.x;
     const dy = leader.position.y - owner.position.y;
     if(dx * dx + dy * dy < 1e-8) return;
@@ -199,8 +199,8 @@ export class ActionFollowLeader extends Action {
    * Jump only if the ring cannot catch up and the companion is still ≥15m out.
    */
   private softTeleportForward(
-    owner: ModuleCreature,
-    leader: ModuleCreature,
+    owner: Creature,
+    leader: Creature,
     offset: THREE.Vector3
   ){
     const dest = new THREE.Vector3();
@@ -243,7 +243,7 @@ export class ActionFollowLeader extends Action {
   /**
    * Last-resort JumpToPoint when TeleportForward cannot place a ring slot.
    */
-  private jumpToFollowOffset(owner: ModuleCreature, offset: THREE.Vector3){
+  private jumpToFollowOffset(owner: Creature, offset: THREE.Vector3){
     const area = owner.area;
     const dest = new THREE.Vector3();
     dest.copy(offset);

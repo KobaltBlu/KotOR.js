@@ -29,7 +29,7 @@ export class OdysseyMaterialBuilder {
   /**
    * Current area DefaultEnvMap resref. envmap assign resolves
    * the envmap resref "DEFAULT" to the module area's DefaultEnvMap before binding.
-   * Set by ModuleArea (game) / ForgeArea (forge) when an area is loaded.
+   * Set by Area (game) / ForgeArea (forge) when an area is loaded.
    */
   static defaultEnvMap: string = '';
 

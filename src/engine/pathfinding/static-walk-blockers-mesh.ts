@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { Area } from "@engine/module/Area";
 import type { OdysseyFace3 } from "@engine/render/three/odyssey";
 import type { OdysseyWalkMesh } from "@engine/odyssey/OdysseyWalkMesh";
 import {
@@ -569,7 +569,7 @@ export function isStaticWalkClearOnWalkMesh(
  * Test personal-space corridor along from→to for walk-check mesh hits.
  */
 export function isStaticWalkClearOnAreaMesh(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   from: THREE.Vector3,
   to: THREE.Vector3,
   options: {

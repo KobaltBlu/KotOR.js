@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Area } from "@engine/module/Area";
+import type { GameObject } from "@engine/module/GameObject";
 import { GameState } from "@engine/runtime/GameState";
 import { isLineOfSightBlockingFace } from "@engine/pathfinding/walk-check-material-mask";
 import { isStaticWalkClearDetailed } from "@engine/pathfinding/static-walk-blockers";
@@ -29,12 +29,12 @@ const _losFaceScratch: any[] = [];
  * True if eye-height visual LOS / hasVisualLos from→to succeeds.
  */
 export function hasVisualLos(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   from: THREE.Vector3,
   to: THREE.Vector3,
   options: {
-    ignoreObject?: ModuleObject;
-    ignoreSource?: ModuleObject;
+    ignoreObject?: GameObject;
+    ignoreSource?: GameObject;
     eyeHeight?: number;
     hitPoint?: THREE.Vector3;
   } = {}

@@ -6,7 +6,7 @@ import { AttackSummaryStrRef } from "@engine/combat/attack-summary-feedback";
 import { FeebackMessageColor } from "@engine/enums/engine/FeedbackMessageColor";
 
 import { isCreature } from "@engine/module/guards/isCreature";
-import { isObject } from "@engine/module/guards/isObject";
+import { isGameObject } from "@engine/module/guards/isGameObject";
 
 /**
  * EffectForceResisted — onApply.
@@ -29,7 +29,7 @@ export class EffectForceResisted extends GameEffect {
 
     super.onApply();
 
-    if(!isObject(this.object)){
+    if(!isGameObject(this.object)){
       return;
     }
 

@@ -13,12 +13,12 @@ import { ExcitedDurationRow } from "@engine/combat/combat-engagement";
 import { ActionParameterType } from "@core/enums/actions/ActionParameterType";
 import { ActionStatus } from "@core/enums/actions/ActionStatus";
 import { ActionType } from "@core/enums/actions/ActionType";
-import { ModuleObjectConstant } from "@core/enums/module/ModuleObjectConstant";
+import { GameObjectConstant } from "@core/enums/module/GameObjectConstant";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 import { isCreature } from "@engine/module/guards/isCreature";
-import { isObject } from "@engine/module/guards/isObject";
+import { isGameObject } from "@engine/module/guards/isGameObject";
 
 /** Parse spells.2da conjure/cast/catch time to milliseconds. */
 function spellTimeMs(value: unknown, fallback: number = 0): number {
@@ -103,12 +103,12 @@ export class ActionCastSpell extends Action {
   }
 
   resolveTarget(): boolean {
-    const targetObj = this.getParameter<ModuleObject>(5);
+    const targetObj = this.getParameter<GameObject>(5);
     const x = this.getParameter<number>(6);
     const y = this.getParameter<number>(7);
     const z = this.getParameter<number>(8);
 
-    if(isObject(targetObj)){
+    if(isGameObject(targetObj)){
       this.target = targetObj;
       this.targetPosition.copy(targetObj.position);
       return true;
@@ -123,18 +123,18 @@ export class ActionCastSpell extends Action {
     return false;
   }
 
-  private isCasterBlocked(owner: ModuleCreature): boolean {
+  private isCasterBlocked(owner: Creature): boolean {
     return !!(owner.isDead() || owner.isDebilitated() || owner.plot || owner.silenced);
   }
 
   /** ArcaneSpellFailure percent → random cast fail */
-  private rollArcaneSpellFailure(owner: ModuleCreature): boolean {
+  private rollArcaneSpellFailure(owner: Creature): boolean {
     const pct = owner.arcaneSpellFailure || 0;
     if(pct <= 0) return false;
     return (Math.floor(Math.random() * 100) + 1) <= pct;
   }
 
-  private isEntangled(owner: ModuleCreature): boolean {
+  private isEntangled(owner: Creature): boolean {
     return !!owner.isEntangled?.();
   }
 
@@ -142,7 +142,7 @@ export class ActionCastSpell extends Action {
    * GetForceItemMask vs spell forbid/require masks.
    * Fail when forbidden bits overlap, or required bits are missing.
    */
-  private failsForceItemMask(owner: ModuleCreature, castSpell: any): boolean {
+  private failsForceItemMask(owner: Creature, castSpell: any): boolean {
     const forbid = castSpell?.forbiditemmask | 0;
     const require = castSpell?.requireitemmask | 0;
     if(!forbid && !require) return false;
@@ -152,7 +152,7 @@ export class ActionCastSpell extends Action {
     return false;
   }
 
-  private applyConjureAnim(owner: ModuleCreature, castSpell: any){
+  private applyConjureAnim(owner: Creature, castSpell: any){
     const anim = castSpell?.getConjureAnimState?.()
       ?? getSpellConjureAnimState(castSpell?.conjanim);
     if(owner.combatRound?.action){
@@ -161,7 +161,7 @@ export class ActionCastSpell extends Action {
     owner.setAnimationState(anim);
   }
 
-  private applyCastAnim(owner: ModuleCreature, castSpell: any){
+  private applyCastAnim(owner: Creature, castSpell: any){
     const anim = castSpell?.getCastAnimState?.()
       ?? getSpellCastAnimState(castSpell?.castanim || castSpell?.conjanim);
     if(!anim) return;
@@ -179,7 +179,7 @@ export class ActionCastSpell extends Action {
     return !!(this.target.isDead?.() || this.target.plot);
   }
 
-  private failCast(owner: ModuleCreature, status: ActionStatus): ActionStatus {
+  private failCast(owner: Creature, status: ActionStatus): ActionStatus {
     if(this.spellCastInstance && !this.spellCastInstance.completed){
       this.spellCastInstance.interrupt();
     }
@@ -205,7 +205,7 @@ export class ActionCastSpell extends Action {
     return Math.max(1, conj + cast + catchT);
   }
 
-  private pauseCasterAndPartner(owner: ModuleCreature, pauseMs: number){
+  private pauseCasterAndPartner(owner: Creature, pauseMs: number){
     const combatRound = owner.combatRound;
     if(!combatRound) return;
 
@@ -220,7 +220,7 @@ export class ActionCastSpell extends Action {
     }
   }
 
-  private faceCastTarget(owner: ModuleCreature){
+  private faceCastTarget(owner: Creature){
     // AddCastSpellActions queues ChangeFacingObject / FacingPoint —
     // animate turn (FacePoint snaps every tick).
     if(this.target){
@@ -240,7 +240,7 @@ export class ActionCastSpell extends Action {
    * hostilesetting → ActivityManager(1)+SetCombatState /
    * ActivityManager(2) for non-hostile (mirrors item-cast action).
    */
-  private applyHostileActivity(owner: ModuleCreature, castSpell: any){
+  private applyHostileActivity(owner: Creature, castSpell: any){
     const hostile = (castSpell?.hostilesetting | 0) === 1;
     owner.activityManager?.(hostile ? 1 : 2);
     if(hostile){
@@ -251,7 +251,7 @@ export class ActionCastSpell extends Action {
     }
   }
 
-  private startSpellInstance(castTarget: ModuleObject | undefined, castSpell: any, fake: boolean): boolean {
+  private startSpellInstance(castTarget: GameObject | undefined, castSpell: any, fake: boolean): boolean {
     if(!isCreature(this.owner)){
       return false;
     }
@@ -262,7 +262,7 @@ export class ActionCastSpell extends Action {
       }
       this.forceSpent = true;
     }
-    const spellCastInstance = new SpellCastInstance(this.owner, castTarget as ModuleObject, castSpell);
+    const spellCastInstance = new SpellCastInstance(this.owner, castTarget as GameObject, castSpell);
     if(!castTarget){
       spellCastInstance.targetLocation.copy(this.targetPosition);
       spellCastInstance.projectileTarget.copy(this.targetPosition);
@@ -368,14 +368,14 @@ export class ActionCastSpell extends Action {
       }
     }
 
-    const rangeTarget = (this.target || { position: this.targetPosition }) as ModuleObject;
+    const rangeTarget = (this.target || { position: this.targetPosition }) as GameObject;
     if(!this.spell.inRange(rangeTarget, this.owner)){
       let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint(-1, this.groupId);
       actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.targetPosition.x);
       actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.targetPosition.y);
       actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.targetPosition.z);
       actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, this.owner.area?.id ?? this.target?.area?.id ?? 0);
-      actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, this.target ? this.target.id : ModuleObjectConstant.OBJECT_INVALID);
+      actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, this.target ? this.target.id : GameObjectConstant.OBJECT_INVALID);
       actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
       actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, this.spell.getCastRange() );
       actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);

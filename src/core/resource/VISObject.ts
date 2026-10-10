@@ -2,7 +2,7 @@ import { BinaryWriter } from "@core/binary/BinaryWriter";
 import { GameFileSystem } from "@core/filesystem/GameFileSystem";
 import type { IVISRoom } from "@core/interface/module/IVISRoom";
 
-/** Minimal area surface needed to attach VIS room links (implemented by ModuleArea). */
+/** Minimal area surface needed to attach VIS room links (implemented by Area). */
 export interface IVISAreaHost {
   rooms: Array<{ roomName: string; visObject?: VISObject }>;
 }

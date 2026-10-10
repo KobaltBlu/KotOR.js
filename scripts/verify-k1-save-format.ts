@@ -48,7 +48,7 @@ assert(!itemPropSave.includes("'SubType'"), 'ItemProperty.save does not use SubT
 assert(itemPropSave.includes("'Useable'"), 'ItemProperty.save uses Useable');
 assert(!itemPropSave.includes("'Usable'"), 'ItemProperty.save does not use Usable');
 
-const cameraSrc = read('src/module/ModuleCamera.ts');
+const cameraSrc = read('src/module/AreaCamera.ts');
 const camSave = saveMethodBody(cameraSrc);
 assert(camSave.includes("GFFDataType.FLOAT, 'FieldOfView'"), 'Camera FieldOfView is FLOAT');
 assert(camSave.includes("GFFDataType.FLOAT, 'Height'"), 'Camera Height is FLOAT');
@@ -60,12 +60,12 @@ assert(
   'CombatRound.toStruct gates DuelPartner behind TSL'
 );
 
-const creatureSrc = read('src/module/ModuleCreature.ts');
+const creatureSrc = read('src/module/Creature.ts');
 const creatureSave = saveMethodBody(creatureSrc);
-assert(!creatureSave.includes('Mod_FirstName'), 'ModuleCreature.save no longer writes Mod_FirstName');
-assert(!creatureSave.includes('Mod_CommntyName'), 'ModuleCreature.save no longer writes Mod_CommntyName');
-assert(creatureSave.includes("'MClassLevUpIn'"), 'ModuleCreature.save writes MClassLevUpIn');
-assert(creatureSave.includes('roundStarted'), 'ModuleCreature.save gates CombatRoundData on roundStarted');
+assert(!creatureSave.includes('Mod_FirstName'), 'Creature.save no longer writes Mod_FirstName');
+assert(!creatureSave.includes('Mod_CommntyName'), 'Creature.save no longer writes Mod_CommntyName');
+assert(creatureSave.includes("'MClassLevUpIn'"), 'Creature.save writes MClassLevUpIn');
+assert(creatureSave.includes('roundStarted'), 'Creature.save gates CombatRoundData on roundStarted');
 assert(
   creatureSave.includes("GameState.GameKey == GameEngineType.TSL") && creatureSave.includes("'NoPermDeath'"),
   'NoPermDeath gated behind TSL'
@@ -76,7 +76,7 @@ assert(!creatureSave.includes("'TextureVar'"), 'Creature save omits TextureVar')
 assert(!creatureSave.includes("'PerceptionRange'"), 'Creature save omits PerceptionRange');
 assert(creatureSave.includes('slot <<= 1'), 'Equip_ItemList walks equip slot bits');
 
-const placeableSrc = read('src/module/ModulePlaceable.ts');
+const placeableSrc = read('src/module/Placeable.ts');
 const placeableSave = saveMethodBody(placeableSrc);
 assert(placeableSave.includes('RootNode.type = 9'), 'Placeable RootNode.type = 9');
 assert(placeableSave.includes('PlaceableOnDialog'), 'Placeable writes OnDialog');
@@ -95,7 +95,7 @@ assert(placeableSrc.includes('GameEffectType.EffectDamageResistance'), 'Placeabl
 assert(placeableSrc.includes('setSubTypeUnMasked(GameEffectDurationType.PERMANENT)'), 'Placeable hardness SubType is PERMANENT only (2)');
 assert(placeableSrc.includes('setSkipOnLoad(true)'), 'Placeable hardness sets SkipOnLoad');
 
-const soundSrc = read('src/module/ModuleSound.ts');
+const soundSrc = read('src/module/Sound.ts');
 const soundSave = saveMethodBody(soundSrc);
 assert(soundSave.includes("BYTE, 'Commandable'"), 'Sound save writes Commandable');
 assert(soundSrc.includes('timeOfDayActive'), 'Sound has client-only timeOfDayActive gate');
@@ -110,13 +110,13 @@ const partySrc = read('src/managers/PartyManager.ts');
 assert(partySrc.includes('PT_COM_MSG_LIST') && partySrc.includes('GameEngineType.TSL'), 'PT_COM_MSG_LIST TSL-gated');
 assert(partySrc.includes('PT_PUPPETS') && partySrc.includes('GameEngineType.TSL'), 'PT_PUPPETS TSL-gated');
 
-const itemSrc = read('src/module/ModuleItem.ts');
+const itemSrc = read('src/module/Item.ts');
 assert(itemSrc.includes('UpgradeLevel') && itemSrc.includes('GameEngineType.TSL'), 'UpgradeLevel TSL-gated');
 
 const auditSrc = read('src/engine/SaveLoadAudit.ts');
 assert(auditSrc.includes('K1 creature export omits TSL/non-engine fields'), 'SaveLoadAudit has K1 creature check');
 
-const enumSrc = read('src/enums/module/ModuleObjectScript.ts');
+const enumSrc = read('src/enums/module/ScriptHook.ts');
 assert(enumSrc.includes("PlaceableOnDialog = 'OnDialog'"), 'PlaceableOnDialog enum exists');
 assert(enumSrc.includes("DoorOnDialog = 'OnDialog'"), 'DoorOnDialog enum exists');
 
@@ -132,10 +132,10 @@ assert(effectSave.includes('new GFFStruct(6)'), 'GameEffect ObjectList uses stru
 assert(effectSave.includes('i < 4') && effectSave.includes('ObjectList'), 'GameEffect ObjectList has 4 slots');
 assert(effectSave.includes('numIntegers'), 'GameEffect NumIntegers from real count');
 
-const areaSrc = read('src/module/ModuleArea.ts');
+const areaSrc = read('src/module/Area.ts');
 assert(areaSrc.includes("GFFDataType.DWORD, 'StealthXPLoss'"), 'StealthXPLoss is DWORD');
 
-const triggerSrc = read('src/module/ModuleTrigger.ts');
+const triggerSrc = read('src/module/Trigger.ts');
 const triggerSave = saveMethodBody(triggerSrc);
 assert(triggerSave.includes('RootNode.type = 1'), 'Trigger RootNode.type = 1');
 assert(triggerSave.includes('new GFFStruct(3)'), 'Trigger Geometry struct type 3');
@@ -146,15 +146,15 @@ assert(!triggerSave.includes("'TrapFlag'"), 'Trigger save omits TrapFlag');
 assert(triggerSave.includes("'TrapDetectable'"), 'Trigger save writes TrapDetectable');
 assert(triggerSave.includes("'TrapDisarmable'"), 'Trigger save writes TrapDisarmable');
 
-const moduleObjectSrc = read('src/module/ModuleObject.ts');
+const moduleObjectSrc = read('src/module/GameObject.ts');
 assert(
-  moduleObjectSrc.includes('!BitWise.InstanceOfObject(this, ModuleObjectType.ModuleTrigger)') &&
-  moduleObjectSrc.includes('!BitWise.InstanceOfObject(this, ModuleObjectType.ModuleDoor)') &&
+  moduleObjectSrc.includes('!BitWise.InstanceOfObject(this, GameObjectType.Trigger)') &&
+  moduleObjectSrc.includes('!BitWise.InstanceOfObject(this, GameObjectType.Door)') &&
   moduleObjectSrc.includes('roomCheck(delta)'),
-  'ModuleObject.update skips roomCheck for ModuleTrigger and ModuleDoor'
+  'GameObject.update skips roomCheck for Trigger and Door'
 );
 
-const doorSrc = read('src/module/ModuleDoor.ts');
+const doorSrc = read('src/module/Door.ts');
 const doorSaveRaw = saveMethodBody(doorSrc);
 const doorSave = doorSaveRaw.slice(0, Math.max(0, doorSaveRaw.indexOf('return gff;')));
 assert(doorSave.includes('DoorOnDialog'), 'Door writes OnDialog');
@@ -228,12 +228,12 @@ assert(!triggerSave.includes("'SetByPartyPlayer'"), 'Trigger omits SetByPartyPla
 assert(itemSrc.includes('propStruct.setType(i)'), 'PropertiesList struct id = index');
 {
   const itemSave = saveMethodBody(itemSrc);
-  assert(!itemSave.includes("'ObjectId'"), 'ModuleItem.save omits ObjectId');
+  assert(!itemSave.includes("'ObjectId'"), 'Item.save omits ObjectId');
   assert(itemSave.includes('modelType == 1'), 'Item BodyVariation/TextureVar gated on modelType == 1');
   assert(itemSave.includes("'BodyVariation'"), 'Item save writes BodyVariation when modelType 1');
   assert(itemSave.includes("'TextureVar'"), 'Item save writes TextureVar when modelType 1');
 }
-assert(itemSrc.includes('getBodyVariationByte'), 'ModuleItem has getBodyVariationByte');
+assert(itemSrc.includes('getBodyVariationByte'), 'Item has getBodyVariationByte');
 assert(creatureSave.includes("DWORD, 'ObjectId'"), 'Creature equip/inventory writes ObjectId');
 assert(creatureSrc.includes("'FollowInfo'"), 'Creature save writes FollowInfo');
 assert(creatureSrc.includes('createDefaultPartyFollowInfo'), 'Creature FollowInfo uses default FollowInfo');
@@ -247,9 +247,9 @@ assert(creatureSave.includes("'PerceptionList'"), 'Creature save writes Percepti
 {
   // SaveCreature persists every visibility node; unresolved
   // objectIds (PLAYER_ID / stale) must not be spliced out of perceptionList.
-  const moduleObjectSrc = read('src/module/ModuleObject.ts');
+  const moduleObjectSrc = read('src/module/GameObject.ts');
   const initIdx = moduleObjectSrc.indexOf('initPerceptionList()');
-  assert(initIdx >= 0, 'ModuleObject has initPerceptionList');
+  assert(initIdx >= 0, 'GameObject has initPerceptionList');
   const initBody = moduleObjectSrc.slice(initIdx, initIdx + 900);
   assert(initBody.includes('GetObjectById'), 'initPerceptionList resolves objectIds');
   assert(!initBody.includes('splice'), 'initPerceptionList does not prune unresolved nodes');
@@ -257,9 +257,9 @@ assert(creatureSave.includes("'PerceptionList'"), 'Creature save writes Percepti
     'initPerceptionList documents retaining unresolved nodes');
 }
 
-const playerSrc = read('src/module/ModulePlayer.ts');
-assert(playerSrc.includes('this.isPC = 1'), 'ModulePlayer ctor sets isPC = 1');
-assert(playerSrc.includes('createDefaultPartyFollowInfo'), 'ModulePlayer seeds FollowInfo');
+const playerSrc = read('src/module/PlayerCharacter.ts');
+assert(playerSrc.includes('this.isPC = 1'), 'PlayerCharacter ctor sets isPC = 1');
+assert(playerSrc.includes('createDefaultPartyFollowInfo'), 'PlayerCharacter seeds FollowInfo');
 
 const charGenSrc = read('src/managers/CharGenManager.ts');
 assert(charGenSrc.includes('seedInitialLevelStat'), 'CharGen seeds initial LvlStatList');
@@ -415,12 +415,12 @@ assert(creatureSave.includes('this.forcePoints | 0'), 'ForcePoints saves forcePo
 assert(!creatureSave.includes('this.getFP()'), 'ForcePoints no longer uses getFP()');
 assert(creatureSave.includes('savedAreaId'), 'AreaId uses savedAreaId fallback');
 assert(creatureSave.includes('getSaveAreaId()'), 'Creature AreaId uses getSaveAreaId()');
-assert(areaSrc.includes('areId'), 'ModuleArea stores ARE ID as areId');
+assert(areaSrc.includes('areId'), 'Area stores ARE ID as areId');
 assert(areaSrc.includes('this.areId = this.are.getFieldByLabel(\'ID\')'), 'ARE ID loads into areId not this.id');
-assert(!/this\.id = this\.are\.getFieldByLabel\('ID'\)/.test(areaSrc), 'ModuleArea no longer overwrites this.id with ARE ID');
+assert(!/this\.id = this\.are\.getFieldByLabel\('ID'\)/.test(areaSrc), 'Area no longer overwrites this.id with ARE ID');
 assert(moduleSrc.includes('areaList[0]?.objectId'), 'Module.Load applies Mod_Area_list ObjectId');
-assert(moduleSrc.includes('AddObjectById(module.area)'), 'Module.Load registers area with ModuleObjectManager');
-assert(moduleObjectSrc.includes('getSaveAreaId()'), 'ModuleObject has getSaveAreaId()');
+assert(moduleSrc.includes('AddObjectById(module.area)'), 'Module.Load registers area with GameObjectManager');
+assert(moduleObjectSrc.includes('getSaveAreaId()'), 'GameObject has getSaveAreaId()');
 assert(creatureSrc.includes("getFieldByLabel('FirstName').getCExoLocString()"), 'FirstName load uses getCExoLocString');
 assert(creatureSrc.includes("hasField('MovementRate')"), 'Creature load reads MovementRate');
 assert(creatureSave.includes('instanceof CExoLocString'), 'FirstName/LastName save uses CExoLocString');

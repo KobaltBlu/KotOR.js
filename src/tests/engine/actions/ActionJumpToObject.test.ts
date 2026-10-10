@@ -25,7 +25,7 @@ jest.mock('@engine/runtime/GameState', () => ({
       party: [],
       resetFollowPath: jest.fn(),
     },
-    ModuleObjectManager: {
+    GameObjectManager: {
       GetObjectById: (id: number) => (id === 99 ? mockTarget : undefined),
       GetClientObjectById: (id: number) => (id === 99 ? mockTarget : undefined),
     },
@@ -196,17 +196,17 @@ describe('ActionJumpToObject open/safe walk location', () => {
   });
 });
 
-describe('ModuleCreature.jumpToObject default flag', () => {
+describe('Creature.jumpToObject default flag', () => {
   it('defaults bWalkStraight to 1 (requireLOS on) in source', () => {
-    // Lightweight source check — full ModuleCreature import is heavy.
+    // Lightweight source check — full Creature import is heavy.
     const fs = require('fs') as typeof import('fs');
     const path = require('path') as typeof import('path');
     const src = fs.readFileSync(
-      path.join(process.cwd(), 'src/module/ModuleCreature.ts'),
+      path.join(process.cwd(), 'src/module/Creature.ts'),
       'utf8',
     );
     expect(src).toMatch(
-      /jumpToObject\(target:\s*ModuleObject,\s*bWalkStraight:\s*number\s*=\s*1\)/,
+      /jumpToObject\(target:\s*GameObject,\s*bWalkStraight:\s*number\s*=\s*1\)/,
     );
     expect(src).toMatch(
       /setParameter\(1,\s*ActionParameterType\.INT,\s*bWalkStraight\s*\|\s*0\)/,

@@ -2,7 +2,7 @@ import { GameState } from "@engine/runtime/GameState";
 import { LBL_3DView } from "@engine/gui";
 import type { GUILabel, GUICheckBox, GUIButton } from "@engine/gui";
 import { MDLLoader } from "@engine/loaders";
-import { ModuleCreature } from "@engine/module/ModuleCreature";
+import { Creature } from "@engine/module/Creature";
 import { OdysseyModel } from "@engine/odyssey";
 import { OdysseyModel3D } from "@engine/render/three/odyssey";
 import { MenuPartySelection as K1_MenuPartySelection } from "@engine/games/kotor/menu/MenuPartySelection";
@@ -76,7 +76,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
   declare BTN_BACK: GUIButton;
   declare BTN_DONE: GUIButton;
 
-  char: ModuleCreature;
+  char: Creature;
   previewNpcId: number = -1;
   LBL_3D_VIEW: any;
   charrec_light: OdysseyModel;
@@ -170,7 +170,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
     super.update(delta);
     if(!this.bVisible) return;
 
-    if(this.char instanceof ModuleCreature){
+    if(this.char instanceof Creature){
       this.char.update(delta);
       if(this.char.model instanceof OdysseyModel3D && this.char.model.bonesInitialized){
         this.char.model.update(delta);
@@ -189,7 +189,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
 
   protected clearPreview(){
     this.previewNpcId = -1;
-    if(this.char instanceof ModuleCreature){
+    if(this.char instanceof Creature){
       try {
         this.char.destroy();
       }catch(e){}
@@ -200,8 +200,8 @@ export class MenuPartySelection extends K1_MenuPartySelection {
   /**
    * TSL: load creature into LBL_3D scene (charrec_light + Setup3DScene).
    */
-  protected async updatePreview(npcId: number, _creature: ModuleCreature){
-    if(this.previewNpcId == npcId && this.char instanceof ModuleCreature){
+  protected async updatePreview(npcId: number, _creature: Creature){
+    if(this.previewNpcId == npcId && this.char instanceof Creature){
       this.LBL_3D.show();
       return;
     }
@@ -209,18 +209,18 @@ export class MenuPartySelection extends K1_MenuPartySelection {
     const token = ++this.previewLoadToken;
     this.LBL_3D.show();
 
-    GameState.PartyManager.LoadPartyMemberCreature(npcId, (creature: ModuleCreature) => {
+    GameState.PartyManager.LoadPartyMemberCreature(npcId, (creature: Creature) => {
       if(token != this.previewLoadToken){
-        if(creature instanceof ModuleCreature){
+        if(creature instanceof Creature){
           try { creature.destroy(); }catch(e){}
         }
         return;
       }
-      if(!(creature instanceof ModuleCreature)){
+      if(!(creature instanceof Creature)){
         this.clearPreview();
         return;
       }
-      if(this.char instanceof ModuleCreature){
+      if(this.char instanceof Creature){
         try { this.char.destroy(); }catch(e){}
       }
       this.char = creature;

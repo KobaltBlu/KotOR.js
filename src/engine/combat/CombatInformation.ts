@@ -2,7 +2,7 @@ import { GFFDataType } from "@core/enums/resource/GFFDataType";
 import { GFFField } from "@core/resource/GFFField";
 import { GFFStruct } from "@core/resource/GFFStruct";
 import { GameState } from "@engine/runtime/GameState";
-import { ModuleObjectConstant } from "@core/enums/module/ModuleObjectConstant";
+import { GameObjectConstant } from "@core/enums/module/GameObjectConstant";
 
 /**
  * One AttackList / DamageList element — CCombatInformationNode (5 bytes).
@@ -70,8 +70,8 @@ export class CombatInformation {
   offHandWeaponEq: number = 0;
   offHandCritRng: number = 0;
   offHandCritMult: number = 0;
-  leftEquip: number = ModuleObjectConstant.OBJECT_INVALID;
-  rightEquip: number = ModuleObjectConstant.OBJECT_INVALID;
+  leftEquip: number = GameObjectConstant.OBJECT_INVALID;
+  rightEquip: number = GameObjectConstant.OBJECT_INVALID;
   leftString: string = '';
   rightString: string = '';
   damageDice: number = 0;

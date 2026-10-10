@@ -6,8 +6,8 @@ import { GameState } from "@engine/runtime/GameState";
 import { SSFType } from "@core/enums/resource/SSFType";
 import { Action } from "@engine/actions/Action";
 import { queueMoveIntoUseRange } from "@engine/actions/use-range";
-import type { ModuleItem } from "@engine/module/ModuleItem";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Item } from "@engine/module/Item";
+import type { GameObject } from "@engine/module/GameObject";
 import { SkillType } from "@core/enums/nwscript/SkillType";
 import { GameEffectDurationType } from "@core/enums/effects/GameEffectDurationType";
 import { ModuleItemProperty } from "@core/enums/module/ModuleItemProperty";
@@ -28,7 +28,7 @@ import { isPlaceable } from "@engine/module/guards/isPlaceable";
 export class ActionUnlockObject extends Action {
   shouted: boolean;
   usedItem: boolean;
-  oItem: ModuleItem;
+  oItem: Item;
   private animQueued = false;
 
   constructor( actionId: number = -1, groupId: number = -1 ){
@@ -58,8 +58,8 @@ export class ActionUnlockObject extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
-    this.target = this.getParameter<ModuleObject>(0);
-    this.oItem = this.getParameter<ModuleItem>(1);
+    this.target = this.getParameter<GameObject>(0);
+    this.oItem = this.getParameter<Item>(1);
 
     if(!isDoor(this.target) && !isPlaceable(this.target)){
       return this.finishFailed();

@@ -1,4 +1,4 @@
-import { ModuleObjectType } from "@core/enums/module/ModuleObjectType";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
 import { NW_FALSE, NW_TRUE } from "@core/nwscript/NWScriptConstants";
 
 /**
@@ -9,9 +9,9 @@ function getCommandable(obj: any): number {
   if(!obj || typeof obj !== 'object'){
     return NW_FALSE;
   }
-  // ModuleObject bit present
+  // GameObject bit present
   if(typeof obj.objectType === 'number'){
-    const isObj = (obj.objectType & ModuleObjectType.ModuleObject) === ModuleObjectType.ModuleObject;
+    const isObj = (obj.objectType & GameObjectType.GameObject) === GameObjectType.GameObject;
     if(!isObj) return NW_FALSE;
   }
   if(typeof obj.getCommadable === 'function'){
@@ -23,7 +23,7 @@ function getCommandable(obj: any): number {
 describe('GetCommandable placeable / creature parity', () => {
   it('returns true for a commandable placeable', () => {
     const placeable = {
-      objectType: ModuleObjectType.ModuleObject | ModuleObjectType.ModulePlaceable,
+      objectType: GameObjectType.GameObject | GameObjectType.Placeable,
       commandable: true,
       getCommadable(){ return !!this.commandable; },
     };
@@ -32,7 +32,7 @@ describe('GetCommandable placeable / creature parity', () => {
 
   it('returns false for a non-commandable placeable', () => {
     const placeable = {
-      objectType: ModuleObjectType.ModuleObject | ModuleObjectType.ModulePlaceable,
+      objectType: GameObjectType.GameObject | GameObjectType.Placeable,
       commandable: false,
       getCommadable(){ return !!this.commandable; },
     };
@@ -41,7 +41,7 @@ describe('GetCommandable placeable / creature parity', () => {
 
   it('uses creature getCommadable / isCommandable', () => {
     const cre = {
-      objectType: ModuleObjectType.ModuleObject | ModuleObjectType.ModuleCreature,
+      objectType: GameObjectType.GameObject | GameObjectType.Creature,
       isCommandable: true,
       getCommadable(){ return this.isCommandable; },
     };

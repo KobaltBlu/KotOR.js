@@ -2,7 +2,7 @@ import { GameEffect } from "@engine/effects/GameEffect";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
 import { GameState } from "@engine/runtime/GameState";
 import { hasImmunityType } from "@engine/effects/haste-slow";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { isCreature } from "@engine/module/guards/isCreature";
 
 /** IMMUNITY_TYPE_CURSED */
@@ -33,12 +33,12 @@ export class EffectCurse extends GameEffect {
     if(!isCreature(this.object)){
       return;
     }
-    const creature = this.object as ModuleCreature;
+    const creature = this.object as Creature;
     if(creature.plot) return;
 
     const creator = this.getCreator();
     const versus = isCreature(creator)
-      ? creator as ModuleCreature
+      ? creator as Creature
       : undefined;
     if(hasImmunityType(creature, IMMUNITY_CURSE, versus)){
       return;
@@ -60,7 +60,7 @@ export class EffectCurse extends GameEffect {
   onRemove(){
     super.onRemove();
     if(!isCreature(this.object)) return;
-    const creature = this.object as ModuleCreature;
+    const creature = this.object as Creature;
     for(let i = 0; i < this.children.length; i++){
       creature.removeEffect?.(this.children[i]);
     }

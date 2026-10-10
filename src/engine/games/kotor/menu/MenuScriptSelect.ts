@@ -1,7 +1,7 @@
 import { GameState } from "@engine/runtime/GameState";
 import { GameMenu } from "@engine/gui";
 import type { GUIListBox, GUILabel, GUIButton } from "@engine/gui";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 
 export interface AIScriptOption {
   nameStrRef: number;
@@ -30,7 +30,7 @@ export class MenuScriptSelect extends GameMenu {
   BTN_Back: GUIButton;
   BTN_Accept: GUIButton;
 
-  creature: ModuleCreature | undefined;
+  creature: Creature | undefined;
   options: AIScriptOption[] = [];
   selected: AIScriptOption | undefined;
 
@@ -101,7 +101,7 @@ export class MenuScriptSelect extends GameMenu {
   /**
    * SetCreatureID — select list row matching creature ai_state.
    */
-  setCreature(creature: ModuleCreature | undefined){
+  setCreature(creature: Creature | undefined){
     this.creature = creature;
     if(!this.options.length){
       this.loadOptionsFrom2DA();
@@ -146,7 +146,7 @@ export class MenuScriptSelect extends GameMenu {
     this.close();
   }
 
-  openForCreature(creature: ModuleCreature | undefined){
+  openForCreature(creature: Creature | undefined){
     this.setCreature(creature);
     this.open();
   }

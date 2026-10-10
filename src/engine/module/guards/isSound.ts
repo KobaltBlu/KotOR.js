@@ -1,8 +1,8 @@
-import type { ModuleObject } from "@engine/module/ModuleObject";
-import type { ModuleSound } from "@engine/module/ModuleSound";
+import type { GameObject } from "@engine/module/GameObject";
+import type { Sound } from "@engine/module/Sound";
 import { BitWise } from "@core/utility/BitWise";
-import { ModuleObjectType } from "@core/enums/module/ModuleObjectType";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
 
-export const isSound: (o: ModuleObject | undefined) => o is ModuleSound = (o): o is ModuleSound => {
-    return !!BitWise.InstanceOfObject(o, ModuleObjectType.ModuleSound);
+export const isSound: (o: GameObject | undefined) => o is Sound = (o): o is Sound => {
+    return !!BitWise.InstanceOfObject(o, GameObjectType.Sound);
 }

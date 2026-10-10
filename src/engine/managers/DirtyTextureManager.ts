@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { Area } from "@engine/module/Area";
 import type { IAreaDirtLayer } from "@core/interface/area/IAreaDirtProperties";
 import { TextureLoader } from "@engine/loaders";
 import { OdysseyTexture } from "@engine/render/three/odyssey/OdysseyTexture";
@@ -36,7 +36,7 @@ export class DirtyTextureManager {
    * Load Scene dirty textures for the current area (TSL only).
    * Call once per area load after ARE Dirty* fields are available.
    */
-  static async loadForArea(area: ModuleArea): Promise<void> {
+  static async loadForArea(area: Area): Promise<void> {
     if(GameState.GameKey != GameEngineType.TSL){
       return;
     }

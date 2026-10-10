@@ -1,4 +1,4 @@
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 
 /**
  * Objects that support GetFortitude/Reflex/WillSavingThrow and Fortitude/Reflex/WillSave.
@@ -8,7 +8,7 @@ export interface SaveCapable {
   getFortitudeSave(): number;
   getReflexSave(): number;
   getWillSave(): number;
-  fortitudeSave(nDC?: number, nSaveType?: number, oVersus?: ModuleObject): number;
-  reflexSave(nDC?: number, nSaveType?: number, oVersus?: ModuleObject): number;
-  willSave(nDC?: number, nSaveType?: number, oVersus?: ModuleObject): number;
+  fortitudeSave(nDC?: number, nSaveType?: number, oVersus?: GameObject): number;
+  reflexSave(nDC?: number, nSaveType?: number, oVersus?: GameObject): number;
+  willSave(nDC?: number, nSaveType?: number, oVersus?: GameObject): number;
 }

@@ -20,14 +20,14 @@ jest.mock("@engine/combat/attack-range", () => ({
 }));
 
 import { queryDoorCrossing } from "@engine/movement/area-movement-queries";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleDoor } from "@engine/module/ModuleDoor";
+import type { Area } from "@engine/module/Area";
+import type { Door } from "@engine/module/Door";
 
 /**
  * Door like end_door10: facing −π/2 (normal N/S), transition line along Y
  * (plane normal E/W). Walking east crosses the doorway.
  */
-function makeDoorwayAxisDoor(): ModuleDoor {
+function makeDoorwayAxisDoor(): Door {
   const position = new THREE.Vector3(47.417, 120.126, 0);
   const transitionLine = new THREE.Line3(
     new THREE.Vector3(47.417, 125.126, 0),
@@ -69,7 +69,7 @@ function makeDoorwayAxisDoor(): ModuleDoor {
     },
     getLinkedToModule: () => "end_m01ab",
     isOpen: () => true,
-  } as unknown as ModuleDoor;
+  } as unknown as Door;
 
   return door;
 }
@@ -77,7 +77,7 @@ function makeDoorwayAxisDoor(): ModuleDoor {
 describe("queryDoorCrossing transition-line plane", () => {
   it("detects east walkthrough when facing is N/S (Endar Spire-style)", () => {
     const door = makeDoorwayAxisDoor();
-    const area = { doors: [door] } as unknown as ModuleArea;
+    const area = { doors: [door] } as unknown as Area;
     const from = new THREE.Vector3(46.92, 120.09, 0);
     const to = new THREE.Vector3(47.92, 120.09, 0);
 
@@ -98,7 +98,7 @@ describe("queryDoorCrossing transition-line plane", () => {
 
   it("ignores motion parallel to the doorway (along the transition line)", () => {
     const door = makeDoorwayAxisDoor();
-    const area = { doors: [door] } as unknown as ModuleArea;
+    const area = { doors: [door] } as unknown as Area;
     // Stay west of the plane; move north/south along the wall
     const from = new THREE.Vector3(46.92, 120.09, 0);
     const to = new THREE.Vector3(46.92, 121.09, 0);
@@ -110,7 +110,7 @@ describe("queryDoorCrossing transition-line plane", () => {
   it("returns linkedOpen false when door is closed", () => {
     const door = makeDoorwayAxisDoor();
     (door as { isOpen: () => boolean }).isOpen = () => false;
-    const area = { doors: [door] } as unknown as ModuleArea;
+    const area = { doors: [door] } as unknown as Area;
     const from = new THREE.Vector3(46.92, 120.09, 0);
     const to = new THREE.Vector3(47.92, 120.09, 0);
 

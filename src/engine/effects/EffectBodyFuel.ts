@@ -1,6 +1,6 @@
 import { GameEffect } from "@engine/effects/GameEffect";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { isCreature } from "@engine/module/guards/isCreature";
 
 /**
@@ -23,13 +23,13 @@ export class EffectBodyFuel extends GameEffect {
       return;
     }
     super.onApply();
-    (this.object as ModuleCreature).bodyFuel = true;
+    (this.object as Creature).bodyFuel = true;
   }
 
   onRemove(){
     super.onRemove();
     if(!isCreature(this.object)) return;
-    const creature = this.object as ModuleCreature;
+    const creature = this.object as Creature;
     const still = (creature.effects || []).some(
       (e) => e !== this && e?.type === GameEffectType.EffectBodyFuel
     );

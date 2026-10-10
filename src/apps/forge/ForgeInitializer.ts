@@ -119,7 +119,7 @@ export class ForgeInitializer {
     KotOR.GameState.WindManager = KotOR.WindManager;
     KotOR.GameState.GrassManager = KotOR.GrassManager;
     KotOR.GameState.MenuManager = KotOR.MenuManager;
-    KotOR.GameState.ModuleObjectManager = KotOR.ModuleObjectManager;
+    KotOR.GameState.GameObjectManager = KotOR.GameObjectManager;
     KotOR.GameState.PartyManager = KotOR.PartyManager;
     KotOR.GameState.ResolutionManager = KotOR.ResolutionManager;
     KotOR.GameState.ShaderManager = KotOR.ShaderManager;

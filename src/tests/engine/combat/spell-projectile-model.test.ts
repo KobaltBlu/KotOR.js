@@ -11,7 +11,7 @@ import {
 } from '@engine/combat/spell-projectile-model';
 
 describe('resolveItemModelResRef', () => {
-  it('builds defaultModel + variation like ModuleItem.loadModel', () => {
+  it('builds defaultModel + variation like Item.loadModel', () => {
     const item = {
       baseItem: { itemClass: 'w_grenade01', defaultModel: 'w_grenade01_001' },
       getModelVariation: () => 1,

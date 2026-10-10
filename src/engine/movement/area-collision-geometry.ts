@@ -1,9 +1,9 @@
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleDoor } from "@engine/module/ModuleDoor";
-import type { ModuleObject } from "@engine/module/ModuleObject";
-import type { ModulePlaceable } from "@engine/module/ModulePlaceable";
-import type { ModuleRoom } from "@engine/module/ModuleRoom";
+import type { Area } from "@engine/module/Area";
+import type { Creature } from "@engine/module/Creature";
+import type { Door } from "@engine/module/Door";
+import type { GameObject } from "@engine/module/GameObject";
+import type { Placeable } from "@engine/module/Placeable";
+import type { AreaRoom } from "@engine/module/AreaRoom";
 
 /**
  * Area collision geometry accessors.
@@ -11,40 +11,40 @@ import type { ModuleRoom } from "@engine/module/ModuleRoom";
  * Geometry answers “what exists where?” — walkmeshes, door/placeable meshes,
  * room portals. It does not move creatures, set blockers, fire OnBlocked, or
  * increment collision timers. Dynamic solving belongs to movement policies +
- * AreaMovementQueries. ModuleCreature locomotion commits only via
+ * AreaMovementQueries. Creature locomotion commits only via
  * MovementCommitter; discontinuous placement via teleportObject.
  */
 
 export type AreaCollisionGeometry = {
-  area: ModuleArea;
-  rooms: ModuleRoom[];
-  doors: ModuleDoor[];
-  placeables: ModulePlaceable[];
-  creatures: ModuleCreature[];
+  area: Area;
+  rooms: AreaRoom[];
+  doors: Door[];
+  placeables: Placeable[];
+  creatures: Creature[];
 };
 
 /**
  * Snapshot geometry lists for an area (passive; no mutation).
  */
 export function getAreaCollisionGeometry(
-  area: ModuleArea | undefined | null
+  area: Area | undefined | null
 ): AreaCollisionGeometry | undefined {
   if(!area) return undefined;
   return {
     area,
-    rooms: (area.rooms ?? []) as ModuleRoom[],
-    doors: (area.doors ?? []) as ModuleDoor[],
-    placeables: (area.placeables ?? []) as ModulePlaceable[],
-    creatures: (area.creatures ?? []) as ModuleCreature[],
+    rooms: (area.rooms ?? []) as AreaRoom[],
+    doors: (area.doors ?? []) as Door[],
+    placeables: (area.placeables ?? []) as Placeable[],
+    creatures: (area.creatures ?? []) as Creature[],
   };
 }
 
 /**
  * True when an object exposes a walkmesh used for static blocking.
  */
-export function objectHasCollisionWalkmesh(object: ModuleObject | undefined): boolean {
+export function objectHasCollisionWalkmesh(object: GameObject | undefined): boolean {
   if(!object) return false;
-  const wm = (object as ModuleObject & { collisionWalkmesh?: unknown; walkmesh?: unknown })
-    .collisionWalkmesh ?? (object as ModuleObject & { walkmesh?: unknown }).walkmesh;
+  const wm = (object as GameObject & { collisionWalkmesh?: unknown; walkmesh?: unknown })
+    .collisionWalkmesh ?? (object as GameObject & { walkmesh?: unknown }).walkmesh;
   return !!wm;
 }

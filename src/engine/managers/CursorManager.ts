@@ -1,16 +1,16 @@
 import * as THREE from "three";
 import { TextureLoader } from "@engine/loaders";
 import { Mouse } from "@engine/controls/Mouse";
-import type { ModuleObject } from "@engine/module/ModuleObject";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleDoor } from "@engine/module/ModuleDoor";
-import type { ModulePlaceable } from "@engine/module/ModulePlaceable";
+import type { GameObject } from "@engine/module/GameObject";
+import type { Creature } from "@engine/module/Creature";
+import type { Door } from "@engine/module/Door";
+import type { Placeable } from "@engine/module/Placeable";
 import { ApplicationProfile } from "@core/utility/ApplicationProfile";
 import { GameEngineType } from "@core/enums/engine";
 import { EngineMode } from "@engine/enums/engine";
 import type { MenuManager } from "@engine/managers/MenuManager";
 import { GameState } from "@engine/runtime/GameState";
-import { ModuleObjectType } from "@core/enums/module/ModuleObjectType";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
 import { BitWise } from "@core/utility/BitWise";
 import { GUIControlTypeMask } from "@core/enums/gui/GUIControlTypeMask";
 import { commitGuiTransform } from "@engine/gui/guiMatrix";
@@ -115,18 +115,18 @@ export class CursorManager {
 	/** Three.js node for the currently selected object (reticle anchor) */
 	static selected: THREE.Object3D;
 	/** Game module object currently selected */
-	static selectedObject: ModuleObject;
+	static selectedObject: GameObject;
 	/** Three.js node for the currently hovered object (reticle anchor) */
 	static hovered: THREE.Object3D;
 	/** Game module object currently hovered */
-	static hoveredObject: ModuleObject;
+	static hoveredObject: GameObject;
 
 	/** combat-reticle swell */
 	static combatReticlePulse = new CombatReticlePulse();
 	static lastCombatReticleTargetId: number = -1;
 	
 	/** Subset of module objects considered for selection/hover */
-	static visibleObjects: ModuleObject[];
+	static visibleObjects: GameObject[];
 
 	static #tmpWorld = new THREE.Vector3();
 	static #tmpHit = new THREE.Vector3();
@@ -201,7 +201,7 @@ export class CursorManager {
 		return (pixelSize / 0x40) * RETICLE_BASE_WORLD_SCALE;
 	}
 
-	static getReticleKind(object: ModuleObject | undefined): ReticleKind {
+	static getReticleKind(object: GameObject | undefined): ReticleKind {
 		if(isCreature(object)){
 			return 'creature';
 		}
@@ -223,33 +223,33 @@ export class CursorManager {
 	 * Doors: UpdateStickyTarget dual-flag — object-update 0x10 bits
 	 * is_hostile (rep < 90 + faction≠) AND hasTrap (trap visible). Locked/Plot unused.
 	 */
-	static isReticleHostile(object: ModuleObject | undefined, observer?: ModuleObject): boolean {
+	static isReticleHostile(object: GameObject | undefined, observer?: GameObject): boolean {
 		if(!object) return false;
 		const viewer = observer ?? GameState.PartyManager.getCurrentPlayer();
 		if(!viewer) return false;
 
 		if(isCreature(object)){
-			const cre = object as ModuleCreature;
+			const cre = object as Creature;
 			if(cre.isDead()) return false;
 			return cre.isHostile(viewer);
 		}
 
 		if(isPlaceable(object)){
-			const plc = object as ModulePlaceable;
+			const plc = object as Placeable;
 			if(!plc.isUseable()) return false;
 			if(plc.plot || plc.isBodyBag || plc.isCorpse) return false;
 			return !!plc.locked;
 		}
 
 		if(isDoor(object)){
-			const door = object as ModuleDoor;
+			const door = object as Door;
 			if(!door.trapFlag) return false;
 			// Trap visible: global latch or DetectedBy list (WriteGameObjUpdate hasTrap bit)
 			if(!door.trapDetected && !door.isTrapDetectedBy(viewer)) return false;
 			const rep = GameState.FactionManager.GetReputation(door, viewer);
 			if(rep >= 90) return false;
 			const doorFac = door.faction?.id ?? door.factionId ?? 0;
-			const viewFac = viewer.faction?.id ?? (viewer as ModuleCreature).factionId ?? 0;
+			const viewFac = viewer.faction?.id ?? (viewer as Creature).factionId ?? 0;
 			return doorFac !== viewFac;
 		}
 
@@ -261,7 +261,7 @@ export class CursorManager {
 	}
 
 	/** Hover reticle (UpdateStickyTarget): friendlyreticle / hostilereticle */
-	static getHoverReticleStyle(object: ModuleObject | undefined): ReticleStyle {
+	static getHoverReticleStyle(object: GameObject | undefined): ReticleStyle {
 		const hostile = CursorManager.isReticleHostile(object);
 		return {
 			hostile,
@@ -272,7 +272,7 @@ export class CursorManager {
 	/**
 	 * Selected reticle (UpdateIndicator): friendlyreticle2 / hostilereticle2 / combatreticle.
 	 */
-	static getSelectedReticleStyle(object: ModuleObject | undefined): ReticleStyle {
+	static getSelectedReticleStyle(object: GameObject | undefined): ReticleStyle {
 		const hostile = CursorManager.isReticleHostile(object);
 		if(!hostile){
 			return { hostile: false, material: 'reticleF2' };
@@ -391,9 +391,9 @@ export class CursorManager {
 	}
 
 	/**
-	 * Notifies the cursor system that a `ModuleObject` was destroyed.
+	 * Notifies the cursor system that a `GameObject` was destroyed.
 	 */
-	static notifyObjectDestroyed(object: ModuleObject){
+	static notifyObjectDestroyed(object: GameObject){
 		if(CursorManager.selectedObject == object){
 			CursorManager.selectedObject = undefined;
 			CursorManager.combatReticlePulse.reset();
@@ -402,13 +402,13 @@ export class CursorManager {
 		if(CursorManager.hoveredObject == object){
 			CursorManager.hoveredObject = undefined;
 		}
-		const idx = GameState.ModuleObjectManager.playerSelectableObjects.indexOf(object);
+		const idx = GameState.GameObjectManager.playerSelectableObjects.indexOf(object);
 		if(idx >= 0){
-			GameState.ModuleObjectManager.playerSelectableObjects.splice(idx, 1);
+			GameState.GameObjectManager.playerSelectableObjects.splice(idx, 1);
 		}
-		const idx2 = GameState.ModuleObjectManager.playerHoverableObjects.indexOf(object);
+		const idx2 = GameState.GameObjectManager.playerHoverableObjects.indexOf(object);
 		if(idx2 >= 0){
-			GameState.ModuleObjectManager.playerHoverableObjects.splice(idx2, 1);
+			GameState.GameObjectManager.playerHoverableObjects.splice(idx2, 1);
 		}
 	}
 
@@ -430,7 +430,7 @@ export class CursorManager {
 			CursorManager.reticle2.material = reticleMaterial;
 	}
 
-	static applyReticleScale(sprite: THREE.Sprite, object: ModuleObject | undefined, pulseExtraPx = 0){
+	static applyReticleScale(sprite: THREE.Sprite, object: GameObject | undefined, pulseExtraPx = 0){
 		const player = GameState.PartyManager.getCurrentPlayer();
 		if(!object || !player || !sprite){
 			return;
@@ -446,7 +446,7 @@ export class CursorManager {
 	 * @param options.lookAt - when false, skip creature LookAt (ShowObject arg2=0)
 	 */
 	public static setReticleSelectedObject(
-		object: ModuleObject | undefined,
+		object: GameObject | undefined,
 		options?: { lookAt?: boolean },
 	){
 		const doLookAt = options?.lookAt !== false;
@@ -472,7 +472,7 @@ export class CursorManager {
 			CursorManager.selectedObject = object;
 		}
 
-		if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModulePlaceable) && !object.isUseable()){
+		if(BitWise.InstanceOf(object?.objectType, GameObjectType.Placeable) && !object.isUseable()){
 			return;
 		}
 
@@ -492,7 +492,7 @@ export class CursorManager {
 	/**
 	 * Sets the currently hovered object and positions the primary reticle.
 	 */
-	public static setReticleHoveredObject( object: ModuleObject ){
+	public static setReticleHoveredObject( object: GameObject ){
 		if(!object){ return; }
 
 		const canChangeCursor = (CursorManager.hoveredObject == CursorManager.selectedObject);
@@ -503,24 +503,24 @@ export class CursorManager {
 			CursorManager.hoveredObject = object;
 		}
 
-		if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleDoor)){
+		if(BitWise.InstanceOf(object?.objectType, GameObjectType.Door)){
 			CursorManager.setCursor(canChangeCursor ? 'door' : 'select');
 			CursorManager.setReticle(CursorManager.getHoverReticleStyle(object).material);
-		}else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModulePlaceable)){
+		}else if(BitWise.InstanceOf(object?.objectType, GameObjectType.Placeable)){
 			if(!object.isUseable()){
 				return;
 			}
 			CursorManager.setCursor(canChangeCursor ? 'use' : 'select');
 			CursorManager.setReticle(CursorManager.getHoverReticleStyle(object).material);
-		}else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleTrigger)){
+		}else if(BitWise.InstanceOf(object?.objectType, GameObjectType.Trigger)){
 			if(!object.isUseable()){
 				return;
 			}
 			CursorManager.setCursor(canChangeCursor ? 'trap' : 'select');
 			CursorManager.setReticle(CursorManager.getHoverReticleStyle(object).material);
-		}else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
+		}else if(BitWise.InstanceOf(object?.objectType, GameObjectType.Creature)){
 			const player = GameState.PartyManager.getCurrentPlayer();
-			const creature = object as ModuleCreature;
+			const creature = object as Creature;
 			const style = CursorManager.getHoverReticleStyle(creature);
 
 			if(style.hostile){
@@ -624,9 +624,9 @@ export class CursorManager {
 		if(!cursorCaptured && GameState.Mode == EngineMode.INGAME){
 			if(CursorManager.MenuManager.GetCurrentMenu() == CursorManager.MenuManager.InGameOverlay){
 				if(GameState.scene_cursor_holder.visible){
-					const moduleObject = CursorManager.onMouseHitInteractive();
-					if(moduleObject){
-						CursorManager.setReticleHoveredObject(moduleObject);
+					const gameObject = CursorManager.onMouseHitInteractive();
+					if(gameObject){
+						CursorManager.setReticleHoveredObject(gameObject);
 					}else{
 						// UpdateStickyTarget hides hover when GetReticlePoint fails / no target
 						CursorManager.hoveredObject = undefined;
@@ -691,13 +691,13 @@ export class CursorManager {
 	 * Nearest walkmesh occlusion along the current raycaster ray.
 	 * Approximates SceneHitCheck room CheckAABBAll + closed-door DWKs.
 	 */
-	static findNearestSceneOccluder(): { distance: number; door?: ModuleObject } | undefined {
+	static findNearestSceneOccluder(): { distance: number; door?: GameObject } | undefined {
 		const area = GameState.module?.area;
 		if(!area) return undefined;
 
 		const raycaster = CursorManager.raycaster;
 		let bestDist = Infinity;
-		let bestDoor: ModuleObject | undefined;
+		let bestDoor: GameObject | undefined;
 
 		const rooms = area.rooms || [];
 		for(let i = 0; i < rooms.length; i++){
@@ -718,11 +718,11 @@ export class CursorManager {
 			for(let i = 0; i < doorWoks.length; i++){
 				const wok = doorWoks[i];
 				if(!wok?.faces?.length || !wok.mesh) continue;
-				const door = wok.moduleObject;
+				const door = wok.gameObject;
 				if(
 					door &&
-					BitWise.InstanceOf(door.objectType, ModuleObjectType.ModuleDoor) &&
-					(door as ModuleDoor).isOpen()
+					BitWise.InstanceOf(door.objectType, GameObjectType.Door) &&
+					(door as Door).isOpen()
 				){
 					continue;
 				}
@@ -730,8 +730,8 @@ export class CursorManager {
 				for(let h = 0; h < hits.length; h++){
 					if(hits[h].distance < bestDist){
 						bestDist = hits[h].distance;
-						bestDoor = BitWise.InstanceOf(door?.objectType, ModuleObjectType.ModuleDoor)
-							? (door as ModuleDoor)
+						bestDoor = BitWise.InstanceOf(door?.objectType, GameObjectType.Door)
+							? (door as Door)
 							: undefined;
 					}
 				}
@@ -747,7 +747,7 @@ export class CursorManager {
 	 * matches engine behavior GetReticlePoint screen write used by the sticky path.
 	 */
 	static projectReticleToScreen(
-		object: ModuleObject,
+		object: GameObject,
 		camera: THREE.Camera,
 		out: { x: number; y: number },
 	): boolean {
@@ -778,14 +778,14 @@ export class CursorManager {
 	 * 2) Sticky fallback — nearest CanSee GetReticlePoint within
 	 * GetStickyMouseThreshhold `(w/10)²+(h/10)²`
 	 */
-	public static onMouseHitInteractive(): ModuleObject | undefined {
+	public static onMouseHitInteractive(): GameObject | undefined {
 		const player = GameState.PartyManager.getCurrentPlayer();
 		const camera = GameState.currentCamera;
 		if(!player || !camera){
 			return undefined;
 		}
 
-		const objects = GameState.ModuleObjectManager.playerSelectableObjects;
+		const objects = GameState.GameObjectManager.playerSelectableObjects;
 		const objCount = objects.length;
 		if(objCount < 1){
 			return undefined;
@@ -801,7 +801,7 @@ export class CursorManager {
 		const occluder = CursorManager.findNearestSceneOccluder();
 		const ray = CursorManager.raycaster.ray;
 
-		let bestObj: ModuleObject | undefined;
+		let bestObj: GameObject | undefined;
 		let bestDist = Infinity;
 
 		for(let i = 0; i < objCount; i++){
@@ -861,12 +861,12 @@ export class CursorManager {
 		const mouseX = Mouse.positionViewport.x;
 		const mouseY = Mouse.positionViewport.y;
 		const screen = { x: 0, y: 0 };
-		let bestSticky: ModuleObject | undefined;
+		let bestSticky: GameObject | undefined;
 		let bestStickyDist = Infinity;
 
 		for(let i = 0; i < objCount; i++){
 			const obj = objects[i];
-			if(!GameState.ModuleObjectManager.canSeeObject(player, obj)){
+			if(!GameState.GameObjectManager.canSeeObject(player, obj)){
 				continue;
 			}
 			if(!CursorManager.passesMousePickGates(player.position, camera.position, obj.position, MOUSE_PICK_RANGE_SQ)){

@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Area } from "@engine/module/Area";
+import type { Creature } from "@engine/module/Creature";
 import {
   findGround,
   findWalkableAttachmentAt,
@@ -76,7 +76,7 @@ export function projectOntoTangent(
   return out;
 }
 
-function playerStaticOpts(creature: ModuleCreature, collectHitInfo = false){
+function playerStaticOpts(creature: Creature, collectHitInfo = false){
   return {
     owner: creature,
     personalSpace: getCreaturePersonalSpace(creature),
@@ -87,8 +87,8 @@ function playerStaticOpts(creature: ModuleCreature, collectHitInfo = false){
 }
 
 function segmentClear(
-  area: ModuleArea,
-  creature: ModuleCreature,
+  area: Area,
+  creature: Creature,
   from: THREE.Vector3,
   to: THREE.Vector3
 ): boolean {
@@ -102,14 +102,14 @@ function segmentClear(
 }
 
 function resolveBlocker(
-  area: ModuleArea,
+  area: Area,
   creatureId: number | undefined
-): ModuleCreature | undefined {
+): Creature | undefined {
   if(creatureId == null) return undefined;
   const found =
     area.creatures?.find((c) => c.id === creatureId) ??
     GameState.PartyManager?.party?.find((c) => c.id === creatureId);
-  return isCreature(found) ? (found as ModuleCreature) : undefined;
+  return isCreature(found) ? (found as Creature) : undefined;
 }
 
 /**
@@ -117,7 +117,7 @@ function resolveBlocker(
  * Does not mutate creature.position.
  */
 export function resolvePlayerControlStep(
-  creature: ModuleCreature,
+  creature: Creature,
   desiredDisplacement: THREE.Vector3
 ): MovementResult {
   const origin = creature.position.clone();
@@ -347,8 +347,8 @@ export function resolvePlayerControlStep(
  * When clearT advanced, also try clipped+projected without length restore.
  */
 function tryProjectedProbes(
-  area: ModuleArea,
-  creature: ModuleCreature,
+  area: Area,
+  creature: Creature,
   origin: THREE.Vector3,
   clipped: THREE.Vector3,
   usedLen: number,
@@ -389,8 +389,8 @@ function tryProjectedProbes(
  * Separation length is up to creperspace so one frame can exit a sub-radius gap.
  */
 function tryPlaceableDepenetrate(
-  area: ModuleArea,
-  creature: ModuleCreature,
+  area: Area,
+  creature: Creature,
   origin: THREE.Vector3,
   desired: THREE.Vector3,
   hitNormal: THREE.Vector3 | undefined,
@@ -487,11 +487,11 @@ function tryPlaceableDepenetrate(
  * without requiring a clear start capsule.
  */
 function tryCreatureResponse(
-  area: ModuleArea,
-  creature: ModuleCreature,
+  area: Area,
+  creature: Creature,
   origin: THREE.Vector3,
   desired: THREE.Vector3,
-  blocker: ModuleCreature | undefined,
+  blocker: Creature | undefined,
   hit: MovementHit | undefined
 ): MovementResult | undefined {
   if(blocker){
@@ -513,11 +513,11 @@ function tryCreatureResponse(
  * Destination must reduce overlap; start may remain overlapping.
  */
 function tryCreatureDepenetrate(
-  area: ModuleArea,
-  creature: ModuleCreature,
+  area: Area,
+  creature: Creature,
   origin: THREE.Vector3,
   desired: THREE.Vector3,
-  blocker: ModuleCreature,
+  blocker: Creature,
   hit: MovementHit | undefined
 ): MovementResult | undefined {
   const minDist =
@@ -580,11 +580,11 @@ function tryCreatureDepenetrate(
  * Uses soft start-overlap for the creature segment so stacked origins can still exit.
  */
 function destinationSeparates(
-  area: ModuleArea,
-  creature: ModuleCreature,
+  area: Area,
+  creature: Creature,
   origin: THREE.Vector3,
   dest: THREE.Vector3,
-  blocker: ModuleCreature,
+  blocker: Creature,
   minDist: number
 ): boolean {
   const st = testStaticMovement(area, origin, dest, playerStaticOpts(creature));
@@ -618,11 +618,11 @@ function destinationSeparates(
  * Slide along separation tangent when a creature blocks the ideal step.
  */
 function tryCreatureSlide(
-  area: ModuleArea,
-  creature: ModuleCreature,
+  area: Area,
+  creature: Creature,
   origin: THREE.Vector3,
   desired: THREE.Vector3,
-  blocker: ModuleCreature | undefined,
+  blocker: Creature | undefined,
   hit: MovementHit | undefined
 ): MovementResult | undefined {
   const len = Math.hypot(desired.x, desired.y);
@@ -724,7 +724,7 @@ function resolveWallNormal(
 }
 
 function finishPlayerResult(
-  creature: ModuleCreature,
+  creature: Creature,
   origin: THREE.Vector3,
   dest: THREE.Vector3,
   hit: MovementResult["hit"]

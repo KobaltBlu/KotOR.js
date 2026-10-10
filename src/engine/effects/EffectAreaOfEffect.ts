@@ -1,8 +1,8 @@
 import { GameEffect } from "@engine/effects/GameEffect";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleAreaOfEffect } from "@engine/module/ModuleAreaOfEffect";
+import type { Creature } from "@engine/module/Creature";
+import type { AreaEffect } from "@engine/module/AreaEffect";
 import type EngineLocation from "@engine/runtime/EngineLocation";
 
 import { isCreature } from "@engine/module/guards/isCreature";
@@ -12,7 +12,7 @@ import { isCreature } from "@engine/module/guards/isCreature";
  * location path via ApplyEffect.
  *
  * int[0] = vfx_persistent row; string[0..2] = OnEnter / Heartbeat / OnExit overrides;
- * objectList[0] = spawned ModuleAreaOfEffect.
+ * objectList[0] = spawned AreaEffect.
  *
  * @file EffectAreaOfEffect.ts
  */
@@ -42,16 +42,16 @@ export class EffectAreaOfEffect extends GameEffect {
 
     super.onApply();
 
-    // Avoid static import cycle with GameEffectFactory ↔ ModuleAreaOfEffect
-    const AoECtor = (area as any).constructor.ModuleAreaOfEffect;
+    // Avoid static import cycle with GameEffectFactory ↔ AreaEffect
+    const AoECtor = (area as any).constructor.AreaEffect;
     if(!AoECtor) return;
-    const aoe: ModuleAreaOfEffect = new AoECtor();
+    const aoe: AreaEffect = new AoECtor();
     aoe.loadFromPersistentRow(aoeId, {
       onEnter: this.getString(0) || '',
       heartbeat: this.getString(1) || '',
       onExit: this.getString(2) || '',
     });
-    aoe.creator = this.getCreator() || (isCreatureHost ? host as ModuleCreature : undefined as any);
+    aoe.creator = this.getCreator() || (isCreatureHost ? host as Creature : undefined as any);
     aoe.creatorId = aoe.creator?.id ?? -1;
     aoe.spellId = this.getSpellId();
     aoe.duration = this.duration;
@@ -62,13 +62,13 @@ export class EffectAreaOfEffect extends GameEffect {
       aoe.linkedToObject = undefined as any;
       aoe.linkedToObjectId = -1;
     }else{
-      const creature = host as ModuleCreature;
+      const creature = host as Creature;
       aoe.position.copy(creature.position);
       aoe.linkedToObject = creature;
       aoe.linkedToObjectId = creature.id;
     }
 
-    GameState.ModuleObjectManager.RegisterObject(aoe);
+    GameState.GameObjectManager.RegisterObject(aoe);
     area.attachObject(aoe);
     aoe.loadScripts();
 
@@ -77,7 +77,7 @@ export class EffectAreaOfEffect extends GameEffect {
 
   onRemove(){
     super.onRemove();
-    const aoe = this.getObject(0) as ModuleAreaOfEffect;
+    const aoe = this.getObject(0) as AreaEffect;
     if(aoe && typeof aoe.destroy === 'function'){
       aoe.destroy();
     }

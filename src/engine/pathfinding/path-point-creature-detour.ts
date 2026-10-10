@@ -1,7 +1,7 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Area } from "@engine/module/Area";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 import { getCreaturePersonalSpace, getPathPersonalSpace } from "@engine/combat/attack-range";
 import { hasClearWalkLine } from "@engine/pathfinding/walk-line-clear";
 
@@ -27,11 +27,11 @@ export type CreatureEdgeDetour = {
  * Compute -style detour around a creature blocking A→B.
  */
 export function computeCreatureEdgeDetour(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   from: THREE.Vector3,
   to: THREE.Vector3,
-  blocker: ModuleObject,
-  owner?: ModuleObject
+  blocker: GameObject,
+  owner?: GameObject
 ): CreatureEdgeDetour | undefined {
   if(!blocker?.position) return undefined;
 
@@ -40,9 +40,9 @@ export function computeCreatureEdgeDetour(
   const len = Math.hypot(dx, dy);
   if(len < 1e-6) return undefined;
 
-  const selfSpace = getPathPersonalSpace(owner as ModuleCreature);
-  const blockSpace = getPathPersonalSpace(blocker as ModuleCreature)
-    || getCreaturePersonalSpace(blocker as ModuleCreature);
+  const selfSpace = getPathPersonalSpace(owner as Creature);
+  const blockSpace = getPathPersonalSpace(blocker as Creature)
+    || getCreaturePersonalSpace(blocker as Creature);
   const radius = selfSpace + blockSpace;
 
   // : perp = normalize(-(By-Ay), Bx-Ax)
@@ -93,7 +93,7 @@ export function computeCreatureEdgeDetour(
  * appearance.2da has no step_tolerance column (perspace/creperspace only);
  * approx from personal_space.
  */
-export function getPathStepTolerance(owner?: ModuleObject): number {
-  const perspace = getPathPersonalSpace(owner as ModuleCreature);
+export function getPathStepTolerance(owner?: GameObject): number {
+  const perspace = getPathPersonalSpace(owner as Creature);
   return Math.max(2, Math.min(4, Math.round(1.0 / Math.max(0.25, perspace))));
 }

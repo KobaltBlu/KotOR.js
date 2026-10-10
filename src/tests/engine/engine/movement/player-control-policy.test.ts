@@ -59,22 +59,22 @@ import {
   resolvePlayerControlStep,
 } from "@engine/movement/player-control-policy";
 import { MovementHitKind, MovementStatus } from "@engine/movement/types";
-import { ModuleObjectType } from "@core/enums/module/ModuleObjectType";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleArea } from "@engine/module/ModuleArea";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
+import type { Creature } from "@engine/module/Creature";
+import type { Area } from "@engine/module/Area";
 
 function mockCreature(
   id: number,
   x: number,
   y: number,
-  area?: ModuleArea
-): ModuleCreature {
+  area?: Area
+): Creature {
   return {
     id,
-    objectType: ModuleObjectType.ModuleCreature,
+    objectType: GameObjectType.Creature,
     position: new THREE.Vector3(x, y, 0),
     area,
-  } as unknown as ModuleCreature;
+  } as unknown as Creature;
 }
 
 describe("projectOntoTangent", () => {
@@ -95,9 +95,9 @@ describe("projectOntoTangent", () => {
 });
 
 describe("resolvePlayerControlStep", () => {
-  let area: ModuleArea;
-  let player: ModuleCreature;
-  let npc: ModuleCreature;
+  let area: Area;
+  let player: Creature;
+  let npc: Creature;
 
   beforeEach(() => {
     testCreatureMovementMock.mockReset();
@@ -112,9 +112,9 @@ describe("resolvePlayerControlStep", () => {
     nudgeFriendlyCreaturesMock.mockReturnValue(false);
 
     npc = mockCreature(9, 1, 0);
-    area = { creatures: [npc] } as unknown as ModuleArea;
+    area = { creatures: [npc] } as unknown as Area;
     player = mockCreature(1, 0, 0, area);
-    (npc as { area: ModuleArea }).area = area;
+    (npc as { area: Area }).area = area;
   });
 
   it("passes softClearStartOverlap false and allowPartyCreatures false on creature tests", () => {
@@ -182,7 +182,7 @@ describe("resolvePlayerControlStep", () => {
 
   it("keeps party solid — never retries with allowPartyCreatures true", () => {
     const partyMate = mockCreature(2, 0.5, 0, area);
-    (area as { creatures: ModuleCreature[] }).creatures = [partyMate];
+    (area as { creatures: Creature[] }).creatures = [partyMate];
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { GameState } = require("@engine/GameState");
     GameState.PartyManager.party = [player, partyMate];

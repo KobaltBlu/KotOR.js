@@ -1,8 +1,8 @@
-import type { ModuleObject } from "@engine/module/ModuleObject";
-import type { ModuleMGGunBank } from "@engine/module/ModuleMGGunBank";
+import type { GameObject } from "@engine/module/GameObject";
+import type { MiniGameGunBank } from "@engine/module/MiniGameGunBank";
 import { BitWise } from "@core/utility/BitWise";
-import { ModuleObjectType } from "@core/enums/module/ModuleObjectType";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
 
-export const isMGGunBank: (o: ModuleObject | undefined) => o is ModuleMGGunBank = (o): o is ModuleMGGunBank => {
-    return !!BitWise.InstanceOfObject(o, ModuleObjectType.ModuleMGGunBank);
+export const isMGGunBank: (o: GameObject | undefined) => o is MiniGameGunBank = (o): o is MiniGameGunBank => {
+    return !!BitWise.InstanceOfObject(o, GameObjectType.MiniGameGunBank);
 }

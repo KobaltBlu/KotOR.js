@@ -2,8 +2,8 @@ import { Action } from "@engine/actions/Action";
 import { ActionStatus } from "@core/enums/actions/ActionStatus";
 import { ActionType } from "@core/enums/actions/ActionType";
 import { isCreature } from "@engine/module/guards/isCreature";
-import { isObject } from "@engine/module/guards/isObject";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import { isGameObject } from "@engine/module/guards/isGameObject";
+import type { GameObject } from "@engine/module/GameObject";
 
 /**
  * ActionChangeFacingObject class.
@@ -25,8 +25,8 @@ export class ActionChangeFacingObject extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
-    this.target = this.getParameter<ModuleObject>(0);
-    if(!isObject(this.target)){
+    this.target = this.getParameter<GameObject>(0);
+    if(!isGameObject(this.target)){
       return ActionStatus.FAILED;
     }
 

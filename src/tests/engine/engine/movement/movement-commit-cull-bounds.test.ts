@@ -38,7 +38,7 @@ import {
   MovementSource,
   MovementStatus,
 } from "@engine/movement/types";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 
 describe("movement commit cull bounds", () => {
   it("refreshes box so isOnScreen uses live position, not spawn AABB", () => {
@@ -89,7 +89,7 @@ describe("movement commit cull bounds", () => {
     expect(creature.isOnScreen()).toBe(false);
 
     commitMovement(
-      creature as unknown as ModuleCreature,
+      creature as unknown as Creature,
       {
         source: MovementSource.Walk,
         status: MovementStatus.Moving,

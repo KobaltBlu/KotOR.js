@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Area } from "@engine/module/Area";
+import type { Creature } from "@engine/module/Creature";
 import { GameState } from "@engine/runtime/GameState";
 import { hasVisualLos } from "@engine/pathfinding/visual-los";
 
@@ -27,11 +27,11 @@ const _to = new THREE.Vector3();
 /**
  * Collect living player-controlled creatures for visibility (party + area PCs).
  */
-function collectPlayerCreatures(area: ModuleArea): ModuleCreature[] {
-  const out: ModuleCreature[] = [];
+function collectPlayerCreatures(area: Area): Creature[] {
+  const out: Creature[] = [];
   const seen = new Set<number>();
 
-  const push = (c: ModuleCreature | undefined) => {
+  const push = (c: Creature | undefined) => {
     if(!c?.position) return;
     if(c.isDead?.()) return;
     const id = c.id;
@@ -44,12 +44,12 @@ function collectPlayerCreatures(area: ModuleArea): ModuleCreature[] {
 
   const party = GameState.PartyManager?.party || [];
   for(let i = 0; i < party.length; i++){
-    push(party[i] as ModuleCreature);
+    push(party[i] as Creature);
   }
 
   const creatures = area.creatures || [];
   for(let i = 0; i < creatures.length; i++){
-    const c = creatures[i] as ModuleCreature;
+    const c = creatures[i] as Creature;
     if(c?.isPC || c?.isPartyMember?.()){
       push(c);
     }
@@ -62,7 +62,7 @@ function collectPlayerCreatures(area: ModuleArea): ModuleCreature[] {
  * @returns Number of players that can see `point` (capped at maxCount).
  */
 export function countPlayerVisibility(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   point: THREE.Vector3,
   maxCount: number = 0x60
 ): number {

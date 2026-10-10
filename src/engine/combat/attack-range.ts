@@ -1,5 +1,5 @@
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 
 import { isCreature } from "@engine/module/guards/isCreature";
 import { isDoor } from "@engine/module/guards/isDoor";
@@ -14,15 +14,15 @@ import { isPlaceable } from "@engine/module/guards/isPlaceable";
  * Engaged (choreographed melee weapons) uses creperspace; otherwise hitradius.
  */
 
-function asCreature(obj: ModuleObject | undefined): ModuleCreature | undefined {
+function asCreature(obj: GameObject | undefined): Creature | undefined {
   if(!obj || !isCreature(obj)){
     return undefined;
   }
-  return obj as ModuleCreature;
+  return obj as Creature;
 }
 
 /** appearance.hitradius — DesiredAttackRange (unengaged creature targets). */
-export function getHitRadius(obj: ModuleObject | undefined): number {
+export function getHitRadius(obj: GameObject | undefined): number {
   const creature = asCreature(obj);
   if(creature){
     return creature.getAppearance()?.hitradius ?? 0.25;
@@ -31,7 +31,7 @@ export function getHitRadius(obj: ModuleObject | undefined): number {
 }
 
 /** appearance.creperspace — creature-creature use / engaged attack spacing. */
-export function getCreaturePersonalSpace(obj: ModuleObject | undefined): number {
+export function getCreaturePersonalSpace(obj: GameObject | undefined): number {
   const creature = asCreature(obj);
   if(creature){
     return creature.getAppearance()?.creperspace ?? 0.4;
@@ -40,7 +40,7 @@ export function getCreaturePersonalSpace(obj: ModuleObject | undefined): number 
 }
 
 /** appearance.perspace — pathfind personal_space (walkmesh / step tolerance). */
-export function getPathPersonalSpace(obj: ModuleObject | undefined): number {
+export function getPathPersonalSpace(obj: GameObject | undefined): number {
   const creature = asCreature(obj);
   if(creature){
     // Narrow-corridor escape override (doorway jam recovery).
@@ -60,8 +60,8 @@ export function getPathPersonalSpace(obj: ModuleObject | undefined): number {
  * @param engaged ResolveChoreographedState (melee weapon pair), not ResolveEngagedState
  */
 export function desiredAttackRange(
-  attacker: ModuleCreature,
-  target: ModuleObject,
+  attacker: Creature,
+  target: GameObject,
   engaged: boolean = false
 ): number {
   const targetCreature = asCreature(target);
@@ -91,8 +91,8 @@ export function desiredAttackRange(
  * FindNearestEnemy override: 20 for both melee and ranged (MaxCleaveRange = 22).
  */
 export function maxAttackRange(
-  attacker: ModuleCreature,
-  target: ModuleObject,
+  attacker: Creature,
+  target: GameObject,
   engaged: boolean = false,
   findNearestEnemyOverride: boolean = false
 ): number {
@@ -117,8 +117,8 @@ export function maxAttackRange(
 
 /** Move-to arrive range while closing for a physical attack (ranged → max, melee → desired). */
 export function getAttackMoveArriveRange(
-  attacker: ModuleCreature,
-  target: ModuleObject,
+  attacker: Creature,
+  target: GameObject,
   engaged: boolean = false
 ): number {
   if(attacker.isRangedEquipped?.()){
@@ -132,8 +132,8 @@ export function getAttackMoveArriveRange(
  * Used by QueueAttackActions / GetNearestEnemy search radius.
  */
 export function maxCleaveRange(
-  attacker: ModuleCreature,
-  referenceTarget?: ModuleObject,
+  attacker: Creature,
+  referenceTarget?: GameObject,
   engaged: boolean = false
 ): number {
   const target = referenceTarget ?? attacker;
@@ -145,8 +145,8 @@ export function maxCleaveRange(
  * eye height +1.5, no perception clamp; maxDistance typically MaxAttackRange.
  */
 export function hasCombatLineOfSight(
-  attacker: ModuleCreature,
-  target: ModuleObject,
+  attacker: Creature,
+  target: GameObject,
   maxDistance?: number
 ): boolean {
   if(!attacker || !target){

@@ -3,8 +3,8 @@ import type { GUILabel, GUIListBox, GUIButton } from "@engine/gui";
 import { GUIInventoryItem } from "@engine/gui/protoitem/GUIInventoryItem";
 import { GameState } from "@engine/runtime/GameState";
 import { InventoryManager } from "@engine/managers/InventoryManager";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleItem } from "@engine/module/ModuleItem";
+import type { Creature } from "@engine/module/Creature";
+import type { Item } from "@engine/module/Item";
 import { TwoDAObject } from "@core/resource/TwoDAObject";
 import {
   CHEMICAL_CREATE_GROUPS,
@@ -18,7 +18,7 @@ import {
 
 interface ChemicalShopChoice {
   recipe: CraftRecipeRow;
-  item: ModuleItem;
+  item: Item;
   cost: number;
   getName: () => string;
   getIcon: () => string;
@@ -60,13 +60,13 @@ export class MenuChemicals extends GameMenu {
   declare LBL_RELATEDSKILL: GUILabel;
   declare LBL_BAR3: GUILabel;
 
-  skillCharacter: ModuleCreature | undefined;
+  skillCharacter: Creature | undefined;
   createGroup: number = CHEMICAL_CREATE_GROUPS.HEALTH;
   /** true = create from shop list; false = breakdown from inventory */
   createMode: boolean = true;
   shopChoices: ChemicalShopChoice[] = [];
   selectedShop: ChemicalShopChoice | undefined;
-  selectedInv: ModuleItem | undefined;
+  selectedInv: Item | undefined;
   skillDiscount: number = 0;
 
   constructor(){
@@ -92,7 +92,7 @@ export class MenuChemicals extends GameMenu {
       if(this.LB_INVITEMS){
         this.LB_INVITEMS.onSelected = (node: any) => {
           this.createMode = false;
-          this.onInvSelected(node as ModuleItem);
+          this.onInvSelected(node as Item);
         };
       }
 
@@ -122,7 +122,7 @@ export class MenuChemicals extends GameMenu {
     });
   }
 
-  open(args?: { character?: ModuleCreature }) {
+  open(args?: { character?: Creature }) {
     this.skillCharacter = args?.character
       || GameState.PartyManager?.party?.[0]
       || GameState.PartyManager?.Player;
@@ -176,7 +176,7 @@ export class MenuChemicals extends GameMenu {
     this.shopChoices = [];
     this.selectedShop = undefined;
     const table = this.getChemicalTable();
-    const ModuleItemClass = GameState.Module?.ModuleArea?.ModuleItem;
+    const ModuleItemClass = GameState.Module?.Area?.Item;
     if(!table || !ModuleItemClass){
       this.LB_SHOPITEMS?.setItems?.([]);
       this.refreshCostLabels(0);
@@ -194,7 +194,7 @@ export class MenuChemicals extends GameMenu {
       if(!recipe) continue;
       if(!chemicalRecipeVisible(recipe, this.createGroup, getSkillRank)) continue;
 
-      let item: ModuleItem | undefined;
+      let item: Item | undefined;
       try{
         item = ModuleItemClass.FromResRef?.(recipe.label);
       }catch(_e){
@@ -240,7 +240,7 @@ export class MenuChemicals extends GameMenu {
     this.BTN_Accept.disableSelection = !choice || stock < (choice.cost | 0);
   }
 
-  onInvSelected(item: ModuleItem) {
+  onInvSelected(item: Item) {
     this.selectedInv = item;
     this.selectedShop = undefined;
     this.createMode = false;
@@ -276,8 +276,8 @@ export class MenuChemicals extends GameMenu {
     if(stock < choice.cost) return;
 
     GameState.PartyManager.ChemicalCount = stock - choice.cost;
-    const ModuleItemClass = GameState.Module?.ModuleArea?.ModuleItem;
-    let grant: ModuleItem | undefined;
+    const ModuleItemClass = GameState.Module?.Area?.Item;
+    let grant: Item | undefined;
     try{
       grant = ModuleItemClass?.FromResRef?.(choice.recipe.label);
     }catch(_e){

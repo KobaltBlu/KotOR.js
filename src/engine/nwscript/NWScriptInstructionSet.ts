@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { NWScriptDataType } from "@core/enums/nwscript/NWScriptDataType";
 import { INWScriptDefAction } from "@core/interface/nwscript/INWScriptDefAction";
-// import { ModuleObjectManager } from "@engine/managers/ModuleObjectManager";
+// import { GameObjectManager } from "@engine/managers/GameObjectManager";
 import type { NWScriptInstance } from "@engine/nwscript/NWScriptInstance";
 import { NWScriptTypes } from "@core/enums/nwscript/NWScriptTypes";
 import { NWScriptSubroutine } from "@engine/nwscript/NWScriptSubroutine";
@@ -145,7 +145,7 @@ export const CALL_ACTION = function( this: NWScriptInstance, instruction: NWScri
         args.push( this.stack.pop()?.value );
         //Test for and fix instances where an object id is pushed instead of an object reference
         // (module ObjectList id, or SWMG mgo_index 0..0xfe).
-        if(typeof args[i] == 'number') args[i] = GameState.ModuleObjectManager.GetObjectById(args[i]);
+        if(typeof args[i] == 'number') args[i] = GameState.GameObjectManager.GetObjectById(args[i]);
       break;
       case NWScriptDataType.STRING:
       case NWScriptDataType.INTEGER:

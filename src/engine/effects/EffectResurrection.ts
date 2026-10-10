@@ -1,7 +1,7 @@
 import { GameEffect } from "@engine/effects/GameEffect";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
 import { ModuleCreatureAnimState } from "@core/enums/module/ModuleCreatureAnimState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 
 import { isCreature } from "@engine/module/guards/isCreature";
 
@@ -28,7 +28,7 @@ export class EffectResurrection extends GameEffect {
     if(!isCreature(this.object)){
       return;
     }
-    const creature = this.object as ModuleCreature;
+    const creature = this.object as Creature;
 
     const pct = this.getInt(0) || 0;
     if(pct > 0 && creature.getMaxHP()){

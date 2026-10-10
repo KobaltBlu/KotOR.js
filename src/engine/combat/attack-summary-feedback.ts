@@ -1,7 +1,7 @@
 import { AttackResult } from "@core/enums/combat/AttackResult";
 import { FeebackMessageColor } from "@engine/enums/engine/FeedbackMessageColor";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 import type { TalentFeat } from "@engine/talents";
 import { formatTlkWithCustoms, tlkText } from "@engine/world/tlk-tokens";
 
@@ -43,8 +43,8 @@ export const AttackSummaryStrRef = {
 } as const;
 
 export interface AttackSummaryFeedbackInput {
-  attacker: ModuleCreature;
-  defender?: ModuleObject;
+  attacker: Creature;
+  defender?: GameObject;
   attackResult: AttackResult;
   /** Total attack roll (d20 + modifiers), ints[2]. */
   toHitTotal: number;
@@ -64,7 +64,7 @@ export interface AttackSummaryFeedbackInput {
 
 export { formatTlkWithCustoms, tlkText };
 
-function objectName(obj: ModuleObject | undefined): string {
+function objectName(obj: GameObject | undefined): string {
   if (!obj) return tlkText(0) || '';
   try {
     return obj.getName?.() || '';

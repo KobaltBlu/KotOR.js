@@ -30,9 +30,9 @@ jest.mock("@core/utility/BitWise", () => ({
 
 import { AILevel } from "@core/enums/module/AILevel";
 import { AIScheduler } from "@engine/runtime/AIScheduler";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 
-function makeObj(id: number): ModuleObject {
+function makeObj(id: number): GameObject {
   return {
     id,
     aiLevel: AILevel.INVALID,
@@ -46,7 +46,7 @@ function makeObj(id: number): ModuleObject {
     destroyed: false,
     willDestroy: false,
     animationState: { index: 0 },
-  } as unknown as ModuleObject;
+  } as unknown as GameObject;
 }
 
 describe("AIScheduler", () => {

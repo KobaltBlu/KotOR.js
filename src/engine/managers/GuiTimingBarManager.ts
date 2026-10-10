@@ -1,5 +1,5 @@
 import type { InGameOverlay } from "@engine/games/kotor/menu/InGameOverlay";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 
 /**
  * GuiTimingBarManager — StartGuiTimingBar / StopGuiTimingBar host.
@@ -39,7 +39,7 @@ export class GuiTimingBarManager {
   static start(
     durationSeconds: number,
     label: string = '',
-    owner?: ModuleObject,
+    owner?: GameObject,
     eventType: number = 1
   ){
     this.active = true;
@@ -56,7 +56,7 @@ export class GuiTimingBarManager {
   static startMs(
     durationMs: number,
     label: string = '',
-    owner?: ModuleObject,
+    owner?: GameObject,
     eventType: number = 1
   ){
     this.start((durationMs || 0) / 1000, label, owner, eventType);
@@ -72,7 +72,7 @@ export class GuiTimingBarManager {
   }
 
   /** Stop only if the bar belongs to this owner (or owner omitted). */
-  static stopFor(owner?: ModuleObject){
+  static stopFor(owner?: GameObject){
     if(!this.active) return;
     if(owner && this.ownerId >= 0 && owner.id !== this.ownerId) return;
     this.stop();
@@ -84,7 +84,7 @@ export class GuiTimingBarManager {
   }
 
   /** Cancel when the owning creature clears actions (player interrupt). */
-  static cancelFor(owner?: ModuleObject){
+  static cancelFor(owner?: GameObject){
     if(!this.active) return;
     if(owner && this.ownerId >= 0 && owner.id !== this.ownerId) return;
     this.cancel();
@@ -94,7 +94,7 @@ export class GuiTimingBarManager {
     return this.active;
   }
 
-  static isActiveFor(owner?: ModuleObject){
+  static isActiveFor(owner?: GameObject){
     if(!this.active) return false;
     if(!owner) return true;
     return this.ownerId < 0 || owner.id === this.ownerId;

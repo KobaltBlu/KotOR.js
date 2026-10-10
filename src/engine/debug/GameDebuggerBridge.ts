@@ -266,7 +266,7 @@ export class GameDebuggerBridge {
         );
       }else if(msg.type == IPCMessageType.RequestObjectDetail){
         const objectId = msg.getParam(0)?.getInt32?.() ?? -1;
-        const obj = GameState.ModuleObjectManager.GetObjectById(objectId);
+        const obj = GameState.GameObjectManager.GetObjectById(objectId);
         const detail = obj ? snapshotLiveObject(obj) : null;
         GameDebuggerBridge.sendInspectorSnapshot(IPCMessageType.ObjectDetail, detail);
       }else if(msg.type == IPCMessageType.RequestGlobalsSnapshot){

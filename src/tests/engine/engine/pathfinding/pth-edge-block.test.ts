@@ -5,29 +5,29 @@ import { describe, expect, it, jest } from "@jest/globals";
 
 jest.mock("@engine/runtime/GameState", () => ({
   GameState: {
-    ModuleObjectManager: { GetObjectById: () => undefined },
+    GameObjectManager: { GetObjectById: () => undefined },
   },
 }));
 
 import { isPthEdgeBlockedByObject } from "@engine/pathfinding/pth-edge-block";
-import { ModuleObjectType } from "@core/enums/module/ModuleObjectType";
-import type { ModuleDoor } from "@engine/module/ModuleDoor";
-import type { ModulePlaceable } from "@engine/module/ModulePlaceable";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
+import type { Door } from "@engine/module/Door";
+import type { Placeable } from "@engine/module/Placeable";
+import type { GameObject } from "@engine/module/GameObject";
 
-function makeDoor(staticFlag: boolean, id = 1): ModuleDoor {
+function makeDoor(staticFlag: boolean, id = 1): Door {
   return {
     id,
-    objectType: ModuleObjectType.ModuleDoor,
+    objectType: GameObjectType.Door,
     static: staticFlag,
-  } as unknown as ModuleDoor;
+  } as unknown as Door;
 }
 
-function makePlaceable(id = 2): ModulePlaceable {
+function makePlaceable(id = 2): Placeable {
   return {
     id,
-    objectType: ModuleObjectType.ModulePlaceable,
-  } as unknown as ModulePlaceable;
+    objectType: GameObjectType.Placeable,
+  } as unknown as Placeable;
 }
 
 describe("isPthEdgeBlockedByObject (GenerateSuccessors)", () => {
@@ -48,8 +48,8 @@ describe("isPthEdgeBlockedByObject (GenerateSuccessors)", () => {
     expect(isPthEdgeBlockedByObject(null)).toBe(false);
     const creature = {
       id: 3,
-      objectType: ModuleObjectType.ModuleCreature,
-    } as unknown as ModuleObject;
+      objectType: GameObjectType.Creature,
+    } as unknown as GameObject;
     expect(isPthEdgeBlockedByObject(creature)).toBe(false);
   });
 });

@@ -6,8 +6,8 @@ import * as THREE from "three";
 import { composeDoorWalkmeshLocalToWorld } from "@engine/pathfinding/door-walkmesh-matrix";
 import { isStaticWalkClearOnWalkMesh } from "@engine/pathfinding/static-walk-blockers-mesh";
 import { isStaticWalkClearDetailed } from "@engine/pathfinding/static-walk-blockers";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleDoor } from "@engine/module/ModuleDoor";
+import type { Area } from "@engine/module/Area";
+import type { Door } from "@engine/module/Door";
 import type { OdysseyWalkMesh } from "@engine/odyssey/OdysseyWalkMesh";
 import type { OdysseyFace3 } from "@engine/render/three/odyssey";
 
@@ -171,9 +171,9 @@ describe("isStaticWalkClearDetailed open door with jamb mesh", () => {
       isOpen: () => true,
       getWalkmeshForOpenState: () => wok,
       collisionManager: { walkmesh: wok },
-    } as unknown as ModuleDoor;
+    } as unknown as Door;
 
-    const area = { doors: [door], placeables: [] } as unknown as ModuleArea;
+    const area = { doors: [door], placeables: [] } as unknown as Area;
     const from = new THREE.Vector3(doorPos.x - 0.25, doorPos.y + 0.4, doorPos.z);
     const to = new THREE.Vector3(doorPos.x - 0.25, doorPos.y - 0.4, doorPos.z);
     const result = isStaticWalkClearDetailed(area, from, to, {

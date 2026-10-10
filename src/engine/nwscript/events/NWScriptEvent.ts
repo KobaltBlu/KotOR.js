@@ -7,7 +7,7 @@ import { EventConversation } from "@engine/nwscript/events/EventConversation";
 import { EventSpellCastAt } from "@engine/nwscript/events/EventSpellCastAt";
 import { EventUserDefined } from "@engine/nwscript/events/EventUserDefined";
 import { EventActivateItem } from "@engine/nwscript/events/EventActivateItem";
-// import { ModuleObjectManager } from "@engine/managers";
+// import { GameObjectManager } from "@engine/managers";
 
 /**
  * NWScriptEvent class.
@@ -91,7 +91,7 @@ export class NWScriptEvent {
   }
 
   getObject(nOffset = 0){
-    return (typeof this.objectList[nOffset] === 'object') ? this.objectList[nOffset] : GameState.ModuleObjectManager.GetObjectById(this.objectList[nOffset]);
+    return (typeof this.objectList[nOffset] === 'object') ? this.objectList[nOffset] : GameState.GameObjectManager.GetObjectById(this.objectList[nOffset]);
   }
 
   save(){

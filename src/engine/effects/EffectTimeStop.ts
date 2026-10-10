@@ -2,7 +2,7 @@ import { GameEffect } from "@engine/effects/GameEffect";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
 import { EngineState } from "@engine/enums/engine";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 
 import { isCreature } from "@engine/module/guards/isCreature";
 
@@ -27,7 +27,7 @@ export class EffectTimeStop extends GameEffect {
     if(!isCreature(this.object)){
       return;
     }
-    const creature = this.object as ModuleCreature;
+    const creature = this.object as Creature;
 
     // Pause already in TimeStop: extend existing Timestop on this object only
     if(GameState.timeStopActive){
@@ -57,7 +57,7 @@ export class EffectTimeStop extends GameEffect {
   onRemove(){
     super.onRemove();
     if(isCreature(this.object)){
-      GameState.timeStopExclusions?.delete((this.object as ModuleCreature).id);
+      GameState.timeStopExclusions?.delete((this.object as Creature).id);
     }
     // TogglePauseState(1) + RemoveFromExclusionList
     if(GameState.timeStopPausedByEffect){
@@ -70,7 +70,7 @@ export class EffectTimeStop extends GameEffect {
 }
 
 /** True if this creature should keep acting under TimeStop (exclusion list). */
-export function isTimeStopExcluded(creature: ModuleCreature): boolean {
+export function isTimeStopExcluded(creature: Creature): boolean {
   if(!GameState.timeStopActive) return false;
   return !!GameState.timeStopExclusions?.has(creature.id)
     || !!creature.hasEffect?.(GameEffectType.EffectTimeStop);

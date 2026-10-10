@@ -15,13 +15,13 @@ jest.mock("@engine/nwscript/NWScript", () => ({ NWScript: {} }));
 jest.mock("@engine/nwscript/NWScriptInstance", () => ({ NWScriptInstance: class {} }));
 jest.mock("@engine/render/FollowerCamera", () => ({ FollowerCamera: {} }));
 
-import { ModuleArea } from "@engine/module/ModuleArea";
+import { Area } from "@engine/module/Area";
 import { isStaticWalkClearOnAreaMesh } from "@engine/pathfinding/static-walk-blockers-mesh";
 import type { OdysseyFace3 } from "@engine/render/three/odyssey/OdysseyFace3";
 
 describe("isStaticWalkClearOnAreaMesh walk candidate reuse", () => {
-  function makeArea(rooms: any[]): ModuleArea {
-    const area = Object.create(ModuleArea.prototype) as ModuleArea;
+  function makeArea(rooms: any[]): Area {
+    const area = Object.create(Area.prototype) as Area;
     area.rooms = rooms as any;
     area.placeables = [] as any;
     area.frameWalkCandidateCache = new Map();

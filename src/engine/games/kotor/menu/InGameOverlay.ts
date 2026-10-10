@@ -12,9 +12,9 @@ import { SSFType } from "@core/enums/resource/SSFType";
 import { TalentObject } from "@engine/talents";
 import { AutoPauseState } from "@engine/enums/engine/AutoPauseState";
 import { KeyMapAction } from "@core/enums/controls/KeyMapAction";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import { isCreature } from "@engine/module/guards/isCreature";
-import { isObject } from "@engine/module/guards/isObject";
+import { isGameObject } from "@engine/module/guards/isGameObject";
 import { getClientCombatMode } from "@engine/combat/combat-engagement";
 import {
   TARGET_MENU_EDGE,
@@ -711,7 +711,7 @@ export class InGameOverlay extends GameMenu {
     return (
       !this.manager.MenuContainer.bVisible &&
       !!GameState.CursorManager.selectedObject &&
-      isObject(GameState.CursorManager.selectedObject) 
+      isGameObject(GameState.CursorManager.selectedObject) 
     );
   }
 
@@ -821,7 +821,7 @@ export class InGameOverlay extends GameMenu {
    * GetMenuPoint / object vtable.
    * Returns top-left screen pixels and visibility status (1 front, 2 behind).
    */
-  getTargetMenuPoint(selectedObject: ModuleObject): TargetMenuPoint {
+  getTargetMenuPoint(selectedObject: GameObject): TargetMenuPoint {
     return getTargetMenuPointUtil(
       selectedObject,
       GameState.currentCamera,
@@ -835,7 +835,7 @@ export class InGameOverlay extends GameMenu {
    * GetReticlePoint screen projection for UpdateIndicator edge arrow
    * (head / head_g / rootdummy — not GetMenuPoint Z offset).
    */
-  getReticleScreenPoint(selectedObject: ModuleObject): TargetMenuPoint {
+  getReticleScreenPoint(selectedObject: GameObject): TargetMenuPoint {
     return getReticleScreenPointUtil(
       selectedObject,
       GameState.currentCamera,
@@ -889,7 +889,7 @@ export class InGameOverlay extends GameMenu {
    * `point` must be GetReticlePoint screen projection (not GetMenuPoint).
    * Uses full viewport (not design LBL_ARROW_MARGIN) so arrows pin to real screen edges.
    */
-  updateArrow(selectedObject: ModuleObject, point?: TargetMenuPoint) {
+  updateArrow(selectedObject: GameObject, point?: TargetMenuPoint) {
     if(!this.namePlateArrow){
       return;
     }

@@ -1,14 +1,14 @@
 import { GameState } from "@engine/runtime/GameState";
 import { ActionMenuPanel } from "@engine/menu/ActionMenuPanel";
 import { ActionMenuItem } from "@engine/menu/ActionMenuItem";
-import type { ModuleObject } from "@engine/module/ModuleObject";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleItem } from "@engine/module/ModuleItem";
+import type { GameObject } from "@engine/module/GameObject";
+import type { Creature } from "@engine/module/Creature";
+import type { Item } from "@engine/module/Item";
 import { IActionPanelLists } from "@engine/interface/gui/IActionPanelLists";
 import { GameEngineType } from "@core/enums/engine/GameEngineType";
 import { ActionType } from "@core/enums/actions/ActionType";
 import { SkillType } from "@core/enums/nwscript/SkillType";
-import { ActionParameterType, ModuleObjectConstant, ModuleTriggerType } from "@core/enums";
+import { ActionParameterType, GameObjectConstant, ModuleTriggerType } from "@core/enums";
 import { TalentFeat } from "@engine/talents/TalentFeat";
 import { TalentObject } from "@engine/talents/TalentObject";
 import { TalentSpell } from "@engine/talents/TalentSpell";
@@ -60,7 +60,7 @@ type ForceMenuMode = 'hostile' | 'friendly';
 interface ForceMenuSpellEntry {
   spell: TalentSpell;
   /** Equipped item that owns this power (droid GetEquipmentForcePowers). */
-  item?: ModuleItem;
+  item?: Item;
   sortIndex: number;
   priority: number;
 }
@@ -77,7 +77,7 @@ const RANGED_FEAT_CHAINS = [
   [77, 20, 31],  // Master / Improved / Sniper Shot
 ];
 
-const EQUIP_FORCE_SLOTS: (keyof ModuleCreature['equipment'])[] = [
+const EQUIP_FORCE_SLOTS: (keyof Creature['equipment'])[] = [
   'HEAD', 'ARMOR', 'ARMS', 'RIGHTHAND', 'LEFTHAND',
   'LEFTARMBAND', 'RIGHTARMBAND', 'IMPLANT', 'BELT',
   'RIGHTHAND2', 'LEFTHAND2', 'CLAW1', 'CLAW2', 'CLAW3',
@@ -111,8 +111,8 @@ export class ActionMenuManager {
   static TARGET_MENU_COUNT = 3;
   static SELF_MENU_COUNT = 4;
 
-  static oPC: ModuleCreature;
-  static oTarget: ModuleObject;
+  static oPC: Creature;
+  static oTarget: GameObject;
   /**
    * When the look-at / selected target changes, slot 0 defaults to Attack
    * (appends Attack after combat feats). Per-frame rebuilds must not
@@ -125,11 +125,11 @@ export class ActionMenuManager {
     selfPanels: [],
   };
 
-  static SetPC(oPC: ModuleCreature){
+  static SetPC(oPC: Creature){
     ActionMenuManager.oPC = oPC;
   }
 
-  static SetTarget(oTarget: ModuleObject){
+  static SetTarget(oTarget: GameObject){
     if(ActionMenuManager.oTarget !== oTarget){
       ActionMenuManager.#preferDefaultAttack = true;
     }
@@ -189,12 +189,12 @@ export class ActionMenuManager {
     return result;
   }
 
-  static #isCreatureLike(target: ModuleObject | undefined): target is ModuleCreature {
+  static #isCreatureLike(target: GameObject | undefined): target is Creature {
     return isCreature(target);
   }
 
   /** GetHostileForcePowers tmp14 — exclusion bits for the current target. */
-  static getHostileTargetExclusionFlags(target: ModuleObject | undefined): number {
+  static getHostileTargetExclusionFlags(target: GameObject | undefined): number {
     if(!ActionMenuManager.#isCreatureLike(target)){
       return ForceMenuExclusion.NON_CREATURE;
     }
@@ -297,7 +297,7 @@ export class ActionMenuManager {
   }
 
   /** caster appearance.racialtype == 5 → GetEquipmentForcePowers for hostile menu. */
-  static isDroidForceMenuCaster(creature: ModuleCreature | undefined): boolean {
+  static isDroidForceMenuCaster(creature: Creature | undefined): boolean {
     if(!creature) return false;
     return creature.getAppearance()?.racialtype === APPEARANCE_RACIALTYPE_DROID;
   }
@@ -306,14 +306,14 @@ export class ActionMenuManager {
    * GetEquipmentForcePowers — hostile (category 1) powers from equipped items.
    */
   static buildEquipmentForceMenuSpellList(
-    creature: ModuleCreature,
+    creature: Creature,
     exclusionFlags: number
   ): ForceMenuSpellEntry[] {
     const collected: TalentSpell[] = [];
-    const itemBySpellId = new Map<number, ModuleItem>();
+    const itemBySpellId = new Map<number, Item>();
 
     for(let i = 0; i < EQUIP_FORCE_SLOTS.length; i++){
-      const item = creature.equipment[EQUIP_FORCE_SLOTS[i]] as ModuleItem | undefined;
+      const item = creature.equipment[EQUIP_FORCE_SLOTS[i]] as Item | undefined;
       if(!item?.getSpells) continue;
       const spells = item.getSpells() || [];
       for(let j = 0; j < spells.length; j++){
@@ -429,9 +429,9 @@ export class ActionMenuManager {
     // skips equipped bands/belt in restricted areas, but still scans
     // inventory so plot items can pass IsLeaderUsableItem.
     if(!ActionMenuManager.areaIsRestricted()){
-      const equipSlots: (keyof ModuleCreature['equipment'])[] = ['LEFTARMBAND', 'RIGHTARMBAND', 'BELT'];
+      const equipSlots: (keyof Creature['equipment'])[] = ['LEFTARMBAND', 'RIGHTARMBAND', 'BELT'];
       for(let i = 0; i < equipSlots.length; i++){
-        const item = ActionMenuManager.oPC.equipment[equipSlots[i]] as ModuleItem;
+        const item = ActionMenuManager.oPC.equipment[equipSlots[i]] as Item;
         if(!item) continue;
         if(!isLeaderUsableItem(ActionMenuManager.oPC, item, true, mask)) continue;
         panel.addAction(new GameState.ActionMenuManager.ActionMenuItem({
@@ -482,8 +482,8 @@ export class ActionMenuManager {
    */
   static populateCounterSpell(){
     if(!ActionMenuManager.oPC || !ActionMenuManager.oTarget) return;
-    if(!(ActionMenuManager.oTarget instanceof GameState.Module.ModuleArea.ModuleCreature)) return;
-    const target = ActionMenuManager.oTarget as ModuleCreature;
+    if(!(ActionMenuManager.oTarget instanceof GameState.Module.Area.Creature)) return;
+    const target = ActionMenuManager.oTarget as Creature;
     if(!shouldShowCounterSpellAction({
       restricted: ActionMenuManager.areaIsRestricted(),
       isSelf: target === ActionMenuManager.oPC,
@@ -511,7 +511,7 @@ export class ActionMenuManager {
    * door/placeable GetUseItems → GetSpikeDetails(1):
    * security spikes after Security on locked targets (TSL).
    */
-  static populateSecuritySpikes(target: ModuleObject){
+  static populateSecuritySpikes(target: GameObject){
     if(!ActionMenuManager.oPC || !target) return;
     const inventory = ActionMenuManager.oPC.getInventory() || [];
     for(let i = 0; i < inventory.length; i++){
@@ -530,7 +530,7 @@ export class ActionMenuManager {
   /**
    * placeable GetUseItems: CastSpell + ItemTargeting == 2 (TSL).
    */
-  static populatePlaceableUseItems(target: ModuleObject){
+  static populatePlaceableUseItems(target: GameObject){
     if(!ActionMenuManager.oPC || !target) return;
     const inventory = ActionMenuManager.oPC.getInventory() || [];
     for(let i = 0; i < inventory.length; i++){
@@ -550,7 +550,7 @@ export class ActionMenuManager {
    * GetDoorInterfaceMines / GetPlaceableInterfaceMines → target slot 2.
    * Client pre-gate: trapFlag clear (door / placeable).
    */
-  static populateDoorOrPlaceableMines(target: ModuleObject, plantStrRef: number = 0xbbd9){
+  static populateDoorOrPlaceableMines(target: GameObject, plantStrRef: number = 0xbbd9){
     if(!ActionMenuManager.oPC || !target) return;
     if(ActionMenuManager.areaIsRestricted()) return;
     if(target.trapFlag) return;
@@ -563,7 +563,7 @@ export class ActionMenuManager {
       if(!isDoorOrPlaceableMineItem(item)) continue;
 
       const action = new GameState.ActionFactory.ActionSetMine();
-      action.setOwner(ActionMenuManager.oPC as ModuleObject);
+      action.setOwner(ActionMenuManager.oPC as GameObject);
       action.setParameter(0, ActionParameterType.DWORD, item);
       action.setParameter(1, ActionParameterType.DWORD, target);
       action.setParameter(2, ActionParameterType.FLOAT, target.position.x);
@@ -752,9 +752,9 @@ export class ActionMenuManager {
     const restricted = ActionMenuManager.areaIsRestricted();
     const isTSL = GameState.GameKey === GameEngineType.TSL;
 
-    if(ActionMenuManager.oTarget instanceof GameState.Module.ModuleArea.ModuleObject){
+    if(ActionMenuManager.oTarget instanceof GameState.Module.Area.GameObject){
 
-      if(ActionMenuManager.oTarget instanceof GameState.Module.ModuleArea.ModulePlaceable){
+      if(ActionMenuManager.oTarget instanceof GameState.Module.Area.Placeable){
         const placeable = ActionMenuManager.oTarget;
         // Object-update 0x10 client bits: Locked + Plot (not Useable/NotBlastable).
         if(placeable.isLocked()){
@@ -784,9 +784,9 @@ export class ActionMenuManager {
           // Slot 1 Security (+ TSL spikes / ItemTargeting==2 use-items).
           if(bCanUseSecurity){
             const action = new GameState.ActionFactory.ActionUnlockObject();
-            action.setOwner(ActionMenuManager.oPC as ModuleObject);
+            action.setOwner(ActionMenuManager.oPC as GameObject);
             action.setParameter(0, ActionParameterType.DWORD, placeable);
-            action.setParameter(1, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
+            action.setParameter(1, ActionParameterType.DWORD, GameObjectConstant.OBJECT_INVALID);
             ActionMenuManager.ActionPanels.targetPanels[1].addAction(new GameState.ActionMenuManager.ActionMenuItem({
               action: action,
               icon: securityTalent.getIcon()
@@ -804,7 +804,7 @@ export class ActionMenuManager {
         }else if(
           !placeable.hasInventory &&
           !!placeable.getAppearance()?.hostile &&
-          placeable.isHostile(ActionMenuManager.oPC as ModuleObject)
+          placeable.isHostile(ActionMenuManager.oPC as GameObject)
         ){
           // Unlocked hostile placeable (placeables.2da Hostile): slot 1 Force; TSL slot 2 hostile items.
           ActionMenuManager.populateHostileForcePowers();
@@ -812,7 +812,7 @@ export class ActionMenuManager {
             ActionMenuManager.populateHostileItems();
           }
         }
-      }else if(ActionMenuManager.oTarget instanceof GameState.Module.ModuleArea.ModuleDoor){
+      }else if(ActionMenuManager.oTarget instanceof GameState.Module.Area.Door){
         const door = ActionMenuManager.oTarget;
         // Early open/anim gate for Bash/DoorSaber (OPENED1/OPENED2 or open flag).
         const doorOpen = door.isOpen();
@@ -826,7 +826,7 @@ export class ActionMenuManager {
             ActionMenuManager.oPCHasMainHandLightsaber()
           ){
             const saber = new GameState.ActionFactory.ActionDoorSaber();
-            saber.setOwner(ActionMenuManager.oPC as ModuleObject);
+            saber.setOwner(ActionMenuManager.oPC as GameObject);
             saber.setParameter(0, ActionParameterType.DWORD, door);
             ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
               action: saber,
@@ -852,9 +852,9 @@ export class ActionMenuManager {
 
         if(door.isLocked() && !door.keyRequired && bCanUseSecurity){
           const action = new GameState.ActionFactory.ActionUnlockObject();
-          action.setOwner(ActionMenuManager.oPC as ModuleObject);
+          action.setOwner(ActionMenuManager.oPC as GameObject);
           action.setParameter(0, ActionParameterType.DWORD, door);
-          action.setParameter(1, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
+          action.setParameter(1, ActionParameterType.DWORD, GameObjectConstant.OBJECT_INVALID);
           ActionMenuManager.ActionPanels.targetPanels[1].addAction(new GameState.ActionMenuManager.ActionMenuItem({
             action: action,
             icon: securityTalent.getIcon()
@@ -868,8 +868,8 @@ export class ActionMenuManager {
           ActionMenuManager.populateDoorOrPlaceableMines(door);
         }
       }else if(
-        ActionMenuManager.oTarget instanceof GameState.Module.ModuleArea.ModuleCreature &&
-        ActionMenuManager.oTarget.isHostile(ActionMenuManager.oPC as ModuleObject)
+        ActionMenuManager.oTarget instanceof GameState.Module.Area.Creature &&
+        ActionMenuManager.oTarget.isHostile(ActionMenuManager.oPC as GameObject)
       ){
         // GetTargetActions slot 0: GetCombatFeatsSkills then Attack.
         if(!restricted){
@@ -906,11 +906,11 @@ export class ActionMenuManager {
           ActionMenuManager.populateHostileItems();
         }
 
-      }else if(ActionMenuManager.oTarget instanceof GameState.Module.ModuleArea.ModuleTrigger){
+      }else if(ActionMenuManager.oTarget instanceof GameState.Module.Area.Trigger){
         if(ActionMenuManager.oTarget.type == ModuleTriggerType.TRAP){
           if(bCanUseDemolitions && ActionMenuManager.oTarget.trapDisarmable){
             const action = new GameState.ActionFactory.ActionDisarmMine();
-            action.setOwner(ActionMenuManager.oPC as ModuleObject);
+            action.setOwner(ActionMenuManager.oPC as GameObject);
             action.setParameter(0, ActionParameterType.DWORD, this.oTarget);
             ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
               action: action,
@@ -922,7 +922,7 @@ export class ActionMenuManager {
 
           if(bCanUseDemolitions){
             const action = new GameState.ActionFactory.ActionRecoverMine();
-            action.setOwner(ActionMenuManager.oPC as ModuleObject);
+            action.setOwner(ActionMenuManager.oPC as GameObject);
             action.setParameter(0, ActionParameterType.DWORD, this.oTarget);
             ActionMenuManager.ActionPanels.targetPanels[1].addAction(new GameState.ActionMenuManager.ActionMenuItem({
               action: action,
@@ -1003,7 +1003,7 @@ export class ActionMenuManager {
    * schedule appends — never wipe it here.
    * Feat attacks: SendPlayerToServerInput_Attack(target, featId).
    */
-  static activateMenuItem(menuItem: ActionMenuItem, defaultTarget?: ModuleObject){
+  static activateMenuItem(menuItem: ActionMenuItem, defaultTarget?: GameObject){
     if(!ActionMenuManager.oPC || !menuItem) return;
     if(menuItem.enabled === false) return;
 
@@ -1039,12 +1039,12 @@ export class ActionMenuManager {
     // Combat feats (Power Attack, Flurry, …) before basic Attack — 
     // SendPlayerToServerInput_Attack(targetId, featId).
     if(menuItem.talent instanceof TalentFeat){
-      pc.attackCreature(target as ModuleCreature, menuItem.talent);
+      pc.attackCreature(target as Creature, menuItem.talent);
       return;
     }
 
     if(menuItem.action && menuItem.action.type == ActionType.ActionPhysicalAttacks){
-      pc.attackCreature(target as ModuleCreature, undefined);
+      pc.attackCreature(target as Creature, undefined);
       return;
     }
 
@@ -1071,7 +1071,7 @@ export class ActionMenuManager {
       // never fall through to look-at (oTarget).
       const useTarget =
         (defaultTarget === pc || menuItem.target === pc) ? pc : (target || pc);
-      menuItem.item.useItemOnObject(pc, useTarget as ModuleObject, { isUserAction: true });
+      menuItem.item.useItemOnObject(pc, useTarget as GameObject, { isUserAction: true });
       return;
     }
 
@@ -1105,7 +1105,7 @@ export class ActionMenuManager {
    * Inventory BTN_USEITEM — InstantUseItem (not animated UseItem).
    * Target is ignored; impact applies on the controlled PC.
    */
-  static useInventoryItem(item: ModuleItem, _target?: ModuleObject){
+  static useInventoryItem(item: Item, _target?: GameObject){
     if(!ActionMenuManager.oPC || !item) return;
     item.instantUseItem(ActionMenuManager.oPC);
   }

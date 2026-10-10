@@ -1,8 +1,8 @@
-import type { ModuleObject } from "@engine/module/ModuleObject";
-import type { ModuleAreaOfEffect } from "@engine/module/ModuleAreaOfEffect";
+import type { GameObject } from "@engine/module/GameObject";
+import type { AreaEffect } from "@engine/module/AreaEffect";
 import { BitWise } from "@core/utility/BitWise";
-import { ModuleObjectType } from "@core/enums/module/ModuleObjectType";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
 
-export const isAreaOfEffect: (o: ModuleObject | undefined) => o is ModuleAreaOfEffect = (o): o is ModuleAreaOfEffect => {
-    return !!BitWise.InstanceOfObject(o, ModuleObjectType.ModuleAreaOfEffect);
+export const isAreaOfEffect: (o: GameObject | undefined) => o is AreaEffect = (o): o is AreaEffect => {
+    return !!BitWise.InstanceOfObject(o, GameObjectType.AreaEffect);
 }

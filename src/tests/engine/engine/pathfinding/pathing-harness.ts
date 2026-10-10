@@ -6,8 +6,8 @@
  */
 import { jest } from "@jest/globals";
 import * as THREE from "three";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { Creature } from "@engine/module/Creature";
+import type { Area } from "@engine/module/Area";
 import {
   PartyFollowPath,
   partyFollowPath,
@@ -21,7 +21,7 @@ import { stepPartyFollowState } from "@engine/pathfinding/party-follow-sm";
 
 export const DT = 1 / 60;
 
-export type PathingCreature = ModuleCreature & {
+export type PathingCreature = Creature & {
   position: THREE.Vector3;
   setPosition: (v: THREE.Vector3 | number, y?: number, z?: number) => void;
   setComputedPath: jest.Mock;
@@ -54,7 +54,7 @@ export type FrameTrace = {
  */
 export function makeOpenArea(options: {
   wall?: { minX: number; maxX: number; minY: number; maxY: number };
-} = {}): ModuleArea {
+} = {}): Area {
   const wall = options.wall;
   return {
     id: 1,
@@ -89,7 +89,7 @@ export function makeOpenArea(options: {
         },
       }),
     },
-  } as unknown as ModuleArea;
+  } as unknown as Area;
 }
 
 export function makeCreature(
@@ -252,7 +252,7 @@ export function createFollowParty(options?: {
   leaderXY?: [number, number];
   companionXY?: [number, number];
   ringCount?: number;
-  area?: ModuleArea;
+  area?: Area;
 }){
   const area = options?.area ?? makeOpenArea();
   const [lx, ly] = options?.leaderXY ?? [0, 0];

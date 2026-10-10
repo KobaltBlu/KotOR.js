@@ -1,7 +1,7 @@
 import { ActionStatus } from "@core/enums/actions/ActionStatus";
 import { ActionType } from "@core/enums/actions/ActionType";
 import { ModuleCreatureArmorSlot } from "@core/enums/module/ModuleCreatureArmorSlot";
-import type { ModuleItem } from "@engine/module/ModuleItem";
+import type { Item } from "@engine/module/Item";
 import { Action } from "@engine/actions/Action";
 import { isCreature } from "@engine/module/guards/isCreature";
 
@@ -32,7 +32,7 @@ export class ActionUnequipItem extends Action {
       return ActionStatus.FAILED;
     }
 
-    const item = this.getParameter<ModuleItem>(0);
+    const item = this.getParameter<Item>(0);
 
     if(this.owner.equipment.HEAD == item){
       this.owner.unequipSlot(ModuleCreatureArmorSlot.HEAD);

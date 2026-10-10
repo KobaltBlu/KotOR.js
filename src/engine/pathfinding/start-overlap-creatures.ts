@@ -1,5 +1,5 @@
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 import { getCreaturePersonalSpace } from "@engine/combat/attack-range";
 
 /**
@@ -58,8 +58,8 @@ export function resolveStartOverlapCreatures(
   combinedRadius: number,
   options: {
     /** Soft-pair creature (pathfind state) — allow if already overlapping it. */
-    softCreature?: ModuleObject;
-    owner?: ModuleObject;
+    softCreature?: GameObject;
+    owner?: GameObject;
     /** Proposed segment end; required for directional soft-clear. */
     lineEnd?: { x: number; y: number; z?: number };
   } = {}
@@ -92,8 +92,8 @@ export function resolveStartOverlapCreatures(
     return { allow: true };
   }
 
-  const soft = options.softCreature as ModuleCreature | undefined;
-  const owner = options.owner as ModuleCreature | undefined;
+  const soft = options.softCreature as Creature | undefined;
+  const owner = options.owner as Creature | undefined;
   if(soft?.position && owner){
     const sx = soft.position.x - creaturePos.x;
     const sy = soft.position.y - creaturePos.y;

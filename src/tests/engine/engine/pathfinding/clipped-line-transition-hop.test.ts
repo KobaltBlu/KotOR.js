@@ -5,7 +5,7 @@
 import { describe, expect, it } from "@jest/globals";
 import * as THREE from "three";
 import { clippedLineSegmentWalkable } from "@engine/pathfinding/clipped-line-segment";
-import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { Area } from "@engine/module/Area";
 import type { OdysseyWalkMesh } from "@engine/odyssey/OdysseyWalkMesh";
 import type { OdysseyFace3 } from "@engine/render/three/odyssey";
 
@@ -30,7 +30,7 @@ function pointInTri(
  * South face listed first in walkFaces (first-match would trap without hop fix).
  */
 function makeSeamArea(transition: number): {
-  area: ModuleArea;
+  area: Area;
   origin: THREE.Vector3;
   dest: THREE.Vector3;
 } {
@@ -87,7 +87,7 @@ function makeSeamArea(transition: number): {
   // South face first — reproduces first-match trap at the seam
   const area = {
     walkFaces: [southFace, northFace],
-  } as unknown as ModuleArea;
+  } as unknown as Area;
 
   const origin = new THREE.Vector3(92.36, 74.80, 0);
   const dest = new THREE.Vector3(92.36, 75.50, 0);

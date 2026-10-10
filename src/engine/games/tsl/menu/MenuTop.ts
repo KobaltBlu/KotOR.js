@@ -1,7 +1,7 @@
 import { GameState } from "@engine/runtime/GameState";
 import type { GUIControl, GUIButton, GUILabel, GUIProgressBar } from "@engine/gui";
 import { TextureLoader } from "@engine/loaders";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { OdysseyTexture } from "@engine/render/three/odyssey/OdysseyTexture";
 import { MenuTop as K1_MenuTop } from "@engine/games/kotor/menu/MenuTop";
 
@@ -134,7 +134,7 @@ export class MenuTop extends K1_MenuTop {
         GameState.PartyManager.SwitchLeaderAtIndex(2);
       });
 
-      GameState.PartyManager.AddEventListener('change', (pm: ModuleCreature) => {
+      GameState.PartyManager.AddEventListener('change', (pm: Creature) => {
         this.UpdatePartyUI();
       });
 

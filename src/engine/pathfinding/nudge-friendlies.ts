@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { getCreaturePersonalSpace } from "@engine/combat/attack-range";
 import { isCreatureNudgeable } from "@engine/pathfinding/is-creature-nudgeable";
 import { teleportObject } from "@engine/movement/teleport";
@@ -48,8 +48,8 @@ function lineProject2D(
  * @returns true if other was pushed (return 1)
  */
 export function nudgeFriendlyCreatures(
-  self: ModuleCreature,
-  other: ModuleCreature,
+  self: Creature,
+  other: Creature,
   to: THREE.Vector3,
   from?: THREE.Vector3
 ): boolean {

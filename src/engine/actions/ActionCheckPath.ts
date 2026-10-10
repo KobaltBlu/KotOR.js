@@ -3,10 +3,10 @@ import { Action } from "@engine/actions/Action";
 import { ActionParameterType } from "@core/enums/actions/ActionParameterType";
 import { ActionStatus } from "@core/enums/actions/ActionStatus";
 import { ActionType } from "@core/enums/actions/ActionType";
-import { ModuleObjectConstant } from "@core/enums/module/ModuleObjectConstant";
+import { GameObjectConstant } from "@core/enums/module/GameObjectConstant";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 import { getPathPersonalSpace } from "@engine/combat/attack-range";
 import {
   advanceInterAreaWaypoint,
@@ -18,7 +18,7 @@ import { findAwayVector } from "@engine/pathfinding/find-away-vector";
 import { canPathToPoint } from "@engine/pathfinding/can-path-to";
 import { isInUseRange, getUseRange } from "@engine/actions/use-range";
 import { isCreature } from "@engine/module/guards/isCreature";
-import { isObject } from "@engine/module/guards/isObject";
+import { isGameObject } from "@engine/module/guards/isGameObject";
 
 /**
  * ActionCheckPath — path-validation ActionTypes.
@@ -36,7 +36,7 @@ export class ActionCheckPath extends Action {
     this.type = type;
   }
 
-  protected ownerIsValid(): this is this & { owner: ModuleCreature } {
+  protected ownerIsValid(): this is this & { owner: Creature } {
     if(!isCreature(this.owner)){
       return false;
     }
@@ -105,11 +105,11 @@ export class ActionCheckPath extends Action {
     return ActionStatus.COMPLETE;
   }
 
-  protected queueMoveToObject(target: ModuleObject, range: number, bRun: number = 1, timeout: number = 30.0): ActionStatus {
+  protected queueMoveToObject(target: GameObject, range: number, bRun: number = 1, timeout: number = 30.0): ActionStatus {
     if(!this.ownerIsValid()){
       return ActionStatus.ERROR;
     }
-    if(!isObject(target)){
+    if(!isGameObject(target)){
       return ActionStatus.ERROR;
     }
     if(isCreature(target) && target.isDead()){
@@ -143,7 +143,7 @@ export class ActionCheckMoveToObject extends ActionCheckPath {
   }
 
   update(delta: number = 0): ActionStatus {
-    const target = this.getParameter<ModuleObject>(0);
+    const target = this.getParameter<GameObject>(0);
     const range = this.getParameter<number>(1) || 1.0;
     const bRun = typeof this.getParameter<number>(2) === 'number' ? (this.getParameter<number>(2) ? 1 : 0) : 1;
     return this.queueMoveToObject(target, range, bRun);
@@ -165,14 +165,14 @@ export class ActionCheckMoveAwayFromObject extends ActionCheckPath {
     if(!this.ownerIsValid()){
       return ActionStatus.ERROR;
     }
-    const fleeFrom = this.getParameter<ModuleObject>(0);
+    const fleeFrom = this.getParameter<GameObject>(0);
     const range = this.getParameter<number>(1) || 10.0;
     const bRun = this.getParameter<number>(2) ? 1 : 0;
     // retry counter (param often 5–10); default 5
     let retries = this.getParameter<number>(3);
     if(typeof retries !== 'number') retries = 5;
 
-    if(!isObject(fleeFrom)){
+    if(!isGameObject(fleeFrom)){
       return ActionStatus.ERROR;
     }
     // Same-area gate 
@@ -204,7 +204,7 @@ export class ActionCheckMoveAwayFromObject extends ActionCheckPath {
     this.queueMoveTo(
       away.x, away.y, away.z,
       this.owner.area?.id ?? 0,
-      ModuleObjectConstant.OBJECT_INVALID,
+      GameObjectConstant.OBJECT_INVALID,
       1.0,
       30.0,
       bRun,
@@ -254,7 +254,7 @@ export class ActionCheckInterAreaPathfinding extends ActionCheckPath {
           next.vector.y,
           next.vector.z,
           this.owner.area?.id ?? 0,
-          ModuleObjectConstant.OBJECT_INVALID,
+          GameObjectConstant.OBJECT_INVALID,
           0.5,
           30.0,
           0,
@@ -302,7 +302,7 @@ export class ActionCheckInterAreaPathfinding extends ActionCheckPath {
       wp.goal.y,
       wp.goal.z,
       this.owner.area?.id ?? 0,
-      wp.object?.id ?? ModuleObjectConstant.OBJECT_INVALID,
+      wp.object?.id ?? GameObjectConstant.OBJECT_INVALID,
       wp.range || 0.5,
       30.0,
       0,
@@ -367,7 +367,7 @@ export class ActionCheckMoveToPoint extends ActionCheckPath {
     const timeout = this.getParameter<number>(8) || 30.0;
     const bRunParam = this.getParameter<number>(5);
     const bRun = typeof bRunParam === 'number' ? (bRunParam ? 1 : 0) : 1;
-    return this.queueMoveTo(x, y, z, areaId, ModuleObjectConstant.OBJECT_INVALID, range, timeout, bRun);
+    return this.queueMoveTo(x, y, z, areaId, GameObjectConstant.OBJECT_INVALID, range, timeout, bRun);
   }
 }
 
@@ -389,8 +389,8 @@ export class ActionCheckMoveToObjectRadius extends ActionCheckPath {
     if(!this.ownerIsValid()){
       return ActionStatus.ERROR;
     }
-    const target = this.getParameter<ModuleObject>(0);
-    if(!isObject(target)){
+    const target = this.getParameter<GameObject>(0);
+    if(!isGameObject(target)){
       return ActionStatus.ERROR;
     }
     if(isCreature(target) && target.isDead()){
@@ -473,7 +473,7 @@ export class ActionCheckMoveToPointRadius extends ActionCheckPath {
       return ActionStatus.ERROR;
     }
     const range = this.getParameter<number>(6) || 1.0;
-    return this.queueMoveTo(x, y, z, areaId, ModuleObjectConstant.OBJECT_INVALID, range);
+    return this.queueMoveTo(x, y, z, areaId, GameObjectConstant.OBJECT_INVALID, range);
   }
 }
 
@@ -530,7 +530,7 @@ export class ActionCheckMoveAwayFromLocation extends ActionCheckPath {
     this.queueMoveTo(
       away.x, away.y, away.z,
       this.owner.area?.id ?? 0,
-      ModuleObjectConstant.OBJECT_INVALID,
+      GameObjectConstant.OBJECT_INVALID,
       1.0,
       30.0,
       bRun,
@@ -559,9 +559,9 @@ export class ActionCheckForceFollowObject extends ActionCheckPath {
     if(!this.ownerIsValid()){
       return ActionStatus.ERROR;
     }
-    const target = this.getParameter<ModuleObject>(0);
+    const target = this.getParameter<GameObject>(0);
     const distance = this.getParameter<number>(1) || 2.0;
-    if(!isObject(target)){
+    if(!isGameObject(target)){
       return ActionStatus.ERROR;
     }
     if(isCreature(target) && target.isDead()){
@@ -590,7 +590,7 @@ export class ActionCheckMoveToFollowRadius extends ActionCheckPath {
   }
 
   update(delta: number = 0): ActionStatus {
-    const target = this.getParameter<ModuleObject>(0);
+    const target = this.getParameter<GameObject>(0);
     const range = this.getParameter<number>(1) || 2.0;
     return this.queueMoveToObject(target, range);
   }

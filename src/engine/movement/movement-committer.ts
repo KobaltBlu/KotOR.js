@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 import { GameState } from "@engine/runtime/GameState";
 import { SignalEventType } from "@core/enums/events/SignalEventType";
 import {
@@ -34,7 +34,7 @@ export type CommitContext = {
 const _disp = new THREE.Vector3();
 
 export function commitMovement(
-  creature: ModuleCreature,
+  creature: Creature,
   result: MovementResult,
   context: CommitContext = {}
 ): void {
@@ -125,13 +125,13 @@ export function commitMovement(
   state.lastCommitSource = result.source;
 
   // Notify position listeners without recursing through teleport/setPosition physics.
-  if(typeof (creature as ModuleCreature & { onPositionChanged?: () => void }).onPositionChanged === "function"){
-    (creature as ModuleCreature & { onPositionChanged: () => void }).positionChanged = true;
+  if(typeof (creature as Creature & { onPositionChanged?: () => void }).onPositionChanged === "function"){
+    (creature as Creature & { onPositionChanged: () => void }).positionChanged = true;
   }
 }
 
 function applyContact(
-  creature: ModuleCreature,
+  creature: Creature,
   result: MovementResult,
   context: CommitContext
 ): void {
@@ -139,7 +139,7 @@ function applyContact(
   const state = ensureMovementState(creature);
   const delta = context.delta ?? 0;
 
-  let blocker: ModuleObject | undefined;
+  let blocker: GameObject | undefined;
   if(result.hit?.kind === MovementHitKind.Creature){
     blocker = result.hit.object;
     if(!blocker && result.hit.creatureId != null){
@@ -166,7 +166,7 @@ function applyContact(
   }
 }
 
-function signalDoorClicked(creature: ModuleCreature, door: ModuleObject){
+function signalDoorClicked(creature: Creature, door: GameObject){
   const tm = GameState.module?.timeManager;
   const event = new GameState.GameEventFactory.EventSignalEvent();
   event.setCaller(creature);

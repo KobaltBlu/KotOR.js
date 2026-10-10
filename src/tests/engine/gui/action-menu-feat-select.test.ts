@@ -44,7 +44,7 @@ jest.mock('@engine/runtime/GameState', () => ({
       },
     },
     ActionFactory: {},
-    Module: { ModuleArea: {} },
+    Module: { Area: {} },
     TLKManager: { GetStringById: () => undefined },
   },
 }));

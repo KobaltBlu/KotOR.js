@@ -49,8 +49,8 @@ jest.mock("@engine/movement/creature-movement-state", () => ({
 
 import { resolveDriveStep } from "@engine/movement/drive-policy";
 import { MovementStatus } from "@engine/movement/types";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { Creature } from "@engine/module/Creature";
+import type { Area } from "@engine/module/Area";
 
 describe("resolveDriveStep room attachment", () => {
   beforeEach(() => {
@@ -73,7 +73,7 @@ describe("resolveDriveStep room attachment", () => {
     const face = { walkIndex: 21 };
     findWalkableAttachmentAtMock.mockReturnValue({ room, face, z: 0.005 });
 
-    const area = {} as ModuleArea;
+    const area = {} as Area;
     const creature = {
       position: new THREE.Vector3(0, 0, 0),
       area,
@@ -82,7 +82,7 @@ describe("resolveDriveStep room attachment", () => {
       getRunSpeed: () => 5.4,
       movementSpeed: 1,
       locomotionScale: 1,
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
 
     const result = resolveDriveStep(
       creature,
@@ -100,7 +100,7 @@ describe("resolveDriveStep room attachment", () => {
     const door = { id: 7 };
     queryDoorCrossingMock.mockReturnValue({ door, linkedOpen: true });
 
-    const area = {} as ModuleArea;
+    const area = {} as Area;
     const creature = {
       position: new THREE.Vector3(0, 0, 0),
       area,
@@ -108,7 +108,7 @@ describe("resolveDriveStep room attachment", () => {
       getRunSpeed: () => 5.4,
       movementSpeed: 1,
       locomotionScale: 1,
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
 
     const result = resolveDriveStep(
       creature,

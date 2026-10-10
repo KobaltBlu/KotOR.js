@@ -1,5 +1,5 @@
 import { GameState } from "@engine/runtime/GameState";
-import { AreaMap, ModuleWaypoint } from "@engine/module";
+import { AreaMap, Waypoint } from "@engine/module";
 import { OdysseyTexture } from "@engine/render/three/odyssey/OdysseyTexture";
 import type { GUIControl, GUILabel } from "@engine/gui";
 import { MapNorthAxis } from "@core/enums/engine/MapNorthAxis";
@@ -71,7 +71,7 @@ export class LBL_MapView {
   mapNoteSize = 32;
   mapNodeHoverScale = 0.75;
   mapNoteDefaultScale = 0.5;
-  mapNoteSelected: ModuleWaypoint;
+  mapNoteSelected: Waypoint;
   bounds: THREE.Box2 = new THREE.Box2();
 
   _mapCoordinates: THREE.Vector2 = new THREE.Vector2(0, 0);
@@ -321,7 +321,7 @@ export class LBL_MapView {
     this.applyMapPlaneScale();
 
     if(this.mode == MapMode.FULLMAP){
-      this.areaMap.addEventListener('mapNoteAdded', (note: ModuleWaypoint) => {
+      this.areaMap.addEventListener('mapNoteAdded', (note: Waypoint) => {
         const noteMaterial = new THREE.MeshBasicMaterial({
           map: this.noteTexture,
           transparent: true,
@@ -331,7 +331,7 @@ export class LBL_MapView {
         const noteMesh = new THREE.Mesh(planeGeometry, noteMaterial);
         this.mapNotes.push(noteMesh);
         this.scene.add(noteMesh);
-        noteMesh.userData.moduleObject = note;
+        noteMesh.userData.gameObject = note;
 
         const scaleSize = this.getMapTextureScaleSize();
         const mapPos = this.areaMap.toMapCoordinates(note.position.x, note.position.y);
@@ -346,13 +346,13 @@ export class LBL_MapView {
         if(!this.mapNoteSelected) this.mapNoteSelected = note;
       });
 
-      this.areaMap.addEventListener('mapNoteRemoved', (note: ModuleWaypoint) => {
+      this.areaMap.addEventListener('mapNoteRemoved', (note: Waypoint) => {
         let i = this.mapNotes.length;
         while(i--){
           const mesh = this.mapNotes[i];
           if(!mesh) continue;
 
-          if(mesh.userData.moduleObject == note){
+          if(mesh.userData.gameObject == note){
             mesh.removeFromParent();
             (mesh.material as THREE.MeshBasicMaterial).dispose();
             this.mapNotes.splice(i, 1);
@@ -372,7 +372,7 @@ export class LBL_MapView {
   onClick(){
     for(let i = 0, len = this.mapNotes.length; i < len; i++){
       const mesh = this.mapNotes[i];
-      const note = mesh.userData.moduleObject;
+      const note = mesh.userData.gameObject;
       if(this.areaMap.isMapPositionExplored(note.position.x, note.position.y)){
         const half = truncDiv(asExtentInt(this.mapNoteDefaultScale * this.mapNoteSize), 2);
         const mx = asExtentInt(mesh.position.x);
@@ -493,7 +493,7 @@ export class LBL_MapView {
       for(let i = 0, len = this.mapNotes.length; i < len; i++){
         const mesh = this.mapNotes[i];
         const material = mesh.material as THREE.MeshBasicMaterial;
-        const note = mesh.userData.moduleObject;
+        const note = mesh.userData.gameObject;
         mesh.visible = note.mapNoteEnabled;
         if(this.areaMap.isMapPositionExplored(note.position.x, note.position.y)){
           const half = truncDiv(asExtentInt(this.mapNoteDefaultScale * this.mapNoteSize), 2);

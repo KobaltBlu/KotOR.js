@@ -4,9 +4,9 @@ import { ModuleCreatureArmorSlot } from "@core/enums/module/ModuleCreatureArmorS
 import { GameMenu } from "@engine/gui";
 import type { GUIListBox, GUILabel, GUIButton } from "@engine/gui";
 import { GUIInventoryItem } from "@engine/gui/protoitem/GUIInventoryItem";
-import type { ModuleCreature, } from "@engine/module/ModuleCreature";
-import type { ModuleItem } from "@engine/module/ModuleItem";
-import type { ModuleStore } from "@engine/module/ModuleStore";
+import type { Creature, } from "@engine/module/Creature";
+import type { Item } from "@engine/module/Item";
+import type { Store } from "@engine/module/Store";
 
 import { isItem } from "@engine/module/guards/isItem";
 import { isStore } from "@engine/module/guards/isStore";
@@ -65,8 +65,8 @@ export class MenuStore extends GameMenu {
   BTN_Examine: GUIButton;
   BTN_Cancel: GUIButton;
   BTN_Accept: GUIButton;
-  storeObject: ModuleStore;
-  creature: ModuleCreature;
+  storeObject: Store;
+  creature: Creature;
   bonusMarkUp: number = 0;
   bonusMarkDown: number = 0;
   sellMode: boolean = false;
@@ -131,7 +131,7 @@ export class MenuStore extends GameMenu {
    * CheckFilter — equipableSlots masks.
    * WEAPONS: 0x30 (RIGHTHAND|LEFTHAND); ARMOR: 0x78b; MISC: no slots.
    */
-  checkFilter(item: ModuleItem): boolean {
+  checkFilter(item: Item): boolean {
     if(!item){
       return false;
     }
@@ -149,7 +149,7 @@ export class MenuStore extends GameMenu {
     }
   }
 
-  sortStoreItems(items: ModuleItem[]): ModuleItem[] {
+  sortStoreItems(items: Item[]): Item[] {
     return items.slice().sort((a, b) => {
       const sa = a.baseItem?.storePanelSort ?? 0;
       const sb = b.baseItem?.storePanelSort ?? 0;
@@ -159,22 +159,22 @@ export class MenuStore extends GameMenu {
   }
 
   /** Player pays: (MarkUp + bonusMarkUp) * GetCost / 100 */
-  getItemBuyPrice(item: ModuleItem) {
+  getItemBuyPrice(item: Item) {
     const markUp = (this.storeObject?.markUp ?? 0) + (this.bonusMarkUp | 0);
     return Math.max(0, Math.floor(markUp * item.getGoldPieceValue() / 100));
   }
 
   /** Player receives: (MarkDown + bonusMarkDown) * GetCost / 100 */
-  getItemSellPrice(item: ModuleItem) {
+  getItemSellPrice(item: Item) {
     const markDown = (this.storeObject?.markDown ?? 0) + (this.bonusMarkDown | 0);
     return Math.max(0, Math.floor(markDown * item.getGoldPieceValue() / 100));
   }
 
-  setStoreObject(storeObject: ModuleStore){
+  setStoreObject(storeObject: Store){
     this.storeObject = storeObject;
   }
 
-  setCustomerObject(creature: ModuleCreature){
+  setCustomerObject(creature: Creature){
     this.creature = creature;
   }
 
@@ -221,7 +221,7 @@ export class MenuStore extends GameMenu {
     return threshold;
   }
 
-  countPartyOnHand(item: ModuleItem): number {
+  countPartyOnHand(item: Item): number {
     const tag = (item.getTag?.() || '').toLowerCase();
     if(!tag) return 0;
     let count = 0;
@@ -236,7 +236,7 @@ export class MenuStore extends GameMenu {
     for(let p = 0; p < Math.min(3, party.length); p++){
       const member = party[p];
       if(!member?.equipment) continue;
-      const eq = member.equipment as Record<string, ModuleItem | undefined>;
+      const eq = member.equipment as Record<string, Item | undefined>;
       for(const key of Object.keys(eq)){
         const equipped = eq[key];
         if(equipped && (equipped.getTag?.() || '').toLowerCase() === tag){
@@ -247,7 +247,7 @@ export class MenuStore extends GameMenu {
     return count;
   }
 
-  countStoreStock(item: ModuleItem): number {
+  countStoreStock(item: Item): number {
     const tag = (item.getTag?.() || '').toLowerCase();
     if(!tag || !this.storeObject) return 0;
     let count = 0;
@@ -281,7 +281,7 @@ export class MenuStore extends GameMenu {
    * K2 buy: STOCK = store item stack/Infinite; ONHAND = party matching count.
    * K2 sell: STOCK = store matching count; ONHAND = party possession of selected item.
    */
-  updateSelectedItemLabels(item: ModuleItem | null | undefined){
+  updateSelectedItemLabels(item: Item | null | undefined){
     if(!item){
       this.LBL_COST_VALUE?.setText('');
       this.LBL_STOCK_VALUE?.setText('');
@@ -315,7 +315,7 @@ export class MenuStore extends GameMenu {
     // no-op in K1
   }
 
-  onItemSelected(item: ModuleItem){
+  onItemSelected(item: Item){
     this.updateSelectedItemLabels(item);
     this.LB_DESCRIPTION.setItem(item.getPropertyDescription());
     this.LB_DESCRIPTION.show();
@@ -325,7 +325,7 @@ export class MenuStore extends GameMenu {
    * SellItem — infinite store stock is copied with Infinite cleared
    * and StackSize=1 before AcquireItem.
    */
-  buyItem(item: ModuleItem){
+  buyItem(item: Item){
     if(!this.storeObject) return;
     const price = this.getItemBuyPrice(item);
     if(GameState.PartyManager.Gold < price){
@@ -348,14 +348,14 @@ export class MenuStore extends GameMenu {
     this.show();
   }
 
-  sellItem(item: ModuleItem){
+  sellItem(item: Item){
     if(!this.storeObject) return;
     const price = this.getItemSellPrice(item);
     GameState.PartyManager.AddGold(price);
     this.LBL_CREDITS_VALUE?.setText(String(GameState.PartyManager.Gold || 0));
     GameState.InventoryManager.removeItem(item, 1);
     try{
-      const sold = new GameState.Module.ModuleArea.ModuleItem(item.template);
+      const sold = new GameState.Module.Area.Item(item.template);
       sold.initProperties?.();
       sold.setStackSize?.(1);
       // Sold player items are finite store stock, not Infinite.
@@ -374,7 +374,7 @@ export class MenuStore extends GameMenu {
       if(!isItem(selected)){
         return;
       }
-      const item = selected as ModuleItem;
+      const item = selected as Item;
       const price = this.getItemBuyPrice(item);
       if(GameState.PartyManager.Gold < price){
         GameState.MenuManager.InGameConfirm.fromStringRef(TLK_CANT_AFFORD);
@@ -395,7 +395,7 @@ export class MenuStore extends GameMenu {
     if(!isItem(selected)){
       return;
     }
-    const item = selected as ModuleItem;
+    const item = selected as Item;
     const price = this.getItemSellPrice(item);
     const threshold = this.getExpensiveThreshold(true);
     if(price > threshold){
@@ -407,12 +407,12 @@ export class MenuStore extends GameMenu {
     this.sellItem(item);
   }
 
-  getFilteredShopInventory(): ModuleItem[] {
+  getFilteredShopInventory(): Item[] {
     const inv = (this.storeObject?.getInventory() || []).filter((item) => this.checkFilter(item));
     return this.sortStoreItems(inv);
   }
 
-  getFilteredSellInventory(): ModuleItem[] {
+  getFilteredSellInventory(): Item[] {
     const inv = GameState.InventoryManager.getSellableInventory().filter((item) => this.checkFilter(item));
     // Infinite is store-stock only; clear any leaked flags on party items before display.
     for(let i = 0; i < inv.length; i++){
@@ -437,7 +437,7 @@ export class MenuStore extends GameMenu {
         this.BTN_Accept.setText(GameState.TLKManager.GetStringById(32130).Value);
         const inv = this.getFilteredSellInventory();
         this.LB_INVITEMS.setItems(inv, {
-          getItemOptions: (item: ModuleItem) => ({
+          getItemOptions: (item: Item) => ({
             onClick: () => {
               this.onItemSelected(item);
             }
@@ -458,7 +458,7 @@ export class MenuStore extends GameMenu {
         this.BTN_Accept.setText(GameState.TLKManager.GetStringById(32132).Value);
         const inv = this.getFilteredShopInventory();
         this.LB_SHOPITEMS.setItems(inv, {
-          getItemOptions: (item: ModuleItem) => ({
+          getItemOptions: (item: Item) => ({
             onClick: () => {
               this.onItemSelected(item);
             }

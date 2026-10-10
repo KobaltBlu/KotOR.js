@@ -3,7 +3,7 @@ import { CutsceneMode } from "@core/enums/dialog/CutsceneMode";
 import { IPCMessageType } from "@engine/enums/server/ipc/IPCMessageType";
 import { GameState } from "@engine/runtime/GameState";
 import { getObjectKind, type OverviewObjectKind } from "@engine/debug/inspect/runtimeSnapshots";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import type { DLGNode } from "@engine/dialog/DLGNode";
 import { GameDebuggerBridge } from '@engine/debug/GameDebuggerBridge';
 
@@ -70,7 +70,7 @@ const MODE_LABELS: Record<number, string> = {
 
 const DUMMY_SCRIPT = 'SWG_DUMMY_SCRIPT';
 
-function participantRef(obj: ModuleObject | undefined | null): DialogParticipantRef | undefined {
+function participantRef(obj: GameObject | undefined | null): DialogParticipantRef | undefined {
   if(!obj){ return undefined; }
   const objectId = Number((obj as any).id ?? -1);
   const kind = getObjectKind(obj);

@@ -5,7 +5,7 @@ import { Action } from "@engine/actions/Action";
 import { Utility } from "@core/utility/Utility";
 import { GameState } from "@engine/runtime/GameState";
 import { ActionParameterType } from "@core/enums/actions/ActionParameterType";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import { TURN_SPEED_FAST } from "@engine/movement/TurnSpeeds";
 import { getPathPersonalSpace } from "@engine/combat/attack-range";
 import { isInUseRange } from "@engine/actions/use-range";
@@ -36,10 +36,10 @@ import {
   setCreatureLocoState,
 } from "@engine/pathfinding/creature-loco";
 import { ModuleCreatureAnimState } from "@core/enums/module/ModuleCreatureAnimState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 
 import { isCreature } from "@engine/module/guards/isCreature";
-import { isObject } from "@engine/module/guards/isObject";
+import { isGameObject } from "@engine/module/guards/isGameObject";
 
 const _safeDest = new THREE.Vector3();
 
@@ -51,7 +51,7 @@ const JAM_REPATH_COOLDOWN_S = 0.5;
  * On failure leave dest at the live target position.
  */
 function snapLiveChaseDest(
-  owner: ModuleCreature,
+  owner: Creature,
   live: THREE.Vector3
 ): THREE.Vector3 {
   const area = owner.area;
@@ -76,7 +76,7 @@ function snapLiveChaseDest(
  * capsule overlaps NonWalk. Ring-search a capsule-safe dest nearby.
  */
 function snapCapsuleSafeDest(
-  owner: ModuleCreature,
+  owner: Creature,
   dest: THREE.Vector3
 ): void {
   const area = owner.area;
@@ -178,10 +178,10 @@ export class ActionMoveToPoint extends Action {
     // Client resolve so KeepCorpse shells (removed from GetObjectById) still work
     // as use-range destinations for ActionUseObject → queueMoveIntoUseRange.
     const param4 = this.parameters[4];
-    if(param4?.type === ActionParameterType.DWORD && typeof GameState.ModuleObjectManager?.GetClientObjectById === 'function'){
-      this.target = GameState.ModuleObjectManager.GetClientObjectById(param4.value as number);
+    if(param4?.type === ActionParameterType.DWORD && typeof GameState.GameObjectManager?.GetClientObjectById === 'function'){
+      this.target = GameState.GameObjectManager.GetClientObjectById(param4.value as number);
     }else{
-      this.target = this.getParameter<ModuleObject>(4);
+      this.target = this.getParameter<GameObject>(4);
     }
     const chaseLive = !!(
       this.target &&
@@ -195,7 +195,7 @@ export class ActionMoveToPoint extends Action {
     // behind a never-finishing Move (arrive + re-click to interact).
     const useRangeTarget = !!(
       this.target &&
-      isObject(this.target)
+      isGameObject(this.target)
     );
 
     if(useRangeTarget){
@@ -352,7 +352,7 @@ export class ActionMoveToPoint extends Action {
    * creature walk update step toward the next waypoint.
    */
   private stepWalkUpdate(
-    owner: ModuleCreature,
+    owner: Creature,
     goal: THREE.Vector3,
     run: boolean,
     delta: number
@@ -409,7 +409,7 @@ export class ActionMoveToPoint extends Action {
    * Hold still while pathfinding resumes — clear walk cycle / speed without
    * failing the action or running full stopMoving recovery.
    */
-  private pauseWalkInPlace(owner: ModuleCreature): void {
+  private pauseWalkInPlace(owner: Creature): void {
     owner.force = 0;
     owner.speed = 0;
     owner.walkSpeedFactor = 0;
@@ -417,7 +417,7 @@ export class ActionMoveToPoint extends Action {
     owner.setAnimationState?.(ModuleCreatureAnimState.PAUSE);
   }
 
-  private consumeArrivedPathPoint(owner: ModuleCreature, range: number): void {
+  private consumeArrivedPathPoint(owner: Creature, range: number): void {
     const point = this.computedPath?.points?.[0];
     if(!point) return;
     const arriveAtPoint = (this.computedPath?.points?.length ?? 0) > 1 ? 0.5 : range;
@@ -426,7 +426,7 @@ export class ActionMoveToPoint extends Action {
     }
   }
 
-  private syncBlockedComputedPath(owner: ModuleCreature): void {
+  private syncBlockedComputedPath(owner: Creature): void {
     const ownerPath = owner.getComputedPath?.();
     if(ownerPath !== this.computedPath){
       this.computedPath = ownerPath;
@@ -442,14 +442,14 @@ export class ActionMoveToPoint extends Action {
    * (`FAILED` is `undefined` in ActionStatus — do not use undefined as continue.)
    */
   private handleWalkmeshBlocked(
-    owner: ModuleCreature,
+    owner: Creature,
     range: number,
     useRangeTarget: boolean
   ): ActionStatus | null {
     this.syncBlockedComputedPath(owner);
 
     // Already in arrive / use range — complete even if path is poisoned.
-    if(useRangeTarget && this.target && isObject(this.target)){
+    if(useRangeTarget && this.target && isGameObject(this.target)){
       if(
         isInUseRange(owner, this.target) ||
         Utility.Distance2D(owner.position, this.real_target_position) <= range
@@ -507,7 +507,7 @@ export class ActionMoveToPoint extends Action {
    * @returns `null` if a usable path was installed (or cooldown holds);
    *          otherwise `FAILED`.
    */
-  private escapeWalkmeshJam(owner: ModuleCreature): ActionStatus | null {
+  private escapeWalkmeshJam(owner: Creature): ActionStatus | null {
     if(this.jamRepathCooldown > 0){
       // Keep blocked state; try again after cooldown.
       return null;
@@ -541,7 +541,7 @@ export class ActionMoveToPoint extends Action {
    * owner → detour → real destination. Does not mutate action destination params.
    * Off-walkmesh origins get a synthetic escape hop onto the detour.
    */
-  private tryWalkClearDetour(owner: ModuleCreature): boolean {
+  private tryWalkClearDetour(owner: Creature): boolean {
     const area = owner.area;
     if(!area) return false;
 
@@ -696,7 +696,7 @@ export class ActionMoveToPoint extends Action {
     }
   }
 
-  private pathRemaining(owner: ModuleCreature): number {
+  private pathRemaining(owner: Creature): number {
     const pts = this.computedPath?.points;
     if(!pts?.length) return 0;
     let remaining = Utility.Distance2D(owner.position, pts[0].vector);
@@ -706,7 +706,7 @@ export class ActionMoveToPoint extends Action {
     return remaining;
   }
 
-  private stopMoving(owner: ModuleCreature){
+  private stopMoving(owner: Creature){
     // Clear physics + walk/run anim.
     owner.clearLocomotionState(false);
     // Drop narrow-corridor escape override.
@@ -732,7 +732,7 @@ export class ActionMoveToPoint extends Action {
    * Keep combat state alive during continuous live chase so the 8s timer
    * does not clear attacks / remove actions mid-approach.
    */
-  private refreshCombatStateDuringChase(owner: ModuleObject): void {
+  private refreshCombatStateDuringChase(owner: GameObject): void {
     if(!isCreature(owner)){
       return;
     }

@@ -12,7 +12,7 @@
  * @file creature-loco.ts
  */
 
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { ActionType } from "@core/enums/actions/ActionType";
 
 /** Creature locomotion modes (internal field). */
@@ -38,13 +38,13 @@ export enum CreatureLocoState {
 /** Force Push on-apply sets loco mode 4. */
 export const FORCE_PUSH_LOCO_STATE = CreatureLocoState.ForcePushed;
 
-export function getCreatureLocoState(creature: ModuleCreature | undefined): number {
+export function getCreatureLocoState(creature: Creature | undefined): number {
   if(!creature) return CreatureLocoState.PathWalk;
   return (creature.creatureLocoState | 0) as CreatureLocoState;
 }
 
 export function setCreatureLocoState(
-  creature: ModuleCreature | undefined,
+  creature: Creature | undefined,
   state: CreatureLocoState | number
 ): void {
   if(!creature) return;
@@ -52,7 +52,7 @@ export function setCreatureLocoState(
 }
 
 /** True when creature loco routes to Force Push / Force Jump (state ∈ {4,5,6}). */
-export function isForcePushLocoActive(creature: ModuleCreature | undefined): boolean {
+export function isForcePushLocoActive(creature: Creature | undefined): boolean {
   const s = getCreatureLocoState(creature);
   return (
     s === CreatureLocoState.ForcePushed ||
@@ -62,12 +62,12 @@ export function isForcePushLocoActive(creature: ModuleCreature | undefined): boo
 }
 
 /** True when creature loco routes to FollowLeader (state === 3). */
-export function isPartyFollowLocoActive(creature: ModuleCreature | undefined): boolean {
+export function isPartyFollowLocoActive(creature: Creature | undefined): boolean {
   return getCreatureLocoState(creature) === CreatureLocoState.PartyFollow;
 }
 
 /** True when creature loco early-outs as paused (state === 1). */
-export function isCreatureLocoPaused(creature: ModuleCreature | undefined): boolean {
+export function isCreatureLocoPaused(creature: Creature | undefined): boolean {
   return getCreatureLocoState(creature) === CreatureLocoState.Paused;
 }
 
@@ -96,7 +96,7 @@ export function locoStateToWakePaused(
  * matching loco mode. Returns true when locomotion should continue this frame.
  */
 export function tryWakePausedCreatureLoco(
-  creature: ModuleCreature | undefined,
+  creature: Creature | undefined,
   headActionType: number | undefined
 ): boolean {
   if(!creature || !isCreatureLocoPaused(creature)){

@@ -2,7 +2,7 @@ import { GFFDataType } from "@core/enums/resource/GFFDataType";
 import { GFFField } from "@core/resource/GFFField";
 import { GFFStruct } from "@core/resource/GFFStruct";
 import { TalentObject } from "@engine/talents/TalentObject";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import { TwoDAManager } from "@core/managers/TwoDAManager";
 import { ActionType } from "@core/enums/actions/ActionType";
 import { ActionCombat } from "@engine/actions/ActionCombat";
@@ -209,7 +209,7 @@ export class TalentSpell extends TalentObject {
    * Queue a cast via combat round (AddCastSpellActions / GUI ForceMenuAction).
    * @param options.isUserAction — player HUD/input (CombatRoundAction.isUserAction)
    */
-  useTalentOnObject(oTarget: ModuleObject, oCaster: ModuleObject, options?: { isUserAction?: boolean }){
+  useTalentOnObject(oTarget: GameObject, oCaster: GameObject, options?: { isUserAction?: boolean }){
     // GetSelfForcePowers / range P — never cast personal/friendly HUD
     // powers at the look-at party member.
     if(oCaster){
@@ -279,7 +279,7 @@ export class TalentSpell extends TalentObject {
 
   }
 
-  inRange(oTarget: ModuleObject, oCaster: ModuleObject){
+  inRange(oTarget: GameObject, oCaster: GameObject){
     if(oTarget == oCaster){
       return true;
     }

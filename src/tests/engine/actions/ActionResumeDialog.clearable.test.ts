@@ -11,15 +11,15 @@ describe("dialog control action clearability", () => {
     // tar_m08aa k_ptar_calofade: Pause → Wait → Resume, then EffectHorrified
     // ClearAllActions(1) must not drop Resume or the dialog hangs paused.
     const resumeSrc = fs.readFileSync(
-      srcPath("actions", "ActionResumeDialog.ts"),
+      srcPath("engine", "actions", "ActionResumeDialog.ts"),
       "utf8"
     );
     const pauseSrc = fs.readFileSync(
-      srcPath("actions", "ActionPauseDialog.ts"),
+      srcPath("engine", "actions", "ActionPauseDialog.ts"),
       "utf8"
     );
     const objectSrc = fs.readFileSync(
-      srcPath("module", "ModuleObject.ts"),
+      srcPath("engine", "module", "GameObject.ts"),
       "utf8"
     );
 

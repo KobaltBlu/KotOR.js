@@ -1,7 +1,7 @@
 import { EngineMode } from "@engine/enums/engine/EngineMode";
 import { GameMenu, GUIPanelCoordFlags } from "@engine/gui";
 import type { GUILabel } from "@engine/gui";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import { GameState } from "@engine/runtime/GameState";
 
 import { isDoor } from "@engine/module/guards/isDoor";
@@ -35,7 +35,7 @@ export class InGameAreaTransition extends GameMenu {
   LBL_DESCRIPTION: GUILabel;
 
   /** Object currently driving the destination label. */
-  transitionObject: ModuleObject;
+  transitionObject: GameObject;
 
   constructor(){
     super();
@@ -60,7 +60,7 @@ export class InGameAreaTransition extends GameMenu {
    * SetTransitionObject.
    * Pass undefined / falsy to clear (OBJECT_INVALID / 0x7F000000).
    */
-  setTransitionObject(object: ModuleObject | undefined){
+  setTransitionObject(object: GameObject | undefined){
     if(!object){
       this.transitionObject = undefined;
       return;
@@ -74,7 +74,7 @@ export class InGameAreaTransition extends GameMenu {
     }
   }
 
-  unsetTransitionObject(object: ModuleObject){
+  unsetTransitionObject(object: GameObject){
     if(this.transitionObject == object){
       this.transitionObject = undefined;
     }

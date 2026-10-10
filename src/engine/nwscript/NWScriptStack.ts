@@ -277,7 +277,7 @@ export class NWScriptStack {
           let value = stackElement.getFieldByLabel('Value').getValue();
           switch(type){
             case 4: //Object
-              let obj = GameState.ModuleObjectManager.GetObjectById(value);
+              let obj = GameState.GameObjectManager.GetObjectById(value);
               
               //0x7f000000 is 2130706432
               if(value == 0x7f000000) //I can confirm that this is INVALID_OBJECT_ID or OBJECT_INVALID as stated in the Bioware_Aurora_Store_Format.pdf on the old nwn.bioware.com site
@@ -340,7 +340,7 @@ export class NWScriptStack {
       break;
     }
   
-    talent.setItem( GameState.ModuleObjectManager.GetObjectById( struct.getFieldByLabel('Item').getValue() ) );
+    talent.setItem( GameState.GameObjectManager.GetObjectById( struct.getFieldByLabel('Item').getValue() ) );
     talent.setItemPropertyIndex( struct.getFieldByLabel('ItemPropertyIndex').getValue() );
     talent.setCasterLevel( struct.getFieldByLabel('CasterLevel').getValue() );
     talent.setMetaType( struct.getFieldByLabel('MetaType').getValue() );
@@ -391,7 +391,7 @@ export class NWScriptStack {
           let value = stackElement.getFieldByLabel('Value').getValue();
           switch(type){
             case NWScriptDataType.OBJECT: //Object
-              let obj = GameState.ModuleObjectManager.GetObjectById(value);
+              let obj = GameState.GameObjectManager.GetObjectById(value);
   
               if(value == 2130706432) //this is either OBJECT_INVALID or OBJECT_SELF
                 obj = undefined;

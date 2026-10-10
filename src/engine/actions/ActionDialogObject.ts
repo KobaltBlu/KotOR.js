@@ -3,16 +3,16 @@ import { ActionStatus } from "@core/enums/actions/ActionStatus";
 import { ActionType } from "@core/enums/actions/ActionType";
 import { EngineMode } from "@engine/enums/engine/EngineMode";
 import { ModuleCreatureAnimState } from "@core/enums/module/ModuleCreatureAnimState";
-import { ModuleObjectConstant } from "@core/enums/module/ModuleObjectConstant";
+import { GameObjectConstant } from "@core/enums/module/GameObjectConstant";
 import { GameState } from "@engine/runtime/GameState";
 import { resolveBeginConversationDialog, resolveDialogStartOwner } from "@engine/actions/dialog-start";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import { DLGObject } from "@engine/dialog/DLGObject";
 import { Utility } from "@core/utility/Utility";
 import { Action } from "@engine/actions/Action";
 
 import { isCreature } from "@engine/module/guards/isCreature";
-import { isObject } from "@engine/module/guards/isObject";
+import { isGameObject } from "@engine/module/guards/isGameObject";
 
 /**
  * ActionDialogObject class.
@@ -51,13 +51,13 @@ export class ActionDialogObject extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
-    this.target = this.getParameter<ModuleObject>(0);
+    this.target = this.getParameter<GameObject>(0);
     const conversation_resref: string = this.getParameter<string>(1) || '';
     const bPrivate = !!this.getParameter<number>(2);
     const ignoreStartRange = this.getParameter<number>(4) || 0;
-    const listenerParam = this.getParameter<ModuleObject>(5);
-    const listener = isObject(listenerParam) &&
-      (listenerParam as any).id !== ModuleObjectConstant.OBJECT_INVALID
+    const listenerParam = this.getParameter<GameObject>(5);
+    const listener = isGameObject(listenerParam) &&
+      (listenerParam as any).id !== GameObjectConstant.OBJECT_INVALID
       ? listenerParam
       : this.owner;
 

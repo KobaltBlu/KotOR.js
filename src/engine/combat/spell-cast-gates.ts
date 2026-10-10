@@ -1,4 +1,4 @@
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import type { TalentSpell } from "@engine/talents/TalentSpell";
 import { canTargetItemCastByPerception } from "@engine/combat/item-property-uses";
 
@@ -14,7 +14,7 @@ import { canTargetItemCastByPerception } from "@engine/combat/item-property-uses
  * Cheat / fake casts skip this (caller responsibility).
  */
 export function passesSpellPrerequisiteGate(
-  caster: Pick<ModuleCreature, 'getHasSpell' | 'getHasFeat'> | undefined,
+  caster: Pick<Creature, 'getHasSpell' | 'getHasFeat'> | undefined,
   spell: Pick<TalentSpell, 'prerequisites'> | undefined
 ): boolean {
   if(!caster || !spell) return true;
@@ -36,7 +36,7 @@ export function passesSpellPrerequisiteGate(
  * Non-cheat casts require the spell id to be known on the caster.
  */
 export function passesSpellKnownGate(
-  caster: Pick<ModuleCreature, 'getHasSpell'> | undefined,
+  caster: Pick<Creature, 'getHasSpell'> | undefined,
   spellId: number
 ): boolean {
   if(!caster || typeof caster.getHasSpell !== 'function') return true;

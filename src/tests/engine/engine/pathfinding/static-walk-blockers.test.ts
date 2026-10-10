@@ -6,7 +6,7 @@ import * as THREE from "three";
 
 jest.mock("@engine/runtime/GameState", () => ({
   GameState: {
-    ModuleObjectManager: { GetObjectById: () => undefined },
+    GameObjectManager: { GetObjectById: () => undefined },
     module: undefined,
   },
 }));
@@ -23,14 +23,14 @@ jest.mock("@engine/pathfinding/static-walk-blockers-mesh", () => ({
 }));
 
 import { isStaticWalkClearDetailed } from "@engine/pathfinding/static-walk-blockers";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleDoor } from "@engine/module/ModuleDoor";
+import type { Area } from "@engine/module/Area";
+import type { Door } from "@engine/module/Door";
 
 function makeDoor(opts: {
   open: boolean;
   faces?: number;
   id?: number;
-}): ModuleDoor {
+}): Door {
   const position = new THREE.Vector3(0, 0, 0);
   const box = new THREE.Box3(
     new THREE.Vector3(-1, -0.2, 0),
@@ -50,7 +50,7 @@ function makeDoor(opts: {
     isOpen: () => opts.open,
     getWalkmeshForOpenState: () => wok,
     collisionManager: { walkmesh: wok },
-  } as unknown as ModuleDoor;
+  } as unknown as Door;
 }
 
 function makePlaceable(opts: {
@@ -97,7 +97,7 @@ describe("isStaticWalkClearDetailed door open mesh", () => {
       doors: [door],
       placeables: [],
       staticBlockerGridDirty: true,
-    } as unknown as ModuleArea;
+    } as unknown as Area;
     const from = new THREE.Vector3(0, -2, 0);
     const to = new THREE.Vector3(0, 2, 0);
     const result = isStaticWalkClearDetailed(area, from, to, { skipMesh: true });
@@ -110,7 +110,7 @@ describe("isStaticWalkClearDetailed door open mesh", () => {
       doors: [door],
       placeables: [],
       staticBlockerGridDirty: true,
-    } as unknown as ModuleArea;
+    } as unknown as Area;
     // Facing 0 → normal along +X; cross from −X to +X through the door box
     const from = new THREE.Vector3(-2, 0, 0);
     const to = new THREE.Vector3(2, 0, 0);
@@ -143,7 +143,7 @@ describe("isStaticWalkClearDetailed static placeables", () => {
       doors: [],
       placeables: [plc],
       staticBlockerGridDirty: true,
-    } as unknown as ModuleArea;
+    } as unknown as Area;
     const from = new THREE.Vector3(-2, 0, 0);
     const to = new THREE.Vector3(2, 0, 0);
     const result = isStaticWalkClearDetailed(area, from, to, { skipMesh: true });
@@ -157,7 +157,7 @@ describe("isStaticWalkClearDetailed static placeables", () => {
       doors: [],
       placeables: [near, far],
       staticBlockerGridDirty: true,
-    } as unknown as ModuleArea;
+    } as unknown as Area;
     const from = new THREE.Vector3(-2, 0, 0);
     const to = new THREE.Vector3(2, 0, 0);
     isStaticWalkClearDetailed(area, from, to, { skipMesh: true });
@@ -175,7 +175,7 @@ describe("isStaticWalkClearDetailed static placeables", () => {
       doors: [],
       placeables: [near, other],
       staticBlockerGridDirty: true,
-    } as unknown as ModuleArea;
+    } as unknown as Area;
     const from = new THREE.Vector3(-2, 0, 0);
     const to = new THREE.Vector3(2, 0, 0);
     isStaticWalkClearDetailed(area, from, to, {
@@ -195,7 +195,7 @@ describe("isStaticWalkClearDetailed static placeables", () => {
       doors: [],
       placeables: [plc],
       staticBlockerGridDirty: true,
-    } as unknown as ModuleArea;
+    } as unknown as Area;
     isStaticWalkClearDetailed(
       area,
       new THREE.Vector3(-2, 0, 0),

@@ -8,7 +8,7 @@ const noNonWalkMock = jest.fn();
 
 jest.mock("@engine/runtime/GameState", () => ({
   GameState: {
-    ModuleObjectManager: { GetObjectById: () => undefined },
+    GameObjectManager: { GetObjectById: () => undefined },
     module: undefined,
   },
 }));
@@ -34,7 +34,7 @@ import {
   WalkLineHitCode,
   hasWalkLineClear,
 } from "@engine/pathfinding/walk-line-clear";
-import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { Area } from "@engine/module/Area";
 
 describe("hasWalkLineClear DetailedBlock clearT", () => {
   beforeEach(() => {
@@ -54,7 +54,7 @@ describe("hasWalkLineClear DetailedBlock clearT", () => {
       walkFaces: [],
       rooms: [],
       isPointWalkable: () => true,
-    } as unknown as ModuleArea;
+    } as unknown as Area;
     const origin = new THREE.Vector3(0, 0, 0);
     const dest = new THREE.Vector3(10, 0, 0);
 
@@ -98,7 +98,7 @@ describe("hasWalkLineClear DetailedBlock clearT", () => {
         out.rooms.length = 0;
         return out;
       },
-    } as unknown as ModuleArea;
+    } as unknown as Area;
 
     const origin = new THREE.Vector3(92, 78.24, 0);
     const dest = new THREE.Vector3(92, 77.9, 0);
@@ -139,7 +139,7 @@ describe("hasWalkLineClear DetailedBlock clearT", () => {
       walkFaces: [],
       rooms: [],
       isPointWalkable: () => true,
-    } as unknown as ModuleArea;
+    } as unknown as Area;
     const origin = new THREE.Vector3(0, 0, 0);
     const dest = new THREE.Vector3(10, 0, 0);
 

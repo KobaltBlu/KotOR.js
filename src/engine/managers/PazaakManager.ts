@@ -7,7 +7,7 @@ import { PazaakTurnMode } from "@core/enums/minigames/PazaakTurnMode";
 import { PazaakTurnState } from "@core/enums/minigames/PazaakTurnState";
 import { IPTPazaakCard } from "@core/interface/minigames/IPTPazaakCard";
 import { IPazaakTable } from "@core/interface/minigames/IPazaakTable";
-import { ModuleCreature } from "@engine/module/ModuleCreature";
+import { Creature } from "@engine/module/Creature";
 import type { NWScriptInstance } from "@engine/nwscript/NWScriptInstance";
 import { PazaakConfig as PazaakConfig_TSL } from "@engine/games/tsl/minigames/mg-pazaak-config";
 import { PazaakConfig as PazaakConfig_KOTOR } from "@engine/games/kotor/minigames/mg-pazaak-config";
@@ -184,7 +184,7 @@ export class PazaakManager {
   static EndScript: string = '';
   static EndScriptInstance: NWScriptInstance = undefined;
   static ShowTutorial: boolean = false;
-  static Opponent: ModuleCreature = undefined;
+  static Opponent: Creature = undefined;
   // static OpponentDeck: Map<PazaakSideDeckSlots, PazaakCards> = new Map<PazaakSideDeckSlots, PazaakCards>;
   static Cards: Map<PazaakCards, IPTPazaakCard> = new Map<PazaakCards, IPTPazaakCard>();
   // static SideDeck: Map<PazaakSideDeckSlots, PazaakCards> = new Map<PazaakSideDeckSlots, PazaakCards>;
@@ -328,7 +328,7 @@ export class PazaakManager {
    * Set the opponent
    * @param creature - The creature to set
    */
-  static SetOpponent(creature: ModuleCreature){
+  static SetOpponent(creature: Creature){
     this.Opponent = creature;
   }
 

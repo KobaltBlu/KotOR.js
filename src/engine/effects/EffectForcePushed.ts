@@ -3,9 +3,9 @@ import { GameEffectType } from "@core/enums/effects/GameEffectType";
 import { GameEffectSetStateType } from "@core/enums/effects/GameEffectSetStateType";
 import { GameState } from "@engine/runtime/GameState";
 import { GameEffect } from "@engine/effects/GameEffect";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import { isCreature } from "@engine/module/guards/isCreature";
-import { isObject } from "@engine/module/guards/isObject";
+import { isGameObject } from "@engine/module/guards/isGameObject";
 import {
   clipForcePushDestination,
   computeForcePushDestination,
@@ -41,9 +41,9 @@ export class EffectForcePushed extends GameEffect {
       return;
     }
 
-    const creature = this.object as ModuleCreature;
+    const creature = this.object as Creature;
     const creator = this.getCreator();
-    const creatorOk = isObject(creator);
+    const creatorOk = isGameObject(creator);
     if(!creatorOk){
       return;
     }

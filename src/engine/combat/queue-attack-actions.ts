@@ -7,10 +7,10 @@ import { duelLog, duelWho } from "@engine/combat/duel-debug";
 import { ensureCombatDispatcher } from "@engine/combat/ensure-combat-dispatcher";
 import { ModuleCreatureAnimState } from "@core/enums/module/ModuleCreatureAnimState";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 
-import { isObject } from "@engine/module/guards/isObject";
+import { isGameObject } from "@engine/module/guards/isGameObject";
 
 /**
  * QueueAttackActions.
@@ -32,12 +32,12 @@ export type QueueAttackActionsOptions = {
   forceNearest?: boolean;
 };
 
-function isDeadOrMissing(target: ModuleObject | undefined): boolean {
+function isDeadOrMissing(target: GameObject | undefined): boolean {
   if(!target){
     return true;
   }
-  if(typeof (target as ModuleCreature).isDead === 'function'){
-    return !!(target as ModuleCreature).isDead();
+  if(typeof (target as Creature).isDead === 'function'){
+    return !!(target as Creature).isDead();
   }
   return false;
 }
@@ -47,8 +47,8 @@ function isDeadOrMissing(target: ModuleObject | undefined): boolean {
  * (alive + hostile). Spell-round MaxCleaveRange gate is unused here.
  */
 export function isValidCreateNewAttackSticky(
-  creature: ModuleCreature,
-  target: ModuleObject | undefined
+  creature: Creature,
+  target: GameObject | undefined
 ): boolean {
   if(!creature || !target || target === creature){
     return false;
@@ -65,7 +65,7 @@ export function isValidCreateNewAttackSticky(
   return true;
 }
 
-function clearCombatModeNoEnemy(creature: ModuleCreature, maxRange: number): void {
+function clearCombatModeNoEnemy(creature: Creature, maxRange: number): void {
   const round = creature.combatRound;
   duelLog(creature, 'create-new-attack:none', {
     maxRange,
@@ -80,7 +80,7 @@ function clearCombatModeNoEnemy(creature: ModuleCreature, maxRange: number): voi
   }
 }
 
-function applyNearestTarget(creature: ModuleCreature, next: ModuleObject): void {
+function applyNearestTarget(creature: Creature, next: GameObject): void {
   const round = creature.combatRound;
   creature.combatData.lastAttackTarget = next;
   creature.combatData.lastAttemptedAttackTarget = next;
@@ -91,14 +91,14 @@ function applyNearestTarget(creature: ModuleCreature, next: ModuleObject): void 
   // QueueAttackActions → SetLastTarget (client UI focus)
   if(
     creature === GameState.PartyManager.getCurrentPlayer?.() &&
-    GameState.ModuleObjectManager?.showObject
+    GameState.GameObjectManager?.showObject
   ){
-    GameState.ModuleObjectManager.showObject(next, true, false);
+    GameState.GameObjectManager.showObject(next, true, false);
   }
 }
 
 export function queueAttackActions(
-  creature: ModuleCreature,
+  creature: Creature,
   options?: QueueAttackActionsOptions
 ): boolean {
   if(!creature || creature.isDead()){
@@ -145,7 +145,7 @@ export function queueAttackActions(
   }
 
   const maxRange = maxCleaveRange(creature);
-  let next: ModuleObject | undefined = requeueSticky ? sticky : undefined;
+  let next: GameObject | undefined = requeueSticky ? sticky : undefined;
 
   if(useNearest){
     next = getNearestEnemy(creature, maxRange);
@@ -168,7 +168,7 @@ export function queueAttackActions(
 
   if(
     !next ||
-    !isObject(next)
+    !isGameObject(next)
   ){
     clearCombatModeNoEnemy(creature, maxRange);
     return false;

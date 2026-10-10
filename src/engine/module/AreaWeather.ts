@@ -1,6 +1,6 @@
 import { GameState } from "@engine/runtime/GameState";
 import { OdysseyModel3D } from "@engine/render/three/odyssey";
-import { ModuleArea } from "@engine/module/ModuleArea";
+import { Area } from "@engine/module/Area";
 import { WeatherCondition } from "@core/enums/module/WeatherCondition";
 import * as THREE from "three";
 import { MDLLoader } from "@engine/loaders";
@@ -55,7 +55,7 @@ const THUNDER_ROLLING = ['as_wt_thunderds1', 'as_wt_thunderds2'] as const;
  */
 export class AreaWeather {
 
-  area: ModuleArea;
+  area: Area;
 
   /** Active rain/snow FX models (up to 6). */
   models: OdysseyModel3D[] = [];
@@ -109,7 +109,7 @@ export class AreaWeather {
   private _loadingWeather: boolean = false;
   private _loadingLightning: boolean = false;
 
-  constructor(area: ModuleArea){
+  constructor(area: Area){
     this.area = area;
   }
 
@@ -217,7 +217,7 @@ export class AreaWeather {
   }
 
   /**
-   * Load weather for the area (called from ModuleArea.loadScene).
+   * Load weather for the area (called from Area.loadScene).
    * Indoor areas clear chances. Saved WeatherStarted restores visuals;
    * otherwise the first update roll runs immediately (check timer = 0).
    */

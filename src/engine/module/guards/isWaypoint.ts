@@ -1,8 +1,8 @@
-import type { ModuleObject } from "@engine/module/ModuleObject";
-import type { ModuleWaypoint } from "@engine/module/ModuleWaypoint";
+import type { GameObject } from "@engine/module/GameObject";
+import type { Waypoint } from "@engine/module/Waypoint";
 import { BitWise } from "@core/utility/BitWise";
-import { ModuleObjectType } from "@core/enums/module/ModuleObjectType";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
 
-export const isWaypoint: (o: ModuleObject | undefined) => o is ModuleWaypoint = (o): o is ModuleWaypoint => {
-    return !!BitWise.InstanceOfObject(o, ModuleObjectType.ModuleWaypoint);
+export const isWaypoint: (o: GameObject | undefined) => o is Waypoint = (o): o is Waypoint => {
+    return !!BitWise.InstanceOfObject(o, GameObjectType.Waypoint);
 }

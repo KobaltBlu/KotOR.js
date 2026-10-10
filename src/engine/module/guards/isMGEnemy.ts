@@ -1,8 +1,8 @@
-import type { ModuleObject } from "@engine/module/ModuleObject";
-import type { ModuleMGEnemy } from "@engine/module/ModuleMGEnemy";
+import type { GameObject } from "@engine/module/GameObject";
+import type { MiniGameEnemy } from "@engine/module/MiniGameEnemy";
 import { BitWise } from "@core/utility/BitWise";
-import { ModuleObjectType } from "@core/enums/module/ModuleObjectType";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
 
-export const isMGEnemy: (o: ModuleObject | undefined) => o is ModuleMGEnemy = (o): o is ModuleMGEnemy => {
-    return !!BitWise.InstanceOfObject(o, ModuleObjectType.ModuleMGEnemy);
+export const isMGEnemy: (o: GameObject | undefined) => o is MiniGameEnemy = (o): o is MiniGameEnemy => {
+    return !!BitWise.InstanceOfObject(o, GameObjectType.MiniGameEnemy);
 }

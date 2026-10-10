@@ -8,15 +8,15 @@ import { srcPath } from '@/tests/helpers/paths';
 
 describe('equip draw flourish', () => {
   it('ActionEquipItem plays playDrawAnimation for non-instant hand equips', () => {
-    const src = fs.readFileSync(srcPath('actions', 'ActionEquipItem.ts'), 'utf8');
+    const src = fs.readFileSync(srcPath('engine', 'actions', 'ActionEquipItem.ts'), 'utf8');
     expect(src).toMatch(/playDrawAnimation\s*\(/);
     expect(src).toMatch(/ModuleCreatureArmorSlot\.RIGHTHAND/);
     expect(src).toMatch(/ModuleCreatureArmorSlot\.LEFTHAND/);
     expect(src).toMatch(/instant/);
   });
 
-  it('ModuleCreature.playDrawAnimation uses FLOURISH / 1500ms', () => {
-    const src = fs.readFileSync(srcPath('module', 'ModuleCreature.ts'), 'utf8');
+  it('Creature.playDrawAnimation uses FLOURISH / 1500ms', () => {
+    const src = fs.readFileSync(srcPath('engine', 'module', 'Creature.ts'), 'utf8');
     const fn = src.match(
       /playDrawAnimation\s*\(\)\s*\{[\s\S]*?\n  \}/
     )?.[0] ?? '';

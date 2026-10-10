@@ -1,4 +1,4 @@
-import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { Area } from "@engine/module/Area";
 import type { Vector3 } from "three";
 
 /**
@@ -11,7 +11,7 @@ import type { Vector3 } from "three";
 /** Quantize endpoints for the static edge cache (~1cm). */
 const EDGE_CACHE_SCALE = 100;
 
-const _edgeWalkClearCache = new WeakMap<ModuleArea, Map<string, boolean>>();
+const _edgeWalkClearCache = new WeakMap<Area, Map<string, boolean>>();
 
 export function edgeCacheKey(from: Vector3, to: Vector3): string {
   const ax = Math.round(from.x * EDGE_CACHE_SCALE);
@@ -26,14 +26,14 @@ export function edgeCacheKey(from: Vector3, to: Vector3): string {
 }
 
 export function getWalkmeshEdgeClearCached(
-  area: ModuleArea,
+  area: Area,
   key: string
 ): boolean | undefined {
   return _edgeWalkClearCache.get(area)?.get(key);
 }
 
 export function setWalkmeshEdgeClearCached(
-  area: ModuleArea,
+  area: Area,
   key: string,
   clear: boolean
 ): void {
@@ -46,7 +46,7 @@ export function setWalkmeshEdgeClearCached(
 }
 
 /** Drop cached walkmesh-edge clear results for an area (doors / blockers changed). */
-export function invalidateWalkmeshEdgeClearCache(area: ModuleArea | undefined): void {
+export function invalidateWalkmeshEdgeClearCache(area: Area | undefined): void {
   if(!area) return;
   _edgeWalkClearCache.delete(area);
 }

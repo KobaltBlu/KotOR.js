@@ -3,9 +3,9 @@ import { ModuleCreatureAnimState, ModuleItemProperty } from "@core/enums";
 import { ActionParameterType } from "@core/enums/actions/ActionParameterType";
 import { ActionStatus } from "@core/enums/actions/ActionStatus";
 import { ActionType } from "@core/enums/actions/ActionType";
-import { ModuleObjectConstant } from "@core/enums/module/ModuleObjectConstant";
-import type { ModuleItem } from "@engine/module/ModuleItem";
-import { ModuleObject } from "@engine/module/ModuleObject";
+import { GameObjectConstant } from "@core/enums/module/GameObjectConstant";
+import type { Item } from "@engine/module/Item";
+import { GameObject } from "@engine/module/GameObject";
 import { Utility } from "@core/utility/Utility";
 import { Action } from "@engine/actions/Action";
 import { MineSkillResult, resolveMineSetCheck, signalTrapTriggered } from "@engine/actions/mine-skill";
@@ -13,7 +13,7 @@ import { MineSkillResult, resolveMineSetCheck, signalTrapTriggered } from "@engi
 import { isCreature } from "@engine/module/guards/isCreature";
 import { isDoor } from "@engine/module/guards/isDoor";
 import { isItem } from "@engine/module/guards/isItem";
-import { isObject } from "@engine/module/guards/isObject";
+import { isGameObject } from "@engine/module/guards/isGameObject";
 import { isPlaceable } from "@engine/module/guards/isPlaceable";
 
 /**
@@ -30,7 +30,7 @@ import { isPlaceable } from "@engine/module/guards/isPlaceable";
 export class ActionSetMine extends Action {
 
   bAnimQueued = false;
-  oItem: ModuleItem;
+  oItem: Item;
   usedItem: boolean = false;
 
   constructor( actionId: number = -1, groupId: number = -1 ){
@@ -47,8 +47,8 @@ export class ActionSetMine extends Action {
 
   update(delta?: number): ActionStatus {
 
-    this.oItem = this.getParameter<ModuleItem>(0);
-    this.target = this.getParameter<ModuleObject>(1);
+    this.oItem = this.getParameter<Item>(0);
+    this.target = this.getParameter<GameObject>(1);
     const x = this.getParameter<number>(2);
     const y = this.getParameter<number>(3);
     const z = this.getParameter<number>(4);
@@ -63,7 +63,7 @@ export class ActionSetMine extends Action {
     }
 
     const stopBar = () => GameState.GuiTimingBarManager?.stopFor?.(this.owner);
-    const hasTarget = isObject(this.target);
+    const hasTarget = isGameObject(this.target);
     const plantPos = hasTarget
       ? this.target.position
       : { x: typeof x === 'number' ? x : this.owner.position.x, y: typeof y === 'number' ? y : this.owner.position.y, z: typeof z === 'number' ? z : this.owner.position.z };
@@ -75,7 +75,7 @@ export class ActionSetMine extends Action {
       actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, plantPos.y);
       actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, plantPos.z);
       actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, this.owner.area?.id ?? 0);
-      actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, hasTarget ? this.target.id : ModuleObjectConstant.OBJECT_INVALID);
+      actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, hasTarget ? this.target.id : GameObjectConstant.OBJECT_INVALID);
       actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
       actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, hasTarget ? 0.5 : 1.0);
       actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
@@ -126,7 +126,7 @@ export class ActionSetMine extends Action {
       }
 
       trapSubtype = property.subType | 0;
-      let plantedTrigger: ModuleObject | undefined;
+      let plantedTrigger: GameObject | undefined;
       if(
         hasTarget &&
         (isDoor(this.target) ||
@@ -138,7 +138,7 @@ export class ActionSetMine extends Action {
       }else{
         // Free-ground: area trigger at plantPos (not hosted on the creature).
         const area = this.owner.area;
-        plantedTrigger = ModuleObject.plantGroundTrap(area, trapSubtype, plantPos as any, this.owner);
+        plantedTrigger = GameObject.plantGroundTrap(area, trapSubtype, plantPos as any, this.owner);
         planted = !!plantedTrigger;
       }
       if(shouldTrigger && plantedTrigger){

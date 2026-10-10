@@ -1,19 +1,19 @@
 import { GameEffect } from "@engine/effects/GameEffect";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
 import { GameEffectDurationType } from "@core/enums/effects/GameEffectDurationType";
-import { ModuleObjectConstant } from "@core/enums/module/ModuleObjectConstant";
+import { GameObjectConstant } from "@core/enums/module/GameObjectConstant";
 import { DiceType } from "@core/enums/combat/DiceType";
 import { Dice } from "@core/utility/Dice";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleItem } from "@engine/module/ModuleItem";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { Item } from "@engine/module/Item";
+import type { GameObject } from "@engine/module/GameObject";
 import { MDLLoader, TextureLoader } from "@engine/loaders";
 import { OdysseyModel3D } from "@engine/render/three/odyssey";
 import * as THREE from "three";
 
 import { isCreature } from "@engine/module/guards/isCreature";
-import { isObject } from "@engine/module/guards/isObject";
+import { isGameObject } from "@engine/module/guards/isGameObject";
 
 /** Default projectile rate when spells.2da speed unavailable (fallback). */
 const DEFAULT_THROW_RATE = 37.0;
@@ -38,7 +38,7 @@ export class EffectLightsaberThrow extends GameEffect {
     this.type = GameEffectType.EffectLightSaberThrow;
   }
 
-  private scheduleApply(target: ModuleObject, effect: GameEffect, delaySec: number){
+  private scheduleApply(target: GameObject, effect: GameEffect, delaySec: number){
     if(!GameState.module || !target) return;
     const future = GameState.module.timeManager.getFutureTimeFromSeconds(Math.max(0, delaySec));
     const event = new GameState.GameEventFactory.EventApplyEffect();
@@ -50,7 +50,7 @@ export class EffectLightsaberThrow extends GameEffect {
     GameState.module.addEvent(event);
   }
 
-  private getThrowRate(creature: ModuleCreature): number {
+  private getThrowRate(creature: Creature): number {
     const spellId = (this.getInt(0) || 0) === 0 ? 0x31 : 4;
     const spell = GameState.SWRuleSet?.spells?.[spellId];
     // reads projectile speed from the spell row (proj column when present).
@@ -61,7 +61,7 @@ export class EffectLightsaberThrow extends GameEffect {
     return DEFAULT_THROW_RATE;
   }
 
-  private makeTravelVfx(dest: ModuleObject, thrower: ModuleCreature): GameEffect {
+  private makeTravelVfx(dest: GameObject, thrower: Creature): GameEffect {
     const vfx = new GameState.GameEffectFactory.EffectVisualEffect();
     vfx.setDurationType(GameEffectDurationType.TEMPORARY);
     vfx.setInt(0, VFX_THROW_TRAVEL);
@@ -72,7 +72,7 @@ export class EffectLightsaberThrow extends GameEffect {
     return vfx;
   }
 
-  private makeImpactVfx(thrower: ModuleCreature): GameEffect {
+  private makeImpactVfx(thrower: Creature): GameEffect {
     const vfx = new GameState.GameEffectFactory.EffectVisualEffect();
     vfx.setDurationType(GameEffectDurationType.INSTANT);
     vfx.setInt(0, VFX_THROW_IMPACT);
@@ -82,7 +82,7 @@ export class EffectLightsaberThrow extends GameEffect {
     return vfx;
   }
 
-  private makeDamage(thrower: ModuleCreature, amount: number): GameEffect {
+  private makeDamage(thrower: Creature, amount: number): GameEffect {
     const dmg = new GameState.GameEffectFactory.EffectDamage();
     dmg.setDurationType(GameEffectDurationType.TEMPORARY);
     dmg.setCreator(thrower);
@@ -97,7 +97,7 @@ export class EffectLightsaberThrow extends GameEffect {
     return dmg;
   }
 
-  private static resolveWeaponModelResRef(weapon: ModuleItem): string {
+  private static resolveWeaponModelResRef(weapon: Item): string {
     const base = weapon.baseItem;
     if(!base) return '';
     const itemclass = String(base.itemClass || '')
@@ -119,9 +119,9 @@ export class EffectLightsaberThrow extends GameEffect {
   }
 
   private async spawnLightsaberThrowMesh(
-    thrower: ModuleCreature,
-    weapon: ModuleItem,
-    path: ModuleObject[],
+    thrower: Creature,
+    weapon: Item,
+    path: GameObject[],
     throwRate: number
   ): Promise<{ dispose: () => void } | undefined> {
     if(!thrower || !weapon || !path?.length) return undefined;
@@ -228,7 +228,7 @@ export class EffectLightsaberThrow extends GameEffect {
     if(!isCreature(this.object)){
       return;
     }
-    const thrower = this.object as ModuleCreature;
+    const thrower = this.object as Creature;
     if(!thrower.equipment?.RIGHTHAND){
       return;
     }
@@ -236,18 +236,18 @@ export class EffectLightsaberThrow extends GameEffect {
     super.onApply();
     thrower.throwingLightsaber = true;
 
-    const targets: ModuleObject[] = [];
+    const targets: GameObject[] = [];
     for(let i = 0; i < 3; i++){
       const o = this.getObject(i);
-      if(isObject(o) &&
-         o.id !== ModuleObjectConstant.OBJECT_INVALID){
+      if(isGameObject(o) &&
+         o.id !== GameObjectConstant.OBJECT_INVALID){
         targets.push(o);
       }
     }
     if(!targets.length) return;
 
     // Path waypoints: thrower → t1 → t2 → t3 → thrower (skip missing)
-    const path: ModuleObject[] = [thrower];
+    const path: GameObject[] = [thrower];
     for(let i = 0; i < targets.length; i++) path.push(targets[i]);
     path.push(thrower);
 
@@ -300,6 +300,6 @@ export class EffectLightsaberThrow extends GameEffect {
     this.throwMesh?.dispose();
     this.throwMesh = undefined;
     if(!isCreature(this.object)) return;
-    (this.object as ModuleCreature).throwingLightsaber = false;
+    (this.object as Creature).throwingLightsaber = false;
   }
 }

@@ -1,6 +1,6 @@
 import { GameState } from "@engine/runtime/GameState";
 import { EngineDebugType } from "@engine/enums/engine/EngineDebugType";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { GameObject } from "@engine/module/GameObject";
 import { getMovementFrameId } from "@engine/movement/creature-movement-state";
 import type { MovementAuthority, MovementSource } from "@engine/movement/types";
 
@@ -38,7 +38,7 @@ export function isMovementInstrumentationEnabled(): boolean {
 }
 
 export function recordMovementWrite(
-  object: ModuleObject | undefined,
+  object: GameObject | undefined,
   kind: MovementWriteKind,
   detail: {
     source?: MovementSource | string;
@@ -66,10 +66,10 @@ export function recordMovementWrite(
  * Assert that a normal XY commit has not already happened this frame.
  */
 export function assertSingleCommit(
-  object: ModuleObject,
+  object: GameObject,
   source: MovementSource | string
 ): void {
-  const state = (object as ModuleObject & {
+  const state = (object as GameObject & {
     movementState?: { lastCommitFrame: number; lastCommitSource?: string };
   }).movementState;
   if(!state) return;

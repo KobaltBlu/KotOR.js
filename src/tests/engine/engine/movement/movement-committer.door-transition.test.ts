@@ -60,8 +60,8 @@ import {
   MovementSource,
   MovementStatus,
 } from "@engine/movement/types";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleDoor } from "@engine/module/ModuleDoor";
+import type { Creature } from "@engine/module/Creature";
+import type { Door } from "@engine/module/Door";
 
 describe("commitMovement door transition", () => {
   beforeEach(() => {
@@ -75,7 +75,7 @@ describe("commitMovement door transition", () => {
       getLinkedToModule: () => "m02aa",
       isOpen: () => true,
       transitNPC: transitNPCMock,
-    } as unknown as ModuleDoor;
+    } as unknown as Door;
 
     const creature = {
       id: 1,
@@ -85,7 +85,7 @@ describe("commitMovement door transition", () => {
       blockingTimer: 0,
       collisionTimer: 0,
       area: { creatures: [] },
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
 
     commitMovement(creature, {
       source: MovementSource.PlayerControl,
@@ -113,7 +113,7 @@ describe("commitMovement door transition", () => {
       getLinkedToModule: () => "",
       isOpen: () => true,
       transitNPC: transitNPCMock,
-    } as unknown as ModuleDoor;
+    } as unknown as Door;
 
     const creature = {
       id: 1,
@@ -122,7 +122,7 @@ describe("commitMovement door transition", () => {
       force: 0,
       blockingTimer: 0,
       area: { creatures: [] },
-    } as unknown as ModuleCreature;
+    } as unknown as Creature;
 
     commitMovement(creature, {
       source: MovementSource.Drive,

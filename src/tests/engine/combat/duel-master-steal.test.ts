@@ -11,7 +11,7 @@ jest.mock('@engine/runtime/GameState', () => ({
     PartyManager: {
       getCurrentPlayer: () => undefined,
     },
-    ModuleObjectManager: {
+    GameObjectManager: {
       GetObjectById: (id: number) => objectMap.get(id),
     },
     TwoDAManager: { datatables: new Map() },
@@ -90,7 +90,7 @@ jest.mock('three', () => {
 });
 
 import { CombatRound } from '@engine/combat/CombatRound';
-import { ModuleObjectType } from '@core/enums/module/ModuleObjectType';
+import { GameObjectType } from '@core/enums/module/GameObjectType';
 
 function makeCreature(id: number){
   const combatData = {
@@ -103,7 +103,7 @@ function makeCreature(id: number){
   };
   const creature: any = {
     id,
-    objectType: ModuleObjectType.ModuleCreature,
+    objectType: GameObjectType.Creature,
     combatData,
     combatRound: undefined as CombatRound | undefined,
     actionQueue: { actionTypeExists: () => false, add: jest.fn() },

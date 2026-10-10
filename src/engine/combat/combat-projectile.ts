@@ -1,9 +1,9 @@
 import * as THREE from "three";
 import { GameState } from "@engine/runtime/GameState";
 import { MDLLoader, TextureLoader } from "@engine/loaders";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleItem } from "@engine/module/ModuleItem";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { Item } from "@engine/module/Item";
+import type { GameObject } from "@engine/module/GameObject";
 import { OdysseyModel } from "@engine/odyssey";
 import { OdysseyModel3D } from "@engine/render/three/odyssey";
 import type { CombatAttackData } from "@engine/combat/CombatAttackData";
@@ -77,7 +77,7 @@ function tryModelNodeWorldPos(
 /**
  * ammunitiontypes.2da row for a ranged weapon (baseitems.ammunitiontype).
  */
-export function getAmmunitionTypeRow(weapon: ModuleItem | undefined): AmmunitionTypeRow | undefined {
+export function getAmmunitionTypeRow(weapon: Item | undefined): AmmunitionTypeRow | undefined {
   if(!weapon?.baseItem) return undefined;
   const ammoId = weapon.baseItem.ammunitionType;
   if(ammoId == null || ammoId < 0) return undefined;
@@ -95,7 +95,7 @@ export function getAmmunitionTypeRow(weapon: ModuleItem | undefined): Ammunition
  * hit aim: model node "impact", else position.z + 1.25.
  */
 export function getProjectileImpactPosition(
-  target: ModuleObject | undefined,
+  target: GameObject | undefined,
   out: THREE.Vector3 = new THREE.Vector3()
 ): THREE.Vector3 {
   if(!target){
@@ -103,7 +103,7 @@ export function getProjectileImpactPosition(
     return out;
   }
 
-  const model = (target as ModuleCreature).model as OdysseyModel3D | undefined;
+  const model = (target as Creature).model as OdysseyModel3D | undefined;
   if(tryModelNodeWorldPos(model, ['impact'], out)){
     return out;
   }
@@ -114,7 +114,7 @@ export function getProjectileImpactPosition(
 }
 
 function getMuzzleHookPosition(
-  creature: ModuleCreature,
+  creature: Creature,
   offHand: boolean,
   out: THREE.Vector3
 ): THREE.Vector3 {
@@ -145,7 +145,7 @@ function getMuzzleHookPosition(
   return out;
 }
 
-function playShotSound(resRef: string, position: THREE.Vector3, creature: ModuleCreature){
+function playShotSound(resRef: string, position: THREE.Vector3, creature: Creature){
   if(!resRef) return;
   const emitter = creature.audioEmitter;
   if(!emitter) return;
@@ -196,10 +196,10 @@ function playTravelAnimation(model: OdysseyModel3D){
 }
 
 /**
- * Traveling bolt instance — updated by ModuleArea like SpellCastInstance.
+ * Traveling bolt instance — updated by Area like SpellCastInstance.
  */
 export class CombatProjectile {
-  owner: ModuleCreature;
+  owner: Creature;
   model: OdysseyModel3D | undefined;
   origin: THREE.Vector3 = new THREE.Vector3();
   target: THREE.Vector3 = new THREE.Vector3();
@@ -216,7 +216,7 @@ export class CombatProjectile {
   impactSound1: string = '';
   private impactPlayed: boolean = false;
 
-  constructor(owner: ModuleCreature){
+  constructor(owner: Creature){
     this.owner = owner;
   }
 
@@ -334,14 +334,14 @@ export class CombatProjectile {
  * (SafeProjectile projectile message handler).
  */
 export function spawnCombatProjectile(
-  owner: ModuleCreature,
+  owner: Creature,
   attack: CombatAttackData
 ): CombatProjectile | undefined {
   if(!owner || !attack?.rangedAttack) return undefined;
 
   const weapon = (attack.attackWeapon ||
     (attack.weaponAttackType === 2 ? owner.equipment?.LEFTHAND : owner.equipment?.RIGHTHAND)
-  ) as ModuleItem | undefined;
+  ) as Item | undefined;
 
   const ammo = getAmmunitionTypeRow(weapon);
   if(!ammo) return undefined;
@@ -431,15 +431,15 @@ export function spawnCombatProjectile(
 }
 
 /**
- * Legacy helper used by ModuleItem.castAmmunitionAtTarget.
+ * Legacy helper used by Item.castAmmunitionAtTarget.
  */
 export function castAmmunitionProjectile(
-  caster: ModuleObject,
-  target: ModuleObject,
-  weapon: ModuleItem
+  caster: GameObject,
+  target: GameObject,
+  weapon: Item
 ): void {
   if(!caster || !weapon) return;
-  const creature = caster as ModuleCreature;
+  const creature = caster as Creature;
   if(!creature.combatRound && !creature.model) return;
 
   const impact = getProjectileImpactPosition(target);

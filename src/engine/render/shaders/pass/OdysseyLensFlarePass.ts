@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { Pass } from "three/examples/jsm/postprocessing/Pass";
 import type { OdysseyLight3D } from "@engine/render/three/odyssey/OdysseyLight3D";
-import type { ModuleArea } from "@engine/module/ModuleArea";
+import type { Area } from "@engine/module/Area";
 import { sceneHitCheckSegment } from "@engine/render/scene-hit-check";
 import {
   ODYSSEY_FLARE_SPEED,
@@ -56,7 +56,7 @@ export class OdysseyLensFlarePass extends Pass {
 
   private lightsProvider: (() => OdysseyLight3D[]) | null = null;
   private cameraProvider: (() => THREE.Camera | undefined) | null = null;
-  private areaProvider: (() => ModuleArea | undefined) | null = null;
+  private areaProvider: (() => Area | undefined) | null = null;
 
   private readonly scene = new THREE.Scene();
   private readonly orthoCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -84,7 +84,7 @@ export class OdysseyLensFlarePass extends Pass {
     this.cameraProvider = provider;
   }
 
-  setAreaProvider(provider: () => ModuleArea | undefined) {
+  setAreaProvider(provider: () => Area | undefined) {
     this.areaProvider = provider;
   }
 

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Creature } from "@engine/module/Creature";
 import {
   DriveUpdateResult,
   tickCreatureDrive,
@@ -50,7 +50,7 @@ export interface CreatureWalkOptions {
  * Advance one frame toward the next path point with accel/trapezoid.
  */
 export function tickCreatureWalk(
-  creature: ModuleCreature,
+  creature: Creature,
   dest: THREE.Vector3,
   running: boolean,
   delta: number,
@@ -60,7 +60,7 @@ export function tickCreatureWalk(
 
   // walk frame distance UseRange early-out (state)
   if(options.useRangeTargetId != null && options.useRangeTargetId !== 0x7f000000){
-    const target = GameState.ModuleObjectManager?.GetObjectById?.(options.useRangeTargetId);
+    const target = GameState.GameObjectManager?.GetObjectById?.(options.useRangeTargetId);
     if(
       target &&
       isCreature(creature) &&
@@ -157,7 +157,7 @@ export function tickCreatureWalk(
       if(isCreature(blocker)){
         const bumped = nudgeFriendlyCreatures(
           creature,
-          blocker as ModuleCreature,
+          blocker as Creature,
           _probe,
           creature.position
         );
@@ -167,7 +167,7 @@ export function tickCreatureWalk(
           const fails = (creature.pathBlockFailCount | 0) + 1;
           creature.pathBlockFailCount = fails;
           if(fails < 6){
-            const hex = buildPathAroundCreature(creature, blocker as ModuleCreature);
+            const hex = buildPathAroundCreature(creature, blocker as Creature);
             if(hex.spliced){
               creature.pathBlockFailCount = 0;
               creature.locomotionScale = savedScale;
@@ -219,6 +219,6 @@ export function tickCreatureWalk(
 }
 
 /** Reset persistent tickCreatureWalk / walk tick state when pathing ends. */
-export function resetWalkSpeedFactor(creature: ModuleCreature): void {
+export function resetWalkSpeedFactor(creature: Creature): void {
   if(creature) creature.walkSpeedFactor = 0;
 }

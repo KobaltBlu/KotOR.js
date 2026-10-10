@@ -5,7 +5,7 @@ import { GameState } from "@engine/runtime/GameState";
 import { PartyManager } from "@engine/managers/PartyManager";
 import { InventoryManager } from "@engine/managers/InventoryManager";
 import { MDLLoader, ResourceLoader, TextureLoader } from "@engine/loaders";
-import { ModuleItem } from "@engine/module/ModuleItem";
+import { Item } from "@engine/module/Item";
 import { OdysseyModel } from "@engine/odyssey";
 import { GFFObject } from "@core/resource/GFFObject";
 import { ResourceTypes } from "@core/resource/ResourceTypes";
@@ -17,7 +17,7 @@ interface SwoopUpgradeChoice {
   template: string;
   group: number;
   level: number;
-  item?: ModuleItem;
+  item?: Item;
   getName: () => string;
   getIcon: () => string;
   getStackSize: () => number;
@@ -405,7 +405,7 @@ export class MenuSwoopUp extends GameMenu {
     try{
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes.uti, tag);
       if(!buffer){ return; }
-      const item = new ModuleItem(new GFFObject(buffer));
+      const item = new Item(new GFFObject(buffer));
       item.initProperties?.();
       item.setStackSize?.(1);
       InventoryManager.addItem(item);

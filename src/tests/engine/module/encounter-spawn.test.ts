@@ -38,10 +38,10 @@ jest.mock("@engine/module/EncounterSpawnEntry", () => ({
   },
 }));
 
-import { ModuleEncounter } from "@engine/module/ModuleEncounter";
-const { pickSpawnPosition, spawnIfAppropriate } = ModuleEncounter;
+import { Encounter } from "@engine/module/Encounter";
+const { pickSpawnPosition, spawnIfAppropriate } = Encounter;
 
-function makeEncounter(partial: Partial<ModuleEncounter> = {}): ModuleEncounter {
+function makeEncounter(partial: Partial<Encounter> = {}): Encounter {
   return {
     active: 1,
     started: 0,
@@ -56,7 +56,7 @@ function makeEncounter(partial: Partial<ModuleEncounter> = {}): ModuleEncounter 
     difficulty: 1,
     area: {},
     ...partial,
-  } as unknown as ModuleEncounter;
+  } as unknown as Encounter;
 }
 
 describe("spawnIfAppropriate pool gates", () => {

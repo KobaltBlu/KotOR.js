@@ -1,6 +1,6 @@
 import { GameEffect } from "@engine/effects/GameEffect";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
-import { ModuleObjectType } from "@core/enums/module/ModuleObjectType";
+import { GameObjectType } from "@core/enums/module/GameObjectType";
 import {
   damageFlagsFromChannels,
   mitigateDamageAmount,
@@ -47,7 +47,7 @@ export class EffectDamage extends GameEffect {
 
     super.onApply();
 
-    if(!BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleObject)){
+    if(!BitWise.InstanceOf(this.object?.objectType, GameObjectType.GameObject)){
       return;
     }
 

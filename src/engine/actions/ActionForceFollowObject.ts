@@ -4,8 +4,8 @@ import { ActionStatus } from "@core/enums/actions/ActionStatus";
 import { ActionType } from "@core/enums/actions/ActionType";
 import { getPathPersonalSpace } from "@engine/combat/attack-range";
 import { partyFollowPath } from "@engine/pathfinding/party-follow-path";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 import { Utility } from "@core/utility/Utility";
 import { Action } from "@engine/actions/Action";
 import * as THREE from "three";
@@ -51,7 +51,7 @@ export class ActionForceFollowObject extends Action {
       return ActionStatus.FAILED;
     }
 
-    this.target = this.getParameter<ModuleObject>(0);
+    this.target = this.getParameter<GameObject>(0);
     const fDistance = this.getParameter<number>(1) || 0.0;
 
     if(!isCreature(this.target)){
@@ -88,8 +88,8 @@ export class ActionForceFollowObject extends Action {
    * MoveTo → Wait → CheckForceFollow (re-enters ForceFollow).
    */
   private enqueueCatchUp(
-    owner: ModuleCreature,
-    followTarget: ModuleCreature,
+    owner: Creature,
+    followTarget: Creature,
     goal: THREE.Vector3,
     arriveRange: number
   ){
@@ -129,7 +129,7 @@ export class ActionForceFollowObject extends Action {
   }
 
   /** Soft hold — do not clear walkSpeedFactor / Jump. */
-  private parkHold(owner: ModuleCreature){
+  private parkHold(owner: Creature){
     owner.force = 0;
     owner.speed = 0;
     owner.walk = false;
@@ -141,8 +141,8 @@ export class ActionForceFollowObject extends Action {
    * else radial point at followDistance on the attacker side of the target.
    */
   private computeFollowGoal(
-    owner: ModuleCreature,
-    followTarget: ModuleCreature,
+    owner: Creature,
+    followTarget: Creature,
     followDistance: number,
     out: THREE.Vector3
   ): THREE.Vector3 {

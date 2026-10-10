@@ -8,8 +8,8 @@ import {
   showGiveTakeStatus,
   UPDATE_STATUS_ITEM_TAKEN,
 } from "@engine/actions/item-transfer";
-import type { ModuleItem } from "@engine/module/ModuleItem";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Item } from "@engine/module/Item";
+import type { GameObject } from "@engine/module/GameObject";
 
 import { isCreature } from "@engine/module/guards/isCreature";
 import { isItem } from "@engine/module/guards/isItem";
@@ -52,8 +52,8 @@ export class ActionTakeItem extends Action {
       return ActionStatus.ERROR;
     }
 
-    const oItem = this.getParameter<ModuleItem>(0);
-    const oTakeFrom = this.getParameter<ModuleObject>(1);
+    const oItem = this.getParameter<Item>(0);
+    const oTakeFrom = this.getParameter<GameObject>(1);
     const bDisplayStatus = (this.getParameter<number>(2) | 0) !== 0;
 
     if (!isItem(oItem)) {

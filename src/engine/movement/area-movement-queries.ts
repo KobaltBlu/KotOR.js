@@ -1,9 +1,9 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleDoor } from "@engine/module/ModuleDoor";
-import type { ModuleObject } from "@engine/module/ModuleObject";
-import type { ModuleRoom } from "@engine/module/ModuleRoom";
+import type { Area } from "@engine/module/Area";
+import type { Creature } from "@engine/module/Creature";
+import type { Door } from "@engine/module/Door";
+import type { GameObject } from "@engine/module/GameObject";
+import type { AreaRoom } from "@engine/module/AreaRoom";
 import type { OdysseyFace3 } from "@engine/render/three/odyssey";
 import { getPathPersonalSpace, getCreaturePersonalSpace } from "@engine/combat/attack-range";
 import {
@@ -27,7 +27,7 @@ import {
  */
 
 export type StaticMovementQueryOptions = {
-  owner?: ModuleCreature;
+  owner?: Creature;
   personalSpace?: number;
   allowPartyCreatures?: boolean;
   collectHitInfo?: boolean;
@@ -36,7 +36,7 @@ export type StaticMovementQueryOptions = {
 };
 
 export type CreatureMovementQueryOptions = {
-  owner?: ModuleCreature;
+  owner?: Creature;
   allowPartyCreatures?: boolean;
   softClearStartOverlap?: boolean;
 };
@@ -44,7 +44,7 @@ export type CreatureMovementQueryOptions = {
 const _hitPos = new THREE.Vector3();
 
 export function testWalkSegment(
-  area: ModuleArea,
+  area: Area,
   from: THREE.Vector3,
   to: THREE.Vector3,
   options: StaticMovementQueryOptions = {}
@@ -66,7 +66,7 @@ export function testWalkSegment(
  * Static/non-walk + walkmesh corridor test (perspace). Creatures not included.
  */
 export function testStaticMovement(
-  area: ModuleArea,
+  area: Area,
   from: THREE.Vector3,
   to: THREE.Vector3,
   options: StaticMovementQueryOptions = {}
@@ -92,7 +92,7 @@ export function testStaticMovement(
  * Creature capsule overlap along a segment (creperspace + 0.01).
  */
 export function testCreatureMovement(
-  area: ModuleArea,
+  area: Area,
   from: THREE.Vector3,
   to: THREE.Vector3,
   options: CreatureMovementQueryOptions = {}
@@ -105,7 +105,7 @@ export function testCreatureMovement(
   if(raw.clear){
     return { clear: true, raw };
   }
-  let object: ModuleObject | undefined;
+  let object: GameObject | undefined;
   if(raw.blockingCreatureId != null){
     object =
       area.creatures?.find((c) => c.id === raw.blockingCreatureId) ??
@@ -122,16 +122,16 @@ export function testCreatureMovement(
 /**
  * Retail-style personal-space radii used by queries (do not normalize).
  */
-export function getActorPathRadius(creature: ModuleCreature): number {
+export function getActorPathRadius(creature: Creature): number {
   return getPathPersonalSpace(creature);
 }
 
-export function getActorCreatureRadius(creature: ModuleCreature): number {
+export function getActorCreatureRadius(creature: Creature): number {
   return getCreaturePersonalSpace(creature);
 }
 
 export type DoorCrossingHit = {
-  door: ModuleDoor;
+  door: Door;
   linkedOpen: boolean;
 };
 
@@ -142,7 +142,7 @@ export type DoorCrossingHit = {
  * the wall rather than through the doorway.
  */
 export function queryDoorCrossing(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   from: THREE.Vector3,
   to: THREE.Vector3
 ): DoorCrossingHit | undefined {
@@ -206,7 +206,7 @@ function segmentHitsBox(
  * Ground / nearest walkable sample. Pure relative to caller — returns a clone.
  */
 export function findGround(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   point: THREE.Vector3,
   personalSpace = 0.1
 ): THREE.Vector3 | undefined {
@@ -217,7 +217,7 @@ export function findGround(
 
 /** Pure room/face attachment at a point (CollisionManager finalize search). */
 export type WalkableAttachment = {
-  room: ModuleRoom;
+  room: AreaRoom;
   face: OdysseyFace3;
   /** World Z for feet on the face (+ small bias, matches CM). */
   z: number;
@@ -226,7 +226,7 @@ export type WalkableAttachment = {
 const _attachClosest = new THREE.Vector3();
 
 function faceAttachmentAt(
-  room: ModuleRoom,
+  room: AreaRoom,
   point: THREE.Vector3
 ): WalkableAttachment | undefined {
   const faces = room.collisionManager?.walkmesh?.walkableFaces;
@@ -249,9 +249,9 @@ function faceAttachmentAt(
  * Prefers `preferRoom` (current attachment), then scans other area rooms.
  */
 export function findWalkableAttachmentAt(
-  area: ModuleArea | undefined,
+  area: Area | undefined,
   point: THREE.Vector3,
-  preferRoom?: ModuleRoom | null
+  preferRoom?: AreaRoom | null
 ): WalkableAttachment | undefined {
   if(!area?.rooms?.length || !point) return undefined;
 

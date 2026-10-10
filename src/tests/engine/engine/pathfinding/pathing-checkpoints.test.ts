@@ -31,7 +31,7 @@ const mockGameState = {
       15: { primaryRange: 8.0 },
     },
   },
-  ModuleObjectManager: { GetObjectById: () => undefined },
+  GameObjectManager: { GetObjectById: () => undefined },
   module: undefined as undefined,
   GameKey: "KOTOR",
 };

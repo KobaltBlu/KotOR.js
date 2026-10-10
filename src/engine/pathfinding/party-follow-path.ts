@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import type { ModuleArea } from "@engine/module/ModuleArea";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
+import type { Area } from "@engine/module/Area";
+import type { Creature } from "@engine/module/Creature";
 import { hasWalkLineClear, WalkLineHitCode } from "@engine/pathfinding/walk-line-clear";
 import { isSafeWalkPoint } from "@engine/pathfinding/safe-walk-point";
 import { GameState } from "@engine/runtime/GameState";
@@ -161,8 +161,8 @@ export class PartyFollowPath {
    * Bearing is stored in radians (leader.rotation.z).
    */
   processPoint(
-    leader: ModuleCreature,
-    area: ModuleArea | undefined
+    leader: Creature,
+    area: Area | undefined
   ): void {
     if(!leader) return;
     const point = leader.position;
@@ -502,7 +502,7 @@ export class PartyFollowPath {
    * String-pull densify (≥1m steps) then recalculate slot goals.
    * Called from processPoint when party_count > 1 and ring is warm enough.
    */
-  smoothFollowPath(area?: ModuleArea, leader?: ModuleCreature): void {
+  smoothFollowPath(area?: Area, leader?: Creature): void {
     if(this.count < 3) return;
 
     const endIdx = this.prevIndex(this.writeHead);
@@ -636,7 +636,7 @@ export class PartyFollowPath {
    */
   teleportForward(
     partyIndex: number,
-    area: ModuleArea | undefined,
+    area: Area | undefined,
     out: THREE.Vector3
   ): boolean {
     if(partyIndex < 1 || partyIndex > 2 || this.count < 3) return false;

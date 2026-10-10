@@ -1,6 +1,6 @@
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleItem } from "@engine/module/ModuleItem";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { Item } from "@engine/module/Item";
+import type { GameObject } from "@engine/module/GameObject";
 import { CombatActionType } from "@core/enums/combat/CombatActionType";
 import { TalentFeat, TalentSpell } from "@engine/talents";
 import { AttackResult } from "@core/enums/combat/AttackResult";
@@ -13,7 +13,7 @@ import { CombatFeatType } from "@core/enums/combat/CombatFeatType";
 import { GFFStruct } from "@core/resource/GFFStruct";
 import { GFFField } from "@core/resource/GFFField";
 import { GFFDataType } from "@core/enums/resource/GFFDataType";
-import { ModuleObjectConstant } from "@core/enums/module/ModuleObjectConstant";
+import { GameObjectConstant } from "@core/enums/module/GameObjectConstant";
 import { GameState } from "@engine/runtime/GameState";
 import { isCreature } from "@engine/module/guards/isCreature";
 import {
@@ -22,7 +22,7 @@ import {
 } from "@engine/combat/resolve-combat-object-id";
 
 export class CombatRoundAction {
-  owner: ModuleObject;
+  owner: GameObject;
 
   actionTimer: number = 0;
   animation: number = 0;
@@ -32,7 +32,7 @@ export class CombatRoundAction {
 
   numAttacks: number = 0;
   actionType: CombatActionType = CombatActionType.INVALID;
-  target: ModuleObject;
+  target: GameObject;
   /** Saved Target DWORD — kept for post-load re-resolve (PerceptionList pattern). */
   targetObjectId: number = 0;
   retargettable: number = 0;
@@ -41,7 +41,7 @@ export class CombatRoundAction {
    * ModuleCreatureArmorSlot / INVENTORY_SLOT_* — not an object id.
    */
   inventorySlot: number = 0;
-  targetRepository: ModuleObject;
+  targetRepository: GameObject;
   /** Saved TargetRepository DWORD for deferred resolve. */
   targetRepositoryObjectId: number = 0;
 
@@ -78,12 +78,12 @@ export class CombatRoundAction {
   overrideSpellId: number = -1;
   overrideSpell: TalentSpell;
 
-  item: ModuleItem;
+  item: Item;
   activePropertyIndex: number = -1;
 
   equipInstant: boolean = false;
 
-  constructor(owner?: ModuleObject){
+  constructor(owner?: GameObject){
     this.owner = owner;
     this.iconResRef = 'i_attack';
   }
@@ -125,7 +125,7 @@ export class CombatRoundAction {
   calculateAttackAnimation(){
     if(!isCreature(this.owner)) return;
 
-    const owner: ModuleCreature = this.owner as any;
+    const owner: Creature = this.owner as any;
     let attackKey = owner.getCombatAnimationAttackType();
     let weaponWield = owner.getCombatAnimationWeaponType();
     let attackType = 1;
@@ -180,7 +180,7 @@ export class CombatRoundAction {
 
     //Get random basic melee attack in combat with another melee creature that is targeting you
     if(attackKey == 'm' && isCreature(this.target)){
-      const target: ModuleCreature = this.target as any;
+      const target: Creature = this.target as any;
       if(owner.isDuelingObject(target)){
         attackKey = 'c';
         attackType = Math.round(Math.random()*4)+1;
@@ -211,14 +211,14 @@ export class CombatRoundAction {
     struct.addField(new GFFField(GFFDataType.INT, 'NumAttacks')).setValue(this.numAttacks || 0);
     struct.addField(new GFFField(GFFDataType.BYTE, 'ActionType')).setValue(this.actionType || 0);
     struct.addField(new GFFField(GFFDataType.DWORD, 'Target')).setValue(
-      this.target?.id ?? ModuleObjectConstant.OBJECT_INVALID
+      this.target?.id ?? GameObjectConstant.OBJECT_INVALID
     );
     struct.addField(new GFFField(GFFDataType.BYTE, 'Retargettable')).setValue(this.retargettable || 0);
     struct.addField(new GFFField(GFFDataType.DWORD, 'InventorySlot')).setValue(
       this.inventorySlot || 0
     );
     struct.addField(new GFFField(GFFDataType.DWORD, 'TargetRepository')).setValue(
-      this.targetRepository?.id ?? ModuleObjectConstant.OBJECT_INVALID
+      this.targetRepository?.id ?? GameObjectConstant.OBJECT_INVALID
     );
     return struct;
   }
@@ -226,7 +226,7 @@ export class CombatRoundAction {
   /**
    * LoadData 
    */
-  fromStruct(struct: GFFStruct, owner?: ModuleObject){
+  fromStruct(struct: GFFStruct, owner?: GameObject){
     if(!struct) return;
     if(owner) this.owner = owner;
     const get = (label: string, fallback: number = 0) =>
@@ -239,9 +239,9 @@ export class CombatRoundAction {
     this.actionType = get('ActionType', CombatActionType.INVALID);
     this.retargettable = get('Retargettable');
 
-    const targetId = get('Target', ModuleObjectConstant.OBJECT_INVALID);
+    const targetId = get('Target', GameObjectConstant.OBJECT_INVALID);
     const invSlot = get('InventorySlot', 0);
-    const repoId = get('TargetRepository', ModuleObjectConstant.OBJECT_INVALID);
+    const repoId = get('TargetRepository', GameObjectConstant.OBJECT_INVALID);
     this.targetObjectId = normalizeCombatObjectId(targetId);
     this.targetRepositoryObjectId = normalizeCombatObjectId(repoId);
     this.target = lookupCombatObjectById(this.targetObjectId);

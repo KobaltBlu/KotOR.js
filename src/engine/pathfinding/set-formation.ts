@@ -1,11 +1,11 @@
 import * as THREE from "three";
 import { ActionParameterType } from "@core/enums/actions/ActionParameterType";
 import { GameState } from "@engine/runtime/GameState";
-import type { ModuleCreature } from "@engine/module/ModuleCreature";
-import type { ModuleObject } from "@engine/module/ModuleObject";
+import type { Creature } from "@engine/module/Creature";
+import type { GameObject } from "@engine/module/GameObject";
 
 import { isCreature } from "@engine/module/guards/isCreature";
-import { isObject } from "@engine/module/guards/isObject";
+import { isGameObject } from "@engine/module/guards/isGameObject";
 
 const DEG2RAD = Math.PI / 180;
 
@@ -18,12 +18,12 @@ const DEG2RAD = Math.PI / 180;
  * @file set-formation.ts
  */
 export function setCreatureFormation(
-  anchor: ModuleObject,
-  creature: ModuleCreature,
+  anchor: GameObject,
+  creature: Creature,
   pattern: number,
   position: number
 ): boolean {
-  if(!isObject(anchor)){
+  if(!isGameObject(anchor)){
     return false;
   }
   if(!isCreature(creature)){
