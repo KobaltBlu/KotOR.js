@@ -184,7 +184,7 @@ describe("resolvePlayerControlStep", () => {
     const partyMate = mockCreature(2, 0.5, 0, area);
     (area as { creatures: Creature[] }).creatures = [partyMate];
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { GameState } = require("@engine/GameState");
+    const { GameState } = require("@engine/runtime/GameState");
     GameState.PartyManager.party = [player, partyMate];
 
     testCreatureMovementMock.mockReturnValue({

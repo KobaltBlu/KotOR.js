@@ -3,16 +3,32 @@ import { GFFDataType } from "@core/enums/resource/GFFDataType";
 import { GFFObject } from "@core/resource/GFFObject";
 import { pathParse } from "@apps/forge/helpers/PathParse";
 
+jest.mock("@apps/forge/ProjectFileSystem", () => ({
+  ProjectFileSystem: {
+    hasRoot: () => false,
+    readFile: jest.fn(),
+    writeFile: jest.fn(),
+    readdir: jest.fn(async () => []),
+    exists: jest.fn(async () => false),
+  },
+}));
+jest.mock("@apps/forge/states/ForgeState", () => ({
+  ForgeState: {
+    project: undefined,
+    getProject: () => undefined,
+  },
+}));
+
 jest.mock("@apps/forge/KotOR", () => {
-  const { GFFObject } = jest.requireActual("@/resource/GFFObject") as typeof import("@core/resource/GFFObject");
-  const { GFFField } = jest.requireActual("@/resource/GFFField") as typeof import("@core/resource/GFFField");
-  const { GFFStruct } = jest.requireActual("@/resource/GFFStruct") as typeof import("@core/resource/GFFStruct");
-  const { GFFDataType } = jest.requireActual("@/enums/resource/GFFDataType") as typeof import("@core/enums/resource/GFFDataType");
-  const { CExoLocString } = jest.requireActual("@/resource/CExoLocString") as typeof import("@core/resource/CExoLocString");
-  const { ApplicationProfile } = jest.requireActual("@/utility/ApplicationProfile") as typeof import("@core/utility/ApplicationProfile");
-  const { GameEngineType } = jest.requireActual("@/enums/engine/GameEngineType") as typeof import("@core/enums/engine/GameEngineType");
-  const { ModuleCreatureArmorSlot } = jest.requireActual("@/enums/module/ModuleCreatureArmorSlot") as typeof import("@core/enums/module/ModuleCreatureArmorSlot");
-  const { ResourceTypes } = jest.requireActual("@/resource/ResourceTypes") as typeof import("@core/resource/ResourceTypes");
+  const { GFFObject } = jest.requireActual("@core/resource/GFFObject") as typeof import("@core/resource/GFFObject");
+  const { GFFField } = jest.requireActual("@core/resource/GFFField") as typeof import("@core/resource/GFFField");
+  const { GFFStruct } = jest.requireActual("@core/resource/GFFStruct") as typeof import("@core/resource/GFFStruct");
+  const { GFFDataType } = jest.requireActual("@core/enums/resource/GFFDataType") as typeof import("@core/enums/resource/GFFDataType");
+  const { CExoLocString } = jest.requireActual("@core/resource/CExoLocString") as typeof import("@core/resource/CExoLocString");
+  const { ApplicationProfile } = jest.requireActual("@core/utility/ApplicationProfile") as typeof import("@core/utility/ApplicationProfile");
+  const { GameEngineType } = jest.requireActual("@core/enums/engine/GameEngineType") as typeof import("@core/enums/engine/GameEngineType");
+  const { ModuleCreatureArmorSlot } = jest.requireActual("@core/enums/module/ModuleCreatureArmorSlot") as typeof import("@core/enums/module/ModuleCreatureArmorSlot");
+  const { ResourceTypes } = jest.requireActual("@core/resource/ResourceTypes") as typeof import("@core/resource/ResourceTypes");
   return {
     GFFObject,
     GFFField,

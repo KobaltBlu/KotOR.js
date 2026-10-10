@@ -326,7 +326,7 @@ describe('OdysseyShadowManager primary shadow map', () => {
     manager.noteShadowMapRendered();
     expect(manager.needsShadowMapRender).toBe(false);
 
-    const { GameState } = require('@engine/GameState');
+    const { GameState } = require('@engine/runtime/GameState');
     GameState.PartyManager = {
       party: [{
         position: new THREE.Vector3(0.5, 0, 0),

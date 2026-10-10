@@ -24,6 +24,7 @@ jest.mock('@engine/audio/ReverbEngine', () => ({
   ReverbEngine: class {
     connectSource() {}
     loadPreset = loadPreset;
+    setEnabled() {}
     updateListener() {}
   },
 }));
@@ -72,6 +73,7 @@ describe('AudioEngine environment (EAX)', () => {
     engine.reverbEngine = {
       loadPreset,
       connectSource: jest.fn(),
+      setEnabled: jest.fn(),
     } as any;
     const gainNode = { disconnect: jest.fn(), connect: jest.fn() };
     (AudioEngine as any).sfxChannel = { getGainNode: () => gainNode };

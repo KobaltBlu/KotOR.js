@@ -202,7 +202,7 @@ describe('Creature.jumpToObject default flag', () => {
     const fs = require('fs') as typeof import('fs');
     const path = require('path') as typeof import('path');
     const src = fs.readFileSync(
-      path.join(process.cwd(), 'src/module/Creature.ts'),
+      path.join(process.cwd(), 'src/engine/module/Creature.ts'),
       'utf8',
     );
     expect(src).toMatch(
@@ -217,7 +217,7 @@ describe('Creature.jumpToObject default flag', () => {
     const fs = require('fs') as typeof import('fs');
     const path = require('path') as typeof import('path');
     const src = fs.readFileSync(
-      path.join(process.cwd(), 'src/nwscript/NWScriptDefK1.ts'),
+      path.join(process.cwd(), 'src/engine/nwscript/NWScriptDefK1.ts'),
       'utf8',
     );
     expect(src).toMatch(/jumpToObject\(args\[0\],\s*bWalkStraight\)/);

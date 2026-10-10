@@ -60,7 +60,7 @@ describe("resolveDialogStartOwner", () => {
   });
 
   beforeEach(() => {
-    const { GameState } = require("@engine/GameState");
+    const { GameState } = require("@engine/runtime/GameState");
     GameState.PartyManager.Player = player;
   });
 

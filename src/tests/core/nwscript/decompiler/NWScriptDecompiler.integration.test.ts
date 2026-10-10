@@ -170,8 +170,8 @@ describe('NWScriptDecompiler integration', () => {
 
     const source = new NWScriptDecompiler(script).decompile();
 
-    expect(source).toContain('float sub1(float floatParam1)');
-    expect(source).toContain('return floatParam1;');
+    expect(source).toContain('float sub1(float fParam1)');
+    expect(source).toContain('return fParam1;');
     expect(source).toContain('sub1(7.0f);');
     expect(source).not.toContain('// Error during decompilation:');
     expect(source).not.toContain('__NCS_DECOMPILER_UNKNOWN_VALUE__');
@@ -208,8 +208,8 @@ describe('NWScriptDecompiler integration', () => {
 
     const source = new NWScriptDecompiler(script).decompile();
 
-    expect(source).toContain('void sub1(int intParam1, string stringParam2)');
-    expect(source).toContain('PrintPair(intParam1, stringParam2);');
+    expect(source).toContain('void sub1(int nParam1, string sParam2)');
+    expect(source).toContain('PrintPair(nParam1, sParam2);');
     expect(source).toContain('sub1(7, "ok");');
     expect(source).not.toContain('__NCS_DECOMPILER_UNKNOWN_VALUE__');
   });
@@ -245,8 +245,8 @@ describe('NWScriptDecompiler integration', () => {
 
     const source = new NWScriptDecompiler(script).decompile();
 
-    expect(source).toContain('void sub1(vector vectorParam1, int intParam2)');
-    expect(source).toContain('PrintVectorInt(vectorParam1, intParam2);');
+    expect(source).toContain('void sub1(vector vParam1, int nParam2)');
+    expect(source).toContain('PrintVectorInt(vParam1, nParam2);');
     expect(source).toContain('sub1(Vector(1.0f, 2.0f, 3.0f), 9);');
     expect(source).not.toContain('__NCS_DECOMPILER_UNKNOWN_VALUE__');
   });
@@ -307,9 +307,9 @@ describe('NWScriptDecompiler integration', () => {
 
     const source = new NWScriptDecompiler(script).decompile();
 
-    expect(source).toContain('int localVar_0 = 5;');
-    expect(source).toContain('PrintInt(localVar_0);');
-    expect(source.match(/localVar_0 = 5/g)).toHaveLength(1);
+    expect(source).toContain('int nLocal1 = 5;');
+    expect(source).toContain('PrintInt(nLocal1);');
+    expect(source.match(/nLocal1 = 5/g)).toHaveLength(1);
     expect(source).not.toContain('__NCS_DECOMPILER_UNKNOWN_VALUE__');
   });
 
@@ -340,9 +340,9 @@ describe('NWScriptDecompiler integration', () => {
 
     const source = new NWScriptDecompiler(script).decompile();
 
-    expect(source).toContain('int localVar_0 = 0;');
-    expect(source).toContain('localVar_0++;');
-    expect(source).toContain('PrintInt(localVar_0);');
+    expect(source).toContain('int nLocal1 = 0;');
+    expect(source).toContain('nLocal1++;');
+    expect(source).toContain('PrintInt(nLocal1);');
     expect(source).not.toContain('sp_-');
   });
 
@@ -377,9 +377,9 @@ describe('NWScriptDecompiler integration', () => {
 
     const source = new NWScriptDecompiler(script).decompile();
 
-    expect(source).toContain('vector localVar_0;');
-    expect(source).toContain('localVar_0 = Vector(1.0f, 2.0f, 3.0f);');
-    expect(source).toContain('PrintVector(localVar_0);');
+    expect(source).toContain('vector vLocal1;');
+    expect(source).toContain('vLocal1 = Vector(1.0f, 2.0f, 3.0f);');
+    expect(source).toContain('PrintVector(vLocal1);');
     expect(source).not.toContain('localVar_1');
     expect(source).not.toContain('localVar_2');
     expect(source).not.toContain('__NCS_DECOMPILER_UNKNOWN_VALUE__');

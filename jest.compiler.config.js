@@ -4,7 +4,7 @@ const base = require('./jest.config.js');
 module.exports = {
   ...base,
   testMatch: [
-    '<rootDir>/src/tests/core/nwscript/compiler/NWScriptCompiler.retail.test.ts',
+    '<rootDir>/src/tests/core/nwscript/compiler/NWScriptCompiler.oracle.test.ts',
   ],
   testTimeout: 120000,
 };

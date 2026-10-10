@@ -254,7 +254,7 @@ describe("drive / walk facade does not settle via CollisionContext solver", () =
 
   it("CollisionContext has no updateCollision locomotion solver", () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { CollisionContext } = require("@engine/CollisionContext");
+    const { CollisionContext } = require("@engine/movement/CollisionContext");
     expect(CollisionContext.prototype.updateCollision).toBeUndefined();
   });
 });

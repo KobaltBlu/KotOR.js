@@ -11,7 +11,7 @@ import { TXIPROCEDURETYPE } from "@core/enums/graphics/txi/TXIPROCEDURETYPE";
 import { TXITexType } from "@core/enums/graphics/txi/TXITexType";
 import { TPCObject } from "@core/resource/TPCObject";
 import { TXI } from "@core/resource/TXI";
-import { PixelManager } from "@apps/forge/KotOR";
+import { PixelManager } from "@core/utility/PixelManager";
 import { displayRgbaToTpc, hasMeaningfulAlpha } from "@apps/forge/image/imageIo";
 import {
   DEFAULT_ENCODE_POLICY,

@@ -13,7 +13,7 @@ const mockHasCombatLineOfSight = jest.fn(
 );
 
 jest.mock('@engine/combat/attack-range', () => {
-  const actual = jest.requireActual('@/combat/attack-range') as typeof import('@engine/combat/attack-range');
+  const actual = jest.requireActual('@engine/combat/attack-range') as typeof import('@engine/combat/attack-range');
   return {
     ...actual,
     hasCombatLineOfSight: (...args: unknown[]) => mockHasCombatLineOfSight(...args),

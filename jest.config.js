@@ -3,6 +3,8 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   moduleNameMapper: {
+    // Styles must win over @/ path aliases (imports like @/apps/.../file.scss).
+    '\\.(css|scss|sass)$': '<rootDir>/src/tests/styleMock.js',
     '^@core$': '<rootDir>/src/core/index.ts',
     '^@core/(.*)$': '<rootDir>/src/core/$1',
     '^@engine$': '<rootDir>/src/engine/index.ts',
@@ -18,8 +20,8 @@ module.exports = {
     '\\\\node_modules\\\\(?!three\\\\)',
   ],
   transform: {
-    // Match three build files on Windows and POSIX paths.
-    'three[/\\\\]build[/\\\\].+\\.js$': '<rootDir>/jest-three-transform.js',
+    // Match three build + examples/jsm ESM on Windows and POSIX paths.
+    'three[/\\\\](build|examples)[/\\\\].+\\.js$': '<rootDir>/jest-three-transform.js',
     '^.+\\.tsx?$': [
       'ts-jest',
       {

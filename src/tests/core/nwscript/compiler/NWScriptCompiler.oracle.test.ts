@@ -20,7 +20,7 @@ import {
   compareFixture,
   compileKotOR,
   hexDump,
-} from '../../compileOracleHarness';
+} from '../../../compileOracleHarness';
 
 function expectMatch(name: string, source: string) {
   const r = compareFixture(name, source);

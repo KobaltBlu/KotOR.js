@@ -80,7 +80,7 @@ describe("movement commit cull bounds", () => {
         }
         creature.box.getBoundingSphere(creature.sphere);
         // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const { GameState } = require("@engine/GameState");
+        const { GameState } = require("@engine/runtime/GameState");
         return GameState.viewportFrustum.intersectsSphere(creature.sphere);
       },
     };

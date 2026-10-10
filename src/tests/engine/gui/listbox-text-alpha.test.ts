@@ -49,15 +49,15 @@ describe("TextureLoader.enQueue cache-hit onLoad order", () => {
   it("does not invoke onLoad until uniforms.map is assigned", async () => {
     // Load TextureLoader + three in one module graph so instanceof ShaderMaterial matches.
     jest.resetModules();
-    jest.doMock("@/three/odyssey/OdysseyMaterialBuilder", () => ({
+    jest.doMock("@engine/render/three/odyssey/OdysseyMaterialBuilder", () => ({
       OdysseyMaterialBuilder: {
         applyTXIToMaterial: jest.fn(() => Promise.resolve()),
       },
     }));
-    jest.doMock("@/loaders/TPCLoader", () => ({
+    jest.doMock("@engine/loaders/TPCLoader", () => ({
       TPCLoader: jest.fn().mockImplementation(() => ({ fetch: jest.fn() })),
     }));
-    jest.doMock("@/loaders/TGALoader", () => ({
+    jest.doMock("@engine/loaders/TGALoader", () => ({
       TGALoader: jest.fn().mockImplementation(() => ({
         fetch: jest.fn(),
         TextureLoader: undefined,
@@ -105,15 +105,15 @@ describe("TextureLoader.enQueue cache-hit onLoad order", () => {
 
   it("assignMaterialTexture binds map on SpriteMaterial", async () => {
     jest.resetModules();
-    jest.doMock("@/three/odyssey/OdysseyMaterialBuilder", () => ({
+    jest.doMock("@engine/render/three/odyssey/OdysseyMaterialBuilder", () => ({
       OdysseyMaterialBuilder: {
         applyTXIToMaterial: jest.fn(() => Promise.resolve()),
       },
     }));
-    jest.doMock("@/loaders/TPCLoader", () => ({
+    jest.doMock("@engine/loaders/TPCLoader", () => ({
       TPCLoader: jest.fn().mockImplementation(() => ({ fetch: jest.fn() })),
     }));
-    jest.doMock("@/loaders/TGALoader", () => ({
+    jest.doMock("@engine/loaders/TGALoader", () => ({
       TGALoader: jest.fn().mockImplementation(() => ({
         fetch: jest.fn(),
         TextureLoader: undefined,
