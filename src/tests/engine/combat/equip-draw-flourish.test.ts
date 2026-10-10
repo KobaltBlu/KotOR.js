@@ -16,7 +16,10 @@ describe('equip draw flourish', () => {
   });
 
   it('Creature.playDrawAnimation uses FLOURISH / 1500ms', () => {
-    const src = fs.readFileSync(srcPath('engine', 'module', 'Creature.ts'), 'utf8');
+    const src = fs.readFileSync(
+      srcPath('engine', 'module', 'creature', 'CreatureCombatService.ts'),
+      'utf8'
+    );
     const fn = src.match(
       /playDrawAnimation\s*\(\)\s*\{[\s\S]*?\n  \}/
     )?.[0] ?? '';

@@ -7,10 +7,8 @@ import type { AreaRoom } from "@engine/module/area/AreaRoom";
 import { AudioEmitter } from "@engine/audio/AudioEmitter";
 import { CreatureClass } from "@engine/combat/CreatureClass";
 import { EffectRacialType } from "@engine/effects";
-import { animForSetState, getActiveSetStateType } from "@engine/effects/set-state";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
 import { ModuleCreatureAnimState, isTransientCombatAnimIndex } from "@core/enums/module/ModuleCreatureAnimState";
-import { AILevel } from "@core/enums/module/AILevel";
 import { GFFDataType } from "@core/enums/resource/GFFDataType";
 import { GameState } from "@engine/runtime/GameState";
 import { GameObjectLoadPipeline } from "@engine/module/serialization/GameObjectLoadPipeline";
@@ -31,18 +29,26 @@ import { TalentSkill } from "@engine/talents/TalentSkill";
 import { TalentSpell } from "@engine/talents/TalentSpell";
 import { TalentObjectType } from "@engine/enums/engine/TalentObjectType";
 import { OdysseyModel3D, OdysseyObject3D } from "@engine/render/three/odyssey";
-import { applyHeadTrackingToHturn, stripHeadTrackingFromHturn } from "@engine/module/creature/applyHeadTrackingToHturn";
+import { CreaturePerceptionService } from "@engine/module/creature/CreaturePerceptionService";
+import { CreatureStatsService } from "@engine/module/creature/CreatureStatsService";
+import { CreatureCombatService } from "@engine/module/creature/CreatureCombatService";
+import { CreatureDeathCorpseService } from "@engine/module/creature/CreatureDeathCorpseService";
+import { CreatureAnimationService } from "@engine/module/creature/CreatureAnimationService";
+import { CreatureModelService } from "@engine/module/creature/CreatureModelService";
+import { CreatureEquipmentService } from "@engine/module/creature/CreatureEquipmentService";
+import type { CreaturePartyFollowInfo } from "@engine/module/creature/partyFollowInfo";
+export type { CreaturePartyFollowInfo } from "@engine/module/creature/partyFollowInfo";
+export { createDefaultPartyFollowInfo } from "@engine/module/creature/partyFollowInfo";
+
 import { OdysseyModel, OdysseyModelAnimation } from "@engine/odyssey";
 import { ModuleCreatureArmorSlot } from "@core/enums/module/ModuleCreatureArmorSlot";
 import { LIPObject } from "@core/resource/LIPObject";
-import { LipSyncPlayer } from "@engine/audio/LipSyncPlayer";
 import { Utility } from "@core/utility/Utility";
 import { testStringAgainstPattern } from "@core/utility/listen-pattern";
 import { drainHeardStringHead } from "@engine/combat/speak-string-broadcast";
 import { EngineMode } from "@engine/enums/engine/EngineMode";
 import { GameEngineType } from "@core/enums/engine/GameEngineType";
 import { getDefaultRuntimeContext } from "@engine/runtime/context";
-import { SSFType } from "@core/enums/resource/SSFType";
 import { ActionType } from "@core/enums/actions/ActionType";
 import { ActionParameterType } from "@core/enums/actions/ActionParameterType";
 import EngineLocation from "@engine/runtime/EngineLocation";
@@ -91,15 +97,8 @@ import {
   resolveOverlayStartFlags,
 } from "@engine/module/animation/resolvePlaybackMode";
 import {
-  isAnimation2DAFlagSet,
-  isStationaryAnimation,
-  isPauseAnimation,
   isWalkingAnimation,
   isRunningAnimation,
-  isHideEquippedItemsAnimation,
-  isParryAnimation,
-  isDialogAnimation,
-  isPlayOutOfPlaceServerId,
 } from "@engine/module/animation/animation2daFlag";
 import {
   combatAnimationAttackKey,
@@ -140,12 +139,7 @@ import { ScriptHook } from "@core/enums/module/ScriptHook";
 import { MineSkillResult, resolvePassiveMineDetect } from "@engine/actions/mine-skill";
 import { PerceptionMask } from "@engine/enums/engine/PerceptionMask";
 import {
-  COMBAT_STATE_DURATION_MS,
   ExcitedDurationRow,
-  getExcitedDurationMs,
-  hasLivingCombatTarget,
-  setClientCombatMode,
-  updateClientCombatMode,
 } from "@engine/combat/combat-engagement";
 import { queueAttackActions } from "@engine/combat/queue-attack-actions";
 import { ensureCombatDispatcher } from "@engine/combat/ensure-combat-dispatcher";
@@ -224,34 +218,6 @@ import { isEncounter } from "@engine/module/guards/isEncounter";
 import { isGameObject } from "@engine/module/guards/isGameObject";
 import { isPlaceable } from "@engine/module/guards/isPlaceable";
 
-/** party-follow info fields (FollowInfo GFF struct). */
-export interface CreaturePartyFollowInfo {
-  followObject: number;
-  followLocation: THREE.Vector3;
-  lastLeaderPos: THREE.Vector3;
-  lastFollowerPos: THREE.Vector3;
-  maxSpeed: number;
-  stickToPos: number;
-  result: number;
-  timeElapsed: number;
-  inSafetyRange: number;
-}
-
-export function createDefaultPartyFollowInfo(): CreaturePartyFollowInfo {
-  return {
-    followObject: GameObjectConstant.OBJECT_INVALID,
-    followLocation: new THREE.Vector3(0, 0, 0),
-    lastLeaderPos: new THREE.Vector3(0, 0, 0),
-    lastFollowerPos: new THREE.Vector3(0, 0, 0),
-    maxSpeed: 0,
-    stickToPos: 0,
-    result: 2,
-    timeElapsed: 0,
-    // party-member defaults 0 after place/reset; only saved
-    // FollowInfo.InSafetyRange=1 should hold chase until leader ≥7.
-    inSafetyRange: 0,
-  };
-}
 
 /**
 * Creature class.
@@ -490,6 +456,14 @@ export class Creature extends GameObject {
   isPC: number;
   lastName: CExoLocString;
   /** — present for party members. */
+  readonly creaturePerceptionService: CreaturePerceptionService;
+  readonly statsService: CreatureStatsService;
+  readonly combatService: CreatureCombatService;
+  readonly deathCorpseService: CreatureDeathCorpseService;
+  readonly animationService: CreatureAnimationService;
+  readonly modelService: CreatureModelService;
+  readonly equipmentService: CreatureEquipmentService;
+
   partyFollowInfo: CreaturePartyFollowInfo | undefined;
   /** history (LvlStatList) for the real PC. */
   levelStats: LevelStatRecord[];
@@ -651,7 +625,7 @@ export class Creature extends GameObject {
   turning: number;
   deathAnimationPlayed: boolean;
   /** One-shot guard for Animation Missing console spam. */
-  private animationMissingLogged: boolean = false;
+  animationMissingLogged: boolean = false;
   deathStarted: boolean;
   /** Pass AL — last trap this creature detected. */
   lastTrapDetected: GameObject;
@@ -688,10 +662,17 @@ export class Creature extends GameObject {
    * Bumps on each loadModel so overlapping armor/head rebuilds discard stale
    * bodies instead of disposing live hand/headgear models attached to them.
    */
-  private modelLoadGeneration: number = 0;
+  modelLoadGeneration: number = 0;
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
+    this.creaturePerceptionService = new CreaturePerceptionService(this);
+    this.statsService = new CreatureStatsService(this);
+    this.combatService = new CreatureCombatService(this);
+    this.deathCorpseService = new CreatureDeathCorpseService(this);
+    this.animationService = new CreatureAnimationService(this);
+    this.modelService = new CreatureModelService(this);
+    this.equipmentService = new CreatureEquipmentService(this);
     this.objectType |= GameObjectType.Creature;
     this.deferEventUpdate = true;
 
@@ -1047,8 +1028,8 @@ export class Creature extends GameObject {
 
   /**
    * Scheduled by Module.aiScheduler.
-   * Heartbeat/effects (super), damage, action queue, perception, combat timers,
-   * regen, AI-level self-adjustment.
+   * Heartbeat/effects (super), then ordered service ticks: damage, action queue,
+   * combat, perception, deferred effects, regen, AI level.
    */
   aiUpdate(delta: number = 0){
     if(this.destroyed || this.isRetainedCorpse) return;
@@ -1067,31 +1048,12 @@ export class Creature extends GameObject {
     this.action = this.actionQueue[0];
 
     if(!this.isDead()){
-      // Process DamageList
-      let elLen = this.damageList.length - 1;
-      for(let i = elLen; i >= 0; i--){
-        this.damageList[i].delay -= delta;
-        if(this.damageList[i].delay <= 0){
-          this.subtractHP(this.damageList[i].amount);
-
-          let painsound = THREE.MathUtils.randInt(0, 1);
-          switch(painsound){
-            case 1:
-              this.playSoundSet(SSFType.PAIN_2);
-            break;
-            default:
-              this.playSoundSet(SSFType.PAIN_1);
-            break;
-          }
-
-          this.damageList.splice(i, 1);
-        }
-      }
-
+      this.combatService.processDamageList(delta);
       this.deathStarted = false;
 
       // Corpses lock the action queue on DEAD; living NPCs in a scripted dead
       // pose (ActionPlayAnimation) must still tick their timed action.
+      // Damage above may have just killed this creature.
       const corpseActionLock =
         this.isDead() && this.animationState.index == ModuleCreatureAnimState.DEAD;
       if(!corpseActionLock){
@@ -1105,14 +1067,9 @@ export class Creature extends GameObject {
       this.damageList = [];
     }
 
-    this.updateCombatStateTimer(delta);
-    this.updateExcitedDuration(delta);
-    updateClientCombatMode(this);
-    this.updateCombat(delta);
-    this.updateCasting(delta);
-
-    this.updatePerceptionList(delta);
-    this.updateListeningPatterns();
+    this.combatService.updateCombatTick(delta);
+    this.creaturePerceptionService.updatePerceptionList(delta);
+    this.creaturePerceptionService.updateListeningPatterns();
 
     // Deferred effects (when deferEventUpdate was set)
     if(this.deferEventUpdate){
@@ -1122,8 +1079,8 @@ export class Creature extends GameObject {
       }
     }
 
-    this.updateRegen(delta);
-    this.adjustAILevel();
+    this.statsService.updateRegen(delta);
+    this.combatService.adjustAILevel();
 
     this._creatureLocoThisFrame = false;
   }
@@ -1133,32 +1090,7 @@ export class Creature extends GameObject {
    * Party/PC → VERY_HIGH; combat → NORMAL; else LOW (area occupied) or VERY_LOW.
    */
   adjustAILevel(){
-    const runtime = getDefaultRuntimeContext();
-    const scheduler = runtime.getAiScheduler();
-    if(!scheduler) return;
-
-    // Party / PC always VERY_HIGH
-    if((this.isPlayer || this.isPM || this.isPartyMember()) && this.aiLevel !== AILevel.VERY_HIGH){
-      scheduler.setAILevel(this, AILevel.VERY_HIGH);
-      return;
-    }
-
-    if(this.isPlayer || this.isPM || this.isPartyMember()) return;
-
-    if(this.combatData?.combatState){
-      if(this.aiLevel !== AILevel.NORMAL && this.aiLevel !== AILevel.VERY_HIGH){
-        scheduler.setAILevel(this, AILevel.NORMAL);
-      }
-      return;
-    }
-
-    // Demote non-combat NORMAL → LOW/VERY_LOW based on players in area
-    if(this.aiLevel === AILevel.NORMAL){
-      const party = runtime.getParty?.() ?? [];
-      const areaOccupied = (this.area as any)?.playersInArea > 0 ||
-        (party.length > 0 && this.area === runtime.getModule()?.area);
-      scheduler.setAILevel(this, areaOccupied ? AILevel.LOW : AILevel.VERY_LOW);
-    }
+    return this.combatService.adjustAILevel();
   }
 
   /**
@@ -1171,16 +1103,19 @@ export class Creature extends GameObject {
   }
 
   updatePaused(delta: number = 0){
-    if(this.spawned){
-      // Allow PC/party room attach while paused so auto-pause cannot leave a blank VIS
-      if(!this.room && this.area){
-        this.updateRoomAttachment(delta);
-      }else{
-        this.updateModelVisibility();
-      }
+    if(!this.spawned) return;
+    // Allow PC/party room attach while paused so auto-pause cannot leave a blank VIS
+    if(!this.room && this.area){
+      this.updateRoomAttachment(delta);
+    }else{
+      this.updateModelVisibility();
     }
   }
 
+  /**
+   * Per-frame visual/loco tick. Domain work is ordered service calls; movement
+   * (player cam, force coast, external force, facing) stays on the facade.
+   */
   update( delta = 0 ){
 
     if(this.destroyed){
@@ -1189,7 +1124,7 @@ export class Creature extends GameObject {
 
     // KeepCorpse shells skip normal AI/effects — visual + eviction fade only
     if(this.isRetainedCorpse){
-      this.updateRetainedCorpse(delta);
+      this.deathCorpseService.updateRetainedCorpse(delta);
       return;
     }
 
@@ -1201,13 +1136,13 @@ export class Creature extends GameObject {
 
     // Converted to KeepCorpse during updateDestroy this frame
     if(this.isRetainedCorpse){
-      this.updateRetainedCorpse(delta);
+      this.deathCorpseService.updateRetainedCorpse(delta);
       return;
     }
 
-    // : DestroyObjectDelay runs before remove; corpse must keep playing DIE→DEAD + model fade.
+    // DestroyObjectDelay runs before remove; corpse must keep playing DIE→DEAD + model fade.
     if(this.willDestroy){
-      this.updateCorpsePendingDestroy(delta);
+      this.deathCorpseService.updateCorpsePendingDestroy(delta);
       return;
     }
 
@@ -1229,361 +1164,29 @@ export class Creature extends GameObject {
       }
 
       if(!this.isReady){
-        //this.getModel.visible = true;
         return;
-      }else{
-
       }
 
-      //Get the first action in the queue
       this.action = this.actionQueue[0];
 
-      /*if(this == GameState.PartyManager.getCurrentPlayer && this.room instanceof AreaRoom){
-        //this.room.show(true);
-      }else if(this.room instanceof AreaRoom){
-        if(this.room.model instanceof OdysseyModel3D){
-          if(this.model){
-            this.model.visible = this.room.model.visible;
-          }
-        }
-      }*/
-
-      // Scripted defeat (e.g. k_ptar_dueler_ud ActionPlayAnimation(DEAD, …, 360))
-      // must hold the corpse pose on living Min1HP/plot NPCs. Only auto get-up
-      // when recovering from a real death (deathAnimationPlayed from DIE→DEAD).
-      if(
-        !this.isDead() &&
-        this.deathAnimationPlayed &&
-        (
-          this.animationState.index == ModuleCreatureAnimState.DEAD ||
-          this.animationState.index == ModuleCreatureAnimState.DEAD1
-        )
-      ){
-        this.deathAnimationPlayed = false;
-        this.setAnimationState(ModuleCreatureAnimState.GET_UP_DEAD);
-      }
-
+      this.deathCorpseService.updateDeathTransition();
       if(!this.isDead()){
-        // Damage list + action queue moved to aiUpdate / quicktickCreatureWalk / walk tick
-
-        if(this.dialogAnimation && (getDefaultRuntimeContext().getMode() == EngineMode.DIALOG) && (!this.action || this.action.type != ActionType.ActionPlayAnimation)){
-          if(this.model){
-
-            if(!this.speed){
-                
-              let _animIsValid = (this.dialogAnimation.animation instanceof OdysseyModelAnimation);
-              if(_animIsValid){
-                let _animIsPlaying = (this.model.animationManager.currentAnimation == this.dialogAnimation.animation);
-                if(!_animIsPlaying && !this.dialogAnimation.started){
-                  let _newAnim = this.dialogAnimation.animation;
-                  if(_newAnim instanceof OdysseyModelAnimation){
-                    this.model.playAnimation( _newAnim, this.dialogAnimation.data.looping );
-                    this.dialogAnimation.started = true;
-                  }else{
-                    //Kill the dialogAnimation if the animation isn't valid
-                    this.dialogAnimation = null;
-                  }
-                }else if(!_animIsPlaying && this.dialogAnimation.started){
-                  //Kill the dialogAnimation if it has already played
-                  this.dialogAnimation = null;
-                }
-              }else{
-                //Kill the dialogAnimation if the animation isn't valid
-                this.dialogAnimation = null;
-              }
-
-            }
-  
-          }else{
-            //Kill the dialogAnimation if there is no model to animate?
-            this.dialogAnimation = null;
-          }
-        }else{
-          this.dialogAnimation = null;
-        }
-      }else{
-        this.getUpAnimationPlayed = false;
-        if(
-          this.deathStarted && 
-          this.animationState.index != ModuleCreatureAnimState.DEAD && 
-          this.animationState.index != ModuleCreatureAnimState.DIE
-        ){
-          this.setAnimationState(ModuleCreatureAnimState.DEAD);
-          this.deathAnimationPlayed = true;
-        }
-        if(!this.deathStarted){
-          this.deathAnimationPlayed = false;
-          this.deathStarted = true;
-          this.clearAllActions();
-          this.onDeath();
-          this.playAppearanceDeathVFX();
-          this.playSoundSet(SSFType.DEAD);
-          this.resetOverlayAnimationState();
-          this.setAnimationState(ModuleCreatureAnimState.DIE);
-        }
+        this.animationService.updateDialogAnimation();
       }
+      this.animationService.updateDebilitatedPose();
 
-      if(this.isDebilitated()){
-        this.force = 0;
-        this.speed = 0;
-        if(!this.combatData.combatState){
-          const state = getActiveSetStateType(this);
-          this.setAnimationState(
-            state > 0 ? animForSetState(state) : ModuleCreatureAnimState.PAUSE
-          );
-        }
-      }
-
-      //-------------------------//
-      // BEGIN: Move Speed Logic //
-      //-------------------------//
-
-      if(
-        this.isDead() ||
-        (
-          this.animationState.index == ModuleCreatureAnimState.DIE ||
-          this.animationState.index == ModuleCreatureAnimState.DIE1 ||
-          this.animationState.index == ModuleCreatureAnimState.GET_UP_DEAD ||
-          this.animationState.index == ModuleCreatureAnimState.GET_UP_DEAD1 
-        )
-      ){
-        this.force = 0;
-        this.speed = 0;
-        this.animSpeed = 1;
-        this.forceVector.set(0, 0, 0);
-        if(this.playerControl){
-          this.playerControl.active = false;
-          this.playerControl.velX = 0;
-          this.playerControl.velY = 0;
-          this.playerControl.accelX = 0;
-          this.playerControl.accelY = 0;
-          this.playerControl.lastAnimMoveSpeed = 0;
-          this.playerControl.driveFlags = 0;
-        }
-      }
-
-      const actionType = this.action?.type;
-      const serverLocomotionActive =
-        actionType === ActionType.ActionDrive ||
-        actionType === ActionType.ActionMoveToPoint ||
-        actionType === ActionType.ActionFollowLeader ||
-        actionType === ActionType.ActionForceFollowObject;
-      const playerControlMoving =
-        !!this.playerControl &&
-        Math.hypot(this.playerControl.velX, this.playerControl.velY) > 0;
-      // Direct WASD/stick overrides path actions while axes are held. Keep
-      // running the controller after release so drag can decelerate.
-      // Dialog mode still ticks creatures; sticky axes must not keep coasting.
-      // Force Push: force-push loco only SetPosition — no cam turn.
-      const forcePushLocked =
-        this.isForcePushed() ||
-        isForcePushLocoActive(this);
-      const runtime = getDefaultRuntimeContext();
-      const usePlayerControl =
-        !forcePushLocked &&
-        runtime.getMode() != EngineMode.DIALOG &&
-        (!!this.playerControl?.active || playerControlMoving) &&
-        (this.controlled || this === runtime.getCurrentPlayer?.());
-
-      let playerControlCommitted = false;
-      if(usePlayerControl){
-        this.applyPlayerCamRelativeControl(delta);
-        if(this.forceVector.lengthSq() > 1e-12){
-          setMovementAuthority(this, MovementAuthority.PlayerControl);
-          const result = resolvePlayerControlStep(this, this.forceVector);
-          commitMovement(this, result, { delta });
-          this.forceVector.set(0, 0, 0);
-          playerControlCommitted = true;
-        }
-      }else if(forcePushLocked){
-        // Hold still for player RK4; creature loco owns the slide.
-        this.forceVector.set(0, 0, 0);
-        this.force = 0;
-        this.speed = 0;
-        if(this.playerControl){
-          this.playerControl.velX = 0;
-          this.playerControl.velY = 0;
-          this.playerControl.accelX = 0;
-          this.playerControl.accelY = 0;
-          this.playerControl.lastAnimMoveSpeed = 0;
-        }
-      }else if(serverLocomotionActive){
-        this.forceVector.set(0, 0, 0);
-        this.force = 0;
-        this.updateServerLocomotionAnimationRate();
-      }else if(this.force > 0 || this.moveDirOverride){
-        // Legacy force-mover leftovers (RandomWalk etc. enqueue MoveTo now).
-        // Keep a minimal coast path for any remaining force setters.
-        this.forceVector.z = 0;
-        this.speed += (this.getMovementSpeed() * 2.5) * this.force * delta;
-        if(this.speed > this.getMovementSpeed()){
-          this.speed = this.getMovementSpeed();
-        }
-        let forceDelta = Math.max(this.force * delta, this.speed * delta);
-        if(this.speed){
-          this.animSpeed = this.speed / this.getRunSpeed();
-        }else{
-          this.animSpeed = 1;
-        }
-        if(!this.forceVector.length()){
-          if(this.moveDirOverride){
-            const ox = this.moveDirOverride.x;
-            const oy = this.moveDirOverride.y;
-            const len = Math.hypot(ox, oy);
-            if(len > 1e-8){
-              this.forceVector.x = (ox / len) * forceDelta;
-              this.forceVector.y = (oy / len) * forceDelta;
-            }
-          }else{
-            this.forceVector.x = ( Math.cos(this.rotation.z + Math.PI/2) * forceDelta );
-            this.forceVector.y = ( Math.sin(this.rotation.z + Math.PI/2) * forceDelta );
-          }
-          if(this.forceVector.length()){
-            if(this.moveDirOverride && this.isWalking()){
-              this.setAnimationState(ModuleCreatureAnimState.WALKING_BACK);
-            }else if(this.animSpeed > 0.75){
-              this.setAnimationState(ModuleCreatureAnimState.RUNNING);
-            }else{
-              this.setAnimationState(ModuleCreatureAnimState.WALKING);
-            }
-          }
-        }else{
-          this.forceVector.multiplyScalar(forceDelta);
-        }
-        if(this.force < 1){
-          this.speed -= (this.getMovementSpeed() * 2.5) * delta;
-        }
-        if(this.speed < 0){
-          this.speed = 0;
-        }
-        if(!this.forceVector.length() && ( this.animationState.index == ModuleCreatureAnimState.RUNNING || this.animationState.index == ModuleCreatureAnimState.WALKING || this.animationState.index == ModuleCreatureAnimState.WALKING_BACK )){
-          if(this.combatMode === CombatMode.COUNTERSPELL){
-            this.setAnimationState(ModuleCreatureAnimState.CASTOUT1_LP);
-          }else{
-            this.setAnimationState(
-              this.combatData.combatState ? ModuleCreatureAnimState.READY : ModuleCreatureAnimState.PAUSE
-            );
-          }
-          this.speed = 0;
-          this.force = 0;
-        }
-      }else{
-        this.forceVector.set(0, 0, 0);
-        this.force = 0;
-        if(this.speed > 0){
-          this.speed = 0;
-        }
-        // creature walk update end-of-path: vtable(0x2710 / PAUSE).
-        // Walk/run clips are forced looping — without this, a transit or cancelled
-        // move leaves the creature frozen on the last walk frame forever.
-        this.clearLocomotionAnimation();
-      }
-
-      //-----------------------//
-      // END: Move Speed Logic //
-      //-----------------------//
+      const playerControlCommitted = this.updateLocomotionFrame(delta);
 
       this.pushGrassWindGust();
+      this.animationService.promoteIdleCombatAnimation();
 
-      // IDLE == PAUSE (10000); promote out-of-combat idle to combat ready while engaged.
-      // Also honor animations.2da pause flag on the current clip.
-      if(this.combatMode === CombatMode.COUNTERSPELL){
-        if(
-          this.animationState.index == ModuleCreatureAnimState.PAUSE ||
-          this.animationState.index == ModuleCreatureAnimState.READY ||
-          isPauseAnimation(this.animationState.animation)
-        ){
-          this.setAnimationState(ModuleCreatureAnimState.CASTOUT1_LP);
-        }
-      }else if(
-        this.combatData.combatState &&
-        (
-          this.animationState.index == ModuleCreatureAnimState.PAUSE ||
-          isPauseAnimation(this.animationState.animation)
-        )
-      ){
-        this.setAnimationState(ModuleCreatureAnimState.READY);
-      }else if(
-        !this.combatData.combatState &&
-        isPauseAnimation(this.animationState.animation) &&
-        this.isInjured() &&
-        this.animationState.index != ModuleCreatureAnimState.PAUSE_INJ
-      ){
-        this.setAnimationState(ModuleCreatureAnimState.PAUSE_INJ);
-      }
-
-      // Combat / casting / perception / regen moved to aiUpdate
-      this.updateAnimationState();
-      this.updateItems(delta);
+      this.animationService.updateAnimationState();
+      this.equipmentService.updateItems(delta);
 
       if(this.model instanceof OdysseyModel3D && this.model.bonesInitialized){
-
-        //BEGIN: Animation Optimization
-        this.model.animateFrame = true;
-        const runtime = getDefaultRuntimeContext();
-        const inParty = (runtime.getParty?.() ?? []).indexOf(this) != -1;
-        // Last-frame cull (visibility sync runs after creature ticks). Party,
-        // dialog, cutscene, and TSL forceAlwaysUpdate keep posing.
-        if(
-          !this.forceAlwaysUpdate &&
-          !this.model.visible &&
-          !inParty &&
-          !this.cutsceneMode &&
-          runtime.getMode() != EngineMode.DIALOG
-        ){
-          this.model.animateFrame = false;
-        }
-        //If the object is further than 50 meters, animate every other frame
-        if(this.model.animateFrame && this.distanceToCamera > 50){
-          this.model.animateFrame = this.model.oddFrame;
-        }
-        
-        if(this.model.animateFrame){
-          //If we can animate and there is fog, make sure the distance isn't greater than the far point of the fog effect
-          if(!inParty && this.context.scene.fog){
-            if(this.distanceToCamera >= this.context.scene.fog.far){
-              this.model.animateFrame = false;
-              //If the object is past the near point, and the near point is greater than zero, animate every other frame
-            }else if(this.context.scene.fog.near && this.distanceToCamera >= this.context.scene.fog.near){
-              this.model.animateFrame = this.model.oddFrame;
-            }
-          }
-        }
-        //END: Animation Optimization
-
-        // Strip look before anim so blend does not start from a looked pose.
-        if(this.model.hturn_g){
-          stripHeadTrackingFromHturn(this.model.hturn_g);
-        }
-
-        if(runtime.getMode() != EngineMode.DIALOG){
-          const locomoting =
-            this.animationState.index == ModuleCreatureAnimState.RUNNING ||
-            this.animationState.index == ModuleCreatureAnimState.WALKING ||
-            this.animationState.index == ModuleCreatureAnimState.WALKING_BACK;
-          // Walk-back reuses walk rows with reverse playback.
-          const playback =
-            (locomoting ? this.animSpeed : this.movementSpeed) *
-            (this.animationState.index == ModuleCreatureAnimState.WALKING_BACK ? -1 : 1);
-          this.model.update(playback * delta);
-          if(this.lipObject instanceof LIPObject){
-            LipSyncPlayer.update(this.lipObject, delta, this.model);
-          }
-        }else{
-          this.model.update( delta );
-          if(this.lipObject instanceof LIPObject){
-            LipSyncPlayer.update(this.lipObject, delta, this.model);
-          }
-          if(this.cutsceneMode && this.model){
-            for(let i = 0, len = this.model.skins.length; i < len; i++){
-              this.model.skins[i].frustumCulled = false;
-            }
-          }
-        }
-
-        this.updateHeadTracking(delta);
+        this.animationService.updateModelPlayback(delta);
         // After body bones are posed so saber trails sample current matrixWorld.
-        this.updateWeaponModels(delta);
+        this.equipmentService.updateWeaponModels(delta);
       }
 
       // Contact OnBlocked for PlayerControl / Drive / Walk / ExternalForce is
@@ -1603,9 +1206,6 @@ export class Creature extends GameObject {
           }
         }
       }
-
-      // Perception / listening moved to aiUpdate
-
 
       // Party companion stuck timer — FollowLeader TeleportForward is owned by
       // the FollowLeader SM (ActionFollowLeader.softTeleportForward). Do not also
@@ -1631,77 +1231,8 @@ export class Creature extends GameObject {
         this.markCollisionMatrixDirty("facing");
       }
 
-      // Stationary turn animations (body turn when idle/pause/ready; not head look).
-      // Only while the current clip is stationary-classified.
-      const stationaryTurnStates = [
-        ModuleCreatureAnimState.IDLE,
-        ModuleCreatureAnimState.PAUSE,
-        ModuleCreatureAnimState.READY,
-        ModuleCreatureAnimState.TURN_LEFT,
-        ModuleCreatureAnimState.TURN_RIGHT
-      ];
-      const currentStationary = isStationaryAnimation(this.animationState.animation);
-      if(
-        this.turning !== 0 &&
-        currentStationary &&
-        stationaryTurnStates.includes(this.animationState.index)
-      ){
-        const wantTurnLeft = this.turning < 0;
-        if(wantTurnLeft && this.animationState.index !== ModuleCreatureAnimState.TURN_LEFT){
-          this.setAnimationState(ModuleCreatureAnimState.TURN_LEFT);
-        }else if(!wantTurnLeft && this.animationState.index !== ModuleCreatureAnimState.TURN_RIGHT){
-          this.setAnimationState(ModuleCreatureAnimState.TURN_RIGHT);
-        }
-      }else if(this.turning === 0 && (this.animationState.index === ModuleCreatureAnimState.TURN_LEFT || this.animationState.index === ModuleCreatureAnimState.TURN_RIGHT)){
-        this.setAnimationState(this.combatData.combatState ? ModuleCreatureAnimState.READY : ModuleCreatureAnimState.PAUSE);
-      }
-
-      //Update equipment
-      if(this.equipment.HEAD){
-        this.equipment.HEAD.update(delta);
-      }
-      if(this.equipment.ARMS){
-        this.equipment.ARMS.update(delta);
-      }
-
-      if(this.equipment.RIGHTARMBAND){
-        this.equipment.RIGHTARMBAND.update(delta);
-      }
-
-      if(this.equipment.LEFTARMBAND){
-        this.equipment.LEFTARMBAND.update(delta);
-      }
-
-      // Hands: powered/item logic only — model tick is updateWeaponModels after body anim.
-      if(this.equipment.RIGHTHAND){
-        this.equipment.RIGHTHAND.updatePoweredAnimation?.();
-      }
-
-      if(this.equipment.LEFTHAND){
-        this.equipment.LEFTHAND.updatePoweredAnimation?.();
-      }
-
-      if(this.equipment.ARMOR){
-        this.equipment.ARMOR.update(delta);
-      }
-      
-      if(this.equipment.BELT){
-        this.equipment.BELT.update(delta);
-      }
-
-      if(this.equipment.CLAW1){
-        this.equipment.CLAW1.update(delta);
-      }
-
-      if(this.equipment.CLAW2){
-        this.equipment.CLAW2.update(delta);
-      }
-
-      if(this.equipment.CLAW3){
-        this.equipment.CLAW3.update(delta);
-      }
-
-      // Effects / regen moved to aiUpdate
+      this.animationService.updateStationaryTurnAnimation();
+      this.equipmentService.updateWearableEquipment(delta);
 
       if(!this.position.equals(this.lastPosition)){
         this.lastPosition.copy(this.position);
@@ -1712,9 +1243,9 @@ export class Creature extends GameObject {
         this.onPositionChanged();
       }
     }else{
-      this.updateAnimationState();
-      this.updateItems(delta);
-      this.updateWeaponModels(delta);
+      this.animationService.updateAnimationState();
+      this.equipmentService.updateItems(delta);
+      this.equipmentService.updateWeaponModels(delta);
     }
 
     // Decay stuck timer only when not in contact (MovementCommitter increments while colliding)
@@ -1727,24 +1258,158 @@ export class Creature extends GameObject {
     this.force = 0;
   }
 
-  updateRegen(delta = 0){
-    this.regenTimer -= delta;
-    if(this.regenTimer <= 0){
-      this.regenTimer = this.regenTimerMax;
-
-      const regeneration = getDefaultRuntimeContext().getSWRuleSet?.()?.regenerations?.[
-        this.combatData.combatState ? 0 : 1
-      ];
-      if(regeneration){
-        if(Number.isFinite(regeneration.forceregen)){
-          this.addFP(Math.abs(regeneration.forceregen));
-        }
-
-        if(Number.isFinite(regeneration.healthregen) && !GameState.PartyManager.DisableHealthRegen){
-          this.addHP(Math.abs(regeneration.healthregen));
-        }
+  /**
+   * Move-speed / player-control / server-loco / force-coast for one frame.
+   * Kept on the facade (tightly coupled to movement authority).
+   * @returns true when player control already committed displacement this frame
+   */
+  private updateLocomotionFrame(delta: number): boolean {
+    if(
+      this.isDead() ||
+      (
+        this.animationState.index == ModuleCreatureAnimState.DIE ||
+        this.animationState.index == ModuleCreatureAnimState.DIE1 ||
+        this.animationState.index == ModuleCreatureAnimState.GET_UP_DEAD ||
+        this.animationState.index == ModuleCreatureAnimState.GET_UP_DEAD1
+      )
+    ){
+      this.force = 0;
+      this.speed = 0;
+      this.animSpeed = 1;
+      this.forceVector.set(0, 0, 0);
+      if(this.playerControl){
+        this.playerControl.active = false;
+        this.playerControl.velX = 0;
+        this.playerControl.velY = 0;
+        this.playerControl.accelX = 0;
+        this.playerControl.accelY = 0;
+        this.playerControl.lastAnimMoveSpeed = 0;
+        this.playerControl.driveFlags = 0;
       }
     }
+
+    const actionType = this.action?.type;
+    const serverLocomotionActive =
+      actionType === ActionType.ActionDrive ||
+      actionType === ActionType.ActionMoveToPoint ||
+      actionType === ActionType.ActionFollowLeader ||
+      actionType === ActionType.ActionForceFollowObject;
+    const playerControlMoving =
+      !!this.playerControl &&
+      Math.hypot(this.playerControl.velX, this.playerControl.velY) > 0;
+    // Direct WASD/stick overrides path actions while axes are held. Keep
+    // running the controller after release so drag can decelerate.
+    // Dialog mode still ticks creatures; sticky axes must not keep coasting.
+    // Force Push: force-push loco only SetPosition — no cam turn.
+    const forcePushLocked =
+      this.isForcePushed() ||
+      isForcePushLocoActive(this);
+    const runtime = getDefaultRuntimeContext();
+    const usePlayerControl =
+      !forcePushLocked &&
+      runtime.getMode() != EngineMode.DIALOG &&
+      (!!this.playerControl?.active || playerControlMoving) &&
+      (this.controlled || this === runtime.getCurrentPlayer?.());
+
+    let playerControlCommitted = false;
+    if(usePlayerControl){
+      this.applyPlayerCamRelativeControl(delta);
+      if(this.forceVector.lengthSq() > 1e-12){
+        setMovementAuthority(this, MovementAuthority.PlayerControl);
+        const result = resolvePlayerControlStep(this, this.forceVector);
+        commitMovement(this, result, { delta });
+        this.forceVector.set(0, 0, 0);
+        playerControlCommitted = true;
+      }
+    }else if(forcePushLocked){
+      // Hold still for player RK4; creature loco owns the slide.
+      this.forceVector.set(0, 0, 0);
+      this.force = 0;
+      this.speed = 0;
+      if(this.playerControl){
+        this.playerControl.velX = 0;
+        this.playerControl.velY = 0;
+        this.playerControl.accelX = 0;
+        this.playerControl.accelY = 0;
+        this.playerControl.lastAnimMoveSpeed = 0;
+      }
+    }else if(serverLocomotionActive){
+      this.forceVector.set(0, 0, 0);
+      this.force = 0;
+      this.updateServerLocomotionAnimationRate();
+    }else if(this.force > 0 || this.moveDirOverride){
+      // Legacy force-mover leftovers (RandomWalk etc. enqueue MoveTo now).
+      // Keep a minimal coast path for any remaining force setters.
+      this.forceVector.z = 0;
+      this.speed += (this.getMovementSpeed() * 2.5) * this.force * delta;
+      if(this.speed > this.getMovementSpeed()){
+        this.speed = this.getMovementSpeed();
+      }
+      let forceDelta = Math.max(this.force * delta, this.speed * delta);
+      if(this.speed){
+        this.animSpeed = this.speed / this.getRunSpeed();
+      }else{
+        this.animSpeed = 1;
+      }
+      if(!this.forceVector.length()){
+        if(this.moveDirOverride){
+          const ox = this.moveDirOverride.x;
+          const oy = this.moveDirOverride.y;
+          const len = Math.hypot(ox, oy);
+          if(len > 1e-8){
+            this.forceVector.x = (ox / len) * forceDelta;
+            this.forceVector.y = (oy / len) * forceDelta;
+          }
+        }else{
+          this.forceVector.x = ( Math.cos(this.rotation.z + Math.PI/2) * forceDelta );
+          this.forceVector.y = ( Math.sin(this.rotation.z + Math.PI/2) * forceDelta );
+        }
+        if(this.forceVector.length()){
+          if(this.moveDirOverride && this.isWalking()){
+            this.setAnimationState(ModuleCreatureAnimState.WALKING_BACK);
+          }else if(this.animSpeed > 0.75){
+            this.setAnimationState(ModuleCreatureAnimState.RUNNING);
+          }else{
+            this.setAnimationState(ModuleCreatureAnimState.WALKING);
+          }
+        }
+      }else{
+        this.forceVector.multiplyScalar(forceDelta);
+      }
+      if(this.force < 1){
+        this.speed -= (this.getMovementSpeed() * 2.5) * delta;
+      }
+      if(this.speed < 0){
+        this.speed = 0;
+      }
+      if(!this.forceVector.length() && ( this.animationState.index == ModuleCreatureAnimState.RUNNING || this.animationState.index == ModuleCreatureAnimState.WALKING || this.animationState.index == ModuleCreatureAnimState.WALKING_BACK )){
+        if(this.combatMode === CombatMode.COUNTERSPELL){
+          this.setAnimationState(ModuleCreatureAnimState.CASTOUT1_LP);
+        }else{
+          this.setAnimationState(
+            this.combatData.combatState ? ModuleCreatureAnimState.READY : ModuleCreatureAnimState.PAUSE
+          );
+        }
+        this.speed = 0;
+        this.force = 0;
+      }
+    }else{
+      this.forceVector.set(0, 0, 0);
+      this.force = 0;
+      if(this.speed > 0){
+        this.speed = 0;
+      }
+      // creature walk update end-of-path: vtable(0x2710 / PAUSE).
+      // Walk/run clips are forced looping — without this, a transit or cancelled
+      // move leaves the creature frozen on the last walk frame forever.
+      this.clearLocomotionAnimation();
+    }
+
+    return playerControlCommitted;
+  }
+
+  updateRegen(delta = 0){
+    return this.statsService.updateRegen(delta);
   }
 
   updateActionQueue(delta = 0){
@@ -1788,233 +1453,23 @@ export class Creature extends GameObject {
   }
 
   updateListeningPatterns(){
-
-    if(this.isDead())
-      return;
-
-    const str = this.heardStrings[0];
-    if(!this.isListening || !str){ return;  }
-
-    // TestListenExpression — scan registered expressions in
-    // order; first match wins. No exact-string fast path.
-    let patternNum: number | undefined;
-    let matchedSubstrings: string[] = [];
-    for(let i = 0; i < this.listeningPatterns.length; i++){
-      const entry = this.listeningPatterns[i];
-      const result = testStringAgainstPattern(entry.pattern, str.string);
-      if(result.matched){
-        patternNum = entry.number;
-        matchedSubstrings = result.substrings;
-        break;
-      }
-    }
-    // Always drain the head — unmatched shouts must not stall the queue.
-    // BroadcastDialog only enqueues OnDialogue on a match (no backlog).
-    drainHeardStringHead(this.heardStrings);
-    if(typeof patternNum === 'undefined'){ return; }
-
-    this.onDialog(str.speaker, patternNum, undefined, matchedSubstrings);
+    return this.creaturePerceptionService.updateListeningPatterns();
   }
 
   updatePerceptionList(delta = 0){
-
-    if(this.isDead())
-      return true;
-
-    if(this.room){
-      if(!this.room.model?.userData?.visActive){
-        return;
-      }
-    }
-
-    if(!this.spawned || !getDefaultRuntimeContext().isReadyToProcessEvents()){
-      return;
-    }
-
-    if(this.perceptionTimer < 3){
-      this.perceptionTimer += 1 * delta;
-      return;
-    }
-
-    this.perceptionTimer = 0;
-
-    //Check modules creatures
-    const creatures = this.area?.creatures;
-    if(!creatures){
-      return;
-    }
-    let creatureLen = creatures.length;
-    for(let i = 0; i < creatureLen; i++ ){
-      let creature = creatures[i];
-      //creature cannot perceive itself
-      if(this == creature){
-        continue;
-      }
-
-      if(creature.isDead()){
-        this.notifyPerceptionSeenObject(creature, false);
-        continue;
-      }
-
-      let distance = this.position.distanceTo(creature.position);
-      const stealthed = creature.isStealthedOrInvisible();
-      const detected = !stealthed || this.doStealthDetection(creature);
-      if(distance < this.getPerceptionRangePrimary() && this.hasLineOfSight(creature) && detected){
-        const wasSeen = this.hasSeenObject(creature);
-        if(GameState.PartyManager.party.indexOf(this) == -1){
-          if(this.isHostile(creature)){
-            this.resetExcitedDuration();
-          }
-        }
-        if(
-          this == GameState.PartyManager.getCurrentPlayer() &&
-          this.isHostile(creature)
-        ){
-          if(!wasSeen){
-            GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.EnemySighted);
-          }
-          GameState.AutoPauseManager.RefreshEnemySightedLatch();
-        }
-        
-        this.notifyPerceptionSeenObject(creature, true);
-      }else if(distance < this.getPerceptionRangeSecondary() && detected){
-        // Listen does not require LOS in; still require contested detect while stealthed
-        this.notifyPerceptionSeenObject(creature, false);
-        this.notifyPerceptionHeardObject(creature, true);
-      }else{
-        this.notifyPerceptionSeenObject(creature, false);
-      }
-    }
-
-    //Check party creatures
-    let partyLen = GameState.PartyManager.party.length;
-    for(let i = 0; i < partyLen; i++ ){
-      let creature = GameState.PartyManager.party[i];
-      //creature cannot perceive itself
-      if(this == creature){
-        continue;
-      }
-
-      if(creature.isDead()){
-        this.notifyPerceptionSeenObject(creature, false);
-        continue;
-      }
-
-      let distance = this.position.distanceTo(creature.position);
-      const stealthed = creature.isStealthedOrInvisible();
-      const detected = !stealthed || this.doStealthDetection(creature);
-      if(distance < this.getPerceptionRangePrimary() && this.hasLineOfSight(creature) && detected){
-        if(GameState.PartyManager.party.indexOf(this) == -1){
-          if(this.isHostile(creature)){
-            this.resetExcitedDuration();
-          }
-
-          this.notifyPerceptionSeenObject(creature, true);
-        }
-      }else if(distance < this.getPerceptionRangeSecondary() && detected){
-        this.notifyPerceptionSeenObject(creature, false);
-        this.notifyPerceptionHeardObject(creature, true);
-      }else{
-        this.notifyPerceptionSeenObject(creature, false);
-      }
-    }
-
-    // Passive trap detect — UpdateMineCheck:
-    // Awareness + d10 (or d10+10) vs DetectDC; not ActionFlagMine.
-    const detectMode = !!this.detectMode;
-    const range = detectMode ? 20.0 : 3.0;
-    for(let i = 0, triglen = this.area.triggers.length; i < triglen; i++){
-      const trig = this.area.triggers[i];
-      if(trig.type != ModuleTriggerType.TRAP){ continue; }
-      if(trig.trapDetected){ continue; }
-      if(!trig.trapDetectable && !(trig.setByPlayerParty && this.isPartyMember())){ continue; }
-
-      const distance = this.position.distanceTo(trig.position);
-      if(distance > range){ continue; }
-
-      if(trig.setByPlayerParty && this.isPartyMember()){
-        trig.detectTrap(this);
-        continue;
-      }
-
-      // Hostile / non-friendly traps only (reputation < 90).
-      if(typeof (this as any).isHostile === 'function' && !this.isHostile(trig as any)){
-        continue;
-      }
-
-      const check = resolvePassiveMineDetect(this, trig, { detectMode });
-      if(check.result === MineSkillResult.SUCCESS || check.result === MineSkillResult.OWNED){
-        trig.detectTrap(this);
-        if(
-          this == GameState.PartyManager.getCurrentPlayer() &&
-          check.result === MineSkillResult.SUCCESS
-        ){
-          GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.MineSighted);
-        }
-      }
-    }
-
+    return this.creaturePerceptionService.updatePerceptionList(delta);
   }
 
   updateCombat(delta = 0){
-    // this.combatData.update(delta);
-    this.combatRound.update(delta);
-
-    // Schedule with pending work but no ActionCombat (WAITING-splice /
-    // ClearAllActions keep-schedule) — restore the dispatcher so drain can resume.
-    ensureCombatDispatcher(this);
-
-    if(this.combatData.lastAttackTarget instanceof GameObject && this.combatData.lastAttackTarget.isDead()){
-      this.combatData.clearTarget(this.combatData.lastAttackTarget);
-    }
-
-    if(this.combatData.lastAttacker instanceof GameObject && this.combatData.lastAttacker.isDead())
-      this.combatData.lastAttacker = undefined;
-
-    if(this.combatData.lastAttemptedAttackTarget instanceof GameObject && this.combatData.lastAttemptedAttackTarget.isDead())
-      this.combatData.lastAttemptedAttackTarget = undefined;
-
-    if(this.combatData.lastAttemptedSpellTarget instanceof GameObject && this.combatData.lastAttemptedSpellTarget.isDead())
-      this.combatData.lastAttemptedSpellTarget = undefined;
-
-    if(this.combatData.lastDamager instanceof GameObject && this.combatData.lastDamager.isDead())
-      this.combatData.lastDamager = undefined;
-
-    if(this.combatData.lastHostileActor instanceof GameObject && this.combatData.lastHostileActor.isDead())
-      this.assignHostileActor(undefined, true);
-
-    if(this.combatData.lastSpellAttacker instanceof GameObject && this.combatData.lastSpellAttacker.isDead())
-      this.combatData.lastSpellAttacker = undefined;
-
-    if(this.isDead()){
-      this.clearTarget();
-      this.combatRound.clearActions();
-    }
-
-    // Auto-requeue only for hostile Damage engagement — not flourish (SpellCast reason).
-    // QueueAttackActions prefers combat-round sticky / keeps queued
-    // actions; never retarget to lastAttacker (who just hit the PC).
-    if(this.isHostileCombatEngaged()){
-      if(GameState.PartyManager.getCurrentPlayer() == this){
-        if(!this.combatRound.scheduledActionList.length && !this.combatRound.action){
-          queueAttackActions(this);
-        }
-      }
-    }else if(!this.combatData.combatState){
-      if(this.animationState.index == ModuleCreatureAnimState.READY){
-        this.setAnimationState(ModuleCreatureAnimState.PAUSE);
-      }
-    }
+    return this.combatService.updateCombat(delta);
   }
 
   updateCasting(delta = 0){
-    // Live spell casts are owned by area.spellInstances (ticked/disposed in Area).
-    // The legacy per-creature casting array is never populated; nothing to tick here.
+    return this.combatService.updateCasting(delta);
   }
 
   clearTarget(){
-    this.combatData.lastAttackTarget = undefined;
-    this.combatData.lastDamager = undefined;
+    return this.combatService.clearTarget();
   }
 
   actionInRange(action: Action): boolean {
@@ -2109,169 +1564,7 @@ export class Creature extends GameObject {
   }
 
   updateAnimationState(){
-
-    if(!(this.model instanceof OdysseyModel3D))
-      return;
-
-    let currentAnimation = this.model.getAnimationName();
-
-    // Overlay runs concurrently with drive — never early-return past locomotion.
-    if(this.overlayAnimationState.animationName && !this.isDead()){
-      const overlayOk = this.overlayAnimationState.animation
-        && isAnimation2DAFlagSet(this.overlayAnimationState.animation.overlay);
-      if(overlayOk){
-        const overlayPlaying = this.model.animationManager?.overlayAnimation?.name?.toLowerCase()
-          === this.overlayAnimationState.animationName.toLowerCase();
-        if(!this.overlayAnimationState.started){
-          this.overlayAnimationState.started = true;
-          this.applyOverlayToBodyAndHead(
-            this.overlayAnimationState.animationName,
-            this.overlayAnimationState.animation
-          );
-        }else if(!overlayPlaying && !isAnimation2DAFlagSet(this.overlayAnimationState.animation.looping)){
-          this.stopOverlayAnimation();
-        }
-      }else if(this.overlayAnimationState.started){
-        this.stopOverlayAnimation();
-      }
-    }
-
-    // Dialog listen/talk owns the pose while stationary (AnimationDialog drive block).
-    if(
-      !this.isDead() &&
-      !this.speed &&
-      (
-        ((getDefaultRuntimeContext().getMode() == EngineMode.DIALOG) && this.dialogAnimation) ||
-        isDialogAnimation(this.animationState.animation)
-      )
-    ){
-      return;
-    }
-
-    if(this.animationState.animation){
-      const desiredName = this.animationState.animation.name?.toLowerCase();
-      // During base crossfade, oldest run may still be on the stack; treat desired
-      // as playing if any active base run has that name (not only getAnimationName).
-      const playingOnStack =
-        !!desiredName &&
-        !!this.model.animationManager?.hasActiveBaseNamed?.(desiredName);
-      const nameMatches =
-        !!desiredName &&
-        currentAnimation?.toLowerCase() === desiredName;
-
-      if(!nameMatches && !playingOnStack){
-        if(!this.animationState.started){
-          this.animationState.started = true;
-          // Drive loco must loop — animations.2da often leaves walk/run as fireforget=0
-          // looping≠1 (e.g. walkSS/runSS), which would end the clip and freeze/slide.
-          const isDriveLoco =
-            this.animationState.index == ModuleCreatureAnimState.RUNNING ||
-            this.animationState.index == ModuleCreatureAnimState.WALKING ||
-            this.animationState.index == ModuleCreatureAnimState.WALKING_BACK;
-          // Living NPCs holding ActionPlayAnimation(DEAD) need a looping corpse pose.
-          const scriptedDeadPose =
-            !this.isDead() &&
-            (
-              this.animationState.index == ModuleCreatureAnimState.DEAD ||
-              this.animationState.index == ModuleCreatureAnimState.DEAD1
-            );
-          let aLooping =
-            isDriveLoco ||
-            scriptedDeadPose ||
-            (
-              !this.animationState.animation.fireforget &&
-              this.animationState.animation.looping
-            );
-          this.model.playAnimation(this.animationState.animation.name?.toLowerCase(), aLooping);
-          if(this.model.animationManager?.currentAnimationState){
-            this.model.animationManager.currentAnimationState.speed =
-              this.animationState.speed < 0 ? this.animationState.speed : (this.animationState.speed || 1);
-          }
-          this.syncAnimationFlagSideEffects(this.animationState.animation, this.animationState.index);
-        }else if(
-          this.animationState.index == ModuleCreatureAnimState.DIE ||
-          this.animationState.index == ModuleCreatureAnimState.DIE1
-        ){
-          // DIE fireforget finished → DEAD (corpses and living Min1HP scripted defeat).
-          // SetAnimation keeps looping DEAD while DIE FAF plays; we promote here.
-          const deadPose =
-            this.animationState.index == ModuleCreatureAnimState.DIE1
-              ? ModuleCreatureAnimState.DEAD1
-              : ModuleCreatureAnimState.DEAD;
-          this.setAnimationState(deadPose);
-          if(this.isDead() || this.willDestroy){
-            this.deathAnimationPlayed = true;
-          }
-        }else if(
-          this.animationState.index == ModuleCreatureAnimState.DEAD ||
-          this.animationState.index == ModuleCreatureAnimState.DEAD1
-        ){
-          // Scripted living dead pose — re-loop; never fall through to READY/PAUSE.
-          this.animationState.started = false;
-        }else if(this.combatData.combatState){
-          // GetPauseReadyAnimation while engaged — don't drop to out-of-combat pause.
-          if(this.animationState.index == ModuleCreatureAnimState.READY){
-            this.animationState.started = false;
-          }else{
-            this.setAnimationState(ModuleCreatureAnimState.READY);
-          }
-        }else if(getDefaultRuntimeContext().getMode() == EngineMode.DIALOG && this.animationState.index != ModuleCreatureAnimState.PAUSE){
-          // SetDialogAnimations owns the pose until the next entry — re-apply
-          // looping talk/listen/READY instead of falling through to idle pause.
-          this.animationState.started = false;
-        }else if(
-          (
-            this.animationState.index == ModuleCreatureAnimState.RUNNING ||
-            this.animationState.index == ModuleCreatureAnimState.WALKING ||
-            this.animationState.index == ModuleCreatureAnimState.WALKING_BACK
-          ) &&
-          (
-            (this.playerControl?.lastAnimMoveSpeed ?? 0) > 0 ||
-            this.speed > 0
-          )
-        ){
-          // Still driving locomotion — re-play clip; never demote to PAUSE (freeze/slide).
-          this.animationState.started = false;
-        }else if(!isStationaryAnimation(this.animationState.animation)){
-          // Non-stationary clip finished while standing — re-assert pause/ready.
-          this.setAnimationState(
-            this.combatData.combatState ? ModuleCreatureAnimState.READY : ModuleCreatureAnimState.PAUSE
-          );
-        }else if(
-          isPauseAnimation(this.animationState.animation) &&
-          (
-            this.animationState.index == ModuleCreatureAnimState.PAUSE ||
-            this.animationState.index == ModuleCreatureAnimState.PAUSE_INJ ||
-            this.animationState.index == ModuleCreatureAnimState.READY
-          )
-        ){
-          // Already on a pause-class pose — re-loop instead of redundant set.
-          this.animationState.started = false;
-        }else{
-          this.setAnimationState(ModuleCreatureAnimState.PAUSE);
-        }
-      }else if(playingOnStack && !this.animationState.started){
-        // Clip already on stack (e.g. crossfade) — mark started without re-play
-        this.animationState.started = true;
-      }
-    }else if(this.isDead() || this.willDestroy){
-      if(
-        this.animationState.index != ModuleCreatureAnimState.DEAD &&
-        this.animationState.index != ModuleCreatureAnimState.DEAD1
-      ){
-        this.setAnimationState(ModuleCreatureAnimState.DEAD);
-        this.deathAnimationPlayed = true;
-      }
-    }else{
-      if(!this.animationMissingLogged){
-        this.animationMissingLogged = true;
-        // console.error('Animation Missing', this.getTag, this.getName, this.animationState);
-      }
-      this.setAnimationState(
-        this.combatData.combatState ? ModuleCreatureAnimState.READY : ModuleCreatureAnimState.PAUSE
-      );
-    }
-
+    return this.animationService.updateAnimationState();
   }
 
   /**
@@ -2280,24 +1573,7 @@ export class Creature extends GameObject {
    * this, creatures render MDL bind/rest pose until the first real tick.
    */
   primeAnimationPose(){
-    if(!(this.model instanceof OdysseyModel3D)){
-      return;
-    }
-    if(!this.animationState.animation){
-      this.setAnimationState(
-        this.combatData.combatState ? ModuleCreatureAnimState.READY : ModuleCreatureAnimState.PAUSE
-      );
-    }
-    this.updateAnimationState();
-    // updateAnimationState may only setAnimationState (started=false) when the
-    // clip was missing — drive play + pose on a second pass.
-    if(this.animationState.animation && !this.animationState.started){
-      this.updateAnimationState();
-    }
-    if(this.model.bonesInitialized){
-      this.model.animateFrame = true;
-      this.model.update(0.0000000000000000000001);
-    }
+    return this.animationService.primeAnimationPose();
   }
 
   damage(amount = 0, oAttacker: GameObject, delayTime = 0){
@@ -2512,15 +1788,7 @@ export class Creature extends GameObject {
    * SetCombatState(1) (8000ms) + SetExcitedState (ExcitedDuration.2da).
    */
   setCombatEngaged(reason: ExcitedDurationRow = ExcitedDurationRow.Damage){
-    const wasCombat = this.combatData.combatState;
-    this.setCombatState(true, reason);
-    this.setExcitedState(reason);
-    // ActionMenuAttack / engage → client SetCombatMode(1)
-    setClientCombatMode(this, true);
-    // RemoveCombatInvisibilityEffects on hostile engagement
-    if(!wasCombat){
-      this.removeCombatInvisibilityEffects();
-    }
+    return this.combatService.setCombatEngaged(reason);
   }
 
   /**
@@ -2530,69 +1798,7 @@ export class Creature extends GameObject {
    * Used on attack start and OnPhysicalAttacked (including misses).
    */
   broadcastCombatStateToParty(other?: GameObject){
-    const otherCreature = isCreature(other)
-      ? (other as Creature)
-      : undefined;
-
-    const combatReasonFor = (subject: Creature): ExcitedDurationRow => {
-      if(!otherCreature){
-        return ExcitedDurationRow.SpellCast;
-      }
-      // BroadcastCombatStateToParty
-      // reason 1 (Damage) when other's last attack/spell target is subject.
-      const data = otherCreature.combatData;
-      if(
-        data.lastAttackTarget === subject ||
-        data.lastSpellTarget === subject ||
-        data.lastAttemptedAttackTarget === subject ||
-        data.lastAttemptedSpellTarget === subject
-      ){
-        return ExcitedDurationRow.Damage;
-      }
-      return ExcitedDurationRow.SpellCast;
-    };
-
-    const selfOrMissing = !other || other === this;
-    const hostileToOther = !!other && this.getReputation(other) < 11;
-    if(selfOrMissing || hostileToOther){
-      this.setCombatState(true, combatReasonFor(this));
-    }
-
-    if(this.plot){
-      return;
-    }
-
-    const members: Creature[] = (this.isPartyMember() || this.faction?.id === 0)
-      ? GameState.PartyManager.party
-      : (this.faction?.creatures ?? []);
-
-    for(let i = 0; i < members.length; i++){
-      const member = members[i];
-      if(!member || member.isDead()){
-        continue;
-      }
-
-      const range = typeof member.getPerceptionRangePrimary === 'function'
-        ? member.getPerceptionRangePrimary()
-        : this.getPerceptionRangePrimary();
-      const dx = this.position.x - member.position.x;
-      const dy = this.position.y - member.position.y;
-      const dz = this.position.z - member.position.z;
-      if(dx * dx + dy * dy + dz * dz > range * range){
-        continue;
-      }
-
-      // : GetReputation(member, arg1) < 11 — skip when other is self/friendly
-      if(other && member.getReputation(other) >= 11){
-        continue;
-      }
-      if(!other){
-        continue;
-      }
-
-      member.setCombatState(true, combatReasonFor(member));
-      member.setExcitedState(ExcitedDurationRow.Damage);
-    }
+    return this.combatService.broadcastCombatStateToParty(other);
   }
 
   /**
@@ -2600,18 +1806,14 @@ export class Creature extends GameObject {
    * sets = (== 0) — non-party AI refresh flag.
    */
   resolveInitiative(){
-    // Party / player-UI creatures  → 0; others → 1
-    this.combatAiRefreshPending = GameState.PartyManager?.party?.indexOf(this) < 0;
-    if(!this.combatData.combatState){
-      this.setCombatState(true, ExcitedDurationRow.SpellCast);
-    }
+    return this.combatService.resolveInitiative();
   }
 
   /**
    * Compatibility wrapper — physical engagement uses Damage row.
    */
   resetExcitedDuration(){
-    this.setCombatEngaged(ExcitedDurationRow.Damage);
+    return this.combatService.resetExcitedDuration();
   }
 
   /**
@@ -2619,35 +1821,7 @@ export class Creature extends GameObject {
    * Active → refresh 8000ms timer; inactive → clear combat engagement.
    */
   setCombatState(active: boolean, reason: number = ExcitedDurationRow.Damage){
-    if(!active){
-      this.combatData.combatState = false;
-      this.combatStateTimer = 0;
-      this.combatStateReason = 0;
-      // SetCombatState(0) clears attempted/current attack+spell targets
-      this.combatData.lastAttemptedAttackTarget = undefined;
-      this.combatData.lastAttackTarget = undefined;
-      this.combatData.lastAttemptedSpellTarget = undefined;
-      this.combatData.lastSpellTarget = undefined;
-      // SetCombatState(0): ClearAllAttacks + RemoveAllActions, then
-      // end combat round if a round is in progress. Mirrors combat-round teardown here.
-      if(this.combatRound){
-        if(this.combatRound.specialAttackList){
-          this.combatRound.specialAttackList.length = 0;
-        }
-        this.combatRound.clearActions();
-        if(this.combatRound.roundStarted){
-          this.combatRound.endCombatRound({ skipQueueAttackActions: true });
-        }
-      }
-      // Client combat camera follows SetCombatMode, not SetCombatState.
-      return;
-    }
-    this.combatData.combatState = true;
-    this.combatStateTimer = COMBAT_STATE_DURATION_MS;
-    // : Damage reason (1) sticks; SpellCast (2) does not overwrite it.
-    if(this.combatStateReason !== ExcitedDurationRow.Damage){
-      this.combatStateReason = reason;
-    }
+    return this.combatService.setCombatState(active, reason);
   }
 
   /**
@@ -2656,23 +1830,7 @@ export class Creature extends GameObject {
    * calls area PlayBattleMusic(1).
    */
   setExcitedState(row: ExcitedDurationRow | number){
-    const duration = getExcitedDurationMs(row);
-    if(duration <= this.excitedDuration){
-      return;
-    }
-    this.excitedDuration = duration;
-    // : GetClientObjectByObjectId must succeed (controlled PC)
-    if(this !== GameState.PartyManager.getCurrentPlayer()){
-      return;
-    }
-    const area = this.area;
-    if(!area){
-      return;
-    }
-    // GetNearestEnemy(this, 30.0, OBJECT_INVALID, OBJECT_INVALID)
-    if(getNearestEnemy(this, 30)){
-      area.playBattleMusic(true);
-    }
+    return this.combatService.setExcitedState(row);
   }
 
   /**
@@ -2680,27 +1838,11 @@ export class Creature extends GameObject {
    * strip INVISIBILITY when int[0]==1 and all SANCTUARY.
    */
   removeCombatInvisibilityEffects(){
-    const effects = this.effects ? this.effects.slice() : [];
-    for(let i = 0; i < effects.length; i++){
-      const e = effects[i];
-      if(!e) continue;
-      if(e.type === GameEffectType.EffectInvisibility && e.getInt(0) === 1){
-        this.removeEffect(e);
-      }else if(e.type === GameEffectType.EffectSanctuary){
-        this.removeEffect(e);
-      }
-    }
-    if(this.stealthMode){
-      this.stealthMode = false;
-    }
+    return this.combatService.removeCombatInvisibilityEffects();
   }
 
   cancelExcitedDuration(){
-    const hadExcited = this.excitedDuration > 0;
-    this.excitedDuration = 0;
-    if(hadExcited && this === GameState.PartyManager.getCurrentPlayer() && this.area){
-      this.area.playBattleMusic(false);
-    }
+    return this.combatService.cancelExcitedDuration();
   }
 
   /**
@@ -2709,28 +1851,7 @@ export class Creature extends GameObject {
    * refresh the 8000ms timer instead of wiping the combat schedule mid-approach.
    */
   updateCombatStateTimer(delta = 0){
-    if(this.instantItemCooldownMs > 0){
-      this.instantItemCooldownMs = Math.max(0, this.instantItemCooldownMs - (1000 * delta));
-    }
-    if(this.isDead()){
-      if(this.combatData.combatState){
-        this.cancelCombat();
-      }
-      return;
-    }
-    if(!this.combatData.combatState) return;
-    this.combatStateTimer -= (1000 * delta);
-    if(this.combatStateTimer <= 0){
-      if(this.isActivelyPursuingCombatTarget()){
-        this.combatStateTimer = COMBAT_STATE_DURATION_MS;
-        return;
-      }
-      this.setCombatState(false, this.combatStateReason);
-      if(this.animationState.index == ModuleCreatureAnimState.READY){
-        this.setAnimationState(ModuleCreatureAnimState.PAUSE);
-      }
-      this.weaponPowered(false);
-    }
+    return this.combatService.updateCombatStateTimer(delta);
   }
 
   /**
@@ -2738,38 +1859,7 @@ export class Creature extends GameObject {
    * still pursuing it (prevents 8s SetCombatState(0) during long approaches).
    */
   isActivelyPursuingCombatTarget(): boolean {
-    if(!hasLivingCombatTarget(this)){
-      return false;
-    }
-    if(this.combatRound?.action?.target && !this.combatRound.action.target.isDead?.()){
-      return true;
-    }
-    const queue = this.actionQueue;
-    if(!queue?.length){
-      return false;
-    }
-    for(let i = 0; i < queue.length; i++){
-      const action = queue[i];
-      if(!action) continue;
-      if(action.type === ActionType.ActionPhysicalAttacks){
-        return true;
-      }
-      if(action.type === ActionType.ActionMoveToPoint){
-        const moveTarget = action.getParameter?.(4);
-        if(
-          moveTarget &&
-          (
-            moveTarget === this.combatData.lastAttackTarget ||
-            moveTarget === this.combatData.lastAttemptedAttackTarget ||
-            moveTarget === this.combatRound?.action?.target ||
-            moveTarget === this.combatRound?.newAttackTarget
-          )
-        ){
-          return true;
-        }
-      }
-    }
-    return false;
+    return this.combatService.isActivelyPursuingCombatTarget();
   }
 
   /**
@@ -2777,185 +1867,44 @@ export class Creature extends GameObject {
    * On expiry for a client-controlled creature → PlayBattleMusic(0).
    */
   updateExcitedDuration(delta = 0){
-    if(this.isDead()){
-      if(this.excitedDuration > 0){
-        this.excitedDuration = 0;
-        if(this === GameState.PartyManager.getCurrentPlayer() && this.area){
-          this.area.playBattleMusic(false);
-        }
-      }
-      return;
-    }
-    if(this.excitedDuration > 0){
-      this.excitedDuration -= (1000 * delta);
-      if(this.excitedDuration <= 0){
-        this.excitedDuration = 0;
-        if(this === GameState.PartyManager.getCurrentPlayer() && this.area){
-          this.area.playBattleMusic(false);
-        }
-      }
-    }
+    return this.combatService.updateExcitedDuration(delta);
   }
 
   isDueling(): boolean {
-    if(!(BitWise.InstanceOf(this.combatData.lastAttackTarget?.objectType, GameObjectType.Creature))) return false;
-    const target = this.combatData.lastAttackTarget as Creature;
-    if(target.combatData.lastAttackTarget != this) return false;
-    return resolveChoreographedState(this, target);
+    return this.combatService.isDueling();
   }
 
   /** ResolveChoreographedState weapon gate (excludes stun baton / ranged). */
   isDuelingWeaponEquipped(){
-    return isChoreographedMeleeWeapon(this);
+    return this.combatService.isDuelingWeaponEquipped();
   }
 
-  isDuelingObject( oObject: GameObject ){
-    if(!(oObject instanceof GameObject)) return false;
-    if(this.combatData.lastAttackTarget != oObject) return false;
-    if(oObject.combatData.lastAttackTarget != this) return false;
-    return resolveChoreographedState(this, oObject);
+  isDuelingObject(oObject: GameObject){
+    return this.combatService.isDuelingObject(oObject);
   }
 
   /**
    * Queue a normal attack (or feat attack). CutsceneAttack uses
    * {@link addCutsceneAttackActions} instead.
    */
-  attackCreature(
-    target: GameObject, feat?: TalentFeat, _isCutsceneAttack = false,
-    attackDamage = 0, attackAnimation?: number | string, attackResult?: AttackResult
-  ){
-    // Legacy CutsceneAttack callers still pass the 3rd-arg true path
-    if(_isCutsceneAttack){
-      const animRow = typeof attackAnimation === 'number'
-        ? attackAnimation
-        : -1;
-      this.addCutsceneAttackActions(
-        target,
-        animRow,
-        attackResult ?? AttackResult.MISS,
-        attackDamage
-      );
-      return;
-    }
-
-    if(target == undefined)
-      return;
-
-    if(target == this)
-      target = GameState.PartyManager.party[0];
-
-    if(target.isDead())
-      return;
-
-    // AddAttackActions — sticky GetAttemptedAttackTarget
-    this.combatData.setAttemptedAttackTargetIfInvalid(target);
-
-    let combatAction = new CombatRoundAction();
-    combatAction.actionType = CombatActionType.ATTACK;
-    combatAction.target = target;
-    combatAction.animation = ModuleCreatureAnimState.ATTACK;
-    combatAction.animationTime = 1500;
-
-    if(feat){
-      combatAction.actionType = CombatActionType.ATTACK_USE_FEAT;
-      combatAction.setFeat(feat);
-    }
-
-    this.combatRound.addAction(combatAction);
-
-    // AddAttackActions → BroadcastCombatStateToParty(this, this.id)
-    this.broadcastCombatStateToParty(this);
-    // ActionMenuAttack → SetCombatMode(1) on the attacker
-    setClientCombatMode(this, true);
-
-    if(!this.actionQueue.actionTypeExists(ActionType.ActionCombat)){
-      const action = getDefaultRuntimeContext().createAction('ActionCombat', 0xFFFF);
-      this.actionQueue.add(action);
-    }
-
+  attackCreature(target: GameObject, feat?: TalentFeat, _isCutsceneAttack = false, attackDamage = 0, attackAnimation?: number | string, attackResult?: AttackResult){
+    return this.combatService.attackCreature(target, feat, _isCutsceneAttack, attackDamage, attackAnimation, attackResult);
   }
 
   /**
    * queue cutscene attacks
    * queue cutscene attack.
    */
-  addCutsceneAttackActions(
-    target: GameObject,
-    animationRow: number,
-    attackResult: AttackResult,
-    damage: number
-  ){
-    // passes oTarget through; ResolveAttack filters creature/door/placeable
-    if(!target){
-      return;
-    }
-
-    this.combatData.setAttemptedAttackTargetIfInvalid(target);
-
-    const combatAction = new CombatRoundAction(this);
-    combatAction.actionType = CombatActionType.ATTACK;
-    combatAction.target = target;
-    // animation_id = 0x2719 (ATTACK)
-    combatAction.animation = ModuleCreatureAnimState.ATTACK;
-    // (combatStretch + 3000) / 2 — stretch defaults to 0
-    combatAction.animationTime = Math.floor((0 + CombatRound.ROUND_LENGTH) / 2);
-    combatAction.resultsCalculated = true;
-    combatAction.attackAnimation = animationRow | 0;
-    combatAction.attackResult = attackResult;
-    combatAction.attackDamage = damage | 0;
-
-    const row = resolveAnimations2DARow(combatAction.attackAnimation);
-    if(row?.name){
-      combatAction.animationName = String(row.name);
-      combatAction.swAnimation = OdysseyModelAnimation.GetAnimation2DA(combatAction.animationName);
-    }
-
-    this.combatRound.addAction(combatAction);
-
-    // : no BroadcastCombatStateToParty on cutscene path
-    // internal field==0 (PC) + client object: transient AI refresh + ClearAllActions(1)
-    if(this.isPC){
-      this.refreshTransientAIState();
-      this.clearAllActions(true);
-    }
-
-    if(!this.actionQueue.actionTypeExists(ActionType.ActionCombat)){
-      const action = getDefaultRuntimeContext().createAction('ActionCombat', 0xFFFF);
-      this.actionQueue.add(action);
-    }
+  addCutsceneAttackActions(target: GameObject, animationRow: number, attackResult: AttackResult, damage: number){
+    return this.combatService.addCutsceneAttackActions(target, animationRow, attackResult, damage);
   }
 
   /**
    * AddCutsceneMoveActions
    * AddCutsceneMoveActions.
    */
-  addCutsceneMoveActions(
-    destObject: GameObject | undefined,
-    position: { x: number; y: number; z: number },
-    shouldRun: number
-  ){
-    const combatAction = new CombatRoundAction(this);
-    combatAction.actionType = CombatActionType.ATTACK_CUTSCENE_MOVE;
-    combatAction.target = destObject;
-    combatAction.moveToPosition = {
-      x: position.x,
-      y: position.y,
-      z: position.z,
-    };
-    combatAction.shouldRun = shouldRun ? 1 : 0;
-
-    this.combatRound.addAction(combatAction);
-
-    // AddCutsceneMoveActions — same PC ClearAllActions(1) gate as attack
-    if(this.isPC){
-      this.refreshTransientAIState();
-      this.clearAllActions(true);
-    }
-
-    if(!this.actionQueue.actionTypeExists(ActionType.ActionCombat)){
-      const action = getDefaultRuntimeContext().createAction('ActionCombat', 0xFFFF);
-      this.actionQueue.add(action);
-    }
+  addCutsceneMoveActions(destObject: GameObject | undefined, position: { x: number; y: number; z: number }, shouldRun: number){
+    return this.combatService.addCutsceneMoveActions(destObject, position, shouldRun);
   }
 
   /**
@@ -2964,7 +1913,7 @@ export class Creature extends GameObject {
    * on the cutscene path.
    */
   refreshTransientAIState(){
-    // Placeholder for transient AI field reset + action walk.
+    return this.combatService.refreshTransientAIState();
   }
 
   /**
@@ -2972,253 +1921,65 @@ export class Creature extends GameObject {
    * (TalentObject|Spell/Feat/Skill), not a 0/1/2 enum.
    */
   useTalent(talent: TalentObject, oTarget: GameObject): Action {
-    let action: Action;
-    if(!(talent instanceof TalentObject)){
-      return action;
-    }
-
-    if((talent.objectType & TalentObjectType.TalentSpell) !== 0){
-      (talent as TalentSpell).useTalentOnObject(oTarget, this);
-      return action;
-    }
-
-    if((talent.objectType & TalentObjectType.TalentFeat) !== 0){
-      const combatAction = new CombatRoundAction();
-      combatAction.actionType = CombatActionType.ATTACK_USE_FEAT;
-      combatAction.target = oTarget;
-      combatAction.setFeat(talent as TalentFeat);
-      this.combatRound.addAction(combatAction);
-      if(!this.actionQueue.actionTypeExists(ActionType.ActionCombat)){
-        this.actionQueue.add(getDefaultRuntimeContext().createAction('ActionCombat', 0xFFFF));
-      }
-      return action;
-    }
-
-    if((talent.objectType & TalentObjectType.TalentSkill) !== 0){
-      if(talent.id == 6){ //Security
-        action = getDefaultRuntimeContext().createAction('ActionUnlockObject');
-        action.setParameter(0, ActionParameterType.DWORD, oTarget.id || GameObjectConstant.OBJECT_INVALID);
-        this.actionQueue.add(action);
-      }
-    }
-    return action;
+    return this.combatService.useTalent(talent, oTarget);
   }
 
   getDebilitatedState(): number {
-    // Prefer highest SetState (priority).
-    if(isCreature(this)){
-      const highest = getActiveSetStateType(this as Creature);
-      if(highest > 0) return highest;
-      // ambient_animation_state = 9 while force-pushed.
-      const ambient = (this as Creature).ambientAnimState | 0;
-      if(ambient === ModuleCreatureAmbientState.PRONE_FORCE_PUSHED){
-        return GameEffectSetStateType.FORCEPUSH;
-      }
-    }
-    const e = this.effects.find(eff => eff?.type == GameEffectType.EffectSetState);
-    return e ? (e.getInt(0) | 0) : 0;
+    return this.combatService.getDebilitatedState();
   }
 
-  animationConstantToAnimation( animation_constant = 10000 ): SWAnimation | undefined {
-    const animations = getDefaultRuntimeContext().getSWRuleSet?.()?.animations;
-
-    const debilitated = resolveDebilitatedCreatureAnimation(
-      this.getDebilitatedState(),
-      {
-        simple: this.isSimpleCreature(),
-        fp_push_played: this.fp_push_played,
-        fp_land_played: this.fp_land_played,
-        fp_getup_played: this.fp_getup_played,
-      },
-      animations,
-    );
-    if(debilitated !== undefined){
-      return debilitated;
-    }
-
-    return resolveCreatureAnimation(
-      animation_constant,
-      this.getAnimationResolveContext(),
-      animations,
-    );
+  animationConstantToAnimation(animation_constant = 10000): SWAnimation | undefined {
+    return this.animationService.animationConstantToAnimation(animation_constant);
   }
 
-  private getAnimationResolveContext(): CreatureAnimationContext {
-    return {
-      simple: this.isSimpleCreature(),
-      injured: this.isInjured(),
-      poisoned: this.isPoisoned(),
-      diseased: this.isDiseased(),
-      weaponType: this.getCombatAnimationWeaponType(),
-      gameKey: getDefaultRuntimeContext().getGameKey() === 'k2'
-        ? GameEngineType.TSL
-        : GameEngineType.KOTOR,
-    };
-  }
 
   setAnimationState(animState: ModuleCreatureAnimState){
-    if(!animState){ return; }
-
-    // SetAnimation — insert DIE/DIE1 before looping DEAD.
-    animState = Creature.resolveEnterDeadTransition(animState, this.animationState?.index);
-
-    const previousAnim = this.animationState?.animation;
-    this.animationState.index = animState;
-    this.animationState.animation = this.animationConstantToAnimation(animState);
-    this.animationState.started = false;
-    if(this.animationState.animation){
-      this.animationMissingLogged = false;
-    }
-    this.syncAnimationFlagSideEffects(this.animationState.animation, animState, previousAnim);
+    return this.animationService.setAnimationState(animState);
   }
   
   resetAnimationState(){
-    this.animationState = {
-      index: ModuleCreatureAnimState.PAUSE,
-      animation: undefined,
-      started: false,
-      speed: 1,
-    }
+    return this.animationService.resetAnimationState();
   }
 
   playTwoDAAnimation(animation: SWAnimation){
-    if(animation){
-      // combat/cutscene swings use SetAnimation — clear dialog slot so
-      // updateAnimationState is not blocked by a lingering dialog READY pose.
-      this.dialogAnimation = null;
-      const previousAnim = this.animationState?.animation;
-      this.resetAnimationState();
-      this.animationState = {
-        index: ModuleCreatureAnimState.PAUSE,
-        animation: animation,
-        started: false,
-        speed: 1,
-      }
-      this.syncAnimationFlagSideEffects(animation, ModuleCreatureAnimState.PAUSE, previousAnim);
-    }
+    return this.animationService.playTwoDAAnimation(animation);
   }
 
   playOverlayAnimation(NWScriptAnimId = -1){
-    this.resetOverlayAnimationState();
-    let animationName = '';
-    switch(NWScriptAnimId){
-      case 123:
-        animationName = 'diveroll';
-      break;
-      default:
-        if(NWScriptAnimId >= 10000){
-          const row = this.animationConstantToAnimation(NWScriptAnimId);
-          if(row?.name){
-            animationName = row.name.toLowerCase();
-          }
-        }
-      break;
-    }
-
-    if(!animationName){ return; }
-
-    const anim = OdysseyModelAnimation.GetAnimation2DA(animationName);
-    const mode = resolvePlaybackMode(NWScriptAnimId, anim);
-    if(mode === AnimationPlaybackMode.OVERLAY || (anim && isAnimation2DAFlagSet(anim.overlay))){
-      this.overlayAnimationState.animationIndex = NWScriptAnimId;
-      this.overlayAnimationState.animationName = animationName;
-      this.overlayAnimationState.animation = anim;
-      this.overlayAnimationState.stopFlag = resolveOverlayStopFlags(NWScriptAnimId);
-      this.overlayAnimationState.started = false;
-    }else if(anim){
-      // Non-overlay NWScript overlay opcode still falls through to base play.
-      this.playTwoDAAnimation(anim);
-    }
+    return this.animationService.playOverlayAnimation(NWScriptAnimId);
   }
 
   /**
    * SetOverlayAnimation — body + head Gobs.
    */
   applyOverlayToBodyAndHead(name: string, data: SWAnimation){
-    const flags = resolveOverlayStartFlags(this.overlayAnimationState?.animationIndex || 0);
-    if(this.model instanceof OdysseyModel3D){
-      this.model.playOverlayAnimation(name, data, flags);
-    }
-    if(this.head instanceof OdysseyModel3D){
-      this.head.playOverlayAnimation(name, data, flags);
-    }
+    return this.animationService.applyOverlayToBodyAndHead(name, data);
   }
 
   /**
    * Stop overlay runs (dialog end / pose change). Uses stop flags 0x80 / 0x400.
    */
   stopOverlayAnimation(){
-    const stopFlag = this.overlayAnimationState.stopFlag || 0x80;
-    if(this.model instanceof OdysseyModel3D){
-      this.model.animationManager?.stopOverlayAnimation(stopFlag);
-    }
-    if(this.head instanceof OdysseyModel3D){
-      this.head.animationManager?.stopOverlayAnimation(stopFlag);
-    }
-    this.resetOverlayAnimationState();
+    return this.animationService.stopOverlayAnimation();
   }
 
   /**
    * Apply a server animation ID using ResolvePlaybackMode (modes 0/1/2).
    */
   applyAnimationByMode(serverId: number, speed: number = 1){
-    if(!serverId){ return; }
-    const twoDA = this.animationConstantToAnimation(serverId);
-    const mode = resolvePlaybackMode(serverId, twoDA);
-    if(mode === AnimationPlaybackMode.OVERLAY){
-      if(twoDA?.name){
-        this.overlayAnimationState = {
-          animationIndex: serverId,
-          animationName: twoDA.name.toLowerCase(),
-          animation: twoDA,
-          started: false,
-          speed: speed || 1,
-          stopFlag: resolveOverlayStopFlags(serverId),
-        };
-      }
-      return;
-    }
-    if(mode === AnimationPlaybackMode.REVERSE){
-      this.setAnimationState(serverId as ModuleCreatureAnimState);
-      this.animationState.speed = speed >= 0 ? -Math.abs(speed || 1) : speed;
-      return;
-    }
-    // Mode 2 — weapon-primary clips prefer item Gob when equipped.
-    if(twoDA?.name && String((twoDA as any).weapon) === '1'){
-      this.startWeaponGesture(twoDA.name.toLowerCase(), this.getAnimationLength(serverId) || 1.5);
-    }
-    this.setAnimationState(serverId as ModuleCreatureAnimState);
-    this.animationState.speed = speed || 1;
-    this.setPlayOutOfPlaceActive(isPlayOutOfPlaceServerId(serverId));
+    return this.animationService.applyAnimationByMode(serverId, speed);
   }
   
   resetOverlayAnimationState(){
-    this.overlayAnimationState = {
-      animationIndex: -1,
-      animationName: '',
-      animation: undefined,
-      started: false,
-      speed: 1,
-      stopFlag: 0x80,
-    }
+    return this.animationService.resetOverlayAnimationState();
   }
 
   resetGestureState(){
-    this.gestureState = {
-      serverId: -1,
-      animation: undefined,
-      started: false,
-      remaining: 0,
-      active: false,
-    };
+    return this.animationService.resetGestureState();
   }
 
   resetWeaponGestureState(){
-    this.weaponGestureState = {
-      animationName: '',
-      remaining: 0,
-      active: false,
-    };
+    return this.animationService.resetWeaponGestureState();
   }
 
   /**
@@ -3226,50 +1987,15 @@ export class Creature extends GameObject {
    * Does not schedule PowerItem off — sabers stay ignited until combat state expires.
    */
   startWeaponGesture(clipName: string, durationSec: number){
-    if(!clipName){ return; }
-    let played = false;
-    if(this.equipment.RIGHTHAND?.playWeaponGesture(clipName)){ played = true; }
-    if(this.equipment.LEFTHAND?.playWeaponGesture(clipName)){ played = true; }
-    // Only arm the timer when a clip actually played on an item Gob.
-    if(!played){ return; }
-    this.weaponGestureState = {
-      animationName: clipName,
-      remaining: Math.max(durationSec, 0.1),
-      active: true,
-    };
+    return this.animationService.startWeaponGesture(clipName, durationSec);
   }
 
   dialogPlayOdysseyAnimation(anim: OdysseyModelAnimation, animationId: number = -1){
-    console.log('dialogPlayOdysseyAnimation', anim)
-    if(!this.model){ 
-      console.warn('dialogPlayOdysseyAnimation failed');
-      console.log(this, anim);
-      return; 
-    }
-    // IsLoopingDialogStuntAnimation — l/wl CUT ids loop.
-    const looping = animationId > 0x577 && animationId < 0x6c0;
-    this.dialogAnimation = {
-      animation: anim,
-      data: {
-        fireforget: looping ? 0 : 1,
-        looping: looping ? 1 : 0
-      } as any,
-      started: false,
-    };
+    return this.animationService.dialogPlayOdysseyAnimation(anim, animationId);
   }
 
   dialogPlayAnimation(data: SWAnimation = {} as SWAnimation){
-    console.log('dialogPlayAnimation', data)
-    if(!this.model){ 
-      console.warn('dialogPlayAnimation failed');
-      console.log(this, data);
-      return; 
-    }
-    this.dialogAnimation = { 
-      animation: this.model.odysseyAnimationMap.get(data.name.toLowerCase().trim()),
-      data: data,
-      started: false,
-    };
+    return this.animationService.dialogPlayAnimation(data);
   }
 
   /**
@@ -3278,28 +2004,7 @@ export class Creature extends GameObject {
    * ClearHostileActionsVersus(null) → end combat round → client SetCombatMode(0).
    */
   cancelCombat(){
-    this.clearAllActions(true);
-    // Heavy SetCombatState(0) already clears combat-round attacks/actions + ends the round.
-    this.setCombatState(false);
-    this.clearTarget();
-    // assign hostile actor(INVALID, force)
-    this.assignHostileActor(undefined, true);
-    // ClearHostileActionsVersus(null): drop every queued hostile action group.
-    this.clearHostileActionsVersus(undefined);
-    if(this.combatRound){
-      if(this.combatRound.roundStarted){
-        this.combatRound.endCombatRound({ skipQueueAttackActions: true });
-      }
-      this.combatRound.clearActions();
-    }
-    // Client SetCombatMode(0) — UI/camera bit (distinct from stance clearCombatMode).
-    setClientCombatMode(this, false);
-    // Stance / CounterSpell activity bits.
-    this.clearCombatMode();
-    this.resetOverlayAnimationState();
-    if(this.animationState.index == ModuleCreatureAnimState.READY){
-      this.setAnimationState(ModuleCreatureAnimState.PAUSE);
-    }
+    return this.combatService.cancelCombat();
   }
 
   /**
@@ -3307,41 +2012,7 @@ export class Creature extends GameObject {
    * @param retainSelfBuffs - 1 for SurrenderRetainBuffs (keep self-created effects)
    */
   surrenderToEnemies(retainSelfBuffs: boolean = false){
-    this.cancelCombat();
-    this.clearAllEffects(retainSelfBuffs);
-
-    // walks area game_objects (GetCreatureByGameObjectID). Party members
-    // are removed from area.creatures on join — include them like GetObjectsInShape.
-    const nearby = Creature.collectSurrenderNearbyCreatures(
-      this.area?.creatures,
-      GameState.PartyManager?.party,
-    );
-
-    if(nearby.length){
-      const origin = this.position;
-      const radiusSq = 250 * 250; // 62500 — not the NWScript 10m comment
-      for(let i = 0; i < nearby.length; i++){
-        const other = nearby[i];
-        if(!other || other === this) continue;
-        const dx = other.position.x - origin.x;
-        const dy = other.position.y - origin.y;
-        const dz = other.position.z - origin.z;
-        if(dx * dx + dy * dy + dz * dz > radiusSq) continue;
-        // GetReputation(self, other) < 11
-        if(this.getReputation(other) >= 11) continue;
-        other.cancelCombat();
-        other.clearAllEffects(retainSelfBuffs);
-      }
-    }
-
-    // AddMember to FactionManager's primary faction (repute row 0 = Player)
-    const playerFaction = GameState.FactionManager?.factions?.get(0);
-    if(playerFaction && this.faction !== playerFaction){
-      this.faction?.removeMember?.(this);
-      this.faction = playerFaction;
-      this.factionId = playerFaction.id;
-      playerFaction.addMember(this);
-    }
+    return this.combatService.surrenderToEnemies(retainSelfBuffs);
   }
 
   /**
@@ -3349,10 +2020,7 @@ export class Creature extends GameObject {
    * used by ChangeFactionByFaction after AddMember.
    */
   clearVisibleList(){
-    this.perceptionList = [];
-    // Force UpdateVisibleList on next tick (bypass 3s throttle)
-    this.perceptionTimer = 3;
-    this.updatePerceptionList(0);
+    return this.combatService.clearVisibleList();
   }
 
   /**
@@ -3362,35 +2030,7 @@ export class Creature extends GameObject {
    * must also target it; when omitted (null) every hostile group is dropped.
    */
   clearHostileActionsVersus(versus?: Creature){
-    if(!this.actionQueue?.length) return;
-    const hostileTypes = [
-      ActionType.ActionPhysicalAttacks,
-      ActionType.ActionCastSpell,
-      ActionType.ActionItemCastSpell,
-    ];
-    const groups = new Set<number>();
-    for(let i = 0; i < this.actionQueue.length; i++){
-      const action = this.actionQueue[i];
-      if(!action) continue;
-      if(!hostileTypes.includes(action.type)) continue;
-      if(!versus){
-        groups.add(action.groupId);
-        continue;
-      }
-      if(!action.parameters?.length) continue;
-      for(let p = 0; p < action.parameters.length; p++){
-        if(action.getParameter(p) === versus){
-          groups.add(action.groupId);
-          break;
-        }
-      }
-    }
-    if(!groups.size) return;
-    for(let i = this.actionQueue.length - 1; i >= 0; i--){
-      if(groups.has(this.actionQueue[i].groupId)){
-        this.actionQueue.splice(i, 1);
-      }
-    }
+    return this.combatService.clearHostileActionsVersus(versus);
   }
 
   /**
@@ -3398,192 +2038,23 @@ export class Creature extends GameObject {
    * area creatures that have this as a combat/hostile ref leave combat vs us.
    */
   pacifyCreature(){
-    const area = this.area;
-    if(!area?.creatures?.length) return;
-
-    for(let i = 0; i < area.creatures.length; i++){
-      const other = area.creatures[i];
-      if(!other || other === this) continue;
-
-      const cd = other.combatData;
-      const engaged =
-        cd.lastAttackTarget === this ||
-        cd.lastAttemptedAttackTarget === this ||
-        cd.lastAttacker === this ||
-        cd.lastDamager === this ||
-        cd.lastHostileActor === this ||
-        cd.lastSpellTarget === this ||
-        cd.lastAttemptedSpellTarget === this ||
-        cd.lastSpellAttacker === this;
-
-      if(!engaged) continue;
-
-      other.setCombatState(false);
-      if(cd.lastAttackTarget === this || cd.lastAttemptedAttackTarget === this){
-        other.clearTarget();
-      }
-      if(cd.lastAttacker === this) cd.lastAttacker = undefined;
-      if(cd.lastDamager === this) cd.lastDamager = undefined;
-      if(cd.lastHostileActor === this) other.assignHostileActor(undefined, true);
-      if(cd.lastSpellTarget === this) cd.lastSpellTarget = undefined;
-      if(cd.lastAttemptedSpellTarget === this) cd.lastAttemptedSpellTarget = undefined;
-      if(cd.lastSpellAttacker === this) cd.lastSpellAttacker = undefined;
-      other.clearHostileActionsVersus(this);
-    }
+    return this.combatService.pacifyCreature();
   }
 
-  getModelAnimationByName( name: string ): OdysseyModelAnimation {
-    return this.model.odysseyAnimationMap.get(name.toLowerCase().trim());
+  getModelAnimationByName(name: string): OdysseyModelAnimation {
+    return this.animationService.getModelAnimationByName(name);
   }
 
-  getDamageAnimation( attackAnimName: string ): SWAnimation {
-
-    const attackAnimNamel = attackAnimName.toLowerCase().trim();
-    
-    let attackAnimIndex = -1;
-
-    let modeltype = this.creatureAppearance.modeltype;
-    let weaponWield = this.getCombatAnimationWeaponType();
-    // Heavy (9) shares g7* clips / combatanimations *7 columns with rifle.
-    const clipDigit = combatReactionClipDigit(weaponWield);
-    
-    const attackAnim = GameState.SWRuleSet.animationNameMap.get(attackAnimNamel);
-
-    const combatAnimation = attackAnim?.combatAnimation;
-    if(combatAnimation){
-      const damageAnimID = combatAnimation.getDamageAnimation(weaponWield);
-      const damageAnim = GameState.SWRuleSet.animationIdMap.get(damageAnimID);
-      if(damageAnim && this.getModelAnimationByName(damageAnim.name)){
-        return OdysseyModelAnimation.GetAnimation2DA(damageAnim.name);
-      }
-    }
-
-    switch(modeltype){
-      case 'S':
-      case 'L':
-        return OdysseyModelAnimation.GetAnimation2DA('cdamages')
-          || this.animationConstantToAnimation(ModuleCreatureAnimState.DAMAGE);
-    }
-    //console.log(attackAnim);
-    
-    switch((attackAnimName || '').toLowerCase()){
-      case 'c2a1':
-        return OdysseyModelAnimation.GetAnimation2DA('c2d1')
-          || this.animationConstantToAnimation(ModuleCreatureAnimState.DAMAGE);
-      case 'c2a2':
-        return OdysseyModelAnimation.GetAnimation2DA('c2d2')
-          || this.animationConstantToAnimation(ModuleCreatureAnimState.DAMAGE);
-      case 'c2a3':
-        return OdysseyModelAnimation.GetAnimation2DA('c2d3')
-          || this.animationConstantToAnimation(ModuleCreatureAnimState.DAMAGE);
-      case 'c2a4':
-        return OdysseyModelAnimation.GetAnimation2DA('c2d4')
-          || this.animationConstantToAnimation(ModuleCreatureAnimState.DAMAGE);
-      case 'c2a5':
-        return OdysseyModelAnimation.GetAnimation2DA('c2d5')
-          || this.animationConstantToAnimation(ModuleCreatureAnimState.DAMAGE);
-    }
-
-    return OdysseyModelAnimation.GetAnimation2DA('g'+clipDigit+'d1')
-      || this.animationConstantToAnimation(ModuleCreatureAnimState.DAMAGE);
-
+  getDamageAnimation(attackAnimName: string): SWAnimation {
+    return this.animationService.getDamageAnimation(attackAnimName);
   }
 
-  getDodgeAnimation( attackAnimName: string ): SWAnimation {
-
-    const attackAnimNamel = attackAnimName.toLowerCase().trim();
-
-    const modeltype = this.creatureAppearance.modeltype;
-    const attackKey = this.getCombatAnimationAttackType();
-    const weaponWield = this.getCombatAnimationWeaponType();
-    const clipDigit = combatReactionClipDigit(weaponWield);
-    
-    const attackAnim = GameState.SWRuleSet.animationNameMap.get(attackAnimNamel);
-
-    const combatAnimation = attackAnim?.combatAnimation;
-    if(combatAnimation){
-      if(combatAnimation.hits == 1 && [4, 2, 3].indexOf(weaponWield) >= 0){
-        const dodgeAnimID = combatAnimation.getDodgeAnimation(weaponWield);
-        const dodgeAnim = GameState.SWRuleSet.animationIdMap.get(dodgeAnimID);
-        if(dodgeAnim && this.getModelAnimationByName(dodgeAnim.name)){
-          //console.log('dodge/parry anim', this.getName, damageAnim.name)
-          return OdysseyModelAnimation.GetAnimation2DA(dodgeAnim.name);
-        }
-      }
-      
-      const dodgeAnimID = combatAnimation.getDodgeAnimation(weaponWield);
-      const dodgeAnim = GameState.SWRuleSet.animationIdMap.get(dodgeAnimID);
-      if(dodgeAnim && this.getModelAnimationByName(dodgeAnim.name)){
-        //console.log('dodge anim', this.getName, dodgeAnim.name)
-        return OdysseyModelAnimation.GetAnimation2DA(dodgeAnim.name);
-      }
-    }
-
-    switch(modeltype){
-      case 'S':
-      case 'L':
-        return OdysseyModelAnimation.GetAnimation2DA('cdodgeg');
-    }
-    
-    switch(attackAnimNamel){
-      case 'c2a1':
-        return OdysseyModelAnimation.GetAnimation2DA('c2d1')
-      case 'c2a2':
-        return OdysseyModelAnimation.GetAnimation2DA('c2d2')
-      case 'c2a3':
-        return OdysseyModelAnimation.GetAnimation2DA('c2d3')
-      case 'c2a4':
-        return OdysseyModelAnimation.GetAnimation2DA('c2d4')
-      case 'c2a5':
-        return OdysseyModelAnimation.GetAnimation2DA('c2d5')
-    }
-
-    return OdysseyModelAnimation.GetAnimation2DA('g'+clipDigit+'g1');
-
+  getDodgeAnimation(attackAnimName: string): SWAnimation {
+    return this.animationService.getDodgeAnimation(attackAnimName);
   }
 
-  getParryAnimation( attackAnimName: string ): SWAnimation {
-
-    const attackAnimNamel = attackAnimName.toLowerCase();
-
-    const modeltype = this.creatureAppearance.modeltype;
-    const attackKey = this.getCombatAnimationAttackType();
-    const weaponWield = this.getCombatAnimationWeaponType();
-    const clipDigit = combatReactionClipDigit(weaponWield);
-    
-    const attackAnim = GameState.SWRuleSet.animationNameMap.get(attackAnimNamel);
-
-    /** Get the combat animation from the attack animation. */
-    const combatAnimation = attackAnim?.combatAnimation;
-    if(combatAnimation){
-      const parryAnimID = combatAnimation.getParryAnimation(weaponWield);
-      const parryAnim = GameState.SWRuleSet.animationIdMap.get(parryAnimID);
-      if(parryAnim && this.getModelAnimationByName(parryAnim.name)){
-        return OdysseyModelAnimation.GetAnimation2DA(parryAnim.name);
-      }
-    }
-
-    switch(modeltype){
-      case 'S':
-      case 'L':
-        return OdysseyModelAnimation.GetAnimation2DA('cdodgeg');
-    }
-    //console.log(attackAnim);
-    switch(attackAnimNamel){
-      case 'c2a1':
-        return OdysseyModelAnimation.GetAnimation2DA('c2p1')
-      case 'c2a2':
-        return OdysseyModelAnimation.GetAnimation2DA('c2p2')
-      case 'c2a3':
-        return OdysseyModelAnimation.GetAnimation2DA('c2p3')
-      case 'c2a4':
-        return OdysseyModelAnimation.GetAnimation2DA('c2p4')
-      case 'c2a5':
-        return OdysseyModelAnimation.GetAnimation2DA('c2p5')
-    }
-
-    return OdysseyModelAnimation.GetAnimation2DA('g'+clipDigit+'g1');
-    
+  getParryAnimation(attackAnimName: string): SWAnimation {
+    return this.animationService.getParryAnimation(attackAnimName);
   }
 
   /**
@@ -3591,7 +2062,7 @@ export class Creature extends GameObject {
    * Matches UpdateWeaponClass weapon_type source: dual uses off-hand item.
    */
   getCombatAnimationAttackType(): string {
-    return combatAnimationAttackKey(this.equipment);
+    return this.animationService.getCombatAnimationAttackType();
   }
 
   /**
@@ -3599,172 +2070,33 @@ export class Creature extends GameObject {
    * Derived from equipped weapon class / wield type.
    */
   getCombatAnimationWeaponType(){
-    return combatAnimationWeaponDigit(this.equipment, this.isSimpleCreature());
+    return this.animationService.getCombatAnimationWeaponType();
   }
 
   getEquippedWeaponType(){
-    let lWeapon = this.equipment.LEFTHAND;
-    let rWeapon = this.equipment.RIGHTHAND;
-    let claw1 = this.equipment.CLAW1;
-    let claw2 = this.equipment.CLAW2;
-    let claw3 = this.equipment.CLAW3;
-
-    if(rWeapon){
-      return (rWeapon.getWeaponType());
-    }
-
-    if(lWeapon){
-      return (lWeapon.getWeaponType());
-    }
-
-    if(claw1){
-      return (claw1.getWeaponType());
-    }
-
-    if(claw2){
-      return (claw2.getWeaponType());
-    }
-
-    if(claw3){
-      return (claw3.getWeaponType());
-    }
-
-    return 0;
+    return this.combatService.getEquippedWeaponType();
   }
 
   isRangedEquipped(){
-    if(this.equipment.RIGHTHAND){
-      return this.equipment.RIGHTHAND.isRangedWeapon();
-    }
-
-    if(this.equipment.LEFTHAND){
-      return this.equipment.LEFTHAND.isRangedWeapon();
-    }
-
-    if(this.equipment.CLAW1){
-      return this.equipment.CLAW1.isRangedWeapon();
-    }
-
-    if(this.equipment.CLAW2){
-      return this.equipment.CLAW2.isRangedWeapon();
-    }
-
-    if(this.equipment.CLAW3){
-      return this.equipment.CLAW3.isRangedWeapon();
-    }
-
-    return false;
+    return this.combatService.isRangedEquipped();
   }
 
-  private static isMeleeWeaponItem(item: Item | undefined): boolean {
-    if(!item?.baseItem) return false;
-    const wield = item.baseItem.weaponWield;
-    return (
-      wield === WeaponWield.STUN_BATON ||
-      wield === WeaponWield.ONE_HANDED_SWORD ||
-      wield === WeaponWield.TWO_HANDED_SWORD
-    );
-  }
 
-  private static isRangedWeaponItem(item: Item | undefined): boolean {
-    if(!item?.baseItem || isGrenadeItemType(item.baseItem.itemType)) return false;
-    const wield = item.baseItem.weaponWield;
-    return (
-      wield === WeaponWield.BLASTER_PISTOL ||
-      wield === WeaponWield.BLASTER_RIFLE ||
-      wield === WeaponWield.BLASTER_HEAVY
-    );
-  }
 
-  private collectWeaponCandidates(equipped: Item | undefined): Item[] {
-    const candidates = (this.getInventory() || []).filter((item): item is Item => !!item);
-    if(equipped && candidates.indexOf(equipped) < 0){
-      candidates.push(equipped);
-    }
-    const offHand = this.equipment?.LEFTHAND;
-    if(offHand && candidates.indexOf(offHand) < 0){
-      candidates.push(offHand);
-    }
-    return candidates;
-  }
 
-  private static pickMostDamagingWeapon(
-    candidates: Item[],
-    predicate: (item: Item) => boolean
-  ): Item | undefined {
-    let best: Item | undefined;
-    let bestScore = -1;
-    for(let i = 0; i < candidates.length; i++){
-      const item = candidates[i];
-      if(!item || !predicate(item)) continue;
-      const score = (item.baseItem?.dieToRoll || 0) * (item.baseItem?.numDice || 0);
-      if(!best || score > bestScore){
-        best = item;
-        bestScore = score;
-      }
-    }
-    return best;
-  }
 
   /** Best melee in possession; falls back to ranged. */
   findMostDamagingMelee(offHand = false): Item | undefined {
-    const equipped = offHand ? this.equipment.LEFTHAND : this.equipment.RIGHTHAND;
-    const candidates = this.collectWeaponCandidates(equipped);
-    return (
-      Creature.pickMostDamagingWeapon(candidates, Creature.isMeleeWeaponItem) ||
-      Creature.pickMostDamagingWeapon(candidates, Creature.isRangedWeaponItem)
-    );
+    return this.equipmentService.findMostDamagingMelee(offHand);
   }
 
   /** Best ranged in possession; falls back to melee. */
   findMostDamagingRanged(): Item | undefined {
-    const candidates = this.collectWeaponCandidates(this.equipment.RIGHTHAND);
-    return (
-      Creature.pickMostDamagingWeapon(candidates, Creature.isRangedWeaponItem) ||
-      Creature.pickMostDamagingWeapon(candidates, Creature.isMeleeWeaponItem)
-    );
+    return this.equipmentService.findMostDamagingRanged();
   }
 
   updateItems(delta = 0){
-
-    // Weapon meshes are updated via updateWeaponModels() after body animation so
-    // saber trails see fresh bone matrices and are not double-ticked per frame.
-    if(this.equipment.RIGHTHAND){
-      this.equipment.RIGHTHAND.updatePoweredAnimation?.();
-    }
-
-    if(this.equipment.LEFTHAND){
-      this.equipment.LEFTHAND.updatePoweredAnimation?.();
-    }
-
-    if(this.weaponGestureState?.active){
-      this.weaponGestureState.remaining -= delta;
-      if(this.weaponGestureState.remaining <= 0){
-        this.weaponGestureState.active = false;
-        this.resetWeaponGestureState();
-        // OnFlourishClipFinished → RestoreWeaponPoweredState (keep on while combat).
-        if(this.combatData.combatState){
-          this.weaponPowered(true);
-        }
-      }
-    }
-
-    if(this.gestureState?.active){
-      this.gestureState.remaining -= delta;
-      if(this.gestureState.remaining <= 0){
-        this.resetGestureState();
-        if(this.combatData.combatState){
-          this.weaponPowered(true);
-          if(
-            this.animationState.index == ModuleCreatureAnimState.MELEE_COMBAT_WIELD ||
-            this.animationState.index == ModuleCreatureAnimState.FLOURISH
-          ){
-            this.setAnimationState(ModuleCreatureAnimState.READY);
-          }
-        }
-      }
-    }
-
+    return this.equipmentService.updateItems(delta);
   }
 
   private getFootstepPriorityGroup(): AudioPriorityGroup {
@@ -3794,14 +2126,7 @@ export class Creature extends GameObject {
   }
 
   showLightSaberContactVisual(): void {
-    const position = new THREE.Vector3();
-    const hook = this.model?.lightsaberhook;
-    if(hook){
-      hook.getWorldPosition(position);
-    }else{
-      position.copy(this.position);
-    }
-    spawnWorldImpactVfx(0xfab, position, this.context);
+    return this.animationService.showLightSaberContactVisual();
   }
 
   /**
@@ -3835,7 +2160,7 @@ export class Creature extends GameObject {
     let footstepIsLooping = false;
 
     // MDL event names match RegisterCallbacks casing; compare case-insensitively.
-    const eventName = String(event.event || '').toLowerCase();
+    const eventName = String((event as any).event || '').toLowerCase();
 
     switch(eventName){
       case 'snd_footstep':
@@ -3898,12 +2223,7 @@ export class Creature extends GameObject {
   }
 
   hasWeapons(){
-    let lWeapon = this.equipment.LEFTHAND;
-    let rWeapon = this.equipment.RIGHTHAND;
-    let cWeapon1 = this.equipment.CLAW1;
-    let cWeapon2 = this.equipment.CLAW2;
-    let cWeapon3 = this.equipment.CLAW3;
-    return (lWeapon) || (rWeapon) || (cWeapon1) || (cWeapon2) || (cWeapon3);
+    return this.equipmentService.hasWeapons();
   }
 
   /**
@@ -3911,58 +2231,11 @@ export class Creature extends GameObject {
    * PlayerFlourishWeapons checks player-control forward/strafe != 0.
    */
   isFlourishMoving(): boolean {
-    const pc = this.playerControl;
-    if(pc && (this.isPlayer || this.isPM || this.isPC)){
-      return Math.abs(pc.axisForward) > 1e-4 || Math.abs(pc.axisRight) > 1e-4;
-    }
-    return this.speed > 0.01 || this.force > 0.01;
+    return this.animationService.isFlourishMoving();
   }
 
   flourish(){
-    // PlayerFlourishWeapons: PowerItem + SetCombatState(1, 2);
-    // moving → SetOverlayAnimation(MELEE_WIELD 0x27ad); standing → InsertFireForget(MELEE_COMBAT_WIELD 0x27ae).
-    this.setCombatState(true, ExcitedDurationRow.SpellCast);
-    let isSimple = this.isSimpleCreature();
-    let weaponType = this.getCombatAnimationWeaponType();
-    
-    if(isSimple || !weaponType){ return; }
-
-    this.weaponPowered(true);
-    const moving = this.isFlourishMoving();
-
-    if(moving){
-      // Body/head overlay (G*F1, overlay=1) — drive keeps walk/run on base slot.
-      const wieldOverlay = this.animationConstantToAnimation(ModuleCreatureAnimState.MELEE_WIELD);
-      if(wieldOverlay?.name){
-        this.overlayAnimationState = {
-          animationIndex: ModuleCreatureAnimState.MELEE_WIELD,
-          animationName: wieldOverlay.name.toLowerCase(),
-          animation: wieldOverlay,
-          started: false,
-          speed: 1,
-          stopFlag: resolveOverlayStopFlags(ModuleCreatureAnimState.MELEE_WIELD),
-        };
-      }
-      // does not play body g*w1 clips on weapon MDLs here — PowerItem only.
-      return;
-    }
-
-    // Standing: fire-forget body gesture (InsertFireForgetAnimation MELEE_COMBAT_WIELD, 0x5dc).
-    const combatWield = this.animationConstantToAnimation(ModuleCreatureAnimState.MELEE_COMBAT_WIELD);
-    const duration = 1.5;
-    this.setAnimationState(ModuleCreatureAnimState.MELEE_COMBAT_WIELD);
-    // Ensure clip resolves even if setAnimationState left animation undefined for edge types.
-    if(!this.animationState.animation && combatWield){
-      this.animationState.animation = combatWield;
-      this.animationState.started = false;
-    }
-    this.gestureState = {
-      serverId: ModuleCreatureAnimState.MELEE_COMBAT_WIELD,
-      animation: combatWield || this.animationState.animation,
-      started: false,
-      remaining: duration,
-      active: true,
-    };
+    return this.combatService.flourish();
   }
 
   /**
@@ -3971,29 +2244,7 @@ export class Creature extends GameObject {
    * Duration matches InsertFireForgetAnimation(..., 0x5dc).
    */
   playDrawAnimation(){
-    if(this.isSimpleCreature()){ return; }
-    const weaponType = this.getCombatAnimationWeaponType();
-    if(!weaponType){ return; }
-
-    // EquipItem → SetCombatState(1, 2) for hand slots when not instant.
-    this.setCombatState(true, ExcitedDurationRow.SpellCast);
-    this.weaponPowered(true);
-
-    const draw = this.animationConstantToAnimation(ModuleCreatureAnimState.FLOURISH);
-    // PlayDrawAnimation always uses 1500ms (0x5dc), not clip length.
-    const duration = 1.5;
-    this.setAnimationState(ModuleCreatureAnimState.FLOURISH);
-    if(!this.animationState.animation && draw){
-      this.animationState.animation = draw;
-      this.animationState.started = false;
-    }
-    this.gestureState = {
-      serverId: ModuleCreatureAnimState.FLOURISH,
-      animation: draw || this.animationState.animation,
-      started: false,
-      remaining: duration,
-      active: true,
-    };
+    return this.combatService.playDrawAnimation();
   }
 
   /**
@@ -4001,7 +2252,7 @@ export class Creature extends GameObject {
    * matches engine behavior client sync gate: SetCombatState client update iff arg2 == 1.
    */
   isHostileCombatEngaged(): boolean {
-    return !!(this.combatData.combatState && this.combatStateReason === ExcitedDurationRow.Damage);
+    return this.combatService.isHostileCombatEngaged();
   }
 
   /**
@@ -4009,12 +2260,7 @@ export class Creature extends GameObject {
    * @param on - Whether the weapon should be powered
    */
   weaponPowered(on: boolean = false): void {
-    const weaponType = this.getCombatAnimationWeaponType();
-    const isSimple = this.isSimpleCreature();
-    if(isSimple || !weaponType){ return; }
-
-    this.equipment.LEFTHAND?.setPowered(on);
-    this.equipment.RIGHTHAND?.setPowered(on);
+    return this.combatService.weaponPowered(on);
   }
 
   setLIP(lip: LIPObject){
@@ -4121,7 +2367,7 @@ export class Creature extends GameObject {
   }
 
   lookAt(oObject: GameObject | undefined){
-    this.lookAtObject = oObject;
+    return this.animationService.lookAt(oObject);
   }
 
   /**
@@ -4152,83 +2398,9 @@ export class Creature extends GameObject {
   lookAtPosition: THREE.Vector3 = new THREE.Vector3();
 
   /** Unwind look compose on hturn when tracking has no valid target. */
-  private unwindHeadTrackingLook(){
-    if(!(this.model instanceof OdysseyModel3D) || !this.model.hturn_g) return;
-    this.headTrackingAngle = 0;
-    this.headTrackingPitch = 0;
-    applyHeadTrackingToHturn(this.model.hturn_g, 0, 0);
-  }
 
   updateHeadTracking(delta: number){
-    if(!this.lookAtObject){
-      this.unwindHeadTrackingLook();
-      return;
-    }
-    if(this.lookAtObject === this || this.lookAtObject.isDead()){
-      this.lookAtObject = undefined;
-      this.unwindHeadTrackingLook();
-      return;
-    }
-    if(!(this.model instanceof OdysseyModel3D) || !this.model.hturn_g){
-      return;
-    }
-    if(!this.headTrackingEnabled){
-      this.unwindHeadTrackingLook();
-      return;
-    }
-
-    let targetYaw = 0;
-    let targetPitch = 0;
-
-    const reticle = this.lookAtObject.getReticleNode();
-    if(reticle){
-      this.lookAtPosition.copy(reticle.getWorldPosition(this.lookAtPosition));
-    }else if(this.lookAtObject.position){
-      this.lookAtPosition.copy(this.lookAtObject.position);
-    }else{
-      this.lookAtObject = undefined;
-      this.unwindHeadTrackingLook();
-      return;
-    }
-    const dx = this.lookAtPosition.x - this.position.x;
-    const dy = this.lookAtPosition.y - this.position.y;
-    const dz = this.lookAtPosition.z - (this.position.z + this.getCameraHeight());
-    const horizontalDist = Math.sqrt(dx * dx + dy * dy);
-
-    const worldAngleToTarget = Math.atan2(dy, dx);
-    const bodyFacing = this.rotation.z + Math.PI / 2;
-    const relativeYaw = Utility.NormalizeRadian(worldAngleToTarget - bodyFacing);
-    const relativePitch = Math.atan2(dz, horizontalDist);
-
-    if(Math.abs(relativeYaw) <= this.headMaxHorizontalAngle){
-      targetYaw = relativeYaw;
-      targetPitch = THREE.MathUtils.clamp(relativePitch, -this.headMaxVerticalAngle, this.headMaxVerticalAngle);
-    }
-
-    const stepH = Creature.HEAD_TRACKING_H_SPEED * delta;
-    const stepV = Creature.HEAD_TRACKING_V_SPEED * delta;
-
-    const yawDiff = Utility.NormalizeRadian(targetYaw - this.headTrackingAngle);
-    if(Math.abs(yawDiff) <= stepH){
-      this.headTrackingAngle = targetYaw;
-    }else{
-      this.headTrackingAngle += Math.sign(yawDiff) * stepH;
-    }
-
-    const pitchDiff = targetPitch - this.headTrackingPitch;
-    if(Math.abs(pitchDiff) <= stepV){
-      this.headTrackingPitch = targetPitch;
-    }else{
-      this.headTrackingPitch += Math.sign(pitchDiff) * stepV;
-    }
-
-    // Do not force idle axes to 0 - that wipes female neck/hturn bind cancel
-    // (+/-0.1745) after anim and makes Model B heads look down (p_bastilah).
-    applyHeadTrackingToHturn(
-      this.model.hturn_g,
-      this.headTrackingAngle,
-      this.headTrackingPitch,
-    );
+    return this.animationService.updateHeadTracking(delta);
   }
 
   onClick(callee: GameObject){
@@ -4333,51 +2505,11 @@ export class Creature extends GameObject {
    * DestroySelf encounter action (arg2=1).
    */
   unlinkFromEncounter(fromDestroySelf: boolean = false){
-    if(this.encounterUnlinked) return;
-    if(this.encounterObjectId === GameObjectConstant.OBJECT_INVALID) return;
-
-    const encounter = GameState.GameObjectManager.GetObjectById(this.encounterObjectId);
-    if(
-      encounter &&
-      isEncounter(encounter)
-    ){
-      (encounter as Encounter).removeFromActiveCreatureCount(
-        this.challengeRating || 0,
-        fromDestroySelf ? 1 : 0
-      );
-    }
-    this.encounterUnlinked = true;
+    return this.deathCorpseService.unlinkFromEncounter(fromDestroySelf);
   }
 
   override onDeath(){
-    this.weaponPowered(false);
-    const nwscript = this.scripts[ScriptHook.CreatureOnDeath];
-    if(nwscript){
-      nwscript.run(this);
-    }
-
-    // effect apply → RemoveFromActiveCreatureCount(..., 0)
-    this.unlinkFromEncounter(false);
-
-    // effect apply strips combat/buff VFX before corpse schedule (else willDestroy
-    // / KeepCorpse skips effect updates and leaves frozen emitters in the world).
-    this.clearEffectsOnDeath();
-
-    // SetAutoPaused Party Killed when a party member dies (not full wipe)
-    if(GameState.PartyManager.party.indexOf(this) >= 0){
-      GameState.GameOverManager?.NotifyPartyMemberDeath?.(this);
-      // Pass AL — Mod_OnPlrDeath / GetLastPlayerDied
-      GameState.module?.notifyPlayerDied?.(this);
-      const anyAlive = GameState.PartyManager.party.some((pm) => pm && pm !== this && !pm.isDead());
-      if(anyAlive){
-        GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.PartyMemberKilled);
-      }
-    }
-
-    // effect apply: GetDeadTemp (party + HP≤0) skips DestroyObjectDelay / KeepCorpse.
-    // Dead PMs stay until TempDeath resurrection or party wipe — do not bag them.
-    this.scheduleDestroyAsCorpse();
-    return true;
+    return this.deathCorpseService.onDeath();
   }
 
   /**
@@ -4385,8 +2517,7 @@ export class Creature extends GameObject {
    * client party and current HP < 1 (awaiting combat-clear resurrection).
    */
   getDeadTemp(): boolean {
-    if(!this.isPartyMember()) return false;
-    return this.getHP() < 1;
+    return this.deathCorpseService.getDeadTemp();
   }
 
   /**
@@ -4398,96 +2529,30 @@ export class Creature extends GameObject {
    * GetDeadTemp party members skip this path entirely.
    */
   scheduleDestroyAsCorpse(){
-    if(!this.isDestroyable) return;
-    if(this.destroyed || this.serverDestroyed || this.isRetainedCorpse) return;
-    // GetDeadTemp branch — no event 0xb / KeepCorpse for live party members
-    if(this.isPartyMember()) return;
-    // Re-apply after OnDeath DestroyObject(OBJECT_SELF) defaults so bare willDestroy
-    // with delay 0 does not skip DestroyObjectDelay / FadeDelayOnDeath.
-    if(this.corpseDestroyScheduled) return;
-
-    const destroyDelayRaw = this.creatureAppearance?.destroyobjectdelay;
-    const destroyDelay = (typeof destroyDelayRaw === 'number' && destroyDelayRaw >= 0)
-      ? destroyDelayRaw
-      : 3.0;
-
-    // FadeDelayOnDeath INT ms when present; missing → KeepCorpse (client shell).
-    const fadeDelayOnDeath = this.creatureAppearance?.fadedelayondeath;
-    const hasFadeDelayOnDeath = typeof fadeDelayOnDeath === 'number' && fadeDelayOnDeath >= 0;
-    this.keepCorpseOnDestroy = !hasFadeDelayOnDeath;
-    const fadeDurationSec = hasFadeDelayOnDeath ? fadeDelayOnDeath / 1000 : 0;
-
-    this.corpseDestroyScheduled = true;
-    this.setWillDestroy(true);
-    if(this.keepCorpseOnDestroy){
-      // Wait DestroyObjectDelay, then enter retained shell (no opacity fade)
-      this.setNoFadeOnDestroy(true);
-      this.setFadeDuration(0);
-      this.setDelayUntilFade(destroyDelay);
-      this.setDelayUntilDestroy(destroyDelay);
-    }else{
-      this.setNoFadeOnDestroy(fadeDurationSec <= 0);
-      this.setFadeDuration(fadeDurationSec);
-      this.setDelayUntilFade(destroyDelay);
-      this.setDelayUntilDestroy(destroyDelay + Math.max(fadeDurationSec, 0));
-    }
+    return this.deathCorpseService.scheduleDestroyAsCorpse();
   }
 
   /**
    * Continue death animation + model while waiting for DestroyObjectDelay / fade-out.
    */
   updateCorpsePendingDestroy(delta: number = 0){
-    if(this.audioEmitter){
-      this.audioEmitter.setPosition(this.position.x, this.position.y, this.position.z + 1.0);
-      this.footstepEmitter?.setPosition(this.position.x, this.position.y, this.position.z);
-    }
-
-    if(this.isDead()){
-      this.damageList = [];
-      this.getUpAnimationPlayed = false;
-      if(
-        this.deathStarted &&
-        this.animationState.index != ModuleCreatureAnimState.DEAD &&
-        this.animationState.index != ModuleCreatureAnimState.DIE
-      ){
-        this.setAnimationState(ModuleCreatureAnimState.DEAD);
-        this.deathAnimationPlayed = true;
-      }
-    }
-
-    this.updateAnimationState();
-    this.updateItems(delta);
-
-    if(this.model instanceof OdysseyModel3D && this.model.bonesInitialized){
-      this.model.animateFrame = true;
-      this.model.update(delta);
-      this.updateWeaponModels(delta);
-    }
+    return this.deathCorpseService.updateCorpsePendingDestroy(delta);
   }
 
   /** Tick wielded weapon models once per frame after the body pose is resolved. */
   updateWeaponModels(delta = 0){
-    if(this.equipment.RIGHTHAND?.model instanceof OdysseyModel3D){
-      this.equipment.RIGHTHAND.model.update(delta);
-    }
-    if(this.equipment.LEFTHAND?.model instanceof OdysseyModel3D){
-      this.equipment.LEFTHAND.model.update(delta);
-    }
+    return this.equipmentService.updateWeaponModels(delta);
   }
 
   /**
    * Resolve bodybag.2da row for this creature (UTC BodyBag, else appearance.body_bag).
    */
   getBodyBagRowId(): number {
-    if(this.bodyBag > 0) return this.bodyBag;
-    const fromAppearance = this.creatureAppearance?.body_bag;
-    if(typeof fromAppearance === 'number' && fromAppearance > 0) return fromAppearance;
-    return 0;
+    return this.deathCorpseService.getBodyBagRowId();
   }
 
   getBodyBagRule(): SWBodyBag | undefined {
-    const rowId = this.getBodyBagRowId();
-    return GameState.SWRuleSet?.bodyBags?.[rowId];
+    return this.deathCorpseService.getBodyBagRule();
   }
 
   /**
@@ -4495,89 +2560,32 @@ export class Creature extends GameObject {
    * bodybag.Appearance → else appearance.Body_Bag row's appearance → else 3.
    */
   getBodyBagAppearance(): number {
-    const bags = GameState.SWRuleSet?.bodyBags;
-    const readAppearance = (rowId: number): number | undefined => {
-      const row = bags?.[rowId];
-      if(!row) return undefined;
-      return row.appearance > 0 ? row.appearance : undefined;
-    };
-
-    const primary = readAppearance(this.getBodyBagRowId());
-    if(primary != null) return primary;
-
-    const altRow = this.creatureAppearance?.body_bag;
-    if(typeof altRow === 'number' && altRow >= 0){
-      const secondary = readAppearance(altRow);
-      if(secondary != null) return secondary;
-    }
-    return 3;
+    return this.deathCorpseService.getBodyBagAppearance();
   }
 
   getBodyBagPlaceable(): Placeable | undefined {
-    if(!this.bodyBagObjectId) return undefined;
-    const bag = GameState.GameObjectManager.GetObjectById(this.bodyBagObjectId) as unknown as Placeable;
-    if(isPlaceable(bag)){
-      return bag as Placeable;
-    }
-    return undefined;
+    return this.deathCorpseService.getBodyBagPlaceable();
   }
 
   /** Target for ActionUseObject when looting a dead creature (bag if present, else corpse). */
   getLootUseTarget(): Placeable | Creature {
-    const bag = this.getBodyBagPlaceable();
-    if(bag && !bag.destroyed){
-      return bag;
-    }
-    return this;
+    return this.deathCorpseService.getLootUseTarget();
   }
 
   hasLootableContents(): boolean {
-    if(this.gold > 0) return true;
-    for(let i = 0; i < this.inventory.length; i++){
-      if(this.inventory[i]?.isDropable?.()) return true;
-    }
-    const slots = Object.keys(this.equipment) as (keyof typeof this.equipment)[];
-    for(let i = 0; i < slots.length; i++){
-      if(this.equipment[slots[i]]?.isDropable?.()) return true;
-    }
-    return false;
+    return this.deathCorpseService.hasLootableContents();
   }
 
   /** Whether the player can loot this corpse (hostile, selectable dead, or linked bag). */
   canLootAsCorpse(from?: GameObject): boolean {
-    if(!this.isDead() && !this.isRetainedCorpse) return false;
-    if(this.getBodyBagPlaceable()) return true;
-    if(from && this.isHostile(from)) return true;
-    if(this.isDeadSelectable && this.hasLootableContents()) return true;
-    return this.isDeadSelectable;
+    return this.deathCorpseService.canLootAsCorpse(from);
   }
 
   /**
    * Whether this creature should drop a body bag (loot / corpse / gold).
    */
   shouldSpawnBodyBag(): boolean {
-    if(!this.isDestroyable) return false;
-    if(GameState.PartyManager?.party?.indexOf(this) >= 0) return false;
-    // Use objectType check — isPlayer(this) type-narrows Creature to never in the false branch
-    if(BitWise.InstanceOf(this.objectType, GameObjectType.PlayerCharacter)) return false;
-    if(this.bodyBagObjectId) return false;
-
-    const rule = this.getBodyBagRule();
-    if(rule?.corpse) return true;
-
-    if(this.gold > 0) return true;
-
-    for(let i = 0; i < this.inventory.length; i++){
-      if(this.inventory[i]?.isDropable?.()) return true;
-    }
-
-    const slots = Object.keys(this.equipment) as (keyof typeof this.equipment)[];
-    for(let i = 0; i < slots.length; i++){
-      const item = this.equipment[slots[i]];
-      if(item?.isDropable?.()) return true;
-    }
-
-    return false;
+    return this.deathCorpseService.shouldSpawnBodyBag();
   }
 
   /**
@@ -4586,19 +2594,7 @@ export class Creature extends GameObject {
    * : destroy event 0xb when destroyable + dead.
    */
   spawnBodyBag(): number {
-    if(!this.shouldSpawnBodyBag()) return GameObjectConstant.OBJECT_INVALID;
-
-    const rule = this.getBodyBagRule();
-    const bagId = Placeable.spawnBodyBagFrom(
-      this,
-      this.getBodyBagRowId(),
-      rule,
-      this.getBodyBagAppearance()
-    );
-    if(bagId !== GameObjectConstant.OBJECT_INVALID){
-      this.bodyBagObjectId = bagId;
-    }
-    return bagId;
+    return this.deathCorpseService.spawnBodyBag();
   }
 
   /**
@@ -4606,28 +2602,7 @@ export class Creature extends GameObject {
    * Called when DestroyObjectDelay elapses (and as destroy backup).
    */
   onServerDestroyEvent(){
-    if(this.serverDestroyed || this.isRetainedCorpse) return;
-    this.serverDestroyed = true;
-
-    if(this.isDead() && this.isDestroyable && !this.bodyBagObjectId){
-      this.spawnBodyBag();
-    }
-
-    const bag = this.getBodyBagPlaceable();
-    const bagIsCorpseModel = !!bag?.isCorpse;
-
-    // Corpse-model bags (Rancor/Krayt) show the placeable; no KeepCorpse shell
-    if(this.keepCorpseOnDestroy && !bagIsCorpseModel){
-      this.enterRetainedCorpse();
-    }else if(bag){
-      bag.setBodyBagVisible(true);
-    }
-
-    // event 0xb removes the object from GetGameObject / tag lookup so
-    // GetIsObjectValid / GetObjectByTag fail (k_ptar_ramp Calo082 gate). KeepCorpse
-    // shells stay in area.creatures for visuals only.
-    GameState.GameObjectManager.RemoveObject(this);
-    // Fade path continues via willDestroy / updateDestroyFade → destroy
+    return this.deathCorpseService.onServerDestroyEvent();
   }
 
   /**
@@ -4635,76 +2610,19 @@ export class Creature extends GameObject {
    * Stays in area.creatures for updates/selection but is excluded from save.
    */
   enterRetainedCorpse(){
-    if(this.isRetainedCorpse || this.destroyed) return;
-
-    const area = this.area;
-    this.isRetainedCorpse = true;
-    this.willDestroy = false;
-    this.keepCorpseOnDestroy = false;
-    this.retainedCorpseFadeRemaining = -1;
-    this.retainedCorpseFadeTotal = 0;
-    this.setOpacity(1);
-
-    if(area){
-      area.corpseCache.add(this);
-    }
-
-    const bag = this.getBodyBagPlaceable();
-    if(bag && !bag.isCorpse){
-      bag.setBodyBagVisible(false);
-    }
-
-    // Hold DEAD pose
-    if(this.animationState.index != ModuleCreatureAnimState.DEAD){
-      this.setAnimationState(ModuleCreatureAnimState.DEAD);
-      this.deathAnimationPlayed = true;
-    }
+    return this.deathCorpseService.enterRetainedCorpse();
   }
 
   /** Corpse-cache overflow: reveal bag and fade this shell out. */
   beginRetainedCorpseFadeOut(fadeSec: number = 1.0){
-    if(!this.isRetainedCorpse || this.destroyed) return;
-    const bag = this.getBodyBagPlaceable();
-    if(bag) bag.setBodyBagVisible(true);
-    this.retainedCorpseFadeTotal = Math.max(0, fadeSec);
-    this.retainedCorpseFadeRemaining = this.retainedCorpseFadeTotal;
-    if(this.retainedCorpseFadeRemaining <= 0){
-      this.disposeRetainedCorpse(false);
-    }
+    return this.deathCorpseService.beginRetainedCorpseFadeOut(fadeSec);
   }
 
   /** Total fade length when eviction starts (for opacity). */
   retainedCorpseFadeTotal: number = 0;
 
   updateRetainedCorpse(delta: number = 0){
-    if(this.destroyed || !this.isRetainedCorpse) return;
-
-    if(this.audioEmitter){
-      this.audioEmitter.setPosition(this.position.x, this.position.y, this.position.z + 1.0);
-    }
-
-    if(this.retainedCorpseFadeRemaining >= 0){
-      this.retainedCorpseFadeRemaining -= delta;
-      const total = this.retainedCorpseFadeTotal > 0 ? this.retainedCorpseFadeTotal : 1;
-      const opacity = Math.max(0, this.retainedCorpseFadeRemaining / total);
-      this.setOpacity(opacity);
-      Object.values(this.equipment).forEach(item => {
-        if(item && item.model instanceof OdysseyModel3D){
-          item.model.setOpacity(opacity);
-        }
-      });
-      if(this.retainedCorpseFadeRemaining <= 0){
-        this.setOpacity(0);
-        this.disposeRetainedCorpse(false);
-        return;
-      }
-    }
-
-    this.updateAnimationState();
-    if(this.model instanceof OdysseyModel3D && this.model.bonesInitialized){
-      this.model.animateFrame = true;
-      this.model.update(delta);
-    }
+    return this.deathCorpseService.updateRetainedCorpse(delta);
   }
 
   /**
@@ -4713,47 +2631,14 @@ export class Creature extends GameObject {
    * any TempDeath revive that must restore normal AI updates.
    */
   clearCorpseDestroyState(){
-    const wasScriptHidden = !!(this.isRetainedCorpse || this.serverDestroyed);
-    const stillInObjectList = GameState.GameObjectManager.ObjectList.has(this.id);
-    if(this.isRetainedCorpse){
-      const area = this.area;
-      area?.corpseCache?.remove(this);
-      this.isRetainedCorpse = false;
-    }
-    this.corpseDestroyScheduled = false;
-    this.serverDestroyed = false;
-    this.keepCorpseOnDestroy = false;
-    this.retainedCorpseFadeRemaining = -1;
-    this.retainedCorpseFadeTotal = 0;
-    this.setWillDestroy(false);
-    this.setDelayUntilDestroy(0);
-    this.setDelayUntilFade(0);
-    this.setNoFadeOnDestroy(false);
-    this.setOpacity(1);
-    // Party TempDeath revive after KeepCorpse removed the object from script tables
-    if(wasScriptHidden && !stillInObjectList){
-      getDefaultRuntimeContext().register(this);
-    }
+    return this.deathCorpseService.clearCorpseDestroyState();
   }
 
   /**
    * Dispose a KeepCorpse shell. Does not destroy the linked body bag.
    */
   disposeRetainedCorpse(revealBag: boolean = false){
-    if(this.destroyed) return;
-    const area = this.area;
-    area?.corpseCache?.remove(this);
-
-    if(revealBag){
-      const bag = this.getBodyBagPlaceable();
-      if(bag) bag.setBodyBagVisible(true);
-    }
-
-    this.isRetainedCorpse = false;
-    this.willDestroy = false;
-    this.serverDestroyed = true;
-    super.destroy();
-    this.disposeCreatureVisuals();
+    return this.deathCorpseService.disposeRetainedCorpse(revealBag);
   }
 
   override onDialog(oSpeaker: GameObject, listenPatternNumber = -1, conversation: DLGObject = undefined, matchedSubstrings: string[] = []){
@@ -5040,21 +2925,7 @@ export class Creature extends GameObject {
   }
 
   isDebilitated(){
-    return this.isConfused()
-      || this.isStunned()
-      || this.isDroidStunned()
-      || this.isParalyzed()
-      || this.isFrightened()
-      || this.isSleeping()
-      || this.isChoking()
-      || this.isForcePushed()
-      || this.isHorrified()
-      || this.isWhirlwind()
-      || this.isCrushed()
-      || this.isHeld()
-      || this.isMindTricked()
-      || this.isDroidScrambled()
-      || this.isKnockedDown();
+    return this.combatService.isDebilitated();
   }
 
   setCommadable(bCommandable = 0){
@@ -5066,47 +2937,7 @@ export class Creature extends GameObject {
   }
 
   getItemInSlot(slot = 0){
-    switch(slot){
-      case ModuleCreatureArmorSlot.IMPLANT:
-        return this.equipment.IMPLANT;
-      break;
-      case ModuleCreatureArmorSlot.HEAD:
-        return this.equipment.HEAD;
-      break;
-      case ModuleCreatureArmorSlot.ARMS:
-        return this.equipment.ARMS;
-      break;
-      case ModuleCreatureArmorSlot.LEFTARMBAND:
-        return this.equipment.LEFTARMBAND;
-      break;
-      case ModuleCreatureArmorSlot.ARMOR:
-        return this.equipment.ARMOR;
-      break;
-      case ModuleCreatureArmorSlot.RIGHTARMBAND:
-        return this.equipment.RIGHTARMBAND;
-      break;
-      case ModuleCreatureArmorSlot.LEFTHAND:
-        return this.equipment.LEFTHAND;
-      break;
-      case ModuleCreatureArmorSlot.BELT:
-        return this.equipment.BELT;
-      break;
-      case ModuleCreatureArmorSlot.RIGHTHAND:
-        return this.equipment.RIGHTHAND;
-      break;
-      case ModuleCreatureArmorSlot.CLAW1:
-        return this.equipment.CLAW1;
-      break;
-      case ModuleCreatureArmorSlot.CLAW2:
-        return this.equipment.CLAW2;
-      break;
-      case ModuleCreatureArmorSlot.CLAW3:
-        return this.equipment.CLAW3;
-      break;
-      default:
-        return null;
-      break;
-    }
+    return this.equipmentService.getItemInSlot(slot);
   }
 
   getInventory(): Item[] {
@@ -5136,30 +2967,27 @@ export class Creature extends GameObject {
   }
 
   getRace(){
-    return this.race;
+    return this.statsService.getRace();
   }
 
   getSubRace(){
-    return this.subrace;
+    return this.statsService.getSubRace();
   }
 
   getGender(){
-    return this.gender;
+    return this.statsService.getGender();
   }
 
   getXP(){
-    return this.experience;
+    return this.statsService.getXP();
   }
 
   setXP(value = 0){
-    this.experience = value;
+    return this.statsService.setXP(value);
   }
 
   addXP(value = 0, xpType: ExperienceType = ExperienceType.PLOT){
-    this.experience += parseInt(value.toString());
-    if(this.isPartyMember()){
-      GameState.UINotificationManager.EnableUINotificationIconType(xpType == ExperienceType.PLOT ? UIIconTimerType.PLOT_XP_RECEIVED : UIIconTimerType.STEALTH_XP_RECEIVED);
-    }
+    return this.statsService.addXP(value, xpType);
   }
 
   getGoodEvil(){
@@ -5419,140 +3247,68 @@ export class Creature extends GameObject {
   }
 
   getSubraceIndex(){
-    return this.subraceIndex;
+    return this.statsService.getSubraceIndex();
   }
 
   setHP(nAmount = 0){
-    // Keep currentHitPoints consistent with getHP for every subrace.
-    // Default: getHP = maxHitPoints + currentHitPoints - hitPoints
-    // Wookiee/Beast: getHP = hitPoints + currentHitPoints
-    // EffectDeath setHP(-11) used only the default inversion, so beast NPCs
-    // (e.g. Calo on Taris) stayed at positive HP with EffectDeath applied
-    // GetIsObjectValid stayed true and k_ptar_ramp never started tar08_ramp.
-    switch(this.subraceIndex){
-      case 1: // WOOKIE
-      case 2: // BEAST
-        this.currentHitPoints = nAmount - this.hitPoints;
-        break;
-      default:
-        this.currentHitPoints = nAmount - (this.maxHitPoints - this.hitPoints);
-        break;
-    }
+    return this.statsService.setHP(nAmount);
   }
 
   addHP(nAmount = 0, ignoreMaxHitPoints = false){
-    if(ignoreMaxHitPoints){
-      this.currentHitPoints += nAmount;
-    }else{
-      let currentHP = this.getHP();
-      if(currentHP < this.getMaxHP()){
-        if(currentHP + nAmount > this.getMaxHP()){
-          this.currentHitPoints += nAmount + (this.getMaxHP() - (currentHP + nAmount));
-        }else{
-          this.currentHitPoints += nAmount;
-        }
-      }
-    }
-
-    if(this.min1HP && this.getHP() < 1)
-      this.setHP(1);
+    return this.statsService.addHP(nAmount, ignoreMaxHitPoints);
   }
 
   subtractHP(nAmount = 0){
-    this.currentHitPoints -= nAmount;
-    if(this.min1HP && this.getHP() < 1)
-      this.setHP(1);
+    return this.statsService.subtractHP(nAmount);
   }
 
   getHP(){
-    switch(this.subraceIndex){
-      case 0: //NONE
-        return (this.maxHitPoints + this.currentHitPoints) - this.hitPoints;
-      case 1: //WOOKIE
-      case 2: //BEAST
-        return this.hitPoints + this.currentHitPoints;
-      default:
-        return (this.maxHitPoints + this.currentHitPoints) - this.hitPoints;
-    }
+    return this.statsService.getHP();
   }
 
   getMaxHP(){
-    return this.maxHitPoints;
+    return this.statsService.getMaxHP();
   }
 
   setMaxHP(nAmount = 0){
-    return this.maxHitPoints = nAmount;
+    return this.statsService.setMaxHP(nAmount);
   }
 
   setMinOneHP(bMinOneHP = false){
-    this.min1HP = bMinOneHP ? true : false;
+    return this.statsService.setMinOneHP(bMinOneHP);
   }
 
   /**
    * GetCurrentForcePoints: temporary + current.
    */
   getFP(){
-    return (this.temporaryForce || 0) + (this.currentForce || 0);
+    return this.statsService.getFP();
   }
 
   getMaxFP(){
-    return this.maxForcePoints;
+    return this.statsService.getMaxFP();
   }
 
   setFP(nAmount = 0){
-    this.temporaryForce = 0;
-    this.currentForce = Math.max(0, nAmount);
+    return this.statsService.setFP(nAmount);
   }
 
   addFP(nAmount = 0, ignoreMaxForcePoints = false){
-    if(nAmount <= 0) return;
-    if(ignoreMaxForcePoints){
-      this.currentForce += nAmount;
-    }else{
-      const room = Math.max(0, this.getMaxFP() - this.getFP());
-      this.currentForce += Math.min(nAmount, room);
-    }
-    if(this.getFP() < 0) this.setFP(0);
+    return this.statsService.addFP(nAmount, ignoreMaxForcePoints);
   }
 
   /**
    * UnReadySpell spend order: temporary FP first, then current.
    */
   subtractFP(nAmount = 0){
-    if(nAmount <= 0) return;
-    let remaining = nAmount;
-    if(this.temporaryForce > 0){
-      if(remaining <= this.temporaryForce){
-        this.temporaryForce -= remaining;
-        return;
-      }
-      remaining -= this.temporaryForce;
-      this.temporaryForce = 0;
-    }
-    this.currentForce -= remaining;
-    if(this.currentForce < 0) this.currentForce = 0;
+    return this.statsService.subtractFP(nAmount);
   }
 
   /**
    * GetAdjustedForcePoints — forceadjust.2da by alignment band.
    */
   getAdjustedForcePointCost(spell: { forcepoints?: number; goodEvil?: string }): number {
-    const base = typeof spell?.forcepoints === 'number' ? spell.forcepoints : (parseInt(String(spell?.forcepoints)) || 0);
-    if(base <= 0) return 0;
-    // NPCs outside party use base cost (arg2 == 0)
-    if(!this.isPartyMember() && !this.isPC){
-      return base;
-    }
-    const alignment = spell?.goodEvil || '-';
-    if(alignment !== 'G' && alignment !== 'E'){
-      return base;
-    }
-    const rowIndex = Math.min(10, Math.max(0, Math.floor(this.getGoodEvil() / 10)));
-    const row = GameState.SWRuleSet.forceAdjustments[rowIndex];
-    if(!row) return base;
-    const mult = alignment === 'G' ? row.goodcost : row.evilcost;
-    if(!isFinite(mult) || mult <= 0) return base;
-    return Math.max(0, Math.floor(base * mult));
+    return this.statsService.getAdjustedForcePointCost(spell);
   }
 
   /**
@@ -5560,10 +3316,7 @@ export class Creature extends GameObject {
    * GetSelfForcePowers / GetHostileForcePowers: body_fuel → use HP instead of FP.
    */
   getForceMenuResource(): number {
-    if(this.bodyFuel){
-      return this.getHP();
-    }
-    return this.getFP();
+    return this.statsService.getForceMenuResource();
   }
 
   /**
@@ -5572,12 +3325,7 @@ export class Creature extends GameObject {
    * the soft FP/HP gate (GetSelfForcePowers / GetHostileForcePowers).
    */
   unreadySpell(spell: { forcepoints?: number; goodEvil?: string } | null | undefined): boolean {
-    if(!spell) return false;
-    const cost = this.getAdjustedForcePointCost(spell);
-    if(cost > 0){
-      this.subtractFP(cost);
-    }
-    return true;
+    return this.statsService.unreadySpell(spell);
   }
 
   /**
@@ -5585,29 +3333,18 @@ export class Creature extends GameObject {
    * first two class slots; otherwise 0.
    */
   getForceSpellClassIndex(): number {
-    const limit = Math.min(2, this.classes?.length || 0);
-    for(let i = 0; i < limit; i++){
-      const id = this.classes[i]?.id | 0;
-      if(id === 3 || id === 4 || id === 5){
-        return i;
-      }
-    }
-    return 0;
+    return this.statsService.getForceSpellClassIndex();
   }
 
   getCameraHeight(){
-    if(this.model && this.model.camerahook){
-      return this.model.camerahook.position.z;
-    }else{
-      return 1.5;
-    }
+    return this.statsService.getCameraHeight();
   }
 
   /**
    * NWScript GetAC / simple AC — GetArmorClass.
    */
   getAC(){
-    return this.getArmorClassVersus(undefined, false);
+    return this.statsService.getAC();
   }
 
   /**
@@ -5615,11 +3352,7 @@ export class Creature extends GameObject {
    * GetVisibleListElement bit_flags & 1 — match by object ref or saved ObjectId.
    */
   hasSeenObject(object: GameObject): boolean {
-    if(!object || object === this) return true;
-    const entry = this.perceptionList?.find(
-      (o) => o.object === object || o.objectId === object.id
-    );
-    return !!(entry && (entry.data & PerceptionMask.SEEN));
+    return this.creaturePerceptionService.hasSeenObject(object);
   }
 
   /**
@@ -5629,105 +3362,7 @@ export class Creature extends GameObject {
    * armor/shield effect AC (types 2–3); dodge + deflection still apply
    */
   getArmorClassVersus(attacker?: Creature, touch = false): number {
-    let ac = 10;
-
-    for(let i = 0; i < this.classes.length; i++){
-      ac += this.classes[i].getACBonus() || 0;
-    }
-
-    // creaturesize.2da acattachmod by appearance.sizecategory
-    const sizeCat = this.getAppearance()?.sizecategory ?? 3;
-    const sizeRow = GameState.SWRuleSet?.creatureSizes?.[sizeCat];
-    if(sizeRow && typeof sizeRow.acattachmod === 'number' && sizeRow.acattachmod !== -1){
-      ac += sizeRow.acattachmod;
-    }
-
-    if(!touch){
-      ac += this.naturalAC || 0;
-
-      const armor = this.equipment.ARMOR;
-      ac += armor?.getACBonus() || 0;
-
-      // Shield / off-hand AC item (non-weapon with AC)
-      const leftHand = this.equipment.LEFTHAND;
-      if(leftHand && leftHand.getWeaponType() == WeaponType.INVALID){
-        ac += leftHand.getACBonus() || 0;
-      }
-    }
-
-    // Flat-footed / can't see attacker: deny positive DEX (negative still hurts).
-    // : GetInvisible(attacker, defender) || !(SEEN bit) → no GetDEXMod / dodge field.
-    const loseDex =
-      !!attacker &&
-      (this.isInvisibleToObserver(attacker) || !this.hasSeenObject(attacker));
-
-    const armor = this.equipment.ARMOR;
-    let dexBonus = Math.floor((this.getDEX() - 10) / 2);
-    if(this.isDebilitated()){
-      dexBonus = Math.min(dexBonus, 0);
-    }
-    if(armor){
-      const maxDex = armor.baseItem?.dexBonus;
-      if(typeof maxDex == 'number' && maxDex >= 0){
-        dexBonus = Math.min(dexBonus, maxDex);
-      }
-    }
-    if(loseDex){
-      dexBonus = Math.min(dexBonus, 0);
-    }
-    ac += dexBonus;
-
-    // Effect AC bonuses. int0=modifyType, int1=value
-    // Touch: skip armor/shield enchantment (types 2–3); dodge/natural/deflection apply.
-    let dodgeBonus = 0;
-    let naturalBonus = 0;
-    let armorEffect = 0;
-    let shieldEffect = 0;
-    let deflectEffect = 0;
-    for(let i = 0; i < this.effects.length; i++){
-      const effect = this.effects[i];
-      if(
-        effect.type != GameEffectType.EffectACIncrease &&
-        effect.type != GameEffectType.EffectACDecrease
-      ) continue;
-      const modType = effect.getInt(0);
-      const value = effect.getInt(1) || 0;
-      const signed = effect.type == GameEffectType.EffectACIncrease ? value : -value;
-      switch(modType){
-        case 0: dodgeBonus += signed; break;     // AC_DODGE_BONUS
-        case 1: naturalBonus += signed; break;   // AC_NATURAL_BONUS
-        case 2: // AC_ARMOUR_ENCHANTMENT (max)
-          if(!touch) armorEffect = Math.max(armorEffect, signed);
-          break;
-        case 3: // AC_SHIELD_ENCHANTMENT (max)
-          if(!touch) shieldEffect = Math.max(shieldEffect, signed);
-          break;
-        case 4: deflectEffect = Math.max(deflectEffect, signed); break;
-        default: dodgeBonus += signed; break;
-      }
-    }
-    // applies effect dodge even when DEX is denied; natural effects apply on touch.
-    ac += dodgeBonus + naturalBonus + armorEffect + shieldEffect + deflectEffect;
-
-    // Dueling AC feat mod (GetTotalACFeatMod) — one-handed with free off-hand
-    const rightHand = this.equipment.RIGHTHAND;
-    const leftHand = this.equipment.LEFTHAND;
-    if(
-      rightHand && !leftHand &&
-      (rightHand.getWeaponWield() == WeaponWield.ONE_HANDED_SWORD ||
-        rightHand.getWeaponWield() == WeaponWield.BLASTER_PISTOL ||
-        rightHand.getWeaponWield() == WeaponWield.STUN_BATON)
-    ){
-      if(this.getHasFeat(CombatFeatType.MASTER_DUELING)) ac += 3;
-      else if(this.getHasFeat(CombatFeatType.ADVANCED_DUELING)) ac += 2;
-      else if(this.getHasFeat(CombatFeatType.DUELING)) ac += 1;
-    }
-
-    if(this.isDebilitated()){
-      ac -= 4;
-    }
-
-    return ac;
+    return this.statsService.getArmorClassVersus(attacker, touch);
   }
 
   /**
@@ -5735,148 +3370,27 @@ export class Creature extends GameObject {
    * @returns 0 miss, 1 hit, 2 critical
    */
   doTouchAttack(target: GameObject, ranged = false): number {
-    if(!target) return 0;
-    if(
-      isDoor(target) ||
-      isPlaceable(target)
-    ){
-      return 1;
-    }
-    if(!isCreature(target)){
-      return 0;
-    }
-    const defender = target as Creature;
-
-    // Concealment → miss (ResolveDefensiveEffects subset)
-    let conceal = 0;
-    for(let i = 0; i < defender.effects.length; i++){
-      const e = defender.effects[i];
-      if(e?.type === GameEffectType.EffectConcealment){
-        conceal = Math.max(conceal, e.getInt(0) || 0);
-      }
-    }
-    if(conceal > 0 && (Math.floor(Math.random() * 100) + 1) <= conceal){
-      return 0;
-    }
-
-    const atkBonus =
-      this.getBaseAttackBonus() +
-      Math.floor(((ranged ? this.getDEX() : this.getSTR()) - 10) / 2) +
-      getAttackEffectBonus(this);
-    const touchAC = defender.getArmorClassVersus(this, true);
-    const roll = Dice.rollD20(1);
-
-    if(roll === 1) return 0;
-    if(roll === 20){
-      const confirm = Dice.rollD20(1);
-      return (confirm + atkBonus) >= touchAC ? 2 : 1;
-    }
-    return (roll + atkBonus) >= touchAC ? 1 : 0;
+    return this.statsService.doTouchAttack(target, ranged);
   }
 
   getSTR(calculateBonuses = true){
-    if(!calculateBonuses){
-      return this.str;
-    }else{
-      return this.str +
-      (this.equipment.HEAD?.getSTRBonus() || 0) +
-      (this.equipment.ARMOR?.getSTRBonus() || 0) +
-      (this.equipment.ARMS?.getSTRBonus() || 0) +
-      (this.equipment.RIGHTHAND?.getSTRBonus() || 0) +
-      (this.equipment.LEFTHAND?.getSTRBonus() || 0) +
-      (this.equipment.LEFTARMBAND?.getSTRBonus() || 0) +
-      (this.equipment.RIGHTARMBAND?.getSTRBonus() || 0) +
-      (this.equipment.IMPLANT?.getSTRBonus() || 0) +
-      (this.equipment.BELT?.getSTRBonus() || 0) +
-      (this.equipment.CLAW1?.getSTRBonus() || 0) +
-      (this.equipment.CLAW2?.getSTRBonus() || 0) +
-      (this.equipment.HIDE?.getSTRBonus() || 0) +
-      getAbilityEffectBonus(this, 0);
-    }
+    return this.statsService.getSTR(calculateBonuses);
   }
 
   getDEX(calculateBonuses = true){
-    if(!calculateBonuses){
-      return this.dex;
-    }else{
-      return this.dex +
-      (this.equipment.HEAD?.getDEXBonus() || 0) +
-      (this.equipment.ARMOR?.getDEXBonus() || 0) +
-      (this.equipment.ARMS?.getDEXBonus() || 0) +
-      (this.equipment.RIGHTHAND?.getDEXBonus() || 0) +
-      (this.equipment.LEFTHAND?.getDEXBonus() || 0) +
-      (this.equipment.LEFTARMBAND?.getDEXBonus() || 0) +
-      (this.equipment.RIGHTARMBAND?.getDEXBonus() || 0) +
-      (this.equipment.IMPLANT?.getDEXBonus() || 0) +
-      (this.equipment.BELT?.getDEXBonus() || 0) +
-      (this.equipment.CLAW1?.getDEXBonus() || 0) +
-      (this.equipment.CLAW2?.getDEXBonus() || 0) +
-      (this.equipment.HIDE?.getDEXBonus() || 0) +
-      getAbilityEffectBonus(this, 1);
-    }
+    return this.statsService.getDEX(calculateBonuses);
   }
 
   getCON(calculateBonuses = true){
-    if(!calculateBonuses){
-      return this.con;
-    }else{
-      return this.con +
-      (this.equipment.HEAD?.getCONBonus() || 0) +
-      (this.equipment.ARMOR?.getCONBonus() || 0) +
-      (this.equipment.ARMS?.getCONBonus() || 0) +
-      (this.equipment.RIGHTHAND?.getCONBonus() || 0) +
-      (this.equipment.LEFTHAND?.getCONBonus() || 0) +
-      (this.equipment.LEFTARMBAND?.getCONBonus() || 0) +
-      (this.equipment.RIGHTARMBAND?.getCONBonus() || 0) +
-      (this.equipment.IMPLANT?.getCONBonus() || 0) +
-      (this.equipment.BELT?.getCONBonus() || 0) +
-      (this.equipment.CLAW1?.getCONBonus() || 0) +
-      (this.equipment.CLAW2?.getCONBonus() || 0) +
-      (this.equipment.HIDE?.getCONBonus() || 0) +
-      getAbilityEffectBonus(this, 2);
-    }
+    return this.statsService.getCON(calculateBonuses);
   }
 
   getCHA(calculateBonuses = true){
-    if(!calculateBonuses){
-      return this.cha;
-    }else{
-      return this.cha +
-      (this.equipment.HEAD?.getCHABonus() || 0) +
-      (this.equipment.ARMOR?.getCHABonus() || 0) +
-      (this.equipment.ARMS?.getCHABonus() || 0) +
-      (this.equipment.RIGHTHAND?.getCHABonus() || 0) +
-      (this.equipment.LEFTHAND?.getCHABonus() || 0) +
-      (this.equipment.LEFTARMBAND?.getCHABonus() || 0) +
-      (this.equipment.RIGHTARMBAND?.getCHABonus() || 0) +
-      (this.equipment.IMPLANT?.getCHABonus() || 0) +
-      (this.equipment.BELT?.getCHABonus() || 0) +
-      (this.equipment.CLAW1?.getCHABonus() || 0) +
-      (this.equipment.CLAW2?.getCHABonus() || 0) +
-      (this.equipment.HIDE?.getCHABonus() || 0) +
-      getAbilityEffectBonus(this, 5);
-    }
+    return this.statsService.getCHA(calculateBonuses);
   }
 
   getWIS(calculateBonuses = true){
-    if(!calculateBonuses){
-      return this.wis;
-    }else{
-      return this.wis +
-      (this.equipment.HEAD?.getWISBonus() || 0) +
-      (this.equipment.ARMOR?.getWISBonus() || 0) +
-      (this.equipment.ARMS?.getWISBonus() || 0) +
-      (this.equipment.RIGHTHAND?.getWISBonus() || 0) +
-      (this.equipment.LEFTHAND?.getWISBonus() || 0) +
-      (this.equipment.LEFTARMBAND?.getWISBonus() || 0) +
-      (this.equipment.RIGHTARMBAND?.getWISBonus() || 0) +
-      (this.equipment.IMPLANT?.getWISBonus() || 0) +
-      (this.equipment.BELT?.getWISBonus() || 0) +
-      (this.equipment.CLAW1?.getWISBonus() || 0) +
-      (this.equipment.CLAW2?.getWISBonus() || 0) +
-      (this.equipment.HIDE?.getWISBonus() || 0) +
-      getAbilityEffectBonus(this, 4);
-    }
+    return this.statsService.getWIS(calculateBonuses);
   }
 
   /**
@@ -5884,21 +3398,21 @@ export class Creature extends GameObject {
    * CON + FortSaveThrow + class/conditioning + effects.
    */
   getFortitudeSave(){
-    return combineSavingThrow(this.getCreatureSavingThrowBase(1), getSavingThrowEffectBonus(this, 1));
+    return this.statsService.getFortitudeSave();
   }
 
   /**
    * Get the reflex save — GetReflexSavingThrow.
    */
   getReflexSave(){
-    return combineSavingThrow(this.getCreatureSavingThrowBase(2), getSavingThrowEffectBonus(this, 2));
+    return this.statsService.getReflexSave();
   }
 
   /**
    * Get the will save — GetWillSavingThrow.
    */
   getWillSave(){
-    return combineSavingThrow(this.getCreatureSavingThrowBase(3), getSavingThrowEffectBonus(this, 3));
+    return this.statsService.getWillSave();
   }
 
   /**
@@ -5906,7 +3420,7 @@ export class Creature extends GameObject {
    * @returns 0 fail, 1 success, 2 immune
    */
   fortitudeSave(nDC = 0, nSaveType = 0, oVersus: GameObject = undefined){
-    return this.savingThrowRoll(1, nDC, nSaveType, oVersus);
+    return this.statsService.fortitudeSave(nDC, nSaveType, oVersus);
   }
 
   /**
@@ -5914,7 +3428,7 @@ export class Creature extends GameObject {
    * @returns 0 fail, 1 success, 2 immune
    */
   reflexSave(nDC = 0, nSaveType = 0, oVersus: GameObject = undefined){
-    return this.savingThrowRoll(2, nDC, nSaveType, oVersus);
+    return this.statsService.reflexSave(nDC, nSaveType, oVersus);
   }
 
   /**
@@ -5922,104 +3436,15 @@ export class Creature extends GameObject {
    * @returns 0 fail, 1 success, 2 immune
    */
   willSave(nDC = 0, nSaveType = 0, oVersus: GameObject = undefined){
-    return this.savingThrowRoll(3, nDC, nSaveType, oVersus);
+    return this.statsService.willSave(nDC, nSaveType, oVersus);
   }
 
-  private getConditioningSaveBonus(): number {
-    if(this.getHasFeat?.(CombatFeatType.MASTER_CONDITIONING)) return 3;
-    if(this.getHasFeat?.(CombatFeatType.IMPROVED_CONDITIONING)) return 2;
-    if(this.getHasFeat?.(CombatFeatType.CONDITIONING)) return 1;
-    return 0;
-  }
 
-  private getClassSavingThrowBonus(kind: number): number {
-    let total = 0;
-    const classes = this.classes || [];
-    for(let i = 0; i < classes.length; i++){
-      const creatureClass = classes[i];
-      if(!creatureClass) continue;
-      if(kind === 1){
-        total += creatureClass.getFortSaveBonus?.() || 0;
-      }else if(kind === 2){
-        total += creatureClass.getRefSaveBonus?.() || 0;
-      }else{
-        total += creatureClass.getWillSaveBonus?.() || 0;
-      }
-    }
-    return total + this.getConditioningSaveBonus();
-  }
 
-  private getCreatureSavingThrowBase(kind: number): number {
-    let abilityMod = 0;
-    let gffBonus = 0;
-    if(kind === 1){
-      abilityMod = CombatRound.GetMod(this.getCON());
-      gffBonus = this.fortitudeSaveThrow | 0;
-    }else if(kind === 2){
-      abilityMod = CombatRound.GetMod(this.getDEX());
-      if(this.isDebilitated?.() && abilityMod > 0){
-        abilityMod = 0;
-      }
-      gffBonus = this.reflexSaveThrow | 0;
-    }else{
-      abilityMod = CombatRound.GetMod(this.getWIS());
-      gffBonus = this.willSaveThrow | 0;
-    }
-    return abilityMod + gffBonus + this.getClassSavingThrowBonus(kind);
-  }
 
-  private savingThrowRoll(
-    kind: number,
-    nDC: number,
-    nSaveType: number,
-    oVersus?: GameObject
-  ): number {
-    const versus = isCreature(oVersus) ? oVersus : undefined;
-    const base = this.getCreatureSavingThrowBase(kind);
-    let effectBonus = getSavingThrowEffectBonus(this, kind, nSaveType | 0, versus);
-    if(effectBonus > 20) effectBonus = 20;
-    const d20 = Dice.roll(1, DiceType.d20);
-    if(rollSavingThrow(combineSavingThrow(base, effectBonus), nDC, d20)){
-      return 1;
-    }
-
-    const spellId = this.combatData?.lastForcePowerUsed?.id
-      ?? (this as any).lastSpellId;
-    let spellSchool: number | undefined;
-    if(typeof spellId === 'number' && spellId >= 0){
-      const spellRow = (GameState as any).SWRuleSet?.spells?.[spellId]
-        ?? (GameState as any).TwoDAManager?.datatables?.get?.('spells')?.rows?.[spellId];
-      const school = spellRow?.school ?? spellRow?.School;
-      if(school !== undefined && school !== ''){
-        spellSchool = parseInt(school, 10);
-      }
-    }
-    const immunityType = savingThrowTypeToImmunity(nSaveType, spellSchool);
-    if(immunityType && hasImmunityType(this, immunityType, versus)){
-      return 2;
-    }
-    return 0;
-  }
 
   getINT(calculateBonuses = true){
-    if(!calculateBonuses){
-      return this.int;
-    }else{
-      return this.int +
-      (this.equipment.HEAD?.getINTBonus() || 0) +
-      (this.equipment.ARMOR?.getINTBonus() || 0) +
-      (this.equipment.ARMS?.getINTBonus() || 0) +
-      (this.equipment.RIGHTHAND?.getINTBonus() || 0) +
-      (this.equipment.LEFTHAND?.getINTBonus() || 0) +
-      (this.equipment.LEFTARMBAND?.getINTBonus() || 0) +
-      (this.equipment.RIGHTARMBAND?.getINTBonus() || 0) +
-      (this.equipment.IMPLANT?.getINTBonus() || 0) +
-      (this.equipment.BELT?.getINTBonus() || 0) +
-      (this.equipment.CLAW1?.getINTBonus() || 0) +
-      (this.equipment.CLAW2?.getINTBonus() || 0) +
-      (this.equipment.HIDE?.getINTBonus() || 0) +
-      getAbilityEffectBonus(this, 3);
-    }
+    return this.statsService.getINT(calculateBonuses);
   }
 
   /**
@@ -6027,59 +3452,40 @@ export class Creature extends GameObject {
    * 5 + total level + WIS mod + CHA mod + Force Focus (+1/+2/+4).
    */
   getSpellSaveDC(){
-    const wisMod = Math.floor((this.getWIS() - 10) / 2);
-    const chaMod = Math.floor((this.getCHA() - 10) / 2);
-    let dc = 5 + this.getTotalClassLevel() + wisMod + chaMod;
-    if(this.getHasFeat(CombatFeatType.FORCE_FOCUS_MASTERY)){
-      return dc + 4;
-    }
-    if(this.getHasFeat(CombatFeatType.FORCE_FOCUS_ADVANCED)){
-      return dc + 2;
-    }
-    if(this.getHasFeat(CombatFeatType.FORCE_FOCUS)){
-      return dc + 1;
-    }
-    return dc;
+    return this.statsService.getSpellSaveDC();
   }
 
   getSpellCasterLevel(){
-    let level = 0;
-    for(let i = 0; i < this.classes.length; i++){
-      if(this.classes[i].spellcaster){
-        level += this.classes[i].level;
-      }
-    }
-    return level;
+    return this.statsService.getSpellCasterLevel();
   }
 
   getIsPC(){
-    return this.isPC;
+    return this.statsService.getIsPC();
   }
 
   getPortraitId(){
-    return this.portraitId;
+    return this.statsService.getPortraitId();
   }
 
   getPortraitResRef(){
-    if(!this.portrait) return '';
-    return this.portrait.getPortraitGoodEvil(this.goodEvil);
+    return this.statsService.getPortraitResRef();
   }
 
   getWalkRateId(){
-    return this.walkRate;
+    return this.statsService.getWalkRateId();
   }
 
   /** NWScript GetMovementRate — WalkRate id (0 if invalid). */
   getMovementRate(){
-    return this.getWalkRateId() | 0;
+    return this.statsService.getMovementRate();
   }
 
   getName(){
-    return this.firstName instanceof CExoLocString ? this.firstName.getValue() : (this.firstName || '');
+    return this.statsService.getName();
   }
 
   getAppearance(): SWCreatureAppearance | undefined {
-    return this.creatureAppearance;
+    return this.statsService.getAppearance();
   }
 
   isWalking(){
@@ -6161,14 +3567,7 @@ export class Creature extends GameObject {
    * Drop sticky walk/run/back to idle. Combat / counterspell promote on next update.
    */
   clearLocomotionAnimation(){
-    const idx = this.animationState?.index;
-    if(
-      idx === ModuleCreatureAnimState.RUNNING ||
-      idx === ModuleCreatureAnimState.WALKING ||
-      idx === ModuleCreatureAnimState.WALKING_BACK
-    ){
-      this.setAnimationState(ModuleCreatureAnimState.PAUSE);
-    }
+    return this.animationService.clearLocomotionAnimation();
   }
 
   /**
@@ -6176,39 +3575,19 @@ export class Creature extends GameObject {
    * owns the pose. Combat/move actions on the queue must still allow walk/run.
    */
   isDriveAnimationBlocked(): boolean {
-    if(this.dialogAnimation){
-      return true;
-    }
-    return isDialogAnimation(this.animationState?.animation);
+    return this.animationService.isDriveAnimationBlocked();
   }
 
   /**
    * Apply side effects from animations.2da flags when the current clip changes:
    * hideequippeditems, play-out-of-place (via server ID), attack payload retain.
    */
-  syncAnimationFlagSideEffects(
-    next: SWAnimation | undefined,
-    serverId: number = 0,
-    previous?: SWAnimation | undefined
-  ){
-    const hideNext = isHideEquippedItemsAnimation(next);
-    if(hideNext){
-      this.hideEquippedItemsForAnimation();
-    }else if(this.animationHideEquippedItemsActive && !this.dialogEquipmentStash){
-      this.showEquippedItemsAfterAnimation();
-    }
-
-    this.setPlayOutOfPlaceActive(
-      isPlayOutOfPlaceServerId(serverId) || isPlayOutOfPlaceServerId(next?.animationId ?? 0)
-    );
-
-    void previous;
+  syncAnimationFlagSideEffects(next: SWAnimation | undefined, serverId: number = 0, previous?: SWAnimation | undefined){
+    return this.animationService.syncAnimationFlagSideEffects(next, serverId, previous);
   }
 
   setPlayOutOfPlaceActive(active: boolean){
-    if(this.model instanceof OdysseyModel3D){
-      this.model.playOutOfPlaceActive = !!active;
-    }
+    return this.animationService.setPlayOutOfPlaceActive(active);
   }
 
   /**
@@ -6216,37 +3595,21 @@ export class Creature extends GameObject {
    * Distinct from dialog UnequipItems.
    */
   hideEquippedItemsForAnimation(){
-    if(this.animationHideEquippedItemsActive) return;
-    this.animationHideEquippedItemsActive = true;
-    const hide = (item: Item | undefined) => {
-      if(item?.model instanceof OdysseyModel3D){
-        item.model.visible = false;
-      }
-    };
-    hide(this.equipment.RIGHTHAND);
-    hide(this.equipment.LEFTHAND);
+    return this.animationService.hideEquippedItemsForAnimation();
   }
 
   /**
    * Restore hand weapon meshes after a hideequippeditems clip ends.
    */
   showEquippedItemsAfterAnimation(){
-    if(!this.animationHideEquippedItemsActive) return;
-    this.animationHideEquippedItemsActive = false;
-    const show = (item: Item | undefined) => {
-      if(item?.model instanceof OdysseyModel3D){
-        item.model.visible = true;
-      }
-    };
-    show(this.equipment.RIGHTHAND);
-    show(this.equipment.LEFTHAND);
+    return this.animationService.showEquippedItemsAfterAnimation();
   }
 
   /**
    * True when the defender's current clip is parry-classified (animations.2da).
    */
   isCurrentAnimationParry(): boolean {
-    return isParryAnimation(this.animationState?.animation);
+    return this.animationService.isCurrentAnimationParry();
   }
 
   /**
@@ -6462,45 +3825,33 @@ export class Creature extends GameObject {
   }
 
   getHitDistance(){
-    return this.creatureAppearance?.hitdist ?? 1;
+    return this.statsService.getHitDistance();
   }
 
   /** appearance.hitradius — unengaged DesiredAttackRange. */
   getHitRadius(){
-    return this.creatureAppearance?.hitradius ?? 1;
+    return this.statsService.getHitRadius();
   }
 
   /** appearance.creperspace — creature spacing / engaged DesiredAttackRange. */
   getCreaturePersonalSpace(){
-    return this.creatureAppearance?.creperspace ?? 1;
+    return this.statsService.getCreaturePersonalSpace();
   }
 
   /** appearance.perspace — pathfind / walkmesh personal radius. */
   getPathPersonalSpace(){
-    return this.creatureAppearance?.perspace ?? 1;
+    return this.statsService.getPathPersonalSpace();
   }
 
   getMainClass(){
-    if(!this.classes.length)
-      return false;
-
-    return this.classes[this.classes.length - 1];
+    return this.statsService.getMainClass();
   }
 
   /**
    * @param subtractNegatives — GetLevel(stats, 1): subtract class.negativeLevels
    */
   getTotalClassLevel(subtractNegatives = false){
-    let total = 0;
-    for(let i = 0, len = this.classes.length; i < len; i++){
-      const cls = this.classes[i];
-      let lv = cls.level || 0;
-      if(subtractNegatives){
-        lv = Math.max(0, lv - (cls.negativeLevels || 0));
-      }
-      total += lv;
-    }
-    return total;
+    return this.statsService.getTotalClassLevel(subtractNegatives);
   }
 
   /**
@@ -6508,122 +3859,41 @@ export class Creature extends GameObject {
    * used by CastSpell forbid/require mask checks.
    */
   getForceItemMask(): number {
-    let mask = 0;
-    const slots = this.equipment;
-    if(!slots) return 0;
-    const items = [
-      slots.HEAD, slots.ARMOR, slots.ARMS, slots.RIGHTHAND, slots.LEFTHAND,
-      slots.LEFTARMBAND, slots.RIGHTARMBAND, slots.IMPLANT, slots.BELT,
-      slots.RIGHTHAND2, slots.LEFTHAND2,
-    ];
-    for(let i = 0; i < items.length; i++){
-      const item = items[i];
-      if(!item) continue;
-      const t = item.baseItemId | 0;
-      switch(t){
-        case 0x1f: mask |= 0x01; break;
-        case 0x20: mask |= 0x02; break;
-        case 0x21: mask |= 0x04; break;
-        case 0x22: mask |= 0x08; break;
-        case 0x23: mask |= 0x10; break;
-        case 0x24: mask |= 0x20; break;
-        case 0x27:
-        case 0x28:
-        case 0x29: mask |= 0x40; break;
-      }
-    }
-    return mask;
+    return this.statsService.getForceItemMask();
   }
 
   getClassLevel(nClass = 0, subtractNegatives = false){
-    for(let i = 0, len = this.classes.length; i < len; i++){
-      if(this.classes[i].id == nClass){
-        let lv = this.classes[i].level || 0;
-        if(subtractNegatives){
-          lv = Math.max(0, lv - (this.classes[i].negativeLevels || 0));
-        }
-        return lv;
-      }
-    }
-    return 0;
+    return this.statsService.getClassLevel(nClass, subtractNegatives);
   }
 
   //Does the creature have enough EXP to level up
   canLevelUp(){
-    let level = this.getTotalClassLevel();
-    const xp = GameState.SWRuleSet?.expTable?.expList?.[level];
-    if(typeof xp === 'number'){
-      return this.getXP() >= xp;
-    }
-    return false;
+    return this.statsService.canLevelUp();
   }
 
   //Get the effective creature level based on the creatures current amount of EXP
   getEffectiveLevel(){
-    let level = 0;
-    const expList = GameState.SWRuleSet?.expTable?.expList;
-    if(expList?.length){
-      for(let i = 0; i < expList.length; i++){
-        if(this.getXP() >= (expList[i] | 0)){
-          level = i;
-        }
-      }
-    }
-    return level;
+    return this.statsService.getEffectiveLevel();
   }
 
   getBaseAttackBonus(){
-    // Class BAB only; ability mods are applied in the attack-roll resolver
-    let bab = 0;
-    for(let i = 0, len = this.classes.length; i < len; i++){
-      bab += this.classes[i].getBaseAttackBonus();
-    }
-    return bab;
+    return this.statsService.getBaseAttackBonus();
   }
 
   getFeats(){
-    return this.feats || [];
+    return this.statsService.getFeats();
   }
 
   getFeat(id = 0){
-    let feats = this.getFeats();
-    for(let i = 0, len = feats.length; i < len; i++){
-      if(feats[i].id == id){
-        return feats[i];
-      }
-    }
-    return null;
+    return this.statsService.getFeat(id);
   }
 
   addFeat(feat: number|TalentFeat = 0){
-    if(feat instanceof TalentFeat){
-      if(!this.getFeat(feat.id)){
-        this.feats.push(feat);
-      }
-    }else{
-      if(!this.getFeat(feat)){
-        this.feats.push(new TalentFeat(feat));
-      }
-    }
+    return this.statsService.addFeat(feat);
   }
 
   getHasFeat(id: number = 0){
-    let feats = this.getFeats();
-    for(let i = 0, len = feats.length; i < len; i++){
-      if(feats[i].id == id){
-        return true;
-      }
-    }
-    // bonus_feats list from EffectBonusFeat
-    if(this.effects?.length){
-      for(let i = 0; i < this.effects.length; i++){
-        const e = this.effects[i];
-        if(e?.type === GameEffectType.EffectBonusFeat && e.getInt(0) === id){
-          return true;
-        }
-      }
-    }
-    return false;
+    return this.statsService.getHasFeat(id);
   }
 
   /**
@@ -6632,14 +3902,11 @@ export class Creature extends GameObject {
    * @returns The remaining uses for the given feat.
    */
   getFeatRemainingUses(id: number = 0): number {
-    if(!this.getHasFeat(id)){
-      return 0;
-    }
-    return 100;
+    return this.statsService.getFeatRemainingUses(id);
   }
 
   getHasSkill(value: number){
-    return this.skills[value].rank > 0;
+    return this.statsService.getHasSkill(value);
   }
 
   /**
@@ -6648,26 +3915,7 @@ export class Creature extends GameObject {
    * @returns True if the creature can use the given skill, false otherwise.
    */
   getCanUseSkill(value: number): boolean {
-    // aliases the mine subskills 100–102 to Demolitions.
-    const skillId = value === 100 || value === 101 || value === 102
-      ? 1
-      : value;
-    const skill = this.skills[skillId];
-    if(!skill) return false;
-    if(!skill.isUntrained()){
-      // stores ranks as signed bytes; 0xff is -1, not 255 ranks.
-      return ((skill.rank << 24) >> 24) > 0;
-    }
-    if(skill.canAllClassesUse()){
-      return true;
-    }
-    for(let i = 0; i < this.classes.length; i++){
-      const classSkill = skill.classData.get(this.classes[i].skillstable);
-      if(classSkill?.isClassSkill){
-        return true;
-      }
-    }
-    return false;
+    return this.statsService.getCanUseSkill(value);
   }
 
   /**
@@ -6677,141 +3925,22 @@ export class Creature extends GameObject {
    * @returns The skill rank for the given skill.
    */
   getSkillRank(value: number, raw: boolean = false){
-    const skills = this.skills;
-    if(!skills || value < 0 || value >= skills.length){
-      return 0;
-    }
-
-    const skill = skills[value] as TalentSkill;
-    let rank = ((skill.rank << 24) >> 24);
-
-    if(raw){
-      return Creature.clampSkillRank(rank);
-    }
-
-    // Trained-only skills with no ranks contribute nothing.
-    if(!skill.isUntrained?.() && rank === 0){
-      return 0;
-    }
-
-    // Effect skill increase / decrease
-    if(this.effects?.length){
-      for(let i = 0; i < this.effects.length; i++){
-        const e = this.effects[i];
-        if(e?.type === GameEffectType.EffectSkillIncrease && e.getInt(0) === value){
-          rank += e.getInt(1) || 0;
-        }else if(e?.type === GameEffectType.EffectSkillDecrease){
-          const id = e.getInt(0);
-          if(id === value || id === 0xff){
-            rank -= e.getInt(1) || 0;
-          }
-        }
-      }
-    }
-
-    const keyRaw = skill.getKeyAbility?.() || skill.keyAbility || '';
-    const keyNum = parseInt(String(keyRaw), 10);
-    const key = Number.isNaN(keyNum) ? String(keyRaw).toLowerCase() : keyNum;
-
-    switch(key){
-      case 0:
-      case 'str':
-        rank += getAbilityModifier(this.getSTR());
-        if(isCreatureBlind(this)) rank -= 4;
-        break;
-      case 1:
-      case 'dex': {
-        const dexMod = getAbilityModifier(this.getDEX());
-        if(this.isDebilitated?.()){
-          rank += dexMod < 0 ? dexMod : 0;
-        }else{
-          rank += dexMod;
-        }
-        if(isCreatureBlind(this)) rank -= 4;
-        break;
-      }
-      case 2:
-      case 'con':
-        rank += getAbilityModifier(this.getCON());
-        break;
-      case 3:
-      case 'int':
-        rank += getAbilityModifier(this.getINT());
-        break;
-      case 4:
-      case 'wis':
-        rank += getAbilityModifier(this.getWIS());
-        break;
-      case 5:
-      case 'cha':
-        rank += getAbilityModifier(this.getCHA());
-        break;
-      default:
-        break;
-    }
-
-    if(skill.hasArmorCheckPenalty?.() || skill.armorCheckPenalty){
-      rank += (this.combatInformation?.armorCheckPen | 0);
-    }
-
-    rank += this.getSkillFeatBonus(value);
-
-    return Creature.clampSkillRank(rank);
+    return this.statsService.getSkillRank(value, raw);
   }
 
-  private static clampSkillRank(rank: number): number {
-    if(rank > 0x7e) return 0x7f;
-    if(rank < -0x7e) return -0x7f;
-    return rank | 0;
-  }
 
   /**
    * Get the skill feat bonus for the given skill.
    * @param skillId The ID of the skill to get the skill feat bonus for.
    * @returns The skill feat bonus for the given skill.
    */
-  private getSkillFeatBonus(skillId: number): number {
-    const has = (id: number) => !!this.getHasFeat?.(id);
-
-    switch(skillId){
-      case SkillType.COMPUTER_USE:
-        if(has(CombatFeatType.GEAR_HEAD_MASTER)) return 3;
-        if(has(CombatFeatType.GEAR_HEAD_ADEPT)) return 2;
-        if(has(CombatFeatType.GEAR_HEAD)) return 1;
-        return 0;
-      case SkillType.DEMOLITIONS:
-      case SkillType.STEALTH:
-        if(has(CombatFeatType.MASTER_CAUTION)) return 3;
-        if(has(CombatFeatType.IMPROVED_CAUTION)) return 2;
-        if(has(CombatFeatType.CAUTIOUS)) return 1;
-        return 0;
-      case SkillType.AWARENESS:
-      case SkillType.PERSUADE:
-      case SkillType.TREAT_INJURY:
-        if(has(CombatFeatType.MASTER__EMPATHY)) return 3;
-        if(has(CombatFeatType.IMPROVED_EMPATHY)) return 2;
-        if(has(CombatFeatType.EMPATHY)) return 1;
-        return 0;
-      case SkillType.REPAIR:
-      case SkillType.SECURITY:
-        if(has(CombatFeatType.GEAR_HEAD_MASTER)) return 3;
-        if(has(CombatFeatType.GEAR_HEAD_ADEPT)) return 2;
-        if(has(CombatFeatType.GEAR_HEAD)) return 1;
-        return 0;
-      default:
-        return 0;
-    }
-  }
 
   /**
    * Get whether the creature is stealthed or invisible.
    * @returns True if the creature is stealthed or invisible, false otherwise.
    */
   isStealthedOrInvisible(): boolean {
-    if(this.stealthMode) return true;
-    if(this.hasEffect?.(GameEffectType.EffectInvisibility)) return true;
-    if(this.hasEffect?.(GameEffectType.EffectSanctuary)) return true;
-    return false;
+    return this.creaturePerceptionService.isStealthedOrInvisible();
   }
 
   /**
@@ -6820,45 +3949,7 @@ export class Creature extends GameObject {
    * @returns True if the target is effect-hidden from this observer, false otherwise.
    */
   isInvisibleToObserver(target: Creature): boolean {
-    if(!target || this === target) return false;
-
-    const detect = getDetectFlags(this);
-    if(detect & DETECT_FLAG_TRUE_SEEING){
-      return false;
-    }
-    const seeInvis = !!(detect & DETECT_FLAG_SEE_INVISIBLE);
-    const pierceDark = !!(detect & (DETECT_FLAG_ULTRA_VISION | DETECT_FLAG_TRUE_SEEING));
-
-    const effects = target.effects || [];
-    for(let i = 0; i < effects.length; i++){
-      const e = effects[i];
-      if(!e) continue;
-
-      if(e.type === GameEffectType.EffectInvisibility){
-        const mode = e.getInt(0) || 1;
-        // mode 2 (darkness): UltraVision / True Seeing pierce
-        if(mode === 2){
-          if(!pierceDark) return true;
-        }else if(mode === 1 || mode === 4){
-          if(!seeInvis) return true;
-        }else if(!seeInvis){
-          return true;
-        }
-      }
-
-      if(e.type === GameEffectType.EffectSanctuary){
-        const hostile = typeof this.isHostile === 'function'
-          ? this.isHostile(target)
-          : (this.factionId !== target.factionId);
-        if(!hostile) continue;
-        const dc = (e as EffectSanctuary).getWillDC?.() || e.getInt(4) || 0;
-        if(dc <= 0 || !this.willSave(dc, 0, target)){
-          return true;
-        }
-      }
-    }
-
-    return false;
+    return this.creaturePerceptionService.isInvisibleToObserver(target);
   }
 
   /**
@@ -6866,124 +3957,36 @@ export class Creature extends GameObject {
    * Returns true if this observer sees the target.
    */
   doSpotDetection(target: Creature): boolean {
-    if(!target) return false;
-    // DoSpotDetection: GetBlind observer fails spot
-    if(isCreatureBlind(this)){
-      return false;
-    }
-    if(!target.isStealthedOrInvisible()) return true;
-
-    const hideRank = target.getSkillLevel?.(SkillType.STEALTH) || 0;
-    if(hideRank < 1 && !target.stealthMode){
-      return true;
-    }
-
-    const hideDice = Dice.roll(1, DiceType.d10);
-    let awareness = this.getSkillLevel?.(SkillType.AWARENESS) || 0;
-    const detectMode = !!this.detectMode;
-    if(!detectMode){
-      awareness = Math.floor(awareness / 2);
-    }
-    const spotDice = Dice.roll(1, DiceType.d10);
-
-    let score = awareness + spotDice - hideRank - hideDice;
-
-    const toTarget = target.position.clone().sub(this.position);
-    toTarget.z = 0;
-    if(toTarget.lengthSq() > 0.0001){
-      toTarget.normalize();
-      const facing = this.getFacingVector?.() || new THREE.Vector3(0, 1, 0);
-      facing.z = 0;
-      if(facing.lengthSq() > 0.0001){
-        facing.normalize();
-        const dot = toTarget.x * facing.x + toTarget.y * facing.y;
-        if(dot < -0.707){
-          score -= 5;
-        }
-      }
-    }
-
-    if(this.combatData?.combatState || this.combatRound?.roundStarted){
-      score -= 10;
-    }
-
-    const targetMoving = (target.force || 0) > 0.01 || (target.speed || 0) > 0.01;
-    const observerMoving = (this.force || 0) > 0.01 || (this.speed || 0) > 0.01;
-    if(!targetMoving) score -= 5;
-    if(!observerMoving) score += 5;
-
-    const dist = this.position.distanceTo(target.position);
-    const distFactor = dist / 3;
-    if(distFactor > 2){
-      score -= Math.floor(distFactor - 2);
-    }
-
-    return score >= 1;
+    return this.creaturePerceptionService.doSpotDetection(target);
   }
 
   doListenDetection(target: Creature): boolean {
-    return this.doSpotDetection(target);
+    return this.creaturePerceptionService.doListenDetection(target);
   }
 
   /**
    * True if this observer can detect a (possibly stealthed/invisible) target.
    */
   doStealthDetection(target: Creature): boolean {
-    // Effect invisibility / sanctuary not pierced → cannot detect
-    if(this.isInvisibleToObserver(target)){
-      return false;
-    }
-    if(!target.isStealthedOrInvisible()){
-      return true;
-    }
-    // Contested hide for stealth mode (and residual invis that was pierced)
-    return this.doSpotDetection(target) || this.doListenDetection(target);
+    return this.creaturePerceptionService.doStealthDetection(target);
   }
 
   getSkillLevel(value: number){
-    return this.getSkillRank(value, false);
+    return this.statsService.getSkillLevel(value);
   }
 
   /**
    * IsStealthCapable — skill + stealth device on belt/hide.
    */
   isStealthCapable(): boolean {
-    if(this.area?.restrictMode) return false;
-    if(this.getSkillLevel(2) < 1) return false; // SkillType.STEALTH
-    const belt = this.equipment?.BELT;
-    const hide = this.equipment?.HIDE;
-    const isStealthDevice = (item: Item) =>
-      !!item && (
-        item.baseItemId === BaseItemType.STEALTH_UNIT ||
-        item.baseItem?.itemType === 0x2c
-      );
-    if(isStealthDevice(belt)) return true;
-    if(isStealthDevice(hide)) return true;
-    return false;
+    return this.combatService.isStealthCapable();
   }
 
   /**
    * SetStealthMode — toggle invisibility for party stealth.
    */
   setStealthMode(enabled: boolean){
-    const next = !!enabled;
-    if(this.stealthMode === next) return;
-    this.stealthMode = next;
-    if(next){
-      const effect = new GameState.GameEffectFactory.EffectInvisibility();
-      effect.setCreator(this);
-      effect.setDurationType(GameEffectDurationType.PERMANENT);
-      // INVISIBILITY_TYPE_NORMAL = 1 — stripped on combat engagement
-      effect.setInt(0, 1);
-      this.addEffect(effect);
-    }else{
-      const effects = this.effects ? this.effects.slice() : [];
-      for(let i = 0; i < effects.length; i++){
-        if(effects[i]?.type === GameEffectType.EffectInvisibility){
-          this.removeEffect(effects[i]);
-        }
-      }
-    }
+    return this.combatService.setStealthMode(enabled);
   }
 
   /**
@@ -6991,63 +3994,14 @@ export class Creature extends GameObject {
    * only applies LimitMovementSpeed for stealth in KotOR (detect is a no-op there).
    */
   setDetectMode(enabled: boolean){
-    const next = !!enabled;
-    if(this.detectMode === next) return;
-    this.detectMode = next;
+    return this.combatService.setDetectMode(enabled);
   }
 
   /**
    * SetActivity — set/clear activity bits with combat-mode exclusivity.
    */
   setActivity(bits: number, enable: boolean, _param3: number = 0){
-    const mask = bits | 0;
-    if(!mask) return;
-    if(enable && (this.activity & mask) === mask){
-      return;
-    }
-
-    // Entering / clearing a combat-mode bit clears other unlocked combat-mode bits
-    if(
-      ((mask & COMBAT_MODE_ACTIVITY_MASK) !== 0 && enable) ||
-      (mask === COMBAT_MODE_ACTIVITY_MASK && !enable)
-    ){
-      for(const bit of [0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000]){
-        if((this.activity & bit) !== 0 && (this.activityLocked & bit) === 0 && (mask & bit) === 0){
-          this.setActivity(bit, false, 0);
-        }
-      }
-    }
-
-    // Skill-mode group 0xf8 exclusivity (simplified)
-    if(((mask & 0xf8) !== 0 && enable) || (mask === 0xf8 && !enable)){
-      for(const bit of [0x08, 0x10, 0x20, 0x40, 0x80]){
-        if((this.activity & bit) !== 0 && (this.activityLocked & bit) === 0 && (mask & bit) === 0){
-          this.setActivity(bit, false, 0);
-        }
-      }
-    }
-
-    if(enable){
-      this.activity |= mask;
-    }else{
-      this.activity &= ~mask;
-    }
-
-    if((mask & 1) !== 0){
-      if(enable){
-        if((this.activity & 0xc) === 0){
-          this.setStealthMode(true);
-        }else{
-          this.activity &= ~1;
-        }
-      }else{
-        this.setStealthMode(false);
-      }
-    }
-    if((mask & 2) !== 0){
-      this.setDetectMode(enable);
-    }
-    // dialog-stop (4) left as no-op beyond the bit itself (StopDialog on clear)
+    return this.combatService.setActivity(bits, enable, _param3);
   }
 
   /**
@@ -7055,304 +4009,89 @@ export class Creature extends GameObject {
    * param 1 clears skill/combat soft modes; param 4 clears stealth/dialog for CounterSpell.
    */
   activityManager(reason: number){
-    if(reason === 4){
-      if((this.activity & 1) !== 0 && (this.activityLocked & 1) === 0){
-        this.activity &= ~1;
-        this.setStealthMode(false);
-      }
-      if((this.activity & 4) !== 0 && (this.activityLocked & 4) === 0){
-        this.activity &= ~4;
-      }
-      if((this.activity & 8) !== 0 && (this.activityLocked & 8) === 0){
-        this.activity &= ~8;
-      }
-      return;
-    }
-
-    if((this.activityLocked & COMBAT_MODE_ACTIVITY_MASK) !== COMBAT_MODE_ACTIVITY_MASK){
-      for(const bit of [0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000]){
-        if((this.activity & bit) !== 0 && (this.activityLocked & bit) === 0){
-          this.setActivity(bit, false, 0);
-        }
-      }
-      this.activity &= ~COMBAT_MODE_ACTIVITY_MASK;
-    }
-
-    if(reason === 1){
-      if((this.activity & 1) !== 0 && (this.activityLocked & 1) === 0){
-        this.activity &= ~1;
-        this.setStealthMode(false);
-      }
-      if((this.activity & 4) !== 0 && (this.activityLocked & 4) === 0){
-        this.activity &= ~4;
-      }
-      for(const bit of [0x08, 0x10, 0x20, 0x40, 0x80]){
-        if((this.activity & bit) !== 0 && (this.activityLocked & bit) === 0){
-          this.activity &= ~bit;
-        }
-      }
-    }
+    return this.combatService.activityManager(reason);
   }
 
   /**
    * SetCombatMode — maps mode → activity bit; defers while round started.
    */
   setCombatMode(mode: number, forceImmediate: boolean = false){
-    const next = (mode | 0) as CombatMode;
-
-    if(!forceImmediate && next === this.combatMode){
-      return;
-    }
-
-    if(!forceImmediate && next !== CombatMode.COUNTERSPELL && this.combatRound?.roundStarted){
-      this.pendingCombatMode = next;
-      return;
-    }
-
-    const prev = this.combatMode;
-    this.combatMode = next;
-    this.applyCombatModeActivityTransition(prev, next);
+    return this.combatService.setCombatMode(mode, forceImmediate);
   }
 
   /**
    * Match SetCombatMode activity transitions; CounterSpell uses the same bit mapping.
    */
-  private applyCombatModeActivityTransition(prev: CombatMode, next: CombatMode){
-    if(next === CombatMode.MODE_1){
-      this.setActivity(0x400, true, 0);
-      return;
-    }
-    if(prev === CombatMode.MODE_1){
-      this.setActivity(0x400, false, 0);
-      // stops here when leaving mode 1; still apply next when forced
-      if(next === CombatMode.NONE) return;
-    }
-
-    if(next === CombatMode.MODE_2){
-      this.setActivity(0x100, true, 0);
-      return;
-    }
-    if(prev === CombatMode.MODE_2){
-      this.setActivity(0x100, false, 0);
-      if(next === CombatMode.NONE) return;
-    }
-
-    if(next === CombatMode.MODE_3){
-      this.setActivity(0x200, true, 0);
-      return;
-    }
-    if(prev === CombatMode.MODE_3){
-      this.setActivity(0x200, false, 0);
-      if(next === CombatMode.NONE) return;
-    }
-
-    if(next === CombatMode.COUNTERSPELL){
-      this.setActivity(0x800, true, 0);
-      return;
-    }
-    if(prev === CombatMode.COUNTERSPELL){
-      this.setActivity(0x800, false, 0);
-      if(next === CombatMode.NONE) return;
-    }
-
-    if(next === CombatMode.MODE_5){
-      this.setActivity(0x1000, true, 0);
-      return;
-    }
-    if(prev === CombatMode.MODE_5){
-      this.setActivity(0x1000, false, 0);
-      if(next === CombatMode.NONE) return;
-    }
-
-    if(next === CombatMode.MODE_6){
-      this.setActivity(0x2000, true, 0);
-      return;
-    }
-    if(prev === CombatMode.MODE_6){
-      this.setActivity(0x2000, false, 0);
-    }
-  }
 
   /**
    * CounterSpell combat-mode enter
    * ActivityManager(4) then set mode 4 / activity 0x800 (or clear prior mode bit).
    */
   enterCounterSpellMode(){
-    this.activityManager(4);
-    if(this.combatMode === CombatMode.COUNTERSPELL){
-      return;
-    }
-    const prev = this.combatMode;
-    this.combatMode = CombatMode.COUNTERSPELL;
-    if(prev === CombatMode.MODE_1){
-      this.setActivity(0x400, false, 0);
-    }else if(prev === CombatMode.MODE_2){
-      this.setActivity(0x100, false, 0);
-    }else if(prev === CombatMode.MODE_3){
-      this.setActivity(0x200, false, 0);
-    }else{
-      this.setActivity(0x800, true, 0);
-    }
+    return this.combatService.enterCounterSpellMode();
   }
 
   /** Clear combat mode (QueueAttackActions / leave CounterSpell). */
   clearCombatMode(){
-    this.pendingCombatMode = -1;
-    if(this.combatMode === CombatMode.NONE) return;
-    const prev = this.combatMode;
-    this.combatMode = CombatMode.NONE;
-    this.applyCombatModeActivityTransition(prev, CombatMode.NONE);
+    return this.combatService.clearCombatMode();
   }
 
   toggleStealthMode(){
-    if(!this.isStealthCapable()) return false;
-    this.setStealthMode(!this.stealthMode);
-    return this.stealthMode;
+    return this.combatService.toggleStealthMode();
   }
 
   getHasSpell(id = 0){
-    return (this.getSpell(id) instanceof TalentSpell) ? true : false;
+    return this.statsService.getHasSpell(id);
   }
 
   /**
    * Set the active Jedi Form spell id if the creature knows it.
    */
   setCurrentForm(formId = 0){
-    if(formId && !this.getHasSpell(formId)) return;
-    this.currentForm = formId || 0;
+    return this.statsService.setCurrentForm(formId);
   }
 
   getCurrentForm(){
-    return this.currentForm || 0;
+    return this.statsService.getCurrentForm();
   }
 
   /**
    * Whether the given form is active. Saber forms also require a lightsaber.
    */
   isFormActive(formId = 0){
-    if(!formId || this.currentForm != formId) return false;
-    if(formId >= 258 && formId <= 264){
-      const right = this.equipment?.RIGHTHAND;
-      const left = this.equipment?.LEFTHAND;
-      return !!(right?.isLightsaber?.() || left?.isLightsaber?.());
-    }
-    return true;
+    return this.statsService.isFormActive(formId);
   }
 
   getSpell(id = 0){
-    for(let i = 0; i < this.classes.length; i++){
-      let cls = this.classes[i];
-      let spells = cls.getSpells();
-      for(let j = 0, len = spells.length; j < len; j++){
-        let spell = spells[j];
-        if(spell.id == id)
-          return spell;
-      }
-    }
-
-    if(typeof this.equipment.RIGHTARMBAND != 'undefined'){
-      let spells = this.equipment.RIGHTARMBAND.getSpells();
-      for(let i = 0, len = spells.length; i < len; i++){
-        if(spells[i].id == id){
-          return spells[i];
-        }
-      }
-    }
-
-    if(typeof this.equipment.LEFTARMBAND != 'undefined'){
-      let spells = this.equipment.LEFTARMBAND.getSpells();
-      for(let i = 0, len = spells.length; i < len; i++){
-        if(spells[i].id == id){
-          return spells[i];
-        }
-      }
-    }
-
-    return undefined;
+    return this.statsService.getSpell(id);
   }
 
   hasTalent(talent: TalentObject){
-    if(typeof talent == 'undefined') return false;
-    if((talent.objectType & TalentObjectType.TalentSpell) !== 0){
-      return this.getHasSpell(talent.id) ? true : false;
-    }
-    if((talent.objectType & TalentObjectType.TalentFeat) !== 0){
-      return this.getHasFeat(talent.id) ? true : false;
-    }
-    if((talent.objectType & TalentObjectType.TalentSkill) !== 0){
-      return this.getHasSkill(talent.id) ? true : false;
-    }
-    return false;
+    return this.statsService.hasTalent(talent);
   }
 
   getTalents(){
-
-    let talents: TalentObject[] = [];
-
-    //Merge Spell Talents from all classs
-    for(let i = 0; i < this.classes.length; i++){
-      talents = talents.concat(this.classes[i].getSpells());
-    }
-
-    //Merge Feat Talents
-    talents = talents.concat(this.feats);
-    //Merge Skill Talents
-    talents = talents.concat(this.skills);
-
-    return talents;
-
+    return this.statsService.getTalents();
   }
 
   getSpells(): TalentSpell[] {
-    const spells: TalentSpell[] = [];
-
-    for(let i = 0, len = this.classes.length; i < len; i++){
-      spells.push(...this.classes[i].getSpells());
-    }
-
-    if(typeof this.equipment.RIGHTARMBAND != 'undefined'){
-      spells.push(...this.equipment.RIGHTARMBAND.getSpells());
-    }
-
-    if(typeof this.equipment.LEFTARMBAND != 'undefined'){
-      spells.push(...this.equipment.LEFTARMBAND.getSpells());
-    }
-
-    return spells;
+    return this.statsService.getSpells();
   }
 
   getClassSpells(){
-    const spells = [];
-
-    for(let i = 0, len = this.classes.length; i < len; i++){
-      spells.push(...this.classes[i].getSpells());
-    }
-
-    return spells;
+    return this.statsService.getClassSpells();
   }
 
   getRandomTalent(category = 0, category2 = 0){
-
-    let talents = this.getTalents().filter( (talent: TalentObject) => talent.category == category || talent.category == category2 );
-    let talent = talents[Math.floor(Math.random()*talents.length)];
-    //console.log('getRandomTalent', talent);
-    return talent;
-
+    return this.statsService.getRandomTalent(category, category2);
   }
 
   getTalentBest(nCategory = 0, nCRMax = 0, nInclusion = 0, nExcludeType = -1, nExcludeId = -1){
-    let talents = this.getTalents().filter( (talent: TalentObject) => ( talent.category > -1 && ( (talent.category & nCategory) == nCategory ) && talent.maxCR <= nCRMax ) );
-    talents.sort((a: TalentObject, b: TalentObject) => (a.maxCR > b.maxCR) ? 1 : -1);
-    //console.log('getTalentBest', talents);
-    if(talents.length){
-      return talents[0];
-    }
-    return undefined;
+    return this.statsService.getTalentBest(nCategory, nCRMax, nInclusion, nExcludeType, nExcludeId);
   }
 
   isSimpleCreature(){
-    if(!this.creatureAppearance) return false;
-    return this.creatureAppearance.modeltype === 'S' || this.creatureAppearance.modeltype === 'L';
+    return this.statsService.isSimpleCreature();
   }
 
   setListening(bVal = false){
@@ -7436,181 +4175,19 @@ export class Creature extends GameObject {
 
   }
 
-  async loadModel (): Promise<OdysseyModel3D> {
-    const generation = ++this.modelLoadGeneration;
-    this.isReady = false;
-    // Hide while rebuilding so bind/rest pose cannot flash if the container
-    // is already in the scene (player path, equip / appearance reload).
-    if(this.model instanceof OdysseyModel3D){
-      this.model.visible = false;
-    }
-    await this.loadEquipmentModels();
-    if(generation !== this.modelLoadGeneration){
-      return this.model;
-    }
-    await this.loadBody(generation);
-    if(generation !== this.modelLoadGeneration){
-      return this.model;
-    }
-    if(this.model instanceof OdysseyModel3D){
-      this.model.visible = false;
-    }
-    await this.loadHead(generation);
-    if(generation !== this.modelLoadGeneration){
-      return this.model;
-    }
-    this.isReady = true;
-    this.settleWalkableAttachment();
-    this.primeAnimationPose();
-    this.update(0.0000000000000000000001);
-    // updateModelVisibility is Mode-gated (INGAME); force visible after prime so a
-    // stale room from the prior module cannot leave the mesh hidden under LOADING.
-    if(this.model instanceof OdysseyModel3D){
-      this.model.visible = true;
-    }
-    return this.model;
+  async loadModel(): Promise<OdysseyModel3D> {
+    return await this.modelService.loadModel();
   }
 
   /**
    * Detach equipment / head meshes before disposing a body so recursive dispose
    * cannot destroy live Item.model instances that will be re-parented.
    */
-  private detachEquippedModelsFromBody(){
-    try{
-      const rh = this.equipment.RIGHTHAND?.model;
-      if(rh instanceof OdysseyModel3D){
-        OdysseyModel3D.restoreAttachedEquipmentShadowCasting(rh);
-      }
-      if(rh?.parent) rh.parent.remove(rh);
-    }catch(e){}
-    try{
-      const lh = this.equipment.LEFTHAND?.model;
-      if(lh instanceof OdysseyModel3D){
-        OdysseyModel3D.restoreAttachedEquipmentShadowCasting(lh);
-      }
-      if(lh?.parent) lh.parent.remove(lh);
-    }catch(e){}
-    try{
-      const helm = this.equipment.HEAD?.model;
-      if(helm instanceof OdysseyModel3D){
-        OdysseyModel3D.restoreAttachedEquipmentShadowCasting(helm);
-      }
-      if(helm?.parent) helm.parent.remove(helm);
-    }catch(e){}
-    try{
-      if(this.head?.parent) this.head.parent.remove(this.head);
-    }catch(e){}
-  }
 
   /** Enable rigid weapon/helm shadow casters on the creature rig. */
-  private syncCreatureShadowCasters(){
-    if(!this.shadowsEnabled){ return; }
-    const mark = (model?: OdysseyModel3D) => {
-      if(model instanceof OdysseyModel3D){
-        OdysseyModel3D.markAttachedEquipmentShadowCasting(model, true);
-      }
-    };
-    mark(this.equipment.RIGHTHAND?.model as OdysseyModel3D);
-    mark(this.equipment.LEFTHAND?.model as OdysseyModel3D);
-    mark(this.equipment.HEAD?.model as OdysseyModel3D);
-  }
 
-  async loadBody(generation?: number) {
-    let appearance = this.creatureAppearance;
-    let bodyVariation: string = this.equipment.ARMOR?.getBodyVariation() || '';
-    let textureVariation: number = this.equipment.ARMOR?.getTextureVariation() || 1;
-    const hasBodyVariation = !!(bodyVariation && bodyVariation.length);
-    const maxBodyIndex = SWCreatureAppearance.maxBodyVariationIndex(
-      GameState.GameKey === GameEngineType.TSL
-    );
-    const { model: bodyModel, texture: bodyTexture } = appearance.getBodyModelInfo(
-      bodyVariation,
-      textureVariation,
-      maxBodyIndex,
-      this.getGoodEvil(),
-      hasBodyVariation,
-    );
-    this.bodyModel = bodyModel;
-    this.bodyTexture = bodyTexture;
-
-    if(!this.bodyModel || this.bodyModel.length === 0){
-      if(generation !== undefined && generation !== this.modelLoadGeneration){
-        return this.model;
-      }
-      this.detachEquippedModelsFromBody();
-      if(this.model){
-        this.model.removeFromParent();
-        try{ this.model.dispose(); }catch(e){}
-      }
-      this.model = new OdysseyModel3D();
-      return this.model;
-    }
-    
-    try{
-      const mdl = await MDLLoader.loader.load(this.bodyModel);
-      // CreateSimple / CreateBTypeBody — appearance.2da ENVMAP
-      // is applied to all body parts via envmap assign, falling back to "DEFAULT" when blank.
-      const envMapOverride = appearance.envmap?.length ? appearance.envmap : 'DEFAULT';
-      const model = await OdysseyModel3D.FromMDL(mdl, {
-        castShadow: true,
-        receiveShadow: false,
-        shadowsEnabled: this.shadowsEnabled,
-        textureVar: this.bodyTexture,
-        isHologram: this.isHologram,
-        envMapOverride: envMapOverride,
-        context: this.context,
-      });
-
-      if(generation !== undefined && generation !== this.modelLoadGeneration){
-        try{ model.dispose(); }catch(e){}
-        return this.model;
-      }
-
-      this.detachEquippedModelsFromBody();
-      if(this.model){
-        this.model.removeFromParent();
-        try{ this.model.dispose(); }catch(e){}
-      }
-      
-      model.addEventListener('playEvent', this.playEvent.bind(this));
-
-      this.model = model;
-      this.model.userData.gameObject = this;
-      this.container.add(this.model);
-      this.markCollisionBoundsDirty('model');
-      this.computeBoundingBox();
-
-      try{
-        if(this.model.lhand instanceof OdysseyObject3D){
-          if(this.equipment.LEFTHAND && this.equipment.LEFTHAND.model instanceof OdysseyModel3D){
-            this.model.lhand.add(this.equipment.LEFTHAND.model);
-          }
-        }
-      }catch(e){
-        console.error('Creature.LoadBody', e);
-      }
-
-      try{
-        if(this.model.rhand instanceof OdysseyObject3D){
-          if(this.equipment.RIGHTHAND && this.equipment.RIGHTHAND.model instanceof OdysseyModel3D){
-            this.model.rhand.add(this.equipment.RIGHTHAND.model);
-          }
-        }
-      }catch(e){
-        console.error('Creature.LoadBody', e);
-      }
-
-      this.syncCreatureShadowCasters();
-
-      this.model.disableMatrixUpdate();
-      const sizeCat = appearance.sizecategory ?? 3;
-      void this.applyShadowBlob(GameObject.shadowBlobResRefFromSizeCategory(sizeCat));
-      return this.model;
-    }catch(e){
-      console.error(e);
-      this.model = new OdysseyModel3D();
-      return this.model;
-    }
+  async loadBody(generation?: number){
+    return await this.modelService.loadBody(generation);
   }
 
   /**
@@ -7620,12 +4197,7 @@ export class Creature extends GameObject {
    * global render override here or NPCs collapse onto a shared heads row.
    */
   resolveAppearanceHeadId(): number {
-    const appearance = this.creatureAppearance;
-    if(!appearance) return -1;
-    if(this.useBackupHead){
-      return appearance.backuphead;
-    }
-    return appearance.normalhead;
+    return this.modelService.resolveAppearanceHeadId();
   }
 
   /**
@@ -7633,87 +4205,11 @@ export class Creature extends GameObject {
    * EffectVisualEffect attaches to the model's impact node (DeathVFXNode default).
    */
   playAppearanceDeathVFX(){
-    const appearance = this.creatureAppearance;
-    const vfxId = appearance?.deathvfx;
-    if(!(typeof vfxId === 'number' && vfxId >= 0)) return;
-
-    const vfx = new GameState.GameEffectFactory.EffectVisualEffect();
-    vfx.setInt(0, vfxId);
-    vfx.setDurationType(GameEffectDurationType.INSTANT);
-    vfx.setCreator(this);
-    const nodeName = (appearance.deathvfxnode || 'impact').replace(/\0[\s\S]*$/g, '').trim();
-    if(nodeName){
-      vfx.setString(0, nodeName);
-    }
-    this.addEffect(vfx);
+    return this.modelService.playAppearanceDeathVFX();
   }
 
   async loadHead(generation?: number): Promise<OdysseyModel3D> {
-    let appearance = this.creatureAppearance;
-    let headId = this.resolveAppearanceHeadId();
-    this.headModel = undefined;
-    if(!( headId >= 0 && appearance.modeltype == 'B' )){
-      return;
-    }
-
-    const headDetails = GameState.SWRuleSet.heads[headId];
-    if(!headDetails){
-      return;
-    }
-
-    const headTexture = headDetails.getTextureGoodEvil(this.getGoodEvil());
-    this.headModel = headDetails.head;
-    const mdl = await MDLLoader.loader.load(this.headModel);
- 
-    const head = await OdysseyModel3D.FromMDL(mdl, {
-      context: this.context,
-      castShadow: true,
-      receiveShadow: false,
-      shadowsEnabled: this.shadowsEnabled,
-      isHologram: this.isHologram,
-      textureVar: headTexture,
-    });
-
-    try
-    {
-      if(generation !== undefined && generation !== this.modelLoadGeneration){
-        try{ head.dispose(); }catch(e){}
-        return this.head;
-      }
-
-      try{
-        const helm = this.equipment.HEAD?.model;
-        if(helm?.parent) helm.parent.remove(helm);
-      }catch(e){}
-
-      if(this.head instanceof OdysseyModel3D){
-        try{ this.head.parent?.remove(this.head); }catch(e){}
-        try{ this.head.dispose(); }catch(e){}
-      }
-
-      this.head = head;
-      this.head.userData.gameObject = this;
-      this.model.attachHead(head);
-
-      try{
-        if(this.head.gogglehook instanceof THREE.Object3D){
-          if(this.equipment.HEAD && this.equipment.HEAD.model instanceof OdysseyModel3D){
-            this.head.gogglehook.add(this.equipment.HEAD.model);
-          }
-        }
-      }catch(e){
-        console.error('Creature', e);
-      }
-
-      this.syncCreatureShadowCasters();
-      
-      this.head.disableMatrixUpdate();
-      return this.head;
-    }
-    catch(e)
-    {
-      console.error(e);
-    }
+    return await this.modelService.loadHead(generation);
   }
 
   /*getEquip_ItemList{
@@ -7724,79 +4220,7 @@ export class Creature extends GameObject {
   }*/
 
   async equipItem(slot = 0x1, item: Item){
-    if(!item){
-      return;
-    }
-
-    // Skip appearance reload on unequip — ARMOR/HEAD re-equip awaits loadModel once.
-    // An unawaited unequip reload races the awaited one and disposes hand weapons.
-    this.unequipSlot(slot, false);
-    if(GameState.module){
-      GameState.module.lastItemEquipped = item;
-    }
-    item.onEquip(this);
-
-    // Stamp hand slots before await so GN_GetWeaponType / attack resolve see the
-    // new weapon immediately (ActionEquipItem does not await equipItem).
-    switch(slot){
-      case ModuleCreatureArmorSlot.RIGHTHAND:
-        this.equipment.RIGHTHAND = item;
-        await item.loadModel();
-        if(item.model instanceof OdysseyModel3D)
-          this.model?.rhand?.add(item.model);
-        return;
-      case ModuleCreatureArmorSlot.LEFTHAND:
-        this.equipment.LEFTHAND = item;
-        await item.loadModel();
-        if(item.model instanceof OdysseyModel3D)
-          this.model?.lhand?.add(item.model);
-        return;
-      case ModuleCreatureArmorSlot.RIGHTHAND2:
-        this.equipment.RIGHTHAND2 = item;
-        return;
-      case ModuleCreatureArmorSlot.LEFTHAND2:
-        this.equipment.LEFTHAND2 = item;
-        return;
-    }
-
-    await item.loadModel();
-    switch(slot){
-      case ModuleCreatureArmorSlot.IMPLANT:
-        this.equipment.IMPLANT = item;
-      break;
-      case ModuleCreatureArmorSlot.HEAD:
-        this.equipment.HEAD = item;
-        await this.loadModel();
-      break;
-      case ModuleCreatureArmorSlot.ARMS:
-        this.equipment.ARMS = item;
-      break;
-      case ModuleCreatureArmorSlot.LEFTARMBAND:
-        this.equipment.LEFTARMBAND = item;
-      break;
-      case ModuleCreatureArmorSlot.RIGHTARMBAND:
-        this.equipment.RIGHTARMBAND = item;
-      break;
-      case ModuleCreatureArmorSlot.ARMOR:
-        this.equipment.ARMOR = item;
-        await this.loadModel();
-      break;
-      case ModuleCreatureArmorSlot.BELT:
-        this.equipment.BELT = item;
-      break;
-      case ModuleCreatureArmorSlot.CLAW1:
-        this.equipment.CLAW1 = item;
-      break;
-      case ModuleCreatureArmorSlot.CLAW2:
-        this.equipment.CLAW2 = item;
-      break;
-      case ModuleCreatureArmorSlot.CLAW3:
-        this.equipment.CLAW3 = item;
-      break;
-      case ModuleCreatureArmorSlot.HIDE:
-        this.equipment.HIDE = item;
-      break;
-    }
+    return await this.equipmentService.equipItem(slot, item);
   }
 
   /**
@@ -7804,147 +4228,15 @@ export class Creature extends GameObject {
    * (caller will reload). Default true for standalone unequip.
    */
   unequipSlot(slot = 0x1, reloadModel: boolean = true){
-    try{
-      switch(slot){
-        case ModuleCreatureArmorSlot.IMPLANT:
-          try{
-            if(this.equipment.IMPLANT){
-              const item = this.equipment.IMPLANT;
-              this.equipment.IMPLANT = undefined;
-              item.onUnEquip(this);
-            }
-          }catch(e){
-            
-          }
-        break;
-        case ModuleCreatureArmorSlot.HEAD:
-          if(this.equipment.HEAD){
-            const item = this.equipment.HEAD;
-            try{ item.model?.parent?.remove(item.model); }catch(e){}
-            this.equipment.HEAD = undefined;
-            item.onUnEquip(this);
-            if(reloadModel){
-              this.loadModel();
-            }
-          }
-        break;
-        case ModuleCreatureArmorSlot.ARMS:
-          try{
-            if(this.equipment.ARMS){
-              const item = this.equipment.ARMS;
-              this.equipment.ARMS = undefined;
-              item.onUnEquip(this);
-            }
-          }catch(e){
-            
-          }
-        break;
-        case ModuleCreatureArmorSlot.RIGHTARMBAND:
-          try{
-            if(this.equipment.RIGHTARMBAND){
-              const item = this.equipment.RIGHTARMBAND;
-              this.equipment.RIGHTARMBAND = undefined;
-              item.onUnEquip(this);
-            }
-          }catch(e){
-            
-          }
-        break;
-        case ModuleCreatureArmorSlot.LEFTARMBAND:
-          try{
-            if(this.equipment.LEFTARMBAND){
-              const item = this.equipment.LEFTARMBAND;
-              this.equipment.LEFTARMBAND = undefined;
-              item.onUnEquip(this);
-            }
-          }catch(e){
-            
-          }
-        break;
-        case ModuleCreatureArmorSlot.ARMOR:
-
-          if(this.equipment.ARMOR){
-            this.equipment.ARMOR.onUnEquip(this);
-          }
-
-          this.equipment.ARMOR = undefined;
-          if(reloadModel){
-            this.loadModel();
-          }
-        break;
-        case ModuleCreatureArmorSlot.RIGHTHAND:
-          try{
-            if(this.equipment.RIGHTHAND){
-              const item = this.equipment.RIGHTHAND;
-              try{ this.model?.rhand?.remove(item.model); }catch(e){}
-              this.equipment.RIGHTHAND = undefined;
-              // Return to inventory — do not destroy (AI weapon switches).
-              item.onUnEquip(this);
-            }
-          }catch(e){
-            
-          }
-        break;
-        case ModuleCreatureArmorSlot.RIGHTHAND2:
-          try{
-            if(this.equipment.RIGHTHAND2){
-              const item = this.equipment.RIGHTHAND2;
-              this.equipment.RIGHTHAND2 = undefined;
-              item.onUnEquip(this);
-            }
-          }catch(e){
-            
-          }
-        break;
-        case ModuleCreatureArmorSlot.BELT:
-          try{
-            if(this.equipment.BELT){
-              const item = this.equipment.BELT;
-              try{ this.model?.rhand?.remove(item.model); }catch(e){}
-              this.equipment.BELT = undefined;
-              item.onUnEquip(this);
-            }
-          }catch(e){
-            
-          }
-        break;
-        case ModuleCreatureArmorSlot.LEFTHAND:
-          try{
-            if(this.equipment.LEFTHAND){
-              const item = this.equipment.LEFTHAND;
-              try{ this.model?.lhand?.remove(item.model); }catch(e){}
-              this.equipment.LEFTHAND = undefined;
-              item.onUnEquip(this);
-            }
-          }catch(e){
-            
-          }
-        break;
-        case ModuleCreatureArmorSlot.LEFTHAND2:
-          try{
-            if(this.equipment.LEFTHAND2){
-              const item = this.equipment.LEFTHAND2;
-              this.equipment.LEFTHAND2 = undefined;
-              item.onUnEquip(this);
-            }
-          }catch(e){
-            
-          }
-        break;
-      }
-    }catch(e){
-      console.error('unequipItem', e);
-    }
+    return this.equipmentService.unequipSlot(slot, reloadModel);
   }
 
   UnequipItems(){
-    //this.unequipSlot(ModuleCreatureArmorSlot.ARMOR);
-    this.unequipSlot(ModuleCreatureArmorSlot.LEFTHAND);
-    this.unequipSlot(ModuleCreatureArmorSlot.RIGHTHAND);
+    return this.equipmentService.UnequipItems();
   }
 
   UnequipHeadItem(){
-    this.unequipSlot(ModuleCreatureArmorSlot.HEAD);
+    return this.equipmentService.UnequipHeadItem();
   }
 
   /**
@@ -7952,106 +4244,22 @@ export class Creature extends GameObject {
    * can restore at conversation end (SetDialogDelay).
    */
   hideEquippedItemsForDialog(unequipItems: boolean = false, unequipHead: boolean = false){
-    if(!this.dialogEquipmentStash){
-      this.dialogEquipmentStash = {};
-    }
-    if(unequipItems){
-      if(this.equipment.RIGHTHAND && this.dialogEquipmentStash.RIGHTHAND === undefined){
-        this.dialogEquipmentStash.RIGHTHAND = this.equipment.RIGHTHAND;
-      }
-      if(this.equipment.LEFTHAND && this.dialogEquipmentStash.LEFTHAND === undefined){
-        this.dialogEquipmentStash.LEFTHAND = this.equipment.LEFTHAND;
-      }
-      this.UnequipItems();
-    }
-    if(unequipHead){
-      if(this.equipment.HEAD && this.dialogEquipmentStash.HEAD === undefined){
-        this.dialogEquipmentStash.HEAD = this.equipment.HEAD;
-      }
-      this.UnequipHeadItem();
-    }
+    return this.equipmentService.hideEquippedItemsForDialog(unequipItems, unequipHead);
   }
 
   /**
    * Dialog ShowEquippedItems — re-equip items stashed by hideEquippedItemsForDialog.
    */
   showEquippedItemsAfterDialog(){
-    const stash = this.dialogEquipmentStash;
-    if(!stash) return;
-    const restore = (slot: number, item: Item | undefined) => {
-      if(item){
-        void this.equipItem(slot, item);
-      }
-    };
-    restore(ModuleCreatureArmorSlot.RIGHTHAND, stash.RIGHTHAND);
-    restore(ModuleCreatureArmorSlot.LEFTHAND, stash.LEFTHAND);
-    restore(ModuleCreatureArmorSlot.HEAD, stash.HEAD);
-    this.dialogEquipmentStash = undefined;
+    return this.equipmentService.showEquippedItemsAfterDialog();
   }
 
   GetItemInSlot(slot = 0){
-
-    switch(slot){
-      case ModuleCreatureArmorSlot.IMPLANT:
-        return this.equipment.IMPLANT;
-      break;
-      case ModuleCreatureArmorSlot.HEAD:
-        return this.equipment.HEAD;
-      break;
-      case ModuleCreatureArmorSlot.ARMS:
-        return this.equipment.ARMS;
-      break;
-      case ModuleCreatureArmorSlot.LEFTARMBAND:
-        return this.equipment.LEFTARMBAND;
-      break;
-      case ModuleCreatureArmorSlot.ARMOR:
-        return this.equipment.ARMOR;
-      break;
-      case ModuleCreatureArmorSlot.RIGHTARMBAND:
-        return this.equipment.RIGHTARMBAND;
-      break;
-      case ModuleCreatureArmorSlot.LEFTHAND:
-        return this.equipment.LEFTHAND;
-      break;
-      case ModuleCreatureArmorSlot.LEFTHAND2:
-        return this.equipment.LEFTHAND2;
-      break;
-      case ModuleCreatureArmorSlot.BELT:
-        return this.equipment.BELT;
-      break;
-      case ModuleCreatureArmorSlot.RIGHTHAND:
-        return this.equipment.RIGHTHAND;
-      break;
-      case ModuleCreatureArmorSlot.RIGHTHAND2:
-        return this.equipment.RIGHTHAND2;
-      break;
-      case ModuleCreatureArmorSlot.HIDE:
-        return this.equipment.HIDE;
-      break;
-      case ModuleCreatureArmorSlot.CLAW1:
-        return this.equipment.CLAW1;
-      break;
-      case ModuleCreatureArmorSlot.CLAW2:
-        return this.equipment.CLAW2;
-      break;
-      case ModuleCreatureArmorSlot.CLAW3:
-        return this.equipment.CLAW3;
-      break;
-      default:
-        return null;
-      break;
-    }
-
+    return this.equipmentService.GetItemInSlot(slot);
   }
 
   setAppearance(appearance: number){
-    this.appearance = appearance;
-    this.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(this.appearance);
-    if(!this.creatureAppearance) return;
-
-    this.headTrackingEnabled = this.creatureAppearance.headtrack !== 0;
-    this.headMaxHorizontalAngle = (this.creatureAppearance.head_arc_h * Math.PI) / 180;
-    this.headMaxVerticalAngle = (this.creatureAppearance.head_arc_v * Math.PI) / 180;
+    return this.modelService.setAppearance(appearance);
   }
 
   initProperties(){
@@ -8264,46 +4472,18 @@ export class Creature extends GameObject {
   }
 
   async loadEquipmentModels(): Promise<void> {
-    const array =  Object.keys(this.equipment);
-    for(let i = 0; i < array.length; i++){
-      const slot_key = array[i];
-      let slot: Item = (this.equipment as any)[slot_key];
-      if(!slot){
-        continue;
-      }
-      const model = await slot.loadModel();
-      if(slot_key == 'RIGHTHAND' || slot_key == 'LEFTHAND'){
-        model.playAnimation('off', true);
-      }
-    }
+    return await this.modelService.loadEquipmentModels();
   }
 
   parseEquipmentSlots(){
-    let slots = Object.keys(this.equipment);
-    for(let i = 0; i < slots.length; i++){
-      const slotKey = slots[i];
-      let item: Item = (this.equipment as any)[slotKey];
-      if(item){
-        item.setPossessor(this);
-        if(!item.load()){
-          (this.equipment as any)[slotKey] = undefined;
-          item.destroy();
-        }
-      }
-    }
+    return this.equipmentService.parseEquipmentSlots();
   }
 
   /**
    * Point CombatInfo LeftEquip/RightEquip at live hand-item ids after load.
    */
   rebindCombatInfoEquipIds(){
-    if(!this.combatInformation){
-      return;
-    }
-    this.combatInformation.rightEquip =
-      this.equipment.RIGHTHAND?.id ?? GameObjectConstant.OBJECT_INVALID;
-    this.combatInformation.leftEquip =
-      this.equipment.LEFTHAND?.id ?? GameObjectConstant.OBJECT_INVALID;
+    return this.equipmentService.rebindCombatInfoEquipIds();
   }
 
   loadSoundSet(){
@@ -8324,20 +4504,8 @@ export class Creature extends GameObject {
     }
   }
 
-  loadItem( template: GFFObject ){
-    let item = new GameState.Module.Area.Item(template);
-    item.initProperties();
-    if(!item.load()){
-      return;
-    }
-    let hasItem = this.getItemByTag(item.getTag());
-    if(hasItem){
-      hasItem.setStackSize(hasItem.getStackSize() + 1);
-      return hasItem;
-    }else{
-      this.inventory.push(item);
-      return item;
-    }
+  loadItem(template: GFFObject){
+    return this.equipmentService.loadItem(template);
   }
 
   playSoundSet(type = -1){
@@ -8354,27 +4522,7 @@ export class Creature extends GameObject {
   }
 
   updateDestroyFade(delta: number = 0): void {
-    if(this.destroyed || this.isRetainedCorpse) return;
-
-    // EventHandler destroy (0xb) — fires at DestroyObjectDelay
-    if(!this.serverDestroyed && this.timeSinceDestroyStarted >= this.delayUntilFade){
-      this.onServerDestroyEvent();
-      // KeepCorpse converts to retained shell — stop the destroy timer path
-      if(this.isRetainedCorpse) return;
-    }
-
-    super.updateDestroyFade(delta);
-    if(this.noFadeOnDestroy) return;
-    if(this.timeSinceDestroyStarted >= this.delayUntilFade){
-      const fadeElapsed = this.timeSinceDestroyStarted - this.delayUntilFade;
-      const fadeLen = this.getFadeDuration();
-      const opacity = fadeLen > 0 ? Math.max(0, 1 - (fadeElapsed / fadeLen)) : 0;
-      Object.values(this.equipment).forEach(item => {
-        if(item && item.model instanceof OdysseyModel3D){
-          item.model.setOpacity(opacity);
-        }
-      });
-    }
+    return this.deathCorpseService.updateDestroyFade(delta);
   }
 
   setOpacity(opacity: number){
@@ -8385,126 +4533,12 @@ export class Creature extends GameObject {
   }
 
   destroy(): void {
-    if(this.destroyed) return;
-
-    // KeepCorpse shell — only disposeRetainedCorpse / cache eviction tears it down
-    if(this.isRetainedCorpse){
-      return;
-    }
-
-    // EventHandler destroy (0xb)
-    this.unlinkFromEncounter(false);
-
-    if(!this.serverDestroyed){
-      this.onServerDestroyEvent();
-      if(this.isRetainedCorpse){
-        // Converted to KeepCorpse shell — do not dispose visuals
-        return;
-      }
-    }
-
-    super.destroy();
-    this.disposeCreatureVisuals();
+    return this.deathCorpseService.destroy();
   }
 
   /** Tear down head/equipment/inventory visuals after GameObject.destroy. */
   disposeCreatureVisuals(){
-    if(this.head instanceof OdysseyModel3D){
-      if(this.head.parent instanceof THREE.Object3D){
-        this.head.removeFromParent();
-      }
-      this.head.dispose();
-      this.head = undefined;
-    }
-
-    if(this.equipment.ARMOR){
-      this.equipment.ARMOR.destroy();
-      this.equipment.ARMOR = undefined;
-    }
-
-    if(this.equipment.ARMS){
-      this.equipment.ARMS.destroy();
-      this.equipment.ARMS = undefined;
-    }
-
-    if(this.equipment.BELT){
-      this.equipment.BELT.destroy();
-      this.equipment.BELT = undefined;
-    }
-
-    if(this.equipment.CLAW1){
-      this.equipment.CLAW1.destroy();
-      this.equipment.CLAW1 = undefined;
-    }
-
-    if(this.equipment.CLAW2){
-      this.equipment.CLAW2.destroy();
-      this.equipment.CLAW2 = undefined;
-    }
-
-    if(this.equipment.CLAW3){
-      this.equipment.CLAW3.destroy();
-      this.equipment.CLAW3 = undefined;
-    }
-
-    if(this.equipment.HEAD){
-      this.equipment.HEAD.destroy();
-      this.equipment.HEAD = undefined;
-    }
-
-    if(this.equipment.HIDE){
-      this.equipment.HIDE.destroy();
-      this.equipment.HIDE = undefined;
-    }
-
-    if(this.equipment.IMPLANT){
-      this.equipment.IMPLANT.destroy();
-      this.equipment.IMPLANT = undefined;
-    }
-
-    if(this.equipment.LEFTARMBAND){
-      this.equipment.LEFTARMBAND.destroy();
-      this.equipment.LEFTARMBAND = undefined;
-    }
-
-    if(this.equipment.LEFTHAND){
-      this.equipment.LEFTHAND.destroy();
-      this.equipment.LEFTHAND = undefined;
-    }
-
-    if(this.equipment.LEFTHAND2){
-      this.equipment.LEFTHAND2.destroy();
-      this.equipment.LEFTHAND2 = undefined;
-    }
-
-    if(this.equipment.RIGHTARMBAND){
-      this.equipment.RIGHTARMBAND.destroy();
-      this.equipment.RIGHTARMBAND = undefined;
-    }
-
-    if(this.equipment.RIGHTHAND){
-      this.equipment.RIGHTHAND.destroy();
-      this.equipment.RIGHTHAND = undefined;
-    }
-
-    if(this.equipment.RIGHTHAND2){
-      this.equipment.RIGHTHAND2.destroy();
-      this.equipment.RIGHTHAND2 = undefined;
-    }
-
-    while(this.inventory.length){
-      const item = this.inventory[0];
-      if(item){
-        item.destroy();
-      }
-      this.inventory.splice(0, 1);
-    }
-    
-    GameState.FactionManager.RemoveCreatureFromFaction(this);
-
-    if(this.debugLabel){
-      this.debugLabel.dispose();
-    }
+    return this.deathCorpseService.disposeCreatureVisuals();
   }
 
   /**
@@ -8512,51 +4546,7 @@ export class Creature extends GameObject {
    * Compute/Update fills these before SaveData.
    */
   syncCombatInformationForSave(){
-    const info = this.combatInformation;
-    if(!info) return;
-
-    info.arcaneSpellFail = this.arcaneSpellFailure | 0;
-    if(this.combatRound){
-      info.numAttacks =
-        ((this.combatRound.onHandAttacks || 0) + (this.combatRound.offHandAttacks || 0)) & 0xff;
-    }
-
-    const right = this.equipment.RIGHTHAND;
-    const left = this.equipment.LEFTHAND;
-    info.rightEquip = right?.id ?? GameObjectConstant.OBJECT_INVALID;
-    info.leftEquip = left?.id ?? GameObjectConstant.OBJECT_INVALID;
-    info.rightString = right?.getTag?.() || right?.getName?.() || '';
-    info.leftString = left?.getTag?.() || left?.getName?.() || '';
-    info.offHandWeaponEq = left ? 1 : 0;
-
-    try{
-      info.forceResistance = getForceResistanceBonus(this) & 0xff;
-    }catch{
-      /* keep prior */
-    }
-
-    if(right){
-      info.onHandCritRng = right.getCriticalThreatRangeMin?.() ?? info.onHandCritRng;
-      info.onHandCritMult = (right.getBaseItem?.()?.criticalHitMultiplier || 2) & 0xff;
-    }else{
-      // Unarmed defaults — CombatAttackData uses 1d4
-      info.unarmedDamDice = info.unarmedDamDice || 1;
-      info.unarmedDamDie = info.unarmedDamDie || 4;
-      info.onHandCritRng = info.onHandCritRng || 20;
-      info.onHandCritMult = info.onHandCritMult || 2;
-    }
-
-    if(left){
-      info.offHandCritRng = left.getCriticalThreatRangeMin?.() ?? info.offHandCritRng;
-      info.offHandCritMult = (left.getBaseItem?.()?.criticalHitMultiplier || info.offHandCritMult || 2) & 0xff;
-    }
-
-    // ACP: prefer prior loaded value; if zero and armor equipped with armorcheckpen flag, mark 1
-    // (full armor.2da accheck magnitude remains Low residual)
-    const armor = this.equipment.ARMOR;
-    if(armor?.getBaseItem?.()?.armorCheckPen && !info.armorCheckPen){
-      info.armorCheckPen = 1;
-    }
+    return this.equipmentService.syncCombatInformationForSave();
   }
 
   /**

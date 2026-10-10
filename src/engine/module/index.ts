@@ -48,5 +48,5 @@ export * from "@engine/module/Waypoint";
 
 export * from "@engine/module/minigame";
 export * from "@engine/module/encounter";
-export * from "@engine/module/creature";
+export * from "@engine/module/creature/index";
 export * from "@engine/module/door";

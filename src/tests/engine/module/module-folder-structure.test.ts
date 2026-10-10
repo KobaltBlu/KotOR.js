@@ -60,11 +60,42 @@ const REQUIRED_ROOT_FACADES = [
   "AreaEffect.ts",
 ] as const;
 
+/** Creature domain services extracted under creature/. */
+const REQUIRED_CREATURE_SERVICES = [
+  "CreaturePerceptionService.ts",
+  "CreatureStatsService.ts",
+  "CreatureCombatService.ts",
+  "CreatureDeathCorpseService.ts",
+  "CreatureAnimationService.ts",
+  "CreatureModelService.ts",
+  "CreatureEquipmentService.ts",
+] as const;
+
+/** GameObject domain services extracted under gameobject/. */
+const REQUIRED_GAMEOBJECT_SERVICES = [
+  "GameObjectActionService.ts",
+  "GameObjectInventoryService.ts",
+  "GameObjectTrapService.ts",
+  "GameObjectEffectService.ts",
+  "GameObjectPresentationService.ts",
+  "GameObjectDestructionService.ts",
+  "GameObjectPerceptionService.ts",
+  "GameObjectScriptService.ts",
+  "GameObjectHydrationService.ts",
+] as const;
+
 function listRootTsFiles(): string[] {
   return fs.readdirSync(MODULE_ROOT).filter((name) => {
     if(!name.endsWith(".ts")) return false;
     return fs.statSync(path.join(MODULE_ROOT, name)).isFile();
   });
+}
+
+function expectDomainFiles(folder: string, files: readonly string[]) {
+  for(const name of files){
+    const file = path.join(MODULE_ROOT, folder, name);
+    expect(fs.existsSync(file) && fs.statSync(file).isFile()).toBe(true);
+  }
 }
 
 describe("module folder structure", () => {
@@ -90,5 +121,23 @@ describe("module folder structure", () => {
       const file = path.join(MODULE_ROOT, facade);
       expect(fs.existsSync(file) && fs.statSync(file).isFile()).toBe(true);
     }
+  });
+
+  test("creature services live under creature/ while Creature facade stays at root", () => {
+    expectDomainFiles("creature", REQUIRED_CREATURE_SERVICES);
+    const rootFiles = new Set(listRootTsFiles());
+    for(const name of REQUIRED_CREATURE_SERVICES){
+      expect(rootFiles.has(name)).toBe(false);
+    }
+    expect(rootFiles.has("Creature.ts")).toBe(true);
+  });
+
+  test("gameobject services live under gameobject/ while GameObject facade stays at root", () => {
+    expectDomainFiles("gameobject", REQUIRED_GAMEOBJECT_SERVICES);
+    const rootFiles = new Set(listRootTsFiles());
+    for(const name of REQUIRED_GAMEOBJECT_SERVICES){
+      expect(rootFiles.has(name)).toBe(false);
+    }
+    expect(rootFiles.has("GameObject.ts")).toBe(true);
   });
 });

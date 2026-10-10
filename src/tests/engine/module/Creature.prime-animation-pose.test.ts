@@ -8,30 +8,35 @@ import { srcPath } from "@/tests/helpers/paths";
 
 describe("Creature.primeAnimationPose", () => {
   it("defines primeAnimationPose and loadModel calls it before return", () => {
-    const src = fs.readFileSync(
+    const facade = fs.readFileSync(
       srcPath("engine", "module", "Creature.ts"),
       "utf8"
     );
-    expect(src).toMatch(/primeAnimationPose\s*\(/);
-    const loadStart = src.indexOf("  async loadModel (): Promise<OdysseyModel3D> {");
+    expect(facade).toMatch(/primeAnimationPose\s*\(/);
+
+    const modelSrc = fs.readFileSync(
+      srcPath("engine", "module", "creature", "CreatureModelService.ts"),
+      "utf8"
+    );
+    const loadStart = modelSrc.indexOf("  async loadModel (): Promise<OdysseyModel3D> {");
     expect(loadStart).toBeGreaterThan(-1);
-    const loadEnd = src.indexOf("private detachEquippedModelsFromBody", loadStart);
-    const loadFn = src.slice(loadStart, loadEnd > loadStart ? loadEnd : loadStart + 2000);
-    expect(loadFn).toMatch(/this\.primeAnimationPose\s*\(\s*\)/);
-    expect(loadFn).toMatch(/this\.model\.visible\s*=\s*false/);
-    expect(loadFn).toMatch(/this\.model\.visible\s*=\s*true/);
+    const loadEnd = modelSrc.indexOf("  detachEquippedModelsFromBody", loadStart);
+    const loadFn = modelSrc.slice(loadStart, loadEnd > loadStart ? loadEnd : loadStart + 2000);
+    expect(loadFn).toMatch(/this\.host\.primeAnimationPose\s*\(\s*\)/);
+    expect(loadFn).toMatch(/this\.host\.model\.visible\s*=\s*false/);
+    expect(loadFn).toMatch(/this\.host\.model\.visible\s*=\s*true/);
   });
 
   it("primeAnimationPose drives updateAnimationState + model.update without Mode gate", () => {
     const src = fs.readFileSync(
-      srcPath("engine", "module", "Creature.ts"),
+      srcPath("engine", "module", "creature", "CreatureAnimationService.ts"),
       "utf8"
     );
     const start = src.indexOf("  primeAnimationPose(){");
     expect(start).toBeGreaterThan(-1);
     const fn = src.slice(start, start + 900);
-    expect(fn).toMatch(/this\.updateAnimationState\s*\(/);
-    expect(fn).toMatch(/this\.model\.update\s*\(/);
+    expect(fn).toMatch(/this\.host\.updateAnimationState\s*\(/);
+    expect(fn).toMatch(/this\.host\.model\.update\s*\(/);
     expect(fn).not.toMatch(/EngineMode/);
   });
 });

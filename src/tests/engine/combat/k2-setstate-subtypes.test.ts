@@ -75,15 +75,20 @@ describe('K2 SetState subtypes 0x0E / 0x10–0x13', () => {
   });
 
   it('Creature helpers and isDebilitated exclude DroidConfused', () => {
-    const src = fs.readFileSync(
+    const facade = fs.readFileSync(
       srcPath('engine', 'module', 'Creature.ts'),
       'utf8'
     );
-    expect(src).toMatch(/isDroidConfused\(\)[\s\S]*?hasSetState\(16\)/);
-    expect(src).toMatch(/isMindTricked\(\)[\s\S]*?hasSetState\(18\)/);
-    expect(src).toMatch(/isDroidScrambled\(\)[\s\S]*?hasSetState\(19\)/);
-    expect(src).toMatch(/isHeld\(\)[\s\S]*?hasSetState\(17\)/);
-    const debil = src.match(/isDebilitated\(\)\{[\s\S]*?\n  \}/)?.[0] ?? '';
+    expect(facade).toMatch(/isDroidConfused\(\)[\s\S]*?hasSetState\(16\)/);
+    expect(facade).toMatch(/isMindTricked\(\)[\s\S]*?hasSetState\(18\)/);
+    expect(facade).toMatch(/isDroidScrambled\(\)[\s\S]*?hasSetState\(19\)/);
+    expect(facade).toMatch(/isHeld\(\)[\s\S]*?hasSetState\(17\)/);
+
+    const combat = fs.readFileSync(
+      srcPath('engine', 'module', 'creature', 'CreatureCombatService.ts'),
+      'utf8'
+    );
+    const debil = combat.match(/isDebilitated\(\)\{[\s\S]*?\n  \}/)?.[0] ?? '';
     expect(debil).toMatch(/isMindTricked/);
     expect(debil).toMatch(/isDroidScrambled/);
     expect(debil).toMatch(/isHeld/);

@@ -50,13 +50,16 @@ describe('ActionEquipMostDamagingMelee/Ranged (opcodes 399/400)', () => {
 
 describe('equipItem hand-slot sync', () => {
   it('stamps RIGHTHAND/LEFTHAND before await loadModel', () => {
-    const src = fs.readFileSync(srcPath('engine', 'module', 'Creature.ts'), 'utf8');
+    const src = fs.readFileSync(
+      srcPath('engine', 'module', 'creature', 'CreatureEquipmentService.ts'),
+      'utf8'
+    );
     // Early hand branch: assign equipment, then await loadModel (return before body switch)
     expect(src).toMatch(
-      /Stamp hand slots before await[\s\S]*?case ModuleCreatureArmorSlot\.RIGHTHAND:[\s\S]*?this\.equipment\.RIGHTHAND = item;[\s\S]*?await item\.loadModel\(\)/
+      /Stamp hand slots before await[\s\S]*?case ModuleCreatureArmorSlot\.RIGHTHAND:[\s\S]*?this\.host\.equipment\.RIGHTHAND = item;[\s\S]*?await item\.loadModel\(\)/
     );
     expect(src).toMatch(
-      /case ModuleCreatureArmorSlot\.LEFTHAND:[\s\S]*?this\.equipment\.LEFTHAND = item;[\s\S]*?await item\.loadModel\(\)/
+      /case ModuleCreatureArmorSlot\.LEFTHAND:[\s\S]*?this\.host\.equipment\.LEFTHAND = item;[\s\S]*?await item\.loadModel\(\)/
     );
   });
 });

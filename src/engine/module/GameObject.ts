@@ -14,10 +14,7 @@ import type { GameEffect } from "@engine/effects/GameEffect";
 import EngineLocation from "@engine/runtime/EngineLocation";
 import { ActionParameterType } from "@core/enums/actions/ActionParameterType";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
-import { NWScriptEventType } from "@core/enums/nwscript/NWScriptEventType";
-import { GFFDataType } from "@core/enums/resource/GFFDataType";
 import { GameState } from "@engine/runtime/GameState";
-import { getDefaultRuntimeContext } from "@engine/runtime/context";
 import { IEffectIconListItem } from "@engine/interface/module/IEffectIconListItem";
 import { SSFType } from "@core/enums/resource/SSFType";
 import { NWScriptEvent } from "@engine/nwscript/events";
@@ -31,20 +28,15 @@ import { LIPObject } from "@core/resource/LIPObject";
 import { OdysseyModel3D, OdysseyObject3D } from "@engine/render/three/odyssey";
 import { Utility } from "@core/utility/Utility";
 import { ComputedPath } from "@engine/pathfinding";
-import { hasVisualLos } from "@engine/pathfinding/visual-los";
-import { isStaticWalkClearDetailed } from "@engine/pathfinding/static-walk-blockers";
 import type { Area } from "@engine/module/Area";
 import type { Door } from "@engine/module/Door";
 import type { Item } from "@engine/module/Item";
 import type { AreaRoom } from "@engine/module/area/AreaRoom";
-import type { Creature } from "@engine/module/Creature";
-import { getSpeakStringNotifyPlan, listenerHearsSpeaker } from "@engine/combat/speak-string-broadcast";
 import {
   assignHostileActor as assignHostileActorHelper,
   getLastHostileActor as getLastHostileActorHelper,
 } from "@engine/combat/last-hostile-actor";
 import { EngineMode } from "@engine/enums/engine/EngineMode";
-import { CutsceneMode } from "@core/enums/dialog/CutsceneMode";
 import { DLGObject } from "@engine/dialog/DLGObject";
 import { Faction } from "@engine/world/Faction";
 import { ScriptVarTable } from "@engine/world/ScriptVarTable";
@@ -59,27 +51,18 @@ import type { IPerceptionInfo } from "@engine/interface/engine/IPerceptionInfo";
 import { PerceptionMask } from "@engine/enums/engine/PerceptionMask";
 import { MDLLoader } from "@engine/loaders";
 import { CombatRound, CombatRoundAction } from "@engine/combat";
-import { ActionListSerializer } from "@engine/module/serialization/ActionListSerializer";
-import { SwVarTableSerializer } from "@engine/module/serialization/SwVarTableSerializer";
-import { Dice } from "@core/utility/Dice";
-import { DiceType } from "@core/enums/combat/DiceType";
 import { BitWise } from "@core/utility/BitWise";
 import { ActionType } from "@core/enums/actions/ActionType";
-import { NWScript } from "@engine/nwscript/NWScript";
-import { ScriptHook, ModuleTriggerType, SkillType } from "@core/enums";
+import { ScriptHook } from "@core/enums";
 import { CombatActionType } from "@core/enums/combat/CombatActionType";
-import { EngineDebugType, TalkVolume } from "@engine/enums/engine";
+import { TalkVolume } from "@engine/enums/engine";
 import type { SWPortrait } from "@engine/rules/SWPortrait";
 import type { IHeardString } from "@engine/interface/dialog/IHeardString";
 import type { SWRange } from "@engine/rules/SWRange";
 import { TURN_SPEED_SLOW } from "@engine/movement/TurnSpeeds";
-import { getForceResistanceBonus } from "@engine/effects/effect-bonuses";
 import type { SWAnimation } from "@engine/rules/SWAnimation";
 import type { Trigger } from "@engine/module/Trigger";
 
-import { resolveScriptAnimationConstant } from "@engine/module/animation/resolveScriptAnimationConstant";
-import { isCreature } from "@engine/module/guards/isCreature";
-import { isPlaceable } from "@engine/module/guards/isPlaceable";
 import {
   type DialogModelVisibilityInput,
   resolveDialogModelVisibility,
@@ -92,8 +75,11 @@ import {
 import { GameObjectActionService } from "./gameobject/GameObjectActionService";
 import { GameObjectDestructionService } from "./gameobject/GameObjectDestructionService";
 import { GameObjectEffectService } from "./gameobject/GameObjectEffectService";
+import { GameObjectHydrationService } from "./gameobject/GameObjectHydrationService";
 import { GameObjectInventoryService } from "./gameobject/GameObjectInventoryService";
+import { GameObjectPerceptionService } from "./gameobject/GameObjectPerceptionService";
 import { GameObjectPresentationService } from "./gameobject/GameObjectPresentationService";
+import { GameObjectScriptService } from "./gameobject/GameObjectScriptService";
 import { GameObjectTrapService } from "./gameobject/GameObjectTrapService";
 
 export type { DialogModelVisibilityInput } from "./gameobject/dialogModelVisibility";
@@ -417,6 +403,9 @@ export class GameObject {
   readonly effectService: GameObjectEffectService;
   readonly presentationService: GameObjectPresentationService;
   readonly destructionService: GameObjectDestructionService;
+  readonly perceptionService: GameObjectPerceptionService;
+  readonly scriptService: GameObjectScriptService;
+  readonly hydrationService: GameObjectHydrationService;
 
   constructor (gff = new GFFObject) {
     this.actionService = new GameObjectActionService(this);
@@ -425,6 +414,9 @@ export class GameObject {
     this.effectService = new GameObjectEffectService(this);
     this.presentationService = new GameObjectPresentationService(this);
     this.destructionService = new GameObjectDestructionService(this);
+    this.perceptionService = new GameObjectPerceptionService(this);
+    this.scriptService = new GameObjectScriptService(this);
+    this.hydrationService = new GameObjectHydrationService(this);
     this.helperColor.setHex( Math.random() * 0xFFFFFF );
     this.initialized = false;
 
@@ -539,12 +531,7 @@ export class GameObject {
   }
 
   getScriptInstance(scriptKey: ScriptHook): NWScriptInstance | undefined {
-    const script = this.scripts[scriptKey];
-    if(!script){ return undefined; }
-    if(!script.scriptKey){
-      script.bindOwner(this, scriptKey);
-    }
-    return script;
+    return this.scriptService.getScriptInstance(scriptKey);
   }
 
   /**
@@ -623,14 +610,7 @@ export class GameObject {
       return;
     }
 
-    // heartbeat threshold: 5999ms
-    this._aiHeartbeatElapsedMs += 1000 * delta;
-    if(this._aiHeartbeatElapsedMs > 5999){
-      if(GameState.module){
-        this.triggerHeartbeat();
-      }
-      this._aiHeartbeatElapsedMs = 0;
-    }
+    this.scriptService.updateHeartbeat(delta);
 
     if(!this.deferEventUpdate){
       for(let i = 0, len = this.effects.length; i < len; i++){
@@ -921,8 +901,7 @@ export class GameObject {
    * Sync execution + resetForRun/init keep STORE_STATE / stack residue from polluting the next fire.
    */
   protected runUserDefinedScript(event: NWScriptEvent, script: NWScriptInstance | undefined): void {
-    if(!(event instanceof NWScriptEvent) || !script){ return; }
-    script.run(this, parseInt(event.getInt(0)));
+    return this.scriptService.runUserDefinedScript(event, script);
   }
 
   /**
@@ -938,11 +917,7 @@ export class GameObject {
    * Run OnSpellCastAt / ScriptSpellAt with lastSpell* fields populated.
    */
   protected runSpellCastAtScript(event: NWScriptEvent, script: NWScriptInstance | undefined): void {
-    if(!(event instanceof NWScriptEvent) || !script){ return; }
-    script.lastSpellCaster = event.getObject(0);
-    script.lastSpell = event.getInt(0);
-    script.lastSpellHarmful = !!event.getInt(1);
-    script.run(this);
+    return this.scriptService.runSpellCastAtScript(event, script);
   }
 
   /**
@@ -959,27 +934,14 @@ export class GameObject {
    * @param event
    */
   scriptEventHandler( event: NWScriptEvent ){
-    // console.log('scriptEventHandler', this.tag, event);
-    if(event instanceof NWScriptEvent){
-      switch(event.type){
-        case NWScriptEventType.EventUserDefined:
-          this.triggerUserDefinedEvent( event );
-        break;
-        case NWScriptEventType.EventSpellCastAt:
-          this.triggerSpellCastAtEvent( event );
-        break;
-        default:
-          console.error('scriptEventHandler', 'Unhandled Event', event, this);
-        break;
-      }
-    }
+    return this.scriptService.scriptEventHandler(event);
   }
 
   /**
    * Heartbeat gate — only after onSpawn and module event processing is ready.
    */
   protected canProcessHeartbeat(): boolean {
-    return this.spawned === true && getDefaultRuntimeContext().isReadyToProcessEvents();
+    return this.scriptService.canProcessHeartbeat();
   }
 
   /**
@@ -1362,53 +1324,7 @@ export class GameObject {
   }
 
   speakString(str: string, volume: TalkVolume){
-    // BroadcastDialog — area objects in range with
-    // listening set. Party members live in PartyManager.party (not always in
-    // area.creatures), so they must be notified for every volume that notifies.
-    const plan = getSpeakStringNotifyPlan(volume);
-    const talkVolume = volume;
-    const rangeSquared = plan.range * plan.range;
-    // Keep original case — captures slice from the original-case
-    // input; matching lowercases internally when case-insensitive.
-    const spoken = str;
-    const notified = new Set<number>();
-
-    const pushHeard = (creature: any, requireHeardPerception: boolean) => {
-      if(!creature || creature === (this as any) || creature.isDead?.()) return;
-      const id = creature.id;
-      if(id != null){
-        if(notified.has(id)) return;
-        notified.add(id);
-      }
-      const d2 = this.position.distanceToSquared(creature.position);
-      if(d2 > rangeSquared) return;
-      // : creature→creature needs HEARD visibility bit. Party path skips
-      // (forces mutual party perception).
-      if(requireHeardPerception && !listenerHearsSpeaker(creature, this)) return;
-      creature.heardStrings.push({
-        speaker: this,
-        string: spoken,
-        volume: talkVolume
-      });
-    };
-
-    if(plan.notifyParty){
-      const party = GameState.PartyManager?.party;
-      if(party){
-        for(let i = 0, len = party.length; i < len; i++){
-          pushHeard(party[i], false);
-        }
-      }
-    }
-
-    if(plan.notifyCreatures){
-      const creatures = this.area?.creatures;
-      if(creatures){
-        for(let i = 0, len = creatures.length; i < len; i++){
-          pushHeard(creatures[i], true);
-        }
-      }
-    }
+    return this.perceptionService.speakString(str, volume);
   }
 
   /**
@@ -1794,7 +1710,7 @@ export class GameObject {
    * object.area_id for save export — area game ObjectId, not ARE template ID.
    */
   getSaveAreaId(): number {
-    return (this.area?.id ?? 0) >>> 0;
+    return this.hydrationService.getSaveAreaId();
   }
 
   /**
@@ -2127,7 +2043,7 @@ export class GameObject {
    * @param bListenting
    */
   setListening(bListenting = false){
-    this.isListening = bListenting ? true : false;;
+    return this.perceptionService.setListening(bListenting);
   }
 
   /**
@@ -2137,25 +2053,17 @@ export class GameObject {
    * @param iNum
    */
   setListeningPattern(sString = '', iNum = 0){
-    const number = iNum | 0;
-    const pattern = typeof sString === 'string' ? sString : '';
-    for(let i = 0; i < this.listeningPatterns.length; i++){
-      if(this.listeningPatterns[i].number === number){
-        this.listeningPatterns[i].pattern = pattern;
-        return;
-      }
-    }
-    this.listeningPatterns.push({ pattern, number });
+    return this.perceptionService.setListeningPattern(sString, iNum);
   }
 
   /** Clear matched substrings (ClearMatchedExpressionStrings). */
   clearMatchedSubstrings(){
-    this.matchedSubstrings = [];
+    return this.perceptionService.clearMatchedSubstrings();
   }
 
   /** Store listen-match captures for GetMatchedSubstring (EventHandler case 7). */
   setMatchedSubstrings(substrings: string[]){
-    this.matchedSubstrings = substrings ? substrings.slice() : [];
+    return this.perceptionService.setMatchedSubstrings(substrings);
   }
 
   /**
@@ -2163,7 +2071,7 @@ export class GameObject {
    * @returns
    */
   getIsListening(){
-    return this.isListening ? true : false;
+    return this.perceptionService.getIsListening();
   }
 
   /**
@@ -2243,8 +2151,7 @@ export class GameObject {
    * @returns
    */
   getPerceptionRangePrimary(){
-    if(!this.perceptionRange){ return 1; }
-    return this.perceptionRange.primaryRange;
+    return this.perceptionService.getPerceptionRangePrimary();
   }
 
   /**
@@ -2252,30 +2159,17 @@ export class GameObject {
    * @returns
    */
   getPerceptionRangeSecondary(){
-    if(!this.perceptionRange){ return 1; }
-    return this.perceptionRange.secondaryRange;
+    return this.perceptionService.getPerceptionRangeSecondary();
   }
 
   /**
    * Initialize the perception list.
-   * SaveCreature writes every non-null 
+   * SaveCreature writes every non-null
    * verbatim (including stale / OBJECT_INVALID ids). Resolve object refs when
    * possible, but never prune unresolved nodes — they must round-trip on save.
    */
   initPerceptionList(){
-    let length = this.perceptionList.length;
-    while(length--){
-      let perceptionObject = this.perceptionList[length];
-      if(perceptionObject){
-        if(typeof perceptionObject.object == 'undefined' && perceptionObject.objectId){
-          const resolved = getDefaultRuntimeContext().getById(perceptionObject.objectId);
-          if(resolved instanceof GameObject){
-            perceptionObject.object = resolved;
-          }
-          // else leave object undefined; keep objectId/data for save round-trip
-        }
-      }
-    }
+    return this.perceptionService.initPerceptionList();
   }
 
   /**
@@ -2285,53 +2179,7 @@ export class GameObject {
    * @returns
    */
   notifyPerceptionHeardObject(object: GameObject, heard = false){
-    if(!object) return;
-
-    let triggerOnNotice = false;
-    let exists = this.perceptionList.filter( (o) => o.object == object );
-    if(exists.length){
-      let existingObject = exists[0];
-      const wasHeard = !!(existingObject.data & PerceptionMask.HEARD);
-      triggerOnNotice = (wasHeard != heard);
-      if(heard){
-        existingObject.data |= PerceptionMask.HEARD;
-      }else{
-        existingObject.data &= ~PerceptionMask.HEARD;
-      }
-    }else{
-      if(heard){
-        let newObject = {
-          object: object,
-          objectId: object.id,
-          data: PerceptionMask.HEARD
-        };
-        this.perceptionList.push(newObject);
-        triggerOnNotice = true;
-        if(object.isPlayer && this.isHostile(object)){
-          this.area?.subtractStealthXP();
-        }
-      }else{
-        if(object.isPlayer && this.isHostile(object)){
-          this.area?.addStealthXP();
-        }
-      }
-    }
-
-    let onNotice: NWScriptInstance;
-    if(isCreature(this)){
-      onNotice = this.scripts[ScriptHook.CreatureOnNotice];
-    }
-
-    if(triggerOnNotice && onNotice){
-      // sets discrete event flags (0x904 Heard / 0x90c Inaudible) — not cumulative list bits
-      onNotice.lastPerceived = {
-        object: object,
-        objectId: object.id,
-        data: heard ? PerceptionMask.HEARD : PerceptionMask.INAUDIBLE
-      };
-      onNotice.run(this);
-      return true;
-    }
+    return this.perceptionService.notifyPerceptionHeardObject(object, heard);
   }
 
   /**
@@ -2341,58 +2189,8 @@ export class GameObject {
    * @returns
    */
   notifyPerceptionSeenObject(object: GameObject, seen = false){
-    if(!object) return;
-
-    let triggerOnNotice = false;
-    let exists = this.perceptionList.filter( (o) => o.object == object );
-    if(exists.length){
-      let existingObject = exists[0];
-      const wasSeen = !!(existingObject.data & PerceptionMask.SEEN);
-      triggerOnNotice = (wasSeen != seen);
-      if(seen){
-        existingObject.data |= PerceptionMask.SEEN;
-      }else{
-        existingObject.data &= ~PerceptionMask.SEEN;
-      }
-    }else{
-      if(seen){
-        let newObject = {
-          object: object,
-          objectId: object.id,
-          data: PerceptionMask.SEEN
-        };
-        this.perceptionList.push(newObject);
-        triggerOnNotice = true;
-        if(object.isPlayer && this.isHostile(object)){
-          this.area?.subtractStealthXP();
-        }
-      }else{
-        if(object.isPlayer && this.isHostile(object)){
-          this.area?.addStealthXP();
-        }
-      }
-    }
-
-    let onNotice: NWScriptInstance;
-    if(isCreature(this)){
-      onNotice = this.scripts[ScriptHook.CreatureOnNotice];
-    }
-
-    if(triggerOnNotice && onNotice){
-      // sets discrete event flags (0x908 Seen / 0x910 Vanished)
-      onNotice.lastPerceived = {
-        object: object,
-        objectId: object.id,
-        data: seen ? PerceptionMask.SEEN : PerceptionMask.INVISIBLE
-      };
-      onNotice.run(this);
-      return true;
-    }
+    return this.perceptionService.notifyPerceptionSeenObject(object, seen);
   }
-
-  #tmpPositionA = new THREE.Vector3();
-  #tmpPositionB = new THREE.Vector3();
-  #tmpDirection = new THREE.Vector3();
 
   /**
    * Check if the object has line of sight to another object.
@@ -2419,70 +2217,7 @@ export class GameObject {
       skipRoomWalkmesh?: boolean;
     }
   ){
-    if(!this.spawned || !getDefaultRuntimeContext().isReadyToProcessEvents())
-      return false;
-
-    if(!(oTarget instanceof GameObject)){
-      return false;
-    }
-
-    const eyeHeight = typeof opts?.eyeHeight === 'number' ? opts.eyeHeight : 1;
-    const ignoreObject = opts?.ignoreObject ?? oTarget;
-    this.#tmpPositionA.copy(this.position);
-    if(opts?.toPosition){
-      this.#tmpPositionB.copy(opts.toPosition);
-    }else{
-      this.#tmpPositionB.copy(oTarget.position);
-    }
-    // Distance check uses eye-adjusted endpoints for range only
-    const distance = Math.hypot(
-      this.#tmpPositionB.x - this.#tmpPositionA.x,
-      this.#tmpPositionB.y - this.#tmpPositionA.y,
-      (this.#tmpPositionB.z + eyeHeight) - (this.#tmpPositionA.z + eyeHeight)
-    );
-    if(distance < 0.05){
-      return true;
-    }
-
-    if(!opts?.ignorePerceptionRange && this.perceptionRange){
-      const primaryRange = this.getPerceptionRangePrimary();
-      if(distance > primaryRange){
-        return false;
-      }
-      max_distance = primaryRange;
-    }else{
-      if(distance > max_distance){
-        return false;
-      }
-    }
-
-    if(!this.area){
-      return false;
-    }
-
-    if(opts?.skipRoomWalkmesh){
-      // Use-range: Detailed-only (personal_space 0.001), no AABB LOS
-      const ignoreIds = [this.id, ignoreObject?.id].filter((id) => id != null) as number[];
-      if(isCreature(this)){
-        const ignoreDoor = ((this as unknown) as Creature).pathFindIgnoreObjectId | 0;
-        if(ignoreDoor) ignoreIds.push(ignoreDoor);
-      }
-      const a = this.#tmpPositionA.clone();
-      const b = this.#tmpPositionB.clone();
-      a.z += eyeHeight;
-      b.z += eyeHeight;
-      return isStaticWalkClearDetailed(this.area, a, b, {
-        personalSpace: 0.001,
-        ignoreObjectIds: ignoreIds,
-        skipMesh: true,
-      }).clear;
-    }
-
-    return hasVisualLos(this.area, this.#tmpPositionA, this.#tmpPositionB, {
-      eyeHeight,
-      ignoreSource: this,
-      ignoreObject,
-    });
+    return this.perceptionService.hasLineOfSight(oTarget, max_distance, opts);
   }
 
   /**
@@ -2552,192 +2287,6 @@ export class GameObject {
     throw new Error(
       `${this.constructor.name}.initProperties must use a concrete GameObject serializer`,
     );
-
-    /*
-     * Removed legacy field-by-field hydration retained temporarily in source
-     * history only; concrete serializers own all hydration.
-    const needsRegister = !this.initialized;
-
-    if(needsRegister){
-      if(this.template.RootNode.hasField('ObjectId')){
-        this.id = this.template.getFieldByLabel('ObjectId').getValue();
-      }else if(this.template.RootNode.hasField('ID')){
-        this.id = this.template.getFieldByLabel('ID').getValue();
-      }
-    }
-
-    if(this.template.RootNode.hasField('Animation'))
-      this.animState = this.template.getFieldByLabel('Animation').getValue();
-
-    if(this.template.RootNode.hasField('Appearance')){
-      this.appearance = this.template.getFieldByLabel('Appearance').getValue();
-    }
-
-    if(this.template.RootNode.hasField('Description'))
-      this.description = this.template.getFieldByLabel('Description').getCExoLocString();
-
-    if(this.template.RootNode.hasField('ObjectId'))
-      this.id = this.template.getFieldByLabel('ObjectId').getValue();
-
-    if(this.template.RootNode.hasField('AutoRemoveKey'))
-      this.autoRemoveKey = this.template.getFieldByLabel('AutoRemoveKey').getValue();
-
-    if(this.template.RootNode.hasField('Commandable'))
-      this.commandable = this.template.getFieldByLabel('Commandable').getValue();
-
-    if(this.template.RootNode.hasField('Cursor'))
-      this.cursor = this.template.getFieldByLabel('Cursor').getValue();
-
-    if(this.template.RootNode.hasField('Faction')){
-      this.factionId = this.template.getFieldByLabel('Faction').getValue();
-      if((this.factionId & 0xFFFFFFFF) == -1){
-        this.factionId = 0;
-      }
-      this.faction = GameState.FactionManager.factions.get(this.factionId);
-    }
-
-    if(this.template.RootNode.hasField('Geometry')){
-      this.geometry = this.template.getFieldByLabel('Geometry').getChildStructs();
-
-      //Push verticies
-      for(let i = 0; i < this.geometry.length; i++){
-        let tgv = this.geometry[i];
-        this.vertices[i] = new THREE.Vector3(
-          tgv.getFieldByLabel('PointX').getValue(),
-          tgv.getFieldByLabel('PointY').getValue(),
-          tgv.getFieldByLabel('PointZ').getValue()
-        );
-      }
-    }
-
-    if(this.template.RootNode.hasField('HasMapNote'))
-      this.hasMapNote = this.template.getFieldByLabel('HasMapNote').getValue();
-
-    if(this.template.RootNode.hasField('HighlightHeight'))
-      this.highlightHeight = this.template.getFieldByLabel('HighlightHeight').getValue();
-
-    if(this.template.RootNode.hasField('KeyName'))
-      this.keyName = this.template.getFieldByLabel('KeyName').getValue();
-
-    if(this.template.RootNode.hasField('LinkedTo'))
-      this.linkedTo = this.template.getFieldByLabel('LinkedTo').getValue();
-
-    if(this.template.RootNode.hasField('LinkedToFlags'))
-      this.linkedToFlags = this.template.getFieldByLabel('LinkedToFlags').getValue();
-
-    if(this.template.RootNode.hasField('LinkedToModule'))
-      this.linkedToModule = this.template.RootNode.getFieldByLabel('LinkedToModule').getValue();
-
-    if(this.template.RootNode.hasField('LoadScreenID'))
-      this.loadScreenID = this.template.getFieldByLabel('LoadScreenID').getValue();
-
-    if(this.template.RootNode.hasField('LocName'))
-      this.locName = this.template.getFieldByLabel('LocName').getCExoLocString();
-
-    if(this.template.RootNode.hasField('LocalizedName'))
-      this.localizedName = this.template.getFieldByLabel('LocalizedName').getCExoLocString();
-
-    if(this.template.RootNode.hasField('MapNote'))
-      this.mapNote = this.template.getFieldByLabel('MapNote').getCExoLocString();
-
-    if(this.template.RootNode.hasField('MapNoteEnabled'))
-      this.mapNoteEnabled = this.template.getFieldByLabel('MapNoteEnabled').getValue();
-
-    if(this.template.RootNode.hasField('PortraidId')){
-      this.portraitId = this.template.getFieldByLabel('PortraidId').getValue();
-      this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
-    }
-
-    if(this.template.RootNode.hasField('PortraitId')){
-      this.portraitId = this.template.getFieldByLabel('PortraitId').getValue();
-      this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
-    }
-
-    if(this.template.RootNode.hasField('SetByPlayerParty'))
-      this.setByPlayerParty = this.template.getFieldByLabel('SetByPlayerParty').getValue();
-
-    if(this.template.RootNode.hasField('Tag'))
-      this.tag = this.template.getFieldByLabel('Tag').getValue();
-
-    if(this.template.RootNode.hasField('TemplateResRef'))
-      this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();
-
-    if(this.template.RootNode.hasField('ResRef'))
-      this.resRef = this.template.getFieldByLabel('ResRef').getValue();
-
-    if(this.template.RootNode.hasField('TransitionDestin'))
-      this.transitionDestin = this.template.getFieldByLabel('TransitionDestin').getCExoLocString();
-
-    if(this.template.RootNode.hasField('TrapDetectable'))
-      this.trapDetectable = this.template.RootNode.getFieldByLabel('TrapDetectable').getValue();
-
-    if(this.template.RootNode.hasField('TrapDisarmable'))
-      this.trapDisarmable = this.template.RootNode.getFieldByLabel('TrapDisarmable').getValue();
-
-    if(this.template.RootNode.hasField('TrapOneShot'))
-      this.trapOneShot = this.template.getFieldByLabel('TrapOneShot').getValue();
-
-    if(this.template.RootNode.hasField('TrapType'))
-      this.trapType = this.template.getFieldByLabel('TrapType').getValue();
-
-    if(this.template.RootNode.hasField('Type'))
-      this.type = this.template.getFieldByLabel('Type').getValue();
-
-    if(this.template.RootNode.hasField('XPosition'))
-      this.position.x = this.template.RootNode.getFieldByLabel('XPosition').getValue();
-
-    if(this.template.RootNode.hasField('YPosition'))
-      this.position.y = this.template.RootNode.getFieldByLabel('YPosition').getValue();
-
-    if(this.template.RootNode.hasField('ZPosition'))
-      this.position.z = this.template.RootNode.getFieldByLabel('ZPosition').getValue();
-
-    if(this.template.RootNode.hasField('XOrientation'))
-      this.xOrientation = this.template.RootNode.getFieldByLabel('XOrientation').getValue();
-
-    if(this.template.RootNode.hasField('YOrientation'))
-      this.yOrientation = this.template.RootNode.getFieldByLabel('YOrientation').getValue();
-
-    if(this.template.RootNode.hasField('ZOrientation'))
-      this.zOrientation = this.template.RootNode.getFieldByLabel('ZOrientation').getValue();
-
-    if(this.template.RootNode.hasField('SWVarTable')){
-      let swVarTableStruct = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0];
-      if(swVarTableStruct){
-        if(swVarTableStruct.hasField('BitArray')){
-          let localBools = swVarTableStruct.getFieldByLabel('BitArray').getChildStructs();
-          for(let i = 0; i < localBools.length; i++){
-            let data = localBools[i].getFieldByLabel('Variable').getValue();
-            for(let bit = 0; bit < 32; bit++){
-              this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
-            }
-          }
-        }
-
-        if(swVarTableStruct.hasField('ByteArray')){
-          let localNumbers = swVarTableStruct.getFieldByLabel('ByteArray').getChildStructs();
-          for(let i = 0; i < localNumbers.length; i++){
-            let data = localNumbers[i].getFieldByLabel('Variable').getValue();
-            this.setLocalNumber(i, data);
-          }
-        }
-      }
-    }
-
-    if(this.template.RootNode.hasField('VarTable')){
-      this.loadNamedVarTable(this.template.RootNode.getFieldByLabel('VarTable'));
-    }
-
-    this.loadActionList();
-
-    // AddToArea / Load*: register after Tag is known (RegisterObject = ObjectList + tag lookup).
-    if(needsRegister){
-      GameState.GameObjectManager.RegisterObject(this);
-    }
-
-    this.initialized = true;
-    */
-
   }
 
   /**
@@ -2745,23 +2294,21 @@ export class GameObject {
    * @returns
    */
   getSWVarTableSaveStruct(){
-    return SwVarTableSerializer.serialize(this);
+    return this.hydrationService.getSWVarTableSaveStruct();
   }
 
   /**
    * Load named VarTable from a GFF LIST field.
    */
   loadNamedVarTable(field?: GFFField){
-    this.scriptVarTable.loadFromListField(field);
+    return this.hydrationService.loadNamedVarTable(field);
   }
 
   /**
    * Write named VarTable into a new LIST field on the given parent struct/root.
    */
   writeNamedVarTable(parent: GFFStruct): GFFField {
-    const list = parent.addField(new GFFField(GFFDataType.LIST, 'VarTable'));
-    this.scriptVarTable.writeToListField(list);
-    return list;
+    return this.hydrationService.writeNamedVarTable(parent);
   }
 
   /**
@@ -2769,14 +2316,7 @@ export class GameObject {
    * Safe to call before initProperties.
    */
   seedResRefsFromTemplate(){
-    const root = this.template?.RootNode;
-    if(!root){ return; }
-    if(!this.templateResRef && root.hasField('TemplateResRef')){
-      this.templateResRef = root.getFieldByLabel('TemplateResRef').getValue() || '';
-    }
-    if(!this.resRef && root.hasField('ResRef')){
-      this.resRef = root.getFieldByLabel('ResRef').getValue() || '';
-    }
+    return this.hydrationService.seedResRefsFromTemplate();
   }
 
   /**
@@ -2786,41 +2326,21 @@ export class GameObject {
    * @param defaultResRef when set, missing fields get this value (doors use "default")
    */
   hydrateScriptResRefsFromStruct(scriptsNode: { hasField?: (k: string) => boolean; getFieldByLabel?: (k: string) => { getValue: () => any } } | undefined, scriptKeys: string[], defaultResRef?: string){
-    if(!scriptsNode?.hasField || !scriptsNode?.getFieldByLabel){ return; }
-    for(const scriptKey of scriptKeys){
-      if(typeof this.scriptResRefs[scriptKey] === 'string'){ continue; }
-      if(scriptsNode.hasField(scriptKey)){
-        this.scriptResRefs[scriptKey] = String(scriptsNode.getFieldByLabel(scriptKey).getValue() ?? '');
-      }else if(defaultResRef !== undefined){
-        this.scriptResRefs[scriptKey] = defaultResRef;
-      }
-    }
+    return this.hydrationService.hydrateScriptResRefsFromStruct(scriptsNode, scriptKeys, defaultResRef);
   }
 
   /**
    * Hydrate script-hook resrefs from this.template.RootNode (init/load phase only).
    */
   hydrateScriptResRefsFromTemplate(scriptKeys: string[], defaultResRef?: string){
-    this.hydrateScriptResRefsFromStruct(this.template?.RootNode, scriptKeys, defaultResRef);
+    return this.hydrationService.hydrateScriptResRefsFromTemplate(scriptKeys, defaultResRef);
   }
 
   /**
    * Bind NWScript instances from already-hydrated scriptResRefs.
    */
   bindScriptsFromResRefs(scriptKeys: string[], warnLabel?: string){
-    for(const scriptKey of scriptKeys){
-      const resRef = this.scriptResRefs[scriptKey];
-      if(!resRef){ continue; }
-      const nwscript = GameState.NWScript.Load(resRef);
-      if(!nwscript){
-        if(warnLabel){
-          console.warn(`${warnLabel}: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
-        }
-        continue;
-      }
-      nwscript.bindOwner(this, scriptKey);
-      this.scripts[scriptKey] = nwscript;
-    }
+    return this.hydrationService.bindScriptsFromResRefs(scriptKeys, warnLabel);
   }
 
   /**

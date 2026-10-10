@@ -97,12 +97,17 @@ describe('Whirlwind / Crush / Wave port wiring', () => {
   });
 
   it('Creature isCrushed and isDebilitated include Crush', () => {
-    const src = fs.readFileSync(
+    const facade = fs.readFileSync(
       srcPath('engine', 'module', 'Creature.ts'),
       'utf8'
     );
-    expect(src).toMatch(/isCrushed\(\)[\s\S]*?hasSetState\(15\)/);
-    expect(src).toMatch(/isDebilitated\(\)[\s\S]*?isCrushed\(\)/);
+    expect(facade).toMatch(/isCrushed\(\)[\s\S]*?hasSetState\(15\)/);
+
+    const combat = fs.readFileSync(
+      srcPath('engine', 'module', 'creature', 'CreatureCombatService.ts'),
+      'utf8'
+    );
+    expect(combat).toMatch(/isDebilitated\(\)[\s\S]*?isCrushed\(\)/);
   });
 
   it('Force Wave has no dedicated effect; K2 Force Push opcodes remain wired', () => {

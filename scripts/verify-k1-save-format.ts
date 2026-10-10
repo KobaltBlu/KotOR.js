@@ -247,11 +247,20 @@ assert(creatureSave.includes("'PerceptionList'"), 'Creature save writes Percepti
 {
   // SaveCreature persists every visibility node; unresolved
   // objectIds (PLAYER_ID / stale) must not be spliced out of perceptionList.
-  const moduleObjectSrc = read('src/module/GameObject.ts');
-  const initIdx = moduleObjectSrc.indexOf('initPerceptionList()');
-  assert(initIdx >= 0, 'GameObject has initPerceptionList');
-  const initBody = moduleObjectSrc.slice(initIdx, initIdx + 900);
-  assert(initBody.includes('GetObjectById'), 'initPerceptionList resolves objectIds');
+  const perceptionSrc = read('src/engine/module/gameobject/GameObjectPerceptionService.ts');
+  const gameObjectSrc = read('src/engine/module/GameObject.ts');
+  const initIdx = perceptionSrc.indexOf('initPerceptionList()');
+  assert(
+    initIdx >= 0 || gameObjectSrc.includes('initPerceptionList()'),
+    'GameObject / GameObjectPerceptionService has initPerceptionList',
+  );
+  const initBody = initIdx >= 0
+    ? perceptionSrc.slice(initIdx, initIdx + 900)
+    : gameObjectSrc.slice(gameObjectSrc.indexOf('initPerceptionList()'), gameObjectSrc.indexOf('initPerceptionList()') + 900);
+  assert(
+    initBody.includes('GetObjectById') || initBody.includes('getById'),
+    'initPerceptionList resolves objectIds',
+  );
   assert(!initBody.includes('splice'), 'initPerceptionList does not prune unresolved nodes');
   assert(initBody.includes('leave object undefined') || initBody.includes('round-trip'),
     'initPerceptionList documents retaining unresolved nodes');
@@ -420,7 +429,14 @@ assert(areaSrc.includes('this.areId = this.are.getFieldByLabel(\'ID\')'), 'ARE I
 assert(!/this\.id = this\.are\.getFieldByLabel\('ID'\)/.test(areaSrc), 'Area no longer overwrites this.id with ARE ID');
 assert(moduleSrc.includes('areaList[0]?.objectId'), 'Module.Load applies Mod_Area_list ObjectId');
 assert(moduleSrc.includes('AddObjectById(module.area)'), 'Module.Load registers area with GameObjectManager');
-assert(moduleObjectSrc.includes('getSaveAreaId()'), 'GameObject has getSaveAreaId()');
+{
+  const hydrationSrc = read('src/engine/module/gameobject/GameObjectHydrationService.ts');
+  const gameObjectSrc = read('src/engine/module/GameObject.ts');
+  assert(
+    hydrationSrc.includes('getSaveAreaId()') || gameObjectSrc.includes('getSaveAreaId()'),
+    'GameObject / GameObjectHydrationService has getSaveAreaId()',
+  );
+}
 assert(creatureSrc.includes("getFieldByLabel('FirstName').getCExoLocString()"), 'FirstName load uses getCExoLocString');
 assert(creatureSrc.includes("hasField('MovementRate')"), 'Creature load reads MovementRate');
 assert(creatureSave.includes('instanceof CExoLocString'), 'FirstName/LastName save uses CExoLocString');

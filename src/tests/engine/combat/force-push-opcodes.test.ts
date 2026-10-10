@@ -102,7 +102,7 @@ describe('Force Push port wiring', () => {
 
   it('anim selection uses getActiveSetStateType / ambient PRONE_FORCE_PUSHED', () => {
     const src = fs.readFileSync(
-      srcPath('engine', 'module', 'Creature.ts'),
+      srcPath('engine', 'module', 'creature', 'CreatureCombatService.ts'),
       'utf8'
     );
     expect(src).toMatch(/getActiveSetStateType/);

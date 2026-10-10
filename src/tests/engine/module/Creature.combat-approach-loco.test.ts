@@ -22,7 +22,10 @@ function isDriveAnimationBlocked(
 
 describe("Creature combat approach loco gate", () => {
   it("updateAnimationState does not clear loco when driveBlocked", () => {
-    const src = fs.readFileSync(srcPath("engine", "module", "Creature.ts"), "utf8");
+    const src = fs.readFileSync(
+      srcPath("engine", "module", "creature", "CreatureAnimationService.ts"),
+      "utf8"
+    );
     const start = src.indexOf("  updateAnimationState(){");
     expect(start).toBeGreaterThan(-1);
     const end = src.indexOf("\n  primeAnimationPose(){", start);
@@ -36,7 +39,10 @@ describe("Creature combat approach loco gate", () => {
   });
 
   it("isDriveAnimationBlocked ignores actionQueue length", () => {
-    const src = fs.readFileSync(srcPath("engine", "module", "Creature.ts"), "utf8");
+    const src = fs.readFileSync(
+      srcPath("engine", "module", "creature", "CreatureAnimationService.ts"),
+      "utf8"
+    );
     const start = src.indexOf("  isDriveAnimationBlocked(): boolean {");
     expect(start).toBeGreaterThan(-1);
     const fn = src.slice(start, start + 400);
