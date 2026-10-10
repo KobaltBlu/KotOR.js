@@ -1,0 +1,163 @@
+/**
+ * Source-boundary regression: after init, GameObject hierarchy code must not
+ * read/write live GFF fields from runtime getters/helpers. GFF access belongs
+ * in load / initProperties / hydrate / save / export only.
+ * @jest-environment node
+ */
+import fs from 'node:fs';
+import path from 'node:path';
+import { describe, expect, it } from '@jest/globals';
+
+const MODULE_DIR = path.resolve(__dirname, '../../../engine/module');
+const MANAGER_DIR = path.resolve(__dirname, '../../../engine/managers');
+
+/** Methods / helpers that may touch this.template (init + save only). */
+const ALLOWED_METHOD_RE =
+  /^(constructor|load|loadScripts|loadInventory|loadItem|loadActionList|loadNamedVarTable|initProperties|seedResRefsFromTemplate|hydrateScriptResRefsFromTemplate|hydrateScriptResRefsFromStruct|bindScriptsFromResRefs|save|Save|clone|destroy|getSWVarTableSaveStruct|writeNamedVarTable|loadFromPersistentRow|getPreviewModelResRef)$/;
+
+/**
+ * Strip comments and string literals so naive scans do not false-positive on docs.
+ */
+function stripNoise(src: string): string {
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/\/\/.*$/gm, '')
+    .replace(/`(?:\\.|[^`\\])*`/g, '""')
+    .replace(/'(?:\\.|[^'\\])*'/g, '""')
+    .replace(/"(?:\\.|[^"\\])*"/g, '""');
+}
+
+/**
+ * Split a class body into method chunks by `name(...){` at brace depth 0 of class.
+ * Returns [{ name, body }].
+ */
+function extractMethods(classSrc: string): Array<{ name: string; body: string }> {
+  const methods: Array<{ name: string; body: string }> = [];
+  const re = /(?:(?:public|private|protected|static|async|override)\s+)*([A-Za-z_][A-Za-z0-9_]*)\s*\([^;{]*\)\s*(?::\s*[^{]+)?\{/g;
+  let match: RegExpExecArray | null;
+  while((match = re.exec(classSrc))){
+    const name = match[1];
+    const start = match.index + match[0].length - 1;
+    let depth = 0;
+    let i = start;
+    for(; i < classSrc.length; i++){
+      const ch = classSrc[i];
+      if(ch === '{') depth++;
+      else if(ch === '}'){
+        depth--;
+        if(depth === 0){
+          i++;
+          break;
+        }
+      }
+    }
+    methods.push({ name, body: classSrc.slice(start, i) });
+    re.lastIndex = i;
+  }
+  return methods;
+}
+
+function listTsFiles(dir: string): string[] {
+  if(!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir)
+    .filter((f) => f.endsWith('.ts') && !f.endsWith('.d.ts'))
+    .map((f) => path.join(dir, f));
+}
+
+const TEMPLATE_TOUCH_RE =
+  /this\.template(?:\?\.|\.)(?:RootNode|getFieldByLabel|hasField|FileType|merge)|this\.template\s*=/;
+
+describe('GameObject template access boundary', () => {
+  it('runtime getters do not read orientation/tag/resref/portrait/key from GFF', () => {
+    const gameObjectSrc = fs.readFileSync(path.join(MODULE_DIR, 'GameObject.ts'), 'utf8');
+    const methods = extractMethods(stripNoise(gameObjectSrc));
+    const banned = [
+      'getXOrientation',
+      'getYOrientation',
+      'getZOrientation',
+      'getPortraitId',
+      'getKeyName',
+      'getTag',
+      'getTemplateResRef',
+      'getResRef',
+      'setTemplateResRef',
+    ];
+    for(const name of banned){
+      const m = methods.find((x) => x.name === name);
+      expect(m).toBeDefined();
+      expect(TEMPLATE_TOUCH_RE.test(m!.body)).toBe(false);
+    }
+  });
+
+  it('Placeable position getters and Item infinite/properties helpers avoid template', () => {
+    const placeableSrc = stripNoise(fs.readFileSync(path.join(MODULE_DIR, 'Placeable.ts'), 'utf8'));
+    const itemSrc = stripNoise(fs.readFileSync(path.join(MODULE_DIR, 'Item.ts'), 'utf8'));
+    const placeableMethods = extractMethods(placeableSrc);
+    for(const name of ['getX', 'getY', 'getZ', 'getBearing']){
+      const m = placeableMethods.find((x) => x.name === name);
+      expect(m).toBeDefined();
+      expect(TEMPLATE_TOUCH_RE.test(m!.body)).toBe(false);
+    }
+    expect(placeableSrc.includes('getItemList')).toBe(false);
+
+    const itemMethods = extractMethods(itemSrc);
+    const setInfinite = itemMethods.find((x) => x.name === 'setInfinite');
+    const getPropertiesList = itemMethods.find((x) => x.name === 'getPropertiesList');
+    expect(setInfinite).toBeDefined();
+    expect(getPropertiesList).toBeDefined();
+    expect(TEMPLATE_TOUCH_RE.test(setInfinite!.body)).toBe(false);
+    expect(TEMPLATE_TOUCH_RE.test(getPropertiesList!.body)).toBe(false);
+  });
+
+  it('Trigger.save writes orientation from runtime fields', () => {
+    const triggerSrc = fs.readFileSync(path.join(MODULE_DIR, 'Trigger.ts'), 'utf8');
+    const save = extractMethods(stripNoise(triggerSrc)).find((m) => m.name === 'save');
+    expect(save).toBeDefined();
+    expect(save!.body).toMatch(/this\.xOrientation/);
+    expect(save!.body).toMatch(/this\.yOrientation/);
+    expect(save!.body).toMatch(/this\.zOrientation/);
+    expect(save!.body).not.toMatch(/this\.template.*XOrientation|getFieldByLabel\s*\(\s*['"]XOrientation['"]\s*\)/);
+  });
+
+  it('persistObjectId does not stamp template ObjectId', () => {
+    const mgrSrc = fs.readFileSync(path.join(MANAGER_DIR, 'GameObjectManager.ts'), 'utf8');
+    const methods = extractMethods(stripNoise(mgrSrc));
+    const persist = methods.find((m) => m.name === 'persistObjectId');
+    expect(persist).toBeDefined();
+    expect(persist!.body).toMatch(/object\.id\s*=/);
+    expect(persist!.body).not.toMatch(/template|ObjectId|GFFField/);
+  });
+
+  it('flags new runtime methods that touch this.template outside allowed lifecycle names', () => {
+    const files = [
+      ...listTsFiles(MODULE_DIR),
+    ].filter((f) => {
+      const base = path.basename(f);
+      return ![
+        'Area.ts', // area ARE/GIT orchestration — separate boundary
+        'Module.ts',
+        'AreaMap.ts',
+        'AreaWeather.ts',
+        'AreaAudio.ts',
+      ].includes(base);
+    });
+
+    const violations: string[] = [];
+    for(const file of files){
+      const raw = fs.readFileSync(file, 'utf8');
+      if(!raw.includes('extends GameObject') && path.basename(file) !== 'GameObject.ts'){
+        continue;
+      }
+      const methods = extractMethods(stripNoise(raw));
+      for(const m of methods){
+        if(ALLOWED_METHOD_RE.test(m.name)) continue;
+        // Nested init helpers commonly named load* / init* / setTemplate / apply*FromTemplate
+        if(/^(load|init|hydrate|seed|merge|apply|read|parse|build|setTemplate).*/i.test(m.name)) continue;
+        if(!TEMPLATE_TOUCH_RE.test(m.body)) continue;
+        violations.push(`${path.basename(file)}:${m.name}`);
+      }
+    }
+
+    expect(violations).toEqual([]);
+  });
+});

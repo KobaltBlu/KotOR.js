@@ -90,26 +90,6 @@ export class Trigger extends GameObject {
     return this.type;
   }
 
-  getTag(){
-    return this.tag;
-  }
-
-  getTemplateResRef(){
-    return this.templateResRef;
-  }
-
-  getXOrientation(){
-    return this.xOrientation;
-  }
-
-  getYOrientation(){
-    return this.yOrientation;
-  }
-
-  getZOrientation(){
-    return this.zOrientation;
-  }
-
   isDead(){
     return false;
   }
@@ -161,13 +141,9 @@ export class Trigger extends GameObject {
   }
 
   load( onLoad?: Function ){
-    // GIT TriggerList entries only carry TemplateResRef + geometry. initProperties is
-    // deferred until load, so templateResRef is still unset here — read it from the
-    // GFF before choosing the UTT-merge path. Skipping this took the savegame branch
-    // on new games (no Tag/ScriptOnEnter), so triggers never fired scripts.
-    if(!this.templateResRef && this.template?.RootNode?.hasField('TemplateResRef')){
-      this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();
-    }
+    // GIT TriggerList entries only carry TemplateResRef + geometry. Seed before
+    // choosing the UTT-merge path so new games don't take the savegame branch.
+    this.seedResRefsFromTemplate();
 
     if(this.getTemplateResRef()){
       //Load template and merge fields
@@ -529,19 +505,8 @@ export class Trigger extends GameObject {
       ScriptHook.TriggerOnUserDefined,
     ];
 
-    const scriptsNode = this.template?.RootNode;
-    if(!scriptsNode){ return; }
-    
-    for(const scriptKey of scriptKeys){
-      if(scriptsNode.hasField(scriptKey)){
-        const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
-        if(!resRef){ continue; }
-        const nwscript = GameState.NWScript.Load(resRef);
-        if(!nwscript){ continue; }
-        nwscript.bindOwner(this, scriptKey);
-        this.scripts[scriptKey] = nwscript;
-      }
-    }
+    this.hydrateScriptResRefsFromTemplate(scriptKeys);
+    this.bindScriptsFromResRefs(scriptKeys);
   }
 
   initProperties(){
@@ -775,11 +740,11 @@ export class Trigger extends GameObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapType') ).setValue(this.trapType);
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'Type') ).setValue(this.type);
     this.writeNamedVarTable(gff.RootNode);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).setValue(this.template.RootNode.getFieldByLabel('XOrientation').getValue());
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).setValue(this.xOrientation || 0);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).setValue(this.position.x);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).setValue(this.template.RootNode.getFieldByLabel('YOrientation').getValue());
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).setValue(this.yOrientation || 0);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).setValue(this.position.y);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZOrientation') ).setValue(this.template.RootNode.getFieldByLabel('ZOrientation').getValue());
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZOrientation') ).setValue(this.zOrientation || 0);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).setValue(this.position.z);
 
     this.template = gff;

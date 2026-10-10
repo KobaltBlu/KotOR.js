@@ -5,7 +5,6 @@ import { GameObjectType } from "@core/enums/module/GameObjectType";
 import { GameObjectConstant } from "@core/enums/module/GameObjectConstant";
 import { AILevel } from "@core/enums/module/AILevel";
 import { ReputationType } from "@core/enums/nwscript/ReputationType";
-import { GFFDataType } from "@core/enums/resource/GFFDataType";
 import { BitWise } from "@core/utility/BitWise";
 import { PartyManager } from "@engine/managers/PartyManager";
 import * as THREE from "three";
@@ -24,7 +23,6 @@ import { FollowerCamera } from "@engine/render/FollowerCamera";
 import { AutoPauseState } from "@engine/enums/engine/AutoPauseState";
 import { EngineState } from "@engine/enums/engine/EngineState";
 import { MiniGameObjectArray } from "@engine/module/minigame/MiniGameObjectArray";
-import { GFFField } from "@core/resource/GFFField";
 
 import { isCreature } from "@engine/module/guards/isCreature";
 import { isDoor } from "@engine/module/guards/isDoor";
@@ -261,16 +259,9 @@ export class GameObjectManager {
     return this.allocateFreeObjectId(this.isCharPoolId(requestedId));
   }
 
-  /** Stamp live id + template ObjectId so saves stay consistent. */
+  /** Stamp live object id. Save/export paths emit ObjectId from runtime state. */
   static persistObjectId(object: GameObject, id: number): void {
     object.id = id;
-    const root = object.template?.RootNode;
-    if(!root) return;
-    if(root.hasField('ObjectId')){
-      root.getFieldByLabel('ObjectId').setValue(id);
-    }else{
-      root.addField(new GFFField(GFFDataType.DWORD, 'ObjectId')).setValue(id);
-    }
   }
 
   /**

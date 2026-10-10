@@ -2008,39 +2008,24 @@ export class MiniGamePlayer extends GameObject {
     instance.run(this, 0);
   }
 
-  loadScripts (){
-    const scriptResRefs = [
-      ScriptHook.MGPlayerOnAccelerate,
-      ScriptHook.MGPlayerOnAnimEvent,
-      ScriptHook.MGPlayerOnBrake,
-      ScriptHook.MGPlayerOnCreate,
-      ScriptHook.MGPlayerOnDamage,
-      ScriptHook.MGPlayerOnDeath,
-      ScriptHook.MGPlayerOnFire,
-      ScriptHook.MGPlayerOnHeartbeat,
-      ScriptHook.MGPlayerOnHitBullet,
-      ScriptHook.MGPlayerOnHitFollower,
-      ScriptHook.MGPlayerOnHitObstacle,
-      ScriptHook.MGPlayerOnHitWorld,
-      ScriptHook.MGPlayerOnTrackLoop,
-    ];
+  static readonly SCRIPT_KEYS = [
+    ScriptHook.MGPlayerOnAccelerate,
+    ScriptHook.MGPlayerOnAnimEvent,
+    ScriptHook.MGPlayerOnBrake,
+    ScriptHook.MGPlayerOnCreate,
+    ScriptHook.MGPlayerOnDamage,
+    ScriptHook.MGPlayerOnDeath,
+    ScriptHook.MGPlayerOnFire,
+    ScriptHook.MGPlayerOnHeartbeat,
+    ScriptHook.MGPlayerOnHitBullet,
+    ScriptHook.MGPlayerOnHitFollower,
+    ScriptHook.MGPlayerOnHitObstacle,
+    ScriptHook.MGPlayerOnHitWorld,
+    ScriptHook.MGPlayerOnTrackLoop,
+  ];
 
-    const scriptsNode = this.template.getFieldByLabel('Scripts')?.getFieldStruct();
-    if(scriptsNode){
-      for(const scriptKey of scriptResRefs){
-        if(scriptsNode.hasField(scriptKey)){
-          const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
-          if(!resRef){ continue; }
-          const nwscript = GameState.NWScript.Load(resRef);
-          if(!nwscript){ 
-            console.warn(`MiniGamePlayer.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
-            continue; 
-          }
-          nwscript.bindOwner(this, scriptKey);
-          this.scripts[scriptKey] = nwscript;
-        }
-      }
-    }
+  loadScripts (){
+    this.bindScriptsFromResRefs(MiniGamePlayer.SCRIPT_KEYS, 'MiniGamePlayer.loadScripts');
   }
 
   initProperties(){
@@ -2166,9 +2151,14 @@ export class MiniGamePlayer extends GameObject {
           )
         );
       }
-
-      this.initialized = true;
     }
+
+    this.hydrateScriptResRefsFromStruct(
+      this.template.getFieldByLabel('Scripts')?.getFieldStruct(),
+      MiniGamePlayer.SCRIPT_KEYS
+    );
+
+    this.initialized = true;
 
 
     /*if(this.template.RootNode.hasField('CameraRotate'))

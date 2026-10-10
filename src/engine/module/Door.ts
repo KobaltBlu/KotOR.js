@@ -138,8 +138,6 @@ export class Door extends GameObject {
   walkmeshOpen2: OdysseyWalkMesh;
 
   doorAppearance: SWDoorAppearance;
-  /** door script resrefs (ctor defaults all slots to "default"). */
-  scriptResRefs: Partial<Record<string, string>> = {};
 
   /** MoveNextDoorState — "door" or doneopening / doneclosing events. */
   private static readonly _doorAnimDoneRe = /^done(opening|closing)/i;
@@ -1169,6 +1167,7 @@ export class Door extends GameObject {
   }
 
   load(){
+    this.seedResRefsFromTemplate();
     if(this.getTemplateResRef()){
       //Load template and merge fields
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utd'], this.getTemplateResRef());
@@ -1279,21 +1278,9 @@ export class Door extends GameObject {
       ScriptHook.DoorOnUserDefined,
     ];
 
-    const scriptsNode = this.template?.RootNode;
-    if(!scriptsNode){ return; }
-    for(const scriptKey of scriptKeys){
-      // ctor seeds all slots to "default"; LoadDoor overwrites with the
-      // template value including an explicit empty resref (must persist "" on save).
-      let resRef = 'default';
-      if(scriptsNode.hasField(scriptKey)){
-        resRef = String(scriptsNode.getFieldByLabel(scriptKey).getValue() ?? '');
-      }
-      this.scriptResRefs[scriptKey] = resRef;
-      const nwscript = GameState.NWScript.Load(resRef);
-      if(!nwscript){ continue; }
-      nwscript.bindOwner(this, scriptKey);
-      this.scripts[scriptKey] = nwscript;
-    }
+    // Absent fields default to "default"; explicit empty resrefs must persist "".
+    this.hydrateScriptResRefsFromTemplate(scriptKeys, 'default');
+    this.bindScriptsFromResRefs(scriptKeys);
   }
 
   async loadWalkmesh(resRef = ''): Promise<OdysseyWalkMesh> {

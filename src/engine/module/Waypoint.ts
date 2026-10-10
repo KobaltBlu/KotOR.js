@@ -72,20 +72,9 @@ export class Waypoint extends GameObject {
     );
   }
 
-  getTag(){
-    return this.tag;
-  }
-
-  getTemplateResRef(){
-    return this.templateResRef;
-  }
-
   load(){
-    // GIT entries only carry TemplateResRef until load; initProperties is deferred,
-    // so read the GFF field before choosing the UTW-merge path (same as Trigger).
-    if(!this.templateResRef && this.template?.RootNode?.hasField('TemplateResRef')){
-      this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();
-    }
+    // GIT entries only carry TemplateResRef until load; seed before UTW-merge.
+    this.seedResRefsFromTemplate();
 
     if(this.getTemplateResRef()){
       //Load template and merge fields

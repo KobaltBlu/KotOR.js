@@ -721,9 +721,6 @@ export class Item extends GameObject {
   clone(): Item {
     const nItem = new Item(this.template);
     nItem.initProperties();
-    if(nItem.template){
-      nItem.template.getFieldByLabel('StackSize')?.setValue(1);
-    }
     nItem.stackSize = 1;
     nItem.copyUpgradeStateFrom(this);
     return nItem;
@@ -849,9 +846,6 @@ export class Item extends GameObject {
   /** item bit 2 (0x4) — store Infinite stock only; player copies clear this. */
   setInfinite(value: number = 0){
     this.infinite = value ? 1 : 0;
-    if(this.template?.RootNode?.hasField?.('Infinite')){
-      this.template.RootNode.getFieldByLabel('Infinite').setValue(this.infinite);
-    }
   }
 
   /**
@@ -868,10 +862,7 @@ export class Item extends GameObject {
   }
 
   getPropertiesList(){
-    if(this.template.RootNode.hasField('PropertiesList')){
-      return this.template.RootNode.getFieldByLabel('PropertiesList').getChildStructs();
-    }
-    return null;
+    return this.properties;
   }
 
   isDisguise(){

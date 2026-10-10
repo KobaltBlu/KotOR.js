@@ -58,6 +58,7 @@ export class Store extends GameObject {
 
   load(){
     // GIT StoreList / UTM use ResRef (not TemplateResRef). Prefer ResRef; fall back for odd templates.
+    this.seedResRefsFromTemplate();
     const resRef = this.getResRef() || this.getTemplateResRef();
     if(resRef){
       //Load template and merge fields
@@ -105,7 +106,13 @@ export class Store extends GameObject {
       this.onOpenStore = this.template.getFieldByLabel('OnOpenStore').getValue();
       
     if(this.template.RootNode.hasField('Tag'))
-      this.tag = this.template.getFieldByLabel('Tag').getValue(); 
+      this.tag = this.template.getFieldByLabel('Tag').getValue();
+
+    if(this.template.RootNode.hasField('ResRef'))
+      this.resRef = this.template.getFieldByLabel('ResRef').getValue();
+
+    if(this.template.RootNode.hasField('TemplateResRef'))
+      this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();
     
     if(this.template.RootNode.hasField('XPosition'))
       this.position.x = this.template.RootNode.getFieldByLabel('XPosition').getValue();

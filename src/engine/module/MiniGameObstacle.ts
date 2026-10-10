@@ -276,30 +276,16 @@ export class MiniGameObstacle extends GameObject {
     onHitFollower.run(this, 0);
   }
 
+  static readonly SCRIPT_KEYS = [
+    ScriptHook.MGObstacleOnAnimEvent,
+    ScriptHook.MGObstacleOnCreate,
+    ScriptHook.MGObstacleOnHeartbeat,
+    ScriptHook.MGObstacleOnHitBullet,
+    ScriptHook.MGObstacleOnHitFollower,
+  ];
+
   loadScripts(){
-    const scriptKeys = [
-      ScriptHook.MGObstacleOnAnimEvent,
-      ScriptHook.MGObstacleOnCreate,
-      ScriptHook.MGObstacleOnHeartbeat,
-      ScriptHook.MGObstacleOnHitBullet,
-      ScriptHook.MGObstacleOnHitFollower,
-    ];
-
-    const scriptsNode = this.template?.getFieldByLabel?.('Scripts')?.getFieldStruct?.();
-    if(!scriptsNode){ return; }
-
-    for(const scriptKey of scriptKeys){
-      if(!scriptsNode.hasField(scriptKey)){ continue; }
-      const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
-      if(!resRef){ continue; }
-      const nwscript = GameState.NWScript.Load(resRef);
-      if(!nwscript){
-        console.warn(`MiniGameObstacle.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
-        continue;
-      }
-      nwscript.bindOwner(this, scriptKey);
-      this.scripts[scriptKey] = nwscript;
-    }
+    this.bindScriptsFromResRefs(MiniGameObstacle.SCRIPT_KEYS, 'MiniGameObstacle.loadScripts');
   }
 
   initProperties(){
@@ -318,6 +304,11 @@ export class MiniGameObstacle extends GameObject {
     if(this.layout?.position){
       this.position.copy(this.layout.position);
     }
+
+    this.hydrateScriptResRefsFromStruct(
+      this.template?.getFieldByLabel?.('Scripts')?.getFieldStruct?.(),
+      MiniGameObstacle.SCRIPT_KEYS
+    );
 
     this.initialized = true;
   }

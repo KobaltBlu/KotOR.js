@@ -429,31 +429,19 @@ export class Placeable extends GameObject {
   }
 
   getX(){
-    if(this.template.RootNode.hasField('X')){
-      return this.template.RootNode.getFieldByLabel('X').getValue();
-    }
-    return 0;
+    return this.position.x;
   }
 
   getY(){
-    if(this.template.RootNode.hasField('Y')){
-      return this.template.RootNode.getFieldByLabel('Y').getValue();
-    }
-    return 0;
+    return this.position.y;
   }
 
   getZ(){
-    if(this.template.RootNode.hasField('Z')){
-      return this.template.RootNode.getFieldByLabel('Z').getValue();
-    }
-    return 0;
+    return this.position.z;
   }
 
   getBearing(){
-    if(this.template.RootNode.hasField('Bearing')){
-      return this.template.RootNode.getFieldByLabel('Bearing').getValue();
-    }
-    return 0;
+    return this.bearing;
   }
 
   isLocked(){
@@ -522,13 +510,6 @@ export class Placeable extends GameObject {
 
   GetConversation(){
     return this.conversation;
-  }
-
-  getItemList(){
-    if(this.template.RootNode.hasField('ItemList')){
-      return this.template.RootNode.getFieldByLabel('ItemList').getChildStructs();
-    }
-    return [];
   }
 
   getItemByTag(sTag = ''): Item {
@@ -774,6 +755,7 @@ export class Placeable extends GameObject {
   }
 
   load(){
+    this.seedResRefsFromTemplate();
     if(this.getTemplateResRef()){
       //Load template and merge fields
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utp'], this.getTemplateResRef());
@@ -864,26 +846,15 @@ export class Placeable extends GameObject {
       ScriptHook.PlaceableOnUserDefined,
     ];
 
-    const scriptsNode = this.template?.RootNode;
-    if(!scriptsNode){ return; }
-
-    for(const scriptKey of scriptKeys){
-      if(scriptsNode.hasField(scriptKey)){
-        const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
-        if(!resRef){ continue; }
-        const nwscript = GameState.NWScript.Load(resRef);
-        if(!nwscript){
-          console.warn(`Placeable.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
-          continue;
-        }
-        nwscript.bindOwner(this, scriptKey);
-        this.scripts[scriptKey] = nwscript;
-      }
-    }
+    this.hydrateScriptResRefsFromTemplate(scriptKeys);
+    this.bindScriptsFromResRefs(scriptKeys, 'Placeable.loadScripts');
   }
 
   loadInventory(){
-    let inventory = this.getItemList();
+    // ItemList is consumed once during load into this.inventory.
+    const inventory = this.template?.RootNode?.hasField('ItemList')
+      ? this.template.RootNode.getFieldByLabel('ItemList').getChildStructs()
+      : [];
     for(let i = 0; i < inventory.length; i++){
       this.loadItem( GFFObject.FromStruct( inventory[i] ) );
     }

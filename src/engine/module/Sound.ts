@@ -150,6 +150,7 @@ export class Sound extends GameObject {
   }
 
   load(){
+    this.seedResRefsFromTemplate();
     if(this.getTemplateResRef()){
       //Load template and merge fields
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['uts'], this.getTemplateResRef());

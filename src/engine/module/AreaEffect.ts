@@ -63,11 +63,11 @@ export class AreaEffect extends GameObject {
   lastHeartbeatTime: number;
 
   /** Script resrefs before NWScript.Load (from vfx_persistent / effect overrides). */
-  scriptResRefs: {
-    onEnter: string;
-    heartbeat: string;
-    onExit: string;
-    onUserDefined: string;
+  override scriptResRefs: Partial<Record<string, string>> & {
+    onEnter?: string;
+    heartbeat?: string;
+    onExit?: string;
+    onUserDefined?: string;
   } = { onEnter: '', heartbeat: '', onExit: '', onUserDefined: '' };
 
   heartbeatMsAccum: number = 0;
@@ -131,36 +131,14 @@ export class AreaEffect extends GameObject {
   }
 
   loadScripts(){
-    const map: [ScriptHook, string][] = [
-      [ScriptHook.AoEOnEnter, this.scriptResRefs.onEnter],
-      [ScriptHook.AoEOnHeartbeat, this.scriptResRefs.heartbeat],
-      [ScriptHook.AoEOnExit, this.scriptResRefs.onExit],
-      [ScriptHook.AoEOnUserDefined, this.scriptResRefs.onUserDefined],
+    const map: [ScriptHook, keyof typeof this.scriptResRefs][] = [
+      [ScriptHook.AoEOnEnter, 'onEnter'],
+      [ScriptHook.AoEOnHeartbeat, 'heartbeat'],
+      [ScriptHook.AoEOnExit, 'onExit'],
+      [ScriptHook.AoEOnUserDefined, 'onUserDefined'],
     ];
-    // Also load from GFF template fields if present
-    const node = this.template?.RootNode;
-    const gffKeys: [ScriptHook, string][] = [
-      [ScriptHook.AoEOnEnter, 'OnObjEnter'],
-      [ScriptHook.AoEOnHeartbeat, 'OnHeartbeat'],
-      [ScriptHook.AoEOnExit, 'OnObjExit'],
-      [ScriptHook.AoEOnUserDefined, 'OnUserDefined'],
-    ];
-    for(const [key, field] of gffKeys){
-      if(node?.hasField(field)){
-        const resRef = node.getFieldByLabel(field).getValue();
-        if(resRef) this.scriptResRefs[
-          key === ScriptHook.AoEOnEnter ? 'onEnter'
-            : key === ScriptHook.AoEOnHeartbeat ? 'heartbeat'
-            : key === ScriptHook.AoEOnExit ? 'onExit'
-            : 'onUserDefined'
-        ] = resRef;
-      }
-    }
-    for(const [scriptKey, resRef] of map){
-      const ref = scriptKey === ScriptHook.AoEOnEnter ? this.scriptResRefs.onEnter
-        : scriptKey === ScriptHook.AoEOnHeartbeat ? this.scriptResRefs.heartbeat
-        : scriptKey === ScriptHook.AoEOnExit ? this.scriptResRefs.onExit
-        : this.scriptResRefs.onUserDefined;
+    for(const [scriptKey, refKey] of map){
+      const ref = this.scriptResRefs[refKey];
       if(!ref) continue;
       const nwscript = GameState.NWScript.Load(ref);
       if(!nwscript) continue;
@@ -462,6 +440,24 @@ export class AreaEffect extends GameObject {
 
     if(this.template.RootNode.hasField('Tag')){
       this.tag = this.template.getFieldByLabel('Tag').getValue();
+    }
+
+    // Script resrefs from GFF override 2DA defaults when present.
+    if(this.template.RootNode.hasField('OnObjEnter')){
+      const resRef = this.template.getFieldByLabel('OnObjEnter').getValue();
+      if(resRef) this.scriptResRefs.onEnter = resRef;
+    }
+    if(this.template.RootNode.hasField('OnHeartbeat')){
+      const resRef = this.template.getFieldByLabel('OnHeartbeat').getValue();
+      if(resRef) this.scriptResRefs.heartbeat = resRef;
+    }
+    if(this.template.RootNode.hasField('OnObjExit')){
+      const resRef = this.template.getFieldByLabel('OnObjExit').getValue();
+      if(resRef) this.scriptResRefs.onExit = resRef;
+    }
+    if(this.template.RootNode.hasField('OnUserDefined')){
+      const resRef = this.template.getFieldByLabel('OnUserDefined').getValue();
+      if(resRef) this.scriptResRefs.onUserDefined = resRef;
     }
 
     if(needsRegister){

@@ -711,38 +711,24 @@ export class MiniGameEnemy extends GameObject {
     onTrackLoop.run(this, 0);
   }
 
-  loadScripts (){
-    const scriptKeys = [
-      ScriptHook.MGEnemyOnAccelerate,
-      ScriptHook.MGEnemyOnAnimEvent,
-      ScriptHook.MGEnemyOnBrake,
-      ScriptHook.MGEnemyOnCreate,
-      ScriptHook.MGEnemyOnDamage,
-      ScriptHook.MGEnemyOnDeath,
-      ScriptHook.MGEnemyOnFire,
-      ScriptHook.MGEnemyOnHeartbeat,
-      ScriptHook.MGEnemyOnHitBullet,
-      ScriptHook.MGEnemyOnHitFollower,
-      ScriptHook.MGEnemyOnHitObstacle,
-      ScriptHook.MGEnemyOnHitWorld,
-      ScriptHook.MGEnemyOnTrackLoop,
-    ];
+  static readonly SCRIPT_KEYS = [
+    ScriptHook.MGEnemyOnAccelerate,
+    ScriptHook.MGEnemyOnAnimEvent,
+    ScriptHook.MGEnemyOnBrake,
+    ScriptHook.MGEnemyOnCreate,
+    ScriptHook.MGEnemyOnDamage,
+    ScriptHook.MGEnemyOnDeath,
+    ScriptHook.MGEnemyOnFire,
+    ScriptHook.MGEnemyOnHeartbeat,
+    ScriptHook.MGEnemyOnHitBullet,
+    ScriptHook.MGEnemyOnHitFollower,
+    ScriptHook.MGEnemyOnHitObstacle,
+    ScriptHook.MGEnemyOnHitWorld,
+    ScriptHook.MGEnemyOnTrackLoop,
+  ];
 
-    const scriptsNode = this.template.getFieldByLabel('Scripts')?.getFieldStruct();
-    if(scriptsNode){
-      for(const scriptKey of scriptKeys){
-        if(!scriptsNode.hasField(scriptKey)){ continue; }
-        const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
-        if(!resRef){ continue; }
-        const nwscript = GameState.NWScript.Load(resRef);
-        if(!nwscript){ 
-          console.warn(`MiniGameEnemy.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
-          continue; 
-        }
-        nwscript.bindOwner(this, scriptKey);
-        this.scripts[scriptKey] = nwscript;
-      }
-    }
+  loadScripts (){
+    this.bindScriptsFromResRefs(MiniGameEnemy.SCRIPT_KEYS, 'MiniGameEnemy.loadScripts');
   }
 
   initProperties(){
@@ -816,6 +802,11 @@ export class MiniGameEnemy extends GameObject {
         );
       }
     }
+
+    this.hydrateScriptResRefsFromStruct(
+      this.template.getFieldByLabel('Scripts')?.getFieldStruct(),
+      MiniGameEnemy.SCRIPT_KEYS
+    );
 
     this.initialized = true;
 

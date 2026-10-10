@@ -250,10 +250,14 @@ export class GameObject {
   };
 
   templateResRef: string = '';
+  /** Blueprint / instance ResRef (UTM StoreList, etc.) — hydrated from GFF ResRef. */
+  resRef: string = '';
   template: GFFObject;
 
   plot: boolean = false;
   scripts: {[key: string]: NWScriptInstance} = { };
+  /** Script-hook resrefs hydrated from GFF at load; used by loadScripts/save. */
+  scriptResRefs: Partial<Record<string, string>> = {};
   tag: string = '';
   bearing: number = 0;
   collisionTimer: number = 0;
@@ -473,6 +477,7 @@ export class GameObject {
 
     this.tag = '';
     this.templateResRef = '';
+    this.resRef = '';
 
     this.xOrientation = 0;
     this.yOrientation = 0;
@@ -2545,10 +2550,7 @@ export class GameObject {
    * @returns
    */
   getXOrientation(){
-    if(this.template.RootNode.hasField('XOrientation')){
-      return this.template.RootNode.getFieldByLabel('XOrientation').getValue();
-    }
-    return 0;
+    return this.xOrientation || 0;
   }
 
   /**
@@ -2556,10 +2558,7 @@ export class GameObject {
    * @returns
    */
   getYOrientation(){
-    if(this.template.RootNode.hasField('XOrientation')){
-      return this.template.RootNode.getFieldByLabel('XOrientation').getValue();
-    }
-    return 0;
+    return this.yOrientation || 0;
   }
 
   /**
@@ -2567,10 +2566,7 @@ export class GameObject {
    * @returns
    */
   getZOrientation(){
-    if(this.template.RootNode.hasField('ZOrientation')){
-      return this.template.RootNode.getFieldByLabel('ZOrientation').getValue();
-    }
-    return 0;
+    return this.zOrientation || 0;
   }
 
   /**
@@ -2613,10 +2609,7 @@ export class GameObject {
    * @returns
    */
   getPortraitId(){
-    if(this.template.RootNode.hasField('PortraitId')){
-      return this.template.RootNode.getFieldByLabel('PortraitId').getValue();
-    }
-    return 0;
+    return this.portraitId || 0;
   }
 
   /**
@@ -2624,10 +2617,7 @@ export class GameObject {
    * @returns
    */
   getKeyName(){
-    if(this.template.RootNode.hasField('KeyName')){
-      return this.template.RootNode.getFieldByLabel('KeyName').getValue();
-    }
-    return null;
+    return this.keyName ?? null;
   }
 
   /**
@@ -2635,15 +2625,7 @@ export class GameObject {
    * @returns
    */
   getTag(){
-    if(this.tag){
-      return this.tag
-    }
-
-    if(this.template && this.template.RootNode && this.template.RootNode.hasField('Tag')){
-      return this.template.RootNode.getFieldByLabel('Tag').getValue()
-    }
-
-    return '';
+    return this.tag || '';
   }
 
   /**
@@ -2651,10 +2633,7 @@ export class GameObject {
    * @returns
    */
   getTemplateResRef(){
-    if(this.template.RootNode.hasField('TemplateResRef')){
-      return this.template.RootNode.getFieldByLabel('TemplateResRef').getValue()
-    }
-    return null;
+    return this.templateResRef || null;
   }
 
   /**
@@ -2662,10 +2641,7 @@ export class GameObject {
    * @returns
    */
   getResRef(){
-    if(this.template.RootNode.hasField('ResRef')){
-      return this.template.RootNode.getFieldByLabel('ResRef').getValue()
-    }
-    return null;
+    return this.resRef || null;
   }
 
   /**
@@ -2673,12 +2649,7 @@ export class GameObject {
    * @param sRef
    */
   setTemplateResRef(sRef=''){
-    if(this.template.RootNode.hasField('TemplateResRef')){
-      this.template.RootNode.getFieldByLabel('TemplateResRef').setValue(sRef)
-    }else{
-      this.template.RootNode.addField( new GFFField(GFFDataType.RESREF, 'TemplateResRef') ).setValue(sRef)
-    }
-
+    this.templateResRef = sRef || '';
   }
 
   /**
@@ -3419,6 +3390,11 @@ export class GameObject {
       this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
     }
 
+    if(this.template.RootNode.hasField('PortraitId')){
+      this.portraitId = this.template.getFieldByLabel('PortraitId').getValue();
+      this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
+    }
+
     if(this.template.RootNode.hasField('SetByPlayerParty'))
       this.setByPlayerParty = this.template.getFieldByLabel('SetByPlayerParty').getValue();
 
@@ -3427,6 +3403,9 @@ export class GameObject {
 
     if(this.template.RootNode.hasField('TemplateResRef'))
       this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();
+
+    if(this.template.RootNode.hasField('ResRef'))
+      this.resRef = this.template.getFieldByLabel('ResRef').getValue();
 
     if(this.template.RootNode.hasField('TransitionDestin'))
       this.transitionDestin = this.template.getFieldByLabel('TransitionDestin').getCExoLocString();
@@ -3561,6 +3540,65 @@ export class GameObject {
     const list = parent.addField(new GFFField(GFFDataType.LIST, 'VarTable'));
     this.scriptVarTable.writeToListField(list);
     return list;
+  }
+
+  /**
+   * Copy TemplateResRef / ResRef from the load buffer before merge decisions.
+   * Safe to call before initProperties.
+   */
+  seedResRefsFromTemplate(){
+    const root = this.template?.RootNode;
+    if(!root){ return; }
+    if(!this.templateResRef && root.hasField('TemplateResRef')){
+      this.templateResRef = root.getFieldByLabel('TemplateResRef').getValue() || '';
+    }
+    if(!this.resRef && root.hasField('ResRef')){
+      this.resRef = root.getFieldByLabel('ResRef').getValue() || '';
+    }
+  }
+
+  /**
+   * Hydrate script-hook resrefs from a GFF struct once (init/load phase only).
+   * @param scriptsNode Root or nested Scripts struct
+   * @param scriptKeys GFF field labels / ScriptHook keys
+   * @param defaultResRef when set, missing fields get this value (doors use "default")
+   */
+  hydrateScriptResRefsFromStruct(scriptsNode: { hasField?: (k: string) => boolean; getFieldByLabel?: (k: string) => { getValue: () => any } } | undefined, scriptKeys: string[], defaultResRef?: string){
+    if(!scriptsNode?.hasField || !scriptsNode?.getFieldByLabel){ return; }
+    for(const scriptKey of scriptKeys){
+      if(typeof this.scriptResRefs[scriptKey] === 'string'){ continue; }
+      if(scriptsNode.hasField(scriptKey)){
+        this.scriptResRefs[scriptKey] = String(scriptsNode.getFieldByLabel(scriptKey).getValue() ?? '');
+      }else if(defaultResRef !== undefined){
+        this.scriptResRefs[scriptKey] = defaultResRef;
+      }
+    }
+  }
+
+  /**
+   * Hydrate script-hook resrefs from this.template.RootNode (init/load phase only).
+   */
+  hydrateScriptResRefsFromTemplate(scriptKeys: string[], defaultResRef?: string){
+    this.hydrateScriptResRefsFromStruct(this.template?.RootNode, scriptKeys, defaultResRef);
+  }
+
+  /**
+   * Bind NWScript instances from already-hydrated scriptResRefs.
+   */
+  bindScriptsFromResRefs(scriptKeys: string[], warnLabel?: string){
+    for(const scriptKey of scriptKeys){
+      const resRef = this.scriptResRefs[scriptKey];
+      if(!resRef){ continue; }
+      const nwscript = GameState.NWScript.Load(resRef);
+      if(!nwscript){
+        if(warnLabel){
+          console.warn(`${warnLabel}: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
+        }
+        continue;
+      }
+      nwscript.bindOwner(this, scriptKey);
+      this.scripts[scriptKey] = nwscript;
+    }
   }
 
   /**

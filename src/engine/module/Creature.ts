@@ -7377,6 +7377,7 @@ export class Creature extends GameObject {
   }
 
   load(){
+    this.seedResRefsFromTemplate();
     if(this.getTemplateResRef()){
       //Load template and merge fields
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utc'], this.getTemplateResRef());
@@ -7427,22 +7428,8 @@ export class Creature extends GameObject {
       ScriptHook.CreatureOnUserDefined,
     ];
 
-    const scriptsNode = this.template?.RootNode;
-    if(!scriptsNode){ return; }
-    
-    for(const scriptKey of scriptKeys){
-      if(scriptsNode.hasField(scriptKey)){
-        const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
-        if(!resRef){ continue; }
-        const nwscript = GameState.NWScript.Load(resRef);
-        if(!nwscript){ 
-          console.warn(`Creature.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
-          continue; 
-        }
-        nwscript.bindOwner(this, scriptKey);
-        this.scripts[scriptKey] = nwscript;
-      }
-    }
+    this.hydrateScriptResRefsFromTemplate(scriptKeys);
+    this.bindScriptsFromResRefs(scriptKeys, 'Creature.loadScripts');
 
   }
 
