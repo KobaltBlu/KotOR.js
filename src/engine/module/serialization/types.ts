@@ -7,6 +7,8 @@ import type { GFFStruct } from '@core/resource/GFFStruct';
 export interface DeserializeContext {
   /** Optional game key when K1/K2 field differences are known. */
   gameKey?: 'k1' | 'k2';
+  /** Active controlled-party index when hydration needs player-specific data. */
+  controlledNpcIndex?: number;
   /**
    * Injected ActionFactory.FromStruct (or equivalent).
    * When set, object serializers hydrate ActionList during deserialize.
@@ -25,6 +27,14 @@ export interface DeserializeContext {
 export interface SerializeContext {
   /** Optional game key when K1/K2 field differences are known. */
   gameKey?: 'k1' | 'k2';
+  /** Explicitly include or omit the PC level-up history. */
+  includePcLevelStats?: boolean;
+  /** Active controlled-party index; -1 identifies direct PC control. */
+  controlledNpcIndex?: number;
+  /** Player UTC facade supplied by the module save boundary. */
+  playerUtc?: any;
+  /** Optional late-bound player lookup for isolated module serialization. */
+  getPlayerSerializeDelegate?: () => any | undefined;
 }
 
 /**

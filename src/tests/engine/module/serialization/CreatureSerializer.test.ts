@@ -140,6 +140,17 @@ describe('CreatureSerializer', () => {
       },
     });
 
+    const omitted = creatureSerializer.serialize(source as any, {
+      controlledNpcIndex: 0,
+    });
+    expect(omitted.RootNode.hasField('LvlStatList')).toBe(false);
+
+    const explicitlyIncluded = creatureSerializer.serialize(source as any, {
+      controlledNpcIndex: 0,
+      includePcLevelStats: true,
+    });
+    expect(explicitlyIncluded.RootNode.hasField('LvlStatList')).toBe(true);
+
     const saved = creatureSerializer.serialize(source as any);
     const hydrated = makeTarget();
     creatureSerializer.deserialize(hydrated, saved);

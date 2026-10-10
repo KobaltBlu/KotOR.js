@@ -82,7 +82,10 @@ describe('EffectResurrection', () => {
   });
 
   it('addEffect frees Instant Resurrection and Heal (on-apply return 1)', () => {
-    const src = fs.readFileSync(srcPath('engine', 'module', 'GameObject.ts'), 'utf8');
+    const src = fs.readFileSync(
+      srcPath('engine', 'module', 'gameobject', 'GameObjectEffectService.ts'),
+      'utf8',
+    );
     const fn = src.match(
       /addEffect\(effect: GameEffect, type = 0, duration = 0\)\{[\s\S]*?\n  \}/
     )?.[0] ?? '';

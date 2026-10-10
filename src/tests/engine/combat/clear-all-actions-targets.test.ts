@@ -11,7 +11,10 @@ import { GameObjectType } from '@core/enums/module/GameObjectType';
 
 describe('ClearAllActions vs attack targets', () => {
   it('does not call combatData.reset (ClearAllActions keeps attack targets)', () => {
-    const src = fs.readFileSync(srcPath('engine', 'module', 'GameObject.ts'), 'utf8');
+    const src = fs.readFileSync(
+      srcPath('engine', 'module', 'gameobject', 'GameObjectActionService.ts'),
+      'utf8',
+    );
     const fn = src.match(
       /clearAllActions\(skipUnclearable = false\)\{[\s\S]*?\n  \}/
     )?.[0] ?? '';

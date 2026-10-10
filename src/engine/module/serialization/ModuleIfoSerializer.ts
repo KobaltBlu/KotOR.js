@@ -4,14 +4,19 @@ import { CExoLocString } from '@core/resource/CExoLocString';
 import { GFFField } from '@core/resource/GFFField';
 import { GFFObject } from '@core/resource/GFFObject';
 import { GFFStruct } from '@core/resource/GFFStruct';
-import { GameState } from '@engine/runtime/GameState';
-import { gffRootOf } from '@engine/module/serialization/types';
+import {
+  gffRootOf,
+  type SerializeContext,
+} from '@engine/module/serialization/types';
 import { readResRef, readString } from '@engine/module/serialization/gffHelpers';
 import { EventQueueSerializer } from '@engine/module/serialization/EventQueueSerializer';
 import { SwVarTableSerializer } from '@engine/module/serialization/SwVarTableSerializer';
 
 export class ModuleIfoSerializer {
-  static serialize(module: any, options: { isSaveGame: boolean }): GFFObject {
+  static serialize(
+    module: any,
+    options: { isSaveGame: boolean } & SerializeContext,
+  ): GFFObject {
     const ifo = new GFFObject();
     ifo.FileType = 'IFO ';
 
@@ -19,7 +24,7 @@ export class ModuleIfoSerializer {
     for (let i = 0; i < module.limboCreatures.length; i++) {
       const creature = module.limboCreatures[i];
       if (!creature) continue;
-      const root = creature.save().RootNode;
+      const root = creature.save(options).RootNode;
       root.setType(4);
       creatureList.addChildStruct(root);
     }
@@ -29,7 +34,7 @@ export class ModuleIfoSerializer {
     const areaList = ifo.RootNode.addField(new GFFField(GFFDataType.LIST, 'Mod_Area_list'));
     if (module.area) {
       areaList.addChildStruct(module.area.saveAreaListStruct());
-      module.area.save();
+      module.area.save(options.gameKey);
     }
 
     ifo.RootNode.addField(new GFFField(GFFDataType.INT, 'Mod_Creator_ID')).setValue(module.creatorId);
@@ -129,9 +134,9 @@ export class ModuleIfoSerializer {
     );
 
     const playerList = ifo.RootNode.addField(new GFFField(GFFDataType.LIST, 'Mod_PlayerList'));
-    if (GameState.PartyManager.Player) {
-      const player = GameState.PartyManager.Player;
-      const playerStruct = player.save().RootNode;
+    const player = options.playerUtc ?? options.getPlayerSerializeDelegate?.();
+    if (player) {
+      const playerStruct = player.save(options).RootNode;
       playerStruct.type = 0xBEAD;
       playerStruct.addField(new GFFField(GFFDataType.CEXOSTRING, 'Mod_CommntyName')).setValue('Bad StrRef');
       playerStruct.addField(new GFFField(GFFDataType.BYTE, 'Mod_IsPrimaryPlr')).setValue(1);

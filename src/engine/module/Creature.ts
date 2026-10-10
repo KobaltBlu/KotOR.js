@@ -15,6 +15,7 @@ import { GFFDataType } from "@core/enums/resource/GFFDataType";
 import { GameState } from "@engine/runtime/GameState";
 import { GameObjectLoadPipeline } from "@engine/module/serialization/GameObjectLoadPipeline";
 import { creatureSerializer } from "@engine/module/serialization/CreatureSerializer";
+import type { SerializeContext } from "@engine/module/serialization/types";
 import { LevelStatListSerializer } from "@engine/module/serialization/LevelStatListSerializer";
 import { NWScriptInstance } from "@engine/nwscript/NWScriptInstance";
 import { NWScriptEvent } from "@engine/nwscript/events";
@@ -40,6 +41,7 @@ import { testStringAgainstPattern } from "@core/utility/listen-pattern";
 import { drainHeardStringHead } from "@engine/combat/speak-string-broadcast";
 import { EngineMode } from "@engine/enums/engine/EngineMode";
 import { GameEngineType } from "@core/enums/engine/GameEngineType";
+import { getDefaultRuntimeContext } from "@engine/runtime/context";
 import { SSFType } from "@core/enums/resource/SSFType";
 import { ActionType } from "@core/enums/actions/ActionType";
 import { ActionParameterType } from "@core/enums/actions/ActionParameterType";
@@ -76,6 +78,7 @@ import { getAttackApproachPoint } from "@engine/combat/nearest-action-point";
 import { Placeable } from "@engine/module/Placeable";
 import type { Encounter } from "@engine/module/Encounter";
 import { BaseItemType } from "@core/enums/combat/BaseItemType";
+import { AreaSubAreaPositionFanout } from "@engine/module/occupancy";
 
 import { ICreatureAnimationState } from "@engine/interface/animation/ICreatureAnimationState";
 import { IOverlayAnimationState } from "@engine/interface/animation/IOverlayAnimationState";
@@ -4246,20 +4249,7 @@ export class Creature extends GameObject {
     this.positionChanged = false;
     // Keep cull / trigger AABB current when position changes outside setPosition.
     this.computeBoundingBox?.();
-    //check if the creature is inside a trigger
-    const triggers = this.area?.triggers;
-    if(triggers){
-      const tLen = triggers.length;
-      for(let i = 0; i < tLen; i++){
-        triggers[i].updateObjectInside(this);
-      }
-    }
-    // Area of Effect enter/exit (UpdateSubAreas)
-    const aoes = this.area?.areaOfEffects;
-    const aLen = aoes?.length || 0;
-    for(let i = 0; i < aLen; i++){
-      aoes[i].updateObjectInside(this);
-    }
+    AreaSubAreaPositionFanout.update(this);
     // ProcessPoint on leader walk — feed party follow ring
     if(GameState.PartyManager.party[0] === this){
       GameState.PartyManager.processLeaderFollowPoint(this);
@@ -8566,9 +8556,12 @@ export class Creature extends GameObject {
     return LevelStatListSerializer.serializeRecord(rec, levelIndex);
   }
 
-  save(){
+  save(context?: SerializeContext){
+    const runtime = getDefaultRuntimeContext();
     const gff = creatureSerializer.serialize(this, {
       gameKey: GameState.GameKey == GameEngineType.TSL ? 'k2' : 'k1',
+      controlledNpcIndex: runtime.getControlledNpcIndex?.() ?? -1,
+      ...(context ?? {}),
     });
     this.template = gff;
     return gff;

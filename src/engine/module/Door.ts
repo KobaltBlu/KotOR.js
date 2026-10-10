@@ -60,6 +60,7 @@ import {
   shouldLogAlertzelkOnOpen,
 } from "@engine/module/door-onopen-diagnostics";
 import { ModuleLoadCoordinator } from '@engine/runtime/ModuleLoadCoordinator';
+import { DoorTransitionProximity } from "@engine/module/occupancy";
 
 interface AnimStateInfo {
   lastAnimState: ModuleDoorAnimState;
@@ -713,10 +714,10 @@ export class Door extends GameObject {
 
   }
 
-  //Some modules have exit triggers that are placed in the same location that the player spawns into
-  //This is my way of keeping the player from immediately activating the trigger
-  //They will be added to the objectsInside array without triggering the onEnter script
-  //If they leave the trigger and then return it will then fire normally
+  /**
+   * Legacy door occupancy seeding. Door transition checks use proximity instead.
+   * @deprecated No active load path calls this method.
+   */
   initObjectsInside(){
     //Check to see if this trigger is linked to another module
     if(this.linkedToModule && this.type == 1){
@@ -903,41 +904,7 @@ export class Door extends GameObject {
       this.openDoor(this);
     }
 
-    const partymember = GameState.PartyManager.party[0];
-    if(partymember){
-      const outer_distance = partymember.position.distanceTo(this.position);
-      if(outer_distance < 10){
-        this.testTransitionLine(partymember);
-        const linkedOpen = !!(this.getLinkedToModule() && this.isOpen());
-        if(this.transitionDistance < 5){
-          if(linkedOpen){
-            GameState.MenuManager.InGameAreaTransition.setTransitionObject(this);
-          }
-        }else{
-          GameState.MenuManager.InGameAreaTransition.unsetTransitionObject(this);
-        }
-        // Linked open doors: keep lastDoorEntered for the whole popup proximity so
-        // CollisionManager can detect a line/plane cross (incl. models without `trans`).
-        const enterDist = linkedOpen ? 5 : 0.5;
-        if(this.transitionDistance < enterDist){
-          if(partymember.lastDoorEntered !== this){
-            partymember.lastDoorEntered = this;
-            this.onEnter(partymember);
-          }
-        } else {
-          if(partymember.lastDoorEntered === this){
-            partymember.lastDoorExited = this;
-            this.onExit(partymember);
-          }
-        }
-      }else{
-        GameState.MenuManager.InGameAreaTransition.unsetTransitionObject(this);
-        if(partymember.lastDoorEntered === this){
-          partymember.lastDoorExited = this;
-          this.onExit(partymember);
-        }
-      }
-    }
+    DoorTransitionProximity.update(this);
 
   }
 

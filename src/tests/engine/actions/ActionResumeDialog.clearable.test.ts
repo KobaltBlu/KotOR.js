@@ -19,7 +19,7 @@ describe("dialog control action clearability", () => {
       "utf8"
     );
     const objectSrc = fs.readFileSync(
-      srcPath("engine", "module", "GameObject.ts"),
+      srcPath("engine", "module", "gameobject", "GameObjectActionService.ts"),
       "utf8"
     );
 

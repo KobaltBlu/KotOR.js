@@ -13,6 +13,7 @@ import type { Creature } from "@engine/module/Creature";
 import type { Item } from "@engine/module/Item";
 
 import { isCreature } from "@engine/module/guards/isCreature";
+import { isAreaEffect } from "@engine/module/guards/isAreaEffect";
 import { isDoor } from "@engine/module/guards/isDoor";
 import { isMGEnemy } from "@engine/module/guards/isMGEnemy";
 import { isMGObstacle } from "@engine/module/guards/isMGObstacle";
@@ -225,11 +226,23 @@ export class EventSignalEvent extends GameEvent {
             onEnter.enteringObject = this.getCaller();
             onEnter.run(obj);
           }
+        }else if(isAreaEffect(obj)){
+          const onEnter = obj.getScriptInstance(ScriptHook.AoEOnEnter);
+          if(onEnter){
+            onEnter.enteringObject = this.getCaller();
+            onEnter.run(obj);
+          }
         }
       break;
       case SignalEventType.OnObjectExit:
         if(isTrigger(obj)){
           const onExit = obj.getScriptInstance(ScriptHook.TriggerOnExit);
+          if(onExit){
+            onExit.exitingObject = this.getCaller();
+            onExit.run(obj);
+          }
+        }else if(isAreaEffect(obj)){
+          const onExit = obj.getScriptInstance(ScriptHook.AoEOnExit);
           if(onExit){
             onExit.exitingObject = this.getCaller();
             onExit.run(obj);

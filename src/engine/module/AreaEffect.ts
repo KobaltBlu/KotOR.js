@@ -13,8 +13,15 @@ import { areaEffectSerializer } from "@engine/module/serialization/AreaEffectSer
 import { GameObjectInitFinalizer } from "@engine/module/serialization/GameObjectInitFinalizer";
 import { GameEffectDurationType } from "@core/enums/effects/GameEffectDurationType";
 import { SignalEventType } from "@core/enums/events/SignalEventType";
+import { getDefaultRuntimeContext } from "@engine/runtime/context";
 
 import { isCreature } from "@engine/module/guards/isCreature";
+import {
+  AreaEffectPolicy,
+  PersistentZoneOccupancy,
+  containsXYCircle,
+  containsXYRect,
+} from "@engine/module/occupancy";
 
 /**
  * AreaEffect class.
@@ -28,6 +35,8 @@ import { isCreature } from "@engine/module/guards/isCreature";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class AreaEffect extends GameObject {
+  private occupancy: PersistentZoneOccupancy<GameObject>;
+  private occupancyPolicy: AreaEffectPolicy;
 
   areaEffectId: number;
   duration: number;
@@ -85,6 +94,8 @@ export class AreaEffect extends GameObject {
     this.spellSaveDC = 14;
     this.lastHeartBeatDay = 0;
     this.lastHeartbeatTime = 0;
+    this.occupancy = new PersistentZoneOccupancy(this.objectsInside);
+    this.occupancyPolicy = new AreaEffectPolicy(this);
   }
 
   load(){
@@ -154,32 +165,27 @@ export class AreaEffect extends GameObject {
 
   isInsideBoundingBox(object: GameObject): boolean {
     if(!object) return false;
-    const dx = object.position.x - this.position.x;
-    const dy = object.position.y - this.position.y;
     if(this.shape === AreaOfEffectShape.RECTANGLE){
-      const halfL = (this.length || 0) / 2;
-      const halfW = (this.width || 0) / 2;
-      return Math.abs(dx) <= halfL && Math.abs(dy) <= halfW;
+      return containsXYRect(
+        object.position,
+        this.position,
+        this.length || 0,
+        this.width || 0
+      );
     }
-    const r = this.radius || 0;
-    return (dx * dx + dy * dy) <= (r * r);
+    return containsXYCircle(object.position, this.position, this.radius || 0);
   }
 
   isInside(object: GameObject): boolean {
-    return this.objectsInside.indexOf(object) >= 0;
+    return this.occupancy.contains(object);
   }
 
   addObjectInside(object: GameObject): boolean {
-    if(this.isInside(object)) return false;
-    this.objectsInside.push(object);
-    return true;
+    return this.occupancy.add(object);
   }
 
   removeObjectInside(object: GameObject): boolean {
-    const idx = this.objectsInside.indexOf(object);
-    if(idx < 0) return false;
-    this.objectsInside.splice(idx, 1);
-    return true;
+    return this.occupancy.remove(object);
   }
 
   updateObjectInside(object: GameObject){
@@ -187,44 +193,37 @@ export class AreaEffect extends GameObject {
     if(isCreature(object) && (object as any).isDead?.()){
       // still allow exit when dying
     }
-    const inside = this.isInsideBoundingBox(object);
-    if(inside){
-      const added = this.addObjectInside(object);
-      if(added){
-        this.lastEntered = object;
-        this.lastEnteredId = object.id;
-        this.onEnter(object);
-      }
-      return;
-    }
-    const removed = this.removeObjectInside(object);
-    if(removed){
-      this.lastLeft = object;
-      this.lastLeftId = object.id;
-      this.onExit(object);
-    }
+    this.occupancy.applyTransition(
+      object,
+      this.isInsideBoundingBox(object),
+      this.occupancyPolicy
+    );
   }
 
   onEnter(object?: GameObject){
     if(!object) return;
-    const event = new GameState.GameEventFactory.EventSignalEvent();
+    const runtime = getDefaultRuntimeContext();
+    const event = runtime.createSignalEvent();
+    if(!event) return;
     event.setCaller(object);
     event.setObject(this);
-    event.setDay(GameState.module.timeManager.pauseDay);
-    event.setTime(GameState.module.timeManager.pauseTime);
+    event.setDay(runtime.getPauseDay());
+    event.setTime(runtime.getPauseTime());
     event.eventType = SignalEventType.OnObjectEnter;
-    GameState.module.addEvent(event);
+    runtime.addEvent(event);
   }
 
   onExit(object?: GameObject){
     if(!object) return;
-    const event = new GameState.GameEventFactory.EventSignalEvent();
+    const runtime = getDefaultRuntimeContext();
+    const event = runtime.createSignalEvent();
+    if(!event) return;
     event.setCaller(object);
     event.setObject(this);
-    event.setDay(GameState.module.timeManager.pauseDay);
-    event.setTime(GameState.module.timeManager.pauseTime);
+    event.setDay(runtime.getPauseDay());
+    event.setTime(runtime.getPauseTime());
     event.eventType = SignalEventType.OnObjectExit;
-    GameState.module.addEvent(event);
+    runtime.addEvent(event);
   }
 
   override triggerUserDefinedEvent(event: NWScriptEvent){
@@ -238,13 +237,14 @@ export class AreaEffect extends GameObject {
     if(this.destroyRequested || this.destroyed) return;
 
     super.aiUpdate(delta);
+    const runtime = getDefaultRuntimeContext();
 
     if(
       !this.linkedToObject &&
       Number.isFinite(this.linkedToObjectId) &&
       this.linkedToObjectId !== GameObjectConstant.OBJECT_INVALID
     ){
-      this.linkedToObject = GameState.GameObjectManager.GetObjectById(this.linkedToObjectId);
+      this.linkedToObject = runtime.getById(this.linkedToObjectId);
     }
 
     // Follow linked creature (circle + linked_to_object)
@@ -277,23 +277,23 @@ export class AreaEffect extends GameObject {
     for(let i = 0; i < creatures.length; i++){
       this.updateObjectInside(creatures[i]);
     }
-    const party = GameState.PartyManager?.party || [];
+    const party = runtime.getParty?.() ?? [];
     for(let i = 0; i < party.length; i++){
       if(party[i]) this.updateObjectInside(party[i]);
     }
 
     // Heartbeat ~6s (AIUpdate > 5999ms); skip first tick
     if(this.lastHeartBeatDay === 0 && this.lastHeartbeatTime === 0){
-      this.lastHeartBeatDay = GameState.module.timeManager.pauseDay;
-      this.lastHeartbeatTime = GameState.module.timeManager.pauseTime;
+      this.lastHeartBeatDay = runtime.getPauseDay();
+      this.lastHeartbeatTime = runtime.getPauseTime();
       this.heartbeatMsAccum = 0;
       return;
     }
     this.heartbeatMsAccum += delta * 1000;
     if(this.heartbeatMsAccum > 5999){
       this.heartbeatMsAccum = 0;
-      this.lastHeartBeatDay = GameState.module.timeManager.pauseDay;
-      this.lastHeartbeatTime = GameState.module.timeManager.pauseTime;
+      this.lastHeartBeatDay = runtime.getPauseDay();
+      this.lastHeartbeatTime = runtime.getPauseTime();
       const hb = this.getScriptInstance(ScriptHook.AoEOnHeartbeat) || this.onHeartbeat;
       if(hb){
         hb.run(this);

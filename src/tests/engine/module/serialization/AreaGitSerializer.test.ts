@@ -12,7 +12,7 @@ describe('AreaGitSerializer / ModuleIfoSerializer aggregation', () => {
 
   it('Area.save delegates GIT assembly to AreaGitSerializer', () => {
     const areaSrc = fs.readFileSync(path.join(MODULE_DIR, 'Area.ts'), 'utf8');
-    expect(areaSrc).toMatch(/AreaGitSerializer\.serialize\(this\)/);
+    expect(areaSrc).toMatch(/AreaGitSerializer\.serialize\(this,\s*\{\s*gameKey\s*\}\)/);
   });
 
   it('Module.save delegates IFO assembly to ModuleIfoSerializer', () => {
@@ -39,6 +39,26 @@ describe('AreaGitSerializer / ModuleIfoSerializer aggregation', () => {
     ]) {
       expect(src).toContain(`'${label}'`);
     }
+  });
+
+  it('serializer files do not import the GameState facade', () => {
+    const offenders = fs.readdirSync(SERIAL_DIR)
+      .filter((file) => file.endsWith('.ts'))
+      .filter((file) => {
+        const src = fs.readFileSync(path.join(SERIAL_DIR, file), 'utf8');
+        return /from\s+['"]@engine\/runtime\/GameState['"]/.test(src);
+      });
+    expect(offenders).toEqual([]);
+  });
+
+  it('save facades provide serializer runtime decisions through context', () => {
+    const areaSerializer = fs.readFileSync(path.join(SERIAL_DIR, 'AreaGitSerializer.ts'), 'utf8');
+    const moduleSerializer = fs.readFileSync(path.join(SERIAL_DIR, 'ModuleIfoSerializer.ts'), 'utf8');
+    const creatureSerializer = fs.readFileSync(path.join(SERIAL_DIR, 'CreatureSerializer.ts'), 'utf8');
+
+    expect(areaSerializer).toMatch(/context\.gameKey\s*\?\?\s*'k1'/);
+    expect(moduleSerializer).toMatch(/options\.playerUtc\s*\?\?/);
+    expect(creatureSerializer).not.toMatch(/GameState\.PartyManager/);
   });
 
   it('serializers never read object.template during serialize()', () => {

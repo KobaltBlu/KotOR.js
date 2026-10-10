@@ -79,16 +79,23 @@ import type { Trigger } from "@engine/module/Trigger";
 import { resolveScriptAnimationConstant } from "@engine/module/animation/resolveScriptAnimationConstant";
 import { isCreature } from "@engine/module/guards/isCreature";
 import { isPlaceable } from "@engine/module/guards/isPlaceable";
+import {
+  type DialogModelVisibilityInput,
+  resolveDialogModelVisibility,
+} from "./gameobject/dialogModelVisibility";
+import {
+  applyTrapGroundGeometry,
+  TRAP_GROUND_HALF_EXTENT,
+  trapKitResRefFromRow,
+} from "./gameobject/trapGroundGeometry";
+import { GameObjectActionService } from "./gameobject/GameObjectActionService";
+import { GameObjectDestructionService } from "./gameobject/GameObjectDestructionService";
+import { GameObjectEffectService } from "./gameobject/GameObjectEffectService";
+import { GameObjectInventoryService } from "./gameobject/GameObjectInventoryService";
+import { GameObjectPresentationService } from "./gameobject/GameObjectPresentationService";
+import { GameObjectTrapService } from "./gameobject/GameObjectTrapService";
 
-export interface DialogModelVisibilityInput {
-  mode: EngineMode;
-  cutsceneMode: CutsceneMode;
-  isPartyMember: boolean;
-  /** StuntList participant — set via GameObject.setCutsceneMode(true). */
-  objectCutsceneMode: boolean;
-  roomModelVisible: boolean | undefined;
-  hasRoom: boolean;
-}
+export type { DialogModelVisibilityInput } from "./gameobject/dialogModelVisibility";
 
 /**
 * GameObject class.
@@ -104,7 +111,7 @@ export interface DialogModelVisibilityInput {
 */
 export class GameObject {
   /** SetMine free-ground half-extent (CreateNewGeometry 2.0). */
-  static readonly TRAP_GROUND_HALF_EXTENT = 2.0;
+  static readonly TRAP_GROUND_HALF_EXTENT = TRAP_GROUND_HALF_EXTENT;
 
   /**
    * Assign local-space trigger vertices for a square mine footprint.
@@ -113,45 +120,19 @@ export class GameObject {
     trigger: Trigger,
     halfExtent: number = GameObject.TRAP_GROUND_HALF_EXTENT,
   ): void {
-    if(!trigger) return;
-    const h = Math.max(0.1, Number(halfExtent) || GameObject.TRAP_GROUND_HALF_EXTENT);
-    trigger.vertices = [
-      new THREE.Vector3(-h,  h, 0),
-      new THREE.Vector3(-h, -h, 0),
-      new THREE.Vector3( h,  h, 0),
-      new THREE.Vector3( h, -h, 0),
-    ];
+    applyTrapGroundGeometry(trigger, halfExtent);
   }
 
   /**
    * traps.2da `resref` for RecoverMine item restore.
    */
   static trapKitResRefFromRow(trapRow: any): string {
-    if(!trapRow) return '';
-    const resref = (trapRow.resref || '').toString().trim();
-    if(!resref || resref === '****') return '';
-    return resref;
+    return trapKitResRefFromRow(trapRow);
   }
 
   /** Resolve mesh visibility for DIALOG / MINIGAME. */
   static resolveDialogModelVisibility(input: DialogModelVisibilityInput): boolean {
-    if(input.mode == EngineMode.MINIGAME){
-      return true;
-    }
-    if(input.mode != EngineMode.DIALOG){
-      return true;
-    }
-    if(
-      input.cutsceneMode == CutsceneMode.ANIMATED &&
-      input.isPartyMember &&
-      !input.objectCutsceneMode
-    ){
-      return false;
-    }
-    if(!input.hasRoom){
-      return true;
-    }
-    return !!input.roomModelVisible;
+    return resolveDialogModelVisibility(input);
   }
 
   facingSpeed: number = TURN_SPEED_SLOW;
@@ -380,8 +361,6 @@ export class GameObject {
   actionQueue: ActionQueue;
   action: Action;
 
-  #computedPath: ComputedPath;
-
   lipObject: LIPObject;
   lookAtObject: GameObject;
 
@@ -431,7 +410,20 @@ export class GameObject {
 
   linkedToObject: GameObject;
 
+  readonly actionService: GameObjectActionService;
+  readonly inventoryService: GameObjectInventoryService;
+  readonly trapService: GameObjectTrapService;
+  readonly effectService: GameObjectEffectService;
+  readonly presentationService: GameObjectPresentationService;
+  readonly destructionService: GameObjectDestructionService;
+
   constructor (gff = new GFFObject) {
+    this.actionService = new GameObjectActionService(this);
+    this.inventoryService = new GameObjectInventoryService(this);
+    this.trapService = new GameObjectTrapService(this);
+    this.effectService = new GameObjectEffectService(this);
+    this.presentationService = new GameObjectPresentationService(this);
+    this.destructionService = new GameObjectDestructionService(this);
     this.helperColor.setHex( Math.random() * 0xFFFFFF );
     this.initialized = false;
 
@@ -559,10 +551,7 @@ export class GameObject {
    * @param room
    */
   attachToRoom(room: AreaRoom){
-    this.detachFromRoom(this.room);
-    this.room = room;
-    this.room.attachChildObject(this);
-    this.markCollisionBoundsDirty();
+    return this.presentationService.attachToRoom(room);
   }
 
   /**
@@ -570,10 +559,7 @@ export class GameObject {
    * @param room
    */
   detachFromRoom(room: AreaRoom){
-    if(!room) return;
-    room.removeChildObject(this);
-    this.room = undefined;
-    this.markCollisionBoundsDirty();
+    return this.presentationService.detachFromRoom(room);
   }
 
   markCollisionMatrixDirty(_reason?: string){
@@ -596,12 +582,7 @@ export class GameObject {
    * @param ctx
    */
   setContext(ctx: any = GameState){
-    this.context = ctx;
-    if(this.model instanceof OdysseyModel3D){
-      this.model.emitters.forEach( (emitter) => {
-        emitter.context = this.context;
-      });
-    }
+    return this.presentationService.setContext(ctx);
   }
 
   /**
@@ -609,10 +590,7 @@ export class GameObject {
    * @returns
    */
   getModel(){
-    if(this.model instanceof THREE.Object3D)
-      return this.model;
-    else
-      return this.model = new OdysseyModel3D();
+    return this.presentationService.getModel();
   }
 
   /**
@@ -620,7 +598,7 @@ export class GameObject {
    * @returns
    */
   isVisible(){
-    return this.getModel().visible;
+    return this.presentationService.isVisible();
   }
 
   /**
@@ -697,32 +675,15 @@ export class GameObject {
    * Doors/triggers override as a no-op — they use getCurrentRoom.
    */
   protected updateRoomAttachment(_delta: number = 0){
-    if(this.spawned){
-      this.updateModelVisibility();
-    }
+    return this.presentationService.updateRoomAttachment(_delta);
   }
 
   updateDestroy(delta: number = 0){
-    if(this.willDestroy && !this.destroyed){
-      this.timeSinceDestroyStarted += delta;
-      this.updateDestroyFade(delta);
-      const fadeLen = this.getFadeDuration();
-      const fadeEndTime = this.noFadeOnDestroy ? 0 : (this.delayUntilFade + fadeLen);
-      const destroyTime = Math.max(this.delayUntilDestroy, fadeEndTime);
-      if(this.timeSinceDestroyStarted >= destroyTime){
-        this.destroy();
-      }
-    }
+    return this.destructionService.updateDestroy(delta);
   }
 
   updateDestroyFade(delta: number = 0){
-    if(this.noFadeOnDestroy || this.destroyed) return;
-    if(this.timeSinceDestroyStarted >= this.delayUntilFade){
-      const fadeElapsed = this.timeSinceDestroyStarted - this.delayUntilFade;
-      const fadeLen = this.getFadeDuration();
-      const opacity = fadeLen > 0 ? Math.max(0, 1 - (fadeElapsed / fadeLen)) : 0;
-      this.setOpacity(opacity);
-    }
+    return this.destructionService.updateDestroyFade(delta);
   }
 
   /**
@@ -730,56 +691,14 @@ export class GameObject {
    * @param delta
    */
   updatePaused(delta: number = 0){
-    // this.force = 0;
-    // this.forceVector.set(0, 0, 0);
-    if(this.spawned){
-      this.updateModelVisibility();
-    }
+    return this.presentationService.updatePaused(delta);
   }
 
   /**
    * Update the model visibility
    */
   updateModelVisibility(){
-    if(!this.model){ return; }
-    this.model.wasOffscreen = !this.model.visible;
-
-    // FreeLook: controlled PC is not drawn (camera on FreeLookHook).
-    if(GameState.Mode == EngineMode.FREELOOK){
-      const player = GameState.PartyManager.getCurrentPlayer();
-      if(player && this.id === player.id){
-        this.model.visible = false;
-        return;
-      }
-    }
-
-    if(GameState.Mode == EngineMode.INGAME){
-      if(!this.room){
-        this.model.visible = true;
-        return;
-      }else{
-        // VIS / gameplay gate — not room mesh draw cull (frustum may hide
-        // room.model while visActive stays true; mirrors LightManager).
-        this.model.visible = !!this.room?.model?.userData?.visActive;
-      }
-
-      //Check to see if the model is inside the current camera's frustum
-      if(!this.isOnScreen()){
-        this.model.visible = false;
-      }
-      return;
-    }
-
-    if(GameState.Mode == EngineMode.DIALOG || GameState.Mode == EngineMode.MINIGAME){
-      this.model.visible = GameObject.resolveDialogModelVisibility({
-        mode: GameState.Mode,
-        cutsceneMode: GameState.CutsceneManager?.cutsceneMode ?? CutsceneMode.DIALOG,
-        isPartyMember: this.isPartyMember(),
-        objectCutsceneMode: !!this.cutsceneMode,
-        hasRoom: !!this.room,
-        roomModelVisible: this.room?.model?.userData?.visActive,
-      });
-    }
+    return this.presentationService.updateModelVisibility();
   }
 
   /**
@@ -799,64 +718,7 @@ export class GameObject {
    * queue multiple attacks/spells while in combat.
    */
   clearAllActions(skipUnclearable = false){
-    // ClearAllActions(1) → ClearAllAttacks only (not RemoveAllActions).
-    // clearAllActions(false) is our aggressive reset (party/dialog) — also
-    // RemoveAllActions so leftover combat-queue entries cannot resume.
-    if(skipUnclearable){
-      this.combatRound?.clearAllAttacks?.();
-    }else{
-      this.combatRound?.clearActions?.();
-    }
-    // Player ActionManager clear: drop roundPaused / infinitePause so the next
-    // scheduled combat action is not stuck behind a cancelled attack pause.
-    if(skipUnclearable && this.combatRound?.roundPaused){
-      this.combatRound.resetCombatAnimations?.(0);
-    }
-    this.setComputedPath(undefined);
-    //Reset the anim state
-    //this.animState = 0;
-    //this.actionQueue.clear;
-    if(skipUnclearable){
-      let i = this.actionQueue.length;
-      while(i--){
-        let action = this.actionQueue[i];
-        // ClearAllActions (commandable path) uses
-        // a per-action keep/drop callback. Conversation Pause/Wait/Resume must
-        // survive SetState clears (EffectHorrified in k_ptar_calofade) or the
-        // dialog stays paused forever with pendingAdvance.
-        if(
-          action.type == ActionType.ActionDialogObject ||
-          action.type == ActionType.ActionPauseDialog ||
-          action.type == ActionType.ActionResumeDialog ||
-          action.type == ActionType.ActionWait
-        ){
-          continue;
-        }
-        if(typeof action.clearable !== 'undefined'){
-          if(action.clearable){
-            this.actionQueue.splice(i, 1).map((a) => a.dispose());
-          }
-        }else{
-          this.actionQueue.splice(i, 1).map((a) => a.dispose());
-        }
-      }
-    }else{
-      this.actionQueue.clear();
-    }
-
-    // CancelGuiTimingEvent clears actions; clearing actions must also StopGuiTimingBar.
-    GameState.GuiTimingBarManager?.cancelFor?.(this);
-
-    // ClearAllActions does not clear GetAttackTarget /
-    // GetAttemptedAttackTarget (or spell targets). GN_EquipAppropriateWeapon runs
-    // after ClearAllActions and needs GetAttackTarget for the melee switch.
-    // Those fields clear on SetCombatState(0) / cancelCombat instead.
-    if((this as { foundEnemyCreature?: unknown }).foundEnemyCreature !== undefined){
-      (this as { foundEnemyCreature?: unknown }).foundEnemyCreature = undefined;
-    }
-    // Drop sticky walk / approach / player-control axes after cancel
-    (this as any).clearLocomotionState?.(true);
-    //this.clearTarget;
+    return this.actionService.clearAllActions(skipUnclearable);
   }
 
   /**
@@ -864,24 +726,7 @@ export class GameObject {
    * and unclearable dialog actions stay intact.
    */
   cancelLocomotionActions(){
-    let i = this.actionQueue.length;
-    while(i--){
-      const action = this.actionQueue[i];
-      if(!action) continue;
-      if(
-        action.type === ActionType.ActionMoveToPoint ||
-        action.type === ActionType.ActionFollowLeader ||
-        action.type === ActionType.ActionForceFollowObject ||
-        action.type === ActionType.ActionDrive ||
-        action.type === ActionType.ActionJumpToPoint ||
-        action.type === ActionType.ActionJumpToObject ||
-        action.type === ActionType.ActionRandomWalk
-      ){
-        this.actionQueue.splice(i, 1).map((a) => a.dispose());
-      }
-    }
-    this.setComputedPath(undefined);
-    (this as any).clearLocomotionState?.(false);
+    return this.actionService.cancelLocomotionActions();
   }
 
   /**
@@ -890,14 +735,7 @@ export class GameObject {
    * @returns
    */
   clearCombatAction(combatAction: CombatRoundAction = undefined){
-    if(combatAction){
-      return this.combatRound.clearAction(combatAction);
-    }
-    if(this.combatRound?.action){
-      this.combatRound.action = undefined;
-      return true;
-    }
-    return false;
+    return this.actionService.clearCombatAction(combatAction);
   }
 
   /**
@@ -906,9 +744,7 @@ export class GameObject {
    * @returns
    */
   clearCombatActionAtIndex(index: number = 0): boolean {
-    if(index < 0 || !this.combatRound?.scheduledActionList?.length) return false;
-    if(index >= this.combatRound.scheduledActionList.length) return false;
-    return !!this.combatRound.scheduledActionList.splice(index, 1).length;
+    return this.actionService.clearCombatActionAtIndex(index);
   }
 
   /**
@@ -918,19 +754,7 @@ export class GameObject {
    * @param time
    */
   actionPlayAnimation(anim = 0, speed = 1, time = 1){
-    if(typeof anim === 'string')
-      throw 'anim cannot be a string!';
-
-    const animConstant = resolveScriptAnimationConstant(anim);
-    if(animConstant >= 10000){
-      const action = new GameState.ActionFactory.ActionPlayAnimation();
-      action.setParameter(0, ActionParameterType.INT, animConstant);
-      action.setParameter(1, ActionParameterType.FLOAT, speed || 1);
-      action.setParameter(2, ActionParameterType.FLOAT, time);
-      this.actionQueue.add(action);
-    }else{
-      console.error('actionPlayAnimation', animConstant, anim);
-    }
+    return this.actionService.actionPlayAnimation(anim, speed, time);
   }
 
   /**
@@ -946,28 +770,7 @@ export class GameObject {
    * @param barkScreenY - TSL nBarkY (−1 default)
    */
   actionDialogObject( target: GameObject, dialogResRef = '', ignoreStartRange = true, bPrivate = 0, nConvoType = 1, clearable = false, ignoreObjectNames: string[] = [], barkScreenX: number = -1, barkScreenY: number = -1, bUseLeader: boolean = false ){
-    const action = new GameState.ActionFactory.ActionDialogObject();
-    action.setParameter(0, ActionParameterType.DWORD, target.id);
-    action.setParameter(1, ActionParameterType.STRING, dialogResRef);
-    action.setParameter(2, ActionParameterType.INT, bPrivate ? 1 : 0);
-    action.setParameter(3, ActionParameterType.INT, nConvoType);
-    action.setParameter(4, ActionParameterType.INT, ignoreStartRange ? 1 : 0);
-    // bUseLeader: force party leader as listener (param 5); else OBJECT_INVALID → owner
-    if(bUseLeader && GameState.PartyManager?.party?.[0]){
-      action.setParameter(5, ActionParameterType.DWORD, GameState.PartyManager.party[0].id);
-    }else{
-      action.setParameter(5, ActionParameterType.DWORD, GameObjectConstant.OBJECT_INVALID);
-    }
-    // Params 6–11: ignore-object names (AddToDialogNonDependantList)
-    for(let i = 0; i < 6; i++){
-      action.setParameter(6 + i, ActionParameterType.STRING, ignoreObjectNames[i] ?? '');
-    }
-    action.setParameter(12, ActionParameterType.INT, barkScreenX);
-    action.setParameter(13, ActionParameterType.INT, barkScreenY);
-    action.setParameter(14, ActionParameterType.INT, bUseLeader ? 1 : 0);
-    action.clearable = clearable;
-    console.log('GameObject.actionDialogObject', action);
-    this.actionQueue.add(action);
+    return this.actionService.actionDialogObject(target, dialogResRef, ignoreStartRange, bPrivate, nConvoType, clearable, ignoreObjectNames, barkScreenX, barkScreenY, bUseLeader);
   }
 
   /**
@@ -975,9 +778,7 @@ export class GameObject {
    * @param object
    */
   actionUseObject( object: GameObject ){
-    const action = new GameState.ActionFactory.ActionUseObject();
-    action.setParameter(0, ActionParameterType.DWORD, object.id);
-    this.actionQueue.add(action);
+    return this.actionService.actionUseObject(object);
   }
 
   /**
@@ -985,10 +786,7 @@ export class GameObject {
    * @param door
    */
   actionOpenDoor( door: GameObject ){
-    const action = new GameState.ActionFactory.ActionOpenDoor();
-    action.setParameter(0, ActionParameterType.DWORD, door.id);
-    action.setParameter(1, ActionParameterType.INT, 0);
-    this.actionQueue.add(action);
+    return this.actionService.actionOpenDoor(door);
   }
 
   /**
@@ -996,10 +794,7 @@ export class GameObject {
    * @param door
    */
   actionCloseDoor( door: GameObject ){
-    const action = new GameState.ActionFactory.ActionCloseDoor();
-    action.setParameter(0, ActionParameterType.DWORD, door.id);
-    action.setParameter(1, ActionParameterType.INT, 0);
-    this.actionQueue.add(action);
+    return this.actionService.actionCloseDoor(door);
   }
 
   /**
@@ -1007,9 +802,7 @@ export class GameObject {
    * @param time
    */
   actionWait( time = 0 ){
-    const action = new GameState.ActionFactory.ActionWait();
-    action.setParameter(0, ActionParameterType.FLOAT, time);
-    this.actionQueue.add(action);
+    return this.actionService.actionWait(time);
   }
 
   isSimpleCreature(){
@@ -1259,7 +1052,7 @@ export class GameObject {
    * Party members override this to return the shared party inventory.
    */
   getInventory(): Item[] {
-    return this.inventory;
+    return this.inventoryService.getInventory();
   }
 
   /**
@@ -1268,7 +1061,7 @@ export class GameObject {
    * @returns
    */
   hasItemByTag(sTag=''){
-    return !!this.getItemByTag(sTag);
+    return this.inventoryService.hasItemByTag(sTag);
   }
 
   /**
@@ -1278,38 +1071,7 @@ export class GameObject {
    * @returns
    */
   addItem(item: Item){
-    item.load();
-
-    const tag = (item.getTag() || '').toLowerCase();
-    const maxStack = (item.baseItem?.stacking | 0) || 1;
-    let remaining = item.getStackSize() | 0;
-    let lastMerged: Item = undefined;
-
-    for(let i = 0; i < this.inventory.length && remaining > 0; i++){
-      const eItem = this.inventory[i];
-      if((eItem.getTag() || '').toLowerCase() !== tag){
-        continue;
-      }
-
-      const room = maxStack - (eItem.getStackSize() | 0);
-      if(room <= 0){
-        continue;
-      }
-
-      const add = Math.min(room, remaining);
-      eItem.setStackSize((eItem.getStackSize() | 0) + add);
-      remaining -= add;
-      lastMerged = eItem;
-    }
-
-    if(remaining <= 0){
-      item.setStackSize(0);
-      return lastMerged || item;
-    }
-
-    item.setStackSize(remaining);
-    this.inventory.push(item);
-    return item;
+    return this.inventoryService.addItem(item);
   }
 
   /**
@@ -1319,21 +1081,7 @@ export class GameObject {
    * @returns
    */
   removeItem(item: Item, nCount = 1): Item {
-    const eItem = this.getItemByTag(item.getTag());
-
-    if(!eItem){
-      return undefined;
-    }
-
-    const idx = this.inventory.indexOf(eItem);
-
-    if(nCount < eItem.getStackSize()){
-      eItem.setStackSize(eItem.getStackSize() - nCount);
-    }else{
-      this.inventory.splice(idx, 1);
-    }
-
-    return eItem.clone();
+    return this.inventoryService.removeItem(item, nCount);
   }
 
   /**
@@ -1343,21 +1091,7 @@ export class GameObject {
    * @returns
    */
   removeItemByTag(sTag = '', nCount = 1): Item {
-    const eItem = this.getItemByTag(sTag);
-
-    if(!eItem){
-      return undefined;
-    }
-
-    const idx = this.inventory.indexOf(eItem);
-
-    if(nCount < eItem.getStackSize()){
-      eItem.setStackSize(eItem.getStackSize() - nCount);
-    }else{
-      this.inventory.splice(idx, 1);
-    }
-
-    return eItem.clone();
+    return this.inventoryService.removeItemByTag(sTag, nCount);
   }
 
   /**
@@ -1366,14 +1100,7 @@ export class GameObject {
    * @returns
    */
   getItem(oItem: Item): Item {
-    if(!oItem){ return undefined; }
-
-    for(let i = 0; i < this.inventory.length; i++){
-      const cItem = this.inventory[i];
-      if(cItem == oItem)
-        return cItem;
-    }
-    return undefined;
+    return this.inventoryService.getItem(oItem);
   }
 
   /**
@@ -1382,14 +1109,7 @@ export class GameObject {
    * @returns
    */
   getItemByTag(sTag = ''): Item {
-    sTag = (sTag || '').toLowerCase();
-    const inventory = this.getInventory();
-    for(let i = 0; i < inventory.length; i++){
-      const item = inventory[i];
-      if((item.getTag() || '').toLowerCase() == sTag)
-        return item;
-    }
-    return;
+    return this.inventoryService.getItemByTag(sTag);
   }
 
   /**
@@ -1397,10 +1117,7 @@ export class GameObject {
    * @returns
    */
   getGold(): number {
-    if(this.isPartyMember()){
-      return GameState.PartyManager.Gold;
-    }
-    return 0;
+    return this.inventoryService.getGold();
   }
 
   /**
@@ -1408,10 +1125,7 @@ export class GameObject {
    * @param nGold
    */
   addGold(nGold = 0): void {
-    if(this.isPartyMember()){
-      GameState.PartyManager.AddGold(nGold);
-      return;
-    }
+    return this.inventoryService.addGold(nGold);
   }
 
   /**
@@ -1419,10 +1133,7 @@ export class GameObject {
    * @param nGold
    */
   removeGold(nGold = 0): void {
-    if(this.isPartyMember()){
-      GameState.PartyManager.AddGold(-Math.abs(nGold));
-      return;
-    }
+    return this.inventoryService.removeGold(nGold);
   }
 
   /**
@@ -1438,10 +1149,7 @@ export class GameObject {
    * @param script
    */
   doCommand(script: NWScriptInstance){
-    //console.log('doCommand', this.getTag, script, action, instruction);
-    let action = new GameState.ActionFactory.ActionDoCommand();
-    action.setParameter(0, ActionParameterType.SCRIPT_SITUATION, script);
-    this.actionQueue.add(action);
+    return this.actionService.doCommand(script);
   }
 
   /**
@@ -1450,60 +1158,11 @@ export class GameObject {
    * @param owner
    */
   addTrap(nTrapId: number = -1, owner: GameObject){
-    const trap = GameState.SWRuleSet.traps[nTrapId];
-    if(!trap){ return; }
-
-    if(trap.trapscript?.length && trap.trapscript != '****'){
-      const nwscript = NWScript.Load(trap.trapscript);
-      if(nwscript){
-        const trapKey = this.bindTrapTriggeredScript(nwscript);
-        if(trapKey){
-          this.scripts[trapKey] = nwscript;
-          nwscript.bindOwner(this, trapKey);
-        }
-      }
-    }
-
-    this.trapType = nTrapId;
-    this.trapCreator = owner;
-    this.trapFlag = true;
-
-    this.ownerDemolitions = owner.getSkillLevel(SkillType.DEMOLITIONS);
-    const d20 = 20;
-
-    const nDetectDC = trap.detectdcmod;
-    this.trapDetectDC = nDetectDC + d20 + this.ownerDemolitions;
-    this.trapDetectable = true;
-
-    const nDisarmDC = trap.disarmdcmod;
-    this.trapDisarmDC = nDisarmDC + d20 + this.ownerDemolitions;
-    this.trapDisarmable = true;
-
-    const trigger = new GameState.Module.Area.Trigger();
-    trigger.initialized = true;
-    trigger.name = GameState.TLKManager.GetStringById(trap.name)?.Value;
-    trigger.factionId = owner.factionId;
-    trigger.type = ModuleTriggerType.TRAP;
-    trigger.trapType = nTrapId;
-    trigger.setByPlayerParty = owner.isPartyMember();
-    trigger.trapDetectDC = this.trapDetectDC;
-    trigger.trapDisarmDC = this.trapDisarmDC;
-    trigger.trapDetectable = true;
-    trigger.trapDisarmable = true;
-    trigger.ownerDemolitions = -1;
-    trigger.trapCreator = owner;
-    trigger.position.copy(this.position);
-
-    trigger.linkedToObject = this;
-    this.linkedToObject = trigger;
-
-    // CreateNewGeometry(2.0) + traps.2da resref for RecoverMine
-    trigger.trapResRef = GameObject.trapKitResRefFromRow(trap);
-    GameObject.applyTrapGroundGeometry(trigger);
-
-    trigger.load();
-
-    this.area?.attachObject(trigger);
+    return this.trapService.addTrap(
+      nTrapId,
+      owner,
+      (script) => this.bindTrapTriggeredScript(script),
+    );
   }
 
   /**
@@ -1515,45 +1174,7 @@ export class GameObject {
     position: THREE.Vector3 | { x: number; y: number; z: number },
     owner: GameObject
   ){
-    if(!area){ return undefined; }
-    const trap = GameState.SWRuleSet.traps[nTrapId];
-    if(!trap){ return undefined; }
-
-    const d20 = 20;
-    const ownerDemolitions = owner.getSkillLevel(SkillType.DEMOLITIONS);
-    const nDetectDC = trap.detectdcmod;
-    const nDisarmDC = trap.disarmdcmod;
-
-    const trigger = new GameState.Module.Area.Trigger();
-    trigger.initialized = true;
-    trigger.name = GameState.TLKManager.GetStringById(trap.name)?.Value;
-    trigger.factionId = owner.factionId;
-    trigger.type = ModuleTriggerType.TRAP;
-    trigger.trapType = nTrapId;
-    trigger.setByPlayerParty = owner.isPartyMember();
-    trigger.trapDetectDC = nDetectDC + d20 + ownerDemolitions;
-    trigger.trapDisarmDC = nDisarmDC + d20 + ownerDemolitions;
-    trigger.trapDetectable = true;
-    trigger.trapDisarmable = true;
-    trigger.ownerDemolitions = ownerDemolitions;
-    trigger.trapCreator = owner;
-    trigger.position.set(position.x, position.y, position.z);
-
-    if(trap.trapscript?.length && trap.trapscript != '****'){
-      const nwscript = NWScript.Load(trap.trapscript);
-      trigger.scripts[ScriptHook.TriggerOnTrapTriggered] = nwscript;
-      if(nwscript){
-        nwscript.bindOwner(trigger, ScriptHook.TriggerOnTrapTriggered);
-      }
-    }
-
-    // CreateNewGeometry(2.0, plantPos) @ SetMine; resref for RecoverMine kit
-    trigger.trapResRef = GameObject.trapKitResRefFromRow(trap);
-    GameObject.applyTrapGroundGeometry(trigger);
-
-    trigger.load();
-    area.attachObject(trigger);
-    return trigger;
+    return GameObjectTrapService.plantGroundTrap(area, nTrapId, position, owner);
   }
 
   /**
@@ -1561,26 +1182,12 @@ export class GameObject {
    * Returns TRUE when the detector was newly added or already present.
    */
   setTrapDetectedBy(detector: GameObject): boolean {
-    if(!detector || detector.id == null){
-      return false;
-    }
-    const id = detector.id;
-    if(this.trapDetectedByIds.indexOf(id) < 0){
-      this.trapDetectedByIds.push(id);
-    }
-    this.trapDetected = true;
-    if(isCreature(detector)){
-      (detector as Creature).lastTrapDetected = this;
-    }
-    return true;
+    return this.trapService.setTrapDetectedBy(detector);
   }
 
   /** Pass AL — TRUE if oCreature's id is on this trap's DetectedBy list. */
   isTrapDetectedBy(creature: GameObject): boolean {
-    if(!creature || creature.id == null){
-      return false;
-    }
-    return this.trapDetectedByIds.indexOf(creature.id) >= 0;
+    return this.trapService.isTrapDetectedBy(creature);
   }
 
   //---------------//
@@ -1852,7 +1459,7 @@ export class GameObject {
    * @returns
    */
   getComputedPath(){
-    return this.#computedPath;
+    return this.actionService.getComputedPath();
   }
 
   /**
@@ -1860,17 +1467,7 @@ export class GameObject {
    * @param computedPath
    */
   setComputedPath(computedPath: ComputedPath){
-    if(!!this.#computedPath){
-      this.#computedPath.dispose();
-    }
-    this.#computedPath = computedPath;
-    if(!this.#computedPath) return;
-
-    this.#computedPath.owner = this;
-    if(this.context?.debug[EngineDebugType.PATH_FINDING]){
-      this.#computedPath.enableHelper = true;
-    }
-    this.#computedPath.buildHelperLine();
+    return this.actionService.setComputedPath(computedPath);
   }
 
   #tmpLIOVec3 = new THREE.Vector3();
@@ -1885,30 +1482,12 @@ export class GameObject {
     return this.#tmpLIOVec3.distanceTo(this.position) <= this.getHitDistance();
   }
 
-  #tmpCHVec3 = new THREE.Vector3();
-
   /**
    * Get the camera hook position (world space).
    * Updates matrixWorld so dialog framing is not stuck at bind-pose / origin.
    */
   getCameraHookPosition(){
-    if(this.model && this.model.camerahook){
-      this.model.updateMatrixWorld(true);
-      this.model.camerahook.getWorldPosition(this.#tmpCHVec3);
-      // Stale graph / not yet parented — fall back to object position + head height
-      if(
-        this.#tmpCHVec3.lengthSq() < 1e-6
-        && this.position.lengthSq() > 1e-4
-      ){
-        this.#tmpCHVec3.copy(this.position);
-        this.#tmpCHVec3.z += 1.5;
-      }
-      return this.#tmpCHVec3;
-    }
-
-    this.#tmpCHVec3.copy(this.position);
-    this.#tmpCHVec3.z += 1.5;
-    return this.#tmpCHVec3;
+    return this.presentationService.getCameraHookPosition();
   }
 
   /**
@@ -1916,12 +1495,7 @@ export class GameObject {
    * @returns
    */
   getCameraHeight(){
-    if(this.model && this.model.camerahook){
-      // object height is an offset from the object's world position.
-      // Returning world Z here caused OldHitCheck to add position.z twice.
-      return this.model.camerahook.position.z;
-    }
-    return 1.5;
+    return this.presentationService.getCameraHeight();
   }
 
   /**
@@ -1982,91 +1556,33 @@ export class GameObject {
    * Blob models have shadows turned off (TurnOffShadows).
    */
   async applyShadowBlob(resref: string): Promise<void> {
-    this.removeShadowBlob();
-    if(!resref || !(this.model instanceof OdysseyModel3D)){ return; }
-    try{
-      const mdl = await MDLLoader.loader.load(resref);
-      if(!mdl || !(this.model instanceof OdysseyModel3D)){ return; }
-      const blob = await OdysseyModel3D.FromMDL(mdl, {
-        context: this.context,
-        castShadow: false,
-        receiveShadow: false,
-        manageLighting: true,
-        static: true,
-      });
-      blob.traverse((obj) => {
-        const mesh = obj as THREE.Mesh;
-        if(mesh.isMesh){
-          mesh.castShadow = false;
-          mesh.receiveShadow = false;
-        }
-      });
-      this.shadowBlobModel = blob;
-      this.model.add(blob);
-      this.updateShadowBlobOrientation();
-      this.updateShadowBlobVisibility();
-    }catch(_e){
-      // Missing Fx_Shadow_* models is non-fatal (e.g. incomplete installs).
-    }
+    return this.presentationService.applyShadowBlob(resref);
   }
 
   /** HideShadowBlob / ShowShadowBlob — area shadows + per-object flag. */
   updateShadowBlobVisibility(){
-    if(!this.shadowBlobModel){ return; }
-    if(GameState.Mode == EngineMode.FREELOOK){
-      const player = GameState.PartyManager.getCurrentPlayer();
-      if(player && this.id === player.id){
-        this.shadowBlobModel.visible = false;
-        return;
-      }
-    }
-    this.shadowBlobModel.visible = GameState.areShadowsEnabled() && this.shadowsEnabled;
+    return this.presentationService.updateShadowBlobVisibility();
   }
 
   /**
    * SetShadowBlobOrientation — align foot blob to walkmesh ground normal.
    */
   updateShadowBlobOrientation(){
-    if(!this.shadowBlobModel){ return; }
-    const up = GameObject._shadowBlobUp;
-    const groundNormal = this.getGroundNormalForShadowBlob();
-    if(groundNormal.lengthSq() < 1e-8){ return; }
-    GameObject._shadowBlobQuat.setFromUnitVectors(up, groundNormal);
-    this.shadowBlobModel.quaternion.copy(GameObject._shadowBlobQuat);
+    return this.presentationService.updateShadowBlobOrientation();
   }
 
   /** Walkable face normal in world space, or +Z when no ground face. */
   getGroundNormalForShadowBlob(): THREE.Vector3 {
-    const face = this.collisionManager.groundFace;
-    if(face?.normal){
-      GameObject._shadowBlobNormal.copy(face.normal);
-      if(this.room?.model?.matrixWorld){
-        GameObject._shadowBlobNormal.applyMatrix3(
-          GameObject._shadowBlobNormalMatrix.getNormalMatrix(this.room.model.matrixWorld)
-        );
-      }
-      return GameObject._shadowBlobNormal.normalize();
-    }
-    return GameObject._shadowBlobUp;
+    return this.presentationService.getGroundNormalForShadowBlob();
   }
 
   /** TurnOffShadows — disable projection and foot blob. */
   setShadowsEnabled(enabled: boolean){
-    this.shadowsEnabled = !!enabled;
-    this.updateShadowBlobVisibility();
+    return this.presentationService.setShadowsEnabled(enabled);
   }
 
-  private static _shadowBlobUp = new THREE.Vector3(0, 0, 1);
-  private static _shadowBlobNormal = new THREE.Vector3();
-  private static _shadowBlobNormalMatrix = new THREE.Matrix3();
-  private static _shadowBlobQuat = new THREE.Quaternion();
-
   removeShadowBlob(){
-    if(this.shadowBlobModel){
-      this.shadowBlobModel.removeFromParent();
-      try{ this.shadowBlobModel.dispose(); }catch(_e){}
-      this.shadowBlobModel = undefined;
-    }
+    return this.presentationService.removeShadowBlob();
   }
 
   /**
@@ -2074,16 +1590,7 @@ export class GameObject {
    * size 1–2 → S, 4–5 → L, else M (ApplyShadowBlob).
    */
   static shadowBlobResRefFromSizeCategory(sizeCategory: number): string {
-    switch(sizeCategory | 0){
-      case 1:
-      case 2:
-        return 'Fx_Shadow_S';
-      case 4:
-      case 5:
-        return 'Fx_Shadow_L';
-      default:
-        return 'Fx_Shadow_M';
-    }
+    return GameObjectPresentationService.shadowBlobResRefFromSizeCategory(sizeCategory);
   }
 
   /**
@@ -2091,12 +1598,7 @@ export class GameObject {
    * 0 → S, 1 → M, 2 → L, else M (ApplyShadowBlob).
    */
   static shadowBlobResRefFromPlaceableShadowSize(shadowSize: number): string {
-    switch(shadowSize | 0){
-      case 0: return 'Fx_Shadow_S';
-      case 2: return 'Fx_Shadow_L';
-      case 1:
-      default: return 'Fx_Shadow_M';
-    }
+    return GameObjectPresentationService.shadowBlobResRefFromPlaceableShadowSize(shadowSize);
   }
 
   /**
@@ -2270,46 +1772,21 @@ export class GameObject {
    * @returns
    */
   resistForce(oCaster: GameObject){
-    if(isCreature(this) && isCreature(oCaster)){
-      //https://gamefaqs.gamespot.com/boards-star-wars-knights-of-the-old-republic
-      //1d20 + target level + ForceResistance± vs. DC of caster level + 10
-      const frBonus = getForceResistanceBonus(this);
-      let roll = Dice.roll(1, DiceType.d20, (this as any).getTotalClassLevel() + frBonus);
-      return (roll > 10 + (oCaster as any).getTotalClassLevel());
-    }
-    return 0;
+    return this.effectService.resistForce(oCaster);
   }
 
   /**
    * Initialize all effects for the object
    */
   initEffects(){
-    // Drop any EffectDamage that was incorrectly persisted (effect apply
-    // returns 1 → never inserted into EffectList). Re-applying would re-deal HP.
-    for(let i = this.effects.length - 1; i >= 0; i--){
-      if(this.effects[i]?.type === GameEffectType.EffectDamage){
-        this.effects.splice(i, 1);
-      }
-    }
-
-    for(let i = 0, len = this.effects.length; i < len; i++){
-      const effect = this.effects[i];
-      if(!effect ){ continue; }
-
-      effect.initialize();
-      //effect.setCreator(this);
-      effect.setAttachedObject(this);
-      effect.onApply(this);
-    }
+    return this.effectService.initEffects();
   }
 
   /**
    * Re-resolve effect CreatorId / ObjectList after all creatures are registered.
    */
   resolveEffectObjectReferences(){
-    for(let i = 0, len = this.effects.length; i < len; i++){
-      this.effects[i]?.resolveObjectReferences?.();
-    }
+    return this.effectService.resolveEffectObjectReferences();
   }
 
   /**
@@ -2326,61 +1803,7 @@ export class GameObject {
    * @param duration - The duration of the effect
    */
   addEffect(effect: GameEffect, type = 0, duration = 0){
-    if(!effect){
-      console.warn('AddEffect', 'Invalid GameEffect', effect);
-      return;
-    }
-
-    if(effect.type == GameEffectType.EffectLink){
-      const e1 = (effect as EffectLink).effect1;
-      const e2 = (effect as EffectLink).effect2;
-      //EFFECT LEFT
-      if(e1){
-        e1.setDurationType(type);
-        e1.setDuration(duration);
-        this.addEffect(e1, type, duration);
-      }
-
-      //EFFECT RIGHT
-      if(e2){
-        e2.setDurationType(type);
-        e2.setDuration(duration);
-        this.addEffect(e2, type, duration);
-      }
-      return;
-    }
-
-    // NWScript Effect* helpers usually initialize before ApplyEffect; engine
-    // paths (combat VFX, etc.) often skip it — load 2DA / resolve ints here.
-    if(!effect.initialized){
-      effect.initialize();
-    }
-    // : allocate effect id from module Mod_Effect_NxtId when not loaded from save
-    if(!effect.id && GameState.module){
-      if(typeof GameState.module.effectNextId !== 'number' || isNaN(GameState.module.effectNextId)){
-        GameState.module.effectNextId = 1;
-      }
-      effect.setId(GameState.module.effectNextId++);
-    }
-    effect.setAttachedObject(this);
-    effect.loadModel();
-    effect.onApply(this);
-    // Immunities / invalid modes return before super.onApply — do not keep rejected effects
-    if(!effect.applied){
-      return;
-    }
-    // ApplyEffect — effect apply returns 1 so the
-    // effect is freed and never inserted into EffectList. Keeping it caused
-    // re-apply (and OnDamaged) during initEffects on module load.
-    // OnApplyResurrection / OnApplyHeal also return 1 (instant free).
-    if(
-      effect.type === GameEffectType.EffectDamage ||
-      effect.type === GameEffectType.EffectResurrection ||
-      effect.type === GameEffectType.EffectHeal
-    ){
-      return;
-    }
-    this.effects.push(effect);
+    return this.effectService.addEffect(effect, type, duration);
   }
 
   /**
@@ -2389,12 +1812,7 @@ export class GameObject {
    * @returns
    */
   getEffect(type = -1){
-    for(let i = 0; i < this.effects.length; i++){
-      if(this.effects[i].type == type){
-        return this.effects[i];
-      }
-    }
-    return undefined;
+    return this.effectService.getEffect(type);
   }
 
   /**
@@ -2403,7 +1821,7 @@ export class GameObject {
    * @returns
    */
   hasEffect(type = -1){
-    return this.getEffect(type) ? true : false;
+    return this.effectService.hasEffect(type);
   }
 
   /**
@@ -2411,20 +1829,7 @@ export class GameObject {
    * @param oCreator
    */
   removeEffectsByCreator( oCreator: GameObject ){
-    if(!(oCreator instanceof GameObject)){
-      return;
-    }
-    let eIndex = this.effects.length - 1;
-    let effect = this.effects[eIndex];
-    while(effect){
-      if(effect.getCreator() == oCreator){
-        let index = this.effects.indexOf(effect);
-        if(index >= 0){
-          this.effects.splice(index, 1)[0].onRemove();
-        }
-      }
-      effect = this.effects[--eIndex];
-    }
+    return this.effectService.removeEffectsByCreator(oCreator);
   }
 
   /**
@@ -2432,17 +1837,7 @@ export class GameObject {
    * @param retainSelfBuffs - SurrenderRetainBuffs: keep effects created by this object
    */
   clearAllEffects(retainSelfBuffs: boolean = false){
-    const effects = this.effects ? this.effects.slice() : [];
-    for(let i = 0; i < effects.length; i++){
-      const effect = effects[i];
-      if(!effect) continue;
-      const duration = effect.getDurationType?.() ?? (effect.subType & 0x07);
-      // skips EQUIPPED (3) and INNATE (4)
-      if(duration === 3 || duration === 4) continue;
-      if(effect.type === 0x09) continue; // EffectSetStateInternal
-      if(retainSelfBuffs && effect.creator === this) continue;
-      this.removeEffect(effect);
-    }
+    return this.effectService.clearAllEffects(retainSelfBuffs);
   }
 
   /**
@@ -2451,16 +1846,7 @@ export class GameObject {
    * (Disguise, Beam, and beam VisualEffects).
    */
   clearEffectsOnDeath(){
-    const effects = this.effects ? this.effects.slice() : [];
-    for(let i = 0; i < effects.length; i++){
-      const effect = effects[i];
-      if(!effect) continue;
-      const duration = effect.getDurationType?.() ?? (effect.subType & 0x07);
-      if(duration === 3 || duration === 4) continue; // EQUIPPED / INNATE
-      if(effect.type === 0x09) continue; // EffectSetStateInternal
-      if(this.isEffectToIgnoreOnDeath(effect)) continue;
-      this.removeEffect(effect);
-    }
+    return this.effectService.clearEffectsOnDeath();
   }
 
   /**
@@ -2468,17 +1854,7 @@ export class GameObject {
    * uses NWScript EFFECT_TYPE_* (Disguise=62, Beam=21). Beam VFX also kept.
    */
   isEffectToIgnoreOnDeath(effect: GameEffect): boolean {
-    if(!effect) return false;
-    // EFFECT_DISGUISE = 62 → GameEffectType.EffectDisguise (0x3E)
-    if(effect.type === GameEffectType.EffectDisguise) return true;
-    // EFFECT_BEAM = 21 → GameEffectType.EffectBeam (0x20)
-    if(effect.type === GameEffectType.EffectBeam) return true;
-    // VisualEffect that is a beam (type_fd 'B') — GetIsBeam
-    if(effect.type === GameEffectType.EffectVisualEffect){
-      const vfx = (effect as any).visualEffect;
-      if(vfx?.type_fd === 'B') return true;
-    }
-    return false;
+    return this.effectService.isEffectToIgnoreOnDeath(effect);
   }
 
   /**
@@ -2486,14 +1862,7 @@ export class GameObject {
    * @param type
    */
   removeEffectsByType(type: number = -1){
-    let effect = this.getEffect(type);
-    while(effect){
-      let index = this.effects.indexOf(effect);
-      if(index >= 0){
-        this.effects.splice(index, 1)[0].onRemove();
-      }
-      effect = this.getEffect(type);
-    }
+    return this.effectService.removeEffectsByType(type);
   }
 
   /**
@@ -2501,10 +1870,7 @@ export class GameObject {
    * @param type
    */
   removeEffect(effect: GameEffect){
-    if(!effect){ return; }
-    const arrIdx = this.effects.indexOf(effect);
-    if(arrIdx == -1){ return; }
-    this.effects.splice(arrIdx, 1)[0].onRemove();
+    return this.effectService.removeEffect(effect);
   }
 
   /**
@@ -2512,29 +1878,7 @@ export class GameObject {
    * Cross-area: AddToArea. Cross-module (party leader): LoadModule + spawn XYZ.
    */
   JumpToLocation(lLocation: EngineLocation){
-    if(!lLocation) return;
-    if(isCreature(this)){
-      const action = new GameState.ActionFactory.ActionJumpToPoint();
-      action.setParameter(0, ActionParameterType.FLOAT, lLocation.position.x);
-      action.setParameter(1, ActionParameterType.FLOAT, lLocation.position.y);
-      action.setParameter(2, ActionParameterType.FLOAT, lLocation.position.z);
-      const areaId = lLocation.area?.id ?? this.area?.id ?? 0;
-      action.setParameter(3, ActionParameterType.DWORD, areaId);
-      action.setParameter(4, ActionParameterType.INT, 1);
-      action.setParameter(5, ActionParameterType.FLOAT, 20.0);
-      action.setParameter(6, ActionParameterType.FLOAT, lLocation.rotation.x);
-      action.setParameter(7, ActionParameterType.FLOAT, lLocation.rotation.y);
-      // Instant jump: run one update (AddActionToFront + process)
-      action.owner = this;
-      action.update(0);
-      return;
-    }
-    this.position.set( lLocation.position.x, lLocation.position.y, lLocation.position.z );
-    this.markCollisionMatrixDirty("position");
-    this.computeBoundingBox();
-    this.setFacing(-Math.atan2(lLocation.rotation.x, lLocation.rotation.y) + Math.PI/2, true);
-    this.collisionManager.groundFace = undefined;
-    this.collisionManager.lastGroundFace = undefined;
+    return this.actionService.JumpToLocation(lLocation);
   }
 
   /**
@@ -2542,9 +1886,7 @@ export class GameObject {
    * @param vPoint
    */
   FacePoint(vPoint=new THREE.Vector3){
-    let tangent = vPoint.clone().sub(this.position.clone());
-    let atan = Math.atan2(-tangent.y, -tangent.x);
-    this.setFacing(atan + Math.PI/2, true);
+    return this.actionService.FacePoint(vPoint);
   }
 
   /**
@@ -2749,28 +2091,7 @@ export class GameObject {
    * @param force
    */
   computeBoundingBox(force: boolean = false){
-    if(!force && !this.collisionBoundsDirty && !this.collisionMatrixDirty){
-      return this.box;
-    }
-
-    if(this.collisionManager?.refreshObjectBounds){
-      this.collisionManager.refreshObjectBounds(force);
-      return this.box;
-    }
-
-    // Single root walk — Three.js updateMatrixWorld already propagates to descendants.
-    if(this.container){
-      this.container.updateMatrixWorld(force);
-    }else if(this.model){
-      this.model.updateMatrixWorld(force);
-    }
-
-    if(this.model instanceof THREE.Object3D)
-      this.box.setFromObject(this.model);
-
-    this.collisionBoundsDirty = false;
-    this.collisionMatrixDirty = false;
-    return this.box;
+    return this.presentationService.computeBoundingBox(force);
   }
 
   boxContainsPoint(point: THREE.Vector3){
@@ -2784,26 +2105,7 @@ export class GameObject {
    * @returns
    */
   isOnScreen(frustum = GameState.viewportFrustum){
-    // Match fog cull to the live camera pose used for the frustum (object
-    // update may have run before FollowerCamera / updateViewportFrustum).
-    if(GameState.currentCamera){
-      this.distanceToCamera = this.position.distanceTo(GameState.currentCameraPosition);
-    }
-
-    if(this.area && this.area.fog){
-      if(this.distanceToCamera >= this.area.fog.far){
-        return false;
-      }
-    }
-
-    // Keep world AABB in sync with position (committers mark dirty; must refresh
-    // before sphere test or spawn-box cull hides moved creatures).
-    if(this.collisionMatrixDirty || this.collisionBoundsDirty){
-      this.computeBoundingBox();
-    }
-
-    this.box.getBoundingSphere(this.sphere);
-    return frustum.intersectsSphere(this.sphere);
+    return this.presentationService.isOnScreen(frustum);
   }
 
   /**
@@ -2811,45 +2113,12 @@ export class GameObject {
    * Creatures / corpse placeables override (head_g / rootdummy).
    */
   getReticleNode(){
-    if(!this.model){ return; }
-
-    if(this.model.lookathook){
-      return this.model.lookathook;
-    }
-
-    if(this.model.talkdummy){
-      return this.model.talkdummy;
-    }
-
-    if(this.model.headhook){
-      return this.model.headhook;
-    }
-
-    if(this.model.rootdummy){
-      return this.model.rootdummy;
-    }
-
-    if(this.model.camerahook){
-      return this.model.camerahook;
-    }
-
-    return this.model;
+    return this.presentationService.getReticleNode();
   }
 
   /** Resolve a named model node (case-insensitive) for reticle anchors. */
   getModelNodeByName(name: string){
-    if(!this.model || !name){ return undefined; }
-    const key = name.toLowerCase();
-    if(typeof (this.model as any)[key] !== 'undefined' && (this.model as any)[key]){
-      return (this.model as any)[key];
-    }
-    if(this.model.nodes?.has(key)){
-      return this.model.nodes.get(key);
-    }
-    if(this.model.nodes?.has(name)){
-      return this.model.nodes.get(name);
-    }
-    return undefined;
+    return this.presentationService.getModelNodeByName(name);
   }
 
   /**
@@ -3228,35 +2497,14 @@ export class GameObject {
    * @param anim
    */
   dialogPlayAnimation(anim: SWAnimation = {} as SWAnimation){
-    console.log('dialogPlayAnimation',anim);
-    if(!this.model){
-      console.warn('dialogPlayAnimation failed');
-      console.log(this, anim);
-      return;
-    }
-
-    const odysseyAnimation = this.model.odysseyAnimations.find( (a) => a.name.toLocaleLowerCase() == anim.name.toLocaleLowerCase() );
-    if(!odysseyAnimation){
-      return;
-    }
-
-    this.dialogAnimation = {
-      animation: odysseyAnimation,
-      data: anim,
-      started: false,
-    };
+    return this.presentationService.dialogPlayAnimation(anim);
   }
 
   /**
    * Reset the dialog animation state
    */
   dialogResetAnimationState(){
-    this.dialogAnimationState = {
-      animationIndex: -1,
-      animation: undefined,
-      data: undefined,
-      started: false,
-    };
+    return this.presentationService.dialogResetAnimationState();
   }
 
   /**
@@ -3579,32 +2827,18 @@ export class GameObject {
    * Skips if the queue already has entries (avoids double-load on re-init).
    */
   loadActionList(){
-    try{
-      if(!this.template?.RootNode){ return; }
-      ActionListSerializer.deserialize(
-        this as any,
-        this.template.RootNode,
-        (struct) => GameState.ActionFactory.FromStruct(struct),
-      );
-    }catch(e: any){
-      console.error(e);
-    }
+    return this.actionService.loadActionList();
   }
 
   /**
    * Convert the action queue to an action list field (delegates to ActionListSerializer).
    */
   actionQueueToActionList(){
-    return ActionListSerializer.writeField(
-      { addField: (f: GFFField) => f },
-      this as any,
-    );
+    return this.actionService.actionQueueToActionList();
   }
 
   setOpacity(opacity: number){
-    if(this.model instanceof OdysseyModel3D){
-      this.model.setOpacity(opacity);
-    }
+    return this.presentationService.setOpacity(opacity);
   }
 
   /**
@@ -3646,184 +2880,34 @@ export class GameObject {
   fadeDuration: number = 8.0;
 
   setWillDestroy(willDestroy: boolean){
-    this.willDestroy = willDestroy;
-    this.timeSinceDestroyStarted = 0;
+    return this.destructionService.setWillDestroy(willDestroy);
   }
 
   setDelayUntilDestroy(delay: number = GameObject.FADE_TIME){
-    this.delayUntilDestroy = delay;
-    this.timeSinceDestroyStarted = 0;
+    return this.destructionService.setDelayUntilDestroy(delay);
   }
 
   setDelayUntilFade(delay: number){
-    if(isCreature(this) || isPlaceable(this)){
-      this.delayUntilFade = delay;
-      return;
-    }
-    this.delayUntilFade = 0;
+    return this.destructionService.setDelayUntilFade(delay);
   }
 
   setFadeDuration(duration: number){
-    this.fadeDuration = Math.max(0, duration);
+    return this.destructionService.setFadeDuration(duration);
   }
 
   getFadeDuration(): number {
-    return this.fadeDuration > 0 ? this.fadeDuration : GameObject.FADE_TIME;
+    return this.destructionService.getFadeDuration(GameObject.FADE_TIME);
   }
 
   setNoFadeOnDestroy(noFade: boolean){
-    if(isCreature(this) || isPlaceable(this)){
-      this.noFadeOnDestroy = noFade;
-      return;
-    }
-    this.noFadeOnDestroy = false;
+    return this.destructionService.setNoFadeOnDestroy(noFade);
   }
 
   /**
    * Destroy the object
    */
   destroy(){
-    this.destroyed = true;
-    try{ console.log('destroy', this.getTag(), this);}catch(e: any){}
-    try{
-      this.container.removeFromParent();
-
-      this.removeShadowBlob();
-
-      if(this.model instanceof OdysseyModel3D){
-        this.model.removeFromParent();
-        this.model.dispose();
-        this.model = undefined;
-      }
-
-      if(this.mesh instanceof THREE.Mesh){
-        this.mesh.removeFromParent();
-
-        (this.mesh.material as THREE.Material).dispose();
-        this.mesh.geometry.dispose();
-
-        this.mesh.material = undefined;
-        this.mesh.geometry = undefined;
-        this.mesh = undefined;
-      }
-
-      //cleanup audio emitter
-      if(this.audioEmitter){
-        this.audioEmitter.destroy();
-        this.audioEmitter = undefined;
-      }
-
-      if(this.footstepEmitter){
-        this.footstepEmitter.destroy();
-        this.footstepEmitter = undefined;
-      }
-
-      // Dispose all game effects
-      if(this.effects && this.effects.length > 0){
-        for(let i = this.effects.length - 1; i >= 0; i--){
-          if(this.effects[i]){
-            this.effects[i].onRemove();
-          }
-        }
-        this.effects.length = 0;
-      }
-
-      //Cleanup scripts
-      Object.keys(this.scripts).forEach( (key) => {
-        if(this.scripts[key] instanceof NWScriptInstance){
-          this.scripts[key].dispose();
-        }
-      });
-      this.scripts = {};
-
-      //Clear action queue
-      if(this.actionQueue){
-        this.actionQueue.clear();
-        this.actionQueue = undefined;
-      }
-
-      //Clear computed path
-      if(this.#computedPath){
-        this.#computedPath.dispose();
-        this.#computedPath = undefined;
-      }
-
-      //Clear perception list
-      if(this.perceptionList){
-        this.perceptionList.length = 0;
-      }
-
-      //Clear inventory
-      if(this.inventory){
-        for(let i = this.inventory.length - 1; i >= 0; i--){
-          if(this.inventory[i]){
-            this.inventory[i].destroy();
-          }
-        }
-        this.inventory.length = 0;
-      }
-
-      //Clear rooms array
-      if(this.rooms){
-        this.rooms.length = 0;
-      }
-
-      //Clear objects inside
-      if(this.objectsInside){
-        this.objectsInside.length = 0;
-      }
-
-      //Dispose Three.js utility objects
-      if(this.forceVector){
-        this.forceVector = undefined;
-      }
-      // if(this.position){
-      // this.position = undefined;
-      // }
-      // if(this.rotation){
-      // this.rotation = undefined;
-      // }
-      // if(this.quaternion){
-      // this.quaternion = undefined;
-      // }
-      if(this.box){
-        this.box = undefined;
-      }
-      if(this.sphere){
-        this.sphere = undefined;
-      }
-      if(this.v20){
-        this.v20 = undefined;
-      }
-      if(this.v21){
-        this.v21 = undefined;
-      }
-
-      this.area?.detachObject(this);
-
-      //Clear references to prevent circular references
-      this.area = undefined;
-      this.room = undefined;
-      this.lookAtObject = undefined;
-      this.lastTriggerEntered = undefined;
-      this.lastTriggerExited = undefined;
-      this.lastAreaEntered = undefined;
-      this.lastAreaExited = undefined;
-      this.lastModuleEntered = undefined;
-      this.lastModuleExited = undefined;
-      this.lastDoorEntered = undefined;
-      this.lastDoorExited = undefined;
-      this.lastPlaceableEntered = undefined;
-      this.lastPlaceableExited = undefined;
-      this.lastAoeEntered = undefined;
-      this.lastAoeExited = undefined;
-      this.conversation = undefined;
-      this.linkedToObject = undefined;
-
-      GameState.GameObjectManager.RemoveObject(this);
-    }catch(e){
-      console.error('GameObject.destroy', e);
-    }
+    return this.destructionService.destroy();
   }
 
 }

@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { GFFDataType } from "@core/enums/resource/GFFDataType";
 import { GameState } from "@engine/runtime/GameState";
+import { getDefaultRuntimeContext } from "@engine/runtime/context";
 import { NWScript } from "@engine/nwscript/NWScript";
 import { NWScriptInstance } from "@engine/nwscript/NWScriptInstance";
 import { NWScriptEvent } from "@engine/nwscript/events";
@@ -23,6 +24,11 @@ import { findHiddenWalkLocation, findOpenWalkLocation } from "@engine/pathfindin
 import type { OdysseyModel3D } from "@engine/render/three/odyssey";
 import { GameObjectLoadPipeline } from "@engine/module/serialization/GameObjectLoadPipeline";
 import { encounterSerializer } from "@engine/module/serialization/EncounterSerializer";
+import {
+  EncounterPolicy,
+  PersistentZoneOccupancy,
+  containsXYAabb,
+} from "@engine/module/occupancy";
 
 /**
  * CalculatePointsFromCR.
@@ -570,6 +576,8 @@ export class Encounter extends GameObject {
   static pickSpawnPosition = pickSpawnPosition;
   static spawnCreatureFromSpawnList = spawnCreatureFromSpawnList;
 
+  private occupancy: PersistentZoneOccupancy<GameObject>;
+  private occupancyPolicy: EncounterPolicy;
   creatureList: EncounterCreatureEntry[];
   spawnPointList: EncounterSpawnPointEntry[];
   spawnList: EncounterSpawnEntry[];
@@ -647,6 +655,11 @@ export class Encounter extends GameObject {
     };
 
     this.objectsInside = [];
+    this.occupancy = new PersistentZoneOccupancy(this.objectsInside);
+    this.occupancyPolicy = new EncounterPolicy(
+      this,
+      () => spawnIfAppropriate(this)
+    );
     this.objectsInsideIdx = 0;
     this.lastObjectEntered = null;
     this.lastObjectExited = null;
@@ -661,67 +674,22 @@ export class Encounter extends GameObject {
     if(this.willDestroy || this.destroyed) return;
 
     this.getCurrentRoom();
+    const runtime = getDefaultRuntimeContext();
     
     //Check Module Creatures
-    let creatureLen = GameState.module.area.creatures.length;
+    const creatures = runtime.getModule()?.area?.creatures ?? [];
+    let creatureLen = creatures.length;
     for(let i = 0; i < creatureLen; i++){
-      let creature = GameState.module.area.creatures[i];
-      let pos = creature.position.clone();
-      if(this.boxContainsPoint(pos)){
-        if(this.objectsInside.indexOf(creature) == -1){
-          this.objectsInside.push(creature);
-          if(this.isHostile(creature)){
-            creature.lastTriggerEntered = this;
-            this.lastObjectEntered = creature;
-
-            this.onEnter(creature);
-            this.triggered = true;
-            this.lastEntered = creature;
-            spawnIfAppropriate(this);
-          }
-        }
-      }else{
-        if(this.objectsInside.indexOf(creature) >= 0){
-          this.objectsInside.splice(this.objectsInside.indexOf(creature), 1);
-          if(this.isHostile(creature)){
-            creature.lastTriggerExited = this;
-            this.lastObjectExited = creature;
-            this.onExit(creature);
-          }
-        }
-      }
+      let creature = creatures[i];
+      this.updateObjectInside(creature);
     }
 
     //Check Party Members
-    let partyLen = GameState.PartyManager.party.length;
+    const party = runtime.getParty?.() ?? [];
+    let partyLen = party.length;
     for(let i = 0; i < partyLen; i++){
-      let partymember = GameState.PartyManager.party[i];
-      let pos = partymember.position.clone();
-      
-      if(this.boxContainsPoint(pos)){
-        if(this.objectsInside.indexOf(partymember) == -1){
-          this.objectsInside.push(partymember);
-          if(this.isHostile(partymember)){
-            partymember.lastTriggerEntered = this;
-            this.lastObjectEntered = partymember;
-
-            this.onEnter(partymember);
-            this.triggered = true;
-            this.lastEntered = partymember;
-            spawnIfAppropriate(this);
-          }
-        }
-      }else{
-        if(this.objectsInside.indexOf(partymember) >= 0){
-          this.objectsInside.splice(this.objectsInside.indexOf(partymember), 1);
-          if(this.isHostile(partymember)){
-            partymember.lastTriggerExited = this;
-            this.lastObjectExited = partymember;
-
-            this.onExit(partymember);
-          }
-        }
-      }
+      let partymember = party[i];
+      this.updateObjectInside(partymember);
     }
 
     // AIUpdate: Single-shot + Reset → re-activate after ResetTime
@@ -765,6 +733,30 @@ export class Encounter extends GameObject {
   update(delta = 0){
     // Visual/client pass — occupancy/spawn logic lives in aiUpdate
     super.update(delta);
+  }
+
+  isInside(object: GameObject): boolean {
+    return this.occupancy.contains(object);
+  }
+
+  addObjectInside(object: GameObject): boolean {
+    return this.occupancy.add(object);
+  }
+
+  removeObjectInside(object: GameObject): boolean {
+    return this.occupancy.remove(object);
+  }
+
+  isInsideBoundingBox(object: GameObject): boolean {
+    return containsXYAabb(object.position, this.box.min, this.box.max);
+  }
+
+  updateObjectInside(object: GameObject): void {
+    this.occupancy.applyTransition(
+      object,
+      this.isInsideBoundingBox(object),
+      this.occupancyPolicy
+    );
   }
 
   onEnter(object: GameObject){

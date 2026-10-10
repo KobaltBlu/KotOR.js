@@ -6,7 +6,6 @@ import { CExoLocString } from '@core/resource/CExoLocString';
 import { ScriptHook } from '@core/enums/module/ScriptHook';
 import { GameEffectType } from '@core/enums/effects/GameEffectType';
 import type { Creature } from '@engine/module/Creature';
-import { GameState } from '@engine/runtime/GameState';
 import type { DeserializeContext, GameObjectSerializer, SerializeContext } from '@engine/module/serialization/types';
 import { gffRootOf } from '@engine/module/serialization/types';
 import {
@@ -533,10 +532,13 @@ export class CreatureSerializer implements GameObjectSerializer<Creature, GFFObj
       PartyFollowInfoSerializer.writeField(gff.RootNode, follow);
     }
 
-    // PC level-up history — only when player-controlled and ControlledNPC === -1.
+    // PC level-up history is emitted only while the PC is directly controlled.
+    // Callers may provide this decision during isolated serialization.
+    const includePcLevelStats = context?.includePcLevelStats ??
+      (context?.controlledNpcIndex === undefined || context.controlledNpcIndex === -1);
     if (
       source.isPC &&
-      GameState.PartyManager?.ControlledNPC === -1 &&
+      includePcLevelStats &&
       source.levelStats?.length > 0
     ) {
       LevelStatListSerializer.writeField(gff.RootNode, source.levelStats);

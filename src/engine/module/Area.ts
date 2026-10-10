@@ -1,4 +1,5 @@
 import { GameState } from "@engine/runtime/GameState";
+import { GameEngineType } from "@core/enums/engine/GameEngineType";
 import { WindManager } from "@engine/managers/WindManager";
 import { DirtyTextureManager } from "@engine/managers/DirtyTextureManager";
 import { TextureAnimationManager } from "@engine/managers/TextureAnimationManager";
@@ -3719,8 +3720,11 @@ export class Area extends GameObject {
     return areaStruct;
   }
 
-  save(): { git: GFFObject, are: GFFObject }{
-    const git = AreaGitSerializer.serialize(this);
+  save(
+    gameKey: 'k1' | 'k2' =
+      GameState.GameKey == GameEngineType.TSL ? 'k2' : 'k1',
+  ): { git: GFFObject, are: GFFObject }{
+    const git = AreaGitSerializer.serialize(this, { gameKey });
     this.git = git;
     this.are.FileType = 'ARE ';
 

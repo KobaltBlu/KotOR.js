@@ -1,8 +1,7 @@
-import { GameEngineType } from '@core/enums/engine/GameEngineType';
 import { GFFDataType } from '@core/enums/resource/GFFDataType';
 import { GFFField } from '@core/resource/GFFField';
 import { GFFObject } from '@core/resource/GFFObject';
-import { GameState } from '@engine/runtime/GameState';
+import type { SerializeContext } from '@engine/module/serialization/types';
 import { waypointSerializer } from '@engine/module/serialization/WaypointSerializer';
 import { triggerSerializer } from '@engine/module/serialization/TriggerSerializer';
 import { soundSerializer } from '@engine/module/serialization/SoundSerializer';
@@ -30,7 +29,7 @@ export type AreaGitListName =
   | 'AreaEffectList';
 
 export class AreaGitSerializer {
-  static serialize(area: any): GFFObject {
+  static serialize(area: any, context: SerializeContext = {}): GFFObject {
     const git = new GFFObject();
     git.FileType = 'GIT ';
 
@@ -70,7 +69,7 @@ export class AreaGitSerializer {
     }
 
     const list = git.RootNode.addField(new GFFField(GFFDataType.LIST, 'List'));
-    const gameKey = GameState.GameKey == GameEngineType.TSL ? 'k2' : 'k1';
+    const gameKey = context.gameKey ?? 'k1';
     for (let i = 0; i < area.items.length; i++) {
       const item = area.items[i];
       if (!item) continue;

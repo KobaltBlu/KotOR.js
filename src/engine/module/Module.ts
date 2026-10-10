@@ -36,6 +36,7 @@ import { GameEngineType } from "@core/enums/engine/GameEngineType";
 import { ScriptVarTable } from "@engine/world/ScriptVarTable";
 import { ModuleSaveTable } from "@engine/save/ModuleSaveTable";
 import { AIScheduler } from "@engine/runtime/AIScheduler";
+import { getDefaultRuntimeContext } from "@engine/runtime/context";
 import type { EffectAreaOfEffect } from "@engine/effects/EffectAreaOfEffect";
 import { ModuleIfoSerializer } from "@engine/module/serialization/ModuleIfoSerializer";
 import { EventQueueSerializer } from "@engine/module/serialization/EventQueueSerializer";
@@ -802,7 +803,13 @@ export class Module {
   async save( isSaveGame = false ){
     GameState.PartyManager.Save();
 
-    const ifo = ModuleIfoSerializer.serialize(this, { isSaveGame });
+    const runtime = getDefaultRuntimeContext();
+    const ifo = ModuleIfoSerializer.serialize(this, {
+      isSaveGame,
+      gameKey: GameState.GameKey == GameEngineType.TSL ? 'k2' : 'k1',
+      controlledNpcIndex: runtime.getControlledNpcIndex?.() ?? -1,
+      playerUtc: GameState.PartyManager.Player,
+    });
     this.ifo = ifo;
 
     const sav = new ERFObject();

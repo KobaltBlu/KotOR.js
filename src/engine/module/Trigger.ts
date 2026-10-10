@@ -14,8 +14,14 @@ import { ScriptHook } from "@core/enums/module/ScriptHook";
 import { NWScriptEvent } from "@engine/nwscript/events";
 import type { NWScriptInstance } from "@engine/nwscript/NWScriptInstance";
 import { ModuleLoadCoordinator } from '@engine/runtime/ModuleLoadCoordinator';
+import { getDefaultRuntimeContext } from "@engine/runtime/context";
 import { GameObjectLoadPipeline } from "@engine/module/serialization/GameObjectLoadPipeline";
 import { triggerSerializer } from "@engine/module/serialization/TriggerSerializer";
+import {
+  PersistentZoneOccupancy,
+  TriggerPolicy,
+  containsXYAabb,
+} from "@engine/module/occupancy";
 
 
 const OBJECTS_INSIDE_UPDATE_THRESHOLD = 15; // 15 frame ticks
@@ -33,6 +39,8 @@ const OBJECTS_INSIDE_UPDATE_THRESHOLD = 15; // 15 frame ticks
 * @memberof KotOR
 */
 export class Trigger extends GameObject {
+  private occupancy: PersistentZoneOccupancy<GameObject>;
+  private occupancyPolicy: TriggerPolicy;
   objectsInsideIdx: number;
   lastObjectEntered: GameObject;
   lastObjectExited: GameObject;
@@ -55,6 +63,8 @@ export class Trigger extends GameObject {
 
     this.template = gff;
     this.objectsInside = [];
+    this.occupancy = new PersistentZoneOccupancy(this.objectsInside);
+    this.occupancyPolicy = new TriggerPolicy(this);
     this.objectsInsideIdx = 0;
     this.lastObjectEntered = null;
     this.lastObjectExited = null;
@@ -250,11 +260,12 @@ export class Trigger extends GameObject {
     //Check to see if this trigger is linked to another module
     if(this.linkedToModule && this.type == 1){
       //Check Party Members
-      const partyLen = GameState.PartyManager.party.length;
+      const party = getDefaultRuntimeContext().getParty?.() ?? [];
+      const partyLen = party.length;
       for(let i = 0; i < partyLen; i++){
-        const partymember = GameState.PartyManager.party[i];
+        const partymember = party[i];
         const pos = partymember.position;
-        if(!this.boxContainsPoint(pos)){ continue; }
+        if(!containsXYAabb(pos, this.box.min, this.box.max)){ continue; }
         const added = this.addObjectInside(partymember);
         if(!added){ continue; }
         
@@ -269,7 +280,7 @@ export class Trigger extends GameObject {
         for(let i = 0; i < creatureLen; i++){
           const creature = creatures[i];
           const pos = creature.position;
-          if(!this.boxContainsPoint(pos)){ continue; }
+          if(!containsXYAabb(pos, this.box.min, this.box.max)){ continue; }
 
           const added = this.addObjectInside(creature);
           if(!added){ continue; }
@@ -281,25 +292,19 @@ export class Trigger extends GameObject {
   }
 
   isInsideBoundingBox(object: GameObject): boolean {
-    return this.boxContainsPoint(object.position);
+    return containsXYAabb(object.position, this.box.min, this.box.max);
   }
 
   isInside(object: GameObject): boolean {
-    return this.objectsInside.indexOf(object) >= 0;
+    return this.occupancy.contains(object);
   }
 
   addObjectInside(object: GameObject): boolean {
-    const isInside = this.isInside(object);
-    if(isInside){ return false; }
-    this.objectsInside.push(object);
-    return true;
+    return this.occupancy.add(object);
   }
 
   removeObjectInside(object: GameObject): boolean {
-    const isInside = this.isInside(object);
-    if(!isInside){ return false; }
-    this.objectsInside.splice(this.objectsInside.indexOf(object), 1);
-    return true;
+    return this.occupancy.remove(object);
   }
 
   isUseable(): boolean {
@@ -374,8 +379,9 @@ export class Trigger extends GameObject {
     this.#autoObjectsInsideTimer = 0;
 
     const creaturesToCheck = [
-      ...(this.area?.creatures ?? []).filter(object => this.boxContainsPoint(object.position)), 
-      ...GameState.PartyManager.party.filter(object => this.boxContainsPoint(object.position))
+      ...(this.area?.creatures ?? []).filter(object => this.isInsideBoundingBox(object)),
+      ...(getDefaultRuntimeContext().getParty?.() ?? [])
+        .filter(object => this.isInsideBoundingBox(object))
     ];
 
     //Check Creatures in Area
@@ -389,82 +395,64 @@ export class Trigger extends GameObject {
   /**
    * Update the objectsInside array and fire enter/exit for occupancy changes.
    *
-   * HandleSubAreaStateChanges queues OnObjectEnter
-   * (0xc) for every newly occupied generic/transition trigger — no hostility or
-   * global one-shot gate. A previous `!triggered && isHostile` lock meant the first
-   * NPC through a Faction=1 trigger on new-game spawn set `triggered` and blocked
-   * the player's later enter (save loads usually skip that NPC traffic).
-   *
-   * Trap one-shot / hostility stays on {@link canTrigger} only.
+   * Generic and transition triggers queue enter behavior for each newly observed
+   * occupant. Trap hostility and one-shot checks are applied after membership.
    */
   updateObjectInside(object: GameObject){
-    const isInside = this.isInsideBoundingBox(object);
-    if(isInside){
-      const added = this.addObjectInside(object);
-      if(!added){ return; }
-
-      if(this.type == ModuleTriggerType.TRAP && !this.canTrigger(object)){
-        return;
-      }
-
-      object.lastTriggerEntered = this;
-      this.lastObjectEntered = object;
-      this.onEnter(object);
-      if(this.type == ModuleTriggerType.TRAP){
-        this.triggered = true;
-      }
-      return;
-    }
-
-    const removed = this.removeObjectInside(object);
-    if(!removed){ return; }
-    object.lastTriggerExited = this;
-    this.lastObjectExited = object;
-    this.onExit(object);
+    this.occupancy.applyTransition(
+      object,
+      this.isInsideBoundingBox(object),
+      this.occupancyPolicy
+    );
   }
 
   onEnter(object?: GameObject){
     if(!object){ return; }
     console.log('Trigger.onEnter', this.type,  this.getTag());
+    const runtime = getDefaultRuntimeContext();
     if(this.type == ModuleTriggerType.TRAP && !this.trapTriggered){
       if(object.isHostile(this)){
         this.trapTriggered = true;
         console.log('Trigger.onEnter', 'Trap Triggered')
-        const event = new GameState.GameEventFactory.EventSignalEvent();
+        const event = runtime.createSignalEvent();
+        if(!event) return;
         event.setCaller(object);
         event.setObject(this);
-        event.setDay(GameState.module.timeManager.pauseDay);
-        event.setTime(GameState.module.timeManager.pauseTime);
+        event.setDay(runtime.getPauseDay());
+        event.setTime(runtime.getPauseTime());
         event.eventType = SignalEventType.OnTrapTriggered;
-        GameState.module.addEvent(event);
+        runtime.addEvent(event);
       }
-    }else if(this.linkedToModule && (GameState.Mode != EngineMode.DIALOG)){
-      if(object == GameState.PartyManager.getCurrentPlayer()){
+    }else if(this.linkedToModule && (runtime.getMode() != EngineMode.DIALOG)){
+      if(object == runtime.getCurrentPlayer?.()){
         ModuleLoadCoordinator.LoadModuleWithAreaTransitionFade(this.linkedToModule.toLowerCase(), this.linkedTo.toLowerCase());
       }
       return;
     }
 
     console.log('Trigger', this.getTag(), 'enter 1')
-    const event = new GameState.GameEventFactory.EventSignalEvent();
+    const event = runtime.createSignalEvent();
+    if(!event) return;
     event.setCaller(object);
     event.setObject(this);
-    event.setDay(GameState.module.timeManager.pauseDay);
-    event.setTime(GameState.module.timeManager.pauseTime);
+    event.setDay(runtime.getPauseDay());
+    event.setTime(runtime.getPauseTime());
     event.eventType = SignalEventType.OnObjectEnter;
-    GameState.module.addEvent(event);
+    runtime.addEvent(event);
   }
 
   onExit(object?: GameObject){
     if(!object){ return; }
     console.log('Trigger', this.getTag(), 'exit')
-    const event = new GameState.GameEventFactory.EventSignalEvent();
+    const runtime = getDefaultRuntimeContext();
+    const event = runtime.createSignalEvent();
+    if(!event) return;
     event.setCaller(object);
     event.setObject(this);
-    event.setDay(GameState.module.timeManager.pauseDay);
-    event.setTime(GameState.module.timeManager.pauseTime);
+    event.setDay(runtime.getPauseDay());
+    event.setTime(runtime.getPauseTime());
     event.eventType = SignalEventType.OnObjectExit;
-    GameState.module.addEvent(event);
+    runtime.addEvent(event);
   }
 
   //---------------//
