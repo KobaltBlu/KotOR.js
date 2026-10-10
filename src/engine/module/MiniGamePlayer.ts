@@ -2097,6 +2097,7 @@ export class MiniGamePlayer extends GameObject {
       this.template.getFieldByLabel('Scripts')?.getFieldStruct(),
       MiniGamePlayer.SCRIPT_KEYS
     );
+    this.initialized = true;
   }
 
 

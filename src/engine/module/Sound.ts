@@ -350,6 +350,7 @@ export class Sound extends GameObject {
     if(needsRegister){
       GameState.GameObjectManager.RegisterObject(this);
     }
+    this.initialized = true;
   }
 
   save(){

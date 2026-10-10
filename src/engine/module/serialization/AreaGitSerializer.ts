@@ -2,7 +2,6 @@ import { GameEngineType } from '@core/enums/engine/GameEngineType';
 import { GFFDataType } from '@core/enums/resource/GFFDataType';
 import { GFFField } from '@core/resource/GFFField';
 import { GFFObject } from '@core/resource/GFFObject';
-import type { GFFStruct } from '@core/resource/GFFStruct';
 import { GameState } from '@engine/runtime/GameState';
 import { waypointSerializer } from '@engine/module/serialization/WaypointSerializer';
 import { triggerSerializer } from '@engine/module/serialization/TriggerSerializer';
@@ -128,23 +127,6 @@ export class AreaGitSerializer {
       case 'PlaceableList': return placeableSerializer.serialize(object);
       case 'CreatureList': return creatureSerializer.serialize(object);
       case 'AreaEffectList': return areaEffectSerializer.serialize(object);
-      default:
-        throw new Error(`AreaGitSerializer: unsupported list ${listName}`);
-    }
-  }
-
-  static deserializeObject(listName: AreaGitListName, target: any, source: GFFObject | GFFStruct): void {
-    switch (listName) {
-      case 'WaypointList': return waypointSerializer.deserialize(target, source as any);
-      case 'TriggerList': return triggerSerializer.deserialize(target, source as any);
-      case 'SoundList': return soundSerializer.deserialize(target, source as any);
-      case 'CameraList': return areaCameraSerializer.deserialize(target, source as any);
-      case 'StoreList': return storeSerializer.deserialize(target, source as any);
-      case 'EncounterList': return encounterSerializer.deserialize(target, source as any);
-      case 'DoorList': return doorSerializer.deserialize(target, source as any);
-      case 'PlaceableList': return placeableSerializer.deserialize(target, source as any);
-      case 'CreatureList': return creatureSerializer.deserialize(target, source as any);
-      case 'AreaEffectList': return areaEffectSerializer.deserialize(target, source as any);
       default:
         throw new Error(`AreaGitSerializer: unsupported list ${listName}`);
     }

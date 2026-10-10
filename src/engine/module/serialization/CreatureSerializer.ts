@@ -6,25 +6,9 @@ import { CExoLocString } from '@core/resource/CExoLocString';
 import { ScriptHook } from '@core/enums/module/ScriptHook';
 import { GameEffectType } from '@core/enums/effects/GameEffectType';
 import type { Creature } from '@engine/module/Creature';
-import { GameObjectConstant } from '@core/enums/module/GameObjectConstant';
 import { GameState } from '@engine/runtime/GameState';
 import type { DeserializeContext, GameObjectSerializer, SerializeContext } from '@engine/module/serialization/types';
 import { gffRootOf } from '@engine/module/serialization/types';
-import * as THREE from 'three';
-
-function defaultPartyFollowInfo() {
-  return {
-    followObject: GameObjectConstant.OBJECT_INVALID,
-    followLocation: new THREE.Vector3(0, 0, 0),
-    lastLeaderPos: new THREE.Vector3(0, 0, 0),
-    lastFollowerPos: new THREE.Vector3(0, 0, 0),
-    maxSpeed: 0,
-    stickToPos: 0,
-    result: 2,
-    timeElapsed: 0,
-    inSafetyRange: 0,
-  };
-}
 import {
   addByte,
   addChar,
@@ -59,6 +43,13 @@ import { CombatRoundSerializer } from '@engine/module/serialization/CombatRoundS
 import { CreatureClassSerializer } from '@engine/module/serialization/CreatureClassSerializer';
 import { TalentFeatSerializer } from '@engine/module/serialization/TalentFeatSerializer';
 import { TalentSkillSerializer } from '@engine/module/serialization/TalentSkillSerializer';
+import { ExpressionListSerializer } from '@engine/module/serialization/ExpressionListSerializer';
+import {
+  createDefaultPartyFollowInfoDto,
+  PartyFollowInfoSerializer,
+} from '@engine/module/serialization/PartyFollowInfoSerializer';
+import { LevelStatListSerializer } from '@engine/module/serialization/LevelStatListSerializer';
+import { NestedItemListSerializer } from '@engine/module/serialization/NestedItemListSerializer';
 
 export const CREATURE_SCRIPT_KEYS = [
   ScriptHook.CreatureOnAttacked,
@@ -159,6 +150,8 @@ export class CreatureSerializer implements GameObjectSerializer<Creature, GFFObj
     }
 
     if (root.hasField('FirstName')) target.firstName = readLocString(root, 'FirstName') as any;
+    if (root.hasField('Deity')) target.deity = readString(root, 'Deity');
+    if (root.hasField('Description')) target.description = readLocString(root, 'Description') as any;
     if (root.hasField('ForcePoints')) target.forcePoints = readShort(root, 'ForcePoints');
     if (root.hasField('Gender')) target.gender = readByte(root, 'Gender');
     if (root.hasField('GoodEvil')) {
@@ -168,6 +161,8 @@ export class CreatureSerializer implements GameObjectSerializer<Creature, GFFObj
     if (root.hasField('Hologram')) target.isHologram = readByte(root, 'Hologram');
     if (root.hasField('Interruptable')) target.interruptable = readByte(root, 'Interruptable');
     if (root.hasField('IsPC')) target.isPC = readByte(root, 'IsPC');
+    if (root.hasField('JoiningXP')) target.joiningXP = readInt(root, 'JoiningXP');
+    if (root.hasField('PlayerCreated')) target.playerCreated = readInt(root, 'PlayerCreated') !== 0;
     if (root.hasField('LastName')) target.lastName = readLocString(root, 'LastName') as any;
 
     if (root.hasField('MaxHitPoints')) target.maxHitPoints = readShort(root, 'MaxHitPoints');
@@ -286,6 +281,16 @@ export class CreatureSerializer implements GameObjectSerializer<Creature, GFFObj
     }
 
     NamedVarTableSerializer.deserialize(target, root);
+    (target as any)._pendingListeningPatterns = ExpressionListSerializer.read(root);
+    target.partyFollowInfo = PartyFollowInfoSerializer.read(root);
+    target.levelStats = LevelStatListSerializer.read(root);
+    if (root.hasField('Animation')) {
+      (target as any)._pendingAnimation = readInt(root, 'Animation');
+    }
+    (target as any)._pendingEquipmentEntries =
+      NestedItemListSerializer.readEquipment(root);
+    (target as any)._pendingInventoryEntries =
+      NestedItemListSerializer.readInventory(root);
     ActionListSerializer.deserializeFromContext(target as any, root, context);
     EffectListSerializer.deserializeFromContext(target as any, root, context);
 
@@ -387,16 +392,7 @@ export class CreatureSerializer implements GameObjectSerializer<Creature, GFFObj
 
     addDword(gff.RootNode, 'Experience', source.experience);
 
-    if (source.listeningPatterns.length > 0) {
-      const expressionList = gff.RootNode.addField(new GFFField(GFFDataType.LIST, 'ExpressionList'));
-      for (let i = 0; i < source.listeningPatterns.length; i++) {
-        const entry = source.listeningPatterns[i];
-        const expressionStruct = new GFFStruct(5);
-        expressionStruct.addField(new GFFField(GFFDataType.INT, 'ExpressionId')).setValue(entry.number);
-        expressionStruct.addField(new GFFField(GFFDataType.CEXOSTRING, 'ExpressionString')).setValue(entry.pattern);
-        expressionList.addChildStruct(expressionStruct);
-      }
-    }
+    ExpressionListSerializer.writeField(gff.RootNode, source.listeningPatterns);
 
     addWord(gff.RootNode, 'FactionID', source.faction ? source.faction.id : source.factionId);
 
@@ -532,39 +528,18 @@ export class CreatureSerializer implements GameObjectSerializer<Creature, GFFObj
 
     // Party-member FollowInfo — observed on savegame UTC for party members.
     if (source.isPM) {
-      const follow = source.partyFollowInfo || defaultPartyFollowInfo();
+      const follow = source.partyFollowInfo || createDefaultPartyFollowInfoDto();
       source.partyFollowInfo = follow;
-      const followField = gff.RootNode.addField(new GFFField(GFFDataType.STRUCT, 'FollowInfo'));
-      const followStruct = new GFFStruct(0);
-      followStruct.addField(new GFFField(GFFDataType.DWORD, 'FollowObject')).setValue(follow.followObject >>> 0);
-      followStruct.addField(new GFFField(GFFDataType.VECTOR, 'FollowLocation')).setValue(
-        follow.followLocation.clone(),
-      );
-      followStruct.addField(new GFFField(GFFDataType.VECTOR, 'LastLeaderPos')).setValue(
-        follow.lastLeaderPos.clone(),
-      );
-      followStruct.addField(new GFFField(GFFDataType.VECTOR, 'LastFollowerPos')).setValue(
-        follow.lastFollowerPos.clone(),
-      );
-      followStruct.addField(new GFFField(GFFDataType.FLOAT, 'MaxSpeed')).setValue(follow.maxSpeed);
-      followStruct.addField(new GFFField(GFFDataType.BYTE, 'StickToPos')).setValue(follow.stickToPos | 0);
-      followStruct.addField(new GFFField(GFFDataType.DWORD, 'Result')).setValue(follow.result >>> 0);
-      followStruct.addField(new GFFField(GFFDataType.DWORD, 'TimeElapsed')).setValue(follow.timeElapsed >>> 0);
-      followStruct.addField(new GFFField(GFFDataType.BYTE, 'InSafetyRange')).setValue(follow.inSafetyRange | 0);
-      followField.addChildStruct(followStruct);
+      PartyFollowInfoSerializer.writeField(gff.RootNode, follow);
     }
 
     // PC level-up history — only when player-controlled and ControlledNPC === -1.
     if (
       source.isPC &&
       GameState.PartyManager?.ControlledNPC === -1 &&
-      source.levelStats?.length > 0 &&
-      typeof source.saveLevelStatStruct === 'function'
+      source.levelStats?.length > 0
     ) {
-      const lvlStatList = gff.RootNode.addField(new GFFField(GFFDataType.LIST, 'LvlStatList'));
-      for (let i = 0; i < source.levelStats.length; i++) {
-        lvlStatList.addChildStruct(source.saveLevelStatStruct(source.levelStats[i], i));
-      }
+      LevelStatListSerializer.writeField(gff.RootNode, source.levelStats);
     }
 
     return gff;

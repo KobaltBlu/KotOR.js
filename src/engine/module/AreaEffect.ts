@@ -10,6 +10,7 @@ import { GameObjectConstant } from "@core/enums/module/GameObjectConstant";
 import { ScriptHook } from "@core/enums/module/ScriptHook";
 import { GameState } from "@engine/runtime/GameState";
 import { areaEffectSerializer } from "@engine/module/serialization/AreaEffectSerializer";
+import { GameObjectInitFinalizer } from "@engine/module/serialization/GameObjectInitFinalizer";
 import { GameEffectDurationType } from "@core/enums/effects/GameEffectDurationType";
 import { SignalEventType } from "@core/enums/events/SignalEventType";
 
@@ -238,6 +239,14 @@ export class AreaEffect extends GameObject {
 
     super.aiUpdate(delta);
 
+    if(
+      !this.linkedToObject &&
+      Number.isFinite(this.linkedToObjectId) &&
+      this.linkedToObjectId !== GameObjectConstant.OBJECT_INVALID
+    ){
+      this.linkedToObject = GameState.GameObjectManager.GetObjectById(this.linkedToObjectId);
+    }
+
     // Follow linked creature (circle + linked_to_object)
     if(
       this.shape !== AreaOfEffectShape.RECTANGLE &&
@@ -334,8 +343,16 @@ export class AreaEffect extends GameObject {
       effect.loadModel();
     }
 
-    if(needsRegister){
-      GameState.GameObjectManager.RegisterObject(this);
+    GameObjectInitFinalizer.finalize(this, {
+      needsRegister,
+      register: () => GameState.GameObjectManager.RegisterObject(this),
+    });
+
+    if(
+      Number.isFinite(this.linkedToObjectId) &&
+      this.linkedToObjectId !== GameObjectConstant.OBJECT_INVALID
+    ){
+      this.linkedToObject = GameState.GameObjectManager.GetObjectById(this.linkedToObjectId);
     }
   }
 

@@ -718,6 +718,7 @@ export class MiniGameGunBank extends GameObject {
     }else{
       console.warn('MiniGameGunBank: missing Bullet struct', this.bankID);
     }
+    this.initialized = true;
   }
 
 }

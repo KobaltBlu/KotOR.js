@@ -9,6 +9,7 @@ export { gffRootOf } from '@engine/module/serialization/types';
 export * from '@engine/module/serialization/gffHelpers';
 export { GameObjectLoadPipeline } from '@engine/module/serialization/GameObjectLoadPipeline';
 export type { BlueprintMergeOptions, BlueprintRefField, BlueprintResourceKey } from '@engine/module/serialization/GameObjectLoadPipeline';
+export { GameObjectInitFinalizer } from '@engine/module/serialization/GameObjectInitFinalizer';
 
 export { SwVarTableSerializer } from '@engine/module/serialization/SwVarTableSerializer';
 export { EventQueueSerializer } from '@engine/module/serialization/EventQueueSerializer';
@@ -44,6 +45,24 @@ export { CreatureClassSerializer } from '@engine/module/serialization/CreatureCl
 export { TalentFeatSerializer } from '@engine/module/serialization/TalentFeatSerializer';
 export { TalentSpellSerializer } from '@engine/module/serialization/TalentSpellSerializer';
 export { TalentSkillSerializer } from '@engine/module/serialization/TalentSkillSerializer';
+export {
+  ExpressionListSerializer,
+  type ListeningPatternDto,
+} from '@engine/module/serialization/ExpressionListSerializer';
+export {
+  PartyFollowInfoSerializer,
+  createDefaultPartyFollowInfoDto,
+  type PartyFollowInfoDto,
+} from '@engine/module/serialization/PartyFollowInfoSerializer';
+export { LevelStatListSerializer } from '@engine/module/serialization/LevelStatListSerializer';
+export {
+  NestedItemListSerializer,
+  type NestedItemEntry,
+} from '@engine/module/serialization/NestedItemListSerializer';
+export {
+  ItemInstanceOverlay,
+  type ItemInstanceOverlayFlags,
+} from '@engine/module/serialization/ItemInstanceOverlay';
 
 export { MiniGamePlayerSerializer, miniGamePlayerSerializer } from '@engine/module/serialization/MiniGamePlayerSerializer';
 export { MiniGameEnemySerializer, miniGameEnemySerializer } from '@engine/module/serialization/MiniGameEnemySerializer';

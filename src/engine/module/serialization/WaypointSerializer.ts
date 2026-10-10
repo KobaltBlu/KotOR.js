@@ -55,7 +55,6 @@ export class WaypointSerializer implements GameObjectSerializer<Waypoint, GFFObj
 
     ActionListSerializer.deserializeFromContext(target as any, root, context);
 
-    target.initialized = true;
   }
 
   serialize(source: Waypoint, _context?: SerializeContext): GFFObject {

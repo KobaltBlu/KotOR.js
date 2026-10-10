@@ -4,7 +4,9 @@ import { GFFObject } from "@core/resource/GFFObject";
 import { GameObjectType } from "@core/enums/module/GameObjectType";
 import { GameState } from "@engine/runtime/GameState";
 import { GameObjectLoadPipeline } from "@engine/module/serialization/GameObjectLoadPipeline";
+import { GameObjectInitFinalizer } from "@engine/module/serialization/GameObjectInitFinalizer";
 import { storeSerializer } from "@engine/module/serialization/StoreSerializer";
+import type { NestedItemEntry } from "@engine/module/serialization/NestedItemListSerializer";
 // import { GameObjectManager } from "@engine/managers";
 
 /**
@@ -80,23 +82,25 @@ export class Store extends GameObject {
       actionFromStruct: (struct) => GameState.ActionFactory.FromStruct(struct),
     });
 
-    if(this.template.RootNode.hasField('ItemList')){
+    const pendingInventory = (this as any)._pendingInventoryEntries as NestedItemEntry[] | undefined;
+    (this as any)._pendingInventoryEntries = undefined;
+    if(pendingInventory){
       // Avoid duplicating stock if initProperties runs again after a template merge.
       while(this.inventory.length){
         this.inventory.pop();
       }
-      const items = this.template.RootNode.getFieldByLabel('ItemList').getChildStructs() || [];
-      for(let i = 0; i < items.length; i++){
-        const moduleItem = new Item(GFFObject.FromStruct(items[i]));
+      for(let i = 0; i < pendingInventory.length; i++){
+        const moduleItem = new Item(GFFObject.FromStruct(pendingInventory[i].struct));
         const stacked = this.addItem(moduleItem);
         stacked.setPossessor(this);
       }
     }
 
 
-    if(needsRegister){
-      GameState.GameObjectManager.RegisterObject(this);
-    }
+    GameObjectInitFinalizer.finalize(this, {
+      needsRegister,
+      register: () => GameState.GameObjectManager.RegisterObject(this),
+    });
   }
 
   destroy(): void {

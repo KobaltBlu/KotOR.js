@@ -7,6 +7,7 @@ import { GFFObject } from '@core/resource/GFFObject';
 import { GFFField } from '@core/resource/GFFField';
 import { GFFDataType } from '@core/enums/resource/GFFDataType';
 import { itemSerializer } from '@engine/module/serialization/ItemSerializer';
+import { ItemInstanceOverlay } from '@engine/module/serialization/ItemInstanceOverlay';
 
 describe('ItemSerializer', () => {
   function makeTemplate(): GFFObject {
@@ -83,6 +84,33 @@ describe('ItemSerializer', () => {
     expect(item.stackSize).toBe(3);
     expect(item.identified).toBeTruthy();
     expect(item.position.x).toBeCloseTo(1, 5);
+    expect(item._bodyVariationFromGff).toBe(false);
+  });
+
+  it('records when BodyVariation was explicitly supplied', () => {
+    const template = makeTemplate();
+    template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'BodyVariation')).setValue(4);
+    const item = makeRuntimeItem();
+
+    itemSerializer.deserialize(item, template);
+
+    expect(item._bodyVariationFromGff).toBe(true);
+    expect(item.bodyVariation).toBe(4);
+  });
+
+  it('applies Dropable and Pickpocketable only when the instance supplied them', () => {
+    const omitted = ItemInstanceOverlay.capture(makeTemplate().RootNode);
+    const unchanged = { dropable: 7, pickpocketable: 8 };
+    ItemInstanceOverlay.apply(unchanged, omitted);
+    expect(unchanged).toEqual({ dropable: 7, pickpocketable: 8 });
+
+    const template = makeTemplate();
+    template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Dropable')).setValue(0);
+    template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Pickpocketable')).setValue(1);
+    const supplied = ItemInstanceOverlay.capture(template.RootNode);
+    const target = { dropable: 7, pickpocketable: 8 };
+    ItemInstanceOverlay.apply(target, supplied);
+    expect(target).toEqual({ dropable: 0, pickpocketable: 1 });
   });
 
   it('serializes a nested GFFStruct from runtime fields', () => {

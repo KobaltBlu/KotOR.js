@@ -28,7 +28,7 @@ export interface BlueprintMergeOptions {
 
 /**
  * Load-orchestration helpers that stay outside Serializer.deserialize.
- * Handles resref seeding and ut* blueprint merge onto a temporary GFF.
+ * Handles resref seeding and ut* blueprint preparation.
  */
 export class GameObjectLoadPipeline {
   static seedResRefs(template: GFFObject | undefined): { templateResRef: string; resRef: string } {
@@ -64,5 +64,20 @@ export class GameObjectLoadPipeline {
     const gff = new GFFObject(buffer);
     template.merge(gff);
     return true;
+  }
+
+  /**
+   * Prepare an instance GFF with its referenced blueprint.
+   *
+   * This migration step intentionally merges in place. GFFObject.FromStruct
+   * aliases the source fields, so using it as a clone could still mutate the
+   * caller and could duplicate fields through mergeStruct.
+   */
+  static prepareMergedSource(
+    instance: GFFObject,
+    options: BlueprintMergeOptions,
+  ): GFFObject {
+    GameObjectLoadPipeline.mergeBlueprint(instance, options);
+    return instance;
   }
 }

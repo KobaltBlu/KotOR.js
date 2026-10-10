@@ -15,6 +15,7 @@ import { GFFDataType } from "@core/enums/resource/GFFDataType";
 import { GameState } from "@engine/runtime/GameState";
 import { GameObjectLoadPipeline } from "@engine/module/serialization/GameObjectLoadPipeline";
 import { creatureSerializer } from "@engine/module/serialization/CreatureSerializer";
+import { LevelStatListSerializer } from "@engine/module/serialization/LevelStatListSerializer";
 import { NWScriptInstance } from "@engine/nwscript/NWScriptInstance";
 import { NWScriptEvent } from "@engine/nwscript/events";
 import { GFFField } from "@core/resource/GFFField";
@@ -54,8 +55,6 @@ import {
 import { GameEffectDurationType } from "@core/enums/effects/GameEffectDurationType";
 import { SWBodyBag } from "@engine/rules/SWBodyBag";
 import {
-  LevelUpAbilityIndex,
-  createEmptyLevelStatRecord,
   type LevelStatRecord,
 } from "@engine/rules/level-up";
 import { SkillType } from "@core/enums/nwscript/SkillType";
@@ -7379,14 +7378,14 @@ export class Creature extends GameObject {
   load(){
     this.seedResRefsFromTemplate();
     if(this.getTemplateResRef()){
-      //Load template and merge fields
-      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utc'], this.getTemplateResRef());
-      if(buffer){
-        const gff = new GFFObject(buffer);
-        this.template.merge(gff);
+      const merged = GameObjectLoadPipeline.mergeBlueprint(this.template, {
+        refField: 'TemplateResRef',
+        resourceKey: 'utc',
+        runtimeResRef: this.getTemplateResRef(),
+      });
+      if(merged){
         this.initProperties();
         this.loadScripts();
-        GameState.FactionManager.AddCreatureToFaction(this);
       }else{
         console.error('Failed to load character template');
         if(this.template instanceof GFFObject){
@@ -7398,6 +7397,8 @@ export class Creature extends GameObject {
       //We already have the template (From SAVEGAME)
       this.initProperties();
       this.loadScripts();
+    }
+    if(this.initialized){
       GameState.FactionManager.AddCreatureToFaction(this);
     }
     
@@ -8100,87 +8101,18 @@ export class Creature extends GameObject {
         delete (this as any)._pendingStealthMode;
       }
 
-      if(this.template.RootNode.hasField('ExpressionList')){
-        let expressions = this.template.RootNode.getFieldByLabel('ExpressionList').getChildStructs();
-        for(let i = 0; i < expressions.length; i++){
+      const pendingListeningPatterns = (this as any)._pendingListeningPatterns;
+      if(pendingListeningPatterns !== undefined){
+        for(let i = 0; i < pendingListeningPatterns.length; i++){
           this.setListeningPattern(
-            expressions[i].getFieldByLabel('ExpressionString').getValue(),
-            expressions[i].getFieldByLabel('ExpressionId').getValue()
+            pendingListeningPatterns[i].pattern,
+            pendingListeningPatterns[i].number,
           );
         }
+        delete (this as any)._pendingListeningPatterns;
       }
           
       this.faction = GameState.FactionManager.factions.get(this.factionId);
-
-      if(this.template.RootNode.hasField('FollowInfo')){
-        const followStruct = this.template.RootNode.getFieldByLabel('FollowInfo').getChildStructs()?.[0];
-        if(followStruct){
-          const info = createDefaultPartyFollowInfo();
-          if(followStruct.hasField('FollowObject'))
-            info.followObject = followStruct.getFieldByLabel('FollowObject').getValue() >>> 0;
-          if(followStruct.hasField('FollowLocation'))
-            info.followLocation.copy(followStruct.getFieldByLabel('FollowLocation').getVector() as THREE.Vector3);
-          if(followStruct.hasField('LastLeaderPos'))
-            info.lastLeaderPos.copy(followStruct.getFieldByLabel('LastLeaderPos').getVector() as THREE.Vector3);
-          if(followStruct.hasField('LastFollowerPos'))
-            info.lastFollowerPos.copy(followStruct.getFieldByLabel('LastFollowerPos').getVector() as THREE.Vector3);
-          if(followStruct.hasField('MaxSpeed'))
-            info.maxSpeed = followStruct.getFieldByLabel('MaxSpeed').getValue();
-          if(followStruct.hasField('StickToPos'))
-            info.stickToPos = followStruct.getFieldByLabel('StickToPos').getValue() | 0;
-          if(followStruct.hasField('Result'))
-            info.result = followStruct.getFieldByLabel('Result').getValue() >>> 0;
-          if(followStruct.hasField('TimeElapsed'))
-            info.timeElapsed = followStruct.getFieldByLabel('TimeElapsed').getValue() >>> 0;
-          if(followStruct.hasField('InSafetyRange'))
-            info.inSafetyRange = followStruct.getFieldByLabel('InSafetyRange').getValue() | 0;
-          this.partyFollowInfo = info;
-        }
-      }
-
-      if(this.template.RootNode.hasField('LvlStatList')){
-        this.levelStats = [];
-        const lvlList = this.template.RootNode.getFieldByLabel('LvlStatList').getChildStructs();
-        for(let i = 0; i < lvlList.length; i++){
-          const ls = lvlList[i];
-          const rec = createEmptyLevelStatRecord();
-          if(ls.hasField('LvlStatClass'))
-            rec.classId = ls.getFieldByLabel('LvlStatClass').getValue() | 0;
-          if(ls.hasField('LvlStatHitDie'))
-            rec.hpChange = ls.getFieldByLabel('LvlStatHitDie').getValue() | 0;
-          if(ls.hasField('LvlStatForce'))
-            rec.fpChange = ls.getFieldByLabel('LvlStatForce').getValue() | 0;
-          if(ls.hasField('LvlStatAbility'))
-            rec.attributeIndex = ls.getFieldByLabel('LvlStatAbility').getValue() | 0;
-          if(ls.hasField('SkillPoints'))
-            rec.skillPointsRemaining = ls.getFieldByLabel('SkillPoints').getValue() | 0;
-          if(ls.hasField('SkillList')){
-            const skills = ls.getFieldByLabel('SkillList').getChildStructs();
-            for(let s = 0; s < SkillType.MAX_SKILLS && s < skills.length; s++){
-              rec.skillRankChanges[s] = skills[s].getFieldByLabel('Rank')?.getValue() | 0;
-            }
-          }
-          if(ls.hasField('FeatList')){
-            const feats = ls.getFieldByLabel('FeatList').getChildStructs();
-            for(let f = 0; f < feats.length; f++){
-              rec.feats.push(feats[f].getFieldByLabel('Feat')?.getValue() | 0);
-            }
-          }
-          if(ls.hasField('KnownList0')){
-            const known = ls.getFieldByLabel('KnownList0').getChildStructs();
-            for(let k = 0; k < known.length; k++){
-              rec.spellsAdded.push(known[k].getFieldByLabel('Spell')?.getValue() | 0);
-            }
-          }
-          if(ls.hasField('KnownRemoveList0')){
-            const removed = ls.getFieldByLabel('KnownRemoveList0').getChildStructs();
-            for(let k = 0; k < removed.length; k++){
-              rec.spellsRemoved.push(removed[k].getFieldByLabel('Spell')?.getValue() | 0);
-            }
-          }
-          this.levelStats.push(rec);
-        }
-      }
 
       const pendingPerceptionRangeId = (this as any)._pendingPerceptionRangeId;
       if(pendingPerceptionRangeId !== undefined){
@@ -8193,9 +8125,7 @@ export class Creature extends GameObject {
         this.perceptionRange = GameState.SWRuleSet.ranges[11];
       }
 
-      if(this.template.RootNode.hasField('PortraitId')){
-        this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
-      }
+      this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
 
       try{
         for(let i = 0; i < this.effects.length; i++){
@@ -8208,15 +8138,15 @@ export class Creature extends GameObject {
       }
 
       try{
-        if(this.template.RootNode.hasField('Equip_ItemList')){
-          let equipment = this.template.RootNode.getFieldByLabel('Equip_ItemList').getChildStructs() || [];
-          for(let i = 0; i < equipment.length; i++){
-            let strt = equipment[i];
+        const pendingEquipmentEntries = (this as any)._pendingEquipmentEntries;
+        if(pendingEquipmentEntries !== undefined){
+          for(let i = 0; i < pendingEquipmentEntries.length; i++){
+            const entry = pendingEquipmentEntries[i];
             let equipped_item = undefined;
-            let slot_type = strt.type;
+            const slot_type = entry.slotType;
             // Always FromStruct so Equip_ItemList Dropable/Pickpocketable survive UTI merge
             // (ReadItemsFromGff: LoadFromTemplate then re-apply Dropable from the struct).
-            equipped_item = new GameState.Module.Area.Item(GFFObject.FromStruct(strt));
+            equipped_item = new GameState.Module.Area.Item(GFFObject.FromStruct(entry.struct));
             
             switch(slot_type){
               case ModuleCreatureArmorSlot.HEAD:
@@ -8271,6 +8201,7 @@ export class Creature extends GameObject {
               break;
             }
           }
+          delete (this as any)._pendingEquipmentEntries;
         }
       }catch(e: any){
         console.error(e);
@@ -8278,11 +8209,12 @@ export class Creature extends GameObject {
 
       this.parseEquipmentSlots();
 
-      if(this.template.RootNode.hasField('ItemList')){
-        const inventory = this.template.RootNode.getFieldByLabel('ItemList').getChildStructs();
-        for(let i = 0; i < inventory.length; i++){
-          this.loadItem(GFFObject.FromStruct(inventory[i]));
+      const pendingInventoryEntries = (this as any)._pendingInventoryEntries;
+      if(pendingInventoryEntries !== undefined){
+        for(let i = 0; i < pendingInventoryEntries.length; i++){
+          this.loadItem(GFFObject.FromStruct(pendingInventoryEntries[i].struct));
         }
+        delete (this as any)._pendingInventoryEntries;
       }
       this.loadSoundSet();
 
@@ -8305,8 +8237,10 @@ export class Creature extends GameObject {
     // then SetAnimation. Always re-resolve after HP is loaded so pause is not
     // stuck on pauseinj from a pre-stats constructor resolve.
     let anim = ModuleCreatureAnimState.PAUSE;
-    if(this.template.RootNode.hasField('Animation')){
-      anim = this.template.getFieldByLabel('Animation').getValue();
+    const pendingAnimation = (this as any)._pendingAnimation;
+    if(pendingAnimation !== undefined){
+      anim = pendingAnimation;
+      delete (this as any)._pendingAnimation;
     }
     if(!anim || anim === ModuleCreatureAnimState.INVALID){
       anim = ModuleCreatureAnimState.PAUSE;
@@ -8629,43 +8563,7 @@ export class Creature extends GameObject {
    * Omits LvlStatAbility for level index 0 or when no ability bump.
    */
   saveLevelStatStruct(rec: LevelStatRecord, levelIndex: number): GFFStruct {
-    const s = new GFFStruct(0);
-    if(levelIndex > 0 && rec.attributeIndex >= 0 && rec.attributeIndex !== LevelUpAbilityIndex.NONE){
-      s.addField( new GFFField(GFFDataType.BYTE, 'LvlStatAbility') ).setValue(rec.attributeIndex | 0);
-    }
-    s.addField( new GFFField(GFFDataType.BYTE, 'LvlStatHitDie') ).setValue(rec.hpChange | 0);
-    s.addField( new GFFField(GFFDataType.BYTE, 'LvlStatForce') ).setValue(rec.fpChange | 0);
-    s.addField( new GFFField(GFFDataType.BYTE, 'LvlStatClass') ).setValue(rec.classId | 0);
-    if(rec.spellsAdded.length > 0){
-      const known = s.addField( new GFFField(GFFDataType.LIST, 'KnownList0') );
-      for(let i = 0; i < rec.spellsAdded.length; i++){
-        const ks = new GFFStruct(0);
-        ks.addField( new GFFField(GFFDataType.WORD, 'Spell') ).setValue(rec.spellsAdded[i] | 0);
-        known.addChildStruct(ks);
-      }
-    }
-    if(rec.spellsRemoved.length > 0){
-      const rem = s.addField( new GFFField(GFFDataType.LIST, 'KnownRemoveList0') );
-      for(let i = 0; i < rec.spellsRemoved.length; i++){
-        const rs = new GFFStruct(0);
-        rs.addField( new GFFField(GFFDataType.WORD, 'Spell') ).setValue(rec.spellsRemoved[i] | 0);
-        rem.addChildStruct(rs);
-      }
-    }
-    s.addField( new GFFField(GFFDataType.WORD, 'SkillPoints') ).setValue(rec.skillPointsRemaining | 0);
-    const skillList = s.addField( new GFFField(GFFDataType.LIST, 'SkillList') );
-    for(let i = 0; i < SkillType.MAX_SKILLS; i++){
-      const sk = new GFFStruct(0);
-      sk.addField( new GFFField(GFFDataType.BYTE, 'Rank') ).setValue((rec.skillRankChanges[i] | 0) & 0xff);
-      skillList.addChildStruct(sk);
-    }
-    const featList = s.addField( new GFFField(GFFDataType.LIST, 'FeatList') );
-    for(let i = 0; i < rec.feats.length; i++){
-      const fs = new GFFStruct(0);
-      fs.addField( new GFFField(GFFDataType.WORD, 'Feat') ).setValue(rec.feats[i] | 0);
-      featList.addChildStruct(fs);
-    }
-    return s;
+    return LevelStatListSerializer.serializeRecord(rec, levelIndex);
   }
 
   save(){

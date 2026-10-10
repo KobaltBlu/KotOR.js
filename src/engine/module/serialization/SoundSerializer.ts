@@ -86,7 +86,6 @@ export class SoundSerializer implements GameObjectSerializer<Sound, GFFObject, G
     ActionListSerializer.deserializeFromContext(target as any, root, context);
 
 
-    target.initialized = true;
   }
 
   serialize(source: Sound, _context?: SerializeContext): GFFObject {

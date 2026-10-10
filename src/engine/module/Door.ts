@@ -42,6 +42,7 @@ import { CombatActionType } from "@core/enums/combat/CombatActionType";
 import { ScriptHook } from "@core/enums/module/ScriptHook";
 import { GameObjectLoadPipeline } from "@engine/module/serialization/GameObjectLoadPipeline";
 import { doorSerializer } from "@engine/module/serialization/DoorSerializer";
+import { GameObjectInitFinalizer } from "@engine/module/serialization/GameObjectInitFinalizer";
 import { composeDoorWalkmeshLocalToWorld } from "@engine/pathfinding/door-walkmesh-matrix";
 import { invalidateStaticBlockerGrid } from "@engine/pathfinding/static-blocker-grid";
 import type { Creature } from "@engine/module/Creature";
@@ -1366,9 +1367,10 @@ export class Door extends GameObject {
     }
 
 
-    if(needsRegister){
-      GameState.GameObjectManager.RegisterObject(this);
-    }
+    GameObjectInitFinalizer.finalize(this, {
+      needsRegister,
+      register: () => GameState.GameObjectManager.RegisterObject(this),
+    });
   }
 
   destroy(): void {

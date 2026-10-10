@@ -535,7 +535,6 @@ function spawnCreatureFromSpawnList(encounter: Encounter): Creature | undefined 
   );
   encounter.spawnList.shift();
 
-  GameState.GameObjectManager.RegisterObject(creature);
   area.attachObject(creature);
   void creature.loadModel?.().then((model: OdysseyModel3D) => {
     if(!model) return;
@@ -944,6 +943,7 @@ export class Encounter extends GameObject {
     if(needsRegister){
       GameState.GameObjectManager.RegisterObject(this);
     }
+    this.initialized = true;
   }
 
   destroy(): void {

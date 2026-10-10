@@ -114,7 +114,6 @@ export class TriggerSerializer implements GameObjectSerializer<Trigger, GFFObjec
     ActionListSerializer.deserializeFromContext(target as any, root, context);
 
 
-    target.initialized = true;
   }
 
   serialize(source: Trigger, _context?: SerializeContext): GFFObject {

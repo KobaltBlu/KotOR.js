@@ -24,6 +24,7 @@ import {
 import { SwVarTableSerializer } from '@engine/module/serialization/SwVarTableSerializer';
 import { ActionListSerializer } from '@engine/module/serialization/ActionListSerializer';
 import { itemSerializer } from '@engine/module/serialization/ItemSerializer';
+import { NestedItemListSerializer } from '@engine/module/serialization/NestedItemListSerializer';
 
 /**
  * Store GIT/UTM serializer.
@@ -63,8 +64,7 @@ export class StoreSerializer implements GameObjectSerializer<Store, GFFObject, G
 
     ActionListSerializer.deserializeFromContext(target as any, root, context);
 
-
-    target.initialized = true;
+    (target as any)._pendingInventoryEntries = NestedItemListSerializer.readInventory(root);
   }
 
   serialize(source: Store, _context?: SerializeContext): GFFObject {

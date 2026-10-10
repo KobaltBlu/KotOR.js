@@ -3296,10 +3296,17 @@ export class GameObject {
   }
 
   /**
-   * Initialize the properties
+   * Base GameObject hydration is intentionally unsupported. Concrete object
+   * facades must deserialize through their dedicated serializer.
    */
   initProperties(){
+    throw new Error(
+      `${this.constructor.name}.initProperties must use a concrete GameObject serializer`,
+    );
 
+    /*
+     * Removed legacy field-by-field hydration retained temporarily in source
+     * history only; concrete serializers own all hydration.
     const needsRegister = !this.initialized;
 
     if(needsRegister){
@@ -3480,18 +3487,7 @@ export class GameObject {
     }
 
     this.initialized = true;
-
-  }
-
-  /**
-   * Save the object
-   */
-  Save(){
-    //TODO
-
-    let gff = new GFFObject();
-
-    return gff;
+    */
 
   }
 

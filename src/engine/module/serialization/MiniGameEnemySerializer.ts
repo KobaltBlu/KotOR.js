@@ -34,7 +34,6 @@ export class MiniGameEnemySerializer implements GameObjectSerializer<MiniGameEne
     }
     if (root.hasField('Trigger')) target.isTrigger = readBoolByte(root, 'Trigger');
 
-    target.initialized = true;
   }
 
   serialize(_source: MiniGameEnemy, _context?: SerializeContext): any {

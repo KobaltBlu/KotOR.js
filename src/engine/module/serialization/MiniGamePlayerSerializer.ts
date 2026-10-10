@@ -36,7 +36,6 @@ export class MiniGamePlayerSerializer implements GameObjectSerializer<MiniGamePl
     else if (root.hasField('TunneZNeg')) target.tunnel.neg.z = readFloat(root, 'TunneZNeg');
     if (root.hasField('TunnelZPos')) target.tunnel.pos.z = readFloat(root, 'TunnelZPos');
 
-    target.initialized = true;
   }
 
   serialize(_source: MiniGamePlayer, _context?: SerializeContext): any {

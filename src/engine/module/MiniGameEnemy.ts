@@ -769,6 +769,7 @@ export class MiniGameEnemy extends GameObject {
       this.template.getFieldByLabel('Scripts')?.getFieldStruct(),
       MiniGameEnemy.SCRIPT_KEYS
     );
+    this.initialized = true;
   }
 
 

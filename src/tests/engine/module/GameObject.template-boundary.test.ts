@@ -13,7 +13,7 @@ const MANAGER_DIR = path.resolve(__dirname, '../../../engine/managers');
 
 /** Methods / helpers that may touch this.template (init + save only). */
 const ALLOWED_METHOD_RE =
-  /^(constructor|load|loadScripts|loadInventory|loadItem|loadActionList|loadNamedVarTable|initProperties|seedResRefsFromTemplate|hydrateScriptResRefsFromTemplate|hydrateScriptResRefsFromStruct|bindScriptsFromResRefs|save|Save|saveLevelStatStruct|actionQueueToActionList|GenerateTemplate|FromResRef|spawnCreatureFromSpawnList|clone|destroy|getSWVarTableSaveStruct|writeNamedVarTable|loadFromPersistentRow|getPreviewModelResRef)$/;
+  /^(constructor|load|loadScripts|loadItem|loadActionList|loadNamedVarTable|initProperties|seedResRefsFromTemplate|hydrateScriptResRefsFromTemplate|hydrateScriptResRefsFromStruct|bindScriptsFromResRefs|save|Save|saveLevelStatStruct|actionQueueToActionList|GenerateTemplate|FromResRef|spawnCreatureFromSpawnList|clone|destroy|getSWVarTableSaveStruct|writeNamedVarTable|loadFromPersistentRow|getPreviewModelResRef)$/;
 
 const CONTROL_FLOW_NAMES = new Set([
   'if', 'else', 'for', 'while', 'switch', 'catch', 'try', 'do', 'return', 'throw',
@@ -241,6 +241,45 @@ describe('GameObject template access boundary', () => {
       }
     }
 
+    expect(violations).toEqual([]);
+  });
+
+  it('facades do not walk serializer-owned hydration labels', () => {
+    const checks: Array<[string, string, string[]]> = [
+      [
+        'Creature.ts',
+        'initProperties',
+        ['ExpressionList', 'FollowInfo', 'LvlStatList', 'Equip_ItemList', 'ItemList', 'Animation'],
+      ],
+      ['Store.ts', 'loadInventory', ['ItemList']],
+      ['Store.ts', 'initProperties', ['ItemList']],
+      ['Placeable.ts', 'loadInventory', ['ItemList']],
+      ['Item.ts', 'initProperties', ['Dropable', 'Pickpocketable']],
+    ];
+
+    for (const [file, methodName, labels] of checks) {
+      const source = fs.readFileSync(path.join(MODULE_DIR, file), 'utf8');
+      const method = extractMethods(source).find((entry) => entry.name === methodName);
+      // Store realizes pending inventory inside initProperties and has no loadInventory method.
+      if (file === 'Store.ts' && methodName === 'loadInventory' && !method) continue;
+      expect(method).toBeDefined();
+      for (const label of labels) {
+        const fieldWalk = new RegExp(
+          `(?:getFieldByLabel|hasField)\\(\\s*['"]${label}['"]`,
+        );
+        expect(method!.body).not.toMatch(fieldWalk);
+      }
+    }
+  });
+
+  it('serializers do not assign the initialized lifecycle flag', () => {
+    const serializationDir = path.join(MODULE_DIR, 'serialization');
+    const violations = listTsFiles(serializationDir)
+      .filter((file) => path.basename(file) !== 'GameObjectInitFinalizer.ts')
+      .filter((file) => /target\.initialized\s*=\s*true/.test(
+        stripNoise(fs.readFileSync(file, 'utf8')),
+      ))
+      .map((file) => path.basename(file));
     expect(violations).toEqual([]);
   });
 });

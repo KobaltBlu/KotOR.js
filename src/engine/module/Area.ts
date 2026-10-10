@@ -3199,6 +3199,15 @@ export class Area extends GameObject {
         console.error(e);
       }
     }
+    for(let i = 0; i < this.areaOfEffects.length; i++){
+      const aoe = this.areaOfEffects[i];
+      if(
+        Number.isFinite(aoe.linkedToObjectId) &&
+        aoe.linkedToObjectId !== GameObjectConstant.OBJECT_INVALID
+      ){
+        aoe.linkedToObject = GameState.GameObjectManager.GetObjectById(aoe.linkedToObjectId);
+      }
+    }
   }
 
   /**

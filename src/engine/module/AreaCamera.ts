@@ -169,6 +169,7 @@ export class AreaCamera {
    */
   initProperties(){
     areaCameraSerializer.deserialize(this, this.template);
+    this.initialized = true;
   }
 
   /**

@@ -316,6 +316,7 @@ export class MiniGameGunBullet extends GameObject {
 
   initProperties(){
     miniGameGunBulletSerializer.deserialize(this, this.template);
+    this.initialized = true;
   }
 
 }

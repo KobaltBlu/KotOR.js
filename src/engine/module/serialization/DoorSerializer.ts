@@ -163,7 +163,6 @@ export class DoorSerializer implements GameObjectSerializer<Door, GFFObject, GFF
     ActionListSerializer.deserializeFromContext(target as any, root, context);
     EffectListSerializer.deserializeFromContext(target as any, root, context);
 
-    target.initialized = true;
   }
 
   serialize(source: Door, _context?: SerializeContext): GFFObject {

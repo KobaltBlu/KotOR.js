@@ -38,7 +38,6 @@ export class AreaCameraSerializer implements GameObjectSerializer<AreaCamera, GF
       target.position.set(position.x, position.y, position.z);
     }
 
-    target.initialized = true;
   }
 
   serialize(source: AreaCamera, _context?: SerializeContext): GFFObject {

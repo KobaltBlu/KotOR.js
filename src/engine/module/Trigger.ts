@@ -527,6 +527,7 @@ export class Trigger extends GameObject {
         this.trapResRef = trap.resref;
       }
     }
+    this.initialized = true;
   }
 
   destroy(): void {

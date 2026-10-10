@@ -36,6 +36,7 @@ export class ItemSerializer implements GameObjectSerializer<Item, any, GFFStruct
 
     const root = gffRootOf(source);
     const needsRegister = !target.initialized;
+    (target as any)._bodyVariationFromGff = root.hasField('BodyVariation');
 
     if (needsRegister) {
       const objectId = readObjectId(root);
@@ -99,7 +100,6 @@ export class ItemSerializer implements GameObjectSerializer<Item, any, GFFStruct
       );
     }
 
-    target.initialized = true;
   }
 
   serialize(source: Item, context?: SerializeContext): GFFStruct {

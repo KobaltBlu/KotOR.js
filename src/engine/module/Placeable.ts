@@ -35,6 +35,7 @@ import { GameEffectDurationType } from "@core/enums/effects/GameEffectDurationTy
 import { GameObject } from "@engine/module/GameObject";
 import { GameObjectLoadPipeline } from "@engine/module/serialization/GameObjectLoadPipeline";
 import { placeableSerializer } from "@engine/module/serialization/PlaceableSerializer";
+import type { NestedItemEntry } from "@engine/module/serialization/NestedItemListSerializer";
 import { Item } from "@engine/module/Item";
 import type { Area } from "@engine/module/Area";
 import type { Creature } from "@engine/module/Creature";
@@ -849,12 +850,11 @@ export class Placeable extends GameObject {
   }
 
   loadInventory(){
-    // ItemList is consumed once during load into this.inventory.
-    const inventory = this.template?.RootNode?.hasField('ItemList')
-      ? this.template.RootNode.getFieldByLabel('ItemList').getChildStructs()
-      : [];
+    const inventory = (this as any)._pendingInventoryEntries as NestedItemEntry[] | undefined;
+    (this as any)._pendingInventoryEntries = undefined;
+    if(!inventory){ return; }
     for(let i = 0; i < inventory.length; i++){
-      this.loadItem( GFFObject.FromStruct( inventory[i] ) );
+      this.loadItem(GFFObject.FromStruct(inventory[i].struct));
     }
   }
 
@@ -963,6 +963,7 @@ export class Placeable extends GameObject {
     if(needsRegister){
       GameState.GameObjectManager.RegisterObject(this);
     }
+    this.initialized = true;
   }
 
   /**

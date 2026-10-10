@@ -8,6 +8,7 @@ import { GameObjectType } from "@core/enums/module/GameObjectType";
 import EngineLocation from "@engine/runtime/EngineLocation";
 import { GameState } from "@engine/runtime/GameState";
 import { GameObjectLoadPipeline } from "@engine/module/serialization/GameObjectLoadPipeline";
+import { GameObjectInitFinalizer } from "@engine/module/serialization/GameObjectInitFinalizer";
 import { waypointSerializer } from "@engine/module/serialization/WaypointSerializer";
 
 /**
@@ -98,9 +99,10 @@ export class Waypoint extends GameObject {
     waypointSerializer.deserialize(this, this.template, {
       actionFromStruct: (struct) => GameState.ActionFactory.FromStruct(struct),
     });
-    if(needsRegister){
-      GameState.GameObjectManager.RegisterObject(this);
-    }
+    GameObjectInitFinalizer.finalize(this, {
+      needsRegister,
+      register: () => GameState.GameObjectManager.RegisterObject(this),
+    });
   }
 
   save(){

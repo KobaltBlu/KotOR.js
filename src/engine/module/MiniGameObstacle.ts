@@ -291,6 +291,7 @@ export class MiniGameObstacle extends GameObject {
 
   initProperties(){
     miniGameObstacleSerializer.deserialize(this, this.template);
+    this.initialized = true;
   }
 
   /** Tear down for DestroyMiniGameObject / area dispose. */

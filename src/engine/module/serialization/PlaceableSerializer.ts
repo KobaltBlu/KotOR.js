@@ -37,6 +37,7 @@ import { PositionBearingTransform } from '@engine/module/serialization/transform
 import { ActionListSerializer } from '@engine/module/serialization/ActionListSerializer';
 import { EffectListSerializer } from '@engine/module/serialization/EffectListSerializer';
 import { itemSerializer } from '@engine/module/serialization/ItemSerializer';
+import { NestedItemListSerializer } from '@engine/module/serialization/NestedItemListSerializer';
 
 export const PLACEABLE_SCRIPT_KEYS = [
   ScriptHook.PlaceableOnClosed,
@@ -194,7 +195,7 @@ export class PlaceableSerializer implements GameObjectSerializer<Placeable, GFFO
     ActionListSerializer.deserializeFromContext(target as any, root, context);
     EffectListSerializer.deserializeFromContext(target as any, root, context);
 
-    target.initialized = true;
+    (target as any)._pendingInventoryEntries = NestedItemListSerializer.readInventory(root);
   }
 
   serialize(source: Placeable, _context?: SerializeContext): GFFObject {

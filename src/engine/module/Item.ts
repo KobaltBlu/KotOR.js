@@ -23,6 +23,7 @@ import { ItemProperty } from "@engine/items/ItemProperty";
 import { GameState } from "@engine/runtime/GameState";
 import { GameObjectLoadPipeline } from "@engine/module/serialization/GameObjectLoadPipeline";
 import { itemSerializer } from "@engine/module/serialization/ItemSerializer";
+import { ItemInstanceOverlay } from "@engine/module/serialization/ItemInstanceOverlay";
 import { GameEngineType } from "@core/enums/engine/GameEngineType";
 import { ActionParameterType, ActionType, GameEffectDurationType, ModuleCreatureAnimState, SkillType } from "@core/enums";
 import { CombatActionType } from "@core/enums/combat/CombatActionType";
@@ -1454,64 +1455,52 @@ export class Item extends GameObject {
   }
 
   load(){
-    // LoadItem: LoadFromTemplate then re-apply instance Dropable /
-    // Pickpocketable only when present on the Equip_ItemList / ItemList struct.
-    const hadDropable = this.template?.RootNode?.hasField('Dropable');
-    const instanceDropable = hadDropable
-      ? this.template.getFieldByLabel('Dropable').getValue()
-      : undefined;
-    const hadPickpocketable = this.template?.RootNode?.hasField('Pickpocketable');
-    const instancePickpocketable = hadPickpocketable
-      ? this.template.getFieldByLabel('Pickpocketable').getValue()
-      : undefined;
-    const applyInstanceFlags = () => {
-      // LoadItem: only overwrite Dropable/Pickpocketable when the instance
-      // Equip_ItemList / ItemList struct has the field; otherwise keep UTI values.
-      if(hadDropable){
-        this.dropable = instanceDropable;
-      }
-      if(hadPickpocketable){
-        this.pickpocketable = instancePickpocketable;
-      }
-    };
+    const instanceOverlay = ItemInstanceOverlay.capture(this.template.RootNode);
 
     if(!this.loaded && this.getEquippedRes()){
-      //Load template and merge fields
-      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['uti'], this.getEquippedRes());
-      if(buffer){
-        const gff = new GFFObject(buffer);
-        this.template.merge(gff);
+      const merged = GameObjectLoadPipeline.mergeBlueprint(this.template, {
+        refField: 'EquippedRes',
+        resourceKey: 'uti',
+        runtimeResRef: this.getEquippedRes(),
+      });
+      if(merged){
         this.initProperties();
-        applyInstanceFlags();
+        ItemInstanceOverlay.apply(this, instanceOverlay);
+        this.loaded = true;
         return true;
       }else{
         console.error('Failed to load Item template');
         if(this.template instanceof GFFObject){
           this.initProperties();
-          applyInstanceFlags();
+          ItemInstanceOverlay.apply(this, instanceOverlay);
+          this.loaded = true;
         }
         return false;
       }
     }else if(!this.loaded && this.getInventoryRes()){
-      //Load template and merge fields
-      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['uti'], this.getInventoryRes());
-      if(buffer){
-        const gff = new GFFObject(buffer);
-        this.template.merge(gff);
+      const merged = GameObjectLoadPipeline.mergeBlueprint(this.template, {
+        refField: 'InventoryRes',
+        resourceKey: 'uti',
+        runtimeResRef: this.getInventoryRes(),
+      });
+      if(merged){
         this.initProperties();
-        applyInstanceFlags();
+        ItemInstanceOverlay.apply(this, instanceOverlay);
+        this.loaded = true;
         return true;
       }else{
         console.error('Failed to load Item template');
         if(this.template instanceof GFFObject){
           this.initProperties();
-          applyInstanceFlags();
+          ItemInstanceOverlay.apply(this, instanceOverlay);
+          this.loaded = true;
         }
         return false;
       }
     }else{
       //We already have the template (From SAVEGAME)
       this.initProperties();
+      this.loaded = true;
       // this.loadScripts;
       return true;
     }
@@ -1679,7 +1668,7 @@ export class Item extends GameObject {
     if(this.baseItemId !== undefined && this.baseItemId !== null){
       this.baseItem = BaseItem.From2DA(this.baseItemId);
     }
-    if(!this.template.RootNode.hasField('BodyVariation') && this.baseItem?.modelType == 1){
+    if(!(this as any)._bodyVariationFromGff && this.baseItem?.modelType == 1){
       const letter = this.baseItem.bodyVar;
       if(typeof letter === 'string' && letter.length){
         this.bodyVariation = Math.max(0, letter.toUpperCase().charCodeAt(0) - 64);
@@ -1691,6 +1680,7 @@ export class Item extends GameObject {
     if(needsRegister){
       GameState.GameObjectManager.RegisterObject(this);
     }
+    this.initialized = true;
   }
 
   setPossessor( oCreature: GameObject){

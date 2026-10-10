@@ -138,7 +138,6 @@ export class EncounterSerializer implements GameObjectSerializer<Encounter, GFFO
     ActionListSerializer.deserializeFromContext(target as any, root, context);
 
 
-    target.initialized = true;
   }
 
   serialize(source: Encounter, _context?: SerializeContext): GFFObject {

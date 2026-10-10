@@ -115,7 +115,6 @@ export class AreaEffectSerializer implements GameObjectSerializer<AreaEffect, GF
     ActionListSerializer.deserializeFromContext(target as any, root, context);
     EffectListSerializer.deserializeFromContext(target as any, root, context);
 
-    target.initialized = true;
   }
 
   serialize(source: AreaEffect, _context?: SerializeContext): GFFObject {
