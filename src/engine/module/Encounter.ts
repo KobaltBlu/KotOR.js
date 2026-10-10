@@ -15,9 +15,9 @@ import { ResourceLoader } from "@engine/loaders";
 // import { GameObjectManager, PartyManager, FactionManager } from "@engine/managers";
 import { GameObjectType } from "@core/enums/module/GameObjectType";
 import { GameObject } from "@engine/module/GameObject";
-import { EncounterCreatureEntry } from "@engine/module/EncounterCreatureEntry";
-import { EncounterSpawnPointEntry } from "@engine/module/EncounterSpawnPointEntry";
-import { EncounterSpawnEntry } from "@engine/module/EncounterSpawnEntry";
+import { EncounterCreatureEntry } from "@engine/module/encounter/EncounterCreatureEntry";
+import { EncounterSpawnPointEntry } from "@engine/module/encounter/EncounterSpawnPointEntry";
+import { EncounterSpawnEntry } from "@engine/module/encounter/EncounterSpawnEntry";
 import { ScriptHook } from "@core/enums/module/ScriptHook";
 import type { Creature } from "@engine/module/Creature";
 import { findHiddenWalkLocation, findOpenWalkLocation } from "@engine/pathfinding/open-walk-location";
@@ -928,12 +928,11 @@ export class Encounter extends GameObject {
 
   initProperties(){
     const needsRegister = !this.initialized;
-    encounterSerializer.deserialize(this, this.template, {
-      actionFromStruct: (struct) => GameState.ActionFactory.FromStruct(struct),
-    });
+    const runtime = getDefaultRuntimeContext();
+    encounterSerializer.deserialize(this, this.template, runtime.toDeserializeContext());
     this.faction = GameState.FactionManager.factions.get(this.factionId);
     if(needsRegister){
-      GameState.GameObjectManager.RegisterObject(this);
+      runtime.register(this);
     }
     this.initialized = true;
   }

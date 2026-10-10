@@ -1,5 +1,9 @@
+import { GameEngineType } from '@core/enums/engine/GameEngineType';
 import { GameState } from '@engine/runtime/GameState';
-import type { GameObjectRuntimeContext } from '@engine/runtime/context/types';
+import type {
+  DeserializeRuntimeContext,
+  GameObjectRuntimeContext,
+} from '@engine/runtime/context/types';
 
 /**
  * Compatibility adapter for runtime code that still stores its services on
@@ -39,6 +43,27 @@ export class GameStateRuntimeAdapter implements GameObjectRuntimeContext {
     return GameState.Mode;
   }
 
+  getGameKey(): 'k1' | 'k2' {
+    return GameState.GameKey == GameEngineType.TSL ? 'k2' : 'k1';
+  }
+
+  getAiScheduler(): any | undefined {
+    return GameState.module?.aiScheduler;
+  }
+
+  toDeserializeContext(): DeserializeRuntimeContext {
+    return {
+      actionFromStruct: (struct: any) => this.actionFromStruct(struct),
+      effectFromStruct: (struct: any) => this.effectFromStruct(struct),
+      gameKey: this.getGameKey(),
+      controlledNpcIndex: this.getControlledNpcIndex(),
+    };
+  }
+
+  isLoadingSave(): boolean {
+    return !!GameState.isLoadingSave;
+  }
+
   getParty(): any[] {
     return GameState.PartyManager?.party ?? [];
   }
@@ -75,9 +100,9 @@ export class GameStateRuntimeAdapter implements GameObjectRuntimeContext {
     return GameState.GameObjectManager?.GetNextPlayerId() ?? 0;
   }
 
-  createAction(name: string): any | undefined {
+  createAction(name: string, ...args: any[]): any | undefined {
     const Action = (GameState.ActionFactory as any)?.[name];
-    return Action ? new Action() : undefined;
+    return Action ? new Action(...args) : undefined;
   }
 
   actionFromStruct(struct: any): any | undefined {
@@ -98,12 +123,25 @@ export class GameStateRuntimeAdapter implements GameObjectRuntimeContext {
     return Trigger ? new Trigger() : undefined;
   }
 
+  createMiniGamePlayer(template?: any): any | undefined {
+    const MiniGamePlayer = GameState.Module?.Area?.MiniGamePlayer;
+    return MiniGamePlayer ? new MiniGamePlayer(template) : undefined;
+  }
+
   getTrapRow(id: number): any {
     return GameState.SWRuleSet?.traps?.[id];
   }
 
   getStringById(id: number): string | undefined {
     return GameState.TLKManager?.GetStringById?.(id)?.Value;
+  }
+
+  getSWRuleSet(): any | undefined {
+    return GameState.SWRuleSet;
+  }
+
+  getRules(): any | undefined {
+    return this.getSWRuleSet();
   }
 
   getGroup(): any {

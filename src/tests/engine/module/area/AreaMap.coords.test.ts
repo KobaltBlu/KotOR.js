@@ -9,7 +9,7 @@ import {
   AreaMap,
   AREA_MAP_LOGICAL_SIZE_TSL,
   AREA_MAP_LOGICAL_SIZE_K1,
-} from "@engine/module/AreaMap";
+} from "@engine/module/area/AreaMap";
 
 /**
  * Live / export-backed Map structs for N/E/S/W × K1/TSL.

@@ -806,7 +806,7 @@ export class Module {
     const runtime = getDefaultRuntimeContext();
     const ifo = ModuleIfoSerializer.serialize(this, {
       isSaveGame,
-      gameKey: GameState.GameKey == GameEngineType.TSL ? 'k2' : 'k1',
+      gameKey: runtime.getGameKey(),
       controlledNpcIndex: runtime.getControlledNpcIndex?.() ?? -1,
       playerUtc: GameState.PartyManager.Player,
     });

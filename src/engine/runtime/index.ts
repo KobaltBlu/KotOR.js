@@ -11,5 +11,6 @@ export * from "@engine/runtime/AIScheduler";
 export * from "@engine/runtime/LoadingScreen";
 export * from "@engine/runtime/post-load-reveal-fade";
 export * from "@engine/runtime/ModuleLoadCoordinator";
+export * from "@engine/runtime/ModulePlayEntrySequence";
 export * from "@engine/runtime/INIConfig";
 export * from "@engine/runtime/EngineLocation";

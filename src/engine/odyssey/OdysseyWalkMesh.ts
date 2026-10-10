@@ -5,7 +5,7 @@ import { OdysseyWalkMeshType } from "@core/enums/odyssey/OdysseyWalkMeshType";
 import { IOdysseyModelAABBNode } from "@engine/interface/odyssey/IOdysseyModelAABBNode";
 import { TwoDAManager } from "@core/managers/TwoDAManager";
 import type { GameObject } from "@engine/module/GameObject";
-import type { AreaRoom } from "@engine/module/AreaRoom";
+import type { AreaRoom } from "@engine/module/area/AreaRoom";
 import { OdysseyFace3 } from "@engine/render/three/odyssey/OdysseyFace3";
 import { SurfaceMaterial } from "@engine/movement/SurfaceMaterial";
 import { TileColor } from "@engine/movement/TileColor";

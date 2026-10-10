@@ -67,13 +67,13 @@ jest.mock('@engine/audio/AudioLoader', () => ({
   AudioLoader: { LoadMusic },
 }));
 
-jest.mock('@engine/module/MiniGameEnemy', () => ({
+jest.mock('@engine/module/minigame/MiniGameEnemy', () => ({
   MiniGameEnemy: class {
     constructor() {}
   },
 }));
 
-jest.mock('@engine/module/MiniGameTrack', () => ({
+jest.mock('@engine/module/minigame/MiniGameTrack', () => ({
   MiniGameTrack: class {
     constructor() {}
   },
@@ -87,7 +87,7 @@ jest.mock('three', () => ({
   },
 }));
 
-import { MiniGame } from '@engine/module/MiniGame';
+import { MiniGame } from '@engine/module/minigame/MiniGame';
 
 function musicStruct(value: unknown) {
   return {

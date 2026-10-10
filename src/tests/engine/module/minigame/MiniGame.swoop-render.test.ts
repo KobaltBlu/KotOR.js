@@ -86,9 +86,9 @@ jest.mock('@core/resource/GFFObject', () => ({ GFFObject: class {} }));
 jest.mock('@core/resource/GFFStruct', () => ({ GFFStruct: class {} }));
 
 import { GameState } from '@engine/runtime/GameState';
-import { MiniGameObstacle } from '@engine/module/MiniGameObstacle';
-import { MiniGame } from '@engine/module/MiniGame';
-import { MiniGameTrack } from '@engine/module/MiniGameTrack';
+import { MiniGameObstacle } from '@engine/module/minigame/MiniGameObstacle';
+import { MiniGame } from '@engine/module/minigame/MiniGame';
+import { MiniGameTrack } from '@engine/module/minigame/MiniGameTrack';
 
 describe('swoop obstacle / enemy rendering attach', () => {
   beforeEach(() => {
@@ -135,7 +135,7 @@ describe('swoop obstacle / enemy rendering attach', () => {
   });
 
   it('obstacle constructor assigns template like player/enemy', () => {
-    const template = { RootNode: {} } as any;
+    const template = { RootNode: { hasField: () => false } } as any;
     const obstacle = new MiniGameObstacle(template, {
       name: 'm03mg_mgo01',
       position: new THREE.Vector3(1, 2, 3),

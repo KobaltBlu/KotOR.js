@@ -125,7 +125,7 @@ describe('GameObject template access boundary', () => {
       ['Item.ts', /itemSerializer\.serialize/],
       ['AreaEffect.ts', /areaEffectSerializer\.serialize/],
       ['Creature.ts', /creatureSerializer\.serialize/],
-      ['AreaCamera.ts', /areaCameraSerializer\.serialize/],
+      ['area/AreaCamera.ts', /areaCameraSerializer\.serialize/],
     ];
     for (const [file, re] of expectations) {
       const src = fs.readFileSync(path.join(MODULE_DIR, file), 'utf8');

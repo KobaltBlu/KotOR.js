@@ -5,13 +5,14 @@ import { AudioEngineChannel } from "@core/enums/audio/AudioEngineChannel";
 import { AudioPriorityGroup } from "@core/enums/audio/AudioPriorityGroup";
 import { AudioEmitterType } from "@core/enums/audio/AudioEmitterType";
 import { EngineMode } from "@engine/enums/engine";
-import { EventManager, VideoManager } from "@engine/managers";
+import { EventManager } from "@engine/managers";
 import { ResourceLoader, TextureLoader } from "@engine/loaders";
 import { SaveGame } from "@engine/save/SaveGame";
 import { consumeAreaTransitionLoadBackground } from "@engine/movement/area-transition-bmp";
 import { ModuleSaveTable } from "@engine/save/ModuleSaveTable";
 import { planPostLoadRevealFade } from "@engine/runtime/post-load-reveal-fade";
 import { EngineModeController } from "@engine/runtime/EngineModeController";
+import { ModulePlayEntrySequence } from "@engine/runtime/ModulePlayEntrySequence";
 import { MotionBlurController } from "@engine/render/MotionBlurController";
 import { ITextureLoaderQueuedRef } from "@engine/interface/loaders/ITextureLoaderQueuedRef";
 import { collapseAreaRoomLightmaps } from "@engine/render/three/odyssey/OdysseyLightmapAtlas";
@@ -193,53 +194,52 @@ export class ModuleLoadCoordinator {
       GameState.scene.visible = true;
       
       AudioEngine.Unmute();
-      VideoManager.playMovieQueue( async () => {
-        const runSpawnScripts = !GameState.isLoadingSave;
-        GameState.isLoadingSave = false;
+      ModulePlayEntrySequence.run({
+        movies: true,
+        gpuWarm: true,
+        // Fade after BusyWait mute clear — host finalize owns applyPostLoadRevealFade.
+        fade: false,
+        prepare: async () => {
+          ModuleLoadCoordinator.ResetModuleAudio();
 
-        ModuleLoadCoordinator.ResetModuleAudio();
+          GameState.renderer.setClearColor( new THREE.Color(GameState.module.area.sun.fogColor) );
 
-        GameState.renderer.setClearColor( new THREE.Color(GameState.module.area.sun.fogColor) );
-        
-        console.log('Area.initAreaObjects');
-        // minigame areas: no party InGame HUD (swoop/turret).
-        if(GameState.module.area.miniGame){
-          EngineModeController.SetEngineMode(EngineMode.MINIGAME);
-        }else{
-          GameState.MenuManager.InGameOverlay.recalculatePosition();
-          GameState.MenuManager.InGameOverlay.open();
-          EngineModeController.SetEngineMode(EngineMode.INGAME);
-          // Pass AE: PT_LAST_GUI_PNL — reopen death panel (GUI_PANEL_PLAYER_DEATH = 0)
-          const lastGui = GameState.PartyManager?.LastGuiPanel | 0;
-          const pc = GameState.PartyManager?.party?.[0];
-          if(lastGui === 0 && pc?.isDead?.()){
-            GameState.GameOverManager?.PopUpGUIPanel?.(pc, 0);
+          console.log('Area.initAreaObjects');
+          // minigame areas: no party InGame HUD (swoop/turret).
+          if(GameState.module.area.miniGame){
+            EngineModeController.SetEngineMode(EngineMode.MINIGAME);
+          }else{
+            GameState.MenuManager.InGameOverlay.recalculatePosition();
+            GameState.MenuManager.InGameOverlay.open();
+            EngineModeController.SetEngineMode(EngineMode.INGAME);
+            // Pass AE: PT_LAST_GUI_PNL — reopen death panel (GUI_PANEL_PLAYER_DEATH = 0)
+            const lastGui = GameState.PartyManager?.LastGuiPanel | 0;
+            const pc = GameState.PartyManager?.party?.[0];
+            if(lastGui === 0 && pc?.isDead?.()){
+              GameState.GameOverManager?.PopUpGUIPanel?.(pc, 0);
+            }
           }
-        }
-        await GameState.module.area.initAreaObjects(runSpawnScripts);
-        console.log('Area: ready to play');
-        GameState.module.readyToProcessEvents = true;
-        // Snap camera + VIS/frustum before load UI hides (first world frame ready)
-        GameState.module.area.primePostLoadReveal();
-        await ModuleLoadCoordinator.warmModuleGpuForArea();
-
-        if(GameState.Mode == EngineMode.INGAME){
-          const anyCanLevel = GameState.PartyManager.party.some((p) => p.canLevelUp());
-          if(anyCanLevel){
-            GameState.audioEmitter.playSound('gui_level');
+        },
+        finalize: async () => {
+          console.log('Area: ready to play');
+          if(GameState.Mode == EngineMode.INGAME){
+            const anyCanLevel = GameState.PartyManager.party.some((p) => p.canLevelUp());
+            if(anyCanLevel){
+              GameState.audioEmitter.playSound('gui_level');
+            }
           }
-        }
 
-        //Reveal the area — MainLoop StartGlobalFade(1, wait=0.5, length=1.0)
-        // FadeIn before LoadScreen.close so the fade plane is already opaque FADING_IN.
-        AudioEngine.clearSoundModeStack();
-        ModuleLoadCoordinator.applyPostLoadRevealFade();
-        // MainLoop after StartSounds: SetSoundMode(0) again (clears BusyWait mute under load).
-        GameState.MenuManager.LoadScreen.close();
-        GameState.module.area.updateDayNightCycle();
-        GameState.module.area.musicBackgroundPlay();
-        GameState.module.area.ambientSoundPlay();
-        GameState.loadingModule = false;
+          //Reveal the area — MainLoop StartGlobalFade(1, wait=0.5, length=1.0)
+          // FadeIn before LoadScreen.close so the fade plane is already opaque FADING_IN.
+          AudioEngine.clearSoundModeStack();
+          ModuleLoadCoordinator.applyPostLoadRevealFade();
+          // MainLoop after StartSounds: SetSoundMode(0) again (clears BusyWait mute under load).
+          GameState.MenuManager.LoadScreen.close();
+          GameState.module.area.updateDayNightCycle();
+          GameState.module.area.musicBackgroundPlay();
+          GameState.module.area.ambientSoundPlay();
+          GameState.loadingModule = false;
+        },
       });
     }catch(e){
       GameState.loadingModule = false;

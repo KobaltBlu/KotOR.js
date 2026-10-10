@@ -4,9 +4,10 @@ import { ILayoutObstacle } from "@core/interface/resource/ILayoutObstacle";
 import { GFFObject } from "@core/resource/GFFObject";
 import { ScriptHook } from "@core/enums/module/ScriptHook";
 import { GameState } from "@engine/runtime/GameState";
+import { getDefaultRuntimeContext } from "@engine/runtime/context";
 import { MiniGameObjectArray } from "@engine/module/minigame/MiniGameObjectArray";
 import { GameObject } from "@engine/module/GameObject";
-import type { MiniGamePlayer } from "@engine/module/MiniGamePlayer";
+import type { MiniGamePlayer } from "@engine/module/minigame/MiniGamePlayer";
 import { OdysseyModel3D } from "@engine/render/three/odyssey";
 import { OdysseyModel, OdysseyModelAnimationManager } from "@engine/odyssey";
 import { MDLLoader } from "@engine/loaders";
@@ -186,7 +187,7 @@ export class MiniGameObstacle extends GameObject {
     if(!raw){ return; }
     if(!raw.toLowerCase().startsWith('custom_')){ return; }
     const modelName = e?.target?.name || this.models?.[0]?.name || this.name || '';
-    GameState.module?.area?.miniGame?.recordAnimEvent?.(raw.substring(7), modelName);
+    getDefaultRuntimeContext().getModule()?.area?.miniGame?.recordAnimEvent?.(raw.substring(7), modelName);
     this.onAnimEvent();
   }
 

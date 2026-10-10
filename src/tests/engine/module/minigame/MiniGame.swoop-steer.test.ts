@@ -33,11 +33,11 @@ jest.mock('@engine/audio/AmbientAudioEmitter', () => ({
   AmbientAudioEmitter: class {},
 }));
 
-jest.mock('@engine/module/MiniGameEnemy', () => ({
+jest.mock('@engine/module/minigame/MiniGameEnemy', () => ({
   MiniGameEnemy: class {},
 }));
 
-jest.mock('@engine/module/MiniGameTrack', () => ({
+jest.mock('@engine/module/minigame/MiniGameTrack', () => ({
   MiniGameTrack: class {},
 }));
 
@@ -48,7 +48,7 @@ jest.mock('@engine/module/minigame/MiniGameObjectArray', () => ({
 jest.mock('@core/resource/GFFObject', () => ({ GFFObject: class {} }));
 jest.mock('@core/resource/GFFStruct', () => ({ GFFStruct: class {} }));
 
-import { MiniGame } from '@engine/module/MiniGame';
+import { MiniGame } from '@engine/module/minigame/MiniGame';
 
 describe('MiniGame swoop lateral steer', () => {
   function makeSwoop(): {

@@ -9,7 +9,7 @@ jest.mock("@engine/runtime/GameState", () => ({ GameState: {} }));
 
 import { findWalkableAttachmentAt } from "@engine/movement/area-movement-queries";
 import type { Area } from "@engine/module/Area";
-import type { AreaRoom } from "@engine/module/AreaRoom";
+import type { AreaRoom } from "@engine/module/area/AreaRoom";
 import type { OdysseyFace3 } from "@engine/render/three/odyssey";
 
 function pointInTri(

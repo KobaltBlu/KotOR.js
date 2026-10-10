@@ -1,7 +1,7 @@
 import { GFFDataType } from '@core/enums/resource/GFFDataType';
 import { GFFField } from '@core/resource/GFFField';
 import type { GFFStruct } from '@core/resource/GFFStruct';
-import { AreaMap } from '@engine/module/AreaMap';
+import { AreaMap } from '@engine/module/area/AreaMap';
 import type { GffRoot } from '@engine/module/serialization/types';
 
 /** ARE map definition and GIT exploration-data boundary. */

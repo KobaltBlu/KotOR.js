@@ -3,13 +3,14 @@ import { miniGameGunBulletSerializer } from "@engine/module/serialization/MiniGa
 import { GFFObject } from "@core/resource/GFFObject";
 import * as THREE from "three";
 import { GameState } from "@engine/runtime/GameState";
+import { getDefaultRuntimeContext } from "@engine/runtime/context";
 import { OdysseyModel3D } from "@engine/render/three/odyssey";
 import { OdysseyModel } from "@engine/odyssey";
 import { GameObjectType } from "@core/enums/module/GameObjectType";
 import { MDLLoader } from "@engine/loaders";
-import type { MiniGameEnemy } from "@engine/module/MiniGameEnemy";
-import type { MiniGamePlayer } from "@engine/module/MiniGamePlayer";
-import type { MiniGameObstacle } from "@engine/module/MiniGameObstacle";
+import type { MiniGameEnemy } from "@engine/module/minigame/MiniGameEnemy";
+import type { MiniGamePlayer } from "@engine/module/minigame/MiniGamePlayer";
+import type { MiniGameObstacle } from "@engine/module/minigame/MiniGameObstacle";
 import { ScriptHook } from "@core/enums/module/ScriptHook";
 import { hitCheckPart, type MGHitCheckOut } from "@engine/module/minigame/MGHitCheck";
 
@@ -109,7 +110,7 @@ export class MiniGameGunBullet extends GameObject {
    */
   doHitCheck(){
     if(this.hit || this.exploding){ return; }
-    const mg = GameState.module?.area?.miniGame;
+    const mg = getDefaultRuntimeContext().getModule()?.area?.miniGame;
     if(!mg){ return; }
 
     const ownerIsPlayer = !!(this.owner as MiniGamePlayer)?.isPlayer ||
@@ -216,7 +217,7 @@ export class MiniGameGunBullet extends GameObject {
   applyHitFollower(target: MiniGamePlayer | MiniGameEnemy){
     this.hit = true;
     this.playCollisionSound();
-    const mg = GameState.module?.area?.miniGame;
+    const mg = getDefaultRuntimeContext().getModule()?.area?.miniGame;
     mg?.recordBulletHit({
       damage: this.damage_amt || 0,
       targetType: this.target_type || 0,
@@ -238,7 +239,7 @@ export class MiniGameGunBullet extends GameObject {
   applyHitObstacle(obstacle: MiniGameObstacle){
     this.hit = true;
     this.playCollisionSound();
-    const mg = GameState.module?.area?.miniGame;
+    const mg = getDefaultRuntimeContext().getModule()?.area?.miniGame;
     mg?.recordBulletHit({
       damage: this.damage_amt || 0,
       targetType: this.target_type || 0,

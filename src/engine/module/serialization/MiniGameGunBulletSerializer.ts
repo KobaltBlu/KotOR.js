@@ -1,4 +1,4 @@
-import type { MiniGameGunBullet } from '@engine/module/MiniGameGunBullet';
+import type { MiniGameGunBullet } from '@engine/module/minigame/MiniGameGunBullet';
 import type { DeserializeContext, GameObjectSerializer, SerializeContext } from '@engine/module/serialization/types';
 import { gffRootOf } from '@engine/module/serialization/types';
 import { readFloat, readResRef, readString } from '@engine/module/serialization/gffHelpers';

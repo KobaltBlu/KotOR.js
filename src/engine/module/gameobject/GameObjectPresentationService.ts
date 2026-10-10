@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { CutsceneMode } from '@core/enums/dialog/CutsceneMode';
 import type { SWAnimation } from '@engine/rules/SWAnimation';
 import { EngineMode } from '@engine/enums/engine/EngineMode';
-import type { AreaRoom } from '@engine/module/AreaRoom';
+import type { AreaRoom } from '@engine/module/area/AreaRoom';
 import type { GameObject } from '@engine/module/GameObject';
 import { MDLLoader } from '@engine/loaders';
 import { OdysseyModel3D } from '@engine/render/three/odyssey';

@@ -27,9 +27,9 @@ import { NamedVarTableSerializer } from '@engine/module/serialization/NamedVarTa
 import { GeometrySerializer } from '@engine/module/serialization/GeometrySerializer';
 import { ScriptResRefSerializer } from '@engine/module/serialization/ScriptResRefSerializer';
 import { ActionListSerializer } from '@engine/module/serialization/ActionListSerializer';
-import { EncounterCreatureEntry } from '@engine/module/EncounterCreatureEntry';
-import { EncounterSpawnPointEntry } from '@engine/module/EncounterSpawnPointEntry';
-import { EncounterSpawnEntry } from '@engine/module/EncounterSpawnEntry';
+import { EncounterCreatureEntry } from '@engine/module/encounter/EncounterCreatureEntry';
+import { EncounterSpawnPointEntry } from '@engine/module/encounter/EncounterSpawnPointEntry';
+import { EncounterSpawnEntry } from '@engine/module/encounter/EncounterSpawnEntry';
 
 const ENCOUNTER_SCRIPT_KEYS = [
   ScriptHook.EncounterOnEntered,

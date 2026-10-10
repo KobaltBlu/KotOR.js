@@ -39,14 +39,14 @@ describe("Creature.primeAnimationPose", () => {
 describe("Area loadPlayer / loadParty T-pose guards", () => {
   it("loadPlayer parents party container after loadModel", () => {
     const src = fs.readFileSync(
-      srcPath("engine", "module", "Area.ts"),
+      srcPath("engine", "module", "area", "AreaPartyBootstrap.ts"),
       "utf8"
     );
-    const start = src.indexOf("  async loadPlayer(): Promise<void> {");
+    const start = src.indexOf("  static async loadPlayer(");
     expect(start).toBeGreaterThan(-1);
-    const end = src.indexOf("  async loadParty(): Promise<void> {", start);
+    const end = src.indexOf("  static async loadParty(", start);
     const fn = src.slice(start, end > start ? end : start + 4000);
-    const firstAdd = fn.indexOf("GameState.group.party.add");
+    const firstAdd = fn.indexOf("groups.party.add");
     const firstLoadModel = fn.indexOf("loadModel()");
     expect(firstAdd).toBeGreaterThan(-1);
     expect(firstLoadModel).toBeGreaterThan(-1);
@@ -55,12 +55,12 @@ describe("Area loadPlayer / loadParty T-pose guards", () => {
 
   it("loadParty re-primes after clearLocomotionState", () => {
     const src = fs.readFileSync(
-      srcPath("engine", "module", "Area.ts"),
+      srcPath("engine", "module", "area", "AreaPartyBootstrap.ts"),
       "utf8"
     );
-    const start = src.indexOf("  async loadParty(): Promise<void> {");
+    const start = src.indexOf("  static async loadParty(");
     expect(start).toBeGreaterThan(-1);
-    const end = src.indexOf("  resolveCombatRoundObjectReferences(){", start);
+    const end = src.indexOf("    area.resolveCombatRoundObjectReferences();", start);
     const fn = src.slice(start, end > start ? end : start + 2000);
     expect(fn).toMatch(/clearLocomotionState/);
     expect(fn).toMatch(/primeAnimationPose/);

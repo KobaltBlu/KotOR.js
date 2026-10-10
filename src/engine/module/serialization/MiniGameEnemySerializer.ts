@@ -1,4 +1,4 @@
-import type { MiniGameEnemy } from '@engine/module/MiniGameEnemy';
+import type { MiniGameEnemy } from '@engine/module/minigame/MiniGameEnemy';
 import type { DeserializeContext, GameObjectSerializer, SerializeContext } from '@engine/module/serialization/types';
 import { gffRootOf } from '@engine/module/serialization/types';
 import {
@@ -8,7 +8,7 @@ import {
   readResRef,
   readString,
 } from '@engine/module/serialization/gffHelpers';
-import { MiniGameTrack } from '@engine/module/MiniGameTrack';
+import { MiniGameTrack } from '@engine/module/minigame/MiniGameTrack';
 
 /**
  * MiniGame enemy — deserialize-only.

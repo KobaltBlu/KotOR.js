@@ -37,8 +37,8 @@ jest.mock('@engine/odyssey', () => ({
   OdysseyModelAnimationManager: class {},
 }));
 jest.mock('@engine/loaders', () => ({ MDLLoader: {} }));
-jest.mock('@engine/module/MiniGameGunBank', () => ({ MiniGameGunBank: class {} }));
-jest.mock('@engine/module/MiniGameTrack', () => ({ MiniGameTrack: class {} }));
+jest.mock('@engine/module/minigame/MiniGameGunBank', () => ({ MiniGameGunBank: class {} }));
+jest.mock('@engine/module/minigame/MiniGameTrack', () => ({ MiniGameTrack: class {} }));
 jest.mock('@engine/module/minigame/MiniGameObjectArray', () => ({
   MiniGameObjectArray: { register: jest.fn(), unregister: jest.fn() },
 }));
@@ -52,15 +52,15 @@ jest.mock('@engine/module/minigame/MGHitCheck', () => ({ hitCheckPart: jest.fn()
 jest.mock('@engine/render/FollowerCamera', () => ({ FollowerCamera: {} }));
 jest.mock('@engine/nwscript/NWScriptInstance', () => ({ NWScriptInstance: class {} }));
 
-jest.mock('@engine/module/MiniGame', () => ({
+jest.mock('@engine/module/minigame/MiniGame', () => ({
   MiniGame: {
     PLAYER_JUMP_SPEED: 12,
   },
 }));
 
 import { GameState } from '@engine/runtime/GameState';
-import { MiniGame } from '@engine/module/MiniGame';
-import { MiniGamePlayer } from '@engine/module/MiniGamePlayer';
+import { MiniGame } from '@engine/module/minigame/MiniGame';
+import { MiniGamePlayer } from '@engine/module/minigame/MiniGamePlayer';
 
 describe('211TEL swoop start script wiring', () => {
   let player: MiniGamePlayer;

@@ -3,6 +3,7 @@ import { miniGamePlayerSerializer } from "@engine/module/serialization/MiniGameP
 import { GFFObject } from "@core/resource/GFFObject";
 import * as THREE from "three";
 import { GameState } from "@engine/runtime/GameState";
+import { getDefaultRuntimeContext } from "@engine/runtime/context";
 import { OdysseyModel3D, OdysseyObject3D } from "@engine/render/three/odyssey";
 import { Utility } from "@core/utility/Utility";
 import { OdysseyModel, OdysseyModelAnimationManager } from "@engine/odyssey";
@@ -16,17 +17,17 @@ import { GameEngineType } from "@core/enums/engine/GameEngineType";
 import { RenderLayer } from "@engine/enums/engine/RenderLayer";
 import { GameObjectType } from "@core/enums/module/GameObjectType";
 import { MDLLoader } from "@engine/loaders";
-import type { AreaRoom } from "@engine/module/AreaRoom";
-import { MiniGameGunBank } from "@engine/module/MiniGameGunBank";
-import type { MiniGameGunBullet } from "@engine/module/MiniGameGunBullet";
-import type { MiniGameEnemy } from "@engine/module/MiniGameEnemy";
-import type { MiniGameObstacle } from "@engine/module/MiniGameObstacle";
+import type { AreaRoom } from "@engine/module/area/AreaRoom";
+import { MiniGameGunBank } from "@engine/module/minigame/MiniGameGunBank";
+import type { MiniGameGunBullet } from "@engine/module/minigame/MiniGameGunBullet";
+import type { MiniGameEnemy } from "@engine/module/minigame/MiniGameEnemy";
+import type { MiniGameObstacle } from "@engine/module/minigame/MiniGameObstacle";
 import { ScriptHook } from "@core/enums/module/ScriptHook";
 import { MGTrackFollowerSounds } from "@engine/module/minigame/MGTrackFollowerSounds";
 import { MGTrackFollowerAudio } from "@engine/module/minigame/MGTrackFollowerAudio";
 import { MiniGameObjectArray } from "@engine/module/minigame/MiniGameObjectArray";
-import { MiniGame } from "@engine/module/MiniGame";
-import { MiniGameTrack } from "@engine/module/MiniGameTrack";
+import { MiniGame } from "@engine/module/minigame/MiniGame";
+import { MiniGameTrack } from "@engine/module/minigame/MiniGameTrack";
 import { hitCheckPart } from "@engine/module/minigame/MGHitCheck";
 import { FollowerCamera } from "@engine/render/FollowerCamera";
 import { AuroraAnimationFlag } from "@core/enums/animation/AuroraAnimationFlag";
@@ -306,7 +307,7 @@ export class MiniGamePlayer extends GameObject {
 
     this.playerOffset.set(this.origin.x, this.origin.y, this.origin.z);
     this.container.position.set(0, 0, 0);
-    if(GameState.module?.area?.miniGame?.type === MiniGameType.TURRET){
+    if(getDefaultRuntimeContext().getModule()?.area?.miniGame?.type === MiniGameType.TURRET){
       // Start_Offset_* are degrees for type-2 aim; sync rotation.
       this.applyTurretOffsetRotation();
     }else{
@@ -449,7 +450,7 @@ export class MiniGamePlayer extends GameObject {
         this.gunBanks[i]?.update?.(delta);
       }
       if(!this.models.length){
-        const mg = GameState.module?.area?.miniGame;
+        const mg = getDefaultRuntimeContext().getModule()?.area?.miniGame;
         if(mg?.player === this){
           this.disposeFollower();
           mg.player = undefined as any;
@@ -461,9 +462,9 @@ export class MiniGamePlayer extends GameObject {
     //this.animationManagers
     this.forceVector.set(0, 0, 0);
 
-    switch(GameState.module.area.miniGame.type){
+    switch(getDefaultRuntimeContext().getModule()?.area?.miniGame?.type){
       case MiniGameType.SWOOPRACE: {
-        const miniGame = GameState.module.area.miniGame;
+        const miniGame = getDefaultRuntimeContext().getModule()?.area?.miniGame;
 
         // Control accelerates only while follower running bit is set.
         if(this.running && (this.speed_min || this.speed)){
@@ -523,7 +524,7 @@ export class MiniGamePlayer extends GameObject {
         }
       } break;
       case MiniGameType.TURRET: {
-        const miniGame = GameState.module.area.miniGame;
+        const miniGame = getDefaultRuntimeContext().getModule()?.area?.miniGame;
         // : Aurora advances the track Gob; we must tick it (same rate as Go/SetSpeed).
         if(this.track instanceof OdysseyModel3D){
           if(this.running){
@@ -550,7 +551,7 @@ export class MiniGamePlayer extends GameObject {
     if(this.camera instanceof OdysseyModel3D && this.camera.bonesInitialized && this.camera.visible){
       this.camera.update(delta);
       // Re-apply after anim — Control writes offset controllers after model tick.
-      if(GameState.module?.area?.miniGame?.type === MiniGameType.SWOOPRACE){
+      if(getDefaultRuntimeContext().getModule()?.area?.miniGame?.type === MiniGameType.SWOOPRACE){
         this.applySwoopTunnelOffset();
       }
     }
@@ -623,7 +624,7 @@ export class MiniGamePlayer extends GameObject {
 
     // : if models empty → SetPlayer(null).
     if(!this.models.length){
-      const mg = GameState.module?.area?.miniGame;
+      const mg = getDefaultRuntimeContext().getModule()?.area?.miniGame;
       if(mg?.player === this){
         this.disposeFollower();
         mg.player = undefined as any;
@@ -768,7 +769,7 @@ export class MiniGamePlayer extends GameObject {
   }
 
   shoot(){
-    switch(GameState.module.area.miniGame.type){
+    switch(getDefaultRuntimeContext().getModule()?.area?.miniGame?.type){
       case MiniGameType.SWOOPRACE:
         // K1 → Fire; TSL → jump (SetJumpSpeed / player hop).
         if(GameState.GameKey == GameEngineType.TSL){
@@ -790,7 +791,7 @@ export class MiniGamePlayer extends GameObject {
    */
   jump(){
     if(GameState.GameKey != GameEngineType.TSL){ return; }
-    const miniGame = GameState.module?.area?.miniGame;
+    const miniGame = getDefaultRuntimeContext().getModule()?.area?.miniGame;
     if(!miniGame || miniGame.type !== MiniGameType.SWOOPRACE){ return; }
 
     const before = miniGame.jumpSpeed;
@@ -972,7 +973,7 @@ export class MiniGamePlayer extends GameObject {
    * not playerOffset — offset only receives the axis velocity delta afterward.
    */
   applyInertia(delta: number){
-    const miniGame = GameState.module?.area?.miniGame;
+    const miniGame = getDefaultRuntimeContext().getModule()?.area?.miniGame;
     const hook = this.track?.getObjectByName?.('modelhook');
     if(!miniGame || !hook || delta <= 0){ return; }
 
@@ -1169,7 +1170,7 @@ export class MiniGamePlayer extends GameObject {
     dt: number,
     out: THREE.Vector3 = new THREE.Vector3()
   ): THREE.Vector3 {
-    const miniGame = GameState.module?.area?.miniGame;
+    const miniGame = getDefaultRuntimeContext().getModule()?.area?.miniGame;
     if(!miniGame || dt <= 0){
       return out.set(0, 0, 0);
     }
@@ -1193,7 +1194,7 @@ export class MiniGamePlayer extends GameObject {
    * Type 1: clamp offset to origin±tunnel. Type 2 infinite: wrap degrees 0–360.
    */
   keepInTunnel(offset: THREE.Vector3){
-    const type = GameState.module?.area?.miniGame?.type;
+    const type = getDefaultRuntimeContext().getModule()?.area?.miniGame?.type;
 
     const clampAxis = (
       value: number,
@@ -1298,7 +1299,7 @@ export class MiniGamePlayer extends GameObject {
     if(!hit){ return; }
 
     obstacle.hit = true;
-    const mg = GameState.module?.area?.miniGame;
+    const mg = getDefaultRuntimeContext().getModule()?.area?.miniGame;
     if(mg){ mg.lastFollowerHit = this; }
     obstacle.lastFollowerHit = this;
 
@@ -1353,7 +1354,7 @@ export class MiniGamePlayer extends GameObject {
   rotate(axis = 'x', amount = 0){
     // Turret tunnels are degrees in GFF; rotation is stored in radians.
     const toRadLimit = (deg: number) => THREE.MathUtils.degToRad(deg);
-    const type = GameState.module?.area?.miniGame?.type;
+    const type = getDefaultRuntimeContext().getModule()?.area?.miniGame?.type;
     const useDeg = type === MiniGameType.TURRET;
 
     const limPos = (v: number) => useDeg ? toRadLimit(v) : v;
@@ -1785,7 +1786,7 @@ export class MiniGamePlayer extends GameObject {
 
     const useAttach = !!cameraRotateFlag;
     const attachType = useAttach
-      ? (GameState.module?.area?.miniGame?.getAttachType?.() ?? this.trackAttachType)
+      ? (getDefaultRuntimeContext().getModule()?.area?.miniGame?.getAttachType?.() ?? this.trackAttachType)
       : 0;
     if(useAttach && attachType){
       // Parent under container so aim (container.rotation) carries the camera/HUD.
@@ -1794,7 +1795,7 @@ export class MiniGamePlayer extends GameObject {
       camera.position.set(0, 0, 0);
       camera.quaternion.identity();
       camera.scale.set(1, 1, 1);
-    }else if(GameState.module?.area?.miniGame?.type === MiniGameType.SWOOPRACE){
+    }else if(getDefaultRuntimeContext().getModule()?.area?.miniGame?.type === MiniGameType.SWOOPRACE){
       this.applySwoopTunnelOffset();
     }
   }
@@ -1865,7 +1866,7 @@ export class MiniGamePlayer extends GameObject {
     if(!raw){ return; }
     const lower = raw.toLowerCase();
     const modelName = e?.target?.name || this.models?.[0]?.name || this.name || '';
-    const mg = GameState.module?.area?.miniGame;
+    const mg = getDefaultRuntimeContext().getModule()?.area?.miniGame;
 
     if(lower.startsWith('custom_')){
       // stores arg2+7 (suffix after "custom_").

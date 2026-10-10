@@ -1,13 +1,14 @@
 import { GameObject } from "@engine/module/GameObject";
 import { miniGameGunBankSerializer } from "@engine/module/serialization/MiniGameGunBankSerializer";
 import { GameState } from "@engine/runtime/GameState";
+import { getDefaultRuntimeContext } from "@engine/runtime/context";
 import { GameObjectType } from "@core/enums/module/GameObjectType";
 import { MDLLoader } from "@engine/loaders";
 import { OdysseyModel } from "@engine/odyssey";
 import { GFFObject } from "@core/resource/GFFObject";
 import { OdysseyModel3D } from "@engine/render/three/odyssey";
-import { MiniGameGunBullet } from "@engine/module/MiniGameGunBullet";
-import type { MiniGamePlayer } from "@engine/module/MiniGamePlayer";
+import { MiniGameGunBullet } from "@engine/module/minigame/MiniGameGunBullet";
+import type { MiniGamePlayer } from "@engine/module/minigame/MiniGamePlayer";
 import * as THREE from "three";
 
 /**
@@ -113,7 +114,7 @@ export class MiniGameGunBank extends GameObject {
    */
   isPlayerInSensingRange(player?: MiniGamePlayer): boolean {
     if(!this.isTargetting()){ return false; }
-    const target = player || GameState.module?.area?.miniGame?.player;
+    const target = player || getDefaultRuntimeContext().getModule()?.area?.miniGame?.player;
     if(!target?.alive){ return false; }
     const origin = MiniGameGunBank._aimScratch;
     const src = this.guns[0] || this.model;
@@ -444,7 +445,7 @@ export class MiniGameGunBank extends GameObject {
       model.update?.(0);
 
       this.bullets.push(bullet);
-      GameState.module?.area?.miniGame?.recordBulletFired?.(
+      getDefaultRuntimeContext().getModule()?.area?.miniGame?.recordBulletFired?.(
         bullet.damage_amt || 0,
         bullet.target_type || 0
       );
@@ -460,7 +461,7 @@ export class MiniGameGunBank extends GameObject {
    * outside the fire cone (clears TrackAndFire flag but keeps clamped aim).
    */
   updateGunTracking(){
-    const player = GameState.module?.area?.miniGame?.player;
+    const player = getDefaultRuntimeContext().getModule()?.area?.miniGame?.player;
     if(!player?.alive || !player.sphere){ return; }
 
     const r = this.sensingRadius;
@@ -543,7 +544,7 @@ export class MiniGameGunBank extends GameObject {
    * the line of fire (AddGun copies sphere_radius into Track).
    */
   aimBulletAtPlayer(bullet: MiniGameGunBullet): boolean {
-    const player = GameState.module?.area?.miniGame?.player;
+    const player = getDefaultRuntimeContext().getModule()?.area?.miniGame?.player;
     if(!player?.alive){ return false; }
 
     const aimPoint = MiniGameGunBank._aimScratch;

@@ -492,24 +492,23 @@ export class Trigger extends GameObject {
 
   initProperties(){
     const needsRegister = !this.initialized;
-    triggerSerializer.deserialize(this, this.template, {
-      actionFromStruct: (struct) => GameState.ActionFactory.FromStruct(struct),
-    });
+    const runtime = getDefaultRuntimeContext();
+    triggerSerializer.deserialize(this, this.template, runtime.toDeserializeContext());
 
     this.faction = GameState.FactionManager.factions.get(this.factionId);
     if(this.portraitId){
-      this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
+      this.portrait = runtime.getSWRuleSet?.()?.portraits?.[this.portraitId];
     }
 
 
     if(needsRegister){
-      GameState.GameObjectManager.RegisterObject(this);
+      runtime.register(this);
     }
 
     if(this.type == ModuleTriggerType.TRAP){
-      const trap = GameState.SWRuleSet.traps[this.trapType];
+      const trap = runtime.getTrapRow?.(this.trapType);
       if(trap){
-        this.trapName = GameState.TLKManager.GetStringById(trap.name).Value;
+        this.trapName = runtime.getStringById?.(trap.name);
         this.trapModelResRef = trap.model;
         this.trapExplosionSound = trap.explosionsound;
         this.trapResRef = trap.resref;

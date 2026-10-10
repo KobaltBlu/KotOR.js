@@ -21,6 +21,7 @@ import { CombatFeatType } from "@core/enums/combat/CombatFeatType";
 import { Dice } from "@core/utility/Dice";
 import { ItemProperty } from "@engine/items/ItemProperty";
 import { GameState } from "@engine/runtime/GameState";
+import { getDefaultRuntimeContext } from "@engine/runtime/context";
 import { GameObjectLoadPipeline } from "@engine/module/serialization/GameObjectLoadPipeline";
 import { itemSerializer } from "@engine/module/serialization/ItemSerializer";
 import { ItemInstanceOverlay } from "@engine/module/serialization/ItemInstanceOverlay";
@@ -1663,6 +1664,7 @@ export class Item extends GameObject {
     }
 
     const needsRegister = !this.initialized;
+    const runtime = getDefaultRuntimeContext();
     itemSerializer.deserialize(this, this.template);
 
     if(this.baseItemId !== undefined && this.baseItemId !== null){
@@ -1675,10 +1677,10 @@ export class Item extends GameObject {
       }
     }
 
-    this.weaponSound = GameState.SWRuleSet.weaponSounds[this.baseItem?.weaponMaterialType];
+    this.weaponSound = runtime.getSWRuleSet?.()?.weaponSounds?.[this.baseItem?.weaponMaterialType];
 
     if(needsRegister){
-      GameState.GameObjectManager.RegisterObject(this);
+      runtime.register(this);
     }
     this.initialized = true;
   }

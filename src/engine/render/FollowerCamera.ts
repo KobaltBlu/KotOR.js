@@ -4,7 +4,7 @@ import { EngineMode } from "@engine/enums/engine/EngineMode";
 import { ClientCameraMode } from "@engine/enums/engine/ClientCameraMode";
 import { Utility } from "@core/utility/Utility";
 import type { Area } from "@engine/module/Area";
-import type { MiniGamePlayer } from "@engine/module/MiniGamePlayer";
+import type { MiniGamePlayer } from "@engine/module/minigame/MiniGamePlayer";
 import type { GameObject } from "@engine/module/GameObject";
 import { BitWise } from "@core/utility/BitWise";
 import { GameObjectType } from "@core/enums/module/GameObjectType";

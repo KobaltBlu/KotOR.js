@@ -1,3 +1,10 @@
+export interface DeserializeRuntimeContext {
+  actionFromStruct?: (struct: any) => any | undefined;
+  effectFromStruct?: (struct: any) => any | undefined;
+  gameKey?: 'k1' | 'k2';
+  controlledNpcIndex?: number;
+}
+
 export interface ModuleSimulationContext {
   getModule(): any | undefined;
   isReadyToProcessEvents(): boolean;
@@ -6,6 +13,10 @@ export interface ModuleSimulationContext {
   addEvent(event: any): void;
   nextEffectId(): number;
   getMode(): any;
+  getGameKey(): 'k1' | 'k2';
+  getAiScheduler(): any | undefined;
+  toDeserializeContext(): DeserializeRuntimeContext;
+  isLoadingSave(): boolean;
 }
 
 export interface PartyContext {
@@ -24,16 +35,19 @@ export interface ObjectRegistryContext {
 }
 
 export interface GameFactoriesContext {
-  createAction(name: string): any | undefined;
+  createAction(name: string, ...args: any[]): any | undefined;
   actionFromStruct(struct: any): any | undefined;
   effectFromStruct(struct: any): any | undefined;
   createSignalEvent(): any;
   createTrigger(): any | undefined;
+  createMiniGamePlayer?(template?: any): any | undefined;
 }
 
 export interface RulesDataContext {
   getTrapRow?(id: number): any;
   getStringById?(id: number): string | undefined;
+  getSWRuleSet?(): any | undefined;
+  getRules?(): any | undefined;
 }
 
 export interface PresentationContext {
@@ -52,5 +66,5 @@ export type GameObjectRuntimeContext = ModuleSimulationContext &
   ObjectRegistryContext &
   GameFactoriesContext &
   Partial<PartyContext> &
-  Partial<RulesDataContext> &
+  RulesDataContext &
   Partial<PresentationContext>;

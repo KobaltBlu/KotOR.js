@@ -1,4 +1,4 @@
-import type { AreaRoom } from "@engine/module/AreaRoom";
+import type { AreaRoom } from "@engine/module/area/AreaRoom";
 import { AudioEmitter } from "@engine/audio/AudioEmitter";
 import { BinaryReader } from "@core/binary/BinaryReader";
 import { ModulePlaceableAnimState } from "@core/enums/module/ModulePlaceableAnimState";
@@ -8,6 +8,7 @@ import { resolveCreatureAnimation } from "@engine/module/animation/resolveCreatu
 import type { CreatureAnimationContext } from "@engine/module/animation/CreatureAnimationContext";
 import { GFFDataType } from "@core/enums/resource/GFFDataType";
 import { GameState } from "@engine/runtime/GameState";
+import { getDefaultRuntimeContext } from "@engine/runtime/context";
 import { SSFType } from "@core/enums/resource/SSFType";
 import type { SWAnimation } from "@engine/rules/SWAnimation";
 import { NWScript } from "@engine/nwscript/NWScript";
@@ -923,10 +924,8 @@ export class Placeable extends GameObject {
 
   initProperties(){
     const needsRegister = !this.initialized;
-    placeableSerializer.deserialize(this, this.template, {
-      actionFromStruct: (struct) => GameState.ActionFactory.FromStruct(struct),
-      effectFromStruct: (struct) => GameState.GameEffectFactory.EffectFromStruct(struct),
-    });
+    const runtime = getDefaultRuntimeContext();
+    placeableSerializer.deserialize(this, this.template, runtime.toDeserializeContext());
 
     const conversationResRef = (this as any)._conversationResRef;
     if(conversationResRef){
@@ -940,7 +939,7 @@ export class Placeable extends GameObject {
       console.error(e);
     }
     if(this.portraitId){
-      this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
+      this.portrait = runtime.getSWRuleSet?.()?.portraits?.[this.portraitId];
     }
 
     for(let i = 0; i < this.effects.length; i++){
@@ -961,7 +960,7 @@ export class Placeable extends GameObject {
 
 
     if(needsRegister){
-      GameState.GameObjectManager.RegisterObject(this);
+      runtime.register(this);
     }
     this.initialized = true;
   }

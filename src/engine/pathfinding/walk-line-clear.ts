@@ -2,7 +2,7 @@ import * as THREE from "three";
 import type { Area } from "@engine/module/Area";
 import type { Creature } from "@engine/module/Creature";
 import type { GameObject } from "@engine/module/GameObject";
-import type { AreaRoom } from "@engine/module/AreaRoom";
+import type { AreaRoom } from "@engine/module/area/AreaRoom";
 import { getCreaturePersonalSpace, getPathPersonalSpace } from "@engine/combat/attack-range";
 import { Utility } from "@core/utility/Utility";
 import { isCreatureCapsuleClear } from "@engine/pathfinding/creature-capsule-clear";

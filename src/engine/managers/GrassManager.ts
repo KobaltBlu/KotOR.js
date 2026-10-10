@@ -5,7 +5,7 @@ import { TextureLoader } from "@engine/loaders";
 import { OdysseyTexture } from "@engine/render/three/odyssey/OdysseyTexture";
 import { OdysseyModelNodeAABB } from "@engine/odyssey/OdysseyModelNodeAABB";
 import type { OdysseyFace3 } from "@engine/render/three/odyssey";
-import type { AreaRoom } from "@engine/module/AreaRoom";
+import type { AreaRoom } from "@engine/module/area/AreaRoom";
 import {
   GRASS_ALPHA_TEST_DEFAULT,
   GRASS_BIN_CELL_SIZE,

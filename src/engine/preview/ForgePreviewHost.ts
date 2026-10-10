@@ -6,6 +6,7 @@ import { EventManager } from "@engine/managers";
 import { TextureLoader } from "@engine/loaders";
 import { EngineModeController } from "@engine/runtime/EngineModeController";
 import { ModuleLoadCoordinator } from "@engine/runtime/ModuleLoadCoordinator";
+import { ModulePlayEntrySequence } from "@engine/runtime/ModulePlayEntrySequence";
 import { ViewportController } from "@engine/runtime/ViewportController";
 import { ITextureLoaderQueuedRef } from "@engine/interface/loaders/ITextureLoaderQueuedRef";
 import { collapseAreaRoomLightmaps } from "@engine/render/three/odyssey/OdysseyLightmapAtlas";
@@ -184,29 +185,32 @@ export class ForgePreviewHost {
       GameState.scene.visible = true;
       AudioEngine.Unmute();
 
-      const runSpawnScripts = true;
-      GameState.isLoadingSave = false;
-      ModuleLoadCoordinator.ResetModuleAudio();
+      await ModulePlayEntrySequence.run({
+        movies: false,
+        isLoadingSave: false,
+        gpuWarm: true,
+        fade: true,
+        prepare: async () => {
+          ModuleLoadCoordinator.ResetModuleAudio();
 
-      try{
-        GameState.MenuManager.InGameOverlay.recalculatePosition();
-        GameState.MenuManager.InGameOverlay.open();
-      }catch(e){
-        console.warn('LoadModuleFromArchives: overlay', e);
-      }
+          try{
+            GameState.MenuManager.InGameOverlay.recalculatePosition();
+            GameState.MenuManager.InGameOverlay.open();
+          }catch(e){
+            console.warn('LoadModuleFromArchives: overlay', e);
+          }
 
-      GameState.renderer.setClearColor( new THREE.Color(GameState.module.area.sun.fogColor) );
+          GameState.renderer.setClearColor( new THREE.Color(GameState.module.area.sun.fogColor) );
 
-      EngineModeController.SetEngineMode(GameState.module.area.miniGame ? EngineMode.MINIGAME : EngineMode.INGAME);
-      await GameState.module.area.initAreaObjects(runSpawnScripts);
-      GameState.module.readyToProcessEvents = true;
-      GameState.module.area.primePostLoadReveal();
-      await ModuleLoadCoordinator.warmModuleGpuForArea();
-      ModuleLoadCoordinator.applyPostLoadRevealFade();
-      try{ GameState.MenuManager.LoadScreen.close(); }catch(e){}
-      GameState.module.area.musicBackgroundPlay();
-      GameState.loadingModule = false;
-      GameState.canvas?.focus();
+          EngineModeController.SetEngineMode(GameState.module.area.miniGame ? EngineMode.MINIGAME : EngineMode.INGAME);
+        },
+        finalize: async () => {
+          try{ GameState.MenuManager.LoadScreen.close(); }catch(e){}
+          GameState.module.area.musicBackgroundPlay();
+          GameState.loadingModule = false;
+          GameState.canvas?.focus();
+        },
+      });
     }catch(e){
       GameState.loadingModule = false;
       console.error(e);

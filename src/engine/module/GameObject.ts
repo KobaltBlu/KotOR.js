@@ -17,6 +17,7 @@ import { GameEffectType } from "@core/enums/effects/GameEffectType";
 import { NWScriptEventType } from "@core/enums/nwscript/NWScriptEventType";
 import { GFFDataType } from "@core/enums/resource/GFFDataType";
 import { GameState } from "@engine/runtime/GameState";
+import { getDefaultRuntimeContext } from "@engine/runtime/context";
 import { IEffectIconListItem } from "@engine/interface/module/IEffectIconListItem";
 import { SSFType } from "@core/enums/resource/SSFType";
 import { NWScriptEvent } from "@engine/nwscript/events";
@@ -35,7 +36,7 @@ import { isStaticWalkClearDetailed } from "@engine/pathfinding/static-walk-block
 import type { Area } from "@engine/module/Area";
 import type { Door } from "@engine/module/Door";
 import type { Item } from "@engine/module/Item";
-import type { AreaRoom } from "@engine/module/AreaRoom";
+import type { AreaRoom } from "@engine/module/area/AreaRoom";
 import type { Creature } from "@engine/module/Creature";
 import { getSpeakStringNotifyPlan, listenerHearsSpeaker } from "@engine/combat/speak-string-broadcast";
 import {
@@ -978,7 +979,7 @@ export class GameObject {
    * Heartbeat gate — only after onSpawn and module event processing is ready.
    */
   protected canProcessHeartbeat(): boolean {
-    return this.spawned === true && !!GameState.module?.readyToProcessEvents;
+    return this.spawned === true && getDefaultRuntimeContext().isReadyToProcessEvents();
   }
 
   /**
@@ -2267,7 +2268,7 @@ export class GameObject {
       let perceptionObject = this.perceptionList[length];
       if(perceptionObject){
         if(typeof perceptionObject.object == 'undefined' && perceptionObject.objectId){
-          const resolved = GameState.GameObjectManager.GetObjectById(perceptionObject.objectId);
+          const resolved = getDefaultRuntimeContext().getById(perceptionObject.objectId);
           if(resolved instanceof GameObject){
             perceptionObject.object = resolved;
           }
@@ -2418,7 +2419,7 @@ export class GameObject {
       skipRoomWalkmesh?: boolean;
     }
   ){
-    if(!this.spawned || !GameState.module.readyToProcessEvents)
+    if(!this.spawned || !getDefaultRuntimeContext().isReadyToProcessEvents())
       return false;
 
     if(!(oTarget instanceof GameObject)){

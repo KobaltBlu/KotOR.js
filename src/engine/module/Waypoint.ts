@@ -6,7 +6,7 @@ import { ResourceTypes } from "@core/resource/ResourceTypes";
 import { ResourceLoader } from "@engine/loaders";
 import { GameObjectType } from "@core/enums/module/GameObjectType";
 import EngineLocation from "@engine/runtime/EngineLocation";
-import { GameState } from "@engine/runtime/GameState";
+import { getDefaultRuntimeContext } from "@engine/runtime/context";
 import { GameObjectLoadPipeline } from "@engine/module/serialization/GameObjectLoadPipeline";
 import { GameObjectInitFinalizer } from "@engine/module/serialization/GameObjectInitFinalizer";
 import { waypointSerializer } from "@engine/module/serialization/WaypointSerializer";
@@ -96,12 +96,11 @@ export class Waypoint extends GameObject {
 
   initProperties(){
     const needsRegister = !this.initialized;
-    waypointSerializer.deserialize(this, this.template, {
-      actionFromStruct: (struct) => GameState.ActionFactory.FromStruct(struct),
-    });
+    const runtime = getDefaultRuntimeContext();
+    waypointSerializer.deserialize(this, this.template, runtime.toDeserializeContext());
     GameObjectInitFinalizer.finalize(this, {
       needsRegister,
-      register: () => GameState.GameObjectManager.RegisterObject(this),
+      register: () => runtime.register(this),
     });
   }
 

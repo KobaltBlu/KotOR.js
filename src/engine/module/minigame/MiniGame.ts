@@ -3,10 +3,11 @@ import { MiniGameType } from "@engine/enums/engine/MiniGameType";
 import { GameEngineType } from "@core/enums/engine/GameEngineType";
 import { GFFObject } from "@core/resource/GFFObject";
 import { GFFStruct } from "@core/resource/GFFStruct";
-import { MiniGameEnemy } from "@engine/module/MiniGameEnemy";
-import type { MiniGameObstacle } from "@engine/module/MiniGameObstacle";
-import type { MiniGamePlayer } from "@engine/module/MiniGamePlayer";
-import { MiniGameTrack } from "@engine/module/MiniGameTrack";
+import { MiniGameEnemy } from "@engine/module/minigame/MiniGameEnemy";
+import type { MiniGameObstacle } from "@engine/module/minigame/MiniGameObstacle";
+import type { MiniGamePlayer } from "@engine/module/minigame/MiniGamePlayer";
+import { getDefaultRuntimeContext } from "@engine/runtime/context";
+import { MiniGameTrack } from "@engine/module/minigame/MiniGameTrack";
 import type { GameObject } from "@engine/module/GameObject";
 import { AudioEngine } from "@engine/audio/AudioEngine";
 import { AudioLoader } from "@engine/audio/AudioLoader";
@@ -153,9 +154,10 @@ export class MiniGame {
     this.nearClip = MiniGame.readFloat(struct, 'Near_Clip', 0.1);
     this.cameraViewAngle = MiniGame.readFloat(struct, 'CameraViewAngle', 65);
 
-    this.player = new GameState.Module.Area.MiniGamePlayer(
+    // Runtime factory avoids a MiniGame ↔ MiniGamePlayer circular value import.
+    this.player = getDefaultRuntimeContext().createMiniGamePlayer?.(
       GFFObject.FromStruct(struct.getFieldByLabel('Player').getChildStructs()[0])
-    );
+    ) as MiniGamePlayer;
     this.parseMouseFromPlayer();
 
     const enemies = struct.getFieldByLabel('Enemies').getChildStructs();

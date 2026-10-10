@@ -15,7 +15,7 @@ jest.mock('@engine/runtime/GameState', () => ({
   },
 }));
 
-import { AreaCamera } from '@engine/module/AreaCamera';
+import { AreaCamera } from '@engine/module/area/AreaCamera';
 import { GFFDataType } from '@core/enums/resource/GFFDataType';
 
 describe('AreaCamera save export', () => {

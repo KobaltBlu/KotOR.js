@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { AreaRoom } from "@engine/module/AreaRoom";
+import { AreaRoom } from "@engine/module/area/AreaRoom";
 import { GameObjectType } from "@core/enums/module/GameObjectType";
 
 jest.mock("three/examples/jsm/utils/BufferGeometryUtils", () => ({}));

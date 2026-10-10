@@ -9,6 +9,7 @@ import { GameObjectType } from "@core/enums/module/GameObjectType";
 import { AudioEmitterType } from "@core/enums/audio/AudioEmitterType";
 import { AudioEngineChannel } from "@core/enums/audio/AudioEngineChannel";
 import { GameState } from "@engine/runtime/GameState";
+import { getDefaultRuntimeContext } from "@engine/runtime/context";
 import { OdysseyModel3D } from "@engine/render/three/odyssey/OdysseyModel3D";
 import { AudioGeneratedType } from "@core/enums/audio/AudioGeneratedType";
 import { AudioPriorityGroup } from "@core/enums/audio/AudioPriorityGroup";
@@ -337,9 +338,8 @@ export class Sound extends GameObject {
 
   initProperties(){
     const needsRegister = !this.initialized;
-    soundSerializer.deserialize(this, this.template, {
-      actionFromStruct: (struct) => GameState.ActionFactory.FromStruct(struct),
-    });
+    const runtime = getDefaultRuntimeContext();
+    soundSerializer.deserialize(this, this.template, runtime.toDeserializeContext());
 
     this.soundType = AudioEmitterType.GLOBAL;
     if(this.positional){
@@ -348,7 +348,7 @@ export class Sound extends GameObject {
 
 
     if(needsRegister){
-      GameState.GameObjectManager.RegisterObject(this);
+      runtime.register(this);
     }
     this.initialized = true;
   }

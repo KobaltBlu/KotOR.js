@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { GameState } from "@engine/runtime/GameState";
-import { AreaMap } from "@engine/module/AreaMap";
+import { AreaMap } from "@engine/module/area/AreaMap";
 import { TextureLoader } from "@engine/loaders";
 import { TPCObject } from "@core/resource/TPCObject";
 import type { OdysseyTexture } from "@engine/render/three/odyssey/OdysseyTexture";

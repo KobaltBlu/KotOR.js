@@ -3,7 +3,7 @@ import type { Creature } from "@engine/module/Creature";
 import type { Door } from "@engine/module/Door";
 import type { GameObject } from "@engine/module/GameObject";
 import type { Placeable } from "@engine/module/Placeable";
-import type { AreaRoom } from "@engine/module/AreaRoom";
+import type { AreaRoom } from "@engine/module/area/AreaRoom";
 
 /**
  * Area collision geometry accessors.

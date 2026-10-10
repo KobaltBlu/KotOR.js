@@ -1,7 +1,8 @@
 import { GameObject } from "@engine/module/GameObject";
-import type { AreaRoom } from "@engine/module/AreaRoom";
+import type { AreaRoom } from "@engine/module/area/AreaRoom";
 import { AudioEmitter } from "@engine/audio/AudioEmitter";
 import { GameState } from "@engine/runtime/GameState";
+import { getDefaultRuntimeContext } from "@engine/runtime/context";
 import { SSFType } from "@core/enums/resource/SSFType";
 import { NWScriptInstance } from "@engine/nwscript/NWScriptInstance";
 import { NWScriptEvent } from "@engine/nwscript/events";
@@ -58,7 +59,7 @@ import {
 import {
   logAlertzelkOnOpen,
   shouldLogAlertzelkOnOpen,
-} from "@engine/module/door-onopen-diagnostics";
+} from "@engine/module/door/door-onopen-diagnostics";
 import { ModuleLoadCoordinator } from '@engine/runtime/ModuleLoadCoordinator';
 import { DoorTransitionProximity } from "@engine/module/occupancy";
 
@@ -1303,10 +1304,8 @@ export class Door extends GameObject {
 
   initProperties(){
     const needsRegister = !this.initialized;
-    doorSerializer.deserialize(this, this.template, {
-      actionFromStruct: (struct) => GameState.ActionFactory.FromStruct(struct),
-      effectFromStruct: (struct) => GameState.GameEffectFactory.EffectFromStruct(struct),
-    });
+    const runtime = getDefaultRuntimeContext();
+    doorSerializer.deserialize(this, this.template, runtime.toDeserializeContext());
 
     const conversationResRef = (this as any)._conversationResRef;
     if(conversationResRef){
@@ -1315,7 +1314,7 @@ export class Door extends GameObject {
 
     this.faction = GameState.FactionManager.factions.get(this.factionId);
     this.doorAppearance = GameState.AppearanceManager.GetDoorAppearanceById(this.genericType);
-    this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
+    this.portrait = runtime.getSWRuleSet?.()?.portraits?.[this.portraitId];
 
     for(let i = 0; i < this.effects.length; i++){
       const effect = this.effects[i];
@@ -1336,7 +1335,7 @@ export class Door extends GameObject {
 
     GameObjectInitFinalizer.finalize(this, {
       needsRegister,
-      register: () => GameState.GameObjectManager.RegisterObject(this),
+      register: () => runtime.register(this),
     });
   }
 

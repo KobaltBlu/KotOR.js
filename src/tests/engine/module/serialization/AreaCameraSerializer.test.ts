@@ -10,7 +10,7 @@ jest.mock('@engine/runtime/GameState', () => ({
 
 jest.mock('@engine/nwscript/NWScript', () => ({ NWScript: {} }));
 
-import { AreaCamera } from '@engine/module/AreaCamera';
+import { AreaCamera } from '@engine/module/area/AreaCamera';
 import { GFFObject } from '@core/resource/GFFObject';
 import { GFFField } from '@core/resource/GFFField';
 import { GFFDataType } from '@core/enums/resource/GFFDataType';

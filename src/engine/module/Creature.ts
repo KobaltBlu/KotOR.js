@@ -2,7 +2,7 @@ import { GFFObject } from "@core/resource/GFFObject";
 import * as THREE from "three";
 import { GameObject } from "@engine/module/GameObject";
 import type { Item } from "@engine/module/Item";
-import type { AreaRoom } from "@engine/module/AreaRoom";
+import type { AreaRoom } from "@engine/module/area/AreaRoom";
 
 import { AudioEmitter } from "@engine/audio/AudioEmitter";
 import { CreatureClass } from "@engine/combat/CreatureClass";
@@ -31,7 +31,7 @@ import { TalentSkill } from "@engine/talents/TalentSkill";
 import { TalentSpell } from "@engine/talents/TalentSpell";
 import { TalentObjectType } from "@engine/enums/engine/TalentObjectType";
 import { OdysseyModel3D, OdysseyObject3D } from "@engine/render/three/odyssey";
-import { applyHeadTrackingToHturn, stripHeadTrackingFromHturn } from "@engine/module/applyHeadTrackingToHturn";
+import { applyHeadTrackingToHturn, stripHeadTrackingFromHturn } from "@engine/module/creature/applyHeadTrackingToHturn";
 import { OdysseyModel, OdysseyModelAnimation } from "@engine/odyssey";
 import { ModuleCreatureArmorSlot } from "@core/enums/module/ModuleCreatureArmorSlot";
 import { LIPObject } from "@core/resource/LIPObject";
@@ -829,7 +829,7 @@ export class Creature extends GameObject {
     this.notReorienting = 0;
     this.palletID = 0; //for use in biowares editor
     this.partyInteract = 0;
-    this.perceptionRange = GameState.SWRuleSet.ranges[11];
+    this.perceptionRange = getDefaultRuntimeContext().getSWRuleSet?.()?.ranges?.[11];
     this.phenotype = 0;
     /** Appearance_Head 0xFF = use appearance.2da normalhead/backuphead. */
     this.appearanceHead = 255;
@@ -980,7 +980,7 @@ export class Creature extends GameObject {
     factor = applyMobilityMovementBonus(
       factor,
       hasMobility,
-      GameState.GameKey === GameEngineType.TSL
+      getDefaultRuntimeContext().getGameKey() === 'k2'
     );
     this.movementSpeed = clampMovementRateFactor(factor);
   }
@@ -996,7 +996,7 @@ export class Creature extends GameObject {
   creatureLocoUpdate(delta: number = 0){
     if(this.destroyed || this.willDestroy || this.isRetainedCorpse) return;
     if(this.isDead()) return;
-    if(!GameState.module?.readyToProcessEvents) return;
+    if(!getDefaultRuntimeContext().isReadyToProcessEvents()) return;
 
     // Force Push / Force Jump run even while paused or debilitated.
     if(isForcePushLocoActive(this)){
@@ -1058,7 +1058,8 @@ export class Creature extends GameObject {
     if(this.destroyed || this.willDestroy) return;
     if(!this.isReady) return;
 
-    if(GameState.Mode != EngineMode.INGAME && GameState.Mode != EngineMode.MINIGAME && GameState.Mode != EngineMode.DIALOG){
+    const mode = getDefaultRuntimeContext().getMode();
+    if(mode != EngineMode.INGAME && mode != EngineMode.MINIGAME && mode != EngineMode.DIALOG){
       this._creatureLocoThisFrame = false;
       return;
     }
@@ -1132,7 +1133,8 @@ export class Creature extends GameObject {
    * Party/PC → VERY_HIGH; combat → NORMAL; else LOW (area occupied) or VERY_LOW.
    */
   adjustAILevel(){
-    const scheduler = GameState.module?.aiScheduler;
+    const runtime = getDefaultRuntimeContext();
+    const scheduler = runtime.getAiScheduler();
     if(!scheduler) return;
 
     // Party / PC always VERY_HIGH
@@ -1152,8 +1154,9 @@ export class Creature extends GameObject {
 
     // Demote non-combat NORMAL → LOW/VERY_LOW based on players in area
     if(this.aiLevel === AILevel.NORMAL){
+      const party = runtime.getParty?.() ?? [];
       const areaOccupied = (this.area as any)?.playersInArea > 0 ||
-        (GameState.PartyManager?.party?.length > 0 && this.area === GameState.module?.area);
+        (party.length > 0 && this.area === runtime.getModule()?.area);
       scheduler.setAILevel(this, areaOccupied ? AILevel.LOW : AILevel.VERY_LOW);
     }
   }
@@ -1217,7 +1220,8 @@ export class Creature extends GameObject {
     this.sphere.center.copy(this.position);
     this.sphere.radius = this.getHitDistance() * 2;
 
-    if(GameState.Mode == EngineMode.INGAME || GameState.Mode == EngineMode.MINIGAME || GameState.Mode == EngineMode.DIALOG){
+    const mode = getDefaultRuntimeContext().getMode();
+    if(mode == EngineMode.INGAME || mode == EngineMode.MINIGAME || mode == EngineMode.DIALOG){
 
       if(this.animationState.index == ModuleCreatureAnimState.IDLE){
         this.footstepEmitter.isLooping = false;
@@ -1262,7 +1266,7 @@ export class Creature extends GameObject {
       if(!this.isDead()){
         // Damage list + action queue moved to aiUpdate / quicktickCreatureWalk / walk tick
 
-        if(this.dialogAnimation && (GameState.Mode == EngineMode.DIALOG) && (!this.action || this.action.type != ActionType.ActionPlayAnimation)){
+        if(this.dialogAnimation && (getDefaultRuntimeContext().getMode() == EngineMode.DIALOG) && (!this.action || this.action.type != ActionType.ActionPlayAnimation)){
           if(this.model){
 
             if(!this.speed){
@@ -1374,11 +1378,12 @@ export class Creature extends GameObject {
       const forcePushLocked =
         this.isForcePushed() ||
         isForcePushLocoActive(this);
+      const runtime = getDefaultRuntimeContext();
       const usePlayerControl =
         !forcePushLocked &&
-        GameState.Mode != EngineMode.DIALOG &&
+        runtime.getMode() != EngineMode.DIALOG &&
         (!!this.playerControl?.active || playerControlMoving) &&
-        (this.controlled || this === GameState.PartyManager.getCurrentPlayer());
+        (this.controlled || this === runtime.getCurrentPlayer?.());
 
       let playerControlCommitted = false;
       if(usePlayerControl){
@@ -1515,7 +1520,8 @@ export class Creature extends GameObject {
 
         //BEGIN: Animation Optimization
         this.model.animateFrame = true;
-        const inParty = GameState.PartyManager.party.indexOf(this) != -1;
+        const runtime = getDefaultRuntimeContext();
+        const inParty = (runtime.getParty?.() ?? []).indexOf(this) != -1;
         // Last-frame cull (visibility sync runs after creature ticks). Party,
         // dialog, cutscene, and TSL forceAlwaysUpdate keep posing.
         if(
@@ -1523,7 +1529,7 @@ export class Creature extends GameObject {
           !this.model.visible &&
           !inParty &&
           !this.cutsceneMode &&
-          GameState.Mode != EngineMode.DIALOG
+          runtime.getMode() != EngineMode.DIALOG
         ){
           this.model.animateFrame = false;
         }
@@ -1550,7 +1556,7 @@ export class Creature extends GameObject {
           stripHeadTrackingFromHturn(this.model.hturn_g);
         }
 
-        if(GameState.Mode != EngineMode.DIALOG){
+        if(runtime.getMode() != EngineMode.DIALOG){
           const locomoting =
             this.animationState.index == ModuleCreatureAnimState.RUNNING ||
             this.animationState.index == ModuleCreatureAnimState.WALKING ||
@@ -1726,7 +1732,9 @@ export class Creature extends GameObject {
     if(this.regenTimer <= 0){
       this.regenTimer = this.regenTimerMax;
 
-      const regeneration = GameState.SWRuleSet.regenerations[this.combatData.combatState ? 0 : 1];
+      const regeneration = getDefaultRuntimeContext().getSWRuleSet?.()?.regenerations?.[
+        this.combatData.combatState ? 0 : 1
+      ];
       if(regeneration){
         if(Number.isFinite(regeneration.forceregen)){
           this.addFP(Math.abs(regeneration.forceregen));
@@ -1744,14 +1752,15 @@ export class Creature extends GameObject {
     // no debilitated early-out. Locomotion is gated in quicktickCreatureWalk / walk tick / move
     // actions; conversation Wait/Resume (k_ptar_calofade after EffectHorrified)
     // must still tick or Pause hangs forever.
-    if(!GameState.module.readyToProcessEvents)
+    const runtime = getDefaultRuntimeContext();
+    if(!runtime.isReadyToProcessEvents())
       return;
 
       
     this.actionQueue.process( delta );
     this.action = this.actionQueue[0];
     if(!(this.action)){
-      const currentPlayer = GameState.PartyManager.getCurrentPlayer();
+      const currentPlayer = runtime.getCurrentPlayer?.();
       if(
         this.isPartyMember() &&
         this != currentPlayer &&
@@ -1818,7 +1827,7 @@ export class Creature extends GameObject {
       }
     }
 
-    if(!this.spawned || !GameState.module.readyToProcessEvents){
+    if(!this.spawned || !getDefaultRuntimeContext().isReadyToProcessEvents()){
       return;
     }
 
@@ -2132,7 +2141,7 @@ export class Creature extends GameObject {
       !this.isDead() &&
       !this.speed &&
       (
-        ((GameState.Mode == EngineMode.DIALOG) && this.dialogAnimation) ||
+        ((getDefaultRuntimeContext().getMode() == EngineMode.DIALOG) && this.dialogAnimation) ||
         isDialogAnimation(this.animationState.animation)
       )
     ){
@@ -2206,7 +2215,7 @@ export class Creature extends GameObject {
           }else{
             this.setAnimationState(ModuleCreatureAnimState.READY);
           }
-        }else if(GameState.Mode == EngineMode.DIALOG && this.animationState.index != ModuleCreatureAnimState.PAUSE){
+        }else if(getDefaultRuntimeContext().getMode() == EngineMode.DIALOG && this.animationState.index != ModuleCreatureAnimState.PAUSE){
           // SetDialogAnimations owns the pose until the next entry — re-apply
           // looping talk/listen/READY instead of falling through to idle pause.
           this.animationState.started = false;
@@ -2364,7 +2373,7 @@ export class Creature extends GameObject {
       // attempted-move object id (GetAttemptedMovementTarget)
       this.attemptedMovementTarget = target;
 
-      let action = new GameState.ActionFactory.ActionMoveToPoint();
+      let action = getDefaultRuntimeContext().createAction('ActionMoveToPoint');
       action.setParameter(0, ActionParameterType.FLOAT, target.position.x);
       action.setParameter(1, ActionParameterType.FLOAT, target.position.y);
       action.setParameter(2, ActionParameterType.FLOAT, target.position.z);
@@ -2399,7 +2408,7 @@ export class Creature extends GameObject {
       const face = faces[Math.floor(Math.random()*faces.length)];
       if(face){
         position.copy(face.centroid);
-        let action = new GameState.ActionFactory.ActionMoveToPoint();
+        let action = getDefaultRuntimeContext().createAction('ActionMoveToPoint');
         action.setParameter(0, ActionParameterType.FLOAT, position.x);
         action.setParameter(1, ActionParameterType.FLOAT, position.y);
         action.setParameter(2, ActionParameterType.FLOAT, position.z);
@@ -2440,8 +2449,9 @@ export class Creature extends GameObject {
       }
 
       //Check if party are too close to location
-      for(let i = 0; i < GameState.PartyManager.party.length; i++){
-        let creature = GameState.PartyManager.party[i];
+      const party = getDefaultRuntimeContext().getParty?.() ?? [];
+      for(let i = 0; i < party.length; i++){
+        let creature = party[i];
         if(this == creature)
           continue;
 
@@ -2451,7 +2461,7 @@ export class Creature extends GameObject {
         }
       }
 
-      let action = new GameState.ActionFactory.ActionMoveToPoint();
+      let action = getDefaultRuntimeContext().createAction('ActionMoveToPoint');
       action.setParameter(0, ActionParameterType.FLOAT, target.position.x);
       action.setParameter(1, ActionParameterType.FLOAT, target.position.y);
       action.setParameter(2, ActionParameterType.FLOAT, target.position.z);
@@ -2470,7 +2480,7 @@ export class Creature extends GameObject {
   jumpToObject(target: GameObject, bWalkStraight: number = 1){
     if(target instanceof GameObject){
 
-      let action = new GameState.ActionFactory.ActionJumpToObject();
+      let action = getDefaultRuntimeContext().createAction('ActionJumpToObject');
       action.setParameter(0, ActionParameterType.DWORD, target.id );
       // bWalkStraight → open/safe walk location requireLOS (default TRUE)
       action.setParameter(1, ActionParameterType.INT, bWalkStraight | 0);
@@ -2482,7 +2492,7 @@ export class Creature extends GameObject {
 
   jumpToLocation(target: EngineLocation){
     if(target instanceof EngineLocation){
-      let action = new GameState.ActionFactory.ActionJumpToPoint();
+      let action = getDefaultRuntimeContext().createAction('ActionJumpToPoint');
       action.setParameter(0, ActionParameterType.FLOAT, target.position.x);
       action.setParameter(1, ActionParameterType.FLOAT, target.position.y);
       action.setParameter(2, ActionParameterType.FLOAT, target.position.z);
@@ -2859,7 +2869,7 @@ export class Creature extends GameObject {
     setClientCombatMode(this, true);
 
     if(!this.actionQueue.actionTypeExists(ActionType.ActionCombat)){
-      const action = new GameState.ActionFactory.ActionCombat(0xFFFF);
+      const action = getDefaultRuntimeContext().createAction('ActionCombat', 0xFFFF);
       this.actionQueue.add(action);
     }
 
@@ -2910,7 +2920,7 @@ export class Creature extends GameObject {
     }
 
     if(!this.actionQueue.actionTypeExists(ActionType.ActionCombat)){
-      const action = new GameState.ActionFactory.ActionCombat(0xFFFF);
+      const action = getDefaultRuntimeContext().createAction('ActionCombat', 0xFFFF);
       this.actionQueue.add(action);
     }
   }
@@ -2943,7 +2953,7 @@ export class Creature extends GameObject {
     }
 
     if(!this.actionQueue.actionTypeExists(ActionType.ActionCombat)){
-      const action = new GameState.ActionFactory.ActionCombat(0xFFFF);
+      const action = getDefaultRuntimeContext().createAction('ActionCombat', 0xFFFF);
       this.actionQueue.add(action);
     }
   }
@@ -2979,14 +2989,14 @@ export class Creature extends GameObject {
       combatAction.setFeat(talent as TalentFeat);
       this.combatRound.addAction(combatAction);
       if(!this.actionQueue.actionTypeExists(ActionType.ActionCombat)){
-        this.actionQueue.add(new GameState.ActionFactory.ActionCombat(0xFFFF));
+        this.actionQueue.add(getDefaultRuntimeContext().createAction('ActionCombat', 0xFFFF));
       }
       return action;
     }
 
     if((talent.objectType & TalentObjectType.TalentSkill) !== 0){
       if(talent.id == 6){ //Security
-        action = new GameState.ActionFactory.ActionUnlockObject();
+        action = getDefaultRuntimeContext().createAction('ActionUnlockObject');
         action.setParameter(0, ActionParameterType.DWORD, oTarget.id || GameObjectConstant.OBJECT_INVALID);
         this.actionQueue.add(action);
       }
@@ -3010,7 +3020,7 @@ export class Creature extends GameObject {
   }
 
   animationConstantToAnimation( animation_constant = 10000 ): SWAnimation | undefined {
-    const animations = GameState.SWRuleSet.animations;
+    const animations = getDefaultRuntimeContext().getSWRuleSet?.()?.animations;
 
     const debilitated = resolveDebilitatedCreatureAnimation(
       this.getDebilitatedState(),
@@ -3040,7 +3050,9 @@ export class Creature extends GameObject {
       poisoned: this.isPoisoned(),
       diseased: this.isDiseased(),
       weaponType: this.getCombatAnimationWeaponType(),
-      gameKey: GameState.GameKey,
+      gameKey: getDefaultRuntimeContext().getGameKey() === 'k2'
+        ? GameEngineType.TSL
+        : GameEngineType.KOTOR,
     };
   }
 
@@ -4720,7 +4732,7 @@ export class Creature extends GameObject {
     this.setOpacity(1);
     // Party TempDeath revive after KeepCorpse removed the object from script tables
     if(wasScriptHidden && !stillInObjectList){
-      GameState.GameObjectManager.RegisterObject(this);
+      getDefaultRuntimeContext().register(this);
     }
   }
 
@@ -8044,22 +8056,21 @@ export class Creature extends GameObject {
 
   initProperties(){
     const needsRegister = !this.initialized;
+    const runtime = getDefaultRuntimeContext();
+    const rules = runtime.getSWRuleSet?.();
     try{
       this.classes = [];
       this.feats = [];
-      this.skills = GameState.SWRuleSet.skills.slice(0).map((skill: TalentSkill) => {
+      this.skills = (rules?.skills ?? []).slice(0).map((skill: TalentSkill) => {
         return skill.clone();
       });
 
-      creatureSerializer.deserialize(this, this.template, {
-        actionFromStruct: (struct) => GameState.ActionFactory.FromStruct(struct),
-        effectFromStruct: (struct) => GameState.GameEffectFactory.EffectFromStruct(struct),
-      });
+      creatureSerializer.deserialize(this, this.template, runtime.toDeserializeContext());
 
       if(needsRegister){
         if(BitWise.InstanceOf(this.objectType, GameObjectType.PlayerCharacter)){
           if(!this.id || this.id === GameObjectConstant.OBJECT_INVALID){
-            this.id = GameState.GameObjectManager.GetNextPlayerId();
+            this.id = runtime.getNextPlayerId?.() ?? 0;
           }
         }
       }
@@ -8106,16 +8117,16 @@ export class Creature extends GameObject {
 
       const pendingPerceptionRangeId = (this as any)._pendingPerceptionRangeId;
       if(pendingPerceptionRangeId !== undefined){
-        this.perceptionRange = GameState.SWRuleSet.ranges[pendingPerceptionRangeId];
+        this.perceptionRange = rules?.ranges?.[pendingPerceptionRangeId];
         delete (this as any)._pendingPerceptionRangeId;
       }else{
         //https://forum.neverwintervault.org/t/perception-range/3191/9
         //It appears that PerceptionRange isn't saved inside the GIT file.
         //The original game appears to use PercepRngDefault when a creature is reloaded from a SaveGame
-        this.perceptionRange = GameState.SWRuleSet.ranges[11];
+        this.perceptionRange = rules?.ranges?.[11];
       }
 
-      this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
+      this.portrait = rules?.portraits?.[this.portraitId];
 
       try{
         for(let i = 0; i < this.effects.length; i++){
@@ -8245,7 +8256,7 @@ export class Creature extends GameObject {
     this.setAnimationState(anim);
 
     if(needsRegister){
-      GameState.GameObjectManager.RegisterObject(this);
+      runtime.register(this);
     }
 
     this.initialized = true;
@@ -8559,7 +8570,7 @@ export class Creature extends GameObject {
   save(context?: SerializeContext){
     const runtime = getDefaultRuntimeContext();
     const gff = creatureSerializer.serialize(this, {
-      gameKey: GameState.GameKey == GameEngineType.TSL ? 'k2' : 'k1',
+      gameKey: runtime.getGameKey(),
       controlledNpcIndex: runtime.getControlledNpcIndex?.() ?? -1,
       ...(context ?? {}),
     });

@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from '@jest/globals';
 import { GFFStruct } from '@core/resource/GFFStruct';
-import { AreaMap } from '@engine/module/AreaMap';
+import { AreaMap } from '@engine/module/area/AreaMap';
 import { AreaMapSerializer } from '@engine/module/serialization/AreaMapSerializer';
 
 describe('AreaMapSerializer', () => {

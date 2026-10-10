@@ -1,5 +1,5 @@
 import type { GameObject } from "@engine/module/GameObject";
-import type { MiniGameTrack } from "@engine/module/MiniGameTrack";
+import type { MiniGameTrack } from "@engine/module/minigame/MiniGameTrack";
 import { BitWise } from "@core/utility/BitWise";
 import { GameObjectType } from "@core/enums/module/GameObjectType";
 

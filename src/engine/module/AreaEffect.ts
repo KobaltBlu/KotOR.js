@@ -331,10 +331,8 @@ export class AreaEffect extends GameObject {
 
   initProperties(): void {
     const needsRegister = !this.initialized;
-    areaEffectSerializer.deserialize(this, this.template, {
-      actionFromStruct: (struct) => GameState.ActionFactory.FromStruct(struct),
-      effectFromStruct: (struct) => GameState.GameEffectFactory.EffectFromStruct(struct),
-    });
+    const runtime = getDefaultRuntimeContext();
+    areaEffectSerializer.deserialize(this, this.template, runtime.toDeserializeContext());
 
 
     for(let i = 0; i < this.effects.length; i++){
@@ -345,14 +343,14 @@ export class AreaEffect extends GameObject {
 
     GameObjectInitFinalizer.finalize(this, {
       needsRegister,
-      register: () => GameState.GameObjectManager.RegisterObject(this),
+      register: () => runtime.register(this),
     });
 
     if(
       Number.isFinite(this.linkedToObjectId) &&
       this.linkedToObjectId !== GameObjectConstant.OBJECT_INVALID
     ){
-      this.linkedToObject = GameState.GameObjectManager.GetObjectById(this.linkedToObjectId);
+      this.linkedToObject = runtime.getById(this.linkedToObjectId);
     }
   }
 

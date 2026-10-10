@@ -5,7 +5,7 @@
  * @jest-environment node
  */
 import { describe, expect, test } from '@jest/globals';
-import { applyHeadTrackingToHturn, stripHeadTrackingFromHturn } from '@engine/module/applyHeadTrackingToHturn';
+import { applyHeadTrackingToHturn, stripHeadTrackingFromHturn } from '@engine/module/creature/applyHeadTrackingToHturn';
 
 function makeHturn(x: number, z = 0) {
   return { rotation: { x, z }, userData: {} as Record<string, unknown> };

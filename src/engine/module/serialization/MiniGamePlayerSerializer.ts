@@ -1,8 +1,8 @@
-import type { MiniGamePlayer } from '@engine/module/MiniGamePlayer';
+import type { MiniGamePlayer } from '@engine/module/minigame/MiniGamePlayer';
 import type { DeserializeContext, GameObjectSerializer, SerializeContext } from '@engine/module/serialization/types';
 import { gffRootOf } from '@engine/module/serialization/types';
 import { readFloat, readInt, readString } from '@engine/module/serialization/gffHelpers';
-import { MiniGameTrack } from '@engine/module/MiniGameTrack';
+import { MiniGameTrack } from '@engine/module/minigame/MiniGameTrack';
 
 /**
  * MiniGame player — deserialize-only.

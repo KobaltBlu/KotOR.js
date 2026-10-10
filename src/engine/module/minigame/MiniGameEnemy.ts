@@ -4,17 +4,18 @@ import * as THREE from "three";
 import { OdysseyModel3D } from "@engine/render/three/odyssey";
 import { NWScriptInstance } from "@engine/nwscript/NWScriptInstance";
 import { GameState } from "@engine/runtime/GameState";
+import { getDefaultRuntimeContext } from "@engine/runtime/context";
 import { OdysseyModel, OdysseyModelAnimationManager } from "@engine/odyssey";
 import { NWScript } from "@engine/nwscript/NWScript";
 import { IModelListItem } from "@core/interface/module/minigame/IModelListItem";
 import { GameObjectType } from "@core/enums/module/GameObjectType";
 import { MDLLoader } from "@engine/loaders";
-import { MiniGameGunBank } from "@engine/module/MiniGameGunBank";
+import { MiniGameGunBank } from "@engine/module/minigame/MiniGameGunBank";
 import { ScriptHook } from "@core/enums/module/ScriptHook";
 import { MGTrackFollowerSounds } from "@engine/module/minigame/MGTrackFollowerSounds";
 import { MGTrackFollowerAudio } from "@engine/module/minigame/MGTrackFollowerAudio";
 import { MiniGameObjectArray } from "@engine/module/minigame/MiniGameObjectArray";
-import { MiniGameTrack } from "@engine/module/MiniGameTrack";
+import { MiniGameTrack } from "@engine/module/minigame/MiniGameTrack";
 import { miniGameEnemySerializer } from "@engine/module/serialization/MiniGameEnemySerializer";
 
 /**
@@ -267,7 +268,7 @@ export class MiniGameEnemy extends GameObject {
       const bank = this.gunBanks[i];
       bank.update(delta);
       if(!this.alive){ continue; }
-      const player = GameState.module?.area?.miniGame?.player;
+      const player = getDefaultRuntimeContext().getModule()?.area?.miniGame?.player;
       if(!player?.alive){ continue; }
 
       // TargettingGunBank: Sensing_Radius gates auto-fire; else forward ray LOS.
@@ -444,7 +445,7 @@ export class MiniGameEnemy extends GameObject {
     if(!raw){ return; }
     const lower = raw.toLowerCase();
     const modelName = e?.target?.name || this.models?.[0]?.name || this.name || '';
-    const mg = GameState.module?.area?.miniGame;
+    const mg = getDefaultRuntimeContext().getModule()?.area?.miniGame;
 
     if(lower.startsWith('custom_')){
       mg?.recordAnimEvent?.(raw.substring(7), modelName);
@@ -569,7 +570,7 @@ export class MiniGameEnemy extends GameObject {
       this.gunBanks[i]?.die?.();
     }
 
-    const mg = GameState.module?.area?.miniGame;
+    const mg = getDefaultRuntimeContext().getModule()?.area?.miniGame;
     if(mg){
       mg.removeEnemy(this);
       if(this.models.length){

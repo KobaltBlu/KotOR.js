@@ -1,4 +1,4 @@
-import type { MiniGameObstacle } from '@engine/module/MiniGameObstacle';
+import type { MiniGameObstacle } from '@engine/module/minigame/MiniGameObstacle';
 import type { DeserializeContext, GameObjectSerializer, SerializeContext } from '@engine/module/serialization/types';
 import { gffRootOf } from '@engine/module/serialization/types';
 import { readFloat, readString } from '@engine/module/serialization/gffHelpers';

@@ -2,7 +2,7 @@ import { GameObject } from "@engine/module/GameObject";
 import { Item } from "@engine/module/Item";
 import { GFFObject } from "@core/resource/GFFObject";
 import { GameObjectType } from "@core/enums/module/GameObjectType";
-import { GameState } from "@engine/runtime/GameState";
+import { getDefaultRuntimeContext } from "@engine/runtime/context";
 import { GameObjectLoadPipeline } from "@engine/module/serialization/GameObjectLoadPipeline";
 import { GameObjectInitFinalizer } from "@engine/module/serialization/GameObjectInitFinalizer";
 import { storeSerializer } from "@engine/module/serialization/StoreSerializer";
@@ -78,9 +78,8 @@ export class Store extends GameObject {
 
   initProperties(){
     const needsRegister = !this.initialized;
-    storeSerializer.deserialize(this, this.template, {
-      actionFromStruct: (struct) => GameState.ActionFactory.FromStruct(struct),
-    });
+    const runtime = getDefaultRuntimeContext();
+    storeSerializer.deserialize(this, this.template, runtime.toDeserializeContext());
 
     const pendingInventory = (this as any)._pendingInventoryEntries as NestedItemEntry[] | undefined;
     (this as any)._pendingInventoryEntries = undefined;
@@ -99,7 +98,7 @@ export class Store extends GameObject {
 
     GameObjectInitFinalizer.finalize(this, {
       needsRegister,
-      register: () => GameState.GameObjectManager.RegisterObject(this),
+      register: () => runtime.register(this),
     });
   }
 

@@ -25,7 +25,7 @@ jest.mock('@engine/runtime/GameState', () => ({
 import {
   logAlertzelkOnOpen,
   shouldLogAlertzelkOnOpen,
-} from '@engine/module/door-onopen-diagnostics';
+} from '@engine/module/door/door-onopen-diagnostics';
 
 describe('door-onopen-diagnostics k_ptar_alertzelk', () => {
   let logSpy: jest.SpiedFunction<typeof console.log>;

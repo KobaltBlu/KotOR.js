@@ -1,5 +1,5 @@
 import type { GameObject } from "@engine/module/GameObject";
-import type { MiniGameGunBullet } from "@engine/module/MiniGameGunBullet";
+import type { MiniGameGunBullet } from "@engine/module/minigame/MiniGameGunBullet";
 import { BitWise } from "@core/utility/BitWise";
 import { GameObjectType } from "@core/enums/module/GameObjectType";
 

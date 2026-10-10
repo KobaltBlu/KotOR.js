@@ -1,5 +1,5 @@
 import { GFFObject } from '@core/resource/GFFObject';
-import type { AreaCamera } from '@engine/module/AreaCamera';
+import type { AreaCamera } from '@engine/module/area/AreaCamera';
 import type { DeserializeContext, GameObjectSerializer, SerializeContext } from '@engine/module/serialization/types';
 import { gffRootOf } from '@engine/module/serialization/types';
 import {

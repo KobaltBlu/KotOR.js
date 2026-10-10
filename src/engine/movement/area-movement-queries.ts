@@ -3,7 +3,7 @@ import type { Area } from "@engine/module/Area";
 import type { Creature } from "@engine/module/Creature";
 import type { Door } from "@engine/module/Door";
 import type { GameObject } from "@engine/module/GameObject";
-import type { AreaRoom } from "@engine/module/AreaRoom";
+import type { AreaRoom } from "@engine/module/area/AreaRoom";
 import type { OdysseyFace3 } from "@engine/render/three/odyssey";
 import { getPathPersonalSpace, getCreaturePersonalSpace } from "@engine/combat/attack-range";
 import {

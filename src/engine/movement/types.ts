@@ -1,6 +1,6 @@
 import type * as THREE from "three";
 import type { GameObject } from "@engine/module/GameObject";
-import type { AreaRoom } from "@engine/module/AreaRoom";
+import type { AreaRoom } from "@engine/module/area/AreaRoom";
 import type { OdysseyFace3 } from "@engine/render/three/odyssey";
 
 /**

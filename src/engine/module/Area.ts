@@ -1,4 +1,5 @@
 import { GameState } from "@engine/runtime/GameState";
+import { getDefaultRuntimeContext } from "@engine/runtime/context";
 import { GameEngineType } from "@core/enums/engine/GameEngineType";
 import { WindManager } from "@engine/managers/WindManager";
 import { DirtyTextureManager } from "@engine/managers/DirtyTextureManager";
@@ -7,10 +8,9 @@ import { PlaceableLightmapBaker } from "@engine/managers/PlaceableLightmapBaker"
 import { GFFObject } from "@core/resource/GFFObject";
 import type { OdysseyFace3 } from "@engine/render/three/odyssey/OdysseyFace3";
 import { OdysseyModel3D } from "@engine/render/three/odyssey/OdysseyModel3D";
-import { OdysseyMaterialBuilder } from "@engine/render/three/odyssey/OdysseyMaterialBuilder";
 import { OdysseyLightingBinder } from "@engine/render/three/odyssey/OdysseyLightingBinder";
-import { AreaMap } from "@engine/module/AreaMap";
-import { AreaWeather } from "@engine/module/AreaWeather";
+import { AreaMap } from "@engine/module/area/AreaMap";
+import { AreaWeather } from "@engine/module/area/AreaWeather";
 import * as THREE from "three";
 import { GFFField } from "@core/resource/GFFField";
 import { GFFDataType } from "@core/enums/resource/GFFDataType";
@@ -18,9 +18,7 @@ import { GFFStruct } from "@core/resource/GFFStruct";
 import { NWScriptInstance } from "@engine/nwscript/NWScriptInstance";
 import { NWScript } from "@engine/nwscript/NWScript";
 import { NWScriptEvent } from "@engine/nwscript/events";
-import { ResourceTypes } from "@core/resource/ResourceTypes";
 import { LYTObject } from "@core/resource/LYTObject";
-import { Utility } from "@core/utility/Utility";
 import EngineLocation from "@engine/runtime/EngineLocation";
 import { OdysseyWalkMesh } from "@engine/odyssey/OdysseyWalkMesh";
 import type { WalkmeshEdge } from "@engine/odyssey/WalkmeshEdge";
@@ -33,7 +31,7 @@ import { VISObject } from "@core/resource/VISObject";
 import { ITextureLoaderQueuedRef } from "@engine/interface/loaders/ITextureLoaderQueuedRef";
 import { FollowerCamera } from "@engine/render/FollowerCamera";
 // import { MenuManager, TwoDAManager, PartyManager, GameObjectManager } from "@engine/managers";
-import { ResourceLoader, TextureLoader } from "@engine/loaders";
+import { TextureLoader } from "@engine/loaders";
 import { IAreaAudioProperties } from "@core/interface/area/IAreaAudioProperties";
 import { AudioEngine } from "@engine/audio";
 import { AREA_MUSIC_FADE_MS, AMBIENT_SOUND_FADE_MS } from "@engine/audio/AudioEngine";
@@ -50,35 +48,41 @@ import { CombatProjectile } from "@engine/combat/combat-projectile";
 import { TextSprite3D } from "@engine/render/TextSprite3D";
 import { GameObject } from "@engine/module/GameObject";
 import { AreaEffect } from "@engine/module/AreaEffect";
-import { AreaCamera } from "@engine/module/AreaCamera";
+import { AreaCamera } from "@engine/module/area/AreaCamera";
 import { Creature } from "@engine/module/Creature";
 import { Door } from "@engine/module/Door";
 import { Encounter } from "@engine/module/Encounter";
 import { Item } from "@engine/module/Item";
-import { MiniGameEnemy } from "@engine/module/MiniGameEnemy";
-import { MiniGameObstacle } from "@engine/module/MiniGameObstacle";
+import { MiniGameEnemy } from "@engine/module/minigame/MiniGameEnemy";
+import { MiniGameObstacle } from "@engine/module/minigame/MiniGameObstacle";
 import { Waypoint } from "@engine/module/Waypoint";
 import { Trigger } from "@engine/module/Trigger";
 import { Store } from "@engine/module/Store";
 import { Sound } from "@engine/module/Sound";
-import { AreaRoom } from "@engine/module/AreaRoom";
+import { AreaRoom } from "@engine/module/area/AreaRoom";
 import { PlayerCharacter } from "@engine/module/PlayerCharacter";
 import { Placeable } from "@engine/module/Placeable";
-import { AreaPath } from "@engine/module/AreaPath";
-import { MiniGame } from "@engine/module/MiniGame";
-import { MiniGameTrack } from "@engine/module/MiniGameTrack";
-import { MiniGamePlayer } from "@engine/module/MiniGamePlayer";
+import { AreaPath } from "@engine/module/area/AreaPath";
+import { MiniGame } from "@engine/module/minigame/MiniGame";
+import { MiniGameTrack } from "@engine/module/minigame/MiniGameTrack";
+import { MiniGamePlayer } from "@engine/module/minigame/MiniGamePlayer";
 import type { Module } from "@engine/module/Module";
 import { IVISRoom } from "@core/interface/module/IVISRoom";
 import { ScriptHook } from "@core/enums/module/ScriptHook";
 import { ModuleDayPhase } from "@core/enums/module/ModuleDayPhase";
 import { ModuleCalendar } from "@engine/module/ModuleCalendar";
 import { ModuleTimeManager } from "@engine/module/ModuleTimeManager";
-import { CorpseCache } from "@engine/module/CorpseCache";
+import { CorpseCache } from "@engine/module/creature/CorpseCache";
 import { GameLoop } from '@engine/runtime/GameLoop';
 import { AreaGitSerializer } from "@engine/module/serialization/AreaGitSerializer";
 import { AreaMapSerializer } from "@engine/module/serialization/AreaMapSerializer";
-import { SwVarTableSerializer } from "@engine/module/serialization/SwVarTableSerializer";
+import { AreaDataBootstrap } from "@engine/module/area/AreaDataBootstrap";
+import { AreaInitPipeline } from "@engine/module/area/AreaInitPipeline";
+import { AreaObjectSceneLoader } from "@engine/module/area/AreaObjectSceneLoader";
+import { AreaPartyBootstrap } from "@engine/module/area/AreaPartyBootstrap";
+import { AreaPostLoadRevealService } from "@engine/module/area/AreaPostLoadRevealService";
+import { AreaResourceBootstrap } from "@engine/module/area/AreaResourceBootstrap";
+import { AreaSceneBootstrap } from "@engine/module/area/AreaSceneBootstrap";
 
 type AreaScriptKeys = 'OnEnter'|'OnExit'|'OnHeartbeat'|'OnUserDefined';
 
@@ -654,8 +658,10 @@ export class Area extends GameObject {
       this.doors[i]?.update(delta);
     }
 
-    for(let i = 0; i < GameState.PartyManager.party.length; i++){
-      GameState.PartyManager.party[i]?.update(delta);
+    const runtime = getDefaultRuntimeContext();
+    const party = runtime.getParty?.() ?? [];
+    for(let i = 0; i < party.length; i++){
+      party[i]?.update(delta);
     }
 
     for(let i = 0; i < this.creatures.length; i++){
@@ -667,12 +673,12 @@ export class Area extends GameObject {
     }
 
     //unset party controlled
-    for(let i = 0; i < GameState.PartyManager.party.length; i++){
-      const pm = GameState.PartyManager.party[i];
+    for(let i = 0; i < party.length; i++){
+      const pm = party[i];
       if(pm) pm.controlled = false;
     }
 
-    if(GameState.Mode == EngineMode.MINIGAME){
+    if(runtime.getMode() == EngineMode.MINIGAME){
       this.miniGame.tick(delta);
     }
 
@@ -775,8 +781,10 @@ export class Area extends GameObject {
       this.doors[i]?.updatePaused(delta);
     }
 
-    for(let i = 0; i < GameState.PartyManager.party.length; i++){
-      const pm = GameState.PartyManager.party[i];
+    const runtime = getDefaultRuntimeContext();
+    const party = runtime.getParty?.() ?? [];
+    for(let i = 0; i < party.length; i++){
+      const pm = party[i];
       if(!pm) continue;
       if(GameState.timeStopActive && GameState.timeStopExclusions?.has(pm.id)){
         // Full visual update for TimeStop exclusions (aiUpdate already ran)
@@ -800,7 +808,7 @@ export class Area extends GameObject {
       this.placeables[i]?.updatePaused(delta);
     }
 
-    if(GameState.Mode == EngineMode.MINIGAME){
+    if(runtime.getMode() == EngineMode.MINIGAME){
       this.miniGame.tickPaused(delta);
     }
 
@@ -1745,16 +1753,7 @@ export class Area extends GameObject {
    * first renderable world frame matches the settled chase pose (no neighbor pop-in).
    */
   primePostLoadReveal(): void {
-    const player = GameState.PartyManager.getCurrentPlayer();
-    if(player && !player.room){
-      player.getCurrentRoom();
-    }
-    this.lastRoom = undefined;
-    FollowerCamera.snapToChasePosition();
-    GameLoop.updateViewportFrustum();
-    this.updateRoomVisibility(0);
-    this.applyRoomRenderFrustumCull();
-    this.syncObjectModelVisibility();
+    AreaPostLoadRevealService.prime(this);
   }
 
   /**
@@ -1832,393 +1831,8 @@ export class Area extends GameObject {
   }
 
   async load(){
-
-    //BEGIN AREA LOAD
-
-    // ARE ObjectId (when present, e.g. embedded save ARE) is the game object id.
-    // ARE ID header is separate (header_info[0]) — never overwrite this.id with it.
-    if(this.are.RootNode.hasField('ObjectId'))
-      this.id = this.are.getFieldByLabel('ObjectId').getValue();
-
-    let rooms = this.are.getFieldByLabel('Rooms');
-
-    this.alphaTest = this.are.getFieldByLabel('AlphaTest').getValue();
-    this.cameraStyle = this.are.getFieldByLabel('CameraStyle').getValue();
-    this.weather.chanceLightning = this.are.getFieldByLabel('ChanceLightning').getValue();
-    this.weather.chanceRain = this.are.getFieldByLabel('ChanceRain').getValue();
-    this.weather.chanceSnow = this.are.getFieldByLabel('ChanceSnow').getValue();
-    this.comments = this.are.getFieldByLabel('Comments').getValue();
-    this.creatorId = this.are.getFieldByLabel('Creator_ID').getValue();
-    this.dayNightCycle = this.are.getFieldByLabel('DayNightCycle').getValue();
-    this.defaultEnvMap = this.are.getFieldByLabel('DefaultEnvMap').getValue();
-    // envmap assign resolves the "DEFAULT" envmap resref
-    // against the current area's DefaultEnvMap.
-    OdysseyMaterialBuilder.defaultEnvMap = this.defaultEnvMap;
-    this.dynamicAmbientColor = this.are.getFieldByLabel('DynAmbientColor').getValue();
-    this.applyDynAmbient();
-    this.expansionList = [];
-
-    this.flags = this.are.getFieldByLabel('Flags').getValue();
-    // LoadAreaHeader: indoor (Flags & 1) clears weather chances / wind.
-    if(this.flags & 1){
-      this.weather.chanceLightning = 0;
-      this.weather.chanceRain = 0;
-      this.weather.chanceSnow = 0;
-    }
-    this.grass = {
-      ambient: this.are.getFieldByLabel('Grass_Ambient').getValue(),
-      density: this.are.getFieldByLabel('Grass_Density').getValue(),
-      diffuse: this.are.getFieldByLabel('Grass_Diffuse').getValue(),
-      probability: {
-        lowerLeft: this.are.getFieldByLabel('Grass_Prob_LL').getValue(),
-        lowerRight: this.are.getFieldByLabel('Grass_Prob_LR').getValue(),
-        upperLeft: this.are.getFieldByLabel('Grass_Prob_UL').getValue(),
-        upperRight: this.are.getFieldByLabel('Grass_Prob_UR').getValue()
-      },
-      quadSize: this.are.getFieldByLabel('Grass_QuadSize').getValue(),
-      textureName: this.are.getFieldByLabel('Grass_TexName').getValue() || 'grass'
-    };
-
-    // TSL dirt layers (DirtyARGB/Size/Formula/Func One–Three). swaps formula 0↔1 on load.
-    this.dirt = {
-      layers: [
-        this.readAreDirtLayer('One'),
-        this.readAreDirtLayer('Two'),
-        this.readAreDirtLayer('Three'),
-      ],
-    };
-
-    this.areId = this.are.getFieldByLabel('ID').getValue();
-    this.isNight = this.are.getFieldByLabel('IsNight').getValue();
-    this.lightingScheme = this.are.getFieldByLabel('LightingScheme').getValue();
-    this.loadScreenId = this.are.getFieldByLabel('LoadScreenID').getValue();
-
-    if(this.are.RootNode.hasField('Map')){
-      const map = this.are.getFieldByLabel('Map')?.getChildStructs()?.[0];
-      const loadedMap = AreaMapSerializer.fromStruct(map);
-      if(loadedMap){
-        this.areaMap = loadedMap;
-      }
-    }
-
-    if(this.are.RootNode.hasField('MiniGame')){
-      this.miniGame = new MiniGame(
-        this.are.getFieldByLabel('MiniGame').getChildStructs()[0]
-      );
-    }
-
-    this.modListenCheck = this.are.getFieldByLabel('ModListenCheck').getValue();
-    this.modSpotCheck = this.are.getFieldByLabel('ModSpotCheck').getValue();
-    this.moon.ambientColor = this.are.getFieldByLabel('MoonAmbientColor').getValue();
-    this.moon.diffuseColor = this.are.getFieldByLabel('MoonDiffuseColor').getValue();
-    this.moon.fogColor = this.are.getFieldByLabel('MoonFogColor').getValue();
-    this.moon.fogFar = this.are.getFieldByLabel('MoonFogFar').getValue();
-    this.moon.fogNear = this.are.getFieldByLabel('MoonFogNear').getValue();
-    this.moon.fogOn = !!this.are.getFieldByLabel('MoonFogOn').getValue();
-    this.moon.shadows = !!this.are.getFieldByLabel('MoonShadows').getValue();
-    this.areaName = this.are.getFieldByLabel('Name').getCExoLocString();
-
-    this.noHangBack = !!this.are.getFieldByLabel('NoHangBack').getValue();
-    this.noRest = !!this.are.getFieldByLabel('NoRest').getValue();
-
-    if(this.are.RootNode.hasField(ScriptHook.AreaOnEnter)){
-      this.scriptResRefs.set(ScriptHook.AreaOnEnter, this.are.getFieldByLabel(ScriptHook.AreaOnEnter).getValue());
-    }
-
-    if(this.are.RootNode.hasField(ScriptHook.AreaOnExit)){
-      this.scriptResRefs.set(ScriptHook.AreaOnExit, this.are.getFieldByLabel(ScriptHook.AreaOnExit).getValue());
-    }
-
-    if(this.are.RootNode.hasField(ScriptHook.AreaOnHeartbeat)){
-      this.scriptResRefs.set(ScriptHook.AreaOnHeartbeat, this.are.getFieldByLabel(ScriptHook.AreaOnHeartbeat).getValue());
-    }
-
-    if(this.are.RootNode.hasField(ScriptHook.AreaOnUserDefined)){
-      this.scriptResRefs.set(ScriptHook.AreaOnUserDefined, this.are.getFieldByLabel(ScriptHook.AreaOnUserDefined).getValue());
-    }
-
-    this.playerOnly = !!this.are.getFieldByLabel('PlayerOnly').getValue();
-    this.playerVsPlayer = this.are.getFieldByLabel('PlayerVsPlayer').getValue();
-
-    //Rooms
-    for(let i = 0; i < rooms.childStructs.length; i++ ){
-      let strt = rooms.childStructs[i];
-      const roomName = this.are.getFieldByLabel('RoomName', strt.getFields()).getValue().toLowerCase();
-      if(!roomName || roomName == '****'){
-        continue;
-      }
-      const envAudio = this.are.getFieldByLabel('EnvAudio', strt.getFields()).getValue();
-      const ambientScale = this.are.getFieldByLabel('AmbientScale', strt.getFields()).getValue();
-      const room = new AreaRoom(roomName, this);
-      room.area = this;
-      room.setAmbientScale(ambientScale);
-      room.setEnvAudio(envAudio);
-      if(strt.hasField('DisableWeather')){
-        room.setDisableWeather(!!this.are.getFieldByLabel('DisableWeather', strt.getFields()).getValue());
-      }
-      this.rooms.push(room);
-    }
-
-    this.shadowOpacity = this.are.getFieldByLabel('ShadowOpacity').getValue();
-
-    this.stealthXPEnabled = this.are.getFieldByLabel('StealthXPEnabled').getValue();
-    this.stealthXPLoss = this.are.getFieldByLabel('StealthXPLoss').getValue();
-    this.stealthXPMax = this.are.getFieldByLabel('StealthXPMax').getValue();
-
-    this.sun.ambientColor = this.are.getFieldByLabel('SunAmbientColor').getValue();
-    this.sun.diffuseColor = this.are.getFieldByLabel('SunDiffuseColor').getValue();
-    this.sun.fogColor = this.are.getFieldByLabel('SunFogColor').getValue();
-    this.sun.fogFar = this.are.getFieldByLabel('SunFogFar').getValue();
-    this.sun.fogNear = this.are.getFieldByLabel('SunFogNear').getValue();
-    this.sun.fogOn = this.are.getFieldByLabel('SunFogOn').getValue();
-    this.sun.shadows = this.are.getFieldByLabel('SunShadows').getValue();
-    this.tag = this.are.getFieldByLabel('Tag').getValue();
-    this.unescapable = this.are.getFieldByLabel('Unescapable').getValue() ? true : false;
-    this.version = this.are.getFieldByLabel('Version').getValue();
-    this.windPower = this.are.getFieldByLabel('WindPower').getValue();
-    this.applyAreaWind();
-
-    this.fog = undefined;
-
-    if(this.sun.fogOn){
-      this.fog = new THREE.Fog(
-        this.sun.fogColor,
-        this.sun.fogNear,
-        this.sun.fogFar
-      );
-      GameState.scene.fog = this.fog;
-    }else{
-      GameState.scene.fog = undefined;
-    }
-
-    // BEGIN GIT LOAD — GIT load (K1) (TSL)
-    // Order: weather/vars → creatures → items → doors → triggers → encounters →
-    // waypoints → sounds → placeables → stores → AOEs → properties → maps → cameras
-
-    const areaProps = this.git.getFieldByLabel('AreaProperties');
-    const areaEffects = this.git.getFieldByLabel('AreaEffectList');
-    const cameras = this.git.getFieldByLabel('CameraList');
-    const creatures = this.git.getFieldByLabel('Creature List');
-    const doors = this.git.getFieldByLabel('Door List');
-    const encounters = this.git.getFieldByLabel('Encounter List');
-    const groundItems = this.git.getFieldByLabel('List');
-    const placeables = this.git.getFieldByLabel('Placeable List');
-    const sounds = this.git.getFieldByLabel('SoundList');
-    const stores = this.git.getFieldByLabel('StoreList');
-    const triggers = this.git.getFieldByLabel('TriggerList');
-    const waypoints = this.git.getFieldByLabel('WaypointList');
-
-    // GIT load start (when from save): weather + var tables before objects.
-    // Indoor areas force clear (GIT load flags & 1).
-    if(this.git.RootNode.hasField('CurrentWeather')){
-      this.weather.currentWeather = this.git.getFieldByLabel('CurrentWeather').getValue();
-      this.weather.fromSave = true;
-    }
-    if(this.git.RootNode.hasField('WeatherStarted')){
-      this.weather.started = !!this.git.getFieldByLabel('WeatherStarted').getValue();
-      this.weather.fromSave = true;
-    }
-    if(this.flags & 1){
-      this.weather.currentWeather = 0xFF;
-      this.weather.started = false;
-    }
-    if(this.git.RootNode.hasField('VarTable')){
-      this.loadNamedVarTable(this.git.getFieldByLabel('VarTable'));
-    }
-    SwVarTableSerializer.deserialize(this, this.git.RootNode);
-
-    // Creatures
-    if(creatures){
-      for(let i = 0; i < creatures.childStructs.length; i++){
-        const strt = creatures.childStructs[i];
-        this.attachObject( new Creature(GFFObject.FromStruct(strt)) );
-      }
-    }
-
-    // Ground items (GIT List)
-    if(groundItems){
-      for(let i = 0; i < groundItems.childStructs.length; i++){
-        const strt = groundItems.childStructs[i];
-        this.attachObject( new Item(GFFObject.FromStruct(strt), true) );
-      }
-    }
-
-    // Doors
-    if(doors){
-      for(let i = 0; i < doors.childStructs.length; i++ ){
-        const strt = doors.childStructs[i];
-        this.attachObject( new Door(GFFObject.FromStruct(strt)) );
-      }
-    }
-
-    // Triggers
-    if(triggers){
-      for(let i = 0; i < triggers.childStructs.length; i++){
-        const strt = triggers.childStructs[i];
-        this.attachObject( new Trigger(GFFObject.FromStruct(strt)) );
-      }
-    }
-
-    // Encounters
-    if(encounters){
-      for(let i = 0; i < encounters.childStructs.length; i++){
-        const strt = encounters.childStructs[i];
-        this.attachObject( new Encounter(GFFObject.FromStruct(strt)) );
-      }
-    }
-
-    // Waypoints
-    if(waypoints){
-      for(let i = 0; i < waypoints.childStructs.length; i++ ){
-        const strt = waypoints.childStructs[i];
-
-        if(this.transWP){
-          if(typeof this.transWP === 'string'){
-            if(this.transWP.toLowerCase() == strt.getFieldByLabel('Tag').getValue().toLowerCase()){
-              this.transWP = GFFObject.FromStruct(strt);
-            }
-          }else if(this.transWP instanceof GFFObject){
-            if(this.transWP.getFieldByLabel('Tag').getValue().toLowerCase() == strt.getFieldByLabel('Tag').getValue().toLowerCase()){
-              this.transWP = GFFObject.FromStruct(strt);
-            }
-          }
-        }
-
-        this.attachObject( new Waypoint(GFFObject.FromStruct(strt)) );
-      }
-    }
-
-    // Sounds
-    if(sounds){
-      for(let i = 0; i < sounds.childStructs.length; i++ ){
-        const strt = sounds.childStructs[i];
-        this.attachObject( new Sound(GFFObject.FromStruct(strt), AudioEngine.GetAudioEngine()) );
-      }
-    }
-
-    // Placeables
-    if(placeables){
-      for(let i = 0; i < placeables.childStructs.length; i++ ){
-        const strt = placeables.childStructs[i];
-        this.attachObject( new Placeable(GFFObject.FromStruct(strt)) );
-      }
-    }
-
-    // Stores
-    if(stores){
-      for(let i = 0; i < stores.childStructs.length; i++ ){
-        const strt = stores.childStructs[i];
-        this.attachObject( new Store(GFFObject.FromStruct(strt)) );
-      }
-    }
-
-    // AreaEffects
-    if(areaEffects){
-      for(let i = 0; i < areaEffects.childStructs.length; i++){
-        const strt = areaEffects.childStructs[i];
-        this.attachObject( new AreaEffect(GFFObject.FromStruct(strt)) );
-      }
-    }
-
-    // LoadProperties — AreaProperties + ambient (after stores/AOEs)
-    if(areaProps){
-      const areaPropsStruct = areaProps.getChildStructs()[0];
-      if(areaPropsStruct){
-        const areaPropsField = areaPropsStruct.getFields();
-        this.audio.ambient.day = this.git.getFieldByLabel('AmbientSndDay', areaPropsField).getValue();
-        this.audio.ambient.dayVolume = this.git.getFieldByLabel('AmbientSndDayVol', areaPropsField).getValue();
-        this.audio.ambient.night = this.git.getFieldByLabel('AmbientSndNight', areaPropsField).getValue();
-        this.audio.ambient.nightVolume = this.git.getFieldByLabel('AmbientSndNitVol', areaPropsField).getValue();
-        if(areaPropsStruct.hasField('EnvAudio')){
-          this.audio.environmentAudio = this.git.getFieldByLabel('EnvAudio', areaPropsField).getValue();
-        }else{
-          this.audio.environmentAudio = -1;
-        }
-
-        this.audio.music.battle = this.git.getFieldByLabel('MusicBattle', areaPropsField).getValue();
-        this.audio.music.day = this.git.getFieldByLabel('MusicDay', areaPropsField).getValue();
-        this.audio.music.delay = this.git.getFieldByLabel('MusicDelay', areaPropsField).getValue();
-        this.audio.music.night = this.git.getFieldByLabel('MusicNight', areaPropsField).getValue();
-        AudioEngine.GetAudioEngine().setAreaAudioProperties(this.audio);
-
-        if(areaPropsStruct.hasField('StealthXPCurrent')){
-          this.stealthXP = areaPropsStruct.getFieldByLabel('StealthXPCurrent').getValue() | 0;
-        }
-        if(areaPropsStruct.hasField('StealthXPLoss')){
-          this.stealthXPLoss = areaPropsStruct.getFieldByLabel('StealthXPLoss').getValue() | 0;
-        }
-        if(areaPropsStruct.hasField('StealthXPEnabled')){
-          this.stealthXPEnabled = areaPropsStruct.getFieldByLabel('StealthXPEnabled').getValue() | 0;
-        }
-        if(areaPropsStruct.hasField('StealthXPMax')){
-          this.stealthXPMax = areaPropsStruct.getFieldByLabel('StealthXPMax').getValue() | 0;
-        }
-        if(areaPropsStruct.hasField('RestrictMode')){
-          this.restrictMode = areaPropsStruct.getFieldByLabel('RestrictMode').getValue() | 0;
-        }
-        if(areaPropsStruct.hasField('Unescapable')){
-          this.unescapable = !!areaPropsStruct.getFieldByLabel('Unescapable').getValue();
-        }
-        if(areaPropsStruct.hasField('SunFogColor')){
-          this.sun.fogColor = areaPropsStruct.getFieldByLabel('SunFogColor').getValue();
-        }
-        // LoadProperties also reads transition pending from AreaProperties.
-        if(areaPropsStruct.hasField('TransPending')){
-          this.transPending = areaPropsStruct.getFieldByLabel('TransPending').getValue() | 0;
-        }
-        if(areaPropsStruct.hasField('TransPendCurrID')){
-          this.transPendCurrId = areaPropsStruct.getFieldByLabel('TransPendCurrID').getValue() | 0;
-        }
-        if(areaPropsStruct.hasField('TransPendNextID')){
-          this.transPendNextId = areaPropsStruct.getFieldByLabel('TransPendNextID').getValue() | 0;
-        }
-      }
-    }
-    // KotOR savegame GIT root still carries TransPending* (SaveGIT); prefer root if present.
-    if(this.git.RootNode.hasField('TransPending')){
-      this.transPending = this.git.getFieldByLabel('TransPending').getValue() | 0;
-    }
-    if(this.git.RootNode.hasField('TransPendCurrID')){
-      this.transPendCurrId = this.git.getFieldByLabel('TransPendCurrID').getValue() | 0;
-    }
-    if(this.git.RootNode.hasField('TransPendNextID')){
-      this.transPendNextId = this.git.getFieldByLabel('TransPendNextID').getValue() | 0;
-    }
-
-    // LoadMaps
-    AreaMapSerializer.deserialize(this.areaMap, this.git.RootNode);
-
-    // LoadPlaceableCameras — last among GIT lists
-    if(cameras){
-      for(let i = 0; i < cameras.childStructs.length; i++){
-        const strt = cameras.childStructs[i];
-        const camera = new AreaCamera(GFFObject.FromStruct(strt) );
-        this.cameras.push(camera);
-      }
-    }
-
-    if(!(this.transWP instanceof GFFObject)){
-      this.transWP = null;
-    }
-
-    GameState.AlphaTest = this.alphaTest;
-
-    // Area default EnvAudio — desired; Render/update applies SetCurrentEnvironment.
-    AudioEngine.GetAudioEngine().setDesiredEnvironment(this.audio.environmentAudio);
-    AudioEngine.GetAudioEngine().applyDesiredEnvironment();
-
-    FollowerCamera.setCameraStyle(this.getCameraStyle());
-    if(this.miniGame){
-      FollowerCamera.setCameraFOV(this.miniGame.cameraViewAngle);
-    }else{
-      FollowerCamera.setCameraFOV(FollowerCamera.DEFAULT_FOV);
-    }
-
-    await this.loadVis();
-    await this.loadLayout();
-    await this.loadScripts();
-    GameState.scene.fog = this.fog;
-
+    //BEGIN AREA LOAD — ARE → GIT → VIS/LYT/scripts (see AreaDataBootstrap).
+    await AreaDataBootstrap.load(this);
   }
 
   getCameraStyle(){
@@ -2247,69 +1861,11 @@ export class Area extends GameObject {
   }
 
   async loadVis(){
-    console.log('Area.loadVis');
-    try{
-      const buffer = await ResourceLoader.loadResource(ResourceTypes.vis, this.name);
-      this.visObject = new VISObject(buffer);
-      this.visObject.read();
-    }catch(e){
-      this.visObject = new VISObject();
-      console.error(e);
-    }
-    this.visObject.attachArea(this);
+    return AreaResourceBootstrap.loadVis(this);
   }
 
   async loadLayout(){
-    console.log('Area.loadLayout');
-    try{
-      const buffer = await ResourceLoader.loadResource(ResourceTypes.lyt, this.name);
-      this.layout = new LYTObject(buffer);
-
-      //Resort the rooms based on the LYT file because it matches the walkmesh transition index numbers
-      let sortedRooms = [];
-      for(let i = 0; i < this.layout.rooms.length; i++){
-        let roomLYT = this.layout.rooms[i];
-        if(!roomLYT.name || roomLYT.name == '****'){
-          continue;
-        }
-        for(let r = 0; r != this.rooms.length; r++ ){
-          let room = this.rooms[r];
-          if(room.roomName.toLowerCase() == roomLYT.name.toLowerCase()){
-            room.position.copy(roomLYT.position);
-            sortedRooms.push(room);
-          }
-        }
-      }
-
-      this.rooms = sortedRooms;
-
-      for(let i = 0; i < this.layout.doorhooks.length; i++){
-        let _doorHook = this.layout.doorhooks[i];
-        this.doorhooks.push(_doorHook);
-      }
-
-      if(this.miniGame){
-        for(let i = 0; i < this.layout.tracks.length; i++){
-          this.miniGame.tracks.push(new MiniGameTrack(this.layout.tracks[i]));
-        }
-
-        for(let i = 0; i < this.layout.obstacles.length; i++){
-          const layoutObs = this.layout.obstacles[i];
-          const name = MiniGame.normalizeMgoName(layoutObs?.name);
-          // : LYT places by Name/pos; ARE Name → GetMiniGameObjectByName → Load(Scripts).
-          const template = name ? this.miniGame.getMiniGameObjectByName(name) : undefined;
-          const obstacle = new MiniGameObstacle(template, layoutObs);
-          if(template){
-            // Load — Scripts then OnCreate (OnCreate in initMiniGameObjects).
-            obstacle.loadScripts();
-          }
-          this.miniGame.obstacles.push(obstacle);
-        }
-      }
-    }catch(e){
-      console.error(e);
-      this.layout = new LYTObject();
-    }
+    return AreaResourceBootstrap.loadLayout(this);
   }
 
   /**
@@ -2414,159 +1970,11 @@ export class Area extends GameObject {
   }
 
   async loadScene(){
-    try{
-      try{
-        GameState.MenuManager.InGameOverlay.miniMap.setAreaMap(this.areaMap);
-        GameState.MenuManager.InGameOverlay.SetMapTexture('lbl_map'+this.name);
-        GameState.MenuManager.MenuMap.miniMap.setAreaMap(this.areaMap);
-        GameState.MenuManager.MenuMap.SetMapTexture('lbl_map'+this.name);
-      }catch(e){
-        console.error(e);
-      }
-
-      // Scene ctor loads dirtytex* before room models bind dirt overlays.
-      try { await DirtyTextureManager.loadForArea(this); } catch(e){ console.error(e); }
-
-      // LoadArea: rooms → GIT load objects → LoadPathPoints
-      try { await this.loadRooms(); } catch(e){ console.error(e); }
-
-      this.roomWalkmeshes = this.rooms.filter( (r) => { return r?.model?.wok}).map( (r) => { return r.model.wok; });
-
-      GameState.MenuManager.LoadScreen.setProgress(10);
-
-      // GIT object asset order matches GIT load (player/party adjacent to creatures)
-      try { await this.loadCreatures(); } catch(e){ console.error(e); }
-      try { await this.loadPlayer(); } catch(e){ console.error(e); }
-      try { await this.loadParty(); } catch(e){ console.error(e); }
-
-      GameState.MenuManager.LoadScreen.setProgress(20);
-
-      try { await this.loadItems(); } catch(e){ console.error(e); }
-      try { await this.loadDoors(); } catch(e){ console.error(e); }
-
-      this.doorWalkmeshes = this.doors.filter( (d) => { return d?.collisionManager?.walkmesh}).map( (d) => { return d.collisionManager.walkmesh; });
-
-      GameState.MenuManager.LoadScreen.setProgress(30);
-
-      try { await this.loadTriggers(); } catch(e){ console.error(e); }
-      try { await this.loadEncounters(); } catch(e){ console.error(e); }
-      try { await this.loadWaypoints(); } catch(e){ console.error(e); }
-
-      GameState.MenuManager.LoadScreen.setProgress(40);
-
-      try { await this.loadsounds(); } catch(e){ console.error(e); }
-      try { await this.loadPlaceables(); } catch(e){ console.error(e); }
-
-      GameState.MenuManager.LoadScreen.setProgress(50);
-
-      try { await this.loadStores(); } catch(e){ console.error(e); }
-      try { await this.loadAreaEffects(); } catch(e){ console.error(e); }
-      try { await this.loadCameras(); } catch(e){ console.error(e); }
-
-      GameState.MenuManager.LoadScreen.setProgress(60);
-
-      await this.loadPath();
-
-      if(this.miniGame){
-        try {
-          await this.miniGame.load();
-        }catch(e){
-          console.error(e);
-          // type-2 Load aborts on missing Camera — do not continue half-loaded MG.
-          throw e;
-        }
-      }
-
-      GameState.MenuManager.LoadScreen.setProgress(80);
-
-      try{
-        await this.loadAreaMusic();
-      }catch(e){
-        console.error(e);
-      }
-
-      GameState.MenuManager.LoadScreen.setProgress(100);
-
-      // Minigame loads intentionally leave party empty (see loadPlayer); skip facing sync.
-      const facingSource = GameState.PartyManager.party[0] ?? GameState.PartyManager.Player;
-      if(facingSource){
-        FollowerCamera.facing = Utility.NormalizeRadian(facingSource.getFacing() - Math.PI/2);
-      }
-
-      try { await this.weather.load(); } catch(e){ console.error(e); }
-
-      this.transWP = null;
-
-      this.cleanupUninitializedObjects();
-      this.detectRoomObjects();
-
-      // IncreaseAILevelPriority when players occupy the area
-      this.playersInArea = GameState.PartyManager?.party?.length || 0;
-      if(this.playersInArea > 0){
-        const aiObjects = [
-          ...this.creatures,
-          ...this.doors,
-          ...this.placeables,
-          ...this.triggers,
-          ...this.encounters,
-          ...this.areaOfEffects,
-          ...(GameState.PartyManager?.party || []),
-        ];
-        GameState.module.aiScheduler.increaseAILevelPriority(aiObjects);
-        // Party / PC always VERY_HIGH
-        for(let i = 0; i < (GameState.PartyManager?.party?.length || 0); i++){
-          const pm = GameState.PartyManager.party[i];
-          if(pm) GameState.module.aiScheduler.setAILevel(pm, AILevel.VERY_HIGH);
-        }
-      }
-
-      if(GameState.group.grass){
-        GameState.group.grass.visible = !!GameState.iniConfig.getProperty('Graphics Options.Grass');
-      }
-    }catch(e){
-      console.error(e);
-    }
+    return AreaSceneBootstrap.run(this);
   }
 
   getSpawnLocation(): EngineLocation {
-    if(GameState.pendingJumpSpawn){
-      const s = GameState.pendingJumpSpawn;
-      GameState.pendingJumpSpawn = undefined;
-      return new EngineLocation(s.x, s.y, s.z, s.ox, s.oy, 0, this);
-    }
-    if(GameState.isLoadingSave){
-      return new EngineLocation(
-        GameState.PartyManager.PlayerTemplate.RootNode.getFieldByLabel('XPosition').getValue(),
-        GameState.PartyManager.PlayerTemplate.RootNode.getFieldByLabel('YPosition').getValue(),
-        GameState.PartyManager.PlayerTemplate.RootNode.getFieldByLabel('ZPosition').getValue(),
-        GameState.PartyManager.PlayerTemplate.RootNode.getFieldByLabel('XOrientation').getValue(),
-        GameState.PartyManager.PlayerTemplate.RootNode.getFieldByLabel('YOrientation').getValue(),
-        0,
-        this
-      );
-    }else if(this.transWP instanceof GFFObject){
-      console.log('TransWP', this.transWP);
-      return new EngineLocation(
-        this.transWP.RootNode.getFieldByLabel('XPosition').getValue(),
-        this.transWP.RootNode.getFieldByLabel('YPosition').getValue(),
-        this.transWP.RootNode.getFieldByLabel('ZPosition').getValue(),
-        this.transWP.RootNode.getFieldByLabel('XOrientation').getValue(),
-        this.transWP.RootNode.getFieldByLabel('YOrientation').getValue(),
-        0,
-        this
-      );
-    }else{
-      console.log('No TransWP');
-      return new EngineLocation(
-        this.module.entryX,
-        this.module.entryY,
-        this.module.entryZ,
-        this.module.entryDirectionX,
-        this.module.entryDirectionY,
-        0,
-        this
-      );
-    }
+    return AreaPartyBootstrap.getSpawnLocation(this);
   }
 
   getPlayerTemplate(): GFFObject {
@@ -2792,78 +2200,7 @@ export class Area extends GameObject {
   }
 
   async loadPlayer(): Promise<void> {
-    console.log('Loading Player', GameState.PartyManager.Player)
-    try{
-      if(GameState.PartyManager.Player instanceof Creature){
-        GameState.PartyManager.Player.npcId = -1;
-
-        if(!this.miniGame){
-          GameState.PartyManager.party[ GameState.PartyManager.GetCreatureStartingPartyIndex(GameState.PartyManager.Player) ] = GameState.PartyManager.Player;
-        }
-
-        this.assignArea(GameState.PartyManager.Player);
-
-        // Reset actions between modules; preserve mid-combat ActionList on save load.
-        if(!GameState.isLoadingSave){
-          GameState.PartyManager.Player.clearAllActions();
-        }
-        GameState.PartyManager.Player.force = 0;
-        GameState.PartyManager.Player.collisionManager.groundFace = undefined;
-        GameState.PartyManager.Player.collisionManager.lastGroundFace = undefined;
-        GameState.PartyManager.Player.load();
-        try{
-          const model = await GameState.PartyManager.Player.loadModel();
-          GameState.PartyManager.Player.model = model;
-          GameState.PartyManager.Player.model.hasCollision = true;
-          //let spawnLoc = this.getSpawnLocation;
-          let spawnLoc = GameState.PartyManager.GetSpawnLocation(GameState.PartyManager.Player);
-          GameState.PartyManager.Player.position.copy(spawnLoc.position);
-          GameState.PartyManager.Player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
-
-          GameState.PartyManager.Player.getCurrentRoom();
-          // GameState.PartyManager.Player.computeBoundingBox(true);
-          if(!this.miniGame){
-            GameState.group.party.add( GameState.PartyManager.Player.container );
-          }
-        }catch(e){
-          console.error(e);
-        }
-      }else{
-        let player = new PlayerCharacter( this.getPlayerTemplate() );
-        player.npcId = -1;
-
-        player.load();
-        // GameState.currentLeader = player;
-        GameState.PartyManager.Player = player;
-
-        if(!this.miniGame){
-          GameState.PartyManager.party[ GameState.PartyManager.GetCreatureStartingPartyIndex(player) ] = player;
-        }
-
-        this.assignArea(player);
-
-        try{
-          const model = await player.loadModel();
-          model.userData.gameObject = player;
-          model.hasCollision = true;
-
-          let spawnLoc = GameState.PartyManager.GetSpawnLocation(player);
-
-          player.position.copy(spawnLoc.position);
-          player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
-
-          player.getCurrentRoom();
-          player.computeBoundingBox(true);
-          if(!this.miniGame){
-            GameState.group.party.add( player.container );
-          }
-        }catch(e){
-          console.error(e);
-        }
-      }
-    }catch(e){
-      console.error(e);
-    }
+    return AreaPartyBootstrap.loadPlayer(this);
   }
 
   /**
@@ -2872,54 +2209,7 @@ export class Area extends GameObject {
    * land at PortraitOrder indices with party[0] unset, which breaks GetObjectByTag.
    */
   async loadParty(): Promise<void> {
-    if(this.miniGame){
-      return;
-    }
-    console.log('Loading Party Member');
-    for(let i = 0; i < GameState.PartyManager.CurrentMembers.length; i++){
-      await GameState.PartyManager.LoadPartyMember(i);
-    }
-    // Portrait-order mismatch can leave Player in the scene but not in party.
-    // initAreaObjects only onSpawns party members — re-insert if missing.
-    const player = GameState.PartyManager.Player;
-    if(player && GameState.PartyManager.party.indexOf(player) < 0){
-      const idx = GameState.PartyManager.GetCreatureStartingPartyIndex(player);
-      if(!GameState.PartyManager.party[idx]){
-        GameState.PartyManager.party[idx] = player;
-      }else{
-        GameState.PartyManager.party.push(player);
-      }
-    }
-    // Area transit reuses locomotion state from the prior module (WASD walk into
-    // a door, etc.). PositionParty leaves creatures in PAUSE (10000).
-    for(let i = 0; i < GameState.PartyManager.party.length; i++){
-      const pm = GameState.PartyManager.party[i];
-      if(pm && typeof pm.clearLocomotionState === 'function'){
-        pm.clearLocomotionState(true);
-        // clearLocomotion may demote walk/run → PAUSE with started=false; apply
-        // before fade-in (Mode is still LOADING so tick update skips anim).
-        if(typeof pm.primeAnimationPose === 'function'){
-          pm.primeAnimationPose();
-        }
-      }
-    }
-    GameState.PartyManager.ApplyControlledNPC();
-    // PositionParty → ResetAllFollowData after placing the party.
-    GameState.PartyManager.resetFollowPath(GameState.PartyManager.party[0]);
-    // Attach every party member to a room (companions skip this in LoadPartyMember;
-    // controlled NPC as party[0] must have a room for UpdateRoom VIS).
-    for(let i = 0; i < GameState.PartyManager.party.length; i++){
-      const pm = GameState.PartyManager.party[i];
-      if(!pm) continue;
-      if(pm.area !== this){
-        this.assignArea(pm);
-      }
-      if(!pm.room){
-        pm.getCurrentRoom();
-      }
-    }
-    // CombatRound fromStruct may run before partners are registered — re-resolve now.
-    this.resolveCombatRoundObjectReferences();
+    return AreaPartyBootstrap.loadParty(this);
   }
 
   /**
@@ -2963,313 +2253,63 @@ export class Area extends GameObject {
    * Load the area's static cameras
    */
   async loadCameras(){
-    console.log('Loading Cameras');
-    for(let i = 0; i < this.cameras.length; i++){
-      const camera = this.cameras[i];
-      camera.load();
-      GameState.staticCameras.push(camera.perspectiveCamera);
-    }
+    return AreaObjectSceneLoader.loadCameras(this);
   }
 
   /**
    * Load the area's rooms
    */
   async loadRooms(): Promise<void> {
-    console.log('Loading Rooms');
-    this.walkEdges = [];
-    this.walkFaces = [];
-
-    for(let i = 0; i < this.rooms.length; i++){
-      const room = this.rooms[i];
-      const model = await room.loadModel();
-      if(model instanceof OdysseyModel3D){
-        if(room.collisionManager.walkmesh instanceof OdysseyWalkMesh){
-          GameState.walkmeshList.push( room.collisionManager.walkmesh.mesh );
-          GameState.group.room_walkmeshes.add( room.collisionManager.walkmesh.mesh );
-        }
-
-        if(typeof model.walkmesh != 'undefined'){
-          GameState.collisionList.push(model.walkmesh);
-        }
-
-        if(typeof model.wok != 'undefined'){
-          this.walkEdges = [...this.walkEdges, ...model.wok.edges.values()];
-          this.walkFaces = [...this.walkFaces, ...model.wok.walkableFaces];
-        }
-
-        model.name = room.roomName;
-        GameState.group.rooms.add(room.container);
-
-        room.computeBoundingBox();
-        room.model.updateMatrix();
-        if(room.collisionManager.walkmesh?.mesh){
-          room.collisionManager.walkmesh.mesh.matrixAutoUpdate = false;
-          room.collisionManager.walkmesh.mesh.updateMatrix();
-          room.collisionManager.walkmesh.mesh.updateMatrixWorld(true);
-        }
-      }
-    }
-
-    for(let j = 0; j < this.rooms.length; j++){
-      this.rooms[j].linkRooms();
-    }
-
-    //Room Linking Pass 2
-    for(let i = 0, iLen = this.rooms.length; i < iLen; i++ ){
-      let room1 = this.rooms[i];
-      //console.log(room1.linked_rooms);
-      //Look for all rooms that can see this room
-      for(let j = 0, jLen = this.rooms.length; j < jLen; j++){
-        let room2 = this.rooms[j];
-        //console.log(room2.linked_rooms);
-        if(room2 instanceof AreaRoom){
-          const room1_room_links = this.visObject.getRoom(room1.roomName)?.rooms || [];
-          const room2_room_links = this.visObject.getRoom(room2.roomName)?.rooms || [];
-          const room2_links_to_room1 = room2_room_links.indexOf(room1.roomName) >= 0;
-          const room1_links_to_room2 = room1_room_links.indexOf(room2.roomName) >= 0;
-
-          const should_link = room2_links_to_room1 || room1_links_to_room2;
-          //console.log('room', room1.roomName, room2.roomName, should_link);
-          if(should_link && !room1.linkedRooms.has(room2.roomName)){
-            room1.addLinkedRoom(room2);
-          }
-
-          if(should_link && !room2.linkedRooms.has(room1.roomName)){
-            room2.addLinkedRoom(room1);
-          }
-        }
-      }
-      this.walkmesh_rooms = [room1].concat(Array.from(room1.linkedRooms.values()));
-    }
+    return AreaObjectSceneLoader.loadRooms(this);
   }
 
   /**
    * Load the area's doors
    */
   async loadDoors(): Promise<void> {
-    console.log('Loading Doors');
-    for(let i = 0; i < this.doors.length; i++){
-      const door = this.doors[i];
-      try{
-        door.load();
-        // door.position.x = door.getX;
-        // door.position.y = door.getY;
-        // door.position.z = door.getZ;
-        door.rotation.set(0, 0, door.getBearing());
-        door.facing = door.getBearing();
-        const model = await door.loadModel();
-        door.computeBoundingBox();
-        const dwk = await door.loadWalkmesh(model.name);
-
-        try{
-          model.userData.walkmesh = dwk;
-        }catch(e){
-          console.error('Failed to add dwk', model.name, dwk, e);
-        }
-
-        if(door.model instanceof OdysseyModel3D){
-          door.box.setFromObject(door.model);
-        }
-
-        if(door.openState){
-          door.model.playAnimation('opened1', true);
-        }
-        door.getCurrentRoom();
-        GameState.group.doors.add( door.container );
-      }catch(e){
-        console.error(e);
-      }
-    }
+    return AreaObjectSceneLoader.loadDoors(this);
   }
 
   /**
    * Load the area's placeables
    */
   async loadPlaceables(): Promise<void> {
-    console.log('Loading Placeables');
-    for(let i = 0; i < this.placeables.length; i++){
-      const plc = this.placeables[i];
-      plc.load();
-      plc.position.set(plc.getX(), plc.getY(), plc.getZ());
-      plc.rotation.set(0, 0, plc.getBearing());
-      const model = await plc.loadModel();
-      GameState.group.placeables.add( plc.container );
-      const pwk = await plc.loadWalkmesh(model.name);
-      GameState.walkmeshList.push( pwk.mesh );
-      plc.computeBoundingBox();
-
-      if(pwk.mesh instanceof THREE.Object3D){
-        // Verts stay local; LocalToWorld is matrixWorld (pose + BWM header.position).
-        plc.syncWalkmeshMatrix();
-        GameState.group.room_walkmeshes.add( pwk.mesh );
-      }
-
-      plc.getCurrentRoom();
-      plc.position.set(plc.getX(), plc.getY(), plc.getZ());
-      plc.markCollisionBoundsDirty('placement');
-      plc.computeBoundingBox();
-      plc.room?.markCollisionPlaceablesDirty?.();
-    }
-    // Bake placeable lightmaps after all models are posed (rooms already registered lights).
-    try{
-      PlaceableLightmapBaker.bakeArea(this, GameState.lightManager);
-    }catch(e){
-      console.error(e);
-    }
+    return AreaObjectSceneLoader.loadPlaceables(this);
   }
 
   /**
    * Load the area's waypoints
    */
   async loadWaypoints(): Promise<void> {
-    console.log('Loading Waypoints');
-    for(let i = 0; i < this.waypoints.length; i++){
-      const waypnt = this.waypoints[i];
-      waypnt.load();
-      const wpObj = new THREE.Object3D();
-      wpObj.name = waypnt.getTag();
-      wpObj.position.copy(waypnt.position);
-      wpObj.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), Math.atan2(-waypnt.getYOrientation(), -waypnt.getXOrientation()));
-      waypnt.rotation.z = Math.atan2(-waypnt.getYOrientation(), -waypnt.getXOrientation()) + Math.PI/2;
-      GameState.group.waypoints.add(wpObj);
-
-      let _distance = 1000000000;
-      let _currentRoom = null;
-      let roomCenter = new THREE.Vector3();
-      for(let i = 0; i < GameState.group.rooms.children.length; i++){
-        let room = GameState.group.rooms.children[i];
-        if(room instanceof OdysseyModel3D){
-          if(room.box.containsPoint(wpObj.position)){
-            room.box.getCenter(roomCenter);
-            let distance = wpObj.position.distanceTo(roomCenter);
-            if(distance < _distance){
-              _distance = distance;
-              _currentRoom = room;
-            }
-          }
-        }
-      }
-      wpObj.userData.area = _currentRoom;
-      this.areaMap.addMapNote(waypnt);
-    }
+    return AreaObjectSceneLoader.loadWaypoints(this);
   }
 
   /**
    * Load the area's encounters
    */
   async loadEncounters(): Promise<void> {
-    console.log('Loading Encounters');
-    for(let i = 0; i < this.encounters.length; i++){
-      const encounter = this.encounters[i];
-      try{
-        encounter.load();
-        let _distance = 1000000000;
-        let _currentRoom = null;
-        let roomCenter = new THREE.Vector3();
-        for(let i = 0; i < GameState.group.rooms.children.length; i++){
-          let room = GameState.group.rooms.children[i];
-          if(room instanceof OdysseyModel3D){
-            if(room.box.containsPoint(encounter.mesh.position)){
-              room.box.getCenter(roomCenter);
-              let distance = encounter.mesh.position.distanceTo(roomCenter);
-              if(distance < _distance){
-                _distance = distance;
-                _currentRoom = room;
-              }
-            }
-          }
-        }
-        encounter.mesh.userData.area = _currentRoom;
-      }catch(e){
-        console.error(e);
-      }
-    }
+    return AreaObjectSceneLoader.loadEncounters(this);
   }
 
   /**
    * Load the area's Area of Effects
    */
   async loadAreaEffects(): Promise<void> {
-    console.log('Loading AreaEffects');
-    for(let i = 0; i < this.areaOfEffects.length; i++){
-      try{
-        const aoe = this.areaOfEffects[i];
-        aoe.load();
-        GameState.group.effects.add( aoe.container );
-      }catch(e){
-        console.error(e);
-      }
-    }
-    for(let i = 0; i < this.areaOfEffects.length; i++){
-      const aoe = this.areaOfEffects[i];
-      if(
-        Number.isFinite(aoe.linkedToObjectId) &&
-        aoe.linkedToObjectId !== GameObjectConstant.OBJECT_INVALID
-      ){
-        aoe.linkedToObject = GameState.GameObjectManager.GetObjectById(aoe.linkedToObjectId);
-      }
-    }
+    return AreaObjectSceneLoader.loadAreaEffects(this);
   }
 
   /**
    * Load the area's triggers
    */
   async loadTriggers(): Promise<void> {
-    console.log('Loading Triggers');
-    for(let i = 0; i < this.triggers.length; i++){
-      try{
-        const trig = this.triggers[i];
-        trig.load();
-        let _distance = 1000000000;
-        let _currentRoom = null;
-        let roomCenter = new THREE.Vector3();
-        for(let i = 0; i < GameState.group.rooms.children.length; i++){
-          let room = GameState.group.rooms.children[i];
-          if(room instanceof OdysseyModel3D){
-            if(room.box.containsPoint(trig.mesh.position)){
-              room.box.getCenter(roomCenter);
-              let distance = trig.mesh.position.distanceTo(roomCenter);
-              if(distance < _distance){
-                _distance = distance;
-                _currentRoom = room;
-              }
-            }
-          }
-        }
-        trig.mesh.userData.area = _currentRoom;
-      }catch(e){
-        console.error(e);
-      }
-    }
+    return AreaObjectSceneLoader.loadTriggers(this);
   }
 
   /**
    * Load the area's creatures
    */
   async loadCreatures(): Promise<void> {
-    console.log('Loading Creatures');
-    for(let i = 0; i < this.creatures.length; i++){
-      try{
-        const creature = this.creatures[i];
-        creature.load();
-        const model = await creature.loadModel();
-        creature.model.userData.gameObject = creature;
-
-        //creature.setFacing(Math.atan2(creature.getXOrientation, creature.getYOrientation) + Math.PI/2, true);
-        creature.setFacing(-Math.atan2(creature.getXOrientation(), creature.getYOrientation()), true);
-
-        model.hasCollision = true;
-        model.name = creature.getTag();
-        GameState.group.creatures.add( creature.container );
-
-        creature.getCurrentRoom();
-        creature.settleWalkableAttachment();
-        creature.update(0.0000000000000000000001);
-        creature.computeBoundingBox();
-      }catch(e){
-        console.error(e);
-      }
-    }
+    return AreaObjectSceneLoader.loadCreatures(this);
   }
 
   /**
@@ -3277,56 +2317,21 @@ export class Area extends GameObject {
    * Scene placement matches ActionDropItem (model under placeables group).
    */
   async loadItems(): Promise<void> {
-    console.log('Loading Items');
-    for(let i = 0; i < this.items.length; i++){
-      try{
-        const item = this.items[i];
-        item.placedInWorld = true;
-        item.load();
-        const model = await item.loadModel();
-        if(!model){ continue; }
-        model.userData.gameObject = item;
-        model.name = item.getTag();
-        model.position.copy(item.position);
-        if(model.parent !== GameState.group.placeables){
-          GameState.group.placeables.add(model);
-        }
-        item.getCurrentRoom();
-      }catch(e){
-        console.error(e);
-      }
-    }
+    return AreaObjectSceneLoader.loadItems(this);
   }
 
   /**
    * Load the area's stores
    */
   async loadStores(): Promise<void> {
-    console.log('Loading Stores');
-    for(let i = 0; i < this.stores.length; i++){
-      try{
-        const store = this.stores[i];
-        store.load();
-      }catch(e){
-        console.error(e);
-      }
-    }
+    return AreaObjectSceneLoader.loadStores(this);
   }
 
   /**
    * Load the area's sounds
    */
   async loadsounds(): Promise<void> {
-    console.log('Loading Sound Emitter');
-    for(let i = 0; i < this.sounds.length; i++){
-      try{
-        const sound = this.sounds[i];
-        sound.load();
-        await sound.loadSound();
-      }catch(e){
-        console.error(e);
-      }
-    }
+    return AreaObjectSceneLoader.loadsounds(this);
   }
 
   /**
@@ -3345,13 +2350,7 @@ export class Area extends GameObject {
    * Load the area's scripts
    */
   async loadScripts(){
-    console.log('Area.loadScripts');
-    for(let [key, resRef] of this.scriptResRefs){
-      const script = GameState.NWScript.Load(resRef);
-      if(!script){ continue; }
-      script.bindOwner(this, String(key));
-      this.scripts[key as any] = script;
-    }
+    return AreaResourceBootstrap.loadScripts(this);
   }
 
   /**
@@ -3360,77 +2359,7 @@ export class Area extends GameObject {
    * onSpawn for init side-effects without inventing non- script slots.
    */
   async initAreaObjects(runSpawnScripts = false){
-    for(let i = 0; i < this.creatures.length; i++){
-      if(this.creatures[i] instanceof GameObject){
-        this.creatures[i].onSpawn(runSpawnScripts);
-      }
-    }
-
-    for(let i = 0; i < this.items.length; i++){
-      if(this.items[i] instanceof GameObject){
-        this.items[i].onSpawn(false);
-      }
-    }
-
-    for(let i = 0; i < this.doors.length; i++){
-      if(this.doors[i] instanceof GameObject){
-        this.doors[i].onSpawn(runSpawnScripts);
-      }
-    }
-
-    for(let i = 0; i < this.triggers.length; i++){
-      if(this.triggers[i] instanceof GameObject){
-        this.triggers[i].onSpawn(runSpawnScripts);
-      }
-    }
-
-    for(let i = 0; i < this.encounters.length; i++){
-      if(this.encounters[i] instanceof GameObject){
-        this.encounters[i].onSpawn(false);
-      }
-    }
-
-    for(let i = 0; i < this.waypoints.length; i++){
-      if(this.waypoints[i] instanceof GameObject){
-        this.waypoints[i].onSpawn(runSpawnScripts);
-      }
-    }
-
-    for(let i = 0; i < this.sounds.length; i++){
-      if(this.sounds[i] instanceof GameObject){
-        this.sounds[i].onSpawn(false);
-      }
-    }
-
-    for(let i = 0; i < this.placeables.length; i++){
-      if(this.placeables[i] instanceof GameObject){
-        this.placeables[i].onSpawn(runSpawnScripts);
-      }
-    }
-
-    for(let i = 0; i < this.stores.length; i++){
-      if(this.stores[i] instanceof GameObject){
-        this.stores[i].onSpawn(false);
-      }
-    }
-
-    for(let i = 0; i < this.areaOfEffects.length; i++){
-      if(this.areaOfEffects[i] instanceof GameObject){
-        this.areaOfEffects[i].onSpawn(false);
-      }
-    }
-
-    for(let i = 0; i < GameState.PartyManager.party.length; i++){
-      if(GameState.PartyManager.party[i] instanceof GameObject){
-        GameState.PartyManager.party[i].onSpawn(runSpawnScripts);
-      }
-    }
-
-    if(this.miniGame){
-      this.miniGame.initMiniGameObjects();
-    }
-
-    this.runStartScripts();
+    return AreaInitPipeline.initAreaObjects(this, runSpawnScripts);
   }
 
   runOnEnterScripts(){
@@ -3445,8 +2374,7 @@ export class Area extends GameObject {
   }
 
   async runStartScripts(){
-    if(this.miniGame) this.miniGame.runMiniGameScripts();
-    this.runOnEnterScripts();
+    return AreaInitPipeline.runStartScripts(this);
   }
 
   detectRoomObjects(){

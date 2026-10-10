@@ -6,7 +6,7 @@ export function createTestRuntimeContext(
   let effectId = 1;
   const objects = new Map<number, any>();
 
-  return {
+  const context: GameObjectRuntimeContext = {
     getModule: () => undefined,
     isReadyToProcessEvents: () => false,
     getPauseDay: () => 0,
@@ -14,6 +14,15 @@ export function createTestRuntimeContext(
     addEvent: () => undefined,
     nextEffectId: () => effectId++,
     getMode: () => undefined,
+    getGameKey: () => 'k1',
+    getAiScheduler: () => undefined,
+    toDeserializeContext: () => ({
+      actionFromStruct: (struct: any) => context.actionFromStruct(struct),
+      effectFromStruct: (struct: any) => context.effectFromStruct(struct),
+      gameKey: context.getGameKey(),
+      controlledNpcIndex: context.getControlledNpcIndex?.() ?? -1,
+    }),
+    isLoadingSave: () => false,
     getParty: () => [],
     getCurrentPlayer: () => undefined,
     getControlledNpcIndex: () => -1,
@@ -27,13 +36,16 @@ export function createTestRuntimeContext(
     },
     getById: (id: number) => objects.get(id),
     getNextPlayerId: () => 0,
-    createAction: () => undefined,
+    createAction: (_name: string, ..._args: any[]) => undefined,
     actionFromStruct: () => undefined,
     effectFromStruct: () => undefined,
     createSignalEvent: () => ({}),
     createTrigger: () => undefined,
+    createMiniGamePlayer: () => undefined,
     getTrapRow: () => undefined,
     getStringById: () => undefined,
+    getSWRuleSet: () => undefined,
+    getRules: () => undefined,
     getGroup: () => undefined,
     getCutsceneMode: () => undefined,
     areShadowsEnabled: () => true,
@@ -42,4 +54,23 @@ export function createTestRuntimeContext(
     getAreaTransitionController: () => undefined,
     ...overrides,
   };
+
+  if (!overrides.toDeserializeContext) {
+    context.toDeserializeContext = () => ({
+      actionFromStruct: (struct: any) => context.actionFromStruct(struct),
+      effectFromStruct: (struct: any) => context.effectFromStruct(struct),
+      gameKey: context.getGameKey(),
+      controlledNpcIndex: context.getControlledNpcIndex?.() ?? -1,
+    });
+  }
+
+  if (!overrides.getRules && overrides.getSWRuleSet) {
+    context.getRules = () => context.getSWRuleSet?.();
+  } else if (!overrides.getSWRuleSet && overrides.getRules) {
+    context.getSWRuleSet = () => context.getRules?.();
+  } else if (!overrides.getRules) {
+    context.getRules = () => context.getSWRuleSet?.();
+  }
+
+  return context;
 }

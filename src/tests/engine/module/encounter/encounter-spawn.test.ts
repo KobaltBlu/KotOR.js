@@ -27,10 +27,10 @@ jest.mock("@engine/render/three/odyssey/OdysseyModel3D", () => ({ OdysseyModel3D
 jest.mock("three/examples/jsm/utils/BufferGeometryUtils", () => ({}));
 jest.mock("@engine/nwscript/NWScript", () => ({ NWScript: {} }));
 jest.mock("@engine/nwscript/NWScriptInstance", () => ({ NWScriptInstance: class {} }));
-jest.mock("@engine/module/EncounterCreatureEntry", () => ({
+jest.mock("@engine/module/encounter/EncounterCreatureEntry", () => ({
   EncounterCreatureEntry: class {},
 }));
-jest.mock("@engine/module/EncounterSpawnEntry", () => ({
+jest.mock("@engine/module/encounter/EncounterSpawnEntry", () => ({
   EncounterSpawnEntry: class {
     spawnResref = "";
     spawnCR = 0;

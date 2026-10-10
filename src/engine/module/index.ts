@@ -1,5 +1,5 @@
-export * from "@engine/module/AreaMap";
-export * from "@engine/module/AreaWeather";
+export * from "@engine/module/area/AreaMap";
+export * from "@engine/module/area/AreaWeather";
 export * from "@engine/module/ModuleTimeManager";
 
 export * from "@engine/module/Module";
@@ -32,29 +32,21 @@ export * from "@engine/module/savingThrow/savingThrowMath";
 export * from "@engine/module/Area";
 export * from "@engine/module/AreaEffect";
 export * from "@engine/module/ModuleCalendar";
-export * from "@engine/module/AreaCamera";
+export * from "@engine/module/area/AreaCamera";
 export * from "@engine/module/Creature";
 export * from "@engine/module/Door";
 export * from "@engine/module/Encounter";
 export * from "@engine/module/Item";
-export * from "@engine/module/AreaPath";
+export * from "@engine/module/area/AreaPath";
 export * from "@engine/module/Placeable";
 export * from "@engine/module/PlayerCharacter";
-export * from "@engine/module/AreaRoom";
+export * from "@engine/module/area/AreaRoom";
 export * from "@engine/module/Sound";
 export * from "@engine/module/Store";
 export * from "@engine/module/Trigger";
 export * from "@engine/module/Waypoint";
 
-export * from "@engine/module/MiniGame";
-export * from "@engine/module/MiniGameEnemy";
-export * from "@engine/module/MiniGameGunBank";
-export * from "@engine/module/MiniGameGunBullet";
-export * from "@engine/module/MiniGameObstacle";
-export * from "@engine/module/MiniGamePlayer";
-export * from "@engine/module/MiniGameTrack";
-
-export * from "@engine/module/EncounterSpawnEntry";
-export * from "@engine/module/EncounterSpawnPointEntry";
-export * from "@engine/module/EncounterCreatureEntry";
-export * from "@engine/module/CorpseCache";
+export * from "@engine/module/minigame";
+export * from "@engine/module/encounter";
+export * from "@engine/module/creature";
+export * from "@engine/module/door";
