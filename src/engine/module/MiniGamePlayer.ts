@@ -1,4 +1,5 @@
 import { GameObject } from "@engine/module/GameObject";
+import { miniGamePlayerSerializer } from "@engine/module/serialization/MiniGamePlayerSerializer";
 import { GFFObject } from "@core/resource/GFFObject";
 import * as THREE from "three";
 import { GameState } from "@engine/runtime/GameState";
@@ -2029,72 +2030,13 @@ export class MiniGamePlayer extends GameObject {
   }
 
   initProperties(){
-    if(this.template.RootNode.hasField('Accel_Secs'))
-      this.accel_secs = this.template.getFieldByLabel('Accel_Secs').getValue();
+    miniGamePlayerSerializer.deserialize(this, this.template);
 
-    if(this.template.RootNode.hasField('Bump_Damage'))
-      this.bump_damage = this.template.getFieldByLabel('Bump_Damage').getValue();
-
-    if(this.template.RootNode.hasField('Camera'))
-      this.cameraName = this.template.getFieldByLabel('Camera').getValue();
-
-    if(this.template.RootNode.hasField('CameraRotate'))
-      this.cameraRotate = this.template.getFieldByLabel('CameraRotate').getValue();
-
-    if(this.template.RootNode.hasField('Hit_Points'))
-      this.hit_points = this.template.getFieldByLabel('Hit_Points').getValue();
-
-    if(this.template.RootNode.hasField('Invince_Period'))
-      this.invince_period = this.template.getFieldByLabel('Invince_Period').getValue();
-
-    if(this.template.RootNode.hasField('Max_HPs'))
-      this.max_hps = this.template.getFieldByLabel('Max_HPs').getValue();
-
-    if(this.template.RootNode.hasField('Maximum_Speed'))
-      this.speed_max = this.template.getFieldByLabel('Maximum_Speed').getValue();
-
-    if(this.template.RootNode.hasField('Minimum_Speed'))
-      this.speed_min = this.template.getFieldByLabel('Minimum_Speed').getValue();
-
-    if(this.template.RootNode.hasField('Num_Loops'))
-      this.num_loops = this.template.getFieldByLabel('Num_Loops').getValue();
-
-    if(this.template.RootNode.hasField('Sphere_Radius'))
-      this.sphere_radius = this.template.getFieldByLabel('Sphere_Radius').getValue();
-
-    if(this.template.RootNode.hasField('Track'))
-      this.trackName = MiniGameTrack.normalizeName(
-        this.template.getFieldByLabel('Track').getValue()
-      );
-
-    // Sounds struct (Death / Engine resrefs).
     if(this.template.RootNode.hasField('Sounds')){
       this.trackFollowerSounds.loadFromSoundsStruct(
         this.template.getFieldByLabel('Sounds').getFieldStruct()
       );
     }
-
-    if(this.template.RootNode.hasField('TunnelXNeg'))
-      this.tunnel.neg.x = this.template.getFieldByLabel('TunnelXNeg').getValue();
-
-    if(this.template.RootNode.hasField('TunnelXPos'))
-      this.tunnel.pos.x = this.template.getFieldByLabel('TunnelXPos').getValue();
-    else if(this.template.RootNode.hasField('TunneXPos'))
-      this.tunnel.pos.x = this.template.getFieldByLabel('TunneXPos').getValue();
-    
-    if(this.template.RootNode.hasField('TunnelYNeg'))
-      this.tunnel.neg.y = this.template.getFieldByLabel('TunnelYNeg').getValue();
-
-    if(this.template.RootNode.hasField('TunnelYPos'))
-      this.tunnel.pos.y = this.template.getFieldByLabel('TunnelYPos').getValue();
-
-    if(this.template.RootNode.hasField('TunnelZNeg'))
-      this.tunnel.neg.z = this.template.getFieldByLabel('TunnelZNeg').getValue();
-    else if(this.template.RootNode.hasField('TunneZNeg'))
-      this.tunnel.neg.z = this.template.getFieldByLabel('TunneZNeg').getValue();
-
-    if(this.template.RootNode.hasField('TunnelZPos'))
-      this.tunnel.pos.z = this.template.getFieldByLabel('TunnelZPos').getValue();
 
     const loadTunnelInfinite = (label: string) => {
       if(!this.template.RootNode.hasField(label)){ return; }
@@ -2109,9 +2051,8 @@ export class MiniGamePlayer extends GameObject {
     if(this.template.RootNode.hasField('TunnelInfinite')){
       loadTunnelInfinite('TunnelInfinite');
     }
-    loadTunnelInfinite('Tunnellnfinite'); // forge typo present in some exports
+    loadTunnelInfinite('Tunnellnfinite');
 
-    // Start_Offset_* → SetOrigin (also seeds offset when not running).
     const startX = this.readFloatField('Start_Offset_X', 'XOrigin');
     const startY = this.readFloatField('Start_Offset_Y', 'YOrigin');
     const startZ = this.readFloatField('Start_Offset_Z', 'ZOrigin');
@@ -2122,7 +2063,6 @@ export class MiniGamePlayer extends GameObject {
       this.playerOffset.set(startX, startY, startZ);
     }
 
-    // Target_Offset_* — BehaviorTrack aim point in player local space.
     this.targetOffset.set(
       this.readFloatField('Target_Offset_X'),
       this.readFloatField('Target_Offset_Y'),
@@ -2157,27 +2097,6 @@ export class MiniGamePlayer extends GameObject {
       this.template.getFieldByLabel('Scripts')?.getFieldStruct(),
       MiniGamePlayer.SCRIPT_KEYS
     );
-
-    this.initialized = true;
-
-
-    /*if(this.template.RootNode.hasField('CameraRotate'))
-      this.cameraRotate = this.template.getFieldByLabel('CameraRotate').getValue();
-
-    if(this.template.RootNode.hasField('Hit_Points'))
-      this.hit_points = this.template.getFieldByLabel('Hit_Points').getValue();
-
-    if(this.template.RootNode.hasField('Invince_Period'))
-      this.invince_period = this.template.getFieldByLabel('Invince_Period').getValue();
-
-    if(this.template.RootNode.hasField('Max_HPs'))
-      this.max_hps = this.template.getFieldByLabel('Max_HPs').getValue();
-
-    if(this.template.RootNode.hasField('Maximum_Speed'))
-      this.maximum_speed = this.template.getFieldByLabel('Maximum_Speed').getValue();*/
-
-
-
   }
 
 

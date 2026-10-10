@@ -37,6 +37,7 @@ import { ScriptVarTable } from "@engine/world/ScriptVarTable";
 import { ModuleSaveTable } from "@engine/save/ModuleSaveTable";
 import { AIScheduler } from "@engine/runtime/AIScheduler";
 import type { EffectAreaOfEffect } from "@engine/effects/EffectAreaOfEffect";
+import { ModuleIfoSerializer } from "@engine/module/serialization/ModuleIfoSerializer";
 
 export interface ModuleExpansionEntry {
   name: CExoLocString;
@@ -843,135 +844,7 @@ export class Module {
   async save( isSaveGame = false ){
     GameState.PartyManager.Save();
 
-    const ifo = new GFFObject();
-    ifo.FileType = 'IFO ';
-
-    const creatureList = ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'Creature List') );
-    for(let i = 0; i < this.limboCreatures.length; i++){
-      const creature = this.limboCreatures[i];
-      if(!creature) continue;
-      const root = creature.save().RootNode;
-      root.setType(4); // limbo element type
-      creatureList.addChildStruct(root);
-    }
-    const eventQueue = ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'EventQueue') );
-    for(let i = 0; i < this.eventQueue.length; i++){
-      let event = this.eventQueue[i];
-      if(!event) continue;
-      const exported = event.export();
-      if(exported){
-        eventQueue.addChildStruct( exported );
-      }
-    }
-
-    const areaList = ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'Mod_Area_list') );
-    if(this.area){
-      areaList.addChildStruct( this.area.saveAreaListStruct() );
-      this.area.save();
-    }
-
-    ifo.RootNode.addField( new GFFField(GFFDataType.INT, 'Mod_Creator_ID') ).setValue(this.creatorId);
-    const cutSceneList = ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'Mod_CutSceneList') );
-    for(let i = 0; i < this.cutSceneList.length; i++){
-      const entry = this.cutSceneList[i];
-      const csStruct = new GFFStruct(1);
-      csStruct.addField(new GFFField(GFFDataType.RESREF, 'CutScene_Name')).setValue(entry.name || '');
-      csStruct.addField(new GFFField(GFFDataType.DWORD, 'CutScene_ID')).setValue(entry.id | 0);
-      cutSceneList.addChildStruct(csStruct);
-    }
-    ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_DawnHour') ).setValue(this.timeManager.dawnHour);
-    ifo.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_Description') ).setValue( this.description );
-    ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_DuskHour') ).setValue(this.timeManager.duskHour);
-    ifo.RootNode.addField( new GFFField(GFFDataType.DWORD64, 'Mod_Effect_NxtId') ).setValue(this.effectNextId);
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_Entry_Area') ).setValue(this.entryArea);
-    ifo.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Mod_Entry_Dir_X') ).setValue(this.entryDirectionX);
-    ifo.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Mod_Entry_Dir_Y') ).setValue(this.entryDirectionY);
-    ifo.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Mod_Entry_X') ).setValue(this.entryX);
-    ifo.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Mod_Entry_Y') ).setValue(this.entryY);
-    ifo.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Mod_Entry_Z') ).setValue(this.entryZ);
-    ifo.RootNode.addField( new GFFField(GFFDataType.WORD, 'Expansion_Pack') ).setValue(this.expansionPack | 0);
-    const expanList = ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'Mod_Expan_List') );
-    for(let i = 0; i < this.expansionList.length; i++){
-      const entry = this.expansionList[i];
-      const exStruct = new GFFStruct(0);
-      exStruct.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'Expansion_Name')).setValue(entry.name || new CExoLocString());
-      exStruct.addField(new GFFField(GFFDataType.INT, 'Expansion_ID')).setValue(entry.id | 0);
-      expanList.addChildStruct(exStruct);
-    }
-    ifo.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Mod_Hak') ).setValue(this.hak);
-    const modIdField = ifo.RootNode.addField( new GFFField(GFFDataType.VOID, 'Mod_ID') );
-    modIdField.setData(this.id instanceof Uint8Array && this.id.length ? this.id : new Uint8Array(16));
-    ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_IsNWMFile') ).setValue(0);
-    ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_IsSaveGame') ).setValue( isSaveGame ? 1 : 0);
-    ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_MinPerHour') ).setValue(this.timeManager.minutesPerHour);
-    ifo.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_Name') ).setValue( this.name );
-    ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_NextCharId0') ).setValue(this.nextCharId0);
-    ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_NextCharId1') ).setValue(this.nextCharId1);
-    ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_NextObjId0') ).setValue(this.nextObjId0);
-    ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_NextObjId1') ).setValue(this.nextObjId1);
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnAcquirItem') ).setValue(this.scripts[ScriptHook.ModuleOnPlayerAcquireItem]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnActvtItem') ).setValue(this.scripts[ScriptHook.ModuleOnPlayerActivateItem]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnClientEntr') ).setValue(this.scripts[ScriptHook.ModuleOnPlayerClientEnter]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnClientLeav') ).setValue(this.scripts[ScriptHook.ModuleOnPlayerClientLeave]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnHeartbeat') ).setValue(this.scripts[ScriptHook.ModuleOnHeartbeat]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnModLoad') ).setValue(this.scripts[ScriptHook.ModuleOnLoad]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnModStart') ).setValue(this.scripts[ScriptHook.ModuleOnStart]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrDeath') ).setValue(this.scripts[ScriptHook.ModuleOnPlayerDeath]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrDying') ).setValue(this.scripts[ScriptHook.ModuleOnPlayerDying]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrLvlUp') ).setValue(this.scripts[ScriptHook.ModuleOnPlayerLevelUp]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrRest') ).setValue(this.scripts[ScriptHook.ModuleOnPlayerRest]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnSpawnBtnDn') ).setValue(this.scripts[ScriptHook.ModuleOnSpawnButtonDown]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnUnAqreItem') ).setValue(this.scripts[ScriptHook.ModuleOnUnAcquireItem]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnUsrDefined') ).setValue(this.scripts[ScriptHook.ModuleOnUserDefined]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_PauseDay') ).setValue(this.timeManager.pauseDay);
-    ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_PauseTime') ).setValue(this.timeManager.pauseTime);
-
-    // Player — SavePlayers: list element type 0xBEAD + Mod_* wrapper fields
-    const playerList = ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'Mod_PlayerList') );
-    if(GameState.PartyManager.Player){
-      const player = GameState.PartyManager.Player;
-      const playerStruct = player.save().RootNode;
-      playerStruct.type = 0xBEAD;
-      const communityName = 'Bad StrRef';
-      playerStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Mod_CommntyName') ).setValue(communityName);
-      playerStruct.addField( new GFFField(GFFDataType.BYTE, 'Mod_IsPrimaryPlr') ).setValue(1);
-      playerStruct.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_FirstName') ).setValue(
-        player.firstName instanceof CExoLocString ? player.firstName : new CExoLocString()
-      );
-      playerStruct.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_LastName') ).setValue(
-        player.lastName instanceof CExoLocString ? player.lastName : new CExoLocString()
-      );
-      playerList.addChildStruct( playerStruct );
-    }
-
-    ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_StartDay') ).setValue(this.timeManager.day);
-    ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_StartHour') ).setValue(this.timeManager.hour);
-    ifo.RootNode.addField( new GFFField(GFFDataType.WORD, 'Mod_StartMiliSec') ).setValue(this.timeManager.milisecond);
-    ifo.RootNode.addField( new GFFField(GFFDataType.WORD, 'Mod_StartMinute') ).setValue(this.timeManager.minute);
-    ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_StartMonth') ).setValue(this.timeManager.month);
-    // SaveModuleIFOStart does not write Mod_StartMovie (load-only in LoadModuleStart)
-    ifo.RootNode.addField( new GFFField(GFFDataType.WORD, 'Mod_StartSecond') ).setValue(this.timeManager.second);
-    ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_StartYear') ).setValue(this.timeManager.year);
-    ifo.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Mod_Tag') ).setValue(this.tag);
-    const tokenList = ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'Mod_Tokens') );
-    // SaveModuleIFOStart skips built-in tokens 0..9
-    this.customTokens.forEach( (tokenValue, tokenNumber) => {
-      if(tokenNumber <= 9) return;
-      const tokenStruct = new GFFStruct(7);
-      tokenStruct.addField( new GFFField(GFFDataType.DWORD, 'Mod_TokensNumber') ).setValue(tokenNumber);
-      tokenStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Mod_TokensValue') ).setValue(tokenValue || '');
-      tokenList.addChildStruct(tokenStruct);
-    });
-    ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_Transition') ).setValue(this.timeManager.transition);
-    ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_Version') ).setValue(this.version);
-    // SaveModuleIFOStart does not write Mod_VO_ID (K1/TSL)
-    ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_XPScale') ).setValue(this.xpScale);
-    // Module-level SWVarTable + named VarTable
-    const swVarTable = ifo.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
-    swVarTable.addChildStruct( this.getModuleSWVarTableSaveStruct() );
-    const varTable = ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'VarTable') );
-    this.scriptVarTable.writeToListField(varTable);
-    
+    const ifo = ModuleIfoSerializer.serialize(this, { isSaveGame });
     this.ifo = ifo;
 
     const sav = new ERFObject();

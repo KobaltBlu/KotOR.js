@@ -21,6 +21,8 @@ import { CombatFeatType } from "@core/enums/combat/CombatFeatType";
 import { Dice } from "@core/utility/Dice";
 import { ItemProperty } from "@engine/items/ItemProperty";
 import { GameState } from "@engine/runtime/GameState";
+import { GameObjectLoadPipeline } from "@engine/module/serialization/GameObjectLoadPipeline";
+import { itemSerializer } from "@engine/module/serialization/ItemSerializer";
 import { GameEngineType } from "@core/enums/engine/GameEngineType";
 import { ActionParameterType, ActionType, GameEffectDurationType, ModuleCreatureAnimState, SkillType } from "@core/enums";
 import { CombatActionType } from "@core/enums/combat/CombatActionType";
@@ -1667,184 +1669,40 @@ export class Item extends GameObject {
   }
 
   initProperties(){
-
     if(this.loaded){
       return;
     }
-    
+
     const needsRegister = !this.initialized;
-    if(needsRegister){
-      if(this.template.RootNode.hasField('ObjectId')){
-        this.id = this.template.getFieldByLabel('ObjectId').getValue();
-      }else if(this.template.RootNode.hasField('ID')){
-        this.id = this.template.getFieldByLabel('ID').getValue();
-      }
-    }
+    itemSerializer.deserialize(this, this.template);
 
-    if(this.template.RootNode.hasField('AddCost'))
-      this.addCost = parseInt(this.template.getFieldByLabel('AddCost').getValue());
-
-    if(this.template.RootNode.hasField('BaseItem')){
-      this.baseItemId = this.template.getFieldByLabel('BaseItem').getValue();
+    if(this.baseItemId !== undefined && this.baseItemId !== null){
       this.baseItem = BaseItem.From2DA(this.baseItemId);
     }
-
-    if(this.template.RootNode.hasField('BodyVariation')){
-      this.bodyVariation = this.template.getFieldByLabel('BodyVariation').getValue();
-    }else if(this.baseItem?.modelType == 1){
-      // LoadDataFromGff seeds body_variation from baseitems when modeltype == 1
+    if(!this.template.RootNode.hasField('BodyVariation') && this.baseItem?.modelType == 1){
       const letter = this.baseItem.bodyVar;
       if(typeof letter === 'string' && letter.length){
         this.bodyVariation = Math.max(0, letter.toUpperCase().charCodeAt(0) - 64);
       }
     }
 
-    if(this.template.RootNode.hasField('Charges'))
-      this.charges = this.template.getFieldByLabel('Charges').getValue();
-
-    if(this.template.RootNode.hasField('Cost'))
-      this.cost = parseInt(this.template.getFieldByLabel('Cost').getValue());
-
-    if(this.template.RootNode.hasField('DELETING'))
-      this.deleting = this.template.getFieldByLabel('DELETING').getValue();
-
-    if(this.template.RootNode.hasField('DescIdentified'))
-      this.descIdentified = this.template.getFieldByLabel('DescIdentified').getCExoLocString();
-
-    if(this.template.RootNode.hasField('Description'))
-      this.description = this.template.getFieldByLabel('Description').getCExoLocString();
-
-    // LoadDataFromGff / ReadItemsFromGff: Dropable BYTE default 0
-    if(this.template.RootNode.hasField('Dropable'))
-      this.dropable = this.template.getFieldByLabel('Dropable').getValue();
-    else if(this.dropable === undefined || this.dropable === null)
-      this.dropable = 0;
-      
-    if(this.template.RootNode.hasField('EquippedRes'))
-      this.equippedRes = this.template.getFieldByLabel('EquippedRes').getValue();
-
-    if(this.template.RootNode.hasField('Identified'))
-      this.identified = this.template.getFieldByLabel('Identified').getValue();
-
-    if(this.template.RootNode.hasField('Infinite'))
-      this.infinite = this.template.getFieldByLabel('Infinite').getValue();
-
-    if(this.template.RootNode.hasField('InventoryRes'))
-      this.inventoryRes = this.template.getFieldByLabel('InventoryRes').getValue();
-  
-    if(this.template.RootNode.hasField('LocalizedName'))
-      this.localizedName = this.template.RootNode.getFieldByLabel('LocalizedName').getCExoLocString();
-        
-    if(this.template.RootNode.hasField('MaxCharges'))
-      this.maxCharges = this.template.RootNode.getFieldByLabel('MaxCharges').getValue();
-
-    if(this.template.RootNode.hasField('ModelVariation'))
-      this.modelVariation = this.template.RootNode.getFieldByLabel('ModelVariation').getValue();
-    
-    if(this.template.RootNode.hasField('NewItem'))
-      this.newItem = this.template.RootNode.getFieldByLabel('NewItem').getValue();
-        
-    if(this.template.RootNode.hasField('NonEquippable'))
-      this.nonEquippable = this.template.RootNode.getFieldByLabel('NonEquippable').getValue();
-  
-    if(this.template.RootNode.hasField('Pickpocketable'))
-      this.pickpocketable = this.template.RootNode.getFieldByLabel('Pickpocketable').getValue();
-      
-    if(this.template.RootNode.hasField('Plot'))
-      this.plot = this.template.getFieldByLabel('Plot').getValue();
-
     if(this.template.RootNode.hasField('PropertiesList')){
       let propertiesList = this.template.getFieldByLabel('PropertiesList').getChildStructs();
       this.properties = [];
       for(let i = 0, len = propertiesList.length; i < len; i++){
-        this.properties.push( 
-          new ItemProperty( 
-            GFFObject.FromStruct( propertiesList[i] ), this 
-          ) 
+        this.properties.push(
+          new ItemProperty(
+            GFFObject.FromStruct( propertiesList[i] ), this
+          )
         );
       }
     }
 
-    if(this.template.RootNode.hasField('StackSize'))
-      this.stackSize = this.template.getFieldByLabel('StackSize').getValue();
-
-    if(this.template.RootNode.hasField('Stolen'))
-      this.stolen = this.template.getFieldByLabel('Stolen').getValue();
-
-    if(this.template.RootNode.hasField('Tag'))
-      this.tag = this.template.getFieldByLabel('Tag').getValue().replace(/\0[\s\S]*$/g,'');
-
-    if(this.template.RootNode.hasField('TextureVar'))
-      this.textureVariation = this.template.getFieldByLabel('TextureVar').getValue();
-
-    if(this.template.RootNode.hasField('Upgrades')){
-      this.upgrades = this.template.getFieldByLabel('Upgrades').getValue();
-    }
-
-    if(this.template.RootNode.hasField('UpgradeLevel')){
-      this.upgradeLevel = this.template.getFieldByLabel('UpgradeLevel').getValue();
-    }
-
-    if(this.template.RootNode.hasField('UpgradeSlot0')){
-      const v = this.template.getFieldByLabel('UpgradeSlot0').getValue();
-      this.upgradeSlot0 = (v === 255 ? -1 : v);
-    }
-
-    if(this.template.RootNode.hasField('UpgradeSlot1')){
-      const v = this.template.getFieldByLabel('UpgradeSlot1').getValue();
-      this.upgradeSlot1 = (v === 255 ? -1 : v);
-    }
-
-    if(this.template.RootNode.hasField('UpgradeSlot2')){
-      const v = this.template.getFieldByLabel('UpgradeSlot2').getValue();
-      this.upgradeSlot2 = (v === 255 ? -1 : v);
-    }
-
-    if(this.template.RootNode.hasField('UpgradeSlot3')){
-      const v = this.template.getFieldByLabel('UpgradeSlot3').getValue();
-      this.upgradeSlot3 = (v === 255 ? -1 : v);
-    }
-
-    if(this.template.RootNode.hasField('UpgradeSlot4')){
-      const v = this.template.getFieldByLabel('UpgradeSlot4').getValue();
-      this.upgradeSlot4 = (v === 255 ? -1 : v);
-    }
-
-    if(this.template.RootNode.hasField('UpgradeSlot5')){
-      const v = this.template.getFieldByLabel('UpgradeSlot5').getValue();
-      this.upgradeSlot5 = (v === 255 ? -1 : v);
-    }
-
-    if(this.template.RootNode.hasField('XPosition'))
-      this.position.x = this.template.RootNode.getFieldByLabel('XPosition').getValue();
-
-    if(this.template.RootNode.hasField('YPosition'))
-      this.position.y = this.template.RootNode.getFieldByLabel('YPosition').getValue();
-
-    if(this.template.RootNode.hasField('ZPosition'))
-      this.position.z = this.template.RootNode.getFieldByLabel('ZPosition').getValue();
-
-    if(this.template.RootNode.hasField('XOrientation'))
-      this.xOrientation = this.template.RootNode.getFieldByLabel('XOrientation').getValue();
-
-    if(this.template.RootNode.hasField('YOrientation'))
-      this.yOrientation = this.template.RootNode.getFieldByLabel('YOrientation').getValue();
-
-    if(this.template.RootNode.hasField('ZOrientation'))
-      this.zOrientation = this.template.RootNode.getFieldByLabel('ZOrientation').getValue();
-
-    if(this.template.RootNode.hasField('PaletteID'))
-      this.palleteID = this.template.RootNode.getFieldByLabel('PaletteID').getValue();
-
-    // PlaySwingSound indexes weaponsounds by baseitems.weaponmattype
     this.weaponSound = GameState.SWRuleSet.weaponSounds[this.baseItem?.weaponMaterialType];
 
     if(needsRegister){
       GameState.GameObjectManager.RegisterObject(this);
     }
-
-    this.initialized = true
-
   }
 
   setPossessor( oCreature: GameObject){
@@ -1892,67 +1750,9 @@ export class Item extends GameObject {
   }
 
   save(){
-    let itemStruct = new GFFStruct(0);
-
-    // SaveItem does not write ObjectId
-    itemStruct.addField( new GFFField(GFFDataType.INT, 'BaseItem') ).setValue(this.getBaseItemId());
-    itemStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
-    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Identified') ).setValue(this.identified);
-    itemStruct.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') ).setValue(
-      this.description instanceof CExoLocString ? this.description : new CExoLocString()
-    );
-    itemStruct.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'DescIdentified') ).setValue(
-      this.descIdentified instanceof CExoLocString ? this.descIdentified : new CExoLocString()
-    );
-    itemStruct.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LocalizedName') ).setValue(
-      this.localizedName instanceof CExoLocString ? this.localizedName : new CExoLocString()
-    );
-    itemStruct.addField( new GFFField(GFFDataType.WORD, 'StackSize') ).setValue(this.stackSize);
-    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Stolen') ).setValue(this.stolen);
-    itemStruct.addField( new GFFField(GFFDataType.DWORD, 'Upgrades') ).setValue(this.upgrades);
-    // TSL-only upgrade slots (K1 has no UpgradeLevel / UpgradeSlot* strings)
-    if(GameState.GameKey == GameEngineType.TSL){
-      itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeLevel') ).setValue(this.upgradeLevel);
-      itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot0') ).setValue(this.upgradeSlot0 == -1 ? 255 : this.upgradeSlot0);
-      itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot1') ).setValue(this.upgradeSlot1 == -1 ? 255 : this.upgradeSlot1);
-      itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot2') ).setValue(this.upgradeSlot2 == -1 ? 255 : this.upgradeSlot2);
-      itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot3') ).setValue(this.upgradeSlot3 == -1 ? 255 : this.upgradeSlot3);
-      itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot4') ).setValue(this.upgradeSlot4 == -1 ? 255 : this.upgradeSlot4);
-      itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot5') ).setValue(this.upgradeSlot5 == -1 ? 255 : this.upgradeSlot5);
-    }
-    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Dropable') ).setValue(this.isDropable() ? 1 : 0);
-    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Pickpocketable') ).setValue(this.pickpocketable ? 1 : 0);
-    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'ModelVariation') ).setValue(this.modelVariation);
-    // SaveItem: BodyVariation + TextureVar only when baseitems.modeltype == 1
-    if(this.baseItem?.modelType == 1){
-      itemStruct.addField( new GFFField(GFFDataType.BYTE, 'BodyVariation') ).setValue(this.getBodyVariationByte());
-      itemStruct.addField( new GFFField(GFFDataType.BYTE, 'TextureVar') ).setValue(this.getTextureVariation());
-    }
-    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Charges') ).setValue(this.charges);
-    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'MaxCharges') ).setValue(this.maxCharges);
-    itemStruct.addField( new GFFField(GFFDataType.DWORD, 'Cost') ).setValue(this.cost);
-    itemStruct.addField( new GFFField(GFFDataType.DWORD, 'AddCost') ).setValue(this.addCost);
-    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Plot') ).setValue(this.plot);
-
-    let propertiesList = itemStruct.addField( new GFFField(GFFDataType.LIST, 'PropertiesList') );
-    for(let i = 0; i < this.properties.length; i++){
-      const propStruct = this.properties[i].save();
-      // SaveItemProperties: list element struct id = index
-      propStruct.setType(i);
-      propertiesList.addChildStruct( propStruct );
-    }
-
-    itemStruct.addField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).setValue(this.position.x);
-    itemStruct.addField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).setValue(this.position.y);
-    itemStruct.addField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).setValue(this.position.z);
-    itemStruct.addField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).setValue(this.xOrientation);
-    itemStruct.addField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).setValue(this.yOrientation);
-    itemStruct.addField( new GFFField(GFFDataType.FLOAT, 'ZOrientation') ).setValue(this.zOrientation);
-    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'NonEquippable') ).setValue(this.nonEquippable);
-    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'NewItem') ).setValue(this.newItem);
-    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'DELETING') ).setValue(this.deleting ? 1 : 0);
-
-    return itemStruct;
+    return itemSerializer.serialize(this, {
+      gameKey: GameState.GameKey == GameEngineType.TSL ? 'k2' : 'k1',
+    });
   }
 
 }

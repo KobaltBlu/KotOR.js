@@ -30,6 +30,7 @@
     "compare-saves": "tsx scripts/compare-saves.ts",
     "export-mdl-ascii": "tsx scripts/export-mdl-ascii.ts",
     "export-dlg-json": "tsx scripts/export-dlg-json.ts",
+    "export-save-gff": "npx tsx scripts/export-save-gff.ts",
     "export-wok-ascii": "tsx scripts/export-wok-ascii.ts",
     "typedoc": "typedoc --out ./wiki ./src/KotOR.ts",
     "check:originality": "node scripts/check-originality-comments.mjs",

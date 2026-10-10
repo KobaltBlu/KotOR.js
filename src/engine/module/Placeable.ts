@@ -33,6 +33,8 @@ import { GameEffectFactory } from "@engine/effects/GameEffectFactory";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
 import { GameEffectDurationType } from "@core/enums/effects/GameEffectDurationType";
 import { GameObject } from "@engine/module/GameObject";
+import { GameObjectLoadPipeline } from "@engine/module/serialization/GameObjectLoadPipeline";
+import { placeableSerializer } from "@engine/module/serialization/PlaceableSerializer";
 import { Item } from "@engine/module/Item";
 import type { Area } from "@engine/module/Area";
 import type { Creature } from "@engine/module/Creature";
@@ -757,24 +759,20 @@ export class Placeable extends GameObject {
   load(){
     this.seedResRefsFromTemplate();
     if(this.getTemplateResRef()){
-      //Load template and merge fields
-      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utp'], this.getTemplateResRef());
-      if(buffer){
-        const gff = new GFFObject(buffer);
-        this.template.merge(gff);
+      const merged = GameObjectLoadPipeline.mergeBlueprint(this.template, {
+        refField: 'TemplateResRef',
+        resourceKey: 'utp',
+        runtimeResRef: this.getTemplateResRef(),
+      });
+      if(!merged){
+        console.error('Failed to load Placeable template');
+      }
+      if(this.template instanceof GFFObject){
         this.initProperties();
         this.loadInventory();
         this.loadScripts();
-      }else{
-        console.error('Failed to load Placeable template');
-        if(this.template instanceof GFFObject){
-          this.initProperties();
-          this.loadInventory();
-          this.loadScripts();
-        }
       }
     }else{
-      //We already have the template (From SAVEGAME)
       this.initProperties();
       this.loadInventory();
       this.loadScripts();
@@ -924,243 +922,22 @@ export class Placeable extends GameObject {
   }
 
   initProperties(){
-
     const needsRegister = !this.initialized;
-    if(needsRegister){
-      if(this.template.RootNode.hasField('ObjectId')){
-        this.id = this.template.getFieldByLabel('ObjectId').getValue();
-      }else if(this.template.RootNode.hasField('ID')){
-        this.id = this.template.getFieldByLabel('ID').getValue();
-      }
+    placeableSerializer.deserialize(this, this.template);
+
+    const conversationResRef = (this as any)._conversationResRef;
+    if(conversationResRef){
+      this.conversation = DLGObject.FromResRef(conversationResRef);
     }
 
-    if(this.template.RootNode.hasField('LocName'))
-      this.name = this.template.getFieldByLabel('LocName').getCExoLocString().getValue()
-
-    if(this.template.RootNode.hasField('Animation')){
-      this.setAnimationState(this.template.getFieldByLabel('Animation').getValue());
-    }
-
-    if(this.template.RootNode.hasField('AnimationState')){
-      const animState = this.template.getFieldByLabel('AnimationState').getValue();
-      switch(animState){
-        case 1:
-          this.setAnimationState(ModulePlaceableAnimState.OPEN);
-        break;
-        case 2:
-          this.setAnimationState(ModulePlaceableAnimState.CLOSE);
-          this.setOpenState(ModulePlaceableState.CLOSED);
-        break;
-        case 3:
-          this.setAnimationState(ModulePlaceableAnimState.DEAD);
-        break;
-        case 4:
-          this.setAnimationState(ModulePlaceableAnimState.ACTIVATE);
-        break;
-        case 5:
-          this.setAnimationState(ModulePlaceableAnimState.DEACTIVATE);
-        break;
-        default:
-          this.setAnimationState(ModulePlaceableAnimState.DEFAULT);
-        break;
-      }
-    }
-
-    if(this.template.RootNode.hasField('Appearance')){
-      this.appearance = this.template.getFieldByLabel('Appearance').getValue();
-      try{
-        this.placeableAppearance = GameState.AppearanceManager.GetPlaceableAppearanceById(this.appearance);
-      }catch(e){
-        console.error(e);
-      }
-    }
-
-    if(this.template.RootNode.hasField('AutoRemoveKey'))
-      this.autoRemoveKey = this.template.getFieldByLabel('AutoRemoveKey').getValue();
-
-    if(this.template.RootNode.hasField('BodyBag'))
-      this.bodyBag = this.template.getFieldByLabel('BodyBag').getValue();
-
-    if(this.template.RootNode.hasField('CloseLockDC'))
-      this.closeLockDC = this.template.getFieldByLabel('CloseLockDC').getValue();
-
-    if(this.template.RootNode.hasField('Conversation')){
-      this.conversation = DLGObject.FromResRef(this.template.getFieldByLabel('Conversation').getValue());
-    }
-
-    if(this.template.RootNode.hasField('Commandable'))
-      this.commandable = !!this.template.getFieldByLabel('Commandable').getValue();
-
-    if(this.template.RootNode.hasField('CurrentHP'))
-      this.currentHP = this.template.getFieldByLabel('CurrentHP').getValue();
-
-    if(this.template.RootNode.hasField('DisarmDC'))
-      this.disarmDC = this.template.getFieldByLabel('DisarmDC').getValue();
-
-    if(this.template.RootNode.hasField('Faction')){
-      this.factionId = this.template.getFieldByLabel('Faction').getValue();
-      if((this.factionId & 0xFFFFFFFF) == -1){
-        this.factionId = 0;
-      }
-    }
     this.faction = GameState.FactionManager.factions.get(this.factionId);
-
-    if(this.template.RootNode.hasField('Fort'))
-      this.fort = this.template.getFieldByLabel('Fort').getValue();
-
-    if(this.template.RootNode.hasField('HP'))
-      this.hp = this.template.RootNode.getFieldByLabel('HP').getValue();
-
-    // If CurrentHP was absent, start at max HP so bash is not immediately dead.
-    if(!this.template.RootNode.hasField('CurrentHP'))
-      this.currentHP = this.hp;
-
-    if(this.template.RootNode.hasField('Hardness'))
-      this.hardness = this.template.RootNode.getFieldByLabel('Hardness').getValue();
-
-    if(this.template.RootNode.hasField('HasInventory'))
-      this.hasInventory = this.template.RootNode.getFieldByLabel('HasInventory').getValue();
-
-    if(this.template.RootNode.hasField('IsBodyBag'))
-      this.isBodyBag = !!this.template.RootNode.getFieldByLabel('IsBodyBag').getValue();
-
-    if(this.template.RootNode.hasField('IsBodyBagVisible'))
-      this.isBodyBagVisible = !!this.template.RootNode.getFieldByLabel('IsBodyBagVisible').getValue();
-
-    if(this.template.RootNode.hasField('DieWhenEmpty'))
-      this.dieWhenEmpty = !!this.template.RootNode.getFieldByLabel('DieWhenEmpty').getValue();
-
-    if(this.template.RootNode.hasField('IsCorpse'))
-      this.isCorpse = !!this.template.RootNode.getFieldByLabel('IsCorpse').getValue();
-
-    if(this.template.RootNode.hasField('GroundPile'))
-      this.groundPile = !!this.template.RootNode.getFieldByLabel('GroundPile').getValue();
-
-    if(this.template.RootNode.hasField('IsDestroyable'))
-      this.isDestroyable = !!this.template.RootNode.getFieldByLabel('IsDestroyable').getValue();
-
-    if(this.template.RootNode.hasField('Interruptable'))
-      this.interruptable = this.template.RootNode.getFieldByLabel('Interruptable').getValue();
-
-    if(this.template.RootNode.hasField('KeyName'))
-      this.keyName = this.template.RootNode.getFieldByLabel('KeyName').getValue();
-
-    if(this.template.RootNode.hasField('KeyRequired'))
-      this.keyRequired = this.template.RootNode.getFieldByLabel('KeyRequired').getValue();
-
-    if(this.template.RootNode.hasField('LocName'))
-      this.locName = this.template.getFieldByLabel('LocName').getCExoLocString();
-
-    if(this.template.RootNode.hasField('Description'))
-      this.description = this.template.getFieldByLabel('Description').getCExoLocString();
-
-    if(this.template.RootNode.hasField('Locked'))
-      this.locked = this.template.getFieldByLabel('Locked').getValue();
-
-    if(this.template.RootNode.hasField('Min1HP'))
-      this.min1HP = this.template.getFieldByLabel('Min1HP').getValue();
-
-    if(this.template.RootNode.hasField('OpenLockDC'))
-      this.openLockDC = this.template.getFieldByLabel('OpenLockDC').getValue();
-
-    if(this.template.RootNode.hasField('PaletteID'))
-      this.paletteID = this.template.getFieldByLabel('PaletteID').getValue();
-
-    // LoadPlaceable: Invulnerable aliases Plot; missing Static → !Useable;
-    // Static forces plot = 1.
-    if(this.template.RootNode.hasField('Invulnerable')){
-      this.plot = !!this.template.getFieldByLabel('Invulnerable').getValue();
-    }else if(this.template.RootNode.hasField('Plot')){
-      this.plot = !!this.template.getFieldByLabel('Plot').getValue();
+    try{
+      this.placeableAppearance = GameState.AppearanceManager.GetPlaceableAppearanceById(this.appearance);
+    }catch(e){
+      console.error(e);
     }
-
-    if(this.template.RootNode.hasField('PartyInteract'))
-      this.partyInteract = this.template.getFieldByLabel('PartyInteract').getValue();
-
-    if(this.template.RootNode.hasField('PortraitId')){
-      this.portraitId = this.template.getFieldByLabel('PortraitId').getValue();
+    if(this.portraitId){
       this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
-    }else if(this.template.RootNode.hasField('PortraidId')){
-      // Legacy typo in some templates
-      this.portraitId = this.template.getFieldByLabel('PortraidId').getValue();
-      this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
-    }
-
-    if(this.template.RootNode.hasField('Ref'))
-      this.ref = this.template.getFieldByLabel('Ref').getValue();
-
-    if(this.template.RootNode.hasField('Useable'))
-      this.useable = this.template.getFieldByLabel('Useable').getValue();
-
-    if(this.template.RootNode.hasField('Static')){
-      this.static = !!this.template.getFieldByLabel('Static').getValue();
-    }else{
-      this.static = !this.useable;
-    }
-    if(this.static){
-      this.plot = true;
-    }
-
-    if(this.template.RootNode.hasField('Tag'))
-      this.tag = this.template.getFieldByLabel('Tag').getValue();
-
-    if(this.template.RootNode.hasField('TemplateResRef'))
-      this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();
-
-    if(this.template.RootNode.hasField('TrapDetectDC'))
-      this.trapDetectDC = this.template.getFieldByLabel('TrapDetectDC').getValue();
-
-    if(this.template.RootNode.hasField('TrapDetectable'))
-      this.trapDetectable = !!this.template.RootNode.getFieldByLabel('TrapDetectable').getValue();
-
-    if(this.template.RootNode.hasField('TrapDisarmable'))
-      this.trapDisarmable = !!this.template.RootNode.getFieldByLabel('TrapDisarmable').getValue();
-
-    if(this.template.RootNode.hasField('TrapFlag'))
-      this.trapFlag = !!this.template.RootNode.getFieldByLabel('TrapFlag').getValue();
-
-    if(this.template.RootNode.hasField('TrapOneShot'))
-      this.trapOneShot = !!this.template.getFieldByLabel('TrapOneShot').getValue();
-
-    if(this.template.RootNode.hasField('TemplateResRef'))
-      this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();
-
-    if(this.template.RootNode.hasField('TrapType'))
-      this.trapType = this.template.getFieldByLabel('TrapType').getValue();
-
-    if(this.template.RootNode.hasField('Will'))
-      this.will = this.template.getFieldByLabel('Will').getValue();
-
-    if(this.template.RootNode.hasField('X'))
-      this.position.x = this.template.RootNode.getFieldByLabel('X').getValue();
-
-    if(this.template.RootNode.hasField('Y'))
-      this.position.y = this.template.RootNode.getFieldByLabel('Y').getValue();
-
-    if(this.template.RootNode.hasField('Z'))
-      this.position.z = this.template.RootNode.getFieldByLabel('Z').getValue();
-
-    if(this.template.RootNode.hasField('Bearing'))
-      this.bearing = this.template.RootNode.getFieldByLabel('Bearing').getValue();
-
-    if(this.template.RootNode.hasField('TweakColor'))
-      this.tweakColor = this.template.getFieldByLabel('TweakColor').getValue();
-
-    if(this.template.RootNode.hasField('UseTweakColor'))
-      this.useTweakColor = this.template.getFieldByLabel('UseTweakColor').getValue();
-
-    if(this.template.RootNode.hasField('NotBlastable'))
-      this.notBlastable = !!this.template.getFieldByLabel('NotBlastable').getValue();
-
-    if(this.template.RootNode.hasField('SWVarTable')){
-      let localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
-      //console.log(localBools);
-      for(let i = 0; i < localBools.length; i++){
-        let data = localBools[i].getFieldByLabel('Variable').getValue();
-        for(let bit = 0; bit < 32; bit++){
-          this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
-        }
-      }
     }
 
     if(this.template.RootNode.hasField('EffectList')){
@@ -1170,23 +947,13 @@ export class Placeable extends GameObject {
         if(effect){
           effect.setAttachedObject(this);
           this.effects.push(effect);
-          //this.addEffect(effect);
         }
       }
     }
 
-    // LoadPlaceable: closed placeables settle on CLOSE (10076) rather than DEFAULT
-    if(this.animState === ModulePlaceableAnimState.DEFAULT && !this.isOpen()){
-      this.setAnimationState(ModulePlaceableAnimState.CLOSE);
-    }
-
-    // PostProcess — hardness applies a permanent
-    // DamageResistance effect (subtype |= 2, int0 = 0x3FFF, int1 = hardness, is_exposed = 0).
     if((this.hardness | 0) > 0 && !this.effects.some(e => e.type === GameEffectType.EffectDamageResistance)){
       const eDamageResist = new GameEffectFactory.EffectDamageResistance();
-      // PostProcess: subtype & 0xfff8 | 2 (PERMANENT only — not MAGICAL|PERMANENT = 10)
       eDamageResist.setSubTypeUnMasked(GameEffectDurationType.PERMANENT);
-      // ApplyEffect with = 1 during PostProcess → SkipOnLoad = 1
       eDamageResist.setSkipOnLoad(true);
       eDamageResist.setInt(0, 0x3FFF);
       eDamageResist.setInt(1, this.hardness | 0);
@@ -1199,9 +966,6 @@ export class Placeable extends GameObject {
     if(needsRegister){
       GameState.GameObjectManager.RegisterObject(this);
     }
-
-    this.initialized = true;
-
   }
 
   /**
@@ -1268,115 +1032,7 @@ export class Placeable extends GameObject {
   }
 
   save(){
-    let gff = new GFFObject();
-    gff.FileType = 'UTP ';
-    // Placeable List element struct type
-    gff.RootNode.type = 9;
-
-    const actionList = gff.RootNode.addField( this.actionQueueToActionList() );
-    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'Animation') ).setValue(this.animState);
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Appearance') ).setValue(this.appearance);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'AutoRemoveKey') ).setValue(this.autoRemoveKey);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Bearing') ).setValue(this.bearing);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'BodyBag') ).setValue(this.bodyBag);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'CloseLockDC') ).setValue(this.closeLockDC);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue(this.commandable ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Conversation') ).setValue(this.conversation ? this.conversation.resref : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'CurrentHP') ).setValue(this.currentHP);
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') ).setValue(
-      this.description instanceof CExoLocString ? this.description : new CExoLocString()
-    );
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DieWhenEmpty') ).setValue( this.dieWhenEmpty ? 1 : 0 );
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DisarmDC') ).setValue(this.disarmDC);
-
-    //Effects
-    const effectList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'EffectList') );
-    for(let i = 0; i < this.effects.length; i++){
-      effectList.addChildStruct( this.effects[i].save() );
-    }
-
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Faction') ).setValue(this.faction ? this.faction.id : this.factionId);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Fort') ).setValue(this.fort);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'GroundPile') ).setValue(this.groundPile ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'HP') ).setValue(this.hp);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Hardness') ).setValue(this.hardness);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'HasInventory') ).setValue(this.hasInventory ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsBodyBag') ).setValue(this.isBodyBag ? 1 : 0);
-    // Shells are never saved — persist visible so reload shows the bag
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsBodyBagVisible') ).setValue(this.isBodyBagVisible ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsCorpse') ).setValue(this.isCorpse ? 1 : 0);
-
-    // SavePlaceable: ItemList only when inventory non-empty
-    if(this.inventory.length){
-      const itemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ItemList') );
-      for(let i = 0; i < this.inventory.length; i++){
-        const invItem = this.inventory[i];
-        const itemStruct = invItem.save();
-        // SavePlaceable writes ObjectId before SaveItem
-        itemStruct.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(invItem.id >>> 0);
-        itemList.addChildStruct(itemStruct);
-      }
-    }
-
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'KeyName') ).setValue(this.keyName);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'KeyRequired') ).setValue(this.keyRequired);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'LightState') ).setValue(this.lightState ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LocName') ).setValue(this.locName);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Lockable') ).setValue(this.lockable);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Locked') ).setValue(this.locked);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Min1HP') ).setValue(this.min1HP);
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
-
-    //Scripts — SavePlaceable field order includes OnDialog
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ScriptHook.PlaceableOnClosed) ).setValue(this.scripts[ScriptHook.PlaceableOnClosed]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ScriptHook.PlaceableOnDamaged) ).setValue(this.scripts[ScriptHook.PlaceableOnDamaged]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ScriptHook.PlaceableOnDeath) ).setValue(this.scripts[ScriptHook.PlaceableOnDeath]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ScriptHook.PlaceableOnDisarm) ).setValue(this.scripts[ScriptHook.PlaceableOnDisarm]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ScriptHook.PlaceableOnHeartbeat) ).setValue(this.scripts[ScriptHook.PlaceableOnHeartbeat]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ScriptHook.PlaceableOnInvDisturbed) ).setValue(this.scripts[ScriptHook.PlaceableOnInvDisturbed]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ScriptHook.PlaceableOnLock) ).setValue(this.scripts[ScriptHook.PlaceableOnLock]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ScriptHook.PlaceableOnMeleeAttacked) ).setValue(this.scripts[ScriptHook.PlaceableOnMeleeAttacked]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ScriptHook.PlaceableOnOpen) ).setValue(this.scripts[ScriptHook.PlaceableOnOpen]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ScriptHook.PlaceableOnSpellCastAt) ).setValue(this.scripts[ScriptHook.PlaceableOnSpellCastAt]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ScriptHook.PlaceableOnUnlock) ).setValue(this.scripts[ScriptHook.PlaceableOnUnlock]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ScriptHook.PlaceableOnUsed) ).setValue(this.scripts[ScriptHook.PlaceableOnUsed]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ScriptHook.PlaceableOnUserDefined) ).setValue(this.scripts[ScriptHook.PlaceableOnUserDefined]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ScriptHook.PlaceableOnDialog) ).setValue(this.scripts[ScriptHook.PlaceableOnDialog]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ScriptHook.PlaceableOnEndDialogue) ).setValue(this.scripts[ScriptHook.PlaceableOnEndDialogue]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ScriptHook.PlaceableOnTrapTriggered) ).setValue(this.scripts[ScriptHook.PlaceableOnTrapTriggered]?.name || '');
-
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Open') ).setValue(this.isOpen() ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'OpenLockDC') ).setValue(this.openLockDC);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PartyInteract') ).setValue(this.partyInteract);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Plot') ).setValue(this.plot);
-    // SavePlaceable: PortraitId if id != -1, else Portrait RESREF
-    if((this.portraitId | 0) !== 0xFFFF && (this.portraitId | 0) !== -1){
-      gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') ).setValue(this.portraitId);
-    }else{
-      const portraitResRef = (this.portrait as any)?.resref || (this.portrait as any)?.baseresre || '';
-      gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Portrait') ).setValue(portraitResRef || '');
-    }
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Ref') ).setValue(this.ref);
-
-    //SWVarTable
-    let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
-    swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
-
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Static') ).setValue(this.static);
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDetectDC') ).setValue(this.trapDetectDC);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDetectable') ).setValue(this.trapDetectable);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDisarmable') ).setValue(this.trapDisarmable);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapFlag') ).setValue(this.trapFlag);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapOneShot') ).setValue(this.trapOneShot);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapType') ).setValue(this.trapType);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Useable') ).setValue(this.useable);
-    this.writeNamedVarTable(gff.RootNode);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Will') ).setValue(this.will);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'X') ).setValue(this.position.x);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Y') ).setValue(this.position.y);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Z') ).setValue(this.position.z);
-
+    const gff = placeableSerializer.serialize(this);
     this.template = gff;
     return gff;
   }

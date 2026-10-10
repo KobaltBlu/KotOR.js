@@ -1,4 +1,5 @@
 import { GameObject } from "@engine/module/GameObject";
+import { miniGameGunBulletSerializer } from "@engine/module/serialization/MiniGameGunBulletSerializer";
 import { GFFObject } from "@core/resource/GFFObject";
 import * as THREE from "three";
 import { GameState } from "@engine/runtime/GameState";
@@ -314,18 +315,7 @@ export class MiniGameGunBullet extends GameObject {
   }
 
   initProperties(){
-    this.model_name = this.template.RootNode.getFieldByLabel('Bullet_Model').getValue();
-    this.collision_sound = this.template.RootNode.getFieldByLabel('Collision_Sound').getValue();
-    this.damage_amt = this.template.RootNode.getFieldByLabel('Damage').getValue();
-    this.lifespan = this.template.RootNode.getFieldByLabel('Lifespan').getValue();
-    this.rate_of_fire = this.template.RootNode.getFieldByLabel('Rate_Of_Fire').getValue();
-    this.speed = this.template.RootNode.getFieldByLabel('Speed').getValue();
-    this.target_type = this.template.RootNode.getFieldByLabel('Target_Type').getValue();
-
-    //TSL speed needs to be increased
-    if(this.speed < 1){
-      this.speed *= 1000;
-    }
+    miniGameGunBulletSerializer.deserialize(this, this.template);
   }
 
 }

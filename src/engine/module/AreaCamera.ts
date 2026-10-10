@@ -1,11 +1,8 @@
 import { GameState } from "@engine/runtime/GameState";
-import { GFFDataType } from "@core/enums/resource/GFFDataType";
-// import { ResolutionManager } from "@engine/managers";
-import { GFFField } from "@core/resource/GFFField";
 import { GFFObject } from "@core/resource/GFFObject";
-import { GFFStruct } from "@core/resource/GFFStruct";
 import { placeableCameraOrientation } from "@engine/render/aurora-camera-orientation";
 import * as THREE from "three";
+import { areaCameraSerializer } from "@engine/module/serialization/AreaCameraSerializer";
 
 /**
  * Represents a static camera found in module areas.
@@ -171,31 +168,7 @@ export class AreaCamera {
    * ```
    */
   initProperties(){
-
-    if(this.template.RootNode.hasField('CameraID'))
-      this.cameraID = this.template.getFieldByLabel('CameraID').getValue();
-
-    if(this.template.RootNode.hasField('FieldOfView'))
-      this.fov = this.template.getFieldByLabel('FieldOfView').getValue();
-
-    if(this.template.RootNode.hasField('Height'))
-      this.height = this.template.getFieldByLabel('Height').getValue();
-
-    if(this.template.RootNode.hasField('MicRange'))
-      this.micRange = this.template.getFieldByLabel('MicRange').getValue();
-
-    if(this.template.RootNode.hasField('Orientation'))
-      this.orientation.copy(this.template.getFieldByLabel('Orientation').getOrientation() as THREE.Quaternion);
-
-    if(this.template.RootNode.hasField('Pitch'))
-      this.pitch = this.template.getFieldByLabel('Pitch').getValue();
-
-    if(this.template.RootNode.hasField('Position')){
-      this.position.copy(this.template.getFieldByLabel('Position').getVector() as THREE.Vector3);
-    }
-
-    this.initialized = true;
-
+    areaCameraSerializer.deserialize(this, this.template);
   }
 
   /**
@@ -219,18 +192,7 @@ export class AreaCamera {
    * ```
    */
   save(){
-    let gff = new GFFObject();
-    gff.RootNode.type = 14;
-
-    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'CameraID') ).setValue(this.cameraID);
-    // SavePlaceableCameras — FieldOfView / Height / Pitch are FLOAT
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'FieldOfView') ).setValue(this.fov);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Height') ).setValue(this.height);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'MicRange') ).setValue(this.micRange);
-    gff.RootNode.addField( new GFFField(GFFDataType.ORIENTATION, 'Orientation') ).setValue({x: this.orientation.x, y: this.orientation.y, z: this.orientation.z, w: this.orientation.w});
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Pitch') ).setValue(this.pitch);
-    gff.RootNode.addField( new GFFField(GFFDataType.VECTOR, 'Position') ).setValue({x: this.position.x, y: this.position.y, z: this.position.z});
-
+    const gff = areaCameraSerializer.serialize(this);
     this.template = gff;
     return gff;
   }

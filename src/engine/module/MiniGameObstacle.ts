@@ -1,4 +1,5 @@
 import { GameObjectType } from "@core/enums/module/GameObjectType";
+import { miniGameObstacleSerializer } from "@engine/module/serialization/MiniGameObstacleSerializer";
 import { ILayoutObstacle } from "@core/interface/resource/ILayoutObstacle";
 import { GFFObject } from "@core/resource/GFFObject";
 import { ScriptHook } from "@core/enums/module/ScriptHook";
@@ -289,28 +290,7 @@ export class MiniGameObstacle extends GameObject {
   }
 
   initProperties(){
-    if(this.template?.RootNode?.hasField?.('Name'))
-      this.name = this.template.getFieldByLabel('Name').getValue().toLowerCase();
-    else if(this.layout?.name)
-      this.name = String(this.layout.name).toLowerCase();
-
-    if(this.template?.RootNode?.hasField?.('Hit_Points'))
-      this.hit_points = this.template.getFieldByLabel('Hit_Points').getValue();
-    if(this.template?.RootNode?.hasField?.('Max_Hit_Points'))
-      this.max_hps = this.template.getFieldByLabel('Max_Hit_Points').getValue();
-    if(this.template?.RootNode?.hasField?.('Invince_Period'))
-      this.invince_period = this.template.getFieldByLabel('Invince_Period').getValue();
-
-    if(this.layout?.position){
-      this.position.copy(this.layout.position);
-    }
-
-    this.hydrateScriptResRefsFromStruct(
-      this.template?.getFieldByLabel?.('Scripts')?.getFieldStruct?.(),
-      MiniGameObstacle.SCRIPT_KEYS
-    );
-
-    this.initialized = true;
+    miniGameObstacleSerializer.deserialize(this, this.template);
   }
 
   /** Tear down for DestroyMiniGameObject / area dispose. */

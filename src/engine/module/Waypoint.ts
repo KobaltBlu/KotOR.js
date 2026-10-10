@@ -3,13 +3,12 @@ import { GFFObject } from "@core/resource/GFFObject";
 import * as THREE from "three";
 import { OdysseyModel3D } from "@engine/render/three/odyssey";
 import { ResourceTypes } from "@core/resource/ResourceTypes";
-import { GFFField } from "@core/resource/GFFField";
-import { GFFDataType } from "@core/enums/resource/GFFDataType";
-import { GFFStruct } from "@core/resource/GFFStruct";
-import { CExoLocString } from "@core/resource/CExoLocString";
 import { ResourceLoader } from "@engine/loaders";
 import { GameObjectType } from "@core/enums/module/GameObjectType";
 import EngineLocation from "@engine/runtime/EngineLocation";
+import { GameState } from "@engine/runtime/GameState";
+import { GameObjectLoadPipeline } from "@engine/module/serialization/GameObjectLoadPipeline";
+import { waypointSerializer } from "@engine/module/serialization/WaypointSerializer";
 
 /**
 * Waypoint class.
@@ -77,17 +76,16 @@ export class Waypoint extends GameObject {
     this.seedResRefsFromTemplate();
 
     if(this.getTemplateResRef()){
-      //Load template and merge fields
-      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utw'], this.getTemplateResRef());
-      if(buffer){
-        const gff = new GFFObject(buffer);
-        this.template.merge(gff);
-        this.initProperties();
-      }else{
+      const merged = GameObjectLoadPipeline.mergeBlueprint(this.template, {
+        refField: 'TemplateResRef',
+        resourceKey: 'utw',
+        runtimeResRef: this.getTemplateResRef(),
+      });
+      if(!merged){
         console.error('Failed to load Waypoint template');
-        if(this.template instanceof GFFObject){
-          this.initProperties();
-        }
+      }
+      if(this.template instanceof GFFObject){
+        this.initProperties();
       }
     }else{
       //We already have the template (From SAVEGAME)
@@ -95,41 +93,17 @@ export class Waypoint extends GameObject {
     }
   }
 
-  save(){
-    let gff = new GFFObject();
-    gff.FileType = 'UTW ';
-    gff.RootNode.type = 5;
-
-    const localizedName = this.localizedName instanceof CExoLocString
-      ? this.localizedName
-      : (this.locName instanceof CExoLocString ? this.locName : new CExoLocString());
-    const mapNote = this.mapNote instanceof CExoLocString ? this.mapNote : new CExoLocString();
-
-    gff.RootNode.addField( this.actionQueueToActionList() );
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE,  'Commandable') ).setValue(this.commandable ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE,  'HasMapNote') ).setValue(this.hasMapNote ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LocalizedName') ).setValue(localizedName);
-    if(this.hasMapNote){
-      gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'MapNote') ).setValue(mapNote);
-      gff.RootNode.addField( new GFFField(GFFDataType.BYTE,  'MapNoteEnabled') ).setValue(this.mapNoteEnabled ? 1 : 0);
+  initProperties(){
+    const needsRegister = !this.initialized;
+    waypointSerializer.deserialize(this, this.template);
+    this.loadActionList();
+    if(needsRegister){
+      GameState.GameObjectManager.RegisterObject(this);
     }
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
+  }
 
-    //SWVarTable
-    let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
-    swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
-
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
-    this.writeNamedVarTable(gff.RootNode);
-
-    // SaveWaypoint — live orientation, not template snapshot
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).setValue(this.getXOrientation());
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).setValue(this.position.x);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).setValue(this.getYOrientation());
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).setValue(this.position.y);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZOrientation') ).setValue(this.getZOrientation());
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).setValue(this.position.z);
-
+  save(){
+    const gff = waypointSerializer.serialize(this);
     this.template = gff;
     return gff;
   }

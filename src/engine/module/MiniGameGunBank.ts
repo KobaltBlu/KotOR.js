@@ -1,4 +1,5 @@
 import { GameObject } from "@engine/module/GameObject";
+import { miniGameGunBankSerializer } from "@engine/module/serialization/MiniGameGunBankSerializer";
 import { GameState } from "@engine/runtime/GameState";
 import { GameObjectType } from "@core/enums/module/GameObjectType";
 import { MDLLoader } from "@engine/loaders";
@@ -701,29 +702,8 @@ export class MiniGameGunBank extends GameObject {
   }
 
   initProperties(){
-    if(this.template.RootNode.hasField('BankID'))
-      this.bankID = this.template.getFieldByLabel('BankID').getValue()
+    miniGameGunBankSerializer.deserialize(this, this.template);
 
-    if(this.template.RootNode.hasField('Fire_Sound')){
-      this.fireSound = this.template.getFieldByLabel('Fire_Sound').getValue()
-      this.fire_sound = this.fireSound;
-    }
-
-    if(this.template.RootNode.hasField('Gun_Model'))
-      this.gunModel = this.template.getFieldByLabel('Gun_Model').getValue()
-
-    if(this.template.RootNode.hasField('Horiz_Spread'))
-      this.horizSpread = this.template.getFieldByLabel('Horiz_Spread').getValue() || 0
-
-    if(this.template.RootNode.hasField('Inaccuracy'))
-      this.inaccuracy = this.template.getFieldByLabel('Inaccuracy').getValue() || 0
-
-    if(this.template.RootNode.hasField('Sensing_Radius'))
-      this.sensingRadius = this.template.getFieldByLabel('Sensing_Radius').getValue() || 0
-
-    if(this.template.RootNode.hasField('Vert_Spread'))
-      this.vertSpread = this.template.getFieldByLabel('Vert_Spread').getValue() || 0
-      
     this.bulletTemplate = (() => {
       const field = this.template.RootNode.getFieldByLabel('Bullet');
       if(!field){ return undefined; }
@@ -738,7 +718,6 @@ export class MiniGameGunBank extends GameObject {
     }else{
       console.warn('MiniGameGunBank: missing Bullet struct', this.bankID);
     }
-
   }
 
 }

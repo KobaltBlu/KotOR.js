@@ -13,7 +13,11 @@ const MANAGER_DIR = path.resolve(__dirname, '../../../engine/managers');
 
 /** Methods / helpers that may touch this.template (init + save only). */
 const ALLOWED_METHOD_RE =
-  /^(constructor|load|loadScripts|loadInventory|loadItem|loadActionList|loadNamedVarTable|initProperties|seedResRefsFromTemplate|hydrateScriptResRefsFromTemplate|hydrateScriptResRefsFromStruct|bindScriptsFromResRefs|save|Save|clone|destroy|getSWVarTableSaveStruct|writeNamedVarTable|loadFromPersistentRow|getPreviewModelResRef)$/;
+  /^(constructor|load|loadScripts|loadInventory|loadItem|loadActionList|loadNamedVarTable|initProperties|seedResRefsFromTemplate|hydrateScriptResRefsFromTemplate|hydrateScriptResRefsFromStruct|bindScriptsFromResRefs|save|Save|saveLevelStatStruct|actionQueueToActionList|GenerateTemplate|FromResRef|spawnCreatureFromSpawnList|clone|destroy|getSWVarTableSaveStruct|writeNamedVarTable|loadFromPersistentRow|getPreviewModelResRef)$/;
+
+const CONTROL_FLOW_NAMES = new Set([
+  'if', 'else', 'for', 'while', 'switch', 'catch', 'try', 'do', 'return', 'throw',
+]);
 
 /**
  * Strip comments and string literals so naive scans do not false-positive on docs.
@@ -109,14 +113,60 @@ describe('GameObject template access boundary', () => {
     expect(TEMPLATE_TOUCH_RE.test(getPropertiesList!.body)).toBe(false);
   });
 
-  it('Trigger.save writes orientation from runtime fields', () => {
-    const triggerSrc = fs.readFileSync(path.join(MODULE_DIR, 'Trigger.ts'), 'utf8');
-    const save = extractMethods(stripNoise(triggerSrc)).find((m) => m.name === 'save');
-    expect(save).toBeDefined();
-    expect(save!.body).toMatch(/this\.xOrientation/);
-    expect(save!.body).toMatch(/this\.yOrientation/);
-    expect(save!.body).toMatch(/this\.zOrientation/);
-    expect(save!.body).not.toMatch(/this\.template.*XOrientation|getFieldByLabel\s*\(\s*['"]XOrientation['"]\s*\)/);
+  it('GameObject save facades delegate to serializers (no inline GFFField construction)', () => {
+    const expectations: Array<[string, RegExp]> = [
+      ['Waypoint.ts', /waypointSerializer\.serialize/],
+      ['Trigger.ts', /triggerSerializer\.serialize/],
+      ['Sound.ts', /soundSerializer\.serialize/],
+      ['Store.ts', /storeSerializer\.serialize/],
+      ['Encounter.ts', /encounterSerializer\.serialize/],
+      ['Door.ts', /doorSerializer\.serialize/],
+      ['Placeable.ts', /placeableSerializer\.serialize/],
+      ['Item.ts', /itemSerializer\.serialize/],
+      ['AreaEffect.ts', /areaEffectSerializer\.serialize/],
+      ['Creature.ts', /creatureSerializer\.serialize/],
+      ['AreaCamera.ts', /areaCameraSerializer\.serialize/],
+    ];
+    for (const [file, re] of expectations) {
+      const src = fs.readFileSync(path.join(MODULE_DIR, file), 'utf8');
+      const save = extractMethods(stripNoise(src)).find((m) => m.name === 'save');
+      expect(save).toBeDefined();
+      expect(save!.body).toMatch(re);
+      // Facades may assign this.template = gff, but must not build fields inline.
+      expect(save!.body).not.toMatch(/new GFFField/);
+      expect(save!.body).not.toMatch(/getFieldByLabel/);
+    }
+  });
+
+  it('runtime GameObject classes keep GFF API use inside allowed lifecycle methods', () => {
+    const GFF_API_RE = /\b(?:getFieldByLabel|hasField|new GFFField|new GFFStruct|new GFFObject)\b/;
+    const files = listTsFiles(MODULE_DIR).filter((f) => {
+      const base = path.basename(f);
+      return ![
+        'Area.ts',
+        'Module.ts',
+        'AreaMap.ts',
+        'AreaWeather.ts',
+        'AreaAudio.ts',
+      ].includes(base) && !f.includes(`${path.sep}serialization${path.sep}`);
+    });
+
+    const violations: string[] = [];
+    for (const file of files) {
+      const raw = fs.readFileSync(file, 'utf8');
+      if (!raw.includes('extends GameObject') && path.basename(file) !== 'GameObject.ts') {
+        continue;
+      }
+      const methods = extractMethods(stripNoise(raw));
+      for (const m of methods) {
+        if (CONTROL_FLOW_NAMES.has(m.name)) continue;
+        if (ALLOWED_METHOD_RE.test(m.name)) continue;
+        if (/^(load|init|hydrate|seed|merge|apply|read|parse|build|setTemplate|save).*/i.test(m.name)) continue;
+        if (!GFF_API_RE.test(m.body) && !TEMPLATE_TOUCH_RE.test(m.body)) continue;
+        violations.push(`${path.basename(file)}:${m.name}`);
+      }
+    }
+    expect(violations).toEqual([]);
   });
 
   it('persistObjectId does not stamp template ObjectId', () => {
@@ -150,9 +200,10 @@ describe('GameObject template access boundary', () => {
       }
       const methods = extractMethods(stripNoise(raw));
       for(const m of methods){
+        if(CONTROL_FLOW_NAMES.has(m.name)) continue;
         if(ALLOWED_METHOD_RE.test(m.name)) continue;
         // Nested init helpers commonly named load* / init* / setTemplate / apply*FromTemplate
-        if(/^(load|init|hydrate|seed|merge|apply|read|parse|build|setTemplate).*/i.test(m.name)) continue;
+        if(/^(load|init|hydrate|seed|merge|apply|read|parse|build|setTemplate|save).*/i.test(m.name)) continue;
         if(!TEMPLATE_TOUCH_RE.test(m.body)) continue;
         violations.push(`${path.basename(file)}:${m.name}`);
       }

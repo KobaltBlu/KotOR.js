@@ -13,6 +13,8 @@ import { ModuleCreatureAnimState, isTransientCombatAnimIndex } from "@core/enums
 import { AILevel } from "@core/enums/module/AILevel";
 import { GFFDataType } from "@core/enums/resource/GFFDataType";
 import { GameState } from "@engine/runtime/GameState";
+import { GameObjectLoadPipeline } from "@engine/module/serialization/GameObjectLoadPipeline";
+import { creatureSerializer } from "@engine/module/serialization/CreatureSerializer";
 import { NWScriptInstance } from "@engine/nwscript/NWScriptInstance";
 import { NWScriptEvent } from "@engine/nwscript/events";
 import { GFFField } from "@core/resource/GFFField";
@@ -113,7 +115,6 @@ import { AudioEngine } from "@engine/audio/AudioEngine";
 import { GameObjectType } from "@core/enums/module/GameObjectType";
 import { BitWise } from "@core/utility/BitWise";
 import { GameObjectConstant } from "@core/enums/module/GameObjectConstant";
-import { PerceptionType } from "@engine/enums/engine/PerceptionType";
 import { AudioEmitterType } from "@core/enums/audio/AudioEmitterType";
 import { AudioPriorityGroup } from "@core/enums/audio/AudioPriorityGroup";
 import { CombatActionType } from "@core/enums/combat/CombatActionType";
@@ -8059,75 +8060,22 @@ export class Creature extends GameObject {
       this.skills = GameState.SWRuleSet.skills.slice(0).map((skill: TalentSkill) => {
         return skill.clone();
       });
-      
+
+      creatureSerializer.deserialize(this, this.template);
+
       if(needsRegister){
         if(BitWise.InstanceOf(this.objectType, GameObjectType.PlayerCharacter)){
-          // Prefer saved ObjectId from pc.utc so mid-combat Target/MasterID refs resolve.
-          const savedId = this.template?.RootNode?.hasField('ObjectId')
-            ? this.template.getFieldByLabel('ObjectId').getValue()
-            : 0;
-          if(savedId && savedId !== GameObjectConstant.OBJECT_INVALID){
-            this.id = savedId;
-          }else{
+          if(!this.id || this.id === GameObjectConstant.OBJECT_INVALID){
             this.id = GameState.GameObjectManager.GetNextPlayerId();
           }
-        }else if(this.template.RootNode.hasField('ObjectId')){
-          this.id = this.template.getFieldByLabel('ObjectId').getValue();
-        }else if(this.template.RootNode.hasField('ID')){
-          this.id = this.template.getFieldByLabel('ID').getValue();
         }
       }
 
-      if(this.template.RootNode.hasField('Appearance_Type')){
-        this.setAppearance(this.template.getFieldByLabel('Appearance_Type').getValue());
+      const pendingAppearance = (this as any)._pendingAppearance;
+      if(pendingAppearance !== undefined){
+        this.setAppearance(pendingAppearance);
+        delete (this as any)._pendingAppearance;
       }
-
-      if(this.template.RootNode.hasField('AreaId')){
-        // SaveCreature AreaId — area attach restores live area; keep as metadata only
-        this.savedAreaId = this.template.getFieldByLabel('AreaId').getValue() >>> 0;
-      }
-
-      if(this.template.RootNode.hasField('Age'))
-        this.age = this.template.getFieldByLabel('Age').getValue() | 0;
-
-      if(this.template.RootNode.hasField('AIState'))
-        this.aiState = this.template.getFieldByLabel('AIState').getValue() | 0;
-
-      if(this.template.RootNode.hasField('AmbientAnimState'))
-        this.ambientAnimState = this.template.getFieldByLabel('AmbientAnimState').getValue() | 0;
-
-      if(this.template.RootNode.hasField('Appearance_Head'))
-        this.appearanceHead = this.template.getFieldByLabel('Appearance_Head').getValue();
-
-      if(this.template.RootNode.hasField('Color_Hair'))
-        this.colorHair = this.template.getFieldByLabel('Color_Hair').getValue();
-      if(this.template.RootNode.hasField('Color_Skin'))
-        this.colorSkin = this.template.getFieldByLabel('Color_Skin').getValue();
-      if(this.template.RootNode.hasField('Color_Tattoo1'))
-        this.colorTattoo1 = this.template.getFieldByLabel('Color_Tattoo1').getValue();
-      if(this.template.RootNode.hasField('Color_Tattoo2'))
-        this.colorTattoo2 = this.template.getFieldByLabel('Color_Tattoo2').getValue();
-
-      if(this.template.RootNode.hasField('DuplicatingHead'))
-        this.duplicatingHead = this.template.getFieldByLabel('DuplicatingHead').getValue();
-      if(this.template.RootNode.hasField('UseBackupHead'))
-        this.useBackupHead = this.template.getFieldByLabel('UseBackupHead').getValue();
-      if(this.template.RootNode.hasField('Tail'))
-        this.tail = this.template.getFieldByLabel('Tail').getValue();
-      if(this.template.RootNode.hasField('Wings'))
-        this.wings = this.template.getFieldByLabel('Wings').getValue();
-
-      if(this.template.RootNode.hasField('BodyBag'))
-        this.bodyBag = this.template.getFieldByLabel('BodyBag').getValue();
-
-      if(this.template.RootNode.hasField('BodyVariation'))
-        this.bodyVariation = this.template.getFieldByLabel('BodyVariation').getValue();
-
-      if(this.template.RootNode.hasField('Gold'))
-        this.gold = this.template.getFieldByLabel('Gold').getValue();
-
-      if(this.template.RootNode.hasField('ChallengeRating'))
-        this.challengeRating = this.template.getFieldByLabel('ChallengeRating').getValue();
 
       if(this.template.RootNode.hasField('ClassList')){
         let classes = this.template.RootNode.getFieldByLabel('ClassList').getChildStructs();
@@ -8138,34 +8086,10 @@ export class Creature extends GameObject {
         }
       }
 
-      if(this.template.RootNode.hasField('Conversation')){
-        this.conversation = DLGObject.FromResRef(this.template.getFieldByLabel('Conversation').getValue());
-      }
-
-      if(this.template.RootNode.hasField('CurrentForce'))
-        this.currentForce = this.template.getFieldByLabel('CurrentForce').getValue();
-
-      if(this.template.RootNode.hasField('HitPoints'))
-        this.hitPoints = this.template.getFieldByLabel('HitPoints').getValue();
-
-      // ReadStatsFromGff: CurrentHitPoints defaults to HitPoints when absent.
-      if(this.template.RootNode.hasField('CurrentHitPoints')){
-        this.currentHitPoints = this.template.getFieldByLabel('CurrentHitPoints').getValue();
-      }else{
-        this.currentHitPoints = this.hitPoints;
-      }
-
-      if(this.template.RootNode.hasField('Disarmable'))
-        this.disarmable = this.template.getFieldByLabel('Disarmable').getValue();
-    
-      if(this.template.RootNode.hasField('Experience'))
-        this.experience = this.template.RootNode.getFieldByLabel('Experience').getValue();
-
-      if(this.template.RootNode.hasField('Listening')){
-        this.setListening(this.template.RootNode.getFieldByLabel('Listening').getValue());
-      }
-      if(this.template.RootNode.hasField('Commandable')){
-        this.setCommadable(this.template.RootNode.getFieldByLabel('Commandable').getValue());
+      const conversationResRef = (this as any)._conversationResRef;
+      if(conversationResRef !== undefined){
+        this.conversation = DLGObject.FromResRef(conversationResRef);
+        delete (this as any)._conversationResRef;
       }
 
       // LoadCreature / LoadCreatureData / LoadCharacterFromIFO:
@@ -8177,8 +8101,10 @@ export class Creature extends GameObject {
       }else{
         this.setDetectMode(true);
       }
-      if(this.template.RootNode.hasField('StealthMode')){
-        this.setActivity(1, !!this.template.RootNode.getFieldByLabel('StealthMode').getValue(), 0);
+      const pendingStealthMode = (this as any)._pendingStealthMode;
+      if(pendingStealthMode !== undefined){
+        this.setActivity(1, pendingStealthMode, 0);
+        delete (this as any)._pendingStealthMode;
       }
 
       if(this.template.RootNode.hasField('ExpressionList')){
@@ -8191,12 +8117,6 @@ export class Creature extends GameObject {
         }
       }
           
-      if(this.template.RootNode.hasField('FactionID')){
-        this.factionId = this.template.getFieldByLabel('FactionID').getValue();
-        if((this.factionId & 0xFFFFFFFF) == -1){
-          this.factionId = 0;
-        }
-      }
       this.faction = GameState.FactionManager.factions.get(this.factionId);
 
       if(this.template.RootNode.hasField('FeatList')){
@@ -8207,29 +8127,6 @@ export class Creature extends GameObject {
           );
         }
       }
-
-      if(this.template.RootNode.hasField('FirstName'))
-        this.firstName = this.template.RootNode.getFieldByLabel('FirstName').getCExoLocString();
-      
-      if(this.template.RootNode.hasField('ForcePoints'))
-        this.forcePoints = this.template.RootNode.getFieldByLabel('ForcePoints').getValue();
-          
-      if(this.template.RootNode.hasField('Gender'))
-        this.gender = this.template.RootNode.getFieldByLabel('Gender').getValue();
-    
-      if(this.template.RootNode.hasField('GoodEvil')){
-        this.goodEvil = this.template.RootNode.getFieldByLabel('GoodEvil').getValue();
-        this.baseGoodEvil = this.goodEvil;
-      }
-        
-      if(this.template.RootNode.hasField('Hologram'))
-        this.isHologram = this.template.getFieldByLabel('Hologram').getValue();
-
-      if(this.template.RootNode.hasField('Interruptable'))
-        this.interruptable = this.template.getFieldByLabel('Interruptable').getValue();
-
-      if(this.template.RootNode.hasField('IsPC'))
-        this.isPC = this.template.getFieldByLabel('IsPC').getValue();
 
       if(this.template.RootNode.hasField('FollowInfo')){
         const followStruct = this.template.RootNode.getFieldByLabel('FollowInfo').getChildStructs()?.[0];
@@ -8301,46 +8198,10 @@ export class Creature extends GameObject {
         }
       }
 
-      if(this.template.RootNode.hasField('LastName'))
-        this.lastName = this.template.getFieldByLabel('LastName').getCExoLocString();
-
-      if(this.template.RootNode.hasField('MaxHitPoints')){
-        this.maxHitPoints = this.template.getFieldByLabel('MaxHitPoints').getValue();
-      }
-      // computes max HP from stats; toolset UTCs that omit MaxHitPoints
-      // must not leave max at 0 (that made pause resolve as pauseinj).
-      if(this.maxHitPoints <= 0 && this.hitPoints > 0){
-        this.maxHitPoints = this.hitPoints;
-      }
-
-      if(this.template.RootNode.hasField('MaxForcePoints')){
-        this.maxForcePoints = this.template.getFieldByLabel('MaxForcePoints').getValue();
-      }
-      // CurrentForce is the spendable pool (CreatureStats current FP).
-      // Toolset UTCs often leave ForcePoints filled and CurrentForce at 0.
-      if(this.currentForce <= 0 && this.forcePoints > 0){
-        this.currentForce = this.maxForcePoints > 0
-          ? Math.min(this.forcePoints, this.maxForcePoints)
-          : this.forcePoints;
-      }
-
-      if(this.template.RootNode.hasField('Min1HP'))
-        this.min1HP = this.template.getFieldByLabel('Min1HP').getValue();
-
-      if(this.template.RootNode.hasField('NaturalAC'))
-        this.naturalAC = this.template.getFieldByLabel('NaturalAC').getValue();
-
-      if(this.template.RootNode.hasField('NoPermDeath'))
-        this.noPermDeath = this.template.getFieldByLabel('NoPermDeath').getValue();
-
-      if(this.template.RootNode.hasField('NotReorienting'))
-        this.notReorienting = this.template.getFieldByLabel('NotReorienting').getValue();
-
-      if(this.template.RootNode.hasField('PartyInteract'))
-        this.partyInteract = this.template.getFieldByLabel('PartyInteract').getValue();
-
-      if(this.template.RootNode.hasField('PerceptionRange')){
-        this.perceptionRange = GameState.SWRuleSet.ranges[this.template.getFieldByLabel('PerceptionRange').getValue()];
+      const pendingPerceptionRangeId = (this as any)._pendingPerceptionRangeId;
+      if(pendingPerceptionRangeId !== undefined){
+        this.perceptionRange = GameState.SWRuleSet.ranges[pendingPerceptionRangeId];
+        delete (this as any)._pendingPerceptionRangeId;
       }else{
         //https://forum.neverwintervault.org/t/perception-range/3191/9
         //It appears that PerceptionRange isn't saved inside the GIT file.
@@ -8348,143 +8209,9 @@ export class Creature extends GameObject {
         this.perceptionRange = GameState.SWRuleSet.ranges[11];
       }
 
-      if(this.template.RootNode.hasField('Phenotype'))
-        this.phenotype = this.template.getFieldByLabel('Phenotype').getValue();
-
-      if(this.template.RootNode.hasField('Plot'))
-        this.plot = this.template.getFieldByLabel('Plot').getValue();
-
-      if(this.template.RootNode.hasField('IsDestroyable'))
-        this.isDestroyable = !!this.template.getFieldByLabel('IsDestroyable').getValue();
-      if(this.template.RootNode.hasField('IsRaiseable'))
-        this.isRaisable = !!this.template.getFieldByLabel('IsRaiseable').getValue();
-      if(this.template.RootNode.hasField('DeadSelectable'))
-        this.isDeadSelectable = !!this.template.getFieldByLabel('DeadSelectable').getValue();
-
       if(this.template.RootNode.hasField('PortraitId')){
-        this.portraitId = this.template.getFieldByLabel('PortraitId').getValue();
         this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
       }
-    
-      if(this.template.RootNode.hasField('Race'))
-        this.race = this.template.RootNode.getFieldByLabel('Race').getValue();
-
-      if(this.template.RootNode.hasField('SkillList')){
-        let skills = this.template.RootNode.getFieldByLabel('SkillList').getChildStructs();
-        for(let i = 0; i < skills.length; i++){
-          this.skills[i].rank = skills[i].getFieldByLabel('Rank').getValue();
-        }
-      }
-
-      if(this.template.RootNode.hasField('SoundSetFile'))
-        this.soundSetFile = this.template.RootNode.getFieldByLabel('SoundSetFile').getValue();
-
-      if(this.template.RootNode.hasField('SpecAbilityList')){
-        this.specialAbilities = [];
-        const list = this.template.RootNode.getFieldByLabel('SpecAbilityList').getChildStructs();
-        for(let i = 0; i < list.length; i++){
-          const s = list[i];
-          this.specialAbilities.push({
-            spell: s.hasField('Spell') ? (s.getFieldByLabel('Spell').getValue() | 0) : 0,
-            spellFlags: s.hasField('SpellFlags') ? (s.getFieldByLabel('SpellFlags').getValue() | 0) : 0,
-            spellCasterLevel: s.hasField('SpellCasterLevel') ? (s.getFieldByLabel('SpellCasterLevel').getValue() | 0) : 0,
-          });
-        }
-      }
-
-      if(this.template.RootNode.hasField('StartingPackage'))
-        this.startingPackage = this.template.RootNode.getFieldByLabel('StartingPackage').getValue() | 0;
-    
-      if(this.template.RootNode.hasField('SubRace'))
-        this.subrace = this.template.RootNode.getFieldByLabel('SubRace').getValue();
-
-      if(this.template.RootNode.hasField('Tag'))
-        this.tag = this.template.getFieldByLabel('Tag').getValue();
-
-      if(this.template.RootNode.hasField('TemplateResRef'))
-        this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();
-
-      if(this.template.RootNode.hasField('TextureVar'))
-        this.textureVar = this.template.getFieldByLabel('TextureVar').getValue();
-
-      // ReadStatsFromGff: MovementRate primary; WalkRate fallback if MovementRate missing
-      if(this.template.RootNode.hasField('MovementRate')){
-        this.walkRate = this.template.getFieldByLabel('MovementRate').getValue();
-      }else if(this.template.RootNode.hasField('WalkRate')){
-        this.walkRate = this.template.getFieldByLabel('WalkRate').getValue();
-      }
-
-      if(this.template.RootNode.hasField('Str'))
-        this.str = this.template.getFieldByLabel('Str').getValue();
-    
-      if(this.template.RootNode.hasField('Dex'))
-        this.dex = this.template.getFieldByLabel('Dex').getValue();
-    
-      if(this.template.RootNode.hasField('Con'))
-        this.con = this.template.getFieldByLabel('Con').getValue();
-    
-      if(this.template.RootNode.hasField('Cha'))
-        this.cha = this.template.getFieldByLabel('Cha').getValue();
-    
-      if(this.template.RootNode.hasField('Wis'))
-        this.wis = this.template.getFieldByLabel('Wis').getValue();
-    
-      if(this.template.RootNode.hasField('Int'))
-        this.int = this.template.getFieldByLabel('Int').getValue();
-
-      if(this.template.RootNode.hasField('XPosition'))
-        this.position.x = this.template.RootNode.getFieldByLabel('XPosition').getValue();
-
-      if(this.template.RootNode.hasField('YPosition'))
-        this.position.y = this.template.RootNode.getFieldByLabel('YPosition').getValue();
-
-      if(this.template.RootNode.hasField('ZPosition'))
-        this.position.z = this.template.RootNode.getFieldByLabel('ZPosition').getValue();
-
-      if(this.template.RootNode.hasField('XOrientation'))
-        this.xOrientation = this.template.RootNode.getFieldByLabel('XOrientation').getValue();
-
-      if(this.template.RootNode.hasField('YOrientation'))
-        this.yOrientation = this.template.RootNode.getFieldByLabel('YOrientation').getValue();
-
-      if(this.template.RootNode.hasField('ZOrientation'))
-        this.zOrientation = this.template.RootNode.getFieldByLabel('ZOrientation').getValue();
-        
-      if(this.template.RootNode.hasField('FortSaveThrow'))
-        this.fortitudeSaveThrow = this.template.RootNode.getFieldByLabel('FortSaveThrow').getValue();
-
-      if(this.template.RootNode.hasField('RefSaveThrow'))
-        this.reflexSaveThrow = this.template.RootNode.getFieldByLabel('RefSaveThrow').getValue();
-
-      if(this.template.RootNode.hasField('WillSaveThrow'))
-        this.willSaveThrow = this.template.RootNode.getFieldByLabel('WillSaveThrow').getValue();
-
-        if(this.template.RootNode.hasField('SubraceIndex'))
-          this.subraceIndex = this.template.RootNode.getFieldByLabel('SubraceIndex').getValue();
-
-
-      if(this.template.RootNode.hasField('SWVarTable')){
-        let localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
-        //console.log(localBools);
-        for(let i = 0; i < localBools.length; i++){
-          let data = localBools[i].getFieldByLabel('Variable').getValue();
-          for(let bit = 0; bit < 32; bit++){
-            this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
-          }
-        }
-        let localNumbers = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('ByteArray').getChildStructs();
-        //console.log(localNumbers);
-        for(let i = 0; i < localNumbers.length; i++){
-          let data = localNumbers[i].getFieldByLabel('Variable').getValue();
-          this.setLocalNumber(i, data);
-        }
-      }
-
-      if(this.template.RootNode.hasField('PM_Appearance'))
-        this.pm_Appearance = this.template.RootNode.getFieldByLabel('PM_Appearance').getValue();
-
-      if(this.template.RootNode.hasField('PM_IsDisguised'))
-        this.pm_IsDisguised = !!this.template.RootNode.getFieldByLabel('PM_IsDisguised').getValue();
 
       try{
         if(this.template.RootNode.hasField('EffectList')){
@@ -8621,31 +8348,6 @@ export class Creature extends GameObject {
 
       // After CombatInfo fromStruct: rebind equip DWORDs to live item objects.
       this.rebindCombatInfoEquipIds();
-
-      //PerceptionList
-      try{
-        if(this.template.RootNode.hasField('PerceptionList')){
-          let perceptionList = this.template.RootNode.getFieldByLabel('PerceptionList').getChildStructs();
-          if(perceptionList.length){
-            this.perceptionList = [];
-          }
-
-          for(let i = 0, len = perceptionList.length; i < len; i++){
-            const perception = perceptionList[i];
-
-            const objectId = perception.getFieldByLabel('ObjectId').getValue();
-            const data = perception.getFieldByLabel('PerceptionData').getValue() as PerceptionType;
-
-            this.perceptionList.push({
-              object: undefined,
-              objectId: objectId,
-              data: data
-            });
-          }
-        }
-      }catch(e: any){
-        console.error(e);
-      }
     }catch(e: any){
       console.error(e);
     }
@@ -9018,294 +8720,11 @@ export class Creature extends GameObject {
   }
 
   save(){
-
-    let gff = new GFFObject();
-    gff.FileType = 'UTC ';
-    // Creature List element struct type
-    gff.RootNode.type = 4;
-    
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
-
-    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'AIState') ).setValue(this.aiState | 0);
-
-    gff.RootNode.addField( this.actionQueueToActionList() );
-
-    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'Age') ).setValue(this.age | 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'AmbientAnimState') ).setValue(this.ambientAnimState | 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'Animation') ).setValue(this.animationState.index);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Appearance_Head') ).setValue(this.appearanceHead | 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'Appearance_Type') ).setValue(this.appearance);
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'AreaId') ).setValue(
-      this.getSaveAreaId() || (this.savedAreaId >>> 0)
-    );
-    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'ArmorClass') ).setValue(this.getAC());
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'BodyBag') ).setValue(this.bodyBag);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Cha') ).setValue(this.cha);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ChallengeRating') ).setValue(this.challengeRating);
-
-    //Classes
-    let classList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ClassList') );
-    for(let i = 0; i < this.classes.length; i++){
-      classList.addChildStruct( this.classes[i].save() );
-    }
-    // SaveStats: MClassLevUpIn = class_count - 1
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'MClassLevUpIn') ).setValue(
-      Math.max(0, (this.classes?.length || 1) - 1)
-    );
-
-    // SaveClassInfo: LvlStatList only for is_pc && pt_controlled_npc == -1
-    if(this.isPC && GameState.PartyManager.ControlledNPC === -1 && this.levelStats.length > 0){
-      const lvlStatList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'LvlStatList') );
-      for(let i = 0; i < this.levelStats.length; i++){
-        lvlStatList.addChildStruct( this.saveLevelStatStruct(this.levelStats[i], i) );
-      }
-    }
-    
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Color_Hair') ).setValue(this.colorHair | 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Color_Skin') ).setValue(this.colorSkin | 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Color_Tattoo1') ).setValue(this.colorTattoo1 | 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Color_Tattoo2') ).setValue(this.colorTattoo2 | 0);
-
-    let combatInfoStruct = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'CombatInfo') );
-    // SaveData — sync live fields before write
-    this.syncCombatInformationForSave();
-    combatInfoStruct.addChildStruct(this.combatInformation.toStruct(0xCAAA));
-
-    let combatRoundDataStruct = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'CombatRoundData') );
-    // SaveCreature: always add CombatRoundData (0xCADA); populate only when RoundStarted
-    if(this.combatRound.roundStarted){
-      combatRoundDataStruct.addChildStruct( this.combatRound.toStruct(0xCADA) );
-    }else{
-      combatRoundDataStruct.addChildStruct( new GFFStruct(0xCADA) );
-    }
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue(this.getCommadable() ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Con') ).setValue(this.con);
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Conversation') ).setValue(this.conversation ? this.conversation.resref : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'CreatnScrptFird') ).setValue( this.spawned ? 1 : 0 );
-    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'CreatureSize') ).setValue(this.getAppearance()?.sizecategory ?? 3);
-    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'CurrentForce') ).setValue(this.currentForce);
-    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'CurrentHitPoints') ).setValue(this.currentHitPoints);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DeadSelectable') ).setValue(this.isDeadSelectable ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Deity') ).setValue(this.deity || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') ).setValue(
-      this.description instanceof CExoLocString ? this.description : new CExoLocString()
-    );
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DetectMode') ).setValue(this.detectMode ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Dex') ).setValue(this.dex);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Disarmable') ).setValue(this.disarmable ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DuplicatingHead') ).setValue(this.duplicatingHead | 0);
-    
-    //Effects
-    let effectList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'EffectList') );
-    for(let i = 0; i < this.effects.length; i++){
-      effectList.addChildStruct( this.effects[i].save() );
-    }
-
-    //Equipment — SaveCreature walks slot bits 1<<0.. 1<<17 (18 slots)
-    let equipItemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'Equip_ItemList') );
-    for(let slot = 1, n = 0; n < 18; slot <<= 1, n++){
-      const equipped = this.GetItemInSlot(slot);
-      if(!equipped) continue;
-      const equipItem = equipped.save();
-      // SaveCreature writes ObjectId before SaveItem (inventory.res omits it)
-      equipItem.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(equipped.id >>> 0);
-      equipItem.setType(slot);
-      equipItemList.addChildStruct(equipItem);
-    }
-
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Experience') ).setValue(this.experience);
-    
-    // SaveListenData: ExpressionList only when size > 0; element struct type 5
-    if(this.listeningPatterns.length > 0){
-      let expressionList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ExpressionList') );
-      for(let i = 0; i < this.listeningPatterns.length; i++){
-        const entry = this.listeningPatterns[i];
-        let expressionStruct = new GFFStruct(5);
-        expressionStruct.addField( new GFFField(GFFDataType.INT, 'ExpressionId') ).setValue( entry.number );
-        expressionStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'ExpressionString') ).setValue( entry.pattern );
-        expressionList.addChildStruct(expressionStruct);
-      }
-    }
-
-    gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'FactionID') ).setValue(this.faction ? this.faction.id : this.factionId);
-
-    //Feats — SaveClassInfo only writes FeatList when feats.size > 0
-    if(this.feats.length > 0){
-      let featList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'FeatList') );
-      for(let i = 0; i < this.feats.length; i++){
-        const featStruct = this.feats[i].save();
-        // FeatList element struct type is 1
-        if(typeof featStruct.setType === 'function') featStruct.setType(1);
-        featList.addChildStruct(featStruct);
-      }
-    }
-
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName') ).setValue(
-      this.firstName instanceof CExoLocString ? this.firstName : new CExoLocString()
-    );
-    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'ForcePoints') ).setValue(this.forcePoints | 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.CHAR, 'FortSaveThrow') ).setValue(this.fortitudeSaveThrow);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Gender') ).setValue(this.gender);
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Gold') ).setValue(this.gold || 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'GoodEvil') ).setValue(this.goodEvil);
-    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'HitPoints') ).setValue(this.hitPoints);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Int') ).setValue(this.int);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Interruptable') ).setValue(this.interruptable ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsDestroyable') ).setValue(this.isDestroyable ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsPC') ).setValue( this.isPC ? 1 : 0 );
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsRaiseable') ).setValue(this.isRaisable ? 1 : 0);
-    if(this.playerCreated){
-      gff.RootNode.addField( new GFFField(GFFDataType.INT, 'PlayerCreated') ).setValue(1);
-    }
-
-    //Creature Inventory
-    let itemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ItemList') );
-    for(let i = 0; i < this.inventory.length; i++){
-      const invItem = this.inventory[i];
-      let itemStruct = invItem.save();
-      // SaveCreature writes ObjectId before SaveItem
-      itemStruct.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(invItem.id >>> 0);
-      itemList.addChildStruct(itemStruct);
-    }
-
-    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'JoiningXP') ).setValue( this.joiningXP ? this.joiningXP : 0 );
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LastName') ).setValue(
-      this.lastName instanceof CExoLocString ? this.lastName : new CExoLocString()
-    );
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Listening') ).setValue( this.isListening );
-
-    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'MaxForcePoints') ).setValue(this.maxForcePoints);
-    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'MaxHitPoints') ).setValue(this.maxHitPoints);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Min1HP') ).setValue(this.min1HP);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'MovementRate') ).setValue(this.getMovementRate());
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'NaturalAC') ).setValue(this.naturalAC);
-    // NoPermDeath is not a K1 save field (absent from K1 binary)
-    if(GameState.GameKey == GameEngineType.TSL){
-      gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'NoPermDeath') ).setValue(this.noPermDeath ? 1 : 0);
-    }
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'NotReorienting') ).setValue(this.notReorienting);
-
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PM_IsDisguised') ).setValue( this.hasEffect(GameEffectType.EffectDisguise) ? 1 : 0 );
-    if( this.hasEffect(GameEffectType.EffectDisguise) ){
-      gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'PM_Appearance') ).setValue( this.appearance );
-    }
-
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PartyInteract') ).setValue(this.partyInteract);
-
-    //Save PerceptionLists
-    let perceptionList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'PerceptionList') );
-    for(let i = 0; i < this.perceptionList.length; i++){
-      let percept = this.perceptionList[i];
-
-      let perceptionStruct = new GFFStruct();
-      perceptionStruct.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( percept.objectId );
-      perceptionStruct.addField( new GFFField(GFFDataType.BYTE, 'PerceptionData') ).setValue( (percept.data & 0xFF) );
-      perceptionList.addChildStruct(perceptionStruct);
-    }
-
-    // PerceptionRange is not written by SaveCreature / SaveStats (GIT)
-    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'Phenotype') ).setValue(this.phenotype);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Plot') ).setValue(this.plot ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') ).setValue(this.portraitId);
-    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'PregameCurrent') ).setValue(this.getHP() | 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Race') ).setValue(this.race);
-    gff.RootNode.addField( new GFFField(GFFDataType.CHAR, 'RefSaveThrow') ).setValue(this.reflexSaveThrow);
-
-    let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
-    swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
-
-    //Scripts
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptAttacked') ).setValue(this.scripts[ScriptHook.CreatureOnAttacked]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptDamaged') ).setValue(this.scripts[ScriptHook.CreatureOnDamaged]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptDeath') ).setValue(this.scripts[ScriptHook.CreatureOnDeath]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptDialogue') ).setValue(this.scripts[ScriptHook.CreatureOnDialog]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptDisturbed') ).setValue(this.scripts[ScriptHook.CreatureOnDisturbed]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptEndDialogu') ).setValue(this.scripts[ScriptHook.CreatureOnEndDialog]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptEndRound') ).setValue(this.scripts[ScriptHook.CreatureOnEndRound]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptHeartbeat') ).setValue(this.scripts[ScriptHook.CreatureOnHeartbeat]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptOnBlocked') ).setValue(this.scripts[ScriptHook.CreatureOnBlocked]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptOnNotice') ).setValue(this.scripts[ScriptHook.CreatureOnNotice]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptRested') ).setValue(this.scripts[ScriptHook.CreatureOnRested]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptSpawn') ).setValue(this.scripts[ScriptHook.CreatureOnSpawn]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptSpellAt') ).setValue(this.scripts[ScriptHook.CreatureOnSpellAt]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptUserDefine') ).setValue(this.scripts[ScriptHook.CreatureOnUserDefined]?.name || '');
-
-    //Skills
-    let skillList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'SkillList') );
-    for(let i = 0; i < 8; i++){
-      skillList.addChildStruct( this.skills[i].save() );
-    }
-
-    gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'SkillPoints') ).setValue( this.skillPoints ? this.skillPoints : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'SoundSetFile') ).setValue(this.soundSetFile);
-
-    // SaveClassInfo: SpecAbilityList only when special_abilities.size > 0
-    if(this.specialAbilities.length > 0){
-      const specAbilityList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'SpecAbilityList') );
-      for(let i = 0; i < this.specialAbilities.length; i++){
-        const sa = this.specialAbilities[i];
-        if(!sa) continue;
-        const saStruct = new GFFStruct(4);
-        saStruct.addField( new GFFField(GFFDataType.WORD, 'Spell') ).setValue((sa.spell ?? 0) | 0);
-        saStruct.addField( new GFFField(GFFDataType.BYTE, 'SpellFlags') ).setValue((sa.spellFlags ?? 0) | 0);
-        saStruct.addField( new GFFField(GFFDataType.BYTE, 'SpellCasterLevel') ).setValue((sa.spellCasterLevel ?? 0) | 0);
-        specAbilityList.addChildStruct(saStruct);
-      }
-    }
-
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'StartingPackage') ).setValue(this.startingPackage | 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'StealthMode') ).setValue(this.stealthMode ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Str') ).setValue(this.str);
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Subrace') ).setValue('');
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'SubraceIndex') ).setValue(this.subraceIndex | 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Tail') ).setValue(this.tail | 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'UseBackupHead') ).setValue(this.useBackupHead ? 1 : 0);
-    this.writeNamedVarTable(gff.RootNode);
-    gff.RootNode.addField( new GFFField(GFFDataType.CHAR, 'WillSaveThrow') ).setValue(this.willSaveThrow);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Wings') ).setValue(this.wings | 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Wis') ).setValue(this.wis);
-
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).setValue( this.position.x );
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).setValue( this.position.y );
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).setValue( this.position.z );
-
-    let theta = this.rotation.z * Math.PI;
-
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).setValue( 1 * Math.cos(theta) );
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).setValue( 1 * Math.sin(theta) );
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZOrientation') ).setValue( 0 );
-
-    // SaveCreature: FollowInfo when party_follow_info allocated (party members)
-    if(this.isPM){
-      const follow = this.partyFollowInfo || createDefaultPartyFollowInfo();
-      this.partyFollowInfo = follow;
-      const followField = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'FollowInfo') );
-      const followStruct = new GFFStruct(0);
-      followStruct.addField( new GFFField(GFFDataType.DWORD, 'FollowObject') ).setValue(follow.followObject >>> 0);
-      followStruct.addField( new GFFField(GFFDataType.VECTOR, 'FollowLocation') ).setValue(follow.followLocation.clone());
-      followStruct.addField( new GFFField(GFFDataType.VECTOR, 'LastLeaderPos') ).setValue(follow.lastLeaderPos.clone());
-      followStruct.addField( new GFFField(GFFDataType.VECTOR, 'LastFollowerPos') ).setValue(follow.lastFollowerPos.clone());
-      followStruct.addField( new GFFField(GFFDataType.FLOAT, 'MaxSpeed') ).setValue(follow.maxSpeed);
-      followStruct.addField( new GFFField(GFFDataType.BYTE, 'StickToPos') ).setValue(follow.stickToPos | 0);
-      followStruct.addField( new GFFField(GFFDataType.DWORD, 'Result') ).setValue(follow.result >>> 0);
-      followStruct.addField( new GFFField(GFFDataType.DWORD, 'TimeElapsed') ).setValue(follow.timeElapsed >>> 0);
-      followStruct.addField( new GFFField(GFFDataType.BYTE, 'InSafetyRange') ).setValue(follow.inSafetyRange | 0);
-      followField.addChildStruct(followStruct);
-    }
-
-    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'fortbonus') ).setValue(this.fortbonus);
-    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'refbonus') ).setValue(this.refbonus);
-    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'willbonus') ).setValue(this.willbonus);
-
+    const gff = creatureSerializer.serialize(this, {
+      gameKey: GameState.GameKey == GameEngineType.TSL ? 'k2' : 'k1',
+    });
     this.template = gff;
-
-    if(this.npcId >= 0){
-      GameState.PartyManager.NPCS[this.npcId].template = this.template;
-    }
-
     return gff;
-
   }
 
   static GenerateTemplate(){

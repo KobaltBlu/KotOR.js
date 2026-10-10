@@ -40,6 +40,8 @@ import { GameEffectDurationType } from "@core/enums/effects/GameEffectDurationTy
 import { ModulePlaceableObjectSound, SkillType } from "@core/enums";
 import { CombatActionType } from "@core/enums/combat/CombatActionType";
 import { ScriptHook } from "@core/enums/module/ScriptHook";
+import { GameObjectLoadPipeline } from "@engine/module/serialization/GameObjectLoadPipeline";
+import { doorSerializer } from "@engine/module/serialization/DoorSerializer";
 import { composeDoorWalkmeshLocalToWorld } from "@engine/pathfinding/door-walkmesh-matrix";
 import { invalidateStaticBlockerGrid } from "@engine/pathfinding/static-blocker-grid";
 import type { Creature } from "@engine/module/Creature";
@@ -1169,23 +1171,19 @@ export class Door extends GameObject {
   load(){
     this.seedResRefsFromTemplate();
     if(this.getTemplateResRef()){
-      //Load template and merge fields
-      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utd'], this.getTemplateResRef());
-      if(buffer){
-        const gff = new GFFObject(buffer);
-        this.template.merge(gff);
-        //console.log(this.template, gff, this)
+      const merged = GameObjectLoadPipeline.mergeBlueprint(this.template, {
+        refField: 'TemplateResRef',
+        resourceKey: 'utd',
+        runtimeResRef: this.getTemplateResRef(),
+      });
+      if(!merged){
+        console.error('Failed to load Door template');
+      }
+      if(this.template instanceof GFFObject){
         this.initProperties();
         this.loadScripts();
-      }else{
-        console.error(`Failed to load ${Door.name} template`);
-        if(this.template instanceof GFFObject){
-          this.initProperties();
-          this.loadScripts();
-        }
       }
     }else{
-      //We already have the template (From SAVEGAME)
       this.initProperties();
       this.loadScripts();
     }
@@ -1336,191 +1334,17 @@ export class Door extends GameObject {
   }
 
   initProperties(){
-    
     const needsRegister = !this.initialized;
-    if(needsRegister){
-      if(this.template.RootNode.hasField('ObjectId')){
-        this.id = this.template.getFieldByLabel('ObjectId').getValue();
-      }else if(this.template.RootNode.hasField('ID')){
-        this.id = this.template.getFieldByLabel('ID').getValue();
-      }
+    doorSerializer.deserialize(this, this.template);
+
+    const conversationResRef = (this as any)._conversationResRef;
+    if(conversationResRef){
+      this.conversation = DLGObject.FromResRef(conversationResRef);
     }
 
-    if(this.template.RootNode.hasField('AnimationState'))
-      this.animationState = this.template.getFieldByLabel('AnimationState').getValue();
-
-    if(this.template.RootNode.hasField('Appearance'))
-      this.appearance = this.template.getFieldByLabel('Appearance').getValue();
-
-    if(this.template.RootNode.hasField('AutoRemoveKey'))
-      this.autoRemoveKey = this.template.getFieldByLabel('AutoRemoveKey').getValue();
-
-    if(this.template.RootNode.hasField('CloseLockDC'))
-      this.closeLockDC = this.template.getFieldByLabel('CloseLockDC').getValue();
-
-    if(this.template.RootNode.hasField('Commandable'))
-      this.commandable = !!this.template.getFieldByLabel('Commandable').getValue();
-
-    if(this.template.RootNode.hasField('Conversation')){
-      this.conversation = DLGObject.FromResRef(this.template.getFieldByLabel('Conversation').getValue());
-    }
-
-    if(this.template.RootNode.hasField('CurrentHP'))
-      this.currentHP = this.template.getFieldByLabel('CurrentHP').getValue();
-
-    if(this.template.RootNode.hasField('DisarmDC'))
-      this.disarmDC = this.template.getFieldByLabel('DisarmDC').getValue();
-
-    if(this.template.RootNode.hasField('Faction')){
-      this.factionId = this.template.getFieldByLabel('Faction').getValue();
-      if((this.factionId & 0xFFFFFFFF) == -1){
-        this.factionId = 0;
-      }
-    }
     this.faction = GameState.FactionManager.factions.get(this.factionId);
-
-    if(this.template.RootNode.hasField('Fort'))
-      this.fort = this.template.getFieldByLabel('Fort').getValue();
-  
-    if(this.template.RootNode.hasField('GenericType')){
-      this.genericType = this.template.RootNode.getFieldByLabel('GenericType').getValue();
-      this.doorAppearance = GameState.AppearanceManager.GetDoorAppearanceById(this.genericType);
-    }
-        
-    if(this.template.RootNode.hasField('HP'))
-      this.hp = this.template.RootNode.getFieldByLabel('HP').getValue();
-
-    // If CurrentHP was absent, start at max HP so bash is not immediately dead.
-    if(!this.template.RootNode.hasField('CurrentHP'))
-      this.currentHP = this.hp;
-
-    if(this.template.RootNode.hasField('Hardness'))
-      this.hardness = this.template.RootNode.getFieldByLabel('Hardness').getValue();
-    
-    if(this.template.RootNode.hasField('Interruptable'))
-      this.interruptable = this.template.RootNode.getFieldByLabel('Interruptable').getValue();
-        
-    if(this.template.RootNode.hasField('KeyName'))
-      this.keyName = this.template.RootNode.getFieldByLabel('KeyName').getValue();
-  
-    if(this.template.RootNode.hasField('KeyRequired'))
-      this.keyRequired = this.template.RootNode.getFieldByLabel('KeyRequired').getValue();
-      
-    if(this.template.RootNode.hasField('LoadScreenID'))
-      this.loadScreenID = this.template.getFieldByLabel('LoadScreenID').getValue();
-
-    if(this.template.RootNode.hasField('LocName'))
-      this.locName = this.template.getFieldByLabel('LocName').getCExoLocString();
-
-    if(this.template.RootNode.hasField('Description'))
-      this.description = this.template.getFieldByLabel('Description').getCExoLocString();
-
-    if(this.template.RootNode.hasField('Locked'))
-      this.locked = this.template.getFieldByLabel('Locked').getValue();
-
-    if(this.template.RootNode.hasField('Min1HP'))
-      this.min1HP = this.template.getFieldByLabel('Min1HP').getValue();
-
-    if(this.template.RootNode.hasField('OpenLockDC'))
-      this.openLockDC = this.template.getFieldByLabel('OpenLockDC').getValue();
-
-    if(this.template.RootNode.hasField('OpenState')){
-      this.openState = this.template.getFieldByLabel('OpenState').getValue();
-      this.alsoOpenState = this.openState;
-    }
-
-    if(this.template.RootNode.hasField('PaletteID'))
-      this.paletteID = this.template.getFieldByLabel('PaletteID').getValue();
-
-    // LoadDoor: Invulnerable aliases Plot; Static forces plot = 1.
-    if(this.template.RootNode.hasField('Invulnerable')){
-      this.plot = !!this.template.getFieldByLabel('Invulnerable').getValue();
-    }else if(this.template.RootNode.hasField('Plot')){
-      this.plot = !!this.template.getFieldByLabel('Plot').getValue();
-    }
-
-    if(this.template.RootNode.hasField('PortraitId')){
-      this.portraitId = this.template.getFieldByLabel('PortraitId').getValue();
-    }else if(this.template.RootNode.hasField('PortraidId')){
-      // Legacy typo in some templates
-      this.portraitId = this.template.getFieldByLabel('PortraidId').getValue();
-    }
-    // LoadDoor: PortraitId == 0 → 0x22E (558)
-    if((this.portraitId | 0) === 0){
-      this.portraitId = 0x22E;
-    }
+    this.doorAppearance = GameState.AppearanceManager.GetDoorAppearanceById(this.genericType);
     this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
-
-
-    if(this.template.RootNode.hasField('Ref'))
-      this.ref = this.template.getFieldByLabel('Ref').getValue();
-
-    if(this.template.RootNode.hasField('SecretDoorDC'))
-      this.secretDoorDC = this.template.getFieldByLabel('SecretDoorDC').getValue();
-
-    if(this.template.RootNode.hasField('Static'))
-      this.static = !!this.template.getFieldByLabel('Static').getValue();
-    if(this.static){
-      this.plot = true;
-    }
-
-    if(this.template.RootNode.hasField('Useable'))
-      this.useable = !!this.template.getFieldByLabel('Useable').getValue();
-
-    if(this.template.RootNode.hasField('Tag'))
-      this.tag = this.template.getFieldByLabel('Tag').getValue();
-
-    if(this.template.RootNode.hasField('TemplateResRef'))
-      this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();
-
-    if(this.template.RootNode.hasField('TrapDetectDC'))
-      this.trapDetectDC = this.template.getFieldByLabel('TrapDetectDC').getValue();
-  
-    if(this.template.RootNode.hasField('TrapDetectable'))
-      this.trapDetectable = !!this.template.RootNode.getFieldByLabel('TrapDetectable').getValue();
-
-    if(this.template.RootNode.hasField('TrapDisarmable'))
-      this.trapDisarmable = !!this.template.RootNode.getFieldByLabel('TrapDisarmable').getValue();
-  
-    if(this.template.RootNode.hasField('TrapFlag'))
-      this.trapFlag = !!this.template.RootNode.getFieldByLabel('TrapFlag').getValue();
-
-    if(this.template.RootNode.hasField('TrapOneShot'))
-      this.trapOneShot = !!this.template.getFieldByLabel('TrapOneShot').getValue();
-
-    if(this.template.RootNode.hasField('TemplateResRef'))
-      this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();
-
-    if(this.template.RootNode.hasField('TrapType'))
-      this.trapType = this.template.getFieldByLabel('TrapType').getValue();
-
-    if(this.template.RootNode.hasField('Will'))
-      this.will = this.template.getFieldByLabel('Will').getValue();
-
-    if(this.template.RootNode.hasField('X'))
-      this.x = this.position.x = this.template.RootNode.getFieldByLabel('X').getValue();
-
-    if(this.template.RootNode.hasField('Y'))
-      this.y = this.position.y = this.template.RootNode.getFieldByLabel('Y').getValue();
-
-    if(this.template.RootNode.hasField('Z'))
-      this.z = this.position.z = this.template.RootNode.getFieldByLabel('Z').getValue();
-
-    if(this.template.RootNode.hasField('Bearing')){
-      this.bearing = this.rotation.z = this.template.RootNode.getFieldByLabel('Bearing').getValue();
-      this.facing = this.bearing;
-    }
-
-    if(this.template.RootNode.hasField('SWVarTable')){
-      let localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
-      //console.log(localBools);
-      for(let i = 0; i < localBools.length; i++){
-        let data = localBools[i].getFieldByLabel('Variable').getValue();
-        for(let bit = 0; bit < 32; bit++){
-          this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
-        }
-      }
-    }
 
     if(this.template.RootNode.hasField('EffectList')){
       let effects = this.template.RootNode.getFieldByLabel('EffectList').getChildStructs() || [];
@@ -1530,18 +1354,13 @@ export class Door extends GameObject {
           effect.setAttachedObject(this);
           effect.loadModel();
           this.effects.push(effect);
-          //this.addEffect(effect);
         }
       }
     }
 
-    // PostProcess — hardness applies a permanent
-    // DamageResistance effect (subtype |= 2, int0 = 0x3FFF, int1 = hardness, is_exposed = 0).
     if((this.hardness | 0) > 0 && !this.effects.some(e => e.type === GameEffectType.EffectDamageResistance)){
       const eDamageResist = new GameEffectFactory.EffectDamageResistance();
-      // PostProcess: subtype & 0xfff8 | 2 (PERMANENT only — not MAGICAL|PERMANENT = 10)
       eDamageResist.setSubTypeUnMasked(GameEffectDurationType.PERMANENT);
-      // ApplyEffect with = 1 during PostProcess → SkipOnLoad = 1
       eDamageResist.setSkipOnLoad(true);
       eDamageResist.setInt(0, 0x3FFF);
       eDamageResist.setInt(1, this.hardness | 0);
@@ -1551,35 +1370,9 @@ export class Door extends GameObject {
 
     this.loadActionList();
 
-    if(this.template.RootNode.hasField('LinkedTo'))
-      this.linkedTo = this.template.RootNode.getFieldByLabel('LinkedTo').getValue();
-
-    if(this.template.RootNode.hasField('LinkedToFlags'))
-      this.linkedToFlags = this.template.RootNode.getFieldByLabel('LinkedToFlags').getValue();
-
-    if(this.template.RootNode.hasField('LinkedToModule'))
-      this.linkedToModule = this.template.RootNode.getFieldByLabel('LinkedToModule').getValue();
-
-    if(this.template.RootNode.hasField('TransitionDestin'))
-      this.transitionDestin = this.template.RootNode.getFieldByLabel('TransitionDestin').getCExoLocString();
-    
-    //BEGIN: TSL Properties
-    if(this.template.RootNode.hasField('TweakColor'))
-      this.tweakColor = this.template.getFieldByLabel('TweakColor').getValue();
-    
-    if(this.template.RootNode.hasField('UseTweakColor'))
-      this.useTweakColor = !!this.template.getFieldByLabel('UseTweakColor').getValue();
-
-    if(this.template.RootNode.hasField('NotBlastable'))
-      this.notBlastable = !!this.template.getFieldByLabel('NotBlastable').getValue();
-    //END: TSL Properties
-
     if(needsRegister){
       GameState.GameObjectManager.RegisterObject(this);
     }
-
-    this.initialized = true
-
   }
 
   destroy(): void {
@@ -1592,101 +1385,7 @@ export class Door extends GameObject {
   }
 
   save(){
-    let gff = new GFFObject();
-    gff.FileType = 'UTD ';
-    gff.RootNode.type = 8;
-
-    let actionList = gff.RootNode.addField( this.actionQueueToActionList() );
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Appearance') ).setValue(this.appearance);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'AutoRemoveKey') ).setValue(this.autoRemoveKey);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Bearing') ).setValue(this.bearing);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'CloseLockDC') ).setValue(this.closeLockDC);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue(this.commandable ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Conversation') ).setValue(this.conversation ? this.conversation.resref : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'CurrentHP') ).setValue(this.currentHP);
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') ).setValue(
-      this.description instanceof CExoLocString ? this.description : new CExoLocString()
-    );
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DisarmDC') ).setValue(this.disarmDC);
-
-    //Effects
-    let effectList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'EffectList') );
-    for(let i = 0; i < this.effects.length; i++){
-      effectList.addChildStruct( this.effects[i].save() );
-    }
-
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Faction') ).setValue(this.faction ? this.faction.id : this.factionId);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Fort') ).setValue(this.fort);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'GenericType') ).setValue(this.genericType);
-    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'HP') ).setValue(this.hp);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Hardness') ).setValue(this.hardness);
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'KeyName') ).setValue(this.keyName);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'KeyRequired') ).setValue(this.keyRequired);
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'LinkedTo') ).setValue(this.linkedTo);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'LinkedToFlags') ).setValue(this.linkedToFlags);
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'LinkedToModule') ).setValue(this.linkedToModule);
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LocName') ).setValue(this.locName);
-    gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'LoadScreenID') ).setValue(this.loadScreenID);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Lockable') ).setValue(this.lockable);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Locked') ).setValue(this.locked);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Min1HP') ).setValue(this.min1HP);
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
-
-    // Scripts — SaveDoor includes OnDialog; omits non- extras
-    // ctor defaults all slots to "default"; persist the loaded resref (including "")
-    // even if the NCS failed to load. Absent-field slots fall back to "default".
-    const scriptResRef = (key: string) => {
-      if(typeof this.scriptResRefs[key] === 'string') return this.scriptResRefs[key];
-      return this.scripts[key]?.name || 'default';
-    };
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ScriptHook.DoorOnClick) ).setValue(scriptResRef(ScriptHook.DoorOnClick));
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ScriptHook.DoorOnClosed) ).setValue(scriptResRef(ScriptHook.DoorOnClosed));
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ScriptHook.DoorOnDamaged) ).setValue(scriptResRef(ScriptHook.DoorOnDamaged));
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ScriptHook.DoorOnDeath) ).setValue(scriptResRef(ScriptHook.DoorOnDeath));
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ScriptHook.DoorOnDialog) ).setValue(scriptResRef(ScriptHook.DoorOnDialog));
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ScriptHook.DoorOnDisarm) ).setValue(scriptResRef(ScriptHook.DoorOnDisarm));
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ScriptHook.DoorOnFailToOpen) ).setValue(scriptResRef(ScriptHook.DoorOnFailToOpen));
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ScriptHook.DoorOnHeartbeat) ).setValue(scriptResRef(ScriptHook.DoorOnHeartbeat));
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ScriptHook.DoorOnLock) ).setValue(scriptResRef(ScriptHook.DoorOnLock));
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ScriptHook.DoorOnMeleeAttacked) ).setValue(scriptResRef(ScriptHook.DoorOnMeleeAttacked));
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ScriptHook.DoorOnOpen) ).setValue(scriptResRef(ScriptHook.DoorOnOpen));
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ScriptHook.DoorOnSpellCastAt) ).setValue(scriptResRef(ScriptHook.DoorOnSpellCastAt));
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ScriptHook.DoorOnTrapTriggered) ).setValue(scriptResRef(ScriptHook.DoorOnTrapTriggered));
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ScriptHook.DoorOnUnlock) ).setValue(scriptResRef(ScriptHook.DoorOnUnlock));
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ScriptHook.DoorOnUserDefined) ).setValue(scriptResRef(ScriptHook.DoorOnUserDefined));
-    
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'OpenLockDC') ).setValue(this.openLockDC);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'OpenState') ).setValue(this.openState);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Plot') ).setValue(this.plot);
-    // SaveDoor: PortraitId if id != -1, else Portrait RESREF
-    if((this.portraitId | 0) !== 0xFFFF && (this.portraitId | 0) !== -1){
-      gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') ).setValue(this.portraitId);
-    }else{
-      const portraitResRef = (this.portrait as any)?.resref || (this.portrait as any)?.baseresre || '';
-      gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Portrait') ).setValue(portraitResRef || '');
-    }
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Ref') ).setValue(this.ref);
-
-    //SWVarTable
-    let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
-    swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
-
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'SecretDoorDC') ).setValue(this.secretDoorDC | 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Static') ).setValue(this.static);
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'TransitionDestin') ).setValue(this.transitionDestin);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDetectDC') ).setValue(this.trapDetectDC);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDetectable') ).setValue(this.trapDetectable);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDisarmable') ).setValue(this.trapDisarmable);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapFlag') ).setValue(this.trapFlag);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapOneShot') ).setValue(this.trapOneShot);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapType') ).setValue(this.trapType);
-    this.writeNamedVarTable(gff.RootNode);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Will') ).setValue(this.will);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'X') ).setValue(this.position.x);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Y') ).setValue(this.position.y);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Z') ).setValue(this.position.z);
-
+    const gff = doorSerializer.serialize(this);
     this.template = gff;
     return gff;
   }

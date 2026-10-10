@@ -86,14 +86,23 @@ describe('GameObject runtime state decoupling', () => {
     expect(methodBody(item, 'getPropertiesList')).toMatch(/return this\.properties/);
   });
 
-  it('Trigger/Waypoint save paths serialize live orientation values', () => {
+  it('Trigger/Waypoint save facades delegate to serializers (runtime orientation)', () => {
     const triggerSave = methodBody(readModule('Trigger.ts'), 'save');
     const waypointSave = methodBody(readModule('Waypoint.ts'), 'save');
-    expect(triggerSave).toMatch(/this\.xOrientation/);
-    expect(triggerSave).toMatch(/this\.yOrientation/);
-    expect(triggerSave).toMatch(/this\.zOrientation/);
-    expect(triggerSave).not.toMatch(/template\.RootNode\.getFieldByLabel\(['"]XOrientation['"]\)/);
-    expect(waypointSave).toMatch(/getXOrientation\(\)|this\.xOrientation/);
+    expect(triggerSave).toMatch(/triggerSerializer\.serialize\(this\)/);
+    expect(waypointSave).toMatch(/waypointSerializer\.serialize\(this\)/);
+
+    const triggerSerializerSrc = fs.readFileSync(
+      path.join(MODULE_DIR, 'serialization', 'TriggerSerializer.ts'),
+      'utf8',
+    );
+    const waypointSerializerSrc = fs.readFileSync(
+      path.join(MODULE_DIR, 'serialization', 'WaypointSerializer.ts'),
+      'utf8',
+    );
+    expect(triggerSerializerSrc).toMatch(/PositionOrientationTransform\.writeFields/);
+    expect(waypointSerializerSrc).toMatch(/PositionOrientationTransform\.writeFields/);
+    expect(triggerSerializerSrc).not.toMatch(/template\.RootNode\.getFieldByLabel\(['"]XOrientation['"]\)/);
 
     // Stale template values must not appear in a runtime-driven export.
     const staleTemplate = new GFFObject();

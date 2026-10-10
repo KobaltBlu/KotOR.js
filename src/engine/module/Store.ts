@@ -1,14 +1,10 @@
 import { GameObject } from "@engine/module/GameObject";
 import { Item } from "@engine/module/Item";
-import { GFFDataType } from "@core/enums/resource/GFFDataType";
-import { NWScriptInstance } from "@engine/nwscript/NWScriptInstance";
-import { GFFField } from "@core/resource/GFFField";
 import { GFFObject } from "@core/resource/GFFObject";
-import { GFFStruct } from "@core/resource/GFFStruct";
-import { ResourceLoader } from "@engine/loaders";
-import { ResourceTypes } from "@core/resource/ResourceTypes";
 import { GameObjectType } from "@core/enums/module/GameObjectType";
 import { GameState } from "@engine/runtime/GameState";
+import { GameObjectLoadPipeline } from "@engine/module/serialization/GameObjectLoadPipeline";
+import { storeSerializer } from "@engine/module/serialization/StoreSerializer";
 // import { GameObjectManager } from "@engine/managers";
 
 /**
@@ -61,17 +57,16 @@ export class Store extends GameObject {
     this.seedResRefsFromTemplate();
     const resRef = this.getResRef() || this.getTemplateResRef();
     if(resRef){
-      //Load template and merge fields
-      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utm'], resRef);
-      if(buffer){
-        const gff = new GFFObject(buffer);
-        this.template.merge(gff);
-        this.initProperties();
-      }else{
+      const merged = GameObjectLoadPipeline.mergeBlueprint(this.template, {
+        refField: 'ResRef',
+        resourceKey: 'utm',
+        runtimeResRef: resRef,
+      });
+      if(!merged){
         console.error('Failed to load Store template', resRef);
-        if(this.template instanceof GFFObject){
-          this.initProperties();
-        }
+      }
+      if(this.template instanceof GFFObject){
+        this.initProperties();
       }
     }else{
       //We already have the template (From SAVEGAME)
@@ -80,103 +75,27 @@ export class Store extends GameObject {
   }
 
   initProperties(){
-    
     const needsRegister = !this.initialized;
-    if(needsRegister){
-      if(this.template.RootNode.hasField('ObjectId')){
-        this.id = this.template.getFieldByLabel('ObjectId').getValue();
-      }else if(this.template.RootNode.hasField('ID')){
-        this.id = this.template.getFieldByLabel('ID').getValue();
-      }
-    }
+    storeSerializer.deserialize(this, this.template);
 
-    if(this.template.RootNode.hasField('BuySellFlag'))
-      this.buySellFlag = this.template.getFieldByLabel('BuySellFlag').getValue()
-
-    if(this.template.RootNode.hasField('LocName'))
-      this.locName = this.template.getFieldByLabel('LocName').getCExoLocString();
-
-    if(this.template.RootNode.hasField('MarkDown'))
-      this.markDown = this.template.getFieldByLabel('MarkDown').getValue();
-
-    if(this.template.RootNode.hasField('MarkUp'))
-      this.markUp = this.template.getFieldByLabel('MarkUp').getValue();
-
-    if(this.template.RootNode.hasField('OnOpenStore'))
-      this.onOpenStore = this.template.getFieldByLabel('OnOpenStore').getValue();
-      
-    if(this.template.RootNode.hasField('Tag'))
-      this.tag = this.template.getFieldByLabel('Tag').getValue();
-
-    if(this.template.RootNode.hasField('ResRef'))
-      this.resRef = this.template.getFieldByLabel('ResRef').getValue();
-
-    if(this.template.RootNode.hasField('TemplateResRef'))
-      this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();
-    
-    if(this.template.RootNode.hasField('XPosition'))
-      this.position.x = this.template.RootNode.getFieldByLabel('XPosition').getValue();
-
-    if(this.template.RootNode.hasField('YPosition'))
-      this.position.y = this.template.RootNode.getFieldByLabel('YPosition').getValue();
-
-    if(this.template.RootNode.hasField('ZPosition'))
-      this.position.z = this.template.RootNode.getFieldByLabel('ZPosition').getValue();
-    
-    if(this.template.RootNode.hasField('XOrientation'))
-      this.rotation.x = this.template.RootNode.getFieldByLabel('XOrientation').getValue();
-
-    if(this.template.RootNode.hasField('YOrientation'))
-      this.rotation.y = this.template.RootNode.getFieldByLabel('YOrientation').getValue();
-
-    if(this.template.RootNode.hasField('ZOrientation'))
-      this.rotation.z = this.template.RootNode.getFieldByLabel('ZOrientation').getValue();
-
-    if(this.template.RootNode.hasField('SWVarTable')){
-      let swVarTableStruct = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0];
-      if(swVarTableStruct){
-        if(swVarTableStruct.hasField('BitArray')){
-          let localBools = swVarTableStruct.getFieldByLabel('BitArray').getChildStructs();
-          for(let i = 0; i < localBools.length; i++){
-            let data = localBools[i].getFieldByLabel('Variable').getValue();
-            for(let bit = 0; bit < 32; bit++){
-              this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
-            }
-          }
-        }
-
-        if(swVarTableStruct.hasField('ByteArray')){
-          let localNumbers = swVarTableStruct.getFieldByLabel('ByteArray').getChildStructs();
-          for(let i = 0; i < localNumbers.length; i++){
-            let data = localNumbers[i].getFieldByLabel('Variable').getValue();
-            this.setLocalNumber(i, data);
-          }
-        }
-      }
-    }
-            
     if(this.template.RootNode.hasField('ItemList')){
       // Avoid duplicating stock if initProperties runs again after a template merge.
       while(this.inventory.length){
         this.inventory.pop();
       }
-      let items = this.template.RootNode.getFieldByLabel('ItemList').getChildStructs() || [];
+      const items = this.template.RootNode.getFieldByLabel('ItemList').getChildStructs() || [];
       for(let i = 0; i < items.length; i++){
         const moduleItem = new Item(GFFObject.FromStruct(items[i]));
-        // LoadStore → AddItemToInventory → MergeItem: merge duplicate stock on load.
         const stacked = this.addItem(moduleItem);
         stacked.setPossessor(this);
       }
     }
-    
+
     this.loadActionList();
 
     if(needsRegister){
       GameState.GameObjectManager.RegisterObject(this);
     }
-
-    this.initialized = true;
-
   }
 
   destroy(): void {
@@ -193,41 +112,7 @@ export class Store extends GameObject {
   }
 
   save(){
-    let gff = new GFFObject();
-    gff.FileType = 'UTM ';
-    gff.RootNode.type = 6;
-
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LocName') ).setValue(this.locName);
-    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'MarkDown') ).setValue(this.markDown);
-    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'MarkUp') ).setValue(this.markUp);
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnOpenStore') ).setValue (this.onOpenStore instanceof NWScriptInstance ? this.onOpenStore.name : '' );
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'BuySellFlag') ).setValue(this.buySellFlag);
-
-    let itemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ItemList') );
-    for(let i = 0; i < this.inventory.length; i++){
-      // SaveStore writes Infinite before SaveItem.
-      const itemStruct = this.inventory[i].save();
-      itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Infinite') ).setValue(this.inventory[i].isInfinite() ? 1 : 0);
-      itemList.addChildStruct( itemStruct );
-    }
-
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).setValue(this.position.x);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).setValue(this.position.y);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).setValue(this.position.z);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).setValue(this.rotation.x);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).setValue(this.rotation.y);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZOrientation') ).setValue(this.rotation.z);
-
-    //SWVarTable
-    let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
-    swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
-
-    gff.RootNode.addField( this.actionQueueToActionList() );
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue(1);
-
-
+    const gff = storeSerializer.serialize(this);
     this.template = gff;
     return gff;
   }

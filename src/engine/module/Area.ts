@@ -75,6 +75,7 @@ import { ModuleCalendar } from "@engine/module/ModuleCalendar";
 import { ModuleTimeManager } from "@engine/module/ModuleTimeManager";
 import { CorpseCache } from "@engine/module/CorpseCache";
 import { GameLoop } from '@engine/runtime/GameLoop';
+import { AreaGitSerializer } from "@engine/module/serialization/AreaGitSerializer";
 
 type AreaScriptKeys = 'OnEnter'|'OnExit'|'OnHeartbeat'|'OnUserDefined';
 
@@ -3723,96 +3724,11 @@ export class Area extends GameObject {
   }
 
   save(): { git: GFFObject, are: GFFObject }{
-    const git = new GFFObject();
-    git.FileType = 'GIT ';
-
-    const aoeList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'AreaEffectList') );
-    for(let i = 0; i < this.areaOfEffects.length; i++){
-      aoeList.addChildStruct( this.areaOfEffects[i].save().RootNode );
-    }
-
-    const areaMapField = git.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'AreaMap') );
-    areaMapField.addChildStruct( this.areaMap.exportData() );
-
-    const areaPropertiesField = git.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'AreaProperties') );
-    areaPropertiesField.addChildStruct( this.getAreaPropertiesStruct() );
-
-    const cameraList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'CameraList') );
-    for(let i = 0; i < this.cameras.length; i++){
-      cameraList.addChildStruct( this.cameras[i].save().RootNode );
-    }
-
-    const creatureList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'Creature List') );
-    for(let i = 0; i < this.creatures.length; i++){
-      const creature = this.creatures[i];
-      // : KeepCorpse shells / post-0xb visuals are client-only — never serialize
-      if(!creature || creature.isRetainedCorpse || creature.serverDestroyed) continue;
-      creatureList.addChildStruct( creature.save().RootNode );
-    }
-
-    // SaveGIT — CurrentWeather is BYTE, not LIST
-    git.RootNode.addField( new GFFField(GFFDataType.BYTE, 'CurrentWeather') ).setValue(this.weather.currentWeather | 0);
-
-    const doorList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'Door List') );
-    for(let i = 0; i < this.doors.length; i++){
-      doorList.addChildStruct( this.doors[i].save().RootNode );
-    }
-
-    const encounterList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'Encounter List') );
-    for(let i = 0; i < this.encounters.length; i++){
-      encounterList.addChildStruct( this.encounters[i].save().RootNode );
-    }
-
-    //Area Items List (ground drops)
-    const list = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'List') );
-    for(let i = 0; i < this.items.length; i++){
-      const item = this.items[i];
-      if(!item) continue;
-      list.addChildStruct( item.save() );
-    }
-
-    const placeableList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'Placeable List') );
-    for(let i = 0; i < this.placeables.length; i++){
-      placeableList.addChildStruct( this.placeables[i].save().RootNode );
-    }
-
-    //SWVarTable
-    const swVarTable = git.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
-    swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
-
-    const soundList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'SoundList') );
-    for(let i = 0; i < this.sounds.length; i++){
-      soundList.addChildStruct( this.sounds[i].save().RootNode );
-    }
-
-    const storeList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'StoreList') );
-    for(let i = 0; i < this.stores.length; i++){
-      storeList.addChildStruct( this.stores[i].save().RootNode );
-    }
-
-    git.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TransPendCurrID') ).setValue(this.transPendCurrId | 0);
-    git.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TransPendNextID') ).setValue(this.transPendNextId | 0);
-    git.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TransPending') ).setValue(this.transPending | 0);
-
-    const triggerList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'TriggerList') );
-    for(let i = 0; i < this.triggers.length; i++){
-      triggerList.addChildStruct( this.triggers[i].save().RootNode );
-    }
-
-    this.writeNamedVarTable(git.RootNode);
-
-    const waypointList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'WaypointList') );
-    for(let i = 0; i < this.waypoints.length; i++){
-      waypointList.addChildStruct( this.waypoints[i].save().RootNode );
-    }
-
-    git.RootNode.addField( new GFFField(GFFDataType.BYTE, 'WeatherStarted') ).setValue(this.weather.started ? 1 : 0);
-
+    const git = AreaGitSerializer.serialize(this);
     this.git = git;
-
     this.are.FileType = 'ARE ';
 
-    return {git: git, are: this.are};
+    return {git, are: this.are};
   }
 
 }
