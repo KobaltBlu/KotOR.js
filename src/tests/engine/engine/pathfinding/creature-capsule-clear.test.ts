@@ -68,9 +68,41 @@ describe("isCreatureCapsuleClear", () => {
     expect(result.clear).toBe(true);
   });
 
-  it("soft-clears start-overlap by default (walk path)", () => {
+  it("soft-clears start-overlap when the step separates from the blocker", () => {
+    // Owner/blocker stacked near origin; step away (−X) increases separation.
     const owner = creature(1, 0, 0);
-    // Blocker sits on the segment start — resolveStartOverlapCreatures soft-allows.
+    const blocker = creature(9, 0.05, 0);
+    const area = { creatures: [owner, blocker] } as unknown as ModuleArea;
+
+    const result = isCreatureCapsuleClear(
+      area,
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(-1, 0, 0),
+      { owner }
+    );
+
+    expect(result.clear).toBe(true);
+  });
+
+  it("blocks start-overlap when the step digs deeper into the blocker", () => {
+    // Pre-overlapped: owner at 0.7, blocker at 1.0 (creperspace sum ≈ 0.81).
+    const owner = creature(1, 0.7, 0);
+    const blocker = creature(9, 1.0, 0);
+    const area = { creatures: [owner, blocker] } as unknown as ModuleArea;
+
+    const result = isCreatureCapsuleClear(
+      area,
+      new THREE.Vector3(0.7, 0, 0),
+      new THREE.Vector3(0.85, 0, 0),
+      { owner }
+    );
+
+    expect(result).toEqual({ clear: false, blockingCreatureId: 9 });
+  });
+
+  it("blocks start-overlap when the step tunnels through the blocker", () => {
+    // Blocker sits on the start; walking +X tunnels through the capsule.
+    const owner = creature(1, 0, 0);
     const blocker = creature(9, 0.05, 0);
     const area = { creatures: [owner, blocker] } as unknown as ModuleArea;
 
@@ -78,6 +110,21 @@ describe("isCreatureCapsuleClear", () => {
       area,
       new THREE.Vector3(0, 0, 0),
       new THREE.Vector3(5, 0, 0),
+      { owner }
+    );
+
+    expect(result).toEqual({ clear: false, blockingCreatureId: 9 });
+  });
+
+  it("soft-clears start-overlap for a tangential / outward step", () => {
+    const owner = creature(1, 0.7, 0);
+    const blocker = creature(9, 1.0, 0);
+    const area = { creatures: [owner, blocker] } as unknown as ModuleArea;
+
+    const result = isCreatureCapsuleClear(
+      area,
+      new THREE.Vector3(0.7, 0, 0),
+      new THREE.Vector3(0.7, 0.25, 0),
       { owner }
     );
 

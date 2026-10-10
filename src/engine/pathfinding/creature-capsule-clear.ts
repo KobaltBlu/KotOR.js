@@ -145,7 +145,12 @@ export function isCreatureCapsuleClear(
       if(softClearStart){
         const soft = resolveStartOverlapCreatures(
           creature.position, from, radius,
-          { owner: options.owner, softCreature: options.softCreature }
+          {
+            owner: options.owner,
+            softCreature: options.softCreature,
+            // Directional soft-clear: escape/outward ok, dig-deeper/tunnel blocked.
+            lineEnd: to,
+          }
         );
         if(soft.allow) continue;
       }
