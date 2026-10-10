@@ -9,12 +9,16 @@
  * @interface
  */
 export interface IOdysseyControllerFrameGeneric {
-  a: THREE.Vector3;
-  b: THREE.Vector3;
-  c: THREE.Vector3;
-  isBezier: boolean;
-  isLinearBezier: boolean;
-  bezier: THREE.QuadraticBezierCurve3;
+  /** Bezier control A (plain xyz at parse; may become THREE.Vector3 lazily). */
+  a?: { x: number; y: number; z: number };
+  b?: { x: number; y: number; z: number };
+  c?: { x: number; y: number; z: number };
+  isBezier?: boolean;
+  isLinearBezier?: boolean;
+  /** When true, bezier mid control equals start (first keyframe). */
+  bezierMidEqualsStart?: boolean;
+  /** Lazy THREE curve; created on first animation sample. */
+  bezier?: THREE.QuadraticBezierCurve3;
   time: number;
   x: number;
   y: number;

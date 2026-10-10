@@ -4,6 +4,7 @@ import { IOdysseyControllerFrameGeneric } from "@core/interface/odyssey/controll
 import { IOdysseyControllerGeneric } from "@core/interface/odyssey/controller/IOdysseyControllerGeneric";
 import { OdysseyModelControllerType } from "@core/enums/odyssey/OdysseyModelControllerType";
 import { OdysseyController } from "@engine/odyssey/controllers/OdysseyController";
+import { ensureControllerFrameBezier } from "@engine/odyssey/binary/ensureControllerFrameBezier";
 
 /**
  * PositionController class.
@@ -69,6 +70,8 @@ export class PositionController extends OdysseyController {
     }
 
     if(last.isBezier){
+      ensureControllerFrameBezier(last);
+      ensureControllerFrameBezier(next);
       //Last point
       if(last.isLinearBezier){
         manager._vec3.copy(last.bezier.getPoint(0)).add(anim._position);
@@ -87,6 +90,7 @@ export class PositionController extends OdysseyController {
       // manager.modelNode.position.lerp(manager._vec3, fl);
       //}
     }else if(next.isBezier){
+      ensureControllerFrameBezier(next);
       //Last point
       manager._vec3.copy(last as any).add(anim._position);
       manager.modelNode.position.copy(manager._vec3);

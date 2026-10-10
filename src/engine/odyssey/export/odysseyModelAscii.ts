@@ -136,19 +136,35 @@ function emitMeshAscii(mesh: OdysseyModelNodeMesh, model: OdysseyModel, nl: stri
     s += nl + "    " + prepareFloat(verts[i]) + " " + prepareFloat(verts[i + 1]) + " " + prepareFloat(verts[i + 2]);
   }
 
-  s += nl + "  faces " + mesh.faces.length;
-  for (let fi = 0; fi < mesh.faces.length; fi++) {
-    const f = mesh.faces[fi];
-    const sg = f.smoothingGroup !== undefined ? f.smoothingGroup : 1;
+  const faceLen = (mesh.faceCount | 0) || mesh.faces.length;
+  s += nl + "  faces " + faceLen;
+  for (let fi = 0; fi < faceLen; fi++) {
+    let a: number;
+    let b: number;
+    let c: number;
+    let sg: number;
+    let materialIndex: number;
+    if (mesh.faceIndices && mesh.faceCount > 0) {
+      a = mesh.faceIndices[fi * 3];
+      b = mesh.faceIndices[fi * 3 + 1];
+      c = mesh.faceIndices[fi * 3 + 2];
+      sg = mesh.faceSmoothingGroups?.[fi] !== undefined ? mesh.faceSmoothingGroups[fi] : 1;
+      materialIndex = mesh.faceMaterialIndices[fi];
+    } else {
+      const f = mesh.faces[fi];
+      a = f.a; b = f.b; c = f.c;
+      sg = f.smoothingGroup !== undefined ? f.smoothingGroup : 1;
+      materialIndex = f.materialIndex;
+    }
     const sgOut = sg === 0 ? 1 : sg;
     s += nl + "    ";
-    s += f.a + " " + f.b + " " + f.c + "  " + sgOut;
+    s += a + " " + b + " " + c + "  " + sgOut;
     if (mesh.MDXDataBitmap & OdysseyModelMDXFlag.UV1) {
-      s += "  " + f.a + " " + f.b + " " + f.c;
+      s += "  " + a + " " + b + " " + c;
     } else {
       s += "  0 0 0";
     }
-    s += "  " + f.materialIndex;
+    s += "  " + materialIndex;
   }
 
   if (mesh.MDXDataBitmap & OdysseyModelMDXFlag.UV1 && mesh.tvectors[0]?.length) {
@@ -159,10 +175,15 @@ function emitMeshAscii(mesh: OdysseyModelNodeMesh, model: OdysseyModel, nl: stri
     }
   }
   if (mesh.MDXDataBitmap & OdysseyModelMDXFlag.UV2 && mesh.tvectors[1]?.length) {
-    s += nl + "  texindices1 " + mesh.faces.length;
-    for (let fi = 0; fi < mesh.faces.length; fi++) {
-      const f = mesh.faces[fi];
-      s += nl + "    " + f.a + " " + f.b + " " + f.c;
+    s += nl + "  texindices1 " + faceLen;
+    for (let fi = 0; fi < faceLen; fi++) {
+      let a: number; let b: number; let c: number;
+      if (mesh.faceIndices && mesh.faceCount > 0) {
+        a = mesh.faceIndices[fi * 3]; b = mesh.faceIndices[fi * 3 + 1]; c = mesh.faceIndices[fi * 3 + 2];
+      } else {
+        const f = mesh.faces[fi]; a = f.a; b = f.b; c = f.c;
+      }
+      s += nl + "    " + a + " " + b + " " + c;
     }
     const tv = mesh.tvectors[1];
     s += nl + "  tverts1 " + mesh.verticesCount;
@@ -171,10 +192,15 @@ function emitMeshAscii(mesh: OdysseyModelNodeMesh, model: OdysseyModel, nl: stri
     }
   }
   if (mesh.MDXDataBitmap & OdysseyModelMDXFlag.UV3 && mesh.tvectors[2]?.length) {
-    s += nl + "  texindices2 " + mesh.faces.length;
-    for (let fi = 0; fi < mesh.faces.length; fi++) {
-      const f = mesh.faces[fi];
-      s += nl + "    " + f.a + " " + f.b + " " + f.c;
+    s += nl + "  texindices2 " + faceLen;
+    for (let fi = 0; fi < faceLen; fi++) {
+      let a: number; let b: number; let c: number;
+      if (mesh.faceIndices && mesh.faceCount > 0) {
+        a = mesh.faceIndices[fi * 3]; b = mesh.faceIndices[fi * 3 + 1]; c = mesh.faceIndices[fi * 3 + 2];
+      } else {
+        const f = mesh.faces[fi]; a = f.a; b = f.b; c = f.c;
+      }
+      s += nl + "    " + a + " " + b + " " + c;
     }
     const tv = mesh.tvectors[2];
     s += nl + "  tverts2 " + mesh.verticesCount;
@@ -183,10 +209,15 @@ function emitMeshAscii(mesh: OdysseyModelNodeMesh, model: OdysseyModel, nl: stri
     }
   }
   if (mesh.MDXDataBitmap & OdysseyModelMDXFlag.UV4 && mesh.tvectors[3]?.length) {
-    s += nl + "  texindices3 " + mesh.faces.length;
-    for (let fi = 0; fi < mesh.faces.length; fi++) {
-      const f = mesh.faces[fi];
-      s += nl + "    " + f.a + " " + f.b + " " + f.c;
+    s += nl + "  texindices3 " + faceLen;
+    for (let fi = 0; fi < faceLen; fi++) {
+      let a: number; let b: number; let c: number;
+      if (mesh.faceIndices && mesh.faceCount > 0) {
+        a = mesh.faceIndices[fi * 3]; b = mesh.faceIndices[fi * 3 + 1]; c = mesh.faceIndices[fi * 3 + 2];
+      } else {
+        const f = mesh.faces[fi]; a = f.a; b = f.b; c = f.c;
+      }
+      s += nl + "    " + a + " " + b + " " + c;
     }
     const tv = mesh.tvectors[3];
     s += nl + "  tverts3 " + mesh.verticesCount;

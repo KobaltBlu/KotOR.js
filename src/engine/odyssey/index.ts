@@ -24,5 +24,8 @@ export * from "@engine/odyssey/OdysseyModelUtility";
 export * from "@engine/odyssey/OdysseyModelFactory";
 export * from "@engine/odyssey/OdysseyNodeIdSync";
 export * from "@engine/odyssey/binary/OdysseyModelBinaryLayout";
+export * from "@engine/odyssey/binary/OdysseyModelBinaryReader";
 export * from "@engine/odyssey/binary/OdysseyModelBinaryWriter";
 export * from "@engine/odyssey/binary/OdysseyModelBinaryMdxWriter";
+export * from "@engine/odyssey/binary/OdysseyModelControllerDecoder";
+export * from "@engine/odyssey/domain/populateMeshFromDecoded";

@@ -1,8 +1,14 @@
 import * as THREE from "three";
-import { OdysseyModel3D } from "@engine/render/three/odyssey";
 import { OdysseyModelNode } from "@engine/odyssey/OdysseyModelNode";
 import type { OdysseyModelAnimation } from "@engine/odyssey/OdysseyModelAnimation";
 import type { OdysseyModel } from "@engine/odyssey/OdysseyModel";
+
+/** Minimal runtime model surface for animation node → scene-node lookup. */
+export type OdysseyAnimationNodeHost = {
+  uuid: string;
+  nodes: Map<string, unknown>;
+  nodesById?: Record<number, unknown> | { [key: number]: unknown };
+};
 
 /**
  * OdysseyModelAnimationNode class.
@@ -24,7 +30,7 @@ export class OdysseyModelAnimationNode extends OdysseyModelNode {
   constructor(animation?: OdysseyModelAnimation){
     super(undefined);
     this.animation = animation;
-    // super(parent);
+    this.isAnimationControllerNode = true;
     this.position = new THREE.Vector3();
     this.quaternion = new THREE.Quaternion();
     this.controllers = new Map();
@@ -33,7 +39,7 @@ export class OdysseyModelAnimationNode extends OdysseyModelNode {
     this.modelNodeCache = {};
   }
 
-  getNode(node: OdysseyModelNode, model: OdysseyModel3D){
+  getNode(node: OdysseyModelNode, model: OdysseyAnimationNodeHost){
 
     if(node && model){
       let cache = this.modelNodeCache[model.uuid] || undefined;

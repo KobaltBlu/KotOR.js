@@ -1,25 +1,21 @@
 import { BinaryReader } from "@core/binary/BinaryReader";
 import { OdysseyModelEngine } from "@core/enums/odyssey/OdysseyModelEngine";
-import { OdysseyModelNodeType } from "@core/enums/odyssey/OdysseyModelNodeType";
 import { IOdysseyArrayDefinition } from "@core/interface/odyssey/IOdysseyArrayDefinition";
 import { IOdysseyFileHeader } from "@core/interface/odyssey/IOdysseyFileHeader";
 import { IOdysseyGeometryHeader } from "@core/interface/odyssey/IOdysseyGeometryHeader";
 import { IOdysseyModelHeader } from "@core/interface/odyssey/IOdysseyModelHeader";
 import { OdysseyModelAnimation } from "@engine/odyssey/OdysseyModelAnimation";
-import { OdysseyModelFactory } from "@engine/odyssey/OdysseyModelFactory";
 import { OdysseyModelNode } from "@engine/odyssey/OdysseyModelNode";
-import { OdysseyModelUtility } from "@engine/odyssey/OdysseyModelUtility";
 import {
   OdysseyModelBinaryWriter,
   type OdysseyModelBinaryBuffers,
   type OdysseyModelBinaryWriteOptions,
 } from "@engine/odyssey/binary/OdysseyModelBinaryWriter";
+import {
+  OdysseyModelBinaryReader,
+  type OdysseyModelBinaryReadOptions,
+} from "@engine/odyssey/binary/OdysseyModelBinaryReader";
 import { MDL_FN_PTR_K1_PC } from "@engine/odyssey/binary/OdysseyModelBinaryLayout";
-
-const mdlStringCleaner = (str: string = ''): string => {
-  const cleaned = str.replace(/\0[\s\S]*$/g,'').toLowerCase().trim();
-  return cleaned != 'null' ? cleaned : '';
-};
 
 /**
  * OdysseyModel class.
@@ -67,169 +63,9 @@ export class OdysseyModel {
   constructor(
     mdlReader: BinaryReader,
     mdxReader: BinaryReader,
-    options?: { preserveSourceBinary?: boolean },
+    options?: OdysseyModelBinaryReadOptions,
   ) {
-    if (options?.preserveSourceBinary) {
-      this.sourceMdl = mdlReader.buffer.slice(
-        mdlReader.buffer.byteOffset,
-        mdlReader.buffer.byteOffset + mdlReader.buffer.byteLength,
-      );
-      if (mdxReader?.buffer?.byteLength) {
-        this.sourceMdx = mdxReader.buffer.slice(
-          mdxReader.buffer.byteOffset,
-          mdxReader.buffer.byteOffset + mdxReader.buffer.byteLength,
-        );
-      }
-    }
-
-    this.mdlReader = mdlReader;
-    this.mdxReader = mdxReader;
-
-    this.fileHeader.flagBinary = this.mdlReader.readUInt32();
-
-    if (this.fileHeader.flagBinary != 0){
-      throw ("KotOR binary model not presented");
-    }
-
-    this.fileHeader.mdlDataSize = this.mdlReader.readUInt32();
-    this.fileHeader.mdxDataSize = this.mdlReader.readUInt32();
-
-    this.fileHeader.modelDataOffset = 12;
-    this.fileHeader.rawDataOffset = this.fileHeader.modelDataOffset + this.fileHeader.mdlDataSize;
-
-    /*
-     * Geometry Header
-     */
-
-    this.geometryHeader.functionPointer0 = this.mdlReader.readUInt32(); //4Byte Function pointer
-    this.geometryHeader.functionPointer1 = this.mdlReader.readUInt32(); //4Byte Function pointer
-
-    //Thanks bead-v :)
-    //Use FunctionPointer0 in the geometry header to determine the engine version the model was prepared for.
-    switch(this.geometryHeader.functionPointer0){
-      case 4273776: //K1
-        this.engine = OdysseyModelEngine.K1;
-      break;
-      case 4285200: //K2
-        this.engine = OdysseyModelEngine.K2;
-      break;
-      case 4254992: //K1_XBOX
-        this.engine = OdysseyModelEngine.K1_XBOX;
-      break;
-      case 4285872: //K2_XBOX
-        this.engine = OdysseyModelEngine.K2_XBOX;
-      break;
-    }
-
-    this.geometryHeader.modelName = mdlStringCleaner(this.mdlReader.readChars(32));
-    this.geometryHeader.rootNodeOffset = this.mdlReader.readUInt32();
-    this.geometryHeader.nodeCount = this.mdlReader.readUInt32();
-
-    this.geometryHeader.unknown1ArrayDefinition = OdysseyModelUtility.ReadArrayDefinition(mdlReader);
-    this.geometryHeader.unknown2ArrayDefinition = OdysseyModelUtility.ReadArrayDefinition(mdlReader);
-
-    this.geometryHeader.refCount = this.mdlReader.readUInt32();
-    this.geometryHeader.geometryType = this.mdlReader.readByte(); //Model Type
-    this.geometryHeader.unknown4 = this.mdlReader.readBytes(3); //Padding
-
-    /*
-     * Model Header
-     */
-    
-    this.modelHeader.classification = this.mdlReader.readByte();
-    this.modelHeader.subClassification = this.mdlReader.readByte();
-    const smoothingByte = this.mdlReader.readByte();
-    this.modelHeader.smoothing = !!smoothingByte; // legacy name; also MDLedit `nUnknown`
-    this.modelHeader.smoothingGroupsInFile = smoothingByte === 1;
-    this.modelHeader.fogged = !!this.mdlReader.readByte();
-    this.modelHeader.childModelCount = this.mdlReader.readUInt32(); //Unkown
-
-    this.modelHeader.animationArrayDefinition = OdysseyModelUtility.ReadArrayDefinition(mdlReader);
-
-    this.modelHeader.parentModelPointer = this.mdlReader.readUInt32(); // Parent model pointer
-
-    this.modelHeader.boundingMinX = this.mdlReader.readSingle();
-    this.modelHeader.boundingMinY = this.mdlReader.readSingle();
-    this.modelHeader.boundingMinZ = this.mdlReader.readSingle();
-    this.modelHeader.boundingMaxX = this.mdlReader.readSingle();
-    this.modelHeader.boundingMaxY = this.mdlReader.readSingle();
-    this.modelHeader.boundingMaxZ = this.mdlReader.readSingle();
-    this.modelHeader.radius = this.mdlReader.readSingle();
-    this.modelHeader.scale = this.mdlReader.readSingle();
-    this.modelHeader.superModelName = mdlStringCleaner(this.mdlReader.readChars(32));
-
-    this.modelHeader.animRootOffset = this.mdlReader.readUInt32();
-    this.modelHeader.headerPaddingAC = this.mdlReader.readUInt32();
-    this.modelHeader.mdxSize = this.mdlReader.readUInt32();
-    this.modelHeader.mdxOffset = this.mdlReader.readUInt32();
-
-    /*
-     * Names Array Header
-     */
-
-    this.namesArrayDefinition = OdysseyModelUtility.ReadArrayDefinition(this.mdlReader);
-    this.nameOffsetsArray = OdysseyModelUtility.ReadArrayUInt32s(this.mdlReader, this.fileHeader.modelDataOffset + this.namesArrayDefinition.offset, this.namesArrayDefinition.count);
-
-    this.names = OdysseyModelUtility.ReadStrings(this.mdlReader, this.nameOffsetsArray, this.fileHeader.modelDataOffset);
-    for(let i = 0, namesLen = this.names.length; i < namesLen; i++){
-      this.names[i] = mdlStringCleaner(this.names[i]);
-    }
-
-    /*
-     * Nodes
-     */
-
-    this.rootNode = this.readNode( this.geometryHeader.rootNodeOffset );
-
-    /*
-     * Animations
-     */
-
-    const animOffsets = OdysseyModelUtility.ReadArrayUInt32s(mdlReader, this.fileHeader.modelDataOffset + this.modelHeader.animationArrayDefinition.offset, this.modelHeader.animationArrayDefinition.count);
-    for (let i = 0; i < this.modelHeader.animationArrayDefinition.count; i++){
-      this.readAnimation( this.fileHeader.modelDataOffset + animOffsets[i] );
-    }
-
-    this.mdlReader.dispose();
-    this.mdxReader.dispose();
-
-  }
-
-  readNode(offset: number, parent = this.rootNode){
-
-    this.mdlReader.position = this.fileHeader.modelDataOffset + offset;  
-    // let node: OdysseyModelNode;
-
-    const node = OdysseyModelFactory.ReadNode(parent, this.mdlReader);
-    node.isRootNode = !parent;
-
-    if(node){
-      node.readBinary(this);
-      node.odysseyModel = undefined;
-
-      for(let i = 0, len = node.childOffsets.length; i < len; i++){
-        node.add( this.readNode(node.childOffsets[i], node ) );
-      }
-  
-      return node;
-    }else{
-      console.error('OdysseyModel.ReadNode', 'Unhandled Node', node.nodeType);
-    }
-
-    return node;
-  }
-
-  readAnimation(offset: number){
-    const pos = this.mdlReader.position;
-    this.mdlReader.seek(offset);
-
-    const anim = new OdysseyModelAnimation();
-    anim.readBinary(this);
-
-    this.animations.push(anim);
-    this.mdlReader.seek(pos);
-
-    return anim;
+    OdysseyModelBinaryReader.readInto(this, mdlReader, mdxReader, options);
   }
 
   getAnimationDummyNodeName(){

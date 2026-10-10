@@ -1,3 +1,20 @@
+/**
+ * Binary save path for Odyssey models (MDL + MDX).
+ *
+ * Supported path today:
+ * - MDL: passthrough of `model.sourceMdl` when the model was loaded with
+ *   `OdysseyModel.FromBuffers(..., { preserveSourceBinary: true })` and
+ *   `preferSourceMdl` is left at its default (true). Wrapper / model-header
+ *   MDX size fields may be patched when MDX is regenerated.
+ * - MDX: regenerated from parsed mesh vertex data via
+ *   {@link OdysseyModelBinaryMdxWriter} (default), unless `preferSourceMdx`
+ *   returns the preserved `sourceMdx` bytes.
+ *
+ * Full MDL rewrite from the parsed node graph is not implemented; calling
+ * write without source MDL (or with `preferSourceMdl: false`) throws.
+ * Structural edits that need a new MDL should go through ASCII export/import
+ * until a real MDL serializer exists.
+ */
 import type { OdysseyModel } from "@engine/odyssey/OdysseyModel";
 import { MDL_WRAPPER_SIZE } from "@engine/odyssey/binary/OdysseyModelBinaryLayout";
 import { OdysseyModelBinaryMdxWriter } from "@engine/odyssey/binary/OdysseyModelBinaryMdxWriter";

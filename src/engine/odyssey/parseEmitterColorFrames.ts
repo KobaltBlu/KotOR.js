@@ -1,4 +1,3 @@
-import * as THREE from "three";
 import { IOdysseyControllerFrameGeneric } from "@core/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
 
 /**
@@ -9,6 +8,8 @@ import { IOdysseyControllerFrameGeneric } from "@core/interface/odyssey/controll
  * Anything else → bezier (3×vec3 per key, stride 9), matching Position.
  * Header columnCount can be bogus (e.g. 19 on m05ab_11a animloop ColorMid);
  * never use it as the bezier row stride.
+ *
+ * Bezier frames store plain xyz; THREE curves are built lazily on first sample.
  */
 export function parseEmitterColorFrames(
   frameCount: number,
@@ -44,18 +45,11 @@ export function parseEmitterColorFrames(
       const cx = data[rowOffset + 6] || 0.0;
       const cy = data[rowOffset + 7] || 0.0;
       const cz = data[rowOffset + 8] || 0.0;
-      frame.a = new THREE.Vector3(ax, ay, az);
-      frame.b = new THREE.Vector3(bx, by, bz);
-      frame.c = new THREE.Vector3(cx, cy, cz);
+      frame.a = { x: ax, y: ay, z: az };
+      frame.b = { x: bx, y: by, z: bz };
+      frame.c = { x: cx, y: cy, z: cz };
       frame.isBezier = true;
-      frame.bezier = new THREE.QuadraticBezierCurve3(
-        new THREE.Vector3(ax, ay, az),
-        new THREE.Vector3(ax + bx, ay + by, az + bz),
-        new THREE.Vector3(ax + cx, ay + cy, az + cz)
-      );
-      if(!r){
-        frame.bezier.v1.copy(frame.bezier.v0);
-      }
+      frame.bezierMidEqualsStart = !r;
       frame.x = ax;
       frame.y = ay;
       frame.z = az;

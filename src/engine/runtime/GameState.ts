@@ -266,6 +266,11 @@ export class GameState implements EngineContext {
   static windManager: WindManager;
   static grassManager: GrassManager;
 
+  /** IGameContext wind accessor — used by OdysseyModel3D.update dangly wind. */
+  static getWindManager(): WindManager | undefined {
+    return GameState.windManager;
+  }
+
   static visible: boolean;
 
   static scene: THREE.Scene;

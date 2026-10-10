@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { IOdysseyControllerFrameGeneric } from "@core/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
 import { IOdysseyControllerGeneric } from "@core/interface/odyssey/controller/IOdysseyControllerGeneric";
 import { OdysseyModelControllerType } from "@core/enums/odyssey/OdysseyModelControllerType";
+import { ensureControllerFrameBezier } from "@engine/odyssey/binary/ensureControllerFrameBezier";
 
 /**
  * OdysseyController class.
@@ -48,6 +49,8 @@ export class OdysseyController {
     out: THREE.Vector3
   ): THREE.Vector3 {
     if(last.isBezier){
+      ensureControllerFrameBezier(last);
+      if(next.isBezier) ensureControllerFrameBezier(next);
       if(last.isLinearBezier){
         out.copy(last.bezier.getPoint(0));
       }else{
@@ -63,6 +66,7 @@ export class OdysseyController {
       return out;
     }
     if(next.isBezier){
+      ensureControllerFrameBezier(next);
       out.set(last.x, last.y, last.z);
       const nextPt = OdysseyController._bezierScratch;
       if(next.isLinearBezier){

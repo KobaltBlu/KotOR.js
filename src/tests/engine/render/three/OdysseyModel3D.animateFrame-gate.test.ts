@@ -2,7 +2,7 @@
  * @jest-environment node
  *
  * Contract for OdysseyModel3D.update when animateFrame is gated off:
- * effects + animationManager still run; emitters / dangly / anim-dummy skip.
+ * effects + animationManager still run; materials / emitters / dangly / anim-dummy skip.
  */
 import { describe, expect, test, jest } from "@jest/globals";
 
@@ -10,6 +10,7 @@ function updateModelLike(model: {
   animateFrame: boolean;
   effects: { update: (d: number) => void }[];
   animationManager: { update: (d: number) => void };
+  materials: { tickTime: () => void }[];
   emitters: { tick: (d: number) => void }[];
   childModels: { animateFrame: boolean; update: (d: number) => void }[];
   updateAnimDummy: () => void;
@@ -24,6 +25,9 @@ function updateModelLike(model: {
     model.updateAnimDummy();
   }
   if(model.animateFrame){
+    for(const mat of model.materials){
+      mat.tickTime();
+    }
     for(const em of model.emitters){
       em.tick(delta);
     }
@@ -39,8 +43,9 @@ function updateModelLike(model: {
 }
 
 describe("OdysseyModel3D.update animateFrame gate", () => {
-  test("skips emitters and dangly when animateFrame is false", () => {
+  test("skips materials, emitters and dangly when animateFrame is false", () => {
     const emitterTick = jest.fn();
+    const materialTick = jest.fn();
     const updateAnimDummy = jest.fn();
     const updateDangly = jest.fn();
     const updateSaber = jest.fn();
@@ -51,6 +56,7 @@ describe("OdysseyModel3D.update animateFrame gate", () => {
       animateFrame: false,
       effects: [],
       animationManager: { update: animUpdate },
+      materials: [{ tickTime: materialTick }],
       emitters: [{ tick: emitterTick }],
       childModels: [{ animateFrame: true, update: childUpdate }],
       updateAnimDummy,
@@ -59,6 +65,7 @@ describe("OdysseyModel3D.update animateFrame gate", () => {
     }, 0.016);
 
     expect(animUpdate).toHaveBeenCalledWith(0.016);
+    expect(materialTick).not.toHaveBeenCalled();
     expect(emitterTick).not.toHaveBeenCalled();
     expect(updateAnimDummy).not.toHaveBeenCalled();
     expect(updateDangly).not.toHaveBeenCalled();
@@ -66,8 +73,9 @@ describe("OdysseyModel3D.update animateFrame gate", () => {
     expect(childUpdate).toHaveBeenCalled();
   });
 
-  test("ticks emitters when animateFrame is true", () => {
+  test("ticks materials and emitters when animateFrame is true", () => {
     const emitterTick = jest.fn();
+    const materialTick = jest.fn();
     const updateAnimDummy = jest.fn();
     const updateDangly = jest.fn();
     const updateSaber = jest.fn();
@@ -76,6 +84,7 @@ describe("OdysseyModel3D.update animateFrame gate", () => {
       animateFrame: true,
       effects: [],
       animationManager: { update: jest.fn() },
+      materials: [{ tickTime: materialTick }],
       emitters: [{ tick: emitterTick }],
       childModels: [],
       updateAnimDummy,
@@ -83,6 +92,7 @@ describe("OdysseyModel3D.update animateFrame gate", () => {
       updateSaber,
     }, 0.016);
 
+    expect(materialTick).toHaveBeenCalled();
     expect(emitterTick).toHaveBeenCalledWith(0.016);
     expect(updateAnimDummy).toHaveBeenCalled();
     expect(updateDangly).toHaveBeenCalled();

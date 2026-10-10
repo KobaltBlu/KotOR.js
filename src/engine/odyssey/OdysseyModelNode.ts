@@ -2,24 +2,10 @@ import * as THREE from "three";
 import { OdysseyModelControllerType } from "@core/enums/odyssey/OdysseyModelControllerType";
 import { OdysseyModelNodeType } from "@core/enums/odyssey/OdysseyModelNodeType";
 import { OdysseyModel } from "@engine/odyssey/OdysseyModel";
-import { OdysseyModelAnimationNode } from "@engine/odyssey/OdysseyModelAnimationNode";
 import { type OdysseyController } from "@engine/odyssey/controllers/OdysseyController";
-import { OdysseyControllerFactory } from "@engine/odyssey/controllers/OdysseyControllerFactory";
 import { IOdysseyArrayDefinition } from "@core/interface/odyssey/IOdysseyArrayDefinition";
 import { OdysseyModelUtility } from "@engine/odyssey/OdysseyModelUtility";
-import { IOdysseyControllerGeneric } from "@core/interface/odyssey/controller/IOdysseyControllerGeneric";
-import { IOdysseyControllerFrameGeneric } from "@core/interface";
-import { parseEmitterColorFrames } from "@engine/odyssey/parseEmitterColorFrames";
-      
-// Compressed orientation keys:
-// packed uint32 as 11-bit X, 11-bit Y, 10-bit Z.
-const QUAT_X_MASK = 0x07ff;
-const QUAT_Y_MASK = 0x07ff;
-const QUAT_Z_MASK = 0x03ff;
-const QUAT_X_SCALE = Math.fround(1.0 / 1023.0);
-const QUAT_Z_SCALE = Math.fround(1.0 / 511.0);
-const QUAT_Y_SHIFT = 11;
-const QUAT_Z_SHIFT = 22;
+import { OdysseyModelControllerDecoder } from "@engine/odyssey/binary/OdysseyModelControllerDecoder";
 
 /**
  * OdysseyModelNode class.
@@ -31,7 +17,8 @@ const QUAT_Z_SHIFT = 22;
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class OdysseyModelNode {
-  uuid: string = crypto.randomUUID();
+  /** Deterministic for binary ingest (`nodeNumber`/`nameIndex`); random for editor/ASCII when needed. */
+  private _uuid: string = '';
   parent: OdysseyModelNode;
   type: OdysseyModelNodeType;
   nodeType: OdysseyModelNodeType;
@@ -54,6 +41,8 @@ export class OdysseyModelNode {
   controllerArrayDefinition: IOdysseyArrayDefinition;
   controllerDataArrayDefinition: IOdysseyArrayDefinition;
   isRootNode: boolean = false;
+  /** True on {@link OdysseyModelAnimationNode}; avoids circular `instanceof` in the controller decoder. */
+  isAnimationControllerNode: boolean = false;
   /**
    * Denotes a child node of the animation dummy group for room models.
    * like: MODELNAMEa or m02ac_02ba
@@ -66,6 +55,38 @@ export class OdysseyModelNode {
   constructor(parent: OdysseyModelNode){
     this.parent = parent;
     this.type = OdysseyModelNodeType.Header;
+  }
+
+  get uuid(): string {
+    if (!this._uuid) {
+      this._uuid = this.createUuid();
+    }
+    return this._uuid;
+  }
+
+  set uuid(value: string) {
+    this._uuid = value || '';
+  }
+
+  /** Assign a UUID when editor/ASCII paths need one before binary ids exist. */
+  ensureUuid(): string {
+    return this.uuid;
+  }
+
+  private createUuid(): string {
+    if (typeof this.nodeNumber === 'number' && this.nodeNumber >= 0) {
+      const nameIdx = typeof this.nameIndex === 'number' ? this.nameIndex : 0;
+      return `odyssey-node:${this.nodeNumber}:${nameIdx}`;
+    }
+    return crypto.randomUUID();
+  }
+
+  /** Bind deterministic id from binary header fields (avoids crypto during parse). */
+  bindBinaryUuid(): void {
+    if (typeof this.nodeNumber === 'number' && this.nodeNumber >= 0) {
+      const nameIdx = typeof this.nameIndex === 'number' ? this.nameIndex : 0;
+      this._uuid = `odyssey-node:${this.nodeNumber}:${nameIdx}`;
+    }
   }
 
   setParent(parent: OdysseyModelNode){
@@ -99,6 +120,8 @@ export class OdysseyModelNode {
     this.padding = this.odysseyModel.mdlReader.readUInt16();
     this.offsetToRoot = this.odysseyModel.mdlReader.readUInt32();
     this.offsetToParent = this.odysseyModel.mdlReader.readUInt32();
+
+    this.bindBinaryUuid();
 
     if (this.nameIndex < this.odysseyModel.names.length){
       this.name = this.odysseyModel.names[this.nameIndex].replace(/\0[\s\S]*$/g,'').toLowerCase();
@@ -134,330 +157,14 @@ export class OdysseyModelNode {
     const controllerData = OdysseyModelUtility.ReadArrayFloats(this.odysseyModel.mdlReader, this.odysseyModel.fileHeader.modelDataOffset + this.controllerDataArrayDefinition.offset, this.controllerDataArrayDefinition.count);
     const controllerData2 = OdysseyModelUtility.ReadArrayUInt32s(this.odysseyModel.mdlReader, this.odysseyModel.fileHeader.modelDataOffset + this.controllerDataArrayDefinition.offset, this.controllerDataArrayDefinition.count);
 
-    this.controllers = this.readBinaryNodeControllers(this.odysseyModel.fileHeader.modelDataOffset + this.controllerArrayDefinition.offset, this.controllerArrayDefinition.count, controllerData, controllerData2);
-  }
-
-  readBinaryNodeControllers(offset: number, count: number, data: Float32Array, data2: Uint32Array){
-    const pos = this.odysseyModel.mdlReader.position;
-    this.odysseyModel.mdlReader.seek(offset);
-
-    const controllers = new Map<OdysseyModelControllerType, OdysseyController>();
-    for(let i = 0; i < count; i++){
-      const controller: IOdysseyControllerGeneric = {
-        data: []
-      } as any;
-
-      controller.type = this.odysseyModel.mdlReader.readInt32();
-      //
-      controller.supermodelLink = this.odysseyModel.mdlReader.readInt16();
-      controller.frameCount = this.odysseyModel.mdlReader.readUInt16();
-      controller.timeKeyIndex = this.odysseyModel.mdlReader.readUInt16(); //Index into the float array of the first time key
-      controller.dataValueIndex = this.odysseyModel.mdlReader.readUInt16(); //Index into the float array of the first controller data value
-      controller.columnCount = this.odysseyModel.mdlReader.readByte();//Number of columns excluding the time key column
-      this.odysseyModel.mdlReader.skip(3); //Skip unused padding
-      
-      let tmpQuat = new THREE.Quaternion();
-
-      // Animation nodes reuse geometry names; prefer the geometry node's type so
-      // controller column layouts match the mesh. Do NOT copy onto geometry nodes —
-      // duplicate names (e.g. c_jawa skin "lhand" then hook "lhand") would corrupt
-      // the later node's type into Skin/Mesh and break hooks / ASCII export.
-      controller.nodeType = this.nodeType;
-      if(this instanceof OdysseyModelAnimationNode && this.odysseyModel.nodes.has(this.name)){
-        const geo = this.odysseyModel.nodes.get(this.name);
-        if(geo){
-          controller.nodeType = this.nodeType = geo.nodeType;
-        }
-      }
-
-      if(controller.frameCount != -1){
-
-        if(this instanceof OdysseyModelAnimationNode || this instanceof OdysseyModelNode){
-
-          //Default Controllers
-          switch(controller.type){
-            case OdysseyModelControllerType.Position:
-              for (let r = 0; r < controller.frameCount; r++) {
-                const frame: IOdysseyControllerFrameGeneric = {
-                  isBezier: false,
-                  time: data[controller.timeKeyIndex + r]
-                } as any;
-
-                const vec3 = {x: 0, y: 0, z: 0};
-
-                if(controller.columnCount == 1){
-                  vec3.x = data[controller.dataValueIndex + (r * controller.columnCount)] || 0.0;
-                  vec3.y = data[controller.dataValueIndex + (r * controller.columnCount)] || 0.0;
-                  vec3.z = data[controller.dataValueIndex + (r * controller.columnCount)] || 0.0;
-                }else if(controller.columnCount == 3){
-                  vec3.x = data[controller.dataValueIndex + (r * controller.columnCount) + 0] || 0.0;
-                  vec3.y = data[controller.dataValueIndex + (r * controller.columnCount) + 1] || 0.0;
-                  vec3.z = data[controller.dataValueIndex + (r * controller.columnCount) + 2] || 0.0;
-                }else{
-                  //This is a bezier curve this controller contains 3 vector3's packed end to end:
-                  //pointA: x1,y1,z1 | pointB: x2,y2,z2 | pointC: x3,y3,z3
-                  //pointB and pointC are relative to pointA
-                  //console.log('bezier', this.name, controller);
-                  let rowOffset = controller.dataValueIndex + (r * 9);
-
-                  frame.a = new THREE.Vector3(
-                    data[rowOffset + 0] || 0.0,
-                    data[rowOffset + 1] || 0.0,
-                    data[rowOffset + 2] || 0.0
-                  );
-
-                  frame.b = new THREE.Vector3(
-                    data[rowOffset + 3] || 0.0,
-                    data[rowOffset + 4] || 0.0,
-                    data[rowOffset + 5] || 0.0
-                  );
-
-                  frame.c = new THREE.Vector3(
-                    data[rowOffset + 6] || 0.0,
-                    data[rowOffset + 7] || 0.0,
-                    data[rowOffset + 8] || 0.0
-                  );
-
-                  frame.isBezier = true;
-                  frame.bezier = new THREE.QuadraticBezierCurve3(
-                    //POINT A
-                    new THREE.Vector3(
-                      data[rowOffset + 0] || 0.0,
-                      data[rowOffset + 1] || 0.0,
-                      data[rowOffset + 2] || 0.0
-                    ),
-                    //POINT B
-                    new THREE.Vector3(
-                      (data[rowOffset + 0] + data[rowOffset + 3]) || 0.0,
-                      (data[rowOffset + 1] + data[rowOffset + 4]) || 0.0,
-                      (data[rowOffset + 2] + data[rowOffset + 5]) || 0.0
-                    ),
-                    //POINT C
-                    new THREE.Vector3(
-                      (data[rowOffset + 0] + data[rowOffset + 6]) || 0.0,
-                      (data[rowOffset + 1] + data[rowOffset + 7]) || 0.0,
-                      (data[rowOffset + 2] + data[rowOffset + 8]) || 0.0
-                    )
-                  );
-                  
-                  // If this is the first keyframe, ignore the Bezier control at v1 by
-                  // copying v0 (keeps animated cameras from jumping off-rails on start).
-                  // camera animation still uses the same controller data; this
-                  // matches observed first-frame stability for dialog CameraModel paths.
-                  if(!r){
-                    frame.bezier.v1.copy(frame.bezier.v0);
-                  }
-
-                  /*frame.isLinearBezier = (frame.bezier.v0.x.toFixed(6) == frame.bezier.v2.x.toFixed(6) && frame.bezier.v0.y.toFixed(6) == frame.bezier.v2.y.toFixed(6));
-
-                  if(frame.isLinearBezier){
-                    frame.bezier.v1.copy(frame.bezier.v0).add(frame.bezier.v2).multiplyScalar(0.5);
-                  }else if(frame.bezier.v0.length() - frame.bezier.v1.length() < 0.01){
-                    frame.isLinearBezier = true;
-                    frame.bezier.v1.copy(frame.bezier.v0).add(frame.bezier.v2).multiplyScalar(0.5);
-                  }*/
-
-                  vec3.x = data[rowOffset + 0] || 0.0;
-                  vec3.y = data[rowOffset + 1] || 0.0;
-                  vec3.z = data[rowOffset + 2] || 0.0;
-
-                }
-    
-                frame.x = vec3.x;
-                frame.y = vec3.y;
-                frame.z = vec3.z;
-    
-                controller.data[r] = (frame);
-              }
-            break;
-            case OdysseyModelControllerType.Orientation:
-              for (let r = 0; r < controller.frameCount; r++) {
-                const frame: IOdysseyControllerFrameGeneric = {} as any;
-                frame.time = data[controller.timeKeyIndex + r];
-
-                if(controller.columnCount == 2){
-                  // Reinterpret controller data dword as packed xyz (float→uint bits)
-                  const temp = data2[controller.dataValueIndex + r] >>> 0;
-
-                  const x = ((temp & QUAT_X_MASK) * QUAT_X_SCALE) - 1.0;
-                  const y = (((temp >> QUAT_Y_SHIFT) & QUAT_Y_MASK) * QUAT_X_SCALE) - 1.0;
-                  const z = (((temp >> QUAT_Z_SHIFT) & QUAT_Z_MASK) * QUAT_Z_SCALE) - 1.0;
-                  const fSquares = x * x + y * y + z * z;
-
-                  // : if (fSquares <= 1.0) w = sqrt(1 - fSquares); else normalize xyz, w = 0
-                  if(fSquares <= 1.0){
-                    tmpQuat.set(x, y, z, Math.sqrt(1.0 - fSquares));
-                  }else{
-                    const invLength = 1.0 / Math.sqrt(fSquares);
-                    tmpQuat.set(x * invLength, y * invLength, z * invLength, 0);
-                  }
-                }else{
-                  // columnCount == 4: raw x,y,z,w floats (no normalize in)
-                  tmpQuat.set(
-                    data[controller.dataValueIndex + (r * controller.columnCount) + 0],
-                    data[controller.dataValueIndex + (r * controller.columnCount) + 1],
-                    data[controller.dataValueIndex + (r * controller.columnCount) + 2],
-                    data[controller.dataValueIndex + (r * controller.columnCount) + 3]
-                  );
-                }
-    
-                frame.x = tmpQuat.x;
-                frame.y = tmpQuat.y;
-                frame.z = tmpQuat.z;
-                frame.w = tmpQuat.w;
-    
-                controller.data[r] = frame;
-              }
-            break;
-            case OdysseyModelControllerType.Scale:
-              for (let r = 0; r < controller.frameCount; r++) {
-                const frame: IOdysseyControllerFrameGeneric = {} as any;
-                frame.time = data[controller.timeKeyIndex + r];
-                frame.value = data[controller.dataValueIndex + (r * controller.columnCount) + 0] || 0.0;
-                controller.data[r] = frame;
-              }
-            break;
-          }
-
-          //Mesh Controllers
-          if ((this.nodeType & OdysseyModelNodeType.Mesh) == OdysseyModelNodeType.Mesh) {
-            switch(controller.type){
-              case OdysseyModelControllerType.Alpha:
-                for (let r = 0; r < controller.frameCount; r++) {
-                  const frame: IOdysseyControllerFrameGeneric = {} as any;
-                  frame.time = data[controller.timeKeyIndex + r];
-                  frame.value = data[controller.dataValueIndex + (r * controller.columnCount) + 0] || 0.0;
-                  controller.data[r] = frame;
-                }
-              break;
-              case OdysseyModelControllerType.SelfIllumColor:
-                for (let r = 0; r < controller.frameCount; r++) {
-                  const frame: IOdysseyControllerFrameGeneric = {} as any;
-      
-                  frame.time = data[controller.timeKeyIndex + r];
-                  frame.x = data[controller.dataValueIndex + (r * controller.columnCount) + 0] || 0.0;
-                  frame.y = data[controller.dataValueIndex + (r * controller.columnCount) + 1] || 0.0;
-                  frame.z = data[controller.dataValueIndex + (r * controller.columnCount) + 2] || 0.0;
-      
-                  controller.data[r] = frame;
-                }
-              break;
-            }
-          }
-
-          //Light Controllers
-          if ((this.nodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
-            switch(controller.type){
-              case OdysseyModelControllerType.Color:
-                for (let r = 0; r < controller.frameCount; r++) {
-                  const frame: IOdysseyControllerFrameGeneric = {} as any;
-                  frame.time = data[controller.timeKeyIndex + r];
-                  frame.x = data[controller.dataValueIndex + (r * controller.columnCount) + 0];
-                  frame.y = data[controller.dataValueIndex + (r * controller.columnCount) + 1];
-                  frame.z = data[controller.dataValueIndex + (r * controller.columnCount) + 2];
-
-                  if(frame.x < 0) frame.x = 1.0 + frame.x;
-                  if(frame.y < 0) frame.y = 1.0 + frame.y;
-                  if(frame.z < 0) frame.z = 1.0 + frame.z;
-
-                  controller.data[r] = frame
-                }
-              break;
-              case OdysseyModelControllerType.ShadowRadius:
-              case OdysseyModelControllerType.Radius:
-              case OdysseyModelControllerType.VerticalDisplacement:
-              case OdysseyModelControllerType.Multiplier:
-                for (let r = 0; r < controller.frameCount; r++) {
-                  const frame: IOdysseyControllerFrameGeneric = {} as any;
-                  frame.time = data[controller.timeKeyIndex + r];
-                  frame.value = data[controller.dataValueIndex + (r * controller.columnCount) + 0];
-                  controller.data[r] = frame
-                }
-              break;
-            }
-          }
-
-          //Emitter Controllers
-          if ((this.nodeType & OdysseyModelNodeType.Emitter) == OdysseyModelNodeType.Emitter) {
-            switch(controller.type){
-              //case OdysseyModelControllerType.P2P_Bezier3:
-              case OdysseyModelControllerType.ColorStart:
-              case OdysseyModelControllerType.ColorMid:
-              case OdysseyModelControllerType.ColorEnd:
-                controller.data = parseEmitterColorFrames(
-                  controller.frameCount,
-                  controller.columnCount,
-                  controller.timeKeyIndex,
-                  controller.dataValueIndex,
-                  data
-                );
-              break;
-              case OdysseyModelControllerType.LifeExp:
-              case OdysseyModelControllerType.BirthRate:
-              case OdysseyModelControllerType.RandomBirthRate:
-              case OdysseyModelControllerType.Bounce_Co:
-              case OdysseyModelControllerType.Drag:
-              case OdysseyModelControllerType.Gravity:
-              case OdysseyModelControllerType.FPS:
-              case OdysseyModelControllerType.Detonate:
-              case OdysseyModelControllerType.CombineTime:
-              case OdysseyModelControllerType.Spread:
-              case OdysseyModelControllerType.Velocity:
-              case OdysseyModelControllerType.RandomVelocity:
-              case OdysseyModelControllerType.Mass:
-              case OdysseyModelControllerType.ParticleRot:
-              case OdysseyModelControllerType.SizeStart:
-              case OdysseyModelControllerType.SizeMid:
-              case OdysseyModelControllerType.SizeEnd:
-              case OdysseyModelControllerType.SizeStart_Y:
-              case OdysseyModelControllerType.SizeMid_Y:
-              case OdysseyModelControllerType.SizeEnd_Y:
-              case OdysseyModelControllerType.LightningDelay:
-              case OdysseyModelControllerType.LightningRadius:
-              case OdysseyModelControllerType.LightningScale:
-              case OdysseyModelControllerType.LightningZigZag:
-              case OdysseyModelControllerType.LightningSubDiv:
-              case OdysseyModelControllerType.P2P_Bezier2:
-              case OdysseyModelControllerType.P2P_Bezier3:
-              case OdysseyModelControllerType.AlphaStart:
-              case OdysseyModelControllerType.AlphaMid:
-              case OdysseyModelControllerType.AlphaEnd:
-              case OdysseyModelControllerType.PercentStart:
-              case OdysseyModelControllerType.PercentMid:
-              case OdysseyModelControllerType.PercentEnd:
-              case OdysseyModelControllerType.Threshold:
-              case OdysseyModelControllerType.XSize:
-              case OdysseyModelControllerType.YSize:
-              case OdysseyModelControllerType.FrameStart:
-              case OdysseyModelControllerType.FrameEnd:
-              case OdysseyModelControllerType.BlurLength:
-                // --------------------- //
-              case OdysseyModelControllerType.TargetSize:
-              case OdysseyModelControllerType.ControlPTCount:
-              case OdysseyModelControllerType.ControlPTRadius:
-              case OdysseyModelControllerType.ControlPTDelay:
-              case OdysseyModelControllerType.TangentSpread:
-              case OdysseyModelControllerType.TangentLength:
-                for (let r = 0; r < controller.frameCount; r++) {
-                  const frame: IOdysseyControllerFrameGeneric = {} as any;
-                  frame.time = data[controller.timeKeyIndex + r];
-                  frame.value = data[controller.dataValueIndex + (r * controller.columnCount) + 0];
-                  controller.data[r] = frame
-                }
-              break;
-            }
-          }
-        }
-
-        if(controller.data.length)
-          controller.data[controller.data.length-1].lastFrame = true;
-
-        controllers.set(controller.type, OdysseyControllerFactory.From(controller));
-      }
-    }
-
-    this.odysseyModel.mdlReader.seek(pos);
-    return controllers;
+    this.controllers = OdysseyModelControllerDecoder.readNodeControllers(
+      this,
+      this.odysseyModel,
+      this.odysseyModel.fileHeader.modelDataOffset + this.controllerArrayDefinition.offset,
+      this.controllerArrayDefinition.count,
+      controllerData,
+      controllerData2,
+    );
   }
 
 }

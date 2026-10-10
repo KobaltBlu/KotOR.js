@@ -5,6 +5,7 @@ import { OdysseyModelNodeMesh } from "@engine/odyssey/OdysseyModelNodeMesh";
 import type { OdysseyModelNode } from "@engine/odyssey/OdysseyModelNode";
 import type { OdysseyModel } from "@engine/odyssey/OdysseyModel";
 import { OdysseyModelUtility } from "@engine/odyssey/OdysseyModelUtility";
+import { readMdxInterleavedFloats } from "@engine/odyssey/binary/OdysseyModelMdxAttributeReader";
 
 /**
  * OdysseyModelNodeSkin class.
@@ -25,8 +26,8 @@ import { OdysseyModelUtility } from "@engine/odyssey/OdysseyModelUtility";
   bonePositionDefinition: IOdysseyArrayDefinition;
   boneConstantsDefinition: IOdysseyArrayDefinition;
   bone_parts: number[];
-  weights: number[];
-  boneIdx: number[];
+  weights: Float32Array | number[];
+  boneIdx: Float32Array | number[];
   bone_mapping: number[];
   bone_constants: number[];
   bone_quaternions: THREE.Quaternion[];
@@ -60,33 +61,18 @@ import { OdysseyModelUtility } from "@engine/odyssey/OdysseyModelUtility";
       this.bone_parts[i] = this.odysseyModel.mdlReader.readUInt16();
     }
 
-    this.weights = [];
-    this.boneIdx = [];
     this.bone_mapping = [];
     this.bone_constants = [];
     this.bone_quaternions = [];
     this.bone_translations = [];
     this.bone_inverse_matrix = [];
 
-    for (let i = 0; i < this.verticesCount; i++) {
-      // Seek To Weights
-      this.odysseyModel.mdxReader.position = (this.MDXNodeDataOffset + (i * this.MDXDataSize)) + this.MDXBoneWeightOffset;
-      this.weights.push(
-        this.odysseyModel.mdxReader.readSingle(),
-        this.odysseyModel.mdxReader.readSingle(),
-        this.odysseyModel.mdxReader.readSingle(),
-        this.odysseyModel.mdxReader.readSingle()
-      );
-
-      // Seek To Bone Indexes
-      this.odysseyModel.mdxReader.position = (this.MDXNodeDataOffset + (i * this.MDXDataSize)) + this.MDXBoneIndexOffset;
-      this.boneIdx.push(
-        this.odysseyModel.mdxReader.readSingle(),
-        this.odysseyModel.mdxReader.readSingle(),
-        this.odysseyModel.mdxReader.readSingle(),
-        this.odysseyModel.mdxReader.readSingle()
-      );
-    }
+    const mdxBuffer = this.odysseyModel.mdxReader.buffer;
+    const stride = this.MDXDataSize | 0;
+    const n = this.verticesCount | 0;
+    const base = this.MDXNodeDataOffset | 0;
+    this.weights = readMdxInterleavedFloats(mdxBuffer, base, stride, this.MDXBoneWeightOffset, n, 4);
+    this.boneIdx = readMdxInterleavedFloats(mdxBuffer, base, stride, this.MDXBoneIndexOffset, n, 4);
 
     if (this.boneMapCount > 0) {
       this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.modelDataOffset + this.boneMapOffset);

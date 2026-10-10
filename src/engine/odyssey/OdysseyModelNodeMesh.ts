@@ -7,7 +7,17 @@ import { OdysseyFace3 } from "@engine/render/three/odyssey/OdysseyFace3";
 import { OdysseyModelNode } from "@engine/odyssey/OdysseyModelNode";
 import type { OdysseyModel } from "@engine/odyssey/OdysseyModel";
 import { OdysseyModelUtility } from "@engine/odyssey/OdysseyModelUtility";
-import { OdysseyWalkMesh } from "@engine/odyssey/OdysseyWalkMesh";
+import {
+  readMdxInterleavedFloats,
+  readMdxTangentBlock,
+} from "@engine/odyssey/binary/OdysseyModelMdxAttributeReader";
+import {
+  initMeshGeometryDefaults,
+  populateMeshDirtFields,
+  populateMeshFaces,
+  populateMeshVertexAttributes,
+  type DecodedMeshFaces,
+} from "@engine/odyssey/domain/populateMeshFromDecoded";
 
 const mdlStringCleaner = (str: string = ''): string => {
   const cleaned = str.replace(/\0[\s\S]*$/g,'').toLowerCase().trim();
@@ -24,18 +34,26 @@ const mdlStringCleaner = (str: string = ''): string => {
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class OdysseyModelNodeMesh extends OdysseyModelNode {
-  vertices: any[];
-  normals: number[];
-  colors: number[];
+  vertices: Float32Array | number[];
+  normals: Float32Array | number[];
+  colors: Float32Array | number[];
   /** Vertex color index list (ASCII / MDLedit); optional. */
   colorIndices?: number[];
-  tvectors: number[][];
+  tvectors: (Float32Array | number[])[];
   texCords: any[][];
   tangents: any[][];
   indexArray: any[];
   uvs: any[];
-  faces: OdysseyFace3[];
-  indices: any[];
+  /** Typed face storage from binary parse (indices / materials / planes). */
+  faceCount: number = 0;
+  faceIndices: Uint16Array;
+  faceNormals: Float32Array;
+  faceDistances: Float32Array;
+  faceMaterialIndices: Uint32Array;
+  faceAdjacent: Int16Array;
+  faceSmoothingGroups?: Uint32Array;
+  private _faces: OdysseyFace3[] | undefined;
+  indices: Uint32Array | number[];
   functionPointer0: number;
   functionPointer1: number;
   boundingBox: { min: THREE.Vector3; max: THREE.Vector3; };
@@ -75,10 +93,10 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
   _unknown2: number;
   _totalArea: number;
   _unknown4: number;
-  tangent1: { tangents: any[]; bitangents: any[]; normals: any[]; computed: any[]; };
-  tangent2: { tangents: any[]; bitangents: any[]; normals: any[]; computed: any[]; };
-  tangent3: { tangents: any[]; bitangents: any[]; normals: any[]; computed: any[]; };
-  tangent4: { tangents: any[]; bitangents: any[]; normals: any[]; computed: any[]; };
+  tangent1: { tangents: Float32Array | number[]; bitangents: Float32Array | number[]; normals: Float32Array | number[]; computed: any[]; };
+  tangent2: { tangents: Float32Array | number[]; bitangents: Float32Array | number[]; normals: Float32Array | number[]; computed: any[]; };
+  tangent3: { tangents: Float32Array | number[]; bitangents: Float32Array | number[]; normals: Float32Array | number[]; computed: any[]; };
+  tangent4: { tangents: Float32Array | number[]; bitangents: Float32Array | number[]; normals: Float32Array | number[]; computed: any[]; };
   faceArrayDefinition: IOdysseyArrayDefinition;
   vertexCoordinatesOffset: number;
 
@@ -106,19 +124,59 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
     this.type |= OdysseyModelNodeType.Mesh;
   }
 
+  /**
+   * Lazy OdysseyFace3[] for ASCII export / AABB grass / THREE walkmesh display.
+   * Binary parse stores typed arrays only; color is left unset (THREE factory paints).
+   */
+  get faces(): OdysseyFace3[] {
+    if (!this._faces) {
+      this._faces = this.buildFacesFromTyped();
+    }
+    return this._faces;
+  }
+
+  set faces(value: OdysseyFace3[]) {
+    this._faces = value ?? [];
+    this.faceCount = this._faces.length;
+  }
+
+  /** Drop lazy OdysseyFace3 cache after typed face arrays change. */
+  clearFaceCache(): void {
+    this._faces = undefined;
+  }
+
+  private buildFacesFromTyped(): OdysseyFace3[] {
+    const count = this.faceCount | 0;
+    if (count <= 0 || !this.faceIndices) {
+      return [];
+    }
+    const out: OdysseyFace3[] = new Array(count);
+    for (let i = 0; i < count; i++) {
+      const a = this.faceIndices[i * 3];
+      const b = this.faceIndices[i * 3 + 1];
+      const c = this.faceIndices[i * 3 + 2];
+      const face = new OdysseyFace3(a, b, c);
+      face.normal.x = this.faceNormals[i * 3];
+      face.normal.y = this.faceNormals[i * 3 + 1];
+      face.normal.z = this.faceNormals[i * 3 + 2];
+      face.distance = this.faceDistances[i];
+      face.materialIndex = this.faceMaterialIndices[i];
+      face.adjacent[0] = this.faceAdjacent[i * 3];
+      face.adjacent[1] = this.faceAdjacent[i * 3 + 1];
+      face.adjacent[2] = this.faceAdjacent[i * 3 + 2];
+      face.surfacemat = OdysseyModelUtility.SURFACEMATERIALS[face.materialIndex];
+      if (this.faceSmoothingGroups) {
+        face.smoothingGroup = this.faceSmoothingGroups[i];
+      }
+      out[i] = face;
+    }
+    return out;
+  }
+
   readBinary(odysseyModel: OdysseyModel){
     super.readBinary(odysseyModel);
 
-    this.vertices = [];
-    this.normals = [];
-    this.colors = [];
-    this.tvectors = [[], [], [], []];
-    this.texCords = [[], [], [], []];
-    this.tangents = [[], [], [], []];
-    this.indexArray = [];
-    this.uvs = [];
-    this.faces = [];
-    this.indices = [];
+    initMeshGeometryDefaults(this);
 
     this.functionPointer0 = this.odysseyModel.mdlReader.readUInt32();
     this.functionPointer1 = this.odysseyModel.mdlReader.readUInt32();
@@ -138,19 +196,19 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
 
     this.transparencyHint = this.odysseyModel.mdlReader.readUInt32() ? true : false;
 
-    this.textureMap1 = mdlStringCleaner(this.odysseyModel.mdlReader.readChars(32)); //This stores the texture filename
-    this.textureMap2 = mdlStringCleaner(this.odysseyModel.mdlReader.readChars(32)); //This stores the lightmap filename
-    this.textureMap3 = mdlStringCleaner(this.odysseyModel.mdlReader.readChars(12)); //This stores a 3rd texture filename (?)
-    this.textureMap4 = mdlStringCleaner(this.odysseyModel.mdlReader.readChars(12)); //This stores a 4th texture filename (?)
+    this.textureMap1 = mdlStringCleaner(this.odysseyModel.mdlReader.readChars(32));
+    this.textureMap2 = mdlStringCleaner(this.odysseyModel.mdlReader.readChars(32));
+    this.textureMap3 = mdlStringCleaner(this.odysseyModel.mdlReader.readChars(12));
+    this.textureMap4 = mdlStringCleaner(this.odysseyModel.mdlReader.readChars(12));
 
-    this.indexCountArrayDef = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader); //IndexCounterArray
-    this.vertexLocArrayDef = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader); //vertex_indices_offset
+    this.indexCountArrayDef = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader);
+    this.vertexLocArrayDef = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader);
 
     if (this.vertexLocArrayDef.count > 1)
       throw ("Face offsets offsets count wrong "+ this.vertexLocArrayDef.count);
 
-    this.InvertedCountArrayDef = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader); //MeshInvertedCounterArray
-    this.InvertedCountArrayDefDuplicate = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader); //MeshInvertedCounterArray
+    this.InvertedCountArrayDef = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader);
+    this.InvertedCountArrayDefDuplicate = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader);
 
     this.saberBytes = [
       this.odysseyModel.mdlReader.readByte(),
@@ -196,13 +254,19 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
     this.flagRender = this.odysseyModel.mdlReader.readByte() ? true : false;
 
     if (this.odysseyModel.engine == OdysseyModelEngine.K2){
-      this.dirtEnabled = this.odysseyModel.mdlReader.readByte();
+      const dirtEnabled = this.odysseyModel.mdlReader.readByte();
       this.tslPadding1 = this.odysseyModel.mdlReader.readByte();
-      this.dirtTexture = this.odysseyModel.mdlReader.readUInt16();
-      this.dirtCoordSpace = this.odysseyModel.mdlReader.readUInt16();
-      this.hideInHolograms = this.odysseyModel.mdlReader.readByte();
+      const dirtTexture = this.odysseyModel.mdlReader.readUInt16();
+      const dirtCoordSpace = this.odysseyModel.mdlReader.readUInt16();
+      const hideInHolograms = this.odysseyModel.mdlReader.readByte();
       this.tslPadding2 = this.odysseyModel.mdlReader.readByte();
-    } 
+      populateMeshDirtFields(this, {
+        dirtEnabled,
+        dirtTexture,
+        dirtCoordSpace,
+        hideInHolograms,
+      });
+    }
 
     this._unknown2 = this.odysseyModel.mdlReader.readUInt16();
     this._totalArea = this.odysseyModel.mdlReader.readSingle();
@@ -216,137 +280,7 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
 
     let cachedPosition = this.odysseyModel.mdlReader.position;
 
-    //Tangent1
-    if(this.MDXDataBitmap & OdysseyModelMDXFlag.TANGENT1){
-      this.tangent1 = {
-        tangents: [],
-        bitangents: [],
-        normals: [],
-        computed: []
-      };
-    }
-
-    //Tangent2
-    if(this.MDXDataBitmap & OdysseyModelMDXFlag.TANGENT2){
-      this.tangent2 = {
-        tangents: [],
-        bitangents: [],
-        normals: [],
-        computed: []
-      };
-    }
-
-    //Tangent3
-    if(this.MDXDataBitmap & OdysseyModelMDXFlag.TANGENT3){
-      this.tangent3 = {
-        tangents: [],
-        bitangents: [],
-        normals: [],
-        computed: []
-      };
-    }
-
-    //Tangent4
-    if(this.MDXDataBitmap & OdysseyModelMDXFlag.TANGENT4){
-      this.tangent4 = {
-        tangents: [],
-        bitangents: [],
-        normals: [],
-        computed: []
-      };
-    }
-
-    for (let i = 0; i < this.verticesCount; i++) {
-      // Base Position Offset
-      let basePosition = (this.MDXNodeDataOffset + (i * this.MDXDataSize));
-
-      // Vertex
-      if(this.MDXDataBitmap & OdysseyModelMDXFlag.VERTEX){
-        this.odysseyModel.mdxReader.position = basePosition + this.MDXVertexOffset;
-        this.vertices.push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
-      }
-
-      // Normal
-      if(this.MDXDataBitmap & OdysseyModelMDXFlag.NORMAL){
-        this.odysseyModel.mdxReader.position = basePosition + this.MDXVertexNormalsOffset;
-        this.normals.push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
-      }
-
-      // Vertex color: no MDX bitmap bit — slot offset != -1 (engine reads RGB only)
-      if (this.MDXVertexColorsOffset >= 0) {
-        this.odysseyModel.mdxReader.position = basePosition + this.MDXVertexColorsOffset;
-        this.colors.push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
-      }
-      
-      // TexCoords1
-      if(this.MDXDataBitmap & OdysseyModelMDXFlag.UV1){
-        this.odysseyModel.mdxReader.position = basePosition + this.MDXUVOffset1;
-        this.tvectors[0].push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
-        // this.tvectors[1][i] = this.tvectors[0][i];
-      }
-
-      // TexCoords2
-      if(this.MDXDataBitmap & OdysseyModelMDXFlag.UV2){
-        this.odysseyModel.mdxReader.position = basePosition + this.MDXUVOffset2;
-        this.tvectors[1].push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
-      }else{
-        this.tvectors[1] = this.tvectors[0].slice(0);
-      }
-
-      // TexCoords3
-      if(this.MDXDataBitmap & OdysseyModelMDXFlag.UV3){
-        //TODO
-      }
-
-      // TexCoords4
-      if(this.MDXDataBitmap & OdysseyModelMDXFlag.UV4){
-        //TODO
-      }
-
-      //Tangent1
-      if(this.MDXDataBitmap & OdysseyModelMDXFlag.TANGENT1){
-        this.odysseyModel.mdxReader.position = basePosition + this.offsetToMdxTangent1;
-        this.tangent1.tangents.push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
-        this.tangent1.bitangents.push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
-        this.tangent1.normals.push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
-        //this.computeTangent(this.tangent1, i);
-      }
-
-      //Tangent2
-      if(this.MDXDataBitmap & OdysseyModelMDXFlag.TANGENT2){
-        this.odysseyModel.mdxReader.position = basePosition + this.offsetToMdxTangent2;
-        this.tangent2.tangents.push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
-        this.tangent2.bitangents.push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
-        this.tangent2.normals.push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
-        //this.computeTangent(this.tangent2, i);
-      }
-
-      //Tangent3
-      if(this.MDXDataBitmap & OdysseyModelMDXFlag.TANGENT3){
-        this.odysseyModel.mdxReader.position = basePosition + this.offsetToMdxTangent3;
-        this.tangent3.tangents.push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
-        this.tangent3.bitangents.push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
-        this.tangent3.normals.push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
-        //this.computeTangent(this.tangent3, i);
-      }
-
-      //Tangent4
-      if(this.MDXDataBitmap & OdysseyModelMDXFlag.TANGENT4){
-        this.odysseyModel.mdxReader.position = basePosition + this.offsetToMdxTangent4;
-        this.tangent4.tangents.push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
-        this.tangent4.bitangents.push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
-        this.tangent4.normals.push(this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle(), this.odysseyModel.mdxReader.readSingle());
-        //this.computeTangent(this.tangent4, i);
-      }
-
-    }
-
-    if(
-      this.MDXDataBitmap & OdysseyModelMDXFlag.UV1 && 
-      !(this.MDXDataBitmap & OdysseyModelMDXFlag.UV2)
-    ){
-      this.tvectors[1] = this.tvectors[0];
-    }
+    this.readMdxVertexAttributes();
 
     if(this.vertexLocArrayDef.count){
       this.odysseyModel.mdlReader.position = this.odysseyModel.fileHeader.modelDataOffset + this.vertexLocArrayDef.offset;
@@ -355,39 +289,7 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
     }
 
     if(this.faceArrayDefinition.count){
-      this.odysseyModel.mdlReader.position = this.odysseyModel.fileHeader.modelDataOffset + this.faceArrayDefinition.offset;
-      for (let i = 0; i < this.faceArrayDefinition.count; i++) {
-
-        this.faces[i] = new OdysseyFace3(0, 0, 0);
-        this.faces[i].normal.x = this.odysseyModel.mdlReader.readSingle();
-        this.faces[i].normal.y = this.odysseyModel.mdlReader.readSingle();
-        this.faces[i].normal.z = this.odysseyModel.mdlReader.readSingle();
-        this.faces[i].distance = this.odysseyModel.mdlReader.readSingle();
-        this.faces[i].materialIndex = this.odysseyModel.mdlReader.readUInt32();
-        this.faces[i].adjacent[0] = this.odysseyModel.mdlReader.readInt16();
-        this.faces[i].adjacent[1] = this.odysseyModel.mdlReader.readInt16();
-        this.faces[i].adjacent[2] = this.odysseyModel.mdlReader.readInt16();
-        this.faces[i].a = this.odysseyModel.mdlReader.readUInt16();
-        this.faces[i].b = this.odysseyModel.mdlReader.readUInt16();
-        this.faces[i].c = this.odysseyModel.mdlReader.readUInt16();
-        this.faces[i].surfacemat = OdysseyModelUtility.SURFACEMATERIALS[this.faces[i].materialIndex];
-        this.faces[i].color = OdysseyWalkMesh.colorForMaterialIndex(this.faces[i].materialIndex);
-
-        this.indices.push(this.faces[i].a, this.faces[i].b, this.faces[i].c);
-
-        if(this.MDXDataBitmap & OdysseyModelMDXFlag.UV1)
-          this.texCords[0][i] = ([this.tvectors[0][this.faces[i].a], this.tvectors[0][this.faces[i].b], this.tvectors[0][this.faces[i].c]]);
-        
-        if(this.MDXDataBitmap & OdysseyModelMDXFlag.UV2)
-          this.texCords[1][i] = ([this.tvectors[1][this.faces[i].a], this.tvectors[1][this.faces[i].b], this.tvectors[1][this.faces[i].c]]);
-
-      }
-
-      if (this.odysseyModel.modelHeader.smoothingGroupsInFile && this.faceArrayDefinition.count > 0) {
-        for (let i = 0; i < this.faceArrayDefinition.count; i++) {
-          this.faces[i].smoothingGroup = this.odysseyModel.mdlReader.readUInt32();
-        }
-      }
+      this.readTypedFaces();
     }
 
     if (this.InvertedCountArrayDef?.count > 0) {
@@ -397,6 +299,107 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
 
     this.odysseyModel.mdlReader.position = cachedPosition;
 
+  }
+
+  private readMdxVertexAttributes(): void {
+    const mdxBuffer = this.odysseyModel.mdxReader.buffer;
+    const stride = this.MDXDataSize | 0;
+    const n = this.verticesCount | 0;
+    const base = this.MDXNodeDataOffset | 0;
+
+    const attrs: {
+      vertices?: Float32Array;
+      normals?: Float32Array;
+      colors?: Float32Array;
+      tvectors: (Float32Array | undefined)[];
+    } = { tvectors: [] };
+
+    if (this.MDXDataBitmap & OdysseyModelMDXFlag.VERTEX) {
+      attrs.vertices = readMdxInterleavedFloats(mdxBuffer, base, stride, this.MDXVertexOffset, n, 3);
+    }
+
+    if (this.MDXDataBitmap & OdysseyModelMDXFlag.NORMAL) {
+      attrs.normals = readMdxInterleavedFloats(mdxBuffer, base, stride, this.MDXVertexNormalsOffset, n, 3);
+    }
+
+    if (this.MDXVertexColorsOffset >= 0) {
+      attrs.colors = readMdxInterleavedFloats(mdxBuffer, base, stride, this.MDXVertexColorsOffset, n, 3);
+    }
+
+    if (this.MDXDataBitmap & OdysseyModelMDXFlag.UV1) {
+      attrs.tvectors[0] = readMdxInterleavedFloats(mdxBuffer, base, stride, this.MDXUVOffset1, n, 2);
+    }
+
+    if (this.MDXDataBitmap & OdysseyModelMDXFlag.UV2) {
+      attrs.tvectors[1] = readMdxInterleavedFloats(mdxBuffer, base, stride, this.MDXUVOffset2, n, 2);
+    } else if (attrs.tvectors[0]) {
+      // Copy so uv/uv1 BufferAttributes never share one ArrayBuffer.
+      attrs.tvectors[1] = new Float32Array(attrs.tvectors[0]);
+    }
+
+    populateMeshVertexAttributes(this, attrs);
+
+    if (this.MDXDataBitmap & OdysseyModelMDXFlag.TANGENT1) {
+      const block = readMdxTangentBlock(mdxBuffer, base, stride, this.offsetToMdxTangent1, n);
+      this.tangent1 = { ...block, computed: [] };
+    }
+    if (this.MDXDataBitmap & OdysseyModelMDXFlag.TANGENT2) {
+      const block = readMdxTangentBlock(mdxBuffer, base, stride, this.offsetToMdxTangent2, n);
+      this.tangent2 = { ...block, computed: [] };
+    }
+    if (this.MDXDataBitmap & OdysseyModelMDXFlag.TANGENT3) {
+      const block = readMdxTangentBlock(mdxBuffer, base, stride, this.offsetToMdxTangent3, n);
+      this.tangent3 = { ...block, computed: [] };
+    }
+    if (this.MDXDataBitmap & OdysseyModelMDXFlag.TANGENT4) {
+      const block = readMdxTangentBlock(mdxBuffer, base, stride, this.offsetToMdxTangent4, n);
+      this.tangent4 = { ...block, computed: [] };
+    }
+  }
+
+  private readTypedFaces(): void {
+    const count = this.faceArrayDefinition.count;
+    const decoded: DecodedMeshFaces = {
+      faceCount: count,
+      faceNormals: new Float32Array(count * 3),
+      faceDistances: new Float32Array(count),
+      faceMaterialIndices: new Uint32Array(count),
+      faceAdjacent: new Int16Array(count * 3),
+      faceIndices: new Uint16Array(count * 3),
+      indices: new Uint32Array(count * 3),
+    };
+
+    this.odysseyModel.mdlReader.position =
+      this.odysseyModel.fileHeader.modelDataOffset + this.faceArrayDefinition.offset;
+
+    for (let i = 0; i < count; i++) {
+      decoded.faceNormals[i * 3] = this.odysseyModel.mdlReader.readSingle();
+      decoded.faceNormals[i * 3 + 1] = this.odysseyModel.mdlReader.readSingle();
+      decoded.faceNormals[i * 3 + 2] = this.odysseyModel.mdlReader.readSingle();
+      decoded.faceDistances[i] = this.odysseyModel.mdlReader.readSingle();
+      decoded.faceMaterialIndices[i] = this.odysseyModel.mdlReader.readUInt32();
+      decoded.faceAdjacent[i * 3] = this.odysseyModel.mdlReader.readInt16();
+      decoded.faceAdjacent[i * 3 + 1] = this.odysseyModel.mdlReader.readInt16();
+      decoded.faceAdjacent[i * 3 + 2] = this.odysseyModel.mdlReader.readInt16();
+      const a = this.odysseyModel.mdlReader.readUInt16();
+      const b = this.odysseyModel.mdlReader.readUInt16();
+      const c = this.odysseyModel.mdlReader.readUInt16();
+      decoded.faceIndices[i * 3] = a;
+      decoded.faceIndices[i * 3 + 1] = b;
+      decoded.faceIndices[i * 3 + 2] = c;
+      decoded.indices![i * 3] = a;
+      decoded.indices![i * 3 + 1] = b;
+      decoded.indices![i * 3 + 2] = c;
+    }
+
+    if (this.odysseyModel.modelHeader.smoothingGroupsInFile && count > 0) {
+      decoded.faceSmoothingGroups = new Uint32Array(count);
+      for (let i = 0; i < count; i++) {
+        decoded.faceSmoothingGroups[i] = this.odysseyModel.mdlReader.readUInt32();
+      }
+    }
+
+    populateMeshFaces(this, decoded);
   }
 
   computeTangent(tangentObject: any, index: number){

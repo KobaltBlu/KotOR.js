@@ -22,8 +22,15 @@ import { OdysseyModelNodeReference } from "@engine/odyssey/OdysseyModelNodeRefer
 import { OdysseyModelNodeSaber } from "@engine/odyssey/OdysseyModelNodeSaber";
 import { OdysseyModelNodeSkin } from "@engine/odyssey/OdysseyModelNodeSkin";
 import { OdysseyControllerFactory } from "@engine/odyssey/controllers/OdysseyControllerFactory";
-import { OdysseyWalkMesh } from "@engine/odyssey/OdysseyWalkMesh";
-import { OdysseyFace3 } from "@engine/render/three/odyssey/OdysseyFace3";
+import {
+  attachStaticController,
+  buildDecodedFacesFromIndexRows,
+  initMeshGeometryDefaults,
+  populateMeshDirtFields,
+  populateMeshFaces,
+  populateMeshVertexAttributes,
+} from "@engine/odyssey/domain/populateMeshFromDecoded";
+import type { OdysseyFace3 } from "@engine/render/three/odyssey/OdysseyFace3";
 import {
   asciiClassificationToEnum,
   asciiControllerBaseToType,
@@ -180,47 +187,13 @@ function createAsciiShell(): OdysseyModel {
   return m;
 }
 
-function buildFaceFromVerts(
-  verts: number[],
-  ia: number,
-  ib: number,
-  ic: number,
-  materialIndex: number,
-  smoothingGroup?: number,
-): OdysseyFace3 {
-  const va = new THREE.Vector3(verts[ia * 3], verts[ia * 3 + 1], verts[ia * 3 + 2]);
-  const vb = new THREE.Vector3(verts[ib * 3], verts[ib * 3 + 1], verts[ib * 3 + 2]);
-  const vc = new THREE.Vector3(verts[ic * 3], verts[ic * 3 + 1], verts[ic * 3 + 2]);
-  const e1 = new THREE.Vector3().subVectors(vb, va);
-  const e2 = new THREE.Vector3().subVectors(vc, va);
-  const n = new THREE.Vector3().crossVectors(e1, e2);
-  if (n.lengthSq() > 1e-20) n.normalize();
-  const planeD = -n.dot(va);
-  const f = new OdysseyFace3(ia, ib, ic, n, undefined, materialIndex);
-  f.distance = planeD;
-  f.adjacent = [-1, -1, -1];
-  f.color = OdysseyWalkMesh.colorForMaterialIndex(materialIndex);
-  if (smoothingGroup !== undefined) f.smoothingGroup = smoothingGroup >>> 0;
-  return f;
-}
-
 function putStaticController(
   node: OdysseyModelNode,
   type: OdysseyModelControllerType,
   columnCount: number,
   frames: IOdysseyControllerFrameGeneric[],
 ): void {
-  const gen: IOdysseyControllerGeneric = {
-    type,
-    nodeType: node.nodeType,
-    frameCount: frames.length,
-    timeKeyIndex: 0,
-    dataValueIndex: 0,
-    columnCount,
-    data: frames,
-  };
-  const c = OdysseyControllerFactory.From(gen);
-  if (c) node.controllers.set(type, c);
+  attachStaticController(node, type, columnCount, frames);
 }
 
 function applyGeometryController(
@@ -247,17 +220,9 @@ function applyGeometryController(
   }
   if (w === "scale") {
     const sc = s.takeNumber();
-    const gen: IOdysseyControllerGeneric = {
-      type: OdysseyModelControllerType.Scale,
-      nodeType: node.nodeType,
-      frameCount: 1,
-      timeKeyIndex: 0,
-      dataValueIndex: 0,
-      columnCount: 1,
-      data: [{ time: 0, value: sc } as IOdysseyControllerFrameGeneric],
-    };
-    const c = OdysseyControllerFactory.From(gen);
-    if (c) node.controllers.set(OdysseyModelControllerType.Scale, c);
+    putStaticController(node, OdysseyModelControllerType.Scale, 1, [
+      { time: 0, value: sc } as IOdysseyControllerFrameGeneric,
+    ]);
     return true;
   }
 
@@ -396,19 +361,10 @@ function parseAabbPreorder(s: MdlAsciiTokenStream, faces: OdysseyFace3[]): IOdys
 }
 
 function parseMeshBody(model: OdysseyModel, mesh: OdysseyModelNodeMesh, s: MdlAsciiTokenStream): void {
-  // readBinary initializes these; ASCII path must too before tverts/faces.
-  if (!mesh.vertices) mesh.vertices = [];
-  if (!mesh.normals) mesh.normals = [];
-  if (!mesh.colors) mesh.colors = [];
-  if (!mesh.tvectors) mesh.tvectors = [[], [], [], []];
-  if (!mesh.texCords) mesh.texCords = [[], [], [], []];
-  if (!mesh.tangents) mesh.tangents = [[], [], [], []];
-  if (!mesh.indexArray) mesh.indexArray = [];
-  if (!mesh.uvs) mesh.uvs = [];
-  if (!mesh.faces) mesh.faces = [];
-  if (!mesh.indices) mesh.indices = [];
+  // Same empty typed buffers as binary mesh read before tverts/faces.
+  initMeshGeometryDefaults(mesh);
 
-  const verts: number[] = [];
+  let verts = new Float32Array(0);
   let mdxFlags = 0;
   while (!s.eof) {
     const p = s.peek();
@@ -446,11 +402,15 @@ function parseMeshBody(model: OdysseyModel, mesh: OdysseyModelNodeMesh, s: MdlAs
     else if (w === "shadow") mesh.flagShadow = !!s.takeNumber();
     else if (w === "beaming") mesh.beaming = !!s.takeNumber();
     else if (w === "render") mesh.flagRender = !!s.takeNumber();
-    else if (w === "dirt_enabled") mesh.dirtEnabled = s.takeInt();
-    else if (w === "dirt_texture") mesh.dirtTexture = s.takeInt();
-    else if (w === "dirt_worldspace") mesh.dirtCoordSpace = s.takeInt();
-    else if (w === "hologram_donotdraw") mesh.hideInHolograms = s.takeInt();
-    else if (w === "tangentspace") {
+    else if (w === "dirt_enabled") {
+      populateMeshDirtFields(mesh, { dirtEnabled: s.takeInt() });
+    } else if (w === "dirt_texture") {
+      populateMeshDirtFields(mesh, { dirtTexture: s.takeInt() });
+    } else if (w === "dirt_worldspace") {
+      populateMeshDirtFields(mesh, { dirtCoordSpace: s.takeInt() });
+    } else if (w === "hologram_donotdraw") {
+      populateMeshDirtFields(mesh, { hideInHolograms: s.takeInt() });
+    } else if (w === "tangentspace") {
       /* flag */
       s.takeNumber();
     } else if (w === "inv_count") {
@@ -485,7 +445,7 @@ function parseMeshBody(model: OdysseyModel, mesh: OdysseyModelNodeMesh, s: MdlAs
     } else if (w === "constraints" && mesh instanceof OdysseyModelNodeDangly) {
       const nc = s.takeInt();
       const dang = mesh as OdysseyModelNodeDangly;
-        dang.constraints = new Float32Array(0);
+      dang.constraints = new Float32Array(nc);
       for (let i = 0; i < nc; i++) dang.constraints[i] = s.takeNumber();
     } else if (w === "aabb" && mesh instanceof OdysseyModelNodeAABB) {
       const aabb = mesh as OdysseyModelNodeAABB;
@@ -499,10 +459,13 @@ function parseMeshBody(model: OdysseyModel, mesh: OdysseyModelNodeMesh, s: MdlAs
       if (s.peek()?.text.toLowerCase() === "endlist") s.take();
     } else if (w === "colors") {
       const n = s.takeInt();
-      mesh.colors = [];
+      const colors = new Float32Array(n * 3);
       for (let i = 0; i < n; i++) {
-        mesh.colors.push(s.takeNumber(), s.takeNumber(), s.takeNumber());
+        colors[i * 3] = s.takeNumber();
+        colors[i * 3 + 1] = s.takeNumber();
+        colors[i * 3 + 2] = s.takeNumber();
       }
+      populateMeshVertexAttributes(mesh, { colors });
     } else if (w === "colorindices") {
       const n = s.takeInt();
       mesh.colorIndices = [];
@@ -513,16 +476,22 @@ function parseMeshBody(model: OdysseyModel, mesh: OdysseyModelNodeMesh, s: MdlAs
     else if (w === "texture1") mesh.textureMap4 = cleanName(s.take().text);
     else if (w === "verts") {
       const n = s.takeInt();
-      mesh.verticesCount = n;
-      verts.length = 0;
+      verts = new Float32Array(n * 3);
       for (let i = 0; i < n; i++) {
-        verts.push(s.takeNumber(), s.takeNumber(), s.takeNumber());
+        verts[i * 3] = s.takeNumber();
+        verts[i * 3 + 1] = s.takeNumber();
+        verts[i * 3 + 2] = s.takeNumber();
       }
-      mesh.vertices = verts;
+      populateMeshVertexAttributes(mesh, { vertices: verts, verticesCount: n });
     } else if (w === "faces") {
       const nf = s.takeInt();
-      mesh.faces = [];
-      mesh.indices = [];
+      const rows: {
+        a: number;
+        b: number;
+        c: number;
+        materialIndex: number;
+        smoothingGroup?: number;
+      }[] = new Array(nf);
       for (let fi = 0; fi < nf; fi++) {
         const a = s.takeInt();
         const b = s.takeInt();
@@ -535,17 +504,27 @@ function parseMeshBody(model: OdysseyModel, mesh: OdysseyModelNodeMesh, s: MdlAs
         void t0;
         void t1;
         void t2;
-        const face = buildFaceFromVerts(verts, a, b, c, mat, sg === 0 ? 1 : sg);
-        mesh.faces.push(face);
-        mesh.indices.push(a, b, c);
+        rows[fi] = {
+          a,
+          b,
+          c,
+          materialIndex: mat,
+          smoothingGroup: sg === 0 ? 1 : sg,
+        };
+      }
+      populateMeshFaces(mesh, buildDecodedFacesFromIndexRows(verts, rows));
+      if (mesh.faceSmoothingGroups) {
+        model.modelHeader.smoothingGroupsInFile = true;
       }
     } else if (w === "tverts") {
       const n = s.takeInt();
       mdxFlags |= OdysseyModelMDXFlag.VERTEX | OdysseyModelMDXFlag.UV1;
-      mesh.tvectors[0] = [];
+      const uv = new Float32Array(n * 2);
       for (let i = 0; i < n; i++) {
-        mesh.tvectors[0].push(s.takeNumber(), s.takeNumber());
+        uv[i * 2] = s.takeNumber();
+        uv[i * 2 + 1] = s.takeNumber();
       }
+      populateMeshVertexAttributes(mesh, { tvectors: [uv] });
     } else if (w === "texindices1") {
       const nf = s.takeInt();
       for (let i = 0; i < nf; i++) {
@@ -556,8 +535,12 @@ function parseMeshBody(model: OdysseyModel, mesh: OdysseyModelNodeMesh, s: MdlAs
       mdxFlags |= OdysseyModelMDXFlag.UV2;
     } else if (w === "tverts1") {
       const n = s.takeInt();
-      mesh.tvectors[1] = [];
-      for (let i = 0; i < n; i++) mesh.tvectors[1].push(s.takeNumber(), s.takeNumber());
+      const uv = new Float32Array(n * 2);
+      for (let i = 0; i < n; i++) {
+        uv[i * 2] = s.takeNumber();
+        uv[i * 2 + 1] = s.takeNumber();
+      }
+      populateMeshVertexAttributes(mesh, { tvectors: [undefined, uv] });
     } else if (w === "texindices2") {
       const nf = s.takeInt();
       for (let i = 0; i < nf; i++) {
@@ -568,8 +551,12 @@ function parseMeshBody(model: OdysseyModel, mesh: OdysseyModelNodeMesh, s: MdlAs
       mdxFlags |= OdysseyModelMDXFlag.UV3;
     } else if (w === "tverts2") {
       const n = s.takeInt();
-      mesh.tvectors[2] = [];
-      for (let i = 0; i < n; i++) mesh.tvectors[2].push(s.takeNumber(), s.takeNumber());
+      const uv = new Float32Array(n * 2);
+      for (let i = 0; i < n; i++) {
+        uv[i * 2] = s.takeNumber();
+        uv[i * 2 + 1] = s.takeNumber();
+      }
+      populateMeshVertexAttributes(mesh, { tvectors: [undefined, undefined, uv] });
     } else if (w === "texindices3") {
       const nf = s.takeInt();
       for (let i = 0; i < nf; i++) {
@@ -580,8 +567,12 @@ function parseMeshBody(model: OdysseyModel, mesh: OdysseyModelNodeMesh, s: MdlAs
       mdxFlags |= OdysseyModelMDXFlag.UV4;
     } else if (w === "tverts3") {
       const n = s.takeInt();
-      mesh.tvectors[3] = [];
-      for (let i = 0; i < n; i++) mesh.tvectors[3].push(s.takeNumber(), s.takeNumber());
+      const uv = new Float32Array(n * 2);
+      for (let i = 0; i < n; i++) {
+        uv[i * 2] = s.takeNumber();
+        uv[i * 2 + 1] = s.takeNumber();
+      }
+      populateMeshVertexAttributes(mesh, { tvectors: [undefined, undefined, undefined, uv] });
     } else if (applyGeometryController(mesh, w, s)) {
       void 0;
     } else {

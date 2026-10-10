@@ -4,6 +4,7 @@ import type { OdysseyModel } from "@engine/odyssey/OdysseyModel";
 import type { OdysseyModelNode } from "@engine/odyssey/OdysseyModelNode";
 import { OdysseyModelNodeMesh } from "@engine/odyssey/OdysseyModelNodeMesh";
 import { OdysseyModelUtility } from "@engine/odyssey/OdysseyModelUtility";
+import { populateAnimMeshFromDecoded } from "@engine/odyssey/domain/populateMeshFromDecoded";
 
 /**
  * Animated mesh (AnimMesh, node type 0x00A1).
@@ -51,30 +52,45 @@ export class OdysseyModelNodeAnimMesh extends OdysseyModelNodeMesh {
 
     const base = odysseyModel.fileHeader.modelDataOffset;
 
-    this.samplePeriod = this.odysseyModel.mdlReader.readSingle();
+    const samplePeriod = this.odysseyModel.mdlReader.readSingle();
 
     this.animVertsArrayDefinition = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader);
     this.animTVertsArrayDefinition = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader);
 
-    this.animVerts = this.readVec3Array(base, this.animVertsArrayDefinition);
-    this.animTVerts = this.readVec3Array(base, this.animTVertsArrayDefinition);
+    const animVerts = this.readVec3Array(base, this.animVertsArrayDefinition);
+    const animTVerts = this.readVec3Array(base, this.animTVertsArrayDefinition);
 
-    this.dataPtr1 = this.odysseyModel.mdlReader.readUInt32();
-    this.dataCount1 = this.odysseyModel.mdlReader.readUInt32();
+    const dataPtr1 = this.odysseyModel.mdlReader.readUInt32();
+    const dataCount1 = this.odysseyModel.mdlReader.readUInt32();
 
-    if (this.dataCount1 > 0 && this.dataPtr1 > 0) {
-      this.dataPtr1Payload = OdysseyModelUtility.ReadArrayFloats(
+    let dataPtr1Payload: Float32Array | undefined;
+    if (dataCount1 > 0 && dataPtr1 > 0) {
+      dataPtr1Payload = OdysseyModelUtility.ReadArrayFloats(
         this.odysseyModel.mdlReader,
-        base + this.dataPtr1,
-        this.dataCount1,
+        base + dataPtr1,
+        dataCount1,
       );
     }
 
-    this.padding24 = this.odysseyModel.mdlReader.readUInt32();
-    this.animVerticesPtr = this.odysseyModel.mdlReader.readUInt32();
-    this.animTexVerticesPtr = this.odysseyModel.mdlReader.readUInt32();
-    this.animVerticesCount = this.odysseyModel.mdlReader.readUInt32();
-    this.animTexVerticesCount = this.odysseyModel.mdlReader.readUInt32();
+    const padding24 = this.odysseyModel.mdlReader.readUInt32();
+    const animVerticesPtr = this.odysseyModel.mdlReader.readUInt32();
+    const animTexVerticesPtr = this.odysseyModel.mdlReader.readUInt32();
+    const animVerticesCount = this.odysseyModel.mdlReader.readUInt32();
+    const animTexVerticesCount = this.odysseyModel.mdlReader.readUInt32();
+
+    populateAnimMeshFromDecoded(this, {
+      samplePeriod,
+      animVerts,
+      animTVerts,
+      dataPtr1,
+      dataCount1,
+      dataPtr1Payload,
+      padding24,
+      animVerticesPtr,
+      animTexVerticesPtr,
+      animVerticesCount,
+      animTexVerticesCount,
+    });
   }
 
   private readVec3Array(
