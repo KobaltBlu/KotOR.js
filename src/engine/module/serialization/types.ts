@@ -7,6 +7,16 @@ import type { GFFStruct } from '@core/resource/GFFStruct';
 export interface DeserializeContext {
   /** Optional game key when K1/K2 field differences are known. */
   gameKey?: 'k1' | 'k2';
+  /**
+   * Injected ActionFactory.FromStruct (or equivalent).
+   * When set, object serializers hydrate ActionList during deserialize.
+   */
+  actionFromStruct?: (struct: GFFStruct) => any | undefined;
+  /**
+   * Injected GameEffectFactory.EffectFromStruct (or equivalent).
+   * When set, object serializers hydrate EffectList during deserialize.
+   */
+  effectFromStruct?: (struct: GFFStruct) => any | undefined;
 }
 
 /**

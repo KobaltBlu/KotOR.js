@@ -58,6 +58,8 @@ import type { IPerceptionInfo } from "@engine/interface/engine/IPerceptionInfo";
 import { PerceptionMask } from "@engine/enums/engine/PerceptionMask";
 import { MDLLoader } from "@engine/loaders";
 import { CombatRound, CombatRoundAction } from "@engine/combat";
+import { ActionListSerializer } from "@engine/module/serialization/ActionListSerializer";
+import { SwVarTableSerializer } from "@engine/module/serialization/SwVarTableSerializer";
 import { Dice } from "@core/utility/Dice";
 import { DiceType } from "@core/enums/combat/DiceType";
 import { BitWise } from "@core/utility/BitWise";
@@ -3498,32 +3500,7 @@ export class GameObject {
    * @returns
    */
   getSWVarTableSaveStruct(){
-    let swVarTableStruct = new GFFStruct();
-
-    let swVarTableBitArray = swVarTableStruct.addField( new GFFField(GFFDataType.LIST, 'BitArray') );
-
-    for(let i = 0; i < 3; i++){
-      let varStruct = new GFFStruct();
-      let value = 0;
-      let offset = 32 * i;
-      for(let j = 0; j < 32; j++){
-        if(this.getLocalBoolean(offset + j) == true){
-          value |= 1 << j;
-        }
-      }
-      value = value >>> 0;
-      varStruct.addField( new GFFField(GFFDataType.DWORD, 'Variable') ).setValue( value );
-      swVarTableBitArray.addChildStruct(varStruct);
-    }
-
-    let swVarTableByteArray = swVarTableStruct.addField( new GFFField(GFFDataType.LIST, 'ByteArray') );
-
-    for(let i = 0; i < 8; i++){
-      let varStruct = new GFFStruct();
-      varStruct.addField( new GFFField(GFFDataType.BYTE, 'Variable') ).setValue( Number(this.getLocalNumber(i)) );
-      swVarTableByteArray.addChildStruct(varStruct);
-    }
-    return swVarTableStruct;
+    return SwVarTableSerializer.serialize(this);
   }
 
   /**
@@ -3607,38 +3584,25 @@ export class GameObject {
    */
   loadActionList(){
     try{
-      if(this.actionQueue.length){
-        return;
-      }
-      if(!this.template?.RootNode?.hasField('ActionList')){
-        return;
-      }
-      const actionStructs = this.template.RootNode.getFieldByLabel('ActionList').getChildStructs();
-      for(let i = 0, len = actionStructs.length; i < len; i++){
-        const action = GameState.ActionFactory.FromStruct(actionStructs[i]);
-        if(action){
-          this.actionQueue.add(action);
-        }
-      }
+      if(!this.template?.RootNode){ return; }
+      ActionListSerializer.deserialize(
+        this as any,
+        this.template.RootNode,
+        (struct) => GameState.ActionFactory.FromStruct(struct),
+      );
     }catch(e: any){
       console.error(e);
     }
   }
 
   /**
-   * Convert the action queue to an action list
-   * @returns
+   * Convert the action queue to an action list field (delegates to ActionListSerializer).
    */
   actionQueueToActionList(){
-    const actionList = new GFFField(GFFDataType.LIST, 'ActionList');
-
-    for(let i = 0, len = this.actionQueue.length; i < len; i++){
-      const action = this.actionQueue[i] as Action;
-      if(!action){ continue; }
-      actionList.addChildStruct(action.toStruct());
-    }
-
-    return actionList;
+    return ActionListSerializer.writeField(
+      { addField: (f: GFFField) => f },
+      this as any,
+    );
   }
 
   setOpacity(opacity: number){

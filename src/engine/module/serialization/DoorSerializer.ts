@@ -1,5 +1,3 @@
-import { GFFDataType } from '@core/enums/resource/GFFDataType';
-import { GFFField } from '@core/resource/GFFField';
 import { GFFObject } from '@core/resource/GFFObject';
 import { CExoLocString } from '@core/resource/CExoLocString';
 import { ScriptHook } from '@core/enums/module/ScriptHook';
@@ -31,6 +29,7 @@ import { NamedVarTableSerializer } from '@engine/module/serialization/NamedVarTa
 import { ScriptResRefSerializer } from '@engine/module/serialization/ScriptResRefSerializer';
 import { PositionBearingTransform } from '@engine/module/serialization/transforms/PositionBearingTransform';
 import { ActionListSerializer } from '@engine/module/serialization/ActionListSerializer';
+import { EffectListSerializer } from '@engine/module/serialization/EffectListSerializer';
 
 export const DOOR_SCRIPT_KEYS = [
   ScriptHook.DoorOnClick,
@@ -57,7 +56,7 @@ export const DOOR_SCRIPT_KEYS = [
  * Conversation / EffectList / faction lookup stay in the Door facade.
  */
 export class DoorSerializer implements GameObjectSerializer<Door, GFFObject, GFFObject> {
-  deserialize(target: Door, source: GFFObject, _context?: DeserializeContext): void {
+  deserialize(target: Door, source: GFFObject, context?: DeserializeContext): void {
     const root = gffRootOf(source);
     const needsRegister = !target.initialized;
 
@@ -161,6 +160,9 @@ export class DoorSerializer implements GameObjectSerializer<Door, GFFObject, GFF
     SwVarTableSerializer.deserialize(target, root, { loadByteArray: false });
     NamedVarTableSerializer.deserialize(target, root);
 
+    ActionListSerializer.deserializeFromContext(target as any, root, context);
+    EffectListSerializer.deserializeFromContext(target as any, root, context);
+
     target.initialized = true;
   }
 
@@ -184,10 +186,7 @@ export class DoorSerializer implements GameObjectSerializer<Door, GFFObject, GFF
     );
     addByte(gff.RootNode, 'DisarmDC', source.disarmDC);
 
-    const effectList = gff.RootNode.addField(new GFFField(GFFDataType.LIST, 'EffectList'));
-    for (let i = 0; i < source.effects.length; i++) {
-      effectList.addChildStruct(source.effects[i].save());
-    }
+    EffectListSerializer.writeField(gff.RootNode, source.effects);
 
     addDword(gff.RootNode, 'Faction', source.faction ? source.faction.id : source.factionId);
     addByte(gff.RootNode, 'Fort', source.fort);

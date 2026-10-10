@@ -28,7 +28,7 @@ import { ActionListSerializer } from '@engine/module/serialization/ActionListSer
  * XPosition + X/Y/ZOrientation, map-note fields, SWVarTable, VarTable, ActionList.
  */
 export class WaypointSerializer implements GameObjectSerializer<Waypoint, GFFObject, GFFObject> {
-  deserialize(target: Waypoint, source: GFFObject, _context?: DeserializeContext): void {
+  deserialize(target: Waypoint, source: GFFObject, context?: DeserializeContext): void {
     const root = gffRootOf(source);
     const needsRegister = !target.initialized;
 
@@ -53,7 +53,8 @@ export class WaypointSerializer implements GameObjectSerializer<Waypoint, GFFObj
     SwVarTableSerializer.deserialize(target, root);
     NamedVarTableSerializer.deserialize(target, root);
 
-    // ActionList conversion requires ActionFactory — left to load facade via loadActionList.
+    ActionListSerializer.deserializeFromContext(target as any, root, context);
+
     target.initialized = true;
   }
 

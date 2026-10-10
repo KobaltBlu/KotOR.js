@@ -23,6 +23,7 @@ import {
   readWord,
 } from '@engine/module/serialization/gffHelpers';
 import { PositionOrientationTransform } from '@engine/module/serialization/transforms/PositionOrientationTransform';
+import { ItemPropertySerializer } from '@engine/module/serialization/ItemPropertySerializer';
 
 /**
  * Item nested GFFStruct serializer (Equip_ItemList / ItemList / Store stock).
@@ -91,7 +92,12 @@ export class ItemSerializer implements GameObjectSerializer<Item, any, GFFStruct
 
     if (root.hasField('PaletteID')) target.palleteID = readByte(root, 'PaletteID');
 
-    // PropertiesList construction needs ItemProperty + parent Item — left to facade.
+    if (root.hasField('PropertiesList')) {
+      const properties = root.getFieldByLabel('PropertiesList').getChildStructs?.() || [];
+      target.properties = properties.map((property: GFFStruct) =>
+        ItemPropertySerializer.deserialize(property, target)
+      );
+    }
 
     target.initialized = true;
   }
@@ -150,7 +156,7 @@ export class ItemSerializer implements GameObjectSerializer<Item, any, GFFStruct
 
     const propertiesList = itemStruct.addField(new GFFField(GFFDataType.LIST, 'PropertiesList'));
     for (let i = 0; i < source.properties.length; i++) {
-      const propStruct = source.properties[i].save();
+      const propStruct = ItemPropertySerializer.serialize(source.properties[i]);
       propStruct.setType(i);
       propertiesList.addChildStruct(propStruct);
     }

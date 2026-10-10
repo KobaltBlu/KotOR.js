@@ -127,7 +127,6 @@ import { CombatRound, CombatRoundAction, resolveAnimations2DARow } from "@engine
 import { spawnWorldImpactVfx } from "@engine/combat/ranged-impact-vfx";
 import { isGrenadeItemType } from "@engine/combat/item-cast-grenade";
 import { CombatInformation } from "@engine/combat/CombatInformation";
-import { GameEffectFactory } from "@engine/effects/GameEffectFactory";
 import type { Action } from "@engine/actions/Action";
 import { ModuleTriggerType } from "@core/enums/module/ModuleTriggerType";
 import { EngineDebugType } from "@engine/enums/engine/EngineDebugType";
@@ -8061,7 +8060,10 @@ export class Creature extends GameObject {
         return skill.clone();
       });
 
-      creatureSerializer.deserialize(this, this.template);
+      creatureSerializer.deserialize(this, this.template, {
+        actionFromStruct: (struct) => GameState.ActionFactory.FromStruct(struct),
+        effectFromStruct: (struct) => GameState.GameEffectFactory.EffectFromStruct(struct),
+      });
 
       if(needsRegister){
         if(BitWise.InstanceOf(this.objectType, GameObjectType.PlayerCharacter)){
@@ -8075,15 +8077,6 @@ export class Creature extends GameObject {
       if(pendingAppearance !== undefined){
         this.setAppearance(pendingAppearance);
         delete (this as any)._pendingAppearance;
-      }
-
-      if(this.template.RootNode.hasField('ClassList')){
-        let classes = this.template.RootNode.getFieldByLabel('ClassList').getChildStructs();
-        for(let i = 0; i < classes.length; i++){
-          this.classes.push(
-            CreatureClass.FromCreatureClassStruct(classes[i])
-          );
-        }
       }
 
       const conversationResRef = (this as any)._conversationResRef;
@@ -8118,15 +8111,6 @@ export class Creature extends GameObject {
       }
           
       this.faction = GameState.FactionManager.factions.get(this.factionId);
-
-      if(this.template.RootNode.hasField('FeatList')){
-        let feats = this.template.RootNode.getFieldByLabel('FeatList').getChildStructs();
-        for(let i = 0; i < feats.length; i++){
-          this.feats.push(
-            new TalentFeat( feats[i].getFieldByLabel('Feat').getValue() )
-          );
-        }
-      }
 
       if(this.template.RootNode.hasField('FollowInfo')){
         const followStruct = this.template.RootNode.getFieldByLabel('FollowInfo').getChildStructs()?.[0];
@@ -8214,18 +8198,10 @@ export class Creature extends GameObject {
       }
 
       try{
-        if(this.template.RootNode.hasField('EffectList')){
-          let effects = this.template.RootNode.getFieldByLabel('EffectList').getChildStructs() || [];
-          for(let i = 0; i < effects.length; i++){
-            let effect = GameEffectFactory.EffectFromStruct(effects[i]);
-            if(effect){
-              effect.setAttachedObject(this);
-              effect.loadModel();
-              //console.log('attached');
-              this.effects.push(effect);
-              //this.addEffect(effect);
-            }
-          }
+        for(let i = 0; i < this.effects.length; i++){
+          const effect = this.effects[i];
+          effect.setAttachedObject(this);
+          effect.loadModel();
         }
       }catch(e: any){
         console.error(e);
@@ -8310,40 +8286,13 @@ export class Creature extends GameObject {
       }
       this.loadSoundSet();
 
-      this.loadActionList();
 
-      // CombatRoundData — LoadCombatRound only applies when RoundStarted != 0
-      try{
-        if(this.template.RootNode.hasField('CombatRoundData')){
-          const crField = this.template.RootNode.getFieldByLabel('CombatRoundData');
-          const crStructs = crField.getChildStructs?.() || [];
-          const crStruct = crStructs[0];
-          if(crStruct){
-            if(this.combatRound.fromStruct(crStruct)){
-              // does not GFF-persist CombatState; mid-round load must
-              // re-enter combat so end combat round / OnEndRound / QueueAttackActions work.
-              this.setCombatState(true, ExcitedDurationRow.Damage);
-              this.setExcitedState(ExcitedDurationRow.Damage);
-            }
-          }
-        }
-      }catch(e: any){
-        console.error('Creature.initProperties CombatRoundData', e);
-      }
-
-      // CombatInfo — LoadData
-      try{
-        if(this.template.RootNode.hasField('CombatInfo')){
-          const ciField = this.template.RootNode.getFieldByLabel('CombatInfo');
-          const ciStructs = ciField.getChildStructs?.() || [];
-          const ciStruct = ciStructs[0];
-          if(ciStruct){
-            this.combatInformation.fromStruct(ciStruct);
-            this.arcaneSpellFailure = this.combatInformation.arcaneSpellFail || this.arcaneSpellFailure;
-          }
-        }
-      }catch(e: any){
-        console.error('Creature.initProperties CombatInfo', e);
+      if((this as any)._pendingCombatRoundStarted){
+        // CombatState is not persisted; a restored active round must re-enter
+        // combat after registration so its timers and end-round hooks resume.
+        this.setCombatState(true, ExcitedDurationRow.Damage);
+        this.setExcitedState(ExcitedDurationRow.Damage);
+        delete (this as any)._pendingCombatRoundStarted;
       }
 
       // After CombatInfo fromStruct: rebind equip DWORDs to live item objects.

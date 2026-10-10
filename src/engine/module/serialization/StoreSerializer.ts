@@ -32,7 +32,7 @@ import { itemSerializer } from '@engine/module/serialization/ItemSerializer';
  * Inventory Item construction stays in the Store facade (needs Item ctor).
  */
 export class StoreSerializer implements GameObjectSerializer<Store, GFFObject, GFFObject> {
-  deserialize(target: Store, source: GFFObject, _context?: DeserializeContext): void {
+  deserialize(target: Store, source: GFFObject, context?: DeserializeContext): void {
     const root = gffRootOf(source);
     const needsRegister = !target.initialized;
 
@@ -60,6 +60,9 @@ export class StoreSerializer implements GameObjectSerializer<Store, GFFObject, G
     if (root.hasField('ZOrientation')) target.rotation.z = readFloat(root, 'ZOrientation');
 
     SwVarTableSerializer.deserialize(target, root);
+
+    ActionListSerializer.deserializeFromContext(target as any, root, context);
+
 
     target.initialized = true;
   }

@@ -923,7 +923,10 @@ export class Placeable extends GameObject {
 
   initProperties(){
     const needsRegister = !this.initialized;
-    placeableSerializer.deserialize(this, this.template);
+    placeableSerializer.deserialize(this, this.template, {
+      actionFromStruct: (struct) => GameState.ActionFactory.FromStruct(struct),
+      effectFromStruct: (struct) => GameState.GameEffectFactory.EffectFromStruct(struct),
+    });
 
     const conversationResRef = (this as any)._conversationResRef;
     if(conversationResRef){
@@ -940,15 +943,10 @@ export class Placeable extends GameObject {
       this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
     }
 
-    if(this.template.RootNode.hasField('EffectList')){
-      let effects = this.template.RootNode.getFieldByLabel('EffectList').getChildStructs() || [];
-      for(let i = 0; i < effects.length; i++){
-        let effect = GameEffectFactory.EffectFromStruct(effects[i]);
-        if(effect){
-          effect.setAttachedObject(this);
-          this.effects.push(effect);
-        }
-      }
+    for(let i = 0; i < this.effects.length; i++){
+      const effect = this.effects[i];
+      effect.setAttachedObject(this);
+      effect.loadModel();
     }
 
     if((this.hardness | 0) > 0 && !this.effects.some(e => e.type === GameEffectType.EffectDamageResistance)){
@@ -961,7 +959,6 @@ export class Placeable extends GameObject {
       this.addEffect(eDamageResist);
     }
 
-    this.loadActionList();
 
     if(needsRegister){
       GameState.GameObjectManager.RegisterObject(this);

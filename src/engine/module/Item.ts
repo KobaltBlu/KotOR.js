@@ -1686,18 +1686,6 @@ export class Item extends GameObject {
       }
     }
 
-    if(this.template.RootNode.hasField('PropertiesList')){
-      let propertiesList = this.template.getFieldByLabel('PropertiesList').getChildStructs();
-      this.properties = [];
-      for(let i = 0, len = propertiesList.length; i < len; i++){
-        this.properties.push(
-          new ItemProperty(
-            GFFObject.FromStruct( propertiesList[i] ), this
-          )
-        );
-      }
-    }
-
     this.weaponSound = GameState.SWRuleSet.weaponSounds[this.baseItem?.weaponMaterialType];
 
     if(needsRegister){

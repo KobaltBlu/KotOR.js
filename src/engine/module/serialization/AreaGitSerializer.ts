@@ -15,6 +15,8 @@ import { placeableSerializer } from '@engine/module/serialization/PlaceableSeria
 import { creatureSerializer } from '@engine/module/serialization/CreatureSerializer';
 import { areaEffectSerializer } from '@engine/module/serialization/AreaEffectSerializer';
 import { itemSerializer } from '@engine/module/serialization/ItemSerializer';
+import { AreaMapSerializer } from '@engine/module/serialization/AreaMapSerializer';
+import { SwVarTableSerializer } from '@engine/module/serialization/SwVarTableSerializer';
 
 export type AreaGitListName =
   | 'WaypointList'
@@ -38,8 +40,7 @@ export class AreaGitSerializer {
       aoeList.addChildStruct(this.serializeObject('AreaEffectList', area.areaOfEffects[i]).RootNode);
     }
 
-    const areaMapField = git.RootNode.addField(new GFFField(GFFDataType.STRUCT, 'AreaMap'));
-    areaMapField.addChildStruct(area.areaMap.exportData());
+    AreaMapSerializer.writeField(git.RootNode, area.areaMap);
 
     const areaPropertiesField = git.RootNode.addField(new GFFField(GFFDataType.STRUCT, 'AreaProperties'));
     areaPropertiesField.addChildStruct(area.getAreaPropertiesStruct());
@@ -82,8 +83,7 @@ export class AreaGitSerializer {
       placeableList.addChildStruct(this.serializeObject('PlaceableList', area.placeables[i]).RootNode);
     }
 
-    const swVarTable = git.RootNode.addField(new GFFField(GFFDataType.STRUCT, 'SWVarTable'));
-    swVarTable.addChildStruct(area.getSWVarTableSaveStruct());
+    SwVarTableSerializer.writeField(git.RootNode, area);
 
     const soundList = git.RootNode.addField(new GFFField(GFFDataType.LIST, 'SoundList'));
     for (let i = 0; i < area.sounds.length; i++) {

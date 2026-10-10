@@ -28,7 +28,7 @@ import { ActionListSerializer } from '@engine/module/serialization/ActionListSer
  * Evidence: Save field set omits TemplateResRef / Priority / Elevation.
  */
 export class SoundSerializer implements GameObjectSerializer<Sound, GFFObject, GFFObject> {
-  deserialize(target: Sound, source: GFFObject, _context?: DeserializeContext): void {
+  deserialize(target: Sound, source: GFFObject, context?: DeserializeContext): void {
     const root = gffRootOf(source);
     const needsRegister = !target.initialized;
 
@@ -82,6 +82,9 @@ export class SoundSerializer implements GameObjectSerializer<Sound, GFFObject, G
 
     SwVarTableSerializer.deserialize(target, root, { loadByteArray: false });
     NamedVarTableSerializer.deserialize(target, root);
+
+    ActionListSerializer.deserializeFromContext(target as any, root, context);
+
 
     target.initialized = true;
   }

@@ -4,6 +4,7 @@ import { GFFDataType } from "@core/enums/resource/GFFDataType";
 import { GFFField } from "@core/resource/GFFField";
 import { GFFStruct } from "@core/resource/GFFStruct";
 import { GameEvent } from "@engine/events/GameEvent";
+import { GameState } from "@engine/runtime/GameState";
 
 /**
  * EventRemoveEffect class.
@@ -36,8 +37,20 @@ export class EventRemoveEffect extends GameEvent {
   }
 
   eventDataFromStruct(struct: GFFStruct){
-    if(struct instanceof GFFStruct){
-      
+    if(!(struct instanceof GFFStruct)) return;
+    // No retail remove-effect queue sample is available locally. The observable
+    // save shape matches apply-effect: EventData is the effect or wraps one.
+    if(struct.hasField('Type')){
+      this.effect = GameState.GameEffectFactory.EffectFromStruct(struct);
+      return;
+    }
+    const fields = struct.getFields?.() || [];
+    for(let i = 0; i < fields.length; i++){
+      const nested = fields[i].getChildStructs?.()?.[0];
+      if(nested){
+        this.effect = GameState.GameEffectFactory.EffectFromStruct(nested);
+        return;
+      }
     }
   }
 

@@ -1,5 +1,3 @@
-import { GFFDataType } from '@core/enums/resource/GFFDataType';
-import { GFFField } from '@core/resource/GFFField';
 import { GFFObject } from '@core/resource/GFFObject';
 import { GameObjectConstant } from '@core/enums/module/GameObjectConstant';
 import { AreaOfEffectShape } from '@core/enums/module/AreaOfEffectShape';
@@ -24,6 +22,7 @@ import {
 } from '@engine/module/serialization/gffHelpers';
 import { SwVarTableSerializer } from '@engine/module/serialization/SwVarTableSerializer';
 import { ActionListSerializer } from '@engine/module/serialization/ActionListSerializer';
+import { EffectListSerializer } from '@engine/module/serialization/EffectListSerializer';
 
 /**
  * AreaEffect serializer.
@@ -40,7 +39,7 @@ import { ActionListSerializer } from '@engine/module/serialization/ActionListSer
  * to align with the load path and GameDefinedStrct naming.
  */
 export class AreaEffectSerializer implements GameObjectSerializer<AreaEffect, GFFObject, GFFObject> {
-  deserialize(target: AreaEffect, source: GFFObject, _context?: DeserializeContext): void {
+  deserialize(target: AreaEffect, source: GFFObject, context?: DeserializeContext): void {
     const root = gffRootOf(source);
     const needsRegister = !target.initialized;
 
@@ -113,6 +112,9 @@ export class AreaEffectSerializer implements GameObjectSerializer<AreaEffect, GF
       if (resRef) target.scriptResRefs.onUserDefined = resRef;
     }
 
+    ActionListSerializer.deserializeFromContext(target as any, root, context);
+    EffectListSerializer.deserializeFromContext(target as any, root, context);
+
     target.initialized = true;
   }
 
@@ -177,10 +179,7 @@ export class AreaEffectSerializer implements GameObjectSerializer<AreaEffect, GF
     ActionListSerializer.writeField(gff.RootNode, source as any);
     SwVarTableSerializer.writeField(gff.RootNode, source);
 
-    const effectList = gff.RootNode.addField(new GFFField(GFFDataType.LIST, 'EffectList'));
-    for (let i = 0; i < source.effects.length; i++) {
-      effectList.addChildStruct(source.effects[i].save());
-    }
+    EffectListSerializer.writeField(gff.RootNode, source.effects);
 
     // Emit Position* / Orientation* (see class comment for evidence).
     addFloat(gff.RootNode, 'PositionX', source.position.x);

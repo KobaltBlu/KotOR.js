@@ -3,12 +3,10 @@ import { GameEffectDurationType } from "@core/enums/effects/GameEffectDurationTy
 import { GameEffectSubType } from "@core/enums/effects/GameEffectSubType";
 import { GameEffectType } from "@core/enums/effects/GameEffectType";
 import { GameObjectConstant } from "@core/enums/module/GameObjectConstant";
-import { GFFDataType } from "@core/enums/resource/GFFDataType";
 // import { GameObjectManager } from "@engine/managers/GameObjectManager";
 import type { Module } from "@engine/module/Module";
 import type { GameObject } from "@engine/module/GameObject";
-import { GFFField } from "@core/resource/GFFField";
-import { GFFStruct } from "@core/resource/GFFStruct";
+import { GameEffectSerializer } from "@engine/module/serialization/GameEffectSerializer";
 
 /**
  * GameEffect class.
@@ -357,58 +355,7 @@ export class GameEffect {
   }
 
   save(){
-
-    let effectStruct = new GFFStruct(2);
-    effectStruct.addField( new GFFField(GFFDataType.DWORD64, 'Id') ).setValue(this.id);
-    effectStruct.addField( new GFFField(GFFDataType.WORD, 'Type') ).setValue(this.getSaveType());
-    effectStruct.addField( new GFFField(GFFDataType.WORD, 'SubType') ).setValue(this.getSubTypeUnMasked());
-    effectStruct.addField( new GFFField(GFFDataType.FLOAT, 'Duration') ).setValue(this.getDuration());
-    effectStruct.addField( new GFFField(GFFDataType.BYTE, 'SkipOnLoad') ).setValue(this.skipOnLoad ? 1 : 0);
-    effectStruct.addField( new GFFField(GFFDataType.DWORD, 'ExpireDay') ).setValue(this.getExpireDay());
-    effectStruct.addField( new GFFField(GFFDataType.DWORD, 'ExpireTime') ).setValue(this.getExpireTime());
-    effectStruct.addField( new GFFField(GFFDataType.DWORD, 'CreatorId') ).setValue( typeof this.creator === 'object' ? this.creator.id : 2130706432 );
-    effectStruct.addField( new GFFField(GFFDataType.DWORD, 'SpellId') ).setValue(this.getSpellId() >= 0 ? this.getSpellId() : 4294967295);
-    effectStruct.addField( new GFFField(GFFDataType.INT, 'IsExposed') ).setValue(this.isExposed ? 1 : 0);
-    // SaveGameEffect: NumIntegers + IntList length match; ObjectList is exactly 4 × type 6
-    const numIntegers = (this.numIntegers | 0) > 0 ? (this.numIntegers | 0) : 8;
-    effectStruct.addField( new GFFField(GFFDataType.INT, 'NumIntegers') ).setValue(numIntegers);
-
-    if(numIntegers > 0){
-      let intList = effectStruct.addField( new GFFField(GFFDataType.LIST, 'IntList') );
-      for(let i = 0; i < numIntegers; i++){
-        let intStruct = new GFFStruct(3);
-        intStruct.addField( new GFFField(GFFDataType.INT, "Value").setValue(this.getInt(i) || 0));
-        intList.addChildStruct(intStruct);
-      }
-    }
-
-    let floatList = effectStruct.addField( new GFFField(GFFDataType.LIST, 'FloatList') );
-    for(let i = 0; i < 4; i++){
-      let floatStruct = new GFFStruct(4);
-      floatStruct.addField( new GFFField(GFFDataType.FLOAT, "Value").setValue(this.getFloat(i) || 0.0));
-      floatList.addChildStruct(floatStruct);
-    }
-
-    let stringList = effectStruct.addField( new GFFField(GFFDataType.LIST, 'StringList') );
-    for(let i = 0; i < 6; i++){
-      let stringStruct = new GFFStruct(5);
-      stringStruct.addField( new GFFField(GFFDataType.CEXOSTRING, "Value").setValue(this.getString(i) || ''));
-      stringList.addChildStruct(stringStruct);
-    }
-
-    let objectList = effectStruct.addField( new GFFField(GFFDataType.LIST, 'ObjectList') );
-    for(let i = 0; i < 4; i++){
-      let objectStruct = new GFFStruct(6);
-      const obj = this.getObject(i);
-      const oid = (obj && typeof obj === 'object') ? (obj.id | 0) : 0;
-      objectStruct.addField( new GFFField(GFFDataType.DWORD, "Value").setValue(
-        oid ? oid : GameObjectConstant.OBJECT_INVALID
-      ));
-      objectList.addChildStruct(objectStruct);
-    }
-
-    return effectStruct;
-
+    return GameEffectSerializer.serialize(this);
   }
 
 }

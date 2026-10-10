@@ -52,7 +52,13 @@ import { SwVarTableSerializer } from '@engine/module/serialization/SwVarTableSer
 import { NamedVarTableSerializer } from '@engine/module/serialization/NamedVarTableSerializer';
 import { PositionOrientationTransform } from '@engine/module/serialization/transforms/PositionOrientationTransform';
 import { ActionListSerializer } from '@engine/module/serialization/ActionListSerializer';
+import { EffectListSerializer } from '@engine/module/serialization/EffectListSerializer';
 import { itemSerializer } from '@engine/module/serialization/ItemSerializer';
+import { CombatInformationSerializer } from '@engine/module/serialization/CombatInformationSerializer';
+import { CombatRoundSerializer } from '@engine/module/serialization/CombatRoundSerializer';
+import { CreatureClassSerializer } from '@engine/module/serialization/CreatureClassSerializer';
+import { TalentFeatSerializer } from '@engine/module/serialization/TalentFeatSerializer';
+import { TalentSkillSerializer } from '@engine/module/serialization/TalentSkillSerializer';
 
 export const CREATURE_SCRIPT_KEYS = [
   ScriptHook.CreatureOnAttacked,
@@ -94,7 +100,7 @@ const CREATURE_SCRIPT_SAVE_FIELDS: Array<[string, string]> = [
  * conversation, perceptionRange, skill templates) stays in the Creature facade.
  */
 export class CreatureSerializer implements GameObjectSerializer<Creature, GFFObject, GFFObject> {
-  deserialize(target: Creature, source: GFFObject, _context?: DeserializeContext): void {
+  deserialize(target: Creature, source: GFFObject, context?: DeserializeContext): void {
     const root = gffRootOf(source);
     const needsRegister = !target.initialized;
 
@@ -190,12 +196,29 @@ export class CreatureSerializer implements GameObjectSerializer<Creature, GFFObj
     if (root.hasField('PortraitId')) target.portraitId = readWord(root, 'PortraitId');
     if (root.hasField('Race')) target.race = readByte(root, 'Race');
 
-    if (root.hasField('SkillList') && target.skills?.length) {
+    if (root.hasField('ClassList')) {
+      const classes = root.getFieldByLabel('ClassList').getChildStructs?.() || [];
+      target.classes = classes.map((entry: GFFStruct) =>
+        CreatureClassSerializer.deserialize(entry)
+      );
+    }
+
+    if (root.hasField('FeatList')) {
+      const feats = root.getFieldByLabel('FeatList').getChildStructs?.() || [];
+      target.feats = feats.map((entry: GFFStruct) =>
+        TalentFeatSerializer.deserialize(entry)
+      );
+    }
+
+    if (root.hasField('SkillList')) {
       const skills = root.getFieldByLabel('SkillList').getChildStructs?.() || [];
+      if (!target.skills) target.skills = [];
       for (let i = 0; i < skills.length; i++) {
-        if (target.skills[i]) {
-          target.skills[i].rank = skills[i].getFieldByLabel('Rank').getValue();
-        }
+        target.skills[i] = TalentSkillSerializer.deserialize(
+          skills[i],
+          i,
+          target.skills?.[i],
+        );
       }
     }
 
@@ -263,6 +286,27 @@ export class CreatureSerializer implements GameObjectSerializer<Creature, GFFObj
     }
 
     NamedVarTableSerializer.deserialize(target, root);
+    ActionListSerializer.deserializeFromContext(target as any, root, context);
+    EffectListSerializer.deserializeFromContext(target as any, root, context);
+
+    if (root.hasField('CombatInfo')) {
+      const combatInfo = root.getFieldByLabel('CombatInfo').getChildStructs?.()[0];
+      if (combatInfo) {
+        CombatInformationSerializer.deserialize(target.combatInformation, combatInfo);
+        target.arcaneSpellFailure =
+          target.combatInformation.arcaneSpellFail || target.arcaneSpellFailure;
+      }
+    }
+
+    if (root.hasField('CombatRoundData')) {
+      const combatRound = root.getFieldByLabel('CombatRoundData').getChildStructs?.()[0];
+      if (
+        combatRound &&
+        CombatRoundSerializer.deserialize(target.combatRound, combatRound)
+      ) {
+        (target as any)._pendingCombatRoundStarted = true;
+      }
+    }
   }
 
   serialize(source: Creature, context?: SerializeContext): GFFObject {
@@ -286,7 +330,7 @@ export class CreatureSerializer implements GameObjectSerializer<Creature, GFFObj
 
     const classList = gff.RootNode.addField(new GFFField(GFFDataType.LIST, 'ClassList'));
     for (let i = 0; i < source.classes.length; i++) {
-      classList.addChildStruct(source.classes[i].save());
+      classList.addChildStruct(CreatureClassSerializer.serialize(source.classes[i]));
     }
     addByte(gff.RootNode, 'MClassLevUpIn', Math.max(0, (source.classes?.length || 1) - 1));
 
@@ -297,11 +341,15 @@ export class CreatureSerializer implements GameObjectSerializer<Creature, GFFObj
 
     const combatInfoStruct = gff.RootNode.addField(new GFFField(GFFDataType.STRUCT, 'CombatInfo'));
     source.syncCombatInformationForSave?.();
-    combatInfoStruct.addChildStruct(source.combatInformation.toStruct(0xCAAA));
+    combatInfoStruct.addChildStruct(
+      CombatInformationSerializer.serialize(source.combatInformation, 0xCAAA),
+    );
 
     const combatRoundDataStruct = gff.RootNode.addField(new GFFField(GFFDataType.STRUCT, 'CombatRoundData'));
     if (source.combatRound.roundStarted) {
-      combatRoundDataStruct.addChildStruct(source.combatRound.toStruct(0xCADA));
+      combatRoundDataStruct.addChildStruct(
+        CombatRoundSerializer.serialize(source.combatRound, 0xCADA),
+      );
     } else {
       combatRoundDataStruct.addChildStruct(new GFFStruct(0xCADA));
     }
@@ -325,10 +373,7 @@ export class CreatureSerializer implements GameObjectSerializer<Creature, GFFObj
     addByte(gff.RootNode, 'Disarmable', source.disarmable);
     addByte(gff.RootNode, 'DuplicatingHead', source.duplicatingHead | 0);
 
-    const effectList = gff.RootNode.addField(new GFFField(GFFDataType.LIST, 'EffectList'));
-    for (let i = 0; i < source.effects.length; i++) {
-      effectList.addChildStruct(source.effects[i].save());
-    }
+    EffectListSerializer.writeField(gff.RootNode, source.effects);
 
     const equipItemList = gff.RootNode.addField(new GFFField(GFFDataType.LIST, 'Equip_ItemList'));
     for (let slot = 1, n = 0; n < 18; slot <<= 1, n++) {
@@ -358,7 +403,7 @@ export class CreatureSerializer implements GameObjectSerializer<Creature, GFFObj
     if (source.feats.length > 0) {
       const featList = gff.RootNode.addField(new GFFField(GFFDataType.LIST, 'FeatList'));
       for (let i = 0; i < source.feats.length; i++) {
-        const featStruct = source.feats[i].save();
+        const featStruct = TalentFeatSerializer.serialize(source.feats[i]);
         if (typeof featStruct.setType === 'function') featStruct.setType(1);
         featList.addChildStruct(featStruct);
       }
@@ -440,7 +485,7 @@ export class CreatureSerializer implements GameObjectSerializer<Creature, GFFObj
 
     const skillList = gff.RootNode.addField(new GFFField(GFFDataType.LIST, 'SkillList'));
     for (let i = 0; i < 8; i++) {
-      skillList.addChildStruct(source.skills[i].save());
+      skillList.addChildStruct(TalentSkillSerializer.serialize(source.skills[i]));
     }
 
     addWord(gff.RootNode, 'SkillPoints', source.skillPoints ? source.skillPoints : 0);

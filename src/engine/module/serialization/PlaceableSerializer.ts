@@ -35,6 +35,7 @@ import { NamedVarTableSerializer } from '@engine/module/serialization/NamedVarTa
 import { ScriptResRefSerializer } from '@engine/module/serialization/ScriptResRefSerializer';
 import { PositionBearingTransform } from '@engine/module/serialization/transforms/PositionBearingTransform';
 import { ActionListSerializer } from '@engine/module/serialization/ActionListSerializer';
+import { EffectListSerializer } from '@engine/module/serialization/EffectListSerializer';
 import { itemSerializer } from '@engine/module/serialization/ItemSerializer';
 
 export const PLACEABLE_SCRIPT_KEYS = [
@@ -62,7 +63,7 @@ export const PLACEABLE_SCRIPT_KEYS = [
  * Inventory load stays in Placeable.loadInventory facade.
  */
 export class PlaceableSerializer implements GameObjectSerializer<Placeable, GFFObject, GFFObject> {
-  deserialize(target: Placeable, source: GFFObject, _context?: DeserializeContext): void {
+  deserialize(target: Placeable, source: GFFObject, context?: DeserializeContext): void {
     const root = gffRootOf(source);
     const needsRegister = !target.initialized;
 
@@ -190,6 +191,9 @@ export class PlaceableSerializer implements GameObjectSerializer<Placeable, GFFO
       target.setAnimationState(ModulePlaceableAnimState.CLOSE);
     }
 
+    ActionListSerializer.deserializeFromContext(target as any, root, context);
+    EffectListSerializer.deserializeFromContext(target as any, root, context);
+
     target.initialized = true;
   }
 
@@ -216,10 +220,7 @@ export class PlaceableSerializer implements GameObjectSerializer<Placeable, GFFO
     addByte(gff.RootNode, 'DieWhenEmpty', source.dieWhenEmpty);
     addByte(gff.RootNode, 'DisarmDC', source.disarmDC);
 
-    const effectList = gff.RootNode.addField(new GFFField(GFFDataType.LIST, 'EffectList'));
-    for (let i = 0; i < source.effects.length; i++) {
-      effectList.addChildStruct(source.effects[i].save());
-    }
+    EffectListSerializer.writeField(gff.RootNode, source.effects);
 
     addDword(gff.RootNode, 'Faction', source.faction ? source.faction.id : source.factionId);
     addByte(gff.RootNode, 'Fort', source.fort);

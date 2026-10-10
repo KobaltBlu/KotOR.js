@@ -504,14 +504,15 @@ export class Trigger extends GameObject {
 
   initProperties(){
     const needsRegister = !this.initialized;
-    triggerSerializer.deserialize(this, this.template);
+    triggerSerializer.deserialize(this, this.template, {
+      actionFromStruct: (struct) => GameState.ActionFactory.FromStruct(struct),
+    });
 
     this.faction = GameState.FactionManager.factions.get(this.factionId);
     if(this.portraitId){
       this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
     }
 
-    this.loadActionList();
 
     if(needsRegister){
       GameState.GameObjectManager.RegisterObject(this);

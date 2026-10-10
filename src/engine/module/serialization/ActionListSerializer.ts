@@ -1,7 +1,7 @@
 import { GFFDataType } from '@core/enums/resource/GFFDataType';
 import { GFFField } from '@core/resource/GFFField';
 import type { GFFStruct } from '@core/resource/GFFStruct';
-import type { GffRoot } from '@engine/module/serialization/types';
+import type { DeserializeContext, GffRoot } from '@engine/module/serialization/types';
 
 export interface ActionListHost {
   actionQueue: {
@@ -28,6 +28,16 @@ export class ActionListSerializer {
       const action = fromStruct(actionStructs[i]);
       if (action) target.actionQueue.add(action);
     }
+  }
+
+  /** Hydrate ActionList when DeserializeContext.actionFromStruct is provided. */
+  static deserializeFromContext(
+    target: ActionListHost,
+    root: GffRoot,
+    context?: DeserializeContext,
+  ): void {
+    if (!context?.actionFromStruct) return;
+    ActionListSerializer.deserialize(target, root, context.actionFromStruct);
   }
 
   static writeField(parent: { addField: (f: GFFField) => GFFField }, source: ActionListHost): GFFField {

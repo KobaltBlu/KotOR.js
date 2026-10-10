@@ -45,7 +45,7 @@ const ENCOUNTER_SCRIPT_KEYS = [
  * Always hydrates fields when called — registration stays in the facade.
  */
 export class EncounterSerializer implements GameObjectSerializer<Encounter, GFFObject, GFFObject> {
-  deserialize(target: Encounter, source: GFFObject, _context?: DeserializeContext): void {
+  deserialize(target: Encounter, source: GFFObject, context?: DeserializeContext): void {
     const root = gffRootOf(source);
     const needsRegister = !target.initialized;
 
@@ -134,6 +134,9 @@ export class EncounterSerializer implements GameObjectSerializer<Encounter, GFFO
 
     ScriptResRefSerializer.deserialize(target, root, ENCOUNTER_SCRIPT_KEYS);
     NamedVarTableSerializer.deserialize(target, root);
+
+    ActionListSerializer.deserializeFromContext(target as any, root, context);
+
 
     target.initialized = true;
   }

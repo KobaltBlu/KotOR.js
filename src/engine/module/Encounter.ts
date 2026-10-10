@@ -937,9 +937,10 @@ export class Encounter extends GameObject {
 
   initProperties(){
     const needsRegister = !this.initialized;
-    encounterSerializer.deserialize(this, this.template);
+    encounterSerializer.deserialize(this, this.template, {
+      actionFromStruct: (struct) => GameState.ActionFactory.FromStruct(struct),
+    });
     this.faction = GameState.FactionManager.factions.get(this.factionId);
-    this.loadActionList();
     if(needsRegister){
       GameState.GameObjectManager.RegisterObject(this);
     }

@@ -8,7 +8,6 @@ import { AreaOfEffectShape } from "@core/enums/module/AreaOfEffectShape";
 import { GameObjectType } from "@core/enums/module/GameObjectType";
 import { GameObjectConstant } from "@core/enums/module/GameObjectConstant";
 import { ScriptHook } from "@core/enums/module/ScriptHook";
-import { GameEffectFactory } from "@engine/effects/GameEffectFactory";
 import { GameState } from "@engine/runtime/GameState";
 import { areaEffectSerializer } from "@engine/module/serialization/AreaEffectSerializer";
 import { GameEffectDurationType } from "@core/enums/effects/GameEffectDurationType";
@@ -323,20 +322,16 @@ export class AreaEffect extends GameObject {
 
   initProperties(): void {
     const needsRegister = !this.initialized;
-    areaEffectSerializer.deserialize(this, this.template);
+    areaEffectSerializer.deserialize(this, this.template, {
+      actionFromStruct: (struct) => GameState.ActionFactory.FromStruct(struct),
+      effectFromStruct: (struct) => GameState.GameEffectFactory.EffectFromStruct(struct),
+    });
 
-    this.loadActionList();
 
-    if(this.template.RootNode.hasField('EffectList')){
-      let effects = this.template.RootNode.getFieldByLabel('EffectList').getChildStructs() || [];
-      for(let i = 0, len = effects.length; i < len; i++){
-        let effect = GameEffectFactory.EffectFromStruct(effects[i]);
-        if(effect){
-          effect.setAttachedObject(this);
-          effect.loadModel();
-          this.effects.push(effect);
-        }
-      }
+    for(let i = 0; i < this.effects.length; i++){
+      const effect = this.effects[i];
+      effect.setAttachedObject(this);
+      effect.loadModel();
     }
 
     if(needsRegister){

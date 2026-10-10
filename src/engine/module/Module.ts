@@ -38,6 +38,8 @@ import { ModuleSaveTable } from "@engine/save/ModuleSaveTable";
 import { AIScheduler } from "@engine/runtime/AIScheduler";
 import type { EffectAreaOfEffect } from "@engine/effects/EffectAreaOfEffect";
 import { ModuleIfoSerializer } from "@engine/module/serialization/ModuleIfoSerializer";
+import { EventQueueSerializer } from "@engine/module/serialization/EventQueueSerializer";
+import { SwVarTableSerializer } from "@engine/module/serialization/SwVarTableSerializer";
 
 export interface ModuleExpansionEntry {
   name: CExoLocString;
@@ -464,25 +466,7 @@ export class Module {
     // Module SWVarTable / named VarTable
     this._locals = { Booleans: [], Numbers: {} };
     this.scriptVarTable = new ScriptVarTable();
-    if(ifo.RootNode.hasField('SWVarTable')){
-      const swStructs = ifo.getFieldByLabel('SWVarTable').getChildStructs();
-      const swVarTableStruct = swStructs[0];
-      if(swVarTableStruct?.hasField('BitArray')){
-        const localBools = swVarTableStruct.getFieldByLabel('BitArray').getChildStructs();
-        for(let i = 0; i < localBools.length; i++){
-          const data = localBools[i].getFieldByLabel('Variable').getValue();
-          for(let bit = 0; bit < 32; bit++){
-            this._locals.Booleans[bit + (i * 32)] = ((data >> bit) % 2 != 0);
-          }
-        }
-      }
-      if(swVarTableStruct?.hasField('ByteArray')){
-        const localNumbers = swVarTableStruct.getFieldByLabel('ByteArray').getChildStructs();
-        for(let i = 0; i < localNumbers.length; i++){
-          this._locals.Numbers[i] = localNumbers[i].getFieldByLabel('Variable').getValue();
-        }
-      }
-    }
+    SwVarTableSerializer.deserialize(this, ifo.RootNode);
     if(ifo.RootNode.hasField('VarTable')){
       this.scriptVarTable.loadFromListField(ifo.getFieldByLabel('VarTable'));
     }
@@ -506,27 +490,7 @@ export class Module {
   }
 
   getModuleSWVarTableSaveStruct(){
-    const swVarTableStruct = new GFFStruct();
-    const swVarTableBitArray = swVarTableStruct.addField(new GFFField(GFFDataType.LIST, 'BitArray'));
-    for(let i = 0; i < 3; i++){
-      const varStruct = new GFFStruct();
-      let value = 0;
-      const offset = 32 * i;
-      for(let j = 0; j < 32; j++){
-        if(this._locals.Booleans[offset + j]){
-          value |= 1 << j;
-        }
-      }
-      varStruct.addField(new GFFField(GFFDataType.DWORD, 'Variable')).setValue(value >>> 0);
-      swVarTableBitArray.addChildStruct(varStruct);
-    }
-    const swVarTableByteArray = swVarTableStruct.addField(new GFFField(GFFDataType.LIST, 'ByteArray'));
-    for(let i = 0; i < 8; i++){
-      const varStruct = new GFFStruct();
-      varStruct.addField(new GFFField(GFFDataType.BYTE, 'Variable')).setValue(Number(this._locals.Numbers[i] || 0));
-      swVarTableByteArray.addChildStruct(varStruct);
-    }
-    return swVarTableStruct;
+    return SwVarTableSerializer.serialize(this);
   }
 
   /** module SWVarTable — Get/SetLocalBoolean on GetModule */
@@ -789,17 +753,11 @@ export class Module {
 
   initEventQueue(){
     //Load module EventQueue after the area is intialized so that GameObject ID's are set
-    if(this.ifo.RootNode.hasField('EventQueue')){
-      let eventQueue = this.ifo.getFieldByLabel('EventQueue').getChildStructs();
-      for(let i = 0; i < eventQueue.length; i++){
-        let event_struct = eventQueue[i];
-        let event = GameEventFactory.EventFromStruct(event_struct);
-        console.log(event_struct, event);
-        if(event){
-          this.eventQueue.push(event);
-        }
-      }
-    }
+    EventQueueSerializer.deserialize(
+      this,
+      this.ifo.RootNode,
+      (struct) => GameEventFactory.EventFromStruct(struct),
+    );
   }
 
   dispose(){

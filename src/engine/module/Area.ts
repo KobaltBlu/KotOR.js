@@ -76,6 +76,8 @@ import { ModuleTimeManager } from "@engine/module/ModuleTimeManager";
 import { CorpseCache } from "@engine/module/CorpseCache";
 import { GameLoop } from '@engine/runtime/GameLoop';
 import { AreaGitSerializer } from "@engine/module/serialization/AreaGitSerializer";
+import { AreaMapSerializer } from "@engine/module/serialization/AreaMapSerializer";
+import { SwVarTableSerializer } from "@engine/module/serialization/SwVarTableSerializer";
 
 type AreaScriptKeys = 'OnEnter'|'OnExit'|'OnHeartbeat'|'OnUserDefined';
 
@@ -1892,7 +1894,7 @@ export class Area extends GameObject {
 
     if(this.are.RootNode.hasField('Map')){
       const map = this.are.getFieldByLabel('Map')?.getChildStructs()?.[0];
-      const loadedMap = map ? AreaMap.FromStruct(map) : undefined;
+      const loadedMap = AreaMapSerializer.fromStruct(map);
       if(loadedMap){
         this.areaMap = loadedMap;
       }
@@ -1992,7 +1994,6 @@ export class Area extends GameObject {
     // Order: weather/vars → creatures → items → doors → triggers → encounters →
     // waypoints → sounds → placeables → stores → AOEs → properties → maps → cameras
 
-    const areaMap = this.git.getFieldByLabel('AreaMap');
     const areaProps = this.git.getFieldByLabel('AreaProperties');
     const areaEffects = this.git.getFieldByLabel('AreaEffectList');
     const cameras = this.git.getFieldByLabel('CameraList');
@@ -2023,16 +2024,7 @@ export class Area extends GameObject {
     if(this.git.RootNode.hasField('VarTable')){
       this.loadNamedVarTable(this.git.getFieldByLabel('VarTable'));
     }
-    if(this.git.RootNode.hasField('SWVarTable')){
-      console.log("SWVarTable", this.git);
-      let localBools = this.git.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
-      for(let i = 0; i < localBools.length; i++){
-        let data = localBools[i].getFieldByLabel('Variable').getValue();
-        for(let bit = 0; bit < 32; bit++){
-          this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
-        }
-      }
-    }
+    SwVarTableSerializer.deserialize(this, this.git.RootNode);
 
     // Creatures
     if(creatures){
@@ -2193,12 +2185,7 @@ export class Area extends GameObject {
     }
 
     // LoadMaps
-    if(areaMap){
-      const areaMapStruct = areaMap.getChildStructs()[0];
-      if(areaMapStruct){
-        this.areaMap.loadDataStruct(areaMapStruct);
-      }
-    }
+    AreaMapSerializer.deserialize(this.areaMap, this.git.RootNode);
 
     // LoadPlaceableCameras — last among GIT lists
     if(cameras){

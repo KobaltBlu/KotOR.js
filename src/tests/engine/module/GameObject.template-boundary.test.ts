@@ -211,4 +211,36 @@ describe('GameObject template access boundary', () => {
 
     expect(violations).toEqual([]);
   });
+
+  it('keeps nested runtime field walks in their explicit load lifecycle methods', () => {
+    const allowedByField: Record<string, RegExp> = {
+      EffectList: /^(initProperties|load)$/,
+      ActionList: /^loadActionList$/,
+      CombatRoundData: /^(initProperties|load)$/,
+      PropertiesList: /^initProperties$/,
+    };
+    const labels = Object.keys(allowedByField);
+    const fieldWalk = new RegExp(
+      `(?:hasField|getFieldByLabel)\\(\\s*['"](${labels.join('|')})['"]`,
+      'g',
+    );
+    const violations: string[] = [];
+
+    for (const file of listTsFiles(MODULE_DIR)) {
+      const raw = fs.readFileSync(file, 'utf8');
+      if (!raw.includes('extends GameObject') && path.basename(file) !== 'GameObject.ts') continue;
+      for (const method of extractMethods(stripNoise(raw))) {
+        fieldWalk.lastIndex = 0;
+        let match: RegExpExecArray | null;
+        while ((match = fieldWalk.exec(method.body))) {
+          const label = match[1];
+          if (!allowedByField[label].test(method.name)) {
+            violations.push(`${path.basename(file)}:${method.name}:${label}`);
+          }
+        }
+      }
+    }
+
+    expect(violations).toEqual([]);
+  });
 });

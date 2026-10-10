@@ -1,9 +1,8 @@
 import { GameState } from "@engine/runtime/GameState";
 import { ActionParameterType } from "@core/enums/actions/ActionParameterType";
-import { GFFDataType } from "@core/enums/resource/GFFDataType";
 import { NWScriptInstance } from "@engine/nwscript/NWScriptInstance";
-import { GFFField } from "@core/resource/GFFField";
 import { GFFStruct } from "@core/resource/GFFStruct";
+import { ActionParameterSerializer } from "@engine/module/serialization/ActionParameterSerializer";
 
 /**
  * Represents a parameter for game actions in the engine.
@@ -92,70 +91,32 @@ export class ActionParameter {
    * ```
    */
   static FromStruct( struct: GFFStruct ){
-    if(!(struct instanceof GFFStruct)){
-      return undefined;
-    }
-
-    const type = struct.getFieldByLabel('Type').getValue();
-    let value = undefined;
-    switch(type){
-      case ActionParameterType.INT:
-      case ActionParameterType.FLOAT:
-      case ActionParameterType.DWORD:
-      case ActionParameterType.STRING:
-        value = struct.getFieldByLabel('Value').getValue();
-      break;
-      case ActionParameterType.SCRIPT_SITUATION:
-        let scriptParamStructs = struct.getFieldByLabel('Value').getChildStructs()[0];
-        let script = new GameState.NWScript();
-        script.name = scriptParamStructs.getFieldByLabel('Name').getValue();
-        script.init(
-          scriptParamStructs.getFieldByLabel('Code').getVoid(),
-          scriptParamStructs.getFieldByLabel('CodeSize').getValue()
-        );
-    
-        let scriptInstance = script.newInstance();
-        scriptInstance.isStoreState = true;
-        scriptInstance.offset = scriptInstance.address = scriptParamStructs.getFieldByLabel('InstructionPtr').getValue();
-    
-        let stackStruct = scriptParamStructs.getFieldByLabel('Stack').getChildStructs()[0];
-        scriptInstance.stack = GameState.NWScript.NWScriptStack.FromActionStruct(stackStruct);
-
-        value = scriptInstance;
-      break;
-      default:
-        throw 'ActionParameter.FromStruct: Invalid Type ('+type+')';
-    }
-    return new ActionParameter(type, value);
+    const loaded = ActionParameterSerializer.read(struct, (situationStruct) => {
+      if(!situationStruct){ return undefined; }
+      const script = new GameState.NWScript();
+      script.name = situationStruct.getFieldByLabel('Name').getValue();
+      script.init(
+        situationStruct.getFieldByLabel('Code').getVoid(),
+        situationStruct.getFieldByLabel('CodeSize').getValue()
+      );
+      const scriptInstance = script.newInstance();
+      scriptInstance.isStoreState = true;
+      scriptInstance.offset = scriptInstance.address = situationStruct.getFieldByLabel('InstructionPtr').getValue();
+      const stackStruct = situationStruct.getFieldByLabel('Stack').getChildStructs()[0];
+      scriptInstance.stack = GameState.NWScript.NWScriptStack.FromActionStruct(stackStruct);
+      return scriptInstance;
+    });
+    if(!loaded){ return undefined; }
+    return new ActionParameter(loaded.type, loaded.scriptInstance ?? loaded.value);
   }
 
   toStruct(){
-    const struct = new GFFStruct(1);
-    // SaveActionQueue — Type is DWORD (INT breaks LoadActionQueue ReadFieldDWORD)
-    struct.addField(new GFFField(GFFDataType.DWORD, 'Type', this.type));
-    switch(this.type){
-      case ActionParameterType.INT:
-        struct.addField(new GFFField(GFFDataType.INT, 'Value', this.value));
-      break;
-      case ActionParameterType.FLOAT:
-        struct.addField(new GFFField(GFFDataType.FLOAT, 'Value', this.value));
-      break;
-      case ActionParameterType.DWORD:
-        struct.addField(new GFFField(GFFDataType.DWORD, 'Value', this.value));
-      break;
-      case ActionParameterType.STRING:
-        struct.addField(new GFFField(GFFDataType.CEXOSTRING, 'Value', this.value));
-      break;
-      case ActionParameterType.SCRIPT_SITUATION:
-        struct.addField(new GFFField(GFFDataType.STRUCT, 'Value')).addChildStruct(
-          this.scriptInstance.saveEventSituation()
-        );
-      break;
-      default:
-        throw 'ActionParameter.toStruct: Invalid Type ('+this.type+')';
-    }
-
-    return struct;
+    return ActionParameterSerializer.write(
+      this.type,
+      this.value,
+      this.scriptInstance,
+      (instance) => instance.saveEventSituation(),
+    );
   }
 
 }

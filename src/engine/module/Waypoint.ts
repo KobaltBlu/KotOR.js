@@ -95,8 +95,9 @@ export class Waypoint extends GameObject {
 
   initProperties(){
     const needsRegister = !this.initialized;
-    waypointSerializer.deserialize(this, this.template);
-    this.loadActionList();
+    waypointSerializer.deserialize(this, this.template, {
+      actionFromStruct: (struct) => GameState.ActionFactory.FromStruct(struct),
+    });
     if(needsRegister){
       GameState.GameObjectManager.RegisterObject(this);
     }

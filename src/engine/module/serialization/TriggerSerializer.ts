@@ -49,7 +49,7 @@ const TRIGGER_SCRIPT_KEYS = [
  * Save omits TrapDetectDC / TrapDisarmDC / TrapFlag (UTT-only).
  */
 export class TriggerSerializer implements GameObjectSerializer<Trigger, GFFObject, GFFObject> {
-  deserialize(target: Trigger, source: GFFObject, _context?: DeserializeContext): void {
+  deserialize(target: Trigger, source: GFFObject, context?: DeserializeContext): void {
     const root = gffRootOf(source);
     const needsRegister = !target.initialized;
 
@@ -110,6 +110,9 @@ export class TriggerSerializer implements GameObjectSerializer<Trigger, GFFObjec
     ScriptResRefSerializer.deserialize(target, root, TRIGGER_SCRIPT_KEYS);
     SwVarTableSerializer.deserialize(target, root, { loadByteArray: false });
     NamedVarTableSerializer.deserialize(target, root);
+
+    ActionListSerializer.deserializeFromContext(target as any, root, context);
+
 
     target.initialized = true;
   }

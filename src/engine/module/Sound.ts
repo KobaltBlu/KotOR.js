@@ -337,14 +337,15 @@ export class Sound extends GameObject {
 
   initProperties(){
     const needsRegister = !this.initialized;
-    soundSerializer.deserialize(this, this.template);
+    soundSerializer.deserialize(this, this.template, {
+      actionFromStruct: (struct) => GameState.ActionFactory.FromStruct(struct),
+    });
 
     this.soundType = AudioEmitterType.GLOBAL;
     if(this.positional){
       this.soundType = this.randomPosition ? AudioEmitterType.RANDOM : AudioEmitterType.POSITIONAL;
     }
 
-    this.loadActionList();
 
     if(needsRegister){
       GameState.GameObjectManager.RegisterObject(this);

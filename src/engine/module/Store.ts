@@ -76,7 +76,9 @@ export class Store extends GameObject {
 
   initProperties(){
     const needsRegister = !this.initialized;
-    storeSerializer.deserialize(this, this.template);
+    storeSerializer.deserialize(this, this.template, {
+      actionFromStruct: (struct) => GameState.ActionFactory.FromStruct(struct),
+    });
 
     if(this.template.RootNode.hasField('ItemList')){
       // Avoid duplicating stock if initProperties runs again after a template merge.
@@ -91,7 +93,6 @@ export class Store extends GameObject {
       }
     }
 
-    this.loadActionList();
 
     if(needsRegister){
       GameState.GameObjectManager.RegisterObject(this);

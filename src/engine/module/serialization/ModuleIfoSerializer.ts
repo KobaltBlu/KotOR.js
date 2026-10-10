@@ -7,6 +7,8 @@ import { GFFStruct } from '@core/resource/GFFStruct';
 import { GameState } from '@engine/runtime/GameState';
 import { gffRootOf } from '@engine/module/serialization/types';
 import { readResRef, readString } from '@engine/module/serialization/gffHelpers';
+import { EventQueueSerializer } from '@engine/module/serialization/EventQueueSerializer';
+import { SwVarTableSerializer } from '@engine/module/serialization/SwVarTableSerializer';
 
 export class ModuleIfoSerializer {
   static serialize(module: any, options: { isSaveGame: boolean }): GFFObject {
@@ -22,15 +24,7 @@ export class ModuleIfoSerializer {
       creatureList.addChildStruct(root);
     }
 
-    const eventQueue = ifo.RootNode.addField(new GFFField(GFFDataType.LIST, 'EventQueue'));
-    for (let i = 0; i < module.eventQueue.length; i++) {
-      const event = module.eventQueue[i];
-      if (!event) continue;
-      const exported = event.export();
-      if (exported) {
-        eventQueue.addChildStruct(exported);
-      }
-    }
+    EventQueueSerializer.writeField(ifo.RootNode, module.eventQueue);
 
     const areaList = ifo.RootNode.addField(new GFFField(GFFDataType.LIST, 'Mod_Area_list'));
     if (module.area) {
@@ -182,8 +176,7 @@ export class ModuleIfoSerializer {
     ifo.RootNode.addField(new GFFField(GFFDataType.DWORD, 'Mod_Version')).setValue(module.version);
     ifo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Mod_XPScale')).setValue(module.xpScale);
 
-    const swVarTable = ifo.RootNode.addField(new GFFField(GFFDataType.STRUCT, 'SWVarTable'));
-    swVarTable.addChildStruct(module.getModuleSWVarTableSaveStruct());
+    SwVarTableSerializer.writeField(ifo.RootNode, module);
     const varTable = ifo.RootNode.addField(new GFFField(GFFDataType.LIST, 'VarTable'));
     module.scriptVarTable.writeToListField(varTable);
 

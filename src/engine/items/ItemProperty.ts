@@ -1,12 +1,10 @@
 import { GameState } from "@engine/runtime/GameState";
 import { ModuleItemCostTable } from "@core/enums/module/ModuleItemCostTable";
-import { GFFDataType } from "@core/enums/resource/GFFDataType";
-import { GFFField } from "@core/resource/GFFField";
-import { GFFStruct } from "@core/resource/GFFStruct";
 import { resolveDamageBonusFromRow } from "@engine/combat/damage-bonus";
 import { SWItemPropsDef } from "@engine/rules/SWItemPropsDef";
 import { SWCostTable } from "@engine/rules/SWCostTable";
 import { TwoDAObject } from "@core/resource/TwoDAObject";
+import { ItemPropertySerializer } from "@engine/module/serialization/ItemPropertySerializer";
 
 class SWSubTypeBase {
   id: number;
@@ -248,21 +246,7 @@ export class ItemProperty {
   }
 
   save(){
-    let propStruct = new GFFStruct(0);
-
-    propStruct.addField( new GFFField(GFFDataType.WORD, 'PropertyName') )?.setValue( this.propertyName == -1 ? 255 : this.propertyName);
-    // item property labels: Subtype / Useable (load already accepts these)
-    propStruct.addField( new GFFField(GFFDataType.WORD, 'Subtype') )?.setValue( this.subType == -1 ? 255 : this.subType);
-    propStruct.addField( new GFFField(GFFDataType.BYTE, 'CostTable') )?.setValue( this.costTable == -1 ? 255 : this.costTable);
-    propStruct.addField( new GFFField(GFFDataType.WORD, 'CostValue') )?.setValue( this.costValue == -1 ? 255 : this.costValue);
-    propStruct.addField( new GFFField(GFFDataType.BYTE, 'Param1') )?.setValue( this.param1 == -1 ? 255 : this.param1);
-    propStruct.addField( new GFFField(GFFDataType.BYTE, 'Param1Value') )?.setValue( this.param1Value == -1 ? 255 : this.param1Value);
-    propStruct.addField( new GFFField(GFFDataType.BYTE, 'ChanceAppear') )?.setValue( this.chanceAppear == -1 ? 255 : this.chanceAppear);
-    propStruct.addField( new GFFField(GFFDataType.BYTE, 'UsesPerDay') )?.setValue( this.usesPerDay == -1 ? 255 : this.usesPerDay);
-    propStruct.addField( new GFFField(GFFDataType.BYTE, 'Useable') )?.setValue( this.useable == -1 ? 255 : this.useable);
-    propStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeType') )?.setValue( this.upgradeType == -1 ? 255 : this.upgradeType);
-
-    return propStruct;
+    return ItemPropertySerializer.serialize(this);
   }
 
 }

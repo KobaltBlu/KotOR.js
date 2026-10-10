@@ -32,6 +32,13 @@ import { getPathPersonalSpace } from "@engine/combat/attack-range";
 import { partyFollowPath } from "@engine/pathfinding/party-follow-path";
 import { findOpenWalkLocation } from "@engine/pathfinding/open-walk-location";
 import { SaveLoadAudit } from "@engine/save/SaveLoadAudit";
+import { CreatureClass } from "@engine/combat/CreatureClass";
+import { TalentFeat } from "@engine/talents/TalentFeat";
+import { TalentSkill } from "@engine/talents/TalentSkill";
+import { TalentSpell } from "@engine/talents/TalentSpell";
+import { CreatureClassSerializer } from "@engine/module/serialization/CreatureClassSerializer";
+import { TalentFeatSerializer } from "@engine/module/serialization/TalentFeatSerializer";
+import { TalentSkillSerializer } from "@engine/module/serialization/TalentSkillSerializer";
 
 import { isCreature } from "@engine/module/guards/isCreature";
 
@@ -2639,37 +2646,30 @@ export class PartyManager {
     pTPL.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PerceptionRange') ).setValue(12);
 
     let classList = pTPL.RootNode.addField( new GFFField(GFFDataType.LIST, 'ClassList') );
-    let _class = new GFFStruct(2);
-    _class.addField( new GFFField(GFFDataType.INT, 'Class') ).setValue(3);
-    _class.addField( new GFFField(GFFDataType.SHORT, 'ClassLevel') ).setValue(20);
-    let spellsPerDay = _class.addField( new GFFField(GFFDataType.LIST, 'SpellsPerDayList') );
-    let spellsPerDayStruct = new GFFStruct(17767);
-    spellsPerDayStruct.addField( new GFFField(GFFDataType.BYTE, 'NumSpellsLeft') ).setValue(0);
-    spellsPerDay.addChildStruct(spellsPerDayStruct);
-    let knownList0 = _class.addField( new GFFField(GFFDataType.LIST, 'KnownList0') );
+    const playerClass = new CreatureClass();
+    playerClass.id = 3;
+    playerClass.level = 20;
     const seenSpellIds = new Set<number>();
     for(let i = 0; i < GENERATE_PLAYER_SPELL_LABELS.length; i++){
       const spellId = PartyManager.findSpellIdByLabel(GENERATE_PLAYER_SPELL_LABELS[i]);
       if(typeof spellId !== 'number' || seenSpellIds.has(spellId)){ continue; }
       seenSpellIds.add(spellId);
-      const spellStruct = new GFFStruct(3);
-      spellStruct.addField( new GFFField(GFFDataType.WORD, 'Spell') ).setValue(spellId);
-      knownList0.addChildStruct(spellStruct);
+      playerClass.addSpell(new TalentSpell(spellId));
     }
-    classList.addChildStruct(_class);
+    classList.addChildStruct(CreatureClassSerializer.serialize(playerClass));
 
     let featList = pTPL.RootNode.addField( new GFFField(GFFDataType.LIST, 'FeatList') );
     for(let i = 0; i < GENERATE_PLAYER_FEATS.length; i++){
-      const featStruct = new GFFStruct(1);
-      featStruct.addField( new GFFField(GFFDataType.WORD, 'Feat') ).setValue(GENERATE_PLAYER_FEATS[i]);
-      featList.addChildStruct(featStruct);
+      featList.addChildStruct(
+        TalentFeatSerializer.serialize(new TalentFeat(GENERATE_PLAYER_FEATS[i]))
+      );
     }
 
     let skillList = pTPL.RootNode.addField( new GFFField(GFFDataType.LIST, 'SkillList') );
     for(let i = 0; i < 8; i++){
-      let _skill = new GFFStruct();
-      _skill.addField( new GFFField(GFFDataType.BYTE, 'Rank') ).setValue(GENERATE_PLAYER_SKILL_RANKS[i] | 0);
-      skillList.addChildStruct(_skill);
+      skillList.addChildStruct(
+        TalentSkillSerializer.serialize(new TalentSkill(i, GENERATE_PLAYER_SKILL_RANKS[i] | 0))
+      );
     }
 
     let armorStruct = new GFFStruct(ModuleCreatureArmorSlot.ARMOR);
