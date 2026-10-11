@@ -10,9 +10,7 @@ import {
   findWalkableAttachmentAt,
   queryDoorCrossing,
   testCreatureMovement,
-  testStaticMovement,
-  testWalkSegment,
-  WalkLineHitCode,
+  testDriveStepClear,
 } from "@engine/movement/area-movement-queries";
 import {
   MovementHitKind,
@@ -29,30 +27,48 @@ import { MovementAuthority } from "@engine/movement/types";
 /**
  * Drive destination preparation (AIActionDrive) + per-frame DriveUpdateLocation.
  * Resolve is mutation-free aside from friend-nudge placement (authorized separately).
+ *
+ * Frame steps use thin drive probes (clip + one stadium) — not plot-grade
+ * hasWalkLineClear binary/fan searches.
  */
 
 const _from = new THREE.Vector3();
-const _to = new THREE.Vector3();
 const _dir = new THREE.Vector3();
 const _next = new THREE.Vector3();
 const _sample = new THREE.Vector3();
-const _slideLeft = new THREE.Vector3();
-const _slideRight = new THREE.Vector3();
-const _slideProbe = new THREE.Vector3();
-const _slideBest = new THREE.Vector3();
 const _moveDir = new THREE.Vector3();
-const _lo = new THREE.Vector3();
-const _hi = new THREE.Vector3();
-const _mid = new THREE.Vector3();
+const _slide = new THREE.Vector3();
+const _probe = new THREE.Vector3();
+const _hitNormal = new THREE.Vector3();
+/** Scratch return for drivePrepareDestination — callers must .copy() immediately. */
+const _prepareOut = new THREE.Vector3();
 
-function lineOk(code: WalkLineHitCode): boolean {
-  return code === WalkLineHitCode.Ok;
+function projectOntoTangent(
+  desiredX: number,
+  desiredY: number,
+  normalX: number,
+  normalY: number,
+  out: THREE.Vector3
+): void {
+  const nLen = Math.hypot(normalX, normalY);
+  if(nLen < 1e-8){
+    out.set(desiredX, desiredY, 0);
+    return;
+  }
+  const nx = normalX / nLen;
+  const ny = normalY / nLen;
+  const vn = desiredX * nx + desiredY * ny;
+  if(vn < 0){
+    out.set(desiredX - nx * vn, desiredY - ny * vn, 0);
+  }else{
+    out.set(desiredX, desiredY, 0);
+  }
 }
 
 /**
- * Resolve a drive step toward `ideal`: creature gate + bump, then direct-line
- * clip; on fail binary-search along the segment, then ±perpendicular wall-slide.
- * Returns a cloned target point (does not move the owner).
+ * Resolve a drive step toward `ideal`: creature gate + bump, then one thin
+ * probe; on block clip to clearT and project onto wall tangent (≤2 retries).
+ * Returns a scratch Vector3 — caller must .copy() immediately (does not move owner).
  */
 export function drivePrepareDestination(
   area: Area,
@@ -71,125 +87,131 @@ export function drivePrepareDestination(
       GameState.PartyManager?.party?.find((c) => c.id === creatures.hit!.creatureId);
     if(isCreature(blocker)){
       if(!nudgeFriendlyCreatures(creature, blocker as Creature, ideal, origin)){
-        return origin.clone();
+        return _prepareOut.copy(origin);
       }
     }else{
-      return origin.clone();
+      return _prepareOut.copy(origin);
     }
   }
 
   const perspace = getPathPersonalSpace(creature);
-  const full = testWalkSegment(area, origin, ideal, {
+  // AI drive: hard static tests (no soft-start door/placeable pre-scan).
+  const probe = testDriveStepClear(area, origin, ideal, {
     owner: creature,
     personalSpace: perspace,
-    softClearStartOverlap: true,
+    softClearStartOverlap: false,
   });
-  if(lineOk(full.code)){
-    return ideal.clone();
-  }
-
-  let t = 0.5;
-  let step = 0.25;
-  let found = false;
-  _slideBest.copy(origin);
-  while(step > 0.005){
-    _sample.set(
-      origin.x + (ideal.x - origin.x) * t,
-      origin.y + (ideal.y - origin.y) * t,
-      origin.z + (ideal.z - origin.z) * t
-    );
-    const mid = testWalkSegment(area, origin, _sample, {
-      owner: creature,
-      personalSpace: perspace,
-      softClearStartOverlap: true,
-    });
-    if(lineOk(mid.code)){
-      _slideBest.copy(_sample);
-      found = true;
-      t += step;
-    }else{
-      t -= step;
-    }
-    step *= 0.5;
-  }
-  if(found){
-    return _slideBest.clone();
+  if(probe.clear){
+    return _prepareOut.copy(ideal);
   }
 
   _moveDir.set(ideal.x - origin.x, ideal.y - origin.y, 0);
-  if(_moveDir.lengthSq() < 1e-10){
-    return origin.clone();
+  const idealLen = _moveDir.length();
+  if(idealLen < 1e-10){
+    return _prepareOut.copy(origin);
   }
   _moveDir.normalize();
-  _slideLeft.set(-_moveDir.y, _moveDir.x, 0);
-  _slideRight.set(_moveDir.y, -_moveDir.x, 0);
 
   const len =
-    typeof stepLen === "number" && stepLen > 0
-      ? stepLen
-      : Math.hypot(ideal.x - origin.x, ideal.y - origin.y);
-  let leftOk = true;
-  let rightOk = true;
-  let leftDir = _slideLeft.clone().add(_moveDir).normalize();
-  let rightDir = _slideRight.clone().add(_moveDir).normalize();
-  let bestDot = -1;
-  let best: THREE.Vector3 | undefined;
+    typeof stepLen === "number" && stepLen > 0 ? stepLen : idealLen;
 
-  for(let i = 0; i < 15 && (leftOk || rightOk); i++){
-    if(leftOk){
-      _slideProbe.set(
-        origin.x + leftDir.x * len,
-        origin.y + leftDir.y * len,
-        origin.z
-      );
-      const hit = testWalkSegment(area, origin, _slideProbe, {
-        owner: creature,
-        personalSpace: perspace,
-        softClearStartOverlap: true,
-      });
-      if(lineOk(hit.code)){
-        const dot = leftDir.x * _moveDir.x + leftDir.y * _moveDir.y;
-        if(dot > bestDot){
-          bestDot = dot;
-          best = _slideProbe.clone();
-        }
-        leftDir = leftDir.clone().add(_slideLeft).normalize();
-      }else{
-        leftOk = false;
+  // Clip to first contact from the thin probe (copy before next probe).
+  const clearT = Math.max(0, Math.min(1, probe.clearT));
+  if(clearT > 1e-4){
+    _sample.set(
+      origin.x + (ideal.x - origin.x) * clearT,
+      origin.y + (ideal.y - origin.y) * clearT,
+      origin.z + (ideal.z - origin.z) * clearT
+    );
+  }else{
+    _sample.copy(origin);
+  }
+  _hitNormal.copy(probe.normal);
+  let nx = _hitNormal.x;
+  let ny = _hitNormal.y;
+  if(Math.hypot(nx, ny) < 1e-8){
+    nx = -_moveDir.x;
+    ny = -_moveDir.y;
+  }
+
+  projectOntoTangent(_moveDir.x * len, _moveDir.y * len, nx, ny, _slide);
+  const slideLen = Math.hypot(_slide.x, _slide.y);
+  if(slideLen < 1e-8){
+    if(clearT > 1e-4){
+      if(area.getNearestWalkablePoint){
+        return _prepareOut.copy(area.getNearestWalkablePoint(_sample, perspace));
       }
+      return _prepareOut.copy(_sample);
     }
-    if(rightOk){
-      _slideProbe.set(
-        origin.x + rightDir.x * len,
-        origin.y + rightDir.y * len,
-        origin.z
-      );
-      const hit = testWalkSegment(area, origin, _slideProbe, {
-        owner: creature,
-        personalSpace: perspace,
-        softClearStartOverlap: true,
-      });
-      if(lineOk(hit.code)){
-        const dot = rightDir.x * _moveDir.x + rightDir.y * _moveDir.y;
+    return _prepareOut.copy(origin);
+  }
+
+  // At most two shortened retries along the tangent.
+  const factors = [1, 0.5];
+  let bestX = 0;
+  let bestY = 0;
+  let bestZ = 0;
+  let hasBest = false;
+  let bestDot = -1;
+  for(let r = 0; r < factors.length; r++){
+    const scale = factors[r];
+    _probe.set(
+      origin.x + (_slide.x / slideLen) * len * scale,
+      origin.y + (_slide.y / slideLen) * len * scale,
+      origin.z
+    );
+    const retry = testDriveStepClear(area, origin, _probe, {
+      owner: creature,
+      personalSpace: perspace,
+      softClearStartOverlap: false,
+    });
+    if(retry.clear){
+      const ux = _slide.x / slideLen;
+      const uy = _slide.y / slideLen;
+      const dot = ux * _moveDir.x + uy * _moveDir.y;
+      if(dot > bestDot){
+        bestDot = dot;
+        bestX = _probe.x;
+        bestY = _probe.y;
+        bestZ = _probe.z;
+        hasBest = true;
+      }
+      break;
+    }
+    if(retry.clearT > 1e-4){
+      const px = origin.x + (_probe.x - origin.x) * retry.clearT;
+      const py = origin.y + (_probe.y - origin.y) * retry.clearT;
+      const moved = Math.hypot(px - origin.x, py - origin.y);
+      if(moved > 1e-4){
+        const ux = (px - origin.x) / moved;
+        const uy = (py - origin.y) / moved;
+        const dot = ux * _moveDir.x + uy * _moveDir.y;
         if(dot > bestDot){
           bestDot = dot;
-          best = _slideProbe.clone();
+          bestX = px;
+          bestY = py;
+          bestZ = origin.z;
+          hasBest = true;
         }
-        rightDir = rightDir.clone().add(_slideRight).normalize();
-      }else{
-        rightOk = false;
       }
     }
   }
 
-  if(best){
+  if(hasBest){
     const factor = Math.max(0.25, Math.min(1, bestDot > 0 ? bestDot : 0.25));
     if(creature){
       creature.locomotionScale = factor;
     }
-    return best;
+    return _prepareOut.set(bestX, bestY, bestZ);
   }
-  return origin.clone();
+
+  if(clearT > 1e-4){
+    if(area.getNearestWalkablePoint){
+      return _prepareOut.copy(area.getNearestWalkablePoint(_sample, perspace));
+    }
+    return _prepareOut.copy(_sample);
+  }
+  return _prepareOut.copy(origin);
 }
 
 /** @deprecated Prefer drivePrepareDestination — alias for ActionDrive callers. */
@@ -202,25 +224,24 @@ function clipWalkablePoint(
   creature: Creature
 ): THREE.Vector3 {
   const perspace = getPathPersonalSpace(creature);
-  const hit = testStaticMovement(area, origin, ideal, {
+  const probe = testDriveStepClear(area, origin, ideal, {
     owner: creature,
     personalSpace: perspace,
-    collectHitInfo: true,
-    softClearStartOverlap: true,
+    softClearStartOverlap: false,
   });
-  if(hit.clear){
+  if(probe.clear){
     return ideal.clone();
   }
-  const walkHit = hit.walkHit;
-  if(walkHit.clearT > 1e-4){
-    _lo.copy(walkHit.clearPoint);
+  if(probe.clearT > 1e-4){
+    _sample.copy(probe.clearPoint);
     if(area.getNearestWalkablePoint){
-      return area.getNearestWalkablePoint(_lo, perspace);
+      return area.getNearestWalkablePoint(_sample, perspace);
     }
-    return _lo.clone();
+    return _sample.clone();
   }
 
-  _lo.copy(origin);
+  // Thin probe gave no usable clearT — fall back to walkable point samples.
+  _from.copy(origin);
   const steps = 8;
   for(let i = 1; i <= steps; i++){
     const t = i / steps;
@@ -230,28 +251,15 @@ function clipWalkablePoint(
       origin.z + (ideal.z - origin.z) * t
     );
     if(typeof area.isPointWalkable === "function" && !area.isPointWalkable(_sample)){
-      _hi.copy(_sample);
-      for(let b = 0; b < 6; b++){
-        _mid.set(
-          (_lo.x + _hi.x) * 0.5,
-          (_lo.y + _hi.y) * 0.5,
-          (_lo.z + _hi.z) * 0.5
-        );
-        if(area.isPointWalkable(_mid)){
-          _lo.copy(_mid);
-        }else{
-          _hi.copy(_mid);
-        }
-      }
       break;
     }
-    _lo.copy(_sample);
+    _from.copy(_sample);
   }
 
   if(area.getNearestWalkablePoint){
-    return area.getNearestWalkablePoint(_lo, perspace);
+    return area.getNearestWalkablePoint(_from, perspace);
   }
-  return _lo.clone();
+  return _from.clone();
 }
 
 /**

@@ -20,6 +20,10 @@ import {
  * Face-walk clipped line, detailed non-walk (doors/static/mesh), adaptive
  * samples, personal-space ring, height continuity, creature capsules,
  * walk-transition rooms, and wall edges.
+ *
+ * Use for direct-line plot, smooth string-pull, and drive/hop validation.
+ * Do NOT call from PTH GenerateSuccessors / origin fan-out — those use
+ * thin clearance in pth-edge-clear.ts (creatures + static door/placeable bits).
  */
 
 /** Result codes used by party follow and other callers. */
@@ -337,6 +341,7 @@ export function hasWalkLineClear(
       hit: walkHit,
       skipMesh: options.skipClippedLine === true,
       softClearStartOverlap: options.softClearStartOverlap === true,
+      candidateFaces,
     });
     if(!polys.clear){
       const clearT = refineDetailedClearT(

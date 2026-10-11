@@ -21,8 +21,15 @@ import { buildGridPath } from "@engine/pathfinding/build-grid-path";
 import { getPathPersonalSpace } from "@engine/combat/attack-range";
 import type { Creature } from "@engine/module/Creature";
 import {
+  isPathPlanBudgetExhausted,
+  pathPlanBudgetRemainingMs,
+  PATH_PLAN_SEARCH_SLICE_MS,
   takePathPlanSearchBudgetMs,
 } from "@engine/pathfinding/path-plan-budget";
+import {
+  ensurePthStaticEdgeTable,
+  isPthThinLineClear,
+} from "@engine/pathfinding/pth-edge-clear";
 
 /** Max PTH nodes tested for origin fan-out LOS (plus closest origin always kept). */
 const ORIGIN_LOS_FANOUT = 8;
@@ -147,6 +154,12 @@ export class AreaPath {
     this.connectionCount = this.points.reduce((sum, p) => {
       return sum + p.connections.length;
     }, 0);
+
+    // Prefetch thin static bits for PTH links (doors may still be loading —
+    // invalidateStaticBlockerGrid rebuilds when open-state changes).
+    if(this.area){
+      ensurePthStaticEdgeTable(this.area, this.points);
+    }
 
     try{
       this.generatePathHelper();
@@ -434,6 +447,7 @@ export class AreaPath {
     destPoint.setArea(this.area);
 
     const ownerId = owner?.id;
+    const pendingDfs = ownerId != null ? this.dfsResumeByOwner.get(ownerId) : undefined;
 
     // Smooth-only resume — same endpoints, skip DFS (buildWalkPath return-1 mid-smooth)
     const smoothOnly = this.tryResumeSmoothOnly(owner, origin, dest, smooth);
@@ -441,8 +455,22 @@ export class AreaPath {
       return smoothOnly;
     }
 
-    // Stage 1: walk-line clear / hasWalkLineClear first
-    if(hasClearWalkLine(this.area, origin, dest, owner)){
+    // Shared tick budget already spent (another owner's slice): return Incomplete
+    // without plot-grade hasWalkLineClear — that was the live tar_m02ac spin cost.
+    if(isPathPlanBudgetExhausted()){
+      const stub = new ComputedPath(owner);
+      stub.incomplete = true;
+      stub.points = [];
+      if(pendingDfs){
+        stub.dfsResume = pendingDfs;
+      }
+      return stub;
+    }
+
+    // Incomplete DFS resume: direct-line already failed when search started —
+    // do not re-pay hasClearWalkLine every resume frame.
+    if(!pendingDfs && hasClearWalkLine(this.area, origin, dest, owner)){
+      // Stage 1: walk-line clear / hasWalkLineClear first (fresh plots only)
       this.clearSmoothSession(ownerId);
       return ComputedPath.FromPointsList([originPoint, destPoint]);
     }
@@ -461,33 +489,11 @@ export class AreaPath {
       closest_destination_point.addConnection(destPoint);
       destPoint.addConnection(closest_destination_point);
 
-      // Cap origin fan-out: full-graph hasLOS against every PTH node is the
-      // spike hotspot. Prefer the nearest N plus the already-linked closest.
-      const ox = origin.x;
-      const oy = origin.y;
-      const byDist = this.points.slice(0).sort((a, b) => {
-        const da = (a.vector.x - ox) * (a.vector.x - ox) + (a.vector.y - oy) * (a.vector.y - oy);
-        const db = (b.vector.x - ox) * (b.vector.x - ox) + (b.vector.y - oy) * (b.vector.y - oy);
-        return da - db;
-      });
-      const fanout: PathPoint[] = [];
-      const seen = new Set<PathPoint>();
-      const tryAdd = (p: PathPoint | undefined) => {
-        if(!p || seen.has(p)) return;
-        if(!p.hasLOS(originPoint, owner)) return;
-        seen.add(p);
-        fanout.push(p);
-      };
-      tryAdd(closest_origin_point);
-      for(let i = 0; i < byDist.length && fanout.length < ORIGIN_LOS_FANOUT; i++){
-        tryAdd(byDist[i]);
-      }
-      originPoint.connections = fanout;
-
       const path = new ComputedPath(owner, originPoint, destPoint);
       path.setOwner(owner);
       const resume = ownerId != null ? this.dfsResumeByOwner.get(ownerId) : undefined;
       // Shared tick budget; 0 means unlimited in pathPointDfsSearch — never pass 0.
+      // Fan-out and DFS share the same deadline — check before / during fan-out.
       const searchBudget = takePathPlanSearchBudgetMs();
       if(searchBudget <= 0){
         this.clearSmoothSession(ownerId);
@@ -501,9 +507,55 @@ export class AreaPath {
         }
         return stub;
       }
+
+      // Cap origin fan-out with thin PTH LOS (not locomotion hasWalkLineClear).
+      ensurePthStaticEdgeTable(this.area, this.points);
+      const ox = origin.x;
+      const oy = origin.y;
+      const byDist = this.points.slice(0).sort((a, b) => {
+        const da = (a.vector.x - ox) * (a.vector.x - ox) + (a.vector.y - oy) * (a.vector.y - oy);
+        const db = (b.vector.x - ox) * (b.vector.x - ox) + (b.vector.y - oy) * (b.vector.y - oy);
+        return da - db;
+      });
+      const fanout: PathPoint[] = [];
+      const seen = new Set<PathPoint>();
+      const tryAdd = (p: PathPoint | undefined) => {
+        if(!p || seen.has(p)) return;
+        if(isPathPlanBudgetExhausted()) return;
+        // Thin creatures + static door/placeable (PathPoint.hasLOS → pth-edge-clear).
+        if(!isPthThinLineClear(this.area, originPoint, p, owner)) return;
+        seen.add(p);
+        fanout.push(p);
+      };
+      tryAdd(closest_origin_point);
+      for(let i = 0; i < byDist.length && fanout.length < ORIGIN_LOS_FANOUT; i++){
+        if(isPathPlanBudgetExhausted()) break;
+        tryAdd(byDist[i]);
+      }
+      // Always keep closest so search can start even if budget cut fan-out short.
+      if(!fanout.length && closest_origin_point){
+        fanout.push(closest_origin_point);
+      }
+      originPoint.connections = fanout;
+
+      const remaining = Math.min(
+        PATH_PLAN_SEARCH_SLICE_MS,
+        pathPlanBudgetRemainingMs()
+      );
+      if(remaining <= 0){
+        this.clearSmoothSession(ownerId);
+        const stub = new ComputedPath(owner);
+        stub.incomplete = true;
+        stub.points = [];
+        if(resume){
+          stub.dfsResume = resume;
+          this.dfsResumeByOwner.set(ownerId!, resume);
+        }
+        return stub;
+      }
       path.search({
         resume,
-        timeBudgetMs: searchBudget,
+        timeBudgetMs: remaining,
       });
 
       for(let i = 0, len = this.points.length; i < len; i++){

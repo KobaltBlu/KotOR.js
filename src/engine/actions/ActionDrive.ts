@@ -46,6 +46,7 @@ export class ActionDrive extends Action {
   private static readonly _tmpFwd = new THREE.Vector3();
   private static readonly _tmpMove = new THREE.Vector3();
   private static readonly _tmpDest = new THREE.Vector3();
+  private static readonly _tmpIdeal = new THREE.Vector3();
 
   private destInitialized = false;
   private destination = new THREE.Vector3();
@@ -276,7 +277,7 @@ export class ActionDrive extends Action {
       const dx = clientX - owner.position.x;
       const dy = clientY - owner.position.y;
       if(dx * dx + dy * dy > ARRIVAL_DIST * ARRIVAL_DIST){
-        const ideal = new THREE.Vector3(clientX, clientY, owner.position.z);
+        const ideal = ActionDrive._tmpIdeal.set(clientX, clientY, owner.position.z);
         dest.copy(driveResolveMoveTarget(owner.area, owner.position, ideal, owner));
       }
     }

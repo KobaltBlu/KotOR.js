@@ -1,7 +1,6 @@
 import * as THREE from "three";
 import { PathPoint } from "@engine/pathfinding/PathPoint";
 import type { GameObject } from "@engine/module/GameObject";
-import type { Creature } from "@engine/module/Creature";
 import { GameState } from "@engine/runtime/GameState";
 import { smoothCornerOptimizeRestartable, type SmoothCornerResume } from "@engine/pathfinding/smooth-corner-optimize";
 import {
@@ -12,12 +11,8 @@ import {
 import { computeCreatureEdgeDetour } from "@engine/pathfinding/path-point-creature-detour";
 import { pathPointDfsSearch } from "@engine/pathfinding/path-point-dfs";
 import type { PathPointDfsTransTable } from "@engine/pathfinding/path-point-dfs-trans-table";
-import { isStaticWalkClearDetailed } from "@engine/pathfinding/static-walk-blockers";
 import { isCreatureCapsuleClear } from "@engine/pathfinding/creature-capsule-clear";
-import { isPthEdgeBlockedByObject } from "@engine/pathfinding/pth-edge-block";
-import { isWalkmeshEdgeWalkClear } from "@engine/pathfinding/path-hops-clear";
-
-import { isCreature } from "@engine/module/guards/isCreature";
+import { isPthStaticEdgeBlocked } from "@engine/pathfinding/pth-edge-clear";
 
 /** Resume state for path-point DFS state / state across timed-out searches. */
 export type PathPointDfsResume = {
@@ -168,8 +163,10 @@ export class ComputedPath {
 
   /**
    * Edge cost for PTH expansion (GenerateSuccessors).
-   * cost < 0 = blocked (static door / placeable / NonWalk void chord).
-   * Non-static doors do not prune edges — plot through while scripted open finishes.
+   * Thin clearance only — creatures + precomputed/live static door/placeable bits.
+   * Do not call hasWalkLineClear here (clip/samples/room BFS are for direct-line,
+   * smooth, and drive/hop validation — see walk-line-clear.ts).
+   * cost < 0 = blocked (static door / placeable). Non-static doors keep the edge.
    * Creature on line → detour length + splice waypoint.
    */
   private evaluateEdge(from: PathPoint, to: PathPoint): { cost: number; detour?: THREE.Vector3 } {
@@ -177,7 +174,6 @@ export class ComputedPath {
     const area = from.area ?? this.owner?.area;
     if(!area) return { cost: dist };
 
-    // order: creature capsule clear, then walkmesh void, then static walk blockers
     const creatures = isCreatureCapsuleClear(area, from.vector, to.vector, {
       owner: this.owner,
       allowPartyCreatures: true,
@@ -193,25 +189,8 @@ export class ComputedPath {
       return { cost: dist + Math.max(1.0, dist * 0.5) };
     }
 
-    // Walkable endpoints with a NonWalk / hard-block chord must not enter the path.
-    if(!isWalkmeshEdgeWalkClear(area, from.vector, to.vector, this.owner)){
+    if(isPthStaticEdgeBlocked(area, from, to, this.owner)){
       return { cost: -1 };
-    }
-
-    const polys = isStaticWalkClearDetailed(area, from.vector, to.vector, {
-      ignoreObjectIds: isCreature(this.owner)
-        ? (() => {
-            const id = (this.owner as Creature).pathFindIgnoreObjectId | 0;
-            return id ? [id] : undefined;
-          })()
-        : undefined,
-    });
-    if(!polys.clear){
-      const obj = GameState.GameObjectManager?.GetObjectById?.(polys.blockingObjectId);
-      // Placeable or static door → drop edge; non-static door → keep successor
-      if(isPthEdgeBlockedByObject(obj)){
-        return { cost: -1 };
-      }
     }
 
     return { cost: dist };

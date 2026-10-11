@@ -11,6 +11,9 @@ import type { Vector3 } from "three";
 /** Quantize endpoints for the static edge cache (~1cm). */
 const EDGE_CACHE_SCALE = 100;
 
+/** Cap entries per area to bound long-session heap growth. */
+const EDGE_CACHE_MAX = 12288;
+
 const _edgeWalkClearCache = new WeakMap<Area, Map<string, boolean>>();
 
 export function edgeCacheKey(from: Vector3, to: Vector3): string {
@@ -41,6 +44,15 @@ export function setWalkmeshEdgeClearCached(
   if(!cache){
     cache = new Map();
     _edgeWalkClearCache.set(area, cache);
+  }
+  if(cache.size >= EDGE_CACHE_MAX && !cache.has(key)){
+    // Map iteration order is insertion order — drop oldest ~1/8.
+    const drop = (EDGE_CACHE_MAX / 8) | 0;
+    let n = 0;
+    for(const k of cache.keys()){
+      cache.delete(k);
+      if(++n >= drop) break;
+    }
   }
   cache.set(key, clear);
 }

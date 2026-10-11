@@ -6,9 +6,10 @@ import {
   findWalkableAttachmentAt,
   queryDoorCrossing,
   testCreatureMovement,
-  testStaticMovement,
+  testDriveStepClear,
   WalkLineHitCode,
 } from "@engine/movement/area-movement-queries";
+import type { DriveStepClearResult } from "@engine/pathfinding/drive-step-clear";
 import {
   MovementHitKind,
   MovementSource,
@@ -35,8 +36,6 @@ import { GameState } from "@engine/runtime/GameState";
 
 const _ideal = new THREE.Vector3();
 const _probe = new THREE.Vector3();
-const _left = new THREE.Vector3();
-const _right = new THREE.Vector3();
 const _best = new THREE.Vector3();
 const _slide = new THREE.Vector3();
 const _normal = new THREE.Vector3();
@@ -92,13 +91,26 @@ function segmentClear(
   from: THREE.Vector3,
   to: THREE.Vector3
 ): boolean {
-  const st = testStaticMovement(area, from, to, playerStaticOpts(creature));
-  if(!st.clear || st.walkHit.code !== WalkLineHitCode.Ok) return false;
+  const st = testDriveStepClear(area, from, to, playerStaticOpts(creature));
+  if(!st.clear || st.code !== WalkLineHitCode.Ok) return false;
   const cr = testCreatureMovement(area, from, to, {
     owner: creature,
     ...PLAYER_CREATURE_OPTS,
   });
   return cr.clear;
+}
+
+function movementHitFromProbe(probe: DriveStepClearResult): MovementHit | undefined {
+  if(probe.clear) return undefined;
+  return {
+    kind:
+      probe.code === WalkLineHitCode.DetailedBlock
+        ? MovementHitKind.Static
+        : MovementHitKind.Walkmesh,
+    objectId: probe.blockingObjectId,
+    position: probe.clearPoint.clone(),
+    distance: probe.clearT,
+  };
 }
 
 function resolveBlocker(
@@ -177,39 +189,50 @@ export function resolvePlayerControlStep(
     }
   }
 
-  const staticHit = testStaticMovement(area, origin, _ideal, {
+  const probe = testDriveStepClear(area, origin, _ideal, {
     ...playerStaticOpts(creature, true),
   });
-  if(staticHit.clear){
+  if(probe.clear){
     return finishPlayerResult(creature, origin, _ideal, undefined);
   }
 
   // CM-style: project desired onto wall tangent in place (no remain-renorm).
-  const walkHit = staticHit.walkHit;
+  const staticHit = {
+    hit: movementHitFromProbe(probe),
+    clearT: probe.clearT,
+    clearPoint: probe.clearPoint,
+    normal: probe.normal ?? probe.walkHit?.normal,
+  };
   const clipped =
-    walkHit.clearT > 1e-4 ? walkHit.clearPoint.clone() : origin.clone();
+    staticHit.clearT > 1e-4 ? staticHit.clearPoint.clone() : origin.clone();
   const usedLen = Math.hypot(clipped.x - origin.x, clipped.y - origin.y);
   const desiredLen = Math.hypot(_desired.x, _desired.y);
   const creperspace = getCreaturePersonalSpace(creature);
 
-  // Prefer nearby walkmesh + placeable edge normals over mesh corner normals.
-  collectBlockingWalkEdgeNormals(area, origin, creperspace, _edgeNormals);
-  if(_edgeNormals.length){
-    projectDesiredOntoNormals(
-      _desired.x,
-      _desired.y,
-      _edgeNormals,
-      _slide
-    );
-    const edgeSlide = tryProjectedProbes(
-      area,
-      creature,
-      origin,
-      clipped,
-      usedLen,
-      staticHit.hit
-    );
-    if(edgeSlide) return edgeSlide;
+  // Prefer nearby walkmesh + placeable edge normals when the thin probe
+  // has no usable hit normal (corners). Skip the edges gather otherwise.
+  const probeHasNormal =
+    staticHit.normal &&
+    (Math.abs(staticHit.normal.x) > 1e-6 || Math.abs(staticHit.normal.y) > 1e-6);
+  if(!probeHasNormal){
+    collectBlockingWalkEdgeNormals(area, origin, creperspace, _edgeNormals);
+    if(_edgeNormals.length){
+      projectDesiredOntoNormals(
+        _desired.x,
+        _desired.y,
+        _edgeNormals,
+        _slide
+      );
+      const edgeSlide = tryProjectedProbes(
+        area,
+        creature,
+        origin,
+        clipped,
+        usedLen,
+        staticHit.hit
+      );
+      if(edgeSlide) return edgeSlide;
+    }
   }
 
   // Capsule already overlapping a placeable/door (Static DetailedBlock): push out
@@ -223,14 +246,14 @@ export function resolvePlayerControlStep(
       creature,
       origin,
       _desired,
-      walkHit.walkHit?.normal,
+      staticHit.normal,
       staticHit.hit
     );
     if(depen) return depen;
   }
 
   const wallNormal = resolveWallNormal(
-    walkHit.walkHit?.normal,
+    staticHit.normal,
     _desired.x,
     _desired.y
   );
@@ -285,49 +308,21 @@ export function resolvePlayerControlStep(
     return finishPlayerResult(creature, origin, clipped, staticHit.hit);
   }
 
-  // Bounded lateral fan along wall (creature-aware). Cap to |desired|.
+  // At most two short tangent retries (thin probes) — not a full lateral fan.
   const len = desiredLen;
   if(len > 1e-8){
-    const nx = _desired.x / len;
-    const ny = _desired.y / len;
-    _left.set(-ny, nx, 0);
-    _right.set(ny, -nx, 0);
-    let bestDot = -1;
-    let best: THREE.Vector3 | undefined;
-    let leftDir = _left.clone().add(new THREE.Vector3(nx, ny, 0)).normalize();
-    let rightDir = _right.clone().add(new THREE.Vector3(nx, ny, 0)).normalize();
-    let leftOk = true;
-    let rightOk = true;
-    for(let i = 0; i < 6 && (leftOk || rightOk); i++){
-      if(leftOk){
-        _probe.set(origin.x + leftDir.x * len, origin.y + leftDir.y * len, origin.z);
+    const slideLen = Math.hypot(_slide.x, _slide.y);
+    if(slideLen > 1e-8){
+      for(const scale of [1, 0.5]){
+        _probe.set(
+          origin.x + (_slide.x / slideLen) * len * scale,
+          origin.y + (_slide.y / slideLen) * len * scale,
+          origin.z
+        );
         if(segmentClear(area, creature, origin, _probe)){
-          const dot = leftDir.x * nx + leftDir.y * ny;
-          if(dot > bestDot){
-            bestDot = dot;
-            best = _probe.clone();
-          }
-          leftDir = leftDir.clone().add(_left).normalize();
-        }else{
-          leftOk = false;
+          return finishPlayerResult(creature, origin, _probe, staticHit.hit);
         }
       }
-      if(rightOk){
-        _probe.set(origin.x + rightDir.x * len, origin.y + rightDir.y * len, origin.z);
-        if(segmentClear(area, creature, origin, _probe)){
-          const dot = rightDir.x * nx + rightDir.y * ny;
-          if(dot > bestDot){
-            bestDot = dot;
-            best = _probe.clone();
-          }
-          rightDir = rightDir.clone().add(_right).normalize();
-        }else{
-          rightOk = false;
-        }
-      }
-    }
-    if(best){
-      return finishPlayerResult(creature, origin, best, staticHit.hit);
     }
   }
 
@@ -357,7 +352,8 @@ function tryProjectedProbes(
   const slideLen = Math.hypot(_slide.x, _slide.y);
   if(slideLen < 1e-8) return undefined;
 
-  const factors = [1, 0.75, 0.5, 0.25];
+  // One full projected step + one shortened retry (thin probes).
+  const factors = [1, 0.5];
   for(const t of factors){
     _probe.set(
       origin.x + _slide.x * t,
@@ -587,8 +583,8 @@ function destinationSeparates(
   blocker: Creature,
   minDist: number
 ): boolean {
-  const st = testStaticMovement(area, origin, dest, playerStaticOpts(creature));
-  if(!st.clear || st.walkHit.code !== WalkLineHitCode.Ok) return false;
+  const st = testDriveStepClear(area, origin, dest, playerStaticOpts(creature));
+  if(!st.clear || st.code !== WalkLineHitCode.Ok) return false;
 
   const odx = dest.x - blocker.position.x;
   const ody = dest.y - blocker.position.y;

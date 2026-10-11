@@ -33,6 +33,28 @@ jest.mock("@engine/movement/area-movement-queries", () => ({
   testCreatureMovement: (...args: unknown[]) => testCreatureMovementMock(...args),
   testStaticMovement: (...args: unknown[]) => testStaticMovementMock(...args),
   testWalkSegment: () => ({ code: 1, ok: true, clearT: 1 }),
+  testDriveStepClear: (
+    area: unknown,
+    from: THREE.Vector3,
+    to: THREE.Vector3,
+    opts?: unknown
+  ) => {
+    const r = testStaticMovementMock(area, from, to, opts) as {
+      clear?: boolean;
+      walkHit?: {
+        code?: number;
+        clearT?: number;
+        clearPoint?: THREE.Vector3;
+      };
+    };
+    const wh = r?.walkHit ?? {};
+    return {
+      clear: !!r?.clear,
+      clearT: wh.clearT ?? (r?.clear ? 1 : 0),
+      clearPoint: wh.clearPoint?.clone?.() ?? to.clone(),
+      code: wh.code ?? (r?.clear ? 1 : -1),
+    };
+  },
   findGround: (...args: unknown[]) => findGroundMock(...args),
   findWalkableAttachmentAt: (...args: unknown[]) =>
     findWalkableAttachmentAtMock(...args),

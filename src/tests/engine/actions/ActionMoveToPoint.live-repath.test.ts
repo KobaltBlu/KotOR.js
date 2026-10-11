@@ -1092,6 +1092,71 @@ describe("ActionMoveToPoint live-chase repath", () => {
     expect(owner.clearLocomotionState).toHaveBeenCalled();
   });
 
+  it("Incomplete mid-smooth path with points is driven (not discarded)", () => {
+    const owner = {
+      id: 1,
+      position: new THREE.Vector3(103.15, 99.27, 0),
+      rotation: { z: 0 },
+      area: {
+        id: 1,
+        getNearestWalkablePoint: (p: THREE.Vector3) => p.clone(),
+        isPointWalkable: () => true,
+      },
+      walkSpeedFactor: 1,
+      force: 1,
+      speed: 1.5,
+      locomotionScale: 1,
+      movementSpeed: 1,
+      helperColor: 0,
+      setComputedPath: jest.fn(),
+      getComputedPath: jest.fn(() => undefined),
+      clearLocomotionState: jest.fn(),
+      setFacing: jest.fn(),
+      setAnimationState: jest.fn(),
+      getWalkSpeed: () => 1.7,
+      getRunSpeed: () => 5.4,
+      walk: false,
+      collisionTimer: 0,
+      blockingTimer: 0,
+      pathFindApproachPersonalSpace: 0,
+    } as unknown as Creature;
+
+    const midSmoothPath = {
+      points: [
+        { vector: new THREE.Vector3(104, 99, 0) },
+        { vector: new THREE.Vector3(120, 95, 0) },
+      ],
+      smoothResume: { cursor: 1 },
+      realtime: true,
+      timer: 8,
+      fixWalkEdges: jest.fn(),
+      setColor: jest.fn(),
+      pop() {
+        return this.points.shift();
+      },
+    };
+    mockPlotPath.mockReturnValue({
+      code: WalkPathCode.Incomplete,
+      path: midSmoothPath,
+    });
+    mockWalkUpdate.mockReturnValue(1);
+
+    const action = new ActionMoveToPoint();
+    action.setOwner(owner);
+    action.setParameter(0, ActionParameterType.FLOAT, 187.95);
+    action.setParameter(1, ActionParameterType.FLOAT, 84.2);
+    action.setParameter(2, ActionParameterType.FLOAT, 0);
+    action.setParameter(3, ActionParameterType.DWORD, 1);
+    action.setParameter(5, ActionParameterType.INT, 0);
+    action.setParameter(6, ActionParameterType.FLOAT, 1.0);
+    action.target_position.set(187.95, 84.2, 0);
+
+    expect(action.update(1 / 60)).toBe(ActionStatus.IN_PROGRESS);
+    expect(owner.setComputedPath).toHaveBeenCalledWith(midSmoothPath);
+    expect(mockWalkUpdate).toHaveBeenCalled();
+    expect(mockPathHopsAreWalkClear).not.toHaveBeenCalled();
+  });
+
   it("Incomplete empty computedPath replots and pauses walk-in-place", () => {
     const owner = {
       id: 1,

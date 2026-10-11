@@ -15,7 +15,10 @@ import {
 } from "@engine/pathfinding/party-follow";
 import { getFollowRateScale, pathApproachScale, walkSpeedFactorRamp } from "@engine/pathfinding/locomotion";
 import { partyFollowPath, FOLLOW_RING_SIZE } from "@engine/pathfinding/party-follow-path";
-import { hasWalkLineClear, WalkLineHitCode } from "@engine/pathfinding/walk-line-clear";
+import { isPthThinLineClear } from "@engine/pathfinding/pth-edge-clear";
+import { probeDriveStepClear } from "@engine/pathfinding/drive-step-clear";
+import { isCreatureCapsuleClear } from "@engine/pathfinding/creature-capsule-clear";
+import { getMovementFrameId } from "@engine/movement/creature-movement-state";
 import { isSafeWalkPoint } from "@engine/pathfinding/safe-walk-point";
 import { ModuleCreatureAnimState } from "@core/enums/module/ModuleCreatureAnimState";
 import { CombatFeatType } from "@core/enums/combat/CombatFeatType";
@@ -299,18 +302,36 @@ function handleWaitingForPath(
   return { continueInner: true, teleport: false };
 }
 
+/** Quantize follow LOS endpoints (~0.25m); cleared each movement frame. */
+const FOLLOW_LOS_QUANT = 4;
+const _followLosCache = new Map<string, boolean>();
+let _followLosFrame = -1;
+
 function hasFollowLos(
   area: NonNullable<Creature["area"]>,
   owner: Creature,
   from: THREE.Vector3,
   to: THREE.Vector3
 ): boolean {
-  const hit = hasWalkLineClear(area, from, to, {
-    owner,
-    personalSpace: Math.max(0.05, getPathPersonalSpace(owner) - 0.1),
-    allowPartyCreatures: true,
-  });
-  return hit.ok || hit.code === WalkLineHitCode.Ok;
+  // Thin creatures + static door/placeable — not locomotion hasWalkLineClear.
+  const frame = getMovementFrameId();
+  if(frame !== _followLosFrame){
+    _followLosCache.clear();
+    _followLosFrame = frame;
+  }
+  const q = FOLLOW_LOS_QUANT;
+  const key =
+    (owner.id | 0) + "|" +
+    ((from.x * q + (from.x >= 0 ? 0.5 : -0.5)) | 0) + "," +
+    ((from.y * q + (from.y >= 0 ? 0.5 : -0.5)) | 0) + "|" +
+    ((to.x * q + (to.x >= 0 ? 0.5 : -0.5)) | 0) + "," +
+    ((to.y * q + (to.y >= 0 ? 0.5 : -0.5)) | 0);
+  const cached = _followLosCache.get(key);
+  if(cached !== undefined) return cached;
+
+  const ok = isPthThinLineClear(area, from, to, owner);
+  _followLosCache.set(key, ok);
+  return ok;
 }
 
 /**
@@ -664,14 +685,15 @@ function applyFollowSetPosition(
 
   const area = owner.area;
   if(area){
-    const hit = hasWalkLineClear(area, owner.position, _tmp, {
+    const perspace = getPathPersonalSpace(owner);
+    const probe = probeDriveStepClear(area, owner.position, _tmp, {
       owner,
-      personalSpace: getPathPersonalSpace(owner),
-      allowPartyCreatures: true,
+      personalSpace: perspace,
+      softClearStartOverlap: false,
     });
-    if(!hit.ok && hit.code !== WalkLineHitCode.Ok){
-      if(hit.clearPoint){
-        _tmp.copy(hit.clearPoint);
+    if(!probe.clear){
+      if(probe.clearT > 1e-4){
+        _tmp.copy(probe.clearPoint);
       }else if(!isSafeWalkPoint(area, _tmp, owner, {
         allowPartyCreatures: true,
       })){
@@ -680,8 +702,17 @@ function applyFollowSetPosition(
         return 0;
       }
     }
+    const creatures = isCreatureCapsuleClear(area, owner.position, _tmp, {
+      owner,
+      allowPartyCreatures: true,
+    });
+    if(!creatures.clear){
+      faceToward(owner, goal);
+      owner.clearLocomotionAnimation?.();
+      return 0;
+    }
     if(typeof area.getNearestWalkablePoint === 'function'){
-      _tmp.copy(area.getNearestWalkablePoint(_tmp, getPathPersonalSpace(owner) * 0.5));
+      _tmp.copy(area.getNearestWalkablePoint(_tmp, perspace * 0.5));
     }
   }
 
@@ -761,17 +792,27 @@ function applyFollowDirectMove(
 
   const area = owner.area;
   if(area){
-    const hit = hasWalkLineClear(area, owner.position, _tmp, {
+    const perspace = Math.max(0.05, getPathPersonalSpace(owner) - 0.1);
+    const probe = probeDriveStepClear(area, owner.position, _tmp, {
       owner,
-      personalSpace: Math.max(0.05, getPathPersonalSpace(owner) - 0.1),
+      personalSpace: perspace,
+      softClearStartOverlap: false,
+    });
+    if(!probe.clear){
+      owner.force = 0;
+      owner.speed = 0;
+      return FollowMoveResult.Blocked;
+    }
+    const creatures = isCreatureCapsuleClear(area, owner.position, _tmp, {
+      owner,
       allowPartyCreatures: true,
     });
-    if(!hit.ok && hit.code !== WalkLineHitCode.Ok){
+    if(!creatures.clear){
       owner.force = 0;
       owner.speed = 0;
       if(
-        hit.code === WalkLineHitCode.Creature &&
-        !isPartyCreatureId(hit.blockingCreatureId)
+        creatures.blockingCreatureId != null &&
+        !isPartyCreatureId(creatures.blockingCreatureId)
       ){
         return FollowMoveResult.BlockedByWorldCreature;
       }

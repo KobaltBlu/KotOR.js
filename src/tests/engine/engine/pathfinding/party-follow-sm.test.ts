@@ -42,6 +42,37 @@ jest.mock("@engine/pathfinding/walk-line-clear", () => ({
   hasClearWalkLine: () => true,
 }));
 
+jest.mock("@engine/pathfinding/drive-step-clear", () => ({
+  probeDriveStepClear: () => ({
+    clear: true,
+    clearT: 1,
+    clearPoint: new THREE.Vector3(),
+    code: 1,
+  }),
+  getDriveProbeCount: () => 0,
+  resetDriveProbeCount: () => undefined,
+}));
+
+jest.mock("@engine/pathfinding/creature-capsule-clear", () => ({
+  isCreatureCapsuleClear: () => ({ clear: true }),
+}));
+
+const mockIsPthThinLineClear = jest.fn(() => true);
+
+jest.mock("@engine/pathfinding/pth-edge-clear", () => ({
+  isPthThinLineClear: (...args: unknown[]) => mockIsPthThinLineClear(...args),
+}));
+
+jest.mock("@engine/movement/creature-movement-state", () => {
+  const actual = jest.requireActual(
+    "@engine/movement/creature-movement-state"
+  ) as Record<string, unknown>;
+  return {
+    ...actual,
+    getMovementFrameId: () => 1,
+  };
+});
+
 jest.mock("@engine/pathfinding/safe-walk-point", () => ({
   isSafeWalkPoint: () => true,
 }));
@@ -443,6 +474,14 @@ describe("Offset stale field17 LOS (Carth stuck walk)", () => {
     partyFollowPath.reset();
     mockGameState.PartyManager.FollowState = 0;
     mockTestDirectLine.mockReset();
+    mockTestDirectLine.mockReturnValue({
+      ok: true,
+      code: 1,
+      clearPoint: new THREE.Vector3(),
+      clearT: 1,
+    });
+    mockIsPthThinLineClear.mockReset();
+    mockIsPthThinLineClear.mockReturnValue(true);
   });
 
   it("refreshes lastSample to feet when stale sample LOS fails but feet LOS ok", () => {
@@ -452,18 +491,11 @@ describe("Offset stale field17 LOS (Carth stuck walk)", () => {
     seedRing(partyFollowPath, 20);
     partyFollowPath.recalculateFollowPoints();
 
-    mockTestDirectLine.mockImplementation((
+    mockIsPthThinLineClear.mockImplementation((
       _area: unknown,
       from: THREE.Vector3
     ) => {
-      const fromFeet =
-        Math.hypot(from.x - companion.position.x, from.y - companion.position.y) < 0.6;
-      return {
-        ok: fromFeet,
-        code: fromFeet ? 1 : -3,
-        clearT: fromFeet ? 1 : 0.5,
-        clearPoint: from.clone(),
-      };
+      return Math.hypot(from.x - companion.position.x, from.y - companion.position.y) < 0.6;
     });
 
     (companion as { area: object }).area = {
@@ -500,7 +532,7 @@ describe("Offset stale field17 LOS (Carth stuck walk)", () => {
     // Stale sample must be discarded (updated to feet then lateral)
     expect(runtime.lastSampleX).not.toBe(-5);
     expect(runtime.lastSampleX).toBeGreaterThan(0);
-    expect(mockTestDirectLine.mock.calls.length).toBeGreaterThanOrEqual(2);
+    expect(mockIsPthThinLineClear.mock.calls.length).toBeGreaterThanOrEqual(2);
   });
 
   it("parks in Offset when LOS blocked but already within FOLLOW_COMFORT (no Moving thrash)", () => {
@@ -510,13 +542,8 @@ describe("Offset stale field17 LOS (Carth stuck walk)", () => {
     seedRing(partyFollowPath, 20);
     partyFollowPath.recalculateFollowPoints();
 
-    // Always blocked — DetailedBlock like live Kreia→offset
-    mockTestDirectLine.mockImplementation(() => ({
-      ok: false,
-      code: -2,
-      clearT: 0,
-      clearPoint: companion.position.clone(),
-    }));
+    // Always blocked — like live Kreia→offset
+    mockIsPthThinLineClear.mockReturnValue(false);
 
     (companion as { area: object }).area = {
       path: {

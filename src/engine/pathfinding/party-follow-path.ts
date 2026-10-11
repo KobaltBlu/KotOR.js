@@ -1,9 +1,11 @@
 import * as THREE from "three";
 import type { Area } from "@engine/module/Area";
 import type { Creature } from "@engine/module/Creature";
-import { hasWalkLineClear, WalkLineHitCode } from "@engine/pathfinding/walk-line-clear";
+import { probeDriveStepClear } from "@engine/pathfinding/drive-step-clear";
+import { isCreatureCapsuleClear } from "@engine/pathfinding/creature-capsule-clear";
 import { isSafeWalkPoint } from "@engine/pathfinding/safe-walk-point";
 import { GameState } from "@engine/runtime/GameState";
+import { getPathPersonalSpace } from "@engine/combat/attack-range";
 
 /**
  * Party leader trail ring — samples used by follow-leader state machine
@@ -189,26 +191,8 @@ export class PartyFollowPath {
     const distSq = dx * dx + dy * dy + dz * dz;
 
     this._tmp.set(last.x, last.y, last.z);
-    // Clear LOS, or creature block only if the blocker is a party member
-    const hit = area
-      ? hasWalkLineClear(area, this._tmp, point, {
-          owner: leader,
-          allowPartyCreatures: true,
-          collectHitInfo: true,
-        })
-      : {
-          ok: true,
-          code: WalkLineHitCode.Ok,
-          clearPoint: point.clone(),
-          clearT: 1,
-          blockingCreatureId: undefined as number | undefined,
-        };
-    const los =
-      hit.ok ||
-      hit.code === WalkLineHitCode.Ok ||
-      (hit.code === WalkLineHitCode.Creature &&
-        hit.blockingCreatureId != null &&
-        isPartyId(hit.blockingCreatureId));
+    // Thin static + capsule (party soft) — not plot-grade hasWalkLineClear.
+    const los = !area || followTrailLineClear(area, leader, this._tmp, point);
 
     if(los){
       this.lastClear.copy(point);
@@ -536,19 +520,7 @@ export class PartyFollowPath {
       const to = ordered[n];
       this._tmp.set(from.x, from.y, from.z);
       this._tmp2.set(to.x, to.y, to.z);
-      let los = true;
-      if(area && leader){
-        const hit = hasWalkLineClear(area, this._tmp, this._tmp2, {
-          owner: leader,
-          allowPartyCreatures: true,
-        });
-        los =
-          hit.ok ||
-          hit.code === WalkLineHitCode.Ok ||
-          (hit.code === WalkLineHitCode.Creature &&
-            hit.blockingCreatureId != null &&
-            isPartyId(hit.blockingCreatureId));
-      }
+      const los = !area || !leader || followTrailLineClear(area, leader, this._tmp, this._tmp2);
       if(!los){
         // Commit previous string-pull tip (n-1) then continue from there
         if(n - 1 > lastKept){
@@ -674,11 +646,24 @@ export class PartyFollowPath {
 /** Shared singleton used by PartyManager / FollowLeader. */
 export const partyFollowPath = new PartyFollowPath();
 
-function isPartyId(id: number): boolean {
-  const party = GameState.PartyManager?.party;
-  if(!party?.length) return false;
-  for(let i = 0; i < party.length; i++){
-    if(party[i]?.id === id) return true;
-  }
-  return false;
+/** Trail / string-pull LOS: thin stadium + party-soft creature capsule. */
+function followTrailLineClear(
+  area: Area,
+  leader: Creature,
+  from: THREE.Vector3,
+  to: THREE.Vector3
+): boolean {
+  const perspace = getPathPersonalSpace(leader);
+  const probe = probeDriveStepClear(area, from, to, {
+    owner: leader,
+    personalSpace: perspace,
+    softClearStartOverlap: false,
+    collectHitInfo: false,
+  });
+  if(!probe.clear) return false;
+  const creatures = isCreatureCapsuleClear(area, from, to, {
+    owner: leader,
+    allowPartyCreatures: true,
+  });
+  return creatures.clear;
 }

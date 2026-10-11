@@ -2,6 +2,7 @@ import * as THREE from "three";
 import type { Area } from "@engine/module/Area";
 import type { Door } from "@engine/module/Door";
 import type { Placeable } from "@engine/module/Placeable";
+import type { OdysseyFace3 } from "@engine/render/three/odyssey";
 import { isStaticWalkClearOnAreaMesh, isStaticWalkClearOnWalkMesh, walkMeshHasStartOverlap } from "@engine/pathfinding/static-walk-blockers-mesh";
 import {
   composeDoorWalkmeshLocalToWorld,
@@ -253,6 +254,11 @@ export function isStaticWalkClearDetailed(
      * Binary-search refine for room-mesh blocks: skip doors/placeables.
      */
     meshOnly?: boolean;
+    /**
+     * Pre-gathered room walk-check faces — passed through to mesh stadium
+     * so callers can avoid a second getWalkCandidatesForBox.
+     */
+    candidateFaces?: OdysseyFace3[];
   } = {}
 ): NoNonWalkPolysResult {
   if(!area) return { clear: true };
@@ -297,6 +303,7 @@ export function isStaticWalkClearDetailed(
     const mesh = isStaticWalkClearOnAreaMesh(area, from, to, {
       personalSpace: expand,
       hit: options.hit,
+      candidateFaces: options.candidateFaces,
     });
     if(!mesh.clear){
       return {
@@ -376,6 +383,7 @@ export function isStaticWalkClearDetailed(
     const mesh = isStaticWalkClearOnAreaMesh(area, from, to, {
       personalSpace: expand,
       hit: options.hit,
+      candidateFaces: options.candidateFaces,
     });
     if(!mesh.clear){
       return {

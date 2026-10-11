@@ -12,6 +12,11 @@ import {
   type WalkLineHit,
 } from "@engine/pathfinding/walk-line-clear";
 import {
+  probeDriveStepClear,
+  type DriveStepClearOptions,
+  type DriveStepClearResult,
+} from "@engine/pathfinding/drive-step-clear";
+import {
   isCreatureCapsuleClear,
   type CreatureCapsuleClearResult,
 } from "@engine/pathfinding/creature-capsule-clear";
@@ -19,6 +24,13 @@ import {
   MovementHitKind,
   type MovementHit,
 } from "@engine/movement/types";
+
+export type { DriveStepClearResult, DriveStepClearOptions };
+export {
+  probeDriveStepClear,
+  getDriveProbeCount,
+  resetDriveProbeCount,
+} from "@engine/pathfinding/drive-step-clear";
 
 /**
  * Passive area movement queries.
@@ -59,6 +71,26 @@ export function testWalkSegment(
     allowPartyCreatures: options.allowPartyCreatures ?? true,
     collectHitInfo: options.collectHitInfo,
     softClearStartOverlap: options.softClearStartOverlap,
+  });
+}
+
+/**
+ * Frame-step drive/WASD/follow clearance — thin probe (no plot-grade WLC).
+ */
+export function testDriveStepClear(
+  area: Area,
+  from: THREE.Vector3,
+  to: THREE.Vector3,
+  options: StaticMovementQueryOptions = {}
+): DriveStepClearResult {
+  const perspace =
+    options.personalSpace ??
+    (options.owner ? getPathPersonalSpace(options.owner) : 0.5);
+  return probeDriveStepClear(area, from, to, {
+    owner: options.owner,
+    personalSpace: perspace,
+    softClearStartOverlap: options.softClearStartOverlap,
+    collectHitInfo: options.collectHitInfo !== false,
   });
 }
 

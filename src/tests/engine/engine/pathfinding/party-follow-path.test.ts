@@ -18,15 +18,25 @@ jest.mock("@engine/runtime/GameState", () => ({
   },
 }));
 
-jest.mock("@engine/pathfinding/walk-line-clear", () => ({
-  hasWalkLineClear: () => ({
-    ok: true,
-    code: 1,
-    clearPoint: new THREE.Vector3(),
+jest.mock("@engine/pathfinding/drive-step-clear", () => ({
+  probeDriveStepClear: () => ({
+    clear: true,
     clearT: 1,
+    clearPoint: new THREE.Vector3(),
+    code: 1,
+    normal: new THREE.Vector3(0, 0, 1),
   }),
-  WalkLineHitCode: { Ok: 1, NonWalk: 2, Creature: -3 },
-  hasClearWalkLine: () => true,
+  getDriveProbeCount: () => 0,
+  resetDriveProbeCount: () => undefined,
+}));
+
+jest.mock("@engine/pathfinding/creature-capsule-clear", () => ({
+  isCreatureCapsuleClear: () => ({ clear: true }),
+}));
+
+jest.mock("@engine/combat/attack-range", () => ({
+  getPathPersonalSpace: () => 0.5,
+  getCreaturePersonalSpace: () => 0.5,
 }));
 
 jest.mock("@engine/pathfinding/safe-walk-point", () => ({

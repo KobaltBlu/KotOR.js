@@ -2,8 +2,7 @@ import type { Area } from "@engine/module/Area";
 import type { GameObject } from "@engine/module/GameObject";
 import type { GFFStruct } from "@core/resource/GFFStruct";
 import type { WalkmeshEdge } from "@engine/odyssey/WalkmeshEdge";
-import { isCreatureCapsuleClear } from "@engine/pathfinding/creature-capsule-clear";
-import { isWalkmeshEdgeWalkClear } from "@engine/pathfinding/path-hops-clear";
+import { isPthThinLineClear } from "@engine/pathfinding/pth-edge-clear";
 import * as THREE from 'three';
 import { IPathPointOptions } from "@engine/interface/engine/pathfinding/IPathPointOptions";
 
@@ -76,20 +75,13 @@ export class PathPoint {
     return false;
   }
 
+  /**
+   * Thin PTH / fan-out LOS (creatures + static door/placeable).
+   * Not locomotion hasWalkLineClear — see pth-edge-clear.ts.
+   */
   hasLOS(point_b: PathPoint, owner?: GameObject): boolean {
-    if(!this.area)
-      return true;
-
-    // Require walkmesh-clear chord — wall-edge LOS alone allows NonWalk face voids.
-    if(!isWalkmeshEdgeWalkClear(this.area, this.vector, point_b.vector, owner)){
-      return false;
-    }
-
-    const creatures = isCreatureCapsuleClear(this.area, this.vector, point_b.vector, {
-      owner,
-      allowPartyCreatures: true,
-    });
-    return creatures.clear;
+    if(!this.area) return true;
+    return isPthThinLineClear(this.area, this, point_b, owner);
   }
 
   addConnection(node: PathPoint) {

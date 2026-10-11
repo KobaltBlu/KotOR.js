@@ -577,6 +577,11 @@ export function isStaticWalkClearOnAreaMesh(
     hit?: WalkHitInfo;
     /** Kept for API compat; geometry path no longer depends on dense samples. */
     steps?: number;
+    /**
+     * Pre-gathered walk-check faces for this segment (skip second
+     * getWalkCandidatesForBox when the caller already gathered).
+     */
+    candidateFaces?: OdysseyFace3[];
   } = {}
 ): StaticWalkBlockersMeshResult {
   if(!area) return { clear: true };
@@ -599,12 +604,16 @@ export function isStaticWalkClearOnAreaMesh(
 
   // Room walk-check faces via area frame cache + per-wok AABB (not a full room loop).
   // walkFacesOnly:false — blockers are walkCheck && !walk; edges unused here.
-  if(typeof area.getWalkCandidatesForBox === 'function' && area.rooms?.length){
-    const { faces } = area.getWalkCandidatesForBox(
+  // Prefer caller-supplied faces (drive thin probe / walk-line) to avoid a second gather.
+  let faces: OdysseyFace3[] | undefined = options.candidateFaces;
+  if(!faces?.length && typeof area.getWalkCandidatesForBox === 'function' && area.rooms?.length){
+    faces = area.getWalkCandidatesForBox(
       queryBox,
       { faces: _faceScratch },
       { edges: false, walkFacesOnly: false }
-    );
+    ).faces;
+  }
+  if(faces?.length){
     for(let i = 0, len = faces.length; i < len; i++){
       const face = faces[i];
       if(!isBlockingFace(face)) continue;

@@ -3,7 +3,7 @@ import type { Area } from "@engine/module/Area";
 import type { Creature } from "@engine/module/Creature";
 import type { GameObject } from "@engine/module/GameObject";
 import { getCreaturePersonalSpace, getPathPersonalSpace } from "@engine/combat/attack-range";
-import { hasClearWalkLine } from "@engine/pathfinding/walk-line-clear";
+import { isPthStaticEdgeBlockedLive } from "@engine/pathfinding/pth-edge-clear";
 
 /**
  * PathPointDFSGenerateSuccessors creature detour:
@@ -74,9 +74,10 @@ export function computeCreatureEdgeDetour(
       Math.hypot(detour.x - from.x, detour.y - from.y) +
       Math.hypot(to.x - detour.x, to.y - detour.y);
 
+    // Thin static only — full hasClearWalkLine is locomotion-grade (too heavy for DFS).
     const clear = !area || (
-      hasClearWalkLine(area, from, detour, owner) &&
-      hasClearWalkLine(area, detour, to, owner)
+      !isPthStaticEdgeBlockedLive(area, from, detour) &&
+      !isPthStaticEdgeBlockedLive(area, detour, to)
     );
     const score = cost + (clear ? 0 : 1000);
     if(score < bestScore){

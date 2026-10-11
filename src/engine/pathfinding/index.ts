@@ -25,4 +25,6 @@ export * from "@engine/pathfinding/creature-loco";
 export * from "@engine/pathfinding/party-follow-path";
 export * from "@engine/pathfinding/build-walk-path";
 export * from "@engine/pathfinding/pth-edge-block";
+export * from "@engine/pathfinding/pth-edge-clear";
+export * from "@engine/pathfinding/pth-static-edge-table";
 export * from "@engine/pathfinding/set-formation";

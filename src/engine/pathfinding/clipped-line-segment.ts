@@ -25,9 +25,30 @@ export type ClippedLineSegmentResult = {
 
 const _hit = new THREE.Vector3();
 const _nudge = new THREE.Vector3();
+/** Shared result — callers must copy clearPoint before the next call. */
+const _clipResult: ClippedLineSegmentResult = {
+  ok: true,
+  clearPoint: new THREE.Vector3(),
+  clearT: 1,
+  minZ: 0,
+  maxZ: 0,
+};
 
 /** Portal hop distances past the seam (live 07j↔02b needs >5cm). */
 const TRANSITION_NUDGE_DISTANCES = [0.05, 0.15, 0.35];
+
+function finishClip(
+  ok: boolean,
+  clearT: number,
+  minZ: number,
+  maxZ: number
+): ClippedLineSegmentResult {
+  _clipResult.ok = ok;
+  _clipResult.clearT = clearT;
+  _clipResult.minZ = minZ;
+  _clipResult.maxZ = maxZ;
+  return _clipResult;
+}
 
 function findWalkFaceAt(
   area: Area,
@@ -131,6 +152,7 @@ function adjacentForSide(
 /**
  * Walk faces origin→dest. Returns ok=false on wall exit or hop budget.
  * When walkmesh is empty, ok=true (caller falls back to samples).
+ * Returned clearPoint is scratch — copy before the next call.
  */
 export function clippedLineSegmentWalkable(
   area: Area | undefined,
@@ -138,21 +160,23 @@ export function clippedLineSegmentWalkable(
   dest: THREE.Vector3,
   options: { maxHeightDelta?: number } = {}
 ): ClippedLineSegmentResult {
-  const clearPoint = origin.clone();
+  const clearPoint = _clipResult.clearPoint;
+  clearPoint.copy(origin);
   const maxDz = options.maxHeightDelta ?? 2.5;
   if(!area?.walkFaces?.length){
-    return { ok: true, clearPoint, clearT: 1, minZ: origin.z, maxZ: origin.z };
+    return finishClip(true, 1, origin.z, origin.z);
   }
 
   const fullDist = Math.hypot(dest.x - origin.x, dest.y - origin.y);
   if(fullDist < 1e-8){
-    return { ok: true, clearPoint: dest.clone(), clearT: 1, minZ: origin.z, maxZ: dest.z };
+    clearPoint.copy(dest);
+    return finishClip(true, 1, origin.z, dest.z);
   }
 
   let face = findWalkFaceAt(area, origin);
   if(!face){
     // Start off-mesh — defer to sample / isPointWalkable path
-    return { ok: true, clearPoint, clearT: 0, minZ: origin.z, maxZ: origin.z };
+    return finishClip(true, 0, origin.z, origin.z);
   }
 
   let curX = origin.x;
@@ -170,17 +194,16 @@ export function clippedLineSegmentWalkable(
       maxZ = Math.max(maxZ, z);
       if(maxZ - minZ > maxDz + 0.2){
         clearPoint.set(curX, curY, curZ);
-        return {
-          ok: false,
-          clearPoint,
-          clearT: Math.hypot(curX - origin.x, curY - origin.y) / fullDist,
+        return finishClip(
+          false,
+          Math.hypot(curX - origin.x, curY - origin.y) / fullDist,
           minZ,
-          maxZ,
-        };
+          maxZ
+        );
       }
       clearPoint.copy(dest);
       clearPoint.z = z;
-      return { ok: true, clearPoint, clearT: 1, minZ, maxZ };
+      return finishClip(true, 1, minZ, maxZ);
     }
 
     const [v0, v1, v2] = faceVerts(face);
@@ -197,7 +220,7 @@ export function clippedLineSegmentWalkable(
     if(outsideCount === 0){
       // Orientation says dest inside but pointInFace2d disagreed — accept
       clearPoint.copy(dest);
-      return { ok: true, clearPoint, clearT: 1, minZ, maxZ };
+      return finishClip(true, 1, minZ, maxZ);
     }
 
     let nextFace: OdysseyFace3 | undefined;
@@ -226,13 +249,12 @@ export function clippedLineSegmentWalkable(
         maxZ = Math.max(maxZ, curZ);
         if(maxZ - minZ > maxDz + 0.2){
           clearPoint.set(curX, curY, curZ);
-          return {
-            ok: false,
-            clearPoint,
-            clearT: Math.hypot(curX - origin.x, curY - origin.y) / fullDist,
+          return finishClip(
+            false,
+            Math.hypot(curX - origin.x, curY - origin.y) / fullDist,
             minZ,
-            maxZ,
-          };
+            maxZ
+          );
         }
         nextFace = adj;
         exitHit = true;
@@ -248,7 +270,7 @@ export function clippedLineSegmentWalkable(
 
         // Non-transition = wall (GetAdjacentRoom == -1)
         if(adj.transition === -1){
-          return { ok: false, clearPoint, clearT: t, minZ, maxZ };
+          return finishClip(false, t, minZ, maxZ);
         }
 
         // Transition: nudge into next room face (prefer other walkmesh).
@@ -266,9 +288,10 @@ export function clippedLineSegmentWalkable(
           // Portal with no walkable face beyond — treat as clear exit of mesh
           // only if dest is near the hit (room-local clip success)
           if(Math.hypot(dest.x - curX, dest.y - curY) < 0.15){
-            return { ok: true, clearPoint: dest.clone(), clearT: 1, minZ, maxZ };
+            clearPoint.copy(dest);
+            return finishClip(true, 1, minZ, maxZ);
           }
-          return { ok: false, clearPoint, clearT: t, minZ, maxZ };
+          return finishClip(false, t, minZ, maxZ);
         }
         curX = _nudge.x;
         curY = _nudge.y;
@@ -279,34 +302,31 @@ export function clippedLineSegmentWalkable(
 
       // Undefined adjacency = hard wall
       clearPoint.set(_hit.x, _hit.y, _hit.z);
-      return {
-        ok: false,
-        clearPoint,
-        clearT: Math.hypot(_hit.x - origin.x, _hit.y - origin.y) / fullDist,
+      return finishClip(
+        false,
+        Math.hypot(_hit.x - origin.x, _hit.y - origin.y) / fullDist,
         minZ,
-        maxZ,
-      };
+        maxZ
+      );
     }
 
     if(!exitHit || !nextFace){
       clearPoint.set(curX, curY, curZ);
-      return {
-        ok: false,
-        clearPoint,
-        clearT: Math.hypot(curX - origin.x, curY - origin.y) / fullDist,
+      return finishClip(
+        false,
+        Math.hypot(curX - origin.x, curY - origin.y) / fullDist,
         minZ,
-        maxZ,
-      };
+        maxZ
+      );
     }
     face = nextFace;
   }
 
   clearPoint.set(curX, curY, curZ);
-  return {
-    ok: false,
-    clearPoint,
-    clearT: Math.hypot(curX - origin.x, curY - origin.y) / fullDist,
+  return finishClip(
+    false,
+    Math.hypot(curX - origin.x, curY - origin.y) / fullDist,
     minZ,
-    maxZ,
-  };
+    maxZ
+  );
 }

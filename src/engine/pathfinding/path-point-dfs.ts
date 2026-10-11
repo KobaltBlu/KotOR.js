@@ -149,7 +149,19 @@ export function pathPointDfsSearch(options: {
         return false;
       }
 
-      const successors = generateSuccessors(node, destination, options.evaluateEdge);
+      const successors = generateSuccessors(
+        node,
+        destination,
+        options.evaluateEdge,
+        () => {
+          if(timedOut()){
+            hitTimeLimit = true;
+            abort = true;
+            return true;
+          }
+          return false;
+        }
+      );
       table.put(px, py, gCost, remaining);
 
       onPath.add(node);
@@ -216,17 +228,21 @@ export function pathPointDfsSearch(options: {
 
 /**
  * GenerateSuccessors: connections with LOS/detour costs, sorted by goal heuristic.
+ * `shouldAbort` is checked between neighbor evals so a single expansion cannot
+ * blow past the wall-clock slice (timeBudgetMs).
  */
 function generateSuccessors(
   node: PathPoint,
   destination: PathPoint,
-  evaluateEdge: (from: PathPoint, to: PathPoint) => PathPointDfsEdgeEval
+  evaluateEdge: (from: PathPoint, to: PathPoint) => PathPointDfsEdgeEval,
+  shouldAbort?: () => boolean
 ): Successor[] {
   const neighbors = node.connections;
   if(!neighbors?.length) return [];
 
   const out: Successor[] = [];
   for(let i = 0; i < neighbors.length; i++){
+    if(shouldAbort?.()) break;
     const neighbor = neighbors[i];
     if(!neighbor || neighbor === node) continue;
     const evaled = evaluateEdge(node, neighbor);

@@ -230,12 +230,16 @@ export class ActionMoveToPoint extends Action {
 
     if(!this.computedPath?.points?.length){
       const area = this.owner.area;
-      if(area && typeof area.isPointWalkable === 'function' && !area.isPointWalkable(this.target_position)){
-        this.target_position.copy(area.getNearestWalkablePoint(this.target_position, 0.05));
-      }else if(area && typeof area.getNearestWalkablePoint === 'function' && typeof area.isPointWalkable !== 'function'){
-        this.target_position.copy(area.getNearestWalkablePoint(this.target_position, 0.05));
+      // Fresh plot only — Incomplete resume must not re-snap endpoints every
+      // frame (jitters dest and forces traverseToPoint to restart).
+      if(this.pathFindInfo?.lastCode !== WalkPathCode.Incomplete){
+        if(area && typeof area.isPointWalkable === 'function' && !area.isPointWalkable(this.target_position)){
+          this.target_position.copy(area.getNearestWalkablePoint(this.target_position, 0.05));
+        }else if(area && typeof area.getNearestWalkablePoint === 'function' && typeof area.isPointWalkable !== 'function'){
+          this.target_position.copy(area.getNearestWalkablePoint(this.target_position, 0.05));
+        }
+        snapCapsuleSafeDest(this.owner, this.target_position);
       }
-      snapCapsuleSafeDest(this.owner, this.target_position);
       this.calculatePath();
     }
 
@@ -855,21 +859,16 @@ export class ActionMoveToPoint extends Action {
       return;
     }
 
-    // Empty Incomplete (budget stub) — do not install a driveable-looking path.
+    // Empty Incomplete (budget / DFS stub): do not drive a stay-put hop.
+    // Mid-smooth Incomplete often already has a full polyline — discarding it
+    // forced traverse+smooth every loco frame (live tar_m02ac droid/woman spin).
     if(result.code === WalkPathCode.Incomplete && !path.points?.length){
       this.setComputedPath(undefined);
       return;
     }
 
-    // Incomplete mid-smooth paths can still carry NonWalk chords — do not drive them.
-    if(
-      result.code === WalkPathCode.Incomplete &&
-      !pathHopsAreWalkClear(area, this.owner.position, path, this.owner)
-    ){
-      this.setComputedPath(undefined);
-      return;
-    }
-
+    // Ready or driveable Incomplete (mid-smooth / mid-DFS): ship points without
+    // pathHopsAreWalkClear — that plot-grade check was re-run every stuck frame.
     path.fixWalkEdges(
       this.owner.pathFindApproachPersonalSpace > 0
         ? this.owner.pathFindApproachPersonalSpace

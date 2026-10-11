@@ -8,6 +8,7 @@ import {
   walkmeshWorldAabbXY,
 } from "@engine/pathfinding/door-walkmesh-matrix";
 import { invalidateWalkmeshEdgeClearCache } from "@engine/pathfinding/walkmesh-edge-clear-cache";
+import { invalidatePthStaticEdgeTable } from "@engine/pathfinding/pth-static-edge-table";
 
 /**
  * Uniform XY hash for door / placeable static-blocker pruning.
@@ -177,6 +178,7 @@ export function invalidateStaticBlockerGrid(area: Area | undefined): void {
   if(!area) return;
   (area as Area & { staticBlockerGridDirty?: boolean }).staticBlockerGridDirty = true;
   invalidateWalkmeshEdgeClearCache(area);
+  invalidatePthStaticEdgeTable(area);
 }
 
 /**

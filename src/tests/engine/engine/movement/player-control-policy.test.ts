@@ -48,6 +48,34 @@ jest.mock("@engine/movement/area-movement-queries", () => ({
   WalkLineHitCode: { Ok: 1, Fail: 0, NonWalk: -1, DetailedBlock: -2, Creature: -3 },
   testCreatureMovement: (...args: unknown[]) => testCreatureMovementMock(...args),
   testStaticMovement: (...args: unknown[]) => testStaticMovementMock(...args),
+  // Thin drive probe — adapt legacy static-mock shape used by this suite.
+  testDriveStepClear: (
+    area: unknown,
+    from: THREE.Vector3,
+    to: THREE.Vector3,
+    opts?: unknown
+  ) => {
+    const r = testStaticMovementMock(area, from, to, opts) as {
+      clear?: boolean;
+      hit?: { objectId?: number };
+      walkHit?: {
+        code?: number;
+        clearT?: number;
+        clearPoint?: THREE.Vector3;
+        walkHit?: { normal?: THREE.Vector3 };
+      };
+    };
+    const wh = r?.walkHit ?? {};
+    return {
+      clear: !!r?.clear,
+      clearT: wh.clearT ?? (r?.clear ? 1 : 0),
+      clearPoint: wh.clearPoint?.clone?.() ?? to.clone(),
+      code: wh.code ?? (r?.clear ? 1 : -1),
+      normal: wh.walkHit?.normal,
+      blockingObjectId: r?.hit?.objectId,
+      walkHit: wh.walkHit,
+    };
+  },
   findGround: (...args: unknown[]) => findGroundMock(...args),
   findWalkableAttachmentAt: (...args: unknown[]) =>
     findWalkableAttachmentAtMock(...args),
@@ -253,29 +281,14 @@ describe("resolvePlayerControlStep", () => {
     expect(staticCalls).toBeGreaterThan(1);
   });
 
-  it("rejects wall lateral probe that is static-clear but creature-blocked", () => {
-    // Ideal creature-clear, static blocked with no clearT (force lateral fan)
-    let creatureCall = 0;
-    testCreatureMovementMock.mockImplementation(
-      (_a: unknown, from: THREE.Vector3, to: THREE.Vector3) => {
-        creatureCall += 1;
-        const dy = Math.abs(to.y - from.y);
-        // Lateral probes have Y component — block creatures
-        if(dy > 0.1){
-          return {
-            clear: false,
-            hit: { kind: MovementHitKind.Creature, creatureId: 9 },
-            raw: { clear: false, blockingCreatureId: 9 },
-          };
-        }
-        return { clear: true, raw: { clear: true } };
-      }
-    );
+  it("rejects into-wall step when tangent slide has no usable motion", () => {
+    // Pure into-wall desire + wall normal → projected slide length 0 → Blocked
+    // (thin probe path; no lateral fan of creature checks).
+    testCreatureMovementMock.mockReturnValue({ clear: true, raw: { clear: true } });
     testStaticMovementMock.mockImplementation(
       (_a: unknown, from: THREE.Vector3, to: THREE.Vector3) => {
         const dx = to.x - from.x;
-        const dy = Math.abs(to.y - from.y);
-        if(dy < 1e-6 && dx > 0){
+        if(dx > 0){
           return {
             clear: false,
             hit: { kind: MovementHitKind.Walkmesh },
@@ -284,12 +297,10 @@ describe("resolvePlayerControlStep", () => {
               ok: false,
               clearT: 0,
               clearPoint: from.clone(),
-              // Outward normal faces free space (−X)
               walkHit: { normal: new THREE.Vector3(-1, 0, 0) },
             },
           };
         }
-        // Lateral static clear
         return {
           clear: true,
           walkHit: {
@@ -308,7 +319,6 @@ describe("resolvePlayerControlStep", () => {
     );
     expect(result.status).toBe(MovementStatus.Blocked);
     expect(result.actualDistance).toBeLessThan(1e-6);
-    expect(creatureCall).toBeGreaterThan(1);
   });
 
   it("allows escape away from the wall (desired · outwardNormal >= 0)", () => {

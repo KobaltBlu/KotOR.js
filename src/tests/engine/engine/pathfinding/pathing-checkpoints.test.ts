@@ -73,6 +73,27 @@ jest.mock("@engine/pathfinding/walk-line-clear", () => ({
   },
 }));
 
+/** Follow foot steps use thin drive probe + capsule (not full WLC). */
+const mockProbeDrive = jest.fn(() => ({
+  clear: true,
+  clearT: 1,
+  clearPoint: new THREE.Vector3(),
+  code: 1,
+}));
+const mockCreatureCapsule = jest.fn(() => ({ clear: true }));
+
+jest.mock("@engine/pathfinding/drive-step-clear", () => ({
+  probeDriveStepClear: (...args: unknown[]) => mockProbeDrive(...args),
+  getDriveProbeCount: () => 0,
+  resetDriveProbeCount: () => undefined,
+}));
+
+jest.mock("@engine/pathfinding/creature-capsule-clear", () => ({
+  isCreatureCapsuleClear: (...args: unknown[]) => mockCreatureCapsule(...args),
+}));
+
+// party-follow-path trail LOS also uses thin probe + capsule (above mocks).
+
 jest.mock("@engine/pathfinding/safe-walk-point", () => ({
   isSafeWalkPoint: () => true,
 }));
@@ -217,6 +238,15 @@ describe("Pathing checkpoints — FollowLeader SM gates", () => {
       clearPoint: new THREE.Vector3(),
       clearT: 1,
     }));
+    mockProbeDrive.mockReset();
+    mockProbeDrive.mockImplementation(() => ({
+      clear: true,
+      clearT: 1,
+      clearPoint: new THREE.Vector3(),
+      code: 1,
+    }));
+    mockCreatureCapsule.mockReset();
+    mockCreatureCapsule.mockImplementation(() => ({ clear: true }));
     mockWalkUpdate.mockClear();
   });
 
@@ -329,13 +359,16 @@ describe("Pathing checkpoints — FollowLeader SM gates", () => {
     });
     const blocker = makeCreature(9, 4.5, 0);
     mockParty.push(leader, companion);
-    mockTestDirectLine.mockImplementation(() => ({
-      ok: false,
-      code: -3,
+    mockProbeDrive.mockReturnValue({
+      clear: true,
+      clearT: 1,
       clearPoint: companion.position.clone(),
-      clearT: 0,
+      code: 1,
+    });
+    mockCreatureCapsule.mockReturnValue({
+      clear: false,
       blockingCreatureId: blocker.id,
-    }));
+    });
 
     runtime.state = PartyFollowState.MovingToPath;
     const beforeBlocker = blocker.position.clone();
@@ -360,6 +393,15 @@ describe("Pathing over time — multi-frame regressions", () => {
       clearPoint: new THREE.Vector3(),
       clearT: 1,
     }));
+    mockProbeDrive.mockReset();
+    mockProbeDrive.mockImplementation(() => ({
+      clear: true,
+      clearT: 1,
+      clearPoint: new THREE.Vector3(),
+      code: 1,
+    }));
+    mockCreatureCapsule.mockReset();
+    mockCreatureCapsule.mockImplementation(() => ({ clear: true }));
     mockWalkUpdate.mockClear();
   });
 
