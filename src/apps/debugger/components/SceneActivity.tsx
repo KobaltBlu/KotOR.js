@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useApp } from "@apps/debugger/context/AppContext";
+import { TopDownMap } from "@engine/debug/inspect/TopDownMap";
 import {
-  TopDownMap,
   DEFAULT_KIND_FILTERS,
   INSPECTOR_DEFAULT_OPEN,
   OVERVIEW_KIND_COLORS,

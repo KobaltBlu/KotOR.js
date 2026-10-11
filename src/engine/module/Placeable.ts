@@ -24,6 +24,7 @@ import { GFFStruct } from "@core/resource/GFFStruct";
 import { MDLLoader, ResourceLoader } from "@engine/loaders";
 import { ResourceTypes } from "@core/resource/ResourceTypes";
 import { OdysseyModel3D } from "@engine/render/three/odyssey";
+import { freezeWorldContainer } from "@engine/render/worldMatrix";
 import { SWPlaceableAppearance } from "@engine/rules/SWPlaceableAppearance";
 import { composeObjectWalkmeshLocalToWorld } from "@engine/pathfinding/door-walkmesh-matrix";
 // import { TwoDAManager, InventoryManager, AppearanceManager, MenuManager, GameObjectManager, FactionManager } from "@engine/managers";
@@ -349,18 +350,8 @@ export class Placeable extends GameObject {
     }
 
     if(this.model instanceof OdysseyModel3D){
-      if(this.room){
-        if(this.room.model instanceof OdysseyModel3D){
-          if(this.model){
-            const visible = !!this.room.model.userData?.visActive;
-            if(this.model.visible !== visible){
-              this.model.visible = visible;
-              this.markCollisionBoundsDirty('visibility');
-            }
-          }
-        }
-      }
-
+      // Visibility comes from Area.syncObjectModelVisibility → updateModelVisibility
+      // (VIS + frustum). Do not toggle model.visible from room visActive alone.
       if(this.model.visible && !this.static){
         this.model.update(delta);
       }
@@ -813,6 +804,10 @@ export class Placeable extends GameObject {
       this.markCollisionBoundsDirty('model');
 
       this.model.disableMatrixUpdate();
+      // Static props: freeze container; dirty flush on placement / open state.
+      if(this.isStatic()){
+        freezeWorldContainer(this.container);
+      }
       const shadowSize = this.getAppearance()?.shadowsize ?? 1;
       void this.applyShadowBlob(GameObject.shadowBlobResRefFromPlaceableShadowSize(shadowSize));
 

@@ -9,6 +9,7 @@ import type { Trigger } from "@engine/module/Trigger";
 import * as THREE from "three";
 import { GameState } from "@engine/runtime/GameState";
 import { OdysseyFace3, OdysseyModel3D, OdysseyObject3D } from "@engine/render/three/odyssey";
+import { freezeWorldContainer } from "@engine/render/worldMatrix";
 import { Utility } from "@core/utility/Utility";
 import { OdysseyWalkMesh } from "@engine/odyssey";
 import { BinaryReader } from "@core/binary/BinaryReader";
@@ -338,12 +339,25 @@ export class AreaRoom {
       return;
     }
     // Last-frame VIS/frustum flags (same-frame cull runs after object ticks).
-    const visActive = !!this.model.userData.visActive;
-    if(!visActive && !this.model.visible){
+    if(!this.model.visible){
+      return;
+    }
+    // Skip pose/emitter/dangly work for drawn rooms with only static geometry.
+    if(!AreaRoom.roomModelNeedsAnimation(this.model)){
       return;
     }
     this.model.animateFrame = true;
     this.model.update(delta);
+  }
+
+  /** True when the room MDL has anim loops, emitters, dangly, or anim-dummy batches. */
+  static roomModelNeedsAnimation(model: OdysseyModel3D): boolean {
+    return (
+      (model.animLoops?.length ?? 0) > 0 ||
+      (model.emitters?.length ?? 0) > 0 ||
+      (model.danglyMeshes?.length ?? 0) > 0 ||
+      (model.animDummyInstanceBatches?.length ?? 0) > 0
+    );
   }
 
   show(showLinkedRooms = false){
@@ -489,7 +503,7 @@ export class AreaRoom {
       console.error(e);
     }
 
-    // Nested OdysseyModel3D roots stay frozen; room root still auto-updates for placement.
+    // Nested OdysseyModel3D roots stay frozen; room container stays put after load.
     this.model.disableMatrixUpdate();
     if(this.model.mergedMesh){
       this.model.mergedMesh.matrixAutoUpdate = false;
@@ -497,6 +511,7 @@ export class AreaRoom {
     if(this.model.mergedDanglyMesh){
       this.model.mergedDanglyMesh.matrixAutoUpdate = false;
     }
+    freezeWorldContainer(this.container);
 
     try{
       await GameState.grassManager?.buildForRoom(this);

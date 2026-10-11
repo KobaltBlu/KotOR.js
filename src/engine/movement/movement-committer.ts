@@ -19,6 +19,7 @@ import {
 } from "@engine/movement/types";
 import { isCreature } from "@engine/module/guards/isCreature";
 import { isDoor } from "@engine/module/guards/isDoor";
+import { commitWorldTransform } from "@engine/render/worldMatrix";
 
 /**
  * Single normal creature movement committer.
@@ -86,6 +87,9 @@ export function commitMovement(
   creature.position.x = final.x;
   creature.position.y = final.y;
   creature.position.z = final.z;
+  // Scene matrixWorldAutoUpdate is off — push local+world immediately so feet
+  // Z is visible this frame (deferred flush alone left characters floating).
+  commitWorldTransform(creature.container);
   creature.markCollisionMatrixDirty?.("movement");
   // Frustum cull (isOnScreen) uses this.box — must refresh after XY commit.
   creature.computeBoundingBox?.();

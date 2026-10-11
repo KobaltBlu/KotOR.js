@@ -24,6 +24,7 @@ import { RenderPerfStats } from "@engine/render/RenderPerfStats";
 import { ModuleGpuWarmLog } from "@engine/render/three/odyssey/warmRoomGpuResources";
 import { OdysseyLightingBinder } from "@engine/render/three/odyssey/OdysseyLightingBinder";
 import { OdysseyUniformBuffers } from "@engine/render/three/odyssey/OdysseyUniformBuffers";
+import { flushWorldMatrices } from "@engine/render/worldMatrix";
 
 /**
  * EffectComposer setup, per-frame world/GUI compose, and depth prepass.
@@ -207,6 +208,9 @@ export class OdysseyRenderPipeline {
   static renderFrame(delta: number = 0): void {
     RenderPerfStats.beginFrame(GameState.renderer);
     ModuleGpuWarmLog.tickFrame(GameState.renderer);
+
+    // GameState.scene.matrixWorldAutoUpdate is false — flush dirty roots only.
+    flushWorldMatrices();
 
     OdysseyRenderPipeline.resetComposerBufferRoles();
     OdysseyRenderPipeline.renderPass.camera = GameState.currentCamera;

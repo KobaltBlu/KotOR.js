@@ -10,6 +10,7 @@ import { ExcitedDurationRow } from "@engine/combat/combat-engagement";
 import { CExoLocString } from "@core/resource/CExoLocString";
 import { GFFObject } from "@core/resource/GFFObject";
 import { OdysseyModel3D } from "@engine/render/three/odyssey";
+import { freezeWorldContainer } from "@engine/render/worldMatrix";
 
 import * as THREE from "three";
 import { ResourceTypes } from "@core/resource/ResourceTypes";
@@ -1199,6 +1200,8 @@ export class Door extends GameObject {
           this.generateTransitionLine();
           
           this.model.disableMatrixUpdate();
+          // Door container stays put; only the model animates open/close.
+          freezeWorldContainer(this.container);
 
           switch(this.openState){
             case ModuleDoorOpenState.CLOSED:

@@ -30,6 +30,7 @@ import { CExoLocString } from "@core/resource/CExoLocString";
 import { VISObject } from "@core/resource/VISObject";
 import { ITextureLoaderQueuedRef } from "@engine/interface/loaders/ITextureLoaderQueuedRef";
 import { FollowerCamera } from "@engine/render/FollowerCamera";
+import { flushWorldMatrices } from "@engine/render/worldMatrix";
 // import { MenuManager, TwoDAManager, PartyManager, GameObjectManager } from "@engine/managers";
 import { TextureLoader } from "@engine/loaders";
 import { IAreaAudioProperties } from "@core/interface/area/IAreaAudioProperties";
@@ -743,6 +744,8 @@ export class Area extends GameObject {
     FollowerCamera.update(delta, this);
     // Rebuild viewportFrustum before object isOnScreen (same pose as room cull).
     GameLoop.updateViewportFrustum();
+    // Scene matrixWorldAutoUpdate is off — flush dirty roots before isOnScreen.
+    flushWorldMatrices();
     this.updateRoomVisibility(delta);
     this.applyRoomRenderFrustumCull();
     // Same-frame object cull after room VIS (avoids one-frame blank props/doors)
@@ -814,6 +817,7 @@ export class Area extends GameObject {
 
     FollowerCamera.update(delta, this);
     GameLoop.updateViewportFrustum();
+    flushWorldMatrices();
     this.updateRoomVisibility(delta);
     this.applyRoomRenderFrustumCull();
     this.syncObjectModelVisibility();
@@ -2513,16 +2517,27 @@ export class Area extends GameObject {
   }
 
   getNearestWalkablePoint(point: THREE.Vector3, safeDistance = 1.5){
-    // PositionWalkable keep — do not re-snap points already on a walk face.
-    // Re-snapping allowed NaN-poisoned degenerate faces to yank the point
-    // across the room ("walk away then speak/use").
+    // PositionWalkable keep — do not re-snap XY when already on a walk face.
+    // Re-snapping XY allowed NaN-poisoned degenerate faces to yank the point
+    // across the room ("walk away then speak/use"). Still project Z onto the
+    // containing face so findGround / locomotion do not keep a floating height.
+    const tmpPoint = new THREE.Vector3();
     if(this.isPointWalkable(point)){
-      return point.clone();
+      const onFace = point.clone();
+      for(let i = 0, len = this.walkFaces.length; i < len; i++){
+        const f = this.walkFaces[i];
+        if(!f.pointInFace2d(point)) continue;
+        f.triangle.closestPointToPoint(point, tmpPoint);
+        if(Number.isFinite(tmpPoint.z)){
+          onFace.z = tmpPoint.z;
+        }
+        break;
+      }
+      return onFace;
     }
 
     let nearest = Infinity;
     let nearest_point = point.clone();
-    const tmpPoint = new THREE.Vector3();
     const tmp1 = new THREE.Vector3();
     const tmp2 = new THREE.Vector3();
     const tmpN = new THREE.Vector3();

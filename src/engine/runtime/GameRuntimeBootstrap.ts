@@ -254,6 +254,9 @@ export class GameRuntimeBootstrap {
     // object when Object3D.updateMatrix unconditionally dirties matrixWorld.
     GameState.scene.matrixAutoUpdate = false;
     GameState.scene.updateMatrix();
+    // Disable the renderer's per-frame world walk; dirty roots flush via
+    // flushWorldMatrices (same pattern as GUI / movie scenes).
+    GameState.scene.matrixWorldAutoUpdate = false;
     // GUI scenes: freeze locals and disable the renderer's per-frame world walk.
     // Children are frozen via childadded; world matrices flush explicitly.
     freezeGuiObject(GameState.scene_gui);

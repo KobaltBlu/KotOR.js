@@ -1,1 +1,1 @@
-export { TopDownMap, type TopDownMapProps } from "@apps/game/KotOR";
+export { TopDownMap, type TopDownMapProps } from "@engine/debug/inspect/TopDownMap";

@@ -32,6 +32,7 @@ import {
   MovementSource,
   MovementStatus,
 } from "@engine/movement/types";
+import { findWalkableAttachmentAt } from "@engine/movement/area-movement-queries";
 
 /**
  * Follow-leader state machine: one-frame steps for party companions
@@ -58,6 +59,11 @@ function commitFollowStep(
   setMovementAuthority(owner, MovementAuthority.FollowLeader);
   const origin = new THREE.Vector3(beforeX, beforeY, owner.position.z);
   const finalPosition = next.clone();
+  // Path/trail Z can lag terrain — snap feet to the walk face under the step.
+  const attach = findWalkableAttachmentAt(owner.area, finalPosition, owner.room);
+  if(attach){
+    finalPosition.z = attach.z;
+  }
   const dx = finalPosition.x - origin.x;
   const dy = finalPosition.y - origin.y;
   const dist = Math.hypot(dx, dy);
@@ -70,6 +76,8 @@ function commitFollowStep(
       finalPosition,
       acceptedDisplacement: new THREE.Vector3(dx, dy, finalPosition.z - origin.z),
       actualDistance: dist,
+      room: attach?.room,
+      groundFace: attach?.face,
     },
     { delta }
   );

@@ -43,7 +43,6 @@ export * from "@engine/dialog/DLGNode";
 export * from "@engine/video/BIKObject";
 export * from "@engine/preview/ForgePreviewHost";
 export * from "@engine/debug/inspect/runtimeSnapshots";
-export * from "@engine/debug/inspect/TopDownMap";
 export * from "@engine/debug/inspect/areaMapOverlay";
 export * from "@engine/debug/inspect/worldMarkers";
 export * from "@engine/debug/server";

@@ -26,6 +26,7 @@ import { GFFObject } from "@core/resource/GFFObject";
 import { GFFStruct } from "@core/resource/GFFStruct";
 import { LIPObject } from "@core/resource/LIPObject";
 import { OdysseyModel3D, OdysseyObject3D } from "@engine/render/three/odyssey";
+import { markWorldMatrixDirty } from "@engine/render/worldMatrix";
 import { Utility } from "@core/utility/Utility";
 import { ComputedPath } from "@engine/pathfinding";
 import type { Area } from "@engine/module/Area";
@@ -552,6 +553,7 @@ export class GameObject {
 
   markCollisionMatrixDirty(_reason?: string){
     this.collisionMatrixDirty = true;
+    markWorldMatrixDirty(this.container);
     if(BitWise.InstanceOf(this.objectType, GameObjectType.Placeable) && this.isStatic?.()){
       this.room?.markCollisionPlaceablesDirty?.(_reason);
     }
@@ -560,6 +562,7 @@ export class GameObject {
   markCollisionBoundsDirty(_reason?: string){
     this.collisionBoundsDirty = true;
     this.collisionMatrixDirty = true;
+    markWorldMatrixDirty(this.container);
     if(BitWise.InstanceOf(this.objectType, GameObjectType.Placeable)){
       this.room?.markCollisionPlaceablesDirty?.(_reason);
     }

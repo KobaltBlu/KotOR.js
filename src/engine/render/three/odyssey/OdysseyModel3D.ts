@@ -21,6 +21,7 @@ import {
   type DanglyGroupParams,
   updateModelDanglyWind,
 } from "@engine/odyssey/DanglyWindSimulator";
+import { markWorldMatrixDirty } from "@engine/render/worldMatrix";
 import { type OdysseyModelNodeSkin } from "@engine/odyssey/OdysseyModelNodeSkin";
 import { type OdysseyModelNodeAABB } from "@engine/odyssey/OdysseyModelNodeAABB";
 import { type OdysseyModelNode } from "@engine/odyssey/OdysseyModelNode";
@@ -673,6 +674,8 @@ export class OdysseyModel3D extends OdysseyObject3D {
         const node = mesh.parent as OdysseyObject3D | null;
         node?.saberTrail?.update(dt, mesh.matrixWorld);
       }
+      // Scene matrixWorldAutoUpdate is off — queue a dirty flush for posed leaves.
+      markWorldMatrixDirty(this);
     }
 
     this.oddFrame = !this.oddFrame;

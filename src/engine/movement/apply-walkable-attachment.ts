@@ -1,5 +1,6 @@
 import type { GameObject } from "@engine/module/GameObject";
 import type { WalkableAttachment } from "@engine/movement/area-movement-queries";
+import { commitWorldTransform } from "@engine/render/worldMatrix";
 
 /**
  * Apply a pure walkable attachment probe to an object (room + ground + Z).
@@ -28,5 +29,6 @@ export function applyWalkableAttachment(
   }
 
   object.position.z = attachment.z;
+  commitWorldTransform(object.container);
   object.markCollisionMatrixDirty?.("attachment");
 }
