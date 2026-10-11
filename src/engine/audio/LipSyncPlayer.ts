@@ -10,6 +10,7 @@ export interface LipSyncModelHost {
   odysseyAnimationMap: Map<string, any>;
   animNodeCache?: Record<string, any>;
   userData?: { gameObject?: { lipObject?: LIPObject | undefined } };
+  animationManager?: { markNodeTransformDirty?: (node?: any) => void };
 }
 
 /**
@@ -114,7 +115,11 @@ export class LipSyncPlayer {
                   modelNode.quaternion.slerp(lip.anim._quaternion.copy(next_frame), fl);
                   break;
               }
-              modelNode.updateMatrix();
+              if(typeof model.animationManager?.markNodeTransformDirty === 'function'){
+                model.animationManager.markNodeTransformDirty(modelNode);
+              }else{
+                modelNode.updateMatrix();
+              }
             }
           });
         }

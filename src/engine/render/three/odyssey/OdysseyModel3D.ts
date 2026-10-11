@@ -125,6 +125,11 @@ export class OdysseyModel3D extends OdysseyObject3D {
   wasOffscreen = false;
   animateFrame = true;
   /**
+   * Set when animation (or an external bone writer) actually changed a pose
+   * this frame. Used by shadow maps to avoid redrawing held poses.
+   */
+  posedThisFrame = false;
+  /**
    * Play-out-of-place: skip root position/orientation controllers so the clip
    * poses in place (server ID bands 0x4B0–0x52F / 0x640–0x6BF).
    */
@@ -422,6 +427,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
       //fix skins
       this.buildSkeleton();
       this.applyShadowCasterMaterials();
+      this.animationManager?.invalidateTransformBinding?.();
 
       for(let i = 0; i < head.materials.length; i++){
         this.materials.push(head.materials[i]);
@@ -615,6 +621,8 @@ export class OdysseyModel3D extends OdysseyObject3D {
   update(delta: number = 0){
 
     // if((GameState.debug as any).disableAnimation) return;
+
+    this.posedThisFrame = false;
 
     for(let i = 0, len = this.effects.length; i < len; i++){
       this.effects[i].update(delta);

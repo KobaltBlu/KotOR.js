@@ -330,7 +330,7 @@ describe('OdysseyShadowManager primary shadow map', () => {
     GameState.PartyManager = {
       party: [{
         position: new THREE.Vector3(0.5, 0, 0),
-        model: { visible: true, animateFrame: true },
+        model: { visible: true, animateFrame: true, posedThisFrame: true },
       }],
     };
 

@@ -155,12 +155,21 @@ export class EffectVisualEffect extends GameEffect {
       this.model.animationManager.currentAnimation = undefined;
 
       if(this.object.model && this.model){
+        const vfxMgr = this.model.animationManager;
         for(let node of this.object.model.nodes){
           let c_node = this.model.nodes.get(node[0]);
+          if(!c_node) continue;
           c_node.position.copy(node[1].position);
           c_node.quaternion.copy(node[1].quaternion);
           c_node.scale.copy(node[1].scale);
+          if(vfxMgr){
+            vfxMgr.markNodeTransformDirty(c_node);
+          }else{
+            c_node.updateMatrix();
+            c_node.matrixWorldNeedsUpdate = true;
+          }
         }
+        this.model.posedThisFrame = true;
       }
 
       // Facing lives on the object container (rotation.z), not model.rotation.

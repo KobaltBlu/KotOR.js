@@ -22,6 +22,11 @@ export interface OdysseyModelAnimationManagerState {
   /**
    * Per-controller frame cursors for the legacy animLoops sampling path.
    * Cleared on loop wrap / seek / animation identity change.
+   * Prefer frameCursorArray when BoundAnimation is attached.
    */
   frameCursors?: Map<unknown, number>;
+  /** BoundAnimation Int32Array cursors (legacy loops / shared sample path). */
+  frameCursorArray?: Int32Array;
+  /** BoundAnimation used to size/index frameCursorArray. */
+  boundAnimation?: unknown;
 }

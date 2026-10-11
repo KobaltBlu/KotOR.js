@@ -1,4 +1,10 @@
-type HturnBone = { rotation: { x: number; z: number }; userData?: Record<string, unknown> };
+type HturnBone = {
+  rotation: { x: number; z: number };
+  userData?: Record<string, unknown>;
+  /** Optional THREE.Object3D / OdysseyObject3D dirty hook target. */
+  updateMatrix?: () => void;
+  matrixWorldNeedsUpdate?: boolean;
+};
 
 type HturnLookUserData = {
   _hturnAnimX?: number;
@@ -74,4 +80,10 @@ export function applyHeadTrackingToHturn(
 
   ud._hturnComposedX = hturn.rotation.x;
   ud._hturnComposedZ = hturn.rotation.z;
+
+  // Euler look writes bypass animation controllers — keep local/world matrices valid.
+  if(typeof hturn.updateMatrix === 'function'){
+    hturn.updateMatrix();
+    hturn.matrixWorldNeedsUpdate = true;
+  }
 }

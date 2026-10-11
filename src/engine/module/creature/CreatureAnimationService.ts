@@ -52,6 +52,16 @@ import {
 } from '@engine/runtime/context';
 
 export class CreatureAnimationService {
+  /**
+   * Opt-in coarser skeletal pose LOD (disabled by default). When false, only
+   * the existing visibility / 50m oddFrame / fog policy applies.
+   */
+  static skeletalEvalLodEnabled = false;
+  /** Distance (m) before optional stride-based pose skip may apply. */
+  static skeletalEvalLodDistance = 80;
+  /** Pose every N rendered opportunities when skeletalEvalLodEnabled. */
+  static skeletalEvalLodStride = 3;
+
   constructor(
     private readonly host: Creature,
     private readonly runtime: GameObjectRuntimeContext = getDefaultRuntimeContext(),
@@ -339,6 +349,8 @@ export class CreatureAnimationService {
     }
 
     //BEGIN: Animation Optimization
+    // Default distance/fog/visibility LOD (always on). Optional skeletalEvalLod*
+    // adds a coarser skip and stays disabled until measured.
     this.host.model.animateFrame = true;
     const runtime = getDefaultRuntimeContext();
     const inParty = (runtime.getParty?.() ?? []).indexOf(this.host) != -1;
@@ -367,6 +379,24 @@ export class CreatureAnimationService {
         }else if(this.host.context.scene.fog.near && this.host.distanceToCamera >= this.host.context.scene.fog.near){
           this.host.model.animateFrame = this.host.model.oddFrame;
         }
+      }
+    }
+
+    // Opt-in coarser skeletal pose skip (disabled by default). Timing/events
+    // still advance in animationManager.update; only animateFrame posing slows.
+    if(
+      CreatureAnimationService.skeletalEvalLodEnabled &&
+      this.host.model.animateFrame &&
+      !inParty &&
+      !this.host.cutsceneMode &&
+      runtime.getMode() != EngineMode.DIALOG &&
+      this.host.distanceToCamera > CreatureAnimationService.skeletalEvalLodDistance
+    ){
+      const stride = Math.max(2, CreatureAnimationService.skeletalEvalLodStride | 0);
+      const modelAny = this.host.model as OdysseyModel3D & { _skeletalLodTick?: number };
+      modelAny._skeletalLodTick = ((modelAny._skeletalLodTick | 0) + 1) % stride;
+      if(modelAny._skeletalLodTick !== 0){
+        this.host.model.animateFrame = false;
       }
     }
     //END: Animation Optimization
@@ -844,6 +874,10 @@ export class CreatureAnimationService {
     this.host.headTrackingAngle = 0;
     this.host.headTrackingPitch = 0;
     applyHeadTrackingToHturn(this.host.model.hturn_g, 0, 0);
+    if(this.host.model.animationManager){
+      this.host.model.animationManager.markNodeTransformDirty(this.host.model.hturn_g as any);
+      this.host.model.posedThisFrame = true;
+    }
   }
 
   updateHeadTracking(delta: number){
@@ -917,6 +951,11 @@ export class CreatureAnimationService {
       this.host.headTrackingAngle,
       this.host.headTrackingPitch,
     );
+    const hturn = this.host.model.hturn_g as { updateMatrix?: () => void } | undefined;
+    if(hturn && this.host.model.animationManager){
+      this.host.model.animationManager.markNodeTransformDirty(hturn as any);
+      this.host.model.posedThisFrame = true;
+    }
   }
 
   clearLocomotionAnimation(){

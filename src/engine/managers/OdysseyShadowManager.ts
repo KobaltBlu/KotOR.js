@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import type { LightManager } from '@engine/managers/LightManager';
 import { LightManager as LightManagerClass } from '@engine/managers/LightManager';
 import type { OdysseyLight3D } from '@engine/render/three/odyssey';
+import { RenderPerfStats } from '@engine/render/RenderPerfStats';
 import { GameState } from '@engine/runtime/GameState';
 import {
   isOdysseyShadowColorVisible,
@@ -947,9 +948,18 @@ export class OdysseyShadowManager {
 
     const nearAnimated = (obj: {
       position?: THREE.Vector3;
-      model?: { visible?: boolean; animateFrame?: boolean };
+      model?: { visible?: boolean; animateFrame?: boolean; posedThisFrame?: boolean };
     } | undefined): boolean => {
-      if(!obj?.model?.visible || !obj.model.animateFrame || !obj.position){ return false; }
+      // Require an actual pose change this frame so held animateFrame poses
+      // (paused / unchanged) do not force shadow map rebuilds.
+      if(
+        !obj?.model?.visible ||
+        !obj.model.animateFrame ||
+        !obj.model.posedThisFrame ||
+        !obj.position
+      ){
+        return false;
+      }
       const dx = obj.position.x - fx;
       const dy = obj.position.y - fy;
       const dz = obj.position.z - fz;
@@ -962,6 +972,7 @@ export class OdysseyShadowManager {
         if(nearAnimated(party[i])){
           this._needsShadowMapRender = true;
           this.lastUpdateReason = 'animated-caster';
+          RenderPerfStats.noteShadowAnimatedCaster();
           return;
         }
       }
@@ -973,6 +984,7 @@ export class OdysseyShadowManager {
         if(nearAnimated(creatures[i])){
           this._needsShadowMapRender = true;
           this.lastUpdateReason = 'animated-caster';
+          RenderPerfStats.noteShadowAnimatedCaster();
           return;
         }
       }

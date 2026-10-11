@@ -10,6 +10,7 @@ jest.mock("@engine/render/three/odyssey", () => ({
 }));
 jest.mock("@engine/render/three/odyssey/OdysseySkeletonBind", () => ({
   markOdysseySkeletonsDirtyUnder: () => {},
+  markOdysseySkeletonDirty: () => {},
 }));
 
 import { OdysseyModelAnimationManager } from "@engine/odyssey/OdysseyModelAnimationManager";
@@ -58,7 +59,7 @@ describe("legacy animLoops frame cursors", () => {
     expect(c).toBe(3);
   });
 
-  it("updateAnimationNodeLegacy stores and reuses per-controller cursors", () => {
+  it("updateAnimationNodeLegacy stores and reuses typed frame cursors", () => {
     const manager = Object.create(OdysseyModelAnimationManager.prototype) as OdysseyModelAnimationManager;
     const setFrame = jest.fn();
     const animate = jest.fn();
@@ -81,14 +82,19 @@ describe("legacy animLoops frame cursors", () => {
       _quaternion: { x: 0, y: 0, z: 0, w: 1 },
     };
     const modelNode: any = {
-      position: { copy: jest.fn(), lerp: jest.fn() },
-      quaternion: { copy: jest.fn(), slerp: jest.fn() },
+      position: { x: 0, y: 0, z: 0, copy: jest.fn(function(v){ this.x=v.x; this.y=v.y; this.z=v.z; return this; }), lerp: jest.fn() },
+      quaternion: { x: 0, y: 0, z: 0, w: 1, copy: jest.fn(function(v){ this.x=v.x; this.y=v.y; this.z=v.z; this.w=v.w; return this; }), slerp: jest.fn() },
+      scale: { x: 1, y: 1, z: 1, copy: jest.fn(function(v){ this.x=v.x; this.y=v.y; this.z=v.z; return this; }) },
     };
     (manager as any).model = {
       nodesById: [modelNode],
       nodes: new Map([["root", modelNode]]),
       wasOffscreen: false,
     };
+    (manager as any)._prevPosition = { copy: jest.fn() };
+    (manager as any)._prevQuaternion = { copy: jest.fn() };
+    (manager as any)._prevScale = { copy: jest.fn() };
+    (manager as any).nodeTransformChanged = jest.fn(() => false);
     (manager as any).applyControllerSample = jest.fn((_a, _s, _c, lastFrame) => {
       return lastFrame;
     });
@@ -102,21 +108,20 @@ describe("legacy animLoops frame cursors", () => {
     };
 
     manager.updateAnimationNodeLegacy(anim, node, state, 1);
-    expect(state.frameCursors.get(controller)).toBe(0);
-    expect((manager as any).applyControllerSample).toHaveBeenCalledWith(
-      anim, state, controller, 0, 1, false
-    );
+    expect(state.frameCursorArray[0]).toBe(0);
+    expect((manager as any).applyControllerSample).toHaveBeenCalled();
+    expect((manager as any).applyControllerSample.mock.calls[0][3]).toBe(0);
 
     state.lastTime = 0.1;
     state.elapsed = 0.6;
     manager.updateAnimationNodeLegacy(anim, node, state, 1);
-    expect(state.frameCursors.get(controller)).toBe(2);
+    expect(state.frameCursorArray[0]).toBe(2);
 
     // Loop wrap discontinuity
     state.lastTime = 1;
     state.elapsed = 0.05;
     manager.updateAnimationNodeLegacy(anim, node, state, 1);
-    expect(state.frameCursors.get(controller)).toBe(0);
+    expect(state.frameCursorArray[0]).toBe(0);
   });
 
   it("updateAnimation clears frame cursors on loop wrap", () => {

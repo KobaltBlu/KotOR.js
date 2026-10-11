@@ -1,3 +1,4 @@
+import * as THREE from "three";
 import type { OdysseyModelAnimation } from "@engine/odyssey/OdysseyModelAnimation";
 import type { OdysseyModelAnimationManager } from "@engine/odyssey/OdysseyModelAnimationManager";
 import { OdysseyController } from "@engine/odyssey/controllers/OdysseyController";
@@ -45,18 +46,16 @@ export class OrientationController extends OdysseyController {
       // }
 
     }
-    if(data.x == 0 && data.y == 0 && data.z == 0 && data.w == 1){
-      data.x = anim._quaternion.x;
-      data.y = anim._quaternion.y;
-      data.z = anim._quaternion.z;
-      data.w = anim._quaternion.w;
+    // Preserve identity-key → bind-pose behavior without mutating shared keyframe data.
+    let x = data.x, y = data.y, z = data.z, w = data.w;
+    if(x == 0 && y == 0 && z == 0 && w == 1){
+      x = anim._quaternion.x;
+      y = anim._quaternion.y;
+      z = anim._quaternion.z;
+      w = anim._quaternion.w;
     }
 
-    // if(manager.trans && this.frameCount > 1){
-    // manager.modelNode.quaternion.slerp(manager._quat.copy(anim._quaternion), 0);
-    // }else{
-      manager.modelNode.quaternion.set(data.x, data.y, data.z, data.w);
-    // }
+    manager.modelNode.quaternion.set(x, y, z, w);
 
     manager.markNodeTransformDirty();
   }
@@ -92,6 +91,60 @@ export class OrientationController extends OdysseyController {
       //manager.modelNode.quaternion.copy(last);
     }
     manager.markNodeTransformDirty();
+  }
+
+  /**
+   * Stateless orientation sample into `out` (mesh path). Emitter path remains
+   * on setFrame/animate until characterized — returns false for emitters.
+   */
+  sampleOrientation(
+    manager: OdysseyModelAnimationManager,
+    _anim: OdysseyModelAnimation,
+    last: IOdysseyControllerFrameGeneric,
+    next: IOdysseyControllerFrameGeneric,
+    fl: number,
+    out: THREE.Quaternion
+  ): boolean {
+    if(manager.modelNode.emitter){
+      return false;
+    }
+    if(next != last){
+      out.copy(last as any);
+      manager._quat.copy(next as any);
+      out.slerp(manager._quat, fl);
+    }else{
+      out.copy(last as any);
+    }
+    return true;
+  }
+
+  sampleOrientationFrame(
+    manager: OdysseyModelAnimationManager,
+    anim: OdysseyModelAnimation,
+    data: IOdysseyControllerFrameGeneric,
+    out: THREE.Quaternion
+  ): void {
+    if(manager.modelNode.controllerHelpers.hasOrientation === undefined){
+      const _controller = manager.modelNode.controllers.get(OdysseyModelControllerType.Orientation);
+      if(typeof _controller != 'undefined'){
+        manager.modelNode.controllerHelpers.hasOrientation = true;
+        manager.modelNode.controllerHelpers.orientation = _controller;
+      }else{
+        manager.modelNode.controllerHelpers.hasOrientation = false;
+        manager.modelNode.controllerHelpers.orientation = undefined;
+      }
+    }
+    if(manager.modelNode.controllerHelpers.hasOrientation){
+      anim._quaternion.copy(manager.modelNode.controllerHelpers.orientation.data[0] as any);
+    }
+    let x = data.x, y = data.y, z = data.z, w = data.w;
+    if(x == 0 && y == 0 && z == 0 && w == 1){
+      x = anim._quaternion.x;
+      y = anim._quaternion.y;
+      z = anim._quaternion.z;
+      w = anim._quaternion.w;
+    }
+    out.set(x, y, z, w);
   }
 
 }

@@ -26,6 +26,21 @@ export class RenderPerfStats {
   /** Soft-depth blitFramebuffer failures this frame (MeshDepthMaterial fallback). */
   static softDepthBlitFails = 0;
 
+  // --- Animation evaluation counters (opt-in via enabled / ?perf=1) ---
+  static animActiveRuns = 0;
+  static animBoundNodesVisited = 0;
+  static animControllerSamples = 0;
+  static animConstantSamples = 0;
+  static animBinarySearchFallbacks = 0;
+  static animTransformWrites = 0;
+  static animUnchangedTransforms = 0;
+  static animDirtyNodes = 0;
+  static animLocalMatrixUpdates = 0;
+  static animSkeletonInvalidations = 0;
+  static animCpuMs = 0;
+  static animMatrixFlushMs = 0;
+  static shadowAnimatedCasterHits = 0;
+
   private static _frame = 0;
   private static _lastProgramId = -1;
   private static _hooksInstalled = false;
@@ -102,6 +117,19 @@ export class RenderPerfStats {
     this.programChanges = 0;
     this.casterDrawCount = 0;
     this.softDepthBlitFails = 0;
+    this.animActiveRuns = 0;
+    this.animBoundNodesVisited = 0;
+    this.animControllerSamples = 0;
+    this.animConstantSamples = 0;
+    this.animBinarySearchFallbacks = 0;
+    this.animTransformWrites = 0;
+    this.animUnchangedTransforms = 0;
+    this.animDirtyNodes = 0;
+    this.animLocalMatrixUpdates = 0;
+    this.animSkeletonInvalidations = 0;
+    this.animCpuMs = 0;
+    this.animMatrixFlushMs = 0;
+    this.shadowAnimatedCasterHits = 0;
     this._lastProgramId = -1;
     this._phase = 'none';
     this._callsAtPhaseStart = this.currentCalls();
@@ -185,6 +213,11 @@ export class RenderPerfStats {
     this.softDepthBlitFails++;
   }
 
+  static noteShadowAnimatedCaster(): void {
+    if(!this.enabled){ return; }
+    this.shadowAnimatedCasterHits++;
+  }
+
   static snapshot(): string {
     return [
       `frame=${this._frame}`,
@@ -201,6 +234,19 @@ export class RenderPerfStats {
       `casters=${this.casterDrawCount}`,
       `guiSkip=${this.guiEmptyDrawsSkipped}`,
       `softBlitFail=${this.softDepthBlitFails}`,
+      `animRuns=${this.animActiveRuns}`,
+      `animNodes=${this.animBoundNodesVisited}`,
+      `animSamples=${this.animControllerSamples}`,
+      `animConst=${this.animConstantSamples}`,
+      `animBin=${this.animBinarySearchFallbacks}`,
+      `animWrites=${this.animTransformWrites}`,
+      `animUnch=${this.animUnchangedTransforms}`,
+      `animDirty=${this.animDirtyNodes}`,
+      `animMtx=${this.animLocalMatrixUpdates}`,
+      `animSkel=${this.animSkeletonInvalidations}`,
+      `animMs=${this.animCpuMs.toFixed(2)}`,
+      `flushMs=${this.animMatrixFlushMs.toFixed(2)}`,
+      `animCaster=${this.shadowAnimatedCasterHits}`,
     ].join(' ');
   }
 

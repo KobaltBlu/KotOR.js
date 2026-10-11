@@ -86,8 +86,14 @@ export class OdysseyModel3DEditorSync {
     if (!runtimeNode || !sourceNode) return false;
     runtimeNode.position.copy(sourceNode.position);
     runtimeNode.quaternion.copy(sourceNode.quaternion);
-    runtimeNode.updateMatrix();
+    if(this.model.animationManager){
+      this.model.animationManager.markNodeTransformDirty(runtimeNode);
+    }else{
+      runtimeNode.updateMatrix();
+      runtimeNode.matrixWorldNeedsUpdate = true;
+    }
     runtimeNode.updateMatrixWorld(true);
+    this.model.posedThisFrame = true;
     return true;
   }
 

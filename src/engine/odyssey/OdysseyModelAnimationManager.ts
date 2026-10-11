@@ -1,9 +1,15 @@
 import * as THREE from "three";
 import { OdysseyModel3D, OdysseyObject3D } from "@engine/render/three/odyssey";
-import { markOdysseySkeletonsDirtyUnder } from "@engine/render/three/odyssey/OdysseySkeletonBind";
+import {
+  markOdysseySkeletonDirty,
+  markOdysseySkeletonsDirtyUnder,
+} from "@engine/render/three/odyssey/OdysseySkeletonBind";
+import { RenderPerfStats } from "@engine/render/RenderPerfStats";
 import type { OdysseyModelAnimation } from "@engine/odyssey/OdysseyModelAnimation";
 import type { OdysseyModelAnimationNode } from "@engine/odyssey/OdysseyModelAnimationNode";
 import { OdysseyController } from "@engine/odyssey/controllers/OdysseyController";
+import { PositionController } from "@engine/odyssey/controllers/PositionController";
+import { OrientationController } from "@engine/odyssey/controllers/OrientationController";
 import { IOdysseyControllerFrameGeneric } from "@core/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
 import { OdysseyModelControllerType } from "@core/enums/odyssey/OdysseyModelControllerType";
 import { OdysseyModelAnimationManagerState } from "@core/enums/odyssey/OdysseyModelAnimationManagerState";
@@ -21,9 +27,15 @@ import {
 import {
   bindAnimation,
   ensureRunFrameCursorArray,
+  ensureStateFrameCursorArray,
   type BoundAnimation,
   type BoundController,
 } from "@engine/odyssey/BoundAnimation";
+import {
+  buildAnimationTransformBinding,
+  collectAffectedSkeletons,
+  type AnimationTransformBinding,
+} from "@engine/odyssey/AnimationTransformBinding";
 import {
   binarySearchFrameCursor,
   isPlaybackDiscontinuity,
@@ -33,9 +45,17 @@ import {
 /**
  * OdysseyModelAnimationManager — multi-clip AnimRun stack.
  *
- * Ordered `runs` (oldest first). Per-run blend weight and animation flags,
- * including QUEUE deferred start. Compatibility accessors map to the
- * primary base and newest overlay runs.
+ * Transform / matrix / skeleton ownership:
+ * - Controllers (and external writers via markNodeTransformDirty) write locals.
+ * - During pose batches, controller dirty marks are deferred; the manager
+ *   compares final TRS and marks nodes once when values actually change.
+ * - flushTouchedNodeMatrices updateMatrix + selective skeleton dirty.
+ * - OdysseySkeletonBind fingerprints gate boneTexture GPU uploads.
+ * - animateFrame gates pose/animLoops sampling; stack timing still advances.
+ *
+ * External bone writers that must call markNodeTransformDirty (or equivalent):
+ * LipSyncPlayer, applyHeadTrackingToHturn / CreatureAnimationService,
+ * EffectVisualEffect node copy, OdysseyModel3DEditorSync.
  *
  * @file OdysseyModelAnimationManager.ts
  */
@@ -70,13 +90,21 @@ export class OdysseyModelAnimationManager {
   _animQuaternion: THREE.Quaternion = new THREE.Quaternion();
   _animPosition2: THREE.Vector3 = new THREE.Vector3();
   _animQuaternion2: THREE.Quaternion = new THREE.Quaternion();
+  _prevPosition: THREE.Vector3 = new THREE.Vector3();
+  _prevQuaternion: THREE.Quaternion = new THREE.Quaternion();
+  _prevScale: THREE.Vector3 = new THREE.Vector3();
 
   private _emptyState: OdysseyModelAnimationManagerState;
   private _matrixBatchDepth = 0;
+  /** When true, controller markNodeTransformDirty is a no-op (manager compares). */
+  private _deferControllerDirty = false;
   private _touchedTransformNodes: OdysseyObject3D[] = [];
   private _touchedTransformNodeSet = new Set<OdysseyObject3D>();
+  private _affectedSkeletons: THREE.Skeleton[] = [];
   /** Model-local bound animation cache (targets are instance-specific). */
   private _boundAnimations = new WeakMap<OdysseyModelAnimation, BoundAnimation>();
+  private _transformBinding: AnimationTransformBinding | undefined;
+  private _transformBindingBuilt = false;
 
   constructor(model: OdysseyModel3D){
     this.model = model;
@@ -87,13 +115,22 @@ export class OdysseyModelAnimationManager {
     this.modelNode = undefined;
   }
 
+  /**
+   * Notify that a node's local TRS changed. Safe for animation controllers and
+   * external writers (lip sync, head look, VFX, Forge).
+   */
   markNodeTransformDirty(node: OdysseyObject3D = this.modelNode): void {
     if(!node) return;
+    if(this._deferControllerDirty){
+      return;
+    }
     if(this._matrixBatchDepth === 0){
       node.updateMatrix();
       node.matrixWorldNeedsUpdate = true;
-      // Non-batch path still moves bones — boneTexture must refill next render.
-      markOdysseySkeletonsDirtyUnder(this.model);
+      this.invalidateSkeletonsForNodes([node]);
+      if(this.model){
+        (this.model as OdysseyModel3D & { posedThisFrame?: boolean }).posedThisFrame = true;
+      }
       return;
     }
     if(!this._touchedTransformNodeSet.has(node)){
@@ -113,19 +150,77 @@ export class OdysseyModelAnimationManager {
     }
   }
 
+  private ensureTransformBinding(): AnimationTransformBinding | undefined {
+    if(!this._transformBindingBuilt){
+      this._transformBindingBuilt = true;
+      this._transformBinding = buildAnimationTransformBinding(this.model);
+    }
+    return this._transformBinding;
+  }
+
+  /** Rebuild node→skeleton map after skins/head merge change. */
+  invalidateTransformBinding(): void {
+    this._transformBindingBuilt = false;
+    this._transformBinding = undefined;
+  }
+
+  private invalidateSkeletonsForNodes(nodes: Array<OdysseyObject3D | THREE.Object3D>): void {
+    const binding = this.ensureTransformBinding();
+    if(!binding || !nodes.length){
+      markOdysseySkeletonsDirtyUnder(this.model);
+      if(RenderPerfStats.enabled){
+        RenderPerfStats.animSkeletonInvalidations++;
+      }
+      return;
+    }
+    let missing = false;
+    for(let i = 0; i < nodes.length; i++){
+      const node = nodes[i];
+      if(node && !binding.nodeSkeletons.has(node.uuid)){
+        missing = true;
+        break;
+      }
+    }
+    const n = collectAffectedSkeletons(binding, nodes, this._affectedSkeletons);
+    if(!missing && n > 0){
+      for(let i = 0; i < n; i++){
+        markOdysseySkeletonDirty(this._affectedSkeletons[i]);
+      }
+      if(RenderPerfStats.enabled){
+        RenderPerfStats.animSkeletonInvalidations += n;
+      }
+      return;
+    }
+    // Unknown dependency — fall back to whole-model dirty.
+    markOdysseySkeletonsDirtyUnder(this.model);
+    if(RenderPerfStats.enabled){
+      RenderPerfStats.animSkeletonInvalidations++;
+    }
+  }
+
   private flushTouchedNodeMatrices(): void {
+    const perf = RenderPerfStats.enabled;
+    const t0 = perf && typeof performance !== "undefined" ? performance.now() : 0;
     const len = this._touchedTransformNodes.length;
     for(let i = 0; i < len; i++){
       const node = this._touchedTransformNodes[i];
       node.updateMatrix();
       node.matrixWorldNeedsUpdate = true;
     }
+    if(perf){
+      RenderPerfStats.animDirtyNodes += len;
+      RenderPerfStats.animLocalMatrixUpdates += len;
+    }
+    if(len > 0){
+      this.invalidateSkeletonsForNodes(this._touchedTransformNodes);
+      if(this.model){
+        (this.model as OdysseyModel3D & { posedThisFrame?: boolean }).posedThisFrame = true;
+      }
+    }
     this._touchedTransformNodes.length = 0;
     this._touchedTransformNodeSet.clear();
-    // Only dirty skins when this batch actually wrote bone locals — empty flushes
-    // were forcing boneTexture uploads + shadow caster-bone-dirty every tick.
-    if(len > 0){
-      markOdysseySkeletonsDirtyUnder(this.model);
+    if(perf){
+      RenderPerfStats.animMatrixFlushMs += performance.now() - t0;
     }
   }
 
@@ -495,6 +590,9 @@ export class OdysseyModelAnimationManager {
   update(delta = 0){
     if(!this.model) return;
 
+    const perf = RenderPerfStats.enabled;
+    const t0 = perf && typeof performance !== "undefined" ? performance.now() : 0;
+
     // Promote queued runs whose predecessors have finished (QUEUE flag 0x20).
     this.promoteQueuedRuns();
 
@@ -526,19 +624,20 @@ export class OdysseyModelAnimationManager {
     this.beginMatrixBatch();
     try{
       // Pose: oldest -> newest, blend by weight (skip queued / zero contribution)
+      // Paused (speed 0) still contributes frozen pose via run.weight.
       if(this.model.bonesInitialized && this.model.animateFrame){
+        let activeRuns = 0;
         for(let i = 0; i < this.runs.length; i++){
           const run = this.runs[i];
           if(!run.animation || isQueuedRun(run)) continue;
-          const rate =
-            typeof run.state.speed === "number" ? run.state.speed : 1;
-          const effectiveWeight = Math.abs(rate) > 0 ? run.weight : 0;
-          if(effectiveWeight <= 1e-4) continue;
-          this.applyRunPose(run, effectiveWeight);
+          if(run.weight <= 1e-4) continue;
+          activeRuns++;
+          this.applyRunPose(run, run.weight);
         }
+        if(perf) RenderPerfStats.animActiveRuns += activeRuns;
       }
 
-      // World Model Animation Loops (legacy scan path; contiguous state array).
+      // World Model Animation Loops — BoundAnimation + typed cursors.
       // Same animateFrame gate as applyRunPose — off-screen rooms/creatures skip.
       if(this.model.bonesInitialized && this.model.animateFrame && this.model.animLoops.length){
         for(let i = 0, len = this.model.animLoops.length; i < len; i++){
@@ -563,6 +662,9 @@ export class OdysseyModelAnimationManager {
     }
 
     this.syncLegacyLastAnimation();
+    if(perf){
+      RenderPerfStats.animCpuMs += performance.now() - t0;
+    }
   }
 
   /**
@@ -675,6 +777,9 @@ export class OdysseyModelAnimationManager {
   }
 
   private getBoundAnimation(anim: OdysseyModelAnimation): BoundAnimation {
+    if(!this._boundAnimations){
+      this._boundAnimations = new WeakMap();
+    }
     let bound = this._boundAnimations.get(anim);
     if(!bound){
       bound = bindAnimation(this.model, anim);
@@ -687,8 +792,11 @@ export class OdysseyModelAnimationManager {
     if(!run.animation) return;
     const bound = this.getBoundAnimation(run.animation);
     ensureRunFrameCursorArray(run, bound);
+    const state = run.state;
+    const rate = typeof state.speed === "number" ? state.speed : 1;
+    const discontinuity = isPlaybackDiscontinuity(state.elapsed, state.lastTime, rate);
     for(let i = 0, nl = bound.nodes.length; i < nl; i++){
-      this.updateAnimationNode(run, bound.nodes[i], blendWeight);
+      this.updateAnimationNode(run, bound.nodes[i], blendWeight, discontinuity);
     }
   }
 
@@ -786,9 +894,13 @@ export class OdysseyModelAnimationManager {
     const standaloneMatrixBatch = this._matrixBatchDepth === 0;
     if(standaloneMatrixBatch) this.beginMatrixBatch();
     try{
-      if(this.model.animateFrame){
-        for(let i = 0, nl = anim.nodes.length; i < nl; i++){
-          this.updateAnimationNodeLegacy(anim, anim.nodes[i], state, 1);
+      if(this.model.animateFrame && anim){
+        const bound = this.getBoundAnimation(anim);
+        ensureStateFrameCursorArray(state, bound);
+        const rate = typeof state.speed === "number" ? state.speed : 1;
+        const discontinuity = isPlaybackDiscontinuity(state.elapsed, state.lastTime, rate);
+        for(let i = 0, nl = bound.nodes.length; i < nl; i++){
+          this.updateAnimationNodeBound(bound.nodes[i], anim, state, 1, discontinuity, state.frameCursorArray);
         }
       }
     }finally{
@@ -806,9 +918,11 @@ export class OdysseyModelAnimationManager {
         state.events.length = 0;
         state.lastEvent = -1;
         state.frameCursors?.clear();
+        if(state.frameCursorArray) state.frameCursorArray.fill(0);
       }else{
         state.elapsed = 0;
         state.frameCursors?.clear();
+        if(state.frameCursorArray) state.frameCursorArray.fill(0);
       }
     }
 
@@ -822,6 +936,7 @@ export class OdysseyModelAnimationManager {
       state.events.length = 0;
       state.lastEvent = -1;
       state.frameCursors?.clear();
+      if(state.frameCursorArray) state.frameCursorArray.fill(0);
       return false;
     }
     return true;
@@ -860,88 +975,30 @@ export class OdysseyModelAnimationManager {
   updateAnimationNode(
     run: AnimRun,
     boundNode: BoundAnimation["nodes"][number],
-    blendWeight: number = 1
+    blendWeight: number = 1,
+    discontinuity?: boolean
   ){
-    const anim = run.animation;
+    if(!run?.animation || !boundNode) return;
     const state = run.state;
-    if(!anim || !boundNode) return;
-
-    this.modelNode = boundNode.target;
-    if(!this.modelNode) return;
-
-    anim._position.x = anim._position.y = anim._position.z = 0;
-    anim._quaternion.x = anim._quaternion.y = anim._quaternion.z = 0;
-    anim._quaternion.w = 1;
-
-    const w = Math.max(0, Math.min(1, blendWeight));
-    const canBlend = w < 1 - 1e-6;
     const rate = typeof state.speed === "number" ? state.speed : 1;
-    const discontinuity = isPlaybackDiscontinuity(state.elapsed, state.lastTime, rate);
-    const cursors = run.frameCursorArray;
-    let transformDirty = false;
-
-    for(let i = 0, cl = boundNode.controllers.length; i < cl; i++){
-      const bc: BoundController = boundNode.controllers[i];
-      const controller = bc.controller;
-      if(!controller || !bc.valid) continue;
-
-      if(
-        this.model?.playOutOfPlaceActive &&
-        this.isPlayOutOfPlaceRootNode(this.modelNode) &&
-        (
-          controller.type == OdysseyModelControllerType.Position ||
-          controller.type == OdysseyModelControllerType.Orientation
-        )
-      ){
-        continue;
-      }
-
-      if(controller.frameCount == 1 && !canBlend){
-        controller.setFrame(this, anim, controller.data[0]);
-        continue;
-      }
-
-      let lastFrame = 0;
-      if(cursors && controller.frameCount > 1){
-        let cursor = cursors[bc.cursorIndex];
-        if(discontinuity || cursor < 0 || cursor >= controller.data.length){
-          cursor = binarySearchFrameCursor(controller.data, state.elapsed);
-        }else{
-          cursor = resolveFrameCursor(controller.data, state.elapsed, cursor);
-        }
-        cursors[bc.cursorIndex] = cursor;
-        lastFrame = cursor;
-      }else if(controller.frameCount > 1){
-        // Map fallback when Int32Array not sized yet
-        if(!run.frameCursors) run.frameCursors = new Map();
-        let cursor = run.frameCursors.get(controller) ?? 0;
-        if(discontinuity || cursor < 0 || cursor >= controller.data.length){
-          cursor = binarySearchFrameCursor(controller.data, state.elapsed);
-        }else{
-          cursor = resolveFrameCursor(controller.data, state.elapsed, cursor);
-        }
-        run.frameCursors.set(controller, cursor);
-        lastFrame = cursor;
-      }
-
-      const applied = this.applyControllerSample(
-        anim,
-        state,
-        controller,
-        lastFrame,
-        w,
-        canBlend
-      );
-      if(applied) transformDirty = true;
-    }
-
-    if(transformDirty){
-      this.markNodeTransformDirty(this.modelNode);
-    }
+    const disc =
+      typeof discontinuity === "boolean"
+        ? discontinuity
+        : isPlaybackDiscontinuity(state.elapsed, state.lastTime, rate);
+    this.updateAnimationNodeBound(
+      boundNode,
+      run.animation,
+      state,
+      blendWeight,
+      disc,
+      run.frameCursorArray,
+      run
+    );
   }
 
   /**
-   * Legacy animLoops path — per-state frame cursors (same fast path as AnimRun).
+   * Legacy entry — resolves node then samples via BoundAnimation-compatible path.
+   * Prefer updateAnimation (bound) for animLoops; kept for direct callers/tests.
    */
   updateAnimationNodeLegacy(
     anim: OdysseyModelAnimation,
@@ -952,15 +1009,47 @@ export class OdysseyModelAnimationManager {
     if(typeof state === "undefined"){
       state = this.createAnimationState();
     }
-    if(!node) return;
-    this.modelNode = undefined;
-    if(typeof node.nodeNumber === "number" && node.nodeNumber >= 0){
-      this.modelNode = this.model.nodesById?.[node.nodeNumber];
+    if(!node || !anim) return;
+    const bound = this.getBoundAnimation(anim);
+    ensureStateFrameCursorArray(state, bound);
+    const rate = typeof state.speed === "number" ? state.speed : 1;
+    const discontinuity = isPlaybackDiscontinuity(state.elapsed, state.lastTime, rate);
+    // Match by name / nodeNumber against bound nodes
+    for(let i = 0; i < bound.nodes.length; i++){
+      const bn = bound.nodes[i];
+      const src = anim.nodes[i] as OdysseyModelAnimationNode;
+      if(src !== node && src?.name !== node.name && src?.nodeNumber !== node.nodeNumber){
+        continue;
+      }
+      this.updateAnimationNodeBound(
+        bn,
+        anim,
+        state,
+        blendWeight,
+        discontinuity,
+        state.frameCursorArray
+      );
+      return;
     }
-    if(!this.modelNode){
-      this.modelNode = this.model.nodes.get(node.name);
-    }
+  }
+
+  private updateAnimationNodeBound(
+    boundNode: BoundAnimation["nodes"][number],
+    anim: OdysseyModelAnimation,
+    state: OdysseyModelAnimationManagerState,
+    blendWeight: number,
+    discontinuity: boolean,
+    cursors?: Int32Array,
+    run?: AnimRun
+  ){
+    if(!anim || !boundNode) return;
+
+    this.modelNode = boundNode.target;
     if(!this.modelNode) return;
+
+    if(RenderPerfStats.enabled){
+      RenderPerfStats.animBoundNodesVisited++;
+    }
 
     anim._position.x = anim._position.y = anim._position.z = 0;
     anim._quaternion.x = anim._quaternion.y = anim._quaternion.z = 0;
@@ -968,64 +1057,156 @@ export class OdysseyModelAnimationManager {
 
     const w = Math.max(0, Math.min(1, blendWeight));
     const canBlend = w < 1 - 1e-6;
-    const rate = typeof state.speed === "number" ? state.speed : 1;
-    const discontinuity = isPlaybackDiscontinuity(state.elapsed, state.lastTime, rate);
-    if(!state.frameCursors) state.frameCursors = new Map();
-    let transformDirty = false;
 
-    for(let c of node.controllers){
-      const controller: OdysseyController = c[1];
+    this._prevPosition.copy(this.modelNode.position);
+    this._prevQuaternion.copy(this.modelNode.quaternion);
+    this._prevScale.copy(this.modelNode.scale);
 
-      if(controller.frameCount == 1 && !canBlend){
-        controller.setFrame(this, anim, controller.data[0]);
-        continue;
+    this._deferControllerDirty = true;
+    try{
+      for(let i = 0, cl = boundNode.controllers.length; i < cl; i++){
+        const bc: BoundController = boundNode.controllers[i];
+        const controller = bc.controller;
+        if(!controller || !bc.valid) continue;
+
+        let lastFrame = 0;
+        if(controller.frameCount > 1){
+          if(cursors){
+            let cursor = cursors[bc.cursorIndex];
+            if(discontinuity || cursor < 0 || cursor >= controller.data.length){
+              cursor = binarySearchFrameCursor(controller.data, state.elapsed);
+              if(RenderPerfStats.enabled) RenderPerfStats.animBinarySearchFallbacks++;
+            }else{
+              cursor = resolveFrameCursor(controller.data, state.elapsed, cursor);
+            }
+            cursors[bc.cursorIndex] = cursor;
+            lastFrame = cursor;
+          }else if(run){
+            if(!run.frameCursors) run.frameCursors = new Map();
+            let cursor = run.frameCursors.get(controller) ?? 0;
+            if(discontinuity || cursor < 0 || cursor >= controller.data.length){
+              cursor = binarySearchFrameCursor(controller.data, state.elapsed);
+              if(RenderPerfStats.enabled) RenderPerfStats.animBinarySearchFallbacks++;
+            }else{
+              cursor = resolveFrameCursor(controller.data, state.elapsed, cursor);
+            }
+            run.frameCursors.set(controller, cursor);
+            lastFrame = cursor;
+          }else{
+            if(!state.frameCursors) state.frameCursors = new Map();
+            let cursor = state.frameCursors.get(controller) ?? 0;
+            if(discontinuity){
+              cursor = binarySearchFrameCursor(controller.data, state.elapsed);
+              if(RenderPerfStats.enabled) RenderPerfStats.animBinarySearchFallbacks++;
+            }else{
+              cursor = resolveFrameCursor(controller.data, state.elapsed, cursor);
+            }
+            state.frameCursors.set(controller, cursor);
+            lastFrame = cursor;
+          }
+        }
+
+        this.applyControllerSample(
+          anim,
+          state,
+          controller,
+          lastFrame,
+          w,
+          canBlend,
+          bc
+        );
       }
-
-      if(!controller.data || controller.data.length != controller.frameCount){
-        continue;
-      }
-
-      let cursor = state.frameCursors.get(controller) ?? 0;
-      if(discontinuity){
-        cursor = binarySearchFrameCursor(controller.data, state.elapsed);
-      }else{
-        cursor = resolveFrameCursor(controller.data, state.elapsed, cursor);
-      }
-      state.frameCursors.set(controller, cursor);
-
-      const applied = this.applyControllerSample(
-        anim,
-        state,
-        controller,
-        cursor,
-        w,
-        canBlend
-      );
-      if(applied) transformDirty = true;
+    }finally{
+      this._deferControllerDirty = false;
     }
 
-    if(transformDirty){
+    if(this.nodeTransformChanged()){
+      if(RenderPerfStats.enabled) RenderPerfStats.animTransformWrites++;
       this.markNodeTransformDirty(this.modelNode);
+    }else if(RenderPerfStats.enabled){
+      RenderPerfStats.animUnchangedTransforms++;
     }
   }
 
-  /**
-   * Shared last/next/fl interpolation + blend. Returns true if Position or
-   * Orientation mutated the node (caller marks dirty once per node).
-   * Preserves wasOffscreen setFrame-then-animate.
-   */
+  private nodeTransformChanged(): boolean {
+    const n = this.modelNode;
+    if(!n) return false;
+    const p = n.position;
+    const s = n.scale;
+    if(
+      p.x !== this._prevPosition.x ||
+      p.y !== this._prevPosition.y ||
+      p.z !== this._prevPosition.z
+    ){
+      return true;
+    }
+    if(
+      s.x !== this._prevScale.x ||
+      s.y !== this._prevScale.y ||
+      s.z !== this._prevScale.z
+    ){
+      return true;
+    }
+    return !this.quaternionsEqual(n.quaternion, this._prevQuaternion);
+  }
+
+  /** Exact equality with q/-q equivalence. */
+  private quaternionsEqual(a: THREE.Quaternion, b: THREE.Quaternion): boolean {
+    return (
+      (a.x === b.x && a.y === b.y && a.z === b.z && a.w === b.w) ||
+      (a.x === -b.x && a.y === -b.y && a.z === -b.z && a.w === -b.w)
+    );
+  }
+
   private isPlayOutOfPlaceRootNode(node: OdysseyObject3D | undefined): boolean {
     if(!node || !this.model) return false;
     return node === this.model || node === this.model.rootdummy;
   }
 
+  private computeInterpolationFactor(
+    state: OdysseyModelAnimationManagerState,
+    last: IOdysseyControllerFrameGeneric,
+    next: IOdysseyControllerFrameGeneric | undefined,
+    lastFrame: number,
+    controller: OdysseyController
+  ): { last: IOdysseyControllerFrameGeneric; next: IOdysseyControllerFrameGeneric; fl: number } {
+    let fl = 0;
+    let useLast = last;
+    let useNext = next;
+    if(useNext){
+      const dt = useNext.time - useLast.time;
+      if(dt === 0){
+        fl = 0;
+      }else{
+        fl = (state.elapsed - useLast.time) / dt;
+      }
+    }else{
+      fl = 1;
+      useNext = controller.data[lastFrame];
+      useLast = controller.data[lastFrame - 1] || controller.data[lastFrame];
+    }
+    if(state.elapsed < useLast.time) fl = 0;
+    if(fl === Infinity || fl === -Infinity) fl = 1;
+    if(isNaN(fl)) fl = 0;
+    if(fl > 1) fl = 1;
+    if(fl < 0) fl = 0;
+    return { last: useLast, next: useNext, fl };
+  }
+
+  /**
+   * Shared last/next/fl interpolation + blend.
+   * Returns true if a transform channel was written (for diagnostics).
+   * Dirty marking is owned by updateAnimationNodeBound change detection.
+   * Preserves wasOffscreen setFrame-then-animate for stateful controllers.
+   */
   private applyControllerSample(
     anim: OdysseyModelAnimation,
     state: OdysseyModelAnimationManagerState,
     controller: OdysseyController,
     lastFrame: number,
     w: number,
-    canBlend: boolean
+    canBlend: boolean,
+    bc?: BoundController
   ): boolean {
     if(
       this.model?.playOutOfPlaceActive &&
@@ -1038,47 +1219,68 @@ export class OdysseyModelAnimationManager {
       return false;
     }
 
+    if(RenderPerfStats.enabled){
+      RenderPerfStats.animControllerSamples++;
+      if(bc?.constant || controller.frameCount === 1){
+        RenderPerfStats.animConstantSamples++;
+      }
+    }
+
     let last: IOdysseyControllerFrameGeneric = controller.data[lastFrame];
-    if(!last) return false;
+    if(!last && controller.frameCount !== 1) return false;
 
-    // Keep wasOffscreen setFrame before animate — controller sampling is not
-    // proven fully stateless across all subclasses.
-    if(this.model.wasOffscreen){
-      controller.setFrame(this, anim, last);
+    const stateful =
+      bc?.statefulSample ||
+      controller.type === OdysseyModelControllerType.Scale ||
+      controller.type === OdysseyModelControllerType.Orientation;
+
+    // Keep wasOffscreen setFrame before animate for stateful controllers.
+    if(this.model.wasOffscreen && stateful){
+      const frame = last || controller.data[0];
+      if(frame) controller.setFrame(this, anim, frame);
     }
 
-    let next: IOdysseyControllerFrameGeneric = controller.data[lastFrame + 1];
-    let fl = 0;
+    const nextRaw: IOdysseyControllerFrameGeneric | undefined =
+      controller.frameCount > 1 ? controller.data[lastFrame + 1] : undefined;
+    const { last: useLast, next: useNext, fl } = this.computeInterpolationFactor(
+      state,
+      last || controller.data[0],
+      nextRaw,
+      lastFrame,
+      controller
+    );
 
-    if(next){
-      fl = Math.abs((state.elapsed - last.time) / (next.time - last.time)) % 1;
-    }else{
-      fl = 1;
-      next = controller.data[lastFrame];
-      last = controller.data[lastFrame - 1] || controller.data[lastFrame];
-    }
-
-    if(state.elapsed < last.time) fl = 0;
-    if(fl == Infinity) fl = 1.0;
-    if(isNaN(fl)) fl = 0;
-    if(fl > 1) fl = 1;
-    if(fl < 0) fl = 0;
-
+    // --- Full weight ---
     if(!canBlend){
       if(controller.frameCount == 1){
         controller.setFrame(this, anim, controller.data[0]);
       }else{
-        controller.animate(this, anim, last, next, fl);
+        controller.animate(this, anim, useLast, useNext, fl);
       }
-      return false;
+      return (
+        controller.type === OdysseyModelControllerType.Position ||
+        controller.type === OdysseyModelControllerType.Orientation ||
+        controller.type === OdysseyModelControllerType.Scale
+      );
     }
 
+    // --- Partial weight: stateless sample for Position / mesh Orientation ---
     if(controller.type == OdysseyModelControllerType.Position){
+      const posCtrl = controller as PositionController;
+      if(typeof posCtrl.samplePosition === "function"){
+        if(controller.frameCount == 1){
+          posCtrl.samplePositionFrame(this, anim, controller.data[0], this._animPosition2);
+        }else{
+          posCtrl.samplePosition(this, anim, useLast, useNext, fl, this._animPosition2);
+        }
+        this.modelNode.position.lerp(this._animPosition2, w);
+        return true;
+      }
       this._animPosition.copy(this.modelNode.position);
       if(controller.frameCount == 1){
         controller.setFrame(this, anim, controller.data[0]);
       }else{
-        controller.animate(this, anim, last, next, fl);
+        controller.animate(this, anim, useLast, useNext, fl);
       }
       this._animPosition2.copy(this.modelNode.position);
       this.modelNode.position.copy(this._animPosition).lerp(this._animPosition2, w);
@@ -1086,24 +1288,45 @@ export class OdysseyModelAnimationManager {
     }
 
     if(controller.type == OdysseyModelControllerType.Orientation){
+      const oriCtrl = controller as OrientationController;
+      if(
+        typeof oriCtrl.sampleOrientation === "function" &&
+        !this.modelNode.emitter
+      ){
+        if(controller.frameCount == 1){
+          oriCtrl.sampleOrientationFrame(this, anim, controller.data[0], this._animQuaternion2);
+        }else if(
+          !oriCtrl.sampleOrientation(this, anim, useLast, useNext, fl, this._animQuaternion2)
+        ){
+          // Emitter / unsupported — fall through to live path
+          this._animQuaternion.copy(this.modelNode.quaternion);
+          controller.animate(this, anim, useLast, useNext, fl);
+          this._animQuaternion2.copy(this.modelNode.quaternion);
+          this.modelNode.quaternion.copy(this._animQuaternion).slerp(this._animQuaternion2, w);
+          return true;
+        }
+        this.modelNode.quaternion.slerp(this._animQuaternion2, w);
+        return true;
+      }
       this._animQuaternion.copy(this.modelNode.quaternion);
       if(controller.frameCount == 1){
         controller.setFrame(this, anim, controller.data[0]);
       }else{
-        controller.animate(this, anim, last, next, fl);
+        controller.animate(this, anim, useLast, useNext, fl);
       }
       this._animQuaternion2.copy(this.modelNode.quaternion);
       this.modelNode.quaternion.copy(this._animQuaternion).slerp(this._animQuaternion2, w);
       return true;
     }
 
-    // Non-transform controllers: apply only when weight is significant
+    // Scale + non-transform: apply when weight is significant (no channel blend)
     if(w >= 0.5){
       if(controller.frameCount == 1){
         controller.setFrame(this, anim, controller.data[0]);
       }else{
-        controller.animate(this, anim, last, next, fl);
+        controller.animate(this, anim, useLast, useNext, fl);
       }
+      return controller.type === OdysseyModelControllerType.Scale;
     }
     return false;
   }
