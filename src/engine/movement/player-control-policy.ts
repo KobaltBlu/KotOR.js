@@ -75,6 +75,19 @@ export function projectOntoTangent(
   return out;
 }
 
+/**
+ * True when a probe hit normal is usable for horizontal wall slide.
+ * Near-Z / tiny-XY normals (flat Nonwalk skirts) must not suppress walk-edge
+ * collection or drive projectOntoTangent.
+ */
+function isUsableWallNormalXY(n: THREE.Vector3 | undefined): boolean {
+  if(!n) return false;
+  const xy = Math.hypot(n.x, n.y);
+  if(xy < 1e-3) return false;
+  if(Math.abs(n.z) > 0.9) return false;
+  return true;
+}
+
 function playerStaticOpts(creature: Creature, collectHitInfo = false){
   return {
     owner: creature,
@@ -210,10 +223,8 @@ export function resolvePlayerControlStep(
   const creperspace = getCreaturePersonalSpace(creature);
 
   // Prefer nearby walkmesh + placeable edge normals when the thin probe
-  // has no usable hit normal (corners). Skip the edges gather otherwise.
-  const probeHasNormal =
-    staticHit.normal &&
-    (Math.abs(staticHit.normal.x) > 1e-6 || Math.abs(staticHit.normal.y) > 1e-6);
+  // has no usable horizontal hit normal (corners / flat Nonwalk skirts).
+  const probeHasNormal = isUsableWallNormalXY(staticHit.normal);
   if(!probeHasNormal){
     collectBlockingWalkEdgeNormals(area, origin, creperspace, _edgeNormals);
     if(_edgeNormals.length){
@@ -233,6 +244,9 @@ export function resolvePlayerControlStep(
       );
       if(edgeSlide) return edgeSlide;
     }
+  }else{
+    // Drop stale multi-edge buffer from a prior frame / unusable-normal path.
+    _edgeNormals.length = 0;
   }
 
   // Capsule already overlapping a placeable/door (Static DetailedBlock): push out
@@ -395,17 +409,16 @@ function tryPlaceableDepenetrate(
   const creperspace = getCreaturePersonalSpace(creature);
   if(creperspace < 1e-8) return undefined;
 
-  if(!_edgeNormals.length){
-    collectBlockingWalkEdgeNormals(area, origin, creperspace, _edgeNormals);
-  }
+  // Always refresh — prior resolve frames may leave stale perimeter normals.
+  collectBlockingWalkEdgeNormals(area, origin, creperspace, _edgeNormals);
 
   const dirs: Array<{ x: number; y: number }> = [];
   for(let i = 0; i < _edgeNormals.length; i++){
     dirs.push({ x: _edgeNormals[i].x, y: _edgeNormals[i].y });
   }
-  if(hitNormal && (Math.abs(hitNormal.x) > 1e-6 || Math.abs(hitNormal.y) > 1e-6)){
-    const nLen = Math.hypot(hitNormal.x, hitNormal.y);
-    dirs.push({ x: hitNormal.x / nLen, y: hitNormal.y / nLen });
+  if(isUsableWallNormalXY(hitNormal)){
+    const nLen = Math.hypot(hitNormal!.x, hitNormal!.y);
+    dirs.push({ x: hitNormal!.x / nLen, y: hitNormal!.y / nLen });
   }
 
   // Channel tangent after multi-normal projection (opposing pile normals → ±X).
@@ -708,8 +721,12 @@ function resolveWallNormal(
   approachX: number,
   approachY: number
 ): THREE.Vector3 {
-  if(hitNormal && (hitNormal.x !== 0 || hitNormal.y !== 0)){
-    return _normal.set(hitNormal.x, hitNormal.y, 0);
+  if(isUsableWallNormalXY(hitNormal)){
+    return _normal.set(hitNormal!.x, hitNormal!.y, 0);
+  }
+  // Flat Nonwalk / missing XY — prefer a freshly collected walk-edge normal.
+  if(_edgeNormals.length){
+    return _normal.set(_edgeNormals[0].x, _edgeNormals[0].y, 0);
   }
   const aLen = Math.hypot(approachX, approachY);
   if(aLen > 1e-8){

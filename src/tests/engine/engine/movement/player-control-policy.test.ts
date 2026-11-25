@@ -544,6 +544,65 @@ describe("resolvePlayerControlStep", () => {
     expect(result.finalPosition.y).toBeCloseTo(player.position.y, 2);
   });
 
+  it("slides along perimeter when DetailedBlock returns near-Z Nonwalk normal", () => {
+    // Live m36aa: flat Nonwalk skirt shares walk edge; probe normal ≈ (0,0,1).
+    const edge = {
+      transition: -1,
+      line: new THREE.Line3(
+        new THREE.Vector3(92.999, 185.02, 0),
+        new THREE.Vector3(97.993, 189.302, 0)
+      ),
+      normal: new THREE.Vector3(-0.6509, 0.7591, 0),
+    };
+    (area as { walkEdges: unknown[] }).walkEdges = [edge];
+    player.position.set(94.2019, 186.484, 0);
+    const nx = -0.6509;
+    const ny = 0.7591;
+
+    testCreatureMovementMock.mockReturnValue({ clear: true, raw: { clear: true } });
+    testStaticMovementMock.mockImplementation(
+      (_a: unknown, from: THREE.Vector3, to: THREE.Vector3) => {
+        const mx = to.x - from.x;
+        const my = to.y - from.y;
+        // Into Nonwalk (against outward walk-edge normal) blocked with near-Z normal
+        if(mx * nx + my * ny < -0.01){
+          return {
+            clear: false,
+            hit: { kind: MovementHitKind.Static },
+            walkHit: {
+              code: -2,
+              ok: false,
+              clearT: 0,
+              clearPoint: from.clone(),
+              walkHit: { normal: new THREE.Vector3(-0.00079, 0.0004, 1) },
+            },
+          };
+        }
+        return {
+          clear: true,
+          walkHit: {
+            code: 1,
+            ok: true,
+            clearT: 1,
+            clearPoint: to.clone(),
+          },
+        };
+      }
+    );
+
+    // Live-style into-wall + along-edge desired (vel before pause)
+    const result = resolvePlayerControlStep(
+      player,
+      new THREE.Vector3(0.198, 0.027, 0)
+    );
+    expect(result.status).toBe(MovementStatus.Moving);
+    expect(result.actualDistance).toBeGreaterThan(0.05);
+    // Must not freeze at clearT=0; motion should keep a tangent component
+    const disp = result.acceptedDisplacement;
+    const along = Math.abs(disp.x * ny - disp.y * nx);
+    expect(along).toBeGreaterThan(0.04);
+  });
+
   it("blocks XY and sets blockAfterDoorSignal when crossing a linked open door", () => {
     const door = { id: 42, tag: "transdoor" };
     testCreatureMovementMock.mockReturnValue({ clear: true, raw: { clear: true } });

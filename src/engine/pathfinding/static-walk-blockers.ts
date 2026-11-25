@@ -3,7 +3,12 @@ import type { Area } from "@engine/module/Area";
 import type { Door } from "@engine/module/Door";
 import type { Placeable } from "@engine/module/Placeable";
 import type { OdysseyFace3 } from "@engine/render/three/odyssey";
-import { isStaticWalkClearOnAreaMesh, isStaticWalkClearOnWalkMesh, walkMeshHasStartOverlap } from "@engine/pathfinding/static-walk-blockers-mesh";
+import {
+  areaBlockingFacesHaveStartOverlap,
+  isStaticWalkClearOnAreaMesh,
+  isStaticWalkClearOnWalkMesh,
+  walkMeshHasStartOverlap,
+} from "@engine/pathfinding/static-walk-blockers-mesh";
 import {
   composeDoorWalkmeshLocalToWorld,
   walkmeshWorldAabbXY,
@@ -39,6 +44,10 @@ const _to = new THREE.Vector3();
 const _mid = new THREE.Vector3();
 const _meshAabb: WalkmeshWorldAabbXY = { minX: 0, maxX: 0, minY: 0, maxY: 0 };
 const _facingBox = new THREE.Box3();
+const _roomOverlapBox = new THREE.Box3();
+const _roomOverlapMin = new THREE.Vector3();
+const _roomOverlapMax = new THREE.Vector3();
+const _roomOverlapFaces: OdysseyFace3[] = [];
 
 function segmentHitsBox(a: THREE.Vector3, b: THREE.Vector3, box: THREE.Box3): boolean {
   for(let i = 0; i <= 10; i++){
@@ -304,6 +313,7 @@ export function isStaticWalkClearDetailed(
       personalSpace: expand,
       hit: options.hit,
       candidateFaces: options.candidateFaces,
+      softClearStartOverlap: softStart,
     });
     if(!mesh.clear){
       return {
@@ -322,8 +332,8 @@ export function isStaticWalkClearDetailed(
   const doorsScan = nearby.doors;
   const placeablesScan = nearby.placeables;
 
-  // If the capsule already overlaps any door/placeable, force dest-only on all
-  // static mesh tests so a neighbor prop cannot stadium-block the escape path.
+  // If the capsule already overlaps any door/placeable/room Nonwalk, force
+  // dest-only on all static mesh tests so a neighbor cannot stadium-block escape.
   let forceDestOnly = false;
   if(softStart){
     if(doorsScan?.length){
@@ -350,6 +360,24 @@ export function isStaticWalkClearDetailed(
           forceDestOnly = true;
           break;
         }
+      }
+    }
+    if(!forceDestOnly && options.skipMesh !== true){
+      let roomFaces = options.candidateFaces;
+      if(!roomFaces?.length && typeof area.getWalkCandidatesForBox === "function"){
+        const pad = expand + 0.05;
+        _roomOverlapBox.set(
+          _roomOverlapMin.set(from.x - pad, from.y - pad, from.z - pad),
+          _roomOverlapMax.set(from.x + pad, from.y + pad, from.z + pad)
+        );
+        roomFaces = area.getWalkCandidatesForBox(
+          _roomOverlapBox,
+          { faces: _roomOverlapFaces },
+          { edges: false, walkFacesOnly: false }
+        ).faces;
+      }
+      if(areaBlockingFacesHaveStartOverlap(roomFaces, from, expand)){
+        forceDestOnly = true;
       }
     }
   }
@@ -384,6 +412,8 @@ export function isStaticWalkClearDetailed(
       personalSpace: expand,
       hit: options.hit,
       candidateFaces: options.candidateFaces,
+      softClearStartOverlap: softStart,
+      forceDestOnly,
     });
     if(!mesh.clear){
       return {

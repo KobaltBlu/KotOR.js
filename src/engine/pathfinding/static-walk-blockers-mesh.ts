@@ -233,9 +233,22 @@ function startCircleTouchesFace(
 }
 
 /**
- * XY contact normal for Edge hits. Flat PWK faces (plc_desk1) often have
- * zero/Z-up face normals — PlayerControl slide needs an outward XY normal or
- * projectOntoTangent cancels all motion against −desired fallback.
+ * True when a face normal is usable as a horizontal wall normal.
+ * Near-Z / tiny-XY normals (flat Nonwalk skirts, desk PWK) must fall through
+ * to 2D edge derivation for collide-and-slide.
+ */
+function faceNormalUsableAsWallXY(fn: THREE.Vector3 | undefined): boolean {
+  if(!fn) return false;
+  const xy = Math.hypot(fn.x, fn.y);
+  if(xy < 1e-3) return false;
+  if(Math.abs(fn.z) > 0.9) return false;
+  return true;
+}
+
+/**
+ * XY contact normal for Edge hits. Flat PWK / room Nonwalk faces often have
+ * zero or near-Z face normals — PlayerControl slide needs an outward XY normal
+ * or projectOntoTangent cancels all motion against −desired fallback.
  */
 function fillEdgeHitNormal(
   hit: WalkHitInfo,
@@ -246,8 +259,8 @@ function fillEdgeHitNormal(
   refY: number
 ): void {
   const fn = face.normal;
-  if(fn && (Math.abs(fn.x) > 1e-6 || Math.abs(fn.y) > 1e-6)){
-    hit.normal.copy(fn);
+  if(faceNormalUsableAsWallXY(fn)){
+    hit.normal.copy(fn!);
     return;
   }
   let ex = vb.x - va.x;
@@ -566,6 +579,30 @@ export function isStaticWalkClearOnWalkMesh(
 }
 
 /**
+ * True when `from` is interior to or within personal-space of any blocking
+ * walk-check face in `faces` (room Nonwalk skirts / area mesh).
+ */
+export function areaBlockingFacesHaveStartOverlap(
+  faces: OdysseyFace3[] | undefined,
+  from: THREE.Vector3,
+  personalSpace = 0.5
+): boolean {
+  if(!faces?.length) return false;
+  const radius = Math.max(0.05, personalSpace);
+  for(let i = 0, len = faces.length; i < len; i++){
+    const face = faces[i];
+    if(!isBlockingFace(face)) continue;
+    if(
+      startInteriorOnFace(face, from.x, from.y, from.z) ||
+      startCircleTouchesFace(face, from.x, from.y, radius)
+    ){
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Test personal-space corridor along from→to for walk-check mesh hits.
  */
 export function isStaticWalkClearOnAreaMesh(
@@ -582,6 +619,13 @@ export function isStaticWalkClearOnAreaMesh(
      * getWalkCandidatesForBox when the caller already gathered).
      */
     candidateFaces?: OdysseyFace3[];
+    /** Skip start-circle / enable dest-only escape (PlayerControl collide-and-slide). */
+    softClearStartOverlap?: boolean;
+    /**
+     * Force dest-only tests even when room faces do not touch the start
+     * capsule (sibling door/placeable already overlapping).
+     */
+    forceDestOnly?: boolean;
   } = {}
 ): StaticWalkBlockersMeshResult {
   if(!area) return { clear: true };
@@ -592,6 +636,7 @@ export function isStaticWalkClearOnAreaMesh(
   const radius = Math.max(0.05, perspace);
   const hit = options.hit;
   const expand = radius + 0.05;
+  const softStart = !!options.softClearStartOverlap;
   const minX = Math.min(from.x, to.x) - expand;
   const maxX = Math.max(from.x, to.x) + expand;
   const minY = Math.min(from.y, to.y) - expand;
@@ -613,14 +658,25 @@ export function isStaticWalkClearOnAreaMesh(
       { edges: false, walkFacesOnly: false }
     ).faces;
   }
+
+  // Soft-start escape: capsule already on a Nonwalk skirt — dest-only so
+  // stadium/distSegSeg cannot clearT=0 forever (m36aa perimeter graze).
+  let startOverlapping = !!options.forceDestOnly;
+  if(softStart && !startOverlapping && faces?.length){
+    startOverlapping = areaBlockingFacesHaveStartOverlap(faces, from, perspace);
+  }
+
   if(faces?.length){
     for(let i = 0, len = faces.length; i < len; i++){
       const face = faces[i];
       if(!isBlockingFace(face)) continue;
       if(!faceOverlapsCorridorAabb(face, minX, maxX, minY, maxY)) continue;
-      if(corridorHitsFace(
-        face, from.x, from.y, to.x, to.y, from.z, to.z, radius, hit
-      )){
+      const blocked = startOverlapping
+        ? destOnlyHitsFace(face, to.x, to.y, to.z, radius, hit)
+        : corridorHitsFace(
+          face, from.x, from.y, to.x, to.y, from.z, to.z, radius, hit, softStart
+        );
+      if(blocked){
         return { clear: false };
       }
     }
@@ -641,19 +697,30 @@ export function isStaticWalkClearOnAreaMesh(
           continue;
         }
       }
-      const faces = facesInQueryBox(
+      const plcFaces = facesInQueryBox(
         plc.collisionManager?.walkmesh,
         queryBox,
         _placeableFaceScratch
       );
-      if(!faces?.length) continue;
-      for(let i = 0, len = faces.length; i < len; i++){
-        const face = faces[i];
+      if(!plcFaces?.length) continue;
+      let plcStartOverlapping = startOverlapping;
+      if(softStart && !plcStartOverlapping){
+        plcStartOverlapping = areaBlockingFacesHaveStartOverlap(
+          plcFaces,
+          from,
+          perspace
+        );
+      }
+      for(let i = 0, len = plcFaces.length; i < len; i++){
+        const face = plcFaces[i];
         if(!isBlockingFace(face)) continue;
         if(!faceOverlapsCorridorAabb(face, minX, maxX, minY, maxY)) continue;
-        if(corridorHitsFace(
-          face, from.x, from.y, to.x, to.y, from.z, to.z, radius, hit
-        )){
+        const blocked = plcStartOverlapping
+          ? destOnlyHitsFace(face, to.x, to.y, to.z, radius, hit)
+          : corridorHitsFace(
+            face, from.x, from.y, to.x, to.y, from.z, to.z, radius, hit, softStart
+          );
+        if(blocked){
           if(hit) hit.objectId = plc.id;
           return { clear: false };
         }
