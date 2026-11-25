@@ -21,6 +21,12 @@ export type ClippedLineSegmentResult = {
   clearT: number;
   minZ: number;
   maxZ: number;
+  /**
+   * True when the clip stopped on a known blocking edge; `wallNormal` then
+   * holds that edge's XY normal pointing back into the walkable face.
+   */
+  hasWallNormal: boolean;
+  wallNormal: THREE.Vector3;
 };
 
 const _hit = new THREE.Vector3();
@@ -32,6 +38,8 @@ const _clipResult: ClippedLineSegmentResult = {
   clearT: 1,
   minZ: 0,
   maxZ: 0,
+  hasWallNormal: false,
+  wallNormal: new THREE.Vector3(),
 };
 
 /** Portal hop distances past the seam (live 07j↔02b needs >5cm). */
@@ -48,6 +56,31 @@ function finishClip(
   _clipResult.minZ = minZ;
   _clipResult.maxZ = maxZ;
   return _clipResult;
+}
+
+/**
+ * Record the blocking edge va→vb normal, oriented toward `inside` (the
+ * opposite vertex of the face being exited — always on the walkable side).
+ */
+function setWallNormal(
+  va: THREE.Vector3,
+  vb: THREE.Vector3,
+  inside: THREE.Vector3
+): void {
+  const ex = vb.x - va.x;
+  const ey = vb.y - va.y;
+  const el = Math.hypot(ex, ey);
+  if(el < 1e-8) return;
+  let nx = -ey / el;
+  let ny = ex / el;
+  const mx = (va.x + vb.x) * 0.5;
+  const my = (va.y + vb.y) * 0.5;
+  if((inside.x - mx) * nx + (inside.y - my) * ny < 0){
+    nx = -nx;
+    ny = -ny;
+  }
+  _clipResult.wallNormal.set(nx, ny, 0);
+  _clipResult.hasWallNormal = true;
 }
 
 function findWalkFaceAt(
@@ -162,6 +195,8 @@ export function clippedLineSegmentWalkable(
 ): ClippedLineSegmentResult {
   const clearPoint = _clipResult.clearPoint;
   clearPoint.copy(origin);
+  _clipResult.hasWallNormal = false;
+  _clipResult.wallNormal.set(0, 0, 0);
   const maxDz = options.maxHeightDelta ?? 2.5;
   if(!area?.walkFaces?.length){
     return finishClip(true, 1, origin.z, origin.z);
@@ -230,6 +265,7 @@ export function clippedLineSegmentWalkable(
       if(!outside[s]) continue;
       const va = verts[s];
       const vb = verts[(s + 1) % 3];
+      const vOpp = verts[(s + 2) % 3];
       if(!intersectLineSegments2d(
         curX, curY, dest.x, dest.y,
         va.x, va.y, vb.x, vb.y,
@@ -270,6 +306,7 @@ export function clippedLineSegmentWalkable(
 
         // Non-transition = wall (GetAdjacentRoom == -1)
         if(adj.transition === -1){
+          setWallNormal(va, vb, vOpp);
           return finishClip(false, t, minZ, maxZ);
         }
 
@@ -291,6 +328,7 @@ export function clippedLineSegmentWalkable(
             clearPoint.copy(dest);
             return finishClip(true, 1, minZ, maxZ);
           }
+          setWallNormal(va, vb, vOpp);
           return finishClip(false, t, minZ, maxZ);
         }
         curX = _nudge.x;
@@ -301,6 +339,7 @@ export function clippedLineSegmentWalkable(
       }
 
       // Undefined adjacency = hard wall
+      setWallNormal(va, vb, vOpp);
       clearPoint.set(_hit.x, _hit.y, _hit.z);
       return finishClip(
         false,

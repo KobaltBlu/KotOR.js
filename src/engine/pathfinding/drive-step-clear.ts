@@ -37,6 +37,11 @@ export type DriveStepClearResult = {
   clearPoint: THREE.Vector3;
   code: WalkLineHitCode;
   normal: THREE.Vector3;
+  /**
+   * True when `normal` is a stand-in (-direction) rather than real geometry.
+   * Slide code should gather nearby edge normals instead of trusting it.
+   */
+  normalSynthetic?: boolean;
   blockingObjectId?: number;
   walkHit?: WalkHitInfo;
 };
@@ -124,6 +129,7 @@ export function probeDriveStepClear(
   _result.blockingObjectId = undefined;
   _result.walkHit = undefined;
   _result.normal.set(0, 0, 1);
+  _result.normalSynthetic = false;
 
   if(!area || from.distanceToSquared(to) < 1e-10){
     _result.clear = true;
@@ -140,11 +146,19 @@ export function probeDriveStepClear(
   const clip = clippedLineSegmentWalkable(area, from, to);
   if(!clip.ok){
     _result.clearPoint.copy(clip.clearPoint);
-    const dx = to.x - from.x;
-    const dy = to.y - from.y;
-    const len = Math.hypot(dx, dy);
-    if(len > 1e-8){
-      _result.normal.set(-(dx / len), -(dy / len), 0);
+    if(clip.hasWallNormal){
+      // Real blocking-edge normal (into walkable side) — slide-capable.
+      _result.normal.copy(clip.wallNormal);
+      _result.normalSynthetic = false;
+    }else{
+      // Height-step / hop budget: no edge known, fall back to -direction.
+      const dx = to.x - from.x;
+      const dy = to.y - from.y;
+      const len = Math.hypot(dx, dy);
+      if(len > 1e-8){
+        _result.normal.set(-(dx / len), -(dy / len), 0);
+      }
+      _result.normalSynthetic = true;
     }
     const walkHit = options.collectHitInfo !== false ? _hitScratch : undefined;
     if(walkHit){

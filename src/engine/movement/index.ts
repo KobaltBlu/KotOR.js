@@ -16,3 +16,4 @@ export * from "@engine/movement/TileColor";
 export * from "@engine/movement/area-transition-bmp";
 export * from "@engine/movement/jump-to-location";
 export * from "@engine/movement/TurnSpeeds";
+export * from "@engine/movement/collide-and-slide";

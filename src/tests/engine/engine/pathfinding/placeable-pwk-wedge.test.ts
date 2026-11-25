@@ -101,12 +101,14 @@ function makePlaceable(
 }
 
 describe("placeable partpile wedge escape", () => {
-  // Live m02ac: two plc_partpile, gap ≈ 0.29, creperspace 0.36
+  // Live m02ac: two plc_partpile. Origin is 0.368 from the south pile and
+  // 0.388 from the north pile, so a 0.4 capsule is genuinely wedged (exact
+  // circle test; the old rectangle stadium wedged even a 0.36 capsule).
   const headerPos = new THREE.Vector3(-0.13, -0.02, 0);
   const southPos = new THREE.Vector3(56.62822723388672, 67.28730010986328, 0.005);
   const northPos = new THREE.Vector3(56.553409576416016, 68.72248077392578, 0.005);
   const origin = new THREE.Vector3(56.8347905690174, 67.99589535341013, 0.005);
-  const radius = 0.36;
+  const radius = 0.4;
 
   it("hard-blocks every lateral probe while wedged (no soft-clear)", () => {
     const south = makePartpileWok(headerPos);
@@ -184,5 +186,30 @@ describe("placeable partpile wedge escape", () => {
     expect(normals.length).toBeGreaterThanOrEqual(1);
     // Opposing piles should contribute distinct normals (not a single deduped one).
     expect(normals.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("uses an exact capsule: a vertex 0.42 away on the diagonal does not block r=0.4", () => {
+    // Pile at the origin with no header offset; point diagonal from the
+    // right-most vertex. The old rectangle stadium reached r·√2 ≈ 0.57 at
+    // its corners and reported a block for this tiny eastward step.
+    const wok = makePartpileWok(new THREE.Vector3());
+    composeObjectWalkmeshLocalToWorld(
+      wok.matrixWorld, new THREE.Vector3(), new THREE.Euler(0, 0, 0), new THREE.Vector3()
+    );
+    const from = new THREE.Vector3(0.449753999710083 + 0.3, -0.015190400183200836 + 0.3, 0);
+    const to = from.clone();
+    to.x += 0.01;
+    const r = isStaticWalkClearOnWalkMesh(wok, from, to, {
+      personalSpace: 0.4,
+      softClearStartOverlap: false,
+    });
+    expect(r.clear).toBe(true);
+
+    // Same geometry with a capsule that really reaches the vertex still blocks.
+    const r2 = isStaticWalkClearOnWalkMesh(wok, from, to, {
+      personalSpace: 0.43,
+      softClearStartOverlap: false,
+    });
+    expect(r2.clear).toBe(false);
   });
 });

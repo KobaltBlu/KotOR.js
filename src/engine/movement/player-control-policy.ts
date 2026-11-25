@@ -21,6 +21,7 @@ import {
   collectBlockingWalkEdgeNormals,
   projectDesiredOntoNormals,
 } from "@engine/movement/wall-slide";
+import { solveCollideAndSlide } from "@engine/movement/collide-and-slide";
 import { getCreaturePersonalSpace } from "@engine/combat/attack-range";
 import { nudgeFriendlyCreatures } from "@engine/pathfinding/nudge-friendlies";
 import { isCreature } from "@engine/module/guards/isCreature";
@@ -36,9 +37,7 @@ import { GameState } from "@engine/runtime/GameState";
 
 const _ideal = new THREE.Vector3();
 const _probe = new THREE.Vector3();
-const _best = new THREE.Vector3();
 const _slide = new THREE.Vector3();
-const _normal = new THREE.Vector3();
 const _desired = new THREE.Vector3();
 const _edgeNormals: THREE.Vector3[] = [];
 
@@ -202,142 +201,66 @@ export function resolvePlayerControlStep(
     }
   }
 
-  const probe = testDriveStepClear(area, origin, _ideal, {
-    ...playerStaticOpts(creature, true),
+  // Static collide-and-slide (walkmesh walls, placeables, doors). Creature
+  // capsules are re-validated per leg with hard player options.
+  const creperspace = getCreaturePersonalSpace(creature);
+  const staticOpts = playerStaticOpts(creature, true);
+  const idealX = _ideal.x;
+  const idealY = _ideal.y;
+  const solve = solveCollideAndSlide(origin, _desired, {
+    area,
+    radius: creperspace,
+    probe: (from, to) => {
+      const r = testDriveStepClear(area, from, to, staticOpts);
+      const clear = r.clear && r.code === WalkLineHitCode.Ok;
+      const n = r.normal ?? r.walkHit?.normal;
+      return {
+        clear,
+        clearT: clear ? 1 : r.clearT,
+        normalX: n?.x,
+        normalY: n?.y,
+        normalUsable: !r.normalSynthetic && isUsableWallNormalXY(n),
+        hit: clear ? undefined : movementHitFromProbe(r),
+      };
+    },
+    validateLeg: (from, to) => {
+      // The creature gate above already cleared origin→ideal.
+      if(
+        from.x === origin.x && from.y === origin.y &&
+        to.x === idealX && to.y === idealY
+      ){
+        return true;
+      }
+      return testCreatureMovement(area, from, to, {
+        owner: creature,
+        ...PLAYER_CREATURE_OPTS,
+      }).clear;
+    },
   });
-  if(probe.clear){
+
+  if(solve.unobstructed){
     return finishPlayerResult(creature, origin, _ideal, undefined);
   }
-
-  // CM-style: project desired onto wall tangent in place (no remain-renorm).
-  const staticHit = {
-    hit: movementHitFromProbe(probe),
-    clearT: probe.clearT,
-    clearPoint: probe.clearPoint,
-    normal: probe.normal ?? probe.walkHit?.normal,
-  };
-  const clipped =
-    staticHit.clearT > 1e-4 ? staticHit.clearPoint.clone() : origin.clone();
-  const usedLen = Math.hypot(clipped.x - origin.x, clipped.y - origin.y);
-  const desiredLen = Math.hypot(_desired.x, _desired.y);
-  const creperspace = getCreaturePersonalSpace(creature);
-
-  // Prefer nearby walkmesh + placeable edge normals when the thin probe
-  // has no usable horizontal hit normal (corners / flat Nonwalk skirts).
-  const probeHasNormal = isUsableWallNormalXY(staticHit.normal);
-  if(!probeHasNormal){
-    collectBlockingWalkEdgeNormals(area, origin, creperspace, _edgeNormals);
-    if(_edgeNormals.length){
-      projectDesiredOntoNormals(
-        _desired.x,
-        _desired.y,
-        _edgeNormals,
-        _slide
-      );
-      const edgeSlide = tryProjectedProbes(
-        area,
-        creature,
-        origin,
-        clipped,
-        usedLen,
-        staticHit.hit
-      );
-      if(edgeSlide) return edgeSlide;
-    }
-  }else{
-    // Drop stale multi-edge buffer from a prior frame / unusable-normal path.
-    _edgeNormals.length = 0;
+  if(solve.moved > 1e-8){
+    return finishPlayerResult(creature, origin, solve.position, solve.hit);
   }
 
-  // Capsule already overlapping a placeable/door (Static DetailedBlock): push out
-  // before single-normal slide — frame steps often cannot reach clear space.
+  // Capsule already overlapping a placeable/door (Static DetailedBlock): push
+  // out — frame steps often cannot reach clear space via sliding alone.
+  // Only when the start truly overlaps: merely resting against a wall must
+  // not trigger a creperspace-sized shove away from it.
   if(
-    usedLen < 1e-8 &&
-    staticHit.hit?.kind === MovementHitKind.Static
+    solve.hit?.kind === MovementHitKind.Static &&
+    startOverlapsStatic(area, creature, origin, _desired)
   ){
     const depen = tryPlaceableDepenetrate(
       area,
       creature,
       origin,
       _desired,
-      staticHit.normal,
-      staticHit.hit
+      solve.hit
     );
     if(depen) return depen;
-  }
-
-  const wallNormal = resolveWallNormal(
-    staticHit.normal,
-    _desired.x,
-    _desired.y
-  );
-  projectOntoTangent(
-    _desired.x,
-    _desired.y,
-    wallNormal.x,
-    wallNormal.y,
-    _slide
-  );
-
-  const escapeDot = _desired.x * wallNormal.x + _desired.y * wallNormal.y;
-  if(escapeDot >= 0){
-    // Escape / along wall — prefer full desired, then short outward, then projected.
-    if(segmentClear(area, creature, origin, _ideal)){
-      return finishPlayerResult(creature, origin, _ideal, undefined);
-    }
-    const outLen = Math.min(desiredLen, creperspace * 0.25);
-    const nLen = Math.hypot(wallNormal.x, wallNormal.y);
-    if(outLen > 1e-8 && nLen > 1e-8){
-      _probe.set(
-        origin.x + (wallNormal.x / nLen) * outLen,
-        origin.y + (wallNormal.y / nLen) * outLen,
-        origin.z
-      );
-      if(segmentClear(area, creature, origin, _probe)){
-        return finishPlayerResult(creature, origin, _probe, staticHit.hit);
-      }
-    }
-    const escapeSlide = tryProjectedProbes(
-      area,
-      creature,
-      origin,
-      clipped,
-      usedLen,
-      staticHit.hit
-    );
-    if(escapeSlide) return escapeSlide;
-  }else{
-    const intoSlide = tryProjectedProbes(
-      area,
-      creature,
-      origin,
-      clipped,
-      usedLen,
-      staticHit.hit
-    );
-    if(intoSlide) return intoSlide;
-  }
-
-  if(usedLen > 1e-8){
-    return finishPlayerResult(creature, origin, clipped, staticHit.hit);
-  }
-
-  // At most two short tangent retries (thin probes) — not a full lateral fan.
-  const len = desiredLen;
-  if(len > 1e-8){
-    const slideLen = Math.hypot(_slide.x, _slide.y);
-    if(slideLen > 1e-8){
-      for(const scale of [1, 0.5]){
-        _probe.set(
-          origin.x + (_slide.x / slideLen) * len * scale,
-          origin.y + (_slide.y / slideLen) * len * scale,
-          origin.z
-        );
-        if(segmentClear(area, creature, origin, _probe)){
-          return finishPlayerResult(creature, origin, _probe, staticHit.hit);
-        }
-      }
-    }
   }
 
   return {
@@ -347,50 +270,50 @@ export function resolvePlayerControlStep(
     finalPosition: origin.clone(),
     acceptedDisplacement: empty,
     actualDistance: 0,
-    hit: staticHit.hit ?? { kind: MovementHitKind.Walkmesh },
+    hit: solve.hit ?? { kind: MovementHitKind.Walkmesh },
   };
 }
 
 /**
- * Probe origin+projected (and shortened factors of projected, not full desired).
- * When clearT advanced, also try clipped+projected without length restore.
+ * True when the creature capsule at `origin` already overlaps static geometry.
+ * A short step straight back from the desired motion with hard start tests
+ * only fails if the start itself is embedded (contact alone stays clear).
  */
-function tryProjectedProbes(
+function startOverlapsStatic(
   area: Area,
   creature: Creature,
   origin: THREE.Vector3,
-  clipped: THREE.Vector3,
-  usedLen: number,
-  hit: MovementResult["hit"]
-): MovementResult | undefined {
-  const slideLen = Math.hypot(_slide.x, _slide.y);
-  if(slideLen < 1e-8) return undefined;
+  desired: THREE.Vector3
+): boolean {
+  const len = Math.hypot(desired.x, desired.y);
+  if(len < 1e-8) return false;
+  const back = 0.02;
+  _probe.set(
+    origin.x - (desired.x / len) * back,
+    origin.y - (desired.y / len) * back,
+    origin.z
+  );
+  const r = testDriveStepClear(area, origin, _probe, {
+    ...playerStaticOpts(creature),
+    softClearStartOverlap: false,
+  });
+  return !(r.clear && r.code === WalkLineHitCode.Ok);
+}
 
-  // One full projected step + one shortened retry (thin probes).
-  const factors = [1, 0.5];
-  for(const t of factors){
-    _probe.set(
-      origin.x + _slide.x * t,
-      origin.y + _slide.y * t,
-      origin.z
-    );
-    if(segmentClear(area, creature, origin, _probe)){
-      return finishPlayerResult(creature, origin, _probe, hit);
-    }
-  }
-  if(usedLen > 1e-8){
-    for(const t of factors){
-      _probe.set(
-        clipped.x + _slide.x * t,
-        clipped.y + _slide.y * t,
-        origin.z
-      );
-      if(segmentClear(area, creature, clipped, _probe)){
-        return finishPlayerResult(creature, origin, _probe, hit);
-      }
-    }
-  }
-  return undefined;
+/** True when a hard-start probe from `at` outward along (ux, uy) is clear. */
+function hardClearFrom(
+  area: Area,
+  creature: Creature,
+  at: THREE.Vector3,
+  ux: number,
+  uy: number
+): boolean {
+  const to = new THREE.Vector3(at.x + ux * 0.02, at.y + uy * 0.02, at.z);
+  const r = testDriveStepClear(area, at, to, {
+    ...playerStaticOpts(creature),
+    softClearStartOverlap: false,
+  });
+  return r.clear && r.code === WalkLineHitCode.Ok;
 }
 
 /**
@@ -403,7 +326,6 @@ function tryPlaceableDepenetrate(
   creature: Creature,
   origin: THREE.Vector3,
   desired: THREE.Vector3,
-  hitNormal: THREE.Vector3 | undefined,
   hit: MovementResult["hit"]
 ): MovementResult | undefined {
   const creperspace = getCreaturePersonalSpace(creature);
@@ -415,10 +337,6 @@ function tryPlaceableDepenetrate(
   const dirs: Array<{ x: number; y: number }> = [];
   for(let i = 0; i < _edgeNormals.length; i++){
     dirs.push({ x: _edgeNormals[i].x, y: _edgeNormals[i].y });
-  }
-  if(isUsableWallNormalXY(hitNormal)){
-    const nLen = Math.hypot(hitNormal!.x, hitNormal!.y);
-    dirs.push({ x: hitNormal!.x / nLen, y: hitNormal!.y / nLen });
   }
 
   // Channel tangent after multi-normal projection (opposing pile normals → ±X).
@@ -447,42 +365,52 @@ function tryPlaceableDepenetrate(
     dirs.push({ x: desired.y / aLen, y: -desired.x / aLen });
   }
 
+  // Smallest separation first: exit the overlap with the least visible
+  // shove. A candidate "resolves" the overlap when a hard-start probe from
+  // the destination can continue outward; otherwise keep the farthest
+  // soft-clear candidate as a fallback so we still make progress.
   const lengths = [
-    creperspace,
-    creperspace * 0.75,
+    0.02,
+    0.05,
+    0.1,
     creperspace * 0.5,
-    creperspace * 0.35,
-    Math.max(Math.hypot(desired.x, desired.y), creperspace * 0.25),
+    creperspace,
   ];
 
-  let best: THREE.Vector3 | undefined;
-  let bestDist = 0;
   const dxn = desired.x;
   const dyn = desired.y;
   const dLen = Math.hypot(dxn, dyn);
+  let best: THREE.Vector3 | undefined;
+  let fallback: THREE.Vector3 | undefined;
+  let fallbackScore = -Infinity;
 
-  for(let d = 0; d < dirs.length; d++){
-    const dir = dirs[d];
-    const nLen = Math.hypot(dir.x, dir.y);
-    if(nLen < 1e-8) continue;
-    const ux = dir.x / nLen;
-    const uy = dir.y / nLen;
-    for(let li = 0; li < lengths.length; li++){
-      const sep = lengths[li];
-      if(!(sep > 1e-8)) continue;
+  for(let li = 0; li < lengths.length && !best; li++){
+    const sep = lengths[li];
+    let bestAlign = -Infinity;
+    for(let d = 0; d < dirs.length; d++){
+      const dir = dirs[d];
+      const nLen = Math.hypot(dir.x, dir.y);
+      if(nLen < 1e-8) continue;
+      const ux = dir.x / nLen;
+      const uy = dir.y / nLen;
       _probe.set(origin.x + ux * sep, origin.y + uy * sep, origin.z);
       if(!segmentClear(area, creature, origin, _probe)) continue;
-      const moved = sep;
-      // Prefer motion aligned with desired when present; else farthest escape.
-      const align =
-        dLen > 1e-8 ? (ux * dxn + uy * dyn) / dLen : moved;
-      const score = moved + Math.max(0, align) * creperspace;
-      if(!best || score > bestDist){
-        bestDist = score;
-        best = _probe.clone();
+      const align = dLen > 1e-8 ? (ux * dxn + uy * dyn) / dLen : 0;
+      if(hardClearFrom(area, creature, _probe, ux, uy)){
+        if(align > bestAlign){
+          bestAlign = align;
+          best = _probe.clone();
+        }
+      }else{
+        const score = sep + Math.max(0, align) * creperspace;
+        if(score > fallbackScore){
+          fallbackScore = score;
+          fallback = _probe.clone();
+        }
       }
     }
   }
+  if(!best) best = fallback;
 
   if(best){
     return finishPlayerResult(creature, origin, best, hit);
@@ -714,26 +642,6 @@ function tryCreatureSlide(
     return finishPlayerResult(creature, origin, best, hit);
   }
   return undefined;
-}
-
-function resolveWallNormal(
-  hitNormal: THREE.Vector3 | undefined,
-  approachX: number,
-  approachY: number
-): THREE.Vector3 {
-  if(isUsableWallNormalXY(hitNormal)){
-    return _normal.set(hitNormal!.x, hitNormal!.y, 0);
-  }
-  // Flat Nonwalk / missing XY — prefer a freshly collected walk-edge normal.
-  if(_edgeNormals.length){
-    return _normal.set(_edgeNormals[0].x, _edgeNormals[0].y, 0);
-  }
-  const aLen = Math.hypot(approachX, approachY);
-  if(aLen > 1e-8){
-    // No hit normal — outward is opposite the blocked approach along the segment.
-    return _normal.set(-approachX / aLen, -approachY / aLen, 0);
-  }
-  return _normal.set(0, 1, 0);
 }
 
 function finishPlayerResult(

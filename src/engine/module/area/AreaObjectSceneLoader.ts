@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { GameObjectConstant } from "@core/enums/module/GameObjectConstant";
 import { PlaceableLightmapBaker } from "@engine/managers/PlaceableLightmapBaker";
+import { invalidateStaticBlockerGrid } from "@engine/pathfinding/static-blocker-grid";
 import type { Area } from "@engine/module/Area";
 import { AreaRoom } from "@engine/module/area/AreaRoom";
 import { OdysseyModel3D } from "@engine/render/three/odyssey/OdysseyModel3D";
@@ -129,6 +130,7 @@ export class AreaObjectSceneLoader {
         console.error(e);
       }
     }
+    invalidateStaticBlockerGrid(area);
   }
 
   /**
@@ -164,6 +166,9 @@ export class AreaObjectSceneLoader {
       plc.computeBoundingBox();
       plc.room?.markCollisionPlaceablesDirty?.();
     }
+    // Any query during load built the blocker grid from unposed objects
+    // (position 0,0 / empty boxes) — rebuild now that placeables are placed.
+    invalidateStaticBlockerGrid(area);
     // Bake placeable lightmaps after all models are posed (rooms already registered lights).
     try{
       PlaceableLightmapBaker.bakeArea(area, context.getLightManager());

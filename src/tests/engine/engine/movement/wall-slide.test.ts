@@ -10,6 +10,7 @@ jest.mock("@engine/runtime/GameState", () => ({ GameState: {} }));
 import {
   collectBlockingWalkEdgeNormals,
   distancePointToSegment2d,
+  mostOpposingNormal,
   projectDesiredOntoNormals,
 } from "@engine/movement/wall-slide";
 import type { Area } from "@engine/module/Area";
@@ -82,6 +83,95 @@ describe("projectDesiredOntoNormals", () => {
   });
 });
 
+describe("projectDesiredOntoNormals (exact)", () => {
+  it("projects onto the single binding wall in an obtuse corner", () => {
+    // Walls with outward normals +Y and (−0.5, 0.866) (120° apart).
+    const n1 = new THREE.Vector3(0, 1, 0);
+    const n2 = new THREE.Vector3(-0.5, Math.sqrt(3) / 2, 0);
+    const out = new THREE.Vector3();
+    // Desired east + slightly down: violates +Y only.
+    projectDesiredOntoNormals(1, -0.1, [n1, n2], out);
+    // Projection onto y=0 is (1,0), but it violates n2 → must be zero or
+    // satisfy both constraints exactly.
+    expect(out.x * n1.x + out.y * n1.y).toBeGreaterThanOrEqual(-1e-9);
+    expect(out.x * n2.x + out.y * n2.y).toBeGreaterThanOrEqual(-1e-9);
+  });
+
+  it("leaves no residual into-wall motion at an acute (60°) wedge", () => {
+    const n1 = new THREE.Vector3(0, 1, 0);
+    const n2 = new THREE.Vector3(Math.sqrt(3) / 2, -0.5, 0);
+    const out = new THREE.Vector3();
+    projectDesiredOntoNormals(-1, -0.2, [n1, n2], out);
+    expect(out.x * n1.x + out.y * n1.y).toBeGreaterThanOrEqual(-1e-9);
+    expect(out.x * n2.x + out.y * n2.y).toBeGreaterThanOrEqual(-1e-9);
+  });
+
+  it("keeps the longest feasible slide in a corridor (opposing normals)", () => {
+    const out = new THREE.Vector3();
+    projectDesiredOntoNormals(
+      0.4,
+      0.3,
+      [new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, -1, 0)],
+      out
+    );
+    expect(out.x).toBeCloseTo(0.4);
+    expect(out.y).toBeCloseTo(0);
+  });
+
+  it("returns desired untouched when it already satisfies every wall", () => {
+    const out = new THREE.Vector3();
+    projectDesiredOntoNormals(0.2, 0.5, [new THREE.Vector3(0, 1, 0)], out);
+    expect(out.x).toBeCloseTo(0.2);
+    expect(out.y).toBeCloseTo(0.5);
+  });
+});
+
+describe("mostOpposingNormal", () => {
+  it("picks the wall pushed into hardest", () => {
+    const out = new THREE.Vector3();
+    const ok = mostOpposingNormal(
+      1,
+      -0.1,
+      [new THREE.Vector3(0, 1, 0), new THREE.Vector3(-1, 0, 0)],
+      out
+    );
+    expect(ok).toBe(true);
+    expect(out.x).toBeCloseTo(-1);
+  });
+});
+
+describe("collectBlockingWalkEdgeNormals contact normals", () => {
+  it("ignores a wall whose line the point is behind (reflex/pillar corner)", () => {
+    // Pillar occupies x<0,y<0. Horizontal wall along y=0 for x∈[-5,0] (+Y),
+    // vertical wall along x=0 for y∈[-5,0] (+X).
+    const top = makeWallEdge(-5, 0, 0, 0, 0, 1);
+    const side = makeWallEdge(0, 0, 0, -5, 1, 0);
+    const area = { walkEdges: [top, side] } as unknown as Area;
+    // Beside the vertical wall, below the top wall's line.
+    const normals = collectBlockingWalkEdgeNormals(
+      area,
+      new THREE.Vector3(0.2, -0.3, 0),
+      0.4
+    );
+    expect(normals.length).toBe(1);
+    expect(normals[0].x).toBeCloseTo(1);
+    expect(normals[0].y).toBeCloseTo(0);
+  });
+
+  it("uses vertex→point normal past a wall endpoint (round corners)", () => {
+    const wall = makeWallEdge(-5, 0, 0, 0, 0, 1);
+    const area = { walkEdges: [wall] } as unknown as Area;
+    const normals = collectBlockingWalkEdgeNormals(
+      area,
+      new THREE.Vector3(0.2, 0.2, 0),
+      0.4
+    );
+    expect(normals.length).toBe(1);
+    expect(normals[0].x).toBeCloseTo(Math.SQRT1_2);
+    expect(normals[0].y).toBeCloseTo(Math.SQRT1_2);
+  });
+});
+
 describe("collectBlockingWalkEdgeNormals", () => {
   it("collects collinear perimeter edges at a shared vertex and dedupes normals", () => {
     // Live-style: two walls meet at x=111.7, y=99.75, both normal +Y
@@ -108,5 +198,49 @@ describe("collectBlockingWalkEdgeNormals", () => {
       0.4
     );
     expect(normals.length).toBe(0);
+  });
+});
+
+describe("projectDesiredOntoNormals with clearance gaps", () => {
+  it("allows motion toward a wall up to its gap", () => {
+    const out = new THREE.Vector3();
+    // Wall 0.03 away (normal +Y); want to move 0.02 into it → fully allowed.
+    projectDesiredOntoNormals(0, -0.02, [new THREE.Vector3(0, 1, 0)], out, [0.03]);
+    expect(out.y).toBeCloseTo(-0.02);
+  });
+
+  it("clamps motion at the gap boundary", () => {
+    const out = new THREE.Vector3();
+    projectDesiredOntoNormals(0.1, -0.1, [new THREE.Vector3(0, 1, 0)], out, [0.03]);
+    expect(out.x).toBeCloseTo(0.1);
+    expect(out.y).toBeCloseTo(-0.03);
+  });
+
+  it("lands on the vertex of two gapped walls", () => {
+    const out = new THREE.Vector3();
+    projectDesiredOntoNormals(
+      -1,
+      -1,
+      [new THREE.Vector3(0, 1, 0), new THREE.Vector3(1, 0, 0)],
+      out,
+      [0.02, 0.05]
+    );
+    expect(out.x).toBeCloseTo(-0.05);
+    expect(out.y).toBeCloseTo(-0.02);
+  });
+
+  it("returns contact distances in parallel with normals", () => {
+    const wall = makeWallEdge(0, 0, 10, 0, 0, 1);
+    const area = { walkEdges: [wall] } as unknown as Area;
+    const dists: number[] = [];
+    const normals = collectBlockingWalkEdgeNormals(
+      area,
+      new THREE.Vector3(5, 0.43, 0),
+      0.4,
+      [],
+      dists
+    );
+    expect(normals.length).toBe(1);
+    expect(dists[0]).toBeCloseTo(0.43);
   });
 });

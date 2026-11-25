@@ -153,36 +153,6 @@ export function intersectLineSegments2d(
   return t >= 0 && t <= 1 && u >= 0 && u <= 1;
 }
 
-type StadiumEdge = { ax: number; ay: number; bx: number; by: number };
-
-/** Personal-space inflated travel strip (stadium / capsule outline). */
-function buildStadiumEdges(
-  ax: number, ay: number, bx: number, by: number, radius: number
-): StadiumEdge[] {
-  const dx = bx - ax;
-  const dy = by - ay;
-  const len = Math.hypot(dx, dy);
-  if(len < 1e-8) return [];
-  const ux = dx / len;
-  const uy = dy / len;
-  const px = -uy * radius;
-  const py = ux * radius;
-  const sx = ax - ux * radius;
-  const sy = ay - uy * radius;
-  const ex = bx + ux * radius;
-  const ey = by + uy * radius;
-  const c0x = sx + px, c0y = sy + py;
-  const c1x = ex + px, c1y = ey + py;
-  const c2x = ex - px, c2y = ey - py;
-  const c3x = sx - px, c3y = sy - py;
-  return [
-    { ax: c0x, ay: c0y, bx: c1x, by: c1y },
-    { ax: c1x, ay: c1y, bx: c2x, by: c2y },
-    { ax: c2x, ay: c2y, bx: c3x, by: c3y },
-    { ax: c3x, ay: c3y, bx: c0x, by: c0y },
-  ];
-}
-
 function faceVerts(face: OdysseyFace3): [THREE.Vector3, THREE.Vector3, THREE.Vector3] | undefined {
   const wm = face.walkmesh;
   if(!wm?.vertices) return undefined;
@@ -340,7 +310,6 @@ function corridorHitsFace(
 
   const startR = radius;
   const destR = radius + 0.001;
-  const stadium = buildStadiumEdges(ax, ay, bx, by, radius);
 
   for(let e = 0; e < 3; e++){
     const va = edges[e][0];
@@ -374,19 +343,10 @@ function corridorHitsFace(
   for(let e = 0; e < 3; e++){
     const va = edges[e][0];
     const vb = edges[e][1];
-    for(let s = 0; s < stadium.length; s++){
-      const st = stadium[s];
-      if(intersectLineSegments2d(va.x, va.y, vb.x, vb.y, st.ax, st.ay, st.bx, st.by)){
-        if(hit){
-          hit.kind = WalkHitKind.Edge;
-          hit.edgeA = va.clone();
-          hit.edgeB = vb.clone();
-          hit.hitPoint.set((va.x + vb.x) * 0.5, (va.y + vb.y) * 0.5, (az + bz) * 0.5);
-          fillEdgeHitNormal(hit, face, va, vb, ax, ay);
-        }
-        return true;
-      }
-    }
+    // Exact swept-circle (capsule) test. A rectangle "stadium" extended by
+    // radius past both ends was used here before; its corners reach
+    // radius·√2, so short per-frame steps behaved like a square collider and
+    // caught early (and direction-dependently) on diagonal geometry.
     if(distSegSeg2D(ax, ay, bx, by, va.x, va.y, vb.x, vb.y) < radius){
       if(hit){
         hit.kind = WalkHitKind.Edge;

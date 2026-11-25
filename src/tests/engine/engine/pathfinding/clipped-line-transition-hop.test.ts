@@ -106,6 +106,21 @@ describe("clippedLineSegmentWalkable transition hop", () => {
     const { area, origin, dest } = makeSeamArea(-1);
     const result = clippedLineSegmentWalkable(area, origin, dest);
     expect(result.ok).toBe(false);
+    // Real wall normal (into the south walkable face), not -direction.
+    expect(result.hasWallNormal).toBe(true);
+    expect(result.wallNormal.x).toBeCloseTo(0, 6);
+    expect(result.wallNormal.y).toBeCloseTo(-1, 6);
+  });
+
+  it("reports the wall edge normal for a diagonal approach", () => {
+    const { area, origin } = makeSeamArea(-1);
+    const dest = new THREE.Vector3(origin.x + 0.6, origin.y + 0.4, 0);
+    const result = clippedLineSegmentWalkable(area, origin, dest);
+    expect(result.ok).toBe(false);
+    expect(result.hasWallNormal).toBe(true);
+    // A -direction stand-in would have a large -X component.
+    expect(Math.abs(result.wallNormal.x)).toBeLessThan(1e-6);
+    expect(result.wallNormal.y).toBeCloseTo(-1, 6);
   });
 
   it("hops even when a short nudge still lies on the source face footprint", () => {
