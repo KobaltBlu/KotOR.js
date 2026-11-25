@@ -26,13 +26,14 @@ import {
   PATH_PLAN_SEARCH_SLICE_MS,
   takePathPlanSearchBudgetMs,
 } from "@engine/pathfinding/path-plan-budget";
-import {
-  ensurePthStaticEdgeTable,
-  isPthThinLineClear,
-} from "@engine/pathfinding/pth-edge-clear";
+import { ensurePthStaticEdgeTable } from "@engine/pathfinding/pth-edge-clear";
+import { isWalkmeshEdgeWalkClear } from "@engine/pathfinding/path-hops-clear";
 
-/** Max PTH nodes tested for origin fan-out LOS (plus closest origin always kept). */
-const ORIGIN_LOS_FANOUT = 8;
+/**
+ * Max PTH nodes walk-line tested per endpoint in getClosestReachablePathPoint
+ * (nearest-first; retail ClosestPathPoint stops at the first in-window hit).
+ */
+const CLOSEST_REACHABLE_MAX_TESTS = 32;
 
 type SmoothSessionStage = "selection" | "corner";
 
@@ -415,6 +416,35 @@ export class AreaPath {
     };
   }
 
+  /**
+   * Retail CSWSArea::ClosestPathPoint (0x004bd770): the nearest PTH point whose
+   * straight line from `point` passes the walkmesh direct-line test
+   * (TestDirectLine ok / creature-only). Nearest-by-distance alone can sit
+   * across a NonWalk void (console, pillar) and poison the first path hop.
+   * Returns undefined when no tested point is reachable (retail → plot fails).
+   */
+  getClosestReachablePathPoint(
+    point: THREE.Vector3,
+    owner?: GameObject
+  ): PathPoint | undefined {
+    if(!this.points.length) return undefined;
+    const px = point.x;
+    const py = point.y;
+    const byDist = this.points.slice(0).sort((a, b) => {
+      const da = (a.vector.x - px) * (a.vector.x - px) + (a.vector.y - py) * (a.vector.y - py);
+      const db = (b.vector.x - px) * (b.vector.x - px) + (b.vector.y - py) * (b.vector.y - py);
+      return da - db;
+    });
+    const n = Math.min(byDist.length, CLOSEST_REACHABLE_MAX_TESTS);
+    for(let i = 0; i < n; i++){
+      const p = byDist[i];
+      if(isWalkmeshEdgeWalkClear(this.area, point, p.vector, owner)){
+        return p;
+      }
+    }
+    return undefined;
+  }
+
   getClosestPathPoint(origin: THREE.Vector3): PathPoint{
     let point: PathPoint;
     let distance = Infinity;
@@ -477,10 +507,16 @@ export class AreaPath {
 
     // Stage 2: PTH PathPointDFS when path points exist
     if(this.points.length){
-      const closest_origin_point = this.getClosestPathPoint(origin);
-      const closest_destination_point = this.getClosestPathPoint(dest);
+      // Retail PlotPathPointPath: each endpoint joins the PTH graph at its
+      // ClosestPathPoint (nearest walk-line reachable node) — one link, no fan-out.
+      const closest_origin_point = this.getClosestReachablePathPoint(origin, owner);
+      const closest_destination_point = this.getClosestReachablePathPoint(dest, owner);
       if(!closest_origin_point || !closest_destination_point){
         this.clearSmoothSession(ownerId);
+        const gridNoPth = this.gridPathToComputed(owner, origin, dest, originPoint);
+        if(gridNoPth){
+          return this.finishWithSmoothSelection(gridNoPth, owner, origin, dest, smooth);
+        }
         return this.partialClearPath(owner, origin, dest, originPoint);
       }
 
@@ -493,7 +529,6 @@ export class AreaPath {
       path.setOwner(owner);
       const resume = ownerId != null ? this.dfsResumeByOwner.get(ownerId) : undefined;
       // Shared tick budget; 0 means unlimited in pathPointDfsSearch — never pass 0.
-      // Fan-out and DFS share the same deadline — check before / during fan-out.
       const searchBudget = takePathPlanSearchBudgetMs();
       if(searchBudget <= 0){
         this.clearSmoothSession(ownerId);
@@ -508,35 +543,9 @@ export class AreaPath {
         return stub;
       }
 
-      // Cap origin fan-out with thin PTH LOS (not locomotion hasWalkLineClear).
+      // PTH static edge table backs PathPoint.hasLOS during the DFS.
       ensurePthStaticEdgeTable(this.area, this.points);
-      const ox = origin.x;
-      const oy = origin.y;
-      const byDist = this.points.slice(0).sort((a, b) => {
-        const da = (a.vector.x - ox) * (a.vector.x - ox) + (a.vector.y - oy) * (a.vector.y - oy);
-        const db = (b.vector.x - ox) * (b.vector.x - ox) + (b.vector.y - oy) * (b.vector.y - oy);
-        return da - db;
-      });
-      const fanout: PathPoint[] = [];
-      const seen = new Set<PathPoint>();
-      const tryAdd = (p: PathPoint | undefined) => {
-        if(!p || seen.has(p)) return;
-        if(isPathPlanBudgetExhausted()) return;
-        // Thin creatures + static door/placeable (PathPoint.hasLOS → pth-edge-clear).
-        if(!isPthThinLineClear(this.area, originPoint, p, owner)) return;
-        seen.add(p);
-        fanout.push(p);
-      };
-      tryAdd(closest_origin_point);
-      for(let i = 0; i < byDist.length && fanout.length < ORIGIN_LOS_FANOUT; i++){
-        if(isPathPlanBudgetExhausted()) break;
-        tryAdd(byDist[i]);
-      }
-      // Always keep closest so search can start even if budget cut fan-out short.
-      if(!fanout.length && closest_origin_point){
-        fanout.push(closest_origin_point);
-      }
-      originPoint.connections = fanout;
+      originPoint.connections = [closest_origin_point];
 
       const remaining = Math.min(
         PATH_PLAN_SEARCH_SLICE_MS,
