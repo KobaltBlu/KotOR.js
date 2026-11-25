@@ -29,6 +29,12 @@ import { MiniGameObjectArray } from "@engine/module/minigame/MiniGameObjectArray
 import { MiniGame } from "@engine/module/minigame/MiniGame";
 import { MiniGameTrack } from "@engine/module/minigame/MiniGameTrack";
 import { hitCheckPart } from "@engine/module/minigame/MGHitCheck";
+import {
+  createBulletHitInfo,
+  MG_TARGET_PLAYER,
+  playMG3DOneShot,
+  type MGBulletHitInfo,
+} from "@engine/module/minigame/MGBulletHit";
 import { FollowerCamera } from "@engine/render/FollowerCamera";
 import { AuroraAnimationFlag } from "@core/enums/animation/AuroraAnimationFlag";
 
@@ -77,7 +83,29 @@ export class MiniGamePlayer extends GameObject {
   no_rotate: THREE.Group;
   speed_min: number;
   speed_max: number;
-  accel_secs: number;
+  /**
+   * CSWMiniPlayer acceleration (speed units / s) — derived at Load from
+   * (Maximum_Speed − Minimum_Speed) / Accel_Secs (0x006702f0).
+   */
+  accelPerSec: number;
+  /**
+   * Dead bit (follower flags & 2) — set before OnDeath runs so a scripted
+   * OnDeath fires once and DoHitCheck stops obstacle / bump checks.
+   */
+  deadBit: boolean = false;
+  /** 0x1d4 — set after a damaging bump; Control skips one auto-accel frame. */
+  skipAccelNextFrame: boolean = false;
+  /** Last bullet that hit this object (read by SWMG_OnBulletHit / GetLastBullet*). */
+  lastBulletHit: MGBulletHitInfo = createBulletHitInfo();
+  /** Enemy last bumped (last_follower_hit_index) — SWMG_GetLastFollowerHit. */
+  lastFollowerHit: any = undefined;
+  /** Bullet fired last by this follower's gun banks (SetBullet on startfire). */
+  lastBulletFired: { damage: number; targetType: number } = { damage: 0, targetType: 0 };
+  /** Obstacle last crossed (last_obstacle_hit) — SWMG_GetLastObstacleHit. */
+  lastObstacleHit: any = undefined;
+  /** OnAnimKeyEvent custom_* suffix / model — SWMG_GetLastEvent(ModelName). */
+  mgLastEvent: string = '';
+  mgLastEventModelName: string = '';
   accel_lateral_secs: number;
   lateralForce: number;
   invince: number;
@@ -209,10 +237,11 @@ export class MiniGamePlayer extends GameObject {
     this.animationManagers = [];
 
     // ctor — speed defaults to 100 (track rate = speed*0.01).
+    // ctor — min_speed = max_speed = 100, acceleration = 0.
     this.speed = 100;
-    this.speed_min = 0;
-    this.speed_max = 0;
-    this.accel_secs = 0;
+    this.speed_min = 100;
+    this.speed_max = 100;
+    this.accelPerSec = 0;
     this.accel_lateral_secs = 0;
     this.lateralForce = 0;
     this.invince = 0;
@@ -462,23 +491,14 @@ export class MiniGamePlayer extends GameObject {
     //this.animationManagers
     this.forceVector.set(0, 0, 0);
 
+    // CSWMiniPlayer::Control (0x0066d640) — both minigame types, no running gate.
+    this.applyAutoAcceleration(delta);
+
     switch(getDefaultRuntimeContext().getModule()?.area?.miniGame?.type){
       case MiniGameType.SWOOPRACE: {
         const miniGame = getDefaultRuntimeContext().getModule()?.area?.miniGame;
 
-        // Control accelerates only while follower running bit is set.
-        if(this.running && (this.speed_min || this.speed)){
-          if(this.speed < this.speed_min){
-            this.speed = this.speed_min;
-          }
-
-          this.speed += (this.accel_secs * delta);
-
-          if(this.speed_max && (this.speed >= this.speed_max)){
-            this.speed = this.speed_max;
-          }
-
-          this.setFollowerSpeed(this.speed);
+        if(this.running){
           this.forceVector.set(0, this.speed * delta, 0);
         }
 
@@ -569,6 +589,27 @@ export class MiniGamePlayer extends GameObject {
     
   }
 
+  /**
+   * CSWMiniPlayer::Control auto-acceleration (0x0066d640):
+   * unless the previous frame bumped (0x1d4), move speed toward max_speed by
+   * acceleration*dt — up when below, down when above — then SetSpeed.
+   */
+  applyAutoAcceleration(delta: number = 0){
+    if(!this.skipAccelNextFrame && this.speed !== this.speed_max){
+      const step = delta * (this.accelPerSec || 0);
+      let next: number;
+      if(this.speed_max <= this.speed){
+        next = this.speed - step;
+        if(next <= this.speed_max){ next = this.speed_max; }
+      }else{
+        next = this.speed + step;
+        if(next >= this.speed_max){ next = this.speed_max; }
+      }
+      this.setFollowerSpeed(next);
+    }
+    this.skipAccelNextFrame = false;
+  }
+
   updatePaused(delta: number = 0){
 
   }
@@ -588,6 +629,10 @@ export class MiniGamePlayer extends GameObject {
     if(!this.alive){ return; }
 
     if(!skipScript){
+      // Dead bit is set before OnDeath(0) (OnDamage / OnHitObstacle), so a
+      // scripted OnDeath runs exactly once.
+      if(this.deadBit){ return; }
+      this.deadBit = true;
       const instance = this.scripts[ScriptHook.MGPlayerOnDeath];
       if(instance){
         instance.run(this, 0);
@@ -595,6 +640,7 @@ export class MiniGamePlayer extends GameObject {
       }
     }
 
+    this.deadBit = true;
     this.alive = false;
     this.stopTrack();
     void this.trackFollowerAudio.playDeathSound();
@@ -810,7 +856,7 @@ export class MiniGamePlayer extends GameObject {
    * accumulate/decay continuous `bankMagnitude`, map ABS to level −10..10, play
    * Ready_01 / BankL_## / BankR_## when the discrete level changes.
    *
-   * @param lateralInput signed rate (keys: ±LateralAccel; stick: axis).
+   * @param lateralInput signed raw axis x in [−1, 1] (keys and stick alike).
    */
   updateBankAnimation(lateralInput: number, delta: number = 0){
     if(delta < 0){ delta = 0; }
@@ -1273,9 +1319,11 @@ export class MiniGamePlayer extends GameObject {
    * No proximity fallback (that falsely killed turret players with large Sphere_Radius).
    */
   tryHitObstacle(obstacle: MiniGameObstacle){
-    // DoObstacleHitCheck does not gate on invulnerability — scripts do.
-    if(!this.alive){ return; }
-    if(!obstacle || obstacle.hit){ return; }
+    // DoObstacleHitCheck (0x0066e6b0) does not gate on invulnerability — scripts do.
+    // No per-obstacle latch: the prev→cur segment test fires once per crossing,
+    // so accel pads trigger again on later laps.
+    if(!this.alive || this.deadBit){ return; }
+    if(!obstacle){ return; }
     if(!obstacle.models?.length){ return; }
     // DoObstacleHitCheck requires follower models.size != 0.
     if(!this.models?.length){ return; }
@@ -1298,23 +1346,25 @@ export class MiniGamePlayer extends GameObject {
     }
     if(!hit){ return; }
 
-    obstacle.hit = true;
     const mg = getDefaultRuntimeContext().getModule()?.area?.miniGame;
-    if(mg){ mg.lastFollowerHit = this; }
+    if(mg){ mg.lastFollowerHit = this; mg.lastObstacleHit = obstacle; }
     obstacle.lastFollowerHit = this;
+    this.lastObstacleHit = obstacle;
 
     // order: player OnHitObstacle, then obstacle OnHitFollower.
     this.onHitObstacle(obstacle);
     obstacle.onHitFollower(this);
   }
 
+  /**
+   * CSWMiniPlayer::Fire (0x0066dc50) — Fire each gun bank only. OnFire runs from
+   * the gun's "startfire" anim event (FireGunCallback → CSWMGGunBank::OnFire),
+   * so it never runs while a bank is on cooldown.
+   */
   fire(){
-    if(this.gunBanks.length){
-      for(let i = 0; i < this.gunBanks.length; i++){
-        this.gunBanks[i].fire();
-      }
+    for(let i = 0; i < this.gunBanks.length; i++){
+      this.gunBanks[i].fire();
     }
-    this.onFire();
   }
 
   /**
@@ -1870,7 +1920,7 @@ export class MiniGamePlayer extends GameObject {
 
     if(lower.startsWith('custom_')){
       // stores arg2+7 (suffix after "custom_").
-      mg?.recordAnimEvent?.(raw.substring(7), modelName);
+      mg?.recordAnimEvent?.(raw.substring(7), modelName, this);
       this.onAnimEvent();
       return;
     }
@@ -1963,19 +2013,26 @@ export class MiniGamePlayer extends GameObject {
     instance.run(this, 0);
   }
 
-  onHitBullet( bullet: MiniGameGunBullet ){
-    const instance = this.scripts[ScriptHook.MGPlayerOnHitBullet];
-    if(instance){
-      instance.mgBullet = bullet;
-      instance.run(this, 0);
-      return;
+  /**
+   * CSWMiniGameObject::OnHitBullet (0x0066c190).
+   * param 0: run OnHitBullet script if set (return).
+   * param 1 / no script: AdjustHitPoints(-damage) when TargetType & bullet target,
+   * then Collision_Sound 3D one-shot at the hit point. Not gated by invulnerability.
+   */
+  onHitBullet( bullet?: MiniGameGunBullet, skipScript: boolean = false ){
+    if(!skipScript){
+      const instance = this.scripts[ScriptHook.MGPlayerOnHitBullet];
+      if(instance){
+        instance.mgBullet = bullet;
+        instance.run(this, 0);
+        return;
+      }
     }
-    // OnHitBullet default: AdjustHitPoints(-damage) when invuln expired.
-    if(this.invince > 0){ return; }
-    const dmg = (bullet as any)?.damage_amt ?? (bullet as any)?.damage ?? 0;
-    if(dmg){
-      this.adjustHitPoints(-dmg, 0);
+    const info = this.lastBulletHit;
+    if((info.targetType & MG_TARGET_PLAYER) !== 0 && info.damage){
+      this.adjustHitPoints(-info.damage, 0);
     }
+    void playMG3DOneShot(info.collisionSound, info.point, true);
   }
 
   onHitFollower( follower: MiniGameEnemy ){
@@ -1983,6 +2040,154 @@ export class MiniGamePlayer extends GameObject {
     if(!instance){ return; }
     instance.mgFollower = follower;
     instance.run(this, 0);
+  }
+
+  /**
+   * Previous-frame world position of the primary model (GetPreviousPosition).
+   */
+  getPreviousHitModelWorld(out: THREE.Vector3): THREE.Vector3 {
+    if(this.hitModelSegReady){ return out.copy(this.hitModelSegFrom); }
+    return this.getHitModelWorld(out);
+  }
+
+  private static _bumpPlayerCur = new THREE.Vector3();
+  private static _bumpPlayerPrev = new THREE.Vector3();
+  private static _bumpEnemyCur = new THREE.Vector3();
+  private static _bumpEnemyPrev = new THREE.Vector3();
+  private static _bumpRelPrev = new THREE.Vector3();
+  private static _bumpRelCur = new THREE.Vector3();
+  private static _bumpNormal = new THREE.Vector3();
+  private static _bumpQuat = new THREE.Quaternion();
+  private static _bumpProj = new THREE.Vector3();
+  private static _bumpDir = new THREE.Vector3();
+  private static _bumpPush = new THREE.Vector3();
+  private static _bumpSum = new THREE.Vector3();
+  private static _bumpOffset = new THREE.Vector3();
+  private static _bumpParentQuat = new THREE.Quaternion();
+
+  /**
+   * SphereIntersect (0x004abdd0) — closest point on segment a→b to the origin
+   * is closer than r. A zero-length segment (< 1e-9) never hits.
+   */
+  static sphereIntersectSegment(a: THREE.Vector3, b: THREE.Vector3, r: number): boolean {
+    const dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z;
+    const len2 = dx * dx + dy * dy + dz * dz;
+    if(len2 < 1e-9){ return false; }
+    let t = (-a.x * dx - a.y * dy - a.z * dz) / len2;
+    if(t < 0){ t = 0; } else if(t > 1){ t = 1; }
+    const px = a.x + dx * t, py = a.y + dy * t, pz = a.z + dz * t;
+    return Math.sqrt(px * px + py * py + pz * pz) < r;
+  }
+
+  /**
+   * CSWMiniPlayer::DoFollowerHitCheck (0x0066eda0) — one pass.
+   * Events (damage, OnHitFollower) only when `firstPass`.
+   * Returns the number of non-trigger enemies that pushed the player.
+   */
+  doFollowerHitCheck(enemies: MiniGameEnemy[], doBumping: boolean, firstPass: boolean): number {
+    const model = this.models?.[0];
+    if(!model){ return 0; }
+    const mg = getDefaultRuntimeContext().getModule()?.area?.miniGame;
+
+    const pCur = this.getHitModelWorld(MiniGamePlayer._bumpPlayerCur);
+    const pPrev = this.getPreviousHitModelWorld(MiniGamePlayer._bumpPlayerPrev);
+    model.getWorldQuaternion(MiniGamePlayer._bumpQuat);
+    const normal = mg?.bumpPlaneNormal
+      ? mg.bumpPlaneNormal(MiniGamePlayer._bumpQuat, MiniGamePlayer._bumpNormal)
+      : MiniGamePlayer._bumpNormal.set(0, 0, 1);
+    const planeD = -normal.dot(pCur);
+
+    const sum = MiniGamePlayer._bumpSum.set(0, 0, 0);
+    let count = 0;
+    let maxBumpDamage = 0;
+
+    for(let i = enemies.length - 1; i >= 0; i--){
+      const enemy = enemies[i];
+      if(!enemy){ continue; }
+      if(!enemy.isTrigger && !doBumping){ continue; }
+      if(!enemy.models?.length || !enemy.models[0]){ break; }
+
+      const eCur = enemy.getHitModelWorld(MiniGamePlayer._bumpEnemyCur);
+      const ePrev = enemy.getPreviousHitModelWorld(MiniGamePlayer._bumpEnemyPrev);
+      const rSum = (enemy.sphere_radius || 0) + (this.sphere_radius || 0);
+      const relPrev = MiniGamePlayer._bumpRelPrev.copy(pPrev).sub(ePrev);
+      const relCur = MiniGamePlayer._bumpRelCur.copy(pCur).sub(eCur);
+      if(!MiniGamePlayer.sphereIntersectSegment(relPrev, relCur, rSum)){ continue; }
+
+      if(enemy.isTrigger){
+        if(firstPass){
+          this.lastFollowerHit = enemy;
+          if(mg){ mg.lastFollowerHit = enemy; }
+          this.onHitFollower(enemy);
+          enemy.lastFollowerHit = this;
+          enemy.onHitFollower(this);
+        }
+        continue;
+      }
+
+      // planeproject: enemy position onto the bump plane through the player.
+      const dist = normal.dot(eCur) + planeD;
+      const proj = MiniGamePlayer._bumpProj.copy(eCur).addScaledVector(normal, -dist);
+      const dir = MiniGamePlayer._bumpDir.copy(pCur).sub(proj);
+      if(dir.lengthSq() > 0){ dir.normalize(); }
+      const push = MiniGamePlayer._bumpPush.copy(proj).addScaledVector(dir, rSum + 0.1).sub(pCur);
+      sum.add(push);
+
+      if(firstPass){
+        if(!(enemy.invince > 0)){
+          enemy.hit();
+          enemy.adjustHitPoints(-(this.bump_damage || 0), 0);
+          enemy.invince = enemy.invince_period || 0;
+        }
+        maxBumpDamage = Math.max(maxBumpDamage, enemy.bump_damage || 0);
+        this.lastFollowerHit = enemy;
+        if(mg){ mg.lastFollowerHit = enemy; }
+        this.onHitFollower(enemy);
+        enemy.lastFollowerHit = this;
+        enemy.onHitFollower(this);
+      }
+      count++;
+    }
+
+    if(!count){ return 0; }
+
+    sum.divideScalar(count);
+    // World push → offset space (container parent / modelhook local frame).
+    const parent = this.container.parent;
+    if(parent){
+      parent.getWorldQuaternion(MiniGamePlayer._bumpParentQuat).invert();
+      sum.applyQuaternion(MiniGamePlayer._bumpParentQuat);
+    }
+    if(mg?.type === MiniGameType.SWOOPRACE){
+      const next = MiniGamePlayer._bumpOffset.copy(this.playerOffset).add(sum);
+      this.keepInTunnel(next);
+      this.playerOffset.copy(next);
+      this.applySwoopTunnelOffset();
+      this.syncWorldSphereAndAudio();
+    }
+
+    if(!(this.invince > 0)){
+      this.setFollowerSpeed(this.speed_min);
+      this.invince = this.invince_period || 0;
+      if(firstPass){
+        this.hit();
+        this.lastHPChange = -maxBumpDamage;
+        this.onDamaged(false);
+        this.skipAccelNextFrame = true;
+      }
+    }
+    return count;
+  }
+
+  /**
+   * CSWTrackFollower::Hit (0x0066d490) — "damage", queued "Ready_01", gun banks Hit.
+   */
+  hit(){
+    this.playAnimation('damage', 0, 0, 0);
+    this.playAnimation('Ready_01', 0, 0, 1);
+    for(let i = 0; i < this.gunBanks.length; i++){
+      this.gunBanks[i]?.hit?.();
+    }
   }
 
   /**

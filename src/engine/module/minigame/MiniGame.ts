@@ -133,7 +133,11 @@ export class MiniGame {
   obstacleTemplates: Map<string, GFFObject> = new Map();
 
   constructor(struct: GFFStruct){
-    this.type = MiniGame.readDword(struct, 'Type', 0) as MiniGameType;
+    // CSWMiniGame::Load (0x006723d0) only accepts Type 1 (swoop) or 2 (turret).
+    const rawType = MiniGame.readDword(struct, 'Type', 0);
+    this.type = (rawType === MiniGameType.SWOOPRACE || rawType === MiniGameType.TURRET)
+      ? rawType as MiniGameType
+      : 0 as MiniGameType;
 
     const movementDefault =
       this.type === MiniGameType.SWOOPRACE ? 6 :
@@ -148,7 +152,9 @@ export class MiniGame {
     }
     this.doBumping = MiniGame.readByte(struct, 'DoBumping', 0);
     this.useInertia = MiniGame.readByte(struct, 'UseInertia', 0);
-    this.dof = MiniGame.readDword(struct, 'DOF', 0);
+    // DOF is kept only when no bits outside 0..7 are set.
+    const rawDof = MiniGame.readDword(struct, 'DOF', 0);
+    this.dof = (rawDof & ~7) === 0 ? rawDof : 0;
     this.music = MiniGame.parseMusicResRef(struct);
     this.farClip = MiniGame.readFloat(struct, 'Far_Clip', 100);
     this.nearClip = MiniGame.readFloat(struct, 'Near_Clip', 0.1);
@@ -338,23 +344,28 @@ export class MiniGame {
       this.doBulletHitChecks(enemy);
     }
 
+    // Dead bit (set before OnDeath) stops obstacle / follower checks.
+    if(player.deadBit){ return; }
+
     // 2) Obstacles vs player.
     for(let i = 0; i < this.obstacles.length; i++){
       const obstacle = this.obstacles[i];
       if(!obstacle){ continue; }
       player.tryHitObstacle(obstacle);
+      if(player.deadBit){ return; }
     }
 
-    // 3) Follower bumps (sphere latch).
-    for(let i = 0; i < this.enemies.length; i++){
-      const enemy = this.enemies[i];
-      if(!enemy || !enemy.alive || enemy.collided){ continue; }
-      if(enemy.sphere?.containsPoint?.(player.sphere.center)){
-        enemy.collided = true;
-        player.onHitFollower(enemy);
-      }
+    // 3) Follower bumps — DoFollowerHitCheck, up to 3 push-out passes;
+    // events only on the first pass.
+    for(let pass = 0; pass < MiniGame.FOLLOWER_HIT_PASSES; pass++){
+      if(!player.models?.length){ break; }
+      const pushed = player.doFollowerHitCheck(this.enemies, !!this.doBumping, pass === 0);
+      if(!pushed){ break; }
     }
   }
+
+  /** DoHitCheck — DoFollowerHitCheck iteration cap. */
+  static readonly FOLLOWER_HIT_PASSES = 3;
 
   /** Run HitCheck on each live bullet for a follower's gun banks. */
   private doBulletHitChecks(follower: { gunBanks?: { bullets?: { doHitCheck?: () => void; hit?: boolean; exploding?: boolean }[] }[] }){
@@ -426,6 +437,10 @@ export class MiniGame {
   }
 
   initMiniGameObjects(){
+    // Retail runs OnCreate at the end of each object's Load: the player first,
+    // then enemies in list order, then obstacles.
+    this.player?.onCreate?.();
+
     for(let i = 0; i < this.enemies.length; i++){
       if(this.enemies[i]){
         this.enemies[i].onCreate();
@@ -438,7 +453,6 @@ export class MiniGame {
       }
     }
 
-    this.player?.onCreate?.();
     // Go — start track followers + streammusic.
     this.go();
   }
@@ -449,7 +463,8 @@ export class MiniGame {
    * player/enemies Go; if streaming source set, Play(musicResRef, STREAMMUSIC=8, loop).
    */
   go(){
-    if(this.type === MiniGameType.SWOOPRACE){
+    // TSL only — K1 CSWMiniGame::Go (0x006714e0) has no FORFEIT_SWOOPRACE step.
+    if(this.type === MiniGameType.SWOOPRACE && GameState.GameKey == GameEngineType.TSL){
       GameState.GlobalVariableManager.SetGlobalBoolean('FORFEIT_SWOOPRACE', false);
     }
     this.player?.go();
@@ -662,8 +677,9 @@ export class MiniGame {
       this.player.playerOffset.x += dx;
       this.player.playerOffset.y += dy;
       this.player.playerOffset.z += dz;
-      // Bank from axis input magnitude (not post-commit velocity rate).
-      this.player.lateralForce = this.lastAxisInput.x * this.lateralAccel;
+      // Control (0x006710e0): bank step = dt * raw axis x in [−1, 1]
+      // (not scaled by LateralAccel — that snapped straight to Bank*_10).
+      this.player.lateralForce = this.lastAxisInput.x;
     }else if(this.type === MiniGameType.TURRET){
       // Control — offset += velocity delta in **degrees**, then
       // KeepInTunnel + write offset to ori controllers. Not radians (was ~57× fast).
@@ -720,9 +736,17 @@ export class MiniGame {
     if(opts.obstacle){ this.lastObstacleHit = opts.obstacle; }
   }
 
-  recordAnimEvent(eventName: string, modelName: string = ''){
+  /**
+   * OnAnimKeyEvent custom_* — retail stores the event on the owning MGO
+   * (SWMG_GetLastEvent reads the caller's own). Globals kept for legacy reads.
+   */
+  recordAnimEvent(eventName: string, modelName: string = '', owner?: { mgLastEvent?: string; mgLastEventModelName?: string }){
     this.lastEvent = eventName || '';
     this.lastEventModelName = modelName || '';
+    if(owner){
+      owner.mgLastEvent = eventName || '';
+      owner.mgLastEventModelName = modelName || '';
+    }
   }
 
   /**

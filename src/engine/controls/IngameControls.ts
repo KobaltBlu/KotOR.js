@@ -1511,13 +1511,18 @@ export class IngameControls {
           mg.updateAxis(x, 0, 0, delta);
           // Swoop accelerate (W / MGActionUp / pad up) → OnAccelerate every frame while held.
           // onaccelerate.ncs gates on MIN_RACE_GEAR / speed thresholds (gear 0 → 1+).
+          // TSL only: K1 HandleInputEvent (0x00621210) never runs OnAccelerate —
+          // K1 speed comes from CSWMiniPlayer::Control auto-acceleration.
           const mgUpPad = KeyMapper.Actions[KeyMapAction.MGActionUp]?.gamepadInput;
           const accelHeld =
             !!KeyMapper.Actions[KeyMapAction.MGActionUp]?.keyboardInput?.down
             || !!mgUpPad?.pressed
             || !!(mgUpPad && 'down' in mgUpPad && mgUpPad.down)
             || !!KeyMapper.Actions[KeyMapAction.ActionUp]?.keyboardInput?.down;
-          if(accelHeld && GameState.State == EngineState.RUNNING && mg.player?.running){
+          if(
+            GameState.GameKey == GameEngineType.TSL &&
+            accelHeld && GameState.State == EngineState.RUNNING && mg.player?.running
+          ){
             mg.player.onAccelerate();
           }
         }else if(mg.type === MiniGameType.TURRET){

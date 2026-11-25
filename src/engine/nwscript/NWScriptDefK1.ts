@@ -8291,7 +8291,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.STRING,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module?.area?.miniGame?.lastEvent || '';
+      // 0x005cb480 — reads the calling MGO's own last event; "" otherwise.
+      const c = this.caller as any;
+      if(!(isMGPlayer(c) || isMGEnemy(c) || isMGObstacle(c))){ return ''; }
+      return c.mgLastEvent || '';
     }
   },
   584:{
@@ -8300,7 +8303,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.STRING,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module?.area?.miniGame?.lastEventModelName || '';
+      // 0x005cb560 — calling MGO's own last event model name; "" otherwise.
+      const c = this.caller as any;
+      if(!(isMGPlayer(c) || isMGEnemy(c) || isMGObstacle(c))){ return ''; }
+      return c.mgLastEventModelName || '';
     }
   },
   585:{
@@ -8335,7 +8341,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module?.area?.miniGame?.lastBulletHitDamage || 0;
+      // GetLastBulletInfo (0x005cb870) — caller MGO's own record; −1 otherwise.
+      const c = this.caller as any;
+      if(!(isMGPlayer(c) || isMGEnemy(c) || isMGObstacle(c))){ return -1; }
+      return c.lastBulletHit?.damage || 0;
     }
   },
   588:{
@@ -8344,7 +8353,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module?.area?.miniGame?.lastBulletHitTarget || 0;
+      // GetLastBulletInfo (0x005cb870) — caller MGO's own record; −1 otherwise.
+      const c = this.caller as any;
+      if(!(isMGPlayer(c) || isMGEnemy(c) || isMGObstacle(c))){ return -1; }
+      return c.lastBulletHit?.targetType || 0;
     }
   },
   589:{
@@ -8355,7 +8367,10 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: []){
       // HitCheckBullet stores last_bullet_hit_shooter_index (mgo_index);
       // StackPushObject that index (0xff if unset).
-      const shooter = GameState.module?.area?.miniGame?.lastBulletHitShooter as GameObject | undefined;
+      // 0x005cb930 — caller MGO's own record; invalid object otherwise.
+      const c = this.caller as any;
+      if(!(isMGPlayer(c) || isMGEnemy(c) || isMGObstacle(c))){ return undefined; }
+      const shooter = c.lastBulletHit?.shooter as GameObject | undefined;
       if(!shooter){ return undefined; }
       const idx = shooter.mgoIndex;
       if(typeof idx !== 'number' || idx < 0 || idx >= 0xff){ return undefined; }
@@ -8382,12 +8397,14 @@ NWScriptDefK1.Actions = {
     args: [],
     action: function(this: NWScriptInstance, args: []){
       // DefaultImpl â†’ OnHitBullet(1) â€” engine default, skip nested script preference.
+      // skipScript=true — must not re-run the caller's own OnHitBullet script.
+      const bullet = this.mgBullet as MiniGameGunBullet;
       if(isMGPlayer(this.caller)){
-        (this.caller as MiniGamePlayer).onHitBullet(this.mgBullet as MiniGameGunBullet);
+        (this.caller as MiniGamePlayer).onHitBullet(bullet, true);
       }else if(isMGEnemy(this.caller)){
-        (this.caller as MiniGameEnemy).onHitBullet();
+        (this.caller as MiniGameEnemy).onHitBullet(bullet, true);
       }else if(isMGObstacle(this.caller)){
-        (this.caller as MiniGameObstacle).onHitBullet();
+        (this.caller as MiniGameObstacle).onHitBullet(bullet, true);
       }
     }
   },
@@ -8411,14 +8428,12 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // : GetLastFollowerHit on caller MGO (obstacle's last_follower_hit_index).
-      if(this.mgFollower){ return this.mgFollower; }
-      const caller = this.caller;
-      if(isMGObstacle(caller)){
-        const hit = (caller as MiniGameObstacle).lastFollowerHit;
-        if(hit){ return hit; }
+      // GetLastObjectHit (0x005cbb00) — caller MGO's own last_follower_hit_index.
+      const caller = this.caller as any;
+      if(isMGPlayer(caller) || isMGEnemy(caller) || isMGObstacle(caller)){
+        if(caller.lastFollowerHit){ return caller.lastFollowerHit; }
       }
-      return GameState.module?.area?.miniGame?.lastFollowerHit || undefined;
+      return this.mgFollower || undefined;
     }
   },
   594:{
@@ -8427,7 +8442,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return this.mgObstacle || GameState.module?.area?.miniGame?.lastObstacleHit || undefined;
+      // GetLastObjectHit (0x005cbb00) — caller MGO's own last obstacle hit.
+      const caller = this.caller as any;
+      if(isMGPlayer(caller) && caller.lastObstacleHit){ return caller.lastObstacleHit; }
+      return this.mgObstacle || undefined;
     }
   },
   595:{
@@ -8436,7 +8454,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module?.area?.miniGame?.lastBulletFiredDamage || 0;
+      // Caller follower's own last fired bullet (SetBullet on startfire); −1 otherwise.
+      const c = this.caller as any;
+      if(!(isMGPlayer(c) || isMGEnemy(c))){ return -1; }
+      return c.lastBulletFired?.damage || 0;
     }
   },
   596:{
@@ -8445,7 +8466,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module?.area?.miniGame?.lastBulletFiredTarget || 0;
+      // Caller follower's own last fired bullet (SetBullet on startfire); −1 otherwise.
+      const c = this.caller as any;
+      if(!(isMGPlayer(c) || isMGEnemy(c))){ return -1; }
+      return c.lastBulletFired?.targetType || 0;
     }
   },
   597:{
@@ -8967,7 +8991,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.STRING,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module?.area?.miniGame?.lastBulletHitPart || '';
+      // 0x005ccbb0 — caller MGO's own last bullet hit part; "" otherwise.
+      const c = this.caller as any;
+      if(!(isMGPlayer(c) || isMGEnemy(c) || isMGObstacle(c))){ return ''; }
+      return c.lastBulletHit?.part || '';
     }
   },
   640:{
@@ -9024,7 +9051,8 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.FLOAT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module.area.miniGame.player.accel_secs;
+      // acceleration (speed/s) derived at Load, not the raw Accel_Secs field.
+      return GameState.module.area.miniGame.player.accelPerSec;
     }
   },
   646:{
@@ -9092,7 +9120,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number]){
-      GameState.module.area.miniGame.player.accel_secs = args[0];
+      GameState.module.area.miniGame.player.accelPerSec = args[0];
     }
   },
   652:{

@@ -13,6 +13,11 @@ import { OdysseyModel, OdysseyModelAnimationManager } from "@engine/odyssey";
 import { MDLLoader } from "@engine/loaders";
 import type { OdysseyObject3D } from "@engine/render/three/odyssey";
 import * as THREE from "three";
+import {
+  createBulletHitInfo,
+  playMG3DOneShot,
+  type MGBulletHitInfo,
+} from "@engine/module/minigame/MGBulletHit";
 
 /**
 * MiniGameObstacle class.
@@ -32,11 +37,14 @@ export class MiniGameObstacle extends GameObject {
   max_hps: number = 0;
   invince_period: number;
   layout: ILayoutObstacle;
-  /** One-shot latch after DoObstacleHitCheck (accel pads, etc.). */
-  hit: boolean = false;
   /** last_follower_hit_index — player who last bumped this obstacle. */
   lastFollowerHit: MiniGamePlayer | undefined;
   lastHPChange: number = 0;
+  /** Last bullet that hit this object (SWMG_OnBulletHit / GetLastBullet*). */
+  lastBulletHit: MGBulletHitInfo = createBulletHitInfo();
+  /** OnAnimKeyEvent custom_* suffix / model — SWMG_GetLastEvent(ModelName). */
+  mgLastEvent: string = '';
+  mgLastEventModelName: string = '';
   models: OdysseyModel3D[] = [];
   animationManagers: OdysseyModelAnimationManager[] = [];
   /** OnAnimKeyEvent custom_* → OnAnimEvent (obstacles have no track loop). */
@@ -187,7 +195,7 @@ export class MiniGameObstacle extends GameObject {
     if(!raw){ return; }
     if(!raw.toLowerCase().startsWith('custom_')){ return; }
     const modelName = e?.target?.name || this.models?.[0]?.name || this.name || '';
-    getDefaultRuntimeContext().getModule()?.area?.miniGame?.recordAnimEvent?.(raw.substring(7), modelName);
+    getDefaultRuntimeContext().getModule()?.area?.miniGame?.recordAnimEvent?.(raw.substring(7), modelName, this);
     this.onAnimEvent();
   }
 
@@ -258,10 +266,20 @@ export class MiniGameObstacle extends GameObject {
     onHeartbeat.run(this);
   }
 
-  onHitBullet(){
-    const onHitBullet = this.scripts[ScriptHook.MGObstacleOnHitBullet];
-    if(!onHitBullet){ return; }
-    onHitBullet.run(this, 0);
+  /**
+   * CSWMiniGameObject::OnHitBullet (0x0066c190). Obstacles are not
+   * TrackFollowers, so the default path only plays Collision_Sound (no HP change).
+   */
+  onHitBullet(bullet?: any, skipScript: boolean = false){
+    if(!skipScript){
+      const onHitBullet = this.scripts[ScriptHook.MGObstacleOnHitBullet];
+      if(onHitBullet){
+        onHitBullet.mgBullet = bullet;
+        onHitBullet.run(this, 0);
+        return;
+      }
+    }
+    void playMG3DOneShot(this.lastBulletHit.collisionSound, this.lastBulletHit.point, false);
   }
 
   /**

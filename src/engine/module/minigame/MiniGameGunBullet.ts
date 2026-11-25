@@ -11,10 +11,8 @@ import { MDLLoader } from "@engine/loaders";
 import type { MiniGameEnemy } from "@engine/module/minigame/MiniGameEnemy";
 import type { MiniGamePlayer } from "@engine/module/minigame/MiniGamePlayer";
 import type { MiniGameObstacle } from "@engine/module/minigame/MiniGameObstacle";
-import { ScriptHook } from "@core/enums/module/ScriptHook";
 import { hitCheckPart, type MGHitCheckOut } from "@engine/module/minigame/MGHitCheck";
-
-import { isMGPlayer } from "@engine/module/guards/isMGPlayer";
+import type { MGBulletHitInfo } from "@engine/module/minigame/MGBulletHit";
 
 /**
 * MiniGameGunBullet class.
@@ -113,37 +111,28 @@ export class MiniGameGunBullet extends GameObject {
     const mg = getDefaultRuntimeContext().getModule()?.area?.miniGame;
     if(!mg){ return; }
 
-    const ownerIsPlayer = !!(this.owner as MiniGamePlayer)?.isPlayer ||
-      (mg.player === this.owner);
-
-    if(ownerIsPlayer){
-      for(let i = 0, len = mg.enemies.length; i < len; i++){
-        const enemy = mg.enemies[i];
-        if(!enemy?.alive){ continue; }
-        if(this.hitsFollower(enemy)){
-          this.applyHitFollower(enemy);
-          return;
-        }
-      }
-      for(let i = 0, len = mg.obstacles.length; i < len; i++){
-        const obstacle = mg.obstacles[i];
-        if(this.hitsObstacle(obstacle)){
-          this.applyHitObstacle(obstacle);
-          return;
-        }
-      }
-    }else{
-      const player = mg.player;
-      if(player?.alive && this.hitsFollower(player)){
-        this.applyHitFollower(player);
+    // CSWMiniGame::DoHitCheck (0x006732f0): every bullet is tested against the
+    // player, then each enemy (reverse list order), then obstacles. Only the
+    // bullet's own shooter is skipped, so enemy bullets can hit other enemies.
+    const shooter = this.getShooter();
+    const player = mg.player;
+    if(player && player !== shooter && this.hitsFollower(player)){
+      this.applyHitFollower(player);
+      return;
+    }
+    for(let i = mg.enemies.length - 1; i >= 0; i--){
+      const enemy = mg.enemies[i];
+      if(!enemy || enemy === shooter){ continue; }
+      if(this.hitsFollower(enemy)){
+        this.applyHitFollower(enemy);
         return;
       }
-      for(let i = 0, len = mg.obstacles.length; i < len; i++){
-        const obstacle = mg.obstacles[i];
-        if(this.hitsObstacle(obstacle)){
-          this.applyHitObstacle(obstacle);
-          return;
-        }
+    }
+    for(let i = mg.obstacles.length - 1; i >= 0; i--){
+      const obstacle = mg.obstacles[i];
+      if(this.hitsObstacle(obstacle)){
+        this.applyHitObstacle(obstacle);
+        return;
       }
     }
   }
@@ -176,7 +165,8 @@ export class MiniGameGunBullet extends GameObject {
   }
 
   /**
-   * DoBulletHitCheck on follower models — hitbullet HitCheckPart; else sphere.
+   * DoBulletHitCheck (0x0066d4e0) on follower models — HitCheckPart against the
+   * "hitbullet" part only. No part → miss (no sphere stand-in).
    */
   hitsFollower(target: MiniGamePlayer | MiniGameEnemy): boolean {
     if(!target){ return false; }
@@ -184,81 +174,73 @@ export class MiniGameGunBullet extends GameObject {
     const to = this.directionLine.end;
     const out = MiniGameGunBullet._hitOut;
     const models = (target as MiniGamePlayer).models || (target as MiniGameEnemy).models;
+    if(!models?.length){ return false; }
 
-    if(models?.length){
-      for(let i = 0; i < models.length; i++){
-        const root = models[i];
-        if(!root){ continue; }
-        const part = root.nodes?.get?.('hitbullet') || root.getObjectByName?.('hitbullet');
-        if(!part){ continue; }
-        if(hitCheckPart(root, part, from, to, out)){
-          if(out.point) this.lastHitPoint.copy(out.point);
-          if(out.normal) this.lastHitNormal.copy(out.normal);
-          return true;
-        }
+    for(let i = 0; i < models.length; i++){
+      const root = models[i];
+      if(!root){ continue; }
+      const part = root.nodes?.get?.('hitbullet') || root.getObjectByName?.('hitbullet');
+      if(!part){ continue; }
+      if(hitCheckPart(root, part, from, to, out)){
+        if(out.point) this.lastHitPoint.copy(out.point);
+        if(out.normal) this.lastHitNormal.copy(out.normal);
+        return true;
       }
-      // Models present but no hitbullet part — no sphere fallback (requires part).
-      // If none of the models had a part, fall through to sphere.
-      let anyPart = false;
-      for(let i = 0; i < models.length; i++){
-        const root = models[i];
-        if(!root){ continue; }
-        if(root.nodes?.get?.('hitbullet') || root.getObjectByName?.('hitbullet')){
-          anyPart = true;
-          break;
-        }
-      }
-      if(anyPart){ return false; }
     }
+    return false;
+  }
 
-    return !!(target.sphere?.containsPoint?.(this.position));
+  /** Follower (player / enemy) that owns the gun bank this bullet came from. */
+  getShooter(): GameObject | undefined {
+    const owner = this.owner as any;
+    return owner?.owner || owner;
+  }
+
+  /**
+   * Copy this bullet's hit data onto the target's per-object record
+   * (CSWMiniGameObject last-bullet fields read by OnHitBullet / SWMG getters).
+   */
+  recordHitOn(target: { lastBulletHit?: MGBulletHitInfo } | undefined){
+    const info = target?.lastBulletHit;
+    if(!info){ return; }
+    info.damage = this.damage_amt || 0;
+    info.targetType = Number(this.target_type) || 0;
+    info.collisionSound = this.collision_sound || '';
+    info.point.copy(this.lastHitPoint);
+    info.shooter = this.getShooter();
+    info.part = 'hitbullet';
   }
 
   applyHitFollower(target: MiniGamePlayer | MiniGameEnemy){
     this.hit = true;
-    this.playCollisionSound();
     const mg = getDefaultRuntimeContext().getModule()?.area?.miniGame;
     mg?.recordBulletHit({
       damage: this.damage_amt || 0,
       targetType: this.target_type || 0,
-      shooter: this.owner,
+      shooter: this.getShooter(),
       follower: target,
     });
-    if(isMGPlayer(target)){
-      (target as MiniGamePlayer).onHitBullet(this);
-      return;
-    }
-    const enemy = target as MiniGameEnemy;
-    const hadScript = !!enemy.scripts?.[ScriptHook.MGEnemyOnHitBullet];
-    enemy.onHitBullet();
-    if(!hadScript && this.damage_amt){
-      enemy.damage(this.damage_amt);
-    }
+    this.recordHitOn(target);
+    // OnHitBullet(0): script if set, else default damage (TargetType mask) + sound.
+    target.onHitBullet(this, false);
+    // HitCheckBullet plays "explode" for every hit, followers included.
+    this.playExplodeThenCull();
   }
 
   applyHitObstacle(obstacle: MiniGameObstacle){
     this.hit = true;
-    this.playCollisionSound();
     const mg = getDefaultRuntimeContext().getModule()?.area?.miniGame;
     mg?.recordBulletHit({
       damage: this.damage_amt || 0,
       targetType: this.target_type || 0,
-      shooter: this.owner,
+      shooter: this.getShooter(),
       obstacle,
     });
-    obstacle.onHitBullet?.();
-    if(this.damage_amt){
-      obstacle.adjustHitPoints?.(-this.damage_amt, 0);
-    }
+    this.recordHitOn(obstacle);
+    // Obstacles are not followers — no HP change; default path only plays the sound.
+    obstacle.onHitBullet?.(this, false);
     // : PlayAnimation("explode"); on success RegisterCallBack(doneexplode); else destroy gob.
     this.playExplodeThenCull();
-  }
-
-  /** Collision_Sound on bullet hit (follower or obstacle). */
-  playCollisionSound(){
-    const sfx = (this.collision_sound || '').replace(/\0[\s\S]*$/g, '').trim();
-    if(!sfx){ return; }
-    GameState.guiAudioEmitter?.playSoundFireAndForget?.(sfx);
   }
 
   /**

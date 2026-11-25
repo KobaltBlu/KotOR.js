@@ -10,6 +10,7 @@ import { OdysseyModel3D } from "@engine/render/three/odyssey";
 import { MiniGameGunBullet } from "@engine/module/minigame/MiniGameGunBullet";
 import type { MiniGamePlayer } from "@engine/module/minigame/MiniGamePlayer";
 import * as THREE from "three";
+import { playMG3DOneShot } from "@engine/module/minigame/MGBulletHit";
 
 /**
 * MiniGameGunBank class.
@@ -268,6 +269,20 @@ export class MiniGameGunBank extends GameObject {
     }
   }
 
+  /**
+   * CSWMGGunBank::Hit (0x00673fd0) — "damage" then queued "ready" on each gun Gob.
+   */
+  hit(){
+    for(let i = 0; i < this.guns.length; i++){
+      const gun = this.guns[i];
+      if(!(gun instanceof OdysseyModel3D) || this.dyingGunFlags[i]){ continue; }
+      const damage = gun.odysseyAnimationMap?.get?.('damage');
+      if(damage){
+        gun.playAnimation(damage, false);
+      }
+    }
+  }
+
   /** RemoveGun — detach + drop gun Gob. */
   removeGunAt(index: number){
     if(index < 0 || index >= this.guns.length){ return; }
@@ -314,10 +329,12 @@ export class MiniGameGunBank extends GameObject {
       : (this.model instanceof OdysseyModel3D ? [this.model] : []);
 
     if(!gunModels.length){
-      // No gun Gob yet — legacy immediate spawn from bank hook.
+      // No gun Gob yet — legacy immediate spawn from bank hook. There is no
+      // anim to carry "startfire", so OnFire runs here when the bank fires.
       if(!(this.gunFireTimers[0] > 0)){
         this.gunFireTimers[0] = rate;
-        if(sfx){ GameState.guiAudioEmitter.playSoundFireAndForget(sfx); }
+        if(sfx){ this.playFireSound(sfx, this.bullet_hook || this.gunHooks[0]); }
+        this.onFireScript();
         const hook = this.bullet_hook || this.gunHooks[0];
         if(hook){ this.spawnBulletFromHook(hook); }
       }
@@ -334,6 +351,13 @@ export class MiniGameGunBank extends GameObject {
           (ev: any) => MiniGameGunBank._fireEventRe.test(String(ev?.name ?? ''))
         ));
         gun.playAnimation(fireAnim || 'fire', false);
+        // Aurora emits a synthetic "start<anim>" event when an animation starts
+        // (cf. "done<anim>" → doneexplode / donedie). FireGunCallback maps
+        // "startfire" → CSWMGGunBank::OnFire, so OnFire runs each time the "fire"
+        // anim starts — even when the MDL has no such key (e.g. K1 mgg_null).
+        if(fireAnim){
+          this.onGunAnimEvent(i, 'startfire');
+        }
         const ready =
           gun.odysseyAnimationMap?.get?.('ready') ||
           gun.odysseyAnimationMap?.get?.('Ready_01');
@@ -350,9 +374,24 @@ export class MiniGameGunBank extends GameObject {
         }
       }
       if(sfx){
-        GameState.guiAudioEmitter.playSoundFireAndForget(sfx);
+        this.playFireSound(sfx, gun);
       }
     }
+  }
+
+  private static readonly _fireSoundPos = new THREE.Vector3();
+
+  /**
+   * Fire SFX: player banks play a 2D one-shot (CSWMGBehaviorFire::Fire, 0x17);
+   * enemy TrackAndFire banks play a 3D one-shot at the gun (0x18).
+   */
+  playFireSound(sfx: string, source?: THREE.Object3D){
+    if(this.isPlayer || !source){
+      GameState.guiAudioEmitter?.playSoundFireAndForget?.(sfx);
+      return;
+    }
+    source.getWorldPosition(MiniGameGunBank._fireSoundPos);
+    void playMG3DOneShot(sfx, MiniGameGunBank._fireSoundPos, false);
   }
 
   /**
@@ -376,9 +415,16 @@ export class MiniGameGunBank extends GameObject {
     this.spawnBulletFromGun(gunIndex, Number.isFinite(hookIndex) ? hookIndex : 0);
   }
 
-  /** OnFire — run follower OnFire script. */
+  /**
+   * CSWMGGunBank::OnFire (0x006738d0) — SetBullet on the owning follower
+   * (SWMG_GetLastBulletFired*), then the follower's OnFire script.
+   */
   onFireScript(){
     const owner = this.owner as any;
+    if(owner?.lastBulletFired){
+      owner.lastBulletFired.damage = this.proto_bullet?.damage_amt || 0;
+      owner.lastBulletFired.targetType = Number(this.proto_bullet?.target_type) || 0;
+    }
     if(typeof owner?.onFire === 'function'){
       owner.onFire();
     }

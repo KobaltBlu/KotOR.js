@@ -17,6 +17,12 @@ import { MGTrackFollowerAudio } from "@engine/module/minigame/MGTrackFollowerAud
 import { MiniGameObjectArray } from "@engine/module/minigame/MiniGameObjectArray";
 import { MiniGameTrack } from "@engine/module/minigame/MiniGameTrack";
 import { miniGameEnemySerializer } from "@engine/module/serialization/MiniGameEnemySerializer";
+import {
+  createBulletHitInfo,
+  MG_TARGET_ENEMY,
+  playMG3DOneShot,
+  type MGBulletHitInfo,
+} from "@engine/module/minigame/MGBulletHit";
 
 /**
 * MiniGameEnemy class.
@@ -92,7 +98,23 @@ export class MiniGameEnemy extends GameObject {
   };
   private animPlayEventTargets: Array<{ target: THREE.Object3D; handler: typeof this.animPlayEventHandler }> = [];
 
-  collided: boolean = false;
+  /**
+   * Dead bit (follower flags & 2) — set before OnDeath runs so a scripted
+   * OnDeath fires once.
+   */
+  deadBit: boolean = false;
+  /** Last bullet that hit this object (SWMG_OnBulletHit / GetLastBullet*). */
+  lastBulletHit: MGBulletHitInfo = createBulletHitInfo();
+  /** last_follower_hit_index — the player that bumped this enemy. */
+  lastFollowerHit: any = undefined;
+  /** Bullet fired last by this follower's gun banks (SetBullet on startfire). */
+  lastBulletFired: { damage: number; targetType: number } = { damage: 0, targetType: 0 };
+  /** OnAnimKeyEvent custom_* suffix / model — SWMG_GetLastEvent(ModelName). */
+  mgLastEvent: string = '';
+  mgLastEventModelName: string = '';
+  /** Primary model world position at the start of this frame (GetPreviousPosition). */
+  prevHitModelWorld: THREE.Vector3 = new THREE.Vector3();
+  private prevHitModelReady: boolean = false;
   /** Last HP delta for SWMG_GetLastHPChange / OnDamage. */
   lastHPChange: number = 0;
   /** World pose for sphere / audio — container.position is local under modelhook. */
@@ -204,6 +226,10 @@ export class MiniGameEnemy extends GameObject {
     this.invince -= delta;
     if(this.invince < 0) this.invince = 0;
 
+    // Previous-frame model position — DoFollowerHitCheck swept test start.
+    this.getHitModelWorld(this.prevHitModelWorld);
+    this.prevHitModelReady = true;
+
     this.sphere.radius = this.sphere_radius;
     this.syncWorldSphereAndAudio();
     this.sphere_geom.scale.setScalar(this.sphere_radius);
@@ -271,17 +297,12 @@ export class MiniGameEnemy extends GameObject {
       const player = getDefaultRuntimeContext().getModule()?.area?.miniGame?.player;
       if(!player?.alive){ continue; }
 
-      // TargettingGunBank: Sensing_Radius gates auto-fire; else forward ray LOS.
-      if(bank.isTargetting()){
-        if(bank.isPlayerInSensingRange(player)){
-          bank.fire();
-        }
-      }else{
-        this.container.getWorldPosition(GameState.raycaster.ray.origin);
-        this.container.getWorldDirection(GameState.raycaster.ray.direction);
-        if(GameState.raycaster.ray.intersectsSphere(player.sphere)){
-          bank.fire();
-        }
+      // Only TrackAndFire (targeting) banks fire on their own
+      // (CSWMGBehaviorTrackAndFire::Control 0x006db3d0). CSWMGGunBank::Fire's
+      // only other caller is CSWMiniPlayer::Fire, so non-targeting enemy banks
+      // never auto-fire.
+      if(bank.isTargetting() && bank.isPlayerInSensingRange(player)){
+        bank.fire();
       }
     }
 
@@ -448,7 +469,7 @@ export class MiniGameEnemy extends GameObject {
     const mg = getDefaultRuntimeContext().getModule()?.area?.miniGame;
 
     if(lower.startsWith('custom_')){
-      mg?.recordAnimEvent?.(raw.substring(7), modelName);
+      mg?.recordAnimEvent?.(raw.substring(7), modelName, this);
       this.onAnimEvent();
       return;
     }
@@ -538,6 +559,9 @@ export class MiniGameEnemy extends GameObject {
     if(!this.alive){ return; }
 
     if(!skipScript){
+      // Dead bit is set before OnDeath(0), so a scripted OnDeath runs once.
+      if(this.deadBit){ return; }
+      this.deadBit = true;
       const onDeath = this.scripts[ScriptHook.MGEnemyOnDeath];
       if(onDeath){
         onDeath.run(this, 0);
@@ -545,6 +569,7 @@ export class MiniGameEnemy extends GameObject {
       }
     }
 
+    this.deadBit = true;
     this.alive = false;
     this.stopTrack();
     void this.trackFollowerAudio.playDeathSound();
@@ -676,18 +701,60 @@ export class MiniGameEnemy extends GameObject {
     onAccelerate.run(this, 0);
   }
 
-  onHitBullet(){
-    const onHitBullet = this.scripts[ScriptHook.MGEnemyOnHitBullet];
-    if(onHitBullet){
-      onHitBullet.run(this, 0);
-      return;
+  /**
+   * CSWMiniGameObject::OnHitBullet (0x0066c190).
+   * param 0: OnHitBullet script if set. param 1 / no script: AdjustHitPoints(-damage)
+   * when TargetType (ENEMY) & bullet target, then Collision_Sound 3D one-shot.
+   */
+  onHitBullet(bullet?: any, skipScript: boolean = false){
+    if(!skipScript){
+      const onHitBullet = this.scripts[ScriptHook.MGEnemyOnHitBullet];
+      if(onHitBullet){
+        onHitBullet.mgBullet = bullet;
+        onHitBullet.run(this, 0);
+        return;
+      }
+    }
+    const info = this.lastBulletHit;
+    if((info.targetType & MG_TARGET_ENEMY) !== 0 && info.damage){
+      this.adjustHitPoints(-info.damage, 0);
+    }
+    void playMG3DOneShot(info.collisionSound, info.point, false);
+  }
+
+  onHitFollower(follower?: any){
+    const onHitFollower = this.scripts[ScriptHook.MGEnemyOnHitFollower];
+    if(!onHitFollower){ return; }
+    if(follower){ onHitFollower.mgFollower = follower; }
+    onHitFollower.run(this, 0);
+  }
+
+  /**
+   * CSWTrackFollower::Hit (0x0066d490) — "damage", queued "Ready_01", gun banks Hit.
+   */
+  hit(){
+    this.playAnimation('damage', 0, 0, 0);
+    this.playAnimation('Ready_01', 0, 0, 1);
+    for(let i = 0; i < this.gunBanks.length; i++){
+      this.gunBanks[i]?.hit?.();
     }
   }
 
-  onHitFollower(){
-    const onHitFollower = this.scripts[ScriptHook.MGEnemyOnHitFollower];
-    if(!onHitFollower){ return; }
-    onHitFollower.run(this, 0);
+  /** World position of the primary follower model (or container). */
+  getHitModelWorld(out: THREE.Vector3): THREE.Vector3 {
+    const model = this.models?.[0];
+    if(model){
+      model.updateMatrixWorld?.(true);
+      return model.getWorldPosition(out);
+    }
+    this.container.updateMatrixWorld?.(true);
+    return this.container.getWorldPosition(out);
+  }
+
+  /** GetPreviousPosition — model world position captured at the start of update. */
+  getPreviousHitModelWorld(out: THREE.Vector3): THREE.Vector3 {
+    if(this.prevHitModelReady){ return out.copy(this.prevHitModelWorld); }
+    return this.getHitModelWorld(out);
   }
 
   /**
