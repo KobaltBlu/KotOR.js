@@ -8796,24 +8796,26 @@ NWScriptDefK1.Actions = {
     }
   },
   623:{
-    comment: "623: SWMG_GetPosition\nreturns track/modelhook local position (tar_m03mg heartbeat uses Y as race progress)\n",
+    comment: "623: SWMG_GetPosition\n",
     name: "SWMG_GetPosition",
     type: NWScriptDataType.VECTOR,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [GameObject]){
       if(isMGPlayer(args[0]) || isMGEnemy(args[0])){
+        // CSWTrackFollower::GetPosition (0x0066d5d0): world position of models[0]
+        // (modelhook pose + tunnel offset). tar_m03mg heartbeat reads .y as race
+        // progress and locks the tunnel to x - 100 (the bike's lateral offset).
         const follower = args[0] as MiniGamePlayer | MiniGameEnemy;
-        const track = follower.track;
-        const hook = track?.getObjectByName?.('modelhook');
-        if(hook){
-          // Track anim drives modelhook local Position — Y advances along the course.
-          return new THREE.Vector3(hook.position.x, hook.position.y, hook.position.z);
-        }
-        if(track){
-          return new THREE.Vector3(track.position.x, track.position.y, track.position.z);
-        }
         const vec3 = new THREE.Vector3();
-        (follower as MiniGamePlayer).container?.getWorldPosition?.(vec3);
+        const source: THREE.Object3D | undefined =
+          follower.models?.[0] ||
+          (follower as MiniGamePlayer).container ||
+          follower.track?.getObjectByName?.('modelhook') ||
+          follower.track;
+        if(source){
+          source.updateWorldMatrix(true, false);
+          source.getWorldPosition(vec3);
+        }
         return vec3;
       }
       return new THREE.Vector3(0, 0, 0);
