@@ -5,14 +5,14 @@ import { PazaakTurnMode } from "@core/enums/minigames/PazaakTurnMode";
 import { PazaakHandSlots } from "@core/enums/minigames/PazaakHandSlots";
 import { PazaakTutorial } from "@engine/minigames/pazaak-tutorial";
 
-/** HandleForfeitButton — MessageBox strref 0xa5b9. */
+/** Forfeit confirmation message. */
 const TLK_FORFEIT_PAZAAK_CONFIRM = 0xa5b9;
 
 /**
  * MenuPazaakGame class (TSL).
  *
  * Restores K1 FLIP/play/stand wiring (skipInit must be false), then adds
- * CHANGE (HandleChangeHandCard) and FORFEIT (HandleForfeitButton).
+ * the CHANGE buttons for the ±1/±2 card and the FORFEIT button.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -146,7 +146,7 @@ export class MenuPazaakGame extends K1_MenuPazaakGame {
   }
 
   /**
-   * HandleChangeHandCard — type 0x16 cycles state 0/1↔2.
+   * Toggle the ±1/±2 card between magnitude 1 and 2.
    */
   changeHandCard(tableIndex: number, cardIndex: number){
     const swapped = GameState.PazaakManager.Tables[tableIndex].swapValueCards.get(cardIndex);
@@ -161,7 +161,7 @@ export class MenuPazaakGame extends K1_MenuPazaakGame {
     const table = GameState.PazaakManager.Tables[tableIndex];
     const flipped = !!table.flipCards.get(cardIndex);
     const swapped = !!table.swapValueCards.get(cardIndex);
-    // HandlePlayHandCard — warn if tutorial + total < 13.
+    // Tutorial: warn if tutorial + total < 13.
     if(tableIndex === PazaakTurnMode.PLAYER && PazaakTutorial.enabled){
       if(table.points < 13){
         GameState.PazaakManager.queueTutorialHelp(
@@ -194,7 +194,7 @@ export class MenuPazaakGame extends K1_MenuPazaakGame {
         );
       }
       if(changeBtn){
-        // only cycles type 0x16; negateModifier marks that card in config.
+        // Only the ±1/±2 card (negateModifier in config) can CHANGE.
         if(card?.negateModifier || card?.type === 0x16){
           changeBtn.show();
           changeBtn.disableSelection = this.noClicks() || table.handCardPlayed;

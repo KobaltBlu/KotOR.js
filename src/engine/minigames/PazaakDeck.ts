@@ -1,4 +1,5 @@
 import { TwoDAObject } from "@core/resource/TwoDAObject";
+import { PazaakCards } from "@core/enums/minigames/PazaakCards";
 
 export class PazaakDeck {
 
@@ -17,55 +18,43 @@ export class PazaakDeck {
   
   cards: number[] = []; //card indexes converted from modifier labels
 
-  static ModifierToCardIndex(cardModifier: string){
-    if(cardModifier == '+1'){
-      return 0;
-    }else if(cardModifier == '+2'){
-      return 1;
-    }else if(cardModifier == '+3'){
-      return 2;
-    }else if(cardModifier == '+4'){
-      return 3;
-    }else if(cardModifier == '+5'){
-      return 4;
-    }else if(cardModifier == '+6'){
-      return 5;
-    }else if(cardModifier == '-1'){
-      return 6;
-    }else if(cardModifier == '-2'){
-      return 7;
-    }else if(cardModifier == '-3'){
-      return 8;
-    }else if(cardModifier == '-4'){
-      return 9;
-    }else if(cardModifier == '-5'){
-      return 10;
-    }else if(cardModifier == '-6'){
-      return 11;
-    }else if(cardModifier == '+-1'){
-      return 12;
-    }else if(cardModifier == '+-2'){
-      return 13;
-    }else if(cardModifier == '+-3'){
-      return 14;
-    }else if(cardModifier == '+-4'){
-      return 15;
-    }else if(cardModifier == '+-5'){
-      return 16;
-    }else if(cardModifier == '+-6'){
-      return 17;
-    }else if(cardModifier == '$$'){ //TSL only
-      return 18;
-    }else if(cardModifier == 'F1'){ //TSL only
-      return 19;
-    }else if(cardModifier == 'F2'){ //TSL only
-      return 20;
-    }else if(cardModifier == 'TT'){ //TSL only
-      return 21;
-    }else if(cardModifier == 'VV'){ //TSL only
-      return 22;
+  /**
+   * Convert a pazaakdecks.2da entry into a side card index.
+   *
+   * The first character picks the card family and the second its value (1-6):
+   * `+N` plus, `-N` minus, `*N` plus/minus (`+-N` is also accepted).
+   * TSL gold cards: `$` Double, `F1` Flip 2&4, `F2` Flip 3&6, `T` Tie Breaker,
+   * `V` ±1/±2 (letters are case-insensitive).
+   */
+  static ModifierToCardIndex(cardModifier: string): PazaakCards {
+    const entry = (cardModifier || '').trim();
+    if(!entry.length){
+      return PazaakCards.INVALID;
     }
-    return -1;
+
+    const family = entry.charAt(0).toUpperCase();
+    switch(family){
+      case '$': return PazaakCards.DOUBLE;
+      case 'F': return entry.charAt(1) == '1' ? PazaakCards.FLIP_2_AND_4 : PazaakCards.FLIP_3_AND_6;
+      case 'T': return PazaakCards.TIE_BREAKER;
+      case 'V': return PazaakCards.PLUS_MINUS_1_OR_2;
+    }
+
+    const digits = entry.startsWith('+-') ? entry.substring(2) : entry.substring(1);
+    const value = parseInt(digits.charAt(0), 10);
+    if(isNaN(value) || value < 1 || value > 6){
+      return PazaakCards.INVALID;
+    }
+    if(entry.startsWith('+-') || family == '*'){
+      return PazaakCards.PLUS_MINUS_1 + (value - 1);
+    }
+    if(family == '-'){
+      return PazaakCards.MINUS_1 + (value - 1);
+    }
+    if(family == '+'){
+      return PazaakCards.PLUS_1 + (value - 1);
+    }
+    return PazaakCards.INVALID;
   }
 
   static From2DA(row: any = {}){

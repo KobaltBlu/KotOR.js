@@ -1,5 +1,5 @@
 /**
- * DoGameSequence — set vs match SFX after score bump.
+ * Set vs match result sound, chosen after the winner's score is bumped.
  * Tie has no result SFX (warnbust is on bust draw, not tie).
  */
 export type PazaakRoundWinner = "player" | "opponent";

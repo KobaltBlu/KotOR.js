@@ -1,24 +1,22 @@
 /**
  * Pazaak tutorial help sequences for PlayPazaak(bShowTutorial=1).
  *
- * K1: ShowMultipleHelp, HandleTutorialClose,
- * StartNewGame, OnPanelAdded (setup).
- * Aspyr mirrors the same TLK ids.
+ * Both games use the same TLK string ids.
  *
  * Pure state machine — no GameState / Three.js imports (Jest-safe).
  */
 
-/** Setup OnPanelAdded help. */
+/** Help shown when the side deck setup screen opens. */
 export const PAZAAK_TUT_SETUP = [0x96e3, 0x96e4, 0x96e5] as const;
-/** Game StartNewGame help (once per session, state bit 8). */
+/** Help shown once when the first game starts. */
 export const PAZAAK_TUT_GAME_START = [0x96e7, 0x96e8] as const;
-/** After first player draw (state bit 2). */
+/** Help shown after the player's first draw. */
 export const PAZAAK_TUT_DRAWN_CARD = 0x96e9;
 /** After closing 0x96e9 — hand / flip help. */
 export const PAZAAK_TUT_HAND_HELP = [0x96ea, 0x96eb, 0x96ec, 0x96f3, 0x96f4] as const;
 /** After closing 0x96ec / 0x96f4 — stand / continue help. */
 export const PAZAAK_TUT_STAND_HELP = [0x96ed, 0x96ee, 0x96ef] as const;
-/** Enemy turn help (state bit 4). */
+/** Help shown at the start of the first enemy turn. */
 export const PAZAAK_TUT_ENEMY_TURN = 0x96f5;
 /** Perfect 20. */
 export const PAZAAK_TUT_TWENTY = 0x96f6;
@@ -41,7 +39,7 @@ export enum PazaakTutorialAction {
   FORCE_STAND = 1,
   /** Close 0x96f2 — play pending hand card. */
   PLAY_SIDE = 2,
-  /** Close 0x96f9 — EndPazaakGame. */
+  /** Close 0x96f9 — end the match. */
   END_GAME = 3,
   /** Close 0x96e9 — queue hand help (action is informational). */
   SET_HAND_HINT = 4,
@@ -62,15 +60,15 @@ export class PazaakTutorialDriver {
   queue: number[] = [];
   /** Strref currently (or last) shown. */
   current = 0;
-  /** bit 8 — StartNewGame intro. */
+  /** Game start intro already shown. */
   gameStartShown = false;
-  /** bit 2 — first draw help. */
+  /** First draw help already shown. */
   drawnCardHelpShown = false;
-  /** bit 4 — enemy turn help. */
+  /** Enemy turn help already shown. */
   enemyTurnHelpShown = false;
-  /** bit 0x10 — twenty help. */
+  /** Twenty help already shown. */
   twentyHelpShown = false;
-  /** Hand index deferred for PLAY_SIDE (HandlePlayHandCard state). */
+  /** Hand index deferred until the play-side warning is dismissed. */
   pendingHandIndex = -1;
 
   reset(){
@@ -88,7 +86,7 @@ export class PazaakTutorialDriver {
   }
 
   /**
-   * Setup OnPanelAdded — enqueue 0x96e3..0x96e5; return first strref or 0.
+   * Setup screen opened — enqueue 0x96e3..0x96e5; return first strref or 0.
    */
   beginSetup(): number {
     if(!this.enabled){ return 0; }
@@ -96,7 +94,7 @@ export class PazaakTutorialDriver {
   }
 
   /**
-   * Game StartNewGame — enqueue 0x96e7..0x96e8 once; return first or 0.
+   * Game started — enqueue 0x96e7..0x96e8 once; return first or 0.
    */
   beginGameIfNeeded(): number {
     if(!this.enabled || this.gameStartShown){ return 0; }
@@ -162,7 +160,7 @@ export class PazaakTutorialDriver {
 
   /**
    * User dismissed the dialog showing `closedStrRef`.
-   * Enqueues follow-up help (HandleTutorialClose) and returns action + next dialog.
+   * Enqueues follow-up help and returns the action and next dialog.
    */
   onHelpClosed(closedStrRef: number): PazaakTutorialDismissResult {
     let action = PazaakTutorialAction.NONE;

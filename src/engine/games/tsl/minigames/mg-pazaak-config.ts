@@ -375,7 +375,7 @@ export const PazaakConfig = {
           'pcards_dblneg_p'
         ]
       },
-      // SetCard — gold order 0x12..0x16
+      // Gold cards: Tie Breaker, Double, Flip 2&4, Flip 3&6, ±1/±2
       {
         name: "Tie Breaker",
         type: 0x12,
@@ -425,7 +425,7 @@ export const PazaakConfig = {
         ]
       },
       {
-        // HandleChangeHandCard — type 0x16 cycles state 0/1↔2 (magnitude)
+        // CHANGE toggles the magnitude between 1 and 2; FLIP sets the sign
         name: "1±2",
         type: 0x16,
         modifier: [1, 2],

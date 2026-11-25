@@ -4,9 +4,21 @@ import type { IPazaakCard } from '@core/interface/minigames/IPazaakCard';
 import type { IPazaakTable } from '@core/interface/minigames/IPazaakTable';
 
 /**
- * Side-card point delta for play / AI.
- * Card 0x16 (PLUS_MINUS_1_OR_2): CHANGE selects magnitude, FLIP selects sign.
- * SetCard / HandleChangeHandCard.
+ * Value of the most recently placed card on a table (0 when the board is empty).
+ */
+export function lastPlayedValue(table: IPazaakTable): number {
+  for(let j = PazaakTableSlots.MAX_SLOTS - 1; j >= 0; j--){
+    const prev = table.cardArea.get(j);
+    if(prev && typeof prev.playedValue === 'number'){
+      return prev.playedValue;
+    }
+  }
+  return 0;
+}
+
+/**
+ * Point delta a side card contributes when played.
+ * The TSL ±1/±2 card uses CHANGE (swapped) for magnitude and FLIP for sign.
  */
 export function resolveSideCardDelta(
   card: IPazaakCard,
@@ -23,15 +35,7 @@ export function resolveSideCardDelta(
     return flipped ? -1 : 1;
   }
   if(cardId === PazaakCards.DOUBLE){
-    let last = 0;
-    for(let j = PazaakTableSlots.MAX_SLOTS - 1; j >= 0; j--){
-      const prev = table.cardArea.get(j);
-      if(prev && typeof prev.playedValue === 'number'){
-        last = prev.playedValue;
-        break;
-      }
-    }
-    return last;
+    return lastPlayedValue(table);
   }
   if(cardId === PazaakCards.FLIP_2_AND_4 || cardId === PazaakCards.FLIP_3_AND_6){
     return 0;
@@ -70,21 +74,36 @@ export function sideCardDisplayLabel(
 }
 
 /**
- * TSL Flip 2&4 / 3&6 — negate played cards whose |value| is in targets on both tables.
+ * Board points a Flip 2&4 / Flip 3&6 card would produce, without changing the board.
  */
-export function applyBoardFlipSpecial(tables: IPazaakTable[], targets: number[]){
-  for(let t = 0; t < tables.length; t++){
-    const table = tables[t];
-    for(let j = 0; j < PazaakTableSlots.MAX_SLOTS; j++){
-      const slot = table.cardArea.get(j);
-      if(!slot || typeof slot.playedValue !== 'number'){ continue; }
-      const abs = Math.abs(slot.playedValue);
-      if(!targets.includes(abs)){ continue; }
-      table.points -= slot.playedValue;
-      slot.playedValue = -slot.playedValue;
+export function previewBoardFlip(table: IPazaakTable, targets: number[]): number {
+  let total = 0;
+  for(let j = 0; j < PazaakTableSlots.MAX_SLOTS; j++){
+    const slot = table.cardArea.get(j);
+    if(!slot || typeof slot.playedValue !== 'number'){ continue; }
+    total += targets.includes(slot.playedValue) ? -slot.playedValue : slot.playedValue;
+  }
+  return total;
+}
+
+/**
+ * TSL Flip 2&4 / Flip 3&6 — turns every positive card on the playing side's own
+ * board whose value is one of the targets negative. Negative cards and the
+ * opponent's board are untouched.
+ */
+export function applyBoardFlip(table: IPazaakTable, targets: number[]){
+  for(let j = 0; j < PazaakTableSlots.MAX_SLOTS; j++){
+    const slot = table.cardArea.get(j);
+    if(!slot || typeof slot.playedValue !== 'number'){ continue; }
+    if(!targets.includes(slot.playedValue)){ continue; }
+    table.points -= slot.playedValue;
+    slot.playedValue = -slot.playedValue;
+    if(slot.reversible || slot.negateModifier){
       slot.flipped = !slot.flipped;
-      slot.modifierLabel = slot.playedValue > 0 ? `+${slot.playedValue}` : `${slot.playedValue}`;
-      table.points += slot.playedValue;
     }
+    slot.modifierLabel = slot.cardId === PazaakCards.TIE_BREAKER
+      ? (slot.playedValue > 0 ? '+1T' : '-1T')
+      : (slot.playedValue > 0 ? `+${slot.playedValue}` : `${slot.playedValue}`);
+    table.points += slot.playedValue;
   }
 }

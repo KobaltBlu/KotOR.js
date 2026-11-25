@@ -196,7 +196,7 @@ export class MenuPazaakSetup extends GameMenu {
     if(GameState.PazaakManager.MaxWager > 0){
       GameState.MenuManager.MenuPazaakWager.open();
     }
-    // OnPanelAdded — setup help 0x96e3..0x96e5.
+    // Show the side deck setup tutorial help.
     PazaakTutorial.setEnabled(!!GameState.PazaakManager.ShowTutorial);
     GameState.PazaakManager.queueTutorialHelp(PazaakTutorial.beginSetup());
     this.knownCards.clear();

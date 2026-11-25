@@ -1,8 +1,7 @@
 /**
  * Pazaak Cards enum.
  *
- * TSL gold side indices match SetCard:
- * 0x12 Tie Breaker, 0x13 Double, 0x14 Flip2&4, 0x15 Flip3&6, 0x16 ±1/±2 (CHANGE).
+ * Indices 18-22 are the TSL-only gold cards.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -30,16 +29,16 @@ export enum PazaakCards {
   PLUS_MINUS_4 = 15,
   PLUS_MINUS_5 = 16,
   PLUS_MINUS_6 = 17,
-  /** TSL gold — SetCard case 0x12 */
+  /** TSL gold card */
   TIE_BREAKER = 18,
-  /** TSL gold — SetCard case 0x13 */
+  /** TSL gold card */
   DOUBLE = 19,
-  /** TSL gold — SetCard case 0x14 */
+  /** TSL gold card */
   FLIP_2_AND_4 = 20,
-  /** TSL gold — SetCard case 0x15 */
+  /** TSL gold card */
   FLIP_3_AND_6 = 21,
   /**
-   * TSL gold — SetCard case 0x16 / HandleChangeHandCard type 0x16.
+   * TSL gold card.
    * FLIP toggles sign; CHANGE (swapValueCards) toggles magnitude 1↔2.
    */
   PLUS_MINUS_1_OR_2 = 22,
