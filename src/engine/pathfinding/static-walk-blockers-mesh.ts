@@ -28,8 +28,6 @@ const _queryBox = new THREE.Box3();
 const _queryMin = new THREE.Vector3();
 const _queryMax = new THREE.Vector3();
 const _faceScratch: OdysseyFace3[] = [];
-/** Placeable getFacesInBox output — separate from room candidate scratch. */
-const _placeableFaceScratch: OdysseyFace3[] = [];
 
 function isBlockingFace(face: OdysseyFace3 | undefined): boolean {
   return isWalkCheckBlockingFace(face);
@@ -40,16 +38,30 @@ function meshFaces(wok: OdysseyWalkMesh | undefined): OdysseyFace3[] | undefined
   return wok.faces?.length ? wok.faces : undefined;
 }
 
-function facesInQueryBox(
-  wok: OdysseyWalkMesh | undefined,
-  queryBox: THREE.Box3,
-  scratch: OdysseyFace3[]
-): OdysseyFace3[] | undefined {
-  if(!wok) return undefined;
-  if(typeof wok.getFacesInBox === 'function'){
-    return wok.getFacesInBox(queryBox, scratch);
+
+/**
+ * True when segment a→b comes within `radius` of (cx, cy) — including edges
+ * that lie entirely inside the circle (which boundary-crossing tests miss).
+ */
+export function circleTouchesSegment2d(
+  cx: number,
+  cy: number,
+  radius: number,
+  ax: number, ay: number,
+  bx: number, by: number
+): boolean {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const lenSq = dx * dx + dy * dy;
+  let t = 0;
+  if(lenSq > 1e-12){
+    t = ((cx - ax) * dx + (cy - ay) * dy) / lenSq;
+    if(t < 0) t = 0;
+    else if(t > 1) t = 1;
   }
-  return meshFaces(wok);
+  const px = ax + dx * t - cx;
+  const py = ay + dy * t - cy;
+  return px * px + py * py < radius * radius;
 }
 
 /**
@@ -195,7 +207,7 @@ function startCircleTouchesFace(
   for(let e = 0; e < 3; e++){
     const va = edges[e][0];
     const vb = edges[e][1];
-    if(intersectCircle2d(ax, ay, touchR, va.x, va.y, vb.x, vb.y) > 0){
+    if(circleTouchesSegment2d(ax, ay, touchR, va.x, va.y, vb.x, vb.y)){
       return true;
     }
   }
@@ -269,7 +281,7 @@ function destOnlyHitsFace(
   for(let e = 0; e < 3; e++){
     const va = edges[e][0];
     const vb = edges[e][1];
-    if(intersectCircle2d(bx, by, destR, va.x, va.y, vb.x, vb.y) > 0){
+    if(circleTouchesSegment2d(bx, by, destR, va.x, va.y, vb.x, vb.y)){
       if(hit){
         hit.kind = WalkHitKind.Edge;
         hit.hitPoint.set(bx, by, bz);
@@ -317,7 +329,7 @@ function corridorHitsFace(
     // Soft start-circle: already in contact can still probe slide/leave steps.
     // Dest + stadium still hard-block so placeables remain solid.
     if(!softClearStartOverlap){
-      if(intersectCircle2d(ax, ay, startR, va.x, va.y, vb.x, vb.y) > 0){
+      if(circleTouchesSegment2d(ax, ay, startR, va.x, va.y, vb.x, vb.y)){
         if(hit){
           hit.kind = WalkHitKind.Edge;
           hit.hitPoint.set(ax, ay, az);
@@ -328,7 +340,7 @@ function corridorHitsFace(
         return true;
       }
     }
-    if(intersectCircle2d(bx, by, destR, va.x, va.y, vb.x, vb.y) > 0){
+    if(circleTouchesSegment2d(bx, by, destR, va.x, va.y, vb.x, vb.y)){
       if(hit){
         hit.kind = WalkHitKind.Edge;
         hit.hitPoint.set(bx, by, bz);
@@ -642,51 +654,9 @@ export function isStaticWalkClearOnAreaMesh(
     }
   }
 
-  const placeables = area.placeables;
-  if(placeables?.length){
-    for(let p = 0; p < placeables.length; p++){
-      const plc = placeables[p];
-      if(!plc?.isStatic?.() && !plc?.collisionManager?.walkmesh) continue;
-      if(plc.box){
-        if(
-          maxX < plc.box.min.x - expand ||
-          minX > plc.box.max.x + expand ||
-          maxY < plc.box.min.y - expand ||
-          minY > plc.box.max.y + expand
-        ){
-          continue;
-        }
-      }
-      const plcFaces = facesInQueryBox(
-        plc.collisionManager?.walkmesh,
-        queryBox,
-        _placeableFaceScratch
-      );
-      if(!plcFaces?.length) continue;
-      let plcStartOverlapping = startOverlapping;
-      if(softStart && !plcStartOverlapping){
-        plcStartOverlapping = areaBlockingFacesHaveStartOverlap(
-          plcFaces,
-          from,
-          perspace
-        );
-      }
-      for(let i = 0, len = plcFaces.length; i < len; i++){
-        const face = plcFaces[i];
-        if(!isBlockingFace(face)) continue;
-        if(!faceOverlapsCorridorAabb(face, minX, maxX, minY, maxY)) continue;
-        const blocked = plcStartOverlapping
-          ? destOnlyHitsFace(face, to.x, to.y, to.z, radius, hit)
-          : corridorHitsFace(
-            face, from.x, from.y, to.x, to.y, from.z, to.z, radius, hit, softStart
-          );
-        if(blocked){
-          if(hit) hit.objectId = plc.id;
-          return { clear: false };
-        }
-      }
-    }
-  }
+  // Placeable walkmeshes are tested by isStaticWalkClearDetailed (world
+  // matrix + blocker grid). Their wok vertices are local-space, so they must
+  // not be compared against this world-space corridor.
 
   return { clear: true };
 }

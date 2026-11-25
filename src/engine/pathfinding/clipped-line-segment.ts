@@ -96,6 +96,44 @@ function findWalkFaceAt(
   return undefined;
 }
 
+const _offMeshNearest = new THREE.Vector3();
+
+/**
+ * Start is off the walkmesh (pushed / spawned outside it). Only allow steps
+ * that land back on a walk face or move closer to the mesh; anything else
+ * is blocked with a normal pointing back toward the mesh so slide solvers
+ * steer the creature home instead of letting it roam freely.
+ */
+function clipFromOffMesh(
+  area: Area,
+  origin: THREE.Vector3,
+  dest: THREE.Vector3
+): ClippedLineSegmentResult {
+  const clearPoint = _clipResult.clearPoint;
+  const destFace = findWalkFaceAt(area, dest);
+  if(destFace){
+    clearPoint.copy(dest);
+    return finishClip(true, 1, origin.z, dest.z);
+  }
+  if(typeof area.getNearestWalkablePoint !== "function"){
+    // Stub areas without a nearest-point query: legacy permissive behaviour.
+    return finishClip(true, 0, origin.z, origin.z);
+  }
+  _offMeshNearest.copy(area.getNearestWalkablePoint(origin, 0));
+  const nx = _offMeshNearest.x - origin.x;
+  const ny = _offMeshNearest.y - origin.y;
+  const dOrigin = Math.hypot(nx, ny);
+  const dDest = Math.hypot(_offMeshNearest.x - dest.x, _offMeshNearest.y - dest.y);
+  if(dOrigin < 1e-6 || dDest < dOrigin - 1e-6){
+    clearPoint.copy(dest);
+    return finishClip(true, 1, origin.z, dest.z);
+  }
+  clearPoint.copy(origin);
+  _clipResult.wallNormal.set(nx / dOrigin, ny / dOrigin, 0);
+  _clipResult.hasWallNormal = true;
+  return finishClip(false, 0, origin.z, origin.z);
+}
+
 /**
  * After crossing a transition edge, prefer a walkable face on a different
  * walkmesh than the source. First-match findWalkFaceAt often returns the
@@ -191,7 +229,15 @@ export function clippedLineSegmentWalkable(
   area: Area | undefined,
   origin: THREE.Vector3,
   dest: THREE.Vector3,
-  options: { maxHeightDelta?: number } = {}
+  options: {
+    maxHeightDelta?: number;
+    /**
+     * Frame-step movement: an off-mesh start may only move back onto / toward
+     * the walkmesh. Plot-grade queries (pathing LOS) keep the permissive
+     * legacy result and rely on their own sample checks.
+     */
+    strictOffMeshStart?: boolean;
+  } = {}
 ): ClippedLineSegmentResult {
   const clearPoint = _clipResult.clearPoint;
   clearPoint.copy(origin);
@@ -210,6 +256,9 @@ export function clippedLineSegmentWalkable(
 
   let face = findWalkFaceAt(area, origin);
   if(!face){
+    if(options.strictOffMeshStart){
+      return clipFromOffMesh(area, origin, dest);
+    }
     // Start off-mesh — defer to sample / isPointWalkable path
     return finishClip(true, 0, origin.z, origin.z);
   }

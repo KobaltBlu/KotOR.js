@@ -132,3 +132,58 @@ describe("clippedLineSegmentWalkable transition hop", () => {
     expect(result.ok).toBe(true);
   });
 });
+
+describe("clippedLineSegmentWalkable strict off-mesh start", () => {
+  function offMeshArea(){
+    const { area } = makeSeamArea(-1);
+    // South face spans y ∈ [70, 75] near x = 92.775; nearest mesh point below it.
+    (area as unknown as { getNearestWalkablePoint: (p: THREE.Vector3) => THREE.Vector3 })
+      .getNearestWalkablePoint = (p) => new THREE.Vector3(p.x, 70, 0);
+    return area;
+  }
+
+  it("blocks a step that moves farther from the walkmesh, with a normal toward it", () => {
+    const area = offMeshArea();
+    const r = clippedLineSegmentWalkable(
+      area,
+      new THREE.Vector3(92.775, 69, 0),
+      new THREE.Vector3(92.775, 68.5, 0),
+      { strictOffMeshStart: true }
+    );
+    expect(r.ok).toBe(false);
+    expect(r.hasWallNormal).toBe(true);
+    expect(r.wallNormal.y).toBeCloseTo(1, 6);
+  });
+
+  it("allows a step toward the walkmesh", () => {
+    const area = offMeshArea();
+    const r = clippedLineSegmentWalkable(
+      area,
+      new THREE.Vector3(92.775, 69, 0),
+      new THREE.Vector3(92.775, 69.5, 0),
+      { strictOffMeshStart: true }
+    );
+    expect(r.ok).toBe(true);
+  });
+
+  it("allows a step that lands back on a walk face", () => {
+    const area = offMeshArea();
+    const r = clippedLineSegmentWalkable(
+      area,
+      new THREE.Vector3(92.775, 69.9, 0),
+      new THREE.Vector3(92.775, 71, 0),
+      { strictOffMeshStart: true }
+    );
+    expect(r.ok).toBe(true);
+  });
+
+  it("keeps the permissive legacy result without the strict flag", () => {
+    const area = offMeshArea();
+    const r = clippedLineSegmentWalkable(
+      area,
+      new THREE.Vector3(92.775, 69, 0),
+      new THREE.Vector3(92.775, 60, 0)
+    );
+    expect(r.ok).toBe(true);
+  });
+});

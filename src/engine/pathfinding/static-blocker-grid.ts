@@ -237,12 +237,13 @@ export function ensureWalkmeshMatrixSynced(
 ): void {
   if(!obj) return;
   const anyObj = obj as GameObject & {
-    collisionMatrixDirty?: boolean;
+    walkmeshMatrixDirty?: boolean;
     syncWalkmeshMatrix?: () => void;
   };
   if(typeof anyObj.syncWalkmeshMatrix !== "function") return;
-  // Static / already-synced pose: matrix is current until markCollisionBoundsDirty.
-  if(anyObj.collisionMatrixDirty === false) return;
+  // Static / already-synced pose: matrix is current until marked dirty.
+  // Own flag — bounds refresh consumes collisionMatrixDirty independently.
+  if(anyObj.walkmeshMatrixDirty === false) return;
   anyObj.syncWalkmeshMatrix();
-  anyObj.collisionMatrixDirty = false;
+  anyObj.walkmeshMatrixDirty = false;
 }

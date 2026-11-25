@@ -143,7 +143,7 @@ export function probeDriveStepClear(
   const softStart = !!options.softClearStartOverlap;
 
   // 1) Clipped walk-face traversal (wall / hop).
-  const clip = clippedLineSegmentWalkable(area, from, to);
+  const clip = clippedLineSegmentWalkable(area, from, to, { strictOffMeshStart: true });
   if(!clip.ok){
     _result.clearPoint.copy(clip.clearPoint);
     if(clip.hasWallNormal){

@@ -418,6 +418,7 @@ export class Door extends GameObject {
     // Use-position LocalToWorld shares the same matrix; keep mat4 in sync but
     // do not bake into vertices (updateMatrix would destroy local space).
     wok.mat4.copy(wok.matrixWorld);
+    this.walkmeshMatrixDirty = false;
     if(wok.mesh){
       wok.mesh.matrixAutoUpdate = false;
       wok.mesh.matrix.copy(wok.matrixWorld);
@@ -883,9 +884,8 @@ export class Door extends GameObject {
     }
 
     // Idle doors keep DWK until open-state swap or matrix dirty (placeable pattern).
-    if(this.collisionMatrixDirty || transitioning){
+    if(this.walkmeshMatrixDirty || transitioning){
       this.syncWalkmeshMatrix();
-      this.collisionMatrixDirty = false;
     }
 
     if(this.isDead()){

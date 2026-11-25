@@ -9,7 +9,6 @@ import {
   testDriveStepClear,
   WalkLineHitCode,
 } from "@engine/movement/area-movement-queries";
-import type { DriveStepClearResult } from "@engine/pathfinding/drive-step-clear";
 import {
   MovementHitKind,
   MovementSource,
@@ -22,6 +21,7 @@ import {
   projectDesiredOntoNormals,
 } from "@engine/movement/wall-slide";
 import { solveCollideAndSlide } from "@engine/movement/collide-and-slide";
+import { makeStaticSlideProbe } from "@engine/movement/static-slide-probe";
 import { getCreaturePersonalSpace } from "@engine/combat/attack-range";
 import { nudgeFriendlyCreatures } from "@engine/pathfinding/nudge-friendlies";
 import { isCreature } from "@engine/module/guards/isCreature";
@@ -74,19 +74,6 @@ export function projectOntoTangent(
   return out;
 }
 
-/**
- * True when a probe hit normal is usable for horizontal wall slide.
- * Near-Z / tiny-XY normals (flat Nonwalk skirts) must not suppress walk-edge
- * collection or drive projectOntoTangent.
- */
-function isUsableWallNormalXY(n: THREE.Vector3 | undefined): boolean {
-  if(!n) return false;
-  const xy = Math.hypot(n.x, n.y);
-  if(xy < 1e-3) return false;
-  if(Math.abs(n.z) > 0.9) return false;
-  return true;
-}
-
 function playerStaticOpts(creature: Creature, collectHitInfo = false){
   return {
     owner: creature,
@@ -110,19 +97,6 @@ function segmentClear(
     ...PLAYER_CREATURE_OPTS,
   });
   return cr.clear;
-}
-
-function movementHitFromProbe(probe: DriveStepClearResult): MovementHit | undefined {
-  if(probe.clear) return undefined;
-  return {
-    kind:
-      probe.code === WalkLineHitCode.DetailedBlock
-        ? MovementHitKind.Static
-        : MovementHitKind.Walkmesh,
-    objectId: probe.blockingObjectId,
-    position: probe.clearPoint.clone(),
-    distance: probe.clearT,
-  };
 }
 
 function resolveBlocker(
@@ -204,25 +178,12 @@ export function resolvePlayerControlStep(
   // Static collide-and-slide (walkmesh walls, placeables, doors). Creature
   // capsules are re-validated per leg with hard player options.
   const creperspace = getCreaturePersonalSpace(creature);
-  const staticOpts = playerStaticOpts(creature, true);
   const idealX = _ideal.x;
   const idealY = _ideal.y;
   const solve = solveCollideAndSlide(origin, _desired, {
     area,
     radius: creperspace,
-    probe: (from, to) => {
-      const r = testDriveStepClear(area, from, to, staticOpts);
-      const clear = r.clear && r.code === WalkLineHitCode.Ok;
-      const n = r.normal ?? r.walkHit?.normal;
-      return {
-        clear,
-        clearT: clear ? 1 : r.clearT,
-        normalX: n?.x,
-        normalY: n?.y,
-        normalUsable: !r.normalSynthetic && isUsableWallNormalXY(n),
-        hit: clear ? undefined : movementHitFromProbe(r),
-      };
-    },
+    probe: makeStaticSlideProbe(area, playerStaticOpts(creature, true)),
     validateLeg: (from, to) => {
       // The creature gate above already cleared origin→ideal.
       if(

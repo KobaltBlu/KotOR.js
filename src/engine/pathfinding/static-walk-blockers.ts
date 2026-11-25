@@ -4,10 +4,8 @@ import type { Door } from "@engine/module/Door";
 import type { Placeable } from "@engine/module/Placeable";
 import type { OdysseyFace3 } from "@engine/render/three/odyssey";
 import {
-  areaBlockingFacesHaveStartOverlap,
   isStaticWalkClearOnAreaMesh,
   isStaticWalkClearOnWalkMesh,
-  walkMeshHasStartOverlap,
 } from "@engine/pathfinding/static-walk-blockers-mesh";
 import {
   composeDoorWalkmeshLocalToWorld,
@@ -44,10 +42,6 @@ const _to = new THREE.Vector3();
 const _mid = new THREE.Vector3();
 const _meshAabb: WalkmeshWorldAabbXY = { minX: 0, maxX: 0, minY: 0, maxY: 0 };
 const _facingBox = new THREE.Box3();
-const _roomOverlapBox = new THREE.Box3();
-const _roomOverlapMin = new THREE.Vector3();
-const _roomOverlapMax = new THREE.Vector3();
-const _roomOverlapFaces: OdysseyFace3[] = [];
 
 function segmentHitsBox(a: THREE.Vector3, b: THREE.Vector3, box: THREE.Box3): boolean {
   for(let i = 0; i <= 10; i++){
@@ -332,55 +326,11 @@ export function isStaticWalkClearDetailed(
   const doorsScan = nearby.doors;
   const placeablesScan = nearby.placeables;
 
-  // If the capsule already overlaps any door/placeable/room Nonwalk, force
-  // dest-only on all static mesh tests so a neighbor cannot stadium-block escape.
-  let forceDestOnly = false;
-  if(softStart){
-    if(doorsScan?.length){
-      for(let i = 0; i < doorsScan.length; i++){
-        const door = doorsScan[i];
-        if(!door || isIgnored(door.id)) continue;
-        const wok = door.collisionManager?.walkmesh;
-        if(!wok?.faces?.length) continue;
-        ensureWalkmeshMatrixSynced(door);
-        if(walkMeshHasStartOverlap(wok, _from, { personalSpace: expand })){
-          forceDestOnly = true;
-          break;
-        }
-      }
-    }
-    if(!forceDestOnly && placeablesScan?.length){
-      for(let i = 0; i < placeablesScan.length; i++){
-        const plc = placeablesScan[i];
-        if(!plc || isIgnored(plc.id)) continue;
-        const wok = plc.collisionManager?.walkmesh;
-        if(!wok?.faces?.length) continue;
-        ensureWalkmeshMatrixSynced(plc);
-        if(walkMeshHasStartOverlap(wok, _from, { personalSpace: expand })){
-          forceDestOnly = true;
-          break;
-        }
-      }
-    }
-    if(!forceDestOnly && options.skipMesh !== true){
-      let roomFaces = options.candidateFaces;
-      if(!roomFaces?.length && typeof area.getWalkCandidatesForBox === "function"){
-        const pad = expand + 0.05;
-        _roomOverlapBox.set(
-          _roomOverlapMin.set(from.x - pad, from.y - pad, from.z - pad),
-          _roomOverlapMax.set(from.x + pad, from.y + pad, from.z + pad)
-        );
-        roomFaces = area.getWalkCandidatesForBox(
-          _roomOverlapBox,
-          { faces: _roomOverlapFaces },
-          { edges: false, walkFacesOnly: false }
-        ).faces;
-      }
-      if(areaBlockingFacesHaveStartOverlap(roomFaces, from, expand)){
-        forceDestOnly = true;
-      }
-    }
-  }
+  // Soft start is scoped per object: each door/placeable/room mesh switches
+  // to dest-only only when the start capsule overlaps *that* mesh. Neighbors
+  // keep swept (capsule) tests so a graze on one crate cannot let a long step
+  // tunnel through a thin closed-door DWK or a second placeable.
+  const forceDestOnly = false;
 
   if(doorsScan?.length){
     for(let i = 0; i < doorsScan.length; i++){

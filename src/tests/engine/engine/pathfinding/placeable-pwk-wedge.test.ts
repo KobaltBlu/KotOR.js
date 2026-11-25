@@ -5,7 +5,11 @@
 import { describe, expect, it } from "@jest/globals";
 import * as THREE from "three";
 import { composeObjectWalkmeshLocalToWorld } from "@engine/pathfinding/door-walkmesh-matrix";
-import { isStaticWalkClearOnWalkMesh } from "@engine/pathfinding/static-walk-blockers-mesh";
+import {
+  circleTouchesSegment2d,
+  intersectCircle2d,
+  isStaticWalkClearOnWalkMesh,
+} from "@engine/pathfinding/static-walk-blockers-mesh";
 import { isStaticWalkClearDetailed } from "@engine/pathfinding/static-walk-blockers";
 import { collectBlockingWalkEdgeNormals } from "@engine/movement/wall-slide";
 import type { Area } from "@engine/module/Area";
@@ -211,5 +215,33 @@ describe("placeable partpile wedge escape", () => {
       softClearStartOverlap: false,
     });
     expect(r2.clear).toBe(false);
+  });
+});
+
+describe("circle tests catch edges fully inside the circle", () => {
+  it("circleTouchesSegment2d detects an enclosed edge (no boundary crossing)", () => {
+    expect(circleTouchesSegment2d(0, 0, 0.4, -0.05, 0, 0.05, 0)).toBe(true);
+    expect(intersectCircle2d(0, 0, 0.4, -0.05, 0, 0.05, 0)).toBe(0);
+    expect(circleTouchesSegment2d(0, 0, 0.4, 1, 0, 2, 0)).toBe(false);
+  });
+
+  it("dest-only test blocks a destination that swallows a small blocker face", () => {
+    // Tiny partpile (≈0.1 across) — every edge is inside a 0.4 dest circle
+    // centred beside it, and the dest is not inside the face itself.
+    const wok = makePartpileWok(new THREE.Vector3(0, 0, 0));
+    for(const v of wok.vertices) v.multiplyScalar(0.1);
+    composeObjectWalkmeshLocalToWorld(
+      wok.matrixWorld,
+      new THREE.Vector3(2, 0, 0),
+      new THREE.Euler(0, 0, 0),
+      new THREE.Vector3(0, 0, 0)
+    );
+    const r = isStaticWalkClearOnWalkMesh(
+      wok,
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(2.15, 0, 0),
+      { personalSpace: 0.4, softClearStartOverlap: true, forceDestOnly: true }
+    );
+    expect(r.clear).toBe(false);
   });
 });

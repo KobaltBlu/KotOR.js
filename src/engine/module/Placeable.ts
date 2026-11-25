@@ -341,11 +341,10 @@ export class Placeable extends GameObject {
     super.update(delta);
 
     if(this.collisionManager.walkmesh){
-      if(!this.isStatic() || this.collisionMatrixDirty){
+      if(!this.isStatic() || this.walkmeshMatrixDirty){
         this.container?.updateMatrix();
         this.container?.updateMatrixWorld(!this.isStatic());
         this.syncWalkmeshMatrix();
-        this.collisionMatrixDirty = false;
       }
     }
 
@@ -888,6 +887,7 @@ export class Placeable extends GameObject {
       wok.mesh.matrix.copy(wok.matrixWorld);
       wok.mesh.matrixWorld.copy(wok.matrixWorld);
     }
+    this.walkmeshMatrixDirty = false;
   }
 
   async loadWalkmesh(resRef = ''): Promise<OdysseyWalkMesh> {

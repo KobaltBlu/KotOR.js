@@ -188,9 +188,9 @@ describe("isStaticWalkClearDetailed static placeables", () => {
     );
   });
 
-  it("skips syncWalkmeshMatrix when collisionMatrixDirty is false", () => {
+  it("skips syncWalkmeshMatrix when walkmeshMatrixDirty is false", () => {
     const plc = makePlaceable({ id: 5, x: 0, y: 0 });
-    plc.collisionMatrixDirty = false;
+    plc.walkmeshMatrixDirty = false;
     const area = {
       doors: [],
       placeables: [plc],

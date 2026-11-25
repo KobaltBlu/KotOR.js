@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { invalidateStaticBlockerGrid } from "@engine/pathfinding/static-blocker-grid";
 import type { Action } from "@engine/actions/Action";
 import { ActionQueue } from "@engine/actions/ActionQueue";
 import { AudioEmitter } from "@engine/audio/AudioEmitter";
@@ -235,6 +236,12 @@ export class GameObject {
   perceptionTimer: number = 0;
   collisionBoundsDirty: boolean = true;
   collisionMatrixDirty: boolean = true;
+  /**
+   * Walkmesh LocalToWorld needs re-sync. Separate from collisionMatrixDirty,
+   * which bounds refresh (refreshObjectBounds / computeBoundingBox) consumes —
+   * sharing one flag let whichever ran first leave the other stale.
+   */
+  walkmeshMatrixDirty: boolean = true;
   tweakColor: number = 0xFFFFFF;
   useTweakColor: boolean = false;
   hp: number = 0;
@@ -553,7 +560,17 @@ export class GameObject {
 
   markCollisionMatrixDirty(_reason?: string){
     this.collisionMatrixDirty = true;
+    this.walkmeshMatrixDirty = true;
     markWorldMatrixDirty(this.container);
+    // Door/placeable pose change moves its walkmesh between blocker-grid
+    // cells. Only discrete pose edits (not per-frame cutscene refreshes).
+    if(
+      (_reason === 'position' || _reason === 'facing') &&
+      (BitWise.InstanceOf(this.objectType, GameObjectType.Placeable) ||
+        BitWise.InstanceOf(this.objectType, GameObjectType.Door))
+    ){
+      invalidateStaticBlockerGrid(this.area);
+    }
     if(BitWise.InstanceOf(this.objectType, GameObjectType.Placeable) && this.isStatic?.()){
       this.room?.markCollisionPlaceablesDirty?.(_reason);
     }
@@ -562,6 +579,7 @@ export class GameObject {
   markCollisionBoundsDirty(_reason?: string){
     this.collisionBoundsDirty = true;
     this.collisionMatrixDirty = true;
+    this.walkmeshMatrixDirty = true;
     markWorldMatrixDirty(this.container);
     if(BitWise.InstanceOf(this.objectType, GameObjectType.Placeable)){
       this.room?.markCollisionPlaceablesDirty?.(_reason);
