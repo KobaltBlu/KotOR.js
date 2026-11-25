@@ -19,7 +19,7 @@ import { OdysseyLensFlarePass } from "@engine/render/shaders/pass/OdysseyLensFla
 import { AccumulationBlurPass } from "@engine/render/shaders/pass/AccumulationBlurPass";
 import { resolveSpeedBlurPass } from "@engine/render/shaders/pass/FrameBufferEffectGates";
 import { MotionBlurController } from "@engine/render/MotionBlurController";
-import { runOdysseyDepthPrepass, runOdysseySoftDepthSplit } from "@engine/render/odysseyDepthPrepass";
+import { createDepthStencilTexture, runOdysseyDepthPrepass, runOdysseySoftDepthSplit } from "@engine/render/odysseyDepthPrepass";
 import { RenderPerfStats } from "@engine/render/RenderPerfStats";
 import { ModuleGpuWarmLog } from "@engine/render/three/odyssey/warmRoomGpuResources";
 import { OdysseyLightingBinder } from "@engine/render/three/odyssey/OdysseyLightingBinder";
@@ -72,8 +72,11 @@ export class OdysseyRenderPipeline {
     };
     OdysseyRenderPipeline.composer.renderTarget1 = new THREE.WebGLRenderTarget(w, h, postRT);
     OdysseyRenderPipeline.composer.renderTarget2 = new THREE.WebGLRenderTarget(w, h, worldRT);
-    OdysseyRenderPipeline.composer.renderTarget2.depthTexture = new THREE.DepthTexture(w, h);
-    OdysseyRenderPipeline.composer.renderTarget2.depthTexture.type = THREE.UnsignedShortType;
+    // DEPTH24_STENCIL8: a DepthFormat texture replaces the stencil renderbuffer,
+    // so emitter force-distortion stencil writes (PartEmitter::RenderFunc) were
+    // dropped and RenderForceDistortion's NOTEQUAL test warped the whole screen.
+    // depthTarget must use the same format for the soft-depth blit.
+    OdysseyRenderPipeline.composer.renderTarget2.depthTexture = createDepthStencilTexture(w, h);
     OdysseyRenderPipeline.composer.writeBuffer = OdysseyRenderPipeline.composer.renderTarget1;
     OdysseyRenderPipeline.composer.readBuffer = OdysseyRenderPipeline.composer.renderTarget2;
     OdysseyRenderPipeline.renderPass = new RenderPass(GameState.scene, GameState.currentCamera);

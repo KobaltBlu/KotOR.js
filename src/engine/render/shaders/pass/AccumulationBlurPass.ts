@@ -27,6 +27,8 @@ export class AccumulationBlurPass extends Pass {
   private copyMaterial: THREE.ShaderMaterial;
   private copyQuad: FullScreenQuad;
   private accumRT: THREE.WebGLRenderTarget | null = null;
+  /** Full-res color-only mix target; copied back so readBuffer keeps its stencil. */
+  private mixRT: THREE.WebGLRenderTarget | null = null;
   /** previousFrameWasSpeed — skip mix until one frame has been saved. */
   private hasPreviousFrame = false;
 
@@ -58,7 +60,9 @@ export class AccumulationBlurPass extends Pass {
     });
     this.copyQuad = new FullScreenQuad(this.copyMaterial);
 
-    this.needsSwap = true;
+    // In-place like the single retail framebuffer: readBuffer keeps the scene
+    // stencil (emitter force-distortion mask) for ForceDistortionPass.
+    this.needsSwap = false;
     this.clear = false;
   }
 
@@ -101,34 +105,59 @@ export class AccumulationBlurPass extends Pass {
     this.copyQuad.render(renderer);
   }
 
+  private ensureMix(source: THREE.WebGLRenderTarget) {
+    if(this.mixRT && this.mixRT.width === source.width && this.mixRT.height === source.height){
+      return;
+    }
+    this.mixRT?.dispose();
+    this.mixRT = new THREE.WebGLRenderTarget(source.width, source.height, {
+      minFilter: THREE.LinearFilter,
+      magFilter: THREE.LinearFilter,
+      format: THREE.RGBAFormat,
+      depthBuffer: false,
+      stencilBuffer: false,
+    });
+  }
+
   render(
     renderer: THREE.WebGLRenderer,
-    writeBuffer: THREE.WebGLRenderTarget,
+    _writeBuffer: THREE.WebGLRenderTarget,
     readBuffer: THREE.WebGLRenderTarget,
     _deltaTime?: number
   ) {
     this.ensureAccum();
     const accum = this.accumRT!;
-    const outTarget = this.renderToScreen ? null : writeBuffer;
 
+    if(this.renderToScreen){
+      if(this.hasPreviousFrame){
+        this.uniforms.tPrev.value = accum.texture;
+        this.uniforms.tCurrent.value = readBuffer.texture;
+        this.fsQuad.material = this.material;
+        renderer.setRenderTarget(null);
+        this.fsQuad.render(renderer);
+      }else{
+        this.blitCopy(renderer, readBuffer.texture, null);
+      }
+      this.blitCopy(renderer, readBuffer.texture, accum);
+      this.hasPreviousFrame = true;
+      return;
+    }
+
+    // RenderAccumulationBlur in place: mix into a scratch target, then copy the
+    // color back into readBuffer (no clear, so its depth/stencil survive).
     if(this.hasPreviousFrame){
+      this.ensureMix(readBuffer);
       this.uniforms.tPrev.value = accum.texture;
       this.uniforms.tCurrent.value = readBuffer.texture;
       this.fsQuad.material = this.material;
-      renderer.setRenderTarget(outTarget);
-      if(this.clear) renderer.clear();
+      renderer.setRenderTarget(this.mixRT);
       this.fsQuad.render(renderer);
-    }else{
-      // First frame: passthrough current scene, then seed accumulation.
-      this.blitCopy(renderer, readBuffer.texture, outTarget);
+      this.blitCopy(renderer, this.mixRT!.texture, readBuffer);
     }
+    // First frame: readBuffer already holds the scene — just seed the history.
 
     // RenderFrameToTexture — downsample the post-mix framebuffer into 128^2.
-    if(this.renderToScreen){
-      this.blitCopy(renderer, readBuffer.texture, accum);
-    }else{
-      this.blitCopy(renderer, writeBuffer.texture, accum);
-    }
+    this.blitCopy(renderer, readBuffer.texture, accum);
     this.hasPreviousFrame = true;
   }
 
@@ -140,6 +169,10 @@ export class AccumulationBlurPass extends Pass {
     if(this.accumRT){
       this.accumRT.dispose();
       this.accumRT = null;
+    }
+    if(this.mixRT){
+      this.mixRT.dispose();
+      this.mixRT = null;
     }
   }
 }

@@ -324,6 +324,9 @@ export class ShaderOdysseyModel extends Shader {
     // animatedUV = (uvDirectionX, uvDirectionY, uvJitter, uvJitterSpeed)
     // animatedUVState = (accumOffsetX, accumOffsetY, jitterPhase, 0)
     #ifdef ANIMATED_UV
+      // three r151+ uv_pars_vertex no longer declares uvTransform; the uniform is
+      // still supplied (identity default, synced by syncOdysseyMapTransforms).
+      uniform mat3 uvTransform;
       uniform vec4 animatedUV;
       uniform vec4 animatedUVState;
 

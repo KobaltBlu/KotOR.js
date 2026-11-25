@@ -287,6 +287,19 @@ export function runOdysseySoftDepthSplit(options: IOdysseySoftDepthSplitOptions)
   return true;
 }
 
+/**
+ * DEPTH24_STENCIL8 depth texture for world / depth-sample targets.
+ * A DepthFormat texture drops the stencil attachment (force-distortion mask), and
+ * blitFramebuffer(DEPTH_BUFFER_BIT) needs matching depth formats on both ends,
+ * so every target in the soft-depth blit chain uses this.
+ */
+export function createDepthStencilTexture(width: number, height: number): THREE.DepthTexture {
+  const dt = new THREE.DepthTexture(width, height);
+  dt.format = THREE.DepthStencilFormat;
+  dt.type = THREE.UnsignedInt248Type;
+  return dt;
+}
+
 function ensureDepthTexture(
   rt: THREE.WebGLRenderTarget,
   renderer: THREE.WebGLRenderer
@@ -300,9 +313,7 @@ function ensureDepthTexture(
     }
     return;
   }
-  const dt = new THREE.DepthTexture(rt.width, rt.height);
-  dt.type = THREE.UnsignedShortType;
-  rt.depthTexture = dt;
+  rt.depthTexture = createDepthStencilTexture(rt.width, rt.height);
   rt.depthBuffer = true;
   // Force Three to rebuild the FBO with the depth texture.
   renderer.setRenderTarget(rt);

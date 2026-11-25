@@ -4,6 +4,7 @@ import Stats from 'three/examples/jsm/libs/stats.module';
 import { GameState } from "@engine/runtime/GameState";
 import { IngameControls } from "@engine/controls/IngameControls";
 import { OdysseyRenderPipeline } from "@engine/render/OdysseyRenderPipeline";
+import { createDepthStencilTexture } from "@engine/render/odysseyDepthPrepass";
 import { ViewportController } from "@engine/runtime/ViewportController";
 import { FollowerCamera } from "@engine/render/FollowerCamera";
 import { EngineDebugType } from "@engine/enums/engine";
@@ -230,11 +231,11 @@ export class GameRuntimeBootstrap {
       depthPars
     );
     GameState.depthTarget.texture.generateMipmaps = false;
-    GameState.depthTarget.depthTexture = new THREE.DepthTexture(
+    // Must match composer renderTarget2 (DEPTH24_STENCIL8) for the soft-depth blit.
+    GameState.depthTarget.depthTexture = createDepthStencilTexture(
       GameState.ResolutionManager.getViewportWidth(),
       GameState.ResolutionManager.getViewportHeight()
     );
-    GameState.depthTarget.depthTexture.type = THREE.UnsignedShortType;
     ViewportController.syncDepthTargetTextureSize();
 
     GameState.clock = new THREE.Timer();
