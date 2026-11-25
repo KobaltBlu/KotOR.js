@@ -170,6 +170,33 @@ describe("collectBlockingWalkEdgeNormals contact normals", () => {
     expect(normals[0].x).toBeCloseTo(Math.SQRT1_2);
     expect(normals[0].y).toBeCloseTo(Math.SQRT1_2);
   });
+
+  it("keeps the nearer contact's normal when near-parallel contacts merge", () => {
+    // Live end_m01ab: Nonwalk sliver edge A (78.88,76.28)→(79.06,75.60) at
+    // 0.349, plus the neighbouring edge's end vertex (78.88,76.28) at 0.3497
+    // whose vertex normal is ~2.3° off. Keeping the vertex normal made the
+    // slide tangent drift into edge A, so every probe blocked (player stuck).
+    const vertexEdge = makeWallEdge(78.22, 76.64, 78.88, 76.28, 0.48, 0.88);
+    const edgeA = makeWallEdge(78.88, 76.28, 79.06, 75.6, 0.967, 0.256);
+    const pt = new THREE.Vector3(79.222, 76.353, 0);
+    for(const order of [[vertexEdge, edgeA], [edgeA, vertexEdge]]){
+      const dists: number[] = [];
+      const normals = collectBlockingWalkEdgeNormals(
+        { walkEdges: order } as unknown as Area,
+        pt,
+        0.41,
+        undefined,
+        dists
+      );
+      expect(normals.length).toBe(1);
+      expect(normals[0].x).toBeCloseTo(0.967, 2);
+      expect(normals[0].y).toBeCloseTo(0.256, 2);
+      expect(dists[0]).toBeCloseTo(
+        distancePointToSegment2d(pt.x, pt.y, 78.88, 76.28, 79.06, 75.6),
+        6
+      );
+    }
+  });
 });
 
 describe("collectBlockingWalkEdgeNormals", () => {

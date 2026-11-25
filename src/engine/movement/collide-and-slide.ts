@@ -108,7 +108,12 @@ function addPlane(x: number, y: number, gap = 0): void {
   const g = Math.max(0, gap);
   for(let i = 0; i < _planes.length; i++){
     if(_planes[i].x * nx + _planes[i].y * ny > PLANE_DEDUPE_DOT){
-      if(g < _gaps[i]) _gaps[i] = g;
+      // Keep the nearer contact's normal: a farther near-parallel feature's
+      // tangent drifts into the nearer wall and stalls the slide.
+      if(g < _gaps[i]){
+        _gaps[i] = g;
+        _planes[i].set(nx, ny, 0);
+      }
       return;
     }
   }

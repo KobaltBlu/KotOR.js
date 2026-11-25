@@ -27,6 +27,8 @@ const _worldC = new THREE.Vector3();
 const _worldVerts = [_worldA, _worldB, _worldC];
 const _edgeN = new THREE.Vector3();
 const _contactN = new THREE.Vector3();
+/** Contact distance per pushed normal (parallel to the current `out`). */
+const _dedupeDist: number[] = [];
 
 /** 2D distance from point to clamped segment. */
 export function distancePointToSegment2d(
@@ -170,14 +172,25 @@ function pushUniqueNormal(
   if(nLen < 1e-8) return;
   const nx = ux / nLen;
   const ny = uy / nLen;
+  if(out.length === 0) _dedupeDist.length = 0;
   for(let j = 0; j < out.length; j++){
     if(out[j].x * nx + out[j].y * ny > 0.98){
-      // Near-parallel duplicate: keep the closest contact.
-      if(_distSink && dist < _distSink[j]) _distSink[j] = dist;
+      // Near-parallel duplicate: keep the closest contact — its normal too.
+      // The nearest feature's direction is the true constraint; keeping a
+      // farther feature's normal (e.g. an adjacent edge's end vertex a few
+      // degrees off) makes the tangent drift into the nearer wall and the
+      // slide stalls.
+      const prevDist = _distSink ? _distSink[j] : _dedupeDist[j];
+      if(dist < prevDist){
+        out[j].set(nx, ny, 0);
+        if(_distSink) _distSink[j] = dist;
+        _dedupeDist[j] = dist;
+      }
       return;
     }
   }
   _distSink?.push(dist);
+  _dedupeDist[out.length] = dist;
   let pool = _pools.get(out);
   if(!pool){
     pool = [];
