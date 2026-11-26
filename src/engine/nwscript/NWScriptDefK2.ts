@@ -5511,7 +5511,7 @@ NWScriptDefK2.Actions = {
     name: 'PlayRoomAnimation',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.STRING, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: NWScriptDefK1.Actions[738]?.action
   },
   739: {
     comment: '739: ShowGalaxyMap\nBrings up the Galaxy Map Gui, with \'nPlanet\' selected.  \'nPlanet\' can only be a planet\nthat has already been set available and selectable.',

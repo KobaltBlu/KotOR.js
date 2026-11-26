@@ -10143,12 +10143,12 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.STRING, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [string, number]){
-      for(let i = 0, len = GameState.module.area.rooms.length; i < len; i++){
-        let room = GameState.module.area.rooms[i];
-        if(room.roomName.toLowerCase() == args[0].toLowerCase()){
-          if(room.model){
-            room.model.playAnimation( 'scriptloop'+Utility.PadInt(args[1], 2) );
-          }
+      const rooms = GameState.module?.area?.rooms || [];
+      const want = String(args[0] ?? '').toLowerCase();
+      for(let i = 0, len = rooms.length; i < len; i++){
+        const room = rooms[i];
+        if(room.roomName.toLowerCase() == want){
+          room.playScriptAnimation(args[1]);
           break;
         }
       }

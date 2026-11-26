@@ -16,6 +16,7 @@ import { BinaryReader } from "@core/binary/BinaryReader";
 import { ResourceTypes } from "@core/resource/ResourceTypes";
 import { MDLLoader, ResourceLoader } from "@engine/loaders";
 import { GameObjectType } from "@core/enums/module/GameObjectType";
+import { AuroraAnimationFlag } from "@core/enums/animation/AuroraAnimationFlag";
 import { BitWise } from "@core/utility/BitWise";
 import { VISObject } from "@core/resource/VISObject";
 import { IVISRoom } from "@core/interface";
@@ -350,9 +351,36 @@ export class AreaRoom {
     this.model.update(delta);
   }
 
-  /** True when the room MDL has anim loops, emitters, dangly, or anim-dummy batches. */
+  /**
+   * PlayRoomAnimation: play `scriptloopNN` on the room model.
+   * Retail plays it as an overlay with no fire-and-forget bit, so the clip
+   * wraps forever and holds its pose (e.g. the Ebon Hawk window backdrop)
+   * alongside the room's animloops.
+   * @returns false when the room has no model or no such clip
+   */
+  playScriptAnimation(index: number): boolean {
+    if(!(this.model instanceof OdysseyModel3D)){
+      return false;
+    }
+    const n = index & 0xffff;
+    const name = 'scriptloop' + (n < 10 ? '0' + n : String(n));
+    const clip = this.model.odysseyAnimationMap?.get(name);
+    if(!clip){
+      return false;
+    }
+    return !!this.model.animationManager.playAnimation(
+      clip,
+      AuroraAnimationFlag.OVERLAY_SLOT | AuroraAnimationFlag.LOOPING
+    );
+  }
+
+  /**
+   * True when the room MDL has anim loops, emitters, dangly, anim-dummy
+   * batches, or a script-started animation (PlayRoomAnimation) running.
+   */
   static roomModelNeedsAnimation(model: OdysseyModel3D): boolean {
     return (
+      (model.animationManager?.runs?.length ?? 0) > 0 ||
       (model.animLoops?.length ?? 0) > 0 ||
       (model.emitters?.length ?? 0) > 0 ||
       (model.danglyMeshes?.length ?? 0) > 0 ||
