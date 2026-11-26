@@ -4291,7 +4291,7 @@ export class Creature extends GameObject {
 
       const conversationResRef = (this as any)._conversationResRef;
       if(conversationResRef !== undefined){
-        this.conversation = DLGObject.FromResRef(conversationResRef);
+        this.deferConversation(conversationResRef);
         delete (this as any)._conversationResRef;
       }
 

@@ -373,7 +373,35 @@ export class GameObject {
   lastAoeEntered: GameObject;
   lastAoeExited: GameObject;
 
-  conversation: DLGObject;
+  private _conversation: DLGObject | undefined;
+  private _deferredConversation: { resref: string; buffer: Uint8Array } | undefined;
+
+  /**
+   * Parsed on first use: most objects never start a conversation, so module load
+   * only captures the DLG bytes (the module resource scope is gone by the time a
+   * party member might first talk in a later module).
+   */
+  get conversation(): DLGObject {
+    const deferred = this._deferredConversation;
+    if(deferred){
+      this._deferredConversation = undefined;
+      this._conversation = DLGObject.FromBuffer(deferred.buffer, deferred.resref);
+    }
+    return this._conversation;
+  }
+
+  set conversation(value: DLGObject) {
+    this._deferredConversation = undefined;
+    this._conversation = value;
+  }
+
+  /** Bind the object's conversation by resref without parsing it yet. */
+  deferConversation(resref: string): void {
+    const buffer = DLGObject.GetCachedBuffer(resref);
+    this._conversation = undefined;
+    this._deferredConversation = buffer ? { resref, buffer } : undefined;
+  }
+
   cutsceneMode: boolean;
 
   trapDetectable: boolean;

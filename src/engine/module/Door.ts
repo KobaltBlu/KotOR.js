@@ -1312,7 +1312,7 @@ export class Door extends GameObject {
 
     const conversationResRef = (this as any)._conversationResRef;
     if(conversationResRef){
-      this.conversation = DLGObject.FromResRef(conversationResRef);
+      this.deferConversation(conversationResRef);
     }
 
     this.faction = GameState.FactionManager.factions.get(this.factionId);

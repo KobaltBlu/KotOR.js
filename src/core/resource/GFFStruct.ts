@@ -35,8 +35,23 @@ import { CExoLocString } from "./CExoLocString";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class GFFStruct {
-  /** Unique identifier for this structure instance */
-  uuid: string;
+  private _uuid: string | undefined;
+
+  /**
+   * Unique identifier for this structure instance. Generated on first read (editor
+   * keys / undo coalescing) so bulk game-data parsing does not pay for one per
+   * structure; stable for the lifetime of the instance once read.
+   */
+  get uuid(): string {
+    if(this._uuid === undefined){
+      this._uuid = crypto.randomUUID();
+    }
+    return this._uuid;
+  }
+
+  set uuid(value: string) {
+    this._uuid = value;
+  }
   
   /** Array of fields contained within this structure */
   fields: GFFField[];
@@ -67,7 +82,6 @@ export class GFFStruct {
    * ```
    */
   constructor(type = 0){
-    this.uuid = crypto.randomUUID();
     this.fields = [];
     this.type = type;
   }

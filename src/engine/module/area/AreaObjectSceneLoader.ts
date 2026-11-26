@@ -6,6 +6,8 @@ import type { Area } from "@engine/module/Area";
 import { AreaRoom } from "@engine/module/area/AreaRoom";
 import { OdysseyModel3D } from "@engine/render/three/odyssey/OdysseyModel3D";
 import { OdysseyWalkMesh } from "@engine/odyssey/OdysseyWalkMesh";
+import { MDLLoader } from "@engine/loaders/MDLLoader";
+import { Utility } from "@core/utility/Utility";
 import {
   getDefaultAreaLoadContext,
   type AreaLoadContext,
@@ -30,6 +32,14 @@ export class AreaObjectSceneLoader {
     const groups = context.getSceneGroups();
     const walkmeshList = context.getWalkmeshList();
     const collisionList = context.getCollisionList();
+
+    // Start every room MDL/MDX read up front so the I/O overlaps; the build loop
+    // below stays sequential and joins each in-flight load.
+    void MDLLoader.loader.prefetch(
+      area.rooms
+        .map((room) => room.roomName)
+        .filter((name) => !Utility.is2daNULL(name)),
+    );
 
     for(let i = 0; i < area.rooms.length; i++){
       const room = area.rooms[i];

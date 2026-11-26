@@ -534,17 +534,22 @@ export class DLGObject {
   }
 
   static FromResRef(resref: string): DLGObject {
-    if(resref){
-      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['dlg'], resref.toLocaleLowerCase());
-      if(buffer){
-        const dlg = DLGObject.FromGFFObject(new GFFObject(buffer));
-        if(dlg){
-          dlg.resref = resref.toLocaleLowerCase();
-        }
-        return dlg;
-      }
+    return DLGObject.FromBuffer(DLGObject.GetCachedBuffer(resref), resref);
+  }
+
+  /** Raw DLG bytes for `resref` from the loaded resource scopes (no parse). */
+  static GetCachedBuffer(resref: string): Uint8Array | undefined {
+    if(!resref){ return undefined; }
+    return ResourceLoader.loadCachedResource(ResourceTypes['dlg'], resref.toLocaleLowerCase()) || undefined;
+  }
+
+  static FromBuffer(buffer: Uint8Array | undefined, resref: string): DLGObject {
+    if(!buffer){ return; }
+    const dlg = DLGObject.FromGFFObject(new GFFObject(buffer));
+    if(dlg){
+      dlg.resref = resref.toLocaleLowerCase();
     }
-    return;
+    return dlg;
   }
 
 }

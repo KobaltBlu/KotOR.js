@@ -2,6 +2,7 @@ import * as THREE from "three";
 import type { OdysseyModel3D } from "@engine/render/three/odyssey/OdysseyModel3D";
 import type { GrassBin } from "@engine/managers/GrassManager";
 import { runOdysseyDepthPrepass } from "@engine/render/odysseyDepthPrepass";
+import { ShaderProgramRetention } from "@engine/render/three/odyssey/ShaderProgramRetention";
 
 export type WarmRoomGpuRoom = {
   model?: OdysseyModel3D;
@@ -125,7 +126,9 @@ export function warmSceneGeometryDraw(options: WarmSceneGeometryDrawOptions): vo
 
   scene.traverse((obj) => {
     if(isUnderSkipRoot(obj, skipRoots)){ return; }
-    if(!obj.visible){
+    // Lights keep their gameplay visibility: three keys programs on the active
+    // shadow-casting light set, so forcing hidden lights on links extra variants.
+    if(!obj.visible && !(obj as THREE.Light).isLight){
       savedVisible.push({ obj, visible: false });
       obj.visible = true;
     }
@@ -173,6 +176,42 @@ export function warmSceneGeometryDraw(options: WarmSceneGeometryDrawOptions): vo
   }
 }
 
+/**
+ * Start compiling every material in `scene` with `target` bound, then keep the
+ * world out of regular frames until linking finishes. A frame that draws a
+ * program before its link completes blocks the main thread on the driver;
+ * hiding the scene lets KHR_parallel_shader_compile link in the background
+ * while the load screen keeps animating.
+ */
+export async function compileSceneOffscreen(
+  renderer: THREE.WebGLRenderer,
+  scene: THREE.Scene | THREE.Object3D,
+  camera: THREE.Camera,
+  target: THREE.WebGLRenderTarget | null
+): Promise<void> {
+  const prevTarget = renderer.getRenderTarget();
+  let pending: Promise<unknown> | undefined;
+  try{
+    renderer.setRenderTarget(target);
+    if(typeof renderer.compileAsync === "function"){
+      pending = renderer.compileAsync(scene as THREE.Scene, camera);
+    }else{
+      renderer.compile(scene as THREE.Scene, camera);
+    }
+  }finally{
+    renderer.setRenderTarget(prevTarget);
+  }
+  if(!pending){ return; }
+
+  const hideWorld = scene.visible;
+  if(hideWorld){ scene.visible = false; }
+  try{
+    await pending;
+  }finally{
+    if(hideWorld){ scene.visible = true; }
+  }
+}
+
 export type WarmModuleGpuOptions = {
   renderer: THREE.WebGLRenderer;
   scene: THREE.Scene | THREE.Object3D;
@@ -202,20 +241,32 @@ export async function warmModuleGpu(options: WarmModuleGpuOptions): Promise<void
 
   warmRoomGpuResources(textureTargets, renderer);
 
-  if(typeof renderer.compileAsync === "function"){
-    await renderer.compileAsync(scene as THREE.Scene, camera);
-  }else{
-    renderer.compile(scene as THREE.Scene, camera);
-  }
+  // Compile against an offscreen target: gameplay draws the world into the
+  // composer's render targets, and three keys programs on output color space /
+  // tone mapping, which differ between the canvas and a render target.
+  const compileTarget = createWarmColorTarget(colorTargetTemplate, WARM_DRAW_SIZE);
+  try{
+    await compileSceneOffscreen(renderer, scene, camera, compileTarget);
 
-  warmSceneGeometryDraw({
-    renderer,
-    scene,
-    camera,
-    skipRoots,
-    colorTargetTemplate,
-    beforeRender,
-  });
+    warmSceneGeometryDraw({
+      renderer,
+      scene,
+      camera,
+      skipRoots,
+      colorTargetTemplate,
+      beforeRender,
+    });
+
+    const prevTarget = renderer.getRenderTarget();
+    renderer.setRenderTarget(compileTarget);
+    try{
+      ShaderProgramRetention.retain(renderer, scene, camera);
+    }finally{
+      renderer.setRenderTarget(prevTarget);
+    }
+  }finally{
+    compileTarget.dispose();
+  }
 
   const memAfter = ModuleGpuWarmLog.snapshotRendererMemory(renderer);
   if(typeof performance !== "undefined"){

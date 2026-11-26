@@ -129,15 +129,76 @@ export class AudioLoader {
   }
 
   static async LoadAmbientSound (resRef: string): Promise<Uint8Array> {
+    const key = String(resRef || '').toLowerCase();
     try{
-      const file = path.join('streammusic', resRef+'.wav');
-      const buffer = await GameFileSystem.readFile(file);
-      const af = new AudioFile(buffer);
-      return await af.getPlayableByteStream();
+      let pending = AudioLoader.streamCache.get(key);
+      if(pending){
+        // Most recently used goes last.
+        AudioLoader.streamCache.delete(key);
+        AudioLoader.streamCache.set(key, pending);
+      }else{
+        pending = AudioLoader.decodeStream(resRef);
+        AudioLoader.rememberStream(key, pending);
+      }
+      // Callers hand the buffer to decodeAudioData, which detaches it.
+      return (await pending).bytes.slice();
     }catch(e){
       console.log(`AudioLoader.LoadAmbientSound : read`);
       console.error(e);
       throw e;
+    }
+  }
+
+  /**
+   * Decoded (playable) streammusic files, most recently used last. ADPCM decode
+   * is the expensive part of loading area music, and the same tracks come back
+   * on reloads, area transitions, and day/night rows that share a file.
+   */
+  static streamCacheBudgetBytes = 64 * 1024 * 1024;
+  private static streamCache = new Map<string, Promise<{ bytes: Uint8Array }>>();
+  private static streamCacheSizes = new Map<string, number>();
+  private static streamCacheBytes = 0;
+
+  static clearStreamCache(): void {
+    AudioLoader.streamCache.clear();
+    AudioLoader.streamCacheSizes.clear();
+    AudioLoader.streamCacheBytes = 0;
+  }
+
+  private static async decodeStream(resRef: string): Promise<{ bytes: Uint8Array }> {
+    const file = path.join('streammusic', resRef+'.wav');
+    const buffer = await GameFileSystem.readFile(file);
+    const af = new AudioFile(buffer);
+    const playable = await af.getPlayableByteStream();
+    // Own the bytes exactly (the playable stream may be a view of a larger buffer).
+    return { bytes: playable.slice() };
+  }
+
+  private static rememberStream(key: string, pending: Promise<{ bytes: Uint8Array }>): void {
+    const cache = AudioLoader.streamCache;
+    cache.set(key, pending);
+    pending.then(({ bytes }) => {
+      if(cache.get(key) !== pending){ return; }
+      AudioLoader.streamCacheSizes.set(key, bytes.byteLength);
+      AudioLoader.streamCacheBytes += bytes.byteLength;
+      for(const oldKey of cache.keys()){
+        if(AudioLoader.streamCacheBytes <= AudioLoader.streamCacheBudgetBytes || oldKey === key){ break; }
+        AudioLoader.evictStream(oldKey);
+      }
+      if(AudioLoader.streamCacheBytes > AudioLoader.streamCacheBudgetBytes){
+        AudioLoader.evictStream(key); // larger than the whole budget
+      }
+    }, () => {
+      if(cache.get(key) === pending){ cache.delete(key); }
+    });
+  }
+
+  private static evictStream(key: string): void {
+    AudioLoader.streamCache.delete(key);
+    const size = AudioLoader.streamCacheSizes.get(key);
+    if(size !== undefined){
+      AudioLoader.streamCacheSizes.delete(key);
+      AudioLoader.streamCacheBytes -= size;
     }
   }
 

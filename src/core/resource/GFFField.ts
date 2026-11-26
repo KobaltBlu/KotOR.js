@@ -35,8 +35,23 @@ import type { IGFFFieldJSON } from "@core/interface/resource/IGFFFieldJSON";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class GFFField {
-  /** Unique identifier for this field instance */
-  uuid: string;
+  private _uuid: string | undefined;
+
+  /**
+   * Unique identifier for this field instance. Generated on first read (editor
+   * keys / undo coalescing) so bulk game-data parsing does not pay for one per
+   * field; stable for the lifetime of the instance once read.
+   */
+  get uuid(): string {
+    if(this._uuid === undefined){
+      this._uuid = crypto.randomUUID();
+    }
+    return this._uuid;
+  }
+
+  set uuid(value: string) {
+    this._uuid = value;
+  }
   
   /** The data type of this field (from GFFDataType enum) */
   type: number;
@@ -94,7 +109,6 @@ export class GFFField {
    * ```
    */
   constructor(type: number = 0, label: string = "", value?: any){
-    this.uuid = crypto.randomUUID();
     this.type = type;
     this.label = label;
     this.data = new Uint8Array(0);

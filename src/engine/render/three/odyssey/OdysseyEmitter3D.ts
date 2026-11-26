@@ -25,6 +25,9 @@ import { FORCE_DISTORTION_STENCIL_BIT } from "@engine/render/shaders/pass/ForceD
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
+/** Shared zero-length placeholder; per-emitter buffers are (re)allocated on first use. */
+const EMPTY_F32 = new Float32Array(0);
+
 export class OdysseyEmitter3D extends OdysseyObject3D {
 
   // Preallocated scratch objects to avoid per-frame heap allocations
@@ -92,11 +95,21 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
    * Per-particle inherit velocity (Particle scale×accel).
    * CPU-only; MoveFunc adds inherit×dt then |inherit×(1-dt)|.
    */
-  private inheritVels: Float32Array = new Float32Array(0);
+  private inheritVels: Float32Array = EMPTY_F32;
 
   particleCount: number = 0;
   private _bounceHitCursor: number = 0;
-  referenceNode: OdysseyObject3D = new OdysseyObject3D();
+  /** Lazily created placeholder target; most emitters never read it. */
+  private _referenceNode: OdysseyObject3D | undefined = undefined;
+  get referenceNode(): OdysseyObject3D {
+    if(!this._referenceNode){
+      this._referenceNode = new OdysseyObject3D();
+    }
+    return this._referenceNode;
+  }
+  set referenceNode(node: OdysseyObject3D) {
+    this._referenceNode = node;
+  }
   /**
    * True once setReferenceNode assigns a real target (PartEmitter).
    * P2P MoveFunc/RenderFunc no-op and skip drawing when unset.
@@ -115,22 +128,22 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
    * Bolt-local mid-sample offsets (u/v in plane ⊥ start→end).
    * Regenerated when delay elapses (LightningEmitter Update).
    */
-  private _lightningMidOU: Float32Array = new Float32Array(0);
-  private _lightningMidOV: Float32Array = new Float32Array(0);
+  private _lightningMidOU: Float32Array = EMPTY_F32;
+  private _lightningMidOV: Float32Array = EMPTY_F32;
   private _lightningSampleCount: number = 0;
   /** ControlPTDelay accumulator (PartEmitter). */
   private _controlPTAccum: number = 0;
   /** Mid control-point jitter in bolt-local (u,v); sized to cpCount. */
-  private _cpMidOU: Float32Array = new Float32Array(0);
-  private _cpMidOV: Float32Array = new Float32Array(0);
+  private _cpMidOU: Float32Array = EMPTY_F32;
+  private _cpMidOV: Float32Array = EMPTY_F32;
   private _cpCount: number = 0;
   /** Scratch centers for Hermite samples (xyz interleaved). */
-  private _lightningCenters: Float32Array = new Float32Array(0);
+  private _lightningCenters: Float32Array = EMPTY_F32;
   /** Scratch control-point positions / tangents (xyz interleaved). */
-  private _cpPositions: Float32Array = new Float32Array(0);
-  private _cpTangents: Float32Array = new Float32Array(0);
+  private _cpPositions: Float32Array = EMPTY_F32;
+  private _cpTangents: Float32Array = EMPTY_F32;
   /** Scratch xyz mid offsets for RecursiveFractal. */
-  private _fractalXYZ: Float32Array = new Float32Array(0);
+  private _fractalXYZ: Float32Array = EMPTY_F32;
   /**
    * Child bolts from numBranches (UpdateBranches).
    * Lightweight ribbons — not full child LightningEmitters.
@@ -236,12 +249,12 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
    * Mesh geometry is rebuilt each tick from these only — never draws spare 0,0,0 slots.
    * RenderLinked builds quads from field particles the same way.
    */
-  private _linkedCenters: Float32Array = new Float32Array(0);
-  private _linkedAges: Float32Array = new Float32Array(0);
-  private _linkedMaxAges: Float32Array = new Float32Array(0);
+  private _linkedCenters: Float32Array = EMPTY_F32;
+  private _linkedAges: Float32Array = EMPTY_F32;
+  private _linkedMaxAges: Float32Array = EMPTY_F32;
   private _linkedCapacity: number = 0;
   /** Scratch for chronological center order when rebuilding the ribbon mesh. */
-  private _linkedDrawCenters: Float32Array = new Float32Array(0);
+  private _linkedDrawCenters: Float32Array = EMPTY_F32;
 
   // Chunk emitter state (ChunkyParticle presentation — InstancedMesh approx of per-particle Gob)
   private _chunkGeometry: THREE.BufferGeometry = null;
@@ -303,17 +316,17 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
       this.updateType = this.node.updateMode;
 
+      // Same result as UniformsUtils.merge([base, { textureAnimation }]) without
+      // the second copy pass (one deep clone of the base set per emitter).
+      const uniforms = THREE.UniformsUtils.clone(THREE.ShaderLib['odyssey-emitter'].uniforms);
+      uniforms.textureAnimation = { value: new THREE.Vector4(
+        this.node.gridX || 1,
+        this.node.gridY || 1,
+        (this.node.gridX || 1) * (this.node.gridY || 1),
+        this.node.loop ?? 1
+      )};
       this.material = new THREE.ShaderMaterial({
-        uniforms: THREE.UniformsUtils.merge( [
-          THREE.ShaderLib['odyssey-emitter'].uniforms, {
-            textureAnimation: { value: new THREE.Vector4(
-              this.node.gridX || 1,
-              this.node.gridY || 1,
-              (this.node.gridX || 1) * (this.node.gridY || 1),
-              this.node.loop ?? 1
-            )},
-          }
-        ]),
+        uniforms,
         vertexShader: THREE.ShaderLib['odyssey-emitter'].vertexShader,
         fragmentShader: THREE.ShaderLib['odyssey-emitter'].fragmentShader,
         side: THREE.FrontSide,

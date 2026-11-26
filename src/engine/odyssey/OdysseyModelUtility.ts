@@ -38,7 +38,7 @@ export class OdysseyModelUtility {
   static ReadArrayUInt8s(stream: BinaryReader, offset: number, count: number): Uint8Array {
     const bytes = stream.buffer;
     const byteOffset = bytes.byteOffset + offset;
-    const byteLength = count * 4;
+    const byteLength = count * 1;
   
     if ((byteOffset & 3) === 0) {
       return new Uint8Array(bytes.buffer, byteOffset, count);
@@ -59,7 +59,7 @@ export class OdysseyModelUtility {
   static ReadArrayInt8s(stream: BinaryReader, offset: number, count: number): Int8Array {
     const bytes = stream.buffer;
     const byteOffset = bytes.byteOffset + offset;
-    const byteLength = count * 4;
+    const byteLength = count * 1;
   
     if ((byteOffset & 3) === 0) {
       return new Int8Array(bytes.buffer, byteOffset, count);
@@ -80,7 +80,7 @@ export class OdysseyModelUtility {
   static ReadArrayUInt16s(stream: BinaryReader, offset: number, count: number): Uint16Array {
     const bytes = stream.buffer;
     const byteOffset = bytes.byteOffset + offset;
-    const byteLength = count * 4;
+    const byteLength = count * 2;
   
     if ((byteOffset & 3) === 0) {
       return new Uint16Array(bytes.buffer, byteOffset, count);
@@ -101,7 +101,7 @@ export class OdysseyModelUtility {
   static ReadArrayInt16s(stream: BinaryReader, offset: number, count: number): Int16Array {
     const bytes = stream.buffer;
     const byteOffset = bytes.byteOffset + offset;
-    const byteLength = count * 4;
+    const byteLength = count * 2;
   
     if ((byteOffset & 3) === 0) {
       return new Int16Array(bytes.buffer, byteOffset, count);

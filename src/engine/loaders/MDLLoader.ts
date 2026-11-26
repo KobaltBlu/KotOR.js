@@ -62,6 +62,33 @@ const resMDX: number = ResourceTypes['mdx'];
 export class MDLLoader {
   /** Static singleton instance of the MDL loader */
   static loader = new MDLLoader();
+
+  /**
+   * Keep a copy of the original MDL/MDX bytes on each loaded model so
+   * {@link OdysseyModel.toBinaryBuffers} can pass the MDL through unchanged.
+   * Off by default: the game never re-serializes models and the copy doubles
+   * model memory. Tools that export binary models should enable it.
+   */
+  static preserveSourceBinary = false;
+
+  /** Loads currently in flight, so concurrent requests share one read + parse. */
+  private pending: Map<string, Promise<OdysseyModel>> = new Map();
+
+  /**
+   * Models no archive has, for the current set of module archives. Effects ask
+   * for absent models (e.g. fx_shadow_m) once per object; without this each ask
+   * walks the key table and every module archive again.
+   */
+  private missing: Set<string> = new Set();
+  private missingScope: unknown = undefined;
+
+  private isKnownMissing(resref: string): boolean {
+    if(this.missingScope !== ResourceLoader.ModuleArchives){
+      this.missing.clear();
+      this.missingScope = ResourceLoader.ModuleArchives;
+    }
+    return this.missing.has(resref);
+  }
   
   /**
    * Loads a 3D model from MDL/MDX files with caching support.
@@ -101,27 +128,71 @@ export class MDLLoader {
       return undefined;
     }
 
-    //Try to load the model
-    try{
-      //Check the cache
-      if(ModelCache.models.has(resref)){
-        return ModelCache.models.get(resref);
-      }
+    //Check the cache
+    const cached = ModelCache.models.get(resref);
+    if(cached){
+      return cached;
+    }
 
+    if(this.isKnownMissing(resref)){
+      return undefined;
+    }
+
+    //Join a load already in flight for the same model
+    const inFlight = this.pending.get(resref);
+    if(inFlight){
+      return inFlight;
+    }
+
+    const promise = this.loadUncached(resref);
+    this.pending.set(resref, promise);
+    try{
+      return await promise;
+    }finally{
+      this.pending.delete(resref);
+    }
+	}
+
+  /**
+   * Start loading several models without waiting on each one in turn, so their
+   * reads overlap. Results land in the cache for later {@link load} calls.
+   */
+  prefetch(resrefs: Iterable<string>): Promise<void> {
+    const loads: Promise<OdysseyModel>[] = [];
+    for(const resref of resrefs){
+      if(resref){
+        loads.push(this.load(resref));
+      }
+    }
+    return Promise.all(loads).then((): void => undefined);
+  }
+
+  private async loadUncached(resref: string): Promise<OdysseyModel> {
+    const scope = ResourceLoader.ModuleArchives;
+    try{
       //Load the resources from disk
       const mdlPromise = ResourceLoader.loadResource(resMDL, resref);
       const mdxPromise = ResourceLoader.loadResource(resMDX, resref);
 
       const [mdl_buffer, mdx_buffer] = await Promise.all([mdlPromise, mdxPromise]);
-      const model = OdysseyModel.FromBuffers(mdl_buffer, mdx_buffer);
+      const model = OdysseyModel.FromBuffers(mdl_buffer, mdx_buffer, {
+        preserveSourceBinary: MDLLoader.preserveSourceBinary,
+      });
       ModelCache.models.set(resref, model);
       return model;
     }catch(e: any){
       console.warn('MD(L|X) 404', resref);
       console.error(e);
+      if(
+        scope === ResourceLoader.ModuleArchives &&
+        typeof e?.message === 'string' && e.message.startsWith('Resource not found')
+      ){
+        this.isKnownMissing(resref);
+        this.missing.add(resref);
+      }
       return undefined;
     }
-	}
+  }
 
   /**
    * Clears the model cache, freeing up memory and forcing fresh loads.
@@ -145,6 +216,8 @@ export class MDLLoader {
    */
   reset(){
     ModelCache.models.clear();
+    this.pending.clear();
+    this.missing.clear();
   }
 
 }

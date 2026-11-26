@@ -104,6 +104,14 @@ export class GameFileSystem {
           // Fall through to a case-insensitive scan (File System Access API is case-sensitive).
         }
         const want = String(filename || '').toLowerCase();
+        if(GameFileSystem.browserReadCaching){
+          const index = await GameFileSystem.getDirectoryFileIndex(dirHandle);
+          const actual = index.get(want);
+          if(actual){
+            return await dirHandle.getFileHandle(actual, { create: false });
+          }
+          throw new Error('Failed to read file: ' + filepath);
+        }
         for await (const entry of dirHandle.values()){
           if(entry.kind === 'file' && entry.name.toLowerCase() === want){
             return await dirHandle.getFileHandle(entry.name, { create: false });
@@ -140,6 +148,14 @@ export class GameFileSystem {
         }
       }
       if(!file) throw new Error('Failed to read file from handle!');
+
+      if(GameFileSystem.browserReadCaching){
+        const bytes = await GameFileSystem.getCachedArchiveBytes(handle, file);
+        if(bytes){
+          output.set(bytes.subarray(position, position + length), offset);
+          return;
+        }
+      }
 
       let blob = file.slice(position, position + length);
       let arrayBuffer = await blob.arrayBuffer();
@@ -238,9 +254,11 @@ export class GameFileSystem {
         fileHandle = found;
       }
 
+      GameFileSystem.invalidateReadCaches();
       const stream = await fileHandle.createWritable();
       await stream.write(data as any);
       await stream.close();
+      GameFileSystem.invalidateReadCaches();
       return true;
     } catch(e) {
       console.error('GameFileSystem.writeFile', filepath, e);
@@ -463,6 +481,7 @@ export class GameFileSystem {
         try{
           const details = path.parse(dirPath);
           // let handle = await this.resolvePathDirectoryHandle(dirPath);
+          GameFileSystem.invalidateReadCaches();
           let parentHandle = await this.resolvePathDirectoryHandle(details.dir);
           if(parentHandle == ApplicationProfile.directoryHandle) resolve(false);
           if(parentHandle){
@@ -560,6 +579,7 @@ export class GameFileSystem {
         }
       })
     }else{
+      GameFileSystem.invalidateReadCaches();
       if(handleOrPath instanceof FileSystemFileHandle && webHandleHasRemove){
         //@ts-ignore
         await handleOrPath.remove();
@@ -662,6 +682,89 @@ export class GameFileSystem {
   static directoryCache: Map<string, FileSystemDirectoryHandle> = new Map();
   static directoryInflight: Map<string, Promise<FileSystemDirectoryHandle>> = new Map();
   private static fileSnapshotCache = new WeakMap<FileSystemFileHandle, File>();
+
+  /**
+   * Browser-only read caches for the game runtime: whole-file buffers for small
+   * archives (one blob read instead of one per resource) and per-directory
+   * lower-case name indexes for case-insensitive opens (including misses).
+   * Off by default because tools such as Forge write game files through their own
+   * handles, which these caches would not see. Electron never uses them.
+   */
+  static browserReadCaching = false;
+  static archiveCacheMaxFileBytes = 48 * 1024 * 1024;
+  static archiveCacheBudgetBytes = 128 * 1024 * 1024;
+  private static archiveBufferCache = new Map<FileSystemFileHandle, { size: number; bytes: Promise<Uint8Array> }>();
+  private static archiveCacheBytes = 0;
+  private static directoryFileIndex = new WeakMap<FileSystemDirectoryHandle, Promise<Map<string, string>>>();
+
+  /** Drop read caches after anything in the game directory changes. */
+  static invalidateReadCaches(): void {
+    GameFileSystem.archiveBufferCache.clear();
+    GameFileSystem.archiveCacheBytes = 0;
+    GameFileSystem.directoryFileIndex = new WeakMap();
+    GameFileSystem.fileSnapshotCache = new WeakMap();
+  }
+
+  /** Small module / save archives; BIFs and texture packs are read sparsely. */
+  static isCacheableArchive(name: string, size: number): boolean {
+    if(!(size > 0) || size > GameFileSystem.archiveCacheMaxFileBytes){ return false; }
+    const lower = String(name || '').toLowerCase();
+    if(lower.startsWith('swpc_tex_')){ return false; }
+    return /\.(rim|erf|mod|sav|hak)$/.test(lower);
+  }
+
+  private static async getCachedArchiveBytes(handle: FileSystemFileHandle, file: File): Promise<Uint8Array | undefined> {
+    const cache = GameFileSystem.archiveBufferCache;
+    let entry = cache.get(handle);
+    if(entry){
+      // Most recently used goes last.
+      cache.delete(handle);
+      cache.set(handle, entry);
+    }else{
+      if(!GameFileSystem.isCacheableArchive(handle.name, file.size)){ return undefined; }
+      const created = { size: file.size, bytes: file.arrayBuffer().then((ab) => new Uint8Array(ab)) };
+      entry = created;
+      cache.set(handle, created);
+      GameFileSystem.archiveCacheBytes += created.size;
+      created.bytes.catch(() => {
+        if(cache.get(handle) === created){
+          cache.delete(handle);
+          GameFileSystem.archiveCacheBytes -= created.size;
+        }
+      });
+      for(const [key, value] of cache){
+        if(GameFileSystem.archiveCacheBytes <= GameFileSystem.archiveCacheBudgetBytes || key === handle){ break; }
+        cache.delete(key);
+        GameFileSystem.archiveCacheBytes -= value.size;
+      }
+    }
+    try{
+      return await entry.bytes;
+    }catch{
+      return undefined;
+    }
+  }
+
+  private static getDirectoryFileIndex(dirHandle: FileSystemDirectoryHandle): Promise<Map<string, string>> {
+    let pending = GameFileSystem.directoryFileIndex.get(dirHandle);
+    if(!pending){
+      const indexes = GameFileSystem.directoryFileIndex;
+      pending = (async () => {
+        const index = new Map<string, string>();
+        for await (const entry of dirHandle.values()){
+          if(entry.kind !== 'file'){ continue; }
+          const lower = entry.name.toLowerCase();
+          if(!index.has(lower)){ index.set(lower, entry.name); }
+        }
+        return index;
+      })();
+      pending.catch(() => {
+        if(indexes.get(dirHandle) === pending){ indexes.delete(dirHandle); }
+      });
+      indexes.set(dirHandle, pending);
+    }
+    return pending;
+  }
 
   private static async resolveFilePathDirectoryHandle(filepath: string): Promise<FileSystemDirectoryHandle> {
     const root = this.getRootDirectoryHandle();

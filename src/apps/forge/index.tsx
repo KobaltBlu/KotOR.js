@@ -41,6 +41,8 @@ const loadReactApplication = () => {
 }
 
 ( async () => {
+  // Forge may export binary models; keep source bytes for MDL passthrough.
+  KotOR.MDLLoader.preserveSourceBinary = true;
   await KotOR.ConfigClient.Init(KotOR.configClientDefaults);
   await Launcher.InitProfiles();
   await restoreGameDirectoryHandlesToProfiles();

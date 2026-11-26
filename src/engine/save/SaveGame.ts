@@ -366,6 +366,12 @@ export class SaveGame {
     if(this.PORTRAIT2)
       GameState.PartyManager.PortraitOrder[2] = this.PORTRAIT2;
 
+    // LoadGame / DoQuickLoad: SetSoundMode(0) then BusyWaitMuteSound before the
+    // load screen. The fade is wall-clock driven, so it runs alongside the save
+    // reads below instead of adding its full length to the load.
+    AudioEngine.SetSoundMode(SoundMode.POP, 0);
+    const muteFade = AudioEngine.BusyWaitMuteSound();
+
     //Init SAVEGAME.sav
     await this.initSaveGameResourceLoader();
     //Create the gameinprogress folder
@@ -411,9 +417,7 @@ export class SaveGame {
     await this.loadPC();
     //Load The Last Module
     console.log('SaveGame', this.getLastModule(), 'Loading Module...');
-    // LoadGame / DoQuickLoad: SetSoundMode(0) then BusyWaitMuteSound before ShowLoadScreen.
-    AudioEngine.SetSoundMode(SoundMode.POP, 0);
-    await AudioEngine.BusyWaitMuteSound();
+    await muteFade;
     ModuleLoadCoordinator.LoadModule(this.getLastModule(), null);
     console.log('SaveGame', 'Load Complete!');
   }

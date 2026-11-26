@@ -152,6 +152,8 @@ export class GameInitializer {
     KotOR.GameState.GameEventFactory = KotOR.GameEventFactory;
     KotOR.GameState.VideoEffectManager = KotOR.VideoEffectManager;
 
+    // The game only writes through GameFileSystem, so its read caches stay coherent.
+    KotOR.GameFileSystem.browserReadCaching = true;
     await KotOR.CurrentGame.CleanGameInProgressFolder();
 
     //Keeps the initializer from loading the same game twice if it's already loaded

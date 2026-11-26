@@ -26,6 +26,40 @@ import {
 import { OdysseyObject3D } from "@engine/render/three/odyssey/OdysseyObject3D";
 import { OdysseyModel3D } from "@engine/render/three/odyssey/OdysseyModel3D";
 
+type SyncedAnimNodes = Pick<OdysseyModelAnimation, 'nodes' | 'rootNode'>;
+
+/**
+ * Supermodel anim → node-id-synchronized node set, per geometry source model.
+ *
+ * The sync result depends only on the geometry hierarchy (names, nodeNumbers,
+ * parent links), which is identical for every OdysseyModel3D built from the
+ * same parsed OdysseyModel with the same parse options. Cloning the anim nodes
+ * is the dominant per-creature load cost (~20k nodes for the humanoid
+ * supermodel chain), so build it once and share the read-only node set.
+ * Per-instance state on anim nodes (modelNodeCache) is already keyed by model uuid.
+ */
+const superAnimSyncCache = new WeakMap<OdysseyModel, Map<string, WeakMap<OdysseyModelAnimation, SyncedAnimNodes>>>();
+
+function getSuperAnimSyncCache(odysseyModel: OdysseyModel3D): WeakMap<OdysseyModelAnimation, SyncedAnimNodes> | undefined {
+  const source = odysseyModel.sourceModel;
+  // Editor sessions can mutate the source hierarchy; always resync there.
+  if(!source || odysseyModel.options?.editorMode){
+    return undefined;
+  }
+  let bySignature = superAnimSyncCache.get(source);
+  if(!bySignature){
+    bySignature = new Map();
+    superAnimSyncCache.set(source, bySignature);
+  }
+  const signature = `${odysseyModel.options?.parseChildren !== false}:${odysseyModel.nodes.size}:${odysseyModel.nodesById.length}`;
+  let byAnim = bySignature.get(signature);
+  if(!byAnim){
+    byAnim = new WeakMap();
+    bySignature.set(signature, byAnim);
+  }
+  return byAnim;
+}
+
 /**
  * Load supermodel animation chain onto an already-built OdysseyModel3D.
  */
@@ -39,18 +73,27 @@ export async function loadOdysseySuperModel(
   }
 
   odysseyModel.ensureNodesById();
+  const syncCache = getSuperAnimSyncCache(odysseyModel);
 
   //--------------------------------------//
   // Supermodel: Animations Merge - Begin
   //--------------------------------------//
   for(let i = 0, ilen = supermodel.animations.length; i < ilen; i++){
-    const animName = supermodel.animations[i].name;
+    const superAnim = supermodel.animations[i];
+    const animName = superAnim.name;
     const hasAnim = odysseyModel.odysseyAnimationMap.has(animName);
     if(!hasAnim){
-      const anim = OdysseyModelAnimation.From(supermodel.animations[i]);
-      // SynchronizeNodes: remap anim model node.id onto geometry id space.
-      // Clone happens inside sync so the cached supermodel MDL is not mutated.
-      synchronizeAnimationToModel(anim, odysseyModel.nodes, odysseyModel.nodesById);
+      const anim = OdysseyModelAnimation.From(superAnim);
+      const synced = syncCache?.get(superAnim);
+      if(synced){
+        anim.nodes = synced.nodes;
+        anim.rootNode = synced.rootNode;
+      }else{
+        // SynchronizeNodes: remap anim model node.id onto geometry id space.
+        // Clone happens inside sync so the cached supermodel MDL is not mutated.
+        synchronizeAnimationToModel(anim, odysseyModel.nodes, odysseyModel.nodesById);
+        syncCache?.set(superAnim, { nodes: anim.nodes, rootNode: anim.rootNode });
+      }
       odysseyModel.odysseyAnimations.push(anim);
       odysseyModel.odysseyAnimationMap.set(anim.name, anim);
     }
@@ -248,8 +291,8 @@ export async function createOdysseyModel3DFromMDL(
         finishMergeStatic(odysseyModel, options);
       }
 
+      // buildSkeleton() finishes with applyShadowCasterMaterials().
       odysseyModel.buildSkeleton();
-      odysseyModel.applyShadowCasterMaterials();
 
       if(model.modelHeader.superModelName.indexOf("null") == -1 && model.modelHeader.superModelName != ''){
         await loadOdysseySuperModel(model.modelHeader.superModelName.toLowerCase(), odysseyModel);

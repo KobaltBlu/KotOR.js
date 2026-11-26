@@ -95,6 +95,7 @@ export class CurrentGame {
                 await directory_handle.removeEntry(handle.name);
               }
             }
+            GameFileSystem.invalidateReadCaches();
           }else if(create){
             const directory_handle = await ApplicationProfile.directoryHandle.getDirectoryHandle(CurrentGame.gameinprogress_dir, { create: true });
             console.log('exists', directory_handle);

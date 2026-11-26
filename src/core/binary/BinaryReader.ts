@@ -198,7 +198,8 @@ export class BinaryReader {
   readChars(num: number, encoding: BufferEncoding = 'latin1'): string {
     if(this.position >= this.buffer.length)
       return '\0';
-    this._value = encoding == 'utf8' ? this.#textDecoderUTF8.decode(this.buffer.slice(this.position, this.position + num)) : this.#textDecoder.decode(this.buffer.slice(this.position, this.position + num));
+    const view = this.buffer.subarray(this.position, this.position + num);
+    this._value = encoding == 'utf8' ? this.#textDecoderUTF8.decode(view) : this.#textDecoder.decode(view);
     this.position += num;
     //console.log(num, this._value);
     return this._value;
