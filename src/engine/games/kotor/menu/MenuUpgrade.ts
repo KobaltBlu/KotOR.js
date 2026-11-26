@@ -1,3 +1,4 @@
+import type { PadControlGlyph } from "@engine/gui/GameMenu";
 import { GameEngineType } from "@core/enums/engine/GameEngineType";
 import { GameState } from "@engine/runtime/GameState";
 import { GameMenu, LBL_3DView } from "@engine/gui";
@@ -747,6 +748,19 @@ export class MenuUpgrade extends GameMenu {
     this.selectedSlotIndex = -1;
     this.componentChoices = [];
     super.close();
+  }
+
+  /** X builds the item with the chosen upgrades. */
+  triggerControllerXPress() {
+    if(this.BTN_ASSEMBLE?.isVisible()) this.BTN_ASSEMBLE.click();
+  }
+
+
+  /** Pad button symbols drawn on this menu's controls. */
+  getPadButtonGlyphs(): PadControlGlyph[] {
+    const glyphs = super.getPadButtonGlyphs();
+    this.addPadGlyph(glyphs, 'x', this.BTN_ASSEMBLE);
+    return glyphs;
   }
 
 }

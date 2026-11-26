@@ -1,3 +1,4 @@
+import type { PadControlGlyph } from "@engine/gui/GameMenu";
 import { PazaakTurnMode } from "@core/enums/minigames/PazaakTurnMode";
 import { PazaakHandSlots } from "@core/enums/minigames/PazaakHandSlots";
 import { PazaakTableSlots } from "@core/enums/minigames/PazaakTableSlots";
@@ -466,4 +467,30 @@ export class MenuPazaakGame extends GameMenu {
 
   }
   
+
+  /** X ends the turn, Y stands. */
+  triggerControllerXPress() {
+    this.BTN_XTEXT?.click();
+  }
+
+  triggerControllerYPress() {
+    this.BTN_YTEXT?.click();
+  }
+
+  /** B and Back offer to forfeit where the game has a forfeit button. */
+  triggerControllerBPress() {
+    (this as any).BTN_FORFEITGAME?.click();
+  }
+
+
+  /** Pad button symbols drawn on this menu's controls. */
+  getPadButtonGlyphs(): PadControlGlyph[] {
+    const glyphs = super.getPadButtonGlyphs();
+    this.addPadGlyph(glyphs, 'x', this.BTN_XTEXT);
+    this.addPadGlyph(glyphs, 'y', this.BTN_YTEXT);
+    const forfeit = (this as any).BTN_FORFEITGAME as GUIButton | undefined;
+    if(forfeit) this.addPadGlyph(glyphs, 'b', forfeit);
+    return glyphs;
+  }
+
 }

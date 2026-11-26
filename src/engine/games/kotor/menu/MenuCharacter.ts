@@ -1,3 +1,4 @@
+import type { PadControlGlyph } from "@engine/gui/GameMenu";
 import { GameState } from "@engine/runtime/GameState";
 import { GameMenu, LBL_3DView } from "@engine/gui";
 import type { GUILabel, GUIButton, GUISlider, GUIControl } from "@engine/gui";
@@ -435,6 +436,41 @@ export class MenuCharacter extends GameMenu {
 
   triggerControllerBumperRPress() {
     this.manager.MenuTop.BTN_ABI.click();
+  }
+
+  /** A levels up when a level is waiting; otherwise presses the focused control. */
+  triggerControllerAPress() {
+    if(this.BTN_LEVELUP?.isVisible() && GameState.PartyManager.getCurrentPlayer()?.canLevelUp()){
+      this.BTN_LEVELUP.click();
+      return;
+    }
+    super.triggerControllerAPress();
+  }
+
+  /** X runs the automatic level-up. */
+  triggerControllerXPress() {
+    if(this.BTN_AUTO?.isVisible()) this.BTN_AUTO.click();
+  }
+
+  /** Y moves to the next party member. */
+  triggerControllerYPress() {
+    if(this.BTN_CHANGE1?.isVisible()) this.BTN_CHANGE1.click();
+  }
+
+  /** Right stick left / right turns the character model. */
+  triggerControllerRStickXPress(positive = false) {
+    this.rotatePortrait(positive ? -10 : 10);
+  }
+
+
+  /** Pad button symbols drawn on this menu's controls. */
+  getPadButtonGlyphs(): PadControlGlyph[] {
+    const glyphs = super.getPadButtonGlyphs();
+    const canLevelUp = !!GameState.PartyManager.getCurrentPlayer()?.canLevelUp();
+    this.addPadGlyph(glyphs, 'a', canLevelUp ? this.BTN_LEVELUP : undefined);
+    this.addPadGlyph(glyphs, 'x', this.BTN_AUTO);
+    this.addPadGlyph(glyphs, 'y', this.BTN_CHANGE1);
+    return glyphs;
   }
 
 }

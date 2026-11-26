@@ -175,11 +175,27 @@ export class InGameDialog extends GameMenu {
     commitGuiTransform(this.bottomBar);
   }
 
+  /** A picks the highlighted reply, or skips the current line while an NPC speaks. */
   triggerControllerAPress() {
-    if(!this.LB_REPLIES.isVisible()) return;
+    if(!this.LB_REPLIES.isVisible()){
+      const cutscene = GameState.CutsceneManager;
+      if(cutscene?.active && cutscene.isListening){
+        cutscene.playerSkipEntry(cutscene.currentEntry);
+      }
+      return;
+    }
     if (!this.LB_REPLIES.selectedItem) return;
     this.LB_REPLIES.selectedItem.click();
   }
+
+  triggerControllerStartPress() {
+    this.triggerControllerAPress();
+  }
+
+  /** Dialog has no cancel on the pad. */
+  triggerControllerBPress() {}
+
+  triggerControllerBackPress() {}
 
   triggerControllerDUpPress() {
     if(!this.LB_REPLIES.isVisible()) return;

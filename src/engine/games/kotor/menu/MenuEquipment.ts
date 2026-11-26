@@ -1,3 +1,4 @@
+import type { PadControlGlyph } from "@engine/gui/GameMenu";
 import { GameState } from "@engine/runtime/GameState";
 import { GameMenu } from "@engine/gui";
 import type { GUIListBox, GUILabel, GUIButton, GUIControl } from "@engine/gui";
@@ -897,4 +898,12 @@ export class MenuEquipment extends GameMenu {
     }
   }
   
+
+  /** Pad button symbols drawn on this menu's controls. */
+  getPadButtonGlyphs(): PadControlGlyph[] {
+    const glyphs = super.getPadButtonGlyphs();
+    if(this.equipmentSelectionActive) this.addPadGlyph(glyphs, 'a', this.BTN_EQUIP);
+    return glyphs;
+  }
+
 }

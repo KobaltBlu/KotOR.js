@@ -17,6 +17,8 @@ export class KeyInput {
   pDown: boolean;
   pressed: boolean;
   buttonIndex: number;
+  /** When false, a held button fires `pressed` once only (no auto-repeat). */
+  repeatEnabled: boolean = true;
   repeating: boolean;
   repeatTimer: number;
   repeatPulseTimer: number;
@@ -57,7 +59,7 @@ export class KeyInput {
           this.pressed = true;
         }
 
-        if( this.down ){
+        if( this.down && this.repeatEnabled ){
           this.repeatTimer += delta;
           this.reapeatSpeed = Math.floor(this.repeatTimer / AnalogInput.RepeatThreshold) < 5 ? 1 : 2;
           if( this.repeatTimer >= KeyInput.RepeatThreshold ){
@@ -78,6 +80,16 @@ export class KeyInput {
         }
       }
     }
+  }
+
+  /** Release the input (pad disconnected or missing for a frame). */
+  reset(){
+    this.down = false;
+    this.pDown = false;
+    this.pressed = false;
+    this.repeating = false;
+    this.repeatTimer = 0;
+    this.repeatPulseTimer = 0;
   }
 
   keyDown(){

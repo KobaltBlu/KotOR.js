@@ -93,4 +93,25 @@ export class MenuJournal extends K1_MenuJournal {
     super.show();
   }
   
+
+  /** Sort buttons in the order the d-pad steps through them. */
+  protected padSortOrder(): [JournalSort, GUIButton][] {
+    return [
+      [JournalSort.RECIEVED, this.BTN_FILTER_TIME],
+      [JournalSort.NAME, this.BTN_FILTER_NAME],
+      [JournalSort.PRIORITY, this.BTN_FILTER_PRIORITY],
+      [JournalSort.PLANET, this.BTN_FILTER_PLANET],
+    ];
+  }
+
+  protected padSortControl(): GUIButton | undefined {
+    return this.padSortOrder().find(([sort]) => sort === this.sort)?.[1];
+  }
+
+  protected stepPadSort(step: number) {
+    const order = this.padSortOrder();
+    const at = order.findIndex(([sort]) => sort === this.sort);
+    this.padStepButtons(order.map(([, btn]) => btn), at, step);
+  }
+
 }

@@ -1,11 +1,32 @@
 import { AnalogInput } from "@engine/controls/AnalogInput";
 import { KeyInput } from "@engine/controls/KeyInput";
+import { detectPadFamily, type PadFamily } from "@engine/controls/gamepad-glyphs";
+
+/** Radial dead zone for both sticks (fraction of full deflection). */
+export const STICK_DEADZONE = 0.15;
+
+/**
+ * Radial stick dead zone: the stick reads 0 while inside a circle of radius
+ * `deadzone`, then rescales so full deflection still reaches 1. Unlike a dead
+ * zone on each axis, this does not snap diagonals toward the axes.
+ */
+export function radialDeadZone(x: number, y: number, deadzone: number = STICK_DEADZONE): { x: number; y: number } {
+  const fx = Number.isFinite(x) ? x : 0;
+  const fy = Number.isFinite(y) ? y : 0;
+  const mag = Math.hypot(fx, fy);
+  if(mag <= deadzone || mag < 1e-9){
+    return { x: 0, y: 0 };
+  }
+  const clamped = Math.min(1, mag);
+  const scale = ((clamped - deadzone) / (1 - deadzone)) / mag;
+  return { x: fx * scale, y: fy * scale };
+}
 
 /**
  * GamePad class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GamePad.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -31,24 +52,62 @@ export class GamePad {
   trigger_l = new AnalogInput('TRIGGER_LEFT', 0.0);
   trigger_r = new AnalogInput('TRIGGER_RIGHT', 0.0);
 
-  stick_l_x = new AnalogInput('L_STICK_X', 0.1, true);
-  stick_l_y = new AnalogInput('L_STICK_Y', 0.1, true);
+  // Stick dead zones are radial and applied in updateState.
+  stick_l_x = new AnalogInput('L_STICK_X', 0, true);
+  stick_l_y = new AnalogInput('L_STICK_Y', 0, true);
   stick_l = new KeyInput('L_STICK');
 
-  stick_r_x = new AnalogInput('R_STICK_X', 0.1, true);
-  stick_r_y = new AnalogInput('R_STICK_Y', 0.1, true);
+  stick_r_x = new AnalogInput('R_STICK_X', 0, true);
+  stick_r_y = new AnalogInput('R_STICK_Y', 0, true);
   stick_r = new KeyInput('R_STICK');
   gamePad: Gamepad;
   controlsMapped: boolean;
+
+  /** Button family of the current pad (drives on-screen button symbols). */
+  family: PadFamily = 'xbox';
 
   constructor(){
     this.gamePad = undefined;
     this.controlsMapped = false;
     this.mapKeys();
+
+    // Only navigation inputs auto-repeat while held. Confirm / cancel / menu
+    // buttons fire once per press so holding them never re-clicks.
+    for(const input of [
+      this.button_a, this.button_b, this.button_x, this.button_y,
+      this.button_back, this.button_start,
+      this.button_bumper_l, this.button_bumper_r,
+      this.stick_l, this.stick_r,
+    ]){
+      input.repeatEnabled = false;
+    }
   }
 
-  setGamePad( gamePad: Gamepad ){
+  /** Every button and axis, for bulk resets. */
+  allInputs(): (KeyInput | AnalogInput)[] {
+    return [
+      this.button_a, this.button_b, this.button_x, this.button_y,
+      this.button_back, this.button_start,
+      this.button_d_up, this.button_d_down, this.button_d_left, this.button_d_right,
+      this.button_bumper_l, this.button_bumper_r,
+      this.trigger_l, this.trigger_r,
+      this.stick_l, this.stick_l_x, this.stick_l_y,
+      this.stick_r, this.stick_r_x, this.stick_r_y,
+    ];
+  }
+
+  setGamePad( gamePad: Gamepad | undefined ){
     this.gamePad = gamePad;
+    if(gamePad){
+      this.family = detectPadFamily(gamePad.id);
+    }
+  }
+
+  /** Release every input, so nothing stays held after the pad goes away. */
+  reset(){
+    for(const input of this.allInputs()){
+      input.reset();
+    }
   }
 
   updateState(delta = 0){
@@ -73,12 +132,14 @@ export class GamePad {
       this.button_d_right.update(this.gamePad, delta);
 
       this.stick_l.update(this.gamePad, delta);
-      this.stick_l_x.update(this.gamePad, delta);
-      this.stick_l_y.update(this.gamePad, delta);
-      
+      const left = radialDeadZone(this.stick_l_x.readRaw(this.gamePad), this.stick_l_y.readRaw(this.gamePad));
+      this.stick_l_x.updateWithValue(left.x, delta);
+      this.stick_l_y.updateWithValue(left.y, delta);
+
       this.stick_r.update(this.gamePad, delta);
-      this.stick_r_x.update(this.gamePad, delta);
-      this.stick_r_y.update(this.gamePad, delta);
+      const right = radialDeadZone(this.stick_r_x.readRaw(this.gamePad), this.stick_r_y.readRaw(this.gamePad));
+      this.stick_r_x.updateWithValue(right.x, delta);
+      this.stick_r_y.updateWithValue(right.y, delta);
     }
   }
 
@@ -132,14 +193,38 @@ export class GamePad {
 
   }
 
+  /**
+   * Fresh snapshot of the active pad for this frame. Keeps the current pad
+   * while it is connected, otherwise switches to the first connected pad.
+   * Returns undefined when no pad is available.
+   */
+  static pollActive(): Gamepad | undefined {
+    const pads = typeof navigator !== 'undefined' && typeof navigator.getGamepads === 'function'
+      ? navigator.getGamepads()
+      : [];
+    const current = GamePad.CurrentGamePadIndex >= 0 ? pads[GamePad.CurrentGamePadIndex] : null;
+    if(current && current.connected){
+      GamePad.CurrentGamePad = current;
+      return current;
+    }
+    for(let i = 0; i < pads.length; i++){
+      const pad = pads[i];
+      if(pad && pad.connected){
+        GamePad.CurrentGamePadIndex = pad.index;
+        GamePad.CurrentGamePad = pad;
+        return pad;
+      }
+    }
+    GamePad.CurrentGamePadIndex = -1;
+    GamePad.CurrentGamePad = undefined;
+    return undefined;
+  }
+
   static Init(){
     GamePad.GamePads = {};
 
-    function gamepadHandler(e: any, connecting: boolean = false) {
-      let gamepad = e.gamepad;
-      // Note:
-      // gamepad === navigator.getGamepads[gamepad.index]
-      console.log('gamepadHandler', e, connecting);
+    function gamepadHandler(e: GamepadEvent, connecting: boolean = false) {
+      const gamepad = e.gamepad;
       if (connecting) {
         GamePad.GamePads[gamepad.index] = gamepad;
         if(GamePad.CurrentGamePadIndex == -1){
@@ -147,22 +232,23 @@ export class GamePad {
           GamePad.CurrentGamePad = gamepad;
         }
       } else {
+        delete GamePad.GamePads[gamepad.index];
         if(GamePad.CurrentGamePadIndex == gamepad.index){
           GamePad.CurrentGamePadIndex = -1;
           GamePad.CurrentGamePad = undefined;
+          // Fall back to another pad that is still connected.
+          GamePad.pollActive();
         }
-        
-        delete GamePad.GamePads[gamepad.index];
       }
     }
 
-    globalThis.addEventListener("gamepadconnected", function(e) { gamepadHandler(e, true); }, false);
-    globalThis.addEventListener("gamepaddisconnected", function(e) { gamepadHandler(e, false); }, false);
+    globalThis.addEventListener("gamepadconnected", function(e: GamepadEvent) { gamepadHandler(e, true); }, false);
+    globalThis.addEventListener("gamepaddisconnected", function(e: GamepadEvent) { gamepadHandler(e, false); }, false);
   }
 
 
-  static CurrentGamePad: GamePad;
+  static CurrentGamePad: Gamepad | undefined;
   static CurrentGamePadIndex: number = -1;
-  static GamePads: any = {};
+  static GamePads: Record<number, Gamepad> = {};
 
 }

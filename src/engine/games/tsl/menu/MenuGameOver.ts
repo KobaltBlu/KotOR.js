@@ -1,3 +1,4 @@
+import type { PadControlGlyph } from "@engine/gui/GameMenu";
 import { GameMenu } from "@engine/gui";
 import type { GUIButton, GUILabel } from "@engine/gui";
 import { GameState } from "@engine/runtime/GameState";
@@ -110,6 +111,25 @@ export class MenuGameOver extends GameMenu {
     if(GameState.PartyManager.getCurrentPlayer()){
       GameState.currentCamera = GameState.camera;
     }
+  }
+
+  /** X opens the load screen. */
+  triggerControllerXPress() {
+    this.BTN_LOADGAME?.click();
+  }
+
+  /** Start loads the last save, like A. */
+  triggerControllerStartPress() {
+    this.BTN_LASTSAVE?.click();
+  }
+
+
+  /** Pad button symbols drawn on this menu's controls. */
+  getPadButtonGlyphs(): PadControlGlyph[] {
+    const glyphs = super.getPadButtonGlyphs();
+    this.addPadGlyph(glyphs, 'x', this.BTN_LOADGAME);
+    this.addPadGlyph(glyphs, 'start', this.BTN_LASTSAVE);
+    return glyphs;
   }
 
 }

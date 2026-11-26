@@ -1,3 +1,4 @@
+import type { PadControlGlyph } from "@engine/gui/GameMenu";
 import { GameState } from "@engine/runtime/GameState";
 import { GameMenu } from "@engine/gui";
 import type { GUIListBox, GUILabel, GUIButton } from "@engine/gui";
@@ -501,6 +502,40 @@ export class MenuAbilities extends GameMenu {
         }
       break;
     }
+  }
+
+  triggerControllerBumperLPress() {
+    this.manager.MenuTop.BTN_CHAR.click();
+  }
+
+  triggerControllerBumperRPress() {
+    this.manager.MenuTop.BTN_MSG.click();
+  }
+
+  /** X cycles the view: skills, powers, feats. */
+  triggerControllerXPress() {
+    this.padNextView()?.click();
+  }
+
+  /** View button X moves to next (skills, powers, feats, wrapping). */
+  protected padNextView(): GUIButton | undefined {
+    const order: [AbilityFilter, GUIButton][] = [
+      [AbilityFilter.SKILLS, this.BTN_SKILLS],
+      [AbilityFilter.POWERS, this.BTN_POWERS],
+      [AbilityFilter.FEATS, this.BTN_FEATS],
+    ];
+    const views = order.filter(([, btn]) => btn && btn.isVisible() && !btn.disableSelection);
+    if(!views.length) return undefined;
+    const at = views.findIndex(([filter]) => filter === this.filter);
+    return views[(at + 1) % views.length][1];
+  }
+
+
+  /** Pad button symbols drawn on this menu's controls. */
+  getPadButtonGlyphs(): PadControlGlyph[] {
+    const glyphs = super.getPadButtonGlyphs();
+    this.addPadGlyph(glyphs, 'x', this.padNextView());
+    return glyphs;
   }
 
 }

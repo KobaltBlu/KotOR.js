@@ -297,4 +297,33 @@ export class InGameComputer extends GameMenu {
     this.updateSkills();
   }
 
+  /** Up / down choose a reply, A picks it, the right stick scrolls the message. */
+  triggerControllerAPress() {
+    if(!this.LB_REPLIES?.isVisible()) return;
+    const row = this.LB_REPLIES.selectedItem;
+    if(row) row.click();
+    else if(this.LB_REPLIES.children.length) this.LB_REPLIES.setSelectedControl(0, false);
+  }
+
+  triggerControllerStartPress() {
+    this.triggerControllerAPress();
+  }
+
+  triggerControllerDUpPress() {
+    if(this.LB_REPLIES?.isVisible()) this.LB_REPLIES.directionalNavigate('up');
+  }
+
+  triggerControllerDDownPress() {
+    if(this.LB_REPLIES?.isVisible()) this.LB_REPLIES.directionalNavigate('down');
+  }
+
+  triggerControllerDLeftPress() {}
+
+  triggerControllerDRightPress() {}
+
+  triggerControllerRStickYPress(positive = false) {
+    if(positive) this.LB_MESSAGE?.scrollDown();
+    else this.LB_MESSAGE?.scrollUp();
+  }
+
 }

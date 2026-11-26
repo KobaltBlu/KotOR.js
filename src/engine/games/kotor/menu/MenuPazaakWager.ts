@@ -1,3 +1,4 @@
+import type { PadControlGlyph } from "@engine/gui/GameMenu";
 import { GameState } from "@engine/runtime/GameState";
 import { GameMenu } from "@engine/gui";
 import type { GUILabel, GUIButton } from "@engine/gui";
@@ -122,4 +123,45 @@ export class MenuPazaakWager extends GameMenu {
     const tlkCredits = GameState.TLKManager?.GetStringById?.(TLK_YOUR_CREDITS)?.Value ?? 'Your credits';
     this.LBL_MAXIMUM.setText(`${tlkMax} ${maxWager}\n${tlkCredits} ${playerGold}`);
   }
+
+  /** Left / right change the wager, A and Start place it, B and Back quit. */
+  triggerControllerDLeftPress() {
+    this.BTN_LESS?.click();
+  }
+
+  triggerControllerDRightPress() {
+    this.BTN_MORE?.click();
+  }
+
+  triggerControllerDDownPress() {
+    this.BTN_LESS?.click();
+  }
+
+  triggerControllerDUpPress() {
+    this.BTN_MORE?.click();
+  }
+
+  triggerControllerAPress() {
+    this.BTN_WAGER?.click();
+  }
+
+  triggerControllerStartPress() {
+    this.BTN_WAGER?.click();
+  }
+
+  triggerControllerBPress() {
+    this.BTN_QUIT?.click();
+  }
+
+
+  /** Pad button symbols drawn on this menu's controls. */
+  getPadButtonGlyphs(): PadControlGlyph[] {
+    const glyphs = super.getPadButtonGlyphs();
+    this.addPadGlyph(glyphs, 'dpad_left', this.BTN_LESS);
+    this.addPadGlyph(glyphs, 'dpad_right', this.BTN_MORE);
+    this.addPadGlyph(glyphs, 'a', this.BTN_WAGER);
+    this.addPadGlyph(glyphs, 'b', this.BTN_QUIT);
+    return glyphs;
+  }
+
 }

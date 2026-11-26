@@ -1,3 +1,4 @@
+import type { PadControlGlyph } from "@engine/gui/GameMenu";
 import type { GUIListBox, GUILabel, GUIButton } from "@engine/gui";
 import type { Creature } from "@engine/module/Creature";
 import { CharGenAttribute } from "@core/enums/chargen/CharGenAttribute";
@@ -330,4 +331,24 @@ export class CharGenAbilities extends GameMenu {
     }
   }
   
+
+  /** Y takes the recommended picks. */
+  triggerControllerYPress() {
+    this.BTN_RECOMMENDED?.click();
+  }
+
+  /** Start accepts, like A on the accept button. */
+  triggerControllerStartPress() {
+    this.BTN_ACCEPT?.click();
+  }
+
+
+  /** Pad button symbols drawn on this menu's controls. */
+  getPadButtonGlyphs(): PadControlGlyph[] {
+    const glyphs = super.getPadButtonGlyphs();
+    this.addPadGlyph(glyphs, 'y', this.BTN_RECOMMENDED);
+    this.addPadGlyph(glyphs, 'start', this.BTN_ACCEPT);
+    return glyphs;
+  }
+
 }

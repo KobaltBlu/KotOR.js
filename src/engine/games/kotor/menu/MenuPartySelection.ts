@@ -1,3 +1,4 @@
+import type { PadControlGlyph } from "@engine/gui/GameMenu";
 import { GameState } from "@engine/runtime/GameState";
 import { GameMenu, GUIControl } from "@engine/gui";
 import type { GUILabel, GUIButton, GUICheckBox } from "@engine/gui";
@@ -746,6 +747,23 @@ export class MenuPartySelection extends GameMenu {
     const match = /^BTN_NPC(\d+)$/i.exec(name);
     if(!match) return -1;
     return parseInt(match[1], 10);
+  }
+
+  /** X and Start finish party selection. */
+  triggerControllerXPress() {
+    if(this.BTN_DONE?.isVisible()) this.BTN_DONE.click();
+  }
+
+  triggerControllerStartPress() {
+    this.triggerControllerXPress();
+  }
+
+
+  /** Pad button symbols drawn on this menu's controls. */
+  getPadButtonGlyphs(): PadControlGlyph[] {
+    const glyphs = super.getPadButtonGlyphs();
+    this.addPadGlyph(glyphs, 'x', this.BTN_DONE);
+    return glyphs;
   }
 
 }

@@ -3,6 +3,7 @@ import Stats from 'three/examples/jsm/libs/stats.module';
 
 import { GameState } from "@engine/runtime/GameState";
 import { IngameControls } from "@engine/controls/IngameControls";
+import { TouchControls } from "@engine/controls/TouchControls";
 import { OdysseyRenderPipeline } from "@engine/render/OdysseyRenderPipeline";
 import { createDepthStencilTexture } from "@engine/render/odysseyDepthPrepass";
 import { ViewportController } from "@engine/runtime/ViewportController";
@@ -396,6 +397,7 @@ export class GameRuntimeBootstrap {
      * Initialize the game controls
      */
     GameState.controls = new IngameControls(GameState.currentCamera, GameState.canvas);
+    GameState.controls.touch = new TouchControls(GameState.controls, GameState.canvas);
 
     /**
      * Initialize the FadeOverlayManager

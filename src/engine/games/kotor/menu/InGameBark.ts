@@ -20,6 +20,7 @@ export class InGameBark extends GameMenu {
   engineMode: EngineMode = EngineMode.INGAME;
   LBL_BARKTEXT: GUILabel;
   isOverlayGUI = true;
+  acceptsPadInput = false;
 
   static BARK_TIMER: number = 3;
   barkTimer: number = 0;

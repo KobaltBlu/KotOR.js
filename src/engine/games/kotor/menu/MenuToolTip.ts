@@ -21,6 +21,7 @@ export class MenuToolTip extends GameMenu {
     this.background = '';
     this.voidFill = false;
     this.isOverlayGUI = true;
+    this.acceptsPadInput = false;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

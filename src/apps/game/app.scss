@@ -15,6 +15,7 @@ body {
   cursor: none;
   height: calc(100vh);
   width: calc(100vw);
+  overscroll-behavior: none;
 }
 
 .viewport-wrapper {
@@ -26,6 +27,13 @@ body {
 }
 
 canvas {
+  // The game reads touches itself: no browser panning, zooming, text selection or long-press menu.
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+
   &:focus {
     outline: none;
   }

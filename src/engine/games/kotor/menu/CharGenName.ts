@@ -1,3 +1,4 @@
+import type { PadControlGlyph } from "@engine/gui/GameMenu";
 import { GameState } from "@engine/runtime/GameState";
 import { GameMenu } from "@engine/gui";
 import type { GUILabel, GUIButton, GUIEditBox } from "@engine/gui";
@@ -63,4 +64,18 @@ export class CharGenName extends GameMenu {
     this.selectedControl = this.NAME_BOX_EDIT;
   }
   
+
+  /** Y rolls a random name. */
+  triggerControllerYPress() {
+    this.BTN_RANDOM?.click();
+  }
+
+
+  /** Pad button symbols drawn on this menu's controls. */
+  getPadButtonGlyphs(): PadControlGlyph[] {
+    const glyphs = super.getPadButtonGlyphs();
+    this.addPadGlyph(glyphs, 'y', this.BTN_RANDOM);
+    return glyphs;
+  }
+
 }

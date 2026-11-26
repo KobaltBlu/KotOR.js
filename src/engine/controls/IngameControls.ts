@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { GameState } from "@engine/runtime/GameState";
-import type { GUIControl, GUIListBox, GUIScrollBar } from "@engine/gui";
+import type { GUIControl, GUIListBox, GUIScrollBar, GameMenu } from "@engine/gui";
 import { Utility } from "@core/utility/Utility";
 import { EngineMode } from "@engine/enums/engine/EngineMode";
 import { EngineState } from "@engine/enums/engine/EngineState";
@@ -16,6 +16,10 @@ import { GUIControlTypeMask } from "@core/enums/gui/GUIControlTypeMask";
 import { GUIControlEventFactory } from "@engine/gui/GUIControlEventFactory";
 import { Keyboard } from "@engine/controls/Keyboard";
 import { GamePad } from "@engine/controls/GamePad";
+import { resolvePadFamily } from "@engine/controls/gamepad-glyphs";
+import { computePrompts, GamepadPromptBar, type GamepadPromptContext } from "@engine/controls/GamepadPrompts";
+import { GamepadButtonGlyphs, placeButtonGlyphs, type GlyphPlacement } from "@engine/controls/GamepadButtonGlyphs";
+import { GamepadQuickMenu, type QuickMenuAvailability, type QuickMenuEntry } from "@engine/controls/GamepadQuickMenu";
 import { Mouse } from "@engine/controls/Mouse";
 import { KeyMapper } from "@engine/controls/KeyMapper";
 import type { KeyInput } from "@engine/controls/KeyInput";
@@ -189,6 +193,21 @@ export class IngameControls {
 
   gamePadMovement: boolean = false;
 
+  /** Touch stick is driving the party leader this frame (keyboard idle must not zero it). */
+  touchMovement: boolean = false;
+
+  /** Last pointer input came from a touch screen; cleared by real mouse / keyboard input. */
+  touchInputActive: boolean = false;
+
+  /** Corner overlay showing pad button symbols for the current screen. */
+  padPrompts: GamepadPromptBar = new GamepadPromptBar();
+  padButtonGlyphs: GamepadButtonGlyphs = new GamepadButtonGlyphs();
+  /** Y quick menu while playing with a pad. */
+  quickMenu: GamepadQuickMenu = new GamepadQuickMenu();
+
+  /** Touch input handler, ticked from Update (attached by the runtime bootstrap). */
+  touch?: { update(delta: number): void };
+
   /**
    * When true, hide the software cursor until a keyboard or mouse event arrives.
    * Set by gamepad activity; cleared by key/mouse handlers.
@@ -361,52 +380,9 @@ export class IngameControls {
         return;
       }
 
-      if(!Mouse.pointerLock){
-        Mouse.Update(event.clientX, event.clientY);
-      }
-      if(event.target == this.element){
-        GameState.MenuManager.activeGUIElement = undefined;
-      }
-
-      GameState.raycaster.setFromCamera( GameState.mouse, GameState.camera_gui );
-
-      const customEvent = GUIControlEventFactory.generateEventObject();
       const logical = Mouse.mapBrowserButton(event.button);
-
-      Mouse.downItem = null;
-      Mouse.clickItem = null;
-      Mouse.shiftKey = !!event.shiftKey;
-
       Mouse.updateButtonStateFromEvent(event);
-
-      // GUI / world action clicks (logical left). Camera hold is RMB-only
-      // (Mouse Look inverts RMB sense per-frame — never steals LMB).
-      if(logical === 'left'){
-        const uiControls = this.MenuGetActiveUIElements();
-        for(let i = 0; i < uiControls.length; i++){
-          if(!customEvent.propagate)
-            break;
-
-          const control = uiControls[i];
-          if(!(control.widget.parent instanceof THREE.Scene) && control.widget.visible){
-            if(GameState.debug.CONTROLS)
-              console.log('uiControls', control)
-            try{
-              if(control.processEventListener('mouseDown', [customEvent])){
-                Mouse.downItem = control;
-                customEvent.propagate = false;
-              }
-
-              if(control.eventListeners['click'].length){
-                Mouse.clickItem = control;
-                customEvent.propagate = false;
-              }
-            }catch(e){
-
-            }
-          }
-        }
-      }
+      this.primaryDownAt(event.clientX, event.clientY, !!event.shiftKey, logical === 'left', event.target == this.element);
 
       // Clicking the game canvas requests pointer lock (user gesture).
       // GUI clicks and non-canvas targets keep the absolute-mouse fallback.
@@ -490,13 +466,7 @@ export class IngameControls {
         GameState.scene_cursor_holder.visible = true;
       }
 
-      if(Mouse.downItem && Mouse.leftDown && !(Mouse.cameraHoldActive && !Mouse.isMouseLookEnabled())){
-        if(BitWise.InstanceOf(Mouse.downItem?.objectType, GUIControlTypeMask.GUIControl)){
-          if(!(Mouse.downItem.widget.parent instanceof THREE.Scene)){
-            Mouse.downItem.processEventListener('mouseMove', [])
-          }
-        }
-      }
+      this.forwardDragToDownItem();
     });
 
     window.addEventListener('mouseup', (event: MouseEvent) => {
@@ -527,115 +497,7 @@ export class IngameControls {
         return;
       }
 
-      Mouse.leftClick = true;
-
-      if(!Mouse.pointerLock){
-        Mouse.Update( event.clientX, event.clientY );
-      }
-
-      //If the NoClickTimer is active then we will return out of this function
-      if(GameState.noClickTimer){
-        Mouse.downItem = undefined;
-        Mouse.clickItem = undefined;
-        return;
-      }
-
-      // : click during death sequence hurries the fade (before UI click handling)
-      if(GameState.GameOverManager?.GetGameOver?.()){
-        GameState.GameOverManager.OnDeathSequenceInput();
-      }
-
-      let clickCaptured = false;
-
-      const customEvent = GUIControlEventFactory.generateEventObject();
-
-      //Try to fire mouse up regardless if mouse is still inside object
-      if(BitWise.InstanceOf(Mouse.downItem?.objectType, GUIControlTypeMask.GUIControl)){
-        if(!(Mouse.downItem.widget.parent instanceof THREE.Scene)){
-          try{
-            Mouse.downItem.processEventListener('mouseUp', [customEvent]);
-            Mouse.leftClick = false;
-          }catch(e){
-            console.error(e);
-          }
-        }
-      }
-
-      // Fire click on the control that received mousedown — do not require the
-      // cursor to still be over it. Floating target menus move with the camera
-      // (edge-turn / focus), so a re-hit-test between down and up drops clicks.
-      if(
-        BitWise.InstanceOf(Mouse.clickItem?.objectType, GUIControlTypeMask.GUIControl) &&
-        Mouse.clickItem.widget?.visible &&
-        !(Mouse.clickItem.widget.parent instanceof THREE.Scene)
-      ){
-        clickCaptured = true;
-        try{
-          const control = Mouse.clickItem;
-          Mouse.clickItem = null;
-          GameState.MenuManager.activeGUIElement = control;
-          control.processEventListener('click', [customEvent]);
-          GameState.guiAudioEmitter.playSoundFireAndForget('gui_click');
-          Mouse.leftClick = false;
-          EventManager.FireEvent('menu.click', {
-            name: control.name,
-            menu: control.menu.constructor.name
-          });
-        }catch(e){
-          console.error(e);
-        }
-      }
-
-      let selectedObject = clickCaptured;
-
-      if(!clickCaptured && (GameState.Mode != EngineMode.DIALOG)){
-        if(GameState.Mode == EngineMode.INGAME && GameState.MenuManager.GetCurrentMenu() == GameState.MenuManager.InGameOverlay){
-          const gameObject = GameState.CursorManager.onMouseHitInteractive();
-          if(BitWise.InstanceOf(gameObject?.objectType, GameObjectType.GameObject)){
-            if(gameObject.isUseable() && gameObject != GameState.PartyManager.getCurrentPlayer()){
-
-              selectedObject = true;
-
-              const distance = GameState.PartyManager.getCurrentPlayer().position.distanceTo(gameObject.position);
-              const distanceThreshold = 20;
-
-              if(GameState.CursorManager.selectedObject == gameObject && distance <= distanceThreshold){
-                if(typeof gameObject.onClick === 'function'){
-                  // case-2 attack → AddAttackActions(clear=0) appends with no
-                  // ClearAllActions. Only clear the action queue when not already
-                  // fighting (exploration → combat), matching ActionManager(1).
-                  const pc = GameState.PartyManager.getCurrentPlayer();
-                  if(!pc.combatData?.combatState){
-                    pc.clearAllActions(true);
-                  }
-                  gameObject.onClick(pc);
-                }else{
-                  let distance = GameState.PartyManager.getCurrentPlayer().position.distanceTo(gameObject.position);
-                  if(distance > 1.5){
-                    GameState.PartyManager.getCurrentPlayer().clearAllActions();
-                    gameObject.clearAllActions();
-                    GameState.PartyManager.getCurrentPlayer().actionDialogObject(gameObject);
-                  }
-                }
-              }
-              GameState.CursorManager.setReticleSelectedObject(gameObject);
-              FollowerCamera.clearFocusObject();
-            }
-            if(GameState.debug.SELECTED_OBJECT)
-              console.log('Ingame Object', gameObject);
-          }else{
-            if(GameState.debug.SELECTED_OBJECT)
-              console.log('Object', gameObject);
-          }
-
-          if(!selectedObject){
-            // GameState.CursorManager.hovered = GameState.CursorManager.hoveredObject = GameState.CursorManager.selected = GameState.CursorManager.selectedObject = undefined;
-          }
-        }
-      }
-
-      Mouse.downItem = undefined;
-      Mouse.clickItem = undefined;
+      this.primaryUpAt(event.clientX, event.clientY);
     });
 
     // Wheel → one-index (or oversized page-step) scroll via GUIListBox.scrollUp/Down
@@ -669,6 +531,264 @@ export class IngameControls {
   }
 
   /**
+   * Primary (logical left) press at a client position. Shared by the mouse
+   * listener and touch input; button state must already be set by the caller.
+   * Non-primary presses only refresh the cursor position and clear GUI state.
+   */
+  primaryDownAt(clientX: number, clientY: number, shift: boolean, isPrimary: boolean = true, onCanvas: boolean = true){
+    if(!Mouse.pointerLock){
+      Mouse.Update(clientX, clientY);
+    }
+    if(onCanvas){
+      GameState.MenuManager.activeGUIElement = undefined;
+    }
+
+    GameState.raycaster.setFromCamera( GameState.mouse, GameState.camera_gui );
+
+    const customEvent = GUIControlEventFactory.generateEventObject();
+
+    Mouse.downItem = null;
+    Mouse.clickItem = null;
+    Mouse.shiftKey = !!shift;
+
+    // GUI / world action clicks (logical left). Camera hold is RMB-only
+    // (Mouse Look inverts RMB sense per-frame — never steals LMB).
+    if(!isPrimary){
+      return;
+    }
+    const uiControls = this.MenuGetActiveUIElements();
+    for(let i = 0; i < uiControls.length; i++){
+      if(!customEvent.propagate)
+        break;
+
+      const control = uiControls[i];
+      if(!(control.widget.parent instanceof THREE.Scene) && control.widget.visible){
+        if(GameState.debug.CONTROLS)
+          console.log('uiControls', control)
+        try{
+          if(control.processEventListener('mouseDown', [customEvent])){
+            Mouse.downItem = control;
+            customEvent.propagate = false;
+          }
+
+          if(control.eventListeners['click'].length){
+            Mouse.clickItem = control;
+            customEvent.propagate = false;
+          }
+        }catch(e){
+
+        }
+      }
+    }
+  }
+
+  /** Send a held primary-button drag to the GUI control that took the press (sliders, scrollbars). */
+  forwardDragToDownItem(){
+    if(Mouse.downItem && Mouse.leftDown && !(Mouse.cameraHoldActive && !Mouse.isMouseLookEnabled())){
+      if(BitWise.InstanceOf(Mouse.downItem?.objectType, GUIControlTypeMask.GUIControl)){
+        if(!(Mouse.downItem.widget.parent instanceof THREE.Scene)){
+          Mouse.downItem.processEventListener('mouseMove', [])
+        }
+      }
+    }
+  }
+
+  /**
+   * Primary (logical left) release at a client position: GUI mouseUp/click,
+   * then world selection / use on the in-game overlay.
+   */
+  primaryUpAt(clientX: number, clientY: number){
+    Mouse.leftClick = true;
+
+    if(!Mouse.pointerLock){
+      Mouse.Update( clientX, clientY );
+    }
+
+    //If the NoClickTimer is active then we will return out of this function
+    if(GameState.noClickTimer){
+      Mouse.downItem = undefined;
+      Mouse.clickItem = undefined;
+      return;
+    }
+
+    // : click during death sequence hurries the fade (before UI click handling)
+    if(GameState.GameOverManager?.GetGameOver?.()){
+      GameState.GameOverManager.OnDeathSequenceInput();
+    }
+
+    let clickCaptured = false;
+
+    const customEvent = GUIControlEventFactory.generateEventObject();
+
+    //Try to fire mouse up regardless if mouse is still inside object
+    if(BitWise.InstanceOf(Mouse.downItem?.objectType, GUIControlTypeMask.GUIControl)){
+      if(!(Mouse.downItem.widget.parent instanceof THREE.Scene)){
+        try{
+          Mouse.downItem.processEventListener('mouseUp', [customEvent]);
+          Mouse.leftClick = false;
+        }catch(e){
+          console.error(e);
+        }
+      }
+    }
+
+    // Fire click on the control that received mousedown — do not require the
+    // cursor to still be over it. Floating target menus move with the camera
+    // (edge-turn / focus), so a re-hit-test between down and up drops clicks.
+    if(
+      BitWise.InstanceOf(Mouse.clickItem?.objectType, GUIControlTypeMask.GUIControl) &&
+      Mouse.clickItem.widget?.visible &&
+      !(Mouse.clickItem.widget.parent instanceof THREE.Scene)
+    ){
+      clickCaptured = true;
+      try{
+        const control = Mouse.clickItem;
+        Mouse.clickItem = null;
+        GameState.MenuManager.activeGUIElement = control;
+        control.processEventListener('click', [customEvent]);
+        GameState.guiAudioEmitter.playSoundFireAndForget('gui_click');
+        Mouse.leftClick = false;
+        EventManager.FireEvent('menu.click', {
+          name: control.name,
+          menu: control.menu.constructor.name
+        });
+      }catch(e){
+        console.error(e);
+      }
+    }
+
+    let selectedObject = clickCaptured;
+
+    if(!clickCaptured && (GameState.Mode != EngineMode.DIALOG)){
+      if(GameState.Mode == EngineMode.INGAME && GameState.MenuManager.GetCurrentMenu() == GameState.MenuManager.InGameOverlay){
+        const gameObject = GameState.CursorManager.onMouseHitInteractive();
+        if(BitWise.InstanceOf(gameObject?.objectType, GameObjectType.GameObject)){
+          if(gameObject.isUseable() && gameObject != GameState.PartyManager.getCurrentPlayer()){
+
+            selectedObject = true;
+
+            const distance = GameState.PartyManager.getCurrentPlayer().position.distanceTo(gameObject.position);
+            const distanceThreshold = 20;
+
+            if(GameState.CursorManager.selectedObject == gameObject && distance <= distanceThreshold){
+              if(typeof gameObject.onClick === 'function'){
+                // case-2 attack → AddAttackActions(clear=0) appends with no
+                // ClearAllActions. Only clear the action queue when not already
+                // fighting (exploration → combat), matching ActionManager(1).
+                const pc = GameState.PartyManager.getCurrentPlayer();
+                if(!pc.combatData?.combatState){
+                  pc.clearAllActions(true);
+                }
+                gameObject.onClick(pc);
+              }else{
+                let distance = GameState.PartyManager.getCurrentPlayer().position.distanceTo(gameObject.position);
+                if(distance > 1.5){
+                  GameState.PartyManager.getCurrentPlayer().clearAllActions();
+                  gameObject.clearAllActions();
+                  GameState.PartyManager.getCurrentPlayer().actionDialogObject(gameObject);
+                }
+              }
+            }
+            GameState.CursorManager.setReticleSelectedObject(gameObject);
+            FollowerCamera.clearFocusObject();
+          }
+          if(GameState.debug.SELECTED_OBJECT)
+            console.log('Ingame Object', gameObject);
+        }else{
+          if(GameState.debug.SELECTED_OBJECT)
+            console.log('Object', gameObject);
+        }
+
+        if(!selectedObject){
+          // GameState.CursorManager.hovered = GameState.CursorManager.hoveredObject = GameState.CursorManager.selected = GameState.CursorManager.selectedObject = undefined;
+        }
+      }
+    }
+
+    Mouse.downItem = undefined;
+    Mouse.clickItem = undefined;
+  }
+
+  /**
+   * Which screen the pad is driving, for the button prompt bar.
+   */
+  getGamepadPromptContext(): GamepadPromptContext {
+    if(GameState.VideoManager?.isMoviePlaying?.() || GameState.Mode == EngineMode.MOVIE){
+      return { screen: 'movie' };
+    }
+    const menu = this.getPadMenu();
+    switch(GameState.Mode){
+      case EngineMode.MINIGAME:
+        return { screen: 'minigame' };
+      case EngineMode.DIALOG: {
+        const replies = (menu as any)?.LB_REPLIES;
+        return { screen: 'dialog', dialogHasReplies: !!replies?.isVisible?.() };
+      }
+      case EngineMode.INGAME:
+        if(!menu || menu === GameState.MenuManager.InGameOverlay){
+          return { screen: this.selectedActionPanelIndex >= 0 ? 'actionPanel' : 'ingame' };
+        }
+        break;
+      case EngineMode.GUI:
+        break;
+      default:
+        return { screen: 'none' };
+    }
+    if(!menu) return { screen: 'none' };
+    // The in-game overlay keeps the base (no-op) bumper handlers, so a menu
+    // with its own handler supports LB / RB tab switching.
+    const baseBumper = GameState.MenuManager.InGameOverlay?.triggerControllerBumperLPress;
+    return {
+      screen: 'menu',
+      menuHasBack: !!menu.padTarget().findPadBackButton(),
+      menuHasTabs: !!baseBumper && menu.triggerControllerBumperLPress !== baseBumper,
+    };
+  }
+
+  /** Show pad button prompts while the pad is the active input; hide them otherwise. */
+  updateGamepadPrompts(){
+    const host = (GameState.canvas as HTMLElement | undefined)?.parentElement;
+    const promptSetting = GameState.iniConfig?.getProperty?.('Game Options.Controller Prompts');
+    const enabled = promptSetting === undefined || promptSetting === null || promptSetting === '' || Number(promptSetting) !== 0;
+    const override = Number(GameState.iniConfig?.getProperty?.('Game Options.Controller Glyphs')) || 0;
+    const family = resolvePadFamily(this.gamePad.gamePad?.id, override);
+    this.quickMenu.render(host, this.quickMenuAvailability(), family);
+    if(!enabled || !this.gamePad.gamePad || !this.controllerHidesCursor || this.touchInputActive || this.quickMenu.isOpen){
+      this.padPrompts.hide();
+      this.padButtonGlyphs.hide();
+      return;
+    }
+    const placements = this.placeMenuButtonGlyphs(host);
+    this.padButtonGlyphs.update(host, placements, family);
+    // Buttons already drawn on a control are left out of the corner bar.
+    const onControls = new Set<string>();
+    for(const p of placements) for(const b of p.buttons) onControls.add(b);
+    const prompts = computePrompts(this.getGamepadPromptContext()).filter((p) => !onControls.has(p.button));
+    this.padPrompts.update(host, prompts, family);
+  }
+
+  /** Where the open menu's pad button symbols go, in CSS pixels inside `host`. */
+  placeMenuButtonGlyphs(host: HTMLElement | null | undefined): GlyphPlacement[] {
+    const canvas = GameState.canvas as HTMLElement | undefined;
+    if(!host || !canvas || GameState.VideoManager?.isMoviePlaying?.()) return [];
+    const menu = this.getPadMenu();
+    if(!menu || menu === GameState.MenuManager.InGameOverlay) return [];
+    const width = GameState.ResolutionManager.getViewportWidth();
+    const height = GameState.ResolutionManager.getViewportHeight();
+    const canvasRect = canvas.getBoundingClientRect();
+    const hostRect = host.getBoundingClientRect();
+    if(!width || !height || !canvasRect.width || !canvasRect.height) return [];
+    const targets = menu.getPadButtonGlyphs();
+    return placeButtonGlyphs(targets, {
+      width, height,
+      scaleX: canvasRect.width / width,
+      scaleY: canvasRect.height / height,
+      offsetX: canvasRect.left - hostRect.left,
+      offsetY: canvasRect.top - hostRect.top,
+    });
+  }
+
+  /**
    * True when the event landed on the game canvas (or pointer lock owns look input).
    * React chrome overlaying the canvas uses other targets and must not drive game input.
    */
@@ -682,6 +802,7 @@ export class IngameControls {
   /** Keyboard / mouse activity — show software cursor again. */
   notifyKeyboardOrMouseInput(){
     this.controllerHidesCursor = false;
+    this.touchInputActive = false;
   }
 
   /** Any meaningful pad activity — hide software cursor until KBM returns. */
@@ -715,7 +836,7 @@ export class IngameControls {
 
     //W / S / dual-mouse — resolve forward together (see resolvePlayerForwardAxis)
     const applyWasdMove = () => {
-      if(this.gamePadMovement) return;
+      if(this.gamePadMovement || this.touchMovement) return;
       const followee = GameState.PartyManager.party[0] as Creature | undefined;
       if(!followee?.canMove?.()) return;
 
@@ -894,23 +1015,7 @@ export class IngameControls {
 
     KeyMapper.Actions[KeyMapAction.Freelook].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      // freelook key: hsMode==1 → SetNavigateCamera + hsMode++
-      if(GameState.cameraHsMode === 1
-        && (GameState.clientCameraMode | 0) !== ClientCameraMode.FREELOOK
-        && (GameState.clientCameraMode | 0) !== ClientCameraMode.NAVIGATE){
-        FollowerCamera.beginNavigateHover();
-        GameState.cameraHsMode = 2;
-        return;
-      }
-      // Exiting navigate restores chase (RestoreCamera when leaving mode 5/7)
-      if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){
-        FollowerCamera.endNavigate();
-        if(GameState.Mode == EngineMode.FREELOOK){
-          EngineModeController.SetEngineMode(EngineMode.INGAME);
-        }
-        return;
-      }
-      EngineModeController.SetEngineMode(GameState.Mode == EngineMode.FREELOOK ? EngineMode.INGAME : EngineMode.FREELOOK);
+      this.toggleFreelook();
     });
 
     KeyMapper.Actions[KeyMapAction.WALKMODIFY].setProcessor( (keymap) => {
@@ -1114,10 +1219,12 @@ export class IngameControls {
       GameState.MenuManager.InGameOverlay.triggerControllerAPress();
     });
 
-    // Gamepad Y — quick-menu stub (full UI in a later pass)
+    // Gamepad Y — quick menu (free look, solo, stealth, quick save, menu, switch weapons)
     KeyMapper.Actions[KeyMapAction.GamepadQuickMenu]?.setProcessor( (keymap: { keyboardInput?: { pressed?: boolean }; gamepadInput?: { pressed?: boolean } }) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      // Later: map / party / solo / stealth / save / options / switch weapons / help
+      if(GameState.Mode != EngineMode.INGAME) return;
+      if(this.getPadMenu() != GameState.MenuManager.InGameOverlay) return;
+      this.openQuickMenu();
     });
 
     // D-pad L/R — cycle HUD action-panel slot
@@ -1142,14 +1249,14 @@ export class IngameControls {
     // LB/RB — PrevSWInGameGui / NextSWInGameGui (menu tab cycle)
     KeyMapper.Actions[KeyMapAction.PrevMenu]?.setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      const menu = GameState.MenuManager.GetCurrentMenu();
+      const menu = this.getPadMenu();
       if(menu && menu !== GameState.MenuManager.InGameOverlay){
         menu.triggerControllerBumperLPress();
       }
     });
     KeyMapper.Actions[KeyMapAction.NextMenu]?.setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      const menu = GameState.MenuManager.GetCurrentMenu();
+      const menu = this.getPadMenu();
       if(menu && menu !== GameState.MenuManager.InGameOverlay){
         menu.triggerControllerBumperRPress();
       }
@@ -1326,6 +1433,169 @@ export class IngameControls {
     });
   }
 
+  /** Enter or leave free look (freelook key, pad quick menu). */
+  toggleFreelook(){
+    // freelook key: hsMode==1 → SetNavigateCamera + hsMode++
+    if(GameState.cameraHsMode === 1
+      && (GameState.clientCameraMode | 0) !== ClientCameraMode.FREELOOK
+      && (GameState.clientCameraMode | 0) !== ClientCameraMode.NAVIGATE){
+      FollowerCamera.beginNavigateHover();
+      GameState.cameraHsMode = 2;
+      return;
+    }
+    // Exiting navigate restores chase (RestoreCamera when leaving mode 5/7)
+    if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){
+      FollowerCamera.endNavigate();
+      if(GameState.Mode == EngineMode.FREELOOK){
+        EngineModeController.SetEngineMode(EngineMode.INGAME);
+      }
+      return;
+    }
+    EngineModeController.SetEngineMode(GameState.Mode == EngineMode.FREELOOK ? EngineMode.INGAME : EngineMode.FREELOOK);
+  }
+
+  /** What the quick menu can offer right now. */
+  quickMenuAvailability(): QuickMenuAvailability {
+    const pc = GameState.PartyManager?.getCurrentPlayer?.() as Creature | undefined;
+    return {
+      stealth: !!pc?.isStealthCapable?.(),
+      switchWeapons: !!pc && GameState.GameKey === GameEngineType.TSL,
+      soloMode: !!GameState.SOLOMODE,
+    };
+  }
+
+  /** Open the quick menu; it pauses play until it closes. */
+  openQuickMenu(){
+    if(this.quickMenu.isOpen) return;
+    this.quickMenu.pausedOnOpen = GameState.State != EngineState.PAUSED;
+    if(this.quickMenu.pausedOnOpen){
+      GameState.AutoPauseManager?.SetPausedByCombat?.(true, AutoPauseState.Manual);
+    }
+    this.quickMenu.open(this.quickMenuAvailability());
+    GameState.guiAudioEmitter?.playSoundFireAndForget?.('gui_click');
+  }
+
+  /** Close the quick menu and resume play if opening it paused the game. */
+  closeQuickMenu(){
+    if(!this.quickMenu.isOpen) return;
+    const resume = this.quickMenu.pausedOnOpen;
+    this.quickMenu.pausedOnOpen = false;
+    this.quickMenu.close();
+    if(resume && GameState.State == EngineState.PAUSED){
+      GameState.AutoPauseManager?.Unpause?.();
+    }
+  }
+
+  runQuickMenuEntry(entry: QuickMenuEntry){
+    const pc = GameState.PartyManager?.getCurrentPlayer?.() as Creature | undefined;
+    // Close first so the game is running again for what follows.
+    this.closeQuickMenu();
+    switch(entry){
+      case 'freelook':
+        this.toggleFreelook();
+        break;
+      case 'solo':
+        GameState.PartyManager.setSoloMode(!GameState.SOLOMODE);
+        break;
+      case 'stealth':
+        GameState.MenuManager.InGameOverlay?.onStealthToggle?.();
+        break;
+      case 'quicksave':
+        void SaveGame.QuickSave();
+        break;
+      case 'menu':
+        GameState.MenuManager.MenuOptions.open();
+        break;
+      case 'switchweapons':
+        if(pc) GameState.ActionFactory.AddSwitchWeaponsAction(pc);
+        break;
+    }
+  }
+
+  /** Pad input while the quick menu is open. Every press is used up here. */
+  handleQuickMenuInput(){
+    const pad = this.gamePad;
+    const availability = this.quickMenuAvailability();
+    const left = pad.button_d_left.pressed || (pad.stick_l_x.pressed && pad.stick_l_x.value < 0);
+    const right = pad.button_d_right.pressed || (pad.stick_l_x.pressed && pad.stick_l_x.value > 0);
+    const up = pad.button_d_up.pressed || (pad.stick_l_y.pressed && pad.stick_l_y.value < 0);
+    const down = pad.button_d_down.pressed || (pad.stick_l_y.pressed && pad.stick_l_y.value > 0);
+
+    if(pad.button_a.pressed){
+      GameState.guiAudioEmitter?.playSoundFireAndForget?.('gui_click');
+      this.runQuickMenuEntry(this.quickMenu.entry);
+    }else if(pad.button_b.pressed || pad.button_y.pressed || pad.button_back.pressed || pad.button_start.pressed){
+      this.closeQuickMenu();
+    }else if(left || right){
+      this.quickMenu.step(left ? -1 : 1, availability);
+      GameState.guiAudioEmitter?.playSoundFireAndForget?.('gui_scroll');
+    }else if(up || down){
+      const party = GameState.PartyManager?.party || [];
+      if(party.length > 1){
+        if(down) GameState.PartyManager.ShiftLeader();
+        else GameState.PartyManager.SwitchLeaderAtIndex(party.length - 1);
+        GameState.guiAudioEmitter?.playSoundFireAndForget?.('gui_scroll');
+      }
+    }
+
+    for(const input of pad.allInputs()){
+      input.pressed = false;
+    }
+  }
+
+  /**
+   * Menu the pad talks to: the top modal that takes input (confirm boxes,
+   * containers, save name, ...), otherwise the top menu.
+   */
+  getPadMenu(): GameMenu | undefined {
+    const mm = GameState.MenuManager;
+    if(!mm) return undefined;
+    for(let i = mm.activeModals.length - 1; i >= 0; i--){
+      const modal = mm.activeModals[i];
+      if(modal && modal.acceptsPadInput !== false && modal.isVisible()) return modal;
+    }
+    return mm.GetCurrentMenu();
+  }
+
+  /**
+   * Send this frame's pad press to `menu`. A press the menu handles is used
+   * up, so closing a menu with B or A does not also fire the in-game action
+   * bound to the same button once the game is back in play.
+   */
+  routePadToMenu(menu: GameMenu){
+    const pad = this.gamePad;
+    const consume = (input: { pressed: boolean }) => { input.pressed = false; };
+    if(pad.button_a.pressed){
+      menu.triggerControllerAPress(); consume(pad.button_a);
+    }else if(pad.button_b.pressed){
+      menu.triggerControllerBPress(); consume(pad.button_b);
+    }else if(pad.button_x.pressed){
+      menu.triggerControllerXPress(); consume(pad.button_x);
+    }else if(pad.button_y.pressed){
+      menu.triggerControllerYPress(); consume(pad.button_y);
+    }else if(pad.button_start.pressed){
+      menu.triggerControllerStartPress(); consume(pad.button_start);
+    }else if(pad.button_back.pressed){
+      menu.triggerControllerBackPress(); consume(pad.button_back);
+    }else if(pad.button_d_up.pressed){
+      menu.triggerControllerDUpPress(); consume(pad.button_d_up);
+    }else if(pad.button_d_down.pressed){
+      menu.triggerControllerDDownPress(); consume(pad.button_d_down);
+    }else if(pad.button_d_left.pressed){
+      menu.triggerControllerDLeftPress(); consume(pad.button_d_left);
+    }else if(pad.button_d_right.pressed){
+      menu.triggerControllerDRightPress(); consume(pad.button_d_right);
+    }else if(pad.stick_l_x.pressed){
+      menu.triggerControllerLStickXPress( pad.stick_l_x.value > 0 );
+    }else if(pad.stick_l_y.pressed){
+      menu.triggerControllerLStickYPress( pad.stick_l_y.value > 0 );
+    }else if(pad.stick_r_x.pressed){
+      menu.triggerControllerRStickXPress( pad.stick_r_x.value > 0 );
+    }else if(pad.stick_r_y.pressed){
+      menu.triggerControllerRStickYPress( pad.stick_r_y.value > 0 );
+    }
+  }
+
   MenuGetActiveUIElements(): GUIControl[] {
     let elements: GUIControl[] = [];
 
@@ -1360,43 +1630,33 @@ export class IngameControls {
 
     this.gamePadMovement = false;
 
-    let gp = undefined;
-    if(GamePad.CurrentGamePad instanceof Gamepad){
-      gp = navigator.getGamepads()[GamePad.CurrentGamePad.index];
+    // Take a fresh pad snapshot each frame. When the pad is gone, release every
+    // input so a held stick or button cannot stay stuck on the last reading.
+    const gp = GamePad.pollActive();
+    if(gp){
       this.gamePad.setGamePad(gp);
       KeyMapper.BindGamepad(this.gamePad);
+    }else if(this.gamePad.gamePad){
+      this.gamePad.setGamePad(undefined);
+      this.gamePad.reset();
+      this.controllerHidesCursor = false;
     }
     this.gamePad.updateState(delta);
     this.pollGamepadHidesCursor();
 
     // GUI menus only — INGAME overlay pad actions go through KeyMapper (pad HUD layout).
     // Bumpers use PrevMenu/NextMenu processors (avoid double-fire).
-    if(currentMenu && currentMenu !== GameState.MenuManager.InGameOverlay){
-      if(this.gamePad.button_a.pressed){
-        currentMenu.triggerControllerAPress();
-      }else if(this.gamePad.button_b.pressed){
-        currentMenu.triggerControllerBPress();
-      }else if(this.gamePad.button_x.pressed){
-        currentMenu.triggerControllerXPress();
-      }else if(this.gamePad.button_y.pressed){
-        currentMenu.triggerControllerYPress();
-      }else if(this.gamePad.button_d_up.pressed){
-        currentMenu.triggerControllerDUpPress();
-      }else if(this.gamePad.button_d_down.pressed){
-        currentMenu.triggerControllerDDownPress();
-      }else if(this.gamePad.button_d_left.pressed){
-        currentMenu.triggerControllerDLeftPress();
-      }else if(this.gamePad.button_d_right.pressed){
-        currentMenu.triggerControllerDRightPress();
-      }else if(this.gamePad.stick_l_x.pressed){
-        currentMenu.triggerControllerLStickXPress( this.gamePad.stick_l_x.value > 0 ? true : false );
-      }else if(this.gamePad.stick_l_y.pressed){
-        currentMenu.triggerControllerLStickYPress( this.gamePad.stick_l_y.value > 0 ? true : false );
-      }else if(this.gamePad.stick_r_x.pressed){
-        currentMenu.triggerControllerRStickXPress( this.gamePad.stick_r_x.value > 0 ? true : false );
-      }else if(this.gamePad.stick_r_y.pressed){
-        currentMenu.triggerControllerRStickYPress( this.gamePad.stick_r_y.value > 0 ? true : false );
+    const padMenu = this.getPadMenu();
+    const moviePlaying = !!GameState.VideoManager?.isMoviePlaying?.();
+    if(this.quickMenu.isOpen){
+      // Leave the quick menu when play moves on without it (dialog, menu, movie, pad gone).
+      if(GameState.Mode != EngineMode.INGAME || padMenu != GameState.MenuManager.InGameOverlay || moviePlaying || !this.gamePad.gamePad){
+        this.closeQuickMenu();
+      }else{
+        this.handleQuickMenuInput();
       }
+    }else if(padMenu && padMenu !== GameState.MenuManager.InGameOverlay && !moviePlaying){
+      this.routePadToMenu(padMenu);
     }
 
     if(GameState.State == EngineState.RUNNING){
@@ -1404,7 +1664,9 @@ export class IngameControls {
       if(
         (GameState.Mode == EngineMode.INGAME) && 
         currentMenu != GameState.MenuManager.InGameConfirm && 
-        currentMenu != GameState.MenuManager.MenuContainer
+        currentMenu != GameState.MenuManager.MenuContainer &&
+        // A modal that takes pad input (container, confirm box) owns the stick.
+        (!padMenu || padMenu === currentMenu)
       ){
         const followee = GameState.PartyManager.party[0];
         if(followee){
@@ -1445,6 +1707,8 @@ export class IngameControls {
       }
     }
     
+    this.touch?.update(delta);
+
     KeyMapper.ProcessMappings(GameState.Mode, delta);
 
     // look state: RMB hold, or always-on when Mouse Look (inverted RMB)
@@ -1487,6 +1751,7 @@ export class IngameControls {
     }else if(
       GameState.Mode == EngineMode.INGAME &&
       !Mouse.cameraHoldActive &&
+      !this.touchInputActive &&
       currentMenu == GameState.MenuManager.InGameOverlay
     ){
       // Screen-edge turn — cursor near left/right screen frame
@@ -1498,10 +1763,8 @@ export class IngameControls {
     if(GameState.Mode == EngineMode.MINIGAME){
       const mg = GameState.module?.area?.miniGame;
       if(mg){
-        const lxRaw = this.gamePad.stick_l_x.value;
-        const lyRaw = this.gamePad.stick_l_y.value;
-        const stickX = Math.abs(lxRaw) > 0.15 ? lxRaw : 0;
-        const stickY = Math.abs(lyRaw) > 0.15 ? lyRaw : 0;
+        const stickX = this.gamePad.stick_l_x.value;
+        const stickY = this.gamePad.stick_l_y.value;
         const keyX = resolveMinigameKeyAxisX();
         const reverseY = isMinigameYAxisReversed();
 
@@ -1563,10 +1826,9 @@ export class IngameControls {
       GameState.Mode == EngineMode.INGAME &&
       currentMenu == GameState.MenuManager.InGameOverlay
     ){
-      const dead = 0.15;
       const rx = this.gamePad.stick_r_x.value;
       const ry = this.gamePad.stick_r_y.value;
-      if(Math.abs(rx) > dead){
+      if(rx){
         const yawSpeed = THREE.MathUtils.degToRad(FollowerCamera.flRotateSpeed || 60);
         FollowerCamera.facing = Utility.NormalizeRadian(
           FollowerCamera.facing + (-rx) * yawSpeed * delta
@@ -1574,7 +1836,7 @@ export class IngameControls {
         FollowerCamera.clearFocusObject();
         GameState.scene_cursor_holder.visible = false;
       }
-      if(Math.abs(ry) > dead){
+      if(ry){
         const tiltSpeed = FollowerCamera.flTiltSpeed || 60;
         const pitchMin = FollowerCamera.stylePitch
           - THREE.MathUtils.degToRad(Math.max(0, FollowerCamera.tiltDown));
@@ -1594,14 +1856,16 @@ export class IngameControls {
     if(GameState.Mode == EngineMode.FREELOOK){
       const rx = this.gamePad.stick_r_x.value;
       const ry = this.gamePad.stick_r_y.value;
-      if(Math.abs(rx) > 0.15 || Math.abs(ry) > 0.15){
+      if(rx || ry){
         FollowerCamera.setFreeLookAxes(
-          Math.abs(rx) > 0.15 ? -rx : 0,
-          Math.abs(ry) > 0.15 ? -ry : 0
+          rx ? -rx : 0,
+          ry ? -ry : 0
         );
       }
       GameState.scene_cursor_holder.visible = false;
     }
+
+    this.updateGamepadPrompts();
 
     //Keyboard: onFrameEnd
     this.keyboard.onFrameEnd(delta);

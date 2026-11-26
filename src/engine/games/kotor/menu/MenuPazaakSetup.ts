@@ -1,3 +1,4 @@
+import type { PadControlGlyph } from "@engine/gui/GameMenu";
 import { PazaakCards } from "@core/enums/minigames/PazaakCards";
 import { PazaakSideDeckSlots } from "@core/enums/minigames/PazaakSideDeckSlots";
 import { PazaakCardGUITextures } from "@core/enums/minigames/PazaakCardGUITextures";
@@ -8,6 +9,7 @@ import type { GUIControl } from "@engine/gui";
 import type { GUILabel, GUIButton } from "@engine/gui";
 
 const MSG_CONFIRM_SIDE_DECK = 32322;
+const TLK_QUIT_PAZAAK_CONFIRM = 42424;
 const MSG_YOU_WIN = 32334;
 const MSG_TIED = 32338;
 const MSG_YOU_LOSE = 32335;
@@ -314,4 +316,81 @@ export class MenuPazaakSetup extends GameMenu {
       }
     }
   }
+
+  /** Last pad focus in each card area, so LB / RB return to it. */
+  private padAvailableFocus: GUIControl | undefined;
+  private padChosenFocus: GUIControl | undefined;
+
+  private padArea(control: GUIControl | undefined): 'available' | 'chosen' | undefined {
+    const name = control?.name || '';
+    if(name.startsWith('BTN_AVAIL')) return 'available';
+    if(name.startsWith('BTN_CHOSEN')) return 'chosen';
+    return undefined;
+  }
+
+  /** Move pad focus into a card area, back to where it last was. */
+  private focusPadArea(area: 'available' | 'chosen'){
+    const current = this.getPadFocus();
+    const currentArea = this.padArea(current);
+    if(currentArea === area) return;
+    if(currentArea === 'available') this.padAvailableFocus = current;
+    if(currentArea === 'chosen') this.padChosenFocus = current;
+    let target = area === 'available' ? this.padAvailableFocus : this.padChosenFocus;
+    if(!target || !this.isPadFocusable(target)){
+      target = this.getPadFocusables().find((c) => this.padArea(c) === area);
+    }
+    if(target){
+      this.setPadFocus(target);
+      GameState.guiAudioEmitter?.playSoundFireAndForget?.('gui_scroll');
+    }
+  }
+
+  /** LB: available cards. */
+  triggerControllerBumperLPress() {
+    this.focusPadArea('available');
+  }
+
+  /** RB: chosen side deck. */
+  triggerControllerBumperRPress() {
+    this.focusPadArea('chosen');
+  }
+
+  /** Y empties the side deck back into the available cards. */
+  triggerControllerYPress() {
+    let changed = false;
+    for(let i = 0; i < PazaakSideDeckSlots.MAX_SLOTS; i++){
+      if(GameState.PazaakManager.PlayerSideDeck.get(i) != PazaakCards.INVALID){
+        GameState.PazaakManager.MoveSideDeckCardToMainDeck(i);
+        changed = true;
+      }
+    }
+    if(changed){
+      GameState.guiAudioEmitter?.playSoundFireAndForget?.('gui_click');
+      this.rebuild();
+    }
+  }
+
+  /** Start begins the game. */
+  triggerControllerStartPress() {
+    this.BTN_ATEXT?.click();
+  }
+
+  /** B and Back ask to quit Pazaak. */
+  triggerControllerBPress() {
+    GameState.guiAudioEmitter?.playSoundFireAndForget?.('gui_click');
+    GameState.MenuManager.InGameConfirm.showConfirmDialog(
+      TLK_QUIT_PAZAAK_CONFIRM,
+      () => { GameState.PazaakManager.CancelPazaak(); },
+      () => {}
+    );
+  }
+
+
+  /** Pad button symbols drawn on this menu's controls. */
+  getPadButtonGlyphs(): PadControlGlyph[] {
+    const glyphs = super.getPadButtonGlyphs();
+    this.addPadGlyph(glyphs, 'start', this.BTN_ATEXT);
+    return glyphs;
+  }
+
 }

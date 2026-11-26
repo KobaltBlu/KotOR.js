@@ -1728,7 +1728,11 @@ export class GUIControl {
    * Clear hover on this control and descendants (occluded sibling subtrees).
    */
   clearHoverTree(){
-    this.menu?.setWidgetHoverActive(this, false);
+    // While the pad drives focus, the cursor position must not unlight it.
+    const padFocusHeld = !!GameState.controls?.controllerHidesCursor && this.menu?.selectedControl === this;
+    if(!padFocusHeld){
+      this.menu?.setWidgetHoverActive(this, false);
+    }
     for(let i = 0; i < this.children.length; i++){
       this.children[i].clearHoverTree();
     }

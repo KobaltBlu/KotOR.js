@@ -24,6 +24,7 @@ export class InGameAreaTransition extends GameMenu {
   engineMode: EngineMode = EngineMode.INGAME;
   /** Overlay so show does not force EngineMode via GameMenu.show. */
   isOverlayGUI = true;
+  acceptsPadInput = false;
   /**
    * ctor: bit_flags = flags & ~DockDesignY | DockDesignX
    * (K1).

@@ -1,3 +1,4 @@
+import type { PadControlGlyph } from "@engine/gui/GameMenu";
 import { GameState } from "@engine/runtime/GameState";
 import { GUIMessageItem } from "@engine/games/kotor/gui/GUIMessageItem";
 import { GameMenu } from "@engine/gui";
@@ -170,4 +171,36 @@ export class MenuMessages extends GameMenu {
     this.manager.MenuTop.BTN_JOU.click();
   }
   
+
+  /** D-pad up / down switch the message filter. */
+  triggerControllerDUpPress() {
+    this.stepPadFilter(-1);
+  }
+
+  triggerControllerDDownPress() {
+    this.stepPadFilter(1);
+  }
+
+  protected stepPadFilter(_step: number) {
+    this.BTN_SHOW?.click();
+  }
+
+  /** Left stick moves through the messages. */
+  triggerControllerLStickYPress(positive = false) {
+    this.padNavigate(positive ? 'down' : 'up');
+  }
+
+
+  /** Pad button symbols drawn on this menu's controls. */
+  getPadButtonGlyphs(): PadControlGlyph[] {
+    const glyphs = super.getPadButtonGlyphs();
+    this.addPadGlyph(glyphs, 'dpad_vertical', this.padFilterControl());
+    return glyphs;
+  }
+
+  /** Control the d-pad filter steps through, for its button symbol. */
+  protected padFilterControl(): GUIButton | undefined {
+    return this.BTN_SHOW;
+  }
+
 }

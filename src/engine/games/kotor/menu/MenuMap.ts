@@ -149,4 +149,28 @@ export class MenuMap extends GameMenu {
     this.manager.MenuTop.BTN_OPT.click();
   }
   
+
+  /** Select the previous (-1) or next (+1) revealed map note. */
+  cycleMapNote(step: number) {
+    const notes = this.miniMap?.areaMap?.getRevealedMapNotes?.() || [];
+    if(!notes.length) return;
+    const at = notes.indexOf(this.miniMap.mapNoteSelected);
+    const index = at < 0
+      ? (step > 0 ? 0 : notes.length - 1)
+      : (at + step + notes.length) % notes.length;
+    const note = notes[index];
+    this.miniMap.mapNoteSelected = note;
+    this.LBL_MapNote.setText(note?.mapNote?.getValue?.() ?? '');
+    GameState.guiAudioEmitter?.playSoundFireAndForget?.('gui_scroll');
+  }
+
+  /** Left / right step through map notes. */
+  triggerControllerDLeftPress() {
+    this.cycleMapNote(-1);
+  }
+
+  triggerControllerDRightPress() {
+    this.cycleMapNote(1);
+  }
+
 }

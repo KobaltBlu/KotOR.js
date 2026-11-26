@@ -1,3 +1,4 @@
+import type { PadControlGlyph } from "@engine/gui/GameMenu";
 import { GameState } from "@engine/runtime/GameState";
 import { JournalEntry } from "@engine/world/JournalEntry";
 import { GameMenu } from "@engine/gui";
@@ -252,4 +253,42 @@ export class MenuJournal extends GameMenu {
     this.manager.MenuTop.BTN_MAP.click();
   }
   
+
+  /** A switches between active and completed quests. */
+  triggerControllerAPress() {
+    this.BTN_SWAPTEXT?.click();
+  }
+
+  /** D-pad up / down change the sort order. */
+  triggerControllerDUpPress() {
+    this.stepPadSort(-1);
+  }
+
+  triggerControllerDDownPress() {
+    this.stepPadSort(1);
+  }
+
+  protected stepPadSort(_step: number) {
+    this.BTN_SORT?.click();
+  }
+
+  /** Left stick moves through the quest list. */
+  triggerControllerLStickYPress(positive = false) {
+    this.padNavigate(positive ? 'down' : 'up');
+  }
+
+
+  /** Pad button symbols drawn on this menu's controls. */
+  getPadButtonGlyphs(): PadControlGlyph[] {
+    const glyphs = super.getPadButtonGlyphs();
+    this.addPadGlyph(glyphs, 'a', this.BTN_SWAPTEXT);
+    this.addPadGlyph(glyphs, 'dpad_vertical', this.padSortControl());
+    return glyphs;
+  }
+
+  /** Control the d-pad sort steps through, for its button symbol. */
+  protected padSortControl(): GUIButton | undefined {
+    return this.BTN_SORT;
+  }
+
 }

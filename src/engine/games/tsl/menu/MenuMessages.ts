@@ -117,4 +117,14 @@ export class MenuMessages extends K1_MenuMessages {
 
   }
   
+
+  protected padFilterControl(): GUIButton | undefined {
+    return [this.BTN_DIALOG, this.BTN_FEEDBACK, this.BTN_COMBAT, this.BTN_EFFECTS][this.messageType - MessageType.DIALOG];
+  }
+
+  protected stepPadFilter(step: number) {
+    const buttons = [this.BTN_DIALOG, this.BTN_FEEDBACK, this.BTN_COMBAT, this.BTN_EFFECTS];
+    this.padStepButtons(buttons, this.messageType - MessageType.DIALOG, step);
+  }
+
 }

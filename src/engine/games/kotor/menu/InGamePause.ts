@@ -38,6 +38,8 @@ export class InGamePause extends GameMenu {
     // Overlay only — do not SetEngineMode(INGAME). Minigame Escape pause must
     // keep Mode==MINIGAME so FollowerCamera stays on camerahook.
     this.isOverlayGUI = true;
+    // Play continues under the pause banner, so the pad stays with the game.
+    this.acceptsPadInput = false;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

@@ -1,3 +1,4 @@
+import type { PadControlGlyph } from "@engine/gui/GameMenu";
 import { GameState } from "@engine/runtime/GameState";
 import type { GUILabel, GUIListBox, GUIButton } from "@engine/gui";
 import { MenuSaveLoad as K1_MenuSaveLoad, NewSaveItem } from "@engine/games/kotor/menu/MenuSaveLoad";
@@ -235,6 +236,23 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
   show() {
     super.show();
     TextureLoader.LoadQueue();
+  }
+
+  /** LB / RB change which saves are listed. */
+  triggerControllerBumperLPress() {
+    if(this.BTN_FILTER?.isVisible()) this.BTN_FILTER.click();
+  }
+
+  triggerControllerBumperRPress() {
+    if(this.BTN_FILTER?.isVisible()) this.BTN_FILTER.click();
+  }
+
+
+  /** Pad button symbols drawn on this menu's controls. */
+  getPadButtonGlyphs(): PadControlGlyph[] {
+    const glyphs = super.getPadButtonGlyphs();
+    this.addPadGlyph(glyphs, 'rb', this.BTN_FILTER);
+    return glyphs;
   }
 
 }

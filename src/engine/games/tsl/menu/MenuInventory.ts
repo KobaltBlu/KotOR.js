@@ -1,3 +1,4 @@
+import type { PadControlGlyph } from "@engine/gui/GameMenu";
 import { GameState } from "@engine/runtime/GameState";
 import { GameMenu } from "@engine/gui";
 import type { GUILabel, GUIButton, GUIListBox } from "@engine/gui";
@@ -164,4 +165,46 @@ export class MenuInventory extends K1_MenuInventory {
     this.LBL_CREDITS_VALUE?.setText(String(GameState.PartyManager.Gold));
   }
   
+
+  private padFilterButtons(): [GUIButton, InventoryFilter][] {
+    return [
+      [this.BTN_ALL, InventoryFilter.ALL],
+      [this.BTN_DATAPADS, InventoryFilter.DATAPADS],
+      [this.BTN_WEAPONS, InventoryFilter.WEAPONS],
+      [this.BTN_ARMOR, InventoryFilter.ARMOR],
+      [this.BTN_USEABLE, InventoryFilter.USEABLE_K2],
+      [this.BTN_QUESTS, InventoryFilter.QUESTS_K2],
+      [this.BTN_MISC, InventoryFilter.MISC_K2],
+    ];
+  }
+
+  private stepPadFilter(step: number) {
+    const order = this.padFilterButtons();
+    const at = order.findIndex(([, filter]) => filter === getCurrentInventoryFilter());
+    this.padStepButtons(order.map(([btn]) => btn), at, step);
+  }
+
+  /** D-pad up / down change the item filter. */
+  triggerControllerDUpPress() {
+    this.stepPadFilter(-1);
+  }
+
+  triggerControllerDDownPress() {
+    this.stepPadFilter(1);
+  }
+
+  /** Left stick moves through the items. */
+  triggerControllerLStickYPress(positive = false) {
+    this.padNavigate(positive ? 'down' : 'up');
+  }
+
+
+  /** Pad button symbols drawn on this menu's controls. */
+  getPadButtonGlyphs(): PadControlGlyph[] {
+    const glyphs = super.getPadButtonGlyphs();
+    const current = this.padFilterButtons().find(([, filter]) => filter === getCurrentInventoryFilter());
+    this.addPadGlyph(glyphs, 'dpad_vertical', current?.[0]);
+    return glyphs;
+  }
+
 }

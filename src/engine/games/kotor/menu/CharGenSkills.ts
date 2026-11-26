@@ -1,3 +1,4 @@
+import type { PadControlGlyph } from "@engine/gui/GameMenu";
 import { GameState } from "@engine/runtime/GameState";
 import { GameMenu } from "@engine/gui";
 import type { GUIListBox, GUILabel, GUIButton, GUIControl } from "@engine/gui";
@@ -362,4 +363,24 @@ export class CharGenSkills extends GameMenu {
     mgr.availSkillPoints = mgr.getMaxSkillPoints();
   }
   
+
+  /** Y takes the recommended picks. */
+  triggerControllerYPress() {
+    this.BTN_RECOMMENDED?.click();
+  }
+
+  /** Start accepts, like A on the accept button. */
+  triggerControllerStartPress() {
+    this.BTN_ACCEPT?.click();
+  }
+
+
+  /** Pad button symbols drawn on this menu's controls. */
+  getPadButtonGlyphs(): PadControlGlyph[] {
+    const glyphs = super.getPadButtonGlyphs();
+    this.addPadGlyph(glyphs, 'y', this.BTN_RECOMMENDED);
+    this.addPadGlyph(glyphs, 'start', this.BTN_ACCEPT);
+    return glyphs;
+  }
+
 }

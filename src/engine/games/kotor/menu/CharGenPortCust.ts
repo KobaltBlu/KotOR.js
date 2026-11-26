@@ -1,3 +1,4 @@
+import type { PadControlGlyph } from "@engine/gui/GameMenu";
 import { GameMenu, LBL_3DView } from "@engine/gui";
 import type { GUILabel, GUIButton } from "@engine/gui";
 import { MDLLoader, TextureLoader } from "@engine/loaders";
@@ -334,6 +335,41 @@ export class CharGenPortCust extends GameMenu {
       : this.sceneModel3D.camerahookf;
     const headHeight = creature.getCameraHeight?.() ?? 1.5;
     this._3dView.attachCameraToHook(hook, { x: 0, y: headHeight, z: 0 }, false);
+  }
+
+  /** Left / right (and LB / RB) step through portraits; A and Start accept. */
+  triggerControllerDLeftPress() {
+    this.BTN_ARRL?.click();
+  }
+
+  triggerControllerDRightPress() {
+    this.BTN_ARRR?.click();
+  }
+
+  triggerControllerBumperLPress() {
+    this.BTN_ARRL?.click();
+  }
+
+  triggerControllerBumperRPress() {
+    this.BTN_ARRR?.click();
+  }
+
+  triggerControllerAPress() {
+    this.BTN_ACCEPT?.click();
+  }
+
+  triggerControllerStartPress() {
+    this.BTN_ACCEPT?.click();
+  }
+
+
+  /** Pad button symbols drawn on this menu's controls. */
+  getPadButtonGlyphs(): PadControlGlyph[] {
+    const glyphs = super.getPadButtonGlyphs();
+    this.addPadGlyph(glyphs, 'lb', this.BTN_ARRL);
+    this.addPadGlyph(glyphs, 'rb', this.BTN_ARRR);
+    this.addPadGlyph(glyphs, 'a', this.BTN_ACCEPT);
+    return glyphs;
   }
 
 }

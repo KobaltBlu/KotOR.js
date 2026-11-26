@@ -1,3 +1,4 @@
+import type { PadControlGlyph } from "@engine/gui/GameMenu";
 import type { GUILabel, GUIListBox, GUIButton } from "@engine/gui";
 import { MenuStore as K1_MenuStore, StoreFilter } from "@engine/games/kotor/menu/MenuStore";
 
@@ -89,4 +90,36 @@ export class MenuStore extends K1_MenuStore {
     this.updateFilterButtons();
     super.show();
   }
+
+  private padFilterButtons(): GUIButton[] {
+    return [this.BTN_ALL, this.BTN_WEAPONS, this.BTN_ARMOR, this.BTN_MISC];
+  }
+
+  /** Y cycles the item filter. */
+  triggerControllerYPress() {
+    this.padStepButtons(this.padFilterButtons(), this.filter, 1, true);
+  }
+
+  /** D-pad up / down step the filter. */
+  triggerControllerDUpPress() {
+    this.padStepButtons(this.padFilterButtons(), this.filter, -1, false);
+  }
+
+  triggerControllerDDownPress() {
+    this.padStepButtons(this.padFilterButtons(), this.filter, 1, false);
+  }
+
+  /** Left stick moves through the items. */
+  triggerControllerLStickYPress(positive = false) {
+    this.padNavigate(positive ? 'down' : 'up');
+  }
+
+
+  /** Pad button symbols drawn on this menu's controls. */
+  getPadButtonGlyphs(): PadControlGlyph[] {
+    const glyphs = super.getPadButtonGlyphs();
+    this.addPadGlyph(glyphs, 'y', this.padFilterButtons()[this.filter]);
+    return glyphs;
+  }
+
 }
