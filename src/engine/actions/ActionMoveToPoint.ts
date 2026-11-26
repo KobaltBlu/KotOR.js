@@ -28,6 +28,7 @@ import {
   pathHopsAreWalkClear,
 } from "@engine/pathfinding/path-hops-clear";
 import { ComputedPath } from "@engine/pathfinding/ComputedPath";
+import { findOpeningDoorOnLine } from "@engine/pathfinding/door-opening";
 import { findOpenWalkLocation } from "@engine/pathfinding/open-walk-location";
 import { isSafeWalkPoint } from "@engine/pathfinding/safe-walk-point";
 import { ensureSafeStandingPosition } from "@engine/pathfinding/ensure-safe-standing";
@@ -246,6 +247,17 @@ export class ActionMoveToPoint extends Action {
     // Incomplete mid-plot (budget / smooth resume): keep trying next tick.
     // Empty-but-truthy computedPath must not skip replot (walk-in-place bug).
     if(this.pathFindInfo?.lastCode === WalkPathCode.Incomplete && !this.computedPath?.points?.length){
+      this.pauseWalkInPlace(this.owner);
+      return ActionStatus.IN_PROGRESS;
+    }
+
+    // A door on the way that is already being opened (typically by the same
+    // script that queued this move) is not a reason to give up: replot next
+    // tick once it has opened.
+    if(
+      !this.computedPath?.points?.length &&
+      findOpeningDoorOnLine(this.owner.area, this.owner.position, this.target_position)
+    ){
       this.pauseWalkInPlace(this.owner);
       return ActionStatus.IN_PROGRESS;
     }

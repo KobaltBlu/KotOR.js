@@ -175,6 +175,38 @@ describe("solveCollideAndSlide", () => {
   });
 });
 
+describe("solveCollideAndSlide when already pressed against a wall", () => {
+  it("eases off the wall instead of stalling on an exactly-tangent slide", () => {
+    // Live probes pad the destination circle by ~1mm, so a creature left
+    // within that pad of a wall (end_m01aa: Trask 0.351 from a door-frame
+    // wall with radius 0.35) has every pure tangent step rejected.
+    const WALL: Wall = { a: [1, -50], b: [1, 50], n: [-1, 0] };
+    const area = { walkEdges: edgesOf([WALL]) } as unknown as Area;
+    const r = solveCollideAndSlide(
+      new THREE.Vector3(0.5995, 0, 0),
+      new THREE.Vector3(0.03, -0.1, 0),
+      {
+        area,
+        radius: 0.4,
+        probe: (_from, to) =>
+          to.x > 0.599
+            ? {
+              clear: false,
+              clearT: 1,
+              normalX: -1,
+              normalY: 0,
+              normalUsable: true,
+              hit: { kind: MovementHitKind.Static },
+            }
+            : { clear: true, clearT: 1 },
+      }
+    );
+    expect(r.position.y).toBeLessThan(-0.05);
+    expect(r.position.x).toBeLessThanOrEqual(0.599);
+    expect(r.moved).toBeLessThanOrEqual(Math.hypot(0.03, 0.1) + 1e-9);
+  });
+});
+
 describe("solveCollideAndSlide with unreliable clearT hints", () => {
   it("does not advance into an obstacle when a blocked probe reports clearT = 1", () => {
     // Live DetailedBlock behaviour: stadium hits project the hit point onto

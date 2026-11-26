@@ -89,6 +89,11 @@ const CONTACT_SLOP = 0.05;
  */
 const GAP_MARGIN = 0.02;
 const PLANE_DEDUPE_DOT = 0.98;
+/**
+ * Most of a slide leg that may be spent easing off a wall the mover is
+ * already pressed against (see `_pushes`).
+ */
+const PUSH_OFF_FRACTION = 0.25;
 
 const _pos = new THREE.Vector3();
 const _target = new THREE.Vector3();
@@ -98,9 +103,15 @@ const _gatheredDist: number[] = [];
 const _planes: THREE.Vector3[] = [];
 /** Clearance to each plane (parallel to `_planes`); 0 = in contact. */
 const _gaps: number[] = [];
+/**
+ * Separation still owed to each plane (parallel to `_planes`). A mover left
+ * inside the probe's contact pad cannot take an exactly-tangent slide (the
+ * destination circle still touches), so slides lean away by up to this much.
+ */
+const _pushes: number[] = [];
 const _planePool: THREE.Vector3[] = [];
 
-function addPlane(x: number, y: number, gap = 0): void {
+function addPlane(x: number, y: number, gap = 0, push = 0): void {
   const len = Math.hypot(x, y);
   if(len < 1e-8) return;
   const nx = x / len;
@@ -114,6 +125,7 @@ function addPlane(x: number, y: number, gap = 0): void {
         _gaps[i] = g;
         _planes[i].set(nx, ny, 0);
       }
+      if(push > _pushes[i]) _pushes[i] = push;
       return;
     }
   }
@@ -125,18 +137,52 @@ function addPlane(x: number, y: number, gap = 0): void {
   }
   _planes.push(v.set(nx, ny, 0));
   _gaps.push(g);
+  _pushes.push(Math.max(0, push));
 }
 
 /** Shift accumulated plane clearances after moving by (dx, dy). */
 function advancePlanes(dx: number, dy: number): void {
   for(let i = 0; i < _planes.length; i++){
-    _gaps[i] = Math.max(0, _gaps[i] + _planes[i].x * dx + _planes[i].y * dy);
+    const along = _planes[i].x * dx + _planes[i].y * dy;
+    _gaps[i] = Math.max(0, _gaps[i] + along);
+    _pushes[i] = Math.max(0, _pushes[i] - along);
   }
 }
 
 /** True when plane i cuts motion (vx, vy) — i.e. it would exceed the gap. */
 function planeCuts(i: number, vx: number, vy: number, len: number): boolean {
   return _planes[i].x * vx + _planes[i].y * vy < -_gaps[i] - 1e-6 * len;
+}
+
+/**
+ * Lean a blocked tangent slide off walls still owed separation, capped to a
+ * fraction of the slide so the step stays mostly along the wall. Skipped when
+ * leaning would cut another plane (inside corners keep the exact crease).
+ * @returns true when `v` was changed.
+ */
+function leanOffContacts(v: THREE.Vector3): boolean {
+  const len = Math.hypot(v.x, v.y);
+  if(len < MIN_STEP) return false;
+  const cap = len * PUSH_OFF_FRACTION;
+  let px = 0;
+  let py = 0;
+  for(let i = 0; i < _planes.length; i++){
+    const want = Math.min(_pushes[i], cap);
+    if(want <= 0) continue;
+    const along = _planes[i].x * v.x + _planes[i].y * v.y;
+    if(along >= want) continue;
+    px += _planes[i].x * (want - along);
+    py += _planes[i].y * (want - along);
+  }
+  if(px === 0 && py === 0) return false;
+  const lx = v.x + px;
+  const ly = v.y + py;
+  const lLen = Math.hypot(lx, ly);
+  for(let i = 0; i < _planes.length; i++){
+    if(planeCuts(i, lx, ly, lLen)) return false;
+  }
+  v.set(lx, ly, 0);
+  return true;
 }
 
 const _legTo = new THREE.Vector3();
@@ -195,6 +241,7 @@ export function solveCollideAndSlide(
   _rem.set(desired.x, desired.y, 0);
   _planes.length = 0;
   _gaps.length = 0;
+  _pushes.length = 0;
 
   let hit: MovementHit | undefined;
   let firstClearT = 1;
@@ -202,6 +249,7 @@ export function solveCollideAndSlide(
   let iterations = 0;
   let slides = 0;
   let shrinks = 0;
+  let leaned = false;
   const maxShrinks = Math.max(0, options.maxShrinks ?? 3);
 
   while(slides < maxIterations && iterations < maxIterations + maxShrinks){
@@ -240,6 +288,12 @@ export function solveCollideAndSlide(
       travel = bisectClearTravel(options, _pos, dirX, dirY, travel, origin.z);
       travel = Math.max(0, travel - skin);
     }
+    // A slide leg that cannot start at all while still inside a wall's
+    // contact pad: lean it off that wall once and retry.
+    if(slides > 0 && travel <= MIN_STEP && !leaned && leanOffContacts(_rem)){
+      leaned = true;
+      continue;
+    }
     if(travel > MIN_STEP){
       _target.set(_pos.x + dirX * travel, _pos.y + dirY * travel, origin.z);
       if(options.validateLeg && !options.validateLeg(_pos, _target)) break;
@@ -261,11 +315,9 @@ export function solveCollideAndSlide(
     let geomOpposed = false;
     for(let i = 0; i < _gathered.length; i++){
       const gn = _gathered[i];
-      const gap = Math.max(
-        0,
-        (_gatheredDist[i] ?? 0) - options.radius - skin - GAP_MARGIN
-      );
-      addPlane(gn.x, gn.y, gap);
+      const clearance = (_gatheredDist[i] ?? 0) - options.radius - skin - GAP_MARGIN;
+      const gap = Math.max(0, clearance);
+      addPlane(gn.x, gn.y, gap, Math.max(0, -clearance));
       if(gn.x * _rem.x + gn.y * _rem.y < -gap - 1e-6 * remLen) geomOpposed = true;
     }
     // The probe normal is a contact (gap 0).
