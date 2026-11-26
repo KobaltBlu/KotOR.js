@@ -254,6 +254,7 @@ export function clearActionIcon(guiControl: GUIButton | undefined): void {
 export function applyActionIconEnabled(
   guiControl: GUIButton | undefined,
   enabled: boolean,
+  keepSelectable: boolean = false,
 ): void {
   if (!guiControl) return;
   const alpha = enabled ? 1.0 : 0.25;
@@ -262,5 +263,6 @@ export function applyActionIconEnabled(
   } catch (_e) {
     /* chrome may be unavailable during teardown */
   }
-  guiControl.disableSelection = !enabled;
+  // Personal slots stay clickable while greyed so a click can say why.
+  guiControl.disableSelection = keepSelectable ? false : !enabled;
 }

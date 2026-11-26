@@ -740,19 +740,18 @@ export class InGameOverlay extends GameMenu {
 
   UpdateSelfUIIcon(index = 0) {
     const guiControl = this.getControlByName('LBL_ACTION' + index);
-    if (GameState.ActionMenuManager.ActionPanels.selfPanels[index].actions.length) {
-      const action = GameState.ActionMenuManager.ActionPanels.selfPanels[index].getSelectedAction();
-      if (action && guiControl.getFillTextureName() != action.icon) {
-        void guiControl.setFillTextureName(action.icon, true, { transparent: true });
-        this.applyActionIconEnabled(guiControl, action.enabled !== false);
-      } else if (action) {
-        this.applyActionIconEnabled(guiControl, action.enabled !== false);
-      } else if (!action) {
-        this.clearActionIcon(guiControl);
-      }
-    } else {
+    const action = GameState.ActionMenuManager.ActionPanels.selfPanels[index]?.getSelectedAction();
+    if (!action) {
       this.clearActionIcon(guiControl);
+      return;
     }
+    if (guiControl.getFillTextureName() != action.icon) {
+      void guiControl.setFillTextureName(action.icon, true, { transparent: true });
+    }
+    // A dead character's whole personal bar is greyed.
+    const pc = GameState.ActionMenuManager.oPC;
+    const lit = action.enabled !== false && !pc?.isDead?.();
+    applyActionIconEnabledUtil(guiControl, lit, true);
   }
 
   applyActionIconEnabled(guiControl: GUIButton, enabled: boolean){
@@ -788,25 +787,43 @@ export class InGameOverlay extends GameMenu {
     this.TB_STEALTH?.setValue?.(pc.stealthMode);
   }
 
+  /** Whether the mouse is over personal slot `index` (icon, frame or arrows). */
+  isPersonalSlotHovered(index: number): boolean {
+    return ['LBL_ACTION', 'BTN_ACTION', 'BTN_ACTIONUP', 'BTN_ACTIONDOWN'].some((prefix) => {
+      const control = this.getControlByName(prefix + index);
+      return !!control?.hover && control.isVisible?.() !== false;
+    });
+  }
+
+  /**
+   * The line above the personal bar: a pending feedback message first,
+   * otherwise the selected entry of the
+   * personal slot under the mouse, with "(N)" for stacks. Empty otherwise.
+   */
   UpdateActionDescription(){
     if(!this.LBL_ACTIONDESC) return;
+    const manager = GameState.ActionMenuManager;
     let desc = '';
-    for(let i = 0; i < GameState.ActionMenuManager.SELF_MENU_COUNT; i++){
-      const selected = GameState.ActionMenuManager.ActionPanels.selfPanels[i]?.getSelectedAction();
-      if(selected?.name){
-        desc = selected.name;
-        break;
-      }
-    }
-    if(!desc){
-      for(let i = 0; i < GameState.ActionMenuManager.TARGET_MENU_COUNT; i++){
-        const selected = GameState.ActionMenuManager.ActionPanels.targetPanels[i]?.getSelectedAction();
-        if(selected?.name){
-          desc = selected.name;
+
+    if(manager.feedbackTimer > 0 && manager.feedbackStrRef >= 0){
+      desc = GameState.TLKManager.GetStringById(manager.feedbackStrRef)?.Value || '';
+    }else{
+      let slot = -1;
+      for(let i = 0; i < manager.SELF_MENU_COUNT; i++){
+        if(this.isPersonalSlotHovered(i)){
+          slot = i;
           break;
         }
       }
+      if(slot >= 0){
+        manager.lastPersonalSlot = slot;
+        const selected = manager.ActionPanels.selfPanels[slot]?.getSelectedAction();
+        if(selected?.name){
+          desc = selected.stackSize > 1 ? `${selected.name} (${selected.stackSize})` : selected.name;
+        }
+      }
     }
+
     if(desc){
       this.LBL_ACTIONDESC.setText(desc);
       this.LBL_ACTIONDESC.show();
@@ -1110,13 +1127,28 @@ export class InGameOverlay extends GameMenu {
     }
   }
 
+  /** Per-slot hover last frame, to notice the mouse leaving a mode slot. */
+  #personalSlotHovered: boolean[] = [];
+
   UpdateSelfUIPanels(delta = 0) {
-    for (let i = 0; i < GameState.ActionMenuManager.SELF_MENU_COUNT; i++) {
+    const manager = GameState.ActionMenuManager;
+    manager.updateFeedback(delta);
+    for (let i = 0; i < manager.SELF_MENU_COUNT; i++) {
+      // Leaving a mode slot (behavior, form, implant) without clicking
+      // drops the preview and shows the active mode again.
+      const hovered = this.isPersonalSlotHovered(i);
+      if (this.#personalSlotHovered[i] && !hovered) {
+        if (manager.ActionPanels.selfPanels[i]?.getSelectedAction()?.isState) {
+          manager.revertActionBarStates();
+        }
+      }
+      this.#personalSlotHovered[i] = hovered;
+
       this.UpdateSelfUIIcon(i);
       this.getControlByName('BTN_ACTIONUP' + i).recalculate();
       this.getControlByName('BTN_ACTIONDOWN' + i).recalculate();
-        
-      if(GameState.ActionMenuManager.ActionPanels.selfPanels[i].actions.length <= 1){
+
+      if(manager.ActionPanels.selfPanels[i].actions.length <= 1){
         this.getControlByName('BTN_ACTIONUP' + i)?.hide();
         this.getControlByName('BTN_ACTIONDOWN' + i)?.hide();
       }else{
@@ -1269,7 +1301,7 @@ export class InGameOverlay extends GameMenu {
     GameState.ActionMenuManager.SetTarget(GameState.CursorManager.selectedObject);
     GameState.ActionMenuManager.UpdateMenuActions();
     this.UpdateTargetUIPanels();
-    this.UpdateSelfUIPanels();
+    this.UpdateSelfUIPanels(delta);
     this.UpdateHUDNotificationIcons(delta);
     const timingBar = GameState.GuiTimingBarManager;
     if(timingBar?.isActive()){

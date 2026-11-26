@@ -1,6 +1,6 @@
 import { GameState } from "@engine/runtime/GameState";
 import { ActionMenuPanel } from "@engine/menu/ActionMenuPanel";
-import { ActionMenuItem } from "@engine/menu/ActionMenuItem";
+import { ActionMenuItem, ActionMenuDisabledReason, ACTION_MENU_DISABLED_REASON_STRREF } from "@engine/menu/ActionMenuItem";
 import type { GameObject } from "@engine/module/GameObject";
 import type { Creature } from "@engine/module/Creature";
 import type { Item } from "@engine/module/Item";
@@ -15,6 +15,7 @@ import { TalentSpell } from "@engine/talents/TalentSpell";
 import {
   UsableItemMask,
   getMineStrengthLevel,
+  getUsableItemDisabledReason,
   getUsableItemMenuName,
   isDoorOrPlaceableMineItem,
   isGrenadeHostileItem,
@@ -87,6 +88,37 @@ const EQUIP_FORCE_SLOTS: (keyof Creature['equipment'])[] = [
 const STANCE_FORM_SPELL_MIN = 0x102;
 const STANCE_FORM_SPELL_MAX = 0x10c;
 
+/** Personal-slot entry id tags (keep item, power and fixed ids apart). */
+const ENTRY_ID_SPELL = 0x20000000;
+const ENTRY_ID_ITEM = 0x40000000;
+/** Behavior ids: base + (AISTATE - 9) for AISTATE 9–13. */
+const ENTRY_ID_BEHAVIOR_BASE = 0x410;
+/** Swappable implant ids: base + implant number (1–4). */
+const ENTRY_ID_IMPLANT_BASE = 0x407;
+
+/** TSL Mandalore swappable implants: feat, global, and the four choices in menu order. */
+const FEAT_SWAPPABLE_IMPLANTS = 203;
+const GLOBAL_CUR_IMPLANT = 'CANDEROUS_CUR_IMPLANT';
+const GLOBAL_PREV_IMPLANT = 'CANDEROUS_P_IMPLANT';
+const SWAP_IMPLANT_SCRIPT = 'a_swapimplant';
+const SWAPPABLE_IMPLANTS = [
+  { implant: 1, nameStrRef: 48429, icon: 'ii_implant1_001', swappedStrRef: 48438 },
+  { implant: 2, nameStrRef: 48430, icon: 'ii_implant3_003', swappedStrRef: 48439 },
+  { implant: 4, nameStrRef: 48431, icon: 'ii_implant2_002', swappedStrRef: 48441 },
+  { implant: 3, nameStrRef: 48432, icon: 'ii_implant3_004', swappedStrRef: 48440 },
+];
+const IMPLANT_SWAP_FEEDBACK_SECONDS = 4;
+
+/** TSL Wookiee Rage I–III feats and the spells they cast, best first. */
+const WOOKIEE_RAGE = [
+  { feat: 233, spell: 0x111 },
+  { feat: 232, spell: 0x110 },
+  { feat: 231, spell: 0x10f },
+];
+
+/** How long a greyed-entry message stays up. */
+const DISABLED_FEEDBACK_SECONDS = 5;
+
 /** TSL trap Force counters: Destroy Droid / Disable Droid / Shock (by mine strength). */
 const MINE_FORCE_SPELL_DESTROY = 0xd;
 const MINE_FORCE_SPELL_DISABLE = 0xc;
@@ -119,6 +151,13 @@ export class ActionMenuManager {
    * reset the player's cycled selection (Power Attack, Flurry, …).
    */
   static #preferDefaultAttack = false;
+  static #lastPC: Creature | undefined = undefined;
+
+  /** Personal slot the player last used; its entry is described on hover. */
+  static lastPersonalSlot: number = -1;
+  /** Feedback line (TLK id) shown in the action description, and seconds left. */
+  static feedbackStrRef: number = -1;
+  static feedbackTimer: number = 0;
 
   static ActionPanels: IActionPanelLists = {
     targetPanels: [],
@@ -250,10 +289,37 @@ export class ActionMenuManager {
       forceItemMask: number;
     }
   ): boolean {
-    if(opts.cost > opts.resource) return false;
-    if(!ActionMenuManager.isWithinForceMenuMinRange(spell.range, opts.distanceSq)) return false;
-    if(!ActionMenuManager.passesForceItemMask(spell, opts.forceItemMask)) return false;
-    return true;
+    return ActionMenuManager.getForceMenuDisabledReason(spell, opts) === ActionMenuDisabledReason.NONE;
+  }
+
+  /**
+   * Why a power is greyed out, or NONE. When several apply, a forbidden worn
+   * item wins, then too-close, then Force points; a missing required item is
+   * only reported when nothing else is wrong.
+   */
+  static getForceMenuDisabledReason(
+    spell: TalentSpell,
+    opts: {
+      resource: number;
+      cost: number;
+      distanceSq: number;
+      forceItemMask: number;
+    }
+  ): number {
+    if(((spell.forbiditemmask | 0) & (opts.forceItemMask | 0)) !== 0){
+      return ActionMenuDisabledReason.FORBIDDEN_ITEM;
+    }
+    if(!ActionMenuManager.isWithinForceMenuMinRange(spell.range, opts.distanceSq)){
+      return ActionMenuDisabledReason.TOO_CLOSE;
+    }
+    if(opts.cost > opts.resource){
+      return ActionMenuDisabledReason.FORCE_POINTS;
+    }
+    const require = spell.requireitemmask | 0;
+    if((require & ~(opts.forceItemMask | 0)) !== 0){
+      return ActionMenuDisabledReason.REQUIRED_ITEM;
+    }
+    return ActionMenuDisabledReason.NONE;
   }
 
   static #sortKeyForMode(spell: TalentSpell, mode: ForceMenuMode): number {
@@ -332,10 +398,14 @@ export class ActionMenuManager {
     return list;
   }
 
-  /** GetSelfForcePowers → personal slot 0. */
+  /** GetSelfForcePowers → personal slot 0 (TSL: implants and Wookiee Rage first). */
   static populateSelfForcePowers(){
     if(!ActionMenuManager.oPC) return;
-    // GetMenuInfo returns empty while area restrict_mode != 0.
+    if(GameState.GameKey === GameEngineType.TSL){
+      ActionMenuManager.populateSwappableImplants();
+      ActionMenuManager.populateWookieeRage();
+    }
+    // Known powers are hidden while area restrict_mode != 0.
     if(ActionMenuManager.areaIsRestricted()) return;
 
     const resource = ActionMenuManager.oPC.getForceMenuResource();
@@ -349,8 +419,8 @@ export class ActionMenuManager {
     for(let i = 0; i < entries.length; i++){
       const { spell } = entries[i];
       const cost = ActionMenuManager.oPC.getAdjustedForcePointCost(spell);
-      // GetSelfForcePowers passes distanceSq = 0.0001
-      const enabled = ActionMenuManager.isForceMenuSpellEnabled(spell, {
+      // Self powers are checked at a near-zero distance.
+      const disabledReason = ActionMenuManager.getForceMenuDisabledReason(spell, {
         resource,
         cost,
         distanceSq: 0.0001,
@@ -360,10 +430,52 @@ export class ActionMenuManager {
         talent: spell,
         target: ActionMenuManager.oPC,
         icon: spell.iconresref,
-        enabled,
+        enabled: disabledReason === ActionMenuDisabledReason.NONE,
+        disabledReason,
+        id: (spell.id | 0) | ENTRY_ID_SPELL,
         name: spell.name || spell.label || '',
       }));
     }
+  }
+
+  /** TSL Mandalore: four implant choices that swap via a_swapimplant. */
+  static populateSwappableImplants(){
+    const pc = ActionMenuManager.oPC;
+    if(!pc?.getHasFeat?.(FEAT_SWAPPABLE_IMPLANTS)) return;
+    const globals = GameState.GlobalVariableManager;
+    const current = globals?.GetGlobalNumber?.(GLOBAL_CUR_IMPLANT) | 0;
+    if(current < 1 || current > 4){
+      globals?.SetGlobalNumber?.(GLOBAL_CUR_IMPLANT, 1);
+    }
+    const panel = ActionMenuManager.ActionPanels.selfPanels[0];
+    for(let i = 0; i < SWAPPABLE_IMPLANTS.length; i++){
+      const entry = SWAPPABLE_IMPLANTS[i];
+      panel.addAction(new GameState.ActionMenuManager.ActionMenuItem({
+        target: pc,
+        icon: entry.icon,
+        name: ActionMenuManager.tlkName(entry.nameStrRef),
+        id: ENTRY_ID_IMPLANT_BASE + entry.implant,
+        implant: entry.implant,
+        isState: true,
+      }));
+    }
+  }
+
+  /** TSL Hanharr: the best Wookiee Rage feat known, cast on self, never greyed. */
+  static populateWookieeRage(){
+    const pc = ActionMenuManager.oPC;
+    if(!pc?.getHasFeat) return;
+    const rage = WOOKIEE_RAGE.find((r) => pc.getHasFeat(r.feat));
+    if(!rage) return;
+    const feat = pc.getFeat?.(rage.feat) || new GameState.TalentFeat(rage.feat);
+    const spell = new GameState.TalentSpell(rage.spell);
+    ActionMenuManager.ActionPanels.selfPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
+      talent: spell,
+      target: pc,
+      icon: feat?.icon || spell.iconresref || '',
+      name: feat?.name || spell.name || '',
+      id: rage.spell | ENTRY_ID_SPELL,
+    }));
   }
 
   /** GetHostileForcePowers → target slot 1. */
@@ -434,13 +546,7 @@ export class ActionMenuManager {
         const item = ActionMenuManager.oPC.equipment[equipSlots[i]] as Item;
         if(!item) continue;
         if(!isLeaderUsableItem(ActionMenuManager.oPC, item, true, mask)) continue;
-        panel.addAction(new GameState.ActionMenuManager.ActionMenuItem({
-          item,
-          target: ActionMenuManager.oPC,
-          icon: item.getIcon(),
-          enabled: isUsableItemActive(ActionMenuManager.oPC, item, true),
-          name: getUsableItemMenuName(item),
-        }));
+        panel.addAction(ActionMenuManager.createUsableItemEntry(item, true));
       }
     }
 
@@ -449,14 +555,23 @@ export class ActionMenuManager {
       const item = inventory[i];
       if(!item) continue;
       if(!isLeaderUsableItem(ActionMenuManager.oPC, item, false, mask)) continue;
-      panel.addAction(new GameState.ActionMenuManager.ActionMenuItem({
-        item,
-        target: ActionMenuManager.oPC,
-        icon: item.getIcon(),
-        enabled: isUsableItemActive(ActionMenuManager.oPC, item, false),
-        name: getUsableItemMenuName(item),
-      }));
+      panel.addAction(ActionMenuManager.createUsableItemEntry(item, false));
     }
+  }
+
+  static createUsableItemEntry(item: Item, fromEquipment: boolean): ActionMenuItem {
+    const pc = ActionMenuManager.oPC;
+    const reason = getUsableItemDisabledReason(pc, item, fromEquipment);
+    return new GameState.ActionMenuManager.ActionMenuItem({
+      item,
+      target: pc,
+      icon: item.getIcon(),
+      enabled: reason < 0 ? false : reason === ActionMenuDisabledReason.NONE,
+      disabledReason: Math.max(0, reason),
+      id: (item.id | 0) | ENTRY_ID_ITEM,
+      stackSize: item.getStackSize?.() ?? item.stackSize ?? 1,
+      name: getUsableItemMenuName(item),
+    });
   }
 
   /** GetHostileItems — grenades on hostile creature/placeable target slot 2. */
@@ -637,10 +752,9 @@ export class ActionMenuManager {
     const panel = ActionMenuManager.ActionPanels.selfPanels[4];
     if(!panel) return;
 
-    // clamps invalid AIState to Aggressive (9).
-    let current = ActionMenuManager.oPC.aiState | 0;
+    // An invalid AIState is clamped to Aggressive (9).
+    const current = ActionMenuManager.oPC.aiState | 0;
     if(current !== 9 && current !== 0xb && current !== 0xc && current !== 0xd){
-      current = 9;
       ActionMenuManager.oPC.aiState = 9;
     }
 
@@ -671,16 +785,10 @@ export class ActionMenuManager {
         icon,
         name: ActionMenuManager.tlkName(nameStrRef, String(row.label || '')),
         aiState,
+        id: ENTRY_ID_BEHAVIOR_BASE + (aiState - 9),
+        isState: true,
         enabled: true,
       }));
-    }
-
-    // Prefer the creature's current behavior as the selected entry.
-    for(let i = 0; i < panel.actions.length; i++){
-      if((panel.actions[i].aiState | 0) === current){
-        panel.selectedIndex = i;
-        break;
-      }
     }
   }
 
@@ -704,7 +812,7 @@ export class ActionMenuManager {
       if(id < STANCE_FORM_SPELL_MIN || id > STANCE_FORM_SPELL_MAX) continue;
 
       const cost = ActionMenuManager.oPC.getAdjustedForcePointCost(spell);
-      const enabled = ActionMenuManager.isForceMenuSpellEnabled(spell, {
+      const disabledReason = ActionMenuManager.getForceMenuDisabledReason(spell, {
         resource,
         cost,
         distanceSq: 0.0001,
@@ -715,24 +823,49 @@ export class ActionMenuManager {
         talent: spell,
         target: ActionMenuManager.oPC,
         icon: spell.iconresref,
-        enabled,
+        enabled: disabledReason === ActionMenuDisabledReason.NONE,
+        disabledReason,
         name: spell.name || spell.label || '',
         formId: id,
+        id,
+        isState: true,
       }));
     }
+  }
 
-    const active = ActionMenuManager.oPC.getCurrentForm?.() | 0;
-    if(active){
-      for(let i = 0; i < panel.actions.length; i++){
-        if((panel.actions[i].formId | 0) === active){
-          panel.selectedIndex = i;
-          break;
-        }
+  /**
+   * Point the mode slots (implant, behavior, form) back at what is active
+   * now, dropping any scrolled-but-unclicked preview. Runs when the
+   * controlled character changes and when the mouse leaves a mode slot.
+   */
+  static revertActionBarStates(){
+    const pc = ActionMenuManager.oPC;
+    if(!pc || GameState.GameKey !== GameEngineType.TSL) return;
+    const panels = ActionMenuManager.ActionPanels.selfPanels;
+
+    if(pc.getHasFeat?.(FEAT_SWAPPABLE_IMPLANTS)){
+      const implant = GameState.GlobalVariableManager?.GetGlobalNumber?.(GLOBAL_CUR_IMPLANT) | 0;
+      if(implant >= 1 && implant <= 4){
+        panels[0]?.selectId(ENTRY_ID_IMPLANT_BASE + implant);
       }
+    }
+
+    const aiState = pc.aiState | 0;
+    if(aiState >= 9 && aiState <= 13){
+      panels[4]?.selectId(ENTRY_ID_BEHAVIOR_BASE + (aiState - 9));
+    }
+
+    const form = pc.getCurrentForm?.() | 0;
+    if(form > 0){
+      panels[5]?.selectId(form);
     }
   }
 
   static UpdateMenuActions(){
+    // A new controlled character starts on its active modes.
+    const pcChanged = ActionMenuManager.oPC !== ActionMenuManager.#lastPC;
+    ActionMenuManager.#lastPC = ActionMenuManager.oPC;
+
     for(let i = 0; i < ActionMenuManager.TARGET_MENU_COUNT; i++){
       ActionMenuManager.ActionPanels.targetPanels[i].clearActions();
     }
@@ -951,6 +1084,9 @@ export class ActionMenuManager {
       ActionMenuManager.populateBehaviors();
       ActionMenuManager.populateStances();
     }
+    if(pcChanged){
+      ActionMenuManager.revertActionBarStates();
+    }
 
     // Clear target-change default if the hostile combat path did not run
     // (empty / non-hostile target) so the flag cannot stick across frames.
@@ -1013,6 +1149,12 @@ export class ActionMenuManager {
     // TSL GetBehaviors / ActionMenuSelectBehavior — set AIState, no action queue.
     if(typeof menuItem.aiState === 'number'){
       pc.aiState = menuItem.aiState | 0;
+      return;
+    }
+
+    // TSL swappable implant — record it, run the swap script, announce it.
+    if(typeof menuItem.implant === 'number'){
+      ActionMenuManager.swapImplant(menuItem.implant, pc);
       return;
     }
 
@@ -1089,11 +1231,43 @@ export class ActionMenuManager {
     }
   }
 
+  static showFeedback(strRef: number, seconds: number){
+    ActionMenuManager.feedbackStrRef = strRef;
+    ActionMenuManager.feedbackTimer = seconds;
+  }
+
+  static updateFeedback(delta: number){
+    if(ActionMenuManager.feedbackTimer > 0){
+      ActionMenuManager.feedbackTimer = Math.max(0, ActionMenuManager.feedbackTimer - delta);
+    }
+  }
+
+  static swapImplant(implant: number, pc: Creature){
+    const entry = SWAPPABLE_IMPLANTS.find((e) => e.implant === implant);
+    if(!entry) return;
+    const globals = GameState.GlobalVariableManager;
+    globals?.SetGlobalNumber?.(GLOBAL_PREV_IMPLANT, globals?.GetGlobalNumber?.(GLOBAL_CUR_IMPLANT) | 0);
+    globals?.SetGlobalNumber?.(GLOBAL_CUR_IMPLANT, implant);
+    const script = GameState.NWScript?.Load?.(SWAP_IMPLANT_SCRIPT);
+    script?.run?.(pc, 0);
+    ActionMenuManager.showFeedback(entry.swappedStrRef, IMPLANT_SWAP_FEEDBACK_SECONDS);
+  }
+
   static onSelfMenuAction(index: number = 0){
     if(!ActionMenuManager.oPC){ return; }
+    ActionMenuManager.lastPersonalSlot = index;
 
     const action = ActionMenuManager.ActionPanels.selfPanels[index].getSelectedAction();
     if(!action){ return; }
+
+    // Greyed entry: say why instead of acting.
+    if(action.enabled === false){
+      const strRef = ACTION_MENU_DISABLED_REASON_STRREF[action.disabledReason | 0];
+      if(strRef !== undefined){
+        ActionMenuManager.showFeedback(strRef, DISABLED_FEEDBACK_SECONDS);
+      }
+      return;
+    }
 
     // GetSelfForcePowers stamps the controlled creature's object id onto
     // every entry; ForceMenuAction casts at that id — never the look-at target.

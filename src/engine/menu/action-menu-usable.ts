@@ -43,6 +43,9 @@ export {
   passesDroidOrHumanRestriction,
 } from "@engine/menu/action-menu-usable-pure";
 
+/** Matches ActionMenuDisabledReason.NOT_INJURED ("Full Health"). */
+const REASON_NOT_INJURED = 5;
+
 /** GetUsableItems mask bits (GetPersonalActions). */
 export const UsableItemMask = {
   MEDICAL: 1,
@@ -55,55 +58,22 @@ function getItemType(item: Item): number {
   return typeof t === 'number' ? t : -1;
 }
 
-/**
- * IsLeaderUsableItem medical / ItemType 0x19 path:
- * CastSpell property present and useable. Item powers use UserType 4
- * (not 1); do not filter on usertype here.
- */
-function hasUseableCastSpellProperty(item: Item): boolean {
+/** First CastSpell property on the item (only the first one counts). */
+function firstCastSpellProperty(item: Item){
   for(let i = 0; i < item.properties.length; i++){
     const prop = item.properties[i];
-    if(
-      prop.isUseable() &&
-      prop.is(ModuleItemProperty.CastSpell) &&
-      prop.subType != null
-    ){
-      return true;
-    }
+    if(prop.is(ModuleItemProperty.CastSpell)) return prop;
   }
-  return false;
+  return undefined;
 }
 
-/**
- * IsLeaderUsableItem fallthrough for forearm/droid devices:
- * CastSpell + spells.ItemTargeting == 1.
- */
-function hasItemTargetingCastSpellProperty(item: Item): boolean {
+/** First Trap property on the item. */
+function firstTrapProperty(item: Item){
   for(let i = 0; i < item.properties.length; i++){
     const prop = item.properties[i];
-    if(
-      !prop.isUseable() ||
-      !prop.is(ModuleItemProperty.CastSpell) ||
-      prop.subType == null
-    ){
-      continue;
-    }
-    const spell = GameState.SWRuleSet?.spells?.[prop.subType];
-    if(spell && (spell.itemtargeting | 0) === 1){
-      return true;
-    }
+    if(prop.is(ModuleItemProperty.Trap)) return prop;
   }
-  return false;
-}
-
-function hasTrapProperty(item: Item): boolean {
-  for(let i = 0; i < item.properties.length; i++){
-    const prop = item.properties[i];
-    if(prop.isUseable() && prop.is(ModuleItemProperty.Trap)){
-      return true;
-    }
-  }
-  return false;
+  return undefined;
 }
 
 export function passesItemDenySubrace(creature: Creature, item: Item): boolean {
@@ -178,123 +148,142 @@ export function canUseItemForMenu(creature: Creature, item: Item): boolean {
 
 /**
  * IsLeaderUsableItem — whether an item belongs in a personal-use HUD slot.
- * Category gates first; every success path ends in CanUseItem.
+ *
+ * - Medical slot: medpacs / droid repair / squad kits. Other slot: ItemType
+ *   0x19. Either passes when the first CastSpell property is useable, or the
+ *   item has none.
+ * - Mines slot: ItemType 0x1c. No Trap property passes; a useable Trap
+ *   property also needs the Demolitions skill.
+ * - Anything else lands in the Other slot when its first CastSpell is
+ *   useable and casts a spell with ItemTargeting 1. Droid utility, droid
+ *   shield and forearm-band items must be equipped for that.
+ * - Plot items skip the area lock and the useable flag, but still need the
+ *   ItemTargeting 1 cast (or the mine path).
+ *
+ * Every pass ends in CanUseItem.
  */
 export function isLeaderUsableItem(
   creature: Creature,
   item: Item,
-  _fromEquipment: boolean,
+  fromEquipment: boolean,
   mask: number
 ): boolean {
   if(!creature || !item) return false;
-  if(item.plot){
-    // Plot items: mines with trap prop + demolitions, or castable "other" from inventory/equip
-    if((mask & UsableItemMask.MINES) && getItemType(item) === ItemTypeCategory.MINE && hasTrapProperty(item)){
-      if(!creature.getCanUseSkill(SkillType.DEMOLITIONS)) return false;
-      return canUseItemForMenu(creature, item);
-    }
-    if((mask & UsableItemMask.OTHER) && hasUseableCastSpellProperty(item)){
-      return canUseItemForMenu(creature, item);
-    }
-    return false;
-  }
-
-  const area = creature.area || (creature as any).module?.area;
-  if(area?.restrictMode && !item.plot) return false;
-
   const itemType = getItemType(item);
+  const isMine = (mask & UsableItemMask.MINES) !== 0 && itemType === ItemTypeCategory.MINE;
 
-  if((mask & UsableItemMask.MEDICAL) && isMedicalItemType(itemType) && hasUseableCastSpellProperty(item)){
-    return canUseItemForMenu(creature, item);
+  if(!item.plot){
+    const area = creature.area || (creature as any).module?.area;
+    if(area?.restrictMode) return false;
+
+    if(
+      ((mask & UsableItemMask.MEDICAL) && isMedicalItemType(itemType)) ||
+      ((mask & UsableItemMask.OTHER) && itemType === ItemTypeCategory.OTHER)
+    ){
+      const cast = firstCastSpellProperty(item);
+      if(cast && !cast.isUseable()) return false;
+      return canUseItemForMenu(creature, item);
+    }
+    if(isMine){
+      return isLeaderUsableMine(creature, item);
+    }
+    const cast = firstCastSpellProperty(item);
+    if(!cast || !cast.isUseable()) return false;
+    return isLeaderUsableTargetingCast(creature, item, cast, itemType, fromEquipment, mask);
   }
 
-  if((mask & UsableItemMask.MINES) && itemType === ItemTypeCategory.MINE && hasTrapProperty(item)){
+  if(isMine){
+    return isLeaderUsableMine(creature, item);
+  }
+  const cast = firstCastSpellProperty(item);
+  if(!cast) return false;
+  return isLeaderUsableTargetingCast(creature, item, cast, itemType, fromEquipment, mask);
+}
+
+function isLeaderUsableMine(creature: Creature, item: Item): boolean {
+  const trap = firstTrapProperty(item);
+  if(trap){
+    if(!trap.isUseable()) return false;
     if(!creature.getCanUseSkill(SkillType.DEMOLITIONS)) return false;
-    return canUseItemForMenu(creature, item);
   }
+  return canUseItemForMenu(creature, item);
+}
 
-  if(mask & UsableItemMask.OTHER){
-    // ItemType 0x19 — CastSpell useable (no ItemTargeting gate).
-    if(itemType === ItemTypeCategory.OTHER && hasUseableCastSpellProperty(item)){
-      return canUseItemForMenu(creature, item);
-    }
-    // Forearm bands / droid devices — require ItemTargeting == 1.
-    if(isSpecialOtherCastSpellItemType(itemType) && hasItemTargetingCastSpellProperty(item)){
-      return canUseItemForMenu(creature, item);
-    }
-  }
-
-  return false;
+function isLeaderUsableTargetingCast(
+  creature: Creature,
+  item: Item,
+  cast: { subType: number },
+  itemType: number,
+  fromEquipment: boolean,
+  mask: number
+): boolean {
+  if((mask & UsableItemMask.OTHER) === 0) return false;
+  if(isSpecialOtherCastSpellItemType(itemType) && !fromEquipment) return false;
+  const spell = cast.subType != null ? GameState.SWRuleSet?.spells?.[cast.subType] : undefined;
+  if(!spell || (spell.itemtargeting | 0) !== 1) return false;
+  return canUseItemForMenu(creature, item);
 }
 
 /**
- * Whether a usable medical/recovery item should appear active (not dimmed).
- * CreateUsableItemEntry:
- * - item_type 0x2d / 0x1a (medpac / droid repair): disable when caster at full HP
- * - item_type 0x2f (squad kit): disable when no party member is injured
- * - equipped non-medical: enable bit from CastSpell.usable (property)
- * Also dims while InstantUseItem combat lockout is active.
+ * Why a personal-slot item is greyed out: an ActionMenuDisabledReason
+ * (0 = usable), or -1 when it is greyed with nothing to report.
+ * - Medpac / droid repair: greyed at full health ("Full Health").
+ * - Squad kit: greyed unless the user or a party member is hurt.
+ * - An equipped item follows its CastSpell useable flag.
+ * - Also greyed while the in-combat item lockout runs.
  */
+export function getUsableItemDisabledReason(
+  creature: Creature,
+  item: Item,
+  fromEquipment: boolean = false
+): number {
+  if(
+    creature.isHostileCombatEngaged?.() &&
+    (creature.instantItemCooldownMs || 0) > 0
+  ){
+    return -1;
+  }
+
+  const itemType = getItemType(item);
+  const selfMedical = isSelfMedicalItemType(itemType) || (itemType < 0 && (
+    item.baseItemId === BaseItemType.MEDICAL_EQUIPMENT ||
+    item.baseItemId === BaseItemType.DROID_REPAIR_EQUIPMENT
+  ));
+  const squadMedical = isSquadMedicalItemType(itemType) || (itemType < 0 && (
+    item.baseItemId === BaseItemType.SQUAD_RECOVERY_KIT ||
+    item.baseItemId === BaseItemType.TSL_SQUAD_RECOVERY_KIT
+  ));
+
+  if(squadMedical){
+    const members = GameState.PartyManager?.party?.length
+      ? [creature, ...GameState.PartyManager.party]
+      : [creature];
+    for(let i = 0; i < members.length; i++){
+      const m = members[i];
+      if(m && m.getHP() < m.getMaxHP()) return 0;
+    }
+    return REASON_NOT_INJURED;
+  }
+
+  if(selfMedical && creature.getHP() >= creature.getMaxHP()){
+    return REASON_NOT_INJURED;
+  }
+
+  if(fromEquipment){
+    const cast = firstCastSpellProperty(item);
+    if(cast && ((cast.useable | 0) & 1) === 0) return -1;
+  }
+
+  return 0;
+}
+
+/** Whether a personal-slot item shows lit (see getUsableItemDisabledReason). */
 export function isUsableItemActive(
   creature: Creature,
   item: Item,
   fromEquipment: boolean = false
 ): boolean {
-  if(
-    creature.isHostileCombatEngaged?.() &&
-    (creature.instantItemCooldownMs || 0) > 0
-  ){
-    return false;
-  }
-
-  const itemType = getItemType(item);
-  if(isSelfMedicalItemType(itemType)){
-    return creature.getHP() < creature.getMaxHP();
-  }
-
-  if(isSquadMedicalItemType(itemType)){
-    const members = GameState.PartyManager?.party?.length
-      ? GameState.PartyManager.party
-      : [creature];
-    for(let i = 0; i < members.length; i++){
-      const m = members[i];
-      if(m && m.getHP() < m.getMaxHP()) return true;
-    }
-    return false;
-  }
-
-  // Fallback for baseitem ids if itemType was not loaded from 2DA.
-  if(
-    item.baseItemId === BaseItemType.MEDICAL_EQUIPMENT ||
-    item.baseItemId === BaseItemType.DROID_REPAIR_EQUIPMENT
-  ){
-    return creature.getHP() < creature.getMaxHP();
-  }
-  if(
-    item.baseItemId === BaseItemType.SQUAD_RECOVERY_KIT ||
-    item.baseItemId === BaseItemType.TSL_SQUAD_RECOVERY_KIT
-  ){
-    const members = GameState.PartyManager?.party?.length
-      ? GameState.PartyManager.party
-      : [creature];
-    for(let i = 0; i < members.length; i++){
-      const m = members[i];
-      if(m && m.getHP() < m.getMaxHP()) return true;
-    }
-    return false;
-  }
-
-  // CreateUsableItemEntry: equipped non-medical XOR enable from CastSpell.usable.
-  if(fromEquipment){
-    for(let i = 0; i < item.properties.length; i++){
-      const prop = item.properties[i];
-      if(prop.isUseable() && prop.is(ModuleItemProperty.CastSpell)){
-        return ((prop.useable | 0) & 1) !== 0;
-      }
-    }
-  }
-
-  return true;
+  return getUsableItemDisabledReason(creature, item, fromEquipment) === 0;
 }
 
 /** CreateUsableItemEntry name: "%s (%s)" with TLK 0x9475 "(Self)". */
