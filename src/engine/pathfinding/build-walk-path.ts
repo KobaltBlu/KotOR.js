@@ -146,15 +146,20 @@ export function buildWalkPath(
       info.dest,
       false
     );
-    if(unsmooth?.points?.length){
-      if(
+    // An Incomplete retry (including the empty stub from a spent tick budget)
+    // resumes next tick; it is not evidence the destination is unreachable.
+    if(
+      unsmooth &&
+      (
         unsmooth.incomplete ||
         unsmooth.smoothResume ||
         unsmooth.smoothCornerResume
-      ){
-        info.lastCode = WalkPathCode.Incomplete;
-        return { code: WalkPathCode.Incomplete, path: unsmooth };
-      }
+      )
+    ){
+      info.lastCode = WalkPathCode.Incomplete;
+      return { code: WalkPathCode.Incomplete, path: unsmooth };
+    }
+    if(unsmooth?.points?.length){
       path = unsmooth;
     }
   }

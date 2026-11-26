@@ -157,6 +157,7 @@ jest.mock('@engine/gui', () => ({
 import { InGameComputer } from '@engine/games/kotor/menu/InGameComputer';
 import { CutsceneManager } from '@engine/managers/CutsceneManager';
 import { DLGCameraAngle } from '@core/enums/dialog/DLGCameraAngle';
+import { ConversationState } from '@core/enums/dialog/ConversationState';
 import { GameState } from '@engine/runtime/GameState';
 
 describe('InGameComputer.setType (K1 SetType)', () => {
@@ -208,6 +209,43 @@ describe('InGameComputer.updateSkills (UpdateSkills)', () => {
     expect(setRep).toHaveBeenCalledWith('7');
     expect(setSpikes).toHaveBeenCalledWith('5');
     expect(setParts).toHaveBeenCalledWith('5');
+  });
+});
+
+describe('InGameComputer.setReplies (SetReplies)', () => {
+  const reply = (text: string) => ({ getCompiledString: () => text }) as any;
+  let menu: InGameComputer;
+  let listbox: { setItems: jest.Mock; show: jest.Mock; hide: jest.Mock };
+
+  beforeEach(() => {
+    menu = new InGameComputer();
+    listbox = { setItems: jest.fn(), show: jest.fn(), hide: jest.fn() };
+    menu.LB_REPLIES = listbox as any;
+    menu.LB_MESSAGE = { show: jest.fn() } as any;
+    menu.updateSkills = jest.fn();
+  });
+
+  test('lone empty end reply shows no rows and hides the list', () => {
+    menu.setReplies([reply('')]);
+    expect(listbox.setItems).toHaveBeenCalledWith([]);
+    expect(listbox.hide).toHaveBeenCalled();
+    expect(listbox.show).not.toHaveBeenCalled();
+    expect(menu.replyIndexMap).toEqual([]);
+  });
+
+  test('empty replies are skipped but rows keep original numbers and indices', () => {
+    menu.setReplies([reply('Option A'), reply(''), reply('Option C')]);
+    expect(listbox.setItems).toHaveBeenCalledWith(['1. Option A', '3. Option C']);
+    expect(listbox.show).toHaveBeenCalled();
+    expect(menu.replyIndexMap).toEqual([0, 2]);
+  });
+
+  test('waiting-for-choice mode keeps an empty list hidden', () => {
+    menu.setReplies([reply('')]);
+    listbox.show.mockClear();
+    menu.setDialogMode(ConversationState.WAITING_FOR_PC_CHOICE);
+    expect(listbox.show).not.toHaveBeenCalled();
+    expect(listbox.hide).toHaveBeenCalled();
   });
 });
 

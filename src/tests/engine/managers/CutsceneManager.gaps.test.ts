@@ -28,7 +28,7 @@ jest.mock('@engine/runtime/GameState', () => ({
       HOLD_WORLD_FADE_IN_LENGTH: 1.0,
       HOLD_WORLD_FADE_IN_WAIT: 0,
     },
-    CutsceneManager: {},
+    CutsceneManager: {},
     Mode: 0,
     holdWorldFadeInForDialog: false,
     Flags: { EnableOverride: false },
@@ -295,6 +295,8 @@ describe('InGameComputer setDialogMode', () => {
     menu.setDialogMode(ConversationState.LISTENING_TO_SPEAKER);
     expect(hide).toHaveBeenCalled();
 
+    // Choice mode shows the list only when setReplies produced rows.
+    menu.replyIndexMap = [0];
     menu.setDialogMode(ConversationState.WAITING_FOR_PC_CHOICE);
     expect(show).toHaveBeenCalled();
   });

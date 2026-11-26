@@ -64,6 +64,8 @@ export class InGameComputer extends GameMenu {
   state: number = 0;
 
   conversation_name: string = '';
+  /** LB_REPLIES row → index into the replies passed to setReplies. */
+  replyIndexMap: number[] = [];
   computerType: number = 0;
 
   /** looping ambient — volume 0x1e (30). */
@@ -87,7 +89,9 @@ export class InGameComputer extends GameMenu {
       this.LB_REPLIES.setSelectOnLeftClick(true);
       this.LB_REPLIES.onClicked = (_entry: DLGNode, _control: any, index: number) => {
         if (index < 0) return;
-        GameState.CutsceneManager.selectReplyAtIndex(index);
+        const replyIndex = this.replyIndexMap[index];
+        if (replyIndex === undefined) return;
+        GameState.CutsceneManager.selectReplyAtIndex(replyIndex);
       }
       resolve();
     });
@@ -210,11 +214,26 @@ export class InGameComputer extends GameMenu {
     super.close();
   }
 
+  /**
+   * Replies with empty text get no row (SetReplies skips them); the rest keep
+   * their original number. A lone empty reply (continue / end) shows no list.
+   * `replies` must be the same array as CutsceneManager.currentReplies.
+   */
   setReplies(replies: DLGNode[]) {
-    // Indices must match CutsceneManager.currentReplies (continues already removed).
-    const texts = replies.map((r, i) => (i + 1) + '. ' + r.getCompiledString());
+    const texts: string[] = [];
+    this.replyIndexMap = [];
+    for(let i = 0; i < replies.length; i++){
+      const text = replies[i]?.getCompiledString?.() || '';
+      if(!text.length){ continue; }
+      texts.push((i + 1) + '. ' + text);
+      this.replyIndexMap.push(i);
+    }
     this.LB_REPLIES.setItems(texts);
-    this.LB_REPLIES.show();
+    if(texts.length){
+      this.LB_REPLIES.show();
+    }else{
+      this.LB_REPLIES.hide();
+    }
     // keeps the spoken entry listbox visible under replies.
     this.LB_MESSAGE?.show?.();
     this.updateSkills();
@@ -268,7 +287,11 @@ export class InGameComputer extends GameMenu {
       this.LB_REPLIES?.hide?.();
       this.LB_MESSAGE?.show?.();
     }else{
-      this.LB_REPLIES?.show?.();
+      if(this.replyIndexMap.length){
+        this.LB_REPLIES?.show?.();
+      }else{
+        this.LB_REPLIES?.hide?.();
+      }
       this.LB_MESSAGE?.show?.();
     }
     this.updateSkills();

@@ -233,4 +233,25 @@ describe("buildWalkPath return codes", () => {
     expect(r.code).toBe(WalkPathCode.Fail);
     expect(info.lastCode).toBe(WalkPathCode.Fail);
   });
+
+  it("returns Incomplete when the unsmoothed retry is starved by the tick budget", () => {
+    const origin = new THREE.Vector3(0, 0, 0);
+    const dest = new THREE.Vector3(5, 0, 0);
+    const owner = { id: 7, position: origin.clone() } as any;
+    const smoothed = makePath([origin, new THREE.Vector3(2, 1, 0), dest]);
+    const stub = makePath([], { incomplete: true });
+    const traverse = jest.fn((..._a: unknown[]) => smoothed);
+    traverse.mockReturnValueOnce(smoothed).mockReturnValueOnce(stub);
+    const area = {
+      id: 1,
+      path: { traverseToPoint: traverse, hasPendingSmoothSession: () => false },
+    } as any;
+    mockPathHopsAreWalkClear.mockReturnValue(false);
+
+    const info: PathFindInfoLite = { ownerId: 7, origin: origin.clone(), dest: dest.clone() };
+    const r = buildWalkPath(area, owner, info);
+    expect(traverse).toHaveBeenCalledTimes(2);
+    expect(r.code).toBe(WalkPathCode.Incomplete);
+    expect(info.lastCode).toBe(WalkPathCode.Incomplete);
+  });
 });

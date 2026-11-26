@@ -841,6 +841,12 @@ export class ActionMoveToPoint extends Action {
       this.pathFindInfo.targetObjectId = this.target.id;
     }
 
+    // The "endpoints unchanged" early-out keeps the caller's current path, so it
+    // is only valid while there is one (the walk tick clears it on a body-block).
+    if(!this.computedPath?.points?.length){
+      this.pathFindInfo.replot = true;
+    }
+
     const result = buildWalkPath(area, this.owner, this.pathFindInfo);
 
     if(result.code === WalkPathCode.Fail){

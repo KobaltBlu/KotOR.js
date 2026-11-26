@@ -35,6 +35,20 @@ import { isWalkmeshEdgeWalkClear } from "@engine/pathfinding/path-hops-clear";
  */
 const CLOSEST_REACHABLE_MAX_TESTS = 32;
 
+/** Same tolerance ComputedPath.search uses to accept a resume. */
+const DFS_RESUME_ENDPOINT_EPS = 0.01;
+
+function dfsResumeMatches(
+  resume: PathPointDfsResume,
+  origin: THREE.Vector3,
+  dest: THREE.Vector3
+): boolean {
+  return (
+    Math.hypot(origin.x - resume.startX, origin.y - resume.startY) < DFS_RESUME_ENDPOINT_EPS &&
+    Math.hypot(dest.x - resume.endX, dest.y - resume.endY) < DFS_RESUME_ENDPOINT_EPS
+  );
+}
+
 type SmoothSessionStage = "selection" | "corner";
 
 type SmoothSession = {
@@ -477,7 +491,13 @@ export class AreaPath {
     destPoint.setArea(this.area);
 
     const ownerId = owner?.id;
-    const pendingDfs = ownerId != null ? this.dfsResumeByOwner.get(ownerId) : undefined;
+    let pendingDfs = ownerId != null ? this.dfsResumeByOwner.get(ownerId) : undefined;
+    // A resume only continues a search with the same endpoints; anything else
+    // is a fresh plot and must get the direct-line test.
+    if(pendingDfs && !dfsResumeMatches(pendingDfs, origin, dest)){
+      this.dfsResumeByOwner.delete(ownerId!);
+      pendingDfs = undefined;
+    }
 
     // Smooth-only resume — same endpoints, skip DFS (buildWalkPath return-1 mid-smooth)
     const smoothOnly = this.tryResumeSmoothOnly(owner, origin, dest, smooth);
@@ -520,14 +540,7 @@ export class AreaPath {
         return this.partialClearPath(owner, origin, dest, originPoint);
       }
 
-      originPoint.addConnection(closest_origin_point);
-      closest_origin_point.addConnection(originPoint);
-      closest_destination_point.addConnection(destPoint);
-      destPoint.addConnection(closest_destination_point);
-
-      const path = new ComputedPath(owner, originPoint, destPoint);
-      path.setOwner(owner);
-      const resume = ownerId != null ? this.dfsResumeByOwner.get(ownerId) : undefined;
+      const resume = pendingDfs;
       // Shared tick budget; 0 means unlimited in pathPointDfsSearch — never pass 0.
       const searchBudget = takePathPlanSearchBudgetMs();
       if(searchBudget <= 0){
@@ -545,7 +558,6 @@ export class AreaPath {
 
       // PTH static edge table backs PathPoint.hasLOS during the DFS.
       ensurePthStaticEdgeTable(this.area, this.points);
-      originPoint.connections = [closest_origin_point];
 
       const remaining = Math.min(
         PATH_PLAN_SEARCH_SLICE_MS,
@@ -562,15 +574,23 @@ export class AreaPath {
         }
         return stub;
       }
-      path.search({
-        resume,
-        timeBudgetMs: remaining,
-      });
+      // Temporary endpoint links go onto the shared PTH nodes only for the
+      // duration of the search, and always come off again.
+      originPoint.connections = [closest_origin_point];
+      closest_origin_point.addConnection(originPoint);
+      closest_destination_point.addConnection(destPoint);
+      destPoint.addConnection(closest_destination_point);
 
-      for(let i = 0, len = this.points.length; i < len; i++){
-        const p = this.points[i];
-        p.removeConnection(originPoint);
-        p.removeConnection(destPoint);
+      const path = new ComputedPath(owner, originPoint, destPoint);
+      path.setOwner(owner);
+      try{
+        path.search({
+          resume,
+          timeBudgetMs: remaining,
+        });
+      }finally{
+        closest_origin_point.removeConnection(originPoint);
+        closest_destination_point.removeConnection(destPoint);
       }
 
       if(ownerId != null){
@@ -622,6 +642,16 @@ export class AreaPath {
     this.smoothResumeByOwner.delete(ownerId);
     this.smoothCornerResumeByOwner.delete(ownerId);
     this.smoothSessionByOwner.delete(ownerId);
+  }
+
+  /**
+   * Drop every in-progress plot (DFS resume and smoothing session) held for
+   * an owner. Called when its move action ends so a later plot starts fresh.
+   */
+  clearOwnerPlanState(ownerId: number | undefined){
+    if(ownerId == null) return;
+    this.dfsResumeByOwner.delete(ownerId);
+    this.clearSmoothSession(ownerId);
   }
 
   /** True when SmoothSelection or SmoothCorner session is held for owner. */

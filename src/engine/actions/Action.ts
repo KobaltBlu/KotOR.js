@@ -124,6 +124,8 @@ export class Action {
         if(!!computedPath && computedPath === this.computedPath){
           this.owner.setComputedPath(undefined);
         }
+        // A half-finished plot belongs to this move; the next one starts fresh.
+        this.owner.area?.path?.clearOwnerPlanState?.(this.owner.id);
       }
     }
   }
