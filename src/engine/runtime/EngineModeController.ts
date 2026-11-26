@@ -2,6 +2,7 @@ import { GameState } from "@engine/runtime/GameState";
 import { AudioEngine } from "@engine/audio";
 import { AudioEngineChannel } from "@core/enums/audio/AudioEngineChannel";
 import { EngineMode } from "@engine/enums/engine";
+import { CutsceneMode } from "@core/enums/dialog/CutsceneMode";
 import { FollowerCamera } from "@engine/render/FollowerCamera";
 import { MotionBlurController } from "@engine/render/MotionBlurController";
 
@@ -11,6 +12,19 @@ import { MotionBlurController } from "@engine/render/MotionBlurController";
  */
 export class EngineModeController {
   static RestoreEnginePlayMode(): void {
+    // A conversation started while a menu / movie / load screen was up
+    // (e.g. a module OnEnter stunt) must resume in DIALOG, not INGAME.
+    const cutscene = GameState.CutsceneManager;
+    if(
+      GameState.module &&
+      cutscene?.active &&
+      cutscene.dialog &&
+      cutscene.cutsceneMode != CutsceneMode.BARK
+    ){
+      console.log('RestoreEnginePlayMode: DIALOG');
+      EngineModeController.SetEngineMode(EngineMode.DIALOG);
+      return;
+    }
     if(GameState.module){
       if(GameState.module.area.miniGame){
         console.log('RestoreEnginePlayMode: MINIGAME');
