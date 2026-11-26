@@ -274,6 +274,10 @@ export class TalentFeat extends TalentObject {
       case CombatFeatType.MASTER_POWER_ATTACK:
       case CombatFeatType.MASTER_POWER_BLAST:
         return 10;
+      case CombatFeatType.FORCE_JUMP_ADVANCED:
+        return 2;
+      case CombatFeatType.FORCE_JUMP_MASTERY:
+        return 4;
     }
     return 0;
   }

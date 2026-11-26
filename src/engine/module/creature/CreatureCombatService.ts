@@ -411,6 +411,7 @@ export class CreatureCombatService {
             moveTarget === this.host.combatData.lastAttackTarget ||
             moveTarget === this.host.combatData.lastAttemptedAttackTarget ||
             moveTarget === this.host.combatRound?.action?.target ||
+            moveTarget === this.host.combatRound?.attackTarget ||
             moveTarget === this.host.combatRound?.newAttackTarget
           )
         ){

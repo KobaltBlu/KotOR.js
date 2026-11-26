@@ -16,7 +16,7 @@ import { isGameObject } from "@engine/module/guards/isGameObject";
  * QueueAttackActions.
  *
  * end combat round passes forceNearest only when the combat-round sticky
- * (NewAttackTarget / field 0xb20) died this end-round. Otherwise:
+ * (the round's attack target) died this end-round. Otherwise:
  * - non-empty schedule → keep queued actions (do not retarget)
  * - empty schedule + valid sticky → re-queue the same sticky target
  * - empty schedule + invalid sticky → GetNearestEnemy (MaxCleaveRange)
@@ -85,7 +85,7 @@ function applyNearestTarget(creature: Creature, next: GameObject): void {
   creature.combatData.lastAttackTarget = next;
   creature.combatData.lastAttemptedAttackTarget = next;
   if(round){
-    round.newAttackTarget = next;
+    round.attackTarget = next;
     round.setAttackTarget(next);
   }
   // QueueAttackActions → SetLastTarget (client UI focus)
@@ -112,7 +112,7 @@ export function queueAttackActions(
 
   const forceNearest = !!options?.forceNearest;
   const scheduleEmpty = !round.scheduledActionList.length;
-  const sticky = round.newAttackTarget;
+  const sticky = round.attackTarget;
   const stickyValid = isValidCreateNewAttackSticky(creature, sticky);
 
   // : (sticky INVALID || schedule non-empty) → only force nearest when

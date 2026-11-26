@@ -18,7 +18,6 @@ import { WeaponWield } from "@core/enums/combat/WeaponWield";
 import { Dice } from "@core/utility/Dice";
 import { DiceType } from "@core/enums/combat/DiceType";
 import {
-  damageFlagsFromChannels,
   mitigateDamageAmount,
   scaleDamageChannels,
 } from "@engine/combat/damage-mitigation";
@@ -251,13 +250,17 @@ export class CombatAttackData {
       ? creature.combatRound.getCriticalHitMultiplier(this.attackWeapon, feat, creature)
       : 1;
 
+    // Damage that lowers the total (negative STR, EffectDamageDecrease).
+    let penalty = 0;
+
     // Unarmed: roll weapon dice once per critical-hit multiplier
     if(!this.attackWeapon){
+      const die = CombatAttackData.getUnarmedDamageDie(creature);
       for(let i = 0; i < critMultiplier; i++){
-        const unarmedRoll = Dice.roll(1, DiceType.d4);
+        const unarmedRoll = die == 2 ? Dice.roll(1, DiceType.d2) : 1;
         const weighted = weightWeaponDiceRoll(
           unarmedRoll,
-          4,
+          die,
           creature,
           this.reactObject
         );
@@ -265,15 +268,16 @@ export class CombatAttackData {
       }
       const strMod = CombatAttackData.GetAbilityMod(creature.getSTR());
       for(let i = 0; i < critMultiplier; i++){
-        this.damageList[DamageType.PHYSICAL].addDamage(strMod);
+        if(strMod > 0) this.damageList[DamageType.PHYSICAL].addDamage(strMod);
+        else penalty -= strMod;
       }
       const unarmedChannels = getDamageIncreaseBonusesByChannel(creature);
-      for(let ch = 0; ch < unarmedChannels.length; ch++){
+      for(let ch = 0; ch < unarmedChannels.length && ch < this.damageList.length; ch++){
         const amount = unarmedChannels[ch];
-        if(amount){
-          this.damageList[ch].addDamage(amount);
-        }
+        if(amount > 0) this.damageList[ch].addDamage(amount);
+        else if(amount < 0) penalty -= amount;
       }
+      this.applyDamagePenalty(penalty);
       this.ensureMinimumDamage();
       this.updateKillingBlow();
       return;
@@ -339,7 +343,8 @@ export class CombatAttackData {
     if(!this.rangedAttack){
       const strMod = CombatAttackData.GetAbilityMod(creature.getSTR());
       for(let i = 0; i < critMultiplier; i++){
-        this.damageList[DamageType.PHYSICAL].addDamage(strMod);
+        if(strMod > 0) this.damageList[DamageType.PHYSICAL].addDamage(strMod);
+        else penalty -= strMod;
       }
     }
 
@@ -361,15 +366,35 @@ export class CombatAttackData {
     const effectChannels = getDamageIncreaseBonusesByChannel(creature, {
       critMultiplier,
     });
-    for(let ch = 0; ch < effectChannels.length; ch++){
+    for(let ch = 0; ch < effectChannels.length && ch < this.damageList.length; ch++){
       const amount = effectChannels[ch];
-      if(amount){
-        this.damageList[ch].addDamage(amount);
-      }
+      if(amount > 0) this.damageList[ch].addDamage(amount);
+      else if(amount < 0) penalty -= amount;
     }
 
+    this.applyDamagePenalty(penalty);
     this.ensureMinimumDamage();
     this.updateKillingBlow();
+  }
+
+  /**
+   * Remove `amount` from the rolled damage, taking it from the generic
+   * channels first and then from the typed ones, never below zero.
+   */
+  private applyDamagePenalty(amount: number){
+    let remaining = Math.max(0, amount | 0);
+    if(!remaining) return;
+    const order: number[] = [DamageType.PHYSICAL, DamageType.BASE];
+    for(let i = 0; i < this.damageList.length; i++){
+      if(i !== DamageType.PHYSICAL && i !== DamageType.BASE) order.push(i);
+    }
+    for(let i = 0; i < order.length && remaining > 0; i++){
+      const channel = this.damageList[order[i]];
+      if(!channel || channel.damageValue <= 0) continue;
+      const take = Math.min(channel.damageValue, remaining);
+      channel.setDamage(channel.damageValue - take);
+      remaining -= take;
+    }
   }
 
   private ensureMinimumDamage(){
@@ -478,7 +503,9 @@ export class CombatAttackData {
         for(let i = 0; i < 15; i++){
           channels[i] = this.damageList[i].damageValue;
         }
-        const flags = damageFlagsFromChannels(channels);
+        // Immunity / resistance / reduction key off the weapon's damage
+        // type only (bludgeoning when unarmed), not bonus damage channels.
+        const flags = (this.attackWeapon?.getDamageFlags?.() | 0) || 1;
         const mitigated = mitigateDamageAmount(target, this.getTotalDamage(), flags, 0);
         scaleDamageChannels(channels, mitigated);
         for(let i = 0; i < 15; i++){
@@ -533,6 +560,13 @@ export class CombatAttackData {
    */
   reset(){
     this.killingBlow = false;
+    this.concealment = false;
+    this.sneakAttack = false;
+    this.coupDeGrace = false;
+    this.toHitTotal = 0;
+    this.targetDefense = 0;
+    this.attackDeflected = 0;
+    this.reaxnDelay = 0;
     this.reactObject = undefined;
     this.attackWeapon = undefined;
     this.attackResult = AttackResult.MISS;
@@ -660,6 +694,12 @@ export class CombatAttackData {
     if(this.ammoItemObjectId && !this.ammoItem){
       this.ammoItem = lookupCombatObjectById(this.ammoItemObjectId);
     }
+  }
+
+  /** Unarmed damage die: 1d2 for small creatures, otherwise 1. */
+  static getUnarmedDamageDie(creature: Creature): number {
+    const size = creature?.getAppearance?.()?.sizecategory || 3;
+    return size < 3 ? 2 : 1;
   }
 
   static GetAbilityMod(abilityScore: number = 10): number {

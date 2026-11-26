@@ -11,7 +11,7 @@ import { resolveDuelRoundFlags } from "@engine/combat/combat-dueling";
 import { resolveAttackPauseMs } from "@engine/combat/combat-round-pause";
 import { duelLog, duelWho } from "@engine/combat/duel-debug";
 import { hasTargetBeenDetected } from "@engine/combat/nearest-enemy";
-import { tryStuckLosRetarget } from "@engine/combat/initialize-new-attack-target";
+import { initializeNewAttackTarget, tryStuckLosRetarget } from "@engine/combat/initialize-new-attack-target";
 import { getNearestActionPoint } from "@engine/combat/nearest-action-point";
 import { GameObjectConstant, SSFType } from "@core/enums";
 import { ActionParameterType } from "@core/enums/actions/ActionParameterType";
@@ -187,10 +187,15 @@ export class ActionPhysicalAttacks extends Action {
     }
 
     if(this.target.isDead()){
-      // Tear down / retarget even when roundStarted is already false
-      // (remaining scheduled swings at a corpse must not block queueing).
-      if(this.owner.combatRound){
-        this.owner.combatRound.endCombatRound();
+      // Drop swings scheduled against the corpse so they cannot block the
+      // next round's queueing. The round itself ends on its own timer, which
+      // is where the switch to the nearest enemy happens.
+      const round = this.owner.combatRound;
+      if(round){
+        round.pruneDeadAttackActions();
+        if(!round.roundStarted && round.action && round.action.target === this.target){
+          round.action = undefined;
+        }
       }
       return ActionStatus.FAILED;
     }
@@ -422,10 +427,11 @@ export class ActionPhysicalAttacks extends Action {
     if(combatRound.roundStarted){
 
       if(isGameObject(combatRound.newAttackTarget)){
-        combatRound.setAttackTarget(combatRound.newAttackTarget);
-        this.setParameter(1, ActionParameterType.DWORD, combatRound.newAttackTarget.id);
-        this.target = combatRound.newAttackTarget;
-        combatRound.newAttackTarget = undefined;
+        const retarget = combatRound.newAttackTarget;
+        initializeNewAttackTarget(this.owner, retarget, this);
+        if(combatRound.action){
+          combatRound.action.target = retarget;
+        }
       }
 
       duelLog(this.owner, 'resolve-attack', {

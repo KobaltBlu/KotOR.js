@@ -34,7 +34,7 @@ export function isChoreographedMeleeWeapon(creature: Creature | undefined): bool
   if(weapon.isRangedWeapon?.()) return false;
   const wield = weapon.getWeaponWield?.() ?? WeaponWield.INVALID;
   if(wield === WeaponWield.STUN_BATON) return false;
-  if(wield === 8) return false;
+  if((wield as number) === 8) return false;
   return true;
 }
 

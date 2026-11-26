@@ -47,6 +47,7 @@ export type ClientCombatModeCreature = {
     lastAttemptedSpellTarget?: { isDead?: () => boolean } | null;
   };
   combatRound?: {
+    attackTarget?: { isDead?: () => boolean } | null;
     newAttackTarget?: { isDead?: () => boolean } | null;
   };
 };
@@ -74,6 +75,7 @@ export function hasLivingCombatTarget(creature: ClientCombatModeCreature | undef
   if(isLivingCombatOid(data.lastAttemptedAttackTarget)) return true;
   if(isLivingCombatOid(data.lastSpellTarget)) return true;
   if(isLivingCombatOid(data.lastAttemptedSpellTarget)) return true;
+  if(isLivingCombatOid(creature.combatRound?.attackTarget)) return true;
   if(isLivingCombatOid(creature.combatRound?.newAttackTarget)) return true;
   return false;
 }

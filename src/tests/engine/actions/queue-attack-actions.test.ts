@@ -66,7 +66,7 @@ function makeCreature(overrides: Record<string, unknown> = {}) {
       lastAttacker: targetB,
     },
     combatRound: {
-      newAttackTarget: targetA,
+      attackTarget: targetA,
       scheduledActionList: [] as unknown[],
       specialAttackList: [] as unknown[],
       setAttackTarget: jest.fn(),
@@ -121,7 +121,7 @@ describe('queueAttackActions', () => {
 
   it('uses GetNearestEnemy when forceNearest after sticky death', () => {
     const creature = makeCreature();
-    creature.combatRound.newAttackTarget = undefined;
+    creature.combatRound.attackTarget = undefined;
     creature.combatRound.scheduledActionList = [{ target: creature._A }];
     mockGetNearestEnemy.mockReturnValue(creature._B);
 
@@ -134,7 +134,7 @@ describe('queueAttackActions', () => {
 
   it('uses GetNearestEnemy when sticky is missing and schedule is empty', () => {
     const creature = makeCreature();
-    creature.combatRound.newAttackTarget = undefined;
+    creature.combatRound.attackTarget = undefined;
     mockGetNearestEnemy.mockReturnValue(creature._B);
 
     expect(queueAttackActions(creature)).toBe(true);

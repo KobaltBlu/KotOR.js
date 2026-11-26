@@ -755,6 +755,7 @@ export class ActionMoveToPoint extends Action {
       data.lastSpellTarget === chase ||
       data.lastAttemptedSpellTarget === chase ||
       roundActionTarget === chase ||
+      owner.combatRound?.attackTarget === chase ||
       owner.combatRound?.newAttackTarget === chase;
     if(!isCombatChase){
       return;

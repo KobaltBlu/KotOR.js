@@ -490,7 +490,7 @@ export class CombatRound {
     if(dir.lengthSq() > 1e-8){
       dir.normalize();
     }else{
-      dir.set(px, py, 0);
+      dir.set(1, 0, 0);
     }
     const far = eye.clone().addScaledVector(dir, 1000);
 
@@ -609,7 +609,13 @@ export class CombatRound {
   dodgeTarget: GameObject;
   /** Saved DodgeTarget DWORD for deferred resolve. */
   dodgeTargetObjectId: number = 0;
-  newAttackTarget: GameObject; //the new target to switch to after this combat round has ended
+  /**
+   * Attack target this round was started against. Kept between rounds so the
+   * end of the round can tell whether it died (switch to the nearest enemy).
+   */
+  attackTarget: GameObject;
+  /** Pending retarget request, consumed by the next physical attack. */
+  newAttackTarget: GameObject;
   /** Saved NewAttackTarget DWORD for deferred resolve. */
   newAttackTargetObjectId: number = 0;
   engaged: boolean = false; // ResolveEngagedState / StartCombatRound
@@ -678,6 +684,7 @@ export class CombatRound {
     this.weaponSucks = false;
     this.dodgeTarget = undefined;
     this.dodgeTargetObjectId = 0;
+    this.attackTarget = undefined;
     this.newAttackTarget = undefined;
     this.newAttackTargetObjectId = 0;
     this.engaged = false;
@@ -780,7 +787,7 @@ export class CombatRound {
     // otherwise the master's ResolveMeleeAnimations sees engaged=false later.
     if(this.engaged && !this.master){
       const savedAction = this.action;
-      this.endCombatRound({ skipQueueAttackActions: true });
+      this.endCombatRound({ skipQueueAttackActions: true, reentryRoundStarted: this.roundStarted });
       this.action = savedAction;
       this.engaged = true;
       this.master = false;
@@ -832,12 +839,12 @@ export class CombatRound {
     this.dodgeTarget = target;
     this.pendingDischargeVisuals.length = 0;
 
-    // StartCombatRound — NewAttackTarget (0xb20) sticky:
-    // set to attack target, or INVALID when targeting self.
+    // Round attack target: the target, or none when targeting self.
+    // newAttackTarget (pending retarget) is left alone.
     if(target && target !== owner){
-      this.newAttackTarget = target;
+      this.attackTarget = target;
     }else{
-      this.newAttackTarget = undefined;
+      this.attackTarget = undefined;
     }
 
     for(let i = 0; i < 5; i++){
@@ -959,7 +966,14 @@ export class CombatRound {
    * End the combat round.
    * end combat round — master clears slave engaged link.
    */
-  endCombatRound(options?: { skipQueueAttackActions?: boolean }){
+  endCombatRound(options?: {
+    skipQueueAttackActions?: boolean;
+    /**
+     * Engaged-slave restart: whether the round being ended had started.
+     * Only a started round runs the OnEndRound script.
+     */
+    reentryRoundStarted?: boolean;
+  }){
     duelLog(this.owner, 'round:end', {
       engaged: this.engaged,
       master: this.master,
@@ -972,6 +986,10 @@ export class CombatRound {
       this.owner === GameState.PartyManager.getCurrentPlayer() &&
       !this.owner.isDead()
     );
+    const normalEnd = options?.reentryRoundStarted !== undefined
+      ? !!options.reentryRoundStarted
+      : !options?.skipQueueAttackActions;
+    const scriptedRound = !!this.resultsCalculated;
     this.roundStarted = false;
     const combatData = this.owner.combatData;
     combatData.lastCombatFeatUsed = undefined;
@@ -1025,12 +1043,20 @@ export class CombatRound {
     this.masterID = undefined;
     this.duelPartner = undefined;
     for(let i = 0; i < 5; i++){
-      this.attackList[i].reset();
+      this.attackList[i]?.reset?.();
     }
-    this.owner.onCombatRoundEnd();
+    // OnEndRound runs only for a normal end of a non-scripted round, never for
+    // the player-controlled character, and not while a move is at the head of
+    // the action queue.
+    const ownerDead = !!this.owner.isDead?.();
+    const controlled = this.owner === GameState.PartyManager.getCurrentPlayer();
+    const headAction = (this.owner as any).actionQueue?.[0];
+    const moving = headAction?.type === ActionType.ActionMoveToPoint;
+    const runEndRoundScript = normalEnd && !scriptedRound && !controlled && !ownerDead && !moving;
+    this.owner.onCombatRoundEnd(runEndRoundScript);
 
     // Body Fuel at end combat round: temporary FP = max FP
-    if(this.owner.bodyFuel){
+    if(isCreature(this.owner) && this.owner.bodyFuel){
       this.owner.temporaryForce = this.owner.getMaxFP();
     }
 
@@ -1038,16 +1064,16 @@ export class CombatRound {
     // end combat round can QueueAttackActions (sticky-target clear).
     this.pruneDeadAttackActions();
 
-    // end combat round: if NewAttackTarget sticky died, force GetNearestEnemy.
-    // Alive sticky keeps focus.
+    // If the round's attack target died, force a nearest-enemy retarget.
+    // A living target keeps focus.
     let forceNearest = false;
-    const sticky = this.newAttackTarget;
+    const sticky = this.attackTarget;
     if(sticky){
       const stickyDead = typeof (sticky as Creature).isDead === 'function'
         ? !!(sticky as Creature).isDead()
         : false;
       if(stickyDead){
-        this.newAttackTarget = undefined;
+        this.attackTarget = undefined;
         forceNearest = true;
       }
     }
@@ -1126,7 +1152,7 @@ export class CombatRound {
         if(this.master && this.duelPartner?.combatRound){
           this.duelPartner.combatRound.resetCombatAnimations(overshoot);
         }
-        const target = this.dodgeTarget || this.action?.target;
+        const target = this.attackTarget || this.dodgeTarget || this.action?.target;
         const targetInvalid = shouldEndRoundOnPauseExpiry({
           hasTarget: !!target,
           targetDead: !!target?.isDead?.(),
@@ -1950,16 +1976,21 @@ export class CombatRound {
    */
   getAttackAbilityModifier(creature: Creature, weapon: Item | undefined): number {
     const strMod = CombatRound.GetMod(creature.getSTR());
-    const dexMod = CombatRound.GetMod(creature.getDEX());
+    let dexMod = CombatRound.GetMod(creature.getDEX());
+    const isTSL = GameState.GameKey == GameEngineType.TSL;
+    if(!isTSL && creature.isDebilitated?.()){
+      dexMod = Math.min(dexMod, 0);
+    }
     if(weapon?.isRangedWeapon()){
       return dexMod;
     }
-    // TSL Finesse: Lightsabers / Melee Weapons — use higher of STR/DEX
-    if(weapon && (weapon.baseItemId == 8 || weapon.baseItemId == 9 || weapon.baseItemId == 10)){
-      if(creature.getHasFeat(CombatFeatType.FINESSE_LIGHTSABERS)){
-        return Math.max(strMod, dexMod);
-      }
-      return strMod;
+    const lightsaber = !!weapon && (weapon.baseItemId == 8 || weapon.baseItemId == 9 || weapon.baseItemId == 10);
+    if(!isTSL){
+      // K1: lightsabers always use the better of STR and DEX.
+      return lightsaber ? Math.max(strMod, dexMod) : strMod;
+    }
+    if(lightsaber){
+      return creature.getHasFeat(CombatFeatType.FINESSE_LIGHTSABERS) ? Math.max(strMod, dexMod) : strMod;
     }
     if(creature.getHasFeat(CombatFeatType.FINESSE_MELEE_WEAPONS)){
       return Math.max(strMod, dexMod);
@@ -1969,57 +2000,73 @@ export class CombatRound {
 
   /**
    * Full to-hit modifier vs target.
+   * @param offHandSwing - true for the off-hand swing of a dual-wield / double-weapon round
    */
   getAttackModifierVersus(
     creature: Creature,
     weapon: Item | undefined,
     weaponSlot: ModuleCreatureArmorSlot,
-    combatAction: CombatRoundAction
+    combatAction: CombatRoundAction,
+    offHandSwing: boolean = weaponSlot == ModuleCreatureArmorSlot.LEFTHAND
   ): number {
+    const isTSL = GameState.GameKey == GameEngineType.TSL;
+    const ranged = !!weapon?.isRangedWeapon();
+    const target = isCreature(combatAction.target) ? combatAction.target as Creature : undefined;
+
     let modifier = creature.getBaseAttackBonus();
     modifier += this.getAttackAbilityModifier(creature, weapon);
     modifier += weapon?.getAttackBonus() || 0;
 
-    if(this.isDualWielding(creature)){
-      if(
-        weaponSlot == ModuleCreatureArmorSlot.RIGHTHAND ||
-        weaponSlot == ModuleCreatureArmorSlot.LEFTHAND
-      ){
-        modifier += this.calculateTwoWeaponModifier(creature, weaponSlot);
-      }
-    }else if(
-      weaponSlot == ModuleCreatureArmorSlot.RIGHTHAND &&
-      weapon &&
-      !weapon.isRangedWeapon() &&
-      !creature.equipment.LEFTHAND &&
-      (weapon.getWeaponWield() == WeaponWield.ONE_HANDED_SWORD ||
-        weapon.getWeaponWield() == WeaponWield.BLASTER_PISTOL ||
-        weapon.getWeaponWield() == WeaponWield.STUN_BATON)
-    ){
-      // Dueling feats with a free off-hand
-      if(creature.getHasFeat(CombatFeatType.MASTER_DUELING)){
-        modifier += 3;
-      }else if(creature.getHasFeat(CombatFeatType.ADVANCED_DUELING)){
-        modifier += 2;
-      }else if(creature.getHasFeat(CombatFeatType.DUELING)){
-        modifier += 1;
-      }
-    }
+    modifier += this.calculateTwoWeaponModifier(creature, offHandSwing);
+    modifier += this.getDuelingAttackBonus(creature);
 
     // Special-attack feat to-hit penalty
     if(combatAction.feat){
       modifier -= combatAction.feat.getAttackPenalty() || 0;
     }
 
-    // Melee vs target holding a ranged weapon (+10)
-    if(
-      weapon && !weapon.isRangedWeapon() &&
-      isCreature(combatAction.target)
-    ){
-      const target = combatAction.target as Creature;
+    if(ranged && combatAction.target?.position){
+      const distSq = creature.position.distanceToSquared(combatAction.target.position);
+      if(distSq <= 25){
+        if(!isTSL){
+          // Point-blank shots get +10.
+          modifier += 10;
+        }else{
+          if(creature.getHasFeat(CombatFeatType.CLOSE_COMBAT)) modifier += 1;
+          if(creature.getHasFeat(CombatFeatType.IMPROVED_CLOSE_COMBAT)) modifier += 1;
+        }
+      }
+    }
+
+    // Melee vs a target holding a ranged weapon
+    if(weapon && !ranged && target){
       const targetWeapon = target.equipment?.RIGHTHAND;
       if(targetWeapon?.isRangedWeapon()){
-        modifier += 10;
+        if(!isTSL){
+          modifier += 10;
+        }else{
+          let bonus = 6;
+          if(target.getHasFeat(CombatFeatType.CLOSE_COMBAT)) bonus -= 2;
+          if(target.getHasFeat(CombatFeatType.IMPROVED_CLOSE_COMBAT)) bonus -= 2;
+          modifier += bonus;
+        }
+      }
+    }
+
+    if(isTSL){
+      if(ranged){
+        for(let feat = CombatFeatType.XXXX_TARGETING_10; feat >= CombatFeatType.TARGETING_1; feat--){
+          if(creature.getHasFeat(feat)){
+            modifier += feat - CombatFeatType.TARGETING_1 + 1;
+            break;
+          }
+        }
+      }
+      if(this.isLightsaberEquipped(creature)){
+        if(creature.getHasFeat(CombatFeatType.SUPER_WEAPON_FOCUS_LIGHTSABER_III)) modifier += 3;
+        else if(creature.getHasFeat(CombatFeatType.SUPER_WEAPON_FOCUS_LIGHTSABER_II)) modifier += 2;
+        else if(creature.getHasFeat(CombatFeatType.SUPER_WEAPON_FOCUS_LIGHTSABER_I)) modifier += 1;
+        modifier += this.getLightsaberFormAttackBonus(creature, target);
       }
     }
 
@@ -2030,9 +2077,41 @@ export class CombatRound {
   }
 
   /**
+   * Dueling feats: one-handed sword or blaster pistol with nothing in the
+   * off hand (TSL also counts fighting unarmed).
+   */
+  getDuelingAttackBonus(creature: Creature): number {
+    const right = creature.equipment?.RIGHTHAND;
+    const left = creature.equipment?.LEFTHAND;
+    if(left) return 0;
+    let qualifies = false;
+    if(right){
+      const wield = right.getWeaponWield();
+      qualifies = wield == WeaponWield.ONE_HANDED_SWORD || wield == WeaponWield.BLASTER_PISTOL;
+    }else{
+      qualifies = GameState.GameKey == GameEngineType.TSL;
+    }
+    if(!qualifies) return 0;
+    if(creature.getHasFeat(CombatFeatType.MASTER_DUELING)) return 3;
+    if(creature.getHasFeat(CombatFeatType.ADVANCED_DUELING)) return 2;
+    if(creature.getHasFeat(CombatFeatType.DUELING)) return 1;
+    return 0;
+  }
+
+  /** TSL lightsaber form to-hit bonuses (caller checks a lightsaber is equipped). */
+  getLightsaberFormAttackBonus(creature: Creature, target?: Creature): number {
+    switch(creature.getCurrentForm()){
+      case LightsaberForm.SHII_CHO: return 1;
+      case LightsaberForm.MAKASHI: return target && this.isLightsaberEquipped(target) ? 3 : 0;
+      case LightsaberForm.SHIEN: return 2;
+      case LightsaberForm.NIMAN: return 1;
+    }
+    return 0;
+  }
+
+  /**
    * Minimum natural d20 that threatens a critical.
    * Threat width = base (+Keen) + Critical Strike / Sniper extras.
-   * TSL: Soresu raises the threshold; Ataru lowers it while a saber is equipped.
    */
   getCriticalThreatRoll(
     weapon: Item | undefined = undefined,
@@ -2063,22 +2142,7 @@ export class CombatRound {
       width += baseThreat * 3;
     }
 
-    let threshold = 21 - width;
-
-    if(
-      GameState.GameKey == GameEngineType.TSL &&
-      attacker &&
-      this.isLightsaberEquipped(attacker)
-    ){
-      const form = attacker.getCurrentForm();
-      if(form == LightsaberForm.SORESU && threshold < 20){
-        threshold += 1;
-      }else if(form == LightsaberForm.ATARU && threshold > 1){
-        threshold -= 1;
-      }
-    }
-
-    return threshold;
+    return 21 - width;
   }
 
   /**
@@ -2144,50 +2208,34 @@ export class CombatRound {
     if(!rightHand || !leftHand) return false;
     if(leftHand.getWeaponType() == WeaponType.INVALID) return false;
     if(leftHand.getWeaponWield() == WeaponWield.INVALID) return false;
-    if(rightHand.getWeaponWield() == WeaponWield.STUN_BATON) return false;
     const creatureSize = this.getCreatureSize(creature);
     const mhSize = (rightHand.getBaseItem()?.weaponSize as number) || 0;
     return mhSize <= creatureSize;
   }
 
   /**
-   * Two-weapon fighting to-hit modifier.
-   * TSL Superior Two-Weapon Fighting I/II/III replace Master penalties when present.
+   * The item that counts as the off-hand weapon for two-weapon penalties:
+   * the left-hand item, or a double weapon in the right hand.
    */
-  calculateTwoWeaponModifier(creature: Creature, slot: ModuleCreatureArmorSlot.RIGHTHAND|ModuleCreatureArmorSlot.LEFTHAND): number {
+  getTwoWeaponOffItem(creature: Creature): Item | undefined {
+    const left = creature.equipment?.LEFTHAND;
+    if(left) return left;
+    const right = creature.equipment?.RIGHTHAND;
+    if(right && right.getWeaponWield() == WeaponWield.TWO_HANDED_SWORD) return right;
+    return undefined;
+  }
+
+  /**
+   * Two-weapon fighting to-hit modifier.
+   * @param offHandSwing - true when resolving the off-hand swing
+   */
+  calculateTwoWeaponModifier(creature: Creature, offHandSwing: boolean): number {
     if(!creature || creature.isSimpleCreature()) return 0;
-    if(!this.isDualWielding(creature)) return 0;
+    const offItem = this.getTwoWeaponOffItem(creature);
+    if(!offItem) return 0;
+    const isTSL = GameState.GameKey == GameEngineType.TSL;
 
-    const leftHand = creature.equipment.LEFTHAND;
-    const creatureSize = this.getCreatureSize(creature);
-    const offhandRelativeSize = leftHand
-      ? (leftHand.getBaseItem().weaponSize as number) - creatureSize
-      : 0;
-    const lightOffhand = offhandRelativeSize == -1;
-
-    // TSL Superior Two-Weapon Fighting (requires Master as prereq in rules)
-    if(creature.getHasFeat(CombatFeatType.SUPER_WEAPON_FOCUS_2_WEAPON_III)){
-      if(slot == ModuleCreatureArmorSlot.RIGHTHAND) return lightOffhand ? 2 : 0;
-      if(slot == ModuleCreatureArmorSlot.LEFTHAND) return -1;
-    }else if(creature.getHasFeat(CombatFeatType.SUPER_WEAPON_FOCUS_2_WEAPON_II)){
-      if(slot == ModuleCreatureArmorSlot.RIGHTHAND) return lightOffhand ? 2 : 0;
-      if(slot == ModuleCreatureArmorSlot.LEFTHAND) return -2;
-    }else if(creature.getHasFeat(CombatFeatType.SUPER_WEAPON_FOCUS_2_WEAPON_I)){
-      if(slot == ModuleCreatureArmorSlot.RIGHTHAND) return lightOffhand ? 1 : -1;
-      if(slot == ModuleCreatureArmorSlot.LEFTHAND) return -2;
-    }
-
-    if(slot == ModuleCreatureArmorSlot.RIGHTHAND){
-      let modifier = lightOffhand ? -4 : -6;
-      if(creature.getHasFeat(CombatFeatType.TWO_WEAPON_MASTERY)){
-        modifier += 4;
-      }else if(creature.getHasFeat(CombatFeatType.TWO_WEAPON_ADVANCED)){
-        modifier += 2;
-      }
-      return modifier;
-    }
-
-    if(slot == ModuleCreatureArmorSlot.LEFTHAND){
+    if(offHandSwing){
       let modifier = -10;
       if(creature.getHasFeat(CombatFeatType.TWO_WEAPON_MASTERY)){
         modifier += 8;
@@ -2196,17 +2244,39 @@ export class CombatRound {
       }else if(creature.getHasFeat(CombatFeatType.TWO_WEAPON_FIGHTING)){
         modifier += 4;
       }
+      if(isTSL && creature.getHasFeat(CombatFeatType.SUPER_WEAPON_FOCUS_2_WEAPON_III)){
+        modifier += 1;
+      }
       return modifier;
     }
 
-    return 0;
+    if(offItem.getWeaponType() == WeaponType.INVALID) return 0;
+    const doubleWeapon = offItem.getWeaponWield() == WeaponWield.TWO_HANDED_SWORD;
+    const relativeSize = ((offItem.getBaseItem()?.weaponSize as number) || 0) - this.getCreatureSize(creature);
+    let modifier = (relativeSize == -1 || doubleWeapon) ? -4 : -6;
+    if(creature.getHasFeat(CombatFeatType.TWO_WEAPON_MASTERY)){
+      modifier += 4;
+    }else if(creature.getHasFeat(CombatFeatType.TWO_WEAPON_ADVANCED)){
+      modifier += 2;
+    }
+    if(isTSL){
+      if(
+        creature.getHasFeat(CombatFeatType.SUPER_WEAPON_FOCUS_2_WEAPON_III) ||
+        creature.getHasFeat(CombatFeatType.SUPER_WEAPON_FOCUS_2_WEAPON_II)
+      ){
+        modifier += 2;
+      }else if(creature.getHasFeat(CombatFeatType.SUPER_WEAPON_FOCUS_2_WEAPON_I)){
+        modifier += 1;
+      }
+    }
+    return modifier;
   }
 
   /**
    * @deprecated Use calculateTwoWeaponModifier
    */
-  calculateTwoWeaponPenalty(creature: Creature, slot: ModuleCreatureArmorSlot.RIGHTHAND|ModuleCreatureArmorSlot.LEFTHAND){
-    return Math.max(0, -this.calculateTwoWeaponModifier(creature, slot));
+  calculateTwoWeaponPenalty(creature: Creature, offHandSwing: boolean){
+    return Math.max(0, -this.calculateTwoWeaponModifier(creature, offHandSwing));
   }
 
   isLightsaberEquipped(creature: Creature): boolean {
@@ -2385,7 +2455,7 @@ export class CombatRound {
 
     // Beat the attack by 6+ to deflect (return fire); otherwise parry.
     // TSL Force Deflection alone cannot return fire.
-    if(canDeflect.value && defenderRoll >= attackTotal + 6 && wouldHit){
+    if(canDeflect.value && defenderRoll >= attackTotal + 6){
       combatAction.attackResult = AttackResult.DEFLECTED;
     }else{
       combatAction.attackResult = AttackResult.PARRIED;
@@ -2444,21 +2514,25 @@ export class CombatRound {
     }
     if(dice <= 0) return false;
 
-    // Sneak / critical immunities block sneak application (vs attacker race/align)
-    if(
-      this.hasEffectImmunity(target, 30, attacker) ||
-      this.hasEffectImmunity(target, 31, attacker)
-    ){
-      return false;
+    const dist = attacker.position.distanceTo(target.position);
+
+    // Helpless targets, or targets that have not seen the attacker (melee,
+    // or ranged within 10m), are sneak-attacked unless immune.
+    const helpless = !!target.isDebilitated?.() || !!target.getDeadTemp?.();
+    const unseen = !target.hasSeenObject?.(attacker) && (!attack.rangedAttack || dist <= 10);
+    if(helpless || unseen){
+      if(
+        this.hasEffectImmunity(target, 30, attacker) ||
+        this.hasEffectImmunity(target, 31, attacker)
+      ){
+        return false;
+      }
+      attack.sneakAttack = true;
+      return true;
     }
 
-    // Ranged sneak max distance
-    if(attack.rangedAttack){
-      const dist = attacker.position.distanceTo(target.position);
-      if(dist > 10) return false;
-    }
-
-    // Front cone: if target faces the attacker (dot >= ~0.707), no sneak
+    // Otherwise only from outside the target's front cone.
+    if(attack.rangedAttack && dist > 10) return false;
     const toAttacker = attacker.position.clone().sub(target.position);
     if(toAttacker.lengthSq() > 0){
       toAttacker.normalize();
@@ -2542,7 +2616,7 @@ export class CombatRound {
     }
 
     const naturalRoll = this.rollD20();
-    const attackMod = this.getAttackModifierVersus(creature, weapon, weaponSlot, combatAction);
+    const attackMod = this.getAttackModifierVersus(creature, weapon, weaponSlot, combatAction, this.offHandTaken);
     const attackTotal = naturalRoll + attackMod;
     const hasAssuredHit = creature.hasEffect(GameEffectType.EffectAssuredHit);
 
@@ -2575,45 +2649,10 @@ export class CombatRound {
       return;
     }
 
-    // Attacker MissChance (Blindness child MissChance 50%)
-    if(!hasAssuredHit){
-      const missChance = this.getMissChancePercent(creature);
-      if(missChance > 0){
-        const roll = Math.floor(Math.random() * 100) + 1;
-        if(roll <= missChance){
-          combatAction.attackResult = AttackResult.MISS;
-          attack.attackResult = AttackResult.MISS;
-          attack.concealment = true;
-          this.logAttackResult(creature, weapon, combatAction, false, hasAssuredHit);
-          this.currentAttack++;
-          return;
-        }
-      }
-    }
-
-    // Target Concealment
-    if(targetCreature && !hasAssuredHit){
-      const conceal = this.getConcealmentPercent(targetCreature);
-      if(conceal > 0){
-        const roll = Math.floor(Math.random() * 100) + 1;
-        if(roll <= conceal){
-          combatAction.attackResult = AttackResult.MISS;
-          attack.attackResult = AttackResult.MISS;
-          attack.concealment = true;
-          this.logAttackResult(creature, weapon, combatAction, false, hasAssuredHit);
-          this.currentAttack++;
-          return;
-        }
-      }
-    }
-
     if(hasAssuredHit){
       combatAction.attackResult = AttackResult.AUTOMATIC_HIT;
       attack.attackResult = AttackResult.AUTOMATIC_HIT;
       attack.calculateDamage(creature, false, combatAction.feat);
-    }else if(naturalRoll == 1){
-      combatAction.attackResult = AttackResult.MISS;
-      attack.attackResult = AttackResult.MISS;
     }else{
       const threatens = this.isCriticalThreat(naturalRoll, weapon, combatAction.feat, creature);
       const wouldHit = naturalRoll == 20 || attackTotal >= targetAC;
@@ -2623,7 +2662,7 @@ export class CombatRound {
         this.resolveDefensiveEffects(creature, targetCreature, attack, combatAction, attackTotal, wouldHit)
       ){
         // Deflected / parried — no damage
-      }else if(!wouldHit){
+      }else if(naturalRoll == 1 || !wouldHit){
         combatAction.attackResult = AttackResult.MISS;
         attack.attackResult = AttackResult.MISS;
       }else if(threatens){
@@ -2701,7 +2740,7 @@ export class CombatRound {
     // (GetDeadTemp) later in ResolveMeleeAnimations, so hits/crits still duel.
     if(attackKey == 'm' && this.engaged){
       attackKey = 'c';
-      attackType = Math.round(Math.random()*4)+1;
+      attackType = Math.floor(Math.random()*5)+1;
     }
 
     // Prefer anim name already chosen by resolveRangedAttack (feat-aware + discharge
@@ -3118,6 +3157,11 @@ export class CombatRound {
     if(this.duelPartnerObjectId && !this.duelPartner){
       this.duelPartner = lookupCombatObjectById(this.duelPartnerObjectId);
     }
+    // The round attack target is not saved; the round starts with it equal
+    // to DodgeTarget (unless the owner targeted itself).
+    if(this.roundStarted && !this.attackTarget && this.dodgeTarget && this.dodgeTarget !== this.owner){
+      this.attackTarget = this.dodgeTarget;
+    }
 
     for(let i = 0; i < this.attackList.length; i++){
       this.attackList[i]?.resolveObjectReferences?.();
@@ -3205,6 +3249,7 @@ export class CombatRound {
     // Empty schedule, or attack entries with no resolvable targets.
     const fallback =
       this.newAttackTarget ||
+      this.attackTarget ||
       this.dodgeTarget ||
       (this.owner as Creature)?.combatData?.lastAttackTarget ||
       this.duelPartner ||
@@ -3224,7 +3269,7 @@ export class CombatRound {
         const creature = this.owner as Creature;
         creature.combatData.lastAttackTarget = fallback;
         creature.combatData.lastAttemptedAttackTarget = fallback;
-        this.newAttackTarget = fallback;
+        this.attackTarget = fallback;
         this.setAttackTarget(fallback);
         queueAttackActions(creature);
       }
@@ -3248,6 +3293,7 @@ export class CombatRound {
     }
     const target =
       this.newAttackTarget ||
+      this.attackTarget ||
       this.dodgeTarget ||
       this.action?.target ||
       this.scheduledActionList[0]?.target ||

@@ -183,7 +183,7 @@ export class CombatRoundAction {
       const target: Creature = this.target as any;
       if(owner.isDuelingObject(target)){
         attackKey = 'c';
-        attackType = Math.round(Math.random()*4)+1;
+        attackType = Math.floor(Math.random()*5)+1;
       }
     }
     

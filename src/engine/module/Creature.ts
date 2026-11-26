@@ -2486,13 +2486,13 @@ export class Creature extends GameObject {
     }
   }
 
-  override onCombatRoundEnd(){
+  override onCombatRoundEnd(runScript: boolean = true){
     if(this.combatData.lastAttemptedAttackTarget instanceof GameObject && this.combatData.lastAttemptedAttackTarget.isDead())
       this.combatData.lastAttemptedAttackTarget = undefined;
 
-    // end combat round fires ScriptEndRound without a CombatState gate.
-    // Keep the dead check only so corpses do not re-run OnEndRound AI.
-    if(this.isDead())
+    // No CombatState gate; the caller decides whether OnEndRound runs.
+    // Keep the dead check so corpses never re-run OnEndRound AI.
+    if(!runScript || this.isDead())
       return true;
     
     const nwscript = this.scripts[ScriptHook.CreatureOnEndRound];

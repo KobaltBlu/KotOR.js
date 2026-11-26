@@ -1306,8 +1306,9 @@ export class GameObject {
 
   /**
    * On combat round end
+   * @param _runScript - whether the OnEndRound script should run
    */
-  onCombatRoundEnd() {
+  onCombatRoundEnd(_runScript: boolean = true) {
     //stub
   }
 
