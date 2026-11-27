@@ -45,6 +45,34 @@ const WIND_UBO_FLOATS =
   WIND_MAX_POINT_SOURCES * 4; // strengths vec2 with std140 stride 16
   // grassDt / danglyElapsed / danglyWindLevel stay as regular uniforms (declared in grass/model shaders)
 
+/** Marks a three.js uniformsList this module already filtered. */
+const PRUNED = Symbol("odysseyUboPruned");
+
+type ThreeUniformEntry = { id: string; addr?: WebGLUniformLocation | null; seq?: unknown };
+
+/**
+ * On WebGL2, getActiveUniform also reports uniform-block members. Three wraps
+ * them with a null location and, while material.uniforms still has a value of
+ * the same name, re-uploads them on every material switch (a GL no-op that
+ * still runs the JS compare/flatten). Drop null-location entries from the
+ * material's cached upload list; three rebuilds the list (unfiltered) whenever
+ * the program changes, and the next draw filters it again.
+ */
+export function pruneBlockMemberUniforms(renderer: THREE.WebGLRenderer, material: THREE.Material): void {
+  const props = renderer.properties.get(material) as { uniformsList?: ThreeUniformEntry[] | null };
+  const list = props.uniformsList as (ThreeUniformEntry[] & { [PRUNED]?: true }) | null | undefined;
+  if (!list || list[PRUNED]) return;
+  let keep = 0;
+  for (let i = 0; i < list.length; i++) {
+    const u = list[i];
+    // Structured uniforms (no addr of their own) are left alone.
+    if (u.addr === null && u.seq === undefined) continue;
+    list[keep++] = u;
+  }
+  list.length = keep;
+  list[PRUNED] = true;
+}
+
 export class OdysseyUbo {
   data: Float32Array;
   private buffer: WebGLBuffer | null = null;
@@ -475,6 +503,7 @@ export class OdysseyUniformBuffers {
       const mat = this as THREE.ShaderMaterial;
       const setId = (mat.userData.odysseyLightUboSet as OdysseyLightUboSetId) || "global";
       OdysseyUniformBuffers.bindLightingSet(setId);
+      pruneBlockMemberUniforms(renderer, mat);
       // Block bindings run from the gl.useProgram wrap (after setProgram).
     };
   }
