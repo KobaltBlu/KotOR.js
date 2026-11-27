@@ -122,6 +122,8 @@
     "ts-jest": "^29.4.15"
   },
   "overrides": {
-    "brace-expansion@1": "^1.1.22"
+    "brace-expansion@1": "^1.1.22",
+    "glob@>=9": "^14.0.2",
+    "minimatch@>=7": "^11.0.1"
   }
 }
